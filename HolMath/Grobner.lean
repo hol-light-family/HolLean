@@ -192,12 +192,9 @@ def mlcm : mon → mon → Except String mon
 /- Reduce monomial cm by polynomial pol, returning replacement for cm.    -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `reduce1 cm (pol,hpol)` (grobner.ml 109-121).  On the empty polynomial it
-    fails; otherwise it divides `cm` by the leading monomial `cm1` and forms
-    both the replacement polynomial and the history record.  Note that
-    `minus_num c` (i.e. `-c`) appears TWICE - once in `grob_cmul` for the
-    polynomial and once inside the `Mmul` of the history - and both must
-    carry the SAME negated coefficient. -/
+/-- `reduce1 cm (pol,hpol)` (grobner.ml 109-121): divide `cm` by the leading
+    monomial, forming the replacement polynomial and history record.  Fails on
+    the empty polynomial. -/
 def reduce1 (cm : mon) : polyh → Except String polyh
   | ([], _) => .error "reduce1"
   | (cm1 :: cms, hpol) =>
@@ -221,10 +218,9 @@ def reduceb (cm : mon) (basis : List polyh) : Except String polyh :=
 /- ---------------------------------------------------------------------- -/
 
 /-- `reduce basis (pol,hist)` (grobner.ml 127-133).  The OCaml uses
-    `try ... with Failure _` as CONTROL FLOW: if `reduceb` fails on the
-    leading monomial `cm`, it recurses on the TAIL `ptl` and conses `cm`
-    back onto the result.  Rendered here as a `match` on the `reduceb`
-    result. -/
+    `try ... with Failure _` as control flow: if `reduceb` fails on the leading
+    monomial it recurses on the tail and conses the monomial back on; rendered
+    here as a `match` on the `reduceb` result. -/
 partial def reduce (basis : List polyh) : polyh → Except String polyh
   | ([], hist) => .ok ([], hist)
   | (cm :: ptl, hist) =>
@@ -251,12 +247,8 @@ def orthogonal (l : mon) (p1 p2 : poly) : Except String Bool := do
 /- Compute S-polynomial of two polynomials.                               -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `spoly cm ph1 ph2` (grobner.ml 147-155).  THE high-risk history record.
-    The FIRST `Mmul` divides by `cm1` an UNMODIFIED monomial `cm`; the SECOND
-    `Mmul` divides by `cm2` a monomial whose COEFFICIENT is NEGATED
-    (`minus_num(fst cm)`, i.e. `-cm.1`) but whose EXPONENT VECTOR is UNCHANGED
-    (`snd cm`, i.e. `cm.2`).  This asymmetry - negation in the second Mmul
-    only - is essential. -/
+/-- `spoly cm ph1 ph2` (grobner.ml 147-155): the S-polynomial of two
+    polynomials, with its history record. -/
 def spoly (cm : mon) : polyh → polyh → Except String polyh
   | ([], h), _ => .ok ([], h)
   | _, ([], h) => .ok ([], h)
@@ -273,10 +265,8 @@ def spoly (cm : mon) : polyh → polyh → Except String polyh
 /- Make a polynomial monic.                                               -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `monic (pol,hist)` (grobner.ml 161-165).  The history multiplier is
-    `Mmul((num_1 // c',map (K 0) m'),hist)` where `(c',m') = hd pol`: the
-    exponent vector `m'` is ZEROED (`map (K 0)`) and the coefficient is the
-    RECIPROCAL `1/c'` of the leading coefficient. -/
+/-- `monic (pol,hist)` (grobner.ml 161-165): scale a polynomial to make its
+    leading coefficient 1, recording the scaling in the history. -/
 def monic : polyh → Except String polyh
   | ([], hist) => .ok ([], hist)
   | (pol@((c', m') :: _), hist) => do
@@ -336,9 +326,9 @@ def align (pr : polyh × polyh) : polyh × polyh :=
 def poly_eq (p1 p2 : poly) : Bool :=
   forall2 (fun (a : mon) (b : mon) => a.1 == b.1 && a.2 == b.2) p1 p2
 
-/-- `memx ((p1,h1),(p2,h2)) ppairs` (grobner.ml 191-193).  NEGATED sense: it
-    is `not (exists ...)`, so `memx` returns TRUE when the pair is NOT found.
-    Reproduced literally - `criterion2` then applies a second `not`. -/
+/-- `memx ((p1,h1),(p2,h2)) ppairs` (grobner.ml 191-193).  Negated sense: it
+    is `not (exists ...)`, returning TRUE when the pair is NOT found
+    (`criterion2` then applies a second `not`). -/
 def memx (pr : polyh × polyh) (ppairs : List (polyh × polyh)) : Bool :=
   let ((p1, _), (p2, _)) := pr
   !(exists' (fun (qq : polyh × polyh) =>
@@ -348,11 +338,8 @@ def memx (pr : polyh × polyh) (ppairs : List (polyh × polyh)) : Bool :=
 /- Buchberger's second criterion.                                         -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `criterion2 basis (lcm,((p1,h1),(p2,h2))) opairs` (grobner.ml 199-204).
-    FOUR conjuncts inside the `exists`, in order: `g`'s polynomial differs
-    from both `p1` and `p2`; `lcm` divides `g`'s leading monomial; and the
-    two `not(memx (align(...)) (map snd opairs))` clauses (a double negation
-    over `memx`, itself already negated - reproduced literally). -/
+/-- `criterion2 basis (lcm,((p1,h1),(p2,h2))) opairs` (grobner.ml 199-204):
+    Buchberger's second criterion. -/
 def criterion2 (basis : List polyh)
     (crit : mon × (polyh × polyh)) (opairs : List (mon × (polyh × polyh))) :
     Bool :=
@@ -390,11 +377,8 @@ def constant_poly (p : poly) : Bool :=
 initialize grobner_messages : IO.Ref Bool ← IO.mkRef true
 
 /-- `grobner_basis basis pairs` (grobner.ml 216-232).  Self-recursive.  The
-    OCaml prints diagnostic progress with `Format.print_string (... ^ " basis
-    elements and " ^ ... ^ " critical pairs")` then `print_newline()`; that
-    diagnostic output is reproduced here, which forces the function into
-    `IO` (wrapped in `Except` for the failing sub-operations).  Note the
-    OCaml's `(sp,hist as sph)` alias pattern: `sph` is the whole pair. -/
+    OCaml prints diagnostic progress, which forces this into `IO` (wrapped in
+    `Except` for the failing sub-operations). -/
 partial def grobner_basis (basis : List polyh)
     (pairs : List (mon × (polyh × polyh))) :
     ExceptT String IO (List polyh) := do
@@ -1107,6 +1091,9 @@ def ideal (R : RingCtx) (tms : List term) (tm : term) : ExceptT String IO (List 
   let cert ← grobner_ideal vars pols pol
   liftExcept ((upto 0 (Int.ofNat (length pols) - 1)).mapM (fun n =>
     holify_polynomial K R.Nm vars (assocd n cert [])))
+/- ---------------------------------------------------------------------- -/
+/- Separate out the cases.                                                -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `RING parms = fst(RING_AND_IDEAL_CONV parms)` (grobner.ml 616). -/
 def RING' [HolBase] (R : RingCtx) : ioconv := RING R
@@ -1277,6 +1264,13 @@ partial def numMultiplyConv [HolBase] (C : NumSimplifyConsts) (pos : Bool) : ioc
                 (BINDER_CONV (BINDER_CONV (RAND_CONV BETA2_CONV)))) th1
     CONV_RULE (RAND_CONV (NUM_MULTIPLY_CONV pos)) th2) <|
   pure (REFL tm)
+/- ---------------------------------------------------------------------- -/
+/- Simplify a natural number assertion to eliminate conditionals, DIV,    -/
+/- MOD, PRE, cutoff subtraction, EVEN and ODD. Try to do it in a way that -/
+/- makes new quantifiers universal. At the moment we don't split "<=>"    -/
+/- which would make this quantifier selection work there too; better to   -/
+/- do NNF first if you care. This also applies to EVEN and ODD.           -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `NUM_SIMPLIFY_CONV` (grobner.ml 651-703).  The `pth_evenodd` net is
     built here, once. -/
@@ -1382,6 +1376,9 @@ def numRingParms (Nm : HolMath.Nums.NumeralConsts)
     RING_INTEGRAL       := NUM_INTEGRAL
     RABINOWITSCH_THM    := TRUTH
     RING_NORMALIZE_CONV := NUM_NORMALIZE_CONV }
+/- ---------------------------------------------------------------------- -/
+/- Natural number version of ring procedure with this normalization.      -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `NUM_RING` (grobner.ml 707-737): builds `initconv` (and its `ADD1` net)
     once and returns the procedure.  `rawring` is `RING` at the

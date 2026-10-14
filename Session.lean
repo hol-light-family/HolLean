@@ -1015,8 +1015,7 @@ initialize theTypeDefinitions :
 initialize theInductiveTypeStore : IO.Ref (Option (List (String × (Int × thm × thm)))) ← IO.mkRef none
 
 /-- `!inductive_type_store` (class.ml 489): read the live store, so types
-    added by `define_type` are seen.  (This used to be a value computed once,
-    which kept only the store's first state.) -/
+    added by `define_type` are seen. -/
 unsafe def get_inductive_type_store : IO (List (String × (Int × thm × thm))) := do
   match ← theInductiveTypeStore.get with
   | some l => pure l
@@ -1040,7 +1039,7 @@ unsafe def new_type_definition (tyname absname repname : String) (th : thm) :
     | .error _ => none
   match cached with
   | some tth' => do
-      IO.eprintln "Benign redefinition of type"
+      HolCore.Lib.warn true "Benign redefinition of type"
       return .ok tth'
   | none =>
     let conv : ioconv := Simp.thencIO (Simp.ratorConvIO (Simp.REWR_CONV B C.EXISTS_THM))
@@ -1214,27 +1213,33 @@ private unsafe def MesonD : Meson.MesonTacDeps :=
     asmFol     := Canon.ASM_FOL_TAC B Cn.fol
     refuteThen := fun ttac => Classic.REFUTE_THEN B (Simp.REWR_CONV B C.refuteThenPth) fTm ttac }
 
-/-- MESON's config (from the OCaml default parameter values). -/
-def mesonConfig : Meson.MesonConfig := Meson.defaultConfig
+/-- meson.ml's settable parameters (`meson_depth := true`, ...). -/
+abbrev meson_depth := Meson.meson_depth
+abbrev meson_prefine := Meson.meson_prefine
+abbrev meson_dcutin := Meson.meson_dcutin
+abbrev meson_skew := Meson.meson_skew
+abbrev meson_brand := Meson.meson_brand
+abbrev meson_split_limit := Meson.meson_split_limit
+abbrev meson_chatty := Meson.meson_chatty
 
 /-- `GEN_MESON_TAC min max step ths`. -/
-unsafe def GEN_MESON_TAC (min max step : Int) (ths : List thm) : tactic :=
-  Meson.GEN_MESON_TAC B MesonD mesonConfig MesonS mesonInferences
-    Mn.pths Mn.eqAx Mn.brand mesonContraposCache min max step ths
+unsafe def GEN_MESON_TAC (min max step : Int) (ths : List thm) : tactic := fun g => do
+  Meson.GEN_MESON_TAC B MesonD (← Meson.readConfig) MesonS mesonInferences
+    Mn.pths Mn.eqAx Mn.brand mesonContraposCache min max step ths g
 
 /-- `ASM_MESON_TAC ths = GEN_MESON_TAC 0 50 1 ths`. -/
-unsafe def ASM_MESON_TAC (ths : List thm) : tactic :=
-  Meson.ASM_MESON_TAC B MesonD mesonConfig MesonS mesonInferences
-    Mn.pths Mn.eqAx Mn.brand mesonContraposCache ths
+unsafe def ASM_MESON_TAC (ths : List thm) : tactic := fun g => do
+  Meson.ASM_MESON_TAC B MesonD (← Meson.readConfig) MesonS mesonInferences
+    Mn.pths Mn.eqAx Mn.brand mesonContraposCache ths g
 
 /-- `MESON_TAC ths`. -/
-unsafe def MESON_TAC (ths : List thm) : tactic :=
-  Meson.MESON_TAC B MesonD mesonConfig MesonS mesonInferences
-    Mn.pths Mn.eqAx Mn.brand mesonContraposCache ths
+unsafe def MESON_TAC (ths : List thm) : tactic := fun g => do
+  Meson.MESON_TAC B MesonD (← Meson.readConfig) MesonS mesonInferences
+    Mn.pths Mn.eqAx Mn.brand mesonContraposCache ths g
 
 /-- `MESON ths tm`: prove `tm` by MESON. -/
-unsafe def MESON (ths : List thm) (tm : term) : IO (Except String thm) :=
-  Meson.MESON B MesonD mesonConfig MesonS mesonInferences
+unsafe def MESON (ths : List thm) (tm : term) : IO (Except String thm) := do
+  Meson.MESON B MesonD (← Meson.readConfig) MesonS mesonInferences
     Mn.pths Mn.eqAx Mn.brand mesonContraposCache ths tm
 
 /- ---------------------------------------------------------------------- -/
@@ -1285,19 +1290,14 @@ private unsafe def metisMkEq (p : term × term) : IO (Except String term) := do
   | .error e => return .error e
 
 /-- `~`, `F`, `\/` as preterms (for building HOL literals during reconstruction). -/
-private unsafe def metisNegp : HolCore.Preterm.preterm :=
-  match unsafeIO (do match ← HolCore.Parser.parse_term "~p" with
-    | .ok t => (match rator t with
-                | .ok neg => pure (HolCore.Preterm.preterm_of_term neg)
-                | .error _ => pure (HolCore.Preterm.preterm_of_term t))
-    | _ => pure (HolCore.Preterm.preterm_of_term fTm)) with
-  | .ok pt => pt | _ => panic! "Session.metisNegp: not initialised"
-private def metisFalsityp : HolCore.Preterm.preterm := HolCore.Preterm.preterm_of_term fTm
-private unsafe def metisDisjp : HolCore.Preterm.preterm :=
-  match unsafeIO (do match ← (mk_const "\\/" [] : IO (Except String term)) with
-    | .ok t => pure (HolCore.Preterm.preterm_of_term t)
-    | .error _ => pure (HolCore.Preterm.preterm_of_term fTm)) with
-  | .ok pt => pt | _ => panic! "Session.metisDisjp: not initialised"
+private def metisQuotp (s : String) : IO HolCore.Preterm.preterm := do
+  match ← HolCore.Parser.parse_term s with
+  | .ok t => pure (HolCore.Preterm.preterm_of_term t)
+  | .error e => panic! s!"Session.metisQuotp {s}: {e}"
+-- metis.ml's Preterm module parses these quotations on every call.
+private def metisNegp : IO HolCore.Preterm.preterm := metisQuotp "~"
+private def metisFalsityp : IO HolCore.Preterm.preterm := metisQuotp "F"
+private def metisDisjp : IO HolCore.Preterm.preterm := metisQuotp "\\/"
 
 /-- `DISJ_ACI_RULE` as a `term → IO (Except thm)` (wraps Canon's pure form). -/
 private unsafe def metisDisjAci (tm : term) : IO (Except String thm) :=
@@ -1780,6 +1780,9 @@ private unsafe def installGenBeta (fstT sndT pairT indT recT : thm) : IO (Except
     let cur ← theInductiveTypeStore.get
     let base := cur.getD [("bool", (2, C.bool_INDUCT, C.bool_RECURSION))]
     theInductiveTypeStore.set (some (("prod", (1, indT, recT)) :: base))
+    -- GEN_BETA_CONV's GABS_RULE lemma is proved when GEN_BETA_CONV is defined,
+    -- before the extend_basic_convs below.
+    let _ ← IO.mkRef (concl gabsRulePth)
     -- extend_basic_convs ("GEN_BETA_CONV", (`GABS (\a. b) c`, GEN_BETA_CONV))
     let pat ← ExceptT.mk (HolCore.Parser.parse_term "GABS (\\a. b) c")
     ExceptT.mk (Simp.extend_basic_convs B "GEN_BETA_CONV" (pat, GEN_BETA_CONV))
@@ -2038,12 +2041,13 @@ private unsafe def letTacPths : thm × thm × thm :=
                   | .ok t => pure t | .error e => panic! s!"LET_TAC pth parse: {e}")
       let pth ← (match ← (MESON [PAIR, PAIR_EQ] goal : IO (Except String thm)) with
                  | .ok t => pure t | .error e => panic! s!"LET_TAC pth: {e}")
-      let taut1 ← (match ← (TAUT (← (match ← HolCore.Parser.parse_term "(x = x) <=> T" with
-                    | .ok t => pure t | .error e => panic! e)) : IO (Except String thm)) with
-                   | .ok t => pure t | .error e => panic! s!"LET_TAC taut1: {e}")
+      -- OCaml builds the list [TAUT ..; TAUT ..] right to left.
       let taut2 ← (match ← (TAUT (← (match ← HolCore.Parser.parse_term "a /\\ T <=> a" with
                     | .ok t => pure t | .error e => panic! e)) : IO (Except String thm)) with
                    | .ok t => pure t | .error e => panic! s!"LET_TAC taut2: {e}")
+      let taut1 ← (match ← (TAUT (← (match ← HolCore.Parser.parse_term "(x = x) <=> T" with
+                    | .ok t => pure t | .error e => panic! e)) : IO (Except String thm)) with
+                   | .ok t => pure t | .error e => panic! s!"LET_TAC taut1: {e}")
       let x := (pth, taut1, taut2)
       theLetTacPth.set (some x); pure x) with
   | .ok x => x | _ => panic! "Session.letTacPths"
@@ -2089,11 +2093,18 @@ private def computeFlags : HolMath.Compute.ComputeFlags :=
 /-- The `t:A->B` witness that `ETA_CONV`/`try_eta` instantiate. -/
 private unsafe def computeEtaT : term := [[ t:A->B ]]
 
-/-- The `COND` constant, whose branches `CBV_CONV` is told to skip. -/
-private unsafe def condTm : term := [[ COND: bool -> A -> A -> A ]]
+/-- The `COND` constant, whose branches `CBV_CONV` is told to skip.  An action:
+    compute.ml parses the quotation in each `bool_compset ()` and
+    `basic_compset ()` call. -/
+private unsafe def condTm : IO term := do
+  match ← HolCore.Parser.parse_term "COND: bool -> A -> A -> A" with
+  | .ok t => pure t | .error e => panic! s!"Session.condTm: {e}"
 
-/-- The `LET` constant, to which `let_CONV` is attached at arity 2. -/
-private unsafe def letTm : term := [[ LET:(A->B)->A->B ]]
+/-- The `LET` constant, to which `let_CONV` is attached at arity 2 (parsed in
+    each `basic_compset ()` call, as in compute.ml). -/
+private unsafe def letTm : IO term := do
+  match ← HolCore.Parser.parse_term "LET:(A->B)->A->B" with
+  | .ok t => pure t | .error e => panic! s!"Session.letTm: {e}"
 
 /-- `lazyfy_thm`: use a lazy rule to avoid computing arguments. -/
 unsafe def lazyfy_thm : thm → IO (Except String thm) :=
@@ -2292,6 +2303,11 @@ def is_numeral : term → Bool := HolMath.Nums.is_numeral
 
 /-- `the_specifications`: the constants introduced by `new_specification`. -/
 initialize theSpecifications : IO.Ref (List HolMath.Nums.specification) ← IO.mkRef []
+/- This is put here because we use numerals as tags to force different    -/
+/- constants specified with equivalent theorems to have different         -/
+/- underlying definitions, ensuring that there are no provable            -/
+/- equalities between them and so in some sense the constants are         -/
+/- "underspecified" as the user might want for some applications.         -/
 
 /-- `new_specification names th`: a derived principle of definition based on
     existence.  Benign respecifications reuse the stored theorem. -/
@@ -3149,10 +3165,23 @@ private unsafe def numRedConvIO : IO (Except String ioconv) := do
       | .error e => return .error e
       | .ok c => do theNumRedConv.set (some c); return .ok c
 
-/-- `NUM_REL_CONV` (calc_num.ml): the five relational reductions. -/
-unsafe def NUM_REL_CONV : IO (Except String ioconv) :=
-  HolMath.CalcNum.NUM_REL_CONV NUM_LT_CONV NUM_LE_CONV NUM_GT_CONV
-    NUM_GE_CONV NUM_EQ_CONV
+/-- The `NUM_REL_CONV` net conversion (calc_num.ml 1443-1451), built once. -/
+initialize theNumRelConv : IO.Ref (Option ioconv) ← IO.mkRef none
+
+private unsafe def numRelConvIO : IO (Except String ioconv) := do
+  match ← theNumRelConv.get with
+  | some c => return .ok c
+  | none =>
+    match ← HolMath.CalcNum.NUM_REL_CONV NUM_LT_CONV NUM_LE_CONV NUM_GT_CONV
+        NUM_GE_CONV NUM_EQ_CONV with
+    | .error e => return .error e
+    | .ok c => do theNumRelConv.set (some c); return .ok c
+
+/-- `NUM_REL_CONV` (calc_num.ml 1443-1451): the five relational reductions. -/
+unsafe def NUM_REL_CONV (tm : term) : IO (Except String thm) := do
+  match ← numRelConvIO with
+  | .error e => return .error e
+  | .ok c => c tm
 
 /-- `NUM_RED_CONV tm` (calc_num.ml): a single numeral reduction step. -/
 unsafe def NUM_RED_CONV (tm : term) : IO (Except String thm) := do
@@ -3172,14 +3201,24 @@ unsafe def NUM_REDUCE_TAC : tactic :=
 
 /-- `NUM_COMPUTE_CONV tm` (calc_num.ml): call-by-value numeral evaluation via a
     `bool_compset ()` extended with the reduction conversions. -/
-unsafe def NUM_COMPUTE_CONV (tm : term) : IO (Except String thm) := do
-  match ← numRedConvListIO with
-  | .error e => return .error e
-  | .ok l =>
-    match ← HolMath.CalcNum.NUM_COMPUTE_CONV l bool_compset
-        set_skip add_conv WEAK_CBV_CONV [[ COND: bool -> A -> A -> A ]] with
+initialize theNumComputeConv : IO.Ref (Option ioconv) ← IO.mkRef none
+
+private unsafe def numComputeConvIO : IO (Except String ioconv) := do
+  match ← theNumComputeConv.get with
+  | some c => return .ok c
+  | none =>
+    match ← numRedConvListIO with
     | .error e => return .error e
-    | .ok c => c tm
+    | .ok l =>
+      match ← HolMath.CalcNum.NUM_COMPUTE_CONV l bool_compset
+          set_skip add_conv WEAK_CBV_CONV [[ COND: bool -> A -> A -> A ]] with
+      | .error e => return .error e
+      | .ok c => do theNumComputeConv.set (some c); return .ok c
+
+unsafe def NUM_COMPUTE_CONV (tm : term) : IO (Except String thm) := do
+  match ← numComputeConvIO with
+  | .error e => return .error e
+  | .ok c => c tm
 
 /-- `EXP_MOD_CONV tm` (calc_num.ml): compute `(a EXP k) MOD n` with reduced
     intermediates. -/
@@ -3306,14 +3345,19 @@ initialize theNumSimplifyConv : IO.Ref (Option ioconv) ← IO.mkRef none
     `NUM_REDUCE_CONV THENC CONDS_CELIM_CONV THENC NNF_CONV THENC
      NUM_MULTIPLY_CONV true THENC NUM_REDUCE_CONV THENC
      GEN_REWRITE_CONV ONCE_DEPTH_CONV [pth_evenodd]`. -/
-unsafe def NUM_SIMPLIFY_CONV : ioconv := fun tm => do
+private unsafe def numSimplifyConvIO : IO (Except String ioconv) := do
   match ← theNumSimplifyConv.get with
-  | some c => c tm
+  | some c => return .ok c
   | none =>
     match ← (HolMath.Grobner.NUM_SIMPLIFY_CONV NsC
                NUM_REDUCE_CONV CONDS_CELIM_CONV NNF_CONV).run with
     | .error e => return .error e
-    | .ok c => do theNumSimplifyConv.set (some c); c tm
+    | .ok c => do theNumSimplifyConv.set (some c); return .ok c
+
+unsafe def NUM_SIMPLIFY_CONV : ioconv := fun tm => do
+  match ← numSimplifyConvIO with
+  | .ok c => c tm
+  | .error e => return .error e
 
 /-- Cache for `NUM_INTEGRAL_LEMMA` (grobner.ml 708-715). -/
 initialize theNumIntegralLemma : IO.Ref (Option thm) ← IO.mkRef none
@@ -3422,14 +3466,20 @@ def grobner_ideal (vars : List term) (pols : List HolMath.Grobner.poly)
 /-- Cache for `NUM_RING` (grobner.ml 707-737). -/
 initialize theNumRing : IO.Ref (Option ioconv) ← IO.mkRef none
 
-/-- `NUM_RING tm` (grobner.ml 707-737). -/
-unsafe def NUM_RING : ioconv := fun tm => do
+/-- Build (once) the `NUM_RING` procedure (grobner.ml 707-737). -/
+private unsafe def numRingIO : IO (Except String ioconv) := do
   match ← theNumRing.get with
-  | some c => c tm
+  | some c => return .ok c
   | none =>
     match ← (HolMath.Grobner.NUM_RING NUM_SIMPLIFY_CONV ADD1 RING).run with
     | .error e => return .error e
-    | .ok c => do theNumRing.set (some c); c tm
+    | .ok c => do theNumRing.set (some c); return .ok c
+
+/-- `NUM_RING tm` (grobner.ml 707-737). -/
+unsafe def NUM_RING : ioconv := fun tm => do
+  match ← numRingIO with
+  | .ok c => c tm
+  | .error e => return .error e
 
 /- ---------------------------------------------------------------------- -/
 /- ind_types.ml: nested-recursion stores and lookups (lines 1009-1080).    -/
@@ -3556,23 +3606,36 @@ unsafe def add_list_option_sum_to_store
     ("option", (2, option_INDUCT, option_RECURSION)) ::
     ("sum",    (2, sum_INDUCT,    sum_RECURSION))     :: base))
 
+/-- Caches for `option_DISTINCT` and `option_INJ`, proved once when
+    ind_types.ml's bootstrap runs (`buildRaw3Ctx`). -/
+initialize theOptionDistinct : IO.Ref (Option thm) ← IO.mkRef none
+initialize theOptionInj : IO.Ref (Option thm) ← IO.mkRef none
+
 /-- `option_DISTINCT` (ind_types.ml 1049-1051):
     `prove (`!a:A. ~(SOME a = NONE)`, REWRITE_TAC[distinctness "option"])`.
     Reads the distinctness store (populated by `extend_rectype_net`). -/
 unsafe def option_DISTINCT : IO (Except String thm) := do
+  if let some th := ← theOptionDistinct.get then return .ok th
   let store ← readDistinctnessStore
   match HolMath.IndTypes.distinctness store "option" with
   | .error e => return .error e
-  | .ok th => (HolMath.IndTypes.prove_option_DISTINCT th).run
+  | .ok th =>
+    match ← (HolMath.IndTypes.prove_option_DISTINCT th).run with
+    | .ok r => do theOptionDistinct.set (some r); return .ok r
+    | .error e => return .error e
 
 /-- `option_INJ` (ind_types.ml 1053-1055):
     `prove (`!a b:A. SOME a = SOME b <=> a = b`, REWRITE_TAC[injectivity "option"])`.
     Reads the injectivity store (populated by `extend_rectype_net`). -/
 unsafe def option_INJ : IO (Except String thm) := do
+  if let some th := ← theOptionInj.get then return .ok th
   let store ← theInjectivityStore.get
   match HolMath.IndTypes.injectivity store "option" with
   | .error e => return .error e
-  | .ok th => (HolMath.IndTypes.prove_option_INJ th).run
+  | .ok th =>
+    match ← (HolMath.IndTypes.prove_option_INJ th).run with
+    | .ok r => do theOptionInj.set (some r); return .ok r
+    | .error e => return .error e
 
 /-- `ISO`, `ISO_REFL`, `ISO_FUN`, `ISO_USAGE` (ind_types.ml 1061-1080),
     threading the Session `new_definition` and `MESON_TAC`. -/
@@ -3646,6 +3709,9 @@ def the_inductive_types : IO (List (String × (thm × thm))) := do
 /- ind_types.ml: the once-per-process bootstrap.                           -/
 /- ---------------------------------------------------------------------- -/
 
+/-- Cache for the two option theorems (ind_types.ml 889-896). -/
+initialize theOptionThms : IO.Ref (Option (thm × thm)) ← IO.mkRef none
+
 /-- Cache for the `ind_types.ml` injection-infrastructure bundle
     (`setupIndTypes`, ind_types.ml 13-300).  It DECLARES constants (`NUMPAIR`,
     `INJN`, `ZCONSTR`, `FCONS`, ...), the `ZRECSPACE` inductive predicate and
@@ -3683,6 +3749,11 @@ private unsafe def buildRaw3Ctx : IO (Except String HolMath.IndTypes.DefTypeRaw3
   let D2 ← HolMath.IndTypes.setupDefTypeRaw2 D outl outr
   let (optI, optR) ← HolMath.IndTypes.option_INDUCT_RECURSION D2
   let (lstI, lstR) ← HolMath.IndTypes.list_INDUCT_RECURSION D2
+  -- ind_types.ml 889-896: FORALL_OPTION_THM and EXISTS_OPTION_THM.
+  if (← theOptionThms.get).isNone then
+    let fa ← HolMath.IndTypes.prove_FORALL_OPTION_THM optI
+    let ex ← HolMath.IndTypes.prove_EXISTS_OPTION_THM fa MESON MESON_TAC
+    theOptionThms.set (some (fa, ex))
   -- ind_types.ml 1009-1013: add list/option/sum to `inductive_type_store`, in
   -- OCaml order, ahead of whatever is already there (`bool`, `prod`, `1`).
   let existing ← (theInductiveTypeStore.get : IO (Option _))
@@ -3693,6 +3764,9 @@ private unsafe def buildRaw3Ctx : IO (Except String HolMath.IndTypes.DefTypeRaw3
   -- ind_types.ml 1035: `do_list extend_rectype_net (!inductive_type_store)`.
   for entry in seeded do
     let _ ← (extend_rectype_net entry : IO (Except String Unit))
+  -- ind_types.ml 1049-1055: option_DISTINCT and option_INJ.
+  let _ ← ExceptT.mk option_DISTINCT
+  let _ ← ExceptT.mk option_INJ
   -- ind_types.ml 1061: ISO is defined after sum, option and list (1009-1035).
   let (iso, isoRefl, isoFun, isoUsage) ← (setupISO : IO (Except String _))
   -- ind_types.ml 1084-1281: the third define_type_raw.  `getStore` and
@@ -3841,9 +3915,6 @@ unsafe def FCONS_UNDO : thm := IndK.FCONS_UNDO
 unsafe def FNIL : thm := IndK.FNIL
 unsafe def INJ_INVERSE2 : thm := IndK.INJ_INVERSE2
 
-/-- Cache for the two option theorems (ind_types.ml 889-896). -/
-initialize theOptionThms : IO.Ref (Option (thm × thm)) ← IO.mkRef none
-
 private unsafe def optionThms : thm × thm :=
   match unsafeIO (do
     match ← theOptionThms.get with
@@ -3926,13 +3997,18 @@ unsafe def MATCH_CONV : ioconv := unwindMatchPair.2
 initialize theForallUnwind : IO.Ref (Option ioconv) ← IO.mkRef none
 
 /-- `FORALL_UNWIND_CONV` (ind_types.ml 1540-1572). -/
-unsafe def FORALL_UNWIND_CONV : ioconv := fun tm => do
+private unsafe def forallUnwindIO : IO (Except String ioconv) := do
   match ← theForallUnwind.get with
-  | some c => c tm
+  | some c => return .ok c
   | none =>
     match ← (HolMath.IndTypes.setupForallUnwind MESON).run with
     | .error e => return .error e
-    | .ok c => do theForallUnwind.set (some c); c tm
+    | .ok c => do theForallUnwind.set (some c); return .ok c
+
+unsafe def FORALL_UNWIND_CONV : ioconv := fun tm => do
+  match ← forallUnwindIO with
+  | .ok c => c tm
+  | .error e => return .error e
 
 /- ---------------------------------------------------------------------- -/
 /- lists.ml: the reproved list induction and the basic definitions layer.  -/
@@ -4099,6 +4175,10 @@ unsafe def MONO_ALL2 : thm := listsMono.MONO_ALL2
     `new_type_abbrev("string",`:char list`)`. -/
 def new_type_abbrev (s : String) (ty : hol_type) : IO Unit :=
   HolCore.Preterm.new_type_abbrev s ty
+/- ---------------------------------------------------------------------- -/
+/- Type of characters, like the HOL88 "ascii" type, with syntax           -/
+/- constructors and equality conversions for chars and strings.           -/
+/- ---------------------------------------------------------------------- -/
 
 /-- Cache for `(char_INDUCT, char_RECURSION)` (lists.ml 881-882):
     `define_type "char = ASCII bool bool bool bool bool bool bool bool"`.
@@ -4266,20 +4346,19 @@ private unsafe def ensureRealAxOverloads : IO Unit := do
     -- read a `nums` theorem to force that layer first.  (`let _ := Nm...` would
     -- NOT force it — a Lean CAF needs an IO action to be forced.)
     let _ ← IO.mkRef (concl Nm.num_RECURSION)
-    -- *** LOAD-ORDER FIDELITY, AND IT IS LOAD-BEARING. ***
-    -- `hol_lib.ml` loads calc_num.ml BEFORE realax.ml, so in OCaml every
-    -- calc_num proforma is built while `:num` is still the default
-    -- interpretation of the overloaded arithmetic symbols.  realax.ml's fifteen
-    -- `overload_interface` calls then make `:real` the default for SCHEMATIC
-    -- terms: `m + n` parses as `num` before this stage runs and
-    -- as `real` after it (closed terms like `1 + 2` are unaffected, because
-    -- their numerals pin the type — which is why a check on `1 + 2` alone is
-    -- NOT sufficient to detect this).
-    -- Our layers are lazy, so without this line `CnP` could first be built
-    -- AFTER the overloads, parse its `m + n`-style proforma terms at `:real`,
-    -- and fail with `TAC_PROOF: Unsolved goals`.  Forcing it here reproduces
-    -- hol_lib.ml's ordering.
+    -- Load-order fidelity (load-bearing): `hol_lib.ml` loads calc_num.ml
+    -- BEFORE realax.ml, so every calc_num proforma is built while `:num` is
+    -- still the default for the overloaded arithmetic symbols.  realax.ml's
+    -- `overload_interface` calls then make `:real` the schematic default
+    -- (`m + n` parses as `num` before this stage, `real` after; closed terms
+    -- like `1 + 2` are unaffected, so a check on `1 + 2` alone cannot detect
+    -- it).  Our layers are lazy, so force `CnP` here to reproduce the order;
+    -- without it `CnP` could build after the overloads and fail with
+    -- `TAC_PROOF: Unsolved goals`.
     let _ ← IO.mkRef (concl CnP.BITS_INJ)
+    -- normalizer.ml (also before realax.ml): SEMIRING_PTHS parses `m + n`-style
+    -- terms too, and the real-arithmetic layers now use this proved instance.
+    let _ ← IO.mkRef (concl NmzP.2)
     match ← (HolMath.RealAx.setupRealAxOverloads parse_as_infix
                make_overloadable overload_interface).run with
     | .ok () => theRealAxOverloads.set true
@@ -4297,7 +4376,7 @@ private unsafe def Dst : HolMath.RealAx.DistThms :=
     | none =>
       ensureRealAxOverloads
       match ← (HolMath.RealAx.setupDist Nm Ar1 Ar2 Ar3 Ar4 Ar5
-                 SUB_ELIM_THM HIGHER_REWRITE_CONV NUM_CANCEL_CONV
+                 SUB_ELIM_THM (Drule.HIGHER_REWRITE_CONV_ths B) NUM_CANCEL_CONV
                  new_definition_pair).run with
       | .ok d => do theDist.set (some d); pure d
       | .error e => panic! s!"setupDist failed: {e}") with
@@ -4773,7 +4852,7 @@ private unsafe def RA1c : HolMath.RealArith.RealArith1Ctx :=
     | some d => pure d
     | none =>
       match ← (HolMath.RealArith.setupRealArith1Ctx Rl RaL
-                 TRUTH ADD_CLAUSES MULT_CLAUSES ASM_MESON_TAC INDUCT_TAC num_CONV
+                 TRUTH NmzP.2 num_CONV
                  is_realintconst
                  REAL_INT_ADD_CONV REAL_INT_MUL_CONV REAL_INT_POW_CONV
                  NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV).run with
@@ -4835,7 +4914,7 @@ private unsafe def RA2c : HolMath.RealArith.RealArith2Ctx :=
     | some d => pure d
     | none =>
       match ← (HolMath.RealArith.setupRealArith2Ctx RaL
-                 TRUTH ADD_CLAUSES MULT_CLAUSES ASM_MESON_TAC INDUCT_TAC num_CONV
+                 TRUTH NmzP.2 num_CONV
                  is_realintconst
                  REAL_INT_ADD_CONV REAL_INT_MUL_CONV REAL_INT_POW_CONV
                  NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV).run with
@@ -5859,7 +5938,7 @@ private unsafe def Q1 : HolMath.CalcRat.RealPolyConvs1 :=
     | some d => pure d
     | none =>
       match ← (HolMath.CalcRat.setupRealPolyConvs1 RaL RAr RPmm
-                 TRUTH ADD_CLAUSES MULT_CLAUSES ASM_MESON_TAC INDUCT_TAC num_CONV
+                 TRUTH NmzP.2 num_CONV
                  NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV).run with
       | .ok d => do theRealPolyConvs1.set (some d); pure d
       | .error e => panic! s!"setupRealPolyConvs1 failed: {e}") with
@@ -6001,16 +6080,22 @@ private unsafe def RFT : HolMath.CalcRat.RealFieldTrans :=
     `REAL_ARITH3` when `REAL_RING` fails. -/
 initialize theRealField : IO.Ref (Option (term → IO (Except String thm))) ← IO.mkRef none
 
-unsafe def REAL_FIELD : term → IO (Except String thm) := fun tm => do
+/-- Build (once) the `REAL_FIELD` procedure (calc_rat.ml 581-630). -/
+private unsafe def realFieldIO : IO (Except String (term → IO (Except String thm))) := do
   match ← theRealField.get with
-  | some f => f tm
+  | some f => return .ok f
   | none =>
     match ← (HolMath.CalcRat.setupRealField Rl RT6 RT7
                NNF_CONV NNFC_CONV WEAK_CNF_CONV CONJ_CANON_CONV PRENEX_CONV
                CONDS_CELIM_CONV NUM_REDUCE_CONV REAL_RAT_REDUCE_CONV
                REAL_RING REAL_ARITH3 MESON).run with
-    | .ok f => do theRealField.set (some f); f tm
+    | .ok f => do theRealField.set (some f); return .ok f
     | .error e => return .error s!"REAL_FIELD: {e}"
+
+unsafe def REAL_FIELD : term → IO (Except String thm) := fun tm => do
+  match ← realFieldIO with
+  | .ok f => f tm
+  | .error e => return .error e
 
 /-- Cache for `RealShrink` (calc_rat.ml 631-688): the eight monotone-mapping
     theorems between R and (-1,1). -/
@@ -6056,66 +6141,11 @@ unsafe def REAL_GROW_SHRINK    : thm := RShr.REAL_GROW_SHRINK
 unsafe def REAL_SHRINK_GROW_EQ : thm := RShr.REAL_SHRINK_GROW_EQ
 unsafe def REAL_SHRINK_GROW    : thm := RShr.REAL_SHRINK_GROW
 
-/-- `REAL_INTEGRAL` (calc_rat.ml 491): the three-conjunct integral-domain
-    theorem, proved once inside `setupRealRing`.  Re-run standalone here to
-    surface it as a bare name (its proof is pure). -/
-initialize theRealIntegralRat : IO.Ref (Option thm) ← IO.mkRef none
+/-- `REAL_INTEGRAL` (calc_rat.ml 491), proved by the REAL_RING setup. -/
+unsafe def REAL_INTEGRAL : thm := RRing.REAL_INTEGRAL
 
-private unsafe def realIntegralRatThm : thm :=
-  match unsafeIO (do
-    match ← theRealIntegralRat.get with
-    | some d => pure d
-    | none =>
-      -- The three-conjunct integral-domain statement; proof mirrors
-      -- calc_rat.ml 491 (two REWRITE_TACs, ONCE_REWRITE_TAC[GSYM REAL_SUB_0],
-      -- REWRITE_TAC[GSYM REAL_ENTIRE], REAL_ARITH_TAC over REAL_ARITH2).
-      match ← (do
-        let s0 := THEN (REWRITE_TAC [MULT_CLAUSES, EQ_ADD_LCANCEL])
-                    (REWRITE_TAC [← liftExcept (GSYM REAL_OF_NUM_EQ),
-                                  ← liftExcept (GSYM REAL_OF_NUM_ADD),
-                                  ← liftExcept (GSYM REAL_OF_NUM_MUL)])
-        let s1 := THEN s0 (ONCE_REWRITE_TAC [← liftExcept (GSYM REAL_SUB_0)])
-        let s2 := THEN s1 (REWRITE_TAC [← liftExcept (GSYM REAL_ENTIRE)])
-        ExceptT.mk (prove (← HolCore.Parser.parse_term
-          "(!x. &0 * x = &0) /\\
-           (!x y z. (x + y = x + z) <=> (y = z)) /\\
-           (!w x y z. (w * y + x * z = w * z + x * y) <=> (w = x) \\/ (y = z))")
-          (THEN s2 (HolMath.Real.REAL_ARITH_TAC REAL_ARITH2)))
-        : ExceptT String IO thm).run with
-      | .ok d => do theRealIntegralRat.set (some d); pure d
-      | .error e => panic! s!"REAL_INTEGRAL failed: {e}") with
-  | .ok d => d | _ => panic! "Session.REAL_INTEGRAL: not run"
-
-/-- `REAL_INTEGRAL` (calc_rat.ml 491). -/
-unsafe def REAL_INTEGRAL : thm := realIntegralRatThm
-
-/-- `REAL_RABINOWITSCH` (calc_rat.ml 500):
-    `|- !x y. ~(x = y) <=> ?z. (x - y) * z = &1`.  Proved once here as a bare
-    name; proof mirrors calc_rat.ml 500 (uses the EARLIER `REAL_ARITH2` for its
-    inline `~(&1 = &0)` lemma). -/
-initialize theRealRabinowitsch : IO.Ref (Option thm) ← IO.mkRef none
-
-private unsafe def realRabinowitschThm : thm :=
-  match unsafeIO (do
-    match ← theRealRabinowitsch.get with
-    | some d => pure d
-    | none =>
-      match ← (do
-        let gsymSub0 ← liftExcept (GSYM REAL_SUB_0)
-        let oneNeZero ← ExceptT.mk (REAL_ARITH2 (← HolCore.Parser.parse_term "~(&1 = &0)"))
-        let land_rand : ioconv → ioconv := fun c =>
-          Simp.landConvIO (Simp.randConvIO c)
-        let s0 := THEN (REPEAT GEN_TAC) (GEN_REWRITE_TAC land_rand [gsymSub0])
-        ExceptT.mk (prove (← HolCore.Parser.parse_term
-          "!x y:real. ~(x = y) <=> ?z. (x - y) * z = &1")
-          (THEN s0 (MESON_TAC [REAL_MUL_RINV, REAL_MUL_LZERO, oneNeZero])))
-        : ExceptT String IO thm).run with
-      | .ok d => do theRealRabinowitsch.set (some d); pure d
-      | .error e => panic! s!"REAL_RABINOWITSCH failed: {e}") with
-  | .ok d => d | _ => panic! "Session.REAL_RABINOWITSCH: not run"
-
-/-- `REAL_RABINOWITSCH` (calc_rat.ml 500). -/
-unsafe def REAL_RABINOWITSCH : thm := realRabinowitschThm
+/-- `REAL_RABINOWITSCH` (calc_rat.ml 500), proved by the REAL_RING setup. -/
+unsafe def REAL_RABINOWITSCH : thm := RRing.REAL_RABINOWITSCH
 
 /- ---------------------------------------------------------------------- -/
 /- int.ml (hol_lib.ml 98): the integers, embedded in the reals.           -/
@@ -6264,8 +6294,8 @@ private unsafe def IntKs : HolMath.Int.IntConstSyntax :=
       | .error e => panic! s!"setupIntConstSyntax failed: {e}") with
   | .ok d => d | _ => panic! "Session.IntKs: setupIntConstSyntax not run"
 
-/-- `INT_OF_REAL_THM` (int.ml 290): *** the lifting rule the next 276 theorems
-    rest on. ***  A `thm → IO (Except String thm)` closure that rewrites a
+/-- `INT_OF_REAL_THM` (int.ml 290): the lifting rule the following int bundles
+    build on.  A `thm → IO (Except String thm)` closure that rewrites a
     universal `REAL_` theorem with the sixteen bridge equations under `GSYM` and
     re-quantifies over `:int`.  Cached because building it proves the inline
     `cond_th` lemma once. -/
@@ -6620,7 +6650,7 @@ private unsafe def IPc : HolMath.Int.IntPolyConvs :=
     | some d => pure d
     | none =>
       match ← (HolMath.Int.setupIntPolyConvs IA1 IAv
-                 TRUTH ADD_CLAUSES MULT_CLAUSES ASM_MESON_TAC INDUCT_TAC num_CONV
+                 TRUTH NmzP.2 num_CONV
                  NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV).run with
       | .ok d => do theIntPolyConvs.set (some d); pure d
       | .error e => panic! s!"setupIntPolyConvs failed: {e}") with
@@ -6728,13 +6758,26 @@ private unsafe def IDrc : HolMath.Int.IntDivRemConvs :=
     net afresh on every call would not reproduce that. -/
 initialize theIntRed : IO.Ref (Option ioconv) ← IO.mkRef none
 
+/-- Cache for `int_red_conv_list` (int.ml 1803). -/
+initialize theIntRedConvList : IO.Ref (Option (List (term × ioconv))) ← IO.mkRef none
+
+/-- `int_red_conv_list` (int.ml 1803): a top-level value in OCaml, so its
+    sixteen patterns are parsed once, under `prioritize_int`. -/
+unsafe def int_red_conv_list : IO (Except String (List (term × ioconv))) := do
+  match ← theIntRedConvList.get with
+  | some l => return .ok l
+  | none =>
+    match ← (HolMath.Int.int_red_conv_list ICv IAv IDrc).run with
+    | .ok l => do theIntRedConvList.set (some l); return .ok l
+    | .error e => return .error e
+
 /-- `INT_RED_CONV` (int.ml 1821): one reduction step on an integer-constant
     term, via the sixteen-entry net over `basic_net()`. -/
 unsafe def INT_RED_CONV : ioconv := fun tm => do
   match ← theIntRed.get with
   | some c => c tm
   | none =>
-    match ← (HolMath.Int.INT_RED_CONV ICv IAv IDrc).run with
+    match ← (do HolMath.Int.INT_RED_CONV (← ExceptT.mk int_red_conv_list)).run with
     | .ok c => do theIntRed.set (some c); c tm
     | .error e => return .error s!"INT_RED_CONV: {e}"
 
@@ -6745,7 +6788,12 @@ unsafe def INT_REDUCE_CONV : ioconv := Simp.depthConvIO INT_RED_CONV
     with a `compset`. -/
 unsafe def int_compute_add_convs (cs : HolMath.Compute.compset) :
     IO (Except String Unit) :=
-  (HolMath.Int.int_compute_add_convs ICv IAv IDrc cs).run
+  (do HolMath.Int.int_compute_add_convs (← ExceptT.mk int_red_conv_list) cs).run
+
+/-- Build `INT_COMPUTE_CONV` from the shared `int_red_conv_list`. -/
+private unsafe def intComputeConvIO : ExceptT String IO ioconv := do
+  let l ← ExceptT.mk int_red_conv_list
+  HolMath.Int.INT_COMPUTE_CONV l bool_compset WEAK_CBV_CONV
 
 /-- Cache for `INT_COMPUTE_CONV` (int.ml 1835): call-by-value reduction over the
     boolean compset extended with those conversions.  The OCaml builds its
@@ -6757,8 +6805,7 @@ unsafe def INT_COMPUTE_CONV : ioconv := fun tm => do
   match ← theIntCompute.get with
   | some c => c tm
   | none =>
-    match ← (HolMath.Int.INT_COMPUTE_CONV ICv IAv IDrc bool_compset
-               WEAK_CBV_CONV).run with
+    match ← (intComputeConvIO).run with
     | .ok c => do theIntCompute.set (some c); c tm
     | .error e => return .error s!"INT_COMPUTE_CONV: {e}"
 
@@ -7029,20 +7076,17 @@ private unsafe def RZp : HolMath.Int.RealZpow :=
       | .error e => panic! s!"setupRealZpow failed: {e}") with
   | .ok d => d | _ => panic! "Session.RZp: setupRealZpow not run"
 
-/-- Guard for `prioritize_num` (int.ml 2765), the VERY LAST int.ml effect.  It
+/-- Guard for `prioritize_num` (int.ml 2765), the last int.ml effect.  It
     restores `num` as the default for overloaded symbols, undoing the
-    `prioritize_int` set at int.ml 70 that was in force for the whole file, so
-    every file loaded AFTER int.ml parses a SCHEMATIC arithmetic term as `num`,
-    not `int` (misplacing it parses those terms at the wrong type).
+    `prioritize_int` set at int.ml 70, so every file loaded after int.ml parses
+    a schematic arithmetic term as `num`, not `int`.
 
-    Deliberately an `IO` ACTION with its own once-only flag, NOT a memoised
-    `Unit` CAF: a `let _ := <caf>` does NOT force a Lean CAF,
-    so a `Unit` CAF here would silently never run and `num` priority would never
-    be restored.  It FIRST forces `RZp` (reading it runs `setupRealZpow`, whose
-    three `zpow` parser effects at int.ml 2634-2636 are the last `int`-side
-    parser mutations), guaranteeing `prioritize_num` runs AFTER every
-    `overload_interface`/`prioritize_int` effect in int.ml - exactly int.ml's
-    2765-is-last ordering. -/
+    An `IO` action with its own once-only flag, not a memoised `Unit` CAF (a
+    `let _ := <caf>` does not force a Lean CAF, so a `Unit` CAF here would never
+    run and `num` priority would never be restored).  It first forces `RZp`
+    (whose three `zpow` parser effects at int.ml 2634-2636 are the last
+    `int`-side parser mutations), so `prioritize_num` runs after every
+    `overload_interface`/`prioritize_int` effect, matching int.ml's ordering. -/
 initialize thePrioritizeNum : IO.Ref Bool ← IO.mkRef false
 
 unsafe def ensurePrioritizeNum : IO Unit := do
@@ -7070,11 +7114,10 @@ unsafe def ensurePrioritizeNum : IO Unit := do
     -- term, and making the reducers silently no-ops (a wrong-type-at-parse-time
     -- hazard crossed with lazy CAF evaluation order).
     -- Forcing the nets here reproduces the OCaml's eager 1803-before-2765 order.
-    match ← (HolMath.Int.INT_RED_CONV ICv IAv IDrc).run with
+    match ← (do HolMath.Int.INT_RED_CONV (← ExceptT.mk int_red_conv_list)).run with
     | .ok c => theIntRed.set (some c)
     | .error e => panic! s!"INT_RED_CONV net (int.ml 1821): {e}"
-    match ← (HolMath.Int.INT_COMPUTE_CONV ICv IAv IDrc bool_compset
-               WEAK_CBV_CONV).run with
+    match ← (intComputeConvIO).run with
     | .ok c => theIntCompute.set (some c)
     | .error e => panic! s!"INT_COMPUTE_CONV net (int.ml 1835): {e}"
     -- STEP 2 - `prioritize_num()` (int.ml 2765).  int.ml keeps `prioritize_int`
@@ -7712,7 +7755,7 @@ unsafe def REAL_SGN_ZPOW    : thm := RZp.REAL_SGN_ZPOW
 /- sets.ml (hol_lib.ml 99): basic set theory (predicates as sets).        -/
 /-                                                                        -/
 /- Wired in sets.ml's own order.  `setupSetsInfixes` registers the        -/
-/- THIRTEEN head infixes (IN, SUBSET, PSUBSET, INTER, UNION, DIFF,        -/
+/- FOURTEEN head infixes (IN, SUBSET, PSUBSET, INTER, UNION, DIFF,        -/
 /- INSERT, DELETE, HAS_SIZE and the five cardinal comparisons) and MUST   -/
 /- run EXACTLY ONCE and BEFORE `setupSetsCore`, whose definition bodies   -/
 /- parse `x IN s`/`s UNION t`/... as those operators (sets.ml 18-32; a    -/
@@ -7740,28 +7783,32 @@ unsafe def REAL_SGN_ZPOW    : thm := RZp.REAL_SGN_ZPOW
     /`ensureRealAxOverloads` precedent. -/
 initialize theSetsInfixes : IO.Ref Bool ← IO.mkRef false
 
-/-- *** THE CANONICAL `hol_lib.ml` LOAD PREFIX, THROUGH int.ml. ***
+/-- Force the canonical `hol_lib.ml` load prefix, through int.ml.
 
-    sets.ml line 12 is `needs "int.ml"`, and in HOL Light `needs` loads EAGERLY
-    AND IN ORDER, so by the time any line of sets.ml runs, every file beneath it
-    has already executed.  Our CAFs are LAZY, so the parser and overload state
-    at the moment a Sets setup first runs depends on whatever the caller happened
-    to force - and terms then resolve their types differently.  If a Sets setup
-    first runs under the wrong parser/overload state, its terms parse at the
-    wrong type and the setup fails; because the bundles are private CAFs, such a
-    failure is silent.
-
-    The ORDER BELOW IS LOAD-BEARING (HolInit.lean and Database.lean use it):
-    forcing only the tail (`ensurePrioritizeNum`) is NOT enough - it makes
-    `RealThms5`/`9`/`11` panic with `linear_ineqs: no contradiction` and
-    `MATCH_MP_TAC: No match`, because the real bundles must be built while
-    `:real` is still the schematic default, BEFORE int.ml's overloads and its
-    closing `prioritize_num`.  DO NOT REORDER. -/
+    sets.ml line 12 is `needs "int.ml"`, and HOL Light's `needs` loads eagerly
+    and in order, so by the time any line of sets.ml runs every file beneath it
+    has executed.  Our CAFs are lazy, so a Sets setup forced under the wrong
+    parser/overload state parses its terms at the wrong type and fails silently
+    (the bundles are private CAFs).  The order below is load-bearing and must
+    not be reordered: forcing only the tail (`ensurePrioritizeNum`) makes
+    `RealThms5`/`9`/`11` panic (`linear_ineqs: no contradiction`,
+    `MATCH_MP_TAC: No match`), because the real bundles must be built while
+    `:real` is still the schematic default, before int.ml's overloads and its
+    closing `prioritize_num`. -/
 unsafe def ensureHolPrefixThroughInt : IO Unit := do
+  -- ind_defs.ml 256: MONO_TAC's `IMP_REFL = ITAUT `!p. p ==> p`` (hol_lib.ml 70).
+  let _ ← IO.mkRef (concl indAux.2.1)
+  -- metis.ml (module Metis_rules) proves its RESOLVE/IMPL_NOT lemmas at load,
+  -- and thecops.ml (module Hashek) runs `new_definition `hashek = T`` at
+  -- load (hol_lib.ml 76-77, before pair.ml); `Cs` and `MtRules` build them.
+  let _ ← IO.mkRef (concl MtRules.RESOLVE_1)
+  let _ ← IO.mkRef (concl Cs.hashek.hashek_def)
+  let _ ← IO.mkRef (concl Qs.selectLemma)                  -- quot.ml (hol_lib.ml 78)
   -- pair.ml 184-192 (hol_lib.ml 80, before nums.ml): CURRY, UNCURRY and
   -- PASSOC are defined at load, so they are in `the_definitions` in OCaml's
   -- order.
   let _ ← IO.mkRef (concl CURRY_DEF)
+  let _ ← IO.mkRef (concl letTacPths.1)                    -- pair.ml 450 (LET_TAC)
   -- NUM_RING FIRST.  Its setup proofs SEARCH over the currently-registered
   -- overloads, so forcing it before the real layer registers the `real` ones
   -- keeps that search small; forcing it AFTER blows up as
@@ -7770,10 +7817,8 @@ unsafe def ensureHolPrefixThroughInt : IO Unit := do
   -- does not parse and this force would silently not happen.
   let _ ← IO.mkRef (concl ADD_SYM)
   ensureArithProcs                                          -- arith.ml 1713-1904
-  match ← HolCore.Parser.parse_term "(a + b) * c = a * c + b * c" with
-  | .ok tm => do let _ ← NUM_RING tm; pure ()
-  | .error e => panic! s!"ensureHolPrefixThroughInt: NUM_RING force: {e}"
   let _ ← IO.mkRef (concl WF)                              -- wf.ml
+  let _ ← IO.mkRef (concl WfInductPths.1)                  -- wf.ml 420-440 (WF_INDUCT_TAC)
   -- calc_num.ml 1473, calc_int.ml 389-406, calc_rat.ml 389-420: these reduction
   -- conversions build a net from UNANNOTATED patterns (`x + y`, `x <= y`, ...)
   -- when their file LOADS, so the patterns take the types of that moment
@@ -7782,12 +7827,30 @@ unsafe def ensureHolPrefixThroughInt : IO Unit := do
   -- in `ensurePrioritizeNum`).  Calling one on `T` builds and caches its net.
   let tTm : term := .Const "T" (.Tyapp "bool" [])
   let _ ← IO.mkRef CnN.pre_tm                              -- calc_num.ml 211-1560
+  let _ ← numRelConvIO                                      -- calc_num.ml 1443
   let _ ← NUM_RED_CONV tTm                                  -- calc_num.ml 1473
+  let _ ← IO.mkRef (concl NmzP.2)                          -- normalizer.ml 537-565
+  -- grobner.ml: NUM_RING's setup proofs search over the registered overloads,
+  -- so it must be built before realax.ml adds the `real` ones (after them it
+  -- fails with `NUM_INTEGRAL: solve_goal: Too deep`).
+  match ← numSimplifyConvIO with
+  | .ok _ => pure ()
+  | .error e => panic! s!"ensureHolPrefixThroughInt: NUM_SIMPLIFY_CONV setup: {e}"
+  let _ ← IO.mkRef (concl NUM_INTEGRAL)
+  match ← numRingIO with
+  | .ok _ => pure ()
+  | .error e => panic! s!"ensureHolPrefixThroughInt: NUM_RING setup: {e}"
   -- ind_types.ml 1421-1539 (UNWIND_CONV/MATCH_CONV): its `do_list
   -- extend_basic_convs` (1528) adds the _MATCH/_FUNCTION reductions to
   -- basic_convs at load, before lists.ml; forcing MATCH_CONV builds it.
   let _ ← MATCH_CONV tTm
-  let _ ← IO.mkRef (concl listsMono.MONO_ALL)              -- lists.ml
+  match ← forallUnwindIO with                              -- ind_types.ml 1540
+  | .ok _ => pure ()
+  | .error e => panic! s!"ensureHolPrefixThroughInt: FORALL_UNWIND_CONV setup: {e}"
+  let _ ← IO.mkRef (concl listThms1.NOT_CONS_NIL)         -- lists.ml, in file order
+  let _ ← IO.mkRef (concl listThms2.ALL_APPEND)
+  let _ ← IO.mkRef (concl listsMono.MONO_ALL)
+  let _ ← IO.mkRef listEvalConvs                           -- lists.ml 751-876
   -- lists.ml 884: `new_type_abbrev("string",`:char list`)`.  That runs when
   -- lists.ml LOADS, so by sets.ml every `:string` annotation expands to
   -- `:char list`.  In our translation the abbreviation is installed as a side
@@ -7796,6 +7859,7 @@ unsafe def ensureHolPrefixThroughInt : IO Unit := do
   -- the term fails to typecheck.  Forcing here reproduces lists.ml's load-time
   -- effect at the right point in the bootstrap order.
   let _ ← IO.mkRef (concl char_INDUCT)                     -- lists.ml 881-884
+  let _ ← IO.mkRef charStringMachinery                     -- lists.ml 886-1020
   let _ ← IO.mkRef (concl realArithLemmas.REAL_LTE_TOTAL)  -- realarith.ml
   let _ ← IO.mkRef (concl genRealArith2Ctx.pth_abs)         -- realarith.ml ABSMAXMIN
   let _ ← REAL_INT_RED_CONV tTm                             -- calc_int.ml 389
@@ -7804,40 +7868,81 @@ unsafe def ensureHolPrefixThroughInt : IO Unit := do
   -- while `:real` is still the schematic default (RT5, RT9, RT11).  Omitting
   -- them leaves them to be forced later, under int.ml's overloads, where they
   -- panic with `linear_ineqs: no contradiction` / `MATCH_MP_TAC: No match`.
-  let _ ← IO.mkRef (concl realThms1.REAL_OF_NUM_LT)
-  let _ ← IO.mkRef (concl realThms5.REAL_LE_MAX)
-  let _ ← IO.mkRef (concl realThms9.REAL_ARCH_SIMPLE)
-  let _ ← IO.mkRef (concl realThms11.SQRT_0)
+  -- real.ml, every bundle in file order.
+  let _ ← IO.mkRef (concl RT1.REAL_OF_NUM_LT)
+  let _ ← IO.mkRef (concl RT2.REAL_EQ_ADD_LCANCEL_0)
+  let _ ← IO.mkRef (concl RT3.REAL_LE_NEGR)
+  let _ ← IO.mkRef (concl RT4.REAL_ABS_ZERO)
+  let _ ← IO.mkRef (concl RT5.REAL_LE_MAX)
+  let _ ← IO.mkRef (concl RBc.le_pth)                      -- REAL_LE_IMP/REAL_LET_IMP
+  let _ ← IO.mkRef (concl RT6.REAL_ABS_MUL)
+  let _ ← IO.mkRef (concl RT7.REAL_LT_LCANCEL_IMP)
+  let _ ← IO.mkRef (concl RT8.REAL_POW_LE_1)
+  let _ ← IO.mkRef (concl RT9.REAL_ARCH_SIMPLE)
+  let _ ← IO.mkRef (concl RT10.real_sgn)
+  let _ ← IO.mkRef (concl RT11.SQRT_0)
   let _ ← IO.mkRef (concl DECIMAL)                          -- calc_rat.ml 16
   -- calc_rat.ml 490: REAL_RING / real_ideal_cofactors.  Its `REAL_INTEGRAL`
   -- sub-proof ends in REAL_ARITH_TAC (calc_rat.ml 499), and like RealThms5/9/11
-  -- that must be built while `:real` is still the schematic default: forced later,
+  -- the setup must be built while `:real` is still the schematic default: forced later,
   -- under int.ml's overloads, it dies with `linear_ineqs: no contradiction`.
   -- That degenerated REAL_RING, and because REAL_FIELD's
   -- `core_rule t = try REAL_RING t with Failure _ -> REAL_ARITH t`
   -- (calc_rat.ml 610) can only fall back when REAL_RING *fails* - not when its
   -- setup PANICS - REAL_FIELD then diverged instead of retrying, which is what
   -- hung sets.ml 3657's `FINITE_REAL_INTERVAL`.
-  let _ ← IO.mkRef (concl REAL_INTEGRAL)                    -- calc_rat.ml 490-499
-  -- Force the REAL_RING CAF ITSELF, not merely REAL_INTEGRAL (which comes from a
-  -- different cache).  RRing exposes only functions, so force it the same way the
-  -- prefix forces NUM_RING - by calling it on a trivial ring identity.
-  -- REAL_RING itself is sound; what matters is WHEN its setup runs.
-  match ← HolCore.Parser.parse_term "(x + y) * z = x * z + y * z" with
-  | .ok tm => do let _ ← REAL_RING tm; pure ()
-  | .error _ => pure ()
+  -- Build the REAL_RING setup (RRing), at calc_rat.ml's position.
+  let r ← IO.mkRef RRing
+  let _ ← r.get
+  if (← theRealRingConvs.get).isNone then panic! "ensureHolPrefixThroughInt: RRing not built"
   -- calc_rat.ml 581: REAL_FIELD.  Its SETUP builds `ltLemma` via this file's own
   -- REAL_ARITH3 and an inline MESON lemma inside `easy_nz_conv`, so like
   -- REAL_RING it must be built while `:real` is still the schematic default.
-  -- The setup itself is sound; what matters is WHEN it runs.
-  -- Forced here with the same goal CalcRatTest uses (the REAL_FIELD.hlp example).
-  match ← HolCore.Parser.parse_term
-      "!x. &0 < x ==> &1 / x - &1 / (x + &1) = &1 / (x * (x + &1))" with
-  | .ok tm => do let _ ← REAL_FIELD tm; pure ()
-  | .error _ => pure ()
+  let _ ← IO.mkRef (concl RFT.REAL_LE_TRANS_LE)            -- calc_rat.ml 563-575
+  match ← realFieldIO with
+  | .ok _ => pure ()
+  | .error e => panic! s!"ensureHolPrefixThroughInt: REAL_FIELD setup: {e}"
+  let _ ← IO.mkRef (concl RShr.REAL_SHRINK_RANGE)          -- calc_rat.ml 634-689
   let _ ← REAL_RAT_RED_CONV tTm                             -- calc_rat.ml 407
   let _ ← REAL_RAT_COMPUTE_CONV tTm                         -- calc_rat.ml 414
   let _ ← IO.mkRef (concl int_of_num)                       -- int.ml
+  -- int.ml, every bundle in file order.
+  let _ ← IO.mkRef IntEx
+  let _ ← IO.mkRef IntTb
+  let _ ← IO.mkRef IntO
+  let _ ← IO.mkRef IntKs
+  let _ ← IO.mkRef IT1
+  let _ ← IO.mkRef IT2
+  let _ ← IO.mkRef IT3
+  let _ ← IO.mkRef IT4
+  let _ ← IO.mkRef IT5
+  let _ ← IO.mkRef IT6
+  let _ ← IO.mkRef IT7
+  let _ ← IO.mkRef IT8
+  let _ ← IO.mkRef IT9
+  let _ ← IO.mkRef IT10
+  let _ ← IO.mkRef IWl
+  let _ ← IO.mkRef IA1
+  let _ ← IO.mkRef IDm
+  let _ ← IO.mkRef ICv
+  let _ ← IO.mkRef IAv
+  let _ ← IO.mkRef IPc
+  let _ ← IO.mkRef IRg
+  let _ ← IO.mkRef IDv
+  let _ ← IO.mkRef ITc1
+  let _ ← IO.mkRef IDr1
+  let _ ← IO.mkRef IDrc
+  let _ ← IO.mkRef IEo
+  let _ ← IO.mkRef IRc
+  let _ ← IO.mkRef IGl
+  let _ ← IO.mkRef INoI
+  let _ ← IO.mkRef INoN
+  let _ ← IO.mkRef IAr
+  let _ ← IO.mkRef IA2
+  let _ ← IO.mkRef IMn
+  let _ ← IO.mkRef INum
+  let _ ← IO.mkRef IPr
+  let _ ← IO.mkRef RZp
   ensurePrioritizeNum                                       -- int.ml 2765, LAST
   pure ()
 
@@ -8243,12 +8348,8 @@ private unsafe def SFun2 : HolMath.Sets.SetsFunspace2 :=
   | .ok d => d | _ => panic! "Session.SFun2: setupSetsFunspace2 not run"
 
 /-- Cache for `SetsInfinite` (sets.ml 3554-3697): the infinitude of the
-    numbers, of strings, and of non-trivial real intervals.  Threads the core
-    Sets bundles plus `SFin`/`SCard`/`SInd`, `T`, the MESON / `MATCH_MP` /
-    `REWRITE_RULE` helpers, `INDUCT_TAC`, the num arithmetic theorems, the list
-    `LENGTH`/`LENGTH_REPLICATE` and the real `REAL_ARITH2`/`REAL_FIELD`/
-    `REAL_ARITH_TAC` procedures with the real order/field lemmas.  Pure
-    `prove`s, so idempotent; the `IO.Ref` just avoids recomputing.
+    numbers, of strings, and of non-trivial real intervals.  Pure `prove`s, so
+    the `IO.Ref` just avoids recomputing.
 
     `string_INFINITE` mentions `(:string)`, so before running the proofs this
     forces the char/string layer (`char_INDUCT`) and installs the lists.ml 884
@@ -8488,17 +8589,12 @@ def mk_fset : List term → IO (Except String term) := HolMath.Sets.mk_fset
     re-drive every proof.  A `let _ := SC` would NOT force a Lean CAF (defect
     class #3), so read a field via `IO.mkRef`. -/
 unsafe def ensureSets : IO Unit := do
-  -- *** FORCE EVERY sets.ml BUNDLE IN FILE ORDER. ***
-  -- HOL Light executes sets.ml top to bottom, so by the time any later proof
-  -- runs, every earlier definition, parser effect and theorem already exists.
-  -- Our CAFs are LAZY and each takes only the bundles it directly cites, so a
-  -- caller that reaches a late bundle first builds it in a state HOL Light
-  -- never has.  That produced VARYING errors from one run to the next -
-  -- `setupSetsCard2` failing with `MATCH_MP_TAC: Bad theorem` on one path and
-  -- `dest_binary` on another, and `setupSetsCross` exhausting MESON with
-  -- `solve_goal: Too deep` - the signature of degenerate inputs rather than a
-  -- wrong proof.  Forcing in file order reproduces the OCaml's eager
-  -- semantics.  DO NOT REORDER: this mirrors sets.ml's own layout.
+  -- Force every sets.ml bundle in file order.  HOL Light executes sets.ml top
+  -- to bottom, so by the time any later proof runs every earlier definition,
+  -- parser effect and theorem already exists.  Our CAFs are lazy and each
+  -- takes only the bundles it cites, so a caller that reaches a late bundle
+  -- first would build it in a state HOL Light never has.  Forcing in file
+  -- order reproduces the eager semantics; do not reorder.
   ensureSetsInfixes                                  -- sets.ml 18-32
   let _ ← IO.mkRef (concl SC.IN)                     -- 38-170
   let _ ← IO.mkRef (concl SP.IN_UNIONS)              -- 173-308
@@ -9263,7 +9359,7 @@ private unsafe def ISeg : HolMath.Iterate.IterateSegments :=
       ensureSets
       ensureIterateInfix
       match ← (HolMath.Iterate.setupIterateSegments
-                 new_definition MESON_TAC SET_TAC ARITH_RULE
+                 new_definition MESON_TAC ASM_MESON_TAC SET_TAC ARITH_RULE
                  ARITH_TAC ASM_ARITH_TAC num_INDUCTION
                  EXTENSION IN_UNION IN_INSERT IN_SING NOT_IN_EMPTY IN_INTER
                  IN_ELIM_THM IN_IMAGE SUBSET DISJOINT FINITE_RULES CARD_CLAUSES
@@ -9299,7 +9395,7 @@ private unsafe def ISort : HolMath.Iterate.IterateSortSeg :=
     match ← theIterateSortSeg.get with
     | some d => pure d
     | none =>
-      match ← (HolMath.Iterate.setupIterateSortSeg MESON_TAC SET_TAC
+      match ← (HolMath.Iterate.setupIterateSortSeg MESON_TAC ASM_MESON_TAC SET_TAC
                  SET_RULE ARITH_RULE
                  ARITH_TAC ASM_ARITH_TAC INT_ARITH_TAC ASM_INT_ARITH_TAC
                  INT_ARITH num_INDUCTION ISeg
@@ -9326,7 +9422,7 @@ private unsafe def IGen : HolMath.Iterate.IterateGeneric :=
     | none => do
       ensureSets
       match ← (HolMath.Iterate.setupIterateGeneric
-                 new_definition MESON_TAC
+                 new_definition MESON_TAC ASM_MESON_TAC
                  EXTENSION IN_ELIM_THM NOT_IN_EMPTY SUBSET FINITE_SUBSET
                  IN_INSERT IN_DELETE IN_IMAGE IN_UNION IN_INTER IN_DIFF IN_SING
                  FINITE_RULES CONJ_ACI o_THM COND_RAND).run with
@@ -9346,7 +9442,7 @@ private unsafe def IK1 : HolMath.Iterate.IterateKey1 :=
     | some d => pure d
     | none => do
       ensureSets
-      match ← (HolMath.Iterate.setupIterateKey1 MESON_TAC SET_TAC
+      match ← (HolMath.Iterate.setupIterateKey1 MESON_TAC ASM_MESON_TAC SET_TAC
                  SET_RULE IGen
                  FINITE_RECURSION FINITE_INDUCT_STRONG
                  IGen.FINITE_SUPPORT FINITE_INSERT FINITE_UNION FINITE_DIFF FINITE_INTER
@@ -9372,7 +9468,7 @@ private unsafe def IK2 : HolMath.Iterate.IterateKey2 :=
     | some d => pure d
     | none => do
       ensureSets
-      match ← (HolMath.Iterate.setupIterateKey2 MESON MESON_TAC
+      match ← (HolMath.Iterate.setupIterateKey2 MESON MESON_TAC ASM_MESON_TAC
                  SET_RULE GEN_BETA_CONV IGen IK1
                  FINITE_INDUCT_STRONG FINITE_IMAGE FINITE_IMAGE_INJ_EQ
                  FINITE_PRODUCT_DEPENDENT FINITE_INSERT IGen.FINITE_SUPPORT
@@ -9398,7 +9494,7 @@ private unsafe def IK3 : HolMath.Iterate.IterateKey3 :=
     | some d => pure d
     | none => do
       ensureSets
-      match ← (HolMath.Iterate.setupIterateKey3 MESON_TAC SET_TAC
+      match ← (HolMath.Iterate.setupIterateKey3 MESON_TAC ASM_MESON_TAC SET_TAC
                  SET_RULE ARITH_RULE ARITH_TAC ASM_ARITH_TAC INDUCT_TAC
                  NUM_REDUCE_CONV num_CONV IGen ISeg IK1 IK2
                  FINITE_INDUCT_STRONG FINITE_UNION FINITE_RESTRICT FINITE_EMPTY FINITE_IMAGE
@@ -9428,7 +9524,7 @@ private unsafe def IOrd : HolMath.Iterate.IterateOrdered :=
     | none => do
       ensureSets
       match ← (HolMath.Iterate.setupIterateOrdered new_specification
-                 MESON MESON_TAC SET_TAC SET_RULE ARITH_RULE ARITH_TAC
+                 MESON MESON_TAC ASM_MESON_TAC SET_TAC SET_RULE ARITH_RULE ARITH_TAC
                  SELECT_RULE let_CONV LET_TAC
                  IGen IK1 ISeg
                  WF_REC WF_MEASURE MEASURE EXISTS_SWAP_FUN_THM SWAP_FORALL_THM SKOLEM_THM
@@ -9498,7 +9594,7 @@ private unsafe def IN1 : HolMath.Iterate.IterateNsum1 :=
       ensureSets
       ensureIteratePrioritizeNum
       match ← (HolMath.Iterate.setupIterateNsum1 new_definition
-                 MESON_TAC SET_TAC ARITH_TAC ARITH_RULE
+                 MESON_TAC ASM_MESON_TAC SET_TAC ARITH_TAC ARITH_RULE
                  IGen IK1 IK2 IK3
                  SELECT_UNIQUE ADD_CLAUSES MULT_CLAUSES MULT_SYM MULT_EQ_0
                  LEFT_ADD_DISTRIB CARD_CLAUSES FINITE_RULES FINITE_INDUCT_STRONG
@@ -9522,7 +9618,7 @@ private unsafe def IN2 : HolMath.Iterate.IterateNsum2 :=
     | some d => pure d
     | none => do
       ensureSets
-      match ← (HolMath.Iterate.setupIterateNsum2 MESON_TAC SET_TAC
+      match ← (HolMath.Iterate.setupIterateNsum2 MESON_TAC ASM_MESON_TAC SET_TAC
                  ARITH_TAC ARITH_RULE IGen IK2 IK3 IN1
                  EQ_TRANS DISJOINT FINITE_INDUCT_STRONG MULT_CLAUSES MULT_AC
                  LE_MULT_RCANCEL LE_MULT_LCANCEL LE_RDIV_EQ LE_REFL LE_TRANS
@@ -9549,7 +9645,7 @@ private unsafe def IN3 : HolMath.Iterate.IterateNsum3 :=
     | some d => pure d
     | none => do
       ensureSets
-      match ← (HolMath.Iterate.setupIterateNsum3 MESON_TAC INDUCT_TAC
+      match ← (HolMath.Iterate.setupIterateNsum3 MESON_TAC ASM_MESON_TAC INDUCT_TAC
                  ARITH_TAC ARITH_RULE extend_basic_congs NUMBER_RULE
                  IK1 IK3 ISeg IN1 IN2
                  FINITE_INDUCT_STRONG ISeg.FINITE_NUMSEG ISeg.NUMSEG_SING ETA_AX MOD_ZERO
@@ -9617,7 +9713,7 @@ private unsafe def IS1 : HolMath.Iterate.IterateSum1 :=
       ensureSets
       ensureIterateSumPrioritizeReal
       match ← (HolMath.Iterate.setupIterateSum1
-                 new_definition MESON_TAC MESON SET_TAC SET_RULE
+                 new_definition MESON_TAC ASM_MESON_TAC MESON SET_TAC SET_RULE
                  REAL_ARITH3 REAL_ARITH_TAC2 IGen IK1 IK2 IK3
                  SELECT_UNIQUE REAL_ADD_LID REAL_ADD_RID REAL_MUL_LZERO
                  REAL_MUL_RZERO REAL_MUL_SYM REAL_ENTIRE REAL_ADD_LDISTRIB
@@ -9644,7 +9740,7 @@ private unsafe def IS2 : HolMath.Iterate.IterateSum2 :=
     | none => do
       ensureSets
       match ← (HolMath.Iterate.setupIterateSum2
-                 MESON_TAC SET_TAC SET_RULE REAL_ARITH3 REAL_ARITH_TAC2
+                 MESON_TAC ASM_MESON_TAC SET_TAC SET_RULE REAL_ARITH3 REAL_ARITH_TAC2
                  IGen IK1 IK2 IK3 IS1
                  IN1.NEUTRAL_ADD FINITE_INDUCT_STRONG FINITE_IMAGE FINITE_RESTRICT
                  FINITE_DIFF FINITE_INTER FINITE_UNIONS FINITE_SUBSET IN_INSERT
@@ -9722,7 +9818,7 @@ private unsafe def IS5 : HolMath.Iterate.IterateSum5 :=
     | none => do
       ensureSets
       match ← (HolMath.Iterate.setupIterateSum5
-                 new_definition MESON_TAC MESON SET_RULE
+                 new_definition MESON_TAC ASM_MESON_TAC MESON SET_RULE
                  REAL_ARITH3 REAL_ARITH_TAC2 ARITH_RULE ARITH_TAC ASM_ARITH_TAC
                  INDUCT_TAC IS1 IS2 IS3 IS4 ISeg
                  ISeg.FINITE_NUMSEG FINITE_EMPTY CARD_CLAUSES FINITE_RULES
@@ -9745,21 +9841,18 @@ private unsafe def IS5 : HolMath.Iterate.IterateSum5 :=
       | .error e => panic! s!"setupIterateSum5 failed: {e}") with
   | .ok d => d | _ => panic! "Session.IS5: setupIterateSum5 not run"
 
-/-- Once-only guard for **iterate.ml 3112**, the closing `prioritize_num()`
+/-- Once-only guard for iterate.ml 3112, the closing `prioritize_num()`
     under the banner "Make natural numbers the default again".
 
-    *** THIS IS HALF OF A PAIR, AND THE OTHER HALF IS
-    `ensureIterateSumPrioritizeReal` (iterate.ml 1982). *** Between those two
-    calls a bare numeral parses `:real`; from here on it parses `:num` again.
-    Omitting this restore would silently mistype every LATER FILE in the
-    development, which no compile error would reveal.
-
-    It needs its OWN flag and its OWN direct call to `prioritize_num`.
-    Delegating to `ensurePrioritizeNum` (int.ml 2765) would be a NO-OP here,
-    because that guard's flag was set long ago during the int/sets chain.
-    The real-half bundles `IS1`-`IS5` are
-    already forced by the time this runs, so their theorems keep the `:real`
-    parse they were built with; only the DEFAULT for later parsing flips. -/
+    This is half of a pair with `ensureIterateSumPrioritizeReal` (iterate.ml
+    1982): between those two calls a bare numeral parses `:real`; from here on
+    it parses `:num` again.  Omitting this restore would silently mistype every
+    later file, which no compile error would reveal.  It needs its own flag and
+    its own direct call to `prioritize_num`; delegating to `ensurePrioritizeNum`
+    (int.ml 2765) would be a no-op, since that guard's flag was set during the
+    int/sets chain.  The real-half bundles `IS1`-`IS5` are already forced by the
+    time this runs, so their theorems keep the `:real` parse they were built
+    with; only the default for later parsing flips. -/
 initialize theIteratePrioritizeNumRestore : IO.Ref Bool ← IO.mkRef false
 
 private unsafe def ensureIteratePrioritizeNumRestore : IO Unit := do
@@ -10397,32 +10490,25 @@ private unsafe def CFProd : HolMath.Cart.CartFiniteProd :=
       | .error e => panic! s!"setupCartFiniteProd failed: {e}") with
   | .ok d => d | _ => panic! "Session.CFProd: setupCartFiniteProd not run"
 
-/-- Cache for `CartTybit` (cart.ml 338-405): the TWO `define_type` calls that
+/-- Cache for `CartTybit` (cart.ml 338-405): the two `define_type` calls that
     create the binary "bit" type constructors `tybit0`/`tybit1`, plus their
-    size/dimindex/finiteness theory.  *** THE MOST CONSEQUENTIAL RANGE IN THE
-    FILE: this is what makes `:2`, `:3`, `:4` ... exist as TYPES, and hence what
-    makes `:real^3` mean anything. ***
+    size/dimindex/finiteness theory.  This is what makes `:2`, `:3`, `:4` ...
+    exist as types, and hence what makes `:real^3` mean anything.
 
-    `define_type` is a HEAVIER, side-effecting primitive than
-    `new_type_definition`: it defines an INDUCTIVE type, returns a PAIR
-    (INDUCT, RECURSION) - so each of the two calls binds TWO names, FOUR in all
-    - and populates the `cases`/`injectivity`/`distinctness` rectype stores.  It
-    lives in this once-only CAF and runs EXACTLY ONCE and IN FILE ORDER (after
-    `CFProd`, i.e. after all five `new_type_definition`s; `tybit0`'s body
-    mentions `finite_sum`).
+    `define_type` defines an inductive type and returns a pair (INDUCT,
+    RECURSION), so each of the two calls binds two names, and populates the
+    `cases`/`injectivity`/`distinctness` rectype stores.  It runs exactly once
+    and in file order (after `CFProd`, i.e. after all five
+    `new_type_definition`s; `tybit0`'s body mentions `finite_sum`).
 
-    *** ORDER IS LOAD-BEARING EVEN BETWEEN THE TWO `define_type` LINES: ***
-    `tybit1`'s body `mktybit1(((A,A)finite_sum,1)finite_sum)` MENTIONS THE TYPE
-    `1`, so `1` must already exist (it does - earlier cart.ml `one`/`1`
-    machinery provides it) and `tybit0` (341) must precede `tybit1` (344).  We
-    run `define_type "tybit0..."` first, then `define_type "tybit1..."`, then
-    read the `cases`/`injectivity` theorems they populated, and hand ALL of them
-    to the PURE `setupCartTybit` (which never itself calls `define_type`/
-    `cases`/`injectivity`).  Forcing `CTybit` extends the type-constructor table
-    so `get_type_arity "tybit0"`/`"tybit1"` (each arity 1) succeed afterwards,
-    and lets `:2`/`:3`/`:4`/`:real^3` parse.  Depends on `CFSum`
-    (`DIMINDEX_HAS_SIZE_FINITE_SUM`/`DIMINDEX_FINITE_SUM`), `CDim`, threaded
-    Sets theorems, and `MULT_2`. -/
+    Order is load-bearing even between the two `define_type` lines: `tybit1`'s
+    body `mktybit1(((A,A)finite_sum,1)finite_sum)` mentions the type `1`, so
+    `1` must already exist and `tybit0` (341) must precede `tybit1` (344).  We
+    run `tybit0` first, then `tybit1`, then read the `cases`/`injectivity`
+    theorems they populated and hand them to the pure `setupCartTybit`.  Forcing
+    `CTybit` extends the type-constructor table so `get_type_arity
+    "tybit0"`/`"tybit1"` succeed and `:2`/`:3`/`:4`/`:real^3` parse.  Depends on
+    `CFSum`, `CDim`, threaded Sets theorems, and `MULT_2`. -/
 initialize theCartTybit : IO.Ref (Option HolMath.Cart.CartTybit) ← IO.mkRef none
 
 private unsafe def CTybit : HolMath.Cart.CartTybit :=
@@ -10504,15 +10590,8 @@ unsafe def DIMINDEX_TAC : tactic := fun g => CDConv.DIMINDEX_TAC g
     `FINITE_CART` and the three whole-universe cardinality results
     (`HAS_SIZE_CART_UNIV`/`CARD_CART_UNIV`/`FINITE_CART_UNIV`).  Pure over
     `CCart`/`CFImg`; enters through `ensureIterate` for the Sets/Pair/arith
-    layer.  No new kernel/parser side effects here - runs in file order AFTER
-    `CDConv`.  `INDUCT_TAC` (nums.ml) is threaded as a plain tactic; `SPEC`/
-    `ISPEC` are the term-instance rules on `B`.  The imported theorems live in
-    the arithmetic layer (`LE_REFL`/`LET_ANTISYM`/`LE`), Sets.lean
-    (`FINITE_RULES`/`IN_ELIM_THM`/`EXTENSION`/`SUBSET`/`IN_SING`/`IN_IMAGE`/
-    `IN_UNIV`/`IN_ELIM_PAIR_THM`/`FINITE_SUBSET`/`FINITE_IMAGE`/`FINITE_PRODUCT`/
-    `SURJECTIVE_IMAGE_EQ`/`HAS_SIZE_IMAGE_INJ`/`HAS_SIZE_FUNSPACE_UNIV`/
-    `HAS_SIZE`), Pair.lean (`EXISTS_PAIR_THM`) and Theorems.lean
-    (`IMP_CONJ_ALT`/`EQ_IMP`). -/
+    layer, with no new kernel/parser side effects, and runs in file order after
+    `CDConv`. -/
 initialize theCartFinite : IO.Ref (Option HolMath.Cart.CartFinite) ← IO.mkRef none
 
 private unsafe def CFin : HolMath.Cart.CartFinite :=
@@ -10887,21 +10966,16 @@ private unsafe def DSupT : HolMath.Define.DefineSuperadmissibleThms :=
   | .ok d => d | _ => panic! "Session.DSupT: setupDefineSuperadmissibleThms not run"
 
 /-- Cache for `DefineWfCasewise` (define.ml 357-463): the WF/tail-recursion-
-    meets-casewise theorems `WF_REC_TAIL_GENERAL'` (360, PRIMED - distinct from
-    the pre-existing unprimed `WF_REC_TAIL_GENERAL` threaded from `Wf`),
-    `WF_REC_CASES` (372), `WF_REC_CASES'` (412), `RECURSION_CASEWISE` (419),
+    meets-casewise theorems `WF_REC_TAIL_GENERAL'` (360), `WF_REC_CASES` (372),
+    `WF_REC_CASES'` (412), `RECURSION_CASEWISE` (419),
     `RECURSION_CASEWISE_PAIRWISE` (432), `SUPERADMISSIBLE_T` (456) and
     `RECURSION_SUPERADMISSIBLE` (460).  `RECURSION_CASEWISE` and
-    `RECURSION_SUPERADMISSIBLE` are the two theorems the 487-line ML suite
-    (define.ml 467-953) instantiates mechanically, so they fix what `define`
-    can accept.  The PRIMED `WF_REC_TAIL_GENERAL'` is used by `WF_REC_CASES`;
-    the UNPRIMED, pre-existing `WF_REC_TAIL_GENERAL` (`Wf.WF_REC_TAIL_GENERAL`)
-    is used ONLY inside `WF_REC_TAIL_GENERAL'`.  Threads `CASEWISE`/
-    `CASEWISE_WORKS` (from `DCase`), `tailadmissible`/`superadmissible`/
-    `admissible` (from `DAdm`), the list `ALL`/`MEM`/`PAIRWISE`/`ALL_MEM`,
-    `LIST_INDUCT_TAC`, `list_INDUCT`, `MONO_EXISTS`, `FUN_EQ_THM`, the rule
-    forms `MATCH_MP`/`ISPEC`/`REWRITE_RULE`, and the bool/quantifier lemmas.
-    Enters through `DSupT` because it follows it in define.ml file order. -/
+    `RECURSION_SUPERADMISSIBLE` are the two theorems define.ml 467-953
+    instantiates mechanically, so they fix what `define` can accept.  The primed
+    `WF_REC_TAIL_GENERAL'` (used by `WF_REC_CASES`) is distinct from the
+    pre-existing unprimed `WF_REC_TAIL_GENERAL` (`Wf.WF_REC_TAIL_GENERAL`), which
+    is used only inside `WF_REC_TAIL_GENERAL'`.  Enters through `DSupT` because
+    it follows it in define.ml file order. -/
 initialize theDefineWfCasewise :
     IO.Ref (Option HolMath.Define.DefineWfCasewise) ← IO.mkRef none
 
@@ -11077,20 +11151,15 @@ unsafe def RECURSION_SUPERADMISSIBLE   : thm := DWfC.RECURSION_SUPERADMISSIBLE
 
 /-- `define tm` (define.ml 957-1028): accept a general recursive definition,
     written as a conjunction of clauses that may use pattern matching, discharge
-    the proof obligations automatically, and introduce the constant.
+    the proof obligations automatically, and introduce the constant.  Calls
+    `prove_general_recursive_function_exists` (define.ml 1024), then
+    `new_specification` and `mk_mconst`.
 
-    Calls `prove_general_recursive_function_exists` (define.ml 1024) - the THIRD
-    of the 467-953 binding's three public names, and the only one `define` uses -
-    then `new_specification` to introduce the constant and `mk_mconst` to build
-    it.
-
-    STATE.  The OCaml's final act is `the_definitions := th3::(!the_definitions)`
-    (1028).  The pure HolMath function takes the current list as a parameter and
-    RETURNS the entry to prepend (`some th3` when it defines, `none` on a benign
-    redefinition, which the OCaml does not record); this accessor performs the
-    ref write, exactly as the `new_specification` accessor does for
-    `theSpecifications`.  `ensureDefine` runs first so every define.ml bundle is
-    forced in file order, reproducing HOL Light's eager top-to-bottom load. -/
+    State: the OCaml's final act is `the_definitions := th3::(!the_definitions)`
+    (1028).  The pure HolMath function returns the entry to prepend (`some th3`
+    when it defines, `none` on a benign redefinition); this accessor performs
+    the ref write.  `ensureDefine` runs first so every define.ml bundle is
+    forced in file order. -/
 unsafe def define (tm : term) : IO (Except String thm) := do
   ensureDefine
   let defs ← getTheDefinitions
@@ -11110,20 +11179,11 @@ unsafe def define (tm : term) : IO (Except String thm) := do
 /- check_axioms (hol_lib.ml 105-114): the library's FINAL integrity check. -/
 /- ---------------------------------------------------------------------- -/
 /-
-  hol_lib.ml ends by DEFINING this (it does not call it):
-
-      let check_axioms () =
-        let basic_axioms = [INFINITY_AX; SELECT_AX; ETA_AX] in
-        let l = filter (fun th -> not (mem th basic_axioms)) (axioms()) in
-        if l <> [] then
-          let msg = "[" ^ (String.concat ", " (map string_of_thm l)) ^ "]" in
-          failwith ("check_axioms: " ^ msg)
-
-  The whole of HOL Light rests on exactly THREE axioms; everything else is
-  derived.  Anything else in `the_axioms` means an axiom leaked in - most likely
-  via `mk_thm`, which is `new_axiom` underneath (drule.ml 24-26).  This is
-  therefore the one check that mechanically bounds the port's trusted base, and
-  `HolTest/AxiomsTest.lean` runs it over the FULLY bootstrapped session.
+  hol_lib.ml ends by defining this (it does not call it).  HOL Light rests on
+  exactly three axioms (`INFINITY_AX`, `SELECT_AX`, `ETA_AX`); anything else in
+  `the_axioms` means an axiom leaked in, most likely via `mk_thm`, which is
+  `new_axiom` underneath (drule.ml 24-26).  `HolTest/AxiomsTest.lean` runs it
+  over the fully bootstrapped session.
 
   `mem` is OCaml structural equality on `thm`, which is `equals_thm` here
   (comparing `dest_thm`, i.e. hypotheses and conclusion).

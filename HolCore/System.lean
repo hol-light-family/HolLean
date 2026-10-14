@@ -325,8 +325,9 @@ def runWith (width maxBoxes : Nat) (act : Fmt Unit) : String :=
     with `pp_set_max_boxes fmt 100` and the current margin. -/
 def run (width : Nat) (act : Fmt Unit) : String := runWith width 100 act
 
-/-- `Format.std_formatter` (default `max_boxes`), at the given margin. -/
-def runStd (width : Nat) (act : Fmt Unit) : String := runWith width 4611686018427387903 act
+/-- `Format.std_formatter` at the given margin.  printer.ml 109 sets its
+    `max_boxes` to 100 (`include Format;; set_max_boxes 100`). -/
+def runStd (width : Nat) (act : Fmt Unit) : String := runWith width 100 act
 
 end Fmt
 

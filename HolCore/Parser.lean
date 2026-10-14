@@ -1,5 +1,6 @@
 /- File: Parser.lean
 Lexical analyzer, type and preterm parsers.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Original (c) Copyright, Andrea Gabrielli, Marco Maggesi 2017-2018
@@ -210,16 +211,6 @@ def pelistof (prs : ParserT τ α) (sep : ParserT τ β) (err : String) : Parser
 
 /- `leftbin`/`rightbin`: left/right-associative binary operator folds. -/
 
--- itlist2 f [o1,o2,..] [y1,y2,..] x = f o1 y1 (f o2 y2 (... x))
-private def pitlist2 {β α : Type} (f : β → α → α → α)
-    (os : List β) (ys : List α) (acc : α) : α :=
-  match os with
-  | [] => acc
-  | ohd :: otl =>
-    match ys with
-    | [] => acc
-    | yhd :: ytl => f ohd yhd (pitlist2 f otl ytl acc)
-
 /-- `leftbin prs sep cons err`: parse `prs` separated by `sep` and fold the
     operators left-associatively with `cons`. -/
 def pleftbin (prs : ParserT τ α) (sep : ParserT τ β) (cons : β → α → α → α) (err : String) :
@@ -227,7 +218,7 @@ def pleftbin (prs : ParserT τ α) (sep : ParserT τ β) (cons : β → α → �
   pmap (pseq prs (pmany (pseq sep (pfix err prs))))
     (fun (x, opxs) =>
       let (ops, xs) := unzip opxs
-      pitlist2 (fun op y acc => cons op acc y) (rev ops) (rev xs) x)
+      (itlist2 (fun op y acc => cons op acc y) (rev ops) (rev xs) x).toOption.getD x)
 
 /-- `rightbin prs sep cons err`: parse `prs` separated by `sep` and fold the
     operators right-associatively with `cons`. -/
@@ -238,7 +229,7 @@ def prightbin (prs : ParserT τ α) (sep : ParserT τ β) (cons : β → α → 
       if opxs.isEmpty then x
       else
         let (ops, xs) := unzip opxs
-        pitlist2 cons ops (x :: (xs.dropLast)) (xs.getLastD x))
+        (itlist2 cons ops (x :: (xs.dropLast)) (xs.getLastD x)).toOption.getD x)
 
 /- `possibly`: zero or one occurrence, as a list. -/
 /-- `possibly prs`: zero or one occurrence of `prs`, returned as a list. -/
@@ -638,7 +629,7 @@ def pleftbinM (prs : ParserM α) (sep : ParserM β) (cons : β → α → α →
   pmapM (pseqM prs (pmanyM (pseqM sep (pfixM err prs))))
     (fun (x, opxs) =>
       let (ops, xs) := unzip opxs
-      pitlist2 (fun op y acc => cons op acc y) (rev ops) (rev xs) x)
+      (itlist2 (fun op y acc => cons op acc y) (rev ops) (rev xs) x).toOption.getD x)
 
 /-- `rightbin` in the IO layer: right-associative binary operator fold. -/
 def prightbinM (prs : ParserM α) (sep : ParserM β) (cons : β → α → α → α) (err : String) :
@@ -648,7 +639,7 @@ def prightbinM (prs : ParserM α) (sep : ParserM β) (cons : β → α → α �
       if opxs.isEmpty then x
       else
         let (ops, xs) := unzip opxs
-        pitlist2 cons ops (x :: xs.dropLast) (xs.getLastD x))
+        (itlist2 cons ops (x :: xs.dropLast) (xs.getLastD x)).toOption.getD x)
 
 /- `a`/`some` in the IO layer. -/
 /-- `some p` in the IO layer: consume one token satisfying `p`. -/

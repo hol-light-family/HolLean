@@ -1,5 +1,6 @@
 /- File: Pair.lean
 Syntax sugaring; theory of pairing, with a bit of support.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Original (c) Copyright, Marco Maggesi 2015
@@ -513,15 +514,6 @@ partial def let_CONV [HolBase] (L : LetDeps) (GEN_BETA_CONV : ioconv) : ioconv :
     if vs.length != n then throw "let_CONV"
     ExceptT.mk (thenc_ EXPAND_BETAS_CONV lete_CONV tm)
 
-/-- `PATH_CONV` (equal.ml) for an `ioconv`: `l` = RATOR, `r` = RAND, else ABS. -/
-def pathConvIO (s : String) (cnv : ioconv) : ioconv :=
-  let rec go : List String → ioconv
-    | []       => cnv
-    | "l" :: t => RATOR_CONV (go t)
-    | "r" :: t => RAND_CONV (go t)
-    | _ :: t   => ABS_CONV (go t)
-  go (explode s)
-
 /-- `LET_TAC` (pair.ml 168-207). -/
 def LET_TAC [HolBase] (L : LetDeps) (GEN_BETA_CONV : ioconv) : tactic :=
   let is_trivlet (tm : term) : Bool :=
@@ -559,7 +551,7 @@ def LET_TAC [HolBase] (L : LetDeps) (GEN_BETA_CONV : ioconv) : tactic :=
            pure (then_ (SUBST_ALL_TAC th') (ASSUME_TAC th')))) deprths |>
       fun t => then_ t (fun (asl', w') => ExceptT.run do
         let tm' ← liftExcept (follow_path path w')
-        ExceptT.mk (CONV_TAC (pathConvIO path (fun _ => let_CONV L GEN_BETA_CONV tm')) (asl', w'))))
+        ExceptT.mk (CONV_TAC (Simp.pathConvIO path (fun _ => let_CONV L GEN_BETA_CONV tm')) (asl', w'))))
       (asl, w))
 
 /- ---------------------------------------------------------------------- -/

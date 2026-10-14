@@ -1,5 +1,6 @@
 /- File: Recursion.lean
 Definition by primitive recursion and other tools for inductive types.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Lean4 translation by Chris Walton 2026 -/

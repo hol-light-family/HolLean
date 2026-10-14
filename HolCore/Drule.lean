@@ -1,5 +1,6 @@
 /- File: Drule.lean
 More sophisticated derived rules including definitions and rewriting.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Original (c) Copyright, Michael Faerber 2018
@@ -67,16 +68,16 @@ def MK_DISJ (eq1 eq2 : thm) : Except String thm := do
   MK_COMB (← AP_TERM (.Const "\\/" bbb) eq1) eq2
 
 /-- From `|- P x = Q x` derive `|- (!x. P x) = (!x. Q x)`. -/
-def MK_FORALL (v : term) (th : thm) : IO (Except String thm) := do
-  match ← mk_const "!" [] with
-  | .error e => return .error e
-  | .ok atm  => return (do AP_TERM (inst [(type_of v, aty)] atm) (← ABS v th))
+def MK_FORALL (v : term) (th : thm) : IO (Except String thm) :=
+  -- `let atm = mk_const("!",[]) in ...`: the constant `!:(A->bool)->bool`
+  let atm : term := .Const "!" (.Tyapp "fun" [.Tyapp "fun" [aty, bool_ty], bool_ty])
+  pure (do AP_TERM (inst [(type_of v, aty)] atm) (← ABS v th))
 
 /-- From `|- P x = Q x` derive `|- (?x. P x) = (?x. Q x)`. -/
-def MK_EXISTS (v : term) (th : thm) : IO (Except String thm) := do
-  match ← mk_const "?" [] with
-  | .error e => return .error e
-  | .ok atm  => return (do AP_TERM (inst [(type_of v, aty)] atm) (← ABS v th))
+def MK_EXISTS (v : term) (th : thm) : IO (Except String thm) :=
+  -- `let atm = mk_const("?",[]) in ...`: the constant `?:(A->bool)->bool`
+  let atm : term := .Const "?" (.Tyapp "fun" [.Tyapp "fun" [aty, bool_ty], bool_ty])
+  pure (do AP_TERM (inst [(type_of v, aty)] atm) (← ABS v th))
 
 /- ---------------------------------------------------------------------- -/
 /- Eliminate the antecedent of a theorem using a conversion/proof rule.   -/
@@ -162,17 +163,10 @@ partial def instantiate (i : instantiation) (tm : term) : Except String term :=
 /-- Instantiate a theorem (types, then terms, then higher-order beta), failing
     if a substituted variable becomes free in the assumptions. Pure.
 
-    `HO_BETAS` must descend when the betacount lookup SUCCEEDS but the arity
-    does not match.  drule.ml 112-114 is
-
-        try let n = rev_assoc hop bcs in
-            if length args = n then BETAS_CONV n tm else fail()
-        with Failure _ -> <descend via dest_comb>
-
-    and the `try` spans BOTH the lookup AND the arity check, so an arity mismatch
-    must FALL THROUGH to the descent, not escape.  Both this and the term-level
-    `ho_betas` in `instantiate` therefore wrap the lookup and the arity check in
-    ONE fallible step and descend on any failure. -/
+    In `HO_BETAS` the betacount lookup and the arity check (drule.ml 112-114) sit
+    in one `try`, so an arity mismatch must fall through to the descent rather
+    than escape; this and the term-level `ho_betas` in `instantiate` both wrap
+    the lookup and arity check in one fallible step and descend on any failure. -/
 partial def INSTANTIATE (i : instantiation) (th : thm) : Except String thm :=
   let (bcs, tmin, tyin) := i
   -- conv performing n leading beta-reductions
@@ -187,16 +181,9 @@ partial def INSTANTIATE (i : instantiation) (th : thm) : Except String thm :=
       | .ok (bv, _) => do ABS bv (← HO_BETAS (← body pat) (← body tm))
       | .error _ =>
         let (hop, args) := strip_comb pat
-        -- drule.ml 112-114:
-        --     try let n = rev_assoc hop bcs in
-        --         if length args = n then BETAS_CONV n tm else fail()
-        --     with Failure _ -> <descend via dest_comb>
-        -- *** THE `try` SPANS BOTH THE LOOKUP AND THE ARITY CHECK. *** An arity
-        -- MISMATCH raises `fail()` INSIDE the `try`, so it must fall through to
-        -- the descent below - it must NOT abort.  Translating this as a two-way
-        -- `match` on `rev_assoc` alone let the arity-mismatch failure escape,
-        -- which is why a pattern like `g f x (y f x)` (hop `g`, three args,
-        -- betacount two) failed instead of splitting into `g f x` and `y f x`.
+        -- drule.ml 112-114: the `try` spans both the lookup and the arity
+        -- check, so an arity mismatch (`fail()`) must fall through to the
+        -- descent below rather than escape.
         let direct : Except String thm := do
           let n ← rev_assoc hop bcs
           if (args.length : Int) == n then betasN n tm else fail
@@ -468,16 +455,10 @@ private def safe_inserta (n : term × term) (l : List (term × term)) :
   | .ok z => if aconv n.1 z then .ok l else failwith "safe_inserta"
   | .error _ => .ok (n :: l)
 
-/-- Like `safe_inserta` but with structural equality. -/
-private def safe_insert (n : term × term) (l : List (term × term)) :
-    Except String (List (term × term)) :=
-  match rev_assoc n.2 l with
-  | .ok z => if n.1 == z then .ok l else failwith "safe_insert"
-  | .error _ => .ok (n :: l)
-
-/-- Structural-equality safe insert for a type instantiation list. -/
-private def safe_insert_ty (n : hol_type × hol_type) (l : List (hol_type × hol_type)) :
-    Except String (List (hol_type × hol_type)) :=
+/-- Like `safe_inserta` but with structural equality (OCaml uses it at
+    terms, types and arities). -/
+private def safe_insert [BEq α] [BEq β] (n : α × β) (l : List (α × β)) :
+    Except String (List (α × β)) :=
   match rev_assoc n.2 l with
   | .ok z => if n.1 == z then .ok l else failwith "safe_insert"
   | .error _ => .ok (n :: l)
@@ -552,7 +533,7 @@ private def separate_insts (insts : List (term × term)) :
     | p :: ps => do
         let sof ← go ps
         let (hop, args) := strip_comb p.2
-        match safe_insert_int ((args.length : Int), hop) sof with
+        match safe_insert ((args.length : Int), hop) sof with
         | .ok sof' => return sof'
         | .error _ => do
             warn true "Inconsistent patterning in higher order match"
@@ -566,12 +547,13 @@ private def separate_insts (insts : List (term × term)) :
                 | .error _ => p.2
       if p.1 == x' then failwith "separate_insts" else .ok (p.1, x')) realinsts
   return (betacounts, tmins, tyins)
-where
-  safe_insert_int (n : Int × term) (l : List (Int × term)) :
-      Except String (List (Int × term)) :=
-    match rev_assoc n.2 l with
-    | .ok z => if n.1 == z then .ok l else failwith "safe_insert"
-    | .error _ => .ok (n :: l)
+
+/-- `mk_dummy`'s variable name (drule.ml 176-178): ONE `genvar`, taken when
+    drule.ml loads, shared by every `term_match` call. -/
+initialize termMatchDummy : String ← do
+  match ← genvar aty with
+  | .Var n _ => pure n
+  | _ => pure "_"
 
 /-- Higher-order term matching entry point. Matches `vtm` (local constants
     `lconsts`) against `ctm`, returning an `instantiation`. IO-valued.
@@ -582,9 +564,7 @@ where
     the term after abstracting out the pattern instances) but it'd be slower. -/
 partial def term_match (lconsts : List term) (vtm ctm : term) :
     IO (Except String instantiation) := ExceptT.run do
-  -- fixed dummy-variable name (from a single genvar), used by term_pmatch
-  let gv ← liftM (genvar aty)
-  let dn ← liftExcept ((dest_var gv).map Prod.fst)
+  let dn := termMatchDummy
   -- The higher-order resolution phase (IO: genvar/subst).
   let rec term_homatch (tyins : List (hol_type × hol_type))
       (sofar : List (term × term) × List homDatum) :
@@ -597,22 +577,17 @@ partial def term_match (lconsts : List term) (vtm ctm : term) :
         if ctm == vtm then term_homatch tyins (insts, rhoms)
         else do
           let (_, vty) ← liftExcept (dest_var vtm)
-          let newtyins ← liftExcept (safe_insert_ty (type_of ctm, vty) tyins)
+          let newtyins ← liftExcept (safe_insert (type_of ctm, vty) tyins)
           term_homatch newtyins ((ctm, vtm) :: insts, rhoms)
       else
         let (vhop, vargs) := strip_comb vtm
         let afvs := freesl vargs
         let inst_fn := inst tyins
         /- Try the pattern-based higher-order step AND ITS CONTINUATION; on any
-           failure, split `ctm`/`vtm` and re-`term_pmatch`.
-
-           *** THE `try` MUST WRAP THE RECURSIVE CALL. *** In drule.ml 244-277
-           the `try` block ends at `term_homatch lconsts tyins (ni,tl homs)`
-           (269), so a failure ANYWHERE DOWNSTREAM backtracks into the
-           decompose-and-re-match fallback below.  Wrapping only the computation
-           of `ni` would make the first step succeed and then propagate a later
-           failure, losing the backtracking that lets higher-order patterns such
-           as `ADMISSIBLE_COMB` resolve by splitting an application. -/
+           failure, split `ctm`/`vtm` and re-`term_pmatch`.  In drule.ml 244-277
+           the `try` ends at `term_homatch ... (ni, tl homs)` (269), so a failure
+           anywhere downstream backtracks into the decompose-and-re-match
+           fallback below; hence the `tryCatch` must wrap the recursive call. -/
         tryCatch (do
             -- tmins: map each free arg var to (its binding, its instance)
             let tmins ← afvs.mapM (fun a => do
@@ -846,11 +821,12 @@ private partial def find_termsM (p : term → IO Bool) (tm : term) : IO (List te
     else return tl'
   accum [] tm
 
-/-- Higher-order rewriting conversion. `top` selects outermost-first search.
-    Given a list of (equational) rewrite theorems, rewrites the first matching
-    subterm of `tm`. Uses the bool rule `SPEC_ALL`. IO-valued. -/
-def HIGHER_REWRITE_CONV (B : BoolThms) (ths : List thm) (top : Bool) (tm : term) :
-    IO (Except String thm) := ExceptT.run do
+/-- `HIGHER_REWRITE_CONV ths` (drule.ml 512-558), staged as in OCaml: the
+    theorems are prepared (GINST, the pattern net) once, when applied to
+    `ths`; the result takes `top` and the term.  Uses the bool rule
+    `SPEC_ALL`. -/
+def HIGHER_REWRITE_CONV_ths (B : BoolThms) (ths : List thm) :
+    IO (Except String (Bool → ioconv)) := ExceptT.run do
   -- GINST: rename the free (non-hypothesis) variables of a theorem to genvars.
   let GINST (th : thm) : ExceptT String IO thm := do
     let fvs := subtract (frees (concl th)) (freesl (hyp th))
@@ -883,6 +859,7 @@ def HIGHER_REWRITE_CONV (B : BoolThms) (ths : List thm) (top : Bool) (tm : term)
   let look_fn (t : term) : IO (List term) := do
     let cands := lookup t mnet
     cands.filterM (fun p => canMatch p t)
+  return fun top tm => ExceptT.run do
   -- the search predicate (IO)
   let predIO (t : term) : IO Bool := do
     let lf ← look_fn t
@@ -911,5 +888,14 @@ def HIGHER_REWRITE_CONV (B : BoolThms) (ths : List thm) (top : Bool) (tm : term)
     let t1 ← INST tmin0 t0
     let t2 ← INST tmin t1
     CONV_RULE beta_fn t2
+
+/-- `HIGHER_REWRITE_CONV ths top tm`: prepare `ths` and rewrite `tm` in one
+    call.  Callers that reuse the same theorems should build the conversion
+    once with `HIGHER_REWRITE_CONV_ths`. -/
+def HIGHER_REWRITE_CONV (B : BoolThms) (ths : List thm) (top : Bool) (tm : term) :
+    IO (Except String thm) := do
+  match ← HIGHER_REWRITE_CONV_ths B ths with
+  | .ok c => c top tm
+  | .error e => return .error e
 
 end HolCore.Drule

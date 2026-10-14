@@ -1,5 +1,6 @@
 /- File: Arith.lean
 Natural number arithmetic.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Original (c) Copyright, Marco Maggesi 2015
@@ -906,13 +907,19 @@ def setupArith4 [HolBase] (N : HolMath.Nums.NumsThms)
         (!n. m <= n ==> P n) /\
         (!n. n < m /\ P(n + 1) ==> P n)
         ==> !n. P n"
-   (REWRITE_TAC [← GSYM ADD1] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
-    ONCE_REWRITE_TAC [← MESON [] (← q r"(!x. P x) <=> ~(?x. ~P x)")] THEN
-    W (MP_TAC o PART_MATCH (lhand o lhand) num_MAX o rand o snd) THEN
-    MATCH_MP_TAC (← TAUT (← q r"q /\ ~r ==> (p /\ q <=> r) ==> ~p")) THEN
-    ONCE_REWRITE_TAC [← TAUT (← q r"~p ==> q <=> ~q ==> p")] THEN
-    REWRITE_TAC [NOT_EXISTS_THM, ← TAUT (← q r"~(~p /\ q) <=> q ==> p"), NOT_LE] THEN
-    ASM_MESON_TAC [LTE_CASES, LT, LT_IMP_LE])
+   (← do
+    let t3 ← TAUT (← q r"~(~p /\ q) <=> q ==> p")
+    let t2 ← TAUT (← q r"~p ==> q <=> ~q ==> p")
+    let t1 ← TAUT (← q r"q /\ ~r ==> (p /\ q <=> r) ==> ~p")
+    let m1 ← MESON [] (← q r"(!x. P x) <=> ~(?x. ~P x)")
+    pure
+     (REWRITE_TAC [← GSYM ADD1] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
+      ONCE_REWRITE_TAC [m1] THEN
+      W (MP_TAC o PART_MATCH (lhand o lhand) num_MAX o rand o snd) THEN
+      MATCH_MP_TAC t1 THEN
+      ONCE_REWRITE_TAC [t2] THEN
+      REWRITE_TAC [NOT_EXISTS_THM, t3, NOT_LE] THEN
+      ASM_MESON_TAC [LTE_CASES, LT, LT_IMP_LE]))
 
   return {
     LE_EXISTS, LT_EXISTS, LE_ADD, LE_ADDR, LT_ADD, LT_ADDR, LE_ADD_LCANCEL,
@@ -2431,12 +2438,10 @@ partial def numCancelMinter (i l1' l2' l1 l2 : List term) :
 
 /-- `NUM_CANCEL_CONV` (arith.ml 1732-1756).  `add_tm`, `eq_tm`,
     `EQ_ADD_LCANCEL_0'` are built once, as in OCaml; the rest runs per call.
-    `add_tm` is taken from `EQ_ADD_LCANCEL` rather than parsed: the quotation
-    gives a free variable when `+` is not declared in the ambient session. -/
+    Session builds it at arith.ml's position, where `(+)` is `num` addition. -/
 def NUM_CANCEL_CONV [HolBase] (EQ_ADD_LCANCEL EQ_ADD_LCANCEL_0 ADD_AC : thm) :
     ExceptT String IO ioconv := do
-  let add_tm ← liftExcept (do rator (← rator (← lhand
-                 (← lhand (strip_forall (concl EQ_ADD_LCANCEL)).2))))
+  let add_tm ← q r"(+)"
   let eq_tm ← q r"(=) :num->num->bool"
   let EQ_ADD_LCANCEL_0' ←
     GEN_REWRITE_RULE (Lib.funpow 2 BINDER_CONV ∘ LAND_CONV) [HolBase.T.EQ_SYM_EQ]
@@ -2445,11 +2450,11 @@ def NUM_CANCEL_CONV [HolBase] (EQ_ADD_LCANCEL EQ_ADD_LCANCEL_0 ADD_AC : thm) :
   return fun tm => ExceptT.run do
     let (l, r) ← liftExcept (dest_eq tm)
     -- `binops `(+)``: the quotation is inside `fun tm ->`, so OCaml parses it
-    -- at every call (after `prioritize_int()` it is integer addition).
-    let plus ← q r"(+)"
+    -- at every call, once for each side (after `prioritize_int()` it is
+    -- integer addition).
     let le := fun a b => decide (compare a b ≠ Ordering.gt)
-    let lats := Lib.sort le (binops plus l)
-    let rats := Lib.sort le (binops plus r)
+    let lats := Lib.sort le (binops (← q r"(+)") l)
+    let rats := Lib.sort le (binops (← q r"(+)") r)
     let (i, lats', rats') := numCancelMinter [] [] [] lats rats
     let l' ← liftExcept (list_mk_binop add_tm (i ++ lats'))
     let r' ← liftExcept (list_mk_binop add_tm (i ++ rats'))

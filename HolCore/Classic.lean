@@ -137,14 +137,16 @@ def ETA_CONV (etaPth : thm) (t : term) (tm : term) : Except String thm := do
 
 /-- `SELECT_RULE`: from `|- ?x. P x` derive `|- P((@) P)`.
     `pth = |- (?) P ==> P((@) P)`, `P = \`P:A->bool\``. -/
-def SELECT_RULE (B : BoolThms) (pth : thm) (P : term) (th : thm) : Except String thm := do
-  let abs ← rand (concl th)
-  let ty := type_of (← bndvar abs)
-  CONV_RULE BETA_CONV (← B.MP (← PINST [(ty, aty)] [(abs, P)] pth) th)
+def SELECT_RULE (B : BoolThms) (pth : thm) (P : term) (th : thm) : Except String thm :=
+  (do let abs ← rand (concl th)
+      let ty := type_of (← bndvar abs)
+      CONV_RULE BETA_CONV (← B.MP (← PINST [(ty, aty)] [(abs, P)] pth) th)
+  ).mapError (fun _ => "SELECT_RULE")
 
 /-- `SELECT_CONV`: rewrite `P((@) P)` to `?x. P x`.
     `pth = |- P((@) P) = (?) P`, `P = \`P:A->bool\``. -/
-def SELECT_CONV (pth : thm) (P : term) (tm : term) : Except String thm := do
+def SELECT_CONV (pth : thm) (P : term) (tm : term) : Except String thm :=
+  (do
   let is_epsok (t : term) : Bool :=
     is_select t &&
       (match dest_select t with
@@ -157,6 +159,7 @@ def SELECT_CONV (pth : thm) (P : term) (tm : term) : Except String thm := do
   let abs ← rand pickeps
   let ty := type_of (← bndvar abs)
   CONV_RULE (LAND_CONV BETA_CONV) (← PINST [(ty, aty)] [(abs, P)] pth)
+  ).mapError (fun _ => "SELECT_CONV")
 
 /- ---------------------------------------------------------------------- -/
 /- Classically based tactics. (See also COND_CASES_TAC later on.)         -/
@@ -178,6 +181,10 @@ def ASM_CASES_TAC (B : BoolThms) (EXCLUDED_MIDDLE : thm) (t : term) : tactic := 
 
 /- ---------------------------------------------------------------------- -/
 /- Set up a reasonable tautology checker for classical logic.             -/
+/- ---------------------------------------------------------------------- -/
+
+/- ---------------------------------------------------------------------- -/
+/- Redefine TAUT to freeze in the rewrites including COND.                -/
 /- ---------------------------------------------------------------------- -/
 
 /-- `TAUT tm`: classical tautology checker. Repeatedly propositional-rewrites,
@@ -214,14 +221,16 @@ def TAUT (B : BoolThms) (BOOL_CASES_AX : thm) (tm : term) : IO (Except String th
 
 /-- `CCONTR tm th`: classical contradiction. `pth = |- (~P ==> F) ==> P`,
     `Pv = \`P:bool\``. From `th = A, ~tm |- F` derive `A |- tm`. -/
-def CCONTR (B : BoolThms) (pth : thm) (Pv : term) (tm : term) (th : thm) : Except String thm := do
-  let tm' ← mk_neg tm
-  B.MP (← INST [(tm, Pv)] pth) (← B.DISCH tm' th)
+def CCONTR (B : BoolThms) (pth : thm) (Pv : term) (tm : term) (th : thm) : Except String thm :=
+  (do let tm' ← mk_neg tm
+      B.MP (← INST [(tm, Pv)] pth) (← B.DISCH tm' th)
+  ).mapError (fun _ => "CCONTR")
 
 /-- `CONTRAPOS_CONV tm`: `(P ==> Q) <=> (~Q ==> ~P)`. `pth = |- (a==>b)<=>(~b==>~a)`. -/
-def CONTRAPOS_CONV (pth : thm) (av bv : term) (tm : term) : Except String thm := do
-  let (P, Q) ← Basics.dest_imp tm
-  INST [(P, av), (Q, bv)] pth
+def CONTRAPOS_CONV (pth : thm) (av bv : term) (tm : term) : Except String thm :=
+  (do let (P, Q) ← Basics.dest_imp tm
+      INST [(P, av), (Q, bv)] pth
+  ).mapError (fun _ => "CONTRAPOS_CONV")
 
 /- ---------------------------------------------------------------------- -/
 /- A classicalal "refutation" tactic.                                     -/
@@ -240,10 +249,22 @@ def REFUTE_THEN (B : BoolThms) (conv : ioconv) (f_tm : term) (ttac : thm_tactic)
 /- Tactic for splitting over an arbitrarily chosen conditional.           -/
 /- ---------------------------------------------------------------------- -/
 
+/-- The prepared `COND_ELIM_CONV`, built on first use. -/
+initialize condElimCache : IO.Ref (Option (thm × ioconv)) ← IO.mkRef none
+
 /-- `COND_ELIM_CONV`: `P (if c then x else y) <=> (c ==> P x) /\ (~c ==> P y)`.
     `COND_ELIM_THM` is the corresponding theorem. -/
-def COND_ELIM_CONV (B : BoolThms) (COND_ELIM_THM : thm) : ioconv := fun tm =>
-  Drule.HIGHER_REWRITE_CONV B [COND_ELIM_THM] true tm
+def COND_ELIM_CONV (B : BoolThms) (COND_ELIM_THM : thm) : ioconv := fun tm => do
+  -- class.ml 403 builds `HIGHER_REWRITE_CONV[COND_ELIM_THM] true` once; the
+  -- prepared conversion is cached here, keyed on the theorem.
+  match ← condElimCache.get with
+  | some (th, c) => if th == COND_ELIM_THM then c tm else build tm
+  | none => build tm
+where
+  build (tm : term) : IO (Except String thm) := do
+    match ← Drule.HIGHER_REWRITE_CONV_ths B [COND_ELIM_THM] with
+    | .error e => return .error e
+    | .ok c => do condElimCache.set (some (COND_ELIM_THM, c true)); c true tm
 
 /-- `COND_CASES_TAC`: split the goal over an arbitrary conditional.
     `denegPth = |- ~ ~p <=> p`. -/

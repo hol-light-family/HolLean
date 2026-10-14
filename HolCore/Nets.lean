@@ -31,9 +31,8 @@ inductive term_label where
 
 /- ---------------------------------------------------------------------- -/
 /- Edges out of a net node are split by label kind. The Vnet edge is      -/
-/- unique (so it's a direct field, looked up in O(1)); the others are     -/
-/- persistent balanced trees keyed by (string * int) or int with          -/
-/- monomorphic comparators. This gives O(log n) per-edge lookup.          -/
+/- unique (a direct Option field); the others are association lists kept  -/
+/- sorted by (string * int) or int key.                                   -/
 /- ---------------------------------------------------------------------- -/
 
 @[reducible] def Sikey := String × Int
@@ -108,20 +107,23 @@ private def label_to_store (lconsts : List term) (tm : term) :
   else
     return (.Vnet, [])
 
-private partial def set_insert [Ord α] (x : α) (l : List α) : List α :=
-  let rec go : List α → Option (List α)
+/-- `enter` with nets.ml's `canon_eq`/`canon_lt` passed in.  OCaml uses
+    polymorphic `compare`, catching `Invalid_argument` (raised on functional
+    values) as `false`; `enter` gives them for an `Ord` type, `enter'` for
+    elements that are functions, and `Simp.enter_gconv` for `(priority, conv)`
+    pairs. -/
+partial def enterBy (canon_eq canon_lt : α → α → Bool) (lconsts : List term)
+    (tmelem : term × α) (nt : net α) : IO (Except String (net α)) :=
+  let (tm, elem) := tmelem
+  let rec sinsert (x : α) : List α → Option (List α)
     | [] => some [x]
     | h :: t =>
-      match compare h x with
-      | .eq => none
-      | _   => if compare x h == .lt then some (x :: h :: t)
-                else (go t).map (h :: ·)
-  (go l).getD l
-
-partial def enter [Ord α] (lconsts : List term) (tmelem : term × α) (nt : net α) :
-    IO (Except String (net α)) :=
-  let (tm, elem) := tmelem
-  let rec upd (elem : α) (tms : List term) (nt : net α) : ExceptT String IO (net α) := do
+      if canon_eq h x then none
+      else if canon_lt x h then some (x :: h :: t)
+      else (sinsert x t).map (h :: ·)
+  let set_insert (x : α) (l : List α) : List α := (sinsert x l).getD l
+  let rec net_update (elem : α) (tms : List term) (nt : net α) :
+      ExceptT String IO (net α) := do
     let (.Netnode r) := nt
     match tms with
     | [] => return .Netnode { r with tips := set_insert elem r.tips }
@@ -130,46 +132,30 @@ partial def enter [Ord α] (lconsts : List term) (tmelem : term × α) (nt : net
         let rest := ntms ++ rtms
         match label with
         | .Vnet =>
-            let child ← upd elem rest ((r.vnet).getD empty_net)
+            let child ← net_update elem rest ((r.vnet).getD empty_net)
             return .Netnode { r with vnet := some child }
         | .Cnet k =>
-            let child ← upd elem rest ((amFind k r.cnets).getD empty_net)
+            let child ← net_update elem rest ((amFind k r.cnets).getD empty_net)
             return .Netnode { r with cnets := amAdd k child r.cnets }
         | .Lcnet k =>
-            let child ← upd elem rest ((amFind k r.lcnets).getD empty_net)
+            let child ← net_update elem rest ((amFind k r.lcnets).getD empty_net)
             return .Netnode { r with lcnets := amAdd k child r.lcnets }
         | .Lnet k =>
-            let child ← upd elem rest ((amFind k r.lnets).getD empty_net)
+            let child ← net_update elem rest ((amFind k r.lnets).getD empty_net)
             return .Netnode { r with lnets := amAdd k child r.lnets }
-  (upd elem [tm] nt).run
+  (net_update elem [tm] nt).run
 
-/-- Insert a new element into a net WITHOUT deduplication (appends to tips).
-    Needed for elements that have no `Ord` instance — e.g. `gconv = Int × conv`
-    whose conversion component is a function.  Otherwise identical to `enter`. -/
-partial def enter' (lconsts : List term) (tmelem : term × α) (nt : net α) :
+/-- Insert a new element into a net. -/
+def enter [Ord α] (lconsts : List term) (tmelem : term × α) (nt : net α) :
     IO (Except String (net α)) :=
-  let (tm, elem) := tmelem
-  let rec upd (elem : α) (tms : List term) (nt : net α) : ExceptT String IO (net α) := do
-    let (.Netnode r) := nt
-    match tms with
-    | [] => return .Netnode { r with tips := r.tips ++ [elem] }
-    | tm :: rtms => do
-        let (label, ntms) ← label_to_store lconsts tm
-        let rest := ntms ++ rtms
-        match label with
-        | .Vnet =>
-            let child ← upd elem rest ((r.vnet).getD empty_net)
-            return .Netnode { r with vnet := some child }
-        | .Cnet k =>
-            let child ← upd elem rest ((amFind k r.cnets).getD empty_net)
-            return .Netnode { r with cnets := amAdd k child r.cnets }
-        | .Lcnet k =>
-            let child ← upd elem rest ((amFind k r.lcnets).getD empty_net)
-            return .Netnode { r with lcnets := amAdd k child r.lcnets }
-        | .Lnet k =>
-            let child ← upd elem rest ((amFind k r.lnets).getD empty_net)
-            return .Netnode { r with lnets := amAdd k child r.lnets }
-  (upd elem [tm] nt).run
+  enterBy (fun x y => compare x y == .eq) (fun x y => compare x y == .lt) lconsts tmelem nt
+
+/-- `enter` for elements that are functions: OCaml's `compare` raises on
+    them, so `canon_eq` and `canon_lt` are both `false` and the element goes
+    at the end of the tips. -/
+def enter' (lconsts : List term) (tmelem : term × α) (nt : net α) :
+    IO (Except String (net α)) :=
+  enterBy (fun _ _ => false) (fun _ _ => false) lconsts tmelem nt
 
 /- ---------------------------------------------------------------------- -/
 /- Look up a term in a net and return possible matches.                   -/

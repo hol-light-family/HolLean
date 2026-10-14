@@ -96,7 +96,10 @@ private def IMPLICATE (B : BoolThms) (t : term) : Except String thm := do
 
 /-- Reversible right rules: split /\, strip !, discharge ==>/~, split <=>. -/
 private def RIGHT_REVERSIBLE_TAC (B : BoolThms) : tactic :=
-  FIRST B [CONJ_TAC B, GEN_TAC B, DISCH_TAC B, EQ_TAC B]
+  FIRST B [CONJ_TAC B,   -- and
+           GEN_TAC B,    -- forall
+           DISCH_TAC B,  -- implies; not
+           EQ_TAC B]     -- iff
 
 /-- Try a list of tactics on a goal, returning the first success (IO tryfind). -/
 private def tryfindTac : List tactic → tactic := fun tacs g =>
@@ -119,11 +122,11 @@ private def LEFT_REVERSIBLE_TAC (B : BoolThms) (th : thm) : tactic := fun gl =>
       | .ok c => (CONJUNCTS_THEN' B (MP_TAC B) c g : IO (Except String goalstate))
       | .error e => return .error e
   tryfindTac
-    [ CONJUNCTS_THEN' B (ASSUME_TAC B) th,
-      DISJ_CASES_TAC B th,
-      CHOOSE_TAC B th,
-      notTac,
-      iffTac ] gl
+    [ CONJUNCTS_THEN' B (ASSUME_TAC B) th,  -- and
+      DISJ_CASES_TAC B th,                  -- or
+      CHOOSE_TAC B th,                      -- exists
+      notTac,                               -- not
+      iffTac ] gl                           -- iff
 
 /-- The core intuitionistic search tactic: `ITAUT_TAC mvs n` searches to
     depth `n` with metavariables `mvs`. -/

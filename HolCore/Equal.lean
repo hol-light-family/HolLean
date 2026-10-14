@@ -1,5 +1,6 @@
 /- File: Equal.lean
 Basic equality reasoning including conversionals.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Lean4 translation by Chris Walton 2026 -/
@@ -160,7 +161,7 @@ def FIRST_CONV (cs : List conv) : conv :=
   fun tm =>
     match end_itlist (fun c1 c2 => ORELSEC c1 c2) cs with
     | .ok c    => c tm
-    | .error _ => failwith "FIRST_CONV"
+    | .error e => .error e
 
 /-- Apply every conversion in the list in sequence. -/
 def EVERY_CONV (l : List conv) : conv :=
@@ -214,9 +215,9 @@ def COMB2_CONV (lconv rconv : conv) (tm : term) : Except String thm :=
 /-- Apply one conversion to both operator and operand of an application. -/
 def COMB_CONV : conv → conv := W COMB2_CONV
 
-/- NOTE: the fallback branch uses a pure `variant (frees bod) (mk_var "_" …)`
-   in place of OCaml's `IO` `genvar` (to keep `conv` pure). -/
-/-- Apply a conversion to the body of an abstraction. -/
+/-- Apply a conversion to the body of an abstraction.
+    The fallback branch uses a pure `variant (frees bod) (mk_var "_" …)` in
+    place of OCaml's `IO` `genvar`, to keep `conv` pure. -/
 def ABS_CONV (c : conv) (tm : term) : Except String thm := do
   let (v, bod) ← dest_abs tm
   let th ← c bod

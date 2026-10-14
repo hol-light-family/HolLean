@@ -8,14 +8,14 @@ written by Michael Faerber and Cezary Kaliszyk.
   (c) Copyright, Joe Hurd, 2001
   (c) Copyright, Joe Leslie-Hurd, 2004
   (c) Copyright, Michael Faerber and Cezary Kaliszyk, 2014-2018.
+Distributed under the same license as HOL Light.
 
 Lean4 translation by Chris Walton 2026.
 
-Structure mirrors `metis.ml`: a large self-contained pure first-order prover
+Structure mirrors `metis.ml`: a self-contained pure first-order prover
 (`Metis_prover`, here namespace `HolCore.Metis.Prover`) followed by the HOL Light
-integration layer.  All bootstrap/mutable state (fresh-name generator, clause-id
-counter, `Random`, `split_limit`, verbosity refs) is confined to `Session.lean`;
-this module is a pure parameterized library with 0 `unsafe`. -/
+integration layer.  All mutable state (fresh-name generator, clause-id counter,
+`Random`, `split_limit`, verbosity refs) is confined to `Session.lean`. -/
 
 import HolCore.Bool
 import HolCore.Equal
@@ -178,6 +178,10 @@ namespace Useful
 
 def isDigit (c : Char) : Bool := '0' ≤ c && c ≤ '9'
 
+/- ---------------------------------------------------------------------- -/
+/- Exceptions.                                                             -/
+/- ---------------------------------------------------------------------- -/
+
 /-- `total f x = try Some (f x) with Failure _ -> None`, for `Except`-valued `f`. -/
 def total (f : α → Except String β) (x : α) : Option β :=
   match f x with | .ok y => some y | .error _ => none
@@ -187,6 +191,10 @@ partial def exp (m : α × α → α) (x : α) (y : Nat) (z : α) : α :=
   match y with
   | 0 => z
   | _ => exp m (m (x, x)) (y / 2) (if y % 2 = 0 then z else m (z, x))
+
+/- ---------------------------------------------------------------------- -/
+/- Comparisons.                                                            -/
+/- ---------------------------------------------------------------------- -/
 
 def revCompare (cmp : α → α → Int) (x y : α) : Int := cmp y x
 
@@ -1843,6 +1851,8 @@ def rhs (lit : literal) : Except String Term.term := Atom.rhs lit.2
 def typedSymbols (lit : literal) : Int := Atom.typedSymbols lit.2
 def nonVarTypedSubterms (lit : literal) : List (Term.path × Term.term) :=
   Atom.nonVarTypedSubterms lit.2
+
+/- Parsing and pretty-printing. -/
 
 def toString (lit : literal) : String := Formula.toString (toFormula lit)
 
@@ -5943,22 +5953,30 @@ namespace MetisPreterm
 
 open HolCore.Preterm (preterm dpty pretype_of_type preterm_of_term)
 
-/-- `mk_negp pt = ~pt` (as a preterm).  `~` obtained via `preterm_of_term`. -/
-def mk_negp (negp : preterm) (pt : preterm) : preterm := .Combp negp pt
+/-- `mk_negp pt = ~pt` (as a preterm).  `negp` is `preterm_of_term \`~\``,
+    an action: metis.ml parses the quotation on every call. -/
+def mk_negp (negp : IO preterm) (pt : preterm) : IO preterm := do
+  return .Combp (← negp) pt
 /-- `mk_eqp (ps,pt) = (= ps pt)`. -/
 def mk_eqp (ps pt : preterm) : preterm := .Combp (.Combp (.Constp "=" dpty) ps) pt
 def mk_conjp (conjp ps pt : preterm) : preterm := .Combp (.Combp conjp ps) pt
-def mk_disjp (disjp ps pt : preterm) : preterm := .Combp (.Combp disjp ps) pt
+def mk_disjp (disjp : IO preterm) (ps pt : preterm) : IO preterm := do
+  return .Combp (.Combp (← disjp) ps) pt
 
 /-- `list_mk_combp (h, t) = rev_itlist (fun x acc -> Combp (acc, x)) t h`. -/
 def list_mk_combp (h : preterm) (t : List preterm) : preterm :=
   HolCore.Lib.rev_itlist (fun x acc => preterm.Combp acc x) t h
 
 /-- `list_mk_disjp`: build a disjunction preterm (falsity for empty).
-    Takes the `F` and `\/` preterms as parameters (built from HOL constants). -/
-def list_mk_disjp (falsityp disjp : preterm) : List preterm → preterm
+    `falsityp` and `disjp` parse `F` and `\/` when run, as in metis.ml.
+    `itlist (curry mk_disjp) t h`: the innermost disjunction is built first. -/
+def list_mk_disjp (falsityp disjp : IO preterm) : List preterm → IO preterm
   | [] => falsityp
-  | h :: t => HolCore.Lib.itlist (fun x acc => mk_disjp disjp x acc) t h
+  | h :: t => go t h
+where
+  go : List preterm → preterm → IO preterm
+    | [], b => pure b
+    | x :: xs, b => do mk_disjp disjp x (← go xs b)
 
 /-- typechecking a preterm with constants fails,
     therefore we convert constants to variables before type checking
@@ -6036,11 +6054,11 @@ def preterm_of_atom (S : FolStores) (atm : Atom.atom) : IO (Except String preter
 
 /-- `preterm_of_literal`: negate the atom preterm if the polarity is false.
     `negp` = `preterm_of_term \`~\`` (supplied). -/
-def preterm_of_literal (S : FolStores) (negp : preterm) (lit : Literal.literal) :
+def preterm_of_literal (S : FolStores) (negp : IO preterm) (lit : Literal.literal) :
     IO (Except String preterm) := do
   match ← preterm_of_atom S lit.2 with
   | .error e => return .error e
-  | .ok pat => return .ok (if lit.1 then pat else MetisPreterm.mk_negp negp pat)
+  | .ok pat => if lit.1 then return .ok pat else return .ok (← MetisPreterm.mk_negp negp pat)
 
 def preterm_of_eq (S : FolStores) (st : Term.term × Term.term) : IO (Except String preterm) := do
   match ← preterm_of_fol_term S st.1, ← preterm_of_fol_term S st.2 with
@@ -6057,12 +6075,12 @@ def typecheck (env : List (String × HolCore.Preterm.pretype)) (pt : preterm) :
 
 /-- `typecheckl env`: type-check a list by disjoining, checking, and re-splitting.
     Needs the `F`/`\/` preterms for `list_mk_disjp`. -/
-def typecheckl (falsityp disjp : preterm) (env : List (String × HolCore.Preterm.pretype))
+def typecheckl (falsityp disjp : IO preterm) (env : List (String × HolCore.Preterm.pretype))
     (xs : List preterm) : ExceptT String IO (List term) := do
   match xs with
   | [] => return []
   | _ =>
-    let tm ← typecheck env (MetisPreterm.list_mk_disjp falsityp disjp xs)
+    let tm ← typecheck env (← MetisPreterm.list_mk_disjp falsityp disjp xs)
     return disjuncts tm
 
 def hol_of_term (S : FolStores) (env : List (String × HolCore.Preterm.pretype)) (tm : Term.term) :
@@ -6075,22 +6093,22 @@ def hol_of_atom (S : FolStores) (env : List (String × HolCore.Preterm.pretype))
   let pt ← (preterm_of_atom S atm : IO (Except String preterm))
   typecheck env pt
 
-def hol_of_literal (S : FolStores) (negp : preterm)
+def hol_of_literal (S : FolStores) (negp : IO preterm)
     (env : List (String × HolCore.Preterm.pretype)) (lit : Literal.literal) :
     ExceptT String IO term := do
   let pt ← (preterm_of_literal S negp lit : IO (Except String preterm))
   typecheck env pt
 
-def hol_of_clause (S : FolStores) (negp falsityp disjp : preterm)
+def hol_of_clause (S : FolStores) (negp falsityp disjp : IO preterm)
     (env : List (String × HolCore.Preterm.pretype)) (lits : List Literal.literal) :
     ExceptT String IO term := do
   let mut pts := []
   for lit in lits do
     pts := pts ++ [← (preterm_of_literal S negp lit : IO (Except String preterm))]
-  typecheck env (MetisPreterm.list_mk_disjp falsityp disjp pts)
+  typecheck env (← MetisPreterm.list_mk_disjp falsityp disjp pts)
 
 /-- `hol_of_substitution env = map dest_eq ∘ typecheckl env ∘ map preterm_of_eq`. -/
-def hol_of_substitution (S : FolStores) (falsityp disjp : preterm)
+def hol_of_substitution (S : FolStores) (falsityp disjp : IO preterm)
     (env : List (String × HolCore.Preterm.pretype)) (eqs : List (Term.term × Term.term)) :
     ExceptT String IO (List (term × term)) := do
   let mut pts := []
@@ -6413,9 +6431,9 @@ open HolCore.FirstOrder.Utils.List (concat_map filter_map)
 /-- Bundle of HOL primitives needed for reconstruction (Session supplies). -/
 structure MetisReconDeps where
   S : FolStores
-  negp : preterm
-  falsityp : preterm
-  disjp : preterm
+  negp : IO preterm
+  falsityp : IO preterm
+  disjp : IO preterm
   rules : Metis_rules.MetisRulesDeps
   EXCLUDED_MIDDLE : thm
   term_type_unify : term → term → HolCore.Drule.instantiation →
@@ -6426,14 +6444,6 @@ structure MetisReconDeps where
   DISJ_CANON_CONV : term → IO (Except String thm)
   PURE_ONCE_REWRITE_CONV : List thm → IO (Except String ioconv)
   Fterm : term                       -- the HOL falsity constant `F`
-
-/-- IO version of `PATH_CONV`: descend the `l`/`r`/`b` path applying `cnv`. -/
-partial def pathConvIOaux (cnv : ioconv) : List Char → ioconv
-  | [] => cnv
-  | 'l' :: t => HolCore.Simp.ratorConvIO (pathConvIOaux cnv t)
-  | 'r' :: t => HolCore.Simp.randConvIO (pathConvIOaux cnv t)
-  | _ :: t => HolCore.Simp.absConvIO (pathConvIOaux cnv t)
-def pathConvIO (s : String) (cnv : ioconv) : ioconv := pathConvIOaux cnv s.toList
 
 /-- `term_eq_mod_type t1 t2 tyinsts`: unify modulo type, requiring no term inst. -/
 def term_eq_mod_type (D : MetisReconDeps) (t1 t2 : term)
@@ -6628,7 +6638,7 @@ partial def hol_of_thm (B : BoolThms) (D : MetisReconDeps) (axioms : List thm) (
       let assumeHeq ← liftExcept (ASSUME heq)
       let rwConv ← (D.PURE_ONCE_REWRITE_CONV [assumeHeq]
                      : IO (Except String ioconv))
-      let conv : ioconv := pathConvIO hpath rwConv
+      let conv : ioconv := HolCore.Simp.pathConvIO hpath rwConv
       let hlitAssume ← liftExcept (ASSUME hlit)
       let hlit' ← (HolCore.Simp.convRuleIO conv hlitAssume : IO (Except String thm))
       if verb then
@@ -6705,6 +6715,7 @@ def FOL_PREPARE_TAC (B : BoolThms) (D : Meson.MesonTacDeps) (splitLimit : Int) (
       D.refuteThen assumeTac,
       Meson.POLY_ASSUME_TAC B gaThs,
       undischAll,
+      -- `~P ==> th1 ==> ... ==> thn ==> F`
       -- eliminate "select terms", e.g. Hilbert operators
       D.selectElim,
       -- MAP_EVERY is mapM for tactics

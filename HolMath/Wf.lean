@@ -1,5 +1,6 @@
 /- File: Wf.lean
 Theory of wellfounded relations.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Lean4 translation by Chris Walton 2026 -/
@@ -56,13 +57,7 @@ def setupWfInfixes : IO Unit := do
 /- The theorems established by this layer.                                -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The `wf.ml` theorems.
-
-    NOTE ON ONE NAME: the OCaml calls the transitive-chain theorem
-    `WF_DHAIN_TRANSITIVE`, which is a typo for `WF_DCHAIN_TRANSITIVE` (it sits
-    directly below `WF_DCHAIN`).  The corrected spelling is used here; HOL Light
-    references the typo'd name only from its `database.ml` name index, never
-    from a proof, so nothing depends on it. -/
+/-- The `wf.ml` theorems. -/
 structure WfThms where
   WF                   : thm
   WF_EQ                : thm
@@ -493,55 +488,59 @@ def setupWf [HolBase]
            (!f g x. (!z. z << x ==> (f z = g z)) ==> (H f x = H g x)) /\
            (!f x y. P f x /\ y << G f x ==> y << x)
            ==> ?f:A->B. !x. f x = if P f x then f(G f x) else H f x"
-   (REPEAT STRIP_TAC THEN
-    CHOOSE_THEN MP_TAC
-     (← prove_inductive_relations_exist
-       (← q r"(!x:A. ~(P f x) ==> terminates f x) /\
-        (!x. P (f:A->B) x /\ terminates f (G f x) ==> terminates f x)")) THEN
-    REWRITE_TAC [FORALL_AND_THM] THEN
-    DISCH_THEN (STRIP_ASSUME_TAC o GSYM) THEN
-    SUBGOAL_THEN
-     (← q r"?while. !f:A->B x:A. while f x = if P f x then while f (G f x) else x")
-     (STRIP_ASSUME_TAC o GSYM)
-    THENL [REWRITE_TAC [← GSYM SKOLEM_THM, WF_REC_TAIL], ALL_TAC] THEN
-    SUBGOAL_THEN
-     (← q r"?f:A->B. !x. f x = if terminates f x then H f (while f x :A) else anything")
-    MP_TAC THENL
-     [FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP WF_REC) THEN
-      REPEAT STRIP_TAC THEN MATCH_MP_TAC (← MESON []
+   (← do
+    let t1 ← TAUT (← q r"a ==> b ==> c <=> b ==> a ==> c")
+    let m1 ← MESON []
        (← q r"(a = b) /\ (a /\ b ==> (x = y) /\ (f x = g x))
-        ==> ((if a then f x else d) = (if b then g y else d))")) THEN
-      REPEAT STRIP_TAC THENL
-       [SUBGOAL_THEN
-         (← q r"!f g x.
-             (!x y. P f x /\ y << G (f:A->B) x ==> y << x) /\
-             (!y:A. (!z:A. z << y ==> z << x)
-                    ==> (P f y = P g y) /\ (G f y = G g y))
-                 ==> terminates f x ==> terminates g x")
-         (fun th => EQ_TAC THEN MATCH_MP_TAC th THEN ASM_MESON_TAC []) THEN
-        GEN_TAC THEN GEN_TAC THEN
-        REWRITE_TAC [RIGHT_FORALL_IMP_THM, IMP_CONJ] THEN DISCH_TAC THEN
-        ONCE_REWRITE_TAC [← TAUT (← q r"a ==> b ==> c <=> b ==> a ==> c")] THEN
-        FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC [],
+        ==> ((if a then f x else d) = (if b then g y else d))")
+    let pire ← prove_inductive_relations_exist
+       (← q r"(!x:A. ~(P f x) ==> terminates f x) /\
+        (!x. P (f:A->B) x /\ terminates f (G f x) ==> terminates f x)")
+    pure
+      (REPEAT STRIP_TAC THEN
+        CHOOSE_THEN MP_TAC pire THEN
+        REWRITE_TAC [FORALL_AND_THM] THEN
+        DISCH_THEN (STRIP_ASSUME_TAC o GSYM) THEN
         SUBGOAL_THEN
-         (← q r"!x:A. terminates (f:A->B) x /\
-                (!y:A. (!z:A. z << y ==> z << x)
-                       ==> (P f y <=> P g y) /\ (G f y :A = G g y))
-                ==> (while f x :A = while g x)")
-         (fun th => MATCH_MP_TAC th THEN ASM_MESON_TAC []) THEN
-        REWRITE_TAC [IMP_CONJ] THEN
-        FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC [],
-        FIRST_X_ASSUM MATCH_MP_TAC THEN
+         (← q r"?while. !f:A->B x:A. while f x = if P f x then while f (G f x) else x")
+         (STRIP_ASSUME_TAC o GSYM)
+        THENL [REWRITE_TAC [← GSYM SKOLEM_THM, WF_REC_TAIL], ALL_TAC] THEN
         SUBGOAL_THEN
-         (← q r"!f:A->B. (!x:A y:A. P f x /\ y << G f x ==> y << x)
-           ==> !x. terminates f x ==> !y. y << while f x ==> y << x")
-         (fun th => ASM_MESON_TAC [th]) THEN
-        GEN_TAC THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-        ASM_MESON_TAC []],
-      MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
-      DISCH_THEN (fun th => tactic_of do pure (ASSUME_TAC (← GSYM th) THEN MP_TAC th)) THEN
-      MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC (← q r"x:A") THEN
-      ASM_CASES_TAC (← q r"P (f:A->B) (x:A) :bool") THEN ASM_MESON_TAC []])
+         (← q r"?f:A->B. !x. f x = if terminates f x then H f (while f x :A) else anything")
+        MP_TAC THENL
+         [FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP WF_REC) THEN
+          REPEAT STRIP_TAC THEN MATCH_MP_TAC m1 THEN
+          REPEAT STRIP_TAC THENL
+           [SUBGOAL_THEN
+             (← q r"!f g x.
+                 (!x y. P f x /\ y << G (f:A->B) x ==> y << x) /\
+                 (!y:A. (!z:A. z << y ==> z << x)
+                        ==> (P f y = P g y) /\ (G f y = G g y))
+                     ==> terminates f x ==> terminates g x")
+             (fun th => EQ_TAC THEN MATCH_MP_TAC th THEN ASM_MESON_TAC []) THEN
+            GEN_TAC THEN GEN_TAC THEN
+            REWRITE_TAC [RIGHT_FORALL_IMP_THM, IMP_CONJ] THEN DISCH_TAC THEN
+            ONCE_REWRITE_TAC [t1] THEN
+            FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC [],
+            SUBGOAL_THEN
+             (← q r"!x:A. terminates (f:A->B) x /\
+                    (!y:A. (!z:A. z << y ==> z << x)
+                           ==> (P f y <=> P g y) /\ (G f y :A = G g y))
+                    ==> (while f x :A = while g x)")
+             (fun th => MATCH_MP_TAC th THEN ASM_MESON_TAC []) THEN
+            REWRITE_TAC [IMP_CONJ] THEN
+            FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC [],
+            FIRST_X_ASSUM MATCH_MP_TAC THEN
+            SUBGOAL_THEN
+             (← q r"!f:A->B. (!x:A y:A. P f x /\ y << G f x ==> y << x)
+               ==> !x. terminates f x ==> !y. y << while f x ==> y << x")
+             (fun th => ASM_MESON_TAC [th]) THEN
+            GEN_TAC THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+            ASM_MESON_TAC []],
+          MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN
+          DISCH_THEN (fun th => tactic_of do pure (ASSUME_TAC (← GSYM th) THEN MP_TAC th)) THEN
+          MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC (← q r"x:A") THEN
+          ASM_CASES_TAC (← q r"P (f:A->B) (x:A) :bool") THEN ASM_MESON_TAC []]))
 
   return { WF, WF_EQ, WF_IND, WF_DCHAIN, WF_DCHAIN_TRANSITIVE, WF_UREC, WF_UREC_WF,
            WF_REC_INVARIANT, WF_REC, WF_REC_WF, WF_EREC, WF_REC_EXISTS, WF_SUBSET,
@@ -554,11 +553,9 @@ def setupWf [HolBase]
 /- ---------------------------------------------------------------------- -/
 
 /-- The two theorems `WF_INDUCT_TAC` proves when wf.ml defines it (its
-    `let qqconv = let pth = prove ...` and `eqconv`).  Kept OUT of `setupWf`:
-    proving them there parses them in a parser type-context already
-    constrained by the surrounding `wf.ml` term parses, which fixes their
-    polymorphic type variables and breaks the `GEN_REWRITE_CONV`/`REWR_CONV`
-    matching under a binder. -/
+    `qqconv`/`eqconv` `pth`s).  Kept out of `setupWf`: proving them there fixes
+    their polymorphic type variables under the surrounding parse context, which
+    breaks the `GEN_REWRITE_CONV`/`REWR_CONV` matching under a binder. -/
 @[nospecialize]
 def setupWfInductPths [HolBase] (MESON_TAC : List thm → tactic) :
     ExceptT String IO (thm × thm) := do

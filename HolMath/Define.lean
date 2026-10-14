@@ -4,62 +4,16 @@ Automated support for general recursive definitions.
 Original (c) Copyright, John Harrison 1998-2007
 Lean4 translation by Chris Walton 2026
 
-  This is the last file `hol_lib.ml` loads.  Nothing follows
-  `loads "define.ml"` except `check_axioms ()`, which asserts that only
-  INFINITY_AX, SELECT_AX and ETA_AX were ever introduced, so this file
-  completes the HOL Light core library.
+  The last file of the HOL Light core library.  `define` is the user-facing
+  entry point: it accepts a general recursive definition (a conjunction of
+  clauses that may use pattern matching) and discharges the proof obligations
+  automatically, by proving admissibility, reducing the clauses to a single
+  `CASEWISE` application, and appealing to wellfounded recursion.
 
-  What it provides.  `define` (957) is the user-facing entry point: it
-  accepts a general recursive definition, written as a conjunction of
-  clauses that may use pattern matching, and discharges the proof
-  obligations automatically.  Underneath, the file proves that a
-  definition is *admissible* (the recursive calls are on smaller
-  arguments), reduces the clauses to a single `CASEWISE` application, and
-  then appeals to wellfounded recursion.
-
-  The file is ML-dominated, like impconv.ml and normalizer.ml, and its
-  shape is decided by one enormous binding.  define.ml 467-469 is
-      let instantiate_casewise_recursion,
-          pure_prove_recursive_function_exists,
-          prove_general_recursive_function_exists =
-  a single `let` binding three names whose body runs to line 953 - 487
-  lines, nearly half the file.  Its seven documented sub-sections (472,
-  528, 546, 599, 692, 811, 854) are all inside that one binding, so they
-  are local helpers, not top-level names.
-
-  Prerequisites.  The pattern-matching constants this file leans on most
-  heavily - `_MATCH`, `GEQ`, `_SEQPATTERN`, `_UNGUARDED_PATTERN`,
-  `_GUARDED_PATTERN` - come from `pair.ml` 29-38, and on our side they are
-  fields of `HolMath.Pair.PairDefs`, with the leading underscores dropped
-  from the Lean field names: `SEQPATTERN`, `UNGUARDED_PATTERN`,
-  `GUARDED_PATTERN`, `MATCH`, plus `GEQ_DEF`.  `list_RECURSION` and
-  `WF_REC_TAIL_GENERAL` are bare Session accessors.
-
-  Section map (define.ml line ranges):
-      10- 25  CASEWISE_DEF, the constant supporting casewise definitions
-      26- 47  conditions for all the clauses of a casewise definition to hold
-      48- 69  admissible, tailadmissible, superadmissible
-      70- 78  a lemma (MATCH_SEQPATTERN)
-      79-222  the admissibility combinators - twenty theorems
-     223-356  superadmissible generalizations where applicable.  The OCaml
-              carries an unusually long explanatory comment here: the
-              "higher type" route cannot be taken in ADMISSIBLE_MATCH
-              because that is not a context where tail recursion makes
-              sense, and there is "some delicacy over assessing
-              welldefinedness"
-     357-463  combining the general WF/tail-recursion theorem with casewise
-              definitions
-     464-953  the main suite, one binding, three names:
-              472-527  basic simplification of welldefinedness conjunctions
-              528-545  simplifying an existential question about a pattern
-              546-598  hacking a proforma to introduce pairing/pattern vars
-              599-691  hack and apply
-              692-810  instantiating the casewise recursion theorem, with a
-                       first attempt at simplifying the distinctness clause
-              811-853  justifying the existence assertion and removing
-                       side-conditions
-              854-953  the same, but guessing the wellfoundedness hypothesis
-     954-1028  the simple `define` function
+  The pattern-matching constants it leans on (`_MATCH`, `GEQ`, `_SEQPATTERN`,
+  `_UNGUARDED_PATTERN`, `_GUARDED_PATTERN`) come from `pair.ml` and are fields
+  of `HolMath.Pair.PairDefs` with the leading underscores dropped
+  (`MATCH`, `SEQPATTERN`, `UNGUARDED_PATTERN`, `GUARDED_PATTERN`, `GEQ_DEF`).
 -/
 
 import HolMath.Cart
@@ -90,24 +44,14 @@ open HolLight HolLight.Syntax
     and the three theorems giving the conditions for all clauses of a casewise
     definition to hold.
 
-    `CASEWISE_DEF` (13) is the file's ONLY `new_recursive_definition`, taken
-    over `list_RECURSION`.  `new_recursive_definition` is a SIDE-EFFECTING
-    kernel primitive (it introduces a constant via `new_specification`), so -
-    exactly as cart.ml threads `new_definition`/`new_type_definition` - it is
-    passed into this pure HolMath layer as a PARAMETER from Session (its exact
-    signature is `ax : thm -> tm : term -> IO (Except String thm)`, `ax` being
-    the recursion theorem `list_RECURSION`).  This layer carries ZERO `unsafe`.
+    `CASEWISE_DEF` (13) is the file's only `new_recursive_definition` (over
+    `list_RECURSION`), threaded in from Session as a parameter so this layer
+    stays pure.  `CASEWISE` (19), `CASEWISE_CASES` (29) and `CASEWISE_WORKS`
+    (39) are plain `prove`s.
 
-    `CASEWISE` (19), `CASEWISE_CASES` (29) and `CASEWISE_WORKS` (39) are plain
-    `prove`s.  Everything later in define.ml rests on these, so the statements
-    are transcribed VERBATIM.
-
-    Depends on `list_RECURSION` and `list_INDUCT` (bare Session accessors), the
-    pair theorems `FORALL_PAIR_THM`/`PAIR_EQ`, the list theorems
-    `MEM`/`ALL_MEM` (the `ALL` constant appears only symbolically in the
-    `CASEWISE_WORKS` statement, never as a rewrite, so it is NOT threaded), and
-    the decision procedures `MESON_TAC`/`ASM_MESON_TAC`.  ZERO `o`-compositions
-    in the range; all four proofs are straight `THEN` chains. -/
+    Depends on `list_RECURSION`/`list_INDUCT`, the pair theorems
+    `FORALL_PAIR_THM`/`PAIR_EQ`, the list theorems `MEM`/`ALL_MEM`, and
+    `MESON_TAC`/`ASM_MESON_TAC`. -/
 structure DefineCasewise where
   /-- `CASEWISE_DEF` (define.ml 13): the primitive-recursive definition
       `(CASEWISE [] f x = @y. T) /\ (CASEWISE (CONS h t) f x = if ?y. FST h y =
@@ -202,13 +146,8 @@ def setupDefineCasewise [HolBase]
     tailadmissible.  This is the version the combinators actually chain.
 
     `MATCH_SEQPATTERN` (73) rewrites `_MATCH x (_SEQPATTERN r s)` into the
-    conditional form, using `_MATCH` and `_SEQPATTERN` from `pair.ml`.  The
-    constants come from `HolMath.Pair.PairDefs` with leading underscores
-    DROPPED: `pairAux.MATCH` and `pairAux.SEQPATTERN`.
-
-    ZERO `o`-compositions in the range.  ZERO THENL sites.  The three
-    definitions are straight `new_definition` calls; the lemma is a straight
-    `THEN` chain `REWRITE_TAC[_MATCH;_SEQPATTERN] THEN MESON_TAC[]`. -/
+    conditional form, using `_MATCH` and `_SEQPATTERN` from `pair.ml`
+    (`HolMath.Pair.PairDefs`, with leading underscores dropped). -/
 structure DefineAdmissible where
   /-- `admissible` (define.ml 51):
       `admissible(<<) p s t <=>
@@ -276,50 +215,24 @@ def setupDefineAdmissible [HolBase]
     admissible, tailadmissible, superadmissible, MATCH_SEQPATTERN }
 
 /-- define.ml 79-222: the fifteen admissibility combinators, `ADMISSIBLE_CONST`
-    (82) through `ADMISSIBLE_MATCH_SEQPATTERN` (211).  (The source contains
-    exactly fifteen `^let ... = prove` bindings in this range, extracted with a
-    regex; there is no larger count.)
+    (82) through `ADMISSIBLE_MATCH_SEQPATTERN` (211).
 
-    Every one elaborates the single `admissible` definition (define.ml 51,
-    threaded here as `admissible`): each says that if a definition's SUBTERMS
-    are admissible then a particular COMPOUND term built from them is
-    admissible.  These are the workhorses the `define` proof suite chains
-    automatically once the file is complete, so each statement is transcribed
-    VERBATIM and every proof preserved character for character - a weakened
-    statement would silently narrow the class of definitions `define` accepts,
-    not fail locally.
+    Each elaborates the single `admissible` definition (define.ml 51): if a
+    definition's subterms are admissible then a particular compound term built
+    from them is admissible.  These are the workhorses the `define` proof suite
+    chains automatically.
 
-    They form ONE contiguous OCaml section and share one dependency set, so
-    they live in ONE bundle.  `ADMISSIBLE_MATCH_SEQPATTERN` (211) rewrites with
-    `ADMISSIBLE_COND` (117) proved earlier in the same bundle, so a split would
-    sever an internal reference.
+    Three combinators reach outside define.ml for their supporting theorems:
+    `ADMISSIBLE_NSUM` (182) uses `nsum`/`NSUM_EQ_NUMSEG`, `ADMISSIBLE_SUM` (190)
+    uses `sum`/`SUM_EQ_NUMSEG` (a different constant at `:real`), and
+    `ADMISSIBLE_MAP` (198) uses `MAP`/`MAP_EQ`/`ALL_MEM`; all threaded as
+    ordinary `thm`s.
 
-    CROSS-FILE REACH (three combinators leave define.ml):
-      * `ADMISSIBLE_NSUM` (182) uses `nsum` (iterate.ml 1288, at `:num`) and is
-        proved by `NSUM_EQ_NUMSEG` (iterate.ml 1796) - both from the Iterate
-        layer's `IterateNsum3` bundle.
-      * `ADMISSIBLE_SUM` (190) uses `sum` (iterate.ml 1984, at `:real`, NOT the
-        same constant as `nsum`) and is proved by `SUM_EQ_NUMSEG`
-        (iterate.ml 2615) - the Iterate layer's `IterateSum3` bundle.
-      * `ADMISSIBLE_MAP` (198) uses `MAP` (lists.ml) and is proved by `MAP_EQ`
-        and `ALL_MEM` - the Lists layer's `ListThms1` bundle.
-    All four supporting theorems (`NSUM_EQ_NUMSEG`, `SUM_EQ_NUMSEG`, `MAP_EQ`,
-    `ALL_MEM`) are threaded as ordinary `thm`s from Session.
-
-    PATTERN-MATCHING CONSTANTS.  `ADMISSIBLE_MATCH` (129), `ADMISSIBLE_SEQPATTERN`
-    (136), `ADMISSIBLE_UNGUARDED_PATTERN` (146), `ADMISSIBLE_GUARDED_PATTERN`
-    (162) and `ADMISSIBLE_MATCH_SEQPATTERN` (211) rewrite with the `pair.ml`
-    constants, which on our side are `HolMath.Pair.PairDefs` fields with the
-    LEADING UNDERSCORES DROPPED: `pairAux.MATCH` (`_MATCH`), `pairAux.SEQPATTERN`
-    (`_SEQPATTERN`), `pairAux.UNGUARDED_PATTERN` (`_UNGUARDED_PATTERN`),
-    `pairAux.GUARDED_PATTERN` (`_GUARDED_PATTERN`) and `pairAux.GEQ_DEF`
-    (`GEQ_DEF`).  `MATCH_SEQPATTERN` (define.ml 73) is threaded from the
-    `DefineAdmissible` bundle.
-
-    ZERO `o`-compositions in the range.  ONE THENL site: define.ml 206 in
-    `ADMISSIBLE_MAP`, width 2, branch list `[ASM_MESON_TAC[]; ALL_TAC]`, with a
-    trailing `THEN MATCH_MP_TAC ...` that applies to ALL survivors and so is
-    built with a further `THEN` OUTSIDE the `THENL`. -/
+    The pattern-matching combinators (`ADMISSIBLE_MATCH`,
+    `ADMISSIBLE_SEQPATTERN`, `ADMISSIBLE_UNGUARDED_PATTERN`,
+    `ADMISSIBLE_GUARDED_PATTERN`, `ADMISSIBLE_MATCH_SEQPATTERN`) rewrite with
+    the `pair.ml` constants, which are `HolMath.Pair.PairDefs` fields with the
+    leading underscores dropped. -/
 structure DefineAdmissibleThms where
   /-- `ADMISSIBLE_CONST` (define.ml 82):
       `!p s c. admissible(<<) p s (\f. c)`.  `REWRITE_TAC[admissible]`. -/
@@ -622,71 +535,18 @@ def setupDefineAdmissibleThms [HolBase]
 
 /-- define.ml 223-356: the seven superadmissible generalizations,
     `ADMISSIBLE_IMP_SUPERADMISSIBLE` (233) through
-    `SUPERADMISSIBLE_MATCH_GUARDED_PATTERN` (330).  (The source contains
-    exactly SEVEN `^let ... = prove` bindings in this range, extracted with a
-    regex on `^let `; the prompt's "eight" was off by one - there is no eighth
-    name.)
+    `SUPERADMISSIBLE_MATCH_GUARDED_PATTERN` (330).
 
-    Each generalizes an admissibility fact into a SUPERADMISSIBLE one: the
+    Each generalizes an admissibility fact into a superadmissible one: the
     tail-recursive refinement `define` actually chains.  The base step is
     `ADMISSIBLE_IMP_SUPERADMISSIBLE` (233), proved directly from the three
     definitions; the remaining six build on it or on `SUPERADMISSIBLE_COND`.
 
-    Proof shapes in this range:
-      * Two BARE one-liners: `SUPERADMISSIBLE_CONST` (244,
-        `MATCH_MP_TAC ADMISSIBLE_IMP_SUPERADMISSIBLE THEN REWRITE_TAC[...]`)
-        and `SUPERADMISSIBLE_MATCH_SEQPATTERN` (295, a single
-        `REWRITE_TAC[MATCH_SEQPATTERN; SUPERADMISSIBLE_COND]`).
-      * Three short structured proofs sharing one shape - unfold the defs,
-        `REPEAT STRIP_TAC`, `MAP_EVERY EXISTS_TAC [..three..]`, close with
-        `ASM_MESON_TAC[]`: `ADMISSIBLE_IMP_SUPERADMISSIBLE` (233) and
-        `SUPERADMISSIBLE_TAIL` (250).
-      * Two HEAVY pattern proofs, near-identical to each other -
-        `SUPERADMISSIBLE_MATCH_UNGUARDED_PATTERN` (306, span 24) and
-        `SUPERADMISSIBLE_MATCH_GUARDED_PATTERN` (330, span 27): unfold via the
-        `pairAux` constants, a `SUBGOAL_THEN ... (fun th -> SIMP_TAC[th])`
-        step split `THENL [ASM_MESON_TAC[]; ALL_TAC]`, then a three-way
-        `MAP_EVERY EXISTS_TAC`, `RULE_ASSUM_TAC(REWRITE_RULE[admissible])`,
-        `SIMP_TAC[]`, `ASM_MESON_TAC[]`.
-      * THE HEAVIEST: `SUPERADMISSIBLE_COND` (262, span 33) - a long THEN
-        chain with THREE THENL sites, two thm-tactic closures over `th`, one
-        `MAP_EVERY X_GEN_TAC` over six vars, a `TAUT`-rewrite, and the range's
-        ONE `o`-composition.
-
-    THE ONE `o`-COMPOSITION (define.ml 288, in `SUPERADMISSIBLE_COND`):
-    `POP_ASSUM_LIST(MP_TAC o end_itlist CONJ)`.  `o` applies its RIGHT operand
-    FIRST: `end_itlist CONJ` folds the popped assumption list into a single
-    right-associated conjunction, THEN `MP_TAC` moves it onto the goal.
-    Rendered right-to-left as `fun ths => MP_TAC (end_itlistM B.CONJ ths)`,
-    guarding the `Except` from `CONJ`.
-
-    THENL SITES (all in `SUPERADMISSIBLE_COND`):
-      * define.ml 274 `ANTS_TAC THENL [ASM_MESON_TAC[]; ALL_TAC]` - width 2,
-        2 branches.  Trailing `THEN DISCH_THEN(...)` is a further THEN.
-      * define.ml 276 `ANTS_TAC THENL [ASM_MESON_TAC[]; MP_TAC th]` - width 2,
-        2 branches, INSIDE the `DISCH_THEN(fun th -> ...)` closure.
-      * define.ml 286 `REPEAT(MATCH_MP_TAC MONO_AND THEN CONJ_TAC) THENL
-        [ASM_MESON_TAC[]; POP_ASSUM_LIST(...); ALL_TAC]` - width 3,
-        3 branches.  The trailing `THEN REWRITE_TAC[IMP_IMP; AND_FORALL_THM]`
-        applies to ALL survivors and is a further THEN OUTSIDE the branch list:
-        `let split := THENL B chain [..3..]`, then
-        `THEN B split (REWRITE_TAC ...)`.
-
-    PATTERN-MATCHING CONSTANTS.  `SUPERADMISSIBLE_MATCH_SEQPATTERN` (295),
-    `SUPERADMISSIBLE_MATCH_UNGUARDED_PATTERN` (306) and
-    `SUPERADMISSIBLE_MATCH_GUARDED_PATTERN` (330) use the `pair.ml` constants,
-    which on our side are `HolMath.Pair.PairDefs` fields with the LEADING
-    UNDERSCORES DROPPED: `pairAux.MATCH` (`_MATCH`), `pairAux.SEQPATTERN`
-    (`_SEQPATTERN`), `pairAux.UNGUARDED_PATTERN` (`_UNGUARDED_PATTERN`),
-    `pairAux.GUARDED_PATTERN` (`_GUARDED_PATTERN`), `pairAux.GEQ_DEF`
-    (`GEQ_DEF`) - NOT bare Session accessors.  `MATCH_SEQPATTERN`
-    (define.ml 73) and the three core definitions are threaded from the
-    `DefineAdmissible` bundle; `ADMISSIBLE_CONST`/`ADMISSIBLE_COND` from the
-    `DefineAdmissibleThms` bundle.
-
-    These generalize the admissibility combinators
-    of define.ml 79-222, so they form ONE contiguous OCaml section with one
-    dependency set and live in ONE bundle. -/
+    The three pattern-matching generalizations use the `pair.ml` constants,
+    which are `HolMath.Pair.PairDefs` fields with the leading underscores
+    dropped.  The three core definitions and `MATCH_SEQPATTERN` are threaded
+    from `DefineAdmissible`; `ADMISSIBLE_CONST`/`ADMISSIBLE_COND` from
+    `DefineAdmissibleThms`. -/
 structure DefineSuperadmissibleThms where
   /-- `ADMISSIBLE_IMP_SUPERADMISSIBLE` (define.ml 233):
       `!(<<) p s t:(A->B)->P->B.
@@ -1732,17 +1592,34 @@ def define [HolBase]
     let ajs ← liftExcept (ths.mapM (fun th => hd (hyp th)))
     let th ← ASSUME (← liftExcept (list_mk_conj ajs))
     pure (f, ← avs.foldrM GEN (← (CONJUNCTS th).foldrM PROVE_HYP (← end_itlist CONJ ths)))
+  -- If t is a benign redefinition of some constant, the left hand side(s) of
+  -- t is some Const.
+  -- If the constant has a polymorphic type, other occurrences of the constant
+  -- in the definition (t) may have different types.
+  -- However, when the constant was being defined, it could not have been
+  -- a constant but a variable with the same name; and the typing rule of Var
+  -- did not allow different occurrences of Var to have different types.
+  -- This discrepancy between typing rules of Const and Var makes the benign
+  -- redefinition check hard.
+  -- type_instantiate_defining_const addresses this problem by making every
+  -- occurrence of the defining constant have the same type.
   let type_instantiate_defining_const (t : term) : ExceptT String IO term := do
+    -- Assume that t is already strip_forall-ed.
+    -- Get the defining constant. This sequence is identical to the beginning
+    -- of close_definition_clauses.
     let cjs := conjuncts t
     let fs ← liftExcept (cjs.mapM headOf)
-    let f ← liftExcept (hd fs)
-    if !(is_const f) then return t
+    let f ← liftExcept (hd fs)  -- Arbitrarily choose one of the left hands
+    if !(is_const f) then return t  -- t cannot be a benign redefinition. Just return the input.
+    -- Instantiate type variables of all other occurrences of the 'f'
+    -- constant
     let fname := Printer.name_of f
     let f_occurs := find_terms
       (fun t' => is_const t' && Printer.name_of t' == fname && t' != f) t
     f_occurs.foldrM (fun f' t_updated => do
       liftExcept (Drule.instantiate (← term_match [] f' f) t_updated)) t
   let tm0 := (strip_forall tm).2
+  -- normalize tm' so that the defining constant have a same type
   tryWith (do
       let tm' ← type_instantiate_defining_const tm0
       let rec tryfindDef : List thm → ExceptT String IO (thm × thm)
@@ -1756,6 +1633,7 @@ def define [HolBase]
     (do
       let (f, th) ← close_definition_clauses tm
       if !(is_var f) then
+        -- If f is not Var, mk_exists will fail.
         let s ← Printer.string_of_term f
         throw s!"define: '{s}' is already defined"
       let etm ← liftExcept (do HolCore.Bool.mk_exists f (← hd (hyp th)))

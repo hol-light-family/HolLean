@@ -5,50 +5,12 @@ Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Lean4 translation by Chris Walton 2026
 
-`realarith.ml` sits on top of `calc_int.ml` (its `needs "calc_int.ml"`) and
-builds HOL Light's linear real decision procedure.  It has five parts:
-
-  1. DRIVING LEMMAS (16-160).  Twenty-nine consequences of the realax.ml
-     axioms, needed only to make the procedure below go through.  Two of them,
-     `REAL_POLY_CLAUSES` and `REAL_POLY_NEG_CLAUSES`, are the semiring and ring
-     clause bundles that both `REAL_ARITH` definitions feed to
-     `SEMIRING_NORMALIZERS_CONV`.
-
-  2. THE POSITIVSTELLENSATZ DATATYPE (166-177).  A ten-constructor algebraic
-     data type recording a refutation certificate - the first OCaml variant
-     type in this translation.
-
-  3. GEN_REAL_ARITH (185-379), the parametrized framework.
-
-  4. REAL_LINEAR_PROVER (385-489), which searches for refutations.
-
-  5. Two instantiations, 494-511 and 651-662.
-
-*** GEN_REAL_ARITH AND REAL_ARITH ARE EACH DEFINED TWICE IN THIS FILE. ***
-The OCaml says so itself.  At 178-183: GEN_REAL_ARITH "is a bootstrapping
-version, and subsequently gets overwritten twice with more specialized
-versions, once here and finally in `calc_rat.ml`".  At 512-515 the second one
-is "Slightly less parametrized GEN_REAL_ARITH with more intelligent elimination
-of abs, max and min hardwired in", and at 647-649 the second REAL_ARITH
-"Incorporate that.  This gets overwritten again in `calc_rat.ml`".
-
-OCaml simply shadows the earlier binding; Lean cannot, so they are numbered:
-
-  GEN_REAL_ARITH1  (185)  the bootstrapping framework.  ELEVEN-element
-                          parameter tuple, including two slots for
-                          abs-elimination conversions.  Consumed ONLY by
-                          REAL_ARITH1.
-  REAL_ARITH1      (494)  the bootstrapping instance: trivial abs-elim (both
-                          slots `NO_CONV`, with a separate `deabs_conv`
-                          rewrite applied first) and integer constants only.
-  GEN_REAL_ARITH2  (517)  abs/max/min elimination hardwired in, so the two
-                          conversion slots are gone: a NINE-element tuple.
-  REAL_ARITH2      (651)  the version the rest of HOL Light sees until
-                          `calc_rat.ml` overwrites it a third time.
-
-The same device was needed for `ind_types.ml`, where `define_type_raw` is
-defined three times.
--/
+HOL Light's linear real decision procedure.  OCaml defines `GEN_REAL_ARITH`
+and `REAL_ARITH` twice each by shadowing; Lean cannot shadow, so the two
+versions are numbered: `GEN_REAL_ARITH1`/`REAL_ARITH1` (the bootstrapping
+versions, with explicit abs-elimination conversion slots) and
+`GEN_REAL_ARITH2`/`REAL_ARITH2` (with abs/max/min elimination hardwired in).
+A third version arrives in `calc_rat.ml`. -/
 
 import HolMath.CalcInt
 import HolMath.Base
@@ -733,20 +695,11 @@ def contradictory (one_tm : term) (p : Rat → Bool)
     Fourier-Motzkin elimination over the inequalities.  Returns the
     contradictory `(e,p)` pair whose certificate refutes the system.
 
-    Two `try find ... with Failure _ ->` fallbacks (first on `lts`, then on
-    `les`) are rendered as pattern matches on the `Except` result of `find`:
-    `.ok` short-circuits, `.error` falls through - a genuine control-flow
-    fallback, not error propagation.  `one_tm` is `&1`.
-
-    Nested `itlist` folds (both fold from the RIGHT, matching OCaml `itlist`):
-      * `les' = itlist (fun ep1 -> itlist (addup ep1) lesp) lesn les0`
-        - outer over `lesn` (right fold), inner over `lesp` (right fold).
-      * `lts' = itlist (fun ep1 -> itlist (addup ep1) (lesp@ltsp)) ltsn
-                       (itlist (fun ep1 -> itlist (addup ep1) (lesn@ltsn)) ltsp
-                               lts0)`
-        - the SEED is itself a right fold of `addup ep1` over `lesn@ltsn`,
-          folded over `ltsp` (right); the OUTER right fold of `addup ep1` over
-          `lesp@ltsp` runs over `ltsn`, seeded by that inner result. -/
+    The OCaml `try find ... with Failure _ ->` fallbacks become pattern matches
+    on the `Except` result of `find` (`.ok` short-circuits, `.error` falls
+    through) - a control-flow fallback, not error propagation.  The nested
+    `itlist` folds are all right folds (see the inline comments); `one_tm` is
+    `&1`. -/
 partial def linear_ineqs (one_tm : term) (vars : List term)
     (les lts : List linForm) : Except String linForm :=
   match HolCore.Lib.find (contradictory one_tm (fun x => x > num_0)) lts with
@@ -797,7 +750,7 @@ partial def linear_ineqs (one_tm : term) (vars : List term)
     -- les' = itlist (fun ep1 -> itlist (addup ep1) lesp) lesn les0   (RIGHT fold)
     let les' := HolCore.Lib.itlist
       (fun ep1 acc => HolCore.Lib.itlist (addup ep1) lesp acc) lesn les0
-    -- lts' : nested RIGHT folds (see doc comment).
+    -- lts' : nested right folds.
     let ltsSeed := HolCore.Lib.itlist
       (fun ep1 acc => HolCore.Lib.itlist (addup ep1) (lesn ++ ltsn) acc) ltsp lts0
     let lts' := HolCore.Lib.itlist
@@ -805,17 +758,12 @@ partial def linear_ineqs (one_tm : term) (vars : List term)
     linear_ineqs one_tm (HolCore.Lib.subtract vars [v]) les' lts'
 
 /-- `linear_eqs (eqs,les,lts)` (realarith.ml 426-441): eliminate the equalities
-    one at a time, then hand off to `linear_ineqs`.  The `try find ... with
-    Failure _ ->` on `eqs` is again a control-flow fallback: `.ok` refutes
-    immediately, `.error` continues to the `match eqs`.
+    one at a time, then hand off to `linear_ineqs`.  The `find` on `eqs` is a
+    control-flow fallback as in `linear_ineqs`.
 
-    `xform` builds `Eqmul(term_of_rat k, p)` and `Product(Rational_lt(abs_num
-    c), q)`.  `k = minus_num d */ abs_num c // c` - OCaml `*/` and `//` are
-    LEFT-ASSOCIATIVE and of equal precedence, so this parses as
-    `((minus_num d) */ (abs_num c)) // c`, i.e. `((-d) * abs_num c) / c`.
-    `term_of_rat` needs the `RatSyntax` record, threaded in as `RS`.
-
-    No `itlist` here.  `choose (undefine one_tm e)` grabs the pivot variable. -/
+    In `xform`, `k = minus_num d */ abs_num c // c`: OCaml's `*/` and `//` are
+    left-associative and of equal precedence, so this is `((-d) * abs_num c) / c`.
+    `term_of_rat` needs the `RatSyntax` record, threaded in as `RS`. -/
 partial def linear_eqs (RS : HolMath.CalcInt.RatSyntax) (one_tm : term)
     (eqs les lts : List linForm) : Except String linForm :=
   match HolCore.Lib.find (contradictory one_tm (fun x => x == num_0)) eqs with
@@ -950,24 +898,16 @@ def setupLinearProverAliens [HolBase] (R : HolMath.RealAx.RealThms) (L : RealAri
   let pth_suc ← REWRITE_RULE [← GSYM R.real_gt] (← SPEC n_tm L.REAL_POS_LT)
   return { n_tm, pth, pth_suc }
 
-/-- `REAL_LINEAR_PROVER` (realarith.ml 385-489): the final closure
-    `fun translator (eq,le,lt) -> ...`.  Computes `eq_pols`/`le_pols`/`lt_pols`
-    via `lin_of_hol o lhand o concl` (the `o` composition is rendered as an
-    explicit lambda), separates `all_aliens` into `suc_aliens` and `aliens`
-    (`itlist (union o dom) ...` also an explicit lambda), extends
-    `le_pols`/`lt_pols` with the alien point functions, runs `linear_prover`,
-    extends `le`/`lt` with `INST`ances of `pth`/`pth_suc`, and finally calls
-    `translator (eq,le',lt') proof`.
+/-- `REAL_LINEAR_PROVER` (realarith.ml 385-489): the `prover` slot of
+    `GEN_REAL_ARITH1`.  Reads the hypotheses into linear forms, handles the
+    `real_of_num n` "aliens" (non-numeral casts), runs `linear_prover`, and
+    calls the translator on the alien-extended triple.
 
-    Signature matches the `prover` slot of `GEN_REAL_ARITH1`: the `translator`
-    is `hol_of_positivstellensatz` passed UNAPPLIED - it takes the triple and
-    then a `positivstellensatz` - because this function must apply it to its own
-    alien-EXTENDED triple, not to the triple the framework started from.  The
-    four term constants `lin_of_hol` needs and the `RatSyntax` (for
-    `linear_eqs`'s `term_of_rat`) plus the alien lemmas `A` are threaded in.
-
-    `partial` because `linear_ineqs`/`linear_eqs`/`lin_of_hol` are self- and
-    mutually recursive (as `GEN_REAL_ARITH1` already is). -/
+    The `translator` (`hol_of_positivstellensatz`) is passed UNAPPLIED so this
+    function can apply it to its own alien-extended triple rather than the one
+    the framework started from.  The term constants `lin_of_hol` needs, the
+    `RatSyntax`, and the alien lemmas `A` are threaded in.  `partial` because
+    `linear_ineqs`/`linear_eqs`/`lin_of_hol` are mutually recursive. -/
 partial def REAL_LINEAR_PROVER (RS : HolMath.CalcInt.RatSyntax)
     (A : LinearProverAliens)
     (one_tm zero_tm add_tm mul_tm : term)
@@ -1018,14 +958,13 @@ partial def REAL_LINEAR_PROVER (RS : HolMath.CalcInt.RatSyntax)
 /-- The two polynomial normaliser setups of `REAL_ARITH` #1 and #2
     (realarith.ml 495-500, 652-657) are the same; this builds them. -/
 def realPolyConvs [HolBase] (L : RealArithLemmas)
-    (TRUTH ADD_CLAUSES MULT_CLAUSES : thm) (ASM_MESON_TAC : List thm → tactic)
-    (INDUCT_TAC : tactic) (num_CONV : term → IO (Except String thm))
+    (TRUTH SEMIRING_PTHS : thm) (num_CONV : term → IO (Except String thm))
     (is_realintconst : term → Bool)
     (REAL_INT_ADD_CONV REAL_INT_MUL_CONV REAL_INT_POW_CONV : ioconv)
     (NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV : ioconv) :
     ExceptT String IO HolMath.Normalizer.PolynomialConvs := do
-  let sctx ← HolMath.Normalizer.setupSemiringCtx TRUTH ADD_CLAUSES MULT_CLAUSES ASM_MESON_TAC
-    INDUCT_TAC num_CONV L.REAL_POLY_CLAUSES L.REAL_POLY_NEG_CLAUSES is_realintconst
+  let sctx ← HolMath.Normalizer.setupSemiringCtx TRUTH SEMIRING_PTHS
+    L.REAL_POLY_CLAUSES L.REAL_POLY_NEG_CLAUSES is_realintconst
     REAL_INT_ADD_CONV REAL_INT_MUL_CONV REAL_INT_POW_CONV term_lt
   return HolMath.Normalizer.SEMIRING_NORMALIZERS_CONV sctx NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV
     num_CONV
@@ -1040,12 +979,11 @@ structure RealArith1Ctx where
 /-- Build `RealArith1Ctx` (realarith.ml 495-500, 509). -/
 @[nospecialize]
 def setupRealArith1Ctx [HolBase] (R : HolMath.RealAx.RealThms) (L : RealArithLemmas)
-    (TRUTH ADD_CLAUSES MULT_CLAUSES : thm) (ASM_MESON_TAC : List thm → tactic)
-    (INDUCT_TAC : tactic) (num_CONV : term → IO (Except String thm))
+    (TRUTH SEMIRING_PTHS : thm) (num_CONV : term → IO (Except String thm))
     (is_realintconst : term → Bool)
     (REAL_INT_ADD_CONV REAL_INT_MUL_CONV REAL_INT_POW_CONV : ioconv)
     (NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV : ioconv) : ExceptT String IO RealArith1Ctx := do
-  let polys ← realPolyConvs L TRUTH ADD_CLAUSES MULT_CLAUSES ASM_MESON_TAC INDUCT_TAC num_CONV
+  let polys ← realPolyConvs L TRUTH SEMIRING_PTHS num_CONV
     is_realintconst REAL_INT_ADD_CONV REAL_INT_MUL_CONV REAL_INT_POW_CONV
     NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV
   let deabs_conv ← REWRITE_CONV_NET [R.real_abs, R.real_max, R.real_min]
@@ -1066,6 +1004,11 @@ def REAL_ARITH1 [HolBase] (P : NNFPths) (G : GenRealArith1Ctx) (RA : RealArith1C
   return fun tm => ExceptT.run do
     let th1 ← ExceptT.mk (RA.deabs_conv tm)
     EQ_MP (← SYM th1) (← ExceptT.mk (rule (← liftExcept (rand (concl th1)))))
+
+/- ---------------------------------------------------------------------- -/
+/- Slightly less parametrized GEN_REAL_ARITH with more intelligent        -/
+/- elimination of abs, max and min hardwired in.                          -/
+/- ---------------------------------------------------------------------- -/
 
 /-- What the second `GEN_REAL_ARITH` binds before `fun (mkconst,...) ->`
     (realarith.ml 518-644): `ABSMAXMIN_ELIM_CONV1`, `ABSMAXMIN_ELIM_CONV2`,
@@ -1223,15 +1166,18 @@ def GEN_REAL_ARITH2 [HolBase] (P : NNFPths) (G : GenRealArith1Ctx) (G2 : GenReal
 structure RealArith2Ctx where
   polys : HolMath.Normalizer.PolynomialConvs
 
+/- ---------------------------------------------------------------------- -/
+/- Incorporate that. This gets overwritten again in "calc_rat.ml".        -/
+/- ---------------------------------------------------------------------- -/
+
 /-- Build `RealArith2Ctx` (realarith.ml 652-657). -/
 @[nospecialize]
 def setupRealArith2Ctx [HolBase] (L : RealArithLemmas)
-    (TRUTH ADD_CLAUSES MULT_CLAUSES : thm) (ASM_MESON_TAC : List thm → tactic)
-    (INDUCT_TAC : tactic) (num_CONV : term → IO (Except String thm))
+    (TRUTH SEMIRING_PTHS : thm) (num_CONV : term → IO (Except String thm))
     (is_realintconst : term → Bool)
     (REAL_INT_ADD_CONV REAL_INT_MUL_CONV REAL_INT_POW_CONV : ioconv)
     (NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV : ioconv) : ExceptT String IO RealArith2Ctx := do
-  let polys ← realPolyConvs L TRUTH ADD_CLAUSES MULT_CLAUSES ASM_MESON_TAC INDUCT_TAC
+  let polys ← realPolyConvs L TRUTH SEMIRING_PTHS
     num_CONV is_realintconst REAL_INT_ADD_CONV REAL_INT_MUL_CONV REAL_INT_POW_CONV
     NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV
   return { polys }

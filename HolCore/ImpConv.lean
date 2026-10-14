@@ -15,12 +15,9 @@ Lean4 translation by Chris Walton 2026.
 `(IMP_REWRITE_TAC, TARGET_REWRITE_TAC, HINT_EXISTS_TAC, SEQ_IMP_REWRITE_TAC,
 CASE_REWRITE_TAC)`.  Here those become top-level definitions in the sub-namespaces
 mirroring the OCaml modules (`Tset`, `Annot`, `Fo_nets`, `Variance`, `Impconv`).
-
-As with the other tools layers this is a PURE parameterized library: it takes the
-established `BoolThms` `B` plus the handful of pre-proved theorems the OCaml uses
-(`A ==> A`, the implication-swap tautology, `IMP_CONJ`/`IMP_IMP`, the `IMPLY_AND`
-rewrite set, the monotonicity theorems, …), bundled in `ImpConvDeps`.  `Session`
-proves those once and binds the public tactics.
+It is a parameterized library taking the established `BoolThms` `B` plus the
+pre-proved theorems the OCaml uses, bundled in `ImpConvDeps` (`Session` proves
+those once and binds the public tactics).
 
 Many HOL Light conversions used here (`REWR_CONV`, `GEN_PART_MATCH`, `MATCH_MP`,
 `PURE_REWRITE_RULE`) are `IO`/`ioconv` in HolCore, so functions that chain them
@@ -1062,6 +1059,10 @@ def MATCH_MP_IMPCONV (B : BoolThms) (th : thm) : imp_conv := fun v t =>
   | .Co => GEN_PART_MATCH B rand th t
   | .Contra => GEN_PART_MATCH B lhand th t
 
+/- ---------------------------------------------------------------------- -/
+/- INTERFACE                                                              -/
+/- ---------------------------------------------------------------------- -/
+
 /-- From an implicational conversion builds a rule, i.e., a function which
     takes a theorem and returns a new theorem.
 
@@ -1983,6 +1984,10 @@ partial def REWR_IMPCONV_OF_CONV (B : BoolThms) (D : ImpConvDeps)
 def REWRITE_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (ths : List thm) :
     WithContext imp_conv :=
   DEPTH_CTXIMPCONV B D V (REWR_IMPCONV_OF_CONV B D (IMPREWR_CTXCONV B D V ths))
+
+/- ---------------------------------------------------------------------- -/
+/- INTERFACE                                                              -/
+/- ---------------------------------------------------------------------- -/
 
 /-- Preprocessor. For now takes a theorem of the form `[p ==> c1 /\ ... /\ ck]`
     and returns the list of theorems `[p ==> c1]`, ..., `[p ==> ck]`. -/

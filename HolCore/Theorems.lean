@@ -198,6 +198,7 @@ def setupTheorems (B : BoolThms) : ExceptT String IO TheoremThms := do
                      [EXISTS_TAC (← pt "a:A"), ASM_REWRITE_TAC []])
               REFL_TAC)))
       : IO (Except String thm))
+  -- Unwinding.
   let UNWIND_THM1 ← (prove (← pt "!P (a:A). (?x. a = x /\\ P x) <=> P a")
       (THEN (REPEAT GEN_TAC) (THENL EQ_TAC
         [DISCH_THEN (CHOOSE_THEN (CONJUNCTS_THEN2 SUBST1_TAC ACCEPT_TAC)),
@@ -559,16 +560,17 @@ def hyp_tac (B : BoolThms) (rule : thm → Except String thm) : ParserT lexcode 
          -- above.
          | [] => REMOVE_THEN lbl (compRule (LABEL_TAC B lbl)))
 
-/-- Run a token parser over a lexed string, requiring all input consumed. -/
-private def runDSL (name : String) (p : ParserT lexcode α) (s : String) : IO (Except String α) := do
+/-- `(p o lex o explode) s`, then `if rest=[] then r else failwith garbage`:
+    lexer and parser failures keep their own messages. -/
+private def runDSL (garbage : String) (p : ParserT lexcode α) (s : String) : IO (Except String α) := do
   let c ← mkCtx
   match lex c (explode s) with
-  | .error _ => return .error s!"{name}: lex error"
+  | .error e => return .error (perrMsg e)
   | .ok toks =>
     match p c toks with
-    | .error _ => return .error s!"{name}: parse error"
+    | .error e => return .error (perrMsg e)
     | .ok (r, rest) => if rest.isEmpty then return .ok r
-                       else return .error s!"{name}: garbage after pattern"
+                       else return .error garbage
 
 /-- Parse-and-run bundle: the five DSL entry points, closed over `B` and the
     three quantifier-commuting theorems needed by `fix_tac`. -/
@@ -584,20 +586,20 @@ structure DSLThms where
 def setupTacticDSL (B : BoolThms)
     (SWAP_FORALL_THM AND_FORALL_THM RIGHT_IMP_FORALL_THM : thm) : DSLThms :=
   let DESTRUCT_TAC (s : String) : thm_tactic := fun th g => do
-    match ← runDSL "DESTRUCT_TAC" (pfix "Destruct pattern" (destruct_tac B)) s with
+    match ← runDSL "Garbage after destruct pattern" (pfix "Destruct pattern" (destruct_tac B)) s with
     | .error e => return .error e
     | .ok ttac => (ttac th g : IO (Except String goalstate))
   let FIX_TAC (s : String) : tactic := fun g => do
-    match ← runDSL "FIX_TAC" (fix_tac B SWAP_FORALL_THM AND_FORALL_THM RIGHT_IMP_FORALL_THM) s with
+    match ← runDSL "FIX_TAC: invalid pattern" (fix_tac B SWAP_FORALL_THM AND_FORALL_THM RIGHT_IMP_FORALL_THM) s with
     | .error e => return .error e
     | .ok tac => (tac g : IO (Except String goalstate))
   let INTRO_TAC (s : String) : tactic := fun g => do
-    match ← runDSL "INTRO_TAC"
+    match ← runDSL "Garbage after intro pattern"
         (pfix "Introduction pattern" (intro_tac B SWAP_FORALL_THM AND_FORALL_THM RIGHT_IMP_FORALL_THM)) s with
     | .error e => return .error e
     | .ok tac => (tac g : IO (Except String goalstate))
   let HYP_TAC (s : String) (rule : thm → Except String thm) : tactic := fun g => do
-    match ← runDSL "HYP_TAC" (hyp_tac B rule) s with
+    match ← runDSL "HYP_TAC: invalid pattern" (hyp_tac B rule) s with
     | .error e => return .error e
     | .ok tac => (tac g : IO (Except String goalstate))
   let CLAIM_TAC (s : String) (tm : term) : tactic := SUBGOAL_THEN B tm (DESTRUCT_TAC s)

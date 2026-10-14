@@ -30,23 +30,44 @@ set_option maxRecDepth 4000
 /- Some parameters controlling MESON behaviour.                           -/
 /- ---------------------------------------------------------------------- -/
 
-/-- Settable parameters controlling MESON search behaviour.  In OCaml these
-    are mutable global `ref`s (`meson_depth`, `meson_prefine`, …); here they
-    are bundled into a config record read once at entry and threaded through
-    the pure search functions.  `Session` owns the mutable refs and builds a
-    `MesonConfig` snapshot before each MESON call. -/
+initialize meson_depth : IO.Ref Bool ← IO.mkRef false   -- Use depth not inference bound.
+
+initialize meson_prefine : IO.Ref Bool ← IO.mkRef true  -- Use Plaisted's positive refinement.
+
+initialize meson_dcutin : IO.Ref Int ← IO.mkRef 1      -- Min size for d-and-c optimization cut-in.
+
+initialize meson_skew : IO.Ref Int ← IO.mkRef 3        -- Skew proof bias (one side is <= n / skew)
+
+initialize meson_brand : IO.Ref Bool ← IO.mkRef false   -- Use Brand transformation
+
+initialize meson_split_limit : IO.Ref Int ← IO.mkRef 8 -- Limit of case splits before MESON proper
+
+initialize meson_chatty : IO.Ref Bool ← IO.mkRef false  -- Old-style verbose MESON output
+
+/-- The values of the parameters above, read when a MESON call starts and
+    passed to the search functions. -/
 structure MesonConfig where
-  depth       : Bool := false   -- Use depth not inference bound.
-  prefine     : Bool := true    -- Use Plaisted's positive refinement.
-  dcutin      : Int  := 1       -- Min size for d-and-c optimization cut-in.
-  skew        : Int  := 3       -- Skew proof bias (one side is <= n / skew)
-  brand       : Bool := false   -- Use Brand transformation
-  splitLimit  : Int  := 8       -- Limit of case splits before MESON proper
-  chatty      : Bool := false   -- Old-style verbose MESON output
+  depth       : Bool := false
+  prefine     : Bool := true
+  dcutin      : Int  := 1
+  skew        : Int  := 3
+  brand       : Bool := false
+  splitLimit  : Int  := 8
+  chatty      : Bool := false
   deriving Inhabited
 
-/-- The default parameter values (matching the OCaml `ref` initial values). -/
-def defaultConfig : MesonConfig := {}
+/-- Read the current parameter values. -/
+def readConfig : IO MesonConfig := do
+  return { depth := ← meson_depth.get, prefine := ← meson_prefine.get,
+           dcutin := ← meson_dcutin.get, skew := ← meson_skew.get,
+           brand := ← meson_brand.get, splitLimit := ← meson_split_limit.get,
+           chatty := ← meson_chatty.get }
+
+/- ---------------------------------------------------------------------- -/
+/- Prolog exception.                                                      -/
+/- ---------------------------------------------------------------------- -/
+
+-- `exception Cut`: the search functions return `.error "Cut"`.
 
 /-- Variable/constant offset increment (`offinc`). -/
 def offinc : Int := 10000
@@ -759,20 +780,13 @@ def expandGoalTop (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref Int)
 /- With iterative deepening of inferences or depth.                       -/
 /- ---------------------------------------------------------------------- -/
 
-/-- Iterative deepening over inferences or depth.
+/-- Iterative deepening over inferences or depth (meson.ml 447-467).
 
-    VERBOSE OUTPUT (meson.ml 447-467).  HOL Light prints progress here, and the
-    three-way branch is reproduced exactly:
-      `meson_chatty && verbose` -> "N inferences so far. Searching with maximum
-                                    size M." on its own line;
-      `verbose` alone           -> "N.." with NO newline and an explicit flush,
-                                    so successive iterations accumulate on one
-                                    line, then "solved at N" with a newline;
-      neither                   -> nothing.
-    This is what produces HOL Light's familiar startup trace
-    `0..0..1..3..11..31..61..114..201..302..473..solved at 633`.
-    Note the non-chatty branch deliberately does NOT use `remark`/`report`,
-    because those append a newline; the running counters must share a line. -/
+    Reproduces HOL Light's three-way progress printing: with `chatty && verbose`
+    a full line per iteration; with `verbose` alone the running "N.." counters on
+    one line (no newline, explicit flush) ending in "solved at N"; otherwise
+    silent. The non-chatty branch avoids `remark`/`report` since those add a
+    newline and the counters must share a line. -/
 partial def solveGoalAux (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref Int)
     (rules : ancestors) (incdepth : Bool) (max incsize : Int) (g : folState) (n : Int) :
     IO (Except String searchResult) := do
@@ -865,9 +879,6 @@ def fol_of_hol_clauses (S : FolStores) (thms : List thm) :
   --   * `fol_of_hol_clause` MUTATES the shared stores (variable and constant
   --     numbering), so the order in which clauses are translated fixes the codes
   --     they receive.  Folding tail-first reproduces OCaml's assignment.
-  -- NOTE: OCaml does not SPECIFY the argument evaluation order of `f h (...)`;
-  -- tail-first matches both `itlist`'s structure and the right-to-left order
-  -- OCaml implementations use in practice.
   let rec rawFold : List thm → IO (Except String (List folRule))
     | [] => return .ok []
     | th :: t => do
@@ -940,19 +951,6 @@ abbrev ContraposCache := IO.Ref (List ((Int × term) × thm))
 
 def clear_contrapos_cache (mem : ContraposCache) : IO Unit := mem.set []
 
-/-- Build-and-apply `GEN_REWRITE_CONV cnvl thl` as a single `ioconv`
-    (local copy of the private `genRewrite`). -/
-private def genRewrite (B : BoolThms) (cnvl : ioconv → ioconv) (thl : List thm) : ioconv :=
-  fun tm => do
-    match ← (Simp.GEN_REWRITE_CONV B cnvl thl : IO (Except String ioconv)) with
-    | .error e => return .error e
-    | .ok c => (c tm : IO (Except String thm))
-
-/-- Build the equation `l = r` (IO, via the `=` constant). -/
-private def mkEq2 (l r : term) : IO (Except String term) := do
-  match ← (mk_eq : IO (Except String ((term × term) → Except String term))) with
-  | .error e => return .error e | .ok f => return (f (l, r))
-
 /- ---------------------------------------------------------------------- -/
 /- Create a HOL contrapositive on demand, with a cache.                   -/
 /- ---------------------------------------------------------------------- -/
@@ -971,7 +969,7 @@ def make_hol_contrapos (B : BoolThms) (P : MesonPths) (mem : ContraposCache)
     let result ← (do
       if n < 0 then
         let pullThenImf : ioconv := Simp.thencIO
-          (genRewrite B Simp.depthConvIO [P.pullTaut]) imf_CONV
+          (Canon.genRewrite B Simp.depthConvIO [P.pullTaut]) imf_CONV
         (Simp.convRuleIO pullThenImf th : IO (Except String thm))
       else
         let djs := disjuncts tm
@@ -988,7 +986,7 @@ def make_hol_contrapos (B : BoolThms) (P : MesonPths) (mem : ContraposCache)
                 match list_mk_disj ndjs with
                 | .error e => return (.error e)
                 | .ok ndisj =>
-                  match ← (mkEq2 tm ndisj : IO (Except String term)) with
+                  match ← (Canon.mkEq2 tm ndisj : IO (Except String term)) with
                   | .error e => return (.error e)
                   | .ok eqtm =>
                     match ← (Theorems.AC B P.reflClause P.disjAci eqtm : IO (Except String thm)) with
@@ -1000,7 +998,7 @@ def make_hol_contrapos (B : BoolThms) (P : MesonPths) (mem : ContraposCache)
         | .ok acth =>
           if djs.length == 1 then return (.ok acth)
           else
-            let push_CONV : ioconv := genRewrite B Simp.topSweepConvIO [P.pushTaut1, P.pushTaut2]
+            let push_CONV : ioconv := Canon.genRewrite B Simp.topSweepConvIO [P.pushTaut1, P.pushTaut2]
             let impThenPush : ioconv := Simp.thencIO imp_CONV push_CONV
             (Simp.convRuleIO impThenPush acth : IO (Except String thm))
       : IO (Except String thm))
@@ -1187,7 +1185,7 @@ def create_congruence_axiom (B : BoolThms) (E : EqAxPths) (pflag : Bool) (tmlen 
       let pairs ← liftExcept (zip largs rargs)
       let mut assumps : List thm := []
       for (l, r) in pairs do
-        let eqt ← (mkEq2 l r : IO (Except String term))
+        let eqt ← (Canon.mkEq2 l r : IO (Except String term))
         let ath ← liftExcept (ASSUME eqt)
         assumps := assumps ++ [ath]
       let th1 ← liftExcept (assumps.foldlM (fun acc e => MK_COMB acc e) (REFL tm))
@@ -1363,7 +1361,7 @@ private partial def brand (B : BoolThms) (P : BrandPths) (tms : List term) (th :
   | tm :: rest =>
     let gv ← genvar (type_of tm)
     return (← (do
-      let eq ← (mkEq2 gv tm : IO (Except String term))
+      let eq ← (Canon.mkEq2 gv tm : IO (Except String term))
       let symEq ← liftExcept (SYM (← ASSUME eq))
       let subbed ← (Equal.SUBS [symEq] th : IO (Except String thm))
       let disched ← liftExcept (B.DISCH eq subbed)
@@ -1385,7 +1383,7 @@ private def brande (B : BoolThms) (P : BrandPths) (th : thm) : IO (Except String
   | .ok (l, _r) => do
     let gv ← genvar (type_of l)
     return (← (do
-      let eq ← (mkEq2 (← liftExcept (rand tm)) gv : IO (Except String term))
+      let eq ← (Canon.mkEq2 (← liftExcept (rand tm)) gv : IO (Except String term))
       let rtor ← liftExcept (rator tm)
       let apEq ← liftExcept (AP_TERM rtor (← ASSUME eq))
       let em ← liftExcept (EQ_MP apEq th)

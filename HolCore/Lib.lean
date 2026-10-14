@@ -44,14 +44,10 @@ infixl:90 " o " => comp
   effectful stage sits INNER (to the right) of a total one.  These variants cover
   the remaining shapes.
 
-  *** EVERY ONE RUNS `g` FIRST, like OCaml's `f o g`: the RIGHTMOST stage runs
-  FIRST. *** Reversing this order is a subtle bug, so the order is restated at
-  each definition.
-
-  *** ALL ARE LEFT-ASSOCIATIVE (`infixl:90`), which is what lets mixed chains go
-  unparenthesised. *** Left association accumulates the OUTER end first, so each
-  operator need only match "the composite so far" against "the next stage
-  inwards".  Pick by that LOCAL shape:
+  Every one runs `g` first, like OCaml's `f o g` (the rightmost stage runs
+  first).  All are left-associative (`infixl:90`), so mixed chains need no
+  parentheses; pick the operator by the local shape of "composite so far" and
+  "next stage inwards":
 
     composite so far    next stage inwards         operator
     total               total                      `o`
@@ -66,18 +62,13 @@ infixl:90 " o " => comp
   for stage as `hd o snd oM dest_type o snd oM dest_const`.  `oEm`/`oIOm` are
   needed only when the OUTERMOST stage is total, as in `snd o dest_forall`
   (impconv.ml 151).  Any grouping that typechecks computes the same function
-  (composition and bind are both associative) - verified on a five-stage mixed
-  chain against a hand-written reference across all of its error paths.
+  (composition and bind are both associative).
 
-  TWO FACTS ESTABLISHED BY EXPERIMENT, recorded so they are not re-litigated:
-    * `oIO`/`oIOm` are NOT subsumed by `oM` or by Lean's built-in `<=<`.
-      `IO (Except ε α)` IS `ExceptT ε IO α`, but Lean resolves the head symbol
-      `IO` to `Monad IO` and never tries `Monad (ExceptT ε IO)`, so both demand
-      `Except ε β → IO γ` for the outer stage and fail.  A competing `Monad`
-      instance on an abbreviation of `IO ∘ Except` was rejected: it would risk
-      instance-resolution ambiguity across this monad-heavy codebase.
-    * `oM` IS Lean's `<=<`, provided under an `o`-shaped name purely so a
-      transcribed chain scans like the OCaml it came from.
+  Note: `oIO`/`oIOm` are not subsumed by `oM` or Lean's `<=<`.  `IO (Except ε α)`
+  is `ExceptT ε IO α`, but Lean resolves the head `IO` to `Monad IO` and never
+  tries `Monad (ExceptT ε IO)`, so `<=<`/`oM` demand `Except ε β → IO γ` and
+  fail.  `oM` is exactly `<=<`, given an `o`-shaped name so transcribed chains
+  scan like their OCaml source.
 
   `oT`/`oTIO` (the `thm_tactic o rule` shape, by far the commonest) live in
   `HolCore/Tactics.lean`, where `thm_tactic` is defined; they bind LOOSER (89) so
@@ -956,6 +947,10 @@ private def undefine_list [Ord α] (x : α) : List (α × β) → List (α × β
     | .lt => (a, b) :: t
     | .gt => (a, b) :: undefine_list x t
   | [] => []
+
+/- ---------------------------------------------------------------------- -/
+/- Undefinition.                                                          -/
+/- ---------------------------------------------------------------------- -/
 
 /-- Remove `x` from the domain of the finite partial function `f`. -/
 def undefine [Hashable α] [Ord α] (x : α) (f : Func α β) : Func α β :=

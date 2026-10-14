@@ -24,6 +24,7 @@ import HolTest.HelpTest
 import HolTest.SubgoalTest
 import HolTest.HolInitTest
 import HolTest.CoreTest
+import HolTest.CoverageTest
 -- Core-layer module tests.  `Preterm`, `Itab`, `FirstOrder` and `System`
 -- are covered here.
 import HolTest.FusionTest      -- the logical kernel: rules + side conditions

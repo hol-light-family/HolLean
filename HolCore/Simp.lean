@@ -28,6 +28,13 @@ namespace HolCore.Simp
 /-- A generalized conversion: a priority together with an (IO) conversion. -/
 abbrev gconv := Int × ioconv
 
+/-- nets.ml's `enter` on `(priority, conv)` pairs: OCaml's `compare` orders
+    them by priority and raises on the conversions, so equal priorities keep
+    insertion order and an entry is never a duplicate. -/
+def enter_gconv (lconsts : List term) (tmelem : term × gconv) (nt : net gconv) :
+    IO (Except String (net gconv)) :=
+  enterBy (fun _ _ => false) (fun x h => x.1 < h.1) lconsts tmelem nt
+
 /- ---------------------------------------------------------------------- -/
 /- Primitive rewriting conversions: unconditional and conditional equations. -/
 /- ---------------------------------------------------------------------- -/
@@ -126,10 +133,8 @@ def net_of_thm (B : BoolThms) (rep : Bool) (th : thm) (sofar : net gconv) :
     | .ok _ => return true | .error _ => return false
   match tm with
   -- ETA_AX special case: |- (\x. v x) = v (falls through to plain eq otherwise).
-  -- `v` MUST BE A VARIABLE: simp.ml 96 patterns `Abs(x,Comb(Var(s,ty) as v,x'))`.
-  -- Without the `is_var v` guard a theorem like `|- (\x. SUC x) = SUC` would
-  -- wrongly take this arm, bypassing the free_in/matchable ORDERED-rewrite
-  -- handling that OCaml applies to it via the plain-equation arm below.
+  -- `v` must be a variable: simp.ml 96 patterns `Abs(x,Comb(Var(s,ty) as v,x'))`,
+  -- so e.g. `|- (\x. SUC x) = SUC` takes the plain-equation arm instead.
   | .Comb (.Comb (.Const "=" _) (.Abs x (.Comb v x'))) v' =>
       if is_var v && x' == x && v' == v && !(x == v) then
         let conv : ioconv := fun t => do
@@ -141,41 +146,41 @@ def net_of_thm (B : BoolThms) (rep : Bool) (th : thm) (sofar : net gconv) :
                 | .error e => return .error e
               else return .error "REWR_CONV (ETA_AX special case)"
           | _ => return .error "REWR_CONV (ETA_AX special case)"
-        enter' lconsts (.Abs x (.Comb v x'), (1, conv)) sofar
+        enter_gconv lconsts (.Abs x (.Comb v x'), (1, conv)) sofar
       else
         -- LHS is an abstraction but not the eta shape: treat as a plain equation.
         let l := term.Abs x (.Comb v x')
         if rep && free_in l v' then
           match B.EQT_INTRO th with
           | .error e => return .error e
-          | .ok th' => enter' lconsts (l, (1, REWR_CONV B th')) sofar
+          | .ok th' => enter_gconv lconsts (l, (1, REWR_CONV B th')) sofar
         else if rep && (← matchable l v') && (← matchable v' l) then
-          enter' lconsts (l, (1, ORDERED_REWR_CONV B term_order th)) sofar
-        else enter' lconsts (l, (1, REWR_CONV B th)) sofar
+          enter_gconv lconsts (l, (1, ORDERED_REWR_CONV B term_order th)) sofar
+        else enter_gconv lconsts (l, (1, REWR_CONV B th)) sofar
   -- plain equation |- l = r
   | .Comb (.Comb (.Const "=" _) l) r =>
       if rep && free_in l r then
         match B.EQT_INTRO th with
         | .error e => return .error e
-        | .ok th' => enter' lconsts (l, (1, REWR_CONV B th')) sofar
+        | .ok th' => enter_gconv lconsts (l, (1, REWR_CONV B th')) sofar
       else if rep && (← matchable l r) && (← matchable r l) then
-        enter' lconsts (l, (1, ORDERED_REWR_CONV B term_order th)) sofar
-      else enter' lconsts (l, (1, REWR_CONV B th)) sofar
+        enter_gconv lconsts (l, (1, ORDERED_REWR_CONV B term_order th)) sofar
+      else enter_gconv lconsts (l, (1, REWR_CONV B th)) sofar
   -- conditional |- c ==> (l = r)
   | .Comb (.Comb _ _t) (.Comb (.Comb (.Const "=" _) l) r) =>
       if rep && free_in l r then
         match (do B.DISCH _t (← B.EQT_INTRO (← B.UNDISCH th)) : Except String thm) with
         | .error e => return .error e
-        | .ok th' => enter' lconsts (l, (3, IMP_REWR_CONV B th')) sofar
+        | .ok th' => enter_gconv lconsts (l, (3, IMP_REWR_CONV B th')) sofar
       else if rep && (← matchable l r) && (← matchable r l) then
-        enter' lconsts (l, (3, ORDERED_IMP_REWR_CONV B term_order th)) sofar
-      else enter' lconsts (l, (3, IMP_REWR_CONV B th)) sofar
+        enter_gconv lconsts (l, (3, ORDERED_IMP_REWR_CONV B term_order th)) sofar
+      else enter_gconv lconsts (l, (3, IMP_REWR_CONV B th)) sofar
   | _ => return .error "net_of_thm"
 
 /-- Create a gconv net for a conversion with a term index. -/
 def net_of_conv (tm : term) (conv : ioconv) (sofar : net gconv) :
     IO (Except String (net gconv)) :=
-  enter' [] (tm, (2, conv)) sofar
+  enter_gconv [] (tm, (2, conv)) sofar
 
 /-- Create a gconv net for a congruence rule (in canonical form!) -/
 def net_of_cong (B : BoolThms) (th : thm) (sofar : net gconv) :
@@ -199,7 +204,7 @@ def net_of_cong (B : BoolThms) (th : thm) (sofar : net gconv) :
         let partfn : term → Except String term :=
           lhand o funpow n (fun x => (rand x).toOption.getD x)
         let conv : ioconv := fun t => GEN_PART_MATCH B partfn th t
-        enter' [] (pat, (4, conv)) sofar
+        enter_gconv [] (pat, (4, conv)) sofar
 
 /- ---------------------------------------------------------------------- -/
 /- Rewriting (and application of other conversions) based on a convnet.   -/
@@ -377,18 +382,15 @@ def apply_prover : prover → ioconv
 
 /-- A simpset: rewrite/congruence net, subprover list, and a rewrite maker.
 
-    NOTE (Lean port): HOL Light's simpset also stores a *condition-prover
-    transformer* of type `strategy → strategy`. That field makes the type
-    non-strictly-positive (`simpset` occurs in a negative position), which Lean
-    rejects for a normal `inductive`. Since every simpset in the library uses
-    the single default prover `basic_prover`, we drop the stored field and call
-    `basic_prover` directly from `IMP_REWRITES_CONV`. This keeps the type
-    strictly positive (hence safe) with no loss of behaviour; the `ss_of_prover`
-    API is retained as a no-op for source compatibility. -/
+    HOL Light's simpset also stores a condition-prover transformer
+    (`strategy → strategy`), but that makes the type non-strictly-positive,
+    which Lean rejects. Since every library simpset uses the default
+    `basic_prover`, we drop the field and call `basic_prover` directly from
+    `IMP_REWRITES_CONV`; `ss_of_prover` is kept as a no-op. -/
 inductive simpset where
-  | Simpset : net gconv →
-              List prover →
-              (thm → List thm → IO (Except String (List thm))) →
+  | Simpset : net gconv →                                         -- Rewrites & congruences
+              List prover →                                       -- Subprovers for prover
+              (thm → List thm → IO (Except String (List thm))) →  -- Rewrite maker
               simpset
 
 /-- A traversal strategy: given a simpset, a depth level, and a term, produce a
@@ -474,7 +476,7 @@ def ss_of_congs (B : BoolThms) (thms : List thm) (ss : simpset) :
   | .error e => return .error e
   | .ok nt' => return .ok (.Simpset nt' provers rewmaker)
 
-/-- Replace the condition-prover of a simpset. NOTE: no-op in this port (see the
+/-- Replace the condition-prover of a simpset. A no-op in this port (see the
     `simpset` type comment); the default `basic_prover` is always used. -/
 def ss_of_prover (_newprover : strategy → strategy) (ss : simpset) : simpset := ss
 
@@ -888,11 +890,9 @@ def absConvIO (c : ioconv) : ioconv := fun tm => do
       match ABS v th with
       | .ok res => return .ok res
       | .error _ =>
-        -- capture-avoidance fallback (mirrors Equal.ABS_CONV): the bound var `v`
-        -- is free in `th`'s hypotheses, so abstract a fresh genvar and alpha-
-        -- convert the result back to the original bound-variable name.
+        -- `try ABS v th with Failure _ -> let gv = genvar(type_of v) in ...`
+        let gv ← genvar (type_of v)
         match (do
-          let gv ← variant (frees bod) (mk_var "_" (type_of v))
           let gbod := (← vsubst [(gv, v)]) bod
           pure (gv, gbod) : Except String (term × term)) with
         | .error e => return .error e
@@ -982,6 +982,15 @@ def binderConvIO (c : ioconv) : ioconv := fun tm =>
   -- `!x. _` / `?x. _` (a binder constant applied to an abstraction) takes the
   -- RAND_CONV path, so the conversion reaches the correct subterm.
   if is_abs tm then absConvIO c tm else randConvIO (absConvIO c) tm
+
+/-- `PATH_CONV` (equal.ml) for an `ioconv`. -/
+def pathConvIO (s : String) (cnv : ioconv) : ioconv :=
+  let rec path_conv : List String → ioconv
+    | []       => cnv
+    | "l" :: t => ratorConvIO (path_conv t)
+    | "r" :: t => randConvIO (path_conv t)
+    | _ :: t   => absConvIO (path_conv t)
+  path_conv (explode s)
 
 /-- `BINOP_CONV` (IO): apply `c` to both operands of a binary application. -/
 def binopConvIO (c : ioconv) : ioconv := fun tm => do

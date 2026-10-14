@@ -116,19 +116,14 @@ abbrev thm_tactical := thm_tactic → thm_tactic
   As everywhere in this family, the RIGHT operand runs FIRST: the rule is
   applied to the theorem, then the resulting theorem is handed to the tactic.
 
-  *** PRECEDENCE: `oT`/`oTIO` are `infixl:89`, DELIBERATELY ONE LOOSER than
-  `Lib`'s `o`/`oM`/`oEm`/`oIO`/`oIOm` at 90. *** These operators cross the
-  boundary out of "rule world" into "tactic world", and nothing can be composed
-  onto a `thm_tactic` afterwards, so `oT` must be the OUTERMOST operator of a
-  chain.  Binding it looser makes the rule chain to its right group FIRST, so a
-  three-stage OCaml chain transcribes with no parentheses at all:
+  `oT`/`oTIO` are `infixl:89`, one looser than `Lib`'s `o`/`oM`/`oEm`/`oIO`/`oIOm`
+  at 90.  They cross from "rule world" into "tactic world" and nothing composes
+  onto a `thm_tactic` afterwards, so `oT` must be the outermost operator of a
+  chain; binding it looser lets the rule chain to its right group first, so an
+  OCaml chain transcribes without parentheses:
 
       MP_TAC o ABS `x:A` o SPEC `x:A`        (class.ml)
       MP_TAC oT ABS xA oM SPEC xA           -- = MP_TAC oT (ABS xA oM SPEC xA)
-
-  At equal precedence this would instead have parsed as
-  `(MP_TAC oT ABS xA) oM SPEC xA` and failed to typecheck - which it did, before
-  the precedence was lowered.
 -/
 
 /-- `ttac oT rule`: HOL Light's `thm_tactic o rule` for an `Except`-valued rule
@@ -393,16 +388,12 @@ def THEN_TCL (ttcl1 ttcl2 : thm_tactical) : thm_tactical :=
 
 /-- `ttcl1 ORELSE_TCL ttcl2` (tactics.ml 213-215).
 
-    ACCEPTED ADAPTATION (reviewed 2026-09-25; do not re-report).  OCaml's
-    `try ttcl1 ttac th with Failure _ -> ttcl2 ttac th` catches only failures
-    raised while BUILDING the tactic: OCaml's thm-tactics (`CONJUNCTS_THEN2`,
-    `DISJ_CASES_TAC`, `CHOOSE_TAC`) take the theorem apart as soon as they are
-    given it.  Here thm-tactics are `fun gl => ...`, so the fallback also
-    catches a failure of the continuation on the goal.  `REPEAT_TCL` and
-    `FIRST_TCL` inherit this.  It differs from OCaml only when `ttcl1` accepts
-    the theorem but its continuation then fails on the goal; OCaml fails there,
-    and this falls back to `ttcl2`.  Kept deliberately: matching OCaml would
-    need thm-tactics to separate construction from application. -/
+    Because thm-tactics here are `fun gl => ...` rather than taking the theorem
+    apart eagerly as in OCaml, the fallback to `ttcl2` also catches a failure of
+    `ttcl1`'s continuation on the goal, not just failures while building the
+    tactic.  This differs from OCaml only when `ttcl1` accepts the theorem but
+    its continuation then fails on the goal.  `REPEAT_TCL`/`FIRST_TCL` inherit
+    this. -/
 def ORELSE_TCL (ttcl1 ttcl2 : thm_tactical) : thm_tactical :=
   fun ttac th => ORELSE (ttcl1 ttac th) (ttcl2 ttac th)
 
@@ -1198,20 +1189,19 @@ def RECALL_ACCEPT_TAC (B : BoolThms) (r : α → IO (Except String thm)) (a : α
 /- ---------------------------------------------------------------------- -/
 
 /-- Split off the antecedent of an antecedent as a subgoal. -/
-def ANTS_TAC (B : BoolThms) : tactic := fun g => ExceptT.run do
-  -- tm1 = `p /\ (q ==> r)`,  tm2 = `p ==> q`
+def ANTS_TAC (B : BoolThms) : tactic :=
   let p : term := .Var "p" bool_ty
   let q : term := .Var "q" bool_ty
-  let rr : term := .Var "r" bool_ty
-  let qimpr ← liftExcept (mk_imp q rr)
-  let tm1 ← liftExcept (mk_conj p qimpr)
-  let tm2 ← liftExcept (mk_imp p q)
-  let th ← liftExcept (do
+  let r : term := .Var "r" bool_ty
+  let th : Except String thm := do
+    let tm1 ← mk_conj p (← mk_imp q r)
+    let tm2 ← mk_imp p q
     let (th1, th2) ← B.CONJ_PAIR (← ASSUME tm1)
-    let inner ← B.MP th2 (← B.MP (← ASSUME tm2) th1)
-    -- itlist DISCH [tm1;tm2] inner
-    B.DISCH tm1 (← B.DISCH tm2 inner))
-  (THEN B (MATCH_MP_TAC B th) (CONJ_TAC B) g : IO (Except String goalstate))
+    itlist (fun t acc => do B.DISCH t (← acc)) [tm1, tm2]
+      (B.MP th2 (← B.MP (← ASSUME tm2) th1))
+  match th with
+  | .ok th => THEN B (MATCH_MP_TAC B th) (CONJ_TAC B)
+  | .error e => fun _ => pure (.error e)
 
 /- ---------------------------------------------------------------------- -/
 /- A printer for goals etc.                                               -/

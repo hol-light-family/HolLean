@@ -1,5 +1,6 @@
 /- File: Printer.lean
 Simplistic HOL Light prettyprinter, using the OCaml "Format" library.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Original (c) Copyright, Marco Maggesi 2017
@@ -382,23 +383,14 @@ private def reverse_interface_of
     | .error _   => s0
 
 /- `DEST_BINARY c tm`: split an application of binary operator `c`, matching
-   either literal equality of the head or INTERFACE-equal constants.
+   either literal equality of the head or interface-equal constants.
 
-   printer.ml 294-301 compares `reverse_interface(dest_const i)` against
-   `reverse_interface(dest_const c)` - the SURFACE names.  Comparing the raw
-   name AND type instead (as this did originally) is WRONG in both directions:
-
-     * it FAILS to merge two occurrences of one polymorphic constant at
-       DIFFERENT type instances that share a surface name.  Every nested tuple
-       hits this: in `a,(b,c)` the outer `,` is `A->B#C->A#(B#C)` and the inner
-       is `B->C->B#C`, so the types NEVER agree and the chain was never merged -
-       we printed `a,(b,c)` where HOL Light prints `a,b,c`.
-     * it would WRONGLY merge if it compared names alone: `=` at `:bool` has
-       surface name `<=>` while `=` at `:num` has surface name `=`, so
-       `(a:bool) = ((b:num) = c)` must print `a <=> b = c`, NOT `a <=> b <=> c`.
-
-   Only the surface-name comparison gets both right, so `revIface` is threaded
-   in from a snapshot. -/
+   printer.ml 294-301 compares the SURFACE names
+   (`reverse_interface(dest_const …)`), not the raw name and type.  The surface
+   comparison is what merges one polymorphic constant across different type
+   instances (so `a,(b,c)` prints as `a,b,c`) while still distinguishing e.g.
+   `=` at `:bool` (surface `<=>`) from `=` at `:num` (surface `=`).  `revIface`
+   is threaded in from a snapshot to keep this pure. -/
 private def DEST_BINARY (revIface : String → hol_type → String)
     (c : term) (tm : term) : Except String (term × term) :=
   (do

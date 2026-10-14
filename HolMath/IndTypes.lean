@@ -1,5 +1,6 @@
 /- File: IndTypes.lean
 Inductive (or free recursive) types.
+John Harrison, University of Cambridge Computer Laboratory
 
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
@@ -545,12 +546,25 @@ def setupDefTypeRaw [HolBase] (FST SND FCONS BETA_THM CONSTR_REC eepth : thm)
            new_definition, new_basic_type_definition,
            zero_tm, suc_tm, t_tm, n_tm, beps_tm, s_tm, zty, numty, CCONV }
 
+/- ---------------------------------------------------------------------- -/
+/- The initial mutual type definition function, with a type-restricted    -/
+/- recursion theorem.                                                     -/
+/- ---------------------------------------------------------------------- -/
+
+/- ---------------------------------------------------------------------- -/
+/- Handy utility to produce "SUC o SUC o SUC ..." form of numeral.        -/
+/- ---------------------------------------------------------------------- -/
+
 /-- `sucivate n = funpow n (curry mk_comb suc) zero` (ind_types.ml 308-310). -/
 def sucivate (D : DefTypeRaw) (n : Nat) : Except String term :=
   let rec go : Nat → term → Except String term
     | 0, acc => .ok acc
     | k + 1, acc => do go k (← mk_comb D.suc_tm acc)
   go n D.zero_tm
+
+/- ---------------------------------------------------------------------- -/
+/- Eliminate local "definitions" in hyps.                                 -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `SCRUB_EQUATION eq (th,insts)` (ind_types.ml 317-320). -/
 def SCRUB_EQUATION [HolBase] (eq : term) (thi : thm × List (term × term)) :
@@ -580,6 +594,13 @@ partial def mk_injector : List term → List hol_type → List term → Except S
     match Lib.remove (fun t => type_of t == ty) iargs with
     | .ok (a, iargs') => do return a :: (← mk_injector (← tl epstms) alltys iargs')
     | .error _ => do return (← hd epstms) :: (← mk_injector (← tl epstms) alltys iargs)
+
+/- ---------------------------------------------------------------------- -/
+/- Proves existence of model (inductively); use pseudo-constructors.      -/
+/-                                                                        -/
+/- Returns suitable definitions of constructors in terms of CONSTR, and   -/
+/- the rule and induction theorems from the inductive relation package.   -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `justify_inductive_type_model def` (ind_types.ml 329-395).  Returns
     `(conths, th2a, th2b)`. -/
@@ -641,6 +662,11 @@ def justify_inductive_type_model [HolBase] (D : DefTypeRaw)
   let th2b ← CONJUNCT1 th2bc
   return (conths, th2a, th2b)
 
+/- ---------------------------------------------------------------------- -/
+/- Shows that the predicates defined by the rules are all nonempty.       -/
+/- (This could be done much more efficiently/cleverly, but it's OK.)      -/
+/- ---------------------------------------------------------------------- -/
+
 /-- `prove_model_inhabitation rth` (ind_types.ml 401-423). -/
 partial def prove_model_inhabitation [HolBase] (rth : thm) : ExceptT String IO (List thm) := do
   let srules ← (CONJUNCTS rth).mapM SPEC_ALL
@@ -664,6 +690,10 @@ partial def prove_model_inhabitation [HolBase] (rth : thm) : ExceptT String IO (
   let ithms ← exhaust_inhabitations imps bases
   liftExcept (preds.mapM (fun p => Lib.find (fun th => (strip_comb (concl th)).1 == p) ithms))
 
+/- ---------------------------------------------------------------------- -/
+/- Makes a type definition for one of the defined subsets.                -/
+/- ---------------------------------------------------------------------- -/
+
 /-- `define_inductive_type cdefs exth` (ind_types.ml 428-441). -/
 def define_inductive_type [HolBase] (D : DefTypeRaw) (cdefs : List thm) (exth : thm) :
     ExceptT String IO (thm × thm) := do
@@ -681,6 +711,11 @@ def define_inductive_type [HolBase] (D : DefTypeRaw) (cdefs : List thm) (exth : 
   let bij2a ← AP_THM th2 (← liftExcept (do rand (← rand (concl bij2))))
   let bij2b ← TRANS bij2a bij2
   return (bij1, bij2b)
+
+/- ---------------------------------------------------------------------- -/
+/- Defines a type constructor corresponding to current                    -/
+/- pseudo-constructor.                                                    -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `define_inductive_type_constructor defs consindex th` (ind_types.ml
     446-468). -/
@@ -713,6 +748,11 @@ def define_inductive_type_constructor [HolBase] (D : DefTypeRaw) (defs : List th
     (← liftExcept (do mkEq deflf (← rand (concl rexpth)))))
   TRANS defth (← SYM rexpth)
 
+/- ---------------------------------------------------------------------- -/
+/- Instantiate the induction theorem on the representatives to transfer   -/
+/- it to the new type(s). Uses "\x. rep-pred(x) /\ P(mk x)" for "P".      -/
+/- ---------------------------------------------------------------------- -/
+
 /-- `instantiate_induction_theorem consindex ith` (ind_types.ml 474-489). -/
 def instantiate_induction_theorem [HolBase] (consindex : List (term × (term × term)))
     (ith : thm) : ExceptT String IO thm := do
@@ -735,6 +775,12 @@ def instantiate_induction_theorem [HolBase] (consindex : List (term × (term × 
       liftExcept (do mk_abs a (← mk_conj (← mk_comb r a) (← mk_comb p (← mk_comb m a)))))
     consindex' (← liftExcept (zip preds args))
   SPECL lambs ith
+
+/- ---------------------------------------------------------------------- -/
+/- Reduce a single clause of the postulated induction theorem (old_ver)   -/
+/- ba                                                                     -/
+/- to the kind wanted for the new type (new_ver); |- new_ver ==> old_ver  -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `pullback_induction_clause tybijpairs conthms` (ind_types.ml 495-533):
     builds `PRERULE` and `IPRULE` once and returns `fun rthm tm -> ...`. -/
@@ -779,6 +825,10 @@ def pullback_induction_clause [HolBase] (tybijpairs : List (thm × thm)) (conthm
       let th3 ← EQ_MP (← SYM conth3) (← CONJ tth th2)
       DISCH asmquant (← GENL avs th3)
 
+/- ---------------------------------------------------------------------- -/
+/- Finish off a consequence of the induction theorem.                     -/
+/- ---------------------------------------------------------------------- -/
+
 /-- `finish_induction_conclusion consindex tybijpairs` (ind_types.ml
     538-556): builds `PRERULE` and `FINRULE` once and returns `fun th -> ...`. -/
 def finish_induction_conclusion [HolBase] (consindex : List (term × (term × term)))
@@ -800,6 +850,10 @@ def finish_induction_conclusion [HolBase] (consindex : List (term × (term × te
     let th2 ← MP th1 (REFL (← liftExcept (do rand (← lhand (concl th1)))))
     let th3 ← CONV_RULE BETA_CONV th2
     GEN v' (← FINRULE (← CONJUNCT2 th3))
+
+/- ---------------------------------------------------------------------- -/
+/- Derive the induction theorem.                                          -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `derive_induction_theorem consindex tybijpairs conthms iith rth`
     (ind_types.ml 561-578). -/
@@ -824,6 +878,11 @@ def derive_induction_theorem [HolBase] (consindex : List (term × (term × term)
   let th6 ← scrubAll (hyp th5) th5
   let th7 ← UNDISCH_ALL th6
   scrubAll (hyp th7) th7
+
+/- ---------------------------------------------------------------------- -/
+/- Create the recursive functions and eliminate pseudo-constructors.      -/
+/- (These are kept just long enough to derive the key property.)          -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `create_recursive_functions tybijpairs consindex conthms rth`
     (ind_types.ml 584-626). -/
@@ -887,6 +946,10 @@ partial def extract_arg [HolBase] (D : DefTypeRaw) (tup v : term) : ExceptT Stri
   let th ← extract_arg D tup' v
   SUBS [← SYM PAIR_th] th
 
+/- ---------------------------------------------------------------------- -/
+/- Create a function for recursion clause.                                -/
+/- ---------------------------------------------------------------------- -/
+
 /-- `create_recursion_iso_constructor consindex` (ind_types.ml 644-669):
     the part depending on `consindex` only is built once, and the function
     of `cth` is returned. -/
@@ -919,6 +982,10 @@ def create_recursion_iso_constructor [HolBase] (D : DefTypeRaw)
     let funname := (← liftExcept (do dest_const (repeat' rator (← lhand (concl cth))))).1 ++ "'"
     let funarg := mk_var funname funty
     liftExcept (do list_mk_abs [i, r, D.s_tm] (← list_mk_comb funarg allargs))
+
+/- ---------------------------------------------------------------------- -/
+/- Derive the recursion theorem.                                          -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `derive_recursion_theorem tybijpairs consindex conthms rath`
     (ind_types.ml 674-710). -/
@@ -963,6 +1030,10 @@ def derive_recursion_theorem [HolBase] (D : DefTypeRaw) (tybijpairs : List (thm 
   let pcons ← liftExcept ((conjuncts (concl rthm)).mapM (fun c => do
       return repeat' rator (← rand (repeat' (fun t => (dest_forall t).map Prod.snd) c))))
   GENL pcons fethm
+
+/- ---------------------------------------------------------------------- -/
+/- Basic function: returns induction and recursion separately. No parser. -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `define_type_raw def`, the first of ind_types.ml's three (712-738). -/
 def define_type_raw1 [HolBase] (D : DefTypeRaw)
@@ -1061,6 +1132,10 @@ def parse_inductive_type_specification (s : String) :
         if rst.isEmpty then return .ok spec
         else return .error "parse_inductive_type_specification: junk after def"
 
+/- ---------------------------------------------------------------------- -/
+/- Use this temporary version to define the sum type.                     -/
+/- ---------------------------------------------------------------------- -/
+
 /-- `sum_INDUCT,sum_RECURSION = define_type_raw (parse_inductive_type_specification
     "sum = INL A | INR B")` (ind_types.ml 768-769), with the first
     `define_type_raw`. -/
@@ -1143,6 +1218,14 @@ def mk_newfun [HolBase] (fn outl : term) : ExceptT String IO thm := do
   let th1 ← ASSUME (← liftExcept (mkEq l r))
   RIGHT_BETAS [x] th1
 
+/- ---------------------------------------------------------------------- -/
+/- Generalize the recursion theorem to multiple domain types.             -/
+/- (We needed to use a single type to justify it via a proforma theorem.) -/
+/-                                                                        -/
+/- NB! Before this is called nontrivially (i.e. more than one new type)   -/
+/- the type constructor ":sum", used internally, must have been defined.  -/
+/- ---------------------------------------------------------------------- -/
+
 /-- `generalize_recursion_theorem th` (ind_types.ml 822-874). -/
 def generalize_recursion_theorem [HolBase] (D2 : DefTypeRaw2) (th : thm) :
     ExceptT String IO thm := do
@@ -1203,6 +1286,10 @@ def define_type_raw2 [HolBase] (D2 : DefTypeRaw2)
     (def_ : List (hol_type × List (String × List hol_type))) : ExceptT String IO (thm × thm) := do
   let (ith, rth) ← define_type_raw1 D2.D def_
   return (ith, ← generalize_recursion_theorem D2 rth)
+
+/- ---------------------------------------------------------------------- -/
+/- Set up options and lists.                                              -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `option_INDUCT,option_RECURSION` (ind_types.ml 880-882). -/
 def option_INDUCT_RECURSION [HolBase] (D2 : DefTypeRaw2) : ExceptT String IO (thm × thm) := do
@@ -1348,6 +1435,15 @@ partial def prove_cases_thm [HolBase] (eepth : thm) (th : thm) : ExceptT String 
 /- Now deal with nested recursion. Need a store of previous theorems.     -/
 /- ---------------------------------------------------------------------- -/
 
+/- ---------------------------------------------------------------------- -/
+/- Also add a cached rewrite of distinctness and injectivity theorems.    -/
+/- Since                                                                  -/
+/- there can be quadratically many distinctness clauses, it would really  -/
+/- be                                                                     -/
+/- preferable to have a conversion, but this seems OK up 100              -/
+/- constructors.                                                          -/
+/- ---------------------------------------------------------------------- -/
+
 /-- The element type of `distinctness_store` and `injectivity_store`
     (ind_types.ml 1023-1024).  The refs live in Session. -/
 abbrev RectypeStore := List (String × thm)
@@ -1370,6 +1466,10 @@ def extend_rectype_net [HolBase]
   let net' ← canon_thl.foldrM
     (fun th acc => ExceptT.mk (Simp.net_of_thm HolBase.B true th acc)) curNet
   return (net', dist', inj')
+
+/- ---------------------------------------------------------------------- -/
+/- Return distinctness and injectivity for a type by simple lookup.       -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `distinctness ty = assoc ty (!distinctness_store)` (ind_types.ml 1041). -/
 def distinctness (store : RectypeStore) (ty : String) : Except String thm :=
@@ -1465,6 +1565,10 @@ open HolCore.Parser (lexcode)
 /- define_type_raw #3: nested types (ind_types.ml 1084-1387).             -/
 /- ---------------------------------------------------------------------- -/
 
+/- ---------------------------------------------------------------------- -/
+/- Hence extend type definition to nested types.                          -/
+/- ---------------------------------------------------------------------- -/
+
 /-- What the third `define_type_raw` binds before `fun def -> ...`
     (ind_types.ml 1084-1281): `ISO_EXPAND_CONV`, `DE_EXISTENTIALIZE_RULE`'s
     `pth`, `SIMPLE_BETA_RULE`'s rewrite and `REWRITE_FUN_EQ_RULE`'s net (made
@@ -1508,6 +1612,10 @@ def setupDefTypeRaw3 [HolBase] (D2 : DefTypeRaw2) (ISO ISO_REFL ISO_FUN ISO_USAG
   return { D2, ISO, ISO_REFL, ISO_FUN, ISO_USAGE, ISO_EXPAND_CONV, dePth, simpleBetaConv,
            funEqNet, getStore, addEntries }
 
+/- ---------------------------------------------------------------------- -/
+/- Dispose of trivial antecedent.                                         -/
+/- ---------------------------------------------------------------------- -/
+
 /-- `TRIV_ANTE_RULE` (ind_types.ml 1090-1106). -/
 def TRIV_ANTE_RULE [HolBase] (th : thm) : ExceptT String IO thm := do
   let TRIV_IMP_CONV (tm : term) : ExceptT String IO thm := do
@@ -1524,6 +1632,10 @@ def TRIV_ANTE_RULE [HolBase] (th : thm) : ExceptT String IO thm := do
     let (ant, _con) ← liftExcept (dest_imp (concl th))
     MP th (← end_itlist CONJ (← (conjuncts ant).mapM TRIV_IMP_CONV))
   else pure th
+
+/- ---------------------------------------------------------------------- -/
+/- Lift type bijections to "arbitrary" (well, free rec or function) type. -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `lift_type_bijections iths cty` (ind_types.ml 1114-1125). -/
 partial def lift_type_bijections [HolBase] (R : DefTypeRaw3) (iths : List thm) (cty : hol_type) :
@@ -1563,6 +1675,10 @@ def clause_corresponds (cl0 cl1 : term) : Except String Bool := do
   let (c1, _) ← dest_const (strip_comb ctm1).1
   let (dty1, rty1) ← dest_fun_ty (type_of f1)
   return (c0 == c1 && dty0 == rty1 && rty0 == dty1)
+
+/- ---------------------------------------------------------------------- -/
+/- Prove isomorphism of nested types where former is the smaller.         -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `prove_inductive_types_isomorphic n k (ith0,rth0) (ith1,rth1)`
     (ind_types.ml 1159-1256). -/
@@ -1657,6 +1773,10 @@ def prove_inductive_types_isomorphic [HolBase] (R : DefTypeRaw3) (n k : Nat)
   let cths5 ← cths4.mapM (CONV_RULE isoConv)
   let cth6 ← end_itlist CONJ cths5
   return (cth6, ← CONJ sth0 sth1)
+
+/- ---------------------------------------------------------------------- -/
+/- Define nested type by doing a 1-level unwinding.                       -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `SCRUB_ASSUMPTION th` (ind_types.ml 1261-1267). -/
 def SCRUB_ASSUMPTION [HolBase] (th : thm) : ExceptT String IO thm := do
@@ -1820,6 +1940,10 @@ def define_type_raw3 [HolBase] (R : DefTypeRaw3)
   let newentries ← liftExcept (newtys.mapM (fun s => do return (← dest_vartype s, retval)))
   ExceptT.mk (R.addEntries newentries)
   return (ith1, rth1)
+
+/- ---------------------------------------------------------------------- -/
+/- The overall function, with rather crude string-based benignity.        -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `define_type s` (ind_types.ml 1396-1414).  `store` is the contents of
     `the_inductive_types`; returns the result and the new contents. -/

@@ -6,17 +6,9 @@ Proof-producing HOL Light implementations of leanCoP and nanoCoP (`thecops.ml`).
 
 Lean4 translation by Chris Walton 2026.
 
-Builds on the Metis/FirstOrder/Meson first-order shadow syntax (`fol_term`
-`Fvar`/`Fnapp`, `fol_atom`, `fol_form`) and reuses `Meson.hol_of_const`,
-`Meson.make_hol_contrapos`, `Meson.finish_RULE`, `Meson.create_equality_axioms`,
-and `FirstOrder.Mapping`/`FirstOrder.Utils`.
-
-As with the other layers this is a PURE parameterized library (0 `unsafe`); all
-mutable state (the leanCoP/nanoCoP `Hashtbl` databases, the `Substarray` trail,
-the fresh-variable counters, verbosity) lives in `Session.lean`.  Lazy streams
-(`Strom`) are modelled as `Unit → IO (Option α)` thunks, matching OCaml's
-effectful `unit -> 'a` streams that raise `End_of_strom` (here: return `none`)
-and use one-shot mutable flags (here: `IO.Ref`). -/
+All mutable state (the leanCoP/nanoCoP databases, the `Substarray` trail, the
+fresh-variable counters, verbosity) lives in `Session.lean`.  Lazy streams
+(`Strom`) are modelled as `Unit → IO (Option α)` thunks. -/
 
 import HolCore.Bool
 import HolCore.Equal
@@ -532,12 +524,10 @@ partial def restore_subst (sub : t) : IO Unit := do
   let (arrs, subl) := sub
   let rec loop : IO Unit := do
     let e ← arrs.env.get
-    -- OCaml tests `!env == subl` (PHYSICAL equality).  Structural equality is
-    -- equivalent here: `subl` is always a suffix of the trail (the trail only
-    -- grows by consing in `add_subst`, which snapshots `!env` right after), so a
-    -- partially-popped trail is `x_k :: ... :: x_1 :: subl`, which is strictly
-    -- LONGER than `subl` and therefore cannot be structurally equal to it.
-    -- Structural equality thus first holds exactly at the physical suffix.
+    -- OCaml tests `!env == subl` (PHYSICAL equality); structural equality is
+    -- equivalent here because `subl` is always a suffix of the trail, so a
+    -- partially-popped trail is strictly longer than `subl` and first matches
+    -- structurally exactly at the physical suffix.
     if e == subl then pure ()
     else match e with
          | h :: tl => do
@@ -1058,6 +1048,13 @@ end Recon
 /- ---------------------------------------------------------------------- -/
 /- Leancop: the leanCoP entry points (`thecops.ml`: leancop.ml).          -/
 /- ---------------------------------------------------------------------- -/
+/- Some examples that are not provable by MESON or METIS in reasonable time:
+   LEANCOP [EXTENSION; IN_INSERT] (concl INSERT_COMM);;
+   LEANCOP [EXTENSION; IN_DELETE] (concl DELETE_COMM);;
+   LEANCOP [EXTENSION; IN_DELETE; IN_INTER] (concl DELETE_INTER);;
+   LEANCOP [SUM_SUPERSET; SUBSET; IN_UNION] (concl SUM_UNION_RZERO);;
+   LEANCOP [SUBSET; NSUM_SUPERSET; IN_UNION] (concl NSUM_UNION_RZERO);;
+   LEANCOP [EXTENSION; NOT_IN_EMPTY; IN_INTERS; IN_INSERT] (concl INTERS_1);; -/
 
 /- `LEANCOP_DEEPEN` runs the search + reconstruction; the tactics prepare the
    goal.  Bundled dependencies (`LeancopDeps`) keep the signatures manageable;
@@ -1215,10 +1212,9 @@ partial def strip_forallq (acc : List Int) : Meson.fol_form → List Int × Meso
   | .Forallq x t => strip_forallq (x :: acc) t
   | t => (acc.reverse, t)
 
-/- Build a `matrix` from a formula.  The Original matrix_of_form from
-   OCaml-nanoCoP is below.
-   WARNING: Gives different results than version above, reconstruction fails!
-   (so the OCaml-nanoCoP alternative is intentionally not used here). -/
+/- Build a `matrix` from a formula.  Original matrix_of_form from OCaml-nanoCoP
+   is below.
+   WARNING: Gives different results than version above, reconstruction fails! -/
 mutual
 partial def litmat_of_form : Meson.fol_form → litmat Unit
   | .Atom t => .Lit t

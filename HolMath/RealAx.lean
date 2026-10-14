@@ -5,18 +5,8 @@ Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Lean4 translation by Chris Walton 2026
 
-CONSTRUCTION OVERVIEW.  The reals are built in three layered stages, each
-introducing a type:
-
-  1. `nadd` (realax.ml 253-263) - a BASIC type definition carving out the
-     "nearly-multiplicative" functions `num->num` satisfying `is_nadd`.
-  2. `hreal` (realax.ml 1257-1258) - a QUOTIENT of `nadd` by the equivalence
-     `(===)`, giving the non-negative reals.
-  3. `real` (realax.ml 1712-1713) - a QUOTIENT of `hreal#hreal` by `treal_eq`,
-     giving the signed reals: the reals at last.
-
-Stages 2 and 3 go through `define_quotient_type` / `lift_function` /
-`lift_theorem` from quot.ml. -/
+The reals are built in three stages: `nadd` (near-multiplicative functions),
+then the quotient `hreal`, then the quotient `real` of `hreal#hreal`. -/
 
 import HolCore.Bool
 import HolCore.Equal
@@ -171,7 +161,7 @@ def setupDist [HolBase] (N : HolMath.Nums.NumsThms)
     (A3 : HolMath.Arith.ArithThms3) (A4 : HolMath.Arith.ArithThms4)
     (A5 : HolMath.Arith.ArithThms5)
     (SUB_ELIM_THM : thm)
-    (HIGHER_REWRITE_CONV : List thm → Bool → ioconv)
+    (HIGHER_REWRITE_CONV : List thm → IO (Except String (Bool → ioconv)))
     (NUM_CANCEL_CONV : ioconv)
     (new_definition' : term → IO (Except String thm)) :
     ExceptT String IO DistThms := do
@@ -259,10 +249,10 @@ def setupDist [HolBase] (N : HolMath.Nums.NumsThms)
 
   /- Now some more theorems. -/
 
+  let conv ← ExceptT.mk
+    (HIGHER_REWRITE_CONV [SUB_ELIM_THM, COND_ELIM_THM, DIST_ELIM_THM])
   let DIST_ELIM_TAC : tactic :=
-    let conv :=
-      HIGHER_REWRITE_CONV [SUB_ELIM_THM, COND_ELIM_THM, DIST_ELIM_THM] false
-    CONV_TAC conv THEN TRY GEN_TAC THEN CONJ_TAC THEN
+    CONV_TAC (conv false) THEN TRY GEN_TAC THEN CONJ_TAC THEN
     DISCH_THEN (fun th => SUBST_ALL_TAC th THEN
                           (match dest_eq (concl th) with
                            | .ok (l, r) =>
@@ -574,15 +564,9 @@ def setupNadd [HolBase] (N : HolMath.Nums.NumsThms)
     naturals `&` (393-415) and the (reflexive) ordering `<<=` (418-511).
     Field names match the OCaml identifiers exactly, in OCaml order.
 
-    THREE `override_interface` calls are LOAD-BEARING and each MUST run before
-    any quotation mentioning its symbol is parsed: `===` (366) before
-    `nadd_eq` and every `x === y`; `&` (393) before `nadd_of_num` and every
-    `&k`; `<<=` (418) before `nadd_le` and every `x <<= y`.  If an override
-    had not run, the symbol would parse as a free VARIABLE and the theorem
-    would be about something else.  The setup is sequenced so each override
-    happens before its dependents.  The infix declarations for `===` and
-    `<<=` live in the file head and are reproduced by
-    `setupRealAxOverloads`, so they are NOT repeated here. -/
+    Each `override_interface` (`===`, `&`, `<<=`) must run before any quotation
+    using its symbol is parsed, or the symbol parses as a free variable; the
+    setup is sequenced accordingly. -/
 structure NaddOrderThms where
   /- Equivalence relation and proof it is one (366-388). -/
   nadd_eq            : thm
@@ -795,14 +779,9 @@ def setupNaddOrder [HolBase]
     properties of multiplication (640-694).  Field names match the OCaml
     identifiers exactly, in OCaml order.
 
-    TWO `override_interface` calls are LOAD-BEARING: `++` (514) before
-    `nadd_add` and every `x ++ y`; `**` (606) before `nadd_mul` and every
-    `x ** y`.  If an override had not run the symbol would parse as a free
-    VARIABLE and the theorem would be about something else.  The setup is
-    sequenced so each override runs before its dependents' quotations are
-    parsed.  The infix declarations for `++` and `**` live in the file head
-    and are reproduced by `setupRealAxOverloads`, so they are NOT repeated
-    here; this setup REQUIRES `setupRealAxOverloads` to have run first. -/
+    The `++` and `**` `override_interface` calls must run before any quotation
+    using those symbols, else they parse as free variables; this setup requires
+    `setupRealAxOverloads` to have run first. -/
 structure NaddArithThms where
   /- Addition (514-530). -/
   nadd_add           : thm
@@ -1050,10 +1029,7 @@ def setupNaddArith [HolBase]
 
 /-- The handy lemmas (realax.ml 703-746), the Archimedean property in a more
     useful form (754-802) and completeness (823-929).  Field names match the
-    OCaml identifiers exactly, in OCaml order.
-
-    NADD_COMPLETE (823) is a ~105-line proof, the hardest single item in the
-    file. -/
+    OCaml identifiers exactly, in OCaml order. -/
 structure NaddCompleteThms where
   /- A few handy lemmas (703-746). -/
   NADD_LE_0        : thm

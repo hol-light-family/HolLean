@@ -232,15 +232,12 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
 
 -- NUM_REL_CONV: 12 >= 4 <=> T (the relational net conversion).
 #eval (do
-  match ← Session.NUM_REL_CONV with
-  | .error e => IO.println s!"NUM_REL_CONV build ERR: {e}"
-  | .ok conv =>
-    match ← HolCore.Parser.parse_term "12 >= 4" with
-    | .error e => IO.println s!"NUM_REL_CONV parse ERR: {e}"
-    | .ok tm =>
-      match ← conv tm with
-      | .ok th => IO.println s!"NUM_REL_CONV -> {← HolCore.Printer.string_of_thm th}"  -- T
-      | .error e => IO.println s!"NUM_REL_CONV ERR: {e}")
+  match ← HolCore.Parser.parse_term "12 >= 4" with
+  | .error e => IO.println s!"NUM_REL_CONV parse ERR: {e}"
+  | .ok tm =>
+    match ← Session.NUM_REL_CONV tm with
+    | .ok th => IO.println s!"NUM_REL_CONV -> {← HolCore.Printer.string_of_thm th}"  -- T
+    | .error e => IO.println s!"NUM_REL_CONV ERR: {e}")
 
 -- NUM_RED_CONV: a single reduction step, 12 + 30 = 42.
 #eval (do
@@ -624,7 +621,7 @@ private unsafe def numBuiltConvCheck (lbl expr expected : String)
 /- ---------------------------------------------------------------------- -/
 /- NUM_REL_CONV: the relational net conversion on a large operand.        -/
 /- ---------------------------------------------------------------------- -/
-#eval numBuiltConvCheck "REL large ge"
+#eval numConvCheck "REL large ge"
   "1606938044258990275541962092341162602522202993782792835301376 >= 4"
   "true"  -- large >= 4
   Session.NUM_REL_CONV

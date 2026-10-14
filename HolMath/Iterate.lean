@@ -10,68 +10,19 @@
 
   A translation of HOL Light's `iterate.ml` (`needs "sets.ml"`).
 
-  THE DESIGN.  One generic operation, `iterate`, folds a binary operation
-  `op` over the part of a set where a function has "support" - the points
-  where `f` differs from `op`'s neutral element.  Everything else in the
-  file is a specialisation: `nsum` and `nproduct` over `:num`, `sum` and
-  `product` over `:real`, `isum` and `iproduct` over `:int`.  The generic
-  lemmas are proved ONCE against an abstract `monoidal op` hypothesis and
-  then instantiated, which is why the "key lemmas" section
-  (iterate.ml 361-889) carries most of the file's weight.
+  One generic operation, `iterate`, folds a binary operation `op` over the
+  part of a set where a function has "support" (the points where `f` differs
+  from `op`'s neutral element); everything else specialises it: `nsum`/
+  `nproduct` over `:num`, `sum`/`product` over `:real`, `isum`/`iproduct` over
+  `:int`.  The generic lemmas are proved once against an abstract `monoidal op`
+  hypothesis and then instantiated.
 
-  PRIORITIZATION CHANGES MID-FILE.  Four calls bracket the file, and they
-  are LOAD-BEARING because they set which type a bare numeral gets at PARSE
-  time:
-      iterate.ml   10   prioritize_num()     -- after `needs "sets.ml"`
-      iterate.ml 1286   prioritize_num()     -- before `nsum`  (1288)
-      iterate.ml 1982   prioritize_real()    -- before `sum`   (1984)
-      iterate.ml 3112   prioritize_real -> prioritize_num()  RESTORES num
-  So iterate.ml 1982-3111 - the real half, `sum` through
-  `polynomial_function` - parses numerals as `:real`, and line 3112 puts
-  `:num` back for every later file.  A theorem in the real half parsed
-  under `:num` priority gets the WRONG TYPE throughout, and `sum` would
-  collide with `nsum`; line 3112's restore is half of a pair, and dropping
-  it silently mistypes every file that follows.  Every bundle must
-  therefore be forced in iterate.ml FILE ORDER with the prioritize guards
-  interleaved at their true positions.
-
-  THE ONE PARSER DECLARATION: `parse_as_infix("..",(15,"right"))` at
-  iterate.ml 16, giving the segment notation `m..n`, and it must run
-  BEFORE `numseg` at 18 and before any term containing `..` is parsed.
-  `<<=`, the order used by the general `iterato` section (890-1187), is
-  NOT declared here - it comes from `realax.ml:18` at (12,"right") and is
-  already registered by this point in the development.
-
-  STYLE.  Written in the HolLight.Base style (HolMath/Base.lean): one `let`
-  per OCaml `let`, in file order.  OCaml builds a tactic right to left, so
-  where one proof's tactic contains several rules that print (SET_RULE,
-  MESON), they are bound first, last one first, to keep HOL Light's message
-  order.
-
-  SECTION MAP (iterate.ml line ranges):
-      13- 157  the `m..n` segment notation and its theorems
-     158- 171  equivalence with the ad-hoc comprehension notation
-     172- 192  NUMSEG_CONV, evaluating `m..n` for specific numerals
-     193- 252  topological sorting of a finite set
-     253- 277  the analogous finiteness theorem for integer segments
-     278- 360  neutral, monoidal, support, iterate
-     361- 889  KEY LEMMAS about the generic notion (the file's core)
-     890-1187  `iterato`: iteration using a specific order `<<=`, hence
-               applying to NON-COMMUTATIVE operations, with refined
-               notions of domain (`dom`) and neutral element (`neut`)
-    1188-1282  nproduct, iproduct, product, isum
-    1283-1919  sums of natural numbers (`nsum`)
-    1920-1947  cardinality of a finite union, via finite sums
-    1948-1978  EXPAND_NSUM_CONV
-    1979-2598  sums of real numbers (`sum`) - UNDER prioritize_real
-    2599-2715  specialised to intervals of numbers
-    2716-2778  partial summation and theorems specific to segments
-    2779-2795  congruences for sum, needing the eta expansion
-    2796-2826  EXPAND_SUM_CONV
-    2827-2854  special algebraic rearrangements
-    2855-2962  useful facts about real polynomial functions
-    2963-3108  `polynomial_function`, a general notion
-    3109-3112  make natural numbers the default again
+  `prioritize_num`/`prioritize_real` calls bracket the file and set which type
+  a bare numeral gets at parse time: the real half (iterate.ml 1982-3111,
+  `sum` through `polynomial_function`) parses numerals as `:real`, and line
+  3112 restores `:num` for later files.  The one parser declaration is
+  `parse_as_infix("..",(15,"right"))` (iterate.ml 16), the segment notation
+  `m..n`, which must run before `numseg` at 18.
 -/
 
 import HolMath.Sets
@@ -195,7 +146,7 @@ structure IterateSegments where
 @[nospecialize]
 def setupIterateSegments [HolBase]
     (new_definition' : term → IO (Except String thm))
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (SET_TAC : List thm → tactic)
     (ARITH_RULE' : term → IO (Except String thm))
     (ARITH_TAC ASM_ARITH_TAC : tactic)
@@ -211,7 +162,6 @@ def setupIterateSegments [HolBase]
     new_definition' (← q s)
   let ARITH_RULE (t : term) : ExceptT String IO thm := ARITH_RULE' t
   let INDUCT_TAC := HolMath.Nums.INDUCT_TAC num_INDUCTION
-  let ASM_MESON_TAC := ASM MESON_TAC
 
   let numseg ← new_definition
     r"m..n = {x:num | m <= x /\ x <= n}"
@@ -447,7 +397,7 @@ structure IterateSortSeg where
 
 @[nospecialize]
 def setupIterateSortSeg [HolBase]
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (SET_TAC : List thm → tactic)
     (SET_RULE' : term → IO (Except String thm))
     (ARITH_RULE' : term → IO (Except String thm))
@@ -465,7 +415,6 @@ def setupIterateSortSeg [HolBase]
   let ARITH_RULE (t : term) : ExceptT String IO thm := ARITH_RULE' t
   let INT_ARITH (t : term) : ExceptT String IO thm := INT_ARITH' t
   let INDUCT_TAC := HolMath.Nums.INDUCT_TAC num_INDUCTION
-  let ASM_MESON_TAC := ASM MESON_TAC
   let { NUMSEG_CLAUSES, IN_NUMSEG, FINITE_NUMSEG, .. } := S
 
   let TOPOLOGICAL_SORT ← prove
@@ -475,54 +424,60 @@ def setupIterateSortSeg [HolBase]
                     ==> ?f. s = IMAGE f (1..n) /\
                             (!j k. j IN 1..n /\ k IN 1..n /\ j < k
                                    ==> ~(f k << f j))"
-   (GEN_TAC THEN DISCH_TAC THEN
-    SUBGOAL_THEN (← q r"!n s. s HAS_SIZE n /\ ~(s = {})
-                      ==> ?a:A. a IN s /\ !b. b IN (s DELETE a) ==> ~(b << a)")
-    ASSUME_TAC THENL
-     [INDUCT_TAC THEN
-      REWRITE_TAC [HAS_SIZE_0, HAS_SIZE_SUC, ← TAUT (← q r"~(a /\ ~a)")] THEN
-      X_GEN_TAC (← q r"s:A->bool") THEN STRIP_TAC THEN
-      FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE I [← GSYM MEMBER_NOT_EMPTY]) THEN
-      DISCH_THEN (X_CHOOSE_TAC (← q r"a:A")) THEN
-      FIRST_X_ASSUM (MP_TAC o SPEC (← q r"a:A")) THEN ASM_REWRITE_TAC [] THEN
-      DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC (← q r"s DELETE (a:A)")) THEN
-      ASM_SIMP_TAC [← SET_RULE (← q r"a IN s ==> (s DELETE a = {} <=> s = {a})")] THEN
-      ASM_CASES_TAC (← q r"s = {a:A}") THEN ASM_REWRITE_TAC [] THENL
-       [EXISTS_TAC (← q r"a:A") THEN SET_TAC [], ALL_TAC] THEN
-      DISCH_THEN (X_CHOOSE_THEN (← q r"b:A") STRIP_ASSUME_TAC) THEN
-      ASM_CASES_TAC (← q r"((a:A) << (b:A)) :bool") THENL
-       [EXISTS_TAC (← q r"a:A"), EXISTS_TAC (← q r"b:A")] THEN ASM SET_TAC [],
-      ALL_TAC] THEN
-    INDUCT_TAC THENL
-     [SIMP_TAC [HAS_SIZE_0, NUMSEG_CLAUSES, ARITH, IMAGE_CLAUSES, NOT_IN_EMPTY],
-      ALL_TAC] THEN
-    REWRITE_TAC [HAS_SIZE_SUC] THEN X_GEN_TAC (← q r"s:A->bool") THEN STRIP_TAC THEN
-    FIRST_X_ASSUM (MP_TAC o SPECL [← q r"SUC n", ← q r"s:A->bool"]) THEN
-    ASM_REWRITE_TAC [HAS_SIZE_SUC] THEN
-    DISCH_THEN (X_CHOOSE_THEN (← q r"a:A") MP_TAC) THEN STRIP_TAC THEN
-    FIRST_X_ASSUM (MP_TAC o SPEC (← q r"s DELETE (a:A)")) THEN ASM_SIMP_TAC [] THEN
-    DISCH_THEN (X_CHOOSE_THEN (← q r"f:num->A") STRIP_ASSUME_TAC) THEN
-    EXISTS_TAC (← q r"\k. if k = 1 then a:A else f(k - 1)") THEN
-    SIMP_TAC [← ARITH_RULE (← q r"1 <= k ==> ~(SUC k = 1)"), SUC_SUB1] THEN
-    SUBGOAL_THEN (← q r"!i. i IN 1..SUC n <=> i = 1 \/ 1 < i /\ (i - 1) IN 1..n")
-     (fun th => REWRITE_TAC [EXTENSION, IN_IMAGE, th])
-    THENL [REWRITE_TAC [IN_NUMSEG] THEN ARITH_TAC, ALL_TAC] THEN CONJ_TAC THENL
-     [X_GEN_TAC (← q r"b:A") THEN ASM_CASES_TAC (← q r"b:A = a") THENL
-       [ASM_MESON_TAC [], ALL_TAC] THEN
-      FIRST_ASSUM (fun th => tactic_of do pure (ONCE_REWRITE_TAC [← MATCH_MP
-       (← SET_RULE (← q r"~(b = a) ==> (b IN s <=> b IN (s DELETE a))")) th])) THEN
-      ONCE_REWRITE_TAC [COND_RAND] THEN
-      ASM_REWRITE_TAC [IN_IMAGE, IN_NUMSEG] THEN
-      EQ_TAC THENL [ALL_TAC, MESON_TAC []] THEN
-      DISCH_THEN (X_CHOOSE_TAC (← q r"i:num")) THEN EXISTS_TAC (← q r"i + 1") THEN
-      ASM_SIMP_TAC [← ARITH_RULE (← q r"1 <= x ==> 1 < x + 1 /\ ~(x + 1 = 1)"), ADD_SUB],
-      MAP_EVERY X_GEN_TAC [← q r"j:num", ← q r"k:num"] THEN
-      MAP_EVERY ASM_CASES_TAC [← q r"j = 1", ← q r"k = 1"] THEN
-      ASM_REWRITE_TAC [LT_REFL] THENL
-       [STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC [],
-        ARITH_TAC,
-        STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-        ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC]])
+   (← do
+    let a2 ← ARITH_RULE (← q r"1 <= x ==> 1 < x + 1 /\ ~(x + 1 = 1)")
+    let a1 ← ARITH_RULE (← q r"1 <= k ==> ~(SUC k = 1)")
+    let s1 ← SET_RULE (← q r"a IN s ==> (s DELETE a = {} <=> s = {a})")
+    let t1 ← TAUT (← q r"~(a /\ ~a)")
+    pure
+      (GEN_TAC THEN DISCH_TAC THEN
+       SUBGOAL_THEN (← q r"!n s. s HAS_SIZE n /\ ~(s = {})
+                         ==> ?a:A. a IN s /\ !b. b IN (s DELETE a) ==> ~(b << a)")
+       ASSUME_TAC THENL
+        [INDUCT_TAC THEN
+         REWRITE_TAC [HAS_SIZE_0, HAS_SIZE_SUC, t1] THEN
+         X_GEN_TAC (← q r"s:A->bool") THEN STRIP_TAC THEN
+         FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE I [← GSYM MEMBER_NOT_EMPTY]) THEN
+         DISCH_THEN (X_CHOOSE_TAC (← q r"a:A")) THEN
+         FIRST_X_ASSUM (MP_TAC o SPEC (← q r"a:A")) THEN ASM_REWRITE_TAC [] THEN
+         DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC (← q r"s DELETE (a:A)")) THEN
+         ASM_SIMP_TAC [s1] THEN
+         ASM_CASES_TAC (← q r"s = {a:A}") THEN ASM_REWRITE_TAC [] THENL
+          [EXISTS_TAC (← q r"a:A") THEN SET_TAC [], ALL_TAC] THEN
+         DISCH_THEN (X_CHOOSE_THEN (← q r"b:A") STRIP_ASSUME_TAC) THEN
+         ASM_CASES_TAC (← q r"((a:A) << (b:A)) :bool") THENL
+          [EXISTS_TAC (← q r"a:A"), EXISTS_TAC (← q r"b:A")] THEN ASM SET_TAC [],
+         ALL_TAC] THEN
+       INDUCT_TAC THENL
+        [SIMP_TAC [HAS_SIZE_0, NUMSEG_CLAUSES, ARITH, IMAGE_CLAUSES, NOT_IN_EMPTY],
+         ALL_TAC] THEN
+       REWRITE_TAC [HAS_SIZE_SUC] THEN X_GEN_TAC (← q r"s:A->bool") THEN STRIP_TAC THEN
+       FIRST_X_ASSUM (MP_TAC o SPECL [← q r"SUC n", ← q r"s:A->bool"]) THEN
+       ASM_REWRITE_TAC [HAS_SIZE_SUC] THEN
+       DISCH_THEN (X_CHOOSE_THEN (← q r"a:A") MP_TAC) THEN STRIP_TAC THEN
+       FIRST_X_ASSUM (MP_TAC o SPEC (← q r"s DELETE (a:A)")) THEN ASM_SIMP_TAC [] THEN
+       DISCH_THEN (X_CHOOSE_THEN (← q r"f:num->A") STRIP_ASSUME_TAC) THEN
+       EXISTS_TAC (← q r"\k. if k = 1 then a:A else f(k - 1)") THEN
+       SIMP_TAC [a1, SUC_SUB1] THEN
+       SUBGOAL_THEN (← q r"!i. i IN 1..SUC n <=> i = 1 \/ 1 < i /\ (i - 1) IN 1..n")
+        (fun th => REWRITE_TAC [EXTENSION, IN_IMAGE, th])
+       THENL [REWRITE_TAC [IN_NUMSEG] THEN ARITH_TAC, ALL_TAC] THEN CONJ_TAC THENL
+        [X_GEN_TAC (← q r"b:A") THEN ASM_CASES_TAC (← q r"b:A = a") THENL
+          [ASM_MESON_TAC [], ALL_TAC] THEN
+         FIRST_ASSUM (fun th => tactic_of do pure (ONCE_REWRITE_TAC [← MATCH_MP
+          (← SET_RULE (← q r"~(b = a) ==> (b IN s <=> b IN (s DELETE a))")) th])) THEN
+         ONCE_REWRITE_TAC [COND_RAND] THEN
+         ASM_REWRITE_TAC [IN_IMAGE, IN_NUMSEG] THEN
+         EQ_TAC THENL [ALL_TAC, MESON_TAC []] THEN
+         DISCH_THEN (X_CHOOSE_TAC (← q r"i:num")) THEN EXISTS_TAC (← q r"i + 1") THEN
+         ASM_SIMP_TAC [a2, ADD_SUB],
+         MAP_EVERY X_GEN_TAC [← q r"j:num", ← q r"k:num"] THEN
+         MAP_EVERY ASM_CASES_TAC [← q r"j = 1", ← q r"k = 1"] THEN
+         ASM_REWRITE_TAC [LT_REFL] THENL
+          [STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM SET_TAC [],
+           ARITH_TAC,
+           STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+           ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC]]))
 
   /- ---------------------------------------------------------------------- -/
   /- Analogous finiteness theorem for segments of integers.                 -/
@@ -533,21 +488,25 @@ def setupIterateSortSeg [HolBase]
    (!l r. FINITE {x:int | l <= x /\ x < r}) /\
    (!l r. FINITE {x:int | l < x /\ x <= r}) /\
    (!l r. FINITE {x:int | l < x /\ x < r})"
-   (MATCH_MP_TAC (← TAUT (← q r"(a ==> b) /\ a ==> a /\ b")) THEN CONJ_TAC THENL
-     [DISCH_TAC THEN REPEAT CONJ_TAC THEN POP_ASSUM MP_TAC THEN
-      REPEAT (MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
-      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] FINITE_SUBSET) THEN
-      REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN INT_ARITH_TAC,
-      REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"&0:int <= r - l") THEN
-      ASM_SIMP_TAC [← INT_ARITH (← q r"~(&0 <= r - l:int) ==> ~(l <= x /\ x <= r)")] THEN
-      ASM_SIMP_TAC [EMPTY_GSPEC, FINITE_EMPTY] THEN
-      MATCH_MP_TAC FINITE_SUBSET THEN
-      EXISTS_TAC (← q r"IMAGE (\n. l + &n) (0..num_of_int(r - l))") THEN
-      ASM_SIMP_TAC [FINITE_IMAGE, FINITE_NUMSEG] THEN
-      REWRITE_TAC [SUBSET, IN_IMAGE, IN_ELIM_THM] THEN
-      REWRITE_TAC [← GSYM INT_OF_NUM_LE, IN_NUMSEG] THEN
-      X_GEN_TAC (← q r"x:int") THEN STRIP_TAC THEN EXISTS_TAC (← q r"num_of_int(x - l)") THEN
-      ASM_SIMP_TAC [INT_OF_NUM_OF_INT, INT_SUB_LE] THEN ASM_INT_ARITH_TAC])
+   (← do
+    let i1 ← INT_ARITH (← q r"~(&0 <= r - l:int) ==> ~(l <= x /\ x <= r)")
+    let t1 ← TAUT (← q r"(a ==> b) /\ a ==> a /\ b")
+    pure
+      (MATCH_MP_TAC t1 THEN CONJ_TAC THENL
+        [DISCH_TAC THEN REPEAT CONJ_TAC THEN POP_ASSUM MP_TAC THEN
+         REPEAT (MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+         MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] FINITE_SUBSET) THEN
+         REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN INT_ARITH_TAC,
+         REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"&0:int <= r - l") THEN
+         ASM_SIMP_TAC [i1] THEN
+         ASM_SIMP_TAC [EMPTY_GSPEC, FINITE_EMPTY] THEN
+         MATCH_MP_TAC FINITE_SUBSET THEN
+         EXISTS_TAC (← q r"IMAGE (\n. l + &n) (0..num_of_int(r - l))") THEN
+         ASM_SIMP_TAC [FINITE_IMAGE, FINITE_NUMSEG] THEN
+         REWRITE_TAC [SUBSET, IN_IMAGE, IN_ELIM_THM] THEN
+         REWRITE_TAC [← GSYM INT_OF_NUM_LE, IN_NUMSEG] THEN
+         X_GEN_TAC (← q r"x:int") THEN STRIP_TAC THEN EXISTS_TAC (← q r"num_of_int(x - l)") THEN
+         ASM_SIMP_TAC [INT_OF_NUM_OF_INT, INT_SUB_LE] THEN ASM_INT_ARITH_TAC]))
 
   return { TOPOLOGICAL_SORT, FINITE_INT_SEG }
 
@@ -619,14 +578,13 @@ structure IterateGeneric where
 @[nospecialize]
 def setupIterateGeneric [HolBase]
     (new_definition' : term → IO (Except String thm))
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (EXTENSION IN_ELIM_THM NOT_IN_EMPTY SUBSET FINITE_SUBSET
      IN_INSERT IN_DELETE IN_IMAGE IN_UNION IN_INTER IN_DIFF IN_SING
      FINITE_RULES CONJ_ACI o_THM COND_RAND : thm) :
     ExceptT String IO IterateGeneric := do
   let new_definition (s : String) : ExceptT String IO thm := do
     new_definition' (← q s)
-  let ASM_MESON_TAC := ASM MESON_TAC
 
   let neutral ← new_definition
     r"neutral op = @x:A. !y. (op x y = y) /\ (op y x = y)"
@@ -795,7 +753,7 @@ structure IterateKey1 where
 
 @[nospecialize]
 def setupIterateKey1 [HolBase]
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (SET_TAC : List thm → tactic)
     (SET_RULE' : term → IO (Except String thm))
     (G : IterateGeneric)
@@ -808,7 +766,6 @@ def setupIterateKey1 [HolBase]
      RIGHT_FORALL_IMP_THM : thm) :
     ExceptT String IO IterateKey1 := do
   let SET_RULE (t : term) : ExceptT String IO thm := SET_RULE' t
-  let ASM_MESON_TAC := ASM MESON_TAC
   let { monoidal, iterate, MONOIDAL_AC, IN_SUPPORT, SUPPORT_SUPPORT,
         SUPPORT_CLAUSES, .. } := G
 
@@ -1080,7 +1037,7 @@ structure IterateKey2 where
 @[nospecialize]
 def setupIterateKey2 [HolBase]
     (MESON' : List thm → term → IO (Except String thm))
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (SET_RULE' : term → IO (Except String thm))
     (GEN_BETA_CONV : ioconv)
     (G : IterateGeneric) (K1 : IterateKey1)
@@ -1093,7 +1050,6 @@ def setupIterateKey2 [HolBase]
     ExceptT String IO IterateKey2 := do
   let MESON (ths : List thm) (t : term) : ExceptT String IO thm := MESON' ths t
   let SET_RULE (t : term) : ExceptT String IO thm := SET_RULE' t
-  let ASM_MESON_TAC := ASM MESON_TAC
   let { support, MONOIDAL_AC, IN_SUPPORT, SUPPORT_CLAUSES, SUPPORT_DELTA, .. } := G
   let { ITERATE_SUPPORT, ITERATE_EXPAND_CASES, ITERATE_CLAUSES, ITERATE_UNION,
         ITERATE_SING, .. } := K1
@@ -1354,7 +1310,7 @@ structure IterateKey3 where
 
 @[nospecialize]
 def setupIterateKey3 [HolBase]
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (SET_TAC : List thm → tactic)
     (SET_RULE' : term → IO (Except String thm))
     (ARITH_RULE' : term → IO (Except String thm))
@@ -1373,7 +1329,6 @@ def setupIterateKey3 [HolBase]
   let SET_RULE (t : term) : ExceptT String IO thm := SET_RULE' t
   let ARITH_RULE (t : term) : ExceptT String IO thm := ARITH_RULE' t
   let num_CONV (t : term) : ExceptT String IO thm := num_CONV' t
-  let ASM_MESON_TAC := ASM MESON_TAC
   let { monoidal, support, MONOIDAL_AC, .. } := G
   let { NUMSEG_CLAUSES, FINITE_NUMSEG, IN_NUMSEG, NUMSEG_EMPTY, .. } := S
   let { ITERATE_SUPPORT, ITERATE_CLAUSES, ITERATE_SING, ITERATE_EQ_NEUTRAL,
@@ -1462,9 +1417,11 @@ def setupIterateKey3 [HolBase]
      (← q r"op (iterate op {x | x IN s /\ P x} (\x. if P x then f x else (g:A->B) x))
        (iterate op {x | x IN s /\ ~P x} (\x. if P x then f x else g x))") THEN
     CONJ_TAC THENL
-     [FIRST_ASSUM (fun th => tactic_of do pure (ASM_SIMP_TAC [← GSYM (← MATCH_MP ITERATE_UNION th),
-        FINITE_RESTRICT,
-        ← SET_RULE (← q r"DISJOINT {x | x IN s /\ P x} {x | x IN s /\ ~P x}")])) THEN
+     [FIRST_ASSUM (fun th => tactic_of do
+        -- OCaml builds the list right to left: SET_RULE runs before MATCH_MP
+        -- fails on an assumption that does not match.
+        let r ← SET_RULE (← q r"DISJOINT {x | x IN s /\ P x} {x | x IN s /\ ~P x}")
+        pure (ASM_SIMP_TAC [← GSYM (← MATCH_MP ITERATE_UNION th), FINITE_RESTRICT, r])) THEN
       AP_THM_TAC THEN AP_TERM_TAC THEN SET_TAC [],
       BINOP_TAC THEN FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP ITERATE_EQ) THEN
       SIMP_TAC [IN_ELIM_THM]])
@@ -1574,28 +1531,13 @@ def setupIterateKey3 [HolBase]
     over the points of `k` where `f` lands in `dom DIFF {neut}`, visiting them
     in the order fixed by `<<=`, so unlike `iterate` it makes sense for a
     NON-COMMUTATIVE `op`; `dom`/`neut` refine the notions of domain and neutral
-    element.  This section "tries to be stylistically similar to iterate
-    above" (iterate.ml 893), so where a lemma mirrors a `364-889` key lemma the
-    name matches with `ITERATE` -> `ITERATO` (SUPPORT, EXPAND_CASES,
-    CLAUSES_GEN, CLAUSES, EQ, INDUCT, CLOSED).  Under `prioritize_num`
-    (iterate.ml 10) every bare numeral is `:num`.
+    element.  Lemmas mirror the generic key lemmas with `ITERATE` -> `ITERATO`.
 
-    The `o`-composition ORDER matters here.  iterate.ml 896
-    is `let iterato = (new_specification ["iterato"] o prove) (tm,tac)`.  `f o
-    g` applies `g` FIRST, so `prove` runs FIRST (producing the existence
-    theorem) and `new_specification ["iterato"] SECOND (introducing the
-    constant).  Rendered below as an explicit TWO-STEP: prove the `?itty. ...`
-    theorem, then feed it to the threaded `new_specification`.
-    `new_specification` is a SIDE-EFFECTING kernel operation, so it is THREADED
-    IN as a parameter from Session (exactly as `new_definition`), and must NOT
-    live in HolMath.
-
-    *** HAZARD (b): `<<=`. ***  Not declared in iterate.ml; it comes from
-    `realax.ml:18 parse_as_infix("<<=",(12,"right"))` and is already registered
-    in this development's bootstrap prefix.  Verified at runtime: `x <<= y`
-    parses as a 2-argument right-infix application whose head is the RELATION
-    VARIABLE `<<=` (`iterato` quantifies over an arbitrary order, so `<<=` is a
-    bound variable, NOT a constant). -/
+    `iterato` (iterate.ml 896) is `new_specification ["iterato"] o prove`: the
+    existence theorem is proved first, then fed to the threaded
+    `new_specification`.  `<<=` is not declared in iterate.ml - it comes from
+    `realax.ml` and is already registered - and here it is a bound relation
+    variable (`iterato` quantifies over an arbitrary order), not a constant. -/
 structure IterateOrdered where
   /-- `iterato` (iterate.ml 896): the constant introduced by
       `new_specification ["iterato"]` from the proved existence theorem.  Its
@@ -1672,7 +1614,7 @@ structure IterateOrdered where
 def setupIterateOrdered [HolBase]
     (new_specification' : List String → thm → IO (Except String thm))
     (MESON' : List thm → term → IO (Except String thm))
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (SET_TAC : List thm → tactic)
     (SET_RULE' : term → IO (Except String thm))
     (ARITH_RULE' : term → IO (Except String thm))
@@ -1693,7 +1635,6 @@ def setupIterateOrdered [HolBase]
   let MESON (ths : List thm) (t : term) : ExceptT String IO thm := MESON' ths t
   let SET_RULE (t : term) : ExceptT String IO thm := SET_RULE' t
   let ARITH_RULE (t : term) : ExceptT String IO thm := ARITH_RULE' t
-  let ASM_MESON_TAC := ASM MESON_TAC
   let { support, .. } := G
   let { ITERATE_EXPAND_CASES, ITERATE_SUPPORT, ITERATE_CLAUSES, .. } := K1
   let { NUMSEG_LREC, NUMSEG_EMPTY, FINITE_NUMSEG, IN_NUMSEG, .. } := S
@@ -1899,16 +1840,20 @@ def setupIterateOrdered [HolBase]
         (!i x. i IN k /\ f i IN dom /\ ~(f i = neut) /\ P x ==> P (op (f i) x))
         ==> P(iterato dom neut op (<<=) k f)"
    (← do
+    let a1 ← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")
+    let t2 ← TAUT
+       (← q r"(p ==> r) /\ (q ==> r) ==> (~p ==> q) ==> r")
     let m2 ← MESON []
       (← q r"(!n k. FINITE k /\ CARD k = n ==> P k) ==> (!k. FINITE k ==> P k)")
+    let t1 ← TAUT
+       (← q r"(a /\ p ==> if q then r else T) <=> a ==> q ==> p ==> r")
     let r1 ← SET_RULE (← q r"i IN k /\ f i IN s /\ ~(f i = z) /\ Q <=>
       i IN {j | j IN k /\ f j IN s DIFF {z}} /\ Q")
     pure
      (REPEAT GEN_TAC THEN REWRITE_TAC [r1] THEN
       ONCE_REWRITE_TAC [ITERATO_EXPAND_CASES] THEN
       ONCE_REWRITE_TAC [COND_RAND] THEN SIMP_TAC [] THEN
-      REWRITE_TAC [← TAUT
-       (← q r"(a /\ p ==> if q then r else T) <=> a ==> q ==> p ==> r")] THEN
+      REWRITE_TAC [t1] THEN
       STRIP_TAC THEN
       SPEC_TAC ((← q r"{i | i IN k /\ (f:K->A) i IN dom DIFF {neut}}"), (← q r"k:K->bool")) THEN
       MATCH_MP_TAC m2 THEN
@@ -1924,8 +1869,7 @@ def setupIterateOrdered [HolBase]
         ← q r"f:K->A"]
        ITERATO_CLAUSES_EXISTS) THEN
       DISCH_THEN (MP_TAC o SPEC (← q r"k:K->bool") o CONJUNCT2) THEN
-      ASM_SIMP_TAC [FINITE_RESTRICT] THEN MATCH_MP_TAC (← TAUT
-       (← q r"(p ==> r) /\ (q ==> r) ==> (~p ==> q) ==> r")) THEN
+      ASM_SIMP_TAC [FINITE_RESTRICT] THEN MATCH_MP_TAC t2 THEN
       CONJ_TAC THENL
        [ONCE_REWRITE_TAC [← GSYM ITERATO_SUPPORT] THEN SIMP_TAC [] THEN
         ASM_REWRITE_TAC [ITERATO_CLAUSES_EXISTS],
@@ -1935,7 +1879,7 @@ def setupIterateOrdered [HolBase]
       ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
       EXISTS_TAC (← q r"n - 1") THEN
       ASM_SIMP_TAC [CARD_DELETE, FINITE_DELETE, IN_DELETE] THEN
-      REWRITE_TAC [← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")] THEN
+      REWRITE_TAC [a1] THEN
       ASM_MESON_TAC [CARD_EQ_0]))
 
   let ITERATO_CLOSED ← prove
@@ -1951,6 +1895,9 @@ def setupIterateOrdered [HolBase]
         monoidal op ==> iterato (:A) (neutral op) op (<<=) = iterate op"
    (← do
     let r3 ← SET_RULE (← q r"i IN k ==> i INSERT (k DELETE i) = k")
+    let a1 ← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")
+    let t1 ← TAUT
+       (← q r"(p ==> r) /\ (q ==> r) ==> (~p ==> q) ==> r")
     let m2 ← MESON []
       (← q r"(!n k. FINITE k /\ CARD k = n ==> P k) ==> (!k. FINITE k ==> P k)")
     let m1 ← MESON []
@@ -1974,8 +1921,7 @@ def setupIterateOrdered [HolBase]
         ← q r"f:K->A"]
        ITERATO_CLAUSES_EXISTS) THEN
       DISCH_THEN (MP_TAC o SPEC (← q r"k:K->bool") o CONJUNCT2) THEN
-      ASM_SIMP_TAC [FINITE_RESTRICT] THEN MATCH_MP_TAC (← TAUT
-       (← q r"(p ==> r) /\ (q ==> r) ==> (~p ==> q) ==> r")) THEN
+      ASM_SIMP_TAC [FINITE_RESTRICT] THEN MATCH_MP_TAC t1 THEN
       CONJ_TAC THENL
        [ONCE_REWRITE_TAC [← GSYM ITERATO_SUPPORT, ← GSYM ITERATE_SUPPORT] THEN
         REWRITE_TAC [support, IN_UNIV, IN_DIFF, IN_SING] THEN
@@ -1984,7 +1930,7 @@ def setupIterateOrdered [HolBase]
       REWRITE_TAC [IN_DIFF, IN_SING] THEN STRIP_TAC THEN
       FIRST_X_ASSUM SUBST1_TAC THEN
       FIRST_X_ASSUM (MP_TAC o SPECL [← q r"n - 1", ← q r"k DELETE (i:K)"]) THEN
-      REWRITE_TAC [← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")] THEN
+      REWRITE_TAC [a1] THEN
       ASM_SIMP_TAC [FINITE_DELETE, CARD_DELETE] THEN
       ANTS_TAC THENL [ASM_MESON_TAC [CARD_EQ_0], DISCH_THEN SUBST1_TAC] THEN
       FIRST_X_ASSUM (MP_TAC o ISPECL [← q r"f:K->A", ← q r"i:K", ← q r"k DELETE (i:K)"] o
@@ -2032,25 +1978,22 @@ def setupIterateOrdered [HolBase]
     monoid law via an arithmetic decision procedure) and a `*_CLAUSES` (the
     empty/insert recursion via `ITERATE_CLAUSES`).
 
-    *** THE TYPE DISCIPLINE IS THE POINT. ***  This range is under
-    `prioritize_num()` (iterate.ml 10), so a BARE numeral parses as `:num`.
-    The four operations live at THREE DIFFERENT TYPES, and each takes its type
-    NOT from any bare numeral but from the EXPLICIT type annotation on the
-    folded operator, EXACTLY as the OCaml does:
+    This range is under `prioritize_num()`, so a bare numeral parses as
+    `:num`.  The four operations live at three different types, and each takes
+    its type from the explicit annotation on the folded operator, not from a
+    bare numeral:
       nproduct  over `:num`   -- `iterate (( * ):num->num->num)`
       iproduct  over `:int`   -- `iterate (( * ):int->int->int)`
       product   over `:real`  -- `iterate (( * ):real->real->real)`
       isum      over `:int`   -- `iterate ((+):int->int->int)`
-    The `&1`/`&0` in the `:int` and `:real` neutral lemmas are `int_of_num`/
-    `real_of_num` applications (`&`), so THEY too carry the type explicitly and
-    do not depend on numeral priority.  `sum` over `:real` is NOT in this range
-    - it arrives at iterate.ml 1984, after `prioritize_real()`.
+    The `&1`/`&0` in the `:int`/`:real` neutral lemmas are `int_of_num`/
+    `real_of_num` applications, so they too carry the type explicitly.  `sum`
+    over `:real` is not here - it arrives after `prioritize_real()`.
 
     Threads `IK1.ITERATE_CLAUSES` (the generic recursion these instantiate),
-    plus the neutral-uniqueness lemma `SELECT_UNIQUE`, `SWAP_FORALL_THM`, the
-    arithmetic identities for each type (`MULT_CLAUSES`/`MULT_EQ_1` for num,
-    `INT_MUL_L/RID`, `INT_ADD_L/RID`, `REAL_MUL_L/RID`) and the three decision
-    tactics `ARITH_TAC`/`INT_ARITH_TAC`/`REAL_ARITH_TAC`. -/
+    plus `SELECT_UNIQUE`, `SWAP_FORALL_THM`, the arithmetic identities for each
+    type and the three decision tactics
+    `ARITH_TAC`/`INT_ARITH_TAC`/`REAL_ARITH_TAC`. -/
 structure IterateSpecial where
   /-- `nproduct` (iterate.ml 1194): `nproduct = iterate (( * ):num->num->num)`,
       the finite product over `:num`.  `new_definition`. -/
@@ -2277,7 +2220,7 @@ structure IterateNsum1 where
 @[nospecialize]
 def setupIterateNsum1 [HolBase]
     (new_definition' : term → IO (Except String thm))
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (SET_TAC : List thm → tactic)
     (ARITH_TAC : tactic)
     (ARITH_RULE' : term → IO (Except String thm))
@@ -2292,7 +2235,6 @@ def setupIterateNsum1 [HolBase]
   let new_definition (s : String) : ExceptT String IO thm := do
     new_definition' (← q s)
   let ARITH_RULE (t : term) : ExceptT String IO thm := ARITH_RULE' t
-  let ASM_MESON_TAC := ASM MESON_TAC
   let { neutral, monoidal, iterate, support, SUPPORT_SUPPORT, .. } := IGen
   let { ITERATE_CLAUSES, ITERATE_UNION, ITERATE_DIFF, ITERATE_INCL_EXCL,
         ITERATE_EQ_NEUTRAL, ITERATE_EXPAND_CASES, ITERATE_DELETE, .. } := IK1
@@ -2559,7 +2501,7 @@ structure IterateNsum2 where
 
 @[nospecialize]
 def setupIterateNsum2 [HolBase]
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (SET_TAC : List thm → tactic)
     (ARITH_TAC : tactic)
     (ARITH_RULE' : term → IO (Except String thm))
@@ -2576,7 +2518,6 @@ def setupIterateNsum2 [HolBase]
   let ARITH_RULE (t : term) : ExceptT String IO thm := ARITH_RULE' t
   let SET_RULE (t : term) : ExceptT String IO thm :=
     HolCore.Tactics.prove HolBase.B t (SET_TAC [])
-  let ASM_MESON_TAC := ASM MESON_TAC
   let { support, .. } := IGen
   let { ITERATE_IMAGE, ITERATE_RESTRICT_SET, ITERATE_EQ_GENERAL,
         ITERATE_EQ_GENERAL_INVERSES, ITERATE_INJECTION, ITERATE_UNION_NONZERO,
@@ -2956,7 +2897,7 @@ structure IterateNsum3 where
 
 @[nospecialize]
 def setupIterateNsum3 [HolBase]
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (INDUCT_TAC : tactic)
     (ARITH_TAC : tactic)
     (ARITH_RULE' : term → IO (Except String thm))
@@ -2970,7 +2911,6 @@ def setupIterateNsum3 [HolBase]
      IMP_CONJ RIGHT_FORALL_IMP_THM : thm) :
     ExceptT String IO IterateNsum3 := do
   let ARITH_RULE (t : term) : ExceptT String IO thm := ARITH_RULE' t
-  let ASM_MESON_TAC := ASM MESON_TAC
   let { ITERATE_CLOSED, ITERATE_RELATED, ITERATE_CLOSED_NONEMPTY,
         ITERATE_RELATED_NONEMPTY, .. } := IK1
   let { ITERATE_CLAUSES_NUMSEG, ITERATE_CLAUSES_NUMSEG_LT, ITERATE_CLAUSES_NUMSEG_LE,
@@ -3359,7 +3299,7 @@ structure IterateSum1 where
 @[nospecialize]
 def setupIterateSum1 [HolBase]
     (new_definition' : term → IO (Except String thm))
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (MESON' : List thm → term → IO (Except String thm))
     (SET_TAC : List thm → tactic)
     (SET_RULE' : term → IO (Except String thm))
@@ -3380,7 +3320,6 @@ def setupIterateSum1 [HolBase]
   let MESON (ths : List thm) (t : term) : ExceptT String IO thm := MESON' ths t
   let SET_RULE (t : term) : ExceptT String IO thm := SET_RULE' t
   let REAL_ARITH (t : term) : ExceptT String IO thm := REAL_ARITH' t
-  let ASM_MESON_TAC := ASM MESON_TAC
   let { neutral, monoidal, iterate, support, SUPPORT_SUPPORT, .. } := IGen
   let { ITERATE_CLAUSES, ITERATE_UNION, ITERATE_DIFF, ITERATE_INCL_EXCL,
         ITERATE_EQ_NEUTRAL, ITERATE_EXPAND_CASES, ITERATE_DELETE, .. } := IK1
@@ -3586,13 +3525,16 @@ def setupIterateSum1 [HolBase]
          FINITE s /\ sum s u = &0
          ==> (!i. i IN s ==> u i = &0) \/
              (?j k. j IN s /\ u j < &0 /\ k IN s /\ u k > &0)"
-   (REPEAT STRIP_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
-     (← MESON [← REAL_ARITH (← q r"(&0 <= --u <=> ~(u > &0)) /\ (&0 <= u <=> ~(u < &0))")]
+   (← do
+    let r2 ← REAL_ARITH (← q r"x = &0 <=> --x = &0")
+    let m1 ← MESON [← REAL_ARITH (← q r"(&0 <= --u <=> ~(u > &0)) /\ (&0 <= u <=> ~(u < &0))")]
        (← q r"(?j k:A. j IN s /\ u j < &0 /\ k IN s /\ u k > &0) \/
-        (!i. i IN s ==> &0 <= u i) \/ (!i. i IN s ==> &0 <= --(u i))")) THEN
-    ASM_REWRITE_TAC [] THEN DISJ1_TAC THENL
-     [ALL_TAC, ONCE_REWRITE_TAC [← REAL_ARITH (← q r"x = &0 <=> --x = &0")]] THEN
-    MATCH_MP_TAC SUM_POS_EQ_0 THEN ASM_REWRITE_TAC [SUM_NEG, REAL_NEG_0])
+        (!i. i IN s ==> &0 <= u i) \/ (!i. i IN s ==> &0 <= --(u i))")
+    pure
+     (REPEAT STRIP_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC m1 THEN
+      ASM_REWRITE_TAC [] THEN DISJ1_TAC THENL
+       [ALL_TAC, ONCE_REWRITE_TAC [r2]] THEN
+      MATCH_MP_TAC SUM_POS_EQ_0 THEN ASM_REWRITE_TAC [SUM_NEG, REAL_NEG_0]))
 
   let SUM_DELETE ← prove
    r"!f s a:A. FINITE s /\ a IN s ==> sum (s DELETE a) f = sum s f - f(a)"
@@ -3725,7 +3667,7 @@ structure IterateSum2 where
 
 @[nospecialize]
 def setupIterateSum2 [HolBase]
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (SET_TAC : List thm → tactic)
     (SET_RULE' : term → IO (Except String thm))
     (REAL_ARITH' : term → IO (Except String thm))
@@ -3744,7 +3686,6 @@ def setupIterateSum2 [HolBase]
     ExceptT String IO IterateSum2 := do
   let SET_RULE (t : term) : ExceptT String IO thm := SET_RULE' t
   let REAL_ARITH (t : term) : ExceptT String IO thm := REAL_ARITH' t
-  let ASM_MESON_TAC := ASM MESON_TAC
   let { support, .. } := IGen
   let { ITERATE_CLOSED, ITERATE_RELATED, ITERATE_CLOSED_NONEMPTY,
         ITERATE_RELATED_NONEMPTY, .. } := IK1
@@ -4547,14 +4488,18 @@ def setupIterateSum4 [HolBase]
    r"!x y n.
         1 <= n ==> x pow n - y pow n =
                    (x - y) * sum(0..n-1) (\i. x pow i * y pow (n - 1 - i))"
-   (REWRITE_TAC [← GSYM SUM_LMUL] THEN
-    REWRITE_TAC [← REAL_ARITH
-     (← q r"(x - y) * (a * b):real = (x * a) * b - a * (y * b)")] THEN
-    SIMP_TAC [← GSYM real_pow, ADD1, ← ARITH_RULE
+   (← do
+    let a1 ← ARITH_RULE
       (← q r"1 <= n /\ x <= n - 1
-       ==> n - 1 - x = n - (x + 1) /\ SUC(n - 1 - x) = n - x")] THEN
-    REWRITE_TAC [SUM_DIFFS_ALT, LE_0] THEN
-    SIMP_TAC [SUB_0, SUB_ADD, SUB_REFL, real_pow, REAL_MUL_LID, REAL_MUL_RID])
+       ==> n - 1 - x = n - (x + 1) /\ SUC(n - 1 - x) = n - x")
+    let r1 ← REAL_ARITH
+     (← q r"(x - y) * (a * b):real = (x * a) * b - a * (y * b)")
+    pure
+     (REWRITE_TAC [← GSYM SUM_LMUL] THEN
+      REWRITE_TAC [r1] THEN
+      SIMP_TAC [← GSYM real_pow, ADD1, a1] THEN
+      REWRITE_TAC [SUM_DIFFS_ALT, LE_0] THEN
+      SIMP_TAC [SUB_0, SUB_ADD, SUB_REFL, real_pow, REAL_MUL_LID, REAL_MUL_RID]))
 
   let REAL_SUB_POW_R1 ← prove
    r"!x n. 1 <= n ==> x pow n - &1 = (x - &1) * sum(0..n-1) (\i. x pow i)"
@@ -4629,7 +4574,7 @@ structure IterateSum5 where
 @[nospecialize]
 def setupIterateSum5 [HolBase]
     (new_definition' : term → IO (Except String thm))
-    (MESON_TAC : List thm → tactic)
+    (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (MESON' : List thm → term → IO (Except String thm))
     (SET_RULE' : term → IO (Except String thm))
     (REAL_ARITH' : term → IO (Except String thm))
@@ -4660,7 +4605,6 @@ def setupIterateSum5 [HolBase]
   let SET_RULE (t : term) : ExceptT String IO thm := SET_RULE' t
   let REAL_ARITH (t : term) : ExceptT String IO thm := REAL_ARITH' t
   let ARITH_RULE (t : term) : ExceptT String IO thm := ARITH_RULE' t
-  let ASM_MESON_TAC := ASM MESON_TAC
   let LE := LE_thm
   let { NUMSEG_SING, .. } := ISeg
   let { SUM_CLAUSES, SUM_LMUL, SUM_RMUL, SUM_0, SUM_EQ, .. } := IS1
@@ -4675,19 +4619,23 @@ def setupIterateSum5 [HolBase]
     ==> sum(0..n) (\i. a i * x pow i) - sum(0..n) (\i. a i * y pow i) =
         (x - y) *
         sum(0..n-1) (\j. sum(j+1..n) (\i. a i * y pow (i - j - 1)) * x pow j)"
-   (REPEAT STRIP_TAC THEN
-    REWRITE_TAC [← GSYM SUM_SUB_NUMSEG, ← GSYM REAL_SUB_LDISTRIB] THEN
-    GEN_REWRITE_TAC LAND_CONV [← MATCH_MP SUM_CLAUSES_LEFT (← SPEC_ALL LE_0)] THEN
-    REWRITE_TAC [REAL_SUB_REFL, real_pow, REAL_MUL_RZERO, REAL_ADD_LID] THEN
-    SIMP_TAC [REAL_SUB_POW, ADD_CLAUSES] THEN
-    ONCE_REWRITE_TAC [← REAL_ARITH (← q r"a * x * s:real = x * a * s")] THEN
-    REWRITE_TAC [SUM_LMUL] THEN AP_TERM_TAC THEN
-    SIMP_TAC [← GSYM SUM_LMUL, ← GSYM SUM_RMUL, SUM_SUM_PRODUCT, FINITE_NUMSEG] THEN
-    MATCH_MP_TAC SUM_EQ_GENERAL_INVERSES THEN
-    REPEAT (EXISTS_TAC (← q r"\(x:num,y:num). (y,x)")) THEN
-    REWRITE_TAC [FORALL_IN_GSPEC, IN_ELIM_PAIR_THM, IN_NUMSEG] THEN
-    REWRITE_TAC [← ARITH_RULE (← q r"a - b - c:num = a - (b + c)"), ADD_SYM] THEN
-    REWRITE_TAC [REAL_MUL_AC] THEN ARITH_TAC)
+   (← do
+    let a1 ← ARITH_RULE (← q r"a - b - c:num = a - (b + c)")
+    let r1 ← REAL_ARITH (← q r"a * x * s:real = x * a * s")
+    pure
+      (REPEAT STRIP_TAC THEN
+       REWRITE_TAC [← GSYM SUM_SUB_NUMSEG, ← GSYM REAL_SUB_LDISTRIB] THEN
+       GEN_REWRITE_TAC LAND_CONV [← MATCH_MP SUM_CLAUSES_LEFT (← SPEC_ALL LE_0)] THEN
+       REWRITE_TAC [REAL_SUB_REFL, real_pow, REAL_MUL_RZERO, REAL_ADD_LID] THEN
+       SIMP_TAC [REAL_SUB_POW, ADD_CLAUSES] THEN
+       ONCE_REWRITE_TAC [r1] THEN
+       REWRITE_TAC [SUM_LMUL] THEN AP_TERM_TAC THEN
+       SIMP_TAC [← GSYM SUM_LMUL, ← GSYM SUM_RMUL, SUM_SUM_PRODUCT, FINITE_NUMSEG] THEN
+       MATCH_MP_TAC SUM_EQ_GENERAL_INVERSES THEN
+       REPEAT (EXISTS_TAC (← q r"\(x:num,y:num). (y,x)")) THEN
+       REWRITE_TAC [FORALL_IN_GSPEC, IN_ELIM_PAIR_THM, IN_NUMSEG] THEN
+       REWRITE_TAC [a1, ADD_SYM] THEN
+       REWRITE_TAC [REAL_MUL_AC] THEN ARITH_TAC))
 
   let REAL_SUB_POLYFUN_ALT ← prove
    r"!a x y n.
@@ -4710,11 +4658,13 @@ def setupIterateSum5 [HolBase]
          ==> FINITE {x | sum(0..n) (\i. c i * x pow i) = &0} /\
              CARD {x | sum(0..n) (\i. c i * x pow i) = &0} <= n"
    (← do
+    let a3 ← ARITH_RULE (← q r"(n + 1) - n - 1 = 0")
     let m2 ← MESON [FINITE_INSERT, CARD_CLAUSES,
                     ← ARITH_RULE (← q r"x <= n ==> SUC x <= SUC n /\ x <= SUC n")]
       (← q r"FINITE s /\ CARD s <= n
        ==> FINITE(r INSERT s) /\ CARD(r INSERT s) <= SUC n")
     let r1 ← SET_RULE (← q r"{x | x = c \/ P x} = c INSERT {x | P x}")
+    let a1 ← ARITH_RULE (← q r"1 <= SUC n")
     pure
      (REWRITE_TAC [NOT_FORALL_THM, NOT_IMP] THEN INDUCT_TAC THENL
        [REWRITE_TAC [NUMSEG_SING, IN_SING, UNWIND_THM2, SUM_CLAUSES_NUMSEG] THEN
@@ -4732,51 +4682,62 @@ def setupIterateSum5 [HolBase]
           X_GEN_TAC (← q r"r:real") THEN DISCH_TAC THEN
           MP_TAC (← GEN (← q r"x:real") (← ISPECL [← q r"c:num->real", ← q r"x:real",
             ← q r"r:real", ← q r"SUC n"] REAL_SUB_POLYFUN)) THEN
-          ASM_REWRITE_TAC [← ARITH_RULE (← q r"1 <= SUC n"), REAL_SUB_RZERO] THEN
+          ASM_REWRITE_TAC [a1, REAL_SUB_RZERO] THEN
           DISCH_THEN (fun th => REWRITE_TAC [th, REAL_ENTIRE, REAL_SUB_0]) THEN
           REWRITE_TAC [r1] THEN
           MATCH_MP_TAC m2 THEN
           REWRITE_TAC [SUC_SUB1] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
           EXISTS_TAC (← q r"n:num") THEN REWRITE_TAC [IN_NUMSEG, ADD1, LE_REFL, LE_0] THEN
-          REWRITE_TAC [SUM_SING_NUMSEG, ← ARITH_RULE (← q r"(n + 1) - n - 1 = 0")] THEN
+          REWRITE_TAC [SUM_SING_NUMSEG, a3] THEN
           ASM_REWRITE_TAC [← GSYM ADD1, real_pow, REAL_MUL_RID]]]))
 
   let REAL_POLYFUN_FINITE_ROOTS ← prove
    r"!n c. FINITE {x | sum(0..n) (\i. c i * x pow i) = &0} <=>
          ?i. i IN 0..n /\ ~(c i = &0)"
-   (REPEAT GEN_TAC THEN REWRITE_TAC [← TAUT (← q r"a /\ ~b <=> ~(a ==> b)")] THEN
-    REWRITE_TAC [← GSYM NOT_FORALL_THM] THEN EQ_TAC THEN
-    SIMP_TAC [REAL_POLYFUN_ROOTBOUND] THEN
-    ONCE_REWRITE_TAC [← GSYM CONTRAPOS_THM] THEN
-    SIMP_TAC [REAL_MUL_LZERO, SUM_0] THEN
-    REWRITE_TAC [← SET_RULE (← q r"{x | T} = (:real)"), real_INFINITE, ← GSYM INFINITE])
+   (← do
+    let s1 ← SET_RULE (← q r"{x | T} = (:real)")
+    let t1 ← TAUT (← q r"a /\ ~b <=> ~(a ==> b)")
+    pure
+     (REPEAT GEN_TAC THEN REWRITE_TAC [t1] THEN
+      REWRITE_TAC [← GSYM NOT_FORALL_THM] THEN EQ_TAC THEN
+      SIMP_TAC [REAL_POLYFUN_ROOTBOUND] THEN
+      ONCE_REWRITE_TAC [← GSYM CONTRAPOS_THM] THEN
+      SIMP_TAC [REAL_MUL_LZERO, SUM_0] THEN
+      REWRITE_TAC [s1, real_INFINITE, ← GSYM INFINITE]))
 
   let REAL_POLYFUN_EQ_0 ← prove
    r"!n c. (!x. sum(0..n) (\i. c i * x pow i) = &0) <=>
          (!i. i IN 0..n ==> c i = &0)"
-   (REPEAT GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL
-     [GEN_REWRITE_TAC I [← TAUT (← q r"p <=> ~ ~p")] THEN DISCH_THEN (MP_TAC o MATCH_MP
-       REAL_POLYFUN_ROOTBOUND) THEN
-      ASM_REWRITE_TAC [real_INFINITE, ← GSYM INFINITE, DE_MORGAN_THM,
-                       ← SET_RULE (← q r"{x | T} = (:real)")],
-      ASM_SIMP_TAC [IN_NUMSEG, LE_0, REAL_MUL_LZERO, SUM_0]])
+   (← do
+    let s1 ← SET_RULE (← q r"{x | T} = (:real)")
+    let t1 ← TAUT (← q r"p <=> ~ ~p")
+    pure
+     (REPEAT GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+       [GEN_REWRITE_TAC I [t1] THEN DISCH_THEN (MP_TAC o MATCH_MP
+         REAL_POLYFUN_ROOTBOUND) THEN
+        ASM_REWRITE_TAC [real_INFINITE, ← GSYM INFINITE, DE_MORGAN_THM, s1],
+        ASM_SIMP_TAC [IN_NUMSEG, LE_0, REAL_MUL_LZERO, SUM_0]]))
 
   let REAL_POLYFUN_EQ_CONST ← prove
    r"!n c k. (!x. sum(0..n) (\i. c i * x pow i) = k) <=>
            c 0 = k /\ (!i. i IN 1..n ==> c i = &0)"
-   (REPEAT GEN_TAC THEN MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC
-     (← q r"!x. sum(0..n) (\i. (if i = 0 then c 0 - k else c i) * x pow i) = &0") THEN
-    CONJ_TAC THENL
-     [SIMP_TAC [SUM_CLAUSES_LEFT, LE_0, real_pow, REAL_MUL_RID] THEN
-      REWRITE_TAC [← REAL_ARITH (← q r"(c - k) + s = &0 <=> c + s = k")] THEN
-      AP_TERM_TAC THEN ABS_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-      AP_TERM_TAC THEN MATCH_MP_TAC SUM_EQ THEN GEN_TAC THEN
-      REWRITE_TAC [IN_NUMSEG] THEN
-      COND_CASES_TAC THEN ASM_REWRITE_TAC [ARITH],
-      REWRITE_TAC [REAL_POLYFUN_EQ_0, IN_NUMSEG, LE_0] THEN
-      GEN_REWRITE_TAC LAND_CONV [← MESON []
-       (← q r"(!n. P n) <=> P 0 /\ (!n. ~(n = 0) ==> P n)")] THEN
-      SIMP_TAC [LE_0, REAL_SUB_0] THEN MESON_TAC [LE_1]])
+   (← do
+    let m1 ← MESON []
+       (← q r"(!n. P n) <=> P 0 /\ (!n. ~(n = 0) ==> P n)")
+    let r1 ← REAL_ARITH (← q r"(c - k) + s = &0 <=> c + s = k")
+    pure
+      (REPEAT GEN_TAC THEN MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC
+        (← q r"!x. sum(0..n) (\i. (if i = 0 then c 0 - k else c i) * x pow i) = &0") THEN
+       CONJ_TAC THENL
+        [SIMP_TAC [SUM_CLAUSES_LEFT, LE_0, real_pow, REAL_MUL_RID] THEN
+         REWRITE_TAC [r1] THEN
+         AP_TERM_TAC THEN ABS_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+         AP_TERM_TAC THEN MATCH_MP_TAC SUM_EQ THEN GEN_TAC THEN
+         REWRITE_TAC [IN_NUMSEG] THEN
+         COND_CASES_TAC THEN ASM_REWRITE_TAC [ARITH],
+         REWRITE_TAC [REAL_POLYFUN_EQ_0, IN_NUMSEG, LE_0] THEN
+         GEN_REWRITE_TAC LAND_CONV [m1] THEN
+         SIMP_TAC [LE_0, REAL_SUB_0] THEN MESON_TAC [LE_1]]))
 
   /- ---------------------------------------------------------------------- -/
   /- A general notion of polynomial function.                               -/

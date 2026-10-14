@@ -5,62 +5,13 @@ Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Lean4 translation by Chris Walton 2026
 
-`calc_rat.ml` sits on top of `real.ml` (its `needs "real.ml"`) and is the file
-that finally makes HOL Light's real arithmetic work over the RATIONALS.  Unlike
-`real.ml`, which is 329 theorems, this file is predominantly CONVERSIONS: of its
-48 top-level bindings only SIXTEEN are `prove`, and it contains 39 `THENC`
-chains and 22 `GEN_REWRITE_CONV` calls - the densest conversion code in the
-development.
-
-*** WHY THIS FILE MATTERS: IT SUPERSEDES THREE EARLIER DEFINITIONS. ***
-`GEN_REAL_ARITH` is defined for the THIRD and last time here, completing an
-arity chain that shrinks at each step:
-
-  realarith.ml 185   GEN_REAL_ARITH1   ELEVEN parameters (two abs-elim slots)
-  realarith.ml 517   GEN_REAL_ARITH2   NINE (abs/max/min hardwired)
-  calc_rat.ml  537   GEN_REAL_ARITH3   ONE  (just the PROVER)
-
-and `REAL_ARITH` likewise reaches its final form (REAL_ARITH3, 544), as does
-`REAL_ARITH_TAC` (REAL_ARITH_TAC2, 553 - real.ml 106 defined the first).
-`ASM_REAL_ARITH_TAC` (555) appears here for the first time.
-
-THE DECISIVE CHANGE is at line 434: the semiring normaliser is instantiated with
-`is_ratconst` where realarith.ml used `is_realintconst`.  That single argument is
-why realarith.ml's REAL_ARITH cannot prove `abs x < e / &2 ==> abs x < e` while
-this file's can - a rational constant is opaque to the earlier normaliser, so it
-becomes part of the monomial rather than a coefficient the linear arithmetic can
-fold.  Three tests in HolTest/RealArithTest.lean and HolTest/RealTest.lean are
-currently asserted to FAIL for exactly that reason, labelled
-`[FWD MARKER: fixed by calc_rat.ml]`, and are expected to start proving once
-this file is wired in.
-
-THE NINETEEN SECTIONS:
-
-    13- 18   DECIMAL, a new constant: `DECIMAL x y = &x / &y`
-    20- 80   five handy lemmas, RAT_LEMMA1..5
-    81- 94   REAL_INT_RAT_CONV
-    95-171   relational operations (LE, LT, GE, GT, EQ, SGN)
-   172-229   the unary operations - NEG, ABS, INV; "all easy"
-   230-275   addition
-   276-286   subtraction
-   287-347   multiplication
-   348-358   division
-   359-371   powers
-   372-385   max and min
-   386-427   everything: the reduction net, RED/REDUCE/COMPUTE convs
-   428-438   the real normalizer over rational constants (six REAL_POLY_* convs)
-   439-486   REAL_POLY_CONV extended to handle `inv` and division
-   487-533   REAL_RING, real_ideal_cofactors, REAL_IDEAL_CONV
-   534-559   the FINAL GEN_REAL_ARITH / REAL_ARITH / REAL_ARITH_TAC, and
-             ASM_REAL_ARITH_TAC
-   560-577   three equivalential forms of transitivity
-   578-630   REAL_FIELD
-   631-688   eight monotone mappings between R and (-1,1)
-
-NOTE `REAL_POLY_CONV` is defined TWICE (431 and 443), the second extending the
-first to `inv` and division, so the two are numbered here as
-`GEN_REAL_ARITH` and its siblings are.
--/
+Makes HOL Light's real arithmetic work over the rationals.  This file defines
+`GEN_REAL_ARITH`, `REAL_ARITH` and `REAL_ARITH_TAC` for the last time (the
+semiring normaliser is now instantiated with `is_ratconst` rather than
+`is_realintconst`), and introduces `ASM_REAL_ARITH_TAC`.  Because OCaml shadows
+and Lean cannot, these are the `3`-numbered versions (`GEN_REAL_ARITH3`,
+`REAL_ARITH3`, `REAL_ARITH_TAC2`); `REAL_POLY_CONV` is likewise defined twice,
+the second extending the first to `inv` and division. -/
 
 import HolMath.Real
 import HolMath.Base
@@ -243,6 +194,10 @@ structure RealRatRelConvs where
   REAL_RAT_SGN_CONV : ioconv
   deriving Inhabited
 
+/- ---------------------------------------------------------------------- -/
+/- Relational operations.                                                 -/
+/- ---------------------------------------------------------------------- -/
+
 /-- Build the relational conversions (calc_rat.ml 84-171). -/
 @[nospecialize]
 def setupRealRatRelConvs [HolBase] (Lm : RatLemmas) (DECIMAL : thm)
@@ -409,6 +364,7 @@ def setupRealRatArithConvs [HolBase] (Lm : RatLemmas) (Rl : RealRatRelConvs)
   let y1 ← q r"y1:real"
   let y2 ← q r"y2:real"
   let y3 ← q r"y3:real"
+  -- Addition.
   let RAW_REAL_RAT_ADD_CONV : ioconv := fun tm => ExceptT.run do
     let (r1, r2) ← liftExcept (dest_addop tm)
     let (x1', y1') ← liftExcept (dest_divop r1)
@@ -435,7 +391,7 @@ def setupRealRatArithConvs [HolBase] (Lm : RatLemmas) (Rl : RealRatRelConvs)
     MP th1 (← TRANS th2 (← SYM th3))
   let REAL_RAT_ADD_CONV := BINOP_CONV Rl.REAL_INT_RAT_CONV THENC
     RAW_REAL_RAT_ADD_CONV THENC TRY_CONV divOne
-  -- REAL_RAT_SUB_CONV (calc_rat.ml 279-284).
+  -- Subtraction.
   let pth ← prove r"x - y = x + --y" (REWRITE_TAC [R.real_sub])
   let REAL_RAT_SUB_CONV := (← GEN_REWRITE_CONV_NET id [pth]) THENC
     RAND_CONV U.REAL_RAT_NEG_CONV THENC REAL_RAT_ADD_CONV
@@ -463,6 +419,7 @@ def setupRealRatArithConvs [HolBase] (Lm : RatLemmas) (Rl : RealRatRelConvs)
   let v2 ← q r"v2:real"
   let d1 ← q r"d1:real"
   let d2 ← q r"d2:real"
+  -- Multiplication.
   let RAW_REAL_RAT_MUL_CONV : ioconv := fun tm => ExceptT.run do
     let (r1, r2) ← liftExcept (dest_mulop tm)
     let (x1', y1') ← liftExcept (dest_divop r1)
@@ -506,6 +463,10 @@ structure RealRatPowMaxMinConvs where
   REAL_RAT_MIN_CONV : ioconv
   deriving Inhabited
 
+/- ---------------------------------------------------------------------- -/
+/- Powers.                                                                -/
+/- ---------------------------------------------------------------------- -/
+
 /-- Build the power, max and min conversions (calc_rat.ml 362-385). -/
 @[nospecialize]
 def setupRealRatPowMaxMinConvs [HolBase] (Rl : RealRatRelConvs)
@@ -524,6 +485,10 @@ def setupRealRatPowMaxMinConvs [HolBase] (Rl : RealRatRelConvs)
   let REAL_RAT_MIN_CONV := REWR_CONV R.real_min THENC
     RATOR_CONV (RATOR_CONV (RAND_CONV Rl.REAL_RAT_LE_CONV)) THENC condConv
   return { REAL_RAT_POW_CONV, REAL_RAT_MAX_CONV, REAL_RAT_MIN_CONV }
+
+/- ---------------------------------------------------------------------- -/
+/- Everything.                                                            -/
+/- ---------------------------------------------------------------------- -/
 
 /-- `real_rat_red_conv_list` (calc_rat.ml 389-405).  OCaml evaluates the list
     literal last element first, so the patterns are parsed in that order. -/
@@ -588,11 +553,10 @@ structure RealPolyConvs1 where
 @[nospecialize]
 def setupRealPolyConvs1 [HolBase] (L : HolMath.RealArith.RealArithLemmas)
     (A : RealRatArithConvs) (P : RealRatPowMaxMinConvs)
-    (TRUTH ADD_CLAUSES MULT_CLAUSES : thm) (ASM_MESON_TAC : List thm → tactic)
-    (INDUCT_TAC : tactic) (num_CONV : term → IO (Except String thm))
+    (TRUTH SEMIRING_PTHS : thm) (num_CONV : term → IO (Except String thm))
     (NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV : ioconv) : ExceptT String IO RealPolyConvs1 := do
-  let sctx ← HolMath.Normalizer.setupSemiringCtx TRUTH ADD_CLAUSES MULT_CLAUSES ASM_MESON_TAC
-    INDUCT_TAC num_CONV L.REAL_POLY_CLAUSES L.REAL_POLY_NEG_CLAUSES HolMath.CalcInt.is_ratconst
+  let sctx ← HolMath.Normalizer.setupSemiringCtx TRUTH SEMIRING_PTHS
+    L.REAL_POLY_CLAUSES L.REAL_POLY_NEG_CLAUSES HolMath.CalcInt.is_ratconst
     A.REAL_RAT_ADD_CONV A.REAL_RAT_MUL_CONV P.REAL_RAT_POW_CONV HolMath.RealArith.term_lt
   let polys := HolMath.Normalizer.SEMIRING_NORMALIZERS_CONV sctx
     NUM_ADD_CONV NUM_SUC_CONV NUM_MULT_CONV num_CONV
@@ -677,6 +641,10 @@ def setupRealPolyConv2 [HolBase] (R : HolMath.RealAx.RealThms) (U : RealRatUnary
 /-- `REAL_RING`, `real_ideal_cofactors` (calc_rat.ml 490-518) and
     `REAL_IDEAL_CONV` (calc_rat.ml 524-531). -/
 structure RealRingConvs where
+  /-- `REAL_INTEGRAL` (calc_rat.ml 491). -/
+  REAL_INTEGRAL : thm
+  /-- `REAL_RABINOWITSCH` (calc_rat.ml 500). -/
+  REAL_RABINOWITSCH : thm
   REAL_RING : term → IO (Except String thm)
   real_ideal_cofactors : List term → term → IO (Except String (List term))
   REAL_IDEAL_CONV : List term → term → IO (Except String thm)
@@ -757,7 +725,7 @@ def setupRealRing [HolBase] (S : HolMath.CalcInt.RatSyntax) (Rl : RealRatRelConv
     let th ← ExceptT.mk (REAL_POLY_CONV tm)
     let th' ← ExceptT.mk (REAL_POLY_CONV tm')
     TRANS th (← SYM th')
-  return { REAL_RING, real_ideal_cofactors, REAL_IDEAL_CONV }
+  return { REAL_INTEGRAL, REAL_RABINOWITSCH, REAL_RING, real_ideal_cofactors, REAL_IDEAL_CONV }
 
 /-- `GEN_REAL_ARITH`, `REAL_ARITH`, `REAL_ARITH_TAC` and `ASM_REAL_ARITH_TAC`,
     the final versions (calc_rat.ml 537-559). -/
@@ -1031,19 +999,28 @@ def setupRealShrink [HolBase]
 
   let REAL_SHRINK_LT ← prove
    r"!x y. x / (&1 + abs x) < y / (&1 + abs y) <=> x < y"
-   (REPEAT GEN_TAC THEN MATCH_MP_TAC (← REAL_ARITH
+   (← do
+    let r6 ← REAL_ARITH (← q r"&0 < &1 + abs x")
+    let r5 ← REAL_ARITH (← q r"a / b * c:real = (a * c) / b")
+    let r4 ← REAL_ARITH (← q r"&0 < &1 + abs x")
+    let r3 ← REAL_ARITH (← q r"abs(&1 + abs x) = &1 + abs x")
+    let m1 ← MESON [] (← q r"(!x y. P x y /\ P y x) <=> (!x y. P x y)")
+    let r2 ← REAL_ARITH (← q r"&0 < &1 + abs x")
+    let r1 ← REAL_ARITH
      (← q r"(&0 < x' <=> &0 < x) /\ (&0 < y' <=> &0 < y) /\
       (abs x' < abs y' <=> abs x < abs y) /\ (abs y' < abs x' <=> abs y < abs x)
-      ==> (x' < y' <=> x < y)")) THEN
-    SIMP_TAC [REAL_LT_RDIV_EQ, ← REAL_ARITH (← q r"&0 < &1 + abs x"), REAL_MUL_LZERO] THEN
-    MAP_EVERY (fun t => SPEC_TAC (t, t)) [← q r"y:real", ← q r"x:real"] THEN
-    REWRITE_TAC [← MESON [] (← q r"(!x y. P x y /\ P y x) <=> (!x y. P x y)")] THEN
-    REPEAT GEN_TAC THEN
-    REWRITE_TAC [REAL_ABS_DIV, ← REAL_ARITH (← q r"abs(&1 + abs x) = &1 + abs x")] THEN
-    SIMP_TAC [REAL_LT_RDIV_EQ, ← REAL_ARITH (← q r"&0 < &1 + abs x")] THEN
-    ONCE_REWRITE_TAC [← REAL_ARITH (← q r"a / b * c:real = (a * c) / b")] THEN
-    SIMP_TAC [REAL_LT_LDIV_EQ, ← REAL_ARITH (← q r"&0 < &1 + abs x")] THEN
-    REAL_ARITH_TAC)
+      ==> (x' < y' <=> x < y)")
+    pure
+     (REPEAT GEN_TAC THEN MATCH_MP_TAC r1 THEN
+      SIMP_TAC [REAL_LT_RDIV_EQ, r2, REAL_MUL_LZERO] THEN
+      MAP_EVERY (fun t => SPEC_TAC (t, t)) [← q r"y:real", ← q r"x:real"] THEN
+      REWRITE_TAC [m1] THEN
+      REPEAT GEN_TAC THEN
+      REWRITE_TAC [REAL_ABS_DIV, r3] THEN
+      SIMP_TAC [REAL_LT_RDIV_EQ, r4] THEN
+      ONCE_REWRITE_TAC [r5] THEN
+      SIMP_TAC [REAL_LT_LDIV_EQ, r6] THEN
+      REAL_ARITH_TAC))
 
   let REAL_SHRINK_LE ← prove
    r"!x y. x / (&1 + abs x) <= y / (&1 + abs y) <=> x <= y"
@@ -1055,15 +1032,20 @@ def setupRealShrink [HolBase]
 
   let REAL_SHRINK_GALOIS ← prove
    r"!x y. x / (&1 + abs x) = y <=> abs y < &1 /\ y / (&1 - abs y) = x"
-   (REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN
-    FIRST_X_ASSUM (fun th => tactic_of do pure (SUBST1_TAC (← SYM th))) THEN
-    ASM_REWRITE_TAC [REAL_SHRINK_RANGE] THEN
-    ASM_SIMP_TAC [REAL_ABS_DIV, ← REAL_ARITH (← q r"abs(&1 + abs x) = &1 + abs x"),
-                  ← REAL_ARITH (← q r"abs y < &1 ==> abs(&1 - abs y) = &1 - abs y")] THEN
-    MATCH_MP_TAC (← REAL_ARITH (← q r"x * inv y * inv z = x * &1 ==> x / y / z = x")) THEN
-    AP_TERM_TAC THEN
-    MATCH_MP_TAC (← REAL_FIELD (← q r"x * y = &1 ==> inv x * inv y = &1")) THEN
-    REPEAT (POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD')
+   (← do
+    let f1 ← REAL_FIELD (← q r"x * y = &1 ==> inv x * inv y = &1")
+    let r3 ← REAL_ARITH (← q r"x * inv y * inv z = x * &1 ==> x / y / z = x")
+    let r2 ← REAL_ARITH (← q r"abs y < &1 ==> abs(&1 - abs y) = &1 - abs y")
+    let r1 ← REAL_ARITH (← q r"abs(&1 + abs x) = &1 + abs x")
+    pure
+     (REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN
+      FIRST_X_ASSUM (fun th => tactic_of do pure (SUBST1_TAC (← SYM th))) THEN
+      ASM_REWRITE_TAC [REAL_SHRINK_RANGE] THEN
+      ASM_SIMP_TAC [REAL_ABS_DIV, r1, r2] THEN
+      MATCH_MP_TAC r3 THEN
+      AP_TERM_TAC THEN
+      MATCH_MP_TAC f1 THEN
+      REPEAT (POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD'))
 
   let REAL_GROW_SHRINK ← prove
    r"!x. x / (&1 + abs x) / (&1 - abs(x / (&1 + abs x))) = x"

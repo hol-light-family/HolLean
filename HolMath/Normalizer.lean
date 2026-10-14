@@ -370,19 +370,16 @@ def setupSemiringCtxFrom [HolBase]
 
 
 /-- Build a `SemiringCtx` from `sth`, `rth`, the semiring operations and the
-    variable ordering (normalizer.ml 90-142), proving `SEMIRING_PTHS` first. -/
+    variable ordering (normalizer.ml 90-142), from the `SEMIRING_PTHS` proved once
+    in normalizer.ml. -/
 @[nospecialize]
 def setupSemiringCtx [HolBase]
-    (TRUTH ADD_CLAUSES MULT_CLAUSES : thm)
-    (ASM_MESON_TAC : List thm → tactic)
-    (INDUCT_TAC : tactic)
-    (num_CONV : term → IO (Except String thm))
+    (TRUTH SEMIRING_PTHS : thm)
     (sth rth : thm)
     (is_semiring_constant : term → Bool)
     (SEMIRING_ADD_CONV SEMIRING_MUL_CONV SEMIRING_POW_CONV : ioconv)
     (variable_order : term → term → Bool) :
     ExceptT String IO SemiringCtx := do
-  let SEMIRING_PTHS ← SEMIRING_PTHS ADD_CLAUSES MULT_CLAUSES ASM_MESON_TAC INDUCT_TAC num_CONV
   setupSemiringCtxFrom SEMIRING_PTHS TRUTH sth rth is_semiring_constant
     SEMIRING_ADD_CONV SEMIRING_MUL_CONV SEMIRING_POW_CONV variable_order
 

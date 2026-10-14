@@ -1,5 +1,6 @@
 /- File: CalcNum.lean
 Calculation with naturals.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Original (c) Copyright, Mario Carneiro 2020
@@ -298,10 +299,7 @@ open HolCore HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Bool HolCore.Equa
 /-- The term constants and proforma variables shared by every `calc_num.ml`
     numeral conversion (calc_num.ml lines 221-238).  `num_ty` is the type of
     naturals; the `*_tm` fields are the raw combinators and operators; the
-    single-letter `*_tm` fields are the proforma variables `a..p:num`.
-
-    LATER STAGES may read (never mutate) these; the set is fixed by the OCaml
-    preamble. -/
+    single-letter `*_tm` fields are the proforma variables `a..p:num`. -/
 structure CalcNumConsts where
   num_ty     : hol_type
   NUMERAL_tm : term
@@ -314,18 +312,14 @@ structure CalcNumConsts where
   mul_tm     : term
   exp_tm     : term
   eq_tm      : term
-  /- `dtm`/`mtm` of calc_num.ml line 1378.  The OCaml writes them as the
-     quotations `(DIV)`/`(MOD)`; we recover them from `DIVISION` by the same
-     theorem-destructuring idiom the preamble already uses for `add_tm` and
-     friends, so that `dest_binop` works without depending on whether the
-     ambient session has declared `DIV`/`MOD` yet.  See `NUM_DIV_CONV`. -/
+  /- `dtm`/`mtm` of calc_num.ml line 1378 (`(DIV)`/`(MOD)`).  Recovered from
+     `DIVISION` by theorem-destructuring rather than from the quotations, so
+     `dest_binop` works whether or not the session has declared `DIV`/`MOD`
+     yet.  See `NUM_DIV_CONV`. -/
   div_tm     : term
   mod_tm     : term
-  /- `(-)` and `(<=)`, likewise recovered from theorems rather than from the
-     quotations `HolLight.q "(-)"` / `HolLight.q "(<=)"` parsed at call time.  Those quotations
-     yield a free VARIABLE whenever the constant is not yet declared in the
-     ambient session (with only `ADD_0` forced, `(+)` is a constant but `(-)`,
-     `(*)`, `(<=)`, `(DIV)`, `(MOD)` are all variables), which makes
+  /- `(-)` and `(<=)`, likewise recovered from theorems rather than quotations:
+     an undeclared constant parses as a free variable, which would make
      `dest_binop` silently never match. -/
   sub_tm     : term
   le_tm      : term
@@ -342,9 +336,8 @@ structure CalcNumConsts where
   deriving Inhabited
 
 /-- Build `CalcNumConsts` from the session theorems (calc_num.ml lines 221-238).
-    The destructuring of `mk_small_numeral 2` and the `rator`/`rand` extractions
-    have been verified against the live session (see the task note): they yield
-    `NUMERAL`, `BIT0`, `BIT1`, `_0`, `SUC`, `(+)`, `(*)`, `EXP`, `(=)`. -/
+    The `rator`/`rand` extractions yield `NUMERAL`, `BIT0`, `BIT1`, `_0`, `SUC`,
+    `(+)`, `(*)`, `EXP`, `(=)`. -/
 def setupCalcNumConsts (ZERO_DEF TWO ADD_0 EXP_2 DIVISION SUB_0 LE_0 : thm)
     (mk_small_numeral : Int → Except String term) :
     ExceptT String IO CalcNumConsts := do
@@ -583,10 +576,6 @@ partial def mkCompNumeral (K : CalcNumConsts) (k : Int) (base : term) :
 /-- Every `pth_*` theorem and theorem-array proved in calc_num.ml lines
     348-603, together with the flag arrays computed alongside the add/adc
     clause arrays.
-
-    LATER STAGES WILL ADD MORE FIELDS to this structure (the remaining
-    `NUM_UNSHIFT_CONV`, `NUM_SQUARE_CONV`, etc. proformas).  Keep the existing
-    fields stable and append new ones.
 
     Field meanings:
     * `BITS_INJ`, `ARITH_0`: `NUM_ADD_RULE`/`NUM_ADC_RULE` helper lemmas.
@@ -1925,22 +1914,13 @@ def num_CONV (K : CalcNumConsts) (P : CalcNumProformas)
     IO (Except String thm) := do
   -- `let SUC_tm = `SUC` in fun tm -> ...`: the constant is fixed when
   -- num_CONV is defined, so hiding or overloading `SUC` later has no effect.
-  let sucTm := K.suc_tm
-  do
-    match (dest_numeral tm : Except String Rat) with
-    | .error _ => return .error "num_CONV"
-    | .ok x =>
-      let n := x - num_1
-      if n < num_0 then return .error "num_CONV"
-      else
-        match (do
-            let tm' ← mk_numeral n
-            mk_comb sucTm tm' : Except String term) with
-        | .error _ => return .error "num_CONV"
-        | .ok sc =>
-          match ← NUM_SUC_CONV K P sc with
-          | .error _ => return .error "num_CONV"
-          | .ok th => (pure (Equal.SYM th) : IO (Except String thm))
+  let SUC_tm := K.suc_tm
+  ExceptT.run do
+    let n := (← liftExcept (dest_numeral tm : Except String Rat)) - num_1
+    if n < num_0 then throw "num_CONV"
+    let tm' ← liftExcept (mk_numeral n)
+    let th ← ExceptT.mk (NUM_SUC_CONV K P (← liftExcept (mk_comb SUC_tm tm')))
+    liftExcept (Equal.SYM th)
 
 end Numerals
 
@@ -2227,6 +2207,9 @@ partial def NUM_EXP_CONV [HolBase] (K : CalcNumConsts)
       let tm' ← liftExcept (rand (concl th'))
       TRANS (← TRANS th th') (← INST [(tm', K.m_tm)] P.exp_fth)
     catch _ => throw "NUM_EXP_CONV"
+/- ---------------------------------------------------------------------- -/
+/- Now more delicate conversions for situations where efficiency matters. -/
+/- ---------------------------------------------------------------------- -/
 
 /- ---------------------------------------------------------------------- -/
 /- NUM_EVEN_CONV, NUM_ODD_CONV (calc_num.ml 211-217).                     -/

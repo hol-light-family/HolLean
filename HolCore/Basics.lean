@@ -1,5 +1,6 @@
 /- File: Basics.lean
 More syntax constructors, and prelogical utilities like matching.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Original (c) Copyright, Andrea Gabrielli, Marco Maggesi 2017-2018
@@ -249,15 +250,9 @@ def mk_mconst (c : String) (ty : hol_type) : IO (Except String term) := do
 
 /-- Like `mk_comb`, but instantiates type variables in the rator if needed.
 
-    DELIBERATE ADAPTATION.  basics.ml 171-174 uses an IRREFUTABLE pattern,
-    `let "fun",[ty;_] = dest_type (type_of tm1)`, which raises `Match_failure` on
-    a non-function `tm1` - an exception that `try ... with Failure _` does NOT
-    catch, i.e. OCaml simply crashes.  We return a catchable
-    `failwith "mk_icomb: not a function type"` instead.
-    This is unobservable in practice: no OCaml caller catches a failure from
-    `mk_icomb` (every caller reaches it through `list_mk_icomb`, and the one
-    nearby `try` - pair.ml 157 - wraps `dest_pair`, not this).  On every input
-    where OCaml succeeds, we return the same term. -/
+    Where OCaml (basics.ml 171-174) uses an irrefutable `let "fun",[ty;_] = ...`
+    that crashes uncatchably on a non-function `tm1`, we return a catchable
+    `failwith`. On every input where OCaml succeeds this returns the same term. -/
 def mk_icomb (tm1 tm2 : term) : Except String term :=
   match dest_type (type_of tm1) with
   | .ok ("fun", [ty, _]) =>
@@ -677,15 +672,7 @@ partial def follow_path (s : String) (tm : term) : Except String term :=
 /- ---------------------------------------------------------------------- -/
 
 /-- The atoms of a Boolean term - the leaves under the logical connectives.
-
-    ORDER IS NOT PART OF THE CONTRACT - treat the result as a SET.  basics.ml
-    454-465 accumulates into a Patricia-tree set (`(tm |-> ()) acc`) and then
-    flattens with `foldl (fun a x y -> x::a) []`, so OCaml's order is the tree's
-    internal (hash-derived) traversal, reversed.  We accumulate into a list with
-    `insert`, giving reverse-first-encounter order.  The two SETS are identical;
-    the orders differ and OCaml's is an implementation artefact, so replicating it
-    would mean replicating the Patricia tree for no semantic gain.  Callers must
-    not depend on the order. -/
+    The result is a set; callers must not depend on its order. -/
 def atoms (tm : term) : Except String (List term) :=
   let rec go (acc : Lib.Func term Unit) (tm : term) : Lib.Func term Unit :=
     match tm with
@@ -699,6 +686,4 @@ def atoms (tm : term) : Except String (List term) :=
   if type_of tm != bool_ty then
     failwith "atoms: not Boolean"
   else
-    -- `foldl (fun a x y -> x::a) [] (atoms undefined tm)`: the order is the
-    -- finite partial function's, i.e. by OCaml `Hashtbl.hash`.
     .ok (Lib.foldl (fun a x _ => x :: a) [] (go Lib.undefined tm))

@@ -5,34 +5,10 @@ Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Lean4 translation by Chris Walton 2026
 
-`calc_int.ml` sits on top of `realax.ml` (its `needs "realax.ml"`) and provides
-calculation with those reals that happen to be integers or rationals.  It has
-four parts:
-
-  1. SYNTAX OPERATIONS (16-60) on constants of type `:real`.  Six pure
-     term-level functions recognising and building `&n` and `--(&n)` (the
-     integer constants) and `&p / &q` (the rational constants, required to be
-     in lowest terms with `q > 1`).  These use the rational layer in
-     HolCore/Lib.lean, which is built on Lean's `Rat`; the OCaml `num`/`ratio`
-     operators map across as
-         =/  ->  ==            <>/ ->  !=           </  ->  <
-         >/  ->  >             //  ->  Lib.divide_num
-         minus_num  ->  negation             gcd_num  ->  Lib.gcd_num
-         numdom x   ->  (Lib.numerator x, Lib.denominator x)
-
-  2. ELEMENTARY REAL THEOREMS (66-171).  About eighteen consequences of the
-     `realax.ml` axioms - the ones needed to justify the conversions below.
-     They are NOT part of realax.ml's own output, so they live here.
-
-  3. THE REAL_INT_* CONVERSIONS (177-374).  Decision procedures that evaluate
-     comparisons and arithmetic on integer constants by delegating to the
-     `NUM_*_CONV` family from `calc_num.ml`.  Note that ONE OCaml `let` binds
-     FIVE conversions at once (177): REAL_INT_LE_CONV, REAL_INT_LT_CONV,
-     REAL_INT_GE_CONV, REAL_INT_GT_CONV and REAL_INT_EQ_CONV, sharing local
-     tautologies.
-
-  4. THE REDUCTION NET AND computeLib INTEGRATION (376-407).
--/
+Calculation with reals that are integers or rationals.  The rational layer in
+HolCore/Lib.lean maps OCaml's `num`/`ratio` operators onto Lean's `Rat`:
+`=/`→`==`, `<>/`→`!=`, `//`→`Lib.divide_num`, `minus_num`→negation,
+`gcd_num`→`Lib.gcd_num`, `numdom x`→`(Lib.numerator x, Lib.denominator x)`. -/
 
 import HolMath.RealAx
 import HolMath.Base

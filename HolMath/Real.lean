@@ -6,47 +6,11 @@ Original (c) Copyright, John Harrison 1998-2007
 Original (c) Copyright, Valentina Bruno 2010
 Lean4 translation by Chris Walton 2026
 
-`real.ml` sits on top of `realarith.ml` (its `needs "realarith.ml"`) and
-develops the basic properties of the reals.  Almost all of its top-level
-bindings are `prove`; only FIVE are anything else:
-
-  REAL_ARITH_TAC   (106)   `CONV_TAC REAL_ARITH` - the tactic form of the
-                           decision procedure, used by most later sections.
-                           NOTE `ASM_REAL_ARITH_TAC` is NOT here; it arrives
-                           with `calc_rat.ml`.
-  REAL_LE_IMP      (598)   a RULE, not a theorem
-  REAL_LET_IMP     (602)   likewise
-  real_sgn        (1521)   `new_definition`
-  sqrt            (1663)   `new_definition`, via the choice operator
-
-THE THIRTEEN SECTIONS:
-
-    14- 72   additional commutativity of the inclusion map
-    73-102   a few theorems we need to prove explicitly for later
-   103-108   tactic version of REAL_ARITH
-   109-400   the linear theorems we can blow away automatically
-   401-510   theorems about `abs`
-   511-594   theorems about max and min
-   595-606   backchaining rules
-   607-1389  nonlinear stuff
-  1390-1452  bounds on convex combinations
-  1453-1517  basic forms of the Archimedian property
-  1518-1637  the sign of a real number
-  1638-1656  "without loss of generality" lemmas
-  1657-1993  square roots
-
-Following the `arith.ml` precedent (theorems grouped into bundles), the
-theorems are grouped into ELEVEN bundles, splitting the two oversized sections
-at `REAL_LE_NEGR` (256) and at `REAL_LT_LCANCEL_IMP` (856) / `REAL_POW_LE_1`
-(1115).
-
-Written in the HolLight.Base style (HolMath/Base.lean): one `let` per OCaml
-`let`, in file order.  `REAL_ARITH` throughout is realarith.ml's (Session's
-`REAL_ARITH2`).
-
-The namespace is `HolMath.Real`, so `RealThms1..11` here do not collide with
-`HolMath.RealAx.RealThms` from `realax.ml`.
--/
+Basic properties of the reals.  The theorems are grouped into eleven bundles
+(`RealThms1..11`) in `HolMath.Real`, so they do not collide with
+`HolMath.RealAx.RealThms`.  `REAL_ARITH` throughout is realarith.ml's
+(Session's `REAL_ARITH2`); `ASM_REAL_ARITH_TAC` is not here, it arrives with
+`calc_rat.ml`. -/
 
 import HolMath.RealArith
 import HolMath.Base

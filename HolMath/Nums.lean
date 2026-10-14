@@ -1,5 +1,6 @@
 /- File: Nums.lean
 The axiom of infinity; construction of the natural numbers.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Lean4 translation by Chris Walton 2026 -/
@@ -92,6 +93,11 @@ structure NumsThms where
       `setupNums` where they provably exist. -/
   numK            : NumeralConsts
   deriving Inhabited
+
+/-- `INDUCT_TAC` (nums.ml 165-167). -/
+def INDUCT_TAC [HolBase] (num_INDUCTION : thm) : tactic :=
+  MATCH_MP_TAC num_INDUCTION THEN
+  CONJ_TAC THENL [ALL_TAC, GEN_TAC THEN DISCH_TAC]
 
 /-- Run the `nums.ml` script: declare the type `ind`, assert the axiom of
     infinity, carve the natural numbers out of `ind` inductively, and prove
@@ -257,9 +263,7 @@ def setupNums [HolBase]
 
   /- Induction tactic. -/
 
-  let INDUCT_TAC : tactic :=
-    MATCH_MP_TAC num_INDUCTION THEN
-    CONJ_TAC THENL [ALL_TAC, GEN_TAC THEN DISCH_TAC]
+  let INDUCT_TAC := INDUCT_TAC num_INDUCTION
 
   let num_RECURSION ← do
     let avs := (strip_forall (concl num_Axiom)).1
@@ -313,11 +317,6 @@ open HolLight HolLight.Syntax
 /- ---------------------------------------------------------------------- -/
 /- Induction tactic.                                                      -/
 /- ---------------------------------------------------------------------- -/
-
-/-- `INDUCT_TAC` (nums.ml 165-167). -/
-def INDUCT_TAC [HolBase] (num_INDUCTION : thm) : tactic :=
-  MATCH_MP_TAC num_INDUCTION THEN
-  CONJ_TAC THENL [ALL_TAC, GEN_TAC THEN DISCH_TAC]
 
 end
 

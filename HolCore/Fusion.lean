@@ -1,5 +1,6 @@
 /- File: Fusion.lean
 Complete HOL kernel of types, terms, and theorems.
+John Harrison, University of Cambridge Computer Laboratory
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Lean4 translation by Chris Walton 2026
@@ -565,14 +566,11 @@ def concl (th : thm) : term := th.concl
 def REFL tm :=
   thm.mk [] (safe_mk_eq tm tm)
 
-/-- `thm` deliberately does NOT `deriving Inhabited`: OCaml's `thm` is fully
-    abstract, and a derived instance would let code outside the kernel fabricate
-    `thm.mk default default`, a "theorem" with an arbitrary conclusion.  An
-    instance is nevertheless needed downstream (the theorem-bundle records
-    derive `Inhabited` so that `Session`'s lazy bootstrap can use `panic!`), so
-    we supply one whose value is a genuine theorem: `|- x = x` by `REFL`.  The
-    only fabricable theorem is therefore a true one, and the abstraction barrier
-    leaks nothing unsound. -/
+/-- `thm` does not `deriving Inhabited`: a derived instance would let code
+    outside the kernel fabricate `thm.mk default default`, a "theorem" with an
+    arbitrary conclusion.  Downstream code needs an instance (theorem-bundle
+    records derive `Inhabited` for `Session`'s lazy bootstrap), so we supply the
+    genuine theorem `|- x = x` by `REFL`, keeping every fabricable theorem true. -/
 instance : Inhabited thm := ⟨REFL default⟩
 
 /-- Transitivity (derivable, but primitive for efficiency). -/

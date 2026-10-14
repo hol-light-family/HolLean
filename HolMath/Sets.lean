@@ -8,56 +8,8 @@ Original (c) Copyright, Marco Maggesi 2012-2017
 Original (c) Copyright, Andrea Gabrielli 2012-2017
 Lean4 translation by Chris Walton 2026
 
-There is no new type here: a set of `:A` simply IS a predicate `A->bool`, so
-`x IN s` unfolds to `s x` and extensionality is function extensionality.
-Everything else is built on that one identification.
-
-The parser desugars set syntax directly:
-  `{a,b,c}`   becomes an `INSERT` chain ending in `EMPTY`  (parser.ml 304-305)
-  `{x | P}`   becomes `GSPEC (\v. ... SETSPEC v ...)`      (parser.ml 328-329)
-Both paths exist in `HolCore.Parser` (`pmk_set_enum`, `pmk_setcompr`), but they
-emit `Varp` - FREE VARIABLES - so the terms only mean anything once `EMPTY`,
-`INSERT_DEF`, `GSPEC` and `SETSPEC` are real constants.  The OCaml says as much
-at sets.ml 74: EMPTY and INSERT_DEF are "needed first, for the parsing of
-enumerations".  The nineteen `parse_as_infix` calls mutate GLOBAL PARSER STATE
-and must run EXACTLY ONCE, IN ORDER, and BEFORE any term using the symbol is
-parsed.  Fourteen are at the top of the file (IN, SUBSET, PSUBSET, INTER, UNION,
-DIFF, INSERT, DELETE, HAS_SIZE and the five cardinal comparisons); the other
-five arrive with the operators they belong to - CROSS at 2732, UNION_OF and
-INTERSECTION_OF at 4001-4002, and has_inf and has_sup at 5030-5031.
-
-STYLE.  Written in the HolLight.Base style (HolMath/Base.lean): one `let`
-per OCaml `let`, in file order.  OCaml builds a tactic right to left, so
-where one proof's tactic contains several rules that print (SET_RULE,
-MESON, REAL_ARITH), they are bound first, last one first, to keep HOL
-Light's message order.  Session runs the infix setups (`setupSetsInfixes`,
-`setupSetsCrossInfix`, `setupSetsUnionOfInfix`, `setupSetsHasInfSupInfix`)
-once each, before the bundle that first parses the symbol.
-
-THE SECTIONS, IN GROUPS:
-
-     15-170   the infix declarations and the 48 core definitions
-    171-308   basic membership properties (SET_TAC's raw material)
-    309-355   CHOICE_DEF, SET_TAC, SET_RULE, first consumers
-    356-950   the operators: empty, universal, subset, psubset, union,
-              intersection, distributivity, disjoint, difference, insert,
-              delete, UNIONS, INTERS
-    951-1382  IMAGE, misc lemmas, stronger induction, function properties
-   1383-1988  finite sets, then recursion over them (ITSET), the latter
-              credited in the OCaml to "Ching-Tsun's code (archive 713)"
-   1989-2652  cardinality: CARD, HAS_SIZE, the numeral expansion, unions,
-              images, smaller subsets, involution parity
-   2653-2924  cardinality of products, then the CROSS operator itself
-   2925-3324  extensional functions, restriction, dependent function spaces,
-              products of families, disjoint unions
-   3325-3553  cardinality of bounded-support functions, of bool, of powerset
-   3554-3696  infinitude of the numbers, of strings, of real intervals
-   3697-3997  finite-set indexing, set/list mappings, the pairwise property
-   3998-4364  UNION_OF and INTERSECTION_OF
-   4365-4697  set_of_list, injectivity/surjectivity, bijections,
-              wellfoundedness, cardinal comparisons
-   4698-5182  supremum and infimum, and their relational counterparts
-   5183-5217  new_inductive_set
+A set of `:A` is just a predicate `A->bool`: `x IN s` unfolds to `s x` and
+extensionality is function extensionality.
 -/
 
 import HolMath.Int
@@ -82,26 +34,10 @@ open HolLight HolLight.Syntax
 /- Infix symbols for set operations.  (sets.ml 15-32)                     -/
 /- ---------------------------------------------------------------------- -/
 
-/-- Register the THIRTEEN infix operators declared at the head of `sets.ml`
-    (sets.ml 18-32).  Each mutates GLOBAL PARSER STATE and must run EXACTLY
-    ONCE, IN ORDER, and BEFORE any term using the symbol is parsed.  Until
-    these run, `x IN s` parses as `x` APPLIED to the free variables `IN` and
-    `s` (no infix is registered), so every later definition in this file that
-    writes `x IN s`, `s SUBSET t`, `s UNION t`, ... depends on this side effect
-    having happened first.
-
-    ORDERING CONSTRAINT for the wiring stage (Session.lean):
-    Session MUST call `setupSetsInfixes` EXACTLY ONCE, and BEFORE it runs
-    `setupSetsCore` (whose definition bodies parse `IN`/`UNION`/`INTER`/... as
-    the registered operators).  The precedences and associativities are
-    transcribed EXACTLY from sets.ml 18-32:
-      IN 11 right; SUBSET 12 right; PSUBSET 12 right; INTER 20 right;
-      UNION 16 right; DIFF 18 LEFT; INSERT 21 right; DELETE 21 LEFT;
-      HAS_SIZE 12 right; and the five cardinal comparisons <=_c, <_c, >=_c,
-      >_c, =_c all at 12 right.
-    The other SIX infixes of `sets.ml` (CROSS 2732, UNION_OF/INTERSECTION_OF
-    4001-4002, has_inf/has_sup 5030-5031) arrive with their operators in later
-    stages, so they are NOT registered here. -/
+/-- Register the fourteen infix operators declared at the head of `sets.ml`
+    (sets.ml 18-32): IN, SUBSET, PSUBSET, INTER, UNION, DIFF, INSERT, DELETE,
+    HAS_SIZE and the five cardinal comparisons.  Must run once, before any term
+    using these symbols is parsed. -/
 def setupSetsInfixes : IO Unit := do
   -- sets.ml 18-25: the eight core set operators.
   HolCore.Printer.parse_as_infix ("IN", (11, "right"))
@@ -130,64 +66,13 @@ def setupSetsInfixes : IO Unit := do
     `PSUBSET`, `DISJOINT`, `SING`, the `FINITE` inductive triple, `INFINITE`,
     `IMAGE`, `INJ`, `SURJ`, `BIJ`, `CHOICE` and `REST`.
 
-    *** THE DEPENDENCY ORDER MATTERS. ***  HOL Light's
-    parser desugars set syntax BEFORE any of these constants exist:
-      `{a,b,c}`   -> an `INSERT` chain ending in `EMPTY`  (parser.ml 304-305)
-      `{x | P}`   -> `GSPEC (\v. ... SETSPEC v ...)`      (parser.ml 328-329)
-    In `HolCore.Parser` both paths emit `Varp` (FREE VARIABLES):
-    `pmk_set_enum` (`INSERT`/`EMPTY`) and `pmk_setcompr` (`GSPEC`/`SETSPEC`).  So a term like `{x:A | x IN s}` is
-    MEANINGLESS until `GSPEC`, `SETSPEC`, `IN`, `EMPTY` and `INSERT_DEF` are
-    real constants introduced by `new_definition`.  The OCaml states this at
-    sets.ml 74: EMPTY and INSERT_DEF are "needed first, for the parsing of
-    enumerations".
-
-    THE ORDER THE CONSTANTS ARE INTRODUCED BELOW MATTERS, and I worked it out
-    from the SOURCE rather than assuming the textual order is safe.  The
-    constraints, each read off a definition BODY that uses set syntax:
-
-      * `IN` (38) must precede EVERYTHING that writes `x IN s` in its body:
-        `EXTENSION`, `UNION`, `UNIONS`, `INTER`, `INTERS`, `DIFF`,
-        `INSERT_DEF`, `INSERT`, `DELETE`, `SUBSET`, `SUBSET`(in PSUBSET),
-        `IMAGE`, `INJ`, `SURJ`, `CHOICE`.  `IN`'s own body `x IN P <=> P x`
-        writes `x IN P`, but there `IN` is the DEFINIENDUM: the parser emits
-        the free var `IN`, `new_definition` binds it and creates the constant.
-      * `GSPEC` (52) and `SETSPEC` (55) must precede every definition whose
-        body uses `{...|...}`: `UNION`, `UNIONS`, `INTER`, `INTERS`, `DIFF`,
-        `INSERT` (the PROVE at 110), `DELETE`, `IMAGE`.  The parser has already
-        turned each `{v | P}` into `GSPEC (\z. ?... SETSPEC z P v)`, so those
-        two constants must exist for the body to elaborate.
-      * `EMPTY` (77) must precede `DISJOINT` (its body `s INTER t = EMPTY`) and
-        the `FINITE` inductive definition (`FINITE (EMPTY:A->bool)`), and any
-        use of enumeration `{...}` (which desugars to an `INSERT`/`EMPTY`
-        chain) - here `SING`'s body `?x. s = {x}` and `IMAGE`'s comprehension.
-      * `INSERT_DEF` (80) introduces the `INSERT` CONSTANT and must precede
-        `INSERT` (110, a PROVE - see below), `FINITE` (`FINITE (x INSERT s)`)
-        and any enumeration `{x}` = `x INSERT EMPTY` (SING 125).
-      * `EXTENSION` (45) and `IN_ELIM_THM` (63) are the two proofs the `INSERT`
-        PROVE relies on, so both precede `INSERT` (110).
-      * `SUBSET` (116) precedes `PSUBSET` (119) - PSUBSET's body writes
-        `s SUBSET t`, and `SUBSET` there is a CONSTANT (an ordinary head
-        symbol, not parser-desugared), so the def must exist first.
-      * `FINITE` (132) precedes `INFINITE` (145).
-      * `INJ`/`SURJ` (147/152) precede `BIJ` (157).
-      * `CHOICE` (161) precedes `REST` (165) - REST's body writes
-        `s DELETE (CHOICE s)`.
-
-    Given all that, the textual order of `sets.ml` IS a valid topological
-    order (IN < EXTENSION < GSPEC < SETSPEC < IN_ELIM_THM < EMPTY <
-    INSERT_DEF < ... < INSERT < DELETE < SUBSET < PSUBSET < ... ), so this
-    stage follows it verbatim.  The one point worth re-checking is that
-    GSPEC/SETSPEC (52/55) come AFTER IN (38)/EXTENSION (45) but BEFORE the
-    first comprehension-using definition UNION (90): they do, so no reordering
-    was needed - but the constraint is documented here for the wiring stage in
-    case a future edit moves a definition.
-
-    Every `new_definition` INTRODUCES A BRAND NEW CONSTANT - a once-only side
-    effect whose mutable CAF lives in Session.lean (a later stage); this layer
-    stays PURE with ZERO `unsafe` and threads `new_definition`/
-    `new_inductive_definition` in as parameters (mirroring `setupNums` /
-    `setupIntOps`).  The `EXTENSION`, `IN_ELIM_THM` and `INSERT` proofs are
-    ordinary proofs over the definitions.
+    The parser desugars `{a,b,c}` into an `INSERT`/`EMPTY` chain and `{x | P}`
+    into `GSPEC (\v. ... SETSPEC v ...)` as free variables, so these constants
+    must be introduced before any definition whose body uses that syntax.  The
+    textual order of `sets.ml` is already a valid order, so this stage follows
+    it verbatim.  The layer stays pure, threading `new_definition` and
+    `new_inductive_definition` in as parameters (the mutable side effect lives
+    in Session.lean).
 
     Takes `MESON_TAC` (for `IN_ELIM_THM`), `new_definition` and
     `new_inductive_definition` (for the `FINITE` triple). -/
@@ -400,22 +285,14 @@ def setupSetsCore [HolBase]
 /- ---------------------------------------------------------------------- -/
 
 /-- The twenty-four "basic membership properties" of sets.ml 171-308.  These
-    are SET_TAC's RAW MATERIAL: SET_TAC (sets.ml 320) rewrites with a fixed
-    list of membership lemmas before handing the goal to MESON, and TWELVE of
+    are SET_TAC's raw material: SET_TAC (sets.ml 320) rewrites with a fixed
+    list of membership lemmas before handing the goal to MESON, and twelve of
     the twenty-five it uses live here (`NOT_IN_EMPTY`, `IN_UNIV`, `IN_UNION`,
     `IN_INTER`, `IN_DIFF`, `IN_INSERT`, `IN_DELETE`, `IN_REST`, `IN_INTERS`,
     `IN_UNIONS`, `IN_IMAGE`, plus the GSPEC/IMAGE forms `UNIONS_IMAGE`,
-    `INTERS_IMAGE`, `UNIONS_GSPEC`, `INTERS_GSPEC`).  A wrong STATEMENT here
-    does NOT break the build - it silently weakens SET_TAC, so every statement
-    below is transcribed CHARACTER-FOR-CHARACTER from the OCaml goal string.
-
-    These are ordinary proofs over the `SetsCore` constants, so this stage
-    consumes the `SetsCore` bundle (`S`), plus `B` (bool primitives, `prove`),
-    `T` (`TheoremThms`, for `CONJ_SYM`/`DISJ_SYM`) and `MESON_TAC`.  The proofs
-    have ZERO THENL branches and exactly FOUR conversion sites, all
-    `GEN_REWRITE_TAC I [EXTENSION]` = the IDENTITY conversion (`fun c => c`,
-    ZERO nesting), in `UNIONS_IMAGE`/`INTERS_IMAGE`/`UNIONS_GSPEC`/
-    `INTERS_GSPEC`. -/
+    `INTERS_IMAGE`, `UNIONS_GSPEC`, `INTERS_GSPEC`).  Ordinary proofs over the
+    `SetsCore` constants (`S`), using `T` (for `CONJ_SYM`/`DISJ_SYM`) and
+    `MESON_TAC`. -/
 structure SetsProps where
   /-- `NOT_IN_EMPTY` (sets.ml 174): `!x:A. ~(x IN EMPTY)`. -/
   NOT_IN_EMPTY : thm
@@ -3203,36 +3080,42 @@ def setupSetsFinite [HolBase] (S : SetsCore) (P : SetsProps)
         FINITE f /\ ~(f = {}) /\
         (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
         ==> UNIONS f IN f"
-   (REWRITE_TAC [IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT THEN
-    REWRITE_TAC [RIGHT_FORALL_IMP_THM, FORALL_IN_INSERT, UNIONS_INSERT] THEN
-    REWRITE_TAC [FORALL_AND_THM, ← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)"),
-                 NOT_INSERT_EMPTY] THEN
-    MAP_EVERY X_GEN_TAC [← q r"s:A->bool", ← q r"f:(A->bool)->bool"] THEN
-    ASM_CASES_TAC (← q r"f:(A->bool)->bool = {}") THEN
-    ASM_REWRITE_TAC [UNIONS_0, IN_INSERT, UNION_EMPTY] THEN
-    DISCH_THEN (fun th => STRIP_TAC THEN MP_TAC th) THEN
-    ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← MESON []
+   (← do
+    let m1 ← MESON []
      (← q r"s UNION t = s \/ s UNION t = t
-      ==> t IN f ==> s UNION t = s \/ s UNION t IN f")) THEN
-    ASM SET_TAC [])
+      ==> t IN f ==> s UNION t = s \/ s UNION t IN f")
+    let t1 ← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)")
+    pure
+     (REWRITE_TAC [IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT THEN
+      REWRITE_TAC [RIGHT_FORALL_IMP_THM, FORALL_IN_INSERT, UNIONS_INSERT] THEN
+      REWRITE_TAC [FORALL_AND_THM, t1, NOT_INSERT_EMPTY] THEN
+      MAP_EVERY X_GEN_TAC [← q r"s:A->bool", ← q r"f:(A->bool)->bool"] THEN
+      ASM_CASES_TAC (← q r"f:(A->bool)->bool = {}") THEN
+      ASM_REWRITE_TAC [UNIONS_0, IN_INSERT, UNION_EMPTY] THEN
+      DISCH_THEN (fun th => STRIP_TAC THEN MP_TAC th) THEN
+      ASM_REWRITE_TAC [] THEN MATCH_MP_TAC m1 THEN
+      ASM SET_TAC []))
 
   let INTERS_IN_CHAIN ← prove
    r"!f:(A->bool)->bool.
         FINITE f /\ ~(f = {}) /\
         (!s t. s IN f /\ t IN f ==> s SUBSET t \/ t SUBSET s)
         ==> INTERS f IN f"
-   (REWRITE_TAC [IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT THEN
-    REWRITE_TAC [RIGHT_FORALL_IMP_THM, FORALL_IN_INSERT, INTERS_INSERT] THEN
-    REWRITE_TAC [FORALL_AND_THM, ← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)"),
-                 NOT_INSERT_EMPTY] THEN
-    MAP_EVERY X_GEN_TAC [← q r"s:A->bool", ← q r"f:(A->bool)->bool"] THEN
-    ASM_CASES_TAC (← q r"f:(A->bool)->bool = {}") THEN
-    ASM_REWRITE_TAC [INTERS_0, IN_INSERT, INTER_UNIV] THEN
-    DISCH_THEN (fun th => STRIP_TAC THEN MP_TAC th) THEN
-    ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← MESON []
+   (← do
+    let m1 ← MESON []
      (← q r"s INTER t = s \/ s INTER t = t
-      ==> t IN f ==> s INTER t = s \/ s INTER t IN f")) THEN
-    ASM SET_TAC [])
+      ==> t IN f ==> s INTER t = s \/ s INTER t IN f")
+    let t1 ← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)")
+    pure
+     (REWRITE_TAC [IMP_CONJ] THEN MATCH_MP_TAC FINITE_INDUCT THEN
+      REWRITE_TAC [RIGHT_FORALL_IMP_THM, FORALL_IN_INSERT, INTERS_INSERT] THEN
+      REWRITE_TAC [FORALL_AND_THM, t1, NOT_INSERT_EMPTY] THEN
+      MAP_EVERY X_GEN_TAC [← q r"s:A->bool", ← q r"f:(A->bool)->bool"] THEN
+      ASM_CASES_TAC (← q r"f:(A->bool)->bool = {}") THEN
+      ASM_REWRITE_TAC [INTERS_0, IN_INSERT, INTER_UNIV] THEN
+      DISCH_THEN (fun th => STRIP_TAC THEN MP_TAC th) THEN
+      ASM_REWRITE_TAC [] THEN MATCH_MP_TAC m1 THEN
+      ASM SET_TAC []))
 
   let FINITE_SUBSET_UNIONS_DIRECTED_EQ ← prove
    r"!f s:A->bool.
@@ -3888,6 +3771,7 @@ def setupSetsCard [HolBase] (S : SetsCore)
    (← do
     let r2 ← SET_RULE
      (← q r"DISJOINT a (UNIONS s) <=> !x. x IN s ==> DISJOINT a x")
+    let a1 ← ARITH_RULE (← q r"SUC a * b = b + a * b")
     let r1 ← SET_RULE
      (← q r"UNIONS {t y | y IN x INSERT s} = t x UNION UNIONS {t y | y IN s}")
     pure
@@ -3905,7 +3789,7 @@ def setupSetsCard [HolBase] (S : SetsCore)
       ASM_SIMP_TAC [CARD_CLAUSES] THEN
       DISCH_THEN (CONJUNCTS_THEN2 (SUBST1_TAC o SYM) STRIP_ASSUME_TAC) THEN
       REWRITE_TAC [r1] THEN
-      REWRITE_TAC [← ARITH_RULE (← q r"SUC a * b = b + a * b")] THEN
+      REWRITE_TAC [a1] THEN
       MATCH_MP_TAC HAS_SIZE_UNION THEN ASM_SIMP_TAC [IN_INSERT] THEN
       REWRITE_TAC [r2] THEN
       ASM_SIMP_TAC [IN_ELIM_THM, LEFT_IMP_EXISTS_THM] THEN
@@ -4198,14 +4082,18 @@ def setupSetsCard2 [HolBase] (S : SetsCore)
 
   let CARD_PSUBSET ← prove
    r"!(a:A->bool) b. a PSUBSET b /\ FINITE(b) ==> CARD(a) < CARD(b)"
-   (REPEAT GEN_TAC THEN REWRITE_TAC [← SET_RULE
-     (← q r"a PSUBSET b <=> ?x. x IN b /\ ~(x IN a) /\ a SUBSET (b DELETE x)")] THEN
-    DISCH_THEN (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
-    DISCH_THEN (X_CHOOSE_THEN (← q r"x:A") STRIP_ASSUME_TAC) THEN
-    MATCH_MP_TAC LET_TRANS THEN EXISTS_TAC (← q r"CARD(b DELETE (x:A))") THEN
-    ASM_SIMP_TAC [CARD_SUBSET, FINITE_DELETE] THEN
-    ASM_SIMP_TAC [CARD_DELETE, ← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")] THEN
-    ASM_MESON_TAC [CARD_EQ_0, MEMBER_NOT_EMPTY])
+   (← do
+    let a1 ← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")
+    let s1 ← SET_RULE
+     (← q r"a PSUBSET b <=> ?x. x IN b /\ ~(x IN a) /\ a SUBSET (b DELETE x)")
+    pure
+     (REPEAT GEN_TAC THEN REWRITE_TAC [s1] THEN
+      DISCH_THEN (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
+      DISCH_THEN (X_CHOOSE_THEN (← q r"x:A") STRIP_ASSUME_TAC) THEN
+      MATCH_MP_TAC LET_TRANS THEN EXISTS_TAC (← q r"CARD(b DELETE (x:A))") THEN
+      ASM_SIMP_TAC [CARD_SUBSET, FINITE_DELETE] THEN
+      ASM_SIMP_TAC [CARD_DELETE, a1] THEN
+      ASM_MESON_TAC [CARD_EQ_0, MEMBER_NOT_EMPTY]))
 
   let CARD_PSUBSET_IMP ← prove
    r"!a b:A->bool. a SUBSET b /\ ~(CARD a = CARD b) ==> a PSUBSET b"
@@ -4238,6 +4126,7 @@ def setupSetsCard2 [HolBase] (S : SetsCore)
         s HAS_SIZE m /\ (!x. x IN s ==> FINITE(t x) /\ CARD(t x) <= n)
         ==> CARD(UNIONS {t(x) | x IN s}) <= m * n"
    (← do
+    let a1 ← ARITH_RULE (← q r"a <= n /\ b <= x * n ==> a + b <= SUC x * n")
     let r3 ← SET_RULE (← q r"{t x | x IN s} = IMAGE t s")
     let r2 ← SET_RULE
      (← q r"UNIONS {t x | x IN a INSERT s} = t(a) UNION UNIONS {t x | x IN s}")
@@ -4259,7 +4148,7 @@ def setupSetsCard2 [HolBase] (S : SetsCore)
         REWRITE_TAC [r3] THEN
         ASM_SIMP_TAC [FINITE_FINITE_UNIONS, FINITE_IMAGE, FORALL_IN_IMAGE,
                       IN_INSERT],
-        MATCH_MP_TAC (← ARITH_RULE (← q r"a <= n /\ b <= x * n ==> a + b <= SUC x * n")) THEN
+        MATCH_MP_TAC a1 THEN
         ASM_SIMP_TAC [IN_INSERT]]))
 
   -- The two SET_RULEs run (and print) right to left, as in OCaml.
@@ -4269,12 +4158,12 @@ def setupSetsCard2 [HolBase] (S : SetsCore)
         ==> CARD(s UNION t) = (CARD(s) + CARD(t)) - CARD(s INTER t)"
    (← do
     let r2 ← SET_RULE (← q r"t DIFF (s INTER t) = t DIFF s")
+    let a1 ← ARITH_RULE (← q r"x:num <= y ==> (a + y) - x = a + (y - x)")
     let r1 ← SET_RULE (← q r"s UNION t = s UNION (t DIFF s)")
     pure
      (REPEAT STRIP_TAC THEN
       ONCE_REWRITE_TAC [r1] THEN
-      ASM_SIMP_TAC [← ARITH_RULE (← q r"x:num <= y ==> (a + y) - x = a + (y - x)"),
-                    CARD_SUBSET, INTER_SUBSET, ← GSYM CARD_DIFF] THEN
+      ASM_SIMP_TAC [a1, CARD_SUBSET, INTER_SUBSET, ← GSYM CARD_DIFF] THEN
       REWRITE_TAC [r2] THEN
       MATCH_MP_TAC CARD_UNION THEN ASM_SIMP_TAC [FINITE_DIFF] THEN SET_TAC []))
 
@@ -4473,40 +4362,48 @@ def setupSetsCard2 [HolBase] (S : SetsCore)
    r"!n s u:A->bool.
         s SUBSET u /\ FINITE s /\ CARD s <= n /\ (FINITE u ==> n <= CARD u)
         ==> ?t. s SUBSET t /\ t SUBSET u /\ t HAS_SIZE n"
-   (REPEAT STRIP_TAC THEN
-    MP_TAC (← ISPECL [← q r"n - CARD(s:A->bool)", ← q r"u DIFF s:A->bool"]
-          CHOOSE_SUBSET_STRONG) THEN
-    ANTS_TAC THENL
-     [ASM_CASES_TAC (← q r"FINITE(u:A->bool)") THEN
-      ASM_SIMP_TAC [CARD_DIFF, ← ARITH_RULE (← q r"n:num <= m ==> n - x <= m - x")] THEN
-      MATCH_MP_TAC (← TAUT (← q r"~p ==> p ==> q")) THEN
-      ASM_MESON_TAC [FINITE_UNION, FINITE_SUBSET, ← SET_RULE
-       (← q r"u SUBSET (u DIFF s) UNION s")],
-      DISCH_THEN (X_CHOOSE_THEN (← q r"t:A->bool") STRIP_ASSUME_TAC) THEN
-      EXISTS_TAC (← q r"s UNION t:A->bool") THEN
-      REPEAT (CONJ_TAC THENL [ASM SET_TAC [], ALL_TAC]) THEN
-      SUBGOAL_THEN (← q r"n:num = CARD(s) + (n - CARD(s:A->bool))") SUBST1_TAC THENL
-       [ASM_ARITH_TAC,
-        MATCH_MP_TAC HAS_SIZE_UNION] THEN
-        ASM_REWRITE_TAC [] THEN ASM_REWRITE_TAC [HAS_SIZE] THEN ASM SET_TAC []])
+   (← do
+    let s1 ← SET_RULE (← q r"u SUBSET (u DIFF s) UNION s")
+    let t1 ← TAUT (← q r"~p ==> p ==> q")
+    let a1 ← ARITH_RULE (← q r"n:num <= m ==> n - x <= m - x")
+    pure
+     (REPEAT STRIP_TAC THEN
+      MP_TAC (← ISPECL [← q r"n - CARD(s:A->bool)", ← q r"u DIFF s:A->bool"]
+            CHOOSE_SUBSET_STRONG) THEN
+      ANTS_TAC THENL
+       [ASM_CASES_TAC (← q r"FINITE(u:A->bool)") THEN
+        ASM_SIMP_TAC [CARD_DIFF, a1] THEN
+        MATCH_MP_TAC t1 THEN
+        ASM_MESON_TAC [FINITE_UNION, FINITE_SUBSET, s1],
+        DISCH_THEN (X_CHOOSE_THEN (← q r"t:A->bool") STRIP_ASSUME_TAC) THEN
+        EXISTS_TAC (← q r"s UNION t:A->bool") THEN
+        REPEAT (CONJ_TAC THENL [ASM SET_TAC [], ALL_TAC]) THEN
+        SUBGOAL_THEN (← q r"n:num = CARD(s) + (n - CARD(s:A->bool))") SUBST1_TAC THENL
+         [ASM_ARITH_TAC,
+          MATCH_MP_TAC HAS_SIZE_UNION] THEN
+          ASM_REWRITE_TAC [] THEN ASM_REWRITE_TAC [HAS_SIZE] THEN ASM SET_TAC []]))
 
   let CARD_LE_UNIONS_CHAIN ← prove
    r"!(f:(A->bool)->bool) n.
         (!t u. t IN f /\ u IN f ==> t SUBSET u \/ u SUBSET t) /\
         (!t. t IN f ==> FINITE t /\ CARD t <= n)
         ==> FINITE(UNIONS f) /\ CARD(UNIONS f) <= n"
-   (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"f:(A->bool)->bool = {}") THEN
-    ASM_REWRITE_TAC [UNIONS_0, FINITE_EMPTY, CARD_CLAUSES, LE_0] THEN
-    DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-    GEN_REWRITE_TAC I [← GSYM CONTRAPOS_THM] THEN
-    REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, ← TAUT (← q r"~(p /\ q) <=> p ==> ~q")] THEN
-    REWRITE_TAC [← ARITH_RULE (← q r"~(x <= n) <=> SUC n <= x")] THEN
-    REWRITE_TAC [CHOOSE_SUBSET_EQ] THEN REWRITE_TAC [RIGHT_AND_EXISTS_THM] THEN
-    ONCE_REWRITE_TAC [SWAP_EXISTS_THM] THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"s:A->bool") THEN
-    REWRITE_TAC [HAS_SIZE] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
-    MATCH_MP_TAC FINITE_SUBSET_UNIONS_CHAIN THEN
-    ASM_REWRITE_TAC [])
+   (← do
+    let a1 ← ARITH_RULE (← q r"~(x <= n) <=> SUC n <= x")
+    let t1 ← TAUT (← q r"~(p /\ q) <=> p ==> ~q")
+    pure
+     (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"f:(A->bool)->bool = {}") THEN
+      ASM_REWRITE_TAC [UNIONS_0, FINITE_EMPTY, CARD_CLAUSES, LE_0] THEN
+      DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+      GEN_REWRITE_TAC I [← GSYM CONTRAPOS_THM] THEN
+      REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, t1] THEN
+      REWRITE_TAC [a1] THEN
+      REWRITE_TAC [CHOOSE_SUBSET_EQ] THEN REWRITE_TAC [RIGHT_AND_EXISTS_THM] THEN
+      ONCE_REWRITE_TAC [SWAP_EXISTS_THM] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"s:A->bool") THEN
+      REWRITE_TAC [HAS_SIZE] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
+      MATCH_MP_TAC FINITE_SUBSET_UNIONS_CHAIN THEN
+      ASM_REWRITE_TAC []))
 
   let CARD_LE_1 ← prove
    r"!s:A->bool. FINITE s /\ CARD s <= 1 <=> ?a. s SUBSET {a}"
@@ -4520,40 +4417,49 @@ def setupSetsCard2 [HolBase] (S : SetsCore)
    r"!f (s:A->bool).
         FINITE s /\ (!x. x IN s ==> f x IN s /\ ~(f x = x) /\ f(f x) = x)
         ==> EVEN(CARD s)"
-   (REPEAT GEN_TAC THEN ABBREV_TAC (← q r"n = CARD(s:A->bool)") THEN
-    POP_ASSUM MP_TAC THEN
-    REWRITE_TAC [← TAUT (← q r"p ==> q /\ r ==> s <=> (q /\ p) /\ r ==> s")] THEN
-    MAP_EVERY (fun t => SPEC_TAC (t, t)) [← q r"s:A->bool", ← q r"n:num"] THEN
-    MATCH_MP_TAC num_WF THEN X_GEN_TAC (← q r"n:num") THEN DISCH_TAC THEN
-    ASM_CASES_TAC (← q r"n = 0") THEN ASM_REWRITE_TAC [ARITH] THEN
-    MATCH_MP_TAC SET_PROVE_CASES THEN ASM_REWRITE_TAC [CARD_CLAUSES] THEN
-    MAP_EVERY X_GEN_TAC [← q r"a:A", ← q r"s:A->bool"] THEN
-    SIMP_TAC [FINITE_INSERT, IMP_CONJ, CARD_CLAUSES, FORALL_IN_INSERT] THEN
-    REWRITE_TAC [IN_INSERT] THEN ASM_CASES_TAC (← q r"f(a:A) = a") THEN
-    ASM_REWRITE_TAC [] THEN ASM_CASES_TAC (← q r"n = 1") THEN
-    ASM_SIMP_TAC [← ARITH_RULE (← q r"SUC n = 1 <=> n = 0"), CARD_EQ_0, NOT_IN_EMPTY] THEN
-    REPEAT STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC (← q r"n - 2")) THEN
-    ANTS_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
-    DISCH_THEN (MP_TAC o SPEC (← q r"s DELETE (f:A->A) a")) THEN
-    ASM_SIMP_TAC [FINITE_DELETE, CARD_DELETE, EVEN_SUB, ARITH] THEN
-    ASM_REWRITE_TAC [← ARITH_RULE (← q r"n <= 2 <=> n = 0 \/ n = 1 \/ n = 2")] THEN
-    ASM_CASES_TAC (← q r"n = 2") THEN ASM_REWRITE_TAC [ARITH] THEN
-    DISCH_THEN MATCH_MP_TAC THEN CONJ_TAC THENL
-     [ASM_ARITH_TAC, ASM SET_TAC []])
+   (← do
+    let a2 ← ARITH_RULE (← q r"n <= 2 <=> n = 0 \/ n = 1 \/ n = 2")
+    let a1 ← ARITH_RULE (← q r"SUC n = 1 <=> n = 0")
+    let t1 ← TAUT (← q r"p ==> q /\ r ==> s <=> (q /\ p) /\ r ==> s")
+    pure
+      (REPEAT GEN_TAC THEN ABBREV_TAC (← q r"n = CARD(s:A->bool)") THEN
+       POP_ASSUM MP_TAC THEN
+       REWRITE_TAC [t1] THEN
+       MAP_EVERY (fun t => SPEC_TAC (t, t)) [← q r"s:A->bool", ← q r"n:num"] THEN
+       MATCH_MP_TAC num_WF THEN X_GEN_TAC (← q r"n:num") THEN DISCH_TAC THEN
+       ASM_CASES_TAC (← q r"n = 0") THEN ASM_REWRITE_TAC [ARITH] THEN
+       MATCH_MP_TAC SET_PROVE_CASES THEN ASM_REWRITE_TAC [CARD_CLAUSES] THEN
+       MAP_EVERY X_GEN_TAC [← q r"a:A", ← q r"s:A->bool"] THEN
+       SIMP_TAC [FINITE_INSERT, IMP_CONJ, CARD_CLAUSES, FORALL_IN_INSERT] THEN
+       REWRITE_TAC [IN_INSERT] THEN ASM_CASES_TAC (← q r"f(a:A) = a") THEN
+       ASM_REWRITE_TAC [] THEN ASM_CASES_TAC (← q r"n = 1") THEN
+       ASM_SIMP_TAC [a1, CARD_EQ_0, NOT_IN_EMPTY] THEN
+       REPEAT STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC (← q r"n - 2")) THEN
+       ANTS_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
+       DISCH_THEN (MP_TAC o SPEC (← q r"s DELETE (f:A->A) a")) THEN
+       ASM_SIMP_TAC [FINITE_DELETE, CARD_DELETE, EVEN_SUB, ARITH] THEN
+       ASM_REWRITE_TAC [a2] THEN
+       ASM_CASES_TAC (← q r"n = 2") THEN ASM_REWRITE_TAC [ARITH] THEN
+       DISCH_THEN MATCH_MP_TAC THEN CONJ_TAC THENL
+        [ASM_ARITH_TAC, ASM SET_TAC []]))
 
   let INVOLUTION_EVEN_FIXPOINTS ← prove
    r"!f (s:A->bool).
         FINITE s /\ (!x. x IN s ==> f x IN s /\ f(f x) = x)
         ==> (EVEN(CARD {x | x IN s /\ f x = x}) <=> EVEN(CARD s))"
-   (REPEAT STRIP_TAC THEN TRANS_TAC EQ_TRANS
-    (← q r"EVEN(CARD({x:A | x IN s /\ f x = x} UNION {x | x IN s /\ ~(f x = x)}))") THEN
-    CONJ_TAC THENL [ALL_TAC, AP_TERM_TAC THEN AP_TERM_TAC THEN SET_TAC []] THEN
-    ASM_SIMP_TAC [EVEN_ADD, CARD_UNION, FINITE_RESTRICT, ← SET_RULE
-     (← q r"{x | x IN s /\ P x} INTER {x | x IN s /\ ~P x} = {}")] THEN
-    REWRITE_TAC [← TAUT (← q r"(p <=> (p <=> q)) <=> q")] THEN
-    MATCH_MP_TAC INVOLUTION_EVEN_NOFIXPOINTS THEN
-    EXISTS_TAC (← q r"f:A->A") THEN ASM_SIMP_TAC [FINITE_RESTRICT] THEN
-    ASM SET_TAC [])
+   (← do
+    let t1 ← TAUT (← q r"(p <=> (p <=> q)) <=> q")
+    let s1 ← SET_RULE
+     (← q r"{x | x IN s /\ P x} INTER {x | x IN s /\ ~P x} = {}")
+    pure
+     (REPEAT STRIP_TAC THEN TRANS_TAC EQ_TRANS
+      (← q r"EVEN(CARD({x:A | x IN s /\ f x = x} UNION {x | x IN s /\ ~(f x = x)}))") THEN
+      CONJ_TAC THENL [ALL_TAC, AP_TERM_TAC THEN AP_TERM_TAC THEN SET_TAC []] THEN
+      ASM_SIMP_TAC [EVEN_ADD, CARD_UNION, FINITE_RESTRICT, s1] THEN
+      REWRITE_TAC [t1] THEN
+      MATCH_MP_TAC INVOLUTION_EVEN_NOFIXPOINTS THEN
+      EXISTS_TAC (← q r"f:A->A") THEN ASM_SIMP_TAC [FINITE_RESTRICT] THEN
+      ASM SET_TAC []))
 
 
   return {
@@ -4722,29 +4628,33 @@ def setupSetsCross [HolBase] (S : SetsCore)
    r"!s m t n.
          s HAS_SIZE m /\ (!x. x IN s ==> t(x) HAS_SIZE n)
          ==> {(x:A,y:B) | x IN s /\ y IN t(x)} HAS_SIZE (m * n)"
-   (GEN_REWRITE_TAC (funpow 4 BINDER_CONV o funpow 2 LAND_CONV) [HAS_SIZE] THEN
-    REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
-    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-    SIMP_TAC [CARD_CLAUSES, NOT_IN_EMPTY, IN_INSERT] THEN CONJ_TAC THENL
-     [GEN_TAC THEN DISCH_THEN (SUBST1_TAC o SYM) THEN
-      REWRITE_TAC [MULT_CLAUSES, HAS_SIZE_0] THEN SET_TAC [],
-      ALL_TAC] THEN
-    MAP_EVERY X_GEN_TAC [← q r"x:A", ← q r"s:A->bool"] THEN STRIP_TAC THEN
-    X_GEN_TAC (← q r"m:num") THEN DISCH_THEN (ASSUME_TAC o SYM) THEN
-    MAP_EVERY X_GEN_TAC [← q r"t:A->B->bool", ← q r"n:num"] THEN
-    REWRITE_TAC [← TAUT (← q r"a \/ b ==> c <=> (a ==> c) /\ (b ==> c)")] THEN
-    SIMP_TAC [FORALL_AND_THM, LEFT_FORALL_IMP_THM, EXISTS_REFL] THEN
-    STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC (← q r"CARD(s:A->bool)")) THEN
-    ASM_REWRITE_TAC [MULT_CLAUSES] THEN DISCH_TAC THEN
-    REWRITE_TAC [← SET_RULE
+   (← do
+    let s1 ← SET_RULE
       (← q r"{(x,y) | (x = a \/ x IN s) /\ y IN t(x)} =
        {(x,y) | x IN s /\ y IN t(x)} UNION
-       IMAGE (\y. (a,y)) (t a)")] THEN
-    MATCH_MP_TAC HAS_SIZE_UNION THEN
-    ASM_SIMP_TAC [HAS_SIZE_IMAGE_INJ, PAIR_EQ] THEN
-    REWRITE_TAC [DISJOINT, IN_IMAGE, IN_ELIM_THM, IN_INTER, EXTENSION,
-                 NOT_IN_EMPTY, EXISTS_PAIR_THM, PAIR_EQ] THEN
-    REPEAT STRIP_TAC THEN ASM_MESON_TAC [PAIR_EQ])
+       IMAGE (\y. (a,y)) (t a)")
+    let t1 ← TAUT (← q r"a \/ b ==> c <=> (a ==> c) /\ (b ==> c)")
+    pure
+      (GEN_REWRITE_TAC (funpow 4 BINDER_CONV o funpow 2 LAND_CONV) [HAS_SIZE] THEN
+       REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
+       MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+       SIMP_TAC [CARD_CLAUSES, NOT_IN_EMPTY, IN_INSERT] THEN CONJ_TAC THENL
+        [GEN_TAC THEN DISCH_THEN (SUBST1_TAC o SYM) THEN
+         REWRITE_TAC [MULT_CLAUSES, HAS_SIZE_0] THEN SET_TAC [],
+         ALL_TAC] THEN
+       MAP_EVERY X_GEN_TAC [← q r"x:A", ← q r"s:A->bool"] THEN STRIP_TAC THEN
+       X_GEN_TAC (← q r"m:num") THEN DISCH_THEN (ASSUME_TAC o SYM) THEN
+       MAP_EVERY X_GEN_TAC [← q r"t:A->B->bool", ← q r"n:num"] THEN
+       REWRITE_TAC [t1] THEN
+       SIMP_TAC [FORALL_AND_THM, LEFT_FORALL_IMP_THM, EXISTS_REFL] THEN
+       STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC (← q r"CARD(s:A->bool)")) THEN
+       ASM_REWRITE_TAC [MULT_CLAUSES] THEN DISCH_TAC THEN
+       REWRITE_TAC [s1] THEN
+       MATCH_MP_TAC HAS_SIZE_UNION THEN
+       ASM_SIMP_TAC [HAS_SIZE_IMAGE_INJ, PAIR_EQ] THEN
+       REWRITE_TAC [DISJOINT, IN_IMAGE, IN_ELIM_THM, IN_INTER, EXTENSION,
+                    NOT_IN_EMPTY, EXISTS_PAIR_THM, PAIR_EQ] THEN
+       REPEAT STRIP_TAC THEN ASM_MESON_TAC [PAIR_EQ]))
 
   let FINITE_PRODUCT_DEPENDENT ← prove
    r"!f:A->B->C s t.
@@ -6525,36 +6435,44 @@ def setupSetsList [HolBase] (S : SetsCore)
        INFINITE s
        ==> ?r:num->num. (!m n. m < n ==> r(m) < r(n)) /\
                         IMAGE r (:num) = s"
-   (REPEAT STRIP_TAC THEN
-    SUBGOAL_THEN (← q r"!n:num. ?x. n <= x /\ x IN s") MP_TAC THENL
-     [ASM_MESON_TAC [INFINITE, num_FINITE, LT_IMP_LE, NOT_LE],
-      GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV) [num_WOP]] THEN
-    REWRITE_TAC [SKOLEM_THM, LEFT_IMP_EXISTS_THM, FORALL_AND_THM] THEN
-    REWRITE_TAC [← TAUT (← q r"p ==> ~(q /\ r) <=> q /\ p ==> ~r")] THEN
-    X_GEN_TAC (← q r"next:num->num") THEN STRIP_TAC THEN
-    MP_TAC (← prove_recursive_functions_exist num_RECURSION
-     (← q r"(f(0) = next 0) /\ (!n. f(SUC n) = next(f n + 1))")) THEN
-    MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"r:num->num") THEN STRIP_TAC THEN
-    MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL
-     [GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC [LT] THEN
-      ASM_MESON_TAC [← ARITH_RULE (← q r"m <= n /\ n + 1 <= p ==> m < p"), LE_LT],
-      DISCH_TAC] THEN
-    ASM_REWRITE_TAC [← GSYM SUBSET_ANTISYM_EQ, FORALL_IN_IMAGE, SUBSET] THEN
-    REWRITE_TAC [IN_IMAGE, IN_UNIV] THEN CONJ_TAC THENL
-     [INDUCT_TAC THEN ASM_MESON_TAC [], ALL_TAC] THEN
-    MATCH_MP_TAC num_WF THEN X_GEN_TAC (← q r"n:num") THEN REPEAT STRIP_TAC THEN
-    ASM_CASES_TAC (← q r"?m:num. m < n /\ m IN s") THENL
-     [MP_TAC (← SPEC (← q r"\m:num. m < n /\ m IN s") num_MAX) THEN
-      ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← TAUT
-       (← q r"p /\ (q ==> r) ==> (p <=> q) ==> r")) THEN
-      CONJ_TAC THENL [MESON_TAC [LT_IMP_LE], ALL_TAC] THEN
-      DISCH_THEN (X_CHOOSE_THEN (← q r"p:num") STRIP_ASSUME_TAC) THEN
-      SUBGOAL_THEN (← q r"?q. p = (r:num->num) q") (CHOOSE_THEN SUBST_ALL_TAC) THENL
-       [ASM_MESON_TAC [], EXISTS_TAC (← q r"SUC q")] THEN
-      ASM_REWRITE_TAC [← GSYM LE_ANTISYM, ← GSYM NOT_LT] THEN
-      ASM_MESON_TAC [NOT_LE, ← ARITH_RULE (← q r"r < p <=> r + 1 <= p")],
-      EXISTS_TAC (← q r"0") THEN ASM_REWRITE_TAC [← GSYM LE_ANTISYM, ← GSYM NOT_LT] THEN
-      ASM_MESON_TAC [LE_0]])
+   (← do
+    let a2 ← ARITH_RULE (← q r"r < p <=> r + 1 <= p")
+    let t3 ← TAUT
+       (← q r"p /\ (q ==> r) ==> (p <=> q) ==> r")
+    let a1 ← ARITH_RULE (← q r"m <= n /\ n + 1 <= p ==> m < p")
+    let t2 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
+    let prfe ← prove_recursive_functions_exist num_RECURSION
+     (← q r"(f(0) = next 0) /\ (!n. f(SUC n) = next(f n + 1))")
+    let t1 ← TAUT (← q r"p ==> ~(q /\ r) <=> q /\ p ==> ~r")
+    pure
+      (REPEAT STRIP_TAC THEN
+       SUBGOAL_THEN (← q r"!n:num. ?x. n <= x /\ x IN s") MP_TAC THENL
+        [ASM_MESON_TAC [INFINITE, num_FINITE, LT_IMP_LE, NOT_LE],
+         GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV) [num_WOP]] THEN
+       REWRITE_TAC [SKOLEM_THM, LEFT_IMP_EXISTS_THM, FORALL_AND_THM] THEN
+       REWRITE_TAC [t1] THEN
+       X_GEN_TAC (← q r"next:num->num") THEN STRIP_TAC THEN
+       MP_TAC prfe THEN
+       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"r:num->num") THEN STRIP_TAC THEN
+       MATCH_MP_TAC t2 THEN CONJ_TAC THENL
+        [GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC [LT] THEN
+         ASM_MESON_TAC [a1, LE_LT],
+         DISCH_TAC] THEN
+       ASM_REWRITE_TAC [← GSYM SUBSET_ANTISYM_EQ, FORALL_IN_IMAGE, SUBSET] THEN
+       REWRITE_TAC [IN_IMAGE, IN_UNIV] THEN CONJ_TAC THENL
+        [INDUCT_TAC THEN ASM_MESON_TAC [], ALL_TAC] THEN
+       MATCH_MP_TAC num_WF THEN X_GEN_TAC (← q r"n:num") THEN REPEAT STRIP_TAC THEN
+       ASM_CASES_TAC (← q r"?m:num. m < n /\ m IN s") THENL
+        [MP_TAC (← SPEC (← q r"\m:num. m < n /\ m IN s") num_MAX) THEN
+         ASM_REWRITE_TAC [] THEN MATCH_MP_TAC t3 THEN
+         CONJ_TAC THENL [MESON_TAC [LT_IMP_LE], ALL_TAC] THEN
+         DISCH_THEN (X_CHOOSE_THEN (← q r"p:num") STRIP_ASSUME_TAC) THEN
+         SUBGOAL_THEN (← q r"?q. p = (r:num->num) q") (CHOOSE_THEN SUBST_ALL_TAC) THENL
+          [ASM_MESON_TAC [], EXISTS_TAC (← q r"SUC q")] THEN
+         ASM_REWRITE_TAC [← GSYM LE_ANTISYM, ← GSYM NOT_LT] THEN
+         ASM_MESON_TAC [NOT_LE, a2],
+         EXISTS_TAC (← q r"0") THEN ASM_REWRITE_TAC [← GSYM LE_ANTISYM, ← GSYM NOT_LT] THEN
+         ASM_MESON_TAC [LE_0]]))
 
   let INFINITE_ENUMERATE_EQ ← prove
    r"!s:num->bool.

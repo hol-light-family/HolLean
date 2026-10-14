@@ -10,18 +10,10 @@ Lean4 translation by Chris Walton 2026
 restricted by a signature.  Here it becomes the namespace `HolMath.Compute`; the
 pieces the signature hides stay `private`.
 
-STRUCTURAL ADAPTATION (forced by Lean).  OCaml's `dterm` embeds a mutable cell,
-`Cst of term * ('a * int option) ref`, and `db` is declared mutually with it.
-Lean rejects an `IO.Ref` occurring inside a mutual inductive ("non valid
-occurrence of the datatypes being declared"), so `Cst` here carries only the
-constant term and the cell is reached by looking the constant's *name* up in the
-compset.  That is exactly what the ref denotes: `from_term` obtains it via
-`assoc_clause rws name`, its sole dereference site is `mk_clos`, and
-`inst_type_dterm` preserves it because type instantiation does not change a
-constant's name.  Sharing and in-place update (`add_in_db_upd`, `set_skip_name`)
-therefore behave as in the OCaml — the cost is that `mk_clos` and its callers
-(`initial_state`, `extern_of_conv`, `inst_rw`, `reduce_cst`, `cbv_wk`/`cbv_up`,
-`strong`/`strong_up`) take the compset as an argument.
+Lean rejects an `IO.Ref` inside a mutual inductive, so where OCaml's `dterm` has
+`Cst of term * ('a * int option) ref` this `Cst` carries only the constant term
+and the cell is reached by looking the constant's name up in the compset.
+Consequently `mk_clos` and its callers take the compset as an argument.
 -/
 
 import HolCore.Bool
@@ -1143,7 +1135,8 @@ def bool_redns [HolBase] (ETA_AX : thm)
 def bool_compset [HolBase] (ETA_AX REFL_CLAUSE : thm)
     (LET_DEF COND_CLAUSES COND_ID NOT_CLAUSES
      AND_CLAUSES OR_CLAUSES IMP_CLAUSES EQ_CLAUSES : thm)
-    (condTm : term) : IO (Except String compset) := do
+    (condTm : IO term) : IO (Except String compset) := do
+  -- compute.ml parses the `COND` quotation on each call; `condTm` does too.
   match ← bool_redns ETA_AX LET_DEF COND_CLAUSES COND_ID NOT_CLAUSES
                      AND_CLAUSES OR_CLAUSES IMP_CLAUSES EQ_CLAUSES with
   | .error e => return .error e
@@ -1151,7 +1144,7 @@ def bool_compset [HolBase] (ETA_AX REFL_CLAUSE : thm)
     match ← from_list REFL_CLAUSE redns with
     | .error e => return .error e
     | .ok base =>
-      match ← set_skip base condTm none with
+      match ← set_skip base (← condTm) none with
       | .error e => return .error e
       | .ok _ => return .ok base
 
@@ -1173,7 +1166,7 @@ def OR : List term → term → Bool
     in because `let_CONV` lives in the `pair.ml` layer. -/
 def basic_compset [HolBase] (ETA_AX REFL_CLAUSE : thm)
     (SELECT_REFL FORALL_SIMP EXISTS_SIMP : thm)
-    (letTm : term) (letConv : ioconv) (condTm : term) :
+    (letTm : IO term) (letConv : ioconv) (condTm : IO term) :
     IO (Except String compset) := do
   let basic_rws0 ← Simp.basic_rewrites
   -- Remove rewrite rules that cause the "lambda abstraction not allowed in
@@ -1200,13 +1193,13 @@ def basic_compset [HolBase] (ETA_AX REFL_CLAUSE : thm)
         match ← add_conv cst args.length the_conv cs with
         | .error e => return .error e
         | .ok _ => pure ()
-      match ← add_conv letTm 2 letConv cs with
+      match ← add_conv (← letTm) 2 letConv cs with
       | .error e => return .error e
       | .ok _ =>
         -- Invoke set_skip again with last parameter set to Some 1 to stop
         -- CBV_CONV looking at conditionals' branches before the guard is fully
         -- true or false
-        match ← set_skip cs condTm none with
+        match ← set_skip cs (← condTm) none with
         | .error e => return .error e
         | .ok _ => return .ok cs
 

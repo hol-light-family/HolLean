@@ -26,7 +26,7 @@ namespace HolCore.Canon
 set_option maxRecDepth 4000
 
 /-- Build-and-apply a `GEN_REWRITE_CONV cnvl thl` as a single `ioconv`. -/
-private def genRewrite (B : BoolThms) (cnvl : ioconv → ioconv) (thl : List thm) : ioconv :=
+def genRewrite (B : BoolThms) (cnvl : ioconv → ioconv) (thl : List thm) : ioconv :=
   fun tm => do
     match ← (Simp.GEN_REWRITE_CONV B cnvl thl : IO (Except String ioconv)) with
     | .error e => return .error e
@@ -43,33 +43,6 @@ def PRESIMP_CONV (B : BoolThms) (T : TheoremThms) (C : ClassThms) : ioconv :=
      T.FORALL_SIMP, T.EXISTS_SIMP, T.EXISTS_OR_THM, T.FORALL_AND_THM,
      T.LEFT_EXISTS_AND_THM, T.RIGHT_EXISTS_AND_THM,
      C.LEFT_FORALL_OR_THM, C.RIGHT_FORALL_OR_THM]
-
-/- ---------------------------------------------------------------------- -/
-/- Skolemize a term already in NNF (doesn't matter if it's not prenex).   -/
-/- ---------------------------------------------------------------------- -/
-
-/-- Skolemize a term already in NNF. -/
-def SKOLEM_CONV (B : BoolThms) (T : TheoremThms) (C : ClassThms) : ioconv :=
-  Simp.thencIO
-    (genRewrite B Simp.topDepthConvIO
-      [T.EXISTS_OR_THM, T.LEFT_EXISTS_AND_THM, T.RIGHT_EXISTS_AND_THM,
-       T.FORALL_AND_THM, C.LEFT_FORALL_OR_THM, C.RIGHT_FORALL_OR_THM,
-       T.FORALL_SIMP, T.EXISTS_SIMP])
-    (genRewrite B Simp.redepthConvIO
-      [T.RIGHT_AND_EXISTS_THM, T.LEFT_AND_EXISTS_THM, T.OR_EXISTS_THM,
-       T.RIGHT_OR_EXISTS_THM, T.LEFT_OR_EXISTS_THM, C.SKOLEM_THM])
-
-/- ---------------------------------------------------------------------- -/
-/- Put a term already in NNF into prenex form.                            -/
-/- ---------------------------------------------------------------------- -/
-
-/-- Put a term already in NNF into prenex form. -/
-def PRENEX_CONV (B : BoolThms) (T : TheoremThms) (C : ClassThms) : ioconv :=
-  genRewrite B Simp.redepthConvIO
-    [T.AND_FORALL_THM, T.LEFT_AND_FORALL_THM, T.RIGHT_AND_FORALL_THM,
-     C.LEFT_OR_FORALL_THM, C.RIGHT_OR_FORALL_THM,
-     T.OR_EXISTS_THM, T.LEFT_OR_EXISTS_THM, T.RIGHT_OR_EXISTS_THM,
-     T.LEFT_AND_EXISTS_THM, T.RIGHT_AND_EXISTS_THM]
 
 /- ---------------------------------------------------------------------- -/
 /- ACI rearrangements of conjunctions and disjunctions. This is much      -/
@@ -216,9 +189,9 @@ def setupNNFPths (B : BoolThms) (T : TheoremThms) (C : ClassThms) (ETA_AX : thm)
   let prove := Tactics.prove B
   let GEN_REWRITE_TAC := Simp.GEN_REWRITE_TAC B
   let REWRITE_TAC := Simp.REWRITE_TAC B
-  let and_tm ← (mk_const "/\\" [] : IO (Except String term))
-  let or_tm ← (mk_const "\\/" [] : IO (Except String term))
-  let not_tm ← (mk_const "~" [] : IO (Except String term))
+  let and_tm ← parse_term "(/\\)"
+  let or_tm ← parse_term "(\\/)"
+  let not_tm ← parse_term "(~)"
   let p_tm ← parse_term "p:bool"
   let q_tm ← parse_term "q:bool"
   let pth_not_not ← TAUT "~ ~ p = p"
@@ -269,7 +242,7 @@ private def binderDomTy (q : term) : Except String hol_type := do
 private def mk_fun_ty' (ty : hol_type) : IO (Except String hol_type) := mk_fun_ty ty bool_ty
 
 /-- Build the equation `l = r` (IO, via the `=` constant). -/
-private def mkEqT (l r : term) : IO (Except String term) := do
+def mkEq2 (l r : term) : IO (Except String term) := do
   match ← (mk_eq : IO (Except String ((term × term) → Except String term))) with
   | .error e => return .error e | .ok f => return (f (l, r))
 
@@ -387,7 +360,7 @@ partial def nnfDconv (B : BoolThms) (P : NNFPths) (cf : Bool) (baseconvs : dconv
       | .ok (th_p, th_n) =>
         return (← (do
           let y ← liftExcept (variant (x :: frees t) x)
-          let eq ← (mkEqT y x : IO (Except String term))
+          let eq ← (mkEq2 y x : IO (Except String term))
           let (eth_p, eth_n) ← (baseconvs eq : IO (Except String (thm × thm)))
           let bth ← liftExcept (do BETA (← mk_comb bod x))
           let bth' ← liftExcept (do BETA_CONV (← mk_comb bod y))
@@ -490,7 +463,7 @@ partial def nnfConvP (B : BoolThms) (P : NNFPths) (cf : Bool)
       | .error e => return .error e | .ok (th_p, th_n) =>
         return (← (do
           let y ← liftExcept (variant (x :: frees t) x)
-          let eq ← (mkEqT y x : IO (Except String term))
+          let eq ← (mkEq2 y x : IO (Except String term))
           let (eth_p, _eth_n) ← (base2 eq : IO (Except String (thm × thm)))
           let bth ← liftExcept (do BETA (← mk_comb bod x))
           let bth' ← liftExcept (do BETA_CONV (← mk_comb bod y))
@@ -583,7 +556,7 @@ partial def nnfConvN (B : BoolThms) (P : NNFPths) (cf : Bool)
       | .error e => return .error e | .ok (th_p, th_n) =>
         return (← (do
           let y ← liftExcept (variant (x :: frees t) x)
-          let eq ← (mkEqT y x : IO (Except String term))
+          let eq ← (mkEq2 y x : IO (Except String term))
           let (_eth_p, eth_n) ← (base2 eq : IO (Except String (thm × thm)))
           let bth ← liftExcept (do BETA (← mk_comb bod x))
           let bth' ← liftExcept (do BETA_CONV (← mk_comb bod y))
@@ -627,6 +600,33 @@ def NNF_CONV (B : BoolThms) (P : NNFPths) : ioconv := GEN_NNF_CONV B P false nnf
 
 /-- Negation normal form (iffs split conjunctively). -/
 def NNFC_CONV (B : BoolThms) (P : NNFPths) : ioconv := GEN_NNF_CONV B P true nnfBase1 nnfBase2
+
+/- ---------------------------------------------------------------------- -/
+/- Skolemize a term already in NNF (doesn't matter if it's not prenex).   -/
+/- ---------------------------------------------------------------------- -/
+
+/-- Skolemize a term already in NNF. -/
+def SKOLEM_CONV (B : BoolThms) (T : TheoremThms) (C : ClassThms) : ioconv :=
+  Simp.thencIO
+    (genRewrite B Simp.topDepthConvIO
+      [T.EXISTS_OR_THM, T.LEFT_EXISTS_AND_THM, T.RIGHT_EXISTS_AND_THM,
+       T.FORALL_AND_THM, C.LEFT_FORALL_OR_THM, C.RIGHT_FORALL_OR_THM,
+       T.FORALL_SIMP, T.EXISTS_SIMP])
+    (genRewrite B Simp.redepthConvIO
+      [T.RIGHT_AND_EXISTS_THM, T.LEFT_AND_EXISTS_THM, T.OR_EXISTS_THM,
+       T.RIGHT_OR_EXISTS_THM, T.LEFT_OR_EXISTS_THM, C.SKOLEM_THM])
+
+/- ---------------------------------------------------------------------- -/
+/- Put a term already in NNF into prenex form.                            -/
+/- ---------------------------------------------------------------------- -/
+
+/-- Put a term already in NNF into prenex form. -/
+def PRENEX_CONV (B : BoolThms) (T : TheoremThms) (C : ClassThms) : ioconv :=
+  genRewrite B Simp.redepthConvIO
+    [T.AND_FORALL_THM, T.LEFT_AND_FORALL_THM, T.RIGHT_AND_FORALL_THM,
+     C.LEFT_OR_FORALL_THM, C.RIGHT_OR_FORALL_THM,
+     T.OR_EXISTS_THM, T.LEFT_OR_EXISTS_THM, T.RIGHT_OR_EXISTS_THM,
+     T.LEFT_AND_EXISTS_THM, T.RIGHT_AND_EXISTS_THM]
 
 /- ---------------------------------------------------------------------- -/
 /- Weak and normal DNF conversion. The "weak" form gives a disjunction of -/
@@ -922,7 +922,7 @@ private def selElimIConv (B : BoolThms) (S : SelLamPths) (tm : term) : IO (Excep
         let itm ← liftExcept (mk_imp (concl th1) tm)
         let th2 ← liftExcept (do B.DISCH_ALL (← B.MP (← ASSUME itm) th1))
         let atm ← liftExcept (list_mk_abs fvs t)
-        let rawdef ← (mkEqT fn atm : IO (Except String term))
+        let rawdef ← (mkEq2 fn atm : IO (Except String term))
         let def_ ← liftExcept (do B.GENL fvs (← SYM (← RIGHT_BETAS fvs (← ASSUME rawdef))))
         let c ← (Simp.PURE_REWRITE_CONV B [def_] : IO (Except String ioconv))
         let th3 ← (c (← liftExcept (lhand (concl th2))) : IO (Except String thm))
@@ -1013,7 +1013,7 @@ private def lamb1Conv (B : BoolThms) (S : SelLamPths) (tm : term) : IO (Except S
       | .ok aatm =>
         let f ← genvar (type_of aatm)
         return (← (do
-          let eq ← (mkEqT f aatm : IO (Except String term))
+          let eq ← (mkEq2 f aatm : IO (Except String term))
           let th1 ← liftExcept (do SYM (← RIGHT_BETAS vs (← ASSUME eq)))
           let th2 ← (elimLambda (genRewrite B (fun c => c) [th1]) tm : IO (Except String thm))
           let th3 ← (Drule.MATCH_MP B S.applyPth (← liftExcept (do B.GEN f (← B.DISCH_ALL th2)))
@@ -1103,8 +1103,8 @@ private partial def condsElimConv (B : BoolThms) (P : CondsPths) (dfl : Bool) (t
           (propsimp_conv tm : IO (Except String thm))
         else
           (do
-            let asm_0 ← (mkEqT p P.falseTm : IO (Except String term))
-            let asm_1 ← (mkEqT p P.trueTm : IO (Except String term))
+            let asm_0 ← (mkEq2 p P.falseTm : IO (Except String term))
+            let asm_1 ← (mkEq2 p P.trueTm : IO (Except String term))
             let simp_0 ← (Simp.net_of_thm B false (← liftExcept (ASSUME asm_0)) P.propsimps
                           : IO (Except String (Nets.net Simp.gconv)))
             let simp_1 ← (Simp.net_of_thm B false (← liftExcept (ASSUME asm_1)) P.propsimps
@@ -1148,29 +1148,6 @@ def CONDS_ELIM_CONV (B : BoolThms) (P : CondsPths) : ioconv := fun tm => condsEl
 
 /-- `CONDS_CELIM_CONV`: eliminate conditionals, conjunctive splitting. -/
 def CONDS_CELIM_CONV (B : BoolThms) (P : CondsPths) : ioconv := fun tm => condsElimConv B P false tm
-
-/- ---------------------------------------------------------------------- -/
-/- Depth conversion to apply at "atomic" formulas in "first-order" term.  -/
-/- ---------------------------------------------------------------------- -/
-
-/-- Apply `conv` at the atomic (non-propositional) subformulas. -/
-partial def PROP_ATOM_CONV (conv : ioconv) (tm : term) : IO (Except String thm) := do
-  match tm with
-  | .Comb (.Const "!" _) (.Abs _ _)
-  | .Comb (.Const "?" _) (.Abs _ _)
-  | .Comb (.Const "?!" _) (.Abs _ _) =>
-      (Simp.binderConvIO (PROP_ATOM_CONV conv) tm : IO (Except String thm))
-  | .Comb (.Comb (.Const "/\\" _) _) _
-  | .Comb (.Comb (.Const "\\/" _) _) _
-  | .Comb (.Comb (.Const "==>" _) _) _
-  | .Comb (.Comb (.Const "=" (.Tyapp "fun" (.Tyapp "bool" [] :: _))) _) _ =>
-      (Simp.binopConvIO (PROP_ATOM_CONV conv) tm : IO (Except String thm))
-  | .Comb (.Const "~" _) _ =>
-      (Simp.randConvIO (PROP_ATOM_CONV conv) tm : IO (Except String thm))
-  | _ =>
-      match ← (conv tm : IO (Except String thm)) with
-      | .ok th => return .ok th
-      | .error _ => return (.ok (REFL tm))
 
 /- ---------------------------------------------------------------------- -/
 /- Fix up all head arities to be consistent, in "first order logic"       -/
@@ -1278,6 +1255,29 @@ def ASM_FOL_TAC (B : BoolThms) (P : FolPths) : tactic := fun (asl, w) => do
    : IO (Except String goalstate))
 
 /- ---------------------------------------------------------------------- -/
+/- Depth conversion to apply at "atomic" formulas in "first-order" term.  -/
+/- ---------------------------------------------------------------------- -/
+
+/-- Apply `conv` at the atomic (non-propositional) subformulas. -/
+partial def PROP_ATOM_CONV (conv : ioconv) (tm : term) : IO (Except String thm) := do
+  match tm with
+  | .Comb (.Const "!" _) (.Abs _ _)
+  | .Comb (.Const "?" _) (.Abs _ _)
+  | .Comb (.Const "?!" _) (.Abs _ _) =>
+      (Simp.binderConvIO (PROP_ATOM_CONV conv) tm : IO (Except String thm))
+  | .Comb (.Comb (.Const "/\\" _) _) _
+  | .Comb (.Comb (.Const "\\/" _) _) _
+  | .Comb (.Comb (.Const "==>" _) _) _
+  | .Comb (.Comb (.Const "=" (.Tyapp "fun" (.Tyapp "bool" [] :: _))) _) _ =>
+      (Simp.binopConvIO (PROP_ATOM_CONV conv) tm : IO (Except String thm))
+  | .Comb (.Const "~" _) _ =>
+      (Simp.randConvIO (PROP_ATOM_CONV conv) tm : IO (Except String thm))
+  | _ =>
+      match ← (conv tm : IO (Except String thm)) with
+      | .ok th => return .ok th
+      | .error _ => return (.ok (REFL tm))
+
+/- ---------------------------------------------------------------------- -/
 /- Consolidated Canon bundle (all pth's proved once).                     -/
 /- ---------------------------------------------------------------------- -/
 
@@ -1315,22 +1315,30 @@ def setupCanon (B : BoolThms) (T : TheoremThms) (C : ClassThms)
   let selLam ← setupSelLam B T C SELECT_AX
   let conds ← setupConds B C propsimps
   let fol ← setupFol B I_THM
-  -- DISJ_ACI pths (UNDISCH'd forms)
+  -- Each canon.ml block parses its own `a_tm`, `b_tm`, `c_tm` and operator
+  -- quotations; the terms are equal, so the bundle keeps one copy.
+  -- DISJ_ACI_RULE (canon.ml 46-51), the UNDISCH'd forms.
   let disjPthLeft ← liftExcept (B.UNDISCH (← TAUT "~(a \\/ b) ==> ~a"))
   let disjPthRight ← liftExcept (B.UNDISCH (← TAUT "~(a \\/ b) ==> ~b"))
   let disjPthTmp ← TAUT "~a ==> ~b ==> ~(a \\/ b)"
   let disjPth ← liftExcept (do B.UNDISCH (← B.UNDISCH disjPthTmp))
   let disjPthNeg ← liftExcept (B.UNDISCH (← TAUT "(~a <=> ~b) ==> (a <=> b)"))
-  -- DNF/CNF pths
-  let dnfPth1 ← TAUT "a /\\ (b \\/ c) <=> a /\\ b \\/ a /\\ c"
-  let dnfPth2 ← TAUT "(a \\/ b) /\\ c <=> a /\\ c \\/ b /\\ c"
-  let cnfPth1 ← TAUT "a \\/ (b /\\ c) <=> (a \\/ b) /\\ (a \\/ c)"
-  let cnfPth2 ← TAUT "(a /\\ b) \\/ c <=> (a \\/ c) /\\ (b \\/ c)"
   let aTm ← parse_term "a:bool"
   let bTm ← parse_term "b:bool"
+  -- WEAK_DNF_CONV/DNF_CONV (canon.ml 393-406).
+  let dnfPth1 ← TAUT "a /\\ (b \\/ c) <=> a /\\ b \\/ a /\\ c"
+  let dnfPth2 ← TAUT "(a \\/ b) /\\ c <=> a /\\ c \\/ b /\\ c"
+  let _ ← parse_term "a:bool"
+  let _ ← parse_term "b:bool"
   let cTm ← parse_term "c:bool"
-  let orTm ← (mk_const "\\/" [] : IO (Except String term))
-  let andTm ← (mk_const "/\\" [] : IO (Except String term))
+  let orTm ← parse_term "(\\/)"
+  -- WEAK_CNF_CONV/CNF_CONV (canon.ml 435-448).
+  let cnfPth1 ← TAUT "a \\/ (b /\\ c) <=> (a \\/ b) /\\ (a \\/ c)"
+  let cnfPth2 ← TAUT "(a /\\ b) \\/ c <=> (a \\/ c) /\\ (b \\/ c)"
+  let _ ← parse_term "a:bool"
+  let _ ← parse_term "b:bool"
+  let _ ← parse_term "c:bool"
+  let andTm ← parse_term "(/\\)"
   return { nnf, selLam, conds, fol,
            disjPthLeft, disjPthRight, disjPth, disjPthNeg,
            dnfPth1, dnfPth2, cnfPth1, cnfPth2, aTm, bTm, cTm, orTm, andTm }

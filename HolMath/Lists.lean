@@ -1,5 +1,6 @@
 /- File: Lists.lean
 Theory of lists, plus characters and strings as lists of characters.
+John Harrison, University of Cambridge Computer Laboratory
 
 Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
@@ -1387,14 +1388,18 @@ structure CharStringMachinery where
 @[nospecialize]
 def setupCharStringMachinery [HolBase] (injectivity_char CONS_11 NOT_CONS_NIL : thm)
     (MESON_TAC : List thm → tactic) : ExceptT String IO CharStringMachinery := do
-  let true_tm ← q r"T"
-  let false_tm ← q r"F"
-  let mk_bool (b : Bool) : term := if b then true_tm else false_tm
+  -- lists.ml parses `T` and `F` inside `mk_bool`, so on every call (the
+  -- pair right to left).  Kept, so the type-variable counter advances as in
+  -- HOL Light.
+  let mk_bool (b : Bool) : ExceptT String IO term := do
+    let false_tm ← q r"F"
+    let true_tm ← q r"T"
+    return if b then true_tm else false_tm
   let ascii_tm ← q r"ASCII"
-  let mk_code (c : Nat) : Except String term :=
-    let lis := (List.range 8).map (fun i => mk_bool ((c / 2 ^ i) % 2 == 1))
-    lis.foldrM (fun x y => mk_comb y x) ascii_tm
-  let codes := (← liftExcept ((List.range 256).mapM mk_code)).toArray
+  let mk_code (c : Nat) : ExceptT String IO term := do
+    let lis ← (List.range 8).mapM (fun i => mk_bool ((c / 2 ^ i) % 2 == 1))
+    liftExcept (lis.foldrM (fun x y => mk_comb y x) ascii_tm)
+  let codes := (← (List.range 256).mapM mk_code).toArray
   let char_ty ← qty r"char"
   let avars ← [r"a0:bool", r"a1:bool", r"a2:bool", r"a3:bool", r"a4:bool", r"a5:bool",
                r"a6:bool"].mapM q
@@ -1454,7 +1459,7 @@ private def findneq : Nat → List term → List term → List term →
   | n, pfx, b1 :: a, b2 :: b =>
     if b1 != b2 then do return (n, pfx.reverse, ← bool_of_term b2, a, b)
     else findneq (n + 1) (b1 :: pfx) a b
-  | _, _, _, _ => failwith "findneq"
+  | _, _, _, _ => failwith ""
 
 /-- `CHAR_DISTINCTNESS c1 c2` (lists.ml 954-956). -/
 def CHAR_DISTINCTNESS (M : CharStringMachinery) (c1 c2 : term) : Except String thm := do

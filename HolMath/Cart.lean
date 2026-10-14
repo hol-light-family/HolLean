@@ -5,68 +5,14 @@ Original (c) Copyright, John Harrison 1998-2007
 Original (c) Copyright, Andrea Gabrielli, Marco Maggesi 2017-2018
 Lean4 translation by Chris Walton 2026
 
-  This file CREATES NEW TYPES.  cart.ml makes five via `new_type_definition`
-  and two more via `define_type`, and those are kernel-level side effects -
-  they extend the type-constructor table, so they must run exactly once and
-  in file order, and every term parsed before they run is untypable.
-
-  The five `new_type_definition` calls, each with its (abs,rep) pair:
-      cart.ml  55  finite_image  ("finite_index",  "dest_finite_image")
-      cart.ml 112  cart          ("mk_cart",       "dest_cart")
-      cart.ml 179  finite_sum    ("mk_finite_sum", "dest_finite_sum")
-      cart.ml 284  finite_diff   ("mk_finite_diff","dest_finite_diff")
-      cart.ml 317  finite_prod   ("mk_finite_prod","dest_finite_prod")
-  `finite_image` is an indexing type of a prescribed size; `cart` is the
-  Cartesian product; the other three give a non-standard sum for "pasting"
-  products together, a subtraction, and a finite-forcing multiplication on
-  type indices.  The last three are each `new_type_definition` applied to a
-  locally proved nonemptiness theorem `th`, so the proof must come first.
-
-  The two `define_type` calls build finite types indexed by binary numbers:
-      cart.ml 341  tybit0_INDUCT, tybit0_RECURSION
-                     = define_type "tybit0 = mktybit0((A,A)finite_sum)"
-      cart.ml 344  tybit1_INDUCT, tybit1_RECURSION
-                     = define_type
-                         "tybit1 = mktybit1(((A,A)finite_sum,1)finite_sum)"
-  These are what make `:2`, `:3`, `:4` ... exist as types, which is why
-  `real^3` means anything at all.  Note `tybit1` mentions the type `1`, so
-  the order here is load-bearing even within these two lines.
-
-  `^` is hard-wired into the parser and printer, not declared here.
-  `parser.ml:213`'s `carttype` binds the `^` type infix to a type operator
-  named literally `cart`, and `printer.ml:227`/`257` print `(A,B)cart` back
-  as `A^B`.  Both paths already exist on our side - `HolCore.Parser`'s
-  `carttypeP` (with `btyop "cart"`) and `HolCore.Printer`'s `pp_print_type` /
-  `pp_print_colored_type` - so nothing needs adding; but they are inert until `new_type_definition "cart"`
-  at cart.ml 112 creates the operator.  This is the same shape as sets.ml,
-  where the parser's `{a,b,c}` and `{x|P}` desugaring existed all along but
-  emitted free variables until EMPTY, INSERT, GSPEC and SETSPEC were real.
-
-  Three parser side effects, and note the middle one is not a
-  `parse_as_infix`:
-      cart.ml 115  parse_as_infix("$",(25,"left"))     -- vector indexing
-      cart.ml 126  parse_as_binder "lambda"            -- vector abstraction
-      cart.ml 571  parse_as_infix("PCROSS",(22,"right"))
-  Each mutates global parser state, must run exactly once, and must run
-  before any term using its symbol is parsed.
-
-  Section map (cart.ml line ranges):
-      11- 50  association of a number with an indexing type (`dimindex`)
-      51- 65  an indexing type of that size, parametrized by base type
-      66-107  dimension of such a type, and indexing over it
-     108-153  finite Cartesian products, with indexing (`$`) and `lambda`
-     154-170  avoiding side-conditions on the index
-     171-275  the non-standard sum used to "paste" products together
-     276-308  the "subtraction" function on type indices
-     309-337  a finite-forcing "multiplication" on type indices
-     338-405  type constructors for finite types indexed by binary numbers
-     406-459  computing `dimindex` of the fintypes
-     460-479  cases 2, 3 and 4, "especially useful for real^N"
-     480-524  the finiteness lemma
-     525-550  more cardinality results for the whole universe
-     551-557  explicit construction of a vector from a list (`vector`)
-     558-567  a convenient set-membership elimination theorem
-     568-733  a variant of product types using pasting of vectors (`PCROSS`)
+  This file creates new types: five via `new_type_definition` (`finite_image`,
+  `cart`, `finite_sum`, `finite_diff`, `finite_prod`) and two via `define_type`
+  (`tybit0`, `tybit1`, which make `:2`, `:3`, `:4` ... exist).  These are
+  kernel side effects, so they run exactly once and in file order.  The `^`
+  type infix is hard-wired into the parser/printer (not declared here) and maps
+  to the type operator `cart`; it is inert until `new_type_definition "cart"`
+  runs.  Three parser side effects also live here: `parse_as_infix "$"` (vector
+  indexing), `parse_as_binder "lambda"`, and `parse_as_infix "PCROSS"`.
 -/
 
 import HolMath.Iterate
@@ -192,29 +138,12 @@ def setupCartDimindex [HolBase]
 
 /-- The `finite_image` type-bijection layer (cart.ml 54-105).
 
-    *** THIS IS THE FIRST `new_type_definition` IN THE ENTIRE DEVELOPMENT. ***
-    cart.ml 54-55 is
-        let finite_image_tybij =
-          new_type_definition "finite_image"
-            ("finite_index","dest_finite_image") <existence th>
-    That is a KERNEL-LEVEL SIDE EFFECT: it extends the type-constructor table
-    with a new unary type operator `finite_image` and introduces the
-    abstraction/representation pair `finite_index`/`dest_finite_image`.  Being
-    side-effecting it MUST run EXACTLY ONCE and IN FILE ORDER, and it must NOT
-    be called from inside HolMath - so `new_type_definition` is threaded in
-    from Session as a PARAMETER, exactly as `new_definition` is (Session builds
-    the type in its once-only CAF and forces this layer from `ensureCart`).
-    The existence proof `?x. x IN 1..dimindex(:A)` is itself PURE and is built
-    here with `prove`, then fed to the threaded `new_type_definition`.
-
-    `finite_image_tybij` is the conjoined bijection theorem; the OCaml uses it
-    only through `MESON_TAC[finite_image_tybij]` in the eight downstream proofs
-    (60-105), so this layer keeps it as a field and never re-derives it.
-
-    Rests on `DIMINDEX_GE_1`/`DIMINDEX_UNIV` (cart.ml 66-105) and on the
-    Sets/Iterate layer's `IN_NUMSEG`, `LE_REFL`, `EXTENSION`, `IN_UNIV`,
-    `IN_IMAGE`, `HAS_SIZE`, `HAS_SIZE_IMAGE_INJ`, `HAS_SIZE_NUMSEG_1`,
-    `CONJ_ASSOC`. -/
+    `finite_image` is an indexing type of a prescribed size.  Its creation
+    (cart.ml 54-55) is the first `new_type_definition` of the development: a
+    kernel side effect threaded in from Session as a parameter, so this layer
+    stays pure.  The existence proof `?x. x IN 1..dimindex(:A)` is built here
+    with `prove`.  `finite_image_tybij` is the conjoined bijection theorem,
+    used only through `MESON_TAC` in the downstream proofs. -/
 structure CartFiniteImage where
   /-- `finite_image_tybij` (cart.ml 54): the abs/rep bijection for the new type
       `finite_image`, from `new_type_definition` applied to the proof of
@@ -349,29 +278,16 @@ open HolLight HolLight.Syntax
 
 
 
-/-- Install the `$` vector-indexing infix (cart.ml 115).
-
-    Second parser side effect of the file; it mutates global parser state.
-    `parse_as_infix("$",(25,"left"))` - precedence 25,
-    LEFT-associative.  Like `setupSetsInfixes` / `setupIterateSegmentsInfix`
-    this must run exactly once and before any term using `$` is parsed (the
-    `finite_index` definition body at cart.ml 118 is the first such term), so
-    it is forced behind a once-only guard, at its true file position (between
-    the `cart` type creation at 112 and `finite_index` at 117). -/
+/-- Install the `$` vector-indexing infix (cart.ml 115):
+    `parse_as_infix("$",(25,"left"))`.  Must run once, before any term using
+    `$` is parsed (the `finite_index` body is the first such term). -/
 def setupCartDollarInfix : IO Unit := do
   -- cart.ml 115.
   HolCore.Printer.parse_as_infix ("$", (25, "left"))
 
-/-- Install the `lambda` binder (cart.ml 126).
-
-    *** THIRD parser side effect of the file, and NOT a `parse_as_infix` - it
-    is a `parse_as_binder`. ***  A survey grepping only for `parse_as_infix`
-    would MISS it entirely.  `parse_as_binder "lambda"` MUTATES GLOBAL PARSER
-    STATE, must run EXACTLY ONCE, and must run BEFORE any `lambda i. ...` term
-    is parsed (the `lambda` definition body at cart.ml 130 is the first such
-    term).  Same precedent as `setupMinimalBinder` (arith.ml).  Session forces
-    it behind a once-only guard at its TRUE file position (cart.ml 126, after
-    `$` and `finite_index`/`CART_EQ`, before the `lambda` definition). -/
+/-- Install the `lambda` binder (cart.ml 126): `parse_as_binder "lambda"` (a
+    binder, not an infix).  Must run once, before any `lambda i. ...` term is
+    parsed (the `lambda` body is the first such term). -/
 def setupCartLambdaBinder : IO Unit := do
   -- cart.ml 126.
   HolCore.Printer.parse_as_binder "lambda"
@@ -395,42 +311,22 @@ open HolLight HolLight.Syntax
 /-- The Cartesian-product type `cart` with its indexing (`$`) and abstraction
     (`lambda`), cart.ml 111-168.
 
-    *** THIS IS THE CENTRE OF THE FILE. ***  cart.ml 111-112 is
-        let cart_tybij =
-          new_type_definition "cart" ("mk_cart","dest_cart") <th>
-    creating the type operator named literally `cart` that the parser and
-    printer rely on:
-    `parser.ml:213`'s `carttype` binds the `^` TYPE INFIX to a type operator
-    named `cart` (our side: `HolCore.Parser`'s `carttypeP`, with
-    `btyop "cart"`), and `printer.ml:227`/`257` print `(A,B)cart` back as
-    `A^B` (ours: `HolCore.Printer`'s `pp_print_type` /
-    `pp_print_colored_type`).  Both paths already exist
-    and need NO changes - they are simply INERT until this line runs.  So the
-    moment `cart_tybij` is forced, `:A^B` starts parsing and PRINTS BACK as
-    `A^B`.  (A `^` over concrete numerals like `:real^3` additionally needs the
-    type-level numeral `3`, which does not exist until cart.ml 341-344's
-    `define_type` calls in a later task.)
+    `cart_tybij` (cart.ml 111-112) creates the type operator `cart` that the
+    hard-wired `^` type infix maps to, so `:A^B` starts parsing and printing
+    once this is forced.  `new_type_definition` is threaded in from Session
+    (kernel side effect); the trivial existence proof `?f:(B)finite_image->A. T`
+    is built here with `prove`.  The two `new_definition`s `finite_index` (117)
+    and `lambda` (128) use the `$` infix and `lambda` binder, so Session
+    installs those before forcing this bundle.
 
-    Being a KERNEL side effect, `new_type_definition` is threaded in from
-    Session as a PARAMETER; this layer stays free of `unsafe`.  The existence
-    theorem it consumes is the PURE, trivial `?f:(B)finite_image->A. T`
-    (`REWRITE_TAC[]`), built here with `prove`.
-
-    Two `new_definition`s live here - `finite_index` (117) and `lambda` (128) -
-    each also threaded from Session and each parsing a body that uses a parser
-    symbol declared just above (`$`, then the `lambda` binder), which is why
-    Session interleaves `setupCartDollarInfix` and `setupCartLambdaBinder` at
-    their true positions when forcing this bundle.
-
-    Depends on `CartFiniteImage` (`FORALL_FINITE_INDEX`,
-    `FINITE_INDEX_WORKS`, `FINITE_INDEX_INJ`, `DIMINDEX_FINITE_IMAGE`) and on
-    `dimindex` (cart.ml 14). -/
+    Depends on `CartFiniteImage` (`FORALL_FINITE_INDEX`, `FINITE_INDEX_WORKS`,
+    `FINITE_INDEX_INJ`, `DIMINDEX_FINITE_IMAGE`) and on `dimindex`. -/
 structure CartCart where
   /-- `cart_tybij` (cart.ml 111): the abs/rep bijection for the new Cartesian
       product type `cart`, from `new_type_definition "cart" ("mk_cart",
       "dest_cart")` applied to the trivial existence proof `?f:(B)finite_image
-      ->A. T` (`REWRITE_TAC[]`).  *** Creating this operator ACTIVATES the
-      parser/printer `^` type infix. *** -/
+      ->A. T` (`REWRITE_TAC[]`).  Creating this operator activates the
+      parser/printer `^` type infix. -/
   cart_tybij : thm
   /-- `finite_index` (cart.ml 117): `(x:A^N)$i = dest_cart x (finite_index i)`.
       `new_definition`; its body is the FIRST term to use the `$` infix. -/
@@ -558,36 +454,16 @@ def setupCartCart [HolBase]
 /-- The `finite_sum` type-bijection layer and the pasting operators
     `pastecart`/`fstcart`/`sndcart` with their theory (cart.ml 174-273).
 
-    *** cart.ml 179 IS THE THIRD `new_type_definition`, AND IT DIFFERS FROM
-    THE FIRST TWO: it is applied to a LOCALLY PROVED nonemptiness theorem. ***
-    The OCaml (cart.ml 174-181) is
-        let finite_sum_tybij =
-          let th = prove
-           (`?x. x IN 1..(dimindex(:A) + dimindex(:B))`,
-            EXISTS_TAC `1` THEN SIMP_TAC[IN_NUMSEG; LE_REFL; DIMINDEX_GE_1;
-              ARITH_RULE `1 <= a ==> 1 <= a + b`]) in
-          new_type_definition "finite_sum" ("mk_finite_sum","dest_finite_sum") th
-    so the PROOF `th` is built FIRST and THEN handed to `new_type_definition`;
-    getting that order right is load-bearing.  Note the inline `ARITH_RULE`
-    argument inside the `SIMP_TAC` list - it is awaited before the list.
+    `finite_sum` is a non-standard sum for "pasting" products together.  Its
+    `new_type_definition` (cart.ml 179) is applied to a locally proved
+    nonemptiness theorem, so that proof is built here first, then handed to the
+    Session-threaded `new_type_definition`.  `pastecart`/`fstcart`/`sndcart`
+    (181/186/189) are three `new_definition`s whose bodies use the `$` infix
+    and `lambda` binder from `CartCart`.
 
-    `new_type_definition` is a KERNEL-level side effect, so - exactly as the
-    earlier two `new_type_definition` layers do - it is threaded in from
-    Session as a PARAMETER and NEVER called inside HolMath, which stays free of
-    `unsafe`.  Forcing this bundle extends the type-constructor table with the
-    binary type operator `finite_sum`, so `get_type_arity "finite_sum"`
-    succeeds afterwards (before this range it failed with `find`).
-
-    `pastecart` (181), `fstcart` (186), `sndcart` (189) are the three
-    `new_definition`s; their bodies use the `$` infix and the `lambda` binder,
-    both already installed by `CCart`.  `finite_sum_tybij` is used only through
-    `MESON_TAC[finite_sum_tybij]` in the image/size proofs (193-204).
-
-    Depends on `dimindex`/`DIMINDEX_GE_1`/`DIMINDEX_UNIV` (cart.ml 11-105),
-    `CartCart` (`CART_EQ`, `LAMBDA_BETA`), threaded Sets/Iterate theorems
-    (`IN_NUMSEG`, `LE_REFL`, `EXTENSION`, `IN_UNIV`, `IN_IMAGE`, `HAS_SIZE`,
-    `HAS_SIZE_IMAGE_INJ`, `HAS_SIZE_NUMSEG_1`, `ADD_SUB`), and the arithmetic
-    layer (`ARITH_RULE`, `ASM_ARITH_TAC`). -/
+    Depends on `dimindex`/`DIMINDEX_GE_1`/`DIMINDEX_UNIV`, `CartCart`
+    (`CART_EQ`, `LAMBDA_BETA`), threaded Sets/Iterate theorems and the
+    arithmetic layer. -/
 structure CartFiniteSum where
   /-- `finite_sum_tybij` (cart.ml 174): the abs/rep bijection for the new
       binary type `finite_sum`, from `new_type_definition "finite_sum"
@@ -803,34 +679,12 @@ def setupCartFiniteSum [HolBase]
 
 /-- The `finite_diff` type-bijection layer (cart.ml 279-305).
 
-    *** cart.ml 284 IS THE FOURTH `new_type_definition`, and - like
-    `finite_sum` - it is applied to a LOCALLY PROVED nonemptiness theorem. ***
-    The OCaml (cart.ml 279-284) is
-        let finite_diff_tybij =
-          let th = prove
-           (`?x. x IN 1..(if dimindex(:B) < dimindex(:A)
-                          then dimindex(:A) - dimindex(:B) else 1)`,
-            EXISTS_TAC `1` THEN REWRITE_TAC[IN_NUMSEG] THEN ARITH_TAC) in
-          new_type_definition "finite_diff" ("mk_finite_diff","dest_finite_diff") th
-    so the PROOF `th` is built FIRST and THEN handed to `new_type_definition`.
-    Note the closer: this proof ends `ARITH_TAC`, and its `REWRITE_TAC`
-    list is `[IN_NUMSEG]` ONLY - no `LE_REFL`.  The `finite_prod` proof below
-    ends `MESON_TAC[...]` and rewrites `[IN_NUMSEG; LE_REFL]`; the two closers
-    and rewrite lists must not be conflated.
-
-    `new_type_definition` is a KERNEL-level side effect, so - exactly as the
-    three earlier `new_type_definition` layers do - it is threaded in from
-    Session as a PARAMETER and NEVER called inside HolMath, which stays free of
-    `unsafe`.  Forcing this bundle extends the type-constructor table with the
-    binary type operator `finite_diff`, so `get_type_arity "finite_diff"`
-    succeeds afterwards (before this range it failed with `find`).
-
-    `finite_diff_tybij` is used only through `MESON_TAC[finite_diff_tybij]` in
-    the image/size proofs (286-300).  Depends on `dimindex`/
-    `DIMINDEX_UNIV`, threaded Sets/Iterate theorems (`IN_NUMSEG`, `EXTENSION`,
-    `IN_UNIV`, `IN_IMAGE`, `HAS_SIZE`, `HAS_SIZE_IMAGE_INJ`,
-    `HAS_SIZE_NUMSEG_1`), and `ARITH_TAC`.  ZERO THENL sites and ZERO
-    `o`-compositions in this range (grep-confirmed). -/
+    `finite_diff` is a "subtraction" function on type indices.  Its
+    `new_type_definition` (cart.ml 284) is applied to a locally proved
+    nonemptiness theorem, built here first.  Its proof closes with `ARITH_TAC`
+    and rewrites `[IN_NUMSEG]` only (unlike the near-identical `finite_prod`
+    goal below, which closes with `MESON_TAC` and rewrites `[IN_NUMSEG;
+    LE_REFL]`).  `new_type_definition` is threaded in from Session. -/
 structure CartFiniteDiff where
   /-- `finite_diff_tybij` (cart.ml 279): the abs/rep bijection for the new
       binary type `finite_diff`, from `new_type_definition "finite_diff"
@@ -909,32 +763,13 @@ def setupCartFiniteDiff [HolBase]
 
 /-- The `finite_prod` type-bijection layer (cart.ml 312-335).
 
-    *** cart.ml 317 IS THE FIFTH `new_type_definition`, and - like
-    `finite_sum`/`finite_diff` - it is applied to a LOCALLY PROVED
-    nonemptiness theorem. ***  The OCaml (cart.ml 312-317) is
-        let finite_prod_tybij =
-          let th = prove
-           (`?x. x IN 1..(dimindex(:A) * dimindex(:B))`,
-             EXISTS_TAC `1` THEN REWRITE_TAC[IN_NUMSEG; LE_REFL] THEN
-             MESON_TAC[LE_1; DIMINDEX_GE_1; MULT_EQ_0]) in
-          new_type_definition "finite_prod" ("mk_finite_prod","dest_finite_prod") th
-    so the PROOF `th` is built FIRST and THEN handed to `new_type_definition`.
-    *** NOTE THE CLOSER: this proof ends `MESON_TAC[LE_1; DIMINDEX_GE_1;
-    MULT_EQ_0]` (three named lemmas) and rewrites `[IN_NUMSEG; LE_REFL]`.  The
-    `finite_diff` proof above ends `ARITH_TAC` and rewrites `[IN_NUMSEG]`
-    ONLY; these are DIFFERENT closers on near-identical existence goals. ***
-
-    `new_type_definition` is threaded in from Session as a PARAMETER (kernel
-    side effect, never inside HolMath); this layer stays free of `unsafe`.
-    Forcing this bundle extends the type-constructor table with the binary type
-    operator `finite_prod`, so `get_type_arity "finite_prod"` succeeds
-    afterwards (before this range it failed with `find`).
-
-    `finite_prod_tybij` is used only through `MESON_TAC[finite_prod_tybij]` in
-    the image/size proofs (319-330).  Depends on `dimindex`/
-    `DIMINDEX_UNIV`/`DIMINDEX_GE_1`, threaded Sets/Iterate theorems, the
-    arithmetic lemmas `LE_1`/`MULT_EQ_0`.  ZERO THENL sites and ZERO
-    `o`-compositions in this range (grep-confirmed). -/
+    `finite_prod` is a finite-forcing "multiplication" on type indices.  Its
+    `new_type_definition` (cart.ml 317) is applied to a locally proved
+    nonemptiness theorem, built here first.  Its proof closes with
+    `MESON_TAC[LE_1; DIMINDEX_GE_1; MULT_EQ_0]` and rewrites `[IN_NUMSEG;
+    LE_REFL]` (unlike the near-identical `finite_diff` goal, which closes with
+    `ARITH_TAC` and rewrites `[IN_NUMSEG]` only).  `new_type_definition` is
+    threaded in from Session. -/
 structure CartFiniteProd where
   /-- `finite_prod_tybij` (cart.ml 312): the abs/rep bijection for the new
       binary type `finite_prod`, from `new_type_definition "finite_prod"
@@ -1261,44 +1096,17 @@ open HolLight HolLight.Syntax
 /-- The finiteness lemma `FINITE_CART` (cart.ml 483-522) and the three whole-
     universe cardinality results (cart.ml 528-548).
 
-    `FINITE_CART` is the one heavy structured proof of the range: a coordinate-
-    wise induction (`INDUCT_TAC`) inside a `SUBGOAL_THEN` that generalises the
-    bound `n <= dimindex(:N)`, closing the successor step by exhibiting the
-    finite `IMAGE` of a product and pulling one coordinate off with a paired
-    lambda.  `HAS_SIZE_CART_UNIV` is a shorter structured proof; `CARD_CART_UNIV`
-    and `FINITE_CART_UNIV` are one-line `MESON_TAC` corollaries of it.
-
-    The imported theorems live, per grep of the Session accessors, in:
-      LE_REFL, LET_ANTISYM, LE                 - the arithmetic layer (Ar2/Ar3)
-      FINITE_RULES, IN_ELIM_THM, EXTENSION,
-        SUBSET                                 - Sets.lean (SC bundle)
-      IN_SING, IN_IMAGE, IN_UNIV               - Sets.lean (SP bundle)
-      IN_ELIM_PAIR_THM                         - Sets.lean (SMi bundle)
-      EXISTS_PAIR_THM                          - Pair.lean (Pr)
-      FINITE_SUBSET, FINITE_IMAGE              - Sets.lean (SFin bundle)
-      FINITE_PRODUCT                           - Sets.lean (SCross bundle)
-      SURJECTIVE_IMAGE_EQ                      - Sets.lean (SIm bundle)
-      HAS_SIZE_IMAGE_INJ                       - Sets.lean (SCard2 bundle)
-      HAS_SIZE_FUNSPACE_UNIV                   - Sets.lean (SFun2 bundle)
-      HAS_SIZE, CARD                           - Sets.lean (SCard bundle)
-      IMP_CONJ_ALT, EQ_IMP                     - Theorems.lean (T)
-    and `CART_EQ`/`LAMBDA_BETA`/`cart_tybij`/`HAS_SIZE_FINITE_IMAGE` are from
-    `CCart`/`CFImg` (stages 3 and 2 of the earlier work).  `dimindex(:N)`,
-    `EXP` and `CARD` appear only symbolically in the statements (installed
-    constants), not as rewrite theorems.
+    `FINITE_CART` is a coordinate-wise induction; `HAS_SIZE_CART_UNIV` reduces
+    the universe to a funspace `(N)finite_image->A`, and `CARD_CART_UNIV`/
+    `FINITE_CART_UNIV` are `MESON_TAC` corollaries of it.
 
     Depends on `CCart` (`CART_EQ`, `LAMBDA_BETA`, `cart_tybij`), `CFImg`
-    (`HAS_SIZE_FINITE_IMAGE`), threaded Sets/Pair/arith theorems, and the
-    decision procedures `MESON_TAC`/`ASM_MESON_TAC`/`ARITH_RULE`.  TWO THENL
-    sites (cart.ml 494 and 511, each width 2 / 2 branches) and TWO
-    `o`-compositions (cart.ml 493 `MP_TAC o SPEC`, cart.ml 535-536
-    `MP_TAC o ISPEC ... o MATCH_MP (...)`) live here, all noted at their
-    proofs. -/
+    (`HAS_SIZE_FINITE_IMAGE`), threaded Sets/Pair/arith theorems, and
+    `MESON_TAC`/`ASM_MESON_TAC`/`ARITH_RULE`. -/
 structure CartFinite where
   /-- `FINITE_CART` (cart.ml 483): `!P. (!i. 1 <= i /\ i <= dimindex(:N) ==>
       FINITE {x | P i x}) ==> FINITE {v:A^N | !i. 1 <= i /\ i <= dimindex(:N)
-      ==> P i (v$i)}`.  Coordinate-wise induction; see the proof for the two
-      THENL sites and the `MP_TAC o SPEC` composition. -/
+      ==> P i (v$i)}`.  Coordinate-wise induction. -/
   FINITE_CART : thm
   /- ---------------------------------------------------------------------- -/
   /- More cardinality results for whole universe.                           -/
@@ -1407,17 +1215,10 @@ def setupCartFinite [HolBase]
 
 /-- cart.ml 551-567: `vector` and `IN_ELIM_PASTECART_THM`.
 
-    `vector` (554) is the FIRST place the cart layer reaches DOWN to the lists
-    layer: its body `(vector l):A^N = lambda i. EL (i - 1) l` builds a cart
-    from a LIST, so the `EL` constant (lists.ml, `new_recursive_definition`)
-    must already be installed when the body parses.  In HOL Light this is
-    guaranteed by load order - `lists.ml` (hol_lib.ml 92) precedes `cart.ml`
-    (101); on our side Session forces `listDefs` (which declares `EL`) before
-    running this bundle.  `vector` is a `new_definition`, threaded in.
-
-    `IN_ELIM_PASTECART_THM` (561) is a `prove`: `pastecart a b IN {pastecart x
-    y | P x y} <=> P a b`.  ZERO THENL sites and ZERO `o`-compositions in the
-    range.  ZERO `unsafe` - a pure parameterized layer. -/
+    `vector` (554) builds a cart from a list: `(vector l):A^N = lambda i.
+    EL (i - 1) l`, so the `EL` constant (lists.ml) must already be installed
+    when its body parses; Session forces `listDefs` before this bundle.  It is
+    a threaded `new_definition`.  `IN_ELIM_PASTECART_THM` (561) is a `prove`. -/
 structure CartVector where
   /-- `vector` (cart.ml 554): `(vector l):A^N = lambda i. EL (i - 1) l`.
       `new_definition`.  Bridges cart -> lists (uses `EL`) and cart -> the
@@ -1474,18 +1275,9 @@ open HolLight HolLight.Syntax
 
 
 
-/-- Install the `PCROSS` infix (cart.ml 571).
-
-    *** THIRD AND LAST parser side effect of the whole file. ***
-    `parse_as_infix("PCROSS",(22,"right"))` - precedence 22, RIGHT-associative.
-    Before it, `s PCROSS t` parsed as `s` APPLIED TO `PCROSS` AND `t`, a
-    three-way juxtaposition - the identical signature sets.ml's `x IN s` had
-    before its infix existed.  It MUTATES GLOBAL PARSER STATE, must run EXACTLY
-    ONCE, and must run BEFORE the `PCROSS` `new_definition` at cart.ml 573 and
-    before any term containing the symbol is parsed.  Like
-    `setupCartDollarInfix` (115) and
-    `setupCartLambdaBinder` (126), Session forces it behind a once-only guard at
-    its TRUE file position (cart.ml 571, just before the `PCROSS` definition). -/
+/-- Install the `PCROSS` infix (cart.ml 571): `parse_as_infix("PCROSS",(22,
+    "right"))`.  Must run once, before the `PCROSS` definition and any term
+    using the symbol is parsed. -/
 def setupCartPcrossInfix : IO Unit := do
   -- cart.ml 571.
   HolCore.Printer.parse_as_infix ("PCROSS", (22, "right"))
@@ -1511,36 +1303,13 @@ open HolLight HolLight.Syntax
 
     `s PCROSS t` is the set of `pastecart x y` for `x IN s`, `y IN t`; it is a
     variant of the set product living in the `finite_sum` cart type.  `PCROSS`
-    (573) is the sole `new_definition`; the rest is 20 plain `prove`s plus TWO
-    `(CONJ_PAIR o prove)` pairs (704/715), each binding TWO names.
-
-    *** THE TWO `(CONJ_PAIR o prove)` PAIRS (704, 715). ***  Each is an `o`
-    COMPOSITION `CONJ_PAIR o prove`, so `prove` runs FIRST (proving the whole
-    conjunction) and `CONJ_PAIR` runs SECOND (splitting it).  `CONJ_PAIR`
-    returns the two conjuncts IN ORDER, so the FIRST conjunct becomes the FIRST
-    name and the SECOND conjunct the SECOND name:
-        704:  PCROSS_UNIONS_UNIONS = first conjunct  (the f,g clause);
-              PCROSS_UNIONS        = CONJ of the remaining two clauses.
-        715:  PCROSS_INTERS_INTERS = first conjunct  (the f,g clause);
-              PCROSS_INTERS        = CONJ of the remaining two clauses.
-    The OCaml conjunction has THREE clauses but `CONJ_PAIR` splits only the
-    OUTERMOST `/\`, so the first name gets clause 1 and the second name gets
-    `clause2 /\ clause3` - both are probed below.
-
-    The `PCROSS` infix (cart.ml 571) is installed by `setupCartPcrossInfix`,
-    which Session forces at its TRUE file position BEFORE this bundle parses any
-    `s PCROSS t` term.
-
-    THREE `o`-compositions in the range:
-      cart.ml 630  `MP_TAC o MATCH_MP HAS_SIZE_PRODUCT` (in HAS_SIZE_PCROSS) -
-                   `MATCH_MP` runs FIRST (rightmost), then `MP_TAC`.
-      cart.ml 704  `CONJ_PAIR o prove` - `prove` FIRST, `CONJ_PAIR` SECOND.
-      cart.ml 715  `CONJ_PAIR o prove` - `prove` FIRST, `CONJ_PAIR` SECOND.
-    ONE THENL site: cart.ml 651 (in FINITE_PCROSS_EQ), width 2 / 2 branches,
-    trailing chain OUTSIDE.
+    (573) is the sole `new_definition`; the rest are plain `prove`s plus two
+    `CONJ_PAIR o prove` pairs (704/715).  In each pair the first name gets the
+    first conjunct (the `f,g` clause) and the second name gets the conjunction
+    of the remaining two clauses.
 
     Depends on `CFSum` (pastecart theory), `CVec` (`IN_ELIM_PASTECART_THM`) and
-    threaded Sets/HAS_SIZE theorems.  ZERO `unsafe`. -/
+    threaded Sets/HAS_SIZE theorems. -/
 structure CartPcross where
   /-- `PCROSS` (cart.ml 573): `s PCROSS t = {pastecart (x:A^M) (y:A^N) |
       x IN s /\ y IN t}`.  `new_definition`; body uses the `PCROSS` infix
