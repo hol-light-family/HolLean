@@ -437,7 +437,7 @@ def setupRealIntArithConvs [HolBase]
 
   -- REAL_INT_ADD_CONV (calc_int.ml 274-345).
   let neg_tm ← q r"(--)"
-  let amp_tm ← q r"(&)"
+  let amp_tm ← q r"&"
   let add_tm ← q r"(+)"
   let dest := dest_binop (← q r"(+)")
   let m_tm ← q r"m:num"

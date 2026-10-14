@@ -232,12 +232,29 @@ unsafe instance : CoeHead (IO (Except String thm)) thm :=
     populated once at load via `Drule.new_definition`. -/
 initialize theFalsity : IO.Ref (Option thm) ← IO.mkRef none
 
+/-- Parse quotations that a HolCore file parses when it loads but whose Lean
+    translation builds the same term directly (a pure definition cannot parse).
+    Parsing them here, in file order, keeps the type-variable counter in step
+    with HOL Light. -/
+private def parseLoadQuotes (qs : List String) : IO Unit := do
+  for s in qs do
+    match ← HolCore.Parser.parse_term s with
+    | .ok _ => pure ()
+    | .error e => throw (IO.userError s!"load quotation {s}: {e}")
+
 initialize (do
   match ← theBool.get with
   | none => throw (IO.userError "theFalsity: setupBool not initialised")
   | some b =>
+    -- drule.ml 33, 37: MK_CONJ's `(/\)`, MK_DISJ's `(\/)`.
+    parseLoadQuotes ["(/\\)", "(\\/)"]
     match ← Drule.new_definition b ((← HolCore.Parser.parse_term "_FALSITY_ = F").toOption.get!) with
-    | .ok th => theFalsity.set (some th)
+    | .ok th =>
+      theFalsity.set (some th)
+      -- tactics.ml 105 (mk_fthm's `_FALSITY_`), 117 (VALID's), 350 (CONV_TAC's
+      -- `T`), 432 (DISCH_TAC's `F`), 754-755 (ANTS_TAC's terms, the `and`
+      -- pair left to right); simp.ml 80 (term_order's `T`).
+      parseLoadQuotes ["_FALSITY_", "_FALSITY_", "T", "F", "p /\\ (q ==> r)", "p ==> q", "T"]
     | .error e => throw (IO.userError s!"_FALSITY_ definition failed: {e}"))
 
 /-- The `_FALSITY_` definitional theorem; private cache reader. -/
@@ -951,12 +968,10 @@ unsafe def EXISTS_BOOL_THM := C.EXISTS_BOOL_THM
 /- These fixed proforma variables need no parser state, so they are built
    directly and stay PURE (verified identical to parsing "P:bool" etc.). -/
 private def boolP  : term := mk_var "P" bool_ty
-private def aBool  : term := mk_var "a" bool_ty
-private def bBoolC : term := mk_var "b" bool_ty
 unsafe def CCONTR (tm : term) (th : thm) : Except String thm :=
   Classic.CCONTR B C.ccontrPth boolP tm th
 unsafe def CONTRAPOS_CONV (tm : term) : Except String thm :=
-  Classic.CONTRAPOS_CONV C.contraposConvPth aBool bBoolC tm
+  Classic.CONTRAPOS_CONV C.contraposConvPth C.contraposA C.contraposB tm
 unsafe def LEFT_FORALL_OR_THM := C.LEFT_FORALL_OR_THM
 unsafe def RIGHT_FORALL_OR_THM := C.RIGHT_FORALL_OR_THM
 unsafe def LEFT_OR_FORALL_THM := C.LEFT_OR_FORALL_THM
@@ -993,14 +1008,12 @@ unsafe def SELECT_RULE (th : thm) : Except String thm :=
   Classic.SELECT_RULE B C.selectRulePth selP th
 unsafe def SELECT_CONV (tm : term) : Except String thm :=
   Classic.SELECT_CONV C.selectConvPth selP tm
-private def etaT : term := mk_var "t" (.Tyapp "fun" [aty, bty])
 unsafe def ETA_CONV (tm : term) : Except String thm :=
-  Classic.ETA_CONV C.etaPth etaT tm
+  Classic.ETA_CONV C.etaPth C.etaT tm
 
 /-- `REFUTE_THEN ttac`: classical refutation tactic. -/
-private def fTm : term := term.Const "F" bool_ty
 unsafe def REFUTE_THEN (ttac : thm_tactic) : tactic :=
-  Classic.REFUTE_THEN B (Simp.REWR_CONV B C.refuteThenPth) fTm ttac
+  Classic.REFUTE_THEN B (Simp.REWR_CONV B C.refuteThenPth) C.refuteF ttac
 
 /- ---------------------------------------------------------------------- -/
 /- Now we can derive type definitions from existence; check benignity.    -/
@@ -1211,7 +1224,7 @@ private unsafe def MesonD : Meson.MesonTacDeps :=
                    | .ok c => c | .error e => panic! s!"ASSOC_CONV DISJ_ASSOC: {e}")
     selectElim := Canon.SELECT_ELIM_TAC B Cn.selLam
     asmFol     := Canon.ASM_FOL_TAC B Cn.fol
-    refuteThen := fun ttac => Classic.REFUTE_THEN B (Simp.REWR_CONV B C.refuteThenPth) fTm ttac }
+    refuteThen := fun ttac => Classic.REFUTE_THEN B (Simp.REWR_CONV B C.refuteThenPth) C.refuteF ttac }
 
 /-- meson.ml's settable parameters (`meson_depth := true`, ...). -/
 abbrev meson_depth := Meson.meson_depth
@@ -1345,8 +1358,7 @@ private unsafe def MetisRecon : Metis.Metis_reconstruct2.MetisReconDeps :=
     type_unify := fun a b s => pure (Drule.type_unify a b s),
     INSTANTIATE := fun i th => pure (Drule.INSTANTIATE i th),
     DISJ_CANON_CONV := Canon.disjCanonConv B Cn,
-    PURE_ONCE_REWRITE_CONV := fun thl => Simp.PURE_ONCE_REWRITE_CONV B thl,
-    Fterm := fTm }
+    PURE_ONCE_REWRITE_CONV := fun thl => Simp.PURE_ONCE_REWRITE_CONV B thl }
 
 /-- `GEN_METIS_TAC ths`. -/
 unsafe def GEN_METIS_TAC (ths : List thm) : tactic :=
@@ -1388,7 +1400,6 @@ unsafe def METIS_SPLIT (n : Int) (ths : List thm) (tm : term) : IO (Except Strin
 structure CopSupport where
   hashek : TheCops.Hashek.HashekThms
   eqSym : Meson.EqAxPths
-  notTFimp : thm
   deriving Inhabited
 
 initialize theCopSupport : IO.Ref (Option CopSupport) ← IO.mkRef none
@@ -1405,14 +1416,16 @@ private unsafe def Cs : CopSupport :=
         -- `hashek` parses as the (bool) constant, not an untyped variable.
         let hashek_def ← (Drule.new_definition B (← parse_term "hashek = T") : IO (Except String thm))
         let hashek_tm ← parse_term "hashek"
-        let hashek_thm ← (Tactics.prove B hashek_tm (Simp.SIMP_TAC B [hashek_def]) : IO (Except String thm))
+        let hashek_thm ← (Tactics.prove B (← parse_term "hashek") (Simp.SIMP_TAC B [hashek_def]) : IO (Except String thm))
         let hashek_prop ← (Tactics.prove B
           (← parse_term "((x /\\ hashek) ==> (y /\\ hashek)) ==> (x ==> y)")
           (Simp.SIMP_TAC B [hashek_def]) : IO (Except String thm))
         let hashek_eq ← (Tactics.prove B (← parse_term "~ hashek <=> F")
           (Simp.SIMP_TAC B [hashek_def]) : IO (Except String thm))
+        -- thecops.ml 43: MARK_ASSUMS = RULE_ASSUM_TAC (DISCH `hashek`).
+        let mark_tm ← parse_term "hashek"
         let H : TheCops.Hashek.HashekThms :=
-          { hashek_def, hashek_tm, hashek_thm, hashek_prop, hashek_eq }
+          { hashek_def, hashek_tm, hashek_thm, hashek_prop, hashek_eq, mark_tm }
         -- leanCoP equality axioms (Meson's + symmetry conjunct).
         let TAUT (s : String) : ExceptT String IO thm := do
           (Classic.TAUT B C.BOOL_CASES_AX (← parse_term s) : IO (Except String thm))
@@ -1430,19 +1443,48 @@ private unsafe def Cs : CopSupport :=
         let veqTm ← liftExcept (do match eqThms with
           | e0 :: _ => rator (← rator (concl e0)) | [] => .error "eqSym: no eq_thms")
         let eqSym : Meson.EqAxPths := { eqThms, impElim, eqElim, veqTm }
-        let notTFimp ← TAUT "!t. (~t ==> F <=> t)"
-        pure ({ hashek := H, eqSym, notTFimp } : CopSupport) : ExceptT String IO CopSupport).run with
+        -- thecops.ml 1256-1270: the three load-time `assert`s.  OCaml
+        -- evaluates `x = y` and the list right to left.  They run when
+        -- thecops.ml loads, with `copverb` at its default (false); this
+        -- setup may be built later, so CONTRADICTION's trace is switched off.
+        let verb ← HolCore.FirstOrder.copverb.get
+        HolCore.FirstOrder.copverb.set false
+        let want ← parse_term "c \\/ b \\/ a"
+        let pc ← liftExcept (B.UNDISCH (← TAUT "c ==> c \\/ b \\/ a"))
+        let pb ← liftExcept (B.UNDISCH (← TAUT "b ==> c \\/ b \\/ a"))
+        let pa ← liftExcept (B.UNDISCH (← TAUT "a ==> c \\/ b \\/ a"))
+        let abc ← liftExcept (HolCore.Kernel.ASSUME (← parse_term "a \\/ b \\/ c"))
+        let got ← liftExcept (TheCops.Ncrecon.DISJ_CASES_LIST B abc [pa, pb, pc])
+        unless concl got == want do throw "thecops.ml 1256: Assert_failure"
+        for swap in [false, true] do
+          let f ← parse_term "F"
+          let (x, y) ← if swap then do
+              let x ← parse_term "~p"; let y ← parse_term "p:bool"; pure (x, y)
+            else do
+              let y ← parse_term "p:bool"; let x ← parse_term "~p"; pure (x, y)
+          let (tx, ty) ← liftExcept (do pure (← HolCore.Kernel.ASSUME x, ← HolCore.Kernel.ASSUME y))
+          let c ← ExceptT.mk (if swap then TheCops.Ncrecon.CONTRADICTION B ty tx else TheCops.Ncrecon.CONTRADICTION B tx ty)
+          unless concl c == f do throw "thecops.ml 1269: Assert_failure"
+        HolCore.FirstOrder.copverb.set verb
+        pure ({ hashek := H, eqSym } : CopSupport) : ExceptT String IO CopSupport).run with
       | .ok c => do theCopSupport.set (some c); pure c
       | .error e => panic! s!"CoP support setup failed: {e}") with
   | .ok c => c | _ => panic! "Session.Cs"
 
+/-- thecops.ml 33: MARK_CONCL's `TAUT `!t. (~t ==> F <=> t)``, proved each
+    time PREPARE_COP_TAC is applied. -/
+private unsafe def copNotTFimp : IO (Except String thm) := do
+  match ← parse_term "!t. (~t ==> F <=> t)" with
+  | .ok t => Classic.TAUT B C.BOOL_CASES_AX t
+  | .error e => return .error e
+
 private unsafe def LeancopD : TheCops.Leancop.LeancopDeps :=
   { S := MesonS, P := Mn.pths, mem := mesonContraposCache, db := leancopDb,
-    E := Cs.eqSym, Emeson := Mn.eqAx, hashek := Cs.hashek, D := MesonD, notTFimp := Cs.notTFimp }
+    E := Cs.eqSym, Emeson := Mn.eqAx, hashek := Cs.hashek, D := MesonD, notTFimp := copNotTFimp }
 
 private unsafe def NanocopD : TheCops.Nanocop.NanocopDeps :=
   { S := MesonS, P := Mn.pths, mem := mesonContraposCache, db := nanocopDb,
-    E := Cs.eqSym, Emeson := Mn.eqAx, hashek := Cs.hashek, D := MesonD, notTFimp := Cs.notTFimp,
+    E := Cs.eqSym, Emeson := Mn.eqAx, hashek := Cs.hashek, D := MesonD, notTFimp := copNotTFimp,
     CONJ_ASSOC := T.CONJ_ASSOC, DISJ_ASSOC := T.DISJ_ASSOC }
 
 /- ---------------------------------------------------------------------- -/
@@ -1595,12 +1637,13 @@ private unsafe def Icv : ImpConv.ImpConvVars :=
     | some v => pure v
     | none =>
       match ← (do
+        let and_tm ← parse_term "(/\\)"                    -- impconv.ml 41
         let A_ ← parse_term "A:bool"
         let B_ ← parse_term "B:bool"
         let C_ ← parse_term "C:bool"
         let D_ ← parse_term "D:bool"
-        let T_ ← parse_term "T"
-        pure ({ A_, B_, C_, D_, T_ } : ImpConv.ImpConvVars) : ExceptT String IO ImpConv.ImpConvVars).run with
+        let T_ ← parse_term "T:bool"
+        pure ({ and_tm, A_, B_, C_, D_, T_ } : ImpConv.ImpConvVars) : ExceptT String IO ImpConv.ImpConvVars).run with
       | .ok v => do theImpConvVars.set (some v); pure v
       | .error e => panic! s!"ImpConv vars setup failed: {e}") with
   | .ok v => v | _ => panic! "Session.Icv"
@@ -1616,7 +1659,6 @@ private unsafe def Icd : ImpConv.ImpConvDeps :=
           (Classic.TAUT B C.BOOL_CASES_AX (← parse_term s) : IO (Except String thm))
         let imp_refl ← TAUT "A ==> A"
         let imp_swap ← TAUT "(p ==> q ==> r) <=> (q ==> p ==> r)"
-        let imp_sym ← TAUT "A ==> B ==> C <=> B ==> A ==> C"
         let IMPLY_AND_RDISTRIB ← TAUT "(x ==> y /\\ z) <=> (x==>y) /\\ (x==>z)"
         let mkimp_iff ← TAUT
           "((A ==> B) ==> (C ==> D)) /\\ ((B ==> A) ==> (D ==> C)) ==> (A <=> B) ==> (C <=> D)"
@@ -1638,8 +1680,12 @@ private unsafe def Icd : ImpConv.ImpConvDeps :=
         let mkimp_conj_co_ctxt ← TAUT "(B==>A) /\\ (B==>D==>C) ==> (B/\\D==>A/\\C)"
         let mkimpl_conj_co_ctxt ← TAUT "(B==>A) ==> (B/\\C==>A/\\C)"
         let mkimpl_conj_co2_ctxt ← TAUT "(C==>B==>A) ==> (B/\\C==>A/\\C)"
+        -- impconv.ml 1346: REWR_IMPCONV_OF_CONV's IMP_SYM.
+        let imp_sym ← TAUT "A ==> B ==> C <=> B ==> A ==> C"
         let case_lem1 ← TAUT "(~P ==> Q = R) ==> (Q <=> (~P ==> R) /\\ (P ==> Q))"
         let case_lem2 ← TAUT "(P ==> Q = R) ==> (Q <=> (P ==> R) /\\ (~P ==> Q))"
+        -- impconv.ml 1716: REWR_IMPMCONV_OF_MCONV proves its own IMP_SYM.
+        let imp_sym' ← TAUT "A ==> B ==> C <=> B ==> A ==> C"
         pure ({ imp_refl, imp_swap, IMP_CONJ, IMP_IMP, IMPLY_AND_RDISTRIB,
                 AND_FORALL_THM, RIGHT_IMP_FORALL_THM, CONJ_ASSOC,
                 MONO_AND, MONO_OR, MONO_IMP, MONO_NOT, MONO_FORALL, MONO_EXISTS,
@@ -1648,7 +1694,7 @@ private unsafe def Icd : ImpConv.ImpConvDeps :=
                 mkimp_imp_contra_ctxt, mkimp_imp_co_ctxt, mkimpr_imp_ctxt,
                 mkimp_conj_contra_ctxt, mkimpl_conj_contra_ctxt, mkimpr_conj_contra_ctxt,
                 mkimp_conj_co_ctxt, mkimpl_conj_co_ctxt, mkimpl_conj_co2_ctxt,
-                NOT_FORALL_THM, NOT_IMP, imp_sym, LEFT_IMP_EXISTS_THM,
+                NOT_FORALL_THM, NOT_IMP, imp_sym, imp_sym', LEFT_IMP_EXISTS_THM,
                 LEFT_FORALL_IMP_THM, case_lem1, case_lem2 } : ImpConv.ImpConvDeps)
           : ExceptT String IO ImpConv.ImpConvDeps).run with
       | .ok d => do theImpConvDeps.set (some d); pure d
@@ -2090,8 +2136,9 @@ initialize stoppers : IO.Ref (Option (term → Bool)) ← IO.mkRef none
 private def computeFlags : HolMath.Compute.ComputeFlags :=
   { monitoring := monitoring, stoppers := stoppers }
 
-/-- The `t:A->B` witness that `ETA_CONV`/`try_eta` instantiate. -/
-private unsafe def computeEtaT : term := [[ t:A->B ]]
+/-- The `t:A->B` witness that `ETA_CONV`/`try_eta` instantiate: compute.ml
+    calls class.ml's ETA_CONV, so it is ETA_CONV's own `t`. -/
+private unsafe def computeEtaT : term := C.etaT
 
 /-- The `COND` constant, whose branches `CBV_CONV` is told to skip.  An action:
     compute.ml parses the quotation in each `bool_compset ()` and
@@ -3404,8 +3451,16 @@ private unsafe def NRP : HolMath.Grobner.RingParms :=
     match ← theNumRingParms.get with
     | some t => pure t
     | none => do
+      -- grobner.ml 727-732 parses the three operators; OCaml builds the
+      -- argument tuple right to left.
+      let q (s : String) : IO term := do
+        match ← HolCore.Parser.parse_term s with
+        | .ok t => pure t | .error e => panic! s!"NUM_RING {s}: {e}"
+      let exp_tm ← q "(EXP):num->num->num"
+      let mul_tm ← q "(*):num->num->num"
+      let add_tm ← q "(+):num->num->num"
       let t ← HolMath.Grobner.numRingParms Nm.numK NUM_EQ_CONV NUM_NORMALIZE_CONV
-                CnK.add_tm CnK.mul_tm CnK.exp_tm NUM_INTEGRAL TRUTH
+                add_tm mul_tm exp_tm NUM_INTEGRAL TRUTH
       theNumRingParms.set (some t); pure t) with
   | .ok t => t | _ => panic! "Session.NRP: numRingParms not run"
 
@@ -4775,23 +4830,26 @@ deriving instance Inhabited for HolMath.Normalizer.PolynomialConvs
 deriving instance Inhabited for HolMath.RealArith.RealArith1Ctx
 deriving instance Inhabited for HolMath.RealArith.RealArith2Ctx
 
-/-- The four term constants `lin_of_hol` needs: `&1:real`, `&0:real`,
-    `(+):real->real->real`, `(*):real->real->real`.  Parsed ONCE here rather
-    than per call (realarith.ml 449-464). -/
+/-- REAL_LINEAR_PROVER's constants: linear_ineqs' `&1` (realarith.ml 388),
+    then lin_of_hol's `&1`, `&0`, `(+):real->real->real`,
+    `(*):real->real->real` (realarith.ml 446-449).  Parsed once. -/
 initialize theRealArithConsts :
-  IO.Ref (Option (term × term × term × term)) ← IO.mkRef none
+  IO.Ref (Option (term × term × term × term × term)) ← IO.mkRef none
 
-private unsafe def RaC : term × term × term × term :=
+private unsafe def RaC : term × term × term × term × term :=
   match unsafeIO (do
     match ← theRealArithConsts.get with
     | some d => pure d
     | none =>
       match ← (do
-        let one  ← Parser.parse_term "&1:real"
-        let zero ← Parser.parse_term "&0:real"
+        -- realarith.ml 446-447 parse them untyped; Session builds this at
+        -- realarith.ml's position, where `&` means `real_of_num`.
+        let lpOne ← Parser.parse_term "&1"
+        let one  ← Parser.parse_term "&1"
+        let zero ← Parser.parse_term "&0"
         let add  ← Parser.parse_term "(+):real->real->real"
         let mul  ← Parser.parse_term "(*):real->real->real"
-        pure (one, zero, add, mul) : ExceptT String IO (term × term × term × term)).run with
+        pure (lpOne, one, zero, add, mul) : ExceptT String IO (term × term × term × term × term)).run with
       | .ok d => do theRealArithConsts.set (some d); pure d
       | .error e => panic! s!"RealArith consts parse failed: {e}") with
   | .ok d => d | _ => panic! "Session.RaC: RealArith consts not parsed"
@@ -4863,8 +4921,8 @@ private unsafe def RA1c : HolMath.RealArith.RealArith1Ctx :=
 /-- `REAL_LINEAR_PROVER` (realarith.ml 385-489), with its `RatSyntax`,
     alien lemmas and `lin_of_hol` constants supplied. -/
 unsafe def REAL_LINEAR_PROVER : HolMath.RealArith.PsProver :=
-  let (one_tm, zero_tm, add_tm, mul_tm) := RaC
-  HolMath.RealArith.REAL_LINEAR_PROVER RSyn LpA one_tm zero_tm add_tm mul_tm
+  let (lp_one_tm, one_tm, zero_tm, add_tm, mul_tm) := RaC
+  HolMath.RealArith.REAL_LINEAR_PROVER RSyn LpA lp_one_tm one_tm zero_tm add_tm mul_tm
 
 /-- Cache for the first `REAL_ARITH` (realarith.ml 494-511). -/
 initialize theRealArith1 : IO.Ref (Option ioconv) ← IO.mkRef none
@@ -7801,6 +7859,9 @@ unsafe def ensureHolPrefixThroughInt : IO Unit := do
   -- metis.ml (module Metis_rules) proves its RESOLVE/IMPL_NOT lemmas at load,
   -- and thecops.ml (module Hashek) runs `new_definition `hashek = T`` at
   -- load (hol_lib.ml 76-77, before pair.ml); `Cs` and `MtRules` build them.
+  -- meson.ml 122: reset_consts' `false_tm = `F`` (Meson.reset_consts uses
+  -- the constant directly).
+  parseLoadQuotes ["F"]
   let _ ← IO.mkRef (concl MtRules.RESOLVE_1)
   let _ ← IO.mkRef (concl Cs.hashek.hashek_def)
   let _ ← IO.mkRef (concl Qs.selectLemma)                  -- quot.ml (hol_lib.ml 78)
@@ -7809,6 +7870,7 @@ unsafe def ensureHolPrefixThroughInt : IO Unit := do
   -- order.
   let _ ← IO.mkRef (concl CURRY_DEF)
   let _ ← IO.mkRef (concl letTacPths.1)                    -- pair.ml 450 (LET_TAC)
+  let _ ← the_compset                                       -- compute.ml 787
   -- NUM_RING FIRST.  Its setup proofs SEARCH over the currently-registered
   -- overloads, so forcing it before the real layer registers the `real` ones
   -- keeps that search small; forcing it AFTER blows up as
@@ -7829,6 +7891,7 @@ unsafe def ensureHolPrefixThroughInt : IO Unit := do
   let _ ← IO.mkRef CnN.pre_tm                              -- calc_num.ml 211-1560
   let _ ← numRelConvIO                                      -- calc_num.ml 1443
   let _ ← NUM_RED_CONV tTm                                  -- calc_num.ml 1473
+  let _ ← numComputeConvIO                                  -- calc_num.ml 1487
   let _ ← IO.mkRef (concl NmzP.2)                          -- normalizer.ml 537-565
   -- grobner.ml: NUM_RING's setup proofs search over the registered overloads,
   -- so it must be built before realax.ml adds the `real` ones (after them it
@@ -7861,6 +7924,7 @@ unsafe def ensureHolPrefixThroughInt : IO Unit := do
   let _ ← IO.mkRef (concl char_INDUCT)                     -- lists.ml 881-884
   let _ ← IO.mkRef charStringMachinery                     -- lists.ml 886-1020
   let _ ← IO.mkRef (concl realArithLemmas.REAL_LTE_TOTAL)  -- realarith.ml
+  let _ ← IO.mkRef RaC                                      -- realarith.ml 445-449
   let _ ← IO.mkRef (concl genRealArith2Ctx.pth_abs)         -- realarith.ml ABSMAXMIN
   let _ ← REAL_INT_RED_CONV tTm                             -- calc_int.ml 389
   let _ ← REAL_INT_COMPUTE_CONV tTm                         -- calc_int.ml 403
@@ -8559,6 +8623,17 @@ unsafe def SET_TAC (ths : List thm) : tactic :=
 unsafe def SET_RULE (tm : term) : IO (Except String thm) :=
   (HolMath.Sets.SET_RULE SC SP MESON_TAC tm).run
 
+/-- new_inductive_set's `(/\)` (sets.ml 5209), parsed once. -/
+initialize theNewIndSetAnd : IO.Ref (Option term) ← IO.mkRef none
+
+private unsafe def newIndSetAndTm : IO term := do
+  match ← theNewIndSetAnd.get with
+  | some t => pure t
+  | none =>
+    match ← HolCore.Parser.parse_term "(/\\)" with
+    | .ok t => do theNewIndSetAnd.set (some t); pure t
+    | .error e => throw (IO.userError s!"new_inductive_set (/\\): {e}")
+
 /-- `new_inductive_set tm` (sets.ml 5183-5217): reduce an inductive SET
     definition to an inductive RELATION and return the `(rules, induct, cases)`
     triple.  A FUNCTION, so - like `SET_TAC`/`SET_RULE` - exposed as an accessor
@@ -8566,17 +8641,19 @@ unsafe def SET_RULE (tm : term) : IO (Except String thm) :=
     read forces `setupSetsCore` and the head infixes) and the injected
     `new_inductive_definition`.  Keeps the OCaml `term -> ...` arity. -/
 unsafe def new_inductive_set (tm : term) :
-    IO (Except String (thm × thm × thm)) :=
-  HolMath.Sets.new_inductive_set SC.IN new_inductive_definition tm
+    IO (Except String (thm × thm × thm)) := do
+  HolMath.Sets.new_inductive_set SC.IN (← newIndSetAndTm) new_inductive_definition tm
 
 /-- `dest_setenum` (sets.ml 3872). -/
 def dest_setenum : term → Except String (List term) := HolMath.Sets.dest_setenum
 /-- `is_setenum` (sets.ml 3878). -/
 def is_setenum : term → Bool := HolMath.Sets.is_setenum
 /-- `mk_setenum` (sets.ml 3880). -/
-def mk_setenum : List term × hol_type → IO (Except String term) := HolMath.Sets.mk_setenum
+unsafe def mk_setenum : List term × hol_type → IO (Except String term) :=
+  HolMath.Sets.mk_setenum SL.insert_atm SL.nil_atm
 /-- `mk_fset` (sets.ml 3886). -/
-def mk_fset : List term → IO (Except String term) := HolMath.Sets.mk_fset
+unsafe def mk_fset : List term → IO (Except String term) :=
+  HolMath.Sets.mk_fset SL.insert_atm SL.nil_atm
 
 /-- Force the parser-critical head of the sets layer, for scratchpads/bootstrap.
     Reading `SC` forces the fourteen head infixes and the core `new_definition`s
@@ -8624,6 +8701,7 @@ unsafe def ensureSets : IO Unit := do
   let _ ← IO.mkRef (concl SSup.sup)                  -- 4698-5027
   ensureSetsHasInfSupInfix                            -- 5030-5031
   let _ ← IO.mkRef (concl SISup.has_inf)             -- 5033-5182
+  let _ ← newIndSetAndTm                             -- 5209
   pure ()
 
 /- ---------------------------------------------------------------------- -/
@@ -9943,19 +10021,8 @@ unsafe def NUMSEG_CONV_pth_2     : thm := INConv.pth_2
     a conversion proves nothing about its behaviour, so this is exposed for the
     test's explicit behavioural driver. -/
 unsafe def NUMSEG_CONV : ioconv :=
-  -- pth_2 : |- m <= n ==> m..n = m INSERT (SUC m..n).  Peel to `m..n = ...`,
-  -- take LHS `m..n = (.. m) n`, and dest_comb twice for `(.. , m)` then `(nsTm, m)`.
-  let derive : Except String (term × term × term) := do
-    let (_, eqn) ← HolCore.Basics.dest_imp (concl INConv.pth_2)
-    let (lhs, _) ← HolCore.Kernel.dest_eq eqn
-    let (nsm, nTm) ← HolCore.Kernel.dest_comb lhs
-    let (nsTm, mTm) ← HolCore.Kernel.dest_comb nsm
-    return (nsTm, mTm, nTm)
-  match derive with
-  | .error e => fun _ => return .error s!"NUMSEG_CONV setup: {e}"
-  | .ok (nsTm, mTm, nTm) =>
-    HolMath.Iterate.NUMSEG_CONV NUM_LT_CONV NUM_LE_CONV NUM_SUC_CONV
-      INConv nsTm mTm nTm
+  HolMath.Iterate.NUMSEG_CONV NUM_LT_CONV NUM_LE_CONV NUM_SUC_CONV
+    INConv INConv.ns_tm INConv.m_tm INConv.n_tm
 -- IterateSortSeg (iterate.ml 196-277)
 unsafe def TOPOLOGICAL_SORT      : thm := ISort.TOPOLOGICAL_SORT
 unsafe def FINITE_INT_SEG        : thm := ISort.FINITE_INT_SEG

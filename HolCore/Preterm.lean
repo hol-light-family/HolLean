@@ -349,7 +349,28 @@ private partial def unify (ptm : Option preterm)
       | _, _ => throw (← string_of_ty_error env ptm)
   go env [(ty1, ty2, ptm.map (fun t => (t, ty1, ty2)))]
 
-/- Attempt to attach a given type to a term, performing unifications. -/
+/- ---------------------------------------------------------------------- -/
+/- Names in a varstruct that "typify" would otherwise read as constants.  -/
+/- A binder may legitimately shadow a constant of that name, so these are -/
+/- forced to be treated as bound variables when typing it (see Absp).     -/
+/- ---------------------------------------------------------------------- -/
+
+private partial def varstruct_consts (ptm : preterm) : IO (List String) := do
+  match ptm with
+  | .Varp s _ =>                         -- same test as "typify" uses below
+      if !(← is_hidden s) && (← get_generic_type s).isOk then return [s] else return []
+  | .Typing t _ => varstruct_consts t    -- annotated binder "(c:ty)"
+  | .Combp (.Combp (.Varp "," _) l) r => -- tuple varstruct "(c,y)"
+      return union (← varstruct_consts l) (← varstruct_consts r)
+  | _ => return []
+
+/- ---------------------------------------------------------------------- -/
+/- Attempt to attach a given type to a term, performing unifications.     -/
+/- Here "venv" maps the names of the bound variables in scope to their    -/
+/- pretypes, and "uenv" holds the unifications of system type variables   -/
+/- accumulated so far. The returned "venv" holds only the *new* bindings. -/
+/- ---------------------------------------------------------------------- -/
+
 private partial def typify (ty : pretype)
     (arg : preterm × List (String × pretype) × List (Int × pretype)) :
     ExceptT String IO (preterm × List (String × pretype) × List (Int × pretype)) := do
@@ -403,12 +424,16 @@ private partial def typify (ty : pretype)
               pure (a, b)
         let uenv0 ← unify (some ptm) uenv (.Ptycon "fun" [ty', ty'']) ty
         let (v', venv1, uenv1) ← do
-          let res ← typify ty' (v, [], uenv0)
-          match res with
-          | (.Constp s _, _, _) =>
-              if ← ignore_constant_varstruct.get then pure (.Varp s ty', [(s, ty')], uenv0)
-              else pure res
-          | _ => pure res
+          -- Pre-bind the constant-named binders, so that typing the
+          -- varstruct sees them as variables rather than constants.
+          let cseed : List (String × pretype) ←
+            if ← ignore_constant_varstruct.get
+            then (← varstruct_consts v).mapM (fun s => do return (s, ← new_type_var))
+            else pure []
+          let (v', venv1, uenv1) ← typify ty' (v, cseed, uenv0)
+          -- Re-add cseed: typify omits names already in its venv, but the
+          -- body below must still see them as bound variables.
+          pure (v', cseed ++ venv1, uenv1)
         let (bod', venv2, uenv2) ← typify ty'' (bod, venv1 ++ venv, uenv1)
         return (.Absp v' bod', venv2, uenv2)
     | _ => throw "typify: unexpected constant at this stage"

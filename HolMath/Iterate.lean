@@ -340,6 +340,10 @@ structure NumsegConvPths where
   /-- `pth_2` (iterate.ml 178):
       `MESON[NUMSEG_LREC; ADD1] \`m <= n ==> m..n = m INSERT (SUC m..n)\``. -/
   pth_2 : thm
+  /-- `ns_tm = \`(..)\``, `m_tm = \`m:num\``, `n_tm = \`n:num\`` (iterate.ml 179). -/
+  ns_tm : term
+  m_tm : term
+  n_tm : term
   deriving Inhabited
 
 /-- `pth_0`, `pth_1` and `pth_2` of `NUMSEG_CONV` (iterate.ml 175-177). -/
@@ -353,13 +357,16 @@ def setupNumsegConvPths [HolBase]
   let pth_0 ← MESON [NUMSEG_EMPTY] (← q r"n < m ==> m..n = {}")
   let pth_1 ← MESON [NUMSEG_SING] (← q r"m..m = {m}")
   let pth_2 ← MESON [NUMSEG_LREC, ADD1] (← q r"m <= n ==> m..n = m INSERT (SUC m..n)")
-  return { pth_0, pth_1, pth_2 }
+  let ns_tm ← q r"(..)"
+  let m_tm ← q r"m:num"
+  let n_tm ← q r"n:num"
+  return { pth_0, pth_1, pth_2, ns_tm, m_tm, n_tm }
 
 /-- `let rec NUMSEG_CONV tm = ...` (iterate.ml 179). -/
 partial def NUMSEG_CONV [HolBase]
     (NUM_LT_CONV NUM_LE_CONV NUM_SUC_CONV : ioconv)
     (P : NumsegConvPths) (ns_tm m_tm n_tm : term) : ioconv := fun tm => ExceptT.run do
-  let { pth_0, pth_1, pth_2 } := P
+  let { pth_0, pth_1, pth_2, .. } := P
   let NUMSEG_CONV := NUMSEG_CONV NUM_LT_CONV NUM_LE_CONV NUM_SUC_CONV P ns_tm m_tm n_tm
   let (nstm, nt) ← dest_comb tm
   let (nst, mt) ← dest_comb nstm

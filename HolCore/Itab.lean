@@ -140,8 +140,10 @@ private partial def ITAUT_TAC (B : BoolThms) (mvs : List term) (n : Int) : tacti
         | .error e => return .error e
         | .ok (ev, _) => do
             let gv ← genvar (type_of ev)
-            (THEN B (X_META_EXISTS_TAC B gv)
-                (THEN B (ITAUT_TAC B (gv :: mvs) (n - 2)) NO_TAC) g
+            -- OCaml `A THEN B THEN C` is `(A THEN B) THEN C`; the grouping
+            -- matters on failure (`B` runs on every subgoal before `C` fails).
+            (THEN B (THEN B (X_META_EXISTS_TAC B gv) (ITAUT_TAC B (gv :: mvs) (n - 2)))
+                NO_TAC g
               : IO (Except String goalstate))
       let allTac : thm_tactic := fun th => fun g => do
         match dest_forall (concl th) with
@@ -149,19 +151,19 @@ private partial def ITAUT_TAC (B : BoolThms) (mvs : List term) (n : Int) : tacti
         | .ok (fv, _) => do
             let gv ← genvar (type_of fv)
             (THEN B (ASSUME_TAC B th)
-              (THEN B (META_SPEC_TAC B gv th)
-                (THEN B (ITAUT_TAC B (gv :: mvs) (n - 2)) NO_TAC)) g
+              (THEN B (THEN B (META_SPEC_TAC B gv th) (ITAUT_TAC B (gv :: mvs) (n - 2)))
+                NO_TAC) g
               : IO (Except String goalstate))
       let impTac : thm → tactic := fun th => fun g => do
         match Basics.dest_imp (concl th) with
         | .error e => return .error e
         | .ok (ant, _) =>
-            (THEN B (SUBGOAL_THEN B ant
+            (THEN B (THEN B (SUBGOAL_THEN B ant
                       (fun ath => fun g2 => do
                         match B.MP th ath with
                         | .ok m => (ASSUME_TAC B m g2 : IO (Except String goalstate))
                         | .error e => return .error e))
-              (THEN B (ITAUT_TAC B mvs (n - 1)) NO_TAC) g
+              (ITAUT_TAC B mvs (n - 1))) NO_TAC g
               : IO (Except String goalstate))
       (ORELSE (FIRST_ASSUM (UNIFY_ACCEPT_TAC mvs))
        (ORELSE (ACCEPT_TAC B B.TRUTH)
@@ -169,8 +171,8 @@ private partial def ITAUT_TAC (B : BoolThms) (mvs : List term) (n : Int) : tacti
        (ORELSE (THEN B (RIGHT_REVERSIBLE_TAC B) (TRY B (ITAUT_TAC B mvs n)))
        (ORELSE (THEN B (FIRST_X_ASSUM B (LEFT_REVERSIBLE_TAC B)) (TRY B (ITAUT_TAC B mvs n)))
        (ORELSE (FIRST_X_ASSUM B allTac)
-       (ORELSE (THEN B (DISJ1_TAC B) (THEN B (ITAUT_TAC B mvs n) NO_TAC))
-       (ORELSE (THEN B (DISJ2_TAC B) (THEN B (ITAUT_TAC B mvs n) NO_TAC))
+       (ORELSE (THEN B (THEN B (DISJ1_TAC B) (ITAUT_TAC B mvs n)) NO_TAC)
+       (ORELSE (THEN B (THEN B (DISJ2_TAC B) (ITAUT_TAC B mvs n)) NO_TAC)
        (ORELSE step7
                (FIRST_ASSUM impTac)))))))))) gl
 

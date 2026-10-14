@@ -347,28 +347,43 @@ structure HashekThms where
   hashek_thm  : thm                    -- |- hashek
   hashek_prop : thm                    -- |- ((x/\hashek) ==> (y/\hashek)) ==> (x ==> y)
   hashek_eq   : thm                    -- |- ~hashek <=> F
+  /-- `MARK_ASSUMS`'s own `hashek` (thecops.ml 43 parses it once more). -/
+  mark_tm     : term
   deriving Inhabited
 
 /-- `MARK_ASSUMS = RULE_ASSUM_TAC (DISCH `hashek`)`. -/
 def MARK_ASSUMS (B : BoolThms) (H : HashekThms) : tactic :=
-  Tactics.RULE_ASSUM_TAC B (fun th => pure (B.DISCH H.hashek_tm th))
+  Tactics.RULE_ASSUM_TAC B (fun th => pure (B.DISCH H.mark_tm th))
 
 /-- `MARK_CONCL label`: move the `label` assumption to the conclusion, rewrite
     `~t ==> F <=> t`, gather remaining assumptions into one conjunction, apply
     `hashek_prop`, split it back into assumptions, and refute.  `notTFimp` is the
-    `TAUT `!t. (~t ==> F <=> t)`` theorem; supplied by Session. -/
+    `TAUT `!t. (~t ==> F <=> t)`` theorem, which thecops.ml proves each time
+    `MARK_CONCL label` is built; the caller supplies it. -/
 def MARK_CONCL (B : BoolThms) (H : HashekThms) (notTFimp : thm)
     (refuteThen : thm_tactic → tactic) (label : String) : tactic :=
   let assumeTac : thm_tactic := fun th => Tactics.ASSUME_TAC B th
   Tactics.EVERY B [
     Tactics.USE_THEN label (fun th => Tactics.UNDISCH_TAC B (concl th)),
-    -- the first part of the implication *may* be a negation,
-    -- but does not necessarily have to be
+    (fun g => do
+      -- assert (is_imp (snd g));
+      if !Basics.is_imp g.2 then return .error "Assert_failure"
+      -- the first part of the implication *may* be a negation,
+      -- but does not necessarily have to be
+      -- assert (snd (dest_imp (snd g)) = `F`);
+      match ← HolCore.Parser.parse_term "F" with
+      | .error e => return .error e
+      | .ok f =>
+        match Basics.dest_imp g.2 with
+        | .ok (_, c) => if c == f then Tactics.ALL_TAC g else return .error "Assert_failure"
+        | .error e => return .error e),
     Simp.REWRITE_TAC B [notTFimp],
     Tactics.POP_ASSUM_LIST (fun l =>
       Tactics.ASSUME_TAC B (if l.isEmpty then B.TRUTH
                             else match end_itlistM (fun a b => B.CONJ a b) l with
                                  | .ok c => c | .error _ => B.TRUTH)),
+    -- assert (length (fst g) = 1);
+    (fun g => if g.1.length == 1 then Tactics.ALL_TAC g else return .error "Assert_failure"),
     (fun (asl, w) =>
       (Tactics.MAP_EVERY B (fun (p : String × thm) => Tactics.UNDISCH_TAC B (concl p.2)) asl (asl, w)
        : IO (Except String goalstate))),
@@ -842,7 +857,11 @@ namespace Prepare
 /-- `PREPARE_COP_TAC ths`: refute, POLY_ASSUME the lemmas, mark the goal with the
     hashek literal, then run the (unmodified) Meson preprocessing pipeline. -/
 def PREPARE_COP_TAC (B : BoolThms) (D : Meson.MesonTacDeps) (H : Hashek.HashekThms)
-    (notTFimp : thm) (ths : List thm) : tactic := fun g => do
+    (notTFimp' : IO (Except String thm)) (ths : List thm) : tactic := fun g => do
+  -- `MARK_CONCL "copconcl"` proves its TAUT when PREPARE_COP_TAC is applied.
+  let notTFimp ← match ← notTFimp' with
+    | .ok th => pure th
+    | .error e => return .error e
   let assumeTac : thm_tactic := fun th => Tactics.ASSUME_TAC B th
   let betaTopDepth : ioconv := HolCore.Simp.topDepthConvIO (fun t => pure (HolCore.Equal.BETA_CONV t))
   let frontConv : ioconv :=
@@ -1073,7 +1092,7 @@ structure LeancopDeps where
   Emeson : Meson.EqAxPths              -- plain Meson equality axioms
   hashek : Hashek.HashekThms           -- hashek marker theorems
   D : Meson.MesonTacDeps               -- Canon/Meson conversion + tactic bundle
-  notTFimp : thm                       -- TAUT `!t. (~t ==> F <=> t)`
+  notTFimp : IO (Except String thm)    -- TAUT `!t. (~t ==> F <=> t)`, per call
 
 /-- `start opt lim`: search for a refutation of the negated hashek literal. -/
 def start (dp : LeancopDeps) (opt : search_opts) (lim : Int) :
@@ -1990,7 +2009,7 @@ structure NanocopDeps where
   Emeson : Meson.EqAxPths
   hashek : Hashek.HashekThms
   D : Meson.MesonTacDeps
-  notTFimp : thm
+  notTFimp : IO (Except String thm)
   CONJ_ASSOC : thm                     -- |- a /\ (b /\ c) <=> (a /\ b) /\ c
   DISJ_ASSOC : thm                     -- |- a \/ (b \/ c) <=> (a \/ b) \/ c
 
@@ -2103,7 +2122,11 @@ def NANOCOP_DEEPEN (B : BoolThms) (dp : NanocopDeps) (opt : search_opts) (ths : 
           if ← copverb.get then
             stdPrintf "Reconstruction:\n"
             stdQueue (← HolCore.Printer.pp_print_thm bot)   -- print_thm: unflushed
-          return .ok bot
+          -- assert (set_eq (hyp bot) (hyp th)); assert (concl bot = `F`);
+          if !(set_eq (hyp bot) (hyp th)) then return .error "Assert_failure"
+          match ← HolCore.Parser.parse_term "F" with
+          | .error e => return .error e
+          | .ok f => if concl bot == f then return .ok bot else return .error "Assert_failure"
 
 /-- Debugging tactic (`PRINT_TAC`, thecops.ml 1462): print the goal (on the
     std_formatter, unflushed, as `print_goal`) when `copverb` is set. -/

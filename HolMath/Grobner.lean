@@ -616,12 +616,20 @@ def pth_step [HolBase] (DE_MORGAN_THM CONTRAPOS_THM : thm) :
               (!n a b c d. ~(n = n0)
                            ==> (a = b) /\ ~(c = d)
                                ==> ~(add a (mul n c) = add b (mul n d)))"
-   (REPEAT GEN_TAC THEN STRIP_TAC THEN
-    ASM_REWRITE_TAC [← GSYM DE_MORGAN_THM] THEN
-    REPEAT GEN_TAC THEN DISCH_TAC THEN STRIP_TAC THEN
-    FIRST_X_ASSUM (fun th => tactic_of do
-      pure (MP_TAC (← SPECL [← q r"n0:A", ← q r"n:A", ← q r"d:A", ← q r"c:A"] th))) THEN
-    ONCE_REWRITE_TAC [← GSYM CONTRAPOS_THM] THEN ASM_SIMP_TAC [])
+   (← do
+    -- `SPECL [`n0:A`; `n:A`; `d:A`; `c:A`]` is built once, with the tactic
+    -- (the list right to left), not for each assumption FIRST_X_ASSUM tries.
+    let c ← q r"c:A"
+    let d ← q r"d:A"
+    let n ← q r"n:A"
+    let n0 ← q r"n0:A"
+    pure
+     (REPEAT GEN_TAC THEN STRIP_TAC THEN
+      ASM_REWRITE_TAC [← GSYM DE_MORGAN_THM] THEN
+      REPEAT GEN_TAC THEN DISCH_TAC THEN STRIP_TAC THEN
+      FIRST_X_ASSUM (fun th => tactic_of do
+        pure (MP_TAC (← SPECL [n0, n, d, c] th))) THEN
+      ONCE_REWRITE_TAC [← GSYM CONTRAPOS_THM] THEN ASM_SIMP_TAC []))
 
 end
 
@@ -1178,20 +1186,18 @@ def setupNumSimplifyConsts [HolBase] (NNF_CONV : ioconv)
      PRE_ELIM_THM' SUB_ELIM_THM' DIVMOD_ELIM_THM'
      NOT_EXISTS_THM EVEN_EXISTS ODD_EXISTS NOT_EVEN NOT_ODD : thm) :
     ExceptT String IO NumSimplifyConsts := do
-  -- `PRE_ELIM_THM = |- P(PRE n) <=> ...`
-  let pre_tm ← liftExcept (do rator (← rand (← lhand (concl PRE_ELIM_THM))))
-  -- `DIVMOD_ELIM_THM = |- P (m DIV n) (m MOD n) <=> ...`
-  let (div_tm, mod_tm) ← liftExcept (do
-    let l ← lhand (concl DIVMOD_ELIM_THM)
-    return (← rator (← rator (← lhand l)), ← rator (← rator (← rand l))))
-  -- `SUB_ELIM_THM = |- P(a - b) <=> ...`
-  let sub_tm ← liftExcept (do rator (← rator (← rand (← lhand (concl SUB_ELIM_THM)))))
+  -- grobner.ml 628-634, in order (Session builds this at grobner.ml's
+  -- position, where these constants are declared).
+  let pre_tm ← q r"PRE"
+  let div_tm ← q r"(DIV):num->num->num"
+  let mod_tm ← q r"(MOD):num->num->num"
   let p_tm ← q r"P:num->bool"
   let n_tm ← q r"n:num"
   let m_tm ← q r"m:num"
   let q_tm ← q r"P:num->num->bool"
   let a_tm ← q r"a:num"
   let b_tm ← q r"b:num"
+  let sub_tm ← q r"(-):num->num->num"
   let PRE_ELIM_THM'' ← CONV_RULE (RAND_CONV NNF_CONV) PRE_ELIM_THM
   let SUB_ELIM_THM'' ← CONV_RULE (RAND_CONV NNF_CONV) SUB_ELIM_THM
   let DIVMOD_ELIM_THM'' ← CONV_RULE (RAND_CONV NNF_CONV) DIVMOD_ELIM_THM

@@ -99,5 +99,6 @@ import HolTest.BinomialTest
 import HolTest.PocklingtonTest
 import HolTest.RingTheoryTest
 import HolTest.UnitBasicTest
+import HolTest.UnitParserTest
 import HolTest.UnitPrinterTest
 import HolTest.UnitRecordsTest

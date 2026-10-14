@@ -6199,21 +6199,22 @@ def dest_setenum (tm : term) : Except String (List term) :=
 /-- `is_setenum = can dest_setenum` (sets.ml 3878). -/
 def is_setenum (tm : term) : Bool := (dest_setenum tm).isOk
 
-/-- `mk_setenum` (sets.ml 3880).  The OCaml instantiates the two parsed
-    constants `(INSERT):A->(A->bool)->(A->bool)` and `(EMPTY):A->bool`; here
-    they are built with `mk_const`, which gives the same terms. -/
-def mk_setenum (lty : List term × hol_type) : IO (Except String term) := ExceptT.run do
+/-- `mk_setenum` (sets.ml 3880).  `insert_atm` and `nil_atm` are the parsed
+    constants `(INSERT):A->(A->bool)->(A->bool)` and `(EMPTY):A->bool`
+    (`SetsList.insert_atm`/`nil_atm`), instantiated at the element type. -/
+def mk_setenum (insert_atm nil_atm : term) (lty : List term × hol_type) :
+    IO (Except String term) := ExceptT.run do
   let (l, ty) := lty
   let aty := mk_vartype "A"
-  let insert_tm ← mk_const "INSERT" [(ty, aty)]
-  let nil_tm ← mk_const "EMPTY" [(ty, aty)]
+  let insert_tm := inst [(ty, aty)] insert_atm
+  let nil_tm := inst [(ty, aty)] nil_atm
   liftExcept (itlist (fun x acc => do (← mk_binop insert_tm x) (← acc)) l (.ok nil_tm))
 
 /-- `mk_fset l = mk_setenum(l,type_of(hd l))` (sets.ml 3886). -/
-def mk_fset (l : List term) : IO (Except String term) := do
+def mk_fset (insert_atm nil_atm : term) (l : List term) : IO (Except String term) := do
   match l with
   | [] => return failwith "hd"
-  | h :: _ => mk_setenum (l, type_of h)
+  | h :: _ => mk_setenum insert_atm nil_atm (l, type_of h)
 
 /-- The theorems of sets.ml 3697-3997, in three OCaml sections:
 
@@ -6231,6 +6232,10 @@ def mk_fset (l : List term) : IO (Except String term) := do
     `mk_setenum`, `mk_fset`) produce no theorem; they are defined before this
     bundle, as plain functions. -/
 structure SetsList where
+  /-- `mk_setenum`'s `(INSERT):A->(A->bool)->(A->bool)` (sets.ml 3881). -/
+  insert_atm : term
+  /-- `mk_setenum`'s `(EMPTY):A->bool` (sets.ml 3882). -/
+  nil_atm : term
   /-- `HAS_SIZE_INDEX` (sets.ml 3700): `s HAS_SIZE n ==> ?f. (!m. m<n ==> f m IN
       s) /\ (!x. x IN s ==> ?!m. m<n /\ f m = x)`.  ONE top-level `CONJ_TAC
       THENL [b1; ALL_TAC]` (width 2); uses `CONJUNCTS_THEN2`, `COND_CASES_TAC`,
@@ -6582,6 +6587,10 @@ def setupSetsList [HolBase] (S : SetsCore)
     SIMP_TAC [LENGTH, set_of_list, CONS_11, SUC_INJ, NOT_CONS_NIL, NOT_SUC] THEN
     SET_TAC [])
 
+  -- mk_setenum (sets.ml 3880-3882): its two constants, parsed once.
+  let insert_atm ← q r"(INSERT):A->(A->bool)->(A->bool)"
+  let nil_atm ← q r"(EMPTY):A->bool"
+
   /- Pairwise property over sets and lists. -/
 
   let pairwise ← new_definition
@@ -6688,6 +6697,7 @@ def setupSetsList [HolBase] (S : SetsCore)
     REWRITE_TAC [IN_DELETE, IN_DIFF] THEN MESON_TAC [])
 
   return {
+    insert_atm, nil_atm,
     HAS_SIZE_INDEX, INFINITE_ENUMERATE, INFINITE_ENUMERATE_EQ,
     INFINITE_ENUMERATE_SUBSET, set_of_list, list_of_set,
     LIST_OF_SET_PROPERTIES, SET_OF_LIST_OF_SET, LENGTH_LIST_OF_SET,
@@ -8420,7 +8430,7 @@ def setupSetsHasInfSup [HolBase] (SSup : SetsSup)
 /- ---------------------------------------------------------------------- -/
 
 /-- `new_inductive_set` (sets.ml 5186). -/
-def new_inductive_set [HolBase] (IN : thm)
+def new_inductive_set [HolBase] (IN : thm) (and_tm : term)
     (new_inductive_definition : term → IO (Except String (thm × thm × thm)))
     (tm : term) : IO (Except String (thm × thm × thm)) := ExceptT.run do
   let const_of_var (v : term) : ExceptT String IO term :=
@@ -8449,8 +8459,11 @@ def new_inductive_set [HolBase] (IN : thm)
     let tm := (splitlist (dest_binop (← q r"(==>)")) tm).2
     let tm := (← dest_binary "IN" tm).2
     pure (strip_comb tm).1
+  -- `find_pvars = setify o map rule_head o binops `(/\)``: `and_tm` is that
+  -- quotation, parsed once when sets.ml loads (sets.ml 5209); `rule_head`'s
+  -- `(==>)` is inside the function, so parsed per call.
   let find_pvars (tm : term) : ExceptT String IO (List term) := do
-    pure (setify (← (binops (← q r"(/\)") tm).mapM rule_head))
+    pure (setify (← (binops and_tm tm).mapM rule_head))
   let pvars ← find_pvars tm
   let dtm ← remove_in_transf pvars tm
   let (th_rules, th_induct, th_cases) ← new_inductive_definition dtm

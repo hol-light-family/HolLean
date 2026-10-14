@@ -266,8 +266,8 @@ def setupRealArithLemmas [HolBase]
    (REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN
     ASM_REWRITE_TAC [REAL_MUL_LZERO, REAL_MUL_RZERO] THEN
     ASM_CASES_TAC (← q r"x = &0") THEN ASM_REWRITE_TAC [] THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (MP_TAC (← AP_TERM (← q r"(*) (inv x)") th))) THEN
+    (let ix := (← q r"(*) (inv x)"); FIRST_ASSUM (fun th => tactic_of do
+      pure (MP_TAC (← AP_TERM ix th)))) THEN
     REWRITE_TAC [REAL_MUL_ASSOC] THEN
     FIRST_ASSUM (fun th => tactic_of do
       pure (REWRITE_TAC [← MATCH_MP REAL_MUL_LINV th])) THEN
@@ -910,7 +910,7 @@ def setupLinearProverAliens [HolBase] (R : HolMath.RealAx.RealThms) (L : RealAri
     `linear_ineqs`/`linear_eqs`/`lin_of_hol` are mutually recursive. -/
 partial def REAL_LINEAR_PROVER (RS : HolMath.CalcInt.RatSyntax)
     (A : LinearProverAliens)
-    (one_tm zero_tm add_tm mul_tm : term)
+    (lp_one_tm one_tm zero_tm add_tm mul_tm : term)
     (translator : (List thm × List thm × List thm) →
                   positivstellensatz → IO (Except String thm))
     (tris : List thm × List thm × List thm) : IO (Except String thm) :=
@@ -936,7 +936,7 @@ partial def REAL_LINEAR_PROVER (RS : HolMath.CalcInt.RatSyntax)
     let lt_pols' := lt_pols ++
       suc_aliens.map (fun v => (v |=> (num_1 : Rat)))
     -- let _,proof = linear_prover(eq_pols,le_pols',lt_pols')
-    let (_, proof) ← liftExcept (linear_prover RS one_tm eq_pols le_pols' lt_pols')
+    let (_, proof) ← liftExcept (linear_prover RS lp_one_tm eq_pols le_pols' lt_pols')
     -- le' = le @ map (fun a -> INST [rand a,n_tm] pth) aliens
     let le' ← liftExcept (do
       let extra ← aliens.mapM (fun a => do

@@ -131,6 +131,12 @@ def net_of_thm (B : BoolThms) (rep : Bool) (th : thm) (sofar : net gconv) :
   let matchable (l r : term) : IO Bool := do
     match ← (term_match lconsts l r : IO (Except String instantiation)) with
     | .ok _ => return true | .error _ => return false
+  -- `rep && matchable l r && matchable r l`, short-circuiting as in OCaml.
+  -- (A `(← ..)` inside a condition runs before the condition is tested, and
+  -- `term_match` draws genvars on higher-order patterns.)
+  let bothMatch (l r : term) : IO Bool := do
+    if !rep then return false
+    if ← matchable l r then matchable r l else return false
   match tm with
   -- ETA_AX special case: |- (\x. v x) = v (falls through to plain eq otherwise).
   -- `v` must be a variable: simp.ml 96 patterns `Abs(x,Comb(Var(s,ty) as v,x'))`,
@@ -154,7 +160,7 @@ def net_of_thm (B : BoolThms) (rep : Bool) (th : thm) (sofar : net gconv) :
           match B.EQT_INTRO th with
           | .error e => return .error e
           | .ok th' => enter_gconv lconsts (l, (1, REWR_CONV B th')) sofar
-        else if rep && (← matchable l v') && (← matchable v' l) then
+        else if ← bothMatch l v' then
           enter_gconv lconsts (l, (1, ORDERED_REWR_CONV B term_order th)) sofar
         else enter_gconv lconsts (l, (1, REWR_CONV B th)) sofar
   -- plain equation |- l = r
@@ -163,7 +169,7 @@ def net_of_thm (B : BoolThms) (rep : Bool) (th : thm) (sofar : net gconv) :
         match B.EQT_INTRO th with
         | .error e => return .error e
         | .ok th' => enter_gconv lconsts (l, (1, REWR_CONV B th')) sofar
-      else if rep && (← matchable l r) && (← matchable r l) then
+      else if ← bothMatch l r then
         enter_gconv lconsts (l, (1, ORDERED_REWR_CONV B term_order th)) sofar
       else enter_gconv lconsts (l, (1, REWR_CONV B th)) sofar
   -- conditional |- c ==> (l = r)
@@ -172,7 +178,7 @@ def net_of_thm (B : BoolThms) (rep : Bool) (th : thm) (sofar : net gconv) :
         match (do B.DISCH _t (← B.EQT_INTRO (← B.UNDISCH th)) : Except String thm) with
         | .error e => return .error e
         | .ok th' => enter_gconv lconsts (l, (3, IMP_REWR_CONV B th')) sofar
-      else if rep && (← matchable l r) && (← matchable r l) then
+      else if ← bothMatch l r then
         enter_gconv lconsts (l, (3, ORDERED_IMP_REWR_CONV B term_order th)) sofar
       else enter_gconv lconsts (l, (3, IMP_REWR_CONV B th)) sofar
   | _ => return .error "net_of_thm"
@@ -914,6 +920,12 @@ def subQconvIO (c : ioconv) : ioconv := fun tm =>
   | .Abs _ _ => absConvIO c tm
   | _ => combQconvIO c tm
 
+/-- `REPEATQC` (IO, equal.ml 218): like `REPEATC`, but fails if the first
+    application fails, so the depth conversions below see "no change" as a
+    failure, as in OCaml. -/
+partial def repeatqcIO (c : ioconv) : ioconv := fun tm =>
+  thencqcIO c (repeatqcIO c) tm
+
 /-- `ONCE_DEPTH_QCONV` (IO, may fail on no-change). -/
 partial def onceDepthQconvIO (c : ioconv) : ioconv := fun tm =>
   orelsecIO c (subQconvIO (onceDepthQconvIO c)) tm
@@ -923,7 +935,7 @@ def onceDepthConvIO (c : ioconv) : ioconv := orelsecIO (onceDepthQconvIO c) allC
 
 /-- `TOP_DEPTH_QCONV` (IO, may fail on no-change). -/
 partial def topDepthQconvIO (c : ioconv) : ioconv := fun tm =>
-  thenqcIO (repeatcIO c)
+  thenqcIO (repeatqcIO c)
     (thencqcIO (subQconvIO (topDepthQconvIO c)) (thencqcIO c (topDepthQconvIO c))) tm
 
 /-- `TOP_DEPTH_CONV` (IO): total (TRY-wrapped). -/
@@ -931,7 +943,7 @@ def topDepthConvIO (c : ioconv) : ioconv := orelsecIO (topDepthQconvIO c) allCon
 
 /-- `DEPTH_QCONV` (IO, bottom-up, may fail on no-change). -/
 partial def depthQconvIO (c : ioconv) : ioconv := fun tm =>
-  thenqcIO (subQconvIO (depthQconvIO c)) (repeatcIO c) tm
+  thenqcIO (subQconvIO (depthQconvIO c)) (repeatqcIO c) tm
 
 /-- `DEPTH_CONV` (IO): total (TRY-wrapped). -/
 def depthConvIO (c : ioconv) : ioconv := orelsecIO (depthQconvIO c) allConvIO
@@ -945,7 +957,7 @@ def redepthConvIO (c : ioconv) : ioconv := orelsecIO (redepthQconvIO c) allConvI
 
 /-- `TOP_SWEEP_QCONV` (IO, may fail on no-change). -/
 partial def topSweepQconvIO (c : ioconv) : ioconv := fun tm =>
-  thenqcIO (repeatcIO c) (subQconvIO (topSweepQconvIO c)) tm
+  thenqcIO (repeatqcIO c) (subQconvIO (topSweepQconvIO c)) tm
 
 /-- `TOP_SWEEP_CONV` (IO): total (TRY-wrapped). -/
 def topSweepConvIO (c : ioconv) : ioconv := orelsecIO (topSweepQconvIO c) allConvIO

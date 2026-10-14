@@ -1057,15 +1057,16 @@ def setupConds (B : BoolThms) (C : ClassThms) (propsimps : Nets.net Simp.gconv) 
   let prove := Tactics.prove B
   let ASM_REWRITE_TAC := Simp.ASM_REWRITE_TAC B
   let BOOL_CASES_TAC := Classic.BOOL_CASES_TAC B C.BOOL_CASES_AX
-  let bTm ← parse_term "b:bool"
+  -- canon.ml 606-616: each `prove` parses its own `b:bool`, then
+  -- `false_tm = `F`` and `true_tm = `T``.
   let thCond ← (prove (← parse_term
       "((b <=> F) ==> x = x0) /\\ ((b <=> T) ==> x = x1) ==> x = (b /\\ x1 \\/ ~b /\\ x0)")
-      (THEN B (BOOL_CASES_TAC bTm) (ASM_REWRITE_TAC [])) : IO (Except String thm))
+      (THEN B (BOOL_CASES_TAC (← parse_term "b:bool")) (ASM_REWRITE_TAC [])) : IO (Except String thm))
   let thCond' ← (prove (← parse_term
       "((b <=> F) ==> x = x0) /\\ ((b <=> T) ==> x = x1) ==> x = ((~b \\/ x1) /\\ (b \\/ x0))")
-      (THEN B (BOOL_CASES_TAC bTm) (ASM_REWRITE_TAC [])) : IO (Except String thm))
-  let falseTm ← (mk_const "F" [] : IO (Except String term))
-  let trueTm ← (mk_const "T" [] : IO (Except String term))
+      (THEN B (BOOL_CASES_TAC (← parse_term "b:bool")) (ASM_REWRITE_TAC [])) : IO (Except String thm))
+  let falseTm ← parse_term "F"
+  let trueTm ← parse_term "T"
   return { thCond, thCond', falseTm, trueTm, propsimps }
 
 /-- `find_conditional`: locate a conditional whose predicate is closed over `fvs`. -/

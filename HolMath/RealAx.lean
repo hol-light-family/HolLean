@@ -237,8 +237,9 @@ def setupDist [HolBase] (N : HolMath.Nums.NumsThms)
   let DIST_ELIM_THM ← prove
    r"P(dist(x,y)) <=> !d. ((x = y + d) ==> P(d)) /\ ((y = x + d) ==> P(d))"
    (DISJ_CASES_TAC (← SPECL [← q r"x:num", ← q r"y:num"] LE_CASES) THEN
-    POP_ASSUM (fun th => tactic_of do
-      pure ((X_CHOOSE_THEN (← q r"e:num") SUBST1_TAC) (← REWRITE_RULE [LE_EXISTS] th))) THEN
+    -- `X_CHOOSE_THEN `e:num` SUBST1_TAC o ...` is built once, for both goals.
+    POP_ASSUM (let e := (← q r"e:num"); fun th => tactic_of do
+      pure ((X_CHOOSE_THEN e SUBST1_TAC) (← REWRITE_RULE [LE_EXISTS] th))) THEN
     REWRITE_TAC [dist, ADD_SUB, ADD_SUB2, ADD_SUBR, ADD_SUBR2] THEN
     REWRITE_TAC [ADD_CLAUSES, EQ_ADD_LCANCEL] THEN
     GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [EQ_SYM_EQ] THEN
@@ -1179,8 +1180,8 @@ def setupNaddComplete [HolBase]
    (REPEAT STRIP_TAC THEN
     DISJ_CASES_TAC (← SPECL [← q r"x:nadd", ← q r"y:nadd"] NADD_LE_TOTAL) THEN
     ASM_REWRITE_TAC [] THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure ((X_CHOOSE_TAC (← q r"d:nadd")) (← MATCH_MP NADD_LE_EXISTS th))) THEN
+    (let d := (← q r"d:nadd"); FIRST_ASSUM (fun th => tactic_of do
+      pure ((X_CHOOSE_TAC d) (← MATCH_MP NADD_LE_EXISTS th)))) THEN
     MATCH_MP_TAC NADD_EQ_IMP_LE THEN
     MATCH_MP_TAC NADD_EQ_TRANS THEN EXISTS_TAC (← q r"y ++ d") THEN
     ASM_REWRITE_TAC [] THEN
@@ -1221,8 +1222,10 @@ def setupNaddComplete [HolBase]
       DISCH_THEN (X_CHOOSE_THEN (← q r"r:num->num")
        (fun th => tactic_of do
           let (th1, th2) ← CONJ_PAIR (← SPEC (← q r"n:num") th)
+          -- `MAP_EVERY (MP_TAC o GEN `n:num`)`: one `n:num` for both theorems.
+          let n ← q r"n:num"
           pure (MAP_EVERY (fun t => tactic_of do
-            pure (MP_TAC (← GEN (← q r"n:num") t))) [th1, th2]))) THEN
+            pure (MP_TAC (← GEN n t))) [th1, th2]))) THEN
       DISCH_THEN (fun th => tactic_of do
         pure (MP_TAC (← GEN (← q r"n:num")
           (← SPECL [← q r"n:num", ← q r"SUC(r(n:num))"] th)))) THEN
@@ -1236,9 +1239,13 @@ def setupNaddComplete [HolBase]
       DISCH_TAC] THEN
     SUBGOAL_THEN (← q r"!n i. i * r(n) <= n * r(i) + n") ASSUME_TAC THENL
      [REPEAT GEN_TAC THEN
-      FIRST_ASSUM (fun th => tactic_of do
-        pure (X_CHOOSE_THEN (← q r"x:nadd") STRIP_ASSUME_TAC
-          (← SPEC (← q r"n:num") th))) THEN
+      -- `X_CHOOSE_THEN `x:nadd` STRIP_ASSUME_TAC o SPEC `n:num``: built
+      -- once (right to left), not for each assumption FIRST_ASSUM tries.
+      (← do
+        let n ← q r"n:num"
+        let x ← q r"x:nadd"
+        pure (FIRST_ASSUM (fun th => tactic_of do
+          pure (X_CHOOSE_THEN x STRIP_ASSUME_TAC (← SPEC n th))))) THEN
       ONCE_REWRITE_TAC [← GSYM NADD_OF_NUM_LE] THEN
       MATCH_MP_TAC NADD_LE_TRANS THEN
       EXISTS_TAC (← q r"&i ** &n ** x") THEN CONJ_TAC THENL
@@ -1302,8 +1309,12 @@ def setupNaddComplete [HolBase]
         GEN_TAC THEN GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [MULT_SYM] THEN
         ASM_REWRITE_TAC [],
         REWRITE_TAC [NADD_LE_RADD] THEN
-        FIRST_ASSUM (fun th => tactic_of do
-          pure (X_CHOOSE_THEN (← q r"x:nadd") MP_TAC (← SPEC (← q r"n:num") th))) THEN
+        (← do
+          -- built once, right to left
+          let n ← q r"n:num"
+          let x ← q r"x:nadd"
+          pure (FIRST_ASSUM (fun th => tactic_of do
+            pure (X_CHOOSE_THEN x MP_TAC (← SPEC n th))))) THEN
         DISCH_THEN STRIP_ASSUME_TAC THEN
         MATCH_MP_TAC NADD_LE_TRANS THEN EXISTS_TAC (← q r"&n ** x") THEN
         ASM_REWRITE_TAC [] THEN MATCH_MP_TAC NADD_LE_LMUL THEN
@@ -1399,8 +1410,8 @@ def setupNaddInvAux [HolBase] (N : HolMath.Nums.NumsThms)
   let NADD_LBOUND ← prove
    r"!x. ~(x === &0) ==> ?A N. !n. N <= n ==> n <= A * fn x n"
    (GEN_TAC THEN DISCH_TAC THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure ((X_CHOOSE_TAC (← q r"N:num")) (← MATCH_MP NADD_NONZERO th))) THEN
+    (let N := (← q r"N:num"); FIRST_ASSUM (fun th => tactic_of do
+      pure ((X_CHOOSE_TAC N) (← MATCH_MP NADD_NONZERO th)))) THEN
     FIRST_ASSUM (fun th => tactic_of do pure (MP_TAC (← MATCH_MP NADD_ARCH_MULT th))) THEN
     DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"1") th))) THEN
     REWRITE_TAC [nadd_le, NADD_MUL, NADD_OF_NUM, MULT_CLAUSES] THEN
@@ -1486,9 +1497,9 @@ def setupNaddInvAux [HolBase] (N : HolMath.Nums.NumsThms)
     REPEAT STRIP_TAC THEN REWRITE_TAC [DIST_LMUL, LEFT_ADD_DISTRIB] THEN
     GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [DIST_SYM] THEN
     MATCH_MP_TAC DIST_TRIANGLES_LE THEN CONJ_TAC THENL
-     [ANTE_RES_THEN (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"m:num") th)))
+     [ANTE_RES_THEN (let m := (← q r"m:num"); fun th => tactic_of do pure (MP_TAC (← SPEC m th)))
         (← ASSUME (← q r"N <= n")),
-      ANTE_RES_THEN (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"n:num") th)))
+      ANTE_RES_THEN (let n := (← q r"n:num"); fun th => tactic_of do pure (MP_TAC (← SPEC n th)))
         (← ASSUME (← q r"N <= m"))] THEN
     MATCH_MP_TAC EQ_IMP THEN REWRITE_TAC [MULT_AC])
 
@@ -1613,8 +1624,8 @@ def setupNaddInvAux [HolBase] (N : HolMath.Nums.NumsThms)
     FIRST_ASSUM (fun th => tactic_of do
       pure (MP_TAC (← MATCH_MP NADD_MUL_LINV_LEMMA7 th))) THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"B0:num") (X_CHOOSE_TAC (← q r"N:num"))) THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (MP_TAC (← SPEC (← q r"N:num") (← MATCH_MP NADD_MUL_LINV_LEMMA7a th)))) THEN
+    (let N := (← q r"N:num"); FIRST_ASSUM (fun th => tactic_of do
+      pure (MP_TAC (← SPEC N (← MATCH_MP NADD_MUL_LINV_LEMMA7a th))))) THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"A:num") (X_CHOOSE_TAC (← q r"B:num"))) THEN
     MATCH_MP_TAC BOUNDS_NOTZERO THEN REWRITE_TAC [DIST_REFL] THEN
     EXISTS_TAC (← q r"A + B0") THEN EXISTS_TAC (← q r"B:num") THEN REPEAT GEN_TAC THEN
@@ -1789,8 +1800,8 @@ def setupHreal [HolBase]
     X_CHOOSE_THEN (← q r"A1:num") (X_CHOOSE_TAC (← q r"B1:num"))
      (← SPECL [← q r"inv(x)", ← q r"x:nadd"] NADD_ALTMUL) THEN
     REWRITE_TAC [DIST_LMUL, NADD_OF_NUM, MULT_CLAUSES] THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure ((X_CHOOSE_TAC (← q r"N:num")) (← MATCH_MP NADD_MUL_LINV_LEMMA2 th))) THEN
+    (let N := (← q r"N:num"); FIRST_ASSUM (fun th => tactic_of do
+      pure ((X_CHOOSE_TAC N) (← MATCH_MP NADD_MUL_LINV_LEMMA2 th)))) THEN
     X_CHOOSE_THEN (← q r"A':num") (X_CHOOSE_TAC (← q r"B':num"))
       (← SPEC (← q r"x:nadd") NADD_BOUND) THEN
     SUBGOAL_THEN (← q r"?A2 B2. !n. dist(fn x n * nadd_rinv x n,n * n) <= A2 * n + B2")
@@ -2778,9 +2789,10 @@ def setupReal [HolBase] (Pr : HolMath.Pair.PairThms) (H : HrealThms)
           DISCH_THEN (X_CHOOSE_THEN (← q r"B:real") STRIP_ASSUME_TAC)] THEN
         EXISTS_TAC (← q r"B + x") THEN CONJ_TAC THENL
          [GEN_TAC THEN GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [lemma] THEN
-          DISCH_THEN (ANTE_RES_THEN
-            (fun th => tactic_of do
-              pure (MP_TAC (← SPEC (← q r"x:real") (← MATCH_MP REAL_LE_LADD_IMP th))))) THEN
+          -- `MP_TAC o SPEC `x:real` o ...`: built once, for every resolvent.
+          DISCH_THEN (ANTE_RES_THEN (let x := (← q r"x:real");
+            fun th => tactic_of do
+              pure (MP_TAC (← SPEC x (← MATCH_MP REAL_LE_LADD_IMP th))))) THEN
           ONCE_REWRITE_TAC [REAL_ADD_SYM] THEN
           REWRITE_TAC [real_sub, ← GSYM REAL_ADD_ASSOC, REAL_ADD_LINV] THEN
           REWRITE_TAC [← ONCE_REWRITE_RULE [REAL_ADD_SYM] REAL_ADD_LID] THEN

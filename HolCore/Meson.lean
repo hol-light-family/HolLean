@@ -938,7 +938,7 @@ def setupMesonPths (B : BoolThms) (T : TheoremThms) (C : ClassThms) :
     (Classic.TAUT B C.BOOL_CASES_AX (← parse_term s) : IO (Except String thm))
   let impTaut ← TAUT "a \\/ b <=> ~b ==> a"
   let pushTaut1 ← TAUT "~(a \\/ b) <=> ~a /\\ ~b"
-  let pushTaut2 ← TAUT "~ ~a <=> a"
+  let pushTaut2 ← TAUT "~(~a) <=> a"
   let pullTaut ← TAUT "~a \\/ ~b <=> ~(a /\\ b)"
   let imfTaut ← TAUT "~p <=> p ==> F"
   let finishTaut1 ← TAUT "(~p ==> p) <=> p"

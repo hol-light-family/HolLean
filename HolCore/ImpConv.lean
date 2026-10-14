@@ -105,6 +105,8 @@ structure ImpConvDeps where
   NOT_IMP : thm
   /-- `A==>B==>C <=> B==>A==>C` (`IMP_SYM`, for `REWR_IMPCONV_OF_CONV`). -/
   imp_sym : thm
+  /-- The same theorem, proved again for `REWR_IMPMCONV_OF_MCONV` (impconv.ml 1716). -/
+  imp_sym' : thm
   /-- `LEFT_IMP_EXISTS_THM` (`(?x. P x) ==> Q <=> (!x. P x ==> Q)`); `IMP_EXIST`
       is its `GSYM`. -/
   LEFT_IMP_EXISTS_THM : thm
@@ -126,6 +128,8 @@ structure ImpConvDeps where
     The `A:bool`, `B:bool`, `C:bool`, `D:bool`, `T:bool` constants used as
     instantiation targets (parsed once in `Session`, supplied here). -/
 structure ImpConvVars where
+  /-- `(/\)`, parsed by impconv.ml 41's `strip_conj = binops ...`. -/
+  and_tm : term
   A_ : term
   B_ : term
   C_ : term
@@ -1688,8 +1692,10 @@ def pat_cnv_of_thm (B : BoolThms) (V : ImpConvVars) (th0 : thm) :
   match c with
   | .Comb (.Comb (.Const "=" _) l) r =>
       -- equational
-      if (← liftIO (do pure (free_in l r))) ||
-         ((← liftIO (matchesEq l r)) && (← liftIO (matchesEq r l))) then
+      -- `free_in l r || matches l r && matches r l`, short-circuiting.
+      if ← liftIO (do
+          if free_in l r then return true
+          if ← matchesEq l r then matchesEq r l else return false) then
         let eqti ← liftExcept (MAP_FORALL_BODY B (fun x => B.EQT_INTRO x) th)
         pure (c, fun avs => REWR_ANNOTCONV B V avs eqti)
       else pure (l, fun avs => REWR_ANNOTCONV B V avs th)
@@ -1702,7 +1708,11 @@ def pat_cnv_of_thm (B : BoolThms) (V : ImpConvVars) (th0 : thm) :
       match cc with
       | .Comb (.Comb (.Const "=" _) l) r =>
           -- OCaml rebinds `matches` to fo_term_match in the `==>` branch (impconv.ml L1232).
-          if free_in l r || ((← liftIO (matchesFo l r)) && (← liftIO (matchesFo r l))) || is_var l then
+          -- `free_in l r || matches l r && matches r l || is_var l`, short-circuiting.
+          if ← liftIO (do
+              if free_in l r then return true
+              if ← (do if ← matchesFo l r then matchesFo r l else return false) then return true
+              return is_var l) then
             if (← liftIO (matchesFo cc p)) then
               let eqti ← liftExcept (B.EQT_INTRO th)
               pure (c, fun avs => REWR_ANNOTCONV B V avs eqti)
@@ -2490,7 +2500,7 @@ partial def REWR_IMPMCONV_OF_MCONV (B : BoolThms) (D : ImpConvDeps)
     (c : WithContext (atomic → annot_mconv)) : WithContext (atomic → imp_mconv) :=
   .mk
     (fun a => fun v t => do
-      let IMP_SYM (th : thm) : IO (Except String thm) := REWR_RULE B D.imp_sym th
+      let IMP_SYM (th : thm) : IO (Except String thm) := REWR_RULE B D.imp_sym' th
       let TRY_GEN (v : term) (th : thm) : thm := (B.GEN v th).toOption.getD th
       -- f (th,ho,new_vars) = ... (same as REWR_IMPCONV_OF_CONV, per element)
       let f (r : thm × Option term × List term) : IO (Except String thm) := do

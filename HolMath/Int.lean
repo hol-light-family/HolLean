@@ -1922,9 +1922,9 @@ def setupIntArithConvs [HolBase]
 
   let INT_ADD_CONV ← do
     let neg_tm ← q r"(--)"
-    let amp_tm ← q r"(&)"
+    let amp_tm ← q r"&"
     let add_tm ← q r"(+)"
-    let dest := dest_binop add_tm
+    let dest := dest_binop (← q r"(+)")
     let m_tm ← q r"m:num"
     let n_tm ← q r"n:num"
     let pth0 ← prove

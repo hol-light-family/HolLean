@@ -1290,6 +1290,12 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
   let pre_pth ← prove
    r"(SUC m = n) ==> (PRE n = m)"
    (DISCH_THEN (SUBST1_TAC o SYM) THEN REWRITE_TAC [PRE])
+  -- The conversions' own quotations (`m`, `n`, `SUC`, ... below) are parsed
+  -- here, where calc_num.ml parses them; the Lean code uses the equal terms
+  -- of `CalcNumConsts`.
+  let quotes (l : List String) : ExceptT String IO Unit := do
+    for s in l do let _ ← q s
+  quotes [r"m:num", r"n:num", r"SUC"]
 
   /- NUM_SUB_CONV (calc_num.ml 1343-1370). -/
 
@@ -1300,6 +1306,7 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
    r"(m + n = p) ==> (p - n = m)"
    (DISCH_THEN (SUBST1_TAC o SYM) THEN
     REWRITE_TAC [ADD_SUB])
+  quotes [r"m:num", r"n:num", r"p:num", r"(-)", r"(+)", r"(<=)"]
 
   /- NUM_DIV_CONV, NUM_MOD_CONV (calc_num.ml 1372-1397). -/
 
@@ -1309,9 +1316,11 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
   let divmod_pth0 ← prove
    r"!m. m DIV 0 = 0 /\ m MOD 0 = m"
    (REWRITE_TAC [DIV_ZERO, MOD_ZERO])
+  quotes [r"m:num", r"n:num", r"q:num", r"r:num", r"(DIV)", r"(MOD)"]
 
   /- NUM_FACT_CONV (calc_num.ml 1398-1425). -/
 
+  quotes [r"SUC", r"(*)"]
   let fact_pth_0 ← prove
    r"FACT 0 = 1"
    (REWRITE_TAC [FACT])
@@ -1319,6 +1328,10 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
    r"(SUC x = y) ==> (FACT x = w) ==> (y * w = z) ==> (FACT y = z)"
    (REPEAT (DISCH_THEN (SUBST1_TAC o SYM)) THEN
     REWRITE_TAC [FACT])
+  quotes [r"w:num", r"x:num", r"y:num", r"z:num"]
+
+  -- num_CONV's `SUC_tm = `SUC`` (calc_num.ml 1500).
+  quotes [r"SUC"]
 
   /- EXPAND_CASES_CONV (calc_num.ml 1508-1526). -/
 

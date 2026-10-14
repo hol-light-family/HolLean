@@ -6443,7 +6443,6 @@ structure MetisReconDeps where
   INSTANTIATE : HolCore.Drule.instantiation → thm → IO (Except String thm)
   DISJ_CANON_CONV : term → IO (Except String thm)
   PURE_ONCE_REWRITE_CONV : List thm → IO (Except String ioconv)
-  Fterm : term                       -- the HOL falsity constant `F`
 
 /-- `term_eq_mod_type t1 t2 tyinsts`: unify modulo type, requiring no term inst. -/
 def term_eq_mod_type (D : MetisReconDeps) (t1 t2 : term)
@@ -6816,9 +6815,14 @@ def SIMPLE_METIS_REFUTE (B : BoolThms) (S : FolStores) (mem : Meson.ContraposCac
         let allhyps := (cths.map hyp).flatten
         if !((hyp proof).all (fun h => HolCore.Lib.mem h allhyps)) then
           return .error "SIMPLE_METIS_REFUTE: extra hypotheses"
-        else if !(concl proof == recon.Fterm) then
-          return .error "SIMPLE_METIS_REFUTE: reconstructed conclusion is not F"
-        else return .ok proof
+        else
+          -- `assert (concl proof = \`F\`)`: metis.ml parses `F` on each call.
+          match ← HolCore.Parser.parse_term "F" with
+          | .error e => return .error e
+          | .ok f =>
+            if !(concl proof == f) then
+              return .error "SIMPLE_METIS_REFUTE: reconstructed conclusion is not F"
+            else return .ok proof
 
 /-- `PURE_METIS_TAC` = FIRST_ASSUM CONTR_TAC ORELSE accept the metis refutation. -/
 def PURE_METIS_TAC (B : BoolThms) (S : FolStores) (mem : Meson.ContraposCache)

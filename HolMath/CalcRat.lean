@@ -208,14 +208,23 @@ def setupRealRatRelConvs [HolBase] (Lm : RatLemmas) (DECIMAL : thm)
   let { IMP_IMP, .. } := HolBase.T
   let { COND_CLAUSES, .. } := HolBase.C
   let REAL_INT_RAT_CONV ← setupRealIntRatConv DECIMAL R K T6
-  let x1 ← q r"x1:real"
-  let x2 ← q r"x2:real"
-  let y1 ← q r"y1:real"
-  let y2 ← q r"y2:real"
-  let dest_div := dest_binop (← q r"(/)")
+  -- Each of LE, LT and EQ parses its own `x1`, `x2`, `y1`, `y2`, relation
+  -- and `(/)` (calc_rat.ml 101-104, 122-125, 147-150), after its theorem.
+  let vars (rel : String) : ExceptT String IO
+      (term × term × term × term × (term → Except String (term × term)) ×
+       (term → Except String (term × term))) := do
+    let x1 ← q r"x1:real"
+    let x2 ← q r"x2:real"
+    let y1 ← q r"y1:real"
+    let y2 ← q r"y2:real"
+    let dest_rel := dest_binop (← q rel)
+    let dest_div := dest_binop (← q r"(/)")
+    return (x1, x2, y1, y2, dest_rel, dest_div)
   -- The RAW conversion shared by LE, LT and EQ (calc_rat.ml 103-112).
-  let raw (dest_rel : term → Except String (term × term)) (pth : thm) (FINAL : ioconv) :
+  let raw (v : term × term × term × term × (term → Except String (term × term)) ×
+        (term → Except String (term × term))) (pth : thm) (FINAL : ioconv) :
       ioconv := fun tm => ExceptT.run do
+    let (x1, x2, y1, y2, dest_rel, dest_div) := v
     let (l, r) ← liftExcept (dest_rel tm)
     let (lx, ly) ← liftExcept (dest_div l)
     let (rx, ry) ← liftExcept (dest_div r)
@@ -228,21 +237,21 @@ def setupRealRatRelConvs [HolBase] (Lm : RatLemmas) (DECIMAL : thm)
    r"&0 < y1 ==> &0 < y2 ==> (x1 / y1 <= x2 / y2 <=> x1 * y2 <= x2 * y1)"
    (REWRITE_TAC [IMP_IMP, Lm.RAT_LEMMA4])
   let REAL_RAT_LE_CONV := BINOP_CONV REAL_INT_RAT_CONV THENC
-    raw (dest_binop (← q r"(<=)")) le_pth V.REAL_INT_LE_CONV
+    raw (← vars r"(<=)") le_pth V.REAL_INT_LE_CONV
   let lt_pth ← prove
    r"&0 < y1 ==> &0 < y2 ==> (x1 / y1 < x2 / y2 <=> x1 * y2 < x2 * y1)"
    (REWRITE_TAC [IMP_IMP] THEN
     GEN_REWRITE_TAC (fun c => RAND_CONV (ONCE_DEPTH_CONV c)) [← GSYM T2.REAL_NOT_LE] THEN
     SIMP_TAC [← TAUT (← q r"(~a <=> ~b) <=> (a <=> b)"), Lm.RAT_LEMMA4])
   let REAL_RAT_LT_CONV := BINOP_CONV REAL_INT_RAT_CONV THENC
-    raw (dest_binop (← q r"(<)")) lt_pth V.REAL_INT_LT_CONV
+    raw (← vars r"(<)") lt_pth V.REAL_INT_LT_CONV
   let REAL_RAT_GE_CONV := (← GEN_REWRITE_CONV_NET id [R.real_ge]) THENC REAL_RAT_LE_CONV
   let REAL_RAT_GT_CONV := (← GEN_REWRITE_CONV_NET id [R.real_gt]) THENC REAL_RAT_LT_CONV
   let eq_pth ← prove
    r"&0 < y1 ==> &0 < y2 ==> ((x1 / y1 = x2 / y2) <=> (x1 * y2 = x2 * y1))"
    (REWRITE_TAC [IMP_IMP, Lm.RAT_LEMMA5])
   let REAL_RAT_EQ_CONV := BINOP_CONV REAL_INT_RAT_CONV THENC
-    raw (dest_binop (← q r"(=) :real->real->bool")) eq_pth V.REAL_INT_EQ_CONV
+    raw (← vars r"(=) :real->real->bool") eq_pth V.REAL_INT_EQ_CONV
   let condAll ← SPEC_ALL COND_CLAUSES
   let REAL_RAT_SGN_CONV :=
     (← GEN_REWRITE_CONV_NET id [T10.real_sgn]) THENC
@@ -282,9 +291,10 @@ def setupRealRatUnaryConvs [HolBase] (DECIMAL : thm) (R : HolMath.RealAx.RealThm
     tryWith (ExceptT.mk (conv1 tm)) <|
     tryWith (do
         let (l, r) ← liftExcept (dest_comb tm)
-        if l == ptm && HolMath.CalcInt.is_realintconst r &&
-           (← liftExcept (HolMath.CalcInt.dest_realintconst r)) > num_0
-        then return REFL tm
+        if l == ptm && HolMath.CalcInt.is_realintconst r then
+          if (← liftExcept (HolMath.CalcInt.dest_realintconst r)) > num_0
+          then return REFL tm
+          else throw ""
         else throw "")
       (throw "REAL_RAT_NEG_CONV")
   let pth ← prove
@@ -412,7 +422,14 @@ def setupRealRatArithConvs [HolBase] (Lm : RatLemmas) (Rl : RealRatRelConvs)
      (← q r"((d1 * u1) * (id2 * iv1)) * ((d2 * u2) * id1 * iv2) =
       (u1 * u2) * (iv1 * iv2) * (id2 * d2) * (id1 * d1)")] THEN
     ASM_SIMP_TAC [R.REAL_MUL_LINV, L.REAL_MUL_RID])
+  -- calc_rat.ml 307-312: the MUL conversion parses its own `(/)`, `x1`,
+  -- `x2`, `y1`, `y2` (equal to the ADD conversion's).
+  let dest_divop := dest_binop (← q r"(/)")
   let dest_mulop := dest_binop (← q r"(*)")
+  let x1 ← q r"x1:real"
+  let x2 ← q r"x2:real"
+  let y1 ← q r"y1:real"
+  let y2 ← q r"y2:real"
   let u1 ← q r"u1:real"
   let u2 ← q r"u2:real"
   let v1 ← q r"v1:real"
