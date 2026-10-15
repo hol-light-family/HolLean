@@ -106,6 +106,8 @@ You need Lean 4 (installed with `elan`; the version is fixed in `lean-toolchain`
 * `make check` does a clean build followed by `make verify`.
 * `make help` lists the other targets.
 
+GitHub Actions runs `make core` on pushes to main and on pull requests (`.github/workflows/ci.yml`).
+
 ## Known differences from HOL Light ##
 
 * `dest_small_numeral` does not fail on numbers too large for an OCaml `int`.
