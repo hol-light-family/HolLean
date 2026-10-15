@@ -81,3 +81,20 @@ precompileModules = true
 [[lean_lib]]
 name = "SessionLibrary"
 roots = ["SessionLibrary"]
+
+# The HOLTrace proof reconstructor (HolTrace.lean): reads a trace in the format
+# at https://holtrace.cr.yp.to/format.html and replays every inference in it
+# through the kernel.
+#
+# It depends on HolCore ALONE, and that is load-bearing rather than tidiness.
+# Replay starts from a bare kernel - the trace itself creates every constant,
+# type and axiom it uses - so importing `Session` would break it: Session's
+# `initialize` runs `setupBool` on load, which declares `T`, `/\` and the rest,
+# and the trace's own definitions of those names would then collide.
+[[lean_lib]]
+name = "HolTrace"
+roots = ["HolTrace"]
+
+[[lean_exe]]
+name = "holtrace"
+root = "HolTrace"

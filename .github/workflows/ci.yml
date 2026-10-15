@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   core:
-    name: kernel and core infrastructure
+    name: kernel and tests
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -30,5 +30,14 @@ jobs:
           lint: false
           use-github-cache: false
 
-      # The cheapest of the Makefile's build tiers.
       - run: make core
+
+      - name: Run HolTrace's tests
+        shell: bash
+        run: |
+          lake lean HolTest/HolTraceTest.lean 2>&1 | tee holtrace-test.log
+          ok=$(grep -c -- '-> OK' holtrace-test.log || true)
+          bad=$(grep -cE 'MISMATCH|\.lean:[0-9]+:[0-9]+: error|^error|^warning:' holtrace-test.log || true)
+          echo "HolTrace: $ok checks OK, $bad bad"
+          test "$bad" = "0"
+          test "$ok" -ge 40
