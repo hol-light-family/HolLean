@@ -740,9 +740,21 @@ def new_basic_type_definition (tyname : String) (absname repname : String)
                 let rty := type_of x
                 let absty := hol_type.Tyapp "fun" [rty, aty]
                 let repty := hol_type.Tyapp "fun" [aty, rty]
-                let _ ← new_constant absname absty
+                -- `let abs = (new_constant(absname,absty); Const(absname,absty))
+                --  and rep = (new_constant(repname,repty); Const(repname,repty))`
+                -- (fusion.ml 634-635): `new_constant` raises if the name is
+                -- taken, so its failure must end the definition here.  The
+                -- guard above checks each name against the existing constants
+                -- but not against the other, so with `absname = repname` the
+                -- second `new_constant` is what rejects it, as in HOL Light
+                -- (which also leaves the type and the first constant declared).
+                match ← new_constant absname absty with
+                | .error e => return .error e
+                | .ok () =>
                 let abs := term.Const absname absty
-                let _ ← new_constant repname repty
+                match ← new_constant repname repty with
+                | .error e => return .error e
+                | .ok () =>
                 let rep := term.Const repname repty
                 let a := term.Var "a" aty
                 let r := term.Var "r" rty

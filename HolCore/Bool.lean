@@ -222,8 +222,10 @@ def setupBool : ExceptT String IO BoolThms := do
   parse_as_infix ("/\\", (8, "right"))
   -- Set up more orthodox notation for equations and equivalence.
   parse_as_infix ("<=>", (2, "right"))
-  let _ ← override_interface "<=>"
-            (.Const "=" (.Tyapp "fun" [bool_ty, .Tyapp "fun" [bool_ty, bool_ty]]))
+  -- `override_interface("<=>",...)` (bool.ml:32): top-level stmt, raises on
+  -- failure; propagate via ExceptT.mk.
+  let _ ← ExceptT.mk (override_interface "<=>"
+            (.Const "=" (.Tyapp "fun" [bool_ty, .Tyapp "fun" [bool_ty, bool_ty]])))
   parse_as_infix ("=", (12, "right"))
 
   -- Useful derived deductive rule.

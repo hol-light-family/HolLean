@@ -529,11 +529,10 @@ def prove_monotonicity_hyps (B : BoolThms) (mthms : List thm) (IMP_REFL : thm) (
 
 /-- `pare_comb qvs tm`: strip trailing arguments from `tm` until it shares no
     free variables with `qvs` and all its arguments are variables. -/
-partial def pare_comb (qvs : List term) (tm : term) : term :=
-  if intersect (frees tm) qvs == [] && forall' is_var (strip_comb tm).2 then tm
-  else match rator tm with
-       | .ok r => pare_comb qvs r
-       | .error _ => tm
+partial def pare_comb (qvs : List term) (tm : term) : Except String term :=
+  if intersect (frees tm) qvs == [] && forall' is_var (strip_comb tm).2 then .ok tm
+  -- ind_defs.ml 307-311: `rator`'s Failure must propagate (not fall back to tm).
+  else do pare_comb qvs (← rator tm)
 
 /-- Generalize schematic variables `vs` in the definition-hypotheses of `th`. -/
 def generalize_schematic_variables (B : BoolThms) (gflag : Bool) (vs : List term) (th : thm) :
@@ -618,10 +617,13 @@ def make_definitions (B : BoolThms) (th : thm) : IO (Except String thm) := do
     returning `(clauses', schematic-args)`. -/
 def unschematize_clauses (clausesIn : List term) : IO (Except String (List term × List term)) := do
   -- schem = map (fun cls -> pare_comb avs (snd(dest_imp bod) or bod)) clauses
-  let schem := clausesIn.map (fun cls =>
+  -- pare_comb now propagates `rator`'s failure (ind_defs.ml 307-311), so thread it.
+  match (clausesIn.mapM (fun cls =>
     let (avs, bod) := strip_forall cls
     let target := match Basics.dest_imp bod with | .ok (_, c) => c | .error _ => bod
-    pare_comb avs target)
+    pare_comb avs target) : Except String (List term)) with
+  | .error e => return .error e
+  | .ok schem =>
   let schems := setify schem
   match schem with
   | [] => return .ok (clausesIn, [])

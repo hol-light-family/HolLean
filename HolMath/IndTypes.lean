@@ -700,8 +700,13 @@ def define_inductive_type [HolBase] (D : DefTypeRaw) (cdefs : List thm) (exth : 
   let extm := concl exth
   let epred := (strip_comb extm).1
   let (ename, _) ← liftExcept (dest_var epred)
-  let th1 ← ASSUME (← liftExcept (Lib.find (fun eq =>
-      match lhand eq with | .ok l => l == epred | .error _ => false) (hyp exth)))
+  -- ind_types.ml 432: OCaml `find (fun eq -> lhand eq = epred)` propagates
+  -- `lhand`'s Failure, so use a failure-propagating find.
+  let predE (eq : term) : Except String Bool := do pure ((← lhand eq) == epred)
+  let rec findE : List term → Except String term
+    | []     => failwith "find"
+    | h :: t => do if (← predE h) then pure h else findE t
+  let th1 ← ASSUME (← liftExcept (findE (hyp exth)))
   let th2 ← TRANS th1 (← ExceptT.mk (SUBS_CONV cdefs (← liftExcept (rand (concl th1)))))
   let th3 ← EQ_MP (← AP_THM th2 (← liftExcept (rand extm))) exth
   let th4 ← scrubAll (hyp th3) th3
@@ -1710,8 +1715,12 @@ def prove_inductive_types_isomorphic [HolBase] (R : DefTypeRaw3) (n k : Nat)
   let (lcjs0, rcjs0) ← liftExcept (chop_list k ((conjuncts bod0).map (fun t => (strip_forall t).2)))
   let (lcjs1, rcjsx) ← liftExcept (do
     chop_list k ((← chop_list n (conjuncts bod1)).2.map (fun t => (strip_forall t).2)))
-  let rcjs1 ← liftExcept (rcjs0.mapM (fun t =>
-    Lib.find (fun t1 => (clause_corresponds t t1).toOption.getD false) rcjsx))
+  -- ind_types.ml 1182: OCaml `find (clause_corresponds t) rcjsx` propagates the
+  -- predicate's Failure, so use a failure-propagating find per element.
+  let rec findCorr (t : term) : List term → Except String term
+    | []       => failwith "find"
+    | t1 :: ts => do if (← clause_corresponds t t1) then pure t1 else findCorr t ts
+  let rcjs1 ← liftExcept (rcjs0.mapM (fun t => findCorr t rcjsx))
   let findArg (ws : List term) (a : term) : Except String term :=
     Lib.find (fun t => is_comb t && (match rand t with | .ok r => r == a | .error _ => false)) ws
   let proc_clause (tm0 tm1 : term) : ExceptT String IO ((term × term) × (term × term)) := do

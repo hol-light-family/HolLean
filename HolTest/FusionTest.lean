@@ -388,4 +388,98 @@ private def failMsg {α : Type} (lbl : String) (got : Except String α)
     IO.println s!"definitions accessor readable ({defs.length}) -> OK"
   else IO.println s!"definitions accessor readable but empty ({defs.length}) -> OK (kernel-only build: no definitions yet)")
 
+
+/- new_basic_type_definition with absname = repname (fusion.ml 617-639).
+   Both names pass the "already in use" guard; HOL Light's second
+   `new_constant` raises, so the definition fails, leaving the type and the
+   first constant declared.  Expected values printed by HOL Light:
+     new_basic_type_definition "ABSTYPE" ("SAME","SAME") (REFL `\w:Q. w`)
+     => Failure "new_constant: constant SAME has already been declared"
+     get_const_type "SAME" = `:(Q->Q)->(Q)ABSTYPE`, get_type_arity "ABSTYPE" = 1
+   (found by the HolTrace reconstructor; HolLean used to accept it and return
+   a theorem with SAME at two different types). -/
+#eval (do
+  let Q := hol_type.Tyvar "Q"
+  let w := term.Var "w" Q
+  let r ← new_basic_type_definition "ht_SAMETY" "ht_SAME" "ht_SAME" (REFL (term.Abs w w))
+  failMsg "new_basic_type_definition abs = rep name"
+    (r.map (fun _ => ())) "new_constant: constant ht_SAME has already been declared"
+  okEq "  ... leaves the first constant (abs) declared" (← get_const_type "ht_SAME")
+    (funTy (funTy Q Q) (.Tyapp "ht_SAMETY" [Q]))
+  okEq "  ... and the type" (← get_type_arity "ht_SAMETY") (1 : Int))
+
+
+/- Failure paths of the kernel's table-extending primitives (fusion.ml
+   new_constant, new_type, new_axiom, new_basic_definition,
+   new_basic_type_definition).  Each must fail exactly as HOL Light does;
+   every expected message below was printed by HOL Light (/tmp/hol4) on the
+   same input.  Discarding one of these failures is how the abs = rep hole
+   above arose, and nothing tested these branches before. -/
+private def pt (s : String) : IO term := do
+  match ← HolCore.Parser.parse_term s with
+  | .ok t => pure t | .error e => throw (IO.userError e)
+private def unit {α : Type} (r : Except String α) : Except String Unit := r.map (fun _ => ())
+
+#eval (do
+  let r ← new_constant "T" bool_ty
+  failMsg "new_constant dup" r "new_constant: constant T has already been declared")
+#eval (do
+  let r ← new_type "bool" 0
+  failMsg "new_type dup" r "new_type: type bool has already been declared")
+#eval (do
+  let r ← new_axiom (.Var "ktx" (.Tyapp "num" []))
+  failMsg "new_axiom not prop" (unit r) "new_axiom: Not a proposition")
+#eval (do
+  let r ← new_basic_definition (← pt "T")
+  failMsg "new_basic_definition not eq" (unit r) "new_basic_definition")
+#eval (do
+  let r ← new_basic_definition (← pt "T = T")
+  failMsg "new_basic_definition lhs const" (unit r) "new_basic_definition: 'T' is already defined")
+#eval (do
+  let r ← new_basic_definition (safe_mk_eq (.Var "ktc" bool_ty) (.Var "ktz" bool_ty))
+  failMsg "new_basic_definition free var" (unit r) "new_definition: term not closed: ktz")
+#eval (do
+  let r ← new_basic_definition (safe_mk_eq (.Var "ktc2" bool_ty) (← pt "!x:A. x = x"))
+  failMsg "new_basic_definition tyvars" (unit r)
+    "new_definition: Type variables not reflected in constant")
+#eval (do
+  let r ← new_basic_definition (safe_mk_eq (.Var "T" bool_ty) (← pt "F"))
+  failMsg "new_basic_definition dup" (unit r) "new_constant: constant T has already been declared")
+#eval (do
+  let idb := term.Abs (.Var "w" bool_ty) (.Var "w" bool_ty)
+  failMsg "new_basic_type_definition hyps"
+    (unit (← new_basic_type_definition "ktty1" "kta1" "ktr1"
+      (← IO.ofExcept (ASSUME (← pt "(\\x:bool. x) T")))))
+    "new_basic_type_definition: Assumptions in theorem"
+  failMsg "new_basic_type_definition not comb"
+    (unit (← new_basic_type_definition "ktty2" "kta2" "ktr2" Session.TRUTH))
+    "new_basic_type_definition: Not a combination"
+  failMsg "new_basic_type_definition not closed"
+    (unit (← new_basic_type_definition "ktty3" "kta3" "ktr3"
+      (REFL (.Var "ktq" (funTy bool_ty bool_ty)))))
+    "new_basic_type_definition: Predicate is not closed"
+  failMsg "new_basic_type_definition type dup"
+    (unit (← new_basic_type_definition "bool" "kta4" "ktr4" (REFL idb)))
+    "new_basic_type_definition: Type already defined"
+  failMsg "new_basic_type_definition const used"
+    (unit (← new_basic_type_definition "ktty5" "T" "ktr5" (REFL idb)))
+    "new_basic_type_definition: Constant(s) already in use")
+
+
+/- The two reachable kernel branches no test reached (found by branch
+   coverage of the whole suite).  HOL Light: `variant [`T`] `T`` fails with
+   "variant: not a variable", `variant [`x:bool`] `x:bool`` = `x'`,
+   `mk_eq(`T`, `\x:bool. x`)` fails with "mk_eq". -/
+#eval (do
+  let T := term.Const "T" bool_ty
+  failMsg "variant on a constant" (variant [T] T) "variant: not a variable"
+  okEq "variant renames a clashing variable" (variant [.Var "x" bool_ty] (.Var "x" bool_ty))
+    (term.Var "x'" bool_ty))
+#eval (do
+  match ← mk_eq with
+  | .error e => IO.println s!"mk_eq factory -> MISMATCH {e}"
+  | .ok mkeq =>
+    failMsg "mk_eq on different types"
+      ((mkeq (term.Const "T" bool_ty, term.Abs (.Var "x" bool_ty) (.Var "x" bool_ty))).map (fun _ => ())) "mk_eq")
+
 end HolTest.FusionTest

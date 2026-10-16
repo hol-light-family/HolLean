@@ -201,14 +201,11 @@ def net_of_cong (B : BoolThms) (th : thm) (sofar : net gconv) :
     | .error e => return .error e
     | .ok pat =>
         -- conv = GEN_PART_MATCH (lhand o funpow n rand) th   (simp.ml 134).
-        -- `funpow n ...` is total here and `lhand` is `Except`-valued, so plain
-        -- `o`; the funpow runs FIRST.
-        -- NOTE the inner step keeps this file's existing behaviour of stopping at
-        -- a failed `rand` (`.toOption.getD x`) rather than propagating, which is
-        -- NOT what the OCaml's `funpow n rand` does - left unchanged here because
-        -- it is a semantic question, not a composition one.
+        -- The selector type `term → Except String term` can carry the failure,
+        -- so propagate `rand`'s failure (via `funpowM`) exactly as OCaml's
+        -- `funpow n rand` raises, instead of stopping at a failed `rand`.
         let partfn : term → Except String term :=
-          lhand o funpow n (fun x => (rand x).toOption.getD x)
+          fun x => do lhand (← funpowM n rand x)
         let conv : ioconv := fun t => GEN_PART_MATCH B partfn th t
         enter_gconv [] (pat, (4, conv)) sofar
 

@@ -88,7 +88,9 @@ def MK_EXISTS (v : term) (th : thm) : IO (Except String thm) :=
 def MP_CONV (B : BoolThms) (cnv : conv) (th : thm) : Except String thm := do
   let (l, _) ← Basics.dest_imp (concl th)
   let ath ← cnv l
-  match B.MP th (← B.EQT_ELIM ath) with
+  -- drule.ml 52-55: `try MP th (EQT_ELIM ath) with Failure _ -> MP th ath`;
+  -- wrap EQT_ELIM in its own `do` so its failure is caught by the fallback too.
+  match (do B.MP th (← B.EQT_ELIM ath)) with
   | .ok r    => .ok r
   | .error _ => B.MP th ath
 

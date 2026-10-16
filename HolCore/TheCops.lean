@@ -1099,8 +1099,10 @@ def start (dp : LeancopDeps) (opt : search_opts) (lim : Int) :
     IO (Option (Substarray.t × Search.lproof)) := do
   if ← copverb.get then stdPrintf s!"Start {lim + 1}\n"   -- thecops.ml 738
   let sub0 ← Subst.empty 1000000
+  -- thecops.ml 740: plain `let hashek = Mapping.fol_of_literal ..`; a failure
+  -- raises out of `start`/`deepen`/`strategy` rather than becoming `none`.
   match ← FirstOrder.Mapping.fol_of_literal dp.S [] [] dp.hashek.hashek_tm with
-  | .error _ => return none
+  | .error e => throw (IO.userError e)
   | .ok hashek =>
     let hashek_neg := Fol_term.negate_lit hashek
     let prfs ← Search.prove_lit dp.S dp.db opt sub0 [] [] lim hashek_neg
@@ -1116,7 +1118,10 @@ def LEANCOP_DEEPEN (B : BoolThms) (dp : LeancopDeps) (opt : search_opts) (ths : 
     IO (Except String thm) := do
   Meson.clear_contrapos_cache dp.mem
   FirstOrder.Mapping.reset_vars dp.S
-  let _ ← FirstOrder.Mapping.reset_consts dp.S
+  -- thecops.ml 750: `Mapping.reset_consts()` runs in sequence; propagate failure.
+  match ← FirstOrder.Mapping.reset_consts dp.S with
+  | .error e => return .error e
+  | .ok _ =>
   match ← Equality.create_eq_axs B dp.E dp.Emeson opt.add_eq_symmetry (ths.map concl) with
   | .error e => return .error e
   | .ok eqAxs =>
@@ -1607,8 +1612,12 @@ partial def prove_ec (opt : search_opts) (k : Int) (sub : Subst.t) (clext : clau
     (mi : matrix mindex) (pi : List mindex) :
     IO (Strom (Subst.t × position × iclause mindex × matrix mindex)) := do
   let .Mk (i, v) _ lmext := clext
+  -- thecops.ml 1123/1124: assert exactly-one matching clause, and `List.length pi = k`.
+  if !(unique (nth_clause i) mi) then throw (IO.userError "prove_ec: assert unique (nth_clause i) mi")
+  if pi.length ≠ k then throw (IO.userError "prove_ec: assert List.length pi = k")
+  -- thecops.ml 1130: `pick (nth_clause i) mi` raises `failwith` if no clause.
   match pick (nth_clause i) mi with
-  | .error _ => pure Strom.nil
+  | .error e => throw (IO.userError e)
   | .ok (((⟨⟨_, k1⟩, v1⟩, cla1) : iclause mindex), miAB) =>
     let alt1 : Unit → IO (Strom (Subst.t × position × iclause mindex × matrix mindex)) := fun _ => do
       match lmext with
@@ -1617,9 +1626,14 @@ partial def prove_ec (opt : search_opts) (k : Int) (sub : Subst.t) (clext : clau
           match ← unify_vars sub v v1 with
           | none => pure Strom.nil
           | some sub2 =>
+            -- thecops.ml 1134: `pick (nth_matrix j) cla1` raises `failwith` if no match.
             match pick (nth_matrix j) cla1 with
-            | .error _ => pure Strom.nil
-            | .ok ((((⟨_, _⟩, mi2) : imatrix mindex)), claDE) =>
+            | .error e => throw (IO.userError e)
+            | .ok ((((⟨_, k1'⟩, mi2) : imatrix mindex)), claDE) => do
+              -- thecops.ml 1135/1136: assert unique (nth_matrix j) cla1 and k1 = k1'.
+              if !(unique (nth_matrix j) cla1) then
+                throw (IO.userError "prove_ec: assert unique (nth_matrix j) cla1")
+              if k1 ≠ k1' then throw (IO.userError "prove_ec: assert k1 = k1'")
               let inner ← prove_ec opt k sub2 clext' mi2 pi
               pure (Strom.map (fun r =>
                 let (sub3, pos, claB1, mi3) := r
@@ -1852,16 +1866,22 @@ def mk_recon_data (problem : thm) (mat : matrix mindex) (sub : Substarray.t) : r
 /-- `prefix_problem data prefix`: descend the problem theorem along the prefix. -/
 def prefix_problem (S : FolStores) (B : BoolThms) (data : recon_data)
     (pfx : List ((Int × List Int) × Int)) : IO (Except String thm) := do
-  let rel (i : Int) : Int := (HolCore.Lib.assoc i data.mapping).toOption.getD 0
+  -- thecops.ml 1322: `let rel i = List.assoc i data.mapping` raises Not_found.
+  let rel (i : Int) : Except String Int := HolCore.Lib.assoc i data.mapping
   let mut cur := data.problem
   for ((i, v), j) in pfx do
-    match ← nth_conj B (rel i) cur with
+    match rel i with
+    | .error e => return .error e
+    | .ok ri =>
+    match ← nth_conj B ri cur with
     | .error e => return .error e
     | .ok cj => match ← spec_vars S B data.sub v cj with
       | .error e => return .error e
-      | .ok sv => match ← nth_disj (rel j) sv with
+      | .ok sv => match rel j with
         | .error e => return .error e
-        | .ok (dj, _) => cur := dj
+        | .ok rj => match ← nth_disj rj sv with
+          | .error e => return .error e
+          | .ok (dj, _) => cur := dj
   return .ok cur
 
 /-- The nanoCoP proof-node pair type carried by the search. -/
@@ -1887,7 +1907,10 @@ partial def bot_of_clause_ext (S : FolStores) (B : BoolThms) (data : recon_data)
     (clext : clause_ext Int) (acc : List (term × thm) × List nprfnode) (th : thm) :
     IO (Except String ((List (term × thm) × List nprfnode) × thm)) := do
   let .Mk (i, v) (matL, _matR) lmext := clext
-  let i' := (HolCore.Lib.assoc i data.mapping).toOption.getD 0
+  -- thecops.ml 1338: `let i' = List.assoc i data.mapping` raises Not_found.
+  match HolCore.Lib.assoc i data.mapping with
+  | .error e => return .error e
+  | .ok i' =>
   let _ := matL
   match ← nth_conj B i' th with
   | .error e => return .error e
@@ -1922,7 +1945,10 @@ partial def bot_of_litmat_ext (S : FolStores) (B : BoolThms) (data : recon_data)
                 | .error e => return .error e
                 | .ok r => return .ok (acc2, r)
   | .Matext j (claL, _claR) clext =>
-    let j' := (HolCore.Lib.assoc j data.mapping).toOption.getD 0
+    -- thecops.ml 1354: `let j' = List.assoc j data.mapping` raises Not_found.
+    match HolCore.Lib.assoc j data.mapping with
+    | .error e => return .error e
+    | .ok j' =>
     let _ := claL
     match ← nth_disj j' thi with
     | .error e => return .error e
@@ -1943,7 +1969,10 @@ partial def bot_of_proof (S : FolStores) (B : BoolThms) (data : recon_data)
     (lem : List (term × thm)) (th : thm) (prf : nprfnode) : IO (Except String thm) := do
   match prf with
   | (.Mat j _mat, .Decomposition _cla ⟨⟨i, _k⟩, v⟩ prfs) => do
-    let i' := (HolCore.Lib.assoc i data.mapping).toOption.getD 0
+    -- thecops.ml 1364: `let i' = List.assoc i data.mapping` raises Not_found.
+    match HolCore.Lib.assoc i data.mapping with
+    | .error e => return .error e
+    | .ok i' => do
     let _ := j
     -- thecops.ml 1367-1368
     if ← copverb.get then stdPrintf s!"Decomposition {i'}: {← HolCore.Printer.string_of_term (concl th)}\n"
@@ -2019,8 +2048,10 @@ def start (dp : NanocopDeps) (mat : matrix Int) (opt : search_opts) (lim : Int) 
   if ← copverb.get then stdPrintf s!"Start {lim + 1}\n"   -- thecops.ml 1408
   let mati := copy_matrix 0 mat
   let sub0 ← Subst.empty 1000000
+  -- thecops.ml 1411: plain `let hashek = Mapping.fol_of_literal ..`; a failure
+  -- raises out of `start`/`deepen`/`strategy` rather than becoming `none`.
   match ← FirstOrder.Mapping.fol_of_literal dp.S [] [] dp.hashek.hashek_tm with
-  | .error _ => return none
+  | .error e => throw (IO.userError e)
   | .ok hashek =>
     let matStream ← Strom.ofList mati
     let picked := Strom.filterMap (fun (ivc : iclause mindex) => do
@@ -2082,7 +2113,10 @@ def NANOCOP_DEEPEN (B : BoolThms) (dp : NanocopDeps) (opt : search_opts) (ths : 
     stdPrintf "NANOCOP_DEEPEN with ths:\n"
     for th in ths do stdPrintf s!"  th: {← HolCore.Printer.string_of_thm th}\n"
   FirstOrder.Mapping.reset_vars dp.S
-  let _ ← FirstOrder.Mapping.reset_consts dp.S
+  -- thecops.ml 1434: `Mapping.reset_consts()` runs in sequence; propagate failure.
+  match ← FirstOrder.Mapping.reset_consts dp.S with
+  | .error e => return .error e
+  | .ok _ =>
   -- gen_eq = map GEN_ALL o create_eq_axs sym o map concl
   -- Right-to-left: `map concl` runs FIRST, then `create_eq_axs`, then
   -- `map GEN_ALL`.  The middle stage is IO-valued while `map GEN_ALL` is only

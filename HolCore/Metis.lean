@@ -6457,11 +6457,13 @@ def term_eq_mod_type (D : MetisReconDeps) (t1 t2 : term)
         stdPrintf s!"{← HolCore.Printer.string_of_term a} <- {← HolCore.Printer.string_of_term b}\n"
     return (if tminsts.isEmpty then some tyinsts else none)
 
-/-- `match_elems f m (xs,ys)`: all ways of matching each `x` to a distinct `y`. -/
-partial def match_elems [BEq β] (f : α → β → σ → IO (Option σ)) (m : σ) :
-    List α × List β → IO (List σ)
-  | ([], []) => return [m]
-  | ([], _) => return []
+/-- `match_elems f m (xs,ys)`: all ways of matching each `x` to a distinct `y`.
+    `f` returns `.ok none` for a (Unify) non-match and `.error e` for a genuine
+    failure, which propagates (metis.ml 9770: only `Unify` becomes `None`). -/
+partial def match_elems [BEq β] (f : α → β → σ → IO (Except String (Option σ))) (m : σ) :
+    List α × List β → IO (Except String (List σ))
+  | ([], []) => return .ok [m]
+  | ([], _) => return .ok []
   | (x :: xs, ys) => do
     let mut out := []
     -- OCaml removes only the CURRENT list cell (physical `!=`), so structural
@@ -6469,17 +6471,25 @@ partial def match_elems [BEq β] (f : α → β → σ → IO (Option σ)) (m : 
     -- structural equality, to mirror that exactly.
     for (y, i) in ys.zipIdx do
       match ← f x y m with
-      | some m' => out := out ++ (← match_elems f m' (xs, ys.eraseIdx i))
-      | none => pure ()
-    return out
+      | .error e => return .error e
+      | .ok (some m') =>
+        match ← match_elems f m' (xs, ys.eraseIdx i) with
+        | .error e => return .error e
+        | .ok rest => out := out ++ rest
+      | .ok none => pure ()
+    return .ok out
 
 def match_fo_ho_clause (D : MetisReconDeps) (vars : List term)
     (clausel : List Literal.literal) (disjs : List term) :
-    IO (List (List (Name.name × term))) :=
+    IO (Except String (List (List (Name.name × term)))) :=
   match_elems
     (fun ft ht m => do
+      -- metis.ml 9770: only `Unify` -> None; other failures (e.g. hol_of_const)
+      -- propagate.
       match ← Metis_unify.unify_fo_ho_literal D.S vars ft ht m with
-      | .ok m' => return some m' | .error _ => return none)
+      | .ok m' => return .ok (some m')
+      | .error "Unify" => return .ok none
+      | .error e => return .error e)
     [] (clausel, disjs)
 
 /-- `reorient_tysubst vars sub`. -/
@@ -6526,7 +6536,8 @@ partial def hol_of_thm (B : BoolThms) (D : MetisReconDeps) (axioms : List thm) (
       for ax in axioms do
         let disjs := striplist Basics.dest_disj (concl ax)
         let tmvars := freesl (hyp ax)
-        let ms ← (match_fo_ho_clause D tmvars clausel disjs : IO (List (List (Name.name × term))))
+        let ms ← ExceptT.mk (match_fo_ho_clause D tmvars clausel disjs :
+                     IO (Except String (List (List (Name.name × term)))))
         for m in ms do maxs := maxs ++ [(m, ax)]
       if maxs.isEmpty then throw "hol_of_thm: no matching axiom"
       else
@@ -6787,12 +6798,14 @@ def SIMPLE_METIS_REFUTE (B : BoolThms) (S : FolStores) (mem : Meson.ContraposCac
       -- canonicalize the input theorems, then reconstruct
       let mut cths := []
       for t in ths do
+        -- `map (CONV_RULE DISJ_CANON_CONV) ths` (metis.ml 10060): a failure of
+        -- DISJ_CANON_CONV or the inner EQ_MP propagates (uncaught `map`).
         match ← DISJ_CANON_CONV (concl t) with
+        | .error e => return .error e
         | .ok eq =>
           match EQ_MP eq t with
+          | .error e => return .error e
           | .ok c => cths := cths ++ [c]
-          | .error _ => cths := cths ++ [t]
-        | .error _ => cths := cths ++ [t]
       -- `without_warnings (fun () -> hol_of_thm ths res)` (metis.ml 10060):
       -- no type-invention warnings during reconstruction.
       let tiv ← HolCore.Preterm.type_invention_warning.get
@@ -6830,7 +6843,10 @@ def PURE_METIS_TAC (B : BoolThms) (S : FolStores) (mem : Meson.ContraposCache)
     (recon : Metis_reconstruct2.MetisReconDeps)
     (DISJ_CANON_CONV : term → IO (Except String thm)) : tactic := fun g => do
   Meson.reset_vars S
-  let _ ← Meson.reset_consts S
+  -- `reset_consts()` (meson.ml 125): OCaml raises on failure; propagate.
+  match ← Meson.reset_consts S with
+  | .error e => return .error e
+  | .ok _ =>
   let refute : tactic := fun (asl, w) => do
     let ths := asl.map (fun p => p.2)
     match ← SIMPLE_METIS_REFUTE B S mem rng idr gen recon DISJ_CANON_CONV ths with

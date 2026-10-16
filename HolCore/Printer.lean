@@ -326,13 +326,17 @@ def install_user_printer (pr : UserPrinter) : IO Unit :=
 def install_user_color_printer (pr : UserPrinter) : IO Unit :=
   user_color_printers.modify (pr :: ·)
 /-- Delete the user printer named `s`. -/
-def delete_user_printer (s : String) : IO Unit :=
-  user_printers.modify fun ps =>
-    (remove (fun (s', _) => s == s') ps).toOption.map Prod.snd |>.getD ps
+def delete_user_printer (s : String) : IO Unit := do
+  -- printer.ml:276: `snd(remove ..)` raises Failure "remove" when `s` is absent
+  match remove (fun (s', _) => s == s') (← user_printers.get) with
+  | .error _ => throw (IO.userError "remove")
+  | .ok (_, ps') => user_printers.set ps'
 /-- Delete the user color printer named `s`. -/
-def delete_user_color_printer (s : String) : IO Unit :=
-  user_color_printers.modify fun ps =>
-    (remove (fun (s', _) => s == s') ps).toOption.map Prod.snd |>.getD ps
+def delete_user_color_printer (s : String) : IO Unit := do
+  -- printer.ml:278: `snd(remove ..)` raises Failure "remove" when `s` is absent
+  match remove (fun (s', _) => s == s') (← user_color_printers.get) with
+  | .error _ => throw (IO.userError "remove")
+  | .ok (_, ps') => user_color_printers.set ps'
 /-- `tryfind` over IO-valued user printers: the first success wins;
     "tryfind" if all decline. -/
 private def tryUserPrinters (tm : term) :

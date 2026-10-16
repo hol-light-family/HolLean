@@ -1873,7 +1873,7 @@ inductive ImprewrOp where
 /-- Replay `baseThs` + `ops` to the current `(net, ths)` of `IMPREWR_CTXCONV`. -/
 partial def imprewrBuild (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
     (baseThs : List thm) (ops : List ImprewrOp) :
-    IO (Fo_nets.t ((Tset.t → annot_conv) × Tset.t × thm) × List thm) := do
+    IO (Except String (Fo_nets.t ((Tset.t → annot_conv) × Tset.t × thm) × List thm)) := do
   let mut net : Fo_nets.t ((Tset.t → annot_conv) × Tset.t × thm) := Fo_nets.empty_net
   -- OCaml `itlist impconv_net_of_thm ths net` enters the LAST element first; since
   -- net_update prepends tips, ths[0] ends up head-of-tips (tried first). Iterate reversed.
@@ -1882,7 +1882,10 @@ partial def imprewrBuild (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
   for op in ops do
     match op with
     | .augment ts =>
-      let ths' := ts.filterMap (fun t => (ASSUME t).toOption)
+      let mut ths' := []
+      for t in ts do match ASSUME t with
+        -- OCaml `map ASSUME ts` propagates (impconv.ml 1316)
+        | .ok th => ths' := ths' ++ [th] | .error e => return .error e
       let mpc1 ← MP_CLOSURE B D ths' ths'
       let mpc2 ← MP_CLOSURE B D ths ths'
       let ths'' := mpc1 ++ ths' ++ mpc2
@@ -1893,7 +1896,7 @@ partial def imprewrBuild (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
         if Tset.mem v vs then none else some th)).reverse   -- OCaml `th :: !ths` reverses traversal order
       net := Fo_nets.filter (fun (_, vs, _) => !(Tset.mem v vs)) net
       ths := survivors
-  pure (net, ths)
+  pure (.ok (net, ths))
 
 /-- The context-aware annotated rewrite conversion `IMPREWR_CTXCONV`, holding a
     net of the theorems' conversions and applying it top-down (`impconv.ml`
@@ -1904,7 +1907,9 @@ partial def imprewrCtx (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
     (baseThs : List thm) (ops : List ImprewrOp) : WithContext (atomic → annot_conv) :=
   .mk
     (fun a => fun t => do
-      let (net, ths) ← imprewrBuild B D V baseThs ops
+      match ← imprewrBuild B D V baseThs ops with
+      | .error e => return .error e
+      | .ok (net, ths) =>
       -- basic_cnv t = (REWRITES_CONV (bigger_net()) t, None, [])
       let basic_cnv (u : term) : IO (Except String (thm × Option term × List term)) := do
         let mut bn ← basic_net
@@ -2011,7 +2016,9 @@ def IMP_REWRITE_TAC (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (ths : Li
     tactic := fun g => do
   let mut pps : List thm := []
   for th in ths do
-    match ← preprocess B D th with | .ok l => pps := pps ++ l | .error _ => pure ()
+    match ← preprocess B D th with
+    -- OCaml `flat (map preprocess ths)` propagates (impconv.ml 1444)
+    | .ok l => pps := pps ++ l | .error e => return .error e
   match ← CTXIMPCONV_TAC B V (REWRITE_CTXIMPCONV B D V pps) g with
   | .ok r => return .ok r
   | .error e => if e == unchanged then return (failwith "Unchanged") else return .error e
@@ -2019,18 +2026,23 @@ def IMP_REWRITE_TAC (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (ths : Li
 /-- `SEQ_IMP_REWRITE_TAC ths`. -/
 def SEQ_IMP_REWRITE_TAC (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (ths : List thm) :
     tactic := fun g => do
-  let cnv ← (match ths with
-    | [] => pure (REWRITE_CTXIMPCONV B D V [B.TRUTH])
+  let cnvE : IO (Except String (WithContext imp_conv)) := (match ths with
+    | [] => return .ok (REWRITE_CTXIMPCONV B D V [B.TRUTH])
     | [th] => do match ← preprocess B D th with
-                 | .ok l => pure (REWRITE_CTXIMPCONV B D V l)
-                 | .error _ => pure (REWRITE_CTXIMPCONV B D V [B.TRUTH])
+                 -- OCaml `REWRITE_CTXIMPCONV (preprocess th)` propagates (impconv.ml 1396)
+                 | .ok l => return .ok (REWRITE_CTXIMPCONV B D V l)
+                 | .error e => return .error e
     | _ :: _ => do
         let mut cnvs : List (WithContext imp_conv) := []
         for th in ths do
           match ← preprocess B D th with
+          -- OCaml `map (REWRITE_CTXIMPCONV o preprocess) ths` propagates (impconv.ml 1396)
           | .ok l => cnvs := cnvs ++ [REWRITE_CTXIMPCONV B D V l]
-          | .error _ => pure ()
-        pure (REPEAT_UNCHANGED_CTXIMPCONV B D V cnvs))
+          | .error e => return .error e
+        return .ok (REPEAT_UNCHANGED_CTXIMPCONV B D V cnvs))
+  match ← cnvE with
+  | .error e => return .error e
+  | .ok cnv =>
   match ← CTXIMPCONV_TAC B V cnv g with
   | .ok r => return .ok r
   | .error e => if e == unchanged then return (failwith "Unchanged") else return .error e
@@ -2719,7 +2731,8 @@ partial def TARGET_REWRITE_IMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConv
         -- map (post v) l  where post v = bind_ctximpconv POST v
         let mut out := []
         for th in l do match ← bind_ctximpconv B POST v th with
-                       | .ok r => out := out ++ [r] | .error _ => pure ()
+                       -- OCaml `map (post v) l` propagates (impconv.ml 1820)
+                       | .ok r => out := out ++ [r] | .error e => return .error e
         return .ok out
   let flat (l : List (List thm)) : List thm := uniq (itlist (merge thm_lt) l [])
   -- is_one_sol g = can (find_term (can (fo_term_match [] g))) o sel
@@ -2734,7 +2747,8 @@ partial def TARGET_REWRITE_IMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConv
     let step := mergesort thm_lt oIOm one_step_sths v
     let mut steps := []
     for th in ths do
-      match ← step th with | .ok l => steps := steps ++ [l] | .error _ => pure ()
+      -- OCaml `flat (map (.. o one_step_sths v) ths)` propagates (impconv.ml 1823)
+      match ← step th with | .ok l => steps := steps ++ [l] | .error e => return .error e
     let pool := flat steps
     -- OCaml: try bind_ctximpconv POST v (find is_sol pool) with _ -> <recurse>.
     -- is_sol th = tryfind is_one_sol ts (sel th).  sel = imp_conv_outcome th v is OUTSIDE `can`,
@@ -2769,7 +2783,8 @@ partial def TARGET_REWRITE_IMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConv
         -- self (map (bind_ctximpconv POST v) pool)
         let mut nextThs := []
         for th in pool do match ← bind_ctximpconv B POST v th with
-                          | .ok r => nextThs := nextThs ++ [r] | .error _ => pure ()
+                          -- OCaml `map (bind_ctximpconv POST v) pool` propagates (impconv.ml 1831)
+                          | .ok r => nextThs := nextThs ++ [r] | .error e => return .error e
         self nextThs
   match IMP_REFL D V t with
   | .ok r0 => self [r0]
@@ -2782,12 +2797,16 @@ partial def TARGET_REWRITE_IMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConv
 def TARGET_REWRITE_TAC (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
     (sths : List thm) (th : thm) : tactic := fun g => do
   let mut sths' := []
-  for s in sths do match ← preprocess B D s with | .ok l => sths' := sths' ++ l | .error _ => pure ()
+  for s in sths do match ← preprocess B D s with
+    -- OCaml `flat (map preprocess sths)` propagates (impconv.ml 1856)
+    | .ok l => sths' := sths' ++ l | .error e => return .error e
   match ← preprocess B D th with
   | .error e => return .error e
   | .ok ths =>
     let mut pats := []
-    for t in ths do match ← patterns_of_thm B V t with | .ok p => pats := pats ++ [p] | .error _ => pure ()
+    for t in ths do match ← patterns_of_thm B V t with
+      -- OCaml `map patterns_of_thm ths` propagates (impconv.ml 1857)
+      | .ok p => pats := pats ++ [p] | .error e => return .error e
     -- (TARGET_REWRITE_IMPCONV sths' pats) + imp_conv_of_ctx_imp_conv (REWRITE_CTXIMPCONV ths)
     let c1 : imp_conv := TARGET_REWRITE_IMPCONV B D V sths' pats
     let c2 : imp_conv := imp_conv_of_ctx_imp_conv (REWRITE_CTXIMPCONV B D V ths)

@@ -405,13 +405,12 @@ def infTypedef (st : State) (c0 : Cursor) : RestoreM State := do
         | _ => throw "A: the name field must end with ']'"
     | _ => throw "A: the name field must be ]abstype]abs]rep]tyvars...]"
   -- The format requires all constant names to be distinct, counting absname
-  -- and repname of every `A` line.  This one case has to be checked HERE: the
-  -- kernel compares each of the two names against the constants that already
-  -- exist, but not against each other, and `HolCore/Fusion.lean` discards the
-  -- result of its two `new_constant` calls (`let _ <- ...`) where HOL Light's
-  -- `new_constant` raises - so with absname = repname this kernel declares the
-  -- name once and still mints a `Const` of that name at the OTHER type, which
-  -- HOL Light refuses to do.
+  -- and repname of every `A` line.  The kernel compares each of the two names
+  -- against the constants that already exist, but not against each other; with
+  -- absname = repname its second `new_constant` now fails (as HOL Light's
+  -- raises; HolCore/Fusion.lean used to discard that result and mint a `Const`
+  -- of the name at the other type).  Checking it here as well keeps the
+  -- reader's error message specific, and the format requires it anyway.
   if absname == repname then
     throw s!"A: absname and repname are both '{absname}'"
   if !(hyp th).isEmpty then

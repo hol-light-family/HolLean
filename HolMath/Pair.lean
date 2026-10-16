@@ -410,9 +410,15 @@ def createProjections [HolBase] (G : GenBetaDeps) (conname : String) :
   let sth ← SPEC_ALL rth
   let (evs, bod) := strip_exists (concl sth)
   let cjs := conjuncts bod
-  let ourcj ← liftExcept (find (fun cj =>
-    (do let (n, _) ← dest_const (strip_comb (← rand (← lhand (strip_forall cj).2))).1
-        pure (n == conname) : Except String Bool).toOption.getD false) cjs)
+  -- pair.ml 221: OCaml `find` propagates the predicate's Failure (dest_const etc.),
+  -- so use a failure-propagating find rather than coercing the error to `false`.
+  let predE (cj : term) : Except String Bool := do
+    let (n, _) ← dest_const (strip_comb (← rand (← lhand (strip_forall cj).2))).1
+    pure (n == conname)
+  let rec findE : List term → Except String term
+    | []     => failwith "find"
+    | h :: t => do if (← predE h) then pure h else findE t
+  let ourcj ← liftExcept (findE cjs)
   let n ← liftExcept (index ourcj cjs)
   let (avs, eqn) := strip_forall ourcj
   let (con', args) := strip_comb (← liftExcept (rand eqn))
