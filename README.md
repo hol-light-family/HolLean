@@ -51,7 +51,7 @@ See the HolTest directory for further examples of HOL Lean code.
 | `HolCore/` | the kernel and core proof infrastructure (fusion.ml to impconv.ml) |
 | `HolMath/` | the mathematical theories (pair.ml to define.ml) |
 | `Session.lean` | the session state, and the names HOL Light users type |
-| `HolLibrary/` | files from HOL Light's `Library/` (so far `prime.ml`, `floor.ml`, `components.ml`, `records.ml`, `bdd.ml`, `words.ml`, `analysis.ml`, `rstc.ml`, `transc.ml`, `wo.ml`, `card.ml`, `bitmatch.ml`, `products.ml`, `agm.ml`, `iter.ml`, `bitsize.ml`, `binary.ml`, `isum.ml`, `frag.ml`, `binomial.ml`, `pocklington.ml` and `ringtheory.ml`), pure like HolMath |
+| `HolLibrary/` | files from HOL Light's `Library/` (so far `prime.ml`, `floor.ml`, `components.ml`, `records.ml`, `bdd.ml`, `words.ml`, `analysis.ml`, `rstc.ml`, `transc.ml`, `wo.ml`, `card.ml`, `bitmatch.ml`, `products.ml`, `agm.ml`, `iter.ml`, `bitsize.ml`, `binary.ml`, `isum.ml`, `frag.ml`, `binomial.ml`, `pocklington.ml`, `ringtheory.ml`, `integer.ml`, `multiplicative.ml`, `primitive.ml`, `pratt.ml`, `poly.ml`, `matroids.ml`, `calc_real.ml`, `permutations.ml`, `jacobi.ml`, `word_automata.ml`, `q.ml`, `fieldtheory.ml`, `rabin_test.ml` and `grouptheory.ml`), pure like HolMath |
 | `SessionLibrary/` | connects `HolLibrary` to Session and exports its theorems by name |
 | `HolInit.lean` | loads the library in `hol_lib.ml` order |
 | `Help.lean`, `Database.lean`, `Help/` | help.ml, database.ml and HOL Light's help files |
@@ -89,9 +89,25 @@ open Session SessionLibrary.Prime
 -- and SessionLibrary.Binomial.ensureBinomial      -- needs "Library/binomial.ml"
 -- and SessionLibrary.Pocklington.ensurePocklington -- needs "Library/pocklington.ml"
 -- and SessionLibrary.RingTheory.ensureRingTheory   -- needs "Library/ringtheory.ml"
+-- and SessionLibrary.Integer.ensureInteger        -- needs "Library/integer.ml"
+-- and SessionLibrary.Multiplicative.ensureMultiplicative -- needs "Library/multiplicative.ml"
+-- and SessionLibrary.Primitive.ensurePrimitive    -- needs "Library/primitive.ml"
+-- and SessionLibrary.Pratt.ensurePratt            -- needs "Library/pratt.ml"
+-- and SessionLibrary.Poly.ensurePoly              -- needs "Library/poly.ml"
+-- and SessionLibrary.Matroids.ensureMatroids      -- needs "Library/matroids.ml"
+-- and SessionLibrary.CalcReal.ensureCalcReal      -- needs "Library/calc_real.ml"
+-- and SessionLibrary.Permutations.ensurePermutations -- needs "Library/permutations.ml"
+-- and SessionLibrary.Jacobi.ensureJacobi          -- needs "Library/jacobi.ml"
+-- and SessionLibrary.WordAutomata.ensureWordAutomata -- needs "Library/word_automata.ml"
+-- and SessionLibrary.Q.ensureQ                    -- needs "Library/q.ml" (module Pa: SessionLibrary.Q.Pa)
+-- and SessionLibrary.FieldTheory.ensureFieldTheory -- needs "Library/fieldtheory.ml"
+-- and SessionLibrary.RabinTest.ensureRabinTest   -- needs "Library/rabin_test.ml"
+-- and SessionLibrary.GroupTheory.ensureGroupTheory -- needs "Library/grouptheory.ml"
 #eval PRIME_DIVPROD
 #eval GCD_CONV [[gcd(12,18)]]
 ```
+
+`pratt.ml` (like HOL Light) calls PARI/GP's `gp` to factor numbers while it loads, so it needs `gp` on the `PATH`; without it, loading fails with HOL Light's message "factor: Call to GP/PARI failed".
 
 Each library name is exported under its HOL Light name.  Where a library rebinds a name that Session (or a library it needs) already has, qualify it: `transc.ml` rebinds `DIVISION_0`, `REAL_DIV_SQRT`, `SQRT_EVEN_POW2` and `SUM_DIFFS` from the core and `SYM_CANON_CONV` and `EXT_CONV` from `analysis.ml`, so write `SessionLibrary.Transc.SUM_DIFFS` for transc's version.  `isum.ml` rebinds `INT_OF_REAL_THM` (a stronger version of int.ml's rule); use `SessionLibrary.Isum.INT_OF_REAL_THM` for isum.ml's.  `pocklington.ml` rebinds lib.ml's `num_0`, `num_1` and `num_2` (same values; `HolCore.Lib.num_0` is the core one).
 
@@ -109,10 +125,13 @@ You need Lean 4 (installed with `elan`; the version is fixed in `lean-toolchain`
 
 GitHub Actions runs `make core` on pushes to main and on pull requests (`.github/workflows/ci.yml`).
 
+By default HolCore, HolMath and the executable are compiled to native code at `-O3` and HolLibrary at `-O0`: HolLibrary's generated C is very large (RingTheory's is 117 MB), and at `-O0` it compiles in minutes rather than an hour.  `make build-O3`, `make test-O3` and `make check-O3` compile everything at `-O3`, and `OPT=N` compiles everything at `-ON` for any target (for example `make test OPT=1`).  Each `OPT=N` build has its own directory, `.lake/build-ON`.
+
 ## Known differences from HOL Light ##
 
 * `dest_small_numeral` does not fail on numbers too large for an OCaml `int`.
 * Some long terms are broken across lines differently.
+* When types are printed, a pair is printed with a space after the comma, `((a:A), (b:A))`, where HOL Light prints `((a:A),(b:A))`.
 * By default, results that come from HOL Light's hash-based lookup tables (for example `atoms`) can come out in a different order.  Setting the environment variable `HOLLEAN_OCAML_HASH` makes them use OCaml's hash and match HOL Light's order.
 * Parts of the library are built when first used, rather than all at load as in HOL Light (`HolInit` loads everything up front).
 * `ORELSE_TCL` and `REPEAT_TCL` also catch a failure of the following tactic.

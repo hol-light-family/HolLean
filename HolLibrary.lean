@@ -20,3 +20,17 @@ import HolLibrary.Frag
 import HolLibrary.Binomial
 import HolLibrary.Pocklington
 import HolLibrary.RingTheory
+import HolLibrary.Integer
+import HolLibrary.Multiplicative
+import HolLibrary.Primitive
+import HolLibrary.Pratt
+import HolLibrary.Poly
+import HolLibrary.Matroids
+import HolLibrary.Permutations
+import HolLibrary.Jacobi
+import HolLibrary.CalcReal
+import HolLibrary.WordAutomata
+import HolLibrary.Q
+import HolLibrary.FieldTheory
+import HolLibrary.RabinTest
+import HolLibrary.GroupTheory

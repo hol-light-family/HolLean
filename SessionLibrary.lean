@@ -20,3 +20,17 @@ import SessionLibrary.Frag
 import SessionLibrary.Binomial
 import SessionLibrary.Pocklington
 import SessionLibrary.RingTheory
+import SessionLibrary.Integer
+import SessionLibrary.Multiplicative
+import SessionLibrary.Primitive
+import SessionLibrary.Pratt
+import SessionLibrary.Poly
+import SessionLibrary.Matroids
+import SessionLibrary.Permutations
+import SessionLibrary.Jacobi
+import SessionLibrary.CalcReal
+import SessionLibrary.WordAutomata
+import SessionLibrary.Q
+import SessionLibrary.FieldTheory
+import SessionLibrary.RabinTest
+import SessionLibrary.GroupTheory

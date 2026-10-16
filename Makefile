@@ -1,7 +1,7 @@
 # Makefile for HolLean - a Lean 4 translation of HOL Light.
 #
 # A thin, documented wrapper around the `lake` invocations used day to day.
-# See lakefile.toml for the targets themselves: FIVE libraries, each with a
+# See lakefile.lean for the targets themselves: FIVE libraries, each with a
 # single root module mirroring the project's layering, plus one executable.
 #
 #     HolCore   the kernel and core proof infrastructure (self-contained)
@@ -33,6 +33,16 @@
 #     make test          build and run the tests (HolTest.lean, the ONLY
 #                        place they are imported), with assertion counts
 #     make test-module M=...  run one test module standalone
+#
+#   optimisation level of the native (C) code
+#     by default (lakefile.lean) HolCore, HolMath and the executable are
+#     compiled at -O3 and HolLibrary at -O0, in .lake/build
+#     make build-O3      `make build` with everything at -O3
+#     make test-O3       `make test` with everything at -O3
+#     make check-O3      `make check` with everything at -O3
+#     make <target> OPT=N    any target with everything at -ON (N = 0, 1, 2, 3, s)
+#     Each OPT=N build has its own directory (.lake/build-ON), so switching
+#     does not recompile the default build's objects.
 #
 #   housekeeping
 #     make clean         remove build artefacts and the log
@@ -79,9 +89,29 @@ else
 LEAN_ENV := LEAN_NUM_THREADS=$(THREADS)
 endif
 
+# Optimisation level of the C code (see lakefile.lean).  Empty means the
+# lakefile's default (HolCore, HolMath and the executable at -O3, HolLibrary at
+# -O0), built in .lake/build.  OPT=N is passed to Lake as `-Kopt=N` and builds
+# everything at -ON in .lake/build-ON.
+#
+# Lake CACHES `-K` options with the elaborated lakefile and keeps using them
+# until the next `-R` (reconfigure), even in later commands given no `-K`.  So
+# every Lake call here passes `-R`, with `-Kopt=N` when a level is set, and the
+# OPT=N run ends with `lake -R check-build`, which puts the cached
+# configuration back to the default for plain `lake` commands and VS Code.
+OPT ?=
+ifeq ($(strip $(OPT)),)
+OPT_FLAGS := -R
+BUILD_DIR := .lake/build
+else
+OPT_FLAGS := -R -Kopt=$(strip $(OPT))
+BUILD_DIR := .lake/build-O$(strip $(OPT))
+endif
+
 # Extra flags passed to every `lake build`.  Normally empty; a hook for
 # one-off experiments such as --no-cache or -v.
 LAKEFLAGS ?=
+override LAKEFLAGS += $(OPT_FLAGS)
 
 # Captured build log, written by `rebuild`, `check` and `test`, and read by
 # `verify`.  Also removed by `clean`.
@@ -161,7 +191,7 @@ PURE_SRC ?= HolCore HolMath HolLibrary
 # The umbrella module every HolTest module must be imported by.
 ROOT_MODULE ?= HolTest.lean
 
-.PHONY: all build core math session proofs prove rebuild clean distclean check verify test test-module module help
+.PHONY: all build core math session proofs prove rebuild clean distclean check verify test test-module module help build-O3 test-O3 check-O3
 
 # ---------------------------------------------------------------------------
 # Building
@@ -222,9 +252,9 @@ module:
 # Cleaning
 # ---------------------------------------------------------------------------
 
-## clean: remove compiled artefacts (.lake/build) and the build log
+## clean: remove compiled artefacts (.lake/build, or .lake/build-ON with OPT=N) and the build log
 clean:
-	rm -rf .lake/build
+	rm -rf $(BUILD_DIR)
 	rm -f $(BUILD_LOG)
 
 ## distclean: also remove .lake entirely (safe - the project has no external deps)
@@ -258,7 +288,7 @@ verify:
 	panics=$$(grep -c 'PANIC' $(BUILD_LOG) || true); \
 	ok=$$(grep -c -- '-> OK' $(BUILD_LOG) || true); \
 	pure_unsafe=$$(grep -rhE '$(UNSAFE_DECL_RE)' $(PURE_SRC) 2>/dev/null | grep -c . || true); \
-	pure_sorry=$$(grep -rhwE 'sorry' $(PURE_SRC) 2>/dev/null | grep -c . || true); \
+	pure_sorry=$$(grep -rhwE 'sorry' $(PURE_SRC) 2>/dev/null | sed -E 's/"([^"\\]|\\.)*"//g' | grep -cw sorry || true); \
 	unimported=0; \
 	for f in HolTest/*.lean; do \
 	  mod=$$(basename "$$f" .lean); \
@@ -311,7 +341,7 @@ verify:
 # startup behaviour, not a fault.
 prove:
 	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) @/HolInit
-	$(LEAN_ENV) HOLLEAN_SHOW_LOAD=$(SHOW_LOAD) $(LAKE) lean Prove.lean
+	$(LEAN_ENV) HOLLEAN_SHOW_LOAD=$(SHOW_LOAD) $(LAKE) $(OPT_FLAGS) lean Prove.lean
 
 ## test: report per-module assertion counts and real errors from a build
 # The test modules are compile-time `#eval`s, so building the HolTest library
@@ -345,7 +375,26 @@ test-module:
 	  echo "usage: make test-module M=HolTest/<Name>.lean"; \
 	  exit 2; \
 	fi
-	$(LEAN_ENV) $(LAKE) lean $(M)
+	$(LEAN_ENV) $(LAKE) $(OPT_FLAGS) lean $(M)
+
+# ---------------------------------------------------------------------------
+# The same at -O3 (Lake's own default level)
+# ---------------------------------------------------------------------------
+
+## build-O3: `make build` with the native code at -O3 (in .lake/build-O3)
+build-O3:
+	@$(MAKE) --no-print-directory build OPT=3; status=$$?; \
+	  $(LAKE) -R check-build > /dev/null 2>&1; exit $$status
+
+## test-O3: `make test` with the native code at -O3 (in .lake/build-O3)
+test-O3:
+	@$(MAKE) --no-print-directory test OPT=3; status=$$?; \
+	  $(LAKE) -R check-build > /dev/null 2>&1; exit $$status
+
+## check-O3: `make check` with the native code at -O3 (cleans .lake/build-O3 only)
+check-O3:
+	@$(MAKE) --no-print-directory check OPT=3; status=$$?; \
+	  $(LAKE) -R check-build > /dev/null 2>&1; exit $$status
 
 # ---------------------------------------------------------------------------
 # Help
@@ -358,6 +407,7 @@ help:
 	@echo ""
 	@echo "Variables:"
 	@printf '  %-22s %s\n' "THREADS=$(THREADS)" "Lean threads; leave EMPTY - setting 1 serialises the build"
+	@printf '  %-22s %s\n' "OPT=$(OPT)" "C optimisation level for everything; empty = -O3, HolLibrary -O0"
 	@printf '  %-22s %s\n' "BUILD_LOG=$(BUILD_LOG)" "log written by rebuild/check/test, read by verify"
 	@printf '  %-22s %s\n' "EXPECTED_MASKED=$(EXPECTED_MASKED)" "tolerated masked-failure lines; 0 - any hit is a defect"
 	@printf '  %-22s %s\n' "LAKEFLAGS=$(LAKEFLAGS)" "extra flags for every lake build"

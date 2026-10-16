@@ -103,3 +103,17 @@ import HolTest.UnitParserTest
 import HolTest.UnitPrinterTest
 import HolTest.UnitRecordsTest
 import HolTest.HolTraceTest
+import HolTest.IntegerTest
+import HolTest.MultiplicativeTest
+import HolTest.PrimitiveTest
+import HolTest.PrattTest
+import HolTest.PolyTest
+import HolTest.MatroidsTest
+import HolTest.PermutationsTest
+import HolTest.JacobiTest
+import HolTest.CalcRealTest
+import HolTest.WordAutomataTest
+import HolTest.QTest
+import HolTest.FieldTheoryTest
+import HolTest.RabinTestTest
+import HolTest.GroupTheoryTest
