@@ -117,3 +117,5 @@ import HolTest.QTest
 import HolTest.FieldTheoryTest
 import HolTest.RabinTestTest
 import HolTest.GroupTheoryTest
+import HolTest.ModmulGroupTest
+import HolTest.SymmetricGroupTest

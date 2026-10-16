@@ -3834,8 +3834,12 @@ private unsafe def buildRaw3Ctx : IO (Except String HolMath.IndTypes.DefTypeRaw3
     (fun es => do
       let cur ← theInductiveTypeStore.get
       theInductiveTypeStore.set (some (es ++ cur.getD []))
+      -- `do_list extend_rectype_net newentries` (ind_types.ml 1386) is part of
+      -- a `;`-sequence, so its failure propagates.
       for e in es do
-        let _ ← extend_rectype_net e
+        match ← extend_rectype_net e with
+        | .error err => return .error err
+        | .ok _ => pure ()
       return .ok ())
   -- ind_types.ml 1390-1394: seed the spec-string keyed store.
   liftM (seed_the_inductive_types lstI lstR optI optR sumI sumR)
@@ -7889,9 +7893,13 @@ unsafe def ensureHolPrefixThroughInt : IO Unit := do
   -- in `ensurePrioritizeNum`).  Calling one on `T` builds and caches its net.
   let tTm : term := .Const "T" (.Tyapp "bool" [])
   let _ ← IO.mkRef CnN.pre_tm                              -- calc_num.ml 211-1560
-  let _ ← numRelConvIO                                      -- calc_num.ml 1443
+  match ← numRelConvIO with                                 -- calc_num.ml 1443
+  | .ok _ => pure ()
+  | .error e => panic! s!"ensureHolPrefixThroughInt: NUM_REL_CONV setup: {e}"
   let _ ← NUM_RED_CONV tTm                                  -- calc_num.ml 1473
-  let _ ← numComputeConvIO                                  -- calc_num.ml 1487
+  match ← numComputeConvIO with                             -- calc_num.ml 1487
+  | .ok _ => pure ()
+  | .error e => panic! s!"ensureHolPrefixThroughInt: NUM_COMPUTE_CONV setup: {e}"
   let _ ← IO.mkRef (concl NmzP.2)                          -- normalizer.ml 537-565
   -- grobner.ml: NUM_RING's setup proofs search over the registered overloads,
   -- so it must be built before realax.ml adds the `real` ones (after them it

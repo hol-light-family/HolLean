@@ -34,3 +34,5 @@ import HolLibrary.Q
 import HolLibrary.FieldTheory
 import HolLibrary.RabinTest
 import HolLibrary.GroupTheory
+import HolLibrary.ModmulGroup
+import HolLibrary.SymmetricGroup

@@ -51,7 +51,7 @@ See the HolTest directory for further examples of HOL Lean code.
 | `HolCore/` | the kernel and core proof infrastructure (fusion.ml to impconv.ml) |
 | `HolMath/` | the mathematical theories (pair.ml to define.ml) |
 | `Session.lean` | the session state, and the names HOL Light users type |
-| `HolLibrary/` | files from HOL Light's `Library/` (so far `prime.ml`, `floor.ml`, `components.ml`, `records.ml`, `bdd.ml`, `words.ml`, `analysis.ml`, `rstc.ml`, `transc.ml`, `wo.ml`, `card.ml`, `bitmatch.ml`, `products.ml`, `agm.ml`, `iter.ml`, `bitsize.ml`, `binary.ml`, `isum.ml`, `frag.ml`, `binomial.ml`, `pocklington.ml`, `ringtheory.ml`, `integer.ml`, `multiplicative.ml`, `primitive.ml`, `pratt.ml`, `poly.ml`, `matroids.ml`, `calc_real.ml`, `permutations.ml`, `jacobi.ml`, `word_automata.ml`, `q.ml`, `fieldtheory.ml`, `rabin_test.ml` and `grouptheory.ml`), pure like HolMath |
+| `HolLibrary/` | files from HOL Light's `Library/` (so far `prime.ml`, `floor.ml`, `components.ml`, `records.ml`, `bdd.ml`, `words.ml`, `analysis.ml`, `rstc.ml`, `transc.ml`, `wo.ml`, `card.ml`, `bitmatch.ml`, `products.ml`, `agm.ml`, `iter.ml`, `bitsize.ml`, `binary.ml`, `isum.ml`, `frag.ml`, `binomial.ml`, `pocklington.ml`, `ringtheory.ml`, `integer.ml`, `multiplicative.ml`, `primitive.ml`, `pratt.ml`, `poly.ml`, `matroids.ml`, `calc_real.ml`, `permutations.ml`, `jacobi.ml`, `word_automata.ml`, `q.ml`, `fieldtheory.ml`, `rabin_test.ml`, `grouptheory.ml`, `modmul_group.ml` and `symmetric_group.ml`: every Library file except `tactician_light.ml`, a tool that runs tactics given as OCaml source and so has no Lean counterpart), pure like HolMath |
 | `SessionLibrary/` | connects `HolLibrary` to Session and exports its theorems by name |
 | `HolInit.lean` | loads the library in `hol_lib.ml` order |
 | `Help.lean`, `Database.lean`, `Help/` | help.ml, database.ml and HOL Light's help files |
@@ -103,6 +103,8 @@ open Session SessionLibrary.Prime
 -- and SessionLibrary.FieldTheory.ensureFieldTheory -- needs "Library/fieldtheory.ml"
 -- and SessionLibrary.RabinTest.ensureRabinTest   -- needs "Library/rabin_test.ml"
 -- and SessionLibrary.GroupTheory.ensureGroupTheory -- needs "Library/grouptheory.ml"
+-- and SessionLibrary.ModmulGroup.ensureModmulGroup -- needs "Library/modmul_group.ml"
+-- and SessionLibrary.SymmetricGroup.ensureSymmetricGroup -- needs "Library/symmetric_group.ml"
 #eval PRIME_DIVPROD
 #eval GCD_CONV [[gcd(12,18)]]
 ```

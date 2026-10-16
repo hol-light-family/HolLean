@@ -34,3 +34,5 @@ import SessionLibrary.Q
 import SessionLibrary.FieldTheory
 import SessionLibrary.RabinTest
 import SessionLibrary.GroupTheory
+import SessionLibrary.ModmulGroup
+import SessionLibrary.SymmetricGroup
