@@ -57,6 +57,7 @@ See the HolTest directory for further examples of HOL Lean code.
 | `Help.lean`, `Database.lean`, `Help/` | help.ml, database.ml and HOL Light's help files |
 | `HolTest/`, `HolTest.lean` | the test suite (about 2,700 checks), including the examples from HOL Light's help files and its UnitTests; HolTest.lean imports every test module and is built only by `make test` and `make check` |
 | `Hol.lean` | the `hollean` executable (`hol.ml`); it does not import the tests |
+| `HolTrace/`, `HolTrace.lean` | the `holtrace` executable: a proof reconstructor for [HOLTrace](https://holtrace.cr.yp.to) files (see `HolTrace/README.md`) |
 | `Prove.lean` | your scratchpad |
 
 HolCore, HolMath and HolLibrary contain no `unsafe` code and no `sorry`; the build checks this.  The `unsafe` code is in Session.lean and the modules built on it (SessionLibrary, HolInit, Database and Hol.lean).

@@ -102,3 +102,4 @@ import HolTest.UnitBasicTest
 import HolTest.UnitParserTest
 import HolTest.UnitPrinterTest
 import HolTest.UnitRecordsTest
+import HolTest.HolTraceTest
