@@ -113,6 +113,12 @@ lean_lib SessionLibrary where
    type and axiom it uses - so importing `Session` would break it: Session's
    `initialize` runs `setupBool` on load, which declares `T`, `/\` and the
    rest, and the trace's own definitions of those names would then collide. -/
+/- Translations of HOL Light's Tutorial/ files (HolTutorial.lean imports
+   them all).  Each is a toplevel session in Prove.lean style; building it
+   runs it.  Built by `make tutorial` and `make check`. -/
+lean_lib HolTutorial where
+  roots := #[`HolTutorial]
+
 lean_lib HolTrace where
   roots := #[`HolTrace]
 

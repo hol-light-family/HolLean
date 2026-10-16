@@ -11272,4 +11272,19 @@ unsafe def check_axioms : IO (Except String Unit) := do
     let strs ← l.mapM HolCore.Printer.string_of_thm
     return .error s!"check_axioms: [{String.intercalate ", " strs}]"
 
+
+/-- `prioritize_num` (nums.ml): make `:num` the default for overloaded symbols. -/
+unsafe def prioritize_num : IO Unit := do
+  match ← (mk_type "num" []) with
+  | .ok ty => prioritize_overload ty
+  | .error e => panic! s!"prioritize_num: {e}"
+
+/-- `prioritize_int` (int.ml): make `:int` the default for overloaded symbols.
+    Forces the `int` theory first, since the type must exist. -/
+unsafe def prioritize_int : IO Unit := do
+  let _ ← IO.mkRef (concl INT_ADD_SYM)
+  match ← (mk_type "int" []) with
+  | .ok ty => prioritize_overload ty
+  | .error e => panic! s!"prioritize_int: {e}"
+
 end Session

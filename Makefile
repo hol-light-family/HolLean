@@ -64,6 +64,9 @@ LAKE ?= lake
 # HolTest library, built only by `make test` and `make check`.
 BUILD_TARGETS ?= hollean @/HolLibrary @/SessionLibrary
 TEST_TARGETS ?= @/HolTest
+# The tutorial translations (HolTutorial.lean): built by `make tutorial` and
+# `make check`.
+TUTORIAL_TARGETS ?= @/HolTutorial
 
 # --- Parallelism -----------------------------------------------------------
 #
@@ -191,7 +194,7 @@ PURE_SRC ?= HolCore HolMath HolLibrary
 # The umbrella module every HolTest module must be imported by.
 ROOT_MODULE ?= HolTest.lean
 
-.PHONY: all build core math session proofs prove rebuild clean distclean check verify test test-module module help build-O3 test-O3 check-O3
+.PHONY: all build core math session proofs prove rebuild clean distclean check verify test test-module module help build-O3 test-O3 check-O3 tutorial
 
 # ---------------------------------------------------------------------------
 # Building
@@ -272,7 +275,7 @@ distclean: clean
 # gate broke rather than dying silently.
 check: clean
 	@echo "==> building from scratch (THREADS=$(THREADS))"
-	@$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(BUILD_TARGETS) $(TEST_TARGETS) > $(BUILD_LOG) 2>&1 || true
+	@$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(BUILD_TARGETS) $(TEST_TARGETS) $(TUTORIAL_TARGETS) > $(BUILD_LOG) 2>&1 || true
 	@$(MAKE) --no-print-directory verify
 
 ## verify: apply the acceptance gates to an existing build log
@@ -368,6 +371,11 @@ test:
 	@errs=$$(grep -cE '$(ERROR_RE)|^error' $(BUILD_LOG) || true); \
 	printf '%-40s errors=%s\n' "-- total" "$$errs"; \
 	[ "$$errs" = "0" ] || { echo "see $(BUILD_LOG)"; exit 1; }
+
+## tutorial: build (and so run) the translations of HOL Light's Tutorial/
+# files (HolTutorial/), printing each session's output.
+tutorial:
+	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(TUTORIAL_TARGETS)
 
 ## test-module: run ONE test module standalone, e.g. make test-module M=HolTest/WfTest.lean
 test-module:

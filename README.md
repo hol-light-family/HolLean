@@ -58,6 +58,7 @@ See the HolTest directory for further examples of HOL Lean code.
 | `HolTest/`, `HolTest.lean` | the test suite (about 2,700 checks), including the examples from HOL Light's help files and its UnitTests; HolTest.lean imports every test module and is built only by `make test` and `make check` |
 | `Hol.lean` | the `hollean` executable (`hol.ml`); it does not import the tests |
 | `HolTrace/`, `HolTrace.lean` | the `holtrace` executable: a proof reconstructor for [HOLTrace](https://holtrace.cr.yp.to) files (see `HolTrace/README.md`) |
+| `HolTutorial/`, `HolTutorial.lean` | translations of HOL Light's Tutorial/ files, one toplevel session each in Prove.lean style (built by `make tutorial` and `make check`); those needing Examples/sos.ml, Examples/cooper.ml, Rqe/ or Multivariate/ are not translated yet |
 | `Prove.lean` | your scratchpad |
 
 HolCore, HolMath and HolLibrary contain no `unsafe` code and no `sorry`; the build checks this.  The `unsafe` code is in Session.lean and the modules built on it (SessionLibrary, HolInit, Database and Hol.lean).
@@ -123,6 +124,7 @@ You need Lean 4 (installed with `elan`; the version is fixed in `lean-toolchain`
 * `make test` builds and runs the tests (the HolTest library; HolTest.lean is the only place they are imported) and prints assertion counts per module.  After a build, running all the tests takes about 35 minutes of CPU, less in wall time.  There is no output until the build finishes.
 * `make verify` checks the build log for errors, warnings, failed tests, panics, and `unsafe` or `sorry` in the pure libraries.
 * `make check` does a clean build followed by `make verify`.
+* `make tutorial` builds the tutorial translations (HolTutorial), printing each session's output.
 * `make help` lists the other targets.
 
 GitHub Actions runs `make core` on pushes to main and on pull requests (`.github/workflows/ci.yml`).

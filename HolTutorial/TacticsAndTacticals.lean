@@ -1,0 +1,112 @@
+/- File: HolTutorial/TacticsAndTacticals.lean
+Translation of HOL Light's Tutorial/Tactics_and_tacticals.ml, phrase by phrase.
+Part of the Lean4 translation of HOL Light by Chris Walton 2026.
+-/
+import HolTutorial.Common
+open HolCore.Kernel Session HolLight.Syntax HolTutorial
+
+namespace HolTutorial.TacticsAndTacticals
+
+#eval phrase 1
+#eval g ([[2 <= n /\ n <= 2 ==> f(2,2) + n < f(n,n) + 7]])
+
+#eval phrase 2
+#eval e DISCH_TAC
+
+#eval phrase 3
+#eval b
+
+#eval phrase 4
+#eval e (CONV_TAC (REWRITE_CONV [LE_ANTISYM]))
+
+#eval phrase 5
+#eval e (SIMP_TAC [])
+
+#eval phrase 6
+#eval e (ONCE_REWRITE_TAC [EQ_SYM_EQ])
+
+#eval phrase 7
+#eval e DISCH_TAC
+
+#eval phrase 8
+#eval e (ASM_REWRITE_TAC [])
+
+#eval phrase 9
+#eval e (CONV_TAC ARITH_RULE)
+
+-- let trivial = top_thm();; (print-only; never reused)
+#eval phrase 10
+#eval top_thm
+
+#eval phrase 11
+#eval g ([[2 <= n /\ n <= 2 ==> f(2,2) + n < f(n,n) + 7]])
+
+#eval phrase 12
+#eval e (CONV_TAC (REWRITE_CONV [LE_ANTISYM]))
+
+#eval phrase 13
+#eval e (SIMP_TAC [])
+
+#eval phrase 14
+#eval e (ONCE_REWRITE_TAC [EQ_SYM_EQ])
+
+#eval phrase 15
+#eval e DISCH_TAC
+
+#eval phrase 16
+#eval e (ASM_REWRITE_TAC [])
+
+#eval phrase 17
+#eval e (CONV_TAC ARITH_RULE)
+
+-- let trivial = top_thm();; (rebinds trivial; print-only)
+#eval phrase 18
+#eval top_thm
+
+#eval phrase 19
+#eval g ([[2 <= n /\ n <= 2 ==> f(2,2) + n < f(n,n) + 7]])
+
+#eval phrase 20
+#eval e (CONV_TAC (REWRITE_CONV [LE_ANTISYM]) THEN
+  SIMP_TAC [] THEN ONCE_REWRITE_TAC [EQ_SYM_EQ] THEN
+  DISCH_TAC THEN ASM_REWRITE_TAC [] THEN CONV_TAC ARITH_RULE)
+
+-- let trivial = top_thm();; (print-only)
+#eval phrase 21
+#eval top_thm
+
+-- let trivial = prove(...) (print-only)
+#eval phrase 22
+#eval prove ([[2 <= n /\ n <= 2 ==> f(2,2) + n < f(n,n) + 7]])
+  (CONV_TAC (REWRITE_CONV [LE_ANTISYM]) THEN
+   SIMP_TAC [] THEN ONCE_REWRITE_TAC [EQ_SYM_EQ] THEN
+   DISCH_TAC THEN ASM_REWRITE_TAC [] THEN CONV_TAC ARITH_RULE)
+
+-- let trivial = prove(...) (rebinds trivial; print-only)
+#eval phrase 23
+#eval prove ([[!x y:real. &0 < x * y ==> (&0 < x <=> &0 < y)]])
+  (REPEAT GEN_TAC THEN MP_TAC (SPECL [([[(--x)]]), ([[y:real]])] REAL_LE_MUL) THEN
+   MP_TAC (SPECL [([[x:real]]), ([[(--y)]])] REAL_LE_MUL) THEN REAL_ARITH_TAC)
+
+-- let trivial = prove(...) (rebinds trivial; print-only)
+#eval phrase 24
+#eval prove ([[!x y:real. &0 < x * y ==> (&0 < x <=> &0 < y)]])
+  (MATCH_MP_TAC REAL_WLOG_LE THEN CONJ_TAC THEN REPEAT GEN_TAC THEN
+   MP_TAC (SPECL [([[(--x)]]), ([[y:real]])] REAL_LE_MUL) THEN REAL_ARITH_TAC)
+
+-- let SUM_OF_NUMBERS = prove(...) (print-only)
+#eval phrase 25
+#eval prove ([[!n. nsum(1..n) (\i. i) = (n * (n + 1)) DIV 2]])
+  (INDUCT_TAC THEN ASM_REWRITE_TAC [NSUM_CLAUSES_NUMSEG] THEN ARITH_TAC)
+
+-- let SUM_OF_SQUARES = prove(...) (print-only)
+#eval phrase 26
+#eval prove ([[!n. nsum(1..n) (\i. i * i) = (n * (n + 1) * (2 * n + 1)) DIV 6]])
+  (INDUCT_TAC THEN ASM_REWRITE_TAC [NSUM_CLAUSES_NUMSEG] THEN ARITH_TAC)
+
+-- let SUM_OF_CUBES = prove(...) (print-only)
+#eval phrase 27
+#eval prove ([[!n. nsum(1..n) (\i. i*i*i) = (n * n * (n + 1) * (n + 1)) DIV 4]])
+  (INDUCT_TAC THEN ASM_REWRITE_TAC [NSUM_CLAUSES_NUMSEG] THEN ARITH_TAC)
+
+end HolTutorial.TacticsAndTacticals
