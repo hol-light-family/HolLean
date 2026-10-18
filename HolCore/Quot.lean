@@ -19,8 +19,6 @@ open HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Bool HolCore.Equal
 
 namespace HolCore.Quot
 
-set_option maxRecDepth 4000
-
 /- ---------------------------------------------------------------------- -/
 /- Given a type name "ty" and a curried binary relation R, this defines   -/
 /- a new type "ty" of R-equivalence classes. The abstraction and          -/

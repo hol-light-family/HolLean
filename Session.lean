@@ -90,8 +90,18 @@ private partial def scanTo (startPos : String.Pos.Raw) : ParserFn := fun c s =>
     else
       scanTo startPos c (s.next' c i h)
 
-/-- Raw-scan combinator (from just after `[[`). -/
-def holQuotRaw : Parser := { fn := fun c s => scanTo s.pos c s, info := {} }
+/-- Raw-scan combinator (from just after `[[`).  It restarts at the END of
+    the `[[` token, not at the current position: the token parser has
+    already skipped the whitespace and comments after `[[`, and HOL text
+    can look like a Lean comment (`[[--x < a ...]]`, real negation), which
+    would otherwise lose the rest of its line. -/
+def holQuotRaw : Parser := {
+  fn := fun c s =>
+    let start := match s.stxStack.back with
+      | .atom (.original _ _ _ endPos) _ => endPos
+      | _ => s.pos
+    scanTo start c (s.setPos start),
+  info := {} }
 
 @[combinator_formatter holQuotRaw]
 def holQuotRaw.formatter : Lean.PrettyPrinter.Formatter := pure ()

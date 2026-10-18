@@ -22,8 +22,6 @@ open HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Bool HolCore.Equal
 
 namespace HolCore.Trivia
 
-set_option maxRecDepth 4000
-
 /-- Parse a term in the `ExceptT String IO` monad. -/
 private def pt (s : String) : ExceptT String IO term := parse_term s
 

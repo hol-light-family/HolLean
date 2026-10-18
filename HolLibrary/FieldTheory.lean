@@ -37,8 +37,6 @@ open HolLight HolLight.Syntax
 
 open HolLibrary.RingTheory (wPart)
 
-set_option maxRecDepth 8000
-
 namespace HolLibrary.FieldTheory
 
 -- @@COREFILL BEGIN

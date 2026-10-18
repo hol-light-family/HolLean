@@ -24,8 +24,6 @@ open HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Bool HolCore.Equal
 
 namespace HolCore.Meson
 
-set_option maxRecDepth 4000
-
 /- ---------------------------------------------------------------------- -/
 /- Some parameters controlling MESON behaviour.                           -/
 /- ---------------------------------------------------------------------- -/

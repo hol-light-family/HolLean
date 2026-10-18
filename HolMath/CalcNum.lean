@@ -30,8 +30,6 @@ import HolMath.Base
 
 namespace HolMath.CalcNum
 
-set_option maxRecDepth 8000
-
 section
 
 open HolCore HolCore.Basics

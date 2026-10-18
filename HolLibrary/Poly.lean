@@ -37,8 +37,6 @@ open HolLight HolLight.Syntax
 open HolLibrary.Analysis (undischCheck)
 open HolLibrary.Analysis (undischCheck SELECT_CONV)
 
-set_option maxRecDepth 8000
-
 namespace HolLibrary.Poly
 
 -- @@COREFILL BEGIN

@@ -235,5 +235,21 @@ private def lexOneIdent (c : Ctx) (src : String) : Except String String :=
    `Resword "//"` the skip compares against.  A faithful test would need to
    mutate the shared reserved-word ref, which is unsafe under the shared build,
    so this coverage is omitted and flagged for the coordinator. -/
+/- The `[[ ]]` quotation keeps text that looks like a Lean comment: real
+   negation at its start (`[[--a < x ...]]`) once lost the rest of the
+   line, because the scan began after the comment Lean had skipped. -/
+#eval show IO Unit from do
+  let _ ← (IO.mkRef (concl ADD_SYM) : IO (IO.Ref term))
+  let q : IO (Except String term) := [[--a < x /\ x < a /\
+    --a < y]]
+  match ← q, ← HolCore.Parser.parse_term "--a < x /\\ x < a /\\ --a < y" with
+  | .ok t, .ok u =>
+    -- (invented type variables differ between the two parses)
+    let names (tm : term) := (HolCore.Kernel.frees tm).filterMap fun v =>
+      match HolCore.Kernel.dest_var v with | .ok (n, _) => some n | .error _ => none
+    if (HolCore.Basics.conjuncts t).length == 3 && names t == names u then
+      IO.println "quotation: leading -- kept -> OK"
+    else IO.println s!"quotation: leading -- -> MISMATCH got {← HolCore.Printer.string_of_term t}"
+  | .error e, _ | _, .error e => IO.println s!"quotation: leading -- -> MISMATCH error {e}"
 
 end HolTest.ParserTest

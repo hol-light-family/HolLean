@@ -34,8 +34,6 @@ open HolCore.Tactics (tactic thm_tactic thm_tactical goal goalstate justificatio
 open HolLibrary.BDD (Tables Bdd VTable UTable CTable)
 open HolLight HolLight.Syntax
 
-set_option maxRecDepth 8000
-
 namespace HolLibrary.WordAutomata
 
 -- @@COREFILL BEGIN

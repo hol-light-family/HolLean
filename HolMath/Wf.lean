@@ -37,8 +37,6 @@ open HolLight HolLight.Syntax
 
 namespace HolMath.Wf
 
-set_option maxRecDepth 8000
-
 /-- Parse a term in the `ExceptT String IO` monad. -/
 private def pt (s : String) : ExceptT String IO term := parse_term s
 

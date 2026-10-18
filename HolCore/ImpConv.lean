@@ -38,8 +38,6 @@ open HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Bool HolCore.Equal
 
 namespace HolCore.ImpConv
 
-set_option maxRecDepth 4000
-
 /-- Pre-proved theorems the OCaml `impconv.ml` closes over (proved once in
     `Session`).  Names mirror the OCaml `let`-bound constants / `TAUT`s. -/
 structure ImpConvDeps where

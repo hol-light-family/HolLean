@@ -12,8 +12,6 @@ open HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Bool HolCore.Equal HolCor
 
 namespace HolCore.FirstOrder
 
-set_option maxRecDepth 4000
-
 /- ---------------------------------------------------------------------- -/
 /- Controls verbosity of these and the main CoP functions.                -/
 /- ---------------------------------------------------------------------- -/

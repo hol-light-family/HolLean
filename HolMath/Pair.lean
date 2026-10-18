@@ -24,8 +24,6 @@ import HolMath.Base
 
 namespace HolMath.Pair
 
-set_option maxRecDepth 4000
-
 section
 
 open HolCore HolCore.Basics

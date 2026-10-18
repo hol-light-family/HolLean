@@ -23,8 +23,6 @@ open HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Bool HolCore.Equal
 
 namespace HolCore.Canon
 
-set_option maxRecDepth 4000
-
 /-- Build-and-apply a `GEN_REWRITE_CONV cnvl thl` as a single `ioconv`. -/
 def genRewrite (B : BoolThms) (cnvl : ioconv → ioconv) (thl : List thm) : ioconv :=
   fun tm => do

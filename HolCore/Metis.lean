@@ -29,8 +29,6 @@ open HolCore.System
 
 namespace HolCore.Metis
 
-set_option maxRecDepth 8000
-
 /-- Controls output verbosity of METIS's proof reconstruction (`metisverb`,
     metis.ml 21).  Off by default, as in HOL Light. -/
 initialize metisverb : IO.Ref Bool ← IO.mkRef false

@@ -34,8 +34,6 @@ import HolMath.Base
 
 namespace HolMath.IndTypes
 
-set_option maxRecDepth 8000
-
 section
 
 open HolCore HolCore.Basics

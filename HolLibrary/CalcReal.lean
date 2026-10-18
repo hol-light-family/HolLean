@@ -37,8 +37,6 @@ open HolCore.Tactics (tactic thm_tactic thm_tactical goal goalstate justificatio
 open HolLight HolLight.Syntax
 open HolMath.CalcInt (dest_realintconst is_ratconst rat_of_term)
 
-set_option maxRecDepth 8000
-
 namespace HolLibrary.CalcReal
 
 -- @@COREFILL BEGIN

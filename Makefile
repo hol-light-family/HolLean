@@ -67,6 +67,10 @@ TEST_TARGETS ?= @/HolTest
 # The tutorial translations (HolTutorial.lean): built by `make tutorial` and
 # `make check`.
 TUTORIAL_TARGETS ?= @/HolTutorial
+# The Examples translations (HolExamples.lean): `make examples`, `make check`.
+EXAMPLES_TARGETS ?= @/HolExamples
+# The Logic/ translations (HolLogicArith.lean): `make logic`, `make check`.
+LOGIC_TARGETS ?= @/HolLogicArith
 
 # --- Parallelism -----------------------------------------------------------
 #
@@ -194,7 +198,7 @@ PURE_SRC ?= HolCore HolMath HolLibrary
 # The umbrella module every HolTest module must be imported by.
 ROOT_MODULE ?= HolTest.lean
 
-.PHONY: all build core math session proofs prove rebuild clean distclean check verify test test-module module help build-O3 test-O3 check-O3 tutorial
+.PHONY: all build core math session proofs prove rebuild clean distclean check verify test test-module module help build-O3 test-O3 check-O3 tutorial examples logic
 
 # ---------------------------------------------------------------------------
 # Building
@@ -275,7 +279,7 @@ distclean: clean
 # gate broke rather than dying silently.
 check: clean
 	@echo "==> building from scratch (THREADS=$(THREADS))"
-	@$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(BUILD_TARGETS) $(TEST_TARGETS) $(TUTORIAL_TARGETS) > $(BUILD_LOG) 2>&1 || true
+	@$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(BUILD_TARGETS) $(TEST_TARGETS) $(TUTORIAL_TARGETS) $(EXAMPLES_TARGETS) $(LOGIC_TARGETS) > $(BUILD_LOG) 2>&1 || true
 	@$(MAKE) --no-print-directory verify
 
 ## verify: apply the acceptance gates to an existing build log
@@ -376,6 +380,16 @@ test:
 # files (HolTutorial/), printing each session's output.
 tutorial:
 	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(TUTORIAL_TARGETS)
+
+## examples: build (and so run) the translations of files of HOL Light's
+# Examples/ (HolExamples/), printing each session's output.
+examples:
+	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(EXAMPLES_TARGETS)
+
+## logic: build (and so run) the translations of HOL Light's Logic/
+# (HolLogicArith/), printing each session's output.
+logic:
+	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(LOGIC_TARGETS)
 
 ## test-module: run ONE test module standalone, e.g. make test-module M=HolTest/WfTest.lean
 test-module:

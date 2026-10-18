@@ -18,8 +18,6 @@ open HolLight
 
 namespace HolMath.Recursion
 
-set_option maxRecDepth 4000
-
 /- ---------------------------------------------------------------------- -/
 /- Prove existence of recursive function. The inner "raw" version requires-/
 /- exact correspondence with recursion theorem; "canon" requires the      -/

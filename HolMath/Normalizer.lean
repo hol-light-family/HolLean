@@ -28,8 +28,6 @@ import HolMath.Base
 
 namespace HolMath.Normalizer
 
-set_option maxRecDepth 8000
-
 section Structures
 
 open HolCore HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Bool HolCore.Equal

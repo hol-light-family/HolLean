@@ -29,8 +29,6 @@ open HolCore.Tactics (tactic thm_tactic thm_tactical goal goalstate justificatio
 open HolLight HolLight.Syntax
 open HolLibrary.Wo (list3 lastThm elThm undischCheck subgoalLhand2 subgoalAnte2 NO_TAC)
 
-set_option maxRecDepth 8000
-
 namespace HolLibrary.Card
 
 /- ------------------------------------------------------------------------- -/

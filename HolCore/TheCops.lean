@@ -22,8 +22,6 @@ open HolCore.Tactics HolCore.FirstOrder
 
 namespace HolCore.TheCops
 
-set_option maxRecDepth 8000
-
 /- `copverb` is `HolCore.FirstOrder.copverb` (firstorder.ml 13), the one
    flag OCaml's thecops.ml reads too. -/
 open HolCore.FirstOrder (copverb)

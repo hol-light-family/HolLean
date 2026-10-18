@@ -32,8 +32,6 @@ open HolCore.Preterm (preterm pretype dpty)
 open HolCore.Parser (lexcode PErr Ctx ParserM)
 open HolLight HolLight.Syntax
 
-set_option maxRecDepth 8000
-
 namespace HolLibrary.BitMatch
 
 /- ------------------------------------------------------------------------- -/

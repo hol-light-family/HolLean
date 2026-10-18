@@ -36,8 +36,6 @@ import HolMath.Base
 
 namespace HolMath.Grobner
 
-set_option maxRecDepth 8000
-
 section Polynomials
 
 open HolCore HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Bool HolCore.Equal

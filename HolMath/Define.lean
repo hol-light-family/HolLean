@@ -21,8 +21,6 @@ import HolMath.Base
 
 namespace HolMath.Define
 
-set_option maxRecDepth 8000
-
 /- ---------------------------------------------------------------------- -/
 /- Constant supporting casewise definitions.  (define.ml 10-47)            -/
 /- ---------------------------------------------------------------------- -/

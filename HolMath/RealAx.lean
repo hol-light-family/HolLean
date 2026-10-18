@@ -39,8 +39,6 @@ import HolMath.Base
 
 namespace HolMath.RealAx
 
-set_option maxRecDepth 8000
-
 section
 
 open HolCore HolCore.Basics

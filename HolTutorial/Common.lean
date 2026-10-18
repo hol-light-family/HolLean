@@ -34,18 +34,40 @@ unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Ses
 
 initialize keepCell : IO.Ref (Std.HashMap String NonScalar) ← IO.mkRef {}
 
-/-- `keep name f`: the value of `f ()`, computed at the first call with this
-    `name` and cached (OCaml's `let name = ...;;`, evaluated once). -/
-@[noinline] unsafe def keep {α : Type} (name : String) (f : Unit → α) : α :=
+/-- A cached value, boxed.  The box is what makes `keep` evaluate once
+    for a FUNCTION-valued `let` (a conversion, rule or tactic): Lean's
+    compiler merges `fun _ => e` with the function `e` returns into one
+    lambda of higher arity, so `e` itself (with any proof it does) would
+    run again at every application.  A lambda returning a structure is not
+    merged. -/
+structure Kept (α : Type) where
+  val : α
+  tag : Unit
+
+/-- `keepBoxed name f`: the value of `f ()`, computed at the first call with
+    this `name` and cached.  Use it through `keep`. -/
+@[noinline] unsafe def keepBoxed {α : Type} (name : String) (f : Unit → Kept α) : α :=
   match unsafeIO (do
     match (← keepCell.get).get? name with
-    | some v => pure (unsafeCast v : α)
+    | some v => pure (unsafeCast v : Kept α).val
     | none =>
-      let v := f ()
-      keepCell.modify (·.insert name (unsafeCast v))
-      pure v) with
+      let b := f ()
+      keepCell.modify (·.insert name (unsafeCast b))
+      pure b.val) with
   | .ok v => v
-  | .error _ => f ()
+  | .error _ => (f ()).val
+
+/-- The cache key of `keep name` in declaration `d`: the same name in two
+    modules (or two declarations) is two different values. -/
+def keyOf (d : Lean.Name) (name : String) : String := s!"{d}/{name}"
+
+/-- `keep name f`: the value of `f ()`, computed at the first use with this
+    `name` and cached (OCaml's `let name = ...;;`, evaluated once).  Written
+    `keep "x" fun _ => e`. -/
+scoped syntax "keep " term:max ppSpace term : term
+scoped macro_rules
+  | `(keep $n fun _ => $e) => `(keepBoxed (keyOf decl_name% $n) (fun _ => ⟨$e, ()⟩))
+  | `(keep $n $f) => `(keepBoxed (keyOf decl_name% $n) (fun u => ⟨$f u, ()⟩))
 
 /-- Print a failure as HOL Light's toplevel reports an uncaught `Failure`:
     `Exception: Failure "msg".` -/

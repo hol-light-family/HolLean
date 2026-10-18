@@ -22,8 +22,6 @@ import HolMath.Base
 
 namespace HolMath.Int
 
-set_option maxRecDepth 8000
-
 open HolCore HolCore.Lib HolCore.Basics
 open HolCore.Kernel hiding ASSUME INST TRANS EQ_MP MK_COMB
 open HolCore.Equal (ioconv lhs lhand rhs)

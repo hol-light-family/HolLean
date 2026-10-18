@@ -27,8 +27,6 @@ import HolMath.Base
 
 namespace HolMath.Arith
 
-set_option maxRecDepth 8000
-
 /- ---------------------------------------------------------------------- -/
 /- Note: all the following proofs are intuitionistic and intensional,     -/
 /- except for the least number principle num_WOP.                         -/

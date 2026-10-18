@@ -42,7 +42,6 @@ open HolLibrary.Analysis (ALPHA_CONV ETA_CONV SELECT_CONV ABS NO_TAC undischChec
 
 namespace HolLibrary.Transc
 
-set_option maxRecDepth 8000
 set_option maxHeartbeats 4000000
 
 /- ------------------------------------------------------------------------- -/

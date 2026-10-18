@@ -36,8 +36,6 @@ open HolLight (HolBase)
 
 namespace HolMath.Compute
 
-set_option maxRecDepth 4000
-
 /- ---------------------------------------------------------------------- -/
 /- compute_rules.sml : the reduction stack.                               -/
 /- ---------------------------------------------------------------------- -/

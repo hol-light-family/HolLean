@@ -280,15 +280,12 @@ unsafe def COMPUTE_DEPTH_CONV (cnv : HolCore.Equal.ioconv) : HolCore.Equal.iocon
 
 /- time e (GEN_REWRITE_TAC COMPUTE_DEPTH_CONV [norm; taut; MEM; ARITH_EQ]);; -/
 #eval phrase 27
-#eval do
-  IO.println "CPU time (user): 0.0"
-  e (GEN_REWRITE_TAC COMPUTE_DEPTH_CONV [norm, taut, listDefs.MEM, ARITH_EQ])
+#eval HolCore.Lib.time e (GEN_REWRITE_TAC COMPUTE_DEPTH_CONV [norm, taut, listDefs.MEM, ARITH_EQ])
 
 /- ignore(b()); time e (REWRITE_TAC[norm; taut; MEM; ARITH_EQ]);; -/
 #eval phrase 28
 #eval do
   let _ ← b
-  IO.println "CPU time (user): 0.0"
-  e (REWRITE_TAC [norm, taut, listDefs.MEM, ARITH_EQ])
+  HolCore.Lib.time e (REWRITE_TAC [norm, taut, listDefs.MEM, ARITH_EQ])
 
 end HolTutorial.HolAsAFunctionalProgrammingLanguage

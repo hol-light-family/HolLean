@@ -20,8 +20,6 @@ open HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Bool HolCore.Equal
 
 namespace HolCore.Theorems
 
-set_option maxRecDepth 4000
-
 /-- The standard logical theorems proved in `theorems.ml`. Built once by
     `setupTheorems` (which also extends the basic rewrites/congruences). -/
 structure TheoremThms where

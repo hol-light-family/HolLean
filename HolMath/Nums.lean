@@ -23,8 +23,6 @@ import HolMath.Base
 
 namespace HolMath.Nums
 
-set_option maxRecDepth 4000
-
 section
 
 open HolCore HolCore.Basics

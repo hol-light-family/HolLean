@@ -39,7 +39,6 @@ open HolLight HolLight.Syntax
 
 namespace HolLibrary.Analysis
 
-set_option maxRecDepth 8000
 set_option maxHeartbeats 4000000
 
 /- ------------------------------------------------------------------------- -/

@@ -31,8 +31,6 @@ import HolMath.Base
 
 namespace HolMath.Iterate
 
-set_option maxRecDepth 8000
-
 open HolCore HolCore.Basics
 open HolCore.Lib hiding rev end_itlist F_F
 open HolCore.Kernel hiding ASSUME INST INST_TYPE TRANS EQ_MP MK_COMB

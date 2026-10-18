@@ -51,7 +51,6 @@ open HolLight HolLight.Syntax
 
 namespace HolLibrary.Prime
 
-set_option maxRecDepth 8000
 set_option maxHeartbeats 1000000
 
 /- ------------------------------------------------------------------------- -/

@@ -59,6 +59,8 @@ See the HolTest directory for further examples of HOL Lean code.
 | `Hol.lean` | the `hollean` executable (`hol.ml`); it does not import the tests |
 | `HolTrace/`, `HolTrace.lean` | the `holtrace` executable: a proof reconstructor for [HOLTrace](https://holtrace.cr.yp.to) files (see `HolTrace/README.md`) |
 | `HolTutorial/`, `HolTutorial.lean` | translations of HOL Light's Tutorial/ files, one toplevel session each in Prove.lean style (built by `make tutorial` and `make check`); those needing Examples/sos.ml, Examples/cooper.ml, Rqe/ or Multivariate/ are not translated yet |
+| `HolExamples/`, `HolExamples.lean` | translations of 31 files of HOL Light's Examples/ (those whose dependencies are translated, except sos.ml, which needs the external solver csdp), in the same style (built by `make examples` and `make check`, except BitBlast, about 45 minutes: `lake build HolExamples.BitBlast`) |
+| `HolLogicArith/`, `HolLogicArith.lean` | translations of HOL Light's Logic/ (18 files) and Arithmetic/ (8 files; its fol.ml is `ArithFol`), in the same style; each module first replays those its make.ml loads before it (built by `make logic` and `make check`) |
 | `Prove.lean` | your scratchpad |
 
 HolCore, HolMath and HolLibrary contain no `unsafe` code and no `sorry`; the build checks this.  The `unsafe` code is in Session.lean and the modules built on it (SessionLibrary, HolInit, Database and Hol.lean).
@@ -124,7 +126,7 @@ You need Lean 4 (installed with `elan`; the version is fixed in `lean-toolchain`
 * `make test` builds and runs the tests (the HolTest library; HolTest.lean is the only place they are imported) and prints assertion counts per module.  After a build, running all the tests takes about 35 minutes of CPU, less in wall time.  There is no output until the build finishes.
 * `make verify` checks the build log for errors, warnings, failed tests, panics, and `unsafe` or `sorry` in the pure libraries.
 * `make check` does a clean build followed by `make verify`.
-* `make tutorial` builds the tutorial translations (HolTutorial), printing each session's output.
+* `make tutorial` builds the tutorial translations (HolTutorial), printing each session's output; `make examples` and `make logic` do the same for HolExamples and HolLogicArith.
 * `make help` lists the other targets.
 
 GitHub Actions runs `make core` on pushes to main and on pull requests (`.github/workflows/ci.yml`).

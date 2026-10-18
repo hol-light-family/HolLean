@@ -17,8 +17,6 @@ import HolMath.Base
 
 namespace HolMath.RealArith
 
-set_option maxRecDepth 8000
-
 section
 
 open HolCore HolCore.Basics

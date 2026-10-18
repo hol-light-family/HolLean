@@ -20,8 +20,6 @@ open HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Bool HolCore.Equal
 
 namespace HolCore.IndDefs
 
-set_option maxRecDepth 4000
-
 /- ---------------------------------------------------------------------- -/
 /- Strip off exactly n arguments from combination.                        -/
 /- ---------------------------------------------------------------------- -/

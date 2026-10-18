@@ -26,6 +26,9 @@ def optArgs (level : String) : Array String :=
 package HolLean where
   version := v!"0.1.0"
   moreLeancArgs := optArgs (optLevel?.getD "3")
+  -- One recursion limit for every module (instead of a `set_option` in
+  -- each file): elaboration of the large proof scripts nests deeply.
+  leanOptions := #[⟨`maxRecDepth, (8000 : Nat)⟩]
   buildDir := match optLevel? with
     | none => defaultBuildDir
     | some level => defaultBuildDir.toString ++ "-O" ++ level
@@ -118,6 +121,18 @@ lean_lib SessionLibrary where
    runs it.  Built by `make tutorial` and `make check`. -/
 lean_lib HolTutorial where
   roots := #[`HolTutorial]
+
+/- Translations of files of HOL Light's Examples/ (HolExamples.lean imports
+   them all), in the same style as HolTutorial.  Built by `make examples`
+   and `make check`. -/
+lean_lib HolExamples where
+  roots := #[`HolExamples]
+
+/- Translations of HOL Light's Logic/ (HolLogicArith.lean imports them all),
+   in the same style as HolTutorial; each module replays the ones Logic/make.ml
+   loads before it.  Built by `make logic`. -/
+lean_lib HolLogicArith where
+  roots := #[`HolLogicArith]
 
 lean_lib HolTrace where
   roots := #[`HolTrace]

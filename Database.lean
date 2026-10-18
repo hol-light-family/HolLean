@@ -26,8 +26,6 @@ open HolCore.Kernel
 
 namespace Database
 
-set_option maxRecDepth 20000
-
 /-- The theorem produced by a Session action (`option_DISTINCT`/`option_INJ`
     are computed on demand there). -/
 private unsafe def run (a : IO (Except String thm)) : thm :=

@@ -35,8 +35,6 @@ open HolCore.Equal (ioconv lhs lhand rhs)
 open HolCore.Tactics (tactic thm_tactic thm_tactical goal goalstate justification)
 open HolLight HolLight.Syntax
 
-set_option maxRecDepth 8000
-
 namespace HolLibrary.Primitive
 
 -- @@COREFILL BEGIN
