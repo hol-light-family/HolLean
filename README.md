@@ -62,7 +62,7 @@ See the HolTest directory for further examples of HOL Lean code.
 | `Hol.lean` | the `hollean` executable (`hol.ml`); it does not import the tests |
 | `HolTrace/`, `HolTrace.lean` | the `holtrace` executable: a proof reconstructor for [HOLTrace](https://holtrace.cr.yp.to) files (see `HolTrace/README.md`) |
 | `HolTutorial/` | translations of HOL Light's Tutorial/ files, one toplevel session each in Prove.lean style (built by `make tutorial` and `make check`); Vectors.ml (it needs Examples/sos.ml and Rqe/) and the two files that load it are not translated yet |
-| `HolExamples/` | translations of 34 files of HOL Light's Examples/ (those whose dependencies are translated, except sos.ml, which needs the external solver csdp, and padics.ml, not yet done), in the same style (built by `make examples` and `make check`; BitBlast takes about 10 minutes) |
+| `HolExamples/` | translations of 35 files of HOL Light's Examples/ (those whose dependencies are translated, except sos.ml, which needs the external solver csdp), in the same style (built by `make examples` and `make check`; BitBlast takes about 10 minutes) |
 | `HolLogicArith/` | translations of HOL Light's Logic/ (18 files) and Arithmetic/ (8 files; its fol.ml is `ArithFol`), in the same style; each module imports the files its make.ml loads before it (built by `make logic` and `make check`) |
 | `Prove.lean` | your scratchpad |
 
