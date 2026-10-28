@@ -3,14 +3,10 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Binary.lean
 
-  The `unsafe` half of the binary.ml translation: it supplies
-  HolLibrary.Binary's dependencies from Session, builds the bundle once,
-  and exports every name under its HOL Light name.  `ensureBinary` is
-  `needs "Library/binary.ml"`.
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Binary.lean by tools/binarydiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the binary.ml translation: it supplies
+  HolLibrary.Binary's dependencies from Session and exports every name under
+  its HOL Light name.  Importing this module is `needs "Library/binary.ml"`:
+  the bundle is built by `initialize` when the module is loaded.
 -/
 
 import Session
@@ -21,12 +17,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Binary
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems binary.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Binary.CoreThms1 where
+def core1 : HolLibrary.Binary.CoreThms1 where
   ADD1 := Session.ADD1
   ADD_ASSOC := Session.ADD_ASSOC
   ADD_SYM := Session.ADD_SYM
@@ -102,10 +94,10 @@ unsafe def core1 (_ : Unit) : HolLibrary.Binary.CoreThms1 where
   UNWIND_THM1 := Session.UNWIND_THM1
   num_INDUCTION := Session.num_INDUCTION
   o_DEF := Session.o_DEF
-  support := Session.support-- @@CORE END
+  support := Session.support
 
 /-- What binary.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Binary.BinaryDeps where
+def deps : HolLibrary.Binary.BinaryDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
   ARITH_TAC := Session.ARITH_TAC
@@ -114,65 +106,37 @@ unsafe def deps (_ : Unit) : HolLibrary.Binary.BinaryDeps where
   MESON_TAC := Session.MESON_TAC
   SET_RULE t := ExceptT.mk (Session.SET_RULE t)
   SET_TAC := Session.SET_TAC
-  core1 := core1 ()
+  core1 := core1
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml). -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Binary: {name}"
+/-- binary.ml, run when this module is loaded. -/
+initialize BBinary : HolLibrary.Binary.Binary ← do
+  match ← (HolLibrary.Binary.setupBinary deps).run with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"setupBinary failed: {e}")
 
-/- The bundles, in binary.ml order. -/
-
--- @@BUNDLES BEGIN
-initialize theBinary : IO.Ref (Option HolLibrary.Binary.Binary) ← IO.mkRef none
-unsafe def BBinary : HolLibrary.Binary.Binary :=
-  cached theBinary "setupBinary" fun _ => do
-    (HolLibrary.Binary.setupBinary (deps ())).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Binary
-unsafe def BOUNDED_FINITE : thm := BBinary.BOUNDED_FINITE
-unsafe def EVEN_NSUM : thm := BBinary.EVEN_NSUM
-unsafe def bitset : thm := BBinary.bitset
-unsafe def binarysum : thm := BBinary.binarysum
-unsafe def BITSET_BOUND_LEMMA : thm := BBinary.BITSET_BOUND_LEMMA
-unsafe def BITSET_BOUND_WEAK : thm := BBinary.BITSET_BOUND_WEAK
-unsafe def FINITE_BITSET : thm := BBinary.FINITE_BITSET
-unsafe def BITSET_0 : thm := BBinary.BITSET_0
-unsafe def BITSET_STEP : thm := BBinary.BITSET_STEP
-unsafe def BINARYSUM_BITSET : thm := BBinary.BINARYSUM_BITSET
-unsafe def BITSET_EQ : thm := BBinary.BITSET_EQ
-unsafe def BITSET_EQ_EMPTY : thm := BBinary.BITSET_EQ_EMPTY
-unsafe def BINARYSUM_BOUND_LEMMA : thm := BBinary.BINARYSUM_BOUND_LEMMA
-unsafe def BINARYSUM_DIV_DIVISIBLE : thm := BBinary.BINARYSUM_DIV_DIVISIBLE
-unsafe def BINARYSUM_DIV : thm := BBinary.BINARYSUM_DIV
-unsafe def BITSET_BINARYSUM : thm := BBinary.BITSET_BINARYSUM
-unsafe def BINARYSUM_BOUND : thm := BBinary.BINARYSUM_BOUND
-unsafe def BITSET_BOUND : thm := BBinary.BITSET_BOUND
-unsafe def BITSET_BOUND_EQ : thm := BBinary.BITSET_BOUND_EQ
-unsafe def BINARYSUM_BOUND_EQ : thm := BBinary.BINARYSUM_BOUND_EQ
+def BOUNDED_FINITE : thm := BBinary.BOUNDED_FINITE
+def EVEN_NSUM : thm := BBinary.EVEN_NSUM
+def bitset : thm := BBinary.bitset
+def binarysum : thm := BBinary.binarysum
+def BITSET_BOUND_LEMMA : thm := BBinary.BITSET_BOUND_LEMMA
+def BITSET_BOUND_WEAK : thm := BBinary.BITSET_BOUND_WEAK
+def FINITE_BITSET : thm := BBinary.FINITE_BITSET
+def BITSET_0 : thm := BBinary.BITSET_0
+def BITSET_STEP : thm := BBinary.BITSET_STEP
+def BINARYSUM_BITSET : thm := BBinary.BINARYSUM_BITSET
+def BITSET_EQ : thm := BBinary.BITSET_EQ
+def BITSET_EQ_EMPTY : thm := BBinary.BITSET_EQ_EMPTY
+def BINARYSUM_BOUND_LEMMA : thm := BBinary.BINARYSUM_BOUND_LEMMA
+def BINARYSUM_DIV_DIVISIBLE : thm := BBinary.BINARYSUM_DIV_DIVISIBLE
+def BINARYSUM_DIV : thm := BBinary.BINARYSUM_DIV
+def BITSET_BINARYSUM : thm := BBinary.BITSET_BINARYSUM
+def BINARYSUM_BOUND : thm := BBinary.BINARYSUM_BOUND
+def BITSET_BOUND : thm := BBinary.BITSET_BOUND
+def BITSET_BOUND_EQ : thm := BBinary.BITSET_BOUND_EQ
+def BINARYSUM_BOUND_EQ : thm := BBinary.BINARYSUM_BOUND_EQ
 
-
--- @@EXPORTS END
-
-/-- `needs "Library/binary.ml"`: build every bundle, in file order. -/
-unsafe def ensureBinary : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BBinary.BOUNDED_FINITE  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/binary.ml"`: already done by importing this module. -/
+def ensureBinary : IO Unit := pure ()
 
 end SessionLibrary.Binary

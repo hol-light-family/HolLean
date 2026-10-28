@@ -20,46 +20,46 @@ namespace HolLogicArith.Prolog
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1` bundles; alias the ones we need. -/
-private unsafe def LENGTH : thm := Session.listDefs.LENGTH
-private unsafe def MAP : thm := Session.listDefs.MAP
-private unsafe def ITLIST : thm := Session.listDefs.ITLIST
-private unsafe def MEM : thm := Session.listDefs.MEM
-private unsafe def ALL : thm := Session.listDefs.ALL
-private unsafe def MEM_MAP : thm := Session.listThms1.MEM_MAP
-private unsafe def ALL2 : thm := Session.listDefs.ALL2
-private unsafe def ALL_MEM : thm := Session.listThms1.ALL_MEM
-private unsafe def ALL_IMP : thm := Session.listThms1.ALL_IMP
-private unsafe def ALL_MAP : thm := Session.listThms1.ALL_MAP
-private unsafe def ALL_T : thm := Session.listThms1.ALL_T
-private unsafe def EX_MAP : thm := Session.listThms1.EX_MAP
-private unsafe def EX_MEM : thm := Session.listThms1.EX_MEM
-private unsafe def MAP_EQ : thm := Session.listThms1.MAP_EQ
-private unsafe def MAP_EQ_DEGEN : thm := Session.listThms1.MAP_EQ_DEGEN
-private unsafe def FORALL_ALL : thm := Session.listThms1.FORALL_ALL
-private unsafe def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
+private def LENGTH : thm := Session.listDefs.LENGTH
+private def MAP : thm := Session.listDefs.MAP
+private def ITLIST : thm := Session.listDefs.ITLIST
+private def MEM : thm := Session.listDefs.MEM
+private def ALL : thm := Session.listDefs.ALL
+private def MEM_MAP : thm := Session.listThms1.MEM_MAP
+private def ALL2 : thm := Session.listDefs.ALL2
+private def ALL_MEM : thm := Session.listThms1.ALL_MEM
+private def ALL_IMP : thm := Session.listThms1.ALL_IMP
+private def ALL_MAP : thm := Session.listThms1.ALL_MAP
+private def ALL_T : thm := Session.listThms1.ALL_T
+private def EX_MAP : thm := Session.listThms1.EX_MAP
+private def EX_MEM : thm := Session.listThms1.EX_MEM
+private def MAP_EQ : thm := Session.listThms1.MAP_EQ
+private def MAP_EQ_DEGEN : thm := Session.listThms1.MAP_EQ_DEGEN
+private def FORALL_ALL : thm := Session.listThms1.FORALL_ALL
+private def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
 
 #eval HolLogicArith.Given.ensure
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_inductive_definition`, panicking with HOL Light's message on failure. -/
-private unsafe def newInductive (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+private def newInductive (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"new_inductive_definition: {e}"
   | .error e => panic! s!"new_inductive_definition IO: {e}"
 
 /- `INST_TYPE [`:term`,`:A`]` as a thm->thm action, for the `o MATCH_MP th`
    compositions below. -/
-private unsafe def instTermForA (th : thm) : ExceptT String IO thm := do
+private def instTermForA (th : thm) : ExceptT String IO thm := do
   let tyterm ← ExceptT.mk (HolCore.Parser.parse_type "term")
   HolLight.INST_TYPE [(tyterm, mk_vartype "A")] th
 
 #eval phrase 1
-unsafe def SATISFIES_IMAGE : thm := keep "SATISFIES_IMAGE" fun _ => (do
+def SATISFIES_IMAGE : thm := keep "SATISFIES_IMAGE" fun _ => (do
   prove ([[M satisfies (IMAGE f s) <=>
    !x v. valuation(M) v /\ x IN s ==> holds M v (f x)]])
    (REWRITE_TAC [satisfies, IN_IMAGE] THEN MESON_TAC [])
@@ -67,29 +67,29 @@ unsafe def SATISFIES_IMAGE : thm := keep "SATISFIES_IMAGE" fun _ => (do
 #eval SATISFIES_IMAGE
 
 #eval phrase 2
-unsafe def definite : thm := keep "definite" fun _ => new_definition
+def definite : thm := keep "definite" fun _ => new_definition
   [[definite(cl) <=> clause(cl) /\ (CARD {p | p IN cl /\ positive p} = 1)]]
 #eval definite
 
 #eval phrase 3
-unsafe def horn : thm := keep "horn" fun _ => new_definition
+def horn : thm := keep "horn" fun _ => new_definition
   [[horn(cl) <=> clause(cl) /\ CARD {p | p IN cl /\ positive p} <= 1]]
 #eval horn
 
 #eval phrase 4
-unsafe def DEFINITE_IMP_HORN : thm := keep "DEFINITE_IMP_HORN" fun _ => (do
+def DEFINITE_IMP_HORN : thm := keep "DEFINITE_IMP_HORN" fun _ => (do
   prove ([[!cl. definite(cl) ==> horn(cl)]])
    (SIMP_TAC [definite, horn, LE_REFL])
   : ExceptT String IO thm).run
 #eval DEFINITE_IMP_HORN
 
 #eval phrase 5
-unsafe def falsify : thm := keep "falsify" fun _ => new_definition
+def falsify : thm := keep "falsify" fun _ => new_definition
   [[falsify ff cl = if definite(cl) then cl else ff INSERT cl]]
 #eval falsify
 
 #eval phrase 6
-unsafe def FALSIFY_FINITE : thm := keep "FALSIFY_FINITE" fun _ => (do
+def FALSIFY_FINITE : thm := keep "FALSIFY_FINITE" fun _ => (do
   prove ([[FINITE(cl) ==> FINITE(falsify ff cl)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [falsify] THEN
     COND_CASES_TAC THEN ASM_SIMP_TAC [FINITE_RULES])
@@ -97,7 +97,7 @@ unsafe def FALSIFY_FINITE : thm := keep "FALSIFY_FINITE" fun _ => (do
 #eval FALSIFY_FINITE
 
 #eval phrase 7
-unsafe def FALSIFY_DEFINITE : thm := keep "FALSIFY_DEFINITE" fun _ => (do
+def FALSIFY_DEFINITE : thm := keep "FALSIFY_DEFINITE" fun _ => (do
   prove ([[horn(cl) ==> definite(falsify (Atom P args) cl)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [falsify] THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN UNDISCH_TAC [[~(definite cl)]] THEN
@@ -131,7 +131,7 @@ unsafe def FALSIFY_DEFINITE : thm := keep "FALSIFY_DEFINITE" fun _ => (do
 #eval FALSIFY_DEFINITE
 
 #eval phrase 8
-unsafe def HOLDS_FALSIFY : thm := keep "HOLDS_FALSIFY" fun _ => (do
+def HOLDS_FALSIFY : thm := keep "HOLDS_FALSIFY" fun _ => (do
   prove ([[FINITE(cl) /\ holds M v (interp cl)
    ==> holds M v (interp(falsify ff cl))]])
    (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
@@ -142,7 +142,7 @@ unsafe def HOLDS_FALSIFY : thm := keep "HOLDS_FALSIFY" fun _ => (do
 #eval HOLDS_FALSIFY
 
 #eval phrase 9
-unsafe def REDUCE_HORN_DEFINITE : thm := keep "REDUCE_HORN_DEFINITE" fun _ => (do
+def REDUCE_HORN_DEFINITE : thm := keep "REDUCE_HORN_DEFINITE" fun _ => (do
   prove ([[(!c. c IN s ==> clause c) /\
    ~((Atom ff []) IN UNIONS s) /\ ~(Not(Atom ff []) IN UNIONS s)
    ==> (~(satisfiable (U:A->bool) (IMAGE interp s)) <=>
@@ -223,7 +223,7 @@ unsafe def REDUCE_HORN_DEFINITE : thm := keep "REDUCE_HORN_DEFINITE" fun _ => (d
 #eval REDUCE_HORN_DEFINITE
 
 #eval phrase 10
-unsafe def minmodel : thm := keep "minmodel" fun _ => new_definition
+def minmodel : thm := keep "minmodel" fun _ => new_definition
   [[minmodel s =
      herbase(functions s),
      Fn,
@@ -234,7 +234,7 @@ unsafe def minmodel : thm := keep "minmodel" fun _ => new_definition
 #eval minmodel
 
 #eval phrase 11
-unsafe def MINMODEL_MINIMAL : thm := keep "MINMODEL_MINIMAL" fun _ => (do
+def MINMODEL_MINIMAL : thm := keep "MINMODEL_MINIMAL" fun _ => (do
   prove ([[!p v s.
         atom p
         ==> (holds (minmodel s) v p <=>
@@ -267,7 +267,7 @@ unsafe def MINMODEL_MINIMAL : thm := keep "MINMODEL_MINIMAL" fun _ => (do
 #eval MINMODEL_MINIMAL
 
 #eval phrase 12
-unsafe def HOLDS_ITLIST_IMP : thm := keep "HOLDS_ITLIST_IMP" fun _ => (do
+def HOLDS_ITLIST_IMP : thm := keep "HOLDS_ITLIST_IMP" fun _ => (do
   prove ([[!M v asm c.
         holds M v (ITLIST (-->) asm c) <=>
         (?p. MEM p asm /\ ~(holds M v p)) \/ holds M v c]])
@@ -278,7 +278,7 @@ unsafe def HOLDS_ITLIST_IMP : thm := keep "HOLDS_ITLIST_IMP" fun _ => (do
 #eval HOLDS_ITLIST_IMP
 
 #eval phrase 13
-unsafe def breakhorn : thm := keep "breakhorn" fun _ => new_definition
+def breakhorn : thm := keep "breakhorn" fun _ => new_definition
   [[breakhorn(cl) =
         if definite cl then
           let p = @p. p IN cl /\ positive p in
@@ -287,17 +287,17 @@ unsafe def breakhorn : thm := keep "breakhorn" fun _ => new_definition
 #eval breakhorn
 
 #eval phrase 14
-unsafe def hypotheses : thm := keep "hypotheses" fun _ => new_definition
+def hypotheses : thm := keep "hypotheses" fun _ => new_definition
   [[hypotheses cl = FST(breakhorn cl)]]
 #eval hypotheses
 
 #eval phrase 15
-unsafe def conclusion : thm := keep "conclusion" fun _ => new_definition
+def conclusion : thm := keep "conclusion" fun _ => new_definition
   [[conclusion cl = SND(breakhorn cl)]]
 #eval conclusion
 
 #eval phrase 16
-unsafe def HOLDS_HORN : thm := keep "HOLDS_HORN" fun _ => (do
+def HOLDS_HORN : thm := keep "HOLDS_HORN" fun _ => (do
   prove ([[!cl. horn(cl)
         ==> ALL atom (hypotheses cl) /\
             (if definite(cl) then atom(conclusion cl)
@@ -384,7 +384,7 @@ unsafe def HOLDS_HORN : thm := keep "HOLDS_HORN" fun _ => (do
 #eval HOLDS_HORN
 
 #eval phrase 17
-unsafe def MINMODEL_MODEL : thm := keep "MINMODEL_MODEL" fun _ => (do
+def MINMODEL_MODEL : thm := keep "MINMODEL_MODEL" fun _ => (do
   prove ([[(!cl. cl IN s ==> definite(cl))
    ==> minmodel(IMAGE interp s) satisfies (IMAGE interp s)]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [satisfies] THEN
@@ -437,7 +437,7 @@ unsafe def MINMODEL_MODEL : thm := keep "MINMODEL_MODEL" fun _ => (do
 #eval MINMODEL_MODEL
 
 #eval phrase 18
-unsafe def CONCLUSION_DEFINITE : thm := keep "CONCLUSION_DEFINITE" fun _ => (do
+def CONCLUSION_DEFINITE : thm := keep "CONCLUSION_DEFINITE" fun _ => (do
   prove ([[!cl p. definite cl /\ p IN cl /\ positive p
           ==> (conclusion cl = p)]])
    (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [conclusion, breakhorn] THEN
@@ -461,7 +461,7 @@ unsafe def CONCLUSION_DEFINITE : thm := keep "CONCLUSION_DEFINITE" fun _ => (do
 #eval CONCLUSION_DEFINITE
 
 #eval phrase 19
-unsafe def CONCLUSION_DEFINITE_ALT : thm := keep "CONCLUSION_DEFINITE_ALT" fun _ => (do
+def CONCLUSION_DEFINITE_ALT : thm := keep "CONCLUSION_DEFINITE_ALT" fun _ => (do
   prove ([[!cl p. clause cl /\ p IN cl /\ positive p /\
           (!q. q IN cl /\ ~(q = p) ==> negative q)
           ==> (conclusion cl = p)]])
@@ -475,7 +475,7 @@ unsafe def CONCLUSION_DEFINITE_ALT : thm := keep "CONCLUSION_DEFINITE_ALT" fun _
 #eval CONCLUSION_DEFINITE_ALT
 
 #eval phrase 20
-unsafe def HYPOTHESES_CONCLUSION : thm := keep "HYPOTHESES_CONCLUSION" fun _ => (do
+def HYPOTHESES_CONCLUSION : thm := keep "HYPOTHESES_CONCLUSION" fun _ => (do
   prove ([[!cl. definite cl
         ==> (set_of_list(hypotheses cl) =
              IMAGE (~~) (cl DELETE (conclusion cl)))]])
@@ -490,20 +490,20 @@ unsafe def HYPOTHESES_CONCLUSION : thm := keep "HYPOTHESES_CONCLUSION" fun _ => 
 #eval HYPOTHESES_CONCLUSION
 
 #eval phrase 21
-unsafe def gbackchain_triple : thm × thm × thm := keep "gbackchain_triple" fun _ =>
+def gbackchain_triple : thm × thm × thm := keep "gbackchain_triple" fun _ =>
   newInductive
     [[!cl i ns. cl IN s /\
                (!x. i(x) IN herbase(functions(IMAGE interp s))) /\
                ALL2 (gbackchain s) ns (MAP (formsubst i) (hypotheses cl))
                ==> gbackchain s (ITLIST (+) ns 1)
                                 (formsubst i (conclusion cl))]]
-unsafe def gbackchain_RULES : thm := gbackchain_triple.1
-unsafe def gbackchain_INDUCT : thm := gbackchain_triple.2.1
-unsafe def gbackchain_CASES : thm := gbackchain_triple.2.2
+def gbackchain_RULES : thm := gbackchain_triple.1
+def gbackchain_INDUCT : thm := gbackchain_triple.2.1
+def gbackchain_CASES : thm := gbackchain_triple.2.2
 #eval do IO.println gbackchain_RULES; IO.println gbackchain_INDUCT; IO.println gbackchain_CASES
 
 #eval phrase 22
-unsafe def ALL2_TRIV : thm := keep "ALL2_TRIV" fun _ => (do
+def ALL2_TRIV : thm := keep "ALL2_TRIV" fun _ => (do
   prove ([[!l1 l2. ALL2 (\n. P) l1 l2 <=> (LENGTH l1 = LENGTH l2) /\ ALL P l2]])
    (LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN
     ASM_REWRITE_TAC [ALL2, ALL, LENGTH, NOT_SUC, SUC_INJ] THEN
@@ -512,7 +512,7 @@ unsafe def ALL2_TRIV : thm := keep "ALL2_TRIV" fun _ => (do
 #eval ALL2_TRIV
 
 #eval phrase 23
-unsafe def GBACKCHAIN_SOUND : thm := keep "GBACKCHAIN_SOUND" fun _ => (do
+def GBACKCHAIN_SOUND : thm := keep "GBACKCHAIN_SOUND" fun _ => (do
   prove ([[(!cl. cl IN s ==> definite(cl)) /\ valuation (minmodel (IMAGE interp s)) v
    ==> !n p. gbackchain s n p ==> holds (minmodel(IMAGE interp s)) v p]])
    (STRIP_TAC THEN MATCH_MP_TAC gbackchain_INDUCT THEN
@@ -559,7 +559,7 @@ unsafe def GBACKCHAIN_SOUND : thm := keep "GBACKCHAIN_SOUND" fun _ => (do
 #eval GBACKCHAIN_SOUND
 
 #eval phrase 24
-unsafe def GBACKCHAIN_COMPLETE : thm := keep "GBACKCHAIN_COMPLETE" fun _ => (do
+def GBACKCHAIN_COMPLETE : thm := keep "GBACKCHAIN_COMPLETE" fun _ => (do
   prove ([[(!cl. cl IN s ==> definite(cl)) /\
    atom(p) /\ (FV p = {}) /\ (!v. holds (minmodel (IMAGE interp s)) v p)
    ==> ?n. gbackchain s n p]])
@@ -657,7 +657,7 @@ unsafe def GBACKCHAIN_COMPLETE : thm := keep "GBACKCHAIN_COMPLETE" fun _ => (do
 #eval GBACKCHAIN_COMPLETE
 
 #eval phrase 25
-unsafe def GBACKCHAIN_MINIMAL : thm := keep "GBACKCHAIN_MINIMAL" fun _ => (do
+def GBACKCHAIN_MINIMAL : thm := keep "GBACKCHAIN_MINIMAL" fun _ => (do
   prove ([[!s p. (!cl. cl IN s ==> definite cl) /\ atom p /\ (FV p = {})
          ==> !v. holds (minmodel (IMAGE interp s)) v p <=> ?n. gbackchain s n p]])
    (REPEAT STRIP_TAC THEN EQ_TAC THENL
@@ -685,7 +685,7 @@ unsafe def GBACKCHAIN_MINIMAL : thm := keep "GBACKCHAIN_MINIMAL" fun _ => (do
 #eval GBACKCHAIN_MINIMAL
 
 #eval phrase 26
-unsafe def iminmodel : thm := keep "iminmodel" fun _ => new_definition
+def iminmodel : thm := keep "iminmodel" fun _ => new_definition
   [[iminmodel s =
      terms(functions s),
      Fn,
@@ -696,7 +696,7 @@ unsafe def iminmodel : thm := keep "iminmodel" fun _ => new_definition
 #eval iminmodel
 
 #eval phrase 27
-unsafe def IMINMODEL_MINIMAL : thm := keep "IMINMODEL_MINIMAL" fun _ => (do
+def IMINMODEL_MINIMAL : thm := keep "IMINMODEL_MINIMAL" fun _ => (do
   prove ([[!p v s.
       atom p
       ==> (holds (iminmodel s) v p <=>
@@ -733,7 +733,7 @@ unsafe def IMINMODEL_MINIMAL : thm := keep "IMINMODEL_MINIMAL" fun _ => (do
 #eval IMINMODEL_MINIMAL
 
 #eval phrase 28
-unsafe def IMINMODEL_MODEL : thm := keep "IMINMODEL_MODEL" fun _ => (do
+def IMINMODEL_MODEL : thm := keep "IMINMODEL_MODEL" fun _ => (do
   prove ([[(!cl. cl IN s ==> definite(cl))
    ==> !v p. p IN s /\ (!x. v(x) IN terms(functions(IMAGE interp s)))
              ==> holds (iminmodel(IMAGE interp s)) v (interp p)]])
@@ -788,7 +788,7 @@ unsafe def IMINMODEL_MODEL : thm := keep "IMINMODEL_MODEL" fun _ => (do
 #eval IMINMODEL_MODEL
 
 #eval phrase 29
-unsafe def IMINMODEL_INTERPRETATION : thm := keep "IMINMODEL_INTERPRETATION" fun _ => (do
+def IMINMODEL_INTERPRETATION : thm := keep "IMINMODEL_INTERPRETATION" fun _ => (do
   prove ([[!s. interpretation(language s) (iminmodel s)]])
    (GEN_TAC THEN REWRITE_TAC [interpretation, iminmodel, language, Dom_DEF] THEN
     REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
@@ -798,19 +798,19 @@ unsafe def IMINMODEL_INTERPRETATION : thm := keep "IMINMODEL_INTERPRETATION" fun
 #eval IMINMODEL_INTERPRETATION
 
 #eval phrase 30
-unsafe def ibackchain_triple : thm × thm × thm := keep "ibackchain_triple" fun _ =>
+def ibackchain_triple : thm × thm × thm := keep "ibackchain_triple" fun _ =>
   newInductive
     [[!cl i ns. cl IN s /\ (!x. i(x) IN terms(functions(IMAGE interp s))) /\
                ALL2 (ibackchain s) ns (MAP (formsubst i) (hypotheses cl))
                ==> ibackchain s (ITLIST (+) ns 1)
                                 (formsubst i (conclusion cl))]]
-unsafe def ibackchain_RULES : thm := ibackchain_triple.1
-unsafe def ibackchain_INDUCT : thm := ibackchain_triple.2.1
-unsafe def ibackchain_CASES : thm := ibackchain_triple.2.2
+def ibackchain_RULES : thm := ibackchain_triple.1
+def ibackchain_INDUCT : thm := ibackchain_triple.2.1
+def ibackchain_CASES : thm := ibackchain_triple.2.2
 #eval do IO.println ibackchain_RULES; IO.println ibackchain_INDUCT; IO.println ibackchain_CASES
 
 #eval phrase 31
-unsafe def IBACKCHAIN_SOUND : thm := keep "IBACKCHAIN_SOUND" fun _ => (do
+def IBACKCHAIN_SOUND : thm := keep "IBACKCHAIN_SOUND" fun _ => (do
   prove ([[(!cl. cl IN s ==> definite(cl))
    ==> !v n p. ibackchain s n p /\
                (!x. v(x) IN terms(functions(IMAGE interp s)))
@@ -858,7 +858,7 @@ unsafe def IBACKCHAIN_SOUND : thm := keep "IBACKCHAIN_SOUND" fun _ => (do
 #eval IBACKCHAIN_SOUND
 
 #eval phrase 32
-unsafe def IBACKCHAIN_COMPLETE : thm := keep "IBACKCHAIN_COMPLETE" fun _ => (do
+def IBACKCHAIN_COMPLETE : thm := keep "IBACKCHAIN_COMPLETE" fun _ => (do
   prove ([[(!cl. cl IN s ==> definite(cl)) /\
    atom(p) /\
    (!v. (!x. v(x) IN terms(functions(IMAGE interp s)))
@@ -951,7 +951,7 @@ unsafe def IBACKCHAIN_COMPLETE : thm := keep "IBACKCHAIN_COMPLETE" fun _ => (do
 #eval IBACKCHAIN_COMPLETE
 
 #eval phrase 33
-unsafe def IBACKCHAIN_MINIMAL : thm := keep "IBACKCHAIN_MINIMAL" fun _ => (do
+def IBACKCHAIN_MINIMAL : thm := keep "IBACKCHAIN_MINIMAL" fun _ => (do
   prove ([[!s p. (!cl. cl IN s ==> definite cl) /\ atom p
          ==> ((!v. (!x. v(x) IN terms(functions(IMAGE interp s)))
                    ==> holds (iminmodel(IMAGE interp s)) v p) <=>
@@ -961,9 +961,9 @@ unsafe def IBACKCHAIN_MINIMAL : thm := keep "IBACKCHAIN_MINIMAL" fun _ => (do
 #eval IBACKCHAIN_MINIMAL
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Prolog" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Prolog" do
   replay (
           HolLogicArith.Given.ensure)
   replay (

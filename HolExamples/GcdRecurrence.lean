@@ -3,15 +3,17 @@ Translation of HOL Light's Examples/gcdrecurrence.ml, phrase by phrase.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 import HolExamples.Common
+import SessionLibrary.Prime
+import SessionLibrary.Integer
 open HolCore.Kernel Session HolLight.Syntax HolExamples
-open SessionLibrary.Prime SessionLibrary.Integer SessionLibrary.GroupTheory
+open SessionLibrary.Prime SessionLibrary.Integer
 namespace HolExamples.GcdRecurrence
 
 /- Helpers: the session's rules lifted into `ExceptT String IO`, so the tactic
    scripts read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
-private unsafe def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (ARITH_RULE tm)
+private def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (ARITH_RULE tm)
 private def ec {α : Type} (x : Except String α) : ExceptT String IO α := ExceptT.mk (pure x)
 
 -- ========================================================================= --
@@ -35,7 +37,7 @@ private def ec {α : Type} (x : Except String α) : ExceptT String IO α := Exce
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 4
-unsafe def INDUCT_SPECIAL : thm := keep "INDUCT_SPECIAL" fun _ => (do
+def INDUCT_SPECIAL : thm := keep "INDUCT_SPECIAL" fun _ => (do
   prove ([[!P. (!n. P 0 n) /\
        (!m n. P m n <=> P n m) /\
        (!m n. P m n ==> P n (m + n))
@@ -58,7 +60,7 @@ unsafe def INDUCT_SPECIAL : thm := keep "INDUCT_SPECIAL" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 5
-unsafe def INT_DIVISORS_RECURRENCE : thm := keep "INT_DIVISORS_RECURRENCE" fun _ => (do
+def INT_DIVISORS_RECURRENCE : thm := keep "INT_DIVISORS_RECURRENCE" fun _ => (do
   prove ([[!G a b. G(0) = &0 /\ G(1) = &1 /\
            coprime(a,b) /\ (!n. G(n + 2) = a * G(n + 1) + b * G(n))
            ==> !d m n. d divides (G m) /\ d divides (G n) <=>
@@ -102,7 +104,7 @@ unsafe def INT_DIVISORS_RECURRENCE : thm := keep "INT_DIVISORS_RECURRENCE" fun _
 #eval INT_DIVISORS_RECURRENCE
 
 #eval phrase 6
-unsafe def INT_GCD_RECURRENCE : thm := keep "INT_GCD_RECURRENCE" fun _ => (do
+def INT_GCD_RECURRENCE : thm := keep "INT_GCD_RECURRENCE" fun _ => (do
   prove ([[!G a b. G(0) = &0 /\ G(1) = &1 /\
            coprime(a,b) /\ (!n. G(n + 2) = a * G(n + 1) + b * G(n)) /\
            (!n. &0 <= G n)
@@ -119,7 +121,7 @@ unsafe def INT_GCD_RECURRENCE : thm := keep "INT_GCD_RECURRENCE" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 7
-unsafe def GCD_RECURRENCE : thm := keep "GCD_RECURRENCE" fun _ => (do
+def GCD_RECURRENCE : thm := keep "GCD_RECURRENCE" fun _ => (do
   prove ([[!G a b. G(0) = 0 /\ G(1) = 1 /\
            coprime(a,b) /\ (!n. G(n + 2) = a * G(n + 1) + b * G(n))
            ==> !m n. gcd(G m,G n) = G(gcd(m,n))]])
@@ -132,7 +134,7 @@ unsafe def GCD_RECURRENCE : thm := keep "GCD_RECURRENCE" fun _ => (do
 #eval GCD_RECURRENCE
 
 #eval phrase 8
-unsafe def DIVISORS_RECURRENCE : thm := keep "DIVISORS_RECURRENCE" fun _ => (do
+def DIVISORS_RECURRENCE : thm := keep "DIVISORS_RECURRENCE" fun _ => (do
   prove ([[!G a b. G(0) = 0 /\ G(1) = 1 /\
            coprime(a,b) /\ (!n. G(n + 2) = a * G(n + 1) + b * G(n))
            ==> !d m n. d divides (G m) /\ d divides (G n) <=>
@@ -146,7 +148,7 @@ unsafe def DIVISORS_RECURRENCE : thm := keep "DIVISORS_RECURRENCE" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 9
-unsafe def GCD_MERSENNE : thm := keep "GCD_MERSENNE" fun _ => (do
+def GCD_MERSENNE : thm := keep "GCD_MERSENNE" fun _ => (do
   prove ([[!m n. gcd(2 EXP m - 1,2 EXP n - 1) = 2 EXP (gcd(m,n)) - 1]])
    (SIMP_TAC [(← ExceptT.mk (HolLight.GSYM INT_OF_NUM_EQ)), NUM_GCD, (← ExceptT.mk (HolLight.GSYM INT_OF_NUM_SUB)),
              (← ExceptT.mk (HolLight.GSYM INT_OF_NUM_POW)), EXP_LT_0, ARITH,
@@ -163,7 +165,7 @@ unsafe def GCD_MERSENNE : thm := keep "GCD_MERSENNE" fun _ => (do
 #eval GCD_MERSENNE
 
 #eval phrase 10
-unsafe def DIVIDES_MERSENNE : thm := keep "DIVIDES_MERSENNE" fun _ => (do
+def DIVIDES_MERSENNE : thm := keep "DIVIDES_MERSENNE" fun _ => (do
   prove ([[!m n. (2 EXP m - 1) divides (2 EXP n - 1) <=> m divides n]])
    (REPEAT GEN_TAC THEN
     REWRITE_TAC [DIVIDES_GCD_LEFT, GCD_MERSENNE] THEN
@@ -177,14 +179,14 @@ unsafe def DIVIDES_MERSENNE : thm := keep "DIVIDES_MERSENNE" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 11
-unsafe def fib : thm := keep "fib" fun _ => (do
+def fib : thm := keep "fib" fun _ => (do
   ExceptT.mk (define
    [[fib 0 = 0 /\ fib 1 = 1 /\ !n. fib(n + 2) = fib(n + 1) + fib(n)]])
   : ExceptT String IO thm).run
 #eval fib
 
 #eval phrase 12
-unsafe def GCD_FIB : thm := keep "GCD_FIB" fun _ => (do
+def GCD_FIB : thm := keep "GCD_FIB" fun _ => (do
   prove ([[!m n. gcd(fib m,fib n) = fib(gcd(m,n))]])
    (MATCH_MP_TAC GCD_RECURRENCE THEN
     REPEAT (EXISTS_TAC [[1]]) THEN REWRITE_TAC [fib, COPRIME_1] THEN ARITH_TAC)
@@ -192,7 +194,7 @@ unsafe def GCD_FIB : thm := keep "GCD_FIB" fun _ => (do
 #eval GCD_FIB
 
 #eval phrase 13
-unsafe def FIB_EQ_0 : thm := keep "FIB_EQ_0" fun _ => (do
+def FIB_EQ_0 : thm := keep "FIB_EQ_0" fun _ => (do
   prove ([[!n. fib n = 0 <=> n = 0]])
    (MATCH_MP_TAC num_INDUCTION THEN REWRITE_TAC [fib] THEN
     MATCH_MP_TAC num_INDUCTION THEN
@@ -203,7 +205,7 @@ unsafe def FIB_EQ_0 : thm := keep "FIB_EQ_0" fun _ => (do
 #eval FIB_EQ_0
 
 #eval phrase 14
-unsafe def FIB_INCREASES_LE : thm := keep "FIB_INCREASES_LE" fun _ => (do
+def FIB_INCREASES_LE : thm := keep "FIB_INCREASES_LE" fun _ => (do
   prove ([[!m n. m <= n ==> fib m <= fib n]])
    (MATCH_MP_TAC TRANSITIVE_STEPWISE_LE THEN
     REWRITE_TAC [LE_REFL, LE_TRANS] THEN
@@ -214,7 +216,7 @@ unsafe def FIB_INCREASES_LE : thm := keep "FIB_INCREASES_LE" fun _ => (do
 #eval FIB_INCREASES_LE
 
 #eval phrase 15
-unsafe def FIB_INCREASES_LT : thm := keep "FIB_INCREASES_LT" fun _ => (do
+def FIB_INCREASES_LT : thm := keep "FIB_INCREASES_LT" fun _ => (do
   prove ([[!m n. 2 <= m /\ m < n ==> fib m < fib n]])
    (INDUCT_TAC THEN REWRITE_TAC [ARITH] THEN
     REPEAT STRIP_TAC THEN TRANS_TAC LTE_TRANS [[fib(m + 2)]] THEN
@@ -225,7 +227,7 @@ unsafe def FIB_INCREASES_LT : thm := keep "FIB_INCREASES_LT" fun _ => (do
 #eval FIB_INCREASES_LT
 
 #eval phrase 16
-unsafe def FIB_EQ_1 : thm := keep "FIB_EQ_1" fun _ => (do
+def FIB_EQ_1 : thm := keep "FIB_EQ_1" fun _ => (do
   prove ([[!n. fib n = 1 <=> n = 1 \/ n = 2]])
    (MATCH_MP_TAC num_INDUCTION THEN REWRITE_TAC [fib, ARITH] THEN
     MATCH_MP_TAC num_INDUCTION THEN REWRITE_TAC [fib, ARITH] THEN
@@ -237,7 +239,7 @@ unsafe def FIB_EQ_1 : thm := keep "FIB_EQ_1" fun _ => (do
 #eval FIB_EQ_1
 
 #eval phrase 17
-unsafe def DIVIDES_FIB : thm := keep "DIVIDES_FIB" fun _ => (do
+def DIVIDES_FIB : thm := keep "DIVIDES_FIB" fun _ => (do
   prove ([[!m n. (fib m) divides (fib n) <=> m divides n \/ n = 0 \/ m = 2]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [DIVIDES_GCD_LEFT, GCD_FIB] THEN
     MP_TAC (← ExceptT.mk (HolLight.SPECL [ [[gcd(m:num,n)]], [[m:num]] ] DIVIDES_LE)) THEN REWRITE_TAC [GCD] THEN
@@ -262,7 +264,7 @@ unsafe def DIVIDES_FIB : thm := keep "DIVIDES_FIB" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 18
-unsafe def pellx : thm := keep "pellx" fun _ => (do
+def pellx : thm := keep "pellx" fun _ => (do
   ExceptT.mk (define
    [[(!a. pellx a 0 = 1) /\
    (!a. pellx a 1 = a) /\
@@ -271,7 +273,7 @@ unsafe def pellx : thm := keep "pellx" fun _ => (do
 #eval pellx
 
 #eval phrase 19
-unsafe def pelly : thm := keep "pelly" fun _ => (do
+def pelly : thm := keep "pelly" fun _ => (do
   ExceptT.mk (define
    [[(!a. pelly a 0 = 0) /\
    (!a. pelly a 1 = 1) /\
@@ -280,7 +282,7 @@ unsafe def pelly : thm := keep "pelly" fun _ => (do
 #eval pelly
 
 #eval phrase 20
-unsafe def PELLY_INCREASES : thm := keep "PELLY_INCREASES" fun _ => (do
+def PELLY_INCREASES : thm := keep "PELLY_INCREASES" fun _ => (do
   prove ([[!a n. ~(a = 0) ==> pelly a n <= pelly a (n + 1)]])
    (GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
     INDUCT_TAC THEN
@@ -293,7 +295,7 @@ unsafe def PELLY_INCREASES : thm := keep "PELLY_INCREASES" fun _ => (do
 #eval PELLY_INCREASES
 
 #eval phrase 21
-unsafe def GCD_PELLY : thm := keep "GCD_PELLY" fun _ => (do
+def GCD_PELLY : thm := keep "GCD_PELLY" fun _ => (do
   prove ([[!a m n. ~(a = 0) ==> gcd(pelly a m,pelly a n) = pelly a (gcd(m,n))]])
    (GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
     REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM INT_OF_NUM_EQ)), NUM_GCD] THEN

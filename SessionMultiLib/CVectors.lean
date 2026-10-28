@@ -1,0 +1,417 @@
+/- ---------------------------------------------------------------------- -/
+/- Session wiring for Multivariate/cvectors.ml.                           -/
+/- ---------------------------------------------------------------------- -/
+/- File: SessionMultiLib/CVectors.lean
+
+  The session half of the cvectors.ml translation: it supplies
+  HolMultiLib.CVectors's dependencies (complexes.ml's deps and bundles,
+  cross.ml's theorems and bundle, the extra theorems from Session and
+  SessionMultiLib, and the parser procedures), and exports every theorem and
+  procedure by name.  Importing this module is
+  `needs "Multivariate/cvectors.ml"`: its own `needs` are the imports of
+  SessionMultiLib.Complexes and SessionMultiLib.Cross, and each bundle is
+  built by `initialize` when the module is loaded, in file order.
+-/
+
+import SessionMultiLib.Complexes
+import SessionMultiLib.Cross
+import HolMultiLib.CVectors
+
+open HolCore HolCore.Kernel
+
+namespace SessionMultiLib.CVectors
+
+open Session SessionMultiLib.Vectors SessionMultiLib.Determinants
+  SessionMultiLib.Topology in
+/-- The theorems cvectors.ml uses that the complexes.ml and cross.ml deps do
+    not carry. -/
+def thms : HolMultiLib.CVectors.CvecThms :=
+  { FINITE_HAS_SIZE, FINITE_INDEX_WORKS, HAS_SIZE_NUMSEG_1, I_DEF, MULT_2, PASTECART_EQ,
+    PASTECART_FST_SND, REAL_ABS_BOUNDS, REAL_ABS_LE, REAL_MUL_POS_LE, REAL_NEG_GT0,
+    REAL_NEG_MINUS1, REAL_NEG_RMUL, REAL_POW_ZERO, SQRT_DIV, UNCURRY_DEF, finite_index,
+    fstcart, pastecart, sndcart,
+    DOT_SQUARE_NORM, NORM_BASIS_1, NORM_EQ_1, NORM_FSTCART, NORM_SNDCART, PASTECART_VSUM,
+    VSUM_3,
+    CONTINUOUS_AT_SEQUENTIALLY, INFSUM_LINEAR, LIM_PASTECART_EQ, SUMMABLE_LINEAR, summable,
+    sums }
+
+open SessionMultiLib.Complexes in
+def deps : HolMultiLib.CVectors.CvectorsDeps where
+  cx := SessionMultiLib.Complexes.deps
+  cxa := BCXA
+  cxb := BCXB
+  cxc := BCXC
+  cxd := BCXD
+  cxe := BCXE
+  cxf := BCXF
+  cxg := BCXG
+  cxh := BCXH
+  cxi := BCXI
+  cxj := BCXJ
+  cxk := BCXK
+  crt := SessionMultiLib.Cross.thms
+  crs := SessionMultiLib.Cross.BCRS
+  prioritize_vector := SessionMultiLib.Vectors.prioritize_vector
+  make_overloadable s ty := ExceptT.mk (Session.make_overloadable s ty)
+  thms := thms
+
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
+
+/- The bundles, in cvectors.ml order. -/
+
+initialize BCVA : HolMultiLib.CVectors.CVA ←
+  ioB "setupCVA" (HolMultiLib.CVectors.setupCVA deps).run
+
+-- CVA (cvectors.ml 23-475)
+def SINGLE : (List thm → HolCore.Tactics.tactic) → thm → HolCore.Tactics.tactic :=
+  fun f x => BCVA.SINGLE f x
+def distrib : List (thm → HolCore.Tactics.tactic) → thm → List HolCore.Tactics.tactic :=
+  fun fs x => BCVA.distrib fs x
+def DISTRIB : List (thm → HolCore.Tactics.tactic) → thm → HolCore.Tactics.tactic :=
+  fun fs x => BCVA.DISTRIB fs x
+def REWRITE_TACS : List thm → HolCore.Tactics.tactic := fun ths g => BCVA.REWRITE_TACS ths g
+def GCONJUNCTS : thm → IO (Except String (List thm)) := fun th => (BCVA.GCONJUNCTS th).run
+def COMPONENT_LE_NORM_ALT : thm := BCVA.COMPONENT_LE_NORM_ALT
+def RE_IM_NORM : thm := BCVA.RE_IM_NORM
+def RE_NORM : thm := BCVA.RE_NORM
+def IM_NORM : thm := BCVA.IM_NORM
+def ABS_RE_NORM : thm := BCVA.ABS_RE_NORM
+def ABS_IM_NORM : thm := BCVA.ABS_IM_NORM
+def NORM_RE : thm := BCVA.NORM_RE
+def NORM_RE_ADD : thm := BCVA.NORM_RE_ADD
+def NORM_RE_SUB : thm := BCVA.NORM_RE_SUB
+def NORM2_ADD_REAL : thm := BCVA.NORM2_ADD_REAL
+def COMPLEX_EQ_RCANCEL_IMP : thm := BCVA.COMPLEX_EQ_RCANCEL_IMP
+def COMPLEX_BALANCE_DIV_MUL : thm := BCVA.COMPLEX_BALANCE_DIV_MUL
+def CSQRT_MUL_LCX_LT : thm := BCVA.CSQRT_MUL_LCX_LT
+def CSQRT_MUL_LCX : thm := BCVA.CSQRT_MUL_LCX
+def REAL_ADD_POW_2 : thm := BCVA.REAL_ADD_POW_2
+def COMPLEX_ADD_POW_2 : thm := BCVA.COMPLEX_ADD_POW_2
+def FINITE_INTER_ENUM : thm := BCVA.FINITE_INTER_ENUM
+def NORM_PASTECART_GE1 : thm := BCVA.NORM_PASTECART_GE1
+def NORM_PASTECART_GE2 : thm := BCVA.NORM_PASTECART_GE2
+def SUMS_PASTECART : thm := BCVA.SUMS_PASTECART
+def LINEAR_SUMS : thm := BCVA.LINEAR_SUMS
+def real_of_complex : thm := BCVA.real_of_complex
+def REAL_OF_COMPLEX : thm := BCVA.REAL_OF_COMPLEX
+def REAL_OF_COMPLEX_RE : thm := BCVA.REAL_OF_COMPLEX_RE
+def REAL_OF_COMPLEX_CX : thm := BCVA.REAL_OF_COMPLEX_CX
+def REAL_OF_COMPLEX_NORM : thm := BCVA.REAL_OF_COMPLEX_NORM
+def REAL_OF_COMPLEX_ADD : thm := BCVA.REAL_OF_COMPLEX_ADD
+def REAL_MUL : thm := BCVA.REAL_MUL
+def REAL_OF_COMPLEX_MUL : thm := BCVA.REAL_OF_COMPLEX_MUL
+def REAL_OF_COMPLEX_0 : thm := BCVA.REAL_OF_COMPLEX_0
+def REAL_COMPLEX_ADD_CNJ : thm := BCVA.REAL_COMPLEX_ADD_CNJ
+def vector_const : thm := BCVA.vector_const
+def vector_map : thm := BCVA.vector_map
+def vector_map2 : thm := BCVA.vector_map2
+def vector_map3 : thm := BCVA.vector_map3
+def FINITE_INDEX_INRANGE_2 : thm := BCVA.FINITE_INDEX_INRANGE_2
+def COMPONENT_TAC : thm → HolCore.Tactics.tactic := fun th g => BCVA.COMPONENT_TAC th g
+def VECTOR_CONST_COMPONENT : thm := BCVA.VECTOR_CONST_COMPONENT
+def VECTOR_MAP_COMPONENT : thm := BCVA.VECTOR_MAP_COMPONENT
+def VECTOR_MAP2_COMPONENT : thm := BCVA.VECTOR_MAP2_COMPONENT
+def VECTOR_MAP3_COMPONENT : thm := BCVA.VECTOR_MAP3_COMPONENT
+def VECTOR_MAP_VECTOR_CONST : thm := BCVA.VECTOR_MAP_VECTOR_CONST
+def VECTOR_MAP_VECTOR_MAP : thm := BCVA.VECTOR_MAP_VECTOR_MAP
+def VECTOR_MAP_VECTOR_MAP2 : thm := BCVA.VECTOR_MAP_VECTOR_MAP2
+def VECTOR_MAP2_LVECTOR_CONST : thm := BCVA.VECTOR_MAP2_LVECTOR_CONST
+def VECTOR_MAP2_RVECTOR_CONST : thm := BCVA.VECTOR_MAP2_RVECTOR_CONST
+def VECTOR_MAP2_LVECTOR_MAP : thm := BCVA.VECTOR_MAP2_LVECTOR_MAP
+def VECTOR_MAP2_RVECTOR_MAP : thm := BCVA.VECTOR_MAP2_RVECTOR_MAP
+def VECTOR_MAP2_LVECTOR_MAP2 : thm := BCVA.VECTOR_MAP2_LVECTOR_MAP2
+def VECTOR_MAP2_RVECTOR_MAP2 : thm := BCVA.VECTOR_MAP2_RVECTOR_MAP2
+def VECTOR_MAP_SIMP_TAC : HolCore.Tactics.tactic := fun g => BCVA.VECTOR_MAP_SIMP_TAC g
+def VECTOR_MAP_PROPERTY_TAC : List thm → thm → HolCore.Tactics.tactic :=
+  fun fs prop g => BCVA.VECTOR_MAP_PROPERTY_TAC fs prop g
+def VECTOR_MAP_PROPERTY : term → List thm → thm → IO (Except String thm) :=
+  fun tm fs prop => (BCVA.VECTOR_MAP_PROPERTY tm fs prop).run
+def COMPLEX_VECTOR_MAP : thm := BCVA.COMPLEX_VECTOR_MAP
+def COMPLEX_NEG_IS_A_MAP : thm := BCVA.COMPLEX_NEG_IS_A_MAP
+def VECTOR_NEG_IS_A_MAP : thm := BCVA.VECTOR_NEG_IS_A_MAP
+def VECTOR_MAP_VECTOR_MAP_ALT : thm := BCVA.VECTOR_MAP_VECTOR_MAP_ALT
+def COMPLEX_VECTOR_MAP2 : thm := BCVA.COMPLEX_VECTOR_MAP2
+def VECTOR_MAP2_RVECTOR_MAP_ALT : thm := BCVA.VECTOR_MAP2_RVECTOR_MAP_ALT
+def COMPLEX_ADD_IS_A_MAP : thm := BCVA.COMPLEX_ADD_IS_A_MAP
+def VECTOR_ADD_IS_A_MAP : thm := BCVA.VECTOR_ADD_IS_A_MAP
+def COMPLEX_SUB_IS_A_MAP : thm := BCVA.COMPLEX_SUB_IS_A_MAP
+def VECTOR_SUB_IS_A_MAP : thm := BCVA.VECTOR_SUB_IS_A_MAP
+def PASTECART_VECTOR_MAP : thm := BCVA.PASTECART_VECTOR_MAP
+def PASTECART_VECTOR_MAP2 : thm := BCVA.PASTECART_VECTOR_MAP2
+def vector_zip : thm := BCVA.vector_zip
+def VECTOR_ZIP_COMPONENT : thm := BCVA.VECTOR_ZIP_COMPONENT
+def vector_unzip : thm := BCVA.vector_unzip
+def VECTOR_UNZIP_COMPONENT : thm := BCVA.VECTOR_UNZIP_COMPONENT
+def VECTOR_MAP2_AS_VECTOR_MAP : thm := BCVA.VECTOR_MAP2_AS_VECTOR_MAP
+
+initialize BCVB : HolMultiLib.CVectors.CVB ←
+  ioB "setupCVB" (HolMultiLib.CVectors.setupCVB deps BCVA).run
+
+-- CVB (cvectors.ml 476-800)
+def prioritize_cvector : IO (Except String Unit) := BCVB.prioritize_cvector.run
+def cvector_zero : thm := BCVB.cvector_zero
+def cvector_neg : thm := BCVB.cvector_neg
+def cvector_add : thm := BCVB.cvector_add
+def cvector_sub : thm := BCVB.cvector_sub
+def cvector_mul : thm := BCVB.cvector_mul
+def CVECTOR_ZERO_COMPONENT : thm := BCVB.CVECTOR_ZERO_COMPONENT
+def CVECTOR_NON_ZERO : thm := BCVB.CVECTOR_NON_ZERO
+def CVECTOR_ADD_COMPONENT : thm := BCVB.CVECTOR_ADD_COMPONENT
+def CVECTOR_SUB_COMPONENT : thm := BCVB.CVECTOR_SUB_COMPONENT
+def CVECTOR_NEG_COMPONENT : thm := BCVB.CVECTOR_NEG_COMPONENT
+def CVECTOR_MUL_COMPONENT : thm := BCVB.CVECTOR_MUL_COMPONENT
+def CVECTOR_ARITH_TAC : HolCore.Tactics.tactic := fun g => BCVB.CVECTOR_ARITH_TAC g
+def CVECTOR_ARITH : term → IO (Except String thm) := fun t => (BCVB.CVECTOR_ARITH t).run
+def CVECTOR_ADD_SYM : thm := BCVB.CVECTOR_ADD_SYM
+def CVECTOR_ADD_ASSOC : thm := BCVB.CVECTOR_ADD_ASSOC
+def CVECTOR_ADD_ID : thm := BCVB.CVECTOR_ADD_ID
+def CVECTOR_ADD_RID : thm := BCVB.CVECTOR_ADD_RID
+def CVECTOR_ADD_LID : thm := BCVB.CVECTOR_ADD_LID
+def CVECTOR_ADD_INV : thm := BCVB.CVECTOR_ADD_INV
+def CVECTOR_MUL_ASSOC : thm := BCVB.CVECTOR_MUL_ASSOC
+def CVECTOR_SUB_LDISTRIB : thm := BCVB.CVECTOR_SUB_LDISTRIB
+def CVECTOR_SCALAR_RDIST : thm := BCVB.CVECTOR_SCALAR_RDIST
+def CVECTOR_MUL_ID : thm := BCVB.CVECTOR_MUL_ID
+def CVECTOR_SUB_REFL : thm := BCVB.CVECTOR_SUB_REFL
+def CVECTOR_SUB_RADD : thm := BCVB.CVECTOR_SUB_RADD
+def CVECTOR_NEG_SUB : thm := BCVB.CVECTOR_NEG_SUB
+def CVECTOR_SUB_EQ : thm := BCVB.CVECTOR_SUB_EQ
+def CVECTOR_SUB_ADD : thm := BCVB.CVECTOR_SUB_ADD
+def CVECTOR_SUB_ADD2 : thm := BCVB.CVECTOR_SUB_ADD2
+def CVECTOR_ADD_LDISTRIB : thm := BCVB.CVECTOR_ADD_LDISTRIB
+def CVECTOR_ADD_RDISTRIB : thm := BCVB.CVECTOR_ADD_RDISTRIB
+def CVECTOR_SUB_RDISTRIB : thm := BCVB.CVECTOR_SUB_RDISTRIB
+def CVECTOR_ADD_SUB : thm := BCVB.CVECTOR_ADD_SUB
+def CVECTOR_EQ_ADDR : thm := BCVB.CVECTOR_EQ_ADDR
+def CVECTOR_SUB : thm := BCVB.CVECTOR_SUB
+def CVECTOR_SUB_RZERO : thm := BCVB.CVECTOR_SUB_RZERO
+def CVECTOR_MUL_RZERO : thm := BCVB.CVECTOR_MUL_RZERO
+def CVECTOR_MUL_LZERO : thm := BCVB.CVECTOR_MUL_LZERO
+def CVECTOR_MUL_EQ_0 : thm := BCVB.CVECTOR_MUL_EQ_0
+def CVECTOR_NEG_MINUS1 : thm := BCVB.CVECTOR_NEG_MINUS1
+def CVECTOR_SUB_LZERO : thm := BCVB.CVECTOR_SUB_LZERO
+def CVECTOR_NEG_NEG : thm := BCVB.CVECTOR_NEG_NEG
+def CVECTOR_MUL_LNEG : thm := BCVB.CVECTOR_MUL_LNEG
+def CVECTOR_MUL_RNEG : thm := BCVB.CVECTOR_MUL_RNEG
+def CVECTOR_NEG_0 : thm := BCVB.CVECTOR_NEG_0
+def CVECTOR_NEG_EQ_0 : thm := BCVB.CVECTOR_NEG_EQ_0
+def CVECTOR_ADD_AC : thm := BCVB.CVECTOR_ADD_AC
+def CVECTOR_MUL_LCANCEL : thm := BCVB.CVECTOR_MUL_LCANCEL
+def CVECTOR_MUL_RCANCEL : thm := BCVB.CVECTOR_MUL_RCANCEL
+def clinear : thm := BCVB.clinear
+def COMMON_TAC : List thm → HolCore.Tactics.tactic := fun ths g => BCVB.COMMON_TAC ths g
+def CLINEAR_COMPOSE_CMUL : thm := BCVB.CLINEAR_COMPOSE_CMUL
+def CLINEAR_COMPOSE_NEG : thm := BCVB.CLINEAR_COMPOSE_NEG
+def CLINEAR_COMPOSE_ADD : thm := BCVB.CLINEAR_COMPOSE_ADD
+def CLINEAR_COMPOSE_SUB : thm := BCVB.CLINEAR_COMPOSE_SUB
+def CLINEAR_COMPOSE : thm := BCVB.CLINEAR_COMPOSE
+def CLINEAR_ID : thm := BCVB.CLINEAR_ID
+def CLINEAR_I : thm := BCVB.CLINEAR_I
+def CLINEAR_ZERO : thm := BCVB.CLINEAR_ZERO
+def CLINEAR_NEGATION : thm := BCVB.CLINEAR_NEGATION
+def CLINEAR_VMUL_COMPONENT : thm := BCVB.CLINEAR_VMUL_COMPONENT
+def CLINEAR_0 : thm := BCVB.CLINEAR_0
+def CLINEAR_CMUL : thm := BCVB.CLINEAR_CMUL
+def CLINEAR_NEG : thm := BCVB.CLINEAR_NEG
+def CLINEAR_ADD : thm := BCVB.CLINEAR_ADD
+def CLINEAR_SUB : thm := BCVB.CLINEAR_SUB
+def CLINEAR_INJECTIVE_0 : thm := BCVB.CLINEAR_INJECTIVE_0
+
+initialize BCVC : HolMultiLib.CVectors.CVC ←
+  ioB "setupCVC" (HolMultiLib.CVectors.setupCVC deps BCVA BCVB).run
+
+-- CVC (cvectors.ml 801-1162)
+def CLINEAR_FSTCART_SNDCART : thm := BCVC.CLINEAR_FSTCART_SNDCART
+def FSTCART_CLINEAR : thm := BCVC.FSTCART_CLINEAR
+def SNDCART_CLINEAR : thm := BCVC.SNDCART_CLINEAR
+def FSTCART_SNDCART_CVECTOR_ZERO : thm := BCVC.FSTCART_SNDCART_CVECTOR_ZERO
+def FSTCART_CVECTOR_ZERO : thm := BCVC.FSTCART_CVECTOR_ZERO
+def SNDCART_CVECTOR_ZERO : thm := BCVC.SNDCART_CVECTOR_ZERO
+def FSTCART_SNDCART_CVECTOR_ADD : thm := BCVC.FSTCART_SNDCART_CVECTOR_ADD
+def FSTCART_SNDCART_CVECTOR_MUL : thm := BCVC.FSTCART_SNDCART_CVECTOR_MUL
+def PASTECART_TAC : List thm → HolCore.Tactics.tactic := fun ths g => BCVC.PASTECART_TAC ths g
+def PASTECART_CVECTOR_ZERO : thm := BCVC.PASTECART_CVECTOR_ZERO
+def PASTECART_EQ_CVECTOR_ZERO : thm := BCVC.PASTECART_EQ_CVECTOR_ZERO
+def PASTECART_CVECTOR_ADD : thm := BCVC.PASTECART_CVECTOR_ADD
+def PASTECART_CVECTOR_MUL : thm := BCVC.PASTECART_CVECTOR_MUL
+def cvector_re : thm := BCVC.cvector_re
+def cvector_im : thm := BCVC.cvector_im
+def vector_to_cvector : thm := BCVC.vector_to_cvector
+def CVECTOR_RE_COMPONENT : thm := BCVC.CVECTOR_RE_COMPONENT
+def CVECTOR_IM_COMPONENT : thm := BCVC.CVECTOR_IM_COMPONENT
+def VECTOR_TO_CVECTOR_COMPONENT : thm := BCVC.VECTOR_TO_CVECTOR_COMPONENT
+def VECTOR_TO_CVECTOR_ZERO : thm := BCVC.VECTOR_TO_CVECTOR_ZERO
+def VECTOR_TO_CVECTOR_ZERO_EQ : thm := BCVC.VECTOR_TO_CVECTOR_ZERO_EQ
+def CVECTOR_ZERO_VEC0 : thm := BCVC.CVECTOR_ZERO_VEC0
+def VECTOR_TO_CVECTOR_MUL : thm := BCVC.VECTOR_TO_CVECTOR_MUL
+def CVECTOR_EQ : thm := BCVC.CVECTOR_EQ
+def CVECTOR_RE_VECTOR_TO_CVECTOR : thm := BCVC.CVECTOR_RE_VECTOR_TO_CVECTOR
+def CVECTOR_IM_VECTOR_TO_CVECTOR : thm := BCVC.CVECTOR_IM_VECTOR_TO_CVECTOR
+def CVECTOR_IM_VECTOR_TO_CVECTOR_IM : thm := BCVC.CVECTOR_IM_VECTOR_TO_CVECTOR_IM
+def VECTOR_TO_CVECTOR_CVECTOR_RE_IM : thm := BCVC.VECTOR_TO_CVECTOR_CVECTOR_RE_IM
+def CVECTOR_IM_VECTOR_TO_CVECTOR_RE_IM : thm := BCVC.CVECTOR_IM_VECTOR_TO_CVECTOR_RE_IM
+def CVECTOR_RE_VECTOR_TO_CVECTOR_RE_IM : thm := BCVC.CVECTOR_RE_VECTOR_TO_CVECTOR_RE_IM
+def CVECTOR_RE_ADD : thm := BCVC.CVECTOR_RE_ADD
+def CVECTOR_IM_ADD : thm := BCVC.CVECTOR_IM_ADD
+def CVECTOR_RE_MUL : thm := BCVC.CVECTOR_RE_MUL
+def CVECTOR_IM_MUL : thm := BCVC.CVECTOR_IM_MUL
+def CVECTOR_RE_VECTOR_MAP : thm := BCVC.CVECTOR_RE_VECTOR_MAP
+def CVECTOR_IM_VECTOR_MAP : thm := BCVC.CVECTOR_IM_VECTOR_MAP
+def VECTOR_MAP_CVECTOR_RE : thm := BCVC.VECTOR_MAP_CVECTOR_RE
+def VECTOR_MAP_CVECTOR_IM : thm := BCVC.VECTOR_MAP_CVECTOR_IM
+def CVECTOR_RE_VECTOR_MAP2 : thm := BCVC.CVECTOR_RE_VECTOR_MAP2
+def CVECTOR_IM_VECTOR_MAP2 : thm := BCVC.CVECTOR_IM_VECTOR_MAP2
+def cvector_flatten : thm := BCVC.cvector_flatten
+def FLATTEN_RE_IM_COMPONENT : thm := BCVC.FLATTEN_RE_IM_COMPONENT
+def complex_vector : thm := BCVC.complex_vector
+def COMPLEX_VECTOR_TRANSPOSE : thm := BCVC.COMPLEX_VECTOR_TRANSPOSE
+def cvector_unflatten : thm := BCVC.cvector_unflatten
+def UNFLATTEN_FLATTEN : thm := BCVC.UNFLATTEN_FLATTEN
+def FLATTEN_UNFLATTEN : thm := BCVC.FLATTEN_UNFLATTEN
+def FLATTEN_CLINEAR : thm := BCVC.FLATTEN_CLINEAR
+def FLATTEN_MAP : thm := BCVC.FLATTEN_MAP
+def FLATTEN_NEG : thm := BCVC.FLATTEN_NEG
+def CVECTOR_NEG_ALT : thm := BCVC.CVECTOR_NEG_ALT
+def FLATTEN_MAP2 : thm := BCVC.FLATTEN_MAP2
+def FLATTEN_ADD : thm := BCVC.FLATTEN_ADD
+def CVECTOR_ADD_ALT : thm := BCVC.CVECTOR_ADD_ALT
+def FLATTEN_SUB : thm := BCVC.FLATTEN_SUB
+def CVECTOR_SUB_ALT : thm := BCVC.CVECTOR_SUB_ALT
+def cvector_cnj : thm := BCVC.cvector_cnj
+def CVECTOR_MAP_PROPERTY : term → thm → IO (Except String thm) :=
+  fun t th => (BCVC.CVECTOR_MAP_PROPERTY t th).run
+def CVECTOR_CNJ_ADD : thm := BCVC.CVECTOR_CNJ_ADD
+def CVECTOR_CNJ_SUB : thm := BCVC.CVECTOR_CNJ_SUB
+def CVECTOR_CNJ_NEG : thm := BCVC.CVECTOR_CNJ_NEG
+def CVECTOR_RE_CNJ : thm := BCVC.CVECTOR_RE_CNJ
+def CVECTOR_IM_CNJ : thm := BCVC.CVECTOR_IM_CNJ
+def CVECTOR_CNJ_CNJ : thm := BCVC.CVECTOR_CNJ_CNJ
+
+initialize BCVD : HolMultiLib.CVectors.CVD ←
+  ioB "setupCVD" (HolMultiLib.CVectors.setupCVD deps BCVA BCVB BCVC).run
+
+-- CVD (cvectors.ml 1163-1533)
+def ccross : thm := BCVD.ccross
+def CCROSS_COMPONENT : thm := BCVD.CCROSS_COMPONENT
+def CART_EQ3 : thm := BCVD.CART_EQ3
+def CCROSS_TAC : List thm → HolCore.Tactics.tactic := fun ths g => BCVD.CCROSS_TAC ths g
+def CCROSS_LZERO : thm := BCVD.CCROSS_LZERO
+def CCROSS_RZERO : thm := BCVD.CCROSS_RZERO
+def CCROSS_SKEW : thm := BCVD.CCROSS_SKEW
+def CCROSS_REFL : thm := BCVD.CCROSS_REFL
+def CCROSS_LADD : thm := BCVD.CCROSS_LADD
+def CCROSS_RADD : thm := BCVD.CCROSS_RADD
+def CCROSS_LMUL : thm := BCVD.CCROSS_LMUL
+def CCROSS_RMUL : thm := BCVD.CCROSS_RMUL
+def CCROSS_LNEG : thm := BCVD.CCROSS_LNEG
+def CCROSS_RNEG : thm := BCVD.CCROSS_RNEG
+def CCROSS_JACOBI : thm := BCVD.CCROSS_JACOBI
+def cdot : thm := BCVD.cdot
+def CDOT_SYM : thm := BCVD.CDOT_SYM
+def REAL_CDOT_SELF : thm := BCVD.REAL_CDOT_SELF
+def CDOT_LADD : thm := BCVD.CDOT_LADD
+def CDOT_RADD : thm := BCVD.CDOT_RADD
+def CDOT_LSUB : thm := BCVD.CDOT_LSUB
+def CDOT_RSUB : thm := BCVD.CDOT_RSUB
+def CDOT_LMUL : thm := BCVD.CDOT_LMUL
+def CDOT_RMUL : thm := BCVD.CDOT_RMUL
+def CDOT_LNEG : thm := BCVD.CDOT_LNEG
+def CDOT_RNEG : thm := BCVD.CDOT_RNEG
+def CDOT_LZERO : thm := BCVD.CDOT_LZERO
+def CNJ_ZERO : thm := BCVD.CNJ_ZERO
+def CDOT_RZERO : thm := BCVD.CDOT_RZERO
+def CDOT3 : thm := BCVD.CDOT3
+def ADD_CDOT_SYM : thm := BCVD.ADD_CDOT_SYM
+def CCROSS_LREAL : thm := BCVD.CCROSS_LREAL
+def CCROSS_RREAL : thm := BCVD.CCROSS_RREAL
+def CDOT_LREAL : thm := BCVD.CDOT_LREAL
+def CDOT_RREAL : thm := BCVD.CDOT_RREAL
+def cnorm2 : thm := BCVD.cnorm2
+def CX_CNORM2 : thm := BCVD.CX_CNORM2
+def CNORM2_CVECTOR_ZERO : thm := BCVD.CNORM2_CVECTOR_ZERO
+def CNORM2_MODULUS : thm := BCVD.CNORM2_MODULUS
+def CNORM2_EQ_0 : thm := BCVD.CNORM2_EQ_0
+def CDOT_EQ_0 : thm := BCVD.CDOT_EQ_0
+def CNORM2_POS : thm := BCVD.CNORM2_POS
+def CDOT_SELF_POS : thm := BCVD.CDOT_SELF_POS
+def CNORM2_MUL : thm := BCVD.CNORM2_MUL
+def CNORM2_NORM2_2 : thm := BCVD.CNORM2_NORM2_2
+def CNORM2_NORM2 : thm := BCVD.CNORM2_NORM2
+def CNORM2_ALT : thm := BCVD.CNORM2_ALT
+def CNORM2_SUB : thm := BCVD.CNORM2_SUB
+def CNORM2_VECTOR_TO_CVECTOR : thm := BCVD.CNORM2_VECTOR_TO_CVECTOR
+def cnorm : thm := BCVD.cnorm
+
+initialize BCVE : HolMultiLib.CVectors.CVE ←
+  ioB "setupCVE" (HolMultiLib.CVectors.setupCVE deps BCVA BCVB BCVC BCVD).run
+
+-- CVE (cvectors.ml 1535-2025)
+def CNORM_CVECTOR_ZERO : thm := BCVE.CNORM_CVECTOR_ZERO
+def CNORM_POW_2 : thm := BCVE.CNORM_POW_2
+def CNORM_NORM_2 : thm := BCVE.CNORM_NORM_2
+def CNORM_NORM : thm := BCVE.CNORM_NORM
+def CNORM_MUL : thm := BCVE.CNORM_MUL
+def CNORM_EQ_0 : thm := BCVE.CNORM_EQ_0
+def CNORM_POS : thm := BCVE.CNORM_POS
+def CNORM_SUB : thm := BCVE.CNORM_SUB
+def CNORM_VECTOR_TO_CVECTOR : thm := BCVE.CNORM_VECTOR_TO_CVECTOR
+def CNORM_BASIS : thm := BCVE.CNORM_BASIS
+def CNORM_BASIS_1 : thm := BCVE.CNORM_BASIS_1
+def CVECTOR_CHOOSE_SIZE : thm := BCVE.CVECTOR_CHOOSE_SIZE
+def cunit : thm := BCVE.cunit
+def CUNIT_CVECTOR_ZERO : thm := BCVE.CUNIT_CVECTOR_ZERO
+def CDOT_CUNIT_MUL_CUNIT : thm := BCVE.CDOT_CUNIT_MUL_CUNIT
+def collinear_cvectors : thm := BCVE.collinear_cvectors
+def COLLINEAR_CVECTORS_SYM : thm := BCVE.COLLINEAR_CVECTORS_SYM
+def COLLINEAR_CVECTORS_0 : thm := BCVE.COLLINEAR_CVECTORS_0
+def NON_NULL_COLLINEARS : thm := BCVE.NON_NULL_COLLINEARS
+def COLLINEAR_LNONNULL : thm := BCVE.COLLINEAR_LNONNULL
+def COLLINEAR_RNONNULL : thm := BCVE.COLLINEAR_RNONNULL
+def COLLINEAR_RUNITREAL : thm := BCVE.COLLINEAR_RUNITREAL
+def CCROSS_COLLINEAR_CVECTORS : thm := BCVE.CCROSS_COLLINEAR_CVECTORS
+def CVECTOR_MUL_INV : thm := BCVE.CVECTOR_MUL_INV
+def CVECTOR_MUL_INV2 : thm := BCVE.CVECTOR_MUL_INV2
+def COLLINEAR_CVECTORS_VECTOR_TO_CVECTOR : thm := BCVE.COLLINEAR_CVECTORS_VECTOR_TO_CVECTOR
+def corthogonal : thm := BCVE.corthogonal
+def CORTHOGONAL_SYM : thm := BCVE.CORTHOGONAL_SYM
+def CORTHOGONAL_0 : thm := BCVE.CORTHOGONAL_0
+def CORTHOGONAL_LZERO : thm := BCVE.CORTHOGONAL_LZERO
+def CORTHOGONAL_RZERO : thm := BCVE.CORTHOGONAL_RZERO
+def CORTHOGONAL_COLLINEAR_CVECTORS : thm := BCVE.CORTHOGONAL_COLLINEAR_CVECTORS
+def CORTHOGONAL_MUL_CLAUSES : thm := BCVE.CORTHOGONAL_MUL_CLAUSES
+def CORTHOGONAL_RMUL : thm := BCVE.CORTHOGONAL_RMUL
+def CORTHOGONAL_RMUL_EQ : thm := BCVE.CORTHOGONAL_RMUL_EQ
+def CORTHOGONAL_LMUL : thm := BCVE.CORTHOGONAL_LMUL
+def CORTHOGONAL_LMUL_EQ : thm := BCVE.CORTHOGONAL_LMUL_EQ
+def CORTHOGONAL_LRMUL_CLAUSES : thm := BCVE.CORTHOGONAL_LRMUL_CLAUSES
+def CORTHOGONAL_LRMUL : thm := BCVE.CORTHOGONAL_LRMUL
+def CORTHOGONAL_LRMUL_EQ : thm := BCVE.CORTHOGONAL_LRMUL_EQ
+def CORTHOGONAL_REAL_CLAUSES : thm := BCVE.CORTHOGONAL_REAL_CLAUSES
+def CORTHOGONAL_RREAL : thm := BCVE.CORTHOGONAL_RREAL
+def CORTHOGONAL_LREAL : thm := BCVE.CORTHOGONAL_LREAL
+def CORTHOGONAL_UNIT : thm := BCVE.CORTHOGONAL_UNIT
+def CORTHOGONAL_RUNIT : thm := BCVE.CORTHOGONAL_RUNIT
+def CORTHOGONAL_LUNIT : thm := BCVE.CORTHOGONAL_LUNIT
+def CORTHOGONAL_PROJECTION : thm := BCVE.CORTHOGONAL_PROJECTION
+def CDOT_PYTHAGOREAN : thm := BCVE.CDOT_PYTHAGOREAN
+def CDOT_CAUCHY_SCHWARZ_POW_2 : thm := BCVE.CDOT_CAUCHY_SCHWARZ_POW_2
+def CDOT_CAUCHY_SCHWARZ : thm := BCVE.CDOT_CAUCHY_SCHWARZ
+def CDOT_CAUCHY_SCHWARZ_POW_2_EQUAL : thm := BCVE.CDOT_CAUCHY_SCHWARZ_POW_2_EQUAL
+def CDOT_CAUCHY_SCHWARZ_EQUAL : thm := BCVE.CDOT_CAUCHY_SCHWARZ_EQUAL
+def CNORM_TRIANGLE : thm := BCVE.CNORM_TRIANGLE
+def REAL_ABS_SUB_CNORM : thm := BCVE.REAL_ABS_SUB_CNORM
+def cvsum : thm := BCVE.cvsum
+def csummable : thm := BCVE.csummable
+def cinfsum : thm := BCVE.cinfsum
+def CSUMMABLE_FLATTEN_CVECTOR : thm := BCVE.CSUMMABLE_FLATTEN_CVECTOR
+def FLATTEN_CINFSUM : thm := BCVE.FLATTEN_CINFSUM
+def CSUMMABLE_LINEAR : thm := BCVE.CSUMMABLE_LINEAR
+def CINFSUM_LINEAR : thm := BCVE.CINFSUM_LINEAR
+
+/-- Force-load hook: importing this module runs every bundle above. -/
+def ensureCvectors : IO Unit := pure ()
+
+end SessionMultiLib.CVectors

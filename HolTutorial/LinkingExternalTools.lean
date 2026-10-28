@@ -13,6 +13,7 @@ conversions that call `maximas` (FACTOR_CONV, ANTIDERIV_CONV, INTEGRAL_CONV)
 fail the same way here.
 -/
 import HolTutorial.Common
+import SessionLibrary.Transc
 open HolCore.Kernel HolCore.Lib HolCore.Basics HolLight HolLight.Syntax HolTutorial
 open Session (prove prioritize_real is_ratconst is_numeral rat_of_term term_of_rat
   lex REAL_RING MESON_TAC NUM_REDUCE_CONV REAL_RAT_REDUCE_CONV
@@ -43,7 +44,7 @@ def isnumc (s : String) : Bool := s.length == 1 && s.front.isDigit
 
 #eval phrase 2
 /- let maximas e = ... | maxima | ... -/
-unsafe def maximas (e : String) : IO String := do
+def maximas (e : String) : IO String := do
   -- Filename.temp_file "maxima" ".out"
   let (handle, filename) ← IO.FS.createTempFile
   let _ := handle
@@ -68,7 +69,7 @@ unsafe def maximas (e : String) : IO String := do
 #eval prioritize_real
 
 #eval phrase 4
-unsafe def maxima_ops : List (String × term) :=
+def maxima_ops : List (String × term) :=
   keep "maxima_ops" fun _ =>
     [("+", ([[(+)]] : term)), ("-", [[(-)]]), ("*", [[( * )]]),
      ("/", [[(/)]]), ("^", [[(pow)]])]
@@ -76,19 +77,19 @@ unsafe def maxima_ops : List (String × term) :=
   (maxima_ops.map (fun p => "(\"" ++ p.1 ++ "\", `" ++ toString p.2 ++ "`)")) ++ "]")
 
 #eval phrase 5
-unsafe def maxima_funs : List (String × term) :=
+def maxima_funs : List (String × term) :=
   keep "maxima_funs" fun _ => [("sin", ([[sin]] : term)), ("cos", [[cos]])]
 #eval IO.println ("[" ++ String.intercalate "; "
   (maxima_funs.map (fun p => "(\"" ++ p.1 ++ "\", `" ++ toString p.2 ++ "`)")) ++ "]")
 
 #eval phrase 6
 /- let mk_uneg = curry mk_comb `(--)` -/
-unsafe def mk_uneg (t : term) : term := (mk_comb ([[(--)]] : term) t).toOption.get!
+def mk_uneg (t : term) : term := (mk_comb ([[(--)]] : term) t).toOption.get!
 #eval fn
 
 #eval phrase 7
 /- let dest_uneg = let ntm = `(--)` in fun tm -> ... -/
-unsafe def dest_uneg (tm : term) : Except String term :=
+def dest_uneg (tm : term) : Except String term :=
   match dest_comb tm with
   | .ok (op, t) => if op == ([[(--)]] : term) then .ok t else .error "dest_uneg"
   | .error e => .error e
@@ -96,14 +97,14 @@ unsafe def dest_uneg (tm : term) : Except String term :=
 
 #eval phrase 8
 /- let mk_pow = let f = mk_binop `(pow)` in fun x y -> f x (rand y) -/
-unsafe def mk_pow (x y : term) : term :=
+def mk_pow (x y : term) : term :=
   ((mk_binop ([[(pow)]] : term) x).toOption.get! ((rand y).toOption.get!)).toOption.get!
 #eval fn
 
 #eval phrase 9
 /- let mk_realvar = let real_ty = `:real` in fun x -> mk_var(x,real_ty) -/
-unsafe def realTy : hol_type := ((unsafeIO (parse_type "real")).toOption.get!).toOption.get!
-unsafe def mk_realvar (x : String) : term := mk_var x realTy
+def realTy : hol_type := ((runIO (parse_type "real")).toOption.get!).toOption.get!
+def mk_realvar (x : String) : term := mk_var x realTy
 #eval fn
 
 /-- OCaml's `string_of_num` on a rational: `n` or `n/d`. -/
@@ -112,7 +113,7 @@ def strOfNum (r : Rat) : String :=
 
 #eval phrase 10
 /- let rec string_of_hol tm = ... -/
-unsafe def string_of_hol (tm : term) : String :=
+partial def string_of_hol (tm : term) : String :=
   if is_ratconst tm then "(" ++ strOfNum ((rat_of_term tm).toOption.get!) ++ ")"
   else if is_numeral tm then strOfNum ((dest_numeral tm).toOption.get!)
   else if is_var tm then (dest_var tm).toOption.get!.1
@@ -132,8 +133,8 @@ unsafe def string_of_hol (tm : term) : String :=
 
 #eval phrase 12
 /- let lexe s = map (function Resword s -> s | Ident s -> s) (lex(explode s)) -/
-unsafe def lexe (s : String) : List String :=
-  (((unsafeIO (lex (explode s))).toOption.get!).toOption.get!).map (fun t =>
+def lexe (s : String) : List String :=
+  (((runIO (lex (explode s))).toOption.get!).toOption.get!).map (fun t =>
     match t with
     | .Resword s => s
     | .Ident s => s)
@@ -142,7 +143,7 @@ unsafe def lexe (s : String) : List String :=
 #eval phrase 13
 /- let parse_bracketed prs inp = match prs inp with ast,")"::rst -> ast,rst
    | _ -> failwith "Closing bracket expected" -/
-unsafe def parse_bracketed {α : Type} (prs : List String → Except String (α × List String))
+def parse_bracketed {α : Type} (prs : List String → Except String (α × List String))
     (inp : List String) : Except String (α × List String) := do
   match ← prs inp with
   | (ast, ")" :: rst) => .ok (ast, rst)
@@ -151,7 +152,7 @@ unsafe def parse_bracketed {α : Type} (prs : List String → Except String (α 
 
 #eval phrase 14
 /- let rec parse_ginfix op opup sof prs inp = ... -/
-unsafe def parse_ginfix {α β γ : Type} [BEq α]
+partial def parse_ginfix {α β γ : Type} [BEq α]
     (op : α) (opup : (β → γ) → β → β → γ) (sof : β → γ)
     (prs : List α → Except String (β × List α)) (inp : List α) :
     Except String (γ × List α) := do
@@ -164,14 +165,14 @@ unsafe def parse_ginfix {α β γ : Type} [BEq α]
 
 #eval phrase 15
 /- let parse_general_infix op = ... -/
-unsafe def parse_general_infix (op : String)
+def parse_general_infix (op : String)
     (prs : List String → Except String (term × List String)) (inp : List String) :
     Except String (term × List String) :=
   let opcon : term → term → term :=
     if op == "^" then mk_pow
     else fun e1 e2 => ((mk_binop ((assoc op maxima_ops).toOption.get!) e1).toOption.get! e2).toOption.get!
   let constr : (term → term) → term → term → term :=
-    if op != "^" && (((unsafeIO (get_infix_status op)).toOption.get!).toOption.get!.2 == "right")
+    if op != "^" && (((runIO (get_infix_status op)).toOption.get!).toOption.get!.2 == "right")
     then fun f e1 e2 => f (opcon e1 e2)
     else fun f e1 e2 => opcon (f e1) e2
   parse_ginfix op constr (fun x => x) prs inp
@@ -181,7 +182,7 @@ unsafe def parse_general_infix (op : String)
 /- let rec parse_atomic_expression inp = ... and parse_exp ... and parse_neg ...
    and parse_expression ... -/
 mutual
-unsafe def parse_atomic_expression (inp : List String) :
+partial def parse_atomic_expression (inp : List String) :
     Except String (term × List String) := do
   match inp with
   | [] => .error "expression expected"
@@ -200,13 +201,13 @@ unsafe def parse_atomic_expression (inp : List String) :
       | _ =>
         if (explode s).all isalnum then .ok (mk_realvar s, rest)
         else .error "expression expected"
-unsafe def parse_exp (inp : List String) : Except String (term × List String) :=
+partial def parse_exp (inp : List String) : Except String (term × List String) :=
   parse_general_infix "^" parse_atomic_expression inp
-unsafe def parse_neg (inp : List String) : Except String (term × List String) := do
+partial def parse_neg (inp : List String) : Except String (term × List String) := do
   match inp with
   | "-" :: rest => do let (e, rst) ← parse_neg rest; .ok (mk_uneg e, rst)
   | _ => parse_exp inp
-unsafe def parse_expression (inp : List String) :
+partial def parse_expression (inp : List String) :
     Except String (term × List String) :=
   itlist parse_general_infix (maxima_ops.map Prod.fst) parse_neg inp
 end
@@ -214,7 +215,7 @@ end
 
 #eval phrase 17
 /- let hol_of_string = fst o parse_expression o lexe -/
-unsafe def hol_of_string (s : String) : term :=
+def hol_of_string (s : String) : term :=
   ((parse_expression (lexe s)).toOption.get!).1
 #eval fn
 
@@ -222,19 +223,19 @@ unsafe def hol_of_string (s : String) : term :=
 #eval IO.println ("`" ++ toString (hol_of_string "sin(x) - cos(-(- - 1 + x))") ++ "`")
 
 /-- `mk_eq (l, r)`, as a one-shot wrapper over the core two-stage `mk_eq`. -/
-unsafe def mkEq (l r : term) : term :=
-  (((unsafeIO mk_eq).toOption.get!).toOption.get! (l, r)).toOption.get!
+def mkEq (l r : term) : term :=
+  (((runIO mk_eq).toOption.get!).toOption.get! (l, r)).toOption.get!
 
 /-- Run a `maximas`-calling conversion.  Because `maxima` is absent the shell
     prints `sh: maxima: command not found`, `maximas` reads an empty file and
     raises `End_of_file`, and (as HOL Light's toplevel does) we print
     `Exception: End_of_file.`. -/
-unsafe def runMaxima {α : Type} (x : IO α) : IO Unit := do
+def runMaxima {α : Type} (x : IO α) : IO Unit := do
   try let _ ← x; pure () catch _ => endOfFile
 
 #eval phrase 19
 /- let FACTOR_CONV tm = ... REAL_RING(mk_eq(tm,tm')) -/
-unsafe def FACTOR_CONV (tm : term) : IO thm := do
+def FACTOR_CONV (tm : term) : IO thm := do
   let s := "factor(" ++ string_of_hol tm ++ ")"
   let tm' := hol_of_string (← maximas s)
   match ← REAL_RING (mkEq tm tm') with
@@ -253,7 +254,7 @@ unsafe def FACTOR_CONV (tm : term) : IO thm := do
 
 #eval phrase 23
 /- let ANTIDERIV_CONV tm = ... (integrate ...) -/
-unsafe def ANTIDERIV_CONV (tm : term) : IO thm := do
+def ANTIDERIV_CONV (tm : term) : IO thm := do
   let (x, bod) ← IO.ofExcept (dest_abs tm)
   let s := "integrate(" ++ string_of_hol bod ++ "," ++ (dest_var x).toOption.get!.1 ++ ")"
   let tm' := (mk_abs x (hol_of_string (← maximas s))).toOption.get!
@@ -272,7 +273,7 @@ unsafe def ANTIDERIV_CONV (tm : term) : IO thm := do
 #eval phrase 26
 /- (**** This one fails as expected so we need more simplification later
    ANTIDERIV_CONV `\x. sin(x) pow 3`;;  ****) -/
-unsafe def SIN_N_CLAUSES : thm := keep "SIN_N_CLAUSES" fun _ => prove
+def SIN_N_CLAUSES : thm := keep "SIN_N_CLAUSES" fun _ => prove
  ([[(sin(&(NUMERAL(BIT0 n)) * x) =
      &2 * sin(&(NUMERAL n) * x) * cos(&(NUMERAL n) * x)) /\
     (sin(&(NUMERAL(BIT1 n)) * x) =
@@ -292,7 +293,7 @@ unsafe def SIN_N_CLAUSES : thm := keep "SIN_N_CLAUSES" fun _ => prove
 
 #eval phrase 27
 /- let TRIG_IDENT_TAC x = ... -/
-unsafe def TRIG_IDENT_TAC (x : term) : tactic :=
+def TRIG_IDENT_TAC (x : term) : tactic :=
   REWRITE_TAC [SIN_N_CLAUSES, SIN_ADD, COS_ADD] THEN
   REWRITE_TAC [REAL_MUL_LZERO, SIN_0, COS_0, REAL_MUL_RZERO] THEN
   MP_TAC (Session.SPEC x SIN_CIRCLE) THEN CONV_TAC REAL_RING
@@ -300,7 +301,7 @@ unsafe def TRIG_IDENT_TAC (x : term) : tactic :=
 
 #eval phrase 28
 /- let ANTIDERIV_CONV tm = ... expand(integrate ...) ... TRIG_IDENT_TAC x -/
-unsafe def ANTIDERIV_CONV_2 (tm : term) : IO thm := do
+def ANTIDERIV_CONV_2 (tm : term) : IO thm := do
   let (x, bod) ← IO.ofExcept (dest_abs tm)
   let s := "expand(integrate(" ++ string_of_hol bod ++ "," ++ (dest_var x).toOption.get!.1 ++ "))"
   let tm' := (mk_abs x (hol_of_string (← maximas s))).toOption.get!
@@ -318,14 +319,14 @@ unsafe def ANTIDERIV_CONV_2 (tm : term) : IO thm := do
 
 #eval phrase 31
 /- let FCT1_WEAK = prove(...) -/
-unsafe def FCT1_WEAK : thm := keep "FCT1_WEAK" fun _ => prove
+def FCT1_WEAK : thm := keep "FCT1_WEAK" fun _ => prove
  ([[(!x. (f diffl f'(x)) x) ==> !x. &0 <= x ==> defint(&0,x) f' (f x - f(&0))]])
   (MESON_TAC [FTC1])
 #eval FCT1_WEAK
 
 #eval phrase 32
 /- let INTEGRAL_CONV tm = ... MATCH_MP FCT1_WEAK (ANTIDERIV_CONV tm) ... -/
-unsafe def INTEGRAL_CONV (tm : term) : IO thm := do
+def INTEGRAL_CONV (tm : term) : IO thm := do
   let th1 ← IO.ofExcept (← Session.MATCH_MP FCT1_WEAK (← ANTIDERIV_CONV_2 tm))
   let r1 ← IO.ofExcept (BETA_RULE th1)
   let r2 ← IO.ofExcept (← convRuleIO REAL_RAT_REDUCE_CONV r1)

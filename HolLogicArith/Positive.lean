@@ -22,66 +22,66 @@ namespace HolLogicArith.Positive
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1`/`listThms2` bundles; alias the ones we need. -/
-private unsafe def LENGTH : thm := Session.listDefs.LENGTH
-private unsafe def MAP : thm := Session.listDefs.MAP
-private unsafe def ITLIST : thm := Session.listDefs.ITLIST
-private unsafe def ALL : thm := Session.listDefs.ALL
-private unsafe def MEM : thm := Session.listDefs.MEM
-private unsafe def MAP_o : thm := Session.listThms1.MAP_o
-private unsafe def MAP_EQ : thm := Session.listThms1.MAP_EQ
-private unsafe def MEM_MAP : thm := Session.listThms1.MEM_MAP
-private unsafe def ALL_MEM : thm := Session.listThms1.ALL_MEM
-private unsafe def EX_MEM : thm := Session.listThms1.EX_MEM
-private unsafe def list_CASES : thm := Session.listThms1.list_CASES
-private unsafe def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
+private def LENGTH : thm := Session.listDefs.LENGTH
+private def MAP : thm := Session.listDefs.MAP
+private def ITLIST : thm := Session.listDefs.ITLIST
+private def ALL : thm := Session.listDefs.ALL
+private def MEM : thm := Session.listDefs.MEM
+private def MAP_o : thm := Session.listThms1.MAP_o
+private def MAP_EQ : thm := Session.listThms1.MAP_EQ
+private def MEM_MAP : thm := Session.listThms1.MEM_MAP
+private def ALL_MEM : thm := Session.listThms1.ALL_MEM
+private def EX_MEM : thm := Session.listThms1.EX_MEM
+private def list_CASES : thm := Session.listThms1.list_CASES
+private def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
 
 /- `RESOLVE_CLAUSE` and `NEGATE_LITERAL` are bound in both Linear and Support;
    OCaml uses the latest binding (support.ml's), so we do too. -/
-private unsafe def RESOLVE_CLAUSE : thm := HolLogicArith.Support.RESOLVE_CLAUSE
-private unsafe def NEGATE_LITERAL : thm := HolLogicArith.Support.NEGATE_LITERAL
+private def RESOLVE_CLAUSE : thm := HolLogicArith.Support.RESOLVE_CLAUSE
+private def NEGATE_LITERAL : thm := HolLogicArith.Support.NEGATE_LITERAL
 
 #eval HolLogicArith.Support.ensure
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_inductive_definition`, panicking with HOL Light's message on failure. -/
-private unsafe def newInductive (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+private def newInductive (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"new_inductive_definition: {e}"
   | .error e => panic! s!"new_inductive_definition IO: {e}"
 
 #eval phrase 1
-unsafe def allpositive : thm := keep "allpositive" fun _ => new_definition
+def allpositive : thm := keep "allpositive" fun _ => new_definition
   [[allpositive cl <=> !p. p IN cl ==> positive p]]
 #eval allpositive
 
 #eval phrase 2
-unsafe def NOT_NEGATIVE_ATOM : thm := keep "NOT_NEGATIVE_ATOM" fun _ => (do
+def NOT_NEGATIVE_ATOM : thm := keep "NOT_NEGATIVE_ATOM" fun _ => (do
   prove ([[!p a. ~(negative (Atom p a))]])
    (REWRITE_TAC [negative, Not_DEF, form_DISTINCT])
   : ExceptT String IO thm).run
 #eval NOT_NEGATIVE_ATOM
 
 #eval phrase 3
-unsafe def NEGATIVE_NOT : thm := keep "NEGATIVE_NOT" fun _ => (do
+def NEGATIVE_NOT : thm := keep "NEGATIVE_NOT" fun _ => (do
   prove ([[!p. negative(Not p)]])
    (MESON_TAC [negative])
   : ExceptT String IO thm).run
 #eval NEGATIVE_NOT
 
 #eval phrase 4
-unsafe def CLAUSE_FINITE : thm := keep "CLAUSE_FINITE" fun _ => (do
+def CLAUSE_FINITE : thm := keep "CLAUSE_FINITE" fun _ => (do
   prove ([[!c. clause c ==> FINITE c]])
    (SIMP_TAC [clause])
   : ExceptT String IO thm).run
 #eval CLAUSE_FINITE
 
 #eval phrase 5
-unsafe def POSITIVE_LITERAL_ATOM : thm := keep "POSITIVE_LITERAL_ATOM" fun _ => (do
+def POSITIVE_LITERAL_ATOM : thm := keep "POSITIVE_LITERAL_ATOM" fun _ => (do
   prove ([[!p. literal(p) /\ positive(p) <=> atom(p)]])
    (REWRITE_TAC [literal, positive, negative] THEN
     MESON_TAC [Not_DEF, form_DISTINCT, ATOM])
@@ -89,14 +89,14 @@ unsafe def POSITIVE_LITERAL_ATOM : thm := keep "POSITIVE_LITERAL_ATOM" fun _ => 
 #eval POSITIVE_LITERAL_ATOM
 
 #eval phrase 6
-unsafe def PHOLDS_ATOM : thm := keep "PHOLDS_ATOM" fun _ => (do
+def PHOLDS_ATOM : thm := keep "PHOLDS_ATOM" fun _ => (do
   prove ([[!v p. atom(p) ==> (pholds v p <=> v p)]])
    (SIMP_TAC [ATOM, LEFT_IMP_EXISTS_THM, PHOLDS])
   : ExceptT String IO thm).run
 #eval PHOLDS_ATOM
 
 #eval phrase 7
-unsafe def PHOLDS_ALLTRUE_POSLIT : thm := keep "PHOLDS_ALLTRUE_POSLIT" fun _ => (do
+def PHOLDS_ALLTRUE_POSLIT : thm := keep "PHOLDS_ALLTRUE_POSLIT" fun _ => (do
   prove ([[!p. literal p /\ positive p ==> pholds (\x. T) p]])
    (REWRITE_TAC [literal, ATOM, positive, negative] THEN
     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [PHOLDS] THEN
@@ -105,7 +105,7 @@ unsafe def PHOLDS_ALLTRUE_POSLIT : thm := keep "PHOLDS_ALLTRUE_POSLIT" fun _ => 
 #eval PHOLDS_ALLTRUE_POSLIT
 
 #eval phrase 8
-unsafe def PHOLDS_ALLFALSE_NEGLIT : thm := keep "PHOLDS_ALLFALSE_NEGLIT" fun _ => (do
+def PHOLDS_ALLFALSE_NEGLIT : thm := keep "PHOLDS_ALLFALSE_NEGLIT" fun _ => (do
   prove ([[!p. literal p /\ negative p ==> pholds (\x. F) p]])
    (REWRITE_TAC [literal, ATOM, positive, negative] THEN
     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [PHOLDS] THEN
@@ -114,7 +114,7 @@ unsafe def PHOLDS_ALLFALSE_NEGLIT : thm := keep "PHOLDS_ALLFALSE_NEGLIT" fun _ =
 #eval PHOLDS_ALLFALSE_NEGLIT
 
 #eval phrase 9
-unsafe def PHOLDS_ALLTRUE_POSCLAUSE : thm := keep "PHOLDS_ALLTRUE_POSCLAUSE" fun _ => (do
+def PHOLDS_ALLTRUE_POSCLAUSE : thm := keep "PHOLDS_ALLTRUE_POSCLAUSE" fun _ => (do
   prove ([[!c. clause(c) /\ allpositive c /\ ~(c = {}) ==> pholds (\x. T) (interp c)]])
    (SIMP_TAC [clause, PHOLDS_INTERP, allpositive, EXTENSION, NOT_IN_EMPTY] THEN
     MESON_TAC [PHOLDS_ALLTRUE_POSLIT])
@@ -122,7 +122,7 @@ unsafe def PHOLDS_ALLTRUE_POSCLAUSE : thm := keep "PHOLDS_ALLTRUE_POSCLAUSE" fun
 #eval PHOLDS_ALLTRUE_POSCLAUSE
 
 #eval phrase 10
-unsafe def PHOLDS_ALLFALSE_NONPOSCLAUSE : thm := keep "PHOLDS_ALLFALSE_NONPOSCLAUSE" fun _ => (do
+def PHOLDS_ALLFALSE_NONPOSCLAUSE : thm := keep "PHOLDS_ALLFALSE_NONPOSCLAUSE" fun _ => (do
   prove ([[!c. clause(c) /\ ~allpositive c ==> pholds (\x. F) (interp c)]])
    (SIMP_TAC [clause, PHOLDS_INTERP, allpositive, EXTENSION, NOT_IN_EMPTY] THEN
     MESON_TAC [PHOLDS_ALLFALSE_NEGLIT, positive])
@@ -130,7 +130,7 @@ unsafe def PHOLDS_ALLFALSE_NONPOSCLAUSE : thm := keep "PHOLDS_ALLFALSE_NONPOSCLA
 #eval PHOLDS_ALLFALSE_NONPOSCLAUSE
 
 #eval phrase 11
-unsafe def PRESOLUTION_LEMMA : thm := keep "PRESOLUTION_LEMMA" fun _ => (do
+def PRESOLUTION_LEMMA : thm := keep "PRESOLUTION_LEMMA" fun _ => (do
   prove ([[!s. FINITE s /\ (!c. c IN s ==> clause c) /\
        ~psatisfiable (IMAGE interp s) /\ ~({} IN s)
        ==> ?c1 c2 p. c1 IN s /\ c2 IN s /\
@@ -372,7 +372,7 @@ unsafe def PRESOLUTION_LEMMA : thm := keep "PRESOLUTION_LEMMA" fun _ => (do
 #eval PRESOLUTION_LEMMA
 
 #eval phrase 12
-unsafe def pposresproof_triple : thm × thm × thm := keep "pposresproof_triple" fun _ =>
+def pposresproof_triple : thm × thm × thm := keep "pposresproof_triple" fun _ =>
   newInductive
     [[(!cl. cl IN hyps ==> pposresproof hyps cl) /\
       (!p cl1 cl2.
@@ -380,13 +380,13 @@ unsafe def pposresproof_triple : thm × thm × thm := keep "pposresproof_triple"
           (allpositive cl1 \/ allpositive cl2) /\
           p IN cl1 /\ ~~p IN cl2
          ==> pposresproof hyps (resolve p cl1 cl2))]]
-unsafe def pposresproof_RULES : thm := pposresproof_triple.1
-unsafe def pposresproof_INDUCT : thm := pposresproof_triple.2.1
-unsafe def pposresproof_CASES : thm := pposresproof_triple.2.2
+def pposresproof_RULES : thm := pposresproof_triple.1
+def pposresproof_INDUCT : thm := pposresproof_triple.2.1
+def pposresproof_CASES : thm := pposresproof_triple.2.2
 #eval do IO.println pposresproof_RULES; IO.println pposresproof_INDUCT; IO.println pposresproof_CASES
 
 #eval phrase 13
-unsafe def POSRESPROOF_FINITE : thm := keep "POSRESPROOF_FINITE" fun _ => (do
+def POSRESPROOF_FINITE : thm := keep "POSRESPROOF_FINITE" fun _ => (do
   prove ([[!hyps. FINITE hyps /\ (!cl. cl IN hyps ==> clause cl)
         ==> FINITE {cl | pposresproof hyps cl}]])
    (REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
@@ -402,7 +402,7 @@ unsafe def POSRESPROOF_FINITE : thm := keep "POSRESPROOF_FINITE" fun _ => (do
 #eval POSRESPROOF_FINITE
 
 #eval phrase 14
-unsafe def PPOSRESPROOF_REFUTATION_COMPLETE_FINITE : thm := keep "PPOSRESPROOF_REFUTATION_COMPLETE_FINITE" fun _ => (do
+def PPOSRESPROOF_REFUTATION_COMPLETE_FINITE : thm := keep "PPOSRESPROOF_REFUTATION_COMPLETE_FINITE" fun _ => (do
   prove ([[FINITE hyps /\
    (!cl. cl IN hyps ==> clause cl) /\
    ~(psatisfiable {interp cl | cl IN hyps})
@@ -428,7 +428,7 @@ unsafe def PPOSRESPROOF_REFUTATION_COMPLETE_FINITE : thm := keep "PPOSRESPROOF_R
 #eval PPOSRESPROOF_REFUTATION_COMPLETE_FINITE
 
 #eval phrase 15
-unsafe def PPOSRESPROOF_MONO : thm := keep "PPOSRESPROOF_MONO" fun _ => (do
+def PPOSRESPROOF_MONO : thm := keep "PPOSRESPROOF_MONO" fun _ => (do
   prove ([[!hyps1 hyps2 c.
         pposresproof hyps1 c /\ hyps1 SUBSET hyps2 ==> pposresproof hyps2 c]])
    (GEN_TAC THEN HolLight.GEN_REWRITE_TAC HolCore.Lib.I [SWAP_FORALL_THM] THEN
@@ -439,7 +439,7 @@ unsafe def PPOSRESPROOF_MONO : thm := keep "PPOSRESPROOF_MONO" fun _ => (do
 #eval PPOSRESPROOF_MONO
 
 #eval phrase 16
-unsafe def PPOSRESPROOF_REFUTATION_COMPLETE : thm := keep "PPOSRESPROOF_REFUTATION_COMPLETE" fun _ => (do
+def PPOSRESPROOF_REFUTATION_COMPLETE : thm := keep "PPOSRESPROOF_REFUTATION_COMPLETE" fun _ => (do
   prove ([[(!cl. cl IN hyps ==> clause cl) /\
    ~(psatisfiable {interp cl | cl IN hyps})
    ==> pposresproof hyps {}]])
@@ -462,7 +462,7 @@ unsafe def PPOSRESPROOF_REFUTATION_COMPLETE : thm := keep "PPOSRESPROOF_REFUTATI
 #eval PPOSRESPROOF_REFUTATION_COMPLETE
 
 #eval phrase 17
-unsafe def psemresproof_triple : thm × thm × thm := keep "psemresproof_triple" fun _ =>
+def psemresproof_triple : thm × thm × thm := keep "psemresproof_triple" fun _ =>
   newInductive
     [[(!cl. cl IN hyps ==> psemresproof v hyps cl) /\
       (!p cl1 cl2.
@@ -470,18 +470,18 @@ unsafe def psemresproof_triple : thm × thm × thm := keep "psemresproof_triple"
           (~pholds v (interp cl1) \/ ~pholds v (interp cl2)) /\
           p IN cl1 /\ ~~p IN cl2
          ==> psemresproof v hyps (resolve p cl1 cl2))]]
-unsafe def psemresproof_RULES : thm := psemresproof_triple.1
-unsafe def psemresproof_INDUCT : thm := psemresproof_triple.2.1
-unsafe def psemresproof_CASES : thm := psemresproof_triple.2.2
+def psemresproof_RULES : thm := psemresproof_triple.1
+def psemresproof_INDUCT : thm := psemresproof_triple.2.1
+def psemresproof_CASES : thm := psemresproof_triple.2.2
 #eval do IO.println psemresproof_RULES; IO.println psemresproof_INDUCT; IO.println psemresproof_CASES
 
 #eval phrase 18
-unsafe def propflip : thm := keep "propflip" fun _ => new_definition
+def propflip : thm := keep "propflip" fun _ => new_definition
   [[propflip w p = if (negative p = pholds w p) then p else ~~p]]
 #eval propflip
 
 #eval phrase 19
-unsafe def PHOLDS_LITERAL_PROPFLIP : thm := keep "PHOLDS_LITERAL_PROPFLIP" fun _ => (do
+def PHOLDS_LITERAL_PROPFLIP : thm := keep "PHOLDS_LITERAL_PROPFLIP" fun _ => (do
   prove ([[!p w. literal(p) ==> (pholds w p <=> pholds (\x. F) (propflip w p))]])
    (REWRITE_TAC [literal, ATOM] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
     REWRITE_TAC [propflip] THEN REWRITE_TAC [PHOLDS] THEN
@@ -491,7 +491,7 @@ unsafe def PHOLDS_LITERAL_PROPFLIP : thm := keep "PHOLDS_LITERAL_PROPFLIP" fun _
 #eval PHOLDS_LITERAL_PROPFLIP
 
 #eval phrase 20
-unsafe def PROPFLIP_INVOLUTE : thm := keep "PROPFLIP_INVOLUTE" fun _ => (do
+def PROPFLIP_INVOLUTE : thm := keep "PROPFLIP_INVOLUTE" fun _ => (do
   prove ([[!w p. literal p ==> (propflip w (propflip w p) = p)]])
    (REWRITE_TAC [literal, ATOM] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
     REWRITE_TAC [propflip] THEN REWRITE_TAC [PHOLDS] THEN
@@ -507,7 +507,7 @@ unsafe def PROPFLIP_INVOLUTE : thm := keep "PROPFLIP_INVOLUTE" fun _ => (do
 #eval PROPFLIP_INVOLUTE
 
 #eval phrase 21
-unsafe def PROPFLIP_INJ : thm := keep "PROPFLIP_INJ" fun _ => (do
+def PROPFLIP_INJ : thm := keep "PROPFLIP_INJ" fun _ => (do
   prove ([[!w p q. literal p /\ literal q /\ (propflip w p = propflip w q)
            ==> (p = q)]])
    (MESON_TAC [PROPFLIP_INVOLUTE])
@@ -515,7 +515,7 @@ unsafe def PROPFLIP_INJ : thm := keep "PROPFLIP_INJ" fun _ => (do
 #eval PROPFLIP_INJ
 
 #eval phrase 22
-unsafe def PROPFLIP_NEGATE : thm := keep "PROPFLIP_NEGATE" fun _ => (do
+def PROPFLIP_NEGATE : thm := keep "PROPFLIP_NEGATE" fun _ => (do
   prove ([[!w p. literal p ==> (propflip w (~~p) = ~~(propflip w p))]])
    (REWRITE_TAC [literal, ATOM] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
     REWRITE_TAC [propflip] THEN REWRITE_TAC [PHOLDS] THEN
@@ -528,7 +528,7 @@ unsafe def PROPFLIP_NEGATE : thm := keep "PROPFLIP_NEGATE" fun _ => (do
 #eval PROPFLIP_NEGATE
 
 #eval phrase 23
-unsafe def PROPFLIP_RESOLVE : thm := keep "PROPFLIP_RESOLVE" fun _ => (do
+def PROPFLIP_RESOLVE : thm := keep "PROPFLIP_RESOLVE" fun _ => (do
   prove ([[!cl1 cl2 p w.
      clause cl1 /\ clause cl2 /\ p IN cl1
      ==> (IMAGE (propflip w) (resolve p cl1 cl2) =
@@ -546,7 +546,7 @@ unsafe def PROPFLIP_RESOLVE : thm := keep "PROPFLIP_RESOLVE" fun _ => (do
 #eval PROPFLIP_RESOLVE
 
 #eval phrase 24
-unsafe def PPOSRESPROOF_CLAUSE : thm := keep "PPOSRESPROOF_CLAUSE" fun _ => (do
+def PPOSRESPROOF_CLAUSE : thm := keep "PPOSRESPROOF_CLAUSE" fun _ => (do
   prove ([[!hyps. (!c. c IN hyps ==> clause c)
           ==> !c. pposresproof hyps c ==> clause c]])
    (GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC pposresproof_INDUCT THEN
@@ -555,7 +555,7 @@ unsafe def PPOSRESPROOF_CLAUSE : thm := keep "PPOSRESPROOF_CLAUSE" fun _ => (do
 #eval PPOSRESPROOF_CLAUSE
 
 #eval phrase 25
-unsafe def PSEMRESPROOF_CLAUSE : thm := keep "PSEMRESPROOF_CLAUSE" fun _ => (do
+def PSEMRESPROOF_CLAUSE : thm := keep "PSEMRESPROOF_CLAUSE" fun _ => (do
   prove ([[!hyps w. (!c. c IN hyps ==> clause c)
             ==> !c. psemresproof w hyps c ==> clause c]])
    (REPEAT GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC psemresproof_INDUCT THEN
@@ -564,7 +564,7 @@ unsafe def PSEMRESPROOF_CLAUSE : thm := keep "PSEMRESPROOF_CLAUSE" fun _ => (do
 #eval PSEMRESPROOF_CLAUSE
 
 #eval phrase 26
-unsafe def LITERAL_PROPFLIP : thm := keep "LITERAL_PROPFLIP" fun _ => (do
+def LITERAL_PROPFLIP : thm := keep "LITERAL_PROPFLIP" fun _ => (do
   prove ([[!p w. literal p ==> literal (propflip w p)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [propflip] THEN
     COND_CASES_TAC THEN SIMP_TAC [NEGATE_LITERAL])
@@ -572,7 +572,7 @@ unsafe def LITERAL_PROPFLIP : thm := keep "LITERAL_PROPFLIP" fun _ => (do
 #eval LITERAL_PROPFLIP
 
 #eval phrase 27
-unsafe def CLAUSE_IMAGE_PROPFLIP : thm := keep "CLAUSE_IMAGE_PROPFLIP" fun _ => (do
+def CLAUSE_IMAGE_PROPFLIP : thm := keep "CLAUSE_IMAGE_PROPFLIP" fun _ => (do
   prove ([[!cl w. clause cl ==> clause (IMAGE (propflip w) cl)]])
    (SIMP_TAC [clause, FINITE_IMAGE] THEN
     MESON_TAC [LITERAL_PROPFLIP, IN_IMAGE])
@@ -580,7 +580,7 @@ unsafe def CLAUSE_IMAGE_PROPFLIP : thm := keep "CLAUSE_IMAGE_PROPFLIP" fun _ => 
 #eval CLAUSE_IMAGE_PROPFLIP
 
 #eval phrase 28
-unsafe def PHOLDS_LITERAL_PROPFLIP_SAME : thm := keep "PHOLDS_LITERAL_PROPFLIP_SAME" fun _ => (do
+def PHOLDS_LITERAL_PROPFLIP_SAME : thm := keep "PHOLDS_LITERAL_PROPFLIP_SAME" fun _ => (do
   prove ([[!p w. literal(p) ==> (pholds w (propflip w p) <=> ~(positive p))]])
    (REWRITE_TAC [literal, ATOM] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
     REWRITE_TAC [propflip] THEN REWRITE_TAC [PHOLDS] THEN
@@ -590,7 +590,7 @@ unsafe def PHOLDS_LITERAL_PROPFLIP_SAME : thm := keep "PHOLDS_LITERAL_PROPFLIP_S
 #eval PHOLDS_LITERAL_PROPFLIP_SAME
 
 #eval phrase 29
-unsafe def PHOLDS_IMAGE_PROPFLIP_SAME : thm := keep "PHOLDS_IMAGE_PROPFLIP_SAME" fun _ => (do
+def PHOLDS_IMAGE_PROPFLIP_SAME : thm := keep "PHOLDS_IMAGE_PROPFLIP_SAME" fun _ => (do
   prove ([[!v cl. clause cl
           ==> (pholds v (interp (IMAGE (propflip v) cl)) <=> ~(allpositive cl))]])
    (SIMP_TAC [clause, PHOLDS_INTERP, FINITE_IMAGE, allpositive] THEN
@@ -602,7 +602,7 @@ unsafe def PHOLDS_IMAGE_PROPFLIP_SAME : thm := keep "PHOLDS_IMAGE_PROPFLIP_SAME"
 #eval PHOLDS_IMAGE_PROPFLIP_SAME
 
 #eval phrase 30
-unsafe def PPOSRESPROOF_PSEMRESPROOF : thm := keep "PPOSRESPROOF_PSEMRESPROOF" fun _ => (do
+def PPOSRESPROOF_PSEMRESPROOF : thm := keep "PPOSRESPROOF_PSEMRESPROOF" fun _ => (do
   prove ([[!hyps. (!c. c IN hyps ==> clause c)
           ==> !w cl. pposresproof hyps cl
                      ==> psemresproof w (IMAGE (IMAGE (propflip w)) hyps)
@@ -625,7 +625,7 @@ unsafe def PPOSRESPROOF_PSEMRESPROOF : thm := keep "PPOSRESPROOF_PSEMRESPROOF" f
 #eval PPOSRESPROOF_PSEMRESPROOF
 
 #eval phrase 31
-unsafe def PHOLDS_ATOM_PROPFLIP_DIFF : thm := keep "PHOLDS_ATOM_PROPFLIP_DIFF" fun _ => (do
+def PHOLDS_ATOM_PROPFLIP_DIFF : thm := keep "PHOLDS_ATOM_PROPFLIP_DIFF" fun _ => (do
   prove ([[!p v w. atom(p) ==> (pholds v (propflip w p) <=> ~(v p = w p))]])
    (SIMP_TAC [ATOM, LEFT_IMP_EXISTS_THM] THEN REPEAT GEN_TAC THEN
     REWRITE_TAC [propflip, NOT_NEGATIVE_ATOM, positive, negate, PHOLDS] THEN
@@ -634,7 +634,7 @@ unsafe def PHOLDS_ATOM_PROPFLIP_DIFF : thm := keep "PHOLDS_ATOM_PROPFLIP_DIFF" f
 #eval PHOLDS_ATOM_PROPFLIP_DIFF
 
 #eval phrase 32
-unsafe def PHOLDS_LITERAL_PROPFLIP_DIFF : thm := keep "PHOLDS_LITERAL_PROPFLIP_DIFF" fun _ => (do
+def PHOLDS_LITERAL_PROPFLIP_DIFF : thm := keep "PHOLDS_LITERAL_PROPFLIP_DIFF" fun _ => (do
   prove ([[!p v w. literal(p)
            ==> (pholds v (propflip w p) <=> pholds (\x. ~(v x = w x)) p)]])
    (REWRITE_TAC [literal, ATOM] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
@@ -645,7 +645,7 @@ unsafe def PHOLDS_LITERAL_PROPFLIP_DIFF : thm := keep "PHOLDS_LITERAL_PROPFLIP_D
 #eval PHOLDS_LITERAL_PROPFLIP_DIFF
 
 #eval phrase 33
-unsafe def PHOLDS_INTERP_IMAGE_PROPFLIP_DIFF : thm := keep "PHOLDS_INTERP_IMAGE_PROPFLIP_DIFF" fun _ => (do
+def PHOLDS_INTERP_IMAGE_PROPFLIP_DIFF : thm := keep "PHOLDS_INTERP_IMAGE_PROPFLIP_DIFF" fun _ => (do
   prove ([[!v cl. clause cl
           ==> (pholds v (interp (IMAGE (propflip w) cl)) <=>
                pholds (\x. ~(v x = w x)) (interp cl))]])
@@ -662,7 +662,7 @@ unsafe def PHOLDS_INTERP_IMAGE_PROPFLIP_DIFF : thm := keep "PHOLDS_INTERP_IMAGE_
 #eval PHOLDS_INTERP_IMAGE_PROPFLIP_DIFF
 
 #eval phrase 34
-unsafe def PSATISFIABLE_CLAUSES_PROPFLIP : thm := keep "PSATISFIABLE_CLAUSES_PROPFLIP" fun _ => (do
+def PSATISFIABLE_CLAUSES_PROPFLIP : thm := keep "PSATISFIABLE_CLAUSES_PROPFLIP" fun _ => (do
   prove ([[!w s. (!c. c IN s ==> clause c)
          ==> (psatisfiable (IMAGE (interp o IMAGE (propflip w)) s) <=>
               psatisfiable (IMAGE interp s))]])
@@ -679,7 +679,7 @@ unsafe def PSATISFIABLE_CLAUSES_PROPFLIP : thm := keep "PSATISFIABLE_CLAUSES_PRO
 #eval PSATISFIABLE_CLAUSES_PROPFLIP
 
 #eval phrase 35
-unsafe def PSEMRESPROOF_MONO : thm := keep "PSEMRESPROOF_MONO" fun _ => (do
+def PSEMRESPROOF_MONO : thm := keep "PSEMRESPROOF_MONO" fun _ => (do
   prove ([[!w hyps1 hyps2 c.
         psemresproof w hyps1 c /\ hyps1 SUBSET hyps2
         ==> psemresproof w hyps2 c]])
@@ -691,7 +691,7 @@ unsafe def PSEMRESPROOF_MONO : thm := keep "PSEMRESPROOF_MONO" fun _ => (do
 #eval PSEMRESPROOF_MONO
 
 #eval phrase 36
-unsafe def PROPFLIP_INVOLUTE_CLAUSE : thm := keep "PROPFLIP_INVOLUTE_CLAUSE" fun _ => (do
+def PROPFLIP_INVOLUTE_CLAUSE : thm := keep "PROPFLIP_INVOLUTE_CLAUSE" fun _ => (do
   prove ([[!w cl. clause cl ==> (IMAGE (propflip w) (IMAGE (propflip w) cl) = cl)]])
    (REWRITE_TAC [clause] THEN REPEAT STRIP_TAC THEN
     HolLight.GEN_REWRITE_TAC HolCore.Lib.I [EXTENSION] THEN REWRITE_TAC [IN_IMAGE] THEN
@@ -700,7 +700,7 @@ unsafe def PROPFLIP_INVOLUTE_CLAUSE : thm := keep "PROPFLIP_INVOLUTE_CLAUSE" fun
 #eval PROPFLIP_INVOLUTE_CLAUSE
 
 #eval phrase 37
-unsafe def PSEMRESPROOF_REFUTATION_COMPLETE : thm := keep "PSEMRESPROOF_REFUTATION_COMPLETE" fun _ => (do
+def PSEMRESPROOF_REFUTATION_COMPLETE : thm := keep "PSEMRESPROOF_REFUTATION_COMPLETE" fun _ => (do
   let lemma ← (do
     prove ([[{interp cl | cl IN hyps} = IMAGE interp hyps]])
      (REWRITE_TAC [EXTENSION, IN_IMAGE, IN_ELIM_THM] THEN MESON_TAC [])
@@ -731,7 +731,7 @@ unsafe def PSEMRESPROOF_REFUTATION_COMPLETE : thm := keep "PSEMRESPROOF_REFUTATI
 #eval PSEMRESPROOF_REFUTATION_COMPLETE
 
 #eval phrase 38
-unsafe def posresproof_triple : thm × thm × thm := keep "posresproof_triple" fun _ =>
+def posresproof_triple : thm × thm × thm := keep "posresproof_triple" fun _ =>
   newInductive
     [[(!cl. cl IN hyps ==> posresproof hyps cl) /\
       (!cl1 cl2 cl2' ps1 ps2 i.
@@ -743,13 +743,13 @@ unsafe def posresproof_triple : thm × thm × thm := keep "posresproof_triple" f
            (mgu (ps1 UNION {~~p | p IN ps2}) = i)
            ==> posresproof hyps
                   (IMAGE (formsubst i) ((cl1 DIFF ps1) UNION (cl2' DIFF ps2))))]]
-unsafe def posresproof_RULES : thm := posresproof_triple.1
-unsafe def posresproof_INDUCT : thm := posresproof_triple.2.1
-unsafe def posresproof_CASES : thm := posresproof_triple.2.2
+def posresproof_RULES : thm := posresproof_triple.1
+def posresproof_INDUCT : thm := posresproof_triple.2.1
+def posresproof_CASES : thm := posresproof_triple.2.2
 #eval do IO.println posresproof_RULES; IO.println posresproof_INDUCT; IO.println posresproof_CASES
 
 #eval phrase 39
-unsafe def POSRESPROOF_CLAUSE : thm := keep "POSRESPROOF_CLAUSE" fun _ => (do
+def POSRESPROOF_CLAUSE : thm := keep "POSRESPROOF_CLAUSE" fun _ => (do
   let lemma ← (do
     prove ([[s DIFF t SUBSET s]]) (SET_TAC []) : ExceptT String IO thm)
   prove ([[(!cl. cl IN hyps ==> clause cl)
@@ -765,7 +765,7 @@ unsafe def POSRESPROOF_CLAUSE : thm := keep "POSRESPROOF_CLAUSE" fun _ => (do
 #eval POSRESPROOF_CLAUSE
 
 #eval phrase 40
-unsafe def ALLPOSITIVE_INSTANCE_OF : thm := keep "ALLPOSITIVE_INSTANCE_OF" fun _ => (do
+def ALLPOSITIVE_INSTANCE_OF : thm := keep "ALLPOSITIVE_INSTANCE_OF" fun _ => (do
   prove ([[!cl1 cl2. cl1 instance_of cl2 /\ allpositive cl1 ==> allpositive cl2]])
    (REWRITE_TAC [allpositive, instance_of] THEN REPEAT GEN_TAC THEN
     DISCH_THEN (CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
@@ -774,7 +774,7 @@ unsafe def ALLPOSITIVE_INSTANCE_OF : thm := keep "ALLPOSITIVE_INSTANCE_OF" fun _
 #eval ALLPOSITIVE_INSTANCE_OF
 
 #eval phrase 41
-unsafe def POSRESOLUTION_COMPLETE : thm := keep "POSRESOLUTION_COMPLETE" fun _ => (do
+def POSRESOLUTION_COMPLETE : thm := keep "POSRESOLUTION_COMPLETE" fun _ => (do
   prove ([[(!cl. cl IN hyps ==> clause cl) /\
    ~(?M:(term->bool)#(num->term list->term)#(num->term list->bool).
         interpretation (language(IMAGE interp hyps)) M /\ ~(Dom M = {}) /\
@@ -879,7 +879,7 @@ unsafe def POSRESOLUTION_COMPLETE : thm := keep "POSRESOLUTION_COMPLETE" fun _ =
 #eval POSRESOLUTION_COMPLETE
 
 #eval phrase 42
-unsafe def semresproof_triple : thm × thm × thm := keep "semresproof_triple" fun _ =>
+def semresproof_triple : thm × thm × thm := keep "semresproof_triple" fun _ =>
   newInductive
     [[(!cl. cl IN hyps ==> semresproof M hyps cl) /\
       (!cl1 cl2 cl2' ps1 ps2 i.
@@ -892,13 +892,13 @@ unsafe def semresproof_triple : thm × thm × thm := keep "semresproof_triple" f
            (mgu (ps1 UNION {~~p | p IN ps2}) = i)
            ==> semresproof M hyps
                   (IMAGE (formsubst i) ((cl1 DIFF ps1) UNION (cl2' DIFF ps2))))]]
-unsafe def semresproof_RULES : thm := semresproof_triple.1
-unsafe def semresproof_INDUCT : thm := semresproof_triple.2.1
-unsafe def semresproof_CASES : thm := semresproof_triple.2.2
+def semresproof_RULES : thm := semresproof_triple.1
+def semresproof_INDUCT : thm := semresproof_triple.2.1
+def semresproof_CASES : thm := semresproof_triple.2.2
 #eval do IO.println semresproof_RULES; IO.println semresproof_INDUCT; IO.println semresproof_CASES
 
 #eval phrase 43
-unsafe def SEMRESPROOF_CLAUSE : thm := keep "SEMRESPROOF_CLAUSE" fun _ => (do
+def SEMRESPROOF_CLAUSE : thm := keep "SEMRESPROOF_CLAUSE" fun _ => (do
   let lemma ← (do
     prove ([[s DIFF t SUBSET s]]) (SET_TAC []) : ExceptT String IO thm)
   prove ([[(!c. c IN hyps ==> clause c) ==> (!c. semresproof M hyps c ==> clause c)]])
@@ -913,14 +913,14 @@ unsafe def SEMRESPROOF_CLAUSE : thm := keep "SEMRESPROOF_CLAUSE" fun _ => (do
 #eval SEMRESPROOF_CLAUSE
 
 #eval phrase 44
-unsafe def QFREE_HOLDS_PHOLDS : thm := keep "QFREE_HOLDS_PHOLDS" fun _ => (do
+def QFREE_HOLDS_PHOLDS : thm := keep "QFREE_HOLDS_PHOLDS" fun _ => (do
   prove ([[!p. qfree(p) ==> (holds M v p <=> pholds (holds M v) p)]])
    (MATCH_MP_TAC form_INDUCTION THEN SIMP_TAC [HOLDS, PHOLDS, qfree])
   : ExceptT String IO thm).run
 #eval QFREE_HOLDS_PHOLDS
 
 #eval phrase 45
-unsafe def LIFTING_FALSIFY : thm := keep "LIFTING_FALSIFY" fun _ => (do
+def LIFTING_FALSIFY : thm := keep "LIFTING_FALSIFY" fun _ => (do
   prove ([[!p M w. qfree(p) /\ (!v. holds M v p)
            ==> pholds (holds M w) (formsubst i p)]])
    (SIMP_TAC [(← HolLight.GSYM QFREE_HOLDS_PHOLDS), QFREE_FORMSUBST, HOLDS_FORMSUBST])
@@ -928,7 +928,7 @@ unsafe def LIFTING_FALSIFY : thm := keep "LIFTING_FALSIFY" fun _ => (do
 #eval LIFTING_FALSIFY
 
 #eval phrase 46
-unsafe def LIFTING_FALSITY_CLAUSE : thm := keep "LIFTING_FALSITY_CLAUSE" fun _ => (do
+def LIFTING_FALSITY_CLAUSE : thm := keep "LIFTING_FALSITY_CLAUSE" fun _ => (do
   prove ([[clause A /\ (!v:num->A. holds M v (interp A)) /\ A' instance_of A
    ==> pholds (holds M w) (interp A')]])
    (REPEAT STRIP_TAC THEN
@@ -943,7 +943,7 @@ unsafe def LIFTING_FALSITY_CLAUSE : thm := keep "LIFTING_FALSITY_CLAUSE" fun _ =
 #eval LIFTING_FALSITY_CLAUSE
 
 #eval phrase 47
-unsafe def SEMRESOLUTION_COMPLETE : thm := keep "SEMRESOLUTION_COMPLETE" fun _ => (do
+def SEMRESOLUTION_COMPLETE : thm := keep "SEMRESOLUTION_COMPLETE" fun _ => (do
   prove ([[(!cl. cl IN hyps ==> clause cl) /\
    ~(?M:(term->bool)#(num->term list->term)#(num->term list->bool).
         interpretation (language(IMAGE interp hyps)) M /\ ~(Dom M = {}) /\
@@ -1058,7 +1058,7 @@ unsafe def SEMRESOLUTION_COMPLETE : thm := keep "SEMRESOLUTION_COMPLETE" fun _ =
 #eval SEMRESOLUTION_COMPLETE
 
 #eval phrase 48
-unsafe def semresproof2_triple : thm × thm × thm := keep "semresproof2_triple" fun _ =>
+def semresproof2_triple : thm × thm × thm := keep "semresproof2_triple" fun _ =>
   newInductive
     [[(!cl. cl IN hyps ==> semresproof2 M hyps cl) /\
       (!cl1 cl2 cl2' ps1 ps2 i.
@@ -1071,13 +1071,13 @@ unsafe def semresproof2_triple : thm × thm × thm := keep "semresproof2_triple"
            (mgu (ps1 UNION {~~p | p IN ps2}) = i)
            ==> semresproof2 M hyps
                   (IMAGE (formsubst i) ((cl1 DIFF ps1) UNION (cl2' DIFF ps2))))]]
-unsafe def semresproof2_RULES : thm := semresproof2_triple.1
-unsafe def semresproof2_INDUCT : thm := semresproof2_triple.2.1
-unsafe def semresproof2_CASES : thm := semresproof2_triple.2.2
+def semresproof2_RULES : thm := semresproof2_triple.1
+def semresproof2_INDUCT : thm := semresproof2_triple.2.1
+def semresproof2_CASES : thm := semresproof2_triple.2.2
 #eval do IO.println semresproof2_RULES; IO.println semresproof2_INDUCT; IO.println semresproof2_CASES
 
 #eval phrase 49
-unsafe def SEMRESPROOF2_CLAUSE : thm := keep "SEMRESPROOF2_CLAUSE" fun _ => (do
+def SEMRESPROOF2_CLAUSE : thm := keep "SEMRESPROOF2_CLAUSE" fun _ => (do
   let lemma ← (do
     prove ([[s DIFF t SUBSET s]]) (SET_TAC []) : ExceptT String IO thm)
   prove ([[(!c. c IN hyps ==> clause c) ==> (!c. semresproof2 M hyps c ==> clause c)]])
@@ -1092,14 +1092,14 @@ unsafe def SEMRESPROOF2_CLAUSE : thm := keep "SEMRESPROOF2_CLAUSE" fun _ => (do
 #eval SEMRESPROOF2_CLAUSE
 
 #eval phrase 50
-unsafe def QFREE_HOLDS_PHOLDS_2 : thm := keep "QFREE_HOLDS_PHOLDS_2" fun _ => (do
+def QFREE_HOLDS_PHOLDS_2 : thm := keep "QFREE_HOLDS_PHOLDS_2" fun _ => (do
   prove ([[!p. qfree(p) ==> (holds M v p <=> pholds (holds M v) p)]])
    (MATCH_MP_TAC form_INDUCTION THEN SIMP_TAC [HOLDS, PHOLDS, qfree])
   : ExceptT String IO thm).run
 #eval QFREE_HOLDS_PHOLDS_2
 
 #eval phrase 51
-unsafe def LIFTING_FALSIFY_2 : thm := keep "LIFTING_FALSIFY_2" fun _ => (do
+def LIFTING_FALSIFY_2 : thm := keep "LIFTING_FALSIFY_2" fun _ => (do
   prove ([[!p M w. qfree(p) /\
            (!v. valuation M v ==> holds M v p) /\
            (!x f l. (f,LENGTH l) IN functions_term(i x) /\
@@ -1115,7 +1115,7 @@ unsafe def LIFTING_FALSIFY_2 : thm := keep "LIFTING_FALSIFY_2" fun _ => (do
 #eval LIFTING_FALSIFY_2
 
 #eval phrase 52
-unsafe def LIFTING_FALSITY_CLAUSE_2 : thm := keep "LIFTING_FALSITY_CLAUSE_2" fun _ => (do
+def LIFTING_FALSITY_CLAUSE_2 : thm := keep "LIFTING_FALSITY_CLAUSE_2" fun _ => (do
   prove ([[clause A /\ (A' = IMAGE (formsubst i) A) /\
    (!v:num->A. valuation M v ==> holds M v (interp A)) /\
    (!x f l. (f,LENGTH l) IN functions_term(i x) /\
@@ -1136,7 +1136,7 @@ unsafe def LIFTING_FALSITY_CLAUSE_2 : thm := keep "LIFTING_FALSITY_CLAUSE_2" fun
 #eval LIFTING_FALSITY_CLAUSE_2
 
 #eval phrase 53
-unsafe def FUNCTIONS_FORM_INTERP : thm := keep "FUNCTIONS_FORM_INTERP" fun _ => (do
+def FUNCTIONS_FORM_INTERP : thm := keep "FUNCTIONS_FORM_INTERP" fun _ => (do
   prove ([[!s. FINITE s ==> (functions_form(interp s) = functions s)]])
    (REWRITE_TAC [interp] THEN
     SUBGOAL_THEN
@@ -1155,7 +1155,7 @@ unsafe def FUNCTIONS_FORM_INTERP : thm := keep "FUNCTIONS_FORM_INTERP" fun _ => 
 #eval FUNCTIONS_FORM_INTERP
 
 #eval phrase 54
-unsafe def FUNCTIONS_IMAGE_INTERP : thm := keep "FUNCTIONS_IMAGE_INTERP" fun _ => (do
+def FUNCTIONS_IMAGE_INTERP : thm := keep "FUNCTIONS_IMAGE_INTERP" fun _ => (do
   prove ([[!s. (!c. c IN s ==> FINITE(c))
        ==> (functions (IMAGE interp s) = UNIONS {functions p | p IN s})]])
    (REPEAT STRIP_TAC THEN HolLight.GEN_REWRITE_TAC HolCore.Lib.I [EXTENSION] THEN
@@ -1175,7 +1175,7 @@ unsafe def FUNCTIONS_IMAGE_INTERP : thm := keep "FUNCTIONS_IMAGE_INTERP" fun _ =
 #eval FUNCTIONS_IMAGE_INTERP
 
 #eval phrase 55
-unsafe def FUNCTIONS_RESOLVE : thm := keep "FUNCTIONS_RESOLVE" fun _ => (do
+def FUNCTIONS_RESOLVE : thm := keep "FUNCTIONS_RESOLVE" fun _ => (do
   prove ([[functions(resolve p cl1 cl2) SUBSET (functions cl1 UNION functions cl2)]])
    (REWRITE_TAC [SUBSET, functions, IN_UNION, resolve, IN_DIFF, IN_UNION,
                 IN_UNIONS, IN_ELIM_THM, IN_DELETE] THEN
@@ -1184,7 +1184,7 @@ unsafe def FUNCTIONS_RESOLVE : thm := keep "FUNCTIONS_RESOLVE" fun _ => (do
 #eval FUNCTIONS_RESOLVE
 
 #eval phrase 56
-unsafe def PSEMRESPROOF_FUNCTIONS : thm := keep "PSEMRESPROOF_FUNCTIONS" fun _ => (do
+def PSEMRESPROOF_FUNCTIONS : thm := keep "PSEMRESPROOF_FUNCTIONS" fun _ => (do
   prove ([[(!c. c IN hyps ==> clause c)
    ==> !c. psemresproof M hyps c
            ==> functions c SUBSET functions(IMAGE interp hyps)]])
@@ -1201,7 +1201,7 @@ unsafe def PSEMRESPROOF_FUNCTIONS : thm := keep "PSEMRESPROOF_FUNCTIONS" fun _ =
 #eval PSEMRESPROOF_FUNCTIONS
 
 #eval phrase 57
-unsafe def FUNCTIONS_TERM_NOCONSTANTS : thm := keep "FUNCTIONS_TERM_NOCONSTANTS" fun _ => (do
+def FUNCTIONS_TERM_NOCONSTANTS : thm := keep "FUNCTIONS_TERM_NOCONSTANTS" fun _ => (do
   prove ([[!t. ~(?c. c,0 IN functions_term t) ==> ~(FVT t = {})]])
    (MATCH_MP_TAC term_INDUCT THEN
     REWRITE_TAC [functions_term, NOT_IN_EMPTY, FVT] THEN CONJ_TAC THENL
@@ -1215,7 +1215,7 @@ unsafe def FUNCTIONS_TERM_NOCONSTANTS : thm := keep "FUNCTIONS_TERM_NOCONSTANTS"
 #eval FUNCTIONS_TERM_NOCONSTANTS
 
 #eval phrase 58
-unsafe def HERBASE : thm := keep "HERBASE" fun _ => (do
+def HERBASE : thm := keep "HERBASE" fun _ => (do
   prove ([[!t. t IN herbase fns <=>
         functions_term t SUBSET fns /\
         (FVT(t) = if ?c. c,0 IN fns then {} else {0})]])
@@ -1282,7 +1282,7 @@ unsafe def HERBASE : thm := keep "HERBASE" fun _ => (do
 #eval HERBASE
 
 #eval phrase 59
-unsafe def HERBASE_LEMMA : thm := keep "HERBASE_LEMMA" fun _ => (do
+def HERBASE_LEMMA : thm := keep "HERBASE_LEMMA" fun _ => (do
   prove ([[functions_form q SUBSET fns /\
    (!v. i(v) IN herbase fns) /\
    ~(j(x) IN herbase fns) /\
@@ -1335,7 +1335,7 @@ unsafe def HERBASE_LEMMA : thm := keep "HERBASE_LEMMA" fun _ => (do
 #eval HERBASE_LEMMA
 
 #eval phrase 60
-unsafe def SEMRESOLUTION_COMPLETE_2 : thm := keep "SEMRESOLUTION_COMPLETE_2" fun _ => (do
+def SEMRESOLUTION_COMPLETE_2 : thm := keep "SEMRESOLUTION_COMPLETE_2" fun _ => (do
   prove ([[(!cl. cl IN hyps ==> clause cl) /\
    ~(?M:(term->bool)#(num->term list->term)#(num->term list->bool).
         interpretation (language(IMAGE interp hyps)) M /\ ~(Dom M = {}) /\
@@ -1594,9 +1594,9 @@ unsafe def SEMRESOLUTION_COMPLETE_2 : thm := keep "SEMRESOLUTION_COMPLETE_2" fun
 #eval SEMRESOLUTION_COMPLETE_2
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Positive" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Positive" do
   replay (
           HolLogicArith.Support.ensure)
   replay (

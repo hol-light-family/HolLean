@@ -33,19 +33,19 @@ partial def normE : ite → ite
 /- let ite_INDUCT,ite_RECURSION = define_type "ite = ...";;
    Binds two theorems; the toplevel prints both. -/
 #eval phrase 3
-unsafe def ite_INDUCT_RECURSION : thm × thm :=
+def ite_INDUCT_RECURSION : thm × thm :=
   keep "ite_types" fun _ =>
-    match unsafeIO (Session.define_type "ite = False | True | Atomic num | Ite ite ite ite") with
+    match runIO (Session.define_type "ite = False | True | Atomic num | Ite ite ite ite") with
     | .ok (.ok p) => p
     | _ => (TRUTH, TRUTH)
-unsafe def ite_INDUCT : thm := ite_INDUCT_RECURSION.1
-unsafe def ite_RECURSION : thm := ite_INDUCT_RECURSION.2
+def ite_INDUCT : thm := ite_INDUCT_RECURSION.1
+def ite_RECURSION : thm := ite_INDUCT_RECURSION.2
 #eval ite_INDUCT
 #eval ite_RECURSION
 
 /- let eth = prove_general_recursive_function_exists `?norm. ...`;; -/
 #eval phrase 4
-unsafe def eth : thm := keep "eth" fun _ =>
+def eth : thm := keep "eth" fun _ =>
   prove_general_recursive_function_exists
     [[?norm. (norm False = False) /\
              (norm True = True) /\
@@ -60,7 +60,7 @@ unsafe def eth : thm := keep "eth" fun _ =>
 
 /- let sizeof = define `(sizeof False = 1) /\ ...`;; -/
 #eval phrase 5
-unsafe def sizeof : thm := keep "sizeof" fun _ => define
+def sizeof : thm := keep "sizeof" fun _ => define
  [[(sizeof False = 1) /\
    (sizeof True = 1) /\
    (sizeof(Atomic i) = 1) /\
@@ -69,7 +69,7 @@ unsafe def sizeof : thm := keep "sizeof" fun _ => define
 
 /- let eth' = let th = prove(hd(hyp eth), ...) in PROVE_HYP th eth;; -/
 #eval phrase 6
-unsafe def eth' : thm := keep "eth'" fun _ =>
+def eth' : thm := keep "eth'" fun _ =>
   let th : thm := prove ((hyp eth).head!)
     (EXISTS_TAC ([[MEASURE sizeof]]) THEN
      REWRITE_TAC [WF_MEASURE, MEASURE_LE, MEASURE, sizeof] THEN ARITH_TAC)
@@ -78,25 +78,25 @@ unsafe def eth' : thm := keep "eth'" fun _ =>
 
 /- let norm = new_specification ["norm"] eth';; -/
 #eval phrase 7
-unsafe def norm : thm := keep "norm" fun _ => new_specification ["norm"] eth'
+def norm : thm := keep "norm" fun _ => new_specification ["norm"] eth'
 #eval norm
 
 /- let SIZEOF_INDUCT = REWRITE_RULE[WF_IND; MEASURE] (ISPEC`sizeof` WF_MEASURE);; -/
 #eval phrase 8
-unsafe def SIZEOF_INDUCT : thm := keep "SIZEOF_INDUCT" fun _ =>
+def SIZEOF_INDUCT : thm := keep "SIZEOF_INDUCT" fun _ =>
   REWRITE_RULE [WF_IND, MEASURE] (ISPEC ([[sizeof]]) WF_MEASURE)
 #eval SIZEOF_INDUCT
 
 /- let SIZEOF_NZ = prove(`!e. ~(sizeof e = 0)`, ...);; -/
 #eval phrase 9
-unsafe def SIZEOF_NZ : thm := keep "SIZEOF_NZ" fun _ =>
+def SIZEOF_NZ : thm := keep "SIZEOF_NZ" fun _ =>
   prove ([[!e. ~(sizeof e = 0)]])
     (MATCH_MP_TAC ite_INDUCT THEN SIMP_TAC [sizeof, ADD_EQ_0, MULT_EQ_0, ARITH])
 #eval SIZEOF_NZ
 
 /- let ITE_INDUCT = prove(`!P. ...`, ...);; -/
 #eval phrase 10
-unsafe def ITE_INDUCT : thm := keep "ITE_INDUCT" fun _ =>
+def ITE_INDUCT : thm := keep "ITE_INDUCT" fun _ =>
   prove ([[!P. P False /\
        P True /\
        (!i. P(Atomic i)) /\
@@ -122,7 +122,7 @@ unsafe def ITE_INDUCT : thm := keep "ITE_INDUCT" fun _ =>
 
 /- let normalized = define `(normalized False <=> T) /\ ...`;; -/
 #eval phrase 11
-unsafe def normalized : thm := keep "normalized" fun _ => define
+def normalized : thm := keep "normalized" fun _ => define
  [[(normalized False <=> T) /\
    (normalized True <=> T) /\
    (normalized(Atomic a) <=> T) /\
@@ -134,14 +134,14 @@ unsafe def normalized : thm := keep "normalized" fun _ => define
 
 /- let NORMALIZED_NORM = prove(`!e. normalized(norm e)`, ...);; -/
 #eval phrase 12
-unsafe def NORMALIZED_NORM : thm := keep "NORMALIZED_NORM" fun _ =>
+def NORMALIZED_NORM : thm := keep "NORMALIZED_NORM" fun _ =>
   prove ([[!e. normalized(norm e)]])
     (MATCH_MP_TAC ITE_INDUCT THEN REWRITE_TAC [norm, normalized])
 #eval NORMALIZED_NORM
 
 /- let NORMALIZED_INDUCT = prove(`P False /\ ...`, ...);; -/
 #eval phrase 13
-unsafe def NORMALIZED_INDUCT : thm := keep "NORMALIZED_INDUCT" fun _ =>
+def NORMALIZED_INDUCT : thm := keep "NORMALIZED_INDUCT" fun _ =>
   prove ([[P False /\
    P True /\
    (!i. P (Atomic i)) /\
@@ -153,7 +153,7 @@ unsafe def NORMALIZED_INDUCT : thm := keep "NORMALIZED_INDUCT" fun _ =>
 
 /- let holds = define `(holds v False <=> F) /\ ...`;; -/
 #eval phrase 14
-unsafe def holds : thm := keep "holds" fun _ => define
+def holds : thm := keep "holds" fun _ => define
  [[(holds v False <=> F) /\
    (holds v True <=> T) /\
    (holds v (Atomic i) <=> v(i)) /\
@@ -162,7 +162,7 @@ unsafe def holds : thm := keep "holds" fun _ => define
 
 /- let HOLDS_NORM = prove(`!e v. holds v (norm e) <=> holds v e`, ...);; -/
 #eval phrase 15
-unsafe def HOLDS_NORM : thm := keep "HOLDS_NORM" fun _ =>
+def HOLDS_NORM : thm := keep "HOLDS_NORM" fun _ =>
   prove ([[!e v. holds v (norm e) <=> holds v e]])
     (MATCH_MP_TAC ITE_INDUCT THEN SIMP_TAC [holds, norm] THEN
      REPEAT STRIP_TAC THEN CONV_TAC TAUT)
@@ -170,7 +170,7 @@ unsafe def HOLDS_NORM : thm := keep "HOLDS_NORM" fun _ =>
 
 /- let taut = define `(taut (t,f) False <=> F) /\ ...`;; -/
 #eval phrase 16
-unsafe def taut : thm := keep "taut" fun _ => define
+def taut : thm := keep "taut" fun _ => define
  [[(taut (t,f) False <=> F) /\
    (taut (t,f) True <=> T) /\
    (taut (t,f) (Atomic i) <=> MEM i t) /\
@@ -182,13 +182,13 @@ unsafe def taut : thm := keep "taut" fun _ => define
 
 /- let tautology = define `tautology e = taut([],[]) (norm e)`;; -/
 #eval phrase 17
-unsafe def tautology : thm := keep "tautology" fun _ =>
+def tautology : thm := keep "tautology" fun _ =>
   define [[tautology e = taut([],[]) (norm e)]]
 #eval tautology
 
 /- let NORMALIZED_TAUT = prove(`!e. normalized e ==> ...`, ...);; -/
 #eval phrase 18
-unsafe def NORMALIZED_TAUT : thm := keep "NORMALIZED_TAUT" fun _ =>
+def NORMALIZED_TAUT : thm := keep "NORMALIZED_TAUT" fun _ =>
   prove ([[!e. normalized e
        ==> !f t. (!a. ~(MEM a t /\ MEM a f))
                  ==> (taut (t,f) e <=>
@@ -209,14 +209,14 @@ unsafe def NORMALIZED_TAUT : thm := keep "NORMALIZED_TAUT" fun _ =>
 
 /- let TAUTOLOGY = prove(`!e. tautology e <=> !v. holds v e`, ...);; -/
 #eval phrase 19
-unsafe def TAUTOLOGY : thm := keep "TAUTOLOGY" fun _ =>
+def TAUTOLOGY : thm := keep "TAUTOLOGY" fun _ =>
   prove ([[!e. tautology e <=> !v. holds v e]])
     (MESON_TAC [tautology, HOLDS_NORM, NORMALIZED_TAUT, listDefs.MEM, NORMALIZED_NORM])
 #eval TAUTOLOGY
 
 /- let HOLDS_BACK = prove(`!v. (F <=> holds v False) /\ ...`, ...);; -/
 #eval phrase 20
-unsafe def HOLDS_BACK : thm := keep "HOLDS_BACK" fun _ =>
+def HOLDS_BACK : thm := keep "HOLDS_BACK" fun _ =>
   prove ([[!v. (F <=> holds v False) /\
        (T <=> holds v True) /\
        (!i. v i <=> holds v (Atomic i)) /\
@@ -231,24 +231,24 @@ unsafe def HOLDS_BACK : thm := keep "HOLDS_BACK" fun _ =>
 
 /- let COND_CONV = GEN_REWRITE_CONV I [COND_CLAUSES];;   (prints `<fun>`) -/
 #eval phrase 21
-unsafe def COND_CONV : HolCore.Equal.ioconv := GEN_REWRITE_CONV id [COND_CLAUSES]
+def COND_CONV : HolCore.Equal.ioconv := GEN_REWRITE_CONV id [COND_CLAUSES]
 #eval IO.println "<fun>"
 
 /- let AND_CONV = GEN_REWRITE_CONV I [TAUT `(F /\ a <=> F) /\ (T /\ a <=> a)`];; -/
 #eval phrase 22
-unsafe def AND_CONV : HolCore.Equal.ioconv :=
+def AND_CONV : HolCore.Equal.ioconv :=
   GEN_REWRITE_CONV id [TAUT [[(F /\ a <=> F) /\ (T /\ a <=> a)]]]
 #eval IO.println "<fun>"
 
 /- let OR_CONV = GEN_REWRITE_CONV I [TAUT `(F \/ a <=> a) /\ (T \/ a <=> T)`];; -/
 #eval phrase 23
-unsafe def OR_CONV : HolCore.Equal.ioconv :=
+def OR_CONV : HolCore.Equal.ioconv :=
   GEN_REWRITE_CONV id [TAUT [[(F \/ a <=> a) /\ (T \/ a <=> T)]]]
 #eval IO.println "<fun>"
 
 /- let rec COMPUTE_DEPTH_CONV conv tm = ... ;;   (prints `<fun>`) -/
 #eval phrase 24
-unsafe def COMPUTE_DEPTH_CONV (cnv : HolCore.Equal.ioconv) : HolCore.Equal.ioconv := fun tm =>
+partial def COMPUTE_DEPTH_CONV (cnv : HolCore.Equal.ioconv) : HolCore.Equal.ioconv := fun tm =>
   if is_cond tm then
    (HolLight.RATOR_CONV (HolLight.LAND_CONV (COMPUTE_DEPTH_CONV cnv)) THENC
     COND_CONV THENC

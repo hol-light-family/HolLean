@@ -29,77 +29,77 @@ open HolLogicArith.Godel (FV_GSENTENCE FV_HSENTENCE)
 namespace HolLogicArith.Derived
 
 /- The session's `prove` lifted into `ExceptT String IO`. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 -- Replay Arithmetic/godel.ml (the one module derived.ml imports).
 #eval HolLogicArith.Godel.ensure
 
 #eval phrase 1
-unsafe def negativef : thm := keep "negativef" fun _ => new_definition
+def negativef : thm := keep "negativef" fun _ => new_definition
   [[negativef p = ?q. p = q --> False]]
 #eval negativef
 
 #eval phrase 2
-unsafe def negatef : thm := keep "negatef" fun _ => new_definition
+def negatef : thm := keep "negatef" fun _ => new_definition
   [[negatef p = if negativef p then @q. p = q --> False else p --> False]]
 #eval negatef
 
 #eval phrase 3
-unsafe def axiom_addimp : thm := keep "axiom_addimp" fun _ => (do
+def axiom_addimp : thm := keep "axiom_addimp" fun _ => (do
   prove ([[!A p q. A |-- p --> (q --> p)]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_addimp
 
 #eval phrase 4
-unsafe def axiom_distribimp : thm := keep "axiom_distribimp" fun _ => (do
+def axiom_distribimp : thm := keep "axiom_distribimp" fun _ => (do
   prove ([[!A p q r. A |-- (p --> q --> r) --> (p --> q) --> (p --> r)]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_distribimp
 
 #eval phrase 5
-unsafe def axiom_doubleneg : thm := keep "axiom_doubleneg" fun _ => (do
+def axiom_doubleneg : thm := keep "axiom_doubleneg" fun _ => (do
   prove ([[!A p. A |-- ((p --> False) --> False) --> p]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_doubleneg
 
 #eval phrase 6
-unsafe def axiom_allimp : thm := keep "axiom_allimp" fun _ => (do
+def axiom_allimp : thm := keep "axiom_allimp" fun _ => (do
   prove ([[!A x p q. A |-- (!!x (p --> q)) --> (!!x p) --> (!!x q)]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_allimp
 
 #eval phrase 7
-unsafe def axiom_impall : thm := keep "axiom_impall" fun _ => (do
+def axiom_impall : thm := keep "axiom_impall" fun _ => (do
   prove ([[!A x p. ~(x IN FV p) ==> A |-- p --> !!x p]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_impall
 
 #eval phrase 8
-unsafe def axiom_existseq : thm := keep "axiom_existseq" fun _ => (do
+def axiom_existseq : thm := keep "axiom_existseq" fun _ => (do
   prove ([[!A x t. ~(x IN FVT t) ==> A |-- ??x (V x === t)]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_existseq
 
 #eval phrase 9
-unsafe def axiom_eqrefl : thm := keep "axiom_eqrefl" fun _ => (do
+def axiom_eqrefl : thm := keep "axiom_eqrefl" fun _ => (do
   prove ([[!A t. A |-- t === t]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_eqrefl
 
 #eval phrase 10
-unsafe def axiom_funcong : thm := keep "axiom_funcong" fun _ => (do
+def axiom_funcong : thm := keep "axiom_funcong" fun _ => (do
   prove ([[(!A s t. A |-- s === t --> Suc s === Suc t) /\
    (!A s t u v. A |-- s === t --> u === v --> s ++ u === t ++ v) /\
    (!A s t u v. A |-- s === t --> u === v --> s ** u === t ** v)]])
@@ -108,7 +108,7 @@ unsafe def axiom_funcong : thm := keep "axiom_funcong" fun _ => (do
 #eval axiom_funcong
 
 #eval phrase 11
-unsafe def axiom_predcong : thm := keep "axiom_predcong" fun _ => (do
+def axiom_predcong : thm := keep "axiom_predcong" fun _ => (do
   prove ([[(!A s t u v. A |-- s === t --> u === v --> s === u --> t === v) /\
    (!A s t u v. A |-- s === t --> u === v --> s << u --> t << v) /\
    (!A s t u v. A |-- s === t --> u === v --> s <<= u --> t <<= v)]])
@@ -117,147 +117,147 @@ unsafe def axiom_predcong : thm := keep "axiom_predcong" fun _ => (do
 #eval axiom_predcong
 
 #eval phrase 12
-unsafe def axiom_iffimp1 : thm := keep "axiom_iffimp1" fun _ => (do
+def axiom_iffimp1 : thm := keep "axiom_iffimp1" fun _ => (do
   prove ([[!A p q. A |-- (p <-> q) --> p --> q]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_iffimp1
 
 #eval phrase 13
-unsafe def axiom_iffimp2 : thm := keep "axiom_iffimp2" fun _ => (do
+def axiom_iffimp2 : thm := keep "axiom_iffimp2" fun _ => (do
   prove ([[!A p q. A |-- (p <-> q) --> q --> p]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_iffimp2
 
 #eval phrase 14
-unsafe def axiom_impiff : thm := keep "axiom_impiff" fun _ => (do
+def axiom_impiff : thm := keep "axiom_impiff" fun _ => (do
   prove ([[!A p q. A |-- (p --> q) --> (q --> p) --> (p <-> q)]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_impiff
 
 #eval phrase 15
-unsafe def axiom_true : thm := keep "axiom_true" fun _ => (do
+def axiom_true : thm := keep "axiom_true" fun _ => (do
   prove ([[A |-- True <-> (False --> False)]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_true
 
 #eval phrase 16
-unsafe def axiom_not : thm := keep "axiom_not" fun _ => (do
+def axiom_not : thm := keep "axiom_not" fun _ => (do
   prove ([[!A p. A |-- Not p <-> (p --> False)]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_not
 
 #eval phrase 17
-unsafe def axiom_and : thm := keep "axiom_and" fun _ => (do
+def axiom_and : thm := keep "axiom_and" fun _ => (do
   prove ([[!A p q. A |-- (p && q) <-> (p --> q --> False) --> False]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_and
 
 #eval phrase 18
-unsafe def axiom_or : thm := keep "axiom_or" fun _ => (do
+def axiom_or : thm := keep "axiom_or" fun _ => (do
   prove ([[!A p q. A |-- (p || q) <-> Not(Not p && Not q)]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_or
 
 #eval phrase 19
-unsafe def axiom_exists : thm := keep "axiom_exists" fun _ => (do
+def axiom_exists : thm := keep "axiom_exists" fun _ => (do
   prove ([[!A x p. A |-- (??x p) <-> Not(!!x (Not p))]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval axiom_exists
 
 #eval phrase 20
-unsafe def «assume» : thm := keep "assume" fun _ => (do
+def «assume» : thm := keep "assume" fun _ => (do
   prove ([[!A p. p IN A ==> A |-- p]])
    (MESON_TAC [proves_RULES])
   : ExceptT String IO thm).run
 #eval «assume»
 
 #eval phrase 21
-unsafe def modusponens : thm := keep "modusponens" fun _ => (do
+def modusponens : thm := keep "modusponens" fun _ => (do
   prove ([[!A p. A |-- (p --> q) /\ A |-- p ==> A |-- q]])
    (MESON_TAC [proves_RULES])
   : ExceptT String IO thm).run
 #eval modusponens
 
 #eval phrase 22
-unsafe def gen : thm := keep "gen" fun _ => (do
+def gen : thm := keep "gen" fun _ => (do
   prove ([[!A p x. A |-- p ==> A |-- !!x p]])
    (MESON_TAC [proves_RULES])
   : ExceptT String IO thm).run
 #eval gen
 
 #eval phrase 23
-unsafe def iff_imp1 : thm := keep "iff_imp1" fun _ => (do
+def iff_imp1 : thm := keep "iff_imp1" fun _ => (do
   prove ([[!A p q. A |-- p <-> q ==> A |-- p --> q]])
    (MESON_TAC [modusponens, axiom_iffimp1])
   : ExceptT String IO thm).run
 #eval iff_imp1
 
 #eval phrase 24
-unsafe def iff_imp2 : thm := keep "iff_imp2" fun _ => (do
+def iff_imp2 : thm := keep "iff_imp2" fun _ => (do
   prove ([[!A p q. A |-- p <-> q ==> A |-- q --> p]])
    (MESON_TAC [modusponens, axiom_iffimp2])
   : ExceptT String IO thm).run
 #eval iff_imp2
 
 #eval phrase 25
-unsafe def imp_antisym : thm := keep "imp_antisym" fun _ => (do
+def imp_antisym : thm := keep "imp_antisym" fun _ => (do
   prove ([[!A p q. A |-- p --> q /\ A |-- q --> p ==> A |-- p <-> q]])
    (MESON_TAC [modusponens, axiom_impiff])
   : ExceptT String IO thm).run
 #eval imp_antisym
 
 #eval phrase 26
-unsafe def add_assum : thm := keep "add_assum" fun _ => (do
+def add_assum : thm := keep "add_assum" fun _ => (do
   prove ([[!A p q. A |-- q ==> A |-- p --> q]])
    (MESON_TAC [modusponens, axiom_addimp])
   : ExceptT String IO thm).run
 #eval add_assum
 
 #eval phrase 27
-unsafe def imp_refl : thm := keep "imp_refl" fun _ => (do
+def imp_refl : thm := keep "imp_refl" fun _ => (do
   prove ([[!A p. A |-- p --> p]])
    (MESON_TAC [modusponens, axiom_distribimp, axiom_addimp])
   : ExceptT String IO thm).run
 #eval imp_refl
 
 #eval phrase 28
-unsafe def imp_add_assum : thm := keep "imp_add_assum" fun _ => (do
+def imp_add_assum : thm := keep "imp_add_assum" fun _ => (do
   prove ([[!A p q r. A |-- q --> r ==> A |-- (p --> q) --> (p --> r)]])
    (MESON_TAC [modusponens, axiom_distribimp, add_assum])
   : ExceptT String IO thm).run
 #eval imp_add_assum
 
 #eval phrase 29
-unsafe def imp_unduplicate : thm := keep "imp_unduplicate" fun _ => (do
+def imp_unduplicate : thm := keep "imp_unduplicate" fun _ => (do
   prove ([[!A p q. A |-- p --> p --> q ==> A |-- p --> q]])
    (MESON_TAC [modusponens, axiom_distribimp, imp_refl])
   : ExceptT String IO thm).run
 #eval imp_unduplicate
 
 #eval phrase 30
-unsafe def imp_trans : thm := keep "imp_trans" fun _ => (do
+def imp_trans : thm := keep "imp_trans" fun _ => (do
   prove ([[!A p q. A |-- p --> q /\ A |-- q --> r ==> A |-- p --> r]])
    (MESON_TAC [modusponens, imp_add_assum])
   : ExceptT String IO thm).run
 #eval imp_trans
 
 #eval phrase 31
-unsafe def imp_swap : thm := keep "imp_swap" fun _ => (do
+def imp_swap : thm := keep "imp_swap" fun _ => (do
   prove ([[!A p q r. A |-- p --> q --> r ==> A |-- q --> p --> r]])
    (MESON_TAC [imp_trans, axiom_addimp, modusponens, axiom_distribimp])
   : ExceptT String IO thm).run
 #eval imp_swap
 
 #eval phrase 32
-unsafe def imp_trans_chain_2 : thm := keep "imp_trans_chain_2" fun _ => (do
+def imp_trans_chain_2 : thm := keep "imp_trans_chain_2" fun _ => (do
   prove ([[!A p q1 q2 r. A |-- p --> q1 /\ A |-- p --> q2 /\ A |-- q1 --> q2 --> r
                  ==> A |-- p --> r]])
    (ASM_MESON_TAC [imp_trans, imp_swap, imp_unduplicate])
@@ -265,77 +265,77 @@ unsafe def imp_trans_chain_2 : thm := keep "imp_trans_chain_2" fun _ => (do
 #eval imp_trans_chain_2
 
 #eval phrase 33
-unsafe def imp_trans_th : thm := keep "imp_trans_th" fun _ => (do
+def imp_trans_th : thm := keep "imp_trans_th" fun _ => (do
   prove ([[!A p q r. A |-- (q --> r) --> (p --> q) --> (p --> r)]])
    (MESON_TAC [imp_trans, axiom_addimp, axiom_distribimp])
   : ExceptT String IO thm).run
 #eval imp_trans_th
 
 #eval phrase 34
-unsafe def imp_add_concl : thm := keep "imp_add_concl" fun _ => (do
+def imp_add_concl : thm := keep "imp_add_concl" fun _ => (do
   prove ([[!A p q r. A |-- p --> q ==> A |-- (q --> r) --> (p --> r)]])
    (MESON_TAC [modusponens, imp_swap, imp_trans_th])
   : ExceptT String IO thm).run
 #eval imp_add_concl
 
 #eval phrase 35
-unsafe def imp_trans2 : thm := keep "imp_trans2" fun _ => (do
+def imp_trans2 : thm := keep "imp_trans2" fun _ => (do
   prove ([[!A p q r s. A |-- p --> q --> r /\ A |-- r --> s ==> A |-- p --> q --> s]])
    (MESON_TAC [imp_add_assum, modusponens, imp_trans_th])
   : ExceptT String IO thm).run
 #eval imp_trans2
 
 #eval phrase 36
-unsafe def imp_swap_th : thm := keep "imp_swap_th" fun _ => (do
+def imp_swap_th : thm := keep "imp_swap_th" fun _ => (do
   prove ([[!A p q r. A |-- (p --> q --> r) --> (q --> p --> r)]])
    (MESON_TAC [imp_trans, axiom_distribimp, imp_add_concl, axiom_addimp])
   : ExceptT String IO thm).run
 #eval imp_swap_th
 
 #eval phrase 37
-unsafe def contrapos : thm := keep "contrapos" fun _ => (do
+def contrapos : thm := keep "contrapos" fun _ => (do
   prove ([[!A p q. A |-- p --> q ==> A |-- Not q --> Not p]])
    (MESON_TAC [imp_trans, iff_imp1, axiom_not, imp_add_concl, iff_imp2])
   : ExceptT String IO thm).run
 #eval contrapos
 
 #eval phrase 38
-unsafe def imp_truefalse : thm := keep "imp_truefalse" fun _ => (do
+def imp_truefalse : thm := keep "imp_truefalse" fun _ => (do
   prove ([[!p q. A |-- (q --> False) --> p --> (p --> q) --> False]])
    (MESON_TAC [imp_trans, imp_trans_th, imp_swap_th])
   : ExceptT String IO thm).run
 #eval imp_truefalse
 
 #eval phrase 39
-unsafe def imp_insert : thm := keep "imp_insert" fun _ => (do
+def imp_insert : thm := keep "imp_insert" fun _ => (do
   prove ([[!A p q r. A |-- p --> r ==> A |-- p --> q --> r]])
    (MESON_TAC [imp_trans, axiom_addimp])
   : ExceptT String IO thm).run
 #eval imp_insert
 
 #eval phrase 40
-unsafe def imp_mono_th : thm := keep "imp_mono_th" fun _ => (do
+def imp_mono_th : thm := keep "imp_mono_th" fun _ => (do
   prove ([[A |-- (p' --> p) --> (q --> q') --> (p --> q) --> (p' --> q')]])
    (MESON_TAC [imp_trans, imp_swap, imp_trans_th])
   : ExceptT String IO thm).run
 #eval imp_mono_th
 
 #eval phrase 41
-unsafe def ex_falso : thm := keep "ex_falso" fun _ => (do
+def ex_falso : thm := keep "ex_falso" fun _ => (do
   prove ([[!A p. A |-- False --> p]])
    (MESON_TAC [imp_trans, axiom_addimp, axiom_doubleneg])
   : ExceptT String IO thm).run
 #eval ex_falso
 
 #eval phrase 42
-unsafe def imp_contr : thm := keep "imp_contr" fun _ => (do
+def imp_contr : thm := keep "imp_contr" fun _ => (do
   prove ([[!A p q. A |-- (p --> False) --> (p --> r)]])
    (MESON_TAC [imp_add_assum, ex_falso])
   : ExceptT String IO thm).run
 #eval imp_contr
 
 #eval phrase 43
-unsafe def imp_contrf : thm := keep "imp_contrf" fun _ => (do
+def imp_contrf : thm := keep "imp_contrf" fun _ => (do
   prove ([[!A p r. A |-- p --> negatef p --> r]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [negatef, negativef] THEN
     COND_CASES_TAC THEN POP_ASSUM STRIP_ASSUME_TAC THEN
@@ -345,21 +345,21 @@ unsafe def imp_contrf : thm := keep "imp_contrf" fun _ => (do
 #eval imp_contrf
 
 #eval phrase 44
-unsafe def contrad : thm := keep "contrad" fun _ => (do
+def contrad : thm := keep "contrad" fun _ => (do
   prove ([[!A p. A |-- (p --> False) --> p ==> A |-- p]])
    (MESON_TAC [modusponens, axiom_distribimp, imp_refl, axiom_doubleneg])
   : ExceptT String IO thm).run
 #eval contrad
 
 #eval phrase 45
-unsafe def bool_cases : thm := keep "bool_cases" fun _ => (do
+def bool_cases : thm := keep "bool_cases" fun _ => (do
   prove ([[!p q. A |-- p --> q /\ A |-- (p --> False) --> q ==> A |-- q]])
    (MESON_TAC [contrad, imp_trans, imp_add_concl])
   : ExceptT String IO thm).run
 #eval bool_cases
 
 #eval phrase 46
-unsafe def imp_false_rule : thm := keep "imp_false_rule" fun _ => (do
+def imp_false_rule : thm := keep "imp_false_rule" fun _ => (do
   prove ([[!p q r. A |-- (q --> False) --> p --> r
            ==> A |-- ((p --> q) --> False) --> r]])
    (MESON_TAC [imp_add_concl, imp_add_assum, ex_falso, axiom_addimp, imp_swap,
@@ -368,7 +368,7 @@ unsafe def imp_false_rule : thm := keep "imp_false_rule" fun _ => (do
 #eval imp_false_rule
 
 #eval phrase 47
-unsafe def imp_true_rule : thm := keep "imp_true_rule" fun _ => (do
+def imp_true_rule : thm := keep "imp_true_rule" fun _ => (do
   prove ([[!A p q r. A |-- (p --> False) --> r /\ A |-- q --> r
              ==> A |-- (p --> q) --> r]])
    (MESON_TAC [imp_insert, imp_swap, modusponens, imp_trans_th, bool_cases])
@@ -376,14 +376,14 @@ unsafe def imp_true_rule : thm := keep "imp_true_rule" fun _ => (do
 #eval imp_true_rule
 
 #eval phrase 48
-unsafe def truth : thm := keep "truth" fun _ => (do
+def truth : thm := keep "truth" fun _ => (do
   prove ([[!A. A |-- True]])
    (MESON_TAC [modusponens, axiom_true, imp_refl, iff_imp2])
   : ExceptT String IO thm).run
 #eval truth
 
 #eval phrase 49
-unsafe def and_left : thm := keep "and_left" fun _ => (do
+def and_left : thm := keep "and_left" fun _ => (do
   prove ([[!A p q. A |-- p && q --> p]])
    (MESON_TAC [imp_add_assum, axiom_addimp, imp_trans, imp_add_concl,
             axiom_doubleneg, imp_trans, iff_imp1, axiom_and])
@@ -391,7 +391,7 @@ unsafe def and_left : thm := keep "and_left" fun _ => (do
 #eval and_left
 
 #eval phrase 50
-unsafe def and_right : thm := keep "and_right" fun _ => (do
+def and_right : thm := keep "and_right" fun _ => (do
   prove ([[!A p q. A |-- p && q --> q]])
    (MESON_TAC [axiom_addimp, imp_trans, imp_add_concl, axiom_doubleneg,
             iff_imp1, axiom_and])
@@ -399,7 +399,7 @@ unsafe def and_right : thm := keep "and_right" fun _ => (do
 #eval and_right
 
 #eval phrase 51
-unsafe def and_pair : thm := keep "and_pair" fun _ => (do
+def and_pair : thm := keep "and_pair" fun _ => (do
   prove ([[!A p q. A |-- p --> q --> p && q]])
    (MESON_TAC [iff_imp2, axiom_and, imp_swap_th, imp_add_assum, imp_trans2,
             modusponens, imp_swap, imp_refl])
@@ -407,49 +407,49 @@ unsafe def and_pair : thm := keep "and_pair" fun _ => (do
 #eval and_pair
 
 #eval phrase 52
-unsafe def META_AND : thm := keep "META_AND" fun _ => (do
+def META_AND : thm := keep "META_AND" fun _ => (do
   prove ([[!A p q. A |-- p && q <=> A |-- p /\ A |-- q]])
    (MESON_TAC [and_left, and_right, and_pair, modusponens])
   : ExceptT String IO thm).run
 #eval META_AND
 
 #eval phrase 53
-unsafe def shunt : thm := keep "shunt" fun _ => (do
+def shunt : thm := keep "shunt" fun _ => (do
   prove ([[!A p q r. A |-- p && q --> r ==> A |-- p --> q --> r]])
    (MESON_TAC [modusponens, imp_add_assum, and_pair])
   : ExceptT String IO thm).run
 #eval shunt
 
 #eval phrase 54
-unsafe def ante_conj : thm := keep "ante_conj" fun _ => (do
+def ante_conj : thm := keep "ante_conj" fun _ => (do
   prove ([[!A p q r. A |-- p --> q --> r ==> A |-- p && q --> r]])
    (MESON_TAC [imp_trans_chain_2, and_left, and_right])
   : ExceptT String IO thm).run
 #eval ante_conj
 
 #eval phrase 55
-unsafe def not_not_false : thm := keep "not_not_false" fun _ => (do
+def not_not_false : thm := keep "not_not_false" fun _ => (do
   prove ([[!A p. A |-- (p --> False) --> False <-> p]])
    (MESON_TAC [imp_antisym, axiom_doubleneg, imp_swap, imp_refl])
   : ExceptT String IO thm).run
 #eval not_not_false
 
 #eval phrase 56
-unsafe def iff_sym : thm := keep "iff_sym" fun _ => (do
+def iff_sym : thm := keep "iff_sym" fun _ => (do
   prove ([[!A p q. A |-- p <-> q <=> A |-- q <-> p]])
    (MESON_TAC [iff_imp1, iff_imp2, imp_antisym])
   : ExceptT String IO thm).run
 #eval iff_sym
 
 #eval phrase 57
-unsafe def iff_trans : thm := keep "iff_trans" fun _ => (do
+def iff_trans : thm := keep "iff_trans" fun _ => (do
   prove ([[!A p q r. A |-- p <-> q /\ A |-- q <-> r ==> A |-- p <-> r]])
    (MESON_TAC [iff_imp1, iff_imp2, imp_trans, imp_antisym])
   : ExceptT String IO thm).run
 #eval iff_trans
 
 #eval phrase 58
-unsafe def not_not : thm := keep "not_not" fun _ => (do
+def not_not : thm := keep "not_not" fun _ => (do
   prove ([[!A p. A |-- Not(Not p) <-> p]])
    (MESON_TAC [iff_trans, not_not_false, axiom_not, imp_antisym, imp_add_concl,
             iff_imp1, iff_imp2])
@@ -457,28 +457,28 @@ unsafe def not_not : thm := keep "not_not" fun _ => (do
 #eval not_not
 
 #eval phrase 59
-unsafe def contrapos_eq : thm := keep "contrapos_eq" fun _ => (do
+def contrapos_eq : thm := keep "contrapos_eq" fun _ => (do
   prove ([[!A p q. A |-- Not p --> Not q <=> A |-- q --> p]])
    (MESON_TAC [contrapos, not_not, iff_imp1, iff_imp2, imp_trans])
   : ExceptT String IO thm).run
 #eval contrapos_eq
 
 #eval phrase 60
-unsafe def or_left : thm := keep "or_left" fun _ => (do
+def or_left : thm := keep "or_left" fun _ => (do
   prove ([[!A p q. A |-- q --> p || q]])
    (MESON_TAC [imp_trans, not_not, iff_imp2, and_right, contrapos, axiom_or])
   : ExceptT String IO thm).run
 #eval or_left
 
 #eval phrase 61
-unsafe def or_right : thm := keep "or_right" fun _ => (do
+def or_right : thm := keep "or_right" fun _ => (do
   prove ([[!A p q. A |-- p --> p || q]])
    (MESON_TAC [imp_trans, not_not, iff_imp2, and_left, contrapos, axiom_or])
   : ExceptT String IO thm).run
 #eval or_right
 
 #eval phrase 62
-unsafe def ante_disj : thm := keep "ante_disj" fun _ => (do
+def ante_disj : thm := keep "ante_disj" fun _ => (do
   prove ([[!A p q r. A |-- p --> r /\ A |-- q --> r
              ==> A |-- p || q --> r]])
    (HolLight.tactic_of do
@@ -491,7 +491,7 @@ unsafe def ante_disj : thm := keep "ante_disj" fun _ => (do
 #eval ante_disj
 
 #eval phrase 63
-unsafe def iff_def : thm := keep "iff_def" fun _ => (do
+def iff_def : thm := keep "iff_def" fun _ => (do
   prove ([[!A p q. A |-- (p <-> q) <-> (p --> q) && (q --> p)]])
    (MESON_TAC [imp_antisym, imp_trans_chain_2, axiom_iffimp1, axiom_iffimp2,
             and_pair, axiom_impiff, imp_trans_chain_2, and_left, and_right])
@@ -499,21 +499,21 @@ unsafe def iff_def : thm := keep "iff_def" fun _ => (do
 #eval iff_def
 
 #eval phrase 64
-unsafe def iff_refl : thm := keep "iff_refl" fun _ => (do
+def iff_refl : thm := keep "iff_refl" fun _ => (do
   prove ([[!A p. A |-- p <-> p]])
    (MESON_TAC [imp_antisym, imp_refl])
   : ExceptT String IO thm).run
 #eval do IO.println iff_refl
 
 #eval phrase 65
-unsafe def eq_sym : thm := keep "eq_sym" fun _ => (do
+def eq_sym : thm := keep "eq_sym" fun _ => (do
   prove ([[!A s t. A |-- s === t --> t === s]])
    (MESON_TAC [axiom_eqrefl, modusponens, imp_swap, axiom_predcong])
   : ExceptT String IO thm).run
 #eval eq_sym
 
 #eval phrase 66
-unsafe def icongruence_general : thm := keep "icongruence_general" fun _ => (do
+def icongruence_general : thm := keep "icongruence_general" fun _ => (do
   prove ([[!A p x s t tm.
      A |-- s === t -->
            termsubst ((x |-> s) v) tm === termsubst ((x |-> t) v) tm]])
@@ -531,7 +531,7 @@ unsafe def icongruence_general : thm := keep "icongruence_general" fun _ => (do
 #eval icongruence_general
 
 #eval phrase 67
-unsafe def icongruence : thm := keep "icongruence" fun _ => (do
+def icongruence : thm := keep "icongruence" fun _ => (do
   prove ([[!A x s t tm.
      A |-- s === t --> termsubst (x |=> s) tm === termsubst (x |=> t) tm]])
    (REWRITE_TAC [assign, icongruence_general])
@@ -539,7 +539,7 @@ unsafe def icongruence : thm := keep "icongruence" fun _ => (do
 #eval icongruence
 
 #eval phrase 68
-unsafe def icongruence_var : thm := keep "icongruence_var" fun _ => (do
+def icongruence_var : thm := keep "icongruence_var" fun _ => (do
   prove ([[!A x t tm.
      A |-- V x === t --> tm === termsubst (x |=> t) tm]])
    (MESON_TAC [icongruence, TERMSUBST_TRIV, ASSIGN_TRIV])
@@ -547,7 +547,7 @@ unsafe def icongruence_var : thm := keep "icongruence_var" fun _ => (do
 #eval icongruence_var
 
 #eval phrase 69
-unsafe def gen_right : thm := keep "gen_right" fun _ => (do
+def gen_right : thm := keep "gen_right" fun _ => (do
   prove ([[!A x p q. ~(x IN FV(p)) /\ A |-- p --> q
              ==> A |-- p --> !!x q]])
    (MESON_TAC [axiom_allimp, modusponens, gen, imp_trans, axiom_impall])
@@ -555,14 +555,14 @@ unsafe def gen_right : thm := keep "gen_right" fun _ => (do
 #eval gen_right
 
 #eval phrase 70
-unsafe def genimp : thm := keep "genimp" fun _ => (do
+def genimp : thm := keep "genimp" fun _ => (do
   prove ([[!x p q. A |-- p --> q ==> A |-- (!!x p) --> (!!x q)]])
    (MESON_TAC [modusponens, axiom_allimp, gen])
   : ExceptT String IO thm).run
 #eval genimp
 
 #eval phrase 71
-unsafe def eximp : thm := keep "eximp" fun _ => (do
+def eximp : thm := keep "eximp" fun _ => (do
   prove ([[!x p q. A |-- p --> q ==> A |-- (??x p) --> (??x q)]])
    (MESON_TAC [contrapos, genimp, contrapos, imp_trans, iff_imp1, iff_imp2,
             axiom_exists])
@@ -570,7 +570,7 @@ unsafe def eximp : thm := keep "eximp" fun _ => (do
 #eval eximp
 
 #eval phrase 72
-unsafe def exists_imp : thm := keep "exists_imp" fun _ => (do
+def exists_imp : thm := keep "exists_imp" fun _ => (do
   prove ([[!A x p q. A |-- ??x (p --> q) /\ ~(x IN FV(q)) ==> A |-- (!!x p) --> q]])
    (REPEAT STRIP_TAC THEN
     SUBGOAL_THEN ([[A |-- (q --> False) --> !!x (p --> Not(p --> q))]])
@@ -592,7 +592,7 @@ unsafe def exists_imp : thm := keep "exists_imp" fun _ => (do
 #eval exists_imp
 
 #eval phrase 73
-unsafe def subspec : thm := keep "subspec" fun _ => (do
+def subspec : thm := keep "subspec" fun _ => (do
   prove ([[!A x t p q. ~(x IN FVT(t)) /\ ~(x IN FV(q)) /\ A |-- V x === t --> p --> q
                ==> A |-- (!!x p) --> q]])
    (MESON_TAC [exists_imp, modusponens, eximp, axiom_existseq])
@@ -600,7 +600,7 @@ unsafe def subspec : thm := keep "subspec" fun _ => (do
 #eval subspec
 
 #eval phrase 74
-unsafe def subalpha : thm := keep "subalpha" fun _ => (do
+def subalpha : thm := keep "subalpha" fun _ => (do
   prove ([[!A x y p q. ((x = y) \/ ~(x IN FV(q)) /\ ~(y IN FV(p))) /\
                A |-- V x === V y --> p --> q
                ==> A |-- (!!x p) --> (!!y q)]])
@@ -616,7 +616,7 @@ unsafe def subalpha : thm := keep "subalpha" fun _ => (do
 #eval subalpha
 
 #eval phrase 75
-unsafe def complexity : thm := keep "complexity" fun _ => (do
+def complexity : thm := keep "complexity" fun _ => (do
   newRec form_RECURSION
     [[(complexity False = 1) /\
    (complexity True = 1) /\
@@ -634,7 +634,7 @@ unsafe def complexity : thm := keep "complexity" fun _ => (do
 #eval complexity
 
 #eval phrase 76
-unsafe def COMPLEXITY_FORMSUBST : thm := keep "COMPLEXITY_FORMSUBST" fun _ => (do
+def COMPLEXITY_FORMSUBST : thm := keep "COMPLEXITY_FORMSUBST" fun _ => (do
   prove ([[!p i. complexity(formsubst i p) = complexity p]])
    (MATCH_MP_TAC form_INDUCT THEN
     SIMP_TAC [formsubst, complexity, LET_DEF, LET_END_DEF])
@@ -642,7 +642,7 @@ unsafe def COMPLEXITY_FORMSUBST : thm := keep "COMPLEXITY_FORMSUBST" fun _ => (d
 #eval COMPLEXITY_FORMSUBST
 
 #eval phrase 77
-unsafe def isubst_general : thm := keep "isubst_general" fun _ => (do
+def isubst_general : thm := keep "isubst_general" fun _ => (do
   prove ([[!A p x v s t. A |-- s === t
                        --> formsubst ((x |-> s) v) p
                            --> formsubst ((x |-> t) v) p]])
@@ -780,7 +780,7 @@ unsafe def isubst_general : thm := keep "isubst_general" fun _ => (do
 #eval isubst_general
 
 #eval phrase 78
-unsafe def isubst : thm := keep "isubst" fun _ => (do
+def isubst : thm := keep "isubst" fun _ => (do
   prove ([[!A p x s t. A |-- s === t
                      --> formsubst (x |=> s) p --> formsubst (x |=> t) p]])
    (REWRITE_TAC [assign, isubst_general])
@@ -788,14 +788,14 @@ unsafe def isubst : thm := keep "isubst" fun _ => (do
 #eval isubst
 
 #eval phrase 79
-unsafe def isubst_var : thm := keep "isubst_var" fun _ => (do
+def isubst_var : thm := keep "isubst_var" fun _ => (do
   prove ([[!A p x t. A |-- V x === t --> p --> formsubst (x |=> t) p]])
    (MESON_TAC [FORMSUBST_TRIV, ASSIGN_TRIV, isubst])
   : ExceptT String IO thm).run
 #eval isubst_var
 
 #eval phrase 80
-unsafe def alpha : thm := keep "alpha" fun _ => (do
+def alpha : thm := keep "alpha" fun _ => (do
   prove ([[!A x z p. ~(z IN FV p) ==> A |-- (!!x p) --> !!z (formsubst (x |=> V z) p)]])
    (REPEAT STRIP_TAC THEN MATCH_MP_TAC subalpha THEN CONJ_TAC THENL
      [ALL_TAC, MESON_TAC [isubst_var]] THEN
@@ -805,7 +805,7 @@ unsafe def alpha : thm := keep "alpha" fun _ => (do
 #eval alpha
 
 #eval phrase 81
-unsafe def VARS : thm := keep "VARS" fun _ => (do
+def VARS : thm := keep "VARS" fun _ => (do
   newRec form_RECURSION
    [[(VARS False = {}) /\
   (VARS True = {}) /\
@@ -823,7 +823,7 @@ unsafe def VARS : thm := keep "VARS" fun _ => (do
 #eval VARS
 
 #eval phrase 82
-unsafe def VARS_FINITE : thm := keep "VARS_FINITE" fun _ => (do
+def VARS_FINITE : thm := keep "VARS_FINITE" fun _ => (do
   prove ([[!p. FINITE(VARS p)]])
    (MATCH_MP_TAC form_INDUCT THEN
     ASM_SIMP_TAC [VARS, FINITE_RULES, FVT_FINITE, FINITE_UNION, FINITE_DELETE])
@@ -831,7 +831,7 @@ unsafe def VARS_FINITE : thm := keep "VARS_FINITE" fun _ => (do
 #eval VARS_FINITE
 
 #eval phrase 83
-unsafe def FV_SUBSET_VARS : thm := keep "FV_SUBSET_VARS" fun _ => (do
+def FV_SUBSET_VARS : thm := keep "FV_SUBSET_VARS" fun _ => (do
   prove ([[!p. FV(p) SUBSET VARS(p)]])
    (REWRITE_TAC [SUBSET] THEN
     MATCH_MP_TAC form_INDUCT THEN REWRITE_TAC [FV, VARS] THEN
@@ -840,7 +840,7 @@ unsafe def FV_SUBSET_VARS : thm := keep "FV_SUBSET_VARS" fun _ => (do
 #eval FV_SUBSET_VARS
 
 #eval phrase 84
-unsafe def TERMSUBST_TWICE_GENERAL : thm := keep "TERMSUBST_TWICE_GENERAL" fun _ => (do
+def TERMSUBST_TWICE_GENERAL : thm := keep "TERMSUBST_TWICE_GENERAL" fun _ => (do
   prove ([[!x z t v s. ~(z IN FVT s)
                ==> (termsubst ((x |-> t) v) s =
                     termsubst ((z |-> t) v) (termsubst (x |=> V z) s))]])
@@ -852,7 +852,7 @@ unsafe def TERMSUBST_TWICE_GENERAL : thm := keep "TERMSUBST_TWICE_GENERAL" fun _
 #eval TERMSUBST_TWICE_GENERAL
 
 #eval phrase 85
-unsafe def TERMSUBST_TWICE : thm := keep "TERMSUBST_TWICE" fun _ => (do
+def TERMSUBST_TWICE : thm := keep "TERMSUBST_TWICE" fun _ => (do
   prove ([[!x z t s. ~(z IN FVT s)
              ==> (termsubst (x |=> t) s =
                   termsubst (z |=> t) (termsubst (x |=> V z) s))]])
@@ -861,7 +861,7 @@ unsafe def TERMSUBST_TWICE : thm := keep "TERMSUBST_TWICE" fun _ => (do
 #eval TERMSUBST_TWICE
 
 #eval phrase 86
-unsafe def FORMSUBST_TWICE_GENERAL : thm := keep "FORMSUBST_TWICE_GENERAL" fun _ => (do
+def FORMSUBST_TWICE_GENERAL : thm := keep "FORMSUBST_TWICE_GENERAL" fun _ => (do
   prove ([[!p i j.
         (!x. x IN VARS p ==> safe_for x i)
         ==> formsubst j (formsubst i p) = formsubst (termsubst j o i) p]])
@@ -933,7 +933,7 @@ unsafe def FORMSUBST_TWICE_GENERAL : thm := keep "FORMSUBST_TWICE_GENERAL" fun _
 #eval FORMSUBST_TWICE_GENERAL
 
 #eval phrase 87
-unsafe def FORMSUBST_TWICE : thm := keep "FORMSUBST_TWICE" fun _ => (do
+def FORMSUBST_TWICE : thm := keep "FORMSUBST_TWICE" fun _ => (do
   prove ([[!z p x t. ~(z IN VARS p)
              ==> (formsubst (z |=> t) (formsubst (x |=> V z) p) =
                   formsubst (x |=> t) p)]])
@@ -951,7 +951,7 @@ unsafe def FORMSUBST_TWICE : thm := keep "FORMSUBST_TWICE" fun _ => (do
 #eval FORMSUBST_TWICE
 
 #eval phrase 88
-unsafe def ispec_lemma : thm := keep "ispec_lemma" fun _ => (do
+def ispec_lemma : thm := keep "ispec_lemma" fun _ => (do
   prove ([[!A x p t. ~(x IN FVT(t)) ==> A |-- !!x p --> formsubst (x |=> t) p]])
    (REPEAT STRIP_TAC THEN MATCH_MP_TAC subspec THEN
     EXISTS_TAC ([[t:term]]) THEN ASM_REWRITE_TAC [isubst_var] THEN
@@ -961,7 +961,7 @@ unsafe def ispec_lemma : thm := keep "ispec_lemma" fun _ => (do
 #eval ispec_lemma
 
 #eval phrase 89
-unsafe def ispec : thm := keep "ispec" fun _ => (do
+def ispec : thm := keep "ispec" fun _ => (do
   prove ([[!A x p t. A |-- !!x p --> formsubst (x |=> t) p]])
    (REPEAT STRIP_TAC THEN ASM_CASES_TAC ([[x IN FVT(t)]]) THEN
     ASM_SIMP_TAC [ispec_lemma] THEN
@@ -984,14 +984,14 @@ unsafe def ispec : thm := keep "ispec" fun _ => (do
 #eval ispec
 
 #eval phrase 90
-unsafe def spec : thm := keep "spec" fun _ => (do
+def spec : thm := keep "spec" fun _ => (do
   prove ([[!A x p t. A |-- !!x p ==> A |-- formsubst (x |=> t) p]])
    (MESON_TAC [ispec, modusponens])
   : ExceptT String IO thm).run
 #eval spec
 
 #eval phrase 91
-unsafe def spec_var : thm := keep "spec_var" fun _ => (do
+def spec_var : thm := keep "spec_var" fun _ => (do
   prove ([[!A x p. A |-- !!x p ==> A |-- p]])
    (REPEAT GEN_TAC THEN
     DISCH_THEN (fun th => HolLight.tactic_of do
@@ -1003,7 +1003,7 @@ unsafe def spec_var : thm := keep "spec_var" fun _ => (do
 #eval spec_var
 
 #eval phrase 92
-unsafe def instantiation : thm := keep "instantiation" fun _ => (do
+def instantiation : thm := keep "instantiation" fun _ => (do
   prove ([[!A v p. A |-- p ==> A |-- formsubst v p]])
    (HolLight.tactic_of do
      let lemma ← prove ([[!A p v. (!x y. x IN FV p /\ y IN FV p /\ x IN FVT(v y)
@@ -1084,7 +1084,7 @@ unsafe def instantiation : thm := keep "instantiation" fun _ => (do
 #eval instantiation
 
 #eval phrase 93
-unsafe def PROVES_MONO : thm := keep "PROVES_MONO" fun _ => (do
+def PROVES_MONO : thm := keep "PROVES_MONO" fun _ => (do
   prove ([[!A B p. A SUBSET B /\ A |-- p ==> B |-- p]])
    (GEN_TAC THEN GEN_TAC THEN
     REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
@@ -1093,7 +1093,7 @@ unsafe def PROVES_MONO : thm := keep "PROVES_MONO" fun _ => (do
 #eval PROVES_MONO
 
 #eval phrase 94
-unsafe def DEDUCTION_LEMMA : thm := keep "DEDUCTION_LEMMA" fun _ => (do
+def DEDUCTION_LEMMA : thm := keep "DEDUCTION_LEMMA" fun _ => (do
   prove ([[!A p q. p INSERT A |-- q /\ closed p ==> A |-- p --> q]])
    (GEN_TAC THEN ONCE_REWRITE_TAC [CONJ_SYM] THEN
     REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
@@ -1106,7 +1106,7 @@ unsafe def DEDUCTION_LEMMA : thm := keep "DEDUCTION_LEMMA" fun _ => (do
 #eval DEDUCTION_LEMMA
 
 #eval phrase 95
-unsafe def DEDUCTION : thm := keep "DEDUCTION" fun _ => (do
+def DEDUCTION : thm := keep "DEDUCTION" fun _ => (do
   prove ([[!A p q. closed p ==> (A |-- p --> q <=> p INSERT A |-- q)]])
    (MESON_TAC [DEDUCTION_LEMMA, modusponens, IN_INSERT, proves_RULES,
             PROVES_MONO, SUBSET])
@@ -1114,7 +1114,7 @@ unsafe def DEDUCTION : thm := keep "DEDUCTION" fun _ => (do
 #eval DEDUCTION
 
 #eval phrase 96
-unsafe def eq_trans : thm := keep "eq_trans" fun _ => (do
+def eq_trans : thm := keep "eq_trans" fun _ => (do
   prove ([[!A s t u. A |-- s === t --> t === u --> s === u]])
    (MESON_TAC [axiom_predcong, modusponens, imp_swap, axiom_eqrefl, imp_trans,
             eq_sym])
@@ -1122,70 +1122,70 @@ unsafe def eq_trans : thm := keep "eq_trans" fun _ => (do
 #eval eq_trans
 
 #eval phrase 97
-unsafe def spec_right : thm := keep "spec_right" fun _ => (do
+def spec_right : thm := keep "spec_right" fun _ => (do
   prove ([[!A p q x. A |-- p --> !!x q ==> A |-- p --> formsubst (x |=> t) q]])
    (MESON_TAC [imp_trans, ispec])
   : ExceptT String IO thm).run
 #eval spec_right
 
 #eval phrase 98
-unsafe def eq_trans_rule : thm := keep "eq_trans_rule" fun _ => (do
+def eq_trans_rule : thm := keep "eq_trans_rule" fun _ => (do
   prove ([[!A s t u. A |-- s === t /\ A |-- t === u ==> A |-- s === u]])
    (MESON_TAC [modusponens, eq_trans])
   : ExceptT String IO thm).run
 #eval eq_trans_rule
 
 #eval phrase 99
-unsafe def eq_sym_rule : thm := keep "eq_sym_rule" fun _ => (do
+def eq_sym_rule : thm := keep "eq_sym_rule" fun _ => (do
   prove ([[!A s t. A |-- s === t <=> A |-- t === s]])
    (MESON_TAC [modusponens, eq_sym])
   : ExceptT String IO thm).run
 #eval eq_sym_rule
 
 #eval phrase 100
-unsafe def allimp : thm := keep "allimp" fun _ => (do
+def allimp : thm := keep "allimp" fun _ => (do
   prove ([[!A x p q. A |-- p --> q ==> A |-- !!x p --> !!x q]])
    (MESON_TAC [axiom_allimp, modusponens, gen])
   : ExceptT String IO thm).run
 #eval allimp
 
 #eval phrase 101
-unsafe def alliff : thm := keep "alliff" fun _ => (do
+def alliff : thm := keep "alliff" fun _ => (do
   prove ([[!A x p q. A |-- p <-> q ==> A |-- !!x p <-> !!x q]])
    (MESON_TAC [allimp, iff_imp1, iff_imp2, imp_antisym])
   : ExceptT String IO thm).run
 #eval alliff
 
 #eval phrase 102
-unsafe def exiff : thm := keep "exiff" fun _ => (do
+def exiff : thm := keep "exiff" fun _ => (do
   prove ([[!A x p q. A |-- p <-> q ==> A |-- ??x p <-> ??x q]])
    (MESON_TAC [eximp, iff_imp1, iff_imp2, imp_antisym])
   : ExceptT String IO thm).run
 #eval exiff
 
 #eval phrase 103
-unsafe def cong_suc : thm := keep "cong_suc" fun _ => (do
+def cong_suc : thm := keep "cong_suc" fun _ => (do
   prove ([[!A s t. A |-- s === t ==> A |-- Suc s === Suc t]])
    (MESON_TAC [modusponens, axiom_funcong])
   : ExceptT String IO thm).run
 #eval cong_suc
 
 #eval phrase 104
-unsafe def cong_add : thm := keep "cong_add" fun _ => (do
+def cong_add : thm := keep "cong_add" fun _ => (do
   prove ([[!A s t u v. A |-- s === t /\ A |-- u === v ==> A |-- s ++ u === t ++ v]])
    (MESON_TAC [modusponens, axiom_funcong])
   : ExceptT String IO thm).run
 #eval cong_add
 
 #eval phrase 105
-unsafe def cong_mul : thm := keep "cong_mul" fun _ => (do
+def cong_mul : thm := keep "cong_mul" fun _ => (do
   prove ([[!A s t u v. A |-- s === t /\ A |-- u === v ==> A |-- s ** u === t ** v]])
    (MESON_TAC [modusponens, axiom_funcong])
   : ExceptT String IO thm).run
 #eval cong_mul
 
 #eval phrase 106
-unsafe def cong_eq : thm := keep "cong_eq" fun _ => (do
+def cong_eq : thm := keep "cong_eq" fun _ => (do
   prove ([[!A s t u v. A |-- s === t /\ A |-- u === v ==> A |-- s === u <-> t === v]])
    (REPEAT STRIP_TAC THEN MATCH_MP_TAC imp_antisym THEN
     ASM_MESON_TAC [modusponens, axiom_predcong, eq_sym])
@@ -1193,7 +1193,7 @@ unsafe def cong_eq : thm := keep "cong_eq" fun _ => (do
 #eval cong_eq
 
 #eval phrase 107
-unsafe def cong_le : thm := keep "cong_le" fun _ => (do
+def cong_le : thm := keep "cong_le" fun _ => (do
   prove ([[!A s t u v. A |-- s === t /\ A |-- u === v ==> A |-- s <<= u <-> t <<= v]])
    (REPEAT STRIP_TAC THEN MATCH_MP_TAC imp_antisym THEN
     ASM_MESON_TAC [modusponens, axiom_predcong, eq_sym])
@@ -1201,7 +1201,7 @@ unsafe def cong_le : thm := keep "cong_le" fun _ => (do
 #eval cong_le
 
 #eval phrase 108
-unsafe def cong_lt : thm := keep "cong_lt" fun _ => (do
+def cong_lt : thm := keep "cong_lt" fun _ => (do
   prove ([[!A s t u v. A |-- s === t /\ A |-- u === v ==> A |-- s << u <-> t << v]])
    (REPEAT STRIP_TAC THEN MATCH_MP_TAC imp_antisym THEN
     ASM_MESON_TAC [modusponens, axiom_predcong, eq_sym])
@@ -1209,7 +1209,7 @@ unsafe def cong_lt : thm := keep "cong_lt" fun _ => (do
 #eval cong_lt
 
 #eval phrase 109
-unsafe def iexists : thm := keep "iexists" fun _ => (do
+def iexists : thm := keep "iexists" fun _ => (do
   prove ([[!A x t p. A |-- formsubst (x |=> t) p --> ??x p]])
    (REPEAT GEN_TAC THEN TRANS_TAC imp_trans ([[Not(!!x (Not p))]]) THEN
     CONJ_TAC THENL [ALL_TAC, MESON_TAC [axiom_exists, iff_imp2]] THEN
@@ -1220,14 +1220,14 @@ unsafe def iexists : thm := keep "iexists" fun _ => (do
 #eval iexists
 
 #eval phrase 110
-unsafe def exists_intro : thm := keep "exists_intro" fun _ => (do
+def exists_intro : thm := keep "exists_intro" fun _ => (do
   prove ([[!A x t p. A |-- formsubst (x |=> t) p ==> A |-- ??x p]])
    (MESON_TAC [iexists, modusponens])
   : ExceptT String IO thm).run
 #eval exists_intro
 
 #eval phrase 111
-unsafe def impex : thm := keep "impex" fun _ => (do
+def impex : thm := keep "impex" fun _ => (do
   prove ([[!A x p. ~(x IN FV p) ==> A |-- (??x p) --> p]])
    (REPEAT STRIP_TAC THEN TRANS_TAC imp_trans ([[Not(Not p)]]) THEN
     CONJ_TAC THENL [ALL_TAC, MESON_TAC [not_not, iff_imp1]] THEN
@@ -1238,7 +1238,7 @@ unsafe def impex : thm := keep "impex" fun _ => (do
 #eval impex
 
 #eval phrase 112
-unsafe def ichoose : thm := keep "ichoose" fun _ => (do
+def ichoose : thm := keep "ichoose" fun _ => (do
   prove ([[!A x p q. A |-- !!x (p --> q) /\ ~(x IN FV q) ==> A |-- (??x p) --> q]])
    (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (MP_TAC oTIO HolLight.MATCH_MP spec_var) THEN
@@ -1252,15 +1252,15 @@ unsafe def ichoose : thm := keep "ichoose" fun _ => (do
 #eval ichoose
 
 #eval phrase 113
-unsafe def eq_trans_imp : thm := keep "eq_trans_imp" fun _ => (do
+def eq_trans_imp : thm := keep "eq_trans_imp" fun _ => (do
   prove ([[A |-- s === s' /\ A |-- t === t' ==> A |-- s === t --> s' === t']])
    (MESON_TAC [axiom_predcong, modusponens])
   : ExceptT String IO thm).run
 #eval eq_trans_imp
 
 #eval phrase 114
-unsafe def fv_theorems : IO.Ref (List thm) :=
-  keep "fv_theorems" fun _ => unsafeBaseIO (IO.mkRef
+def fv_theorems : IO.Ref (List thm) :=
+  keep "fv_theorems" fun _ => runBaseIO (IO.mkRef
    [FV, FV_AXIOM, FV_DIAGONALIZE, FV_DIVIDES, FV_FINITE, FV_FIXPOINT, FV_FORM,
   FV_FORM1, FV_FREEFORM, FV_FREEFORM1, FV_FREETERM, FV_FREETERM1,
   FV_GNUMERAL, FV_GNUMERAL1, Tarski.«FV_GNUMERAL1'», FV_GSENTENCE,
@@ -1273,7 +1273,7 @@ unsafe def fv_theorems : IO.Ref (List thm) :=
 
 #eval phrase 115
 /- let IN_FV_RULE ths tm = try EQT_ELIM(...) with Failure _ -> ASSUME tm -/
-unsafe def IN_FV_RULE (ths : List thm) (tm : term) : IO thm := do
+def IN_FV_RULE (ths : List thm) (tm : term) : IO thm := do
   let fvts ← fv_theorems.get
   let conv := (HolLight.GEN_REWRITE_CONV HolLight.TOP_DEPTH_CONV
                 ([IN_UNION, IN_DELETE, NOT_IN_EMPTY, IN_INSERT] ++ ths ++ fvts) THENC
@@ -1287,7 +1287,7 @@ unsafe def IN_FV_RULE (ths : List thm) (tm : term) : IO thm := do
 
 #eval phrase 116
 /- let rec SAFE_FOR_RULE tm = ... (three PART_MATCH attempts) -/
-unsafe def SAFE_FOR_RULE (tm : term) : IO thm := do
+partial def SAFE_FOR_RULE (tm : term) : IO thm := do
   let ioE {α : Type} (e : Except String α) : IO α :=
     match e with | .ok v => pure v | .error m => throw (IO.userError m)
   match ← (Session.PART_MATCH pure SAFE_FOR_V tm) with
@@ -1310,12 +1310,12 @@ unsafe def SAFE_FOR_RULE (tm : term) : IO thm := do
 
 #eval phrase 117
 /- let VALMOD_CONV = GEN_REWRITE_CONV TOP_DEPTH_CONV [ASSIGN; VALMOD] THENC NUM_REDUCE_CONV -/
-unsafe def VALMOD_CONV : HolCore.Equal.ioconv :=
+def VALMOD_CONV : HolCore.Equal.ioconv :=
   HolLight.GEN_REWRITE_CONV HolLight.TOP_DEPTH_CONV [ASSIGN, VALMOD] THENC Session.NUM_REDUCE_CONV
 #eval do IO.println "<fun>"
 
 #eval phrase 118
-unsafe def TERMSUBST_NUMERAL : thm := keep "TERMSUBST_NUMERAL" fun _ => (do
+def TERMSUBST_NUMERAL : thm := keep "TERMSUBST_NUMERAL" fun _ => (do
   prove ([[!v n. termsubst v (numeral n) = numeral n]])
    (SIMP_TAC [TERMSUBST_TRIVIAL, FVT_NUMERAL, NOT_IN_EMPTY])
   : ExceptT String IO thm).run
@@ -1323,7 +1323,7 @@ unsafe def TERMSUBST_NUMERAL : thm := keep "TERMSUBST_NUMERAL" fun _ => (do
 
 #eval phrase 119
 /- let rec TERMSUBST_CONV tm = ... -/
-unsafe def TERMSUBST_CONV : HolCore.Equal.ioconv := fun tm => ((do
+partial def TERMSUBST_CONV : HolCore.Equal.ioconv := fun tm => ((do
   let cj1 ← liftExcept (Session.CONJUNCT1 termsubst)
   let c1 ← liftExcept (Session.CONJ TERMSUBST_NUMERAL cj1)
   let e1 ← liftExcept (HolCore.Lib.el 1 (Session.CONJUNCTS termsubst))
@@ -1339,7 +1339,7 @@ unsafe def TERMSUBST_CONV : HolCore.Equal.ioconv := fun tm => ((do
 
 #eval phrase 120
 /- let rec FORMSUBST_CONV tm = ... -/
-unsafe def FORMSUBST_CONV : HolCore.Equal.ioconv := fun tm => ((do
+partial def FORMSUBST_CONV : HolCore.Equal.ioconv := fun tm => ((do
   let f0 ← liftExcept (HolCore.Lib.el 0 (Session.CONJUNCTS formsubst))
   let f1 ← liftExcept (HolCore.Lib.el 1 (Session.CONJUNCTS formsubst))
   let f2 ← liftExcept (HolCore.Lib.el 2 (Session.CONJUNCTS formsubst))
@@ -1367,12 +1367,12 @@ unsafe def FORMSUBST_CONV : HolCore.Equal.ioconv := fun tm => ((do
 
 #eval phrase 121
 /- let spec_var_rule th = MATCH_MP spec_var th -/
-unsafe def spec_var_rule (th : thm) : ExceptT String IO thm := HolLight.MATCH_MP spec_var th
+def spec_var_rule (th : thm) : ExceptT String IO thm := HolLight.MATCH_MP spec_var th
 #eval do IO.println "<fun>"
 
 #eval phrase 122
 /- let spec_all_rule = repeat spec_var_rule -/
-unsafe def spec_all_rule (th : thm) : ExceptT String IO thm := ExceptT.mk do
+partial def spec_all_rule (th : thm) : ExceptT String IO thm := ExceptT.mk do
   match ← (spec_var_rule th).run with
   | .ok th' => (spec_all_rule th').run
   | .error _ => pure (.ok th)
@@ -1380,7 +1380,7 @@ unsafe def spec_all_rule (th : thm) : ExceptT String IO thm := ExceptT.mk do
 
 #eval phrase 123
 /- let instantiate_rule ilist th = ... -/
-unsafe def instantiate_rule (ilist : List (term × Nat)) (th : thm) : ExceptT String IO thm := do
+def instantiate_rule (ilist : List (term × Nat)) (th : thm) : ExceptT String IO thm := do
   let v_tm ← (HolCore.Parser.parse_term "(|->):num->term->(num->term)->(num->term)")
   let Vtm ← (HolCore.Parser.parse_term "V")
   let v ← liftExcept (HolCore.Lib.itlistM (fun (tx : term × Nat) (v : term) => do
@@ -1395,7 +1395,7 @@ unsafe def instantiate_rule (ilist : List (term × Nat)) (th : thm) : ExceptT St
 
 #eval phrase 124
 /- let specl_rule tms th = ... -/
-unsafe def specl_rule (tms : List term) (th : thm) : ExceptT String IO thm := do
+def specl_rule (tms : List term) (th : thm) : ExceptT String IO thm := do
   let bop ← (HolCore.Parser.parse_term "(!!):num->form->form")
   let rhsTh ← liftExcept (rand (HolCore.Kernel.concl th))
   let avs := HolCore.Lib.striplist (fun t => HolCore.Basics.dest_binop bop t) rhsTh
@@ -1409,12 +1409,12 @@ unsafe def specl_rule (tms : List term) (th : thm) : ExceptT String IO thm := do
 
 #eval phrase 125
 /- let spec_rule t th = specl_rule [t] th -/
-unsafe def spec_rule (t : term) (th : thm) : ExceptT String IO thm := specl_rule [t] th
+def spec_rule (t : term) (th : thm) : ExceptT String IO thm := specl_rule [t] th
 #eval do IO.println "<fun>"
 
 #eval phrase 126
 /- let gen_rule t th = SPEC (mk_small_numeral t) (MATCH_MP gen th) -/
-unsafe def gen_rule (t : Nat) (th : thm) : ExceptT String IO thm := do
+def gen_rule (t : Nat) (th : thm) : ExceptT String IO thm := do
   let g ← HolLight.MATCH_MP gen th
   let n ← liftExcept (Session.mk_small_numeral (t : Int))
   HolLight.SPEC n g
@@ -1422,7 +1422,7 @@ unsafe def gen_rule (t : Nat) (th : thm) : ExceptT String IO thm := do
 
 #eval phrase 127
 /- let gens_tac ns (asl,w) = ... -/
-unsafe def gens_tac (ns : List Nat) : HolCore.Tactics.tactic := fun g =>
+def gens_tac (ns : List Nat) : HolCore.Tactics.tactic := fun g =>
   HolLight.tactic_of (do
     let w := HolLight.snd g
     let (avs, bod) ← liftExcept (HolCore.Lib.nsplit HolCore.Basics.dest_forall ns w)
@@ -1441,13 +1441,13 @@ unsafe def gens_tac (ns : List Nat) : HolCore.Tactics.tactic := fun g =>
 
 #eval phrase 128
 /- let gen_tac n = gens_tac [n] -/
-unsafe def gen_tac (n : Nat) : HolCore.Tactics.tactic := gens_tac [n]
+def gen_tac (n : Nat) : HolCore.Tactics.tactic := gens_tac [n]
 #eval do IO.println "<fun>"
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Derived" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Derived" do
   replay (
           HolLogicArith.Godel.ensure)
   replay (

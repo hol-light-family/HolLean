@@ -164,8 +164,8 @@ private def checkRoundtrip (label : String) (tm : term) : IO Unit := do
       else s!"printer_tests {label} -> MISMATCH printed `{printed}` reparsed != original")
 
 #eval (do
-  -- printer_tests.ml runs in a fully loaded HOL Light: load everything (as
-  -- HolInit does), dropping the load's MESON output.
+  -- printer_tests.ml runs in a fully loaded HOL Light (the library is
+  -- loaded at import), dropping any output of the old forcing call.
   let sink ← IO.mkRef ({} : IO.FS.Stream.Buffer)
   let out := IO.FS.Stream.ofBuffer sink
   let _ ← IO.withStdout out (IO.withStderr out ensureDefine)

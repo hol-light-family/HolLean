@@ -25,12 +25,12 @@ namespace HolLogicArith.Godel
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_inductive_definition` returns a triple (rules,induct,cases). -/
-private unsafe def defInductive (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+private def defInductive (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"new_inductive_definition: {e}"
   | .error e => panic! s!"new_inductive_definition IO: {e}"
@@ -39,7 +39,7 @@ private unsafe def defInductive (tm : term) : thm × thm × thm :=
 #eval HolLogicArith.ArithProv.ensure
 
 #eval phrase 1
-unsafe def sigmapi_triple : thm × thm × thm := keep "sigmapi_triple" fun _ =>
+def sigmapi_triple : thm × thm × thm := keep "sigmapi_triple" fun _ =>
   defInductive
     [[(!b n. sigmapi b n False) /\
       (!b n. sigmapi b n True) /\
@@ -63,26 +63,26 @@ unsafe def sigmapi_triple : thm × thm × thm := keep "sigmapi_triple" fun _ =>
       (!b n x p t. sigmapi b n p /\ ~(x IN FVT t)
                ==> sigmapi b n (!!x (V x <<= t --> p))) /\
       (!b c n p. sigmapi b n p ==> sigmapi c (n + 1) p)]]
-unsafe def sigmapi_RULES : thm := sigmapi_triple.1
-unsafe def sigmapi_INDUCT : thm := sigmapi_triple.2.1
-unsafe def sigmapi_CASES : thm := sigmapi_triple.2.2
+def sigmapi_RULES : thm := sigmapi_triple.1
+def sigmapi_INDUCT : thm := sigmapi_triple.2.1
+def sigmapi_CASES : thm := sigmapi_triple.2.2
 #eval do IO.println sigmapi_RULES; IO.println sigmapi_INDUCT; IO.println sigmapi_CASES
 
 #eval phrase 2
-unsafe def SIGMA : thm := keep "SIGMA" fun _ => new_definition [[SIGMA = sigmapi T]]
+def SIGMA : thm := keep "SIGMA" fun _ => new_definition [[SIGMA = sigmapi T]]
 #eval SIGMA
 
 #eval phrase 3
-unsafe def PI : thm := keep "PI" fun _ => new_definition [[PI = sigmapi F]]
+def PI : thm := keep "PI" fun _ => new_definition [[PI = sigmapi F]]
 #eval PI
 
 #eval phrase 4
-unsafe def DELTA : thm := keep "DELTA" fun _ => new_definition
+def DELTA : thm := keep "DELTA" fun _ => new_definition
   [[DELTA n p <=> SIGMA n p /\ PI n p]]
 #eval DELTA
 
 #eval phrase 5
-unsafe def SIGMAPI_PROP : thm := keep "SIGMAPI_PROP" fun _ => (do
+def SIGMAPI_PROP : thm := keep "SIGMAPI_PROP" fun _ => (do
   prove ([[(!n b. sigmapi b n False <=> T) /\
    (!n b. sigmapi b n True <=> T) /\
    (!n b s t. sigmapi b n (s === t) <=> T) /\
@@ -117,7 +117,7 @@ unsafe def SIGMAPI_PROP : thm := keep "SIGMAPI_PROP" fun _ => (do
 #eval SIGMAPI_PROP
 
 #eval phrase 6
-unsafe def SIGMAPI_MONO_LEMMA : thm := keep "SIGMAPI_MONO_LEMMA" fun _ => (do
+def SIGMAPI_MONO_LEMMA : thm := keep "SIGMAPI_MONO_LEMMA" fun _ => (do
   prove ([[(!b n p. sigmapi b n p ==> sigmapi b (n + 1) p) /\
    (!b n p. ~(n = 0) /\ sigmapi b (n - 1) p ==> sigmapi b n p) /\
    (!b n p. ~(n = 0) /\ sigmapi (~b) (n - 1) p ==> sigmapi b n p)]])
@@ -133,7 +133,7 @@ unsafe def SIGMAPI_MONO_LEMMA : thm := keep "SIGMAPI_MONO_LEMMA" fun _ => (do
 #eval SIGMAPI_MONO_LEMMA
 
 #eval phrase 7
-unsafe def SIGMAPI_REV_EXISTS : thm := keep "SIGMAPI_REV_EXISTS" fun _ => (do
+def SIGMAPI_REV_EXISTS : thm := keep "SIGMAPI_REV_EXISTS" fun _ => (do
   prove ([[!n b x p. sigmapi b n (??x p) ==> sigmapi b n p]])
    (HolLight.tactic_of do
      let ar1 ← ExceptT.mk (ARITH_RULE [[n < n + 1]])
@@ -148,7 +148,7 @@ unsafe def SIGMAPI_REV_EXISTS : thm := keep "SIGMAPI_REV_EXISTS" fun _ => (do
 #eval SIGMAPI_REV_EXISTS
 
 #eval phrase 8
-unsafe def SIGMAPI_REV_FORALL : thm := keep "SIGMAPI_REV_FORALL" fun _ => (do
+def SIGMAPI_REV_FORALL : thm := keep "SIGMAPI_REV_FORALL" fun _ => (do
   prove ([[!n b x p. sigmapi b n (!!x p) ==> sigmapi b n p]])
    (HolLight.tactic_of do
      let ar1 ← ExceptT.mk (ARITH_RULE [[n < n + 1]])
@@ -163,7 +163,7 @@ unsafe def SIGMAPI_REV_FORALL : thm := keep "SIGMAPI_REV_FORALL" fun _ => (do
 #eval SIGMAPI_REV_FORALL
 
 #eval phrase 9
-unsafe def SIGMAPI_CLAUSES_CODE : thm := keep "SIGMAPI_CLAUSES_CODE" fun _ => (do
+def SIGMAPI_CLAUSES_CODE : thm := keep "SIGMAPI_CLAUSES_CODE" fun _ => (do
   prove ([[(!n b. sigmapi b n False <=> T) /\
    (!n b. sigmapi b n True <=> T) /\
    (!n b s t. sigmapi b n (s === t) <=> T) /\
@@ -253,7 +253,7 @@ unsafe def SIGMAPI_CLAUSES_CODE : thm := keep "SIGMAPI_CLAUSES_CODE" fun _ => (d
 #eval SIGMAPI_CLAUSES_CODE
 
 #eval phrase 10
-unsafe def SIGMAPI_CLAUSES : thm := keep "SIGMAPI_CLAUSES" fun _ => (do
+def SIGMAPI_CLAUSES : thm := keep "SIGMAPI_CLAUSES" fun _ => (do
   prove ([[(!n b. sigmapi b n False <=> T) /\
    (!n b. sigmapi b n True <=> T) /\
    (!n b s t. sigmapi b n (s === t) <=> T) /\
@@ -293,7 +293,7 @@ unsafe def SIGMAPI_CLAUSES : thm := keep "SIGMAPI_CLAUSES" fun _ => (do
 #eval SIGMAPI_CLAUSES
 
 #eval phrase 11
-unsafe def SIGMAPI_FORMSUBST : thm := keep "SIGMAPI_FORMSUBST" fun _ => (do
+def SIGMAPI_FORMSUBST : thm := keep "SIGMAPI_FORMSUBST" fun _ => (do
   prove ([[!p v n b. sigmapi b n p ==> sigmapi b n (formsubst v p)]])
    (HolLight.tactic_of do
      let taut1 ← ExceptT.mk (TAUT [[(a ==> b /\ c) ==> (a ==> b) /\ (a ==> c)]])
@@ -349,7 +349,7 @@ unsafe def SIGMAPI_FORMSUBST : thm := keep "SIGMAPI_FORMSUBST" fun _ => (do
 #eval SIGMAPI_FORMSUBST
 
 #eval phrase 12
-unsafe def SIGMAPI_TAC : List thm → HolCore.Tactics.tactic :=
+def SIGMAPI_TAC : List thm → HolCore.Tactics.tactic :=
   keep "SIGMAPI_TAC" fun _ => fun ths =>
   HolLight.tactic_of do
     let gca ← HolLight.GSYM CONJ_ASSOC
@@ -366,28 +366,28 @@ unsafe def SIGMAPI_TAC : List thm → HolCore.Tactics.tactic :=
 #eval IO.println "<fun>"
 
 #eval phrase 13
-unsafe def SIGMAPI_DIVIDES : thm := keep "SIGMAPI_DIVIDES" fun _ => (do
+def SIGMAPI_DIVIDES : thm := keep "SIGMAPI_DIVIDES" fun _ => (do
   prove ([[!n s t. sigmapi b n (arith_divides s t)]])
    (SIGMAPI_TAC [arith_divides])
   : ExceptT String IO thm).run
 #eval SIGMAPI_DIVIDES
 
 #eval phrase 14
-unsafe def SIGMAPI_PRIME : thm := keep "SIGMAPI_PRIME" fun _ => (do
+def SIGMAPI_PRIME : thm := keep "SIGMAPI_PRIME" fun _ => (do
   prove ([[!n t. sigmapi b n (arith_prime t)]])
    (SIGMAPI_TAC [arith_prime, SIGMAPI_DIVIDES])
   : ExceptT String IO thm).run
 #eval SIGMAPI_PRIME
 
 #eval phrase 15
-unsafe def SIGMAPI_PRIMEPOW : thm := keep "SIGMAPI_PRIMEPOW" fun _ => (do
+def SIGMAPI_PRIMEPOW : thm := keep "SIGMAPI_PRIMEPOW" fun _ => (do
   prove ([[!n s t. sigmapi b n (arith_primepow s t)]])
    (SIGMAPI_TAC [arith_primepow, SIGMAPI_DIVIDES, SIGMAPI_PRIME])
   : ExceptT String IO thm).run
 #eval SIGMAPI_PRIMEPOW
 
 #eval phrase 16
-unsafe def SIGMAPI_RTC : thm := keep "SIGMAPI_RTC" fun _ => (do
+def SIGMAPI_RTC : thm := keep "SIGMAPI_RTC" fun _ => (do
   prove ([[(!s t. sigmapi T 1 (R s t))
    ==> !s t. sigmapi T 1 (arith_rtc R s t)]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [arith_rtc] THEN
@@ -400,7 +400,7 @@ unsafe def SIGMAPI_RTC : thm := keep "SIGMAPI_RTC" fun _ => (do
 #eval SIGMAPI_RTC
 
 #eval phrase 17
-unsafe def SIGMAPI_RTCP : thm := keep "SIGMAPI_RTCP" fun _ => (do
+def SIGMAPI_RTCP : thm := keep "SIGMAPI_RTCP" fun _ => (do
   prove ([[(!s t u. sigmapi T 1 (R s t u))
    ==> !s t u. sigmapi T 1 (arith_rtcp R s t u)]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [arith_rtcp] THEN
@@ -413,63 +413,63 @@ unsafe def SIGMAPI_RTCP : thm := keep "SIGMAPI_RTCP" fun _ => (do
 #eval SIGMAPI_RTCP
 
 #eval phrase 18
-unsafe def SIGMAPI_TERM1 : thm := keep "SIGMAPI_TERM1" fun _ => (do
+def SIGMAPI_TERM1 : thm := keep "SIGMAPI_TERM1" fun _ => (do
   prove ([[!s t. sigmapi T 1 (arith_term1 s t)]])
    (SIGMAPI_TAC [arith_term1])
   : ExceptT String IO thm).run
 #eval SIGMAPI_TERM1
 
 #eval phrase 19
-unsafe def SIGMAPI_TERM : thm := keep "SIGMAPI_TERM" fun _ => (do
+def SIGMAPI_TERM : thm := keep "SIGMAPI_TERM" fun _ => (do
   prove ([[!t. sigmapi T 1 (arith_term t)]])
    (SIGMAPI_TAC [arith_term, SIGMAPI_RTC, SIGMAPI_TERM1])
   : ExceptT String IO thm).run
 #eval SIGMAPI_TERM
 
 #eval phrase 20
-unsafe def SIGMAPI_FORM1 : thm := keep "SIGMAPI_FORM1" fun _ => (do
+def SIGMAPI_FORM1 : thm := keep "SIGMAPI_FORM1" fun _ => (do
   prove ([[!s t. sigmapi T 1 (arith_form1 s t)]])
    (SIGMAPI_TAC [arith_form1, SIGMAPI_TERM])
   : ExceptT String IO thm).run
 #eval SIGMAPI_FORM1
 
 #eval phrase 21
-unsafe def SIGMAPI_FORM : thm := keep "SIGMAPI_FORM" fun _ => (do
+def SIGMAPI_FORM : thm := keep "SIGMAPI_FORM" fun _ => (do
   prove ([[!t. sigmapi T 1 (arith_form t)]])
    (SIGMAPI_TAC [arith_form, SIGMAPI_RTC, SIGMAPI_FORM1])
   : ExceptT String IO thm).run
 #eval SIGMAPI_FORM
 
 #eval phrase 22
-unsafe def SIGMAPI_FREETERM1 : thm := keep "SIGMAPI_FREETERM1" fun _ => (do
+def SIGMAPI_FREETERM1 : thm := keep "SIGMAPI_FREETERM1" fun _ => (do
   prove ([[!s t u. sigmapi T 1 (arith_freeterm1 s t u)]])
    (SIGMAPI_TAC [arith_freeterm1])
   : ExceptT String IO thm).run
 #eval SIGMAPI_FREETERM1
 
 #eval phrase 23
-unsafe def SIGMAPI_FREETERM : thm := keep "SIGMAPI_FREETERM" fun _ => (do
+def SIGMAPI_FREETERM : thm := keep "SIGMAPI_FREETERM" fun _ => (do
   prove ([[!s t. sigmapi T 1 (arith_freeterm s t)]])
    (SIGMAPI_TAC [arith_freeterm, SIGMAPI_FREETERM1, SIGMAPI_RTCP])
   : ExceptT String IO thm).run
 #eval SIGMAPI_FREETERM
 
 #eval phrase 24
-unsafe def SIGMAPI_FREEFORM1 : thm := keep "SIGMAPI_FREEFORM1" fun _ => (do
+def SIGMAPI_FREEFORM1 : thm := keep "SIGMAPI_FREEFORM1" fun _ => (do
   prove ([[!s t u. sigmapi T 1 (arith_freeform1 s t u)]])
    (SIGMAPI_TAC [arith_freeform1, SIGMAPI_FREETERM, SIGMAPI_FORM])
   : ExceptT String IO thm).run
 #eval SIGMAPI_FREEFORM1
 
 #eval phrase 25
-unsafe def SIGMAPI_FREEFORM : thm := keep "SIGMAPI_FREEFORM" fun _ => (do
+def SIGMAPI_FREEFORM : thm := keep "SIGMAPI_FREEFORM" fun _ => (do
   prove ([[!s t. sigmapi T 1 (arith_freeform s t)]])
    (SIGMAPI_TAC [arith_freeform, SIGMAPI_FREEFORM1, SIGMAPI_RTCP])
   : ExceptT String IO thm).run
 #eval SIGMAPI_FREEFORM
 
 #eval phrase 26
-unsafe def SIGMAPI_AXIOM : thm := keep "SIGMAPI_AXIOM" fun _ => (do
+def SIGMAPI_AXIOM : thm := keep "SIGMAPI_AXIOM" fun _ => (do
   prove ([[!t. sigmapi T 1 (arith_axiom t)]])
    (SIGMAPI_TAC [arith_axiom, SIGMAPI_FREEFORM, SIGMAPI_FREETERM, SIGMAPI_FORM,
                SIGMAPI_TERM])
@@ -477,21 +477,21 @@ unsafe def SIGMAPI_AXIOM : thm := keep "SIGMAPI_AXIOM" fun _ => (do
 #eval SIGMAPI_AXIOM
 
 #eval phrase 27
-unsafe def SIGMAPI_PROV1 : thm := keep "SIGMAPI_PROV1" fun _ => (do
+def SIGMAPI_PROV1 : thm := keep "SIGMAPI_PROV1" fun _ => (do
   prove ([[!A. (!t. sigmapi T 1 (A t)) ==> !s t. sigmapi T 1 (arith_prov1 A s t)]])
    (SIGMAPI_TAC [arith_prov1, SIGMAPI_AXIOM])
   : ExceptT String IO thm).run
 #eval SIGMAPI_PROV1
 
 #eval phrase 28
-unsafe def SIGMAPI_PROV : thm := keep "SIGMAPI_PROV" fun _ => (do
+def SIGMAPI_PROV : thm := keep "SIGMAPI_PROV" fun _ => (do
   prove ([[(!t. sigmapi T 1 (A t)) ==> !t. sigmapi T 1 (arith_prov A t)]])
    (SIGMAPI_TAC [arith_prov, SIGMAPI_PROV1, SIGMAPI_RTC])
   : ExceptT String IO thm).run
 #eval SIGMAPI_PROV
 
 #eval phrase 29
-unsafe def SIGMAPI_PRIMRECSTEP : thm := keep "SIGMAPI_PRIMRECSTEP" fun _ => (do
+def SIGMAPI_PRIMRECSTEP : thm := keep "SIGMAPI_PRIMRECSTEP" fun _ => (do
   prove ([[(!s t u. sigmapi T 1 (R s t u))
    ==> !s t. sigmapi T 1 (arith_primrecstep R s t)]])
    (SIGMAPI_TAC [arith_primrecstep])
@@ -499,7 +499,7 @@ unsafe def SIGMAPI_PRIMRECSTEP : thm := keep "SIGMAPI_PRIMRECSTEP" fun _ => (do
 #eval SIGMAPI_PRIMRECSTEP
 
 #eval phrase 30
-unsafe def SIGMAPI_PRIMREC : thm := keep "SIGMAPI_PRIMREC" fun _ => (do
+def SIGMAPI_PRIMREC : thm := keep "SIGMAPI_PRIMREC" fun _ => (do
   prove ([[(!s t u. sigmapi T 1 (R s t u))
    ==> !s t. sigmapi T 1 (arith_primrec R c s t)]])
    (SIGMAPI_TAC [arith_primrec, SIGMAPI_PRIMRECSTEP, SIGMAPI_RTC])
@@ -507,14 +507,14 @@ unsafe def SIGMAPI_PRIMREC : thm := keep "SIGMAPI_PRIMREC" fun _ => (do
 #eval SIGMAPI_PRIMREC
 
 #eval phrase 31
-unsafe def SIGMAPI_GNUMERAL1 : thm := keep "SIGMAPI_GNUMERAL1" fun _ => (do
+def SIGMAPI_GNUMERAL1 : thm := keep "SIGMAPI_GNUMERAL1" fun _ => (do
   prove ([[!s t. sigmapi T 1 (arith_gnumeral1 s t)]])
    (SIGMAPI_TAC [arith_gnumeral1])
   : ExceptT String IO thm).run
 #eval SIGMAPI_GNUMERAL1
 
 #eval phrase 32
-unsafe def SIGMAPI_GNUMERAL : thm := keep "SIGMAPI_GNUMERAL" fun _ => (do
+def SIGMAPI_GNUMERAL : thm := keep "SIGMAPI_GNUMERAL" fun _ => (do
   prove ([[!s t. sigmapi T 1 (arith_gnumeral s t)]])
    (SIGMAPI_TAC [arith_gnumeral, Tarski.«arith_gnumeral1'»,
                SIGMAPI_GNUMERAL1, SIGMAPI_RTC])
@@ -522,21 +522,21 @@ unsafe def SIGMAPI_GNUMERAL : thm := keep "SIGMAPI_GNUMERAL" fun _ => (do
 #eval SIGMAPI_GNUMERAL
 
 #eval phrase 33
-unsafe def SIGMAPI_QSUBST : thm := keep "SIGMAPI_QSUBST" fun _ => (do
+def SIGMAPI_QSUBST : thm := keep "SIGMAPI_QSUBST" fun _ => (do
   prove ([[!x n p.  sigmapi T 1 p ==> sigmapi T 1 (qsubst(x,n) p)]])
    (SIGMAPI_TAC [qsubst])
   : ExceptT String IO thm).run
 #eval SIGMAPI_QSUBST
 
 #eval phrase 34
-unsafe def SIGMAPI_QDIAG : thm := keep "SIGMAPI_QDIAG" fun _ => (do
+def SIGMAPI_QDIAG : thm := keep "SIGMAPI_QDIAG" fun _ => (do
   prove ([[!x s t. sigmapi T 1 (arith_qdiag x s t)]])
    (SIGMAPI_TAC [arith_qdiag, SIGMAPI_GNUMERAL])
   : ExceptT String IO thm).run
 #eval SIGMAPI_QDIAG
 
 #eval phrase 35
-unsafe def SIGMAPI_DIAGONALIZE : thm := keep "SIGMAPI_DIAGONALIZE" fun _ => (do
+def SIGMAPI_DIAGONALIZE : thm := keep "SIGMAPI_DIAGONALIZE" fun _ => (do
   prove ([[!x p. sigmapi T 1 p ==> sigmapi T 1 (diagonalize x p)]])
    (SIGMAPI_TAC [diagonalize, SIGMAPI_QDIAG,
          SIGMAPI_FORMSUBST, LET_DEF, LET_END_DEF])
@@ -544,25 +544,25 @@ unsafe def SIGMAPI_DIAGONALIZE : thm := keep "SIGMAPI_DIAGONALIZE" fun _ => (do
 #eval SIGMAPI_DIAGONALIZE
 
 #eval phrase 36
-unsafe def SIGMAPI_FIXPOINT : thm := keep "SIGMAPI_FIXPOINT" fun _ => (do
+def SIGMAPI_FIXPOINT : thm := keep "SIGMAPI_FIXPOINT" fun _ => (do
   prove ([[!x p. sigmapi T 1 p ==> sigmapi T 1 (fixpoint x p)]])
    (SIGMAPI_TAC [fixpoint, qdiag, SIGMAPI_QSUBST, SIGMAPI_DIAGONALIZE])
   : ExceptT String IO thm).run
 #eval SIGMAPI_FIXPOINT
 
 #eval phrase 37
-unsafe def hsentence : thm := keep "hsentence" fun _ => new_definition
+def hsentence : thm := keep "hsentence" fun _ => new_definition
   [[hsentence Arep =
     fixpoint 0 (arith_prov Arep (arith_pair (numeral 4) (V 0)))]]
 #eval hsentence
 
 #eval phrase 38
-unsafe def gsentence : thm := keep "gsentence" fun _ => new_definition
+def gsentence : thm := keep "gsentence" fun _ => new_definition
   [[gsentence Arep = Not(hsentence Arep)]]
 #eval gsentence
 
 #eval phrase 39
-unsafe def FV_HSENTENCE : thm := keep "FV_HSENTENCE" fun _ => (do
+def FV_HSENTENCE : thm := keep "FV_HSENTENCE" fun _ => (do
   prove ([[!Arep. (!t. FV(Arep t) = FVT t) ==> (FV(hsentence Arep) = {})]])
    (SIMP_TAC [hsentence, FV_FIXPOINT, FV_PROV] THEN
     REWRITE_TAC [FVT_PAIR, FVT_NUMERAL, FVT, UNION_EMPTY, DELETE_INSERT,
@@ -571,28 +571,28 @@ unsafe def FV_HSENTENCE : thm := keep "FV_HSENTENCE" fun _ => (do
 #eval FV_HSENTENCE
 
 #eval phrase 40
-unsafe def FV_GSENTENCE : thm := keep "FV_GSENTENCE" fun _ => (do
+def FV_GSENTENCE : thm := keep "FV_GSENTENCE" fun _ => (do
   prove ([[!Arep. (!t. FV(Arep t) = FVT t) ==> (FV(gsentence Arep) = {})]])
    (SIMP_TAC [gsentence, FV_HSENTENCE, FV])
   : ExceptT String IO thm).run
 #eval FV_GSENTENCE
 
 #eval phrase 41
-unsafe def SIGMAPI_HSENTENCE : thm := keep "SIGMAPI_HSENTENCE" fun _ => (do
+def SIGMAPI_HSENTENCE : thm := keep "SIGMAPI_HSENTENCE" fun _ => (do
   prove ([[!Arep. (!t. sigmapi T 1 (Arep t)) ==> sigmapi T 1 (hsentence Arep)]])
    (SIGMAPI_TAC [hsentence, SIGMAPI_FIXPOINT, SIGMAPI_PROV])
   : ExceptT String IO thm).run
 #eval SIGMAPI_HSENTENCE
 
 #eval phrase 42
-unsafe def SIGMAPI_GSENTENCE : thm := keep "SIGMAPI_GSENTENCE" fun _ => (do
+def SIGMAPI_GSENTENCE : thm := keep "SIGMAPI_GSENTENCE" fun _ => (do
   prove ([[!Arep. (!t. sigmapi T 1 (Arep t)) ==> sigmapi F 1 (gsentence Arep)]])
    (SIGMAPI_TAC [gsentence, SIGMAPI_HSENTENCE])
   : ExceptT String IO thm).run
 #eval SIGMAPI_GSENTENCE
 
 #eval phrase 43
-unsafe def HSENTENCE_FIX_STRONG : thm := keep "HSENTENCE_FIX_STRONG" fun _ => (do
+def HSENTENCE_FIX_STRONG : thm := keep "HSENTENCE_FIX_STRONG" fun _ => (do
   prove ([[!A Arep.
         (!v t. holds v (Arep t) <=> (termval v t) IN IMAGE gform A)
         ==> !v. holds v (hsentence Arep) <=> A |-- Not(hsentence Arep)]])
@@ -606,7 +606,7 @@ unsafe def HSENTENCE_FIX_STRONG : thm := keep "HSENTENCE_FIX_STRONG" fun _ => (d
 #eval HSENTENCE_FIX_STRONG
 
 #eval phrase 44
-unsafe def HSENTENCE_FIX : thm := keep "HSENTENCE_FIX" fun _ => (do
+def HSENTENCE_FIX : thm := keep "HSENTENCE_FIX" fun _ => (do
   prove ([[!A Arep.
         (!v t. holds v (Arep t) <=> (termval v t) IN IMAGE gform A)
         ==> (arithtrue(hsentence Arep) <=> A |-- Not(hsentence Arep))]])
@@ -615,7 +615,7 @@ unsafe def HSENTENCE_FIX : thm := keep "HSENTENCE_FIX" fun _ => (do
 #eval HSENTENCE_FIX
 
 #eval phrase 45
-unsafe def GSENTENCE_FIX : thm := keep "GSENTENCE_FIX" fun _ => (do
+def GSENTENCE_FIX : thm := keep "GSENTENCE_FIX" fun _ => (do
   prove ([[!A Arep.
         (!v t. holds v (Arep t) <=> (termval v t) IN IMAGE gform A)
         ==> (arithtrue(gsentence Arep) <=> ~(A |-- gsentence Arep))]])
@@ -625,34 +625,34 @@ unsafe def GSENTENCE_FIX : thm := keep "GSENTENCE_FIX" fun _ => (do
 #eval GSENTENCE_FIX
 
 #eval phrase 46
-unsafe def ground : thm := keep "ground" fun _ => new_definition
+def ground : thm := keep "ground" fun _ => new_definition
   [[ground t <=> (FVT t = {})]]
 #eval ground
 
 #eval phrase 47
-unsafe def complete_for : thm := keep "complete_for" fun _ => new_definition
+def complete_for : thm := keep "complete_for" fun _ => new_definition
   [[complete_for P A <=> !p. P p /\ arithtrue p ==> A |-- p]]
 #eval complete_for
 
 #eval phrase 48
-unsafe def sound_for : thm := keep "sound_for" fun _ => new_definition
+def sound_for : thm := keep "sound_for" fun _ => new_definition
   [[sound_for P A <=> !p. P p /\ A |-- p ==> arithtrue p]]
 #eval sound_for
 
 #eval phrase 49
-unsafe def consistent : thm := keep "consistent" fun _ => new_definition
+def consistent : thm := keep "consistent" fun _ => new_definition
   [[consistent A <=> ~(?p. A |-- p /\ A |-- Not p)]]
 #eval consistent
 
 #eval phrase 50
-unsafe def CONSISTENT_ALT : thm := keep "CONSISTENT_ALT" fun _ => (do
+def CONSISTENT_ALT : thm := keep "CONSISTENT_ALT" fun _ => (do
   prove ([[!A p. A |-- p /\ A |-- Not p <=> A |-- False]])
    (MESON_TAC [proves_RULES, axiom_RULES])
   : ExceptT String IO thm).run
 #eval CONSISTENT_ALT
 
 #eval phrase 51
-unsafe def DEFINABLE_BY_ONEVAR : thm := keep "DEFINABLE_BY_ONEVAR" fun _ => (do
+def DEFINABLE_BY_ONEVAR : thm := keep "DEFINABLE_BY_ONEVAR" fun _ => (do
   prove ([[definable_by (SIGMA 1) s <=>
         ?p x. SIGMA 1 p /\ (FV p = {x}) /\ !v. holds v p <=> (v x) IN s]])
    (REWRITE_TAC [definable_by, SIGMA] THEN
@@ -668,7 +668,7 @@ unsafe def DEFINABLE_BY_ONEVAR : thm := keep "DEFINABLE_BY_ONEVAR" fun _ => (do
 #eval DEFINABLE_BY_ONEVAR
 
 #eval phrase 52
-unsafe def CLOSED_NOT_TRUE : thm := keep "CLOSED_NOT_TRUE" fun _ => (do
+def CLOSED_NOT_TRUE : thm := keep "CLOSED_NOT_TRUE" fun _ => (do
   prove ([[!p. closed p ==> (arithtrue(Not p) <=> ~(arithtrue p))]])
    (REWRITE_TAC [closed, arithtrue, holds] THEN
     MESON_TAC [HOLDS_VALUATION, NOT_IN_EMPTY])
@@ -676,7 +676,7 @@ unsafe def CLOSED_NOT_TRUE : thm := keep "CLOSED_NOT_TRUE" fun _ => (do
 #eval CLOSED_NOT_TRUE
 
 #eval phrase 53
-unsafe def G1 : thm := keep "G1" fun _ => (do
+def G1 : thm := keep "G1" fun _ => (do
   prove ([[!A. definable_by (SIGMA 1) (IMAGE gform A)
        ==> ?G. PI 1 G /\ closed G /\
                (sound_for (PI 1 INTER closed) A ==> arithtrue G /\ ~(A |-- G)) /\
@@ -720,7 +720,7 @@ unsafe def G1 : thm := keep "G1" fun _ => (do
 #eval G1
 
 #eval phrase 54
-unsafe def COMPLETE_SOUND_SENTENCE : thm := keep "COMPLETE_SOUND_SENTENCE" fun _ => (do
+def COMPLETE_SOUND_SENTENCE : thm := keep "COMPLETE_SOUND_SENTENCE" fun _ => (do
   prove ([[consistent A /\ complete_for (sigmapi (~b) n INTER closed) A
    ==> sound_for (sigmapi b n INTER closed) A]])
    (REWRITE_TAC [consistent, sound_for, complete_for, IN, INTER, IN_ELIM_THM] THEN
@@ -736,7 +736,7 @@ unsafe def COMPLETE_SOUND_SENTENCE : thm := keep "COMPLETE_SOUND_SENTENCE" fun _
 #eval COMPLETE_SOUND_SENTENCE
 
 #eval phrase 55
-unsafe def G1_TRAD : thm := keep "G1_TRAD" fun _ => (do
+def G1_TRAD : thm := keep "G1_TRAD" fun _ => (do
   prove ([[!A. consistent A /\
        complete_for (SIGMA 1 INTER closed) A /\
        definable_by (SIGMA 1) (IMAGE gform A)
@@ -749,9 +749,9 @@ unsafe def G1_TRAD : thm := keep "G1_TRAD" fun _ => (do
 #eval G1_TRAD
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Godel" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Godel" do
   replay (
           HolLogicArith.ArithProv.ensure)
   replay (

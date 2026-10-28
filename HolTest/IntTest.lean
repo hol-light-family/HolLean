@@ -332,6 +332,11 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
 #eval thmCheck "int_abs_th" Session.int_abs_th
   "|- forall x. real_of_int (abs x) = abs (real_of_int x)"
 
+/- The numerals below are integers: int.ml runs these conversions under its
+   `prioritize_int` (int.ml 70), but after the whole load `:num` is the
+   default, so set `:int` for this section and restore `:num` after it. -/
+#eval Session.prioritize_int
+
 /- (5c) The nine INT_*_CONV arithmetic conversions + five relational ones,
    plus INT_NEG_CONV, on integer numerals (int.ml 871-1084). -/
 #eval convCheck "INT_ADD_CONV &2 + &3" "&2 + &3" "|- &2 + &3 = &5" INT_ADD_CONV
@@ -349,6 +354,7 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
 #eval convCheck "INT_GE_CONV &3 >= &5" "&3 >= &5" "|- &3 >= &5 <=> false" INT_GE_CONV
 #eval convCheck "INT_SGN_CONV int_sgn(--(&4))" "int_sgn(--(&4))"
   "|- int_sgn (--&4) = --&1" INT_SGN_CONV
+#eval Session.prioritize_num
 
 /- (5d) INT_RED_CONV / INT_REDUCE_CONV / INT_COMPUTE_CONV (int.ml 1821-1835).
    `INT_RED_CONV` is a SINGLE reduction step - `REWRITES_CONV` over the
@@ -469,7 +475,7 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
    negative control `x pow 2 = &2 ==> F`, which the doc states INT_RING CANNOT
    prove (not valid in all integral domains). -/
 #eval proves "INT_RING.hlp Brahmagupta"
-  ("(a pow 2 + b pow 2) * (c pow 2 + d pow 2) = " ++
+  ("((a:int) pow 2 + b pow 2) * (c pow 2 + d pow 2) = " ++
    "(a * c - b * d) pow 2 + (a * d + b * c) pow 2") Session.INT_RING
 #eval procFails "INT_RING.hlp x pow 2 = &2 ==> F (doc says CANNOT)"
   "x pow 2 = &2 ==> F" Session.INT_RING
@@ -542,7 +548,7 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
    `rem`, `max` and `min`.  That is an omission rather than a false statement,
    so it is not counted among the faults. -/
 #eval convCheck "INT_REDUCE_CONV.hlp worked example (the hlp's one correct part)"
-  "if &5 pow 4 < &4 pow 5 then (&2 pow 3 - &1) pow 2 + &1 else &99"
+  "if (&5:int) pow 4 < &4 pow 5 then (&2 pow 3 - &1) pow 2 + &1 else &99:int"
   ("|- (if &5 pow 4 < &4 pow 5 then (&2 pow 3 - &1) pow 2 + &1 else &99) " ++
    "= &50") INT_REDUCE_CONV
 

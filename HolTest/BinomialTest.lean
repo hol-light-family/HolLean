@@ -10,7 +10,7 @@ NUM_BINOM_CONV cases in tools/binomialdiff/convs.txt.  CARD_RESTRICTED_POWERSET
 prints with `?NNN` invented type variables so it is omitted here. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Binomial
 
 open HolCore.Kernel HolTest.CommonTest
 

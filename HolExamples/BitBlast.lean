@@ -3,6 +3,7 @@ Translation of HOL Light's Examples/bitblast.ml, phrase by phrase.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 import HolExamples.Common
+import SessionLibrary.Words
 open HolCore.Kernel Session HolLight.Syntax HolExamples
 open scoped HolLight
 
@@ -24,7 +25,7 @@ namespace HolExamples.BitBlast
 -- let BITBLAST tm =
 --   let th = (ONCE_DEPTH_CONV EXPAND_CASES_CONV THENC NUM_REDUCE_CONV) tm in
 --   EQ_MP (SYM th) (BITBLAST_RULE (rand(concl th)));;
-unsafe def BITBLAST (tm : term) : IO (Except String thm) := (do
+def BITBLAST (tm : term) : IO (Except String thm) := (do
   let th ← ExceptT.mk
     ((HolLight.ONCE_DEPTH_CONV Session.EXPAND_CASES_CONV THENC Session.NUM_REDUCE_CONV) tm)
   let rtm ← ExceptT.mk (pure (rand (concl th)))

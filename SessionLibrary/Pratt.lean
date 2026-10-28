@@ -3,14 +3,12 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Pratt.lean
 
-  The `unsafe` half of the pratt.ml translation: it supplies HolLibrary.Pratt's
-  dependencies from Session and SessionLibrary.Prime, builds the bundles once, in order,
-  and exports every name under its HOL Light name.  `ensurePratt` is
-  `needs "Library/pratt.ml"` (which first does `needs "Library/prime.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Pratt.lean by tools/prattdiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the pratt.ml translation: it supplies
+  HolLibrary.Pratt's dependencies from Session and SessionLibrary.Prime, and
+  exports every name under its HOL Light name.  Importing this module is
+  `needs "Library/pratt.ml"`; its `needs "Library/prime.ml"` is the import of
+  SessionLibrary.Prime.  The bundles are built by `initialize` when the
+  module is loaded, in file order.
 -/
 
 import Session
@@ -22,12 +20,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Pratt
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems pratt.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Pratt.CoreThms1 where
+def core1 : HolLibrary.Pratt.CoreThms1 where
   ADD_AC := Session.ADD_AC
   ADD_ASSOC := Session.ADD_ASSOC
   ADD_CLAUSES := Session.ADD_CLAUSES
@@ -99,7 +93,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Pratt.CoreThms1 where
   LE_0 := Session.LE_0
   LE_ANTISYM := Session.LE_ANTISYM
 /-- The core theorems pratt.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Pratt.CoreThms2 where
+def core2 : HolLibrary.Pratt.CoreThms2 where
   LE_CASES := Session.LE_CASES
   LE_LT := Session.LE_LT
   LE_MULT_LCANCEL := Session.LE_MULT_LCANCEL
@@ -150,13 +144,12 @@ unsafe def core2 (_ : Unit) : HolLibrary.Pratt.CoreThms2 where
   num_divides := Session.num_divides
   prime := Session.prime
 /-- The core theorems pratt.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.Pratt.CoreThms3 where
+def core3 : HolLibrary.Pratt.CoreThms3 where
 /-- The core theorems pratt.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.Pratt.CoreThms4 where
--- @@CORE END
+def core4 : HolLibrary.Pratt.CoreThms4 where
 
 /-- What pratt.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Pratt.PrattDeps where
+def deps : HolLibrary.Pratt.PrattDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   prioritize_num := do
     match ← HolCore.Kernel.mk_type "num" [] with
@@ -181,145 +174,92 @@ unsafe def deps (_ : Unit) : HolLibrary.Pratt.PrattDeps where
   mk_numeral := Session.mk_numeral
   mk_small_numeral := Session.mk_small_numeral
   mk_flist := Session.mk_flist
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then prime.ml, which pratt.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Prime.ensurePrime
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Pratt: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in file order; each forces the one before it. -/
+/- The bundles, in pratt.ml order. -/
+initialize BCompat : HolLibrary.Pratt.Compat ←
+  ioB "setupCompat" (HolLibrary.Pratt.setupCompat deps).run
+initialize BCong : HolLibrary.Pratt.Cong ←
+  ioB "setupCong" (HolLibrary.Pratt.setupCong deps BCompat).run
+initialize BPhi : HolLibrary.Pratt.Phi ←
+  ioB "setupPhi" (HolLibrary.Pratt.setupPhi deps BCompat).run
+initialize BFermat : HolLibrary.Pratt.Fermat ←
+  ioB "setupFermat" (HolLibrary.Pratt.setupFermat deps BCompat BCong BPhi).run
+initialize BLucas : HolLibrary.Pratt.Lucas ←
+  ioB "setupLucas" (HolLibrary.Pratt.setupLucas deps BCong BPhi BFermat).run
+initialize BPrimefact : HolLibrary.Pratt.Primefact ←
+  ioB "setupPrimefact" (HolLibrary.Pratt.setupPrimefact deps BLucas).run
+initialize BCertify : HolLibrary.Pratt.Certify ←
+  ioB "setupCertify" (HolLibrary.Pratt.setupCertify deps BPrimefact).run
 
--- @@BUNDLES BEGIN
-initialize theCompat : IO.Ref (Option HolLibrary.Pratt.Compat) ← IO.mkRef none
-unsafe def BCompat : HolLibrary.Pratt.Compat :=
-  cached theCompat "setupCompat" fun _ => do
-    (HolLibrary.Pratt.setupCompat (deps ())).run
-
-initialize theCong : IO.Ref (Option HolLibrary.Pratt.Cong) ← IO.mkRef none
-unsafe def BCong : HolLibrary.Pratt.Cong :=
-  cached theCong "setupCong" fun _ => do
-    let _ ← IO.mkRef BCompat.nat_mod_lemma
-    (HolLibrary.Pratt.setupCong (deps ()) BCompat).run
-
-initialize thePhi : IO.Ref (Option HolLibrary.Pratt.Phi) ← IO.mkRef none
-unsafe def BPhi : HolLibrary.Pratt.Phi :=
-  cached thePhi "setupPhi" fun _ => do
-    let _ ← IO.mkRef BCong.CONG_MOD_0
-    (HolLibrary.Pratt.setupPhi (deps ()) BCompat).run
-
-initialize theFermat : IO.Ref (Option HolLibrary.Pratt.Fermat) ← IO.mkRef none
-unsafe def BFermat : HolLibrary.Pratt.Fermat :=
-  cached theFermat "setupFermat" fun _ => do
-    let _ ← IO.mkRef BPhi.phi
-    (HolLibrary.Pratt.setupFermat (deps ()) BCompat BCong BPhi).run
-
-initialize theLucas : IO.Ref (Option HolLibrary.Pratt.Lucas) ← IO.mkRef none
-unsafe def BLucas : HolLibrary.Pratt.Lucas :=
-  cached theLucas "setupLucas" fun _ => do
-    let _ ← IO.mkRef BFermat.DIFFERENCE_POS_LEMMA
-    (HolLibrary.Pratt.setupLucas (deps ()) BCong BPhi BFermat).run
-
-initialize thePrimefact : IO.Ref (Option HolLibrary.Pratt.Primefact) ← IO.mkRef none
-unsafe def BPrimefact : HolLibrary.Pratt.Primefact :=
-  cached thePrimefact "setupPrimefact" fun _ => do
-    let _ ← IO.mkRef BLucas.LUCAS_COPRIME_LEMMA
-    (HolLibrary.Pratt.setupPrimefact (deps ()) BLucas).run
-
-initialize theCertify : IO.Ref (Option HolLibrary.Pratt.Certify) ← IO.mkRef none
-unsafe def BCertify : HolLibrary.Pratt.Certify :=
-  cached theCertify "setupCertify" fun _ => do
-    let _ ← IO.mkRef BPrimefact.primefact
-    (HolLibrary.Pratt.setupCertify (deps ()) BPrimefact).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Compat
-unsafe def nat_mod_lemma : thm := BCompat.nat_mod_lemma
-unsafe def nat_mod : thm := BCompat.nat_mod
-unsafe def PRIME : thm := BCompat.PRIME
-unsafe def FINITE_NUMBER_SEGMENT : thm := BCompat.FINITE_NUMBER_SEGMENT
+def nat_mod_lemma : thm := BCompat.nat_mod_lemma
+def nat_mod : thm := BCompat.nat_mod
+def PRIME : thm := BCompat.PRIME
+def FINITE_NUMBER_SEGMENT : thm := BCompat.FINITE_NUMBER_SEGMENT
 
 -- Cong
-unsafe def CONG_MOD_0 : thm := BCong.CONG_MOD_0
-unsafe def CONG_MOD_1 : thm := BCong.CONG_MOD_1
-unsafe def CONG_0 : thm := BCong.CONG_0
-unsafe def CONG_SUB_CASES : thm := BCong.CONG_SUB_CASES
-unsafe def CONG_MULT_LCANCEL : thm := BCong.CONG_MULT_LCANCEL
-unsafe def CONG_REFL : thm := BCong.CONG_REFL
-unsafe def CONG_SYM : thm := BCong.CONG_SYM
-unsafe def CONG_TRANS : thm := BCong.CONG_TRANS
+def CONG_MOD_0 : thm := BCong.CONG_MOD_0
+def CONG_MOD_1 : thm := BCong.CONG_MOD_1
+def CONG_0 : thm := BCong.CONG_0
+def CONG_SUB_CASES : thm := BCong.CONG_SUB_CASES
+def CONG_MULT_LCANCEL : thm := BCong.CONG_MULT_LCANCEL
+def CONG_REFL : thm := BCong.CONG_REFL
+def CONG_SYM : thm := BCong.CONG_SYM
+def CONG_TRANS : thm := BCong.CONG_TRANS
 
 -- Phi
-unsafe def phi : thm := BPhi.phi
-unsafe def PHI_ALT : thm := BPhi.PHI_ALT
-unsafe def PHI_ANOTHER : thm := BPhi.PHI_ANOTHER
-unsafe def PHI_LIMIT : thm := BPhi.PHI_LIMIT
-unsafe def PHI_LIMIT_STRONG : thm := BPhi.PHI_LIMIT_STRONG
-unsafe def PHI_0 : thm := BPhi.PHI_0
-unsafe def PHI_1 : thm := BPhi.PHI_1
-unsafe def PHI_LOWERBOUND_1_STRONG : thm := BPhi.PHI_LOWERBOUND_1_STRONG
-unsafe def PHI_LOWERBOUND_1 : thm := BPhi.PHI_LOWERBOUND_1
-unsafe def PHI_LOWERBOUND_2 : thm := BPhi.PHI_LOWERBOUND_2
-unsafe def PHI_PRIME_EQ : thm := BPhi.PHI_PRIME_EQ
-unsafe def PHI_PRIME : thm := BPhi.PHI_PRIME
+def phi : thm := BPhi.phi
+def PHI_ALT : thm := BPhi.PHI_ALT
+def PHI_ANOTHER : thm := BPhi.PHI_ANOTHER
+def PHI_LIMIT : thm := BPhi.PHI_LIMIT
+def PHI_LIMIT_STRONG : thm := BPhi.PHI_LIMIT_STRONG
+def PHI_0 : thm := BPhi.PHI_0
+def PHI_1 : thm := BPhi.PHI_1
+def PHI_LOWERBOUND_1_STRONG : thm := BPhi.PHI_LOWERBOUND_1_STRONG
+def PHI_LOWERBOUND_1 : thm := BPhi.PHI_LOWERBOUND_1
+def PHI_LOWERBOUND_2 : thm := BPhi.PHI_LOWERBOUND_2
+def PHI_PRIME_EQ : thm := BPhi.PHI_PRIME_EQ
+def PHI_PRIME : thm := BPhi.PHI_PRIME
 
 -- Fermat
-unsafe def DIFFERENCE_POS_LEMMA : thm := BFermat.DIFFERENCE_POS_LEMMA
-unsafe def ITSET_MODMULT : thm := BFermat.ITSET_MODMULT
-unsafe def ITSET_MODMULT_COPRIME : thm := BFermat.ITSET_MODMULT_COPRIME
-unsafe def FERMAT_LITTLE : thm := BFermat.FERMAT_LITTLE
-unsafe def FERMAT_LITTLE_PRIME : thm := BFermat.FERMAT_LITTLE_PRIME
+def DIFFERENCE_POS_LEMMA : thm := BFermat.DIFFERENCE_POS_LEMMA
+def ITSET_MODMULT : thm := BFermat.ITSET_MODMULT
+def ITSET_MODMULT_COPRIME : thm := BFermat.ITSET_MODMULT_COPRIME
+def FERMAT_LITTLE : thm := BFermat.FERMAT_LITTLE
+def FERMAT_LITTLE_PRIME : thm := BFermat.FERMAT_LITTLE_PRIME
 
 -- Lucas
-unsafe def LUCAS_COPRIME_LEMMA : thm := BLucas.LUCAS_COPRIME_LEMMA
-unsafe def LUCAS_WEAK : thm := BLucas.LUCAS_WEAK
-unsafe def LUCAS : thm := BLucas.LUCAS
+def LUCAS_COPRIME_LEMMA : thm := BLucas.LUCAS_COPRIME_LEMMA
+def LUCAS_WEAK : thm := BLucas.LUCAS_WEAK
+def LUCAS : thm := BLucas.LUCAS
 
 -- Primefact
-unsafe def primefact : thm := BPrimefact.primefact
-unsafe def PRIMEFACT : thm := BPrimefact.PRIMEFACT
-unsafe def PRIMAFACT_CONTAINS : thm := BPrimefact.PRIMAFACT_CONTAINS
-unsafe def PRIMEFACT_VARIANT : thm := BPrimefact.PRIMEFACT_VARIANT
-unsafe def LUCAS_PRIMEFACT : thm := BPrimefact.LUCAS_PRIMEFACT
+def primefact : thm := BPrimefact.primefact
+def PRIMEFACT : thm := BPrimefact.PRIMEFACT
+def PRIMAFACT_CONTAINS : thm := BPrimefact.PRIMAFACT_CONTAINS
+def PRIMEFACT_VARIANT : thm := BPrimefact.PRIMEFACT_VARIANT
+def LUCAS_PRIMEFACT : thm := BPrimefact.LUCAS_PRIMEFACT
 
 -- Certify
-unsafe def EXP_EQ_MOD_CONV : HolCore.Equal.ioconv := fun t => BCertify.EXP_EQ_MOD_CONV t
-unsafe def prime_theorem_cache := BCertify.prime_theorem_cache
-unsafe def check_certificate := BCertify.check_certificate
-unsafe def PROVE_PRIME := BCertify.PROVE_PRIME
-unsafe def PROVE_PRIMEFACT := BCertify.PROVE_PRIMEFACT
-unsafe def PRIME_TEST : term → IO (Except String thm) := fun t => (BCertify.PRIME_TEST t).run
-unsafe def PRIME_CONV : term → IO (Except String thm) := fun t => (BCertify.PRIME_CONV t).run
--- @@EXPORTS END
+def EXP_EQ_MOD_CONV : HolCore.Equal.ioconv := fun t => BCertify.EXP_EQ_MOD_CONV t
+def prime_theorem_cache := BCertify.prime_theorem_cache
+def check_certificate := BCertify.check_certificate
+def PROVE_PRIME := BCertify.PROVE_PRIME
+def PROVE_PRIMEFACT := BCertify.PROVE_PRIMEFACT
+def PRIME_TEST : term → IO (Except String thm) := fun t => (BCertify.PRIME_TEST t).run
+def PRIME_CONV : term → IO (Except String thm) := fun t => (BCertify.PRIME_CONV t).run
 
-/-- `needs "Library/pratt.ml"`: build the bundles, in order. -/
-unsafe def ensurePratt : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BCompat.nat_mod_lemma
-  let _ ← IO.mkRef BCong.CONG_MOD_0
-  let _ ← IO.mkRef BPhi.phi
-  let _ ← IO.mkRef BFermat.DIFFERENCE_POS_LEMMA
-  let _ ← IO.mkRef BLucas.LUCAS_COPRIME_LEMMA
-  let _ ← IO.mkRef BPrimefact.primefact
-  let _ ← IO.mkRef BCertify.EXP_EQ_MOD_CONV  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/pratt.ml"`: already done by importing this module. -/
+def ensurePratt : IO Unit := pure ()
 
 end SessionLibrary.Pratt

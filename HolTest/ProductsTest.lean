@@ -11,7 +11,7 @@ congruences products.ml adds with `extend_basic_congs` are not in those
 dumps, so the `cong` checks below test them through SIMP_TAC. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Products
 
 open HolCore.Kernel HolTest.CommonTest
 

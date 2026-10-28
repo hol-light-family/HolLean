@@ -9,7 +9,7 @@ namespace HolExamples.RecTypes
 /- `time define_type s`: as the OCaml toplevel runs it.  `define_type` is
    IO-valued (`IO (Except String (thm × thm))`); `time` reports the CPU time
    (masked by compare.py) and the (coerced) call fails loudly on an error. -/
-private unsafe def timeDefineType (s : String) : IO (thm × thm) :=
+private def timeDefineType (s : String) : IO (thm × thm) :=
   HolCore.Lib.time (fun _ => do
     match ← define_type s with
     | .ok v => pure v
@@ -18,13 +18,13 @@ private unsafe def timeDefineType (s : String) : IO (thm × thm) :=
 /- A print-only `time define_type` phrase prints `val it : thm * thm = (...)`;
    compare.py strips the `val it : thm * thm =` prefix and all whitespace, so
    we print the OCaml pair layout `(|- ...,\n   |- ...)`. -/
-private unsafe def printPair (p : thm × thm) : IO Unit := do
+private def printPair (p : thm × thm) : IO Unit := do
   IO.println s!"({← HolCore.Printer.string_of_thm p.1},\n   {← HolCore.Printer.string_of_thm p.2})"
 
 /- A named `let x_INDUCTION,x_RECURSION = time define_type` phrase prints
    `val x_INDUCTION : thm = |- ...` and `val x_RECURSION : thm = |- ...`;
    compare.py strips the `val x : thm =` prefixes. -/
-private unsafe def printTwo (p : thm × thm) : IO Unit := do
+private def printTwo (p : thm × thm) : IO Unit := do
   IO.println (← HolCore.Printer.string_of_thm p.1)
   IO.println (← HolCore.Printer.string_of_thm p.2)
 
@@ -102,141 +102,141 @@ private unsafe def printTwo (p : thm × thm) : IO Unit := do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 10
-unsafe def term_INDUCTION_term_RECURSION : thm × thm := keep "term_types" fun _ =>
-  match unsafeIO (timeDefineType
+def term_INDUCTION_term_RECURSION : thm × thm := keep "term_types" fun _ =>
+  match runIO (timeDefineType
     "term = Vari int | Fni int (term list)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def term_INDUCTION : thm := term_INDUCTION_term_RECURSION.1
-unsafe def term_RECURSION : thm := term_INDUCTION_term_RECURSION.2
+def term_INDUCTION : thm := term_INDUCTION_term_RECURSION.1
+def term_RECURSION : thm := term_INDUCTION_term_RECURSION.2
 #eval (printTwo term_INDUCTION_term_RECURSION : IO Unit)
 
 #eval phrase 11
-unsafe def bintree_INDUCTION_bintree_RECURSION : thm × thm := keep "bintree_types" fun _ =>
-  match unsafeIO (timeDefineType
+def bintree_INDUCTION_bintree_RECURSION : thm × thm := keep "bintree_types" fun _ =>
+  match runIO (timeDefineType
     "bintree = Leafb | Branchb (bintree # bintree)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def bintree_INDUCTION : thm := bintree_INDUCTION_bintree_RECURSION.1
-unsafe def bintree_RECURSION : thm := bintree_INDUCTION_bintree_RECURSION.2
+def bintree_INDUCTION : thm := bintree_INDUCTION_bintree_RECURSION.1
+def bintree_RECURSION : thm := bintree_INDUCTION_bintree_RECURSION.2
 #eval (printTwo bintree_INDUCTION_bintree_RECURSION : IO Unit)
 
 #eval phrase 12
-unsafe def etree_INDUCTION_etree_RECURSION : thm × thm := keep "etree_types" fun _ =>
-  match unsafeIO (timeDefineType
+def etree_INDUCTION_etree_RECURSION : thm × thm := keep "etree_types" fun _ =>
+  match runIO (timeDefineType
     "etree = Terminal | Nonterminal (num + etree)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def etree_INDUCTION : thm := etree_INDUCTION_etree_RECURSION.1
-unsafe def etree_RECURSION : thm := etree_INDUCTION_etree_RECURSION.2
+def etree_INDUCTION : thm := etree_INDUCTION_etree_RECURSION.1
+def etree_RECURSION : thm := etree_INDUCTION_etree_RECURSION.2
 #eval (printTwo etree_INDUCTION_etree_RECURSION : IO Unit)
 
 #eval phrase 13
-unsafe def ptree_INDUCTION_ptree_RECURSION : thm × thm := keep "ptree_types" fun _ =>
-  match unsafeIO (timeDefineType
+def ptree_INDUCTION_ptree_RECURSION : thm × thm := keep "ptree_types" fun _ =>
+  match runIO (timeDefineType
     "ptree = Only (ptree option)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def ptree_INDUCTION : thm := ptree_INDUCTION_ptree_RECURSION.1
-unsafe def ptree_RECURSION : thm := ptree_INDUCTION_ptree_RECURSION.2
+def ptree_INDUCTION : thm := ptree_INDUCTION_ptree_RECURSION.1
+def ptree_RECURSION : thm := ptree_INDUCTION_ptree_RECURSION.2
 #eval (printTwo ptree_INDUCTION_ptree_RECURSION : IO Unit)
 
 #eval phrase 14
-unsafe def mut_INDUCTION_mut_RECURSION : thm × thm := keep "mut_types" fun _ =>
-  match unsafeIO (timeDefineType
+def mut_INDUCTION_mut_RECURSION : thm × thm := keep "mut_types" fun _ =>
+  match runIO (timeDefineType
     "mutual = Mutual A mutual D otherone | Friend D otherone;
    otherone = Great C | Expectations mutual otherone") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def mut_INDUCTION : thm := mut_INDUCTION_mut_RECURSION.1
-unsafe def mut_RECURSION : thm := mut_INDUCTION_mut_RECURSION.2
+def mut_INDUCTION : thm := mut_INDUCTION_mut_RECURSION.1
+def mut_RECURSION : thm := mut_INDUCTION_mut_RECURSION.2
 #eval (printTwo mut_INDUCTION_mut_RECURSION : IO Unit)
 
 #eval phrase 15
-unsafe def groof_INDUCTION_groof_RECURSION : thm × thm := keep "groof_types" fun _ =>
-  match unsafeIO (timeDefineType
+def groof_INDUCTION_groof_RECURSION : thm × thm := keep "groof_types" fun _ =>
+  match runIO (timeDefineType
     "groof = Wu bool
          | Wibble (A,groof,L)mutual
          | Wobble groof groof") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def groof_INDUCTION : thm := groof_INDUCTION_groof_RECURSION.1
-unsafe def groof_RECURSION : thm := groof_INDUCTION_groof_RECURSION.2
+def groof_INDUCTION : thm := groof_INDUCTION_groof_RECURSION.1
+def groof_RECURSION : thm := groof_INDUCTION_groof_RECURSION.2
 #eval (printTwo groof_INDUCTION_groof_RECURSION : IO Unit)
 
 #eval phrase 16
-unsafe def biterm_INDUCTION_biterm_RECURSION : thm × thm := keep "biterm_types" fun _ =>
-  match unsafeIO (timeDefineType
+def biterm_INDUCTION_biterm_RECURSION : thm × thm := keep "biterm_types" fun _ =>
+  match runIO (timeDefineType
     "biterm = Variab int
           | Fnapp (biterm list + biterm list)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def biterm_INDUCTION : thm := biterm_INDUCTION_biterm_RECURSION.1
-unsafe def biterm_RECURSION : thm := biterm_INDUCTION_biterm_RECURSION.2
+def biterm_INDUCTION : thm := biterm_INDUCTION_biterm_RECURSION.1
+def biterm_RECURSION : thm := biterm_INDUCTION_biterm_RECURSION.2
 #eval (printTwo biterm_INDUCTION_biterm_RECURSION : IO Unit)
 
 #eval phrase 17
-unsafe def triterm_INDUCTION_triterm_RECURSION : thm × thm := keep "triterm_types" fun _ =>
-  match unsafeIO (timeDefineType
+def triterm_INDUCTION_triterm_RECURSION : thm × thm := keep "triterm_types" fun _ =>
+  match runIO (timeDefineType
     "triterm = Var0 int
           | Fun2 (triterm list + triterm list)
           | Fun1 (triterm list)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def triterm_INDUCTION : thm := triterm_INDUCTION_triterm_RECURSION.1
-unsafe def triterm_RECURSION : thm := triterm_INDUCTION_triterm_RECURSION.2
+def triterm_INDUCTION : thm := triterm_INDUCTION_triterm_RECURSION.1
+def triterm_RECURSION : thm := triterm_INDUCTION_triterm_RECURSION.2
 #eval (printTwo triterm_INDUCTION_triterm_RECURSION : IO Unit)
 
 #eval phrase 18
-unsafe def xtree_INDUCTION_xtree_RECURSION : thm × thm := keep "xtree_types" fun _ =>
-  match unsafeIO (timeDefineType
+def xtree_INDUCTION_xtree_RECURSION : thm × thm := keep "xtree_types" fun _ =>
+  match runIO (timeDefineType
     "xtree = Leafx A
            | Branchx (xtree list)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def xtree_INDUCTION : thm := xtree_INDUCTION_xtree_RECURSION.1
-unsafe def xtree_RECURSION : thm := xtree_INDUCTION_xtree_RECURSION.2
+def xtree_INDUCTION : thm := xtree_INDUCTION_xtree_RECURSION.1
+def xtree_RECURSION : thm := xtree_INDUCTION_xtree_RECURSION.2
 #eval (printTwo xtree_INDUCTION_xtree_RECURSION : IO Unit)
 
 #eval phrase 19
-unsafe def simper_INDUCTION_simper_RECURSION : thm × thm := keep "simper_types" fun _ =>
-  match unsafeIO (timeDefineType
+def simper_INDUCTION_simper_RECURSION : thm × thm := keep "simper_types" fun _ =>
+  match runIO (timeDefineType
     "simper = Leaves A B
           | Bough (simper xtree)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def simper_INDUCTION : thm := simper_INDUCTION_simper_RECURSION.1
-unsafe def simper_RECURSION : thm := simper_INDUCTION_simper_RECURSION.2
+def simper_INDUCTION : thm := simper_INDUCTION_simper_RECURSION.1
+def simper_RECURSION : thm := simper_INDUCTION_simper_RECURSION.2
 #eval (printTwo simper_INDUCTION_simper_RECURSION : IO Unit)
 
 #eval phrase 20
-unsafe def array_INDUCTION_array_RECURSION : thm × thm := keep "array_types" fun _ =>
-  match unsafeIO (timeDefineType
+def array_INDUCTION_array_RECURSION : thm × thm := keep "array_types" fun _ =>
+  match runIO (timeDefineType
     "array = Array num (A list)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def array_INDUCTION : thm := array_INDUCTION_array_RECURSION.1
-unsafe def array_RECURSION : thm := array_INDUCTION_array_RECURSION.2
+def array_INDUCTION : thm := array_INDUCTION_array_RECURSION.1
+def array_RECURSION : thm := array_INDUCTION_array_RECURSION.2
 #eval (printTwo array_INDUCTION_array_RECURSION : IO Unit)
 
 #eval phrase 21
-unsafe def value_INDUCTION_value_RECURSION : thm × thm := keep "value_types" fun _ =>
-  match unsafeIO (timeDefineType
+def value_INDUCTION_value_RECURSION : thm × thm := keep "value_types" fun _ =>
+  match runIO (timeDefineType
     "value = Integer num
          | Boolean bool
          | List_of (value list)
          | Tree_of (value xtree)
          | Array_of (value array)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def value_INDUCTION : thm := value_INDUCTION_value_RECURSION.1
-unsafe def value_RECURSION : thm := value_INDUCTION_value_RECURSION.2
+def value_INDUCTION : thm := value_INDUCTION_value_RECURSION.1
+def value_RECURSION : thm := value_INDUCTION_value_RECURSION.2
 #eval (printTwo value_INDUCTION_value_RECURSION : IO Unit)
 
 #eval phrase 22
-unsafe def example_INDUCTION_example_RECURSION : thm × thm := keep "example_types" fun _ =>
-  match unsafeIO (timeDefineType
+def example_INDUCTION_example_RECURSION : thm × thm := keep "example_types" fun _ =>
+  match runIO (timeDefineType
     "command = Assignment (num list # expression list)
            | Sequence (command list);
    expression = Numeral num
               | Plus (expression # expression)
               | Valof command") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def example_INDUCTION : thm := example_INDUCTION_example_RECURSION.1
-unsafe def example_RECURSION : thm := example_INDUCTION_example_RECURSION.2
+def example_INDUCTION : thm := example_INDUCTION_example_RECURSION.1
+def example_RECURSION : thm := example_INDUCTION_example_RECURSION.2
 #eval (printTwo example_INDUCTION_example_RECURSION : IO Unit)
 
 #eval phrase 23
-unsafe def zonk_INDUCTION_zonk_RECURSION : thm × thm := keep "zonk_types" fun _ =>
-  match unsafeIO (timeDefineType
+def zonk_INDUCTION_zonk_RECURSION : thm × thm := keep "zonk_types" fun _ =>
+  match runIO (timeDefineType
     "zonk = Stonk ((zonk,pink,A)mutual)list # expression
         | Tonk zonk (pink list)
         | Honk num;
@@ -244,8 +244,8 @@ unsafe def zonk_INDUCTION_zonk_RECURSION : thm × thm := keep "zonk_types" fun _
         | Purple num
         | Rain (A # pink)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def zonk_INDUCTION : thm := zonk_INDUCTION_zonk_RECURSION.1
-unsafe def zonk_RECURSION : thm := zonk_INDUCTION_zonk_RECURSION.2
+def zonk_INDUCTION : thm := zonk_INDUCTION_zonk_RECURSION.1
+def zonk_RECURSION : thm := zonk_INDUCTION_zonk_RECURSION.2
 #eval (printTwo zonk_INDUCTION_zonk_RECURSION : IO Unit)
 
 -- ------------------------------------------------------------------------- --
@@ -424,17 +424,17 @@ unsafe def zonk_RECURSION : thm := zonk_INDUCTION_zonk_RECURSION.2
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 31
-unsafe def string_INDUCTION_string_RECURSION : thm × thm := keep "string_types" fun _ =>
-  match unsafeIO (timeDefineType
+def string_INDUCTION_string_RECURSION : thm × thm := keep "string_types" fun _ =>
+  match runIO (timeDefineType
     "string = EMPTY_STRING | CONS_STRING num string") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def string_INDUCTION : thm := string_INDUCTION_string_RECURSION.1
-unsafe def string_RECURSION : thm := string_INDUCTION_string_RECURSION.2
+def string_INDUCTION : thm := string_INDUCTION_string_RECURSION.1
+def string_RECURSION : thm := string_INDUCTION_string_RECURSION.2
 #eval (printTwo string_INDUCTION_string_RECURSION : IO Unit)
 
 #eval phrase 32
-unsafe def strid_INDUCTION_strid_RECURSION : thm × thm := keep "strid_types" fun _ =>
-  match unsafeIO (timeDefineType
+def strid_INDUCTION_strid_RECURSION : thm × thm := keep "strid_types" fun _ =>
+  match runIO (timeDefineType
     "strid = STRID string;
    var = VAR string;
    con = CON string;
@@ -442,31 +442,31 @@ unsafe def strid_INDUCTION_strid_RECURSION : thm × thm := keep "strid_types" fu
    excon = EXCON string;
    label = LABEL string") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def strid_INDUCTION : thm := strid_INDUCTION_strid_RECURSION.1
-unsafe def strid_RECURSION : thm := strid_INDUCTION_strid_RECURSION.2
+def strid_INDUCTION : thm := strid_INDUCTION_strid_RECURSION.1
+def strid_RECURSION : thm := strid_INDUCTION_strid_RECURSION.2
 #eval (printTwo strid_INDUCTION_strid_RECURSION : IO Unit)
 
 #eval phrase 33
-unsafe def nonemptylist_INDUCTION_nonemptylist_RECURSION : thm × thm := keep "nonemptylist_types" fun _ =>
-  match unsafeIO (timeDefineType
+def nonemptylist_INDUCTION_nonemptylist_RECURSION : thm × thm := keep "nonemptylist_types" fun _ =>
+  match runIO (timeDefineType
     "nonemptylist = Head_and_tail A (A list)") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def nonemptylist_INDUCTION : thm := nonemptylist_INDUCTION_nonemptylist_RECURSION.1
-unsafe def nonemptylist_RECURSION : thm := nonemptylist_INDUCTION_nonemptylist_RECURSION.2
+def nonemptylist_INDUCTION : thm := nonemptylist_INDUCTION_nonemptylist_RECURSION.1
+def nonemptylist_RECURSION : thm := nonemptylist_INDUCTION_nonemptylist_RECURSION.2
 #eval (printTwo nonemptylist_INDUCTION_nonemptylist_RECURSION : IO Unit)
 
 #eval phrase 34
-unsafe def long_INDUCTION_long_RECURSION : thm × thm := keep "long_types" fun _ =>
-  match unsafeIO (timeDefineType
+def long_INDUCTION_long_RECURSION : thm × thm := keep "long_types" fun _ =>
+  match runIO (timeDefineType
     "long = BASE A | QUALIFIED strid long") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def long_INDUCTION : thm := long_INDUCTION_long_RECURSION.1
-unsafe def long_RECURSION : thm := long_INDUCTION_long_RECURSION.2
+def long_INDUCTION : thm := long_INDUCTION_long_RECURSION.1
+def long_RECURSION : thm := long_INDUCTION_long_RECURSION.2
 #eval (printTwo long_INDUCTION_long_RECURSION : IO Unit)
 
 #eval phrase 35
-unsafe def myra_INDUCTION_myra_RECURSION : thm × thm := keep "myra_types" fun _ =>
-  match unsafeIO (timeDefineType
+def myra_INDUCTION_myra_RECURSION : thm × thm := keep "myra_types" fun _ =>
+  match runIO (timeDefineType
     "atpat_e = WILDCARDatpat_e
            | SCONatpat_e scon
            | VARatpat_e var
@@ -522,8 +522,8 @@ unsafe def myra_INDUCTION_myra_RECURSION : thm × thm := keep "myra_types" fun _
    valbind_e = PLAINvalbind_e pat_e exp_e (valbind_e option)
              | RECvalbind_e valbind_e") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def myra_INDUCTION : thm := myra_INDUCTION_myra_RECURSION.1
-unsafe def myra_RECURSION : thm := myra_INDUCTION_myra_RECURSION.2
+def myra_INDUCTION : thm := myra_INDUCTION_myra_RECURSION.1
+def myra_RECURSION : thm := myra_INDUCTION_myra_RECURSION.2
 #eval (printTwo myra_INDUCTION_myra_RECURSION : IO Unit)
 
 -- ------------------------------------------------------------------------- --
@@ -531,8 +531,8 @@ unsafe def myra_RECURSION : thm := myra_INDUCTION_myra_RECURSION.2
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 36
-unsafe def daryl_INDUCTION_daryl_RECURSION : thm × thm := keep "daryl_types" fun _ =>
-  match unsafeIO (timeDefineType
+def daryl_INDUCTION_daryl_RECURSION : thm × thm := keep "daryl_types" fun _ =>
+  match runIO (timeDefineType
     "Source_text
      = module string (string list) (Module_item list)
      | Source_textMeta string;
@@ -648,8 +648,8 @@ unsafe def daryl_INDUCTION_daryl_RECURSION : thm × thm := keep "daryl_types" fu
      | Meta_Concatenation Concatenation
      | Meta_Multiple_concatenation Multiple_concatenation") with
   | .ok p => p | .error e => panic! (toString e)
-unsafe def daryl_INDUCTION : thm := daryl_INDUCTION_daryl_RECURSION.1
-unsafe def daryl_RECURSION : thm := daryl_INDUCTION_daryl_RECURSION.2
+def daryl_INDUCTION : thm := daryl_INDUCTION_daryl_RECURSION.1
+def daryl_RECURSION : thm := daryl_INDUCTION_daryl_RECURSION.2
 #eval (printTwo daryl_INDUCTION_daryl_RECURSION : IO Unit)
 
 end HolExamples.RecTypes

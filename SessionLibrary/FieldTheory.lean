@@ -3,14 +3,13 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/FieldTheory.lean
 
-  The `unsafe` half of the fieldtheory.ml translation: it supplies HolLibrary.FieldTheory's
-  dependencies from Session and SessionLibrary.Matroids, SessionLibrary.RingTheory, builds the bundles once, in order,
-  and exports every name under its HOL Light name.  `ensureFieldTheory` is
-  `needs "Library/fieldtheory.ml"` (which first does `needs "Library/matroids.ml"`, `needs "Library/ringtheory.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/FieldTheory.lean by tools/fieldtheorydiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the fieldtheory.ml translation: it supplies
+  HolLibrary.FieldTheory's dependencies from Session, SessionLibrary.Matroids
+  and SessionLibrary.RingTheory, and exports every name under its HOL Light
+  name.  Importing this module is `needs "Library/fieldtheory.ml"`; its
+  `needs` of matroids.ml and ringtheory.ml are the imports of those modules.
+  The bundles are built by `initialize` when the module is loaded, in file
+  order.
 -/
 
 import Session
@@ -23,12 +22,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.FieldTheory
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.FieldTheory.CoreThms1 where
+def core1 : HolLibrary.FieldTheory.CoreThms1 where
   AND_FORALL_THM := Session.AND_FORALL_THM
   ARITH_EQ := Session.ARITH_EQ
   CANTOR_THM_UNIV := SessionLibrary.Card.«CANTOR_THM_UNIV»
@@ -100,21 +95,21 @@ unsafe def core1 (_ : Unit) : HolLibrary.FieldTheory.CoreThms1 where
   FIELD_EQ_ALL_UNITS := SessionLibrary.RingTheory.«FIELD_EQ_ALL_UNITS»
   FIELD_HOMOMORPHISM_DIV := SessionLibrary.RingTheory.«FIELD_HOMOMORPHISM_DIV»
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core10 (_ : Unit) : HolLibrary.FieldTheory.CoreThms10 where
+def core10 : HolLibrary.FieldTheory.CoreThms10 where
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core11 (_ : Unit) : HolLibrary.FieldTheory.CoreThms11 where
+def core11 : HolLibrary.FieldTheory.CoreThms11 where
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core12 (_ : Unit) : HolLibrary.FieldTheory.CoreThms12 where
+def core12 : HolLibrary.FieldTheory.CoreThms12 where
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core13 (_ : Unit) : HolLibrary.FieldTheory.CoreThms13 where
+def core13 : HolLibrary.FieldTheory.CoreThms13 where
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core14 (_ : Unit) : HolLibrary.FieldTheory.CoreThms14 where
+def core14 : HolLibrary.FieldTheory.CoreThms14 where
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core15 (_ : Unit) : HolLibrary.FieldTheory.CoreThms15 where
+def core15 : HolLibrary.FieldTheory.CoreThms15 where
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core16 (_ : Unit) : HolLibrary.FieldTheory.CoreThms16 where
+def core16 : HolLibrary.FieldTheory.CoreThms16 where
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.FieldTheory.CoreThms2 where
+def core2 : HolLibrary.FieldTheory.CoreThms2 where
   FIELD_HOMOMORPHISM_INV := SessionLibrary.RingTheory.«FIELD_HOMOMORPHISM_INV»
   FIELD_IMP_INTEGRAL_DOMAIN := SessionLibrary.RingTheory.«FIELD_IMP_INTEGRAL_DOMAIN»
   FIELD_IMP_NONTRIVIAL_RING := SessionLibrary.RingTheory.«FIELD_IMP_NONTRIVIAL_RING»
@@ -186,7 +181,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.FieldTheory.CoreThms2 where
   IMAGE_UNIONS := Session.IMAGE_UNIONS
   IMAGE_o := Session.IMAGE_o
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.FieldTheory.CoreThms3 where
+def core3 : HolLibrary.FieldTheory.CoreThms3 where
   IMP_CONJ := Session.IMP_CONJ
   IMP_CONJ_ALT := Session.IMP_CONJ_ALT
   IMP_IMP := Session.IMP_IMP
@@ -258,7 +253,7 @@ unsafe def core3 (_ : Unit) : HolLibrary.FieldTheory.CoreThms3 where
   MATROID_FINITE_DIMENSIONAL_ANY := SessionLibrary.Matroids.«MATROID_FINITE_DIMENSIONAL_ANY»
   MATROID_INDEPENDENT_CARD_LE_SPANNING := SessionLibrary.Matroids.«MATROID_INDEPENDENT_CARD_LE_SPANNING»
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.FieldTheory.CoreThms4 where
+def core4 : HolLibrary.FieldTheory.CoreThms4 where
   MATROID_INDEPENDENT_CARD_LE_SPAN_FINITE := SessionLibrary.Matroids.«MATROID_INDEPENDENT_CARD_LE_SPAN_FINITE»
   MATROID_INDEPENDENT_FINITARY := SessionLibrary.Matroids.«MATROID_INDEPENDENT_FINITARY»
   MATROID_INDEPENDENT_INSERT := SessionLibrary.Matroids.«MATROID_INDEPENDENT_INSERT»
@@ -330,7 +325,7 @@ unsafe def core4 (_ : Unit) : HolLibrary.FieldTheory.CoreThms4 where
   POLY_EVAL_HOMOMORPHIC_IMAGE := SessionLibrary.RingTheory.«POLY_EVAL_HOMOMORPHIC_IMAGE»
   POLY_EVAL_MUL := SessionLibrary.RingTheory.«POLY_EVAL_MUL»
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core5 (_ : Unit) : HolLibrary.FieldTheory.CoreThms5 where
+def core5 : HolLibrary.FieldTheory.CoreThms5 where
   POLY_EVAL_RING_PRODUCT := SessionLibrary.RingTheory.«POLY_EVAL_RING_PRODUCT»
   POLY_EVAL_SUB := SessionLibrary.RingTheory.«POLY_EVAL_SUB»
   POLY_EVAL_VAR := SessionLibrary.RingTheory.«POLY_EVAL_VAR»
@@ -402,7 +397,7 @@ unsafe def core5 (_ : Unit) : HolLibrary.FieldTheory.CoreThms5 where
   RING_CHAR_FINITE := SessionLibrary.RingTheory.«RING_CHAR_FINITE»
   RING_CHAR_UNIQUE := SessionLibrary.RingTheory.«RING_CHAR_UNIQUE»
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core6 (_ : Unit) : HolLibrary.FieldTheory.CoreThms6 where
+def core6 : HolLibrary.FieldTheory.CoreThms6 where
   RING_COPRIME_00 := SessionLibrary.RingTheory.«RING_COPRIME_00»
   RING_COPRIME_HOMOMORPHIC_IMAGE := SessionLibrary.RingTheory.«RING_COPRIME_HOMOMORPHIC_IMAGE»
   RING_COSET_EQ := SessionLibrary.RingTheory.«RING_COSET_EQ»
@@ -474,7 +469,7 @@ unsafe def core6 (_ : Unit) : HolLibrary.FieldTheory.CoreThms6 where
   RING_MONOMORPHISM_POLY_RINGS := SessionLibrary.RingTheory.«RING_MONOMORPHISM_POLY_RINGS»
   RING_MUL := SessionLibrary.RingTheory.«RING_MUL»
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core7 (_ : Unit) : HolLibrary.FieldTheory.CoreThms7 where
+def core7 : HolLibrary.FieldTheory.CoreThms7 where
   RING_MUL_ASSOC := SessionLibrary.RingTheory.«RING_MUL_ASSOC»
   RING_MUL_IN_SUBRING_GENERATED := SessionLibrary.RingTheory.«RING_MUL_IN_SUBRING_GENERATED»
   RING_MUL_LID := SessionLibrary.RingTheory.«RING_MUL_LID»
@@ -546,7 +541,7 @@ unsafe def core7 (_ : Unit) : HolLibrary.FieldTheory.CoreThms7 where
   SUBRING_GENERATED_BY_SUBRING_GENERATED := SessionLibrary.RingTheory.«SUBRING_GENERATED_BY_SUBRING_GENERATED»
   SUBRING_GENERATED_EQ := SessionLibrary.RingTheory.«SUBRING_GENERATED_EQ»
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core8 (_ : Unit) : HolLibrary.FieldTheory.CoreThms8 where
+def core8 : HolLibrary.FieldTheory.CoreThms8 where
   SUBRING_GENERATED_IDEMPOT := SessionLibrary.RingTheory.«SUBRING_GENERATED_IDEMPOT»
   SUBRING_GENERATED_INC := SessionLibrary.RingTheory.«SUBRING_GENERATED_INC»
   SUBRING_GENERATED_INC_GEN := SessionLibrary.RingTheory.«SUBRING_GENERATED_INC_GEN»
@@ -618,7 +613,7 @@ unsafe def core8 (_ : Unit) : HolLibrary.FieldTheory.CoreThms8 where
   num_INFINITE := Session.num_INFINITE
   num_WF := Session.num_WF
 /-- The core theorems fieldtheory.ml uses. -/
-unsafe def core9 (_ : Unit) : HolLibrary.FieldTheory.CoreThms9 where
+def core9 : HolLibrary.FieldTheory.CoreThms9 where
   num_WOP := Session.num_WOP
   o_ASSOC := Session.o_ASSOC
   o_DEF := Session.o_DEF
@@ -663,10 +658,9 @@ unsafe def core9 (_ : Unit) : HolLibrary.FieldTheory.CoreThms9 where
   ring_unit := SessionLibrary.RingTheory.«ring_unit»
   subring_of := SessionLibrary.RingTheory.«subring_of»
   trivial_ring := SessionLibrary.RingTheory.«trivial_ring»
--- @@CORE END
 
 /-- What fieldtheory.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.FieldTheory.FieldTheoryDeps where
+def deps : HolLibrary.FieldTheory.FieldTheoryDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   define s := do ExceptT.mk (Session.define (← HolLight.q s))
   parse_as_infix := Session.parse_as_infix
@@ -686,720 +680,598 @@ unsafe def deps (_ : Unit) : HolLibrary.FieldTheory.FieldTheoryDeps where
   RING_RULE t := ExceptT.mk (SessionLibrary.RingTheory.RING_RULE t)
   basic_ss := Session.basic_ss
   TAUT t := ExceptT.mk (Session.TAUT t)
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
-  core5 := core5 ()
-  core6 := core6 ()
-  core7 := core7 ()
-  core8 := core8 ()
-  core9 := core9 ()
-  core10 := core10 ()
-  core11 := core11 ()
-  core12 := core12 ()
-  core13 := core13 ()
-  core14 := core14 ()
-  core15 := core15 ()
-  core16 := core16 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
+  core5 := core5
+  core6 := core6
+  core7 := core7
+  core8 := core8
+  core9 := core9
+  core10 := core10
+  core11 := core11
+  core12 := core12
+  core13 := core13
+  core14 := core14
+  core15 := core15
+  core16 := core16
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then matroids.ml, ringtheory.ml, which fieldtheory.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Matroids.ensureMatroids
-      SessionLibrary.RingTheory.ensureRingTheory
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.FieldTheory: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in file order; each forces the one before it. -/
+/- The bundles, in fieldtheory.ml order. -/
 
--- @@BUNDLES BEGIN
-initialize theSubfields : IO.Ref (Option HolLibrary.FieldTheory.Subfields) ← IO.mkRef none
-unsafe def BSubfields : HolLibrary.FieldTheory.Subfields :=
-  cached theSubfields "setupSubfields" fun _ => do
-    (HolLibrary.FieldTheory.setupSubfields (deps ())).run
+initialize BSubfields : HolLibrary.FieldTheory.Subfields ←
+  ioB "setupSubfields" <|
+    (HolLibrary.FieldTheory.setupSubfields deps).run
 
-initialize theSubfieldGenerated : IO.Ref (Option HolLibrary.FieldTheory.SubfieldGenerated) ← IO.mkRef none
-unsafe def BSubfieldGenerated : HolLibrary.FieldTheory.SubfieldGenerated :=
-  cached theSubfieldGenerated "setupSubfieldGenerated" fun _ => do
-    let _ ← IO.mkRef BSubfields.subfield_of
-    (HolLibrary.FieldTheory.setupSubfieldGenerated (deps ()) BSubfields).run
+initialize BSubfieldGenerated : HolLibrary.FieldTheory.SubfieldGenerated ←
+  ioB "setupSubfieldGenerated" <|
+    (HolLibrary.FieldTheory.setupSubfieldGenerated deps BSubfields).run
 
-initialize theSubfieldGenerated1 : IO.Ref (Option HolLibrary.FieldTheory.SubfieldGenerated1) ← IO.mkRef none
-unsafe def BSubfieldGenerated1 : HolLibrary.FieldTheory.SubfieldGenerated1 :=
-  cached theSubfieldGenerated1 "setupSubfieldGenerated1" fun _ => do
-    let _ ← IO.mkRef BSubfieldGenerated.subfield_generated
-    (HolLibrary.FieldTheory.setupSubfieldGenerated1 (deps ()) BSubfields BSubfieldGenerated).run
+initialize BSubfieldGenerated1 : HolLibrary.FieldTheory.SubfieldGenerated1 ←
+  ioB "setupSubfieldGenerated1" <|
+    (HolLibrary.FieldTheory.setupSubfieldGenerated1 deps BSubfields BSubfieldGenerated).run
 
-initialize theSubfieldGenerated2 : IO.Ref (Option HolLibrary.FieldTheory.SubfieldGenerated2) ← IO.mkRef none
-unsafe def BSubfieldGenerated2 : HolLibrary.FieldTheory.SubfieldGenerated2 :=
-  cached theSubfieldGenerated2 "setupSubfieldGenerated2" fun _ => do
-    let _ ← IO.mkRef BSubfieldGenerated1.SUBSET_CARRIER_SUBFIELD_GENERATED
-    (HolLibrary.FieldTheory.setupSubfieldGenerated2 (deps ()) BSubfields BSubfieldGenerated BSubfieldGenerated1).run
+initialize BSubfieldGenerated2 : HolLibrary.FieldTheory.SubfieldGenerated2 ←
+  ioB "setupSubfieldGenerated2" <|
+    (HolLibrary.FieldTheory.setupSubfieldGenerated2 deps BSubfields BSubfieldGenerated BSubfieldGenerated1).run
 
-initialize theSubfieldQuotients : IO.Ref (Option HolLibrary.FieldTheory.SubfieldQuotients) ← IO.mkRef none
-unsafe def BSubfieldQuotients : HolLibrary.FieldTheory.SubfieldQuotients :=
-  cached theSubfieldQuotients "setupSubfieldQuotients" fun _ => do
-    let _ ← IO.mkRef BSubfieldGenerated2.SUBFIELD_OF_MONOMORPHIC_IMAGE
-    (HolLibrary.FieldTheory.setupSubfieldQuotients (deps ()) BSubfields BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2).run
+initialize BSubfieldQuotients : HolLibrary.FieldTheory.SubfieldQuotients ←
+  ioB "setupSubfieldQuotients" <|
+    (HolLibrary.FieldTheory.setupSubfieldQuotients deps BSubfields BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2).run
 
-initialize theFieldExtension : IO.Ref (Option HolLibrary.FieldTheory.FieldExtension) ← IO.mkRef none
-unsafe def BFieldExtension : HolLibrary.FieldTheory.FieldExtension :=
-  cached theFieldExtension "setupFieldExtension" fun _ => do
-    let _ ← IO.mkRef BSubfieldQuotients.FIELD_SUBFIELD_GENERATED_UNITS
-    (HolLibrary.FieldTheory.setupFieldExtension (deps ()) BSubfields BSubfieldGenerated).run
+initialize BFieldExtension : HolLibrary.FieldTheory.FieldExtension ←
+  ioB "setupFieldExtension" <|
+    (HolLibrary.FieldTheory.setupFieldExtension deps BSubfields BSubfieldGenerated).run
 
-initialize theRingSpan : IO.Ref (Option HolLibrary.FieldTheory.RingSpan) ← IO.mkRef none
-unsafe def BRingSpan : HolLibrary.FieldTheory.RingSpan :=
-  cached theRingSpan "setupRingSpan" fun _ => do
-    let _ ← IO.mkRef BFieldExtension.field_extension
-    (HolLibrary.FieldTheory.setupRingSpan (deps ())).run
+initialize BRingSpan : HolLibrary.FieldTheory.RingSpan ←
+  ioB "setupRingSpan" <|
+    (HolLibrary.FieldTheory.setupRingSpan deps).run
 
-initialize theRingMatroid : IO.Ref (Option HolLibrary.FieldTheory.RingMatroid) ← IO.mkRef none
-unsafe def BRingMatroid : HolLibrary.FieldTheory.RingMatroid :=
-  cached theRingMatroid "setupRingMatroid" fun _ => do
-    let _ ← IO.mkRef BRingSpan.ring_span_RULES
-    (HolLibrary.FieldTheory.setupRingMatroid (deps ()) BRingSpan).run
+initialize BRingMatroid : HolLibrary.FieldTheory.RingMatroid ←
+  ioB "setupRingMatroid" <|
+    (HolLibrary.FieldTheory.setupRingMatroid deps BRingSpan).run
 
-initialize theLinearAlgebra : IO.Ref (Option HolLibrary.FieldTheory.LinearAlgebra) ← IO.mkRef none
-unsafe def BLinearAlgebra : HolLibrary.FieldTheory.LinearAlgebra :=
-  cached theLinearAlgebra "setupLinearAlgebra" fun _ => do
-    let _ ← IO.mkRef BRingMatroid.ring_matroid
-    (HolLibrary.FieldTheory.setupLinearAlgebra (deps ()) BFieldExtension BRingSpan BRingMatroid).run
+initialize BLinearAlgebra : HolLibrary.FieldTheory.LinearAlgebra ←
+  ioB "setupLinearAlgebra" <|
+    (HolLibrary.FieldTheory.setupLinearAlgebra deps BFieldExtension BRingSpan BRingMatroid).run
 
-initialize theFinitary : IO.Ref (Option HolLibrary.FieldTheory.Finitary) ← IO.mkRef none
-unsafe def BFinitary : HolLibrary.FieldTheory.Finitary :=
-  cached theFinitary "setupFinitary" fun _ => do
-    let _ ← IO.mkRef BLinearAlgebra.ring_dependent
-    (HolLibrary.FieldTheory.setupFinitary (deps ()) BSubfields BSubfieldGenerated BRingSpan BRingMatroid BLinearAlgebra).run
+initialize BFinitary : HolLibrary.FieldTheory.Finitary ←
+  ioB "setupFinitary" <|
+    (HolLibrary.FieldTheory.setupFinitary deps BSubfields BSubfieldGenerated BRingSpan BRingMatroid BLinearAlgebra).run
 
-initialize theTowerLaw : IO.Ref (Option HolLibrary.FieldTheory.TowerLaw) ← IO.mkRef none
-unsafe def BTowerLaw : HolLibrary.FieldTheory.TowerLaw :=
-  cached theTowerLaw "setupTowerLaw" fun _ => do
-    let _ ← IO.mkRef BFinitary.RING_DEPENDENT_FINITARY
-    (HolLibrary.FieldTheory.setupTowerLaw (deps ()) BFieldExtension BRingSpan BLinearAlgebra BFinitary).run
+initialize BTowerLaw : HolLibrary.FieldTheory.TowerLaw ←
+  ioB "setupTowerLaw" <|
+    (HolLibrary.FieldTheory.setupTowerLaw deps BFieldExtension BRingSpan BLinearAlgebra BFinitary).run
 
-initialize theFiniteExtension : IO.Ref (Option HolLibrary.FieldTheory.FiniteExtension) ← IO.mkRef none
-unsafe def BFiniteExtension : HolLibrary.FieldTheory.FiniteExtension :=
-  cached theFiniteExtension "setupFiniteExtension" fun _ => do
-    let _ ← IO.mkRef BTowerLaw.RING_SPANNING_TRANS
-    (HolLibrary.FieldTheory.setupFiniteExtension (deps ()) BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BFieldExtension BRingSpan BRingMatroid BLinearAlgebra BFinitary BTowerLaw).run
+initialize BFiniteExtension : HolLibrary.FieldTheory.FiniteExtension ←
+  ioB "setupFiniteExtension" <|
+    (HolLibrary.FieldTheory.setupFiniteExtension deps BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BFieldExtension BRingSpan BRingMatroid BLinearAlgebra BFinitary BTowerLaw).run
 
-initialize theAlgebraicExtension : IO.Ref (Option HolLibrary.FieldTheory.AlgebraicExtension) ← IO.mkRef none
-unsafe def BAlgebraicExtension : HolLibrary.FieldTheory.AlgebraicExtension :=
-  cached theAlgebraicExtension "setupAlgebraicExtension" fun _ => do
-    let _ ← IO.mkRef BFiniteExtension.finite_extension
-    (HolLibrary.FieldTheory.setupAlgebraicExtension (deps ()) BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BSubfieldQuotients BFieldExtension).run
+initialize BAlgebraicExtension : HolLibrary.FieldTheory.AlgebraicExtension ←
+  ioB "setupAlgebraicExtension" <|
+    (HolLibrary.FieldTheory.setupAlgebraicExtension deps BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BSubfieldQuotients BFieldExtension).run
 
-initialize theAlgebraicOverBasics : IO.Ref (Option HolLibrary.FieldTheory.AlgebraicOverBasics) ← IO.mkRef none
-unsafe def BAlgebraicOverBasics : HolLibrary.FieldTheory.AlgebraicOverBasics :=
-  cached theAlgebraicOverBasics "setupAlgebraicOverBasics" fun _ => do
-    let _ ← IO.mkRef BAlgebraicExtension.algebraic_over
-    (HolLibrary.FieldTheory.setupAlgebraicOverBasics (deps ()) BFieldExtension BRingSpan BFinitary BFiniteExtension BAlgebraicExtension).run
+initialize BAlgebraicOverBasics : HolLibrary.FieldTheory.AlgebraicOverBasics ←
+  ioB "setupAlgebraicOverBasics" <|
+    (HolLibrary.FieldTheory.setupAlgebraicOverBasics deps BFieldExtension BRingSpan BFinitary BFiniteExtension BAlgebraicExtension).run
 
-initialize theAlgebraicExtensionProps : IO.Ref (Option HolLibrary.FieldTheory.AlgebraicExtensionProps) ← IO.mkRef none
-unsafe def BAlgebraicExtensionProps : HolLibrary.FieldTheory.AlgebraicExtensionProps :=
-  cached theAlgebraicExtensionProps "setupAlgebraicExtensionProps" fun _ => do
-    let _ ← IO.mkRef BAlgebraicOverBasics.ALGEBRAIC_OVER_NONMONOMORPHISM
-    (HolLibrary.FieldTheory.setupAlgebraicExtensionProps (deps ()) BSubfieldGenerated BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics).run
+initialize BAlgebraicExtensionProps : HolLibrary.FieldTheory.AlgebraicExtensionProps ←
+  ioB "setupAlgebraicExtensionProps" <|
+    (HolLibrary.FieldTheory.setupAlgebraicExtensionProps deps BSubfieldGenerated BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics).run
 
-initialize theAlgebraicExtMisc : IO.Ref (Option HolLibrary.FieldTheory.AlgebraicExtMisc) ← IO.mkRef none
-unsafe def BAlgebraicExtMisc : HolLibrary.FieldTheory.AlgebraicExtMisc :=
-  cached theAlgebraicExtMisc "setupAlgebraicExtMisc" fun _ => do
-    let _ ← IO.mkRef BAlgebraicExtensionProps.FIELD_SIMPLE_ALGEBRAIC_EXTENSION_GEN
-    (HolLibrary.FieldTheory.setupAlgebraicExtMisc (deps ()) BSubfieldQuotients BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps).run
+initialize BAlgebraicExtMisc : HolLibrary.FieldTheory.AlgebraicExtMisc ←
+  ioB "setupAlgebraicExtMisc" <|
+    (HolLibrary.FieldTheory.setupAlgebraicExtMisc deps BSubfieldQuotients BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps).run
 
-initialize theAlgebraicField : IO.Ref (Option HolLibrary.FieldTheory.AlgebraicField) ← IO.mkRef none
-unsafe def BAlgebraicField : HolLibrary.FieldTheory.AlgebraicField :=
-  cached theAlgebraicField "setupAlgebraicField" fun _ => do
-    let _ ← IO.mkRef BAlgebraicExtMisc.ALGEBRAIC_FROM_SUBRING_GENERATED
-    (HolLibrary.FieldTheory.setupAlgebraicField (deps ()) BSubfields BSubfieldGenerated BFieldExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BAlgebraicExtMisc).run
+initialize BAlgebraicField : HolLibrary.FieldTheory.AlgebraicField ←
+  ioB "setupAlgebraicField" <|
+    (HolLibrary.FieldTheory.setupAlgebraicField deps BSubfields BSubfieldGenerated BFieldExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BAlgebraicExtMisc).run
 
-initialize theFiniteExt : IO.Ref (Option HolLibrary.FieldTheory.FiniteExt) ← IO.mkRef none
-unsafe def BFiniteExt : HolLibrary.FieldTheory.FiniteExt :=
-  cached theFiniteExt "setupFiniteExt" fun _ => do
-    let _ ← IO.mkRef BAlgebraicField.ALGEBRAIC_OVER_0
-    (HolLibrary.FieldTheory.setupFiniteExt (deps ()) BFieldExtension BRingSpan BLinearAlgebra BFinitary BFiniteExtension).run
+initialize BFiniteExt : HolLibrary.FieldTheory.FiniteExt ←
+  ioB "setupFiniteExt" <|
+    (HolLibrary.FieldTheory.setupFiniteExt deps BFieldExtension BRingSpan BLinearAlgebra BFinitary BFiniteExtension).run
 
-initialize theAlgDepDefs : IO.Ref (Option HolLibrary.FieldTheory.AlgDepDefs) ← IO.mkRef none
-unsafe def BAlgDepDefs : HolLibrary.FieldTheory.AlgDepDefs :=
-  cached theAlgDepDefs "setupAlgDepDefs" fun _ => do
-    let _ ← IO.mkRef BFiniteExt.FINITE_EQ_FIELD_EXTENSION
-    (HolLibrary.FieldTheory.setupAlgDepDefs (deps ()) BSubfieldGenerated BFieldExtension BRingSpan BFinitary BAlgebraicExtension BAlgebraicField).run
+initialize BAlgDepDefs : HolLibrary.FieldTheory.AlgDepDefs ←
+  ioB "setupAlgDepDefs" <|
+    (HolLibrary.FieldTheory.setupAlgDepDefs deps BSubfieldGenerated BFieldExtension BRingSpan BFinitary BAlgebraicExtension BAlgebraicField).run
 
-initialize theAlgDepSpan : IO.Ref (Option HolLibrary.FieldTheory.AlgDepSpan) ← IO.mkRef none
-unsafe def BAlgDepSpan : HolLibrary.FieldTheory.AlgDepSpan :=
-  cached theAlgDepSpan "setupAlgDepSpan" fun _ => do
-    let _ ← IO.mkRef BAlgDepDefs.algebraically_dependent
-    (HolLibrary.FieldTheory.setupAlgDepSpan (deps ()) BSubfieldGenerated BSubfieldGenerated1 BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicField BAlgDepDefs).run
+initialize BAlgDepSpan : HolLibrary.FieldTheory.AlgDepSpan ←
+  ioB "setupAlgDepSpan" <|
+    (HolLibrary.FieldTheory.setupAlgDepSpan deps BSubfieldGenerated BSubfieldGenerated1 BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicField BAlgDepDefs).run
 
-initialize theAlgSpanDepIndep : IO.Ref (Option HolLibrary.FieldTheory.AlgSpanDepIndep) ← IO.mkRef none
-unsafe def BAlgSpanDepIndep : HolLibrary.FieldTheory.AlgSpanDepIndep :=
-  cached theAlgSpanDepIndep "setupAlgSpanDepIndep" fun _ => do
-    let _ ← IO.mkRef BAlgDepSpan.ALGEBRAIC_SPAN_SPAN
-    (HolLibrary.FieldTheory.setupAlgSpanDepIndep (deps ()) BSubfields BSubfieldGenerated BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgDepDefs BAlgDepSpan).run
+initialize BAlgSpanDepIndep : HolLibrary.FieldTheory.AlgSpanDepIndep ←
+  ioB "setupAlgSpanDepIndep" <|
+    (HolLibrary.FieldTheory.setupAlgSpanDepIndep deps BSubfields BSubfieldGenerated BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgDepDefs BAlgDepSpan).run
 
-initialize theAlgebraicMatroid : IO.Ref (Option HolLibrary.FieldTheory.AlgebraicMatroid) ← IO.mkRef none
-unsafe def BAlgebraicMatroid : HolLibrary.FieldTheory.AlgebraicMatroid :=
-  cached theAlgebraicMatroid "setupAlgebraicMatroid" fun _ => do
-    let _ ← IO.mkRef BAlgSpanDepIndep.ALGEBRAICALLY_DEPENDENT_FINITARY
-    (HolLibrary.FieldTheory.setupAlgebraicMatroid (deps ()) BFieldExtension BAlgDepDefs BAlgDepSpan BAlgSpanDepIndep).run
+initialize BAlgebraicMatroid : HolLibrary.FieldTheory.AlgebraicMatroid ←
+  ioB "setupAlgebraicMatroid" <|
+    (HolLibrary.FieldTheory.setupAlgebraicMatroid deps BFieldExtension BAlgDepDefs BAlgDepSpan BAlgSpanDepIndep).run
 
-initialize theAlgebraicTrans : IO.Ref (Option HolLibrary.FieldTheory.AlgebraicTrans) ← IO.mkRef none
-unsafe def BAlgebraicTrans : HolLibrary.FieldTheory.AlgebraicTrans :=
-  cached theAlgebraicTrans "setupAlgebraicTrans" fun _ => do
-    let _ ← IO.mkRef BAlgebraicMatroid.algebraic_matroid
-    (HolLibrary.FieldTheory.setupAlgebraicTrans (deps ()) BSubfieldGenerated BSubfieldGenerated1 BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicField BAlgDepDefs BAlgDepSpan BAlgSpanDepIndep BAlgebraicMatroid).run
+initialize BAlgebraicTrans : HolLibrary.FieldTheory.AlgebraicTrans ←
+  ioB "setupAlgebraicTrans" <|
+    (HolLibrary.FieldTheory.setupAlgebraicTrans deps BSubfieldGenerated BSubfieldGenerated1 BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicField BAlgDepDefs BAlgDepSpan BAlgSpanDepIndep BAlgebraicMatroid).run
 
-initialize theAlgebraicOverExt : IO.Ref (Option HolLibrary.FieldTheory.AlgebraicOverExt) ← IO.mkRef none
-unsafe def BAlgebraicOverExt : HolLibrary.FieldTheory.AlgebraicOverExt :=
-  cached theAlgebraicOverExt "setupAlgebraicOverExt" fun _ => do
-    let _ ← IO.mkRef BAlgebraicTrans.ALGEBRAIC_OVER_MONOMORPHIC_IMAGE
-    (HolLibrary.FieldTheory.setupAlgebraicOverExt (deps ()) BSubfieldGenerated BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicExtMisc BAlgebraicField BAlgDepDefs BAlgSpanDepIndep BAlgebraicMatroid BAlgebraicTrans).run
+initialize BAlgebraicOverExt : HolLibrary.FieldTheory.AlgebraicOverExt ←
+  ioB "setupAlgebraicOverExt" <|
+    (HolLibrary.FieldTheory.setupAlgebraicOverExt deps BSubfieldGenerated BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicExtMisc BAlgebraicField BAlgDepDefs BAlgSpanDepIndep BAlgebraicMatroid BAlgebraicTrans).run
 
-initialize theTotallyTranscendental : IO.Ref (Option HolLibrary.FieldTheory.TotallyTranscendental) ← IO.mkRef none
-unsafe def BTotallyTranscendental : HolLibrary.FieldTheory.TotallyTranscendental :=
-  cached theTotallyTranscendental "setupTotallyTranscendental" fun _ => do
-    let _ ← IO.mkRef BAlgebraicOverExt.ALGEBRAIC_SPAN_OVER_ALGEBRAIC_EXTENSION
-    (HolLibrary.FieldTheory.setupTotallyTranscendental (deps ()) BSubfields BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BSubfieldQuotients BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicField BAlgDepDefs BAlgDepSpan BAlgSpanDepIndep).run
+initialize BTotallyTranscendental : HolLibrary.FieldTheory.TotallyTranscendental ←
+  ioB "setupTotallyTranscendental" <|
+    (HolLibrary.FieldTheory.setupTotallyTranscendental deps BSubfields BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BSubfieldQuotients BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicField BAlgDepDefs BAlgDepSpan BAlgSpanDepIndep).run
 
-initialize theFinitelyGeneratedTransEq : IO.Ref (Option HolLibrary.FieldTheory.FinitelyGeneratedTransEq) ← IO.mkRef none
-unsafe def BFinitelyGeneratedTransEq : HolLibrary.FieldTheory.FinitelyGeneratedTransEq :=
-  cached theFinitelyGeneratedTransEq "setupFinitelyGeneratedTransEq" fun _ => do
-    let _ ← IO.mkRef BTotallyTranscendental.TOTALLY_TRANSCENDENTAL_EXTENSION
-    (HolLibrary.FieldTheory.setupFinitelyGeneratedTransEq (deps ()) BSubfields BSubfieldGenerated BSubfieldGenerated1 BFieldExtension BRingMatroid BLinearAlgebra BFinitary BFiniteExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicExtMisc BAlgDepDefs BAlgDepSpan BAlgSpanDepIndep BAlgebraicMatroid BAlgebraicTrans BAlgebraicOverExt BTotallyTranscendental).run
+initialize BFinitelyGeneratedTransEq : HolLibrary.FieldTheory.FinitelyGeneratedTransEq ←
+  ioB "setupFinitelyGeneratedTransEq" <|
+    (HolLibrary.FieldTheory.setupFinitelyGeneratedTransEq deps BSubfields BSubfieldGenerated BSubfieldGenerated1 BFieldExtension BRingMatroid BLinearAlgebra BFinitary BFiniteExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicExtMisc BAlgDepDefs BAlgDepSpan BAlgSpanDepIndep BAlgebraicMatroid BAlgebraicTrans BAlgebraicOverExt BTotallyTranscendental).run
 
-initialize theAcfBasic : IO.Ref (Option HolLibrary.FieldTheory.AcfBasic) ← IO.mkRef none
-unsafe def BAcfBasic : HolLibrary.FieldTheory.AcfBasic :=
-  cached theAcfBasic "setupAcfBasic" fun _ => do
-    let _ ← IO.mkRef BFinitelyGeneratedTransEq.FINITELY_GENERATED_EXTENSION_TRANS_EQ
-    (HolLibrary.FieldTheory.setupAcfBasic (deps ()) BFieldExtension BAlgebraicOverBasics).run
+initialize BAcfBasic : HolLibrary.FieldTheory.AcfBasic ←
+  ioB "setupAcfBasic" <|
+    (HolLibrary.FieldTheory.setupAcfBasic deps BFieldExtension BAlgebraicOverBasics).run
 
-initialize theAcfSplit : IO.Ref (Option HolLibrary.FieldTheory.AcfSplit) ← IO.mkRef none
-unsafe def BAcfSplit : HolLibrary.FieldTheory.AcfSplit :=
-  cached theAcfSplit "setupAcfSplit" fun _ => do
-    let _ ← IO.mkRef BAcfBasic.algebraically_closed_field
-    (HolLibrary.FieldTheory.setupAcfSplit (deps ()) BAcfBasic).run
+initialize BAcfSplit : HolLibrary.FieldTheory.AcfSplit ←
+  ioB "setupAcfSplit" <|
+    (HolLibrary.FieldTheory.setupAcfSplit deps BAcfBasic).run
 
-initialize theClosedFieldSplits : IO.Ref (Option HolLibrary.FieldTheory.ClosedFieldSplits) ← IO.mkRef none
-unsafe def BClosedFieldSplits : HolLibrary.FieldTheory.ClosedFieldSplits :=
-  cached theClosedFieldSplits "setupClosedFieldSplits" fun _ => do
-    let _ ← IO.mkRef BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_EQ_IRREDUCIBLES
-    (HolLibrary.FieldTheory.setupClosedFieldSplits (deps ()) BAcfBasic BAcfSplit).run
+initialize BClosedFieldSplits : HolLibrary.FieldTheory.ClosedFieldSplits ←
+  ioB "setupClosedFieldSplits" <|
+    (HolLibrary.FieldTheory.setupClosedFieldSplits deps BAcfBasic BAcfSplit).run
 
-initialize theSimpleExtendHom : IO.Ref (Option HolLibrary.FieldTheory.SimpleExtendHom) ← IO.mkRef none
-unsafe def BSimpleExtendHom : HolLibrary.FieldTheory.SimpleExtendHom :=
-  cached theSimpleExtendHom "setupSimpleExtendHom" fun _ => do
-    let _ ← IO.mkRef BClosedFieldSplits.ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT
-    (HolLibrary.FieldTheory.setupSimpleExtendHom (deps ()) BAcfBasic).run
+initialize BSimpleExtendHom : HolLibrary.FieldTheory.SimpleExtendHom ←
+  ioB "setupSimpleExtendHom" <|
+    (HolLibrary.FieldTheory.setupSimpleExtendHom deps BAcfBasic).run
 
-initialize theClosureExtendHom : IO.Ref (Option HolLibrary.FieldTheory.ClosureExtendHom) ← IO.mkRef none
-unsafe def BClosureExtendHom : HolLibrary.FieldTheory.ClosureExtendHom :=
-  cached theClosureExtendHom "setupClosureExtendHom" fun _ => do
-    let _ ← IO.mkRef BSimpleExtendHom.SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM
-    (HolLibrary.FieldTheory.setupClosureExtendHom (deps ()) BSubfields BSubfieldGenerated2 BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAcfBasic BSimpleExtendHom).run
+initialize BClosureExtendHom : HolLibrary.FieldTheory.ClosureExtendHom ←
+  ioB "setupClosureExtendHom" <|
+    (HolLibrary.FieldTheory.setupClosureExtendHom deps BSubfields BSubfieldGenerated2 BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAcfBasic BSimpleExtendHom).run
 
-initialize thePolySquarefree : IO.Ref (Option HolLibrary.FieldTheory.PolySquarefree) ← IO.mkRef none
-unsafe def BPolySquarefree : HolLibrary.FieldTheory.PolySquarefree :=
-  cached thePolySquarefree "setupPolySquarefree" fun _ => do
-    let _ ← IO.mkRef BClosureExtendHom.ALGEBRAIC_CLOSURE_EXTEND_HOMOMORPHISM
-    (HolLibrary.FieldTheory.setupPolySquarefree (deps ()) BAcfBasic BAcfSplit).run
+initialize BPolySquarefree : HolLibrary.FieldTheory.PolySquarefree ←
+  ioB "setupPolySquarefree" <|
+    (HolLibrary.FieldTheory.setupPolySquarefree deps BAcfBasic BAcfSplit).run
 
-initialize theAlgebraicClosureExistsId : IO.Ref (Option HolLibrary.FieldTheory.AlgebraicClosureExistsId) ← IO.mkRef none
-unsafe def BAlgebraicClosureExistsId : HolLibrary.FieldTheory.AlgebraicClosureExistsId :=
-  cached theAlgebraicClosureExistsId "setupAlgebraicClosureExistsId" fun _ => do
-    let _ ← IO.mkRef BPolySquarefree.POLY_SQUAREFREE_ROOT_COUNT_EXPLICIT
-    (HolLibrary.FieldTheory.setupAlgebraicClosureExistsId (deps ()) BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BAlgebraicExtMisc BAcfBasic).run
+initialize BAlgebraicClosureExistsId : HolLibrary.FieldTheory.AlgebraicClosureExistsId ←
+  ioB "setupAlgebraicClosureExistsId" <|
+    (HolLibrary.FieldTheory.setupAlgebraicClosureExistsId deps BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BAlgebraicExtMisc BAcfBasic).run
 
-initialize theAlgebraicClosure : IO.Ref (Option HolLibrary.FieldTheory.AlgebraicClosure) ← IO.mkRef none
-unsafe def BAlgebraicClosure : HolLibrary.FieldTheory.AlgebraicClosure :=
-  cached theAlgebraicClosure "setupAlgebraicClosure" fun _ => do
-    let _ ← IO.mkRef BAlgebraicClosureExistsId.ALGEBRAIC_CLOSURE_EXISTS_ID
-    (HolLibrary.FieldTheory.setupAlgebraicClosure (deps ()) BFieldExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtMisc BAlgebraicField BAcfBasic BClosureExtendHom BAlgebraicClosureExistsId).run
+initialize BAlgebraicClosure : HolLibrary.FieldTheory.AlgebraicClosure ←
+  ioB "setupAlgebraicClosure" <|
+    (HolLibrary.FieldTheory.setupAlgebraicClosure deps BFieldExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtMisc BAlgebraicField BAcfBasic BClosureExtendHom BAlgebraicClosureExistsId).run
 
--- @@BUNDLES END
 
--- @@EXPORTS BEGIN
 -- Subfields
-unsafe def subfield_of : thm := BSubfields.subfield_of
-unsafe def SUBFIELD_IMP_SUBRING_OF : thm := BSubfields.SUBFIELD_IMP_SUBRING_OF
-unsafe def SUBFIELD_OF_IMP_SUBSET : thm := BSubfields.SUBFIELD_OF_IMP_SUBSET
-unsafe def SUBFIELD_OF_IMP_10 : thm := BSubfields.SUBFIELD_OF_IMP_10
-unsafe def SUBFIELD_OF_IMP_NONTRIVIAL : thm := BSubfields.SUBFIELD_OF_IMP_NONTRIVIAL
-unsafe def IN_SUBFIELD_LINV : thm := BSubfields.IN_SUBFIELD_LINV
-unsafe def IN_SUBFIELD_RINV : thm := BSubfields.IN_SUBFIELD_RINV
-unsafe def IN_SUBFIELD_INV : thm := BSubfields.IN_SUBFIELD_INV
-unsafe def RING_INV_SUBRING_GENERATED : thm := BSubfields.RING_INV_SUBRING_GENERATED
-unsafe def SUBFIELD_OF_FIELD_INV : thm := BSubfields.SUBFIELD_OF_FIELD_INV
-unsafe def SUBFIELD_OF_INTERS : thm := BSubfields.SUBFIELD_OF_INTERS
-unsafe def SUBFIELD_OF_INTER : thm := BSubfields.SUBFIELD_OF_INTER
-unsafe def CARRIER_SUBFIELD_OF : thm := BSubfields.CARRIER_SUBFIELD_OF
-unsafe def IN_SUBFIELD_0 : thm := BSubfields.IN_SUBFIELD_0
-unsafe def IN_SUBFIELD_1 : thm := BSubfields.IN_SUBFIELD_1
-unsafe def IN_SUBFIELD_NEG : thm := BSubfields.IN_SUBFIELD_NEG
-unsafe def IN_SUBFIELD_ADD : thm := BSubfields.IN_SUBFIELD_ADD
-unsafe def IN_SUBFIELD_MUL : thm := BSubfields.IN_SUBFIELD_MUL
-unsafe def IN_SUBFIELD_SUB : thm := BSubfields.IN_SUBFIELD_SUB
-unsafe def IN_SUBFIELD_POW : thm := BSubfields.IN_SUBFIELD_POW
-unsafe def IN_SUBFIELD_SUM : thm := BSubfields.IN_SUBFIELD_SUM
-unsafe def IN_SUBFIELD_PRODUCT : thm := BSubfields.IN_SUBFIELD_PRODUCT
-unsafe def SUBFIELD_OF_HOMOMORPHIC_EQUALITIES : thm := BSubfields.SUBFIELD_OF_HOMOMORPHIC_EQUALITIES
-unsafe def SUBFIELD_OF_FIXPOINTS : thm := BSubfields.SUBFIELD_OF_FIXPOINTS
-unsafe def SUBFIELD_OF_SUBRING_QUOTIENTS : thm := BSubfields.SUBFIELD_OF_SUBRING_QUOTIENTS
+def subfield_of : thm := BSubfields.subfield_of
+def SUBFIELD_IMP_SUBRING_OF : thm := BSubfields.SUBFIELD_IMP_SUBRING_OF
+def SUBFIELD_OF_IMP_SUBSET : thm := BSubfields.SUBFIELD_OF_IMP_SUBSET
+def SUBFIELD_OF_IMP_10 : thm := BSubfields.SUBFIELD_OF_IMP_10
+def SUBFIELD_OF_IMP_NONTRIVIAL : thm := BSubfields.SUBFIELD_OF_IMP_NONTRIVIAL
+def IN_SUBFIELD_LINV : thm := BSubfields.IN_SUBFIELD_LINV
+def IN_SUBFIELD_RINV : thm := BSubfields.IN_SUBFIELD_RINV
+def IN_SUBFIELD_INV : thm := BSubfields.IN_SUBFIELD_INV
+def RING_INV_SUBRING_GENERATED : thm := BSubfields.RING_INV_SUBRING_GENERATED
+def SUBFIELD_OF_FIELD_INV : thm := BSubfields.SUBFIELD_OF_FIELD_INV
+def SUBFIELD_OF_INTERS : thm := BSubfields.SUBFIELD_OF_INTERS
+def SUBFIELD_OF_INTER : thm := BSubfields.SUBFIELD_OF_INTER
+def CARRIER_SUBFIELD_OF : thm := BSubfields.CARRIER_SUBFIELD_OF
+def IN_SUBFIELD_0 : thm := BSubfields.IN_SUBFIELD_0
+def IN_SUBFIELD_1 : thm := BSubfields.IN_SUBFIELD_1
+def IN_SUBFIELD_NEG : thm := BSubfields.IN_SUBFIELD_NEG
+def IN_SUBFIELD_ADD : thm := BSubfields.IN_SUBFIELD_ADD
+def IN_SUBFIELD_MUL : thm := BSubfields.IN_SUBFIELD_MUL
+def IN_SUBFIELD_SUB : thm := BSubfields.IN_SUBFIELD_SUB
+def IN_SUBFIELD_POW : thm := BSubfields.IN_SUBFIELD_POW
+def IN_SUBFIELD_SUM : thm := BSubfields.IN_SUBFIELD_SUM
+def IN_SUBFIELD_PRODUCT : thm := BSubfields.IN_SUBFIELD_PRODUCT
+def SUBFIELD_OF_HOMOMORPHIC_EQUALITIES : thm := BSubfields.SUBFIELD_OF_HOMOMORPHIC_EQUALITIES
+def SUBFIELD_OF_FIXPOINTS : thm := BSubfields.SUBFIELD_OF_FIXPOINTS
+def SUBFIELD_OF_SUBRING_QUOTIENTS : thm := BSubfields.SUBFIELD_OF_SUBRING_QUOTIENTS
 
 -- SubfieldGenerated
-unsafe def subfield_generated : thm := BSubfieldGenerated.subfield_generated
-unsafe def SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBFIELD_GENERATED
-unsafe def CARRIER_SUBFIELD_GENERATED_FIELD : thm := BSubfieldGenerated.CARRIER_SUBFIELD_GENERATED_FIELD
-unsafe def CARRIER_SUBFIELD_GENERATED_SUBFIELD : thm := BSubfieldGenerated.CARRIER_SUBFIELD_GENERATED_SUBFIELD
-unsafe def RING_CARRIER_SUBFIELD_GENERATED_SUBSET : thm := BSubfieldGenerated.RING_CARRIER_SUBFIELD_GENERATED_SUBSET
-unsafe def SUBFIELD_GENERATED_RESTRICT : thm := BSubfieldGenerated.SUBFIELD_GENERATED_RESTRICT
-unsafe def SUBFIELD_GENERATED_MONO : thm := BSubfieldGenerated.SUBFIELD_GENERATED_MONO
-unsafe def SUBFIELD_GENERATED_MINIMAL : thm := BSubfieldGenerated.SUBFIELD_GENERATED_MINIMAL
-unsafe def SUBRING_SUBSET_SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBRING_SUBSET_SUBFIELD_GENERATED
-unsafe def SUBRING_SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBRING_SUBFIELD_GENERATED
-unsafe def SUBFIELD_GENERATED_TRIVIAL : thm := BSubfieldGenerated.SUBFIELD_GENERATED_TRIVIAL
-unsafe def SUBRING_EQ_SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBRING_EQ_SUBFIELD_GENERATED
-unsafe def SUBRING_GENERATED_BY_SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBRING_GENERATED_BY_SUBFIELD_GENERATED
-unsafe def SUBFIELD_GENERATED_SUBSET_CARRIER : thm := BSubfieldGenerated.SUBFIELD_GENERATED_SUBSET_CARRIER
-unsafe def SUBFIELD_SUBFIELD_GENERATED_ALT : thm := BSubfieldGenerated.SUBFIELD_SUBFIELD_GENERATED_ALT
-unsafe def SUBFIELD_SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBFIELD_SUBFIELD_GENERATED
-unsafe def FIELD_SUBFIELD_GENERATED_ALT : thm := BSubfieldGenerated.FIELD_SUBFIELD_GENERATED_ALT
-unsafe def FIELD_SUBFIELD_GENERATED_EQ : thm := BSubfieldGenerated.FIELD_SUBFIELD_GENERATED_EQ
-unsafe def SUBFIELD_SUBFIELD_GENERATED_EQ : thm := BSubfieldGenerated.SUBFIELD_SUBFIELD_GENERATED_EQ
-unsafe def FIELD_SUBFIELD_GENERATED : thm := BSubfieldGenerated.FIELD_SUBFIELD_GENERATED
-unsafe def FIELD_SUBFIELD_GENERATED_MONO : thm := BSubfieldGenerated.FIELD_SUBFIELD_GENERATED_MONO
-unsafe def SUBFIELD_GENERATED_EQ : thm := BSubfieldGenerated.SUBFIELD_GENERATED_EQ
-unsafe def SUBFIELDS_GENERATED_EQ : thm := BSubfieldGenerated.SUBFIELDS_GENERATED_EQ
-unsafe def SUBFIELD_GENERATED_SUPERSET : thm := BSubfieldGenerated.SUBFIELD_GENERATED_SUPERSET
-unsafe def FINITE_SUBFIELD_GENERATED : thm := BSubfieldGenerated.FINITE_SUBFIELD_GENERATED
+def subfield_generated : thm := BSubfieldGenerated.subfield_generated
+def SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBFIELD_GENERATED
+def CARRIER_SUBFIELD_GENERATED_FIELD : thm := BSubfieldGenerated.CARRIER_SUBFIELD_GENERATED_FIELD
+def CARRIER_SUBFIELD_GENERATED_SUBFIELD : thm := BSubfieldGenerated.CARRIER_SUBFIELD_GENERATED_SUBFIELD
+def RING_CARRIER_SUBFIELD_GENERATED_SUBSET : thm := BSubfieldGenerated.RING_CARRIER_SUBFIELD_GENERATED_SUBSET
+def SUBFIELD_GENERATED_RESTRICT : thm := BSubfieldGenerated.SUBFIELD_GENERATED_RESTRICT
+def SUBFIELD_GENERATED_MONO : thm := BSubfieldGenerated.SUBFIELD_GENERATED_MONO
+def SUBFIELD_GENERATED_MINIMAL : thm := BSubfieldGenerated.SUBFIELD_GENERATED_MINIMAL
+def SUBRING_SUBSET_SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBRING_SUBSET_SUBFIELD_GENERATED
+def SUBRING_SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBRING_SUBFIELD_GENERATED
+def SUBFIELD_GENERATED_TRIVIAL : thm := BSubfieldGenerated.SUBFIELD_GENERATED_TRIVIAL
+def SUBRING_EQ_SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBRING_EQ_SUBFIELD_GENERATED
+def SUBRING_GENERATED_BY_SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBRING_GENERATED_BY_SUBFIELD_GENERATED
+def SUBFIELD_GENERATED_SUBSET_CARRIER : thm := BSubfieldGenerated.SUBFIELD_GENERATED_SUBSET_CARRIER
+def SUBFIELD_SUBFIELD_GENERATED_ALT : thm := BSubfieldGenerated.SUBFIELD_SUBFIELD_GENERATED_ALT
+def SUBFIELD_SUBFIELD_GENERATED : thm := BSubfieldGenerated.SUBFIELD_SUBFIELD_GENERATED
+def FIELD_SUBFIELD_GENERATED_ALT : thm := BSubfieldGenerated.FIELD_SUBFIELD_GENERATED_ALT
+def FIELD_SUBFIELD_GENERATED_EQ : thm := BSubfieldGenerated.FIELD_SUBFIELD_GENERATED_EQ
+def SUBFIELD_SUBFIELD_GENERATED_EQ : thm := BSubfieldGenerated.SUBFIELD_SUBFIELD_GENERATED_EQ
+def FIELD_SUBFIELD_GENERATED : thm := BSubfieldGenerated.FIELD_SUBFIELD_GENERATED
+def FIELD_SUBFIELD_GENERATED_MONO : thm := BSubfieldGenerated.FIELD_SUBFIELD_GENERATED_MONO
+def SUBFIELD_GENERATED_EQ : thm := BSubfieldGenerated.SUBFIELD_GENERATED_EQ
+def SUBFIELDS_GENERATED_EQ : thm := BSubfieldGenerated.SUBFIELDS_GENERATED_EQ
+def SUBFIELD_GENERATED_SUPERSET : thm := BSubfieldGenerated.SUBFIELD_GENERATED_SUPERSET
+def FINITE_SUBFIELD_GENERATED : thm := BSubfieldGenerated.FINITE_SUBFIELD_GENERATED
 
 -- SubfieldGenerated1
-unsafe def SUBSET_CARRIER_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBSET_CARRIER_SUBFIELD_GENERATED
-unsafe def SUBFIELD_GENERATED_MINIMAL_EQ : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_MINIMAL_EQ
-unsafe def SUBFIELD_GENERATED_RING_CARRIER : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_RING_CARRIER
-unsafe def SUBFIELD_GENERATED_SUBSET_CARRIER_SUBSET : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_SUBSET_CARRIER_SUBSET
-unsafe def SUBFIELD_GENERATED_BY_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_BY_SUBFIELD_GENERATED
-unsafe def SUBFIELD_GENERATED_REFL : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_REFL
-unsafe def SUBFIELD_GENERATED_INC : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_INC
-unsafe def SUBFIELD_GENERATED_INC_GEN : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_INC_GEN
-unsafe def SUBRING_OF_SUBFIELD_GENERATED_EQ : thm := BSubfieldGenerated1.SUBRING_OF_SUBFIELD_GENERATED_EQ
-unsafe def SUBFIELD_OF_SUBFIELD_GENERATED_EQ : thm := BSubfieldGenerated1.SUBFIELD_OF_SUBFIELD_GENERATED_EQ
-unsafe def SUBFIELD_OF_SUBFIELD_GENERATED_SUBFIELD_EQ : thm := BSubfieldGenerated1.SUBFIELD_OF_SUBFIELD_GENERATED_SUBFIELD_EQ
-unsafe def SUBFIELD_OF_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBFIELD_OF_SUBFIELD_GENERATED
-unsafe def SUBFIELD_OF_SUBFIELD_GENERATED_REV : thm := BSubfieldGenerated1.SUBFIELD_OF_SUBFIELD_GENERATED_REV
-unsafe def SUBFIELD_GENERATED_IDEMPOT : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_IDEMPOT
-unsafe def SUBFIELD_GENERATED_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_SUBFIELD_GENERATED
-unsafe def SUBRING_GENERATED_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBRING_GENERATED_SUBFIELD_GENERATED
-unsafe def TRIVIAL_RING_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.TRIVIAL_RING_SUBFIELD_GENERATED
-unsafe def SUBFIELD_GENERATED_UNION_LEFT : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_UNION_LEFT
-unsafe def SUBFIELD_GENERATED_UNION_RIGHT : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_UNION_RIGHT
-unsafe def SUBFIELD_GENERATED_UNION : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_UNION
+def SUBSET_CARRIER_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBSET_CARRIER_SUBFIELD_GENERATED
+def SUBFIELD_GENERATED_MINIMAL_EQ : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_MINIMAL_EQ
+def SUBFIELD_GENERATED_RING_CARRIER : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_RING_CARRIER
+def SUBFIELD_GENERATED_SUBSET_CARRIER_SUBSET : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_SUBSET_CARRIER_SUBSET
+def SUBFIELD_GENERATED_BY_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_BY_SUBFIELD_GENERATED
+def SUBFIELD_GENERATED_REFL : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_REFL
+def SUBFIELD_GENERATED_INC : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_INC
+def SUBFIELD_GENERATED_INC_GEN : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_INC_GEN
+def SUBRING_OF_SUBFIELD_GENERATED_EQ : thm := BSubfieldGenerated1.SUBRING_OF_SUBFIELD_GENERATED_EQ
+def SUBFIELD_OF_SUBFIELD_GENERATED_EQ : thm := BSubfieldGenerated1.SUBFIELD_OF_SUBFIELD_GENERATED_EQ
+def SUBFIELD_OF_SUBFIELD_GENERATED_SUBFIELD_EQ : thm := BSubfieldGenerated1.SUBFIELD_OF_SUBFIELD_GENERATED_SUBFIELD_EQ
+def SUBFIELD_OF_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBFIELD_OF_SUBFIELD_GENERATED
+def SUBFIELD_OF_SUBFIELD_GENERATED_REV : thm := BSubfieldGenerated1.SUBFIELD_OF_SUBFIELD_GENERATED_REV
+def SUBFIELD_GENERATED_IDEMPOT : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_IDEMPOT
+def SUBFIELD_GENERATED_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_SUBFIELD_GENERATED
+def SUBRING_GENERATED_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBRING_GENERATED_SUBFIELD_GENERATED
+def TRIVIAL_RING_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.TRIVIAL_RING_SUBFIELD_GENERATED
+def SUBFIELD_GENERATED_UNION_LEFT : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_UNION_LEFT
+def SUBFIELD_GENERATED_UNION_RIGHT : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_UNION_RIGHT
+def SUBFIELD_GENERATED_UNION : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_UNION
 
 -- SubfieldGenerated2
-unsafe def SUBFIELD_OF_MONOMORPHIC_IMAGE : thm := BSubfieldGenerated2.SUBFIELD_OF_MONOMORPHIC_IMAGE
-unsafe def SUBFIELD_OF_MONOMORPHIC_PREIMAGE : thm := BSubfieldGenerated2.SUBFIELD_OF_MONOMORPHIC_PREIMAGE
-unsafe def SUBFIELD_GENERATED_BY_MONOMORPHIC_IMAGE : thm := BSubfieldGenerated2.SUBFIELD_GENERATED_BY_MONOMORPHIC_IMAGE
-unsafe def RING_SUB_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_SUB_SUBFIELD_GENERATED
-unsafe def RING_POW_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_POW_SUBFIELD_GENERATED
-unsafe def RING_OF_NUM_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_OF_NUM_SUBFIELD_GENERATED
-unsafe def RING_OF_INT_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_OF_INT_SUBFIELD_GENERATED
-unsafe def RING_CHAR_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_CHAR_SUBFIELD_GENERATED
-unsafe def RING_0_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_0_IN_SUBFIELD_GENERATED
-unsafe def RING_1_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_1_IN_SUBFIELD_GENERATED
-unsafe def RING_NEG_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_NEG_IN_SUBFIELD_GENERATED
-unsafe def RING_ADD_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_ADD_IN_SUBFIELD_GENERATED
-unsafe def RING_MUL_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_MUL_IN_SUBFIELD_GENERATED
-unsafe def RING_POW_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_POW_IN_SUBFIELD_GENERATED
-unsafe def RING_INV_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_INV_SUBFIELD_GENERATED
-unsafe def RING_INV_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_INV_IN_SUBFIELD_GENERATED
-unsafe def RING_DIV_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_DIV_IN_SUBFIELD_GENERATED
-unsafe def SUBFIELD_GENERATED_INDUCT : thm := BSubfieldGenerated2.SUBFIELD_GENERATED_INDUCT
-unsafe def POLY_CONST_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.POLY_CONST_SUBFIELD_GENERATED
-unsafe def POLY_SUBFIELD_GENERATED_CLAUSES : thm := BSubfieldGenerated2.POLY_SUBFIELD_GENERATED_CLAUSES
+def SUBFIELD_OF_MONOMORPHIC_IMAGE : thm := BSubfieldGenerated2.SUBFIELD_OF_MONOMORPHIC_IMAGE
+def SUBFIELD_OF_MONOMORPHIC_PREIMAGE : thm := BSubfieldGenerated2.SUBFIELD_OF_MONOMORPHIC_PREIMAGE
+def SUBFIELD_GENERATED_BY_MONOMORPHIC_IMAGE : thm := BSubfieldGenerated2.SUBFIELD_GENERATED_BY_MONOMORPHIC_IMAGE
+def RING_SUB_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_SUB_SUBFIELD_GENERATED
+def RING_POW_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_POW_SUBFIELD_GENERATED
+def RING_OF_NUM_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_OF_NUM_SUBFIELD_GENERATED
+def RING_OF_INT_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_OF_INT_SUBFIELD_GENERATED
+def RING_CHAR_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_CHAR_SUBFIELD_GENERATED
+def RING_0_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_0_IN_SUBFIELD_GENERATED
+def RING_1_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_1_IN_SUBFIELD_GENERATED
+def RING_NEG_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_NEG_IN_SUBFIELD_GENERATED
+def RING_ADD_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_ADD_IN_SUBFIELD_GENERATED
+def RING_MUL_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_MUL_IN_SUBFIELD_GENERATED
+def RING_POW_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_POW_IN_SUBFIELD_GENERATED
+def RING_INV_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_INV_SUBFIELD_GENERATED
+def RING_INV_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_INV_IN_SUBFIELD_GENERATED
+def RING_DIV_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_DIV_IN_SUBFIELD_GENERATED
+def SUBFIELD_GENERATED_INDUCT : thm := BSubfieldGenerated2.SUBFIELD_GENERATED_INDUCT
+def POLY_CONST_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.POLY_CONST_SUBFIELD_GENERATED
+def POLY_SUBFIELD_GENERATED_CLAUSES : thm := BSubfieldGenerated2.POLY_SUBFIELD_GENERATED_CLAUSES
 
 -- SubfieldQuotients
-unsafe def FIELD_SUBFIELD_GENERATED_UNITS : thm := BSubfieldQuotients.FIELD_SUBFIELD_GENERATED_UNITS
-unsafe def SUBFIELD_GENERATED_SUBRING_QUOTIENTS : thm := BSubfieldQuotients.SUBFIELD_GENERATED_SUBRING_QUOTIENTS
-unsafe def RING_CARRIER_SUBFIELD_GENERATED_SUBRING_QUOTIENTS : thm := BSubfieldQuotients.RING_CARRIER_SUBFIELD_GENERATED_SUBRING_QUOTIENTS
-unsafe def SUBFIELD_GENERATED_QUOTIENTS : thm := BSubfieldQuotients.SUBFIELD_GENERATED_QUOTIENTS
-unsafe def FINITE_SUBSET_SUBFIELD_GENERATED_DENOMINATOR : thm := BSubfieldQuotients.FINITE_SUBSET_SUBFIELD_GENERATED_DENOMINATOR
-unsafe def POLY_OVER_SUBFIELD_GENERATED_DENOMINATOR : thm := BSubfieldQuotients.POLY_OVER_SUBFIELD_GENERATED_DENOMINATOR
-unsafe def IN_SUBFIELD_GENERATED_FINITARY : thm := BSubfieldQuotients.IN_SUBFIELD_GENERATED_FINITARY
-unsafe def PRIME_SUBFIELD_MINIMAL : thm := BSubfieldQuotients.PRIME_SUBFIELD_MINIMAL
-unsafe def PRIME_SUBFIELD_EQ_SUBRING : thm := BSubfieldQuotients.PRIME_SUBFIELD_EQ_SUBRING
-unsafe def FROBENIUS_FIXED_FIELD : thm := BSubfieldQuotients.FROBENIUS_FIXED_FIELD
+def FIELD_SUBFIELD_GENERATED_UNITS : thm := BSubfieldQuotients.FIELD_SUBFIELD_GENERATED_UNITS
+def SUBFIELD_GENERATED_SUBRING_QUOTIENTS : thm := BSubfieldQuotients.SUBFIELD_GENERATED_SUBRING_QUOTIENTS
+def RING_CARRIER_SUBFIELD_GENERATED_SUBRING_QUOTIENTS : thm := BSubfieldQuotients.RING_CARRIER_SUBFIELD_GENERATED_SUBRING_QUOTIENTS
+def SUBFIELD_GENERATED_QUOTIENTS : thm := BSubfieldQuotients.SUBFIELD_GENERATED_QUOTIENTS
+def FINITE_SUBSET_SUBFIELD_GENERATED_DENOMINATOR : thm := BSubfieldQuotients.FINITE_SUBSET_SUBFIELD_GENERATED_DENOMINATOR
+def POLY_OVER_SUBFIELD_GENERATED_DENOMINATOR : thm := BSubfieldQuotients.POLY_OVER_SUBFIELD_GENERATED_DENOMINATOR
+def IN_SUBFIELD_GENERATED_FINITARY : thm := BSubfieldQuotients.IN_SUBFIELD_GENERATED_FINITARY
+def PRIME_SUBFIELD_MINIMAL : thm := BSubfieldQuotients.PRIME_SUBFIELD_MINIMAL
+def PRIME_SUBFIELD_EQ_SUBRING : thm := BSubfieldQuotients.PRIME_SUBFIELD_EQ_SUBRING
+def FROBENIUS_FIXED_FIELD : thm := BSubfieldQuotients.FROBENIUS_FIXED_FIELD
 
 -- FieldExtension
-unsafe def field_extension : thm := BFieldExtension.field_extension
-unsafe def FIELD_EXTENSION_IMP_MONOMORPHISM : thm := BFieldExtension.FIELD_EXTENSION_IMP_MONOMORPHISM
-unsafe def FIELD_EXTENSION_IMP_HOMOMORPHISM : thm := BFieldExtension.FIELD_EXTENSION_IMP_HOMOMORPHISM
-unsafe def FIELD_EXTENSION_IMP_SUBSET : thm := BFieldExtension.FIELD_EXTENSION_IMP_SUBSET
-unsafe def FIELD_EXTENSION_CARRIER : thm := BFieldExtension.FIELD_EXTENSION_CARRIER
-unsafe def FIELD_EXTENSION_FROM_SUBRING_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_FROM_SUBRING_GENERATED
-unsafe def FIELD_EXTENSION_EQ : thm := BFieldExtension.FIELD_EXTENSION_EQ
-unsafe def FIELD_EXTENSION_REFL : thm := BFieldExtension.FIELD_EXTENSION_REFL
-unsafe def FIELD_EXTENSION_TRANS : thm := BFieldExtension.FIELD_EXTENSION_TRANS
-unsafe def FIELD_EXTENSION_TRANS_I : thm := BFieldExtension.FIELD_EXTENSION_TRANS_I
-unsafe def FIELD_EXTENSION_ISOMORPHISM : thm := BFieldExtension.FIELD_EXTENSION_ISOMORPHISM
-unsafe def FIELD_EXTENSION_SUBRING_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_SUBRING_GENERATED
-unsafe def FIELD_EXTENSION_INTO_SUBRING_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_INTO_SUBRING_GENERATED
-unsafe def FIELD_EXTENSION_INTO_SUBFIELD_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_INTO_SUBFIELD_GENERATED
-unsafe def KRONECKER_FIELD_EXTENSION : thm := BFieldExtension.KRONECKER_FIELD_EXTENSION
-unsafe def KRONECKER_SIMPLE_FIELD_EXTENSION : thm := BFieldExtension.KRONECKER_SIMPLE_FIELD_EXTENSION
-unsafe def COPRIME_POLY_NO_COMMON_ROOT : thm := BFieldExtension.COPRIME_POLY_NO_COMMON_ROOT
-unsafe def COPRIME_POLY_NO_COMMON_ROOT_I : thm := BFieldExtension.COPRIME_POLY_NO_COMMON_ROOT_I
+def field_extension : thm := BFieldExtension.field_extension
+def FIELD_EXTENSION_IMP_MONOMORPHISM : thm := BFieldExtension.FIELD_EXTENSION_IMP_MONOMORPHISM
+def FIELD_EXTENSION_IMP_HOMOMORPHISM : thm := BFieldExtension.FIELD_EXTENSION_IMP_HOMOMORPHISM
+def FIELD_EXTENSION_IMP_SUBSET : thm := BFieldExtension.FIELD_EXTENSION_IMP_SUBSET
+def FIELD_EXTENSION_CARRIER : thm := BFieldExtension.FIELD_EXTENSION_CARRIER
+def FIELD_EXTENSION_FROM_SUBRING_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_FROM_SUBRING_GENERATED
+def FIELD_EXTENSION_EQ : thm := BFieldExtension.FIELD_EXTENSION_EQ
+def FIELD_EXTENSION_REFL : thm := BFieldExtension.FIELD_EXTENSION_REFL
+def FIELD_EXTENSION_TRANS : thm := BFieldExtension.FIELD_EXTENSION_TRANS
+def FIELD_EXTENSION_TRANS_I : thm := BFieldExtension.FIELD_EXTENSION_TRANS_I
+def FIELD_EXTENSION_ISOMORPHISM : thm := BFieldExtension.FIELD_EXTENSION_ISOMORPHISM
+def FIELD_EXTENSION_SUBRING_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_SUBRING_GENERATED
+def FIELD_EXTENSION_INTO_SUBRING_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_INTO_SUBRING_GENERATED
+def FIELD_EXTENSION_INTO_SUBFIELD_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_INTO_SUBFIELD_GENERATED
+def KRONECKER_FIELD_EXTENSION : thm := BFieldExtension.KRONECKER_FIELD_EXTENSION
+def KRONECKER_SIMPLE_FIELD_EXTENSION : thm := BFieldExtension.KRONECKER_SIMPLE_FIELD_EXTENSION
+def COPRIME_POLY_NO_COMMON_ROOT : thm := BFieldExtension.COPRIME_POLY_NO_COMMON_ROOT
+def COPRIME_POLY_NO_COMMON_ROOT_I : thm := BFieldExtension.COPRIME_POLY_NO_COMMON_ROOT_I
 
 -- RingSpan
-unsafe def ring_span_RULES : thm := BRingSpan.ring_span_RULES
-unsafe def ring_span_INDUCT : thm := BRingSpan.ring_span_INDUCT
-unsafe def ring_span_CASES : thm := BRingSpan.ring_span_CASES
-unsafe def RING_SPAN_0 : thm := BRingSpan.RING_SPAN_0
-unsafe def RING_SPAN_INC : thm := BRingSpan.RING_SPAN_INC
-unsafe def RING_SPAN_ADD : thm := BRingSpan.RING_SPAN_ADD
-unsafe def RING_SPAN_MUL : thm := BRingSpan.RING_SPAN_MUL
-unsafe def RING_SPAN_SUBSET : thm := BRingSpan.RING_SPAN_SUBSET
-unsafe def RING_SPAN_SUPERSET_GEN : thm := BRingSpan.RING_SPAN_SUPERSET_GEN
-unsafe def RING_SPAN_SUPERSET : thm := BRingSpan.RING_SPAN_SUPERSET
-unsafe def RING_SPAN_SUPERSET_EQ : thm := BRingSpan.RING_SPAN_SUPERSET_EQ
-unsafe def RING_SPAN_MONO : thm := BRingSpan.RING_SPAN_MONO
-unsafe def SUBSET_RING_SPAN : thm := BRingSpan.SUBSET_RING_SPAN
-unsafe def RING_SPAN_RESTRICT : thm := BRingSpan.RING_SPAN_RESTRICT
-unsafe def RING_SPAN_SPAN : thm := BRingSpan.RING_SPAN_SPAN
-unsafe def RING_SPAN_FINITARY : thm := BRingSpan.RING_SPAN_FINITARY
-unsafe def RING_SPAN_NONEMPTY : thm := BRingSpan.RING_SPAN_NONEMPTY
-unsafe def RING_SPAN_SELF : thm := BRingSpan.RING_SPAN_SELF
-unsafe def RING_SPAN_EMPTY : thm := BRingSpan.RING_SPAN_EMPTY
-unsafe def RING_SPAN_NEG : thm := BRingSpan.RING_SPAN_NEG
-unsafe def RING_SPAN_SUB : thm := BRingSpan.RING_SPAN_SUB
-unsafe def RING_SPAN_SUM : thm := BRingSpan.RING_SPAN_SUM
-unsafe def RING_SPAN_UNION : thm := BRingSpan.RING_SPAN_UNION
-unsafe def RING_SPAN_SING : thm := BRingSpan.RING_SPAN_SING
-unsafe def RING_SPAN_EXCHANGE : thm := BRingSpan.RING_SPAN_EXCHANGE
-unsafe def RING_SPAN_FINITE : thm := BRingSpan.RING_SPAN_FINITE
-unsafe def RING_SPAN_HOMOMORPHIC_IMAGE : thm := BRingSpan.RING_SPAN_HOMOMORPHIC_IMAGE
+def ring_span_RULES : thm := BRingSpan.ring_span_RULES
+def ring_span_INDUCT : thm := BRingSpan.ring_span_INDUCT
+def ring_span_CASES : thm := BRingSpan.ring_span_CASES
+def RING_SPAN_0 : thm := BRingSpan.RING_SPAN_0
+def RING_SPAN_INC : thm := BRingSpan.RING_SPAN_INC
+def RING_SPAN_ADD : thm := BRingSpan.RING_SPAN_ADD
+def RING_SPAN_MUL : thm := BRingSpan.RING_SPAN_MUL
+def RING_SPAN_SUBSET : thm := BRingSpan.RING_SPAN_SUBSET
+def RING_SPAN_SUPERSET_GEN : thm := BRingSpan.RING_SPAN_SUPERSET_GEN
+def RING_SPAN_SUPERSET : thm := BRingSpan.RING_SPAN_SUPERSET
+def RING_SPAN_SUPERSET_EQ : thm := BRingSpan.RING_SPAN_SUPERSET_EQ
+def RING_SPAN_MONO : thm := BRingSpan.RING_SPAN_MONO
+def SUBSET_RING_SPAN : thm := BRingSpan.SUBSET_RING_SPAN
+def RING_SPAN_RESTRICT : thm := BRingSpan.RING_SPAN_RESTRICT
+def RING_SPAN_SPAN : thm := BRingSpan.RING_SPAN_SPAN
+def RING_SPAN_FINITARY : thm := BRingSpan.RING_SPAN_FINITARY
+def RING_SPAN_NONEMPTY : thm := BRingSpan.RING_SPAN_NONEMPTY
+def RING_SPAN_SELF : thm := BRingSpan.RING_SPAN_SELF
+def RING_SPAN_EMPTY : thm := BRingSpan.RING_SPAN_EMPTY
+def RING_SPAN_NEG : thm := BRingSpan.RING_SPAN_NEG
+def RING_SPAN_SUB : thm := BRingSpan.RING_SPAN_SUB
+def RING_SPAN_SUM : thm := BRingSpan.RING_SPAN_SUM
+def RING_SPAN_UNION : thm := BRingSpan.RING_SPAN_UNION
+def RING_SPAN_SING : thm := BRingSpan.RING_SPAN_SING
+def RING_SPAN_EXCHANGE : thm := BRingSpan.RING_SPAN_EXCHANGE
+def RING_SPAN_FINITE : thm := BRingSpan.RING_SPAN_FINITE
+def RING_SPAN_HOMOMORPHIC_IMAGE : thm := BRingSpan.RING_SPAN_HOMOMORPHIC_IMAGE
 
 -- RingMatroid
-unsafe def ring_matroid : thm := BRingMatroid.ring_matroid
-unsafe def RING_MATROID : thm := BRingMatroid.RING_MATROID
+def ring_matroid : thm := BRingMatroid.ring_matroid
+def RING_MATROID : thm := BRingMatroid.RING_MATROID
 
 -- LinearAlgebra
-unsafe def ring_dependent : thm := BLinearAlgebra.ring_dependent
-unsafe def ring_independent : thm := BLinearAlgebra.ring_independent
-unsafe def ring_spanning : thm := BLinearAlgebra.ring_spanning
-unsafe def ring_basis : thm := BLinearAlgebra.ring_basis
-unsafe def RING_DEPENDENT_IMP_SUBSET : thm := BLinearAlgebra.RING_DEPENDENT_IMP_SUBSET
-unsafe def RING_INDEPENDENT_IMP_SUBSET : thm := BLinearAlgebra.RING_INDEPENDENT_IMP_SUBSET
-unsafe def RING_SPANNING_IMP_SUBSET : thm := BLinearAlgebra.RING_SPANNING_IMP_SUBSET
-unsafe def RING_BASIS_IMP_SUBSET : thm := BLinearAlgebra.RING_BASIS_IMP_SUBSET
-unsafe def RING_MATROID_INDEPENDENT : thm := BLinearAlgebra.RING_MATROID_INDEPENDENT
-unsafe def RING_MATROID_SPANNING : thm := BLinearAlgebra.RING_MATROID_SPANNING
-unsafe def RING_MATROID_BASIS : thm := BLinearAlgebra.RING_MATROID_BASIS
-unsafe def RING_BASIS_EXISTS : thm := BLinearAlgebra.RING_BASIS_EXISTS
-unsafe def RING_SPANNING_CONTAINS_BASIS : thm := BLinearAlgebra.RING_SPANNING_CONTAINS_BASIS
-unsafe def RING_BASES_CARD_EQ : thm := BLinearAlgebra.RING_BASES_CARD_EQ
-unsafe def RING_SPANNING_ALT : thm := BLinearAlgebra.RING_SPANNING_ALT
-unsafe def RING_SPANNING_IMP_NONEMPTY : thm := BLinearAlgebra.RING_SPANNING_IMP_NONEMPTY
-unsafe def RING_INDEPENDENT_EMPTY : thm := BLinearAlgebra.RING_INDEPENDENT_EMPTY
-unsafe def RING_INDEPENDENT_NONZERO : thm := BLinearAlgebra.RING_INDEPENDENT_NONZERO
-unsafe def RING_DEPENDENT_MONO : thm := BLinearAlgebra.RING_DEPENDENT_MONO
-unsafe def RING_INDEPENDENT_MONO : thm := BLinearAlgebra.RING_INDEPENDENT_MONO
+def ring_dependent : thm := BLinearAlgebra.ring_dependent
+def ring_independent : thm := BLinearAlgebra.ring_independent
+def ring_spanning : thm := BLinearAlgebra.ring_spanning
+def ring_basis : thm := BLinearAlgebra.ring_basis
+def RING_DEPENDENT_IMP_SUBSET : thm := BLinearAlgebra.RING_DEPENDENT_IMP_SUBSET
+def RING_INDEPENDENT_IMP_SUBSET : thm := BLinearAlgebra.RING_INDEPENDENT_IMP_SUBSET
+def RING_SPANNING_IMP_SUBSET : thm := BLinearAlgebra.RING_SPANNING_IMP_SUBSET
+def RING_BASIS_IMP_SUBSET : thm := BLinearAlgebra.RING_BASIS_IMP_SUBSET
+def RING_MATROID_INDEPENDENT : thm := BLinearAlgebra.RING_MATROID_INDEPENDENT
+def RING_MATROID_SPANNING : thm := BLinearAlgebra.RING_MATROID_SPANNING
+def RING_MATROID_BASIS : thm := BLinearAlgebra.RING_MATROID_BASIS
+def RING_BASIS_EXISTS : thm := BLinearAlgebra.RING_BASIS_EXISTS
+def RING_SPANNING_CONTAINS_BASIS : thm := BLinearAlgebra.RING_SPANNING_CONTAINS_BASIS
+def RING_BASES_CARD_EQ : thm := BLinearAlgebra.RING_BASES_CARD_EQ
+def RING_SPANNING_ALT : thm := BLinearAlgebra.RING_SPANNING_ALT
+def RING_SPANNING_IMP_NONEMPTY : thm := BLinearAlgebra.RING_SPANNING_IMP_NONEMPTY
+def RING_INDEPENDENT_EMPTY : thm := BLinearAlgebra.RING_INDEPENDENT_EMPTY
+def RING_INDEPENDENT_NONZERO : thm := BLinearAlgebra.RING_INDEPENDENT_NONZERO
+def RING_DEPENDENT_MONO : thm := BLinearAlgebra.RING_DEPENDENT_MONO
+def RING_INDEPENDENT_MONO : thm := BLinearAlgebra.RING_INDEPENDENT_MONO
 
 -- Finitary
-unsafe def RING_DEPENDENT_FINITARY : thm := BFinitary.RING_DEPENDENT_FINITARY
-unsafe def RING_INDEPENDENT_FINITARY : thm := BFinitary.RING_INDEPENDENT_FINITARY
-unsafe def RING_INDEPENDENT_LE_SPAN : thm := BFinitary.RING_INDEPENDENT_LE_SPAN
-unsafe def RING_DEPENDENT_FINITE : thm := BFinitary.RING_DEPENDENT_FINITE
-unsafe def RING_INDEPENDENT_FINITE : thm := BFinitary.RING_INDEPENDENT_FINITE
-unsafe def RING_INDEPENDENT_FINITE_EQ : thm := BFinitary.RING_INDEPENDENT_FINITE_EQ
-unsafe def RING_DEPENDENT_SPAN_IMAGE : thm := BFinitary.RING_DEPENDENT_SPAN_IMAGE
-unsafe def RING_SPAN_SUBSET_SUBRING_GENERATED : thm := BFinitary.RING_SPAN_SUBSET_SUBRING_GENERATED
-unsafe def RING_SPAN_SUBSET_SUBFIELD_GENERATED : thm := BFinitary.RING_SPAN_SUBSET_SUBFIELD_GENERATED
-unsafe def RING_INDEPENDENT_INSERT : thm := BFinitary.RING_INDEPENDENT_INSERT
-unsafe def RING_INDEPENDENT_CARD_LE_SPANNING : thm := BFinitary.RING_INDEPENDENT_CARD_LE_SPANNING
+def RING_DEPENDENT_FINITARY : thm := BFinitary.RING_DEPENDENT_FINITARY
+def RING_INDEPENDENT_FINITARY : thm := BFinitary.RING_INDEPENDENT_FINITARY
+def RING_INDEPENDENT_LE_SPAN : thm := BFinitary.RING_INDEPENDENT_LE_SPAN
+def RING_DEPENDENT_FINITE : thm := BFinitary.RING_DEPENDENT_FINITE
+def RING_INDEPENDENT_FINITE : thm := BFinitary.RING_INDEPENDENT_FINITE
+def RING_INDEPENDENT_FINITE_EQ : thm := BFinitary.RING_INDEPENDENT_FINITE_EQ
+def RING_DEPENDENT_SPAN_IMAGE : thm := BFinitary.RING_DEPENDENT_SPAN_IMAGE
+def RING_SPAN_SUBSET_SUBRING_GENERATED : thm := BFinitary.RING_SPAN_SUBSET_SUBRING_GENERATED
+def RING_SPAN_SUBSET_SUBFIELD_GENERATED : thm := BFinitary.RING_SPAN_SUBSET_SUBFIELD_GENERATED
+def RING_INDEPENDENT_INSERT : thm := BFinitary.RING_INDEPENDENT_INSERT
+def RING_INDEPENDENT_CARD_LE_SPANNING : thm := BFinitary.RING_INDEPENDENT_CARD_LE_SPANNING
 
 -- TowerLaw
-unsafe def RING_SPANNING_TRANS : thm := BTowerLaw.RING_SPANNING_TRANS
-unsafe def RING_INDEPENDENT_PRODUCTS : thm := BTowerLaw.RING_INDEPENDENT_PRODUCTS
-unsafe def RING_INDEPENDENT_TRANS : thm := BTowerLaw.RING_INDEPENDENT_TRANS
-unsafe def RING_BASIS_TRANS : thm := BTowerLaw.RING_BASIS_TRANS
-unsafe def FIELD_EXTENSION_TOWER_LAW : thm := BTowerLaw.FIELD_EXTENSION_TOWER_LAW
+def RING_SPANNING_TRANS : thm := BTowerLaw.RING_SPANNING_TRANS
+def RING_INDEPENDENT_PRODUCTS : thm := BTowerLaw.RING_INDEPENDENT_PRODUCTS
+def RING_INDEPENDENT_TRANS : thm := BTowerLaw.RING_INDEPENDENT_TRANS
+def RING_BASIS_TRANS : thm := BTowerLaw.RING_BASIS_TRANS
+def FIELD_EXTENSION_TOWER_LAW : thm := BTowerLaw.FIELD_EXTENSION_TOWER_LAW
 
 -- FiniteExtension
-unsafe def finite_extension : thm := BFiniteExtension.finite_extension
-unsafe def RING_MATROID_FINITE_DIMENSIONAL : thm := BFiniteExtension.RING_MATROID_FINITE_DIMENSIONAL
-unsafe def FINITE_IMP_FIELD_EXTENSION : thm := BFiniteExtension.FINITE_IMP_FIELD_EXTENSION
-unsafe def FINITE_EXTENSION_RING_MATROID : thm := BFiniteExtension.FINITE_EXTENSION_RING_MATROID
-unsafe def FINITE_EXTENSION : thm := BFiniteExtension.FINITE_EXTENSION
-unsafe def FINITE_EXTENSION_SPANNING : thm := BFiniteExtension.FINITE_EXTENSION_SPANNING
-unsafe def FINITE_EXTENSION_BASIS : thm := BFiniteExtension.FINITE_EXTENSION_BASIS
-unsafe def FINITE_EXTENSION_ANY : thm := BFiniteExtension.FINITE_EXTENSION_ANY
-unsafe def FINITE_EXTENSION_ISOMORPHISM : thm := BFiniteExtension.FINITE_EXTENSION_ISOMORPHISM
-unsafe def FINITE_EXTENSION_TRANS : thm := BFiniteExtension.FINITE_EXTENSION_TRANS
-unsafe def FINITE_EXTENSION_TRANS_EQ : thm := BFiniteExtension.FINITE_EXTENSION_TRANS_EQ
-unsafe def finitely_generated_extension : thm := BFiniteExtension.finitely_generated_extension
-unsafe def FINITELY_GENERATED_IMP_FIELD_EXTENSION : thm := BFiniteExtension.FINITELY_GENERATED_IMP_FIELD_EXTENSION
-unsafe def FINITE_IMP_FINITELY_GENERATED_EXTENSION : thm := BFiniteExtension.FINITE_IMP_FINITELY_GENERATED_EXTENSION
-unsafe def FINITELY_GENERATED_EXTENSION : thm := BFiniteExtension.FINITELY_GENERATED_EXTENSION
-unsafe def FINITELY_GENERATED_EXTENSION_TRANS : thm := BFiniteExtension.FINITELY_GENERATED_EXTENSION_TRANS
+def finite_extension : thm := BFiniteExtension.finite_extension
+def RING_MATROID_FINITE_DIMENSIONAL : thm := BFiniteExtension.RING_MATROID_FINITE_DIMENSIONAL
+def FINITE_IMP_FIELD_EXTENSION : thm := BFiniteExtension.FINITE_IMP_FIELD_EXTENSION
+def FINITE_EXTENSION_RING_MATROID : thm := BFiniteExtension.FINITE_EXTENSION_RING_MATROID
+def FINITE_EXTENSION : thm := BFiniteExtension.FINITE_EXTENSION
+def FINITE_EXTENSION_SPANNING : thm := BFiniteExtension.FINITE_EXTENSION_SPANNING
+def FINITE_EXTENSION_BASIS : thm := BFiniteExtension.FINITE_EXTENSION_BASIS
+def FINITE_EXTENSION_ANY : thm := BFiniteExtension.FINITE_EXTENSION_ANY
+def FINITE_EXTENSION_ISOMORPHISM : thm := BFiniteExtension.FINITE_EXTENSION_ISOMORPHISM
+def FINITE_EXTENSION_TRANS : thm := BFiniteExtension.FINITE_EXTENSION_TRANS
+def FINITE_EXTENSION_TRANS_EQ : thm := BFiniteExtension.FINITE_EXTENSION_TRANS_EQ
+def finitely_generated_extension : thm := BFiniteExtension.finitely_generated_extension
+def FINITELY_GENERATED_IMP_FIELD_EXTENSION : thm := BFiniteExtension.FINITELY_GENERATED_IMP_FIELD_EXTENSION
+def FINITE_IMP_FINITELY_GENERATED_EXTENSION : thm := BFiniteExtension.FINITE_IMP_FINITELY_GENERATED_EXTENSION
+def FINITELY_GENERATED_EXTENSION : thm := BFiniteExtension.FINITELY_GENERATED_EXTENSION
+def FINITELY_GENERATED_EXTENSION_TRANS : thm := BFiniteExtension.FINITELY_GENERATED_EXTENSION_TRANS
 
 -- AlgebraicExtension
-unsafe def algebraic_over : thm := BAlgebraicExtension.algebraic_over
-unsafe def transcendental_over : thm := BAlgebraicExtension.transcendental_over
-unsafe def algebraic_extension : thm := BAlgebraicExtension.algebraic_extension
-unsafe def ALGEBRAIC_OVER : thm := BAlgebraicExtension.ALGEBRAIC_OVER
-unsafe def ALGEBRAIC_IMP_FIELD_EXTENSION : thm := BAlgebraicExtension.ALGEBRAIC_IMP_FIELD_EXTENSION
-unsafe def ALGEBRAIC_OVER_ALT : thm := BAlgebraicExtension.ALGEBRAIC_OVER_ALT
-unsafe def ALGEBRAIC_OVER_IN_CARRIER : thm := BAlgebraicExtension.ALGEBRAIC_OVER_IN_CARRIER
-unsafe def TRANSCENDENTAL_OVER_IN_CARRIER : thm := BAlgebraicExtension.TRANSCENDENTAL_OVER_IN_CARRIER
-unsafe def ALGEBRAIC_OVER_IMAGE_GEN : thm := BAlgebraicExtension.ALGEBRAIC_OVER_IMAGE_GEN
-unsafe def ALGEBRAIC_OVER_IMAGE : thm := BAlgebraicExtension.ALGEBRAIC_OVER_IMAGE
-unsafe def ALGEBRAIC_OVER_IMAGE_SUBSET : thm := BAlgebraicExtension.ALGEBRAIC_OVER_IMAGE_SUBSET
-unsafe def ALGEBRAIC_OVER_REFL : thm := BAlgebraicExtension.ALGEBRAIC_OVER_REFL
-unsafe def ALGEBRAIC_OVER_SUBRING_GENERATED : thm := BAlgebraicExtension.ALGEBRAIC_OVER_SUBRING_GENERATED
-unsafe def ALGEBRAIC_OVER_SUBFIELD_GENERATED : thm := BAlgebraicExtension.ALGEBRAIC_OVER_SUBFIELD_GENERATED
-unsafe def ALGEBRAIC_OVER_SUBRING_GENERATED_MONO : thm := BAlgebraicExtension.ALGEBRAIC_OVER_SUBRING_GENERATED_MONO
-unsafe def ALGEBRAIC_OVER_SUBFIELD_SUBRING_GENERATED : thm := BAlgebraicExtension.ALGEBRAIC_OVER_SUBFIELD_SUBRING_GENERATED
+def algebraic_over : thm := BAlgebraicExtension.algebraic_over
+def transcendental_over : thm := BAlgebraicExtension.transcendental_over
+def algebraic_extension : thm := BAlgebraicExtension.algebraic_extension
+def ALGEBRAIC_OVER : thm := BAlgebraicExtension.ALGEBRAIC_OVER
+def ALGEBRAIC_IMP_FIELD_EXTENSION : thm := BAlgebraicExtension.ALGEBRAIC_IMP_FIELD_EXTENSION
+def ALGEBRAIC_OVER_ALT : thm := BAlgebraicExtension.ALGEBRAIC_OVER_ALT
+def ALGEBRAIC_OVER_IN_CARRIER : thm := BAlgebraicExtension.ALGEBRAIC_OVER_IN_CARRIER
+def TRANSCENDENTAL_OVER_IN_CARRIER : thm := BAlgebraicExtension.TRANSCENDENTAL_OVER_IN_CARRIER
+def ALGEBRAIC_OVER_IMAGE_GEN : thm := BAlgebraicExtension.ALGEBRAIC_OVER_IMAGE_GEN
+def ALGEBRAIC_OVER_IMAGE : thm := BAlgebraicExtension.ALGEBRAIC_OVER_IMAGE
+def ALGEBRAIC_OVER_IMAGE_SUBSET : thm := BAlgebraicExtension.ALGEBRAIC_OVER_IMAGE_SUBSET
+def ALGEBRAIC_OVER_REFL : thm := BAlgebraicExtension.ALGEBRAIC_OVER_REFL
+def ALGEBRAIC_OVER_SUBRING_GENERATED : thm := BAlgebraicExtension.ALGEBRAIC_OVER_SUBRING_GENERATED
+def ALGEBRAIC_OVER_SUBFIELD_GENERATED : thm := BAlgebraicExtension.ALGEBRAIC_OVER_SUBFIELD_GENERATED
+def ALGEBRAIC_OVER_SUBRING_GENERATED_MONO : thm := BAlgebraicExtension.ALGEBRAIC_OVER_SUBRING_GENERATED_MONO
+def ALGEBRAIC_OVER_SUBFIELD_SUBRING_GENERATED : thm := BAlgebraicExtension.ALGEBRAIC_OVER_SUBFIELD_SUBRING_GENERATED
 
 -- AlgebraicOverBasics
-unsafe def ALGEBRAIC_OVER_NONMONOMORPHISM : thm := BAlgebraicOverBasics.ALGEBRAIC_OVER_NONMONOMORPHISM
-unsafe def ALGEBRAIC_EXTENSION : thm := BAlgebraicOverBasics.ALGEBRAIC_EXTENSION
-unsafe def ALGEBRAIC_EXTENSION_ALT : thm := BAlgebraicOverBasics.ALGEBRAIC_EXTENSION_ALT
-unsafe def ALGEBRAIC_OVER_EQ : thm := BAlgebraicOverBasics.ALGEBRAIC_OVER_EQ
-unsafe def ALGEBRAIC_OVER_EQ_EQ : thm := BAlgebraicOverBasics.ALGEBRAIC_OVER_EQ_EQ
-unsafe def ALGEBRAIC_EXTENSION_EQ : thm := BAlgebraicOverBasics.ALGEBRAIC_EXTENSION_EQ
-unsafe def FINITE_IMP_ALGEBRAIC_EXTENSION_EXPLICIT : thm := BAlgebraicOverBasics.FINITE_IMP_ALGEBRAIC_EXTENSION_EXPLICIT
-unsafe def FINITE_IMP_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverBasics.FINITE_IMP_ALGEBRAIC_EXTENSION
-unsafe def RING_SIMPLE_EXTENSION_SPAN : thm := BAlgebraicOverBasics.RING_SIMPLE_EXTENSION_SPAN
-unsafe def RING_SIMPLE_ALGEBRAIC_EXTENSION_SPAN : thm := BAlgebraicOverBasics.RING_SIMPLE_ALGEBRAIC_EXTENSION_SPAN
+def ALGEBRAIC_OVER_NONMONOMORPHISM : thm := BAlgebraicOverBasics.ALGEBRAIC_OVER_NONMONOMORPHISM
+def ALGEBRAIC_EXTENSION : thm := BAlgebraicOverBasics.ALGEBRAIC_EXTENSION
+def ALGEBRAIC_EXTENSION_ALT : thm := BAlgebraicOverBasics.ALGEBRAIC_EXTENSION_ALT
+def ALGEBRAIC_OVER_EQ : thm := BAlgebraicOverBasics.ALGEBRAIC_OVER_EQ
+def ALGEBRAIC_OVER_EQ_EQ : thm := BAlgebraicOverBasics.ALGEBRAIC_OVER_EQ_EQ
+def ALGEBRAIC_EXTENSION_EQ : thm := BAlgebraicOverBasics.ALGEBRAIC_EXTENSION_EQ
+def FINITE_IMP_ALGEBRAIC_EXTENSION_EXPLICIT : thm := BAlgebraicOverBasics.FINITE_IMP_ALGEBRAIC_EXTENSION_EXPLICIT
+def FINITE_IMP_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverBasics.FINITE_IMP_ALGEBRAIC_EXTENSION
+def RING_SIMPLE_EXTENSION_SPAN : thm := BAlgebraicOverBasics.RING_SIMPLE_EXTENSION_SPAN
+def RING_SIMPLE_ALGEBRAIC_EXTENSION_SPAN : thm := BAlgebraicOverBasics.RING_SIMPLE_ALGEBRAIC_EXTENSION_SPAN
 
 -- AlgebraicExtensionProps
-unsafe def FIELD_SIMPLE_ALGEBRAIC_EXTENSION_GEN : thm := BAlgebraicExtensionProps.FIELD_SIMPLE_ALGEBRAIC_EXTENSION_GEN
-unsafe def FIELD_SIMPLE_ALGEBRAIC_EXTENSION_EQ : thm := BAlgebraicExtensionProps.FIELD_SIMPLE_ALGEBRAIC_EXTENSION_EQ
-unsafe def FIELD_SIMPLE_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtensionProps.FIELD_SIMPLE_ALGEBRAIC_EXTENSION
-unsafe def FINITE_SIMPLE_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtensionProps.FINITE_SIMPLE_ALGEBRAIC_EXTENSION
-unsafe def ALGEBRAIC_OVER_FROM_MONOMORPHIC_IMAGE : thm := BAlgebraicExtensionProps.ALGEBRAIC_OVER_FROM_MONOMORPHIC_IMAGE
-unsafe def ALGEBRAIC_OVER_ISOMORPHIC_IMAGE : thm := BAlgebraicExtensionProps.ALGEBRAIC_OVER_ISOMORPHIC_IMAGE
-unsafe def ALGEBRAIC_OVER_RANGE : thm := BAlgebraicExtensionProps.ALGEBRAIC_OVER_RANGE
-unsafe def ALGEBRAIC_OVER_FIELD_EXTENSION : thm := BAlgebraicExtensionProps.ALGEBRAIC_OVER_FIELD_EXTENSION
-unsafe def FINITE_FINITELY_GENERATED_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtensionProps.FINITE_FINITELY_GENERATED_ALGEBRAIC_EXTENSION
-unsafe def FINITE_EQ_FINITELY_GENERATED_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtensionProps.FINITE_EQ_FINITELY_GENERATED_ALGEBRAIC_EXTENSION
+def FIELD_SIMPLE_ALGEBRAIC_EXTENSION_GEN : thm := BAlgebraicExtensionProps.FIELD_SIMPLE_ALGEBRAIC_EXTENSION_GEN
+def FIELD_SIMPLE_ALGEBRAIC_EXTENSION_EQ : thm := BAlgebraicExtensionProps.FIELD_SIMPLE_ALGEBRAIC_EXTENSION_EQ
+def FIELD_SIMPLE_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtensionProps.FIELD_SIMPLE_ALGEBRAIC_EXTENSION
+def FINITE_SIMPLE_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtensionProps.FINITE_SIMPLE_ALGEBRAIC_EXTENSION
+def ALGEBRAIC_OVER_FROM_MONOMORPHIC_IMAGE : thm := BAlgebraicExtensionProps.ALGEBRAIC_OVER_FROM_MONOMORPHIC_IMAGE
+def ALGEBRAIC_OVER_ISOMORPHIC_IMAGE : thm := BAlgebraicExtensionProps.ALGEBRAIC_OVER_ISOMORPHIC_IMAGE
+def ALGEBRAIC_OVER_RANGE : thm := BAlgebraicExtensionProps.ALGEBRAIC_OVER_RANGE
+def ALGEBRAIC_OVER_FIELD_EXTENSION : thm := BAlgebraicExtensionProps.ALGEBRAIC_OVER_FIELD_EXTENSION
+def FINITE_FINITELY_GENERATED_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtensionProps.FINITE_FINITELY_GENERATED_ALGEBRAIC_EXTENSION
+def FINITE_EQ_FINITELY_GENERATED_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtensionProps.FINITE_EQ_FINITELY_GENERATED_ALGEBRAIC_EXTENSION
 
 -- AlgebraicExtMisc
-unsafe def ALGEBRAIC_FROM_SUBRING_GENERATED : thm := BAlgebraicExtMisc.ALGEBRAIC_FROM_SUBRING_GENERATED
-unsafe def ALGEBRAIC_EXTENSION_ISOMORPHISM : thm := BAlgebraicExtMisc.ALGEBRAIC_EXTENSION_ISOMORPHISM
-unsafe def ALGEBRAIC_EXTENSION_REFL : thm := BAlgebraicExtMisc.ALGEBRAIC_EXTENSION_REFL
-unsafe def ALGEBRAIC_EXTENSION_TRANS : thm := BAlgebraicExtMisc.ALGEBRAIC_EXTENSION_TRANS
-unsafe def ALGEBRAIC_EXTENSION_TRANS_EQ : thm := BAlgebraicExtMisc.ALGEBRAIC_EXTENSION_TRANS_EQ
-unsafe def CARD_LE_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtMisc.CARD_LE_ALGEBRAIC_EXTENSION
-unsafe def CARD_EQ_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtMisc.CARD_EQ_ALGEBRAIC_EXTENSION
-unsafe def RING_AUTOMORPHISM_OF_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtMisc.RING_AUTOMORPHISM_OF_ALGEBRAIC_EXTENSION
-unsafe def RING_AUTOMORPHISM_FROBENIUS_GEN : thm := BAlgebraicExtMisc.RING_AUTOMORPHISM_FROBENIUS_GEN
+def ALGEBRAIC_FROM_SUBRING_GENERATED : thm := BAlgebraicExtMisc.ALGEBRAIC_FROM_SUBRING_GENERATED
+def ALGEBRAIC_EXTENSION_ISOMORPHISM : thm := BAlgebraicExtMisc.ALGEBRAIC_EXTENSION_ISOMORPHISM
+def ALGEBRAIC_EXTENSION_REFL : thm := BAlgebraicExtMisc.ALGEBRAIC_EXTENSION_REFL
+def ALGEBRAIC_EXTENSION_TRANS : thm := BAlgebraicExtMisc.ALGEBRAIC_EXTENSION_TRANS
+def ALGEBRAIC_EXTENSION_TRANS_EQ : thm := BAlgebraicExtMisc.ALGEBRAIC_EXTENSION_TRANS_EQ
+def CARD_LE_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtMisc.CARD_LE_ALGEBRAIC_EXTENSION
+def CARD_EQ_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtMisc.CARD_EQ_ALGEBRAIC_EXTENSION
+def RING_AUTOMORPHISM_OF_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtMisc.RING_AUTOMORPHISM_OF_ALGEBRAIC_EXTENSION
+def RING_AUTOMORPHISM_FROBENIUS_GEN : thm := BAlgebraicExtMisc.RING_AUTOMORPHISM_FROBENIUS_GEN
 
 -- AlgebraicField
-unsafe def ALGEBRAIC_OVER_0 : thm := BAlgebraicField.ALGEBRAIC_OVER_0
-unsafe def ALGEBRAIC_OVER_1 : thm := BAlgebraicField.ALGEBRAIC_OVER_1
-unsafe def ALGEBRAIC_OVER_NEG : thm := BAlgebraicField.ALGEBRAIC_OVER_NEG
-unsafe def ALGEBRAIC_OVER_INV : thm := BAlgebraicField.ALGEBRAIC_OVER_INV
-unsafe def ALGEBRAIC_OVER_ADD : thm := BAlgebraicField.ALGEBRAIC_OVER_ADD
-unsafe def ALGEBRAIC_OVER_MUL : thm := BAlgebraicField.ALGEBRAIC_OVER_MUL
-unsafe def ALGEBRAIC_OVER_SUB : thm := BAlgebraicField.ALGEBRAIC_OVER_SUB
-unsafe def ALGEBRAIC_OVER_DIV : thm := BAlgebraicField.ALGEBRAIC_OVER_DIV
-unsafe def ALGEBRAIC_OVER_POW : thm := BAlgebraicField.ALGEBRAIC_OVER_POW
-unsafe def SUBRING_OF_ALGEBRAIC_OVER : thm := BAlgebraicField.SUBRING_OF_ALGEBRAIC_OVER
-unsafe def SUBFIELD_OF_ALGEBRAIC_OVER : thm := BAlgebraicField.SUBFIELD_OF_ALGEBRAIC_OVER
-unsafe def ALGEBRAIC_OVER_SUBFIELD_GENERATED_ALGEBRAIC : thm := BAlgebraicField.ALGEBRAIC_OVER_SUBFIELD_GENERATED_ALGEBRAIC
-unsafe def FIELD_ALGEBRAIC_EXTENSION : thm := BAlgebraicField.FIELD_ALGEBRAIC_EXTENSION
-unsafe def SUBFIELD_OF_ALGEBRAIC_EXTENSION : thm := BAlgebraicField.SUBFIELD_OF_ALGEBRAIC_EXTENSION
-unsafe def FIELD_ALGEBRAIC_OVER : thm := BAlgebraicField.FIELD_ALGEBRAIC_OVER
-unsafe def SUBRING_SUBFIELD_ALGEBRAIC_OVER : thm := BAlgebraicField.SUBRING_SUBFIELD_ALGEBRAIC_OVER
-unsafe def ALGEBRAIC_OVER_TRANS : thm := BAlgebraicField.ALGEBRAIC_OVER_TRANS
-unsafe def ALGEBRAIC_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicField.ALGEBRAIC_OVER_ALGEBRAIC_EXTENSION
+def ALGEBRAIC_OVER_0 : thm := BAlgebraicField.ALGEBRAIC_OVER_0
+def ALGEBRAIC_OVER_1 : thm := BAlgebraicField.ALGEBRAIC_OVER_1
+def ALGEBRAIC_OVER_NEG : thm := BAlgebraicField.ALGEBRAIC_OVER_NEG
+def ALGEBRAIC_OVER_INV : thm := BAlgebraicField.ALGEBRAIC_OVER_INV
+def ALGEBRAIC_OVER_ADD : thm := BAlgebraicField.ALGEBRAIC_OVER_ADD
+def ALGEBRAIC_OVER_MUL : thm := BAlgebraicField.ALGEBRAIC_OVER_MUL
+def ALGEBRAIC_OVER_SUB : thm := BAlgebraicField.ALGEBRAIC_OVER_SUB
+def ALGEBRAIC_OVER_DIV : thm := BAlgebraicField.ALGEBRAIC_OVER_DIV
+def ALGEBRAIC_OVER_POW : thm := BAlgebraicField.ALGEBRAIC_OVER_POW
+def SUBRING_OF_ALGEBRAIC_OVER : thm := BAlgebraicField.SUBRING_OF_ALGEBRAIC_OVER
+def SUBFIELD_OF_ALGEBRAIC_OVER : thm := BAlgebraicField.SUBFIELD_OF_ALGEBRAIC_OVER
+def ALGEBRAIC_OVER_SUBFIELD_GENERATED_ALGEBRAIC : thm := BAlgebraicField.ALGEBRAIC_OVER_SUBFIELD_GENERATED_ALGEBRAIC
+def FIELD_ALGEBRAIC_EXTENSION : thm := BAlgebraicField.FIELD_ALGEBRAIC_EXTENSION
+def SUBFIELD_OF_ALGEBRAIC_EXTENSION : thm := BAlgebraicField.SUBFIELD_OF_ALGEBRAIC_EXTENSION
+def FIELD_ALGEBRAIC_OVER : thm := BAlgebraicField.FIELD_ALGEBRAIC_OVER
+def SUBRING_SUBFIELD_ALGEBRAIC_OVER : thm := BAlgebraicField.SUBRING_SUBFIELD_ALGEBRAIC_OVER
+def ALGEBRAIC_OVER_TRANS : thm := BAlgebraicField.ALGEBRAIC_OVER_TRANS
+def ALGEBRAIC_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicField.ALGEBRAIC_OVER_ALGEBRAIC_EXTENSION
 
 -- FiniteExt
-unsafe def FINITE_EQ_FIELD_EXTENSION : thm := BFiniteExt.FINITE_EQ_FIELD_EXTENSION
-unsafe def HAS_SIZE_FINITE_EXTENSION : thm := BFiniteExt.HAS_SIZE_FINITE_EXTENSION
-unsafe def FINITE_FINITE_FIELD_EXTENSION : thm := BFiniteExt.FINITE_FINITE_FIELD_EXTENSION
-unsafe def CARD_FINITE_EXTENSION : thm := BFiniteExt.CARD_FINITE_EXTENSION
-unsafe def FIELD_EXTENSION_FROM_PRIME_SUBRING : thm := BFiniteExt.FIELD_EXTENSION_FROM_PRIME_SUBRING
-unsafe def FINITE_INTEGRAL_DOMAIN_SIZE : thm := BFiniteExt.FINITE_INTEGRAL_DOMAIN_SIZE
+def FINITE_EQ_FIELD_EXTENSION : thm := BFiniteExt.FINITE_EQ_FIELD_EXTENSION
+def HAS_SIZE_FINITE_EXTENSION : thm := BFiniteExt.HAS_SIZE_FINITE_EXTENSION
+def FINITE_FINITE_FIELD_EXTENSION : thm := BFiniteExt.FINITE_FINITE_FIELD_EXTENSION
+def CARD_FINITE_EXTENSION : thm := BFiniteExt.CARD_FINITE_EXTENSION
+def FIELD_EXTENSION_FROM_PRIME_SUBRING : thm := BFiniteExt.FIELD_EXTENSION_FROM_PRIME_SUBRING
+def FINITE_INTEGRAL_DOMAIN_SIZE : thm := BFiniteExt.FINITE_INTEGRAL_DOMAIN_SIZE
 
 -- AlgDepDefs
-unsafe def algebraically_dependent : thm := BAlgDepDefs.algebraically_dependent
-unsafe def algebraically_independent : thm := BAlgDepDefs.algebraically_independent
-unsafe def algebraic_span : thm := BAlgDepDefs.algebraic_span
-unsafe def algebraically_spanning : thm := BAlgDepDefs.algebraically_spanning
-unsafe def transcendence_basis : thm := BAlgDepDefs.transcendence_basis
-unsafe def ALGEBRAICALLY_DEPENDENT_IMP_SUBSET : thm := BAlgDepDefs.ALGEBRAICALLY_DEPENDENT_IMP_SUBSET
-unsafe def ALGEBRAICALLY_INDEPENDENT_IMP_SUBSET : thm := BAlgDepDefs.ALGEBRAICALLY_INDEPENDENT_IMP_SUBSET
-unsafe def TRANSCENDENCE_BASIS_IMP_SUBSET : thm := BAlgDepDefs.TRANSCENDENCE_BASIS_IMP_SUBSET
-unsafe def ALGEBRAICALLY_DEPENDENT_ALT : thm := BAlgDepDefs.ALGEBRAICALLY_DEPENDENT_ALT
-unsafe def ALGEBRAIC_SPAN : thm := BAlgDepDefs.ALGEBRAIC_SPAN
-unsafe def ALGEBRAIC_SPAN_FIELD : thm := BAlgDepDefs.ALGEBRAIC_SPAN_FIELD
-unsafe def ALGEBRAIC_SPAN_RANGE : thm := BAlgDepDefs.ALGEBRAIC_SPAN_RANGE
-unsafe def ALGEBRAIC_SPAN_RESTRICT : thm := BAlgDepDefs.ALGEBRAIC_SPAN_RESTRICT
-unsafe def ALGEBRAIC_SPAN_SUBSET : thm := BAlgDepDefs.ALGEBRAIC_SPAN_SUBSET
-unsafe def RING_SPAN_SUBSET_ALGEBRAIC_SPAN : thm := BAlgDepDefs.RING_SPAN_SUBSET_ALGEBRAIC_SPAN
-unsafe def ALGEBRAIC_SPAN_SUPERSET : thm := BAlgDepDefs.ALGEBRAIC_SPAN_SUPERSET
-unsafe def ALGEBRAIC_SPAN_MONO : thm := BAlgDepDefs.ALGEBRAIC_SPAN_MONO
-unsafe def ALGEBRAIC_EXTENSION_SUBFIELD_GENERATED_ALGEBRAIC : thm := BAlgDepDefs.ALGEBRAIC_EXTENSION_SUBFIELD_GENERATED_ALGEBRAIC
-unsafe def ALGEBRAIC_EXTENSION_SUBRING_GENERATED_ALGEBRAIC : thm := BAlgDepDefs.ALGEBRAIC_EXTENSION_SUBRING_GENERATED_ALGEBRAIC
+def algebraically_dependent : thm := BAlgDepDefs.algebraically_dependent
+def algebraically_independent : thm := BAlgDepDefs.algebraically_independent
+def algebraic_span : thm := BAlgDepDefs.algebraic_span
+def algebraically_spanning : thm := BAlgDepDefs.algebraically_spanning
+def transcendence_basis : thm := BAlgDepDefs.transcendence_basis
+def ALGEBRAICALLY_DEPENDENT_IMP_SUBSET : thm := BAlgDepDefs.ALGEBRAICALLY_DEPENDENT_IMP_SUBSET
+def ALGEBRAICALLY_INDEPENDENT_IMP_SUBSET : thm := BAlgDepDefs.ALGEBRAICALLY_INDEPENDENT_IMP_SUBSET
+def TRANSCENDENCE_BASIS_IMP_SUBSET : thm := BAlgDepDefs.TRANSCENDENCE_BASIS_IMP_SUBSET
+def ALGEBRAICALLY_DEPENDENT_ALT : thm := BAlgDepDefs.ALGEBRAICALLY_DEPENDENT_ALT
+def ALGEBRAIC_SPAN : thm := BAlgDepDefs.ALGEBRAIC_SPAN
+def ALGEBRAIC_SPAN_FIELD : thm := BAlgDepDefs.ALGEBRAIC_SPAN_FIELD
+def ALGEBRAIC_SPAN_RANGE : thm := BAlgDepDefs.ALGEBRAIC_SPAN_RANGE
+def ALGEBRAIC_SPAN_RESTRICT : thm := BAlgDepDefs.ALGEBRAIC_SPAN_RESTRICT
+def ALGEBRAIC_SPAN_SUBSET : thm := BAlgDepDefs.ALGEBRAIC_SPAN_SUBSET
+def RING_SPAN_SUBSET_ALGEBRAIC_SPAN : thm := BAlgDepDefs.RING_SPAN_SUBSET_ALGEBRAIC_SPAN
+def ALGEBRAIC_SPAN_SUPERSET : thm := BAlgDepDefs.ALGEBRAIC_SPAN_SUPERSET
+def ALGEBRAIC_SPAN_MONO : thm := BAlgDepDefs.ALGEBRAIC_SPAN_MONO
+def ALGEBRAIC_EXTENSION_SUBFIELD_GENERATED_ALGEBRAIC : thm := BAlgDepDefs.ALGEBRAIC_EXTENSION_SUBFIELD_GENERATED_ALGEBRAIC
+def ALGEBRAIC_EXTENSION_SUBRING_GENERATED_ALGEBRAIC : thm := BAlgDepDefs.ALGEBRAIC_EXTENSION_SUBRING_GENERATED_ALGEBRAIC
 
 -- AlgDepSpan
-unsafe def ALGEBRAIC_SPAN_SPAN : thm := BAlgDepSpan.ALGEBRAIC_SPAN_SPAN
-unsafe def ALGEBRAIC_SPAN_FINITARY : thm := BAlgDepSpan.ALGEBRAIC_SPAN_FINITARY
-unsafe def ALGEBRAIC_SPAN_EMPTY : thm := BAlgDepSpan.ALGEBRAIC_SPAN_EMPTY
-unsafe def ALGEBRAICALLY_INDEPENDENT_EMPTY : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_EMPTY
-unsafe def ALGEBRAICALLY_DEPENDENT_SING : thm := BAlgDepSpan.ALGEBRAICALLY_DEPENDENT_SING
-unsafe def ALGEBRAICALLY_INDEPENDENT_SING : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_SING
-unsafe def ALGEBRAICALLY_DEPENDENT_MONO : thm := BAlgDepSpan.ALGEBRAICALLY_DEPENDENT_MONO
-unsafe def ALGEBRAICALLY_DEPENDENT_OVER_SUBRING_GENERATED_MONO : thm := BAlgDepSpan.ALGEBRAICALLY_DEPENDENT_OVER_SUBRING_GENERATED_MONO
-unsafe def ALGEBRAICALLY_INDEPENDENT_MONO : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_MONO
-unsafe def ALGEBRAICALLY_INDEPENDENT_OVER_SUBRING_GENERATED_MONO : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_OVER_SUBRING_GENERATED_MONO
-unsafe def ALGEBRAICALLY_INDEPENDENT_IMP_TRANSCENDENTAL : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_IMP_TRANSCENDENTAL
-unsafe def ALGEBRAICALLY_INDEPENDENT_IMP_DISJOINT : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_IMP_DISJOINT
+def ALGEBRAIC_SPAN_SPAN : thm := BAlgDepSpan.ALGEBRAIC_SPAN_SPAN
+def ALGEBRAIC_SPAN_FINITARY : thm := BAlgDepSpan.ALGEBRAIC_SPAN_FINITARY
+def ALGEBRAIC_SPAN_EMPTY : thm := BAlgDepSpan.ALGEBRAIC_SPAN_EMPTY
+def ALGEBRAICALLY_INDEPENDENT_EMPTY : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_EMPTY
+def ALGEBRAICALLY_DEPENDENT_SING : thm := BAlgDepSpan.ALGEBRAICALLY_DEPENDENT_SING
+def ALGEBRAICALLY_INDEPENDENT_SING : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_SING
+def ALGEBRAICALLY_DEPENDENT_MONO : thm := BAlgDepSpan.ALGEBRAICALLY_DEPENDENT_MONO
+def ALGEBRAICALLY_DEPENDENT_OVER_SUBRING_GENERATED_MONO : thm := BAlgDepSpan.ALGEBRAICALLY_DEPENDENT_OVER_SUBRING_GENERATED_MONO
+def ALGEBRAICALLY_INDEPENDENT_MONO : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_MONO
+def ALGEBRAICALLY_INDEPENDENT_OVER_SUBRING_GENERATED_MONO : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_OVER_SUBRING_GENERATED_MONO
+def ALGEBRAICALLY_INDEPENDENT_IMP_TRANSCENDENTAL : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_IMP_TRANSCENDENTAL
+def ALGEBRAICALLY_INDEPENDENT_IMP_DISJOINT : thm := BAlgDepSpan.ALGEBRAICALLY_INDEPENDENT_IMP_DISJOINT
 
 -- AlgSpanDepIndep
-unsafe def ALGEBRAICALLY_DEPENDENT_FINITARY : thm := BAlgSpanDepIndep.ALGEBRAICALLY_DEPENDENT_FINITARY
-unsafe def RING_MONOMORPHISM_POLY_EXTEND : thm := BAlgSpanDepIndep.RING_MONOMORPHISM_POLY_EXTEND
-unsafe def ALGEBRAICALLY_DEPENDENT_FROM_INSERT : thm := BAlgSpanDepIndep.ALGEBRAICALLY_DEPENDENT_FROM_INSERT
-unsafe def ALGEBRAICALLY_DEPENDENT_INSERT : thm := BAlgSpanDepIndep.ALGEBRAICALLY_DEPENDENT_INSERT
-unsafe def ALGEBRAICALLY_INDEPENDENT_INSERT : thm := BAlgSpanDepIndep.ALGEBRAICALLY_INDEPENDENT_INSERT
-unsafe def ALGEBRAICALLY_DEPENDENT_SPAN : thm := BAlgSpanDepIndep.ALGEBRAICALLY_DEPENDENT_SPAN
-unsafe def ALGEBRAICALLY_INDEPENDENT_SPAN : thm := BAlgSpanDepIndep.ALGEBRAICALLY_INDEPENDENT_SPAN
-unsafe def ALGEBRAIC_SPAN_EXCHANGE : thm := BAlgSpanDepIndep.ALGEBRAIC_SPAN_EXCHANGE
-unsafe def ALGEBRAICALLY_SPANNING : thm := BAlgSpanDepIndep.ALGEBRAICALLY_SPANNING
+def ALGEBRAICALLY_DEPENDENT_FINITARY : thm := BAlgSpanDepIndep.ALGEBRAICALLY_DEPENDENT_FINITARY
+def RING_MONOMORPHISM_POLY_EXTEND : thm := BAlgSpanDepIndep.RING_MONOMORPHISM_POLY_EXTEND
+def ALGEBRAICALLY_DEPENDENT_FROM_INSERT : thm := BAlgSpanDepIndep.ALGEBRAICALLY_DEPENDENT_FROM_INSERT
+def ALGEBRAICALLY_DEPENDENT_INSERT : thm := BAlgSpanDepIndep.ALGEBRAICALLY_DEPENDENT_INSERT
+def ALGEBRAICALLY_INDEPENDENT_INSERT : thm := BAlgSpanDepIndep.ALGEBRAICALLY_INDEPENDENT_INSERT
+def ALGEBRAICALLY_DEPENDENT_SPAN : thm := BAlgSpanDepIndep.ALGEBRAICALLY_DEPENDENT_SPAN
+def ALGEBRAICALLY_INDEPENDENT_SPAN : thm := BAlgSpanDepIndep.ALGEBRAICALLY_INDEPENDENT_SPAN
+def ALGEBRAIC_SPAN_EXCHANGE : thm := BAlgSpanDepIndep.ALGEBRAIC_SPAN_EXCHANGE
+def ALGEBRAICALLY_SPANNING : thm := BAlgSpanDepIndep.ALGEBRAICALLY_SPANNING
 
 -- AlgebraicMatroid
-unsafe def algebraic_matroid : thm := BAlgebraicMatroid.algebraic_matroid
-unsafe def ALGEBRAIC_MATROID : thm := BAlgebraicMatroid.ALGEBRAIC_MATROID
-unsafe def ALGEBRAIC_MATROID_INDEPENDENT : thm := BAlgebraicMatroid.ALGEBRAIC_MATROID_INDEPENDENT
-unsafe def ALGEBRAIC_MATROID_DEPENDENT : thm := BAlgebraicMatroid.ALGEBRAIC_MATROID_DEPENDENT
-unsafe def ALGEBRAIC_MATROID_SPANNING : thm := BAlgebraicMatroid.ALGEBRAIC_MATROID_SPANNING
-unsafe def ALGEBRAIC_MATROID_BASIS : thm := BAlgebraicMatroid.ALGEBRAIC_MATROID_BASIS
-unsafe def TRANSCENDENCE_BASIS_EXISTS : thm := BAlgebraicMatroid.TRANSCENDENCE_BASIS_EXISTS
-unsafe def ALGEBRAICALLY_SPANNING_CONTAINS_TRANSCENDENCE_BASIS : thm := BAlgebraicMatroid.ALGEBRAICALLY_SPANNING_CONTAINS_TRANSCENDENCE_BASIS
-unsafe def TRANSCENDENCE_BASES_CARD_EQ : thm := BAlgebraicMatroid.TRANSCENDENCE_BASES_CARD_EQ
-unsafe def ALGEBRAICALLY_DEPENDENT_MONOMORPHIC_IMAGE : thm := BAlgebraicMatroid.ALGEBRAICALLY_DEPENDENT_MONOMORPHIC_IMAGE
+def algebraic_matroid : thm := BAlgebraicMatroid.algebraic_matroid
+def ALGEBRAIC_MATROID : thm := BAlgebraicMatroid.ALGEBRAIC_MATROID
+def ALGEBRAIC_MATROID_INDEPENDENT : thm := BAlgebraicMatroid.ALGEBRAIC_MATROID_INDEPENDENT
+def ALGEBRAIC_MATROID_DEPENDENT : thm := BAlgebraicMatroid.ALGEBRAIC_MATROID_DEPENDENT
+def ALGEBRAIC_MATROID_SPANNING : thm := BAlgebraicMatroid.ALGEBRAIC_MATROID_SPANNING
+def ALGEBRAIC_MATROID_BASIS : thm := BAlgebraicMatroid.ALGEBRAIC_MATROID_BASIS
+def TRANSCENDENCE_BASIS_EXISTS : thm := BAlgebraicMatroid.TRANSCENDENCE_BASIS_EXISTS
+def ALGEBRAICALLY_SPANNING_CONTAINS_TRANSCENDENCE_BASIS : thm := BAlgebraicMatroid.ALGEBRAICALLY_SPANNING_CONTAINS_TRANSCENDENCE_BASIS
+def TRANSCENDENCE_BASES_CARD_EQ : thm := BAlgebraicMatroid.TRANSCENDENCE_BASES_CARD_EQ
+def ALGEBRAICALLY_DEPENDENT_MONOMORPHIC_IMAGE : thm := BAlgebraicMatroid.ALGEBRAICALLY_DEPENDENT_MONOMORPHIC_IMAGE
 
 -- AlgebraicTrans
-unsafe def ALGEBRAIC_OVER_MONOMORPHIC_IMAGE : thm := BAlgebraicTrans.ALGEBRAIC_OVER_MONOMORPHIC_IMAGE
-unsafe def ALGEBRAIC_SPAN_MONOMORPHIC_IMAGE : thm := BAlgebraicTrans.ALGEBRAIC_SPAN_MONOMORPHIC_IMAGE
-unsafe def ALGEBRAICALLY_INDEPENDENT_TRANS : thm := BAlgebraicTrans.ALGEBRAICALLY_INDEPENDENT_TRANS
-unsafe def ALGEBRAICALLY_SPANNING_TRANS : thm := BAlgebraicTrans.ALGEBRAICALLY_SPANNING_TRANS
-unsafe def TRANSCENDENCE_BASIS_TRANS : thm := BAlgebraicTrans.TRANSCENDENCE_BASIS_TRANS
-unsafe def TRANSCENDENCE_BASIS_TOWER_LAW : thm := BAlgebraicTrans.TRANSCENDENCE_BASIS_TOWER_LAW
-unsafe def TRANSCENDENCE_BASIS_CARD_LE_LEFT : thm := BAlgebraicTrans.TRANSCENDENCE_BASIS_CARD_LE_LEFT
-unsafe def TRANSCENDENCE_BASIS_CARD_LE_RIGHT : thm := BAlgebraicTrans.TRANSCENDENCE_BASIS_CARD_LE_RIGHT
-unsafe def ALGEBRAIC_EXTENSION_SUBFIELDS_GENERATED : thm := BAlgebraicTrans.ALGEBRAIC_EXTENSION_SUBFIELDS_GENERATED
+def ALGEBRAIC_OVER_MONOMORPHIC_IMAGE : thm := BAlgebraicTrans.ALGEBRAIC_OVER_MONOMORPHIC_IMAGE
+def ALGEBRAIC_SPAN_MONOMORPHIC_IMAGE : thm := BAlgebraicTrans.ALGEBRAIC_SPAN_MONOMORPHIC_IMAGE
+def ALGEBRAICALLY_INDEPENDENT_TRANS : thm := BAlgebraicTrans.ALGEBRAICALLY_INDEPENDENT_TRANS
+def ALGEBRAICALLY_SPANNING_TRANS : thm := BAlgebraicTrans.ALGEBRAICALLY_SPANNING_TRANS
+def TRANSCENDENCE_BASIS_TRANS : thm := BAlgebraicTrans.TRANSCENDENCE_BASIS_TRANS
+def TRANSCENDENCE_BASIS_TOWER_LAW : thm := BAlgebraicTrans.TRANSCENDENCE_BASIS_TOWER_LAW
+def TRANSCENDENCE_BASIS_CARD_LE_LEFT : thm := BAlgebraicTrans.TRANSCENDENCE_BASIS_CARD_LE_LEFT
+def TRANSCENDENCE_BASIS_CARD_LE_RIGHT : thm := BAlgebraicTrans.TRANSCENDENCE_BASIS_CARD_LE_RIGHT
+def ALGEBRAIC_EXTENSION_SUBFIELDS_GENERATED : thm := BAlgebraicTrans.ALGEBRAIC_EXTENSION_SUBFIELDS_GENERATED
 
 -- AlgebraicOverExt
-unsafe def ALGEBRAIC_SPAN_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverExt.ALGEBRAIC_SPAN_OVER_ALGEBRAIC_EXTENSION
-unsafe def ALGEBRAICALLY_DEPENDENT_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverExt.ALGEBRAICALLY_DEPENDENT_OVER_ALGEBRAIC_EXTENSION
-unsafe def ALGEBRAICALLY_INDEPENDENT_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverExt.ALGEBRAICALLY_INDEPENDENT_OVER_ALGEBRAIC_EXTENSION
-unsafe def ALGEBRAICALLY_SPANNING_SPAN : thm := BAlgebraicOverExt.ALGEBRAICALLY_SPANNING_SPAN
-unsafe def ALGEBRAICALLY_SPANNING_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverExt.ALGEBRAICALLY_SPANNING_OVER_ALGEBRAIC_EXTENSION
-unsafe def TRANSCENDENCE_BASIS_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverExt.TRANSCENDENCE_BASIS_OVER_ALGEBRAIC_EXTENSION
-unsafe def ALGEBRAICALLY_INDEPENDENT_CARD_LE_SPANNING : thm := BAlgebraicOverExt.ALGEBRAICALLY_INDEPENDENT_CARD_LE_SPANNING
-unsafe def FINITELY_GENERATED_ALGEBRAICALLY_INDEPENDENT_IMP_FINITE : thm := BAlgebraicOverExt.FINITELY_GENERATED_ALGEBRAICALLY_INDEPENDENT_IMP_FINITE
-unsafe def TRANSCENDENCE_BASIS_IMP_ALGEBRAICALLY_SPANNING : thm := BAlgebraicOverExt.TRANSCENDENCE_BASIS_IMP_ALGEBRAICALLY_SPANNING
-unsafe def TRANSCENDENCE_BASIS_IMP_ALGEBRAICALLY_INDEPENDENT : thm := BAlgebraicOverExt.TRANSCENDENCE_BASIS_IMP_ALGEBRAICALLY_INDEPENDENT
+def ALGEBRAIC_SPAN_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverExt.ALGEBRAIC_SPAN_OVER_ALGEBRAIC_EXTENSION
+def ALGEBRAICALLY_DEPENDENT_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverExt.ALGEBRAICALLY_DEPENDENT_OVER_ALGEBRAIC_EXTENSION
+def ALGEBRAICALLY_INDEPENDENT_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverExt.ALGEBRAICALLY_INDEPENDENT_OVER_ALGEBRAIC_EXTENSION
+def ALGEBRAICALLY_SPANNING_SPAN : thm := BAlgebraicOverExt.ALGEBRAICALLY_SPANNING_SPAN
+def ALGEBRAICALLY_SPANNING_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverExt.ALGEBRAICALLY_SPANNING_OVER_ALGEBRAIC_EXTENSION
+def TRANSCENDENCE_BASIS_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicOverExt.TRANSCENDENCE_BASIS_OVER_ALGEBRAIC_EXTENSION
+def ALGEBRAICALLY_INDEPENDENT_CARD_LE_SPANNING : thm := BAlgebraicOverExt.ALGEBRAICALLY_INDEPENDENT_CARD_LE_SPANNING
+def FINITELY_GENERATED_ALGEBRAICALLY_INDEPENDENT_IMP_FINITE : thm := BAlgebraicOverExt.FINITELY_GENERATED_ALGEBRAICALLY_INDEPENDENT_IMP_FINITE
+def TRANSCENDENCE_BASIS_IMP_ALGEBRAICALLY_SPANNING : thm := BAlgebraicOverExt.TRANSCENDENCE_BASIS_IMP_ALGEBRAICALLY_SPANNING
+def TRANSCENDENCE_BASIS_IMP_ALGEBRAICALLY_INDEPENDENT : thm := BAlgebraicOverExt.TRANSCENDENCE_BASIS_IMP_ALGEBRAICALLY_INDEPENDENT
 
 -- TotallyTranscendental
-unsafe def TOTALLY_TRANSCENDENTAL_EXTENSION : thm := BTotallyTranscendental.TOTALLY_TRANSCENDENTAL_EXTENSION
-unsafe def TOTALLY_TRANSCENDENTAL_EXTENSION_ALT : thm := BTotallyTranscendental.TOTALLY_TRANSCENDENTAL_EXTENSION_ALT
+def TOTALLY_TRANSCENDENTAL_EXTENSION : thm := BTotallyTranscendental.TOTALLY_TRANSCENDENTAL_EXTENSION
+def TOTALLY_TRANSCENDENTAL_EXTENSION_ALT : thm := BTotallyTranscendental.TOTALLY_TRANSCENDENTAL_EXTENSION_ALT
 
 -- FinitelyGeneratedTransEq
-unsafe def FINITELY_GENERATED_EXTENSION_TRANS_EQ : thm := BFinitelyGeneratedTransEq.FINITELY_GENERATED_EXTENSION_TRANS_EQ
+def FINITELY_GENERATED_EXTENSION_TRANS_EQ : thm := BFinitelyGeneratedTransEq.FINITELY_GENERATED_EXTENSION_TRANS_EQ
 
 -- AcfBasic
-unsafe def algebraically_closed_field : thm := BAcfBasic.algebraically_closed_field
-unsafe def ALGEBRAICALLY_CLOSED_FIELD_IMP_FIELD : thm := BAcfBasic.ALGEBRAICALLY_CLOSED_FIELD_IMP_FIELD
-unsafe def ALGEBRAICALLY_CLOSED_FIELD_ISOMORPHIC_IMAGE : thm := BAcfBasic.ALGEBRAICALLY_CLOSED_FIELD_ISOMORPHIC_IMAGE
-unsafe def ISOMORPHIC_RING_ALGEBRAICALLY_CLOSED_FIELD : thm := BAcfBasic.ISOMORPHIC_RING_ALGEBRAICALLY_CLOSED_FIELD
-unsafe def ALGEBRAICALLY_CLOSED_FIELD_IMP_INFINITE : thm := BAcfBasic.ALGEBRAICALLY_CLOSED_FIELD_IMP_INFINITE
-unsafe def ALGEBRAICALLY_CLOSED_FIELD_NO_PROPER_ALGEBRAIC_EXTENSION : thm := BAcfBasic.ALGEBRAICALLY_CLOSED_FIELD_NO_PROPER_ALGEBRAIC_EXTENSION
+def algebraically_closed_field : thm := BAcfBasic.algebraically_closed_field
+def ALGEBRAICALLY_CLOSED_FIELD_IMP_FIELD : thm := BAcfBasic.ALGEBRAICALLY_CLOSED_FIELD_IMP_FIELD
+def ALGEBRAICALLY_CLOSED_FIELD_ISOMORPHIC_IMAGE : thm := BAcfBasic.ALGEBRAICALLY_CLOSED_FIELD_ISOMORPHIC_IMAGE
+def ISOMORPHIC_RING_ALGEBRAICALLY_CLOSED_FIELD : thm := BAcfBasic.ISOMORPHIC_RING_ALGEBRAICALLY_CLOSED_FIELD
+def ALGEBRAICALLY_CLOSED_FIELD_IMP_INFINITE : thm := BAcfBasic.ALGEBRAICALLY_CLOSED_FIELD_IMP_INFINITE
+def ALGEBRAICALLY_CLOSED_FIELD_NO_PROPER_ALGEBRAIC_EXTENSION : thm := BAcfBasic.ALGEBRAICALLY_CLOSED_FIELD_NO_PROPER_ALGEBRAIC_EXTENSION
 
 -- AcfSplit
-unsafe def ALGEBRAICALLY_CLOSED_FIELD_EQ_IRREDUCIBLES : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_EQ_IRREDUCIBLES
-unsafe def IRREDUCIBLE_ALGEBRAICALLY_CLOSED_FIELD : thm := BAcfSplit.IRREDUCIBLE_ALGEBRAICALLY_CLOSED_FIELD
-unsafe def ALGEBRAICALLY_CLOSED_FIELD_DECOMPOSE : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_DECOMPOSE
-unsafe def ALGEBRAICALLY_CLOSED_FIELD_SPLITS : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_SPLITS
+def ALGEBRAICALLY_CLOSED_FIELD_EQ_IRREDUCIBLES : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_EQ_IRREDUCIBLES
+def IRREDUCIBLE_ALGEBRAICALLY_CLOSED_FIELD : thm := BAcfSplit.IRREDUCIBLE_ALGEBRAICALLY_CLOSED_FIELD
+def ALGEBRAICALLY_CLOSED_FIELD_DECOMPOSE : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_DECOMPOSE
+def ALGEBRAICALLY_CLOSED_FIELD_SPLITS : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_SPLITS
 
 -- ClosedFieldSplits
-unsafe def ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT : thm := BClosedFieldSplits.ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT
-unsafe def ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS : thm := BClosedFieldSplits.ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS
+def ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT : thm := BClosedFieldSplits.ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT
+def ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS : thm := BClosedFieldSplits.ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS
 
 -- SimpleExtendHom
-unsafe def SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM : thm := BSimpleExtendHom.SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM
+def SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM : thm := BSimpleExtendHom.SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM
 
 -- ClosureExtendHom
-unsafe def ALGEBRAIC_CLOSURE_EXTEND_HOMOMORPHISM : thm := BClosureExtendHom.ALGEBRAIC_CLOSURE_EXTEND_HOMOMORPHISM
+def ALGEBRAIC_CLOSURE_EXTEND_HOMOMORPHISM : thm := BClosureExtendHom.ALGEBRAIC_CLOSURE_EXTEND_HOMOMORPHISM
 
 -- PolySquarefree
-unsafe def POLY_SQUAREFREE_ROOT_COUNT_EXPLICIT : thm := BPolySquarefree.POLY_SQUAREFREE_ROOT_COUNT_EXPLICIT
-unsafe def POLY_SQUAREFREE_ROOT_COUNT : thm := BPolySquarefree.POLY_SQUAREFREE_ROOT_COUNT
-unsafe def POLY_SQUAREFREE_ROOT_COUNT_EQ : thm := BPolySquarefree.POLY_SQUAREFREE_ROOT_COUNT_EQ
-unsafe def POLY_SQUAREFREE_EXPLICIT_EQ : thm := BPolySquarefree.POLY_SQUAREFREE_EXPLICIT_EQ
+def POLY_SQUAREFREE_ROOT_COUNT_EXPLICIT : thm := BPolySquarefree.POLY_SQUAREFREE_ROOT_COUNT_EXPLICIT
+def POLY_SQUAREFREE_ROOT_COUNT : thm := BPolySquarefree.POLY_SQUAREFREE_ROOT_COUNT
+def POLY_SQUAREFREE_ROOT_COUNT_EQ : thm := BPolySquarefree.POLY_SQUAREFREE_ROOT_COUNT_EQ
+def POLY_SQUAREFREE_EXPLICIT_EQ : thm := BPolySquarefree.POLY_SQUAREFREE_EXPLICIT_EQ
 
 -- AlgebraicClosureExistsId
-unsafe def ALGEBRAIC_CLOSURE_EXISTS_ID : thm := BAlgebraicClosureExistsId.ALGEBRAIC_CLOSURE_EXISTS_ID
+def ALGEBRAIC_CLOSURE_EXISTS_ID : thm := BAlgebraicClosureExistsId.ALGEBRAIC_CLOSURE_EXISTS_ID
 
 -- AlgebraicClosure
-unsafe def ALGEBRAIC_CLOSURE_EXISTS : thm := BAlgebraicClosure.ALGEBRAIC_CLOSURE_EXISTS
-unsafe def ALGEBRAIC_CLOSURE_UNIQUE_EXPLICIT : thm := BAlgebraicClosure.ALGEBRAIC_CLOSURE_UNIQUE_EXPLICIT
-unsafe def ALGEBRAIC_CLOSURE_UNIQUE : thm := BAlgebraicClosure.ALGEBRAIC_CLOSURE_UNIQUE
--- @@EXPORTS END
-
-/-- `needs "Library/fieldtheory.ml"`: build the bundles, in order. -/
-unsafe def ensureFieldTheory : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BSubfields.subfield_of
-  let _ ← IO.mkRef BSubfieldGenerated.subfield_generated
-  let _ ← IO.mkRef BSubfieldGenerated1.SUBSET_CARRIER_SUBFIELD_GENERATED
-  let _ ← IO.mkRef BSubfieldGenerated2.SUBFIELD_OF_MONOMORPHIC_IMAGE
-  let _ ← IO.mkRef BSubfieldQuotients.FIELD_SUBFIELD_GENERATED_UNITS
-  let _ ← IO.mkRef BFieldExtension.field_extension
-  let _ ← IO.mkRef BRingSpan.ring_span_RULES
-  let _ ← IO.mkRef BRingMatroid.ring_matroid
-  let _ ← IO.mkRef BLinearAlgebra.ring_dependent
-  let _ ← IO.mkRef BFinitary.RING_DEPENDENT_FINITARY
-  let _ ← IO.mkRef BTowerLaw.RING_SPANNING_TRANS
-  let _ ← IO.mkRef BFiniteExtension.finite_extension
-  let _ ← IO.mkRef BAlgebraicExtension.algebraic_over
-  let _ ← IO.mkRef BAlgebraicOverBasics.ALGEBRAIC_OVER_NONMONOMORPHISM
-  let _ ← IO.mkRef BAlgebraicExtensionProps.FIELD_SIMPLE_ALGEBRAIC_EXTENSION_GEN
-  let _ ← IO.mkRef BAlgebraicExtMisc.ALGEBRAIC_FROM_SUBRING_GENERATED
-  let _ ← IO.mkRef BAlgebraicField.ALGEBRAIC_OVER_0
-  let _ ← IO.mkRef BFiniteExt.FINITE_EQ_FIELD_EXTENSION
-  let _ ← IO.mkRef BAlgDepDefs.algebraically_dependent
-  let _ ← IO.mkRef BAlgDepSpan.ALGEBRAIC_SPAN_SPAN
-  let _ ← IO.mkRef BAlgSpanDepIndep.ALGEBRAICALLY_DEPENDENT_FINITARY
-  let _ ← IO.mkRef BAlgebraicMatroid.algebraic_matroid
-  let _ ← IO.mkRef BAlgebraicTrans.ALGEBRAIC_OVER_MONOMORPHIC_IMAGE
-  let _ ← IO.mkRef BAlgebraicOverExt.ALGEBRAIC_SPAN_OVER_ALGEBRAIC_EXTENSION
-  let _ ← IO.mkRef BTotallyTranscendental.TOTALLY_TRANSCENDENTAL_EXTENSION
-  let _ ← IO.mkRef BFinitelyGeneratedTransEq.FINITELY_GENERATED_EXTENSION_TRANS_EQ
-  let _ ← IO.mkRef BAcfBasic.algebraically_closed_field
-  let _ ← IO.mkRef BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_EQ_IRREDUCIBLES
-  let _ ← IO.mkRef BClosedFieldSplits.ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT
-  let _ ← IO.mkRef BSimpleExtendHom.SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM
-  let _ ← IO.mkRef BClosureExtendHom.ALGEBRAIC_CLOSURE_EXTEND_HOMOMORPHISM
-  let _ ← IO.mkRef BPolySquarefree.POLY_SQUAREFREE_ROOT_COUNT_EXPLICIT
-  let _ ← IO.mkRef BAlgebraicClosureExistsId.ALGEBRAIC_CLOSURE_EXISTS_ID
-  let _ ← IO.mkRef BAlgebraicClosure.ALGEBRAIC_CLOSURE_EXISTS
-  -- @@ENSURE END
-  pure ()
+def ALGEBRAIC_CLOSURE_EXISTS : thm := BAlgebraicClosure.ALGEBRAIC_CLOSURE_EXISTS
+def ALGEBRAIC_CLOSURE_UNIQUE_EXPLICIT : thm := BAlgebraicClosure.ALGEBRAIC_CLOSURE_UNIQUE_EXPLICIT
+def ALGEBRAIC_CLOSURE_UNIQUE : thm := BAlgebraicClosure.ALGEBRAIC_CLOSURE_UNIQUE
+/-- `needs "Library/fieldtheory.ml"`: already done by importing this module. -/
+def ensureFieldTheory : IO Unit := pure ()
 
 end SessionLibrary.FieldTheory

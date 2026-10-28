@@ -13,33 +13,33 @@ namespace HolLogicArith.FolProp
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1` bundles; alias the ones we need. -/
-private unsafe def ALL : thm := Session.listDefs.ALL
-private unsafe def ITLIST : thm := Session.listDefs.ITLIST
-private unsafe def ALL_IMP : thm := Session.listThms1.ALL_IMP
+private def ALL : thm := Session.listDefs.ALL
+private def ITLIST : thm := Session.listDefs.ITLIST
+private def ALL_IMP : thm := Session.listThms1.ALL_IMP
 
 /- Zorn's lemma and poset/chain machinery come from Library/wo.ml, exposed by
    SessionLibrary.Wo (replayed as part of Fol's prelude). -/
-private unsafe def ZL : thm := SessionLibrary.Wo.ZL
-private unsafe def poset : thm := SessionLibrary.Wo.poset
-private unsafe def fld : thm := SessionLibrary.Wo.fld
-private unsafe def chain : thm := SessionLibrary.Wo.chain
-private unsafe def PBETA_TAC : HolCore.Tactics.tactic := SessionLibrary.Wo.PBETA_TAC
+private def ZL : thm := SessionLibrary.Wo.ZL
+private def poset : thm := SessionLibrary.Wo.poset
+private def fld : thm := SessionLibrary.Wo.fld
+private def chain : thm := SessionLibrary.Wo.chain
+private def PBETA_TAC : HolCore.Tactics.tactic := SessionLibrary.Wo.PBETA_TAC
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 #eval HolLogicArith.Fol.ensure
 
 /- Library/wo.ml is loaded by make.ml BEFORE fol_prop.ml, so HOL Light runs
-   ZL/poset/chain's proofs in the prelude.  HolLean builds the Wo bundles
-   lazily on first use; force them here (in the prelude, whose output is not
-   compared) so their traces don't surface inside phrase 11 (FINSAT_MAX). -/
+   ZL/poset/chain's proofs in the prelude.  Importing SessionLibrary.Wo has
+   built them already; reading them here is kept as a check (in the prelude,
+   whose output is not compared). -/
 #eval show IO Unit from do
   let _ ← IO.mkRef ZL
   let _ ← IO.mkRef poset
@@ -48,7 +48,7 @@ private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   pure ()
 
 #eval phrase 1
-unsafe def pholds : thm := keep "pholds" fun _ => (do
+def pholds : thm := keep "pholds" fun _ => (do
   newRec form_RECURSION
     [[(pholds v False <=> F) /\
       (pholds v (Atom p l) <=> v (Atom p l)) /\
@@ -58,7 +58,7 @@ unsafe def pholds : thm := keep "pholds" fun _ => (do
 #eval pholds
 
 #eval phrase 2
-unsafe def PHOLDS : thm := keep "PHOLDS" fun _ => (do
+def PHOLDS : thm := keep "PHOLDS" fun _ => (do
   prove ([[(pholds v False <=> F) /\
    (pholds v True <=> T) /\
    (pholds v (Atom p l) <=> v (Atom p l)) /\
@@ -77,43 +77,43 @@ unsafe def PHOLDS : thm := keep "PHOLDS" fun _ => (do
 #eval parse_as_infix ("psatisfies", (10, "right"))
 
 #eval phrase 4
-unsafe def psatisfies : thm := keep "psatisfies" fun _ => new_definition
+def psatisfies : thm := keep "psatisfies" fun _ => new_definition
   [[v psatisfies s <=> !p. p IN s ==> pholds v p]]
 #eval psatisfies
 
 #eval phrase 5
-unsafe def psatisfiable : thm := keep "psatisfiable" fun _ => new_definition
+def psatisfiable : thm := keep "psatisfiable" fun _ => new_definition
   [[psatisfiable s <=> ?v. !p. p IN s ==> pholds v p]]
 #eval psatisfiable
 
 #eval phrase 6
-unsafe def PSATISFIABLE_MONO : thm := keep "PSATISFIABLE_MONO" fun _ => (do
+def PSATISFIABLE_MONO : thm := keep "PSATISFIABLE_MONO" fun _ => (do
   prove ([[!A B. psatisfiable A /\ B SUBSET A ==> psatisfiable B]])
    (REWRITE_TAC [psatisfiable] THEN MESON_TAC [SUBSET])
   : ExceptT String IO thm).run
 #eval PSATISFIABLE_MONO
 
 #eval phrase 7
-unsafe def finsat : thm := keep "finsat" fun _ => new_definition
+def finsat : thm := keep "finsat" fun _ => new_definition
   [[finsat A <=> !B. B SUBSET A /\ FINITE(B) ==> psatisfiable B]]
 #eval finsat
 
 #eval phrase 8
-unsafe def FINSAT_MONO : thm := keep "FINSAT_MONO" fun _ => (do
+def FINSAT_MONO : thm := keep "FINSAT_MONO" fun _ => (do
   prove ([[!A B. finsat A /\ B SUBSET A ==> finsat B]])
    (REWRITE_TAC [finsat] THEN MESON_TAC [SUBSET_TRANS, FINITE_SUBSET])
   : ExceptT String IO thm).run
 #eval FINSAT_MONO
 
 #eval phrase 9
-unsafe def SATISFIABLE_MONO : thm := keep "SATISFIABLE_MONO" fun _ => (do
+def SATISFIABLE_MONO : thm := keep "SATISFIABLE_MONO" fun _ => (do
   prove ([[!A B. psatisfiable A /\ B SUBSET A ==> psatisfiable B]])
    (REWRITE_TAC [psatisfiable] THEN MESON_TAC [SUBSET])
   : ExceptT String IO thm).run
 #eval SATISFIABLE_MONO
 
 #eval phrase 10
-unsafe def FINSAT_SATISFIABLE : thm := keep "FINSAT_SATISFIABLE" fun _ => (do
+def FINSAT_SATISFIABLE : thm := keep "FINSAT_SATISFIABLE" fun _ => (do
   prove ([[psatisfiable B ==> finsat B]])
    (REWRITE_TAC [finsat] THEN
     MESON_TAC [SATISFIABLE_MONO, SUBSET_TRANS, FINITE_SUBSET])
@@ -121,7 +121,7 @@ unsafe def FINSAT_SATISFIABLE : thm := keep "FINSAT_SATISFIABLE" fun _ => (do
 #eval FINSAT_SATISFIABLE
 
 #eval phrase 11
-unsafe def FINSAT_MAX : thm := keep "FINSAT_MAX" fun _ => (do
+def FINSAT_MAX : thm := keep "FINSAT_MAX" fun _ => (do
   prove ([[!A. finsat(A) ==> ?B. A SUBSET B /\ finsat(B) /\
                          !C. B SUBSET C /\ finsat(C) ==> (C = B)]])
    (REPEAT STRIP_TAC THEN
@@ -196,7 +196,7 @@ unsafe def FINSAT_MAX : thm := keep "FINSAT_MAX" fun _ => (do
 #eval FINSAT_MAX
 
 #eval phrase 12
-unsafe def FINSAT_EXTEND : thm := keep "FINSAT_EXTEND" fun _ => (do
+def FINSAT_EXTEND : thm := keep "FINSAT_EXTEND" fun _ => (do
   prove ([[finsat(B) ==> finsat(p INSERT B) \/ finsat(Not p INSERT B)]])
    (HolLight.tactic_of do
      let taut1 ← ExceptT.mk (TAUT [[p <=> ~ ~ p]])
@@ -227,7 +227,7 @@ unsafe def FINSAT_EXTEND : thm := keep "FINSAT_EXTEND" fun _ => (do
 #eval FINSAT_EXTEND
 
 #eval phrase 13
-unsafe def FINSAT_MAX_COMPLETE : thm := keep "FINSAT_MAX_COMPLETE" fun _ => (do
+def FINSAT_MAX_COMPLETE : thm := keep "FINSAT_MAX_COMPLETE" fun _ => (do
   prove ([[finsat(B) /\ (!C. B SUBSET C /\ finsat(C) ==> (C = B))
    ==> !p. p IN B \/ Not(p) IN B]])
    (REPEAT STRIP_TAC THEN
@@ -239,7 +239,7 @@ unsafe def FINSAT_MAX_COMPLETE : thm := keep "FINSAT_MAX_COMPLETE" fun _ => (do
 #eval FINSAT_MAX_COMPLETE
 
 #eval phrase 14
-unsafe def FINSAT_MAX_COMPLETE_STRONG : thm := keep "FINSAT_MAX_COMPLETE_STRONG" fun _ => (do
+def FINSAT_MAX_COMPLETE_STRONG : thm := keep "FINSAT_MAX_COMPLETE_STRONG" fun _ => (do
   prove ([[finsat(B) /\ (!C. B SUBSET C /\ finsat(C) ==> (C = B))
    ==> !p. Not(p) IN B <=> ~(p IN B)]])
    (HolLight.tactic_of do
@@ -265,7 +265,7 @@ unsafe def FINSAT_MAX_COMPLETE_STRONG : thm := keep "FINSAT_MAX_COMPLETE_STRONG"
 #eval FINSAT_MAX_COMPLETE_STRONG
 
 #eval phrase 15
-unsafe def FINSAT_DEDUCTION : thm := keep "FINSAT_DEDUCTION" fun _ => (do
+def FINSAT_DEDUCTION : thm := keep "FINSAT_DEDUCTION" fun _ => (do
   prove ([[finsat(B) /\ (!C. B SUBSET C /\ finsat(C) ==> (C = B))
    ==> !p. p IN B <=> ?A. FINITE(A) /\ A SUBSET B /\
                         !v. (!q. q IN A ==> pholds v q) ==> pholds v p]])
@@ -291,7 +291,7 @@ unsafe def FINSAT_DEDUCTION : thm := keep "FINSAT_DEDUCTION" fun _ => (do
 #eval FINSAT_DEDUCTION
 
 #eval phrase 16
-unsafe def FINSAT_MAX_CONSISTENT : thm := keep "FINSAT_MAX_CONSISTENT" fun _ => (do
+def FINSAT_MAX_CONSISTENT : thm := keep "FINSAT_MAX_CONSISTENT" fun _ => (do
   prove ([[finsat(B) /\ (!C. B SUBSET C /\ finsat(C) ==> (C = B))
    ==> ~(False IN B)]])
    (DISCH_THEN (MP_TAC o CONJUNCT1) THEN
@@ -306,7 +306,7 @@ unsafe def FINSAT_MAX_CONSISTENT : thm := keep "FINSAT_MAX_CONSISTENT" fun _ => 
 #eval FINSAT_MAX_CONSISTENT
 
 #eval phrase 17
-unsafe def FINSAT_MAX_HOMO : thm := keep "FINSAT_MAX_HOMO" fun _ => (do
+def FINSAT_MAX_HOMO : thm := keep "FINSAT_MAX_HOMO" fun _ => (do
   prove ([[finsat(B) /\ (!C. B SUBSET C /\ finsat(C) ==> (C = B))
    ==> !p q. (p --> q) IN B <=> p IN B ==> q IN B]])
    (DISCH_TAC THEN REPEAT GEN_TAC THEN EQ_TAC THENL
@@ -338,7 +338,7 @@ unsafe def FINSAT_MAX_HOMO : thm := keep "FINSAT_MAX_HOMO" fun _ => (do
 #eval FINSAT_MAX_HOMO
 
 #eval phrase 18
-unsafe def COMPACT_PROP : thm := keep "COMPACT_PROP" fun _ => (do
+def COMPACT_PROP : thm := keep "COMPACT_PROP" fun _ => (do
   prove ([[(!B. FINITE(B) /\ B SUBSET A
         ==> ?d. !r. r IN B ==> pholds(d) r)
    ==> ?d. !r. r IN A ==> pholds(d) r]])
@@ -364,7 +364,7 @@ unsafe def COMPACT_PROP : thm := keep "COMPACT_PROP" fun _ => (do
 #eval COMPACT_PROP
 
 #eval phrase 19
-unsafe def COMPACT_PROP_ALT : thm := keep "COMPACT_PROP_ALT" fun _ => (do
+def COMPACT_PROP_ALT : thm := keep "COMPACT_PROP_ALT" fun _ => (do
   prove ([[!A. (!d. ?p. p IN A /\ pholds d p)
        ==> ?B. FINITE(B) /\ B SUBSET A /\ (!d. ?p. p IN B /\ pholds d p)]])
    (HolLight.tactic_of do
@@ -396,7 +396,7 @@ unsafe def COMPACT_PROP_ALT : thm := keep "COMPACT_PROP_ALT" fun _ => (do
 #eval COMPACT_PROP_ALT
 
 #eval phrase 20
-unsafe def FINITE_DISJ_LEMMA : thm := keep "FINITE_DISJ_LEMMA" fun _ => (do
+def FINITE_DISJ_LEMMA : thm := keep "FINITE_DISJ_LEMMA" fun _ => (do
   prove ([[!A. FINITE(A) ==> ?ps. ALL (\p. p IN A) ps /\
                           !d. pholds(d) (ITLIST (||) ps False) <=>
                               ?p. p IN A /\ pholds d p]])
@@ -414,7 +414,7 @@ unsafe def FINITE_DISJ_LEMMA : thm := keep "FINITE_DISJ_LEMMA" fun _ => (do
 #eval FINITE_DISJ_LEMMA
 
 #eval phrase 21
-unsafe def COMPACT_DISJ : thm := keep "COMPACT_DISJ" fun _ => (do
+def COMPACT_DISJ : thm := keep "COMPACT_DISJ" fun _ => (do
   prove ([[!A. (!d. ?p. p IN A /\ pholds d p)
        ==> ?ps. ALL (\p. p IN A) ps /\
                 !d. pholds(d) (ITLIST (||) ps False)]])
@@ -430,9 +430,9 @@ unsafe def COMPACT_DISJ : thm := keep "COMPACT_DISJ" fun _ => (do
 #eval COMPACT_DISJ
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.FolProp" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.FolProp" do
   replay (
           HolLogicArith.Fol.ensure)
   replay (

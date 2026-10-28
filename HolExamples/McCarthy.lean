@@ -8,7 +8,7 @@ namespace HolExamples.McCarthy
 
 /- Helpers: the session's IO-valued rules lifted into `ExceptT String IO`, so
    the term-building functions and tactic scripts read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 private def ec {α : Type} (x : Except String α) : ExceptT String IO α := ExceptT.mk (pure x)
 
@@ -31,13 +31,13 @@ private def ec {α : Type} (x : Except String α) : ExceptT String IO α := Exce
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 1
-unsafe def string_INDUCT_string_RECURSION : thm × thm := keep "string_types" fun _ =>
-  match unsafeIO (define_type "string = String (int list)") with
+def string_INDUCT_string_RECURSION : thm × thm := keep "string_types" fun _ =>
+  match runIO (define_type "string = String (int list)") with
   | .ok (.ok p) => p
   | .ok (.error e) => panic! e
   | .error e => panic! (toString e)
-unsafe def string_INDUCT : thm := string_INDUCT_string_RECURSION.1
-unsafe def string_RECURSION : thm := string_INDUCT_string_RECURSION.2
+def string_INDUCT : thm := string_INDUCT_string_RECURSION.1
+def string_RECURSION : thm := string_INDUCT_string_RECURSION.2
 #eval (do IO.println (← HolCore.Printer.string_of_thm string_INDUCT)
           IO.println (← HolCore.Printer.string_of_thm string_RECURSION) : IO Unit)
 
@@ -56,16 +56,16 @@ unsafe def string_RECURSION : thm := string_INDUCT_string_RECURSION.2
  -/
 
 #eval phrase 2
-unsafe def exp_INDUCT_exp_RECURSION : thm × thm := keep "exp_types" fun _ =>
-  match unsafeIO (define_type
+def exp_INDUCT_exp_RECURSION : thm × thm := keep "exp_types" fun _ =>
+  match runIO (define_type
     "exp = Lit num
          | Var string
          | Plus exp exp") with
   | .ok (.ok p) => p
   | .ok (.error e) => panic! e
   | .error e => panic! (toString e)
-unsafe def exp_INDUCT : thm := exp_INDUCT_exp_RECURSION.1
-unsafe def exp_RECURSION : thm := exp_INDUCT_exp_RECURSION.2
+def exp_INDUCT : thm := exp_INDUCT_exp_RECURSION.1
+def exp_RECURSION : thm := exp_INDUCT_exp_RECURSION.2
 #eval (do IO.println (← HolCore.Printer.string_of_thm exp_INDUCT)
           IO.println (← HolCore.Printer.string_of_thm exp_RECURSION) : IO Unit)
 
@@ -78,7 +78,7 @@ unsafe def exp_RECURSION : thm := exp_INDUCT_exp_RECURSION.2
  -/
 
 #eval phrase 3
-unsafe def E_DEF : thm := keep "E_DEF" fun _ => (do
+def E_DEF : thm := keep "E_DEF" fun _ => (do
   ExceptT.mk (new_recursive_definition exp_RECURSION
    [[(E (Lit n) s = n)
   /\  (E (Var v) s = s v)
@@ -102,21 +102,21 @@ unsafe def E_DEF : thm := keep "E_DEF" fun _ => (do
  -/
 
 #eval phrase 4
-unsafe def cell_INDUCT_cell_RECURSION : thm × thm := keep "cell_types" fun _ =>
-  match unsafeIO (define_type
+def cell_INDUCT_cell_RECURSION : thm × thm := keep "cell_types" fun _ =>
+  match runIO (define_type
     "cell = Acc
           | Reg num") with
   | .ok (.ok p) => p
   | .ok (.error e) => panic! e
   | .error e => panic! (toString e)
-unsafe def cell_INDUCT : thm := cell_INDUCT_cell_RECURSION.1
-unsafe def cell_RECURSION : thm := cell_INDUCT_cell_RECURSION.2
+def cell_INDUCT : thm := cell_INDUCT_cell_RECURSION.1
+def cell_RECURSION : thm := cell_INDUCT_cell_RECURSION.2
 #eval (do IO.println (← HolCore.Printer.string_of_thm cell_INDUCT)
           IO.println (← HolCore.Printer.string_of_thm cell_RECURSION) : IO Unit)
 
 #eval phrase 5
-unsafe def inst_INDUCT_inst_RECURSION : thm × thm := keep "inst_types" fun _ =>
-  match unsafeIO (define_type
+def inst_INDUCT_inst_RECURSION : thm × thm := keep "inst_types" fun _ =>
+  match runIO (define_type
     "inst = LI num
           | LOAD num
           | STO num
@@ -124,8 +124,8 @@ unsafe def inst_INDUCT_inst_RECURSION : thm × thm := keep "inst_types" fun _ =>
   | .ok (.ok p) => p
   | .ok (.error e) => panic! e
   | .error e => panic! (toString e)
-unsafe def inst_INDUCT : thm := inst_INDUCT_inst_RECURSION.1
-unsafe def inst_RECURSION : thm := inst_INDUCT_inst_RECURSION.2
+def inst_INDUCT : thm := inst_INDUCT_inst_RECURSION.1
+def inst_RECURSION : thm := inst_INDUCT_inst_RECURSION.2
 #eval (do IO.println (← HolCore.Printer.string_of_thm inst_INDUCT)
           IO.println (← HolCore.Printer.string_of_thm inst_RECURSION) : IO Unit)
 
@@ -135,7 +135,7 @@ unsafe def inst_RECURSION : thm := inst_INDUCT_inst_RECURSION.2
  -/
 
 #eval phrase 6
-unsafe def update_def : thm := keep "update_def" fun _ => (do
+def update_def : thm := keep "update_def" fun _ => (do
   ExceptT.mk (new_definition [[update x z s y = if (y = x) then z else s y]])
   : ExceptT String IO thm).run
 #eval update_def
@@ -150,7 +150,7 @@ unsafe def update_def : thm := keep "update_def" fun _ => (do
  -/
 
 #eval phrase 7
-unsafe def S_DEF : thm := keep "S_DEF" fun _ => (do
+def S_DEF : thm := keep "S_DEF" fun _ => (do
   ExceptT.mk (new_recursive_definition inst_RECURSION
    [[(S (LI n) s = update Acc n s)
   /\  (S (LOAD r) s = update Acc (s (Reg r)) s)
@@ -168,7 +168,7 @@ unsafe def S_DEF : thm := keep "S_DEF" fun _ => (do
  -/
 
 #eval phrase 8
-unsafe def S'_DEF : thm := keep "S'_DEF" fun _ => (do
+def S'_DEF : thm := keep "S'_DEF" fun _ => (do
   ExceptT.mk (new_recursive_definition list_RECURSION
    [[(S' [] s = s)
   /\  (S' (CONS inst rest) s = S' rest (S inst s))]])
@@ -187,7 +187,7 @@ unsafe def S'_DEF : thm := keep "S'_DEF" fun _ => (do
  -/
 
 #eval phrase 9
-unsafe def C_DEF : thm := keep "C_DEF" fun _ => (do
+def C_DEF : thm := keep "C_DEF" fun _ => (do
   ExceptT.mk (new_recursive_definition exp_RECURSION
    [[(C (Lit n) map r = [LI n])
   /\  (C (Var v) map r = [LOAD (map v)])
@@ -203,27 +203,27 @@ unsafe def C_DEF : thm := keep "C_DEF" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 10
-unsafe def cellth : thm := keep "cellth" fun _ => (do
-  ec (Session.CONJ (← ec (distinctness "cell")) (← ec (injectivity "cell")))
+def cellth : thm := keep "cellth" fun _ => (do
+  ec (Session.CONJ (← ExceptT.mk (distinctness "cell")) (← ExceptT.mk (injectivity "cell")))
   : ExceptT String IO thm).run
 #eval cellth
 
 #eval phrase 11
-unsafe def S'_APPEND : thm := keep "S'_APPEND" fun _ => (do
+def S'_APPEND : thm := keep "S'_APPEND" fun _ => (do
   prove ([[!p1 p2 s. S' (APPEND p1 p2) s = S' p2 (S' p1 s)]])
    (LIST_INDUCT_TAC THEN ASM_SIMP_TAC [S'_DEF, listDefs.APPEND])
   : ExceptT String IO thm).run
 #eval S'_APPEND
 
 #eval phrase 12
-unsafe def UPDATE_DIFFERENT : thm := keep "UPDATE_DIFFERENT" fun _ => (do
+def UPDATE_DIFFERENT : thm := keep "UPDATE_DIFFERENT" fun _ => (do
   prove ([[!x y z s. ~(x = y) ==> (update x z s y = s y)]])
    (SIMP_TAC [update_def])
   : ExceptT String IO thm).run
 #eval UPDATE_DIFFERENT
 
 #eval phrase 13
-unsafe def UPDATE_SAME : thm := keep "UPDATE_SAME" fun _ => (do
+def UPDATE_SAME : thm := keep "UPDATE_SAME" fun _ => (do
   prove ([[!x z s. update x z s x = z]])
    (SIMP_TAC [update_def])
   : ExceptT String IO thm).run
@@ -263,7 +263,7 @@ unsafe def UPDATE_SAME : thm := keep "UPDATE_SAME" fun _ => (do
  -/
 
 #eval phrase 14
-unsafe def CORRECTNESS_THEOREM : thm := keep "CORRECTNESS_THEOREM" fun _ => (do
+def CORRECTNESS_THEOREM : thm := keep "CORRECTNESS_THEOREM" fun _ => (do
   prove ([[!e map s s' r.
       (!v. map v < r) ==>
       (!v. s v = s' (Reg (map v))) ==>

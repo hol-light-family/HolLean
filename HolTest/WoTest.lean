@@ -9,7 +9,7 @@ tools/wodiff/check.sh compares far more structurally: all 159 theorems,
 the constants and definitions and all 817 load messages. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Wo
 
 open HolCore.Kernel HolTest.CommonTest
 

@@ -14,16 +14,16 @@ open HolLight (tactic_of tryWith)
 namespace HolExamples.DLO
 
 /- The session's `prove` lifted into `ExceptT String IO`. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /-- Cache a value built by an `ExceptT String IO` computation (a toplevel
     `let` whose right-hand side builds a conversion from proved theorems,
     so OCaml's definition-time traces fire at the defining phrase). -/
-private unsafe def keepE {α : Type} [Inhabited α] (name : String)
+private def keepE {α : Type} [Inhabited α] (name : String)
     (m : ExceptT String IO α) : α :=
   keep name fun _ =>
-    match unsafeIO m.run with
+    match runIO m.run with
     | .ok (.ok v) => v
     | .ok (.error e) => panic! e
     | .error e => panic! (toString e)
@@ -39,12 +39,12 @@ private unsafe def keepE {α : Type} [Inhabited α] (name : String)
 /- ---------------------------------------------------------------------- -/
 /-  Util                                                                  -/
 /- ---------------------------------------------------------------------- -/
-unsafe def eitConj : List term → Except String term
+def eitConj : List term → Except String term
   | [] => Except.error "end_itlist"
   | [x] => Except.ok x
   | h :: t => do mk_conj h (← eitConj t)
 
-unsafe def list_conj (l : List term) : Except String term :=
+def list_conj (l : List term) : Except String term :=
   let t_tm : term := ([[T]])
   if l == [] then Except.ok t_tm else eitConj l
 #eval IO.println "<fun>"
@@ -52,8 +52,8 @@ unsafe def list_conj (l : List term) : Except String term :=
 #eval phrase 3
 -- OCaml's `let mk_lt = mk_binop `(<)`` parses `(<)` once, at this phrase.
 -- Keep the operator term so it is not re-parsed (and re-warned) on every call.
-unsafe def lt_op : term := keep "lt_op" fun _ => ([[(<)]])
-unsafe def mk_lt (l r : term) : Except String term := do
+def lt_op : term := keep "lt_op" fun _ => ([[(<)]])
+def mk_lt (l r : term) : Except String term := do
   let f ← mk_binop lt_op l
   f r
 #eval (do let _ ← HolCore.Printer.string_of_term lt_op; IO.println "<fun>")
@@ -62,49 +62,49 @@ unsafe def mk_lt (l r : term) : Except String term := do
 /- ---------------------------------------------------------------------- -/
 /-  cnnf                                                                  -/
 /- ---------------------------------------------------------------------- -/
-unsafe def DOUBLE_NEG_CONV (tm : term) : IO (Except String thm) := (do
+def DOUBLE_NEG_CONV (tm : term) : IO (Except String thm) := (do
   let dn_thm ← ExceptT.mk (TAUT [[!x. ~(~ x) <=> x]])
   let tm' ← liftExcept (do dest_neg (← dest_neg tm))
   liftExcept (ISPEC tm' dn_thm) : ExceptT String IO thm).run
 #eval IO.println "<fun>"
 
 #eval phrase 5
-unsafe def IMP_CONV (tm : term) : IO (Except String thm) := (do
+def IMP_CONV (tm : term) : IO (Except String thm) := (do
   let i_thm ← ExceptT.mk (TAUT [[!a b. (a ==> b) <=> (~a \/ b)]])
   let (a, b) ← liftExcept (HolCore.Basics.dest_imp tm)
   liftExcept (ISPECL [a, b] i_thm) : ExceptT String IO thm).run
 #eval IO.println "<fun>"
 
 #eval phrase 6
-unsafe def BEQ_CONV (tm : term) : IO (Except String thm) := (do
+def BEQ_CONV (tm : term) : IO (Except String thm) := (do
   let beq_thm ← ExceptT.mk (TAUT [[!a b. (a = b) <=> (a /\ b \/ ~a /\ ~b)]])
   let (a, b) ← liftExcept (dest_eq tm)
   liftExcept (ISPECL [a, b] beq_thm) : ExceptT String IO thm).run
 #eval IO.println "<fun>"
 
 #eval phrase 7
-unsafe def NEG_AND_CONV (tm : term) : IO (Except String thm) := (do
+def NEG_AND_CONV (tm : term) : IO (Except String thm) := (do
   let na_thm ← ExceptT.mk (TAUT [[!a b. ~(a /\ b) <=> (~a \/ ~b)]])
   let (a, b) ← liftExcept (do HolCore.Basics.dest_conj (← dest_neg tm))
   liftExcept (ISPECL [a, b] na_thm) : ExceptT String IO thm).run
 #eval IO.println "<fun>"
 
 #eval phrase 8
-unsafe def NEG_OR_CONV (tm : term) : IO (Except String thm) := (do
+def NEG_OR_CONV (tm : term) : IO (Except String thm) := (do
   let no_thm ← ExceptT.mk (TAUT [[!a b. ~(a \/ b) <=> (~a /\ ~b)]])
   let (a, b) ← liftExcept (do HolCore.Basics.dest_disj (← dest_neg tm))
   liftExcept (ISPECL [a, b] no_thm) : ExceptT String IO thm).run
 #eval IO.println "<fun>"
 
 #eval phrase 9
-unsafe def NEG_IMP_CONV (tm : term) : IO (Except String thm) := (do
+def NEG_IMP_CONV (tm : term) : IO (Except String thm) := (do
   let ni_thm ← ExceptT.mk (TAUT [[!a b. ~(a ==> b) <=> (a /\ ~b)]])
   let (a, b) ← liftExcept (do HolCore.Basics.dest_imp (← dest_neg tm))
   liftExcept (ISPECL [a, b] ni_thm) : ExceptT String IO thm).run
 #eval IO.println "<fun>"
 
 #eval phrase 10
-unsafe def NEG_BEQ_CONV (tm : term) : IO (Except String thm) := (do
+def NEG_BEQ_CONV (tm : term) : IO (Except String thm) := (do
   let nbeq_thm ← ExceptT.mk (TAUT [[!a b. ~(a = b) <=> (a /\ ~b \/ ~a /\ b)]])
   let (a, b) ← liftExcept (do dest_eq (← dest_neg tm))
   liftExcept (ISPECL [a, b] nbeq_thm) : ExceptT String IO thm).run
@@ -112,7 +112,7 @@ unsafe def NEG_BEQ_CONV (tm : term) : IO (Except String thm) := (do
 
 #eval phrase 11
 -- tm = (p /\ q0) \/ (~p /\ q1)
-unsafe def dest_cases (tm : term) : Except String (term × term × term) :=
+def dest_cases (tm : term) : Except String (term × term × term) :=
   match (do
     let (l, r) ← HolCore.Basics.dest_disj tm
     let (p, q0) ← HolCore.Basics.dest_conj l
@@ -124,18 +124,18 @@ unsafe def dest_cases (tm : term) : Except String (term × term × term) :=
 #eval IO.println "<fun>"
 
 #eval phrase 12
-unsafe def is_cases (tm : term) : Bool := can dest_cases tm
+def is_cases (tm : term) : Bool := can dest_cases tm
 #eval IO.println "<fun>"
 
 #eval phrase 13
-unsafe def CASES_CONV (tm : term) : IO (Except String thm) := (do
+def CASES_CONV (tm : term) : IO (Except String thm) := (do
   let c_thm ← ExceptT.mk (TAUT [[!p q0 q1. ~(p /\ q0 \/ ~p /\ q1) <=> (p /\ ~q0 \/ ~p /\ ~q1)]])
   let (p, q0, q1) ← liftExcept (dest_cases tm)
   liftExcept (ISPECL [p, q0, q1] c_thm) : ExceptT String IO thm).run
 #eval IO.println "<fun>"
 
 #eval phrase 14
-unsafe def QE_SIMPLIFY_CONV : term → IO (Except String thm) :=
+def QE_SIMPLIFY_CONV : term → IO (Except String thm) :=
   keepE "QE_SIMPLIFY_CONV" (do
   -- parsed here, inside the cached block: a coerced `[[ ]]` is a pure value
   -- to the compiler, which may lift it out and parse it at every call
@@ -160,7 +160,7 @@ unsafe def QE_SIMPLIFY_CONV : term → IO (Except String thm) :=
 #eval (do let _ ← QE_SIMPLIFY_CONV [[T]]; IO.println "<fun>")
 
 #eval phrase 15
-unsafe def CNNF_CONV (lfn_conv : term → IO (Except String thm)) (tm0 : term) :
+partial def CNNF_CONV (lfn_conv : term → IO (Except String thm)) (tm0 : term) :
     IO (Except String thm) := (do
   let refl_conj := HolCore.Kernel.REFL [[(/\)]]
   let refl_disj := HolCore.Kernel.REFL [[(\/)]]
@@ -254,7 +254,7 @@ map (CNNF_CONV (fun x -> REFL x)) tests;;
 /- ---------------------------------------------------------------------- -/
 /-  Real Lists                                                            -/
 /- ---------------------------------------------------------------------- -/
-unsafe def MINL : thm := keep "MINL" fun _ => (do
+def MINL : thm := keep "MINL" fun _ => (do
   ExceptT.mk (new_recursive_definition list_RECURSION
    [[(MINL [] default = default) /\
      (MINL (CONS h t) default = min h (MINL t default))]])
@@ -262,7 +262,7 @@ unsafe def MINL : thm := keep "MINL" fun _ => (do
 #eval MINL
 
 #eval phrase 17
-unsafe def MAXL : thm := keep "MAXL" fun _ => (do
+def MAXL : thm := keep "MAXL" fun _ => (do
   ExceptT.mk (new_recursive_definition list_RECURSION
    [[(MAXL [] default = default) /\
      (MAXL (CONS h t) default = max h (MAXL t default))]])
@@ -270,21 +270,21 @@ unsafe def MAXL : thm := keep "MAXL" fun _ => (do
 #eval MAXL
 
 #eval phrase 18
-unsafe def MAX_LT : thm := keep "MAX_LT" fun _ => (do
+def MAX_LT : thm := keep "MAX_LT" fun _ => (do
   prove ([[!x y z. max x y < z <=> x < z /\ y < z]])
    (REWRITE_TAC [real_max] THEN MESON_TAC [REAL_LET_TRANS, REAL_LE_TOTAL])
   : ExceptT String IO thm).run
 #eval MAX_LT
 
 #eval phrase 19
-unsafe def MIN_GT : thm := keep "MIN_GT" fun _ => (do
+def MIN_GT : thm := keep "MIN_GT" fun _ => (do
   prove ([[!x y z. x < real_min y z <=> x < y /\ x < z]])
    (REWRITE_TAC [real_min] THEN MESON_TAC [REAL_LTE_TRANS, REAL_LE_TOTAL])
   : ExceptT String IO thm).run
 #eval MIN_GT
 
 #eval phrase 20
-unsafe def ALL_LT_LEMMA : thm := keep "ALL_LT_LEMMA" fun _ => (do
+def ALL_LT_LEMMA : thm := keep "ALL_LT_LEMMA" fun _ => (do
   prove ([[!left x lefts. ALL (\l. l < x) (CONS left lefts) <=> MAXL lefts left < x]])
    (GEN_TAC THEN GEN_TAC THEN LIST_INDUCT_TAC THEN REWRITE_TAC [MAXL, listDefs.ALL] THEN
     SPEC_TAC ([[t:real list]], [[t:real list]]) THEN LIST_INDUCT_TAC THEN
@@ -293,7 +293,7 @@ unsafe def ALL_LT_LEMMA : thm := keep "ALL_LT_LEMMA" fun _ => (do
 #eval ALL_LT_LEMMA
 
 #eval phrase 21
-unsafe def ALL_GT_LEMMA : thm := keep "ALL_GT_LEMMA" fun _ => (do
+def ALL_GT_LEMMA : thm := keep "ALL_GT_LEMMA" fun _ => (do
   prove ([[!right x rights.
         ALL (\r. x < r) (CONS right rights) <=> x < MINL rights right]])
    (GEN_TAC THEN GEN_TAC THEN LIST_INDUCT_TAC THEN REWRITE_TAC [MINL, listDefs.ALL] THEN
@@ -306,7 +306,7 @@ unsafe def ALL_GT_LEMMA : thm := keep "ALL_GT_LEMMA" fun _ => (do
 /- ---------------------------------------------------------------------- -/
 /-  Axioms                                                                -/
 /- ---------------------------------------------------------------------- -/
-unsafe def REAL_DENSE : thm := keep "REAL_DENSE" fun _ => (do
+def REAL_DENSE : thm := keep "REAL_DENSE" fun _ => (do
   prove ([[!x y. x < y ==> ?z. x < z /\ z < y]])
    (REPEAT STRIP_TAC THEN EXISTS_TAC [[(x + y) / &2]] THEN
     SIMP_TAC [REAL_LT_LDIV_EQ, REAL_LT_RDIV_EQ, REAL_OF_NUM_LT, ARITH] THEN
@@ -315,7 +315,7 @@ unsafe def REAL_DENSE : thm := keep "REAL_DENSE" fun _ => (do
 #eval REAL_DENSE
 
 #eval phrase 23
-unsafe def REAL_LT_EXISTS : thm := keep "REAL_LT_EXISTS" fun _ => (do
+def REAL_LT_EXISTS : thm := keep "REAL_LT_EXISTS" fun _ => (do
   prove ([[!x. ?y. x < y]])
    (GEN_TAC THEN
     EXISTS_TAC [[x + &1]] THEN
@@ -324,7 +324,7 @@ unsafe def REAL_LT_EXISTS : thm := keep "REAL_LT_EXISTS" fun _ => (do
 #eval REAL_LT_EXISTS
 
 #eval phrase 24
-unsafe def REAL_GT_EXISTS : thm := keep "REAL_GT_EXISTS" fun _ => (do
+def REAL_GT_EXISTS : thm := keep "REAL_GT_EXISTS" fun _ => (do
   prove ([[!x. ?y. y < x]])
    (GEN_TAC THEN
     EXISTS_TAC [[x - &1]] THEN
@@ -336,7 +336,7 @@ unsafe def REAL_GT_EXISTS : thm := keep "REAL_GT_EXISTS" fun _ => (do
 /- ---------------------------------------------------------------------- -/
 /-  lfn_dlo                                                               -/
 /- ---------------------------------------------------------------------- -/
-unsafe def LFN_DLO_CONV (tm : term) : IO (Except String thm) := (do
+def LFN_DLO_CONV (tm : term) : IO (Except String thm) := (do
   let r1 ← ExceptT.mk (Session.REAL_ARITH2 [[~(s < t) <=> ((s = t) \/ (t < s))]])
   let r2 ← ExceptT.mk (Session.REAL_ARITH2 [[~(s = t) <=> (s < t \/ t < s)]])
   ExceptT.mk (Session.PURE_REWRITE_CONV [r1, r2] tm)
@@ -347,21 +347,21 @@ unsafe def LFN_DLO_CONV (tm : term) : IO (Except String thm) := (do
 /- ------------------------------------------------------------------------- -/
 /- Proforma theorems to support the main inference step.                     -/
 /- ------------------------------------------------------------------------- -/
-unsafe def PROFORMA_LEFT : thm := keep "PROFORMA_LEFT" fun _ => (do
+def PROFORMA_LEFT : thm := keep "PROFORMA_LEFT" fun _ => (do
   prove ([[!l ls. (?x. ALL (\l. l < x) (CONS l ls)) <=> T]])
    (REWRITE_TAC [ALL_LT_LEMMA] THEN MESON_TAC [REAL_LT_EXISTS])
   : ExceptT String IO thm).run
 #eval PROFORMA_LEFT
 
 #eval phrase 27
-unsafe def PROFORMA_RIGHT : thm := keep "PROFORMA_RIGHT" fun _ => (do
+def PROFORMA_RIGHT : thm := keep "PROFORMA_RIGHT" fun _ => (do
   prove ([[!r rs. (?x. ALL (\r. x < r) (CONS r rs)) <=> T]])
    (REWRITE_TAC [ALL_GT_LEMMA] THEN MESON_TAC [REAL_GT_EXISTS])
   : ExceptT String IO thm).run
 #eval PROFORMA_RIGHT
 
 #eval phrase 28
-unsafe def PROFORMA_BOTH : thm := keep "PROFORMA_BOTH" fun _ => (do
+def PROFORMA_BOTH : thm := keep "PROFORMA_BOTH" fun _ => (do
   prove ([[!l ls r rs.
         (?x. ALL (\l. l < x) (CONS l ls) /\ ALL (\r. x < r) (CONS r rs)) <=>
         ALL (\l. ALL (\r. l < r) (CONS r rs)) (CONS l ls)]])
@@ -374,13 +374,13 @@ unsafe def PROFORMA_BOTH : thm := keep "PROFORMA_BOTH" fun _ => (do
 /- ------------------------------------------------------------------------- -/
 /- Deal with ?x. <conjunction of strict inequalities all involving x>        -/
 /- ------------------------------------------------------------------------- -/
-unsafe def mk_rlist (x : List term) : IO (Except String term) := (do
+def mk_rlist (x : List term) : IO (Except String term) := (do
   let ty ← ExceptT.mk (HolCore.Parser.parse_type "real")
   ExceptT.mk (Session.mk_list x ty) : ExceptT String IO term).run
 #eval IO.println "<fun>"
 
 #eval phrase 30
-unsafe def expand_all (th : thm) : IO (Except String thm) := (do
+def expand_all (th : thm) : IO (Except String thm) := (do
   let t1 ← ExceptT.mk (TAUT [[a /\ T <=> a]])
   ExceptT.mk (Session.PURE_REWRITE_RULE
     [listDefs.ALL, BETA_THM, (← ExceptT.mk (HolLight.GSYM CONJ_ASSOC)), t1] th)
@@ -388,7 +388,7 @@ unsafe def expand_all (th : thm) : IO (Except String thm) := (do
 #eval IO.println "<fun>"
 
 #eval phrase 31
-unsafe def DLO_EQ_CONV (fm : term) : IO (Except String thm) := (do
+def DLO_EQ_CONV (fm : term) : IO (Except String thm) := (do
   let mkEq ← ExceptT.mk (mk_eq : IO _)
   let (x, p) ← liftExcept (dest_exists fm)
   let (xl, xr) := partition (fun t => (match (do rand t : Except String term) with
@@ -418,7 +418,7 @@ unsafe def DLO_EQ_CONV (fm : term) : IO (Except String thm) := (do
 #eval IO.println "<fun>"
 
 #eval phrase 32
-unsafe def pth_triv : thm := keep "pth_triv" fun _ => (do
+def pth_triv : thm := keep "pth_triv" fun _ => (do
   prove
    ([[((?x. x = x) <=> T) /\
      ((?x. x = t) <=> T) /\
@@ -427,17 +427,17 @@ unsafe def pth_triv : thm := keep "pth_triv" fun _ => (do
      ((?x. (t = x) /\ P x) <=> P t)]])
     (MESON_TAC [])
   : ExceptT String IO thm).run
-unsafe def pth_refl : thm := keep "pth_refl" fun _ => (do
+def pth_refl : thm := keep "pth_refl" fun _ => (do
   prove
    ([[(?x. (x = x) /\ P x) <=> (?x. P x)]])
     (MESON_TAC [])
   : ExceptT String IO thm).run
 
-unsafe def eq_triv_conv (tm : term) : IO (Except String thm) :=
+def eq_triv_conv (tm : term) : IO (Except String thm) :=
   Session.GEN_REWRITE_CONV HolCore.Lib.I [pth_triv] tm
-unsafe def eq_refl_conv (tm : term) : IO (Except String thm) :=
+def eq_refl_conv (tm : term) : IO (Except String thm) :=
   Session.GEN_REWRITE_CONV HolCore.Lib.I [pth_refl] tm
-unsafe def lt_refl_conv (tm : term) : IO (Except String thm) :=
+def lt_refl_conv (tm : term) : IO (Except String thm) :=
   Session.GEN_REWRITE_CONV HolLight.DEPTH_CONV
    [REAL_LT_REFL, AND_CLAUSES, EXISTS_SIMP] tm
 #eval (do
@@ -448,7 +448,7 @@ unsafe def lt_refl_conv (tm : term) : IO (Except String thm) :=
   IO.println "<fun>" : IO Unit)
 
 #eval phrase 33
-unsafe def DLOBASIC_CONV (fm0 : term) : IO (Except String thm) :=
+partial def DLOBASIC_CONV (fm0 : term) : IO (Except String thm) :=
   let rec go (fm : term) : ExceptT String IO thm :=
     tryWith (do
       let (x, p) ← liftExcept (dest_exists fm)
@@ -477,7 +477,7 @@ unsafe def DLOBASIC_CONV (fm0 : term) : IO (Except String thm) :=
 /- ------------------------------------------------------------------------- -/
 /- Overall quantifier elimination.                                           -/
 /- ------------------------------------------------------------------------- -/
-unsafe def AFN_DLO_CONV (_vars : List term) (tm : term) : IO (Except String thm) := (do
+def AFN_DLO_CONV (_vars : List term) (tm : term) : IO (Except String thm) := (do
   let r1 ← ExceptT.mk (Session.REAL_ARITH2 [[s <= t <=> ~(t < s)]])
   let r2 ← ExceptT.mk (Session.REAL_ARITH2 [[s >= t <=> ~(s < t)]])
   let r3 ← ExceptT.mk (Session.REAL_ARITH2 [[s > t <=> t < s]])
@@ -486,7 +486,7 @@ unsafe def AFN_DLO_CONV (_vars : List term) (tm : term) : IO (Except String thm)
 #eval IO.println "<fun>"
 
 #eval phrase 35
-unsafe def dest_binop_op (tm : term) : Except String (term × term × term) :=
+def dest_binop_op (tm : term) : Except String (term × term × term) :=
   match (do
     let (f, r) ← dest_comb tm
     let (op, l) ← dest_comb f
@@ -496,19 +496,19 @@ unsafe def dest_binop_op (tm : term) : Except String (term × term × term) :=
 #eval IO.println "<fun>"
 
 #eval phrase 36
-unsafe def forall_thm : thm := keep "forall_thm" fun _ => (do
+def forall_thm : thm := keep "forall_thm" fun _ => (do
   prove ([[!P. (!x. P x) <=> ~ (?x. ~ P x)]]) (MESON_TAC [])
   : ExceptT String IO thm).run
-unsafe def or_exists_conv (tm : term) : IO (Except String thm) :=
+def or_exists_conv (tm : term) : IO (Except String thm) :=
   Session.PURE_REWRITE_CONV [OR_EXISTS_THM] tm
-unsafe def triv_exists_conv (tm : term) : IO (Except String thm) :=
+def triv_exists_conv (tm : term) : IO (Except String thm) :=
   Session.REWR_CONV EXISTS_SIMP tm
-unsafe def push_exists_conv (tm : term) : IO (Except String thm) :=
+def push_exists_conv (tm : term) : IO (Except String thm) :=
   Session.REWR_CONV RIGHT_EXISTS_AND_THM tm
-unsafe def not_tm : term := [[(~)]]
-unsafe def or_tm : term := [[(\/)]]
-unsafe def t_tm : term := [[T]]
-unsafe def f_tm : term := [[F]]
+def not_tm : term := [[(~)]]
+def or_tm : term := [[(\/)]]
+def t_tm : term := [[T]]
+def f_tm : term := [[F]]
 #eval (do IO.println (← HolCore.Printer.string_of_thm forall_thm)
           IO.println "<fun>"
           IO.println "<fun>"
@@ -519,7 +519,7 @@ unsafe def f_tm : term := [[F]]
           IO.println s!"`{← HolCore.Printer.string_of_term f_tm}`" : IO Unit)
 
 #eval phrase 37
-unsafe def LIFT_QELIM_CONV
+partial def LIFT_QELIM_CONV
     (afn_conv : List term → term → IO (Except String thm))
     (nfn_conv : term → IO (Except String thm))
     (qfn_conv : List term → term → IO (Except String thm))
@@ -574,7 +574,7 @@ where
 #eval IO.println "<fun>"
 
 #eval phrase 38
-unsafe def QELIM_DLO_CONV (tm : term) : IO (Except String thm) :=
+def QELIM_DLO_CONV (tm : term) : IO (Except String thm) :=
   ((LIFT_QELIM_CONV AFN_DLO_CONV
       ((fun t => (CNNF_CONV LFN_DLO_CONV) t) THENC Session.DNF_CONV)
       (fun _v => DLOBASIC_CONV)) THENC (Session.REWRITE_CONV [])) tm
@@ -584,7 +584,7 @@ unsafe def QELIM_DLO_CONV (tm : term) : IO (Except String thm) :=
 /- ---------------------------------------------------------------------- -/
 /-  Test                                                                  -/
 /- ---------------------------------------------------------------------- -/
-unsafe def tests : List term := keep "tests" fun _ => [
+def tests : List term := keep "tests" fun _ => [
   [[!x y. ?z. z < x /\ z < y]],
   [[?z. x < x /\ z < y]],
   [[?z. x < z /\ z < y]],

@@ -7,7 +7,7 @@ open HolCore.Kernel Session HolLight.Syntax HolExamples
 open scoped HolLight
 namespace HolExamples.SafetyLiveness
 
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 -- ========================================================================= --
@@ -20,13 +20,13 @@ private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT Str
 -- ========================================================================= --
 
 #eval phrase 1
-unsafe def safety : thm := keep "safety" fun _ => new_definition
+def safety : thm := keep "safety" fun _ => new_definition
   [[safety (p:(num->S)->bool) <=>
         !s. ~(p s) ==> ?n. !s'. (!m. m <= n ==> s(m) = s'(m)) ==> ~(p s')]]
 #eval safety
 
 #eval phrase 2
-unsafe def liveness : thm := keep "liveness" fun _ => new_definition
+def liveness : thm := keep "liveness" fun _ => new_definition
   [[liveness (p:(num->S)->bool) <=>
         !s n. ?s'. (!m. m <= n ==> s(m) = s'(m)) /\ p s']]
 #eval liveness
@@ -36,7 +36,7 @@ unsafe def liveness : thm := keep "liveness" fun _ => new_definition
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 3
-unsafe def SAFETY : thm := keep "SAFETY" fun _ => (do
+def SAFETY : thm := keep "SAFETY" fun _ => (do
   prove ([[!p:(num->S)->bool.
         safety p <=>
         !s. ~(p s) ==> ?n. !s'. (!m. m < n ==> s(m) = s'(m)) ==> ~(p s')]])
@@ -46,7 +46,7 @@ unsafe def SAFETY : thm := keep "SAFETY" fun _ => (do
 #eval SAFETY
 
 #eval phrase 4
-unsafe def LIVENESS : thm := keep "LIVENESS" fun _ => (do
+def LIVENESS : thm := keep "LIVENESS" fun _ => (do
   prove ([[!p:(num->S)->bool.
         liveness p <=>
         !s n. ?s'. (!m. m < n ==> s(m) = s'(m)) /\ p s']])
@@ -60,7 +60,7 @@ unsafe def LIVENESS : thm := keep "LIVENESS" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 5
-unsafe def SAFETY_LIVENESS_DECOMPOSITION : thm := keep "SAFETY_LIVENESS_DECOMPOSITION" fun _ => (do
+def SAFETY_LIVENESS_DECOMPOSITION : thm := keep "SAFETY_LIVENESS_DECOMPOSITION" fun _ => (do
   prove ([[!P:(num->S)->bool.
       ?S L. safety S /\ liveness L /\ (!x. S x /\ L x <=> P x)]])
    (REPEAT GEN_TAC THEN

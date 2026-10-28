@@ -18,69 +18,69 @@ namespace HolLogicArith.Unif
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1`/`listThms2` bundles; alias the ones we need. -/
-private unsafe def HD : thm := Session.listDefs.HD
-private unsafe def TL : thm := Session.listDefs.TL
-private unsafe def LENGTH : thm := Session.listDefs.LENGTH
-private unsafe def MAP : thm := Session.listDefs.MAP
-private unsafe def ALL : thm := Session.listDefs.ALL
-private unsafe def EX : thm := Session.listDefs.EX
-private unsafe def ITLIST : thm := Session.listDefs.ITLIST
-private unsafe def MEM : thm := Session.listDefs.MEM
-private unsafe def EL : thm := Session.listDefs.EL
-private unsafe def FILTER : thm := Session.listDefs.FILTER
-private unsafe def ASSOC : thm := Session.listDefs.ASSOC
-private unsafe def ZIP : thm := Session.listDefs.ZIP
-private unsafe def APPEND : thm := Session.listDefs.APPEND
-private unsafe def ALL2 : thm := Session.listDefs.ALL2
-private unsafe def ALL2_DEF : thm := Session.listDefs.ALL2_DEF
-private unsafe def MAP2 : thm := Session.listDefs.MAP2
-private unsafe def MAP_EQ : thm := Session.listThms1.MAP_EQ
-private unsafe def MAP_o : thm := Session.listThms1.MAP_o
-private unsafe def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
-private unsafe def LENGTH_APPEND : thm := Session.listThms1.LENGTH_APPEND
-private unsafe def MAP_APPEND : thm := Session.listThms1.MAP_APPEND
-private unsafe def APPEND_NIL : thm := Session.listThms1.APPEND_NIL
-private unsafe def APPEND_ASSOC : thm := Session.listThms1.APPEND_ASSOC
-private unsafe def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
-private unsafe def CONS_11 : thm := Session.listThms1.CONS_11
-private unsafe def NOT_CONS_NIL : thm := Session.listThms1.NOT_CONS_NIL
-private unsafe def list_CASES : thm := Session.listThms1.list_CASES
-private unsafe def ALL_T : thm := Session.listThms1.ALL_T
-private unsafe def ALL_MAP : thm := Session.listThms1.ALL_MAP
-private unsafe def ALL_IMP : thm := Session.listThms1.ALL_IMP
-private unsafe def AND_ALL : thm := Session.listThms1.AND_ALL
-private unsafe def EX_MAP : thm := Session.listThms1.EX_MAP
-private unsafe def EX_MEM : thm := Session.listThms1.EX_MEM
-private unsafe def EX_IMP : thm := Session.listThms1.EX_IMP
-private unsafe def EXISTS_EX : thm := Session.listThms1.EXISTS_EX
-private unsafe def ALL_MEM : thm := Session.listThms1.ALL_MEM
-private unsafe def MEM_MAP : thm := Session.listThms1.MEM_MAP
-private unsafe def MEM_APPEND : thm := Session.listThms1.MEM_APPEND
-private unsafe def FILTER_APPEND : thm := Session.listThms1.FILTER_APPEND
-private unsafe def FILTER_MAP : thm := Session.listThms1.FILTER_MAP
-private unsafe def MEM_FILTER : thm := Session.listThms1.MEM_FILTER
-private unsafe def MAP_FST_ZIP : thm := Session.listThms1.MAP_FST_ZIP
-private unsafe def MAP_SND_ZIP : thm := Session.listThms1.MAP_SND_ZIP
-private unsafe def MEM_ASSOC : thm := Session.listThms1.MEM_ASSOC
-private unsafe def ALL_APPEND : thm := Session.listThms2.ALL_APPEND
+private def HD : thm := Session.listDefs.HD
+private def TL : thm := Session.listDefs.TL
+private def LENGTH : thm := Session.listDefs.LENGTH
+private def MAP : thm := Session.listDefs.MAP
+private def ALL : thm := Session.listDefs.ALL
+private def EX : thm := Session.listDefs.EX
+private def ITLIST : thm := Session.listDefs.ITLIST
+private def MEM : thm := Session.listDefs.MEM
+private def EL : thm := Session.listDefs.EL
+private def FILTER : thm := Session.listDefs.FILTER
+private def ASSOC : thm := Session.listDefs.ASSOC
+private def ZIP : thm := Session.listDefs.ZIP
+private def APPEND : thm := Session.listDefs.APPEND
+private def ALL2 : thm := Session.listDefs.ALL2
+private def ALL2_DEF : thm := Session.listDefs.ALL2_DEF
+private def MAP2 : thm := Session.listDefs.MAP2
+private def MAP_EQ : thm := Session.listThms1.MAP_EQ
+private def MAP_o : thm := Session.listThms1.MAP_o
+private def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
+private def LENGTH_APPEND : thm := Session.listThms1.LENGTH_APPEND
+private def MAP_APPEND : thm := Session.listThms1.MAP_APPEND
+private def APPEND_NIL : thm := Session.listThms1.APPEND_NIL
+private def APPEND_ASSOC : thm := Session.listThms1.APPEND_ASSOC
+private def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
+private def CONS_11 : thm := Session.listThms1.CONS_11
+private def NOT_CONS_NIL : thm := Session.listThms1.NOT_CONS_NIL
+private def list_CASES : thm := Session.listThms1.list_CASES
+private def ALL_T : thm := Session.listThms1.ALL_T
+private def ALL_MAP : thm := Session.listThms1.ALL_MAP
+private def ALL_IMP : thm := Session.listThms1.ALL_IMP
+private def AND_ALL : thm := Session.listThms1.AND_ALL
+private def EX_MAP : thm := Session.listThms1.EX_MAP
+private def EX_MEM : thm := Session.listThms1.EX_MEM
+private def EX_IMP : thm := Session.listThms1.EX_IMP
+private def EXISTS_EX : thm := Session.listThms1.EXISTS_EX
+private def ALL_MEM : thm := Session.listThms1.ALL_MEM
+private def MEM_MAP : thm := Session.listThms1.MEM_MAP
+private def MEM_APPEND : thm := Session.listThms1.MEM_APPEND
+private def FILTER_APPEND : thm := Session.listThms1.FILTER_APPEND
+private def FILTER_MAP : thm := Session.listThms1.FILTER_MAP
+private def MEM_FILTER : thm := Session.listThms1.MEM_FILTER
+private def MAP_FST_ZIP : thm := Session.listThms1.MAP_FST_ZIP
+private def MAP_SND_ZIP : thm := Session.listThms1.MAP_SND_ZIP
+private def MEM_ASSOC : thm := Session.listThms1.MEM_ASSOC
+private def ALL_APPEND : thm := Session.listThms2.ALL_APPEND
 
 #eval HolLogicArith.Fole.ensure
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 /- `new_specification` lifted into `ExceptT String IO`. -/
-private unsafe def newSpec (names : List String) (th : thm) : ExceptT String IO thm :=
+private def newSpec (names : List String) (th : thm) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_specification names th)
 
 #eval phrase 1
-unsafe def LEFT_AND_EX_THM : thm := keep "LEFT_AND_EX_THM" fun _ => (do
+def LEFT_AND_EX_THM : thm := keep "LEFT_AND_EX_THM" fun _ => (do
   prove ([[!P Q l. EX P l /\ Q <=> EX (\x. P x /\ Q) l]])
    (GEN_TAC THEN GEN_TAC THEN CONV_TAC (HolLight.ONCE_DEPTH_CONV HolLight.SYM_CONV) THEN
     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [EX] THEN CONV_TAC TAUT)
@@ -88,7 +88,7 @@ unsafe def LEFT_AND_EX_THM : thm := keep "LEFT_AND_EX_THM" fun _ => (do
 #eval LEFT_AND_EX_THM
 
 #eval phrase 2
-unsafe def EX_ADHOC : thm := keep "EX_ADHOC" fun _ => (do
+def EX_ADHOC : thm := keep "EX_ADHOC" fun _ => (do
   prove ([[!l. (!x. ~(P x) ==> (Q x <=> R x)) ==> (~EX P l ==> (EX Q l <=> EX R l))]])
    (REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
     LIST_INDUCT_TAC THEN REWRITE_TAC [EX] THEN ASM_MESON_TAC [])
@@ -96,14 +96,14 @@ unsafe def EX_ADHOC : thm := keep "EX_ADHOC" fun _ => (do
 #eval EX_ADHOC
 
 #eval phrase 3
-unsafe def ALL_ADHOC : thm := keep "ALL_ADHOC" fun _ => (do
+def ALL_ADHOC : thm := keep "ALL_ADHOC" fun _ => (do
   prove ([[!l. ALL (\x. f x = g x) l ==> (EX f l <=> EX g l)]])
    (LIST_INDUCT_TAC THEN REWRITE_TAC [ALL, EX] THEN ASM_MESON_TAC [])
   : ExceptT String IO thm).run
 #eval ALL_ADHOC
 
 #eval phrase 4
-unsafe def WF_FINITE_LEMMA : thm := keep "WF_FINITE_LEMMA" fun _ => (do
+def WF_FINITE_LEMMA : thm := keep "WF_FINITE_LEMMA" fun _ => (do
   prove ([[!(<<) s. FINITE s /\
             (!x:A. ~(TC(<<) x x)) /\ (!x y. x << y ==> y IN s)
             ==> WF(<<)]])
@@ -129,7 +129,7 @@ unsafe def WF_FINITE_LEMMA : thm := keep "WF_FINITE_LEMMA" fun _ => (do
 #eval WF_FINITE_LEMMA
 
 #eval phrase 5
-unsafe def TC_REV : thm := keep "TC_REV" fun _ => (do
+def TC_REV : thm := keep "TC_REV" fun _ => (do
   prove ([[!x:A y. TC (\u v. R v u) x y <=> TC R y x]])
    (REWRITE_TAC [(← ExceptT.mk (TAUT [[(a <=> b) <=> (a ==> b) /\ (b ==> a)]])), FORALL_AND_THM] THEN
     CONJ_TAC THENL [ALL_TAC, ONCE_REWRITE_TAC [SWAP_FORALL_THM]] THEN
@@ -138,7 +138,7 @@ unsafe def TC_REV : thm := keep "TC_REV" fun _ => (do
 #eval TC_REV
 
 #eval phrase 6
-unsafe def WF_DISJ : thm := keep "WF_DISJ" fun _ => (do
+def WF_DISJ : thm := keep "WF_DISJ" fun _ => (do
   let wf_tc_imp ← (do let (_, b) ← HolLight.EQ_IMP_RULE (← HolLight.SPEC_ALL WF_TC); pure b)
   prove ([[WF(R) /\ WF(\x y. ?z. S x z /\ RTC(R) z y) ==> WF(\x:A y. R x y \/ S x y)]])
    (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
@@ -154,7 +154,7 @@ unsafe def WF_DISJ : thm := keep "WF_DISJ" fun _ => (do
 #eval WF_DISJ
 
 #eval phrase 7
-unsafe def WF_ALTERNATION : thm := keep "WF_ALTERNATION" fun _ => (do
+def WF_ALTERNATION : thm := keep "WF_ALTERNATION" fun _ => (do
   prove ([[WF(\x y. R x y \/ S x y) /\ (!x y z. ~(P x y /\ P y z))
    ==> WF(\(x1:A,y1) (x2,y2). S x1 x2 /\ S y1 y2 \/
                               R x1 x2 /\ (y1 = y2) \/
@@ -196,7 +196,7 @@ unsafe def WF_ALTERNATION : thm := keep "WF_ALTERNATION" fun _ => (do
 #eval WF_ALTERNATION
 
 #eval phrase 8
-unsafe def MULTISET_FILTEREQ : thm := keep "MULTISET_FILTEREQ" fun _ => (do
+def MULTISET_FILTEREQ : thm := keep "MULTISET_FILTEREQ" fun _ => (do
   prove ([[multiplicity (multiset (\x:A. LENGTH (FILTER ((=) x) l))) a =
         LENGTH (FILTER ((=) a) l)]])
    (MP_TAC (← HolLight.ISPEC ([[\x:A. LENGTH (FILTER ((=) x) l)]])
@@ -221,7 +221,7 @@ unsafe def MULTISET_FILTEREQ : thm := keep "MULTISET_FILTEREQ" fun _ => (do
 #eval MULTISET_FILTEREQ
 
 #eval phrase 9
-unsafe def WF_MULTIZIP : thm := keep "WF_MULTIZIP" fun _ => (do
+def WF_MULTIZIP : thm := keep "WF_MULTIZIP" fun _ => (do
   let tyAlist ← ExceptT.mk (HolCore.Parser.parse_type "(A)list")
   let lemma ← HolLight.INST_TYPE [(tyAlist, mk_vartype "A")] WF_MEASURE_GEN
   prove ([[WF(R)
@@ -253,7 +253,7 @@ unsafe def WF_MULTIZIP : thm := keep "WF_MULTIZIP" fun _ => (do
 #eval WF_MULTIZIP
 
 #eval phrase 10
-unsafe def WF_MEASURE_OR_NONINC : thm := keep "WF_MEASURE_OR_NONINC" fun _ => (do
+def WF_MEASURE_OR_NONINC : thm := keep "WF_MEASURE_OR_NONINC" fun _ => (do
   prove ([[!R (m:A->num).
         WF(R) /\ (!x y. R x y ==> m x <= m y)
         ==> WF(\x y. MEASURE m x y \/ R x y)]])
@@ -279,7 +279,7 @@ unsafe def WF_MEASURE_OR_NONINC : thm := keep "WF_MEASURE_OR_NONINC" fun _ => (d
 #eval WF_MEASURE_OR_NONINC
 
 #eval phrase 11
-unsafe def WF_PROJ_EQ : thm := keep "WF_PROJ_EQ" fun _ => (do
+def WF_PROJ_EQ : thm := keep "WF_PROJ_EQ" fun _ => (do
   prove ([[(!x. P x ==> WF(R x))
    ==> WF(\(x',y') (x:A,y:B). P(x) /\ (x' = x) /\ R x y' y)]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [WF_DCHAIN] THEN
@@ -307,17 +307,17 @@ unsafe def WF_PROJ_EQ : thm := keep "WF_PROJ_EQ" fun _ => (do
 
 
 #eval phrase 12
-unsafe def OCC : thm := keep "OCC" fun _ => new_definition
+def OCC : thm := keep "OCC" fun _ => new_definition
   [[OCC env (x:num) y <=> ?t. MEM (x,t) env /\ y IN FVT(t)]]
 #eval OCC
 
 #eval phrase 13
-unsafe def LOOPFREE : thm := keep "LOOPFREE" fun _ => new_definition
+def LOOPFREE : thm := keep "LOOPFREE" fun _ => new_definition
   [[LOOPFREE env <=> !z. ~(TC (OCC env) z z)]]
 #eval LOOPFREE
 
 #eval phrase 14
-unsafe def LOOP_BREAK : thm := keep "LOOP_BREAK" fun _ => (do
+def LOOP_BREAK : thm := keep "LOOP_BREAK" fun _ => (do
   prove ([[!env x t u v.
         TC(OCC (CONS (x,t) env)) u v /\ ~(TC(OCC env) u v)
         ==> ?y. RTC(OCC env) u x /\ y IN FVT(t) /\ RTC(OCC env) y v]])
@@ -354,7 +354,7 @@ unsafe def LOOP_BREAK : thm := keep "LOOP_BREAK" fun _ => (do
 #eval LOOP_BREAK
 
 #eval phrase 15
-unsafe def LOOPFREE_PRESERVE : thm := keep "LOOPFREE_PRESERVE" fun _ => (do
+def LOOPFREE_PRESERVE : thm := keep "LOOPFREE_PRESERVE" fun _ => (do
   prove ([[LOOPFREE env /\ ~(?y. y IN FVT(t) /\ RTC (OCC env) y x)
    ==> LOOPFREE (CONS (x,t) env)]])
    (MESON_TAC [LOOPFREE, RTC_CASES, LOOP_BREAK])
@@ -362,7 +362,7 @@ unsafe def LOOPFREE_PRESERVE : thm := keep "LOOPFREE_PRESERVE" fun _ => (do
 #eval LOOPFREE_PRESERVE
 
 #eval phrase 16
-unsafe def LOOPFREE_PRESERVE_EQ : thm := keep "LOOPFREE_PRESERVE_EQ" fun _ => (do
+def LOOPFREE_PRESERVE_EQ : thm := keep "LOOPFREE_PRESERVE_EQ" fun _ => (do
   prove ([[LOOPFREE env
    ==> (LOOPFREE (CONS (x,t) env) = ~(?y. y IN FVT(t) /\ RTC (OCC env) y x))]])
    (MATCH_MP_TAC (← ExceptT.mk (TAUT [[(a /\ ~c ==> b) /\ (c ==> ~b) ==> (a ==> (b <=> ~c))]])) THEN
@@ -379,7 +379,7 @@ unsafe def LOOPFREE_PRESERVE_EQ : thm := keep "LOOPFREE_PRESERVE_EQ" fun _ => (d
 #eval LOOPFREE_PRESERVE_EQ
 
 #eval phrase 17
-unsafe def LOOPFREE_WF : thm := keep "LOOPFREE_WF" fun _ => (do
+def LOOPFREE_WF : thm := keep "LOOPFREE_WF" fun _ => (do
   prove ([[!env. LOOPFREE env ==> WF(\x y. OCC env y x)]])
    (REWRITE_TAC [LOOPFREE] THEN REPEAT STRIP_TAC THEN
     MATCH_MP_TAC WF_FINITE_LEMMA THEN
@@ -394,7 +394,7 @@ unsafe def LOOPFREE_WF : thm := keep "LOOPFREE_WF" fun _ => (do
 #eval LOOPFREE_WF
 
 #eval phrase 18
-unsafe def LOOPFREE_WF_TERM : thm := keep "LOOPFREE_WF_TERM" fun _ => (do
+def LOOPFREE_WF_TERM : thm := keep "LOOPFREE_WF_TERM" fun _ => (do
   prove ([[!env. LOOPFREE(env) ==> WF(\s t. ?y. y IN FVT(t) /\ MEM (y,s) env)]])
    (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (MP_TAC o HolLight.MATCH_MP LOOPFREE_WF) THEN
@@ -407,7 +407,7 @@ unsafe def LOOPFREE_WF_TERM : thm := keep "LOOPFREE_WF_TERM" fun _ => (do
 #eval LOOPFREE_WF_TERM
 
 #eval phrase 19
-unsafe def LOOPCHECK_EXISTS : thm := keep "LOOPCHECK_EXISTS" fun _ => (do
+def LOOPCHECK_EXISTS : thm := keep "LOOPCHECK_EXISTS" fun _ => (do
   prove ([[!env x.
      LOOPFREE(env)
      ==> ?loopcheck. !t.
@@ -421,14 +421,14 @@ unsafe def LOOPCHECK_EXISTS : thm := keep "LOOPCHECK_EXISTS" fun _ => (do
 #eval LOOPCHECK_EXISTS
 
 #eval phrase 20
-unsafe def loopcheck_raw : thm := keep "loopcheck_raw" fun _ => (do
+def loopcheck_raw : thm := keep "loopcheck_raw" fun _ => (do
   newSpec ["loopcheck"]
    (← HolLight.REWRITE_RULE [SKOLEM_THM, RIGHT_IMP_EXISTS_THM] LOOPCHECK_EXISTS)
   : ExceptT String IO thm).run
 #eval loopcheck_raw
 
 #eval phrase 21
-unsafe def loopcheck : thm := keep "loopcheck" fun _ => (do
+def loopcheck : thm := keep "loopcheck" fun _ => (do
   prove ([[!env x.
         LOOPFREE(env)
         ==> (!x y. loopcheck env x (V y) <=>
@@ -446,7 +446,7 @@ unsafe def loopcheck : thm := keep "loopcheck" fun _ => (do
 #eval loopcheck
 
 #eval phrase 22
-unsafe def LOOPCHECK : thm := keep "LOOPCHECK" fun _ => (do
+def LOOPCHECK : thm := keep "LOOPCHECK" fun _ => (do
   prove ([[!env x t. LOOPFREE(env)
              ==> (loopcheck env x t <=> ~LOOPFREE (CONS (x,t) env))]])
    (REPEAT STRIP_TAC THEN MATCH_MP_TAC EQ_TRANS THEN
@@ -472,13 +472,13 @@ unsafe def LOOPCHECK : thm := keep "LOOPCHECK" fun _ => (do
 #eval LOOPCHECK
 
 #eval phrase 23
-unsafe def rightsubst : thm := keep "rightsubst" fun _ => new_definition
+def rightsubst : thm := keep "rightsubst" fun _ => new_definition
   [[rightsubst (x,t) (y:num,s) =
      y,termsubst (\z. if z = x then t else V(z)) s]]
 #eval rightsubst
 
 #eval phrase 24
-unsafe def SOLVE_EXISTS : thm := keep "SOLVE_EXISTS" fun _ => (do
+def SOLVE_EXISTS : thm := keep "SOLVE_EXISTS" fun _ => (do
   let lemma ← (do
     prove ([[(if b then x else y) = (if ~b then y else x)]])
      (BOOL_CASES_TAC [[b:bool]] THEN REWRITE_TAC [])
@@ -493,18 +493,18 @@ unsafe def SOLVE_EXISTS : thm := keep "SOLVE_EXISTS" fun _ => (do
 #eval SOLVE_EXISTS
 
 #eval phrase 25
-unsafe def SOLVEC_RAW : thm := keep "SOLVEC_RAW" fun _ => (do
+def SOLVEC_RAW : thm := keep "SOLVEC_RAW" fun _ => (do
   newSpec ["SOLVEC"] SOLVE_EXISTS
   : ExceptT String IO thm).run
 #eval SOLVEC_RAW
 
 #eval phrase 26
-unsafe def SOLVE_1 : thm := keep "SOLVE_1" fun _ => new_definition
+def SOLVE_1 : thm := keep "SOLVE_1" fun _ => new_definition
   [[SOLVE sol uns = SOLVEC (sol,uns)]]
 #eval SOLVE_1
 
 #eval phrase 27
-unsafe def SOLVE : thm := keep "SOLVE" fun _ => (do
+def SOLVE : thm := keep "SOLVE" fun _ => (do
   prove ([[(!sol. SOLVE sol [] = sol) /\
    (!sol p oth. SOLVE sol (CONS p oth) =
                 SOLVE (CONS p (MAP (rightsubst p) sol))
@@ -517,12 +517,12 @@ unsafe def SOLVE : thm := keep "SOLVE" fun _ => (do
 
 
 #eval phrase 28
-unsafe def CONFLICTFREE : thm := keep "CONFLICTFREE" fun _ => new_definition
+def CONFLICTFREE : thm := keep "CONFLICTFREE" fun _ => new_definition
   [[CONFLICTFREE l <=> !x. LENGTH (FILTER (\(y:num,s:term). y = x) l) <= 1]]
 #eval CONFLICTFREE
 
 #eval phrase 29
-unsafe def SOLVE_PRESERVES_LOOPFREE_LEMMA : thm := keep "SOLVE_PRESERVES_LOOPFREE_LEMMA" fun _ => (do
+def SOLVE_PRESERVES_LOOPFREE_LEMMA : thm := keep "SOLVE_PRESERVES_LOOPFREE_LEMMA" fun _ => (do
   prove ([[!p oth x y.
         TC(OCC (MAP (rightsubst p) oth)) x y ==> TC(OCC (CONS p oth)) x y]])
    (ONCE_REWRITE_TAC [FORALL_PAIR_THM] THEN
@@ -543,14 +543,14 @@ unsafe def SOLVE_PRESERVES_LOOPFREE_LEMMA : thm := keep "SOLVE_PRESERVES_LOOPFRE
 #eval SOLVE_PRESERVES_LOOPFREE_LEMMA
 
 #eval phrase 30
-unsafe def SOLVE_PRESERVES_LOOPFREE : thm := keep "SOLVE_PRESERVES_LOOPFREE" fun _ => (do
+def SOLVE_PRESERVES_LOOPFREE : thm := keep "SOLVE_PRESERVES_LOOPFREE" fun _ => (do
   prove ([[!p oth. LOOPFREE(CONS p oth) ==> LOOPFREE(MAP (rightsubst p) oth)]])
    (REWRITE_TAC [LOOPFREE] THEN MESON_TAC [SOLVE_PRESERVES_LOOPFREE_LEMMA])
   : ExceptT String IO thm).run
 #eval SOLVE_PRESERVES_LOOPFREE
 
 #eval phrase 31
-unsafe def SOLVE_PRESERVES_CONFLICTFREE_LEMMA : thm := keep "SOLVE_PRESERVES_CONFLICTFREE_LEMMA" fun _ => (do
+def SOLVE_PRESERVES_CONFLICTFREE_LEMMA : thm := keep "SOLVE_PRESERVES_CONFLICTFREE_LEMMA" fun _ => (do
   prove ([[!p x. (\(y,s). y = x) o rightsubst p = (\(y,s). y = x)]])
    (REWRITE_TAC [FUN_EQ_THM, o_THM, FORALL_PAIR_THM, rightsubst] THEN
     CONV_TAC (HolLight.ONCE_DEPTH_CONV GEN_BETA_CONV) THEN REWRITE_TAC [EQ_SYM])
@@ -558,7 +558,7 @@ unsafe def SOLVE_PRESERVES_CONFLICTFREE_LEMMA : thm := keep "SOLVE_PRESERVES_CON
 #eval SOLVE_PRESERVES_CONFLICTFREE_LEMMA
 
 #eval phrase 32
-unsafe def SOLVE_PRESERVES_CONFLICTFREE : thm := keep "SOLVE_PRESERVES_CONFLICTFREE" fun _ => (do
+def SOLVE_PRESERVES_CONFLICTFREE : thm := keep "SOLVE_PRESERVES_CONFLICTFREE" fun _ => (do
   prove ([[CONFLICTFREE(APPEND sol (CONS p oth))
    ==> CONFLICTFREE(APPEND (CONS p (MAP (rightsubst p) sol))
                            (MAP (rightsubst p) oth))]])
@@ -571,7 +571,7 @@ unsafe def SOLVE_PRESERVES_CONFLICTFREE : thm := keep "SOLVE_PRESERVES_CONFLICTF
 #eval SOLVE_PRESERVES_CONFLICTFREE
 
 #eval phrase 33
-unsafe def SOLVE_PRESERVES_DEFREE : thm := keep "SOLVE_PRESERVES_DEFREE" fun _ => (do
+def SOLVE_PRESERVES_DEFREE : thm := keep "SOLVE_PRESERVES_DEFREE" fun _ => (do
   prove ([[LOOPFREE(CONS p oth) /\
    (!x y s t. MEM (x,t) sol /\ MEM (y,s) (APPEND sol (CONS p oth))
               ==> ~(x IN FVT(s)))
@@ -636,7 +636,7 @@ unsafe def SOLVE_PRESERVES_DEFREE : thm := keep "SOLVE_PRESERVES_DEFREE" fun _ =
 #eval SOLVE_PRESERVES_DEFREE
 
 #eval phrase 34
-unsafe def SOLVE_PRESERVES_UNIFIERS : thm := keep "SOLVE_PRESERVES_UNIFIERS" fun _ => (do
+def SOLVE_PRESERVES_UNIFIERS : thm := keep "SOLVE_PRESERVES_UNIFIERS" fun _ => (do
   let lemma ← (do
     prove ([[(!x t y s. P y s /\ (x = y) /\ (t = f s) ==> Q x t) <=>
      (!x t s. P x s ==> Q x (f s))]])
@@ -670,7 +670,7 @@ unsafe def SOLVE_PRESERVES_UNIFIERS : thm := keep "SOLVE_PRESERVES_UNIFIERS" fun
 #eval SOLVE_PRESERVES_UNIFIERS
 
 #eval phrase 35
-unsafe def SOLVE_WORKS_GENERAL : thm := keep "SOLVE_WORKS_GENERAL" fun _ => (do
+def SOLVE_WORKS_GENERAL : thm := keep "SOLVE_WORKS_GENERAL" fun _ => (do
   prove ([[!n env sol. (LENGTH env = n) /\
                LOOPFREE(env) /\
                CONFLICTFREE(APPEND sol env) /\
@@ -701,7 +701,7 @@ unsafe def SOLVE_WORKS_GENERAL : thm := keep "SOLVE_WORKS_GENERAL" fun _ => (do
 #eval SOLVE_WORKS_GENERAL
 
 #eval phrase 36
-unsafe def SOLVE_WORKS : thm := keep "SOLVE_WORKS" fun _ => (do
+def SOLVE_WORKS : thm := keep "SOLVE_WORKS" fun _ => (do
   prove ([[!env.
         LOOPFREE(env) /\ CONFLICTFREE(env)
         ==> CONFLICTFREE(SOLVE [] env) /\
@@ -718,24 +718,24 @@ unsafe def SOLVE_WORKS : thm := keep "SOLVE_WORKS" fun _ => (do
 #eval SOLVE_WORKS
 
 #eval phrase 37
-unsafe def retval_INDUCT_retval_RECURSION : thm × thm := keep "retval_types" fun _ =>
-  match unsafeIO (define_type
+def retval_INDUCT_retval_RECURSION : thm × thm := keep "retval_types" fun _ =>
+  match runIO (define_type
     "retval = TT | FF | Exception") with
   | .ok (.ok p) => p
   | .ok (.error e) => panic! e
   | .error e => panic! (toString e)
-unsafe def retval_INDUCT : thm := retval_INDUCT_retval_RECURSION.1
-unsafe def retval_RECURSION : thm := retval_INDUCT_retval_RECURSION.2
+def retval_INDUCT : thm := retval_INDUCT_retval_RECURSION.1
+def retval_RECURSION : thm := retval_INDUCT_retval_RECURSION.2
 #eval (do IO.println (← HolCore.Printer.string_of_thm retval_INDUCT)
           IO.println (← HolCore.Printer.string_of_thm retval_RECURSION) : IO Unit)
 
 #eval phrase 38
-unsafe def retval_DISTINCT : thm := keep "retval_DISTINCT" fun _ =>
+def retval_DISTINCT : thm := keep "retval_DISTINCT" fun _ =>
   (ExceptT.mk (Session.prove_constructors_distinct retval_RECURSION) : ExceptT String IO thm).run
 #eval retval_DISTINCT
 
 #eval phrase 39
-unsafe def ISTRIV_EXISTS : thm := keep "ISTRIV_EXISTS" fun _ => (do
+def ISTRIV_EXISTS : thm := keep "ISTRIV_EXISTS" fun _ => (do
   prove ([[!env x. LOOPFREE(env) /\ CONFLICTFREE(env)
      ==> ?istriv. !t. istriv t =
      if t = V x then TT
@@ -771,14 +771,14 @@ unsafe def ISTRIV_EXISTS : thm := keep "ISTRIV_EXISTS" fun _ => (do
 #eval ISTRIV_EXISTS
 
 #eval phrase 40
-unsafe def istriv_raw : thm := keep "istriv_raw" fun _ => (do
+def istriv_raw : thm := keep "istriv_raw" fun _ => (do
   newSpec ["istriv"]
    (← HolLight.REWRITE_RULE [SKOLEM_THM, RIGHT_IMP_EXISTS_THM] ISTRIV_EXISTS)
   : ExceptT String IO thm).run
 #eval istriv_raw
 
 #eval phrase 41
-unsafe def istriv : thm := keep "istriv" fun _ => (do
+def istriv : thm := keep "istriv" fun _ => (do
   prove ([[!env x.
         LOOPFREE(env) /\ CONFLICTFREE(env)
         ==> (!x y. istriv env x (V y) =
@@ -885,19 +885,19 @@ unsafe def istriv : thm := keep "istriv" fun _ => (do
 
 
 #eval phrase 42
-unsafe def EQV : thm := keep "EQV" fun _ => new_definition
+def EQV : thm := keep "EQV" fun _ => new_definition
   [[EQV env x y = MEM (x,V y) env]]
 #eval EQV
 
 #eval phrase 43
-unsafe def EQV_IMP_OCC : thm := keep "EQV_IMP_OCC" fun _ => (do
+def EQV_IMP_OCC : thm := keep "EQV_IMP_OCC" fun _ => (do
   prove ([[!env x y. EQV env x y ==> OCC env x y]])
    (REWRITE_TAC [EQV, OCC] THEN MESON_TAC [IN_INSERT, FVT])
   : ExceptT String IO thm).run
 #eval EQV_IMP_OCC
 
 #eval phrase 44
-unsafe def ISTRIV_WORKS : thm := keep "ISTRIV_WORKS" fun _ => (do
+def ISTRIV_WORKS : thm := keep "ISTRIV_WORKS" fun _ => (do
   prove ([[!env x t. LOOPFREE(env) /\ CONFLICTFREE(env)
              ==> (istriv env x t =
                     if ?y. (t = V y) /\ RTC (EQV env) y x then TT
@@ -1016,12 +1016,12 @@ unsafe def ISTRIV_WORKS : thm := keep "ISTRIV_WORKS" fun _ => (do
 #eval ISTRIV_WORKS
 
 #eval phrase 45
-unsafe def SUB1 : thm := keep "SUB1" fun _ => new_definition
+def SUB1 : thm := keep "SUB1" fun _ => new_definition
   [[SUB1 s t <=> ?f args. (t = Fn f args) /\ MEM s args]]
 #eval SUB1
 
 #eval phrase 46
-unsafe def WF_SUB1 : thm := keep "WF_SUB1" fun _ => (do
+def WF_SUB1 : thm := keep "WF_SUB1" fun _ => (do
   prove ([[WF(SUB1)]])
    (SIMP_TAC [WF_IND, SUB1, LEFT_IMP_EXISTS_THM] THEN
     REPEAT GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC term_INDUCT THEN
@@ -1032,7 +1032,7 @@ unsafe def WF_SUB1 : thm := keep "WF_SUB1" fun _ => (do
 #eval WF_SUB1
 
 #eval phrase 47
-unsafe def RTC_SUB1 : thm := keep "RTC_SUB1" fun _ => (do
+def RTC_SUB1 : thm := keep "RTC_SUB1" fun _ => (do
   prove ([[!x t. RTC(SUB1) (V x) t <=> x IN FVT(t)]])
    (GEN_TAC THEN MATCH_MP_TAC term_INDUCT THEN
     REWRITE_TAC [FVT, IN_INSERT, NOT_IN_EMPTY, IN_LIST_UNION] THEN CONJ_TAC THEN
@@ -1048,7 +1048,7 @@ unsafe def RTC_SUB1 : thm := keep "RTC_SUB1" fun _ => (do
 #eval RTC_SUB1
 
 #eval phrase 48
-unsafe def WF_SUBCOMPONENT : thm := keep "WF_SUBCOMPONENT" fun _ => (do
+def WF_SUBCOMPONENT : thm := keep "WF_SUBCOMPONENT" fun _ => (do
   prove ([[LOOPFREE(env) ==> WF(\s t. ?x. MEM (x,s) env /\ RTC(SUB1) (V x) t)]])
    (REWRITE_TAC [RTC_SUB1] THEN ONCE_REWRITE_TAC [CONJ_SYM] THEN
     REWRITE_TAC [LOOPFREE_WF_TERM])
@@ -1056,7 +1056,7 @@ unsafe def WF_SUBCOMPONENT : thm := keep "WF_SUBCOMPONENT" fun _ => (do
 #eval WF_SUBCOMPONENT
 
 #eval phrase 49
-unsafe def WF_DESCENT : thm := keep "WF_DESCENT" fun _ => (do
+def WF_DESCENT : thm := keep "WF_DESCENT" fun _ => (do
   prove ([[LOOPFREE(env)
    ==> WF(\s t. (?x. (t = V x) /\ MEM (x,s) env) \/
                 (?f args. (t = Fn f args) /\ MEM s args))]])
@@ -1070,7 +1070,7 @@ unsafe def WF_DESCENT : thm := keep "WF_DESCENT" fun _ => (do
 #eval WF_DESCENT
 
 #eval phrase 50
-unsafe def termcases : thm := keep "termcases" fun _ => (do
+def termcases : thm := keep "termcases" fun _ => (do
   newRec term_RECURSION
    [[(termcases cv cf (V v) = cv v) /\
      (termcases cv cf (Fn f args) = cf f args)]]
@@ -1078,7 +1078,7 @@ unsafe def termcases : thm := keep "termcases" fun _ => (do
 #eval termcases
 
 #eval phrase 51
-unsafe def tpcases_def : thm := keep "tpcases_def" fun _ => new_definition
+def tpcases_def : thm := keep "tpcases_def" fun _ => new_definition
   [[tpcases c1 c2 c3 (t1,t2) =
         termcases (\v1. termcases
                             (\v2. c2 v1 (V v2))
@@ -1090,7 +1090,7 @@ unsafe def tpcases_def : thm := keep "tpcases_def" fun _ => new_definition
 #eval tpcases_def
 
 #eval phrase 52
-unsafe def tpcases : thm := keep "tpcases" fun _ => (do
+def tpcases : thm := keep "tpcases" fun _ => (do
   prove ([[(tpcases c1 c2 c3 (Fn f1 args1,Fn f2 args2) = c1 f1 args1 f2 args2) /\
    (tpcases c1 c2 c3 (V v1,t2) = c2 v1 t2) /\
    (tpcases c1 c2 c3 (Fn f1 args1,V v2) = c3 f1 args1 v2)]])
@@ -1100,7 +1100,7 @@ unsafe def tpcases : thm := keep "tpcases" fun _ => (do
 #eval tpcases
 
 #eval phrase 53
-unsafe def MLEFT : thm := keep "MLEFT" fun _ => new_definition
+def MLEFT : thm := keep "MLEFT" fun _ => new_definition
   [[MLEFT (env,eqs) =
        CARD(FVT(Fn 0 (MAP FST eqs)) UNION
             FVT(Fn 0 (MAP SND eqs)) UNION
@@ -1110,7 +1110,7 @@ unsafe def MLEFT : thm := keep "MLEFT" fun _ => new_definition
 #eval MLEFT
 
 #eval phrase 54
-unsafe def CRIGHT : thm := keep "CRIGHT" fun _ => new_definition
+def CRIGHT : thm := keep "CRIGHT" fun _ => new_definition
   [[CRIGHT (env',eqs') (env,eqs) <=>
          LOOPFREE(env) /\
          (env' = env) /\
@@ -1129,14 +1129,14 @@ unsafe def CRIGHT : thm := keep "CRIGHT" fun _ => new_definition
 #eval CRIGHT
 
 #eval phrase 55
-unsafe def CALLORDER : thm := keep "CALLORDER" fun _ => new_definition
+def CALLORDER : thm := keep "CALLORDER" fun _ => new_definition
   [[CALLORDER (env',eqs') (env,eqs) <=>
         MEASURE MLEFT (env',eqs') (env,eqs) \/
         CRIGHT (env',eqs') (env,eqs)]]
 #eval CALLORDER
 
 #eval phrase 56
-unsafe def PAIRED_ETA_THM : thm := keep "PAIRED_ETA_THM" fun _ => (do
+def PAIRED_ETA_THM : thm := keep "PAIRED_ETA_THM" fun _ => (do
   prove ([[!g:A#B->C. (\(p1,p2). g (p1,p2)) = g]])
    (REWRITE_TAC [FUN_EQ_THM, FORALL_PAIR_THM] THEN
     CONV_TAC (HolLight.ONCE_DEPTH_CONV GEN_BETA_CONV) THEN REWRITE_TAC [])
@@ -1144,7 +1144,7 @@ unsafe def PAIRED_ETA_THM : thm := keep "PAIRED_ETA_THM" fun _ => (do
 #eval PAIRED_ETA_THM
 
 #eval phrase 57
-unsafe def WF_CRIGHT : thm := keep "WF_CRIGHT" fun _ => (do
+def WF_CRIGHT : thm := keep "WF_CRIGHT" fun _ => (do
   prove ([[WF CRIGHT]])
    (SUBGOAL_THEN ([[CRIGHT = \(env',eqs') (env,eqs). CRIGHT (env',eqs') (env,eqs)]])
     SUBST1_TAC THENL
@@ -1204,7 +1204,7 @@ unsafe def WF_CRIGHT : thm := keep "WF_CRIGHT" fun _ => (do
 #eval WF_CRIGHT
 
 #eval phrase 58
-unsafe def WF_CALLORDER : thm := keep "WF_CALLORDER" fun _ => (do
+def WF_CALLORDER : thm := keep "WF_CALLORDER" fun _ => (do
   prove ([[WF CALLORDER]])
    (SUBGOAL_THEN
      ([[CALLORDER = \(env',eqs') (env,eqs). CALLORDER (env',eqs') (env,eqs)]])
@@ -1245,7 +1245,7 @@ unsafe def WF_CALLORDER : thm := keep "WF_CALLORDER" fun _ => (do
 #eval WF_CALLORDER
 
 #eval phrase 59
-unsafe def UNIFY_EXISTS_RAW : thm := keep "UNIFY_EXISTS_RAW" fun _ => (do
+def UNIFY_EXISTS_RAW : thm := keep "UNIFY_EXISTS_RAW" fun _ => (do
   prove ([[?unify.
       !pr. unify pr =
               if ~LOOPFREE(FST pr) then NONE
@@ -1363,13 +1363,13 @@ unsafe def UNIFY_EXISTS_RAW : thm := keep "UNIFY_EXISTS_RAW" fun _ => (do
 #eval UNIFY_EXISTS_RAW
 
 #eval phrase 60
-unsafe def unify_raw : thm := keep "unify_raw" fun _ => (do
+def unify_raw : thm := keep "unify_raw" fun _ => (do
   newSpec ["unify"] UNIFY_EXISTS_RAW
   : ExceptT String IO thm).run
 #eval unify_raw
 
 #eval phrase 61
-unsafe def unify : thm := keep "unify" fun _ => (do
+def unify : thm := keep "unify" fun _ => (do
   prove ([[LOOPFREE(env)
    ==> (unify (env,CONS (Fn f fargs,Fn g gargs) oth) =
             if (f = g) /\ (LENGTH fargs = LENGTH gargs)
@@ -1390,22 +1390,22 @@ unsafe def unify : thm := keep "unify" fun _ => (do
 
 
 #eval phrase 62
-unsafe def unifies : thm := keep "unifies" fun _ => new_definition
+def unifies : thm := keep "unifies" fun _ => new_definition
   [[unifies i l <=> ALL (\(s,t). termsubst i s = termsubst i t) l]]
 #eval unifies
 
 #eval phrase 63
-unsafe def OPTION_DISTINCT : thm := keep "OPTION_DISTINCT" fun _ =>
+def OPTION_DISTINCT : thm := keep "OPTION_DISTINCT" fun _ =>
   (ExceptT.mk (Session.prove_constructors_distinct option_RECURSION) : ExceptT String IO thm).run
 #eval OPTION_DISTINCT
 
 #eval phrase 64
-unsafe def OPTION_INJ : thm := keep "OPTION_INJ" fun _ =>
+def OPTION_INJ : thm := keep "OPTION_INJ" fun _ =>
   (ExceptT.mk (Session.prove_constructors_injective option_RECURSION) : ExceptT String IO thm).run
 #eval OPTION_INJ
 
 #eval phrase 65
-unsafe def TC_SUB1_IRREFL : thm := keep "TC_SUB1_IRREFL" fun _ => (do
+def TC_SUB1_IRREFL : thm := keep "TC_SUB1_IRREFL" fun _ => (do
   prove ([[!s t. TC SUB1 s t ==> ~(s = t)]])
    (REPEAT GEN_TAC THEN ONCE_REWRITE_TAC [(← ExceptT.mk (TAUT [[a ==> ~b <=> b ==> ~a]]))] THEN
     DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC WF_REFL THEN
@@ -1415,7 +1415,7 @@ unsafe def TC_SUB1_IRREFL : thm := keep "TC_SUB1_IRREFL" fun _ => (do
 #eval TC_SUB1_IRREFL
 
 #eval phrase 66
-unsafe def UNIFY_OCCURS : thm := keep "UNIFY_OCCURS" fun _ => (do
+def UNIFY_OCCURS : thm := keep "UNIFY_OCCURS" fun _ => (do
   prove ([[!env i.
         ALL (\(x,t). i x = termsubst i t) env
         ==> !x y. RTC (OCC env) x y ==> RTC SUB1 (i y) (i x)]])
@@ -1445,7 +1445,7 @@ unsafe def UNIFY_OCCURS : thm := keep "UNIFY_OCCURS" fun _ => (do
 #eval UNIFY_OCCURS
 
 #eval phrase 67
-unsafe def UNIFY_OCCURS_PROPER : thm := keep "UNIFY_OCCURS_PROPER" fun _ => (do
+def UNIFY_OCCURS_PROPER : thm := keep "UNIFY_OCCURS_PROPER" fun _ => (do
   prove ([[!env i.
         ALL (\(x,t). i x = termsubst i t) env
         ==> !x y. RTC (OCC env) x y
@@ -1503,7 +1503,7 @@ unsafe def UNIFY_OCCURS_PROPER : thm := keep "UNIFY_OCCURS_PROPER" fun _ => (do
 #eval UNIFY_OCCURS_PROPER
 
 #eval phrase 68
-unsafe def GOODLOOP_UNIFIABLE : thm := keep "GOODLOOP_UNIFIABLE" fun _ => (do
+def GOODLOOP_UNIFIABLE : thm := keep "GOODLOOP_UNIFIABLE" fun _ => (do
   prove ([[!env x t.
         LOOPFREE(env) /\ CONFLICTFREE(env) /\ (istriv env x t = TT)
    ==> !i. unifies i (CONS (V x,t) (MAP (\(x,t). V x,t) env)) =
@@ -1537,7 +1537,7 @@ unsafe def GOODLOOP_UNIFIABLE : thm := keep "GOODLOOP_UNIFIABLE" fun _ => (do
 #eval GOODLOOP_UNIFIABLE
 
 #eval phrase 69
-unsafe def BADLOOP_UNUNIFIABLE : thm := keep "BADLOOP_UNUNIFIABLE" fun _ => (do
+def BADLOOP_UNUNIFIABLE : thm := keep "BADLOOP_UNUNIFIABLE" fun _ => (do
   prove ([[!env x t.
         LOOPFREE(env) /\ CONFLICTFREE(env) /\ (istriv env x t = Exception)
         ==> !i. ~(unifies i (CONS (V x,t) (MAP (\(x,t). V x,t) env)))]])
@@ -1628,7 +1628,7 @@ unsafe def BADLOOP_UNUNIFIABLE : thm := keep "BADLOOP_UNUNIFIABLE" fun _ => (do
 #eval BADLOOP_UNUNIFIABLE
 
 #eval phrase 70
-unsafe def UNIFY_WORKS_RAW : thm := keep "UNIFY_WORKS_RAW" fun _ => (do
+def UNIFY_WORKS_RAW : thm := keep "UNIFY_WORKS_RAW" fun _ => (do
   prove ([[!pr. LOOPFREE(FST pr) /\ CONFLICTFREE(FST pr)
         ==> ((unify pr = NONE)
              ==> !i. ~(unifies i (APPEND (MAP (\(x,t). V x,t) (FST pr))
@@ -1842,20 +1842,20 @@ unsafe def UNIFY_WORKS_RAW : thm := keep "UNIFY_WORKS_RAW" fun _ => (do
 #eval UNIFY_WORKS_RAW
 
 #eval phrase 71
-unsafe def THE : thm := keep "THE" fun _ => (do
+def THE : thm := keep "THE" fun _ => (do
   newRec option_RECURSION
    [[THE(SOME x) = x]]
   : ExceptT String IO thm).run
 #eval THE
 
 #eval phrase 72
-unsafe def unifier : thm := keep "unifier" fun _ => new_definition
+def unifier : thm := keep "unifier" fun _ => new_definition
   [[unifier env =
      let sol = SOLVE [] env in ITLIST valmod sol V]]
 #eval unifier
 
 #eval phrase 73
-unsafe def ITLIST_VALMOD_LEMMA : thm := keep "ITLIST_VALMOD_LEMMA" fun _ => (do
+def ITLIST_VALMOD_LEMMA : thm := keep "ITLIST_VALMOD_LEMMA" fun _ => (do
   prove ([[!env x. CONFLICTFREE(env)
            ==> !t. (ITLIST valmod env V x = t) <=>
                    MEM (x,t) env \/ (t = V x) /\ ~(MEM x (MAP FST env))]])
@@ -1882,7 +1882,7 @@ unsafe def ITLIST_VALMOD_LEMMA : thm := keep "ITLIST_VALMOD_LEMMA" fun _ => (do
 #eval ITLIST_VALMOD_LEMMA
 
 #eval phrase 74
-unsafe def UNIFIER_WORKS : thm := keep "UNIFIER_WORKS" fun _ => (do
+def UNIFIER_WORKS : thm := keep "UNIFIER_WORKS" fun _ => (do
   prove ([[!env. LOOPFREE(env) /\ CONFLICTFREE(env)
          ==> unifies (unifier env) (MAP (\(x,t). V x,t) env)]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [unifier] THEN LET_TAC THEN
@@ -1909,7 +1909,7 @@ unsafe def UNIFIER_WORKS : thm := keep "UNIFIER_WORKS" fun _ => (do
 #eval UNIFIER_WORKS
 
 #eval phrase 75
-unsafe def UNIFIER_MGU : thm := keep "UNIFIER_MGU" fun _ => (do
+def UNIFIER_MGU : thm := keep "UNIFIER_MGU" fun _ => (do
   prove ([[!env. LOOPFREE(env) /\ CONFLICTFREE(env)
          ==> !i. unifies i (MAP (\(x,t). V x,t) env)
                  ==> (termsubst i =
@@ -1940,7 +1940,7 @@ unsafe def UNIFIER_MGU : thm := keep "UNIFIER_MGU" fun _ => (do
 #eval UNIFIER_MGU
 
 #eval phrase 76
-unsafe def UNIFY_WORKS : thm := keep "UNIFY_WORKS" fun _ => (do
+def UNIFY_WORKS : thm := keep "UNIFY_WORKS" fun _ => (do
   prove ([[!env eqs.
      LOOPFREE(env) /\ CONFLICTFREE(env)
      ==> ((unify (env,eqs) = NONE)
@@ -1981,7 +1981,7 @@ unsafe def UNIFY_WORKS : thm := keep "UNIFY_WORKS" fun _ => (do
 #eval UNIFY_WORKS
 
 #eval phrase 77
-unsafe def UNIFY_WORKS_SIMPLE : thm := keep "UNIFY_WORKS_SIMPLE" fun _ => (do
+def UNIFY_WORKS_SIMPLE : thm := keep "UNIFY_WORKS_SIMPLE" fun _ => (do
   prove ([[!eqs. ((unify ([],eqs) = NONE) ==> !i. ~(unifies i eqs)) /\
          ((unify ([],eqs) = SOME ans)
           ==> LOOPFREE(ans) /\ CONFLICTFREE(ans) /\
@@ -1996,19 +1996,19 @@ unsafe def UNIFY_WORKS_SIMPLE : thm := keep "UNIFY_WORKS_SIMPLE" fun _ => (do
 #eval UNIFY_WORKS_SIMPLE
 
 #eval phrase 78
-unsafe def Unifies_DEF : thm := keep "Unifies_DEF" fun _ => new_definition
+def Unifies_DEF : thm := keep "Unifies_DEF" fun _ => new_definition
   [[Unifies i s <=> !p q. p IN s /\ q IN s ==> (formsubst i p = formsubst i q)]]
 #eval Unifies_DEF
 
 #eval phrase 79
-unsafe def UNIFIES : thm := keep "UNIFIES" fun _ => (do
+def UNIFIES : thm := keep "UNIFIES" fun _ => (do
   prove ([[Unifies i s <=> ?q. !p. p IN s ==> (formsubst i p = q)]])
    (MESON_TAC [Unifies_DEF])
   : ExceptT String IO thm).run
 #eval UNIFIES
 
 #eval phrase 80
-unsafe def UNIFIER_FORMPAIR_TERMLIST : thm := keep "UNIFIER_FORMPAIR_TERMLIST" fun _ => (do
+def UNIFIER_FORMPAIR_TERMLIST : thm := keep "UNIFIER_FORMPAIR_TERMLIST" fun _ => (do
   let lemma ← (do
     prove ([[?l. !i. ~(unifies i l)]])
      (EXISTS_TAC [[ [Fn 0 [], Fn 1 [] ] ]] THEN
@@ -2059,7 +2059,7 @@ unsafe def UNIFIER_FORMPAIR_TERMLIST : thm := keep "UNIFIER_FORMPAIR_TERMLIST" f
 #eval UNIFIER_FORMPAIR_TERMLIST
 
 #eval phrase 81
-unsafe def UNIFIER_SUBTERMS : thm := keep "UNIFIER_SUBTERMS" fun _ => (do
+def UNIFIER_SUBTERMS : thm := keep "UNIFIER_SUBTERMS" fun _ => (do
   prove ([[!A. FINITE A /\ (!p. p IN A ==> qfree p)
        ==> ?l. !i. Unifies i A = unifies i l]])
    (REPEAT STRIP_TAC THEN
@@ -2100,7 +2100,7 @@ unsafe def UNIFIER_SUBTERMS : thm := keep "UNIFIER_SUBTERMS" fun _ => (do
 #eval UNIFIER_SUBTERMS
 
 #eval phrase 82
-unsafe def MGU_EXISTS : thm := keep "MGU_EXISTS" fun _ => (do
+def MGU_EXISTS : thm := keep "MGU_EXISTS" fun _ => (do
   prove ([[FINITE s /\ (!p. p IN s ==> qfree p)
    ==> ((?i. Unifies i s) <=>
         (?i. Unifies i s /\
@@ -2136,7 +2136,7 @@ unsafe def MGU_EXISTS : thm := keep "MGU_EXISTS" fun _ => (do
 #eval MGU_EXISTS
 
 #eval phrase 83
-unsafe def mgu : thm := keep "mgu" fun _ => new_definition
+def mgu : thm := keep "mgu" fun _ => new_definition
   [[mgu s = @i. Unifies i s /\
                !j. Unifies j s
                    ==> !p. qfree p
@@ -2145,7 +2145,7 @@ unsafe def mgu : thm := keep "mgu" fun _ => new_definition
 #eval mgu
 
 #eval phrase 84
-unsafe def MGU : thm := keep "MGU" fun _ => (do
+def MGU : thm := keep "MGU" fun _ => (do
   prove ([[!s. FINITE s /\ (!p. p IN s ==> qfree p) /\ (?i. Unifies i s)
        ==> Unifies (mgu s) s /\
            !i. Unifies i s
@@ -2159,7 +2159,7 @@ unsafe def MGU : thm := keep "MGU" fun _ => (do
 #eval MGU
 
 #eval phrase 85
-unsafe def FORMSUBST_TERMSUBST_LEMMA : thm := keep "FORMSUBST_TERMSUBST_LEMMA" fun _ => (do
+def FORMSUBST_TERMSUBST_LEMMA : thm := keep "FORMSUBST_TERMSUBST_LEMMA" fun _ => (do
   prove ([[(!p. qfree(p) ==> (formsubst i p = formsubst j (formsubst k p))) <=>
    (termsubst i = termsubst j o termsubst k)]])
    (REWRITE_TAC [FUN_EQ_THM, o_THM] THEN EQ_TAC THEN DISCH_TAC THENL
@@ -2172,14 +2172,14 @@ unsafe def FORMSUBST_TERMSUBST_LEMMA : thm := keep "FORMSUBST_TERMSUBST_LEMMA" f
 #eval FORMSUBST_TERMSUBST_LEMMA
 
 #eval phrase 86
-unsafe def ismgu : thm := keep "ismgu" fun _ => new_definition
+def ismgu : thm := keep "ismgu" fun _ => new_definition
   [[ismgu s i <=> Unifies i s /\
                  !j. Unifies j s
                      ==> ?k. (termsubst j = termsubst k o termsubst i)]]
 #eval ismgu
 
 #eval phrase 87
-unsafe def ISMGU : thm := keep "ISMGU" fun _ => (do
+def ISMGU : thm := keep "ISMGU" fun _ => (do
   prove ([[ismgu s i <=> Unifies i s /\
                  !j. Unifies j s
                      ==> ?k. !p. qfree(p)
@@ -2190,7 +2190,7 @@ unsafe def ISMGU : thm := keep "ISMGU" fun _ => (do
 #eval ISMGU
 
 #eval phrase 88
-unsafe def ISMGU_MGU : thm := keep "ISMGU_MGU" fun _ => (do
+def ISMGU_MGU : thm := keep "ISMGU_MGU" fun _ => (do
   prove ([[!s. FINITE(s) /\ (!p. p IN s ==> qfree p) /\ (?i. Unifies i s)
        ==> ismgu s (mgu s)]])
    (GEN_TAC THEN DISCH_THEN (fun th => HolLight.tactic_of do
@@ -2201,13 +2201,13 @@ unsafe def ISMGU_MGU : thm := keep "ISMGU_MGU" fun _ => (do
 #eval ISMGU_MGU
 
 #eval phrase 89
-unsafe def «renaming» : thm := keep "renaming" fun _ => new_definition
+def «renaming» : thm := keep "renaming" fun _ => new_definition
   [[renaming i <=> ?j. (termsubst j o termsubst i = I) /\
                       (termsubst i o termsubst j = I)]]
 #eval «renaming»
 
 #eval phrase 90
-unsafe def RENAMING : thm := keep "RENAMING" fun _ => (do
+def RENAMING : thm := keep "RENAMING" fun _ => (do
   prove ([[renaming i ==> (!x. ?y. i(x) = V y) /\
                   (!x x'. (i(x') = i(x)) ==> (x' = x))]])
    (REWRITE_TAC [«renaming», FUN_EQ_THM, o_THM, I_DEF] THEN
@@ -2225,9 +2225,9 @@ unsafe def RENAMING : thm := keep "RENAMING" fun _ => (do
 #eval RENAMING
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Unif" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Unif" do
   replay (
           HolLogicArith.Fole.ensure)
   replay (

@@ -15,7 +15,7 @@ SUM_DIFFS, SYM_CANON_CONV, EXT_CONV) are qualified with
 their own. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Transc
 
 open HolCore.Kernel HolTest.CommonTest
 

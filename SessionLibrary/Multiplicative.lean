@@ -3,14 +3,13 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Multiplicative.lean
 
-  The `unsafe` half of the multiplicative.ml translation: it supplies HolLibrary.Multiplicative's
-  dependencies from Session and SessionLibrary.Products, SessionLibrary.Iter, SessionLibrary.Prime, SessionLibrary.Pocklington, builds the bundles once, in order,
-  and exports every name under its HOL Light name.  `ensureMultiplicative` is
-  `needs "Library/multiplicative.ml"` (which first does `needs "Library/products.ml"`, `needs "Library/iter.ml"`, `needs "Library/prime.ml"`, `needs "Library/pocklington.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Multiplicative.lean by tools/multiplicativediff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the multiplicative.ml translation: it supplies
+  HolLibrary.Multiplicative's dependencies from Session and
+  SessionLibrary.Products, Iter, Prime and Pocklington, and exports every
+  name under its HOL Light name.  Importing this module is
+  `needs "Library/multiplicative.ml"`; its `needs` of products.ml, iter.ml,
+  prime.ml and pocklington.ml are the imports of those modules.  The bundles
+  are built by `initialize` when the module is loaded, in file order.
 -/
 
 import Session
@@ -25,12 +24,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Multiplicative
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems multiplicative.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Multiplicative.CoreThms1 where
+def core1 : HolLibrary.Multiplicative.CoreThms1 where
   ARITH_EQ := Session.ARITH_EQ
   CARD_CLAUSES := Session.CARD_CLAUSES
   CARD_SING := Session.CARD_SING
@@ -102,7 +97,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Multiplicative.CoreThms1 where
   MULT_EXP := Session.MULT_EXP
   MULT_SYM := Session.MULT_SYM
 /-- The core theorems multiplicative.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Multiplicative.CoreThms2 where
+def core2 : HolLibrary.Multiplicative.CoreThms2 where
   NOT_IN_EMPTY := Session.NOT_IN_EMPTY
   NOT_LT := Session.NOT_LT
   NOT_SUC := Session.NOT_SUC
@@ -162,13 +157,12 @@ unsafe def core2 (_ : Unit) : HolLibrary.Multiplicative.CoreThms2 where
   o_DEF := Session.o_DEF
   real_pow := Session.real_pow
 /-- The core theorems multiplicative.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.Multiplicative.CoreThms3 where
+def core3 : HolLibrary.Multiplicative.CoreThms3 where
 /-- The core theorems multiplicative.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.Multiplicative.CoreThms4 where
--- @@CORE END
+def core4 : HolLibrary.Multiplicative.CoreThms4 where
 
 /-- What multiplicative.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Multiplicative.MultiplicativeDeps where
+def deps : HolLibrary.Multiplicative.MultiplicativeDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   prioritize_real := Session.prioritize_real
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
@@ -184,115 +178,73 @@ unsafe def deps (_ : Unit) : HolLibrary.Multiplicative.MultiplicativeDeps where
   INDUCT_TAC := Session.INDUCT_TAC
   GEN_BETA_CONV := Session.GEN_BETA_CONV
   REAL_RAT_REDUCE_CONV := Session.REAL_RAT_REDUCE_CONV
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then products.ml, iter.ml, prime.ml, pocklington.ml, which multiplicative.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Products.ensureProducts
-      SessionLibrary.Iter.ensureIter
-      SessionLibrary.Prime.ensurePrime
-      SessionLibrary.Pocklington.ensurePocklington
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Multiplicative: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in file order; each forces the one before it. -/
+/- The bundles, in multiplicative.ml order. -/
+initialize BBasics : HolLibrary.Multiplicative.Basics ←
+  ioB "setupBasics" (HolLibrary.Multiplicative.setupBasics deps).run
+initialize BParticular : HolLibrary.Multiplicative.Particular ←
+  ioB "setupParticular" (HolLibrary.Multiplicative.setupParticular deps BBasics).run
+initialize BReal : HolLibrary.Multiplicative.Real ←
+  ioB "setupReal" (HolLibrary.Multiplicative.setupReal deps).run
+initialize BMobius : HolLibrary.Multiplicative.Mobius ←
+  ioB "setupMobius" (HolLibrary.Multiplicative.setupMobius deps BReal).run
 
--- @@BUNDLES BEGIN
-initialize theBasics : IO.Ref (Option HolLibrary.Multiplicative.Basics) ← IO.mkRef none
-unsafe def BBasics : HolLibrary.Multiplicative.Basics :=
-  cached theBasics "setupBasics" fun _ => do
-    (HolLibrary.Multiplicative.setupBasics (deps ())).run
-
-initialize theParticular : IO.Ref (Option HolLibrary.Multiplicative.Particular) ← IO.mkRef none
-unsafe def BParticular : HolLibrary.Multiplicative.Particular :=
-  cached theParticular "setupParticular" fun _ => do
-    let _ ← IO.mkRef BBasics.multiplicative
-    (HolLibrary.Multiplicative.setupParticular (deps ()) BBasics).run
-
-initialize theReal : IO.Ref (Option HolLibrary.Multiplicative.Real) ← IO.mkRef none
-unsafe def BReal : HolLibrary.Multiplicative.Real :=
-  cached theReal "setupReal" fun _ => do
-    let _ ← IO.mkRef BParticular.MULTIPLICATIVE_ID
-    (HolLibrary.Multiplicative.setupReal (deps ())).run
-
-initialize theMobius : IO.Ref (Option HolLibrary.Multiplicative.Mobius) ← IO.mkRef none
-unsafe def BMobius : HolLibrary.Multiplicative.Mobius :=
-  cached theMobius "setupMobius" fun _ => do
-    let _ ← IO.mkRef BReal.real_multiplicative
-    (HolLibrary.Multiplicative.setupMobius (deps ()) BReal).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Basics
-unsafe def multiplicative : thm := BBasics.multiplicative
-unsafe def MULTIPLICATIVE_1 : thm := BBasics.MULTIPLICATIVE_1
-unsafe def MULTIPLICATIVE : thm := BBasics.MULTIPLICATIVE
-unsafe def MULTIPLICATIVE_IGNOREZERO : thm := BBasics.MULTIPLICATIVE_IGNOREZERO
-unsafe def MULTIPLICATIVE_EXPAND : thm := BBasics.MULTIPLICATIVE_EXPAND
-unsafe def MULTIPLICATIVE_CONVOLUTION : thm := BBasics.MULTIPLICATIVE_CONVOLUTION
-unsafe def MULTIPLICATIVE_CONST : thm := BBasics.MULTIPLICATIVE_CONST
-unsafe def MULTIPLICATIVE_DELTA : thm := BBasics.MULTIPLICATIVE_DELTA
-unsafe def MULTIPLICATIVE_DIVISORSUM : thm := BBasics.MULTIPLICATIVE_DIVISORSUM
+def multiplicative : thm := BBasics.multiplicative
+def MULTIPLICATIVE_1 : thm := BBasics.MULTIPLICATIVE_1
+def MULTIPLICATIVE : thm := BBasics.MULTIPLICATIVE
+def MULTIPLICATIVE_IGNOREZERO : thm := BBasics.MULTIPLICATIVE_IGNOREZERO
+def MULTIPLICATIVE_EXPAND : thm := BBasics.MULTIPLICATIVE_EXPAND
+def MULTIPLICATIVE_CONVOLUTION : thm := BBasics.MULTIPLICATIVE_CONVOLUTION
+def MULTIPLICATIVE_CONST : thm := BBasics.MULTIPLICATIVE_CONST
+def MULTIPLICATIVE_DELTA : thm := BBasics.MULTIPLICATIVE_DELTA
+def MULTIPLICATIVE_DIVISORSUM : thm := BBasics.MULTIPLICATIVE_DIVISORSUM
 
 -- Particular
-unsafe def MULTIPLICATIVE_ID : thm := BParticular.MULTIPLICATIVE_ID
-unsafe def MULTIPLICATIVE_POWERSUM : thm := BParticular.MULTIPLICATIVE_POWERSUM
-unsafe def sigma : thm := BParticular.sigma
-unsafe def tau : thm := BParticular.tau
-unsafe def MULTIPLICATIVE_SIGMA : thm := BParticular.MULTIPLICATIVE_SIGMA
-unsafe def MULTIPLICATIVE_TAU : thm := BParticular.MULTIPLICATIVE_TAU
-unsafe def MULTIPLICATIVE_PHI : thm := BParticular.MULTIPLICATIVE_PHI
-unsafe def MULTIPLICATIVE_GCD : thm := BParticular.MULTIPLICATIVE_GCD
-unsafe def PHI_EXPAND : thm := BParticular.PHI_EXPAND
-unsafe def MULTIPLICATIVE_UNIQUE : thm := BParticular.MULTIPLICATIVE_UNIQUE
-unsafe def PHI_DIVISORSUM : thm := BParticular.PHI_DIVISORSUM
+def MULTIPLICATIVE_ID : thm := BParticular.MULTIPLICATIVE_ID
+def MULTIPLICATIVE_POWERSUM : thm := BParticular.MULTIPLICATIVE_POWERSUM
+def sigma : thm := BParticular.sigma
+def tau : thm := BParticular.tau
+def MULTIPLICATIVE_SIGMA : thm := BParticular.MULTIPLICATIVE_SIGMA
+def MULTIPLICATIVE_TAU : thm := BParticular.MULTIPLICATIVE_TAU
+def MULTIPLICATIVE_PHI : thm := BParticular.MULTIPLICATIVE_PHI
+def MULTIPLICATIVE_GCD : thm := BParticular.MULTIPLICATIVE_GCD
+def PHI_EXPAND : thm := BParticular.PHI_EXPAND
+def MULTIPLICATIVE_UNIQUE : thm := BParticular.MULTIPLICATIVE_UNIQUE
+def PHI_DIVISORSUM : thm := BParticular.PHI_DIVISORSUM
 
 -- Real
-unsafe def real_multiplicative : thm := BReal.real_multiplicative
-unsafe def REAL_MULTIPLICATIVE : thm := BReal.REAL_MULTIPLICATIVE
-unsafe def REAL_MULTIPLICATIVE_CONST : thm := BReal.REAL_MULTIPLICATIVE_CONST
-unsafe def REAL_MULTIPLICATIVE_DELTA : thm := BReal.REAL_MULTIPLICATIVE_DELTA
-unsafe def REAL_MULTIPLICATIVE_IGNOREZERO : thm := BReal.REAL_MULTIPLICATIVE_IGNOREZERO
-unsafe def REAL_MULTIPLICATIVE_CONVOLUTION : thm := BReal.REAL_MULTIPLICATIVE_CONVOLUTION
-unsafe def REAL_MULTIPLICATIVE_DIVISORSUM : thm := BReal.REAL_MULTIPLICATIVE_DIVISORSUM
+def real_multiplicative : thm := BReal.real_multiplicative
+def REAL_MULTIPLICATIVE : thm := BReal.REAL_MULTIPLICATIVE
+def REAL_MULTIPLICATIVE_CONST : thm := BReal.REAL_MULTIPLICATIVE_CONST
+def REAL_MULTIPLICATIVE_DELTA : thm := BReal.REAL_MULTIPLICATIVE_DELTA
+def REAL_MULTIPLICATIVE_IGNOREZERO : thm := BReal.REAL_MULTIPLICATIVE_IGNOREZERO
+def REAL_MULTIPLICATIVE_CONVOLUTION : thm := BReal.REAL_MULTIPLICATIVE_CONVOLUTION
+def REAL_MULTIPLICATIVE_DIVISORSUM : thm := BReal.REAL_MULTIPLICATIVE_DIVISORSUM
 
 -- Mobius
-unsafe def mobius : thm := BMobius.mobius
-unsafe def MOBIUS_ALT : thm := BMobius.MOBIUS_ALT
-unsafe def MOBIUS_0 : thm := BMobius.MOBIUS_0
-unsafe def MOBIUS_1 : thm := BMobius.MOBIUS_1
-unsafe def REAL_ABS_MOBIUS : thm := BMobius.REAL_ABS_MOBIUS
-unsafe def MOBIUS_MULT : thm := BMobius.MOBIUS_MULT
-unsafe def REAL_MULTIPLICATIVE_MOBIUS : thm := BMobius.REAL_MULTIPLICATIVE_MOBIUS
-unsafe def MOBIUS_PRIME : thm := BMobius.MOBIUS_PRIME
-unsafe def MOBIUS_PRIMEPOW : thm := BMobius.MOBIUS_PRIMEPOW
-unsafe def DIVISORSUM_MOBIUS : thm := BMobius.DIVISORSUM_MOBIUS
-unsafe def MOBIUS_INVERSION : thm := BMobius.MOBIUS_INVERSION
--- @@EXPORTS END
-
-/-- `needs "Library/multiplicative.ml"`: build the bundles, in order. -/
-unsafe def ensureMultiplicative : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BBasics.multiplicative
-  let _ ← IO.mkRef BParticular.MULTIPLICATIVE_ID
-  let _ ← IO.mkRef BReal.real_multiplicative
-  let _ ← IO.mkRef BMobius.mobius  -- @@ENSURE END
-  pure ()
+def mobius : thm := BMobius.mobius
+def MOBIUS_ALT : thm := BMobius.MOBIUS_ALT
+def MOBIUS_0 : thm := BMobius.MOBIUS_0
+def MOBIUS_1 : thm := BMobius.MOBIUS_1
+def REAL_ABS_MOBIUS : thm := BMobius.REAL_ABS_MOBIUS
+def MOBIUS_MULT : thm := BMobius.MOBIUS_MULT
+def REAL_MULTIPLICATIVE_MOBIUS : thm := BMobius.REAL_MULTIPLICATIVE_MOBIUS
+def MOBIUS_PRIME : thm := BMobius.MOBIUS_PRIME
+def MOBIUS_PRIMEPOW : thm := BMobius.MOBIUS_PRIMEPOW
+def DIVISORSUM_MOBIUS : thm := BMobius.DIVISORSUM_MOBIUS
+def MOBIUS_INVERSION : thm := BMobius.MOBIUS_INVERSION
+/-- `needs "Library/multiplicative.ml"`: already done by importing this module. -/
+def ensureMultiplicative : IO Unit := pure ()
 
 end SessionLibrary.Multiplicative

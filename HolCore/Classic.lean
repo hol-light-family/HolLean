@@ -104,6 +104,7 @@ structure ClassThms where
   LEFT_EXISTS_IMP_THM : thm
   RIGHT_IMP_EXISTS_THM : thm
   RIGHT_EXISTS_IMP_THM : thm
+  COND_DEF : thm
   COND_CLAUSES : thm
   COND_EXPAND  : thm
   COND_ID      : thm
@@ -295,7 +296,7 @@ def COND_CASES_TAC (B : BoolThms) (COND_ELIM_THM : thm) (denegPth : thm) : tacti
 
 /-- Establish the `class.ml` theorem layer. -/
 def setupClass (B : BoolThms) (T : TheoremThms)
-    (ETA_AX SELECT_AX COND_DEF : thm) : ExceptT String IO ClassThms := do
+    (ETA_AX SELECT_AX : thm) : ExceptT String IO ClassThms := do
   let prove := Tactics.prove B
   let REWRITE_TAC := Simp.REWRITE_TAC B
   let GEN_TAC := Tactics.GEN_TAC B
@@ -475,7 +476,10 @@ def setupClass (B : BoolThms) (T : TheoremThms)
         (REWRITE_TAC [NOT_EXISTS_THM, NOT_IMP, T.RIGHT_AND_FORALL_THM]))) : IO (Except String thm))
   let RIGHT_EXISTS_IMP_THM ← (prove (← pt "!P Q. (?x:A. P ==> Q x) <=> (P ==> ?x:A. Q x)")
       (MATCH_ACCEPT_TAC (← liftExcept (GSYM RIGHT_IMP_EXISTS_THM))) : IO (Except String thm))
-  -- The conditional
+  -- The conditional (class.ml 315-317).
+  let COND_DEF ← (Drule.new_definition B (← pt
+      "COND = \\t t1 t2. @x:A. ((t <=> T) ==> (x = t1)) /\\ ((t <=> F) ==> (x = t2))")
+      : IO (Except String thm))
   let COND_CLAUSES ← (prove (← pt "!(t1:A) t2. ((if T then t1 else t2) = t1) /\\ ((if F then t1 else t2) = t2)")
       (REWRITE_TAC [COND_DEF]) : IO (Except String thm))
   let _ ← (Simp.extend_basic_rewrites B [COND_CLAUSES] : IO (Except String Unit))
@@ -566,7 +570,7 @@ def setupClass (B : BoolThms) (T : TheoremThms)
            FORALL_BOOL_THM, EXISTS_BOOL_THM,
            LEFT_FORALL_OR_THM, RIGHT_FORALL_OR_THM, LEFT_OR_FORALL_THM, RIGHT_OR_FORALL_THM,
            LEFT_IMP_FORALL_THM, LEFT_EXISTS_IMP_THM, RIGHT_IMP_EXISTS_THM, RIGHT_EXISTS_IMP_THM,
-           COND_CLAUSES, COND_EXPAND, COND_ID, COND_RAND, COND_RATOR, COND_ABS, COND_SWAP,
+           COND_DEF, COND_CLAUSES, COND_EXPAND, COND_ID, COND_RAND, COND_RATOR, COND_ABS, COND_SWAP,
            MONO_COND, COND_ELIM_THM, denegPth,
            SKOLEM_THM, SKOLEM_THM_GEN, UNIQUE_SKOLEM_ALT, UNIQUE_SKOLEM_THM,
            COND_CONG, COND_EQ_CLAUSE, bool_INDUCT, bool_RECURSION }

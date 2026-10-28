@@ -13,7 +13,7 @@ Loading components.ml (`ensureComponents`) runs the whole file; a proof that
 failed would `panic!`, which the `make verify` PANIC gate catches. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Components
 
 open HolCore.Kernel Session SessionLibrary.Components HolTest.CommonTest
 

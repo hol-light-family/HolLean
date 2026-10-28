@@ -9,7 +9,7 @@ joined; tools/qdiff/qprt.ml).  tools/qdiff/check.sh compares 25 cases
 structurally. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Q
 
 open HolCore.Kernel HolTest.CommonTest
 

@@ -20,38 +20,38 @@ namespace HolLogicArith.Linear
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1`/`listThms2` bundles; alias the ones we need. -/
-private unsafe def LENGTH : thm := Session.listDefs.LENGTH
-private unsafe def MEM : thm := Session.listDefs.MEM
-private unsafe def ALL : thm := Session.listDefs.ALL
-private unsafe def ALL2 : thm := Session.listDefs.ALL2
-private unsafe def LAST : thm := Session.listDefs.LAST
-private unsafe def NOT_CONS_NIL : thm := Session.listThms1.NOT_CONS_NIL
-private unsafe def CONS_11 : thm := Session.listThms1.CONS_11
-private unsafe def ALL_MEM : thm := Session.listThms1.ALL_MEM
-private unsafe def MAP_o : thm := Session.listThms1.MAP_o
-private unsafe def MAP_EQ : thm := Session.listThms1.MAP_EQ
-private unsafe def list_INDUCT : thm := Session.list_INDUCT
+private def LENGTH : thm := Session.listDefs.LENGTH
+private def MEM : thm := Session.listDefs.MEM
+private def ALL : thm := Session.listDefs.ALL
+private def ALL2 : thm := Session.listDefs.ALL2
+private def LAST : thm := Session.listDefs.LAST
+private def NOT_CONS_NIL : thm := Session.listThms1.NOT_CONS_NIL
+private def CONS_11 : thm := Session.listThms1.CONS_11
+private def ALL_MEM : thm := Session.listThms1.ALL_MEM
+private def MAP_o : thm := Session.listThms1.MAP_o
+private def MAP_EQ : thm := Session.listThms1.MAP_EQ
+private def list_INDUCT : thm := Session.list_INDUCT
 
 #eval HolLogicArith.Given.ensure
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 /- `new_inductive_definition`, panicking with HOL Light's message on failure. -/
-private unsafe def newInductive (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+private def newInductive (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"new_inductive_definition: {e}"
   | .error e => panic! s!"new_inductive_definition IO: {e}"
 
 #eval phrase 1
-unsafe def RESOLVE_CLAUSE : thm := keep "RESOLVE_CLAUSE" fun _ => (do
+def RESOLVE_CLAUSE : thm := keep "RESOLVE_CLAUSE" fun _ => (do
   prove ([[!c1 c2 p. clause c1 /\ clause c2 ==> clause(resolve p c1 c2)]])
    (REWRITE_TAC [clause, resolve, FINITE_UNION, IN_UNION, IN_DELETE] THEN
     MESON_TAC [DELETE_SUBSET, FINITE_SUBSET])
@@ -59,7 +59,7 @@ unsafe def RESOLVE_CLAUSE : thm := keep "RESOLVE_CLAUSE" fun _ => (do
 #eval RESOLVE_CLAUSE
 
 #eval phrase 2
-unsafe def PRESPROOF_CLAUSE : thm := keep "PRESPROOF_CLAUSE" fun _ => (do
+def PRESPROOF_CLAUSE : thm := keep "PRESPROOF_CLAUSE" fun _ => (do
   prove ([[!hyps cl. (!c. c IN hyps ==> clause c) /\ presproof hyps cl ==> clause cl]])
    (REWRITE_TAC [IMP_CONJ] THEN
     GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
@@ -68,7 +68,7 @@ unsafe def PRESPROOF_CLAUSE : thm := keep "PRESPROOF_CLAUSE" fun _ => (do
 #eval PRESPROOF_CLAUSE
 
 #eval phrase 3
-unsafe def RESOLVE_MONO : thm := keep "RESOLVE_MONO" fun _ => (do
+def RESOLVE_MONO : thm := keep "RESOLVE_MONO" fun _ => (do
   prove ([[!c1 c2 c1' c2' p.
         c1 SUBSET c1' /\ c2 SUBSET c2'
         ==> (resolve p c1 c2) SUBSET (resolve p c1' c2')]])
@@ -77,20 +77,20 @@ unsafe def RESOLVE_MONO : thm := keep "RESOLVE_MONO" fun _ => (do
 #eval RESOLVE_MONO
 
 #eval phrase 4
-unsafe def ppresproof_triple : thm × thm × thm := keep "ppresproof_triple" fun _ =>
+def ppresproof_triple : thm × thm × thm := keep "ppresproof_triple" fun _ =>
   newInductive
     [[(!c. clause(c) ==> ppresproof {c} c) /\
       (!p asm1 asm2 c1 c2.
               ppresproof asm1 c1 /\ ppresproof asm2 c2 /\
               p IN c1 /\ ~~ p IN c2
                   ==> ppresproof (asm1 UNION asm2) (resolve p c1 c2))]]
-unsafe def ppresproof_RULES : thm := ppresproof_triple.1
-unsafe def ppresproof_INDUCT : thm := ppresproof_triple.2.1
-unsafe def ppresproof_CASES : thm := ppresproof_triple.2.2
+def ppresproof_RULES : thm := ppresproof_triple.1
+def ppresproof_INDUCT : thm := ppresproof_triple.2.1
+def ppresproof_CASES : thm := ppresproof_triple.2.2
 #eval do IO.println ppresproof_RULES; IO.println ppresproof_INDUCT; IO.println ppresproof_CASES
 
 #eval phrase 5
-unsafe def PPRESPROOF : thm := keep "PPRESPROOF" fun _ => (do
+def PPRESPROOF : thm := keep "PPRESPROOF" fun _ => (do
   prove ([[!hyps. (!c. c IN hyps ==> clause c)
           ==> !c. presproof hyps c <=>
                         ?asm. asm SUBSET hyps /\ ppresproof asm c]])
@@ -114,7 +114,7 @@ unsafe def PPRESPROOF : thm := keep "PPRESPROOF" fun _ => (do
 #eval PPRESPROOF
 
 #eval phrase 6
-unsafe def PPRESPROOF_CLAUSE : thm := keep "PPRESPROOF_CLAUSE" fun _ => (do
+def PPRESPROOF_CLAUSE : thm := keep "PPRESPROOF_CLAUSE" fun _ => (do
   prove ([[!asm cl. ppresproof asm cl ==> clause cl /\ (!c. c IN asm ==> clause c)]])
    (MATCH_MP_TAC ppresproof_INDUCT THEN SIMP_TAC [IN_INSERT, NOT_IN_EMPTY] THEN
     SIMP_TAC [IN_UNION, RESOLVE_CLAUSE] THEN MESON_TAC [])
@@ -122,7 +122,7 @@ unsafe def PPRESPROOF_CLAUSE : thm := keep "PPRESPROOF_CLAUSE" fun _ => (do
 #eval PPRESPROOF_CLAUSE
 
 #eval phrase 7
-unsafe def PPRESPROOF_CONSEQUENCE : thm := keep "PPRESPROOF_CONSEQUENCE" fun _ => (do
+def PPRESPROOF_CONSEQUENCE : thm := keep "PPRESPROOF_CONSEQUENCE" fun _ => (do
   prove ([[!asm cl. ppresproof asm cl
             ==> !d. d psatisfies (IMAGE interp asm) ==> pholds d (interp cl)]])
    (SUBGOAL_THEN
@@ -159,7 +159,7 @@ unsafe def PPRESPROOF_CONSEQUENCE : thm := keep "PPRESPROOF_CONSEQUENCE" fun _ =
 #eval PPRESPROOF_CONSEQUENCE
 
 #eval phrase 8
-unsafe def PPRESPROOF_SOUND : thm := keep "PPRESPROOF_SOUND" fun _ => (do
+def PPRESPROOF_SOUND : thm := keep "PPRESPROOF_SOUND" fun _ => (do
   prove ([[!asm. ppresproof asm {} ==> ~(psatisfiable (IMAGE interp asm))]])
    (GEN_TAC THEN DISCH_THEN (MP_TAC oTIO HolLight.MATCH_MP PPRESPROOF_CONSEQUENCE) THEN
     REWRITE_TAC [psatisfiable] THEN
@@ -169,7 +169,7 @@ unsafe def PPRESPROOF_SOUND : thm := keep "PPRESPROOF_SOUND" fun _ => (do
 #eval PPRESPROOF_SOUND
 
 #eval phrase 9
-unsafe def PPRESPROOF_ALLNEGATIVE : thm := keep "PPRESPROOF_ALLNEGATIVE" fun _ => (do
+def PPRESPROOF_ALLNEGATIVE : thm := keep "PPRESPROOF_ALLNEGATIVE" fun _ => (do
   prove ([[!asm. ppresproof asm {} ==> ?c. c IN asm /\ !p. p IN c ==> negative p]])
    (GEN_TAC THEN DISCH_TAC THEN
     FIRST_ASSUM (MP_TAC oTIO HolLight.MATCH_MP PPRESPROOF_SOUND) THEN
@@ -196,7 +196,7 @@ unsafe def PPRESPROOF_ALLNEGATIVE : thm := keep "PPRESPROOF_ALLNEGATIVE" fun _ =
 #eval PPRESPROOF_ALLNEGATIVE
 
 #eval phrase 10
-unsafe def lpresproof_triple : thm × thm × thm := keep "lpresproof_triple" fun _ =>
+def lpresproof_triple : thm × thm × thm := keep "lpresproof_triple" fun _ =>
   newInductive
     [[(!cl. cl IN hyps ==> lpresproof hyps [cl]) /\
       (!c1 c2 lis p.
@@ -204,13 +204,13 @@ unsafe def lpresproof_triple : thm × thm × thm := keep "lpresproof_triple" fun
           (c2 IN hyps \/ MEM c2 lis) /\
           p IN c1 /\ ~~p IN c2
           ==> lpresproof hyps (CONS (resolve p c1 c2) (CONS c1 lis)))]]
-unsafe def lpresproof_RULES : thm := lpresproof_triple.1
-unsafe def lpresproof_INDUCT : thm := lpresproof_triple.2.1
-unsafe def lpresproof_CASES : thm := lpresproof_triple.2.2
+def lpresproof_RULES : thm := lpresproof_triple.1
+def lpresproof_INDUCT : thm := lpresproof_triple.2.1
+def lpresproof_CASES : thm := lpresproof_triple.2.2
 #eval do IO.println lpresproof_RULES; IO.println lpresproof_INDUCT; IO.println lpresproof_CASES
 
 #eval phrase 11
-unsafe def LPRESPROOF_MONO : thm := keep "LPRESPROOF_MONO" fun _ => (do
+def LPRESPROOF_MONO : thm := keep "LPRESPROOF_MONO" fun _ => (do
   prove ([[!hyps hyps' c.
         hyps SUBSET hyps' /\ lpresproof hyps c ==> lpresproof hyps' c]])
    (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
@@ -221,14 +221,14 @@ unsafe def LPRESPROOF_MONO : thm := keep "LPRESPROOF_MONO" fun _ => (do
 #eval LPRESPROOF_MONO
 
 #eval phrase 12
-unsafe def RESOLVE_SYM : thm := keep "RESOLVE_SYM" fun _ => (do
+def RESOLVE_SYM : thm := keep "RESOLVE_SYM" fun _ => (do
   prove ([[!c1 c2 p. literal p ==> (resolve (~~p) c1 c2 = resolve p c2 c1)]])
    (SIMP_TAC [resolve, NEGATE_NEGATE, UNION_ACI])
   : ExceptT String IO thm).run
 #eval RESOLVE_SYM
 
 #eval phrase 13
-unsafe def RESOLVE_TAUT_L : thm := keep "RESOLVE_TAUT_L" fun _ => (do
+def RESOLVE_TAUT_L : thm := keep "RESOLVE_TAUT_L" fun _ => (do
   prove ([[!c1 c2 p. clause c1 /\ tautologous c1
              ==> tautologous(resolve p c1 c2) \/ c2 SUBSET (resolve p c1 c2)]])
    (REWRITE_TAC [tautologous, SUBSET, resolve, IN_DELETE, IN_UNION, clause] THEN
@@ -241,7 +241,7 @@ unsafe def RESOLVE_TAUT_L : thm := keep "RESOLVE_TAUT_L" fun _ => (do
 #eval RESOLVE_TAUT_L
 
 #eval phrase 14
-unsafe def RESOLVE_TAUT_R : thm := keep "RESOLVE_TAUT_R" fun _ => (do
+def RESOLVE_TAUT_R : thm := keep "RESOLVE_TAUT_R" fun _ => (do
   prove ([[!c1 c2 p. clause c2 /\ tautologous c2 /\ literal p
              ==> tautologous(resolve p c1 c2) \/ c1 SUBSET (resolve p c1 c2)]])
    (REWRITE_TAC [tautologous, SUBSET, resolve, IN_DELETE, IN_UNION, clause] THEN
@@ -255,14 +255,14 @@ unsafe def RESOLVE_TAUT_R : thm := keep "RESOLVE_TAUT_R" fun _ => (do
 #eval RESOLVE_TAUT_R
 
 #eval phrase 15
-unsafe def SUBSET_TAUT : thm := keep "SUBSET_TAUT" fun _ => (do
+def SUBSET_TAUT : thm := keep "SUBSET_TAUT" fun _ => (do
   prove ([[!c1 c2. tautologous c1 /\ c1 SUBSET c2 ==> tautologous c2]])
    (REWRITE_TAC [tautologous, SUBSET] THEN MESON_TAC [])
   : ExceptT String IO thm).run
 #eval SUBSET_TAUT
 
 #eval phrase 16
-unsafe def suffix : thm := keep "suffix" fun _ => (do
+def suffix : thm := keep "suffix" fun _ => (do
   newRec Session.list_RECURSION
     [[(suffix lis [] <=> (lis = [])) /\
       (suffix lis (CONS s cs) <=> (lis = CONS s cs) \/ suffix lis cs)]]
@@ -270,14 +270,14 @@ unsafe def suffix : thm := keep "suffix" fun _ => (do
 #eval suffix
 
 #eval phrase 17
-unsafe def SUFFIX_REFL : thm := keep "SUFFIX_REFL" fun _ => (do
+def SUFFIX_REFL : thm := keep "SUFFIX_REFL" fun _ => (do
   prove ([[!lis. suffix lis lis]])
    (LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [suffix])
   : ExceptT String IO thm).run
 #eval SUFFIX_REFL
 
 #eval phrase 18
-unsafe def SUFFIX_BUTLAST : thm := keep "SUFFIX_BUTLAST" fun _ => (do
+def SUFFIX_BUTLAST : thm := keep "SUFFIX_BUTLAST" fun _ => (do
   prove ([[!l1 l2. suffix l1 l2 /\ ~(l1 = []) ==> (LAST l1 :A = LAST l2)]])
    (GEN_TAC THEN ASM_CASES_TAC [[l1:(A)list = [] ]] THEN ASM_REWRITE_TAC [] THEN
     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [suffix, LAST] THEN
@@ -287,7 +287,7 @@ unsafe def SUFFIX_BUTLAST : thm := keep "SUFFIX_BUTLAST" fun _ => (do
 #eval SUFFIX_BUTLAST
 
 #eval phrase 19
-unsafe def SUFFIX_TRANS : thm := keep "SUFFIX_TRANS" fun _ => (do
+def SUFFIX_TRANS : thm := keep "SUFFIX_TRANS" fun _ => (do
   prove ([[!l1 l2 l3. suffix l1 l2 /\ suffix l2 l3 ==> suffix l1 l3]])
    (GEN_TAC THEN GEN_TAC THEN LIST_INDUCT_TAC THEN REWRITE_TAC [suffix] THEN
     ASM_MESON_TAC [suffix])
@@ -295,7 +295,7 @@ unsafe def SUFFIX_TRANS : thm := keep "SUFFIX_TRANS" fun _ => (do
 #eval SUFFIX_TRANS
 
 #eval phrase 20
-unsafe def SUFFIX_MEM : thm := keep "SUFFIX_MEM" fun _ => (do
+def SUFFIX_MEM : thm := keep "SUFFIX_MEM" fun _ => (do
   prove ([[!x:A l lis. suffix (CONS x l) lis ==> MEM x lis]])
    (GEN_TAC THEN GEN_TAC THEN LIST_INDUCT_TAC THEN
     REWRITE_TAC [MEM, suffix, NOT_CONS_NIL, CONS_11] THEN ASM_MESON_TAC [])
@@ -303,14 +303,14 @@ unsafe def SUFFIX_MEM : thm := keep "SUFFIX_MEM" fun _ => (do
 #eval SUFFIX_MEM
 
 #eval phrase 21
-unsafe def SUFFIX_CONS : thm := keep "SUFFIX_CONS" fun _ => (do
+def SUFFIX_CONS : thm := keep "SUFFIX_CONS" fun _ => (do
   prove ([[!x l1 l2. suffix l1 l2 ==> suffix l1 (CONS x l2)]])
    (MESON_TAC [suffix])
   : ExceptT String IO thm).run
 #eval SUFFIX_CONS
 
 #eval phrase 22
-unsafe def SUFFIX_LENGTH : thm := keep "SUFFIX_LENGTH" fun _ => (do
+def SUFFIX_LENGTH : thm := keep "SUFFIX_LENGTH" fun _ => (do
   prove ([[!l1 l2. suffix l1 l2 ==> LENGTH l1 <= LENGTH l2]])
    (ONCE_REWRITE_TAC [SWAP_FORALL_THM] THEN LIST_INDUCT_TAC THEN
     ASM_SIMP_TAC [suffix, LENGTH, NOT_CONS_NIL, LE_0] THEN
@@ -320,14 +320,14 @@ unsafe def SUFFIX_LENGTH : thm := keep "SUFFIX_LENGTH" fun _ => (do
 #eval SUFFIX_LENGTH
 
 #eval phrase 23
-unsafe def NOT_SUFFIX_TAIL : thm := keep "NOT_SUFFIX_TAIL" fun _ => (do
+def NOT_SUFFIX_TAIL : thm := keep "NOT_SUFFIX_TAIL" fun _ => (do
   prove ([[!x l. ~(suffix (CONS x l) l)]])
    (MESON_TAC [SUFFIX_LENGTH, LENGTH, (← ExceptT.mk (ARITH_RULE [[~(SUC n <= n)]]))])
   : ExceptT String IO thm).run
 #eval NOT_SUFFIX_TAIL
 
 #eval phrase 24
-unsafe def SUFFIX_ANTISYM : thm := keep "SUFFIX_ANTISYM" fun _ => (do
+def SUFFIX_ANTISYM : thm := keep "SUFFIX_ANTISYM" fun _ => (do
   prove ([[!l1 l2. suffix l1 l2 /\ suffix l2 l1 ==> (l1 = l2)]])
    (LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN
     REWRITE_TAC [suffix, NOT_CONS_NIL, CONS_11] THEN
@@ -336,7 +336,7 @@ unsafe def SUFFIX_ANTISYM : thm := keep "SUFFIX_ANTISYM" fun _ => (do
 #eval SUFFIX_ANTISYM
 
 #eval phrase 25
-unsafe def NEGATE_LITERAL : thm := keep "NEGATE_LITERAL" fun _ => (do
+def NEGATE_LITERAL : thm := keep "NEGATE_LITERAL" fun _ => (do
   prove ([[!q. literal q ==> literal(~~q)]])
    (REWRITE_TAC [literal, ATOM] THEN REPEAT STRIP_TAC THEN
     ASM_SIMP_TAC [] THEN ASM_MESON_TAC [ATOM, NEGATE_ATOM, NEGATE_NEG])
@@ -344,7 +344,7 @@ unsafe def NEGATE_LITERAL : thm := keep "NEGATE_LITERAL" fun _ => (do
 #eval NEGATE_LITERAL
 
 #eval phrase 26
-unsafe def SYMMETRY_LEMMA_1 : thm := keep "SYMMETRY_LEMMA_1" fun _ => (do
+def SYMMETRY_LEMMA_1 : thm := keep "SYMMETRY_LEMMA_1" fun _ => (do
   prove ([[(!q basm B casm C c.
         literal q
         ==> (P q basm B casm C c = P (~~q) casm C basm B c)) /\
@@ -361,7 +361,7 @@ unsafe def SYMMETRY_LEMMA_1 : thm := keep "SYMMETRY_LEMMA_1" fun _ => (do
 #eval SYMMETRY_LEMMA_1
 
 #eval phrase 27
-unsafe def SYMMETRY_LEMMA_2 : thm := keep "SYMMETRY_LEMMA_2" fun _ => (do
+def SYMMETRY_LEMMA_2 : thm := keep "SYMMETRY_LEMMA_2" fun _ => (do
   prove ([[(!p q basm B casm C main aasm A.
         literal q
         ==> (P p q basm B casm C main aasm A =
@@ -376,7 +376,7 @@ unsafe def SYMMETRY_LEMMA_2 : thm := keep "SYMMETRY_LEMMA_2" fun _ => (do
 #eval SYMMETRY_LEMMA_2
 
 #eval phrase 28
-unsafe def LINEARIZATION : thm := keep "LINEARIZATION" fun _ => (do
+def LINEARIZATION : thm := keep "LINEARIZATION" fun _ => (do
   prove ([[!asm cl. ppresproof asm cl
             ==> !c. c IN asm
                     ==> ?cl' lis. lpresproof asm (CONS cl' lis) /\
@@ -644,20 +644,20 @@ unsafe def LINEARIZATION : thm := keep "LINEARIZATION" fun _ => (do
 #eval LINEARIZATION
 
 #eval phrase 29
-unsafe def lresproof_triple : thm × thm × thm := keep "lresproof_triple" fun _ =>
+def lresproof_triple : thm × thm × thm := keep "lresproof_triple" fun _ =>
   newInductive
     [[(!cl. cl IN hyps ==> lresproof hyps [cl]) /\
       (!c1 c2 lis cl.
           lresproof hyps (CONS c1 lis) /\ (c2 IN hyps \/ MEM c2 lis) /\
           isaresolvent cl (c1,c2)
           ==> lresproof hyps (CONS cl (CONS c1 lis)))]]
-unsafe def lresproof_RULES : thm := lresproof_triple.1
-unsafe def lresproof_INDUCT : thm := lresproof_triple.2.1
-unsafe def lresproof_CASES : thm := lresproof_triple.2.2
+def lresproof_RULES : thm := lresproof_triple.1
+def lresproof_INDUCT : thm := lresproof_triple.2.1
+def lresproof_CASES : thm := lresproof_triple.2.2
 #eval do IO.println lresproof_RULES; IO.println lresproof_INDUCT; IO.println lresproof_CASES
 
 #eval phrase 30
-unsafe def ALL2_BUTLAST : thm := keep "ALL2_BUTLAST" fun _ => (do
+def ALL2_BUTLAST : thm := keep "ALL2_BUTLAST" fun _ => (do
   prove ([[!P:(A->A->bool) l1 l2.
        ~(l1 = []) /\ ALL2 P l1 l2 ==> P (LAST l1) (LAST l2)]])
    (GEN_TAC THEN LIST_INDUCT_TAC THEN REWRITE_TAC [NOT_CONS_NIL] THEN
@@ -675,7 +675,7 @@ unsafe def ALL2_BUTLAST : thm := keep "ALL2_BUTLAST" fun _ => (do
 #eval ALL2_BUTLAST
 
 #eval phrase 31
-unsafe def ALL2_MEM : thm := keep "ALL2_MEM" fun _ => (do
+def ALL2_MEM : thm := keep "ALL2_MEM" fun _ => (do
   prove ([[!l1 l2. ALL2 P l1 l2 /\ MEM x l1 ==> ?y. MEM y l2 /\ P x y]])
    (LIST_INDUCT_TAC THEN REWRITE_TAC [MEM] THEN
     LIST_INDUCT_TAC THEN REWRITE_TAC [ALL2, MEM] THEN ASM_MESON_TAC [])
@@ -683,7 +683,7 @@ unsafe def ALL2_MEM : thm := keep "ALL2_MEM" fun _ => (do
 #eval ALL2_MEM
 
 #eval phrase 32
-unsafe def LRESPROOF_CLAUSE : thm := keep "LRESPROOF_CLAUSE" fun _ => (do
+def LRESPROOF_CLAUSE : thm := keep "LRESPROOF_CLAUSE" fun _ => (do
   prove ([[!hyps. (!c. c IN hyps ==> clause c)
           ==> !lis. lresproof hyps lis ==> ALL clause lis]])
    (GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC lresproof_INDUCT THEN
@@ -692,7 +692,7 @@ unsafe def LRESPROOF_CLAUSE : thm := keep "LRESPROOF_CLAUSE" fun _ => (do
 #eval LRESPROOF_CLAUSE
 
 #eval phrase 33
-unsafe def LINEAR_RESOLUTION_COMPLETE : thm := keep "LINEAR_RESOLUTION_COMPLETE" fun _ => (do
+def LINEAR_RESOLUTION_COMPLETE : thm := keep "LINEAR_RESOLUTION_COMPLETE" fun _ => (do
   prove ([[(!cl. cl IN hyps ==> clause cl) /\
    ~(?M:(term->bool)#(num->term list->term)#(num->term list->bool).
         interpretation (language(IMAGE interp hyps)) M /\ ~(Dom M = {}) /\
@@ -886,9 +886,9 @@ unsafe def LINEAR_RESOLUTION_COMPLETE : thm := keep "LINEAR_RESOLUTION_COMPLETE"
 #eval LINEAR_RESOLUTION_COMPLETE
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Linear" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Linear" do
   replay (
           HolLogicArith.Given.ensure)
   replay (

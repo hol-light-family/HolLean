@@ -1,15 +1,28 @@
 # Makefile for HolLean - a Lean 4 translation of HOL Light.
 #
 # A thin, documented wrapper around the `lake` invocations used day to day.
-# See lakefile.lean for the targets themselves: FIVE libraries, each with a
-# single root module mirroring the project's layering, plus one executable.
+# See lakefile.lean for the targets themselves: the libraries below, mirroring
+# the project's layering, plus two executables.
 #
-#     HolCore   the kernel and core proof infrastructure (self-contained)
-#     HolMath   the mathematical theories        (depends on HolCore)
-#     Session   the `unsafe` session state       (depends on HolCore + HolMath)
-#     HolTest   the runtime test suite           (depends on Session)
-#     HolInit   eager bootstrap for scratchpad use, outside defaultTargets
-#     hollean   the executable, rooted at Hol.lean (the default target)
+#     HolCore         the kernel and core proof infrastructure (self-contained)
+#     HolMath         the mathematical theories     (depends on HolCore)
+#     SessionCore     the core's session state, one module per HolCore file
+#     SessionMath     the theories' session state, one module per HolMath file
+#     Session         Session.lean, importing both: the whole session, built
+#                     when it is imported
+#     HolLibrary      HOL Light's Library/ files    (depends on HolMath)
+#     SessionLibrary  their session wiring; importing a module is its file's
+#                     `needs`                       (depends on Session)
+#     HolMultiLib     HOL Light's Multivariate/ files (depends on HolMath)
+#     SessionMultiLib their session wiring, as SessionLibrary
+#                                             (depends on SessionLibrary)
+#     Help, Database  help.ml and database.ml
+#     HolToplevel     helpers for the translated toplevel sessions
+#     HolTest         the test suite, each module on its own
+#     HolTutorial, HolExamples, HolLogicArith  the translations of HOL Light's
+#                     Tutorial/, Examples/, Logic/ and Arithmetic/ files
+#     hollean         the executable, rooted at Hol.lean (the default target)
+#     holtrace        the HOLTrace proof reconstructor (HolTrace.lean)
 #
 # QUICK REFERENCE - every target, grouped by what you want to do:
 #
@@ -17,8 +30,8 @@
 #     make core          the kernel only
 #     make math          + the mathematical theories (no tests run)
 #     make session       + the session state layer
-#     make proofs        + the Library files; proof-checks everything, no
-#                        native code, no tests
+#     make proofs        + the Library files; proof-checks them, no native
+#                        code, no tests (not the Multivariate files)
 #     make               everything but the tests, including native code and
 #                        the binary
 #     make module M=...  one module only
@@ -30,13 +43,14 @@
 #   verification
 #     make check         build from scratch and enforce the acceptance gates
 #     make verify        apply the gates to an existing build log
-#     make test          build and run the tests (HolTest.lean, the ONLY
-#                        place they are imported), with assertion counts
+#     make test          build and run the tests (every module under HolTest/,
+#                        each on its own), with assertion counts
 #     make test-module M=...  run one test module standalone
 #
 #   optimisation level of the native (C) code
 #     by default (lakefile.lean) HolCore, HolMath and the executable are
-#     compiled at -O3 and HolLibrary at -O0, in .lake/build
+#     compiled at -O3, and HolLibrary and the session libraries at -O0, in
+#     .lake/build
 #     make build-O3      `make build` with everything at -O3
 #     make test-O3       `make test` with everything at -O3
 #     make check-O3      `make check` with everything at -O3
@@ -53,8 +67,9 @@
 # (lib.ml), so MESON prints a search trace (`0..0..1..3..11..solved at 633`,
 # meson.ml 447-467) and ITAUT prints `Searching with limit N`; the parser also
 # warns about every term with invented type variables, and grobner.ml prints
-# its progress.  The test suite turns `verbose`, `type_invention_warning` and
-# `grobner_messages` off (HolTest/CommonTest.lean), so
+# its progress.  Session turns these off while the library loads (unless
+# HOLLEAN_SHOW_LOAD is set) and restores them afterwards; the test suite also
+# turns them off for its own checks (HolTest/CommonTest.lean), so
 # build.log holds the test results; Prove.lean keeps HOL Light's defaults.
 #
 LAKE ?= lake
@@ -62,14 +77,15 @@ LAKE ?= lake
 # What `make`/`make build` builds: the executable (Hol.lean, which does NOT
 # import the tests) and HOL Light's Library/ files.  The test suite is the
 # HolTest library, built only by `make test` and `make check`.
-BUILD_TARGETS ?= hollean @/HolLibrary @/SessionLibrary
+BUILD_TARGETS ?= hollean @/HolLibrary @/SessionLibrary @/HolMultiLib @/SessionMultiLib
 TEST_TARGETS ?= @/HolTest
-# The tutorial translations (HolTutorial.lean): built by `make tutorial` and
-# `make check`.
+# The tutorial translations (every module under HolTutorial/): built by
+# `make tutorial` and `make check`.
 TUTORIAL_TARGETS ?= @/HolTutorial
-# The Examples translations (HolExamples.lean): `make examples`, `make check`.
+# The Examples translations (HolExamples/): `make examples`, `make check`.
 EXAMPLES_TARGETS ?= @/HolExamples
-# The Logic/ translations (HolLogicArith.lean): `make logic`, `make check`.
+# The Logic/ and Arithmetic/ translations (HolLogicArith/): `make logic`,
+# `make check`.
 LOGIC_TARGETS ?= @/HolLogicArith
 
 # --- Parallelism -----------------------------------------------------------
@@ -97,9 +113,9 @@ LEAN_ENV := LEAN_NUM_THREADS=$(THREADS)
 endif
 
 # Optimisation level of the C code (see lakefile.lean).  Empty means the
-# lakefile's default (HolCore, HolMath and the executable at -O3, HolLibrary at
-# -O0), built in .lake/build.  OPT=N is passed to Lake as `-Kopt=N` and builds
-# everything at -ON in .lake/build-ON.
+# lakefile's default (HolCore, HolMath and the executable at -O3, HolLibrary
+# and the session libraries at -O0), built in .lake/build.  OPT=N is passed to
+# Lake as `-Kopt=N` and builds everything at -ON in .lake/build-ON.
 #
 # Lake CACHES `-K` options with the elaborated lakefile and keeps using them
 # until the next `-R` (reconfigure), even in later commands given no `-K`.  So
@@ -132,15 +148,13 @@ M ?=
 SHOW_LOAD ?= 2
 
 # A MASKED FAILURE is a real failure wearing the costume of ordinary output.
-# Session reads each theorem bundle from a cached ref through an `unsafe def`; if
-# the layer never initialised, that hits `panic!` - and `panic!` does NOT abort,
-# it prints to stderr and returns `Inhabited.default`, then execution CONTINUES
-# (verified experimentally).  `Inhabited thm` is `REFL default` and
-# `default : term` prints as the EMPTY STRING, so every field of the degenerated
-# bundle prints as an equation with both sides invisible.  A test meant to
-# exercise real theorems instead emits that, which reads as OUTPUT rather than an
-# error, and the build still exits 0.  There are ~466 `panic!` sites feeding this
-# path.
+# A coercion from a failed rule result to `thm` (or a test helper) hits
+# `panic!` - and `panic!` does NOT abort: it prints to stderr and returns
+# `Inhabited.default`, then execution CONTINUES (verified experimentally).
+# `Inhabited thm` is `REFL default` and `default : term` prints as the EMPTY
+# STRING, so the degenerated theorem prints as an equation with both sides
+# invisible.  A test meant to exercise a real theorem instead emits that,
+# which reads as OUTPUT rather than an error, and the build still exits 0.
 #
 # WAS 1, NOW 0.  One intentional line used to print `default : thm` on purpose,
 # costing a permanent exemption and meaning a REAL degeneration had to reach TWO
@@ -160,7 +174,7 @@ MASKED_RE ?= \|-[[:space:]]*=[[:space:]]*$$
 
 # A `panic!` does not stop the build (it returns a default value and carries
 # on), so a layer that failed to build is visible only as a `PANIC` line.
-# Any such line is a defect.  HolTest/HolInitTest imports HolInit, so under
+# Any such line is a defect.  Every test module imports Session, so under
 # `make check` (which builds the tests) this also covers the full load sequence.
 
 # Pattern matching a FAILED ASSERTION.  Test modules print `-> OK` when a check
@@ -180,23 +194,26 @@ FAILED_RE ?= -> FAIL
 ERROR_RE ?= \.lean:[0-9]+:[0-9]+: error
 
 # Pattern matching a REAL `unsafe` DECLARATION (not the word in a docstring).
-# The HolMath layer is a pure library: all `unsafe` state lives in Session and
-# above.  Several HolMath docstrings PROSE about staying "PURE with ZERO
-# `unsafe`", so grepping the bare word is WRONG (it finds those comments); this
+# HolCore, HolMath and HolLibrary are pure libraries.  Several of their
+# docstrings mention `unsafe` in prose, so grepping the bare word is WRONG; this
 # anchors on `unsafe` as a leading declaration modifier before def/instance/etc,
-# optionally preceded by `private` or an attribute.  Verified: 0 in the pure
-# libraries, 3452 in Session.
+# optionally preceded by `private` or an attribute.
 UNSAFE_DECL_RE ?= ^[[:space:]]*(private[[:space:]]+|@\[[^]]*\][[:space:]]*)*unsafe[[:space:]]+(def|instance|abbrev|structure|opaque|axiom)\b
 
-# Directories the purity invariants scan.  BOTH HolCore and HolMath are pure
-# libraries: every `unsafe` declaration in the project belongs in Session.lean or
-# above (HolInit/Hol/HolTest legitimately carry `unsafe` because CALLING an
-# unsafe Session accessor requires an unsafe context).  HolCore was previously
-# unscanned - it was at zero by construction but nothing enforced it, so a
-# regression there would have been invisible.  Measured: HolCore 0, HolMath 0.
-PURE_SRC ?= HolCore HolMath HolLibrary
-# The umbrella module every HolTest module must be imported by.
-ROOT_MODULE ?= HolTest.lean
+# Directories the purity invariants scan.  HolCore, HolMath and HolLibrary are
+# pure libraries.  The only other `unsafe` declarations are the few
+# `implemented_by` implementations in SessionCore/Base.lean, SessionMath/Sets.lean
+# and HolToplevel.lean, and the test helpers in HolTest.
+# Measured: HolCore 0, HolMath 0, HolLibrary 0.
+PURE_SRC ?= HolCore HolMath HolLibrary HolMultiLib
+# Modules whose `initialize` constants the function-type gate checks (with
+# their imports).  Lean compiles a function-typed `initialize` as a function
+# and never runs its initialiser in compiled code (holtranslation.md).
+# SessionLibrary, HolTest and the translation libraries have no aggregate
+# module, so every module in them is listed.
+INITGATE_MODULES ?= Session HolToplevel \
+  $(subst /,.,$(patsubst %.lean,%,$(wildcard SessionLibrary/*.lean SessionMultiLib/*.lean HolTest/*.lean \
+    HolTutorial/*.lean HolExamples/*.lean HolLogicArith/*.lean)))
 
 .PHONY: all build core math session proofs prove rebuild clean distclean check verify test test-module module help build-O3 test-O3 check-O3 tutorial examples logic
 
@@ -218,30 +235,29 @@ core:
 math:
 	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) @/HolMath
 
-## session: the session state layer (HolCore + HolMath + Session)
+## session: the session state layer (HolCore + HolMath + SessionCore + SessionMath + Session)
 session:
-	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) @/Session
+	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) @/SessionCore @/SessionMath @/Session
 
 ## proofs: check all proofs (oleans only) - skips native compilation
 # The DEFAULT target is the `hollean` executable, so Lake compiles Lean -> C ->
 # object code for every module.  That native codegen was MEASURED at 35% of a
 # from-scratch build and produces a binary that proof checking does not need.
 # Building the module facets `+Hol +HolLibrary +SessionLibrary` instead
-# elaborates everything (no tests: they are only in HolTest.lean), but emits
+# elaborates everything (no tests: they are only in HolTest/), but emits
 # no C.  Use this while developing; use `build` when
 # you actually want the executable.
 #
-# The tiers below are cumulative - each builds on the one above it.  Job counts
-# are current; wall times depend heavily on your machine and on whether MESON's
-# verbose trace is enabled, so they are deliberately not recorded here.
+# The tiers below are cumulative - each builds on the one above it.  Wall times
+# depend heavily on your machine, so they are deliberately not recorded here.
 #
-#   make core       28 jobs   kernel and core infrastructure only
-#   make math       46 jobs   + the mathematical theories
-#   make session    49 jobs   + Session
-#   make proofs               + the Library files (no tests)
-#   make build                + native codegen and the executable
+#   make core       kernel and core infrastructure only
+#   make math       + the mathematical theories
+#   make session    + SessionCore, SessionMath and Session
+#   make proofs     + the Library files (no tests)
+#   make build      + native codegen and the executable
 proofs:
-	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) +Hol +HolLibrary +SessionLibrary
+	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) +Hol +HolLibrary @/SessionLibrary:leanArts
 
 ## rebuild: clean, then build from scratch, capturing the log
 rebuild: clean
@@ -274,7 +290,7 @@ distclean: clean
 
 ## check: build from scratch and enforce the acceptance gates
 # The standing acceptance criteria are stricter than "the build exited 0": also
-# zero warnings, no masked bundle failures, and no test MISMATCH.  Builds with
+# zero warnings, no masked failures, and no test MISMATCH.  Builds with
 # `|| true` so that a failing build still reaches `verify` and reports WHICH
 # gate broke rather than dying silently.
 check: clean
@@ -296,12 +312,10 @@ verify:
 	ok=$$(grep -c -- '-> OK' $(BUILD_LOG) || true); \
 	pure_unsafe=$$(grep -rhE '$(UNSAFE_DECL_RE)' $(PURE_SRC) 2>/dev/null | grep -c . || true); \
 	pure_sorry=$$(grep -rhwE 'sorry' $(PURE_SRC) 2>/dev/null | sed -E 's/"([^"\\]|\\.)*"//g' | grep -cw sorry || true); \
-	unimported=0; \
-	for f in HolTest/*.lean; do \
-	  mod=$$(basename "$$f" .lean); \
-	  grep -qE "^import HolTest\.$$mod([[:space:]]|$$)" $(ROOT_MODULE) || { \
-	    echo "    UNIMPORTED HolTest module: $$mod"; unimported=$$((unimported+1)); }; \
-	done; \
+	initgate_out=$$($(LEAN_ENV) $(LAKE) env lean --run checks/InitGate.lean $(INITGATE_MODULES) 2>&1); \
+	fn_init=$$(echo "$$initgate_out" | grep -c 'FUNCTION-TYPED initialize' || true); \
+	echo "$$initgate_out" | grep 'FUNCTION-TYPED initialize' || true; \
+	echo "$$initgate_out" | grep -q '^initgate:' || { echo "    initgate did not run: $$initgate_out" | head -3; fn_init=1; }; \
 	printf '    %-18s %-6s %s\n' "errors"          "$$errors"   "(want 0)"; \
 	printf '    %-18s %-6s %s\n' "warnings"        "$$warnings" "(want 0)"; \
 	printf '    %-18s %-6s %s\n' "masked failures" "$$masked"   "(want $(EXPECTED_MASKED))"; \
@@ -310,10 +324,11 @@ verify:
 	printf '    %-18s %-6s %s\n' "panics" "$$panics" "(want 0)"; \
 	printf '    %-18s %-6s %s\n' "pure-lib unsafe" "$$pure_unsafe" "(want 0)"; \
 	printf '    %-18s %-6s %s\n' "pure-lib sorry"  "$$pure_sorry" "(want 0)"; \
-	printf '    %-18s %-6s %s\n' "unimported tests" "$$unimported" "(want 0)"; \
+	printf '    %-18s %-6s %s\n' "fn-typed initialize" "$$fn_init" "(want 0)"; \
 	printf '    %-18s %-6s %s\n' "assertions OK"   "$$ok"       "(informational)"; \
 	fail=0; \
 	[ "$$errors"   = "0" ] || fail=1; \
+	[ "$$fn_init"  = "0" ] || fail=1; \
 	[ "$$warnings" = "0" ] || fail=1; \
 	[ "$$masked"   = "$(EXPECTED_MASKED)" ] || fail=1; \
 	[ "$$mismatch" = "0" ] || fail=1; \
@@ -321,7 +336,6 @@ verify:
 	[ "$$panics"   = "0" ] || fail=1; \
 	[ "$$pure_unsafe" = "0" ] || fail=1; \
 	[ "$$pure_sorry"  = "0" ] || fail=1; \
-	[ "$$unimported" = "0" ] || fail=1; \
 	if [ "$$fail" = "0" ]; then \
 	  echo "==> OK: all gates passed (full log in $(BUILD_LOG))"; \
 	else \
@@ -330,24 +344,24 @@ verify:
 	fi
 
 ## prove: run your own scratchpad experiments in Prove.lean
-# HOLLEAN_SHOW_LOAD shows the library load's messages; HolInit drops them
+# HOLLEAN_SHOW_LOAD shows the library load's messages; Session turns them off
 # otherwise, because in VS Code they would deadlock the language server.
 #   1  HOL Light's default messages (MESON progress, type-invention warnings);
 #   2  also the METIS and CoP tracing (`metisverb`, `Metis_unify.verb`,
 #      `copverb`), for the load only.
 # `make prove` uses SHOW_LOAD (default 2): make prove SHOW_LOAD=1 for less
-# Prove.lean imports HolInit, which pulls in HolCore + HolMath + Session but
-# NOT HolTest, so you do not re-run the project's test suite.  Prove.lean itself
+# Prove.lean imports Session, which pulls in HolCore + HolMath but NOT
+# HolTest, so you do not re-run the project's test suite.  Prove.lean itself
 # belongs to no Lake target and nothing imports it, so whatever you write there
 # cannot break `build`, `proofs` or `check`.
 #
-# HolInit is built first because Prove.lean imports it.  Its `initialize` block
-# runs the whole HOL Light load sequence - Lean's nearest analogue to hol.ml's
-# `loads` - so nothing needs forcing, at the cost of a bootstrap on every run.
-# Expect MESON's verbose search trace during that bootstrap; that is HOL Light's
-# startup behaviour, not a fault.
+# Session and Help are built first because Prove.lean imports them.  Importing
+# Session runs the whole HOL Light load sequence (each layer is an
+# `initialize`, Lean's nearest analogue to hol.ml's `loads`), so nothing needs
+# forcing.  Expect MESON's verbose search trace during the load; that is HOL
+# Light's startup behaviour, not a fault.
 prove:
-	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) @/HolInit
+	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) Session Help
 	$(LEAN_ENV) HOLLEAN_SHOW_LOAD=$(SHOW_LOAD) $(LAKE) $(OPT_FLAGS) lean Prove.lean
 
 ## test: report per-module assertion counts and real errors from a build
@@ -376,18 +390,15 @@ test:
 	printf '%-40s errors=%s\n' "-- total" "$$errs"; \
 	[ "$$errs" = "0" ] || { echo "see $(BUILD_LOG)"; exit 1; }
 
-## tutorial: build (and so run) the translations of HOL Light's Tutorial/
-# files (HolTutorial/), printing each session's output.
+## tutorial: build (and so run) the Tutorial/ translations (HolTutorial/), printing their output
 tutorial:
 	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(TUTORIAL_TARGETS)
 
-## examples: build (and so run) the translations of files of HOL Light's
-# Examples/ (HolExamples/), printing each session's output.
+## examples: build (and so run) the Examples/ translations (HolExamples/), printing their output
 examples:
 	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(EXAMPLES_TARGETS)
 
-## logic: build (and so run) the translations of HOL Light's Logic/
-# (HolLogicArith/), printing each session's output.
+## logic: build (and so run) the Logic/ and Arithmetic/ translations (HolLogicArith/), printing their output
 logic:
 	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(LOGIC_TARGETS)
 
@@ -429,7 +440,7 @@ help:
 	@echo ""
 	@echo "Variables:"
 	@printf '  %-22s %s\n' "THREADS=$(THREADS)" "Lean threads; leave EMPTY - setting 1 serialises the build"
-	@printf '  %-22s %s\n' "OPT=$(OPT)" "C optimisation level for everything; empty = -O3, HolLibrary -O0"
+	@printf '  %-22s %s\n' "OPT=$(OPT)" "C optimisation level for everything; empty = -O3, HolLibrary and Session* -O0"
 	@printf '  %-22s %s\n' "BUILD_LOG=$(BUILD_LOG)" "log written by rebuild/check/test, read by verify"
 	@printf '  %-22s %s\n' "EXPECTED_MASKED=$(EXPECTED_MASKED)" "tolerated masked-failure lines; 0 - any hit is a defect"
 	@printf '  %-22s %s\n' "LAKEFLAGS=$(LAKEFLAGS)" "extra flags for every lake build"

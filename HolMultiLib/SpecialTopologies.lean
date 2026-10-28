@@ -1,0 +1,816 @@
+/- ========================================================================= -/
+/- Some special/counterintuive/weird topological spaces for counterexamples. -/
+/- ========================================================================= -/
+/- File: HolMultiLib/SpecialTopologies.lean
+
+  Lean4 translation by Chris Walton 2026
+
+  A translation of HOL Light's `Multivariate/specialtopologies.ml`, in the
+  style of HolMultiLib/Metric.lean and HolMultiLib/Homology.lean: pure, the
+  proofs translated by hand, one `let` per OCaml `let`, in file order.  What
+  specialtopologies.ml uses from the core library, from Library/card.ml and
+  from Multivariate/misc.ml and metric.ml is passed in `SpecialTopologiesDeps`;
+  SessionMultiLib/SpecialTopologies.lean supplies it.
+-/
+
+import HolMultiLib.Metric
+
+open HolCore HolCore.Lib
+open HolCore.Kernel hiding ASSUME INST
+open HolCore.Equal (ioconv lhs rhs lhand)
+open HolCore.Tactics (tactic thm_tactic thm_tactical goal)
+open HolLight HolLight.Syntax
+
+namespace HolMultiLib.SpecialTopologies
+
+/-- The core theorems specialtopologies.ml uses. -/
+structure CoreThms where
+  (COND_ID CONJ_ASSOC CONTRAPOS_THM COUNTABLE DIFF_EQ_EMPTY DIFF_UNIONS DISJOINT
+   DISJOINT_EMPTY_REFL EMPTY_GSPEC EMPTY_SUBSET EMPTY_UNIONS EXISTS_IN_GSPEC EXISTS_OR_THM
+   EXTENSION FINITE_DELETE FINITE_DIFF FINITE_EMPTY FINITE_IMAGE_EQ FINITE_INSERT
+   FINITE_POWERSET FINITE_SING FINITE_SUBSET FINITE_UNION FORALL_FINITE_SUBSET_IMAGE
+   FORALL_IN_GSPEC FORALL_IN_IMAGE FORALL_IN_INSERT FORALL_SUBSET_INSERT FORALL_UNWIND_THM2
+   IMAGE_CLAUSES IMAGE_EQ_EMPTY IMP_CONJ IN INFINITE INTERS_GSPEC INTERS_INSERT INTER_COMM
+   INTER_EMPTY INTER_IDEMPOT INTER_INTERS INTER_SUBSET IN_DIFF IN_ELIM_THM IN_GSPEC IN_INSERT
+   IN_INTER IN_SING LEFT_IMP_EXISTS_THM MEMBER_NOT_EMPTY MONO_EXISTS NOT_IMP NOT_INSERT_EMPTY
+   NOT_IN_EMPTY RIGHT_AND_EXISTS_THM RIGHT_EXISTS_AND_THM RIGHT_FORALL_IMP_THM RIGHT_OR_DISTRIB
+   SIMPLE_IMAGE SING_SUBSET SUBSET SUBSET_ANTISYM_EQ SUBSET_DIFF SUBSET_EMPTY SUBSET_REFL
+   UNIONS_0 UNIONS_DELETE_EMPTY UNIONS_INSERT UNIONS_SINGS UNIONS_SUBSET UNION_EMPTY
+   UNWIND_THM1 UNWIND_THM2 ge_c num_INFINITE : thm)
+  deriving Inhabited
+
+/-- The card.ml theorems specialtopologies.ml uses. -/
+structure CardThms where
+  (CARD_EQ_IMP_LE CARD_EQ_SYM CARD_FINITE_CONG CARD_LE_EQ_SUBSET CARD_NOT_LT COUNTABLE_DIFF
+   COUNTABLE_EMPTY COUNTABLE_SING COUNTABLE_SUBSET COUNTABLE_UNION FINITE_CARD_LT
+   FINITE_IMP_COUNTABLE : thm)
+  deriving Inhabited
+
+/-- The misc.ml and metric.ml theorems specialtopologies.ml uses. -/
+structure MetThms where
+  (CLOSED_IN_TOPSPACE COMPACT_IMP_LOCALLY_COMPACT_SPACE COMPACT_IN_FIP COMPACT_IN_SUBSET_TOPSPACE
+   COMPACT_IN_SUBSPACE COMPACT_SPACE COMPLETELY_REGULAR_IMP_REGULAR_SPACE CONNECTED_IN_CLOSED_IN
+   CONNECTED_IN_TOPSPACE CONNECTED_SPACE_DISCRETE_TOPOLOGY CONTINUOUS_MAP_CLOSED_IN
+   CONTINUOUS_MAP_CONST DERIVED_SET_OF_EMPTY DERIVED_SET_OF_RESTRICT ENDS_IN_UNIT_REAL_INTERVAL
+   FINITE_IMP_COMPACT_IN NEIGHBOURHOOD_BASE_OF OPEN_IN_DISCRETE_TOPOLOGY OPEN_IN_EMPTY
+   OPEN_IN_SUBTOPOLOGY_ALT OPEN_IN_TOPSPACE REGULAR_T1_EQ_HAUSDORFF_SPACE SUBTOPOLOGY_RESTRICT
+   SUBTOPOLOGY_TOPSPACE T1_SPACE_CLOSED_IN_FINITE T1_SPACE_CLOSED_IN_SING TOPOLOGY_EQ
+   TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY TOPSPACE_SUBTOPOLOGY TOPSPACE_SUBTOPOLOGY_SUBSET closed_in
+   compact_space completely_regular_space continuous_map derived_set_of hausdorff_space
+   istopology kc_space normal_space path_connected_in path_connected_space path_in t0_space
+   topology_tybij topspace : thm)
+  deriving Inhabited
+
+structure SpecialTopologiesDeps where
+  -- definitions
+  new_definition : String → ExceptT String IO thm
+  -- decision procedures
+  ASM_MESON_TAC : List thm → tactic
+  MESON : List thm → term → ExceptT String IO thm
+  MESON_TAC : List thm → tactic
+  SET_RULE : term → ExceptT String IO thm
+  SET_TAC : List thm → tactic
+  -- conversions
+  REAL_RAT_REDUCE_CONV : ioconv
+  -- theorems
+  core : CoreThms
+  card : CardThms
+  met : MetThms
+
+/- ------------------------------------------------------------------------- -/
+/- The indiscrete (trivial) topology.  (specialtopologies.ml 11-224)          -/
+/- ------------------------------------------------------------------------- -/
+
+structure STI where
+  indiscrete_topology : thm
+  OPEN_IN_INDISCRETE_TOPOLOGY : thm
+  TOPSPACE_INDISCRETE_TOPOLOGY : thm
+  CLOSED_IN_INDISCRETE_TOPOLOGY : thm
+  SUBTOPOLOGY_INDISCRETE_TOPOLOGY : thm
+  COMPACT_SPACE_INDISCRETE_TOPOLOGY : thm
+  COMPACT_IN_INDISCRETE_TOPOLOGY : thm
+  LOCALLY_COMPACT_SPACE_INDISCRETE_TOPOLOGY : thm
+  COMPLETELY_REGULAR_SPACE_INDISCRETE_TOPOLOGY : thm
+  REGULAR_SPACE_INDISCRETE_TOPOLOGY : thm
+  T1_SPACE_INDISCRETE_TOPOLOGY : thm
+  T0_SPACE_INDISCRETE_TOPOLOGY : thm
+  HAUSDORFF_SPACE_INDISCRETE_TOPOLOGY : thm
+  NORMAL_SPACE_INDISCRETE_TOPOLOGY : thm
+  DERIVED_SET_OF_INDISCRETE_TOPOLOGY : thm
+  DERIVED_SET_OF_TOPSPACE_INDISCRETE_TOPOLOGY : thm
+  PERFECT_SET_INDISCRETE_TOPOLOGY : thm
+  CONTINUOUS_MAP_INTO_INDISCRETE_TOPOLOGY : thm
+  CONTINUOUS_MAP_FROM_INDISCRETE_TOPOLOGY : thm
+  PATH_CONNECTED_SPACE_INDISCRETE_TOPOLOGY : thm
+  PATH_CONNECTED_IN_INDISCRETE_TOPOLOGY : thm
+  NEIGHBOURHOOD_BASE_OF_INDISCRETE_TOPOLOGY : thm
+  deriving Inhabited
+
+@[nospecialize]
+def setupSTI [HolBase] (D : SpecialTopologiesDeps) : ExceptT String IO STI := do
+  -- @@SCOPE BEGIN
+  let { new_definition, MESON_TAC, SET_RULE, SET_TAC, REAL_RAT_REDUCE_CONV, .. } := D
+  let { COND_ID, CONJ_ASSOC, DIFF_EQ_EMPTY, DISJOINT, DISJOINT_EMPTY_REFL, EMPTY_GSPEC,
+        EMPTY_SUBSET, EXISTS_OR_THM, EXTENSION, FINITE_EMPTY, FINITE_INSERT, FINITE_SUBSET,
+        FORALL_IN_IMAGE, FORALL_IN_INSERT, FORALL_SUBSET_INSERT, FORALL_UNWIND_THM2,
+        IMAGE_CLAUSES, IMP_CONJ, IN, INTER_COMM, INTER_EMPTY, INTER_IDEMPOT, IN_DIFF,
+        IN_ELIM_THM, IN_GSPEC, IN_INSERT, IN_INTER, NOT_IN_EMPTY, RIGHT_EXISTS_AND_THM,
+        RIGHT_FORALL_IMP_THM, RIGHT_OR_DISTRIB, SIMPLE_IMAGE, SUBSET, SUBSET_ANTISYM_EQ,
+        SUBSET_EMPTY, SUBSET_REFL, UNIONS_0, UNIONS_INSERT, UNION_EMPTY, UNWIND_THM1,
+        UNWIND_THM2, .. } := D.core
+  let { COMPACT_IMP_LOCALLY_COMPACT_SPACE, COMPACT_IN_SUBSPACE, COMPACT_SPACE,
+        COMPLETELY_REGULAR_IMP_REGULAR_SPACE, CONTINUOUS_MAP_CLOSED_IN, CONTINUOUS_MAP_CONST,
+        DERIVED_SET_OF_EMPTY, DERIVED_SET_OF_RESTRICT, ENDS_IN_UNIT_REAL_INTERVAL,
+        NEIGHBOURHOOD_BASE_OF, OPEN_IN_EMPTY, OPEN_IN_SUBTOPOLOGY_ALT, OPEN_IN_TOPSPACE,
+        REGULAR_T1_EQ_HAUSDORFF_SPACE, T1_SPACE_CLOSED_IN_SING, TOPOLOGY_EQ,
+        TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY, TOPSPACE_SUBTOPOLOGY, closed_in,
+        completely_regular_space, continuous_map, derived_set_of, istopology, normal_space,
+        path_connected_in, path_connected_space, path_in, t0_space, topology_tybij,
+        topspace, .. } := D.met
+  -- @@SCOPE END
+
+  let indiscrete_topology ← new_definition
+   r"indiscrete_topology (u:A->bool) = topology {{},u}"
+
+  let OPEN_IN_INDISCRETE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        open_in (indiscrete_topology u) s <=> s = {} \/ s = u"
+   (REPEAT GEN_TAC THEN REWRITE_TAC [indiscrete_topology] THEN
+    W (MP_TAC o (fun th => do pure (← EQ_IMP_RULE th).1) o
+       PART_MATCH (lhand o rand) (← CONJUNCT2 topology_tybij) o rator o lhand o snd) THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC [istopology, IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
+      REWRITE_TAC [FORALL_IN_INSERT, NOT_IN_EMPTY, FORALL_SUBSET_INSERT,
+                   UNIONS_INSERT, SUBSET_EMPTY, FORALL_UNWIND_THM2, UNIONS_0,
+                   UNION_EMPTY, INTER_EMPTY, INTER_IDEMPOT] THEN
+      REWRITE_TAC [IN_INSERT],
+      DISCH_THEN SUBST1_TAC THEN GEN_REWRITE_TAC LAND_CONV [← GSYM IN] THEN
+      REWRITE_TAC [IN_INSERT, NOT_IN_EMPTY]])
+
+  let TOPSPACE_INDISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. topspace(indiscrete_topology u) = u"
+   (REWRITE_TAC [topspace, OPEN_IN_INDISCRETE_TOPOLOGY] THEN SET_TAC [])
+
+  let CLOSED_IN_INDISCRETE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        closed_in (indiscrete_topology u) s <=> s = {} \/ s = u"
+   (REWRITE_TAC [closed_in, OPEN_IN_INDISCRETE_TOPOLOGY,
+                 TOPSPACE_INDISCRETE_TOPOLOGY] THEN
+    SET_TAC [])
+
+  let SUBTOPOLOGY_INDISCRETE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        subtopology (indiscrete_topology u) s =
+        indiscrete_topology (u INTER s)"
+   (REPEAT GEN_TAC THEN REWRITE_TAC [TOPOLOGY_EQ] THEN
+    GEN_TAC THEN REWRITE_TAC [OPEN_IN_SUBTOPOLOGY_ALT] THEN
+    REWRITE_TAC [OPEN_IN_INDISCRETE_TOPOLOGY] THEN
+    ONCE_REWRITE_TAC [← SET_RULE (← q r"x = a \/ x = b <=> x IN {a,b}")] THEN
+    REWRITE_TAC [SIMPLE_IMAGE, IMAGE_CLAUSES, INTER_EMPTY] THEN
+    REWRITE_TAC [INTER_COMM])
+
+  let COMPACT_SPACE_INDISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. compact_space (indiscrete_topology u)"
+   (GEN_TAC THEN REWRITE_TAC [COMPACT_SPACE, OPEN_IN_INDISCRETE_TOPOLOGY] THEN
+    X_GEN_TAC (← q r"U:(A->bool)->bool") THEN STRIP_TAC THEN
+    EXISTS_TAC (← q r"U:(A->bool)->bool") THEN ASM_REWRITE_TAC [SUBSET_REFL] THEN
+    MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"{{},(u:A->bool)}") THEN
+    REWRITE_TAC [FINITE_INSERT, FINITE_EMPTY] THEN
+    GEN_REWRITE_TAC id [SUBSET] THEN ASM_REWRITE_TAC [IN_INSERT, NOT_IN_EMPTY])
+
+  let COMPACT_IN_INDISCRETE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        compact_in (indiscrete_topology u) s <=> s SUBSET u"
+   (REWRITE_TAC [COMPACT_IN_SUBSPACE, TOPSPACE_INDISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [SUBTOPOLOGY_INDISCRETE_TOPOLOGY,
+                 COMPACT_SPACE_INDISCRETE_TOPOLOGY])
+
+  let LOCALLY_COMPACT_SPACE_INDISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. locally_compact_space (indiscrete_topology u)"
+   (SIMP_TAC [COMPACT_IMP_LOCALLY_COMPACT_SPACE,
+              COMPACT_SPACE_INDISCRETE_TOPOLOGY])
+
+  let COMPLETELY_REGULAR_SPACE_INDISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. completely_regular_space(indiscrete_topology u)"
+   (REWRITE_TAC [completely_regular_space, CLOSED_IN_INDISCRETE_TOPOLOGY,
+                 TOPSPACE_INDISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [← SET_RULE
+      (← q r"(s = {} \/ s = u) /\ x IN u DIFF s <=> s = {} /\ x IN u")] THEN
+    REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM, FORALL_UNWIND_THM2] THEN
+    MAP_EVERY X_GEN_TAC [← q r"u:A->bool", ← q r"x:A"] THEN
+    DISCH_TAC THEN EXISTS_TAC (← q r"(\x. &0):A->real") THEN
+    REWRITE_TAC [CONTINUOUS_MAP_CONST, NOT_IN_EMPTY] THEN
+    REWRITE_TAC [TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY,
+                 ENDS_IN_UNIT_REAL_INTERVAL])
+
+  let REGULAR_SPACE_INDISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. regular_space(indiscrete_topology u)"
+   (SIMP_TAC [COMPLETELY_REGULAR_IMP_REGULAR_SPACE,
+              COMPLETELY_REGULAR_SPACE_INDISCRETE_TOPOLOGY])
+
+  let T1_SPACE_INDISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. t1_space(indiscrete_topology u) <=> ?a. u SUBSET {a}"
+   (REWRITE_TAC [T1_SPACE_CLOSED_IN_SING, TOPSPACE_INDISCRETE_TOPOLOGY,
+                 CLOSED_IN_INDISCRETE_TOPOLOGY] THEN
+    SET_TAC [])
+
+  let T0_SPACE_INDISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. t0_space(indiscrete_topology u) <=> ?a. u SUBSET {a}"
+   (GEN_TAC THEN REWRITE_TAC [t0_space, OPEN_IN_INDISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [TOPSPACE_INDISCRETE_TOPOLOGY, RIGHT_OR_DISTRIB] THEN
+    SIMP_TAC [EXISTS_OR_THM, UNWIND_THM2, NOT_IN_EMPTY] THEN SET_TAC [])
+
+  let HAUSDORFF_SPACE_INDISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. hausdorff_space(indiscrete_topology u) <=> ?a. u SUBSET {a}"
+   (MESON_TAC [REGULAR_T1_EQ_HAUSDORFF_SPACE, REGULAR_SPACE_INDISCRETE_TOPOLOGY,
+               T1_SPACE_INDISCRETE_TOPOLOGY])
+
+  let NORMAL_SPACE_INDISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. normal_space(indiscrete_topology u)"
+   (GEN_TAC THEN REWRITE_TAC [normal_space, CLOSED_IN_INDISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [OPEN_IN_INDISCRETE_TOPOLOGY, RIGHT_OR_DISTRIB] THEN
+    REWRITE_TAC [EXISTS_OR_THM, ← GSYM CONJ_ASSOC, RIGHT_EXISTS_AND_THM] THEN
+    REWRITE_TAC [UNWIND_THM2] THEN SET_TAC [])
+
+  let DERIVED_SET_OF_INDISCRETE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        (indiscrete_topology u) derived_set_of s =
+        if ?a. u INTER s SUBSET {a} then if DISJOINT u s then {} else u DIFF s
+        else u"
+   (REPEAT GEN_TAC THEN ONCE_REWRITE_TAC [DERIVED_SET_OF_RESTRICT] THEN
+    ONCE_REWRITE_TAC [DISJOINT, ← SET_RULE (← q r"u DIFF s = u DIFF (u INTER s)")] THEN
+    MP_TAC (← SET_RULE (← q r"(u INTER s:A->bool) SUBSET u")) THEN
+    REWRITE_TAC [TOPSPACE_SUBTOPOLOGY, TOPSPACE_INDISCRETE_TOPOLOGY] THEN
+    SPEC_TAC (← q r"u INTER s:A->bool", ← q r"t:A->bool") THEN
+    X_GEN_TAC (← q r"s:A->bool") THEN
+    STRIP_TAC THEN  ASM_CASES_TAC (← q r"s:A->bool = {}") THEN
+    ASM_REWRITE_TAC [DERIVED_SET_OF_EMPTY, INTER_EMPTY, EMPTY_SUBSET] THEN
+    REWRITE_TAC [derived_set_of, EXTENSION, IN_ELIM_THM, IN_INTER] THEN
+    REWRITE_TAC [OPEN_IN_INDISCRETE_TOPOLOGY, TOPSPACE_INDISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [← TAUT
+      (← q r"p /\ (q \/ r) ==> s <=> (q ==> p ==> s) /\ (r ==> p ==> s)")] THEN
+    SIMP_TAC [NOT_IN_EMPTY, FORALL_UNWIND_THM2] THEN
+    X_GEN_TAC (← q r"x:A") THEN COND_CASES_TAC THENL [ALL_TAC, ASM SET_TAC []] THEN
+    ASM_CASES_TAC (← q r"(x:A) IN u") THEN ASM_REWRITE_TAC [NOT_IN_EMPTY, IN_DIFF] THEN
+    ASM SET_TAC [])
+
+  let DERIVED_SET_OF_TOPSPACE_INDISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool.
+        (indiscrete_topology u) derived_set_of u =
+        if ?a. u SUBSET {a} then {} else u"
+   (GEN_TAC THEN REWRITE_TAC [DERIVED_SET_OF_INDISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [← GSYM DISJOINT_EMPTY_REFL, INTER_IDEMPOT] THEN
+    REWRITE_TAC [DIFF_EQ_EMPTY, COND_ID])
+
+  let PERFECT_SET_INDISCRETE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        (indiscrete_topology u) derived_set_of s = s <=>
+        s = {} \/ s = u /\ ~(?a.  u SUBSET {a})"
+   (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"s:A->bool = {}") THEN
+    ASM_REWRITE_TAC [DERIVED_SET_OF_EMPTY] THEN
+    REWRITE_TAC [DERIVED_SET_OF_INDISCRETE_TOPOLOGY] THEN
+    ASM_CASES_TAC (← q r"s:A->bool = u") THENL [ALL_TAC, ASM SET_TAC []] THEN
+    FIRST_X_ASSUM SUBST_ALL_TAC THEN
+    ASM_REWRITE_TAC [← GSYM DISJOINT_EMPTY_REFL, INTER_IDEMPOT] THEN
+    COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN ASM SET_TAC [])
+
+  let CONTINUOUS_MAP_INTO_INDISCRETE_TOPOLOGY ← prove
+   r"!(f:A->B) top u.
+        continuous_map (top,indiscrete_topology u) f <=>
+        IMAGE f (topspace top) SUBSET u"
+   (REPEAT GEN_TAC THEN
+    REWRITE_TAC [continuous_map, OPEN_IN_INDISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [← TAUT (← q r"p \/ q ==> r <=> (p ==> r) /\ (q ==> r)")] THEN
+    SIMP_TAC [NOT_IN_EMPTY, EMPTY_GSPEC, OPEN_IN_EMPTY] THEN
+    REWRITE_TAC [SUBSET, FORALL_IN_IMAGE, FORALL_UNWIND_THM2] THEN
+    REWRITE_TAC [TOPSPACE_INDISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [← TAUT (← q r"(p /\ q <=> p) <=> p ==> q")] THEN
+    SIMP_TAC [← TAUT (← q r"p /\ q <=> ~(p ==> ~q)")] THEN
+    REWRITE_TAC [IN_GSPEC, OPEN_IN_TOPSPACE])
+
+  let CONTINUOUS_MAP_FROM_INDISCRETE_TOPOLOGY ← prove
+   r"!top u (f:A->B).
+        t1_space top
+        ==> (continuous_map(indiscrete_topology u,top) f <=>
+             u = {} \/ ?a. a IN topspace top /\ !x. x IN u ==> f x = a)"
+   (REWRITE_TAC [T1_SPACE_CLOSED_IN_SING] THEN REPEAT STRIP_TAC THEN
+    ASM_CASES_TAC (← q r"u:A->bool = {}") THEN
+    ASM_REWRITE_TAC [CONTINUOUS_MAP_CLOSED_IN, TOPSPACE_INDISCRETE_TOPOLOGY,
+      CLOSED_IN_INDISCRETE_TOPOLOGY, NOT_IN_EMPTY, EMPTY_GSPEC] THEN
+    EQ_TAC THENL [ALL_TAC, ASM SET_TAC []] THEN
+    STRIP_TAC THEN MATCH_MP_TAC (← SET_RULE
+     (← q r"~(u = {}) /\
+      (!x. x IN u ==> f x IN v) /\
+      (!x y. x IN u /\ y IN u ==> f x = f y)
+      ==> ?a. a IN v /\ (!x. x IN u ==> f x = a)")) THEN
+    ASM_REWRITE_TAC [] THEN
+    MAP_EVERY X_GEN_TAC [← q r"a:A", ← q r"b:A"] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM (fun th => tactic_of do
+      pure (MP_TAC (← SPEC (← q r"{(f:A->B) b}") th) THEN
+            MP_TAC (← SPEC (← q r"{(f:A->B) a}") th))) THEN
+    ASM_SIMP_TAC [] THEN ASM SET_TAC [])
+
+  let PATH_CONNECTED_SPACE_INDISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. path_connected_space(indiscrete_topology u)"
+   (REPEAT GEN_TAC THEN REWRITE_TAC [path_connected_space] THEN
+    REWRITE_TAC [path_in, CONTINUOUS_MAP_INTO_INDISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [TOPSPACE_INDISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [TOPSPACE_EUCLIDEANREAL_SUBTOPOLOGY] THEN
+    MAP_EVERY X_GEN_TAC [← q r"x:A", ← q r"y:A"] THEN STRIP_TAC THEN
+    EXISTS_TAC (← q r"(\i. if i = &0 then x else y):real->A") THEN
+    REWRITE_TAC [SUBSET, FORALL_IN_IMAGE] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN ASM SET_TAC [])
+
+  let PATH_CONNECTED_IN_INDISCRETE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        path_connected_in (indiscrete_topology u) s <=> s SUBSET u"
+   (REWRITE_TAC [path_connected_in, PATH_CONNECTED_SPACE_INDISCRETE_TOPOLOGY,
+                 SUBTOPOLOGY_INDISCRETE_TOPOLOGY, TOPSPACE_INDISCRETE_TOPOLOGY])
+
+  let NEIGHBOURHOOD_BASE_OF_INDISCRETE_TOPOLOGY ← prove
+   r"!P u:A->bool.
+        neighbourhood_base_of P (indiscrete_topology u) <=>
+        u = {} \/ P u"
+   (REWRITE_TAC [NEIGHBOURHOOD_BASE_OF, OPEN_IN_INDISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [← TAUT
+     (← q r"(p \/ q) /\ r ==> s <=> (p ==> r ==> s) /\ (q ==> r ==> s)")] THEN
+    SIMP_TAC [IN_ELIM_THM, RIGHT_FORALL_IMP_THM, NOT_IN_EMPTY] THEN
+    REWRITE_TAC [FORALL_UNWIND_THM2, RIGHT_OR_DISTRIB] THEN
+    REWRITE_TAC [EXISTS_OR_THM, RIGHT_EXISTS_AND_THM, UNWIND_THM2] THEN
+    REWRITE_TAC [NOT_IN_EMPTY, SUBSET_ANTISYM_EQ] THEN
+    ONCE_REWRITE_TAC [← TAUT (← q r"p /\ q /\ r <=> r /\ p /\ q")] THEN
+    SIMP_TAC [UNWIND_THM1] THEN SET_TAC [])
+
+  return { indiscrete_topology, OPEN_IN_INDISCRETE_TOPOLOGY, TOPSPACE_INDISCRETE_TOPOLOGY,
+           CLOSED_IN_INDISCRETE_TOPOLOGY, SUBTOPOLOGY_INDISCRETE_TOPOLOGY,
+           COMPACT_SPACE_INDISCRETE_TOPOLOGY, COMPACT_IN_INDISCRETE_TOPOLOGY,
+           LOCALLY_COMPACT_SPACE_INDISCRETE_TOPOLOGY,
+           COMPLETELY_REGULAR_SPACE_INDISCRETE_TOPOLOGY, REGULAR_SPACE_INDISCRETE_TOPOLOGY,
+           T1_SPACE_INDISCRETE_TOPOLOGY, T0_SPACE_INDISCRETE_TOPOLOGY,
+           HAUSDORFF_SPACE_INDISCRETE_TOPOLOGY, NORMAL_SPACE_INDISCRETE_TOPOLOGY,
+           DERIVED_SET_OF_INDISCRETE_TOPOLOGY, DERIVED_SET_OF_TOPSPACE_INDISCRETE_TOPOLOGY,
+           PERFECT_SET_INDISCRETE_TOPOLOGY, CONTINUOUS_MAP_INTO_INDISCRETE_TOPOLOGY,
+           CONTINUOUS_MAP_FROM_INDISCRETE_TOPOLOGY, PATH_CONNECTED_SPACE_INDISCRETE_TOPOLOGY,
+           PATH_CONNECTED_IN_INDISCRETE_TOPOLOGY, NEIGHBOURHOOD_BASE_OF_INDISCRETE_TOPOLOGY }
+
+/- ------------------------------------------------------------------------- -/
+/- Finite-complement (cofinite) topology.  (specialtopologies.ml 225-412)     -/
+/- ------------------------------------------------------------------------- -/
+
+structure STF where
+  cofinite_topology : thm
+  OPEN_IN_COFINITE_TOPOLOGY : thm
+  TOPSPACE_COFINITE_TOPOLOGY : thm
+  CLOSED_IN_COFINITE_TOPOLOGY : thm
+  T1_SPACE_COFINITE_TOPOLOGY : thm
+  T1_SPACE_COFINITE_TOPOLOGY_MINIMAL : thm
+  COFINITE_EQ_DISCRETE_TOPOLOGY : thm
+  CONNECTED_IN_COFINITE_TOPOLOGY : thm
+  CONNECTED_SPACE_COFINITE_TOPOLOGY : thm
+  COMPACT_IN_COFINITE_TOPOLOGY : thm
+  COMPACT_SPACE_COFINITE_TOPOLOGY : thm
+  HAUSDORFF_SPACE_SUBTOPOLOGY_COFINITE_TOPOLOGY : thm
+  HAUSDORFF_SPACE_COFINITE_TOPOLOGY : thm
+  deriving Inhabited
+
+@[nospecialize]
+def setupSTF [HolBase] (D : SpecialTopologiesDeps) : ExceptT String IO STF := do
+  -- @@SCOPE BEGIN
+  let { new_definition, ASM_MESON_TAC, MESON, MESON_TAC, SET_RULE, SET_TAC, .. } := D
+  let { DIFF_EQ_EMPTY, EMPTY_UNIONS, EXISTS_IN_GSPEC, FINITE_DELETE, FINITE_DIFF, FINITE_EMPTY,
+        FINITE_IMAGE_EQ, FINITE_INSERT, FINITE_POWERSET, FINITE_SING, FINITE_SUBSET,
+        FINITE_UNION, FORALL_IN_GSPEC, FORALL_IN_INSERT, IMAGE_CLAUSES, IMAGE_EQ_EMPTY, IMP_CONJ,
+        IN, INFINITE, INTERS_INSERT, INTER_EMPTY, INTER_IDEMPOT, INTER_INTERS, INTER_SUBSET,
+        IN_ELIM_THM, IN_INSERT, IN_INTER, IN_SING, LEFT_IMP_EXISTS_THM, MEMBER_NOT_EMPTY,
+        MONO_EXISTS, NOT_INSERT_EMPTY, RIGHT_AND_EXISTS_THM, RIGHT_EXISTS_AND_THM,
+        RIGHT_FORALL_IMP_THM, SIMPLE_IMAGE, SING_SUBSET, SUBSET, SUBSET_REFL,
+        UNIONS_DELETE_EMPTY, UNIONS_SUBSET, .. } := D.core
+  let { CLOSED_IN_TOPSPACE, COMPACT_IN_FIP, CONNECTED_IN_CLOSED_IN, CONNECTED_IN_TOPSPACE,
+        CONNECTED_SPACE_DISCRETE_TOPOLOGY, OPEN_IN_DISCRETE_TOPOLOGY, OPEN_IN_SUBTOPOLOGY_ALT,
+        SUBTOPOLOGY_RESTRICT, SUBTOPOLOGY_TOPSPACE, T1_SPACE_CLOSED_IN_FINITE,
+        T1_SPACE_CLOSED_IN_SING, TOPOLOGY_EQ, TOPSPACE_SUBTOPOLOGY_SUBSET, closed_in,
+        compact_space, hausdorff_space, istopology, topology_tybij, topspace, .. } := D.met
+  -- @@SCOPE END
+
+  let cofinite_topology ← new_definition
+   r"cofinite_topology (u:A->bool) =
+        topology ({} INSERT {s | s SUBSET u /\ FINITE(u DIFF s)})"
+
+  let OPEN_IN_COFINITE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        open_in (cofinite_topology u) s <=>
+        s = {} \/ s SUBSET u /\ FINITE(u DIFF s)"
+   (REPEAT GEN_TAC THEN REWRITE_TAC [cofinite_topology] THEN
+    W (MP_TAC o (fun th => do pure (← EQ_IMP_RULE th).1) o
+       PART_MATCH (lhand o rand) (← CONJUNCT2 topology_tybij) o rator o lhand o snd) THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC [istopology],
+      DISCH_THEN SUBST1_TAC THEN
+      GEN_REWRITE_TAC LAND_CONV [← GSYM IN] THEN
+      REWRITE_TAC [IN_ELIM_THM, IN_INSERT]] THEN
+    REWRITE_TAC [RIGHT_FORALL_IMP_THM, IMP_CONJ, FORALL_IN_INSERT] THEN
+    REWRITE_TAC [IN_INSERT, INTER_EMPTY] THEN CONJ_TAC THENL
+     [REWRITE_TAC [IN_ELIM_THM] THEN
+      X_GEN_TAC (← q r"s:A->bool") THEN STRIP_TAC THEN
+      X_GEN_TAC (← q r"t:A->bool") THEN STRIP_TAC THEN DISJ2_TAC THEN
+      REWRITE_TAC [← SET_RULE (← q r"u DIFF s INTER t = (u DIFF s) UNION (u DIFF t)")] THEN
+      ASM_SIMP_TAC [FINITE_UNION] THEN ASM SET_TAC [],
+      X_GEN_TAC (← q r"k:(A->bool)->bool") THEN REWRITE_TAC [EMPTY_UNIONS] THEN
+      REWRITE_TAC [← TAUT (← q r"p ==> q \/ r <=> p /\ ~q ==> r")] THEN
+      DISCH_THEN (MP_TAC o MATCH_MP (← SET_RULE
+       (← q r"k SUBSET a INSERT s /\ ~(!x. x IN k ==> x = a)
+        ==> k DELETE a SUBSET s /\ ~(k DELETE a = {})"))) THEN
+      ONCE_REWRITE_TAC [← GSYM UNIONS_DELETE_EMPTY] THEN
+      SPEC_TAC (← q r"(k DELETE {}):(A->bool)->bool", ← q r"v:(A->bool)->bool") THEN
+      GEN_TAC THEN GEN_REWRITE_TAC (LAND_CONV o LAND_CONV) [SUBSET] THEN
+      SIMP_TAC [IN_ELIM_THM, UNIONS_SUBSET] THEN STRIP_TAC THEN
+      FIRST_X_ASSUM (X_CHOOSE_TAC (← q r"s:A->bool") o
+        REWRITE_RULE [← GSYM MEMBER_NOT_EMPTY]) THEN
+      MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"u DIFF s:A->bool") THEN
+      ASM_SIMP_TAC [] THEN ASM SET_TAC []])
+
+  let TOPSPACE_COFINITE_TOPOLOGY ← prove
+   r"!u:A->bool. topspace(cofinite_topology u) = u"
+   (GEN_TAC THEN REWRITE_TAC [topspace, OPEN_IN_COFINITE_TOPOLOGY] THEN
+    MATCH_MP_TAC (← SET_RULE
+     (← q r"(!s. P s ==> s SUBSET u) /\ P u ==> UNIONS {s | P s} = u")) THEN
+    REWRITE_TAC [DIFF_EQ_EMPTY, FINITE_EMPTY] THEN SET_TAC [])
+
+  let CLOSED_IN_COFINITE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        closed_in (cofinite_topology u) s <=>
+        s = u \/ s SUBSET u /\ FINITE s"
+   (REWRITE_TAC [closed_in, OPEN_IN_COFINITE_TOPOLOGY,
+                 TOPSPACE_COFINITE_TOPOLOGY] THEN
+    REPEAT GEN_TAC THEN
+    ASM_CASES_TAC (← q r"(s:A->bool) SUBSET u") THEN
+    ASM_SIMP_TAC [← SET_RULE (← q r"s SUBSET u ==> u DIFF (u DIFF s) = s")] THEN
+    ASM SET_TAC [])
+
+  let T1_SPACE_COFINITE_TOPOLOGY ← prove
+   r"!u:A->bool. t1_space(cofinite_topology u)"
+   (REWRITE_TAC [T1_SPACE_CLOSED_IN_SING, CLOSED_IN_COFINITE_TOPOLOGY] THEN
+    SIMP_TAC [FINITE_SING, SING_SUBSET, TOPSPACE_COFINITE_TOPOLOGY])
+
+  let T1_SPACE_COFINITE_TOPOLOGY_MINIMAL ← prove
+   r"!top s:A->bool.
+        t1_space top /\ closed_in (cofinite_topology(topspace top)) s
+        ==> closed_in top s"
+   (REWRITE_TAC [CLOSED_IN_COFINITE_TOPOLOGY] THEN
+    MESON_TAC [T1_SPACE_CLOSED_IN_FINITE, CLOSED_IN_TOPSPACE])
+
+  let COFINITE_EQ_DISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. FINITE u ==> cofinite_topology u = discrete_topology u"
+   (SIMP_TAC [TOPOLOGY_EQ, OPEN_IN_DISCRETE_TOPOLOGY, OPEN_IN_COFINITE_TOPOLOGY,
+              FINITE_DIFF] THEN
+    SET_TAC [])
+
+  let CONNECTED_IN_COFINITE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        INFINITE s /\ s SUBSET u ==> connected_in (cofinite_topology u) s"
+   (REWRITE_TAC [CONNECTED_IN_CLOSED_IN, CLOSED_IN_COFINITE_TOPOLOGY] THEN
+    SIMP_TAC [TOPSPACE_COFINITE_TOPOLOGY] THEN REPEAT STRIP_TAC THENL
+     [ASM SET_TAC [], ASM SET_TAC [], ASM SET_TAC [],
+      ASM_MESON_TAC [INFINITE, FINITE_SUBSET, FINITE_UNION]])
+
+  let CONNECTED_SPACE_COFINITE_TOPOLOGY ← prove
+   r"!u:A->bool.
+        connected_space(cofinite_topology u) <=>
+        (?a. u SUBSET {a}) \/ INFINITE u"
+   (GEN_TAC THEN ASM_CASES_TAC (← q r"FINITE(u:A->bool)") THEN
+    ASM_SIMP_TAC [INFINITE, COFINITE_EQ_DISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [CONNECTED_SPACE_DISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [← GSYM CONNECTED_IN_TOPSPACE] THEN
+    MATCH_MP_TAC CONNECTED_IN_COFINITE_TOPOLOGY THEN
+    ASM_REWRITE_TAC [INFINITE, TOPSPACE_COFINITE_TOPOLOGY, SUBSET_REFL])
+
+  let COMPACT_IN_COFINITE_TOPOLOGY ← prove
+   r"!u s:A->bool. compact_in(cofinite_topology u) s <=> s SUBSET u"
+   (REPEAT GEN_TAC THEN
+    REWRITE_TAC [COMPACT_IN_FIP, CLOSED_IN_COFINITE_TOPOLOGY] THEN
+    REWRITE_TAC [TOPSPACE_COFINITE_TOPOLOGY] THEN
+    ASM_CASES_TAC (← q r"(s:A->bool) SUBSET u") THEN ASM_REWRITE_TAC [] THEN
+    X_GEN_TAC (← q r"U:(A->bool)->bool") THEN STRIP_TAC THEN
+    ASM_CASES_TAC (← q r"FINITE(U:(A->bool)->bool)") THEN
+    ASM_SIMP_TAC [SUBSET_REFL] THEN
+    SUBGOAL_THEN (← q r"?k:A->bool. k IN U /\ k SUBSET u /\ FINITE k")
+    STRIP_ASSUME_TAC THENL
+     [SUBGOAL_THEN (← q r"~((U:(A->bool)->bool) SUBSET {u})") MP_TAC THENL
+       [ASM_MESON_TAC [FINITE_SUBSET, FINITE_SING],
+        REWRITE_TAC [SUBSET, IN_SING] THEN ASM SET_TAC []],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"?V. V SUBSET U /\ FINITE V /\ INTERS U :A->bool = INTERS V")
+    MP_TAC THENL [ALL_TAC, ASM_MESON_TAC []] THEN
+    SUBGOAL_THEN (← q r"U = k INSERT (U DELETE (k:A->bool))") SUBST1_TAC THENL
+     [ASM SET_TAC [], REWRITE_TAC [INTER_INTERS, INTERS_INSERT]] THEN
+    ASM_SIMP_TAC [← SET_RULE (← q r"a IN s ==> (s DELETE a = {} <=> s = {a})")] THEN
+    COND_CASES_TAC THENL [ASM_MESON_TAC [FINITE_SING], ALL_TAC] THEN
+    MATCH_MP_TAC (← MESON [] (← q r"!k. (?s. P(k INSERT k INSERT s)) ==> (?s. P s)")) THEN
+    EXISTS_TAC (← q r"k:A->bool") THEN ONCE_REWRITE_TAC [INTERS_INSERT] THEN
+    REWRITE_TAC [INTER_INTERS, FINITE_INSERT, NOT_INSERT_EMPTY] THEN
+    SUBGOAL_THEN (← q r"FINITE {k INTER t:A->bool | t | t IN U DELETE k}") MP_TAC THENL
+     [MATCH_MP_TAC FINITE_SUBSET THEN
+      EXISTS_TAC (← q r"{l:A->bool | l SUBSET k}") THEN
+      ASM_SIMP_TAC [FINITE_POWERSET] THEN
+      GEN_REWRITE_TAC id [SUBSET] THEN REWRITE_TAC [FORALL_IN_GSPEC] THEN
+      REWRITE_TAC [IN_ELIM_THM, INTER_SUBSET],
+      REWRITE_TAC [SIMPLE_IMAGE] THEN
+      GEN_REWRITE_TAC LAND_CONV [FINITE_IMAGE_EQ] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"V:(A->bool)->bool") THEN
+      ASM_CASES_TAC (← q r"V:(A->bool)->bool = {}") THEN
+      ASM_REWRITE_TAC [IMAGE_CLAUSES, IMAGE_EQ_EMPTY] THENL
+       [ASM_MESON_TAC [FINITE_EMPTY, FINITE_DELETE], STRIP_TAC] THEN
+      CONJ_TAC THENL [ASM SET_TAC [], ASM_REWRITE_TAC []] THEN
+      REWRITE_TAC [INTER_IDEMPOT, INTER_INTERS, INTERS_INSERT] THEN
+      ASM_REWRITE_TAC [IMAGE_EQ_EMPTY, ← SET_RULE
+       (← q r"{g y | y IN IMAGE f s} = {g(f x) | x IN s}")] THEN
+      REWRITE_TAC [SIMPLE_IMAGE, ← SET_RULE (← q r"k INTER k INTER s = k INTER s")]])
+
+  let COMPACT_SPACE_COFINITE_TOPOLOGY ← prove
+   r"!u:A->bool. compact_space(cofinite_topology u)"
+   (REWRITE_TAC [compact_space, COMPACT_IN_COFINITE_TOPOLOGY] THEN
+    REWRITE_TAC [TOPSPACE_COFINITE_TOPOLOGY, SUBSET_REFL])
+
+  let HAUSDORFF_SPACE_SUBTOPOLOGY_COFINITE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        hausdorff_space (subtopology (cofinite_topology u) s) <=>
+        FINITE(u INTER s)"
+   (REPEAT GEN_TAC THEN ONCE_REWRITE_TAC [SUBTOPOLOGY_RESTRICT] THEN
+    REWRITE_TAC [TOPSPACE_COFINITE_TOPOLOGY] THEN
+    MP_TAC (← SET_RULE (← q r"u INTER (s:A->bool) SUBSET u")) THEN
+    SPEC_TAC (← q r"u INTER (s:A->bool)", ← q r"s:A->bool") THEN
+    REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+     [ASM_CASES_TAC (← q r"?a:A. s SUBSET {a}") THENL
+       [ASM_MESON_TAC [FINITE_SUBSET, FINITE_SING], ALL_TAC] THEN
+      FIRST_X_ASSUM (MP_TAC o MATCH_MP (← SET_RULE
+       (← q r"~(?a. s SUBSET {a}) ==> ?a b. a IN s /\ b IN s /\ ~(a = b)"))) THEN
+      REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
+      MAP_EVERY X_GEN_TAC [← q r"a:A", ← q r"b:A"] THEN STRIP_TAC THEN
+      FIRST_X_ASSUM (MP_TAC o SPECL [← q r"a:A", ← q r"b:A"] o
+        GEN_REWRITE_RULE id [hausdorff_space]) THEN
+      ASM_SIMP_TAC [TOPSPACE_SUBTOPOLOGY_SUBSET, TOPSPACE_COFINITE_TOPOLOGY] THEN
+      REWRITE_TAC [LEFT_IMP_EXISTS_THM, RIGHT_FORALL_IMP_THM, IMP_CONJ] THEN
+      REWRITE_TAC [OPEN_IN_SUBTOPOLOGY_ALT, FORALL_IN_GSPEC] THEN
+      REWRITE_TAC [IN_INTER, OPEN_IN_COFINITE_TOPOLOGY] THEN
+      X_GEN_TAC (← q r"t:A->bool") THEN STRIP_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
+      X_GEN_TAC (← q r"t':A->bool") THEN STRIP_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
+      EXISTS_TAC (← q r"(u DIFF t) UNION (u DIFF t'):A->bool") THEN
+      ASM_REWRITE_TAC [FINITE_UNION] THEN ASM SET_TAC [],
+      ASM_SIMP_TAC [hausdorff_space, TOPSPACE_SUBTOPOLOGY_SUBSET,
+                    TOPSPACE_COFINITE_TOPOLOGY] THEN
+      MAP_EVERY X_GEN_TAC [← q r"x:A", ← q r"y:A"] THEN STRIP_TAC THEN
+      REWRITE_TAC [RIGHT_EXISTS_AND_THM, OPEN_IN_SUBTOPOLOGY_ALT] THEN
+      REWRITE_TAC [EXISTS_IN_GSPEC, OPEN_IN_COFINITE_TOPOLOGY] THEN
+      REWRITE_TAC [RIGHT_AND_EXISTS_THM] THEN
+      EXISTS_TAC (← q r"(x:A) INSERT (u DIFF s)") THEN
+      EXISTS_TAC (← q r"(y:A) INSERT (u DIFF s)") THEN
+      REWRITE_TAC [NOT_INSERT_EMPTY] THEN
+      REPEAT CONJ_TAC THEN
+      TRY (MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"s:A->bool")) THEN
+      ASM_REWRITE_TAC [] THEN ASM SET_TAC []])
+
+  let HAUSDORFF_SPACE_COFINITE_TOPOLOGY ← prove
+   r"!u:A->bool. hausdorff_space(cofinite_topology u) <=> FINITE u"
+   (GEN_TAC THEN ONCE_REWRITE_TAC [← GSYM SUBTOPOLOGY_TOPSPACE] THEN
+    REWRITE_TAC [HAUSDORFF_SPACE_SUBTOPOLOGY_COFINITE_TOPOLOGY] THEN
+    REWRITE_TAC [TOPSPACE_COFINITE_TOPOLOGY, INTER_IDEMPOT])
+
+  return { cofinite_topology, OPEN_IN_COFINITE_TOPOLOGY, TOPSPACE_COFINITE_TOPOLOGY,
+           CLOSED_IN_COFINITE_TOPOLOGY, T1_SPACE_COFINITE_TOPOLOGY,
+           T1_SPACE_COFINITE_TOPOLOGY_MINIMAL, COFINITE_EQ_DISCRETE_TOPOLOGY,
+           CONNECTED_IN_COFINITE_TOPOLOGY, CONNECTED_SPACE_COFINITE_TOPOLOGY,
+           COMPACT_IN_COFINITE_TOPOLOGY, COMPACT_SPACE_COFINITE_TOPOLOGY,
+           HAUSDORFF_SPACE_SUBTOPOLOGY_COFINITE_TOPOLOGY, HAUSDORFF_SPACE_COFINITE_TOPOLOGY }
+
+/- ------------------------------------------------------------------------- -/
+/- Countable-complement (cocountable) topology.                              -/
+/- (specialtopologies.ml 413-591)                                            -/
+/- ------------------------------------------------------------------------- -/
+
+structure STC where
+  cocountable_topology : thm
+  OPEN_IN_COCOUNTABLE_TOPOLOGY : thm
+  TOPSPACE_COCOUNTABLE_TOPOLOGY : thm
+  CLOSED_IN_COCOUNTABLE_TOPOLOGY : thm
+  T1_SPACE_COCOUNTABLE_TOPOLOGY : thm
+  COCOUNTABLE_EQ_DISCRETE_TOPOLOGY : thm
+  CONNECTED_IN_COCOUNTABLE_TOPOLOGY : thm
+  CONNECTED_SPACE_COCOUNTABLE_TOPOLOGY : thm
+  COMPACT_IN_COCOUNTABLE_TOPOLOGY : thm
+  COMPACT_SPACE_COCOUNTABLE_TOPOLOGY : thm
+  HAUSDORFF_SPACE_SUBTOPOLOGY_COCOUNTABLE_TOPOLOGY : thm
+  HAUSDORFF_SPACE_COCOUNTABLE_TOPOLOGY : thm
+  KC_SPACE_COCOUNTABLE_TOPOLOGY : thm
+  deriving Inhabited
+
+@[nospecialize]
+def setupSTC [HolBase] (D : SpecialTopologiesDeps) : ExceptT String IO STC := do
+  -- @@SCOPE BEGIN
+  let { new_definition, ASM_MESON_TAC, SET_RULE, SET_TAC, .. } := D
+  let { CONTRAPOS_THM, COUNTABLE, DIFF_EQ_EMPTY, DIFF_UNIONS, EMPTY_UNIONS, EXISTS_IN_GSPEC,
+        FINITE_EMPTY, FORALL_FINITE_SUBSET_IMAGE, FORALL_IN_GSPEC, FORALL_IN_INSERT, IMP_CONJ,
+        IN, INFINITE, INTERS_GSPEC, INTER_EMPTY, INTER_IDEMPOT, IN_ELIM_THM, IN_INSERT,
+        IN_INTER, LEFT_IMP_EXISTS_THM, MEMBER_NOT_EMPTY, NOT_IMP, NOT_INSERT_EMPTY,
+        RIGHT_AND_EXISTS_THM, RIGHT_EXISTS_AND_THM, RIGHT_FORALL_IMP_THM, SIMPLE_IMAGE,
+        SING_SUBSET, SUBSET, SUBSET_DIFF, SUBSET_REFL, UNIONS_DELETE_EMPTY, UNIONS_SINGS,
+        UNIONS_SUBSET, ge_c, num_INFINITE, .. } := D.core
+  let { CARD_EQ_IMP_LE, CARD_EQ_SYM, CARD_FINITE_CONG, CARD_LE_EQ_SUBSET, CARD_NOT_LT,
+        COUNTABLE_DIFF, COUNTABLE_EMPTY, COUNTABLE_SING, COUNTABLE_SUBSET, COUNTABLE_UNION,
+        FINITE_CARD_LT, FINITE_IMP_COUNTABLE, .. } := D.card
+  let { COMPACT_IN_FIP, COMPACT_IN_SUBSET_TOPSPACE, CONNECTED_IN_CLOSED_IN,
+        CONNECTED_IN_TOPSPACE, CONNECTED_SPACE_DISCRETE_TOPOLOGY, FINITE_IMP_COMPACT_IN,
+        OPEN_IN_DISCRETE_TOPOLOGY, OPEN_IN_SUBTOPOLOGY_ALT, SUBTOPOLOGY_RESTRICT,
+        SUBTOPOLOGY_TOPSPACE, T1_SPACE_CLOSED_IN_SING, TOPOLOGY_EQ, TOPSPACE_SUBTOPOLOGY_SUBSET,
+        closed_in, compact_space, hausdorff_space, istopology, kc_space, topology_tybij,
+        topspace, .. } := D.met
+  -- @@SCOPE END
+
+  let cocountable_topology ← new_definition
+   r"cocountable_topology (u:A->bool) =
+        topology ({} INSERT {s | s SUBSET u /\ COUNTABLE(u DIFF s)})"
+
+  let OPEN_IN_COCOUNTABLE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        open_in (cocountable_topology u) s <=>
+        s = {} \/ s SUBSET u /\ COUNTABLE(u DIFF s)"
+   (REPEAT GEN_TAC THEN REWRITE_TAC [cocountable_topology] THEN
+    W (MP_TAC o (fun th => do pure (← EQ_IMP_RULE th).1) o
+       PART_MATCH (lhand o rand) (← CONJUNCT2 topology_tybij) o rator o lhand o snd) THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC [istopology],
+      DISCH_THEN SUBST1_TAC THEN
+      GEN_REWRITE_TAC LAND_CONV [← GSYM IN] THEN
+      REWRITE_TAC [IN_ELIM_THM, IN_INSERT]] THEN
+    REWRITE_TAC [RIGHT_FORALL_IMP_THM, IMP_CONJ, FORALL_IN_INSERT] THEN
+    REWRITE_TAC [IN_INSERT, INTER_EMPTY] THEN CONJ_TAC THENL
+     [REWRITE_TAC [IN_ELIM_THM] THEN
+      X_GEN_TAC (← q r"s:A->bool") THEN STRIP_TAC THEN
+      X_GEN_TAC (← q r"t:A->bool") THEN STRIP_TAC THEN DISJ2_TAC THEN
+      REWRITE_TAC [← SET_RULE (← q r"u DIFF s INTER t = (u DIFF s) UNION (u DIFF t)")] THEN
+      ASM_SIMP_TAC [COUNTABLE_UNION] THEN ASM SET_TAC [],
+      X_GEN_TAC (← q r"k:(A->bool)->bool") THEN REWRITE_TAC [EMPTY_UNIONS] THEN
+      REWRITE_TAC [← TAUT (← q r"p ==> q \/ r <=> p /\ ~q ==> r")] THEN
+      DISCH_THEN (MP_TAC o MATCH_MP (← SET_RULE
+       (← q r"k SUBSET a INSERT s /\ ~(!x. x IN k ==> x = a)
+        ==> k DELETE a SUBSET s /\ ~(k DELETE a = {})"))) THEN
+      ONCE_REWRITE_TAC [← GSYM UNIONS_DELETE_EMPTY] THEN
+      SPEC_TAC (← q r"(k DELETE {}):(A->bool)->bool", ← q r"v:(A->bool)->bool") THEN
+      GEN_TAC THEN GEN_REWRITE_TAC (LAND_CONV o LAND_CONV) [SUBSET] THEN
+      SIMP_TAC [IN_ELIM_THM, UNIONS_SUBSET] THEN STRIP_TAC THEN
+      FIRST_X_ASSUM (X_CHOOSE_TAC (← q r"s:A->bool") o
+        REWRITE_RULE [← GSYM MEMBER_NOT_EMPTY]) THEN
+      MATCH_MP_TAC COUNTABLE_SUBSET THEN EXISTS_TAC (← q r"u DIFF s:A->bool") THEN
+      ASM_SIMP_TAC [] THEN ASM SET_TAC []])
+
+  let TOPSPACE_COCOUNTABLE_TOPOLOGY ← prove
+   r"!u:A->bool. topspace(cocountable_topology u) = u"
+   (GEN_TAC THEN REWRITE_TAC [topspace, OPEN_IN_COCOUNTABLE_TOPOLOGY] THEN
+    MATCH_MP_TAC (← SET_RULE
+     (← q r"(!s. P s ==> s SUBSET u) /\ P u ==> UNIONS {s | P s} = u")) THEN
+    REWRITE_TAC [DIFF_EQ_EMPTY, COUNTABLE_EMPTY] THEN SET_TAC [])
+
+  let CLOSED_IN_COCOUNTABLE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        closed_in (cocountable_topology u) s <=>
+        s = u \/ s SUBSET u /\ COUNTABLE s"
+   (REWRITE_TAC [closed_in, OPEN_IN_COCOUNTABLE_TOPOLOGY,
+                 TOPSPACE_COCOUNTABLE_TOPOLOGY] THEN
+    REPEAT GEN_TAC THEN
+    ASM_CASES_TAC (← q r"(s:A->bool) SUBSET u") THEN
+    ASM_SIMP_TAC [← SET_RULE (← q r"s SUBSET u ==> u DIFF (u DIFF s) = s")] THEN
+    ASM SET_TAC [])
+
+  let T1_SPACE_COCOUNTABLE_TOPOLOGY ← prove
+   r"!u:A->bool. t1_space(cocountable_topology u)"
+   (REWRITE_TAC [T1_SPACE_CLOSED_IN_SING, CLOSED_IN_COCOUNTABLE_TOPOLOGY] THEN
+    SIMP_TAC [COUNTABLE_SING, SING_SUBSET, TOPSPACE_COCOUNTABLE_TOPOLOGY])
+
+  let COCOUNTABLE_EQ_DISCRETE_TOPOLOGY ← prove
+   r"!u:A->bool. COUNTABLE u ==> cocountable_topology u = discrete_topology u"
+   (SIMP_TAC [TOPOLOGY_EQ, OPEN_IN_DISCRETE_TOPOLOGY, OPEN_IN_COCOUNTABLE_TOPOLOGY,
+              COUNTABLE_DIFF] THEN
+    SET_TAC [])
+
+  let CONNECTED_IN_COCOUNTABLE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        ~COUNTABLE s /\ s SUBSET u
+        ==> connected_in (cocountable_topology u) s"
+   (REWRITE_TAC [CONNECTED_IN_CLOSED_IN, CLOSED_IN_COCOUNTABLE_TOPOLOGY] THEN
+    SIMP_TAC [TOPSPACE_COCOUNTABLE_TOPOLOGY] THEN REPEAT STRIP_TAC THENL
+     [ASM SET_TAC [], ASM SET_TAC [], ASM SET_TAC [],
+      ASM_MESON_TAC [COUNTABLE_SUBSET, COUNTABLE_UNION]])
+
+  let CONNECTED_SPACE_COCOUNTABLE_TOPOLOGY ← prove
+   r"!u:A->bool.
+        connected_space(cocountable_topology u) <=>
+        (?a. u SUBSET {a}) \/ ~COUNTABLE u"
+   (GEN_TAC THEN ASM_CASES_TAC (← q r"COUNTABLE(u:A->bool)") THEN
+    ASM_SIMP_TAC [COCOUNTABLE_EQ_DISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [CONNECTED_SPACE_DISCRETE_TOPOLOGY] THEN
+    REWRITE_TAC [← GSYM CONNECTED_IN_TOPSPACE] THEN
+    MATCH_MP_TAC CONNECTED_IN_COCOUNTABLE_TOPOLOGY THEN
+    ASM_REWRITE_TAC [TOPSPACE_COCOUNTABLE_TOPOLOGY, SUBSET_REFL])
+
+  let COMPACT_IN_COCOUNTABLE_TOPOLOGY ← prove
+   r"!u s:A->bool. compact_in(cocountable_topology u) s <=>
+                 s SUBSET u /\ FINITE s"
+   (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"(s:A->bool) SUBSET u") THENL
+     [EQ_TAC THEN
+      ASM_SIMP_TAC [FINITE_IMP_COMPACT_IN, TOPSPACE_COCOUNTABLE_TOPOLOGY],
+      ASM_MESON_TAC [COMPACT_IN_SUBSET_TOPSPACE,
+                     TOPSPACE_COCOUNTABLE_TOPOLOGY]] THEN
+    GEN_REWRITE_TAC id [← GSYM CONTRAPOS_THM] THEN
+    REWRITE_TAC [FINITE_CARD_LT, CARD_NOT_LT, CARD_LE_EQ_SUBSET] THEN
+    DISCH_THEN (X_CHOOSE_THEN (← q r"t:A->bool") STRIP_ASSUME_TAC) THEN
+    FIRST_ASSUM (MP_TAC o MATCH_MP CARD_FINITE_CONG) THEN
+    REWRITE_TAC [← REWRITE_RULE [INFINITE] num_INFINITE] THEN
+    ASM_CASES_TAC (← q r"t:A->bool = {}") THEN ASM_REWRITE_TAC [FINITE_EMPTY] THEN
+    DISCH_TAC THEN
+    REWRITE_TAC [COMPACT_IN_FIP, CLOSED_IN_COCOUNTABLE_TOPOLOGY] THEN
+    ASM_REWRITE_TAC [TOPSPACE_COCOUNTABLE_TOPOLOGY] THEN
+    DISCH_THEN (MP_TAC o SPEC (← q r"{t DIFF {x:A} | x | x IN t}")) THEN
+    REWRITE_TAC [NOT_IMP, FORALL_IN_GSPEC] THEN REPEAT CONJ_TAC THENL
+     [X_GEN_TAC (← q r"a:A") THEN DISCH_TAC THEN DISJ2_TAC THEN
+      CONJ_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
+      MATCH_MP_TAC COUNTABLE_SUBSET THEN EXISTS_TAC (← q r"t:A->bool") THEN
+      REWRITE_TAC [SUBSET_DIFF, COUNTABLE, ge_c] THEN
+      ASM_MESON_TAC [CARD_EQ_SYM, CARD_EQ_IMP_LE],
+      ALL_TAC,
+      REWRITE_TAC [INTERS_GSPEC] THEN ASM SET_TAC []] THEN
+    REWRITE_TAC [FORALL_FINITE_SUBSET_IMAGE, SIMPLE_IMAGE] THEN
+    X_GEN_TAC (← q r"v:A->bool") THEN STRIP_TAC THEN
+    FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE
+      (← q r"t SUBSET s ==> ~(t INTER u = {}) ==> ~(s INTER u = {})"))) THEN
+    REWRITE_TAC [← SET_RULE
+     (← q r"IMAGE (\x. t DIFF {x}) v = {t DIFF u | u IN IMAGE (\x. {x}) v}")] THEN
+    REWRITE_TAC [← GSYM DIFF_UNIONS] THEN
+    REWRITE_TAC [← GSYM SIMPLE_IMAGE, UNIONS_SINGS] THEN
+    ASM_SIMP_TAC [← SET_RULE (← q r"v SUBSET t ==> (t DIFF v = {} <=> t = v)")] THEN
+    ASM_MESON_TAC [])
+
+  let COMPACT_SPACE_COCOUNTABLE_TOPOLOGY ← prove
+   r"!u:A->bool. compact_space(cocountable_topology u) <=> FINITE u"
+   (REWRITE_TAC [compact_space, COMPACT_IN_COCOUNTABLE_TOPOLOGY] THEN
+    REWRITE_TAC [TOPSPACE_COCOUNTABLE_TOPOLOGY, SUBSET_REFL])
+
+  let HAUSDORFF_SPACE_SUBTOPOLOGY_COCOUNTABLE_TOPOLOGY ← prove
+   r"!u s:A->bool.
+        hausdorff_space (subtopology (cocountable_topology u) s) <=>
+        COUNTABLE(u INTER s)"
+   (REPEAT GEN_TAC THEN ONCE_REWRITE_TAC [SUBTOPOLOGY_RESTRICT] THEN
+    REWRITE_TAC [TOPSPACE_COCOUNTABLE_TOPOLOGY] THEN
+    MP_TAC (← SET_RULE (← q r"u INTER (s:A->bool) SUBSET u")) THEN
+    SPEC_TAC (← q r"u INTER (s:A->bool)", ← q r"s:A->bool") THEN
+    REPEAT STRIP_TAC THEN EQ_TAC THEN DISCH_TAC THENL
+     [ASM_CASES_TAC (← q r"?a:A. s SUBSET {a}") THENL
+       [ASM_MESON_TAC [COUNTABLE_SUBSET, COUNTABLE_SING], ALL_TAC] THEN
+      FIRST_X_ASSUM (MP_TAC o MATCH_MP (← SET_RULE
+       (← q r"~(?a. s SUBSET {a}) ==> ?a b. a IN s /\ b IN s /\ ~(a = b)"))) THEN
+      REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
+      MAP_EVERY X_GEN_TAC [← q r"a:A", ← q r"b:A"] THEN STRIP_TAC THEN
+      FIRST_X_ASSUM (MP_TAC o SPECL [← q r"a:A", ← q r"b:A"] o
+        GEN_REWRITE_RULE id [hausdorff_space]) THEN
+      ASM_SIMP_TAC [TOPSPACE_SUBTOPOLOGY_SUBSET,
+                    TOPSPACE_COCOUNTABLE_TOPOLOGY] THEN
+      REWRITE_TAC [LEFT_IMP_EXISTS_THM, RIGHT_FORALL_IMP_THM, IMP_CONJ] THEN
+      REWRITE_TAC [OPEN_IN_SUBTOPOLOGY_ALT, FORALL_IN_GSPEC] THEN
+      REWRITE_TAC [IN_INTER, OPEN_IN_COCOUNTABLE_TOPOLOGY] THEN
+      X_GEN_TAC (← q r"t:A->bool") THEN STRIP_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
+      X_GEN_TAC (← q r"t':A->bool") THEN STRIP_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC COUNTABLE_SUBSET THEN
+      EXISTS_TAC (← q r"(u DIFF t) UNION (u DIFF t'):A->bool") THEN
+      ASM_REWRITE_TAC [COUNTABLE_UNION] THEN ASM SET_TAC [],
+      ASM_SIMP_TAC [hausdorff_space, TOPSPACE_SUBTOPOLOGY_SUBSET,
+                    TOPSPACE_COCOUNTABLE_TOPOLOGY] THEN
+      MAP_EVERY X_GEN_TAC [← q r"x:A", ← q r"y:A"] THEN STRIP_TAC THEN
+      REWRITE_TAC [RIGHT_EXISTS_AND_THM, OPEN_IN_SUBTOPOLOGY_ALT] THEN
+      REWRITE_TAC [EXISTS_IN_GSPEC, OPEN_IN_COCOUNTABLE_TOPOLOGY] THEN
+      REWRITE_TAC [RIGHT_AND_EXISTS_THM] THEN
+      EXISTS_TAC (← q r"(x:A) INSERT (u DIFF s)") THEN
+      EXISTS_TAC (← q r"(y:A) INSERT (u DIFF s)") THEN
+      REWRITE_TAC [NOT_INSERT_EMPTY] THEN
+      REPEAT CONJ_TAC THEN
+      TRY (MATCH_MP_TAC COUNTABLE_SUBSET THEN EXISTS_TAC (← q r"s:A->bool")) THEN
+      ASM_REWRITE_TAC [] THEN ASM SET_TAC []])
+
+  let HAUSDORFF_SPACE_COCOUNTABLE_TOPOLOGY ← prove
+   r"!u:A->bool. hausdorff_space(cocountable_topology u) <=> COUNTABLE u"
+   (GEN_TAC THEN ONCE_REWRITE_TAC [← GSYM SUBTOPOLOGY_TOPSPACE] THEN
+    REWRITE_TAC [HAUSDORFF_SPACE_SUBTOPOLOGY_COCOUNTABLE_TOPOLOGY] THEN
+    REWRITE_TAC [TOPSPACE_COCOUNTABLE_TOPOLOGY, INTER_IDEMPOT])
+
+  let KC_SPACE_COCOUNTABLE_TOPOLOGY ← prove
+   r"!u:A->bool. kc_space(cocountable_topology u)"
+   (REWRITE_TAC [kc_space, CLOSED_IN_COCOUNTABLE_TOPOLOGY,
+                 COMPACT_IN_COCOUNTABLE_TOPOLOGY] THEN
+    SIMP_TAC [FINITE_IMP_COUNTABLE])
+
+  return { cocountable_topology, OPEN_IN_COCOUNTABLE_TOPOLOGY, TOPSPACE_COCOUNTABLE_TOPOLOGY,
+           CLOSED_IN_COCOUNTABLE_TOPOLOGY, T1_SPACE_COCOUNTABLE_TOPOLOGY,
+           COCOUNTABLE_EQ_DISCRETE_TOPOLOGY, CONNECTED_IN_COCOUNTABLE_TOPOLOGY,
+           CONNECTED_SPACE_COCOUNTABLE_TOPOLOGY, COMPACT_IN_COCOUNTABLE_TOPOLOGY,
+           COMPACT_SPACE_COCOUNTABLE_TOPOLOGY, HAUSDORFF_SPACE_SUBTOPOLOGY_COCOUNTABLE_TOPOLOGY,
+           HAUSDORFF_SPACE_COCOUNTABLE_TOPOLOGY, KC_SPACE_COCOUNTABLE_TOPOLOGY }
+
+end HolMultiLib.SpecialTopologies

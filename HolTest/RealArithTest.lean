@@ -49,6 +49,12 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
 /- accessor (it forces none of the ~8.8s ABSMAXMIN proof).                 -/
 /- ---------------------------------------------------------------------- -/
 
+/- Session loads all of hol_lib.ml, which ends with `:num` as the default
+   type for overloaded symbols (iterate.ml's closing `prioritize_num`), as
+   HOL Light does.  This file's goals are about the reals, so make `:real` the
+   default first, as a HOL Light user would (and as iterate.ml does at 1982). -/
+#eval Session.prioritize_real
+
 #eval Session.realArithLemmas.REAL_LTE_TOTAL
 
 /-- Squash whitespace so a printed theorem can be compared against a
@@ -66,12 +72,9 @@ private unsafe def thmCheck (lbl : String) (t : thm) (expected : String) : IO Un
     load-bearing: both `REAL_ARITH` definitions feed them to
     `SEMIRING_NORMALIZERS_CONV`, so a dropped conjunct would be SILENT. -/
 private unsafe def conjCountCheck (lbl : String) (t : thm) (n : Nat) : IO Unit := do
-  match ← Session.theBool.get with
-  | none => IO.println s!"{lbl} -> MISMATCH BoolThms not forced"
-  | some B =>
-    let got := (B.CONJUNCTS t).length
-    if got == n then IO.println s!"{lbl} -> OK ({n} conjuncts)"
-    else IO.println s!"{lbl} -> MISMATCH got {got} conjuncts, want {n}"
+  let got := (Session.CONJUNCTS t).length
+  if got == n then IO.println s!"{lbl} -> OK ({n} conjuncts)"
+  else IO.println s!"{lbl} -> MISMATCH got {got} conjuncts, want {n}"
 
 /-- Parse `goal`, run a decision procedure, assert it PROVES the goal with NO
     hypotheses.  A proved goal's conclusion IS the goal, so the expected form is

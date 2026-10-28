@@ -3,10 +3,10 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Prime.lean
 
-  The `unsafe` half of the prime.ml translation, as Session.lean is for
-  HolMath: it supplies HolLibrary.Prime's dependencies from Session, builds
-  each theorem bundle on first use (in file order), and exports every
-  theorem by name.  `ensurePrime` is `needs "Library/prime.ml"`.
+  The session half of the prime.ml translation: it supplies
+  HolLibrary.Prime's dependencies from Session and exports every theorem by
+  name.  Importing this module is `needs "Library/prime.ml"`: each theorem
+  bundle is built by `initialize` when the module is loaded, in file order.
 -/
 
 import Session
@@ -17,11 +17,8 @@ open Session
 
 namespace SessionLibrary.Prime
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨sessionB, sessionC, sessionT⟩
-
 /-- The core theorems prime.ml uses, A-L. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Prime.CoreThms1 where
+def core1 : HolLibrary.Prime.CoreThms1 where
   ADD1 := Session.ADD1
   ADD_AC := Session.ADD_AC
   ADD_CLAUSES := Session.ADD_CLAUSES
@@ -151,7 +148,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Prime.CoreThms1 where
   LT_REFL := Session.LT_REFL
 
 /-- The core theorems prime.ml uses, M-Z and lower case. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Prime.CoreThms2 where
+def core2 : HolLibrary.Prime.CoreThms2 where
   MAX := Session.MAX
   MOD_LT_EQ := Session.MOD_LT_EQ
   MONOIDAL_MUL := Session.MONOIDAL_MUL
@@ -221,10 +218,8 @@ unsafe def core2 (_ : Unit) : HolLibrary.Prime.CoreThms2 where
   prime := Session.prime
   support := Session.support
 
-/-- prime.ml's dependencies, from Session.  A function, not a constant: a
-    constant would be built (forcing every Session theorem it names) when
-    first referenced, before hol.ml's library has been loaded in order. -/
-unsafe def deps (_ : Unit) : HolLibrary.Prime.PrimeDeps where
+/-- prime.ml's dependencies, from Session. -/
+def deps : HolLibrary.Prime.PrimeDeps where
   new_definition s := do
     let t ← ExceptT.mk (HolCore.Parser.parse_term s)
     ExceptT.mk (Session.new_definition t)
@@ -251,390 +246,362 @@ unsafe def deps (_ : Unit) : HolLibrary.Prime.PrimeDeps where
   NUM_MULT_CONV := NUM_MULT_CONV
   NUM_REDUCE_CONV := NUM_REDUCE_CONV
   mk_numeral := mk_numeral
-  core1 := core1 ()
-  core2 := core2 ()
+  core1 := core1
+  core2 := core2
 
 /-- prime.ml runs after the whole of hol.ml, then `prioritize_num()`
-    (prime.ml 5).  Run once, before the first bundle. -/
-initialize thePrimePrelude : IO.Ref Bool ← IO.mkRef false
+    (prime.ml 5).  Run when this module is loaded, before the first bundle. -/
+initialize primePrelude : Unit ← do
+  match ← (HolMath.Int.prioritize_num Session.prioritize_overload).run with
+  | .ok () => pure ()
+  | .error e => throw (IO.userError s!"prioritize_num failed: {e}")
 
-unsafe def ensurePrimePrelude : IO Unit := do
-  unless (← thePrimePrelude.get) do
-    thePrimePrelude.set true
-    Session.ensureDefine
-    match ← (HolMath.Int.prioritize_num Session.prioritize_overload).run with
-    | .ok () => pure ()
-    | .error e => panic! s!"prioritize_num failed: {e}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/-- Build a bundle once, after the prelude.  `setup` is a thunk: building
-    its argument would force `deps`, and so every Session theorem it names,
-    before hol.ml's library has been loaded in order. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      ensurePrimePrelude
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Prime: {name}"
-
-initialize theDivides : IO.Ref (Option HolLibrary.Prime.Divides) ← IO.mkRef none
-private unsafe def BDivides : HolLibrary.Prime.Divides :=
-  cached theDivides "setupDivides" fun _ => (HolLibrary.Prime.setupDivides (deps ())).run
-initialize theGcd : IO.Ref (Option HolLibrary.Prime.Gcd) ← IO.mkRef none
-private unsafe def BGcd : HolLibrary.Prime.Gcd :=
-  cached theGcd "setupGcd" fun _ => (HolLibrary.Prime.setupGcd (deps ()) BDivides).run
-initialize theCoprime : IO.Ref (Option HolLibrary.Prime.Coprime) ← IO.mkRef none
-private unsafe def BCoprime : HolLibrary.Prime.Coprime :=
-  cached theCoprime "setupCoprime" fun _ => (HolLibrary.Prime.setupCoprime (deps ()) BDivides BGcd).run
-initialize thePrimes : IO.Ref (Option HolLibrary.Prime.Primes) ← IO.mkRef none
-private unsafe def BPrimes : HolLibrary.Prime.Primes :=
-  cached thePrimes "setupPrimes" fun _ => (HolLibrary.Prime.setupPrimes (deps ()) BDivides BGcd BCoprime).run
-initialize theChinese : IO.Ref (Option HolLibrary.Prime.Chinese) ← IO.mkRef none
-private unsafe def BChinese : HolLibrary.Prime.Chinese :=
-  cached theChinese "setupChinese" fun _ => (HolLibrary.Prime.setupChinese (deps ()) BGcd BCoprime).run
-initialize theIndex : IO.Ref (Option HolLibrary.Prime.Index) ← IO.mkRef none
-private unsafe def BIndex : HolLibrary.Prime.Index :=
-  cached theIndex "setupIndex" fun _ => (HolLibrary.Prime.setupIndex (deps ()) BDivides BGcd BCoprime BPrimes).run
-initialize theLcm : IO.Ref (Option HolLibrary.Prime.Lcm) ← IO.mkRef none
-private unsafe def BLcm : HolLibrary.Prime.Lcm :=
-  cached theLcm "setupLcm" fun _ => (HolLibrary.Prime.setupLcm (deps ()) BDivides BGcd BCoprime BPrimes BIndex).run
-initialize theIterated : IO.Ref (Option HolLibrary.Prime.Iterated) ← IO.mkRef none
-private unsafe def BIterated : HolLibrary.Prime.Iterated :=
-  cached theIterated "setupIterated" fun _ => (HolLibrary.Prime.setupIterated (deps ()) BDivides BGcd BPrimes BLcm).run
-initialize theInduct : IO.Ref (Option HolLibrary.Prime.Induct) ← IO.mkRef none
-private unsafe def BInduct : HolLibrary.Prime.Induct :=
-  cached theInduct "setupInduct" fun _ => (HolLibrary.Prime.setupInduct (deps ()) BCoprime BPrimes).run
-initialize theConvs : IO.Ref (Option HolLibrary.Prime.Convs) ← IO.mkRef none
-private unsafe def BConvs : HolLibrary.Prime.Convs :=
-  cached theConvs "setupConvs" fun _ => (HolLibrary.Prime.setupConvs (deps ()) BDivides BGcd).run
+/- The bundles, in prime.ml order. -/
+initialize BDivides : HolLibrary.Prime.Divides ←
+  ioB "setupDivides" (HolLibrary.Prime.setupDivides deps).run
+initialize BGcd : HolLibrary.Prime.Gcd ←
+  ioB "setupGcd" (HolLibrary.Prime.setupGcd deps BDivides).run
+initialize BCoprime : HolLibrary.Prime.Coprime ←
+  ioB "setupCoprime" (HolLibrary.Prime.setupCoprime deps BDivides BGcd).run
+initialize BPrimes : HolLibrary.Prime.Primes ←
+  ioB "setupPrimes" (HolLibrary.Prime.setupPrimes deps BDivides BGcd BCoprime).run
+initialize BChinese : HolLibrary.Prime.Chinese ←
+  ioB "setupChinese" (HolLibrary.Prime.setupChinese deps BGcd BCoprime).run
+initialize BIndex : HolLibrary.Prime.Index ←
+  ioB "setupIndex" (HolLibrary.Prime.setupIndex deps BDivides BGcd BCoprime BPrimes).run
+initialize BLcm : HolLibrary.Prime.Lcm ←
+  ioB "setupLcm" (HolLibrary.Prime.setupLcm deps BDivides BGcd BCoprime BPrimes BIndex).run
+initialize BIterated : HolLibrary.Prime.Iterated ←
+  ioB "setupIterated" (HolLibrary.Prime.setupIterated deps BDivides BGcd BPrimes BLcm).run
+initialize BInduct : HolLibrary.Prime.Induct ←
+  ioB "setupInduct" (HolLibrary.Prime.setupInduct deps BCoprime BPrimes).run
+initialize BConvs : HolLibrary.Prime.Convs ←
+  ioB "setupConvs" (HolLibrary.Prime.setupConvs deps BDivides BGcd).run
 
 /- The theorems, by name. -/
 -- Divides
-unsafe def DIVIDES_0                    : thm := BDivides.DIVIDES_0
-unsafe def DIVIDES_ZERO                 : thm := BDivides.DIVIDES_ZERO
-unsafe def DIVIDES_1                    : thm := BDivides.DIVIDES_1
-unsafe def DIVIDES_REFL                 : thm := BDivides.DIVIDES_REFL
-unsafe def DIVIDES_TRANS                : thm := BDivides.DIVIDES_TRANS
-unsafe def DIVIDES_ADD                  : thm := BDivides.DIVIDES_ADD
-unsafe def DIVIDES_SUB_EQ               : thm := BDivides.DIVIDES_SUB_EQ
-unsafe def DIVIDES_SUB                  : thm := BDivides.DIVIDES_SUB
-unsafe def DIVIDES_SUB_1                : thm := BDivides.DIVIDES_SUB_1
-unsafe def DIVIDES_LMUL                 : thm := BDivides.DIVIDES_LMUL
-unsafe def DIVIDES_RMUL                 : thm := BDivides.DIVIDES_RMUL
-unsafe def DIVIDES_ADD_REVR             : thm := BDivides.DIVIDES_ADD_REVR
-unsafe def DIVIDES_ADD_REVL             : thm := BDivides.DIVIDES_ADD_REVL
-unsafe def DIVIDES_MUL_L                : thm := BDivides.DIVIDES_MUL_L
-unsafe def DIVIDES_MUL_R                : thm := BDivides.DIVIDES_MUL_R
-unsafe def DIVIDES_LMUL2                : thm := BDivides.DIVIDES_LMUL2
-unsafe def DIVIDES_RMUL2                : thm := BDivides.DIVIDES_RMUL2
-unsafe def DIVIDES_CMUL2                : thm := BDivides.DIVIDES_CMUL2
-unsafe def DIVIDES_LMUL2_EQ             : thm := BDivides.DIVIDES_LMUL2_EQ
-unsafe def DIVIDES_RMUL2_EQ             : thm := BDivides.DIVIDES_RMUL2_EQ
-unsafe def DIVIDES_EQ_ZERO              : thm := BDivides.DIVIDES_EQ_ZERO
-unsafe def DIVIDES_CASES                : thm := BDivides.DIVIDES_CASES
-unsafe def DIVIDES_DIV_NOT              : thm := BDivides.DIVIDES_DIV_NOT
-unsafe def DIVIDES_MUL2                 : thm := BDivides.DIVIDES_MUL2
-unsafe def DIVIDES_EXP                  : thm := BDivides.DIVIDES_EXP
-unsafe def DIVIDES_EXP2                 : thm := BDivides.DIVIDES_EXP2
-unsafe def DIVIDES_EXP_LE_IMP           : thm := BDivides.DIVIDES_EXP_LE_IMP
-unsafe def DIVIDES_EXP_LE               : thm := BDivides.DIVIDES_EXP_LE
-unsafe def DIVIDES_TRIVIAL_UPPERBOUND   : thm := BDivides.DIVIDES_TRIVIAL_UPPERBOUND
-unsafe def DIVIDES_FACT                 : thm := BDivides.DIVIDES_FACT
-unsafe def DIVIDES_2                    : thm := BDivides.DIVIDES_2
-unsafe def DIVIDES_REXP_SUC             : thm := BDivides.DIVIDES_REXP_SUC
-unsafe def DIVIDES_REXP                 : thm := BDivides.DIVIDES_REXP
-unsafe def FINITE_DIVISORS              : thm := BDivides.FINITE_DIVISORS
-unsafe def FINITE_SPECIAL_DIVISORS      : thm := BDivides.FINITE_SPECIAL_DIVISORS
-unsafe def DIVISORS_EQ                  : thm := BDivides.DIVISORS_EQ
-unsafe def MULTIPLES_EQ                 : thm := BDivides.MULTIPLES_EQ
-unsafe def DIVIDES_NSUM                 : thm := BDivides.DIVIDES_NSUM
+def DIVIDES_0                    : thm := BDivides.DIVIDES_0
+def DIVIDES_ZERO                 : thm := BDivides.DIVIDES_ZERO
+def DIVIDES_1                    : thm := BDivides.DIVIDES_1
+def DIVIDES_REFL                 : thm := BDivides.DIVIDES_REFL
+def DIVIDES_TRANS                : thm := BDivides.DIVIDES_TRANS
+def DIVIDES_ADD                  : thm := BDivides.DIVIDES_ADD
+def DIVIDES_SUB_EQ               : thm := BDivides.DIVIDES_SUB_EQ
+def DIVIDES_SUB                  : thm := BDivides.DIVIDES_SUB
+def DIVIDES_SUB_1                : thm := BDivides.DIVIDES_SUB_1
+def DIVIDES_LMUL                 : thm := BDivides.DIVIDES_LMUL
+def DIVIDES_RMUL                 : thm := BDivides.DIVIDES_RMUL
+def DIVIDES_ADD_REVR             : thm := BDivides.DIVIDES_ADD_REVR
+def DIVIDES_ADD_REVL             : thm := BDivides.DIVIDES_ADD_REVL
+def DIVIDES_MUL_L                : thm := BDivides.DIVIDES_MUL_L
+def DIVIDES_MUL_R                : thm := BDivides.DIVIDES_MUL_R
+def DIVIDES_LMUL2                : thm := BDivides.DIVIDES_LMUL2
+def DIVIDES_RMUL2                : thm := BDivides.DIVIDES_RMUL2
+def DIVIDES_CMUL2                : thm := BDivides.DIVIDES_CMUL2
+def DIVIDES_LMUL2_EQ             : thm := BDivides.DIVIDES_LMUL2_EQ
+def DIVIDES_RMUL2_EQ             : thm := BDivides.DIVIDES_RMUL2_EQ
+def DIVIDES_EQ_ZERO              : thm := BDivides.DIVIDES_EQ_ZERO
+def DIVIDES_CASES                : thm := BDivides.DIVIDES_CASES
+def DIVIDES_DIV_NOT              : thm := BDivides.DIVIDES_DIV_NOT
+def DIVIDES_MUL2                 : thm := BDivides.DIVIDES_MUL2
+def DIVIDES_EXP                  : thm := BDivides.DIVIDES_EXP
+def DIVIDES_EXP2                 : thm := BDivides.DIVIDES_EXP2
+def DIVIDES_EXP_LE_IMP           : thm := BDivides.DIVIDES_EXP_LE_IMP
+def DIVIDES_EXP_LE               : thm := BDivides.DIVIDES_EXP_LE
+def DIVIDES_TRIVIAL_UPPERBOUND   : thm := BDivides.DIVIDES_TRIVIAL_UPPERBOUND
+def DIVIDES_FACT                 : thm := BDivides.DIVIDES_FACT
+def DIVIDES_2                    : thm := BDivides.DIVIDES_2
+def DIVIDES_REXP_SUC             : thm := BDivides.DIVIDES_REXP_SUC
+def DIVIDES_REXP                 : thm := BDivides.DIVIDES_REXP
+def FINITE_DIVISORS              : thm := BDivides.FINITE_DIVISORS
+def FINITE_SPECIAL_DIVISORS      : thm := BDivides.FINITE_SPECIAL_DIVISORS
+def DIVISORS_EQ                  : thm := BDivides.DIVISORS_EQ
+def MULTIPLES_EQ                 : thm := BDivides.MULTIPLES_EQ
+def DIVIDES_NSUM                 : thm := BDivides.DIVIDES_NSUM
 
 -- Gcd
-unsafe def DIVIDES_GCD                  : thm := BGcd.DIVIDES_GCD
-unsafe def GCD_0                        : thm := BGcd.GCD_0
-unsafe def GCD_ZERO                     : thm := BGcd.GCD_ZERO
-unsafe def GCD_REFL                     : thm := BGcd.GCD_REFL
-unsafe def GCD_1                        : thm := BGcd.GCD_1
-unsafe def GCD_MULTIPLE                 : thm := BGcd.GCD_MULTIPLE
-unsafe def GCD_ADD                      : thm := BGcd.GCD_ADD
-unsafe def GCD_SUB                      : thm := BGcd.GCD_SUB
-unsafe def DIVIDES_GCD_LEFT             : thm := BGcd.DIVIDES_GCD_LEFT
-unsafe def DIVIDES_GCD_RIGHT            : thm := BGcd.DIVIDES_GCD_RIGHT
-unsafe def GCD_COPRIME_LMUL             : thm := BGcd.GCD_COPRIME_LMUL
-unsafe def GCD_COPRIME_RMUL             : thm := BGcd.GCD_COPRIME_RMUL
-unsafe def DIVIDES_LMUL_GCD             : thm := BGcd.DIVIDES_LMUL_GCD
-unsafe def DIVIDES_RMUL_GCD             : thm := BGcd.DIVIDES_RMUL_GCD
-unsafe def GCD_MUL_COPRIME              : thm := BGcd.GCD_MUL_COPRIME
-unsafe def GCD_SYM                      : thm := BGcd.GCD_SYM
-unsafe def GCD_ASSOC                    : thm := BGcd.GCD_ASSOC
-unsafe def GCD_LMUL                     : thm := BGcd.GCD_LMUL
-unsafe def GCD_RMUL                     : thm := BGcd.GCD_RMUL
-unsafe def GCD_BEZOUT_SUM               : thm := BGcd.GCD_BEZOUT_SUM
-unsafe def GCD_COPRIME_DIVIDES_LMUL     : thm := BGcd.GCD_COPRIME_DIVIDES_LMUL
-unsafe def GCD_COPRIME_DIVIDES_RMUL     : thm := BGcd.GCD_COPRIME_DIVIDES_RMUL
-unsafe def GCD_UNIQUE                   : thm := BGcd.GCD_UNIQUE
-unsafe def GCD_EQ                       : thm := BGcd.GCD_EQ
-unsafe def BEZOUT_GCD_STRONG            : thm := BGcd.BEZOUT_GCD_STRONG
-unsafe def BEZOUT_ADD_STRONG            : thm := BGcd.BEZOUT_ADD_STRONG
-unsafe def BEZOUT_GCD                   : thm := BGcd.BEZOUT_GCD
-unsafe def BEZOUT_ADD                   : thm := BGcd.BEZOUT_ADD
-unsafe def BEZOUT                       : thm := BGcd.BEZOUT
-unsafe def GCD_BEZOUT                   : thm := BGcd.GCD_BEZOUT
-unsafe def GCD_LE                       : thm := BGcd.GCD_LE
-unsafe def GCD_LE_MIN_EQ                : thm := BGcd.GCD_LE_MIN_EQ
-unsafe def GCD_LE_MIN                   : thm := BGcd.GCD_LE_MIN
-unsafe def GCD_LE_MAX                   : thm := BGcd.GCD_LE_MAX
+def DIVIDES_GCD                  : thm := BGcd.DIVIDES_GCD
+def GCD_0                        : thm := BGcd.GCD_0
+def GCD_ZERO                     : thm := BGcd.GCD_ZERO
+def GCD_REFL                     : thm := BGcd.GCD_REFL
+def GCD_1                        : thm := BGcd.GCD_1
+def GCD_MULTIPLE                 : thm := BGcd.GCD_MULTIPLE
+def GCD_ADD                      : thm := BGcd.GCD_ADD
+def GCD_SUB                      : thm := BGcd.GCD_SUB
+def DIVIDES_GCD_LEFT             : thm := BGcd.DIVIDES_GCD_LEFT
+def DIVIDES_GCD_RIGHT            : thm := BGcd.DIVIDES_GCD_RIGHT
+def GCD_COPRIME_LMUL             : thm := BGcd.GCD_COPRIME_LMUL
+def GCD_COPRIME_RMUL             : thm := BGcd.GCD_COPRIME_RMUL
+def DIVIDES_LMUL_GCD             : thm := BGcd.DIVIDES_LMUL_GCD
+def DIVIDES_RMUL_GCD             : thm := BGcd.DIVIDES_RMUL_GCD
+def GCD_MUL_COPRIME              : thm := BGcd.GCD_MUL_COPRIME
+def GCD_SYM                      : thm := BGcd.GCD_SYM
+def GCD_ASSOC                    : thm := BGcd.GCD_ASSOC
+def GCD_LMUL                     : thm := BGcd.GCD_LMUL
+def GCD_RMUL                     : thm := BGcd.GCD_RMUL
+def GCD_BEZOUT_SUM               : thm := BGcd.GCD_BEZOUT_SUM
+def GCD_COPRIME_DIVIDES_LMUL     : thm := BGcd.GCD_COPRIME_DIVIDES_LMUL
+def GCD_COPRIME_DIVIDES_RMUL     : thm := BGcd.GCD_COPRIME_DIVIDES_RMUL
+def GCD_UNIQUE                   : thm := BGcd.GCD_UNIQUE
+def GCD_EQ                       : thm := BGcd.GCD_EQ
+def BEZOUT_GCD_STRONG            : thm := BGcd.BEZOUT_GCD_STRONG
+def BEZOUT_ADD_STRONG            : thm := BGcd.BEZOUT_ADD_STRONG
+def BEZOUT_GCD                   : thm := BGcd.BEZOUT_GCD
+def BEZOUT_ADD                   : thm := BGcd.BEZOUT_ADD
+def BEZOUT                       : thm := BGcd.BEZOUT
+def GCD_BEZOUT                   : thm := BGcd.GCD_BEZOUT
+def GCD_LE                       : thm := BGcd.GCD_LE
+def GCD_LE_MIN_EQ                : thm := BGcd.GCD_LE_MIN_EQ
+def GCD_LE_MIN                   : thm := BGcd.GCD_LE_MIN
+def GCD_LE_MAX                   : thm := BGcd.GCD_LE_MAX
 
 -- Coprime
-unsafe def COPRIME                      : thm := BCoprime.COPRIME
-unsafe def COPRIME_GCD                  : thm := BCoprime.COPRIME_GCD
-unsafe def GCD_ONE                      : thm := BCoprime.GCD_ONE
-unsafe def COPRIME_SYM                  : thm := BCoprime.COPRIME_SYM
-unsafe def COPRIME_BEZOUT               : thm := BCoprime.COPRIME_BEZOUT
-unsafe def COPRIME_DIVPROD              : thm := BCoprime.COPRIME_DIVPROD
-unsafe def COPRIME_1                    : thm := BCoprime.COPRIME_1
-unsafe def GCD_COPRIME                  : thm := BCoprime.GCD_COPRIME
-unsafe def GCD_COPRIME_EXISTS           : thm := BCoprime.GCD_COPRIME_EXISTS
-unsafe def COPRIME_DIVPROD_IFF          : thm := BCoprime.COPRIME_DIVPROD_IFF
-unsafe def CONG_MULT_LCANCEL_IFF        : thm := BCoprime.CONG_MULT_LCANCEL_IFF
-unsafe def CONG_MULT_RCANCEL_IFF        : thm := BCoprime.CONG_MULT_RCANCEL_IFF
-unsafe def COPRIME_0                    : thm := BCoprime.COPRIME_0
-unsafe def COPRIME_MUL                  : thm := BCoprime.COPRIME_MUL
-unsafe def COPRIME_LMUL2                : thm := BCoprime.COPRIME_LMUL2
-unsafe def COPRIME_RMUL2                : thm := BCoprime.COPRIME_RMUL2
-unsafe def COPRIME_LMUL                 : thm := BCoprime.COPRIME_LMUL
-unsafe def COPRIME_RMUL                 : thm := BCoprime.COPRIME_RMUL
-unsafe def COPRIME_EXP                  : thm := BCoprime.COPRIME_EXP
-unsafe def COPRIME_EXP_IMP              : thm := BCoprime.COPRIME_EXP_IMP
-unsafe def COPRIME_REXP                 : thm := BCoprime.COPRIME_REXP
-unsafe def COPRIME_LEXP                 : thm := BCoprime.COPRIME_LEXP
-unsafe def COPRIME_EXP2                 : thm := BCoprime.COPRIME_EXP2
-unsafe def COPRIME_EXP2_SUC             : thm := BCoprime.COPRIME_EXP2_SUC
-unsafe def COPRIME_NPRODUCT_EQ          : thm := BCoprime.COPRIME_NPRODUCT_EQ
-unsafe def COPRIME_NPRODUCT             : thm := BCoprime.COPRIME_NPRODUCT
-unsafe def COPRIME_DIVISORS             : thm := BCoprime.COPRIME_DIVISORS
-unsafe def COPRIME_REFL                 : thm := BCoprime.COPRIME_REFL
-unsafe def COPRIME_PLUS1                : thm := BCoprime.COPRIME_PLUS1
-unsafe def COPRIME_MINUS1               : thm := BCoprime.COPRIME_MINUS1
-unsafe def GCD_EXP                      : thm := BCoprime.GCD_EXP
-unsafe def DIVIDES_EXP2_REV             : thm := BCoprime.DIVIDES_EXP2_REV
-unsafe def DIVIDES_EXP2_EQ              : thm := BCoprime.DIVIDES_EXP2_EQ
-unsafe def DIVIDES_MUL                  : thm := BCoprime.DIVIDES_MUL
-unsafe def DIVISION_DECOMP              : thm := BCoprime.DIVISION_DECOMP
+def COPRIME                      : thm := BCoprime.COPRIME
+def COPRIME_GCD                  : thm := BCoprime.COPRIME_GCD
+def GCD_ONE                      : thm := BCoprime.GCD_ONE
+def COPRIME_SYM                  : thm := BCoprime.COPRIME_SYM
+def COPRIME_BEZOUT               : thm := BCoprime.COPRIME_BEZOUT
+def COPRIME_DIVPROD              : thm := BCoprime.COPRIME_DIVPROD
+def COPRIME_1                    : thm := BCoprime.COPRIME_1
+def GCD_COPRIME                  : thm := BCoprime.GCD_COPRIME
+def GCD_COPRIME_EXISTS           : thm := BCoprime.GCD_COPRIME_EXISTS
+def COPRIME_DIVPROD_IFF          : thm := BCoprime.COPRIME_DIVPROD_IFF
+def CONG_MULT_LCANCEL_IFF        : thm := BCoprime.CONG_MULT_LCANCEL_IFF
+def CONG_MULT_RCANCEL_IFF        : thm := BCoprime.CONG_MULT_RCANCEL_IFF
+def COPRIME_0                    : thm := BCoprime.COPRIME_0
+def COPRIME_MUL                  : thm := BCoprime.COPRIME_MUL
+def COPRIME_LMUL2                : thm := BCoprime.COPRIME_LMUL2
+def COPRIME_RMUL2                : thm := BCoprime.COPRIME_RMUL2
+def COPRIME_LMUL                 : thm := BCoprime.COPRIME_LMUL
+def COPRIME_RMUL                 : thm := BCoprime.COPRIME_RMUL
+def COPRIME_EXP                  : thm := BCoprime.COPRIME_EXP
+def COPRIME_EXP_IMP              : thm := BCoprime.COPRIME_EXP_IMP
+def COPRIME_REXP                 : thm := BCoprime.COPRIME_REXP
+def COPRIME_LEXP                 : thm := BCoprime.COPRIME_LEXP
+def COPRIME_EXP2                 : thm := BCoprime.COPRIME_EXP2
+def COPRIME_EXP2_SUC             : thm := BCoprime.COPRIME_EXP2_SUC
+def COPRIME_NPRODUCT_EQ          : thm := BCoprime.COPRIME_NPRODUCT_EQ
+def COPRIME_NPRODUCT             : thm := BCoprime.COPRIME_NPRODUCT
+def COPRIME_DIVISORS             : thm := BCoprime.COPRIME_DIVISORS
+def COPRIME_REFL                 : thm := BCoprime.COPRIME_REFL
+def COPRIME_PLUS1                : thm := BCoprime.COPRIME_PLUS1
+def COPRIME_MINUS1               : thm := BCoprime.COPRIME_MINUS1
+def GCD_EXP                      : thm := BCoprime.GCD_EXP
+def DIVIDES_EXP2_REV             : thm := BCoprime.DIVIDES_EXP2_REV
+def DIVIDES_EXP2_EQ              : thm := BCoprime.DIVIDES_EXP2_EQ
+def DIVIDES_MUL                  : thm := BCoprime.DIVIDES_MUL
+def DIVISION_DECOMP              : thm := BCoprime.DIVISION_DECOMP
 
 -- Primes
-unsafe def PRIME_0                      : thm := BPrimes.PRIME_0
-unsafe def PRIME_1                      : thm := BPrimes.PRIME_1
-unsafe def PRIME_ALT                    : thm := BPrimes.PRIME_ALT
-unsafe def PRIME_2                      : thm := BPrimes.PRIME_2
-unsafe def PRIME_COPRIME_STRONG         : thm := BPrimes.PRIME_COPRIME_STRONG
-unsafe def PRIME_COPRIME                : thm := BPrimes.PRIME_COPRIME
-unsafe def PRIME_COPRIME_EQ             : thm := BPrimes.PRIME_COPRIME_EQ
-unsafe def COPRIME_PRIME                : thm := BPrimes.COPRIME_PRIME
-unsafe def PRIME_DIVPROD                : thm := BPrimes.PRIME_DIVPROD
-unsafe def PRIME_DIVPROD_EQ             : thm := BPrimes.PRIME_DIVPROD_EQ
-unsafe def PRIME_INT_DIVPROD_EQ         : thm := BPrimes.PRIME_INT_DIVPROD_EQ
-unsafe def PRIME_GE_2                   : thm := BPrimes.PRIME_GE_2
-unsafe def PRIME_FACTOR                 : thm := BPrimes.PRIME_FACTOR
-unsafe def PRIME                        : thm := BPrimes.PRIME
-unsafe def PRIME_PRIME_FACTOR           : thm := BPrimes.PRIME_PRIME_FACTOR
-unsafe def PRIME_FACTOR_LT              : thm := BPrimes.PRIME_FACTOR_LT
-unsafe def COPRIME_PRIME_EQ             : thm := BPrimes.COPRIME_PRIME_EQ
-unsafe def GCD_PRIME_CASES              : thm := BPrimes.GCD_PRIME_CASES
-unsafe def GCD_2_CASES                  : thm := BPrimes.GCD_2_CASES
-unsafe def COPRIME_PRIMEPOW             : thm := BPrimes.COPRIME_PRIMEPOW
-unsafe def COPRIME_BEZOUT_STRONG        : thm := BPrimes.COPRIME_BEZOUT_STRONG
-unsafe def COPRIME_BEZOUT_ALT           : thm := BPrimes.COPRIME_BEZOUT_ALT
-unsafe def BEZOUT_PRIME                 : thm := BPrimes.BEZOUT_PRIME
-unsafe def PRIME_DIVEXP                 : thm := BPrimes.PRIME_DIVEXP
-unsafe def PRIME_DIVEXP_N               : thm := BPrimes.PRIME_DIVEXP_N
-unsafe def PRIME_DIVEXP_EQ              : thm := BPrimes.PRIME_DIVEXP_EQ
-unsafe def COPRIME_SOS                  : thm := BPrimes.COPRIME_SOS
-unsafe def PRIME_IMP_NZ                 : thm := BPrimes.PRIME_IMP_NZ
-unsafe def DISTINCT_PRIME_COPRIME       : thm := BPrimes.DISTINCT_PRIME_COPRIME
-unsafe def PRIME_COPRIME_LT             : thm := BPrimes.PRIME_COPRIME_LT
-unsafe def DIVIDES_PRIME_PRIME          : thm := BPrimes.DIVIDES_PRIME_PRIME
-unsafe def COPRIME_PRIME_PRIME          : thm := BPrimes.COPRIME_PRIME_PRIME
-unsafe def DIVIDES_PRIME_EXP_LE         : thm := BPrimes.DIVIDES_PRIME_EXP_LE
-unsafe def EQ_PRIME_EXP                 : thm := BPrimes.EQ_PRIME_EXP
-unsafe def PRIME_ODD                    : thm := BPrimes.PRIME_ODD
-unsafe def ODD_PRIME                    : thm := BPrimes.ODD_PRIME
-unsafe def DIVIDES_FACT_PRIME           : thm := BPrimes.DIVIDES_FACT_PRIME
-unsafe def EQ_PRIMEPOW                  : thm := BPrimes.EQ_PRIMEPOW
-unsafe def COPRIME_2                    : thm := BPrimes.COPRIME_2
-unsafe def DIVIDES_EXP_PLUS1            : thm := BPrimes.DIVIDES_EXP_PLUS1
-unsafe def DIVIDES_EXP_MINUS1           : thm := BPrimes.DIVIDES_EXP_MINUS1
-unsafe def PRIME_IRREDUCIBLE            : thm := BPrimes.PRIME_IRREDUCIBLE
-unsafe def COPRIME_EXP_DIVPROD          : thm := BPrimes.COPRIME_EXP_DIVPROD
-unsafe def PRIME_COPRIME_CASES          : thm := BPrimes.PRIME_COPRIME_CASES
-unsafe def PRIME_DIVPROD_POW_GEN        : thm := BPrimes.PRIME_DIVPROD_POW_GEN
-unsafe def PRIME_DIVPROD_POW_GEN_EQ     : thm := BPrimes.PRIME_DIVPROD_POW_GEN_EQ
-unsafe def PRIME_DIVPROD_POW            : thm := BPrimes.PRIME_DIVPROD_POW
-unsafe def PRIME_DIVPROD_POW_EQ         : thm := BPrimes.PRIME_DIVPROD_POW_EQ
-unsafe def PRIME_FACTOR_INDUCT          : thm := BPrimes.PRIME_FACTOR_INDUCT
-unsafe def COMPLETE_FACTOR_INDUCT       : thm := BPrimes.COMPLETE_FACTOR_INDUCT
-unsafe def PRIME_FACTOR_PARTITION       : thm := BPrimes.PRIME_FACTOR_PARTITION
-unsafe def COPRIME_PAIR_DECOMP          : thm := BPrimes.COPRIME_PAIR_DECOMP
-unsafe def EXP_MULT_EXISTS              : thm := BPrimes.EXP_MULT_EXISTS
-unsafe def COPRIME_POW                  : thm := BPrimes.COPRIME_POW
-unsafe def PRIME_EXP                    : thm := BPrimes.PRIME_EXP
-unsafe def PRIME_POWER_MULT             : thm := BPrimes.PRIME_POWER_MULT
-unsafe def PRIME_POWER_EXP              : thm := BPrimes.PRIME_POWER_EXP
-unsafe def DIVIDES_PRIMEPOW             : thm := BPrimes.DIVIDES_PRIMEPOW
-unsafe def PRIMEPOW_DIVIDES_PROD        : thm := BPrimes.PRIMEPOW_DIVIDES_PROD
-unsafe def EUCLID_BOUND                 : thm := BPrimes.EUCLID_BOUND
-unsafe def EUCLID                       : thm := BPrimes.EUCLID
-unsafe def PRIMES_INFINITE              : thm := BPrimes.PRIMES_INFINITE
-unsafe def FACTORIZATION_INDEX          : thm := BPrimes.FACTORIZATION_INDEX
-unsafe def PRIMEPOW_FACTOR              : thm := BPrimes.PRIMEPOW_FACTOR
-unsafe def PRIMEPOW_DIVISORS_DIVIDES    : thm := BPrimes.PRIMEPOW_DIVISORS_DIVIDES
-unsafe def PRIMEPOW_DIVISORS_EQ         : thm := BPrimes.PRIMEPOW_DIVISORS_EQ
+def PRIME_0                      : thm := BPrimes.PRIME_0
+def PRIME_1                      : thm := BPrimes.PRIME_1
+def PRIME_ALT                    : thm := BPrimes.PRIME_ALT
+def PRIME_2                      : thm := BPrimes.PRIME_2
+def PRIME_COPRIME_STRONG         : thm := BPrimes.PRIME_COPRIME_STRONG
+def PRIME_COPRIME                : thm := BPrimes.PRIME_COPRIME
+def PRIME_COPRIME_EQ             : thm := BPrimes.PRIME_COPRIME_EQ
+def COPRIME_PRIME                : thm := BPrimes.COPRIME_PRIME
+def PRIME_DIVPROD                : thm := BPrimes.PRIME_DIVPROD
+def PRIME_DIVPROD_EQ             : thm := BPrimes.PRIME_DIVPROD_EQ
+def PRIME_INT_DIVPROD_EQ         : thm := BPrimes.PRIME_INT_DIVPROD_EQ
+def PRIME_GE_2                   : thm := BPrimes.PRIME_GE_2
+def PRIME_FACTOR                 : thm := BPrimes.PRIME_FACTOR
+def PRIME                        : thm := BPrimes.PRIME
+def PRIME_PRIME_FACTOR           : thm := BPrimes.PRIME_PRIME_FACTOR
+def PRIME_FACTOR_LT              : thm := BPrimes.PRIME_FACTOR_LT
+def COPRIME_PRIME_EQ             : thm := BPrimes.COPRIME_PRIME_EQ
+def GCD_PRIME_CASES              : thm := BPrimes.GCD_PRIME_CASES
+def GCD_2_CASES                  : thm := BPrimes.GCD_2_CASES
+def COPRIME_PRIMEPOW             : thm := BPrimes.COPRIME_PRIMEPOW
+def COPRIME_BEZOUT_STRONG        : thm := BPrimes.COPRIME_BEZOUT_STRONG
+def COPRIME_BEZOUT_ALT           : thm := BPrimes.COPRIME_BEZOUT_ALT
+def BEZOUT_PRIME                 : thm := BPrimes.BEZOUT_PRIME
+def PRIME_DIVEXP                 : thm := BPrimes.PRIME_DIVEXP
+def PRIME_DIVEXP_N               : thm := BPrimes.PRIME_DIVEXP_N
+def PRIME_DIVEXP_EQ              : thm := BPrimes.PRIME_DIVEXP_EQ
+def COPRIME_SOS                  : thm := BPrimes.COPRIME_SOS
+def PRIME_IMP_NZ                 : thm := BPrimes.PRIME_IMP_NZ
+def DISTINCT_PRIME_COPRIME       : thm := BPrimes.DISTINCT_PRIME_COPRIME
+def PRIME_COPRIME_LT             : thm := BPrimes.PRIME_COPRIME_LT
+def DIVIDES_PRIME_PRIME          : thm := BPrimes.DIVIDES_PRIME_PRIME
+def COPRIME_PRIME_PRIME          : thm := BPrimes.COPRIME_PRIME_PRIME
+def DIVIDES_PRIME_EXP_LE         : thm := BPrimes.DIVIDES_PRIME_EXP_LE
+def EQ_PRIME_EXP                 : thm := BPrimes.EQ_PRIME_EXP
+def PRIME_ODD                    : thm := BPrimes.PRIME_ODD
+def ODD_PRIME                    : thm := BPrimes.ODD_PRIME
+def DIVIDES_FACT_PRIME           : thm := BPrimes.DIVIDES_FACT_PRIME
+def EQ_PRIMEPOW                  : thm := BPrimes.EQ_PRIMEPOW
+def COPRIME_2                    : thm := BPrimes.COPRIME_2
+def DIVIDES_EXP_PLUS1            : thm := BPrimes.DIVIDES_EXP_PLUS1
+def DIVIDES_EXP_MINUS1           : thm := BPrimes.DIVIDES_EXP_MINUS1
+def PRIME_IRREDUCIBLE            : thm := BPrimes.PRIME_IRREDUCIBLE
+def COPRIME_EXP_DIVPROD          : thm := BPrimes.COPRIME_EXP_DIVPROD
+def PRIME_COPRIME_CASES          : thm := BPrimes.PRIME_COPRIME_CASES
+def PRIME_DIVPROD_POW_GEN        : thm := BPrimes.PRIME_DIVPROD_POW_GEN
+def PRIME_DIVPROD_POW_GEN_EQ     : thm := BPrimes.PRIME_DIVPROD_POW_GEN_EQ
+def PRIME_DIVPROD_POW            : thm := BPrimes.PRIME_DIVPROD_POW
+def PRIME_DIVPROD_POW_EQ         : thm := BPrimes.PRIME_DIVPROD_POW_EQ
+def PRIME_FACTOR_INDUCT          : thm := BPrimes.PRIME_FACTOR_INDUCT
+def COMPLETE_FACTOR_INDUCT       : thm := BPrimes.COMPLETE_FACTOR_INDUCT
+def PRIME_FACTOR_PARTITION       : thm := BPrimes.PRIME_FACTOR_PARTITION
+def COPRIME_PAIR_DECOMP          : thm := BPrimes.COPRIME_PAIR_DECOMP
+def EXP_MULT_EXISTS              : thm := BPrimes.EXP_MULT_EXISTS
+def COPRIME_POW                  : thm := BPrimes.COPRIME_POW
+def PRIME_EXP                    : thm := BPrimes.PRIME_EXP
+def PRIME_POWER_MULT             : thm := BPrimes.PRIME_POWER_MULT
+def PRIME_POWER_EXP              : thm := BPrimes.PRIME_POWER_EXP
+def DIVIDES_PRIMEPOW             : thm := BPrimes.DIVIDES_PRIMEPOW
+def PRIMEPOW_DIVIDES_PROD        : thm := BPrimes.PRIMEPOW_DIVIDES_PROD
+def EUCLID_BOUND                 : thm := BPrimes.EUCLID_BOUND
+def EUCLID                       : thm := BPrimes.EUCLID
+def PRIMES_INFINITE              : thm := BPrimes.PRIMES_INFINITE
+def FACTORIZATION_INDEX          : thm := BPrimes.FACTORIZATION_INDEX
+def PRIMEPOW_FACTOR              : thm := BPrimes.PRIMEPOW_FACTOR
+def PRIMEPOW_DIVISORS_DIVIDES    : thm := BPrimes.PRIMEPOW_DIVISORS_DIVIDES
+def PRIMEPOW_DIVISORS_EQ         : thm := BPrimes.PRIMEPOW_DIVISORS_EQ
 
 -- Chinese
-unsafe def CHINESE_REMAINDER            : thm := BChinese.CHINESE_REMAINDER
+def CHINESE_REMAINDER            : thm := BChinese.CHINESE_REMAINDER
 
 -- Index
-unsafe def FINITE_EXP_LE                : thm := BIndex.FINITE_EXP_LE
-unsafe def FINITE_INDICES               : thm := BIndex.FINITE_INDICES
-unsafe def index_def                    : thm := BIndex.index_def
-unsafe def INDEX_0                      : thm := BIndex.INDEX_0
-unsafe def PRIMEPOW_DIVIDES_INDEX       : thm := BIndex.PRIMEPOW_DIVIDES_INDEX
-unsafe def LE_INDEX                     : thm := BIndex.LE_INDEX
-unsafe def EXP_INDEX_DIVIDES            : thm := BIndex.EXP_INDEX_DIVIDES
-unsafe def INDEX_LT                     : thm := BIndex.INDEX_LT
-unsafe def INDEX_1                      : thm := BIndex.INDEX_1
-unsafe def INDEX_MUL                    : thm := BIndex.INDEX_MUL
-unsafe def INDEX_EXP                    : thm := BIndex.INDEX_EXP
-unsafe def INDEX_FACT                   : thm := BIndex.INDEX_FACT
-unsafe def INDEX_FACT_ALT               : thm := BIndex.INDEX_FACT_ALT
-unsafe def INDEX_FACT_UNBOUNDED         : thm := BIndex.INDEX_FACT_UNBOUNDED
-unsafe def PRIMEPOW_DIVIDES_FACT        : thm := BIndex.PRIMEPOW_DIVIDES_FACT
-unsafe def INDEX_REFL                   : thm := BIndex.INDEX_REFL
-unsafe def INDEX_EQ_0                   : thm := BIndex.INDEX_EQ_0
-unsafe def INDEX_ZERO                   : thm := BIndex.INDEX_ZERO
-unsafe def INDEX_POW                    : thm := BIndex.INDEX_POW
-unsafe def INDEX_PRIME                  : thm := BIndex.INDEX_PRIME
-unsafe def INDEX_TRIVIAL_BOUND          : thm := BIndex.INDEX_TRIVIAL_BOUND
-unsafe def INDEX_DECOMPOSITION          : thm := BIndex.INDEX_DECOMPOSITION
-unsafe def INDEX_DECOMPOSITION_PRIME    : thm := BIndex.INDEX_DECOMPOSITION_PRIME
-unsafe def INDEX_DECOMPOSITION_LE       : thm := BIndex.INDEX_DECOMPOSITION_LE
-unsafe def INDEX_DECOMPOSITION_UNIQUE   : thm := BIndex.INDEX_DECOMPOSITION_UNIQUE
-unsafe def INDEX_UNIQUE                 : thm := BIndex.INDEX_UNIQUE
-unsafe def INDEX_UNIQUE_EQ              : thm := BIndex.INDEX_UNIQUE_EQ
-unsafe def INDEX_UNIQUE_ALT             : thm := BIndex.INDEX_UNIQUE_ALT
-unsafe def INDEX_ADD_MIN                : thm := BIndex.INDEX_ADD_MIN
-unsafe def INDEX_SUB_MIN                : thm := BIndex.INDEX_SUB_MIN
-unsafe def INDEX_ADD                    : thm := BIndex.INDEX_ADD
-unsafe def INDEX_MULT_BASE              : thm := BIndex.INDEX_MULT_BASE
-unsafe def INDEX_MULT_EXP               : thm := BIndex.INDEX_MULT_EXP
-unsafe def INDEX_MULT_ADD               : thm := BIndex.INDEX_MULT_ADD
-unsafe def INDEX_NSUM_LE                : thm := BIndex.INDEX_NSUM_LE
-unsafe def DIVIDES_INDEX                : thm := BIndex.DIVIDES_INDEX
-unsafe def EQ_INDEX                     : thm := BIndex.EQ_INDEX
-unsafe def COPRIME_INDEX                : thm := BIndex.COPRIME_INDEX
-unsafe def INDEX_GCD                    : thm := BIndex.INDEX_GCD
-unsafe def FORALL_PRIME_INDEX           : thm := BIndex.FORALL_PRIME_INDEX
-unsafe def INDEX_FACT_PRIME_MULT        : thm := BIndex.INDEX_FACT_PRIME_MULT
-unsafe def PRIME_FACTORIZATION_INDEX    : thm := BIndex.PRIME_FACTORIZATION_INDEX
-unsafe def PRIME_POWER_EXISTS           : thm := BIndex.PRIME_POWER_EXISTS
-unsafe def PRIME_POWER_EXISTS_ALT       : thm := BIndex.PRIME_POWER_EXISTS_ALT
-unsafe def PRIME_FACTORIZATION_ALT      : thm := BIndex.PRIME_FACTORIZATION_ALT
-unsafe def PRIME_FACTORIZATION          : thm := BIndex.PRIME_FACTORIZATION
+def FINITE_EXP_LE                : thm := BIndex.FINITE_EXP_LE
+def FINITE_INDICES               : thm := BIndex.FINITE_INDICES
+def index_def                    : thm := BIndex.index_def
+def INDEX_0                      : thm := BIndex.INDEX_0
+def PRIMEPOW_DIVIDES_INDEX       : thm := BIndex.PRIMEPOW_DIVIDES_INDEX
+def LE_INDEX                     : thm := BIndex.LE_INDEX
+def EXP_INDEX_DIVIDES            : thm := BIndex.EXP_INDEX_DIVIDES
+def INDEX_LT                     : thm := BIndex.INDEX_LT
+def INDEX_1                      : thm := BIndex.INDEX_1
+def INDEX_MUL                    : thm := BIndex.INDEX_MUL
+def INDEX_EXP                    : thm := BIndex.INDEX_EXP
+def INDEX_FACT                   : thm := BIndex.INDEX_FACT
+def INDEX_FACT_ALT               : thm := BIndex.INDEX_FACT_ALT
+def INDEX_FACT_UNBOUNDED         : thm := BIndex.INDEX_FACT_UNBOUNDED
+def PRIMEPOW_DIVIDES_FACT        : thm := BIndex.PRIMEPOW_DIVIDES_FACT
+def INDEX_REFL                   : thm := BIndex.INDEX_REFL
+def INDEX_EQ_0                   : thm := BIndex.INDEX_EQ_0
+def INDEX_ZERO                   : thm := BIndex.INDEX_ZERO
+def INDEX_POW                    : thm := BIndex.INDEX_POW
+def INDEX_PRIME                  : thm := BIndex.INDEX_PRIME
+def INDEX_TRIVIAL_BOUND          : thm := BIndex.INDEX_TRIVIAL_BOUND
+def INDEX_DECOMPOSITION          : thm := BIndex.INDEX_DECOMPOSITION
+def INDEX_DECOMPOSITION_PRIME    : thm := BIndex.INDEX_DECOMPOSITION_PRIME
+def INDEX_DECOMPOSITION_LE       : thm := BIndex.INDEX_DECOMPOSITION_LE
+def INDEX_DECOMPOSITION_UNIQUE   : thm := BIndex.INDEX_DECOMPOSITION_UNIQUE
+def INDEX_UNIQUE                 : thm := BIndex.INDEX_UNIQUE
+def INDEX_UNIQUE_EQ              : thm := BIndex.INDEX_UNIQUE_EQ
+def INDEX_UNIQUE_ALT             : thm := BIndex.INDEX_UNIQUE_ALT
+def INDEX_ADD_MIN                : thm := BIndex.INDEX_ADD_MIN
+def INDEX_SUB_MIN                : thm := BIndex.INDEX_SUB_MIN
+def INDEX_ADD                    : thm := BIndex.INDEX_ADD
+def INDEX_MULT_BASE              : thm := BIndex.INDEX_MULT_BASE
+def INDEX_MULT_EXP               : thm := BIndex.INDEX_MULT_EXP
+def INDEX_MULT_ADD               : thm := BIndex.INDEX_MULT_ADD
+def INDEX_NSUM_LE                : thm := BIndex.INDEX_NSUM_LE
+def DIVIDES_INDEX                : thm := BIndex.DIVIDES_INDEX
+def EQ_INDEX                     : thm := BIndex.EQ_INDEX
+def COPRIME_INDEX                : thm := BIndex.COPRIME_INDEX
+def INDEX_GCD                    : thm := BIndex.INDEX_GCD
+def FORALL_PRIME_INDEX           : thm := BIndex.FORALL_PRIME_INDEX
+def INDEX_FACT_PRIME_MULT        : thm := BIndex.INDEX_FACT_PRIME_MULT
+def PRIME_FACTORIZATION_INDEX    : thm := BIndex.PRIME_FACTORIZATION_INDEX
+def PRIME_POWER_EXISTS           : thm := BIndex.PRIME_POWER_EXISTS
+def PRIME_POWER_EXISTS_ALT       : thm := BIndex.PRIME_POWER_EXISTS_ALT
+def PRIME_FACTORIZATION_ALT      : thm := BIndex.PRIME_FACTORIZATION_ALT
+def PRIME_FACTORIZATION          : thm := BIndex.PRIME_FACTORIZATION
 
 -- Lcm
-unsafe def lcm                          : thm := BLcm.lcm
-unsafe def LCM_DIVIDES                  : thm := BLcm.LCM_DIVIDES
-unsafe def LCM                          : thm := BLcm.LCM
-unsafe def LCM_DIVIDES_MUL              : thm := BLcm.LCM_DIVIDES_MUL
-unsafe def DIVIDES_LCM                  : thm := BLcm.DIVIDES_LCM
-unsafe def LCM_0                        : thm := BLcm.LCM_0
-unsafe def LCM_1                        : thm := BLcm.LCM_1
-unsafe def LCM_SYM                      : thm := BLcm.LCM_SYM
-unsafe def DIVIDES_LCM_GCD              : thm := BLcm.DIVIDES_LCM_GCD
-unsafe def PRIMEPOW_DIVIDES_LCM         : thm := BLcm.PRIMEPOW_DIVIDES_LCM
-unsafe def PRIME_DIVIDES_LCM            : thm := BLcm.PRIME_DIVIDES_LCM
-unsafe def LCM_ZERO                     : thm := BLcm.LCM_ZERO
-unsafe def INDEX_LCM                    : thm := BLcm.INDEX_LCM
-unsafe def LCM_ASSOC                    : thm := BLcm.LCM_ASSOC
-unsafe def LCM_REFL                     : thm := BLcm.LCM_REFL
-unsafe def LCM_MULTIPLE                 : thm := BLcm.LCM_MULTIPLE
-unsafe def LCM_GCD_DISTRIB              : thm := BLcm.LCM_GCD_DISTRIB
-unsafe def GCD_LCM_DISTRIB              : thm := BLcm.GCD_LCM_DISTRIB
-unsafe def LCM_UNIQUE                   : thm := BLcm.LCM_UNIQUE
-unsafe def LCM_EQ                       : thm := BLcm.LCM_EQ
-unsafe def LCM_EQ_1                     : thm := BLcm.LCM_EQ_1
-unsafe def DIVIDES_LCM_LEFT             : thm := BLcm.DIVIDES_LCM_LEFT
-unsafe def DIVIDES_LCM_RIGHT            : thm := BLcm.DIVIDES_LCM_RIGHT
-unsafe def MULT_LCM_GCD                 : thm := BLcm.MULT_LCM_GCD
-unsafe def MULT_GCD_LCM                 : thm := BLcm.MULT_GCD_LCM
-unsafe def LCM_LMUL                     : thm := BLcm.LCM_LMUL
-unsafe def LCM_RMUL                     : thm := BLcm.LCM_RMUL
-unsafe def LCM_EXP                      : thm := BLcm.LCM_EXP
-unsafe def LCM_COPRIME_DECOMP           : thm := BLcm.LCM_COPRIME_DECOMP
-unsafe def LE_LCM                       : thm := BLcm.LE_LCM
-unsafe def LCM_LE_MULT                  : thm := BLcm.LCM_LE_MULT
-unsafe def LCM_EQ_MULT                  : thm := BLcm.LCM_EQ_MULT
-unsafe def MAX_LE_LCM_EQ                : thm := BLcm.MAX_LE_LCM_EQ
-unsafe def MAX_LE_LCM                   : thm := BLcm.MAX_LE_LCM
+def lcm                          : thm := BLcm.lcm
+def LCM_DIVIDES                  : thm := BLcm.LCM_DIVIDES
+def LCM                          : thm := BLcm.LCM
+def LCM_DIVIDES_MUL              : thm := BLcm.LCM_DIVIDES_MUL
+def DIVIDES_LCM                  : thm := BLcm.DIVIDES_LCM
+def LCM_0                        : thm := BLcm.LCM_0
+def LCM_1                        : thm := BLcm.LCM_1
+def LCM_SYM                      : thm := BLcm.LCM_SYM
+def DIVIDES_LCM_GCD              : thm := BLcm.DIVIDES_LCM_GCD
+def PRIMEPOW_DIVIDES_LCM         : thm := BLcm.PRIMEPOW_DIVIDES_LCM
+def PRIME_DIVIDES_LCM            : thm := BLcm.PRIME_DIVIDES_LCM
+def LCM_ZERO                     : thm := BLcm.LCM_ZERO
+def INDEX_LCM                    : thm := BLcm.INDEX_LCM
+def LCM_ASSOC                    : thm := BLcm.LCM_ASSOC
+def LCM_REFL                     : thm := BLcm.LCM_REFL
+def LCM_MULTIPLE                 : thm := BLcm.LCM_MULTIPLE
+def LCM_GCD_DISTRIB              : thm := BLcm.LCM_GCD_DISTRIB
+def GCD_LCM_DISTRIB              : thm := BLcm.GCD_LCM_DISTRIB
+def LCM_UNIQUE                   : thm := BLcm.LCM_UNIQUE
+def LCM_EQ                       : thm := BLcm.LCM_EQ
+def LCM_EQ_1                     : thm := BLcm.LCM_EQ_1
+def DIVIDES_LCM_LEFT             : thm := BLcm.DIVIDES_LCM_LEFT
+def DIVIDES_LCM_RIGHT            : thm := BLcm.DIVIDES_LCM_RIGHT
+def MULT_LCM_GCD                 : thm := BLcm.MULT_LCM_GCD
+def MULT_GCD_LCM                 : thm := BLcm.MULT_GCD_LCM
+def LCM_LMUL                     : thm := BLcm.LCM_LMUL
+def LCM_RMUL                     : thm := BLcm.LCM_RMUL
+def LCM_EXP                      : thm := BLcm.LCM_EXP
+def LCM_COPRIME_DECOMP           : thm := BLcm.LCM_COPRIME_DECOMP
+def LE_LCM                       : thm := BLcm.LE_LCM
+def LCM_LE_MULT                  : thm := BLcm.LCM_LE_MULT
+def LCM_EQ_MULT                  : thm := BLcm.LCM_EQ_MULT
+def MAX_LE_LCM_EQ                : thm := BLcm.MAX_LE_LCM_EQ
+def MAX_LE_LCM                   : thm := BLcm.MAX_LE_LCM
 
 -- Iterated
-unsafe def NEUTRAL_GCD                  : thm := BIterated.NEUTRAL_GCD
-unsafe def MONOIDAL_GCD                 : thm := BIterated.MONOIDAL_GCD
-unsafe def NEUTRAL_LCM                  : thm := BIterated.NEUTRAL_LCM
-unsafe def MONOIDAL_LCM                 : thm := BIterated.MONOIDAL_LCM
-unsafe def ITERATE_GCD_DIVIDES          : thm := BIterated.ITERATE_GCD_DIVIDES
-unsafe def ITERATE_GCD_DIVIDES_EQ       : thm := BIterated.ITERATE_GCD_DIVIDES_EQ
-unsafe def DIVIDES_ITERATE_GCD          : thm := BIterated.DIVIDES_ITERATE_GCD
-unsafe def DIVIDES_ITERATE_GCD_GEN      : thm := BIterated.DIVIDES_ITERATE_GCD_GEN
-unsafe def DIVIDES_ITERATE_LCM          : thm := BIterated.DIVIDES_ITERATE_LCM
-unsafe def DIVIDES_ITERATE_LCM_GEN      : thm := BIterated.DIVIDES_ITERATE_LCM_GEN
-unsafe def ITERATE_LCM_DIVIDES          : thm := BIterated.ITERATE_LCM_DIVIDES
-unsafe def ITERATE_LCM_DIVIDES_GEN      : thm := BIterated.ITERATE_LCM_DIVIDES_GEN
-unsafe def PRIMEPOW_DIVIDES_ITERATE_LCM : thm := BIterated.PRIMEPOW_DIVIDES_ITERATE_LCM
-unsafe def PRIMEPOW_DIVIDES_ITERATE_LCM_GEN : thm := BIterated.PRIMEPOW_DIVIDES_ITERATE_LCM_GEN
-unsafe def PRIME_DIVIDES_ITERATE_LCM_GEN : thm := BIterated.PRIME_DIVIDES_ITERATE_LCM_GEN
-unsafe def PRIME_DIVIDES_ITERATE_LCM    : thm := BIterated.PRIME_DIVIDES_ITERATE_LCM
-unsafe def ITERATE_LCM_EQ_0_GEN         : thm := BIterated.ITERATE_LCM_EQ_0_GEN
-unsafe def ITERATE_LCM_EQ_0             : thm := BIterated.ITERATE_LCM_EQ_0
-unsafe def ITERATE_LCM_EQ_1_GEN         : thm := BIterated.ITERATE_LCM_EQ_1_GEN
-unsafe def ITERATE_LCM_EQ_1             : thm := BIterated.ITERATE_LCM_EQ_1
-unsafe def ITERATE_GCD_EQ_0_GEN         : thm := BIterated.ITERATE_GCD_EQ_0_GEN
-unsafe def ITERATE_GCD_EQ_0             : thm := BIterated.ITERATE_GCD_EQ_0
+def NEUTRAL_GCD                  : thm := BIterated.NEUTRAL_GCD
+def MONOIDAL_GCD                 : thm := BIterated.MONOIDAL_GCD
+def NEUTRAL_LCM                  : thm := BIterated.NEUTRAL_LCM
+def MONOIDAL_LCM                 : thm := BIterated.MONOIDAL_LCM
+def ITERATE_GCD_DIVIDES          : thm := BIterated.ITERATE_GCD_DIVIDES
+def ITERATE_GCD_DIVIDES_EQ       : thm := BIterated.ITERATE_GCD_DIVIDES_EQ
+def DIVIDES_ITERATE_GCD          : thm := BIterated.DIVIDES_ITERATE_GCD
+def DIVIDES_ITERATE_GCD_GEN      : thm := BIterated.DIVIDES_ITERATE_GCD_GEN
+def DIVIDES_ITERATE_LCM          : thm := BIterated.DIVIDES_ITERATE_LCM
+def DIVIDES_ITERATE_LCM_GEN      : thm := BIterated.DIVIDES_ITERATE_LCM_GEN
+def ITERATE_LCM_DIVIDES          : thm := BIterated.ITERATE_LCM_DIVIDES
+def ITERATE_LCM_DIVIDES_GEN      : thm := BIterated.ITERATE_LCM_DIVIDES_GEN
+def PRIMEPOW_DIVIDES_ITERATE_LCM : thm := BIterated.PRIMEPOW_DIVIDES_ITERATE_LCM
+def PRIMEPOW_DIVIDES_ITERATE_LCM_GEN : thm := BIterated.PRIMEPOW_DIVIDES_ITERATE_LCM_GEN
+def PRIME_DIVIDES_ITERATE_LCM_GEN : thm := BIterated.PRIME_DIVIDES_ITERATE_LCM_GEN
+def PRIME_DIVIDES_ITERATE_LCM    : thm := BIterated.PRIME_DIVIDES_ITERATE_LCM
+def ITERATE_LCM_EQ_0_GEN         : thm := BIterated.ITERATE_LCM_EQ_0_GEN
+def ITERATE_LCM_EQ_0             : thm := BIterated.ITERATE_LCM_EQ_0
+def ITERATE_LCM_EQ_1_GEN         : thm := BIterated.ITERATE_LCM_EQ_1_GEN
+def ITERATE_LCM_EQ_1             : thm := BIterated.ITERATE_LCM_EQ_1
+def ITERATE_GCD_EQ_0_GEN         : thm := BIterated.ITERATE_GCD_EQ_0_GEN
+def ITERATE_GCD_EQ_0             : thm := BIterated.ITERATE_GCD_EQ_0
 
 -- Induct
-unsafe def INDUCT_COPRIME               : thm := BInduct.INDUCT_COPRIME
-unsafe def INDUCT_COPRIME_STRONG        : thm := BInduct.INDUCT_COPRIME_STRONG
-unsafe def INDUCT_COPRIME_ALT           : thm := BInduct.INDUCT_COPRIME_ALT
+def INDUCT_COPRIME               : thm := BInduct.INDUCT_COPRIME
+def INDUCT_COPRIME_STRONG        : thm := BInduct.INDUCT_COPRIME_STRONG
+def INDUCT_COPRIME_ALT           : thm := BInduct.INDUCT_COPRIME_ALT
 
 /- The conversions (prime.ml 2358-2472). -/
 /-- `DIVIDES_CONV` (prime.ml 2361). -/
-unsafe def DIVIDES_CONV : HolCore.Equal.ioconv := fun tm => HolLibrary.Prime.DIVIDES_CONV (deps ()) BConvs tm
+def DIVIDES_CONV : HolCore.Equal.ioconv := fun tm => HolLibrary.Prime.DIVIDES_CONV (deps) BConvs tm
 /-- `COPRIME_CONV` (prime.ml 2381). -/
-unsafe def COPRIME_CONV : HolCore.Equal.ioconv := fun tm => HolLibrary.Prime.COPRIME_CONV (deps ()) BConvs tm
+def COPRIME_CONV : HolCore.Equal.ioconv := fun tm => HolLibrary.Prime.COPRIME_CONV (deps) BConvs tm
 /-- `GCD_CONV` (prime.ml 2429). -/
-unsafe def GCD_CONV : HolCore.Equal.ioconv := fun tm => HolLibrary.Prime.GCD_CONV (deps ()) BConvs tm
-/-- `LCM_CONV` (prime.ml 2467), built once. -/
-initialize theLcmConv : IO.Ref (Option HolCore.Equal.ioconv) ← IO.mkRef none
-private unsafe def BLcmConv : HolCore.Equal.ioconv :=
-  cached theLcmConv "LCM_CONV" fun _ => (HolLibrary.Prime.LCM_CONV (deps ()) BConvs BLcm.lcm).run
-unsafe def LCM_CONV : HolCore.Equal.ioconv := fun tm => BLcmConv tm
+def GCD_CONV : HolCore.Equal.ioconv := fun tm => HolLibrary.Prime.GCD_CONV (deps) BConvs tm
+/-- `LCM_CONV` (prime.ml 2467), built once at load.  A conversion, so it is
+    kept in a one-field structure: an `initialize` of function type is never
+    run in compiled code (see `WfQqconvBox`, SessionMath/Wf.lean). -/
+structure LcmConvBox where
+  conv : HolCore.Equal.ioconv
 
-/-- `needs "Library/prime.ml"`: build every bundle, in file order. -/
-unsafe def ensurePrime : IO Unit := do
-  let _ ← IO.mkRef (concl BDivides.DIVIDES_0)
-  let _ ← IO.mkRef (concl BGcd.DIVIDES_GCD)
-  let _ ← IO.mkRef (concl BCoprime.COPRIME)
-  let _ ← IO.mkRef (concl BPrimes.PRIME_0)
-  let _ ← IO.mkRef (concl BChinese.CHINESE_REMAINDER)
-  let _ ← IO.mkRef (concl BIndex.FINITE_EXP_LE)
-  let _ ← IO.mkRef (concl BLcm.lcm)
-  let _ ← IO.mkRef (concl BIterated.NEUTRAL_GCD)
-  let _ ← IO.mkRef (concl BInduct.INDUCT_COPRIME)
-  let _ ← IO.mkRef (concl BConvs.divides_pth_0)
-  pure ()
+instance : Inhabited LcmConvBox := ⟨⟨fun _ => pure (.error "LCM_CONV")⟩⟩
+
+initialize lcmConvBox : LcmConvBox ←
+  return ⟨← ioB "LCM_CONV" (HolLibrary.Prime.LCM_CONV deps BConvs BLcm.lcm).run⟩
+def LCM_CONV : HolCore.Equal.ioconv := lcmConvBox.conv
+
+/-- `needs "Library/prime.ml"`: already done by importing this module. -/
+def ensurePrime : IO Unit := pure ()
 
 end SessionLibrary.Prime

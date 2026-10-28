@@ -12,20 +12,20 @@ open scoped HolLight
 namespace HolExamples.Prog
 
 /-- The session's IO-valued `prove`, lifted into `ExceptT String IO`. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /-- Run `new_inductive_definition`, panicking with HOL Light's message on
     failure (as the toplevel throws). -/
-unsafe def newInductive (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+def newInductive (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"new_inductive_definition: {e}"
   | .error e => panic! s!"new_inductive_definition IO: {e}"
 
 /-- Run `define_type`, panicking with HOL Light's message on failure. -/
-unsafe def defType (s : String) : thm × thm :=
-  match unsafeIO (define_type s) with
+def defType (s : String) : thm × thm :=
+  match runIO (define_type s) with
   | .ok (.ok p) => p
   | .ok (.error e) => panic! s!"define_type: {e}"
   | .error e => panic! s!"define_type IO: {e}"
@@ -57,42 +57,42 @@ unsafe def defType (s : String) : thm × thm :=
 #eval (parse_as_infix ("IMPLIES", (12, "right")) : IO Unit)
 
 #eval phrase 7
-unsafe def FALSE : thm := keep "FALSE" fun _ => new_definition
+def FALSE : thm := keep "FALSE" fun _ => new_definition
   [[FALSE = \x:S. F]]
 #eval FALSE
 
 #eval phrase 8
-unsafe def TRUE : thm := keep "TRUE" fun _ => new_definition
+def TRUE : thm := keep "TRUE" fun _ => new_definition
   [[TRUE = \x:S. T]]
 #eval TRUE
 
 #eval phrase 9
-unsafe def NOT : thm := keep "NOT" fun _ => new_definition
+def NOT : thm := keep "NOT" fun _ => new_definition
   [[NOT p = \x:S. ~(p x)]]
 #eval NOT
 
 #eval phrase 10
-unsafe def AND : thm := keep "AND" fun _ => new_definition
+def AND : thm := keep "AND" fun _ => new_definition
   [[p AND q = \x:S. p x /\ q x]]
 #eval AND
 
 #eval phrase 11
-unsafe def OR : thm := keep "OR" fun _ => new_definition
+def OR : thm := keep "OR" fun _ => new_definition
   [[p OR q = \x:S. p x \/ q x]]
 #eval OR
 
 #eval phrase 12
-unsafe def ANDS : thm := keep "ANDS" fun _ => new_definition
+def ANDS : thm := keep "ANDS" fun _ => new_definition
   [[ANDS P = \x:S. !p. P p ==> p x]]
 #eval ANDS
 
 #eval phrase 13
-unsafe def ORS : thm := keep "ORS" fun _ => new_definition
+def ORS : thm := keep "ORS" fun _ => new_definition
   [[ORS P = \x:S. ?p. P p /\ p x]]
 #eval ORS
 
 #eval phrase 14
-unsafe def IMP : thm := keep "IMP" fun _ => new_definition
+def IMP : thm := keep "IMP" fun _ => new_definition
   [[p IMP q = \x:S. p x ==> q x]]
 #eval IMP
 
@@ -101,7 +101,7 @@ unsafe def IMP : thm := keep "IMP" fun _ => new_definition
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 15
-unsafe def IMPLIES : thm := keep "IMPLIES" fun _ => new_definition
+def IMPLIES : thm := keep "IMPLIES" fun _ => new_definition
   [[p IMPLIES q <=> !x:S. p x ==> q x]]
 #eval IMPLIES
 
@@ -111,7 +111,7 @@ unsafe def IMPLIES : thm := keep "IMPLIES" fun _ => new_definition
 
 #eval phrase 16
 -- let PRED_TAUT = let tac = ... in fun tm -> prove(tm,tac);;
-unsafe def PRED_TAUT (tm : term) : ExceptT String IO thm :=
+def PRED_TAUT (tm : term) : ExceptT String IO thm :=
   let tac :=
     REWRITE_TAC [FALSE, TRUE, NOT, AND, OR, ANDS, ORS, IMP,
                 IMPLIES, FUN_EQ_THM] THEN MESON_TAC []
@@ -123,7 +123,7 @@ unsafe def PRED_TAUT (tm : term) : ExceptT String IO thm :=
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 17
-unsafe def IMPLIES_TRANS : thm := keep "IMPLIES_TRANS" fun _ => (PRED_TAUT
+def IMPLIES_TRANS : thm := keep "IMPLIES_TRANS" fun _ => (PRED_TAUT
   [[!p q r. p IMPLIES q /\ q IMPLIES r ==> p IMPLIES r]]).run
 #eval IMPLIES_TRANS
 
@@ -135,38 +135,38 @@ unsafe def IMPLIES_TRANS : thm := keep "IMPLIES_TRANS" fun _ => (PRED_TAUT
 #eval (parse_as_infix ("Seq", (26, "right")) : IO Unit)
 
 #eval phrase 19
-unsafe def command_defs : thm × thm :=
+def command_defs : thm × thm :=
   keep "command_defs" fun _ => defType
     "command = Assign (S->S)
            | Seq command command
            | Ite (S->bool) command command
            | While (S->bool) command"
-unsafe def command_INDUCTION : thm := command_defs.1
-unsafe def command_RECURSION : thm := command_defs.2
+def command_INDUCTION : thm := command_defs.1
+def command_RECURSION : thm := command_defs.2
 #eval do IO.println (repr command_INDUCTION); IO.println (repr command_RECURSION)
 
 #eval phrase 20
-unsafe def SKIP : thm := keep "SKIP" fun _ => new_definition
+def SKIP : thm := keep "SKIP" fun _ => new_definition
   [[SKIP = Assign I]]
 #eval SKIP
 
 #eval phrase 21
-unsafe def ABORT : thm := keep "ABORT" fun _ => new_definition
+def ABORT : thm := keep "ABORT" fun _ => new_definition
   [[ABORT = While TRUE SKIP]]
 #eval ABORT
 
 #eval phrase 22
-unsafe def «IF» : thm := keep "IF" fun _ => new_definition
+def «IF» : thm := keep "IF" fun _ => new_definition
   [[IF e c = Ite e c SKIP]]
 #eval «IF»
 
 #eval phrase 23
-unsafe def DO : thm := keep "DO" fun _ => new_definition
+def DO : thm := keep "DO" fun _ => new_definition
   [[DO c e = c Seq (While e c)]]
 #eval DO
 
 #eval phrase 24
-unsafe def ASSERT : thm := keep "ASSERT" fun _ => new_definition
+def ASSERT : thm := keep "ASSERT" fun _ => new_definition
   [[ASSERT g = Ite g SKIP ABORT]]
 #eval ASSERT
 
@@ -175,12 +175,12 @@ unsafe def ASSERT : thm := keep "ASSERT" fun _ => new_definition
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 25
-unsafe def AWHILE : thm := keep "AWHILE" fun _ => new_definition
+def AWHILE : thm := keep "AWHILE" fun _ => new_definition
   [[AWHILE (i:S->bool) (v:S->S->bool) (e:S->bool) c = While e c]]
 #eval AWHILE
 
 #eval phrase 26
-unsafe def ADO : thm := keep "ADO" fun _ => new_definition
+def ADO : thm := keep "ADO" fun _ => new_definition
   [[ADO (i:S->bool) (v:S->S->bool) c (e:S->bool) = DO c e]]
 #eval ADO
 
@@ -189,15 +189,17 @@ unsafe def ADO : thm := keep "ADO" fun _ => new_definition
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 27
-unsafe def command_DISTINCT : thm :=
+def command_DISTINCT : thm :=
   keep "command_DISTINCT" fun _ =>
-    match distinctness "command" with | .ok t => t | .error e => panic! e
+    match runIO (distinctness "command") with
+    | .ok (.ok t) => t | .ok (.error e) => panic! e | .error e => panic! s!"{e}"
 #eval command_DISTINCT
 
 #eval phrase 28
-unsafe def command_INJECTIVE : thm :=
+def command_INJECTIVE : thm :=
   keep "command_INJECTIVE" fun _ =>
-    match injectivity "command" with | .ok t => t | .error e => panic! e
+    match runIO (injectivity "command") with
+    | .ok (.ok t) => t | .ok (.error e) => panic! e | .error e => panic! s!"{e}"
 #eval command_INJECTIVE
 
 -- ------------------------------------------------------------------------- --
@@ -205,7 +207,7 @@ unsafe def command_INJECTIVE : thm :=
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 29
-unsafe def sem_defs : thm × thm × thm :=
+def sem_defs : thm × thm × thm :=
   keep "sem_defs" fun _ => newInductive
   [[(!f s. sem(Assign f) s (f s)) /\
    (!c1 c2 s s' s''. sem(c1) s s' /\ sem(c2) s' s''
@@ -215,9 +217,9 @@ unsafe def sem_defs : thm × thm × thm :=
    (!e c s. ~(e s) ==> sem(While e c) s s) /\
    (!e c s s' s''. e s /\ sem(c) s s' /\ sem(While e c) s' s''
                ==> sem(While e c) s s'')]]
-unsafe def sem_RULES : thm := sem_defs.1
-unsafe def sem_INDUCT : thm := sem_defs.2.1
-unsafe def sem_CASES : thm := sem_defs.2.2
+def sem_RULES : thm := sem_defs.1
+def sem_INDUCT : thm := sem_defs.2.1
+def sem_CASES : thm := sem_defs.2.2
 #eval do IO.println (repr sem_RULES); IO.println (repr sem_INDUCT); IO.println (repr sem_CASES)
 
 -- ------------------------------------------------------------------------- --
@@ -225,21 +227,21 @@ unsafe def sem_CASES : thm := sem_defs.2.2
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 30
-unsafe def SEM_ASSIGN : thm := keep "SEM_ASSIGN" fun _ => (prove
+def SEM_ASSIGN : thm := keep "SEM_ASSIGN" fun _ => (prove
  ([[sem(Assign f) s s' <=> (s' = f s)]])
   (GEN_REWRITE_TAC HolLight.LAND_CONV [sem_CASES] THEN
   REWRITE_TAC [command_DISTINCT, command_INJECTIVE] THEN MESON_TAC [])).run
 #eval SEM_ASSIGN
 
 #eval phrase 31
-unsafe def SEM_SEQ : thm := keep "SEM_SEQ" fun _ => (prove
+def SEM_SEQ : thm := keep "SEM_SEQ" fun _ => (prove
  ([[sem(c1 Seq c2) s s' <=> ?s''. sem c1 s s'' /\ sem c2 s'' s']])
   (GEN_REWRITE_TAC HolLight.LAND_CONV [sem_CASES] THEN
   REWRITE_TAC [command_DISTINCT, command_INJECTIVE] THEN MESON_TAC [])).run
 #eval SEM_SEQ
 
 #eval phrase 32
-unsafe def SEM_ITE : thm := keep "SEM_ITE" fun _ => (prove
+def SEM_ITE : thm := keep "SEM_ITE" fun _ => (prove
  ([[sem(Ite e c1 c2) s s' <=> e s /\ sem c1 s s' \/
                              ~(e s) /\ sem c2 s s']])
   (GEN_REWRITE_TAC HolLight.LAND_CONV [sem_CASES] THEN
@@ -247,19 +249,19 @@ unsafe def SEM_ITE : thm := keep "SEM_ITE" fun _ => (prove
 #eval SEM_ITE
 
 #eval phrase 33
-unsafe def SEM_SKIP : thm := keep "SEM_SKIP" fun _ => (prove
+def SEM_SKIP : thm := keep "SEM_SKIP" fun _ => (prove
  ([[sem(SKIP) s s' <=> (s' = s)]])
   (REWRITE_TAC [SKIP, SEM_ASSIGN, I_THM])).run
 #eval SEM_SKIP
 
 #eval phrase 34
-unsafe def SEM_IF : thm := keep "SEM_IF" fun _ => (prove
+def SEM_IF : thm := keep "SEM_IF" fun _ => (prove
  ([[sem(IF e c) s s' <=> e s /\ sem c s s' \/ ~(e s) /\ (s = s')]])
   (REWRITE_TAC [«IF», SEM_ITE, SEM_SKIP, EQ_SYM_EQ])).run
 #eval SEM_IF
 
 #eval phrase 35
-unsafe def SEM_WHILE : thm := keep "SEM_WHILE" fun _ => (prove
+def SEM_WHILE : thm := keep "SEM_WHILE" fun _ => (prove
  ([[sem(While e c) s s' <=> sem(IF e (c Seq While e c)) s s']])
   (GEN_REWRITE_TAC HolLight.LAND_CONV [sem_CASES] THEN
   REWRITE_TAC [FUN_EQ_THM, SEM_IF, SEM_SEQ] THEN REPEAT GEN_TAC THEN
@@ -267,7 +269,7 @@ unsafe def SEM_WHILE : thm := keep "SEM_WHILE" fun _ => (prove
 #eval SEM_WHILE
 
 #eval phrase 36
-unsafe def SEM_ABORT : thm := keep "SEM_ABORT" fun _ => (do
+def SEM_ABORT : thm := keep "SEM_ABORT" fun _ => (do
   let lemma ← prove
    ([[!c s s'. sem c s s' ==> ~(c = ABORT)]])
     (MATCH_MP_TAC sem_INDUCT THEN
@@ -278,14 +280,14 @@ unsafe def SEM_ABORT : thm := keep "SEM_ABORT" fun _ => (do
 #eval SEM_ABORT
 
 #eval phrase 37
-unsafe def SEM_DO : thm := keep "SEM_DO" fun _ => (do
+def SEM_DO : thm := keep "SEM_DO" fun _ => (do
   prove ([[sem(DO c e) s s' <=> sem(c Seq IF e (DO c e)) s s']])
     (REWRITE_TAC [DO, SEM_SEQ, (← ExceptT.mk (HolLight.GSYM SEM_WHILE))])
   : ExceptT String IO thm).run
 #eval SEM_DO
 
 #eval phrase 38
-unsafe def SEM_ASSERT : thm := keep "SEM_ASSERT" fun _ => (prove
+def SEM_ASSERT : thm := keep "SEM_ASSERT" fun _ => (prove
  ([[sem(ASSERT g) s s' <=> g s /\ (s' = s)]])
   (REWRITE_TAC [ASSERT, SEM_ITE, SEM_SKIP, SEM_ABORT])).run
 #eval SEM_ASSERT
@@ -295,12 +297,12 @@ unsafe def SEM_ASSERT : thm := keep "SEM_ASSERT" fun _ => (prove
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 39
-unsafe def deterministic : thm := keep "deterministic" fun _ => new_definition
+def deterministic : thm := keep "deterministic" fun _ => new_definition
   [[deterministic r <=> !s s1 s2. r s s1 /\ r s s2 ==> (s1 = s2)]]
 #eval deterministic
 
 #eval phrase 40
-unsafe def DETERMINISM : thm := keep "DETERMINISM" fun _ => (do
+def DETERMINISM : thm := keep "DETERMINISM" fun _ => (do
   let g ← q r"!c:(S)command. deterministic(sem c)"
   let sg ← q r"!c s s1. sem c s s1 ==> !s2:S. sem c s s2 ==> (s1 = s2)"
   prove g
@@ -319,17 +321,17 @@ unsafe def DETERMINISM : thm := keep "DETERMINISM" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 41
-unsafe def terminates : thm := keep "terminates" fun _ => new_definition
+def terminates : thm := keep "terminates" fun _ => new_definition
   [[terminates c s <=> ?s'. sem c s s']]
 #eval terminates
 
 #eval phrase 42
-unsafe def wlp : thm := keep "wlp" fun _ => new_definition
+def wlp : thm := keep "wlp" fun _ => new_definition
   [[wlp c q s <=> !s'. sem c s s' ==> q s']]
 #eval wlp
 
 #eval phrase 43
-unsafe def wp : thm := keep "wp" fun _ => new_definition
+def wp : thm := keep "wp" fun _ => new_definition
   [[wp c q s <=> terminates c s /\ wlp c q s]]
 #eval wp
 
@@ -338,25 +340,25 @@ unsafe def wp : thm := keep "wp" fun _ => new_definition
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 44
-unsafe def WP_TOTAL : thm := keep "WP_TOTAL" fun _ => (prove
+def WP_TOTAL : thm := keep "WP_TOTAL" fun _ => (prove
  ([[!c. (wp c FALSE = FALSE)]])
   (REWRITE_TAC [FUN_EQ_THM, wp, wlp, terminates, FALSE] THEN MESON_TAC [])).run
 #eval WP_TOTAL
 
 #eval phrase 45
-unsafe def WP_MONOTONIC : thm := keep "WP_MONOTONIC" fun _ => (prove
+def WP_MONOTONIC : thm := keep "WP_MONOTONIC" fun _ => (prove
  ([[q IMPLIES r ==> wp c q IMPLIES wp c r]])
   (REWRITE_TAC [IMPLIES, wp, wlp, terminates] THEN MESON_TAC [])).run
 #eval WP_MONOTONIC
 
 #eval phrase 46
-unsafe def WP_CONJUNCTIVE : thm := keep "WP_CONJUNCTIVE" fun _ => (prove
+def WP_CONJUNCTIVE : thm := keep "WP_CONJUNCTIVE" fun _ => (prove
  ([[(wp c q) AND (wp c r) = wp c (q AND r)]])
   (REWRITE_TAC [FUN_EQ_THM, wp, wlp, terminates, AND] THEN MESON_TAC [])).run
 #eval WP_CONJUNCTIVE
 
 #eval phrase 47
-unsafe def WP_DISJUNCTIVE : thm := keep "WP_DISJUNCTIVE" fun _ => (prove
+def WP_DISJUNCTIVE : thm := keep "WP_DISJUNCTIVE" fun _ => (prove
  ([[(wp c p) OR (wp c q) = wp c (p OR q)]])
   (REWRITE_TAC [FUN_EQ_THM, wp, wlp, OR, terminates] THEN
   MESON_TAC [REWRITE_RULE [deterministic] DETERMINISM])).run
@@ -367,60 +369,60 @@ unsafe def WP_DISJUNCTIVE : thm := keep "WP_DISJUNCTIVE" fun _ => (prove
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 48
-unsafe def WP_ASSIGN : thm := keep "WP_ASSIGN" fun _ => (prove
+def WP_ASSIGN : thm := keep "WP_ASSIGN" fun _ => (prove
  ([[!f q. wp (Assign f) q = q o f]])
   (REWRITE_TAC [wp, wlp, terminates, o_THM, FUN_EQ_THM, SEM_ASSIGN] THEN
   MESON_TAC [])).run
 #eval WP_ASSIGN
 
 #eval phrase 49
-unsafe def WP_SEQ : thm := keep "WP_SEQ" fun _ => (prove
+def WP_SEQ : thm := keep "WP_SEQ" fun _ => (prove
  ([[!c1 c2 q. wp (c1 Seq c2) q = wp c1 (wp c2 q)]])
   (REWRITE_TAC [wp, wlp, terminates, SEM_SEQ, FUN_EQ_THM] THEN
   MESON_TAC [REWRITE_RULE [deterministic] DETERMINISM])).run
 #eval WP_SEQ
 
 #eval phrase 50
-unsafe def WP_ITE : thm := keep "WP_ITE" fun _ => (prove
+def WP_ITE : thm := keep "WP_ITE" fun _ => (prove
  ([[!e c1 c2 q. wp (Ite e c1 c2) q = (e AND wp c1 q) OR (NOT e AND wp c2 q)]])
   (REWRITE_TAC [wp, wlp, terminates, SEM_ITE, FUN_EQ_THM, AND, OR, NOT] THEN
   MESON_TAC [])).run
 #eval WP_ITE
 
 #eval phrase 51
-unsafe def WP_WHILE : thm := keep "WP_WHILE" fun _ => (do
+def WP_WHILE : thm := keep "WP_WHILE" fun _ => (do
   prove ([[!e c. wp (IF e (c Seq While e c)) q = wp (While e c) q]])
     (REWRITE_TAC [FUN_EQ_THM, wp, wlp, terminates, (← ExceptT.mk (HolLight.GSYM SEM_WHILE))])
   : ExceptT String IO thm).run
 #eval WP_WHILE
 
 #eval phrase 52
-unsafe def WP_SKIP : thm := keep "WP_SKIP" fun _ => (prove
+def WP_SKIP : thm := keep "WP_SKIP" fun _ => (prove
  ([[!q. wp SKIP q = q]])
   (REWRITE_TAC [FUN_EQ_THM, SKIP, WP_ASSIGN, I_THM, o_THM])).run
 #eval WP_SKIP
 
 #eval phrase 53
-unsafe def WP_ABORT : thm := keep "WP_ABORT" fun _ => (prove
+def WP_ABORT : thm := keep "WP_ABORT" fun _ => (prove
  ([[!q. wp ABORT q = FALSE]])
   (REWRITE_TAC [FUN_EQ_THM, wp, wlp, terminates, SEM_ABORT, FALSE])).run
 #eval WP_ABORT
 
 #eval phrase 54
-unsafe def WP_IF : thm := keep "WP_IF" fun _ => (prove
+def WP_IF : thm := keep "WP_IF" fun _ => (prove
  ([[!e c q. wp (IF e c) q = (e AND wp c q) OR (NOT e AND q)]])
   (REWRITE_TAC [«IF», WP_ITE, WP_SKIP])).run
 #eval WP_IF
 
 #eval phrase 55
-unsafe def WP_DO : thm := keep "WP_DO" fun _ => (do
+def WP_DO : thm := keep "WP_DO" fun _ => (do
   prove ([[!e c. wp (c Seq IF e (DO c e)) q = wp (DO c e) q]])
     (REWRITE_TAC [FUN_EQ_THM, wp, wlp, terminates, (← ExceptT.mk (HolLight.GSYM SEM_DO))])
   : ExceptT String IO thm).run
 #eval WP_DO
 
 #eval phrase 56
-unsafe def WP_ASSERT : thm := keep "WP_ASSERT" fun _ => (prove
+def WP_ASSERT : thm := keep "WP_ASSERT" fun _ => (prove
  ([[!g q. wp (ASSERT g) q = g AND q]])
   (REWRITE_TAC [wp, wlp, terminates, SEM_ASSERT, FUN_EQ_THM, AND] THEN
   MESON_TAC [])).run
@@ -431,30 +433,30 @@ unsafe def WP_ASSERT : thm := keep "WP_ASSERT" fun _ => (prove
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 57
-unsafe def correct : thm := keep "correct" fun _ => new_definition
+def correct : thm := keep "correct" fun _ => new_definition
   [[correct p c q <=> p IMPLIES (wp c q)]]
 #eval correct
 
 #eval phrase 58
-unsafe def CORRECT_PRESTRENGTH : thm := keep "CORRECT_PRESTRENGTH" fun _ => (prove
+def CORRECT_PRESTRENGTH : thm := keep "CORRECT_PRESTRENGTH" fun _ => (prove
  ([[!p p' c q. p IMPLIES p' /\ correct p' c q ==> correct p c q]])
   (REWRITE_TAC [correct, IMPLIES_TRANS])).run
 #eval CORRECT_PRESTRENGTH
 
 #eval phrase 59
-unsafe def CORRECT_POSTWEAK : thm := keep "CORRECT_POSTWEAK" fun _ => (prove
+def CORRECT_POSTWEAK : thm := keep "CORRECT_POSTWEAK" fun _ => (prove
  ([[!p c q q'. correct p c q' /\ q' IMPLIES q ==> correct p c q]])
   (REWRITE_TAC [correct] THEN MESON_TAC [WP_MONOTONIC, IMPLIES_TRANS])).run
 #eval CORRECT_POSTWEAK
 
 #eval phrase 60
-unsafe def CORRECT_ASSIGN : thm := keep "CORRECT_ASSIGN" fun _ => (prove
+def CORRECT_ASSIGN : thm := keep "CORRECT_ASSIGN" fun _ => (prove
  ([[!p f q. (p IMPLIES (\s. q(f s))) ==> correct p (Assign f) q]])
   (REWRITE_TAC [correct, WP_ASSIGN, IMPLIES, o_THM])).run
 #eval CORRECT_ASSIGN
 
 #eval phrase 61
-unsafe def CORRECT_SEQ : thm := keep "CORRECT_SEQ" fun _ => (prove
+def CORRECT_SEQ : thm := keep "CORRECT_SEQ" fun _ => (prove
  ([[!p q r c1 c2.
         correct p c1 r /\ correct r c2 q ==> correct p (c1 Seq c2) q]])
   (REWRITE_TAC [correct, WP_SEQ, o_THM] THEN
@@ -462,7 +464,7 @@ unsafe def CORRECT_SEQ : thm := keep "CORRECT_SEQ" fun _ => (prove
 #eval CORRECT_SEQ
 
 #eval phrase 62
-unsafe def CORRECT_ITE : thm := keep "CORRECT_ITE" fun _ => (prove
+def CORRECT_ITE : thm := keep "CORRECT_ITE" fun _ => (prove
  ([[!p e c1 c2 q.
        correct (p AND e) c1 q /\ correct (p AND (NOT e)) c2 q
        ==> correct p (Ite e c1 c2) q]])
@@ -470,7 +472,7 @@ unsafe def CORRECT_ITE : thm := keep "CORRECT_ITE" fun _ => (prove
 #eval CORRECT_ITE
 
 #eval phrase 63
-unsafe def CORRECT_WHILE : thm := keep "CORRECT_WHILE" fun _ => (do
+def CORRECT_WHILE : thm := keep "CORRECT_WHILE" fun _ => (do
   let g ← q r"! (<<) p c q e invariant.
        WF(<<) /\
        p IMPLIES invariant /\
@@ -503,19 +505,19 @@ unsafe def CORRECT_WHILE : thm := keep "CORRECT_WHILE" fun _ => (do
 #eval CORRECT_WHILE
 
 #eval phrase 64
-unsafe def CORRECT_SKIP : thm := keep "CORRECT_SKIP" fun _ => (prove
+def CORRECT_SKIP : thm := keep "CORRECT_SKIP" fun _ => (prove
  ([[!p q. (p IMPLIES q) ==> correct p SKIP q]])
   (REWRITE_TAC [correct, WP_SKIP])).run
 #eval CORRECT_SKIP
 
 #eval phrase 65
-unsafe def CORRECT_ABORT : thm := keep "CORRECT_ABORT" fun _ => (prove
+def CORRECT_ABORT : thm := keep "CORRECT_ABORT" fun _ => (prove
  ([[!p q. F ==> correct p ABORT q]])
   (REWRITE_TAC [])).run
 #eval CORRECT_ABORT
 
 #eval phrase 66
-unsafe def CORRECT_IF : thm := keep "CORRECT_IF" fun _ => (prove
+def CORRECT_IF : thm := keep "CORRECT_IF" fun _ => (prove
  ([[!p e c q.
         correct (p AND e) c q /\ (p AND (NOT e)) IMPLIES q
         ==> correct p (IF e c) q]])
@@ -523,7 +525,7 @@ unsafe def CORRECT_IF : thm := keep "CORRECT_IF" fun _ => (prove
 #eval CORRECT_IF
 
 #eval phrase 67
-unsafe def CORRECT_DO : thm := keep "CORRECT_DO" fun _ => (do
+def CORRECT_DO : thm := keep "CORRECT_DO" fun _ => (do
   let g ← q r"! (<<) p q c invariant.
         WF(<<) /\
         (e AND invariant) IMPLIES p /\
@@ -556,7 +558,7 @@ unsafe def CORRECT_DO : thm := keep "CORRECT_DO" fun _ => (do
 #eval CORRECT_DO
 
 #eval phrase 68
-unsafe def CORRECT_ASSERT : thm := keep "CORRECT_ASSERT" fun _ => (prove
+def CORRECT_ASSERT : thm := keep "CORRECT_ASSERT" fun _ => (prove
  ([[!p g q. p IMPLIES (g AND q) ==> correct p (ASSERT g) q]])
   (REWRITE_TAC [correct, WP_ASSERT])).run
 #eval CORRECT_ASSERT
@@ -566,25 +568,25 @@ unsafe def CORRECT_ASSERT : thm := keep "CORRECT_ASSERT" fun _ => (prove
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 69
-unsafe def VC_ASSIGN : thm := keep "VC_ASSIGN" fun _ => (prove
+def VC_ASSIGN : thm := keep "VC_ASSIGN" fun _ => (prove
  ([[p IMPLIES (q o f) ==> correct p (Assign f) q]])
   (REWRITE_TAC [o_DEF, CORRECT_ASSIGN])).run
 #eval VC_ASSIGN
 
 #eval phrase 70
-unsafe def VC_SKIP : thm := keep "VC_SKIP" fun _ => (prove
+def VC_SKIP : thm := keep "VC_SKIP" fun _ => (prove
  ([[p IMPLIES q ==> correct p SKIP q]])
   (REWRITE_TAC [CORRECT_SKIP])).run
 #eval VC_SKIP
 
 #eval phrase 71
-unsafe def VC_ABORT : thm := keep "VC_ABORT" fun _ => (prove
+def VC_ABORT : thm := keep "VC_ABORT" fun _ => (prove
  ([[F ==> correct p ABORT q]])
   (MATCH_ACCEPT_TAC CORRECT_ABORT)).run
 #eval VC_ABORT
 
 #eval phrase 72
-unsafe def VC_ASSERT : thm := keep "VC_ASSERT" fun _ => (prove
+def VC_ASSERT : thm := keep "VC_ASSERT" fun _ => (prove
  ([[p IMPLIES (b AND q) ==> correct p (ASSERT b) q]])
   (REWRITE_TAC [CORRECT_ASSERT])).run
 #eval VC_ASSERT
@@ -594,21 +596,21 @@ unsafe def VC_ASSERT : thm := keep "VC_ASSERT" fun _ => (prove
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 73
-unsafe def VC_ITE : thm := keep "VC_ITE" fun _ => (prove
+def VC_ITE : thm := keep "VC_ITE" fun _ => (prove
  ([[correct (p AND e) c1 q /\ correct (p AND NOT e) c2 q
    ==> correct p (Ite e c1 c2) q]])
   (REWRITE_TAC [CORRECT_ITE])).run
 #eval VC_ITE
 
 #eval phrase 74
-unsafe def VC_IF : thm := keep "VC_IF" fun _ => (prove
+def VC_IF : thm := keep "VC_IF" fun _ => (prove
  ([[correct (p AND e) c q /\ p AND NOT e IMPLIES q
    ==> correct p (IF e c) q]])
   (REWRITE_TAC [CORRECT_IF])).run
 #eval VC_IF
 
 #eval phrase 75
-unsafe def VC_AWHILE_VARIANT : thm := keep "VC_AWHILE_VARIANT" fun _ => (do
+def VC_AWHILE_VARIANT : thm := keep "VC_AWHILE_VARIANT" fun _ => (do
   let g ← q r"WF(<<) /\
    p IMPLIES invariant /\
    (NOT e) AND invariant IMPLIES q /\
@@ -621,7 +623,7 @@ unsafe def VC_AWHILE_VARIANT : thm := keep "VC_AWHILE_VARIANT" fun _ => (do
 #eval VC_AWHILE_VARIANT
 
 #eval phrase 76
-unsafe def VC_AWHILE_MEASURE : thm := keep "VC_AWHILE_MEASURE" fun _ => (do
+def VC_AWHILE_MEASURE : thm := keep "VC_AWHILE_MEASURE" fun _ => (do
   let g ← q r"p IMPLIES invariant /\
    (NOT e) AND invariant IMPLIES q /\
    (!X. correct
@@ -640,7 +642,7 @@ unsafe def VC_AWHILE_MEASURE : thm := keep "VC_AWHILE_MEASURE" fun _ => (do
 #eval VC_AWHILE_MEASURE
 
 #eval phrase 77
-unsafe def VC_ADO_VARIANT : thm := keep "VC_ADO_VARIANT" fun _ => (do
+def VC_ADO_VARIANT : thm := keep "VC_ADO_VARIANT" fun _ => (do
   let g ← q r"WF(<<) /\
    (e AND invariant) IMPLIES p /\
    ((NOT e) AND invariant) IMPLIES q /\
@@ -653,7 +655,7 @@ unsafe def VC_ADO_VARIANT : thm := keep "VC_ADO_VARIANT" fun _ => (do
 #eval VC_ADO_VARIANT
 
 #eval phrase 78
-unsafe def VC_ADO_MEASURE : thm := keep "VC_ADO_MEASURE" fun _ => (do
+def VC_ADO_MEASURE : thm := keep "VC_ADO_MEASURE" fun _ => (do
   let g ← q r"(e AND invariant) IMPLIES p /\
    ((NOT e) AND invariant) IMPLIES q /\
    (!X. correct
@@ -674,7 +676,7 @@ unsafe def VC_ADO_MEASURE : thm := keep "VC_ADO_MEASURE" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 79
-unsafe def VC_SEQ_ASSERT_LEFT : thm := keep "VC_SEQ_ASSERT_LEFT" fun _ => (do
+def VC_SEQ_ASSERT_LEFT : thm := keep "VC_SEQ_ASSERT_LEFT" fun _ => (do
   let l1 ← PRED_TAUT [[(p IMPLIES b) ==> (p IMPLIES b AND p)]]
   prove ([[p IMPLIES b /\ correct b c q ==> correct p (ASSERT b Seq c) q]])
     (MESON_TAC [CORRECT_SEQ, CORRECT_ASSERT, CORRECT_PRESTRENGTH, l1])
@@ -682,7 +684,7 @@ unsafe def VC_SEQ_ASSERT_LEFT : thm := keep "VC_SEQ_ASSERT_LEFT" fun _ => (do
 #eval VC_SEQ_ASSERT_LEFT
 
 #eval phrase 80
-unsafe def VC_SEQ_ASSERT_RIGHT : thm := keep "VC_SEQ_ASSERT_RIGHT" fun _ => (do
+def VC_SEQ_ASSERT_RIGHT : thm := keep "VC_SEQ_ASSERT_RIGHT" fun _ => (do
   let l1 ← PRED_TAUT [[(p IMPLIES b) ==> (p IMPLIES p AND b)]]
   prove ([[correct p c b /\ b IMPLIES q ==> correct p (c Seq (ASSERT b)) q]])
     (MESON_TAC [CORRECT_SEQ, CORRECT_ASSERT, l1])
@@ -690,7 +692,7 @@ unsafe def VC_SEQ_ASSERT_RIGHT : thm := keep "VC_SEQ_ASSERT_RIGHT" fun _ => (do
 #eval VC_SEQ_ASSERT_RIGHT
 
 #eval phrase 81
-unsafe def VC_SEQ_ASSERT_MIDDLE : thm := keep "VC_SEQ_ASSERT_MIDDLE" fun _ => (do
+def VC_SEQ_ASSERT_MIDDLE : thm := keep "VC_SEQ_ASSERT_MIDDLE" fun _ => (do
   let l1 ← PRED_TAUT [[b IMPLIES b AND b]]
   prove ([[correct p c b /\ correct b c' q
    ==> correct p (c Seq (ASSERT b) Seq c') q]])
@@ -699,7 +701,7 @@ unsafe def VC_SEQ_ASSERT_MIDDLE : thm := keep "VC_SEQ_ASSERT_MIDDLE" fun _ => (d
 #eval VC_SEQ_ASSERT_MIDDLE
 
 #eval phrase 82
-unsafe def VC_SEQ_ASSIGN_LEFT : thm := keep "VC_SEQ_ASSIGN_LEFT" fun _ => (prove
+def VC_SEQ_ASSIGN_LEFT : thm := keep "VC_SEQ_ASSIGN_LEFT" fun _ => (prove
  ([[(p o f = p) /\ (f o f = f) /\
    correct (p AND (\s:S. s = f s)) c q
    ==> correct p ((Assign f) Seq c) q]])
@@ -710,7 +712,7 @@ unsafe def VC_SEQ_ASSIGN_LEFT : thm := keep "VC_SEQ_ASSIGN_LEFT" fun _ => (prove
 #eval VC_SEQ_ASSIGN_LEFT
 
 #eval phrase 83
-unsafe def VC_SEQ_ASSIGN_RIGHT : thm := keep "VC_SEQ_ASSIGN_RIGHT" fun _ => (do
+def VC_SEQ_ASSIGN_RIGHT : thm := keep "VC_SEQ_ASSIGN_RIGHT" fun _ => (do
   let l1 ← PRED_TAUT [[(p:S->bool) IMPLIES p]]
   prove ([[correct p c (q o f) ==> correct p (c Seq (Assign f)) q]])
     (MESON_TAC [CORRECT_SEQ, VC_ASSIGN, l1])
@@ -731,11 +733,11 @@ partial def dive_to_var : preterm → Except String preterm
 
 #eval phrase 85
 -- let reserve_program_words,unreserve_program_words = ...
-unsafe def program_words : List String :=
+def program_words : List String :=
   ["var", "end", "skip", "abort", ":=", "if", "then", "else", "while", "do"]
-unsafe def reserve_program_words : Unit → IO Unit :=
+def reserve_program_words : Unit → IO Unit :=
   fun _ => HolCore.Printer.reserve_words program_words
-unsafe def unreserve_program_words : Unit → IO Unit :=
+def unreserve_program_words : Unit → IO Unit :=
   fun _ => HolCore.Printer.unreserve_words program_words
 #eval (do IO.println "<fun>"; IO.println "<fun>" : IO Unit)
 
@@ -782,21 +784,21 @@ private def pp_lmk_gwhile (al : List (preterm × preterm)) (e c : preterm) : pre
 private def pp_lmk_gdo (al : List (preterm × preterm)) (c e : preterm) : preterm :=
   match al with | [] => pp_lmk_do c e | (i, v) :: _ => pp_lmk_ado i v c e
 -- `let expression s = parse_preterm >> (fun p -> Absp(s,p))`
-private unsafe def pp_expression (s : preterm) : ParserM preterm :=
+private def pp_expression (s : preterm) : ParserM preterm :=
   pmapM parse_preterm (fun p => .Absp s p)
 -- `let identifier = function (Ident n)::rest -> n,rest | _ -> raise Noparse`
-private unsafe def pp_identifier : ParserM String := fun _ inp => do
+private def pp_identifier : ParserM String := fun _ inp => do
   match inp with
   | (.Ident n) :: rest => pure (.ok (n, rest))
   | _ => pure (.error .noparse)
 -- `let variant s = (a (Ident "variant") ++ parse_preterm >> snd) ||| ...`
-private unsafe def pp_variant (s : preterm) : ParserM preterm :=
+private def pp_variant (s : preterm) : ParserM preterm :=
   porM
     (pmapM (pseqM (paM (.Ident "variant")) parse_preterm) Prod.snd)
     (pmapM (pseqM (paM (.Ident "measure")) (pp_expression s))
       (fun x => .Combp (preterm.Varp "MEASURE" dpty) x.2))
 -- `let annotation s = a "[" ++ a "invariant" ++ expression s ++ a ";" ++ variant s ++ a "]" >> ...`
-private unsafe def pp_annotation (s : preterm) : ParserM (preterm × preterm) :=
+private def pp_annotation (s : preterm) : ParserM (preterm × preterm) :=
   pmapM
     (pseqM (pseqM (pseqM (pseqM (pseqM
       (paM (.Resword "[")) (paM (.Ident "invariant"))) (pp_expression s))
@@ -804,7 +806,7 @@ private unsafe def pp_annotation (s : preterm) : ParserM (preterm × preterm) :=
     (fun x => let ((((( _, _), i), _), v), _) := x; (i, v))
 -- `let rec command s i = (...) i and commands s i = (...) i`
 mutual
-private unsafe def pp_command (s : preterm) : ParserM preterm := fun c i =>
+private partial def pp_command (s : preterm) : ParserM preterm := fun c i =>
   (HolCore.Parser.pfirstM
    [ pmapM (pseqM (pseqM (paM (.Resword "(")) (pp_commands s)) (paM (.Resword ")")))
        (fun x => x.1.2),
@@ -826,13 +828,13 @@ private unsafe def pp_command (s : preterm) : ParserM preterm := fun c i =>
        (fun x => pp_lmk_assert x.1.2),
      HolCore.Parser.pmapME (pseqM (pseqM pp_identifier (paM (.Resword ":="))) parse_preterm)
        (fun x => let ((v, _), e) := x; pp_lmk_assign s v e) ]) c i
-private unsafe def pp_commands (s : preterm) : ParserM preterm := fun c i =>
+private partial def pp_commands (s : preterm) : ParserM preterm := fun c i =>
   (pmapM (pseqM (pp_command s)
      (ppossiblyM (pmapM (pseqM (paM (.Resword ";")) (pp_commands s)) Prod.snd)))
      (fun x => pp_lmk_seq x.1 x.2)) c i
 end
 -- `let program i = let ((_,s),_),r = (a "var" ++ parse_preterm ++ a ";") i in ...`
-private unsafe def pp_program : ParserM (preterm × preterm) := fun c i => do
+private def pp_program : ParserM (preterm × preterm) := fun c i => do
   match ← (pseqM (pseqM (paM (.Resword "var")) parse_preterm) (paM (.Resword ";"))) c i with
   | .error e => pure (.error e)
   | .ok ((((_, s), _), r)) =>
@@ -840,14 +842,14 @@ private unsafe def pp_program : ParserM (preterm × preterm) := fun c i => do
     | .error e => pure (.error e)
     | .ok (cc, r') => pure (.ok ((s, cc), r'))
 -- `let assertion = a "correct" ++ parse_preterm ++ program ++ parse_preterm >> ...`
-private unsafe def pp_assertion : ParserM preterm :=
+private def pp_assertion : ParserM preterm :=
   pmapM (pseqM (pseqM (pseqM (paM (.Ident "correct")) parse_preterm) pp_program) parse_preterm)
     (fun x =>
       let ((( _, p), (s, cc)), qq) := x
       preterm.Combp (.Combp (.Combp (preterm.Varp "correct" dpty) (.Absp s p)) cc) (.Absp s qq))
-unsafe def parse_program : HolCore.Parser.UserParser := fun inp => do
+def parse_program : HolCore.Parser.UserParser := fun inp => do
   (pmapM pp_program Prod.snd) (← mkCtx) inp
-unsafe def parse_program_assertion : HolCore.Parser.UserParser := fun inp => do
+def parse_program_assertion : HolCore.Parser.UserParser := fun inp => do
   pp_assertion (← mkCtx) inp
 #eval (do IO.println "<fun>"; IO.println "<fun>" : IO Unit)
 
@@ -857,7 +859,7 @@ unsafe def parse_program_assertion : HolCore.Parser.UserParser := fun inp => do
 
 /-- `repair` (shared by STATE_GEN_TAC / STATE_GEN_TAC'): `PAIR_CONV` is
     `REWR_CONV(GSYM PAIR)`.  `try ... with Failure _ -> REFL v,((v,vs)::acc)`. -/
-private unsafe def stateRepair (PAIR_CONV : term → IO (Except String thm)) :
+private partial def stateRepair (PAIR_CONV : term → IO (Except String thm)) :
     term → term → List (term × term) → IO (thm × List (term × term)) :=
   fun vs v acc => do
     let res : Except String (thm × List (term × term)) ← (do
@@ -879,7 +881,7 @@ private unsafe def stateRepair (PAIR_CONV : term → IO (Except String thm)) :
     | .error _ => pure (HolCore.Kernel.REFL v, (v, vs) :: acc)
 
 /-- `end_itlist (curry mk_pair)`: right-fold a nonempty list into a pair term. -/
-private unsafe def endItlistMkPair : List term → IO (Except String term)
+private def endItlistMkPair : List term → IO (Except String term)
   | [] => pure (.error "end_itlist")
   | [x] => pure (.ok x)
   | x :: xs => do
@@ -889,7 +891,7 @@ private unsafe def endItlistMkPair : List term → IO (Except String term)
 
 #eval phrase 88
 -- let STATE_GEN_TAC = ...
-unsafe def STATE_GEN_TAC : HolCore.Tactics.tactic := fun (asl, w) => do
+def STATE_GEN_TAC : HolCore.Tactics.tactic := fun (asl, w) => do
   match ← (do
     let gp ← HolLight.GSYM PAIR
     let PAIR_CONV := Session.REWR_CONV gp
@@ -907,7 +909,7 @@ unsafe def STATE_GEN_TAC : HolCore.Tactics.tactic := fun (asl, w) => do
 
 #eval phrase 89
 -- let STATE_GEN_TAC' = ... (variant-renaming version)
-unsafe def STATE_GEN_TAC' : HolCore.Tactics.tactic := fun (asl, w) => do
+def STATE_GEN_TAC' : HolCore.Tactics.tactic := fun (asl, w) => do
   match ← (do
     let gp ← HolLight.GSYM PAIR
     let PAIR_CONV := Session.REWR_CONV gp
@@ -934,7 +936,7 @@ unsafe def STATE_GEN_TAC' : HolCore.Tactics.tactic := fun (asl, w) => do
 
 #eval phrase 90
 -- let VC_UNPACK_TAC = ...
-unsafe def VC_UNPACK_TAC : HolCore.Tactics.tactic := fun g => do
+def VC_UNPACK_TAC : HolCore.Tactics.tactic := fun g => do
   match ← (HolLight.GSYM CONJ_ASSOC).run with
   | .error e => pure (.error e)
   | .ok ca =>
@@ -949,8 +951,8 @@ unsafe def VC_UNPACK_TAC : HolCore.Tactics.tactic := fun g => do
 
 #eval phrase 91
 -- let find_pwp = ...
-unsafe def find_pwp_wpths : List term := keep "find_pwp_wpths" fun _ =>
-  match unsafeIO ((do
+def find_pwp_wpths : List term := keep "find_pwp_wpths" fun _ =>
+  match runIO ((do
     let aw ← q r"wp (AWHILE i v e c) q = i"
     let ad ← q r"wp (ADO i v c e) q = i"
     pure (([WP_ASSIGN, WP_ITE, WP_SKIP, WP_ABORT, WP_IF, WP_ASSERT].map
@@ -959,7 +961,7 @@ unsafe def find_pwp_wpths : List term := keep "find_pwp_wpths" fun _ =>
   | .ok (.ok l) => l
   | .ok (.error e) => panic! e
   | .error e => panic! (toString e)
-unsafe def find_pwp (tm : term) (qq : term) : IO (Except String term) := (do
+def find_pwp (tm : term) (qq : term) : IO (Except String term) := (do
   let wpths := find_pwp_wpths
   let conv (t : term) : ExceptT String IO term :=
     ExceptT.mk (HolCore.Lib.tryfindM (fun tt => (do
@@ -977,18 +979,18 @@ unsafe def find_pwp (tm : term) (qq : term) : IO (Except String term) := (do
 
 #eval phrase 92
 -- let VC_SEQ_TAC = ...
-private unsafe def vcSeq_is_assert (tm : term) : Bool :=
+private def vcSeq_is_assert (tm : term) : Bool :=
   match (do pure ((← HolCore.Kernel.dest_const (← rator tm)).1 == "ASSERT")) with
   | .ok b => b | .error _ => false
-private unsafe def vcSeq_is_assign (tm : term) : Bool :=
+private def vcSeq_is_assign (tm : term) : Bool :=
   match (do pure ((← HolCore.Kernel.dest_const (← rator tm)).1 == "Assign")) with
   | .ok b => b | .error _ => false
-private unsafe def vcSeq_SIDE_TAC : HolCore.Tactics.tactic :=
+private def vcSeq_SIDE_TAC : HolCore.Tactics.tactic :=
   GEN_REWRITE_TAC HolCore.Lib.I [FUN_EQ_THM] THEN STATE_GEN_TAC THEN
   PURE_REWRITE_TAC [IMPLIES, o_THM, FALSE, TRUE, AND, OR, NOT, IMP] THEN
   CONV_TAC (HolLight.REDEPTH_CONV GEN_BETA_CONV) THEN
   REWRITE_TAC [PAIR_EQ] THEN Session.NO_TAC
-private unsafe def vcSeq_ADJUST_TAC (ptm ptm' : term) : HolCore.Tactics.tactic :=
+private def vcSeq_ADJUST_TAC (ptm ptm' : term) : HolCore.Tactics.tactic :=
   fun (asl, w) => do
     match ← (do
       let substFn ← ExceptT.mk (HolCore.Basics.subst [(ptm', ptm)])
@@ -1000,7 +1002,7 @@ private unsafe def vcSeq_ADJUST_TAC (ptm ptm' : term) : HolCore.Tactics.tactic :
       : ExceptT String IO HolCore.Tactics.tactic).run with
     | .ok tac => tac (asl, w)
     | .error e => pure (.error e)
-unsafe def VC_SEQ_TAC : HolCore.Tactics.tactic := fun (asl, w) => do
+def VC_SEQ_TAC : HolCore.Tactics.tactic := fun (asl, w) => do
   -- Set up the common data (dest_comb/striplist/seq); a failure here aborts.
   match ← (do
     let (cptm, qq) ← liftExcept (dest_comb w)
@@ -1081,8 +1083,8 @@ unsafe def VC_SEQ_TAC : HolCore.Tactics.tactic := fun (asl, w) => do
 #eval phrase 93
 -- let VC_STEP_TAC = ... (a term-keyed net of tactics; lookup = those whose
 -- key matches the goal, tried by FIRST)
-unsafe def vc_step_pats : List term := keep "vc_step_pats" fun _ =>
-  match unsafeIO ((do
+def vc_step_pats : List term := keep "vc_step_pats" fun _ =>
+  match runIO ((do
     pure [(← q r"correct p SKIP q"), (← q r"correct p (ASSERT b) q"),
       (← q r"correct p (Assign f) q"), (← q r"correct p (Ite e c1 c2) q"),
       (← q r"correct p (IF e c) q"), (← q r"correct p (AWHILE i (MEASURE m) e c) q"),
@@ -1092,7 +1094,7 @@ unsafe def vc_step_pats : List term := keep "vc_step_pats" fun _ =>
   | .ok (.ok l) => l
   | .ok (.error e) => panic! e
   | .error e => panic! (toString e)
-unsafe def VC_STEP_TAC : HolCore.Tactics.tactic := fun (asl, w) => do
+def VC_STEP_TAC : HolCore.Tactics.tactic := fun (asl, w) => do
   let tacs : List HolCore.Tactics.tactic :=
     [MATCH_MP_TAC VC_SKIP THEN VC_UNPACK_TAC,
      MATCH_MP_TAC VC_ASSERT THEN VC_UNPACK_TAC,
@@ -1126,7 +1128,7 @@ unsafe def VC_STEP_TAC : HolCore.Tactics.tactic := fun (asl, w) => do
 
 #eval phrase 94
 -- let VC_TAC = REPEAT VC_STEP_TAC;;
-unsafe def VC_TAC : HolCore.Tactics.tactic := REPEAT VC_STEP_TAC
+def VC_TAC : HolCore.Tactics.tactic := REPEAT VC_STEP_TAC
 #eval IO.println "<fun>"
 
 -- ------------------------------------------------------------------------- --
@@ -1137,7 +1139,7 @@ unsafe def VC_TAC : HolCore.Tactics.tactic := REPEAT VC_STEP_TAC
 #eval (install_parser ("correct", parse_program_assertion) : IO Unit)
 
 #eval phrase 96
-unsafe def EXAMPLE_FACTORIAL : thm := keep "EXAMPLE_FACTORIAL" fun _ => (do
+def EXAMPLE_FACTORIAL : thm := keep "EXAMPLE_FACTORIAL" fun _ => (do
   let g ← q r"correct
    T
      var x,y,n;

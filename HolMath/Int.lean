@@ -133,11 +133,12 @@ def setupIntTybij [HolBase]
 /- Set up interface map.                                                  -/
 /- ---------------------------------------------------------------------- -/
 
-/-- int.ml 61-70: `do_list overload_interface [...]` and `prioritize_int()`.
+/-- int.ml 61-68: `do_list overload_interface [...]`.  This puts the int
+    operations first in the interface, so from here `int` is the default for
+    these symbols.  (int.ml 70 defines `prioritize_int` but does not call it.)
     Global parser state; Session runs it once, before the definitions below. -/
 def setupIntInterface
-    (overload_interface : String → term → IO (Except String Unit))
-    (prioritize_overload : hol_type → IO Unit) :
+    (overload_interface : String → term → IO (Except String Unit)) :
     ExceptT String IO Unit := do
   for (s, c) in
       [("+", "int_add:int->int->int"), ("-", "int_sub:int->int->int"),
@@ -148,8 +149,6 @@ def setupIntInterface
        ("max", "int_max:int->int->int"), ("min", "int_min:int->int->int"),
        ("&", "int_of_num:num->int")] do
     ExceptT.mk (overload_interface s (← q c))
-  -- `let prioritize_int() = prioritize_overload(mk_type("int",[]))`
-  liftM (prioritize_overload (← (mk_type "int" [] : ExceptT String IO hol_type)))
 
 /- ---------------------------------------------------------------------- -/
 /- Definitions and closure derivations of all operations but "inv" and "/".-/

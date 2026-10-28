@@ -26,7 +26,7 @@ namespace HolLogicArith.SigmaComplete
 open HolLogicArith.Derived
 
 /- The session's `prove` lifted into `ExceptT String IO`. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- Local, corrected `FORMSUBST_CONV` and specialization rules.
@@ -41,7 +41,7 @@ private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT Str
    does (via `spec_rule`/`specl_rule` on `le_def`, whose body contains `??`).  We
    reproduce derived.ml's algorithm exactly, replacing only the broken `<|>` with an
    explicit match, and build the specialization rules on top of it. -/
-private unsafe def FORMSUBST_CONV : HolCore.Equal.ioconv := fun tm => ((do
+private partial def FORMSUBST_CONV : HolCore.Equal.ioconv := fun tm => ((do
   let f0 ← liftExcept (HolCore.Lib.el 0 (Session.CONJUNCTS formsubst))
   let f1 ← liftExcept (HolCore.Lib.el 1 (Session.CONJUNCTS formsubst))
   let f2 ← liftExcept (HolCore.Lib.el 2 (Session.CONJUNCTS formsubst))
@@ -70,7 +70,7 @@ private unsafe def FORMSUBST_CONV : HolCore.Equal.ioconv := fun tm => ((do
 
 /- `instantiate_rule`/`specl_rule`/`spec_rule` as in derived.ml, over the local
    (corrected) FORMSUBST_CONV. -/
-private unsafe def instantiate_rule (ilist : List (term × Nat)) (th : thm) : ExceptT String IO thm := do
+private def instantiate_rule (ilist : List (term × Nat)) (th : thm) : ExceptT String IO thm := do
   let v_tm ← (HolCore.Parser.parse_term "(|->):num->term->(num->term)->(num->term)")
   let Vtm ← (HolCore.Parser.parse_term "V")
   let v ← liftExcept (HolCore.Lib.itlistM (fun (tx : term × Nat) (v : term) => do
@@ -82,7 +82,7 @@ private unsafe def instantiate_rule (ilist : List (term × Nat)) (th : thm) : Ex
   let sp ← HolLight.SPEC v inst
   HolLight.CONV_RULE (HolLight.RAND_CONV FORMSUBST_CONV) sp
 
-private unsafe def specl_rule (tms : List term) (th : thm) : ExceptT String IO thm := do
+private def specl_rule (tms : List term) (th : thm) : ExceptT String IO thm := do
   let bop ← (HolCore.Parser.parse_term "(!!):num->form->form")
   let rhsTh ← liftExcept (rand (HolCore.Kernel.concl th))
   let avs := HolCore.Lib.striplist (fun t => HolCore.Basics.dest_binop bop t) rhsTh
@@ -93,15 +93,15 @@ private unsafe def specl_rule (tms : List term) (th : thm) : ExceptT String IO t
   let th' ← vs.foldlM (fun t _ => HolLight.MATCH_MP spec_var t) th
   instantiate_rule ilist th'
 
-private unsafe def spec_rule (t : term) (th : thm) : ExceptT String IO thm := specl_rule [t] th
+private def spec_rule (t : term) (th : thm) : ExceptT String IO thm := specl_rule [t] th
 
-private unsafe def ITLIST : thm := Session.listDefs.ITLIST
+private def ITLIST : thm := Session.listDefs.ITLIST
 
 -- Replay Arithmetic/derived.ml (the one module sigmacomplete.ml imports).
 #eval HolLogicArith.Derived.ensure
 
 #eval phrase 1
-unsafe def robinson : thm := keep "robinson" fun _ => new_definition
+def robinson : thm := keep "robinson" fun _ => new_definition
   [[robinson =
         (!!0 (!!1 (Suc(V 0) === Suc(V 1) --> V 0 === V 1))) &&
         (!!1 (Not(V 1 === Z) <-> ??0 (V 1 === Suc(V 0)))) &&
@@ -117,31 +117,31 @@ unsafe def robinson : thm := keep "robinson" fun _ => new_definition
 /- let [suc_inj; num_cases; add_0; add_suc; mul_0; mul_suc; le_def; lt_def] =
      CONJUNCTS(REWRITE_RULE[META_AND] (GEN_REWRITE_RULE RAND_CONV [robinson]
      (MATCH_MP assume (SET_RULE `robinson IN {robinson}`)))) -/
-private unsafe def robinson_axioms : thm := keep "robinson_axioms" fun _ => (do
+private def robinson_axioms : thm := keep "robinson_axioms" fun _ => (do
   let setr ← ExceptT.mk (Session.SET_RULE [[robinson IN {robinson}]])
   let asm ← HolLight.MATCH_MP «assume» setr
   let gr ← HolLight.GEN_REWRITE_RULE HolLight.RAND_CONV [robinson] asm
   HolLight.REWRITE_RULE [META_AND] gr
   : ExceptT String IO thm).run
-unsafe def suc_inj : thm := keep "suc_inj" fun _ => (Session.CONJUNCTS robinson_axioms)[0]!
-unsafe def num_cases : thm := keep "num_cases" fun _ => (Session.CONJUNCTS robinson_axioms)[1]!
-unsafe def add_0 : thm := keep "add_0" fun _ => (Session.CONJUNCTS robinson_axioms)[2]!
-unsafe def add_suc : thm := keep "add_suc" fun _ => (Session.CONJUNCTS robinson_axioms)[3]!
-unsafe def mul_0 : thm := keep "mul_0" fun _ => (Session.CONJUNCTS robinson_axioms)[4]!
-unsafe def mul_suc : thm := keep "mul_suc" fun _ => (Session.CONJUNCTS robinson_axioms)[5]!
-unsafe def le_def : thm := keep "le_def" fun _ => (Session.CONJUNCTS robinson_axioms)[6]!
-unsafe def lt_def : thm := keep "lt_def" fun _ => (Session.CONJUNCTS robinson_axioms)[7]!
+def suc_inj : thm := keep "suc_inj" fun _ => (Session.CONJUNCTS robinson_axioms)[0]!
+def num_cases : thm := keep "num_cases" fun _ => (Session.CONJUNCTS robinson_axioms)[1]!
+def add_0 : thm := keep "add_0" fun _ => (Session.CONJUNCTS robinson_axioms)[2]!
+def add_suc : thm := keep "add_suc" fun _ => (Session.CONJUNCTS robinson_axioms)[3]!
+def mul_0 : thm := keep "mul_0" fun _ => (Session.CONJUNCTS robinson_axioms)[4]!
+def mul_suc : thm := keep "mul_suc" fun _ => (Session.CONJUNCTS robinson_axioms)[5]!
+def le_def : thm := keep "le_def" fun _ => (Session.CONJUNCTS robinson_axioms)[6]!
+def lt_def : thm := keep "lt_def" fun _ => (Session.CONJUNCTS robinson_axioms)[7]!
 #eval do IO.println suc_inj; IO.println num_cases; IO.println add_0; IO.println add_suc; IO.println mul_0; IO.println mul_suc; IO.println le_def; IO.println lt_def
 
 #eval phrase 3
-unsafe def «suc_inj'» : thm := keep "suc_inj'" fun _ => (do
+def «suc_inj'» : thm := keep "suc_inj'" fun _ => (do
   prove ([[!s t. {robinson} |-- Suc(s) === Suc(t) --> s === t]])
    (REWRITE_TAC [← specl_rule [ [[s:term]], [[t:term]] ] suc_inj])
   : ExceptT String IO thm).run
 #eval «suc_inj'»
 
 #eval phrase 4
-unsafe def «num_cases'» : thm := keep "num_cases'" fun _ => (do
+def «num_cases'» : thm := keep "num_cases'" fun _ => (do
   prove ([[!t z. ~(z IN FVT t)
            ==> {robinson} |--  (Not(t === Z) <-> ??z (t === Suc(V z)))]])
    (HolLight.tactic_of do
@@ -185,42 +185,42 @@ unsafe def «num_cases'» : thm := keep "num_cases'" fun _ => (do
 #eval «num_cases'»
 
 #eval phrase 5
-unsafe def «add_0'» : thm := keep "add_0'" fun _ => (do
+def «add_0'» : thm := keep "add_0'" fun _ => (do
   prove ([[!t. {robinson} |--  Z ++ t === t]])
    (REWRITE_TAC [← spec_rule ([[t:term]]) add_0])
   : ExceptT String IO thm).run
 #eval «add_0'»
 
 #eval phrase 6
-unsafe def «add_suc'» : thm := keep "add_suc'" fun _ => (do
+def «add_suc'» : thm := keep "add_suc'" fun _ => (do
   prove ([[!s t. {robinson} |--  Suc(s) ++ t === Suc(s ++ t)]])
    (REWRITE_TAC [← specl_rule [ [[s:term]], [[t:term]] ] add_suc])
   : ExceptT String IO thm).run
 #eval «add_suc'»
 
 #eval phrase 7
-unsafe def «mul_0'» : thm := keep "mul_0'" fun _ => (do
+def «mul_0'» : thm := keep "mul_0'" fun _ => (do
   prove ([[!t. {robinson} |--  Z ** t === Z]])
    (REWRITE_TAC [← spec_rule ([[t:term]]) mul_0])
   : ExceptT String IO thm).run
 #eval «mul_0'»
 
 #eval phrase 8
-unsafe def «mul_suc'» : thm := keep "mul_suc'" fun _ => (do
+def «mul_suc'» : thm := keep "mul_suc'" fun _ => (do
   prove ([[!s t. {robinson} |--  Suc(s) ** t === t ++ s ** t]])
    (REWRITE_TAC [← specl_rule [ [[s:term]], [[t:term]] ] mul_suc])
   : ExceptT String IO thm).run
 #eval «mul_suc'»
 
 #eval phrase 9
-unsafe def «lt_def'» : thm := keep "lt_def'" fun _ => (do
+def «lt_def'» : thm := keep "lt_def'" fun _ => (do
   prove ([[!s t. {robinson} |--  (s << t <-> Suc(s) <<= t)]])
    (REWRITE_TAC [← specl_rule [ [[s:term]], [[t:term]] ] lt_def])
   : ExceptT String IO thm).run
 #eval «lt_def'»
 
 #eval phrase 10
-unsafe def SIGMA1_COMPLETE_ADD : thm := keep "SIGMA1_COMPLETE_ADD" fun _ => (do
+def SIGMA1_COMPLETE_ADD : thm := keep "SIGMA1_COMPLETE_ADD" fun _ => (do
   prove ([[!m n. {robinson} |-- numeral m ++ numeral n === numeral(m + n)]])
    (INDUCT_TAC THEN REWRITE_TAC [ADD_CLAUSES, numeral] THEN
     ASM_MESON_TAC [«add_0'», «add_suc'», axiom_funcong, eq_trans, modusponens])
@@ -228,7 +228,7 @@ unsafe def SIGMA1_COMPLETE_ADD : thm := keep "SIGMA1_COMPLETE_ADD" fun _ => (do
 #eval SIGMA1_COMPLETE_ADD
 
 #eval phrase 11
-unsafe def SIGMA1_COMPLETE_MUL : thm := keep "SIGMA1_COMPLETE_MUL" fun _ => (do
+def SIGMA1_COMPLETE_MUL : thm := keep "SIGMA1_COMPLETE_MUL" fun _ => (do
   prove ([[!m n. {robinson} |-- (numeral m ** numeral n === numeral(m * n))]])
    (INDUCT_TAC THEN REWRITE_TAC [ADD_CLAUSES, MULT_CLAUSES, numeral] THENL
      [ASM_MESON_TAC [«mul_0'»], ALL_TAC] THEN
@@ -241,7 +241,7 @@ unsafe def SIGMA1_COMPLETE_MUL : thm := keep "SIGMA1_COMPLETE_MUL" fun _ => (do
 #eval SIGMA1_COMPLETE_MUL
 
 #eval phrase 12
-unsafe def SIGMA1_COMPLETE_TERM : thm := keep "SIGMA1_COMPLETE_TERM" fun _ => (do
+def SIGMA1_COMPLETE_TERM : thm := keep "SIGMA1_COMPLETE_TERM" fun _ => (do
   prove ([[!v t n. FVT t = {} /\ termval v t = n
            ==> {robinson} |-- (t === numeral n)]])
    (HolLight.tactic_of do
@@ -262,7 +262,7 @@ unsafe def SIGMA1_COMPLETE_TERM : thm := keep "SIGMA1_COMPLETE_TERM" fun _ => (d
 
 #eval phrase 13
 /- let canonize_clauses = ... and false_imp = ... and true_imp = ... -/
-unsafe def canonize_clauses : thm := keep "canonize_clauses" fun _ => (do
+def canonize_clauses : thm := keep "canonize_clauses" fun _ => (do
   let lemma0 ← ExceptT.mk (MESON [imp_refl, imp_swap, modusponens, axiom_doubleneg]
     [[!A p. A |-- (p --> False) --> False <=> A |-- p]])
   let lemma1 ← ExceptT.mk (MESON [iff_imp1, iff_imp2, modusponens, imp_trans]
@@ -275,9 +275,9 @@ unsafe def canonize_clauses : thm := keep "canonize_clauses" fun _ => (do
       liftExcept (Session.CONJ mm acc))
     lemma0
   : ExceptT String IO thm).run
-unsafe def false_imp : thm := keep "false_imp" fun _ => (ExceptT.mk (MESON [imp_truefalse, modusponens]
+def false_imp : thm := keep "false_imp" fun _ => (ExceptT.mk (MESON [imp_truefalse, modusponens]
     [[A |-- p /\ A |-- q --> False ==> A |-- (p --> q) --> False]]) : ExceptT String IO thm).run
-unsafe def true_imp : thm := keep "true_imp" fun _ => (ExceptT.mk (MESON [axiom_addimp, modusponens, ex_falso, imp_trans]
+def true_imp : thm := keep "true_imp" fun _ => (ExceptT.mk (MESON [axiom_addimp, modusponens, ex_falso, imp_trans]
    [[A |-- p --> False \/ A |-- q ==> A |-- p --> q]]) : ExceptT String IO thm).run
 #eval do
   let a ← pure canonize_clauses
@@ -286,7 +286,7 @@ unsafe def true_imp : thm := keep "true_imp" fun _ => (ExceptT.mk (MESON [axiom_
   IO.println a; IO.println b; IO.println c
 
 #eval phrase 14
-unsafe def CANONIZE_TAC : HolCore.Tactics.tactic :=
+def CANONIZE_TAC : HolCore.Tactics.tactic :=
   REWRITE_TAC [canonize_clauses, imp_refl] THEN
   REPEAT ((MATCH_MP_TAC false_imp THEN CONJ_TAC) ORELSE
          MATCH_MP_TAC true_imp THEN
@@ -294,14 +294,14 @@ unsafe def CANONIZE_TAC : HolCore.Tactics.tactic :=
 #eval do IO.println "<fun>"
 
 #eval phrase 15
-unsafe def suc_inj_eq : thm := keep "suc_inj_eq" fun _ => (do
+def suc_inj_eq : thm := keep "suc_inj_eq" fun _ => (do
   prove ([[!s t. {robinson} |-- Suc s === Suc t <-> s === t]])
    (MESON_TAC [«suc_inj'», axiom_funcong, imp_antisym])
   : ExceptT String IO thm).run
 #eval suc_inj_eq
 
 #eval phrase 16
-unsafe def suc_le_eq : thm := keep "suc_le_eq" fun _ => (do
+def suc_le_eq : thm := keep "suc_le_eq" fun _ => (do
   prove ([[!s t. {robinson} |-- Suc s <<= Suc t <-> s <<= t]])
    (gens_tac [0,1] THEN
     TRANS_TAC iff_trans ([[??2 (Suc(V 0) ++ V 2 === Suc(V 1))]]) THEN
@@ -317,7 +317,7 @@ unsafe def suc_le_eq : thm := keep "suc_le_eq" fun _ => (do
 #eval suc_le_eq
 
 #eval phrase 17
-unsafe def le_iff_lt : thm := keep "le_iff_lt" fun _ => (do
+def le_iff_lt : thm := keep "le_iff_lt" fun _ => (do
   prove ([[!s t. {robinson} |-- s <<= t <-> s << Suc t]])
    (REPEAT GEN_TAC THEN TRANS_TAC iff_trans ([[Suc s <<= Suc t]]) THEN
     ONCE_REWRITE_TAC [iff_sym] THEN
@@ -326,14 +326,14 @@ unsafe def le_iff_lt : thm := keep "le_iff_lt" fun _ => (do
 #eval le_iff_lt
 
 #eval phrase 18
-unsafe def suc_lt_eq : thm := keep "suc_lt_eq" fun _ => (do
+def suc_lt_eq : thm := keep "suc_lt_eq" fun _ => (do
   prove ([[!s t. {robinson} |-- Suc s << Suc t <-> s << t]])
    (MESON_TAC [iff_sym, iff_trans, le_iff_lt, «lt_def'»])
   : ExceptT String IO thm).run
 #eval suc_lt_eq
 
 #eval phrase 19
-unsafe def not_suc_eq_0 : thm := keep "not_suc_eq_0" fun _ => (do
+def not_suc_eq_0 : thm := keep "not_suc_eq_0" fun _ => (do
   prove ([[!t. {robinson} |-- Suc t === Z --> False]])
    (gen_tac 1 THEN
     SUBGOAL_THEN ([[{robinson} |-- Not(Suc(V 1) === Z)]]) MP_TAC THENL
@@ -346,7 +346,7 @@ unsafe def not_suc_eq_0 : thm := keep "not_suc_eq_0" fun _ => (do
 #eval not_suc_eq_0
 
 #eval phrase 20
-unsafe def not_suc_le_0 : thm := keep "not_suc_le_0" fun _ => (do
+def not_suc_le_0 : thm := keep "not_suc_le_0" fun _ => (do
   prove ([[!t. {robinson} |-- Suc t <<= Z --> False]])
    (X_GEN_TAC ([[s:term]]) THEN
     SUBGOAL_THEN ([[{robinson} |-- !!0 (Suc(V 0) <<= Z --> False)]]) MP_TAC THENL
@@ -369,14 +369,14 @@ unsafe def not_suc_le_0 : thm := keep "not_suc_le_0" fun _ => (do
 #eval not_suc_le_0
 
 #eval phrase 21
-unsafe def not_lt_0 : thm := keep "not_lt_0" fun _ => (do
+def not_lt_0 : thm := keep "not_lt_0" fun _ => (do
   prove ([[!t. {robinson} |-- t << Z --> False]])
    (MESON_TAC [not_suc_le_0, «lt_def'», imp_trans, iff_imp1])
   : ExceptT String IO thm).run
 #eval not_lt_0
 
 #eval phrase 22
-unsafe def add_0_right : thm := keep "add_0_right" fun _ => (do
+def add_0_right : thm := keep "add_0_right" fun _ => (do
   prove ([[!n. {robinson} |-- numeral n ++ Z === numeral n]])
    (GEN_TAC THEN MP_TAC (← ExceptT.mk (HolLight.ISPECL [ [[n:num]], [[0]] ] SIGMA1_COMPLETE_ADD)) THEN
     REWRITE_TAC [numeral, ADD_CLAUSES])
@@ -384,7 +384,7 @@ unsafe def add_0_right : thm := keep "add_0_right" fun _ => (do
 #eval add_0_right
 
 #eval phrase 23
-unsafe def ATOM_EQ_FALSE : thm := keep "ATOM_EQ_FALSE" fun _ => (do
+def ATOM_EQ_FALSE : thm := keep "ATOM_EQ_FALSE" fun _ => (do
   prove ([[!m n. ~(m = n) ==> {robinson} |-- numeral m === numeral n --> False]])
    (ONCE_REWRITE_TAC [SWAP_FORALL_THM] THEN
     MATCH_MP_TAC WLOG_LT THEN REWRITE_TAC [] THEN CONJ_TAC THENL
@@ -397,7 +397,7 @@ unsafe def ATOM_EQ_FALSE : thm := keep "ATOM_EQ_FALSE" fun _ => (do
 #eval ATOM_EQ_FALSE
 
 #eval phrase 24
-unsafe def ATOM_LE_FALSE : thm := keep "ATOM_LE_FALSE" fun _ => (do
+def ATOM_LE_FALSE : thm := keep "ATOM_LE_FALSE" fun _ => (do
   prove ([[!m n. n < m ==> {robinson} |-- numeral m <<= numeral n --> False]])
    (INDUCT_TAC THEN REWRITE_TAC [(← HolLight.CONJUNCT1 LT)] THEN
     INDUCT_TAC THEN REWRITE_TAC [numeral, not_suc_le_0, LT_SUC] THEN
@@ -406,7 +406,7 @@ unsafe def ATOM_LE_FALSE : thm := keep "ATOM_LE_FALSE" fun _ => (do
 #eval ATOM_LE_FALSE
 
 #eval phrase 25
-unsafe def ATOM_LT_FALSE : thm := keep "ATOM_LT_FALSE" fun _ => (do
+def ATOM_LT_FALSE : thm := keep "ATOM_LT_FALSE" fun _ => (do
   prove ([[!m n. n <= m ==> {robinson} |-- numeral m << numeral n --> False]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [(← HolLight.GSYM LT_SUC_LE)] THEN
     DISCH_THEN (MP_TAC oTIO HolLight.MATCH_MP ATOM_LE_FALSE) THEN
@@ -416,14 +416,14 @@ unsafe def ATOM_LT_FALSE : thm := keep "ATOM_LT_FALSE" fun _ => (do
 #eval ATOM_LT_FALSE
 
 #eval phrase 26
-unsafe def ATOM_EQ_TRUE : thm := keep "ATOM_EQ_TRUE" fun _ => (do
+def ATOM_EQ_TRUE : thm := keep "ATOM_EQ_TRUE" fun _ => (do
   prove ([[!m n. m = n ==> {robinson} |-- numeral m === numeral n]])
    (MESON_TAC [axiom_eqrefl])
   : ExceptT String IO thm).run
 #eval ATOM_EQ_TRUE
 
 #eval phrase 27
-unsafe def ATOM_LE_TRUE : thm := keep "ATOM_LE_TRUE" fun _ => (do
+def ATOM_LE_TRUE : thm := keep "ATOM_LE_TRUE" fun _ => (do
   prove ([[!m n. m <= n ==> {robinson} |-- numeral m <<= numeral n]])
    (SUBGOAL_THEN ([[!m n. {robinson} |-- numeral m <<= numeral(m + n)]])
     MP_TAC THENL [ALL_TAC, MESON_TAC [LE_EXISTS]] THEN
@@ -439,7 +439,7 @@ unsafe def ATOM_LE_TRUE : thm := keep "ATOM_LE_TRUE" fun _ => (do
 #eval ATOM_LE_TRUE
 
 #eval phrase 28
-unsafe def ATOM_LT_TRUE : thm := keep "ATOM_LT_TRUE" fun _ => (do
+def ATOM_LT_TRUE : thm := keep "ATOM_LT_TRUE" fun _ => (do
   prove ([[!m n. m < n ==> {robinson} |-- numeral m << numeral n]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [(← HolLight.GSYM LE_SUC_LT)] THEN
     DISCH_THEN (MP_TAC oTIO HolLight.MATCH_MP ATOM_LE_TRUE) THEN
@@ -449,7 +449,7 @@ unsafe def ATOM_LT_TRUE : thm := keep "ATOM_LT_TRUE" fun _ => (do
 #eval ATOM_LT_TRUE
 
 #eval phrase 29
-unsafe def FORMSUBST_FORMSUBST_SAME_NONE : thm := keep "FORMSUBST_FORMSUBST_SAME_NONE" fun _ => (do
+def FORMSUBST_FORMSUBST_SAME_NONE : thm := keep "FORMSUBST_FORMSUBST_SAME_NONE" fun _ => (do
   prove ([[!s t x p.
         FVT t = {x} /\ FVT s = {}
         ==> formsubst (x |=> s) (formsubst (x |=> t) p) =
@@ -482,7 +482,7 @@ unsafe def FORMSUBST_FORMSUBST_SAME_NONE : thm := keep "FORMSUBST_FORMSUBST_SAME
 #eval FORMSUBST_FORMSUBST_SAME_NONE
 
 #eval phrase 30
-unsafe def num_cases_rule : thm := keep "num_cases_rule" fun _ => (do
+def num_cases_rule : thm := keep "num_cases_rule" fun _ => (do
   prove ([[!p x. {robinson} |-- formsubst (x |=> Z) p /\
          {robinson} |-- formsubst (x |=> Suc(V x)) p
          ==> {robinson} |-- p]])
@@ -538,7 +538,7 @@ unsafe def num_cases_rule : thm := keep "num_cases_rule" fun _ => (do
 #eval num_cases_rule
 
 #eval phrase 31
-unsafe def SIGMAPI1_COMPLETE : thm := keep "SIGMAPI1_COMPLETE" fun _ => (do
+def SIGMAPI1_COMPLETE : thm := keep "SIGMAPI1_COMPLETE" fun _ => (do
   prove ([[!v p b. sigmapi b 1 p /\ closed p
            ==> (b /\ holds v p ==> {robinson} |-- p) /\
                (~b /\ ~holds v p ==> {robinson} |-- p --> False)]])
@@ -796,7 +796,7 @@ unsafe def SIGMAPI1_COMPLETE : thm := keep "SIGMAPI1_COMPLETE" fun _ => (do
 #eval SIGMAPI1_COMPLETE
 
 #eval phrase 32
-unsafe def G1_ROBINSON : thm := keep "G1_ROBINSON" fun _ => (do
+def G1_ROBINSON : thm := keep "G1_ROBINSON" fun _ => (do
   prove ([[!A. definable_by (SIGMA 1) (IMAGE gform A) /\
        consistent A /\ A |-- robinson
        ==> ?G. PI 1 G /\
@@ -821,32 +821,32 @@ unsafe def G1_ROBINSON : thm := keep "G1_ROBINSON" fun _ => (do
 #eval G1_ROBINSON
 
 #eval phrase 33
-unsafe def complete : thm := keep "complete" fun _ => new_definition
+def complete : thm := keep "complete" fun _ => new_definition
   [[complete A <=> !p. closed p ==> A |-- p \/ A |-- Not p]]
 #eval complete
 
 #eval phrase 34
-unsafe def sound : thm := keep "sound" fun _ => new_definition
+def sound : thm := keep "sound" fun _ => new_definition
   [[sound A <=> !p. A |-- p ==> arithtrue p]]
 #eval sound
 
 #eval phrase 35
-unsafe def semcomplete : thm := keep "semcomplete" fun _ => new_definition
+def semcomplete : thm := keep "semcomplete" fun _ => new_definition
   [[semcomplete A <=> !p. arithtrue p ==> A |-- p]]
 #eval semcomplete
 
 #eval phrase 36
-unsafe def generalize : thm := keep "generalize" fun _ => new_definition
+def generalize : thm := keep "generalize" fun _ => new_definition
   [[generalize vs p = ITLIST (!!) vs p]]
 #eval generalize
 
 #eval phrase 37
-unsafe def closure : thm := keep "closure" fun _ => new_definition
+def closure : thm := keep "closure" fun _ => new_definition
   [[closure p = generalize (list_of_set(FV p)) p]]
 #eval closure
 
 #eval phrase 38
-unsafe def TRUE_GENERALIZE : thm := keep "TRUE_GENERALIZE" fun _ => (do
+def TRUE_GENERALIZE : thm := keep "TRUE_GENERALIZE" fun _ => (do
   prove ([[!vs p. arithtrue(generalize vs p) <=> arithtrue p]])
    (REWRITE_TAC [generalize, arithtrue] THEN
     LIST_INDUCT_TAC THEN REWRITE_TAC [ITLIST, holds] THEN GEN_TAC THEN
@@ -858,7 +858,7 @@ unsafe def TRUE_GENERALIZE : thm := keep "TRUE_GENERALIZE" fun _ => (do
 #eval TRUE_GENERALIZE
 
 #eval phrase 39
-unsafe def PROVABLE_GENERALIZE : thm := keep "PROVABLE_GENERALIZE" fun _ => (do
+def PROVABLE_GENERALIZE : thm := keep "PROVABLE_GENERALIZE" fun _ => (do
   prove ([[!A p vs. A |-- generalize vs p <=> A |-- p]])
    (GEN_TAC THEN GEN_TAC THEN REWRITE_TAC [generalize] THEN LIST_INDUCT_TAC THEN
     REWRITE_TAC [ITLIST] THEN FIRST_X_ASSUM (SUBST1_TAC oTIO HolLight.SYM) THEN
@@ -867,7 +867,7 @@ unsafe def PROVABLE_GENERALIZE : thm := keep "PROVABLE_GENERALIZE" fun _ => (do
 #eval PROVABLE_GENERALIZE
 
 #eval phrase 40
-unsafe def FV_GENERALIZE : thm := keep "FV_GENERALIZE" fun _ => (do
+def FV_GENERALIZE : thm := keep "FV_GENERALIZE" fun _ => (do
   prove ([[!p vs. FV(generalize vs p) = FV(p) DIFF (set_of_list vs)]])
    (GEN_TAC THEN REWRITE_TAC [generalize] THEN
     LIST_INDUCT_TAC THEN REWRITE_TAC [set_of_list, DIFF_EMPTY, ITLIST] THEN
@@ -876,7 +876,7 @@ unsafe def FV_GENERALIZE : thm := keep "FV_GENERALIZE" fun _ => (do
 #eval FV_GENERALIZE
 
 #eval phrase 41
-unsafe def CLOSED_CLOSURE : thm := keep "CLOSED_CLOSURE" fun _ => (do
+def CLOSED_CLOSURE : thm := keep "CLOSED_CLOSURE" fun _ => (do
   prove ([[!p. closed(closure p)]])
    (REWRITE_TAC [closed, closure, FV_GENERALIZE] THEN
     SIMP_TAC [SET_OF_LIST_OF_SET, FV_FINITE, DIFF_EQ_EMPTY])
@@ -884,28 +884,28 @@ unsafe def CLOSED_CLOSURE : thm := keep "CLOSED_CLOSURE" fun _ => (do
 #eval CLOSED_CLOSURE
 
 #eval phrase 42
-unsafe def TRUE_CLOSURE : thm := keep "TRUE_CLOSURE" fun _ => (do
+def TRUE_CLOSURE : thm := keep "TRUE_CLOSURE" fun _ => (do
   prove ([[!p. arithtrue(closure p) <=> arithtrue p]])
    (REWRITE_TAC [closure, TRUE_GENERALIZE])
   : ExceptT String IO thm).run
 #eval TRUE_CLOSURE
 
 #eval phrase 43
-unsafe def PROVABLE_CLOSURE : thm := keep "PROVABLE_CLOSURE" fun _ => (do
+def PROVABLE_CLOSURE : thm := keep "PROVABLE_CLOSURE" fun _ => (do
   prove ([[!A p. A |-- closure p <=> A |-- p]])
    (REWRITE_TAC [closure, PROVABLE_GENERALIZE])
   : ExceptT String IO thm).run
 #eval PROVABLE_CLOSURE
 
 #eval phrase 44
-unsafe def DEFINABLE_DEFINABLE_BY : thm := keep "DEFINABLE_DEFINABLE_BY" fun _ => (do
+def DEFINABLE_DEFINABLE_BY : thm := keep "DEFINABLE_DEFINABLE_BY" fun _ => (do
   prove ([[definable = definable_by (\x. T)]])
    (REWRITE_TAC [FUN_EQ_THM, definable, definable_by])
   : ExceptT String IO thm).run
 #eval DEFINABLE_DEFINABLE_BY
 
 #eval phrase 45
-unsafe def DEFINABLE_ONEVAR : thm := keep "DEFINABLE_ONEVAR" fun _ => (do
+def DEFINABLE_ONEVAR : thm := keep "DEFINABLE_ONEVAR" fun _ => (do
   prove ([[definable s <=> ?p x. (FV p = {x}) /\ !v. holds v p <=> (v x) IN s]])
    (REWRITE_TAC [definable] THEN EQ_TAC THENL [ALL_TAC, MESON_TAC []] THEN
     DISCH_THEN (X_CHOOSE_THEN ([[p:form]]) (X_CHOOSE_TAC ([[x:num]]))) THEN
@@ -919,7 +919,7 @@ unsafe def DEFINABLE_ONEVAR : thm := keep "DEFINABLE_ONEVAR" fun _ => (do
 #eval DEFINABLE_ONEVAR
 
 #eval phrase 46
-unsafe def CLOSED_TRUE_OR_FALSE : thm := keep "CLOSED_TRUE_OR_FALSE" fun _ => (do
+def CLOSED_TRUE_OR_FALSE : thm := keep "CLOSED_TRUE_OR_FALSE" fun _ => (do
   prove ([[!p. closed p ==> arithtrue p \/ arithtrue(Not p)]])
    (REWRITE_TAC [closed, arithtrue, holds] THEN REPEAT STRIP_TAC THEN
     ASM_MESON_TAC [HOLDS_VALUATION, NOT_IN_EMPTY])
@@ -927,14 +927,14 @@ unsafe def CLOSED_TRUE_OR_FALSE : thm := keep "CLOSED_TRUE_OR_FALSE" fun _ => (d
 #eval CLOSED_TRUE_OR_FALSE
 
 #eval phrase 47
-unsafe def SEMCOMPLETE_IMP_COMPLETE : thm := keep "SEMCOMPLETE_IMP_COMPLETE" fun _ => (do
+def SEMCOMPLETE_IMP_COMPLETE : thm := keep "SEMCOMPLETE_IMP_COMPLETE" fun _ => (do
   prove ([[!A. semcomplete A ==> complete A]])
    (REWRITE_TAC [semcomplete, complete] THEN MESON_TAC [CLOSED_TRUE_OR_FALSE])
   : ExceptT String IO thm).run
 #eval SEMCOMPLETE_IMP_COMPLETE
 
 #eval phrase 48
-unsafe def SOUND_CLOSED : thm := keep "SOUND_CLOSED" fun _ => (do
+def SOUND_CLOSED : thm := keep "SOUND_CLOSED" fun _ => (do
   prove ([[sound A <=> !p. closed p /\ A |-- p ==> arithtrue p]])
    (REWRITE_TAC [sound] THEN EQ_TAC THENL [MESON_TAC [], ALL_TAC] THEN
     MESON_TAC [TRUE_CLOSURE, PROVABLE_CLOSURE, CLOSED_CLOSURE])
@@ -942,7 +942,7 @@ unsafe def SOUND_CLOSED : thm := keep "SOUND_CLOSED" fun _ => (do
 #eval SOUND_CLOSED
 
 #eval phrase 49
-unsafe def SOUND_IMP_CONSISTENT : thm := keep "SOUND_IMP_CONSISTENT" fun _ => (do
+def SOUND_IMP_CONSISTENT : thm := keep "SOUND_IMP_CONSISTENT" fun _ => (do
   prove ([[!A. sound A ==> consistent A]])
    (REWRITE_TAC [sound, consistent, CONSISTENT_ALT] THEN
     SUBGOAL_THEN ([[~(arithtrue False)]]) (fun th => MESON_TAC [th]) THEN
@@ -951,7 +951,7 @@ unsafe def SOUND_IMP_CONSISTENT : thm := keep "SOUND_IMP_CONSISTENT" fun _ => (d
 #eval SOUND_IMP_CONSISTENT
 
 #eval phrase 50
-unsafe def SEMCOMPLETE_SOUND_EQ_CONSISTENT : thm := keep "SEMCOMPLETE_SOUND_EQ_CONSISTENT" fun _ => (do
+def SEMCOMPLETE_SOUND_EQ_CONSISTENT : thm := keep "SEMCOMPLETE_SOUND_EQ_CONSISTENT" fun _ => (do
   prove ([[!A. semcomplete A ==> (sound A <=> consistent A)]])
    (REWRITE_TAC [semcomplete] THEN REPEAT STRIP_TAC THEN EQ_TAC THEN
     REWRITE_TAC [SOUND_IMP_CONSISTENT] THEN
@@ -961,9 +961,9 @@ unsafe def SEMCOMPLETE_SOUND_EQ_CONSISTENT : thm := keep "SEMCOMPLETE_SOUND_EQ_C
 #eval SEMCOMPLETE_SOUND_EQ_CONSISTENT
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.SigmaComplete" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.SigmaComplete" do
   replay (
           HolLogicArith.Derived.ensure)
   replay (

@@ -3,14 +3,13 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/ModmulGroup.lean
 
-  The `unsafe` half of the modmulgroup.ml translation: it supplies HolLibrary.ModmulGroup's
-  dependencies from Session and SessionLibrary.GroupTheory, SessionLibrary.Primitive, builds the bundles once, in order,
-  and exports every name under its HOL Light name.  `ensureModmulGroup` is
-  `needs "Library/modmulgroup.ml"` (which first does `needs "Library/grouptheory.ml"`, `needs "Library/primitive.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/ModmulGroup.lean by tools/modmulgroupdiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the modmul_group.ml translation: it supplies
+  HolLibrary.ModmulGroup's dependencies from Session, SessionLibrary.GroupTheory
+  and SessionLibrary.Primitive, and exports every name under its HOL Light
+  name.  Importing this module is `needs "Library/modmul_group.ml"`; its
+  `needs` of grouptheory.ml and primitive.ml are the imports of those
+  modules.  The bundles are built by `initialize` when the module is loaded,
+  in file order.
 -/
 
 import Session
@@ -23,12 +22,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.ModmulGroup
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems modmul_group.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.ModmulGroup.CoreThms1 where
+def core1 : HolLibrary.ModmulGroup.CoreThms1 where
   AND_FORALL_THM := Session.AND_FORALL_THM
   ARITH := Session.ARITH
   CARD_CROSS := Session.CARD_CROSS
@@ -100,7 +95,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.ModmulGroup.CoreThms1 where
   PROD_GROUP := SessionLibrary.GroupTheory.«PROD_GROUP»
   SINGLETON_GROUP := SessionLibrary.GroupTheory.«SINGLETON_GROUP»
 /-- The core theorems modmul_group.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.ModmulGroup.CoreThms2 where
+def core2 : HolLibrary.ModmulGroup.CoreThms2 where
   SUBSET := Session.SUBSET
   TRIVIAL_GROUP_HAS_SIZE_1 := SessionLibrary.GroupTheory.«TRIVIAL_GROUP_HAS_SIZE_1»
   TRIVIAL_IMP_CYCLIC_GROUP := SessionLibrary.GroupTheory.«TRIVIAL_IMP_CYCLIC_GROUP»
@@ -116,13 +111,12 @@ unsafe def core2 (_ : Unit) : HolLibrary.ModmulGroup.CoreThms2 where
   inverse_mod := SessionLibrary.Pocklington.«inverse_mod»
   isomorphic_group := SessionLibrary.GroupTheory.«isomorphic_group»
 /-- The core theorems modmul_group.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.ModmulGroup.CoreThms3 where
+def core3 : HolLibrary.ModmulGroup.CoreThms3 where
 /-- The core theorems modmul_group.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.ModmulGroup.CoreThms4 where
--- @@CORE END
+def core4 : HolLibrary.ModmulGroup.CoreThms4 where
 
 /-- What modmulgroup.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.ModmulGroup.ModmulGroupDeps where
+def deps : HolLibrary.ModmulGroup.ModmulGroupDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
   ARITH_TAC := Session.ARITH_TAC
@@ -132,90 +126,49 @@ unsafe def deps (_ : Unit) : HolLibrary.ModmulGroup.ModmulGroupDeps where
   MESON_TAC := Session.MESON_TAC
   ASM_MESON_TAC := Session.ASM_MESON_TAC
   INDUCT_TAC := Session.INDUCT_TAC
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then grouptheory.ml, primitive.ml, which modmulgroup.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.GroupTheory.ensureGroupTheory
-      SessionLibrary.Primitive.ensurePrimitive
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.ModmulGroup: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in file order; each forces the one before it. -/
+/- The bundles, in modmul_group.ml order. -/
+initialize BGen : HolLibrary.ModmulGroup.Gen ←
+  ioB "setupGen" (HolLibrary.ModmulGroup.setupGen deps).run
+initialize BModmul : HolLibrary.ModmulGroup.Modmul ←
+  ioB "setupModmul" (HolLibrary.ModmulGroup.setupModmul deps).run
+initialize BCrt : HolLibrary.ModmulGroup.Crt ←
+  ioB "setupCrt" (HolLibrary.ModmulGroup.setupCrt deps BGen BModmul).run
+initialize BPrimroot : HolLibrary.ModmulGroup.Primroot ←
+  ioB "setupPrimroot" (HolLibrary.ModmulGroup.setupPrimroot deps BModmul BCrt).run
 
--- @@BUNDLES BEGIN
-initialize theGen : IO.Ref (Option HolLibrary.ModmulGroup.Gen) ← IO.mkRef none
-unsafe def BGen : HolLibrary.ModmulGroup.Gen :=
-  cached theGen "setupGen" fun _ => do
-    (HolLibrary.ModmulGroup.setupGen (deps ())).run
-
-initialize theModmul : IO.Ref (Option HolLibrary.ModmulGroup.Modmul) ← IO.mkRef none
-unsafe def BModmul : HolLibrary.ModmulGroup.Modmul :=
-  cached theModmul "setupModmul" fun _ => do
-    let _ ← IO.mkRef BGen.MULT_EQ_2
-    (HolLibrary.ModmulGroup.setupModmul (deps ())).run
-
-initialize theCrt : IO.Ref (Option HolLibrary.ModmulGroup.Crt) ← IO.mkRef none
-unsafe def BCrt : HolLibrary.ModmulGroup.Crt :=
-  cached theCrt "setupCrt" fun _ => do
-    let _ ← IO.mkRef BModmul.modmul_group
-    (HolLibrary.ModmulGroup.setupCrt (deps ()) BGen BModmul).run
-
-initialize thePrimroot : IO.Ref (Option HolLibrary.ModmulGroup.Primroot) ← IO.mkRef none
-unsafe def BPrimroot : HolLibrary.ModmulGroup.Primroot :=
-  cached thePrimroot "setupPrimroot" fun _ => do
-    let _ ← IO.mkRef BCrt.GROUP_HOMOMORPHISM_PROD_MODMUL_GROUP
-    (HolLibrary.ModmulGroup.setupPrimroot (deps ()) BModmul BCrt).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Gen
-unsafe def MULT_EQ_2 : thm := BGen.MULT_EQ_2
+def MULT_EQ_2 : thm := BGen.MULT_EQ_2
 
 -- Modmul
-unsafe def modmul_group : thm := BModmul.modmul_group
-unsafe def MODMUL_GROUP : thm := BModmul.MODMUL_GROUP
-unsafe def FINITE_MODMUL_GROUP : thm := BModmul.FINITE_MODMUL_GROUP
-unsafe def ORDER_MODMUL_GROUP : thm := BModmul.ORDER_MODMUL_GROUP
-unsafe def HAS_SIZE_MODMUL_GROUP : thm := BModmul.HAS_SIZE_MODMUL_GROUP
-unsafe def ABELIAN_MODMUL_GROUP : thm := BModmul.ABELIAN_MODMUL_GROUP
-unsafe def TRIVIAL_MODMUL_GROUP : thm := BModmul.TRIVIAL_MODMUL_GROUP
+def modmul_group : thm := BModmul.modmul_group
+def MODMUL_GROUP : thm := BModmul.MODMUL_GROUP
+def FINITE_MODMUL_GROUP : thm := BModmul.FINITE_MODMUL_GROUP
+def ORDER_MODMUL_GROUP : thm := BModmul.ORDER_MODMUL_GROUP
+def HAS_SIZE_MODMUL_GROUP : thm := BModmul.HAS_SIZE_MODMUL_GROUP
+def ABELIAN_MODMUL_GROUP : thm := BModmul.ABELIAN_MODMUL_GROUP
+def TRIVIAL_MODMUL_GROUP : thm := BModmul.TRIVIAL_MODMUL_GROUP
 
 -- Crt
-unsafe def GROUP_HOMOMORPHISM_PROD_MODMUL_GROUP : thm := BCrt.GROUP_HOMOMORPHISM_PROD_MODMUL_GROUP
-unsafe def GROUP_ISOMORPHISM_PROD_MODMUL_GROUP : thm := BCrt.GROUP_ISOMORPHISM_PROD_MODMUL_GROUP
-unsafe def ISOMORPHIC_GROUP_MODMUL_GROUP : thm := BCrt.ISOMORPHIC_GROUP_MODMUL_GROUP
-unsafe def GROUP_POW_MODMUL_GROUP : thm := BCrt.GROUP_POW_MODMUL_GROUP
-unsafe def GROUP_ELEMENT_ORDER_MODMUL_GROUP : thm := BCrt.GROUP_ELEMENT_ORDER_MODMUL_GROUP
+def GROUP_HOMOMORPHISM_PROD_MODMUL_GROUP : thm := BCrt.GROUP_HOMOMORPHISM_PROD_MODMUL_GROUP
+def GROUP_ISOMORPHISM_PROD_MODMUL_GROUP : thm := BCrt.GROUP_ISOMORPHISM_PROD_MODMUL_GROUP
+def ISOMORPHIC_GROUP_MODMUL_GROUP : thm := BCrt.ISOMORPHIC_GROUP_MODMUL_GROUP
+def GROUP_POW_MODMUL_GROUP : thm := BCrt.GROUP_POW_MODMUL_GROUP
+def GROUP_ELEMENT_ORDER_MODMUL_GROUP : thm := BCrt.GROUP_ELEMENT_ORDER_MODMUL_GROUP
 
 -- Primroot
-unsafe def CYCLIC_MODMUL_GROUP : thm := BPrimroot.CYCLIC_MODMUL_GROUP
--- @@EXPORTS END
-
-/-- `needs "Library/modmulgroup.ml"`: build the bundles, in order. -/
-unsafe def ensureModmulGroup : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BGen.MULT_EQ_2
-  let _ ← IO.mkRef BModmul.modmul_group
-  let _ ← IO.mkRef BCrt.GROUP_HOMOMORPHISM_PROD_MODMUL_GROUP
-  let _ ← IO.mkRef BPrimroot.CYCLIC_MODMUL_GROUP
-  -- @@ENSURE END
-  pure ()
+def CYCLIC_MODMUL_GROUP : thm := BPrimroot.CYCLIC_MODMUL_GROUP
+/-- `needs "Library/modmul_group.ml"`: already done by importing this module. -/
+def ensureModmulGroup : IO Unit := pure ()
 
 end SessionLibrary.ModmulGroup

@@ -15,7 +15,7 @@ The suite exercises:
     theorems"). -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Isum
 
 open HolCore.Kernel HolTest.CommonTest
 

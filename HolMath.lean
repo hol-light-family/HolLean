@@ -2,7 +2,7 @@
 Library root: the mathematical theories and additional proof tools.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 
-This module is the ROOT of the `HolMath` Lean library (see `lakefile.toml`).
+This module is the ROOT of the `HolMath` Lean library (see `lakefile.lean`).
 Lake's `roots` determine which modules BELONG to a library, while the default
 `globs` build only the root module itself and, recursively, its local imports.
 So this import list IS the library's build set - a module absent from it is not

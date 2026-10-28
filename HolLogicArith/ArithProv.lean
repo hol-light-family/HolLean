@@ -24,17 +24,17 @@ namespace HolLogicArith.ArithProv
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_specification` lifted into `ExceptT String IO`. -/
-private unsafe def newSpec (names : List String) (th : thm) : ExceptT String IO thm :=
+private def newSpec (names : List String) (th : thm) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_specification names th)
 
 /- Force an `ExceptT String IO (thm × thm)` to its value, panicking with HOL
    Light's message on failure (as the toplevel `let a,b = ...` would throw). -/
-private unsafe def runObj (m : ExceptT String IO (thm × thm)) : thm × thm :=
-  match unsafeIO m.run with
+private def runObj (m : ExceptT String IO (thm × thm)) : thm × thm :=
+  match runIO m.run with
   | .ok (.ok p) => p
   | .ok (.error e) => panic! s!"OBJECTIFY: {e}"
   | .error e => panic! s!"OBJECTIFY IO: {e}"
@@ -46,7 +46,7 @@ private unsafe def runObj (m : ExceptT String IO (thm × thm)) : thm × thm :=
 #eval Session.prioritize_num
 
 #eval phrase 2
-unsafe def ALLN_DEF : thm := keep "ALLN_DEF" fun _ => (do
+def ALLN_DEF : thm := keep "ALLN_DEF" fun _ => (do
   let th ← prove ([[!P. ?ALLN. !z.
          ALLN z <=>
                 if ?x y. z = NPAIR x y
@@ -67,7 +67,7 @@ unsafe def ALLN_DEF : thm := keep "ALLN_DEF" fun _ => (do
 #eval ALLN_DEF
 
 #eval phrase 3
-unsafe def ALLN : thm := keep "ALLN" fun _ => (do
+def ALLN : thm := keep "ALLN" fun _ => (do
   prove ([[(ALLN P 0 <=> T) /\
    (ALLN P (NPAIR x y) <=> P x /\ ALLN P y)]])
    (REPEAT STRIP_TAC THEN GEN_REWRITE_TAC HolLight.LAND_CONV [ALLN_DEF] THEN
@@ -78,7 +78,7 @@ unsafe def ALLN : thm := keep "ALLN" fun _ => (do
 #eval ALLN
 
 #eval phrase 4
-unsafe def TERM1 : thm := keep "TERM1" fun _ => new_definition
+def TERM1 : thm := keep "TERM1" fun _ => new_definition
   [[TERM1 x y <=>
         (?l u. (x = l) /\ (y = NPAIR (NPAIR 0 u) l)) \/
         (?l. (x = l) /\ (y = NPAIR (NPAIR 1 0) l)) \/
@@ -89,17 +89,17 @@ unsafe def TERM1 : thm := keep "TERM1" fun _ => new_definition
 #eval TERM1
 
 #eval phrase 5
-unsafe def TERM : thm := keep "TERM" fun _ => new_definition
+def TERM : thm := keep "TERM" fun _ => new_definition
   [[TERM n <=> RTC TERM1 0 (NPAIR n 0)]]
 #eval TERM
 
 #eval phrase 6
-unsafe def isagterm : thm := keep "isagterm" fun _ => new_definition
+def isagterm : thm := keep "isagterm" fun _ => new_definition
   [[isagterm n <=> ?t. n = gterm t]]
 #eval isagterm
 
 #eval phrase 7
-unsafe def TERM_LEMMA1 : thm := keep "TERM_LEMMA1" fun _ => (do
+def TERM_LEMMA1 : thm := keep "TERM_LEMMA1" fun _ => (do
   prove ([[!x y. TERM1 x y ==> ALLN isagterm x ==> ALLN isagterm y]])
    (HolLight.tactic_of do
      let taut1 ← ExceptT.mk (TAUT [[a \/ b ==> c <=> (a ==> c) /\ (b ==> c)]])
@@ -112,7 +112,7 @@ unsafe def TERM_LEMMA1 : thm := keep "TERM_LEMMA1" fun _ => (do
 #eval TERM_LEMMA1
 
 #eval phrase 8
-unsafe def TERM_LEMMA2 : thm := keep "TERM_LEMMA2" fun _ => (do
+def TERM_LEMMA2 : thm := keep "TERM_LEMMA2" fun _ => (do
   prove ([[!t a. RTC TERM1 a (NPAIR (gterm t) a)]])
    (MATCH_MP_TAC term_INDUCT THEN REWRITE_TAC [gterm] THEN
     MESON_TAC [RTC_INC, RTC_TRANS, TERM1])
@@ -120,7 +120,7 @@ unsafe def TERM_LEMMA2 : thm := keep "TERM_LEMMA2" fun _ => (do
 #eval TERM_LEMMA2
 
 #eval phrase 9
-unsafe def TERM_THM : thm := keep "TERM_THM" fun _ => (do
+def TERM_THM : thm := keep "TERM_THM" fun _ => (do
   prove ([[!n. TERM n <=> ?t. n = gterm t]])
    (GEN_TAC THEN REWRITE_TAC [TERM] THEN EQ_TAC THENL
      [ALL_TAC, MESON_TAC [TERM_LEMMA2]] THEN
@@ -131,7 +131,7 @@ unsafe def TERM_THM : thm := keep "TERM_THM" fun _ => (do
 #eval TERM_THM
 
 #eval phrase 10
-unsafe def FORM1 : thm := keep "FORM1" fun _ => new_definition
+def FORM1 : thm := keep "FORM1" fun _ => new_definition
   [[FORM1 x y <=>
         (?l. (x = l) /\ (y = NPAIR (NPAIR 0 0) l)) \/
         (?l. (x = l) /\ (y = NPAIR (NPAIR 0 1) l)) \/
@@ -150,17 +150,17 @@ unsafe def FORM1 : thm := keep "FORM1" fun _ => new_definition
 #eval FORM1
 
 #eval phrase 11
-unsafe def FORM : thm := keep "FORM" fun _ => new_definition
+def FORM : thm := keep "FORM" fun _ => new_definition
   [[FORM n <=> RTC FORM1 0 (NPAIR n 0)]]
 #eval FORM
 
 #eval phrase 12
-unsafe def isagform : thm := keep "isagform" fun _ => new_definition
+def isagform : thm := keep "isagform" fun _ => new_definition
   [[isagform n <=> ?t. n = gform t]]
 #eval isagform
 
 #eval phrase 13
-unsafe def FORM_LEMMA1 : thm := keep "FORM_LEMMA1" fun _ => (do
+def FORM_LEMMA1 : thm := keep "FORM_LEMMA1" fun _ => (do
   prove ([[!x y. FORM1 x y ==> ALLN isagform x ==> ALLN isagform y]])
    (HolLight.tactic_of do
      let taut1 ← ExceptT.mk (TAUT [[a \/ b ==> c <=> (a ==> c) /\ (b ==> c)]])
@@ -173,7 +173,7 @@ unsafe def FORM_LEMMA1 : thm := keep "FORM_LEMMA1" fun _ => (do
 #eval FORM_LEMMA1
 
 #eval phrase 14
-unsafe def FORM_LEMMA2 : thm := keep "FORM_LEMMA2" fun _ => (do
+def FORM_LEMMA2 : thm := keep "FORM_LEMMA2" fun _ => (do
   prove ([[!p a. RTC FORM1 a (NPAIR (gform p) a)]])
    (HolLight.tactic_of do
      let taut1 ← ExceptT.mk (TAUT [[(a \/ b ==> c) <=> (a ==> c) /\ (b ==> c)]])
@@ -188,7 +188,7 @@ unsafe def FORM_LEMMA2 : thm := keep "FORM_LEMMA2" fun _ => (do
 #eval FORM_LEMMA2
 
 #eval phrase 15
-unsafe def FORM_THM : thm := keep "FORM_THM" fun _ => (do
+def FORM_THM : thm := keep "FORM_THM" fun _ => (do
   prove ([[!n. FORM n <=> ?p. n = gform p]])
    (GEN_TAC THEN REWRITE_TAC [FORM] THEN EQ_TAC THENL
      [ALL_TAC, MESON_TAC [FORM_LEMMA2]] THEN
@@ -199,7 +199,7 @@ unsafe def FORM_THM : thm := keep "FORM_THM" fun _ => (do
 #eval FORM_THM
 
 #eval phrase 16
-unsafe def FREETERM1 : thm := keep "FREETERM1" fun _ => new_definition
+def FREETERM1 : thm := keep "FREETERM1" fun _ => new_definition
   [[FREETERM1 m x y <=>
         (?l u. ~(u = m) /\ (x = l) /\ (y = NPAIR (NPAIR 0 u) l)) \/
         (?l. (x = l) /\ (y = NPAIR (NPAIR 1 0) l)) \/
@@ -210,17 +210,17 @@ unsafe def FREETERM1 : thm := keep "FREETERM1" fun _ => new_definition
 #eval FREETERM1
 
 #eval phrase 17
-unsafe def FREETERM : thm := keep "FREETERM" fun _ => new_definition
+def FREETERM : thm := keep "FREETERM" fun _ => new_definition
   [[FREETERM m n <=> RTC (FREETERM1 m) 0 (NPAIR n 0)]]
 #eval FREETERM
 
 #eval phrase 18
-unsafe def isafterm : thm := keep "isafterm" fun _ => new_definition
+def isafterm : thm := keep "isafterm" fun _ => new_definition
   [[isafterm m n <=> ?t. ~(m IN IMAGE number (FVT t)) /\ (n = gterm t)]]
 #eval isafterm
 
 #eval phrase 19
-unsafe def ISAFTERM : thm := keep "ISAFTERM" fun _ => (do
+def ISAFTERM : thm := keep "ISAFTERM" fun _ => (do
   prove ([[(~(number x = m) ==> isafterm m (NPAIR 0 (number x))) /\
    isafterm m (NPAIR 1 0) /\
    (isafterm m t ==> isafterm m (NPAIR 2 t)) /\
@@ -245,7 +245,7 @@ unsafe def ISAFTERM : thm := keep "ISAFTERM" fun _ => (do
 #eval ISAFTERM
 
 #eval phrase 20
-unsafe def FREETERM_LEMMA1 : thm := keep "FREETERM_LEMMA1" fun _ => (do
+def FREETERM_LEMMA1 : thm := keep "FREETERM_LEMMA1" fun _ => (do
   prove ([[!m x y. FREETERM1 m x y ==> ALLN (isafterm m) x ==> ALLN (isafterm m) y]])
    (HolLight.tactic_of do
      let taut1 ← ExceptT.mk (TAUT [[a \/ b ==> c <=> (a ==> c) /\ (b ==> c)]])
@@ -258,7 +258,7 @@ unsafe def FREETERM_LEMMA1 : thm := keep "FREETERM_LEMMA1" fun _ => (do
 #eval FREETERM_LEMMA1
 
 #eval phrase 21
-unsafe def FREETERM_LEMMA2 : thm := keep "FREETERM_LEMMA2" fun _ => (do
+def FREETERM_LEMMA2 : thm := keep "FREETERM_LEMMA2" fun _ => (do
   prove ([[!m t a. ~(m IN IMAGE number (FVT t))
            ==> RTC (FREETERM1 m) a (NPAIR (gterm t) a)]])
    (GEN_TAC THEN MATCH_MP_TAC term_INDUCT THEN
@@ -274,7 +274,7 @@ unsafe def FREETERM_LEMMA2 : thm := keep "FREETERM_LEMMA2" fun _ => (do
 #eval FREETERM_LEMMA2
 
 #eval phrase 22
-unsafe def FREETERM_THM : thm := keep "FREETERM_THM" fun _ => (do
+def FREETERM_THM : thm := keep "FREETERM_THM" fun _ => (do
   prove ([[!m n. FREETERM m n <=> ?t. ~(m IN IMAGE number (FVT(t))) /\ (n = gterm t)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [FREETERM] THEN EQ_TAC THENL
      [ALL_TAC, MESON_TAC [FREETERM_LEMMA2]] THEN
@@ -286,7 +286,7 @@ unsafe def FREETERM_THM : thm := keep "FREETERM_THM" fun _ => (do
 #eval FREETERM_THM
 
 #eval phrase 23
-unsafe def FREEFORM1 : thm := keep "FREEFORM1" fun _ => new_definition
+def FREEFORM1 : thm := keep "FREEFORM1" fun _ => new_definition
   [[FREEFORM1 m x y <=>
         (?l. (x = l) /\ (y = NPAIR (NPAIR 0 0) l)) \/
         (?l. (x = l) /\ (y = NPAIR (NPAIR 0 1) l)) \/
@@ -308,17 +308,17 @@ unsafe def FREEFORM1 : thm := keep "FREEFORM1" fun _ => new_definition
 #eval FREEFORM1
 
 #eval phrase 24
-unsafe def FREEFORM : thm := keep "FREEFORM" fun _ => new_definition
+def FREEFORM : thm := keep "FREEFORM" fun _ => new_definition
   [[FREEFORM m n <=> RTC (FREEFORM1 m) 0 (NPAIR n 0)]]
 #eval FREEFORM
 
 #eval phrase 25
-unsafe def isafform : thm := keep "isafform" fun _ => new_definition
+def isafform : thm := keep "isafform" fun _ => new_definition
   [[isafform m n <=> ?p. ~(m IN IMAGE number (FV p)) /\ (n = gform p)]]
 #eval isafform
 
 #eval phrase 26
-unsafe def ISAFFORM : thm := keep "ISAFFORM" fun _ => (do
+def ISAFFORM : thm := keep "ISAFFORM" fun _ => (do
   prove ([[isafform m (NPAIR 0 0) /\
    isafform m (NPAIR 0 1) /\
    (isafterm m s /\ isafterm m t ==> isafform m (NPAIR 1 (NPAIR s t))) /\
@@ -366,7 +366,7 @@ unsafe def ISAFFORM : thm := keep "ISAFFORM" fun _ => (do
 #eval ISAFFORM
 
 #eval phrase 27
-unsafe def FREEFORM_LEMMA1 : thm := keep "FREEFORM_LEMMA1" fun _ => (do
+def FREEFORM_LEMMA1 : thm := keep "FREEFORM_LEMMA1" fun _ => (do
   prove ([[!x y. FREEFORM1 m x y ==> ALLN (isafform m) x ==> ALLN (isafform m) y]])
    (HolLight.tactic_of do
      let taut1 ← ExceptT.mk (TAUT [[a \/ b ==> c <=> (a ==> c) /\ (b ==> c)]])
@@ -380,7 +380,7 @@ unsafe def FREEFORM_LEMMA1 : thm := keep "FREEFORM_LEMMA1" fun _ => (do
 #eval FREEFORM_LEMMA1
 
 #eval phrase 28
-unsafe def FREEFORM_LEMMA2 : thm := keep "FREEFORM_LEMMA2" fun _ => (do
+def FREEFORM_LEMMA2 : thm := keep "FREEFORM_LEMMA2" fun _ => (do
   prove ([[!m p a. ~(m IN IMAGE number (FV p))
            ==> RTC (FREEFORM1 m) a (NPAIR (gform p) a)]])
    (HolLight.tactic_of do
@@ -406,7 +406,7 @@ unsafe def FREEFORM_LEMMA2 : thm := keep "FREEFORM_LEMMA2" fun _ => (do
 #eval FREEFORM_LEMMA2
 
 #eval phrase 29
-unsafe def FREEFORM_THM : thm := keep "FREEFORM_THM" fun _ => (do
+def FREEFORM_THM : thm := keep "FREEFORM_THM" fun _ => (do
   prove ([[!m n. FREEFORM m n <=> ?p. ~(m IN IMAGE number (FV p)) /\ (n = gform p)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [FREEFORM] THEN EQ_TAC THENL
      [ALL_TAC, MESON_TAC [FREEFORM_LEMMA2]] THEN
@@ -418,7 +418,7 @@ unsafe def FREEFORM_THM : thm := keep "FREEFORM_THM" fun _ => (do
 #eval FREEFORM_THM
 
 #eval phrase 30
-unsafe def AXIOM_pair : thm × thm := keep "AXIOM_pair" fun _ =>
+def AXIOM_pair : thm × thm := keep "AXIOM_pair" fun _ =>
   runObj (do
     let th0 ← prove
      ([[((?x p. P (number x) (gform p) /\ ~(x IN FV(p))) <=>
@@ -458,19 +458,19 @@ unsafe def AXIOM_pair : thm × thm := keep "AXIOM_pair" fun _ =>
      ([[!p. AXIOM(gform p) <=> axiom p]])
       (REWRITE_TAC [axiom_CASES, AXIOM, th])
     pure (AXIOM, AXIOM_THM))
-unsafe def AXIOM : thm := AXIOM_pair.1
-unsafe def AXIOM_THM : thm := AXIOM_pair.2
+def AXIOM : thm := AXIOM_pair.1
+def AXIOM_THM : thm := AXIOM_pair.2
 #eval do IO.println AXIOM; IO.println AXIOM_THM
 
 #eval phrase 31
-unsafe def GTERM_CASES_ALT : thm := keep "GTERM_CASES_ALT" fun _ => (do
+def GTERM_CASES_ALT : thm := keep "GTERM_CASES_ALT" fun _ => (do
   prove ([[(gterm u = NPAIR 0 x <=> u = V(denumber x))]])
    (REWRITE_TAC [(← HolLight.GSYM GTERM_CASES), NUMBER_DENUMBER])
   : ExceptT String IO thm).run
 #eval GTERM_CASES_ALT
 
 #eval phrase 32
-unsafe def GFORM_CASES_ALT : thm := keep "GFORM_CASES_ALT" fun _ => (do
+def GFORM_CASES_ALT : thm := keep "GFORM_CASES_ALT" fun _ => (do
   prove ([[(gform r = NPAIR 9 (NPAIR x n) <=>
     (?p. r = !!(denumber x) p /\ gform p = n)) /\
    (gform r = NPAIR 10 (NPAIR x n) <=>
@@ -480,7 +480,7 @@ unsafe def GFORM_CASES_ALT : thm := keep "GFORM_CASES_ALT" fun _ => (do
 #eval GFORM_CASES_ALT
 
 #eval phrase 33
-unsafe def AXIOM_FORMULA : thm := keep "AXIOM_FORMULA" fun _ => (do
+def AXIOM_FORMULA : thm := keep "AXIOM_FORMULA" fun _ => (do
   prove ([[!a. AXIOM a ==> ?p. a = gform p]])
    (REWRITE_TAC [AXIOM, FREEFORM_THM, FREETERM_THM, FORM_THM, TERM_THM] THEN
     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
@@ -492,14 +492,14 @@ unsafe def AXIOM_FORMULA : thm := keep "AXIOM_FORMULA" fun _ => (do
 #eval AXIOM_FORMULA
 
 #eval phrase 34
-unsafe def AXIOM_THM_STRONG : thm := keep "AXIOM_THM_STRONG" fun _ => (do
+def AXIOM_THM_STRONG : thm := keep "AXIOM_THM_STRONG" fun _ => (do
   prove ([[!a. AXIOM a <=> ?p. axiom p /\ (a = gform p)]])
    (MESON_TAC [AXIOM_THM, AXIOM_FORMULA])
   : ExceptT String IO thm).run
 #eval AXIOM_THM_STRONG
 
 #eval phrase 35
-unsafe def PROV1 : thm := keep "PROV1" fun _ => new_definition
+def PROV1 : thm := keep "PROV1" fun _ => new_definition
   [[PROV1 A x y <=>
         (?a. (AXIOM a \/ a IN A) /\ (y = NPAIR a x)) \/
         (?p q l. (x = NPAIR (NPAIR 7 (NPAIR p q)) (NPAIR p l)) /\
@@ -508,17 +508,17 @@ unsafe def PROV1 : thm := keep "PROV1" fun _ => new_definition
 #eval PROV1
 
 #eval phrase 36
-unsafe def PROV : thm := keep "PROV" fun _ => new_definition
+def PROV : thm := keep "PROV" fun _ => new_definition
   [[PROV A n <=> RTC (PROV1 A) 0 (NPAIR n 0)]]
 #eval PROV
 
 #eval phrase 37
-unsafe def isaprove : thm := keep "isaprove" fun _ => new_definition
+def isaprove : thm := keep "isaprove" fun _ => new_definition
   [[isaprove A n <=> ?p. (gform p = n) /\ A |-- p]]
 #eval isaprove
 
 #eval phrase 38
-unsafe def PROV_LEMMA1 : thm := keep "PROV_LEMMA1" fun _ => (do
+def PROV_LEMMA1 : thm := keep "PROV_LEMMA1" fun _ => (do
   prove ([[!A p q. PROV1 (IMAGE gform A) x y
            ==> ALLN (isaprove A) x ==> ALLN (isaprove A) y]])
    (HolLight.tactic_of do
@@ -548,7 +548,7 @@ unsafe def PROV_LEMMA1 : thm := keep "PROV_LEMMA1" fun _ => (do
 #eval PROV_LEMMA1
 
 #eval phrase 39
-unsafe def PROV_LEMMA2 : thm := keep "PROV_LEMMA2" fun _ => (do
+def PROV_LEMMA2 : thm := keep "PROV_LEMMA2" fun _ => (do
   prove ([[!A p. A |-- p ==> !a. RTC (PROV1 (IMAGE gform A)) a (NPAIR (gform p) a)]])
    (GEN_TAC THEN MATCH_MP_TAC proves_INDUCT THEN REWRITE_TAC [gform] THEN
     MESON_TAC [RTC_INC, RTC_TRANS, PROV1, IN_IMAGE, AXIOM_THM])
@@ -556,7 +556,7 @@ unsafe def PROV_LEMMA2 : thm := keep "PROV_LEMMA2" fun _ => (do
 #eval PROV_LEMMA2
 
 #eval phrase 40
-unsafe def PROV_THM_STRONG : thm := keep "PROV_THM_STRONG" fun _ => (do
+def PROV_THM_STRONG : thm := keep "PROV_THM_STRONG" fun _ => (do
   prove ([[!A n. PROV (IMAGE gform A) n <=> ?p. A |-- p /\ (gform p = n)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [PROV] THEN EQ_TAC THENL
      [ALL_TAC, MESON_TAC [PROV_LEMMA2]] THEN
@@ -569,134 +569,134 @@ unsafe def PROV_THM_STRONG : thm := keep "PROV_THM_STRONG" fun _ => (do
 #eval PROV_THM_STRONG
 
 #eval phrase 41
-unsafe def PROV_THM : thm := keep "PROV_THM" fun _ => (do
+def PROV_THM : thm := keep "PROV_THM" fun _ => (do
   prove ([[!A p. PROV (IMAGE gform A) (gform p) <=> A |-- p]])
    (MESON_TAC [PROV_THM_STRONG, GFORM_INJ])
   : ExceptT String IO thm).run
 #eval PROV_THM
 
 #eval phrase 42
-unsafe def arith_term1_pair : thm × thm := keep "arith_term1_pair" fun _ =>
+def arith_term1_pair : thm × thm := keep "arith_term1_pair" fun _ =>
   runObj (OBJECTIFY [] "arith_term1" TERM1)
-unsafe def arith_term1 : thm := arith_term1_pair.1
-unsafe def ARITH_TERM1 : thm := arith_term1_pair.2
+def arith_term1 : thm := arith_term1_pair.1
+def ARITH_TERM1 : thm := arith_term1_pair.2
 #eval do IO.println arith_term1; IO.println ARITH_TERM1
 
 #eval phrase 43
-unsafe def FV_TERM1 : thm := keep "FV_TERM1" fun _ => (do
+def FV_TERM1 : thm := keep "FV_TERM1" fun _ => (do
   prove ([[!s t. FV(arith_term1 s t) = (FVT s) UNION (FVT t)]])
    (Definability.FV_TAC [arith_term1, FVT_PAIR, FVT_NUMERAL])
   : ExceptT String IO thm).run
 #eval FV_TERM1
 
 #eval phrase 44
-unsafe def arith_term_pair : thm × thm := keep "arith_term_pair" fun _ =>
+def arith_term_pair : thm × thm := keep "arith_term_pair" fun _ =>
   runObj (OBJECTIFY_RTC ARITH_TERM1 "arith_term" TERM)
-unsafe def arith_term : thm := arith_term_pair.1
-unsafe def ARITH_TERM : thm := arith_term_pair.2
+def arith_term : thm := arith_term_pair.1
+def ARITH_TERM : thm := arith_term_pair.2
 #eval do IO.println arith_term; IO.println ARITH_TERM
 
 #eval phrase 45
-unsafe def FV_TERM : thm := keep "FV_TERM" fun _ => (do
+def FV_TERM : thm := keep "FV_TERM" fun _ => (do
   prove ([[!t. FV(arith_term t) = FVT t]])
    (Definability.FV_TAC [arith_term, FV_RTC, FV_TERM1, FVT_PAIR, FVT_NUMERAL])
   : ExceptT String IO thm).run
 #eval FV_TERM
 
 #eval phrase 46
-unsafe def arith_form1_pair : thm × thm := keep "arith_form1_pair" fun _ =>
+def arith_form1_pair : thm × thm := keep "arith_form1_pair" fun _ =>
   runObj (OBJECTIFY [ARITH_TERM] "arith_form1" FORM1)
-unsafe def arith_form1 : thm := arith_form1_pair.1
-unsafe def ARITH_FORM1 : thm := arith_form1_pair.2
+def arith_form1 : thm := arith_form1_pair.1
+def ARITH_FORM1 : thm := arith_form1_pair.2
 #eval do IO.println arith_form1; IO.println ARITH_FORM1
 
 #eval phrase 47
-unsafe def FV_FORM1 : thm := keep "FV_FORM1" fun _ => (do
+def FV_FORM1 : thm := keep "FV_FORM1" fun _ => (do
   prove ([[!s t. FV(arith_form1 s t) = (FVT s) UNION (FVT t)]])
    (Definability.FV_TAC [arith_form1, FV_TERM, FVT_PAIR, FVT_NUMERAL])
   : ExceptT String IO thm).run
 #eval FV_FORM1
 
 #eval phrase 48
-unsafe def arith_form_pair : thm × thm := keep "arith_form_pair" fun _ =>
+def arith_form_pair : thm × thm := keep "arith_form_pair" fun _ =>
   runObj (OBJECTIFY_RTC ARITH_FORM1 "arith_form" FORM)
-unsafe def arith_form : thm := arith_form_pair.1
-unsafe def ARITH_FORM : thm := arith_form_pair.2
+def arith_form : thm := arith_form_pair.1
+def ARITH_FORM : thm := arith_form_pair.2
 #eval do IO.println arith_form; IO.println ARITH_FORM
 
 #eval phrase 49
-unsafe def FV_FORM : thm := keep "FV_FORM" fun _ => (do
+def FV_FORM : thm := keep "FV_FORM" fun _ => (do
   prove ([[!t. FV(arith_form t) = FVT t]])
    (Definability.FV_TAC [arith_form, FV_RTC, FV_FORM1, FVT_PAIR, FVT_NUMERAL])
   : ExceptT String IO thm).run
 #eval FV_FORM
 
 #eval phrase 50
-unsafe def arith_freeterm1_pair : thm × thm := keep "arith_freeterm1_pair" fun _ =>
+def arith_freeterm1_pair : thm × thm := keep "arith_freeterm1_pair" fun _ =>
   runObj (OBJECTIFY [] "arith_freeterm1" FREETERM1)
-unsafe def arith_freeterm1 : thm := arith_freeterm1_pair.1
-unsafe def ARITH_FREETERM1 : thm := arith_freeterm1_pair.2
+def arith_freeterm1 : thm := arith_freeterm1_pair.1
+def ARITH_FREETERM1 : thm := arith_freeterm1_pair.2
 #eval do IO.println arith_freeterm1; IO.println ARITH_FREETERM1
 
 #eval phrase 51
-unsafe def FV_FREETERM1 : thm := keep "FV_FREETERM1" fun _ => (do
+def FV_FREETERM1 : thm := keep "FV_FREETERM1" fun _ => (do
   prove ([[!s t u. FV(arith_freeterm1 s t u) = (FVT s) UNION (FVT t) UNION (FVT u)]])
    (Definability.FV_TAC [arith_freeterm1, FVT_PAIR, FVT_NUMERAL])
   : ExceptT String IO thm).run
 #eval FV_FREETERM1
 
 #eval phrase 52
-unsafe def arith_freeterm_pair : thm × thm := keep "arith_freeterm_pair" fun _ =>
+def arith_freeterm_pair : thm × thm := keep "arith_freeterm_pair" fun _ =>
   runObj (OBJECTIFY_RTCP ARITH_FREETERM1 "arith_freeterm" FREETERM)
-unsafe def arith_freeterm : thm := arith_freeterm_pair.1
-unsafe def ARITH_FREETERM : thm := arith_freeterm_pair.2
+def arith_freeterm : thm := arith_freeterm_pair.1
+def ARITH_FREETERM : thm := arith_freeterm_pair.2
 #eval do IO.println arith_freeterm; IO.println ARITH_FREETERM
 
 #eval phrase 53
-unsafe def FV_FREETERM : thm := keep "FV_FREETERM" fun _ => (do
+def FV_FREETERM : thm := keep "FV_FREETERM" fun _ => (do
   prove ([[!s t. FV(arith_freeterm s t) = (FVT s) UNION (FVT t)]])
    (Definability.FV_TAC [arith_freeterm, FV_RTCP, FV_FREETERM1, FVT_PAIR, FVT_NUMERAL])
   : ExceptT String IO thm).run
 #eval FV_FREETERM
 
 #eval phrase 54
-unsafe def arith_freeform1_pair : thm × thm := keep "arith_freeform1_pair" fun _ =>
+def arith_freeform1_pair : thm × thm := keep "arith_freeform1_pair" fun _ =>
   runObj (OBJECTIFY [ARITH_FREETERM, ARITH_FORM] "arith_freeform1" FREEFORM1)
-unsafe def arith_freeform1 : thm := arith_freeform1_pair.1
-unsafe def ARITH_FREEFORM1 : thm := arith_freeform1_pair.2
+def arith_freeform1 : thm := arith_freeform1_pair.1
+def ARITH_FREEFORM1 : thm := arith_freeform1_pair.2
 #eval do IO.println arith_freeform1; IO.println ARITH_FREEFORM1
 
 #eval phrase 55
-unsafe def FV_FREEFORM1 : thm := keep "FV_FREEFORM1" fun _ => (do
+def FV_FREEFORM1 : thm := keep "FV_FREEFORM1" fun _ => (do
   prove ([[!s t u. FV(arith_freeform1 s t u) = (FVT s) UNION (FVT t) UNION (FVT u)]])
    (Definability.FV_TAC [arith_freeform1, FV_FREETERM, FV_FORM, FVT_PAIR, FVT_NUMERAL])
   : ExceptT String IO thm).run
 #eval FV_FREEFORM1
 
 #eval phrase 56
-unsafe def arith_freeform_pair : thm × thm := keep "arith_freeform_pair" fun _ =>
+def arith_freeform_pair : thm × thm := keep "arith_freeform_pair" fun _ =>
   runObj (OBJECTIFY_RTCP ARITH_FREEFORM1 "arith_freeform" FREEFORM)
-unsafe def arith_freeform : thm := arith_freeform_pair.1
-unsafe def ARITH_FREEFORM : thm := arith_freeform_pair.2
+def arith_freeform : thm := arith_freeform_pair.1
+def ARITH_FREEFORM : thm := arith_freeform_pair.2
 #eval do IO.println arith_freeform; IO.println ARITH_FREEFORM
 
 #eval phrase 57
-unsafe def FV_FREEFORM : thm := keep "FV_FREEFORM" fun _ => (do
+def FV_FREEFORM : thm := keep "FV_FREEFORM" fun _ => (do
   prove ([[!s t. FV(arith_freeform s t) = (FVT s) UNION (FVT t)]])
    (Definability.FV_TAC [arith_freeform, FV_RTCP, FV_FREEFORM1, FVT_PAIR, FVT_NUMERAL])
   : ExceptT String IO thm).run
 #eval FV_FREEFORM
 
 #eval phrase 58
-unsafe def arith_axiom_pair : thm × thm := keep "arith_axiom_pair" fun _ =>
+def arith_axiom_pair : thm × thm := keep "arith_axiom_pair" fun _ =>
   runObj (OBJECTIFY [ARITH_FORM, ARITH_FREEFORM, ARITH_FREETERM, ARITH_TERM]
            "arith_axiom" AXIOM)
-unsafe def arith_axiom : thm := arith_axiom_pair.1
-unsafe def ARITH_AXIOM : thm := arith_axiom_pair.2
+def arith_axiom : thm := arith_axiom_pair.1
+def ARITH_AXIOM : thm := arith_axiom_pair.2
 #eval do IO.println arith_axiom; IO.println ARITH_AXIOM
 
 #eval phrase 59
-unsafe def FV_AXIOM : thm := keep "FV_AXIOM" fun _ => (do
+def FV_AXIOM : thm := keep "FV_AXIOM" fun _ => (do
   prove ([[!t. FV(arith_axiom t) = FVT t]])
    (Definability.FV_TAC [arith_axiom, FV_FREETERM, FV_FREEFORM, FV_TERM, FV_FORM,
           FVT_PAIR, FVT_NUMERAL])
@@ -704,18 +704,18 @@ unsafe def FV_AXIOM : thm := keep "FV_AXIOM" fun _ => (do
 #eval FV_AXIOM
 
 #eval phrase 60
-unsafe def arith_prov1_pair : thm × thm := keep "arith_prov1_pair" fun _ =>
+def arith_prov1_pair : thm × thm := keep "arith_prov1_pair" fun _ =>
   runObj (do
     let PROV1' ← HolLight.REWRITE_RULE [IN] PROV1
     let asm ← liftExcept (HolCore.Kernel.ASSUME
       [[!v n. holds v (A n) <=> Ax (termval v n)]])
     OBJECTIFY [asm, ARITH_AXIOM] "arith_prov1" PROV1')
-unsafe def arith_prov1 : thm := arith_prov1_pair.1
-unsafe def ARITH_PROV1_obj : thm := arith_prov1_pair.2
+def arith_prov1 : thm := arith_prov1_pair.1
+def ARITH_PROV1_obj : thm := arith_prov1_pair.2
 #eval do IO.println arith_prov1; IO.println ARITH_PROV1_obj
 
 #eval phrase 61
-unsafe def ARITH_PROV1 : thm := keep "ARITH_PROV1" fun _ => (do
+def ARITH_PROV1 : thm := keep "ARITH_PROV1" fun _ => (do
   prove ([[(!v t. holds v (A t) <=> Ax(termval v t))
    ==> (!v s t.
              holds v (arith_prov1 A s t) <=>
@@ -729,14 +729,14 @@ unsafe def ARITH_PROV1 : thm := keep "ARITH_PROV1" fun _ => (do
 #eval ARITH_PROV1
 
 #eval phrase 62
-unsafe def FV_PROV1 : thm := keep "FV_PROV1" fun _ => (do
+def FV_PROV1 : thm := keep "FV_PROV1" fun _ => (do
   prove ([[(!t. FV(A t) = FVT t) ==> !s t. FV(arith_prov1 A s t) = FVT(s) UNION FVT(t)]])
    (Definability.FV_TAC [arith_prov1, FV_AXIOM, FVT_NUMERAL, FVT_PAIR])
   : ExceptT String IO thm).run
 #eval FV_PROV1
 
 #eval phrase 63
-unsafe def arith_prov : thm := keep "arith_prov" fun _ => new_definition
+def arith_prov : thm := keep "arith_prov" fun _ => new_definition
   [[arith_prov A n =
     formsubst ((0 |-> n) V)
         (arith_rtc (arith_prov1 A) (numeral 0)
@@ -744,7 +744,7 @@ unsafe def arith_prov : thm := keep "arith_prov" fun _ => new_definition
 #eval arith_prov
 
 #eval phrase 64
-unsafe def ARITH_PROV : thm := keep "ARITH_PROV" fun _ => (do
+def ARITH_PROV : thm := keep "ARITH_PROV" fun _ => (do
   prove ([[!Ax A. (!v t. holds v (A t) <=> Ax(termval v t))
           ==> !v n. holds v (arith_prov A n) <=> PROV Ax (termval v n)]])
    (REPEAT GEN_TAC THEN DISCH_THEN (MP_TAC o HolLight.MATCH_MP ARITH_PROV1) THEN
@@ -757,14 +757,14 @@ unsafe def ARITH_PROV : thm := keep "ARITH_PROV" fun _ => (do
 #eval ARITH_PROV
 
 #eval phrase 65
-unsafe def FV_PROV : thm := keep "FV_PROV" fun _ => (do
+def FV_PROV : thm := keep "FV_PROV" fun _ => (do
   prove ([[(!t. FV(A t) = FVT t) ==> !t. FV(arith_prov A t) = FVT t]])
    (Definability.FV_TAC [arith_prov, FV_PROV1, FV_RTC, FVT_NUMERAL, FVT_PAIR])
   : ExceptT String IO thm).run
 #eval FV_PROV
 
 #eval phrase 66
-unsafe def PROV_DEFINABLE : thm := keep "PROV_DEFINABLE" fun _ => (do
+def PROV_DEFINABLE : thm := keep "PROV_DEFINABLE" fun _ => (do
   let spc ← ExceptT.mk (HolLight.SPECL [ [[IMAGE gform Ax]], [[\t. formsubst ((x |-> t) V) A]] ]
                ARITH_PROV)
   prove ([[!Ax. definable {gform p | p IN Ax} ==> definable {gform p | Ax |-- p}]])
@@ -782,7 +782,7 @@ unsafe def PROV_DEFINABLE : thm := keep "PROV_DEFINABLE" fun _ => (do
 #eval PROV_DEFINABLE
 
 #eval phrase 67
-unsafe def GODEL_CRUDE : thm := keep "GODEL_CRUDE" fun _ => (do
+def GODEL_CRUDE : thm := keep "GODEL_CRUDE" fun _ => (do
   prove ([[!Ax. definable {gform p | p IN Ax} ==> ?p. ~(arithtrue p <=> Ax |-- p)]])
    (HolLight.tactic_of do
      let taut1 ← ExceptT.mk (TAUT [[(~c ==> (a <=> b)) ==> a ==> ~b ==> c]])
@@ -795,9 +795,9 @@ unsafe def GODEL_CRUDE : thm := keep "GODEL_CRUDE" fun _ => (do
 #eval GODEL_CRUDE
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.ArithProv" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.ArithProv" do
   replay (
           HolLogicArith.Tarski.ensure)
   replay (

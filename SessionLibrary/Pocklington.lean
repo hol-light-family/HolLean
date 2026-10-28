@@ -3,18 +3,13 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Pocklington.lean
 
-  The `unsafe` half of the pocklington.ml translation: it supplies
+  The session half of the pocklington.ml translation: it supplies
   HolLibrary.Pocklington's dependencies from Session, SessionLibrary.Iter
-  and SessionLibrary.Prime, builds each bundle once, in file order, and
-  exports every name under its HOL Light name.  `ensurePocklington` is
-  `needs "Library/pocklington.ml"` (which first does `needs
-  "Library/iter.ml"` and `needs "Library/prime.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Pocklington.lean by tools/pocklingtondiff/gen_session.py and
-  scope.py (bookkeeping only: field-by-field copies and accessors).  The
-  iter.ml and prime.ml theorems are filled from SessionLibrary.Iter and
-  SessionLibrary.Prime.
+  and SessionLibrary.Prime, and exports every name under its HOL Light name.
+  Importing this module is `needs "Library/pocklington.ml"`; its
+  `needs "Library/iter.ml"` and `needs "Library/prime.ml"` are the imports
+  of SessionLibrary.Iter and SessionLibrary.Prime.  Each bundle is built by
+  `initialize` when the module is loaded, in file order.
 -/
 
 import Session
@@ -27,12 +22,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Pocklington
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems pocklington.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Pocklington.CoreThms1 where
+def core1 : HolLibrary.Pocklington.CoreThms1 where
   ADD1 := Session.ADD1
   ADD_AC := Session.ADD_AC
   ADD_ASSOC := Session.ADD_ASSOC
@@ -107,7 +98,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Pocklington.CoreThms1 where
   DIVIDES_MOD := Session.DIVIDES_MOD
   DIVIDES_MUL := SessionLibrary.Prime.«DIVIDES_MUL»
 /-- The core theorems pocklington.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Pocklington.CoreThms2 where
+def core2 : HolLibrary.Pocklington.CoreThms2 where
   DIVIDES_MUL2 := SessionLibrary.Prime.«DIVIDES_MUL2»
   DIVIDES_ONE := Session.DIVIDES_ONE
   DIVIDES_PRIME_PRIME := SessionLibrary.Prime.«DIVIDES_PRIME_PRIME»
@@ -182,7 +173,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.Pocklington.CoreThms2 where
   IMAGE_CLAUSES := Session.IMAGE_CLAUSES
   IMAGE_EQ_EMPTY := Session.IMAGE_EQ_EMPTY
 /-- The core theorems pocklington.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.Pocklington.CoreThms3 where
+def core3 : HolLibrary.Pocklington.CoreThms3 where
   IMP_CONJ := Session.IMP_CONJ
   IMP_IMP := Session.IMP_IMP
   IN := Session.IN
@@ -257,7 +248,7 @@ unsafe def core3 (_ : Unit) : HolLibrary.Pocklington.CoreThms3 where
   MONO_AND := Session.MONO_AND
   MONO_EXISTS := Session.MONO_EXISTS
 /-- The core theorems pocklington.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.Pocklington.CoreThms4 where
+def core4 : HolLibrary.Pocklington.CoreThms4 where
   MULT_AC := Session.MULT_AC
   MULT_ASSOC := Session.MULT_ASSOC
   MULT_CLAUSES := Session.MULT_CLAUSES
@@ -334,10 +325,10 @@ unsafe def core4 (_ : Unit) : HolLibrary.Pocklington.CoreThms4 where
   ALL_IMP := Session.listThms1.ALL_IMP
   ALL_MEM := Session.listThms1.ALL_MEM
   num_WF := Session.num_WF
-  LT_MULT_RCANCEL := Session.LT_MULT_RCANCEL-- @@CORE END
+  LT_MULT_RCANCEL := Session.LT_MULT_RCANCEL
 
 /-- What pocklington.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Pocklington.PocklingtonDeps where
+def deps : HolLibrary.Pocklington.PocklingtonDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   prioritize_num := do
     match ← HolCore.Kernel.mk_type "num" [] with
@@ -372,300 +363,255 @@ unsafe def deps (_ : Unit) : HolLibrary.Pocklington.PocklingtonDeps where
   mk_numeral := Session.mk_numeral
   mk_small_numeral := Session.mk_small_numeral
   mk_flist := Session.mk_flist
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then iter.ml and prime.ml, which
-    pocklington.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Iter.ensureIter
-      SessionLibrary.Prime.ensurePrime
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Pocklington: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The single bundle. -/
+/- The bundles, in pocklington.ml order. -/
+initialize BBasics : HolLibrary.Pocklington.Basics ←
+  ioB "setupBasics" (HolLibrary.Pocklington.setupBasics deps).run
+initialize BSolve : HolLibrary.Pocklington.Solve ←
+  ioB "setupSolve" (HolLibrary.Pocklington.setupSolve deps BBasics).run
+initialize BSquarefree : HolLibrary.Pocklington.Squarefree ←
+  ioB "setupSquarefree" (HolLibrary.Pocklington.setupSquarefree deps BBasics).run
+initialize BPhi : HolLibrary.Pocklington.Phi ←
+  ioB "setupPhi" (HolLibrary.Pocklington.setupPhi deps BBasics BSolve).run
+initialize BOrder : HolLibrary.Pocklington.Order ←
+  ioB "setupOrder" (HolLibrary.Pocklington.setupOrder deps BBasics BSolve BPhi).run
+initialize BPock : HolLibrary.Pocklington.Pock ←
+  ioB "setupPock" (HolLibrary.Pocklington.setupPock deps BBasics BPhi BOrder).run
+initialize BCertify : HolLibrary.Pocklington.Certify ←
+  ioB "setupCertify" (HolLibrary.Pocklington.setupCertify deps BPock).run
 
--- @@BUNDLES BEGIN
-initialize theBasics : IO.Ref (Option HolLibrary.Pocklington.Basics) ← IO.mkRef none
-unsafe def BBasics : HolLibrary.Pocklington.Basics :=
-  cached theBasics "setupBasics" fun _ => do
-    (HolLibrary.Pocklington.setupBasics (deps ())).run
-
-initialize theSolve : IO.Ref (Option HolLibrary.Pocklington.Solve) ← IO.mkRef none
-unsafe def BSolve : HolLibrary.Pocklington.Solve :=
-  cached theSolve "setupSolve" fun _ => do
-    let _ ← IO.mkRef BBasics.nat_mod_lemma
-    (HolLibrary.Pocklington.setupSolve (deps ()) BBasics).run
-
-initialize theSquarefree : IO.Ref (Option HolLibrary.Pocklington.Squarefree) ← IO.mkRef none
-unsafe def BSquarefree : HolLibrary.Pocklington.Squarefree :=
-  cached theSquarefree "setupSquarefree" fun _ => do
-    let _ ← IO.mkRef BSolve.CONG_SOLVE_EQ
-    (HolLibrary.Pocklington.setupSquarefree (deps ()) BBasics).run
-
-initialize thePhi : IO.Ref (Option HolLibrary.Pocklington.Phi) ← IO.mkRef none
-unsafe def BPhi : HolLibrary.Pocklington.Phi :=
-  cached thePhi "setupPhi" fun _ => do
-    let _ ← IO.mkRef BSquarefree.squarefree
-    (HolLibrary.Pocklington.setupPhi (deps ()) BBasics BSolve).run
-
-initialize theOrder : IO.Ref (Option HolLibrary.Pocklington.Order) ← IO.mkRef none
-unsafe def BOrder : HolLibrary.Pocklington.Order :=
-  cached theOrder "setupOrder" fun _ => do
-    let _ ← IO.mkRef BPhi.phi
-    (HolLibrary.Pocklington.setupOrder (deps ()) BBasics BSolve BPhi).run
-
-initialize thePock : IO.Ref (Option HolLibrary.Pocklington.Pock) ← IO.mkRef none
-unsafe def BPock : HolLibrary.Pocklington.Pock :=
-  cached thePock "setupPock" fun _ => do
-    let _ ← IO.mkRef BOrder.LUCAS_COPRIME_LEMMA
-    (HolLibrary.Pocklington.setupPock (deps ()) BBasics BPhi BOrder).run
-
-initialize theCertify : IO.Ref (Option HolLibrary.Pocklington.Certify) ← IO.mkRef none
-unsafe def BCertify : HolLibrary.Pocklington.Certify :=
-  cached theCertify "setupCertify" fun _ => do
-    let _ ← IO.mkRef BPock.POCKLINGTON_LEMMA
-    (HolLibrary.Pocklington.setupCertify (deps ()) BPock).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Basics
-unsafe def nat_mod_lemma : thm := BBasics.nat_mod_lemma
-unsafe def nat_mod : thm := BBasics.nat_mod
-unsafe def FINITE_NUMBER_SEGMENT : thm := BBasics.FINITE_NUMBER_SEGMENT
-unsafe def CONG_MOD_0 : thm := BBasics.CONG_MOD_0
-unsafe def CONG_MOD_1 : thm := BBasics.CONG_MOD_1
-unsafe def CONG_MOD_2 : thm := BBasics.CONG_MOD_2
-unsafe def CONG_MOD_2_ALT : thm := BBasics.CONG_MOD_2_ALT
-unsafe def CONG_0 : thm := BBasics.CONG_0
-unsafe def CONG_SUB_CASES : thm := BBasics.CONG_SUB_CASES
-unsafe def CONG_MINUS1 : thm := BBasics.CONG_MINUS1
-unsafe def CONG_MINUS1_SQUARED : thm := BBasics.CONG_MINUS1_SQUARED
-unsafe def CONG_CASES : thm := BBasics.CONG_CASES
-unsafe def CONG_CASE : thm := BBasics.CONG_CASE
-unsafe def CONG_MULT_LCANCEL : thm := BBasics.CONG_MULT_LCANCEL
-unsafe def CONG_MULT_RCANCEL : thm := BBasics.CONG_MULT_RCANCEL
-unsafe def CONG_REFL : thm := BBasics.CONG_REFL
-unsafe def EQ_IMP_CONG : thm := BBasics.EQ_IMP_CONG
-unsafe def CONG_SYM : thm := BBasics.CONG_SYM
-unsafe def CONG_TRANS : thm := BBasics.CONG_TRANS
-unsafe def CONG_ADD : thm := BBasics.CONG_ADD
-unsafe def CONG_MULT : thm := BBasics.CONG_MULT
-unsafe def CONG_MULT_1 : thm := BBasics.CONG_MULT_1
-unsafe def CONG_EXP : thm := BBasics.CONG_EXP
-unsafe def CONG_EXP_1 : thm := BBasics.CONG_EXP_1
-unsafe def CONG_SUB : thm := BBasics.CONG_SUB
-unsafe def CONG_MULT_LCANCEL_EQ : thm := BBasics.CONG_MULT_LCANCEL_EQ
-unsafe def CONG_MULT_RCANCEL_EQ : thm := BBasics.CONG_MULT_RCANCEL_EQ
-unsafe def CONG_ADD_LCANCEL_EQ : thm := BBasics.CONG_ADD_LCANCEL_EQ
-unsafe def CONG_ADD_RCANCEL_EQ : thm := BBasics.CONG_ADD_RCANCEL_EQ
-unsafe def CONG_ADD_RCANCEL : thm := BBasics.CONG_ADD_RCANCEL
-unsafe def CONG_ADD_LCANCEL : thm := BBasics.CONG_ADD_LCANCEL
-unsafe def CONG_ADD_LCANCEL_EQ_0 : thm := BBasics.CONG_ADD_LCANCEL_EQ_0
-unsafe def CONG_ADD_RCANCEL_EQ_0 : thm := BBasics.CONG_ADD_RCANCEL_EQ_0
-unsafe def CONG_MULT_LCANCEL_ALL : thm := BBasics.CONG_MULT_LCANCEL_ALL
-unsafe def CONG_LMUL : thm := BBasics.CONG_LMUL
-unsafe def CONG_RMUL : thm := BBasics.CONG_RMUL
-unsafe def CONG_IMP_EQ : thm := BBasics.CONG_IMP_EQ
-unsafe def CONG_DIVIDES_MODULUS : thm := BBasics.CONG_DIVIDES_MODULUS
-unsafe def CONG_0_DIVIDES : thm := BBasics.CONG_0_DIVIDES
-unsafe def CONG_1_DIVIDES : thm := BBasics.CONG_1_DIVIDES
-unsafe def CONG_1_DIVIDES_EQ : thm := BBasics.CONG_1_DIVIDES_EQ
-unsafe def CONG_DIVIDES : thm := BBasics.CONG_DIVIDES
-unsafe def CONG_COPRIME : thm := BBasics.CONG_COPRIME
-unsafe def CONG_GCD_RIGHT : thm := BBasics.CONG_GCD_RIGHT
-unsafe def CONG_GCD_LEFT : thm := BBasics.CONG_GCD_LEFT
-unsafe def CONG_MOD : thm := BBasics.CONG_MOD
-unsafe def MOD_MULT_CONG : thm := BBasics.MOD_MULT_CONG
-unsafe def CONG_MOD_LT : thm := BBasics.CONG_MOD_LT
-unsafe def MOD_UNIQUE : thm := BBasics.MOD_UNIQUE
-unsafe def CONG_DIV : thm := BBasics.CONG_DIV
-unsafe def CONG_DIV_COPRIME : thm := BBasics.CONG_DIV_COPRIME
-unsafe def CONG_SQUARE_1_PRIME_POWER : thm := BBasics.CONG_SQUARE_1_PRIME_POWER
-unsafe def CONG_LT : thm := BBasics.CONG_LT
-unsafe def CONG_LE : thm := BBasics.CONG_LE
-unsafe def CONG_TO_1 : thm := BBasics.CONG_TO_1
-unsafe def EVEN_MOD_2 : thm := BBasics.EVEN_MOD_2
-unsafe def ODD_MOD_2 : thm := BBasics.ODD_MOD_2
-unsafe def CONG_CONV : term → IO (Except String thm) := fun t => (BBasics.CONG_CONV t).run
+def nat_mod_lemma : thm := BBasics.nat_mod_lemma
+def nat_mod : thm := BBasics.nat_mod
+def FINITE_NUMBER_SEGMENT : thm := BBasics.FINITE_NUMBER_SEGMENT
+def CONG_MOD_0 : thm := BBasics.CONG_MOD_0
+def CONG_MOD_1 : thm := BBasics.CONG_MOD_1
+def CONG_MOD_2 : thm := BBasics.CONG_MOD_2
+def CONG_MOD_2_ALT : thm := BBasics.CONG_MOD_2_ALT
+def CONG_0 : thm := BBasics.CONG_0
+def CONG_SUB_CASES : thm := BBasics.CONG_SUB_CASES
+def CONG_MINUS1 : thm := BBasics.CONG_MINUS1
+def CONG_MINUS1_SQUARED : thm := BBasics.CONG_MINUS1_SQUARED
+def CONG_CASES : thm := BBasics.CONG_CASES
+def CONG_CASE : thm := BBasics.CONG_CASE
+def CONG_MULT_LCANCEL : thm := BBasics.CONG_MULT_LCANCEL
+def CONG_MULT_RCANCEL : thm := BBasics.CONG_MULT_RCANCEL
+def CONG_REFL : thm := BBasics.CONG_REFL
+def EQ_IMP_CONG : thm := BBasics.EQ_IMP_CONG
+def CONG_SYM : thm := BBasics.CONG_SYM
+def CONG_TRANS : thm := BBasics.CONG_TRANS
+def CONG_ADD : thm := BBasics.CONG_ADD
+def CONG_MULT : thm := BBasics.CONG_MULT
+def CONG_MULT_1 : thm := BBasics.CONG_MULT_1
+def CONG_EXP : thm := BBasics.CONG_EXP
+def CONG_EXP_1 : thm := BBasics.CONG_EXP_1
+def CONG_SUB : thm := BBasics.CONG_SUB
+def CONG_MULT_LCANCEL_EQ : thm := BBasics.CONG_MULT_LCANCEL_EQ
+def CONG_MULT_RCANCEL_EQ : thm := BBasics.CONG_MULT_RCANCEL_EQ
+def CONG_ADD_LCANCEL_EQ : thm := BBasics.CONG_ADD_LCANCEL_EQ
+def CONG_ADD_RCANCEL_EQ : thm := BBasics.CONG_ADD_RCANCEL_EQ
+def CONG_ADD_RCANCEL : thm := BBasics.CONG_ADD_RCANCEL
+def CONG_ADD_LCANCEL : thm := BBasics.CONG_ADD_LCANCEL
+def CONG_ADD_LCANCEL_EQ_0 : thm := BBasics.CONG_ADD_LCANCEL_EQ_0
+def CONG_ADD_RCANCEL_EQ_0 : thm := BBasics.CONG_ADD_RCANCEL_EQ_0
+def CONG_MULT_LCANCEL_ALL : thm := BBasics.CONG_MULT_LCANCEL_ALL
+def CONG_LMUL : thm := BBasics.CONG_LMUL
+def CONG_RMUL : thm := BBasics.CONG_RMUL
+def CONG_IMP_EQ : thm := BBasics.CONG_IMP_EQ
+def CONG_DIVIDES_MODULUS : thm := BBasics.CONG_DIVIDES_MODULUS
+def CONG_0_DIVIDES : thm := BBasics.CONG_0_DIVIDES
+def CONG_1_DIVIDES : thm := BBasics.CONG_1_DIVIDES
+def CONG_1_DIVIDES_EQ : thm := BBasics.CONG_1_DIVIDES_EQ
+def CONG_DIVIDES : thm := BBasics.CONG_DIVIDES
+def CONG_COPRIME : thm := BBasics.CONG_COPRIME
+def CONG_GCD_RIGHT : thm := BBasics.CONG_GCD_RIGHT
+def CONG_GCD_LEFT : thm := BBasics.CONG_GCD_LEFT
+def CONG_MOD : thm := BBasics.CONG_MOD
+def MOD_MULT_CONG : thm := BBasics.MOD_MULT_CONG
+def CONG_MOD_LT : thm := BBasics.CONG_MOD_LT
+def MOD_UNIQUE : thm := BBasics.MOD_UNIQUE
+def CONG_DIV : thm := BBasics.CONG_DIV
+def CONG_DIV_COPRIME : thm := BBasics.CONG_DIV_COPRIME
+def CONG_SQUARE_1_PRIME_POWER : thm := BBasics.CONG_SQUARE_1_PRIME_POWER
+def CONG_LT : thm := BBasics.CONG_LT
+def CONG_LE : thm := BBasics.CONG_LE
+def CONG_TO_1 : thm := BBasics.CONG_TO_1
+def EVEN_MOD_2 : thm := BBasics.EVEN_MOD_2
+def ODD_MOD_2 : thm := BBasics.ODD_MOD_2
+def CONG_CONV : term → IO (Except String thm) := fun t => (BBasics.CONG_CONV t).run
 
 -- Solve
-unsafe def CONG_SOLVE_EQ : thm := BSolve.CONG_SOLVE_EQ
-unsafe def CONG_SOLVE_LT_EQ : thm := BSolve.CONG_SOLVE_LT_EQ
-unsafe def CONG_SOLVE : thm := BSolve.CONG_SOLVE
-unsafe def CONG_SOLVE_UNIQUE : thm := BSolve.CONG_SOLVE_UNIQUE
-unsafe def CONG_SOLVE_UNIQUE_NONTRIVIAL : thm := BSolve.CONG_SOLVE_UNIQUE_NONTRIVIAL
-unsafe def CONG_UNIQUE_INVERSE_PRIME : thm := BSolve.CONG_UNIQUE_INVERSE_PRIME
-unsafe def COUNT_CONG_SOLVE_SIMPLE : thm := BSolve.COUNT_CONG_SOLVE_SIMPLE
-unsafe def COUNT_CONG_SOLVE_GEN : thm := BSolve.COUNT_CONG_SOLVE_GEN
-unsafe def COUNT_CONG_SOLVE : thm := BSolve.COUNT_CONG_SOLVE
-unsafe def CONG_CHINESE : thm := BSolve.CONG_CHINESE
-unsafe def CHINESE_REMAINDER_UNIQUE : thm := BSolve.CHINESE_REMAINDER_UNIQUE
-unsafe def CHINESE_REMAINDER_COPRIME_UNIQUE : thm := BSolve.CHINESE_REMAINDER_COPRIME_UNIQUE
-unsafe def CHINESE_REMAINDER_USUAL : thm := BSolve.CHINESE_REMAINDER_USUAL
-unsafe def CONG_CHINESE_EQ : thm := BSolve.CONG_CHINESE_EQ
-unsafe def CHINESE_REMAINDER_COUNT : thm := BSolve.CHINESE_REMAINDER_COUNT
-unsafe def CHINESE_REMAINDER_COPRIME_COUNT : thm := BSolve.CHINESE_REMAINDER_COPRIME_COUNT
-unsafe def COUNT_ROOTS_MODULO_COPRIME : thm := BSolve.COUNT_ROOTS_MODULO_COPRIME
-unsafe def inverse_mod : thm := BSolve.inverse_mod
-unsafe def INVERSE_MOD_BOUND : thm := BSolve.INVERSE_MOD_BOUND
-unsafe def INVERSE_MOD_RMUL_GEN : thm := BSolve.INVERSE_MOD_RMUL_GEN
-unsafe def INVERSE_MOD_LMUL_GEN : thm := BSolve.INVERSE_MOD_LMUL_GEN
-unsafe def INVERSE_MOD_RMUL_EQ : thm := BSolve.INVERSE_MOD_RMUL_EQ
-unsafe def INVERSE_MOD_LMUL_EQ : thm := BSolve.INVERSE_MOD_LMUL_EQ
-unsafe def INVERSE_MOD_LMUL : thm := BSolve.INVERSE_MOD_LMUL
-unsafe def INVERSE_MOD_RMUL : thm := BSolve.INVERSE_MOD_RMUL
-unsafe def INVERSE_MOD_UNIQUE : thm := BSolve.INVERSE_MOD_UNIQUE
-unsafe def INVERSE_MOD_1 : thm := BSolve.INVERSE_MOD_1
-unsafe def INVERSE_MOD_CONG : thm := BSolve.INVERSE_MOD_CONG
-unsafe def INVERSE_MOD_INVERSE_MOD_CONG : thm := BSolve.INVERSE_MOD_INVERSE_MOD_CONG
-unsafe def INVERSE_MOD_INVERSE_MOD : thm := BSolve.INVERSE_MOD_INVERSE_MOD
-unsafe def INVERSE_MOD_NONZERO_ALT : thm := BSolve.INVERSE_MOD_NONZERO_ALT
-unsafe def INVERSE_MOD_NONZERO : thm := BSolve.INVERSE_MOD_NONZERO
-unsafe def INVERSE_MOD_BOUND_LE : thm := BSolve.INVERSE_MOD_BOUND_LE
-unsafe def INVERSE_MOD_INVERSION : thm := BSolve.INVERSE_MOD_INVERSION
-unsafe def INVERSE_MOD_CONV : term → IO (Except String thm) := fun t => (BSolve.INVERSE_MOD_CONV t).run
+def CONG_SOLVE_EQ : thm := BSolve.CONG_SOLVE_EQ
+def CONG_SOLVE_LT_EQ : thm := BSolve.CONG_SOLVE_LT_EQ
+def CONG_SOLVE : thm := BSolve.CONG_SOLVE
+def CONG_SOLVE_UNIQUE : thm := BSolve.CONG_SOLVE_UNIQUE
+def CONG_SOLVE_UNIQUE_NONTRIVIAL : thm := BSolve.CONG_SOLVE_UNIQUE_NONTRIVIAL
+def CONG_UNIQUE_INVERSE_PRIME : thm := BSolve.CONG_UNIQUE_INVERSE_PRIME
+def COUNT_CONG_SOLVE_SIMPLE : thm := BSolve.COUNT_CONG_SOLVE_SIMPLE
+def COUNT_CONG_SOLVE_GEN : thm := BSolve.COUNT_CONG_SOLVE_GEN
+def COUNT_CONG_SOLVE : thm := BSolve.COUNT_CONG_SOLVE
+def CONG_CHINESE : thm := BSolve.CONG_CHINESE
+def CHINESE_REMAINDER_UNIQUE : thm := BSolve.CHINESE_REMAINDER_UNIQUE
+def CHINESE_REMAINDER_COPRIME_UNIQUE : thm := BSolve.CHINESE_REMAINDER_COPRIME_UNIQUE
+def CHINESE_REMAINDER_USUAL : thm := BSolve.CHINESE_REMAINDER_USUAL
+def CONG_CHINESE_EQ : thm := BSolve.CONG_CHINESE_EQ
+def CHINESE_REMAINDER_COUNT : thm := BSolve.CHINESE_REMAINDER_COUNT
+def CHINESE_REMAINDER_COPRIME_COUNT : thm := BSolve.CHINESE_REMAINDER_COPRIME_COUNT
+def COUNT_ROOTS_MODULO_COPRIME : thm := BSolve.COUNT_ROOTS_MODULO_COPRIME
+def inverse_mod : thm := BSolve.inverse_mod
+def INVERSE_MOD_BOUND : thm := BSolve.INVERSE_MOD_BOUND
+def INVERSE_MOD_RMUL_GEN : thm := BSolve.INVERSE_MOD_RMUL_GEN
+def INVERSE_MOD_LMUL_GEN : thm := BSolve.INVERSE_MOD_LMUL_GEN
+def INVERSE_MOD_RMUL_EQ : thm := BSolve.INVERSE_MOD_RMUL_EQ
+def INVERSE_MOD_LMUL_EQ : thm := BSolve.INVERSE_MOD_LMUL_EQ
+def INVERSE_MOD_LMUL : thm := BSolve.INVERSE_MOD_LMUL
+def INVERSE_MOD_RMUL : thm := BSolve.INVERSE_MOD_RMUL
+def INVERSE_MOD_UNIQUE : thm := BSolve.INVERSE_MOD_UNIQUE
+def INVERSE_MOD_1 : thm := BSolve.INVERSE_MOD_1
+def INVERSE_MOD_CONG : thm := BSolve.INVERSE_MOD_CONG
+def INVERSE_MOD_INVERSE_MOD_CONG : thm := BSolve.INVERSE_MOD_INVERSE_MOD_CONG
+def INVERSE_MOD_INVERSE_MOD : thm := BSolve.INVERSE_MOD_INVERSE_MOD
+def INVERSE_MOD_NONZERO_ALT : thm := BSolve.INVERSE_MOD_NONZERO_ALT
+def INVERSE_MOD_NONZERO : thm := BSolve.INVERSE_MOD_NONZERO
+def INVERSE_MOD_BOUND_LE : thm := BSolve.INVERSE_MOD_BOUND_LE
+def INVERSE_MOD_INVERSION : thm := BSolve.INVERSE_MOD_INVERSION
+def INVERSE_MOD_CONV : term → IO (Except String thm) := fun t => (BSolve.INVERSE_MOD_CONV t).run
 
 -- Squarefree
-unsafe def squarefree : thm := BSquarefree.squarefree
-unsafe def SQUAREFREE_0 : thm := BSquarefree.SQUAREFREE_0
-unsafe def SQUAREFREE_1 : thm := BSquarefree.SQUAREFREE_1
-unsafe def SQUAREFREE_IMP_NZ : thm := BSquarefree.SQUAREFREE_IMP_NZ
-unsafe def SQUAREFREE_PRIME : thm := BSquarefree.SQUAREFREE_PRIME
-unsafe def SQUAREFREE_PRIME_DIVISOR : thm := BSquarefree.SQUAREFREE_PRIME_DIVISOR
-unsafe def SQUAREFREE_INDEX : thm := BSquarefree.SQUAREFREE_INDEX
-unsafe def SQUAREFREE_PRIME_INDEX : thm := BSquarefree.SQUAREFREE_PRIME_INDEX
-unsafe def SQUAREFREE_COPRIME : thm := BSquarefree.SQUAREFREE_COPRIME
-unsafe def SQUAREFREE_COPRIME_DIVISORS : thm := BSquarefree.SQUAREFREE_COPRIME_DIVISORS
-unsafe def SQUAREFREE_DIVISOR : thm := BSquarefree.SQUAREFREE_DIVISOR
-unsafe def PRIME_IMP_SQUAREFREE : thm := BSquarefree.PRIME_IMP_SQUAREFREE
-unsafe def SQUAREFREE_MUL : thm := BSquarefree.SQUAREFREE_MUL
-unsafe def SQUAREFREE_EXP : thm := BSquarefree.SQUAREFREE_EXP
-unsafe def SQUAREFREE_DIVIDES : thm := BSquarefree.SQUAREFREE_DIVIDES
-unsafe def SQUAREFREE_DIVEXP : thm := BSquarefree.SQUAREFREE_DIVEXP
-unsafe def SQUAREFREE_DIVEXP_EQ : thm := BSquarefree.SQUAREFREE_DIVEXP_EQ
-unsafe def SQUAREFREE : thm := BSquarefree.SQUAREFREE
-unsafe def SQUAREFREE_ALT : thm := BSquarefree.SQUAREFREE_ALT
-unsafe def SQUAREFREE_GCD : thm := BSquarefree.SQUAREFREE_GCD
-unsafe def SQUAREFREE_GCD_SQUARE : thm := BSquarefree.SQUAREFREE_GCD_SQUARE
-unsafe def SQUAREFREE_NPRODUCT : thm := BSquarefree.SQUAREFREE_NPRODUCT
-unsafe def SQUAREFREE_EXPAND : thm := BSquarefree.SQUAREFREE_EXPAND
-unsafe def SQUAREFREE_EXPAND_EQ : thm := BSquarefree.SQUAREFREE_EXPAND_EQ
-unsafe def SQUAREFREE_DECOMPOSITION : thm := BSquarefree.SQUAREFREE_DECOMPOSITION
-unsafe def CONG_MOD_SQUAREFREE : thm := BSquarefree.CONG_MOD_SQUAREFREE
-unsafe def CONG_MOD_SQUAREFREE_EQ : thm := BSquarefree.CONG_MOD_SQUAREFREE_EQ
+def squarefree : thm := BSquarefree.squarefree
+def SQUAREFREE_0 : thm := BSquarefree.SQUAREFREE_0
+def SQUAREFREE_1 : thm := BSquarefree.SQUAREFREE_1
+def SQUAREFREE_IMP_NZ : thm := BSquarefree.SQUAREFREE_IMP_NZ
+def SQUAREFREE_PRIME : thm := BSquarefree.SQUAREFREE_PRIME
+def SQUAREFREE_PRIME_DIVISOR : thm := BSquarefree.SQUAREFREE_PRIME_DIVISOR
+def SQUAREFREE_INDEX : thm := BSquarefree.SQUAREFREE_INDEX
+def SQUAREFREE_PRIME_INDEX : thm := BSquarefree.SQUAREFREE_PRIME_INDEX
+def SQUAREFREE_COPRIME : thm := BSquarefree.SQUAREFREE_COPRIME
+def SQUAREFREE_COPRIME_DIVISORS : thm := BSquarefree.SQUAREFREE_COPRIME_DIVISORS
+def SQUAREFREE_DIVISOR : thm := BSquarefree.SQUAREFREE_DIVISOR
+def PRIME_IMP_SQUAREFREE : thm := BSquarefree.PRIME_IMP_SQUAREFREE
+def SQUAREFREE_MUL : thm := BSquarefree.SQUAREFREE_MUL
+def SQUAREFREE_EXP : thm := BSquarefree.SQUAREFREE_EXP
+def SQUAREFREE_DIVIDES : thm := BSquarefree.SQUAREFREE_DIVIDES
+def SQUAREFREE_DIVEXP : thm := BSquarefree.SQUAREFREE_DIVEXP
+def SQUAREFREE_DIVEXP_EQ : thm := BSquarefree.SQUAREFREE_DIVEXP_EQ
+def SQUAREFREE : thm := BSquarefree.SQUAREFREE
+def SQUAREFREE_ALT : thm := BSquarefree.SQUAREFREE_ALT
+def SQUAREFREE_GCD : thm := BSquarefree.SQUAREFREE_GCD
+def SQUAREFREE_GCD_SQUARE : thm := BSquarefree.SQUAREFREE_GCD_SQUARE
+def SQUAREFREE_NPRODUCT : thm := BSquarefree.SQUAREFREE_NPRODUCT
+def SQUAREFREE_EXPAND : thm := BSquarefree.SQUAREFREE_EXPAND
+def SQUAREFREE_EXPAND_EQ : thm := BSquarefree.SQUAREFREE_EXPAND_EQ
+def SQUAREFREE_DECOMPOSITION : thm := BSquarefree.SQUAREFREE_DECOMPOSITION
+def CONG_MOD_SQUAREFREE : thm := BSquarefree.CONG_MOD_SQUAREFREE
+def CONG_MOD_SQUAREFREE_EQ : thm := BSquarefree.CONG_MOD_SQUAREFREE_EQ
 
 -- Phi
-unsafe def phi : thm := BPhi.phi
-unsafe def PHI_ALT : thm := BPhi.PHI_ALT
-unsafe def PHI_FINITE_LEMMA : thm := BPhi.PHI_FINITE_LEMMA
-unsafe def PHI_ANOTHER : thm := BPhi.PHI_ANOTHER
-unsafe def PHI_LIMIT : thm := BPhi.PHI_LIMIT
-unsafe def PHI_LIMIT_STRONG : thm := BPhi.PHI_LIMIT_STRONG
-unsafe def PHI_0 : thm := BPhi.PHI_0
-unsafe def PHI_1 : thm := BPhi.PHI_1
-unsafe def PHI_LOWERBOUND_1_STRONG : thm := BPhi.PHI_LOWERBOUND_1_STRONG
-unsafe def PHI_LOWERBOUND_1 : thm := BPhi.PHI_LOWERBOUND_1
-unsafe def PHI_LOWERBOUND_2 : thm := BPhi.PHI_LOWERBOUND_2
-unsafe def PHI_EQ_0 : thm := BPhi.PHI_EQ_0
-unsafe def PHI_PRIME_EQ : thm := BPhi.PHI_PRIME_EQ
-unsafe def PHI_PRIME : thm := BPhi.PHI_PRIME
-unsafe def PHI_PRIMEPOW_SUC : thm := BPhi.PHI_PRIMEPOW_SUC
-unsafe def PHI_PRIMEPOW : thm := BPhi.PHI_PRIMEPOW
-unsafe def PHI_PRIMEPOW_ALT : thm := BPhi.PHI_PRIMEPOW_ALT
-unsafe def PHI_2 : thm := BPhi.PHI_2
-unsafe def PHI_MULTIPLICATIVE : thm := BPhi.PHI_MULTIPLICATIVE
-unsafe def EVEN_PHI : thm := BPhi.EVEN_PHI
-unsafe def EVEN_PHI_EQ : thm := BPhi.EVEN_PHI_EQ
-unsafe def ODD_PHI_EQ : thm := BPhi.ODD_PHI_EQ
-unsafe def PHI_EQ_PRIME : thm := BPhi.PHI_EQ_PRIME
-unsafe def PHI_LIMIT_COMPOSITE : thm := BPhi.PHI_LIMIT_COMPOSITE
-unsafe def NPRODUCT_MOD : thm := BPhi.NPRODUCT_MOD
-unsafe def NPRODUCT_CMUL : thm := BPhi.NPRODUCT_CMUL
-unsafe def ITERATE_OVER_COPRIME : thm := BPhi.ITERATE_OVER_COPRIME
-unsafe def ITERATE_ITERATE_DIVISORS : thm := BPhi.ITERATE_ITERATE_DIVISORS
-unsafe def FERMAT_LITTLE : thm := BPhi.FERMAT_LITTLE
-unsafe def FERMAT_LITTLE_PRIME : thm := BPhi.FERMAT_LITTLE_PRIME
+def phi : thm := BPhi.phi
+def PHI_ALT : thm := BPhi.PHI_ALT
+def PHI_FINITE_LEMMA : thm := BPhi.PHI_FINITE_LEMMA
+def PHI_ANOTHER : thm := BPhi.PHI_ANOTHER
+def PHI_LIMIT : thm := BPhi.PHI_LIMIT
+def PHI_LIMIT_STRONG : thm := BPhi.PHI_LIMIT_STRONG
+def PHI_0 : thm := BPhi.PHI_0
+def PHI_1 : thm := BPhi.PHI_1
+def PHI_LOWERBOUND_1_STRONG : thm := BPhi.PHI_LOWERBOUND_1_STRONG
+def PHI_LOWERBOUND_1 : thm := BPhi.PHI_LOWERBOUND_1
+def PHI_LOWERBOUND_2 : thm := BPhi.PHI_LOWERBOUND_2
+def PHI_EQ_0 : thm := BPhi.PHI_EQ_0
+def PHI_PRIME_EQ : thm := BPhi.PHI_PRIME_EQ
+def PHI_PRIME : thm := BPhi.PHI_PRIME
+def PHI_PRIMEPOW_SUC : thm := BPhi.PHI_PRIMEPOW_SUC
+def PHI_PRIMEPOW : thm := BPhi.PHI_PRIMEPOW
+def PHI_PRIMEPOW_ALT : thm := BPhi.PHI_PRIMEPOW_ALT
+def PHI_2 : thm := BPhi.PHI_2
+def PHI_MULTIPLICATIVE : thm := BPhi.PHI_MULTIPLICATIVE
+def EVEN_PHI : thm := BPhi.EVEN_PHI
+def EVEN_PHI_EQ : thm := BPhi.EVEN_PHI_EQ
+def ODD_PHI_EQ : thm := BPhi.ODD_PHI_EQ
+def PHI_EQ_PRIME : thm := BPhi.PHI_EQ_PRIME
+def PHI_LIMIT_COMPOSITE : thm := BPhi.PHI_LIMIT_COMPOSITE
+def NPRODUCT_MOD : thm := BPhi.NPRODUCT_MOD
+def NPRODUCT_CMUL : thm := BPhi.NPRODUCT_CMUL
+def ITERATE_OVER_COPRIME : thm := BPhi.ITERATE_OVER_COPRIME
+def ITERATE_ITERATE_DIVISORS : thm := BPhi.ITERATE_ITERATE_DIVISORS
+def FERMAT_LITTLE : thm := BPhi.FERMAT_LITTLE
+def FERMAT_LITTLE_PRIME : thm := BPhi.FERMAT_LITTLE_PRIME
 
 -- Order
-unsafe def LUCAS_COPRIME_LEMMA : thm := BOrder.LUCAS_COPRIME_LEMMA
-unsafe def LUCAS_WEAK : thm := BOrder.LUCAS_WEAK
-unsafe def LUCAS : thm := BOrder.LUCAS
-unsafe def order : thm := BOrder.order
-unsafe def EXP_ITER : thm := BOrder.EXP_ITER
-unsafe def ORDER_DIVIDES : thm := BOrder.ORDER_DIVIDES
-unsafe def ORDER : thm := BOrder.ORDER
-unsafe def ORDER_UNIQUE_ALT : thm := BOrder.ORDER_UNIQUE_ALT
-unsafe def ORDER_MINIMAL : thm := BOrder.ORDER_MINIMAL
-unsafe def ORDER_WORKS : thm := BOrder.ORDER_WORKS
-unsafe def ORDER_1 : thm := BOrder.ORDER_1
-unsafe def ORDER_EQ_0 : thm := BOrder.ORDER_EQ_0
-unsafe def ORDER_EQ_1 : thm := BOrder.ORDER_EQ_1
-unsafe def ORDER_UNIQUE_PRIME : thm := BOrder.ORDER_UNIQUE_PRIME
-unsafe def ORDER_CONG : thm := BOrder.ORDER_CONG
-unsafe def ORDER_MOD : thm := BOrder.ORDER_MOD
-unsafe def COPRIME_ORDER : thm := BOrder.COPRIME_ORDER
-unsafe def ORDER_DIVIDES_PHI : thm := BOrder.ORDER_DIVIDES_PHI
-unsafe def ORDER_LE_PHI : thm := BOrder.ORDER_LE_PHI
-unsafe def ORDER_DIVIDES_EXPDIFF : thm := BOrder.ORDER_DIVIDES_EXPDIFF
-unsafe def ORDER_UNIQUE : thm := BOrder.ORDER_UNIQUE
-unsafe def ORDER_MUL_LCM : thm := BOrder.ORDER_MUL_LCM
-unsafe def ORDER_EXP_GEN : thm := BOrder.ORDER_EXP_GEN
-unsafe def ORDER_EXP : thm := BOrder.ORDER_EXP
-unsafe def ORDER_INVERSE_MOD : thm := BOrder.ORDER_INVERSE_MOD
-unsafe def ORDER_MUL_DIVIDES : thm := BOrder.ORDER_MUL_DIVIDES
-unsafe def ORDER_MUL_EQ : thm := BOrder.ORDER_MUL_EQ
-unsafe def ORDER_LCM_EXISTS : thm := BOrder.ORDER_LCM_EXISTS
-unsafe def ORDER_DIVIDES_MAXIMAL : thm := BOrder.ORDER_DIVIDES_MAXIMAL
-unsafe def POWER_RESIDUE_MODULO_COPRIME : thm := BOrder.POWER_RESIDUE_MODULO_COPRIME
-unsafe def POWER_RESIDUE_MODULO_PRIME : thm := BOrder.POWER_RESIDUE_MODULO_PRIME
-unsafe def INJECTIVE_EXP_MODULO : thm := BOrder.INJECTIVE_EXP_MODULO
-unsafe def PRIMITIVE_ROOT_IMP_COPRIME : thm := BOrder.PRIMITIVE_ROOT_IMP_COPRIME
-unsafe def PRIMITIVE_ROOT_IMP_PRIME : thm := BOrder.PRIMITIVE_ROOT_IMP_PRIME
-unsafe def PRIMITIVE_ROOT_IMAGE : thm := BOrder.PRIMITIVE_ROOT_IMAGE
-unsafe def PRIMITIVE_ROOT_IMAGE_PRIME : thm := BOrder.PRIMITIVE_ROOT_IMAGE_PRIME
-unsafe def PRIMITIVE_ROOT_SURJECTIVE : thm := BOrder.PRIMITIVE_ROOT_SURJECTIVE
-unsafe def PRIMITIVE_ROOT_SURJECTIVE_ALT : thm := BOrder.PRIMITIVE_ROOT_SURJECTIVE_ALT
-unsafe def PRIMITIVE_ROOT_SURJECTIVE_PRIME : thm := BOrder.PRIMITIVE_ROOT_SURJECTIVE_PRIME
-unsafe def PRIMITIVE_ROOT_SURJECTIVE_PRIME_ALT : thm := BOrder.PRIMITIVE_ROOT_SURJECTIVE_PRIME_ALT
-unsafe def PRIME_DIVISOR_SQRT : thm := BOrder.PRIME_DIVISOR_SQRT
-unsafe def PRIME_PRIME_FACTOR_SQRT : thm := BOrder.PRIME_PRIME_FACTOR_SQRT
+def LUCAS_COPRIME_LEMMA : thm := BOrder.LUCAS_COPRIME_LEMMA
+def LUCAS_WEAK : thm := BOrder.LUCAS_WEAK
+def LUCAS : thm := BOrder.LUCAS
+def order : thm := BOrder.order
+def EXP_ITER : thm := BOrder.EXP_ITER
+def ORDER_DIVIDES : thm := BOrder.ORDER_DIVIDES
+def ORDER : thm := BOrder.ORDER
+def ORDER_UNIQUE_ALT : thm := BOrder.ORDER_UNIQUE_ALT
+def ORDER_MINIMAL : thm := BOrder.ORDER_MINIMAL
+def ORDER_WORKS : thm := BOrder.ORDER_WORKS
+def ORDER_1 : thm := BOrder.ORDER_1
+def ORDER_EQ_0 : thm := BOrder.ORDER_EQ_0
+def ORDER_EQ_1 : thm := BOrder.ORDER_EQ_1
+def ORDER_UNIQUE_PRIME : thm := BOrder.ORDER_UNIQUE_PRIME
+def ORDER_CONG : thm := BOrder.ORDER_CONG
+def ORDER_MOD : thm := BOrder.ORDER_MOD
+def COPRIME_ORDER : thm := BOrder.COPRIME_ORDER
+def ORDER_DIVIDES_PHI : thm := BOrder.ORDER_DIVIDES_PHI
+def ORDER_LE_PHI : thm := BOrder.ORDER_LE_PHI
+def ORDER_DIVIDES_EXPDIFF : thm := BOrder.ORDER_DIVIDES_EXPDIFF
+def ORDER_UNIQUE : thm := BOrder.ORDER_UNIQUE
+def ORDER_MUL_LCM : thm := BOrder.ORDER_MUL_LCM
+def ORDER_EXP_GEN : thm := BOrder.ORDER_EXP_GEN
+def ORDER_EXP : thm := BOrder.ORDER_EXP
+def ORDER_INVERSE_MOD : thm := BOrder.ORDER_INVERSE_MOD
+def ORDER_MUL_DIVIDES : thm := BOrder.ORDER_MUL_DIVIDES
+def ORDER_MUL_EQ : thm := BOrder.ORDER_MUL_EQ
+def ORDER_LCM_EXISTS : thm := BOrder.ORDER_LCM_EXISTS
+def ORDER_DIVIDES_MAXIMAL : thm := BOrder.ORDER_DIVIDES_MAXIMAL
+def POWER_RESIDUE_MODULO_COPRIME : thm := BOrder.POWER_RESIDUE_MODULO_COPRIME
+def POWER_RESIDUE_MODULO_PRIME : thm := BOrder.POWER_RESIDUE_MODULO_PRIME
+def INJECTIVE_EXP_MODULO : thm := BOrder.INJECTIVE_EXP_MODULO
+def PRIMITIVE_ROOT_IMP_COPRIME : thm := BOrder.PRIMITIVE_ROOT_IMP_COPRIME
+def PRIMITIVE_ROOT_IMP_PRIME : thm := BOrder.PRIMITIVE_ROOT_IMP_PRIME
+def PRIMITIVE_ROOT_IMAGE : thm := BOrder.PRIMITIVE_ROOT_IMAGE
+def PRIMITIVE_ROOT_IMAGE_PRIME : thm := BOrder.PRIMITIVE_ROOT_IMAGE_PRIME
+def PRIMITIVE_ROOT_SURJECTIVE : thm := BOrder.PRIMITIVE_ROOT_SURJECTIVE
+def PRIMITIVE_ROOT_SURJECTIVE_ALT : thm := BOrder.PRIMITIVE_ROOT_SURJECTIVE_ALT
+def PRIMITIVE_ROOT_SURJECTIVE_PRIME : thm := BOrder.PRIMITIVE_ROOT_SURJECTIVE_PRIME
+def PRIMITIVE_ROOT_SURJECTIVE_PRIME_ALT : thm := BOrder.PRIMITIVE_ROOT_SURJECTIVE_PRIME_ALT
+def PRIME_DIVISOR_SQRT : thm := BOrder.PRIME_DIVISOR_SQRT
+def PRIME_PRIME_FACTOR_SQRT : thm := BOrder.PRIME_PRIME_FACTOR_SQRT
 
 -- Pock
-unsafe def POCKLINGTON_LEMMA : thm := BPock.POCKLINGTON_LEMMA
-unsafe def POCKLINGTON : thm := BPock.POCKLINGTON
-unsafe def POCKLINGTON_ALT : thm := BPock.POCKLINGTON_ALT
-unsafe def primefact : thm := BPock.primefact
-unsafe def PRIMEFACT : thm := BPock.PRIMEFACT
-unsafe def PRIMAFACT_CONTAINS : thm := BPock.PRIMAFACT_CONTAINS
-unsafe def PRIMEFACT_VARIANT : thm := BPock.PRIMEFACT_VARIANT
-unsafe def LUCAS_PRIMEFACT : thm := BPock.LUCAS_PRIMEFACT
-unsafe def POCKLINGTON_PRIMEFACT : thm := BPock.POCKLINGTON_PRIMEFACT
+def POCKLINGTON_LEMMA : thm := BPock.POCKLINGTON_LEMMA
+def POCKLINGTON : thm := BPock.POCKLINGTON
+def POCKLINGTON_ALT : thm := BPock.POCKLINGTON_ALT
+def primefact : thm := BPock.primefact
+def PRIMEFACT : thm := BPock.PRIMEFACT
+def PRIMAFACT_CONTAINS : thm := BPock.PRIMAFACT_CONTAINS
+def PRIMEFACT_VARIANT : thm := BPock.PRIMEFACT_VARIANT
+def LUCAS_PRIMEFACT : thm := BPock.LUCAS_PRIMEFACT
+def POCKLINGTON_PRIMEFACT : thm := BPock.POCKLINGTON_PRIMEFACT
 
 -- Certify
-unsafe def prime_theorem_cache := BCertify.prime_theorem_cache
-unsafe def check_certificate := BCertify.check_certificate
-unsafe def PROVE_PRIME := BCertify.PROVE_PRIME
-unsafe def PROVE_PRIMEFACT := BCertify.PROVE_PRIMEFACT
-unsafe def PRIME_TEST : term → IO (Except String thm) := fun t => (BCertify.PRIME_TEST t).run
-unsafe def PRIME_CONV : term → IO (Except String thm) := fun t => (BCertify.PRIME_CONV t).run
-unsafe def GUIDED_PROVE_PRIME := BCertify.GUIDED_PROVE_PRIME
-unsafe def PRIME_RULE := BCertify.PRIME_RULE
+def prime_theorem_cache := BCertify.prime_theorem_cache
+def check_certificate := BCertify.check_certificate
+def PROVE_PRIME := BCertify.PROVE_PRIME
+def PROVE_PRIMEFACT := BCertify.PROVE_PRIMEFACT
+def PRIME_TEST : term → IO (Except String thm) := fun t => (BCertify.PRIME_TEST t).run
+def PRIME_CONV : term → IO (Except String thm) := fun t => (BCertify.PRIME_CONV t).run
+def GUIDED_PROVE_PRIME := BCertify.GUIDED_PROVE_PRIME
+def PRIME_RULE := BCertify.PRIME_RULE
 
 
 
@@ -675,7 +621,6 @@ unsafe def PRIME_RULE := BCertify.PRIME_RULE
 
 
 
--- @@EXPORTS END
 
 /- pocklington.ml's names that HolLibrary.Pocklington defines at top level
    (they need no bundle). -/
@@ -684,16 +629,7 @@ export HolLibrary.Pocklington (num_0 num_1 num_2 even_num odd_num log2 powermod 
   certify_prime lookup_under_num split_factors extract_primes_from_certificate
   guided_certify_prime)
 
-/-- `needs "Library/pocklington.ml"`: build the bundle. -/
-unsafe def ensurePocklington : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BBasics.nat_mod_lemma
-  let _ ← IO.mkRef BSolve.CONG_SOLVE_EQ
-  let _ ← IO.mkRef BSquarefree.squarefree
-  let _ ← IO.mkRef BPhi.phi
-  let _ ← IO.mkRef BOrder.LUCAS_COPRIME_LEMMA
-  let _ ← IO.mkRef BPock.POCKLINGTON_LEMMA
-  let _ ← IO.mkRef BCertify.prime_theorem_cache-- @@ENSURE END
-  pure ()
+/-- `needs "Library/pocklington.ml"`: already done by importing this module. -/
+def ensurePocklington : IO Unit := pure ()
 
 end SessionLibrary.Pocklington

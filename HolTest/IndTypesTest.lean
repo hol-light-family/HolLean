@@ -43,14 +43,15 @@ private def squash (s : String) : String := (s.replace "\n" "").replace " " ""
 /-                                                                        -/
 /- These must work with NO prior `define_type` call: OCaml runs all of     -/
 /- ind_types.ml eagerly at load time, so `distinctness "list"` already    -/
-/- succeeds the moment loading finishes.  This project is lazy-on-demand,  -/
-/- so the readers force the bootstrap first - these tests pin that down.   -/
+/- succeeds the moment loading finishes.  So does Session's import.  The  -/
+/- readers are `IO`: they read the live stores, which `define_type`       -/
+/- extends.                                                               -/
 /- ---------------------------------------------------------------------- -/
 
-/-- Compare a pure store lookup against the documented HOL Light output. -/
-private unsafe def lookupCheck (lbl : String) (r : Except String thm)
+/-- Compare a store lookup against the documented HOL Light output. -/
+private unsafe def lookupCheck (lbl : String) (r : IO (Except String thm))
     (expected : String) : IO Unit := do
-  match r with
+  match ← r with
   | .error e => IO.println s!"{lbl} ERR: {e}"
   | .ok th =>
     let got := squash (← HolCore.Printer.string_of_thm th)
@@ -241,8 +242,8 @@ private unsafe def defineTypeFails (lbl spec expected : String) : IO Unit := do
   match ← Session.define_type "reg = RegA A | RegB reg reg" with
   | .error e => IO.println s!"store registration -> MISMATCH define failed: {e}"
   | .ok _ =>
-    let d := (Session.distinctness "reg").toOption.isSome
-    let i := (Session.injectivity "reg").toOption.isSome
+    let d := (← Session.distinctness "reg").toOption.isSome
+    let i := (← Session.injectivity "reg").toOption.isSome
     if d && i then IO.println "store registration -> OK"
     else IO.println s!"store registration -> MISMATCH dist={d} inj={i}" : IO Unit)
 

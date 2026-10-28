@@ -8,14 +8,14 @@ namespace HolExamples.Forster
 
 /- The session's IO-valued `prove` lifted into `ExceptT String IO`, so tactic
    scripts read as in OCaml. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 #eval phrase 1
 #eval Session.prioritize_num
 
 #eval phrase 2
-unsafe def FORSTER_PUZZLE : thm := keep "FORSTER_PUZZLE" fun _ => (do
+def FORSTER_PUZZLE : thm := keep "FORSTER_PUZZLE" fun _ => (do
   prove ([[(!n. f(n + 1) > f(f(n))) ==> !n. f(n) = n]])
    (REWRITE_TAC [GT, (← HolLight.GSYM ADD1)] THEN STRIP_TAC THEN
     SUBGOAL_THEN ([[!n m. f(m) < n ==> m <= f m]]) ASSUME_TAC THENL
@@ -35,7 +35,7 @@ unsafe def FORSTER_PUZZLE : thm := keep "FORSTER_PUZZLE" fun _ => (do
 
 #eval phrase 3
 -- Alternative; shorter but less transparent and taking longer to run.
-unsafe def FORSTER_PUZZLE_2 : thm := keep "FORSTER_PUZZLE_2" fun _ => (do
+def FORSTER_PUZZLE_2 : thm := keep "FORSTER_PUZZLE_2" fun _ => (do
   prove ([[(!n. f(n + 1) > f(f(n))) ==> !n. f(n) = n]])
    (REWRITE_TAC [GT, (← HolLight.GSYM ADD1)] THEN STRIP_TAC THEN
     SUBGOAL_THEN ([[!n m. f(m) < n ==> m <= f m]]) ASSUME_TAC THENL
@@ -53,7 +53,7 @@ unsafe def FORSTER_PUZZLE_2 : thm := keep "FORSTER_PUZZLE_2" fun _ => (do
 
 #eval phrase 4
 -- Robin Milner's proof.
-unsafe def FORSTER_PUZZLE_3 : thm := keep "FORSTER_PUZZLE_3" fun _ => (do
+def FORSTER_PUZZLE_3 : thm := keep "FORSTER_PUZZLE_3" fun _ => (do
   prove ([[(!n. f(n + 1) > f(f(n))) ==> !n. f(n) = n]])
    (REWRITE_TAC [GT, (← HolLight.GSYM ADD1)] THEN STRIP_TAC THEN
     SUBGOAL_THEN ([[!m n. m <= f(n + m)]]) ASSUME_TAC THENL
@@ -71,7 +71,7 @@ unsafe def FORSTER_PUZZLE_3 : thm := keep "FORSTER_PUZZLE_3" fun _ => (do
 
 #eval phrase 5
 -- A variant of Robin's proof avoiding explicit use of addition.
-unsafe def FORSTER_PUZZLE_4 : thm := keep "FORSTER_PUZZLE_4" fun _ => (do
+def FORSTER_PUZZLE_4 : thm := keep "FORSTER_PUZZLE_4" fun _ => (do
   prove ([[(!n. f(n + 1) > f(f(n))) ==> !n. f(n) = n]])
    (REWRITE_TAC [GT, (← HolLight.GSYM ADD1)] THEN STRIP_TAC THEN
     SUBGOAL_THEN ([[!m n. m <= n ==> m <= f(n)]]) ASSUME_TAC THENL
@@ -91,7 +91,7 @@ unsafe def FORSTER_PUZZLE_4 : thm := keep "FORSTER_PUZZLE_4" fun _ => (do
 
 #eval phrase 6
 -- The shortest?
-unsafe def FORSTER_PUZZLE_5 : thm := keep "FORSTER_PUZZLE_5" fun _ => (do
+def FORSTER_PUZZLE_5 : thm := keep "FORSTER_PUZZLE_5" fun _ => (do
   prove ([[(!n. f(n + 1) > f(f(n))) ==> !n. f(n) = n]])
    (REWRITE_TAC [GT, (← HolLight.GSYM ADD1)] THEN STRIP_TAC THEN
     SUBGOAL_THEN ([[!m n. m <= f(n + m)]]) ASSUME_TAC THENL

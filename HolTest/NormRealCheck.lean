@@ -203,6 +203,13 @@ unsafe def forceReal : IO Unit := do
 /- 3. real.ml : theorem statements (early, middle, late) via stmtOK.       -/
 /- ====================================================================== -/
 
+/- Session loads all of hol_lib.ml, which ends with `:num` as the default
+   type for overloaded symbols (iterate.ml's closing `prioritize_num`), as
+   HOL Light does.  Sections 1-2 are about `num`; from here on the goals are
+   about the reals, so make `:real` the default, as a HOL Light user would
+   (and as iterate.ml does at 1982). -/
+#eval Session.prioritize_real
+
 /- Early (real.ml 17-56): number-embedding clauses. -/
 #eval (do let th := Session.REAL_OF_NUM_GE
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))

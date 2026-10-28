@@ -3,14 +3,11 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Products.lean
 
-  The `unsafe` half of the products.ml translation: it supplies
-  HolLibrary.Products's dependencies from Session, builds each bundle once,
-  in file order, and exports every name under its HOL Light name.
-  `ensureProducts` is `needs "Library/products.ml"`.
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Products.lean by tools/productsdiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the products.ml translation: it supplies
+  HolLibrary.Products's dependencies from Session and exports every name
+  under its HOL Light name.  Importing this module is
+  `needs "Library/products.ml"`: each bundle is built by `initialize` when
+  the module is loaded, in file order.
 -/
 
 import Session
@@ -21,12 +18,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Products
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems products.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Products.CoreThms1 where
+def core1 : HolLibrary.Products.CoreThms1 where
   ADD_SUB := Session.ADD_SUB
   ARITH := Session.ARITH
   ARITH_EQ := Session.ARITH_EQ
@@ -72,7 +65,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Products.CoreThms1 where
   INT_OF_NUM_MUL := Session.INT_OF_NUM_MUL
   INT_POS := Session.INT_POS
 /-- The core theorems products.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Products.CoreThms2 where
+def core2 : HolLibrary.Products.CoreThms2 where
   INT_POW := Session.INT_POW
   INT_POW_ADD := Session.INT_POW_ADD
   IN_ELIM_PAIR_THM := Session.IN_ELIM_PAIR_THM
@@ -118,7 +111,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.Products.CoreThms2 where
   NEUTRAL_INT_MUL := Session.NEUTRAL_INT_MUL
   NEUTRAL_MUL := Session.NEUTRAL_MUL
 /-- The core theorems products.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.Products.CoreThms3 where
+def core3 : HolLibrary.Products.CoreThms3 where
   NEUTRAL_REAL_MUL := Session.NEUTRAL_REAL_MUL
   NOT_IN_EMPTY := Session.NOT_IN_EMPTY
   NOT_LT := Session.NOT_LT
@@ -161,10 +154,10 @@ unsafe def core3 (_ : Unit) : HolLibrary.Products.CoreThms3 where
   product := Session.product
   real_div := Session.real_div
   real_pow := Session.real_pow
-  support := Session.support-- @@CORE END
+  support := Session.support
 
 /-- What products.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Products.ProductsDeps where
+def deps : HolLibrary.Products.ProductsDeps where
   prioritize_num := do
     match ← HolCore.Kernel.mk_type "num" [] with
     | .ok ty => Session.prioritize_overload ty
@@ -179,217 +172,183 @@ unsafe def deps (_ : Unit) : HolLibrary.Products.ProductsDeps where
   MESON ths t := ExceptT.mk (Session.MESON ths t)
   MESON_TAC := Session.MESON_TAC
   NUMBER_RULE t := ExceptT.mk (Session.NUMBER_RULE t)
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml). -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Products: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in products.ml order.  Each forces the one before it, so
-   that any bundle builds every earlier one first, as HOL Light's load does. -/
+/- The bundles, in products.ml order. -/
+initialize BNProduct : HolLibrary.Products.NProduct ←
+  ioB "setupNProduct" (HolLibrary.Products.setupNProduct deps).run
+initialize BIProduct : HolLibrary.Products.IProduct ←
+  ioB "setupIProduct" (HolLibrary.Products.setupIProduct deps).run
+initialize BProduct : HolLibrary.Products.Product ←
+  ioB "setupProduct" (HolLibrary.Products.setupProduct deps).run
 
--- @@BUNDLES BEGIN
-initialize theNProduct : IO.Ref (Option HolLibrary.Products.NProduct) ← IO.mkRef none
-unsafe def BNProduct : HolLibrary.Products.NProduct :=
-  cached theNProduct "setupNProduct" fun _ => do
-    (HolLibrary.Products.setupNProduct (deps ())).run
-
-initialize theIProduct : IO.Ref (Option HolLibrary.Products.IProduct) ← IO.mkRef none
-unsafe def BIProduct : HolLibrary.Products.IProduct :=
-  cached theIProduct "setupIProduct" fun _ => do
-    let _ ← IO.mkRef BNProduct.NPRODUCT_SUPPORT
-    (HolLibrary.Products.setupIProduct (deps ())).run
-
-initialize theProduct : IO.Ref (Option HolLibrary.Products.Product) ← IO.mkRef none
-unsafe def BProduct : HolLibrary.Products.Product :=
-  cached theProduct "setupProduct" fun _ => do
-    let _ ← IO.mkRef BIProduct.IPRODUCT_SUPPORT
-    (HolLibrary.Products.setupProduct (deps ())).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- NProduct
-unsafe def NPRODUCT_SUPPORT : thm := BNProduct.NPRODUCT_SUPPORT
-unsafe def NPRODUCT_UNION : thm := BNProduct.NPRODUCT_UNION
-unsafe def NPRODUCT_IMAGE : thm := BNProduct.NPRODUCT_IMAGE
-unsafe def NPRODUCT_INJECTION : thm := BNProduct.NPRODUCT_INJECTION
-unsafe def NPRODUCT_ADD_SPLIT : thm := BNProduct.NPRODUCT_ADD_SPLIT
-unsafe def NPRODUCT_POS_LT : thm := BNProduct.NPRODUCT_POS_LT
-unsafe def NPRODUCT_POS_LT_NUMSEG : thm := BNProduct.NPRODUCT_POS_LT_NUMSEG
-unsafe def NPRODUCT_OFFSET : thm := BNProduct.NPRODUCT_OFFSET
-unsafe def NPRODUCT_SING : thm := BNProduct.NPRODUCT_SING
-unsafe def NPRODUCT_SING_NUMSEG : thm := BNProduct.NPRODUCT_SING_NUMSEG
-unsafe def NPRODUCT_CLAUSES_NUMSEG : thm := BNProduct.NPRODUCT_CLAUSES_NUMSEG
-unsafe def NPRODUCT_EQ : thm := BNProduct.NPRODUCT_EQ
-unsafe def NPRODUCT_EQ_NUMSEG : thm := BNProduct.NPRODUCT_EQ_NUMSEG
-unsafe def NPRODUCT_EQ_0 : thm := BNProduct.NPRODUCT_EQ_0
-unsafe def NPRODUCT_EQ_0_NUMSEG : thm := BNProduct.NPRODUCT_EQ_0_NUMSEG
-unsafe def NPRODUCT_RESTRICT : thm := BNProduct.NPRODUCT_RESTRICT
-unsafe def NPRODUCT_RESTRICT_SET : thm := BNProduct.NPRODUCT_RESTRICT_SET
-unsafe def NPRODUCT_LE : thm := BNProduct.NPRODUCT_LE
-unsafe def NPRODUCT_LE_NUMSEG : thm := BNProduct.NPRODUCT_LE_NUMSEG
-unsafe def NPRODUCT_EQ_1 : thm := BNProduct.NPRODUCT_EQ_1
-unsafe def NPRODUCT_EQ_1_NUMSEG : thm := BNProduct.NPRODUCT_EQ_1_NUMSEG
-unsafe def NPRODUCT_MUL_GEN : thm := BNProduct.NPRODUCT_MUL_GEN
-unsafe def NPRODUCT_MUL : thm := BNProduct.NPRODUCT_MUL
-unsafe def NPRODUCT_MUL_NUMSEG : thm := BNProduct.NPRODUCT_MUL_NUMSEG
-unsafe def NPRODUCT_CONST : thm := BNProduct.NPRODUCT_CONST
-unsafe def NPRODUCT_CONST_NUMSEG : thm := BNProduct.NPRODUCT_CONST_NUMSEG
-unsafe def NPRODUCT_CONST_NUMSEG_1 : thm := BNProduct.NPRODUCT_CONST_NUMSEG_1
-unsafe def NPRODUCT_ONE : thm := BNProduct.NPRODUCT_ONE
-unsafe def NPRODUCT_CLOSED : thm := BNProduct.NPRODUCT_CLOSED
-unsafe def NPRODUCT_RELATED : thm := BNProduct.NPRODUCT_RELATED
-unsafe def NPRODUCT_CLOSED_NONEMPTY : thm := BNProduct.NPRODUCT_CLOSED_NONEMPTY
-unsafe def NPRODUCT_RELATED_NONEMPTY : thm := BNProduct.NPRODUCT_RELATED_NONEMPTY
-unsafe def CONG_NPRODUCT : thm := BNProduct.CONG_NPRODUCT
-unsafe def NPRODUCT_CLAUSES_LEFT : thm := BNProduct.NPRODUCT_CLAUSES_LEFT
-unsafe def NPRODUCT_CLAUSES_RIGHT : thm := BNProduct.NPRODUCT_CLAUSES_RIGHT
-unsafe def NPRODUCT_SUPERSET : thm := BNProduct.NPRODUCT_SUPERSET
-unsafe def NPRODUCT_UNIV : thm := BNProduct.NPRODUCT_UNIV
-unsafe def NPRODUCT_PAIR : thm := BNProduct.NPRODUCT_PAIR
-unsafe def NPRODUCT_REFLECT : thm := BNProduct.NPRODUCT_REFLECT
-unsafe def NPRODUCT_DELETE : thm := BNProduct.NPRODUCT_DELETE
-unsafe def NPRODUCT_FACT : thm := BNProduct.NPRODUCT_FACT
-unsafe def NPRODUCT_DELTA : thm := BNProduct.NPRODUCT_DELTA
-unsafe def EXP_NSUM : thm := BNProduct.EXP_NSUM
-unsafe def HAS_SIZE_CART : thm := BNProduct.HAS_SIZE_CART
-unsafe def CARD_CART : thm := BNProduct.CARD_CART
+def NPRODUCT_SUPPORT : thm := BNProduct.NPRODUCT_SUPPORT
+def NPRODUCT_UNION : thm := BNProduct.NPRODUCT_UNION
+def NPRODUCT_IMAGE : thm := BNProduct.NPRODUCT_IMAGE
+def NPRODUCT_INJECTION : thm := BNProduct.NPRODUCT_INJECTION
+def NPRODUCT_ADD_SPLIT : thm := BNProduct.NPRODUCT_ADD_SPLIT
+def NPRODUCT_POS_LT : thm := BNProduct.NPRODUCT_POS_LT
+def NPRODUCT_POS_LT_NUMSEG : thm := BNProduct.NPRODUCT_POS_LT_NUMSEG
+def NPRODUCT_OFFSET : thm := BNProduct.NPRODUCT_OFFSET
+def NPRODUCT_SING : thm := BNProduct.NPRODUCT_SING
+def NPRODUCT_SING_NUMSEG : thm := BNProduct.NPRODUCT_SING_NUMSEG
+def NPRODUCT_CLAUSES_NUMSEG : thm := BNProduct.NPRODUCT_CLAUSES_NUMSEG
+def NPRODUCT_EQ : thm := BNProduct.NPRODUCT_EQ
+def NPRODUCT_EQ_NUMSEG : thm := BNProduct.NPRODUCT_EQ_NUMSEG
+def NPRODUCT_EQ_0 : thm := BNProduct.NPRODUCT_EQ_0
+def NPRODUCT_EQ_0_NUMSEG : thm := BNProduct.NPRODUCT_EQ_0_NUMSEG
+def NPRODUCT_RESTRICT : thm := BNProduct.NPRODUCT_RESTRICT
+def NPRODUCT_RESTRICT_SET : thm := BNProduct.NPRODUCT_RESTRICT_SET
+def NPRODUCT_LE : thm := BNProduct.NPRODUCT_LE
+def NPRODUCT_LE_NUMSEG : thm := BNProduct.NPRODUCT_LE_NUMSEG
+def NPRODUCT_EQ_1 : thm := BNProduct.NPRODUCT_EQ_1
+def NPRODUCT_EQ_1_NUMSEG : thm := BNProduct.NPRODUCT_EQ_1_NUMSEG
+def NPRODUCT_MUL_GEN : thm := BNProduct.NPRODUCT_MUL_GEN
+def NPRODUCT_MUL : thm := BNProduct.NPRODUCT_MUL
+def NPRODUCT_MUL_NUMSEG : thm := BNProduct.NPRODUCT_MUL_NUMSEG
+def NPRODUCT_CONST : thm := BNProduct.NPRODUCT_CONST
+def NPRODUCT_CONST_NUMSEG : thm := BNProduct.NPRODUCT_CONST_NUMSEG
+def NPRODUCT_CONST_NUMSEG_1 : thm := BNProduct.NPRODUCT_CONST_NUMSEG_1
+def NPRODUCT_ONE : thm := BNProduct.NPRODUCT_ONE
+def NPRODUCT_CLOSED : thm := BNProduct.NPRODUCT_CLOSED
+def NPRODUCT_RELATED : thm := BNProduct.NPRODUCT_RELATED
+def NPRODUCT_CLOSED_NONEMPTY : thm := BNProduct.NPRODUCT_CLOSED_NONEMPTY
+def NPRODUCT_RELATED_NONEMPTY : thm := BNProduct.NPRODUCT_RELATED_NONEMPTY
+def CONG_NPRODUCT : thm := BNProduct.CONG_NPRODUCT
+def NPRODUCT_CLAUSES_LEFT : thm := BNProduct.NPRODUCT_CLAUSES_LEFT
+def NPRODUCT_CLAUSES_RIGHT : thm := BNProduct.NPRODUCT_CLAUSES_RIGHT
+def NPRODUCT_SUPERSET : thm := BNProduct.NPRODUCT_SUPERSET
+def NPRODUCT_UNIV : thm := BNProduct.NPRODUCT_UNIV
+def NPRODUCT_PAIR : thm := BNProduct.NPRODUCT_PAIR
+def NPRODUCT_REFLECT : thm := BNProduct.NPRODUCT_REFLECT
+def NPRODUCT_DELETE : thm := BNProduct.NPRODUCT_DELETE
+def NPRODUCT_FACT : thm := BNProduct.NPRODUCT_FACT
+def NPRODUCT_DELTA : thm := BNProduct.NPRODUCT_DELTA
+def EXP_NSUM : thm := BNProduct.EXP_NSUM
+def HAS_SIZE_CART : thm := BNProduct.HAS_SIZE_CART
+def CARD_CART : thm := BNProduct.CARD_CART
 
 -- IProduct
-unsafe def IPRODUCT_SUPPORT : thm := BIProduct.IPRODUCT_SUPPORT
-unsafe def IPRODUCT_UNION : thm := BIProduct.IPRODUCT_UNION
-unsafe def IPRODUCT_IMAGE : thm := BIProduct.IPRODUCT_IMAGE
-unsafe def IPRODUCT_INJECTION : thm := BIProduct.IPRODUCT_INJECTION
-unsafe def IPRODUCT_ADD_SPLIT : thm := BIProduct.IPRODUCT_ADD_SPLIT
-unsafe def IPRODUCT_POS_LE : thm := BIProduct.IPRODUCT_POS_LE
-unsafe def IPRODUCT_POS_LE_NUMSEG : thm := BIProduct.IPRODUCT_POS_LE_NUMSEG
-unsafe def IPRODUCT_POS_LT : thm := BIProduct.IPRODUCT_POS_LT
-unsafe def IPRODUCT_POS_LT_NUMSEG : thm := BIProduct.IPRODUCT_POS_LT_NUMSEG
-unsafe def IPRODUCT_OFFSET : thm := BIProduct.IPRODUCT_OFFSET
-unsafe def IPRODUCT_SING : thm := BIProduct.IPRODUCT_SING
-unsafe def IPRODUCT_SING_NUMSEG : thm := BIProduct.IPRODUCT_SING_NUMSEG
-unsafe def IPRODUCT_CLAUSES_NUMSEG : thm := BIProduct.IPRODUCT_CLAUSES_NUMSEG
-unsafe def IPRODUCT_EQ : thm := BIProduct.IPRODUCT_EQ
-unsafe def IPRODUCT_EQ_NUMSEG : thm := BIProduct.IPRODUCT_EQ_NUMSEG
-unsafe def IPRODUCT_EQ_0 : thm := BIProduct.IPRODUCT_EQ_0
-unsafe def IPRODUCT_EQ_0_NUMSEG : thm := BIProduct.IPRODUCT_EQ_0_NUMSEG
-unsafe def IPRODUCT_RESTRICT : thm := BIProduct.IPRODUCT_RESTRICT
-unsafe def IPRODUCT_RESTRICT_SET : thm := BIProduct.IPRODUCT_RESTRICT_SET
-unsafe def IPRODUCT_LE : thm := BIProduct.IPRODUCT_LE
-unsafe def IPRODUCT_LE_NUMSEG : thm := BIProduct.IPRODUCT_LE_NUMSEG
-unsafe def IPRODUCT_EQ_1 : thm := BIProduct.IPRODUCT_EQ_1
-unsafe def IPRODUCT_EQ_1_NUMSEG : thm := BIProduct.IPRODUCT_EQ_1_NUMSEG
-unsafe def IPRODUCT_MUL_GEN : thm := BIProduct.IPRODUCT_MUL_GEN
-unsafe def IPRODUCT_MUL : thm := BIProduct.IPRODUCT_MUL
-unsafe def IPRODUCT_MUL_NUMSEG : thm := BIProduct.IPRODUCT_MUL_NUMSEG
-unsafe def IPRODUCT_CONST : thm := BIProduct.IPRODUCT_CONST
-unsafe def IPRODUCT_CONST_NUMSEG : thm := BIProduct.IPRODUCT_CONST_NUMSEG
-unsafe def IPRODUCT_CONST_NUMSEG_1 : thm := BIProduct.IPRODUCT_CONST_NUMSEG_1
-unsafe def IPRODUCT_NEG : thm := BIProduct.IPRODUCT_NEG
-unsafe def IPRODUCT_NEG_NUMSEG : thm := BIProduct.IPRODUCT_NEG_NUMSEG
-unsafe def IPRODUCT_NEG_NUMSEG_1 : thm := BIProduct.IPRODUCT_NEG_NUMSEG_1
-unsafe def IPRODUCT_ONE : thm := BIProduct.IPRODUCT_ONE
-unsafe def IPRODUCT_LE_1 : thm := BIProduct.IPRODUCT_LE_1
-unsafe def IPRODUCT_ABS : thm := BIProduct.IPRODUCT_ABS
-unsafe def IPRODUCT_CLOSED : thm := BIProduct.IPRODUCT_CLOSED
-unsafe def IPRODUCT_RELATED : thm := BIProduct.IPRODUCT_RELATED
-unsafe def IPRODUCT_CLOSED_NONEMPTY : thm := BIProduct.IPRODUCT_CLOSED_NONEMPTY
-unsafe def IPRODUCT_RELATED_NONEMPTY : thm := BIProduct.IPRODUCT_RELATED_NONEMPTY
-unsafe def IPRODUCT_CLAUSES_LEFT : thm := BIProduct.IPRODUCT_CLAUSES_LEFT
-unsafe def IPRODUCT_CLAUSES_RIGHT : thm := BIProduct.IPRODUCT_CLAUSES_RIGHT
-unsafe def INT_OF_NUM_NPRODUCT : thm := BIProduct.INT_OF_NUM_NPRODUCT
-unsafe def IPRODUCT_SUPERSET : thm := BIProduct.IPRODUCT_SUPERSET
-unsafe def IPRODUCT_UNIV : thm := BIProduct.IPRODUCT_UNIV
-unsafe def IPRODUCT_PAIR : thm := BIProduct.IPRODUCT_PAIR
-unsafe def IPRODUCT_REFLECT : thm := BIProduct.IPRODUCT_REFLECT
-unsafe def IPRODUCT_DELETE : thm := BIProduct.IPRODUCT_DELETE
-unsafe def IPRODUCT_DELTA : thm := BIProduct.IPRODUCT_DELTA
-unsafe def INT_POW_NSUM : thm := BIProduct.INT_POW_NSUM
+def IPRODUCT_SUPPORT : thm := BIProduct.IPRODUCT_SUPPORT
+def IPRODUCT_UNION : thm := BIProduct.IPRODUCT_UNION
+def IPRODUCT_IMAGE : thm := BIProduct.IPRODUCT_IMAGE
+def IPRODUCT_INJECTION : thm := BIProduct.IPRODUCT_INJECTION
+def IPRODUCT_ADD_SPLIT : thm := BIProduct.IPRODUCT_ADD_SPLIT
+def IPRODUCT_POS_LE : thm := BIProduct.IPRODUCT_POS_LE
+def IPRODUCT_POS_LE_NUMSEG : thm := BIProduct.IPRODUCT_POS_LE_NUMSEG
+def IPRODUCT_POS_LT : thm := BIProduct.IPRODUCT_POS_LT
+def IPRODUCT_POS_LT_NUMSEG : thm := BIProduct.IPRODUCT_POS_LT_NUMSEG
+def IPRODUCT_OFFSET : thm := BIProduct.IPRODUCT_OFFSET
+def IPRODUCT_SING : thm := BIProduct.IPRODUCT_SING
+def IPRODUCT_SING_NUMSEG : thm := BIProduct.IPRODUCT_SING_NUMSEG
+def IPRODUCT_CLAUSES_NUMSEG : thm := BIProduct.IPRODUCT_CLAUSES_NUMSEG
+def IPRODUCT_EQ : thm := BIProduct.IPRODUCT_EQ
+def IPRODUCT_EQ_NUMSEG : thm := BIProduct.IPRODUCT_EQ_NUMSEG
+def IPRODUCT_EQ_0 : thm := BIProduct.IPRODUCT_EQ_0
+def IPRODUCT_EQ_0_NUMSEG : thm := BIProduct.IPRODUCT_EQ_0_NUMSEG
+def IPRODUCT_RESTRICT : thm := BIProduct.IPRODUCT_RESTRICT
+def IPRODUCT_RESTRICT_SET : thm := BIProduct.IPRODUCT_RESTRICT_SET
+def IPRODUCT_LE : thm := BIProduct.IPRODUCT_LE
+def IPRODUCT_LE_NUMSEG : thm := BIProduct.IPRODUCT_LE_NUMSEG
+def IPRODUCT_EQ_1 : thm := BIProduct.IPRODUCT_EQ_1
+def IPRODUCT_EQ_1_NUMSEG : thm := BIProduct.IPRODUCT_EQ_1_NUMSEG
+def IPRODUCT_MUL_GEN : thm := BIProduct.IPRODUCT_MUL_GEN
+def IPRODUCT_MUL : thm := BIProduct.IPRODUCT_MUL
+def IPRODUCT_MUL_NUMSEG : thm := BIProduct.IPRODUCT_MUL_NUMSEG
+def IPRODUCT_CONST : thm := BIProduct.IPRODUCT_CONST
+def IPRODUCT_CONST_NUMSEG : thm := BIProduct.IPRODUCT_CONST_NUMSEG
+def IPRODUCT_CONST_NUMSEG_1 : thm := BIProduct.IPRODUCT_CONST_NUMSEG_1
+def IPRODUCT_NEG : thm := BIProduct.IPRODUCT_NEG
+def IPRODUCT_NEG_NUMSEG : thm := BIProduct.IPRODUCT_NEG_NUMSEG
+def IPRODUCT_NEG_NUMSEG_1 : thm := BIProduct.IPRODUCT_NEG_NUMSEG_1
+def IPRODUCT_ONE : thm := BIProduct.IPRODUCT_ONE
+def IPRODUCT_LE_1 : thm := BIProduct.IPRODUCT_LE_1
+def IPRODUCT_ABS : thm := BIProduct.IPRODUCT_ABS
+def IPRODUCT_CLOSED : thm := BIProduct.IPRODUCT_CLOSED
+def IPRODUCT_RELATED : thm := BIProduct.IPRODUCT_RELATED
+def IPRODUCT_CLOSED_NONEMPTY : thm := BIProduct.IPRODUCT_CLOSED_NONEMPTY
+def IPRODUCT_RELATED_NONEMPTY : thm := BIProduct.IPRODUCT_RELATED_NONEMPTY
+def IPRODUCT_CLAUSES_LEFT : thm := BIProduct.IPRODUCT_CLAUSES_LEFT
+def IPRODUCT_CLAUSES_RIGHT : thm := BIProduct.IPRODUCT_CLAUSES_RIGHT
+def INT_OF_NUM_NPRODUCT : thm := BIProduct.INT_OF_NUM_NPRODUCT
+def IPRODUCT_SUPERSET : thm := BIProduct.IPRODUCT_SUPERSET
+def IPRODUCT_UNIV : thm := BIProduct.IPRODUCT_UNIV
+def IPRODUCT_PAIR : thm := BIProduct.IPRODUCT_PAIR
+def IPRODUCT_REFLECT : thm := BIProduct.IPRODUCT_REFLECT
+def IPRODUCT_DELETE : thm := BIProduct.IPRODUCT_DELETE
+def IPRODUCT_DELTA : thm := BIProduct.IPRODUCT_DELTA
+def INT_POW_NSUM : thm := BIProduct.INT_POW_NSUM
 
 -- Product
-unsafe def PRODUCT_SUPPORT : thm := BProduct.PRODUCT_SUPPORT
-unsafe def PRODUCT_UNION : thm := BProduct.PRODUCT_UNION
-unsafe def PRODUCT_IMAGE : thm := BProduct.PRODUCT_IMAGE
-unsafe def PRODUCT_INJECTION : thm := BProduct.PRODUCT_INJECTION
-unsafe def PRODUCT_ADD_SPLIT : thm := BProduct.PRODUCT_ADD_SPLIT
-unsafe def PRODUCT_POS_LE : thm := BProduct.PRODUCT_POS_LE
-unsafe def PRODUCT_POS_LE_NUMSEG : thm := BProduct.PRODUCT_POS_LE_NUMSEG
-unsafe def PRODUCT_POS_LT : thm := BProduct.PRODUCT_POS_LT
-unsafe def PRODUCT_POS_LT_NUMSEG : thm := BProduct.PRODUCT_POS_LT_NUMSEG
-unsafe def PRODUCT_OFFSET : thm := BProduct.PRODUCT_OFFSET
-unsafe def PRODUCT_SING : thm := BProduct.PRODUCT_SING
-unsafe def PRODUCT_SING_NUMSEG : thm := BProduct.PRODUCT_SING_NUMSEG
-unsafe def PRODUCT_CLAUSES_NUMSEG : thm := BProduct.PRODUCT_CLAUSES_NUMSEG
-unsafe def PRODUCT_EQ : thm := BProduct.PRODUCT_EQ
-unsafe def PRODUCT_EQ_NUMSEG : thm := BProduct.PRODUCT_EQ_NUMSEG
-unsafe def PRODUCT_EQ_0 : thm := BProduct.PRODUCT_EQ_0
-unsafe def PRODUCT_EQ_0_NUMSEG : thm := BProduct.PRODUCT_EQ_0_NUMSEG
-unsafe def PRODUCT_RESTRICT : thm := BProduct.PRODUCT_RESTRICT
-unsafe def PRODUCT_RESTRICT_SET : thm := BProduct.PRODUCT_RESTRICT_SET
-unsafe def PRODUCT_LE : thm := BProduct.PRODUCT_LE
-unsafe def PRODUCT_LE_NUMSEG : thm := BProduct.PRODUCT_LE_NUMSEG
-unsafe def PRODUCT_EQ_1 : thm := BProduct.PRODUCT_EQ_1
-unsafe def PRODUCT_EQ_1_NUMSEG : thm := BProduct.PRODUCT_EQ_1_NUMSEG
-unsafe def PRODUCT_MUL_GEN : thm := BProduct.PRODUCT_MUL_GEN
-unsafe def PRODUCT_MUL : thm := BProduct.PRODUCT_MUL
-unsafe def PRODUCT_MUL_NUMSEG : thm := BProduct.PRODUCT_MUL_NUMSEG
-unsafe def PRODUCT_CONST : thm := BProduct.PRODUCT_CONST
-unsafe def PRODUCT_CONST_NUMSEG : thm := BProduct.PRODUCT_CONST_NUMSEG
-unsafe def PRODUCT_CONST_NUMSEG_1 : thm := BProduct.PRODUCT_CONST_NUMSEG_1
-unsafe def PRODUCT_NEG : thm := BProduct.PRODUCT_NEG
-unsafe def PRODUCT_NEG_NUMSEG : thm := BProduct.PRODUCT_NEG_NUMSEG
-unsafe def PRODUCT_NEG_NUMSEG_1 : thm := BProduct.PRODUCT_NEG_NUMSEG_1
-unsafe def PRODUCT_INV : thm := BProduct.PRODUCT_INV
-unsafe def PRODUCT_DIV : thm := BProduct.PRODUCT_DIV
-unsafe def PRODUCT_DIV_NUMSEG : thm := BProduct.PRODUCT_DIV_NUMSEG
-unsafe def PRODUCT_ONE : thm := BProduct.PRODUCT_ONE
-unsafe def PRODUCT_LE_1 : thm := BProduct.PRODUCT_LE_1
-unsafe def PRODUCT_ABS : thm := BProduct.PRODUCT_ABS
-unsafe def PRODUCT_CLOSED : thm := BProduct.PRODUCT_CLOSED
-unsafe def PRODUCT_RELATED : thm := BProduct.PRODUCT_RELATED
-unsafe def PRODUCT_CLOSED_NONEMPTY : thm := BProduct.PRODUCT_CLOSED_NONEMPTY
-unsafe def PRODUCT_RELATED_NONEMPTY : thm := BProduct.PRODUCT_RELATED_NONEMPTY
-unsafe def PRODUCT_CLAUSES_LEFT : thm := BProduct.PRODUCT_CLAUSES_LEFT
-unsafe def PRODUCT_CLAUSES_RIGHT : thm := BProduct.PRODUCT_CLAUSES_RIGHT
-unsafe def REAL_OF_NUM_NPRODUCT : thm := BProduct.REAL_OF_NUM_NPRODUCT
-unsafe def PRODUCT_SUPERSET : thm := BProduct.PRODUCT_SUPERSET
-unsafe def PRODUCT_UNIV : thm := BProduct.PRODUCT_UNIV
-unsafe def PRODUCT_PAIR : thm := BProduct.PRODUCT_PAIR
-unsafe def PRODUCT_REFLECT : thm := BProduct.PRODUCT_REFLECT
-unsafe def PRODUCT_DELETE : thm := BProduct.PRODUCT_DELETE
-unsafe def PRODUCT_DELTA : thm := BProduct.PRODUCT_DELTA
-unsafe def REAL_POW_NSUM : thm := BProduct.REAL_POW_NSUM
-unsafe def POLYNOMIAL_FUNCTION_PRODUCT : thm := BProduct.POLYNOMIAL_FUNCTION_PRODUCT
+def PRODUCT_SUPPORT : thm := BProduct.PRODUCT_SUPPORT
+def PRODUCT_UNION : thm := BProduct.PRODUCT_UNION
+def PRODUCT_IMAGE : thm := BProduct.PRODUCT_IMAGE
+def PRODUCT_INJECTION : thm := BProduct.PRODUCT_INJECTION
+def PRODUCT_ADD_SPLIT : thm := BProduct.PRODUCT_ADD_SPLIT
+def PRODUCT_POS_LE : thm := BProduct.PRODUCT_POS_LE
+def PRODUCT_POS_LE_NUMSEG : thm := BProduct.PRODUCT_POS_LE_NUMSEG
+def PRODUCT_POS_LT : thm := BProduct.PRODUCT_POS_LT
+def PRODUCT_POS_LT_NUMSEG : thm := BProduct.PRODUCT_POS_LT_NUMSEG
+def PRODUCT_OFFSET : thm := BProduct.PRODUCT_OFFSET
+def PRODUCT_SING : thm := BProduct.PRODUCT_SING
+def PRODUCT_SING_NUMSEG : thm := BProduct.PRODUCT_SING_NUMSEG
+def PRODUCT_CLAUSES_NUMSEG : thm := BProduct.PRODUCT_CLAUSES_NUMSEG
+def PRODUCT_EQ : thm := BProduct.PRODUCT_EQ
+def PRODUCT_EQ_NUMSEG : thm := BProduct.PRODUCT_EQ_NUMSEG
+def PRODUCT_EQ_0 : thm := BProduct.PRODUCT_EQ_0
+def PRODUCT_EQ_0_NUMSEG : thm := BProduct.PRODUCT_EQ_0_NUMSEG
+def PRODUCT_RESTRICT : thm := BProduct.PRODUCT_RESTRICT
+def PRODUCT_RESTRICT_SET : thm := BProduct.PRODUCT_RESTRICT_SET
+def PRODUCT_LE : thm := BProduct.PRODUCT_LE
+def PRODUCT_LE_NUMSEG : thm := BProduct.PRODUCT_LE_NUMSEG
+def PRODUCT_EQ_1 : thm := BProduct.PRODUCT_EQ_1
+def PRODUCT_EQ_1_NUMSEG : thm := BProduct.PRODUCT_EQ_1_NUMSEG
+def PRODUCT_MUL_GEN : thm := BProduct.PRODUCT_MUL_GEN
+def PRODUCT_MUL : thm := BProduct.PRODUCT_MUL
+def PRODUCT_MUL_NUMSEG : thm := BProduct.PRODUCT_MUL_NUMSEG
+def PRODUCT_CONST : thm := BProduct.PRODUCT_CONST
+def PRODUCT_CONST_NUMSEG : thm := BProduct.PRODUCT_CONST_NUMSEG
+def PRODUCT_CONST_NUMSEG_1 : thm := BProduct.PRODUCT_CONST_NUMSEG_1
+def PRODUCT_NEG : thm := BProduct.PRODUCT_NEG
+def PRODUCT_NEG_NUMSEG : thm := BProduct.PRODUCT_NEG_NUMSEG
+def PRODUCT_NEG_NUMSEG_1 : thm := BProduct.PRODUCT_NEG_NUMSEG_1
+def PRODUCT_INV : thm := BProduct.PRODUCT_INV
+def PRODUCT_DIV : thm := BProduct.PRODUCT_DIV
+def PRODUCT_DIV_NUMSEG : thm := BProduct.PRODUCT_DIV_NUMSEG
+def PRODUCT_ONE : thm := BProduct.PRODUCT_ONE
+def PRODUCT_LE_1 : thm := BProduct.PRODUCT_LE_1
+def PRODUCT_ABS : thm := BProduct.PRODUCT_ABS
+def PRODUCT_CLOSED : thm := BProduct.PRODUCT_CLOSED
+def PRODUCT_RELATED : thm := BProduct.PRODUCT_RELATED
+def PRODUCT_CLOSED_NONEMPTY : thm := BProduct.PRODUCT_CLOSED_NONEMPTY
+def PRODUCT_RELATED_NONEMPTY : thm := BProduct.PRODUCT_RELATED_NONEMPTY
+def PRODUCT_CLAUSES_LEFT : thm := BProduct.PRODUCT_CLAUSES_LEFT
+def PRODUCT_CLAUSES_RIGHT : thm := BProduct.PRODUCT_CLAUSES_RIGHT
+def REAL_OF_NUM_NPRODUCT : thm := BProduct.REAL_OF_NUM_NPRODUCT
+def PRODUCT_SUPERSET : thm := BProduct.PRODUCT_SUPERSET
+def PRODUCT_UNIV : thm := BProduct.PRODUCT_UNIV
+def PRODUCT_PAIR : thm := BProduct.PRODUCT_PAIR
+def PRODUCT_REFLECT : thm := BProduct.PRODUCT_REFLECT
+def PRODUCT_DELETE : thm := BProduct.PRODUCT_DELETE
+def PRODUCT_DELTA : thm := BProduct.PRODUCT_DELTA
+def REAL_POW_NSUM : thm := BProduct.REAL_POW_NSUM
+def POLYNOMIAL_FUNCTION_PRODUCT : thm := BProduct.POLYNOMIAL_FUNCTION_PRODUCT
 
 
 
 
 
 
--- @@EXPORTS END
-
-/-- `needs "Library/products.ml"`: build every bundle, in file order. -/
-unsafe def ensureProducts : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BNProduct.NPRODUCT_SUPPORT
-  let _ ← IO.mkRef BIProduct.IPRODUCT_SUPPORT
-  let _ ← IO.mkRef BProduct.PRODUCT_SUPPORT  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/products.ml"`: already done by importing this module. -/
+def ensureProducts : IO Unit := pure ()
 
 end SessionLibrary.Products

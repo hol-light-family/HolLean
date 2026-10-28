@@ -3,14 +3,15 @@ Translation of HOL Light's Examples/miller_rabin.ml, phrase by phrase.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 import HolExamples.Common
+import SessionLibrary.Primitive
 open HolCore.Kernel Session HolLight.Syntax HolExamples
 open SessionLibrary.Prime SessionLibrary.Pocklington SessionLibrary.Multiplicative
-open SessionLibrary.ModmulGroup SessionLibrary.Products SessionLibrary.Primitive
+open SessionLibrary.Products SessionLibrary.Primitive
 namespace HolExamples.MillerRabin
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 private def ec {α : Type} (x : Except String α) : ExceptT String IO α := ExceptT.mk (pure x)
 
@@ -33,7 +34,7 @@ private def ec {α : Type} (x : Except String α) : ExceptT String IO α := Exce
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 3
-unsafe def miller_rabin_composite : thm := keep "miller_rabin_composite" fun _ => new_definition
+def miller_rabin_composite : thm := keep "miller_rabin_composite" fun _ => new_definition
   [[miller_rabin_composite a n <=>
         if EVEN n then ~(n = 2) else
         let e = index 2 (n - 1) in
@@ -43,7 +44,7 @@ unsafe def miller_rabin_composite : thm := keep "miller_rabin_composite" fun _ =
 #eval miller_rabin_composite
 
 #eval phrase 4
-unsafe def miller_rabin_pseudoprime : thm := keep "miller_rabin_pseudoprime" fun _ => new_definition
+def miller_rabin_pseudoprime : thm := keep "miller_rabin_pseudoprime" fun _ => new_definition
   [[miller_rabin_pseudoprime a n <=>
         n = 2 \/
         ODD n /\
@@ -54,7 +55,7 @@ unsafe def miller_rabin_pseudoprime : thm := keep "miller_rabin_pseudoprime" fun
 #eval miller_rabin_pseudoprime
 
 #eval phrase 5
-unsafe def NOT_MILLER_RABIN_COMPOSITE : thm := keep "NOT_MILLER_RABIN_COMPOSITE" fun _ => (do
+def NOT_MILLER_RABIN_COMPOSITE : thm := keep "NOT_MILLER_RABIN_COMPOSITE" fun _ => (do
   prove ([[!a n. ~(miller_rabin_composite a n) <=> miller_rabin_pseudoprime a n]])
    (REWRITE_TAC [miller_rabin_composite, miller_rabin_pseudoprime] THEN
     REPEAT GEN_TAC THEN ASM_CASES_TAC [[n = 2]] THEN ASM_REWRITE_TAC [ARITH] THEN
@@ -64,7 +65,7 @@ unsafe def NOT_MILLER_RABIN_COMPOSITE : thm := keep "NOT_MILLER_RABIN_COMPOSITE"
 #eval NOT_MILLER_RABIN_COMPOSITE
 
 #eval phrase 6
-unsafe def NOT_MILLER_RABIN_PSEUDOPRIME : thm := keep "NOT_MILLER_RABIN_PSEUDOPRIME" fun _ => (do
+def NOT_MILLER_RABIN_PSEUDOPRIME : thm := keep "NOT_MILLER_RABIN_PSEUDOPRIME" fun _ => (do
   prove ([[!a n. ~(miller_rabin_pseudoprime a n) <=> miller_rabin_composite a n]])
    (REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM NOT_MILLER_RABIN_COMPOSITE))])
   : ExceptT String IO thm).run
@@ -77,7 +78,7 @@ unsafe def NOT_MILLER_RABIN_PSEUDOPRIME : thm := keep "NOT_MILLER_RABIN_PSEUDOPR
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 7
-unsafe def MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME_EXPLICIT : thm := keep "MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME_EXPLICIT" fun _ => (do
+def MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME_EXPLICIT : thm := keep "MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME_EXPLICIT" fun _ => (do
   prove ([[!a q. miller_rabin_pseudoprime a q /\ ~(q = 2)
          ==> (a EXP (q - 1) == 1) (mod q)]])
    (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
@@ -108,7 +109,7 @@ unsafe def MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME_EXPLICIT : thm := keep "MILLER_RA
 #eval MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME_EXPLICIT
 
 #eval phrase 8
-unsafe def MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME_EXPLICIT : thm := keep "MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME_EXPLICIT" fun _ => (do
+def MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME_EXPLICIT : thm := keep "MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME_EXPLICIT" fun _ => (do
   prove ([[!a q. (?p k. prime p /\ ODD p /\ p EXP k = q)
          ==> (miller_rabin_pseudoprime a q <=> (a EXP (q - 1) == 1) (mod q))]])
    (REPEAT GEN_TAC THEN DISCH_TAC THEN EQ_TAC THENL
@@ -148,7 +149,7 @@ unsafe def MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME_EXPLICIT : thm := keep "MILLER_RAB
 #eval MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME_EXPLICIT
 
 #eval phrase 9
-unsafe def PRIME_IMP_MILLER_RABIN_PSEUDOPRIME : thm := keep "PRIME_IMP_MILLER_RABIN_PSEUDOPRIME" fun _ => (do
+def PRIME_IMP_MILLER_RABIN_PSEUDOPRIME : thm := keep "PRIME_IMP_MILLER_RABIN_PSEUDOPRIME" fun _ => (do
   prove ([[!a p. prime p /\ coprime(a,p) ==> miller_rabin_pseudoprime a p]])
    (REPEAT GEN_TAC THEN ASM_CASES_TAC [[p = 2]] THENL
      [ASM_REWRITE_TAC [miller_rabin_pseudoprime], STRIP_TAC] THEN
@@ -162,7 +163,7 @@ unsafe def PRIME_IMP_MILLER_RABIN_PSEUDOPRIME : thm := keep "PRIME_IMP_MILLER_RA
 #eval PRIME_IMP_MILLER_RABIN_PSEUDOPRIME
 
 #eval phrase 10
-unsafe def PRIME_IMP_MILLER_RABIN_PSEUDOPRIME_ALT : thm := keep "PRIME_IMP_MILLER_RABIN_PSEUDOPRIME_ALT" fun _ => (do
+def PRIME_IMP_MILLER_RABIN_PSEUDOPRIME_ALT : thm := keep "PRIME_IMP_MILLER_RABIN_PSEUDOPRIME_ALT" fun _ => (do
   prove ([[!a p. prime p /\ ~(p divides a) ==> miller_rabin_pseudoprime a p]])
    (ASM_MESON_TAC [PRIME_COPRIME_EQ, COPRIME_SYM,
                 PRIME_IMP_MILLER_RABIN_PSEUDOPRIME])
@@ -170,7 +171,7 @@ unsafe def PRIME_IMP_MILLER_RABIN_PSEUDOPRIME_ALT : thm := keep "PRIME_IMP_MILLE
 #eval PRIME_IMP_MILLER_RABIN_PSEUDOPRIME_ALT
 
 #eval phrase 11
-unsafe def MILLER_RABIN_COMPOSITE_IMP_COMPOSITE : thm := keep "MILLER_RABIN_COMPOSITE_IMP_COMPOSITE" fun _ => (do
+def MILLER_RABIN_COMPOSITE_IMP_COMPOSITE : thm := keep "MILLER_RABIN_COMPOSITE_IMP_COMPOSITE" fun _ => (do
   prove ([[!a p. coprime(a,p) /\ miller_rabin_composite a p ==> ~(prime p)]])
    (REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM NOT_MILLER_RABIN_PSEUDOPRIME))] THEN
     MESON_TAC [PRIME_IMP_MILLER_RABIN_PSEUDOPRIME])
@@ -178,7 +179,7 @@ unsafe def MILLER_RABIN_COMPOSITE_IMP_COMPOSITE : thm := keep "MILLER_RABIN_COMP
 #eval MILLER_RABIN_COMPOSITE_IMP_COMPOSITE
 
 #eval phrase 12
-unsafe def MILLER_RABIN_COMPOSITE_IMP_COMPOSITE_ALT : thm := keep "MILLER_RABIN_COMPOSITE_IMP_COMPOSITE_ALT" fun _ => (do
+def MILLER_RABIN_COMPOSITE_IMP_COMPOSITE_ALT : thm := keep "MILLER_RABIN_COMPOSITE_IMP_COMPOSITE_ALT" fun _ => (do
   prove ([[!a p. ~(p divides a) /\ miller_rabin_composite a p ==> ~(prime p)]])
    (ASM_MESON_TAC [PRIME_COPRIME_EQ, COPRIME_SYM,
                  MILLER_RABIN_COMPOSITE_IMP_COMPOSITE])
@@ -190,7 +191,7 @@ unsafe def MILLER_RABIN_COMPOSITE_IMP_COMPOSITE_ALT : thm := keep "MILLER_RABIN_
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 13
-unsafe def MILLER_RABIN_PSEUDOPRIME_IMP_COPRIME : thm := keep "MILLER_RABIN_PSEUDOPRIME_IMP_COPRIME" fun _ => (do
+def MILLER_RABIN_PSEUDOPRIME_IMP_COPRIME : thm := keep "MILLER_RABIN_PSEUDOPRIME_IMP_COPRIME" fun _ => (do
   -- OCaml evaluates the tactic's subexpressions right-to-left, so the
   -- NUMBER_RULE for `coprime(a,1)` (rightmost) runs before the one for the
   -- Fermat congruence.  Bind them in that order so Grobner's traces match.
@@ -213,7 +214,7 @@ unsafe def MILLER_RABIN_PSEUDOPRIME_IMP_COPRIME : thm := keep "MILLER_RABIN_PSEU
 #eval MILLER_RABIN_PSEUDOPRIME_IMP_COPRIME
 
 #eval phrase 14
-unsafe def MILLER_RABIN_PSEUDOPRIME_CONG : thm := keep "MILLER_RABIN_PSEUDOPRIME_CONG" fun _ => (do
+def MILLER_RABIN_PSEUDOPRIME_CONG : thm := keep "MILLER_RABIN_PSEUDOPRIME_CONG" fun _ => (do
   prove ([[!a b p.
         (a == b) (mod p)
         ==> (miller_rabin_pseudoprime a p <=> miller_rabin_pseudoprime b p)]])
@@ -235,7 +236,7 @@ unsafe def MILLER_RABIN_PSEUDOPRIME_CONG : thm := keep "MILLER_RABIN_PSEUDOPRIME
 #eval MILLER_RABIN_PSEUDOPRIME_CONG
 
 #eval phrase 15
-unsafe def MILLER_RABIN_PSEUDOPRIME_1 : thm := keep "MILLER_RABIN_PSEUDOPRIME_1" fun _ => (do
+def MILLER_RABIN_PSEUDOPRIME_1 : thm := keep "MILLER_RABIN_PSEUDOPRIME_1" fun _ => (do
   prove ([[!p. ODD p ==> miller_rabin_pseudoprime 1 p]])
    (REWRITE_TAC [miller_rabin_pseudoprime, EXP_ONE, CONG_REFL] THEN
     CONV_TAC (HolLight.TOP_DEPTH_CONV Session.let_CONV) THEN SIMP_TAC [])
@@ -243,7 +244,7 @@ unsafe def MILLER_RABIN_PSEUDOPRIME_1 : thm := keep "MILLER_RABIN_PSEUDOPRIME_1"
 #eval MILLER_RABIN_PSEUDOPRIME_1
 
 #eval phrase 16
-unsafe def MILLER_RABIN_PSEUDOPRIME_MOD_1 : thm := keep "MILLER_RABIN_PSEUDOPRIME_MOD_1" fun _ => (do
+def MILLER_RABIN_PSEUDOPRIME_MOD_1 : thm := keep "MILLER_RABIN_PSEUDOPRIME_MOD_1" fun _ => (do
   prove ([[!a. miller_rabin_pseudoprime a 1]])
    (REWRITE_TAC [miller_rabin_pseudoprime, CONG_MOD_1] THEN
     CONV_TAC (HolLight.TOP_DEPTH_CONV Session.let_CONV) THEN REWRITE_TAC [ARITH])
@@ -251,7 +252,7 @@ unsafe def MILLER_RABIN_PSEUDOPRIME_MOD_1 : thm := keep "MILLER_RABIN_PSEUDOPRIM
 #eval MILLER_RABIN_PSEUDOPRIME_MOD_1
 
 #eval phrase 17
-unsafe def MILLER_RABIN_PSEUDOPRIME_INVERSE_MOD : thm := keep "MILLER_RABIN_PSEUDOPRIME_INVERSE_MOD" fun _ => (do
+def MILLER_RABIN_PSEUDOPRIME_INVERSE_MOD : thm := keep "MILLER_RABIN_PSEUDOPRIME_INVERSE_MOD" fun _ => (do
   -- The two NUMBER_RULE lemmas occur in the two THENL branches; OCaml
   -- evaluates the tactic right-to-left, so the second branch's rule runs
   -- (and prints its Grobner trace) before the first branch's.
@@ -294,7 +295,7 @@ unsafe def MILLER_RABIN_PSEUDOPRIME_INVERSE_MOD : thm := keep "MILLER_RABIN_PSEU
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 18
-unsafe def BOUND_POWER_RESIDUES_MODULO_ODD_COPRIME : thm := keep "BOUND_POWER_RESIDUES_MODULO_ODD_COPRIME" fun _ => (do
+def BOUND_POWER_RESIDUES_MODULO_ODD_COPRIME : thm := keep "BOUND_POWER_RESIDUES_MODULO_ODD_COPRIME" fun _ => (do
   -- Right-to-left: the NUMBER_RULE (rightmost traced build-time argument) is
   -- evaluated before the MESON term, so its Grobner traces precede the
   -- MESON "solved" line.
@@ -330,7 +331,7 @@ unsafe def BOUND_POWER_RESIDUES_MODULO_ODD_COPRIME : thm := keep "BOUND_POWER_RE
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 19
-unsafe def MILLER_RABIN_PSEUDOPRIME_BOUND_GEN : thm := keep "MILLER_RABIN_PSEUDOPRIME_BOUND_GEN" fun _ => (do
+def MILLER_RABIN_PSEUDOPRIME_BOUND_GEN : thm := keep "MILLER_RABIN_PSEUDOPRIME_BOUND_GEN" fun _ => (do
   -- OCaml evaluates the tactic's build-time arguments right-to-left: bind the
   -- NUMBER_RULE/SET_RULE/MESON lemmas here, bottom-of-tactic first, so their
   -- Grobner / MESON / "inventing type variables" traces print in OCaml order.
@@ -501,7 +502,7 @@ unsafe def MILLER_RABIN_PSEUDOPRIME_BOUND_GEN : thm := keep "MILLER_RABIN_PSEUDO
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 20
-unsafe def MILLER_RABIN_PSEUDOPRIME_BOUND_PHI : thm := keep "MILLER_RABIN_PSEUDOPRIME_BOUND_PHI" fun _ => (do
+def MILLER_RABIN_PSEUDOPRIME_BOUND_PHI : thm := keep "MILLER_RABIN_PSEUDOPRIME_BOUND_PHI" fun _ => (do
   -- OCaml evaluates the tactic's build-time arguments right-to-left, so the
   -- NUMBER_RULE/SET_RULE/MESON lemmas fire (and print their Grobner / MESON /
   -- "inventing type variables" traces) in reverse of textual order.  Bind
@@ -737,7 +738,7 @@ unsafe def MILLER_RABIN_PSEUDOPRIME_BOUND_PHI : thm := keep "MILLER_RABIN_PSEUDO
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 21
-unsafe def ABSOLUTE_MILLER_RABIN_PSEUDOPRIME : thm := keep "ABSOLUTE_MILLER_RABIN_PSEUDOPRIME" fun _ => (do
+def ABSOLUTE_MILLER_RABIN_PSEUDOPRIME : thm := keep "ABSOLUTE_MILLER_RABIN_PSEUDOPRIME" fun _ => (do
   -- Right-to-left evaluation of the tactic's build-time arguments: the
   -- polymorphic MESON lemma (rightmost) is built before the SET_RULE, so its
   -- "inventing type variables" warning and MESON traces come first.
@@ -787,7 +788,7 @@ unsafe def ABSOLUTE_MILLER_RABIN_PSEUDOPRIME : thm := keep "ABSOLUTE_MILLER_RABI
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 22
-unsafe def MILLER_RABIN_PSEUDOPRIME_BOUND_LT : thm := keep "MILLER_RABIN_PSEUDOPRIME_BOUND_LT" fun _ => (do
+def MILLER_RABIN_PSEUDOPRIME_BOUND_LT : thm := keep "MILLER_RABIN_PSEUDOPRIME_BOUND_LT" fun _ => (do
   -- The three polymorphic build-time lemmas each emit "inventing type
   -- variables" + MESON traces.  OCaml evaluates the tactic right-to-left, so
   -- the textually-last one runs first: bind them in OCaml evaluation order.
@@ -828,7 +829,7 @@ unsafe def MILLER_RABIN_PSEUDOPRIME_BOUND_LT : thm := keep "MILLER_RABIN_PSEUDOP
 #eval MILLER_RABIN_PSEUDOPRIME_BOUND_LT
 
 #eval phrase 23
-unsafe def MILLER_RABIN_PSEUDOPRIME_BOUND : thm := keep "MILLER_RABIN_PSEUDOPRIME_BOUND" fun _ => (do
+def MILLER_RABIN_PSEUDOPRIME_BOUND : thm := keep "MILLER_RABIN_PSEUDOPRIME_BOUND" fun _ => (do
   prove ([[!n. ODD n /\ ~prime n /\ ~(n = 1)
        ==> CARD {a | a < n /\ miller_rabin_pseudoprime a n} <= n DIV 4]])
    (GEN_TAC THEN
@@ -838,9 +839,9 @@ unsafe def MILLER_RABIN_PSEUDOPRIME_BOUND : thm := keep "MILLER_RABIN_PSEUDOPRIM
 #eval MILLER_RABIN_PSEUDOPRIME_BOUND
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolExamples.MillerRabin" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolExamples.MillerRabin" do
   replay (
           SessionLibrary.Primitive.ensurePrimitive)
   replay (

@@ -3,12 +3,12 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Records.lean
 
-  The `unsafe` half of the records.ml translation: it holds
+  The session half of the records.ml translation: it holds
   `the_record_types` (records.ml 31), supplies HolLibrary.Records'
   dependencies from Session and SessionLibrary.Components, and exports
-  records.ml's functions under their own names.  `ensureRecords` is
-  `needs "Library/records.ml"`, which first does `needs
-  "Library/components.ml"` (records.ml 7).
+  records.ml's functions under their own names.  Importing this module is
+  `needs "Library/records.ml"`; its `needs "Library/components.ml"`
+  (records.ml 7) is the import of SessionLibrary.Components.
 -/
 
 import Session
@@ -20,14 +20,11 @@ open Session SessionLibrary.Components
 
 namespace SessionLibrary.Records
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨sessionB, sessionC, sessionT⟩
-
 /-- `the_record_types` (records.ml 31-32). -/
 initialize the_record_types : IO.Ref HolLibrary.Records.RecordTypes ← IO.mkRef []
 
 /-- What records.ml uses from Session and components.ml. -/
-unsafe def deps (_ : Unit) : HolLibrary.Records.RecordsDeps where
+def deps : HolLibrary.Records.RecordsDeps where
   define_type_raw d := HolMath.IndTypes.define_type_raw3 Session.raw3Ctx d
   prove_recursive_functions_exist ax t :=
     ExceptT.mk (Session.prove_recursive_functions_exist ax t)
@@ -42,25 +39,23 @@ unsafe def deps (_ : Unit) : HolLibrary.Records.RecordsDeps where
   add_component_orthogonality_thms := add_component_orthogonality_thms
   C := components
 
-initialize theDefineRecordType :
-    IO.Ref (Option (String → ExceptT String IO (thm × thm × thm))) ← IO.mkRef none
+/-- `define_record_type`, as built by records.ml's load.  A function, so it
+    is kept in a one-field structure: an `initialize` of function type is
+    never run in compiled code (see `WfQqconvBox`, SessionMath/Wf.lean). -/
+structure DefineRecordTypeBox where
+  run : String → ExceptT String IO (thm × thm × thm)
 
-/-- records.ml's load: `needs "Library/components.ml"`, then `tweak`
-    (records.ml 35-37), once.  (An explicit IO step: a cached value of
-    function type would be evaluated afresh at each call, not at `needs`.) -/
-unsafe def getDefineRecordType : IO (String → ExceptT String IO (thm × thm × thm)) := do
-  match ← theDefineRecordType.get with
-  | some f => pure f
-  | none => do
-    ensureComponents
-    match ← (HolLibrary.Records.setupRecords (deps ())).run with
-    | .ok f => do theDefineRecordType.set (some f); pure f
-    | .error e => panic! s!"setupRecords failed: {e}"
+instance : Inhabited DefineRecordTypeBox := ⟨⟨fun _ => throw "define_record_type"⟩⟩
 
-/-- `needs "Library/records.ml"`. -/
-unsafe def ensureRecords : IO Unit := do
-  let _ ← getDefineRecordType
-  pure ()
+/-- records.ml's load: `tweak` (records.ml 35-37), run when this module is
+    loaded. -/
+initialize defineRecordTypeBox : DefineRecordTypeBox ← do
+  match ← (HolLibrary.Records.setupRecords deps).run with
+  | .ok f => pure ⟨f⟩
+  | .error e => throw (IO.userError s!"setupRecords failed: {e}")
+
+/-- `needs "Library/records.ml"`: already done by importing this module. -/
+def ensureRecords : IO Unit := pure ()
 
 /-- `parse_record_specification s` (records.ml 9). -/
 def parse_record_specification (s : String) :
@@ -68,43 +63,42 @@ def parse_record_specification (s : String) :
   (HolLibrary.Records.parse_record_specification s).run
 
 /-- `define_record_type s` (records.ml 34). -/
-unsafe def define_record_type (s : String) : IO (Except String (thm × thm × thm)) := do
-  ((← getDefineRecordType) s).run
+def define_record_type (s : String) : IO (Except String (thm × thm × thm)) :=
+  (defineRecordTypeBox.run s).run
 
 /-- `get_record_components cth` (records.ml 80). -/
 def get_record_components (cth : thm) : Except String (List term) :=
   HolLibrary.Records.get_record_components cth
 
 /-- `record_read_write_thms (ith,cth)` (records.ml 90). -/
-unsafe def record_read_write_thms (p : thm × thm) : IO (Except String (List thm)) :=
+def record_read_write_thms (p : thm × thm) : IO (Except String (List thm)) :=
   (HolLibrary.Records.record_read_write_thms p.1 p.2).run
 
 /-- `record_strongly_valid_component_thms (ith,cth)` (records.ml 103). -/
-unsafe def record_strongly_valid_component_thms (p : thm × thm) :
+def record_strongly_valid_component_thms (p : thm × thm) :
     IO (Except String (List thm)) :=
   (HolLibrary.Records.record_strongly_valid_component_thms components p.1 p.2).run
 
 /-- `record_valid_component_thms (ith,cth)` (records.ml 112). -/
-unsafe def record_valid_component_thms (p : thm × thm) : IO (Except String (List thm)) :=
+def record_valid_component_thms (p : thm × thm) : IO (Except String (List thm)) :=
   (HolLibrary.Records.record_valid_component_thms components p.1 p.2).run
 
 /-- `record_extensionally_valid_component_thms (ith,cth)` (records.ml 116). -/
-unsafe def record_extensionally_valid_component_thms (p : thm × thm) :
+def record_extensionally_valid_component_thms (p : thm × thm) :
     IO (Except String (List thm)) :=
   (HolLibrary.Records.record_extensionally_valid_component_thms components p.1 p.2).run
 
 /-- `record_weakly_valid_component_thms (ith,cth)` (records.ml 120). -/
-unsafe def record_weakly_valid_component_thms (p : thm × thm) :
+def record_weakly_valid_component_thms (p : thm × thm) :
     IO (Except String (List thm)) :=
   (HolLibrary.Records.record_weakly_valid_component_thms components p.1 p.2).run
 
 /-- `record_orthogonality_thms (ith,cth)` (records.ml 128). -/
-unsafe def record_orthogonality_thms (p : thm × thm) : IO (Except String (List thm)) :=
+def record_orthogonality_thms (p : thm × thm) : IO (Except String (List thm)) :=
   (HolLibrary.Records.record_orthogonality_thms components p.1 p.2).run
 
 /-- `define_auto_record_type def` (records.ml 144). -/
-unsafe def define_auto_record_type (s : String) : IO (Except String (thm × thm × thm)) := do
-  let drt ← getDefineRecordType
-  (HolLibrary.Records.define_auto_record_type (deps ()) drt s).run
+def define_auto_record_type (s : String) : IO (Except String (thm × thm × thm)) :=
+  (HolLibrary.Records.define_auto_record_type deps defineRecordTypeBox.run s).run
 
 end SessionLibrary.Records

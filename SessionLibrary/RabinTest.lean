@@ -3,14 +3,13 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/RabinTest.lean
 
-  The `unsafe` half of the rabintest.ml translation: it supplies HolLibrary.RabinTest's
-  dependencies from Session and SessionLibrary.FieldTheory, builds the bundles once, in order,
-  and exports every name under its HOL Light name.  `ensureRabinTest` is
-  `needs "Library/rabintest.ml"` (which first does `needs "Library/fieldtheory.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/RabinTest.lean by tools/rabintestdiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the rabin_test.ml translation: it supplies
+  HolLibrary.RabinTest's dependencies from Session and
+  SessionLibrary.FieldTheory, and exports every name under its HOL Light
+  name.  Importing this module is `needs "Library/rabin_test.ml"`; its
+  `needs "Library/fieldtheory.ml"` is the import of SessionLibrary.FieldTheory.
+  The bundles are built by `initialize` when the module is loaded, in file
+  order.
 -/
 
 import Session
@@ -22,12 +21,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.RabinTest
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems rabin_test.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.RabinTest.CoreThms1 where
+def core1 : HolLibrary.RabinTest.CoreThms1 where
   ADD_SYM := Session.ADD_SYM
   CARD_CLAUSES := Session.CARD_CLAUSES
   CARD_DELETE := Session.CARD_DELETE
@@ -99,7 +94,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.RabinTest.CoreThms1 where
   NOETHERIAN_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS := SessionLibrary.RingTheory.«NOETHERIAN_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS»
   NOT_FORALL_THM := Session.NOT_FORALL_THM
 /-- The core theorems rabin_test.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.RabinTest.CoreThms2 where
+def core2 : HolLibrary.RabinTest.CoreThms2 where
   NOT_IMP := Session.NOT_IMP
   NOT_IN_EMPTY := Session.NOT_IN_EMPTY
   NOT_SUC := Session.NOT_SUC
@@ -171,7 +166,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.RabinTest.CoreThms2 where
   RING_POW_MUL := SessionLibrary.RingTheory.«RING_POW_MUL»
   RING_POW_POW := SessionLibrary.RingTheory.«RING_POW_POW»
 /-- The core theorems rabin_test.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.RabinTest.CoreThms3 where
+def core3 : HolLibrary.RabinTest.CoreThms3 where
   RING_POW_ZERO := SessionLibrary.RingTheory.«RING_POW_ZERO»
   RING_PRODUCT := SessionLibrary.RingTheory.«RING_PRODUCT»
   RING_PRODUCT_EQ_GENERAL_INVERSES := SessionLibrary.RingTheory.«RING_PRODUCT_EQ_GENERAL_INVERSES»
@@ -208,11 +203,10 @@ unsafe def core3 (_ : Unit) : HolLibrary.RabinTest.CoreThms3 where
   ring_pow := SessionLibrary.RingTheory.«ring_pow»
   ring_spanning := SessionLibrary.FieldTheory.«ring_spanning»
 /-- The core theorems rabin_test.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.RabinTest.CoreThms4 where
--- @@CORE END
+def core4 : HolLibrary.RabinTest.CoreThms4 where
 
 /-- What rabintest.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.RabinTest.RabinTestDeps where
+def deps : HolLibrary.RabinTest.RabinTestDeps where
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
   ARITH_TAC := Session.ARITH_TAC
   ASM_ARITH_TAC := Session.ASM_ARITH_TAC
@@ -222,110 +216,64 @@ unsafe def deps (_ : Unit) : HolLibrary.RabinTest.RabinTestDeps where
   INDUCT_TAC := Session.INDUCT_TAC
   RING_RULE t := ExceptT.mk (SessionLibrary.RingTheory.RING_RULE t)
   TAUT t := ExceptT.mk (Session.TAUT t)
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then fieldtheory.ml, which rabintest.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.FieldTheory.ensureFieldTheory
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.RabinTest: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in file order; each forces the one before it. -/
+/- The bundles, in rabin_test.ml order. -/
+initialize BGeneralLemmas : HolLibrary.RabinTest.GeneralLemmas ←
+  ioB "setupGeneralLemmas" (HolLibrary.RabinTest.setupGeneralLemmas deps).run
+initialize BFiniteFieldFrobenius : HolLibrary.RabinTest.FiniteFieldFrobenius ←
+  ioB "setupFiniteFieldFrobenius" (HolLibrary.RabinTest.setupFiniteFieldFrobenius deps).run
+initialize BIrreducibleDivides : HolLibrary.RabinTest.IrreducibleDivides ←
+  ioB "setupIrreducibleDivides" (HolLibrary.RabinTest.setupIrreducibleDivides deps
+    BGeneralLemmas BFiniteFieldFrobenius).run
+initialize BDegreeBound : HolLibrary.RabinTest.DegreeBound ←
+  ioB "setupDegreeBound" (HolLibrary.RabinTest.setupDegreeBound deps BFiniteFieldFrobenius
+    BIrreducibleDivides).run
+initialize BIrreducibleDividesDegree : HolLibrary.RabinTest.IrreducibleDividesDegree ←
+  ioB "setupIrreducibleDividesDegree" (HolLibrary.RabinTest.setupIrreducibleDividesDegree deps
+    BGeneralLemmas BIrreducibleDivides BDegreeBound).run
+initialize BRabinTest : HolLibrary.RabinTest.RabinTest ←
+  ioB "setupRabinTest" (HolLibrary.RabinTest.setupRabinTest deps BGeneralLemmas
+    BIrreducibleDivides BIrreducibleDividesDegree).run
 
--- @@BUNDLES BEGIN
-initialize theGeneralLemmas : IO.Ref (Option HolLibrary.RabinTest.GeneralLemmas) ← IO.mkRef none
-unsafe def BGeneralLemmas : HolLibrary.RabinTest.GeneralLemmas :=
-  cached theGeneralLemmas "setupGeneralLemmas" fun _ => do
-    (HolLibrary.RabinTest.setupGeneralLemmas (deps ())).run
-
-initialize theFiniteFieldFrobenius : IO.Ref (Option HolLibrary.RabinTest.FiniteFieldFrobenius) ← IO.mkRef none
-unsafe def BFiniteFieldFrobenius : HolLibrary.RabinTest.FiniteFieldFrobenius :=
-  cached theFiniteFieldFrobenius "setupFiniteFieldFrobenius" fun _ => do
-    let _ ← IO.mkRef BGeneralLemmas.RING_DIVIDES_POW_ITERATE
-    (HolLibrary.RabinTest.setupFiniteFieldFrobenius (deps ())).run
-
-initialize theIrreducibleDivides : IO.Ref (Option HolLibrary.RabinTest.IrreducibleDivides) ← IO.mkRef none
-unsafe def BIrreducibleDivides : HolLibrary.RabinTest.IrreducibleDivides :=
-  cached theIrreducibleDivides "setupIrreducibleDivides" fun _ => do
-    let _ ← IO.mkRef BFiniteFieldFrobenius.FIELD_NONZERO_PRODUCT_PERMUTE
-    (HolLibrary.RabinTest.setupIrreducibleDivides (deps ()) BGeneralLemmas BFiniteFieldFrobenius).run
-
-initialize theDegreeBound : IO.Ref (Option HolLibrary.RabinTest.DegreeBound) ← IO.mkRef none
-unsafe def BDegreeBound : HolLibrary.RabinTest.DegreeBound :=
-  cached theDegreeBound "setupDegreeBound" fun _ => do
-    let _ ← IO.mkRef BIrreducibleDivides.IRREDUCIBLE_DIVIDES_XQ_MINUS_X_GEN
-    (HolLibrary.RabinTest.setupDegreeBound (deps ()) BFiniteFieldFrobenius BIrreducibleDivides).run
-
-initialize theIrreducibleDividesDegree : IO.Ref (Option HolLibrary.RabinTest.IrreducibleDividesDegree) ← IO.mkRef none
-unsafe def BIrreducibleDividesDegree : HolLibrary.RabinTest.IrreducibleDividesDegree :=
-  cached theIrreducibleDividesDegree "setupIrreducibleDividesDegree" fun _ => do
-    let _ ← IO.mkRef BDegreeBound.FIELD_ROOTS_BOUND
-    (HolLibrary.RabinTest.setupIrreducibleDividesDegree (deps ()) BGeneralLemmas BIrreducibleDivides BDegreeBound).run
-
-initialize theRabinTest : IO.Ref (Option HolLibrary.RabinTest.RabinTest) ← IO.mkRef none
-unsafe def BRabinTest : HolLibrary.RabinTest.RabinTest :=
-  cached theRabinTest "setupRabinTest" fun _ => do
-    let _ ← IO.mkRef BIrreducibleDividesDegree.IRREDUCIBLE_DIVIDES_DEGREE
-    (HolLibrary.RabinTest.setupRabinTest (deps ()) BGeneralLemmas BIrreducibleDivides BIrreducibleDividesDegree).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- GeneralLemmas
-unsafe def RING_DIVIDES_POW_ITERATE : thm := BGeneralLemmas.RING_DIVIDES_POW_ITERATE
-unsafe def POLY_NONUNIT_DEGREE_GE_1 : thm := BGeneralLemmas.POLY_NONUNIT_DEGREE_GE_1
-unsafe def RING_DIVIDES_REDUCE : thm := BGeneralLemmas.RING_DIVIDES_REDUCE
+def RING_DIVIDES_POW_ITERATE : thm := BGeneralLemmas.RING_DIVIDES_POW_ITERATE
+def POLY_NONUNIT_DEGREE_GE_1 : thm := BGeneralLemmas.POLY_NONUNIT_DEGREE_GE_1
+def RING_DIVIDES_REDUCE : thm := BGeneralLemmas.RING_DIVIDES_REDUCE
 
 -- FiniteFieldFrobenius
-unsafe def FIELD_NONZERO_PRODUCT_PERMUTE : thm := BFiniteFieldFrobenius.FIELD_NONZERO_PRODUCT_PERMUTE
-unsafe def FINITE_FIELD_ELEMENT_POW : thm := BFiniteFieldFrobenius.FINITE_FIELD_ELEMENT_POW
-unsafe def QUOTIENT_POLY_RING_FINITE_CARD : thm := BFiniteFieldFrobenius.QUOTIENT_POLY_RING_FINITE_CARD
+def FIELD_NONZERO_PRODUCT_PERMUTE : thm := BFiniteFieldFrobenius.FIELD_NONZERO_PRODUCT_PERMUTE
+def FINITE_FIELD_ELEMENT_POW : thm := BFiniteFieldFrobenius.FINITE_FIELD_ELEMENT_POW
+def QUOTIENT_POLY_RING_FINITE_CARD : thm := BFiniteFieldFrobenius.QUOTIENT_POLY_RING_FINITE_CARD
 
 -- IrreducibleDivides
-unsafe def IRREDUCIBLE_DIVIDES_XQ_MINUS_X_GEN : thm := BIrreducibleDivides.IRREDUCIBLE_DIVIDES_XQ_MINUS_X_GEN
-unsafe def IRREDUCIBLE_DIVIDES_XQ_MINUS_X : thm := BIrreducibleDivides.IRREDUCIBLE_DIVIDES_XQ_MINUS_X
-unsafe def FINITE_FIELD_POW_ITERATE : thm := BIrreducibleDivides.FINITE_FIELD_POW_ITERATE
-unsafe def RING_ENDOMORPHISM_FROBENIUS_ITERATE : thm := BIrreducibleDivides.RING_ENDOMORPHISM_FROBENIUS_ITERATE
+def IRREDUCIBLE_DIVIDES_XQ_MINUS_X_GEN : thm := BIrreducibleDivides.IRREDUCIBLE_DIVIDES_XQ_MINUS_X_GEN
+def IRREDUCIBLE_DIVIDES_XQ_MINUS_X : thm := BIrreducibleDivides.IRREDUCIBLE_DIVIDES_XQ_MINUS_X
+def FINITE_FIELD_POW_ITERATE : thm := BIrreducibleDivides.FINITE_FIELD_POW_ITERATE
+def RING_ENDOMORPHISM_FROBENIUS_ITERATE : thm := BIrreducibleDivides.RING_ENDOMORPHISM_FROBENIUS_ITERATE
 
 -- DegreeBound
-unsafe def FIELD_ROOTS_BOUND : thm := BDegreeBound.FIELD_ROOTS_BOUND
-unsafe def FINITE_FIELD_CARD_CHAR_POWER : thm := BDegreeBound.FINITE_FIELD_CARD_CHAR_POWER
-unsafe def IRREDUCIBLE_DIVIDES_DEGREE_BOUND : thm := BDegreeBound.IRREDUCIBLE_DIVIDES_DEGREE_BOUND
+def FIELD_ROOTS_BOUND : thm := BDegreeBound.FIELD_ROOTS_BOUND
+def FINITE_FIELD_CARD_CHAR_POWER : thm := BDegreeBound.FINITE_FIELD_CARD_CHAR_POWER
+def IRREDUCIBLE_DIVIDES_DEGREE_BOUND : thm := BDegreeBound.IRREDUCIBLE_DIVIDES_DEGREE_BOUND
 
 -- IrreducibleDividesDegree
-unsafe def IRREDUCIBLE_DIVIDES_DEGREE : thm := BIrreducibleDividesDegree.IRREDUCIBLE_DIVIDES_DEGREE
+def IRREDUCIBLE_DIVIDES_DEGREE : thm := BIrreducibleDividesDegree.IRREDUCIBLE_DIVIDES_DEGREE
 
 -- RabinTest
-unsafe def RABIN_IRREDUCIBILITY_NECESSARY : thm := BRabinTest.RABIN_IRREDUCIBILITY_NECESSARY
-unsafe def RABIN_IRREDUCIBILITY_SUFFICIENT : thm := BRabinTest.RABIN_IRREDUCIBILITY_SUFFICIENT
-unsafe def RABIN_IRREDUCIBILITY_TEST : thm := BRabinTest.RABIN_IRREDUCIBILITY_TEST
--- @@EXPORTS END
-
-/-- `needs "Library/rabintest.ml"`: build the bundles, in order. -/
-unsafe def ensureRabinTest : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BGeneralLemmas.RING_DIVIDES_POW_ITERATE
-  let _ ← IO.mkRef BFiniteFieldFrobenius.FIELD_NONZERO_PRODUCT_PERMUTE
-  let _ ← IO.mkRef BIrreducibleDivides.IRREDUCIBLE_DIVIDES_XQ_MINUS_X_GEN
-  let _ ← IO.mkRef BDegreeBound.FIELD_ROOTS_BOUND
-  let _ ← IO.mkRef BIrreducibleDividesDegree.IRREDUCIBLE_DIVIDES_DEGREE
-  let _ ← IO.mkRef BRabinTest.RABIN_IRREDUCIBILITY_NECESSARY
-  -- @@ENSURE END
-  pure ()
+def RABIN_IRREDUCIBILITY_NECESSARY : thm := BRabinTest.RABIN_IRREDUCIBILITY_NECESSARY
+def RABIN_IRREDUCIBILITY_SUFFICIENT : thm := BRabinTest.RABIN_IRREDUCIBILITY_SUFFICIENT
+def RABIN_IRREDUCIBILITY_TEST : thm := BRabinTest.RABIN_IRREDUCIBILITY_TEST
+/-- `needs "Library/rabin_test.ml"`: already done by importing this module. -/
+def ensureRabinTest : IO Unit := pure ()
 
 end SessionLibrary.RabinTest

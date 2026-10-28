@@ -3,6 +3,9 @@ Translation of HOL Light's Examples/harmonicsum.ml, phrase by phrase.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 import HolExamples.Common
+import SessionLibrary.Prime
+import SessionLibrary.Products
+import SessionLibrary.Floor
 open HolCore.Kernel Session HolLight.Syntax HolExamples
 open scoped HolLight
 open SessionLibrary.Prime SessionLibrary.Products SessionLibrary.Floor
@@ -10,7 +13,7 @@ namespace HolExamples.HarmonicSum
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- ========================================================================= -/
@@ -34,7 +37,7 @@ private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT Str
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 4
-unsafe def NUMSEG_MAXIMAL_INDEX_2 : thm := keep "NUMSEG_MAXIMAL_INDEX_2" fun _ => (do
+def NUMSEG_MAXIMAL_INDEX_2 : thm := keep "NUMSEG_MAXIMAL_INDEX_2" fun _ => (do
   prove ([[!m n. 1 <= m /\ m <= n
          ==> ?k. k IN m..n /\
                  !l. l IN m..n /\ ~(l = k) ==> index 2 l < index 2 k]])
@@ -77,7 +80,7 @@ unsafe def NUMSEG_MAXIMAL_INDEX_2 : thm := keep "NUMSEG_MAXIMAL_INDEX_2" fun _ =
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 5
-unsafe def NONINTEGER_HARMONIC : thm := keep "NONINTEGER_HARMONIC" fun _ => (do
+def NONINTEGER_HARMONIC : thm := keep "NONINTEGER_HARMONIC" fun _ => (do
   let lemma ← prove
    ([[!m n. 1 <= m
            ==> sum(m..n) (\k. inv(&k)) =

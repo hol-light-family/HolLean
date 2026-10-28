@@ -3,10 +3,10 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Floor.lean
 
-  The `unsafe` half of the floor.ml translation (as SessionLibrary/Prime.lean
-  is for prime.ml): it supplies HolLibrary.Floor's dependencies from Session,
-  builds each bundle on first use (in file order), and exports every theorem
-  by name.  `ensureFloor` is `needs "Library/floor.ml"`.
+  The session half of the floor.ml translation: it supplies
+  HolLibrary.Floor's dependencies from Session and exports every theorem by
+  name.  Importing this module is `needs "Library/floor.ml"`: each bundle is
+  built by `initialize` when the module is loaded, in file order.
 -/
 
 import Session
@@ -17,11 +17,8 @@ open Session
 
 namespace SessionLibrary.Floor
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨sessionB, sessionC, sessionT⟩
-
 /-- The core theorems floor.ml uses, A-L. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Floor.CoreThms1 where
+def core1 : HolLibrary.Floor.CoreThms1 where
   ADD_SUB := Session.ADD_SUB
   ADD_SYM := Session.ADD_SYM
   CONJ_ASSOC := Session.CONJ_ASSOC
@@ -67,7 +64,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Floor.CoreThms1 where
   LT_SUC_LE := Session.LT_SUC_LE
 
 /-- The core theorems floor.ml uses, M-Z and lower case. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Floor.CoreThms2 where
+def core2 : HolLibrary.Floor.CoreThms2 where
   MONO_EXISTS := Session.MONO_EXISTS
   MONO_FORALL := Session.MONO_FORALL
   MULT_EQ_1 := Session.MULT_EQ_1
@@ -164,11 +161,10 @@ unsafe def core2 (_ : Unit) : HolLibrary.Floor.CoreThms2 where
   real_pow := Session.real_pow
   real_sub := Session.real_sub
 
-/-- floor.ml's dependencies, from Session.  A function, not a constant (see
-    SessionLibrary/Prime.lean).  REAL_ARITH and REAL_ARITH_TAC are the ones
-    HOL Light users have after hol.ml: calc_rat.ml's (`REAL_ARITH3`,
-    `REAL_ARITH_TAC2`). -/
-unsafe def deps (_ : Unit) : HolLibrary.Floor.FloorDeps where
+/-- floor.ml's dependencies, from Session.  REAL_ARITH and REAL_ARITH_TAC
+    are the ones HOL Light users have after hol.ml: calc_rat.ml's
+    (`REAL_ARITH3`, `REAL_ARITH_TAC2`). -/
+def deps : HolLibrary.Floor.FloorDeps where
   new_definition s := do
     let t ← ExceptT.mk (HolCore.Parser.parse_term s)
     ExceptT.mk (Session.new_definition t)
@@ -186,205 +182,170 @@ unsafe def deps (_ : Unit) : HolLibrary.Floor.FloorDeps where
   REAL_FIELD t := ExceptT.mk (REAL_FIELD t)
   REAL_POLY_CONV := REAL_POLY_CONV
   SET_TAC := SET_TAC
-  core1 := core1 ()
-  core2 := core2 ()
+  core1 := core1
+  core2 := core2
 
 /-- floor.ml runs after the whole of hol.ml, then `prioritize_real()`
-    (floor.ml 5).  Run once, before the first bundle. -/
-initialize theFloorPrelude : IO.Ref Bool ← IO.mkRef false
+    (floor.ml 5).  Run when this module is loaded, before the first bundle. -/
+initialize floorPrelude : Unit ← Session.prioritize_real
 
-unsafe def ensureFloorPrelude : IO Unit := do
-  unless (← theFloorPrelude.get) do
-    theFloorPrelude.set true
-    Session.ensureDefine
-    Session.prioritize_real
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/-- Build a bundle once, after the prelude. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      ensureFloorPrelude
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Floor: {name}"
-
-initialize theInteger : IO.Ref (Option HolLibrary.Floor.Integer) ← IO.mkRef none
-private unsafe def BInteger : HolLibrary.Floor.Integer :=
-  cached theInteger "setupInteger" fun _ => (HolLibrary.Floor.setupInteger (deps ())).run
-initialize theRational : IO.Ref (Option HolLibrary.Floor.Rational) ← IO.mkRef none
-private unsafe def BRational : HolLibrary.Floor.Rational :=
-  cached theRational "setupRational" fun _ => (HolLibrary.Floor.setupRational (deps ()) BInteger).run
-initialize theFloorFrac : IO.Ref (Option HolLibrary.Floor.FloorFrac) ← IO.mkRef none
-private unsafe def BFloorFrac : HolLibrary.Floor.FloorFrac :=
-  cached theFloorFrac "setupFloorFrac" fun _ => (HolLibrary.Floor.setupFloorFrac (deps ()) BInteger).run
-initialize theFloorLemmas : IO.Ref (Option HolLibrary.Floor.FloorLemmas) ← IO.mkRef none
-private unsafe def BFloorLemmas : HolLibrary.Floor.FloorLemmas :=
-  cached theFloorLemmas "setupFloorLemmas" fun _ => (HolLibrary.Floor.setupFloorLemmas (deps ()) BInteger BFloorFrac).run
-initialize theBetween : IO.Ref (Option HolLibrary.Floor.Between) ← IO.mkRef none
-private unsafe def BBetween : HolLibrary.Floor.Between :=
-  cached theBetween "setupBetween" fun _ => (HolLibrary.Floor.setupBetween (deps ()) BInteger BFloorLemmas).run
-initialize theRealOfInt : IO.Ref (Option HolLibrary.Floor.RealOfInt) ← IO.mkRef none
-private unsafe def BRealOfInt : HolLibrary.Floor.RealOfInt :=
-  cached theRealOfInt "setupRealOfInt" fun _ => (HolLibrary.Floor.setupRealOfInt (deps ())).run
-initialize theFinite : IO.Ref (Option HolLibrary.Floor.Finite) ← IO.mkRef none
-private unsafe def BFinite : HolLibrary.Floor.Finite :=
-  cached theFinite "setupFinite" fun _ => (HolLibrary.Floor.setupFinite (deps ()) BInteger BRealOfInt).run
-initialize theInfinite : IO.Ref (Option HolLibrary.Floor.Infinite) ← IO.mkRef none
-private unsafe def BInfinite : HolLibrary.Floor.Infinite :=
-  cached theInfinite "setupInfinite" fun _ => (HolLibrary.Floor.setupInfinite (deps ()) BInteger BRational).run
-initialize theApprox : IO.Ref (Option HolLibrary.Floor.Approx) ← IO.mkRef none
-private unsafe def BApprox : HolLibrary.Floor.Approx :=
-  cached theApprox "setupApprox" fun _ => (HolLibrary.Floor.setupApprox (deps ()) BInteger BRational BFloorLemmas).run
-initialize theCongruence : IO.Ref (Option HolLibrary.Floor.Congruence) ← IO.mkRef none
-private unsafe def BCongruence : HolLibrary.Floor.Congruence :=
-  cached theCongruence "setupCongruence" fun _ => (HolLibrary.Floor.setupCongruence (deps ()) BRealOfInt).run
-initialize theIntegerTac : IO.Ref (Option HolLibrary.Floor.IntegerTac) ← IO.mkRef none
-private unsafe def BIntegerTac : HolLibrary.Floor.IntegerTac :=
-  cached theIntegerTac "setupIntegerTac" fun _ => (HolLibrary.Floor.setupIntegerTac (deps ()) BInteger).run
+/- The bundles, in floor.ml order (as `ensureFloor` forced them). -/
+initialize BInteger : HolLibrary.Floor.Integer ←
+  ioB "setupInteger" (HolLibrary.Floor.setupInteger deps).run
+initialize BRational : HolLibrary.Floor.Rational ←
+  ioB "setupRational" (HolLibrary.Floor.setupRational deps BInteger).run
+initialize BFloorFrac : HolLibrary.Floor.FloorFrac ←
+  ioB "setupFloorFrac" (HolLibrary.Floor.setupFloorFrac deps BInteger).run
+initialize BFloorLemmas : HolLibrary.Floor.FloorLemmas ←
+  ioB "setupFloorLemmas" (HolLibrary.Floor.setupFloorLemmas deps BInteger BFloorFrac).run
+initialize BBetween : HolLibrary.Floor.Between ←
+  ioB "setupBetween" (HolLibrary.Floor.setupBetween deps BInteger BFloorLemmas).run
+initialize BRealOfInt : HolLibrary.Floor.RealOfInt ←
+  ioB "setupRealOfInt" (HolLibrary.Floor.setupRealOfInt deps).run
+initialize BFinite : HolLibrary.Floor.Finite ←
+  ioB "setupFinite" (HolLibrary.Floor.setupFinite deps BInteger BRealOfInt).run
+initialize BInfinite : HolLibrary.Floor.Infinite ←
+  ioB "setupInfinite" (HolLibrary.Floor.setupInfinite deps BInteger BRational).run
+initialize BApprox : HolLibrary.Floor.Approx ←
+  ioB "setupApprox" (HolLibrary.Floor.setupApprox deps BInteger BRational BFloorLemmas).run
+initialize BCongruence : HolLibrary.Floor.Congruence ←
+  ioB "setupCongruence" (HolLibrary.Floor.setupCongruence deps BRealOfInt).run
+initialize BIntegerTac : HolLibrary.Floor.IntegerTac ←
+  ioB "setupIntegerTac" (HolLibrary.Floor.setupIntegerTac deps BInteger).run
 
 /- The theorems, by name. -/
 -- Integer
-unsafe def INTEGER_CASES                : thm := BInteger.INTEGER_CASES
-unsafe def REAL_ABS_INTEGER_LEMMA       : thm := BInteger.REAL_ABS_INTEGER_LEMMA
-unsafe def INTEGER_CLOSED               : thm := BInteger.INTEGER_CLOSED
-unsafe def INTEGER_ADD                  : thm := BInteger.INTEGER_ADD
-unsafe def INTEGER_SUB                  : thm := BInteger.INTEGER_SUB
-unsafe def INTEGER_MUL                  : thm := BInteger.INTEGER_MUL
-unsafe def INTEGER_POW                  : thm := BInteger.INTEGER_POW
-unsafe def REAL_LE_INTEGERS             : thm := BInteger.REAL_LE_INTEGERS
-unsafe def REAL_LE_CASES_INTEGERS       : thm := BInteger.REAL_LE_CASES_INTEGERS
-unsafe def REAL_LE_REVERSE_INTEGERS     : thm := BInteger.REAL_LE_REVERSE_INTEGERS
-unsafe def REAL_LT_INTEGERS             : thm := BInteger.REAL_LT_INTEGERS
-unsafe def REAL_EQ_INTEGERS             : thm := BInteger.REAL_EQ_INTEGERS
-unsafe def REAL_EQ_INTEGERS_IMP         : thm := BInteger.REAL_EQ_INTEGERS_IMP
-unsafe def INTEGER_NEG                  : thm := BInteger.INTEGER_NEG
-unsafe def INTEGER_ABS                  : thm := BInteger.INTEGER_ABS
-unsafe def INTEGER_POS                  : thm := BInteger.INTEGER_POS
-unsafe def NONNEGATIVE_INTEGER          : thm := BInteger.NONNEGATIVE_INTEGER
-unsafe def NONPOSITIVE_INTEGER          : thm := BInteger.NONPOSITIVE_INTEGER
-unsafe def NONPOSITIVE_INTEGER_ALT      : thm := BInteger.NONPOSITIVE_INTEGER_ALT
-unsafe def INTEGER_ADD_EQ               : thm := BInteger.INTEGER_ADD_EQ
-unsafe def INTEGER_SUB_EQ               : thm := BInteger.INTEGER_SUB_EQ
-unsafe def FORALL_INTEGER               : thm := BInteger.FORALL_INTEGER
-unsafe def INTEGER_SUM                  : thm := BInteger.INTEGER_SUM
-unsafe def INTEGER_ABS_MUL_EQ_1         : thm := BInteger.INTEGER_ABS_MUL_EQ_1
-unsafe def INTEGER_DIV                  : thm := BInteger.INTEGER_DIV
+def INTEGER_CASES                : thm := BInteger.INTEGER_CASES
+def REAL_ABS_INTEGER_LEMMA       : thm := BInteger.REAL_ABS_INTEGER_LEMMA
+def INTEGER_CLOSED               : thm := BInteger.INTEGER_CLOSED
+def INTEGER_ADD                  : thm := BInteger.INTEGER_ADD
+def INTEGER_SUB                  : thm := BInteger.INTEGER_SUB
+def INTEGER_MUL                  : thm := BInteger.INTEGER_MUL
+def INTEGER_POW                  : thm := BInteger.INTEGER_POW
+def REAL_LE_INTEGERS             : thm := BInteger.REAL_LE_INTEGERS
+def REAL_LE_CASES_INTEGERS       : thm := BInteger.REAL_LE_CASES_INTEGERS
+def REAL_LE_REVERSE_INTEGERS     : thm := BInteger.REAL_LE_REVERSE_INTEGERS
+def REAL_LT_INTEGERS             : thm := BInteger.REAL_LT_INTEGERS
+def REAL_EQ_INTEGERS             : thm := BInteger.REAL_EQ_INTEGERS
+def REAL_EQ_INTEGERS_IMP         : thm := BInteger.REAL_EQ_INTEGERS_IMP
+def INTEGER_NEG                  : thm := BInteger.INTEGER_NEG
+def INTEGER_ABS                  : thm := BInteger.INTEGER_ABS
+def INTEGER_POS                  : thm := BInteger.INTEGER_POS
+def NONNEGATIVE_INTEGER          : thm := BInteger.NONNEGATIVE_INTEGER
+def NONPOSITIVE_INTEGER          : thm := BInteger.NONPOSITIVE_INTEGER
+def NONPOSITIVE_INTEGER_ALT      : thm := BInteger.NONPOSITIVE_INTEGER_ALT
+def INTEGER_ADD_EQ               : thm := BInteger.INTEGER_ADD_EQ
+def INTEGER_SUB_EQ               : thm := BInteger.INTEGER_SUB_EQ
+def FORALL_INTEGER               : thm := BInteger.FORALL_INTEGER
+def INTEGER_SUM                  : thm := BInteger.INTEGER_SUM
+def INTEGER_ABS_MUL_EQ_1         : thm := BInteger.INTEGER_ABS_MUL_EQ_1
+def INTEGER_DIV                  : thm := BInteger.INTEGER_DIV
 
 -- Rational
-unsafe def rational                     : thm := BRational.rational
-unsafe def RATIONAL_INTEGER             : thm := BRational.RATIONAL_INTEGER
-unsafe def RATIONAL_NUM                 : thm := BRational.RATIONAL_NUM
-unsafe def RATIONAL_NEG                 : thm := BRational.RATIONAL_NEG
-unsafe def RATIONAL_ABS                 : thm := BRational.RATIONAL_ABS
-unsafe def RATIONAL_INV                 : thm := BRational.RATIONAL_INV
-unsafe def RATIONAL_ADD                 : thm := BRational.RATIONAL_ADD
-unsafe def RATIONAL_SUB                 : thm := BRational.RATIONAL_SUB
-unsafe def RATIONAL_MUL                 : thm := BRational.RATIONAL_MUL
-unsafe def RATIONAL_DIV                 : thm := BRational.RATIONAL_DIV
-unsafe def RATIONAL_POW                 : thm := BRational.RATIONAL_POW
-unsafe def RATIONAL_CLOSED              : thm := BRational.RATIONAL_CLOSED
-unsafe def RATIONAL_NEG_EQ              : thm := BRational.RATIONAL_NEG_EQ
-unsafe def RATIONAL_ABS_EQ              : thm := BRational.RATIONAL_ABS_EQ
-unsafe def RATIONAL_INV_EQ              : thm := BRational.RATIONAL_INV_EQ
-unsafe def RATIONAL_SUM                 : thm := BRational.RATIONAL_SUM
-unsafe def RATIONAL_ALT                 : thm := BRational.RATIONAL_ALT
+def rational                     : thm := BRational.rational
+def RATIONAL_INTEGER             : thm := BRational.RATIONAL_INTEGER
+def RATIONAL_NUM                 : thm := BRational.RATIONAL_NUM
+def RATIONAL_NEG                 : thm := BRational.RATIONAL_NEG
+def RATIONAL_ABS                 : thm := BRational.RATIONAL_ABS
+def RATIONAL_INV                 : thm := BRational.RATIONAL_INV
+def RATIONAL_ADD                 : thm := BRational.RATIONAL_ADD
+def RATIONAL_SUB                 : thm := BRational.RATIONAL_SUB
+def RATIONAL_MUL                 : thm := BRational.RATIONAL_MUL
+def RATIONAL_DIV                 : thm := BRational.RATIONAL_DIV
+def RATIONAL_POW                 : thm := BRational.RATIONAL_POW
+def RATIONAL_CLOSED              : thm := BRational.RATIONAL_CLOSED
+def RATIONAL_NEG_EQ              : thm := BRational.RATIONAL_NEG_EQ
+def RATIONAL_ABS_EQ              : thm := BRational.RATIONAL_ABS_EQ
+def RATIONAL_INV_EQ              : thm := BRational.RATIONAL_INV_EQ
+def RATIONAL_SUM                 : thm := BRational.RATIONAL_SUM
+def RATIONAL_ALT                 : thm := BRational.RATIONAL_ALT
 
 -- FloorFrac
-unsafe def REAL_TRUNCATE_POS            : thm := BFloorFrac.REAL_TRUNCATE_POS
-unsafe def REAL_TRUNCATE                : thm := BFloorFrac.REAL_TRUNCATE
-unsafe def FLOOR_FRAC                   : thm := BFloorFrac.FLOOR_FRAC
+def REAL_TRUNCATE_POS            : thm := BFloorFrac.REAL_TRUNCATE_POS
+def REAL_TRUNCATE                : thm := BFloorFrac.REAL_TRUNCATE
+def FLOOR_FRAC                   : thm := BFloorFrac.FLOOR_FRAC
 
 -- FloorLemmas
-unsafe def FLOOR_UNIQUE                 : thm := BFloorLemmas.FLOOR_UNIQUE
-unsafe def FLOOR_EQ_0                   : thm := BFloorLemmas.FLOOR_EQ_0
-unsafe def FLOOR                        : thm := BFloorLemmas.FLOOR
-unsafe def FLOOR_DOUBLE                 : thm := BFloorLemmas.FLOOR_DOUBLE
-unsafe def FRAC_FLOOR                   : thm := BFloorLemmas.FRAC_FLOOR
-unsafe def FLOOR_NUM                    : thm := BFloorLemmas.FLOOR_NUM
-unsafe def REAL_LE_FLOOR                : thm := BFloorLemmas.REAL_LE_FLOOR
-unsafe def REAL_FLOOR_LE                : thm := BFloorLemmas.REAL_FLOOR_LE
-unsafe def REAL_FLOOR_LT                : thm := BFloorLemmas.REAL_FLOOR_LT
-unsafe def REAL_LT_FLOOR                : thm := BFloorLemmas.REAL_LT_FLOOR
-unsafe def FLOOR_POS                    : thm := BFloorLemmas.FLOOR_POS
-unsafe def FLOOR_DIV_DIV                : thm := BFloorLemmas.FLOOR_DIV_DIV
-unsafe def FLOOR_MONO                   : thm := BFloorLemmas.FLOOR_MONO
-unsafe def REAL_FLOOR_EQ                : thm := BFloorLemmas.REAL_FLOOR_EQ
-unsafe def REAL_FLOOR_LT_REFL           : thm := BFloorLemmas.REAL_FLOOR_LT_REFL
-unsafe def REAL_FRAC_EQ_0               : thm := BFloorLemmas.REAL_FRAC_EQ_0
-unsafe def REAL_FRAC_POS_LT             : thm := BFloorLemmas.REAL_FRAC_POS_LT
-unsafe def FRAC_NUM                     : thm := BFloorLemmas.FRAC_NUM
-unsafe def REAL_FLOOR_REFL              : thm := BFloorLemmas.REAL_FLOOR_REFL
-unsafe def REAL_FRAC_ZERO               : thm := BFloorLemmas.REAL_FRAC_ZERO
-unsafe def REAL_FLOOR_ADD               : thm := BFloorLemmas.REAL_FLOOR_ADD
-unsafe def REAL_FLOOR_TRIANGLE          : thm := BFloorLemmas.REAL_FLOOR_TRIANGLE
-unsafe def REAL_FLOOR_NEG               : thm := BFloorLemmas.REAL_FLOOR_NEG
-unsafe def REAL_FRAC_ADD                : thm := BFloorLemmas.REAL_FRAC_ADD
-unsafe def FLOOR_POS_LE                 : thm := BFloorLemmas.FLOOR_POS_LE
-unsafe def FRAC_UNIQUE                  : thm := BFloorLemmas.FRAC_UNIQUE
-unsafe def REAL_FRAC_EQ                 : thm := BFloorLemmas.REAL_FRAC_EQ
-unsafe def INTEGER_ROUND                : thm := BFloorLemmas.INTEGER_ROUND
-unsafe def FRAC_DIV_MOD                 : thm := BFloorLemmas.FRAC_DIV_MOD
-unsafe def FRAC_NEG                     : thm := BFloorLemmas.FRAC_NEG
-unsafe def REAL_FLOOR_FLOOR_DIV         : thm := BFloorLemmas.REAL_FLOOR_FLOOR_DIV
+def FLOOR_UNIQUE                 : thm := BFloorLemmas.FLOOR_UNIQUE
+def FLOOR_EQ_0                   : thm := BFloorLemmas.FLOOR_EQ_0
+def FLOOR                        : thm := BFloorLemmas.FLOOR
+def FLOOR_DOUBLE                 : thm := BFloorLemmas.FLOOR_DOUBLE
+def FRAC_FLOOR                   : thm := BFloorLemmas.FRAC_FLOOR
+def FLOOR_NUM                    : thm := BFloorLemmas.FLOOR_NUM
+def REAL_LE_FLOOR                : thm := BFloorLemmas.REAL_LE_FLOOR
+def REAL_FLOOR_LE                : thm := BFloorLemmas.REAL_FLOOR_LE
+def REAL_FLOOR_LT                : thm := BFloorLemmas.REAL_FLOOR_LT
+def REAL_LT_FLOOR                : thm := BFloorLemmas.REAL_LT_FLOOR
+def FLOOR_POS                    : thm := BFloorLemmas.FLOOR_POS
+def FLOOR_DIV_DIV                : thm := BFloorLemmas.FLOOR_DIV_DIV
+def FLOOR_MONO                   : thm := BFloorLemmas.FLOOR_MONO
+def REAL_FLOOR_EQ                : thm := BFloorLemmas.REAL_FLOOR_EQ
+def REAL_FLOOR_LT_REFL           : thm := BFloorLemmas.REAL_FLOOR_LT_REFL
+def REAL_FRAC_EQ_0               : thm := BFloorLemmas.REAL_FRAC_EQ_0
+def REAL_FRAC_POS_LT             : thm := BFloorLemmas.REAL_FRAC_POS_LT
+def FRAC_NUM                     : thm := BFloorLemmas.FRAC_NUM
+def REAL_FLOOR_REFL              : thm := BFloorLemmas.REAL_FLOOR_REFL
+def REAL_FRAC_ZERO               : thm := BFloorLemmas.REAL_FRAC_ZERO
+def REAL_FLOOR_ADD               : thm := BFloorLemmas.REAL_FLOOR_ADD
+def REAL_FLOOR_TRIANGLE          : thm := BFloorLemmas.REAL_FLOOR_TRIANGLE
+def REAL_FLOOR_NEG               : thm := BFloorLemmas.REAL_FLOOR_NEG
+def REAL_FRAC_ADD                : thm := BFloorLemmas.REAL_FRAC_ADD
+def FLOOR_POS_LE                 : thm := BFloorLemmas.FLOOR_POS_LE
+def FRAC_UNIQUE                  : thm := BFloorLemmas.FRAC_UNIQUE
+def REAL_FRAC_EQ                 : thm := BFloorLemmas.REAL_FRAC_EQ
+def INTEGER_ROUND                : thm := BFloorLemmas.INTEGER_ROUND
+def FRAC_DIV_MOD                 : thm := BFloorLemmas.FRAC_DIV_MOD
+def FRAC_NEG                     : thm := BFloorLemmas.FRAC_NEG
+def REAL_FLOOR_FLOOR_DIV         : thm := BFloorLemmas.REAL_FLOOR_FLOOR_DIV
 
 -- Between
-unsafe def INTEGER_EXISTS_BETWEEN_ALT   : thm := BBetween.INTEGER_EXISTS_BETWEEN_ALT
-unsafe def INTEGER_EXISTS_BETWEEN_LT    : thm := BBetween.INTEGER_EXISTS_BETWEEN_LT
-unsafe def INTEGER_EXISTS_BETWEEN       : thm := BBetween.INTEGER_EXISTS_BETWEEN
-unsafe def INTEGER_EXISTS_BETWEEN_ABS   : thm := BBetween.INTEGER_EXISTS_BETWEEN_ABS
-unsafe def INTEGER_EXISTS_BETWEEN_ABS_LT : thm := BBetween.INTEGER_EXISTS_BETWEEN_ABS_LT
+def INTEGER_EXISTS_BETWEEN_ALT   : thm := BBetween.INTEGER_EXISTS_BETWEEN_ALT
+def INTEGER_EXISTS_BETWEEN_LT    : thm := BBetween.INTEGER_EXISTS_BETWEEN_LT
+def INTEGER_EXISTS_BETWEEN       : thm := BBetween.INTEGER_EXISTS_BETWEEN
+def INTEGER_EXISTS_BETWEEN_ABS   : thm := BBetween.INTEGER_EXISTS_BETWEEN_ABS
+def INTEGER_EXISTS_BETWEEN_ABS_LT : thm := BBetween.INTEGER_EXISTS_BETWEEN_ABS_LT
 
 -- RealOfInt
-unsafe def REAL_OF_INT_OF_REAL          : thm := BRealOfInt.REAL_OF_INT_OF_REAL
-unsafe def IMAGE_REAL_OF_INT_UNIV       : thm := BRealOfInt.IMAGE_REAL_OF_INT_UNIV
+def REAL_OF_INT_OF_REAL          : thm := BRealOfInt.REAL_OF_INT_OF_REAL
+def IMAGE_REAL_OF_INT_UNIV       : thm := BRealOfInt.IMAGE_REAL_OF_INT_UNIV
 
 -- Finite
-unsafe def HAS_SIZE_INTSEG_NUM          : thm := BFinite.HAS_SIZE_INTSEG_NUM
-unsafe def FINITE_INTSEG                : thm := BFinite.FINITE_INTSEG
-unsafe def HAS_SIZE_INTSEG_INT          : thm := BFinite.HAS_SIZE_INTSEG_INT
-unsafe def CARD_INTSEG_INT              : thm := BFinite.CARD_INTSEG_INT
-unsafe def REAL_CARD_INTSEG_INT         : thm := BFinite.REAL_CARD_INTSEG_INT
+def HAS_SIZE_INTSEG_NUM          : thm := BFinite.HAS_SIZE_INTSEG_NUM
+def FINITE_INTSEG                : thm := BFinite.FINITE_INTSEG
+def HAS_SIZE_INTSEG_INT          : thm := BFinite.HAS_SIZE_INTSEG_INT
+def CARD_INTSEG_INT              : thm := BFinite.CARD_INTSEG_INT
+def REAL_CARD_INTSEG_INT         : thm := BFinite.REAL_CARD_INTSEG_INT
 
 -- Infinite
-unsafe def INFINITE_INTEGER             : thm := BInfinite.INFINITE_INTEGER
-unsafe def INFINITE_RATIONAL            : thm := BInfinite.INFINITE_RATIONAL
+def INFINITE_INTEGER             : thm := BInfinite.INFINITE_INTEGER
+def INFINITE_RATIONAL            : thm := BInfinite.INFINITE_RATIONAL
 
 -- Approx
-unsafe def PADIC_RATIONAL_APPROXIMATION_STRADDLE : thm := BApprox.PADIC_RATIONAL_APPROXIMATION_STRADDLE
-unsafe def PADIC_RATIONAL_APPROXIMATION_STRADDLE_POS : thm := BApprox.PADIC_RATIONAL_APPROXIMATION_STRADDLE_POS
-unsafe def PADIC_RATIONAL_APPROXIMATION_STRADDLE_POS_LE : thm := BApprox.PADIC_RATIONAL_APPROXIMATION_STRADDLE_POS_LE
-unsafe def RATIONAL_APPROXIMATION       : thm := BApprox.RATIONAL_APPROXIMATION
-unsafe def RATIONAL_BETWEEN             : thm := BApprox.RATIONAL_BETWEEN
-unsafe def RATIONAL_BETWEEN_EQ          : thm := BApprox.RATIONAL_BETWEEN_EQ
-unsafe def RATIONAL_APPROXIMATION_STRADDLE : thm := BApprox.RATIONAL_APPROXIMATION_STRADDLE
-unsafe def RATIONAL_APPROXIMATION_ABOVE : thm := BApprox.RATIONAL_APPROXIMATION_ABOVE
-unsafe def RATIONAL_APPROXIMATION_BELOW : thm := BApprox.RATIONAL_APPROXIMATION_BELOW
-unsafe def INFINITE_RATIONAL_IN_RANGE   : thm := BApprox.INFINITE_RATIONAL_IN_RANGE
+def PADIC_RATIONAL_APPROXIMATION_STRADDLE : thm := BApprox.PADIC_RATIONAL_APPROXIMATION_STRADDLE
+def PADIC_RATIONAL_APPROXIMATION_STRADDLE_POS : thm := BApprox.PADIC_RATIONAL_APPROXIMATION_STRADDLE_POS
+def PADIC_RATIONAL_APPROXIMATION_STRADDLE_POS_LE : thm := BApprox.PADIC_RATIONAL_APPROXIMATION_STRADDLE_POS_LE
+def RATIONAL_APPROXIMATION       : thm := BApprox.RATIONAL_APPROXIMATION
+def RATIONAL_BETWEEN             : thm := BApprox.RATIONAL_BETWEEN
+def RATIONAL_BETWEEN_EQ          : thm := BApprox.RATIONAL_BETWEEN_EQ
+def RATIONAL_APPROXIMATION_STRADDLE : thm := BApprox.RATIONAL_APPROXIMATION_STRADDLE
+def RATIONAL_APPROXIMATION_ABOVE : thm := BApprox.RATIONAL_APPROXIMATION_ABOVE
+def RATIONAL_APPROXIMATION_BELOW : thm := BApprox.RATIONAL_APPROXIMATION_BELOW
+def INFINITE_RATIONAL_IN_RANGE   : thm := BApprox.INFINITE_RATIONAL_IN_RANGE
 
 -- Congruence
-unsafe def REAL_CONGRUENCE              : thm := BCongruence.REAL_CONGRUENCE
-unsafe def REAL_INT_CONGRUENCE          : thm := BCongruence.REAL_INT_CONGRUENCE
+def REAL_CONGRUENCE              : thm := BCongruence.REAL_CONGRUENCE
+def REAL_INT_CONGRUENCE          : thm := BCongruence.REAL_INT_CONGRUENCE
 
 -- IntegerTac
-unsafe def REAL_INTEGER_TAC             : HolCore.Tactics.tactic := BIntegerTac.REAL_INTEGER_TAC
+def REAL_INTEGER_TAC             : HolCore.Tactics.tactic := BIntegerTac.REAL_INTEGER_TAC
 
-/-- `needs "Library/floor.ml"`: build every bundle, in file order. -/
-unsafe def ensureFloor : IO Unit := do
-  let _ ← IO.mkRef (concl BInteger.INTEGER_CASES)
-  let _ ← IO.mkRef (concl BRational.rational)
-  let _ ← IO.mkRef (concl BFloorFrac.REAL_TRUNCATE_POS)
-  let _ ← IO.mkRef (concl BFloorLemmas.FLOOR_UNIQUE)
-  let _ ← IO.mkRef (concl BBetween.INTEGER_EXISTS_BETWEEN_ALT)
-  let _ ← IO.mkRef (concl BRealOfInt.REAL_OF_INT_OF_REAL)
-  let _ ← IO.mkRef (concl BFinite.HAS_SIZE_INTSEG_NUM)
-  let _ ← IO.mkRef (concl BInfinite.INFINITE_INTEGER)
-  let _ ← IO.mkRef (concl BApprox.PADIC_RATIONAL_APPROXIMATION_STRADDLE)
-  let _ ← IO.mkRef (concl BCongruence.REAL_CONGRUENCE)
-  let _ ← IO.mkRef BIntegerTac.REAL_INTEGER_TAC
-  pure ()
+/-- `needs "Library/floor.ml"`: already done by importing this module. -/
+def ensureFloor : IO Unit := pure ()
 
 end SessionLibrary.Floor

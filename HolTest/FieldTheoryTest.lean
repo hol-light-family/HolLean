@@ -10,7 +10,7 @@ printed, and the constants and definitions after loading.  Theorems that
 print with `?NNN` invented type variables are omitted here. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.FieldTheory
 
 open HolCore.Kernel HolTest.CommonTest
 

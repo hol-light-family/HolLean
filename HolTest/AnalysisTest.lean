@@ -14,7 +14,7 @@ analysis.ml's names (e.g. REAL_LE_ANTISYM, SUM_TWO) are also core names in
 `Session`. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Analysis
 
 open HolCore.Kernel HolTest.CommonTest
 

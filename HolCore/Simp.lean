@@ -447,12 +447,13 @@ def ss_of_thms (B : BoolThms) (thms : List thm) (ss : simpset) :
   match ← (mkAll thms [] : IO (Except String (List thm))) with
   | .error e => return .error e
   | .ok cthms =>
+    -- net' = itlist (net_of_thm true) cthms net   (right fold: last first)
     let rec addAll : List thm → net gconv → IO (Except String (net gconv))
       | [], n => return .ok n
       | t :: ts, n => do
-          match ← (net_of_thm B true t n : IO (Except String (net gconv))) with
+          match ← (addAll ts n : IO (Except String (net gconv))) with
           | .error e => return .error e
-          | .ok n' => addAll ts n'
+          | .ok n' => (net_of_thm B true t n' : IO (Except String (net gconv)))
     match ← (addAll cthms nt : IO (Except String (net gconv))) with
     | .error e => return .error e
     | .ok nt' => return .ok (.Simpset nt' provers rewmaker)
@@ -469,12 +470,13 @@ def ss_of_conv (keytm : term) (conv : ioconv) (ss : simpset) :
 def ss_of_congs (B : BoolThms) (thms : List thm) (ss : simpset) :
     IO (Except String simpset) := do
   let (.Simpset nt provers rewmaker) := ss
+  -- net' = itlist net_of_cong thms net   (right fold: last first)
   let rec addAll : List thm → net gconv → IO (Except String (net gconv))
     | [], n => return .ok n
     | t :: ts, n => do
-        match ← (net_of_cong B t n : IO (Except String (net gconv))) with
+        match ← (addAll ts n : IO (Except String (net gconv))) with
         | .error e => return .error e
-        | .ok n' => addAll ts n'
+        | .ok n' => (net_of_cong B t n' : IO (Except String (net gconv)))
   match ← (addAll thms nt : IO (Except String (net gconv))) with
   | .error e => return .error e
   | .ok nt' => return .ok (.Simpset nt' provers rewmaker)
@@ -507,12 +509,13 @@ def AUGMENT_SIMPSET (B : BoolThms) (cth : thm) (ss : simpset) :
   match ← (rewmaker cth [] : IO (Except String (List thm))) with
   | .error e => return .error e
   | .ok cthms =>
+    -- net' = itlist (net_of_thm true) cthms net   (right fold: last first)
     let rec addAll : List thm → net gconv → IO (Except String (net gconv))
       | [], n => return .ok n
       | t :: ts, n => do
-          match ← (net_of_thm B true t n : IO (Except String (net gconv))) with
+          match ← (addAll ts n : IO (Except String (net gconv))) with
           | .error e => return .error e
-          | .ok n' => addAll ts n'
+          | .ok n' => (net_of_thm B true t n' : IO (Except String (net gconv)))
     match ← (addAll cthms nt : IO (Except String (net gconv))) with
     | .error e => return .error e
     | .ok nt' => return .ok (.Simpset nt' provers' rewmaker)

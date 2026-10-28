@@ -3,6 +3,7 @@ Translation of HOL Light's Examples/polylog.ml, phrase by phrase.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 import HolExamples.Common
+import SessionLibrary.Transc
 open HolCore.Kernel HolCore.Lib Session HolLight.Syntax HolExamples
 open SessionLibrary.Transc (LN_1 LN_MUL LN_DIV ATN_1 ATN_0 ATN_NEG ATN_TAN TAN_ATN
   PI2_PI4 ATN_MONO_LT ATN_LT_PI4_POS TAN_COT DIFF_CONV diffs TERMDIFF_STRONG)
@@ -14,14 +15,14 @@ namespace HolExamples.PolyLog
 /- The session's `prove` lifted into `ExceptT String IO`, so the tactic
    scripts read as the OCaml does.  `ra`/`rr` are the term-level real decision
    procedure (`REAL_ARITH`) and `REWRITE_RULE`, lifted into `ExceptT`. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
-private unsafe def ra (tm : term) : ExceptT String IO thm := ExceptT.mk (Session.REAL_ARITH3 tm)
-private unsafe def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (Session.ARITH_RULE tm)
-private unsafe def rr (ths : List thm) (th : thm) : ExceptT String IO thm :=
+private def ra (tm : term) : ExceptT String IO thm := ExceptT.mk (Session.REAL_ARITH3 tm)
+private def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (Session.ARITH_RULE tm)
+private def rr (ths : List thm) (th : thm) : ExceptT String IO thm :=
   ExceptT.mk (Session.REWRITE_RULE ths th)
-private unsafe def nrc (tm : term) : ExceptT String IO thm := ExceptT.mk (NUM_REDUCE_CONV tm)
-private unsafe def rrc (tm : term) : ExceptT String IO thm := ExceptT.mk (REAL_RAT_REDUCE_CONV tm)
+private def nrc (tm : term) : ExceptT String IO thm := ExceptT.mk (NUM_REDUCE_CONV tm)
+private def rrc (tm : term) : ExceptT String IO thm := ExceptT.mk (REAL_RAT_REDUCE_CONV tm)
 private def ec {α : Type} (x : Except String α) : ExceptT String IO α := ExceptT.mk (pure x)
 
 -- ========================================================================= --
@@ -33,7 +34,7 @@ private def ec {α : Type} (x : Except String α) : ExceptT String IO α := Exce
 #eval SessionLibrary.Transc.ensureTransc
 
 #eval phrase 2
-unsafe def FACTOR_1X4_LEMMA : thm := keep "FACTOR_1X4_LEMMA" fun _ => (do
+def FACTOR_1X4_LEMMA : thm := keep "FACTOR_1X4_LEMMA" fun _ => (do
   prove
    ([[!x. (x * x + x * sqrt (&2) + &1) * (x * x - x * sqrt (&2) + &1) =
          &1 + x pow 4]])
@@ -50,7 +51,7 @@ unsafe def FACTOR_1X4_LEMMA : thm := keep "FACTOR_1X4_LEMMA" fun _ => (do
 #eval FACTOR_1X4_LEMMA
 
 #eval phrase 3
-unsafe def MAGIC_DERIVATIVE : thm := keep "MAGIC_DERIVATIVE" fun _ => (do
+def MAGIC_DERIVATIVE : thm := keep "MAGIC_DERIVATIVE" fun _ => (do
   prove
    ([[!x. abs(x) < &1
        ==> ((\x. ln((x - &1) pow 2) +
@@ -259,7 +260,7 @@ unsafe def MAGIC_DERIVATIVE : thm := keep "MAGIC_DERIVATIVE" fun _ => (do
 #eval MAGIC_DERIVATIVE
 
 #eval phrase 4
-unsafe def POLYLOG_CONVERGES : thm := keep "POLYLOG_CONVERGES" fun _ => (do
+def POLYLOG_CONVERGES : thm := keep "POLYLOG_CONVERGES" fun _ => (do
   prove
    ([[!a b x. ~(a = 0) /\ ~(b = 0) /\ abs(x) < &1
            ==> summable (\n. x pow (a * n + b) / &(a * n + b))]])
@@ -288,7 +289,7 @@ unsafe def POLYLOG_CONVERGES : thm := keep "POLYLOG_CONVERGES" fun _ => (do
 #eval POLYLOG_CONVERGES
 
 #eval phrase 5
-unsafe def POLYLOG_DERIVATIVE : thm := keep "POLYLOG_DERIVATIVE" fun _ => (do
+def POLYLOG_DERIVATIVE : thm := keep "POLYLOG_DERIVATIVE" fun _ => (do
   prove
    ([[!a b x. ~(a = 0) /\ ~(b = 0) /\ abs(x) < &1
            ==> ((\x. suminf (\n. x pow (a * n + b) / &(a * n + b))) diffl
@@ -472,7 +473,7 @@ unsafe def POLYLOG_DERIVATIVE : thm := keep "POLYLOG_DERIVATIVE" fun _ => (do
 #eval POLYLOG_DERIVATIVE
 
 #eval phrase 6
-unsafe def POLYLOG_THM : thm := keep "POLYLOG_THM" fun _ => (do
+def POLYLOG_THM : thm := keep "POLYLOG_THM" fun _ => (do
   let gLN_MUL ← HolLight.GSYM LN_MUL
   prove
    ([[(\n. inv(&16 pow n) * (&4 / &(8 * n + 1) -

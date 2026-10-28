@@ -13,26 +13,26 @@ namespace HolLogicArith.Prenex
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 /- `new_inductive_definition`, panicking with HOL Light's message on failure. -/
-private unsafe def newInductive (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+private def newInductive (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"new_inductive_definition: {e}"
   | .error e => panic! s!"new_inductive_definition IO: {e}"
 
 /- `new_specification` lifted into `ExceptT String IO`. -/
-private unsafe def newSpec (names : List String) (th : thm) : ExceptT String IO thm :=
+private def newSpec (names : List String) (th : thm) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_specification names th)
 
 #eval phrase 1
-unsafe def qfree : thm := keep "qfree" fun _ => (do
+def qfree : thm := keep "qfree" fun _ => (do
   newRec form_RECURSION
     [[(qfree False <=> T) /\
       (qfree (Atom n l) <=> T) /\
@@ -42,7 +42,7 @@ unsafe def qfree : thm := keep "qfree" fun _ => (do
 #eval qfree
 
 #eval phrase 2
-unsafe def QFREE : thm := keep "QFREE" fun _ => (do
+def QFREE : thm := keep "QFREE" fun _ => (do
   prove ([[(qfree False <=> T) /\
    (qfree True <=> T) /\
    (!a l. qfree (Atom a l) <=> T) /\
@@ -59,7 +59,7 @@ unsafe def QFREE : thm := keep "QFREE" fun _ => (do
 #eval QFREE
 
 #eval phrase 3
-unsafe def QFREE_FORMSUBST : thm := keep "QFREE_FORMSUBST" fun _ => (do
+def QFREE_FORMSUBST : thm := keep "QFREE_FORMSUBST" fun _ => (do
   prove ([[!p v. qfree (formsubst v p) <=> qfree p]])
    (MATCH_MP_TAC form_INDUCTION THEN
     ASM_REWRITE_TAC [formsubst, qfree, LET_DEF, LET_END_DEF] THEN
@@ -68,7 +68,7 @@ unsafe def QFREE_FORMSUBST : thm := keep "QFREE_FORMSUBST" fun _ => (do
 #eval QFREE_FORMSUBST
 
 #eval phrase 4
-unsafe def QFREE_BV_EMPTY : thm := keep "QFREE_BV_EMPTY" fun _ => (do
+def QFREE_BV_EMPTY : thm := keep "QFREE_BV_EMPTY" fun _ => (do
   prove ([[!p. qfree(p) <=> (BV(p) = EMPTY)]])
    (MATCH_MP_TAC form_INDUCTION THEN REWRITE_TAC [qfree, BV] THEN
     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [EMPTY_UNION] THEN
@@ -78,28 +78,28 @@ unsafe def QFREE_BV_EMPTY : thm := keep "QFREE_BV_EMPTY" fun _ => (do
 #eval QFREE_BV_EMPTY
 
 #eval phrase 5
-unsafe def prenex_triple : thm × thm × thm := keep "prenex_triple" fun _ =>
+def prenex_triple : thm × thm × thm := keep "prenex_triple" fun _ =>
   newInductive
     [[(!p. qfree p ==> prenex p) /\
       (!x p. prenex p ==> prenex (!!x p)) /\
       (!x p. prenex p ==> prenex (??x p))]]
-unsafe def prenex_RULES : thm := prenex_triple.1
-unsafe def prenex_INDUCT : thm := prenex_triple.2.1
-unsafe def prenex_CASES : thm := prenex_triple.2.2
+def prenex_RULES : thm := prenex_triple.1
+def prenex_INDUCT : thm := prenex_triple.2.1
+def prenex_CASES : thm := prenex_triple.2.2
 #eval do IO.println prenex_RULES; IO.println prenex_INDUCT; IO.println prenex_CASES
 
 #eval phrase 6
-unsafe def universal_triple : thm × thm × thm := keep "universal_triple" fun _ =>
+def universal_triple : thm × thm × thm := keep "universal_triple" fun _ =>
   newInductive
     [[(!p. qfree p ==> universal p) /\
       (!x p. universal p ==> universal (!!x p))]]
-unsafe def universal_RULES : thm := universal_triple.1
-unsafe def universal_INDUCT : thm := universal_triple.2.1
-unsafe def universal_CASES : thm := universal_triple.2.2
+def universal_RULES : thm := universal_triple.1
+def universal_INDUCT : thm := universal_triple.2.1
+def universal_CASES : thm := universal_triple.2.2
 #eval do IO.println universal_RULES; IO.println universal_INDUCT; IO.println universal_CASES
 
 #eval phrase 7
-unsafe def prenex_INDUCT_NOT : thm := keep "prenex_INDUCT_NOT" fun _ => (do
+def prenex_INDUCT_NOT : thm := keep "prenex_INDUCT_NOT" fun _ => (do
   prove ([[!P. (!p. qfree p ==> P p) /\
        (!x p. P p ==> P (!! x p)) /\
        (!x p. P p ==> P (Not p))
@@ -110,7 +110,7 @@ unsafe def prenex_INDUCT_NOT : thm := keep "prenex_INDUCT_NOT" fun _ => (do
 #eval prenex_INDUCT_NOT
 
 #eval phrase 8
-unsafe def PRENEX : thm := keep "PRENEX" fun _ => (do
+def PRENEX : thm := keep "PRENEX" fun _ => (do
   prove ([[(prenex False <=> T) /\
    (prenex True <=> T) /\
    (!a l. prenex (Atom a l) <=> T) /\
@@ -130,7 +130,7 @@ unsafe def PRENEX : thm := keep "PRENEX" fun _ => (do
 #eval PRENEX
 
 #eval phrase 9
-unsafe def FORMSUBST_STRUCTURE_LEMMA : thm := keep "FORMSUBST_STRUCTURE_LEMMA" fun _ => (do
+def FORMSUBST_STRUCTURE_LEMMA : thm := keep "FORMSUBST_STRUCTURE_LEMMA" fun _ => (do
   prove ([[!p i. ((formsubst i p = False) <=> (p = False)) /\
          ((?a l. formsubst i p = Atom a l) <=> (?a l. p = Atom a l)) /\
          ((?q r. formsubst i p = q --> r) <=> (?q r. p = q --> r)) /\
@@ -143,7 +143,7 @@ unsafe def FORMSUBST_STRUCTURE_LEMMA : thm := keep "FORMSUBST_STRUCTURE_LEMMA" f
 #eval FORMSUBST_STRUCTURE_LEMMA
 
 #eval phrase 10
-unsafe def FORMSUBST_STRUCTURE_NOT : thm := keep "FORMSUBST_STRUCTURE_NOT" fun _ => (do
+def FORMSUBST_STRUCTURE_NOT : thm := keep "FORMSUBST_STRUCTURE_NOT" fun _ => (do
   prove ([[!p i. (?q. formsubst i p = Not q) <=> (?q. p = Not q)]])
    (HolLight.tactic_of do
      let th2 ← liftExcept (HolCore.Lib.el 2 (HolLight.CONJUNCTS (← HolLight.SPEC_ALL FORMSUBST_STRUCTURE_LEMMA)))
@@ -164,7 +164,7 @@ unsafe def FORMSUBST_STRUCTURE_NOT : thm := keep "FORMSUBST_STRUCTURE_NOT" fun _
 #eval FORMSUBST_STRUCTURE_NOT
 
 #eval phrase 11
-unsafe def FORMSUBST_STRUCTURE_EXISTS : thm := keep "FORMSUBST_STRUCTURE_EXISTS" fun _ => (do
+def FORMSUBST_STRUCTURE_EXISTS : thm := keep "FORMSUBST_STRUCTURE_EXISTS" fun _ => (do
   prove ([[!p i. (?x q. formsubst i p = ??x q) <=> (?x q. p = ??x q)]])
    (HolLight.tactic_of do
      let mp1 ← do let (a, _) ← HolLight.EQ_IMP_RULE (← HolLight.SPEC_ALL FORMSUBST_STRUCTURE_NOT); pure a
@@ -197,7 +197,7 @@ unsafe def FORMSUBST_STRUCTURE_EXISTS : thm := keep "FORMSUBST_STRUCTURE_EXISTS"
 #eval FORMSUBST_STRUCTURE_EXISTS
 
 #eval phrase 12
-unsafe def PRENEX_FORMSUBST_LEMMA : thm := keep "PRENEX_FORMSUBST_LEMMA" fun _ => (do
+def PRENEX_FORMSUBST_LEMMA : thm := keep "PRENEX_FORMSUBST_LEMMA" fun _ => (do
   prove ([[!p. prenex p ==> !i q. (p = formsubst i q) ==> prenex q]])
    (MATCH_MP_TAC prenex_INDUCT THEN REPEAT CONJ_TAC THENL
      [MESON_TAC [QFREE_FORMSUBST, prenex_RULES],
@@ -226,7 +226,7 @@ unsafe def PRENEX_FORMSUBST_LEMMA : thm := keep "PRENEX_FORMSUBST_LEMMA" fun _ =
 #eval PRENEX_FORMSUBST_LEMMA
 
 #eval phrase 13
-unsafe def PRENEX_FORMSUBST : thm := keep "PRENEX_FORMSUBST" fun _ => (do
+def PRENEX_FORMSUBST : thm := keep "PRENEX_FORMSUBST" fun _ => (do
   prove ([[!p i. prenex(formsubst i p) = prenex p]])
    (REPEAT GEN_TAC THEN EQ_TAC THENL
      [MESON_TAC [PRENEX_FORMSUBST_LEMMA],
@@ -245,7 +245,7 @@ unsafe def PRENEX_FORMSUBST : thm := keep "PRENEX_FORMSUBST" fun _ => (do
 #eval PRENEX_FORMSUBST
 
 #eval phrase 14
-unsafe def size : thm := keep "size" fun _ => (do
+def size : thm := keep "size" fun _ => (do
   newRec form_RECURSION
     [[(size False = 1) /\
       (size (Atom p l) = 1) /\
@@ -255,7 +255,7 @@ unsafe def size : thm := keep "size" fun _ => (do
 #eval size
 
 #eval phrase 15
-unsafe def SIZE : thm := keep "SIZE" fun _ => (do
+def SIZE : thm := keep "SIZE" fun _ => (do
   prove ([[(size False = 1) /\
    (size True = 2) /\
    (!a l. size (Atom a l) = 1) /\
@@ -272,7 +272,7 @@ unsafe def SIZE : thm := keep "SIZE" fun _ => (do
 #eval SIZE
 
 #eval phrase 16
-unsafe def SIZE_FORMSUBST : thm := keep "SIZE_FORMSUBST" fun _ => (do
+def SIZE_FORMSUBST : thm := keep "SIZE_FORMSUBST" fun _ => (do
   prove ([[!p i. size (formsubst i p) = size p]])
    (MATCH_MP_TAC form_INDUCTION THEN
     ASM_REWRITE_TAC [formsubst, size, LET_END_DEF, LET_DEF] THEN
@@ -281,7 +281,7 @@ unsafe def SIZE_FORMSUBST : thm := keep "SIZE_FORMSUBST" fun _ => (do
 #eval SIZE_FORMSUBST
 
 #eval phrase 17
-unsafe def PPAT_DEF : thm := keep "PPAT_DEF" fun _ => new_definition
+def PPAT_DEF : thm := keep "PPAT_DEF" fun _ => new_definition
   [[PPAT A B C r =
      if ?x p. r = !!x p then
                     A (@x. ?p. r = !!x p)
@@ -293,7 +293,7 @@ unsafe def PPAT_DEF : thm := keep "PPAT_DEF" fun _ => new_definition
 #eval PPAT_DEF
 
 #eval phrase 18
-unsafe def PRENEX_DISTINCT : thm := keep "PRENEX_DISTINCT" fun _ => (do
+def PRENEX_DISTINCT : thm := keep "PRENEX_DISTINCT" fun _ => (do
   prove ([[!x y p q. ((!!x p = !!y q) <=> (x = y) /\ (p = q)) /\
              ((??x p = ??y q) <=> (x = y) /\ (p = q)) /\
              ~(!!x p = ??y q)]])
@@ -302,7 +302,7 @@ unsafe def PRENEX_DISTINCT : thm := keep "PRENEX_DISTINCT" fun _ => (do
 #eval PRENEX_DISTINCT
 
 #eval phrase 19
-unsafe def PPAT : thm := keep "PPAT" fun _ => (do
+def PPAT : thm := keep "PPAT" fun _ => (do
   prove ([[!A B C. (!x p. PPAT A B C (!!x p) = A x p :A) /\
            (!x p. PPAT A B C (??x p) = B x p) /\
            !r. ~(?x p. r = !!x p) /\ ~(?x p. r = ??x p)
@@ -319,7 +319,7 @@ unsafe def PPAT : thm := keep "PPAT" fun _ => (do
 #eval PPAT
 
 #eval phrase 20
-unsafe def SIZE_REC : thm := keep "SIZE_REC" fun _ => (do
+def SIZE_REC : thm := keep "SIZE_REC" fun _ => (do
   prove ([[!H. (!f g x. (!z. size z < size x ==> (f z = g z)) ==> (H f x = H g x))
        ==> (?f. !x. f x = H f x)]])
    (MATCH_MP_TAC WF_REC THEN
@@ -328,7 +328,7 @@ unsafe def SIZE_REC : thm := keep "SIZE_REC" fun _ => (do
 #eval SIZE_REC
 
 #eval phrase 21
-unsafe def PRENEX_RIGHT_EXISTENCE : thm := keep "PRENEX_RIGHT_EXISTENCE" fun _ => (do
+def PRENEX_RIGHT_EXISTENCE : thm := keep "PRENEX_RIGHT_EXISTENCE" fun _ => (do
   prove ([[?Prenex_right.
         (!p x q. Prenex_right p (!!x q) =
                    let y = VARIANT(FV(p) UNION FV(!!x q)) in
@@ -383,12 +383,12 @@ unsafe def PRENEX_RIGHT_EXISTENCE : thm := keep "PRENEX_RIGHT_EXISTENCE" fun _ =
 #eval PRENEX_RIGHT_EXISTENCE
 
 #eval phrase 22
-unsafe def PRENEX_RIGHT : thm := keep "PRENEX_RIGHT" fun _ =>
+def PRENEX_RIGHT : thm := keep "PRENEX_RIGHT" fun _ =>
   (newSpec ["Prenex_right"] PRENEX_RIGHT_EXISTENCE : ExceptT String IO thm).run
 #eval PRENEX_RIGHT
 
 #eval phrase 23
-unsafe def PRENEX_LEFT_EXISTENCE : thm := keep "PRENEX_LEFT_EXISTENCE" fun _ => (do
+def PRENEX_LEFT_EXISTENCE : thm := keep "PRENEX_LEFT_EXISTENCE" fun _ => (do
   prove ([[?Prenex_left.
         (!p x q. Prenex_left (!!x q) p =
                    let y = VARIANT(FV(!!x q) UNION FV(p)) in
@@ -444,12 +444,12 @@ unsafe def PRENEX_LEFT_EXISTENCE : thm := keep "PRENEX_LEFT_EXISTENCE" fun _ => 
 #eval PRENEX_LEFT_EXISTENCE
 
 #eval phrase 24
-unsafe def PRENEX_LEFT : thm := keep "PRENEX_LEFT" fun _ =>
+def PRENEX_LEFT : thm := keep "PRENEX_LEFT" fun _ =>
   (newSpec ["Prenex_left"] PRENEX_LEFT_EXISTENCE : ExceptT String IO thm).run
 #eval PRENEX_LEFT
 
 #eval phrase 25
-unsafe def Prenex_DEF : thm := keep "Prenex_DEF" fun _ => (do
+def Prenex_DEF : thm := keep "Prenex_DEF" fun _ => (do
   newRec form_RECURSION
     [[(Prenex False = False) /\
       (Prenex (Atom a l) = Atom a l) /\
@@ -459,7 +459,7 @@ unsafe def Prenex_DEF : thm := keep "Prenex_DEF" fun _ => (do
 #eval Prenex_DEF
 
 #eval phrase 26
-unsafe def PRENEX_RIGHT_FORALL : thm := keep "PRENEX_RIGHT_FORALL" fun _ => (do
+def PRENEX_RIGHT_FORALL : thm := keep "PRENEX_RIGHT_FORALL" fun _ => (do
   prove ([[~(Dom M :A->bool = EMPTY)
    ==> (holds M v (p --> !!x q) <=>
         holds M v (!! (VARIANT (FV(p) UNION FV(!!x q)))
@@ -497,7 +497,7 @@ unsafe def PRENEX_RIGHT_FORALL : thm := keep "PRENEX_RIGHT_FORALL" fun _ => (do
 #eval PRENEX_RIGHT_FORALL
 
 #eval phrase 27
-unsafe def PRENEX_RIGHT_EXISTS : thm := keep "PRENEX_RIGHT_EXISTS" fun _ => (do
+def PRENEX_RIGHT_EXISTS : thm := keep "PRENEX_RIGHT_EXISTS" fun _ => (do
   prove ([[~(Dom M :A->bool = EMPTY)
    ==> (holds M v (p --> ??x q) <=>
         holds M v (?? (VARIANT (FV(p) UNION FV(??x q)))
@@ -537,7 +537,7 @@ unsafe def PRENEX_RIGHT_EXISTS : thm := keep "PRENEX_RIGHT_EXISTS" fun _ => (do
 #eval PRENEX_RIGHT_EXISTS
 
 #eval phrase 28
-unsafe def PRENEX_DUALITY_LEMMAS : thm := keep "PRENEX_DUALITY_LEMMAS" fun _ => (do
+def PRENEX_DUALITY_LEMMAS : thm := keep "PRENEX_DUALITY_LEMMAS" fun _ => (do
   prove ([[(holds M v (??x p --> q) <=> holds M v (Not q --> !!x (Not p))) /\
    (holds M v (!!x p --> q) <=> holds M v (Not q --> ??x (Not p)))]])
    (REWRITE_TAC [HOLDS] THEN MESON_TAC [])
@@ -545,7 +545,7 @@ unsafe def PRENEX_DUALITY_LEMMAS : thm := keep "PRENEX_DUALITY_LEMMAS" fun _ => 
 #eval PRENEX_DUALITY_LEMMAS
 
 #eval phrase 29
-unsafe def PRENEX_LEFT_FORALL : thm := keep "PRENEX_LEFT_FORALL" fun _ => (do
+def PRENEX_LEFT_FORALL : thm := keep "PRENEX_LEFT_FORALL" fun _ => (do
   prove ([[~(Dom M :A->bool = EMPTY)
    ==> (holds M v (!!x p --> q) <=>
         holds M v (?? (VARIANT (FV(!!x p) UNION FV(q)))
@@ -560,7 +560,7 @@ unsafe def PRENEX_LEFT_FORALL : thm := keep "PRENEX_LEFT_FORALL" fun _ => (do
 #eval PRENEX_LEFT_FORALL
 
 #eval phrase 30
-unsafe def PRENEX_LEFT_EXISTS : thm := keep "PRENEX_LEFT_EXISTS" fun _ => (do
+def PRENEX_LEFT_EXISTS : thm := keep "PRENEX_LEFT_EXISTS" fun _ => (do
   prove ([[~(Dom M :A->bool = EMPTY)
    ==> (holds M v (??x p --> q) <=>
         holds M v (!! (VARIANT (FV(??x p) UNION FV(q)))
@@ -575,7 +575,7 @@ unsafe def PRENEX_LEFT_EXISTS : thm := keep "PRENEX_LEFT_EXISTS" fun _ => (do
 #eval PRENEX_LEFT_EXISTS
 
 #eval phrase 31
-unsafe def PRENEX_RIGHT_FORALL_FV : thm := keep "PRENEX_RIGHT_FORALL_FV" fun _ => (do
+def PRENEX_RIGHT_FORALL_FV : thm := keep "PRENEX_RIGHT_FORALL_FV" fun _ => (do
   prove ([[FV(p --> !!x q) = FV(!! (VARIANT (FV(p) UNION FV(!!x q)))
                            (p --> formsubst (valmod
                               (x,V(VARIANT (FV(p) UNION FV(!!x q)))) V) q))]])
@@ -590,7 +590,7 @@ unsafe def PRENEX_RIGHT_FORALL_FV : thm := keep "PRENEX_RIGHT_FORALL_FV" fun _ =
 #eval PRENEX_RIGHT_FORALL_FV
 
 #eval phrase 32
-unsafe def PRENEX_RIGHT_EXISTS_FV : thm := keep "PRENEX_RIGHT_EXISTS_FV" fun _ => (do
+def PRENEX_RIGHT_EXISTS_FV : thm := keep "PRENEX_RIGHT_EXISTS_FV" fun _ => (do
   prove ([[FV(p --> ??x q) =
    FV(?? (VARIANT (FV(p) UNION FV(??x q)))
            (p --> formsubst (valmod
@@ -607,7 +607,7 @@ unsafe def PRENEX_RIGHT_EXISTS_FV : thm := keep "PRENEX_RIGHT_EXISTS_FV" fun _ =
 #eval PRENEX_RIGHT_EXISTS_FV
 
 #eval phrase 33
-unsafe def PRENEX_LEFT_FORALL_FV : thm := keep "PRENEX_LEFT_FORALL_FV" fun _ => (do
+def PRENEX_LEFT_FORALL_FV : thm := keep "PRENEX_LEFT_FORALL_FV" fun _ => (do
   prove ([[FV(!!x p --> q) =
    FV(?? (VARIANT (FV(!!x p) UNION FV(q)))
                       (formsubst (valmod
@@ -624,7 +624,7 @@ unsafe def PRENEX_LEFT_FORALL_FV : thm := keep "PRENEX_LEFT_FORALL_FV" fun _ => 
 #eval PRENEX_LEFT_FORALL_FV
 
 #eval phrase 34
-unsafe def PRENEX_LEFT_EXISTS_FV : thm := keep "PRENEX_LEFT_EXISTS_FV" fun _ => (do
+def PRENEX_LEFT_EXISTS_FV : thm := keep "PRENEX_LEFT_EXISTS_FV" fun _ => (do
   prove ([[FV(??x p --> q) =
    FV(!! (VARIANT (FV(??x p) UNION FV(q)))
                       (formsubst (valmod
@@ -641,7 +641,7 @@ unsafe def PRENEX_LEFT_EXISTS_FV : thm := keep "PRENEX_LEFT_EXISTS_FV" fun _ => 
 #eval PRENEX_LEFT_EXISTS_FV
 
 #eval phrase 35
-unsafe def PRENEX_RIGHT_FORALL_LANGUAGE : thm := keep "PRENEX_RIGHT_FORALL_LANGUAGE" fun _ => (do
+def PRENEX_RIGHT_FORALL_LANGUAGE : thm := keep "PRENEX_RIGHT_FORALL_LANGUAGE" fun _ => (do
   prove ([[language {(p --> !!x q)} = language {(!! (VARIANT (FV(p) UNION FV(!!x q)))
                            (p --> formsubst (valmod
                               (x,V(VARIANT (FV(p) UNION FV(!!x q)))) V) q))}]])
@@ -651,7 +651,7 @@ unsafe def PRENEX_RIGHT_FORALL_LANGUAGE : thm := keep "PRENEX_RIGHT_FORALL_LANGU
 #eval PRENEX_RIGHT_FORALL_LANGUAGE
 
 #eval phrase 36
-unsafe def PRENEX_RIGHT_EXISTS_LANGUAGE : thm := keep "PRENEX_RIGHT_EXISTS_LANGUAGE" fun _ => (do
+def PRENEX_RIGHT_EXISTS_LANGUAGE : thm := keep "PRENEX_RIGHT_EXISTS_LANGUAGE" fun _ => (do
   prove ([[language {(p --> ??x q)} =
    language {(?? (VARIANT (FV(p) UNION FV(??x q)))
            (p --> formsubst (valmod
@@ -663,7 +663,7 @@ unsafe def PRENEX_RIGHT_EXISTS_LANGUAGE : thm := keep "PRENEX_RIGHT_EXISTS_LANGU
 #eval PRENEX_RIGHT_EXISTS_LANGUAGE
 
 #eval phrase 37
-unsafe def PRENEX_LEFT_FORALL_LANGUAGE : thm := keep "PRENEX_LEFT_FORALL_LANGUAGE" fun _ => (do
+def PRENEX_LEFT_FORALL_LANGUAGE : thm := keep "PRENEX_LEFT_FORALL_LANGUAGE" fun _ => (do
   prove ([[language {(!!x p --> q)} =
    language {(?? (VARIANT (FV(!!x p) UNION FV(q)))
                       (formsubst (valmod
@@ -675,7 +675,7 @@ unsafe def PRENEX_LEFT_FORALL_LANGUAGE : thm := keep "PRENEX_LEFT_FORALL_LANGUAG
 #eval PRENEX_LEFT_FORALL_LANGUAGE
 
 #eval phrase 38
-unsafe def PRENEX_LEFT_EXISTS_LANGUAGE : thm := keep "PRENEX_LEFT_EXISTS_LANGUAGE" fun _ => (do
+def PRENEX_LEFT_EXISTS_LANGUAGE : thm := keep "PRENEX_LEFT_EXISTS_LANGUAGE" fun _ => (do
   prove ([[language {(??x p --> q)} =
    language {(!! (VARIANT (FV(??x p) UNION FV(q)))
                       (formsubst (valmod
@@ -687,7 +687,7 @@ unsafe def PRENEX_LEFT_EXISTS_LANGUAGE : thm := keep "PRENEX_LEFT_EXISTS_LANGUAG
 #eval PRENEX_LEFT_EXISTS_LANGUAGE
 
 #eval phrase 39
-unsafe def PRENEX_LEMMA_FORALL : thm := keep "PRENEX_LEMMA_FORALL" fun _ => (do
+def PRENEX_LEMMA_FORALL : thm := keep "PRENEX_LEMMA_FORALL" fun _ => (do
   prove ([[P /\
    (FV r1 = FV r2) /\
    (language {r1} = language {r2}) /\
@@ -704,7 +704,7 @@ unsafe def PRENEX_LEMMA_FORALL : thm := keep "PRENEX_LEMMA_FORALL" fun _ => (do
 #eval PRENEX_LEMMA_FORALL
 
 #eval phrase 40
-unsafe def PRENEX_LEMMA_EXISTS : thm := keep "PRENEX_LEMMA_EXISTS" fun _ => (do
+def PRENEX_LEMMA_EXISTS : thm := keep "PRENEX_LEMMA_EXISTS" fun _ => (do
   prove ([[P /\
    (FV r1 = FV r2) /\
    (language {r1} = language {r2}) /\
@@ -723,7 +723,7 @@ unsafe def PRENEX_LEMMA_EXISTS : thm := keep "PRENEX_LEMMA_EXISTS" fun _ => (do
 #eval PRENEX_LEMMA_EXISTS
 
 #eval phrase 41
-unsafe def PRENEX_RIGHT_THM : thm := keep "PRENEX_RIGHT_THM" fun _ => (do
+def PRENEX_RIGHT_THM : thm := keep "PRENEX_RIGHT_THM" fun _ => (do
   prove ([[!p q. qfree p /\ prenex q
          ==> prenex (Prenex_right p q) /\
              (FV(Prenex_right p q) = FV(p --> q)) /\
@@ -762,7 +762,7 @@ unsafe def PRENEX_RIGHT_THM : thm := keep "PRENEX_RIGHT_THM" fun _ => (do
 #eval PRENEX_RIGHT_THM
 
 #eval phrase 42
-unsafe def PRENEX_LEFT_THM : thm := keep "PRENEX_LEFT_THM" fun _ => (do
+def PRENEX_LEFT_THM : thm := keep "PRENEX_LEFT_THM" fun _ => (do
   prove ([[!p q. prenex p /\ prenex q
          ==> prenex (Prenex_left p q) /\
              (FV(Prenex_left p q) = FV(p --> q)) /\
@@ -802,7 +802,7 @@ unsafe def PRENEX_LEFT_THM : thm := keep "PRENEX_LEFT_THM" fun _ => (do
 #eval PRENEX_LEFT_THM
 
 #eval phrase 43
-unsafe def PRENEX_THM : thm := keep "PRENEX_THM" fun _ => (do
+def PRENEX_THM : thm := keep "PRENEX_THM" fun _ => (do
   prove ([[!p. prenex(Prenex p) /\
        (FV(Prenex p) = FV(p)) /\
        (language {(Prenex p)} = language {p}) /\
@@ -818,9 +818,9 @@ unsafe def PRENEX_THM : thm := keep "PRENEX_THM" fun _ => (do
 #eval PRENEX_THM
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Prenex" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Prenex" do
   replay (
           HolLogicArith.Fol.ensure)
   replay (

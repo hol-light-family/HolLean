@@ -162,7 +162,7 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
 
 #eval (do
   let _ ← IO.mkRef (concl Session.MONO_ALL)
-  let l := (← Session.theMonotonicityTheorems.get).getD []
+  let l ← Session.theMonotonicityTheorems.get
   let concls ← l.mapM (fun t => do return squash (← HolCore.Printer.string_of_thm t))
   let hasAll := concls.any (fun s => s == squash "|- (forall x. P x ==> Q x) ==> ALL P l ==> ALL Q l")
   let hasAll2 := concls.any (fun s =>

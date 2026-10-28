@@ -19,40 +19,40 @@ namespace HolLogicArith.Given
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1`/`listThms2` bundles; alias the ones we need. -/
-private unsafe def LENGTH : thm := Session.listDefs.LENGTH
-private unsafe def MAP : thm := Session.listDefs.MAP
-private unsafe def ITLIST : thm := Session.listDefs.ITLIST
-private unsafe def MEM : thm := Session.listDefs.MEM
-private unsafe def EX : thm := Session.listDefs.EX
-private unsafe def FILTER : thm := Session.listDefs.FILTER
-private unsafe def EL : thm := Session.listDefs.EL
-private unsafe def HD : thm := Session.listDefs.HD
-private unsafe def TL : thm := Session.listDefs.TL
-private unsafe def APPEND : thm := Session.listDefs.APPEND
-private unsafe def MAP_o : thm := Session.listThms1.MAP_o
-private unsafe def MAP_EQ : thm := Session.listThms1.MAP_EQ
-private unsafe def MAP_EQ_DEGEN : thm := Session.listThms1.MAP_EQ_DEGEN
-private unsafe def list_CASES : thm := Session.listThms1.list_CASES
-private unsafe def ALL_T : thm := Session.listThms1.ALL_T
-private unsafe def I_THM : thm := Session.I_THM
-private unsafe def NOT_CONS_NIL : thm := Session.listThms1.NOT_CONS_NIL
-private unsafe def CONS_11 : thm := Session.listThms1.CONS_11
-private unsafe def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
-private unsafe def MEM_EL : thm := Session.listThms2.MEM_EL
+private def LENGTH : thm := Session.listDefs.LENGTH
+private def MAP : thm := Session.listDefs.MAP
+private def ITLIST : thm := Session.listDefs.ITLIST
+private def MEM : thm := Session.listDefs.MEM
+private def EX : thm := Session.listDefs.EX
+private def FILTER : thm := Session.listDefs.FILTER
+private def EL : thm := Session.listDefs.EL
+private def HD : thm := Session.listDefs.HD
+private def TL : thm := Session.listDefs.TL
+private def APPEND : thm := Session.listDefs.APPEND
+private def MAP_o : thm := Session.listThms1.MAP_o
+private def MAP_EQ : thm := Session.listThms1.MAP_EQ
+private def MAP_EQ_DEGEN : thm := Session.listThms1.MAP_EQ_DEGEN
+private def list_CASES : thm := Session.listThms1.list_CASES
+private def ALL_T : thm := Session.listThms1.ALL_T
+private def I_THM : thm := Session.I_THM
+private def NOT_CONS_NIL : thm := Session.listThms1.NOT_CONS_NIL
+private def CONS_11 : thm := Session.listThms1.CONS_11
+private def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
+private def MEM_EL : thm := Session.listThms2.MEM_EL
 
 #eval HolLogicArith.Resolution.ensure
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 #eval phrase 1
-unsafe def FIRSTN : thm := keep "FIRSTN" fun _ => (do
+def FIRSTN : thm := keep "FIRSTN" fun _ => (do
   newRec num_RECURSION
     [[(FIRSTN 0 l = []) /\
       (FIRSTN (SUC n) l = if l = [] then [] else CONS (HD l) (FIRSTN n (TL l)))]]
@@ -60,7 +60,7 @@ unsafe def FIRSTN : thm := keep "FIRSTN" fun _ => (do
 #eval FIRSTN
 
 #eval phrase 2
-unsafe def FIRSTN_TRIVIAL : thm := keep "FIRSTN_TRIVIAL" fun _ => (do
+def FIRSTN_TRIVIAL : thm := keep "FIRSTN_TRIVIAL" fun _ => (do
   prove ([[!n l. LENGTH l <= n ==> (FIRSTN n l = l)]])
    (INDUCT_TAC THEN SIMP_TAC [LE, FIRSTN, LENGTH_EQ_NIL] THEN
     LIST_INDUCT_TAC THEN REWRITE_TAC [NOT_CONS_NIL] THEN
@@ -70,14 +70,14 @@ unsafe def FIRSTN_TRIVIAL : thm := keep "FIRSTN_TRIVIAL" fun _ => (do
 #eval FIRSTN_TRIVIAL
 
 #eval phrase 3
-unsafe def FIRSTN_EMPTY : thm := keep "FIRSTN_EMPTY" fun _ => (do
+def FIRSTN_EMPTY : thm := keep "FIRSTN_EMPTY" fun _ => (do
   prove ([[!n. FIRSTN n [] = [] ]])
    (MESON_TAC [FIRSTN_TRIVIAL, LENGTH, LE_0])
   : ExceptT String IO thm).run
 #eval FIRSTN_EMPTY
 
 #eval phrase 4
-unsafe def FIRSTN_SUBLIST : thm := keep "FIRSTN_SUBLIST" fun _ => (do
+def FIRSTN_SUBLIST : thm := keep "FIRSTN_SUBLIST" fun _ => (do
   prove ([[!x n l. MEM x (FIRSTN n l) ==> MEM x l]])
    (GEN_TAC THEN INDUCT_TAC THEN REWRITE_TAC [FIRSTN, MEM] THEN
     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [NOT_CONS_NIL, HD, TL, MEM] THEN
@@ -86,7 +86,7 @@ unsafe def FIRSTN_SUBLIST : thm := keep "FIRSTN_SUBLIST" fun _ => (do
 #eval FIRSTN_SUBLIST
 
 #eval phrase 5
-unsafe def FIRSTN_SUC : thm := keep "FIRSTN_SUC" fun _ => (do
+def FIRSTN_SUC : thm := keep "FIRSTN_SUC" fun _ => (do
   prove ([[!x n l. MEM x (FIRSTN (SUC n) l)
            ==> MEM x (APPEND (FIRSTN n l) [EL n l]) ]])
    (GEN_TAC THEN INDUCT_TAC THENL
@@ -100,14 +100,14 @@ unsafe def FIRSTN_SUC : thm := keep "FIRSTN_SUC" fun _ => (do
 #eval FIRSTN_SUC
 
 #eval phrase 6
-unsafe def FIRSTN_SHORT : thm := keep "FIRSTN_SHORT" fun _ => (do
+def FIRSTN_SHORT : thm := keep "FIRSTN_SHORT" fun _ => (do
   prove ([[!n l. LENGTH l <= n ==> (FIRSTN (SUC n) l = FIRSTN n l)]])
    (MESON_TAC [FIRSTN_TRIVIAL, (← ExceptT.mk (ARITH_RULE [[x <= n ==> x <= SUC n]]))])
   : ExceptT String IO thm).run
 #eval FIRSTN_SHORT
 
 #eval phrase 7
-unsafe def tautologous : thm := keep "tautologous" fun _ => new_definition
+def tautologous : thm := keep "tautologous" fun _ => new_definition
   [[tautologous cl <=> ?p. p IN cl /\ ~~p IN cl]]
 #eval tautologous
 
@@ -115,12 +115,12 @@ unsafe def tautologous : thm := keep "tautologous" fun _ => new_definition
 #eval parse_as_infix ("subsumes", (12, "right"))
 
 #eval phrase 9
-unsafe def subsumes : thm := keep "subsumes" fun _ => new_definition
+def subsumes : thm := keep "subsumes" fun _ => new_definition
   [[cl subsumes cl' <=> ?i. IMAGE (formsubst i) cl SUBSET cl']]
 #eval subsumes
 
 #eval phrase 10
-unsafe def subsumes_REFL : thm := keep "subsumes_REFL" fun _ => (do
+def subsumes_REFL : thm := keep "subsumes_REFL" fun _ => (do
   prove ([[!cl. cl subsumes cl]])
    (GEN_TAC THEN REWRITE_TAC [subsumes] THEN
     EXISTS_TAC [[V]] THEN
@@ -129,7 +129,7 @@ unsafe def subsumes_REFL : thm := keep "subsumes_REFL" fun _ => (do
 #eval subsumes_REFL
 
 #eval phrase 11
-unsafe def subsumes_TRANS : thm := keep "subsumes_TRANS" fun _ => (do
+def subsumes_TRANS : thm := keep "subsumes_TRANS" fun _ => (do
   prove ([[!cl1 cl2 cl3. clause cl1 /\ cl1 subsumes cl2 /\ cl2 subsumes cl3
                  ==> cl1 subsumes cl3]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [subsumes, clause] THEN
@@ -160,26 +160,26 @@ unsafe def subsumes_TRANS : thm := keep "subsumes_TRANS" fun _ => (do
 #eval parse_as_infix ("SUBSUMES", (12, "right"))
 
 #eval phrase 13
-unsafe def SUBSUMES : thm := keep "SUBSUMES" fun _ => new_definition
+def SUBSUMES : thm := keep "SUBSUMES" fun _ => new_definition
   [[s SUBSUMES s' <=> !cl'. cl' IN s' ==> ?cl. cl IN s /\ cl subsumes cl']]
 #eval SUBSUMES
 
 #eval phrase 14
-unsafe def SUBSUMES_REFL : thm := keep "SUBSUMES_REFL" fun _ => (do
+def SUBSUMES_REFL : thm := keep "SUBSUMES_REFL" fun _ => (do
   prove ([[!s. s SUBSUMES s]])
    (REWRITE_TAC [SUBSUMES] THEN MESON_TAC [subsumes_REFL])
   : ExceptT String IO thm).run
 #eval SUBSUMES_REFL
 
 #eval phrase 15
-unsafe def SUBSUMES_UNION : thm := keep "SUBSUMES_UNION" fun _ => (do
+def SUBSUMES_UNION : thm := keep "SUBSUMES_UNION" fun _ => (do
   prove ([[s SUBSUMES s' /\ t SUBSUMES t' ==> (s UNION t) SUBSUMES (s' UNION t')]])
    (REWRITE_TAC [SUBSUMES, IN_UNION] THEN MESON_TAC [])
   : ExceptT String IO thm).run
 #eval SUBSUMES_UNION
 
 #eval phrase 16
-unsafe def SUBSUMES_TRANS : thm := keep "SUBSUMES_TRANS" fun _ => (do
+def SUBSUMES_TRANS : thm := keep "SUBSUMES_TRANS" fun _ => (do
   prove ([[!s t u. (!c. c IN s ==> clause c) /\ s SUBSUMES t /\ t SUBSUMES u
            ==> s SUBSUMES u]])
    (REWRITE_TAC [SUBSUMES] THEN MESON_TAC [subsumes_TRANS])
@@ -187,14 +187,14 @@ unsafe def SUBSUMES_TRANS : thm := keep "SUBSUMES_TRANS" fun _ => (do
 #eval SUBSUMES_TRANS
 
 #eval phrase 17
-unsafe def SUBSUMES_SUBSET : thm := keep "SUBSUMES_SUBSET" fun _ => (do
+def SUBSUMES_SUBSET : thm := keep "SUBSUMES_SUBSET" fun _ => (do
   prove ([[!s t u. s SUBSUMES t /\ s SUBSET u ==> u SUBSUMES t]])
    (REWRITE_TAC [SUBSUMES, SUBSET] THEN MESON_TAC [])
   : ExceptT String IO thm).run
 #eval SUBSUMES_SUBSET
 
 #eval phrase 18
-unsafe def SUBSUMES_CLAUSES : thm := keep "SUBSUMES_CLAUSES" fun _ => (do
+def SUBSUMES_CLAUSES : thm := keep "SUBSUMES_CLAUSES" fun _ => (do
   prove ([[(!s. s SUBSUMES {}) /\
    (!s. s SUBSUMES (x INSERT t) <=> s SUBSUMES {x} /\ s SUBSUMES t)]])
    (REWRITE_TAC [SUBSUMES, IN_INSERT, NOT_IN_EMPTY] THEN MESON_TAC [])
@@ -202,33 +202,33 @@ unsafe def SUBSUMES_CLAUSES : thm := keep "SUBSUMES_CLAUSES" fun _ => (do
 #eval SUBSUMES_CLAUSES
 
 #eval phrase 19
-unsafe def SUBSUMES_SUBSET_REFL : thm := keep "SUBSUMES_SUBSET_REFL" fun _ => (do
+def SUBSUMES_SUBSET_REFL : thm := keep "SUBSUMES_SUBSET_REFL" fun _ => (do
   prove ([[!s t. s SUBSET t ==> t SUBSUMES s]])
    (MESON_TAC [SUBSUMES_SUBSET, SUBSUMES_REFL])
   : ExceptT String IO thm).run
 #eval SUBSUMES_SUBSET_REFL
 
 #eval phrase 20
-unsafe def allresolvents : thm := keep "allresolvents" fun _ => new_definition
+def allresolvents : thm := keep "allresolvents" fun _ => new_definition
   [[allresolvents s1 s2 =
         {c | ?c1 c2. c1 IN s1 /\ c2 IN s2 /\ isaresolvent c (c1,c2)}]]
 #eval allresolvents
 
 #eval phrase 21
-unsafe def allntresolvents : thm := keep "allntresolvents" fun _ => new_definition
+def allntresolvents : thm := keep "allntresolvents" fun _ => new_definition
   [[allntresolvents s1 s2 =
         {r | r IN allresolvents s1 s2 /\ ~(tautologous r)}]]
 #eval allntresolvents
 
 #eval phrase 22
-unsafe def TERMSUBST_TERMSUBST_o : thm := keep "TERMSUBST_TERMSUBST_o" fun _ => (do
+def TERMSUBST_TERMSUBST_o : thm := keep "TERMSUBST_TERMSUBST_o" fun _ => (do
   prove ([[termsubst (termsubst j o i) = termsubst j o termsubst i]])
    (REWRITE_TAC [FUN_EQ_THM, o_THM, TERMSUBST_TERMSUBST])
   : ExceptT String IO thm).run
 #eval TERMSUBST_TERMSUBST_o
 
 #eval phrase 23
-unsafe def FORMSUBST_FORMSUBST : thm := keep "FORMSUBST_FORMSUBST" fun _ => (do
+def FORMSUBST_FORMSUBST : thm := keep "FORMSUBST_FORMSUBST" fun _ => (do
   prove ([[!p i j. qfree(p)
            ==> (formsubst j (formsubst i p) = formsubst (termsubst j o i) p)]])
    (REPEAT GEN_TAC THEN SPEC_TAC ([[p:form]], [[p:form]]) THEN
@@ -238,7 +238,7 @@ unsafe def FORMSUBST_FORMSUBST : thm := keep "FORMSUBST_FORMSUBST" fun _ => (do
 #eval FORMSUBST_FORMSUBST
 
 #eval phrase 24
-unsafe def ISARESOLVENT_SYM : thm := keep "ISARESOLVENT_SYM" fun _ => (do
+def ISARESOLVENT_SYM : thm := keep "ISARESOLVENT_SYM" fun _ => (do
   prove ([[!c1 c2 cl.
         clause c1 /\ clause c2 /\ isaresolvent cl (c2,c1)
         ==> ?cl'. isaresolvent cl' (c1,c2) /\ cl' subsumes cl]])
@@ -623,7 +623,7 @@ unsafe def ISARESOLVENT_SYM : thm := keep "ISARESOLVENT_SYM" fun _ => (do
 #eval ISARESOLVENT_SYM
 
 #eval phrase 25
-unsafe def ALLRESOLVENTS_SYM : thm := keep "ALLRESOLVENTS_SYM" fun _ => (do
+def ALLRESOLVENTS_SYM : thm := keep "ALLRESOLVENTS_SYM" fun _ => (do
   prove ([[(!c. c IN A ==> clause c) /\ (!c. c IN B ==> clause c)
    ==> (allresolvents A B) SUBSUMES (allresolvents B A)]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [SUBSUMES, allresolvents, IN_ELIM_THM] THEN
@@ -639,7 +639,7 @@ unsafe def ALLRESOLVENTS_SYM : thm := keep "ALLRESOLVENTS_SYM" fun _ => (do
 #eval ALLRESOLVENTS_SYM
 
 #eval phrase 26
-unsafe def ALLRESOLVENTS_UNION : thm := keep "ALLRESOLVENTS_UNION" fun _ => (do
+def ALLRESOLVENTS_UNION : thm := keep "ALLRESOLVENTS_UNION" fun _ => (do
   prove ([[(allresolvents (A UNION B) C =
         (allresolvents A C) UNION (allresolvents B C)) /\
    (allresolvents A (B UNION C) =
@@ -650,7 +650,7 @@ unsafe def ALLRESOLVENTS_UNION : thm := keep "ALLRESOLVENTS_UNION" fun _ => (do
 #eval ALLRESOLVENTS_UNION
 
 #eval phrase 27
-unsafe def ALLRESOLVENTS_STEP : thm := keep "ALLRESOLVENTS_STEP" fun _ => (do
+def ALLRESOLVENTS_STEP : thm := keep "ALLRESOLVENTS_STEP" fun _ => (do
   prove ([[(!c. c IN B ==> clause(c)) /\
    (!c. c IN C ==> clause(c))
    ==> ((allresolvents B (A UNION B)) UNION
@@ -669,33 +669,33 @@ unsafe def ALLRESOLVENTS_STEP : thm := keep "ALLRESOLVENTS_STEP" fun _ => (do
 #eval ALLRESOLVENTS_STEP
 
 #eval phrase 28
-unsafe def resolvents : thm := keep "resolvents" fun _ => new_definition
+def resolvents : thm := keep "resolvents" fun _ => new_definition
   [[resolvents cl cls = list_of_set(allresolvents {cl} (set_of_list cls))]]
 #eval resolvents
 
 #eval phrase 29
-unsafe def CLAUSE_UNION : thm := keep "CLAUSE_UNION" fun _ => (do
+def CLAUSE_UNION : thm := keep "CLAUSE_UNION" fun _ => (do
   prove ([[!c1 c2. clause(c1 UNION c2) <=> clause(c1) /\ clause(c2)]])
    (REWRITE_TAC [clause, FINITE_UNION, IN_UNION] THEN MESON_TAC [])
   : ExceptT String IO thm).run
 #eval CLAUSE_UNION
 
 #eval phrase 30
-unsafe def CLAUSE_SUBSET : thm := keep "CLAUSE_SUBSET" fun _ => (do
+def CLAUSE_SUBSET : thm := keep "CLAUSE_SUBSET" fun _ => (do
   prove ([[!c1 c2. clause c2 /\ c1 SUBSET c2 ==> clause c1]])
    (REWRITE_TAC [clause] THEN MESON_TAC [SUBSET, FINITE_SUBSET])
   : ExceptT String IO thm).run
 #eval CLAUSE_SUBSET
 
 #eval phrase 31
-unsafe def CLAUSE_DIFF : thm := keep "CLAUSE_DIFF" fun _ => (do
+def CLAUSE_DIFF : thm := keep "CLAUSE_DIFF" fun _ => (do
   prove ([[!c1 c2. clause c1 ==> clause (c1 DIFF c2)]])
    (MESON_TAC [CLAUSE_SUBSET, IN_DIFF, SUBSET])
   : ExceptT String IO thm).run
 #eval CLAUSE_DIFF
 
 #eval phrase 32
-unsafe def ISARESOLVENT_CLAUSE : thm := keep "ISARESOLVENT_CLAUSE" fun _ => (do
+def ISARESOLVENT_CLAUSE : thm := keep "ISARESOLVENT_CLAUSE" fun _ => (do
   prove ([[!p q r. clause p /\ clause q /\ isaresolvent r (p,q) ==> clause r]])
    (REWRITE_TAC [isaresolvent] THEN
     CONV_TAC (HolLight.TOP_DEPTH_CONV Session.let_CONV) THEN REPEAT STRIP_TAC THEN
@@ -705,7 +705,7 @@ unsafe def ISARESOLVENT_CLAUSE : thm := keep "ISARESOLVENT_CLAUSE" fun _ => (do
 #eval ISARESOLVENT_CLAUSE
 
 #eval phrase 33
-unsafe def ALLRESOLVENTS_CLAUSE : thm := keep "ALLRESOLVENTS_CLAUSE" fun _ => (do
+def ALLRESOLVENTS_CLAUSE : thm := keep "ALLRESOLVENTS_CLAUSE" fun _ => (do
   prove ([[(!c. c IN s ==> clause c) /\ (!c. c IN t ==> clause c)
    ==> !c. c IN allresolvents s t ==> clause c]])
    (REWRITE_TAC [allresolvents, IN_ELIM_THM, isaresolvent] THEN
@@ -716,7 +716,7 @@ unsafe def ALLRESOLVENTS_CLAUSE : thm := keep "ALLRESOLVENTS_CLAUSE" fun _ => (d
 #eval ALLRESOLVENTS_CLAUSE
 
 #eval phrase 34
-unsafe def ISARESOLVENT_FINITE : thm := keep "ISARESOLVENT_FINITE" fun _ => (do
+def ISARESOLVENT_FINITE : thm := keep "ISARESOLVENT_FINITE" fun _ => (do
   prove ([[!c1 c2. clause(c1) /\ clause(c2)
            ==> FINITE {c | isaresolvent c (c1,c2)}]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [isaresolvent] THEN
@@ -745,7 +745,7 @@ unsafe def ISARESOLVENT_FINITE : thm := keep "ISARESOLVENT_FINITE" fun _ => (do
 #eval ISARESOLVENT_FINITE
 
 #eval phrase 35
-unsafe def ALLRESOLVENTS_FINITE : thm := keep "ALLRESOLVENTS_FINITE" fun _ => (do
+def ALLRESOLVENTS_FINITE : thm := keep "ALLRESOLVENTS_FINITE" fun _ => (do
   prove ([[!s t. FINITE(s) /\ FINITE(t) /\
          (!c. c IN s ==> clause c) /\
          (!c. c IN t ==> clause c)
@@ -770,7 +770,7 @@ unsafe def ALLRESOLVENTS_FINITE : thm := keep "ALLRESOLVENTS_FINITE" fun _ => (d
 #eval ALLRESOLVENTS_FINITE
 
 #eval phrase 36
-unsafe def replace : thm := keep "replace" fun _ => (do
+def replace : thm := keep "replace" fun _ => (do
   newRec Session.list_RECURSION
     [[(replace cl [] = [cl]) /\
       (replace cl (CONS c cls) =
@@ -779,7 +779,7 @@ unsafe def replace : thm := keep "replace" fun _ => (do
 #eval replace
 
 #eval phrase 37
-unsafe def REPLACE : thm := keep "REPLACE" fun _ => (do
+def REPLACE : thm := keep "REPLACE" fun _ => (do
   prove ([[!cl lis. (!c. MEM c lis ==> clause c) /\ clause cl
             ==> (!c. MEM c (replace cl lis) ==> clause c) /\
                 set_of_list(replace cl lis) SUBSUMES set_of_list(CONS cl lis)]])
@@ -802,14 +802,14 @@ unsafe def REPLACE : thm := keep "REPLACE" fun _ => (do
 #eval REPLACE
 
 #eval phrase 38
-unsafe def incorporate : thm := keep "incorporate" fun _ => new_definition
+def incorporate : thm := keep "incorporate" fun _ => new_definition
   [[incorporate gcl cl current =
         if tautologous cl \/ EX (\c. c subsumes cl) (CONS gcl current)
         then current else replace cl current]]
 #eval incorporate
 
 #eval phrase 39
-unsafe def INCORPORATE : thm := keep "INCORPORATE" fun _ => (do
+def INCORPORATE : thm := keep "INCORPORATE" fun _ => (do
   prove ([[!gcl cl current.
         (!c. MEM c current ==> clause c) /\ clause gcl /\ clause cl
         ==> (!c. MEM c (incorporate gcl cl current) ==> clause c) /\
@@ -849,12 +849,12 @@ unsafe def INCORPORATE : thm := keep "INCORPORATE" fun _ => (do
 #eval INCORPORATE
 
 #eval phrase 40
-unsafe def insert_def : thm := keep "insert_def" fun _ => new_definition
+def insert_def : thm := keep "insert_def" fun _ => new_definition
   [[insert x l = if MEM x l then l else CONS x l]]
 #eval insert_def
 
 #eval phrase 41
-unsafe def step : thm := keep "step" fun _ => new_definition
+def step : thm := keep "step" fun _ => new_definition
   [[step (used,unused) =
         if unused = [] then (used,unused) else
         let new = resolvents (HD unused) (CONS (HD unused) used) in
@@ -863,7 +863,7 @@ unsafe def step : thm := keep "step" fun _ => new_definition
 #eval step
 
 #eval phrase 42
-unsafe def STEP : thm := keep "STEP" fun _ => (do
+def STEP : thm := keep "STEP" fun _ => (do
   prove ([[(step(used,[]) = (used,[])) /\
    (step(used,CONS cl cls) =
         let new = resolvents cl (CONS cl used) in
@@ -874,7 +874,7 @@ unsafe def STEP : thm := keep "STEP" fun _ => (do
 #eval STEP
 
 #eval phrase 43
-unsafe def given : thm := keep "given" fun _ => (do
+def given : thm := keep "given" fun _ => (do
   newRec num_RECURSION
     [[(given 0 p = p) /\
       (given (SUC n) p = step(given n p))]]
@@ -882,17 +882,17 @@ unsafe def given : thm := keep "given" fun _ => (do
 #eval given
 
 #eval phrase 44
-unsafe def Used_DEF : thm := keep "Used_DEF" fun _ => new_definition
+def Used_DEF : thm := keep "Used_DEF" fun _ => new_definition
   [[Used init n = set_of_list(FST(given n init))]]
 #eval Used_DEF
 
 #eval phrase 45
-unsafe def Unused_DEF : thm := keep "Unused_DEF" fun _ => new_definition
+def Unused_DEF : thm := keep "Unused_DEF" fun _ => new_definition
   [[Unused init n = set_of_list(SND(given n init))]]
 #eval Unused_DEF
 
 #eval phrase 46
-unsafe def Sub_DEF : thm := keep "Sub_DEF" fun _ => (do
+def Sub_DEF : thm := keep "Sub_DEF" fun _ => (do
   newRec num_RECURSION
     [[(Sub init 0 = {}) /\
       (Sub init (SUC n) = if SND(given n init) = [] then Sub init n
@@ -901,7 +901,7 @@ unsafe def Sub_DEF : thm := keep "Sub_DEF" fun _ => (do
 #eval Sub_DEF
 
 #eval phrase 47
-unsafe def TAUTOLOGOUS_INSTANCE : thm := keep "TAUTOLOGOUS_INSTANCE" fun _ => (do
+def TAUTOLOGOUS_INSTANCE : thm := keep "TAUTOLOGOUS_INSTANCE" fun _ => (do
   prove ([[!i cl. tautologous cl ==> tautologous (IMAGE (formsubst i) cl)]])
    (REWRITE_TAC [tautologous, IN_IMAGE] THEN
     MESON_TAC [FORMSUBST_NEGATE])
@@ -909,7 +909,7 @@ unsafe def TAUTOLOGOUS_INSTANCE : thm := keep "TAUTOLOGOUS_INSTANCE" fun _ => (d
 #eval TAUTOLOGOUS_INSTANCE
 
 #eval phrase 48
-unsafe def NONTAUTOLOGOUS_SUBSUMES : thm := keep "NONTAUTOLOGOUS_SUBSUMES" fun _ => (do
+def NONTAUTOLOGOUS_SUBSUMES : thm := keep "NONTAUTOLOGOUS_SUBSUMES" fun _ => (do
   prove ([[cl subsumes cl' /\ ~(tautologous cl') ==> ~(tautologous cl)]])
    (REWRITE_TAC [subsumes, SUBSET, tautologous, IN_IMAGE] THEN
     MESON_TAC [FORMSUBST_NEGATE])
@@ -917,7 +917,7 @@ unsafe def NONTAUTOLOGOUS_SUBSUMES : thm := keep "NONTAUTOLOGOUS_SUBSUMES" fun _
 #eval NONTAUTOLOGOUS_SUBSUMES
 
 #eval phrase 49
-unsafe def ALLNTRESOLVENTS_STEP : thm := keep "ALLNTRESOLVENTS_STEP" fun _ => (do
+def ALLNTRESOLVENTS_STEP : thm := keep "ALLNTRESOLVENTS_STEP" fun _ => (do
   prove ([[(!c. c IN B ==> clause(c)) /\
    (!c. c IN C ==> clause(c))
    ==> ((allntresolvents B (A UNION B)) UNION
@@ -930,7 +930,7 @@ unsafe def ALLNTRESOLVENTS_STEP : thm := keep "ALLNTRESOLVENTS_STEP" fun _ => (d
 #eval ALLNTRESOLVENTS_STEP
 
 #eval phrase 50
-unsafe def ALLNTRESOLVENTS_UNION : thm := keep "ALLNTRESOLVENTS_UNION" fun _ => (do
+def ALLNTRESOLVENTS_UNION : thm := keep "ALLNTRESOLVENTS_UNION" fun _ => (do
   prove ([[(allntresolvents (A UNION B) C =
         (allntresolvents A C) UNION (allntresolvents B C)) /\
    (allntresolvents A (B UNION C) =
@@ -942,7 +942,7 @@ unsafe def ALLNTRESOLVENTS_UNION : thm := keep "ALLNTRESOLVENTS_UNION" fun _ => 
 #eval ALLNTRESOLVENTS_UNION
 
 #eval phrase 51
-unsafe def SET_OF_LIST_INSERT : thm := keep "SET_OF_LIST_INSERT" fun _ => (do
+def SET_OF_LIST_INSERT : thm := keep "SET_OF_LIST_INSERT" fun _ => (do
   prove ([[!x s. set_of_list(insert x s) = x INSERT set_of_list(s)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [insert_def] THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [set_of_list] THEN
@@ -951,7 +951,7 @@ unsafe def SET_OF_LIST_INSERT : thm := keep "SET_OF_LIST_INSERT" fun _ => (do
 #eval SET_OF_LIST_INSERT
 
 #eval phrase 52
-unsafe def SET_OF_LIST_FILTER : thm := keep "SET_OF_LIST_FILTER" fun _ => (do
+def SET_OF_LIST_FILTER : thm := keep "SET_OF_LIST_FILTER" fun _ => (do
   prove ([[!P l. set_of_list(FILTER P l) = {x | x IN set_of_list l /\ P x}]])
    (GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [FILTER, set_of_list] THENL
      [REWRITE_TAC [EXTENSION, IN_ELIM_THM, NOT_IN_EMPTY], ALL_TAC] THEN
@@ -962,7 +962,7 @@ unsafe def SET_OF_LIST_FILTER : thm := keep "SET_OF_LIST_FILTER" fun _ => (do
 #eval SET_OF_LIST_FILTER
 
 #eval phrase 53
-unsafe def USED_SUB : thm := keep "USED_SUB" fun _ => (do
+def USED_SUB : thm := keep "USED_SUB" fun _ => (do
   prove ([[!used unused n.
         Used(used,unused) n = set_of_list(used) UNION Sub(used,unused) n]])
    (GEN_TAC THEN GEN_TAC THEN
@@ -979,7 +979,7 @@ unsafe def USED_SUB : thm := keep "USED_SUB" fun _ => (do
 #eval USED_SUB
 
 #eval phrase 54
-unsafe def GIVEN_INVARIANT : thm := keep "GIVEN_INVARIANT" fun _ => (do
+def GIVEN_INVARIANT : thm := keep "GIVEN_INVARIANT" fun _ => (do
   let lemma1 ← prove ([[x INSERT s = s UNION {x}]]) (SET_TAC [])
   let lemma2 ← prove
    ([[(x INSERT s) UNION t = (s UNION (t UNION {x})) UNION (t UNION {x})]])
@@ -1175,7 +1175,7 @@ unsafe def GIVEN_INVARIANT : thm := keep "GIVEN_INVARIANT" fun _ => (do
 #eval GIVEN_INVARIANT
 
 #eval phrase 55
-unsafe def SUB_MONO_SUBSET : thm := keep "SUB_MONO_SUBSET" fun _ => (do
+def SUB_MONO_SUBSET : thm := keep "SUB_MONO_SUBSET" fun _ => (do
   prove ([[!init m n. m <= n ==> (Sub init m) SUBSET (Sub init n)]])
    (REPEAT GEN_TAC THEN SIMP_TAC [LE_EXISTS, LEFT_IMP_EXISTS_THM] THEN
     X_GEN_TAC [[d:num]] THEN DISCH_THEN (HolCore.Lib.K ALL_TAC) THEN
@@ -1187,14 +1187,14 @@ unsafe def SUB_MONO_SUBSET : thm := keep "SUB_MONO_SUBSET" fun _ => (do
 #eval SUB_MONO_SUBSET
 
 #eval phrase 56
-unsafe def SUB_MONO : thm := keep "SUB_MONO" fun _ => (do
+def SUB_MONO : thm := keep "SUB_MONO" fun _ => (do
   prove ([[!init m n. m <= n ==> (Sub init n) SUBSUMES (Sub init m)]])
    (MESON_TAC [SUBSUMES_SUBSET_REFL, SUB_MONO_SUBSET])
   : ExceptT String IO thm).run
 #eval SUB_MONO
 
 #eval phrase 57
-unsafe def LENGTH_REPLACE : thm := keep "LENGTH_REPLACE" fun _ => (do
+def LENGTH_REPLACE : thm := keep "LENGTH_REPLACE" fun _ => (do
   prove ([[!cl current. LENGTH current <= LENGTH(replace cl current)]])
    (GEN_TAC THEN LIST_INDUCT_TAC THEN REWRITE_TAC [replace] THEN
     REWRITE_TAC [LENGTH, LE_0] THEN
@@ -1203,7 +1203,7 @@ unsafe def LENGTH_REPLACE : thm := keep "LENGTH_REPLACE" fun _ => (do
 #eval LENGTH_REPLACE
 
 #eval phrase 58
-unsafe def LENGTH_INCORPORATE : thm := keep "LENGTH_INCORPORATE" fun _ => (do
+def LENGTH_INCORPORATE : thm := keep "LENGTH_INCORPORATE" fun _ => (do
   prove ([[!gcl cl current. LENGTH current <= LENGTH(incorporate gcl cl current)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [incorporate] THEN
     COND_CASES_TAC THEN REWRITE_TAC [LE_REFL, LENGTH_REPLACE])
@@ -1211,7 +1211,7 @@ unsafe def LENGTH_INCORPORATE : thm := keep "LENGTH_INCORPORATE" fun _ => (do
 #eval LENGTH_INCORPORATE
 
 #eval phrase 59
-unsafe def LENGTH_UNUSED_CHANGE : thm := keep "LENGTH_UNUSED_CHANGE" fun _ => (do
+def LENGTH_UNUSED_CHANGE : thm := keep "LENGTH_UNUSED_CHANGE" fun _ => (do
   prove ([[!init m n.
         LENGTH(SND(given m init)) <= LENGTH (SND(given (m + n) init)) + n]])
    (HolLight.GEN_REWRITE_TAC HolCore.Lib.I [FORALL_PAIR_THM] THEN
@@ -1240,7 +1240,7 @@ unsafe def LENGTH_UNUSED_CHANGE : thm := keep "LENGTH_UNUSED_CHANGE" fun _ => (d
 #eval LENGTH_UNUSED_CHANGE
 
 #eval phrase 60
-unsafe def LENGTH_UNUSED_ZERO : thm := keep "LENGTH_UNUSED_ZERO" fun _ => (do
+def LENGTH_UNUSED_ZERO : thm := keep "LENGTH_UNUSED_ZERO" fun _ => (do
   prove ([[!used unused m n.
         (SND (given m (used,unused)) = [])
         ==> (SND (given (m + n) (used,unused)) = [])]])
@@ -1253,7 +1253,7 @@ unsafe def LENGTH_UNUSED_ZERO : thm := keep "LENGTH_UNUSED_ZERO" fun _ => (do
 #eval LENGTH_UNUSED_ZERO
 
 #eval phrase 61
-unsafe def REPLACE_SUBSUMES_SELF : thm := keep "REPLACE_SUBSUMES_SELF" fun _ => (do
+def REPLACE_SUBSUMES_SELF : thm := keep "REPLACE_SUBSUMES_SELF" fun _ => (do
   prove ([[!cl current n.
         n < LENGTH current
         ==> (EL n (replace cl current)) subsumes (EL n current)]])
@@ -1265,7 +1265,7 @@ unsafe def REPLACE_SUBSUMES_SELF : thm := keep "REPLACE_SUBSUMES_SELF" fun _ => 
 #eval REPLACE_SUBSUMES_SELF
 
 #eval phrase 62
-unsafe def INCORPORATE_SUBSUMES_SELF : thm := keep "INCORPORATE_SUBSUMES_SELF" fun _ => (do
+def INCORPORATE_SUBSUMES_SELF : thm := keep "INCORPORATE_SUBSUMES_SELF" fun _ => (do
   prove ([[!gcl cl current n.
         n < LENGTH current
         ==> (EL n (incorporate gcl cl current)) subsumes (EL n current)]])
@@ -1275,7 +1275,7 @@ unsafe def INCORPORATE_SUBSUMES_SELF : thm := keep "INCORPORATE_SUBSUMES_SELF" f
 #eval INCORPORATE_SUBSUMES_SELF
 
 #eval phrase 63
-unsafe def REPLACE_CLAUSE : thm := keep "REPLACE_CLAUSE" fun _ => (do
+def REPLACE_CLAUSE : thm := keep "REPLACE_CLAUSE" fun _ => (do
   prove ([[!cl current.
         (!c. MEM c current ==> clause c) /\ clause cl
         ==> !c. MEM c (replace cl current) ==> clause c]])
@@ -1286,7 +1286,7 @@ unsafe def REPLACE_CLAUSE : thm := keep "REPLACE_CLAUSE" fun _ => (do
 #eval REPLACE_CLAUSE
 
 #eval phrase 64
-unsafe def INCORPORATE_CLAUSE : thm := keep "INCORPORATE_CLAUSE" fun _ => (do
+def INCORPORATE_CLAUSE : thm := keep "INCORPORATE_CLAUSE" fun _ => (do
   prove ([[(!c. MEM c current ==> clause c) /\ clause cl
    ==> !c. MEM c (incorporate gcl cl current) ==> clause c]])
    (REPEAT GEN_TAC THEN STRIP_TAC THEN GEN_TAC THEN REWRITE_TAC [incorporate] THEN
@@ -1296,7 +1296,7 @@ unsafe def INCORPORATE_CLAUSE : thm := keep "INCORPORATE_CLAUSE" fun _ => (do
 #eval INCORPORATE_CLAUSE
 
 #eval phrase 65
-unsafe def INCORPORATE_CLAUSE_EL : thm := keep "INCORPORATE_CLAUSE_EL" fun _ => (do
+def INCORPORATE_CLAUSE_EL : thm := keep "INCORPORATE_CLAUSE_EL" fun _ => (do
   prove ([[(!c. MEM c current ==> clause c) /\ clause cl /\ p < LENGTH current
    ==> clause (EL p (incorporate gcl cl current))]])
    (MESON_TAC [MEM_EL, INCORPORATE_CLAUSE, LENGTH_INCORPORATE,
@@ -1305,7 +1305,7 @@ unsafe def INCORPORATE_CLAUSE_EL : thm := keep "INCORPORATE_CLAUSE_EL" fun _ => 
 #eval INCORPORATE_CLAUSE_EL
 
 #eval phrase 66
-unsafe def UNUSED_SUBSUMES_SELF : thm := keep "UNUSED_SUBSUMES_SELF" fun _ => (do
+def UNUSED_SUBSUMES_SELF : thm := keep "UNUSED_SUBSUMES_SELF" fun _ => (do
   prove ([[!used unused.
         (!c. MEM c used ==> clause c) /\
         (!c. MEM c unused ==> clause c)
@@ -1422,7 +1422,7 @@ unsafe def UNUSED_SUBSUMES_SELF : thm := keep "UNUSED_SUBSUMES_SELF" fun _ => (d
 #eval UNUSED_SUBSUMES_SELF
 
 #eval phrase 67
-unsafe def SUB_SUBSUMES_UNUSED : thm := keep "SUB_SUBSUMES_UNUSED" fun _ => (do
+def SUB_SUBSUMES_UNUSED : thm := keep "SUB_SUBSUMES_UNUSED" fun _ => (do
   let lemma ← prove ([[x INSERT s = {x} UNION s]]) (SET_TAC [])
   let ar1 ← ExceptT.mk (ARITH_RULE [[x <= n ==> x <= SUC n]])
   prove ([[(!c. MEM c used ==> clause c) /\
@@ -1537,7 +1537,7 @@ unsafe def SUB_SUBSUMES_UNUSED : thm := keep "SUB_SUBSUMES_UNUSED" fun _ => (do
 #eval SUB_SUBSUMES_UNUSED
 
 #eval phrase 68
-unsafe def «break» : thm := keep "break" fun _ => (do
+def «break» : thm := keep "break" fun _ => (do
   newRec num_RECURSION
     [[(break init 0 = LENGTH(SND(given 0 init))) /\
       (break init (SUC n) =
@@ -1546,12 +1546,12 @@ unsafe def «break» : thm := keep "break" fun _ => (do
 #eval «break»
 
 #eval phrase 69
-unsafe def level : thm := keep "level" fun _ => new_definition
+def level : thm := keep "level" fun _ => new_definition
   [[level init n = Sub init (break init n)]]
 #eval level
 
 #eval phrase 70
-unsafe def LEVEL_0 : thm := keep "LEVEL_0" fun _ => (do
+def LEVEL_0 : thm := keep "LEVEL_0" fun _ => (do
   prove ([[!used unused.
         (!c. MEM c used ==> clause c) /\
         (!c. MEM c unused ==> clause c)
@@ -1565,7 +1565,7 @@ unsafe def LEVEL_0 : thm := keep "LEVEL_0" fun _ => (do
 #eval LEVEL_0
 
 #eval phrase 71
-unsafe def LEVEL_STEP : thm := keep "LEVEL_STEP" fun _ => (do
+def LEVEL_STEP : thm := keep "LEVEL_STEP" fun _ => (do
   prove ([[!used unused.
         (!c. MEM c used ==> clause c) /\
         (!c. MEM c unused ==> clause c)
@@ -1588,7 +1588,7 @@ unsafe def LEVEL_STEP : thm := keep "LEVEL_STEP" fun _ => (do
 #eval LEVEL_STEP
 
 #eval phrase 72
-unsafe def level_CLAUSE : thm := keep "level_CLAUSE" fun _ => (do
+def level_CLAUSE : thm := keep "level_CLAUSE" fun _ => (do
   prove ([[!used unused.
         (!c. MEM c used ==> clause c) /\
         (!c. MEM c unused ==> clause c)
@@ -1598,7 +1598,7 @@ unsafe def level_CLAUSE : thm := keep "level_CLAUSE" fun _ => (do
 #eval level_CLAUSE
 
 #eval phrase 73
-unsafe def BREAK_MONO : thm := keep "BREAK_MONO" fun _ => (do
+def BREAK_MONO : thm := keep "BREAK_MONO" fun _ => (do
   prove ([[!init m n. m <= n ==> break init m <= break init n]])
    (SUBGOAL_THEN ([[!init m d. break init m <= break init (m + d)]])
      (fun th => MESON_TAC [th, LE_EXISTS]) THEN
@@ -1609,7 +1609,7 @@ unsafe def BREAK_MONO : thm := keep "BREAK_MONO" fun _ => (do
 #eval BREAK_MONO
 
 #eval phrase 74
-unsafe def level_MONO_SUBSET : thm := keep "level_MONO_SUBSET" fun _ => (do
+def level_MONO_SUBSET : thm := keep "level_MONO_SUBSET" fun _ => (do
   prove ([[!used unused.
         (!c. MEM c used ==> clause c) /\
         (!c. MEM c unused ==> clause c)
@@ -1620,7 +1620,7 @@ unsafe def level_MONO_SUBSET : thm := keep "level_MONO_SUBSET" fun _ => (do
 #eval level_MONO_SUBSET
 
 #eval phrase 75
-unsafe def level_MONO : thm := keep "level_MONO" fun _ => (do
+def level_MONO : thm := keep "level_MONO" fun _ => (do
   prove ([[!used unused.
         (!c. MEM c used ==> clause c) /\
         (!c. MEM c unused ==> clause c)
@@ -1631,7 +1631,7 @@ unsafe def level_MONO : thm := keep "level_MONO" fun _ => (do
 #eval level_MONO
 
 #eval phrase 76
-unsafe def IMAGE_CLAUSE_EQ : thm := keep "IMAGE_CLAUSE_EQ" fun _ => (do
+def IMAGE_CLAUSE_EQ : thm := keep "IMAGE_CLAUSE_EQ" fun _ => (do
   prove ([[clause p /\ (!q. qfree(q) ==> (f q = g q))
    ==> (IMAGE f p = IMAGE g p)]])
    (REWRITE_TAC [clause, EXTENSION, IN_IMAGE] THEN
@@ -1640,7 +1640,7 @@ unsafe def IMAGE_CLAUSE_EQ : thm := keep "IMAGE_CLAUSE_EQ" fun _ => (do
 #eval IMAGE_CLAUSE_EQ
 
 #eval phrase 77
-unsafe def FORMSUBST_TERMSUBST_EQ : thm := keep "FORMSUBST_TERMSUBST_EQ" fun _ => (do
+def FORMSUBST_TERMSUBST_EQ : thm := keep "FORMSUBST_TERMSUBST_EQ" fun _ => (do
   prove ([[(!p. qfree(p) ==> (formsubst i p = formsubst j p)) <=>
    (termsubst i = termsubst j)]])
    (REWRITE_TAC [FUN_EQ_THM, o_THM] THEN EQ_TAC THEN DISCH_TAC THENL
@@ -1653,7 +1653,7 @@ unsafe def FORMSUBST_TERMSUBST_EQ : thm := keep "FORMSUBST_TERMSUBST_EQ" fun _ =
 #eval FORMSUBST_TERMSUBST_EQ
 
 #eval phrase 78
-unsafe def ISARESOLVENT_SUBSUME_L : thm := keep "ISARESOLVENT_SUBSUME_L" fun _ => (do
+def ISARESOLVENT_SUBSUME_L : thm := keep "ISARESOLVENT_SUBSUME_L" fun _ => (do
   let lemma ← prove
    ([[a SUBSET a' /\ b SUBSET b' ==> (a UNION b) SUBSET (a' UNION b')]])
     (SET_TAC [])
@@ -1964,7 +1964,7 @@ unsafe def ISARESOLVENT_SUBSUME_L : thm := keep "ISARESOLVENT_SUBSUME_L" fun _ =
 #eval ISARESOLVENT_SUBSUME_L
 
 #eval phrase 79
-unsafe def ISARESOLVENT_SUBSUME_R : thm := keep "ISARESOLVENT_SUBSUME_R" fun _ => (do
+def ISARESOLVENT_SUBSUME_R : thm := keep "ISARESOLVENT_SUBSUME_R" fun _ => (do
   prove ([[!p q q' r.
         clause p /\ clause q /\ clause q' /\
         q' subsumes q /\ isaresolvent r (p,q)
@@ -1990,7 +1990,7 @@ unsafe def ISARESOLVENT_SUBSUME_R : thm := keep "ISARESOLVENT_SUBSUME_R" fun _ =
 #eval ISARESOLVENT_SUBSUME_R
 
 #eval phrase 80
-unsafe def ISARESOLVENT_SUBSUME : thm := keep "ISARESOLVENT_SUBSUME" fun _ => (do
+def ISARESOLVENT_SUBSUME : thm := keep "ISARESOLVENT_SUBSUME" fun _ => (do
   prove ([[!p p' q q' r.
         clause p /\ clause p' /\ clause q /\ clause q' /\
         p' subsumes p /\ q' subsumes q /\ isaresolvent r (p,q)
@@ -2010,7 +2010,7 @@ unsafe def ISARESOLVENT_SUBSUME : thm := keep "ISARESOLVENT_SUBSUME" fun _ => (d
 #eval ISARESOLVENT_SUBSUME
 
 #eval phrase 81
-unsafe def ALLRESOLVENTS_SUBSUME_L : thm := keep "ALLRESOLVENTS_SUBSUME_L" fun _ => (do
+def ALLRESOLVENTS_SUBSUME_L : thm := keep "ALLRESOLVENTS_SUBSUME_L" fun _ => (do
   prove ([[!s t u.
       (!c. c IN s ==> clause c) /\
       (!c. c IN t ==> clause c) /\
@@ -2023,7 +2023,7 @@ unsafe def ALLRESOLVENTS_SUBSUME_L : thm := keep "ALLRESOLVENTS_SUBSUME_L" fun _
 #eval ALLRESOLVENTS_SUBSUME_L
 
 #eval phrase 82
-unsafe def ALLRESOLVENTS_SUBSUME_R : thm := keep "ALLRESOLVENTS_SUBSUME_R" fun _ => (do
+def ALLRESOLVENTS_SUBSUME_R : thm := keep "ALLRESOLVENTS_SUBSUME_R" fun _ => (do
   prove ([[!s t u.
       (!c. c IN s ==> clause c) /\
       (!c. c IN t ==> clause c) /\
@@ -2036,7 +2036,7 @@ unsafe def ALLRESOLVENTS_SUBSUME_R : thm := keep "ALLRESOLVENTS_SUBSUME_R" fun _
 #eval ALLRESOLVENTS_SUBSUME_R
 
 #eval phrase 83
-unsafe def ALLRESOLVENTS_SUBSUME : thm := keep "ALLRESOLVENTS_SUBSUME" fun _ => (do
+def ALLRESOLVENTS_SUBSUME : thm := keep "ALLRESOLVENTS_SUBSUME" fun _ => (do
   prove ([[!s t s' t'.
       (!c. c IN s ==> clause c) /\
       (!c. c IN s' ==> clause c) /\
@@ -2055,7 +2055,7 @@ unsafe def ALLRESOLVENTS_SUBSUME : thm := keep "ALLRESOLVENTS_SUBSUME" fun _ => 
 #eval ALLRESOLVENTS_SUBSUME
 
 #eval phrase 84
-unsafe def ISARESOLVENT_TAUTOLOGY_L : thm := keep "ISARESOLVENT_TAUTOLOGY_L" fun _ => (do
+def ISARESOLVENT_TAUTOLOGY_L : thm := keep "ISARESOLVENT_TAUTOLOGY_L" fun _ => (do
   let lemma ← prove
    ([[{~~p | p IN s} = IMAGE (~~) s]])
     (REWRITE_TAC [EXTENSION, IN_IMAGE, IN_ELIM_THM] THEN MESON_TAC [])
@@ -2170,14 +2170,14 @@ unsafe def ISARESOLVENT_TAUTOLOGY_L : thm := keep "ISARESOLVENT_TAUTOLOGY_L" fun
 #eval ISARESOLVENT_TAUTOLOGY_L
 
 #eval phrase 85
-unsafe def TAUTOLOGOUS_SUBSUMES : thm := keep "TAUTOLOGOUS_SUBSUMES" fun _ => (do
+def TAUTOLOGOUS_SUBSUMES : thm := keep "TAUTOLOGOUS_SUBSUMES" fun _ => (do
   prove ([[!p q. p subsumes q /\ tautologous(p) ==> tautologous(q)]])
    (MESON_TAC [subsumes, tautologous, SUBSET, TAUTOLOGOUS_INSTANCE])
   : ExceptT String IO thm).run
 #eval TAUTOLOGOUS_SUBSUMES
 
 #eval phrase 86
-unsafe def ISARESOLVENT_TAUTOLOGY_R : thm := keep "ISARESOLVENT_TAUTOLOGY_R" fun _ => (do
+def ISARESOLVENT_TAUTOLOGY_R : thm := keep "ISARESOLVENT_TAUTOLOGY_R" fun _ => (do
   prove ([[!p q r.
       clause p /\ clause q /\
       tautologous(p) /\ isaresolvent r (q,p)
@@ -2188,7 +2188,7 @@ unsafe def ISARESOLVENT_TAUTOLOGY_R : thm := keep "ISARESOLVENT_TAUTOLOGY_R" fun
 #eval ISARESOLVENT_TAUTOLOGY_R
 
 #eval phrase 87
-unsafe def REPLACE_FROMNEW : thm := keep "REPLACE_FROMNEW" fun _ => (do
+def REPLACE_FROMNEW : thm := keep "REPLACE_FROMNEW" fun _ => (do
   prove ([[!cl lis c. MEM c (replace cl lis) ==> MEM c lis \/ (c = cl)]])
    (GEN_TAC THEN LIST_INDUCT_TAC THEN REWRITE_TAC [replace] THEN
     SIMP_TAC [MEM] THEN GEN_TAC THEN COND_CASES_TAC THEN
@@ -2197,7 +2197,7 @@ unsafe def REPLACE_FROMNEW : thm := keep "REPLACE_FROMNEW" fun _ => (do
 #eval REPLACE_FROMNEW
 
 #eval phrase 88
-unsafe def INCORPORATE_FROMNEW : thm := keep "INCORPORATE_FROMNEW" fun _ => (do
+def INCORPORATE_FROMNEW : thm := keep "INCORPORATE_FROMNEW" fun _ => (do
   prove ([[!gcl cl lis c.
         MEM c (incorporate gcl cl lis) ==> MEM c lis \/ (c = cl)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [incorporate] THEN COND_CASES_TAC THEN
@@ -2206,7 +2206,7 @@ unsafe def INCORPORATE_FROMNEW : thm := keep "INCORPORATE_FROMNEW" fun _ => (do
 #eval INCORPORATE_FROMNEW
 
 #eval phrase 89
-unsafe def ITLIST_INCORPORATE_FROMNEW : thm := keep "ITLIST_INCORPORATE_FROMNEW" fun _ => (do
+def ITLIST_INCORPORATE_FROMNEW : thm := keep "ITLIST_INCORPORATE_FROMNEW" fun _ => (do
   prove ([[!gcl lis new c.
         MEM c (ITLIST (incorporate gcl) new lis)
         ==> MEM c new \/ MEM c lis]])
@@ -2216,7 +2216,7 @@ unsafe def ITLIST_INCORPORATE_FROMNEW : thm := keep "ITLIST_INCORPORATE_FROMNEW"
 #eval ITLIST_INCORPORATE_FROMNEW
 
 #eval phrase 90
-unsafe def UNUSED_FROMNEW : thm := keep "UNUSED_FROMNEW" fun _ => (do
+def UNUSED_FROMNEW : thm := keep "UNUSED_FROMNEW" fun _ => (do
   prove ([[!used unused c n.
         MEM c (SND(given n (used,unused)))
         ==> MEM c unused \/
@@ -2245,7 +2245,7 @@ unsafe def UNUSED_FROMNEW : thm := keep "UNUSED_FROMNEW" fun _ => (do
 #eval UNUSED_FROMNEW
 
 #eval phrase 91
-unsafe def SUB_FROMNEW : thm := keep "SUB_FROMNEW" fun _ => (do
+def SUB_FROMNEW : thm := keep "SUB_FROMNEW" fun _ => (do
   let _lemma ← prove
    ([[!l. ~(l = []) ==> MEM (HD l) l]])
     (LIST_INDUCT_TAC THEN REWRITE_TAC [MEM, HD])
@@ -2276,7 +2276,7 @@ unsafe def SUB_FROMNEW : thm := keep "SUB_FROMNEW" fun _ => (do
 #eval SUB_FROMNEW
 
 #eval phrase 92
-unsafe def LEVEL_FROMNEW : thm := keep "LEVEL_FROMNEW" fun _ => (do
+def LEVEL_FROMNEW : thm := keep "LEVEL_FROMNEW" fun _ => (do
   prove ([[!used unused c n.
         c IN level(used,unused) n
         ==> MEM c unused \/
@@ -2289,9 +2289,9 @@ unsafe def LEVEL_FROMNEW : thm := keep "LEVEL_FROMNEW" fun _ => (do
 #eval LEVEL_FROMNEW
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Given" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Given" do
   replay (
           HolLogicArith.Resolution.ensure)
   replay (

@@ -104,12 +104,14 @@ private unsafe def convOK (lbl input expected : String) (cv : ioconv) : IO Unit 
 
 /- ====================================================================== -/
 /- (1) int.ml THEOREM STATEMENTS (stmtOK vs verbatim OCaml `prove`).       -/
+/-     `num` is the default type here, so untyped statements carry `:int` -/
+/-     (int.ml proves them under its `prioritize_int`).                   -/
 /-     Spread early / middle / late; several with THENL-heavy proofs.      -/
 /- ====================================================================== -/
 
 -- early (int.ml 217): INT_IMAGE, THENL [DISJ1_TAC; DISJ2_TAC].
 #eval stmtOK "INT_IMAGE (int.ml 217)" Session.INT_IMAGE
-  "!x. (?n. x = &n) \\/ (?n. x = --(&n))"
+  "!x:int. (?n. x = &n) \\/ (?n. x = --(&n))"
 -- int.ml 227/232: cases lemmas (MESON[INT_IMAGE]).
 #eval stmtOK "FORALL_INT_CASES (int.ml 227)" Session.FORALL_INT_CASES
   "!P:int->bool. (!x. P x) <=> (!n. P(&n)) /\\ (!n. P(-- &n))"
@@ -117,23 +119,23 @@ private unsafe def convOK (lbl input expected : String) (cv : ioconv) : IO Unit 
   "!P:int->bool. (?x. P x) <=> (?n. P(&n)) \\/ (?n. P(-- &n))"
 -- int.ml 235: INT_LT_DISCRETE (the discreteness lemma; multi-step proof).
 #eval stmtOK "INT_LT_DISCRETE (int.ml 235)" Session.INT_LT_DISCRETE
-  "!x y. x < y <=> (x + &1) <= y"
+  "!x y:int. x < y <=> (x + &1) <= y"
 -- int.ml 337/350: INT_OF_REAL_THM lifts (simple statements, complex origin).
 #eval stmtOK "INT_ABS_MUL (int.ml 337)" Session.INT_ABS_MUL
-  "!x y. abs(x * y) = abs x * abs y"
+  "!x y:int. abs(x * y) = abs x * abs y"
 #eval stmtOK "INT_ABS_TRIANGLE (int.ml 350)" Session.INT_ABS_TRIANGLE
-  "!x y. abs(x + y) <= abs x + abs y"
+  "!x y:int. abs(x + y) <= abs x + abs y"
 -- int.ml 425/530: more lifts.
 #eval stmtOK "INT_LNEG_UNIQ (int.ml 425)" Session.INT_LNEG_UNIQ
-  "!x y. (x + y = &0) <=> (x = --y)"
+  "!x y:int. (x + y = &0) <=> (x = --y)"
 #eval stmtOK "INT_POS (int.ml 530)" Session.INT_POS
-  "!n. &0 <= &n"
+  "!n. &0 <= (&n:int)"
 -- middle (int.ml 732): INT_LE_DISCRETE (proved by INT_ARITH).
 #eval stmtOK "INT_LE_DISCRETE (int.ml 732)" Session.INT_LE_DISCRETE
   "!x y:int. x <= y <=> x < y + &1"
 -- int.ml 773: INT_ARCH (big SUBGOAL_THEN/THENL proof).
 #eval stmtOK "INT_ARCH (int.ml 773)" Session.INT_ARCH
-  "!x d. ~(d = &0) ==> ?c. x < c * d"
+  "!x d:int. ~(d = &0) ==> ?c. x < c * d"
 -- int.ml 822: INT_DIVISION (MESON[INT_DIVISION_0]).
 #eval stmtOK "INT_DIVISION (int.ml 822)" Session.INT_DIVISION
   ("!m n. ~(n = &0) ==> m = m div n * n + m rem n /\\ " ++

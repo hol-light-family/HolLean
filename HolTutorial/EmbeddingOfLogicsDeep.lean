@@ -11,17 +11,17 @@ namespace HolTutorial.EmbeddingOfLogicsDeep
 
 /-- Run `define_type` (an `IO (Except String (thm × thm))`) to its pair,
     panicking with HOL Light's message on failure (as the toplevel throws). -/
-unsafe def defType (s : String) : thm × thm :=
-  match unsafeIO (define_type s) with
+def defType (s : String) : thm × thm :=
+  match runIO (define_type s) with
   | .ok (.ok p) => p
   | .ok (.error e) => panic! s!"define_type: {e}"
   | .error e => panic! s!"define_type IO: {e}"
 
 #eval phrase 1
-unsafe def string_INDUCT_RECURSION : thm × thm :=
+def string_INDUCT_RECURSION : thm × thm :=
   keep "string_INDUCT_RECURSION" fun _ => defType "string = String num"
-unsafe def string_INDUCT : thm := string_INDUCT_RECURSION.1
-unsafe def string_RECURSION : thm := string_INDUCT_RECURSION.2
+def string_INDUCT : thm := string_INDUCT_RECURSION.1
+def string_RECURSION : thm := string_INDUCT_RECURSION.2
 #eval do IO.println string_INDUCT; IO.println string_RECURSION
 
 #eval phrase 2
@@ -46,7 +46,7 @@ unsafe def string_RECURSION : thm := string_INDUCT_RECURSION.2
 #eval parse_as_prefix "Diamond"
 
 #eval phrase 9
-unsafe def form_INDUCT_RECURSION : thm × thm :=
+def form_INDUCT_RECURSION : thm × thm :=
   keep "form_INDUCT_RECURSION" fun _ =>
     defType "form = False
        | True
@@ -58,12 +58,12 @@ unsafe def form_INDUCT_RECURSION : thm × thm :=
        | <-> form form
        | Box form
        | Diamond form"
-unsafe def form_INDUCT : thm := form_INDUCT_RECURSION.1
-unsafe def form_RECURSION : thm := form_INDUCT_RECURSION.2
+def form_INDUCT : thm := form_INDUCT_RECURSION.1
+def form_RECURSION : thm := form_INDUCT_RECURSION.2
 #eval do IO.println form_INDUCT; IO.println form_RECURSION
 
 #eval phrase 10
-unsafe def holds : thm := keep "holds" fun _ => define
+def holds : thm := keep "holds" fun _ => define
  [[(holds (W,R) V False w <=> F) /\
   (holds (W,R) V True w <=> T) /\
   (holds (W,R) V (Atom a) w <=> V a w) /\
@@ -79,7 +79,7 @@ unsafe def holds : thm := keep "holds" fun _ => define
 #eval holds
 
 #eval phrase 11
-unsafe def holds_in : thm := keep "holds_in" fun _ => new_definition
+def holds_in : thm := keep "holds_in" fun _ => new_definition
  [[holds_in (W,R) p = !V w. w IN W ==> holds (W,R) V p w]]
 #eval holds_in
 
@@ -87,63 +87,63 @@ unsafe def holds_in : thm := keep "holds_in" fun _ => new_definition
 #eval parse_as_infix ("|=", (11, "right"))
 
 #eval phrase 13
-unsafe def valid : thm := keep "valid" fun _ => new_definition
+def valid : thm := keep "valid" fun _ => new_definition
  [[L |= p <=> !f. L f ==> holds_in f p]]
 #eval valid
 
 #eval phrase 14
-unsafe def S4 : thm := keep "S4" fun _ => new_definition
+def S4 : thm := keep "S4" fun _ => new_definition
  [[S4(W,R) <=> ~(W = {}) /\ (!x y. R x y ==> x IN W /\ y IN W) /\
               (!x. x IN W ==> R x x) /\
               (!x y z. R x y /\ R y z ==> R x z)]]
 #eval S4
 
 #eval phrase 15
-unsafe def LTL : thm := keep "LTL" fun _ => new_definition
+def LTL : thm := keep "LTL" fun _ => new_definition
  [[LTL(W,R) <=> (W = UNIV) /\ !x y:num. R x y <=> x <= y]]
 #eval LTL
 
 #eval phrase 16
-unsafe def GL : thm := keep "GL" fun _ => new_definition
+def GL : thm := keep "GL" fun _ => new_definition
  [[GL(W,R) <=> ~(W = {}) /\ (!x y. R x y ==> x IN W /\ y IN W) /\
               WF(\x y. R y x) /\ (!x y z:num. R x y /\ R y z ==> R x z)]]
 #eval GL
 
 #eval phrase 17
-unsafe def MODAL_TAC : tactic :=
+def MODAL_TAC : tactic :=
   REWRITE_TAC [valid, FORALL_PAIR_THM, holds_in, holds] THEN MESON_TAC []
 #eval IO.println "<fun>"
 
 #eval phrase 18
-unsafe def MODAL_RULE (tm : term) : IO (Except String thm) := Session.prove tm MODAL_TAC
+def MODAL_RULE (tm : term) : IO (Except String thm) := Session.prove tm MODAL_TAC
 #eval IO.println "<fun>"
 
 #eval phrase 19
-unsafe def TAUT_1 : thm := keep "TAUT_1" fun _ => MODAL_RULE [[L |= Box True]]
+def TAUT_1 : thm := keep "TAUT_1" fun _ => MODAL_RULE [[L |= Box True]]
 #eval TAUT_1
 
 #eval phrase 20
-unsafe def TAUT_2 : thm := keep "TAUT_2" fun _ => MODAL_RULE [[L |= Box(A --> B) --> Box A --> Box B]]
+def TAUT_2 : thm := keep "TAUT_2" fun _ => MODAL_RULE [[L |= Box(A --> B) --> Box A --> Box B]]
 #eval TAUT_2
 
 #eval phrase 21
-unsafe def TAUT_3 : thm := keep "TAUT_3" fun _ => MODAL_RULE [[L |= Diamond(A --> B) --> Box A --> Diamond B]]
+def TAUT_3 : thm := keep "TAUT_3" fun _ => MODAL_RULE [[L |= Diamond(A --> B) --> Box A --> Diamond B]]
 #eval TAUT_3
 
 #eval phrase 22
-unsafe def TAUT_4 : thm := keep "TAUT_4" fun _ => MODAL_RULE [[L |= Box(A --> B) --> Diamond A --> Diamond B]]
+def TAUT_4 : thm := keep "TAUT_4" fun _ => MODAL_RULE [[L |= Box(A --> B) --> Diamond A --> Diamond B]]
 #eval TAUT_4
 
 #eval phrase 23
-unsafe def TAUT_5 : thm := keep "TAUT_5" fun _ => MODAL_RULE [[L |= Box(A && B) --> Box A && Box B]]
+def TAUT_5 : thm := keep "TAUT_5" fun _ => MODAL_RULE [[L |= Box(A && B) --> Box A && Box B]]
 #eval TAUT_5
 
 #eval phrase 24
-unsafe def TAUT_6 : thm := keep "TAUT_6" fun _ => MODAL_RULE [[L |= Diamond(A || B) --> Diamond A || Diamond B]]
+def TAUT_6 : thm := keep "TAUT_6" fun _ => MODAL_RULE [[L |= Diamond(A || B) --> Diamond A || Diamond B]]
 #eval TAUT_6
 
 #eval phrase 25
-unsafe def HOLDS_FORALL_LEMMA : thm := keep "HOLDS_FORALL_LEMMA" fun _ => Session.prove
+def HOLDS_FORALL_LEMMA : thm := keep "HOLDS_FORALL_LEMMA" fun _ => Session.prove
  ([[!W R P. (!A V. P(holds (W,R) V A)) <=> (!p:W->bool. P p)]])
   (tactic_of do
    let atom ← q "Atom a"
@@ -157,20 +157,20 @@ unsafe def HOLDS_FORALL_LEMMA : thm := keep "HOLDS_FORALL_LEMMA" fun _ => Sessio
 #eval HOLDS_FORALL_LEMMA
 
 #eval phrase 26
-unsafe def MODAL_SCHEMA_TAC : tactic :=
+def MODAL_SCHEMA_TAC : tactic :=
   REWRITE_TAC [holds_in, holds] THEN MP_TAC HOLDS_FORALL_LEMMA THEN
   REPEAT (MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
   DISCH_THEN (fun th => REWRITE_TAC [th])
 #eval IO.println "<fun>"
 
 #eval phrase 27
-unsafe def MODAL_REFL : thm := keep "MODAL_REFL" fun _ => Session.prove
+def MODAL_REFL : thm := keep "MODAL_REFL" fun _ => Session.prove
  ([[!W R. (!w:W. w IN W ==> R w w) <=> !A. holds_in (W,R) (Box A --> A)]])
   (MODAL_SCHEMA_TAC THEN MESON_TAC [])
 #eval MODAL_REFL
 
 #eval phrase 28
-unsafe def MODAL_TRANS : thm := keep "MODAL_TRANS" fun _ => Session.prove
+def MODAL_TRANS : thm := keep "MODAL_TRANS" fun _ => Session.prove
  ([[!W R. (!w w' w'':W. w IN W /\ w' IN W /\ w'' IN W /\
                        R w w' /\ R w' w'' ==> R w w'') <=>
          (!A. holds_in (W,R) (Box A --> Box(Box A)))]])
@@ -178,14 +178,14 @@ unsafe def MODAL_TRANS : thm := keep "MODAL_TRANS" fun _ => Session.prove
 #eval MODAL_TRANS
 
 #eval phrase 29
-unsafe def MODAL_SERIAL : thm := keep "MODAL_SERIAL" fun _ => Session.prove
+def MODAL_SERIAL : thm := keep "MODAL_SERIAL" fun _ => Session.prove
  ([[!W R. (!w:W. w IN W ==> ?w'. w' IN W /\ R w w') <=>
          (!A. holds_in (W,R) (Box A --> Diamond A))]])
   (MODAL_SCHEMA_TAC THEN MESON_TAC [])
 #eval MODAL_SERIAL
 
 #eval phrase 30
-unsafe def MODAL_SYM : thm := keep "MODAL_SYM" fun _ => Session.prove
+def MODAL_SYM : thm := keep "MODAL_SYM" fun _ => Session.prove
  ([[!W R. (!w w':W. w IN W /\ w' IN W /\ R w w' ==> R w' w) <=>
          (!A. holds_in (W,R) (A --> Box(Diamond A)))]])
   (tactic_of do
@@ -197,7 +197,7 @@ unsafe def MODAL_SYM : thm := keep "MODAL_SYM" fun _ => Session.prove
 #eval MODAL_SYM
 
 #eval phrase 31
-unsafe def MODAL_WFTRANS : thm := keep "MODAL_WFTRANS" fun _ => Session.prove
+def MODAL_WFTRANS : thm := keep "MODAL_WFTRANS" fun _ => Session.prove
  ([[!W R. (!x y z:W. x IN W /\ y IN W /\ z IN W /\ R x y /\ R y z ==> R x z) /\
          WF(\x y. x IN W /\ y IN W /\ R y x) <=>
          (!A. holds_in (W,R) (Box(Box A --> A) --> Box A))]])

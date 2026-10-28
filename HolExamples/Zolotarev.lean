@@ -3,20 +3,22 @@ Translation of HOL Light's Examples/zolotarev.ml, phrase by phrase.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 import HolExamples.Common
+import SessionLibrary.Jacobi
+import SessionLibrary.Permutations
 open HolCore.Kernel Session HolLight.Syntax HolExamples
-open SessionLibrary.Prime SessionLibrary.Integer SessionLibrary.GroupTheory
+open SessionLibrary.Prime SessionLibrary.Integer
 open SessionLibrary.Jacobi SessionLibrary.Permutations SessionLibrary.Pocklington
 open SessionLibrary.Primitive
 namespace HolExamples.Zolotarev
 
 /- Helpers: the session's rules lifted into `ExceptT String IO`, so the tactic
    scripts read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
-private unsafe def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (ARITH_RULE tm)
-private unsafe def nr (tm : term) : ExceptT String IO thm := ExceptT.mk (NUMBER_RULE tm)
-private unsafe def sr (tm : term) : ExceptT String IO thm := ExceptT.mk (SET_RULE tm)
-private unsafe def tt (tm : term) : ExceptT String IO thm := ExceptT.mk (TAUT tm)
+private def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (ARITH_RULE tm)
+private def nr (tm : term) : ExceptT String IO thm := ExceptT.mk (NUMBER_RULE tm)
+private def sr (tm : term) : ExceptT String IO thm := ExceptT.mk (SET_RULE tm)
+private def tt (tm : term) : ExceptT String IO thm := ExceptT.mk (TAUT tm)
 private def ec {α : Type} (x : Except String α) : ExceptT String IO α := ExceptT.mk (pure x)
 
 -- ========================================================================= --
@@ -37,14 +39,14 @@ private def ec {α : Type} (x : Except String α) : ExceptT String IO α := Exce
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 3
-unsafe def zolotarev : thm := keep "zolotarev" fun _ => (do
+def zolotarev : thm := keep "zolotarev" fun _ => (do
   ExceptT.mk (new_definition
    [[zolotarev(a,n) = \m. if m < n then (a * m) MOD n else m]])
   : ExceptT String IO thm).run
 #eval zolotarev
 
 #eval phrase 4
-unsafe def PERMUTES_ZOLOTAREV : thm := keep "PERMUTES_ZOLOTAREV" fun _ => (do
+def PERMUTES_ZOLOTAREV : thm := keep "PERMUTES_ZOLOTAREV" fun _ => (do
   prove ([[!a n. coprime(a,n) ==> (zolotarev(a,n)) permutes {m | m < n}]])
    (SIMP_TAC [PERMUTES_FINITE_INJECTIVE, FINITE_NUMSEG_LT] THEN
     REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM, FORALL_IN_GSPEC] THEN
@@ -57,7 +59,7 @@ unsafe def PERMUTES_ZOLOTAREV : thm := keep "PERMUTES_ZOLOTAREV" fun _ => (do
 #eval PERMUTES_ZOLOTAREV
 
 #eval phrase 5
-unsafe def PERMUTES_ZOLOTAREV_ALT : thm := keep "PERMUTES_ZOLOTAREV_ALT" fun _ => (do
+def PERMUTES_ZOLOTAREV_ALT : thm := keep "PERMUTES_ZOLOTAREV_ALT" fun _ => (do
   prove ([[!a n. coprime(a,n) ==> (zolotarev(a,n)) permutes {m | 0 < m /\ m < n}]])
    (REPEAT STRIP_TAC THEN MATCH_MP_TAC PERMUTES_SUPERSET THEN
     EXISTS_TAC [[{m:num | m < n}]] THEN ASM_SIMP_TAC [PERMUTES_ZOLOTAREV] THEN
@@ -68,7 +70,7 @@ unsafe def PERMUTES_ZOLOTAREV_ALT : thm := keep "PERMUTES_ZOLOTAREV_ALT" fun _ =
 #eval PERMUTES_ZOLOTAREV_ALT
 
 #eval phrase 6
-unsafe def PERMUTATION_ZOLOTAREV : thm := keep "PERMUTATION_ZOLOTAREV" fun _ => (do
+def PERMUTATION_ZOLOTAREV : thm := keep "PERMUTATION_ZOLOTAREV" fun _ => (do
   prove ([[!a n. coprime(a,n) ==> permutation (zolotarev(a,n))]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [PERMUTATION_PERMUTES] THEN
     EXISTS_TAC [[{m:num | m < n}]] THEN
@@ -77,7 +79,7 @@ unsafe def PERMUTATION_ZOLOTAREV : thm := keep "PERMUTATION_ZOLOTAREV" fun _ => 
 #eval PERMUTATION_ZOLOTAREV
 
 #eval phrase 7
-unsafe def ZOLATAREV_MOD : thm := keep "ZOLATAREV_MOD" fun _ => (do
+def ZOLATAREV_MOD : thm := keep "ZOLATAREV_MOD" fun _ => (do
   prove ([[!a n. zolotarev(a MOD n,n) = zolotarev(a,n)]])
    (REWRITE_TAC [FUN_EQ_THM, zolotarev] THEN
     MESON_TAC [MOD_MULT_MOD2, MOD_MOD_REFL])
@@ -85,7 +87,7 @@ unsafe def ZOLATAREV_MOD : thm := keep "ZOLATAREV_MOD" fun _ => (do
 #eval ZOLATAREV_MOD
 
 #eval phrase 8
-unsafe def ZOLOTAREV_CONG : thm := keep "ZOLOTAREV_CONG" fun _ => (do
+def ZOLOTAREV_CONG : thm := keep "ZOLOTAREV_CONG" fun _ => (do
   prove ([[!a b n. (a == b) (mod n) ==> zolotarev(a,n) = zolotarev(b,n)]])
    (MESON_TAC [CONG, ZOLATAREV_MOD])
   : ExceptT String IO thm).run
@@ -99,14 +101,14 @@ unsafe def ZOLOTAREV_CONG : thm := keep "ZOLOTAREV_CONG" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 9
-unsafe def zolotarevu : thm := keep "zolotarevu" fun _ => (do
+def zolotarevu : thm := keep "zolotarevu" fun _ => (do
   ExceptT.mk (new_definition
    [[zolotarevu(a,n) = \m. if coprime(m,n) /\ m < n then (a * m) MOD n else m]])
   : ExceptT String IO thm).run
 #eval zolotarevu
 
 #eval phrase 10
-unsafe def PERMUTES_ZOLOTAREVU : thm := keep "PERMUTES_ZOLOTAREVU" fun _ => (do
+def PERMUTES_ZOLOTAREVU : thm := keep "PERMUTES_ZOLOTAREVU" fun _ => (do
   -- OCaml evaluates the tactic's rule arguments right-to-left, so the
   -- `NUMBER_RULE` (basis traces) prints before the `SET_RULE` (MESON traces).
   let nrth ← nr [[coprime(a:num,n) /\ (a * x == a * y) (mod n) ==> (x == y) (mod n)]]
@@ -125,7 +127,7 @@ unsafe def PERMUTES_ZOLOTAREVU : thm := keep "PERMUTES_ZOLOTAREVU" fun _ => (do
 #eval PERMUTES_ZOLOTAREVU
 
 #eval phrase 11
-unsafe def PERMUTATION_ZOLOTAREVU : thm := keep "PERMUTATION_ZOLOTAREVU" fun _ => (do
+def PERMUTATION_ZOLOTAREVU : thm := keep "PERMUTATION_ZOLOTAREVU" fun _ => (do
   prove ([[!a n. coprime(a,n) ==> permutation (zolotarevu(a,n))]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [PERMUTATION_PERMUTES] THEN
     EXISTS_TAC [[{m:num | m IN {m | m < n} /\ coprime(m,n)}]] THEN
@@ -136,7 +138,7 @@ unsafe def PERMUTATION_ZOLOTAREVU : thm := keep "PERMUTATION_ZOLOTAREVU" fun _ =
 #eval PERMUTATION_ZOLOTAREVU
 
 #eval phrase 12
-unsafe def ZOLATAREVU_MOD : thm := keep "ZOLATAREVU_MOD" fun _ => (do
+def ZOLATAREVU_MOD : thm := keep "ZOLATAREVU_MOD" fun _ => (do
   prove ([[!a n. zolotarevu(a MOD n,n) = zolotarevu(a,n)]])
    (REWRITE_TAC [FUN_EQ_THM, zolotarevu] THEN
     MESON_TAC [MOD_MULT_MOD2, MOD_MOD_REFL])
@@ -144,7 +146,7 @@ unsafe def ZOLATAREVU_MOD : thm := keep "ZOLATAREVU_MOD" fun _ => (do
 #eval ZOLATAREVU_MOD
 
 #eval phrase 13
-unsafe def ZOLOTAREVU_PRIMITIVE : thm := keep "ZOLOTAREVU_PRIMITIVE" fun _ => (do
+def ZOLOTAREVU_PRIMITIVE : thm := keep "ZOLOTAREVU_PRIMITIVE" fun _ => (do
   prove ([[!a n. 3 <= n /\ coprime(a,n) /\ (?g. order n g = phi n)
          ==> (evenperm(zolotarevu(a,n)) <=> ?x. (x EXP 2 == a) (mod n))]])
    (REPEAT GEN_TAC THEN ASM_CASES_TAC [[n = 0]] THEN
@@ -191,7 +193,7 @@ unsafe def ZOLOTAREVU_PRIMITIVE : thm := keep "ZOLOTAREVU_PRIMITIVE" fun _ => (d
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 14
-unsafe def ZOLATAREV_EQ_ZOLATAREVU : thm := keep "ZOLATAREV_EQ_ZOLATAREVU" fun _ => (do
+def ZOLATAREV_EQ_ZOLATAREVU : thm := keep "ZOLATAREV_EQ_ZOLATAREVU" fun _ => (do
   prove ([[!a p. prime p ==> zolotarev(a,p) = zolotarevu(a,p)]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [zolotarev, zolotarevu, FUN_EQ_THM] THEN
     X_GEN_TAC [[n:num]] THEN ASM_CASES_TAC [[n:num < p]] THEN ASM_REWRITE_TAC [] THEN
@@ -204,7 +206,7 @@ unsafe def ZOLATAREV_EQ_ZOLATAREVU : thm := keep "ZOLATAREV_EQ_ZOLATAREVU" fun _
 #eval ZOLATAREV_EQ_ZOLATAREVU
 
 #eval phrase 15
-unsafe def ZOLOTAREV_1 : thm := keep "ZOLOTAREV_1" fun _ => (do
+def ZOLOTAREV_1 : thm := keep "ZOLOTAREV_1" fun _ => (do
   prove ([[!a. zolotarev(a,1) = I]])
    (REWRITE_TAC [FUN_EQ_THM, I_DEF] THEN REPEAT GEN_TAC THEN
     SIMP_TAC [zolotarev, (← ar [[m < 1 <=> m = 0]]), MULT_CLAUSES, MOD_0] THEN
@@ -213,7 +215,7 @@ unsafe def ZOLOTAREV_1 : thm := keep "ZOLOTAREV_1" fun _ => (do
 #eval ZOLOTAREV_1
 
 #eval phrase 16
-unsafe def JACOBI_EQ_ZOLOTAREV_PRIMEPOW : thm := keep "JACOBI_EQ_ZOLOTAREV_PRIMEPOW" fun _ => (do
+def JACOBI_EQ_ZOLOTAREV_PRIMEPOW : thm := keep "JACOBI_EQ_ZOLOTAREV_PRIMEPOW" fun _ => (do
   prove ([[!a p k.
         prime p /\ ODD p /\ coprime(a,p)
         ==> real_of_int(jacobi(a,p EXP k)) = sign(zolotarev(a,p EXP k))]])
@@ -292,7 +294,7 @@ unsafe def JACOBI_EQ_ZOLOTAREV_PRIMEPOW : thm := keep "JACOBI_EQ_ZOLOTAREV_PRIME
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 17
-unsafe def JACOBI_EQ_ZOLOTAREV : thm := keep "JACOBI_EQ_ZOLOTAREV" fun _ => (do
+def JACOBI_EQ_ZOLOTAREV : thm := keep "JACOBI_EQ_ZOLOTAREV" fun _ => (do
   prove ([[!a n. ODD n /\ coprime(a,n)
          ==> real_of_int(jacobi(a,n)) = sign(zolotarev(a,n))]])
    (GEN_TAC THEN MATCH_MP_TAC INDUCT_COPRIME_ALT THEN

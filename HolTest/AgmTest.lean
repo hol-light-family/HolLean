@@ -9,7 +9,7 @@ defines no conversions or rules, only theorems, and none of them print with
 invented type variables, so each is checked directly. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Agm
 
 open HolCore.Kernel HolTest.CommonTest
 

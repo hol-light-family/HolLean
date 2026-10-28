@@ -3,14 +3,13 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/GroupTheory.lean
 
-  The `unsafe` half of the grouptheory.ml translation: it supplies HolLibrary.GroupTheory's
-  dependencies from Session and SessionLibrary.Frag, SessionLibrary.Card, SessionLibrary.Prime, builds the bundles once, in order,
-  and exports every name under its HOL Light name.  `ensureGroupTheory` is
-  `needs "Library/grouptheory.ml"` (which first does `needs "Library/frag.ml"`, `needs "Library/card.ml"`, `needs "Library/prime.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/GroupTheory.lean by tools/grouptheorydiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the grouptheory.ml translation: it supplies
+  HolLibrary.GroupTheory's dependencies from Session and SessionLibrary.Frag,
+  Card and Prime, and exports every name under its HOL Light name.
+  Importing this module is `needs "Library/grouptheory.ml"`; its `needs` of
+  frag.ml, card.ml and prime.ml are the imports of those modules.  The
+  bundles are built by `initialize` when the module is loaded, in file
+  order.
 -/
 
 import Session
@@ -24,12 +23,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.GroupTheory
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.GroupTheory.CoreThms1 where
+def core1 : HolLibrary.GroupTheory.CoreThms1 where
   ADD1 := Session.ADD1
   ADD_CLAUSES := Session.ADD_CLAUSES
   ADD_SYM := Session.ADD_SYM
@@ -101,21 +96,21 @@ unsafe def core1 (_ : Unit) : HolLibrary.GroupTheory.CoreThms1 where
   CONG_NSUM := Session.CONG_NSUM
   CONJ_ASSOC := Session.CONJ_ASSOC
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core10 (_ : Unit) : HolLibrary.GroupTheory.CoreThms10 where
+def core10 : HolLibrary.GroupTheory.CoreThms10 where
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core11 (_ : Unit) : HolLibrary.GroupTheory.CoreThms11 where
+def core11 : HolLibrary.GroupTheory.CoreThms11 where
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core12 (_ : Unit) : HolLibrary.GroupTheory.CoreThms12 where
+def core12 : HolLibrary.GroupTheory.CoreThms12 where
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core13 (_ : Unit) : HolLibrary.GroupTheory.CoreThms13 where
+def core13 : HolLibrary.GroupTheory.CoreThms13 where
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core14 (_ : Unit) : HolLibrary.GroupTheory.CoreThms14 where
+def core14 : HolLibrary.GroupTheory.CoreThms14 where
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core15 (_ : Unit) : HolLibrary.GroupTheory.CoreThms15 where
+def core15 : HolLibrary.GroupTheory.CoreThms15 where
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core16 (_ : Unit) : HolLibrary.GroupTheory.CoreThms16 where
+def core16 : HolLibrary.GroupTheory.CoreThms16 where
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.GroupTheory.CoreThms2 where
+def core2 : HolLibrary.GroupTheory.CoreThms2 where
   CONJ_SYM := Session.CONJ_SYM
   CONTRAPOS_THM := Session.CONTRAPOS_THM
   COPRIME_GCD := SessionLibrary.Prime.«COPRIME_GCD»
@@ -187,7 +182,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.GroupTheory.CoreThms2 where
   EXP_EQ_0 := Session.EXP_EQ_0
   EXP_EQ_1 := Session.EXP_EQ_1
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.GroupTheory.CoreThms3 where
+def core3 : HolLibrary.GroupTheory.CoreThms3 where
   EXTENSION := Session.EXTENSION
   EXTENSIONAL := Session.EXTENSIONAL
   EXTENSIONAL_UNIV := Session.EXTENSIONAL_UNIV
@@ -259,7 +254,7 @@ unsafe def core3 (_ : Unit) : HolLibrary.GroupTheory.CoreThms3 where
   HAS_SIZE := Session.HAS_SIZE
   HAS_SIZE_0 := Session.HAS_SIZE_0
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.GroupTheory.CoreThms4 where
+def core4 : HolLibrary.GroupTheory.CoreThms4 where
   HAS_SIZE_IMAGE_INJ := Session.HAS_SIZE_IMAGE_INJ
   IMAGE := Session.IMAGE
   IMAGE_CLAUSES := Session.IMAGE_CLAUSES
@@ -331,7 +326,7 @@ unsafe def core4 (_ : Unit) : HolLibrary.GroupTheory.CoreThms4 where
   INT_MUL_SYM := Session.INT_MUL_SYM
   INT_NEG_0 := Session.INT_NEG_0
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core5 (_ : Unit) : HolLibrary.GroupTheory.CoreThms5 where
+def core5 : HolLibrary.GroupTheory.CoreThms5 where
   INT_NEG_ADD := Session.INT_NEG_ADD
   INT_NEG_EQ_0 := Session.INT_NEG_EQ_0
   INT_NEG_NEG := Session.INT_NEG_NEG
@@ -403,7 +398,7 @@ unsafe def core5 (_ : Unit) : HolLibrary.GroupTheory.CoreThms5 where
   LCM_DIVIDES_MUL := SessionLibrary.Prime.«LCM_DIVIDES_MUL»
   LCM_ZERO := SessionLibrary.Prime.«LCM_ZERO»
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core6 (_ : Unit) : HolLibrary.GroupTheory.CoreThms6 where
+def core6 : HolLibrary.GroupTheory.CoreThms6 where
   LE := Session.LE
   LEFT_AND_EXISTS_THM := Session.LEFT_AND_EXISTS_THM
   LEFT_EXISTS_AND_THM := Session.LEFT_EXISTS_AND_THM
@@ -475,7 +470,7 @@ unsafe def core6 (_ : Unit) : HolLibrary.GroupTheory.CoreThms6 where
   RESTRICTION := Session.RESTRICTION
   RESTRICTION_EXTENSION := Session.RESTRICTION_EXTENSION
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core7 (_ : Unit) : HolLibrary.GroupTheory.CoreThms7 where
+def core7 : HolLibrary.GroupTheory.CoreThms7 where
   RESTRICTION_IN_CARTESIAN_PRODUCT := Session.RESTRICTION_IN_CARTESIAN_PRODUCT
   RESTRICTION_IN_EXTENSIONAL := Session.RESTRICTION_IN_EXTENSIONAL
   RESTRICTION_THM := Session.RESTRICTION_THM
@@ -547,7 +542,7 @@ unsafe def core7 (_ : Unit) : HolLibrary.GroupTheory.CoreThms7 where
   monoidal := Session.monoidal
   mul_c := SessionLibrary.Card.«mul_c»
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core8 (_ : Unit) : HolLibrary.GroupTheory.CoreThms8 where
+def core8 : HolLibrary.GroupTheory.CoreThms8 where
   neutral := Session.neutral
   num_FINITE := Session.num_FINITE
   num_INDUCTION := Session.num_INDUCTION
@@ -567,11 +562,10 @@ unsafe def core8 (_ : Unit) : HolLibrary.GroupTheory.CoreThms8 where
   support := Session.support
   woset := SessionLibrary.Wo.«woset»
 /-- The core theorems grouptheory.ml uses. -/
-unsafe def core9 (_ : Unit) : HolLibrary.GroupTheory.CoreThms9 where
--- @@CORE END
+def core9 : HolLibrary.GroupTheory.CoreThms9 where
 
 /-- What grouptheory.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.GroupTheory.GroupTheoryDeps where
+def deps : HolLibrary.GroupTheory.GroupTheoryDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   new_type_definition ty names th :=
     ExceptT.mk (Session.new_type_definition ty names.1 names.2 th)
@@ -608,2098 +602,1817 @@ unsafe def deps (_ : Unit) : HolLibrary.GroupTheory.GroupTheoryDeps where
   INT_REM_DOWN_CONV := Session.INT_REM_DOWN_CONV
   FRAG_MODULE t := ExceptT.mk (SessionLibrary.Frag.FRAG_MODULE t)
   ETA_CONV t := pure (Session.ETA_CONV t)
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
-  core5 := core5 ()
-  core6 := core6 ()
-  core7 := core7 ()
-  core8 := core8 ()
-  core9 := core9 ()
-  core10 := core10 ()
-  core11 := core11 ()
-  core12 := core12 ()
-  core13 := core13 ()
-  core14 := core14 ()
-  core15 := core15 ()
-  core16 := core16 ()
-
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then frag.ml, card.ml, prime.ml, which grouptheory.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Frag.ensureFrag
-      SessionLibrary.Card.ensureCard
-      SessionLibrary.Prime.ensurePrime
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.GroupTheory: {name}"
-
-/- The bundles, in file order; each forces the one before it. -/
-
--- @@BUNDLES BEGIN
-initialize theBasics : IO.Ref (Option HolLibrary.GroupTheory.Basics) ← IO.mkRef none
-unsafe def BBasics : HolLibrary.GroupTheory.Basics :=
-  cached theBasics "setupBasics" fun _ => do
-    (HolLibrary.GroupTheory.setupBasics (deps ())).run
-
-initialize theDerived : IO.Ref (Option HolLibrary.GroupTheory.Derived) ← IO.mkRef none
-unsafe def BDerived : HolLibrary.GroupTheory.Derived :=
-  cached theDerived "setupDerived" fun _ => do
-    let _ ← IO.mkRef BBasics.group_tybij
-    (HolLibrary.GroupTheory.setupDerived (deps ()) BBasics).run
-
-initialize thePow : IO.Ref (Option HolLibrary.GroupTheory.Pow) ← IO.mkRef none
-unsafe def BPow : HolLibrary.GroupTheory.Pow :=
-  cached thePow "setupPow" fun _ => do
-    let _ ← IO.mkRef BDerived.group_div
-    (HolLibrary.GroupTheory.setupPow (deps ()) BBasics BDerived).run
-
-initialize theAbelian : IO.Ref (Option HolLibrary.GroupTheory.Abelian) ← IO.mkRef none
-unsafe def BAbelian : HolLibrary.GroupTheory.Abelian :=
-  cached theAbelian "setupAbelian" fun _ => do
-    let _ ← IO.mkRef BPow.GROUP_COMMUTES_POW
-    (HolLibrary.GroupTheory.setupAbelian (deps ()) BBasics BDerived BPow).run
-
-initialize theTotalized : IO.Ref (Option HolLibrary.GroupTheory.Totalized) ← IO.mkRef none
-unsafe def BTotalized : HolLibrary.GroupTheory.Totalized :=
-  cached theTotalized "setupTotalized" fun _ => do
-    let _ ← IO.mkRef BAbelian.abelian_group
-    (HolLibrary.GroupTheory.setupTotalized (deps ()) BBasics BDerived BAbelian).run
-
-initialize theGroupRule : IO.Ref (Option HolLibrary.GroupTheory.GroupRule) ← IO.mkRef none
-unsafe def BGroupRule : HolLibrary.GroupTheory.GroupRule :=
-  cached theGroupRule "setupGroupRule" fun _ => do
-    let _ ← IO.mkRef BTotalized.group_neg
-    (HolLibrary.GroupTheory.setupGroupRule (deps ()) BBasics BDerived BPow BTotalized).run
-
-initialize theGroupProduct : IO.Ref (Option HolLibrary.GroupTheory.GroupProduct) ← IO.mkRef none
-unsafe def BGroupProduct : HolLibrary.GroupTheory.GroupProduct :=
-  cached theGroupProduct "setupGroupProduct" fun _ => do
-    let _ ← IO.mkRef BGroupRule.GROUP_RULE
-    (HolLibrary.GroupTheory.setupGroupProduct (deps ()) BBasics BDerived).run
-
-initialize theGroupProductClauses : IO.Ref (Option HolLibrary.GroupTheory.GroupProductClauses) ← IO.mkRef none
-unsafe def BGroupProductClauses : HolLibrary.GroupTheory.GroupProductClauses :=
-  cached theGroupProductClauses "setupGroupProductClauses" fun _ => do
-    let _ ← IO.mkRef BGroupProduct.group_product
-    (HolLibrary.GroupTheory.setupGroupProductClauses (deps ()) BBasics BAbelian BGroupProduct).run
-
-initialize theGroupProductMul : IO.Ref (Option HolLibrary.GroupTheory.GroupProductMul) ← IO.mkRef none
-unsafe def BGroupProductMul : HolLibrary.GroupTheory.GroupProductMul :=
-  cached theGroupProductMul "setupGroupProductMul" fun _ => do
-    let _ ← IO.mkRef BGroupProductClauses.GROUP_PRODUCT_UNION
-    (HolLibrary.GroupTheory.setupGroupProductMul (deps ()) BBasics BDerived BPow BAbelian BTotalized BGroupProduct BGroupProductClauses).run
-
-initialize theConjugation : IO.Ref (Option HolLibrary.GroupTheory.Conjugation) ← IO.mkRef none
-unsafe def BConjugation : HolLibrary.GroupTheory.Conjugation :=
-  cached theConjugation "setupConjugation" fun _ => do
-    let _ ← IO.mkRef BGroupProductMul.GROUP_PRODUCT_MUL
-    (HolLibrary.GroupTheory.setupConjugation (deps ()) BBasics BGroupRule).run
-
-initialize theSubgroups : IO.Ref (Option HolLibrary.GroupTheory.Subgroups) ← IO.mkRef none
-unsafe def BSubgroups : HolLibrary.GroupTheory.Subgroups :=
-  cached theSubgroups "setupSubgroups" fun _ => do
-    let _ ← IO.mkRef BConjugation.group_conjugation
-    (HolLibrary.GroupTheory.setupSubgroups (deps ()) BBasics BDerived BPow BGroupProduct BConjugation).run
-
-initialize theSubgroupGenerated : IO.Ref (Option HolLibrary.GroupTheory.SubgroupGenerated) ← IO.mkRef none
-unsafe def BSubgroupGenerated : HolLibrary.GroupTheory.SubgroupGenerated :=
-  cached theSubgroupGenerated "setupSubgroupGenerated" fun _ => do
-    let _ ← IO.mkRef BSubgroups.subgroup_of
-    (HolLibrary.GroupTheory.setupSubgroupGenerated (deps ()) BBasics BDerived BPow BAbelian BConjugation BSubgroups).run
-
-initialize theSubgroupGen1 : IO.Ref (Option HolLibrary.GroupTheory.SubgroupGen1) ← IO.mkRef none
-unsafe def BSubgroupGen1 : HolLibrary.GroupTheory.SubgroupGen1 :=
-  cached theSubgroupGen1 "setupSubgroupGen1" fun _ => do
-    let _ ← IO.mkRef BSubgroupGenerated.subgroup_generated
-    (HolLibrary.GroupTheory.setupSubgroupGen1 (deps ()) BBasics BSubgroups BSubgroupGenerated).run
-
-initialize theSubgroupGen2 : IO.Ref (Option HolLibrary.GroupTheory.SubgroupGen2) ← IO.mkRef none
-unsafe def BSubgroupGen2 : HolLibrary.GroupTheory.SubgroupGen2 :=
-  cached theSubgroupGen2 "setupSubgroupGen2" fun _ => do
-    let _ ← IO.mkRef BSubgroupGen1.FINITE_SUBGROUP_GENERATED
-    (HolLibrary.GroupTheory.setupSubgroupGen2 (deps ()) BBasics BDerived BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1).run
-
-initialize theProdGroup : IO.Ref (Option HolLibrary.GroupTheory.ProdGroup) ← IO.mkRef none
-unsafe def BProdGroup : HolLibrary.GroupTheory.ProdGroup :=
-  cached theProdGroup "setupProdGroup" fun _ => do
-    let _ ← IO.mkRef BSubgroupGen2.SUBGROUP_GENERATED_INSERT_ID
-    (HolLibrary.GroupTheory.setupProdGroup (deps ()) BBasics BDerived BPow BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1).run
-
-initialize theProductGroup : IO.Ref (Option HolLibrary.GroupTheory.ProductGroup) ← IO.mkRef none
-unsafe def BProductGroup : HolLibrary.GroupTheory.ProductGroup :=
-  cached theProductGroup "setupProductGroup" fun _ => do
-    let _ ← IO.mkRef BProdGroup.prod_group
-    (HolLibrary.GroupTheory.setupProductGroup (deps ()) BBasics BDerived BPow BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup).run
-
-initialize theSumGroup : IO.Ref (Option HolLibrary.GroupTheory.SumGroup) ← IO.mkRef none
-unsafe def BSumGroup : HolLibrary.GroupTheory.SumGroup :=
-  cached theSumGroup "setupSumGroup" fun _ => do
-    let _ ← IO.mkRef BProductGroup.PRODUCT_GROUP
-    (HolLibrary.GroupTheory.setupSumGroup (deps ()) BBasics BDerived BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BProductGroup).run
-
-initialize theHomomorphisms : IO.Ref (Option HolLibrary.GroupTheory.Homomorphisms) ← IO.mkRef none
-unsafe def BHomomorphisms : HolLibrary.GroupTheory.Homomorphisms :=
-  cached theHomomorphisms "setupHomomorphisms" fun _ => do
-    let _ ← IO.mkRef BSumGroup.sum_group
-    (HolLibrary.GroupTheory.setupHomomorphisms (deps ()) BBasics BDerived BSubgroupGenerated).run
-
-initialize theHomomorphisms1 : IO.Ref (Option HolLibrary.GroupTheory.Homomorphisms1) ← IO.mkRef none
-unsafe def BHomomorphisms1 : HolLibrary.GroupTheory.Homomorphisms1 :=
-  cached theHomomorphisms1 "setupHomomorphisms1" fun _ => do
-    let _ ← IO.mkRef BHomomorphisms.group_homomorphism
-    (HolLibrary.GroupTheory.setupHomomorphisms1 (deps ()) BBasics BDerived BPow BSubgroupGenerated BSubgroupGen1 BHomomorphisms).run
-
-initialize theHomomorphisms2 : IO.Ref (Option HolLibrary.GroupTheory.Homomorphisms2) ← IO.mkRef none
-unsafe def BHomomorphisms2 : HolLibrary.GroupTheory.Homomorphisms2 :=
-  cached theHomomorphisms2 "setupHomomorphisms2" fun _ => do
-    let _ ← IO.mkRef BHomomorphisms1.GROUP_HOMOMORPHISM_INV
-    (HolLibrary.GroupTheory.setupHomomorphisms2 (deps ()) BBasics BGroupRule BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms BHomomorphisms1).run
-
-initialize theHomomorphisms3 : IO.Ref (Option HolLibrary.GroupTheory.Homomorphisms3) ← IO.mkRef none
-unsafe def BHomomorphisms3 : HolLibrary.GroupTheory.Homomorphisms3 :=
-  cached theHomomorphisms3 "setupHomomorphisms3" fun _ => do
-    let _ ← IO.mkRef BHomomorphisms2.SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE
-    (HolLibrary.GroupTheory.setupHomomorphisms3 (deps ()) BBasics BDerived BSubgroupGenerated BProdGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2).run
-
-initialize theHomomorphisms4 : IO.Ref (Option HolLibrary.GroupTheory.Homomorphisms4) ← IO.mkRef none
-unsafe def BHomomorphisms4 : HolLibrary.GroupTheory.Homomorphisms4 :=
-  cached theHomomorphisms4 "setupHomomorphisms4" fun _ => do
-    let _ ← IO.mkRef BHomomorphisms3.CARD_EQ_GROUP_ISOMORPHIC_IMAGE
-    (HolLibrary.GroupTheory.setupHomomorphisms4 (deps ()) BBasics BDerived BPow BAbelian BProductGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2).run
-
-initialize theIso1 : IO.Ref (Option HolLibrary.GroupTheory.Iso1) ← IO.mkRef none
-unsafe def BIso1 : HolLibrary.GroupTheory.Iso1 :=
-  cached theIso1 "setupIso1" fun _ => do
-    let _ ← IO.mkRef BHomomorphisms4.GROUP_HOMOMORPHISM_COMPONENTWISE
-    (HolLibrary.GroupTheory.setupIso1 (deps ()) BBasics BProductGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BHomomorphisms4).run
-
-initialize theIso2 : IO.Ref (Option HolLibrary.GroupTheory.Iso2) ← IO.mkRef none
-unsafe def BIso2 : HolLibrary.GroupTheory.Iso2 :=
-  cached theIso2 "setupIso2" fun _ => do
-    let _ ← IO.mkRef BIso1.isomorphic_group
-    (HolLibrary.GroupTheory.setupIso2 (deps ()) BBasics BSubgroupGenerated BProdGroup BProductGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BHomomorphisms4 BIso1).run
-
-initialize theDirectLimit : IO.Ref (Option HolLibrary.GroupTheory.DirectLimit) ← IO.mkRef none
-unsafe def BDirectLimit : HolLibrary.GroupTheory.DirectLimit :=
-  cached theDirectLimit "setupDirectLimit" fun _ => do
-    let _ ← IO.mkRef BIso2.ISOMORPHIC_PRODUCT_GROUP_BIJECTIONS
-    (HolLibrary.GroupTheory.setupDirectLimit (deps ()) BBasics BHomomorphisms).run
-
-initialize theSetwise1 : IO.Ref (Option HolLibrary.GroupTheory.Setwise1) ← IO.mkRef none
-unsafe def BSetwise1 : HolLibrary.GroupTheory.Setwise1 :=
-  cached theSetwise1 "setupSetwise1" fun _ => do
-    let _ ← IO.mkRef BDirectLimit.GROUP_DIRECT_LIMIT
-    (HolLibrary.GroupTheory.setupSetwise1 (deps ()) BBasics BDerived BAbelian BSubgroups).run
-
-initialize theSetwise2 : IO.Ref (Option HolLibrary.GroupTheory.Setwise2) ← IO.mkRef none
-unsafe def BSetwise2 : HolLibrary.GroupTheory.Setwise2 :=
-  cached theSetwise2 "setupSetwise2" fun _ => do
-    let _ ← IO.mkRef BSetwise1.group_setinv
-    (HolLibrary.GroupTheory.setupSetwise2 (deps ()) BBasics BDerived BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BSetwise1).run
-
-initialize theGroupActions : IO.Ref (Option HolLibrary.GroupTheory.GroupActions) ← IO.mkRef none
-unsafe def BGroupActions : HolLibrary.GroupTheory.GroupActions :=
-  cached theGroupActions "setupGroupActions" fun _ => do
-    let _ ← IO.mkRef BSetwise2.GROUP_SETMUL_RSUBSET_EQ
-    (HolLibrary.GroupTheory.setupGroupActions (deps ()) BBasics BDerived BSubgroups BSubgroupGenerated BSubgroupGen1).run
-
-initialize theGroupOrbits : IO.Ref (Option HolLibrary.GroupTheory.GroupOrbits) ← IO.mkRef none
-unsafe def BGroupOrbits : HolLibrary.GroupTheory.GroupOrbits :=
-  cached theGroupOrbits "setupGroupOrbits" fun _ => do
-    let _ ← IO.mkRef BGroupActions.group_action
-    (HolLibrary.GroupTheory.setupGroupOrbits (deps ()) BBasics BGroupActions).run
-
-initialize theOrbitStabilizer : IO.Ref (Option HolLibrary.GroupTheory.OrbitStabilizer) ← IO.mkRef none
-unsafe def BOrbitStabilizer : HolLibrary.GroupTheory.OrbitStabilizer :=
-  cached theOrbitStabilizer "setupOrbitStabilizer" fun _ => do
-    let _ ← IO.mkRef BGroupOrbits.group_orbit
-    (HolLibrary.GroupTheory.setupOrbitStabilizer (deps ()) BBasics BDerived BGroupRule BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BSetwise1 BGroupActions BGroupOrbits).run
-
-initialize theCosets : IO.Ref (Option HolLibrary.GroupTheory.Cosets) ← IO.mkRef none
-unsafe def BCosets : HolLibrary.GroupTheory.Cosets :=
-  cached theCosets "setupCosets" fun _ => do
-    let _ ← IO.mkRef BOrbitStabilizer.ORBIT_STABILIZER_MUL_GEN
-    (HolLibrary.GroupTheory.setupCosets (deps ()) BBasics BDerived BSubgroups BSetwise1 BSetwise2).run
-
-initialize theCosets1 : IO.Ref (Option HolLibrary.GroupTheory.Cosets1) ← IO.mkRef none
-unsafe def BCosets1 : HolLibrary.GroupTheory.Cosets1 :=
-  cached theCosets1 "setupCosets1" fun _ => do
-    let _ ← IO.mkRef BCosets.right_coset
-    (HolLibrary.GroupTheory.setupCosets1 (deps ()) BBasics BDerived BSubgroups BSetwise1 BCosets).run
-
-initialize theCosets2 : IO.Ref (Option HolLibrary.GroupTheory.Cosets2) ← IO.mkRef none
-unsafe def BCosets2 : HolLibrary.GroupTheory.Cosets2 :=
-  cached theCosets2 "setupCosets2" fun _ => do
-    let _ ← IO.mkRef BCosets1.IN_LEFT_COSET_SELF
-    (HolLibrary.GroupTheory.setupCosets2 (deps ()) BBasics BDerived BGroupRule BConjugation BSubgroups BSubgroupGen1 BProdGroup BProductGroup BSetwise1 BGroupActions BGroupOrbits BOrbitStabilizer BCosets).run
-
-initialize theCosetProducts : IO.Ref (Option HolLibrary.GroupTheory.CosetProducts) ← IO.mkRef none
-unsafe def BCosetProducts : HolLibrary.GroupTheory.CosetProducts :=
-  cached theCosetProducts "setupCosetProducts" fun _ => do
-    let _ ← IO.mkRef BCosets2.GROUP_ORBIT_SUBGROUP_TRANSLATION
-    (HolLibrary.GroupTheory.setupCosetProducts (deps ()) BBasics BGroupRule BSubgroups BSubgroupGenerated BSubgroupGen1 BProductGroup BSetwise1 BCosets BCosets1 BCosets2).run
-
-initialize theNormalSubgroups : IO.Ref (Option HolLibrary.GroupTheory.NormalSubgroups) ← IO.mkRef none
-unsafe def BNormalSubgroups : HolLibrary.GroupTheory.NormalSubgroups :=
-  cached theNormalSubgroups "setupNormalSubgroups" fun _ => do
-    let _ ← IO.mkRef BCosetProducts.RIGHT_COSET_PRODUCT_GROUP
-    (HolLibrary.GroupTheory.setupNormalSubgroups (deps ()) BBasics BDerived BAbelian BConjugation BSubgroups BSetwise1 BSetwise2 BGroupActions BCosets BCosets1).run
-
-initialize theNormalSubgroups2 : IO.Ref (Option HolLibrary.GroupTheory.NormalSubgroups2) ← IO.mkRef none
-unsafe def BNormalSubgroups2 : HolLibrary.GroupTheory.NormalSubgroups2 :=
-  cached theNormalSubgroups2 "setupNormalSubgroups2" fun _ => do
-    let _ ← IO.mkRef BNormalSubgroups.normal_subgroup_of
-    (HolLibrary.GroupTheory.setupNormalSubgroups2 (deps ()) BBasics BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BSetwise1 BSetwise2 BCosets BCosets2 BCosetProducts BNormalSubgroups).run
-
-initialize theConjugate : IO.Ref (Option HolLibrary.GroupTheory.Conjugate) ← IO.mkRef none
-unsafe def BConjugate : HolLibrary.GroupTheory.Conjugate :=
-  cached theConjugate "setupConjugate" fun _ => do
-    let _ ← IO.mkRef BNormalSubgroups2.GROUP_SETMUL_RIGHT_COSET
-    (HolLibrary.GroupTheory.setupConjugate (deps ()) BBasics BDerived BConjugation BSubgroupGenerated BHomomorphisms2 BHomomorphisms3 BIso1 BGroupActions BGroupOrbits BOrbitStabilizer).run
-
-initialize theCentralizerNormalizer : IO.Ref (Option HolLibrary.GroupTheory.CentralizerNormalizer) ← IO.mkRef none
-unsafe def BCentralizerNormalizer : HolLibrary.GroupTheory.CentralizerNormalizer :=
-  cached theCentralizerNormalizer "setupCentralizerNormalizer" fun _ => do
-    let _ ← IO.mkRef BConjugate.group_conjugate
-    (HolLibrary.GroupTheory.setupCentralizerNormalizer (deps ()) BBasics BDerived BAbelian BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BSetwise1 BSetwise2 BCosetProducts BNormalSubgroups).run
-
-initialize theCentralizerNormalizer2 : IO.Ref (Option HolLibrary.GroupTheory.CentralizerNormalizer2) ← IO.mkRef none
-unsafe def BCentralizerNormalizer2 : HolLibrary.GroupTheory.CentralizerNormalizer2 :=
-  cached theCentralizerNormalizer2 "setupCentralizerNormalizer2" fun _ => do
-    let _ ← IO.mkRef BCentralizerNormalizer.group_centralizer
-    (HolLibrary.GroupTheory.setupCentralizerNormalizer2 (deps ()) BBasics BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms2 BSetwise1 BGroupActions BGroupOrbits BOrbitStabilizer BNormalSubgroups BConjugate BCentralizerNormalizer).run
-
-initialize theQuotientGroups : IO.Ref (Option HolLibrary.GroupTheory.QuotientGroups) ← IO.mkRef none
-unsafe def BQuotientGroups : HolLibrary.GroupTheory.QuotientGroups :=
-  cached theQuotientGroups "setupQuotientGroups" fun _ => do
-    let _ ← IO.mkRef BCentralizerNormalizer2.GROUP_CENTRALIZER_ALT
-    (HolLibrary.GroupTheory.setupQuotientGroups (deps ()) BBasics BDerived BPow BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BProductGroup BHomomorphisms BHomomorphisms2 BIso1 BSetwise1 BSetwise2 BCosets BCosets2 BCosetProducts BNormalSubgroups BNormalSubgroups2).run
-
-initialize theKernelsImages1 : IO.Ref (Option HolLibrary.GroupTheory.KernelsImages1) ← IO.mkRef none
-unsafe def BKernelsImages1 : HolLibrary.GroupTheory.KernelsImages1 :=
-  cached theKernelsImages1 "setupKernelsImages1" fun _ => do
-    let _ ← IO.mkRef BQuotientGroups.quotient_group
-    (HolLibrary.GroupTheory.setupKernelsImages1 (deps ()) BBasics BDerived BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BSetwise1 BCosets BCosets2 BNormalSubgroups BQuotientGroups).run
-
-initialize theKernelsImages2 : IO.Ref (Option HolLibrary.GroupTheory.KernelsImages2) ← IO.mkRef none
-unsafe def BKernelsImages2 : HolLibrary.GroupTheory.KernelsImages2 :=
-  cached theKernelsImages2 "setupKernelsImages2" fun _ => do
-    let _ ← IO.mkRef BKernelsImages1.group_kernel
-    (HolLibrary.GroupTheory.setupKernelsImages2 (deps ()) BBasics BDerived BTotalized BSubgroups BSubgroupGen1 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BSetwise1 BSetwise2 BCosets BNormalSubgroups BNormalSubgroups2 BQuotientGroups BKernelsImages1).run
-
-initialize theSubgroupCorrespondence : IO.Ref (Option HolLibrary.GroupTheory.SubgroupCorrespondence) ← IO.mkRef none
-unsafe def BSubgroupCorrespondence : HolLibrary.GroupTheory.SubgroupCorrespondence :=
-  cached theSubgroupCorrespondence "setupSubgroupCorrespondence" fun _ => do
-    let _ ← IO.mkRef BKernelsImages2.QUOTIENT_GROUP_UNIVERSAL_EXPLICIT
-    (HolLibrary.GroupTheory.setupSubgroupCorrespondence (deps ()) BBasics BDerived BConjugation BSubgroups BHomomorphisms BHomomorphisms1 BHomomorphisms2 BSetwise1 BCosets BNormalSubgroups BConjugate BQuotientGroups BKernelsImages1 BKernelsImages2).run
-
-initialize theTrivialHomomorphisms : IO.Ref (Option HolLibrary.GroupTheory.TrivialHomomorphisms) ← IO.mkRef none
-unsafe def BTrivialHomomorphisms : HolLibrary.GroupTheory.TrivialHomomorphisms :=
-  cached theTrivialHomomorphisms "setupTrivialHomomorphisms" fun _ => do
-    let _ ← IO.mkRef BSubgroupCorrespondence.GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT
-    (HolLibrary.GroupTheory.setupTrivialHomomorphisms (deps ()) BBasics BHomomorphisms BHomomorphisms1 BHomomorphisms2 BKernelsImages1).run
-
-initialize theGroupElementOrder : IO.Ref (Option HolLibrary.GroupTheory.GroupElementOrder) ← IO.mkRef none
-unsafe def BGroupElementOrder : HolLibrary.GroupTheory.GroupElementOrder :=
-  cached theGroupElementOrder "setupGroupElementOrder" fun _ => do
-    let _ ← IO.mkRef BTrivialHomomorphisms.trivial_homomorphism
-    (HolLibrary.GroupTheory.setupGroupElementOrder (deps ()) BBasics BDerived BPow).run
-
-initialize theGroupElementOrder2 : IO.Ref (Option HolLibrary.GroupTheory.GroupElementOrder2) ← IO.mkRef none
-unsafe def BGroupElementOrder2 : HolLibrary.GroupTheory.GroupElementOrder2 :=
-  cached theGroupElementOrder2 "setupGroupElementOrder2" fun _ => do
-    let _ ← IO.mkRef BGroupElementOrder.group_element_order
-    (HolLibrary.GroupTheory.setupGroupElementOrder2 (deps ()) BBasics BDerived BPow BAbelian BGroupRule BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BKernelsImages1 BGroupElementOrder).run
-
-initialize theOrderDecomp : IO.Ref (Option HolLibrary.GroupTheory.OrderDecomp) ← IO.mkRef none
-unsafe def BOrderDecomp : HolLibrary.GroupTheory.OrderDecomp :=
-  cached theOrderDecomp "setupOrderDecomp" fun _ => do
-    let _ ← IO.mkRef BGroupElementOrder2.GROUP_ELEMENT_ORDER_POW_GEN
-    (HolLibrary.GroupTheory.setupOrderDecomp (deps ()) BBasics BDerived BPow BAbelian BGroupRule BSubgroupGenerated BProdGroup BSumGroup BGroupElementOrder BGroupElementOrder2).run
-
-initialize theTorsionSubgroups : IO.Ref (Option HolLibrary.GroupTheory.TorsionSubgroups) ← IO.mkRef none
-unsafe def BTorsionSubgroups : HolLibrary.GroupTheory.TorsionSubgroups :=
-  cached theTorsionSubgroups "setupTorsionSubgroups" fun _ => do
-    let _ ← IO.mkRef BOrderDecomp.GROUP_ELEMENT_ORDER_LCM_EXISTS
-    (HolLibrary.GroupTheory.setupTorsionSubgroups (deps ()) BBasics BDerived BConjugation BSubgroups BCosets BNormalSubgroups BQuotientGroups BGroupElementOrder BGroupElementOrder2).run
-
-initialize theCyclicGroups1 : IO.Ref (Option HolLibrary.GroupTheory.CyclicGroups1) ← IO.mkRef none
-unsafe def BCyclicGroups1 : HolLibrary.GroupTheory.CyclicGroups1 :=
-  cached theCyclicGroups1 "setupCyclicGroups1" fun _ => do
-    let _ ← IO.mkRef BTorsionSubgroups.SUBGROUP_OF_TORSION_GENERAL
-    (HolLibrary.GroupTheory.setupCyclicGroups1 (deps ()) BBasics BDerived BPow BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BNormalSubgroups BQuotientGroups).run
-
-initialize theCyclicGroups2 : IO.Ref (Option HolLibrary.GroupTheory.CyclicGroups2) ← IO.mkRef none
-unsafe def BCyclicGroups2 : HolLibrary.GroupTheory.CyclicGroups2 :=
-  cached theCyclicGroups2 "setupCyclicGroups2" fun _ => do
-    let _ ← IO.mkRef BCyclicGroups1.SUBGROUP_OF_POWERS
-    (HolLibrary.GroupTheory.setupCyclicGroups2 (deps ()) BBasics BDerived BPow BSubgroups BSubgroupGenerated BSubgroupGen1 BCosets2 BGroupElementOrder BCyclicGroups1).run
-
-initialize theCyclicGroups3 : IO.Ref (Option HolLibrary.GroupTheory.CyclicGroups3) ← IO.mkRef none
-unsafe def BCyclicGroups3 : HolLibrary.GroupTheory.CyclicGroups3 :=
-  cached theCyclicGroups3 "setupCyclicGroups3" fun _ => do
-    let _ ← IO.mkRef BCyclicGroups2.FINITE_CYCLIC_SUBGROUP
-    (HolLibrary.GroupTheory.setupCyclicGroups3 (deps ()) BBasics BDerived BPow BSubgroups BSubgroupGenerated BSubgroupGen1 BCosets2 BNormalSubgroups BQuotientGroups BSubgroupCorrespondence BGroupElementOrder BGroupElementOrder2 BCyclicGroups1 BCyclicGroups2).run
-
-initialize theFinitelyGenerated : IO.Ref (Option HolLibrary.GroupTheory.FinitelyGenerated) ← IO.mkRef none
-unsafe def BFinitelyGenerated : HolLibrary.GroupTheory.FinitelyGenerated :=
-  cached theFinitelyGenerated "setupFinitelyGenerated" fun _ => do
-    let _ ← IO.mkRef BCyclicGroups3.ABELIAN_SIMPLE_GROUP
-    (HolLibrary.GroupTheory.setupFinitelyGenerated (deps ()) BBasics BDerived BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BProductGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BIso1 BIso2 BGroupActions BQuotientGroups BCyclicGroups1).run
-
-initialize theFinitelyGeneratedSubgroups : IO.Ref (Option HolLibrary.GroupTheory.FinitelyGeneratedSubgroups) ← IO.mkRef none
-unsafe def BFinitelyGeneratedSubgroups : HolLibrary.GroupTheory.FinitelyGeneratedSubgroups :=
-  cached theFinitelyGeneratedSubgroups "setupFinitelyGeneratedSubgroups" fun _ => do
-    let _ ← IO.mkRef BFinitelyGenerated.finitely_generated_group
-    (HolLibrary.GroupTheory.setupFinitelyGeneratedSubgroups (deps ()) BBasics BDerived BGroupRule BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BIso2 BSetwise1 BGroupActions BCosets BCosets1 BCosets2 BCosetProducts BNormalSubgroups BNormalSubgroups2 BQuotientGroups BKernelsImages1 BKernelsImages2 BCyclicGroups1 BFinitelyGenerated).run
-
-initialize theFinitelyGeneratedMaximal : IO.Ref (Option HolLibrary.GroupTheory.FinitelyGeneratedMaximal) ← IO.mkRef none
-unsafe def BFinitelyGeneratedMaximal : HolLibrary.GroupTheory.FinitelyGeneratedMaximal :=
-  cached theFinitelyGeneratedMaximal "setupFinitelyGeneratedMaximal" fun _ => do
-    let _ ← IO.mkRef BFinitelyGeneratedSubgroups.FINITELY_GENERATED_FIXED_INDEX_SUBGROUPS
-    (HolLibrary.GroupTheory.setupFinitelyGeneratedMaximal (deps ()) BBasics BSubgroups BSubgroupGenerated BSubgroupGen2 BNormalSubgroups BFinitelyGenerated BFinitelyGeneratedSubgroups).run
-
-initialize theIntegerGroup : IO.Ref (Option HolLibrary.GroupTheory.IntegerGroup) ← IO.mkRef none
-unsafe def BIntegerGroup : HolLibrary.GroupTheory.IntegerGroup :=
-  cached theIntegerGroup "setupIntegerGroup" fun _ => do
-    let _ ← IO.mkRef BFinitelyGeneratedMaximal.FINITELY_GENERATED_ABELIAN_SUBGROUP
-    (HolLibrary.GroupTheory.setupIntegerGroup (deps ()) BBasics BDerived BPow BAbelian BSubgroupGen1 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BGroupElementOrder BCyclicGroups1 BCyclicGroups2).run
-
-initialize theIntegerModGroup : IO.Ref (Option HolLibrary.GroupTheory.IntegerModGroup) ← IO.mkRef none
-unsafe def BIntegerModGroup : HolLibrary.GroupTheory.IntegerModGroup :=
-  cached theIntegerModGroup "setupIntegerModGroup" fun _ => do
-    let _ ← IO.mkRef BIntegerGroup.integer_group
-    (HolLibrary.GroupTheory.setupIntegerModGroup (deps ()) BBasics BDerived BPow BAbelian BSubgroupGenerated BSubgroupGen1 BProdGroup BHomomorphisms BGroupElementOrder BGroupElementOrder2 BCyclicGroups1 BIntegerGroup).run
-
-initialize theCyclicInteger : IO.Ref (Option HolLibrary.GroupTheory.CyclicInteger) ← IO.mkRef none
-unsafe def BCyclicInteger : HolLibrary.GroupTheory.CyclicInteger :=
-  cached theCyclicInteger "setupCyclicInteger" fun _ => do
-    let _ ← IO.mkRef BIntegerModGroup.integer_mod_group
-    (HolLibrary.GroupTheory.setupCyclicInteger (deps ()) BBasics BPow BSubgroupGenerated BIso1 BIso2 BKernelsImages1 BGroupElementOrder BCyclicGroups1 BCyclicGroups2 BIntegerGroup BIntegerModGroup).run
-
-initialize theCyclicProd : IO.Ref (Option HolLibrary.GroupTheory.CyclicProd) ← IO.mkRef none
-unsafe def BCyclicProd : HolLibrary.GroupTheory.CyclicProd :=
-  cached theCyclicProd "setupCyclicProd" fun _ => do
-    let _ ← IO.mkRef BCyclicInteger.CYCLIC_INTEGER_GROUP
-    (HolLibrary.GroupTheory.setupCyclicProd (deps ()) BBasics BDerived BPow BSubgroupGenerated BSubgroupGen1 BProdGroup BHomomorphisms2 BHomomorphisms3 BIso1 BIso2 BGroupElementOrder BCyclicGroups1 BCyclicGroups2 BCyclicGroups3 BIntegerModGroup BCyclicInteger).run
-
-initialize thePgroup : IO.Ref (Option HolLibrary.GroupTheory.Pgroup) ← IO.mkRef none
-unsafe def BPgroup : HolLibrary.GroupTheory.Pgroup :=
-  cached thePgroup "setupPgroup" fun _ => do
-    let _ ← IO.mkRef BCyclicProd.CYCLIC_PROD_INTEGER_MOD_GROUP
-    (HolLibrary.GroupTheory.setupPgroup (deps ()) BBasics BProdGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms3 BHomomorphisms4 BQuotientGroups BGroupElementOrder BGroupElementOrder2 BOrderDecomp).run
-
-initialize theSylowCount : IO.Ref (Option HolLibrary.GroupTheory.SylowCount) ← IO.mkRef none
-unsafe def BSylowCount : HolLibrary.GroupTheory.SylowCount :=
-  cached theSylowCount "setupSylowCount" fun _ => do
-    let _ ← IO.mkRef BPgroup.pgroup
-    (HolLibrary.GroupTheory.setupSylowCount (deps ()) BBasics BGroupRule BSubgroups BSubgroupGen1 BSetwise1 BGroupActions BGroupOrbits BOrbitStabilizer BCosets BCosets1 BCosets2 BCyclicGroups3 BIntegerModGroup BCyclicInteger).run
-
-initialize theSylow : IO.Ref (Option HolLibrary.GroupTheory.Sylow) ← IO.mkRef none
-unsafe def BSylow : HolLibrary.GroupTheory.Sylow :=
-  cached theSylow "setupSylow" fun _ => do
-    let _ ← IO.mkRef BSylowCount.SYLOW_THEOREM_COUNT_MOD
-    (HolLibrary.GroupTheory.setupSylow (deps ()) BBasics BDerived BPow BSubgroups BSubgroupGenerated BSubgroupGen1 BGroupElementOrder BOrderDecomp BCyclicGroups3 BPgroup BSylowCount).run
-
-initialize thePowering : IO.Ref (Option HolLibrary.GroupTheory.Powering) ← IO.mkRef none
-unsafe def BPowering : HolLibrary.GroupTheory.Powering :=
-  cached thePowering "setupPowering" fun _ => do
-    let _ ← IO.mkRef BSylow.SYLOW_THEOREM
-    (HolLibrary.GroupTheory.setupPowering (deps ()) BHomomorphisms BHomomorphisms2 BHomomorphisms4 BGroupOrbits BOrbitStabilizer BSylow).run
-
-initialize theSylow2 : IO.Ref (Option HolLibrary.GroupTheory.Sylow2) ← IO.mkRef none
-unsafe def BSylow2 : HolLibrary.GroupTheory.Sylow2 :=
-  cached theSylow2 "setupSylow2" fun _ => do
-    let _ ← IO.mkRef BPowering.ABELIAN_GROUP_MONOMORPHISM_POWERING_EQ
-    (HolLibrary.GroupTheory.setupSylow2 (deps ()) BBasics BGroupRule BConjugation BSubgroups BSubgroupGen1 BHomomorphisms2 BGroupActions BCosets BCosets2 BNormalSubgroups BConjugate BCentralizerNormalizer BCentralizerNormalizer2 BSubgroupCorrespondence BSylow BPowering).run
-
-initialize thePGroupCentre : IO.Ref (Option HolLibrary.GroupTheory.PGroupCentre) ← IO.mkRef none
-unsafe def BPGroupCentre : HolLibrary.GroupTheory.PGroupCentre :=
-  cached thePGroupCentre "setupPGroupCentre" fun _ => do
-    let _ ← IO.mkRef BSylow2.SYLOW_THEOREM_CONJUGATE_GEN
-    (HolLibrary.GroupTheory.setupPGroupCentre (deps ()) BBasics BDerived BConjugation BSubgroups BSubgroupGen1 BGroupActions BOrbitStabilizer BCosets BCosets2 BCosetProducts BNormalSubgroups BCentralizerNormalizer BSylow BPowering).run
-
-initialize thePgroupNormalizer : IO.Ref (Option HolLibrary.GroupTheory.PgroupNormalizer) ← IO.mkRef none
-unsafe def BPgroupNormalizer : HolLibrary.GroupTheory.PgroupNormalizer :=
-  cached thePgroupNormalizer "setupPgroupNormalizer" fun _ => do
-    let _ ← IO.mkRef BPGroupCentre.PGROUP_NONTRIVIAL_CENTRE_GEN
-    (HolLibrary.GroupTheory.setupPgroupNormalizer (deps ()) BBasics BDerived BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms2 BSetwise1 BSetwise2 BCosets2 BCosetProducts BNormalSubgroups BConjugate BCentralizerNormalizer BSylow BSylow2 BPGroupCentre).run
-
-initialize theGroupDisjointSum : IO.Ref (Option HolLibrary.GroupTheory.GroupDisjointSum) ← IO.mkRef none
-unsafe def BGroupDisjointSum : HolLibrary.GroupTheory.GroupDisjointSum :=
-  cached theGroupDisjointSum "setupGroupDisjointSum" fun _ => do
-    let _ ← IO.mkRef BPgroupNormalizer.PGROUP_SUBGROUP_PSUBSET_NORMALIZER
-    (HolLibrary.GroupTheory.setupGroupDisjointSum (deps ()) BBasics BDerived BGroupRule BSubgroups BSetwise1 BCosets BNormalSubgroups).run
-
-initialize theGroupMulMorphism : IO.Ref (Option HolLibrary.GroupTheory.GroupMulMorphism) ← IO.mkRef none
-unsafe def BGroupMulMorphism : HolLibrary.GroupTheory.GroupMulMorphism :=
-  cached theGroupMulMorphism "setupGroupMulMorphism" fun _ => do
-    let _ ← IO.mkRef BGroupDisjointSum.GROUP_DISJOINT_SUM_ALT
-    (HolLibrary.GroupTheory.setupGroupMulMorphism (deps ()) BBasics BAbelian BGroupRule BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BProdGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BSetwise1 BNormalSubgroups BGroupDisjointSum).run
-
-initialize theGroupSumImKer : IO.Ref (Option HolLibrary.GroupTheory.GroupSumImKer) ← IO.mkRef none
-unsafe def BGroupSumImKer : HolLibrary.GroupTheory.GroupSumImKer :=
-  cached theGroupSumImKer "setupGroupSumImKer" fun _ => do
-    let _ ← IO.mkRef BGroupMulMorphism.GROUP_HOMOMORPHISM_GROUP_MUL_GEN
-    (HolLibrary.GroupTheory.setupGroupSumImKer (deps ()) BBasics BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BHomomorphisms2 BIso1 BSetwise1 BCosetProducts BNormalSubgroups BNormalSubgroups2 BKernelsImages1 BGroupDisjointSum BGroupMulMorphism).run
-
-initialize theGroupSumHomomorphism : IO.Ref (Option HolLibrary.GroupTheory.GroupSumHomomorphism) ← IO.mkRef none
-unsafe def BGroupSumHomomorphism : HolLibrary.GroupTheory.GroupSumHomomorphism :=
-  cached theGroupSumHomomorphism "setupGroupSumHomomorphism" fun _ => do
-    let _ ← IO.mkRef BGroupSumImKer.ISOMORPHIC_PROD_GROUP_SUBGROUP_GENERATED
-    (HolLibrary.GroupTheory.setupGroupSumHomomorphism (deps ()) BBasics BDerived BAbelian BGroupRule BGroupProduct BGroupProductMul BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms4).run
-
-initialize theGroupSumEpimorphism : IO.Ref (Option HolLibrary.GroupTheory.GroupSumEpimorphism) ← IO.mkRef none
-unsafe def BGroupSumEpimorphism : HolLibrary.GroupTheory.GroupSumEpimorphism :=
-  cached theGroupSumEpimorphism "setupGroupSumEpimorphism" fun _ => do
-    let _ ← IO.mkRef BGroupSumHomomorphism.GROUP_HOMOMORPHISM_GROUP_SUM_GEN
-    (HolLibrary.GroupTheory.setupGroupSumEpimorphism (deps ()) BAbelian BGroupProduct BSubgroups BSubgroupGenerated BSubgroupGen1 BSumGroup BHomomorphisms BHomomorphisms2 BGroupSumHomomorphism).run
-
-initialize theGroupSumMonomorphism : IO.Ref (Option HolLibrary.GroupTheory.GroupSumMonomorphism) ← IO.mkRef none
-unsafe def BGroupSumMonomorphism : HolLibrary.GroupTheory.GroupSumMonomorphism :=
-  cached theGroupSumMonomorphism "setupGroupSumMonomorphism" fun _ => do
-    let _ ← IO.mkRef BGroupSumEpimorphism.SUBGROUP_EPIMORPHISM_GROUP_SUM_GEN
-    (HolLibrary.GroupTheory.setupGroupSumMonomorphism (deps ()) BBasics BDerived BAbelian BGroupRule BGroupProduct BGroupProductClauses BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BSumGroup BHomomorphisms BHomomorphisms2 BKernelsImages1 BGroupDisjointSum BGroupSumHomomorphism BGroupSumEpimorphism).run
-
-initialize theSumGroupIsomorphism : IO.Ref (Option HolLibrary.GroupTheory.SumGroupIsomorphism) ← IO.mkRef none
-unsafe def BSumGroupIsomorphism : HolLibrary.GroupTheory.SumGroupIsomorphism :=
-  cached theSumGroupIsomorphism "setupSumGroupIsomorphism" fun _ => do
-    let _ ← IO.mkRef BGroupSumMonomorphism.GROUP_MONOMORPHISM_GROUP_SUM_GEN
-    (HolLibrary.GroupTheory.setupSumGroupIsomorphism (deps ()) BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms2 BIso1 BNormalSubgroups BGroupDisjointSum BGroupSumEpimorphism BGroupSumMonomorphism).run
-
-initialize theCarrierSubgroupGeneratedUnions : IO.Ref (Option HolLibrary.GroupTheory.CarrierSubgroupGeneratedUnions) ← IO.mkRef none
-unsafe def BCarrierSubgroupGeneratedUnions : HolLibrary.GroupTheory.CarrierSubgroupGeneratedUnions :=
-  cached theCarrierSubgroupGeneratedUnions "setupCarrierSubgroupGeneratedUnions" fun _ => do
-    let _ ← IO.mkRef BSumGroupIsomorphism.SUBGROUP_ISOMORPHISM_GROUP_SUM_EQ
-    (HolLibrary.GroupTheory.setupCarrierSubgroupGeneratedUnions (deps ()) BDerived BPow BAbelian BGroupProduct BGroupProductMul BSubgroups BSubgroupGenerated BSubgroupGen1 BSumGroup BHomomorphisms BGroupSumEpimorphism).run
-
-initialize thePrimeTorsion : IO.Ref (Option HolLibrary.GroupTheory.PrimeTorsion) ← IO.mkRef none
-unsafe def BPrimeTorsion : HolLibrary.GroupTheory.PrimeTorsion :=
-  cached thePrimeTorsion "setupPrimeTorsion" fun _ => do
-    let _ ← IO.mkRef BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_UNIONS
-    (HolLibrary.GroupTheory.setupPrimeTorsion (deps ()) BBasics BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BGroupElementOrder BGroupElementOrder2 BOrderDecomp).run
-
-initialize theTorsionStructure : IO.Ref (Option HolLibrary.GroupTheory.TorsionStructure) ← IO.mkRef none
-unsafe def BTorsionStructure : HolLibrary.GroupTheory.TorsionStructure :=
-  cached theTorsionStructure "setupTorsionStructure" fun _ => do
-    let _ ← IO.mkRef BPrimeTorsion.SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FINITE
-    (HolLibrary.GroupTheory.setupTorsionStructure (deps ()) BBasics BSubgroups BSubgroupGenerated BSubgroupGen1 BSumGroup BHomomorphisms BHomomorphisms2 BIso1 BGroupElementOrder BGroupElementOrder2 BOrderDecomp BTorsionSubgroups BCyclicGroups3 BPgroup BGroupDisjointSum BSumGroupIsomorphism BPrimeTorsion).run
-
-initialize theFinitelyGeneratedAbelian : IO.Ref (Option HolLibrary.GroupTheory.FinitelyGeneratedAbelian) ← IO.mkRef none
-unsafe def BFinitelyGeneratedAbelian : HolLibrary.GroupTheory.FinitelyGeneratedAbelian :=
-  cached theFinitelyGeneratedAbelian "setupFinitelyGeneratedAbelian" fun _ => do
-    let _ ← IO.mkRef BTorsionStructure.SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FULL
-    (HolLibrary.GroupTheory.setupFinitelyGeneratedAbelian (deps ()) BBasics BPow BAbelian BGroupRule BGroupProduct BGroupProductClauses BGroupProductMul BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BProdGroup BProductGroup BSumGroup BHomomorphisms BHomomorphisms2 BHomomorphisms3 BHomomorphisms4 BIso2 BSetwise1 BSetwise2 BKernelsImages1 BGroupElementOrder BCyclicGroups1 BGroupSumEpimorphism BCarrierSubgroupGeneratedUnions).run
-
-initialize theFinGenAbelianStructure : IO.Ref (Option HolLibrary.GroupTheory.FinGenAbelianStructure) ← IO.mkRef none
-unsafe def BFinGenAbelianStructure : HolLibrary.GroupTheory.FinGenAbelianStructure :=
-  cached theFinGenAbelianStructure "setupFinGenAbelianStructure" fun _ => do
-    let _ ← IO.mkRef BFinitelyGeneratedAbelian.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM
-    (HolLibrary.GroupTheory.setupFinGenAbelianStructure (deps ()) BSumGroup BIso1 BIso2 BGroupElementOrder2 BOrderDecomp BTorsionSubgroups BCyclicGroups1 BFinitelyGenerated BIntegerGroup BIntegerModGroup BCyclicInteger BFinitelyGeneratedAbelian).run
-
-initialize theFreeAbelianGroup : IO.Ref (Option HolLibrary.GroupTheory.FreeAbelianGroup) ← IO.mkRef none
-unsafe def BFreeAbelianGroup : HolLibrary.GroupTheory.FreeAbelianGroup :=
-  cached theFreeAbelianGroup "setupFreeAbelianGroup" fun _ => do
-    let _ ← IO.mkRef BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM_ALT
-    (HolLibrary.GroupTheory.setupFreeAbelianGroup (deps ()) BBasics BDerived BPow BAbelian BTotalized BSubgroups BSumGroup BHomomorphisms BHomomorphisms2 BIso1 BKernelsImages1 BIntegerGroup).run
-
-initialize theFreeAbelianExtra : IO.Ref (Option HolLibrary.GroupTheory.FreeAbelianExtra) ← IO.mkRef none
-unsafe def BFreeAbelianExtra : HolLibrary.GroupTheory.FreeAbelianExtra :=
-  cached theFreeAbelianExtra "setupFreeAbelianExtra" fun _ => do
-    let _ ← IO.mkRef BFreeAbelianGroup.free_abelian_group
-    (HolLibrary.GroupTheory.setupFreeAbelianExtra (deps ()) BBasics BDerived BHomomorphisms BHomomorphisms1 BIso1 BIso2 BIntegerModGroup BFreeAbelianGroup).run
-
-initialize theSolvableGroup : IO.Ref (Option HolLibrary.GroupTheory.SolvableGroup) ← IO.mkRef none
-unsafe def BSolvableGroup : HolLibrary.GroupTheory.SolvableGroup :=
-  cached theSolvableGroup "setupSolvableGroup" fun _ => do
-    let _ ← IO.mkRef BFreeAbelianExtra.ISOMORPHIC_FREE_ABELIAN_GROUP_UNIONS
-    (HolLibrary.GroupTheory.setupSolvableGroup (deps ()) BBasics BDerived BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BCosets BNormalSubgroups BQuotientGroups).run
-
-initialize theSolvableImage : IO.Ref (Option HolLibrary.GroupTheory.SolvableImage) ← IO.mkRef none
-unsafe def BSolvableImage : HolLibrary.GroupTheory.SolvableImage :=
-  cached theSolvableImage "setupSolvableImage" fun _ => do
-    let _ ← IO.mkRef BSolvableGroup.solvable_group
-    (HolLibrary.GroupTheory.setupSolvableImage (deps ()) BBasics BDerived BAbelian BSubgroupGenerated BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms4 BIso1 BCosets BNormalSubgroups BNormalSubgroups2 BQuotientGroups BKernelsImages1 BKernelsImages2 BSubgroupCorrespondence BSolvableGroup).run
-
-initialize theSolvableSubgroup : IO.Ref (Option HolLibrary.GroupTheory.SolvableSubgroup) ← IO.mkRef none
-unsafe def BSolvableSubgroup : HolLibrary.GroupTheory.SolvableSubgroup :=
-  cached theSolvableSubgroup "setupSolvableSubgroup" fun _ => do
-    let _ ← IO.mkRef BSolvableImage.ABELIAN_QUOTIENT_EPIMORPHIC_IMAGE
-    (HolLibrary.GroupTheory.setupSolvableSubgroup (deps ()) BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BIso1 BNormalSubgroups BKernelsImages1 BSolvableGroup BSolvableImage).run
-
-initialize theSolvableQuotient : IO.Ref (Option HolLibrary.GroupTheory.SolvableQuotient) ← IO.mkRef none
-unsafe def BSolvableQuotient : HolLibrary.GroupTheory.SolvableQuotient :=
-  cached theSolvableQuotient "setupSolvableQuotient" fun _ => do
-    let _ ← IO.mkRef BSolvableSubgroup.SOLVABLE_GROUP_SUBGROUP
-    (HolLibrary.GroupTheory.setupSolvableQuotient (deps ()) BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BHomomorphisms2 BIso2 BNormalSubgroups BQuotientGroups BKernelsImages1 BSubgroupCorrespondence BSolvableGroup).run
-
-initialize theExactSequences : IO.Ref (Option HolLibrary.GroupTheory.ExactSequences) ← IO.mkRef none
-unsafe def BExactSequences : HolLibrary.GroupTheory.ExactSequences :=
-  cached theExactSequences "setupExactSequences" fun _ => do
-    let _ ← IO.mkRef BSolvableQuotient.SOLVABLE_GROUP_SOLVABLE_QUOTIENT
-    (HolLibrary.GroupTheory.setupExactSequences (deps ()) BBasics BSubgroupGen1 BProdGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BNormalSubgroups BQuotientGroups BKernelsImages1 BKernelsImages2 BTrivialHomomorphisms).run
-
-initialize theExactSeq : IO.Ref (Option HolLibrary.GroupTheory.ExactSeq) ← IO.mkRef none
-unsafe def BExactSeq : HolLibrary.GroupTheory.ExactSeq :=
-  cached theExactSeq "setupExactSeq" fun _ => do
-    let _ ← IO.mkRef BExactSequences.group_exactness
-    (HolLibrary.GroupTheory.setupExactSeq (deps ()) BBasics BDerived BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BHomomorphisms4 BIso1 BSetwise1 BNormalSubgroups BKernelsImages1 BKernelsImages2 BGroupDisjointSum BGroupMulMorphism BGroupSumImKer BExactSequences).run
-
-initialize theFiveLemma : IO.Ref (Option HolLibrary.GroupTheory.FiveLemma) ← IO.mkRef none
-unsafe def BFiveLemma : HolLibrary.GroupTheory.FiveLemma :=
-  cached theFiveLemma "setupFiveLemma" fun _ => do
-    let _ ← IO.mkRef BExactSeq.EXACT_SEQUENCE_SUM_LEMMA
-    (HolLibrary.GroupTheory.setupFiveLemma (deps ()) BBasics BDerived BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BKernelsImages1 BFreeAbelianGroup BExactSequences BExactSeq).run
-
-initialize theShortFiveLemma : IO.Ref (Option HolLibrary.GroupTheory.ShortFiveLemma) ← IO.mkRef none
-unsafe def BShortFiveLemma : HolLibrary.GroupTheory.ShortFiveLemma :=
-  cached theShortFiveLemma "setupShortFiveLemma" fun _ => do
-    let _ ← IO.mkRef BFiveLemma.SPLITTING_LEMMA_FREE_ABELIAN_GROUP
-    (HolLibrary.GroupTheory.setupShortFiveLemma (deps ()) BBasics BGroupRule BProdGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BKernelsImages1 BExactSequences BExactSeq BFiveLemma).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
+  core5 := core5
+  core6 := core6
+  core7 := core7
+  core8 := core8
+  core9 := core9
+  core10 := core10
+  core11 := core11
+  core12 := core12
+  core13 := core13
+  core14 := core14
+  core15 := core15
+  core16 := core16
+
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
+
+/- The bundles, in grouptheory.ml order. -/
+
+initialize BBasics : HolLibrary.GroupTheory.Basics ←
+  ioB "setupBasics" <|
+    (HolLibrary.GroupTheory.setupBasics deps).run
+
+initialize BDerived : HolLibrary.GroupTheory.Derived ←
+  ioB "setupDerived" <|
+    (HolLibrary.GroupTheory.setupDerived deps BBasics).run
+
+initialize BPow : HolLibrary.GroupTheory.Pow ←
+  ioB "setupPow" <|
+    (HolLibrary.GroupTheory.setupPow deps BBasics BDerived).run
+
+initialize BAbelian : HolLibrary.GroupTheory.Abelian ←
+  ioB "setupAbelian" <|
+    (HolLibrary.GroupTheory.setupAbelian deps BBasics BDerived BPow).run
+
+initialize BTotalized : HolLibrary.GroupTheory.Totalized ←
+  ioB "setupTotalized" <|
+    (HolLibrary.GroupTheory.setupTotalized deps BBasics BDerived BAbelian).run
+
+initialize BGroupRule : HolLibrary.GroupTheory.GroupRule ←
+  ioB "setupGroupRule" <|
+    (HolLibrary.GroupTheory.setupGroupRule deps BBasics BDerived BPow BTotalized).run
+
+initialize BGroupProduct : HolLibrary.GroupTheory.GroupProduct ←
+  ioB "setupGroupProduct" <|
+    (HolLibrary.GroupTheory.setupGroupProduct deps BBasics BDerived).run
+
+initialize BGroupProductClauses : HolLibrary.GroupTheory.GroupProductClauses ←
+  ioB "setupGroupProductClauses" <|
+    (HolLibrary.GroupTheory.setupGroupProductClauses deps BBasics BAbelian BGroupProduct).run
+
+initialize BGroupProductMul : HolLibrary.GroupTheory.GroupProductMul ←
+  ioB "setupGroupProductMul" <|
+    (HolLibrary.GroupTheory.setupGroupProductMul deps BBasics BDerived BPow BAbelian BTotalized BGroupProduct BGroupProductClauses).run
+
+initialize BConjugation : HolLibrary.GroupTheory.Conjugation ←
+  ioB "setupConjugation" <|
+    (HolLibrary.GroupTheory.setupConjugation deps BBasics BGroupRule).run
+
+initialize BSubgroups : HolLibrary.GroupTheory.Subgroups ←
+  ioB "setupSubgroups" <|
+    (HolLibrary.GroupTheory.setupSubgroups deps BBasics BDerived BPow BGroupProduct BConjugation).run
+
+initialize BSubgroupGenerated : HolLibrary.GroupTheory.SubgroupGenerated ←
+  ioB "setupSubgroupGenerated" <|
+    (HolLibrary.GroupTheory.setupSubgroupGenerated deps BBasics BDerived BPow BAbelian BConjugation BSubgroups).run
+
+initialize BSubgroupGen1 : HolLibrary.GroupTheory.SubgroupGen1 ←
+  ioB "setupSubgroupGen1" <|
+    (HolLibrary.GroupTheory.setupSubgroupGen1 deps BBasics BSubgroups BSubgroupGenerated).run
+
+initialize BSubgroupGen2 : HolLibrary.GroupTheory.SubgroupGen2 ←
+  ioB "setupSubgroupGen2" <|
+    (HolLibrary.GroupTheory.setupSubgroupGen2 deps BBasics BDerived BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1).run
+
+initialize BProdGroup : HolLibrary.GroupTheory.ProdGroup ←
+  ioB "setupProdGroup" <|
+    (HolLibrary.GroupTheory.setupProdGroup deps BBasics BDerived BPow BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1).run
+
+initialize BProductGroup : HolLibrary.GroupTheory.ProductGroup ←
+  ioB "setupProductGroup" <|
+    (HolLibrary.GroupTheory.setupProductGroup deps BBasics BDerived BPow BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup).run
+
+initialize BSumGroup : HolLibrary.GroupTheory.SumGroup ←
+  ioB "setupSumGroup" <|
+    (HolLibrary.GroupTheory.setupSumGroup deps BBasics BDerived BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BProductGroup).run
+
+initialize BHomomorphisms : HolLibrary.GroupTheory.Homomorphisms ←
+  ioB "setupHomomorphisms" <|
+    (HolLibrary.GroupTheory.setupHomomorphisms deps BBasics BDerived BSubgroupGenerated).run
+
+initialize BHomomorphisms1 : HolLibrary.GroupTheory.Homomorphisms1 ←
+  ioB "setupHomomorphisms1" <|
+    (HolLibrary.GroupTheory.setupHomomorphisms1 deps BBasics BDerived BPow BSubgroupGenerated BSubgroupGen1 BHomomorphisms).run
+
+initialize BHomomorphisms2 : HolLibrary.GroupTheory.Homomorphisms2 ←
+  ioB "setupHomomorphisms2" <|
+    (HolLibrary.GroupTheory.setupHomomorphisms2 deps BBasics BGroupRule BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms BHomomorphisms1).run
+
+initialize BHomomorphisms3 : HolLibrary.GroupTheory.Homomorphisms3 ←
+  ioB "setupHomomorphisms3" <|
+    (HolLibrary.GroupTheory.setupHomomorphisms3 deps BBasics BDerived BSubgroupGenerated BProdGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2).run
+
+initialize BHomomorphisms4 : HolLibrary.GroupTheory.Homomorphisms4 ←
+  ioB "setupHomomorphisms4" <|
+    (HolLibrary.GroupTheory.setupHomomorphisms4 deps BBasics BDerived BPow BAbelian BProductGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2).run
+
+initialize BIso1 : HolLibrary.GroupTheory.Iso1 ←
+  ioB "setupIso1" <|
+    (HolLibrary.GroupTheory.setupIso1 deps BBasics BProductGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BHomomorphisms4).run
+
+initialize BIso2 : HolLibrary.GroupTheory.Iso2 ←
+  ioB "setupIso2" <|
+    (HolLibrary.GroupTheory.setupIso2 deps BBasics BSubgroupGenerated BProdGroup BProductGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BHomomorphisms4 BIso1).run
+
+initialize BDirectLimit : HolLibrary.GroupTheory.DirectLimit ←
+  ioB "setupDirectLimit" <|
+    (HolLibrary.GroupTheory.setupDirectLimit deps BBasics BHomomorphisms).run
+
+initialize BSetwise1 : HolLibrary.GroupTheory.Setwise1 ←
+  ioB "setupSetwise1" <|
+    (HolLibrary.GroupTheory.setupSetwise1 deps BBasics BDerived BAbelian BSubgroups).run
+
+initialize BSetwise2 : HolLibrary.GroupTheory.Setwise2 ←
+  ioB "setupSetwise2" <|
+    (HolLibrary.GroupTheory.setupSetwise2 deps BBasics BDerived BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BSetwise1).run
+
+initialize BGroupActions : HolLibrary.GroupTheory.GroupActions ←
+  ioB "setupGroupActions" <|
+    (HolLibrary.GroupTheory.setupGroupActions deps BBasics BDerived BSubgroups BSubgroupGenerated BSubgroupGen1).run
+
+initialize BGroupOrbits : HolLibrary.GroupTheory.GroupOrbits ←
+  ioB "setupGroupOrbits" <|
+    (HolLibrary.GroupTheory.setupGroupOrbits deps BBasics BGroupActions).run
+
+initialize BOrbitStabilizer : HolLibrary.GroupTheory.OrbitStabilizer ←
+  ioB "setupOrbitStabilizer" <|
+    (HolLibrary.GroupTheory.setupOrbitStabilizer deps BBasics BDerived BGroupRule BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BSetwise1 BGroupActions BGroupOrbits).run
+
+initialize BCosets : HolLibrary.GroupTheory.Cosets ←
+  ioB "setupCosets" <|
+    (HolLibrary.GroupTheory.setupCosets deps BBasics BDerived BSubgroups BSetwise1 BSetwise2).run
+
+initialize BCosets1 : HolLibrary.GroupTheory.Cosets1 ←
+  ioB "setupCosets1" <|
+    (HolLibrary.GroupTheory.setupCosets1 deps BBasics BDerived BSubgroups BSetwise1 BCosets).run
+
+initialize BCosets2 : HolLibrary.GroupTheory.Cosets2 ←
+  ioB "setupCosets2" <|
+    (HolLibrary.GroupTheory.setupCosets2 deps BBasics BDerived BGroupRule BConjugation BSubgroups BSubgroupGen1 BProdGroup BProductGroup BSetwise1 BGroupActions BGroupOrbits BOrbitStabilizer BCosets).run
+
+initialize BCosetProducts : HolLibrary.GroupTheory.CosetProducts ←
+  ioB "setupCosetProducts" <|
+    (HolLibrary.GroupTheory.setupCosetProducts deps BBasics BGroupRule BSubgroups BSubgroupGenerated BSubgroupGen1 BProductGroup BSetwise1 BCosets BCosets1 BCosets2).run
+
+initialize BNormalSubgroups : HolLibrary.GroupTheory.NormalSubgroups ←
+  ioB "setupNormalSubgroups" <|
+    (HolLibrary.GroupTheory.setupNormalSubgroups deps BBasics BDerived BAbelian BConjugation BSubgroups BSetwise1 BSetwise2 BGroupActions BCosets BCosets1).run
+
+initialize BNormalSubgroups2 : HolLibrary.GroupTheory.NormalSubgroups2 ←
+  ioB "setupNormalSubgroups2" <|
+    (HolLibrary.GroupTheory.setupNormalSubgroups2 deps BBasics BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BSetwise1 BSetwise2 BCosets BCosets2 BCosetProducts BNormalSubgroups).run
+
+initialize BConjugate : HolLibrary.GroupTheory.Conjugate ←
+  ioB "setupConjugate" <|
+    (HolLibrary.GroupTheory.setupConjugate deps BBasics BDerived BConjugation BSubgroupGenerated BHomomorphisms2 BHomomorphisms3 BIso1 BGroupActions BGroupOrbits BOrbitStabilizer).run
+
+initialize BCentralizerNormalizer : HolLibrary.GroupTheory.CentralizerNormalizer ←
+  ioB "setupCentralizerNormalizer" <|
+    (HolLibrary.GroupTheory.setupCentralizerNormalizer deps BBasics BDerived BAbelian BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BSetwise1 BSetwise2 BCosetProducts BNormalSubgroups).run
+
+initialize BCentralizerNormalizer2 : HolLibrary.GroupTheory.CentralizerNormalizer2 ←
+  ioB "setupCentralizerNormalizer2" <|
+    (HolLibrary.GroupTheory.setupCentralizerNormalizer2 deps BBasics BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms2 BSetwise1 BGroupActions BGroupOrbits BOrbitStabilizer BNormalSubgroups BConjugate BCentralizerNormalizer).run
+
+initialize BQuotientGroups : HolLibrary.GroupTheory.QuotientGroups ←
+  ioB "setupQuotientGroups" <|
+    (HolLibrary.GroupTheory.setupQuotientGroups deps BBasics BDerived BPow BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BProductGroup BHomomorphisms BHomomorphisms2 BIso1 BSetwise1 BSetwise2 BCosets BCosets2 BCosetProducts BNormalSubgroups BNormalSubgroups2).run
+
+initialize BKernelsImages1 : HolLibrary.GroupTheory.KernelsImages1 ←
+  ioB "setupKernelsImages1" <|
+    (HolLibrary.GroupTheory.setupKernelsImages1 deps BBasics BDerived BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BSetwise1 BCosets BCosets2 BNormalSubgroups BQuotientGroups).run
+
+initialize BKernelsImages2 : HolLibrary.GroupTheory.KernelsImages2 ←
+  ioB "setupKernelsImages2" <|
+    (HolLibrary.GroupTheory.setupKernelsImages2 deps BBasics BDerived BTotalized BSubgroups BSubgroupGen1 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BSetwise1 BSetwise2 BCosets BNormalSubgroups BNormalSubgroups2 BQuotientGroups BKernelsImages1).run
+
+initialize BSubgroupCorrespondence : HolLibrary.GroupTheory.SubgroupCorrespondence ←
+  ioB "setupSubgroupCorrespondence" <|
+    (HolLibrary.GroupTheory.setupSubgroupCorrespondence deps BBasics BDerived BConjugation BSubgroups BHomomorphisms BHomomorphisms1 BHomomorphisms2 BSetwise1 BCosets BNormalSubgroups BConjugate BQuotientGroups BKernelsImages1 BKernelsImages2).run
+
+initialize BTrivialHomomorphisms : HolLibrary.GroupTheory.TrivialHomomorphisms ←
+  ioB "setupTrivialHomomorphisms" <|
+    (HolLibrary.GroupTheory.setupTrivialHomomorphisms deps BBasics BHomomorphisms BHomomorphisms1 BHomomorphisms2 BKernelsImages1).run
+
+initialize BGroupElementOrder : HolLibrary.GroupTheory.GroupElementOrder ←
+  ioB "setupGroupElementOrder" <|
+    (HolLibrary.GroupTheory.setupGroupElementOrder deps BBasics BDerived BPow).run
+
+initialize BGroupElementOrder2 : HolLibrary.GroupTheory.GroupElementOrder2 ←
+  ioB "setupGroupElementOrder2" <|
+    (HolLibrary.GroupTheory.setupGroupElementOrder2 deps BBasics BDerived BPow BAbelian BGroupRule BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BKernelsImages1 BGroupElementOrder).run
+
+initialize BOrderDecomp : HolLibrary.GroupTheory.OrderDecomp ←
+  ioB "setupOrderDecomp" <|
+    (HolLibrary.GroupTheory.setupOrderDecomp deps BBasics BDerived BPow BAbelian BGroupRule BSubgroupGenerated BProdGroup BSumGroup BGroupElementOrder BGroupElementOrder2).run
+
+initialize BTorsionSubgroups : HolLibrary.GroupTheory.TorsionSubgroups ←
+  ioB "setupTorsionSubgroups" <|
+    (HolLibrary.GroupTheory.setupTorsionSubgroups deps BBasics BDerived BConjugation BSubgroups BCosets BNormalSubgroups BQuotientGroups BGroupElementOrder BGroupElementOrder2).run
+
+initialize BCyclicGroups1 : HolLibrary.GroupTheory.CyclicGroups1 ←
+  ioB "setupCyclicGroups1" <|
+    (HolLibrary.GroupTheory.setupCyclicGroups1 deps BBasics BDerived BPow BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BNormalSubgroups BQuotientGroups).run
+
+initialize BCyclicGroups2 : HolLibrary.GroupTheory.CyclicGroups2 ←
+  ioB "setupCyclicGroups2" <|
+    (HolLibrary.GroupTheory.setupCyclicGroups2 deps BBasics BDerived BPow BSubgroups BSubgroupGenerated BSubgroupGen1 BCosets2 BGroupElementOrder BCyclicGroups1).run
+
+initialize BCyclicGroups3 : HolLibrary.GroupTheory.CyclicGroups3 ←
+  ioB "setupCyclicGroups3" <|
+    (HolLibrary.GroupTheory.setupCyclicGroups3 deps BBasics BDerived BPow BSubgroups BSubgroupGenerated BSubgroupGen1 BCosets2 BNormalSubgroups BQuotientGroups BSubgroupCorrespondence BGroupElementOrder BGroupElementOrder2 BCyclicGroups1 BCyclicGroups2).run
+
+initialize BFinitelyGenerated : HolLibrary.GroupTheory.FinitelyGenerated ←
+  ioB "setupFinitelyGenerated" <|
+    (HolLibrary.GroupTheory.setupFinitelyGenerated deps BBasics BDerived BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BProductGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BIso1 BIso2 BGroupActions BQuotientGroups BCyclicGroups1).run
+
+initialize BFinitelyGeneratedSubgroups : HolLibrary.GroupTheory.FinitelyGeneratedSubgroups ←
+  ioB "setupFinitelyGeneratedSubgroups" <|
+    (HolLibrary.GroupTheory.setupFinitelyGeneratedSubgroups deps BBasics BDerived BGroupRule BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BIso2 BSetwise1 BGroupActions BCosets BCosets1 BCosets2 BCosetProducts BNormalSubgroups BNormalSubgroups2 BQuotientGroups BKernelsImages1 BKernelsImages2 BCyclicGroups1 BFinitelyGenerated).run
+
+initialize BFinitelyGeneratedMaximal : HolLibrary.GroupTheory.FinitelyGeneratedMaximal ←
+  ioB "setupFinitelyGeneratedMaximal" <|
+    (HolLibrary.GroupTheory.setupFinitelyGeneratedMaximal deps BBasics BSubgroups BSubgroupGenerated BSubgroupGen2 BNormalSubgroups BFinitelyGenerated BFinitelyGeneratedSubgroups).run
+
+initialize BIntegerGroup : HolLibrary.GroupTheory.IntegerGroup ←
+  ioB "setupIntegerGroup" <|
+    (HolLibrary.GroupTheory.setupIntegerGroup deps BBasics BDerived BPow BAbelian BSubgroupGen1 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BGroupElementOrder BCyclicGroups1 BCyclicGroups2).run
+
+initialize BIntegerModGroup : HolLibrary.GroupTheory.IntegerModGroup ←
+  ioB "setupIntegerModGroup" <|
+    (HolLibrary.GroupTheory.setupIntegerModGroup deps BBasics BDerived BPow BAbelian BSubgroupGenerated BSubgroupGen1 BProdGroup BHomomorphisms BGroupElementOrder BGroupElementOrder2 BCyclicGroups1 BIntegerGroup).run
+
+initialize BCyclicInteger : HolLibrary.GroupTheory.CyclicInteger ←
+  ioB "setupCyclicInteger" <|
+    (HolLibrary.GroupTheory.setupCyclicInteger deps BBasics BPow BSubgroupGenerated BIso1 BIso2 BKernelsImages1 BGroupElementOrder BCyclicGroups1 BCyclicGroups2 BIntegerGroup BIntegerModGroup).run
+
+initialize BCyclicProd : HolLibrary.GroupTheory.CyclicProd ←
+  ioB "setupCyclicProd" <|
+    (HolLibrary.GroupTheory.setupCyclicProd deps BBasics BDerived BPow BSubgroupGenerated BSubgroupGen1 BProdGroup BHomomorphisms2 BHomomorphisms3 BIso1 BIso2 BGroupElementOrder BCyclicGroups1 BCyclicGroups2 BCyclicGroups3 BIntegerModGroup BCyclicInteger).run
+
+initialize BPgroup : HolLibrary.GroupTheory.Pgroup ←
+  ioB "setupPgroup" <|
+    (HolLibrary.GroupTheory.setupPgroup deps BBasics BProdGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms3 BHomomorphisms4 BQuotientGroups BGroupElementOrder BGroupElementOrder2 BOrderDecomp).run
+
+initialize BSylowCount : HolLibrary.GroupTheory.SylowCount ←
+  ioB "setupSylowCount" <|
+    (HolLibrary.GroupTheory.setupSylowCount deps BBasics BGroupRule BSubgroups BSubgroupGen1 BSetwise1 BGroupActions BGroupOrbits BOrbitStabilizer BCosets BCosets1 BCosets2 BCyclicGroups3 BIntegerModGroup BCyclicInteger).run
+
+initialize BSylow : HolLibrary.GroupTheory.Sylow ←
+  ioB "setupSylow" <|
+    (HolLibrary.GroupTheory.setupSylow deps BBasics BDerived BPow BSubgroups BSubgroupGenerated BSubgroupGen1 BGroupElementOrder BOrderDecomp BCyclicGroups3 BPgroup BSylowCount).run
+
+initialize BPowering : HolLibrary.GroupTheory.Powering ←
+  ioB "setupPowering" <|
+    (HolLibrary.GroupTheory.setupPowering deps BHomomorphisms BHomomorphisms2 BHomomorphisms4 BGroupOrbits BOrbitStabilizer BSylow).run
+
+initialize BSylow2 : HolLibrary.GroupTheory.Sylow2 ←
+  ioB "setupSylow2" <|
+    (HolLibrary.GroupTheory.setupSylow2 deps BBasics BGroupRule BConjugation BSubgroups BSubgroupGen1 BHomomorphisms2 BGroupActions BCosets BCosets2 BNormalSubgroups BConjugate BCentralizerNormalizer BCentralizerNormalizer2 BSubgroupCorrespondence BSylow BPowering).run
+
+initialize BPGroupCentre : HolLibrary.GroupTheory.PGroupCentre ←
+  ioB "setupPGroupCentre" <|
+    (HolLibrary.GroupTheory.setupPGroupCentre deps BBasics BDerived BConjugation BSubgroups BSubgroupGen1 BGroupActions BOrbitStabilizer BCosets BCosets2 BCosetProducts BNormalSubgroups BCentralizerNormalizer BSylow BPowering).run
+
+initialize BPgroupNormalizer : HolLibrary.GroupTheory.PgroupNormalizer ←
+  ioB "setupPgroupNormalizer" <|
+    (HolLibrary.GroupTheory.setupPgroupNormalizer deps BBasics BDerived BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms2 BSetwise1 BSetwise2 BCosets2 BCosetProducts BNormalSubgroups BConjugate BCentralizerNormalizer BSylow BSylow2 BPGroupCentre).run
+
+initialize BGroupDisjointSum : HolLibrary.GroupTheory.GroupDisjointSum ←
+  ioB "setupGroupDisjointSum" <|
+    (HolLibrary.GroupTheory.setupGroupDisjointSum deps BBasics BDerived BGroupRule BSubgroups BSetwise1 BCosets BNormalSubgroups).run
+
+initialize BGroupMulMorphism : HolLibrary.GroupTheory.GroupMulMorphism ←
+  ioB "setupGroupMulMorphism" <|
+    (HolLibrary.GroupTheory.setupGroupMulMorphism deps BBasics BAbelian BGroupRule BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BProdGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BSetwise1 BNormalSubgroups BGroupDisjointSum).run
+
+initialize BGroupSumImKer : HolLibrary.GroupTheory.GroupSumImKer ←
+  ioB "setupGroupSumImKer" <|
+    (HolLibrary.GroupTheory.setupGroupSumImKer deps BBasics BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BHomomorphisms2 BIso1 BSetwise1 BCosetProducts BNormalSubgroups BNormalSubgroups2 BKernelsImages1 BGroupDisjointSum BGroupMulMorphism).run
+
+initialize BGroupSumHomomorphism : HolLibrary.GroupTheory.GroupSumHomomorphism ←
+  ioB "setupGroupSumHomomorphism" <|
+    (HolLibrary.GroupTheory.setupGroupSumHomomorphism deps BBasics BDerived BAbelian BGroupRule BGroupProduct BGroupProductMul BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms4).run
+
+initialize BGroupSumEpimorphism : HolLibrary.GroupTheory.GroupSumEpimorphism ←
+  ioB "setupGroupSumEpimorphism" <|
+    (HolLibrary.GroupTheory.setupGroupSumEpimorphism deps BAbelian BGroupProduct BSubgroups BSubgroupGenerated BSubgroupGen1 BSumGroup BHomomorphisms BHomomorphisms2 BGroupSumHomomorphism).run
+
+initialize BGroupSumMonomorphism : HolLibrary.GroupTheory.GroupSumMonomorphism ←
+  ioB "setupGroupSumMonomorphism" <|
+    (HolLibrary.GroupTheory.setupGroupSumMonomorphism deps BBasics BDerived BAbelian BGroupRule BGroupProduct BGroupProductClauses BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BSumGroup BHomomorphisms BHomomorphisms2 BKernelsImages1 BGroupDisjointSum BGroupSumHomomorphism BGroupSumEpimorphism).run
+
+initialize BSumGroupIsomorphism : HolLibrary.GroupTheory.SumGroupIsomorphism ←
+  ioB "setupSumGroupIsomorphism" <|
+    (HolLibrary.GroupTheory.setupSumGroupIsomorphism deps BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms2 BIso1 BNormalSubgroups BGroupDisjointSum BGroupSumEpimorphism BGroupSumMonomorphism).run
+
+initialize BCarrierSubgroupGeneratedUnions : HolLibrary.GroupTheory.CarrierSubgroupGeneratedUnions ←
+  ioB "setupCarrierSubgroupGeneratedUnions" <|
+    (HolLibrary.GroupTheory.setupCarrierSubgroupGeneratedUnions deps BDerived BPow BAbelian BGroupProduct BGroupProductMul BSubgroups BSubgroupGenerated BSubgroupGen1 BSumGroup BHomomorphisms BGroupSumEpimorphism).run
+
+initialize BPrimeTorsion : HolLibrary.GroupTheory.PrimeTorsion ←
+  ioB "setupPrimeTorsion" <|
+    (HolLibrary.GroupTheory.setupPrimeTorsion deps BBasics BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BGroupElementOrder BGroupElementOrder2 BOrderDecomp).run
+
+initialize BTorsionStructure : HolLibrary.GroupTheory.TorsionStructure ←
+  ioB "setupTorsionStructure" <|
+    (HolLibrary.GroupTheory.setupTorsionStructure deps BBasics BSubgroups BSubgroupGenerated BSubgroupGen1 BSumGroup BHomomorphisms BHomomorphisms2 BIso1 BGroupElementOrder BGroupElementOrder2 BOrderDecomp BTorsionSubgroups BCyclicGroups3 BPgroup BGroupDisjointSum BSumGroupIsomorphism BPrimeTorsion).run
+
+initialize BFinitelyGeneratedAbelian : HolLibrary.GroupTheory.FinitelyGeneratedAbelian ←
+  ioB "setupFinitelyGeneratedAbelian" <|
+    (HolLibrary.GroupTheory.setupFinitelyGeneratedAbelian deps BBasics BPow BAbelian BGroupRule BGroupProduct BGroupProductClauses BGroupProductMul BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BProdGroup BProductGroup BSumGroup BHomomorphisms BHomomorphisms2 BHomomorphisms3 BHomomorphisms4 BIso2 BSetwise1 BSetwise2 BKernelsImages1 BGroupElementOrder BCyclicGroups1 BGroupSumEpimorphism BCarrierSubgroupGeneratedUnions).run
+
+initialize BFinGenAbelianStructure : HolLibrary.GroupTheory.FinGenAbelianStructure ←
+  ioB "setupFinGenAbelianStructure" <|
+    (HolLibrary.GroupTheory.setupFinGenAbelianStructure deps BSumGroup BIso1 BIso2 BGroupElementOrder2 BOrderDecomp BTorsionSubgroups BCyclicGroups1 BFinitelyGenerated BIntegerGroup BIntegerModGroup BCyclicInteger BFinitelyGeneratedAbelian).run
+
+initialize BFreeAbelianGroup : HolLibrary.GroupTheory.FreeAbelianGroup ←
+  ioB "setupFreeAbelianGroup" <|
+    (HolLibrary.GroupTheory.setupFreeAbelianGroup deps BBasics BDerived BPow BAbelian BTotalized BSubgroups BSumGroup BHomomorphisms BHomomorphisms2 BIso1 BKernelsImages1 BIntegerGroup).run
+
+initialize BFreeAbelianExtra : HolLibrary.GroupTheory.FreeAbelianExtra ←
+  ioB "setupFreeAbelianExtra" <|
+    (HolLibrary.GroupTheory.setupFreeAbelianExtra deps BBasics BDerived BHomomorphisms BHomomorphisms1 BIso1 BIso2 BIntegerModGroup BFreeAbelianGroup).run
+
+initialize BSolvableGroup : HolLibrary.GroupTheory.SolvableGroup ←
+  ioB "setupSolvableGroup" <|
+    (HolLibrary.GroupTheory.setupSolvableGroup deps BBasics BDerived BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BCosets BNormalSubgroups BQuotientGroups).run
+
+initialize BSolvableImage : HolLibrary.GroupTheory.SolvableImage ←
+  ioB "setupSolvableImage" <|
+    (HolLibrary.GroupTheory.setupSolvableImage deps BBasics BDerived BAbelian BSubgroupGenerated BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms4 BIso1 BCosets BNormalSubgroups BNormalSubgroups2 BQuotientGroups BKernelsImages1 BKernelsImages2 BSubgroupCorrespondence BSolvableGroup).run
+
+initialize BSolvableSubgroup : HolLibrary.GroupTheory.SolvableSubgroup ←
+  ioB "setupSolvableSubgroup" <|
+    (HolLibrary.GroupTheory.setupSolvableSubgroup deps BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BIso1 BNormalSubgroups BKernelsImages1 BSolvableGroup BSolvableImage).run
+
+initialize BSolvableQuotient : HolLibrary.GroupTheory.SolvableQuotient ←
+  ioB "setupSolvableQuotient" <|
+    (HolLibrary.GroupTheory.setupSolvableQuotient deps BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BHomomorphisms2 BIso2 BNormalSubgroups BQuotientGroups BKernelsImages1 BSubgroupCorrespondence BSolvableGroup).run
+
+initialize BExactSequences : HolLibrary.GroupTheory.ExactSequences ←
+  ioB "setupExactSequences" <|
+    (HolLibrary.GroupTheory.setupExactSequences deps BBasics BSubgroupGen1 BProdGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BNormalSubgroups BQuotientGroups BKernelsImages1 BKernelsImages2 BTrivialHomomorphisms).run
+
+initialize BExactSeq : HolLibrary.GroupTheory.ExactSeq ←
+  ioB "setupExactSeq" <|
+    (HolLibrary.GroupTheory.setupExactSeq deps BBasics BDerived BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BHomomorphisms4 BIso1 BSetwise1 BNormalSubgroups BKernelsImages1 BKernelsImages2 BGroupDisjointSum BGroupMulMorphism BGroupSumImKer BExactSequences).run
+
+initialize BFiveLemma : HolLibrary.GroupTheory.FiveLemma ←
+  ioB "setupFiveLemma" <|
+    (HolLibrary.GroupTheory.setupFiveLemma deps BBasics BDerived BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BKernelsImages1 BFreeAbelianGroup BExactSequences BExactSeq).run
+
+initialize BShortFiveLemma : HolLibrary.GroupTheory.ShortFiveLemma ←
+  ioB "setupShortFiveLemma" <|
+    (HolLibrary.GroupTheory.setupShortFiveLemma deps BBasics BGroupRule BProdGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BKernelsImages1 BExactSequences BExactSeq BFiveLemma).run
+
+
 -- Basics
-unsafe def group_tybij : thm := BBasics.group_tybij
-unsafe def group_carrier : thm := BBasics.group_carrier
-unsafe def group_id : thm := BBasics.group_id
-unsafe def group_inv : thm := BBasics.group_inv
-unsafe def group_mul : thm := BBasics.group_mul
-unsafe def GROUP_PROPERTIES := BBasics.GROUP_PROPERTIES
-unsafe def GROUP_ID : thm := BBasics.GROUP_ID
-unsafe def GROUP_INV : thm := BBasics.GROUP_INV
-unsafe def GROUP_MUL : thm := BBasics.GROUP_MUL
-unsafe def GROUP_MUL_ASSOC : thm := BBasics.GROUP_MUL_ASSOC
-unsafe def GROUP_MUL_LID : thm := BBasics.GROUP_MUL_LID
-unsafe def GROUP_MUL_RID : thm := BBasics.GROUP_MUL_RID
-unsafe def GROUP_MUL_LINV : thm := BBasics.GROUP_MUL_LINV
-unsafe def GROUP_MUL_RINV : thm := BBasics.GROUP_MUL_RINV
-unsafe def GROUPS_EQ : thm := BBasics.GROUPS_EQ
-unsafe def GROUP_CARRIER_NONEMPTY : thm := BBasics.GROUP_CARRIER_NONEMPTY
-unsafe def singleton_group : thm := BBasics.singleton_group
-unsafe def SINGLETON_GROUP : thm := BBasics.SINGLETON_GROUP
-unsafe def trivial_group : thm := BBasics.trivial_group
-unsafe def TRIVIAL_IMP_FINITE_GROUP : thm := BBasics.TRIVIAL_IMP_FINITE_GROUP
-unsafe def TRIVIAL_GROUP_SINGLETON_GROUP : thm := BBasics.TRIVIAL_GROUP_SINGLETON_GROUP
-unsafe def FINITE_SINGLETON_GROUP : thm := BBasics.FINITE_SINGLETON_GROUP
-unsafe def TRIVIAL_GROUP_SUBSET : thm := BBasics.TRIVIAL_GROUP_SUBSET
-unsafe def TRIVIAL_GROUP : thm := BBasics.TRIVIAL_GROUP
-unsafe def TRIVIAL_GROUP_ALT : thm := BBasics.TRIVIAL_GROUP_ALT
-unsafe def TRIVIAL_GROUP_HAS_SIZE_1 : thm := BBasics.TRIVIAL_GROUP_HAS_SIZE_1
-unsafe def GROUP_CARRIER_HAS_SIZE_1 : thm := BBasics.GROUP_CARRIER_HAS_SIZE_1
-unsafe def opposite_group : thm := BBasics.opposite_group
-unsafe def OPPOSITE_GROUP : thm := BBasics.OPPOSITE_GROUP
-unsafe def OPPOSITE_OPPOSITE_GROUP : thm := BBasics.OPPOSITE_OPPOSITE_GROUP
-unsafe def OPPOSITE_GROUP_INV : thm := BBasics.OPPOSITE_GROUP_INV
-unsafe def OPPOSITE_GROUP_MUL : thm := BBasics.OPPOSITE_GROUP_MUL
-unsafe def OPPOSITE_SINGLETON_GROUP : thm := BBasics.OPPOSITE_SINGLETON_GROUP
-unsafe def TRIVIAL_OPPOSITE_GROUP : thm := BBasics.TRIVIAL_OPPOSITE_GROUP
-unsafe def FINITE_OPPOSITE_GROUP : thm := BBasics.FINITE_OPPOSITE_GROUP
+def group_tybij : thm := BBasics.group_tybij
+def group_carrier : thm := BBasics.group_carrier
+def group_id : thm := BBasics.group_id
+def group_inv : thm := BBasics.group_inv
+def group_mul : thm := BBasics.group_mul
+def GROUP_PROPERTIES := BBasics.GROUP_PROPERTIES
+def GROUP_ID : thm := BBasics.GROUP_ID
+def GROUP_INV : thm := BBasics.GROUP_INV
+def GROUP_MUL : thm := BBasics.GROUP_MUL
+def GROUP_MUL_ASSOC : thm := BBasics.GROUP_MUL_ASSOC
+def GROUP_MUL_LID : thm := BBasics.GROUP_MUL_LID
+def GROUP_MUL_RID : thm := BBasics.GROUP_MUL_RID
+def GROUP_MUL_LINV : thm := BBasics.GROUP_MUL_LINV
+def GROUP_MUL_RINV : thm := BBasics.GROUP_MUL_RINV
+def GROUPS_EQ : thm := BBasics.GROUPS_EQ
+def GROUP_CARRIER_NONEMPTY : thm := BBasics.GROUP_CARRIER_NONEMPTY
+def singleton_group : thm := BBasics.singleton_group
+def SINGLETON_GROUP : thm := BBasics.SINGLETON_GROUP
+def trivial_group : thm := BBasics.trivial_group
+def TRIVIAL_IMP_FINITE_GROUP : thm := BBasics.TRIVIAL_IMP_FINITE_GROUP
+def TRIVIAL_GROUP_SINGLETON_GROUP : thm := BBasics.TRIVIAL_GROUP_SINGLETON_GROUP
+def FINITE_SINGLETON_GROUP : thm := BBasics.FINITE_SINGLETON_GROUP
+def TRIVIAL_GROUP_SUBSET : thm := BBasics.TRIVIAL_GROUP_SUBSET
+def TRIVIAL_GROUP : thm := BBasics.TRIVIAL_GROUP
+def TRIVIAL_GROUP_ALT : thm := BBasics.TRIVIAL_GROUP_ALT
+def TRIVIAL_GROUP_HAS_SIZE_1 : thm := BBasics.TRIVIAL_GROUP_HAS_SIZE_1
+def GROUP_CARRIER_HAS_SIZE_1 : thm := BBasics.GROUP_CARRIER_HAS_SIZE_1
+def opposite_group : thm := BBasics.opposite_group
+def OPPOSITE_GROUP : thm := BBasics.OPPOSITE_GROUP
+def OPPOSITE_OPPOSITE_GROUP : thm := BBasics.OPPOSITE_OPPOSITE_GROUP
+def OPPOSITE_GROUP_INV : thm := BBasics.OPPOSITE_GROUP_INV
+def OPPOSITE_GROUP_MUL : thm := BBasics.OPPOSITE_GROUP_MUL
+def OPPOSITE_SINGLETON_GROUP : thm := BBasics.OPPOSITE_SINGLETON_GROUP
+def TRIVIAL_OPPOSITE_GROUP : thm := BBasics.TRIVIAL_OPPOSITE_GROUP
+def FINITE_OPPOSITE_GROUP : thm := BBasics.FINITE_OPPOSITE_GROUP
 
 -- Derived
-unsafe def group_div : thm := BDerived.group_div
-unsafe def GROUP_DIV : thm := BDerived.GROUP_DIV
-unsafe def GROUP_MUL_LCANCEL : thm := BDerived.GROUP_MUL_LCANCEL
-unsafe def GROUP_MUL_LCANCEL_IMP : thm := BDerived.GROUP_MUL_LCANCEL_IMP
-unsafe def GROUP_MUL_RCANCEL : thm := BDerived.GROUP_MUL_RCANCEL
-unsafe def GROUP_MUL_RCANCEL_IMP : thm := BDerived.GROUP_MUL_RCANCEL_IMP
-unsafe def GROUP_LID_UNIQUE : thm := BDerived.GROUP_LID_UNIQUE
-unsafe def GROUP_RID_UNIQUE : thm := BDerived.GROUP_RID_UNIQUE
-unsafe def GROUP_LID_EQ : thm := BDerived.GROUP_LID_EQ
-unsafe def GROUP_RID_EQ : thm := BDerived.GROUP_RID_EQ
-unsafe def GROUP_LINV_UNIQUE : thm := BDerived.GROUP_LINV_UNIQUE
-unsafe def GROUP_RINV_UNIQUE : thm := BDerived.GROUP_RINV_UNIQUE
-unsafe def GROUP_LINV_EQ : thm := BDerived.GROUP_LINV_EQ
-unsafe def GROUP_RINV_EQ : thm := BDerived.GROUP_RINV_EQ
-unsafe def GROUP_MUL_EQ_ID : thm := BDerived.GROUP_MUL_EQ_ID
-unsafe def GROUP_INV_INV : thm := BDerived.GROUP_INV_INV
-unsafe def GROUP_INV_ID : thm := BDerived.GROUP_INV_ID
-unsafe def GROUP_INV_EQ_ID : thm := BDerived.GROUP_INV_EQ_ID
-unsafe def GROUP_INV_MUL : thm := BDerived.GROUP_INV_MUL
-unsafe def GROUP_INV_EQ : thm := BDerived.GROUP_INV_EQ
-unsafe def GROUP_DIV_REFL : thm := BDerived.GROUP_DIV_REFL
-unsafe def GROUP_DIV_EQ_ID : thm := BDerived.GROUP_DIV_EQ_ID
-unsafe def GROUP_COMMUTES_INV : thm := BDerived.GROUP_COMMUTES_INV
-unsafe def GROUP_COMMUTES_INV_EQ : thm := BDerived.GROUP_COMMUTES_INV_EQ
-unsafe def GROUP_COMMUTES_MUL : thm := BDerived.GROUP_COMMUTES_MUL
-unsafe def FORALL_IN_GROUP_CARRIER_INV : thm := BDerived.FORALL_IN_GROUP_CARRIER_INV
-unsafe def EXISTS_IN_GROUP_CARRIER_INV : thm := BDerived.EXISTS_IN_GROUP_CARRIER_INV
-unsafe def group_pow : thm := BDerived.group_pow
-unsafe def GROUP_POW : thm := BDerived.GROUP_POW
-unsafe def GROUP_POW_0 : thm := BDerived.GROUP_POW_0
-unsafe def GROUP_POW_1 : thm := BDerived.GROUP_POW_1
-unsafe def GROUP_POW_2 : thm := BDerived.GROUP_POW_2
-unsafe def GROUP_POW_ID : thm := BDerived.GROUP_POW_ID
-unsafe def GROUP_POW_ADD : thm := BDerived.GROUP_POW_ADD
-unsafe def GROUP_POW_SUB : thm := BDerived.GROUP_POW_SUB
-unsafe def GROUP_POW_SUB_ALT : thm := BDerived.GROUP_POW_SUB_ALT
-unsafe def GROUP_INV_POW : thm := BDerived.GROUP_INV_POW
-unsafe def GROUP_POW_MUL : thm := BDerived.GROUP_POW_MUL
-unsafe def GROUP_POW_POW : thm := BDerived.GROUP_POW_POW
+def group_div : thm := BDerived.group_div
+def GROUP_DIV : thm := BDerived.GROUP_DIV
+def GROUP_MUL_LCANCEL : thm := BDerived.GROUP_MUL_LCANCEL
+def GROUP_MUL_LCANCEL_IMP : thm := BDerived.GROUP_MUL_LCANCEL_IMP
+def GROUP_MUL_RCANCEL : thm := BDerived.GROUP_MUL_RCANCEL
+def GROUP_MUL_RCANCEL_IMP : thm := BDerived.GROUP_MUL_RCANCEL_IMP
+def GROUP_LID_UNIQUE : thm := BDerived.GROUP_LID_UNIQUE
+def GROUP_RID_UNIQUE : thm := BDerived.GROUP_RID_UNIQUE
+def GROUP_LID_EQ : thm := BDerived.GROUP_LID_EQ
+def GROUP_RID_EQ : thm := BDerived.GROUP_RID_EQ
+def GROUP_LINV_UNIQUE : thm := BDerived.GROUP_LINV_UNIQUE
+def GROUP_RINV_UNIQUE : thm := BDerived.GROUP_RINV_UNIQUE
+def GROUP_LINV_EQ : thm := BDerived.GROUP_LINV_EQ
+def GROUP_RINV_EQ : thm := BDerived.GROUP_RINV_EQ
+def GROUP_MUL_EQ_ID : thm := BDerived.GROUP_MUL_EQ_ID
+def GROUP_INV_INV : thm := BDerived.GROUP_INV_INV
+def GROUP_INV_ID : thm := BDerived.GROUP_INV_ID
+def GROUP_INV_EQ_ID : thm := BDerived.GROUP_INV_EQ_ID
+def GROUP_INV_MUL : thm := BDerived.GROUP_INV_MUL
+def GROUP_INV_EQ : thm := BDerived.GROUP_INV_EQ
+def GROUP_DIV_REFL : thm := BDerived.GROUP_DIV_REFL
+def GROUP_DIV_EQ_ID : thm := BDerived.GROUP_DIV_EQ_ID
+def GROUP_COMMUTES_INV : thm := BDerived.GROUP_COMMUTES_INV
+def GROUP_COMMUTES_INV_EQ : thm := BDerived.GROUP_COMMUTES_INV_EQ
+def GROUP_COMMUTES_MUL : thm := BDerived.GROUP_COMMUTES_MUL
+def FORALL_IN_GROUP_CARRIER_INV : thm := BDerived.FORALL_IN_GROUP_CARRIER_INV
+def EXISTS_IN_GROUP_CARRIER_INV : thm := BDerived.EXISTS_IN_GROUP_CARRIER_INV
+def group_pow : thm := BDerived.group_pow
+def GROUP_POW : thm := BDerived.GROUP_POW
+def GROUP_POW_0 : thm := BDerived.GROUP_POW_0
+def GROUP_POW_1 : thm := BDerived.GROUP_POW_1
+def GROUP_POW_2 : thm := BDerived.GROUP_POW_2
+def GROUP_POW_ID : thm := BDerived.GROUP_POW_ID
+def GROUP_POW_ADD : thm := BDerived.GROUP_POW_ADD
+def GROUP_POW_SUB : thm := BDerived.GROUP_POW_SUB
+def GROUP_POW_SUB_ALT : thm := BDerived.GROUP_POW_SUB_ALT
+def GROUP_INV_POW : thm := BDerived.GROUP_INV_POW
+def GROUP_POW_MUL : thm := BDerived.GROUP_POW_MUL
+def GROUP_POW_POW : thm := BDerived.GROUP_POW_POW
 
 -- Pow
-unsafe def GROUP_COMMUTES_POW : thm := BPow.GROUP_COMMUTES_POW
-unsafe def GROUP_MUL_POW : thm := BPow.GROUP_MUL_POW
-unsafe def group_zpow : thm := BPow.group_zpow
-unsafe def GROUP_ZPOW : thm := BPow.GROUP_ZPOW
-unsafe def GROUP_NPOW : thm := BPow.GROUP_NPOW
-unsafe def GROUP_ZPOW_0 : thm := BPow.GROUP_ZPOW_0
-unsafe def GROUP_ZPOW_1 : thm := BPow.GROUP_ZPOW_1
-unsafe def GROUP_ZPOW_2 : thm := BPow.GROUP_ZPOW_2
-unsafe def GROUP_ZPOW_ID : thm := BPow.GROUP_ZPOW_ID
-unsafe def GROUP_ZPOW_NEG : thm := BPow.GROUP_ZPOW_NEG
-unsafe def GROUP_ZPOW_MINUS1 : thm := BPow.GROUP_ZPOW_MINUS1
-unsafe def GROUP_ZPOW_POW : thm := BPow.GROUP_ZPOW_POW
-unsafe def GROUP_ZPOW_ABS_EQ_ID : thm := BPow.GROUP_ZPOW_ABS_EQ_ID
-unsafe def GROUP_ZPOW_ADD : thm := BPow.GROUP_ZPOW_ADD
-unsafe def GROUP_ZPOW_SUB : thm := BPow.GROUP_ZPOW_SUB
-unsafe def GROUP_ZPOW_SUB_ALT : thm := BPow.GROUP_ZPOW_SUB_ALT
-unsafe def GROUP_INV_ZPOW : thm := BPow.GROUP_INV_ZPOW
-unsafe def GROUP_ZPOW_INV : thm := BPow.GROUP_ZPOW_INV
-unsafe def GROUP_ZPOW_MUL : thm := BPow.GROUP_ZPOW_MUL
-unsafe def GROUP_COMMUTES_ZPOW : thm := BPow.GROUP_COMMUTES_ZPOW
-unsafe def GROUP_MUL_ZPOW : thm := BPow.GROUP_MUL_ZPOW
+def GROUP_COMMUTES_POW : thm := BPow.GROUP_COMMUTES_POW
+def GROUP_MUL_POW : thm := BPow.GROUP_MUL_POW
+def group_zpow : thm := BPow.group_zpow
+def GROUP_ZPOW : thm := BPow.GROUP_ZPOW
+def GROUP_NPOW : thm := BPow.GROUP_NPOW
+def GROUP_ZPOW_0 : thm := BPow.GROUP_ZPOW_0
+def GROUP_ZPOW_1 : thm := BPow.GROUP_ZPOW_1
+def GROUP_ZPOW_2 : thm := BPow.GROUP_ZPOW_2
+def GROUP_ZPOW_ID : thm := BPow.GROUP_ZPOW_ID
+def GROUP_ZPOW_NEG : thm := BPow.GROUP_ZPOW_NEG
+def GROUP_ZPOW_MINUS1 : thm := BPow.GROUP_ZPOW_MINUS1
+def GROUP_ZPOW_POW : thm := BPow.GROUP_ZPOW_POW
+def GROUP_ZPOW_ABS_EQ_ID : thm := BPow.GROUP_ZPOW_ABS_EQ_ID
+def GROUP_ZPOW_ADD : thm := BPow.GROUP_ZPOW_ADD
+def GROUP_ZPOW_SUB : thm := BPow.GROUP_ZPOW_SUB
+def GROUP_ZPOW_SUB_ALT : thm := BPow.GROUP_ZPOW_SUB_ALT
+def GROUP_INV_ZPOW : thm := BPow.GROUP_INV_ZPOW
+def GROUP_ZPOW_INV : thm := BPow.GROUP_ZPOW_INV
+def GROUP_ZPOW_MUL : thm := BPow.GROUP_ZPOW_MUL
+def GROUP_COMMUTES_ZPOW : thm := BPow.GROUP_COMMUTES_ZPOW
+def GROUP_MUL_ZPOW : thm := BPow.GROUP_MUL_ZPOW
 
 -- Abelian
-unsafe def abelian_group : thm := BAbelian.abelian_group
-unsafe def TRIVIAL_IMP_ABELIAN_GROUP : thm := BAbelian.TRIVIAL_IMP_ABELIAN_GROUP
-unsafe def ABELIAN_SINGLETON_GROUP : thm := BAbelian.ABELIAN_SINGLETON_GROUP
-unsafe def ABELIAN_OPPOSITE_GROUP : thm := BAbelian.ABELIAN_OPPOSITE_GROUP
-unsafe def ABELIAN_GROUP_MUL_POW : thm := BAbelian.ABELIAN_GROUP_MUL_POW
-unsafe def ABELIAN_GROUP_MUL_ZPOW : thm := BAbelian.ABELIAN_GROUP_MUL_ZPOW
-unsafe def ABELIAN_GROUP_DIV_ZPOW : thm := BAbelian.ABELIAN_GROUP_DIV_ZPOW
-unsafe def ABELIAN_GROUP_MUL_AC : thm := BAbelian.ABELIAN_GROUP_MUL_AC
+def abelian_group : thm := BAbelian.abelian_group
+def TRIVIAL_IMP_ABELIAN_GROUP : thm := BAbelian.TRIVIAL_IMP_ABELIAN_GROUP
+def ABELIAN_SINGLETON_GROUP : thm := BAbelian.ABELIAN_SINGLETON_GROUP
+def ABELIAN_OPPOSITE_GROUP : thm := BAbelian.ABELIAN_OPPOSITE_GROUP
+def ABELIAN_GROUP_MUL_POW : thm := BAbelian.ABELIAN_GROUP_MUL_POW
+def ABELIAN_GROUP_MUL_ZPOW : thm := BAbelian.ABELIAN_GROUP_MUL_ZPOW
+def ABELIAN_GROUP_DIV_ZPOW : thm := BAbelian.ABELIAN_GROUP_DIV_ZPOW
+def ABELIAN_GROUP_MUL_AC : thm := BAbelian.ABELIAN_GROUP_MUL_AC
 
 -- Totalized
-unsafe def group_neg : thm := BTotalized.group_neg
-unsafe def group_add : thm := BTotalized.group_add
-unsafe def group_nmul : thm := BTotalized.group_nmul
-unsafe def GROUP_NEG : thm := BTotalized.GROUP_NEG
-unsafe def GROUP_ADD : thm := BTotalized.GROUP_ADD
-unsafe def GROUP_NEG_EQ_INV : thm := BTotalized.GROUP_NEG_EQ_INV
-unsafe def GROUP_ADD_EQ_MUL : thm := BTotalized.GROUP_ADD_EQ_MUL
-unsafe def GROUP_ADD_LID : thm := BTotalized.GROUP_ADD_LID
-unsafe def GROUP_ADD_RID : thm := BTotalized.GROUP_ADD_RID
-unsafe def GROUP_ADD_ASSOC : thm := BTotalized.GROUP_ADD_ASSOC
-unsafe def GROUP_NEG_ADD : thm := BTotalized.GROUP_NEG_ADD
-unsafe def GROUP_NEG_NEG : thm := BTotalized.GROUP_NEG_NEG
-unsafe def GROUP_NEG_ID : thm := BTotalized.GROUP_NEG_ID
-unsafe def GROUP_ADD_EQ_ID : thm := BTotalized.GROUP_ADD_EQ_ID
-unsafe def GROUP_NEG_EQ_ID : thm := BTotalized.GROUP_NEG_EQ_ID
-unsafe def GROUP_NMUL_EQ_POW : thm := BTotalized.GROUP_NMUL_EQ_POW
-unsafe def GROUP_NMUL_ADD : thm := BTotalized.GROUP_NMUL_ADD
-unsafe def GROUP_NMUL_MUL : thm := BTotalized.GROUP_NMUL_MUL
-unsafe def GROUP_NMUL_1 : thm := BTotalized.GROUP_NMUL_1
-unsafe def GROUP_NEG_NMUL : thm := BTotalized.GROUP_NEG_NMUL
-unsafe def GROUP_ADD_SYM : thm := BTotalized.GROUP_ADD_SYM
-unsafe def GROUP_ADD_SYM_EQ : thm := BTotalized.GROUP_ADD_SYM_EQ
-unsafe def GROUP_ADD_NMUL : thm := BTotalized.GROUP_ADD_NMUL
-unsafe def NEUTRAL_GROUP_ADD : thm := BTotalized.NEUTRAL_GROUP_ADD
-unsafe def MONOIDAL_GROUP_ADD : thm := BTotalized.MONOIDAL_GROUP_ADD
+def group_neg : thm := BTotalized.group_neg
+def group_add : thm := BTotalized.group_add
+def group_nmul : thm := BTotalized.group_nmul
+def GROUP_NEG : thm := BTotalized.GROUP_NEG
+def GROUP_ADD : thm := BTotalized.GROUP_ADD
+def GROUP_NEG_EQ_INV : thm := BTotalized.GROUP_NEG_EQ_INV
+def GROUP_ADD_EQ_MUL : thm := BTotalized.GROUP_ADD_EQ_MUL
+def GROUP_ADD_LID : thm := BTotalized.GROUP_ADD_LID
+def GROUP_ADD_RID : thm := BTotalized.GROUP_ADD_RID
+def GROUP_ADD_ASSOC : thm := BTotalized.GROUP_ADD_ASSOC
+def GROUP_NEG_ADD : thm := BTotalized.GROUP_NEG_ADD
+def GROUP_NEG_NEG : thm := BTotalized.GROUP_NEG_NEG
+def GROUP_NEG_ID : thm := BTotalized.GROUP_NEG_ID
+def GROUP_ADD_EQ_ID : thm := BTotalized.GROUP_ADD_EQ_ID
+def GROUP_NEG_EQ_ID : thm := BTotalized.GROUP_NEG_EQ_ID
+def GROUP_NMUL_EQ_POW : thm := BTotalized.GROUP_NMUL_EQ_POW
+def GROUP_NMUL_ADD : thm := BTotalized.GROUP_NMUL_ADD
+def GROUP_NMUL_MUL : thm := BTotalized.GROUP_NMUL_MUL
+def GROUP_NMUL_1 : thm := BTotalized.GROUP_NMUL_1
+def GROUP_NEG_NMUL : thm := BTotalized.GROUP_NEG_NMUL
+def GROUP_ADD_SYM : thm := BTotalized.GROUP_ADD_SYM
+def GROUP_ADD_SYM_EQ : thm := BTotalized.GROUP_ADD_SYM_EQ
+def GROUP_ADD_NMUL : thm := BTotalized.GROUP_ADD_NMUL
+def NEUTRAL_GROUP_ADD : thm := BTotalized.NEUTRAL_GROUP_ADD
+def MONOIDAL_GROUP_ADD : thm := BTotalized.MONOIDAL_GROUP_ADD
 
 -- GroupRule
-unsafe def GROUP_RULE : term → IO (Except String thm) := fun t => (BGroupRule.GROUP_RULE t).run
-unsafe def GROUP_TAC : HolCore.Tactics.tactic := fun g => BGroupRule.GROUP_TAC g
+def GROUP_RULE : term → IO (Except String thm) := fun t => (BGroupRule.GROUP_RULE t).run
+def GROUP_TAC : HolCore.Tactics.tactic := fun g => BGroupRule.GROUP_TAC g
 
 -- GroupProduct
-unsafe def group_product : thm := BGroupProduct.group_product
-unsafe def group_sum : thm := BGroupProduct.group_sum
-unsafe def GROUP_PRODUCT_EQ : thm := BGroupProduct.GROUP_PRODUCT_EQ
-unsafe def GROUP_SUM_EQ : thm := BGroupProduct.GROUP_SUM_EQ
-unsafe def GROUP_PRODUCT_CLOSED : thm := BGroupProduct.GROUP_PRODUCT_CLOSED
-unsafe def GROUP_SUM_CLOSED : thm := BGroupProduct.GROUP_SUM_CLOSED
-unsafe def GROUP_PRODUCT : thm := BGroupProduct.GROUP_PRODUCT
-unsafe def GROUP_SUM : thm := BGroupProduct.GROUP_SUM
-unsafe def GROUP_PRODUCT_SUPPORT : thm := BGroupProduct.GROUP_PRODUCT_SUPPORT
-unsafe def GROUP_SUM_SUPPORT : thm := BGroupProduct.GROUP_SUM_SUPPORT
-unsafe def GROUP_PRODUCT_RESTRICT : thm := BGroupProduct.GROUP_PRODUCT_RESTRICT
-unsafe def GROUP_SUM_RESTRICT : thm := BGroupProduct.GROUP_SUM_RESTRICT
-unsafe def GROUP_PRODUCT_EXPAND_CASES : thm := BGroupProduct.GROUP_PRODUCT_EXPAND_CASES
-unsafe def GROUP_SUM_EXPAND_CASES : thm := BGroupProduct.GROUP_SUM_EXPAND_CASES
-unsafe def GROUP_PRODUCT_RESTRICT_SET : thm := BGroupProduct.GROUP_PRODUCT_RESTRICT_SET
-unsafe def GROUP_SUM_RESTRICT_SET : thm := BGroupProduct.GROUP_SUM_RESTRICT_SET
-unsafe def GROUP_PRODUCT_SUPERSET : thm := BGroupProduct.GROUP_PRODUCT_SUPERSET
-unsafe def GROUP_SUM_SUPERSET : thm := BGroupProduct.GROUP_SUM_SUPERSET
-unsafe def GROUP_PRODUCT_CLAUSES : thm := BGroupProduct.GROUP_PRODUCT_CLAUSES
-unsafe def GROUP_PRODUCT_CLAUSES_EXISTS : thm := BGroupProduct.GROUP_PRODUCT_CLAUSES_EXISTS
-unsafe def GROUP_SUM_CLAUSES_EXISTS : thm := BGroupProduct.GROUP_SUM_CLAUSES_EXISTS
-unsafe def GROUP_PRODUCT_EQ_ID : thm := BGroupProduct.GROUP_PRODUCT_EQ_ID
-unsafe def GROUP_SUM_EQ_ID : thm := BGroupProduct.GROUP_SUM_EQ_ID
-unsafe def GROUP_PRODUCT_ID : thm := BGroupProduct.GROUP_PRODUCT_ID
-unsafe def GROUP_SUM_ID : thm := BGroupProduct.GROUP_SUM_ID
-unsafe def GROUP_COMMUTES_PRODUCT : thm := BGroupProduct.GROUP_COMMUTES_PRODUCT
-unsafe def GROUP_COMMUTES_SUM : thm := BGroupProduct.GROUP_COMMUTES_SUM
-unsafe def GROUP_PRODUCT_SING : thm := BGroupProduct.GROUP_PRODUCT_SING
-unsafe def GROUP_SUM_SING : thm := BGroupProduct.GROUP_SUM_SING
+def group_product : thm := BGroupProduct.group_product
+def group_sum : thm := BGroupProduct.group_sum
+def GROUP_PRODUCT_EQ : thm := BGroupProduct.GROUP_PRODUCT_EQ
+def GROUP_SUM_EQ : thm := BGroupProduct.GROUP_SUM_EQ
+def GROUP_PRODUCT_CLOSED : thm := BGroupProduct.GROUP_PRODUCT_CLOSED
+def GROUP_SUM_CLOSED : thm := BGroupProduct.GROUP_SUM_CLOSED
+def GROUP_PRODUCT : thm := BGroupProduct.GROUP_PRODUCT
+def GROUP_SUM : thm := BGroupProduct.GROUP_SUM
+def GROUP_PRODUCT_SUPPORT : thm := BGroupProduct.GROUP_PRODUCT_SUPPORT
+def GROUP_SUM_SUPPORT : thm := BGroupProduct.GROUP_SUM_SUPPORT
+def GROUP_PRODUCT_RESTRICT : thm := BGroupProduct.GROUP_PRODUCT_RESTRICT
+def GROUP_SUM_RESTRICT : thm := BGroupProduct.GROUP_SUM_RESTRICT
+def GROUP_PRODUCT_EXPAND_CASES : thm := BGroupProduct.GROUP_PRODUCT_EXPAND_CASES
+def GROUP_SUM_EXPAND_CASES : thm := BGroupProduct.GROUP_SUM_EXPAND_CASES
+def GROUP_PRODUCT_RESTRICT_SET : thm := BGroupProduct.GROUP_PRODUCT_RESTRICT_SET
+def GROUP_SUM_RESTRICT_SET : thm := BGroupProduct.GROUP_SUM_RESTRICT_SET
+def GROUP_PRODUCT_SUPERSET : thm := BGroupProduct.GROUP_PRODUCT_SUPERSET
+def GROUP_SUM_SUPERSET : thm := BGroupProduct.GROUP_SUM_SUPERSET
+def GROUP_PRODUCT_CLAUSES : thm := BGroupProduct.GROUP_PRODUCT_CLAUSES
+def GROUP_PRODUCT_CLAUSES_EXISTS : thm := BGroupProduct.GROUP_PRODUCT_CLAUSES_EXISTS
+def GROUP_SUM_CLAUSES_EXISTS : thm := BGroupProduct.GROUP_SUM_CLAUSES_EXISTS
+def GROUP_PRODUCT_EQ_ID : thm := BGroupProduct.GROUP_PRODUCT_EQ_ID
+def GROUP_SUM_EQ_ID : thm := BGroupProduct.GROUP_SUM_EQ_ID
+def GROUP_PRODUCT_ID : thm := BGroupProduct.GROUP_PRODUCT_ID
+def GROUP_SUM_ID : thm := BGroupProduct.GROUP_SUM_ID
+def GROUP_COMMUTES_PRODUCT : thm := BGroupProduct.GROUP_COMMUTES_PRODUCT
+def GROUP_COMMUTES_SUM : thm := BGroupProduct.GROUP_COMMUTES_SUM
+def GROUP_PRODUCT_SING : thm := BGroupProduct.GROUP_PRODUCT_SING
+def GROUP_SUM_SING : thm := BGroupProduct.GROUP_SUM_SING
 
 -- GroupProductClauses
-unsafe def GROUP_PRODUCT_UNION : thm := BGroupProductClauses.GROUP_PRODUCT_UNION
-unsafe def GROUP_PRODUCT_CLAUSES_LEFT : thm := BGroupProductClauses.GROUP_PRODUCT_CLAUSES_LEFT
-unsafe def GROUP_PRODUCT_CLAUSES_RIGHT : thm := BGroupProductClauses.GROUP_PRODUCT_CLAUSES_RIGHT
-unsafe def GROUP_PRODUCT_CLAUSES_NUMSEG : thm := BGroupProductClauses.GROUP_PRODUCT_CLAUSES_NUMSEG
-unsafe def GROUP_PRODUCT_CLAUSES_COMMUTING : thm := BGroupProductClauses.GROUP_PRODUCT_CLAUSES_COMMUTING
-unsafe def ABELIAN_GROUP_PRODUCT_CLAUSES : thm := BGroupProductClauses.ABELIAN_GROUP_PRODUCT_CLAUSES
-unsafe def GROUP_SUM_CLAUSES_COMMUTING : thm := BGroupProductClauses.GROUP_SUM_CLAUSES_COMMUTING
-unsafe def ABELIAN_GROUP_SUM_CLAUSES : thm := BGroupProductClauses.ABELIAN_GROUP_SUM_CLAUSES
+def GROUP_PRODUCT_UNION : thm := BGroupProductClauses.GROUP_PRODUCT_UNION
+def GROUP_PRODUCT_CLAUSES_LEFT : thm := BGroupProductClauses.GROUP_PRODUCT_CLAUSES_LEFT
+def GROUP_PRODUCT_CLAUSES_RIGHT : thm := BGroupProductClauses.GROUP_PRODUCT_CLAUSES_RIGHT
+def GROUP_PRODUCT_CLAUSES_NUMSEG : thm := BGroupProductClauses.GROUP_PRODUCT_CLAUSES_NUMSEG
+def GROUP_PRODUCT_CLAUSES_COMMUTING : thm := BGroupProductClauses.GROUP_PRODUCT_CLAUSES_COMMUTING
+def ABELIAN_GROUP_PRODUCT_CLAUSES : thm := BGroupProductClauses.ABELIAN_GROUP_PRODUCT_CLAUSES
+def GROUP_SUM_CLAUSES_COMMUTING : thm := BGroupProductClauses.GROUP_SUM_CLAUSES_COMMUTING
+def ABELIAN_GROUP_SUM_CLAUSES : thm := BGroupProductClauses.ABELIAN_GROUP_SUM_CLAUSES
 
 -- GroupProductMul
-unsafe def GROUP_PRODUCT_MUL : thm := BGroupProductMul.GROUP_PRODUCT_MUL
-unsafe def GROUP_SUM_MUL : thm := BGroupProductMul.GROUP_SUM_MUL
-unsafe def ABELIAN_GROUP_SUM_MUL : thm := BGroupProductMul.ABELIAN_GROUP_SUM_MUL
-unsafe def GROUP_SUM_INV : thm := BGroupProductMul.GROUP_SUM_INV
-unsafe def ABELIAN_GROUP_SUM_INV : thm := BGroupProductMul.ABELIAN_GROUP_SUM_INV
-unsafe def GROUP_SUM_POW : thm := BGroupProductMul.GROUP_SUM_POW
-unsafe def ABELIAN_GROUP_SUM_POW : thm := BGroupProductMul.ABELIAN_GROUP_SUM_POW
-unsafe def GROUP_SUM_ZPOW : thm := BGroupProductMul.GROUP_SUM_ZPOW
-unsafe def ABELIAN_GROUP_SUM_ZPOW : thm := BGroupProductMul.ABELIAN_GROUP_SUM_ZPOW
-unsafe def GROUP_SUM_IMAGE : thm := BGroupProductMul.GROUP_SUM_IMAGE
-unsafe def ABELIAN_GROUP_PRODUCT_ITERATE : thm := BGroupProductMul.ABELIAN_GROUP_PRODUCT_ITERATE
-unsafe def ABELIAN_GROUP_SUM_ITERATE : thm := BGroupProductMul.ABELIAN_GROUP_SUM_ITERATE
-unsafe def ABELIAN_GROUP_ITERATE : thm := BGroupProductMul.ABELIAN_GROUP_ITERATE
+def GROUP_PRODUCT_MUL : thm := BGroupProductMul.GROUP_PRODUCT_MUL
+def GROUP_SUM_MUL : thm := BGroupProductMul.GROUP_SUM_MUL
+def ABELIAN_GROUP_SUM_MUL : thm := BGroupProductMul.ABELIAN_GROUP_SUM_MUL
+def GROUP_SUM_INV : thm := BGroupProductMul.GROUP_SUM_INV
+def ABELIAN_GROUP_SUM_INV : thm := BGroupProductMul.ABELIAN_GROUP_SUM_INV
+def GROUP_SUM_POW : thm := BGroupProductMul.GROUP_SUM_POW
+def ABELIAN_GROUP_SUM_POW : thm := BGroupProductMul.ABELIAN_GROUP_SUM_POW
+def GROUP_SUM_ZPOW : thm := BGroupProductMul.GROUP_SUM_ZPOW
+def ABELIAN_GROUP_SUM_ZPOW : thm := BGroupProductMul.ABELIAN_GROUP_SUM_ZPOW
+def GROUP_SUM_IMAGE : thm := BGroupProductMul.GROUP_SUM_IMAGE
+def ABELIAN_GROUP_PRODUCT_ITERATE : thm := BGroupProductMul.ABELIAN_GROUP_PRODUCT_ITERATE
+def ABELIAN_GROUP_SUM_ITERATE : thm := BGroupProductMul.ABELIAN_GROUP_SUM_ITERATE
+def ABELIAN_GROUP_ITERATE : thm := BGroupProductMul.ABELIAN_GROUP_ITERATE
 
 -- Conjugation
-unsafe def group_conjugation : thm := BConjugation.group_conjugation
-unsafe def GROUP_CONJUGATION : thm := BConjugation.GROUP_CONJUGATION
-unsafe def GROUP_CONJUGATION_CONJUGATION : thm := BConjugation.GROUP_CONJUGATION_CONJUGATION
-unsafe def GROUP_CONJUGATION_EQ : thm := BConjugation.GROUP_CONJUGATION_EQ
-unsafe def GROUP_CONJUGATION_EQ_SELF : thm := BConjugation.GROUP_CONJUGATION_EQ_SELF
-unsafe def GROUP_CONJUGATION_EQ_ID : thm := BConjugation.GROUP_CONJUGATION_EQ_ID
-unsafe def GROUP_CONJUGATION_BY_ID : thm := BConjugation.GROUP_CONJUGATION_BY_ID
-unsafe def GROUP_CONJUGATION_LINV : thm := BConjugation.GROUP_CONJUGATION_LINV
-unsafe def GROUP_CONJUGATION_RINV : thm := BConjugation.GROUP_CONJUGATION_RINV
-unsafe def IN_IMAGE_GROUP_CONJUGATION : thm := BConjugation.IN_IMAGE_GROUP_CONJUGATION
-unsafe def IMAGE_GROUP_CONJUGATION_SUBSET : thm := BConjugation.IMAGE_GROUP_CONJUGATION_SUBSET
-unsafe def IMAGE_GROUP_CONJUGATION_BY_ID : thm := BConjugation.IMAGE_GROUP_CONJUGATION_BY_ID
-unsafe def IMAGE_GROUP_CONJUGATION_BY_MUL : thm := BConjugation.IMAGE_GROUP_CONJUGATION_BY_MUL
-unsafe def IMAGE_GROUP_CONJUGATION_BY_INV : thm := BConjugation.IMAGE_GROUP_CONJUGATION_BY_INV
-unsafe def IMAGE_GROUP_CONJUGATION_EQ_SWAP : thm := BConjugation.IMAGE_GROUP_CONJUGATION_EQ_SWAP
-unsafe def IMAGE_GROUP_CONJUGATION_EQ_PREIMAGE : thm := BConjugation.IMAGE_GROUP_CONJUGATION_EQ_PREIMAGE
+def group_conjugation : thm := BConjugation.group_conjugation
+def GROUP_CONJUGATION : thm := BConjugation.GROUP_CONJUGATION
+def GROUP_CONJUGATION_CONJUGATION : thm := BConjugation.GROUP_CONJUGATION_CONJUGATION
+def GROUP_CONJUGATION_EQ : thm := BConjugation.GROUP_CONJUGATION_EQ
+def GROUP_CONJUGATION_EQ_SELF : thm := BConjugation.GROUP_CONJUGATION_EQ_SELF
+def GROUP_CONJUGATION_EQ_ID : thm := BConjugation.GROUP_CONJUGATION_EQ_ID
+def GROUP_CONJUGATION_BY_ID : thm := BConjugation.GROUP_CONJUGATION_BY_ID
+def GROUP_CONJUGATION_LINV : thm := BConjugation.GROUP_CONJUGATION_LINV
+def GROUP_CONJUGATION_RINV : thm := BConjugation.GROUP_CONJUGATION_RINV
+def IN_IMAGE_GROUP_CONJUGATION : thm := BConjugation.IN_IMAGE_GROUP_CONJUGATION
+def IMAGE_GROUP_CONJUGATION_SUBSET : thm := BConjugation.IMAGE_GROUP_CONJUGATION_SUBSET
+def IMAGE_GROUP_CONJUGATION_BY_ID : thm := BConjugation.IMAGE_GROUP_CONJUGATION_BY_ID
+def IMAGE_GROUP_CONJUGATION_BY_MUL : thm := BConjugation.IMAGE_GROUP_CONJUGATION_BY_MUL
+def IMAGE_GROUP_CONJUGATION_BY_INV : thm := BConjugation.IMAGE_GROUP_CONJUGATION_BY_INV
+def IMAGE_GROUP_CONJUGATION_EQ_SWAP : thm := BConjugation.IMAGE_GROUP_CONJUGATION_EQ_SWAP
+def IMAGE_GROUP_CONJUGATION_EQ_PREIMAGE : thm := BConjugation.IMAGE_GROUP_CONJUGATION_EQ_PREIMAGE
 
 -- Subgroups
-unsafe def subgroup_of : thm := BSubgroups.subgroup_of
-unsafe def IN_SUBGROUP_ID : thm := BSubgroups.IN_SUBGROUP_ID
-unsafe def IN_SUBGROUP_INV : thm := BSubgroups.IN_SUBGROUP_INV
-unsafe def IN_SUBGROUP_MUL : thm := BSubgroups.IN_SUBGROUP_MUL
-unsafe def IN_SUBGROUP_DIV : thm := BSubgroups.IN_SUBGROUP_DIV
-unsafe def IN_SUBGROUP_POW : thm := BSubgroups.IN_SUBGROUP_POW
-unsafe def IN_SUBGROUP_ZPOW : thm := BSubgroups.IN_SUBGROUP_ZPOW
-unsafe def IN_SUBGROUP_CONJUGATION : thm := BSubgroups.IN_SUBGROUP_CONJUGATION
-unsafe def IN_SUBGROUP_PRODUCT : thm := BSubgroups.IN_SUBGROUP_PRODUCT
-unsafe def IN_SUBGROUP_SUM : thm := BSubgroups.IN_SUBGROUP_SUM
-unsafe def IMAGE_GROUP_CONJUGATION_SUBGROUP : thm := BSubgroups.IMAGE_GROUP_CONJUGATION_SUBGROUP
-unsafe def SUBGROUP_OF_INTERS : thm := BSubgroups.SUBGROUP_OF_INTERS
-unsafe def SUBGROUP_OF_INTER : thm := BSubgroups.SUBGROUP_OF_INTER
-unsafe def SUBGROUP_OF_UNIONS : thm := BSubgroups.SUBGROUP_OF_UNIONS
-unsafe def SUBGROUP_OF_OPPOSITE_GROUP : thm := BSubgroups.SUBGROUP_OF_OPPOSITE_GROUP
-unsafe def SUBGROUP_OF_IMP_SUBSET : thm := BSubgroups.SUBGROUP_OF_IMP_SUBSET
-unsafe def SUBGROUP_OF_IMP_NONEMPTY : thm := BSubgroups.SUBGROUP_OF_IMP_NONEMPTY
-unsafe def TRIVIAL_SUBGROUP_OF : thm := BSubgroups.TRIVIAL_SUBGROUP_OF
-unsafe def CARRIER_SUBGROUP_OF : thm := BSubgroups.CARRIER_SUBGROUP_OF
-unsafe def FINITE_SUBGROUPS : thm := BSubgroups.FINITE_SUBGROUPS
-unsafe def FINITE_RESTRICTED_SUBGROUPS : thm := BSubgroups.FINITE_RESTRICTED_SUBGROUPS
+def subgroup_of : thm := BSubgroups.subgroup_of
+def IN_SUBGROUP_ID : thm := BSubgroups.IN_SUBGROUP_ID
+def IN_SUBGROUP_INV : thm := BSubgroups.IN_SUBGROUP_INV
+def IN_SUBGROUP_MUL : thm := BSubgroups.IN_SUBGROUP_MUL
+def IN_SUBGROUP_DIV : thm := BSubgroups.IN_SUBGROUP_DIV
+def IN_SUBGROUP_POW : thm := BSubgroups.IN_SUBGROUP_POW
+def IN_SUBGROUP_ZPOW : thm := BSubgroups.IN_SUBGROUP_ZPOW
+def IN_SUBGROUP_CONJUGATION : thm := BSubgroups.IN_SUBGROUP_CONJUGATION
+def IN_SUBGROUP_PRODUCT : thm := BSubgroups.IN_SUBGROUP_PRODUCT
+def IN_SUBGROUP_SUM : thm := BSubgroups.IN_SUBGROUP_SUM
+def IMAGE_GROUP_CONJUGATION_SUBGROUP : thm := BSubgroups.IMAGE_GROUP_CONJUGATION_SUBGROUP
+def SUBGROUP_OF_INTERS : thm := BSubgroups.SUBGROUP_OF_INTERS
+def SUBGROUP_OF_INTER : thm := BSubgroups.SUBGROUP_OF_INTER
+def SUBGROUP_OF_UNIONS : thm := BSubgroups.SUBGROUP_OF_UNIONS
+def SUBGROUP_OF_OPPOSITE_GROUP : thm := BSubgroups.SUBGROUP_OF_OPPOSITE_GROUP
+def SUBGROUP_OF_IMP_SUBSET : thm := BSubgroups.SUBGROUP_OF_IMP_SUBSET
+def SUBGROUP_OF_IMP_NONEMPTY : thm := BSubgroups.SUBGROUP_OF_IMP_NONEMPTY
+def TRIVIAL_SUBGROUP_OF : thm := BSubgroups.TRIVIAL_SUBGROUP_OF
+def CARRIER_SUBGROUP_OF : thm := BSubgroups.CARRIER_SUBGROUP_OF
+def FINITE_SUBGROUPS : thm := BSubgroups.FINITE_SUBGROUPS
+def FINITE_RESTRICTED_SUBGROUPS : thm := BSubgroups.FINITE_RESTRICTED_SUBGROUPS
 
 -- SubgroupGenerated
-unsafe def subgroup_generated : thm := BSubgroupGenerated.subgroup_generated
-unsafe def SUBGROUP_GENERATED : thm := BSubgroupGenerated.SUBGROUP_GENERATED
-unsafe def SUBGROUP_GENERATED_EQ : thm := BSubgroupGenerated.SUBGROUP_GENERATED_EQ
-unsafe def GROUP_ID_SUBGROUP : thm := BSubgroupGenerated.GROUP_ID_SUBGROUP
-unsafe def GROUP_INV_SUBGROUP : thm := BSubgroupGenerated.GROUP_INV_SUBGROUP
-unsafe def GROUP_MUL_SUBGROUP : thm := BSubgroupGenerated.GROUP_MUL_SUBGROUP
-unsafe def ABELIAN_SUBGROUP_GENERATED : thm := BSubgroupGenerated.ABELIAN_SUBGROUP_GENERATED
-unsafe def GROUP_DIV_SUBGROUP_GENERATED : thm := BSubgroupGenerated.GROUP_DIV_SUBGROUP_GENERATED
-unsafe def GROUP_POW_SUBGROUP_GENERATED : thm := BSubgroupGenerated.GROUP_POW_SUBGROUP_GENERATED
-unsafe def GROUP_ZPOW_SUBGROUP_GENERATED : thm := BSubgroupGenerated.GROUP_ZPOW_SUBGROUP_GENERATED
-unsafe def GROUP_CONJUGATION_SUBGROUP_GENERATED : thm := BSubgroupGenerated.GROUP_CONJUGATION_SUBGROUP_GENERATED
-unsafe def SUBGROUP_GENERATED_RESTRICT : thm := BSubgroupGenerated.SUBGROUP_GENERATED_RESTRICT
-unsafe def SUBGROUP_SUBGROUP_GENERATED : thm := BSubgroupGenerated.SUBGROUP_SUBGROUP_GENERATED
-unsafe def SUBGROUP_GENERATED_MONO : thm := BSubgroupGenerated.SUBGROUP_GENERATED_MONO
-unsafe def SUBGROUP_GENERATED_MINIMAL : thm := BSubgroupGenerated.SUBGROUP_GENERATED_MINIMAL
-unsafe def SUBGROUPS_GENERATED_EQ : thm := BSubgroupGenerated.SUBGROUPS_GENERATED_EQ
-unsafe def SUBGROUP_GENERATED_INDUCT : thm := BSubgroupGenerated.SUBGROUP_GENERATED_INDUCT
-unsafe def GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET : thm := BSubgroupGenerated.GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET
-unsafe def SUBGROUP_GENERATED_SUPERSET : thm := BSubgroupGenerated.SUBGROUP_GENERATED_SUPERSET
-unsafe def SUBGROUP_OF_SUBGROUP_GENERATED_EQ : thm := BSubgroupGenerated.SUBGROUP_OF_SUBGROUP_GENERATED_EQ
-unsafe def SUBGROUP_GENERATED_INDUCT_STRONG : thm := BSubgroupGenerated.SUBGROUP_GENERATED_INDUCT_STRONG
-unsafe def SUBGROUP_GENERATED_INDUCT_ALT : thm := BSubgroupGenerated.SUBGROUP_GENERATED_INDUCT_ALT
-unsafe def SUBGROUP_GENERATED_INDUCT_LEFT : thm := BSubgroupGenerated.SUBGROUP_GENERATED_INDUCT_LEFT
+def subgroup_generated : thm := BSubgroupGenerated.subgroup_generated
+def SUBGROUP_GENERATED : thm := BSubgroupGenerated.SUBGROUP_GENERATED
+def SUBGROUP_GENERATED_EQ : thm := BSubgroupGenerated.SUBGROUP_GENERATED_EQ
+def GROUP_ID_SUBGROUP : thm := BSubgroupGenerated.GROUP_ID_SUBGROUP
+def GROUP_INV_SUBGROUP : thm := BSubgroupGenerated.GROUP_INV_SUBGROUP
+def GROUP_MUL_SUBGROUP : thm := BSubgroupGenerated.GROUP_MUL_SUBGROUP
+def ABELIAN_SUBGROUP_GENERATED : thm := BSubgroupGenerated.ABELIAN_SUBGROUP_GENERATED
+def GROUP_DIV_SUBGROUP_GENERATED : thm := BSubgroupGenerated.GROUP_DIV_SUBGROUP_GENERATED
+def GROUP_POW_SUBGROUP_GENERATED : thm := BSubgroupGenerated.GROUP_POW_SUBGROUP_GENERATED
+def GROUP_ZPOW_SUBGROUP_GENERATED : thm := BSubgroupGenerated.GROUP_ZPOW_SUBGROUP_GENERATED
+def GROUP_CONJUGATION_SUBGROUP_GENERATED : thm := BSubgroupGenerated.GROUP_CONJUGATION_SUBGROUP_GENERATED
+def SUBGROUP_GENERATED_RESTRICT : thm := BSubgroupGenerated.SUBGROUP_GENERATED_RESTRICT
+def SUBGROUP_SUBGROUP_GENERATED : thm := BSubgroupGenerated.SUBGROUP_SUBGROUP_GENERATED
+def SUBGROUP_GENERATED_MONO : thm := BSubgroupGenerated.SUBGROUP_GENERATED_MONO
+def SUBGROUP_GENERATED_MINIMAL : thm := BSubgroupGenerated.SUBGROUP_GENERATED_MINIMAL
+def SUBGROUPS_GENERATED_EQ : thm := BSubgroupGenerated.SUBGROUPS_GENERATED_EQ
+def SUBGROUP_GENERATED_INDUCT : thm := BSubgroupGenerated.SUBGROUP_GENERATED_INDUCT
+def GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET : thm := BSubgroupGenerated.GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET
+def SUBGROUP_GENERATED_SUPERSET : thm := BSubgroupGenerated.SUBGROUP_GENERATED_SUPERSET
+def SUBGROUP_OF_SUBGROUP_GENERATED_EQ : thm := BSubgroupGenerated.SUBGROUP_OF_SUBGROUP_GENERATED_EQ
+def SUBGROUP_GENERATED_INDUCT_STRONG : thm := BSubgroupGenerated.SUBGROUP_GENERATED_INDUCT_STRONG
+def SUBGROUP_GENERATED_INDUCT_ALT : thm := BSubgroupGenerated.SUBGROUP_GENERATED_INDUCT_ALT
+def SUBGROUP_GENERATED_INDUCT_LEFT : thm := BSubgroupGenerated.SUBGROUP_GENERATED_INDUCT_LEFT
 
 -- SubgroupGen1
-unsafe def FINITE_SUBGROUP_GENERATED : thm := BSubgroupGen1.FINITE_SUBGROUP_GENERATED
-unsafe def CARD_LE_SUBGROUP_GENERATED : thm := BSubgroupGen1.CARD_LE_SUBGROUP_GENERATED
-unsafe def COUNTABLE_SUBGROUP_GENERATED : thm := BSubgroupGen1.COUNTABLE_SUBGROUP_GENERATED
-unsafe def SUBGROUP_GENERATED_SUBSET_CARRIER : thm := BSubgroupGen1.SUBGROUP_GENERATED_SUBSET_CARRIER
-unsafe def SUBSET_CARRIER_SUBGROUP_GENERATED : thm := BSubgroupGen1.SUBSET_CARRIER_SUBGROUP_GENERATED
-unsafe def SUBGROUP_GENERATED_MINIMAL_EQ : thm := BSubgroupGen1.SUBGROUP_GENERATED_MINIMAL_EQ
-unsafe def CARRIER_SUBGROUP_GENERATED_SUBGROUP : thm := BSubgroupGen1.CARRIER_SUBGROUP_GENERATED_SUBGROUP
-unsafe def SUBGROUP_OF_SUBGROUP_GENERATED_SUBGROUP_EQ : thm := BSubgroupGen1.SUBGROUP_OF_SUBGROUP_GENERATED_SUBGROUP_EQ
-unsafe def SUBGROUP_GENERATED_GROUP_CARRIER : thm := BSubgroupGen1.SUBGROUP_GENERATED_GROUP_CARRIER
-unsafe def SUBGROUP_OF_SUBGROUP_GENERATED : thm := BSubgroupGen1.SUBGROUP_OF_SUBGROUP_GENERATED
-unsafe def SUBGROUP_GENERATED_SUBSET_CARRIER_SUBSET : thm := BSubgroupGen1.SUBGROUP_GENERATED_SUBSET_CARRIER_SUBSET
-unsafe def SUBGROUP_GENERATED_REFL : thm := BSubgroupGen1.SUBGROUP_GENERATED_REFL
-unsafe def SUBGROUP_GENERATED_INC : thm := BSubgroupGen1.SUBGROUP_GENERATED_INC
-unsafe def SUBGROUP_GENERATED_INC_GEN : thm := BSubgroupGen1.SUBGROUP_GENERATED_INC_GEN
-unsafe def SUBGROUP_OF_SUBGROUP_GENERATED_REV : thm := BSubgroupGen1.SUBGROUP_OF_SUBGROUP_GENERATED_REV
-unsafe def TRIVIAL_GROUP_SUBGROUP_GENERATED : thm := BSubgroupGen1.TRIVIAL_GROUP_SUBGROUP_GENERATED
-unsafe def TRIVIAL_GROUP_SUBGROUP_GENERATED_TRIVIAL : thm := BSubgroupGen1.TRIVIAL_GROUP_SUBGROUP_GENERATED_TRIVIAL
-unsafe def TRIVIAL_GROUP_SUBGROUP_GENERATED_EQ : thm := BSubgroupGen1.TRIVIAL_GROUP_SUBGROUP_GENERATED_EQ
-unsafe def TRIVIAL_GROUP_GENERATED_BY_ANYTHING : thm := BSubgroupGen1.TRIVIAL_GROUP_GENERATED_BY_ANYTHING
-unsafe def SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED : thm := BSubgroupGen1.SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED
+def FINITE_SUBGROUP_GENERATED : thm := BSubgroupGen1.FINITE_SUBGROUP_GENERATED
+def CARD_LE_SUBGROUP_GENERATED : thm := BSubgroupGen1.CARD_LE_SUBGROUP_GENERATED
+def COUNTABLE_SUBGROUP_GENERATED : thm := BSubgroupGen1.COUNTABLE_SUBGROUP_GENERATED
+def SUBGROUP_GENERATED_SUBSET_CARRIER : thm := BSubgroupGen1.SUBGROUP_GENERATED_SUBSET_CARRIER
+def SUBSET_CARRIER_SUBGROUP_GENERATED : thm := BSubgroupGen1.SUBSET_CARRIER_SUBGROUP_GENERATED
+def SUBGROUP_GENERATED_MINIMAL_EQ : thm := BSubgroupGen1.SUBGROUP_GENERATED_MINIMAL_EQ
+def CARRIER_SUBGROUP_GENERATED_SUBGROUP : thm := BSubgroupGen1.CARRIER_SUBGROUP_GENERATED_SUBGROUP
+def SUBGROUP_OF_SUBGROUP_GENERATED_SUBGROUP_EQ : thm := BSubgroupGen1.SUBGROUP_OF_SUBGROUP_GENERATED_SUBGROUP_EQ
+def SUBGROUP_GENERATED_GROUP_CARRIER : thm := BSubgroupGen1.SUBGROUP_GENERATED_GROUP_CARRIER
+def SUBGROUP_OF_SUBGROUP_GENERATED : thm := BSubgroupGen1.SUBGROUP_OF_SUBGROUP_GENERATED
+def SUBGROUP_GENERATED_SUBSET_CARRIER_SUBSET : thm := BSubgroupGen1.SUBGROUP_GENERATED_SUBSET_CARRIER_SUBSET
+def SUBGROUP_GENERATED_REFL : thm := BSubgroupGen1.SUBGROUP_GENERATED_REFL
+def SUBGROUP_GENERATED_INC : thm := BSubgroupGen1.SUBGROUP_GENERATED_INC
+def SUBGROUP_GENERATED_INC_GEN : thm := BSubgroupGen1.SUBGROUP_GENERATED_INC_GEN
+def SUBGROUP_OF_SUBGROUP_GENERATED_REV : thm := BSubgroupGen1.SUBGROUP_OF_SUBGROUP_GENERATED_REV
+def TRIVIAL_GROUP_SUBGROUP_GENERATED : thm := BSubgroupGen1.TRIVIAL_GROUP_SUBGROUP_GENERATED
+def TRIVIAL_GROUP_SUBGROUP_GENERATED_TRIVIAL : thm := BSubgroupGen1.TRIVIAL_GROUP_SUBGROUP_GENERATED_TRIVIAL
+def TRIVIAL_GROUP_SUBGROUP_GENERATED_EQ : thm := BSubgroupGen1.TRIVIAL_GROUP_SUBGROUP_GENERATED_EQ
+def TRIVIAL_GROUP_GENERATED_BY_ANYTHING : thm := BSubgroupGen1.TRIVIAL_GROUP_GENERATED_BY_ANYTHING
+def SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED : thm := BSubgroupGen1.SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED
 
 -- SubgroupGen2
-unsafe def SUBGROUP_GENERATED_INSERT_ID : thm := BSubgroupGen2.SUBGROUP_GENERATED_INSERT_ID
-unsafe def GROUP_CARRIER_SUBGROUP_GENERATED_MONO : thm := BSubgroupGen2.GROUP_CARRIER_SUBGROUP_GENERATED_MONO
-unsafe def SUBGROUP_GENERATED_IDEMPOT_GEN : thm := BSubgroupGen2.SUBGROUP_GENERATED_IDEMPOT_GEN
-unsafe def SUBGROUP_GENERATED_IDEMPOT : thm := BSubgroupGen2.SUBGROUP_GENERATED_IDEMPOT
-unsafe def SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED_IDEMPOT : thm := BSubgroupGen2.SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED_IDEMPOT
-unsafe def SUBGROUP_GENERATED_UNION_LEFT : thm := BSubgroupGen2.SUBGROUP_GENERATED_UNION_LEFT
-unsafe def SUBGROUP_GENERATED_UNION_RIGHT : thm := BSubgroupGen2.SUBGROUP_GENERATED_UNION_RIGHT
-unsafe def SUBGROUP_GENERATED_UNION : thm := BSubgroupGen2.SUBGROUP_GENERATED_UNION
-unsafe def TRIVIAL_GROUP_SUBGROUP_GENERATED_EMPTY : thm := BSubgroupGen2.TRIVIAL_GROUP_SUBGROUP_GENERATED_EMPTY
-unsafe def SUBGROUP_OF_COMMUTING_ELEMENTS : thm := BSubgroupGen2.SUBGROUP_OF_COMMUTING_ELEMENTS
-unsafe def GROUP_COMMUTES_SUBGROUP_GENERATED_EQ : thm := BSubgroupGen2.GROUP_COMMUTES_SUBGROUP_GENERATED_EQ
-unsafe def GROUP_COMMUTES_SUBGROUP_GENERATED : thm := BSubgroupGen2.GROUP_COMMUTES_SUBGROUP_GENERATED
-unsafe def GROUP_COMMUTES_SUBGROUPS_GENERATED_EQ : thm := BSubgroupGen2.GROUP_COMMUTES_SUBGROUPS_GENERATED_EQ
-unsafe def ABELIAN_GROUP_SUBGROUP_GENERATED_GEN : thm := BSubgroupGen2.ABELIAN_GROUP_SUBGROUP_GENERATED_GEN
+def SUBGROUP_GENERATED_INSERT_ID : thm := BSubgroupGen2.SUBGROUP_GENERATED_INSERT_ID
+def GROUP_CARRIER_SUBGROUP_GENERATED_MONO : thm := BSubgroupGen2.GROUP_CARRIER_SUBGROUP_GENERATED_MONO
+def SUBGROUP_GENERATED_IDEMPOT_GEN : thm := BSubgroupGen2.SUBGROUP_GENERATED_IDEMPOT_GEN
+def SUBGROUP_GENERATED_IDEMPOT : thm := BSubgroupGen2.SUBGROUP_GENERATED_IDEMPOT
+def SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED_IDEMPOT : thm := BSubgroupGen2.SUBGROUP_GENERATED_BY_SUBGROUP_GENERATED_IDEMPOT
+def SUBGROUP_GENERATED_UNION_LEFT : thm := BSubgroupGen2.SUBGROUP_GENERATED_UNION_LEFT
+def SUBGROUP_GENERATED_UNION_RIGHT : thm := BSubgroupGen2.SUBGROUP_GENERATED_UNION_RIGHT
+def SUBGROUP_GENERATED_UNION : thm := BSubgroupGen2.SUBGROUP_GENERATED_UNION
+def TRIVIAL_GROUP_SUBGROUP_GENERATED_EMPTY : thm := BSubgroupGen2.TRIVIAL_GROUP_SUBGROUP_GENERATED_EMPTY
+def SUBGROUP_OF_COMMUTING_ELEMENTS : thm := BSubgroupGen2.SUBGROUP_OF_COMMUTING_ELEMENTS
+def GROUP_COMMUTES_SUBGROUP_GENERATED_EQ : thm := BSubgroupGen2.GROUP_COMMUTES_SUBGROUP_GENERATED_EQ
+def GROUP_COMMUTES_SUBGROUP_GENERATED : thm := BSubgroupGen2.GROUP_COMMUTES_SUBGROUP_GENERATED
+def GROUP_COMMUTES_SUBGROUPS_GENERATED_EQ : thm := BSubgroupGen2.GROUP_COMMUTES_SUBGROUPS_GENERATED_EQ
+def ABELIAN_GROUP_SUBGROUP_GENERATED_GEN : thm := BSubgroupGen2.ABELIAN_GROUP_SUBGROUP_GENERATED_GEN
 
 -- ProdGroup
-unsafe def prod_group : thm := BProdGroup.prod_group
-unsafe def PROD_GROUP : thm := BProdGroup.PROD_GROUP
-unsafe def GROUP_POW_PROD_GROUP : thm := BProdGroup.GROUP_POW_PROD_GROUP
-unsafe def GROUP_ZPOW_PROD_GROUP : thm := BProdGroup.GROUP_ZPOW_PROD_GROUP
-unsafe def OPPOSITE_PROD_GROUP : thm := BProdGroup.OPPOSITE_PROD_GROUP
-unsafe def TRIVIAL_PROD_GROUP : thm := BProdGroup.TRIVIAL_PROD_GROUP
-unsafe def FINITE_PROD_GROUP : thm := BProdGroup.FINITE_PROD_GROUP
-unsafe def ABELIAN_PROD_GROUP : thm := BProdGroup.ABELIAN_PROD_GROUP
-unsafe def CROSS_SUBGROUP_OF_PROD_GROUP : thm := BProdGroup.CROSS_SUBGROUP_OF_PROD_GROUP
-unsafe def PROD_GROUP_SUBGROUP_GENERATED : thm := BProdGroup.PROD_GROUP_SUBGROUP_GENERATED
-unsafe def product_group : thm := BProdGroup.product_group
+def prod_group : thm := BProdGroup.prod_group
+def PROD_GROUP : thm := BProdGroup.PROD_GROUP
+def GROUP_POW_PROD_GROUP : thm := BProdGroup.GROUP_POW_PROD_GROUP
+def GROUP_ZPOW_PROD_GROUP : thm := BProdGroup.GROUP_ZPOW_PROD_GROUP
+def OPPOSITE_PROD_GROUP : thm := BProdGroup.OPPOSITE_PROD_GROUP
+def TRIVIAL_PROD_GROUP : thm := BProdGroup.TRIVIAL_PROD_GROUP
+def FINITE_PROD_GROUP : thm := BProdGroup.FINITE_PROD_GROUP
+def ABELIAN_PROD_GROUP : thm := BProdGroup.ABELIAN_PROD_GROUP
+def CROSS_SUBGROUP_OF_PROD_GROUP : thm := BProdGroup.CROSS_SUBGROUP_OF_PROD_GROUP
+def PROD_GROUP_SUBGROUP_GENERATED : thm := BProdGroup.PROD_GROUP_SUBGROUP_GENERATED
+def product_group : thm := BProdGroup.product_group
 
 -- ProductGroup
-unsafe def PRODUCT_GROUP : thm := BProductGroup.PRODUCT_GROUP
-unsafe def GROUP_POW_PRODUCT_GROUP : thm := BProductGroup.GROUP_POW_PRODUCT_GROUP
-unsafe def GROUP_ZPOW_PRODUCT_GROUP : thm := BProductGroup.GROUP_ZPOW_PRODUCT_GROUP
-unsafe def OPPOSITE_PRODUCT_GROUP : thm := BProductGroup.OPPOSITE_PRODUCT_GROUP
-unsafe def GROUP_PRODUCT_INJECTION : thm := BProductGroup.GROUP_PRODUCT_INJECTION
-unsafe def TRIVIAL_PRODUCT_GROUP : thm := BProductGroup.TRIVIAL_PRODUCT_GROUP
-unsafe def CARTESIAN_PRODUCT_SUBGROUP_OF_PRODUCT_GROUP : thm := BProductGroup.CARTESIAN_PRODUCT_SUBGROUP_OF_PRODUCT_GROUP
-unsafe def PRODUCT_GROUP_SUBGROUP_GENERATED : thm := BProductGroup.PRODUCT_GROUP_SUBGROUP_GENERATED
-unsafe def FINITE_PRODUCT_GROUP : thm := BProductGroup.FINITE_PRODUCT_GROUP
-unsafe def ABELIAN_PRODUCT_GROUP : thm := BProductGroup.ABELIAN_PRODUCT_GROUP
+def PRODUCT_GROUP : thm := BProductGroup.PRODUCT_GROUP
+def GROUP_POW_PRODUCT_GROUP : thm := BProductGroup.GROUP_POW_PRODUCT_GROUP
+def GROUP_ZPOW_PRODUCT_GROUP : thm := BProductGroup.GROUP_ZPOW_PRODUCT_GROUP
+def OPPOSITE_PRODUCT_GROUP : thm := BProductGroup.OPPOSITE_PRODUCT_GROUP
+def GROUP_PRODUCT_INJECTION : thm := BProductGroup.GROUP_PRODUCT_INJECTION
+def TRIVIAL_PRODUCT_GROUP : thm := BProductGroup.TRIVIAL_PRODUCT_GROUP
+def CARTESIAN_PRODUCT_SUBGROUP_OF_PRODUCT_GROUP : thm := BProductGroup.CARTESIAN_PRODUCT_SUBGROUP_OF_PRODUCT_GROUP
+def PRODUCT_GROUP_SUBGROUP_GENERATED : thm := BProductGroup.PRODUCT_GROUP_SUBGROUP_GENERATED
+def FINITE_PRODUCT_GROUP : thm := BProductGroup.FINITE_PRODUCT_GROUP
+def ABELIAN_PRODUCT_GROUP : thm := BProductGroup.ABELIAN_PRODUCT_GROUP
 
 -- SumGroup
-unsafe def sum_group : thm := BSumGroup.sum_group
-unsafe def SUM_GROUP_ALT : thm := BSumGroup.SUM_GROUP_ALT
-unsafe def SUM_GROUP_EQ_PRODUCT_GROUP : thm := BSumGroup.SUM_GROUP_EQ_PRODUCT_GROUP
-unsafe def SUBGROUP_SUM_GROUP : thm := BSumGroup.SUBGROUP_SUM_GROUP
-unsafe def SUM_GROUP_CLAUSES : thm := BSumGroup.SUM_GROUP_CLAUSES
-unsafe def GROUP_POW_SUM_GROUP : thm := BSumGroup.GROUP_POW_SUM_GROUP
-unsafe def GROUP_ZPOW_SUM_GROUP : thm := BSumGroup.GROUP_ZPOW_SUM_GROUP
-unsafe def GROUP_SUM_INJECTION : thm := BSumGroup.GROUP_SUM_INJECTION
-unsafe def TRIVIAL_SUM_GROUP : thm := BSumGroup.TRIVIAL_SUM_GROUP
-unsafe def CARTESIAN_PRODUCT_SUBGROUP_OF_SUM_GROUP : thm := BSumGroup.CARTESIAN_PRODUCT_SUBGROUP_OF_SUM_GROUP
-unsafe def SUM_GROUP_SUBGROUP_GENERATED : thm := BSumGroup.SUM_GROUP_SUBGROUP_GENERATED
-unsafe def ABELIAN_SUM_GROUP : thm := BSumGroup.ABELIAN_SUM_GROUP
+def sum_group : thm := BSumGroup.sum_group
+def SUM_GROUP_ALT : thm := BSumGroup.SUM_GROUP_ALT
+def SUM_GROUP_EQ_PRODUCT_GROUP : thm := BSumGroup.SUM_GROUP_EQ_PRODUCT_GROUP
+def SUBGROUP_SUM_GROUP : thm := BSumGroup.SUBGROUP_SUM_GROUP
+def SUM_GROUP_CLAUSES : thm := BSumGroup.SUM_GROUP_CLAUSES
+def GROUP_POW_SUM_GROUP : thm := BSumGroup.GROUP_POW_SUM_GROUP
+def GROUP_ZPOW_SUM_GROUP : thm := BSumGroup.GROUP_ZPOW_SUM_GROUP
+def GROUP_SUM_INJECTION : thm := BSumGroup.GROUP_SUM_INJECTION
+def TRIVIAL_SUM_GROUP : thm := BSumGroup.TRIVIAL_SUM_GROUP
+def CARTESIAN_PRODUCT_SUBGROUP_OF_SUM_GROUP : thm := BSumGroup.CARTESIAN_PRODUCT_SUBGROUP_OF_SUM_GROUP
+def SUM_GROUP_SUBGROUP_GENERATED : thm := BSumGroup.SUM_GROUP_SUBGROUP_GENERATED
+def ABELIAN_SUM_GROUP : thm := BSumGroup.ABELIAN_SUM_GROUP
 
 -- Homomorphisms
-unsafe def group_homomorphism : thm := BHomomorphisms.group_homomorphism
-unsafe def group_monomorphism : thm := BHomomorphisms.group_monomorphism
-unsafe def group_epimorphism : thm := BHomomorphisms.group_epimorphism
-unsafe def group_endomorphism : thm := BHomomorphisms.group_endomorphism
-unsafe def group_isomorphisms : thm := BHomomorphisms.group_isomorphisms
-unsafe def group_isomorphism : thm := BHomomorphisms.group_isomorphism
-unsafe def group_automorphism : thm := BHomomorphisms.group_automorphism
-unsafe def GROUP_HOMOMORPHISM_EQ : thm := BHomomorphisms.GROUP_HOMOMORPHISM_EQ
-unsafe def GROUP_MONOMORPHISM_EQ : thm := BHomomorphisms.GROUP_MONOMORPHISM_EQ
-unsafe def GROUP_EPIMORPHISM_EQ : thm := BHomomorphisms.GROUP_EPIMORPHISM_EQ
-unsafe def GROUP_ENDOMORPHISM_EQ : thm := BHomomorphisms.GROUP_ENDOMORPHISM_EQ
-unsafe def GROUP_ISOMORPHISMS_EQ : thm := BHomomorphisms.GROUP_ISOMORPHISMS_EQ
-unsafe def GROUP_ISOMORPHISM_EQ : thm := BHomomorphisms.GROUP_ISOMORPHISM_EQ
-unsafe def GROUP_AUTOMORPHISM_EQ : thm := BHomomorphisms.GROUP_AUTOMORPHISM_EQ
-unsafe def GROUP_HOMOMORPHISMS_EQ_ON_GENERATORS : thm := BHomomorphisms.GROUP_HOMOMORPHISMS_EQ_ON_GENERATORS
-unsafe def GROUP_ISOMORPHISMS_SYM : thm := BHomomorphisms.GROUP_ISOMORPHISMS_SYM
-unsafe def GROUP_ISOMORPHISMS_IMP_ISOMORPHISM : thm := BHomomorphisms.GROUP_ISOMORPHISMS_IMP_ISOMORPHISM
-unsafe def GROUP_ISOMORPHISMS_IMP_ISOMORPHISM_ALT : thm := BHomomorphisms.GROUP_ISOMORPHISMS_IMP_ISOMORPHISM_ALT
-unsafe def GROUP_HOMOMORPHISM : thm := BHomomorphisms.GROUP_HOMOMORPHISM
-unsafe def GROUP_EPIMORPHISM_SUBSET : thm := BHomomorphisms.GROUP_EPIMORPHISM_SUBSET
-unsafe def GROUP_ISOMORPHISMS : thm := BHomomorphisms.GROUP_ISOMORPHISMS
-unsafe def GROUP_HOMOMORPHISM_OF_ID : thm := BHomomorphisms.GROUP_HOMOMORPHISM_OF_ID
+def group_homomorphism : thm := BHomomorphisms.group_homomorphism
+def group_monomorphism : thm := BHomomorphisms.group_monomorphism
+def group_epimorphism : thm := BHomomorphisms.group_epimorphism
+def group_endomorphism : thm := BHomomorphisms.group_endomorphism
+def group_isomorphisms : thm := BHomomorphisms.group_isomorphisms
+def group_isomorphism : thm := BHomomorphisms.group_isomorphism
+def group_automorphism : thm := BHomomorphisms.group_automorphism
+def GROUP_HOMOMORPHISM_EQ : thm := BHomomorphisms.GROUP_HOMOMORPHISM_EQ
+def GROUP_MONOMORPHISM_EQ : thm := BHomomorphisms.GROUP_MONOMORPHISM_EQ
+def GROUP_EPIMORPHISM_EQ : thm := BHomomorphisms.GROUP_EPIMORPHISM_EQ
+def GROUP_ENDOMORPHISM_EQ : thm := BHomomorphisms.GROUP_ENDOMORPHISM_EQ
+def GROUP_ISOMORPHISMS_EQ : thm := BHomomorphisms.GROUP_ISOMORPHISMS_EQ
+def GROUP_ISOMORPHISM_EQ : thm := BHomomorphisms.GROUP_ISOMORPHISM_EQ
+def GROUP_AUTOMORPHISM_EQ : thm := BHomomorphisms.GROUP_AUTOMORPHISM_EQ
+def GROUP_HOMOMORPHISMS_EQ_ON_GENERATORS : thm := BHomomorphisms.GROUP_HOMOMORPHISMS_EQ_ON_GENERATORS
+def GROUP_ISOMORPHISMS_SYM : thm := BHomomorphisms.GROUP_ISOMORPHISMS_SYM
+def GROUP_ISOMORPHISMS_IMP_ISOMORPHISM : thm := BHomomorphisms.GROUP_ISOMORPHISMS_IMP_ISOMORPHISM
+def GROUP_ISOMORPHISMS_IMP_ISOMORPHISM_ALT : thm := BHomomorphisms.GROUP_ISOMORPHISMS_IMP_ISOMORPHISM_ALT
+def GROUP_HOMOMORPHISM : thm := BHomomorphisms.GROUP_HOMOMORPHISM
+def GROUP_EPIMORPHISM_SUBSET : thm := BHomomorphisms.GROUP_EPIMORPHISM_SUBSET
+def GROUP_ISOMORPHISMS : thm := BHomomorphisms.GROUP_ISOMORPHISMS
+def GROUP_HOMOMORPHISM_OF_ID : thm := BHomomorphisms.GROUP_HOMOMORPHISM_OF_ID
 
 -- Homomorphisms1
-unsafe def GROUP_HOMOMORPHISM_INV : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_INV
-unsafe def GROUP_HOMOMORPHISM_MUL : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_MUL
-unsafe def GROUP_HOMOMORPHISM_DIV : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_DIV
-unsafe def GROUP_HOMOMORPHISM_POW : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_POW
-unsafe def GROUP_HOMOMORPHISM_ZPOW : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_ZPOW
-unsafe def GROUP_HOMOMORPHISM_TRIVIAL : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_TRIVIAL
-unsafe def GROUP_HOMOMORPHISM_ID : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_ID
-unsafe def GROUP_MONOMORPHISM_ID : thm := BHomomorphisms1.GROUP_MONOMORPHISM_ID
-unsafe def GROUP_EPIMORPHISM_ID : thm := BHomomorphisms1.GROUP_EPIMORPHISM_ID
-unsafe def GROUP_ISOMORPHISMS_ID : thm := BHomomorphisms1.GROUP_ISOMORPHISMS_ID
-unsafe def GROUP_ISOMORPHISM_ID : thm := BHomomorphisms1.GROUP_ISOMORPHISM_ID
-unsafe def GROUP_HOMOMORPHISM_COMPOSE : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_COMPOSE
-unsafe def GROUP_MONOMORPHISM_COMPOSE : thm := BHomomorphisms1.GROUP_MONOMORPHISM_COMPOSE
-unsafe def GROUP_MONOMORPHISM_COMPOSE_REV : thm := BHomomorphisms1.GROUP_MONOMORPHISM_COMPOSE_REV
-unsafe def GROUP_EPIMORPHISM_COMPOSE : thm := BHomomorphisms1.GROUP_EPIMORPHISM_COMPOSE
-unsafe def GROUP_EPIMORPHISM_COMPOSE_REV : thm := BHomomorphisms1.GROUP_EPIMORPHISM_COMPOSE_REV
-unsafe def GROUP_MONOMORPHISM_LEFT_INVERTIBLE : thm := BHomomorphisms1.GROUP_MONOMORPHISM_LEFT_INVERTIBLE
-unsafe def GROUP_EPIMORPHISM_RIGHT_INVERTIBLE : thm := BHomomorphisms1.GROUP_EPIMORPHISM_RIGHT_INVERTIBLE
-unsafe def GROUP_HOMOMORPHISM_INTO_SUBGROUP : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_INTO_SUBGROUP
-unsafe def GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ_GEN : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ_GEN
-unsafe def GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ
-unsafe def GROUP_HOMOMORPHISM_FROM_SUBGROUP_GENERATED : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_FROM_SUBGROUP_GENERATED
-unsafe def GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS
-unsafe def GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS_ALT : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS_ALT
-unsafe def GROUP_MONOMORPHISM_FROM_SUBGROUP_GENERATED : thm := BHomomorphisms1.GROUP_MONOMORPHISM_FROM_SUBGROUP_GENERATED
-unsafe def GROUP_MONOMORPHISM_BETWEEN_SUBGROUPS : thm := BHomomorphisms1.GROUP_MONOMORPHISM_BETWEEN_SUBGROUPS
-unsafe def GROUP_MONOMORPHISM_INTO_SUPERGROUP : thm := BHomomorphisms1.GROUP_MONOMORPHISM_INTO_SUPERGROUP
-unsafe def GROUP_HOMOMORPHISM_INCLUSION : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_INCLUSION
-unsafe def GROUP_MONOMORPHISM_INCLUSION : thm := BHomomorphisms1.GROUP_MONOMORPHISM_INCLUSION
+def GROUP_HOMOMORPHISM_INV : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_INV
+def GROUP_HOMOMORPHISM_MUL : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_MUL
+def GROUP_HOMOMORPHISM_DIV : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_DIV
+def GROUP_HOMOMORPHISM_POW : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_POW
+def GROUP_HOMOMORPHISM_ZPOW : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_ZPOW
+def GROUP_HOMOMORPHISM_TRIVIAL : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_TRIVIAL
+def GROUP_HOMOMORPHISM_ID : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_ID
+def GROUP_MONOMORPHISM_ID : thm := BHomomorphisms1.GROUP_MONOMORPHISM_ID
+def GROUP_EPIMORPHISM_ID : thm := BHomomorphisms1.GROUP_EPIMORPHISM_ID
+def GROUP_ISOMORPHISMS_ID : thm := BHomomorphisms1.GROUP_ISOMORPHISMS_ID
+def GROUP_ISOMORPHISM_ID : thm := BHomomorphisms1.GROUP_ISOMORPHISM_ID
+def GROUP_HOMOMORPHISM_COMPOSE : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_COMPOSE
+def GROUP_MONOMORPHISM_COMPOSE : thm := BHomomorphisms1.GROUP_MONOMORPHISM_COMPOSE
+def GROUP_MONOMORPHISM_COMPOSE_REV : thm := BHomomorphisms1.GROUP_MONOMORPHISM_COMPOSE_REV
+def GROUP_EPIMORPHISM_COMPOSE : thm := BHomomorphisms1.GROUP_EPIMORPHISM_COMPOSE
+def GROUP_EPIMORPHISM_COMPOSE_REV : thm := BHomomorphisms1.GROUP_EPIMORPHISM_COMPOSE_REV
+def GROUP_MONOMORPHISM_LEFT_INVERTIBLE : thm := BHomomorphisms1.GROUP_MONOMORPHISM_LEFT_INVERTIBLE
+def GROUP_EPIMORPHISM_RIGHT_INVERTIBLE : thm := BHomomorphisms1.GROUP_EPIMORPHISM_RIGHT_INVERTIBLE
+def GROUP_HOMOMORPHISM_INTO_SUBGROUP : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_INTO_SUBGROUP
+def GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ_GEN : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ_GEN
+def GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ
+def GROUP_HOMOMORPHISM_FROM_SUBGROUP_GENERATED : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_FROM_SUBGROUP_GENERATED
+def GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS
+def GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS_ALT : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_BETWEEN_SUBGROUPS_ALT
+def GROUP_MONOMORPHISM_FROM_SUBGROUP_GENERATED : thm := BHomomorphisms1.GROUP_MONOMORPHISM_FROM_SUBGROUP_GENERATED
+def GROUP_MONOMORPHISM_BETWEEN_SUBGROUPS : thm := BHomomorphisms1.GROUP_MONOMORPHISM_BETWEEN_SUBGROUPS
+def GROUP_MONOMORPHISM_INTO_SUPERGROUP : thm := BHomomorphisms1.GROUP_MONOMORPHISM_INTO_SUPERGROUP
+def GROUP_HOMOMORPHISM_INCLUSION : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_INCLUSION
+def GROUP_MONOMORPHISM_INCLUSION : thm := BHomomorphisms1.GROUP_MONOMORPHISM_INCLUSION
 
 -- Homomorphisms2
-unsafe def SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE : thm := BHomomorphisms2.SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE
-unsafe def SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE_EQ : thm := BHomomorphisms2.SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE_EQ
-unsafe def SUBGROUP_GENERATED_BY_EPIMORPHIC_IMAGE : thm := BHomomorphisms2.SUBGROUP_GENERATED_BY_EPIMORPHIC_IMAGE
-unsafe def GROUP_EPIMORPHISM_BETWEEN_SUBGROUPS : thm := BHomomorphisms2.GROUP_EPIMORPHISM_BETWEEN_SUBGROUPS
-unsafe def GROUP_EPIMORPHISM_INTO_SUBGROUP_EQ_GEN : thm := BHomomorphisms2.GROUP_EPIMORPHISM_INTO_SUBGROUP_EQ_GEN
-unsafe def GROUP_EPIMORPHISM_INTO_SUBGROUP_EQ : thm := BHomomorphisms2.GROUP_EPIMORPHISM_INTO_SUBGROUP_EQ
-unsafe def GROUP_ISOMORPHISM : thm := BHomomorphisms2.GROUP_ISOMORPHISM
-unsafe def GROUP_ISOMORPHISM_SUBSET : thm := BHomomorphisms2.GROUP_ISOMORPHISM_SUBSET
-unsafe def SUBGROUP_OF_HOMOMORPHIC_IMAGE : thm := BHomomorphisms2.SUBGROUP_OF_HOMOMORPHIC_IMAGE
-unsafe def SUBGROUP_OF_HOMOMORPHIC_PREIMAGE : thm := BHomomorphisms2.SUBGROUP_OF_HOMOMORPHIC_PREIMAGE
-unsafe def SUBGROUP_OF_EPIMORPHIC_PREIMAGE : thm := BHomomorphisms2.SUBGROUP_OF_EPIMORPHIC_PREIMAGE
-unsafe def GROUP_MONOMORPHISM_EPIMORPHISM : thm := BHomomorphisms2.GROUP_MONOMORPHISM_EPIMORPHISM
-unsafe def GROUP_ISOMORPHISM_EPIMORPHISM : thm := BHomomorphisms2.GROUP_ISOMORPHISM_EPIMORPHISM
-unsafe def SUBGROUP_MONOMORPHISM_EPIMORPHISM : thm := BHomomorphisms2.SUBGROUP_MONOMORPHISM_EPIMORPHISM
-unsafe def GROUP_ISOMORPHISM_IMP_MONOMORPHISM : thm := BHomomorphisms2.GROUP_ISOMORPHISM_IMP_MONOMORPHISM
-unsafe def GROUP_ISOMORPHISM_IMP_EPIMORPHISM : thm := BHomomorphisms2.GROUP_ISOMORPHISM_IMP_EPIMORPHISM
-unsafe def GROUP_MONOMORPHISM_IMP_HOMOMORPHISM : thm := BHomomorphisms2.GROUP_MONOMORPHISM_IMP_HOMOMORPHISM
-unsafe def GROUP_EPIMORPHISM_IMP_HOMOMORPHISM : thm := BHomomorphisms2.GROUP_EPIMORPHISM_IMP_HOMOMORPHISM
-unsafe def GROUP_ISOMORPHISM_IMP_HOMOMORPHISM : thm := BHomomorphisms2.GROUP_ISOMORPHISM_IMP_HOMOMORPHISM
-unsafe def GROUP_AUTOMORPHISM_IMP_ENDOMORPHISM : thm := BHomomorphisms2.GROUP_AUTOMORPHISM_IMP_ENDOMORPHISM
-unsafe def GROUP_ISOMORPHISM_EQ_MONOMORPHISM_FINITE : thm := BHomomorphisms2.GROUP_ISOMORPHISM_EQ_MONOMORPHISM_FINITE
-unsafe def GROUP_ISOMORPHISM_EQ_EPIMORPHISM_FINITE : thm := BHomomorphisms2.GROUP_ISOMORPHISM_EQ_EPIMORPHISM_FINITE
-unsafe def GROUP_ISOMORPHISMS_CONJUGATION : thm := BHomomorphisms2.GROUP_ISOMORPHISMS_CONJUGATION
-unsafe def GROUP_AUTOMORPHISM_CONJUGATION : thm := BHomomorphisms2.GROUP_AUTOMORPHISM_CONJUGATION
-unsafe def GROUP_ISOMORPHISM_CONJUGATION : thm := BHomomorphisms2.GROUP_ISOMORPHISM_CONJUGATION
-unsafe def GROUP_HOMOMORPHISM_CONJUGATION : thm := BHomomorphisms2.GROUP_HOMOMORPHISM_CONJUGATION
-unsafe def CARD_LE_GROUP_MONOMORPHIC_IMAGE : thm := BHomomorphisms2.CARD_LE_GROUP_MONOMORPHIC_IMAGE
-unsafe def CARD_LE_GROUP_EPIMORPHIC_IMAGE : thm := BHomomorphisms2.CARD_LE_GROUP_EPIMORPHIC_IMAGE
+def SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE : thm := BHomomorphisms2.SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE
+def SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE_EQ : thm := BHomomorphisms2.SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE_EQ
+def SUBGROUP_GENERATED_BY_EPIMORPHIC_IMAGE : thm := BHomomorphisms2.SUBGROUP_GENERATED_BY_EPIMORPHIC_IMAGE
+def GROUP_EPIMORPHISM_BETWEEN_SUBGROUPS : thm := BHomomorphisms2.GROUP_EPIMORPHISM_BETWEEN_SUBGROUPS
+def GROUP_EPIMORPHISM_INTO_SUBGROUP_EQ_GEN : thm := BHomomorphisms2.GROUP_EPIMORPHISM_INTO_SUBGROUP_EQ_GEN
+def GROUP_EPIMORPHISM_INTO_SUBGROUP_EQ : thm := BHomomorphisms2.GROUP_EPIMORPHISM_INTO_SUBGROUP_EQ
+def GROUP_ISOMORPHISM : thm := BHomomorphisms2.GROUP_ISOMORPHISM
+def GROUP_ISOMORPHISM_SUBSET : thm := BHomomorphisms2.GROUP_ISOMORPHISM_SUBSET
+def SUBGROUP_OF_HOMOMORPHIC_IMAGE : thm := BHomomorphisms2.SUBGROUP_OF_HOMOMORPHIC_IMAGE
+def SUBGROUP_OF_HOMOMORPHIC_PREIMAGE : thm := BHomomorphisms2.SUBGROUP_OF_HOMOMORPHIC_PREIMAGE
+def SUBGROUP_OF_EPIMORPHIC_PREIMAGE : thm := BHomomorphisms2.SUBGROUP_OF_EPIMORPHIC_PREIMAGE
+def GROUP_MONOMORPHISM_EPIMORPHISM : thm := BHomomorphisms2.GROUP_MONOMORPHISM_EPIMORPHISM
+def GROUP_ISOMORPHISM_EPIMORPHISM : thm := BHomomorphisms2.GROUP_ISOMORPHISM_EPIMORPHISM
+def SUBGROUP_MONOMORPHISM_EPIMORPHISM : thm := BHomomorphisms2.SUBGROUP_MONOMORPHISM_EPIMORPHISM
+def GROUP_ISOMORPHISM_IMP_MONOMORPHISM : thm := BHomomorphisms2.GROUP_ISOMORPHISM_IMP_MONOMORPHISM
+def GROUP_ISOMORPHISM_IMP_EPIMORPHISM : thm := BHomomorphisms2.GROUP_ISOMORPHISM_IMP_EPIMORPHISM
+def GROUP_MONOMORPHISM_IMP_HOMOMORPHISM : thm := BHomomorphisms2.GROUP_MONOMORPHISM_IMP_HOMOMORPHISM
+def GROUP_EPIMORPHISM_IMP_HOMOMORPHISM : thm := BHomomorphisms2.GROUP_EPIMORPHISM_IMP_HOMOMORPHISM
+def GROUP_ISOMORPHISM_IMP_HOMOMORPHISM : thm := BHomomorphisms2.GROUP_ISOMORPHISM_IMP_HOMOMORPHISM
+def GROUP_AUTOMORPHISM_IMP_ENDOMORPHISM : thm := BHomomorphisms2.GROUP_AUTOMORPHISM_IMP_ENDOMORPHISM
+def GROUP_ISOMORPHISM_EQ_MONOMORPHISM_FINITE : thm := BHomomorphisms2.GROUP_ISOMORPHISM_EQ_MONOMORPHISM_FINITE
+def GROUP_ISOMORPHISM_EQ_EPIMORPHISM_FINITE : thm := BHomomorphisms2.GROUP_ISOMORPHISM_EQ_EPIMORPHISM_FINITE
+def GROUP_ISOMORPHISMS_CONJUGATION : thm := BHomomorphisms2.GROUP_ISOMORPHISMS_CONJUGATION
+def GROUP_AUTOMORPHISM_CONJUGATION : thm := BHomomorphisms2.GROUP_AUTOMORPHISM_CONJUGATION
+def GROUP_ISOMORPHISM_CONJUGATION : thm := BHomomorphisms2.GROUP_ISOMORPHISM_CONJUGATION
+def GROUP_HOMOMORPHISM_CONJUGATION : thm := BHomomorphisms2.GROUP_HOMOMORPHISM_CONJUGATION
+def CARD_LE_GROUP_MONOMORPHIC_IMAGE : thm := BHomomorphisms2.CARD_LE_GROUP_MONOMORPHIC_IMAGE
+def CARD_LE_GROUP_EPIMORPHIC_IMAGE : thm := BHomomorphisms2.CARD_LE_GROUP_EPIMORPHIC_IMAGE
 
 -- Homomorphisms3
-unsafe def CARD_EQ_GROUP_ISOMORPHIC_IMAGE : thm := BHomomorphisms3.CARD_EQ_GROUP_ISOMORPHIC_IMAGE
-unsafe def FINITE_GROUP_MONOMORPHIC_PREIMAGE : thm := BHomomorphisms3.FINITE_GROUP_MONOMORPHIC_PREIMAGE
-unsafe def FINITE_GROUP_EPIMORPHIC_IMAGE : thm := BHomomorphisms3.FINITE_GROUP_EPIMORPHIC_IMAGE
-unsafe def CARD_EQ_GROUP_MONOMORPHIC_IMAGE : thm := BHomomorphisms3.CARD_EQ_GROUP_MONOMORPHIC_IMAGE
-unsafe def GROUP_ISOMORPHISMS_BETWEEN_SUBGROUPS : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_BETWEEN_SUBGROUPS
-unsafe def GROUP_ISOMORPHISMS_BETWEEN_SUBGROUPS_ALT : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_BETWEEN_SUBGROUPS_ALT
-unsafe def GROUP_ISOMORPHISM_BETWEEN_SUBGROUPS : thm := BHomomorphisms3.GROUP_ISOMORPHISM_BETWEEN_SUBGROUPS
-unsafe def GROUP_ISOMORPHISMS_COMPOSE : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_COMPOSE
-unsafe def GROUP_ISOMORPHISM_COMPOSE : thm := BHomomorphisms3.GROUP_ISOMORPHISM_COMPOSE
-unsafe def GROUP_ISOMORPHISM_COMPOSE_REV : thm := BHomomorphisms3.GROUP_ISOMORPHISM_COMPOSE_REV
-unsafe def GROUP_EPIMORPHISM_ISOMORPHISM_COMPOSE_REV : thm := BHomomorphisms3.GROUP_EPIMORPHISM_ISOMORPHISM_COMPOSE_REV
-unsafe def GROUP_MONOMORPHISM_ISOMORPHISM_COMPOSE_REV : thm := BHomomorphisms3.GROUP_MONOMORPHISM_ISOMORPHISM_COMPOSE_REV
-unsafe def GROUP_ISOMORPHISM_INVERSE : thm := BHomomorphisms3.GROUP_ISOMORPHISM_INVERSE
-unsafe def GROUP_ISOMORPHISMS_OPPOSITE_GROUP : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_OPPOSITE_GROUP
-unsafe def GROUP_ISOMORPHISM_OPPOSITE_GROUP : thm := BHomomorphisms3.GROUP_ISOMORPHISM_OPPOSITE_GROUP
-unsafe def GROUP_HOMOMORPHISM_FROM_TRIVIAL_GROUP : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_FROM_TRIVIAL_GROUP
-unsafe def GROUP_MONOMORPHISM_FROM_TRIVIAL_GROUP : thm := BHomomorphisms3.GROUP_MONOMORPHISM_FROM_TRIVIAL_GROUP
-unsafe def GROUP_MONOMORPHISM_TO_TRIVIAL_GROUP : thm := BHomomorphisms3.GROUP_MONOMORPHISM_TO_TRIVIAL_GROUP
-unsafe def GROUP_EPIMORPHISM_FROM_TRIVIAL_GROUP : thm := BHomomorphisms3.GROUP_EPIMORPHISM_FROM_TRIVIAL_GROUP
-unsafe def GROUP_EPIMORPHISM_TO_TRIVIAL_GROUP : thm := BHomomorphisms3.GROUP_EPIMORPHISM_TO_TRIVIAL_GROUP
-unsafe def GROUP_HOMOMORPHISM_PAIRWISE : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_PAIRWISE
-unsafe def GROUP_HOMOMORPHISM_PAIRED : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_PAIRED
-unsafe def GROUP_HOMOMORPHISM_PAIRED2 : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_PAIRED2
-unsafe def GROUP_ISOMORPHISMS_PAIRED2 : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_PAIRED2
-unsafe def GROUP_ISOMORPHISM_PAIRED2 : thm := BHomomorphisms3.GROUP_ISOMORPHISM_PAIRED2
-unsafe def GROUP_HOMOMORPHISM_OF_FST : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_OF_FST
-unsafe def GROUP_HOMOMORPHISM_OF_SND : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_OF_SND
-unsafe def GROUP_EPIMORPHISM_OF_FST : thm := BHomomorphisms3.GROUP_EPIMORPHISM_OF_FST
-unsafe def GROUP_EPIMORPHISM_OF_SND : thm := BHomomorphisms3.GROUP_EPIMORPHISM_OF_SND
-unsafe def GROUP_HOMOMORPHISM_FST : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_FST
-unsafe def GROUP_HOMOMORPHISM_SND : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_SND
-unsafe def GROUP_EPIMORPHISM_FST : thm := BHomomorphisms3.GROUP_EPIMORPHISM_FST
-unsafe def GROUP_EPIMORPHISM_SND : thm := BHomomorphisms3.GROUP_EPIMORPHISM_SND
-unsafe def GROUP_ISOMORPHISM_FST : thm := BHomomorphisms3.GROUP_ISOMORPHISM_FST
-unsafe def GROUP_ISOMORPHISM_SND : thm := BHomomorphisms3.GROUP_ISOMORPHISM_SND
-unsafe def GROUP_ISOMORPHISMS_PROD_GROUP_SWAP : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_PROD_GROUP_SWAP
+def CARD_EQ_GROUP_ISOMORPHIC_IMAGE : thm := BHomomorphisms3.CARD_EQ_GROUP_ISOMORPHIC_IMAGE
+def FINITE_GROUP_MONOMORPHIC_PREIMAGE : thm := BHomomorphisms3.FINITE_GROUP_MONOMORPHIC_PREIMAGE
+def FINITE_GROUP_EPIMORPHIC_IMAGE : thm := BHomomorphisms3.FINITE_GROUP_EPIMORPHIC_IMAGE
+def CARD_EQ_GROUP_MONOMORPHIC_IMAGE : thm := BHomomorphisms3.CARD_EQ_GROUP_MONOMORPHIC_IMAGE
+def GROUP_ISOMORPHISMS_BETWEEN_SUBGROUPS : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_BETWEEN_SUBGROUPS
+def GROUP_ISOMORPHISMS_BETWEEN_SUBGROUPS_ALT : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_BETWEEN_SUBGROUPS_ALT
+def GROUP_ISOMORPHISM_BETWEEN_SUBGROUPS : thm := BHomomorphisms3.GROUP_ISOMORPHISM_BETWEEN_SUBGROUPS
+def GROUP_ISOMORPHISMS_COMPOSE : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_COMPOSE
+def GROUP_ISOMORPHISM_COMPOSE : thm := BHomomorphisms3.GROUP_ISOMORPHISM_COMPOSE
+def GROUP_ISOMORPHISM_COMPOSE_REV : thm := BHomomorphisms3.GROUP_ISOMORPHISM_COMPOSE_REV
+def GROUP_EPIMORPHISM_ISOMORPHISM_COMPOSE_REV : thm := BHomomorphisms3.GROUP_EPIMORPHISM_ISOMORPHISM_COMPOSE_REV
+def GROUP_MONOMORPHISM_ISOMORPHISM_COMPOSE_REV : thm := BHomomorphisms3.GROUP_MONOMORPHISM_ISOMORPHISM_COMPOSE_REV
+def GROUP_ISOMORPHISM_INVERSE : thm := BHomomorphisms3.GROUP_ISOMORPHISM_INVERSE
+def GROUP_ISOMORPHISMS_OPPOSITE_GROUP : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_OPPOSITE_GROUP
+def GROUP_ISOMORPHISM_OPPOSITE_GROUP : thm := BHomomorphisms3.GROUP_ISOMORPHISM_OPPOSITE_GROUP
+def GROUP_HOMOMORPHISM_FROM_TRIVIAL_GROUP : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_FROM_TRIVIAL_GROUP
+def GROUP_MONOMORPHISM_FROM_TRIVIAL_GROUP : thm := BHomomorphisms3.GROUP_MONOMORPHISM_FROM_TRIVIAL_GROUP
+def GROUP_MONOMORPHISM_TO_TRIVIAL_GROUP : thm := BHomomorphisms3.GROUP_MONOMORPHISM_TO_TRIVIAL_GROUP
+def GROUP_EPIMORPHISM_FROM_TRIVIAL_GROUP : thm := BHomomorphisms3.GROUP_EPIMORPHISM_FROM_TRIVIAL_GROUP
+def GROUP_EPIMORPHISM_TO_TRIVIAL_GROUP : thm := BHomomorphisms3.GROUP_EPIMORPHISM_TO_TRIVIAL_GROUP
+def GROUP_HOMOMORPHISM_PAIRWISE : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_PAIRWISE
+def GROUP_HOMOMORPHISM_PAIRED : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_PAIRED
+def GROUP_HOMOMORPHISM_PAIRED2 : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_PAIRED2
+def GROUP_ISOMORPHISMS_PAIRED2 : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_PAIRED2
+def GROUP_ISOMORPHISM_PAIRED2 : thm := BHomomorphisms3.GROUP_ISOMORPHISM_PAIRED2
+def GROUP_HOMOMORPHISM_OF_FST : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_OF_FST
+def GROUP_HOMOMORPHISM_OF_SND : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_OF_SND
+def GROUP_EPIMORPHISM_OF_FST : thm := BHomomorphisms3.GROUP_EPIMORPHISM_OF_FST
+def GROUP_EPIMORPHISM_OF_SND : thm := BHomomorphisms3.GROUP_EPIMORPHISM_OF_SND
+def GROUP_HOMOMORPHISM_FST : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_FST
+def GROUP_HOMOMORPHISM_SND : thm := BHomomorphisms3.GROUP_HOMOMORPHISM_SND
+def GROUP_EPIMORPHISM_FST : thm := BHomomorphisms3.GROUP_EPIMORPHISM_FST
+def GROUP_EPIMORPHISM_SND : thm := BHomomorphisms3.GROUP_EPIMORPHISM_SND
+def GROUP_ISOMORPHISM_FST : thm := BHomomorphisms3.GROUP_ISOMORPHISM_FST
+def GROUP_ISOMORPHISM_SND : thm := BHomomorphisms3.GROUP_ISOMORPHISM_SND
+def GROUP_ISOMORPHISMS_PROD_GROUP_SWAP : thm := BHomomorphisms3.GROUP_ISOMORPHISMS_PROD_GROUP_SWAP
 
 -- Homomorphisms4
-unsafe def GROUP_HOMOMORPHISM_COMPONENTWISE : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_COMPONENTWISE
-unsafe def GROUP_HOMOMORPHISM_COMPONENTWISE_UNIV : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_COMPONENTWISE_UNIV
-unsafe def GROUP_HOMOMORPHISM_PRODUCT_PROJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_PRODUCT_PROJECTION
-unsafe def GROUP_HOMOMORPHISM_SUM_PROJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_SUM_PROJECTION
-unsafe def GROUP_HOMOMORPHISM_PRODUCT_INJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_PRODUCT_INJECTION
-unsafe def GROUP_HOMOMORPHISM_SUM_INJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_SUM_INJECTION
-unsafe def GROUP_HOMOMORPHISM_PRODUCT : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_PRODUCT
-unsafe def GROUP_HOMOMORPHISM_SUM : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_SUM
-unsafe def GROUP_EPIMORPHISM_PRODUCT_PROJECTION : thm := BHomomorphisms4.GROUP_EPIMORPHISM_PRODUCT_PROJECTION
-unsafe def GROUP_ISOMORPHISM_PRODUCT_PROJECTION : thm := BHomomorphisms4.GROUP_ISOMORPHISM_PRODUCT_PROJECTION
-unsafe def GROUP_EPIMORPHISM_SUM_PROJECTION : thm := BHomomorphisms4.GROUP_EPIMORPHISM_SUM_PROJECTION
-unsafe def GROUP_ISOMORPHISM_SUM_PROJECTION : thm := BHomomorphisms4.GROUP_ISOMORPHISM_SUM_PROJECTION
-unsafe def ABELIAN_GROUP_EPIMORPHIC_IMAGE : thm := BHomomorphisms4.ABELIAN_GROUP_EPIMORPHIC_IMAGE
-unsafe def ABELIAN_GROUP_HOMOMORPHISM_GROUP_MUL : thm := BHomomorphisms4.ABELIAN_GROUP_HOMOMORPHISM_GROUP_MUL
-unsafe def ABELIAN_GROUP_HOMOMORPHISM_INVERSION : thm := BHomomorphisms4.ABELIAN_GROUP_HOMOMORPHISM_INVERSION
-unsafe def ABELIAN_GROUP_ISOMORPHISMS_INVERSION : thm := BHomomorphisms4.ABELIAN_GROUP_ISOMORPHISMS_INVERSION
-unsafe def ABELIAN_GROUP_ISOMORPHISM_INVERSION : thm := BHomomorphisms4.ABELIAN_GROUP_ISOMORPHISM_INVERSION
-unsafe def ABELIAN_GROUP_MONOMORPHISM_INVERSION : thm := BHomomorphisms4.ABELIAN_GROUP_MONOMORPHISM_INVERSION
-unsafe def ABELIAN_GROUP_EPIMORPHISM_INVERSION : thm := BHomomorphisms4.ABELIAN_GROUP_EPIMORPHISM_INVERSION
-unsafe def ABELIAN_GROUP_HOMOMORPHISM_POWERING : thm := BHomomorphisms4.ABELIAN_GROUP_HOMOMORPHISM_POWERING
-unsafe def ABELIAN_GROUP_HOMOMORPHISM_ZPOWERING : thm := BHomomorphisms4.ABELIAN_GROUP_HOMOMORPHISM_ZPOWERING
+def GROUP_HOMOMORPHISM_COMPONENTWISE : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_COMPONENTWISE
+def GROUP_HOMOMORPHISM_COMPONENTWISE_UNIV : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_COMPONENTWISE_UNIV
+def GROUP_HOMOMORPHISM_PRODUCT_PROJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_PRODUCT_PROJECTION
+def GROUP_HOMOMORPHISM_SUM_PROJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_SUM_PROJECTION
+def GROUP_HOMOMORPHISM_PRODUCT_INJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_PRODUCT_INJECTION
+def GROUP_HOMOMORPHISM_SUM_INJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_SUM_INJECTION
+def GROUP_HOMOMORPHISM_PRODUCT : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_PRODUCT
+def GROUP_HOMOMORPHISM_SUM : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_SUM
+def GROUP_EPIMORPHISM_PRODUCT_PROJECTION : thm := BHomomorphisms4.GROUP_EPIMORPHISM_PRODUCT_PROJECTION
+def GROUP_ISOMORPHISM_PRODUCT_PROJECTION : thm := BHomomorphisms4.GROUP_ISOMORPHISM_PRODUCT_PROJECTION
+def GROUP_EPIMORPHISM_SUM_PROJECTION : thm := BHomomorphisms4.GROUP_EPIMORPHISM_SUM_PROJECTION
+def GROUP_ISOMORPHISM_SUM_PROJECTION : thm := BHomomorphisms4.GROUP_ISOMORPHISM_SUM_PROJECTION
+def ABELIAN_GROUP_EPIMORPHIC_IMAGE : thm := BHomomorphisms4.ABELIAN_GROUP_EPIMORPHIC_IMAGE
+def ABELIAN_GROUP_HOMOMORPHISM_GROUP_MUL : thm := BHomomorphisms4.ABELIAN_GROUP_HOMOMORPHISM_GROUP_MUL
+def ABELIAN_GROUP_HOMOMORPHISM_INVERSION : thm := BHomomorphisms4.ABELIAN_GROUP_HOMOMORPHISM_INVERSION
+def ABELIAN_GROUP_ISOMORPHISMS_INVERSION : thm := BHomomorphisms4.ABELIAN_GROUP_ISOMORPHISMS_INVERSION
+def ABELIAN_GROUP_ISOMORPHISM_INVERSION : thm := BHomomorphisms4.ABELIAN_GROUP_ISOMORPHISM_INVERSION
+def ABELIAN_GROUP_MONOMORPHISM_INVERSION : thm := BHomomorphisms4.ABELIAN_GROUP_MONOMORPHISM_INVERSION
+def ABELIAN_GROUP_EPIMORPHISM_INVERSION : thm := BHomomorphisms4.ABELIAN_GROUP_EPIMORPHISM_INVERSION
+def ABELIAN_GROUP_HOMOMORPHISM_POWERING : thm := BHomomorphisms4.ABELIAN_GROUP_HOMOMORPHISM_POWERING
+def ABELIAN_GROUP_HOMOMORPHISM_ZPOWERING : thm := BHomomorphisms4.ABELIAN_GROUP_HOMOMORPHISM_ZPOWERING
 
 -- Iso1
-unsafe def isomorphic_group : thm := BIso1.isomorphic_group
-unsafe def GROUP_ISOMORPHISM_IMP_ISOMORPHIC : thm := BIso1.GROUP_ISOMORPHISM_IMP_ISOMORPHIC
-unsafe def ISOMORPHIC_PRODUCT_GROUP_SING : thm := BIso1.ISOMORPHIC_PRODUCT_GROUP_SING
-unsafe def ISOMORPHIC_SUM_GROUP_SING : thm := BIso1.ISOMORPHIC_SUM_GROUP_SING
-unsafe def ISOMORPHIC_GROUP_REFL : thm := BIso1.ISOMORPHIC_GROUP_REFL
-unsafe def ISOMORPHIC_GROUP_SYM : thm := BIso1.ISOMORPHIC_GROUP_SYM
-unsafe def ISOMORPHIC_GROUP_TRANS : thm := BIso1.ISOMORPHIC_GROUP_TRANS
-unsafe def ISOMORPHIC_GROUP_OPPOSITE_GROUP : thm := BIso1.ISOMORPHIC_GROUP_OPPOSITE_GROUP
-unsafe def ISOMORPHIC_GROUP_TRIVIALITY : thm := BIso1.ISOMORPHIC_GROUP_TRIVIALITY
-unsafe def ISOMORPHIC_TO_TRIVIAL_GROUP : thm := BIso1.ISOMORPHIC_TO_TRIVIAL_GROUP
-unsafe def ISOMORPHIC_TRIVIAL_GROUPS : thm := BIso1.ISOMORPHIC_TRIVIAL_GROUPS
-unsafe def ISOMORPHIC_GROUP_SINGLETON_GROUP : thm := BIso1.ISOMORPHIC_GROUP_SINGLETON_GROUP
-unsafe def ISOMORPHIC_GROUP_PROD_GROUPS : thm := BIso1.ISOMORPHIC_GROUP_PROD_GROUPS
-unsafe def ISOMORPHIC_GROUP_PROD_GROUP_SYM : thm := BIso1.ISOMORPHIC_GROUP_PROD_GROUP_SYM
-unsafe def ISOMORPHIC_GROUP_PROD_GROUP_SWAP_LEFT : thm := BIso1.ISOMORPHIC_GROUP_PROD_GROUP_SWAP_LEFT
-unsafe def ISOMORPHIC_GROUP_PROD_GROUP_SWAP_RIGHT : thm := BIso1.ISOMORPHIC_GROUP_PROD_GROUP_SWAP_RIGHT
-unsafe def ISOMORPHIC_PROD_TRIVIAL_GROUP : thm := BIso1.ISOMORPHIC_PROD_TRIVIAL_GROUP
-unsafe def ISOMORPHIC_PRODUCT_GROUP_SUPPORT : thm := BIso1.ISOMORPHIC_PRODUCT_GROUP_SUPPORT
-unsafe def ISOMORPHIC_PRODUCT_GROUP_SYMDIFF : thm := BIso1.ISOMORPHIC_PRODUCT_GROUP_SYMDIFF
-unsafe def ISOMORPHIC_SUM_GROUP_SUPPORT : thm := BIso1.ISOMORPHIC_SUM_GROUP_SUPPORT
-unsafe def ISOMORPHIC_SUM_GROUP_SYMDIFF : thm := BIso1.ISOMORPHIC_SUM_GROUP_SYMDIFF
+def isomorphic_group : thm := BIso1.isomorphic_group
+def GROUP_ISOMORPHISM_IMP_ISOMORPHIC : thm := BIso1.GROUP_ISOMORPHISM_IMP_ISOMORPHIC
+def ISOMORPHIC_PRODUCT_GROUP_SING : thm := BIso1.ISOMORPHIC_PRODUCT_GROUP_SING
+def ISOMORPHIC_SUM_GROUP_SING : thm := BIso1.ISOMORPHIC_SUM_GROUP_SING
+def ISOMORPHIC_GROUP_REFL : thm := BIso1.ISOMORPHIC_GROUP_REFL
+def ISOMORPHIC_GROUP_SYM : thm := BIso1.ISOMORPHIC_GROUP_SYM
+def ISOMORPHIC_GROUP_TRANS : thm := BIso1.ISOMORPHIC_GROUP_TRANS
+def ISOMORPHIC_GROUP_OPPOSITE_GROUP : thm := BIso1.ISOMORPHIC_GROUP_OPPOSITE_GROUP
+def ISOMORPHIC_GROUP_TRIVIALITY : thm := BIso1.ISOMORPHIC_GROUP_TRIVIALITY
+def ISOMORPHIC_TO_TRIVIAL_GROUP : thm := BIso1.ISOMORPHIC_TO_TRIVIAL_GROUP
+def ISOMORPHIC_TRIVIAL_GROUPS : thm := BIso1.ISOMORPHIC_TRIVIAL_GROUPS
+def ISOMORPHIC_GROUP_SINGLETON_GROUP : thm := BIso1.ISOMORPHIC_GROUP_SINGLETON_GROUP
+def ISOMORPHIC_GROUP_PROD_GROUPS : thm := BIso1.ISOMORPHIC_GROUP_PROD_GROUPS
+def ISOMORPHIC_GROUP_PROD_GROUP_SYM : thm := BIso1.ISOMORPHIC_GROUP_PROD_GROUP_SYM
+def ISOMORPHIC_GROUP_PROD_GROUP_SWAP_LEFT : thm := BIso1.ISOMORPHIC_GROUP_PROD_GROUP_SWAP_LEFT
+def ISOMORPHIC_GROUP_PROD_GROUP_SWAP_RIGHT : thm := BIso1.ISOMORPHIC_GROUP_PROD_GROUP_SWAP_RIGHT
+def ISOMORPHIC_PROD_TRIVIAL_GROUP : thm := BIso1.ISOMORPHIC_PROD_TRIVIAL_GROUP
+def ISOMORPHIC_PRODUCT_GROUP_SUPPORT : thm := BIso1.ISOMORPHIC_PRODUCT_GROUP_SUPPORT
+def ISOMORPHIC_PRODUCT_GROUP_SYMDIFF : thm := BIso1.ISOMORPHIC_PRODUCT_GROUP_SYMDIFF
+def ISOMORPHIC_SUM_GROUP_SUPPORT : thm := BIso1.ISOMORPHIC_SUM_GROUP_SUPPORT
+def ISOMORPHIC_SUM_GROUP_SYMDIFF : thm := BIso1.ISOMORPHIC_SUM_GROUP_SYMDIFF
 
 -- Iso2
-unsafe def ISOMORPHIC_PRODUCT_GROUP_BIJECTIONS : thm := BIso2.ISOMORPHIC_PRODUCT_GROUP_BIJECTIONS
-unsafe def ISOMORPHIC_SUM_GROUP_BIJECTIONS : thm := BIso2.ISOMORPHIC_SUM_GROUP_BIJECTIONS
-unsafe def ISOMORPHIC_GROUP_PRODUCT_GROUP : thm := BIso2.ISOMORPHIC_GROUP_PRODUCT_GROUP
-unsafe def ISOMORPHIC_GROUP_SUM_GROUP : thm := BIso2.ISOMORPHIC_GROUP_SUM_GROUP
-unsafe def GROUP_ISOMORPHISMS_PRODUCT_GROUP_DISJOINT_UNION : thm := BIso2.GROUP_ISOMORPHISMS_PRODUCT_GROUP_DISJOINT_UNION
-unsafe def GROUP_ISOMORPHISMS_SUM_GROUP_DISJOINT_UNION : thm := BIso2.GROUP_ISOMORPHISMS_SUM_GROUP_DISJOINT_UNION
-unsafe def GROUP_ISOMORPHISM_PRODUCT_GROUP_DISJOINT_UNION : thm := BIso2.GROUP_ISOMORPHISM_PRODUCT_GROUP_DISJOINT_UNION
-unsafe def GROUP_ISOMORPHISM_SUM_GROUP_DISJOINT_UNION : thm := BIso2.GROUP_ISOMORPHISM_SUM_GROUP_DISJOINT_UNION
-unsafe def ISOMORPHIC_PRODUCT_GROUP_DISJOINT_UNION : thm := BIso2.ISOMORPHIC_PRODUCT_GROUP_DISJOINT_UNION
-unsafe def ISOMORPHIC_SUM_GROUP_DISJOINT_UNION : thm := BIso2.ISOMORPHIC_SUM_GROUP_DISJOINT_UNION
-unsafe def ISOMORPHIC_PRODUCT_GROUP_INSERT : thm := BIso2.ISOMORPHIC_PRODUCT_GROUP_INSERT
-unsafe def ISOMORPHIC_SUM_GROUP_INSERT : thm := BIso2.ISOMORPHIC_SUM_GROUP_INSERT
-unsafe def ISOMORPHIC_GROUP_CARD_EQ : thm := BIso2.ISOMORPHIC_GROUP_CARD_EQ
-unsafe def ISOMORPHIC_GROUP_FINITENESS : thm := BIso2.ISOMORPHIC_GROUP_FINITENESS
-unsafe def ISOMORPHIC_GROUP_INFINITENESS : thm := BIso2.ISOMORPHIC_GROUP_INFINITENESS
-unsafe def ISOMORPHIC_GROUP_HAS_ORDER : thm := BIso2.ISOMORPHIC_GROUP_HAS_ORDER
-unsafe def ISOMORPHIC_GROUP_ORDER : thm := BIso2.ISOMORPHIC_GROUP_ORDER
-unsafe def ISOMORPHIC_GROUP_ABELIANNESS : thm := BIso2.ISOMORPHIC_GROUP_ABELIANNESS
-unsafe def CREATE_ISOMORPHIC_COPY_OF_GROUP : thm := BIso2.CREATE_ISOMORPHIC_COPY_OF_GROUP
-unsafe def ISOMORPHIC_COPY_OF_GROUP : thm := BIso2.ISOMORPHIC_COPY_OF_GROUP
+def ISOMORPHIC_PRODUCT_GROUP_BIJECTIONS : thm := BIso2.ISOMORPHIC_PRODUCT_GROUP_BIJECTIONS
+def ISOMORPHIC_SUM_GROUP_BIJECTIONS : thm := BIso2.ISOMORPHIC_SUM_GROUP_BIJECTIONS
+def ISOMORPHIC_GROUP_PRODUCT_GROUP : thm := BIso2.ISOMORPHIC_GROUP_PRODUCT_GROUP
+def ISOMORPHIC_GROUP_SUM_GROUP : thm := BIso2.ISOMORPHIC_GROUP_SUM_GROUP
+def GROUP_ISOMORPHISMS_PRODUCT_GROUP_DISJOINT_UNION : thm := BIso2.GROUP_ISOMORPHISMS_PRODUCT_GROUP_DISJOINT_UNION
+def GROUP_ISOMORPHISMS_SUM_GROUP_DISJOINT_UNION : thm := BIso2.GROUP_ISOMORPHISMS_SUM_GROUP_DISJOINT_UNION
+def GROUP_ISOMORPHISM_PRODUCT_GROUP_DISJOINT_UNION : thm := BIso2.GROUP_ISOMORPHISM_PRODUCT_GROUP_DISJOINT_UNION
+def GROUP_ISOMORPHISM_SUM_GROUP_DISJOINT_UNION : thm := BIso2.GROUP_ISOMORPHISM_SUM_GROUP_DISJOINT_UNION
+def ISOMORPHIC_PRODUCT_GROUP_DISJOINT_UNION : thm := BIso2.ISOMORPHIC_PRODUCT_GROUP_DISJOINT_UNION
+def ISOMORPHIC_SUM_GROUP_DISJOINT_UNION : thm := BIso2.ISOMORPHIC_SUM_GROUP_DISJOINT_UNION
+def ISOMORPHIC_PRODUCT_GROUP_INSERT : thm := BIso2.ISOMORPHIC_PRODUCT_GROUP_INSERT
+def ISOMORPHIC_SUM_GROUP_INSERT : thm := BIso2.ISOMORPHIC_SUM_GROUP_INSERT
+def ISOMORPHIC_GROUP_CARD_EQ : thm := BIso2.ISOMORPHIC_GROUP_CARD_EQ
+def ISOMORPHIC_GROUP_FINITENESS : thm := BIso2.ISOMORPHIC_GROUP_FINITENESS
+def ISOMORPHIC_GROUP_INFINITENESS : thm := BIso2.ISOMORPHIC_GROUP_INFINITENESS
+def ISOMORPHIC_GROUP_HAS_ORDER : thm := BIso2.ISOMORPHIC_GROUP_HAS_ORDER
+def ISOMORPHIC_GROUP_ORDER : thm := BIso2.ISOMORPHIC_GROUP_ORDER
+def ISOMORPHIC_GROUP_ABELIANNESS : thm := BIso2.ISOMORPHIC_GROUP_ABELIANNESS
+def CREATE_ISOMORPHIC_COPY_OF_GROUP : thm := BIso2.CREATE_ISOMORPHIC_COPY_OF_GROUP
+def ISOMORPHIC_COPY_OF_GROUP : thm := BIso2.ISOMORPHIC_COPY_OF_GROUP
 
 -- DirectLimit
-unsafe def GROUP_DIRECT_LIMIT : thm := BDirectLimit.GROUP_DIRECT_LIMIT
+def GROUP_DIRECT_LIMIT : thm := BDirectLimit.GROUP_DIRECT_LIMIT
 
 -- Setwise1
-unsafe def group_setinv : thm := BSetwise1.group_setinv
-unsafe def group_setmul : thm := BSetwise1.group_setmul
-unsafe def GROUP_SETINV_AS_IMAGE : thm := BSetwise1.GROUP_SETINV_AS_IMAGE
-unsafe def SUBGROUP_OF_SETWISE : thm := BSetwise1.SUBGROUP_OF_SETWISE
-unsafe def FINITE_SUBGROUP_OF_SETWISE : thm := BSetwise1.FINITE_SUBGROUP_OF_SETWISE
-unsafe def OPPOSITE_GROUP_SETINV : thm := BSetwise1.OPPOSITE_GROUP_SETINV
-unsafe def OPPOSITE_GROUP_SETMUL : thm := BSetwise1.OPPOSITE_GROUP_SETMUL
-unsafe def GROUP_SETINV_EQ_EMPTY : thm := BSetwise1.GROUP_SETINV_EQ_EMPTY
-unsafe def GROUP_SETMUL_EQ_EMPTY : thm := BSetwise1.GROUP_SETMUL_EQ_EMPTY
-unsafe def GROUP_SETMUL_EMPTY : thm := BSetwise1.GROUP_SETMUL_EMPTY
-unsafe def GROUP_SETINV_MONO : thm := BSetwise1.GROUP_SETINV_MONO
-unsafe def GROUP_SETMUL_MONO : thm := BSetwise1.GROUP_SETMUL_MONO
-unsafe def GROUP_SETMUL_INC_GEN : thm := BSetwise1.GROUP_SETMUL_INC_GEN
-unsafe def GROUP_SETMUL_INC : thm := BSetwise1.GROUP_SETMUL_INC
-unsafe def FINITE_GROUP_SETMUL : thm := BSetwise1.FINITE_GROUP_SETMUL
-unsafe def GROUP_SETMUL_SYM_ELEMENTWISE : thm := BSetwise1.GROUP_SETMUL_SYM_ELEMENTWISE
-unsafe def GROUP_SETINV_SING : thm := BSetwise1.GROUP_SETINV_SING
-unsafe def GROUP_SETMUL_SING : thm := BSetwise1.GROUP_SETMUL_SING
-unsafe def GROUP_SETINV : thm := BSetwise1.GROUP_SETINV
-unsafe def GROUP_SETMUL : thm := BSetwise1.GROUP_SETMUL
-unsafe def GROUP_SETMUL_LID : thm := BSetwise1.GROUP_SETMUL_LID
-unsafe def GROUP_SETMUL_RID : thm := BSetwise1.GROUP_SETMUL_RID
-unsafe def GROUP_SETMUL_ASSOC : thm := BSetwise1.GROUP_SETMUL_ASSOC
-unsafe def GROUP_SETMUL_SYM : thm := BSetwise1.GROUP_SETMUL_SYM
-unsafe def GROUP_SETINV_SUBGROUP : thm := BSetwise1.GROUP_SETINV_SUBGROUP
-unsafe def GROUP_SETMUL_LSUBSET : thm := BSetwise1.GROUP_SETMUL_LSUBSET
-unsafe def GROUP_SETMUL_RSUBSET : thm := BSetwise1.GROUP_SETMUL_RSUBSET
-unsafe def GROUP_SETMUL_LSUBSET_EQ : thm := BSetwise1.GROUP_SETMUL_LSUBSET_EQ
+def group_setinv : thm := BSetwise1.group_setinv
+def group_setmul : thm := BSetwise1.group_setmul
+def GROUP_SETINV_AS_IMAGE : thm := BSetwise1.GROUP_SETINV_AS_IMAGE
+def SUBGROUP_OF_SETWISE : thm := BSetwise1.SUBGROUP_OF_SETWISE
+def FINITE_SUBGROUP_OF_SETWISE : thm := BSetwise1.FINITE_SUBGROUP_OF_SETWISE
+def OPPOSITE_GROUP_SETINV : thm := BSetwise1.OPPOSITE_GROUP_SETINV
+def OPPOSITE_GROUP_SETMUL : thm := BSetwise1.OPPOSITE_GROUP_SETMUL
+def GROUP_SETINV_EQ_EMPTY : thm := BSetwise1.GROUP_SETINV_EQ_EMPTY
+def GROUP_SETMUL_EQ_EMPTY : thm := BSetwise1.GROUP_SETMUL_EQ_EMPTY
+def GROUP_SETMUL_EMPTY : thm := BSetwise1.GROUP_SETMUL_EMPTY
+def GROUP_SETINV_MONO : thm := BSetwise1.GROUP_SETINV_MONO
+def GROUP_SETMUL_MONO : thm := BSetwise1.GROUP_SETMUL_MONO
+def GROUP_SETMUL_INC_GEN : thm := BSetwise1.GROUP_SETMUL_INC_GEN
+def GROUP_SETMUL_INC : thm := BSetwise1.GROUP_SETMUL_INC
+def FINITE_GROUP_SETMUL : thm := BSetwise1.FINITE_GROUP_SETMUL
+def GROUP_SETMUL_SYM_ELEMENTWISE : thm := BSetwise1.GROUP_SETMUL_SYM_ELEMENTWISE
+def GROUP_SETINV_SING : thm := BSetwise1.GROUP_SETINV_SING
+def GROUP_SETMUL_SING : thm := BSetwise1.GROUP_SETMUL_SING
+def GROUP_SETINV : thm := BSetwise1.GROUP_SETINV
+def GROUP_SETMUL : thm := BSetwise1.GROUP_SETMUL
+def GROUP_SETMUL_LID : thm := BSetwise1.GROUP_SETMUL_LID
+def GROUP_SETMUL_RID : thm := BSetwise1.GROUP_SETMUL_RID
+def GROUP_SETMUL_ASSOC : thm := BSetwise1.GROUP_SETMUL_ASSOC
+def GROUP_SETMUL_SYM : thm := BSetwise1.GROUP_SETMUL_SYM
+def GROUP_SETINV_SUBGROUP : thm := BSetwise1.GROUP_SETINV_SUBGROUP
+def GROUP_SETMUL_LSUBSET : thm := BSetwise1.GROUP_SETMUL_LSUBSET
+def GROUP_SETMUL_RSUBSET : thm := BSetwise1.GROUP_SETMUL_RSUBSET
+def GROUP_SETMUL_LSUBSET_EQ : thm := BSetwise1.GROUP_SETMUL_LSUBSET_EQ
 
 -- Setwise2
-unsafe def GROUP_SETMUL_RSUBSET_EQ : thm := BSetwise2.GROUP_SETMUL_RSUBSET_EQ
-unsafe def IMAGE_GROUP_CONJUGATION : thm := BSetwise2.IMAGE_GROUP_CONJUGATION
-unsafe def IMAGE_GROUP_CONJUGATION_EQ : thm := BSetwise2.IMAGE_GROUP_CONJUGATION_EQ
-unsafe def GROUP_SETMUL_SUBGROUP : thm := BSetwise2.GROUP_SETMUL_SUBGROUP
-unsafe def GROUP_SETMUL_LCANCEL : thm := BSetwise2.GROUP_SETMUL_LCANCEL
-unsafe def GROUP_SETMUL_RCANCEL : thm := BSetwise2.GROUP_SETMUL_RCANCEL
-unsafe def GROUP_SETMUL_LCANCEL_SET : thm := BSetwise2.GROUP_SETMUL_LCANCEL_SET
-unsafe def GROUP_SETMUL_RCANCEL_SET : thm := BSetwise2.GROUP_SETMUL_RCANCEL_SET
-unsafe def SUBGROUP_SETMUL_EQ : thm := BSetwise2.SUBGROUP_SETMUL_EQ
-unsafe def SUBGROUP_SETMUL : thm := BSetwise2.SUBGROUP_SETMUL
-unsafe def SUBGROUP_GENERATED_SETMUL : thm := BSetwise2.SUBGROUP_GENERATED_SETMUL
-unsafe def CARRIER_SUBGROUP_GENERATED_UNION : thm := BSetwise2.CARRIER_SUBGROUP_GENERATED_UNION
+def GROUP_SETMUL_RSUBSET_EQ : thm := BSetwise2.GROUP_SETMUL_RSUBSET_EQ
+def IMAGE_GROUP_CONJUGATION : thm := BSetwise2.IMAGE_GROUP_CONJUGATION
+def IMAGE_GROUP_CONJUGATION_EQ : thm := BSetwise2.IMAGE_GROUP_CONJUGATION_EQ
+def GROUP_SETMUL_SUBGROUP : thm := BSetwise2.GROUP_SETMUL_SUBGROUP
+def GROUP_SETMUL_LCANCEL : thm := BSetwise2.GROUP_SETMUL_LCANCEL
+def GROUP_SETMUL_RCANCEL : thm := BSetwise2.GROUP_SETMUL_RCANCEL
+def GROUP_SETMUL_LCANCEL_SET : thm := BSetwise2.GROUP_SETMUL_LCANCEL_SET
+def GROUP_SETMUL_RCANCEL_SET : thm := BSetwise2.GROUP_SETMUL_RCANCEL_SET
+def SUBGROUP_SETMUL_EQ : thm := BSetwise2.SUBGROUP_SETMUL_EQ
+def SUBGROUP_SETMUL : thm := BSetwise2.SUBGROUP_SETMUL
+def SUBGROUP_GENERATED_SETMUL : thm := BSetwise2.SUBGROUP_GENERATED_SETMUL
+def CARRIER_SUBGROUP_GENERATED_UNION : thm := BSetwise2.CARRIER_SUBGROUP_GENERATED_UNION
 
 -- GroupActions
-unsafe def group_action : thm := BGroupActions.group_action
-unsafe def GROUP_ACTION_ALT : thm := BGroupActions.GROUP_ACTION_ALT
-unsafe def GROUP_ACTION_MUL : thm := BGroupActions.GROUP_ACTION_MUL
-unsafe def GROUP_ACTION_LINV : thm := BGroupActions.GROUP_ACTION_LINV
-unsafe def GROUP_ACTION_RINV : thm := BGroupActions.GROUP_ACTION_RINV
-unsafe def GROUP_ACTION_BIJECTIVE : thm := BGroupActions.GROUP_ACTION_BIJECTIVE
-unsafe def GROUP_ACTION_SURJECTIVE : thm := BGroupActions.GROUP_ACTION_SURJECTIVE
-unsafe def GROUP_ACTION_INJECTIVE : thm := BGroupActions.GROUP_ACTION_INJECTIVE
-unsafe def GROUP_ACTION_ON_SUBSET : thm := BGroupActions.GROUP_ACTION_ON_SUBSET
-unsafe def GROUP_ACTION_FROM_SUBGROUP : thm := BGroupActions.GROUP_ACTION_FROM_SUBGROUP
-unsafe def GROUP_ACTIONS_EQ_ON_GENERATORS : thm := BGroupActions.GROUP_ACTIONS_EQ_ON_GENERATORS
-unsafe def GROUP_ACTION_IMAGE : thm := BGroupActions.GROUP_ACTION_IMAGE
-unsafe def GROUP_ACTION_IMAGE_SIZED : thm := BGroupActions.GROUP_ACTION_IMAGE_SIZED
-unsafe def group_stabilizer : thm := BGroupActions.group_stabilizer
-unsafe def GROUP_STABILIZER_SUBSET_CARRIER : thm := BGroupActions.GROUP_STABILIZER_SUBSET_CARRIER
-unsafe def FINITE_GROUP_STABILIZER : thm := BGroupActions.FINITE_GROUP_STABILIZER
-unsafe def SUBGROUP_OF_GROUP_STABILIZER : thm := BGroupActions.SUBGROUP_OF_GROUP_STABILIZER
-unsafe def GROUP_STABILIZER_NONEMPTY : thm := BGroupActions.GROUP_STABILIZER_NONEMPTY
-unsafe def GROUP_STABILIZER_SUBGROUP_GENERATED : thm := BGroupActions.GROUP_STABILIZER_SUBGROUP_GENERATED
-unsafe def GROUP_STABILIZER_ON_SUBGROUP : thm := BGroupActions.GROUP_STABILIZER_ON_SUBGROUP
-unsafe def GROUP_ACTION_KERNEL_POINTWISE : thm := BGroupActions.GROUP_ACTION_KERNEL_POINTWISE
-unsafe def GROUP_ACTION_EQ : thm := BGroupActions.GROUP_ACTION_EQ
-unsafe def GROUP_ACTION_FIBRES : thm := BGroupActions.GROUP_ACTION_FIBRES
+def group_action : thm := BGroupActions.group_action
+def GROUP_ACTION_ALT : thm := BGroupActions.GROUP_ACTION_ALT
+def GROUP_ACTION_MUL : thm := BGroupActions.GROUP_ACTION_MUL
+def GROUP_ACTION_LINV : thm := BGroupActions.GROUP_ACTION_LINV
+def GROUP_ACTION_RINV : thm := BGroupActions.GROUP_ACTION_RINV
+def GROUP_ACTION_BIJECTIVE : thm := BGroupActions.GROUP_ACTION_BIJECTIVE
+def GROUP_ACTION_SURJECTIVE : thm := BGroupActions.GROUP_ACTION_SURJECTIVE
+def GROUP_ACTION_INJECTIVE : thm := BGroupActions.GROUP_ACTION_INJECTIVE
+def GROUP_ACTION_ON_SUBSET : thm := BGroupActions.GROUP_ACTION_ON_SUBSET
+def GROUP_ACTION_FROM_SUBGROUP : thm := BGroupActions.GROUP_ACTION_FROM_SUBGROUP
+def GROUP_ACTIONS_EQ_ON_GENERATORS : thm := BGroupActions.GROUP_ACTIONS_EQ_ON_GENERATORS
+def GROUP_ACTION_IMAGE : thm := BGroupActions.GROUP_ACTION_IMAGE
+def GROUP_ACTION_IMAGE_SIZED : thm := BGroupActions.GROUP_ACTION_IMAGE_SIZED
+def group_stabilizer : thm := BGroupActions.group_stabilizer
+def GROUP_STABILIZER_SUBSET_CARRIER : thm := BGroupActions.GROUP_STABILIZER_SUBSET_CARRIER
+def FINITE_GROUP_STABILIZER : thm := BGroupActions.FINITE_GROUP_STABILIZER
+def SUBGROUP_OF_GROUP_STABILIZER : thm := BGroupActions.SUBGROUP_OF_GROUP_STABILIZER
+def GROUP_STABILIZER_NONEMPTY : thm := BGroupActions.GROUP_STABILIZER_NONEMPTY
+def GROUP_STABILIZER_SUBGROUP_GENERATED : thm := BGroupActions.GROUP_STABILIZER_SUBGROUP_GENERATED
+def GROUP_STABILIZER_ON_SUBGROUP : thm := BGroupActions.GROUP_STABILIZER_ON_SUBGROUP
+def GROUP_ACTION_KERNEL_POINTWISE : thm := BGroupActions.GROUP_ACTION_KERNEL_POINTWISE
+def GROUP_ACTION_EQ : thm := BGroupActions.GROUP_ACTION_EQ
+def GROUP_ACTION_FIBRES : thm := BGroupActions.GROUP_ACTION_FIBRES
 
 -- GroupOrbits
-unsafe def group_orbit : thm := BGroupOrbits.group_orbit
-unsafe def GROUP_ORBIT_IN_SET : thm := BGroupOrbits.GROUP_ORBIT_IN_SET
-unsafe def IN_GROUP_ORBIT : thm := BGroupOrbits.IN_GROUP_ORBIT
-unsafe def GROUP_ORBIT : thm := BGroupOrbits.GROUP_ORBIT
-unsafe def GROUP_ORBIT_SUBSET : thm := BGroupOrbits.GROUP_ORBIT_SUBSET
-unsafe def GROUP_ORBIT_ON_SUBSET : thm := BGroupOrbits.GROUP_ORBIT_ON_SUBSET
-unsafe def FINITE_GROUP_ORBIT : thm := BGroupOrbits.FINITE_GROUP_ORBIT
-unsafe def GROUP_ORBIT_REFL_EQ : thm := BGroupOrbits.GROUP_ORBIT_REFL_EQ
-unsafe def GROUP_ORBIT_REFL : thm := BGroupOrbits.GROUP_ORBIT_REFL
-unsafe def IN_GROUP_ORBIT_SELF : thm := BGroupOrbits.IN_GROUP_ORBIT_SELF
-unsafe def GROUP_ORBIT_EMPTY : thm := BGroupOrbits.GROUP_ORBIT_EMPTY
-unsafe def GROUP_ORBIT_EQ_EMPTY : thm := BGroupOrbits.GROUP_ORBIT_EQ_EMPTY
-unsafe def GROUP_ORBIT_SYM_EQ : thm := BGroupOrbits.GROUP_ORBIT_SYM_EQ
-unsafe def GROUP_ORBIT_SYM : thm := BGroupOrbits.GROUP_ORBIT_SYM
-unsafe def GROUP_ORBIT_TRANS : thm := BGroupOrbits.GROUP_ORBIT_TRANS
-unsafe def GROUP_ORBIT_EQ : thm := BGroupOrbits.GROUP_ORBIT_EQ
-unsafe def CLOSED_GROUP_ORBIT : thm := BGroupOrbits.CLOSED_GROUP_ORBIT
-unsafe def GROUP_ORBIT_EQ_SING : thm := BGroupOrbits.GROUP_ORBIT_EQ_SING
-unsafe def GROUP_ORBIT_EQ_SING_SELF : thm := BGroupOrbits.GROUP_ORBIT_EQ_SING_SELF
-unsafe def GROUP_ORBIT_HAS_SIZE_1 : thm := BGroupOrbits.GROUP_ORBIT_HAS_SIZE_1
-unsafe def GROUP_ACTION_INVARIANT_SUBSET : thm := BGroupOrbits.GROUP_ACTION_INVARIANT_SUBSET
-unsafe def GROUP_ACTION_CLOSED : thm := BGroupOrbits.GROUP_ACTION_CLOSED
-unsafe def GROUP_ACTION_INVARIANT : thm := BGroupOrbits.GROUP_ACTION_INVARIANT
-unsafe def INVARIANT_GROUP_ORBIT : thm := BGroupOrbits.INVARIANT_GROUP_ORBIT
-unsafe def SUBSET_GROUP_ORBIT_CLOSED : thm := BGroupOrbits.SUBSET_GROUP_ORBIT_CLOSED
-unsafe def SUBSET_GROUP_ORBIT_INVARIANT : thm := BGroupOrbits.SUBSET_GROUP_ORBIT_INVARIANT
-unsafe def GROUP_ORBITS_EQ : thm := BGroupOrbits.GROUP_ORBITS_EQ
-unsafe def DISJOINT_GROUP_ORBITS : thm := BGroupOrbits.DISJOINT_GROUP_ORBITS
-unsafe def PAIRWISE_DISJOINT_GROUP_ORBITS : thm := BGroupOrbits.PAIRWISE_DISJOINT_GROUP_ORBITS
-unsafe def UNIONS_GROUP_ORBITS_CLOSED : thm := BGroupOrbits.UNIONS_GROUP_ORBITS_CLOSED
-unsafe def UNIONS_GROUP_ORBITS_INVARIANT : thm := BGroupOrbits.UNIONS_GROUP_ORBITS_INVARIANT
-unsafe def UNIONS_GROUP_ORBITS : thm := BGroupOrbits.UNIONS_GROUP_ORBITS
-unsafe def NSUM_CARD_GROUP_ORBITS : thm := BGroupOrbits.NSUM_CARD_GROUP_ORBITS
+def group_orbit : thm := BGroupOrbits.group_orbit
+def GROUP_ORBIT_IN_SET : thm := BGroupOrbits.GROUP_ORBIT_IN_SET
+def IN_GROUP_ORBIT : thm := BGroupOrbits.IN_GROUP_ORBIT
+def GROUP_ORBIT : thm := BGroupOrbits.GROUP_ORBIT
+def GROUP_ORBIT_SUBSET : thm := BGroupOrbits.GROUP_ORBIT_SUBSET
+def GROUP_ORBIT_ON_SUBSET : thm := BGroupOrbits.GROUP_ORBIT_ON_SUBSET
+def FINITE_GROUP_ORBIT : thm := BGroupOrbits.FINITE_GROUP_ORBIT
+def GROUP_ORBIT_REFL_EQ : thm := BGroupOrbits.GROUP_ORBIT_REFL_EQ
+def GROUP_ORBIT_REFL : thm := BGroupOrbits.GROUP_ORBIT_REFL
+def IN_GROUP_ORBIT_SELF : thm := BGroupOrbits.IN_GROUP_ORBIT_SELF
+def GROUP_ORBIT_EMPTY : thm := BGroupOrbits.GROUP_ORBIT_EMPTY
+def GROUP_ORBIT_EQ_EMPTY : thm := BGroupOrbits.GROUP_ORBIT_EQ_EMPTY
+def GROUP_ORBIT_SYM_EQ : thm := BGroupOrbits.GROUP_ORBIT_SYM_EQ
+def GROUP_ORBIT_SYM : thm := BGroupOrbits.GROUP_ORBIT_SYM
+def GROUP_ORBIT_TRANS : thm := BGroupOrbits.GROUP_ORBIT_TRANS
+def GROUP_ORBIT_EQ : thm := BGroupOrbits.GROUP_ORBIT_EQ
+def CLOSED_GROUP_ORBIT : thm := BGroupOrbits.CLOSED_GROUP_ORBIT
+def GROUP_ORBIT_EQ_SING : thm := BGroupOrbits.GROUP_ORBIT_EQ_SING
+def GROUP_ORBIT_EQ_SING_SELF : thm := BGroupOrbits.GROUP_ORBIT_EQ_SING_SELF
+def GROUP_ORBIT_HAS_SIZE_1 : thm := BGroupOrbits.GROUP_ORBIT_HAS_SIZE_1
+def GROUP_ACTION_INVARIANT_SUBSET : thm := BGroupOrbits.GROUP_ACTION_INVARIANT_SUBSET
+def GROUP_ACTION_CLOSED : thm := BGroupOrbits.GROUP_ACTION_CLOSED
+def GROUP_ACTION_INVARIANT : thm := BGroupOrbits.GROUP_ACTION_INVARIANT
+def INVARIANT_GROUP_ORBIT : thm := BGroupOrbits.INVARIANT_GROUP_ORBIT
+def SUBSET_GROUP_ORBIT_CLOSED : thm := BGroupOrbits.SUBSET_GROUP_ORBIT_CLOSED
+def SUBSET_GROUP_ORBIT_INVARIANT : thm := BGroupOrbits.SUBSET_GROUP_ORBIT_INVARIANT
+def GROUP_ORBITS_EQ : thm := BGroupOrbits.GROUP_ORBITS_EQ
+def DISJOINT_GROUP_ORBITS : thm := BGroupOrbits.DISJOINT_GROUP_ORBITS
+def PAIRWISE_DISJOINT_GROUP_ORBITS : thm := BGroupOrbits.PAIRWISE_DISJOINT_GROUP_ORBITS
+def UNIONS_GROUP_ORBITS_CLOSED : thm := BGroupOrbits.UNIONS_GROUP_ORBITS_CLOSED
+def UNIONS_GROUP_ORBITS_INVARIANT : thm := BGroupOrbits.UNIONS_GROUP_ORBITS_INVARIANT
+def UNIONS_GROUP_ORBITS : thm := BGroupOrbits.UNIONS_GROUP_ORBITS
+def NSUM_CARD_GROUP_ORBITS : thm := BGroupOrbits.NSUM_CARD_GROUP_ORBITS
 
 -- OrbitStabilizer
-unsafe def ORBIT_STABILIZER_MUL_GEN : thm := BOrbitStabilizer.ORBIT_STABILIZER_MUL_GEN
-unsafe def ORBIT_STABILIZER_MUL : thm := BOrbitStabilizer.ORBIT_STABILIZER_MUL
-unsafe def CARD_GROUP_ORBIT_DIVIDES : thm := BOrbitStabilizer.CARD_GROUP_ORBIT_DIVIDES
-unsafe def CARD_GROUP_STABILIZER_DIVIDES : thm := BOrbitStabilizer.CARD_GROUP_STABILIZER_DIVIDES
-unsafe def GROUP_STABILIZER_OF_ACTION : thm := BOrbitStabilizer.GROUP_STABILIZER_OF_ACTION
-unsafe def GROUP_ACTION_SUBGROUP_TRANSLATION : thm := BOrbitStabilizer.GROUP_ACTION_SUBGROUP_TRANSLATION
-unsafe def GROUP_STABILIZER_SUBGROUP_TRANSLATION : thm := BOrbitStabilizer.GROUP_STABILIZER_SUBGROUP_TRANSLATION
-unsafe def GROUP_ACTION_GROUP_TRANSLATION : thm := BOrbitStabilizer.GROUP_ACTION_GROUP_TRANSLATION
-unsafe def GROUP_STABILIZER_GROUP_TRANSLATION : thm := BOrbitStabilizer.GROUP_STABILIZER_GROUP_TRANSLATION
-unsafe def GROUP_ACTION_SUBSET_TRANSLATION : thm := BOrbitStabilizer.GROUP_ACTION_SUBSET_TRANSLATION
-unsafe def GROUP_ACTION_CONJUGATION : thm := BOrbitStabilizer.GROUP_ACTION_CONJUGATION
-unsafe def CARD_GROUP_SETMUL_GEN : thm := BOrbitStabilizer.CARD_GROUP_SETMUL_GEN
-unsafe def CARD_GROUP_SETMUL_MUL : thm := BOrbitStabilizer.CARD_GROUP_SETMUL_MUL
-unsafe def CARD_GROUP_SETMUL : thm := BOrbitStabilizer.CARD_GROUP_SETMUL
-unsafe def CARD_GROUP_SETMUL_DIVIDES : thm := BOrbitStabilizer.CARD_GROUP_SETMUL_DIVIDES
-unsafe def GROUP_ORBIT_COMMON_DIVISOR : thm := BOrbitStabilizer.GROUP_ORBIT_COMMON_DIVISOR
-unsafe def GROUP_ORBIT_COMMON_INDEX : thm := BOrbitStabilizer.GROUP_ORBIT_COMMON_INDEX
+def ORBIT_STABILIZER_MUL_GEN : thm := BOrbitStabilizer.ORBIT_STABILIZER_MUL_GEN
+def ORBIT_STABILIZER_MUL : thm := BOrbitStabilizer.ORBIT_STABILIZER_MUL
+def CARD_GROUP_ORBIT_DIVIDES : thm := BOrbitStabilizer.CARD_GROUP_ORBIT_DIVIDES
+def CARD_GROUP_STABILIZER_DIVIDES : thm := BOrbitStabilizer.CARD_GROUP_STABILIZER_DIVIDES
+def GROUP_STABILIZER_OF_ACTION : thm := BOrbitStabilizer.GROUP_STABILIZER_OF_ACTION
+def GROUP_ACTION_SUBGROUP_TRANSLATION : thm := BOrbitStabilizer.GROUP_ACTION_SUBGROUP_TRANSLATION
+def GROUP_STABILIZER_SUBGROUP_TRANSLATION : thm := BOrbitStabilizer.GROUP_STABILIZER_SUBGROUP_TRANSLATION
+def GROUP_ACTION_GROUP_TRANSLATION : thm := BOrbitStabilizer.GROUP_ACTION_GROUP_TRANSLATION
+def GROUP_STABILIZER_GROUP_TRANSLATION : thm := BOrbitStabilizer.GROUP_STABILIZER_GROUP_TRANSLATION
+def GROUP_ACTION_SUBSET_TRANSLATION : thm := BOrbitStabilizer.GROUP_ACTION_SUBSET_TRANSLATION
+def GROUP_ACTION_CONJUGATION : thm := BOrbitStabilizer.GROUP_ACTION_CONJUGATION
+def CARD_GROUP_SETMUL_GEN : thm := BOrbitStabilizer.CARD_GROUP_SETMUL_GEN
+def CARD_GROUP_SETMUL_MUL : thm := BOrbitStabilizer.CARD_GROUP_SETMUL_MUL
+def CARD_GROUP_SETMUL : thm := BOrbitStabilizer.CARD_GROUP_SETMUL
+def CARD_GROUP_SETMUL_DIVIDES : thm := BOrbitStabilizer.CARD_GROUP_SETMUL_DIVIDES
+def GROUP_ORBIT_COMMON_DIVISOR : thm := BOrbitStabilizer.GROUP_ORBIT_COMMON_DIVISOR
+def GROUP_ORBIT_COMMON_INDEX : thm := BOrbitStabilizer.GROUP_ORBIT_COMMON_INDEX
 
 -- Cosets
-unsafe def right_coset : thm := BCosets.right_coset
-unsafe def left_coset : thm := BCosets.left_coset
-unsafe def LEFT_COSET_AS_IMAGE : thm := BCosets.LEFT_COSET_AS_IMAGE
-unsafe def RIGHT_COSET : thm := BCosets.RIGHT_COSET
-unsafe def LEFT_COSET : thm := BCosets.LEFT_COSET
-unsafe def IN_RIGHT_COSET : thm := BCosets.IN_RIGHT_COSET
-unsafe def IN_LEFT_COSET : thm := BCosets.IN_LEFT_COSET
-unsafe def IN_RIGHT_COSET_INV : thm := BCosets.IN_RIGHT_COSET_INV
-unsafe def IN_LEFT_COSET_INV : thm := BCosets.IN_LEFT_COSET_INV
-unsafe def GROUP_SETINV_LEFT_COSET_GEN : thm := BCosets.GROUP_SETINV_LEFT_COSET_GEN
-unsafe def GROUP_SETINV_RIGHT_COSET_GEN : thm := BCosets.GROUP_SETINV_RIGHT_COSET_GEN
-unsafe def RIGHT_COSET_OPPOSITE_GROUP : thm := BCosets.RIGHT_COSET_OPPOSITE_GROUP
-unsafe def LEFT_COSET_OPPOSITE_GROUP : thm := BCosets.LEFT_COSET_OPPOSITE_GROUP
-unsafe def GROUP_CONJUGATION_RIGHT_COSET : thm := BCosets.GROUP_CONJUGATION_RIGHT_COSET
-unsafe def RIGHT_COSET_GROUP_CONJUGATION : thm := BCosets.RIGHT_COSET_GROUP_CONJUGATION
-unsafe def LEFT_COSET_LEFT_COSET : thm := BCosets.LEFT_COSET_LEFT_COSET
-unsafe def RIGHT_COSET_RIGHT_COSET : thm := BCosets.RIGHT_COSET_RIGHT_COSET
-unsafe def RIGHT_COSET_ID : thm := BCosets.RIGHT_COSET_ID
-unsafe def LEFT_COSET_ID : thm := BCosets.LEFT_COSET_ID
-unsafe def LEFT_COSET_TRIVIAL : thm := BCosets.LEFT_COSET_TRIVIAL
-unsafe def RIGHT_COSET_TRIVIAL : thm := BCosets.RIGHT_COSET_TRIVIAL
-unsafe def LEFT_COSET_CARRIER : thm := BCosets.LEFT_COSET_CARRIER
-unsafe def RIGHT_COSET_CARRIER : thm := BCosets.RIGHT_COSET_CARRIER
-unsafe def RIGHT_COSET_EQ : thm := BCosets.RIGHT_COSET_EQ
-unsafe def LEFT_COSET_EQ : thm := BCosets.LEFT_COSET_EQ
-unsafe def RIGHT_COSET_EQ_SUBGROUP : thm := BCosets.RIGHT_COSET_EQ_SUBGROUP
-unsafe def LEFT_COSET_EQ_SUBGROUP : thm := BCosets.LEFT_COSET_EQ_SUBGROUP
-unsafe def RIGHT_COSET_EQ_EMPTY : thm := BCosets.RIGHT_COSET_EQ_EMPTY
-unsafe def LEFT_COSET_EQ_EMPTY : thm := BCosets.LEFT_COSET_EQ_EMPTY
-unsafe def RIGHT_COSET_NONEMPTY : thm := BCosets.RIGHT_COSET_NONEMPTY
-unsafe def LEFT_COSET_NONEMPTY : thm := BCosets.LEFT_COSET_NONEMPTY
-unsafe def IN_RIGHT_COSET_SELF : thm := BCosets.IN_RIGHT_COSET_SELF
+def right_coset : thm := BCosets.right_coset
+def left_coset : thm := BCosets.left_coset
+def LEFT_COSET_AS_IMAGE : thm := BCosets.LEFT_COSET_AS_IMAGE
+def RIGHT_COSET : thm := BCosets.RIGHT_COSET
+def LEFT_COSET : thm := BCosets.LEFT_COSET
+def IN_RIGHT_COSET : thm := BCosets.IN_RIGHT_COSET
+def IN_LEFT_COSET : thm := BCosets.IN_LEFT_COSET
+def IN_RIGHT_COSET_INV : thm := BCosets.IN_RIGHT_COSET_INV
+def IN_LEFT_COSET_INV : thm := BCosets.IN_LEFT_COSET_INV
+def GROUP_SETINV_LEFT_COSET_GEN : thm := BCosets.GROUP_SETINV_LEFT_COSET_GEN
+def GROUP_SETINV_RIGHT_COSET_GEN : thm := BCosets.GROUP_SETINV_RIGHT_COSET_GEN
+def RIGHT_COSET_OPPOSITE_GROUP : thm := BCosets.RIGHT_COSET_OPPOSITE_GROUP
+def LEFT_COSET_OPPOSITE_GROUP : thm := BCosets.LEFT_COSET_OPPOSITE_GROUP
+def GROUP_CONJUGATION_RIGHT_COSET : thm := BCosets.GROUP_CONJUGATION_RIGHT_COSET
+def RIGHT_COSET_GROUP_CONJUGATION : thm := BCosets.RIGHT_COSET_GROUP_CONJUGATION
+def LEFT_COSET_LEFT_COSET : thm := BCosets.LEFT_COSET_LEFT_COSET
+def RIGHT_COSET_RIGHT_COSET : thm := BCosets.RIGHT_COSET_RIGHT_COSET
+def RIGHT_COSET_ID : thm := BCosets.RIGHT_COSET_ID
+def LEFT_COSET_ID : thm := BCosets.LEFT_COSET_ID
+def LEFT_COSET_TRIVIAL : thm := BCosets.LEFT_COSET_TRIVIAL
+def RIGHT_COSET_TRIVIAL : thm := BCosets.RIGHT_COSET_TRIVIAL
+def LEFT_COSET_CARRIER : thm := BCosets.LEFT_COSET_CARRIER
+def RIGHT_COSET_CARRIER : thm := BCosets.RIGHT_COSET_CARRIER
+def RIGHT_COSET_EQ : thm := BCosets.RIGHT_COSET_EQ
+def LEFT_COSET_EQ : thm := BCosets.LEFT_COSET_EQ
+def RIGHT_COSET_EQ_SUBGROUP : thm := BCosets.RIGHT_COSET_EQ_SUBGROUP
+def LEFT_COSET_EQ_SUBGROUP : thm := BCosets.LEFT_COSET_EQ_SUBGROUP
+def RIGHT_COSET_EQ_EMPTY : thm := BCosets.RIGHT_COSET_EQ_EMPTY
+def LEFT_COSET_EQ_EMPTY : thm := BCosets.LEFT_COSET_EQ_EMPTY
+def RIGHT_COSET_NONEMPTY : thm := BCosets.RIGHT_COSET_NONEMPTY
+def LEFT_COSET_NONEMPTY : thm := BCosets.LEFT_COSET_NONEMPTY
+def IN_RIGHT_COSET_SELF : thm := BCosets.IN_RIGHT_COSET_SELF
 
 -- Cosets1
-unsafe def IN_LEFT_COSET_SELF : thm := BCosets1.IN_LEFT_COSET_SELF
-unsafe def UNIONS_RIGHT_COSETS : thm := BCosets1.UNIONS_RIGHT_COSETS
-unsafe def UNIONS_LEFT_COSETS : thm := BCosets1.UNIONS_LEFT_COSETS
-unsafe def RIGHT_COSETS_EQ : thm := BCosets1.RIGHT_COSETS_EQ
-unsafe def LEFT_COSETS_EQ : thm := BCosets1.LEFT_COSETS_EQ
-unsafe def DISJOINT_RIGHT_COSETS : thm := BCosets1.DISJOINT_RIGHT_COSETS
-unsafe def DISJOINT_LEFT_COSETS : thm := BCosets1.DISJOINT_LEFT_COSETS
-unsafe def PAIRWISE_DISJOINT_RIGHT_COSETS : thm := BCosets1.PAIRWISE_DISJOINT_RIGHT_COSETS
-unsafe def PAIRWISE_DISJOINT_LEFT_COSETS : thm := BCosets1.PAIRWISE_DISJOINT_LEFT_COSETS
-unsafe def IMAGE_RIGHT_COSET_SWITCH : thm := BCosets1.IMAGE_RIGHT_COSET_SWITCH
-unsafe def IMAGE_LEFT_COSET_SWITCH : thm := BCosets1.IMAGE_LEFT_COSET_SWITCH
-unsafe def CARD_EQ_LEFT_RIGHT_COSETS : thm := BCosets1.CARD_EQ_LEFT_RIGHT_COSETS
-unsafe def HAS_SIZE_LEFT_RIGHT_COSETS : thm := BCosets1.HAS_SIZE_LEFT_RIGHT_COSETS
-unsafe def CARD_EQ_RIGHT_COSETS : thm := BCosets1.CARD_EQ_RIGHT_COSETS
-unsafe def GROUP_ID_IN_LEFT_COSET_GEN : thm := BCosets1.GROUP_ID_IN_LEFT_COSET_GEN
-unsafe def GROUP_ID_IN_LEFT_COSET : thm := BCosets1.GROUP_ID_IN_LEFT_COSET
-unsafe def SUBGROUP_OF_LEFT_COSET : thm := BCosets1.SUBGROUP_OF_LEFT_COSET
-unsafe def GROUP_ID_IN_RIGHT_COSET_GEN : thm := BCosets1.GROUP_ID_IN_RIGHT_COSET_GEN
-unsafe def GROUP_ID_IN_RIGHT_COSET : thm := BCosets1.GROUP_ID_IN_RIGHT_COSET
-unsafe def SUBGROUP_OF_RIGHT_COSET : thm := BCosets1.SUBGROUP_OF_RIGHT_COSET
-unsafe def CARD_EQ_LEFT_COSETS : thm := BCosets1.CARD_EQ_LEFT_COSETS
-unsafe def CARD_EQ_RIGHT_COSET_SUBGROUP : thm := BCosets1.CARD_EQ_RIGHT_COSET_SUBGROUP
-unsafe def CARD_EQ_LEFT_COSET_SUBGROUP : thm := BCosets1.CARD_EQ_LEFT_COSET_SUBGROUP
+def IN_LEFT_COSET_SELF : thm := BCosets1.IN_LEFT_COSET_SELF
+def UNIONS_RIGHT_COSETS : thm := BCosets1.UNIONS_RIGHT_COSETS
+def UNIONS_LEFT_COSETS : thm := BCosets1.UNIONS_LEFT_COSETS
+def RIGHT_COSETS_EQ : thm := BCosets1.RIGHT_COSETS_EQ
+def LEFT_COSETS_EQ : thm := BCosets1.LEFT_COSETS_EQ
+def DISJOINT_RIGHT_COSETS : thm := BCosets1.DISJOINT_RIGHT_COSETS
+def DISJOINT_LEFT_COSETS : thm := BCosets1.DISJOINT_LEFT_COSETS
+def PAIRWISE_DISJOINT_RIGHT_COSETS : thm := BCosets1.PAIRWISE_DISJOINT_RIGHT_COSETS
+def PAIRWISE_DISJOINT_LEFT_COSETS : thm := BCosets1.PAIRWISE_DISJOINT_LEFT_COSETS
+def IMAGE_RIGHT_COSET_SWITCH : thm := BCosets1.IMAGE_RIGHT_COSET_SWITCH
+def IMAGE_LEFT_COSET_SWITCH : thm := BCosets1.IMAGE_LEFT_COSET_SWITCH
+def CARD_EQ_LEFT_RIGHT_COSETS : thm := BCosets1.CARD_EQ_LEFT_RIGHT_COSETS
+def HAS_SIZE_LEFT_RIGHT_COSETS : thm := BCosets1.HAS_SIZE_LEFT_RIGHT_COSETS
+def CARD_EQ_RIGHT_COSETS : thm := BCosets1.CARD_EQ_RIGHT_COSETS
+def GROUP_ID_IN_LEFT_COSET_GEN : thm := BCosets1.GROUP_ID_IN_LEFT_COSET_GEN
+def GROUP_ID_IN_LEFT_COSET : thm := BCosets1.GROUP_ID_IN_LEFT_COSET
+def SUBGROUP_OF_LEFT_COSET : thm := BCosets1.SUBGROUP_OF_LEFT_COSET
+def GROUP_ID_IN_RIGHT_COSET_GEN : thm := BCosets1.GROUP_ID_IN_RIGHT_COSET_GEN
+def GROUP_ID_IN_RIGHT_COSET : thm := BCosets1.GROUP_ID_IN_RIGHT_COSET
+def SUBGROUP_OF_RIGHT_COSET : thm := BCosets1.SUBGROUP_OF_RIGHT_COSET
+def CARD_EQ_LEFT_COSETS : thm := BCosets1.CARD_EQ_LEFT_COSETS
+def CARD_EQ_RIGHT_COSET_SUBGROUP : thm := BCosets1.CARD_EQ_RIGHT_COSET_SUBGROUP
+def CARD_EQ_LEFT_COSET_SUBGROUP : thm := BCosets1.CARD_EQ_LEFT_COSET_SUBGROUP
 
 -- Cosets2
-unsafe def GROUP_ORBIT_SUBGROUP_TRANSLATION : thm := BCosets2.GROUP_ORBIT_SUBGROUP_TRANSLATION
-unsafe def GROUP_ORBIT_GROUP_TRANSLATION : thm := BCosets2.GROUP_ORBIT_GROUP_TRANSLATION
-unsafe def ORBIT_STABILIZER_GEN : thm := BCosets2.ORBIT_STABILIZER_GEN
-unsafe def ORBIT_STABILIZER : thm := BCosets2.ORBIT_STABILIZER
-unsafe def GROUP_ACTION_LEFT_COSET_MULTIPLICATION : thm := BCosets2.GROUP_ACTION_LEFT_COSET_MULTIPLICATION
-unsafe def GROUP_ORBIT_LEFT_COSET_MULTIPLICATION : thm := BCosets2.GROUP_ORBIT_LEFT_COSET_MULTIPLICATION
-unsafe def GROUP_STABILIZER_LEFT_COSET_MULTIPLICATION : thm := BCosets2.GROUP_STABILIZER_LEFT_COSET_MULTIPLICATION
-unsafe def GROUP_ORBIT_LEFT_COSET_MULTIPLICATION_ID : thm := BCosets2.GROUP_ORBIT_LEFT_COSET_MULTIPLICATION_ID
-unsafe def GROUP_STABILIZER_LEFT_COSET_MULTIPLICATION_ID : thm := BCosets2.GROUP_STABILIZER_LEFT_COSET_MULTIPLICATION_ID
-unsafe def LAGRANGE_THEOREM_LEFT_GEN : thm := BCosets2.LAGRANGE_THEOREM_LEFT_GEN
-unsafe def LAGRANGE_THEOREM_RIGHT_GEN : thm := BCosets2.LAGRANGE_THEOREM_RIGHT_GEN
-unsafe def LAGRANGE_THEOREM_LEFT : thm := BCosets2.LAGRANGE_THEOREM_LEFT
-unsafe def LAGRANGE_THEOREM_RIGHT : thm := BCosets2.LAGRANGE_THEOREM_RIGHT
-unsafe def LAGRANGE_THEOREM : thm := BCosets2.LAGRANGE_THEOREM
-unsafe def CARD_LEFT_COSETS_DIVIDES : thm := BCosets2.CARD_LEFT_COSETS_DIVIDES
-unsafe def CARD_RIGHT_COSETS_DIVIDES : thm := BCosets2.CARD_RIGHT_COSETS_DIVIDES
-unsafe def LAGRANGE_THEOREM_LEFT_DIV : thm := BCosets2.LAGRANGE_THEOREM_LEFT_DIV
-unsafe def LAGRANGE_THEOREM_RIGHT_DIV : thm := BCosets2.LAGRANGE_THEOREM_RIGHT_DIV
-unsafe def GROUP_SETMUL_PROD_GROUP : thm := BCosets2.GROUP_SETMUL_PROD_GROUP
-unsafe def RIGHT_COSET_PROD_GROUP : thm := BCosets2.RIGHT_COSET_PROD_GROUP
-unsafe def LEFT_COSET_PROD_GROUP : thm := BCosets2.LEFT_COSET_PROD_GROUP
-unsafe def GROUP_SETMUL_PRODUCT_GROUP : thm := BCosets2.GROUP_SETMUL_PRODUCT_GROUP
+def GROUP_ORBIT_SUBGROUP_TRANSLATION : thm := BCosets2.GROUP_ORBIT_SUBGROUP_TRANSLATION
+def GROUP_ORBIT_GROUP_TRANSLATION : thm := BCosets2.GROUP_ORBIT_GROUP_TRANSLATION
+def ORBIT_STABILIZER_GEN : thm := BCosets2.ORBIT_STABILIZER_GEN
+def ORBIT_STABILIZER : thm := BCosets2.ORBIT_STABILIZER
+def GROUP_ACTION_LEFT_COSET_MULTIPLICATION : thm := BCosets2.GROUP_ACTION_LEFT_COSET_MULTIPLICATION
+def GROUP_ORBIT_LEFT_COSET_MULTIPLICATION : thm := BCosets2.GROUP_ORBIT_LEFT_COSET_MULTIPLICATION
+def GROUP_STABILIZER_LEFT_COSET_MULTIPLICATION : thm := BCosets2.GROUP_STABILIZER_LEFT_COSET_MULTIPLICATION
+def GROUP_ORBIT_LEFT_COSET_MULTIPLICATION_ID : thm := BCosets2.GROUP_ORBIT_LEFT_COSET_MULTIPLICATION_ID
+def GROUP_STABILIZER_LEFT_COSET_MULTIPLICATION_ID : thm := BCosets2.GROUP_STABILIZER_LEFT_COSET_MULTIPLICATION_ID
+def LAGRANGE_THEOREM_LEFT_GEN : thm := BCosets2.LAGRANGE_THEOREM_LEFT_GEN
+def LAGRANGE_THEOREM_RIGHT_GEN : thm := BCosets2.LAGRANGE_THEOREM_RIGHT_GEN
+def LAGRANGE_THEOREM_LEFT : thm := BCosets2.LAGRANGE_THEOREM_LEFT
+def LAGRANGE_THEOREM_RIGHT : thm := BCosets2.LAGRANGE_THEOREM_RIGHT
+def LAGRANGE_THEOREM : thm := BCosets2.LAGRANGE_THEOREM
+def CARD_LEFT_COSETS_DIVIDES : thm := BCosets2.CARD_LEFT_COSETS_DIVIDES
+def CARD_RIGHT_COSETS_DIVIDES : thm := BCosets2.CARD_RIGHT_COSETS_DIVIDES
+def LAGRANGE_THEOREM_LEFT_DIV : thm := BCosets2.LAGRANGE_THEOREM_LEFT_DIV
+def LAGRANGE_THEOREM_RIGHT_DIV : thm := BCosets2.LAGRANGE_THEOREM_RIGHT_DIV
+def GROUP_SETMUL_PROD_GROUP : thm := BCosets2.GROUP_SETMUL_PROD_GROUP
+def RIGHT_COSET_PROD_GROUP : thm := BCosets2.RIGHT_COSET_PROD_GROUP
+def LEFT_COSET_PROD_GROUP : thm := BCosets2.LEFT_COSET_PROD_GROUP
+def GROUP_SETMUL_PRODUCT_GROUP : thm := BCosets2.GROUP_SETMUL_PRODUCT_GROUP
 
 -- CosetProducts
-unsafe def RIGHT_COSET_PRODUCT_GROUP : thm := BCosetProducts.RIGHT_COSET_PRODUCT_GROUP
-unsafe def LEFT_COSET_PRODUCT_GROUP : thm := BCosetProducts.LEFT_COSET_PRODUCT_GROUP
-unsafe def GROUP_SETINV_SUBGROUP_GENERATED : thm := BCosetProducts.GROUP_SETINV_SUBGROUP_GENERATED
-unsafe def GROUP_SETMUL_SUBGROUP_GENERATED : thm := BCosetProducts.GROUP_SETMUL_SUBGROUP_GENERATED
-unsafe def RIGHT_COSET_SUBGROUP_GENERATED : thm := BCosetProducts.RIGHT_COSET_SUBGROUP_GENERATED
-unsafe def LEFT_COSET_SUBGROUP_GENERATED : thm := BCosetProducts.LEFT_COSET_SUBGROUP_GENERATED
-unsafe def SCHREIER_TRANSVERSAL_LEMMA : thm := BCosetProducts.SCHREIER_TRANSVERSAL_LEMMA
+def RIGHT_COSET_PRODUCT_GROUP : thm := BCosetProducts.RIGHT_COSET_PRODUCT_GROUP
+def LEFT_COSET_PRODUCT_GROUP : thm := BCosetProducts.LEFT_COSET_PRODUCT_GROUP
+def GROUP_SETINV_SUBGROUP_GENERATED : thm := BCosetProducts.GROUP_SETINV_SUBGROUP_GENERATED
+def GROUP_SETMUL_SUBGROUP_GENERATED : thm := BCosetProducts.GROUP_SETMUL_SUBGROUP_GENERATED
+def RIGHT_COSET_SUBGROUP_GENERATED : thm := BCosetProducts.RIGHT_COSET_SUBGROUP_GENERATED
+def LEFT_COSET_SUBGROUP_GENERATED : thm := BCosetProducts.LEFT_COSET_SUBGROUP_GENERATED
+def SCHREIER_TRANSVERSAL_LEMMA : thm := BCosetProducts.SCHREIER_TRANSVERSAL_LEMMA
 
 -- NormalSubgroups
-unsafe def normal_subgroup_of : thm := BNormalSubgroups.normal_subgroup_of
-unsafe def NORMAL_SUBGROUP_IMP_SUBGROUP : thm := BNormalSubgroups.NORMAL_SUBGROUP_IMP_SUBGROUP
-unsafe def NORMAL_SUBGROUP_OF_IMP_SUBSET : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_IMP_SUBSET
-unsafe def NORMAL_SUBGROUP_OF_OPPOSITE_GROUP : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_OPPOSITE_GROUP
-unsafe def ABELIAN_GROUP_NORMAL_SUBGROUP : thm := BNormalSubgroups.ABELIAN_GROUP_NORMAL_SUBGROUP
-unsafe def NORMAL_SUBGROUP_CONJUGATE_ALT : thm := BNormalSubgroups.NORMAL_SUBGROUP_CONJUGATE_ALT
-unsafe def NORMAL_SUBGROUP_CONJUGATE_INV : thm := BNormalSubgroups.NORMAL_SUBGROUP_CONJUGATE_INV
-unsafe def NORMAL_SUBGROUP_CONJUGATION_EQ : thm := BNormalSubgroups.NORMAL_SUBGROUP_CONJUGATION_EQ
-unsafe def NORMAL_SUBGROUP_CONJUGATION : thm := BNormalSubgroups.NORMAL_SUBGROUP_CONJUGATION
-unsafe def NORMAL_SUBGROUP_CONJUGATION_SUPERSET : thm := BNormalSubgroups.NORMAL_SUBGROUP_CONJUGATION_SUPERSET
-unsafe def ABELIAN_GROUP_CONJUGATION : thm := BNormalSubgroups.ABELIAN_GROUP_CONJUGATION
-unsafe def NORMAL_SUBGROUP_OF_INTERS : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_INTERS
-unsafe def NORMAL_SUBGROUP_OF_INTER : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_INTER
-unsafe def NORMAL_SUBGROUP_OF_UNIONS : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_UNIONS
-unsafe def NORMAL_SUBGROUP_ACTION_KERNEL : thm := BNormalSubgroups.NORMAL_SUBGROUP_ACTION_KERNEL
-unsafe def NORMAL_SUBGROUP_LEFT_EQ_RIGHT_COSETS : thm := BNormalSubgroups.NORMAL_SUBGROUP_LEFT_EQ_RIGHT_COSETS
-unsafe def NORMAL_SUBGROUP_LEFT_SUBSET_RIGHT_COSETS : thm := BNormalSubgroups.NORMAL_SUBGROUP_LEFT_SUBSET_RIGHT_COSETS
-unsafe def NORMAL_SUBGROUP_RIGHT_SUBSET_LEFT_COSETS : thm := BNormalSubgroups.NORMAL_SUBGROUP_RIGHT_SUBSET_LEFT_COSETS
-unsafe def NORMAL_SUBGROUP_MUL_SYM : thm := BNormalSubgroups.NORMAL_SUBGROUP_MUL_SYM
-unsafe def TRIVIAL_NORMAL_SUBGROUP_OF : thm := BNormalSubgroups.TRIVIAL_NORMAL_SUBGROUP_OF
-unsafe def CARRIER_NORMAL_SUBGROUP_OF : thm := BNormalSubgroups.CARRIER_NORMAL_SUBGROUP_OF
-unsafe def GROUP_SETINV_RIGHT_COSET : thm := BNormalSubgroups.GROUP_SETINV_RIGHT_COSET
-unsafe def GROUP_SETINV_LEFT_COSET : thm := BNormalSubgroups.GROUP_SETINV_LEFT_COSET
+def normal_subgroup_of : thm := BNormalSubgroups.normal_subgroup_of
+def NORMAL_SUBGROUP_IMP_SUBGROUP : thm := BNormalSubgroups.NORMAL_SUBGROUP_IMP_SUBGROUP
+def NORMAL_SUBGROUP_OF_IMP_SUBSET : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_IMP_SUBSET
+def NORMAL_SUBGROUP_OF_OPPOSITE_GROUP : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_OPPOSITE_GROUP
+def ABELIAN_GROUP_NORMAL_SUBGROUP : thm := BNormalSubgroups.ABELIAN_GROUP_NORMAL_SUBGROUP
+def NORMAL_SUBGROUP_CONJUGATE_ALT : thm := BNormalSubgroups.NORMAL_SUBGROUP_CONJUGATE_ALT
+def NORMAL_SUBGROUP_CONJUGATE_INV : thm := BNormalSubgroups.NORMAL_SUBGROUP_CONJUGATE_INV
+def NORMAL_SUBGROUP_CONJUGATION_EQ : thm := BNormalSubgroups.NORMAL_SUBGROUP_CONJUGATION_EQ
+def NORMAL_SUBGROUP_CONJUGATION : thm := BNormalSubgroups.NORMAL_SUBGROUP_CONJUGATION
+def NORMAL_SUBGROUP_CONJUGATION_SUPERSET : thm := BNormalSubgroups.NORMAL_SUBGROUP_CONJUGATION_SUPERSET
+def ABELIAN_GROUP_CONJUGATION : thm := BNormalSubgroups.ABELIAN_GROUP_CONJUGATION
+def NORMAL_SUBGROUP_OF_INTERS : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_INTERS
+def NORMAL_SUBGROUP_OF_INTER : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_INTER
+def NORMAL_SUBGROUP_OF_UNIONS : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_UNIONS
+def NORMAL_SUBGROUP_ACTION_KERNEL : thm := BNormalSubgroups.NORMAL_SUBGROUP_ACTION_KERNEL
+def NORMAL_SUBGROUP_LEFT_EQ_RIGHT_COSETS : thm := BNormalSubgroups.NORMAL_SUBGROUP_LEFT_EQ_RIGHT_COSETS
+def NORMAL_SUBGROUP_LEFT_SUBSET_RIGHT_COSETS : thm := BNormalSubgroups.NORMAL_SUBGROUP_LEFT_SUBSET_RIGHT_COSETS
+def NORMAL_SUBGROUP_RIGHT_SUBSET_LEFT_COSETS : thm := BNormalSubgroups.NORMAL_SUBGROUP_RIGHT_SUBSET_LEFT_COSETS
+def NORMAL_SUBGROUP_MUL_SYM : thm := BNormalSubgroups.NORMAL_SUBGROUP_MUL_SYM
+def TRIVIAL_NORMAL_SUBGROUP_OF : thm := BNormalSubgroups.TRIVIAL_NORMAL_SUBGROUP_OF
+def CARRIER_NORMAL_SUBGROUP_OF : thm := BNormalSubgroups.CARRIER_NORMAL_SUBGROUP_OF
+def GROUP_SETINV_RIGHT_COSET : thm := BNormalSubgroups.GROUP_SETINV_RIGHT_COSET
+def GROUP_SETINV_LEFT_COSET : thm := BNormalSubgroups.GROUP_SETINV_LEFT_COSET
 
 -- NormalSubgroups2
-unsafe def GROUP_SETMUL_RIGHT_COSET : thm := BNormalSubgroups2.GROUP_SETMUL_RIGHT_COSET
-unsafe def GROUP_SETMUL_LEFT_COSET : thm := BNormalSubgroups2.GROUP_SETMUL_LEFT_COSET
-unsafe def CROSS_NORMAL_SUBGROUP_OF_PROD_GROUP : thm := BNormalSubgroups2.CROSS_NORMAL_SUBGROUP_OF_PROD_GROUP
-unsafe def NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED_GEN : thm := BNormalSubgroups2.NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED_GEN
-unsafe def NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED : thm := BNormalSubgroups2.NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED
-unsafe def GROUP_SETMUL_NORMAL_SUBGROUP_LEFT : thm := BNormalSubgroups2.GROUP_SETMUL_NORMAL_SUBGROUP_LEFT
-unsafe def GROUP_SETMUL_NORMAL_SUBGROUP_RIGHT : thm := BNormalSubgroups2.GROUP_SETMUL_NORMAL_SUBGROUP_RIGHT
-unsafe def GROUP_SETMUL_NORMAL_SUBGROUP : thm := BNormalSubgroups2.GROUP_SETMUL_NORMAL_SUBGROUP
-unsafe def CARRIER_SUBGROUP_GENERATED_UNION_LEFT : thm := BNormalSubgroups2.CARRIER_SUBGROUP_GENERATED_UNION_LEFT
-unsafe def CARRIER_SUBGROUP_GENERATED_UNION_RIGHT : thm := BNormalSubgroups2.CARRIER_SUBGROUP_GENERATED_UNION_RIGHT
+def GROUP_SETMUL_RIGHT_COSET : thm := BNormalSubgroups2.GROUP_SETMUL_RIGHT_COSET
+def GROUP_SETMUL_LEFT_COSET : thm := BNormalSubgroups2.GROUP_SETMUL_LEFT_COSET
+def CROSS_NORMAL_SUBGROUP_OF_PROD_GROUP : thm := BNormalSubgroups2.CROSS_NORMAL_SUBGROUP_OF_PROD_GROUP
+def NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED_GEN : thm := BNormalSubgroups2.NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED_GEN
+def NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED : thm := BNormalSubgroups2.NORMAL_SUBGROUP_OF_SUBGROUP_GENERATED
+def GROUP_SETMUL_NORMAL_SUBGROUP_LEFT : thm := BNormalSubgroups2.GROUP_SETMUL_NORMAL_SUBGROUP_LEFT
+def GROUP_SETMUL_NORMAL_SUBGROUP_RIGHT : thm := BNormalSubgroups2.GROUP_SETMUL_NORMAL_SUBGROUP_RIGHT
+def GROUP_SETMUL_NORMAL_SUBGROUP : thm := BNormalSubgroups2.GROUP_SETMUL_NORMAL_SUBGROUP
+def CARRIER_SUBGROUP_GENERATED_UNION_LEFT : thm := BNormalSubgroups2.CARRIER_SUBGROUP_GENERATED_UNION_LEFT
+def CARRIER_SUBGROUP_GENERATED_UNION_RIGHT : thm := BNormalSubgroups2.CARRIER_SUBGROUP_GENERATED_UNION_RIGHT
 
 -- Conjugate
-unsafe def group_conjugate : thm := BConjugate.group_conjugate
-unsafe def GROUP_CONJUGATE_REFL : thm := BConjugate.GROUP_CONJUGATE_REFL
-unsafe def GROUP_CONJUGATE_SYM : thm := BConjugate.GROUP_CONJUGATE_SYM
-unsafe def GROUP_CONJUGATE_TRANS : thm := BConjugate.GROUP_CONJUGATE_TRANS
-unsafe def GROUP_CONJUGATE_SUBGROUPS_GENERATED : thm := BConjugate.GROUP_CONJUGATE_SUBGROUPS_GENERATED
-unsafe def GROUP_CONJUGATE_IMP_ISOMORPHIC : thm := BConjugate.GROUP_CONJUGATE_IMP_ISOMORPHIC
-unsafe def GROUP_CONJUGATE_IMP_CARD_EQ : thm := BConjugate.GROUP_CONJUGATE_IMP_CARD_EQ
-unsafe def GROUP_ORBIT_CONJUGATE_STABILIZERS : thm := BConjugate.GROUP_ORBIT_CONJUGATE_STABILIZERS
-unsafe def CARD_EQ_GROUP_ORBIT_STABILIZERS : thm := BConjugate.CARD_EQ_GROUP_ORBIT_STABILIZERS
+def group_conjugate : thm := BConjugate.group_conjugate
+def GROUP_CONJUGATE_REFL : thm := BConjugate.GROUP_CONJUGATE_REFL
+def GROUP_CONJUGATE_SYM : thm := BConjugate.GROUP_CONJUGATE_SYM
+def GROUP_CONJUGATE_TRANS : thm := BConjugate.GROUP_CONJUGATE_TRANS
+def GROUP_CONJUGATE_SUBGROUPS_GENERATED : thm := BConjugate.GROUP_CONJUGATE_SUBGROUPS_GENERATED
+def GROUP_CONJUGATE_IMP_ISOMORPHIC : thm := BConjugate.GROUP_CONJUGATE_IMP_ISOMORPHIC
+def GROUP_CONJUGATE_IMP_CARD_EQ : thm := BConjugate.GROUP_CONJUGATE_IMP_CARD_EQ
+def GROUP_ORBIT_CONJUGATE_STABILIZERS : thm := BConjugate.GROUP_ORBIT_CONJUGATE_STABILIZERS
+def CARD_EQ_GROUP_ORBIT_STABILIZERS : thm := BConjugate.CARD_EQ_GROUP_ORBIT_STABILIZERS
 
 -- CentralizerNormalizer
-unsafe def group_centralizer : thm := BCentralizerNormalizer.group_centralizer
-unsafe def group_normalizer : thm := BCentralizerNormalizer.group_normalizer
-unsafe def GROUP_CENTRALIZER : thm := BCentralizerNormalizer.GROUP_CENTRALIZER
-unsafe def GROUP_NORMALIZER : thm := BCentralizerNormalizer.GROUP_NORMALIZER
-unsafe def GROUP_NORMALIZER_CONJUGATION_EQ : thm := BCentralizerNormalizer.GROUP_NORMALIZER_CONJUGATION_EQ
-unsafe def GROUP_NORMALIZER_CONJUGATION : thm := BCentralizerNormalizer.GROUP_NORMALIZER_CONJUGATION
-unsafe def GROUP_NORMALIZER_FINITE : thm := BCentralizerNormalizer.GROUP_NORMALIZER_FINITE
-unsafe def GROUP_CENTRALIZER_RESTRICT : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_RESTRICT
-unsafe def GROUP_NORMALIZER_RESTRICT : thm := BCentralizerNormalizer.GROUP_NORMALIZER_RESTRICT
-unsafe def GROUP_CENTRALIZER_SUBSET_CARRIER : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_SUBSET_CARRIER
-unsafe def GROUP_NORMALIZER_SUBSET_CARRIER : thm := BCentralizerNormalizer.GROUP_NORMALIZER_SUBSET_CARRIER
-unsafe def FINITE_GROUP_CENTRALIZER : thm := BCentralizerNormalizer.FINITE_GROUP_CENTRALIZER
-unsafe def FINITE_GROUP_NORMALIZER : thm := BCentralizerNormalizer.FINITE_GROUP_NORMALIZER
-unsafe def GROUP_CENTRALIZER_SUBSET_NORMALIZER : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_SUBSET_NORMALIZER
-unsafe def SUBGROUP_GROUP_CENTRALIZER : thm := BCentralizerNormalizer.SUBGROUP_GROUP_CENTRALIZER
-unsafe def SUBGROUP_GROUP_NORMALIZER : thm := BCentralizerNormalizer.SUBGROUP_GROUP_NORMALIZER
-unsafe def GROUP_CENTRALIZER_SUBGROUP_GENERATED : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_SUBGROUP_GENERATED
-unsafe def GROUP_NORMALIZER_SUBGROUP_GENERATED : thm := BCentralizerNormalizer.GROUP_NORMALIZER_SUBGROUP_GENERATED
-unsafe def IN_GROUP_CENTRALIZER_ID : thm := BCentralizerNormalizer.IN_GROUP_CENTRALIZER_ID
-unsafe def IN_GROUP_NORMALIZER_ID : thm := BCentralizerNormalizer.IN_GROUP_NORMALIZER_ID
-unsafe def GROUP_CENTRALIZER_NONEMPTY : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_NONEMPTY
-unsafe def GROUP_NORMALIZER_NONEMPTY : thm := BCentralizerNormalizer.GROUP_NORMALIZER_NONEMPTY
-unsafe def GROUP_CENTRALIZER_SUBSET : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_SUBSET
-unsafe def GROUP_CENTRALIZER_SUBSET_EQ : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_SUBSET_EQ
-unsafe def GROUP_CENTRE_EQ_CARRIER : thm := BCentralizerNormalizer.GROUP_CENTRE_EQ_CARRIER
-unsafe def GROUP_CENTRALIZER_CENTRALIZER_SUBSET : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_CENTRALIZER_SUBSET
-unsafe def GROUP_NORMALIZER_MAXIMAL_GEN : thm := BCentralizerNormalizer.GROUP_NORMALIZER_MAXIMAL_GEN
-unsafe def GROUP_NORMALIZER_MAXIMAL : thm := BCentralizerNormalizer.GROUP_NORMALIZER_MAXIMAL
-unsafe def NORMAL_SUBGROUP_NORMALIZER_CONTAINS_CARRIER : thm := BCentralizerNormalizer.NORMAL_SUBGROUP_NORMALIZER_CONTAINS_CARRIER
-unsafe def NORMAL_SUBGROUP_NORMALIZER_EQ_CARRIER : thm := BCentralizerNormalizer.NORMAL_SUBGROUP_NORMALIZER_EQ_CARRIER
-unsafe def GROUP_NORMALIZER_SUBSET : thm := BCentralizerNormalizer.GROUP_NORMALIZER_SUBSET
-unsafe def NORMAL_SUBGROUP_OF_NORMALIZER : thm := BCentralizerNormalizer.NORMAL_SUBGROUP_OF_NORMALIZER
-unsafe def GROUP_CENTRALIZER_POINTWISE : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_POINTWISE
+def group_centralizer : thm := BCentralizerNormalizer.group_centralizer
+def group_normalizer : thm := BCentralizerNormalizer.group_normalizer
+def GROUP_CENTRALIZER : thm := BCentralizerNormalizer.GROUP_CENTRALIZER
+def GROUP_NORMALIZER : thm := BCentralizerNormalizer.GROUP_NORMALIZER
+def GROUP_NORMALIZER_CONJUGATION_EQ : thm := BCentralizerNormalizer.GROUP_NORMALIZER_CONJUGATION_EQ
+def GROUP_NORMALIZER_CONJUGATION : thm := BCentralizerNormalizer.GROUP_NORMALIZER_CONJUGATION
+def GROUP_NORMALIZER_FINITE : thm := BCentralizerNormalizer.GROUP_NORMALIZER_FINITE
+def GROUP_CENTRALIZER_RESTRICT : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_RESTRICT
+def GROUP_NORMALIZER_RESTRICT : thm := BCentralizerNormalizer.GROUP_NORMALIZER_RESTRICT
+def GROUP_CENTRALIZER_SUBSET_CARRIER : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_SUBSET_CARRIER
+def GROUP_NORMALIZER_SUBSET_CARRIER : thm := BCentralizerNormalizer.GROUP_NORMALIZER_SUBSET_CARRIER
+def FINITE_GROUP_CENTRALIZER : thm := BCentralizerNormalizer.FINITE_GROUP_CENTRALIZER
+def FINITE_GROUP_NORMALIZER : thm := BCentralizerNormalizer.FINITE_GROUP_NORMALIZER
+def GROUP_CENTRALIZER_SUBSET_NORMALIZER : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_SUBSET_NORMALIZER
+def SUBGROUP_GROUP_CENTRALIZER : thm := BCentralizerNormalizer.SUBGROUP_GROUP_CENTRALIZER
+def SUBGROUP_GROUP_NORMALIZER : thm := BCentralizerNormalizer.SUBGROUP_GROUP_NORMALIZER
+def GROUP_CENTRALIZER_SUBGROUP_GENERATED : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_SUBGROUP_GENERATED
+def GROUP_NORMALIZER_SUBGROUP_GENERATED : thm := BCentralizerNormalizer.GROUP_NORMALIZER_SUBGROUP_GENERATED
+def IN_GROUP_CENTRALIZER_ID : thm := BCentralizerNormalizer.IN_GROUP_CENTRALIZER_ID
+def IN_GROUP_NORMALIZER_ID : thm := BCentralizerNormalizer.IN_GROUP_NORMALIZER_ID
+def GROUP_CENTRALIZER_NONEMPTY : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_NONEMPTY
+def GROUP_NORMALIZER_NONEMPTY : thm := BCentralizerNormalizer.GROUP_NORMALIZER_NONEMPTY
+def GROUP_CENTRALIZER_SUBSET : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_SUBSET
+def GROUP_CENTRALIZER_SUBSET_EQ : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_SUBSET_EQ
+def GROUP_CENTRE_EQ_CARRIER : thm := BCentralizerNormalizer.GROUP_CENTRE_EQ_CARRIER
+def GROUP_CENTRALIZER_CENTRALIZER_SUBSET : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_CENTRALIZER_SUBSET
+def GROUP_NORMALIZER_MAXIMAL_GEN : thm := BCentralizerNormalizer.GROUP_NORMALIZER_MAXIMAL_GEN
+def GROUP_NORMALIZER_MAXIMAL : thm := BCentralizerNormalizer.GROUP_NORMALIZER_MAXIMAL
+def NORMAL_SUBGROUP_NORMALIZER_CONTAINS_CARRIER : thm := BCentralizerNormalizer.NORMAL_SUBGROUP_NORMALIZER_CONTAINS_CARRIER
+def NORMAL_SUBGROUP_NORMALIZER_EQ_CARRIER : thm := BCentralizerNormalizer.NORMAL_SUBGROUP_NORMALIZER_EQ_CARRIER
+def GROUP_NORMALIZER_SUBSET : thm := BCentralizerNormalizer.GROUP_NORMALIZER_SUBSET
+def NORMAL_SUBGROUP_OF_NORMALIZER : thm := BCentralizerNormalizer.NORMAL_SUBGROUP_OF_NORMALIZER
+def GROUP_CENTRALIZER_POINTWISE : thm := BCentralizerNormalizer.GROUP_CENTRALIZER_POINTWISE
 
 -- CentralizerNormalizer2
-unsafe def GROUP_CENTRALIZER_ALT : thm := BCentralizerNormalizer2.GROUP_CENTRALIZER_ALT
-unsafe def NORMAL_SUBGROUP_CENTRALIZER_NORMALIZER : thm := BCentralizerNormalizer2.NORMAL_SUBGROUP_CENTRALIZER_NORMALIZER
-unsafe def NORMAL_SUBGROUP_CENTRALIZER : thm := BCentralizerNormalizer2.NORMAL_SUBGROUP_CENTRALIZER
-unsafe def GROUP_NORMALIZER_SING : thm := BCentralizerNormalizer2.GROUP_NORMALIZER_SING
-unsafe def GROUP_CENTRALIZER_GALOIS_EQ : thm := BCentralizerNormalizer2.GROUP_CENTRALIZER_GALOIS_EQ
-unsafe def GROUP_CENTRALIZER_GALOIS : thm := BCentralizerNormalizer2.GROUP_CENTRALIZER_GALOIS
-unsafe def GROUP_CENTRALIZER_MONO : thm := BCentralizerNormalizer2.GROUP_CENTRALIZER_MONO
-unsafe def GROUP_ACTION_CONJUGATION_NORMAL_SUBGROUP : thm := BCentralizerNormalizer2.GROUP_ACTION_CONJUGATION_NORMAL_SUBGROUP
-unsafe def GROUP_STABILIZER_CONJUGATION : thm := BCentralizerNormalizer2.GROUP_STABILIZER_CONJUGATION
-unsafe def GROUP_ORBIT_CONJUGATION_GEN : thm := BCentralizerNormalizer2.GROUP_ORBIT_CONJUGATION_GEN
-unsafe def GROUP_ORBIT_CONJUGATION : thm := BCentralizerNormalizer2.GROUP_ORBIT_CONJUGATION
-unsafe def GROUP_ACTION_IMAGE_CONJUGATION : thm := BCentralizerNormalizer2.GROUP_ACTION_IMAGE_CONJUGATION
-unsafe def GROUP_STABILIZER_IMAGE_CONJUGATION : thm := BCentralizerNormalizer2.GROUP_STABILIZER_IMAGE_CONJUGATION
-unsafe def GROUP_ACTION_IMAGE_CONJUGATION_CARRIER : thm := BCentralizerNormalizer2.GROUP_ACTION_IMAGE_CONJUGATION_CARRIER
-unsafe def GROUP_ACTION_IMAGE_CONJUGATION_SUBGROUPS : thm := BCentralizerNormalizer2.GROUP_ACTION_IMAGE_CONJUGATION_SUBGROUPS
-unsafe def GROUP_ORBIT_IMAGE_CONJUGATION : thm := BCentralizerNormalizer2.GROUP_ORBIT_IMAGE_CONJUGATION
-unsafe def GROUP_ORBIT_IMAGE_CONJUGATION_GEN : thm := BCentralizerNormalizer2.GROUP_ORBIT_IMAGE_CONJUGATION_GEN
-unsafe def CARD_CONJUGATE_SUBSETS_MUL_GEN : thm := BCentralizerNormalizer2.CARD_CONJUGATE_SUBSETS_MUL_GEN
-unsafe def CARD_CONJUGATE_SUBSETS_MUL : thm := BCentralizerNormalizer2.CARD_CONJUGATE_SUBSETS_MUL
-unsafe def CARD_CONJUGATE_SUBSETS : thm := BCentralizerNormalizer2.CARD_CONJUGATE_SUBSETS
+def GROUP_CENTRALIZER_ALT : thm := BCentralizerNormalizer2.GROUP_CENTRALIZER_ALT
+def NORMAL_SUBGROUP_CENTRALIZER_NORMALIZER : thm := BCentralizerNormalizer2.NORMAL_SUBGROUP_CENTRALIZER_NORMALIZER
+def NORMAL_SUBGROUP_CENTRALIZER : thm := BCentralizerNormalizer2.NORMAL_SUBGROUP_CENTRALIZER
+def GROUP_NORMALIZER_SING : thm := BCentralizerNormalizer2.GROUP_NORMALIZER_SING
+def GROUP_CENTRALIZER_GALOIS_EQ : thm := BCentralizerNormalizer2.GROUP_CENTRALIZER_GALOIS_EQ
+def GROUP_CENTRALIZER_GALOIS : thm := BCentralizerNormalizer2.GROUP_CENTRALIZER_GALOIS
+def GROUP_CENTRALIZER_MONO : thm := BCentralizerNormalizer2.GROUP_CENTRALIZER_MONO
+def GROUP_ACTION_CONJUGATION_NORMAL_SUBGROUP : thm := BCentralizerNormalizer2.GROUP_ACTION_CONJUGATION_NORMAL_SUBGROUP
+def GROUP_STABILIZER_CONJUGATION : thm := BCentralizerNormalizer2.GROUP_STABILIZER_CONJUGATION
+def GROUP_ORBIT_CONJUGATION_GEN : thm := BCentralizerNormalizer2.GROUP_ORBIT_CONJUGATION_GEN
+def GROUP_ORBIT_CONJUGATION : thm := BCentralizerNormalizer2.GROUP_ORBIT_CONJUGATION
+def GROUP_ACTION_IMAGE_CONJUGATION : thm := BCentralizerNormalizer2.GROUP_ACTION_IMAGE_CONJUGATION
+def GROUP_STABILIZER_IMAGE_CONJUGATION : thm := BCentralizerNormalizer2.GROUP_STABILIZER_IMAGE_CONJUGATION
+def GROUP_ACTION_IMAGE_CONJUGATION_CARRIER : thm := BCentralizerNormalizer2.GROUP_ACTION_IMAGE_CONJUGATION_CARRIER
+def GROUP_ACTION_IMAGE_CONJUGATION_SUBGROUPS : thm := BCentralizerNormalizer2.GROUP_ACTION_IMAGE_CONJUGATION_SUBGROUPS
+def GROUP_ORBIT_IMAGE_CONJUGATION : thm := BCentralizerNormalizer2.GROUP_ORBIT_IMAGE_CONJUGATION
+def GROUP_ORBIT_IMAGE_CONJUGATION_GEN : thm := BCentralizerNormalizer2.GROUP_ORBIT_IMAGE_CONJUGATION_GEN
+def CARD_CONJUGATE_SUBSETS_MUL_GEN : thm := BCentralizerNormalizer2.CARD_CONJUGATE_SUBSETS_MUL_GEN
+def CARD_CONJUGATE_SUBSETS_MUL : thm := BCentralizerNormalizer2.CARD_CONJUGATE_SUBSETS_MUL
+def CARD_CONJUGATE_SUBSETS : thm := BCentralizerNormalizer2.CARD_CONJUGATE_SUBSETS
 
 -- QuotientGroups
-unsafe def quotient_group : thm := BQuotientGroups.quotient_group
-unsafe def QUOTIENT_GROUP : thm := BQuotientGroups.QUOTIENT_GROUP
-unsafe def ABELIAN_QUOTIENT_GROUP : thm := BQuotientGroups.ABELIAN_QUOTIENT_GROUP
-unsafe def FINITE_QUOTIENT_GROUP : thm := BQuotientGroups.FINITE_QUOTIENT_GROUP
-unsafe def TRIVIAL_QUOTIENT_GROUP : thm := BQuotientGroups.TRIVIAL_QUOTIENT_GROUP
-unsafe def QUOTIENT_GROUP_ID : thm := BQuotientGroups.QUOTIENT_GROUP_ID
-unsafe def QUOTIENT_GROUP_INV : thm := BQuotientGroups.QUOTIENT_GROUP_INV
-unsafe def QUOTIENT_GROUP_MUL : thm := BQuotientGroups.QUOTIENT_GROUP_MUL
-unsafe def QUOTIENT_GROUP_DIV : thm := BQuotientGroups.QUOTIENT_GROUP_DIV
-unsafe def QUOTIENT_GROUP_POW : thm := BQuotientGroups.QUOTIENT_GROUP_POW
-unsafe def QUOTIENT_GROUP_ZPOW : thm := BQuotientGroups.QUOTIENT_GROUP_ZPOW
-unsafe def GROUP_HOMOMORPHISM_RIGHT_COSET : thm := BQuotientGroups.GROUP_HOMOMORPHISM_RIGHT_COSET
-unsafe def GROUP_EPIMORPHISM_RIGHT_COSET : thm := BQuotientGroups.GROUP_EPIMORPHISM_RIGHT_COSET
-unsafe def CARD_LE_QUOTIENT_GROUP : thm := BQuotientGroups.CARD_LE_QUOTIENT_GROUP
-unsafe def CARD_QUOTIENT_GROUP_DIVIDES : thm := BQuotientGroups.CARD_QUOTIENT_GROUP_DIVIDES
-unsafe def TRIVIAL_QUOTIENT_GROUP_EQ : thm := BQuotientGroups.TRIVIAL_QUOTIENT_GROUP_EQ
-unsafe def TRIVIAL_QUOTIENT_GROUP_SELF : thm := BQuotientGroups.TRIVIAL_QUOTIENT_GROUP_SELF
-unsafe def QUOTIENT_GROUP_TRIVIAL : thm := BQuotientGroups.QUOTIENT_GROUP_TRIVIAL
-unsafe def GROUP_ISOMORPHISM_PROD_QUOTIENT_GROUP : thm := BQuotientGroups.GROUP_ISOMORPHISM_PROD_QUOTIENT_GROUP
-unsafe def ISOMORPHIC_QUOTIENT_PROD_GROUP : thm := BQuotientGroups.ISOMORPHIC_QUOTIENT_PROD_GROUP
-unsafe def CARTESIAN_PRODUCT_NORMAL_SUBGROUP_OF_PRODUCT_GROUP : thm := BQuotientGroups.CARTESIAN_PRODUCT_NORMAL_SUBGROUP_OF_PRODUCT_GROUP
-unsafe def GROUP_ISOMORPHISM_PRODUCT_QUOTIENT_GROUP : thm := BQuotientGroups.GROUP_ISOMORPHISM_PRODUCT_QUOTIENT_GROUP
-unsafe def ISOMORPHIC_QUOTIENT_PRODUCT_GROUP : thm := BQuotientGroups.ISOMORPHIC_QUOTIENT_PRODUCT_GROUP
-unsafe def SUBGROUP_OF_QUOTIENT_GROUP : thm := BQuotientGroups.SUBGROUP_OF_QUOTIENT_GROUP
-unsafe def SUBGROUP_OF_QUOTIENT_GROUP_ALT : thm := BQuotientGroups.SUBGROUP_OF_QUOTIENT_GROUP_ALT
-unsafe def SUBGROUP_OF_QUOTIENT_GROUP_GENERATED_BY : thm := BQuotientGroups.SUBGROUP_OF_QUOTIENT_GROUP_GENERATED_BY
-unsafe def QUOTIENT_GROUP_SUBGROUP_GENERATED : thm := BQuotientGroups.QUOTIENT_GROUP_SUBGROUP_GENERATED
+def quotient_group : thm := BQuotientGroups.quotient_group
+def QUOTIENT_GROUP : thm := BQuotientGroups.QUOTIENT_GROUP
+def ABELIAN_QUOTIENT_GROUP : thm := BQuotientGroups.ABELIAN_QUOTIENT_GROUP
+def FINITE_QUOTIENT_GROUP : thm := BQuotientGroups.FINITE_QUOTIENT_GROUP
+def TRIVIAL_QUOTIENT_GROUP : thm := BQuotientGroups.TRIVIAL_QUOTIENT_GROUP
+def QUOTIENT_GROUP_ID : thm := BQuotientGroups.QUOTIENT_GROUP_ID
+def QUOTIENT_GROUP_INV : thm := BQuotientGroups.QUOTIENT_GROUP_INV
+def QUOTIENT_GROUP_MUL : thm := BQuotientGroups.QUOTIENT_GROUP_MUL
+def QUOTIENT_GROUP_DIV : thm := BQuotientGroups.QUOTIENT_GROUP_DIV
+def QUOTIENT_GROUP_POW : thm := BQuotientGroups.QUOTIENT_GROUP_POW
+def QUOTIENT_GROUP_ZPOW : thm := BQuotientGroups.QUOTIENT_GROUP_ZPOW
+def GROUP_HOMOMORPHISM_RIGHT_COSET : thm := BQuotientGroups.GROUP_HOMOMORPHISM_RIGHT_COSET
+def GROUP_EPIMORPHISM_RIGHT_COSET : thm := BQuotientGroups.GROUP_EPIMORPHISM_RIGHT_COSET
+def CARD_LE_QUOTIENT_GROUP : thm := BQuotientGroups.CARD_LE_QUOTIENT_GROUP
+def CARD_QUOTIENT_GROUP_DIVIDES : thm := BQuotientGroups.CARD_QUOTIENT_GROUP_DIVIDES
+def TRIVIAL_QUOTIENT_GROUP_EQ : thm := BQuotientGroups.TRIVIAL_QUOTIENT_GROUP_EQ
+def TRIVIAL_QUOTIENT_GROUP_SELF : thm := BQuotientGroups.TRIVIAL_QUOTIENT_GROUP_SELF
+def QUOTIENT_GROUP_TRIVIAL : thm := BQuotientGroups.QUOTIENT_GROUP_TRIVIAL
+def GROUP_ISOMORPHISM_PROD_QUOTIENT_GROUP : thm := BQuotientGroups.GROUP_ISOMORPHISM_PROD_QUOTIENT_GROUP
+def ISOMORPHIC_QUOTIENT_PROD_GROUP : thm := BQuotientGroups.ISOMORPHIC_QUOTIENT_PROD_GROUP
+def CARTESIAN_PRODUCT_NORMAL_SUBGROUP_OF_PRODUCT_GROUP : thm := BQuotientGroups.CARTESIAN_PRODUCT_NORMAL_SUBGROUP_OF_PRODUCT_GROUP
+def GROUP_ISOMORPHISM_PRODUCT_QUOTIENT_GROUP : thm := BQuotientGroups.GROUP_ISOMORPHISM_PRODUCT_QUOTIENT_GROUP
+def ISOMORPHIC_QUOTIENT_PRODUCT_GROUP : thm := BQuotientGroups.ISOMORPHIC_QUOTIENT_PRODUCT_GROUP
+def SUBGROUP_OF_QUOTIENT_GROUP : thm := BQuotientGroups.SUBGROUP_OF_QUOTIENT_GROUP
+def SUBGROUP_OF_QUOTIENT_GROUP_ALT : thm := BQuotientGroups.SUBGROUP_OF_QUOTIENT_GROUP_ALT
+def SUBGROUP_OF_QUOTIENT_GROUP_GENERATED_BY : thm := BQuotientGroups.SUBGROUP_OF_QUOTIENT_GROUP_GENERATED_BY
+def QUOTIENT_GROUP_SUBGROUP_GENERATED : thm := BQuotientGroups.QUOTIENT_GROUP_SUBGROUP_GENERATED
 
 -- KernelsImages1
-unsafe def group_kernel : thm := BKernelsImages1.group_kernel
-unsafe def group_image : thm := BKernelsImages1.group_image
-unsafe def GROUP_KERNEL_ID : thm := BKernelsImages1.GROUP_KERNEL_ID
-unsafe def GROUP_KERNEL_NONEMPTY : thm := BKernelsImages1.GROUP_KERNEL_NONEMPTY
-unsafe def GROUP_KERNEL_SUBSET_CARRIER : thm := BKernelsImages1.GROUP_KERNEL_SUBSET_CARRIER
-unsafe def GROUP_MONOMORPHISM : thm := BKernelsImages1.GROUP_MONOMORPHISM
-unsafe def GROUP_MONOMORPHISM_ALT : thm := BKernelsImages1.GROUP_MONOMORPHISM_ALT
-unsafe def GROUP_MONOMORPHISM_ALT_EQ : thm := BKernelsImages1.GROUP_MONOMORPHISM_ALT_EQ
-unsafe def GROUP_EPIMORPHISM : thm := BKernelsImages1.GROUP_EPIMORPHISM
-unsafe def GROUP_EPIMORPHISM_ALT : thm := BKernelsImages1.GROUP_EPIMORPHISM_ALT
-unsafe def GROUP_ISOMORPHISM_EPIMORPHISM_ALT : thm := BKernelsImages1.GROUP_ISOMORPHISM_EPIMORPHISM_ALT
-unsafe def GROUP_ISOMORPHISM_GROUP_KERNEL_GROUP_IMAGE : thm := BKernelsImages1.GROUP_ISOMORPHISM_GROUP_KERNEL_GROUP_IMAGE
-unsafe def GROUP_ISOMORPHISM_ALT : thm := BKernelsImages1.GROUP_ISOMORPHISM_ALT
-unsafe def SUBGROUP_GROUP_KERNEL : thm := BKernelsImages1.SUBGROUP_GROUP_KERNEL
-unsafe def SUBGROUP_GROUP_IMAGE : thm := BKernelsImages1.SUBGROUP_GROUP_IMAGE
-unsafe def GROUP_KERNEL_TO_SUBGROUP_GENERATED : thm := BKernelsImages1.GROUP_KERNEL_TO_SUBGROUP_GENERATED
-unsafe def GROUP_IMAGE_TO_SUBGROUP_GENERATED : thm := BKernelsImages1.GROUP_IMAGE_TO_SUBGROUP_GENERATED
-unsafe def GROUP_KERNEL_FROM_SUBGROUP_GENERATED : thm := BKernelsImages1.GROUP_KERNEL_FROM_SUBGROUP_GENERATED
-unsafe def GROUP_IMAGE_FROM_SUBGROUP_GENERATED : thm := BKernelsImages1.GROUP_IMAGE_FROM_SUBGROUP_GENERATED
-unsafe def GROUP_ISOMORPHISM_ONTO_IMAGE : thm := BKernelsImages1.GROUP_ISOMORPHISM_ONTO_IMAGE
-unsafe def NORMAL_SUBGROUP_GROUP_KERNEL : thm := BKernelsImages1.NORMAL_SUBGROUP_GROUP_KERNEL
-unsafe def GROUP_KERNEL_RIGHT_COSET : thm := BKernelsImages1.GROUP_KERNEL_RIGHT_COSET
-unsafe def CARD_EQ_GROUP_IMAGE_KERNEL : thm := BKernelsImages1.CARD_EQ_GROUP_IMAGE_KERNEL
-unsafe def CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE : thm := BKernelsImages1.CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE
-unsafe def CARD_DIVIDES_GROUP_EPIMORPHIC_IMAGE : thm := BKernelsImages1.CARD_DIVIDES_GROUP_EPIMORPHIC_IMAGE
+def group_kernel : thm := BKernelsImages1.group_kernel
+def group_image : thm := BKernelsImages1.group_image
+def GROUP_KERNEL_ID : thm := BKernelsImages1.GROUP_KERNEL_ID
+def GROUP_KERNEL_NONEMPTY : thm := BKernelsImages1.GROUP_KERNEL_NONEMPTY
+def GROUP_KERNEL_SUBSET_CARRIER : thm := BKernelsImages1.GROUP_KERNEL_SUBSET_CARRIER
+def GROUP_MONOMORPHISM : thm := BKernelsImages1.GROUP_MONOMORPHISM
+def GROUP_MONOMORPHISM_ALT : thm := BKernelsImages1.GROUP_MONOMORPHISM_ALT
+def GROUP_MONOMORPHISM_ALT_EQ : thm := BKernelsImages1.GROUP_MONOMORPHISM_ALT_EQ
+def GROUP_EPIMORPHISM : thm := BKernelsImages1.GROUP_EPIMORPHISM
+def GROUP_EPIMORPHISM_ALT : thm := BKernelsImages1.GROUP_EPIMORPHISM_ALT
+def GROUP_ISOMORPHISM_EPIMORPHISM_ALT : thm := BKernelsImages1.GROUP_ISOMORPHISM_EPIMORPHISM_ALT
+def GROUP_ISOMORPHISM_GROUP_KERNEL_GROUP_IMAGE : thm := BKernelsImages1.GROUP_ISOMORPHISM_GROUP_KERNEL_GROUP_IMAGE
+def GROUP_ISOMORPHISM_ALT : thm := BKernelsImages1.GROUP_ISOMORPHISM_ALT
+def SUBGROUP_GROUP_KERNEL : thm := BKernelsImages1.SUBGROUP_GROUP_KERNEL
+def SUBGROUP_GROUP_IMAGE : thm := BKernelsImages1.SUBGROUP_GROUP_IMAGE
+def GROUP_KERNEL_TO_SUBGROUP_GENERATED : thm := BKernelsImages1.GROUP_KERNEL_TO_SUBGROUP_GENERATED
+def GROUP_IMAGE_TO_SUBGROUP_GENERATED : thm := BKernelsImages1.GROUP_IMAGE_TO_SUBGROUP_GENERATED
+def GROUP_KERNEL_FROM_SUBGROUP_GENERATED : thm := BKernelsImages1.GROUP_KERNEL_FROM_SUBGROUP_GENERATED
+def GROUP_IMAGE_FROM_SUBGROUP_GENERATED : thm := BKernelsImages1.GROUP_IMAGE_FROM_SUBGROUP_GENERATED
+def GROUP_ISOMORPHISM_ONTO_IMAGE : thm := BKernelsImages1.GROUP_ISOMORPHISM_ONTO_IMAGE
+def NORMAL_SUBGROUP_GROUP_KERNEL : thm := BKernelsImages1.NORMAL_SUBGROUP_GROUP_KERNEL
+def GROUP_KERNEL_RIGHT_COSET : thm := BKernelsImages1.GROUP_KERNEL_RIGHT_COSET
+def CARD_EQ_GROUP_IMAGE_KERNEL : thm := BKernelsImages1.CARD_EQ_GROUP_IMAGE_KERNEL
+def CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE : thm := BKernelsImages1.CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE
+def CARD_DIVIDES_GROUP_EPIMORPHIC_IMAGE : thm := BKernelsImages1.CARD_DIVIDES_GROUP_EPIMORPHIC_IMAGE
 
 -- KernelsImages2
-unsafe def QUOTIENT_GROUP_UNIVERSAL_EXPLICIT : thm := BKernelsImages2.QUOTIENT_GROUP_UNIVERSAL_EXPLICIT
-unsafe def QUOTIENT_GROUP_UNIVERSAL : thm := BKernelsImages2.QUOTIENT_GROUP_UNIVERSAL
-unsafe def QUOTIENT_GROUP_UNIVERSAL_EPIMORPHISM : thm := BKernelsImages2.QUOTIENT_GROUP_UNIVERSAL_EPIMORPHISM
-unsafe def GROUP_KERNEL_FROM_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_KERNEL_FROM_TRIVIAL_GROUP
-unsafe def GROUP_IMAGE_FROM_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_IMAGE_FROM_TRIVIAL_GROUP
-unsafe def GROUP_KERNEL_TO_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_KERNEL_TO_TRIVIAL_GROUP
-unsafe def GROUP_IMAGE_TO_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_IMAGE_TO_TRIVIAL_GROUP
-unsafe def FIRST_GROUP_ISOMORPHISM_THEOREM : thm := BKernelsImages2.FIRST_GROUP_ISOMORPHISM_THEOREM
-unsafe def FIRST_GROUP_EPIMORPHISM_THEOREM : thm := BKernelsImages2.FIRST_GROUP_EPIMORPHISM_THEOREM
-unsafe def GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_RIGHT : thm := BKernelsImages2.GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_RIGHT
-unsafe def GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_LEFT : thm := BKernelsImages2.GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_LEFT
-unsafe def GROUP_HOMOMORPHISM_IMAGE_PREIMAGE : thm := BKernelsImages2.GROUP_HOMOMORPHISM_IMAGE_PREIMAGE
-unsafe def GROUP_HOMOMORPHISM_PREIMAGE_IMAGE : thm := BKernelsImages2.GROUP_HOMOMORPHISM_PREIMAGE_IMAGE
-unsafe def GROUP_HOMOMORPHISM_IMAGE_PREIMAGE_EQ : thm := BKernelsImages2.GROUP_HOMOMORPHISM_IMAGE_PREIMAGE_EQ
-unsafe def GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE : thm := BKernelsImages2.GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE
+def QUOTIENT_GROUP_UNIVERSAL_EXPLICIT : thm := BKernelsImages2.QUOTIENT_GROUP_UNIVERSAL_EXPLICIT
+def QUOTIENT_GROUP_UNIVERSAL : thm := BKernelsImages2.QUOTIENT_GROUP_UNIVERSAL
+def QUOTIENT_GROUP_UNIVERSAL_EPIMORPHISM : thm := BKernelsImages2.QUOTIENT_GROUP_UNIVERSAL_EPIMORPHISM
+def GROUP_KERNEL_FROM_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_KERNEL_FROM_TRIVIAL_GROUP
+def GROUP_IMAGE_FROM_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_IMAGE_FROM_TRIVIAL_GROUP
+def GROUP_KERNEL_TO_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_KERNEL_TO_TRIVIAL_GROUP
+def GROUP_IMAGE_TO_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_IMAGE_TO_TRIVIAL_GROUP
+def FIRST_GROUP_ISOMORPHISM_THEOREM : thm := BKernelsImages2.FIRST_GROUP_ISOMORPHISM_THEOREM
+def FIRST_GROUP_EPIMORPHISM_THEOREM : thm := BKernelsImages2.FIRST_GROUP_EPIMORPHISM_THEOREM
+def GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_RIGHT : thm := BKernelsImages2.GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_RIGHT
+def GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_LEFT : thm := BKernelsImages2.GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_LEFT
+def GROUP_HOMOMORPHISM_IMAGE_PREIMAGE : thm := BKernelsImages2.GROUP_HOMOMORPHISM_IMAGE_PREIMAGE
+def GROUP_HOMOMORPHISM_PREIMAGE_IMAGE : thm := BKernelsImages2.GROUP_HOMOMORPHISM_PREIMAGE_IMAGE
+def GROUP_HOMOMORPHISM_IMAGE_PREIMAGE_EQ : thm := BKernelsImages2.GROUP_HOMOMORPHISM_IMAGE_PREIMAGE_EQ
+def GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE : thm := BKernelsImages2.GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE
 
 -- SubgroupCorrespondence
-unsafe def GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT : thm := BSubgroupCorrespondence.GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT
-unsafe def NORMAL_SUBGROUP_OF_HOMOMORPHIC_PREIMAGE : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_OF_HOMOMORPHIC_PREIMAGE
-unsafe def NORMAL_SUBGROUP_OF_EPIMORPHIC_IMAGE : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_OF_EPIMORPHIC_IMAGE
-unsafe def NORMAL_SUBGROUP_OF_EPIMORPHIC_PREIMAGE_EQ : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_OF_EPIMORPHIC_PREIMAGE_EQ
-unsafe def GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE : thm := BSubgroupCorrespondence.GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE
-unsafe def GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE_ALT : thm := BSubgroupCorrespondence.GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE_ALT
-unsafe def SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ : thm := BSubgroupCorrespondence.SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ
-unsafe def NORMAL_SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ
-unsafe def GROUP_CONJUGATE_SUBGROUP_OF : thm := BSubgroupCorrespondence.GROUP_CONJUGATE_SUBGROUP_OF
-unsafe def GROUP_CONJUGATE_NORMAL_SUBGROUP_OF : thm := BSubgroupCorrespondence.GROUP_CONJUGATE_NORMAL_SUBGROUP_OF
-unsafe def NORMAL_SUBGROUP_CONJUGATE : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_CONJUGATE
-unsafe def NORMAL_SUBGROUP_CONJUGATE_EQ : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_CONJUGATE_EQ
-unsafe def QUOTIENT_SUBGROUP_CORRESPONDENCE : thm := BSubgroupCorrespondence.QUOTIENT_SUBGROUP_CORRESPONDENCE
-unsafe def QUOTIENT_NORMAL_SUBGROUP_CORRESPONDENCE : thm := BSubgroupCorrespondence.QUOTIENT_NORMAL_SUBGROUP_CORRESPONDENCE
-unsafe def FIRST_GROUP_ISOMORPHISM_THEOREM_GEN : thm := BSubgroupCorrespondence.FIRST_GROUP_ISOMORPHISM_THEOREM_GEN
-unsafe def FIRST_GROUP_ISOMORPHISM_THEOREM_GEN_ALT : thm := BSubgroupCorrespondence.FIRST_GROUP_ISOMORPHISM_THEOREM_GEN_ALT
-unsafe def SIMPLE_GROUP_EPIMORPHIC_IMAGE_EQ : thm := BSubgroupCorrespondence.SIMPLE_GROUP_EPIMORPHIC_IMAGE_EQ
-unsafe def NO_PROPER_SUBGROUP_EPIMORPHIC_IMAGE_EQ : thm := BSubgroupCorrespondence.NO_PROPER_SUBGROUP_EPIMORPHIC_IMAGE_EQ
-unsafe def MAXIMAL_SUBGROUP : thm := BSubgroupCorrespondence.MAXIMAL_SUBGROUP
-unsafe def MAXIMAL_NORMAL_SUBGROUP : thm := BSubgroupCorrespondence.MAXIMAL_NORMAL_SUBGROUP
+def GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT : thm := BSubgroupCorrespondence.GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT
+def NORMAL_SUBGROUP_OF_HOMOMORPHIC_PREIMAGE : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_OF_HOMOMORPHIC_PREIMAGE
+def NORMAL_SUBGROUP_OF_EPIMORPHIC_IMAGE : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_OF_EPIMORPHIC_IMAGE
+def NORMAL_SUBGROUP_OF_EPIMORPHIC_PREIMAGE_EQ : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_OF_EPIMORPHIC_PREIMAGE_EQ
+def GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE : thm := BSubgroupCorrespondence.GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE
+def GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE_ALT : thm := BSubgroupCorrespondence.GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE_ALT
+def SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ : thm := BSubgroupCorrespondence.SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ
+def NORMAL_SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_OF_ISOMORPHIC_IMAGE_EQ
+def GROUP_CONJUGATE_SUBGROUP_OF : thm := BSubgroupCorrespondence.GROUP_CONJUGATE_SUBGROUP_OF
+def GROUP_CONJUGATE_NORMAL_SUBGROUP_OF : thm := BSubgroupCorrespondence.GROUP_CONJUGATE_NORMAL_SUBGROUP_OF
+def NORMAL_SUBGROUP_CONJUGATE : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_CONJUGATE
+def NORMAL_SUBGROUP_CONJUGATE_EQ : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_CONJUGATE_EQ
+def QUOTIENT_SUBGROUP_CORRESPONDENCE : thm := BSubgroupCorrespondence.QUOTIENT_SUBGROUP_CORRESPONDENCE
+def QUOTIENT_NORMAL_SUBGROUP_CORRESPONDENCE : thm := BSubgroupCorrespondence.QUOTIENT_NORMAL_SUBGROUP_CORRESPONDENCE
+def FIRST_GROUP_ISOMORPHISM_THEOREM_GEN : thm := BSubgroupCorrespondence.FIRST_GROUP_ISOMORPHISM_THEOREM_GEN
+def FIRST_GROUP_ISOMORPHISM_THEOREM_GEN_ALT : thm := BSubgroupCorrespondence.FIRST_GROUP_ISOMORPHISM_THEOREM_GEN_ALT
+def SIMPLE_GROUP_EPIMORPHIC_IMAGE_EQ : thm := BSubgroupCorrespondence.SIMPLE_GROUP_EPIMORPHIC_IMAGE_EQ
+def NO_PROPER_SUBGROUP_EPIMORPHIC_IMAGE_EQ : thm := BSubgroupCorrespondence.NO_PROPER_SUBGROUP_EPIMORPHIC_IMAGE_EQ
+def MAXIMAL_SUBGROUP : thm := BSubgroupCorrespondence.MAXIMAL_SUBGROUP
+def MAXIMAL_NORMAL_SUBGROUP : thm := BSubgroupCorrespondence.MAXIMAL_NORMAL_SUBGROUP
 
 -- TrivialHomomorphisms
-unsafe def trivial_homomorphism : thm := BTrivialHomomorphisms.trivial_homomorphism
-unsafe def GROUP_KERNEL_IMAGE_TRIVIAL : thm := BTrivialHomomorphisms.GROUP_KERNEL_IMAGE_TRIVIAL
-unsafe def TRIVIAL_HOMOMORPHISM_GROUP_KERNEL : thm := BTrivialHomomorphisms.TRIVIAL_HOMOMORPHISM_GROUP_KERNEL
-unsafe def TRIVIAL_HOMOMORPHISM_GROUP_IMAGE : thm := BTrivialHomomorphisms.TRIVIAL_HOMOMORPHISM_GROUP_IMAGE
-unsafe def TRIVIAL_HOMOMORPHISM_TRIVIAL : thm := BTrivialHomomorphisms.TRIVIAL_HOMOMORPHISM_TRIVIAL
-unsafe def GROUP_MONOMORPHISM_TRIVIAL : thm := BTrivialHomomorphisms.GROUP_MONOMORPHISM_TRIVIAL
-unsafe def GROUP_EPIMORPHISM_TRIVIAL : thm := BTrivialHomomorphisms.GROUP_EPIMORPHISM_TRIVIAL
-unsafe def GROUP_ISOMORPHISM_TRIVIAL : thm := BTrivialHomomorphisms.GROUP_ISOMORPHISM_TRIVIAL
+def trivial_homomorphism : thm := BTrivialHomomorphisms.trivial_homomorphism
+def GROUP_KERNEL_IMAGE_TRIVIAL : thm := BTrivialHomomorphisms.GROUP_KERNEL_IMAGE_TRIVIAL
+def TRIVIAL_HOMOMORPHISM_GROUP_KERNEL : thm := BTrivialHomomorphisms.TRIVIAL_HOMOMORPHISM_GROUP_KERNEL
+def TRIVIAL_HOMOMORPHISM_GROUP_IMAGE : thm := BTrivialHomomorphisms.TRIVIAL_HOMOMORPHISM_GROUP_IMAGE
+def TRIVIAL_HOMOMORPHISM_TRIVIAL : thm := BTrivialHomomorphisms.TRIVIAL_HOMOMORPHISM_TRIVIAL
+def GROUP_MONOMORPHISM_TRIVIAL : thm := BTrivialHomomorphisms.GROUP_MONOMORPHISM_TRIVIAL
+def GROUP_EPIMORPHISM_TRIVIAL : thm := BTrivialHomomorphisms.GROUP_EPIMORPHISM_TRIVIAL
+def GROUP_ISOMORPHISM_TRIVIAL : thm := BTrivialHomomorphisms.GROUP_ISOMORPHISM_TRIVIAL
 
 -- GroupElementOrder
-unsafe def group_element_order : thm := BGroupElementOrder.group_element_order
-unsafe def GROUP_POW_EQ_ID : thm := BGroupElementOrder.GROUP_POW_EQ_ID
-unsafe def GROUP_POW_EQ_ID_DIVISOR : thm := BGroupElementOrder.GROUP_POW_EQ_ID_DIVISOR
-unsafe def GROUP_POW_ELEMENT_ORDER : thm := BGroupElementOrder.GROUP_POW_ELEMENT_ORDER
-unsafe def GROUP_ZPOW_EQ_ID : thm := BGroupElementOrder.GROUP_ZPOW_EQ_ID
-unsafe def GROUP_ZPOW_EQ_ID_DIVISOR : thm := BGroupElementOrder.GROUP_ZPOW_EQ_ID_DIVISOR
-unsafe def GROUP_ZPOW_EQ_ALT : thm := BGroupElementOrder.GROUP_ZPOW_EQ_ALT
-unsafe def GROUP_ZPOW_EQ : thm := BGroupElementOrder.GROUP_ZPOW_EQ
-unsafe def GROUP_POW_EQ : thm := BGroupElementOrder.GROUP_POW_EQ
-unsafe def GROUP_ZPOW_REM_ELEMENT_ORDER : thm := BGroupElementOrder.GROUP_ZPOW_REM_ELEMENT_ORDER
-unsafe def GROUP_POW_MOD_ELEMENT_ORDER : thm := BGroupElementOrder.GROUP_POW_MOD_ELEMENT_ORDER
-unsafe def GROUP_ELEMENT_ORDER_EQ_0 : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_EQ_0
-unsafe def GROUP_ELEMENT_ORDER_UNIQUE : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_UNIQUE
-unsafe def GROUP_ELEMENT_ORDER_EQ_1 : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_EQ_1
-unsafe def GROUP_ELEMENT_ORDER_UNIQUE_PRIME : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_UNIQUE_PRIME
-unsafe def GROUP_ELEMENT_ORDER_ID : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_ID
-unsafe def GROUP_ELEMENT_ORDER_INV : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_INV
-unsafe def GROUP_POW_GCD_EQ_ID : thm := BGroupElementOrder.GROUP_POW_GCD_EQ_ID
-unsafe def GROUP_POW_COPRIME_EQ_ID : thm := BGroupElementOrder.GROUP_POW_COPRIME_EQ_ID
-unsafe def FINITE_GROUP_ELEMENT_ORDER_NONZERO : thm := BGroupElementOrder.FINITE_GROUP_ELEMENT_ORDER_NONZERO
-unsafe def GROUP_ELEMENT_ORDER_POW : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_POW
+def group_element_order : thm := BGroupElementOrder.group_element_order
+def GROUP_POW_EQ_ID : thm := BGroupElementOrder.GROUP_POW_EQ_ID
+def GROUP_POW_EQ_ID_DIVISOR : thm := BGroupElementOrder.GROUP_POW_EQ_ID_DIVISOR
+def GROUP_POW_ELEMENT_ORDER : thm := BGroupElementOrder.GROUP_POW_ELEMENT_ORDER
+def GROUP_ZPOW_EQ_ID : thm := BGroupElementOrder.GROUP_ZPOW_EQ_ID
+def GROUP_ZPOW_EQ_ID_DIVISOR : thm := BGroupElementOrder.GROUP_ZPOW_EQ_ID_DIVISOR
+def GROUP_ZPOW_EQ_ALT : thm := BGroupElementOrder.GROUP_ZPOW_EQ_ALT
+def GROUP_ZPOW_EQ : thm := BGroupElementOrder.GROUP_ZPOW_EQ
+def GROUP_POW_EQ : thm := BGroupElementOrder.GROUP_POW_EQ
+def GROUP_ZPOW_REM_ELEMENT_ORDER : thm := BGroupElementOrder.GROUP_ZPOW_REM_ELEMENT_ORDER
+def GROUP_POW_MOD_ELEMENT_ORDER : thm := BGroupElementOrder.GROUP_POW_MOD_ELEMENT_ORDER
+def GROUP_ELEMENT_ORDER_EQ_0 : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_EQ_0
+def GROUP_ELEMENT_ORDER_UNIQUE : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_UNIQUE
+def GROUP_ELEMENT_ORDER_EQ_1 : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_EQ_1
+def GROUP_ELEMENT_ORDER_UNIQUE_PRIME : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_UNIQUE_PRIME
+def GROUP_ELEMENT_ORDER_ID : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_ID
+def GROUP_ELEMENT_ORDER_INV : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_INV
+def GROUP_POW_GCD_EQ_ID : thm := BGroupElementOrder.GROUP_POW_GCD_EQ_ID
+def GROUP_POW_COPRIME_EQ_ID : thm := BGroupElementOrder.GROUP_POW_COPRIME_EQ_ID
+def FINITE_GROUP_ELEMENT_ORDER_NONZERO : thm := BGroupElementOrder.FINITE_GROUP_ELEMENT_ORDER_NONZERO
+def GROUP_ELEMENT_ORDER_POW : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_POW
 
 -- GroupElementOrder2
-unsafe def GROUP_ELEMENT_ORDER_POW_GEN : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_POW_GEN
-unsafe def GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN
-unsafe def ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN : thm := BGroupElementOrder2.ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN
-unsafe def GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM
-unsafe def ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM : thm := BGroupElementOrder2.ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM
-unsafe def GROUP_ELEMENT_ORDER_HOMOMORPHIC_IMAGE : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_HOMOMORPHIC_IMAGE
-unsafe def GROUP_ELEMENT_ORDER_MONOMORPHIC_IMAGE : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MONOMORPHIC_IMAGE
-unsafe def ISOMORPHIC_GROUP_TORSION : thm := BGroupElementOrder2.ISOMORPHIC_GROUP_TORSION
-unsafe def GROUP_ELEMENT_ORDER_CONJUGATION : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_CONJUGATION
-unsafe def GROUP_ELEMENT_ORDER_MUL_DIVIDES : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MUL_DIVIDES
-unsafe def ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES : thm := BGroupElementOrder2.ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES
-unsafe def GROUP_POW_MUL_EQ_ID_SYM : thm := BGroupElementOrder2.GROUP_POW_MUL_EQ_ID_SYM
-unsafe def GROUP_ELEMENT_ORDER_MUL_SYM : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MUL_SYM
-unsafe def GROUP_ELEMENT_ORDER_UNIQUE_ALT : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_UNIQUE_ALT
-unsafe def GROUP_ELEMENT_ORDER_EQ_2 : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_EQ_2
-unsafe def GROUP_ELEMENT_ORDER_EQ_2_ALT : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_EQ_2_ALT
-unsafe def GROUP_ELEMENT_ORDER_POW_DIVIDES : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_POW_DIVIDES
-unsafe def GROUP_ELEMENT_ORDER_MUL_EQ : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MUL_EQ
-unsafe def GROUP_ELEMENT_ORDER_EQ_MUL_GEN : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_EQ_MUL_GEN
-unsafe def GROUP_ELEMENT_ORDER_EQ_MUL : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_EQ_MUL
-unsafe def ABELIAN_GROUP_ELEMENT_ORDER_MUL_EQ : thm := BGroupElementOrder2.ABELIAN_GROUP_ELEMENT_ORDER_MUL_EQ
+def GROUP_ELEMENT_ORDER_POW_GEN : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_POW_GEN
+def GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN
+def ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN : thm := BGroupElementOrder2.ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN
+def GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM
+def ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM : thm := BGroupElementOrder2.ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES_LCM
+def GROUP_ELEMENT_ORDER_HOMOMORPHIC_IMAGE : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_HOMOMORPHIC_IMAGE
+def GROUP_ELEMENT_ORDER_MONOMORPHIC_IMAGE : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MONOMORPHIC_IMAGE
+def ISOMORPHIC_GROUP_TORSION : thm := BGroupElementOrder2.ISOMORPHIC_GROUP_TORSION
+def GROUP_ELEMENT_ORDER_CONJUGATION : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_CONJUGATION
+def GROUP_ELEMENT_ORDER_MUL_DIVIDES : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MUL_DIVIDES
+def ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES : thm := BGroupElementOrder2.ABELIAN_GROUP_ELEMENT_ORDER_MUL_DIVIDES
+def GROUP_POW_MUL_EQ_ID_SYM : thm := BGroupElementOrder2.GROUP_POW_MUL_EQ_ID_SYM
+def GROUP_ELEMENT_ORDER_MUL_SYM : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MUL_SYM
+def GROUP_ELEMENT_ORDER_UNIQUE_ALT : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_UNIQUE_ALT
+def GROUP_ELEMENT_ORDER_EQ_2 : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_EQ_2
+def GROUP_ELEMENT_ORDER_EQ_2_ALT : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_EQ_2_ALT
+def GROUP_ELEMENT_ORDER_POW_DIVIDES : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_POW_DIVIDES
+def GROUP_ELEMENT_ORDER_MUL_EQ : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_MUL_EQ
+def GROUP_ELEMENT_ORDER_EQ_MUL_GEN : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_EQ_MUL_GEN
+def GROUP_ELEMENT_ORDER_EQ_MUL : thm := BGroupElementOrder2.GROUP_ELEMENT_ORDER_EQ_MUL
+def ABELIAN_GROUP_ELEMENT_ORDER_MUL_EQ : thm := BGroupElementOrder2.ABELIAN_GROUP_ELEMENT_ORDER_MUL_EQ
 
 -- OrderDecomp
-unsafe def GROUP_ELEMENT_ORDER_LCM_EXISTS : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_LCM_EXISTS
-unsafe def ABELIAN_GROUP_ELEMENT_ORDER_LCM_EXISTS : thm := BOrderDecomp.ABELIAN_GROUP_ELEMENT_ORDER_LCM_EXISTS
-unsafe def ABELIAN_GROUP_ORDER_DIVIDES_MAXIMAL : thm := BOrderDecomp.ABELIAN_GROUP_ORDER_DIVIDES_MAXIMAL
-unsafe def ABELIAN_GROUP_ELEMENT_ORDER_DIVIDES_MAXIMAL_ALT : thm := BOrderDecomp.ABELIAN_GROUP_ELEMENT_ORDER_DIVIDES_MAXIMAL_ALT
-unsafe def GROUP_ELEMENT_ORDER_SUBGROUP_GENERATED : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_SUBGROUP_GENERATED
-unsafe def GROUP_ELEMENT_ORDER_PROD_GROUP : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_PROD_GROUP
-unsafe def GROUP_ELEMENT_ORDER_PROD_GROUP_ALT : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_PROD_GROUP_ALT
-unsafe def GROUP_ELEMENT_ORDER_SUM_GROUP : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_SUM_GROUP
-unsafe def GROUP_ELEMENT_ORDER_SUM_GROUP_EQ_0 : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_SUM_GROUP_EQ_0
-unsafe def GROUP_ELEMENT_ORDER_COPRIME_DECOMP_EXPLICIT : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_COPRIME_DECOMP_EXPLICIT
-unsafe def GROUP_ELEMENT_ORDER_COPRIME_DECOMP_UNIQUE : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_COPRIME_DECOMP_UNIQUE
-unsafe def GROUP_ELEMENT_ORDER_COPRIME_DECOMP : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_COPRIME_DECOMP
-unsafe def GROUP_ELEMENT_ORDER_COPRIME_DECOMP_DIVIDES : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_COPRIME_DECOMP_DIVIDES
-unsafe def GROUP_POW_EQ_ID_DECOMP : thm := BOrderDecomp.GROUP_POW_EQ_ID_DECOMP
-unsafe def GROUP_ELEMENT_ORDER_PRIMEPOW_DECOMP : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_PRIMEPOW_DECOMP
+def GROUP_ELEMENT_ORDER_LCM_EXISTS : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_LCM_EXISTS
+def ABELIAN_GROUP_ELEMENT_ORDER_LCM_EXISTS : thm := BOrderDecomp.ABELIAN_GROUP_ELEMENT_ORDER_LCM_EXISTS
+def ABELIAN_GROUP_ORDER_DIVIDES_MAXIMAL : thm := BOrderDecomp.ABELIAN_GROUP_ORDER_DIVIDES_MAXIMAL
+def ABELIAN_GROUP_ELEMENT_ORDER_DIVIDES_MAXIMAL_ALT : thm := BOrderDecomp.ABELIAN_GROUP_ELEMENT_ORDER_DIVIDES_MAXIMAL_ALT
+def GROUP_ELEMENT_ORDER_SUBGROUP_GENERATED : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_SUBGROUP_GENERATED
+def GROUP_ELEMENT_ORDER_PROD_GROUP : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_PROD_GROUP
+def GROUP_ELEMENT_ORDER_PROD_GROUP_ALT : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_PROD_GROUP_ALT
+def GROUP_ELEMENT_ORDER_SUM_GROUP : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_SUM_GROUP
+def GROUP_ELEMENT_ORDER_SUM_GROUP_EQ_0 : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_SUM_GROUP_EQ_0
+def GROUP_ELEMENT_ORDER_COPRIME_DECOMP_EXPLICIT : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_COPRIME_DECOMP_EXPLICIT
+def GROUP_ELEMENT_ORDER_COPRIME_DECOMP_UNIQUE : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_COPRIME_DECOMP_UNIQUE
+def GROUP_ELEMENT_ORDER_COPRIME_DECOMP : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_COPRIME_DECOMP
+def GROUP_ELEMENT_ORDER_COPRIME_DECOMP_DIVIDES : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_COPRIME_DECOMP_DIVIDES
+def GROUP_POW_EQ_ID_DECOMP : thm := BOrderDecomp.GROUP_POW_EQ_ID_DECOMP
+def GROUP_ELEMENT_ORDER_PRIMEPOW_DECOMP : thm := BOrderDecomp.GROUP_ELEMENT_ORDER_PRIMEPOW_DECOMP
 
 -- TorsionSubgroups
-unsafe def SUBGROUP_OF_TORSION_GENERAL : thm := BTorsionSubgroups.SUBGROUP_OF_TORSION_GENERAL
-unsafe def SUBGROUP_OF_TORSION_GEN : thm := BTorsionSubgroups.SUBGROUP_OF_TORSION_GEN
-unsafe def SUBGROUP_OF_TORSION : thm := BTorsionSubgroups.SUBGROUP_OF_TORSION
-unsafe def SUBGROUP_OF_PRIMES_TORSION : thm := BTorsionSubgroups.SUBGROUP_OF_PRIMES_TORSION
-unsafe def SUBGROUP_OF_PRIME_TORSION : thm := BTorsionSubgroups.SUBGROUP_OF_PRIME_TORSION
-unsafe def SUBGROUP_OF_LOWER_ORDER : thm := BTorsionSubgroups.SUBGROUP_OF_LOWER_ORDER
-unsafe def SUBGROUP_OF_LOWER_ORDER_ALT : thm := BTorsionSubgroups.SUBGROUP_OF_LOWER_ORDER_ALT
-unsafe def SUBGROUP_OF_NONDIVISIBLE_ORDER : thm := BTorsionSubgroups.SUBGROUP_OF_NONDIVISIBLE_ORDER
-unsafe def SUBGROUP_OF_COPRIME_ORDER : thm := BTorsionSubgroups.SUBGROUP_OF_COPRIME_ORDER
-unsafe def TORSION_FREE_GROUP : thm := BTorsionSubgroups.TORSION_FREE_GROUP
-unsafe def TORSION_FREE_GROUP_ALT : thm := BTorsionSubgroups.TORSION_FREE_GROUP_ALT
-unsafe def QUOTIENT_GROUP_POW_EQ_ID : thm := BTorsionSubgroups.QUOTIENT_GROUP_POW_EQ_ID
-unsafe def TORSION_FREE_QUOTIENT_GROUP : thm := BTorsionSubgroups.TORSION_FREE_QUOTIENT_GROUP
-unsafe def IMAGE_GROUP_CONJUGATION_TORSION_GEN : thm := BTorsionSubgroups.IMAGE_GROUP_CONJUGATION_TORSION_GEN
-unsafe def NORMAL_SUBGROUP_OF_TORSION_GEN : thm := BTorsionSubgroups.NORMAL_SUBGROUP_OF_TORSION_GEN
-unsafe def NORMAL_SUBGROUP_OF_TORSION : thm := BTorsionSubgroups.NORMAL_SUBGROUP_OF_TORSION
+def SUBGROUP_OF_TORSION_GENERAL : thm := BTorsionSubgroups.SUBGROUP_OF_TORSION_GENERAL
+def SUBGROUP_OF_TORSION_GEN : thm := BTorsionSubgroups.SUBGROUP_OF_TORSION_GEN
+def SUBGROUP_OF_TORSION : thm := BTorsionSubgroups.SUBGROUP_OF_TORSION
+def SUBGROUP_OF_PRIMES_TORSION : thm := BTorsionSubgroups.SUBGROUP_OF_PRIMES_TORSION
+def SUBGROUP_OF_PRIME_TORSION : thm := BTorsionSubgroups.SUBGROUP_OF_PRIME_TORSION
+def SUBGROUP_OF_LOWER_ORDER : thm := BTorsionSubgroups.SUBGROUP_OF_LOWER_ORDER
+def SUBGROUP_OF_LOWER_ORDER_ALT : thm := BTorsionSubgroups.SUBGROUP_OF_LOWER_ORDER_ALT
+def SUBGROUP_OF_NONDIVISIBLE_ORDER : thm := BTorsionSubgroups.SUBGROUP_OF_NONDIVISIBLE_ORDER
+def SUBGROUP_OF_COPRIME_ORDER : thm := BTorsionSubgroups.SUBGROUP_OF_COPRIME_ORDER
+def TORSION_FREE_GROUP : thm := BTorsionSubgroups.TORSION_FREE_GROUP
+def TORSION_FREE_GROUP_ALT : thm := BTorsionSubgroups.TORSION_FREE_GROUP_ALT
+def QUOTIENT_GROUP_POW_EQ_ID : thm := BTorsionSubgroups.QUOTIENT_GROUP_POW_EQ_ID
+def TORSION_FREE_QUOTIENT_GROUP : thm := BTorsionSubgroups.TORSION_FREE_QUOTIENT_GROUP
+def IMAGE_GROUP_CONJUGATION_TORSION_GEN : thm := BTorsionSubgroups.IMAGE_GROUP_CONJUGATION_TORSION_GEN
+def NORMAL_SUBGROUP_OF_TORSION_GEN : thm := BTorsionSubgroups.NORMAL_SUBGROUP_OF_TORSION_GEN
+def NORMAL_SUBGROUP_OF_TORSION : thm := BTorsionSubgroups.NORMAL_SUBGROUP_OF_TORSION
 
 -- CyclicGroups1
-unsafe def SUBGROUP_OF_POWERS : thm := BCyclicGroups1.SUBGROUP_OF_POWERS
-unsafe def CARRIER_SUBGROUP_GENERATED_BY_SING : thm := BCyclicGroups1.CARRIER_SUBGROUP_GENERATED_BY_SING
-unsafe def cyclic_group : thm := BCyclicGroups1.cyclic_group
-unsafe def CYCLIC_GROUP : thm := BCyclicGroups1.CYCLIC_GROUP
-unsafe def CYCLIC_IMP_ABELIAN_GROUP : thm := BCyclicGroups1.CYCLIC_IMP_ABELIAN_GROUP
-unsafe def TRIVIAL_IMP_CYCLIC_GROUP : thm := BCyclicGroups1.TRIVIAL_IMP_CYCLIC_GROUP
-unsafe def CYCLIC_GROUP_ALT : thm := BCyclicGroups1.CYCLIC_GROUP_ALT
-unsafe def CYCLIC_GROUP_GENERATED : thm := BCyclicGroups1.CYCLIC_GROUP_GENERATED
-unsafe def CYCLIC_GROUP_EPIMORPHIC_IMAGE : thm := BCyclicGroups1.CYCLIC_GROUP_EPIMORPHIC_IMAGE
-unsafe def ISOMORPHIC_GROUP_CYCLICITY : thm := BCyclicGroups1.ISOMORPHIC_GROUP_CYCLICITY
-unsafe def SUBGROUP_OF_CYCLIC_GROUP_EXPLICIT : thm := BCyclicGroups1.SUBGROUP_OF_CYCLIC_GROUP_EXPLICIT
-unsafe def SUBGROUP_OF_CYCLIC_GROUP : thm := BCyclicGroups1.SUBGROUP_OF_CYCLIC_GROUP
-unsafe def CYCLIC_GROUP_QUOTIENT_GROUP : thm := BCyclicGroups1.CYCLIC_GROUP_QUOTIENT_GROUP
-unsafe def NO_PROPER_SUBGROUPS_IMP_CYCLIC : thm := BCyclicGroups1.NO_PROPER_SUBGROUPS_IMP_CYCLIC
+def SUBGROUP_OF_POWERS : thm := BCyclicGroups1.SUBGROUP_OF_POWERS
+def CARRIER_SUBGROUP_GENERATED_BY_SING : thm := BCyclicGroups1.CARRIER_SUBGROUP_GENERATED_BY_SING
+def cyclic_group : thm := BCyclicGroups1.cyclic_group
+def CYCLIC_GROUP : thm := BCyclicGroups1.CYCLIC_GROUP
+def CYCLIC_IMP_ABELIAN_GROUP : thm := BCyclicGroups1.CYCLIC_IMP_ABELIAN_GROUP
+def TRIVIAL_IMP_CYCLIC_GROUP : thm := BCyclicGroups1.TRIVIAL_IMP_CYCLIC_GROUP
+def CYCLIC_GROUP_ALT : thm := BCyclicGroups1.CYCLIC_GROUP_ALT
+def CYCLIC_GROUP_GENERATED : thm := BCyclicGroups1.CYCLIC_GROUP_GENERATED
+def CYCLIC_GROUP_EPIMORPHIC_IMAGE : thm := BCyclicGroups1.CYCLIC_GROUP_EPIMORPHIC_IMAGE
+def ISOMORPHIC_GROUP_CYCLICITY : thm := BCyclicGroups1.ISOMORPHIC_GROUP_CYCLICITY
+def SUBGROUP_OF_CYCLIC_GROUP_EXPLICIT : thm := BCyclicGroups1.SUBGROUP_OF_CYCLIC_GROUP_EXPLICIT
+def SUBGROUP_OF_CYCLIC_GROUP : thm := BCyclicGroups1.SUBGROUP_OF_CYCLIC_GROUP
+def CYCLIC_GROUP_QUOTIENT_GROUP : thm := BCyclicGroups1.CYCLIC_GROUP_QUOTIENT_GROUP
+def NO_PROPER_SUBGROUPS_IMP_CYCLIC : thm := BCyclicGroups1.NO_PROPER_SUBGROUPS_IMP_CYCLIC
 
 -- CyclicGroups2
-unsafe def FINITE_CYCLIC_SUBGROUP : thm := BCyclicGroups2.FINITE_CYCLIC_SUBGROUP
-unsafe def INFINITE_CYCLIC_SUBGROUP : thm := BCyclicGroups2.INFINITE_CYCLIC_SUBGROUP
-unsafe def FINITE_CYCLIC_SUBGROUP_ALT : thm := BCyclicGroups2.FINITE_CYCLIC_SUBGROUP_ALT
-unsafe def INFINITE_CYCLIC_SUBGROUP_ALT : thm := BCyclicGroups2.INFINITE_CYCLIC_SUBGROUP_ALT
-unsafe def FINITE_CYCLIC_SUBGROUP_ORDER : thm := BCyclicGroups2.FINITE_CYCLIC_SUBGROUP_ORDER
-unsafe def INFINITE_CYCLIC_SUBGROUP_ORDER : thm := BCyclicGroups2.INFINITE_CYCLIC_SUBGROUP_ORDER
-unsafe def FINITE_CYCLIC_SUBGROUP_EXPLICIT : thm := BCyclicGroups2.FINITE_CYCLIC_SUBGROUP_EXPLICIT
-unsafe def FINITE_SUBGROUPS_EQ : thm := BCyclicGroups2.FINITE_SUBGROUPS_EQ
-unsafe def CARD_CYCLIC_SUBGROUP_ORDER : thm := BCyclicGroups2.CARD_CYCLIC_SUBGROUP_ORDER
-unsafe def PRIME_ORDER_IMP_NO_PROPER_SUBGROUPS : thm := BCyclicGroups2.PRIME_ORDER_IMP_NO_PROPER_SUBGROUPS
-unsafe def PRIME_ORDER_EQ_NO_PROPER_SUBGROUPS : thm := BCyclicGroups2.PRIME_ORDER_EQ_NO_PROPER_SUBGROUPS
-unsafe def NO_PROPER_SUBGROUPS_EQ_CYCLIC_PRIME_ORDER : thm := BCyclicGroups2.NO_PROPER_SUBGROUPS_EQ_CYCLIC_PRIME_ORDER
+def FINITE_CYCLIC_SUBGROUP : thm := BCyclicGroups2.FINITE_CYCLIC_SUBGROUP
+def INFINITE_CYCLIC_SUBGROUP : thm := BCyclicGroups2.INFINITE_CYCLIC_SUBGROUP
+def FINITE_CYCLIC_SUBGROUP_ALT : thm := BCyclicGroups2.FINITE_CYCLIC_SUBGROUP_ALT
+def INFINITE_CYCLIC_SUBGROUP_ALT : thm := BCyclicGroups2.INFINITE_CYCLIC_SUBGROUP_ALT
+def FINITE_CYCLIC_SUBGROUP_ORDER : thm := BCyclicGroups2.FINITE_CYCLIC_SUBGROUP_ORDER
+def INFINITE_CYCLIC_SUBGROUP_ORDER : thm := BCyclicGroups2.INFINITE_CYCLIC_SUBGROUP_ORDER
+def FINITE_CYCLIC_SUBGROUP_EXPLICIT : thm := BCyclicGroups2.FINITE_CYCLIC_SUBGROUP_EXPLICIT
+def FINITE_SUBGROUPS_EQ : thm := BCyclicGroups2.FINITE_SUBGROUPS_EQ
+def CARD_CYCLIC_SUBGROUP_ORDER : thm := BCyclicGroups2.CARD_CYCLIC_SUBGROUP_ORDER
+def PRIME_ORDER_IMP_NO_PROPER_SUBGROUPS : thm := BCyclicGroups2.PRIME_ORDER_IMP_NO_PROPER_SUBGROUPS
+def PRIME_ORDER_EQ_NO_PROPER_SUBGROUPS : thm := BCyclicGroups2.PRIME_ORDER_EQ_NO_PROPER_SUBGROUPS
+def NO_PROPER_SUBGROUPS_EQ_CYCLIC_PRIME_ORDER : thm := BCyclicGroups2.NO_PROPER_SUBGROUPS_EQ_CYCLIC_PRIME_ORDER
 
 -- CyclicGroups3
-unsafe def ABELIAN_SIMPLE_GROUP : thm := BCyclicGroups3.ABELIAN_SIMPLE_GROUP
-unsafe def PRIME_ORDER_IMP_CYCLIC_GROUP : thm := BCyclicGroups3.PRIME_ORDER_IMP_CYCLIC_GROUP
-unsafe def GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER : thm := BCyclicGroups3.GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER
-unsafe def GROUP_POW_GROUP_ORDER : thm := BCyclicGroups3.GROUP_POW_GROUP_ORDER
-unsafe def GROUP_ZPOW_REM_ORDER : thm := BCyclicGroups3.GROUP_ZPOW_REM_ORDER
-unsafe def GROUP_POW_MOD_ORDER : thm := BCyclicGroups3.GROUP_POW_MOD_ORDER
-unsafe def SUBGROUP_OF_FINITE_CYCLIC_GROUP : thm := BCyclicGroups3.SUBGROUP_OF_FINITE_CYCLIC_GROUP
-unsafe def COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS : thm := BCyclicGroups3.COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS
-unsafe def COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS_ALL : thm := BCyclicGroups3.COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS_ALL
-unsafe def MAXIMAL_SUBGROUP_PRIME_INDEX : thm := BCyclicGroups3.MAXIMAL_SUBGROUP_PRIME_INDEX
-unsafe def PRIME_INDEX_MAXIMAL_PROPER_SUBGROUP : thm := BCyclicGroups3.PRIME_INDEX_MAXIMAL_PROPER_SUBGROUP
-unsafe def MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX : thm := BCyclicGroups3.MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX
-unsafe def GROUP_ZPOW_CANCEL : thm := BCyclicGroups3.GROUP_ZPOW_CANCEL
-unsafe def GROUP_POW_CANCEL : thm := BCyclicGroups3.GROUP_POW_CANCEL
+def ABELIAN_SIMPLE_GROUP : thm := BCyclicGroups3.ABELIAN_SIMPLE_GROUP
+def PRIME_ORDER_IMP_CYCLIC_GROUP : thm := BCyclicGroups3.PRIME_ORDER_IMP_CYCLIC_GROUP
+def GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER : thm := BCyclicGroups3.GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER
+def GROUP_POW_GROUP_ORDER : thm := BCyclicGroups3.GROUP_POW_GROUP_ORDER
+def GROUP_ZPOW_REM_ORDER : thm := BCyclicGroups3.GROUP_ZPOW_REM_ORDER
+def GROUP_POW_MOD_ORDER : thm := BCyclicGroups3.GROUP_POW_MOD_ORDER
+def SUBGROUP_OF_FINITE_CYCLIC_GROUP : thm := BCyclicGroups3.SUBGROUP_OF_FINITE_CYCLIC_GROUP
+def COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS : thm := BCyclicGroups3.COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS
+def COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS_ALL : thm := BCyclicGroups3.COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS_ALL
+def MAXIMAL_SUBGROUP_PRIME_INDEX : thm := BCyclicGroups3.MAXIMAL_SUBGROUP_PRIME_INDEX
+def PRIME_INDEX_MAXIMAL_PROPER_SUBGROUP : thm := BCyclicGroups3.PRIME_INDEX_MAXIMAL_PROPER_SUBGROUP
+def MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX : thm := BCyclicGroups3.MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX
+def GROUP_ZPOW_CANCEL : thm := BCyclicGroups3.GROUP_ZPOW_CANCEL
+def GROUP_POW_CANCEL : thm := BCyclicGroups3.GROUP_POW_CANCEL
 
 -- FinitelyGenerated
-unsafe def finitely_generated_group : thm := BFinitelyGenerated.finitely_generated_group
-unsafe def FINITELY_GENERATED_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_GROUP
-unsafe def CYCLIC_IMP_FINITELY_GENERATED_GROUP : thm := BFinitelyGenerated.CYCLIC_IMP_FINITELY_GENERATED_GROUP
-unsafe def FINITE_IMP_FINITELY_GENERATED_GROUP : thm := BFinitelyGenerated.FINITE_IMP_FINITELY_GENERATED_GROUP
-unsafe def TRIVIAL_IMP_FINITELY_GENERATED_GROUP : thm := BFinitelyGenerated.TRIVIAL_IMP_FINITELY_GENERATED_GROUP
-unsafe def FINITELY_GENERATED_GROUP_EPIMORPHIC_IMAGE : thm := BFinitelyGenerated.FINITELY_GENERATED_GROUP_EPIMORPHIC_IMAGE
-unsafe def ISOMORPHIC_GROUP_FINITE_GENERATION : thm := BFinitelyGenerated.ISOMORPHIC_GROUP_FINITE_GENERATION
-unsafe def FINITELY_GENERATED_GROUP_QUOTIENT_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_GROUP_QUOTIENT_GROUP
-unsafe def FINITELY_GENERATED_IMP_COUNTABLE_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_IMP_COUNTABLE_GROUP
-unsafe def FINITELY_GENERATED_PROD_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_PROD_GROUP
-unsafe def FINITELY_GENERATED_PRODUCT_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_PRODUCT_GROUP
-unsafe def FINITELY_GENERATED_SUM_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_SUM_GROUP
-unsafe def FINITE_GROUP_ACTIONS : thm := BFinitelyGenerated.FINITE_GROUP_ACTIONS
+def finitely_generated_group : thm := BFinitelyGenerated.finitely_generated_group
+def FINITELY_GENERATED_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_GROUP
+def CYCLIC_IMP_FINITELY_GENERATED_GROUP : thm := BFinitelyGenerated.CYCLIC_IMP_FINITELY_GENERATED_GROUP
+def FINITE_IMP_FINITELY_GENERATED_GROUP : thm := BFinitelyGenerated.FINITE_IMP_FINITELY_GENERATED_GROUP
+def TRIVIAL_IMP_FINITELY_GENERATED_GROUP : thm := BFinitelyGenerated.TRIVIAL_IMP_FINITELY_GENERATED_GROUP
+def FINITELY_GENERATED_GROUP_EPIMORPHIC_IMAGE : thm := BFinitelyGenerated.FINITELY_GENERATED_GROUP_EPIMORPHIC_IMAGE
+def ISOMORPHIC_GROUP_FINITE_GENERATION : thm := BFinitelyGenerated.ISOMORPHIC_GROUP_FINITE_GENERATION
+def FINITELY_GENERATED_GROUP_QUOTIENT_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_GROUP_QUOTIENT_GROUP
+def FINITELY_GENERATED_IMP_COUNTABLE_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_IMP_COUNTABLE_GROUP
+def FINITELY_GENERATED_PROD_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_PROD_GROUP
+def FINITELY_GENERATED_PRODUCT_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_PRODUCT_GROUP
+def FINITELY_GENERATED_SUM_GROUP : thm := BFinitelyGenerated.FINITELY_GENERATED_SUM_GROUP
+def FINITE_GROUP_ACTIONS : thm := BFinitelyGenerated.FINITE_GROUP_ACTIONS
 
 -- FinitelyGeneratedSubgroups
-unsafe def FINITELY_GENERATED_FIXED_INDEX_SUBGROUPS : thm := BFinitelyGeneratedSubgroups.FINITELY_GENERATED_FIXED_INDEX_SUBGROUPS
-unsafe def FINITELY_GENERATED_FINITE_INDEX_SUBGROUP : thm := BFinitelyGeneratedSubgroups.FINITELY_GENERATED_FINITE_INDEX_SUBGROUP
-unsafe def FINITELY_GENERATED_ABELIAN_SUBGROUP_EXPLICIT : thm := BFinitelyGeneratedSubgroups.FINITELY_GENERATED_ABELIAN_SUBGROUP_EXPLICIT
+def FINITELY_GENERATED_FIXED_INDEX_SUBGROUPS : thm := BFinitelyGeneratedSubgroups.FINITELY_GENERATED_FIXED_INDEX_SUBGROUPS
+def FINITELY_GENERATED_FINITE_INDEX_SUBGROUP : thm := BFinitelyGeneratedSubgroups.FINITELY_GENERATED_FINITE_INDEX_SUBGROUP
+def FINITELY_GENERATED_ABELIAN_SUBGROUP_EXPLICIT : thm := BFinitelyGeneratedSubgroups.FINITELY_GENERATED_ABELIAN_SUBGROUP_EXPLICIT
 
 -- FinitelyGeneratedMaximal
-unsafe def FINITELY_GENERATED_ABELIAN_SUBGROUP : thm := BFinitelyGeneratedMaximal.FINITELY_GENERATED_ABELIAN_SUBGROUP
-unsafe def MAXIMAL_SUBGROUP_EXISTS : thm := BFinitelyGeneratedMaximal.MAXIMAL_SUBGROUP_EXISTS
-unsafe def MAXIMAL_NORMAL_SUBGROUP_EXISTS : thm := BFinitelyGeneratedMaximal.MAXIMAL_NORMAL_SUBGROUP_EXISTS
+def FINITELY_GENERATED_ABELIAN_SUBGROUP : thm := BFinitelyGeneratedMaximal.FINITELY_GENERATED_ABELIAN_SUBGROUP
+def MAXIMAL_SUBGROUP_EXISTS : thm := BFinitelyGeneratedMaximal.MAXIMAL_SUBGROUP_EXISTS
+def MAXIMAL_NORMAL_SUBGROUP_EXISTS : thm := BFinitelyGeneratedMaximal.MAXIMAL_NORMAL_SUBGROUP_EXISTS
 
 -- IntegerGroup
-unsafe def integer_group : thm := BIntegerGroup.integer_group
-unsafe def INTEGER_GROUP : thm := BIntegerGroup.INTEGER_GROUP
-unsafe def ABELIAN_INTEGER_GROUP : thm := BIntegerGroup.ABELIAN_INTEGER_GROUP
-unsafe def INFINITE_INTEGER_GROUP : thm := BIntegerGroup.INFINITE_INTEGER_GROUP
-unsafe def GROUP_POW_INTEGER_GROUP : thm := BIntegerGroup.GROUP_POW_INTEGER_GROUP
-unsafe def GROUP_ZPOW_INTEGER_GROUP : thm := BIntegerGroup.GROUP_ZPOW_INTEGER_GROUP
-unsafe def GROUP_ELEMENT_ORDER_INTEGER_GROUP : thm := BIntegerGroup.GROUP_ELEMENT_ORDER_INTEGER_GROUP
-unsafe def GROUP_ENDOMORPHISM_INTEGER_GROUP_MUL : thm := BIntegerGroup.GROUP_ENDOMORPHISM_INTEGER_GROUP_MUL
-unsafe def GROUP_ENDOMORPHISM_INTEGER_GROUP_EXPLICIT : thm := BIntegerGroup.GROUP_ENDOMORPHISM_INTEGER_GROUP_EXPLICIT
-unsafe def GROUP_ENDOMORPHISM_INTEGER_GROUP_EQ : thm := BIntegerGroup.GROUP_ENDOMORPHISM_INTEGER_GROUP_EQ
-unsafe def GROUP_ENDOMORPHISM_INTEGER_GROUP_EQ_ALT : thm := BIntegerGroup.GROUP_ENDOMORPHISM_INTEGER_GROUP_EQ_ALT
-unsafe def GROUP_HOMOMORPHISM_GROUP_ZPOW : thm := BIntegerGroup.GROUP_HOMOMORPHISM_GROUP_ZPOW
-unsafe def GROUP_EPIMORPHISM_GROUP_ZPOW : thm := BIntegerGroup.GROUP_EPIMORPHISM_GROUP_ZPOW
-unsafe def GROUP_ISOMORPHISM_GROUP_ZPOW : thm := BIntegerGroup.GROUP_ISOMORPHISM_GROUP_ZPOW
-unsafe def ISOMORPHIC_GROUP_INFINITE_CYCLIC_INTEGER : thm := BIntegerGroup.ISOMORPHIC_GROUP_INFINITE_CYCLIC_INTEGER
-unsafe def ISOMORPHIC_INFINITE_CYCLIC_GROUPS : thm := BIntegerGroup.ISOMORPHIC_INFINITE_CYCLIC_GROUPS
+def integer_group : thm := BIntegerGroup.integer_group
+def INTEGER_GROUP : thm := BIntegerGroup.INTEGER_GROUP
+def ABELIAN_INTEGER_GROUP : thm := BIntegerGroup.ABELIAN_INTEGER_GROUP
+def INFINITE_INTEGER_GROUP : thm := BIntegerGroup.INFINITE_INTEGER_GROUP
+def GROUP_POW_INTEGER_GROUP : thm := BIntegerGroup.GROUP_POW_INTEGER_GROUP
+def GROUP_ZPOW_INTEGER_GROUP : thm := BIntegerGroup.GROUP_ZPOW_INTEGER_GROUP
+def GROUP_ELEMENT_ORDER_INTEGER_GROUP : thm := BIntegerGroup.GROUP_ELEMENT_ORDER_INTEGER_GROUP
+def GROUP_ENDOMORPHISM_INTEGER_GROUP_MUL : thm := BIntegerGroup.GROUP_ENDOMORPHISM_INTEGER_GROUP_MUL
+def GROUP_ENDOMORPHISM_INTEGER_GROUP_EXPLICIT : thm := BIntegerGroup.GROUP_ENDOMORPHISM_INTEGER_GROUP_EXPLICIT
+def GROUP_ENDOMORPHISM_INTEGER_GROUP_EQ : thm := BIntegerGroup.GROUP_ENDOMORPHISM_INTEGER_GROUP_EQ
+def GROUP_ENDOMORPHISM_INTEGER_GROUP_EQ_ALT : thm := BIntegerGroup.GROUP_ENDOMORPHISM_INTEGER_GROUP_EQ_ALT
+def GROUP_HOMOMORPHISM_GROUP_ZPOW : thm := BIntegerGroup.GROUP_HOMOMORPHISM_GROUP_ZPOW
+def GROUP_EPIMORPHISM_GROUP_ZPOW : thm := BIntegerGroup.GROUP_EPIMORPHISM_GROUP_ZPOW
+def GROUP_ISOMORPHISM_GROUP_ZPOW : thm := BIntegerGroup.GROUP_ISOMORPHISM_GROUP_ZPOW
+def ISOMORPHIC_GROUP_INFINITE_CYCLIC_INTEGER : thm := BIntegerGroup.ISOMORPHIC_GROUP_INFINITE_CYCLIC_INTEGER
+def ISOMORPHIC_INFINITE_CYCLIC_GROUPS : thm := BIntegerGroup.ISOMORPHIC_INFINITE_CYCLIC_GROUPS
 
 -- IntegerModGroup
-unsafe def integer_mod_group : thm := BIntegerModGroup.integer_mod_group
-unsafe def INTEGER_MOD_GROUP : thm := BIntegerModGroup.INTEGER_MOD_GROUP
-unsafe def INTEGER_MOD_GROUP_TRIVIAL : thm := BIntegerModGroup.INTEGER_MOD_GROUP_TRIVIAL
-unsafe def GROUP_CARRIER_INTEGER_MOD_GROUP : thm := BIntegerModGroup.GROUP_CARRIER_INTEGER_MOD_GROUP
-unsafe def GROUP_POW_INTEGER_MOD_GROUP : thm := BIntegerModGroup.GROUP_POW_INTEGER_MOD_GROUP
-unsafe def GROUP_ZPOW_INTEGER_MOD_GROUP : thm := BIntegerModGroup.GROUP_ZPOW_INTEGER_MOD_GROUP
-unsafe def ABELIAN_INTEGER_MOD_GROUP : thm := BIntegerModGroup.ABELIAN_INTEGER_MOD_GROUP
-unsafe def INTEGER_MOD_GROUP_0 : thm := BIntegerModGroup.INTEGER_MOD_GROUP_0
-unsafe def INTEGER_MOD_GROUP_1R : thm := BIntegerModGroup.INTEGER_MOD_GROUP_1R
-unsafe def INTEGER_MOD_GROUP_1 : thm := BIntegerModGroup.INTEGER_MOD_GROUP_1
-unsafe def GROUP_HOMOMORPHISM_PROD_INTEGER_MOD_GROUP : thm := BIntegerModGroup.GROUP_HOMOMORPHISM_PROD_INTEGER_MOD_GROUP
-unsafe def TRIVIAL_INTEGER_MOD_GROUP : thm := BIntegerModGroup.TRIVIAL_INTEGER_MOD_GROUP
-unsafe def NON_TRIVIAL_INTEGER_GROUP : thm := BIntegerModGroup.NON_TRIVIAL_INTEGER_GROUP
-unsafe def GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1 : thm := BIntegerModGroup.GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1
-unsafe def GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1R : thm := BIntegerModGroup.GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1R
-unsafe def GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP : thm := BIntegerModGroup.GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP
-unsafe def INTEGER_MOD_SUBGROUP_GENERATED_BY_1R : thm := BIntegerModGroup.INTEGER_MOD_SUBGROUP_GENERATED_BY_1R
-unsafe def INTEGER_MOD_SUBGROUP_GENERATED_BY_1 : thm := BIntegerModGroup.INTEGER_MOD_SUBGROUP_GENERATED_BY_1
-unsafe def CYCLIC_GROUP_INTEGER_MOD_GROUP : thm := BIntegerModGroup.CYCLIC_GROUP_INTEGER_MOD_GROUP
+def integer_mod_group : thm := BIntegerModGroup.integer_mod_group
+def INTEGER_MOD_GROUP : thm := BIntegerModGroup.INTEGER_MOD_GROUP
+def INTEGER_MOD_GROUP_TRIVIAL : thm := BIntegerModGroup.INTEGER_MOD_GROUP_TRIVIAL
+def GROUP_CARRIER_INTEGER_MOD_GROUP : thm := BIntegerModGroup.GROUP_CARRIER_INTEGER_MOD_GROUP
+def GROUP_POW_INTEGER_MOD_GROUP : thm := BIntegerModGroup.GROUP_POW_INTEGER_MOD_GROUP
+def GROUP_ZPOW_INTEGER_MOD_GROUP : thm := BIntegerModGroup.GROUP_ZPOW_INTEGER_MOD_GROUP
+def ABELIAN_INTEGER_MOD_GROUP : thm := BIntegerModGroup.ABELIAN_INTEGER_MOD_GROUP
+def INTEGER_MOD_GROUP_0 : thm := BIntegerModGroup.INTEGER_MOD_GROUP_0
+def INTEGER_MOD_GROUP_1R : thm := BIntegerModGroup.INTEGER_MOD_GROUP_1R
+def INTEGER_MOD_GROUP_1 : thm := BIntegerModGroup.INTEGER_MOD_GROUP_1
+def GROUP_HOMOMORPHISM_PROD_INTEGER_MOD_GROUP : thm := BIntegerModGroup.GROUP_HOMOMORPHISM_PROD_INTEGER_MOD_GROUP
+def TRIVIAL_INTEGER_MOD_GROUP : thm := BIntegerModGroup.TRIVIAL_INTEGER_MOD_GROUP
+def NON_TRIVIAL_INTEGER_GROUP : thm := BIntegerModGroup.NON_TRIVIAL_INTEGER_GROUP
+def GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1 : thm := BIntegerModGroup.GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1
+def GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1R : thm := BIntegerModGroup.GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1R
+def GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP : thm := BIntegerModGroup.GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP
+def INTEGER_MOD_SUBGROUP_GENERATED_BY_1R : thm := BIntegerModGroup.INTEGER_MOD_SUBGROUP_GENERATED_BY_1R
+def INTEGER_MOD_SUBGROUP_GENERATED_BY_1 : thm := BIntegerModGroup.INTEGER_MOD_SUBGROUP_GENERATED_BY_1
+def CYCLIC_GROUP_INTEGER_MOD_GROUP : thm := BIntegerModGroup.CYCLIC_GROUP_INTEGER_MOD_GROUP
 
 -- CyclicInteger
-unsafe def CYCLIC_INTEGER_GROUP : thm := BCyclicInteger.CYCLIC_INTEGER_GROUP
-unsafe def FINITE_INTEGER_MOD_GROUP : thm := BCyclicInteger.FINITE_INTEGER_MOD_GROUP
-unsafe def GROUP_EPIMORPHISM_INTEGER_MOD_GROUP_ZPOW : thm := BCyclicInteger.GROUP_EPIMORPHISM_INTEGER_MOD_GROUP_ZPOW
-unsafe def GROUP_ISOMORPHISM_GROUP_ZPOW_GEN : thm := BCyclicInteger.GROUP_ISOMORPHISM_GROUP_ZPOW_GEN
-unsafe def ISOMORPHIC_GROUP_CYCLIC_INTEGER : thm := BCyclicInteger.ISOMORPHIC_GROUP_CYCLIC_INTEGER
-unsafe def ORDER_INTEGER_MOD_GROUP : thm := BCyclicInteger.ORDER_INTEGER_MOD_GROUP
-unsafe def ISOMORPHIC_FINITE_CYCLIC_INTEGER_MOD_GROUP : thm := BCyclicInteger.ISOMORPHIC_FINITE_CYCLIC_INTEGER_MOD_GROUP
-unsafe def ISOMORPHIC_GROUP_INTEGER_MOD_GROUP : thm := BCyclicInteger.ISOMORPHIC_GROUP_INTEGER_MOD_GROUP
-unsafe def ISOMORPHIC_INTEGER_MOD_GROUPS : thm := BCyclicInteger.ISOMORPHIC_INTEGER_MOD_GROUPS
-unsafe def ISOMORPHIC_FINITE_CYCLIC_GROUPS : thm := BCyclicInteger.ISOMORPHIC_FINITE_CYCLIC_GROUPS
-unsafe def CYCLIC_IMP_COUNTABLE_GROUP : thm := BCyclicInteger.CYCLIC_IMP_COUNTABLE_GROUP
-unsafe def SUBGROUP_GENERATED_ELEMENT_ORDER : thm := BCyclicInteger.SUBGROUP_GENERATED_ELEMENT_ORDER
-unsafe def CYCLIC_GROUP_ELEMENT_ORDER : thm := BCyclicInteger.CYCLIC_GROUP_ELEMENT_ORDER
+def CYCLIC_INTEGER_GROUP : thm := BCyclicInteger.CYCLIC_INTEGER_GROUP
+def FINITE_INTEGER_MOD_GROUP : thm := BCyclicInteger.FINITE_INTEGER_MOD_GROUP
+def GROUP_EPIMORPHISM_INTEGER_MOD_GROUP_ZPOW : thm := BCyclicInteger.GROUP_EPIMORPHISM_INTEGER_MOD_GROUP_ZPOW
+def GROUP_ISOMORPHISM_GROUP_ZPOW_GEN : thm := BCyclicInteger.GROUP_ISOMORPHISM_GROUP_ZPOW_GEN
+def ISOMORPHIC_GROUP_CYCLIC_INTEGER : thm := BCyclicInteger.ISOMORPHIC_GROUP_CYCLIC_INTEGER
+def ORDER_INTEGER_MOD_GROUP : thm := BCyclicInteger.ORDER_INTEGER_MOD_GROUP
+def ISOMORPHIC_FINITE_CYCLIC_INTEGER_MOD_GROUP : thm := BCyclicInteger.ISOMORPHIC_FINITE_CYCLIC_INTEGER_MOD_GROUP
+def ISOMORPHIC_GROUP_INTEGER_MOD_GROUP : thm := BCyclicInteger.ISOMORPHIC_GROUP_INTEGER_MOD_GROUP
+def ISOMORPHIC_INTEGER_MOD_GROUPS : thm := BCyclicInteger.ISOMORPHIC_INTEGER_MOD_GROUPS
+def ISOMORPHIC_FINITE_CYCLIC_GROUPS : thm := BCyclicInteger.ISOMORPHIC_FINITE_CYCLIC_GROUPS
+def CYCLIC_IMP_COUNTABLE_GROUP : thm := BCyclicInteger.CYCLIC_IMP_COUNTABLE_GROUP
+def SUBGROUP_GENERATED_ELEMENT_ORDER : thm := BCyclicInteger.SUBGROUP_GENERATED_ELEMENT_ORDER
+def CYCLIC_GROUP_ELEMENT_ORDER : thm := BCyclicInteger.CYCLIC_GROUP_ELEMENT_ORDER
 
 -- CyclicProd
-unsafe def CYCLIC_PROD_INTEGER_MOD_GROUP : thm := BCyclicProd.CYCLIC_PROD_INTEGER_MOD_GROUP
-unsafe def ISOMORPHIC_PROD_INTEGER_MOD_GROUP : thm := BCyclicProd.ISOMORPHIC_PROD_INTEGER_MOD_GROUP
-unsafe def GROUP_ISOMORPHISM_PROD_INTEGER_MOD_GROUP : thm := BCyclicProd.GROUP_ISOMORPHISM_PROD_INTEGER_MOD_GROUP
-unsafe def CYCLIC_PROD_GROUP : thm := BCyclicProd.CYCLIC_PROD_GROUP
-unsafe def CYCLIC_PRIME_ORDER_GROUP : thm := BCyclicProd.CYCLIC_PRIME_ORDER_GROUP
-unsafe def GROUP_ELEMENT_ORDER_PRIME : thm := BCyclicProd.GROUP_ELEMENT_ORDER_PRIME
-unsafe def GENERATOR_INTEGER_MOD_GROUP : thm := BCyclicProd.GENERATOR_INTEGER_MOD_GROUP
-unsafe def CYCLIC_GROUP_PRIME_ORDER_EQ : thm := BCyclicProd.CYCLIC_GROUP_PRIME_ORDER_EQ
+def CYCLIC_PROD_INTEGER_MOD_GROUP : thm := BCyclicProd.CYCLIC_PROD_INTEGER_MOD_GROUP
+def ISOMORPHIC_PROD_INTEGER_MOD_GROUP : thm := BCyclicProd.ISOMORPHIC_PROD_INTEGER_MOD_GROUP
+def GROUP_ISOMORPHISM_PROD_INTEGER_MOD_GROUP : thm := BCyclicProd.GROUP_ISOMORPHISM_PROD_INTEGER_MOD_GROUP
+def CYCLIC_PROD_GROUP : thm := BCyclicProd.CYCLIC_PROD_GROUP
+def CYCLIC_PRIME_ORDER_GROUP : thm := BCyclicProd.CYCLIC_PRIME_ORDER_GROUP
+def GROUP_ELEMENT_ORDER_PRIME : thm := BCyclicProd.GROUP_ELEMENT_ORDER_PRIME
+def GENERATOR_INTEGER_MOD_GROUP : thm := BCyclicProd.GENERATOR_INTEGER_MOD_GROUP
+def CYCLIC_GROUP_PRIME_ORDER_EQ : thm := BCyclicProd.CYCLIC_GROUP_PRIME_ORDER_EQ
 
 -- Pgroup
-unsafe def pgroup : thm := BPgroup.pgroup
-unsafe def PGROUP_MONOMORPHIC_PREIMAGE : thm := BPgroup.PGROUP_MONOMORPHIC_PREIMAGE
-unsafe def PGROUP_EPIMORPHIC_IMAGE : thm := BPgroup.PGROUP_EPIMORPHIC_IMAGE
-unsafe def PGROUP_QUOTIENT_GROUP : thm := BPgroup.PGROUP_QUOTIENT_GROUP
-unsafe def PGROUP_SUBGROUP_GENERATED : thm := BPgroup.PGROUP_SUBGROUP_GENERATED
-unsafe def PGROUP_PROD_GROUP : thm := BPgroup.PGROUP_PROD_GROUP
-unsafe def PGROUP_EMPTY : thm := BPgroup.PGROUP_EMPTY
-unsafe def PGROUP_MONO : thm := BPgroup.PGROUP_MONO
-unsafe def PGROUP_SUM_GROUP : thm := BPgroup.PGROUP_SUM_GROUP
-unsafe def PGROUP_SING : thm := BPgroup.PGROUP_SING
+def pgroup : thm := BPgroup.pgroup
+def PGROUP_MONOMORPHIC_PREIMAGE : thm := BPgroup.PGROUP_MONOMORPHIC_PREIMAGE
+def PGROUP_EPIMORPHIC_IMAGE : thm := BPgroup.PGROUP_EPIMORPHIC_IMAGE
+def PGROUP_QUOTIENT_GROUP : thm := BPgroup.PGROUP_QUOTIENT_GROUP
+def PGROUP_SUBGROUP_GENERATED : thm := BPgroup.PGROUP_SUBGROUP_GENERATED
+def PGROUP_PROD_GROUP : thm := BPgroup.PGROUP_PROD_GROUP
+def PGROUP_EMPTY : thm := BPgroup.PGROUP_EMPTY
+def PGROUP_MONO : thm := BPgroup.PGROUP_MONO
+def PGROUP_SUM_GROUP : thm := BPgroup.PGROUP_SUM_GROUP
+def PGROUP_SING : thm := BPgroup.PGROUP_SING
 
 -- SylowCount
-unsafe def SYLOW_THEOREM_COUNT_MOD : thm := BSylowCount.SYLOW_THEOREM_COUNT_MOD
+def SYLOW_THEOREM_COUNT_MOD : thm := BSylowCount.SYLOW_THEOREM_COUNT_MOD
 
 -- Sylow
-unsafe def SYLOW_THEOREM : thm := BSylow.SYLOW_THEOREM
-unsafe def CAUCHY_GROUP_THEOREM : thm := BSylow.CAUCHY_GROUP_THEOREM
-unsafe def PRIME_DIVIDES_GROUP_ORDER : thm := BSylow.PRIME_DIVIDES_GROUP_ORDER
-unsafe def COPRIME_GROUP_ORDER : thm := BSylow.COPRIME_GROUP_ORDER
-unsafe def FINITE_PGROUP : thm := BSylow.FINITE_PGROUP
-unsafe def FINITE_PGROUP_SING : thm := BSylow.FINITE_PGROUP_SING
-unsafe def FINITE_AND_PGROUP_SING : thm := BSylow.FINITE_AND_PGROUP_SING
-unsafe def FINITE_GROUP_POW_INJECTIVE_EQ : thm := BSylow.FINITE_GROUP_POW_INJECTIVE_EQ
-unsafe def FINITE_GROUP_ZPOW_INJECTIVE_EQ : thm := BSylow.FINITE_GROUP_ZPOW_INJECTIVE_EQ
-unsafe def FINITE_GROUP_POW_SURJECTIVE_EQ : thm := BSylow.FINITE_GROUP_POW_SURJECTIVE_EQ
-unsafe def FINITE_GROUP_ZPOW_SURJECTIVE_EQ : thm := BSylow.FINITE_GROUP_ZPOW_SURJECTIVE_EQ
-unsafe def FINITE_GROUP_ZROOT_EXISTS : thm := BSylow.FINITE_GROUP_ZROOT_EXISTS
-unsafe def FINITE_GROUP_ROOT_EXISTS : thm := BSylow.FINITE_GROUP_ROOT_EXISTS
+def SYLOW_THEOREM : thm := BSylow.SYLOW_THEOREM
+def CAUCHY_GROUP_THEOREM : thm := BSylow.CAUCHY_GROUP_THEOREM
+def PRIME_DIVIDES_GROUP_ORDER : thm := BSylow.PRIME_DIVIDES_GROUP_ORDER
+def COPRIME_GROUP_ORDER : thm := BSylow.COPRIME_GROUP_ORDER
+def FINITE_PGROUP : thm := BSylow.FINITE_PGROUP
+def FINITE_PGROUP_SING : thm := BSylow.FINITE_PGROUP_SING
+def FINITE_AND_PGROUP_SING : thm := BSylow.FINITE_AND_PGROUP_SING
+def FINITE_GROUP_POW_INJECTIVE_EQ : thm := BSylow.FINITE_GROUP_POW_INJECTIVE_EQ
+def FINITE_GROUP_ZPOW_INJECTIVE_EQ : thm := BSylow.FINITE_GROUP_ZPOW_INJECTIVE_EQ
+def FINITE_GROUP_POW_SURJECTIVE_EQ : thm := BSylow.FINITE_GROUP_POW_SURJECTIVE_EQ
+def FINITE_GROUP_ZPOW_SURJECTIVE_EQ : thm := BSylow.FINITE_GROUP_ZPOW_SURJECTIVE_EQ
+def FINITE_GROUP_ZROOT_EXISTS : thm := BSylow.FINITE_GROUP_ZROOT_EXISTS
+def FINITE_GROUP_ROOT_EXISTS : thm := BSylow.FINITE_GROUP_ROOT_EXISTS
 
 -- Powering
-unsafe def ABELIAN_GROUP_MONOMORPHISM_POWERING_EQ : thm := BPowering.ABELIAN_GROUP_MONOMORPHISM_POWERING_EQ
-unsafe def ABELIAN_GROUP_MONOMORPHISM_POWERING : thm := BPowering.ABELIAN_GROUP_MONOMORPHISM_POWERING
-unsafe def ABELIAN_GROUP_ISOMORPHISM_POWERING_EQ : thm := BPowering.ABELIAN_GROUP_ISOMORPHISM_POWERING_EQ
-unsafe def ABELIAN_GROUP_ISOMORPHISM_POWERING : thm := BPowering.ABELIAN_GROUP_ISOMORPHISM_POWERING
-unsafe def ABELIAN_GROUP_EPIMORPHISM_POWERING_EQ : thm := BPowering.ABELIAN_GROUP_EPIMORPHISM_POWERING_EQ
-unsafe def ABELIAN_GROUP_EPIMORPHISM_POWERING : thm := BPowering.ABELIAN_GROUP_EPIMORPHISM_POWERING
-unsafe def PGROUP_ACTION_FIXPOINTS : thm := BPowering.PGROUP_ACTION_FIXPOINTS
-unsafe def PGROUP_ACTION_FIXPOINT : thm := BPowering.PGROUP_ACTION_FIXPOINT
+def ABELIAN_GROUP_MONOMORPHISM_POWERING_EQ : thm := BPowering.ABELIAN_GROUP_MONOMORPHISM_POWERING_EQ
+def ABELIAN_GROUP_MONOMORPHISM_POWERING : thm := BPowering.ABELIAN_GROUP_MONOMORPHISM_POWERING
+def ABELIAN_GROUP_ISOMORPHISM_POWERING_EQ : thm := BPowering.ABELIAN_GROUP_ISOMORPHISM_POWERING_EQ
+def ABELIAN_GROUP_ISOMORPHISM_POWERING : thm := BPowering.ABELIAN_GROUP_ISOMORPHISM_POWERING
+def ABELIAN_GROUP_EPIMORPHISM_POWERING_EQ : thm := BPowering.ABELIAN_GROUP_EPIMORPHISM_POWERING_EQ
+def ABELIAN_GROUP_EPIMORPHISM_POWERING : thm := BPowering.ABELIAN_GROUP_EPIMORPHISM_POWERING
+def PGROUP_ACTION_FIXPOINTS : thm := BPowering.PGROUP_ACTION_FIXPOINTS
+def PGROUP_ACTION_FIXPOINT : thm := BPowering.PGROUP_ACTION_FIXPOINT
 
 -- Sylow2
-unsafe def SYLOW_THEOREM_CONJUGATE_GEN : thm := BSylow2.SYLOW_THEOREM_CONJUGATE_GEN
-unsafe def SYLOW_THEOREM_CONJUGATE_SUBSET : thm := BSylow2.SYLOW_THEOREM_CONJUGATE_SUBSET
-unsafe def SYLOW_THEOREM_CONJUGATE_ALT : thm := BSylow2.SYLOW_THEOREM_CONJUGATE_ALT
-unsafe def SYLOW_THEOREM_CONJUGATE : thm := BSylow2.SYLOW_THEOREM_CONJUGATE
-unsafe def SYLOW_THEOREM_CONJUGATE_EQ : thm := BSylow2.SYLOW_THEOREM_CONJUGATE_EQ
-unsafe def SYLOW_THEOREM_PGROUP_SUPERSET : thm := BSylow2.SYLOW_THEOREM_PGROUP_SUPERSET
-unsafe def SYLOW_THEOREM_NORMAL_UNIQUE : thm := BSylow2.SYLOW_THEOREM_NORMAL_UNIQUE
-unsafe def SYLOW_THEOREM_COUNT_NORMALIZER : thm := BSylow2.SYLOW_THEOREM_COUNT_NORMALIZER
-unsafe def SYLOW_THEOREM_COUNT_NORMALIZER_MUL : thm := BSylow2.SYLOW_THEOREM_COUNT_NORMALIZER_MUL
-unsafe def SYLOW_THEOREM_NORMAL_UNIQUE_EQ : thm := BSylow2.SYLOW_THEOREM_NORMAL_UNIQUE_EQ
-unsafe def SYLOW_THEOREM_UNIQUE : thm := BSylow2.SYLOW_THEOREM_UNIQUE
-unsafe def SYLOW_THEOREM_COUNT_DIVISOR : thm := BSylow2.SYLOW_THEOREM_COUNT_DIVISOR
+def SYLOW_THEOREM_CONJUGATE_GEN : thm := BSylow2.SYLOW_THEOREM_CONJUGATE_GEN
+def SYLOW_THEOREM_CONJUGATE_SUBSET : thm := BSylow2.SYLOW_THEOREM_CONJUGATE_SUBSET
+def SYLOW_THEOREM_CONJUGATE_ALT : thm := BSylow2.SYLOW_THEOREM_CONJUGATE_ALT
+def SYLOW_THEOREM_CONJUGATE : thm := BSylow2.SYLOW_THEOREM_CONJUGATE
+def SYLOW_THEOREM_CONJUGATE_EQ : thm := BSylow2.SYLOW_THEOREM_CONJUGATE_EQ
+def SYLOW_THEOREM_PGROUP_SUPERSET : thm := BSylow2.SYLOW_THEOREM_PGROUP_SUPERSET
+def SYLOW_THEOREM_NORMAL_UNIQUE : thm := BSylow2.SYLOW_THEOREM_NORMAL_UNIQUE
+def SYLOW_THEOREM_COUNT_NORMALIZER : thm := BSylow2.SYLOW_THEOREM_COUNT_NORMALIZER
+def SYLOW_THEOREM_COUNT_NORMALIZER_MUL : thm := BSylow2.SYLOW_THEOREM_COUNT_NORMALIZER_MUL
+def SYLOW_THEOREM_NORMAL_UNIQUE_EQ : thm := BSylow2.SYLOW_THEOREM_NORMAL_UNIQUE_EQ
+def SYLOW_THEOREM_UNIQUE : thm := BSylow2.SYLOW_THEOREM_UNIQUE
+def SYLOW_THEOREM_COUNT_DIVISOR : thm := BSylow2.SYLOW_THEOREM_COUNT_DIVISOR
 
 -- PGroupCentre
-unsafe def PGROUP_NONTRIVIAL_CENTRE_GEN : thm := BPGroupCentre.PGROUP_NONTRIVIAL_CENTRE_GEN
-unsafe def PGROUP_NONTRIVIAL_CENTRE : thm := BPGroupCentre.PGROUP_NONTRIVIAL_CENTRE
-unsafe def PGROUP_DIVIDES_NORMALIZER_QUOTIENT : thm := BPGroupCentre.PGROUP_DIVIDES_NORMALIZER_QUOTIENT
+def PGROUP_NONTRIVIAL_CENTRE_GEN : thm := BPGroupCentre.PGROUP_NONTRIVIAL_CENTRE_GEN
+def PGROUP_NONTRIVIAL_CENTRE : thm := BPGroupCentre.PGROUP_NONTRIVIAL_CENTRE
+def PGROUP_DIVIDES_NORMALIZER_QUOTIENT : thm := BPGroupCentre.PGROUP_DIVIDES_NORMALIZER_QUOTIENT
 
 -- PgroupNormalizer
-unsafe def PGROUP_SUBGROUP_PSUBSET_NORMALIZER : thm := BPgroupNormalizer.PGROUP_SUBGROUP_PSUBSET_NORMALIZER
-unsafe def PGROUP_MAXIMAL_NORMAL_SUBGROUP_OF : thm := BPgroupNormalizer.PGROUP_MAXIMAL_NORMAL_SUBGROUP_OF
-unsafe def PGROUP_FRATTINI : thm := BPgroupNormalizer.PGROUP_FRATTINI
-unsafe def PGROUP_SELF_NORMALIZER : thm := BPgroupNormalizer.PGROUP_SELF_NORMALIZER
-unsafe def PGROUP_NORMALIZER_NORMALIZER : thm := BPgroupNormalizer.PGROUP_NORMALIZER_NORMALIZER
+def PGROUP_SUBGROUP_PSUBSET_NORMALIZER : thm := BPgroupNormalizer.PGROUP_SUBGROUP_PSUBSET_NORMALIZER
+def PGROUP_MAXIMAL_NORMAL_SUBGROUP_OF : thm := BPgroupNormalizer.PGROUP_MAXIMAL_NORMAL_SUBGROUP_OF
+def PGROUP_FRATTINI : thm := BPgroupNormalizer.PGROUP_FRATTINI
+def PGROUP_SELF_NORMALIZER : thm := BPgroupNormalizer.PGROUP_SELF_NORMALIZER
+def PGROUP_NORMALIZER_NORMALIZER : thm := BPgroupNormalizer.PGROUP_NORMALIZER_NORMALIZER
 
 -- GroupDisjointSum
-unsafe def GROUP_DISJOINT_SUM_ALT : thm := BGroupDisjointSum.GROUP_DISJOINT_SUM_ALT
-unsafe def GROUP_DISJOINT_SUM_ID : thm := BGroupDisjointSum.GROUP_DISJOINT_SUM_ID
-unsafe def GROUP_DISJOINT_SUM_CANCEL : thm := BGroupDisjointSum.GROUP_DISJOINT_SUM_CANCEL
-unsafe def GROUP_SUM_COMMUTING_IMP_NORMAL : thm := BGroupDisjointSum.GROUP_SUM_COMMUTING_IMP_NORMAL
-unsafe def GROUP_SUM_NORMAL_IMP_COMMUTING : thm := BGroupDisjointSum.GROUP_SUM_NORMAL_IMP_COMMUTING
-unsafe def GROUP_SUM_NORMAL_EQ_COMMUTING : thm := BGroupDisjointSum.GROUP_SUM_NORMAL_EQ_COMMUTING
+def GROUP_DISJOINT_SUM_ALT : thm := BGroupDisjointSum.GROUP_DISJOINT_SUM_ALT
+def GROUP_DISJOINT_SUM_ID : thm := BGroupDisjointSum.GROUP_DISJOINT_SUM_ID
+def GROUP_DISJOINT_SUM_CANCEL : thm := BGroupDisjointSum.GROUP_DISJOINT_SUM_CANCEL
+def GROUP_SUM_COMMUTING_IMP_NORMAL : thm := BGroupDisjointSum.GROUP_SUM_COMMUTING_IMP_NORMAL
+def GROUP_SUM_NORMAL_IMP_COMMUTING : thm := BGroupDisjointSum.GROUP_SUM_NORMAL_IMP_COMMUTING
+def GROUP_SUM_NORMAL_EQ_COMMUTING : thm := BGroupDisjointSum.GROUP_SUM_NORMAL_EQ_COMMUTING
 
 -- GroupMulMorphism
-unsafe def GROUP_HOMOMORPHISM_GROUP_MUL_GEN : thm := BGroupMulMorphism.GROUP_HOMOMORPHISM_GROUP_MUL_GEN
-unsafe def GROUP_HOMOMORPHISM_GROUP_MUL_EQ : thm := BGroupMulMorphism.GROUP_HOMOMORPHISM_GROUP_MUL_EQ
-unsafe def GROUP_HOMOMORPHISM_GROUP_MUL : thm := BGroupMulMorphism.GROUP_HOMOMORPHISM_GROUP_MUL
-unsafe def GROUP_EPIMORPHISM_GROUP_MUL_EQ : thm := BGroupMulMorphism.GROUP_EPIMORPHISM_GROUP_MUL_EQ
-unsafe def GROUP_MONOMORPHISM_GROUP_MUL_EQ : thm := BGroupMulMorphism.GROUP_MONOMORPHISM_GROUP_MUL_EQ
-unsafe def GROUP_ISOMORPHISM_GROUP_MUL_ALT : thm := BGroupMulMorphism.GROUP_ISOMORPHISM_GROUP_MUL_ALT
-unsafe def GROUP_ISOMORPHISM_GROUP_MUL_EQ : thm := BGroupMulMorphism.GROUP_ISOMORPHISM_GROUP_MUL_EQ
-unsafe def GROUP_ISOMORPHISM_GROUP_MUL_GEN : thm := BGroupMulMorphism.GROUP_ISOMORPHISM_GROUP_MUL_GEN
-unsafe def GROUP_ISOMORPHISM_GROUP_MUL : thm := BGroupMulMorphism.GROUP_ISOMORPHISM_GROUP_MUL
+def GROUP_HOMOMORPHISM_GROUP_MUL_GEN : thm := BGroupMulMorphism.GROUP_HOMOMORPHISM_GROUP_MUL_GEN
+def GROUP_HOMOMORPHISM_GROUP_MUL_EQ : thm := BGroupMulMorphism.GROUP_HOMOMORPHISM_GROUP_MUL_EQ
+def GROUP_HOMOMORPHISM_GROUP_MUL : thm := BGroupMulMorphism.GROUP_HOMOMORPHISM_GROUP_MUL
+def GROUP_EPIMORPHISM_GROUP_MUL_EQ : thm := BGroupMulMorphism.GROUP_EPIMORPHISM_GROUP_MUL_EQ
+def GROUP_MONOMORPHISM_GROUP_MUL_EQ : thm := BGroupMulMorphism.GROUP_MONOMORPHISM_GROUP_MUL_EQ
+def GROUP_ISOMORPHISM_GROUP_MUL_ALT : thm := BGroupMulMorphism.GROUP_ISOMORPHISM_GROUP_MUL_ALT
+def GROUP_ISOMORPHISM_GROUP_MUL_EQ : thm := BGroupMulMorphism.GROUP_ISOMORPHISM_GROUP_MUL_EQ
+def GROUP_ISOMORPHISM_GROUP_MUL_GEN : thm := BGroupMulMorphism.GROUP_ISOMORPHISM_GROUP_MUL_GEN
+def GROUP_ISOMORPHISM_GROUP_MUL : thm := BGroupMulMorphism.GROUP_ISOMORPHISM_GROUP_MUL
 
 -- GroupSumImKer
-unsafe def ISOMORPHIC_PROD_GROUP_SUBGROUP_GENERATED : thm := BGroupSumImKer.ISOMORPHIC_PROD_GROUP_SUBGROUP_GENERATED
-unsafe def GROUP_INTER_IM_KER : thm := BGroupSumImKer.GROUP_INTER_IM_KER
-unsafe def GROUP_SUM_IM_KER : thm := BGroupSumImKer.GROUP_SUM_IM_KER
-unsafe def GROUP_SUM_KER_IM : thm := BGroupSumImKer.GROUP_SUM_KER_IM
-unsafe def GROUP_SEMIDIRECT_SUM_IM_KER : thm := BGroupSumImKer.GROUP_SEMIDIRECT_SUM_IM_KER
-unsafe def GROUP_SEMIDIRECT_SUM_KER_IM : thm := BGroupSumImKer.GROUP_SEMIDIRECT_SUM_KER_IM
-unsafe def GROUP_ISOMORPHISM_GROUP_MUL_IM_KER : thm := BGroupSumImKer.GROUP_ISOMORPHISM_GROUP_MUL_IM_KER
-unsafe def GROUP_ISOMORPHISM_GROUP_MUL_KER_IM : thm := BGroupSumImKer.GROUP_ISOMORPHISM_GROUP_MUL_KER_IM
+def ISOMORPHIC_PROD_GROUP_SUBGROUP_GENERATED : thm := BGroupSumImKer.ISOMORPHIC_PROD_GROUP_SUBGROUP_GENERATED
+def GROUP_INTER_IM_KER : thm := BGroupSumImKer.GROUP_INTER_IM_KER
+def GROUP_SUM_IM_KER : thm := BGroupSumImKer.GROUP_SUM_IM_KER
+def GROUP_SUM_KER_IM : thm := BGroupSumImKer.GROUP_SUM_KER_IM
+def GROUP_SEMIDIRECT_SUM_IM_KER : thm := BGroupSumImKer.GROUP_SEMIDIRECT_SUM_IM_KER
+def GROUP_SEMIDIRECT_SUM_KER_IM : thm := BGroupSumImKer.GROUP_SEMIDIRECT_SUM_KER_IM
+def GROUP_ISOMORPHISM_GROUP_MUL_IM_KER : thm := BGroupSumImKer.GROUP_ISOMORPHISM_GROUP_MUL_IM_KER
+def GROUP_ISOMORPHISM_GROUP_MUL_KER_IM : thm := BGroupSumImKer.GROUP_ISOMORPHISM_GROUP_MUL_KER_IM
 
 -- GroupSumHomomorphism
-unsafe def GROUP_HOMOMORPHISM_GROUP_SUM_GEN : thm := BGroupSumHomomorphism.GROUP_HOMOMORPHISM_GROUP_SUM_GEN
-unsafe def GROUP_HOMOMORPHISM_GROUP_SUM_EQ : thm := BGroupSumHomomorphism.GROUP_HOMOMORPHISM_GROUP_SUM_EQ
-unsafe def GROUP_HOMOMORPHISM_GROUP_SUM : thm := BGroupSumHomomorphism.GROUP_HOMOMORPHISM_GROUP_SUM
-unsafe def GROUP_HOMOMORPHISM_ABELIAN_GROUP_SUM : thm := BGroupSumHomomorphism.GROUP_HOMOMORPHISM_ABELIAN_GROUP_SUM
-unsafe def ABELIAN_GROUP_HOMOMORPHISM_GROUP_SUM : thm := BGroupSumHomomorphism.ABELIAN_GROUP_HOMOMORPHISM_GROUP_SUM
+def GROUP_HOMOMORPHISM_GROUP_SUM_GEN : thm := BGroupSumHomomorphism.GROUP_HOMOMORPHISM_GROUP_SUM_GEN
+def GROUP_HOMOMORPHISM_GROUP_SUM_EQ : thm := BGroupSumHomomorphism.GROUP_HOMOMORPHISM_GROUP_SUM_EQ
+def GROUP_HOMOMORPHISM_GROUP_SUM : thm := BGroupSumHomomorphism.GROUP_HOMOMORPHISM_GROUP_SUM
+def GROUP_HOMOMORPHISM_ABELIAN_GROUP_SUM : thm := BGroupSumHomomorphism.GROUP_HOMOMORPHISM_ABELIAN_GROUP_SUM
+def ABELIAN_GROUP_HOMOMORPHISM_GROUP_SUM : thm := BGroupSumHomomorphism.ABELIAN_GROUP_HOMOMORPHISM_GROUP_SUM
 
 -- GroupSumEpimorphism
-unsafe def SUBGROUP_EPIMORPHISM_GROUP_SUM_GEN : thm := BGroupSumEpimorphism.SUBGROUP_EPIMORPHISM_GROUP_SUM_GEN
-unsafe def SUBGROUP_EPIMORPHISM_GROUP_SUM_EQ : thm := BGroupSumEpimorphism.SUBGROUP_EPIMORPHISM_GROUP_SUM_EQ
-unsafe def SUBGROUP_EPIMORPHISM_GROUP_SUM : thm := BGroupSumEpimorphism.SUBGROUP_EPIMORPHISM_GROUP_SUM
-unsafe def SUBGROUP_EPIMORPHISM_ABELIAN_GROUP_SUM : thm := BGroupSumEpimorphism.SUBGROUP_EPIMORPHISM_ABELIAN_GROUP_SUM
-unsafe def GROUP_EPIMORPHISM_GROUP_SUM_GEN : thm := BGroupSumEpimorphism.GROUP_EPIMORPHISM_GROUP_SUM_GEN
-unsafe def GROUP_EPIMORPHISM_GROUP_SUM_EQ : thm := BGroupSumEpimorphism.GROUP_EPIMORPHISM_GROUP_SUM_EQ
-unsafe def GROUP_EPIMORPHISM_GROUP_SUM : thm := BGroupSumEpimorphism.GROUP_EPIMORPHISM_GROUP_SUM
-unsafe def GROUP_EPIMORPHISM_ABELIAN_GROUP_SUM : thm := BGroupSumEpimorphism.GROUP_EPIMORPHISM_ABELIAN_GROUP_SUM
+def SUBGROUP_EPIMORPHISM_GROUP_SUM_GEN : thm := BGroupSumEpimorphism.SUBGROUP_EPIMORPHISM_GROUP_SUM_GEN
+def SUBGROUP_EPIMORPHISM_GROUP_SUM_EQ : thm := BGroupSumEpimorphism.SUBGROUP_EPIMORPHISM_GROUP_SUM_EQ
+def SUBGROUP_EPIMORPHISM_GROUP_SUM : thm := BGroupSumEpimorphism.SUBGROUP_EPIMORPHISM_GROUP_SUM
+def SUBGROUP_EPIMORPHISM_ABELIAN_GROUP_SUM : thm := BGroupSumEpimorphism.SUBGROUP_EPIMORPHISM_ABELIAN_GROUP_SUM
+def GROUP_EPIMORPHISM_GROUP_SUM_GEN : thm := BGroupSumEpimorphism.GROUP_EPIMORPHISM_GROUP_SUM_GEN
+def GROUP_EPIMORPHISM_GROUP_SUM_EQ : thm := BGroupSumEpimorphism.GROUP_EPIMORPHISM_GROUP_SUM_EQ
+def GROUP_EPIMORPHISM_GROUP_SUM : thm := BGroupSumEpimorphism.GROUP_EPIMORPHISM_GROUP_SUM
+def GROUP_EPIMORPHISM_ABELIAN_GROUP_SUM : thm := BGroupSumEpimorphism.GROUP_EPIMORPHISM_ABELIAN_GROUP_SUM
 
 -- GroupSumMonomorphism
-unsafe def GROUP_MONOMORPHISM_GROUP_SUM_GEN : thm := BGroupSumMonomorphism.GROUP_MONOMORPHISM_GROUP_SUM_GEN
-unsafe def GROUP_MONOMORPHISM_GROUP_SUM_EQ : thm := BGroupSumMonomorphism.GROUP_MONOMORPHISM_GROUP_SUM_EQ
-unsafe def GROUP_MONOMORPHISM_GROUP_SUM : thm := BGroupSumMonomorphism.GROUP_MONOMORPHISM_GROUP_SUM
-unsafe def GROUP_MONOMORPHISM_ABELIAN_GROUP_SUM : thm := BGroupSumMonomorphism.GROUP_MONOMORPHISM_ABELIAN_GROUP_SUM
-unsafe def SUBGROUP_ISOMORPHISM_GROUP_SUM_GEN : thm := BGroupSumMonomorphism.SUBGROUP_ISOMORPHISM_GROUP_SUM_GEN
+def GROUP_MONOMORPHISM_GROUP_SUM_GEN : thm := BGroupSumMonomorphism.GROUP_MONOMORPHISM_GROUP_SUM_GEN
+def GROUP_MONOMORPHISM_GROUP_SUM_EQ : thm := BGroupSumMonomorphism.GROUP_MONOMORPHISM_GROUP_SUM_EQ
+def GROUP_MONOMORPHISM_GROUP_SUM : thm := BGroupSumMonomorphism.GROUP_MONOMORPHISM_GROUP_SUM
+def GROUP_MONOMORPHISM_ABELIAN_GROUP_SUM : thm := BGroupSumMonomorphism.GROUP_MONOMORPHISM_ABELIAN_GROUP_SUM
+def SUBGROUP_ISOMORPHISM_GROUP_SUM_GEN : thm := BGroupSumMonomorphism.SUBGROUP_ISOMORPHISM_GROUP_SUM_GEN
 
 -- SumGroupIsomorphism
-unsafe def SUBGROUP_ISOMORPHISM_GROUP_SUM_EQ : thm := BSumGroupIsomorphism.SUBGROUP_ISOMORPHISM_GROUP_SUM_EQ
-unsafe def SUBGROUP_ISOMORPHISM_GROUP_SUM : thm := BSumGroupIsomorphism.SUBGROUP_ISOMORPHISM_GROUP_SUM
-unsafe def SUBGROUP_ISOMORPHISM_ABELIAN_GROUP_SUM : thm := BSumGroupIsomorphism.SUBGROUP_ISOMORPHISM_ABELIAN_GROUP_SUM
-unsafe def GROUP_ISOMORPHISM_GROUP_SUM_GEN : thm := BSumGroupIsomorphism.GROUP_ISOMORPHISM_GROUP_SUM_GEN
-unsafe def GROUP_ISOMORPHISM_GROUP_SUM_EQ : thm := BSumGroupIsomorphism.GROUP_ISOMORPHISM_GROUP_SUM_EQ
-unsafe def GROUP_ISOMORPHISM_GROUP_SUM : thm := BSumGroupIsomorphism.GROUP_ISOMORPHISM_GROUP_SUM
-unsafe def GROUP_ISOMORPHISM_ABELIAN_GROUP_SUM : thm := BSumGroupIsomorphism.GROUP_ISOMORPHISM_ABELIAN_GROUP_SUM
-unsafe def ISOMORPHIC_SUM_GROUP_GEN : thm := BSumGroupIsomorphism.ISOMORPHIC_SUM_GROUP_GEN
-unsafe def ISOMORPHIC_SUM_GROUP : thm := BSumGroupIsomorphism.ISOMORPHIC_SUM_GROUP
-unsafe def ISOMORPHIC_ABELIAN_SUM_GROUP : thm := BSumGroupIsomorphism.ISOMORPHIC_ABELIAN_SUM_GROUP
-unsafe def ISOMORPHIC_NORMAL_SUM_GROUP : thm := BSumGroupIsomorphism.ISOMORPHIC_NORMAL_SUM_GROUP
+def SUBGROUP_ISOMORPHISM_GROUP_SUM_EQ : thm := BSumGroupIsomorphism.SUBGROUP_ISOMORPHISM_GROUP_SUM_EQ
+def SUBGROUP_ISOMORPHISM_GROUP_SUM : thm := BSumGroupIsomorphism.SUBGROUP_ISOMORPHISM_GROUP_SUM
+def SUBGROUP_ISOMORPHISM_ABELIAN_GROUP_SUM : thm := BSumGroupIsomorphism.SUBGROUP_ISOMORPHISM_ABELIAN_GROUP_SUM
+def GROUP_ISOMORPHISM_GROUP_SUM_GEN : thm := BSumGroupIsomorphism.GROUP_ISOMORPHISM_GROUP_SUM_GEN
+def GROUP_ISOMORPHISM_GROUP_SUM_EQ : thm := BSumGroupIsomorphism.GROUP_ISOMORPHISM_GROUP_SUM_EQ
+def GROUP_ISOMORPHISM_GROUP_SUM : thm := BSumGroupIsomorphism.GROUP_ISOMORPHISM_GROUP_SUM
+def GROUP_ISOMORPHISM_ABELIAN_GROUP_SUM : thm := BSumGroupIsomorphism.GROUP_ISOMORPHISM_ABELIAN_GROUP_SUM
+def ISOMORPHIC_SUM_GROUP_GEN : thm := BSumGroupIsomorphism.ISOMORPHIC_SUM_GROUP_GEN
+def ISOMORPHIC_SUM_GROUP : thm := BSumGroupIsomorphism.ISOMORPHIC_SUM_GROUP
+def ISOMORPHIC_ABELIAN_SUM_GROUP : thm := BSumGroupIsomorphism.ISOMORPHIC_ABELIAN_SUM_GROUP
+def ISOMORPHIC_NORMAL_SUM_GROUP : thm := BSumGroupIsomorphism.ISOMORPHIC_NORMAL_SUM_GROUP
 
 -- CarrierSubgroupGeneratedUnions
-unsafe def CARRIER_SUBGROUP_GENERATED_UNIONS : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_UNIONS
-unsafe def CARRIER_SUBGROUP_GENERATED_UNIONS_ALT : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_UNIONS_ALT
-unsafe def CARRIER_SUBGROUP_GENERATED_UNIONS_FINITE : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_UNIONS_FINITE
-unsafe def CARRIER_SUBGROUP_GENERATED_UNIONS_EXPLICIT : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_UNIONS_EXPLICIT
-unsafe def CARRIER_SUBGROUP_GENERATED_ALT : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_ALT
-unsafe def CARRIER_SUBGROUP_GENERATED_FINITE : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_FINITE
-unsafe def CARRIER_SUBGROUP_GENERATED_EXPLICIT : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_EXPLICIT
+def CARRIER_SUBGROUP_GENERATED_UNIONS : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_UNIONS
+def CARRIER_SUBGROUP_GENERATED_UNIONS_ALT : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_UNIONS_ALT
+def CARRIER_SUBGROUP_GENERATED_UNIONS_FINITE : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_UNIONS_FINITE
+def CARRIER_SUBGROUP_GENERATED_UNIONS_EXPLICIT : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_UNIONS_EXPLICIT
+def CARRIER_SUBGROUP_GENERATED_ALT : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_ALT
+def CARRIER_SUBGROUP_GENERATED_FINITE : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_FINITE
+def CARRIER_SUBGROUP_GENERATED_EXPLICIT : thm := BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_EXPLICIT
 
 -- PrimeTorsion
-unsafe def SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FINITE : thm := BPrimeTorsion.SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FINITE
-unsafe def SUBGROUP_GENERATED_UNIONS_PRIME_TORSION : thm := BPrimeTorsion.SUBGROUP_GENERATED_UNIONS_PRIME_TORSION
+def SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FINITE : thm := BPrimeTorsion.SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FINITE
+def SUBGROUP_GENERATED_UNIONS_PRIME_TORSION : thm := BPrimeTorsion.SUBGROUP_GENERATED_UNIONS_PRIME_TORSION
 
 -- TorsionStructure
-unsafe def SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FULL : thm := BTorsionStructure.SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FULL
-unsafe def PGROUP_PRIME_TORSION : thm := BTorsionStructure.PGROUP_PRIME_TORSION
-unsafe def PGROUP_SUBSET_PRIME_TORSION : thm := BTorsionStructure.PGROUP_SUBSET_PRIME_TORSION
-unsafe def ABELIAN_GROUP_TORSION_ISOMORPHISM : thm := BTorsionStructure.ABELIAN_GROUP_TORSION_ISOMORPHISM
-unsafe def ABELIAN_GROUP_TORSION_STRUCTURE : thm := BTorsionStructure.ABELIAN_GROUP_TORSION_STRUCTURE
-unsafe def TORSION_ABELIAN_GROUP_ISOMORPHISM : thm := BTorsionStructure.TORSION_ABELIAN_GROUP_ISOMORPHISM
-unsafe def TORSION_ABELIAN_GROUP_STRUCTURE : thm := BTorsionStructure.TORSION_ABELIAN_GROUP_STRUCTURE
-unsafe def FINITE_ABELIAN_GROUP_STRUCTURE : thm := BTorsionStructure.FINITE_ABELIAN_GROUP_STRUCTURE
-unsafe def FINITE_ABELIAN_GROUP_STRUCTURE_ALT : thm := BTorsionStructure.FINITE_ABELIAN_GROUP_STRUCTURE_ALT
-unsafe def TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS : thm := BTorsionStructure.TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS
+def SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FULL : thm := BTorsionStructure.SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FULL
+def PGROUP_PRIME_TORSION : thm := BTorsionStructure.PGROUP_PRIME_TORSION
+def PGROUP_SUBSET_PRIME_TORSION : thm := BTorsionStructure.PGROUP_SUBSET_PRIME_TORSION
+def ABELIAN_GROUP_TORSION_ISOMORPHISM : thm := BTorsionStructure.ABELIAN_GROUP_TORSION_ISOMORPHISM
+def ABELIAN_GROUP_TORSION_STRUCTURE : thm := BTorsionStructure.ABELIAN_GROUP_TORSION_STRUCTURE
+def TORSION_ABELIAN_GROUP_ISOMORPHISM : thm := BTorsionStructure.TORSION_ABELIAN_GROUP_ISOMORPHISM
+def TORSION_ABELIAN_GROUP_STRUCTURE : thm := BTorsionStructure.TORSION_ABELIAN_GROUP_STRUCTURE
+def FINITE_ABELIAN_GROUP_STRUCTURE : thm := BTorsionStructure.FINITE_ABELIAN_GROUP_STRUCTURE
+def FINITE_ABELIAN_GROUP_STRUCTURE_ALT : thm := BTorsionStructure.FINITE_ABELIAN_GROUP_STRUCTURE_ALT
+def TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS : thm := BTorsionStructure.TORSION_ABELIAN_GROUP_AS_SUM_OF_PGROUPS
 
 -- FinitelyGeneratedAbelian
-unsafe def FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM : thm := BFinitelyGeneratedAbelian.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM
+def FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM : thm := BFinitelyGeneratedAbelian.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM
 
 -- FinGenAbelianStructure
-unsafe def FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM_ALT : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM_ALT
-unsafe def FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_EXPLICIT : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_EXPLICIT
-unsafe def FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_EXPLICIT_ALT : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_EXPLICIT_ALT
-unsafe def FINITELY_GENERATED_ABELIAN_GROUP_STRUCTURE_EXPLICIT : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_STRUCTURE_EXPLICIT
-unsafe def FINITELY_GENERATED_ABELIAN_GROUP_STRUCTURE_EXPLICIT_ALT : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_STRUCTURE_EXPLICIT_ALT
-unsafe def FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_CYCLIC_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_CYCLIC_GROUPS
-unsafe def FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_CYCLIC_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_CYCLIC_GROUPS
-unsafe def FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_INTEGER_MOD_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_INTEGER_MOD_GROUPS
-unsafe def FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_INTEGER_MOD_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_INTEGER_MOD_GROUPS
-unsafe def FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_INTEGER_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_INTEGER_GROUPS
-unsafe def FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_INTEGER_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_INTEGER_GROUPS
+def FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM_ALT : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM_ALT
+def FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_EXPLICIT : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_EXPLICIT
+def FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_EXPLICIT_ALT : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_EXPLICIT_ALT
+def FINITELY_GENERATED_ABELIAN_GROUP_STRUCTURE_EXPLICIT : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_STRUCTURE_EXPLICIT
+def FINITELY_GENERATED_ABELIAN_GROUP_STRUCTURE_EXPLICIT_ALT : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_STRUCTURE_EXPLICIT_ALT
+def FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_CYCLIC_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_CYCLIC_GROUPS
+def FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_CYCLIC_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_CYCLIC_GROUPS
+def FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_INTEGER_MOD_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_INTEGER_MOD_GROUPS
+def FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_INTEGER_MOD_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_INTEGER_MOD_GROUPS
+def FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_INTEGER_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_INTEGER_GROUPS
+def FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_INTEGER_GROUPS : thm := BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_GROUP_AS_PRODUCT_OF_INTEGER_GROUPS
 
 -- FreeAbelianGroup
-unsafe def free_abelian_group : thm := BFreeAbelianGroup.free_abelian_group
-unsafe def FREE_ABELIAN_GROUP : thm := BFreeAbelianGroup.FREE_ABELIAN_GROUP
-unsafe def ABELIAN_FREE_ABELIAN_GROUP : thm := BFreeAbelianGroup.ABELIAN_FREE_ABELIAN_GROUP
-unsafe def FREE_ABELIAN_GROUP_POW : thm := BFreeAbelianGroup.FREE_ABELIAN_GROUP_POW
-unsafe def FREE_ABELIAN_GROUP_ZPOW : thm := BFreeAbelianGroup.FREE_ABELIAN_GROUP_ZPOW
-unsafe def FRAG_OF_IN_FREE_ABELIAN_GROUP : thm := BFreeAbelianGroup.FRAG_OF_IN_FREE_ABELIAN_GROUP
-unsafe def FREE_ABELIAN_GROUP_INDUCT : thm := BFreeAbelianGroup.FREE_ABELIAN_GROUP_INDUCT
-unsafe def FREE_ABELIAN_GROUP_UNIVERSAL : thm := BFreeAbelianGroup.FREE_ABELIAN_GROUP_UNIVERSAL
-unsafe def ISOMORPHIC_GROUP_INTEGER_FREE_ABELIAN_GROUP_SING : thm := BFreeAbelianGroup.ISOMORPHIC_GROUP_INTEGER_FREE_ABELIAN_GROUP_SING
-unsafe def GROUP_HOMOMORPHISM_FREE_ABELIAN_GROUPS_ID : thm := BFreeAbelianGroup.GROUP_HOMOMORPHISM_FREE_ABELIAN_GROUPS_ID
-unsafe def GROUP_ISOMORPHISM_FREE_ABELIAN_GROUP_SUM : thm := BFreeAbelianGroup.GROUP_ISOMORPHISM_FREE_ABELIAN_GROUP_SUM
+def free_abelian_group : thm := BFreeAbelianGroup.free_abelian_group
+def FREE_ABELIAN_GROUP : thm := BFreeAbelianGroup.FREE_ABELIAN_GROUP
+def ABELIAN_FREE_ABELIAN_GROUP : thm := BFreeAbelianGroup.ABELIAN_FREE_ABELIAN_GROUP
+def FREE_ABELIAN_GROUP_POW : thm := BFreeAbelianGroup.FREE_ABELIAN_GROUP_POW
+def FREE_ABELIAN_GROUP_ZPOW : thm := BFreeAbelianGroup.FREE_ABELIAN_GROUP_ZPOW
+def FRAG_OF_IN_FREE_ABELIAN_GROUP : thm := BFreeAbelianGroup.FRAG_OF_IN_FREE_ABELIAN_GROUP
+def FREE_ABELIAN_GROUP_INDUCT : thm := BFreeAbelianGroup.FREE_ABELIAN_GROUP_INDUCT
+def FREE_ABELIAN_GROUP_UNIVERSAL : thm := BFreeAbelianGroup.FREE_ABELIAN_GROUP_UNIVERSAL
+def ISOMORPHIC_GROUP_INTEGER_FREE_ABELIAN_GROUP_SING : thm := BFreeAbelianGroup.ISOMORPHIC_GROUP_INTEGER_FREE_ABELIAN_GROUP_SING
+def GROUP_HOMOMORPHISM_FREE_ABELIAN_GROUPS_ID : thm := BFreeAbelianGroup.GROUP_HOMOMORPHISM_FREE_ABELIAN_GROUPS_ID
+def GROUP_ISOMORPHISM_FREE_ABELIAN_GROUP_SUM : thm := BFreeAbelianGroup.GROUP_ISOMORPHISM_FREE_ABELIAN_GROUP_SUM
 
 -- FreeAbelianExtra
-unsafe def ISOMORPHIC_FREE_ABELIAN_GROUP_UNIONS : thm := BFreeAbelianExtra.ISOMORPHIC_FREE_ABELIAN_GROUP_UNIONS
-unsafe def ISOMORPHIC_SUM_INTEGER_GROUP : thm := BFreeAbelianExtra.ISOMORPHIC_SUM_INTEGER_GROUP
-unsafe def CARD_EQ_FREE_ABELIAN_GROUP_INFINITE : thm := BFreeAbelianExtra.CARD_EQ_FREE_ABELIAN_GROUP_INFINITE
-unsafe def CARD_EQ_HOMOMORPHISMS_FROM_FREE_ABELIAN_GROUP : thm := BFreeAbelianExtra.CARD_EQ_HOMOMORPHISMS_FROM_FREE_ABELIAN_GROUP
-unsafe def ISOMORPHIC_FREE_ABELIAN_GROUPS : thm := BFreeAbelianExtra.ISOMORPHIC_FREE_ABELIAN_GROUPS
+def ISOMORPHIC_FREE_ABELIAN_GROUP_UNIONS : thm := BFreeAbelianExtra.ISOMORPHIC_FREE_ABELIAN_GROUP_UNIONS
+def ISOMORPHIC_SUM_INTEGER_GROUP : thm := BFreeAbelianExtra.ISOMORPHIC_SUM_INTEGER_GROUP
+def CARD_EQ_FREE_ABELIAN_GROUP_INFINITE : thm := BFreeAbelianExtra.CARD_EQ_FREE_ABELIAN_GROUP_INFINITE
+def CARD_EQ_HOMOMORPHISMS_FROM_FREE_ABELIAN_GROUP : thm := BFreeAbelianExtra.CARD_EQ_HOMOMORPHISMS_FROM_FREE_ABELIAN_GROUP
+def ISOMORPHIC_FREE_ABELIAN_GROUPS : thm := BFreeAbelianExtra.ISOMORPHIC_FREE_ABELIAN_GROUPS
 
 -- SolvableGroup
-unsafe def solvable_group : thm := BSolvableGroup.solvable_group
-unsafe def SOLVABLE_GROUP_ALT : thm := BSolvableGroup.SOLVABLE_GROUP_ALT
-unsafe def ABELIAN_QUOTIENT_COMMUTATOR : thm := BSolvableGroup.ABELIAN_QUOTIENT_COMMUTATOR
-unsafe def TRIVIAL_IMP_SOLVABLE_GROUP : thm := BSolvableGroup.TRIVIAL_IMP_SOLVABLE_GROUP
-unsafe def ABELIAN_IMP_SOLVABLE_GROUP : thm := BSolvableGroup.ABELIAN_IMP_SOLVABLE_GROUP
-unsafe def SOLVABLE_GROUP_NORMAL_EXTENSION : thm := BSolvableGroup.SOLVABLE_GROUP_NORMAL_EXTENSION
+def solvable_group : thm := BSolvableGroup.solvable_group
+def SOLVABLE_GROUP_ALT : thm := BSolvableGroup.SOLVABLE_GROUP_ALT
+def ABELIAN_QUOTIENT_COMMUTATOR : thm := BSolvableGroup.ABELIAN_QUOTIENT_COMMUTATOR
+def TRIVIAL_IMP_SOLVABLE_GROUP : thm := BSolvableGroup.TRIVIAL_IMP_SOLVABLE_GROUP
+def ABELIAN_IMP_SOLVABLE_GROUP : thm := BSolvableGroup.ABELIAN_IMP_SOLVABLE_GROUP
+def SOLVABLE_GROUP_NORMAL_EXTENSION : thm := BSolvableGroup.SOLVABLE_GROUP_NORMAL_EXTENSION
 
 -- SolvableImage
-unsafe def ABELIAN_QUOTIENT_EPIMORPHIC_IMAGE : thm := BSolvableImage.ABELIAN_QUOTIENT_EPIMORPHIC_IMAGE
-unsafe def SOLVABLE_GROUP_EPIMORPHIC_IMAGE : thm := BSolvableImage.SOLVABLE_GROUP_EPIMORPHIC_IMAGE
-unsafe def SOLVABLE_GROUP_QUOTIENT : thm := BSolvableImage.SOLVABLE_GROUP_QUOTIENT
-unsafe def ISOMORPHIC_GROUP_SOLVABILITY : thm := BSolvableImage.ISOMORPHIC_GROUP_SOLVABILITY
-unsafe def COMMUTATOR_IMP_ABELIAN_QUOTIENT : thm := BSolvableImage.COMMUTATOR_IMP_ABELIAN_QUOTIENT
-unsafe def ABELIAN_QUOTIENT_GROUP_DIV : thm := BSolvableImage.ABELIAN_QUOTIENT_GROUP_DIV
+def ABELIAN_QUOTIENT_EPIMORPHIC_IMAGE : thm := BSolvableImage.ABELIAN_QUOTIENT_EPIMORPHIC_IMAGE
+def SOLVABLE_GROUP_EPIMORPHIC_IMAGE : thm := BSolvableImage.SOLVABLE_GROUP_EPIMORPHIC_IMAGE
+def SOLVABLE_GROUP_QUOTIENT : thm := BSolvableImage.SOLVABLE_GROUP_QUOTIENT
+def ISOMORPHIC_GROUP_SOLVABILITY : thm := BSolvableImage.ISOMORPHIC_GROUP_SOLVABILITY
+def COMMUTATOR_IMP_ABELIAN_QUOTIENT : thm := BSolvableImage.COMMUTATOR_IMP_ABELIAN_QUOTIENT
+def ABELIAN_QUOTIENT_GROUP_DIV : thm := BSolvableImage.ABELIAN_QUOTIENT_GROUP_DIV
 
 -- SolvableSubgroup
-unsafe def SOLVABLE_GROUP_SUBGROUP : thm := BSolvableSubgroup.SOLVABLE_GROUP_SUBGROUP
-unsafe def SOLVABLE_GROUP_MONOMORPHIC_PREIMAGE : thm := BSolvableSubgroup.SOLVABLE_GROUP_MONOMORPHIC_PREIMAGE
+def SOLVABLE_GROUP_SUBGROUP : thm := BSolvableSubgroup.SOLVABLE_GROUP_SUBGROUP
+def SOLVABLE_GROUP_MONOMORPHIC_PREIMAGE : thm := BSolvableSubgroup.SOLVABLE_GROUP_MONOMORPHIC_PREIMAGE
 
 -- SolvableQuotient
-unsafe def SOLVABLE_GROUP_SOLVABLE_QUOTIENT : thm := BSolvableQuotient.SOLVABLE_GROUP_SOLVABLE_QUOTIENT
+def SOLVABLE_GROUP_SOLVABLE_QUOTIENT : thm := BSolvableQuotient.SOLVABLE_GROUP_SOLVABLE_QUOTIENT
 
 -- ExactSequences
-unsafe def group_exactness : thm := BExactSequences.group_exactness
-unsafe def short_exact_sequence : thm := BExactSequences.short_exact_sequence
-unsafe def SHORT_EXACT_SEQUENCE : thm := BExactSequences.SHORT_EXACT_SEQUENCE
-unsafe def GROUP_EXACTNESS_MONOMORPHISM : thm := BExactSequences.GROUP_EXACTNESS_MONOMORPHISM
-unsafe def GROUP_EXACTNESS_EPIMORPHISM : thm := BExactSequences.GROUP_EXACTNESS_EPIMORPHISM
-unsafe def EXTREMELY_SHORT_EXACT_SEQUENCE : thm := BExactSequences.EXTREMELY_SHORT_EXACT_SEQUENCE
-unsafe def GROUP_EXACTNESS_EPIMORPHISM_EQ_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_EPIMORPHISM_EQ_TRIVIALITY
-unsafe def GROUP_EXACTNESS_MONOMORPHISM_EQ_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_MONOMORPHISM_EQ_TRIVIALITY
-unsafe def VERY_SHORT_EXACT_SEQUENCE : thm := BExactSequences.VERY_SHORT_EXACT_SEQUENCE
-unsafe def GROUP_EXACTNESS_EQ_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_EQ_TRIVIALITY
-unsafe def GROUP_EXACTNESS_IMP_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_IMP_TRIVIALITY
-unsafe def GROUP_EXACTNESS_ISOMORPHISM_EQ_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_ISOMORPHISM_EQ_TRIVIALITY
-unsafe def GROUP_EXACTNESS_ISOMORPHISM_EQ_MONO_EPI : thm := BExactSequences.GROUP_EXACTNESS_ISOMORPHISM_EQ_MONO_EPI
-unsafe def SHORT_EXACT_SEQUENCE_NORMAL_SUBGROUP : thm := BExactSequences.SHORT_EXACT_SEQUENCE_NORMAL_SUBGROUP
-unsafe def SHORT_EXACT_SEQUENCE_PROD_GROUP : thm := BExactSequences.SHORT_EXACT_SEQUENCE_PROD_GROUP
-unsafe def SHORT_EXACT_SEQUENCE_PROD_GROUP_ALT : thm := BExactSequences.SHORT_EXACT_SEQUENCE_PROD_GROUP_ALT
+def group_exactness : thm := BExactSequences.group_exactness
+def short_exact_sequence : thm := BExactSequences.short_exact_sequence
+def SHORT_EXACT_SEQUENCE : thm := BExactSequences.SHORT_EXACT_SEQUENCE
+def GROUP_EXACTNESS_MONOMORPHISM : thm := BExactSequences.GROUP_EXACTNESS_MONOMORPHISM
+def GROUP_EXACTNESS_EPIMORPHISM : thm := BExactSequences.GROUP_EXACTNESS_EPIMORPHISM
+def EXTREMELY_SHORT_EXACT_SEQUENCE : thm := BExactSequences.EXTREMELY_SHORT_EXACT_SEQUENCE
+def GROUP_EXACTNESS_EPIMORPHISM_EQ_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_EPIMORPHISM_EQ_TRIVIALITY
+def GROUP_EXACTNESS_MONOMORPHISM_EQ_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_MONOMORPHISM_EQ_TRIVIALITY
+def VERY_SHORT_EXACT_SEQUENCE : thm := BExactSequences.VERY_SHORT_EXACT_SEQUENCE
+def GROUP_EXACTNESS_EQ_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_EQ_TRIVIALITY
+def GROUP_EXACTNESS_IMP_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_IMP_TRIVIALITY
+def GROUP_EXACTNESS_ISOMORPHISM_EQ_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_ISOMORPHISM_EQ_TRIVIALITY
+def GROUP_EXACTNESS_ISOMORPHISM_EQ_MONO_EPI : thm := BExactSequences.GROUP_EXACTNESS_ISOMORPHISM_EQ_MONO_EPI
+def SHORT_EXACT_SEQUENCE_NORMAL_SUBGROUP : thm := BExactSequences.SHORT_EXACT_SEQUENCE_NORMAL_SUBGROUP
+def SHORT_EXACT_SEQUENCE_PROD_GROUP : thm := BExactSequences.SHORT_EXACT_SEQUENCE_PROD_GROUP
+def SHORT_EXACT_SEQUENCE_PROD_GROUP_ALT : thm := BExactSequences.SHORT_EXACT_SEQUENCE_PROD_GROUP_ALT
 
 -- ExactSeq
-unsafe def EXACT_SEQUENCE_SUM_LEMMA : thm := BExactSeq.EXACT_SEQUENCE_SUM_LEMMA
-unsafe def SHORT_EXACT_SEQUENCE_QUOTIENT : thm := BExactSeq.SHORT_EXACT_SEQUENCE_QUOTIENT
-unsafe def TRIVIAL_GROUPS_IMP_SHORT_EXACT_SEQUENCE : thm := BExactSeq.TRIVIAL_GROUPS_IMP_SHORT_EXACT_SEQUENCE
-unsafe def SHORT_EXACT_SEQUENCE_TRIVIAL_GROUPS : thm := BExactSeq.SHORT_EXACT_SEQUENCE_TRIVIAL_GROUPS
-unsafe def SPLITTING_SUBLEMMA_GEN : thm := BExactSeq.SPLITTING_SUBLEMMA_GEN
-unsafe def SPLITTING_SUBLEMMA : thm := BExactSeq.SPLITTING_SUBLEMMA
-unsafe def SPLITTING_LEMMA_LEFT_GEN : thm := BExactSeq.SPLITTING_LEMMA_LEFT_GEN
-unsafe def SPLITTING_LEMMA_LEFT : thm := BExactSeq.SPLITTING_LEMMA_LEFT
-unsafe def SPLITTING_LEMMA_LEFT_PROD_GROUP : thm := BExactSeq.SPLITTING_LEMMA_LEFT_PROD_GROUP
-unsafe def SPLITTING_LEMMA_RIGHT_GEN : thm := BExactSeq.SPLITTING_LEMMA_RIGHT_GEN
-unsafe def SPLITTING_LEMMA_RIGHT : thm := BExactSeq.SPLITTING_LEMMA_RIGHT
-unsafe def SPLITTING_LEMMA_RIGHT_PROD_GROUP : thm := BExactSeq.SPLITTING_LEMMA_RIGHT_PROD_GROUP
+def EXACT_SEQUENCE_SUM_LEMMA : thm := BExactSeq.EXACT_SEQUENCE_SUM_LEMMA
+def SHORT_EXACT_SEQUENCE_QUOTIENT : thm := BExactSeq.SHORT_EXACT_SEQUENCE_QUOTIENT
+def TRIVIAL_GROUPS_IMP_SHORT_EXACT_SEQUENCE : thm := BExactSeq.TRIVIAL_GROUPS_IMP_SHORT_EXACT_SEQUENCE
+def SHORT_EXACT_SEQUENCE_TRIVIAL_GROUPS : thm := BExactSeq.SHORT_EXACT_SEQUENCE_TRIVIAL_GROUPS
+def SPLITTING_SUBLEMMA_GEN : thm := BExactSeq.SPLITTING_SUBLEMMA_GEN
+def SPLITTING_SUBLEMMA : thm := BExactSeq.SPLITTING_SUBLEMMA
+def SPLITTING_LEMMA_LEFT_GEN : thm := BExactSeq.SPLITTING_LEMMA_LEFT_GEN
+def SPLITTING_LEMMA_LEFT : thm := BExactSeq.SPLITTING_LEMMA_LEFT
+def SPLITTING_LEMMA_LEFT_PROD_GROUP : thm := BExactSeq.SPLITTING_LEMMA_LEFT_PROD_GROUP
+def SPLITTING_LEMMA_RIGHT_GEN : thm := BExactSeq.SPLITTING_LEMMA_RIGHT_GEN
+def SPLITTING_LEMMA_RIGHT : thm := BExactSeq.SPLITTING_LEMMA_RIGHT
+def SPLITTING_LEMMA_RIGHT_PROD_GROUP : thm := BExactSeq.SPLITTING_LEMMA_RIGHT_PROD_GROUP
 
 -- FiveLemma
-unsafe def SPLITTING_LEMMA_FREE_ABELIAN_GROUP : thm := BFiveLemma.SPLITTING_LEMMA_FREE_ABELIAN_GROUP
-unsafe def FOUR_LEMMA_MONO : thm := BFiveLemma.FOUR_LEMMA_MONO
-unsafe def FOUR_LEMMA_EPI : thm := BFiveLemma.FOUR_LEMMA_EPI
-unsafe def FIVE_LEMMA : thm := BFiveLemma.FIVE_LEMMA
+def SPLITTING_LEMMA_FREE_ABELIAN_GROUP : thm := BFiveLemma.SPLITTING_LEMMA_FREE_ABELIAN_GROUP
+def FOUR_LEMMA_MONO : thm := BFiveLemma.FOUR_LEMMA_MONO
+def FOUR_LEMMA_EPI : thm := BFiveLemma.FOUR_LEMMA_EPI
+def FIVE_LEMMA : thm := BFiveLemma.FIVE_LEMMA
 
 -- ShortFiveLemma
-unsafe def SHORT_FIVE_LEMMA_MONO : thm := BShortFiveLemma.SHORT_FIVE_LEMMA_MONO
-unsafe def SHORT_FIVE_LEMMA_EPI : thm := BShortFiveLemma.SHORT_FIVE_LEMMA_EPI
-unsafe def SHORT_FIVE_LEMMA : thm := BShortFiveLemma.SHORT_FIVE_LEMMA
-unsafe def EXACT_SEQUENCE_HEXAGON_LEMMA : thm := BShortFiveLemma.EXACT_SEQUENCE_HEXAGON_LEMMA
--- @@EXPORTS END
+def SHORT_FIVE_LEMMA_MONO : thm := BShortFiveLemma.SHORT_FIVE_LEMMA_MONO
+def SHORT_FIVE_LEMMA_EPI : thm := BShortFiveLemma.SHORT_FIVE_LEMMA_EPI
+def SHORT_FIVE_LEMMA : thm := BShortFiveLemma.SHORT_FIVE_LEMMA
+def EXACT_SEQUENCE_HEXAGON_LEMMA : thm := BShortFiveLemma.EXACT_SEQUENCE_HEXAGON_LEMMA
 
-/-- `needs "Library/grouptheory.ml"`: build the bundles, in order. -/
-unsafe def ensureGroupTheory : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BBasics.group_tybij
-  let _ ← IO.mkRef BDerived.group_div
-  let _ ← IO.mkRef BPow.GROUP_COMMUTES_POW
-  let _ ← IO.mkRef BAbelian.abelian_group
-  let _ ← IO.mkRef BTotalized.group_neg
-  let _ ← IO.mkRef BGroupRule.GROUP_RULE
-  let _ ← IO.mkRef BGroupProduct.group_product
-  let _ ← IO.mkRef BGroupProductClauses.GROUP_PRODUCT_UNION
-  let _ ← IO.mkRef BGroupProductMul.GROUP_PRODUCT_MUL
-  let _ ← IO.mkRef BConjugation.group_conjugation
-  let _ ← IO.mkRef BSubgroups.subgroup_of
-  let _ ← IO.mkRef BSubgroupGenerated.subgroup_generated
-  let _ ← IO.mkRef BSubgroupGen1.FINITE_SUBGROUP_GENERATED
-  let _ ← IO.mkRef BSubgroupGen2.SUBGROUP_GENERATED_INSERT_ID
-  let _ ← IO.mkRef BProdGroup.prod_group
-  let _ ← IO.mkRef BProductGroup.PRODUCT_GROUP
-  let _ ← IO.mkRef BSumGroup.sum_group
-  let _ ← IO.mkRef BHomomorphisms.group_homomorphism
-  let _ ← IO.mkRef BHomomorphisms1.GROUP_HOMOMORPHISM_INV
-  let _ ← IO.mkRef BHomomorphisms2.SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE
-  let _ ← IO.mkRef BHomomorphisms3.CARD_EQ_GROUP_ISOMORPHIC_IMAGE
-  let _ ← IO.mkRef BHomomorphisms4.GROUP_HOMOMORPHISM_COMPONENTWISE
-  let _ ← IO.mkRef BIso1.isomorphic_group
-  let _ ← IO.mkRef BIso2.ISOMORPHIC_PRODUCT_GROUP_BIJECTIONS
-  let _ ← IO.mkRef BDirectLimit.GROUP_DIRECT_LIMIT
-  let _ ← IO.mkRef BSetwise1.group_setinv
-  let _ ← IO.mkRef BSetwise2.GROUP_SETMUL_RSUBSET_EQ
-  let _ ← IO.mkRef BGroupActions.group_action
-  let _ ← IO.mkRef BGroupOrbits.group_orbit
-  let _ ← IO.mkRef BOrbitStabilizer.ORBIT_STABILIZER_MUL_GEN
-  let _ ← IO.mkRef BCosets.right_coset
-  let _ ← IO.mkRef BCosets1.IN_LEFT_COSET_SELF
-  let _ ← IO.mkRef BCosets2.GROUP_ORBIT_SUBGROUP_TRANSLATION
-  let _ ← IO.mkRef BCosetProducts.RIGHT_COSET_PRODUCT_GROUP
-  let _ ← IO.mkRef BNormalSubgroups.normal_subgroup_of
-  let _ ← IO.mkRef BNormalSubgroups2.GROUP_SETMUL_RIGHT_COSET
-  let _ ← IO.mkRef BConjugate.group_conjugate
-  let _ ← IO.mkRef BCentralizerNormalizer.group_centralizer
-  let _ ← IO.mkRef BCentralizerNormalizer2.GROUP_CENTRALIZER_ALT
-  let _ ← IO.mkRef BQuotientGroups.quotient_group
-  let _ ← IO.mkRef BKernelsImages1.group_kernel
-  let _ ← IO.mkRef BKernelsImages2.QUOTIENT_GROUP_UNIVERSAL_EXPLICIT
-  let _ ← IO.mkRef BSubgroupCorrespondence.GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT
-  let _ ← IO.mkRef BTrivialHomomorphisms.trivial_homomorphism
-  let _ ← IO.mkRef BGroupElementOrder.group_element_order
-  let _ ← IO.mkRef BGroupElementOrder2.GROUP_ELEMENT_ORDER_POW_GEN
-  let _ ← IO.mkRef BOrderDecomp.GROUP_ELEMENT_ORDER_LCM_EXISTS
-  let _ ← IO.mkRef BTorsionSubgroups.SUBGROUP_OF_TORSION_GENERAL
-  let _ ← IO.mkRef BCyclicGroups1.SUBGROUP_OF_POWERS
-  let _ ← IO.mkRef BCyclicGroups2.FINITE_CYCLIC_SUBGROUP
-  let _ ← IO.mkRef BCyclicGroups3.ABELIAN_SIMPLE_GROUP
-  let _ ← IO.mkRef BFinitelyGenerated.finitely_generated_group
-  let _ ← IO.mkRef BFinitelyGeneratedSubgroups.FINITELY_GENERATED_FIXED_INDEX_SUBGROUPS
-  let _ ← IO.mkRef BFinitelyGeneratedMaximal.FINITELY_GENERATED_ABELIAN_SUBGROUP
-  let _ ← IO.mkRef BIntegerGroup.integer_group
-  let _ ← IO.mkRef BIntegerModGroup.integer_mod_group
-  let _ ← IO.mkRef BCyclicInteger.CYCLIC_INTEGER_GROUP
-  let _ ← IO.mkRef BCyclicProd.CYCLIC_PROD_INTEGER_MOD_GROUP
-  let _ ← IO.mkRef BPgroup.pgroup
-  let _ ← IO.mkRef BSylowCount.SYLOW_THEOREM_COUNT_MOD
-  let _ ← IO.mkRef BSylow.SYLOW_THEOREM
-  let _ ← IO.mkRef BPowering.ABELIAN_GROUP_MONOMORPHISM_POWERING_EQ
-  let _ ← IO.mkRef BSylow2.SYLOW_THEOREM_CONJUGATE_GEN
-  let _ ← IO.mkRef BPGroupCentre.PGROUP_NONTRIVIAL_CENTRE_GEN
-  let _ ← IO.mkRef BPgroupNormalizer.PGROUP_SUBGROUP_PSUBSET_NORMALIZER
-  let _ ← IO.mkRef BGroupDisjointSum.GROUP_DISJOINT_SUM_ALT
-  let _ ← IO.mkRef BGroupMulMorphism.GROUP_HOMOMORPHISM_GROUP_MUL_GEN
-  let _ ← IO.mkRef BGroupSumImKer.ISOMORPHIC_PROD_GROUP_SUBGROUP_GENERATED
-  let _ ← IO.mkRef BGroupSumHomomorphism.GROUP_HOMOMORPHISM_GROUP_SUM_GEN
-  let _ ← IO.mkRef BGroupSumEpimorphism.SUBGROUP_EPIMORPHISM_GROUP_SUM_GEN
-  let _ ← IO.mkRef BGroupSumMonomorphism.GROUP_MONOMORPHISM_GROUP_SUM_GEN
-  let _ ← IO.mkRef BSumGroupIsomorphism.SUBGROUP_ISOMORPHISM_GROUP_SUM_EQ
-  let _ ← IO.mkRef BCarrierSubgroupGeneratedUnions.CARRIER_SUBGROUP_GENERATED_UNIONS
-  let _ ← IO.mkRef BPrimeTorsion.SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FINITE
-  let _ ← IO.mkRef BTorsionStructure.SUBGROUP_GENERATED_UNIONS_PRIME_TORSION_FULL
-  let _ ← IO.mkRef BFinitelyGeneratedAbelian.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM
-  let _ ← IO.mkRef BFinGenAbelianStructure.FINITELY_GENERATED_ABELIAN_SUBGROUP_STRUCTURE_ISOMORPHISM_ALT
-  let _ ← IO.mkRef BFreeAbelianGroup.free_abelian_group
-  let _ ← IO.mkRef BFreeAbelianExtra.ISOMORPHIC_FREE_ABELIAN_GROUP_UNIONS
-  let _ ← IO.mkRef BSolvableGroup.solvable_group
-  let _ ← IO.mkRef BSolvableImage.ABELIAN_QUOTIENT_EPIMORPHIC_IMAGE
-  let _ ← IO.mkRef BSolvableSubgroup.SOLVABLE_GROUP_SUBGROUP
-  let _ ← IO.mkRef BSolvableQuotient.SOLVABLE_GROUP_SOLVABLE_QUOTIENT
-  let _ ← IO.mkRef BExactSequences.group_exactness
-  let _ ← IO.mkRef BExactSeq.EXACT_SEQUENCE_SUM_LEMMA
-  let _ ← IO.mkRef BFiveLemma.SPLITTING_LEMMA_FREE_ABELIAN_GROUP
-  let _ ← IO.mkRef BShortFiveLemma.SHORT_FIVE_LEMMA_MONO
-  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/grouptheory.ml"`: already done by importing this module. -/
+def ensureGroupTheory : IO Unit := pure ()
 
 end SessionLibrary.GroupTheory

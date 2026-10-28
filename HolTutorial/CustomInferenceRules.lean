@@ -27,13 +27,13 @@ abbrev kINST := HolCore.Kernel.INST
 abbrev kSYM := HolCore.Equal.SYM
 
 /-- Apply an `ioconv` and ask (as OCaml's `can`) whether it succeeded. -/
-unsafe def canIO (c : term → IO (Except String thm)) (tm : term) : IO Bool := do
+def canIO (c : term → IO (Except String thm)) (tm : term) : IO Bool := do
   match ← c tm with
   | .ok _ => pure true
   | .error _ => pure false
 
 #eval phrase 1
-unsafe def near_ring_axioms : term :=
+def near_ring_axioms : term :=
   keep "near_ring_axioms" fun _ =>
     [[(!x. 0 + x = x) /\
       (!x. neg x + x = 0) /\
@@ -46,12 +46,12 @@ unsafe def near_ring_axioms : term :=
 -- (**** Works eventually but takes a very long time
 --  MESON[] `... ==> !a. 0 * a = 0`;;  ****)  (commented out in HOL Light too)
 -- let is_realvar w x = is_var x && not(mem x w);;
-unsafe def is_realvar (w : List term) (x : term) : Bool := is_var x && !(mem x w)
+def is_realvar (w : List term) (x : term) : Bool := is_var x && !(mem x w)
 #eval IO.println "<fun>"
 
 #eval phrase 3
 -- let rec real_strip w tm = ...
-unsafe def real_strip (w : List term) (tm : term) : Except String (term × List term) :=
+partial def real_strip (w : List term) (tm : term) : Except String (term × List term) :=
   if mem tm w then .ok (tm, []) else do
     let (l, r) ← dest_comb tm
     let (f, args) ← real_strip w l
@@ -60,7 +60,7 @@ unsafe def real_strip (w : List term) (tm : term) : Except String (term × List 
 
 #eval phrase 4
 -- let weight lis (f,n) (g,m) = ...
-unsafe def weight (lis : List term) : (term × Nat) → (term × Nat) → Except String Bool :=
+def weight (lis : List term) : (term × Nat) → (term × Nat) → Except String Bool :=
   fun (f, n) (g, m) => do
     let i ← index f lis
     let j ← index g lis
@@ -69,7 +69,7 @@ unsafe def weight (lis : List term) : (term × Nat) → (term × Nat) → Except
 
 #eval phrase 5
 -- let rec lexord ord l1 l2 = ...
-unsafe def lexord {α : Type} [BEq α] (ord : α → α → Except String Bool) :
+def lexord {α : Type} [BEq α] (ord : α → α → Except String Bool) :
     List α → List α → Except String Bool
   | h1 :: t1, h2 :: t2 => do
       if ← ord h1 h2 then .ok (length t1 == length t2)
@@ -78,11 +78,11 @@ unsafe def lexord {α : Type} [BEq α] (ord : α → α → Except String Bool) 
 #eval IO.println "<fun>"
 
 /-- OCaml's `exists`/`forall` over `Except`-valued predicates (short-circuit). -/
-unsafe def existsE {α : Type} (p : α → Except String Bool) :
+def existsE {α : Type} (p : α → Except String Bool) :
     List α → Except String Bool
   | [] => .ok false
   | h :: t => do if ← p h then .ok true else existsE p t
-unsafe def forallE {α : Type} (p : α → Except String Bool) :
+def forallE {α : Type} (p : α → Except String Bool) :
     List α → Except String Bool
   | [] => .ok true
   | h :: t => do if ← p h then forallE p t else .ok false
@@ -90,7 +90,7 @@ unsafe def forallE {α : Type} (p : α → Except String Bool) :
 #eval phrase 6
 -- let rec lpo_gt w s t = ... and lpo_ge w s t = (s = t) || lpo_gt w s t;;
 mutual
-unsafe def lpo_gt (w : List term) (s t : term) : Except String Bool :=
+partial def lpo_gt (w : List term) (s t : term) : Except String Bool :=
   if is_realvar w t then .ok (!(s == t) && mem t (frees s))
   else if is_realvar w s || is_abs s || is_abs t then .ok false else do
     let (f, fargs) ← real_strip w s
@@ -102,7 +102,7 @@ unsafe def lpo_gt (w : List term) (s t : term) : Except String Bool :=
           .ok true
         else weight w (f, length fargs) (g, length gargs)
       else .ok false
-unsafe def lpo_ge (w : List term) (s t : term) : Except String Bool := do
+partial def lpo_ge (w : List term) (s t : term) : Except String Bool := do
   if s == t then .ok true else lpo_gt w s t
 end
 #eval IO.println "<fun>"
@@ -110,7 +110,7 @@ end
 
 #eval phrase 7
 -- let rec istriv w env x t = ...
-unsafe def istriv (w : List term) (env : Func term term) (x : term) (t : term) :
+partial def istriv (w : List term) (env : Func term term) (x : term) (t : term) :
     Except String Bool :=
   if is_realvar w t then
     if t == x then .ok true
@@ -123,7 +123,7 @@ unsafe def istriv (w : List term) (env : Func term term) (x : term) (t : term) :
 
 #eval phrase 8
 -- let rec unify w env tp = ...
-unsafe def unify (w : List term) (env : Func term term) :
+partial def unify (w : List term) (env : Func term term) :
     term × term → Except String (Func term term)
   | (x, t) =>
     -- ((Var(_,_) as x),t) | (t,(Var(_,_) as x)) when not(mem x w)
@@ -146,7 +146,7 @@ unsafe def unify (w : List term) (env : Func term term) :
 
 #eval phrase 9
 -- let fullunify w (s,t) = ...
-unsafe def fullunify (w : List term) : term × term →
+partial def fullunify (w : List term) : term × term →
     Except String (List (term × term))
   | (s, t) => do
     let env ← unify w undefined (s, t)
@@ -160,7 +160,7 @@ unsafe def fullunify (w : List term) : term × term →
 
 #eval phrase 10
 -- let rec listcases fn rfn lis acc = ...
-unsafe def listcases {α β : Type}
+def listcases {α β : Type}
     (fn : term → (α → thm → Except String β) → Except String (List β))
     (rfn : α → List thm → Except String β) :
     List term → List β → Except String (List β)
@@ -173,13 +173,13 @@ unsafe def listcases {α β : Type}
 
 #eval phrase 11
 -- let LIST_MK_COMB f ths = rev_itlist (fun s t -> MK_COMB(t,s)) ths (REFL f);;
-unsafe def LIST_MK_COMB (f : term) (ths : List thm) : Except String thm :=
+def LIST_MK_COMB (f : term) (ths : List thm) : Except String thm :=
   ths.foldl (fun acc s => do kMK_COMB (← acc) s) (.ok (kREFL f))
 #eval IO.println "<fun>"
 
 #eval phrase 12
 -- let rec overlaps w th tm rfn = ...
-unsafe def overlaps {α : Type} (w : List term) (th : thm) (tm : term)
+partial def overlaps {α : Type} (w : List term) (th : thm) (tm : term)
     (rfn : List (term × term) → thm → Except String α) :
     Except String (List α) := do
   let (l, _r) ← dest_eq (concl th)
@@ -194,7 +194,7 @@ unsafe def overlaps {α : Type} (w : List term) (th : thm) (tm : term)
 
 #eval phrase 13
 -- let crit1 w eq1 eq2 = ...
-unsafe def crit1 (w : List term) (eq1 eq2 : thm) : Except String (List thm) := do
+def crit1 (w : List term) (eq1 eq2 : thm) : Except String (List thm) := do
   let (_l1, _r1) ← dest_eq (concl eq1)
   let (l2, _r2) ← dest_eq (concl eq2)
   overlaps w eq1 l2 (fun i th => do kTRANS (← kSYM (← kINST i th)) (← kINST i eq2))
@@ -202,7 +202,7 @@ unsafe def crit1 (w : List term) (eq1 eq2 : thm) : Except String (List thm) := d
 
 #eval phrase 14
 -- let fixvariables s th = ...
-unsafe def fixvariables (s : String) (th : thm) : Except String thm := do
+def fixvariables (s : String) (th : thm) : Except String thm := do
   let fvs := subtract (frees (concl th)) (freesl (hyp th))
   let gvs ← map2 (fun v n => mk_var (s ++ toString n) (type_of v))
                  fvs (HolCore.Lib.upto 1 (length fvs : Int))
@@ -211,13 +211,13 @@ unsafe def fixvariables (s : String) (th : thm) : Except String thm := do
 
 #eval phrase 15
 -- let renamepair (th1,th2) = fixvariables "x" th1,fixvariables "y" th2;;
-unsafe def renamepair : thm × thm → Except String (thm × thm)
+def renamepair : thm × thm → Except String (thm × thm)
   | (th1, th2) => do pure ((← fixvariables "x" th1), (← fixvariables "y" th2))
 #eval IO.println "<fun>"
 
 #eval phrase 16
 -- let critical_pairs w tha thb = ...
-unsafe def critical_pairs (w : List term) (tha thb : thm) :
+def critical_pairs (w : List term) (tha thb : thm) :
     Except String (List thm) := do
   let (th1, th2) ← renamepair (tha, thb)
   pure ((← crit1 w th1 th2) ++ (← crit1 w th2 th1))
@@ -225,7 +225,7 @@ unsafe def critical_pairs (w : List term) (tha thb : thm) :
 
 #eval phrase 17
 -- let normalize_and_orient w eqs th = ...
-unsafe def normalize_and_orient (w : List term) (eqs : List thm) (th : thm) :
+def normalize_and_orient (w : List term) (eqs : List thm) (th : thm) :
     ExceptT String IO thm := do
   let th' ← ExceptT.mk (Session.GEN_REWRITE_RULE HolLight.TOP_DEPTH_CONV eqs th)
   let (s', t') ← liftExcept (dest_eq (concl th'))
@@ -236,7 +236,7 @@ unsafe def normalize_and_orient (w : List term) (eqs : List thm) (th : thm) :
 
 #eval phrase 18
 -- let status(eqs,crs) eqs0 = ...
-unsafe def status (p : List thm × List thm) (eqs0 : List thm) : IO Unit := do
+def status (p : List thm × List thm) (eqs0 : List thm) : IO Unit := do
   let (eqs, crs) := p
   if eqs == eqs0 && (length crs) % 1000 != 0 then pure () else do
     IO.print (toString (length eqs) ++ " equations and " ++
@@ -246,14 +246,14 @@ unsafe def status (p : List thm × List thm) (eqs0 : List thm) : IO Unit := do
 
 #eval phrase 19
 -- let left_reducible eqs eq = ...
-unsafe def left_reducible (eqs : List thm) (eq : thm) : IO Bool :=
+def left_reducible (eqs : List thm) (eq : thm) : IO Bool :=
   canIO (HolLight.CHANGED_CONV (Session.GEN_REWRITE_CONV (HolLight.LAND_CONV o HolLight.ONCE_DEPTH_CONV) eqs))
         (concl eq)
 #eval IO.println "<fun>"
 
 #eval phrase 20
 -- let rec complete w (eqs,crits) = ...
-unsafe def complete (w : List term) :
+partial def complete (w : List term) :
     List thm × List thm → ExceptT String IO (List thm)
   | (eqs, crits) =>
     match crits with
@@ -264,7 +264,7 @@ unsafe def complete (w : List term) :
             let (s', t') ← liftExcept (dest_eq (concl eq'))
             if s' == t' then pure (eqs, ocrits) else do
               let (crits', eqs') := partition (fun e =>
-                match unsafeIO (left_reducible [eq'] e) with
+                match runIO (left_reducible [eq'] e) with
                 | .ok b => b | .error _ => false) eqs
               let eqs'' := eq' :: eqs'
               let cps ← (eqs''.foldrM
@@ -284,7 +284,7 @@ unsafe def complete (w : List term) :
 
 #eval phrase 21
 -- let complete_equations wts eqs = ...
-unsafe def complete_equations (wts : List term) (eqs : List thm) :
+def complete_equations (wts : List term) (eqs : List thm) :
     ExceptT String IO (List thm) := do
   let eqs' ← eqs.mapM (normalize_and_orient wts [])
   complete wts ([], eqs')
@@ -292,17 +292,17 @@ unsafe def complete_equations (wts : List term) (eqs : List thm) :
 
 /-- Print a `thm list` as the OCaml toplevel does: `[th1; th2; ...]`
     (whitespace is normalised away by the comparison). -/
-unsafe def printThmList (ths : List thm) : IO Unit :=
+def printThmList (ths : List thm) : IO Unit :=
   IO.println ("[" ++ "; ".intercalate (ths.map toString) ++ "]")
 
 /-- Print a `term list` as the OCaml toplevel does: `` [`t1`; `t2`; ...] ``. -/
-unsafe def printTermList (tms : List term) : IO Unit := do
+def printTermList (tms : List term) : IO Unit := do
   let parts ← tms.mapM (fun t => do pure ("`" ++ (← HolCore.Printer.string_of_term t) ++ "`"))
   IO.println ("[" ++ "; ".intercalate parts ++ "]")
 
 /-- Run an `ExceptT String IO (List thm)` and print the result, or the
     `Exception: Failure "msg".` the toplevel would show on failure. -/
-unsafe def runThmList (m : ExceptT String IO (List thm)) : IO Unit := do
+def runThmList (m : ExceptT String IO (List thm)) : IO Unit := do
   match ← m.run with
   | .ok ths => printThmList ths
   | .error e => failure e
@@ -335,7 +335,7 @@ unsafe def runThmList (m : ExceptT String IO (List thm)) : IO Unit := do
 
 #eval phrase 25
 -- let COMPLETE_TAC w th = ...
-unsafe def COMPLETE_TAC (w : List term) (th : thm) : tactic := tactic_of do
+def COMPLETE_TAC (w : List term) (th : thm) : tactic := tactic_of do
   let eqs ← liftExcept ((CONJUNCTS (← liftExcept (SPEC_ALL th))).mapM SPEC_ALL)
   let eqs' ← complete_equations w eqs
   pure (MAP_EVERY (ASSUME_TAC o GEN_ALL) eqs')

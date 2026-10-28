@@ -3,14 +3,13 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/CalcReal.lean
 
-  The `unsafe` half of the calcreal.ml translation: it supplies HolLibrary.CalcReal's
-  dependencies from Session and SessionLibrary.Analysis, SessionLibrary.Transc, builds the bundles once, in order,
-  and exports every name under its HOL Light name.  `ensureCalcReal` is
-  `needs "Library/calcreal.ml"` (which first does `needs "Library/analysis.ml"`, `needs "Library/transc.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/CalcReal.lean by tools/calcrealdiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the calcreal.ml translation: it supplies
+  HolLibrary.CalcReal's dependencies from Session, SessionLibrary.Analysis
+  and SessionLibrary.Transc, and exports every name under its HOL Light
+  name.  Importing this module is `needs "Library/calcreal.ml"`; its `needs`
+  of analysis.ml and transc.ml are the imports of those modules.  The
+  bundles are built by `initialize` when the module is loaded, in file
+  order.
 -/
 
 import Session
@@ -23,12 +22,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.CalcReal
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems calc_real.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.CalcReal.CoreThms1 where
+def core1 : HolLibrary.CalcReal.CoreThms1 where
   ABS_N := SessionLibrary.Analysis.«ABS_N»
   ABS_NZ := SessionLibrary.Analysis.«ABS_NZ»
   ADD1 := Session.ADD1
@@ -100,7 +95,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.CalcReal.CoreThms1 where
   REAL_EXP_BOUND_LEMMA := SessionLibrary.Transc.«REAL_EXP_BOUND_LEMMA»
   REAL_EXP_MONO_LE := SessionLibrary.Transc.«REAL_EXP_MONO_LE»
 /-- The core theorems calc_real.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.CalcReal.CoreThms2 where
+def core2 : HolLibrary.CalcReal.CoreThms2 where
   REAL_EXP_POS_LE := SessionLibrary.Transc.«REAL_EXP_POS_LE»
   REAL_INV_0 := Session.REAL_INV_0
   REAL_INV_1 := Session.REAL_INV_1
@@ -172,7 +167,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.CalcReal.CoreThms2 where
   REAL_NEG_NEG := SessionLibrary.Analysis.«REAL_NEG_NEG»
   REAL_NOT_LE := SessionLibrary.Analysis.«REAL_NOT_LE»
 /-- The core theorems calc_real.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.CalcReal.CoreThms3 where
+def core3 : HolLibrary.CalcReal.CoreThms3 where
   REAL_NOT_LT := SessionLibrary.Analysis.«REAL_NOT_LT»
   REAL_OF_NUM_ADD := Session.REAL_OF_NUM_ADD
   REAL_OF_NUM_EQ := Session.REAL_OF_NUM_EQ
@@ -219,11 +214,10 @@ unsafe def core3 (_ : Unit) : HolLibrary.CalcReal.CoreThms3 where
   real_sub := Session.real_sub
   sum := SessionLibrary.Analysis.«sum»
 /-- The core theorems calc_real.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.CalcReal.CoreThms4 where
--- @@CORE END
+def core4 : HolLibrary.CalcReal.CoreThms4 where
 
 /-- What calcreal.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.CalcReal.CalcRealDeps where
+def deps : HolLibrary.CalcReal.CalcRealDeps where
   ARITH_TAC := Session.ARITH_TAC
   MESON_TAC := Session.MESON_TAC
   REAL_ARITH t := ExceptT.mk (Session.REAL_ARITH3 t)
@@ -250,226 +244,168 @@ unsafe def deps (_ : Unit) : HolLibrary.CalcReal.CalcRealDeps where
   REAL_INT_POW_CONV := Session.REAL_INT_POW_CONV
   REAL_INT_LE_CONV := Session.REAL_INT_LE_CONV
   REAL_RAT_LE_CONV := Session.REAL_RAT_LE_CONV
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then analysis.ml, transc.ml, which calcreal.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Analysis.ensureAnalysis
-      SessionLibrary.Transc.ensureTransc
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.CalcReal: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in file order; each forces the one before it. -/
+/- The bundles, in calcreal.ml order. -/
 
--- @@BUNDLES BEGIN
-initialize theLemmas : IO.Ref (Option HolLibrary.CalcReal.Lemmas) ← IO.mkRef none
-unsafe def BLemmas : HolLibrary.CalcReal.Lemmas :=
-  cached theLemmas "setupLemmas" fun _ => do
-    (HolLibrary.CalcReal.setupLemmas (deps ())).run
+initialize BLemmas : HolLibrary.CalcReal.Lemmas ←
+  ioB "setupLemmas" <|
+    (HolLibrary.CalcReal.setupLemmas deps).run
 
-initialize theStepsDown : IO.Ref (Option HolLibrary.CalcReal.StepsDown) ← IO.mkRef none
-unsafe def BStepsDown : HolLibrary.CalcReal.StepsDown :=
-  cached theStepsDown "setupStepsDown" fun _ => do
-    let _ ← IO.mkRef BLemmas.REAL_SUB_SUM0
-    (HolLibrary.CalcReal.setupStepsDown (deps ()) BLemmas).run
+initialize BStepsDown : HolLibrary.CalcReal.StepsDown ←
+  ioB "setupStepsDown" <|
+    (HolLibrary.CalcReal.setupStepsDown deps BLemmas).run
 
-initialize theStepsInv : IO.Ref (Option HolLibrary.CalcReal.StepsInv) ← IO.mkRef none
-unsafe def BStepsInv : HolLibrary.CalcReal.StepsInv :=
-  cached theStepsInv "setupStepsInv" fun _ => do
-    let _ ← IO.mkRef BStepsDown.REALCALC_DOWNGRADE
-    (HolLibrary.CalcReal.setupStepsInv (deps ()) BLemmas).run
+initialize BStepsInv : HolLibrary.CalcReal.StepsInv ←
+  ioB "setupStepsInv" <|
+    (HolLibrary.CalcReal.setupStepsInv deps BLemmas).run
 
-initialize theStepsAddMul : IO.Ref (Option HolLibrary.CalcReal.StepsAddMul) ← IO.mkRef none
-unsafe def BStepsAddMul : HolLibrary.CalcReal.StepsAddMul :=
-  cached theStepsAddMul "setupStepsAddMul" fun _ => do
-    let _ ← IO.mkRef BStepsInv.REALCALC_INV_LEMMA
-    (HolLibrary.CalcReal.setupStepsAddMul (deps ()) BLemmas).run
+initialize BStepsAddMul : HolLibrary.CalcReal.StepsAddMul ←
+  ioB "setupStepsAddMul" <|
+    (HolLibrary.CalcReal.setupStepsAddMul deps BLemmas).run
 
-initialize theSqrt : IO.Ref (Option HolLibrary.CalcReal.Sqrt) ← IO.mkRef none
-unsafe def BSqrt : HolLibrary.CalcReal.Sqrt :=
-  cached theSqrt "setupSqrt" fun _ => do
-    let _ ← IO.mkRef BStepsAddMul.REALCALC_ADD
-    (HolLibrary.CalcReal.setupSqrt (deps ())).run
+initialize BSqrt : HolLibrary.CalcReal.Sqrt ←
+  ioB "setupSqrt" <|
+    (HolLibrary.CalcReal.setupSqrt deps).run
 
-initialize theStepLemmas : IO.Ref (Option HolLibrary.CalcReal.StepLemmas) ← IO.mkRef none
-unsafe def BStepLemmas : HolLibrary.CalcReal.StepLemmas :=
-  cached theStepLemmas "setupStepLemmas" fun _ => do
-    let _ ← IO.mkRef BSqrt.REALCALC_SQRT
-    (HolLibrary.CalcReal.setupStepLemmas (deps ()) BLemmas).run
+initialize BStepLemmas : HolLibrary.CalcReal.StepLemmas ←
+  ioB "setupStepLemmas" <|
+    (HolLibrary.CalcReal.setupStepLemmas deps BLemmas).run
 
-initialize theStepInstances : IO.Ref (Option HolLibrary.CalcReal.StepInstances) ← IO.mkRef none
-unsafe def BStepInstances : HolLibrary.CalcReal.StepInstances :=
-  cached theStepInstances "setupStepInstances" fun _ => do
-    let _ ← IO.mkRef BStepLemmas.STEP_LEMMA1
-    (HolLibrary.CalcReal.setupStepInstances (deps ()) BLemmas BStepLemmas).run
+initialize BStepInstances : HolLibrary.CalcReal.StepInstances ←
+  ioB "setupStepInstances" <|
+    (HolLibrary.CalcReal.setupStepInstances deps BLemmas BStepLemmas).run
 
-initialize theExpandRange : IO.Ref (Option HolLibrary.CalcReal.ExpandRange) ← IO.mkRef none
-unsafe def BExpandRange : HolLibrary.CalcReal.ExpandRange :=
-  cached theExpandRange "setupExpandRange" fun _ => do
-    let _ ← IO.mkRef BStepInstances.STEP_EXP
-    (HolLibrary.CalcReal.setupExpandRange (deps ())).run
+initialize BExpandRange : HolLibrary.CalcReal.ExpandRange ←
+  ioB "setupExpandRange" <|
+    (HolLibrary.CalcReal.setupExpandRange deps).run
 
-initialize theIterExp : IO.Ref (Option HolLibrary.CalcReal.IterExp) ← IO.mkRef none
-unsafe def BIterExp : HolLibrary.CalcReal.IterExp :=
-  cached theIterExp "setupIterExp" fun _ => do
-    let _ ← IO.mkRef BExpandRange.EXPAND_RANGE_CONV
-    (HolLibrary.CalcReal.setupIterExp (deps ()) BStepInstances BExpandRange).run
+initialize BIterExp : HolLibrary.CalcReal.IterExp ←
+  ioB "setupIterExp" <|
+    (HolLibrary.CalcReal.setupIterExp deps BStepInstances BExpandRange).run
 
-initialize theStepsIter : IO.Ref (Option HolLibrary.CalcReal.StepsIter) ← IO.mkRef none
-unsafe def BStepsIter : HolLibrary.CalcReal.StepsIter :=
-  cached theStepsIter "setupStepsIter" fun _ => do
-    let _ ← IO.mkRef BIterExp.STEP_EXP_THM
-    (HolLibrary.CalcReal.setupStepsIter (deps ()) BLemmas BIterExp).run
+initialize BStepsIter : HolLibrary.CalcReal.StepsIter ←
+  ioB "setupStepsIter" <|
+    (HolLibrary.CalcReal.setupStepsIter deps BLemmas BIterExp).run
 
-initialize theTaylorExp : IO.Ref (Option HolLibrary.CalcReal.TaylorExp) ← IO.mkRef none
-unsafe def BTaylorExp : HolLibrary.CalcReal.TaylorExp :=
-  cached theTaylorExp "setupTaylorExp" fun _ => do
-    let _ ← IO.mkRef BStepsIter.STEPS_EXP_LEMMA
-    (HolLibrary.CalcReal.setupTaylorExp (deps ())).run
+initialize BTaylorExp : HolLibrary.CalcReal.TaylorExp ←
+  ioB "setupTaylorExp" <|
+    (HolLibrary.CalcReal.setupTaylorExp deps).run
 
-initialize theApprox : IO.Ref (Option HolLibrary.CalcReal.Approx) ← IO.mkRef none
-unsafe def BApprox : HolLibrary.CalcReal.Approx :=
-  cached theApprox "setupApprox" fun _ => do
-    let _ ← IO.mkRef BTaylorExp.MCLAURIN_EXP_LE1
-    (HolLibrary.CalcReal.setupApprox (deps ()) BLemmas BStepsIter BTaylorExp).run
+initialize BApprox : HolLibrary.CalcReal.Approx ←
+  ioB "setupApprox" <|
+    (HolLibrary.CalcReal.setupApprox deps BLemmas BStepsIter BTaylorExp).run
 
-initialize theOverall : IO.Ref (Option HolLibrary.CalcReal.Overall) ← IO.mkRef none
-unsafe def BOverall : HolLibrary.CalcReal.Overall :=
-  cached theOverall "setupOverall" fun _ => do
-    let _ ← IO.mkRef BApprox.APPROX_LEMMA1
-    (HolLibrary.CalcReal.setupOverall (deps ()) BStepsDown BStepsInv BStepsAddMul BSqrt BExpandRange BApprox).run
+initialize BOverall : HolLibrary.CalcReal.Overall ←
+  ioB "setupOverall" <|
+    (HolLibrary.CalcReal.setupOverall deps BStepsDown BStepsInv BStepsAddMul BSqrt BExpandRange BApprox).run
 
--- @@BUNDLES END
 
--- @@EXPORTS BEGIN
 -- Lemmas
-unsafe def REAL_SUB_SUM0 : thm := BLemmas.REAL_SUB_SUM0
-unsafe def REAL_MUL_RSUM0 : thm := BLemmas.REAL_MUL_RSUM0
-unsafe def REAL_ABS_LEMMA : thm := BLemmas.REAL_ABS_LEMMA
-unsafe def REAL_ABS_LEMMA1 : thm := BLemmas.REAL_ABS_LEMMA1
-unsafe def REAL_ABS_TRIANGLE_LEMMA : thm := BLemmas.REAL_ABS_TRIANGLE_LEMMA
-unsafe def REAL_MONO_POW2 : thm := BLemmas.REAL_MONO_POW2
-unsafe def REAL_LE_SUC_POW2 : thm := BLemmas.REAL_LE_SUC_POW2
-unsafe def REAL_OPPSIGN_LEMMA : thm := BLemmas.REAL_OPPSIGN_LEMMA
-unsafe def REAL_OPPSIGN : thm := BLemmas.REAL_OPPSIGN
-unsafe def REAL_NDIV_LEMMA1a : thm := BLemmas.REAL_NDIV_LEMMA1a
-unsafe def REAL_NDIV_LEMMA1b : thm := BLemmas.REAL_NDIV_LEMMA1b
-unsafe def REAL_NDIV_LEMMA2 : thm := BLemmas.REAL_NDIV_LEMMA2
-unsafe def REAL_NDIV_LEMMA3 : thm := BLemmas.REAL_NDIV_LEMMA3
+def REAL_SUB_SUM0 : thm := BLemmas.REAL_SUB_SUM0
+def REAL_MUL_RSUM0 : thm := BLemmas.REAL_MUL_RSUM0
+def REAL_ABS_LEMMA : thm := BLemmas.REAL_ABS_LEMMA
+def REAL_ABS_LEMMA1 : thm := BLemmas.REAL_ABS_LEMMA1
+def REAL_ABS_TRIANGLE_LEMMA : thm := BLemmas.REAL_ABS_TRIANGLE_LEMMA
+def REAL_MONO_POW2 : thm := BLemmas.REAL_MONO_POW2
+def REAL_LE_SUC_POW2 : thm := BLemmas.REAL_LE_SUC_POW2
+def REAL_OPPSIGN_LEMMA : thm := BLemmas.REAL_OPPSIGN_LEMMA
+def REAL_OPPSIGN : thm := BLemmas.REAL_OPPSIGN
+def REAL_NDIV_LEMMA1a : thm := BLemmas.REAL_NDIV_LEMMA1a
+def REAL_NDIV_LEMMA1b : thm := BLemmas.REAL_NDIV_LEMMA1b
+def REAL_NDIV_LEMMA2 : thm := BLemmas.REAL_NDIV_LEMMA2
+def REAL_NDIV_LEMMA3 : thm := BLemmas.REAL_NDIV_LEMMA3
 
 -- StepsDown
-unsafe def REALCALC_DOWNGRADE : thm := BStepsDown.REALCALC_DOWNGRADE
-unsafe def REALCALC_INT : thm := BStepsDown.REALCALC_INT
-unsafe def REALCALC_NEG : thm := BStepsDown.REALCALC_NEG
-unsafe def REALCALC_ABS : thm := BStepsDown.REALCALC_ABS
+def REALCALC_DOWNGRADE : thm := BStepsDown.REALCALC_DOWNGRADE
+def REALCALC_INT : thm := BStepsDown.REALCALC_INT
+def REALCALC_NEG : thm := BStepsDown.REALCALC_NEG
+def REALCALC_ABS : thm := BStepsDown.REALCALC_ABS
 
 -- StepsInv
-unsafe def REALCALC_INV_LEMMA : thm := BStepsInv.REALCALC_INV_LEMMA
-unsafe def REALCALC_INV : thm := BStepsInv.REALCALC_INV
+def REALCALC_INV_LEMMA : thm := BStepsInv.REALCALC_INV_LEMMA
+def REALCALC_INV : thm := BStepsInv.REALCALC_INV
 
 -- StepsAddMul
-unsafe def REALCALC_ADD : thm := BStepsAddMul.REALCALC_ADD
-unsafe def REALCALC_MUL : thm := BStepsAddMul.REALCALC_MUL
+def REALCALC_ADD : thm := BStepsAddMul.REALCALC_ADD
+def REALCALC_MUL : thm := BStepsAddMul.REALCALC_MUL
 
 -- Sqrt
-unsafe def REALCALC_SQRT : thm := BSqrt.REALCALC_SQRT
+def REALCALC_SQRT : thm := BSqrt.REALCALC_SQRT
 
 -- StepLemmas
-unsafe def STEP_LEMMA1 : thm := BStepLemmas.STEP_LEMMA1
-unsafe def STEP_LEMMA2 : thm := BStepLemmas.STEP_LEMMA2
+def STEP_LEMMA1 : thm := BStepLemmas.STEP_LEMMA1
+def STEP_LEMMA2 : thm := BStepLemmas.STEP_LEMMA2
 
 -- StepInstances
-unsafe def STEP_EXP : thm := BStepInstances.STEP_EXP
-unsafe def STEP_SIN : thm := BStepInstances.STEP_SIN
-unsafe def STEP_COS : thm := BStepInstances.STEP_COS
-unsafe def STEP_LN : thm := BStepInstances.STEP_LN
+def STEP_EXP : thm := BStepInstances.STEP_EXP
+def STEP_SIN : thm := BStepInstances.STEP_SIN
+def STEP_COS : thm := BStepInstances.STEP_COS
+def STEP_LN : thm := BStepInstances.STEP_LN
 
 -- ExpandRange
-unsafe def EXPAND_RANGE_CONV : HolCore.Equal.ioconv := fun t => BExpandRange.EXPAND_RANGE_CONV t
+def EXPAND_RANGE_CONV : HolCore.Equal.ioconv := fun t => BExpandRange.EXPAND_RANGE_CONV t
 
 -- IterExp
-unsafe def STEP_EXP_THM : thm := BIterExp.STEP_EXP_THM
-unsafe def STEP_EXP_RULE := BIterExp.STEP_EXP_RULE
-unsafe def STEP_EXP_0 : thm := BIterExp.STEP_EXP_0
-unsafe def STEP_EXP_1 : thm := BIterExp.STEP_EXP_1
-unsafe def STEP_EXP_2 : thm := BIterExp.STEP_EXP_2
-unsafe def STEP_EXP_3 : thm := BIterExp.STEP_EXP_3
-unsafe def STEP_EXP_4 : thm := BIterExp.STEP_EXP_4
-unsafe def STEP_EXP_5 : thm := BIterExp.STEP_EXP_5
-unsafe def STEP_EXP_4_PLUS : thm := BIterExp.STEP_EXP_4_PLUS
-unsafe def STEPS_EXP_0 : thm := BIterExp.STEPS_EXP_0
-unsafe def STEPS_EXP_1 : thm := BIterExp.STEPS_EXP_1
-unsafe def STEPS_EXP_2 : thm := BIterExp.STEPS_EXP_2
-unsafe def STEPS_EXP_3 : thm := BIterExp.STEPS_EXP_3
-unsafe def STEPS_EXP_4 : thm := BIterExp.STEPS_EXP_4
+def STEP_EXP_THM : thm := BIterExp.STEP_EXP_THM
+def STEP_EXP_RULE := BIterExp.STEP_EXP_RULE
+def STEP_EXP_0 : thm := BIterExp.STEP_EXP_0
+def STEP_EXP_1 : thm := BIterExp.STEP_EXP_1
+def STEP_EXP_2 : thm := BIterExp.STEP_EXP_2
+def STEP_EXP_3 : thm := BIterExp.STEP_EXP_3
+def STEP_EXP_4 : thm := BIterExp.STEP_EXP_4
+def STEP_EXP_5 : thm := BIterExp.STEP_EXP_5
+def STEP_EXP_4_PLUS : thm := BIterExp.STEP_EXP_4_PLUS
+def STEPS_EXP_0 : thm := BIterExp.STEPS_EXP_0
+def STEPS_EXP_1 : thm := BIterExp.STEPS_EXP_1
+def STEPS_EXP_2 : thm := BIterExp.STEPS_EXP_2
+def STEPS_EXP_3 : thm := BIterExp.STEPS_EXP_3
+def STEPS_EXP_4 : thm := BIterExp.STEPS_EXP_4
 
 -- StepsIter
-unsafe def STEPS_EXP_LEMMA : thm := BStepsIter.STEPS_EXP_LEMMA
-unsafe def STEPS_EXP : thm := BStepsIter.STEPS_EXP
-unsafe def STEPS_LN : thm := BStepsIter.STEPS_LN
+def STEPS_EXP_LEMMA : thm := BStepsIter.STEPS_EXP_LEMMA
+def STEPS_EXP : thm := BStepsIter.STEPS_EXP
+def STEPS_LN : thm := BStepsIter.STEPS_LN
 
 -- TaylorExp
-unsafe def MCLAURIN_EXP_LE1 : thm := BTaylorExp.MCLAURIN_EXP_LE1
-unsafe def REAL_EXP_15 : thm := BTaylorExp.REAL_EXP_15
-unsafe def TAYLOR_EXP_WEAK : thm := BTaylorExp.TAYLOR_EXP_WEAK
-unsafe def REAL_EXP_13 : thm := BTaylorExp.REAL_EXP_13
-unsafe def TAYLOR_EXP : thm := BTaylorExp.TAYLOR_EXP
-unsafe def TAYLOR_LN : thm := BTaylorExp.TAYLOR_LN
+def MCLAURIN_EXP_LE1 : thm := BTaylorExp.MCLAURIN_EXP_LE1
+def REAL_EXP_15 : thm := BTaylorExp.REAL_EXP_15
+def TAYLOR_EXP_WEAK : thm := BTaylorExp.TAYLOR_EXP_WEAK
+def REAL_EXP_13 : thm := BTaylorExp.REAL_EXP_13
+def TAYLOR_EXP : thm := BTaylorExp.TAYLOR_EXP
+def TAYLOR_LN : thm := BTaylorExp.TAYLOR_LN
 
 -- Approx
-unsafe def APPROX_LEMMA1 : thm := BApprox.APPROX_LEMMA1
-unsafe def APPROX_EXP : thm := BApprox.APPROX_EXP
-unsafe def APPROX_LN : thm := BApprox.APPROX_LN
-unsafe def ELIMINATE_DEF := BApprox.ELIMINATE_DEF
+def APPROX_LEMMA1 : thm := BApprox.APPROX_LEMMA1
+def APPROX_EXP : thm := BApprox.APPROX_EXP
+def APPROX_LN : thm := BApprox.APPROX_LN
+def ELIMINATE_DEF := BApprox.ELIMINATE_DEF
 
 -- Overall
-unsafe def realcalc_cache := BOverall.realcalc_cache
-unsafe def REALCALC_CONV := BOverall.REALCALC_CONV
-unsafe def thm_eval := BOverall.thm_eval
-unsafe def raw_eval := BOverall.raw_eval
-unsafe def thm_wrap := BOverall.thm_wrap
-unsafe def REALCALC_PRECONV := BOverall.REALCALC_PRECONV
-unsafe def REALCALC_LT : thm := BOverall.REALCALC_LT
-unsafe def REALCALC_LE : thm := BOverall.REALCALC_LE
-unsafe def REALCALC_GT : thm := BOverall.REALCALC_GT
-unsafe def REALCALC_GE : thm := BOverall.REALCALC_GE
-unsafe def REALCALC_EQ : thm := BOverall.REALCALC_EQ
-unsafe def realcalc_rel_conv := BOverall.realcalc_rel_conv
-unsafe def REALCALC_REL_CONV : term → IO (Except String thm) := fun t => (BOverall.REALCALC_REL_CONV t).run
--- @@EXPORTS END
+def realcalc_cache := BOverall.realcalc_cache
+def REALCALC_CONV := BOverall.REALCALC_CONV
+def thm_eval := BOverall.thm_eval
+def raw_eval := BOverall.raw_eval
+def thm_wrap := BOverall.thm_wrap
+def REALCALC_PRECONV := BOverall.REALCALC_PRECONV
+def REALCALC_LT : thm := BOverall.REALCALC_LT
+def REALCALC_LE : thm := BOverall.REALCALC_LE
+def REALCALC_GT : thm := BOverall.REALCALC_GT
+def REALCALC_GE : thm := BOverall.REALCALC_GE
+def REALCALC_EQ : thm := BOverall.REALCALC_EQ
+def realcalc_rel_conv := BOverall.realcalc_rel_conv
+def REALCALC_REL_CONV : term → IO (Except String thm) := fun t => (BOverall.REALCALC_REL_CONV t).run
 
-/-- `needs "Library/calcreal.ml"`: build the bundles, in order. -/
-unsafe def ensureCalcReal : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BLemmas.REAL_SUB_SUM0
-  let _ ← IO.mkRef BStepsDown.REALCALC_DOWNGRADE
-  let _ ← IO.mkRef BStepsInv.REALCALC_INV_LEMMA
-  let _ ← IO.mkRef BStepsAddMul.REALCALC_ADD
-  let _ ← IO.mkRef BSqrt.REALCALC_SQRT
-  let _ ← IO.mkRef BStepLemmas.STEP_LEMMA1
-  let _ ← IO.mkRef BStepInstances.STEP_EXP
-  let _ ← IO.mkRef BExpandRange.EXPAND_RANGE_CONV
-  let _ ← IO.mkRef BIterExp.STEP_EXP_THM
-  let _ ← IO.mkRef BStepsIter.STEPS_EXP_LEMMA
-  let _ ← IO.mkRef BTaylorExp.MCLAURIN_EXP_LE1
-  let _ ← IO.mkRef BApprox.APPROX_LEMMA1
-  let _ ← IO.mkRef BOverall.REALCALC_LT
-  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/calcreal.ml"`: already done by importing this module. -/
+def ensureCalcReal : IO Unit := pure ()
 
 end SessionLibrary.CalcReal

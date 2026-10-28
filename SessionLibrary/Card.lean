@@ -3,14 +3,11 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Card.lean
 
-  The `unsafe` half of the card.ml translation: it supplies HolLibrary.Card's
-  dependencies from Session, builds each bundle once, in file order, and
-  exports every name under its HOL Light name.  `ensureCard` is `needs
-  "Library/card.ml"` (which first does `needs "Library/wo.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Card.lean by tools/carddiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the card.ml translation: it supplies HolLibrary.Card's
+  dependencies from Session and exports every name under its HOL Light name.
+  Importing this module is `needs "Library/card.ml"`; its
+  `needs "Library/wo.ml"` is the import of SessionLibrary.Wo.  Each bundle is
+  built by `initialize` when the module is loaded, in file order.
 -/
 
 import Session
@@ -22,12 +19,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Card
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems card.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Card.CoreThms1 where
+def core1 : HolLibrary.Card.CoreThms1 where
   ADD1 := Session.ADD1
   AND_FORALL_THM := Session.AND_FORALL_THM
   ARB := Session.ARB
@@ -123,7 +116,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Card.CoreThms1 where
   IMP_IMP := Session.IMP_IMP
   IN := Session.IN
 /-- The core theorems card.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Card.CoreThms2 where
+def core2 : HolLibrary.Card.CoreThms2 where
   INFINITE := Session.INFINITE
   INFINITE_CROSS_EQ := Session.INFINITE_CROSS_EQ
   INFINITE_ENUMERATE_SUBSET := Session.INFINITE_ENUMERATE_SUBSET
@@ -219,7 +212,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.Card.CoreThms2 where
   REAL_LE_DIV := Session.REAL_LE_DIV
   REAL_LE_INV_EQ := Session.REAL_LE_INV_EQ
 /-- The core theorems card.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.Card.CoreThms3 where
+def core3 : HolLibrary.Card.CoreThms3 where
   REAL_LE_MUL := Session.REAL_LE_MUL
   REAL_LT_DIV := Session.REAL_LT_DIV
   REAL_LT_IMP_LE := Session.REAL_LT_IMP_LE
@@ -313,14 +306,14 @@ unsafe def core3 (_ : Unit) : HolLibrary.Card.CoreThms3 where
   real_div := Session.real_div
   real_pow := Session.real_pow
   sum_INDUCT := Session.sum_INDUCT
-  sum_RECURSION := Session.sum_RECURSION-- @@CORE END
+  sum_RECURSION := Session.sum_RECURSION
 
 /-- What card.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Card.CardDeps where
+def deps : HolLibrary.Card.CardDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   parse_as_infix := Session.parse_as_infix
-  distinctness s := ExceptT.mk (pure (Session.distinctness s))
-  injectivity s := ExceptT.mk (pure (Session.injectivity s))
+  distinctness s := ExceptT.mk (Session.distinctness s)
+  injectivity s := ExceptT.mk (Session.injectivity s)
   prove_cases_thm th := ExceptT.mk (Session.prove_cases_thm th)
   prove_recursive_functions_exist ax t := ExceptT.mk (Session.prove_recursive_functions_exist ax t)
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
@@ -343,414 +336,359 @@ unsafe def deps (_ : Unit) : HolLibrary.Card.CardDeps where
   NUM_REDUCE_CONV := Session.NUM_REDUCE_CONV
   REAL_RAT_REDUCE_CONV := Session.REAL_RAT_REDUCE_CONV
   SELECT_CONV t := pure (Session.SELECT_CONV t)
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`), as HOL Light has loaded all of hol_lib.ml
-    before `needs "Library/card.ml"`, and then wo.ml, which card.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      -- HOL Light adds MATCH_CONV to the basic conversions loading
-      -- ind_types.ml; Session builds that layer on first use, and card.ml's
-      -- rewrites need it (`function` terms, UNION_LE_ADD_C).
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Wo.ensureWo
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Card: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in card.ml order.  Each forces the one before it, so that
-   any bundle builds every earlier one first, as HOL Light's load does. -/
+/- The bundles, in card.ml order. -/
+initialize BBasics : HolLibrary.Card.Basics ←
+  ioB "setupBasics" (HolLibrary.Card.setupBasics deps).run
+open SessionLibrary.Wo (BDefs BOrders BSegs BInseg BWellOrder BZorn) in
+initialize BOrder : HolLibrary.Card.Order ←
+  ioB "setupOrder" (HolLibrary.Card.setupOrder deps BBasics BDefs BOrders BSegs BInseg
+    BWellOrder BZorn).run
+initialize BArith : HolLibrary.Card.Arith ←
+  ioB "setupArith" (HolLibrary.Card.setupArith deps BBasics BOrder).run
+initialize BSquare : HolLibrary.Card.Square ←
+  ioB "setupSquare"
+    (HolLibrary.Card.setupSquare deps BBasics BOrder BArith SessionLibrary.Wo.BZorn).run
+initialize BCancel : HolLibrary.Card.Cancel ←
+  ioB "setupCancel" (HolLibrary.Card.setupCancel deps BBasics BOrder BArith BSquare).run
+initialize BCountable : HolLibrary.Card.Countable ←
+  ioB "setupCountable"
+    (HolLibrary.Card.setupCountable deps BBasics BOrder BArith BSquare BCancel).run
+initialize BUnionOf : HolLibrary.Card.UnionOf ←
+  ioB "setupUnionOf" (HolLibrary.Card.setupUnionOf deps BCountable SessionLibrary.Wo.BDefs).run
+initialize BReals : HolLibrary.Card.Reals ←
+  ioB "setupReals" (HolLibrary.Card.setupReals deps BBasics BOrder BArith BSquare BCountable
+    BUnionOf).run
+initialize BExp : HolLibrary.Card.Exp ←
+  ioB "setupExp"
+    (HolLibrary.Card.setupExp deps BBasics BOrder BArith BSquare BCountable BReals).run
+initialize BPowerset : HolLibrary.Card.Powerset ←
+  ioB "setupPowerset" (HolLibrary.Card.setupPowerset deps BBasics BOrder BArith BSquare
+    BCountable BReals BExp).run
+initialize BCartesian : HolLibrary.Card.Cartesian ←
+  ioB "setupCartesian" (HolLibrary.Card.setupCartesian deps BBasics BOrder BArith BSquare
+    BCountable BReals BExp BPowerset).run
 
--- @@BUNDLES BEGIN
-initialize theBasics : IO.Ref (Option HolLibrary.Card.Basics) ← IO.mkRef none
-unsafe def BBasics : HolLibrary.Card.Basics :=
-  cached theBasics "setupBasics" fun _ => do
-    (HolLibrary.Card.setupBasics (deps ())).run
-
-initialize theOrder : IO.Ref (Option HolLibrary.Card.Order) ← IO.mkRef none
-unsafe def BOrder : HolLibrary.Card.Order :=
-  cached theOrder "setupOrder" fun _ => do
-    let _ ← IO.mkRef BBasics.TRANS_CHAIN_TAC
-    (HolLibrary.Card.setupOrder (deps ()) BBasics SessionLibrary.Wo.BDefs SessionLibrary.Wo.BOrders SessionLibrary.Wo.BSegs SessionLibrary.Wo.BInseg SessionLibrary.Wo.BWellOrder SessionLibrary.Wo.BZorn).run
-
-initialize theArith : IO.Ref (Option HolLibrary.Card.Arith) ← IO.mkRef none
-unsafe def BArith : HolLibrary.Card.Arith :=
-  cached theArith "setupArith" fun _ => do
-    let _ ← IO.mkRef BOrder.CARD_LE_ANTISYM
-    (HolLibrary.Card.setupArith (deps ()) BBasics BOrder).run
-
-initialize theSquare : IO.Ref (Option HolLibrary.Card.Square) ← IO.mkRef none
-unsafe def BSquare : HolLibrary.Card.Square :=
-  cached theSquare "setupSquare" fun _ => do
-    let _ ← IO.mkRef BArith.add_c
-    (HolLibrary.Card.setupSquare (deps ()) BBasics BOrder BArith SessionLibrary.Wo.BZorn).run
-
-initialize theCancel : IO.Ref (Option HolLibrary.Card.Cancel) ← IO.mkRef none
-unsafe def BCancel : HolLibrary.Card.Cancel :=
-  cached theCancel "setupCancel" fun _ => do
-    let _ ← IO.mkRef BSquare.CARD_SQUARE_INFINITE
-    (HolLibrary.Card.setupCancel (deps ()) BBasics BOrder BArith BSquare).run
-
-initialize theCountable : IO.Ref (Option HolLibrary.Card.Countable) ← IO.mkRef none
-unsafe def BCountable : HolLibrary.Card.Countable :=
-  cached theCountable "setupCountable" fun _ => do
-    let _ ← IO.mkRef BCancel.CARD_LT_ADD
-    (HolLibrary.Card.setupCountable (deps ()) BBasics BOrder BArith BSquare BCancel).run
-
-initialize theUnionOf : IO.Ref (Option HolLibrary.Card.UnionOf) ← IO.mkRef none
-unsafe def BUnionOf : HolLibrary.Card.UnionOf :=
-  cached theUnionOf "setupUnionOf" fun _ => do
-    let _ ← IO.mkRef BCountable.CANTOR_THM
-    (HolLibrary.Card.setupUnionOf (deps ()) BCountable SessionLibrary.Wo.BDefs).run
-
-initialize theReals : IO.Ref (Option HolLibrary.Card.Reals) ← IO.mkRef none
-unsafe def BReals : HolLibrary.Card.Reals :=
-  cached theReals "setupReals" fun _ => do
-    let _ ← IO.mkRef BUnionOf.COUNTABLE_CART
-    (HolLibrary.Card.setupReals (deps ()) BBasics BOrder BArith BSquare BCountable BUnionOf).run
-
-initialize theExp : IO.Ref (Option HolLibrary.Card.Exp) ← IO.mkRef none
-unsafe def BExp : HolLibrary.Card.Exp :=
-  cached theExp "setupExp" fun _ => do
-    let _ ← IO.mkRef BReals.COUNTABLE_UNION_OF_INTERS_NONEMPTY
-    (HolLibrary.Card.setupExp (deps ()) BBasics BOrder BArith BSquare BCountable BReals).run
-
-initialize thePowerset : IO.Ref (Option HolLibrary.Card.Powerset) ← IO.mkRef none
-unsafe def BPowerset : HolLibrary.Card.Powerset :=
-  cached thePowerset "setupPowerset" fun _ => do
-    let _ ← IO.mkRef BExp.exp_c
-    (HolLibrary.Card.setupPowerset (deps ()) BBasics BOrder BArith BSquare BCountable BReals BExp).run
-
-initialize theCartesian : IO.Ref (Option HolLibrary.Card.Cartesian) ← IO.mkRef none
-unsafe def BCartesian : HolLibrary.Card.Cartesian :=
-  cached theCartesian "setupCartesian" fun _ => do
-    let _ ← IO.mkRef BPowerset.CARD_EQ_RESTRICTED_POWERSET
-    (HolLibrary.Card.setupCartesian (deps ()) BBasics BOrder BArith BSquare BCountable BReals BExp BPowerset).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Basics
-unsafe def TRANS_CHAIN_TAC := BBasics.TRANS_CHAIN_TAC
-unsafe def sum_DISTINCT : thm := BBasics.sum_DISTINCT
-unsafe def sum_INJECTIVE : thm := BBasics.sum_INJECTIVE
-unsafe def sum_CASES : thm := BBasics.sum_CASES
-unsafe def FORALL_SUM_THM : thm := BBasics.FORALL_SUM_THM
-unsafe def EXISTS_SUM_THM : thm := BBasics.EXISTS_SUM_THM
-unsafe def FLATTEN_LEMMA : thm := BBasics.FLATTEN_LEMMA
-unsafe def TARSKI_SET : thm := BBasics.TARSKI_SET
-unsafe def INJECTIVE_LEFT_INVERSE_NONEMPTY : thm := BBasics.INJECTIVE_LEFT_INVERSE_NONEMPTY
-unsafe def BIJECTIVE_INJECTIVE_SURJECTIVE : thm := BBasics.BIJECTIVE_INJECTIVE_SURJECTIVE
-unsafe def BIJECTIVE_INVERSES : thm := BBasics.BIJECTIVE_INVERSES
-unsafe def EQ_C_BIJECTIONS : thm := BBasics.EQ_C_BIJECTIONS
-unsafe def EQ_C : thm := BBasics.EQ_C
-unsafe def EQ_C_ALT : thm := BBasics.EQ_C_ALT
-unsafe def CARD_LE_REFL : thm := BBasics.CARD_LE_REFL
-unsafe def CARD_EMPTY_LE : thm := BBasics.CARD_EMPTY_LE
-unsafe def CARD_LE_TRANS : thm := BBasics.CARD_LE_TRANS
-unsafe def CARD_LT_REFL : thm := BBasics.CARD_LT_REFL
-unsafe def CARD_LET_TRANS : thm := BBasics.CARD_LET_TRANS
-unsafe def CARD_LTE_TRANS : thm := BBasics.CARD_LTE_TRANS
-unsafe def CARD_LT_TRANS : thm := BBasics.CARD_LT_TRANS
-unsafe def CARD_EQ_REFL : thm := BBasics.CARD_EQ_REFL
-unsafe def CARD_EQ_REFL_IMP : thm := BBasics.CARD_EQ_REFL_IMP
-unsafe def CARD_EQ_SYM : thm := BBasics.CARD_EQ_SYM
-unsafe def CARD_EQ_IMP_LE : thm := BBasics.CARD_EQ_IMP_LE
-unsafe def CARD_LT_IMP_LE : thm := BBasics.CARD_LT_IMP_LE
-unsafe def CARD_LE_RELATIONAL : thm := BBasics.CARD_LE_RELATIONAL
-unsafe def CARD_LE_RELATIONAL_FULL : thm := BBasics.CARD_LE_RELATIONAL_FULL
-unsafe def CARD_LE_EMPTY : thm := BBasics.CARD_LE_EMPTY
-unsafe def CARD_EQ_EMPTY : thm := BBasics.CARD_EQ_EMPTY
+def TRANS_CHAIN_TAC := BBasics.TRANS_CHAIN_TAC
+def sum_DISTINCT : thm := BBasics.sum_DISTINCT
+def sum_INJECTIVE : thm := BBasics.sum_INJECTIVE
+def sum_CASES : thm := BBasics.sum_CASES
+def FORALL_SUM_THM : thm := BBasics.FORALL_SUM_THM
+def EXISTS_SUM_THM : thm := BBasics.EXISTS_SUM_THM
+def FLATTEN_LEMMA : thm := BBasics.FLATTEN_LEMMA
+def TARSKI_SET : thm := BBasics.TARSKI_SET
+def INJECTIVE_LEFT_INVERSE_NONEMPTY : thm := BBasics.INJECTIVE_LEFT_INVERSE_NONEMPTY
+def BIJECTIVE_INJECTIVE_SURJECTIVE : thm := BBasics.BIJECTIVE_INJECTIVE_SURJECTIVE
+def BIJECTIVE_INVERSES : thm := BBasics.BIJECTIVE_INVERSES
+def EQ_C_BIJECTIONS : thm := BBasics.EQ_C_BIJECTIONS
+def EQ_C : thm := BBasics.EQ_C
+def EQ_C_ALT : thm := BBasics.EQ_C_ALT
+def CARD_LE_REFL : thm := BBasics.CARD_LE_REFL
+def CARD_EMPTY_LE : thm := BBasics.CARD_EMPTY_LE
+def CARD_LE_TRANS : thm := BBasics.CARD_LE_TRANS
+def CARD_LT_REFL : thm := BBasics.CARD_LT_REFL
+def CARD_LET_TRANS : thm := BBasics.CARD_LET_TRANS
+def CARD_LTE_TRANS : thm := BBasics.CARD_LTE_TRANS
+def CARD_LT_TRANS : thm := BBasics.CARD_LT_TRANS
+def CARD_EQ_REFL : thm := BBasics.CARD_EQ_REFL
+def CARD_EQ_REFL_IMP : thm := BBasics.CARD_EQ_REFL_IMP
+def CARD_EQ_SYM : thm := BBasics.CARD_EQ_SYM
+def CARD_EQ_IMP_LE : thm := BBasics.CARD_EQ_IMP_LE
+def CARD_LT_IMP_LE : thm := BBasics.CARD_LT_IMP_LE
+def CARD_LE_RELATIONAL : thm := BBasics.CARD_LE_RELATIONAL
+def CARD_LE_RELATIONAL_FULL : thm := BBasics.CARD_LE_RELATIONAL_FULL
+def CARD_LE_EMPTY : thm := BBasics.CARD_LE_EMPTY
+def CARD_EQ_EMPTY : thm := BBasics.CARD_EQ_EMPTY
 
 -- Order
-unsafe def CARD_LE_ANTISYM : thm := BOrder.CARD_LE_ANTISYM
-unsafe def CARD_LE_TOTAL : thm := BOrder.CARD_LE_TOTAL
-unsafe def CARD_LET_TOTAL : thm := BOrder.CARD_LET_TOTAL
-unsafe def CARD_LTE_TOTAL : thm := BOrder.CARD_LTE_TOTAL
-unsafe def CARD_LT_TOTAL : thm := BOrder.CARD_LT_TOTAL
-unsafe def CARD_NOT_LE : thm := BOrder.CARD_NOT_LE
-unsafe def CARD_NOT_LT : thm := BOrder.CARD_NOT_LT
-unsafe def CARD_LT_LE : thm := BOrder.CARD_LT_LE
-unsafe def CARD_LE_LT : thm := BOrder.CARD_LE_LT
-unsafe def CARD_LE_CONG : thm := BOrder.CARD_LE_CONG
-unsafe def CARD_LT_CONG : thm := BOrder.CARD_LT_CONG
-unsafe def CARD_EQ_TRANS : thm := BOrder.CARD_EQ_TRANS
-unsafe def CARD_EQ_CONG : thm := BOrder.CARD_EQ_CONG
-unsafe def INFINITE_CARD_LE : thm := BOrder.INFINITE_CARD_LE
-unsafe def FINITE_CARD_LT : thm := BOrder.FINITE_CARD_LT
-unsafe def CARD_LE_SUBSET : thm := BOrder.CARD_LE_SUBSET
-unsafe def CARD_LE_UNIV : thm := BOrder.CARD_LE_UNIV
-unsafe def CARD_LE_EQ_SUBSET : thm := BOrder.CARD_LE_EQ_SUBSET
-unsafe def CARD_LE_EQ_SUBSET_UNIV : thm := BOrder.CARD_LE_EQ_SUBSET_UNIV
-unsafe def CARD_INFINITE_CONG : thm := BOrder.CARD_INFINITE_CONG
-unsafe def CARD_FINITE_CONG : thm := BOrder.CARD_FINITE_CONG
-unsafe def CARD_LE_FINITE : thm := BOrder.CARD_LE_FINITE
-unsafe def CARD_EQ_FINITE : thm := BOrder.CARD_EQ_FINITE
-unsafe def CARD_EQ_INFINITE : thm := BOrder.CARD_EQ_INFINITE
-unsafe def CARD_LE_INFINITE : thm := BOrder.CARD_LE_INFINITE
-unsafe def CARD_LT_FINITE_INFINITE : thm := BOrder.CARD_LT_FINITE_INFINITE
-unsafe def CARD_LE_FINITE_INFINITE : thm := BOrder.CARD_LE_FINITE_INFINITE
-unsafe def CARD_LE_CARD_IMP : thm := BOrder.CARD_LE_CARD_IMP
-unsafe def CARD_EQ_CARD_IMP : thm := BOrder.CARD_EQ_CARD_IMP
-unsafe def CARD_LE_CARD : thm := BOrder.CARD_LE_CARD
-unsafe def CARD_EQ_CARD : thm := BOrder.CARD_EQ_CARD
-unsafe def CARD_LT_CARD : thm := BOrder.CARD_LT_CARD
-unsafe def CARD_HAS_SIZE_CONG : thm := BOrder.CARD_HAS_SIZE_CONG
-unsafe def NUMSEG_CARD_LE : thm := BOrder.NUMSEG_CARD_LE
-unsafe def CARD_LE_IMAGE : thm := BOrder.CARD_LE_IMAGE
-unsafe def CARD_LE_IMAGE_GEN : thm := BOrder.CARD_LE_IMAGE_GEN
-unsafe def CARD_EQ_IMAGE : thm := BOrder.CARD_EQ_IMAGE
-unsafe def CARD_GE_PREIMAGE : thm := BOrder.CARD_GE_PREIMAGE
-unsafe def CARD_LE_PREIMAGE : thm := BOrder.CARD_LE_PREIMAGE
-unsafe def CARD_EQ_PREIMAGE : thm := BOrder.CARD_EQ_PREIMAGE
-unsafe def CARD_LE_IMAGES : thm := BOrder.CARD_LE_IMAGES
-unsafe def CARD_EQ_IMAGES : thm := BOrder.CARD_EQ_IMAGES
-unsafe def LE_C_IMAGE : thm := BOrder.LE_C_IMAGE
-unsafe def LE_C_IMAGE_SUBSET : thm := BOrder.LE_C_IMAGE_SUBSET
-unsafe def CARD_LE_SING : thm := BOrder.CARD_LE_SING
-unsafe def CARD_SING_LE : thm := BOrder.CARD_SING_LE
-unsafe def CARD_EQ_ORDINAL_EXISTS : thm := BOrder.CARD_EQ_ORDINAL_EXISTS
-unsafe def WF_CARD_LT : thm := BOrder.WF_CARD_LT
+def CARD_LE_ANTISYM : thm := BOrder.CARD_LE_ANTISYM
+def CARD_LE_TOTAL : thm := BOrder.CARD_LE_TOTAL
+def CARD_LET_TOTAL : thm := BOrder.CARD_LET_TOTAL
+def CARD_LTE_TOTAL : thm := BOrder.CARD_LTE_TOTAL
+def CARD_LT_TOTAL : thm := BOrder.CARD_LT_TOTAL
+def CARD_NOT_LE : thm := BOrder.CARD_NOT_LE
+def CARD_NOT_LT : thm := BOrder.CARD_NOT_LT
+def CARD_LT_LE : thm := BOrder.CARD_LT_LE
+def CARD_LE_LT : thm := BOrder.CARD_LE_LT
+def CARD_LE_CONG : thm := BOrder.CARD_LE_CONG
+def CARD_LT_CONG : thm := BOrder.CARD_LT_CONG
+def CARD_EQ_TRANS : thm := BOrder.CARD_EQ_TRANS
+def CARD_EQ_CONG : thm := BOrder.CARD_EQ_CONG
+def INFINITE_CARD_LE : thm := BOrder.INFINITE_CARD_LE
+def FINITE_CARD_LT : thm := BOrder.FINITE_CARD_LT
+def CARD_LE_SUBSET : thm := BOrder.CARD_LE_SUBSET
+def CARD_LE_UNIV : thm := BOrder.CARD_LE_UNIV
+def CARD_LE_EQ_SUBSET : thm := BOrder.CARD_LE_EQ_SUBSET
+def CARD_LE_EQ_SUBSET_UNIV : thm := BOrder.CARD_LE_EQ_SUBSET_UNIV
+def CARD_INFINITE_CONG : thm := BOrder.CARD_INFINITE_CONG
+def CARD_FINITE_CONG : thm := BOrder.CARD_FINITE_CONG
+def CARD_LE_FINITE : thm := BOrder.CARD_LE_FINITE
+def CARD_EQ_FINITE : thm := BOrder.CARD_EQ_FINITE
+def CARD_EQ_INFINITE : thm := BOrder.CARD_EQ_INFINITE
+def CARD_LE_INFINITE : thm := BOrder.CARD_LE_INFINITE
+def CARD_LT_FINITE_INFINITE : thm := BOrder.CARD_LT_FINITE_INFINITE
+def CARD_LE_FINITE_INFINITE : thm := BOrder.CARD_LE_FINITE_INFINITE
+def CARD_LE_CARD_IMP : thm := BOrder.CARD_LE_CARD_IMP
+def CARD_EQ_CARD_IMP : thm := BOrder.CARD_EQ_CARD_IMP
+def CARD_LE_CARD : thm := BOrder.CARD_LE_CARD
+def CARD_EQ_CARD : thm := BOrder.CARD_EQ_CARD
+def CARD_LT_CARD : thm := BOrder.CARD_LT_CARD
+def CARD_HAS_SIZE_CONG : thm := BOrder.CARD_HAS_SIZE_CONG
+def NUMSEG_CARD_LE : thm := BOrder.NUMSEG_CARD_LE
+def CARD_LE_IMAGE : thm := BOrder.CARD_LE_IMAGE
+def CARD_LE_IMAGE_GEN : thm := BOrder.CARD_LE_IMAGE_GEN
+def CARD_EQ_IMAGE : thm := BOrder.CARD_EQ_IMAGE
+def CARD_GE_PREIMAGE : thm := BOrder.CARD_GE_PREIMAGE
+def CARD_LE_PREIMAGE : thm := BOrder.CARD_LE_PREIMAGE
+def CARD_EQ_PREIMAGE : thm := BOrder.CARD_EQ_PREIMAGE
+def CARD_LE_IMAGES : thm := BOrder.CARD_LE_IMAGES
+def CARD_EQ_IMAGES : thm := BOrder.CARD_EQ_IMAGES
+def LE_C_IMAGE : thm := BOrder.LE_C_IMAGE
+def LE_C_IMAGE_SUBSET : thm := BOrder.LE_C_IMAGE_SUBSET
+def CARD_LE_SING : thm := BOrder.CARD_LE_SING
+def CARD_SING_LE : thm := BOrder.CARD_SING_LE
+def CARD_EQ_ORDINAL_EXISTS : thm := BOrder.CARD_EQ_ORDINAL_EXISTS
+def WF_CARD_LT : thm := BOrder.WF_CARD_LT
 
 -- Arith
-unsafe def add_c : thm := BArith.add_c
-unsafe def mul_c : thm := BArith.mul_c
-unsafe def CARD_LE_ADD : thm := BArith.CARD_LE_ADD
-unsafe def CARD_LE_MUL : thm := BArith.CARD_LE_MUL
-unsafe def CARD_FUNSPACE_LE : thm := BArith.CARD_FUNSPACE_LE
-unsafe def CARD_ADD_CONG : thm := BArith.CARD_ADD_CONG
-unsafe def CARD_MUL_CONG : thm := BArith.CARD_MUL_CONG
-unsafe def CARD_FUNSPACE_CONG : thm := BArith.CARD_FUNSPACE_CONG
-unsafe def MUL_C_UNIV : thm := BArith.MUL_C_UNIV
-unsafe def CARD_FUNSPACE_CURRY : thm := BArith.CARD_FUNSPACE_CURRY
-unsafe def IN_CARD_ADD : thm := BArith.IN_CARD_ADD
-unsafe def IN_CARD_MUL : thm := BArith.IN_CARD_MUL
-unsafe def CARD_LE_SQUARE : thm := BArith.CARD_LE_SQUARE
-unsafe def CARD_SQUARE_NUM : thm := BArith.CARD_SQUARE_NUM
-unsafe def UNION_LE_ADD_C : thm := BArith.UNION_LE_ADD_C
-unsafe def CARD_ADD_C : thm := BArith.CARD_ADD_C
-unsafe def CARD_MUL_C : thm := BArith.CARD_MUL_C
-unsafe def CARD_ADD_SYM : thm := BArith.CARD_ADD_SYM
-unsafe def CARD_ADD_ASSOC : thm := BArith.CARD_ADD_ASSOC
-unsafe def CARD_MUL_SYM : thm := BArith.CARD_MUL_SYM
-unsafe def CARD_MUL_ASSOC : thm := BArith.CARD_MUL_ASSOC
-unsafe def CARD_LDISTRIB : thm := BArith.CARD_LDISTRIB
-unsafe def CARD_RDISTRIB : thm := BArith.CARD_RDISTRIB
-unsafe def CARD_LE_ADDR : thm := BArith.CARD_LE_ADDR
-unsafe def CARD_LE_ADDL : thm := BArith.CARD_LE_ADDL
-unsafe def CARD_MUL_LID : thm := BArith.CARD_MUL_LID
-unsafe def CARD_MUL_RID : thm := BArith.CARD_MUL_RID
-unsafe def CARD_ADD_LE_MUL_INFINITE : thm := BArith.CARD_ADD_LE_MUL_INFINITE
-unsafe def CARD_DISJOINT_UNION : thm := BArith.CARD_DISJOINT_UNION
-unsafe def CARD_LE_EXISTS : thm := BArith.CARD_LE_EXISTS
-unsafe def CARD_LT_IMP_SUC_LE : thm := BArith.CARD_LT_IMP_SUC_LE
+def add_c : thm := BArith.add_c
+def mul_c : thm := BArith.mul_c
+def CARD_LE_ADD : thm := BArith.CARD_LE_ADD
+def CARD_LE_MUL : thm := BArith.CARD_LE_MUL
+def CARD_FUNSPACE_LE : thm := BArith.CARD_FUNSPACE_LE
+def CARD_ADD_CONG : thm := BArith.CARD_ADD_CONG
+def CARD_MUL_CONG : thm := BArith.CARD_MUL_CONG
+def CARD_FUNSPACE_CONG : thm := BArith.CARD_FUNSPACE_CONG
+def MUL_C_UNIV : thm := BArith.MUL_C_UNIV
+def CARD_FUNSPACE_CURRY : thm := BArith.CARD_FUNSPACE_CURRY
+def IN_CARD_ADD : thm := BArith.IN_CARD_ADD
+def IN_CARD_MUL : thm := BArith.IN_CARD_MUL
+def CARD_LE_SQUARE : thm := BArith.CARD_LE_SQUARE
+def CARD_SQUARE_NUM : thm := BArith.CARD_SQUARE_NUM
+def UNION_LE_ADD_C : thm := BArith.UNION_LE_ADD_C
+def CARD_ADD_C : thm := BArith.CARD_ADD_C
+def CARD_MUL_C : thm := BArith.CARD_MUL_C
+def CARD_ADD_SYM : thm := BArith.CARD_ADD_SYM
+def CARD_ADD_ASSOC : thm := BArith.CARD_ADD_ASSOC
+def CARD_MUL_SYM : thm := BArith.CARD_MUL_SYM
+def CARD_MUL_ASSOC : thm := BArith.CARD_MUL_ASSOC
+def CARD_LDISTRIB : thm := BArith.CARD_LDISTRIB
+def CARD_RDISTRIB : thm := BArith.CARD_RDISTRIB
+def CARD_LE_ADDR : thm := BArith.CARD_LE_ADDR
+def CARD_LE_ADDL : thm := BArith.CARD_LE_ADDL
+def CARD_MUL_LID : thm := BArith.CARD_MUL_LID
+def CARD_MUL_RID : thm := BArith.CARD_MUL_RID
+def CARD_ADD_LE_MUL_INFINITE : thm := BArith.CARD_ADD_LE_MUL_INFINITE
+def CARD_DISJOINT_UNION : thm := BArith.CARD_DISJOINT_UNION
+def CARD_LE_EXISTS : thm := BArith.CARD_LE_EXISTS
+def CARD_LT_IMP_SUC_LE : thm := BArith.CARD_LT_IMP_SUC_LE
 
 -- Square
-unsafe def CARD_SQUARE_INFINITE : thm := BSquare.CARD_SQUARE_INFINITE
-unsafe def CARD_ADD_FINITE : thm := BSquare.CARD_ADD_FINITE
-unsafe def CARD_ADD_FINITE_EQ : thm := BSquare.CARD_ADD_FINITE_EQ
-unsafe def CARD_MUL_FINITE : thm := BSquare.CARD_MUL_FINITE
-unsafe def CARD_MUL_FINITE_EQ : thm := BSquare.CARD_MUL_FINITE_EQ
-unsafe def CARD_MUL_ABSORB_LE : thm := BSquare.CARD_MUL_ABSORB_LE
-unsafe def CARD_MUL2_ABSORB_LE : thm := BSquare.CARD_MUL2_ABSORB_LE
-unsafe def CARD_MUL2_ABSORB_LE_ALT : thm := BSquare.CARD_MUL2_ABSORB_LE_ALT
-unsafe def CARD_ADD_ABSORB_LE : thm := BSquare.CARD_ADD_ABSORB_LE
-unsafe def CARD_ADD2_ABSORB_LE : thm := BSquare.CARD_ADD2_ABSORB_LE
-unsafe def CARD_MUL_ABSORB : thm := BSquare.CARD_MUL_ABSORB
-unsafe def CARD_ADD_ABSORB_LEFT : thm := BSquare.CARD_ADD_ABSORB_LEFT
-unsafe def CARD_ADD_ABSORB_RIGHT : thm := BSquare.CARD_ADD_ABSORB_RIGHT
-unsafe def CARD_UNION_ABSORB_LEFT : thm := BSquare.CARD_UNION_ABSORB_LEFT
-unsafe def CARD_UNION_ABSORB_RIGHT : thm := BSquare.CARD_UNION_ABSORB_RIGHT
-unsafe def CARD_ADD2_ABSORB_LT : thm := BSquare.CARD_ADD2_ABSORB_LT
-unsafe def CARD_DIFF_ABSORB : thm := BSquare.CARD_DIFF_ABSORB
+def CARD_SQUARE_INFINITE : thm := BSquare.CARD_SQUARE_INFINITE
+def CARD_ADD_FINITE : thm := BSquare.CARD_ADD_FINITE
+def CARD_ADD_FINITE_EQ : thm := BSquare.CARD_ADD_FINITE_EQ
+def CARD_MUL_FINITE : thm := BSquare.CARD_MUL_FINITE
+def CARD_MUL_FINITE_EQ : thm := BSquare.CARD_MUL_FINITE_EQ
+def CARD_MUL_ABSORB_LE : thm := BSquare.CARD_MUL_ABSORB_LE
+def CARD_MUL2_ABSORB_LE : thm := BSquare.CARD_MUL2_ABSORB_LE
+def CARD_MUL2_ABSORB_LE_ALT : thm := BSquare.CARD_MUL2_ABSORB_LE_ALT
+def CARD_ADD_ABSORB_LE : thm := BSquare.CARD_ADD_ABSORB_LE
+def CARD_ADD2_ABSORB_LE : thm := BSquare.CARD_ADD2_ABSORB_LE
+def CARD_MUL_ABSORB : thm := BSquare.CARD_MUL_ABSORB
+def CARD_ADD_ABSORB_LEFT : thm := BSquare.CARD_ADD_ABSORB_LEFT
+def CARD_ADD_ABSORB_RIGHT : thm := BSquare.CARD_ADD_ABSORB_RIGHT
+def CARD_UNION_ABSORB_LEFT : thm := BSquare.CARD_UNION_ABSORB_LEFT
+def CARD_UNION_ABSORB_RIGHT : thm := BSquare.CARD_UNION_ABSORB_RIGHT
+def CARD_ADD2_ABSORB_LT : thm := BSquare.CARD_ADD2_ABSORB_LT
+def CARD_DIFF_ABSORB : thm := BSquare.CARD_DIFF_ABSORB
 
 -- Cancel
-unsafe def CARD_LT_ADD : thm := BCancel.CARD_LT_ADD
-unsafe def CARD_LE_ADD_LCANCEL : thm := BCancel.CARD_LE_ADD_LCANCEL
-unsafe def CARD_LE_ADD_LCANCEL_EQ : thm := BCancel.CARD_LE_ADD_LCANCEL_EQ
-unsafe def CARD_LE_ADD_RCANCEL : thm := BCancel.CARD_LE_ADD_RCANCEL
-unsafe def CARD_LE_ADD_RCANCEL_EQ : thm := BCancel.CARD_LE_ADD_RCANCEL_EQ
-unsafe def CARD_EQ_ADD_LCANCEL : thm := BCancel.CARD_EQ_ADD_LCANCEL
-unsafe def CARD_EQ_ADD_LCANCEL_EQ : thm := BCancel.CARD_EQ_ADD_LCANCEL_EQ
-unsafe def CARD_EQ_ADD_RCANCEL : thm := BCancel.CARD_EQ_ADD_RCANCEL
-unsafe def CARD_EQ_ADD_RCANCEL_EQ : thm := BCancel.CARD_EQ_ADD_RCANCEL_EQ
-unsafe def CARD_LE_UNIONS2 : thm := BCancel.CARD_LE_UNIONS2
-unsafe def CARD_LE_UNIONS : thm := BCancel.CARD_LE_UNIONS
-unsafe def CARD_LE_DISJOINT_UNIONS : thm := BCancel.CARD_LE_DISJOINT_UNIONS
-unsafe def CARD_EQ_DISJOINT_UNIONS : thm := BCancel.CARD_EQ_DISJOINT_UNIONS
-unsafe def CARD_EQ_IMAGE_MUL_FIBRES : thm := BCancel.CARD_EQ_IMAGE_MUL_FIBRES
-unsafe def CARD_DIFF_CONG : thm := BCancel.CARD_DIFF_CONG
-unsafe def EQ_C_BIJECTIONS_DISJOINT : thm := BCancel.EQ_C_BIJECTIONS_DISJOINT
-unsafe def EQ_C_BIJECTIONS_SUBSETS : thm := BCancel.EQ_C_BIJECTIONS_SUBSETS
-unsafe def EQ_C_BIJECTIONS_SUBSETS_LT : thm := BCancel.EQ_C_BIJECTIONS_SUBSETS_LT
-unsafe def EQ_C_BIJECTIONS_EXTEND : thm := BCancel.EQ_C_BIJECTIONS_EXTEND
-unsafe def EQ_C_INVOLUTION : thm := BCancel.EQ_C_INVOLUTION
-unsafe def CARD_MUL_LT_LEMMA : thm := BCancel.CARD_MUL_LT_LEMMA
-unsafe def CARD_MUL_LT_INFINITE : thm := BCancel.CARD_MUL_LT_INFINITE
+def CARD_LT_ADD : thm := BCancel.CARD_LT_ADD
+def CARD_LE_ADD_LCANCEL : thm := BCancel.CARD_LE_ADD_LCANCEL
+def CARD_LE_ADD_LCANCEL_EQ : thm := BCancel.CARD_LE_ADD_LCANCEL_EQ
+def CARD_LE_ADD_RCANCEL : thm := BCancel.CARD_LE_ADD_RCANCEL
+def CARD_LE_ADD_RCANCEL_EQ : thm := BCancel.CARD_LE_ADD_RCANCEL_EQ
+def CARD_EQ_ADD_LCANCEL : thm := BCancel.CARD_EQ_ADD_LCANCEL
+def CARD_EQ_ADD_LCANCEL_EQ : thm := BCancel.CARD_EQ_ADD_LCANCEL_EQ
+def CARD_EQ_ADD_RCANCEL : thm := BCancel.CARD_EQ_ADD_RCANCEL
+def CARD_EQ_ADD_RCANCEL_EQ : thm := BCancel.CARD_EQ_ADD_RCANCEL_EQ
+def CARD_LE_UNIONS2 : thm := BCancel.CARD_LE_UNIONS2
+def CARD_LE_UNIONS : thm := BCancel.CARD_LE_UNIONS
+def CARD_LE_DISJOINT_UNIONS : thm := BCancel.CARD_LE_DISJOINT_UNIONS
+def CARD_EQ_DISJOINT_UNIONS : thm := BCancel.CARD_EQ_DISJOINT_UNIONS
+def CARD_EQ_IMAGE_MUL_FIBRES : thm := BCancel.CARD_EQ_IMAGE_MUL_FIBRES
+def CARD_DIFF_CONG : thm := BCancel.CARD_DIFF_CONG
+def EQ_C_BIJECTIONS_DISJOINT : thm := BCancel.EQ_C_BIJECTIONS_DISJOINT
+def EQ_C_BIJECTIONS_SUBSETS : thm := BCancel.EQ_C_BIJECTIONS_SUBSETS
+def EQ_C_BIJECTIONS_SUBSETS_LT : thm := BCancel.EQ_C_BIJECTIONS_SUBSETS_LT
+def EQ_C_BIJECTIONS_EXTEND : thm := BCancel.EQ_C_BIJECTIONS_EXTEND
+def EQ_C_INVOLUTION : thm := BCancel.EQ_C_INVOLUTION
+def CARD_MUL_LT_LEMMA : thm := BCancel.CARD_MUL_LT_LEMMA
+def CARD_MUL_LT_INFINITE : thm := BCancel.CARD_MUL_LT_INFINITE
 
 -- Countable
-unsafe def CANTOR_THM : thm := BCountable.CANTOR_THM
-unsafe def CANTOR_THM_UNIV : thm := BCountable.CANTOR_THM_UNIV
-unsafe def NUM_COUNTABLE : thm := BCountable.NUM_COUNTABLE
-unsafe def COUNTABLE_ALT : thm := BCountable.COUNTABLE_ALT
-unsafe def COUNTABLE_CASES : thm := BCountable.COUNTABLE_CASES
-unsafe def CARD_LE_COUNTABLE : thm := BCountable.CARD_LE_COUNTABLE
-unsafe def CARD_EQ_COUNTABLE : thm := BCountable.CARD_EQ_COUNTABLE
-unsafe def CARD_COUNTABLE_CONG : thm := BCountable.CARD_COUNTABLE_CONG
-unsafe def COUNTABLE_SUBSET : thm := BCountable.COUNTABLE_SUBSET
-unsafe def COUNTABLE_RESTRICT : thm := BCountable.COUNTABLE_RESTRICT
-unsafe def COUNTABLE_SUBSET_NUM : thm := BCountable.COUNTABLE_SUBSET_NUM
-unsafe def FINITE_IMP_COUNTABLE : thm := BCountable.FINITE_IMP_COUNTABLE
-unsafe def CARD_LE_COUNTABLE_INFINITE : thm := BCountable.CARD_LE_COUNTABLE_INFINITE
-unsafe def CARD_LT_COUNTABLE_UNCOUNTABLE : thm := BCountable.CARD_LT_COUNTABLE_UNCOUNTABLE
-unsafe def COUNTABLE_IMAGE : thm := BCountable.COUNTABLE_IMAGE
-unsafe def COUNTABLE_IMAGE_INJ_GENERAL : thm := BCountable.COUNTABLE_IMAGE_INJ_GENERAL
-unsafe def COUNTABLE_IMAGE_INJ_EQ : thm := BCountable.COUNTABLE_IMAGE_INJ_EQ
-unsafe def COUNTABLE_IMAGE_INJ : thm := BCountable.COUNTABLE_IMAGE_INJ
-unsafe def COUNTABLE_EMPTY : thm := BCountable.COUNTABLE_EMPTY
-unsafe def COUNTABLE_INTER : thm := BCountable.COUNTABLE_INTER
-unsafe def COUNTABLE_UNION_IMP : thm := BCountable.COUNTABLE_UNION_IMP
-unsafe def COUNTABLE_UNION : thm := BCountable.COUNTABLE_UNION
-unsafe def COUNTABLE_SING : thm := BCountable.COUNTABLE_SING
-unsafe def COUNTABLE_INSERT : thm := BCountable.COUNTABLE_INSERT
-unsafe def COUNTABLE_DELETE : thm := BCountable.COUNTABLE_DELETE
-unsafe def COUNTABLE_DIFF_FINITE : thm := BCountable.COUNTABLE_DIFF_FINITE
-unsafe def COUNTABLE_DIFF : thm := BCountable.COUNTABLE_DIFF
-unsafe def COUNTABLE_CROSS : thm := BCountable.COUNTABLE_CROSS
-unsafe def COUNTABLE_AS_IMAGE_SUBSET : thm := BCountable.COUNTABLE_AS_IMAGE_SUBSET
-unsafe def COUNTABLE_AS_IMAGE_SUBSET_EQ : thm := BCountable.COUNTABLE_AS_IMAGE_SUBSET_EQ
-unsafe def COUNTABLE_AS_IMAGE : thm := BCountable.COUNTABLE_AS_IMAGE
-unsafe def FORALL_COUNTABLE_AS_IMAGE : thm := BCountable.FORALL_COUNTABLE_AS_IMAGE
-unsafe def COUNTABLE_AS_INJECTIVE_IMAGE : thm := BCountable.COUNTABLE_AS_INJECTIVE_IMAGE
-unsafe def COUNTABLE_AS_IMAGE_NUM_SUBSET : thm := BCountable.COUNTABLE_AS_IMAGE_NUM_SUBSET
-unsafe def COUNTABLE_AS_INJECTIVE_IMAGE_SUBSET : thm := BCountable.COUNTABLE_AS_INJECTIVE_IMAGE_SUBSET
-unsafe def COUNTABLE_UNIONS : thm := BCountable.COUNTABLE_UNIONS
-unsafe def COUNTABLE_PRODUCT_DEPENDENT : thm := BCountable.COUNTABLE_PRODUCT_DEPENDENT
-unsafe def COUNTABLE_CARD_ADD : thm := BCountable.COUNTABLE_CARD_ADD
-unsafe def COUNTABLE_CARD_ADD_EQ : thm := BCountable.COUNTABLE_CARD_ADD_EQ
-unsafe def COUNTABLE_CARD_MUL : thm := BCountable.COUNTABLE_CARD_MUL
-unsafe def COUNTABLE_CARD_MUL_EQ : thm := BCountable.COUNTABLE_CARD_MUL_EQ
-unsafe def CARD_EQ_PCROSS : thm := BCountable.CARD_EQ_PCROSS
-unsafe def COUNTABLE_PCROSS_EQ : thm := BCountable.COUNTABLE_PCROSS_EQ
-unsafe def COUNTABLE_PCROSS : thm := BCountable.COUNTABLE_PCROSS
-unsafe def INT_COUNTABLE : thm := BCountable.INT_COUNTABLE
-unsafe def CARD_EQ_INT_NUM : thm := BCountable.CARD_EQ_INT_NUM
-unsafe def int_INFINITE : thm := BCountable.int_INFINITE
+def CANTOR_THM : thm := BCountable.CANTOR_THM
+def CANTOR_THM_UNIV : thm := BCountable.CANTOR_THM_UNIV
+def NUM_COUNTABLE : thm := BCountable.NUM_COUNTABLE
+def COUNTABLE_ALT : thm := BCountable.COUNTABLE_ALT
+def COUNTABLE_CASES : thm := BCountable.COUNTABLE_CASES
+def CARD_LE_COUNTABLE : thm := BCountable.CARD_LE_COUNTABLE
+def CARD_EQ_COUNTABLE : thm := BCountable.CARD_EQ_COUNTABLE
+def CARD_COUNTABLE_CONG : thm := BCountable.CARD_COUNTABLE_CONG
+def COUNTABLE_SUBSET : thm := BCountable.COUNTABLE_SUBSET
+def COUNTABLE_RESTRICT : thm := BCountable.COUNTABLE_RESTRICT
+def COUNTABLE_SUBSET_NUM : thm := BCountable.COUNTABLE_SUBSET_NUM
+def FINITE_IMP_COUNTABLE : thm := BCountable.FINITE_IMP_COUNTABLE
+def CARD_LE_COUNTABLE_INFINITE : thm := BCountable.CARD_LE_COUNTABLE_INFINITE
+def CARD_LT_COUNTABLE_UNCOUNTABLE : thm := BCountable.CARD_LT_COUNTABLE_UNCOUNTABLE
+def COUNTABLE_IMAGE : thm := BCountable.COUNTABLE_IMAGE
+def COUNTABLE_IMAGE_INJ_GENERAL : thm := BCountable.COUNTABLE_IMAGE_INJ_GENERAL
+def COUNTABLE_IMAGE_INJ_EQ : thm := BCountable.COUNTABLE_IMAGE_INJ_EQ
+def COUNTABLE_IMAGE_INJ : thm := BCountable.COUNTABLE_IMAGE_INJ
+def COUNTABLE_EMPTY : thm := BCountable.COUNTABLE_EMPTY
+def COUNTABLE_INTER : thm := BCountable.COUNTABLE_INTER
+def COUNTABLE_UNION_IMP : thm := BCountable.COUNTABLE_UNION_IMP
+def COUNTABLE_UNION : thm := BCountable.COUNTABLE_UNION
+def COUNTABLE_SING : thm := BCountable.COUNTABLE_SING
+def COUNTABLE_INSERT : thm := BCountable.COUNTABLE_INSERT
+def COUNTABLE_DELETE : thm := BCountable.COUNTABLE_DELETE
+def COUNTABLE_DIFF_FINITE : thm := BCountable.COUNTABLE_DIFF_FINITE
+def COUNTABLE_DIFF : thm := BCountable.COUNTABLE_DIFF
+def COUNTABLE_CROSS : thm := BCountable.COUNTABLE_CROSS
+def COUNTABLE_AS_IMAGE_SUBSET : thm := BCountable.COUNTABLE_AS_IMAGE_SUBSET
+def COUNTABLE_AS_IMAGE_SUBSET_EQ : thm := BCountable.COUNTABLE_AS_IMAGE_SUBSET_EQ
+def COUNTABLE_AS_IMAGE : thm := BCountable.COUNTABLE_AS_IMAGE
+def FORALL_COUNTABLE_AS_IMAGE : thm := BCountable.FORALL_COUNTABLE_AS_IMAGE
+def COUNTABLE_AS_INJECTIVE_IMAGE : thm := BCountable.COUNTABLE_AS_INJECTIVE_IMAGE
+def COUNTABLE_AS_IMAGE_NUM_SUBSET : thm := BCountable.COUNTABLE_AS_IMAGE_NUM_SUBSET
+def COUNTABLE_AS_INJECTIVE_IMAGE_SUBSET : thm := BCountable.COUNTABLE_AS_INJECTIVE_IMAGE_SUBSET
+def COUNTABLE_UNIONS : thm := BCountable.COUNTABLE_UNIONS
+def COUNTABLE_PRODUCT_DEPENDENT : thm := BCountable.COUNTABLE_PRODUCT_DEPENDENT
+def COUNTABLE_CARD_ADD : thm := BCountable.COUNTABLE_CARD_ADD
+def COUNTABLE_CARD_ADD_EQ : thm := BCountable.COUNTABLE_CARD_ADD_EQ
+def COUNTABLE_CARD_MUL : thm := BCountable.COUNTABLE_CARD_MUL
+def COUNTABLE_CARD_MUL_EQ : thm := BCountable.COUNTABLE_CARD_MUL_EQ
+def CARD_EQ_PCROSS : thm := BCountable.CARD_EQ_PCROSS
+def COUNTABLE_PCROSS_EQ : thm := BCountable.COUNTABLE_PCROSS_EQ
+def COUNTABLE_PCROSS : thm := BCountable.COUNTABLE_PCROSS
+def INT_COUNTABLE : thm := BCountable.INT_COUNTABLE
+def CARD_EQ_INT_NUM : thm := BCountable.CARD_EQ_INT_NUM
+def int_INFINITE : thm := BCountable.int_INFINITE
 
 -- UnionOf
-unsafe def COUNTABLE_CART : thm := BUnionOf.COUNTABLE_CART
-unsafe def EXISTS_COUNTABLE_SUBSET_IMAGE_INJ : thm := BUnionOf.EXISTS_COUNTABLE_SUBSET_IMAGE_INJ
-unsafe def FORALL_COUNTABLE_SUBSET_IMAGE_INJ : thm := BUnionOf.FORALL_COUNTABLE_SUBSET_IMAGE_INJ
-unsafe def EXISTS_COUNTABLE_SUBSET_IMAGE : thm := BUnionOf.EXISTS_COUNTABLE_SUBSET_IMAGE
-unsafe def FORALL_COUNTABLE_SUBSET_IMAGE : thm := BUnionOf.FORALL_COUNTABLE_SUBSET_IMAGE
-unsafe def COUNTABLE_SUBSET_IMAGE : thm := BUnionOf.COUNTABLE_SUBSET_IMAGE
-unsafe def COUNTABLE_IMAGE_EQ : thm := BUnionOf.COUNTABLE_IMAGE_EQ
-unsafe def COUNTABLE_IMAGE_EQ_INJ : thm := BUnionOf.COUNTABLE_IMAGE_EQ_INJ
-unsafe def COUNTABLE_FLD : thm := BUnionOf.COUNTABLE_FLD
-unsafe def COUNTABLE_UNION_OF_EMPTY : thm := BUnionOf.COUNTABLE_UNION_OF_EMPTY
-unsafe def COUNTABLE_INTERSECTION_OF_EMPTY : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_EMPTY
-unsafe def COUNTABLE_UNION_OF_INC : thm := BUnionOf.COUNTABLE_UNION_OF_INC
-unsafe def COUNTABLE_INTERSECTION_OF_INC : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_INC
-unsafe def COUNTABLE_UNION_OF_COMPLEMENT : thm := BUnionOf.COUNTABLE_UNION_OF_COMPLEMENT
-unsafe def COUNTABLE_INTERSECTION_OF_COMPLEMENT : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_COMPLEMENT
-unsafe def COUNTABLE_UNION_OF_EXPLICIT : thm := BUnionOf.COUNTABLE_UNION_OF_EXPLICIT
-unsafe def COUNTABLE_UNION_OF_ASCENDING : thm := BUnionOf.COUNTABLE_UNION_OF_ASCENDING
-unsafe def COUNTABLE_UNION_OF_IDEMPOT : thm := BUnionOf.COUNTABLE_UNION_OF_IDEMPOT
-unsafe def COUNTABLE_INTERSECTION_OF_IDEMPOT : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_IDEMPOT
-unsafe def COUNTABLE_UNION_OF_UNIONS : thm := BUnionOf.COUNTABLE_UNION_OF_UNIONS
-unsafe def COUNTABLE_UNION_OF_UNION : thm := BUnionOf.COUNTABLE_UNION_OF_UNION
-unsafe def COUNTABLE_INTERSECTION_OF_INTERS : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_INTERS
-unsafe def COUNTABLE_INTERSECTION_OF_INTER : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_INTER
-unsafe def COUNTABLE_UNION_OF_INTER_EQ : thm := BUnionOf.COUNTABLE_UNION_OF_INTER_EQ
-unsafe def COUNTABLE_UNION_OF_INTER : thm := BUnionOf.COUNTABLE_UNION_OF_INTER
-unsafe def COUNTABLE_INTERSECTION_OF_UNION_EQ : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_UNION_EQ
-unsafe def COUNTABLE_INTERSECTION_OF_UNION : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_UNION
-unsafe def COUNTABLE_INTERSECTION_OF_UNIONS_NONEMPTY : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_UNIONS_NONEMPTY
-unsafe def COUNTABLE_INTERSECTION_OF_UNIONS : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_UNIONS
+def COUNTABLE_CART : thm := BUnionOf.COUNTABLE_CART
+def EXISTS_COUNTABLE_SUBSET_IMAGE_INJ : thm := BUnionOf.EXISTS_COUNTABLE_SUBSET_IMAGE_INJ
+def FORALL_COUNTABLE_SUBSET_IMAGE_INJ : thm := BUnionOf.FORALL_COUNTABLE_SUBSET_IMAGE_INJ
+def EXISTS_COUNTABLE_SUBSET_IMAGE : thm := BUnionOf.EXISTS_COUNTABLE_SUBSET_IMAGE
+def FORALL_COUNTABLE_SUBSET_IMAGE : thm := BUnionOf.FORALL_COUNTABLE_SUBSET_IMAGE
+def COUNTABLE_SUBSET_IMAGE : thm := BUnionOf.COUNTABLE_SUBSET_IMAGE
+def COUNTABLE_IMAGE_EQ : thm := BUnionOf.COUNTABLE_IMAGE_EQ
+def COUNTABLE_IMAGE_EQ_INJ : thm := BUnionOf.COUNTABLE_IMAGE_EQ_INJ
+def COUNTABLE_FLD : thm := BUnionOf.COUNTABLE_FLD
+def COUNTABLE_UNION_OF_EMPTY : thm := BUnionOf.COUNTABLE_UNION_OF_EMPTY
+def COUNTABLE_INTERSECTION_OF_EMPTY : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_EMPTY
+def COUNTABLE_UNION_OF_INC : thm := BUnionOf.COUNTABLE_UNION_OF_INC
+def COUNTABLE_INTERSECTION_OF_INC : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_INC
+def COUNTABLE_UNION_OF_COMPLEMENT : thm := BUnionOf.COUNTABLE_UNION_OF_COMPLEMENT
+def COUNTABLE_INTERSECTION_OF_COMPLEMENT : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_COMPLEMENT
+def COUNTABLE_UNION_OF_EXPLICIT : thm := BUnionOf.COUNTABLE_UNION_OF_EXPLICIT
+def COUNTABLE_UNION_OF_ASCENDING : thm := BUnionOf.COUNTABLE_UNION_OF_ASCENDING
+def COUNTABLE_UNION_OF_IDEMPOT : thm := BUnionOf.COUNTABLE_UNION_OF_IDEMPOT
+def COUNTABLE_INTERSECTION_OF_IDEMPOT : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_IDEMPOT
+def COUNTABLE_UNION_OF_UNIONS : thm := BUnionOf.COUNTABLE_UNION_OF_UNIONS
+def COUNTABLE_UNION_OF_UNION : thm := BUnionOf.COUNTABLE_UNION_OF_UNION
+def COUNTABLE_INTERSECTION_OF_INTERS : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_INTERS
+def COUNTABLE_INTERSECTION_OF_INTER : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_INTER
+def COUNTABLE_UNION_OF_INTER_EQ : thm := BUnionOf.COUNTABLE_UNION_OF_INTER_EQ
+def COUNTABLE_UNION_OF_INTER : thm := BUnionOf.COUNTABLE_UNION_OF_INTER
+def COUNTABLE_INTERSECTION_OF_UNION_EQ : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_UNION_EQ
+def COUNTABLE_INTERSECTION_OF_UNION : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_UNION
+def COUNTABLE_INTERSECTION_OF_UNIONS_NONEMPTY : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_UNIONS_NONEMPTY
+def COUNTABLE_INTERSECTION_OF_UNIONS : thm := BUnionOf.COUNTABLE_INTERSECTION_OF_UNIONS
 
 -- Reals
-unsafe def COUNTABLE_UNION_OF_INTERS_NONEMPTY : thm := BReals.COUNTABLE_UNION_OF_INTERS_NONEMPTY
-unsafe def COUNTABLE_UNION_OF_INTERS : thm := BReals.COUNTABLE_UNION_OF_INTERS
-unsafe def COUNTABLE_DISJOINT_UNION_OF_IDEMPOT : thm := BReals.COUNTABLE_DISJOINT_UNION_OF_IDEMPOT
-unsafe def COUNTABLE_ASCENDING_CHAIN : thm := BReals.COUNTABLE_ASCENDING_CHAIN
-unsafe def COUNTABLE_DESCENDING_CHAIN : thm := BReals.COUNTABLE_DESCENDING_CHAIN
-unsafe def CARD_EQ_LIST_GEN : thm := BReals.CARD_EQ_LIST_GEN
-unsafe def CARD_EQ_LIST : thm := BReals.CARD_EQ_LIST
-unsafe def CARD_EQ_CART : thm := BReals.CARD_EQ_CART
-unsafe def CARD_EQ_REAL : thm := BReals.CARD_EQ_REAL
-unsafe def UNCOUNTABLE_REAL : thm := BReals.UNCOUNTABLE_REAL
-unsafe def CARD_EQ_REAL_IMP_UNCOUNTABLE : thm := BReals.CARD_EQ_REAL_IMP_UNCOUNTABLE
-unsafe def COUNTABLE_IMP_CARD_LT_REAL : thm := BReals.COUNTABLE_IMP_CARD_LT_REAL
-unsafe def CARD_LT_NUM_REAL : thm := BReals.CARD_LT_NUM_REAL
-unsafe def CARD_EQ_REAL_SUBSET : thm := BReals.CARD_EQ_REAL_SUBSET
+def COUNTABLE_UNION_OF_INTERS_NONEMPTY : thm := BReals.COUNTABLE_UNION_OF_INTERS_NONEMPTY
+def COUNTABLE_UNION_OF_INTERS : thm := BReals.COUNTABLE_UNION_OF_INTERS
+def COUNTABLE_DISJOINT_UNION_OF_IDEMPOT : thm := BReals.COUNTABLE_DISJOINT_UNION_OF_IDEMPOT
+def COUNTABLE_ASCENDING_CHAIN : thm := BReals.COUNTABLE_ASCENDING_CHAIN
+def COUNTABLE_DESCENDING_CHAIN : thm := BReals.COUNTABLE_DESCENDING_CHAIN
+def CARD_EQ_LIST_GEN : thm := BReals.CARD_EQ_LIST_GEN
+def CARD_EQ_LIST : thm := BReals.CARD_EQ_LIST
+def CARD_EQ_CART : thm := BReals.CARD_EQ_CART
+def CARD_EQ_REAL : thm := BReals.CARD_EQ_REAL
+def UNCOUNTABLE_REAL : thm := BReals.UNCOUNTABLE_REAL
+def CARD_EQ_REAL_IMP_UNCOUNTABLE : thm := BReals.CARD_EQ_REAL_IMP_UNCOUNTABLE
+def COUNTABLE_IMP_CARD_LT_REAL : thm := BReals.COUNTABLE_IMP_CARD_LT_REAL
+def CARD_LT_NUM_REAL : thm := BReals.CARD_LT_NUM_REAL
+def CARD_EQ_REAL_SUBSET : thm := BReals.CARD_EQ_REAL_SUBSET
 
 -- Exp
-unsafe def exp_c : thm := BExp.exp_c
-unsafe def EXP_C : thm := BExp.EXP_C
-unsafe def CARD_EXP_UNIV : thm := BExp.CARD_EXP_UNIV
-unsafe def CARD_EXP_GRAPH : thm := BExp.CARD_EXP_GRAPH
-unsafe def CARD_EXP_GRAPH_PAIRED : thm := BExp.CARD_EXP_GRAPH_PAIRED
-unsafe def CARD_EXP_0 : thm := BExp.CARD_EXP_0
-unsafe def CARD_EXP_ZERO : thm := BExp.CARD_EXP_ZERO
-unsafe def CARD_EXP_ADD : thm := BExp.CARD_EXP_ADD
-unsafe def CARD_EXP_MUL : thm := BExp.CARD_EXP_MUL
-unsafe def CARD_MUL_EXP : thm := BExp.CARD_MUL_EXP
-unsafe def CARD_EXP_SING : thm := BExp.CARD_EXP_SING
-unsafe def CARD_LE_EXP_LEFT : thm := BExp.CARD_LE_EXP_LEFT
-unsafe def CARD_LE_EXP_RIGHT : thm := BExp.CARD_LE_EXP_RIGHT
-unsafe def CARD_LE_EXP : thm := BExp.CARD_LE_EXP
-unsafe def CARD_EXP_CONG : thm := BExp.CARD_EXP_CONG
-unsafe def CARD_EXP_FINITE : thm := BExp.CARD_EXP_FINITE
-unsafe def CARD_EXP_C : thm := BExp.CARD_EXP_C
-unsafe def CARD_EXP_POWERSET : thm := BExp.CARD_EXP_POWERSET
-unsafe def CARD_EXP_CANTOR : thm := BExp.CARD_EXP_CANTOR
-unsafe def CARD_EXP_ABSORB : thm := BExp.CARD_EXP_ABSORB
-unsafe def CARD_EXP_LE_REAL : thm := BExp.CARD_EXP_LE_REAL
-unsafe def CARD_EXP_EQ_REAL : thm := BExp.CARD_EXP_EQ_REAL
+def exp_c : thm := BExp.exp_c
+def EXP_C : thm := BExp.EXP_C
+def CARD_EXP_UNIV : thm := BExp.CARD_EXP_UNIV
+def CARD_EXP_GRAPH : thm := BExp.CARD_EXP_GRAPH
+def CARD_EXP_GRAPH_PAIRED : thm := BExp.CARD_EXP_GRAPH_PAIRED
+def CARD_EXP_0 : thm := BExp.CARD_EXP_0
+def CARD_EXP_ZERO : thm := BExp.CARD_EXP_ZERO
+def CARD_EXP_ADD : thm := BExp.CARD_EXP_ADD
+def CARD_EXP_MUL : thm := BExp.CARD_EXP_MUL
+def CARD_MUL_EXP : thm := BExp.CARD_MUL_EXP
+def CARD_EXP_SING : thm := BExp.CARD_EXP_SING
+def CARD_LE_EXP_LEFT : thm := BExp.CARD_LE_EXP_LEFT
+def CARD_LE_EXP_RIGHT : thm := BExp.CARD_LE_EXP_RIGHT
+def CARD_LE_EXP : thm := BExp.CARD_LE_EXP
+def CARD_EXP_CONG : thm := BExp.CARD_EXP_CONG
+def CARD_EXP_FINITE : thm := BExp.CARD_EXP_FINITE
+def CARD_EXP_C : thm := BExp.CARD_EXP_C
+def CARD_EXP_POWERSET : thm := BExp.CARD_EXP_POWERSET
+def CARD_EXP_CANTOR : thm := BExp.CARD_EXP_CANTOR
+def CARD_EXP_ABSORB : thm := BExp.CARD_EXP_ABSORB
+def CARD_EXP_LE_REAL : thm := BExp.CARD_EXP_LE_REAL
+def CARD_EXP_EQ_REAL : thm := BExp.CARD_EXP_EQ_REAL
 
 -- Powerset
-unsafe def CARD_EQ_RESTRICTED_POWERSET : thm := BPowerset.CARD_EQ_RESTRICTED_POWERSET
-unsafe def CARD_EQ_LIMITED_POWERSET : thm := BPowerset.CARD_EQ_LIMITED_POWERSET
-unsafe def CARD_EQ_FULLSIZE_POWERSET : thm := BPowerset.CARD_EQ_FULLSIZE_POWERSET
-unsafe def CARD_EQ_EXP_INFINITE_FINITE : thm := BPowerset.CARD_EQ_EXP_INFINITE_FINITE
-unsafe def CARD_EQ_FINITE_SUBSETS : thm := BPowerset.CARD_EQ_FINITE_SUBSETS
-unsafe def CARD_LE_LIST : thm := BPowerset.CARD_LE_LIST
-unsafe def CARD_LE_SUBPOWERSET : thm := BPowerset.CARD_LE_SUBPOWERSET
-unsafe def CARD_LE_FINITE_SUBSETS : thm := BPowerset.CARD_LE_FINITE_SUBSETS
-unsafe def CARD_LE_COUNTABLE_SUBSETS : thm := BPowerset.CARD_LE_COUNTABLE_SUBSETS
-unsafe def CARD_LE_POWERSET : thm := BPowerset.CARD_LE_POWERSET
-unsafe def CARD_POWERSET_CONG : thm := BPowerset.CARD_POWERSET_CONG
-unsafe def COUNTABLE_LIST_GEN : thm := BPowerset.COUNTABLE_LIST_GEN
-unsafe def COUNTABLE_LIST : thm := BPowerset.COUNTABLE_LIST
-unsafe def COUNTABLE_FINITE_SUBSETS : thm := BPowerset.COUNTABLE_FINITE_SUBSETS
-unsafe def CARD_EQ_REAL_SEQUENCES : thm := BPowerset.CARD_EQ_REAL_SEQUENCES
-unsafe def CARD_EQ_COUNTABLE_SUBSETS_SUBREAL : thm := BPowerset.CARD_EQ_COUNTABLE_SUBSETS_SUBREAL
-unsafe def CARD_EQ_COUNTABLE_SUBSETS_REAL : thm := BPowerset.CARD_EQ_COUNTABLE_SUBSETS_REAL
-unsafe def CARD_LE_RESTRICTED_FUNSPACE : thm := BPowerset.CARD_LE_RESTRICTED_FUNSPACE
-unsafe def COUNTABLE_RESTRICTED_FUNSPACE : thm := BPowerset.COUNTABLE_RESTRICTED_FUNSPACE
-unsafe def CARD_LE_RESTRICTED_FUNSPACE_INFINITE : thm := BPowerset.CARD_LE_RESTRICTED_FUNSPACE_INFINITE
-unsafe def CARD_EQ_RESTRICTED_FUNSPACE_INFINITE : thm := BPowerset.CARD_EQ_RESTRICTED_FUNSPACE_INFINITE
-unsafe def CARD_EQ_FUNSPACE : thm := BPowerset.CARD_EQ_FUNSPACE
+def CARD_EQ_RESTRICTED_POWERSET : thm := BPowerset.CARD_EQ_RESTRICTED_POWERSET
+def CARD_EQ_LIMITED_POWERSET : thm := BPowerset.CARD_EQ_LIMITED_POWERSET
+def CARD_EQ_FULLSIZE_POWERSET : thm := BPowerset.CARD_EQ_FULLSIZE_POWERSET
+def CARD_EQ_EXP_INFINITE_FINITE : thm := BPowerset.CARD_EQ_EXP_INFINITE_FINITE
+def CARD_EQ_FINITE_SUBSETS : thm := BPowerset.CARD_EQ_FINITE_SUBSETS
+def CARD_LE_LIST : thm := BPowerset.CARD_LE_LIST
+def CARD_LE_SUBPOWERSET : thm := BPowerset.CARD_LE_SUBPOWERSET
+def CARD_LE_FINITE_SUBSETS : thm := BPowerset.CARD_LE_FINITE_SUBSETS
+def CARD_LE_COUNTABLE_SUBSETS : thm := BPowerset.CARD_LE_COUNTABLE_SUBSETS
+def CARD_LE_POWERSET : thm := BPowerset.CARD_LE_POWERSET
+def CARD_POWERSET_CONG : thm := BPowerset.CARD_POWERSET_CONG
+def COUNTABLE_LIST_GEN : thm := BPowerset.COUNTABLE_LIST_GEN
+def COUNTABLE_LIST : thm := BPowerset.COUNTABLE_LIST
+def COUNTABLE_FINITE_SUBSETS : thm := BPowerset.COUNTABLE_FINITE_SUBSETS
+def CARD_EQ_REAL_SEQUENCES : thm := BPowerset.CARD_EQ_REAL_SEQUENCES
+def CARD_EQ_COUNTABLE_SUBSETS_SUBREAL : thm := BPowerset.CARD_EQ_COUNTABLE_SUBSETS_SUBREAL
+def CARD_EQ_COUNTABLE_SUBSETS_REAL : thm := BPowerset.CARD_EQ_COUNTABLE_SUBSETS_REAL
+def CARD_LE_RESTRICTED_FUNSPACE : thm := BPowerset.CARD_LE_RESTRICTED_FUNSPACE
+def COUNTABLE_RESTRICTED_FUNSPACE : thm := BPowerset.COUNTABLE_RESTRICTED_FUNSPACE
+def CARD_LE_RESTRICTED_FUNSPACE_INFINITE : thm := BPowerset.CARD_LE_RESTRICTED_FUNSPACE_INFINITE
+def CARD_EQ_RESTRICTED_FUNSPACE_INFINITE : thm := BPowerset.CARD_EQ_RESTRICTED_FUNSPACE_INFINITE
+def CARD_EQ_FUNSPACE : thm := BPowerset.CARD_EQ_FUNSPACE
 
 -- Cartesian
-unsafe def CARTESIAN_PRODUCT_CONST : thm := BCartesian.CARTESIAN_PRODUCT_CONST
-unsafe def CARD_LE_CARTESIAN_PRODUCT : thm := BCartesian.CARD_LE_CARTESIAN_PRODUCT
-unsafe def CARD_EQ_CARTESIAN_PRODUCT : thm := BCartesian.CARD_EQ_CARTESIAN_PRODUCT
-unsafe def CARD_LE_CARTESIAN_PRODUCT_SUBINDEX : thm := BCartesian.CARD_LE_CARTESIAN_PRODUCT_SUBINDEX
-unsafe def FINITE_CARTESIAN_PRODUCT : thm := BCartesian.FINITE_CARTESIAN_PRODUCT
-unsafe def COUNTABLE_CARTESIAN_PRODUCT : thm := BCartesian.COUNTABLE_CARTESIAN_PRODUCT
-unsafe def CARD_EXP_FINITE_EQ : thm := BCartesian.CARD_EXP_FINITE_EQ
-unsafe def CARD_EQ_CARTESIAN_PRODUCT_DISJOINT_UNION : thm := BCartesian.CARD_EQ_CARTESIAN_PRODUCT_DISJOINT_UNION
+def CARTESIAN_PRODUCT_CONST : thm := BCartesian.CARTESIAN_PRODUCT_CONST
+def CARD_LE_CARTESIAN_PRODUCT : thm := BCartesian.CARD_LE_CARTESIAN_PRODUCT
+def CARD_EQ_CARTESIAN_PRODUCT : thm := BCartesian.CARD_EQ_CARTESIAN_PRODUCT
+def CARD_LE_CARTESIAN_PRODUCT_SUBINDEX : thm := BCartesian.CARD_LE_CARTESIAN_PRODUCT_SUBINDEX
+def FINITE_CARTESIAN_PRODUCT : thm := BCartesian.FINITE_CARTESIAN_PRODUCT
+def COUNTABLE_CARTESIAN_PRODUCT : thm := BCartesian.COUNTABLE_CARTESIAN_PRODUCT
+def CARD_EXP_FINITE_EQ : thm := BCartesian.CARD_EXP_FINITE_EQ
+def CARD_EQ_CARTESIAN_PRODUCT_DISJOINT_UNION : thm := BCartesian.CARD_EQ_CARTESIAN_PRODUCT_DISJOINT_UNION
 
 
 
@@ -781,22 +719,7 @@ unsafe def CARD_EQ_CARTESIAN_PRODUCT_DISJOINT_UNION : thm := BCartesian.CARD_EQ_
 
 
 
--- @@EXPORTS END
-
-/-- `needs "Library/card.ml"`: build every bundle, in file order. -/
-unsafe def ensureCard : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BBasics.sum_DISTINCT
-  let _ ← IO.mkRef BOrder.CARD_LE_ANTISYM
-  let _ ← IO.mkRef BArith.add_c
-  let _ ← IO.mkRef BSquare.CARD_SQUARE_INFINITE
-  let _ ← IO.mkRef BCancel.CARD_LT_ADD
-  let _ ← IO.mkRef BCountable.CANTOR_THM
-  let _ ← IO.mkRef BUnionOf.COUNTABLE_CART
-  let _ ← IO.mkRef BReals.COUNTABLE_UNION_OF_INTERS_NONEMPTY
-  let _ ← IO.mkRef BExp.exp_c
-  let _ ← IO.mkRef BPowerset.CARD_EQ_RESTRICTED_POWERSET
-  let _ ← IO.mkRef BCartesian.CARTESIAN_PRODUCT_CONST  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/card.ml"`: already done by importing this module. -/
+def ensureCard : IO Unit := pure ()
 
 end SessionLibrary.Card

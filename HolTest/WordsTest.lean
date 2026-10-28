@@ -10,7 +10,7 @@ tools/wordsdiff/check.sh compares far more structurally: all 840 theorems,
 messages. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Words
 
 open HolCore.Kernel Session SessionLibrary.Words HolTest.CommonTest
 

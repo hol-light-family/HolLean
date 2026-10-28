@@ -10,7 +10,7 @@ structurally: all 2153 theorems, the conversion results in convs.txt, the
 constants and definitions and all load messages. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.RingTheory
 
 open HolCore.Kernel HolTest.CommonTest
 

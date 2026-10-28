@@ -3,15 +3,11 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Agm.lean
 
-  The `unsafe` half of the agm.ml translation: it supplies HolLibrary.Agm's
-  dependencies from Session and SessionLibrary.Products, builds the bundle
-  once, and exports every name under its HOL Light name.  `ensureAgm` is
-  `needs "Library/agm.ml"` (which first does `needs "Library/products.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Agm.lean by tools/agmdiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).  The products.ml
-  theorems agm.ml uses are filled from SessionLibrary.Products.
+  The session half of the agm.ml translation: it supplies HolLibrary.Agm's
+  dependencies from Session and SessionLibrary.Products, and exports every
+  name under its HOL Light name.  Importing this module is
+  `needs "Library/agm.ml"`; its `needs "Library/products.ml"` is the import
+  of SessionLibrary.Products.
 -/
 
 import Session
@@ -23,12 +19,9 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Agm
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
-/-- The core theorems agm.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Agm.CoreThms1 where
+/-- The core theorems agm.ml uses (products.ml's from
+    SessionLibrary.Products). -/
+def core1 : HolLibrary.Agm.CoreThms1 where
   ADD1 := Session.ADD1
   ADD_SYM := Session.ADD_SYM
   ARITH := Session.ARITH
@@ -83,10 +76,10 @@ unsafe def core1 (_ : Unit) : HolLibrary.Agm.CoreThms1 where
   SUM_POS_LE := Session.SUM_POS_LE
   num_WF := Session.num_WF
   real_div := Session.real_div
-  real_pow := Session.real_pow-- @@CORE END
+  real_pow := Session.real_pow
 
 /-- What agm.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Agm.AgmDeps where
+def deps : HolLibrary.Agm.AgmDeps where
   prioritize_real := Session.prioritize_real
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
   ARITH_TAC := Session.ARITH_TAC
@@ -94,55 +87,25 @@ unsafe def deps (_ : Unit) : HolLibrary.Agm.AgmDeps where
   MESON_TAC := Session.MESON_TAC
   REAL_ARITH t := ExceptT.mk (Session.REAL_ARITH3 t)
   REAL_FIELD t := ExceptT.mk (Session.REAL_FIELD t)
-  core1 := core1 ()
+  core1 := core1
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then products.ml, which agm.ml
-    needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Products.ensureProducts
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Agm: {name}"
+/-- agm.ml, run when this module is loaded (after products.ml, which agm.ml
+    needs: the import of SessionLibrary.Products). -/
+initialize BAgm : HolLibrary.Agm.Agm ← do
+  match ← (HolLibrary.Agm.setupAgm deps).run with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"setupAgm failed: {e}")
 
-/- The single bundle. -/
-
--- @@BUNDLES BEGIN
-initialize theAgm : IO.Ref (Option HolLibrary.Agm.Agm) ← IO.mkRef none
-unsafe def BAgm : HolLibrary.Agm.Agm :=
-  cached theAgm "setupAgm" fun _ => do
-    (HolLibrary.Agm.setupAgm (deps ())).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Agm
-unsafe def FORALL_2 : thm := BAgm.FORALL_2
-unsafe def NUMSEG_2 : thm := BAgm.NUMSEG_2
-unsafe def AGM_2 : thm := BAgm.AGM_2
-unsafe def SUM_SPLIT_2 : thm := BAgm.SUM_SPLIT_2
-unsafe def PRODUCT_SPLIT_2 : thm := BAgm.PRODUCT_SPLIT_2
-unsafe def CAUCHY_INDUCT : thm := BAgm.CAUCHY_INDUCT
-unsafe def AGM : thm := BAgm.AGM
+def FORALL_2 : thm := BAgm.FORALL_2
+def NUMSEG_2 : thm := BAgm.NUMSEG_2
+def AGM_2 : thm := BAgm.AGM_2
+def SUM_SPLIT_2 : thm := BAgm.SUM_SPLIT_2
+def PRODUCT_SPLIT_2 : thm := BAgm.PRODUCT_SPLIT_2
+def CAUCHY_INDUCT : thm := BAgm.CAUCHY_INDUCT
+def AGM : thm := BAgm.AGM
 
-
-
--- @@EXPORTS END
-
-/-- `needs "Library/agm.ml"`: build the bundle. -/
-unsafe def ensureAgm : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BAgm.FORALL_2  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/agm.ml"`: already done by importing this module. -/
+def ensureAgm : IO Unit := pure ()
 
 end SessionLibrary.Agm

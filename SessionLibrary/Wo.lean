@@ -3,14 +3,12 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Wo.lean
 
-  The `unsafe` half of the wo.ml translation: it supplies HolLibrary.Wo's
-  dependencies from Session, builds each bundle once, in file order, and
-  exports every name under its HOL Light name.  `ensureWo` is `needs
-  "Library/wo.ml"`.
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Wo.lean by tools/wodiff/gen_session.py (bookkeeping only:
-  field-by-field copies and accessors).
+  The session half of the wo.ml translation: it supplies HolLibrary.Wo's
+  dependencies from Session and exports every name under its HOL Light name.
+  Importing this module is `needs "Library/wo.ml"`: each bundle is built by
+  `initialize` when the module is loaded, in file order, after the whole of
+  Session (as HOL Light has loaded all of hol_lib.ml before wo.ml's
+  `parse_as_infix`).
 -/
 
 import Session
@@ -21,12 +19,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Wo
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems wo.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Wo.CoreThms1 where
+def core1 : HolLibrary.Wo.CoreThms1 where
   AND_FORALL_THM := Session.«AND_FORALL_THM»
   COND_ID := Session.«COND_ID»
   CONJ_ASSOC := Session.«CONJ_ASSOC»
@@ -127,10 +121,10 @@ unsafe def core1 (_ : Unit) : HolLibrary.Wo.CoreThms1 where
   num_FINITE := Session.«num_FINITE»
   num_INFINITE := Session.«num_INFINITE»
   o_THM := Session.«o_THM»
-  pairwise := Session.«pairwise»-- @@CORE END
+  pairwise := Session.«pairwise»
 
 /-- What wo.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Wo.WoDeps where
+def deps : HolLibrary.Wo.WoDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   parse_as_infix := Session.parse_as_infix
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
@@ -144,246 +138,203 @@ unsafe def deps (_ : Unit) : HolLibrary.Wo.WoDeps where
   SET_TAC := Session.SET_TAC
   GEN_BETA_CONV := Session.GEN_BETA_CONV
   SELECT_CONV t := pure (Session.SELECT_CONV t)
-  core1 := core1 ()
+  core1 := core1
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`): HOL Light has loaded all of hol_lib.ml before
-    `needs "Library/wo.ml"`, and Session would otherwise build some core
-    layers later, on first use, after wo.ml's `parse_as_infix`. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Wo: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in wo.ml order.  Each forces the one before it, so that
-   any bundle builds every earlier one first, as HOL Light's load does. -/
+/- The bundles, in wo.ml order. -/
+initialize BDefs : HolLibrary.Wo.Defs ←
+  ioB "setupDefs" (HolLibrary.Wo.setupDefs deps).run
+initialize BOrders : HolLibrary.Wo.Orders ←
+  ioB "setupOrders" (HolLibrary.Wo.setupOrders deps BDefs).run
+initialize BSegs : HolLibrary.Wo.Segs ←
+  ioB "setupSegs" (HolLibrary.Wo.setupSegs deps BDefs BOrders).run
+initialize BInseg : HolLibrary.Wo.Inseg ←
+  ioB "setupInseg" (HolLibrary.Wo.setupInseg deps BDefs BOrders BSegs).run
+initialize BWellOrder : HolLibrary.Wo.WellOrder ←
+  ioB "setupWellOrder" (HolLibrary.Wo.setupWellOrder deps BDefs BOrders BSegs BInseg).run
+initialize BZorn : HolLibrary.Wo.Zorn ←
+  ioB "setupZorn" (HolLibrary.Wo.setupZorn deps BDefs BOrders BSegs BInseg BWellOrder).run
+initialize BTukey : HolLibrary.Wo.Tukey ←
+  ioB "setupTukey" (HolLibrary.Wo.setupTukey deps BDefs BOrders BSegs BInseg BWellOrder BZorn).run
 
--- @@BUNDLES BEGIN
-initialize theDefs : IO.Ref (Option HolLibrary.Wo.Defs) ← IO.mkRef none
-unsafe def BDefs : HolLibrary.Wo.Defs :=
-  cached theDefs "setupDefs" fun _ => do
-    (HolLibrary.Wo.setupDefs (deps ())).run
-
-initialize theOrders : IO.Ref (Option HolLibrary.Wo.Orders) ← IO.mkRef none
-unsafe def BOrders : HolLibrary.Wo.Orders :=
-  cached theOrders "setupOrders" fun _ => do
-    let _ ← IO.mkRef BDefs.PBETA_TAC
-    (HolLibrary.Wo.setupOrders (deps ()) BDefs).run
-
-initialize theSegs : IO.Ref (Option HolLibrary.Wo.Segs) ← IO.mkRef none
-unsafe def BSegs : HolLibrary.Wo.Segs :=
-  cached theSegs "setupSegs" fun _ => do
-    let _ ← IO.mkRef BOrders.strictly
-    (HolLibrary.Wo.setupSegs (deps ()) BDefs BOrders).run
-
-initialize theInseg : IO.Ref (Option HolLibrary.Wo.Inseg) ← IO.mkRef none
-unsafe def BInseg : HolLibrary.Wo.Inseg :=
-  cached theInseg "setupInseg" fun _ => do
-    let _ ← IO.mkRef BSegs.FLD_TRIVIAL
-    (HolLibrary.Wo.setupInseg (deps ()) BDefs BOrders BSegs).run
-
-initialize theWellOrder : IO.Ref (Option HolLibrary.Wo.WellOrder) ← IO.mkRef none
-unsafe def BWellOrder : HolLibrary.Wo.WellOrder :=
-  cached theWellOrder "setupWellOrder" fun _ => do
-    let _ ← IO.mkRef BInseg.WOSET_TRANS_LE
-    (HolLibrary.Wo.setupWellOrder (deps ()) BDefs BOrders BSegs BInseg).run
-
-initialize theZorn : IO.Ref (Option HolLibrary.Wo.Zorn) ← IO.mkRef none
-unsafe def BZorn : HolLibrary.Wo.Zorn :=
-  cached theZorn "setupZorn" fun _ => do
-    let _ ← IO.mkRef BWellOrder.ORDINAL_UNION
-    (HolLibrary.Wo.setupZorn (deps ()) BDefs BOrders BSegs BInseg BWellOrder).run
-
-initialize theTukey : IO.Ref (Option HolLibrary.Wo.Tukey) ← IO.mkRef none
-unsafe def BTukey : HolLibrary.Wo.Tukey :=
-  cached theTukey "setupTukey" fun _ => do
-    let _ ← IO.mkRef BZorn.HP
-    (HolLibrary.Wo.setupTukey (deps ()) BDefs BOrders BSegs BInseg BWellOrder BZorn).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Defs
-unsafe def PBETA_TAC : HolCore.Tactics.tactic := fun g => BDefs.PBETA_TAC g
-unsafe def SUBSET_PRED : thm := BDefs.SUBSET_PRED
-unsafe def UNIONS_PRED : thm := BDefs.UNIONS_PRED
-unsafe def fld : thm := BDefs.fld
-unsafe def IN_FLD : thm := BDefs.IN_FLD
-unsafe def FLD_EQ_EMPTY : thm := BDefs.FLD_EQ_EMPTY
-unsafe def FLD_SUBSET : thm := BDefs.FLD_SUBSET
-unsafe def FINITE_FLD : thm := BDefs.FINITE_FLD
-unsafe def qoset : thm := BDefs.qoset
-unsafe def poset : thm := BDefs.poset
-unsafe def toset : thm := BDefs.toset
-unsafe def woset : thm := BDefs.woset
-unsafe def wqoset : thm := BDefs.wqoset
-unsafe def chain : thm := BDefs.chain
-unsafe def antichain : thm := BDefs.antichain
-unsafe def CHAIN : thm := BDefs.CHAIN
-unsafe def ANTICHAIN : thm := BDefs.ANTICHAIN
-unsafe def CHAIN_SUBSET : thm := BDefs.CHAIN_SUBSET
-unsafe def ANTICHAIN_SUBSET : thm := BDefs.ANTICHAIN_SUBSET
-unsafe def QOSET_REFL : thm := BDefs.QOSET_REFL
-unsafe def QOSET_TRANS : thm := BDefs.QOSET_TRANS
-unsafe def QOSET_REFL_EQ : thm := BDefs.QOSET_REFL_EQ
-unsafe def QOSET_FLDEQ : thm := BDefs.QOSET_FLDEQ
-unsafe def QOSET_FLD : thm := BDefs.QOSET_FLD
-unsafe def WOSET_IMP_TOSET : thm := BDefs.WOSET_IMP_TOSET
-unsafe def WOSET_IMP_POSET : thm := BDefs.WOSET_IMP_POSET
-unsafe def WOSET_IMP_QOSET : thm := BDefs.WOSET_IMP_QOSET
-unsafe def TOSET_IMP_POSET : thm := BDefs.TOSET_IMP_POSET
-unsafe def TOSET_IMP_QOSET : thm := BDefs.TOSET_IMP_QOSET
-unsafe def POSET_IMP_QOSET : thm := BDefs.POSET_IMP_QOSET
-unsafe def WQOSET_IMP_QOSET : thm := BDefs.WQOSET_IMP_QOSET
+def PBETA_TAC : HolCore.Tactics.tactic := fun g => BDefs.PBETA_TAC g
+def SUBSET_PRED : thm := BDefs.SUBSET_PRED
+def UNIONS_PRED : thm := BDefs.UNIONS_PRED
+def fld : thm := BDefs.fld
+def IN_FLD : thm := BDefs.IN_FLD
+def FLD_EQ_EMPTY : thm := BDefs.FLD_EQ_EMPTY
+def FLD_SUBSET : thm := BDefs.FLD_SUBSET
+def FINITE_FLD : thm := BDefs.FINITE_FLD
+def qoset : thm := BDefs.qoset
+def poset : thm := BDefs.poset
+def toset : thm := BDefs.toset
+def woset : thm := BDefs.woset
+def wqoset : thm := BDefs.wqoset
+def chain : thm := BDefs.chain
+def antichain : thm := BDefs.antichain
+def CHAIN : thm := BDefs.CHAIN
+def ANTICHAIN : thm := BDefs.ANTICHAIN
+def CHAIN_SUBSET : thm := BDefs.CHAIN_SUBSET
+def ANTICHAIN_SUBSET : thm := BDefs.ANTICHAIN_SUBSET
+def QOSET_REFL : thm := BDefs.QOSET_REFL
+def QOSET_TRANS : thm := BDefs.QOSET_TRANS
+def QOSET_REFL_EQ : thm := BDefs.QOSET_REFL_EQ
+def QOSET_FLDEQ : thm := BDefs.QOSET_FLDEQ
+def QOSET_FLD : thm := BDefs.QOSET_FLD
+def WOSET_IMP_TOSET : thm := BDefs.WOSET_IMP_TOSET
+def WOSET_IMP_POSET : thm := BDefs.WOSET_IMP_POSET
+def WOSET_IMP_QOSET : thm := BDefs.WOSET_IMP_QOSET
+def TOSET_IMP_POSET : thm := BDefs.TOSET_IMP_POSET
+def TOSET_IMP_QOSET : thm := BDefs.TOSET_IMP_QOSET
+def POSET_IMP_QOSET : thm := BDefs.POSET_IMP_QOSET
+def WQOSET_IMP_QOSET : thm := BDefs.WQOSET_IMP_QOSET
 
 -- Orders
-unsafe def strictly : thm := BOrders.strictly
-unsafe def properly : thm := BOrders.properly
-unsafe def PROPERLY_EQ_STRICTLY : thm := BOrders.PROPERLY_EQ_STRICTLY
-unsafe def STRICTLY_EQ_PROPERLY : thm := BOrders.STRICTLY_EQ_PROPERLY
-unsafe def STRICTLY_IMP_PROPERLY : thm := BOrders.STRICTLY_IMP_PROPERLY
-unsafe def STRICTLY_STRICTLY : thm := BOrders.STRICTLY_STRICTLY
-unsafe def PROPERLY_PROPERLY : thm := BOrders.PROPERLY_PROPERLY
-unsafe def STRICTLY_PROPERLY : thm := BOrders.STRICTLY_PROPERLY
-unsafe def PROPERLY_STRICTLY : thm := BOrders.PROPERLY_STRICTLY
-unsafe def PROPERLY_MONO : thm := BOrders.PROPERLY_MONO
-unsafe def POSET_QOSET : thm := BOrders.POSET_QOSET
-unsafe def TOSET : thm := BOrders.TOSET
-unsafe def TOSET_POSET : thm := BOrders.TOSET_POSET
-unsafe def WOSET_TOSET : thm := BOrders.WOSET_TOSET
-unsafe def WQOSET : thm := BOrders.WQOSET
-unsafe def WQOSET_QOSET : thm := BOrders.WQOSET_QOSET
-unsafe def WOSET_POSET : thm := BOrders.WOSET_POSET
-unsafe def WOSET : thm := BOrders.WOSET
-unsafe def WOSET_WF : thm := BOrders.WOSET_WF
-unsafe def WOSET_IMP_WQOSET : thm := BOrders.WOSET_IMP_WQOSET
-unsafe def WQOSET_SUPERSET : thm := BOrders.WQOSET_SUPERSET
-unsafe def WQOSET_NOBAD : thm := BOrders.WQOSET_NOBAD
-unsafe def WQOSET_NOBAD_SUBSEQ : thm := BOrders.WQOSET_NOBAD_SUBSEQ
-unsafe def WQOSET_ANTICHAIN : thm := BOrders.WQOSET_ANTICHAIN
-unsafe def WQOSET_IMP_WF : thm := BOrders.WQOSET_IMP_WF
-unsafe def WQOSET_WF_SUPERSET : thm := BOrders.WQOSET_WF_SUPERSET
-unsafe def WQOSET_WF_SUPERSET_EQ : thm := BOrders.WQOSET_WF_SUPERSET_EQ
-unsafe def WOSET_WQOSET : thm := BOrders.WOSET_WQOSET
-unsafe def FLD_RESTRICT_QOSET : thm := BOrders.FLD_RESTRICT_QOSET
-unsafe def FLD_RESTRICT_POSET : thm := BOrders.FLD_RESTRICT_POSET
-unsafe def FLD_RESTRICT_TOSET : thm := BOrders.FLD_RESTRICT_TOSET
-unsafe def FLD_RESTRICT_WOSET : thm := BOrders.FLD_RESTRICT_WOSET
-unsafe def FLD_RESTRICT_WQOSET : thm := BOrders.FLD_RESTRICT_WQOSET
-unsafe def QOSET_RESTRICT : thm := BOrders.QOSET_RESTRICT
-unsafe def POSET_RESTRICT : thm := BOrders.POSET_RESTRICT
-unsafe def TOSET_RESTRICT : thm := BOrders.TOSET_RESTRICT
-unsafe def WOSET_RESTRICT : thm := BOrders.WOSET_RESTRICT
-unsafe def WQOSET_RESTRICT : thm := BOrders.WQOSET_RESTRICT
-unsafe def QOSET_MIN : thm := BOrders.QOSET_MIN
-unsafe def QOSET_MAX : thm := BOrders.QOSET_MAX
-unsafe def POSET_MIN : thm := BOrders.POSET_MIN
-unsafe def POSET_MAX : thm := BOrders.POSET_MAX
-unsafe def TOSET_MIN : thm := BOrders.TOSET_MIN
-unsafe def TOSET_MAX : thm := BOrders.TOSET_MAX
+def strictly : thm := BOrders.strictly
+def properly : thm := BOrders.properly
+def PROPERLY_EQ_STRICTLY : thm := BOrders.PROPERLY_EQ_STRICTLY
+def STRICTLY_EQ_PROPERLY : thm := BOrders.STRICTLY_EQ_PROPERLY
+def STRICTLY_IMP_PROPERLY : thm := BOrders.STRICTLY_IMP_PROPERLY
+def STRICTLY_STRICTLY : thm := BOrders.STRICTLY_STRICTLY
+def PROPERLY_PROPERLY : thm := BOrders.PROPERLY_PROPERLY
+def STRICTLY_PROPERLY : thm := BOrders.STRICTLY_PROPERLY
+def PROPERLY_STRICTLY : thm := BOrders.PROPERLY_STRICTLY
+def PROPERLY_MONO : thm := BOrders.PROPERLY_MONO
+def POSET_QOSET : thm := BOrders.POSET_QOSET
+def TOSET : thm := BOrders.TOSET
+def TOSET_POSET : thm := BOrders.TOSET_POSET
+def WOSET_TOSET : thm := BOrders.WOSET_TOSET
+def WQOSET : thm := BOrders.WQOSET
+def WQOSET_QOSET : thm := BOrders.WQOSET_QOSET
+def WOSET_POSET : thm := BOrders.WOSET_POSET
+def WOSET : thm := BOrders.WOSET
+def WOSET_WF : thm := BOrders.WOSET_WF
+def WOSET_IMP_WQOSET : thm := BOrders.WOSET_IMP_WQOSET
+def WQOSET_SUPERSET : thm := BOrders.WQOSET_SUPERSET
+def WQOSET_NOBAD : thm := BOrders.WQOSET_NOBAD
+def WQOSET_NOBAD_SUBSEQ : thm := BOrders.WQOSET_NOBAD_SUBSEQ
+def WQOSET_ANTICHAIN : thm := BOrders.WQOSET_ANTICHAIN
+def WQOSET_IMP_WF : thm := BOrders.WQOSET_IMP_WF
+def WQOSET_WF_SUPERSET : thm := BOrders.WQOSET_WF_SUPERSET
+def WQOSET_WF_SUPERSET_EQ : thm := BOrders.WQOSET_WF_SUPERSET_EQ
+def WOSET_WQOSET : thm := BOrders.WOSET_WQOSET
+def FLD_RESTRICT_QOSET : thm := BOrders.FLD_RESTRICT_QOSET
+def FLD_RESTRICT_POSET : thm := BOrders.FLD_RESTRICT_POSET
+def FLD_RESTRICT_TOSET : thm := BOrders.FLD_RESTRICT_TOSET
+def FLD_RESTRICT_WOSET : thm := BOrders.FLD_RESTRICT_WOSET
+def FLD_RESTRICT_WQOSET : thm := BOrders.FLD_RESTRICT_WQOSET
+def QOSET_RESTRICT : thm := BOrders.QOSET_RESTRICT
+def POSET_RESTRICT : thm := BOrders.POSET_RESTRICT
+def TOSET_RESTRICT : thm := BOrders.TOSET_RESTRICT
+def WOSET_RESTRICT : thm := BOrders.WOSET_RESTRICT
+def WQOSET_RESTRICT : thm := BOrders.WQOSET_RESTRICT
+def QOSET_MIN : thm := BOrders.QOSET_MIN
+def QOSET_MAX : thm := BOrders.QOSET_MAX
+def POSET_MIN : thm := BOrders.POSET_MIN
+def POSET_MAX : thm := BOrders.POSET_MAX
+def TOSET_MIN : thm := BOrders.TOSET_MIN
+def TOSET_MAX : thm := BOrders.TOSET_MAX
 
 -- Segs
-unsafe def FLD_TRIVIAL : thm := BSegs.FLD_TRIVIAL
-unsafe def WOSET_TRIVIAL : thm := BSegs.WOSET_TRIVIAL
-unsafe def WQOSET_TRIVIAL : thm := BSegs.WQOSET_TRIVIAL
-unsafe def TOSET_TRIVIAL : thm := BSegs.TOSET_TRIVIAL
-unsafe def POSET_TRIVIAL : thm := BSegs.POSET_TRIVIAL
-unsafe def QOSET_TRIVIAL : thm := BSegs.QOSET_TRIVIAL
-unsafe def FLD_num : thm := BSegs.FLD_num
-unsafe def WOSET_num : thm := BSegs.WOSET_num
-unsafe def WQOSET_num : thm := BSegs.WQOSET_num
-unsafe def TOSET_num : thm := BSegs.TOSET_num
-unsafe def POSET_num : thm := BSegs.POSET_num
-unsafe def QOSET_num : thm := BSegs.QOSET_num
-unsafe def QOSET_POINTWISE : thm := BSegs.QOSET_POINTWISE
-unsafe def FLD_POINTWISE : thm := BSegs.FLD_POINTWISE
-unsafe def WQOSET_POINTWISE : thm := BSegs.WQOSET_POINTWISE
-unsafe def DICKSON : thm := BSegs.DICKSON
-unsafe def inseg : thm := BSegs.inseg
-unsafe def INSEG_ANTISYM : thm := BSegs.INSEG_ANTISYM
-unsafe def INSEG_REFL : thm := BSegs.INSEG_REFL
-unsafe def INSEG_TRANS : thm := BSegs.INSEG_TRANS
-unsafe def linseg : thm := BSegs.linseg
-unsafe def ordinal : thm := BSegs.ordinal
-unsafe def POSET_REFL : thm := BSegs.POSET_REFL
-unsafe def POSET_TRANS : thm := BSegs.POSET_TRANS
-unsafe def POSET_ANTISYM : thm := BSegs.POSET_ANTISYM
-unsafe def POSET_FLDEQ : thm := BSegs.POSET_FLDEQ
-unsafe def WOSET_REFL : thm := BSegs.WOSET_REFL
-unsafe def WOSET_TRANS : thm := BSegs.WOSET_TRANS
-unsafe def WOSET_ANTISYM : thm := BSegs.WOSET_ANTISYM
-unsafe def WOSET_TOTAL : thm := BSegs.WOSET_TOTAL
-unsafe def WOSET_WELL : thm := BSegs.WOSET_WELL
-unsafe def WOSET_FLDEQ : thm := BSegs.WOSET_FLDEQ
-unsafe def WOSET_TRANS_LESS : thm := BSegs.WOSET_TRANS_LESS
-unsafe def PAIRED_EXT : thm := BSegs.PAIRED_EXT
+def FLD_TRIVIAL : thm := BSegs.FLD_TRIVIAL
+def WOSET_TRIVIAL : thm := BSegs.WOSET_TRIVIAL
+def WQOSET_TRIVIAL : thm := BSegs.WQOSET_TRIVIAL
+def TOSET_TRIVIAL : thm := BSegs.TOSET_TRIVIAL
+def POSET_TRIVIAL : thm := BSegs.POSET_TRIVIAL
+def QOSET_TRIVIAL : thm := BSegs.QOSET_TRIVIAL
+def FLD_num : thm := BSegs.FLD_num
+def WOSET_num : thm := BSegs.WOSET_num
+def WQOSET_num : thm := BSegs.WQOSET_num
+def TOSET_num : thm := BSegs.TOSET_num
+def POSET_num : thm := BSegs.POSET_num
+def QOSET_num : thm := BSegs.QOSET_num
+def QOSET_POINTWISE : thm := BSegs.QOSET_POINTWISE
+def FLD_POINTWISE : thm := BSegs.FLD_POINTWISE
+def WQOSET_POINTWISE : thm := BSegs.WQOSET_POINTWISE
+def DICKSON : thm := BSegs.DICKSON
+def inseg : thm := BSegs.inseg
+def INSEG_ANTISYM : thm := BSegs.INSEG_ANTISYM
+def INSEG_REFL : thm := BSegs.INSEG_REFL
+def INSEG_TRANS : thm := BSegs.INSEG_TRANS
+def linseg : thm := BSegs.linseg
+def ordinal : thm := BSegs.ordinal
+def POSET_REFL : thm := BSegs.POSET_REFL
+def POSET_TRANS : thm := BSegs.POSET_TRANS
+def POSET_ANTISYM : thm := BSegs.POSET_ANTISYM
+def POSET_FLDEQ : thm := BSegs.POSET_FLDEQ
+def WOSET_REFL : thm := BSegs.WOSET_REFL
+def WOSET_TRANS : thm := BSegs.WOSET_TRANS
+def WOSET_ANTISYM : thm := BSegs.WOSET_ANTISYM
+def WOSET_TOTAL : thm := BSegs.WOSET_TOTAL
+def WOSET_WELL : thm := BSegs.WOSET_WELL
+def WOSET_FLDEQ : thm := BSegs.WOSET_FLDEQ
+def WOSET_TRANS_LESS : thm := BSegs.WOSET_TRANS_LESS
+def PAIRED_EXT : thm := BSegs.PAIRED_EXT
 
 -- Inseg
-unsafe def WOSET_TRANS_LE : thm := BInseg.WOSET_TRANS_LE
-unsafe def WOSET_WELL_CONTRAPOS : thm := BInseg.WOSET_WELL_CONTRAPOS
-unsafe def WOSET_TOTAL_LE : thm := BInseg.WOSET_TOTAL_LE
-unsafe def WOSET_TOTAL_LT : thm := BInseg.WOSET_TOTAL_LT
-unsafe def ORDINAL_IMP_WOSET : thm := BInseg.ORDINAL_IMP_WOSET
-unsafe def WOSET_FINITE_TOSET : thm := BInseg.WOSET_FINITE_TOSET
-unsafe def UNION_FLD : thm := BInseg.UNION_FLD
-unsafe def UNION_INSEG : thm := BInseg.UNION_INSEG
-unsafe def INSEG_SUBSET : thm := BInseg.INSEG_SUBSET
-unsafe def INSEG_SUBSET_FLD : thm := BInseg.INSEG_SUBSET_FLD
-unsafe def INSEG_FLD_SUBSET : thm := BInseg.INSEG_FLD_SUBSET
-unsafe def INSEG_WOSET : thm := BInseg.INSEG_WOSET
-unsafe def INSEG_ORDINAL : thm := BInseg.INSEG_ORDINAL
-unsafe def LINSEG_INSEG : thm := BInseg.LINSEG_INSEG
-unsafe def LINSEG_WOSET : thm := BInseg.LINSEG_WOSET
-unsafe def LINSEG_FLD : thm := BInseg.LINSEG_FLD
-unsafe def INSEG_PROPER_SUBSET : thm := BInseg.INSEG_PROPER_SUBSET
-unsafe def INSEG_PROPER_SUBSET_FLD : thm := BInseg.INSEG_PROPER_SUBSET_FLD
-unsafe def INSEG_LINSEG : thm := BInseg.INSEG_LINSEG
-unsafe def EXTEND_FLD : thm := BInseg.EXTEND_FLD
-unsafe def EXTEND_INSEG : thm := BInseg.EXTEND_INSEG
-unsafe def EXTEND_LINSEG : thm := BInseg.EXTEND_LINSEG
-unsafe def ORDINAL_CHAINED_LEMMA : thm := BInseg.ORDINAL_CHAINED_LEMMA
-unsafe def ORDINAL_CHAINED : thm := BInseg.ORDINAL_CHAINED
-unsafe def ORDINAL_FLD_UNIQUE : thm := BInseg.ORDINAL_FLD_UNIQUE
-unsafe def ORDINAL_FLD_SUBSET : thm := BInseg.ORDINAL_FLD_SUBSET
-unsafe def ORDINAL_FLD_SUBSET_EQ : thm := BInseg.ORDINAL_FLD_SUBSET_EQ
-unsafe def FLD_SUC : thm := BInseg.FLD_SUC
-unsafe def ORDINAL_SUC : thm := BInseg.ORDINAL_SUC
+def WOSET_TRANS_LE : thm := BInseg.WOSET_TRANS_LE
+def WOSET_WELL_CONTRAPOS : thm := BInseg.WOSET_WELL_CONTRAPOS
+def WOSET_TOTAL_LE : thm := BInseg.WOSET_TOTAL_LE
+def WOSET_TOTAL_LT : thm := BInseg.WOSET_TOTAL_LT
+def ORDINAL_IMP_WOSET : thm := BInseg.ORDINAL_IMP_WOSET
+def WOSET_FINITE_TOSET : thm := BInseg.WOSET_FINITE_TOSET
+def UNION_FLD : thm := BInseg.UNION_FLD
+def UNION_INSEG : thm := BInseg.UNION_INSEG
+def INSEG_SUBSET : thm := BInseg.INSEG_SUBSET
+def INSEG_SUBSET_FLD : thm := BInseg.INSEG_SUBSET_FLD
+def INSEG_FLD_SUBSET : thm := BInseg.INSEG_FLD_SUBSET
+def INSEG_WOSET : thm := BInseg.INSEG_WOSET
+def INSEG_ORDINAL : thm := BInseg.INSEG_ORDINAL
+def LINSEG_INSEG : thm := BInseg.LINSEG_INSEG
+def LINSEG_WOSET : thm := BInseg.LINSEG_WOSET
+def LINSEG_FLD : thm := BInseg.LINSEG_FLD
+def INSEG_PROPER_SUBSET : thm := BInseg.INSEG_PROPER_SUBSET
+def INSEG_PROPER_SUBSET_FLD : thm := BInseg.INSEG_PROPER_SUBSET_FLD
+def INSEG_LINSEG : thm := BInseg.INSEG_LINSEG
+def EXTEND_FLD : thm := BInseg.EXTEND_FLD
+def EXTEND_INSEG : thm := BInseg.EXTEND_INSEG
+def EXTEND_LINSEG : thm := BInseg.EXTEND_LINSEG
+def ORDINAL_CHAINED_LEMMA : thm := BInseg.ORDINAL_CHAINED_LEMMA
+def ORDINAL_CHAINED : thm := BInseg.ORDINAL_CHAINED
+def ORDINAL_FLD_UNIQUE : thm := BInseg.ORDINAL_FLD_UNIQUE
+def ORDINAL_FLD_SUBSET : thm := BInseg.ORDINAL_FLD_SUBSET
+def ORDINAL_FLD_SUBSET_EQ : thm := BInseg.ORDINAL_FLD_SUBSET_EQ
+def FLD_SUC : thm := BInseg.FLD_SUC
+def ORDINAL_SUC : thm := BInseg.ORDINAL_SUC
 
 -- WellOrder
-unsafe def ORDINAL_UNION : thm := BWellOrder.ORDINAL_UNION
-unsafe def ORDINAL_UNION_LEMMA : thm := BWellOrder.ORDINAL_UNION_LEMMA
-unsafe def ORDINAL_UP : thm := BWellOrder.ORDINAL_UP
-unsafe def WO_ORDINAL : thm := BWellOrder.WO_ORDINAL
-unsafe def FLD_RESTRICT : thm := BWellOrder.FLD_RESTRICT
-unsafe def WO : thm := BWellOrder.WO
-unsafe def WF_INSEG_WOSET : thm := BWellOrder.WF_INSEG_WOSET
-unsafe def WOSET_INSEG_ORDINAL : thm := BWellOrder.WOSET_INSEG_ORDINAL
-unsafe def SUBWOSET_ISO_INSEG : thm := BWellOrder.SUBWOSET_ISO_INSEG
+def ORDINAL_UNION : thm := BWellOrder.ORDINAL_UNION
+def ORDINAL_UNION_LEMMA : thm := BWellOrder.ORDINAL_UNION_LEMMA
+def ORDINAL_UP : thm := BWellOrder.ORDINAL_UP
+def WO_ORDINAL : thm := BWellOrder.WO_ORDINAL
+def FLD_RESTRICT : thm := BWellOrder.FLD_RESTRICT
+def WO : thm := BWellOrder.WO
+def WF_INSEG_WOSET : thm := BWellOrder.WF_INSEG_WOSET
+def WOSET_INSEG_ORDINAL : thm := BWellOrder.WOSET_INSEG_ORDINAL
+def SUBWOSET_ISO_INSEG : thm := BWellOrder.SUBWOSET_ISO_INSEG
 
 -- Zorn
-unsafe def HP : thm := BZorn.HP
-unsafe def ZL_STRONG : thm := BZorn.ZL_STRONG
-unsafe def ZL : thm := BZorn.ZL
-unsafe def KL_POSET_LEMMA : thm := BZorn.KL_POSET_LEMMA
-unsafe def KL : thm := BZorn.KL
-unsafe def POSET_RESTRICTED_SUBSET : thm := BZorn.POSET_RESTRICTED_SUBSET
-unsafe def FLD_RESTRICTED_SUBSET : thm := BZorn.FLD_RESTRICTED_SUBSET
-unsafe def ZL_SUBSETS : thm := BZorn.ZL_SUBSETS
-unsafe def ZL_SUBSETS_UNIONS : thm := BZorn.ZL_SUBSETS_UNIONS
-unsafe def ZL_SUBSETS_UNIONS_NONEMPTY : thm := BZorn.ZL_SUBSETS_UNIONS_NONEMPTY
+def HP : thm := BZorn.HP
+def ZL_STRONG : thm := BZorn.ZL_STRONG
+def ZL : thm := BZorn.ZL
+def KL_POSET_LEMMA : thm := BZorn.KL_POSET_LEMMA
+def KL : thm := BZorn.KL
+def POSET_RESTRICTED_SUBSET : thm := BZorn.POSET_RESTRICTED_SUBSET
+def FLD_RESTRICTED_SUBSET : thm := BZorn.FLD_RESTRICTED_SUBSET
+def ZL_SUBSETS : thm := BZorn.ZL_SUBSETS
+def ZL_SUBSETS_UNIONS : thm := BZorn.ZL_SUBSETS_UNIONS
+def ZL_SUBSETS_UNIONS_NONEMPTY : thm := BZorn.ZL_SUBSETS_UNIONS_NONEMPTY
 
 -- Tukey
-unsafe def TUKEY : thm := BTukey.TUKEY
-unsafe def OEP : thm := BTukey.OEP
-unsafe def TOSET_COFINAL_WOSET : thm := BTukey.TOSET_COFINAL_WOSET
+def TUKEY : thm := BTukey.TUKEY
+def OEP : thm := BTukey.OEP
+def TOSET_COFINAL_WOSET : thm := BTukey.TOSET_COFINAL_WOSET
 
 
 
@@ -400,18 +351,7 @@ unsafe def TOSET_COFINAL_WOSET : thm := BTukey.TOSET_COFINAL_WOSET
 
 
 
--- @@EXPORTS END
-
-/-- `needs "Library/wo.ml"`: build every bundle, in file order. -/
-unsafe def ensureWo : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BDefs.SUBSET_PRED
-  let _ ← IO.mkRef BOrders.strictly
-  let _ ← IO.mkRef BSegs.FLD_TRIVIAL
-  let _ ← IO.mkRef BInseg.WOSET_TRANS_LE
-  let _ ← IO.mkRef BWellOrder.ORDINAL_UNION
-  let _ ← IO.mkRef BZorn.HP
-  let _ ← IO.mkRef BTukey.TUKEY  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/wo.ml"`: already done by importing this module. -/
+def ensureWo : IO Unit := pure ()
 
 end SessionLibrary.Wo

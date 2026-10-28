@@ -10,7 +10,7 @@ constants and definitions, and the BITSIZE_CONV conversion tests from
 tools/bitsizediff/convs.txt. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Bitsize
 
 open HolCore.Kernel HolTest.CommonTest
 

@@ -3,10 +3,11 @@ Translation of HOL Light's Examples/pseudoprime.ml, phrase by phrase.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 import HolExamples.Common
+import SessionLibrary.Jacobi
 import HolExamples.MillerRabin
 open HolCore.Kernel Session HolLight.Syntax HolExamples
 open SessionLibrary.Prime SessionLibrary.Pocklington SessionLibrary.Multiplicative
-open SessionLibrary.ModmulGroup SessionLibrary.Products SessionLibrary.Primitive
+open SessionLibrary.Products SessionLibrary.Primitive
 open SessionLibrary.Jacobi
 open SessionLibrary.Integer
 open HolExamples.MillerRabin
@@ -14,19 +15,19 @@ namespace HolExamples.PseudoPrime
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 private def ec {α : Type} (x : Except String α) : ExceptT String IO α := ExceptT.mk (pure x)
 
 /- A `let A,B = (CONJ_PAIR o prove)(...)` phrase: run the proof once and print
    both theorems as `val A : thm = |- ...` / `val B : thm = |- ...` (compare.py
    strips the `val x : thm =` prefixes). -/
-private unsafe def runPair (x : ExceptT String IO (thm × thm)) : thm × thm :=
-  match unsafeIO x.run with
+private def runPair (x : ExceptT String IO (thm × thm)) : thm × thm :=
+  match runIO x.run with
   | .ok (.ok p) => p
   | .ok (.error e) => panic! e
   | .error e => panic! (toString e)
-private unsafe def printTwo (p : thm × thm) : IO Unit := do
+private def printTwo (p : thm × thm) : IO Unit := do
   IO.println (← HolCore.Printer.string_of_thm p.1)
   IO.println (← HolCore.Printer.string_of_thm p.2)
 
@@ -48,7 +49,7 @@ private unsafe def printTwo (p : thm × thm) : IO Unit := do
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 3
-unsafe def CARD_SUBSET_HALF_LEMMA : thm := keep "CARD_SUBSET_HALF_LEMMA" fun _ => (do
+def CARD_SUBSET_HALF_LEMMA : thm := keep "CARD_SUBSET_HALF_LEMMA" fun _ => (do
   prove ([[!f s (t:A->bool) n.
         FINITE t /\ CARD t <= n /\
         s SUBSET t /\ IMAGE f s SUBSET t DIFF s /\
@@ -74,19 +75,19 @@ unsafe def CARD_SUBSET_HALF_LEMMA : thm := keep "CARD_SUBSET_HALF_LEMMA" fun _ =
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 4
-unsafe def fermat_pseudoprime : thm := keep "fermat_pseudoprime" fun _ => new_definition
+def fermat_pseudoprime : thm := keep "fermat_pseudoprime" fun _ => new_definition
   [[fermat_pseudoprime a n <=>
         (a EXP (n - 1) == 1) (mod n)]]
 #eval fermat_pseudoprime
 
 #eval phrase 5
-unsafe def carmichael_number : thm := keep "carmichael_number" fun _ => new_definition
+def carmichael_number : thm := keep "carmichael_number" fun _ => new_definition
   [[carmichael_number n <=>
      2 <= n /\ ~prime n /\ !a. coprime(a,n) ==> fermat_pseudoprime a n]]
 #eval carmichael_number
 
 #eval phrase 6
-unsafe def CARMICHAEL_NUMBER_PAIR : thm × thm := keep "CARMICHAEL_NUMBER_PAIR" fun _ => runPair (do
+def CARMICHAEL_NUMBER_PAIR : thm × thm := keep "CARMICHAEL_NUMBER_PAIR" fun _ => runPair (do
   -- OCaml builds the tactic right-to-left (and THENL branches right-to-left),
   -- so the Grobner/MESON trace rules are evaluated in reverse textual order.
   let nr_I ← ExceptT.mk (NUMBER_RULE [[p divides a /\ p divides b ==> (b:num == a) (mod p)]])
@@ -208,12 +209,12 @@ unsafe def CARMICHAEL_NUMBER_PAIR : thm × thm := keep "CARMICHAEL_NUMBER_PAIR" 
         MATCH_MP_TAC nr_I THEN
         EXPAND_TAC "b" THEN ASM_SIMP_TAC [PRIME_DIVEXP_EQ] THEN
         ASM_MESON_TAC [PRIME_COPRIME_EQ, COPRIME_SYM]]]) ))
-unsafe def CARMICHAEL_NUMBER : thm := CARMICHAEL_NUMBER_PAIR.1
-unsafe def CARMICHAEL_NUMBER_KORSELT_ALT : thm := CARMICHAEL_NUMBER_PAIR.2
+def CARMICHAEL_NUMBER : thm := CARMICHAEL_NUMBER_PAIR.1
+def CARMICHAEL_NUMBER_KORSELT_ALT : thm := CARMICHAEL_NUMBER_PAIR.2
 #eval printTwo CARMICHAEL_NUMBER_PAIR
 
 #eval phrase 7
-unsafe def CARMICHAEL_NUMBER_KORSELT : thm := keep "CARMICHAEL_NUMBER_KORSELT" fun _ => (do
+def CARMICHAEL_NUMBER_KORSELT : thm := keep "CARMICHAEL_NUMBER_KORSELT" fun _ => (do
   prove ([[!n. carmichael_number n <=>
         2 <= n /\ ~prime n /\ ODD n /\ squarefree n /\
         !p. prime p /\ p divides n ==> (p - 1) divides (n - 1)]])
@@ -223,28 +224,28 @@ unsafe def CARMICHAEL_NUMBER_KORSELT : thm := keep "CARMICHAEL_NUMBER_KORSELT" f
 #eval CARMICHAEL_NUMBER_KORSELT
 
 #eval phrase 8
-unsafe def CARMICHAEL_NUMBER_IMP_ODD : thm := keep "CARMICHAEL_NUMBER_IMP_ODD" fun _ => (do
+def CARMICHAEL_NUMBER_IMP_ODD : thm := keep "CARMICHAEL_NUMBER_IMP_ODD" fun _ => (do
   prove ([[!n. carmichael_number n ==> ODD n]])
    (SIMP_TAC [CARMICHAEL_NUMBER_KORSELT])
   : ExceptT String IO thm).run
 #eval CARMICHAEL_NUMBER_IMP_ODD
 
 #eval phrase 9
-unsafe def CARMICHAEL_NUMBER_IMP_SQUAREFREE : thm := keep "CARMICHAEL_NUMBER_IMP_SQUAREFREE" fun _ => (do
+def CARMICHAEL_NUMBER_IMP_SQUAREFREE : thm := keep "CARMICHAEL_NUMBER_IMP_SQUAREFREE" fun _ => (do
   prove ([[!n. carmichael_number n ==> squarefree n]])
    (SIMP_TAC [CARMICHAEL_NUMBER_KORSELT])
   : ExceptT String IO thm).run
 #eval CARMICHAEL_NUMBER_IMP_SQUAREFREE
 
 #eval phrase 10
-unsafe def CARMICHAEL_NUMBER_IMP_NZ : thm := keep "CARMICHAEL_NUMBER_IMP_NZ" fun _ => (do
+def CARMICHAEL_NUMBER_IMP_NZ : thm := keep "CARMICHAEL_NUMBER_IMP_NZ" fun _ => (do
   prove ([[!n. carmichael_number n ==> ~(n = 0)]])
    (MESON_TAC [CARMICHAEL_NUMBER_IMP_ODD, ODD])
   : ExceptT String IO thm).run
 #eval CARMICHAEL_NUMBER_IMP_NZ
 
 #eval phrase 11
-unsafe def CARMICHAEL_NUMBER_IMP_TRIPLET : thm := keep "CARMICHAEL_NUMBER_IMP_TRIPLET" fun _ => (do
+def CARMICHAEL_NUMBER_IMP_TRIPLET : thm := keep "CARMICHAEL_NUMBER_IMP_TRIPLET" fun _ => (do
   -- OCaml builds the tactic right-to-left, so the `q divides ...` NUMBER_RULE
   -- (rightmost) is evaluated before the MESON[HAS_SIZE] term (whose parse emits
   -- the "inventing type variables" warning).
@@ -289,7 +290,7 @@ unsafe def CARMICHAEL_NUMBER_IMP_TRIPLET : thm := keep "CARMICHAEL_NUMBER_IMP_TR
 #eval CARMICHAEL_NUMBER_IMP_TRIPLET
 
 #eval phrase 12
-unsafe def CARMICHAEL_NUMBER_PRIME_FACTOR_CONG_1 : thm := keep "CARMICHAEL_NUMBER_PRIME_FACTOR_CONG_1" fun _ => (do
+def CARMICHAEL_NUMBER_PRIME_FACTOR_CONG_1 : thm := keep "CARMICHAEL_NUMBER_PRIME_FACTOR_CONG_1" fun _ => (do
   -- OCaml evaluates the tactic right-to-left: the `(n == n + 1)` NUMBER_RULE
   -- (rightmost) is built before the `q divides ...` one.
   let nr_eq ← ExceptT.mk (NUMBER_RULE [[(n == n + 1) (mod q) <=> q = 1]])
@@ -316,7 +317,7 @@ unsafe def CARMICHAEL_NUMBER_PRIME_FACTOR_CONG_1 : thm := keep "CARMICHAEL_NUMBE
 #eval CARMICHAEL_NUMBER_PRIME_FACTOR_CONG_1
 
 #eval phrase 13
-unsafe def FERMAT_PSEUDOPRIME_IMP_COPRIME : thm := keep "FERMAT_PSEUDOPRIME_IMP_COPRIME" fun _ => (do
+def FERMAT_PSEUDOPRIME_IMP_COPRIME : thm := keep "FERMAT_PSEUDOPRIME_IMP_COPRIME" fun _ => (do
   prove ([[!a n. fermat_pseudoprime a n ==> n = 0 \/ coprime(a,n)]])
    (REPEAT GEN_TAC THEN ASM_CASES_TAC [[n = 0]] THEN REWRITE_TAC [] THEN
     ASM_CASES_TAC [[n = 1]] THEN ASM_REWRITE_TAC [COPRIME_1] THEN
@@ -328,7 +329,7 @@ unsafe def FERMAT_PSEUDOPRIME_IMP_COPRIME : thm := keep "FERMAT_PSEUDOPRIME_IMP_
 #eval FERMAT_PSEUDOPRIME_IMP_COPRIME
 
 #eval phrase 14
-unsafe def PRIME_IMP_FERMAT_PSEUDOPRIME : thm := keep "PRIME_IMP_FERMAT_PSEUDOPRIME" fun _ => (do
+def PRIME_IMP_FERMAT_PSEUDOPRIME : thm := keep "PRIME_IMP_FERMAT_PSEUDOPRIME" fun _ => (do
   prove ([[!p a. prime p /\ ~(p divides a) ==> fermat_pseudoprime a p]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [fermat_pseudoprime] THEN
     MATCH_MP_TAC FERMAT_LITTLE_PRIME THEN
@@ -337,7 +338,7 @@ unsafe def PRIME_IMP_FERMAT_PSEUDOPRIME : thm := keep "PRIME_IMP_FERMAT_PSEUDOPR
 #eval PRIME_IMP_FERMAT_PSEUDOPRIME
 
 #eval phrase 15
-unsafe def PRIME_EQ_FERMAT_PSEUDOPRIME : thm := keep "PRIME_EQ_FERMAT_PSEUDOPRIME" fun _ => (do
+def PRIME_EQ_FERMAT_PSEUDOPRIME : thm := keep "PRIME_EQ_FERMAT_PSEUDOPRIME" fun _ => (do
   prove ([[!p. prime p <=> 2 <= p /\ (!a. 0 < a /\ a < p ==> fermat_pseudoprime a p)]])
    (GEN_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC [PRIME_GE_2] THENL
      [MATCH_MP_TAC PRIME_IMP_FERMAT_PSEUDOPRIME THEN ASM_REWRITE_TAC [] THEN
@@ -353,7 +354,7 @@ unsafe def PRIME_EQ_FERMAT_PSEUDOPRIME : thm := keep "PRIME_EQ_FERMAT_PSEUDOPRIM
 #eval PRIME_EQ_FERMAT_PSEUDOPRIME
 
 #eval phrase 16
-unsafe def ABSOLUTE_FERMAT_PSEUDOPRIME : thm := keep "ABSOLUTE_FERMAT_PSEUDOPRIME" fun _ => (do
+def ABSOLUTE_FERMAT_PSEUDOPRIME : thm := keep "ABSOLUTE_FERMAT_PSEUDOPRIME" fun _ => (do
   prove ([[!n. (!a. coprime(a,n) ==> fermat_pseudoprime a n) <=>
        n = 0 \/ n = 1 \/ prime n \/ carmichael_number n]])
    (GEN_TAC THEN ASM_CASES_TAC [[n = 0]] THENL
@@ -371,7 +372,7 @@ unsafe def ABSOLUTE_FERMAT_PSEUDOPRIME : thm := keep "ABSOLUTE_FERMAT_PSEUDOPRIM
 #eval ABSOLUTE_FERMAT_PSEUDOPRIME
 
 #eval phrase 17
-unsafe def FERMAT_PSEUDOPRIME_BOUND_PHI_ALT : thm := keep "FERMAT_PSEUDOPRIME_BOUND_PHI_ALT" fun _ => (do
+def FERMAT_PSEUDOPRIME_BOUND_PHI_ALT : thm := keep "FERMAT_PSEUDOPRIME_BOUND_PHI_ALT" fun _ => (do
   prove ([[!n. ~(n = 1) /\ ~prime n /\ ~carmichael_number n
         ==> 2 * CARD {a | a < n /\ fermat_pseudoprime a n} <= phi n]])
    (GEN_TAC THEN ASM_CASES_TAC [[n = 0]] THEN
@@ -406,7 +407,7 @@ unsafe def FERMAT_PSEUDOPRIME_BOUND_PHI_ALT : thm := keep "FERMAT_PSEUDOPRIME_BO
 #eval FERMAT_PSEUDOPRIME_BOUND_PHI_ALT
 
 #eval phrase 18
-unsafe def FERMAT_PSEUDOPRIME_BOUND_PHI : thm := keep "FERMAT_PSEUDOPRIME_BOUND_PHI" fun _ => (do
+def FERMAT_PSEUDOPRIME_BOUND_PHI : thm := keep "FERMAT_PSEUDOPRIME_BOUND_PHI" fun _ => (do
   prove ([[!n. ~(n = 1) /\ ~prime n /\ ~carmichael_number n
         ==> CARD {a | a < n /\ fermat_pseudoprime a n} <= phi n DIV 2]])
    (REWRITE_TAC [(← ExceptT.mk (ARITH_RULE [[a <= b DIV 2 <=> 2 * a <= b]]))] THEN
@@ -415,7 +416,7 @@ unsafe def FERMAT_PSEUDOPRIME_BOUND_PHI : thm := keep "FERMAT_PSEUDOPRIME_BOUND_
 #eval FERMAT_PSEUDOPRIME_BOUND_PHI
 
 #eval phrase 19
-unsafe def FERMAT_PSEUDOPRIME_BOUND_LT : thm := keep "FERMAT_PSEUDOPRIME_BOUND_LT" fun _ => (do
+def FERMAT_PSEUDOPRIME_BOUND_LT : thm := keep "FERMAT_PSEUDOPRIME_BOUND_LT" fun _ => (do
   prove ([[!n. ~(n = 0) /\ ~(n = 1) /\ ~prime n /\ ~carmichael_number n
         ==> CARD {a | a < n /\ fermat_pseudoprime a n} < n DIV 2]])
    (REPEAT STRIP_TAC THEN
@@ -427,7 +428,7 @@ unsafe def FERMAT_PSEUDOPRIME_BOUND_LT : thm := keep "FERMAT_PSEUDOPRIME_BOUND_L
 #eval FERMAT_PSEUDOPRIME_BOUND_LT
 
 #eval phrase 20
-unsafe def MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME : thm := keep "MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME" fun _ => (do
+def MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME : thm := keep "MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME" fun _ => (do
   prove ([[!a q. miller_rabin_pseudoprime a q /\ ~(q = 2) ==> fermat_pseudoprime a q]])
    (REWRITE_TAC [fermat_pseudoprime] THEN
     REWRITE_TAC [MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME_EXPLICIT])
@@ -435,7 +436,7 @@ unsafe def MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME : thm := keep "MILLER_RABIN_IMP_F
 #eval MILLER_RABIN_IMP_FERMAT_PSEUDOPRIME
 
 #eval phrase 21
-unsafe def MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME : thm := keep "MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME" fun _ => (do
+def MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME : thm := keep "MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME" fun _ => (do
   prove ([[!a q. (?p k. prime p /\ ODD p /\ p EXP k = q)
          ==> (miller_rabin_pseudoprime a q <=> fermat_pseudoprime a q)]])
    (REWRITE_TAC [fermat_pseudoprime] THEN
@@ -448,7 +449,7 @@ unsafe def MILLER_RABIN_EQ_FERMAT_PSEUDOPRIME : thm := keep "MILLER_RABIN_EQ_FER
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 22
-unsafe def weak_euler_pseudoprime : thm := keep "weak_euler_pseudoprime" fun _ => new_definition
+def weak_euler_pseudoprime : thm := keep "weak_euler_pseudoprime" fun _ => new_definition
   [[weak_euler_pseudoprime a n <=>
         ODD n /\
         ((&a pow ((n - 1) DIV 2) == (&1:int)) (mod &n) \/
@@ -456,7 +457,7 @@ unsafe def weak_euler_pseudoprime : thm := keep "weak_euler_pseudoprime" fun _ =
 #eval weak_euler_pseudoprime
 
 #eval phrase 23
-unsafe def WEAK_EULER_IMP_FERMAT_PSEUDOPRIME : thm := keep "WEAK_EULER_IMP_FERMAT_PSEUDOPRIME" fun _ => (do
+def WEAK_EULER_IMP_FERMAT_PSEUDOPRIME : thm := keep "WEAK_EULER_IMP_FERMAT_PSEUDOPRIME" fun _ => (do
   -- OCaml evaluates the tactic right-to-left, so the second INTEGER_RULE
   -- (`x = y ==> ...`) is built before the first (`x pow 2 == y pow 2`).
   let ir_eq ← ExceptT.mk (INTEGER_RULE
@@ -476,14 +477,14 @@ unsafe def WEAK_EULER_IMP_FERMAT_PSEUDOPRIME : thm := keep "WEAK_EULER_IMP_FERMA
 #eval WEAK_EULER_IMP_FERMAT_PSEUDOPRIME
 
 #eval phrase 24
-unsafe def WEAK_EULER_PSEUDOPRIME_IMP_ODD : thm := keep "WEAK_EULER_PSEUDOPRIME_IMP_ODD" fun _ => (do
+def WEAK_EULER_PSEUDOPRIME_IMP_ODD : thm := keep "WEAK_EULER_PSEUDOPRIME_IMP_ODD" fun _ => (do
   prove ([[!a n. weak_euler_pseudoprime a n ==> ODD n]])
    (SIMP_TAC [weak_euler_pseudoprime])
   : ExceptT String IO thm).run
 #eval WEAK_EULER_PSEUDOPRIME_IMP_ODD
 
 #eval phrase 25
-unsafe def WEAK_EULER_PSEUDOPRIME_IMP_COPRIME : thm := keep "WEAK_EULER_PSEUDOPRIME_IMP_COPRIME" fun _ => (do
+def WEAK_EULER_PSEUDOPRIME_IMP_COPRIME : thm := keep "WEAK_EULER_PSEUDOPRIME_IMP_COPRIME" fun _ => (do
   prove ([[!a n. weak_euler_pseudoprime a n ==> coprime(a,n)]])
    (MESON_TAC [WEAK_EULER_IMP_FERMAT_PSEUDOPRIME, FERMAT_PSEUDOPRIME_IMP_COPRIME,
               ODD, weak_euler_pseudoprime])
@@ -491,7 +492,7 @@ unsafe def WEAK_EULER_PSEUDOPRIME_IMP_COPRIME : thm := keep "WEAK_EULER_PSEUDOPR
 #eval WEAK_EULER_PSEUDOPRIME_IMP_COPRIME
 
 #eval phrase 26
-unsafe def PRIME_IMP_WEAK_EULER_PSEUDOPRIME : thm := keep "PRIME_IMP_WEAK_EULER_PSEUDOPRIME" fun _ => (do
+def PRIME_IMP_WEAK_EULER_PSEUDOPRIME : thm := keep "PRIME_IMP_WEAK_EULER_PSEUDOPRIME" fun _ => (do
   prove ([[!p a. prime p /\ ~(p = 2) /\ ~(p divides a) ==> weak_euler_pseudoprime a p]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [weak_euler_pseudoprime] THEN
     CONJ_TAC THENL [ASM_MESON_TAC [PRIME_ODD], ONCE_REWRITE_TAC [DISJ_SYM]] THEN
@@ -504,7 +505,7 @@ unsafe def PRIME_IMP_WEAK_EULER_PSEUDOPRIME : thm := keep "PRIME_IMP_WEAK_EULER_
 #eval PRIME_IMP_WEAK_EULER_PSEUDOPRIME
 
 #eval phrase 27
-unsafe def PRIME_EQ_WEAK_EULER_PSEUDOPRIME : thm := keep "PRIME_EQ_WEAK_EULER_PSEUDOPRIME" fun _ => (do
+def PRIME_EQ_WEAK_EULER_PSEUDOPRIME : thm := keep "PRIME_EQ_WEAK_EULER_PSEUDOPRIME" fun _ => (do
   prove ([[!p. prime p <=>
        p = 2 \/ 2 <= p /\
        (!a. 0 < a /\ a < p ==> weak_euler_pseudoprime a p)]])
@@ -519,7 +520,7 @@ unsafe def PRIME_EQ_WEAK_EULER_PSEUDOPRIME : thm := keep "PRIME_EQ_WEAK_EULER_PS
 #eval PRIME_EQ_WEAK_EULER_PSEUDOPRIME
 
 #eval phrase 28
-unsafe def MILLER_RABIN_IMP_WEAK_EULER_PSEUDOPRIME : thm := keep "MILLER_RABIN_IMP_WEAK_EULER_PSEUDOPRIME" fun _ => (do
+def MILLER_RABIN_IMP_WEAK_EULER_PSEUDOPRIME : thm := keep "MILLER_RABIN_IMP_WEAK_EULER_PSEUDOPRIME" fun _ => (do
   prove ([[!a q. miller_rabin_pseudoprime a q /\ ~(q = 2)
          ==> weak_euler_pseudoprime a q]])
    (MAP_EVERY X_GEN_TAC [ [[a:num]], [[n:num]] ] THEN
@@ -565,7 +566,7 @@ unsafe def MILLER_RABIN_IMP_WEAK_EULER_PSEUDOPRIME : thm := keep "MILLER_RABIN_I
 #eval MILLER_RABIN_IMP_WEAK_EULER_PSEUDOPRIME
 
 #eval phrase 29
-unsafe def MILLER_RABIN_EQ_WEAK_EULER_PSEUDOPRIME : thm := keep "MILLER_RABIN_EQ_WEAK_EULER_PSEUDOPRIME" fun _ => (do
+def MILLER_RABIN_EQ_WEAK_EULER_PSEUDOPRIME : thm := keep "MILLER_RABIN_EQ_WEAK_EULER_PSEUDOPRIME" fun _ => (do
   prove ([[!a n. ~(n = 2) /\ (?p k. prime p /\ ODD p /\ p EXP k = n) \/
          (n == 3) (mod 4)
          ==> (miller_rabin_pseudoprime a n <=> weak_euler_pseudoprime a n)]])
@@ -597,7 +598,7 @@ unsafe def MILLER_RABIN_EQ_WEAK_EULER_PSEUDOPRIME : thm := keep "MILLER_RABIN_EQ
 #eval MILLER_RABIN_EQ_WEAK_EULER_PSEUDOPRIME
 
 #eval phrase 30
-unsafe def ABSOLUTE_WEAK_EULER_PSEUDOPRIME_PAIR : thm × thm := keep "ABSOLUTE_WEAK_EULER_PSEUDOPRIME_PAIR" fun _ => runPair (do
+def ABSOLUTE_WEAK_EULER_PSEUDOPRIME_PAIR : thm × thm := keep "ABSOLUTE_WEAK_EULER_PSEUDOPRIME_PAIR" fun _ => runPair (do
   CONJ_PAIR (← prove ([[(!n. (!a. coprime(a,n) ==> weak_euler_pseudoprime a n) <=>
         ODD n /\
         (prime n \/
@@ -711,12 +712,12 @@ unsafe def ABSOLUTE_WEAK_EULER_PSEUDOPRIME_PAIR : thm × thm := keep "ABSOLUTE_W
     REWRITE_TAC [INT_OF_NUM_MUL, MULT_CLAUSES, (← ExceptT.mk (HolLight.GSYM num_divides))] THEN
     ASM_MESON_TAC [DIVIDES_PRIME_PRIME, ODD_MULT,
                   (← ExceptT.mk (NUM_REDUCE_CONV [[ODD 2]])), PRIME_2]) ))
-unsafe def ABSOLUTE_WEAK_EULER_PSEUDOPRIME : thm := ABSOLUTE_WEAK_EULER_PSEUDOPRIME_PAIR.1
-unsafe def ABSOLUTE_WEAK_EULER_PSEUDOPRIME_ALT : thm := ABSOLUTE_WEAK_EULER_PSEUDOPRIME_PAIR.2
+def ABSOLUTE_WEAK_EULER_PSEUDOPRIME : thm := ABSOLUTE_WEAK_EULER_PSEUDOPRIME_PAIR.1
+def ABSOLUTE_WEAK_EULER_PSEUDOPRIME_ALT : thm := ABSOLUTE_WEAK_EULER_PSEUDOPRIME_PAIR.2
 #eval printTwo ABSOLUTE_WEAK_EULER_PSEUDOPRIME_PAIR
 
 #eval phrase 31
-unsafe def WEAK_EULER_PSEUDOPRIME_BOUND_PHI_ALT : thm := keep "WEAK_EULER_PSEUDOPRIME_BOUND_PHI_ALT" fun _ => (do
+def WEAK_EULER_PSEUDOPRIME_BOUND_PHI_ALT : thm := keep "WEAK_EULER_PSEUDOPRIME_BOUND_PHI_ALT" fun _ => (do
   prove ([[!n. ~prime n /\
        ~(squarefree n /\
          !p. prime p /\ p divides n ==> p - 1 divides (n - 1) DIV 2)
@@ -764,7 +765,7 @@ unsafe def WEAK_EULER_PSEUDOPRIME_BOUND_PHI_ALT : thm := keep "WEAK_EULER_PSEUDO
 #eval WEAK_EULER_PSEUDOPRIME_BOUND_PHI_ALT
 
 #eval phrase 32
-unsafe def WEAK_EULER_PSEUDOPRIME_BOUND_PHI : thm := keep "WEAK_EULER_PSEUDOPRIME_BOUND_PHI" fun _ => (do
+def WEAK_EULER_PSEUDOPRIME_BOUND_PHI : thm := keep "WEAK_EULER_PSEUDOPRIME_BOUND_PHI" fun _ => (do
   prove ([[!n. ~prime n /\
        ~(squarefree n /\
          !p. prime p /\ p divides n ==> p - 1 divides (n - 1) DIV 2)
@@ -775,7 +776,7 @@ unsafe def WEAK_EULER_PSEUDOPRIME_BOUND_PHI : thm := keep "WEAK_EULER_PSEUDOPRIM
 #eval WEAK_EULER_PSEUDOPRIME_BOUND_PHI
 
 #eval phrase 33
-unsafe def WEAK_EULER_PSEUDOPRIME_BOUND_LT : thm := keep "WEAK_EULER_PSEUDOPRIME_BOUND_LT" fun _ => (do
+def WEAK_EULER_PSEUDOPRIME_BOUND_LT : thm := keep "WEAK_EULER_PSEUDOPRIME_BOUND_LT" fun _ => (do
   prove ([[!n. ~(n = 0) /\ ~(n = 1) /\ ~prime n /\
        ~(squarefree n /\
          !p. prime p /\ p divides n ==> p - 1 divides (n - 1) DIV 2)
@@ -789,28 +790,28 @@ unsafe def WEAK_EULER_PSEUDOPRIME_BOUND_LT : thm := keep "WEAK_EULER_PSEUDOPRIME
 #eval WEAK_EULER_PSEUDOPRIME_BOUND_LT
 
 #eval phrase 34
-unsafe def euler_jacobi_pseudoprime : thm := keep "euler_jacobi_pseudoprime" fun _ => new_definition
+def euler_jacobi_pseudoprime : thm := keep "euler_jacobi_pseudoprime" fun _ => new_definition
   [[euler_jacobi_pseudoprime a n <=>
         ODD n /\ coprime(a,n) /\
         (jacobi(a,n) == &a pow ((n - 1) DIV 2)) (mod &n)]]
 #eval euler_jacobi_pseudoprime
 
 #eval phrase 35
-unsafe def EULER_JACOBI_PSEUDOPRIME_IMP_COPRIME : thm := keep "EULER_JACOBI_PSEUDOPRIME_IMP_COPRIME" fun _ => (do
+def EULER_JACOBI_PSEUDOPRIME_IMP_COPRIME : thm := keep "EULER_JACOBI_PSEUDOPRIME_IMP_COPRIME" fun _ => (do
   prove ([[!a n. euler_jacobi_pseudoprime a n ==> coprime(a,n)]])
    (SIMP_TAC [euler_jacobi_pseudoprime])
   : ExceptT String IO thm).run
 #eval EULER_JACOBI_PSEUDOPRIME_IMP_COPRIME
 
 #eval phrase 36
-unsafe def EULER_JACOBI_PSEUDOPRIME_IMP_ODD : thm := keep "EULER_JACOBI_PSEUDOPRIME_IMP_ODD" fun _ => (do
+def EULER_JACOBI_PSEUDOPRIME_IMP_ODD : thm := keep "EULER_JACOBI_PSEUDOPRIME_IMP_ODD" fun _ => (do
   prove ([[!a n. euler_jacobi_pseudoprime a n ==> ODD n]])
    (SIMP_TAC [euler_jacobi_pseudoprime])
   : ExceptT String IO thm).run
 #eval EULER_JACOBI_PSEUDOPRIME_IMP_ODD
 
 #eval phrase 37
-unsafe def EULER_JACOBI_IMP_WEAK_EULER_PSEUDOPRIME : thm := keep "EULER_JACOBI_IMP_WEAK_EULER_PSEUDOPRIME" fun _ => (do
+def EULER_JACOBI_IMP_WEAK_EULER_PSEUDOPRIME : thm := keep "EULER_JACOBI_IMP_WEAK_EULER_PSEUDOPRIME" fun _ => (do
   prove ([[!a n. euler_jacobi_pseudoprime a n ==> weak_euler_pseudoprime a n]])
    (REPEAT GEN_TAC THEN
     SIMP_TAC [weak_euler_pseudoprime, euler_jacobi_pseudoprime] THEN
@@ -821,7 +822,7 @@ unsafe def EULER_JACOBI_IMP_WEAK_EULER_PSEUDOPRIME : thm := keep "EULER_JACOBI_I
 #eval EULER_JACOBI_IMP_WEAK_EULER_PSEUDOPRIME
 
 #eval phrase 38
-unsafe def EULER_JACOBI_IMP_FERMAT_PSEUDOPRIME : thm := keep "EULER_JACOBI_IMP_FERMAT_PSEUDOPRIME" fun _ => (do
+def EULER_JACOBI_IMP_FERMAT_PSEUDOPRIME : thm := keep "EULER_JACOBI_IMP_FERMAT_PSEUDOPRIME" fun _ => (do
   prove ([[!a n. euler_jacobi_pseudoprime a n ==> fermat_pseudoprime a n]])
    (MESON_TAC [EULER_JACOBI_IMP_WEAK_EULER_PSEUDOPRIME,
               WEAK_EULER_IMP_FERMAT_PSEUDOPRIME])
@@ -829,7 +830,7 @@ unsafe def EULER_JACOBI_IMP_FERMAT_PSEUDOPRIME : thm := keep "EULER_JACOBI_IMP_F
 #eval EULER_JACOBI_IMP_FERMAT_PSEUDOPRIME
 
 #eval phrase 39
-unsafe def PRIME_IMP_EULER_JACOBI_PSEUDOPRIME : thm := keep "PRIME_IMP_EULER_JACOBI_PSEUDOPRIME" fun _ => (do
+def PRIME_IMP_EULER_JACOBI_PSEUDOPRIME : thm := keep "PRIME_IMP_EULER_JACOBI_PSEUDOPRIME" fun _ => (do
   prove ([[!p a. prime p /\ ~(p = 2) /\ ~(p divides a)
          ==> euler_jacobi_pseudoprime a p]])
    (SIMP_TAC [euler_jacobi_pseudoprime, JACOBI_EULER] THEN
@@ -838,7 +839,7 @@ unsafe def PRIME_IMP_EULER_JACOBI_PSEUDOPRIME : thm := keep "PRIME_IMP_EULER_JAC
 #eval PRIME_IMP_EULER_JACOBI_PSEUDOPRIME
 
 #eval phrase 40
-unsafe def PRIME_EQ_EULER_JACOBI_PSEUDOPRIME : thm := keep "PRIME_EQ_EULER_JACOBI_PSEUDOPRIME" fun _ => (do
+def PRIME_EQ_EULER_JACOBI_PSEUDOPRIME : thm := keep "PRIME_EQ_EULER_JACOBI_PSEUDOPRIME" fun _ => (do
   prove ([[!p. prime p <=>
        p = 2 \/ 2 <= p /\
        (!a. 0 < a /\ a < p ==> euler_jacobi_pseudoprime a p)]])
@@ -853,7 +854,7 @@ unsafe def PRIME_EQ_EULER_JACOBI_PSEUDOPRIME : thm := keep "PRIME_EQ_EULER_JACOB
 #eval PRIME_EQ_EULER_JACOBI_PSEUDOPRIME
 
 #eval phrase 41
-unsafe def ABSOLUTE_EULER_JACOBI_PSEUDOPRIME : thm := keep "ABSOLUTE_EULER_JACOBI_PSEUDOPRIME" fun _ => (do
+def ABSOLUTE_EULER_JACOBI_PSEUDOPRIME : thm := keep "ABSOLUTE_EULER_JACOBI_PSEUDOPRIME" fun _ => (do
   -- OCaml builds the tactic right-to-left, so the Grobner-trace rules are
   -- evaluated in reverse textual order.
   let ir2 ← ExceptT.mk (INTEGER_RULE
@@ -929,7 +930,7 @@ unsafe def ABSOLUTE_EULER_JACOBI_PSEUDOPRIME : thm := keep "ABSOLUTE_EULER_JACOB
 #eval ABSOLUTE_EULER_JACOBI_PSEUDOPRIME
 
 #eval phrase 42
-unsafe def EULER_JACOBI_PSEUDOPRIME_BOUND_PHI_ALT : thm := keep "EULER_JACOBI_PSEUDOPRIME_BOUND_PHI_ALT" fun _ => (do
+def EULER_JACOBI_PSEUDOPRIME_BOUND_PHI_ALT : thm := keep "EULER_JACOBI_PSEUDOPRIME_BOUND_PHI_ALT" fun _ => (do
   prove ([[!n. ~(n = 1) /\ ~prime n
         ==> 2 * CARD {a | a < n /\ euler_jacobi_pseudoprime a n} <= phi n]])
    (GEN_TAC THEN ASM_CASES_TAC [[n = 0]] THEN
@@ -968,7 +969,7 @@ unsafe def EULER_JACOBI_PSEUDOPRIME_BOUND_PHI_ALT : thm := keep "EULER_JACOBI_PS
 #eval EULER_JACOBI_PSEUDOPRIME_BOUND_PHI_ALT
 
 #eval phrase 43
-unsafe def EULER_JACOBI_PSEUDOPRIME_BOUND_PHI : thm := keep "EULER_JACOBI_PSEUDOPRIME_BOUND_PHI" fun _ => (do
+def EULER_JACOBI_PSEUDOPRIME_BOUND_PHI : thm := keep "EULER_JACOBI_PSEUDOPRIME_BOUND_PHI" fun _ => (do
   prove ([[!n. ~(n = 1) /\ ~prime n
         ==> CARD {a | a < n /\ euler_jacobi_pseudoprime a n} <= phi n DIV 2]])
    (REWRITE_TAC [(← ExceptT.mk (ARITH_RULE [[a <= b DIV 2 <=> 2 * a <= b]]))] THEN
@@ -977,7 +978,7 @@ unsafe def EULER_JACOBI_PSEUDOPRIME_BOUND_PHI : thm := keep "EULER_JACOBI_PSEUDO
 #eval EULER_JACOBI_PSEUDOPRIME_BOUND_PHI
 
 #eval phrase 44
-unsafe def EULER_JACOBI_PSEUDOPRIME_BOUND_LT : thm := keep "EULER_JACOBI_PSEUDOPRIME_BOUND_LT" fun _ => (do
+def EULER_JACOBI_PSEUDOPRIME_BOUND_LT : thm := keep "EULER_JACOBI_PSEUDOPRIME_BOUND_LT" fun _ => (do
   prove ([[!n. ~(n = 0) /\ ~(n = 1) /\ ~prime n
         ==> CARD {a | a < n /\ euler_jacobi_pseudoprime a n} < n DIV 2]])
    (REPEAT STRIP_TAC THEN
@@ -989,7 +990,7 @@ unsafe def EULER_JACOBI_PSEUDOPRIME_BOUND_LT : thm := keep "EULER_JACOBI_PSEUDOP
 #eval EULER_JACOBI_PSEUDOPRIME_BOUND_LT
 
 #eval phrase 45
-unsafe def MILLER_RABIN_IMP_EULER_JACOBI_PSEUDOPRIME : thm := keep "MILLER_RABIN_IMP_EULER_JACOBI_PSEUDOPRIME" fun _ => (do
+def MILLER_RABIN_IMP_EULER_JACOBI_PSEUDOPRIME : thm := keep "MILLER_RABIN_IMP_EULER_JACOBI_PSEUDOPRIME" fun _ => (do
   let lemma0 ← prove
    ([[!x m n (k:A->bool).
           n divides m EXP 2 /\ FINITE k
@@ -1232,7 +1233,7 @@ unsafe def MILLER_RABIN_IMP_EULER_JACOBI_PSEUDOPRIME : thm := keep "MILLER_RABIN
 #eval MILLER_RABIN_IMP_EULER_JACOBI_PSEUDOPRIME
 
 #eval phrase 46
-unsafe def MILLER_RABIN_EQ_EULER_JACOBI_PSEUDOPRIME : thm := keep "MILLER_RABIN_EQ_EULER_JACOBI_PSEUDOPRIME" fun _ => (do
+def MILLER_RABIN_EQ_EULER_JACOBI_PSEUDOPRIME : thm := keep "MILLER_RABIN_EQ_EULER_JACOBI_PSEUDOPRIME" fun _ => (do
   prove ([[!a n. ~(n = 2) /\ (?p k. prime p /\ ODD p /\ p EXP k = n) \/
          (n == 3) (mod 4)
          ==> (miller_rabin_pseudoprime a n <=> euler_jacobi_pseudoprime a n)]])

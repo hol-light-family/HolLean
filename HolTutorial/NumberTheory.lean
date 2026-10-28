@@ -4,6 +4,9 @@ Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 
 import HolTutorial.Common
+import SessionLibrary.Prime
+import SessionLibrary.Pocklington
+import SessionLibrary.Binomial
 
 open HolCore.Kernel Session HolLight.Syntax HolTutorial
 open SessionLibrary.Prime SessionLibrary.Pocklington SessionLibrary.Binomial
@@ -12,7 +15,7 @@ namespace HolTutorial.NumberTheory
 
 /- Helpers: the session's `prove` lifted into `ExceptT String IO`, so tactic
    scripts read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 #eval phrase 1
@@ -34,7 +37,7 @@ private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT Str
 #eval phrase 5
 /- let FERMAT_PRIME_CONV n = ... ;;   (OCaml prints `val FERMAT_PRIME_CONV :
    int -> thm = <fun>`) -/
-unsafe def FERMAT_PRIME_CONV (n : Int) : IO (Except String thm) := (do
+def FERMAT_PRIME_CONV (n : Int) : IO (Except String thm) := (do
   let m ← ExceptT.mk (pure (mk_small_numeral n))
   let base : term := [[prime(2 EXP (2 EXP x) + 1)]]
   let substFn ← ExceptT.mk (HolCore.Basics.subst [(m, [[x:num]])])
@@ -71,7 +74,7 @@ unsafe def FERMAT_PRIME_CONV (n : Int) : IO (Except String thm) := (do
 #eval FERMAT_PRIME_CONV 8
 
 #eval phrase 15
-unsafe def CONG_TRIVIAL : thm := keep "CONG_TRIVIAL" fun _ => (do
+def CONG_TRIVIAL : thm := keep "CONG_TRIVIAL" fun _ => (do
   prove ([[!x y. n divides x /\ n divides y ==> (x == y) (mod n)]])
    (MESON_TAC [CONG_0, CONG_SYM, CONG_TRANS])
   : ExceptT String IO thm).run
@@ -79,7 +82,7 @@ unsafe def CONG_TRIVIAL : thm := keep "CONG_TRIVIAL" fun _ => (do
 
 #eval phrase 16
 /- let LITTLE_CHECK_CONV tm = ... ;;   (prints `<fun>`) -/
-unsafe def LITTLE_CHECK_CONV (tm : term) : IO (Except String thm) := (do
+def LITTLE_CHECK_CONV (tm : term) : IO (Except String thm) := (do
   let th ← ExceptT.mk ((HolLight.RATOR_CONV (HolLight.LAND_CONV NUM_EXP_CONV) THENC CONG_CONV) tm)
   Session.EQT_ELIM th
   : ExceptT String IO thm).run
@@ -101,7 +104,7 @@ unsafe def LITTLE_CHECK_CONV (tm : term) : IO (Except String thm) := (do
 #eval LITTLE_CHECK_CONV [[(777 EXP 13 == 777) (mod 13)]]
 
 #eval phrase 22
-unsafe def DIVIDES_FACT_PRIME : thm := keep "DIVIDES_FACT_PRIME" fun _ => (do
+def DIVIDES_FACT_PRIME : thm := keep "DIVIDES_FACT_PRIME" fun _ => (do
   prove ([[!p. prime p ==> !n. p divides (FACT n) <=> p <= n]])
    (GEN_TAC THEN DISCH_TAC THEN INDUCT_TAC THEN REWRITE_TAC [FACT, LE] THENL
      [ASM_MESON_TAC [DIVIDES_ONE, PRIME_0, PRIME_1],
@@ -111,7 +114,7 @@ unsafe def DIVIDES_FACT_PRIME : thm := keep "DIVIDES_FACT_PRIME" fun _ => (do
 #eval DIVIDES_FACT_PRIME
 
 #eval phrase 23
-unsafe def DIVIDES_BINOM_PRIME : thm := keep "DIVIDES_BINOM_PRIME" fun _ => (do
+def DIVIDES_BINOM_PRIME : thm := keep "DIVIDES_BINOM_PRIME" fun _ => (do
   prove ([[!n p. prime p /\ 0 < n /\ n < p ==> p divides binom(p,n)]])
    (REPEAT STRIP_TAC THEN
     MP_TAC (← ExceptT.mk (HolLight.AP_TERM ([[(divides) p]])
@@ -123,7 +126,7 @@ unsafe def DIVIDES_BINOM_PRIME : thm := keep "DIVIDES_BINOM_PRIME" fun _ => (do
 #eval DIVIDES_BINOM_PRIME
 
 #eval phrase 24
-unsafe def DIVIDES_NSUM : thm := keep "DIVIDES_NSUM" fun _ => (do
+def DIVIDES_NSUM : thm := keep "DIVIDES_NSUM" fun _ => (do
   prove ([[!m n. (!i. m <= i /\ i <= n ==> p divides f(i)) ==> p divides nsum(m..n) f]])
    (GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC [NSUM_CLAUSES_NUMSEG] THEN
     ASM_MESON_TAC [LE, LE_TRANS, DIVIDES_0, DIVIDES_ADD, LE_REFL])
@@ -131,7 +134,7 @@ unsafe def DIVIDES_NSUM : thm := keep "DIVIDES_NSUM" fun _ => (do
 #eval DIVIDES_NSUM
 
 #eval phrase 25
-unsafe def FLT_LEMMA : thm := keep "FLT_LEMMA" fun _ => (do
+def FLT_LEMMA : thm := keep "FLT_LEMMA" fun _ => (do
   prove ([[!p a b. prime p ==> ((a + b) EXP p == a EXP p + b EXP p) (mod p)]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [BINOMIAL_THEOREM] THEN
     SUBGOAL_THEN ([[1 <= p /\ 0 < p]]) STRIP_ASSUME_TAC THENL
@@ -148,7 +151,7 @@ unsafe def FLT_LEMMA : thm := keep "FLT_LEMMA" fun _ => (do
 #eval FLT_LEMMA
 
 #eval phrase 26
-unsafe def FERMAT_LITTLE : thm := keep "FERMAT_LITTLE" fun _ => (do
+def FERMAT_LITTLE : thm := keep "FERMAT_LITTLE" fun _ => (do
   prove ([[!p a. prime p ==> (a EXP p == a) (mod p)]])
    (GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
     INDUCT_TAC THENL
@@ -158,7 +161,7 @@ unsafe def FERMAT_LITTLE : thm := keep "FERMAT_LITTLE" fun _ => (do
 #eval FERMAT_LITTLE
 
 #eval phrase 27
-unsafe def FERMAT_LITTLE_COPRIME : thm := keep "FERMAT_LITTLE_COPRIME" fun _ => (do
+def FERMAT_LITTLE_COPRIME : thm := keep "FERMAT_LITTLE_COPRIME" fun _ => (do
   prove ([[!p a. prime p /\ coprime(a,p) ==> (a EXP (p - 1) == 1) (mod p)]])
    (REPEAT STRIP_TAC THEN MATCH_MP_TAC CONG_MULT_LCANCEL THEN
     EXISTS_TAC [[a:num]] THEN ASM_REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM (← ExceptT.mk (HolLight.CONJUNCT2 EXP))))] THEN
@@ -168,7 +171,7 @@ unsafe def FERMAT_LITTLE_COPRIME : thm := keep "FERMAT_LITTLE_COPRIME" fun _ => 
 #eval FERMAT_LITTLE_COPRIME
 
 #eval phrase 28
-unsafe def FERMAT_LITTLE_VARIANT : thm := keep "FERMAT_LITTLE_VARIANT" fun _ => (do
+def FERMAT_LITTLE_VARIANT : thm := keep "FERMAT_LITTLE_VARIANT" fun _ => (do
   prove ([[!p a. prime p ==> (a EXP (1 + m * (p - 1)) == a) (mod p)]])
    (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (DISJ_CASES_TAC o HolLight.SPEC [[a:num]] o HolLight.MATCH_MP PRIME_COPRIME_STRONG)
@@ -182,7 +185,7 @@ unsafe def FERMAT_LITTLE_VARIANT : thm := keep "FERMAT_LITTLE_VARIANT" fun _ => 
 #eval FERMAT_LITTLE_VARIANT
 
 #eval phrase 29
-unsafe def RSA : thm := keep "RSA" fun _ => (do
+def RSA : thm := keep "RSA" fun _ => (do
   prove ([[prime p /\ prime q /\ ~(p = q) /\
    (d * e == 1) (mod ((p - 1) * (q - 1))) /\
    plaintext < p * q /\ (ciphertext = (plaintext EXP e) MOD (p * q))

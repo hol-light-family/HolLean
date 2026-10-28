@@ -7,11 +7,11 @@ open HolCore.Kernel Session HolLight.Syntax HolExamples
 open scoped HolLight
 namespace HolExamples.Bondy
 
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 #eval phrase 1
-unsafe def BONDY : thm := keep "BONDY" fun _ => (do
+def BONDY : thm := keep "BONDY" fun _ => (do
   prove ([[!(X:A->bool) f n.
         1 <= n /\ X HAS_SIZE n /\ f HAS_SIZE n /\ (!s. s IN f ==> s SUBSET X)
         ==> ?x. x IN X /\ {s DIFF {x} | s IN f} HAS_SIZE n]])

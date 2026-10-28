@@ -9,7 +9,7 @@ tools/bdddiff/check.sh compares a larger set structurally, with the
 `bdd_stats` remarks that show the BDD tables are built in the same order. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.BDD
 
 open HolCore.Kernel Session SessionLibrary.BDD HolTest.CommonTest
 

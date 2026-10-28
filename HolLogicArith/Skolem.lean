@@ -12,38 +12,38 @@ namespace HolLogicArith.Skolem
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1` bundles (aliased here as in Fol.lean). -/
-private unsafe def MAP : thm := Session.listDefs.MAP
-private unsafe def ALL : thm := Session.listDefs.ALL
-private unsafe def MAP_EQ : thm := Session.listThms1.MAP_EQ
-private unsafe def MAP_EQ_DEGEN : thm := Session.listThms1.MAP_EQ_DEGEN
-private unsafe def MAP_o : thm := Session.listThms1.MAP_o
-private unsafe def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
-private unsafe def CONS_11 : thm := Session.listThms1.CONS_11
-private unsafe def ALL_T : thm := Session.listThms1.ALL_T
-private unsafe def NOT_CONS_NIL : thm := Session.listThms1.NOT_CONS_NIL
-private unsafe def MEM : thm := Session.listDefs.MEM
-private unsafe def LENGTH : thm := Session.listDefs.LENGTH
-private unsafe def ITLIST : thm := Session.listDefs.ITLIST
-private unsafe def MAP2 : thm := Session.listDefs.MAP2
-private unsafe def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
+private def MAP : thm := Session.listDefs.MAP
+private def ALL : thm := Session.listDefs.ALL
+private def MAP_EQ : thm := Session.listThms1.MAP_EQ
+private def MAP_EQ_DEGEN : thm := Session.listThms1.MAP_EQ_DEGEN
+private def MAP_o : thm := Session.listThms1.MAP_o
+private def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
+private def CONS_11 : thm := Session.listThms1.CONS_11
+private def ALL_T : thm := Session.listThms1.ALL_T
+private def NOT_CONS_NIL : thm := Session.listThms1.NOT_CONS_NIL
+private def MEM : thm := Session.listDefs.MEM
+private def LENGTH : thm := Session.listDefs.LENGTH
+private def ITLIST : thm := Session.listDefs.ITLIST
+private def MAP2 : thm := Session.listDefs.MAP2
+private def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
 
 #eval HolLogicArith.Prenex.ensure
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 /- `new_specification` lifted into `ExceptT String IO`. -/
-private unsafe def newSpec (names : List String) (th : thm) : ExceptT String IO thm :=
+private def newSpec (names : List String) (th : thm) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_specification names th)
 
 #eval phrase 1
-unsafe def HOLDS_EXISTS_LEMMA : thm := keep "HOLDS_EXISTS_LEMMA" fun _ => (do
+def HOLDS_EXISTS_LEMMA : thm := keep "HOLDS_EXISTS_LEMMA" fun _ => (do
   prove ([[!p t x M v preds:num#num->bool.
         interpretation (functions_term t,preds) M /\
         valuation(M) (v:num->A) /\
@@ -58,13 +58,13 @@ unsafe def HOLDS_EXISTS_LEMMA : thm := keep "HOLDS_EXISTS_LEMMA" fun _ => (do
 #eval HOLDS_EXISTS_LEMMA
 
 #eval phrase 2
-unsafe def Skolem1_DEF : thm := keep "Skolem1_DEF" fun _ => new_definition
+def Skolem1_DEF : thm := keep "Skolem1_DEF" fun _ => new_definition
   [[Skolem1 f x p =
      formsubst (valmod (x,Fn f (MAP V (list_of_set(FV(??x p))))) V) p]]
 #eval Skolem1_DEF
 
 #eval phrase 3
-unsafe def HOLDS_SKOLEM1 : thm := keep "HOLDS_SKOLEM1" fun _ => (do
+def HOLDS_SKOLEM1 : thm := keep "HOLDS_SKOLEM1" fun _ => (do
   prove ([[!f x p.
      prenex(??x p) /\
      ~((f,CARD(FV(??x p))) IN functions_form(??x p))
@@ -349,7 +349,7 @@ unsafe def HOLDS_SKOLEM1 : thm := keep "HOLDS_SKOLEM1" fun _ => (do
 #eval HOLDS_SKOLEM1
 
 #eval phrase 4
-unsafe def Skolems_EXISTENCE : thm := keep "Skolems_EXISTENCE" fun _ => (do
+def Skolems_EXISTENCE : thm := keep "Skolems_EXISTENCE" fun _ => (do
   prove ([[!J. ?Skolems. !r.
     Skolems r = \k. PPAT (\x q. !!x (Skolems q k))
                          (\x q. Skolems (Skolem1 (NUMPAIR J k) x q) (SUC k))
@@ -379,7 +379,7 @@ unsafe def Skolems_EXISTENCE : thm := keep "Skolems_EXISTENCE" fun _ => (do
 #eval Skolems_EXISTENCE
 
 #eval phrase 5
-unsafe def Skolems_SPECIFICATION : thm := keep "Skolems_SPECIFICATION" fun _ => (do
+def Skolems_SPECIFICATION : thm := keep "Skolems_SPECIFICATION" fun _ => (do
   prove ([[?Skolems. !J r k.
         Skolems J r k =
           PPAT (\x q. !!x (Skolems J q k))
@@ -390,12 +390,12 @@ unsafe def Skolems_SPECIFICATION : thm := keep "Skolems_SPECIFICATION" fun _ => 
 #eval Skolems_SPECIFICATION
 
 #eval phrase 6
-unsafe def Skolems_DEF : thm := keep "Skolems_DEF" fun _ =>
+def Skolems_DEF : thm := keep "Skolems_DEF" fun _ =>
   (newSpec ["Skolems"] Skolems_SPECIFICATION : ExceptT String IO thm).run
 #eval Skolems_DEF
 
 #eval phrase 7
-unsafe def HOLDS_SKOLEMS_INDUCTION : thm := keep "HOLDS_SKOLEMS_INDUCTION" fun _ => (do
+def HOLDS_SKOLEMS_INDUCTION : thm := keep "HOLDS_SKOLEMS_INDUCTION" fun _ => (do
   prove ([[!n J k p.
            (size(p) = n) /\
            prenex(p) /\
@@ -572,7 +572,7 @@ unsafe def HOLDS_SKOLEMS_INDUCTION : thm := keep "HOLDS_SKOLEMS_INDUCTION" fun _
 #eval HOLDS_SKOLEMS_INDUCTION
 
 #eval phrase 8
-unsafe def HOLDS_SKOLEMS_PRENEX : thm := keep "HOLDS_SKOLEMS_PRENEX" fun _ => (do
+def HOLDS_SKOLEMS_PRENEX : thm := keep "HOLDS_SKOLEMS_PRENEX" fun _ => (do
   prove ([[!p.
     prenex(p)
     ==> !K. (!l m. ~(NUMPAIR K l,m IN functions_form p))
@@ -604,12 +604,12 @@ unsafe def HOLDS_SKOLEMS_PRENEX : thm := keep "HOLDS_SKOLEMS_PRENEX" fun _ => (d
 #eval HOLDS_SKOLEMS_PRENEX
 
 #eval phrase 9
-unsafe def Skopre_DEF : thm := keep "Skopre_DEF" fun _ => new_definition
+def Skopre_DEF : thm := keep "Skopre_DEF" fun _ => new_definition
   [[Skopre K p = Skolems K (Prenex p) 0]]
 #eval Skopre_DEF
 
 #eval phrase 10
-unsafe def SKOPRE : thm := keep "SKOPRE" fun _ => (do
+def SKOPRE : thm := keep "SKOPRE" fun _ => (do
   prove ([[!p K.
       (!l m. ~(NUMPAIR K l,m IN functions_form p))
        ==> universal(Skopre K p) /\
@@ -661,12 +661,12 @@ unsafe def SKOPRE : thm := keep "SKOPRE" fun _ => (do
 #eval SKOPRE
 
 #eval phrase 11
-unsafe def bumpmod : thm := keep "bumpmod" fun _ => new_definition
+def bumpmod : thm := keep "bumpmod" fun _ => new_definition
   [[bumpmod(M) = Dom(M),(\k zs. Fun(M) (NUMSND k) zs),Pred(M)]]
 #eval bumpmod
 
 #eval phrase 12
-unsafe def bumpterm : thm := keep "bumpterm" fun _ => (do
+def bumpterm : thm := keep "bumpterm" fun _ => (do
   newRec term_RECURSION
     [[(bumpterm (V x) = V x) /\
    (bumpterm (Fn k l) = Fn (NUMPAIR 0 k) (MAP bumpterm l))]]
@@ -674,7 +674,7 @@ unsafe def bumpterm : thm := keep "bumpterm" fun _ => (do
 #eval bumpterm
 
 #eval phrase 13
-unsafe def bumpform : thm := keep "bumpform" fun _ => (do
+def bumpform : thm := keep "bumpform" fun _ => (do
   newRec form_RECURSION
     [[(bumpform False = False) /\
    (bumpform (Atom p l) = Atom p (MAP bumpterm l)) /\
@@ -684,7 +684,7 @@ unsafe def bumpform : thm := keep "bumpform" fun _ => (do
 #eval bumpform
 
 #eval phrase 14
-unsafe def BUMPTERM : thm := keep "BUMPTERM" fun _ => (do
+def BUMPTERM : thm := keep "BUMPTERM" fun _ => (do
   prove ([[!M v t. termval M v t = termval (bumpmod M) v (bumpterm t)]])
    (GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC term_INDUCT THEN
     REWRITE_TAC [termval, bumpterm] THEN
@@ -696,7 +696,7 @@ unsafe def BUMPTERM : thm := keep "BUMPTERM" fun _ => (do
 #eval BUMPTERM
 
 #eval phrase 15
-unsafe def BUMPFORM : thm := keep "BUMPFORM" fun _ => (do
+def BUMPFORM : thm := keep "BUMPFORM" fun _ => (do
   prove ([[!M p v. holds M v p = holds (bumpmod M) v (bumpform p)]])
    (GEN_TAC THEN MATCH_MP_TAC form_INDUCTION THEN
     REPEAT STRIP_TAC THEN
@@ -708,7 +708,7 @@ unsafe def BUMPFORM : thm := keep "BUMPFORM" fun _ => (do
 #eval BUMPFORM
 
 #eval phrase 16
-unsafe def FUNCTIONS_FORM_BUMPFORM : thm := keep "FUNCTIONS_FORM_BUMPFORM" fun _ => (do
+def FUNCTIONS_FORM_BUMPFORM : thm := keep "FUNCTIONS_FORM_BUMPFORM" fun _ => (do
   prove ([[!p f m.
         f,m IN functions_form(bumpform p)
         ==> ?k. (f = NUMPAIR 0 k) /\ k,m IN functions_form p]])
@@ -737,7 +737,7 @@ unsafe def FUNCTIONS_FORM_BUMPFORM : thm := keep "FUNCTIONS_FORM_BUMPFORM" fun _
 #eval FUNCTIONS_FORM_BUMPFORM
 
 #eval phrase 17
-unsafe def BUMPFORM_INTERPRETATION : thm := keep "BUMPFORM_INTERPRETATION" fun _ => (do
+def BUMPFORM_INTERPRETATION : thm := keep "BUMPFORM_INTERPRETATION" fun _ => (do
   prove ([[interpretation (language {p}) M
    ==> interpretation (language {(bumpform p)}) (bumpmod M)]])
    (REWRITE_TAC [LANGUAGE_1, interpretation] THEN
@@ -749,7 +749,7 @@ unsafe def BUMPFORM_INTERPRETATION : thm := keep "BUMPFORM_INTERPRETATION" fun _
 #eval BUMPFORM_INTERPRETATION
 
 #eval phrase 18
-unsafe def unbumpterm : thm := keep "unbumpterm" fun _ => (do
+def unbumpterm : thm := keep "unbumpterm" fun _ => (do
   newRec term_RECURSION
     [[(unbumpterm (V x) = V x) /\
    (unbumpterm (Fn k l) = Fn (NUMSND k) (MAP unbumpterm l))]]
@@ -757,7 +757,7 @@ unsafe def unbumpterm : thm := keep "unbumpterm" fun _ => (do
 #eval unbumpterm
 
 #eval phrase 19
-unsafe def unbumpform : thm := keep "unbumpform" fun _ => (do
+def unbumpform : thm := keep "unbumpform" fun _ => (do
   newRec form_RECURSION
     [[(unbumpform False = False) /\
    (unbumpform (Atom p l) = Atom p (MAP unbumpterm l)) /\
@@ -767,7 +767,7 @@ unsafe def unbumpform : thm := keep "unbumpform" fun _ => (do
 #eval unbumpform
 
 #eval phrase 20
-unsafe def UNBUMPTERM : thm := keep "UNBUMPTERM" fun _ => (do
+def UNBUMPTERM : thm := keep "UNBUMPTERM" fun _ => (do
   prove ([[!t. unbumpterm(bumpterm t) = t]])
    (MATCH_MP_TAC term_INDUCT THEN
     REWRITE_TAC [unbumpterm, bumpterm, NUMPAIR_DEST] THEN
@@ -779,7 +779,7 @@ unsafe def UNBUMPTERM : thm := keep "UNBUMPTERM" fun _ => (do
 #eval UNBUMPTERM
 
 #eval phrase 21
-unsafe def UNBUMPFORM : thm := keep "UNBUMPFORM" fun _ => (do
+def UNBUMPFORM : thm := keep "UNBUMPFORM" fun _ => (do
   prove ([[!p. unbumpform (bumpform p) = p]])
    (MATCH_MP_TAC form_INDUCTION THEN
     REWRITE_TAC [unbumpform, bumpform] THEN
@@ -791,12 +791,12 @@ unsafe def UNBUMPFORM : thm := keep "UNBUMPFORM" fun _ => (do
 #eval UNBUMPFORM
 
 #eval phrase 22
-unsafe def unbumpmod : thm := keep "unbumpmod" fun _ => new_definition
+def unbumpmod : thm := keep "unbumpmod" fun _ => new_definition
   [[unbumpmod(M) = Dom(M),(\k zs. Fun(M) (NUMPAIR 0 k) zs),Pred(M)]]
 #eval unbumpmod
 
 #eval phrase 23
-unsafe def UNBUMPMOD_TERM : thm := keep "UNBUMPMOD_TERM" fun _ => (do
+def UNBUMPMOD_TERM : thm := keep "UNBUMPMOD_TERM" fun _ => (do
   prove ([[!M v t. termval M v (bumpterm t) = termval (unbumpmod M) v t]])
    (GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC term_INDUCT THEN
     REWRITE_TAC [termval, bumpterm] THEN
@@ -808,7 +808,7 @@ unsafe def UNBUMPMOD_TERM : thm := keep "UNBUMPMOD_TERM" fun _ => (do
 #eval UNBUMPMOD_TERM
 
 #eval phrase 24
-unsafe def UNBUMPMOD : thm := keep "UNBUMPMOD" fun _ => (do
+def UNBUMPMOD : thm := keep "UNBUMPMOD" fun _ => (do
   prove ([[!M p (v:num->A). holds M v (bumpform p) = holds (unbumpmod M) v p]])
    (GEN_TAC THEN MATCH_MP_TAC form_INDUCTION THEN
     REPEAT STRIP_TAC THEN
@@ -820,7 +820,7 @@ unsafe def UNBUMPMOD : thm := keep "UNBUMPMOD" fun _ => (do
 #eval UNBUMPMOD
 
 #eval phrase 25
-unsafe def NUMLIST : thm := keep "NUMLIST" fun _ => (do
+def NUMLIST : thm := keep "NUMLIST" fun _ => (do
   newRec Session.list_RECURSION
     [[(NUMLIST [] = 0) /\
    (NUMLIST (CONS h t) = NUMPAIR h (NUMLIST t) + 1)]]
@@ -828,7 +828,7 @@ unsafe def NUMLIST : thm := keep "NUMLIST" fun _ => (do
 #eval NUMLIST
 
 #eval phrase 26
-unsafe def NUMLIST_INJ : thm := keep "NUMLIST_INJ" fun _ => (do
+def NUMLIST_INJ : thm := keep "NUMLIST_INJ" fun _ => (do
   prove ([[!l1 l2. (NUMLIST l1 = NUMLIST l2) = (l1 = l2)]])
    (REPEAT (LIST_INDUCT_TAC ORELSE STRIP_TAC) THEN
     ASM_REWRITE_TAC [NUMLIST, (← HolLight.GSYM ADD1), SUC_INJ, NOT_SUC,
@@ -837,7 +837,7 @@ unsafe def NUMLIST_INJ : thm := keep "NUMLIST_INJ" fun _ => (do
 #eval NUMLIST_INJ
 
 #eval phrase 27
-unsafe def num_of_term : thm := keep "num_of_term" fun _ => (do
+def num_of_term : thm := keep "num_of_term" fun _ => (do
   new_nested_recursive_definition term_RECURSION
     [[(!x. num_of_term (V x) = NUMPAIR 0 x) /\
    (!f l. num_of_term (Fn f l) =
@@ -846,7 +846,7 @@ unsafe def num_of_term : thm := keep "num_of_term" fun _ => (do
 #eval num_of_term
 
 #eval phrase 28
-unsafe def NUM_OF_TERM_INJ : thm := keep "NUM_OF_TERM_INJ" fun _ => (do
+def NUM_OF_TERM_INJ : thm := keep "NUM_OF_TERM_INJ" fun _ => (do
   prove ([[!s t. (num_of_term s = num_of_term t) = (s = t)]])
    (REPEAT (MATCH_MP_TAC term_INDUCT ORELSE STRIP_TAC) THEN
     ASM_REWRITE_TAC [num_of_term, NUMPAIR_INJ, NUMLIST_INJ, ARITH] THEN
@@ -865,7 +865,7 @@ unsafe def NUM_OF_TERM_INJ : thm := keep "NUM_OF_TERM_INJ" fun _ => (do
 #eval NUM_OF_TERM_INJ
 
 #eval phrase 29
-unsafe def num_of_form : thm := keep "num_of_form" fun _ => (do
+def num_of_form : thm := keep "num_of_form" fun _ => (do
   newRec form_RECURSION
     [[(num_of_form False = NUMPAIR 0 0) /\
    (num_of_form (Atom p l) =
@@ -877,7 +877,7 @@ unsafe def num_of_form : thm := keep "num_of_form" fun _ => (do
 #eval num_of_form
 
 #eval phrase 30
-unsafe def NUMLIST_NUM_OF_TERM : thm := keep "NUMLIST_NUM_OF_TERM" fun _ => (do
+def NUMLIST_NUM_OF_TERM : thm := keep "NUMLIST_NUM_OF_TERM" fun _ => (do
   prove ([[!l1 l2. (NUMLIST (MAP num_of_term l1) = NUMLIST (MAP num_of_term l2)) =
            (l1 = l2)]])
    (REPEAT (LIST_INDUCT_TAC ORELSE GEN_TAC) THEN
@@ -887,7 +887,7 @@ unsafe def NUMLIST_NUM_OF_TERM : thm := keep "NUMLIST_NUM_OF_TERM" fun _ => (do
 #eval NUMLIST_NUM_OF_TERM
 
 #eval phrase 31
-unsafe def NUM_OF_FORM_INJ : thm := keep "NUM_OF_FORM_INJ" fun _ => (do
+def NUM_OF_FORM_INJ : thm := keep "NUM_OF_FORM_INJ" fun _ => (do
   prove ([[!q r. (num_of_form q = num_of_form r) = (q = r)]])
    (MATCH_MP_TAC form_INDUCTION THEN REPEAT CONJ_TAC THENL
      [ALL_TAC,
@@ -901,24 +901,24 @@ unsafe def NUM_OF_FORM_INJ : thm := keep "NUM_OF_FORM_INJ" fun _ => (do
 #eval NUM_OF_FORM_INJ
 
 #eval phrase 32
-unsafe def form_of_num : thm := keep "form_of_num" fun _ => new_definition
+def form_of_num : thm := keep "form_of_num" fun _ => new_definition
   [[form_of_num x = @p. num_of_form p = x]]
 #eval form_of_num
 
 #eval phrase 33
-unsafe def FORM_OF_NUM : thm := keep "FORM_OF_NUM" fun _ => (do
+def FORM_OF_NUM : thm := keep "FORM_OF_NUM" fun _ => (do
   prove ([[form_of_num(num_of_form p) = p]])
    (REWRITE_TAC [form_of_num, NUM_OF_FORM_INJ])
   : ExceptT String IO thm).run
 #eval FORM_OF_NUM
 
 #eval phrase 34
-unsafe def SKOLEMIZE : thm := keep "SKOLEMIZE" fun _ => new_definition
+def SKOLEMIZE : thm := keep "SKOLEMIZE" fun _ => new_definition
   [[SKOLEMIZE p = Skopre (num_of_form(bumpform p) + 1) (bumpform p)]]
 #eval SKOLEMIZE
 
 #eval phrase 35
-unsafe def SKOLEMIZE_WORKS : thm := keep "SKOLEMIZE_WORKS" fun _ => (do
+def SKOLEMIZE_WORKS : thm := keep "SKOLEMIZE_WORKS" fun _ => (do
   prove ([[!p. universal(SKOLEMIZE p) /\
        (FV(SKOLEMIZE p) = FV(bumpform p)) /\
        (predicates_form (SKOLEMIZE p) = predicates_form (bumpform p)) /\
@@ -968,7 +968,7 @@ unsafe def SKOLEMIZE_WORKS : thm := keep "SKOLEMIZE_WORKS" fun _ => (do
 #eval SKOLEMIZE_WORKS
 
 #eval phrase 36
-unsafe def FUNCTIONS_FORM_SKOLEMIZE : thm := keep "FUNCTIONS_FORM_SKOLEMIZE" fun _ => (do
+def FUNCTIONS_FORM_SKOLEMIZE : thm := keep "FUNCTIONS_FORM_SKOLEMIZE" fun _ => (do
   prove ([[!p f m.
         f,m IN functions_form(SKOLEMIZE p)
         ==> (?k. (f = NUMPAIR 0 k) /\ k,m IN functions_form p) \/
@@ -1008,7 +1008,7 @@ unsafe def FUNCTIONS_FORM_SKOLEMIZE : thm := keep "FUNCTIONS_FORM_SKOLEMIZE" fun
 #eval FUNCTIONS_FORM_SKOLEMIZE
 
 #eval phrase 37
-unsafe def SKOMOD1 : thm := keep "SKOMOD1" fun _ => new_definition
+def SKOMOD1 : thm := keep "SKOMOD1" fun _ => new_definition
   [[SKOMOD1 p M =
      if (!v. valuation M v ==> holds M v p)
      then @M'. (Dom M' = Dom (bumpmod M)) /\
@@ -1024,7 +1024,7 @@ unsafe def SKOMOD1 : thm := keep "SKOMOD1" fun _ => new_definition
 #eval SKOMOD1
 
 #eval phrase 38
-unsafe def SKOMOD1_WORKS : thm := keep "SKOMOD1_WORKS" fun _ => (do
+def SKOMOD1_WORKS : thm := keep "SKOMOD1_WORKS" fun _ => (do
   prove ([[!M p.
       interpretation (language {p}) M /\
       ~(Dom M = EMPTY)
@@ -1060,7 +1060,7 @@ unsafe def SKOMOD1_WORKS : thm := keep "SKOMOD1_WORKS" fun _ => (do
 #eval SKOMOD1_WORKS
 
 #eval phrase 39
-unsafe def SKOMOD : thm := keep "SKOMOD" fun _ => new_definition
+def SKOMOD : thm := keep "SKOMOD" fun _ => new_definition
   [[SKOMOD M =
      (Dom M,
       (\g zs. if NUMFST g = 0 then Fun M (NUMSND g) zs
@@ -1070,7 +1070,7 @@ unsafe def SKOMOD : thm := keep "SKOMOD" fun _ => new_definition
 #eval SKOMOD
 
 #eval phrase 40
-unsafe def SKOMOD_INTERPRETATION : thm := keep "SKOMOD_INTERPRETATION" fun _ => (do
+def SKOMOD_INTERPRETATION : thm := keep "SKOMOD_INTERPRETATION" fun _ => (do
   prove ([[interpretation (language {p}) M /\
    ~(Dom M :A->bool = EMPTY)
    ==> interpretation (language {(SKOLEMIZE p)}) (SKOMOD M)]])
@@ -1097,7 +1097,7 @@ unsafe def SKOMOD_INTERPRETATION : thm := keep "SKOMOD_INTERPRETATION" fun _ => 
 #eval SKOMOD_INTERPRETATION
 
 #eval phrase 41
-unsafe def SKOMOD_WORKS : thm := keep "SKOMOD_WORKS" fun _ => (do
+def SKOMOD_WORKS : thm := keep "SKOMOD_WORKS" fun _ => (do
   prove ([[interpretation(language {p}) M /\
    ~(Dom M = EMPTY)
    ==> ((!v:num->A. valuation(M) v ==> holds M v p) <=>
@@ -1170,7 +1170,7 @@ unsafe def SKOMOD_WORKS : thm := keep "SKOMOD_WORKS" fun _ => (do
 #eval SKOMOD_WORKS
 
 #eval phrase 42
-unsafe def SKOLEMIZE_SATISFIABLE : thm := keep "SKOLEMIZE_SATISFIABLE" fun _ => (do
+def SKOLEMIZE_SATISFIABLE : thm := keep "SKOLEMIZE_SATISFIABLE" fun _ => (do
   prove ([[(?M. ~(Dom M :A->bool = EMPTY) /\
         interpretation (language s) M /\
         M satisfies s) <=>
@@ -1326,7 +1326,7 @@ unsafe def SKOLEMIZE_SATISFIABLE : thm := keep "SKOLEMIZE_SATISFIABLE" fun _ => 
 #eval SKOLEMIZE_SATISFIABLE
 
 #eval phrase 43
-unsafe def specialize : thm := keep "specialize" fun _ => (do
+def specialize : thm := keep "specialize" fun _ => (do
   newRec form_RECURSION
     [[(specialize False = False) /\
    (specialize (Atom p l) = Atom p l) /\
@@ -1336,7 +1336,7 @@ unsafe def specialize : thm := keep "specialize" fun _ => (do
 #eval specialize
 
 #eval phrase 44
-unsafe def SPECIALIZE_SATISFIES : thm := keep "SPECIALIZE_SATISFIES" fun _ => (do
+def SPECIALIZE_SATISFIES : thm := keep "SPECIALIZE_SATISFIES" fun _ => (do
   prove ([[!M s. ~(Dom M:A->bool = EMPTY)
          ==> (M satisfies s <=> M satisfies {specialize p | p IN s})]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [satisfies, IN_ELIM_THM] THEN
@@ -1350,7 +1350,7 @@ unsafe def SPECIALIZE_SATISFIES : thm := keep "SPECIALIZE_SATISFIES" fun _ => (d
 #eval SPECIALIZE_SATISFIES
 
 #eval phrase 45
-unsafe def SPECIALIZE_QFREE : thm := keep "SPECIALIZE_QFREE" fun _ => (do
+def SPECIALIZE_QFREE : thm := keep "SPECIALIZE_QFREE" fun _ => (do
   prove ([[!p. universal p ==> qfree(specialize p)]])
    (MATCH_MP_TAC universal_INDUCT THEN REWRITE_TAC [specialize] THEN
     MATCH_MP_TAC form_INDUCTION THEN REWRITE_TAC [qfree, specialize])
@@ -1358,7 +1358,7 @@ unsafe def SPECIALIZE_QFREE : thm := keep "SPECIALIZE_QFREE" fun _ => (do
 #eval SPECIALIZE_QFREE
 
 #eval phrase 46
-unsafe def SPECIALIZE_LANGUAGE : thm := keep "SPECIALIZE_LANGUAGE" fun _ => (do
+def SPECIALIZE_LANGUAGE : thm := keep "SPECIALIZE_LANGUAGE" fun _ => (do
   prove ([[!s. language {specialize p | p IN s} = language s]])
    (REWRITE_TAC [language, functions, predicates, PAIR_EQ] THEN
     REWRITE_TAC [EXTENSION, IN_UNIONS, IN_ELIM_THM] THEN
@@ -1372,12 +1372,12 @@ unsafe def SPECIALIZE_LANGUAGE : thm := keep "SPECIALIZE_LANGUAGE" fun _ => (do
 #eval SPECIALIZE_LANGUAGE
 
 #eval phrase 47
-unsafe def SKOLEM : thm := keep "SKOLEM" fun _ => new_definition
+def SKOLEM : thm := keep "SKOLEM" fun _ => new_definition
   [[SKOLEM p = specialize(SKOLEMIZE p)]]
 #eval SKOLEM
 
 #eval phrase 48
-unsafe def SKOLEM_QFREE : thm := keep "SKOLEM_QFREE" fun _ => (do
+def SKOLEM_QFREE : thm := keep "SKOLEM_QFREE" fun _ => (do
   prove ([[!p. qfree(SKOLEM p)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [SKOLEM] THEN
     MATCH_MP_TAC SPECIALIZE_QFREE THEN
@@ -1386,7 +1386,7 @@ unsafe def SKOLEM_QFREE : thm := keep "SKOLEM_QFREE" fun _ => (do
 #eval SKOLEM_QFREE
 
 #eval phrase 49
-unsafe def SKOLEM_SATISFIABLE : thm := keep "SKOLEM_SATISFIABLE" fun _ => (do
+def SKOLEM_SATISFIABLE : thm := keep "SKOLEM_SATISFIABLE" fun _ => (do
   prove ([[(?M. ~(Dom M :A->bool = EMPTY) /\
         interpretation (language s) M /\
         M satisfies s) =
@@ -1411,9 +1411,9 @@ unsafe def SKOLEM_SATISFIABLE : thm := keep "SKOLEM_SATISFIABLE" fun _ => (do
 #eval SKOLEM_SATISFIABLE
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Skolem" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Skolem" do
   replay (
           HolLogicArith.Prenex.ensure)
   replay (

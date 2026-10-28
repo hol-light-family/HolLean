@@ -59,6 +59,12 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
 /- other parse in this file.                                              -/
 /- ---------------------------------------------------------------------- -/
 
+/- Session loads all of hol_lib.ml, which ends with `:num` as the default
+   type for overloaded symbols (iterate.ml's closing `prioritize_num`), as
+   HOL Light does.  This file's goals are about the reals, so make `:real` the
+   default first, as a HOL Light user would (and as iterate.ml does at 1982). -/
+#eval Session.prioritize_real
+
 #eval Session.realThms1.REAL_OF_NUM_LT
 
 /-- Squash whitespace so a printed theorem can be compared against a

@@ -3,19 +3,14 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/RingTheory.lean
 
-  The `unsafe` half of the ringtheory.ml translation: it supplies
+  The session half of the ringtheory.ml translation: it supplies
   HolLibrary.RingTheory's dependencies from Session and the parent
-  libraries, builds each bundle once, in file order, and
-  exports every name under its HOL Light name.  `ensureRingTheory` is
-  `needs "Library/ringtheory.ml"` (which first does `needs
-  "Library/binomial.ml"`, `needs "Library/pocklington.ml"` and `needs
-  "Library/card.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/RingTheory.lean by tools/ringtheorydiff/gen_session.py and
-  scope.py (bookkeeping only: field-by-field copies and accessors).  The
-  parents' theorems are filled from their SessionLibrary modules, the
-  last-loaded first, as OCaml's shadowing.
+  libraries, and exports every name under its HOL Light name.  Importing
+  this module is `needs "Library/ringtheory.ml"`; its `needs` of
+  binomial.ml, pocklington.ml and card.ml are the imports of those modules.
+  The parents' theorems are filled from their SessionLibrary modules, the
+  last-loaded first, as OCaml's shadowing.  Each bundle is built by
+  `initialize` when the module is loaded, in file order.
 -/
 
 import Session
@@ -29,12 +24,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.RingTheory
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems ringtheory.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.RingTheory.CoreThms1 where
+def core1 : HolLibrary.RingTheory.CoreThms1 where
   ADD1 := Session.ADD1
   ADD_CLAUSES := Session.ADD_CLAUSES
   ADD_EQ_0 := Session.ADD_EQ_0
@@ -105,7 +96,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.RingTheory.CoreThms1 where
   COND_CLAUSES := Session.COND_CLAUSES
   COND_ID := Session.COND_ID
 /-- The core theorems ringtheory.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.RingTheory.CoreThms2 where
+def core2 : HolLibrary.RingTheory.CoreThms2 where
   COND_RAND := Session.COND_RAND
   COND_RATOR := Session.COND_RATOR
   COND_SWAP := Session.COND_SWAP
@@ -176,7 +167,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.RingTheory.CoreThms2 where
   EXTENSION := Session.EXTENSION
   EXTENSIONAL := Session.EXTENSIONAL
 /-- The core theorems ringtheory.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.RingTheory.CoreThms3 where
+def core3 : HolLibrary.RingTheory.CoreThms3 where
   EXTENSIONAL_UNIV := Session.EXTENSIONAL_UNIV
   FINITE_1 := Session.FINITE_1
   FINITE_BOOL := Session.FINITE_BOOL
@@ -247,7 +238,7 @@ unsafe def core3 (_ : Unit) : HolLibrary.RingTheory.CoreThms3 where
   IMAGE_SND_CROSS := Session.IMAGE_SND_CROSS
   IMAGE_SUBSET := Session.IMAGE_SUBSET
 /-- The core theorems ringtheory.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.RingTheory.CoreThms4 where
+def core4 : HolLibrary.RingTheory.CoreThms4 where
   IMAGE_UNION := Session.IMAGE_UNION
   IMAGE_o := Session.IMAGE_o
   IMP_CONJ := Session.IMP_CONJ
@@ -318,7 +309,7 @@ unsafe def core4 (_ : Unit) : HolLibrary.RingTheory.CoreThms4 where
   INT_REM_0 := Session.INT_REM_0
   INT_REM_1 := Session.INT_REM_1
 /-- The core theorems ringtheory.ml uses. -/
-unsafe def core5 (_ : Unit) : HolLibrary.RingTheory.CoreThms5 where
+def core5 : HolLibrary.RingTheory.CoreThms5 where
   INT_REM_EQ := Session.INT_REM_EQ
   INT_REM_EQ_SELF := Session.INT_REM_EQ_SELF
   INT_REM_LT := Session.INT_REM_LT
@@ -389,7 +380,7 @@ unsafe def core5 (_ : Unit) : HolLibrary.RingTheory.CoreThms5 where
   LT_ANTISYM := Session.LT_ANTISYM
   LT_IMP_LE := Session.LT_IMP_LE
 /-- The core theorems ringtheory.ml uses. -/
-unsafe def core6 (_ : Unit) : HolLibrary.RingTheory.CoreThms6 where
+def core6 : HolLibrary.RingTheory.CoreThms6 where
   LT_IMP_NE := Session.LT_IMP_NE
   LT_REFL := Session.LT_REFL
   LT_SUC_LE := Session.LT_SUC_LE
@@ -460,7 +451,7 @@ unsafe def core6 (_ : Unit) : HolLibrary.RingTheory.CoreThms6 where
   REAL_OF_NUM_EQ := Session.REAL_OF_NUM_EQ
   REAL_OF_NUM_SUC := Session.REAL_OF_NUM_SUC
 /-- The core theorems ringtheory.ml uses. -/
-unsafe def core7 (_ : Unit) : HolLibrary.RingTheory.CoreThms7 where
+def core7 : HolLibrary.RingTheory.CoreThms7 where
   RESTRICTION := Session.RESTRICTION
   RESTRICTION_EXTENSION := Session.RESTRICTION_EXTENSION
   RESTRICTION_IN_CARTESIAN_PRODUCT := Session.RESTRICTION_IN_CARTESIAN_PRODUCT
@@ -531,7 +522,7 @@ unsafe def core7 (_ : Unit) : HolLibrary.RingTheory.CoreThms7 where
   WF_ANTISYM := Session.WF_ANTISYM
   WF_DCHAIN := Session.WF_DCHAIN
 /-- The core theorems ringtheory.ml uses. -/
-unsafe def core8 (_ : Unit) : HolLibrary.RingTheory.CoreThms8 where
+def core8 : HolLibrary.RingTheory.CoreThms8 where
   WF_IND := Session.WF_IND
   WF_LEX := Session.WF_LEX
   WF_MEASURE_GEN := Session.WF_MEASURE_GEN
@@ -597,10 +588,10 @@ unsafe def core8 (_ : Unit) : HolLibrary.RingTheory.CoreThms8 where
   sum_DISTINCT := SessionLibrary.Card.«sum_DISTINCT»
   sum_INJECTIVE := SessionLibrary.Card.«sum_INJECTIVE»
   support := Session.support
-  toset := SessionLibrary.Wo.«toset»-- @@CORE END
+  toset := SessionLibrary.Wo.«toset»
 
 /-- What ringtheory.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.RingTheory.RingTheoryDeps where
+def deps : HolLibrary.RingTheory.RingTheoryDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   new_type_definition ty names th :=
     ExceptT.mk (Session.new_type_definition ty names.1 names.2 th)
@@ -673,2753 +664,2600 @@ unsafe def deps (_ : Unit) : HolLibrary.RingTheory.RingTheoryDeps where
       Session.LEFT_OR_EXISTS_THM Session.RIGHT_OR_EXISTS_THM Session.LEFT_AND_EXISTS_THM
       Session.RIGHT_AND_EXISTS_THM K
     pure (HolMath.Grobner.RING' R, HolMath.Grobner.ideal_cofactors R)
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
-  core5 := core5 ()
-  core6 := core6 ()
-  core7 := core7 ()
-  core8 := core8 ()
-
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then binomial.ml, pocklington.ml and
-    card.ml, which ringtheory.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Binomial.ensureBinomial
-      SessionLibrary.Pocklington.ensurePocklington
-      SessionLibrary.Card.ensureCard
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.RingTheory: {name}"
-
-/- The single bundle. -/
-
--- @@BUNDLES BEGIN
-initialize theBasics : IO.Ref (Option HolLibrary.RingTheory.Basics) ← IO.mkRef none
-unsafe def BBasics : HolLibrary.RingTheory.Basics :=
-  cached theBasics "setupBasics" fun _ => do
-    (HolLibrary.RingTheory.setupBasics (deps ())).run
-
-initialize theNumbers : IO.Ref (Option HolLibrary.RingTheory.Numbers) ← IO.mkRef none
-unsafe def BNumbers : HolLibrary.RingTheory.Numbers :=
-  cached theNumbers "setupNumbers" fun _ => do
-    let _ ← IO.mkRef BBasics.ring_tybij
-    (HolLibrary.RingTheory.setupNumbers (deps ()) BBasics).run
-
-initialize theSums : IO.Ref (Option HolLibrary.RingTheory.Sums) ← IO.mkRef none
-unsafe def BSums : HolLibrary.RingTheory.Sums :=
-  cached theSums "setupSums" fun _ => do
-    let _ ← IO.mkRef BNumbers.ring_of_num
-    (HolLibrary.RingTheory.setupSums (deps ()) BBasics BNumbers).run
-
-initialize theProducts : IO.Ref (Option HolLibrary.RingTheory.Products) ← IO.mkRef none
-unsafe def BProducts : HolLibrary.RingTheory.Products :=
-  cached theProducts "setupProducts" fun _ => do
-    let _ ← IO.mkRef BSums.ring_sum
-    (HolLibrary.RingTheory.setupProducts (deps ()) BBasics BNumbers).run
-
-initialize theDivides : IO.Ref (Option HolLibrary.RingTheory.Divides) ← IO.mkRef none
-unsafe def BDivides : HolLibrary.RingTheory.Divides :=
-  cached theDivides "setupDivides" fun _ => do
-    let _ ← IO.mkRef BProducts.ring_product
-    (HolLibrary.RingTheory.setupDivides (deps ()) BBasics BNumbers BSums BProducts).run
-
-initialize theSubrings : IO.Ref (Option HolLibrary.RingTheory.Subrings) ← IO.mkRef none
-unsafe def BSubrings : HolLibrary.RingTheory.Subrings :=
-  cached theSubrings "setupSubrings" fun _ => do
-    let _ ← IO.mkRef BDivides.ring_divides
-    (HolLibrary.RingTheory.setupSubrings (deps ()) BBasics BNumbers BSums BProducts).run
-
-initialize theIdeals : IO.Ref (Option HolLibrary.RingTheory.Ideals) ← IO.mkRef none
-unsafe def BIdeals : HolLibrary.RingTheory.Ideals :=
-  cached theIdeals "setupIdeals" fun _ => do
-    let _ ← IO.mkRef BSubrings.subring_of
-    (HolLibrary.RingTheory.setupIdeals (deps ()) BBasics BNumbers BSums BDivides BSubrings).run
-
-initialize theDomains : IO.Ref (Option HolLibrary.RingTheory.Domains) ← IO.mkRef none
-unsafe def BDomains : HolLibrary.RingTheory.Domains :=
-  cached theDomains "setupDomains" fun _ => do
-    let _ ← IO.mkRef BIdeals.ring_ideal
-    (HolLibrary.RingTheory.setupDomains (deps ()) BBasics BNumbers BProducts BDivides BSubrings).run
-
-initialize theRules : IO.Ref (Option HolLibrary.RingTheory.Rules) ← IO.mkRef none
-unsafe def BRules : HolLibrary.RingTheory.Rules :=
-  cached theRules "setupRules" fun _ => do
-    let _ ← IO.mkRef BDomains.integral_domain
-    (HolLibrary.RingTheory.setupRules (deps ()) BBasics BNumbers BDivides BDomains).run
-
-initialize theHoms : IO.Ref (Option HolLibrary.RingTheory.Homs) ← IO.mkRef none
-unsafe def BHoms : HolLibrary.RingTheory.Homs :=
-  cached theHoms "setupHoms" fun _ => do
-    let _ ← IO.mkRef BRules.RING_CARRIER_RULE
-    (HolLibrary.RingTheory.setupHoms (deps ()) BBasics BNumbers BSums BProducts BDivides BSubrings BIdeals BDomains).run
-
-initialize theIso : IO.Ref (Option HolLibrary.RingTheory.Iso) ← IO.mkRef none
-unsafe def BIso : HolLibrary.RingTheory.Iso :=
-  cached theIso "setupIso" fun _ => do
-    let _ ← IO.mkRef BHoms.ring_homomorphism
-    (HolLibrary.RingTheory.setupIso (deps ()) BBasics BHoms).run
-
-initialize theKernels : IO.Ref (Option HolLibrary.RingTheory.Kernels) ← IO.mkRef none
-unsafe def BKernels : HolLibrary.RingTheory.Kernels :=
-  cached theKernels "setupKernels" fun _ => do
-    let _ ← IO.mkRef BIso.isomorphic_ring
-    (HolLibrary.RingTheory.setupKernels (deps ()) BBasics BDivides BSubrings BIdeals BDomains BHoms BIso).run
-
-initialize theProdRings : IO.Ref (Option HolLibrary.RingTheory.ProdRings) ← IO.mkRef none
-unsafe def BProdRings : HolLibrary.RingTheory.ProdRings :=
-  cached theProdRings "setupProdRings" fun _ => do
-    let _ ← IO.mkRef BKernels.ring_kernel
-    (HolLibrary.RingTheory.setupProdRings (deps ()) BBasics BNumbers BSums BDivides BSubrings BIdeals BHoms BIso).run
-
-initialize theLimits : IO.Ref (Option HolLibrary.RingTheory.Limits) ← IO.mkRef none
-unsafe def BLimits : HolLibrary.RingTheory.Limits :=
-  cached theLimits "setupLimits" fun _ => do
-    let _ ← IO.mkRef BProdRings.prod_ring
-    (HolLibrary.RingTheory.setupLimits (deps ()) BBasics BNumbers BHoms).run
-
-initialize theRingRule : IO.Ref (Option HolLibrary.RingTheory.RingRule) ← IO.mkRef none
-unsafe def BRingRule : HolLibrary.RingTheory.RingRule :=
-  cached theRingRule "setupRingRule" fun _ => do
-    let _ ← IO.mkRef BLimits.RING_DIRECT_LIMIT
-    (HolLibrary.RingTheory.setupRingRule (deps ()) BBasics BNumbers BRules BHoms BIso BProdRings BLimits).run
-
-initialize theCosets : IO.Ref (Option HolLibrary.RingTheory.Cosets) ← IO.mkRef none
-unsafe def BCosets : HolLibrary.RingTheory.Cosets :=
-  cached theCosets "setupCosets" fun _ => do
-    let _ ← IO.mkRef BRingRule.RING_RULE
-    (HolLibrary.RingTheory.setupCosets (deps ()) BBasics BNumbers BDivides BSubrings BIdeals BHoms BIso BKernels BProdRings BRingRule).run
-
-initialize theQuotients : IO.Ref (Option HolLibrary.RingTheory.Quotients) ← IO.mkRef none
-unsafe def BQuotients : HolLibrary.RingTheory.Quotients :=
-  cached theQuotients "setupQuotients" fun _ => do
-    let _ ← IO.mkRef BCosets.ring_coset
-    (HolLibrary.RingTheory.setupQuotients (deps ()) BBasics BSubrings BIdeals BHoms BIso BKernels BCosets).run
-
-initialize thePrimes : IO.Ref (Option HolLibrary.RingTheory.Primes) ← IO.mkRef none
-unsafe def BPrimes : HolLibrary.RingTheory.Primes :=
-  cached thePrimes "setupPrimes" fun _ => do
-    let _ ← IO.mkRef BQuotients.quotient_ring
-    (HolLibrary.RingTheory.setupPrimes (deps ()) BBasics BNumbers BProducts BDivides BDomains BHoms BKernels).run
-
-initialize theFactorizations : IO.Ref (Option HolLibrary.RingTheory.Factorizations) ← IO.mkRef none
-unsafe def BFactorizations : HolLibrary.RingTheory.Factorizations :=
-  cached theFactorizations "setupFactorizations" fun _ => do
-    let _ ← IO.mkRef BPrimes.ring_prime
-    (HolLibrary.RingTheory.setupFactorizations (deps ()) BBasics BProducts BDivides BDomains BPrimes).run
-
-initialize theSquarefree : IO.Ref (Option HolLibrary.RingTheory.Squarefree) ← IO.mkRef none
-unsafe def BSquarefree : HolLibrary.RingTheory.Squarefree :=
-  cached theSquarefree "setupSquarefree" fun _ => do
-    let _ ← IO.mkRef BFactorizations.RING_DIVIDES_PRIMEFACTS_INJECTION
-    (HolLibrary.RingTheory.setupSquarefree (deps ()) BBasics BNumbers BDivides BDomains BPrimes).run
-
-initialize theLocalization : IO.Ref (Option HolLibrary.RingTheory.Localization) ← IO.mkRef none
-unsafe def BLocalization : HolLibrary.RingTheory.Localization :=
-  cached theLocalization "setupLocalization" fun _ => do
-    let _ ← IO.mkRef BSquarefree.ring_squarefree
-    (HolLibrary.RingTheory.setupLocalization (deps ()) BBasics BDivides BIdeals BDomains BHoms BIso BKernels BRingRule BSquarefree).run
-
-initialize theSpecialIdeals : IO.Ref (Option HolLibrary.RingTheory.SpecialIdeals) ← IO.mkRef none
-unsafe def BSpecialIdeals : HolLibrary.RingTheory.SpecialIdeals :=
-  cached theSpecialIdeals "setupSpecialIdeals" fun _ => do
-    let _ ← IO.mkRef BLocalization.ring_localequiv
-    (HolLibrary.RingTheory.setupSpecialIdeals (deps ()) BBasics BNumbers BDivides BIdeals BDomains BHoms BIso BKernels BRingRule BCosets BQuotients BPrimes BSquarefree BLocalization).run
-
-initialize theRadical : IO.Ref (Option HolLibrary.RingTheory.Radical) ← IO.mkRef none
-unsafe def BRadical : HolLibrary.RingTheory.Radical :=
-  cached theRadical "setupRadical" fun _ => do
-    let _ ← IO.mkRef BSpecialIdeals.proper_ideal
-    (HolLibrary.RingTheory.setupRadical (deps ()) BBasics BNumbers BSums BDivides BIdeals BDomains BRingRule BSquarefree BSpecialIdeals).run
-
-initialize theUFDs : IO.Ref (Option HolLibrary.RingTheory.UFDs) ← IO.mkRef none
-unsafe def BUFDs : HolLibrary.RingTheory.UFDs :=
-  cached theUFDs "setupUFDs" fun _ => do
-    let _ ← IO.mkRef BRadical.radical
-    (HolLibrary.RingTheory.setupUFDs (deps ()) BBasics BProducts BDivides BIdeals BDomains BHoms BIso BKernels BRingRule BPrimes BFactorizations BSquarefree BLocalization BSpecialIdeals).run
-
-initialize theEuclidean : IO.Ref (Option HolLibrary.RingTheory.Euclidean) ← IO.mkRef none
-unsafe def BEuclidean : HolLibrary.RingTheory.Euclidean :=
-  cached theEuclidean "setupEuclidean" fun _ => do
-    let _ ← IO.mkRef BUFDs.UFD
-    (HolLibrary.RingTheory.setupEuclidean (deps ()) BBasics BDivides BIdeals BDomains BHoms BIso BQuotients BSpecialIdeals).run
-
-initialize theNoetherian : IO.Ref (Option HolLibrary.RingTheory.Noetherian) ← IO.mkRef none
-unsafe def BNoetherian : HolLibrary.RingTheory.Noetherian :=
-  cached theNoetherian "setupNoetherian" fun _ => do
-    let _ ← IO.mkRef BEuclidean.euclidean_ring
-    (HolLibrary.RingTheory.setupNoetherian (deps ()) BBasics BIdeals BHoms BIso BKernels BProdRings BQuotients BSpecialIdeals BUFDs).run
-
-initialize theACCP : IO.Ref (Option HolLibrary.RingTheory.ACCP) ← IO.mkRef none
-unsafe def BACCP : HolLibrary.RingTheory.ACCP :=
-  cached theACCP "setupACCP" fun _ => do
-    let _ ← IO.mkRef BNoetherian.NOETHERIAN_RING
-    (HolLibrary.RingTheory.setupACCP (deps ()) BBasics BProducts BDivides BIdeals BDomains BPrimes BFactorizations BSpecialIdeals BUFDs BNoetherian).run
-
-initialize theRingGcd : IO.Ref (Option HolLibrary.RingTheory.RingGcd) ← IO.mkRef none
-unsafe def BRingGcd : HolLibrary.RingTheory.RingGcd :=
-  cached theRingGcd "setupRingGcd" fun _ => do
-    let _ ← IO.mkRef BACCP.RING_ACCP
-    (HolLibrary.RingTheory.setupRingGcd (deps ()) BBasics BNumbers BDivides BDomains BUFDs).run
-
-initialize theBezout : IO.Ref (Option HolLibrary.RingTheory.Bezout) ← IO.mkRef none
-unsafe def BBezout : HolLibrary.RingTheory.Bezout :=
-  cached theBezout "setupBezout" fun _ => do
-    let _ ← IO.mkRef BRingGcd.ring_gcd
-    (HolLibrary.RingTheory.setupBezout (deps ()) BBasics BDivides BIdeals BHoms BIso BRingRule BQuotients BPrimes BSquarefree BLocalization BSpecialIdeals BUFDs BNoetherian BACCP BRingGcd).run
-
-initialize theGcdDomain : IO.Ref (Option HolLibrary.RingTheory.GcdDomain) ← IO.mkRef none
-unsafe def BGcdDomain : HolLibrary.RingTheory.GcdDomain :=
-  cached theGcdDomain "setupGcdDomain" fun _ => do
-    let _ ← IO.mkRef BBezout.bezout_ring
-    (HolLibrary.RingTheory.setupGcdDomain (deps ()) BBasics BNumbers BProducts BDivides BDomains BUFDs BRingGcd BBezout).run
-
-initialize theSquarefreeUFD : IO.Ref (Option HolLibrary.RingTheory.SquarefreeUFD) ← IO.mkRef none
-unsafe def BSquarefreeUFD : HolLibrary.RingTheory.SquarefreeUFD :=
-  cached theSquarefreeUFD "setupSquarefreeUFD" fun _ => do
-    let _ ← IO.mkRef BGcdDomain.RING_GCD_LMUL
-    (HolLibrary.RingTheory.setupSquarefreeUFD (deps ()) BBasics BNumbers BProducts BDivides BDomains BRingRule BPrimes BSquarefree BUFDs BRingGcd BGcdDomain).run
-
-initialize theBooleanRings : IO.Ref (Option HolLibrary.RingTheory.BooleanRings) ← IO.mkRef none
-unsafe def BBooleanRings : HolLibrary.RingTheory.BooleanRings :=
-  cached theBooleanRings "setupBooleanRings" fun _ => do
-    let _ ← IO.mkRef BSquarefreeUFD.RING_SQUAREFREE_GCD
-    (HolLibrary.RingTheory.setupBooleanRings (deps ()) BBasics BNumbers BDivides BSubrings BIdeals BDomains BHoms BIso BKernels BProdRings BRingRule BQuotients BPrimes BSquarefree BSpecialIdeals BRadical BBezout).run
-
-initialize theLocalRings : IO.Ref (Option HolLibrary.RingTheory.LocalRings) ← IO.mkRef none
-unsafe def BLocalRings : HolLibrary.RingTheory.LocalRings :=
-  cached theLocalRings "setupLocalRings" fun _ => do
-    let _ ← IO.mkRef BBooleanRings.boolean_ring
-    (HolLibrary.RingTheory.setupLocalRings (deps ()) BBasics BIdeals BHoms BIso BQuotients BSquarefree BLocalization BSpecialIdeals BNoetherian).run
-
-initialize theVonNeumann : IO.Ref (Option HolLibrary.RingTheory.VonNeumann) ← IO.mkRef none
-unsafe def BVonNeumann : HolLibrary.RingTheory.VonNeumann :=
-  cached theVonNeumann "setupVonNeumann" fun _ => do
-    let _ ← IO.mkRef BLocalRings.local_ring
-    (HolLibrary.RingTheory.setupVonNeumann (deps ()) BBasics BNumbers BDivides BIdeals BDomains BHoms BIso BProdRings BRingRule BQuotients BSquarefree BLocalization BSpecialIdeals BUFDs BBezout BBooleanRings).run
-
-initialize theBoolRing : IO.Ref (Option HolLibrary.RingTheory.BoolRing) ← IO.mkRef none
-unsafe def BBoolRing : HolLibrary.RingTheory.BoolRing :=
-  cached theBoolRing "setupBoolRing" fun _ => do
-    let _ ← IO.mkRef BVonNeumann.vnregular_ring
-    (HolLibrary.RingTheory.setupBoolRing (deps ()) BBasics BDomains BHoms BIso BRingRule BBooleanRings).run
-
-initialize theIntegerRing : IO.Ref (Option HolLibrary.RingTheory.IntegerRing) ← IO.mkRef none
-unsafe def BIntegerRing : HolLibrary.RingTheory.IntegerRing :=
-  cached theIntegerRing "setupIntegerRing" fun _ => do
-    let _ ← IO.mkRef BBoolRing.bool_ring
-    (HolLibrary.RingTheory.setupIntegerRing (deps ()) BBasics BNumbers BDivides BIdeals BDomains BHoms BKernels BCosets BUFDs BEuclidean BRingGcd BBezout).run
-
-initialize theIntegerModRing : IO.Ref (Option HolLibrary.RingTheory.IntegerModRing) ← IO.mkRef none
-unsafe def BIntegerModRing : HolLibrary.RingTheory.IntegerModRing :=
-  cached theIntegerModRing "setupIntegerModRing" fun _ => do
-    let _ ← IO.mkRef BIntegerRing.integer_ring
-    (HolLibrary.RingTheory.setupIntegerModRing (deps ()) BBasics BNumbers BDivides BIdeals BDomains BHoms BIso BKernels BProdRings BCosets BQuotients BVonNeumann BIntegerRing).run
-
-initialize theIntegerModConv : IO.Ref (Option HolLibrary.RingTheory.IntegerModConv) ← IO.mkRef none
-unsafe def BIntegerModConv : HolLibrary.RingTheory.IntegerModConv :=
-  cached theIntegerModConv "setupIntegerModConv" fun _ => do
-    let _ ← IO.mkRef BIntegerModRing.integer_mod_ring
-    (HolLibrary.RingTheory.setupIntegerModConv (deps ()) BBasics BDivides BIntegerModRing).run
-
-initialize theRealRing : IO.Ref (Option HolLibrary.RingTheory.RealRing) ← IO.mkRef none
-unsafe def BRealRing : HolLibrary.RingTheory.RealRing :=
-  cached theRealRing "setupRealRing" fun _ => do
-    let _ ← IO.mkRef BIntegerModConv.RING_INV_INTEGER_MOD_RING
-    (HolLibrary.RingTheory.setupRealRing (deps ()) BBasics BNumbers BDivides BDomains).run
-
-initialize theMonomials : IO.Ref (Option HolLibrary.RingTheory.Monomials) ← IO.mkRef none
-unsafe def BMonomials : HolLibrary.RingTheory.Monomials :=
-  cached theMonomials "setupMonomials" fun _ => do
-    let _ ← IO.mkRef BRealRing.real_ring
-    (HolLibrary.RingTheory.setupMonomials (deps ())).run
-
-initialize thePowerSeries : IO.Ref (Option HolLibrary.RingTheory.PowerSeries) ← IO.mkRef none
-unsafe def BPowerSeries : HolLibrary.RingTheory.PowerSeries :=
-  cached thePowerSeries "setupPowerSeries" fun _ => do
-    let _ ← IO.mkRef BMonomials.monomial_1
-    (HolLibrary.RingTheory.setupPowerSeries (deps ()) BBasics BSums BRingRule BMonomials).run
-
-initialize thePolyRings : IO.Ref (Option HolLibrary.RingTheory.PolyRings) ← IO.mkRef none
-unsafe def BPolyRings : HolLibrary.RingTheory.PolyRings :=
-  cached thePolyRings "setupPolyRings" fun _ => do
-    let _ ← IO.mkRef BPowerSeries.ring_powerseries
-    (HolLibrary.RingTheory.setupPolyRings (deps ()) BBasics BNumbers BSums BProducts BSubrings BHoms BMonomials BPowerSeries).run
-
-initialize theHomExtend : IO.Ref (Option HolLibrary.RingTheory.HomExtend) ← IO.mkRef none
-unsafe def BHomExtend : HolLibrary.RingTheory.HomExtend :=
-  cached theHomExtend "setupHomExtend" fun _ => do
-    let _ ← IO.mkRef BPolyRings.powser_ring
-    (HolLibrary.RingTheory.setupHomExtend (deps ()) BBasics BNumbers BSums BProducts BSubrings BHoms BRingRule BMonomials BPowerSeries BPolyRings).run
-
-initialize theNatIso : IO.Ref (Option HolLibrary.RingTheory.NatIso) ← IO.mkRef none
-unsafe def BNatIso : HolLibrary.RingTheory.NatIso :=
-  cached theNatIso "setupNatIso" fun _ => do
-    let _ ← IO.mkRef BHomExtend.poly_extend
-    (HolLibrary.RingTheory.setupNatIso (deps ()) BBasics BSums BProducts BSubrings BHoms BIso BRingRule BMonomials BPowerSeries BPolyRings BHomExtend).run
-
-initialize theRenaming : IO.Ref (Option HolLibrary.RingTheory.Renaming) ← IO.mkRef none
-unsafe def BRenaming : HolLibrary.RingTheory.Renaming :=
-  cached theRenaming "setupRenaming" fun _ => do
-    let _ ← IO.mkRef BNatIso.RING_ISOMORPHISM_POWSER_RING_TRIVIAL
-    (HolLibrary.RingTheory.setupRenaming (deps ()) BBasics BSums BProducts BDivides BHoms BMonomials BPowerSeries BPolyRings BHomExtend BNatIso).run
-
-initialize theMonomialOrders : IO.Ref (Option HolLibrary.RingTheory.MonomialOrders) ← IO.mkRef none
-unsafe def BMonomialOrders : HolLibrary.RingTheory.MonomialOrders :=
-  cached theMonomialOrders "setupMonomialOrders" fun _ => do
-    let _ ← IO.mkRef BRenaming.poly_reindex
-    (HolLibrary.RingTheory.setupMonomialOrders (deps ()) BMonomials).run
-
-initialize theOneCoeff : IO.Ref (Option HolLibrary.RingTheory.OneCoeff) ← IO.mkRef none
-unsafe def BOneCoeff : HolLibrary.RingTheory.OneCoeff :=
-  cached theOneCoeff "setupOneCoeff" fun _ => do
-    let _ ← IO.mkRef BMonomialOrders.POSET_MONOMIAL_DIVIDES
-    (HolLibrary.RingTheory.setupOneCoeff (deps ()) BBasics BSums BSubrings BMonomials BPowerSeries BPolyRings).run
-
-initialize theDegree : IO.Ref (Option HolLibrary.RingTheory.Degree) ← IO.mkRef none
-unsafe def BDegree : HolLibrary.RingTheory.Degree :=
-  cached theDegree "setupDegree" fun _ => do
-    let _ ← IO.mkRef BOneCoeff.EXISTS_FUN_FROM_1
-    (HolLibrary.RingTheory.setupDegree (deps ()) BBasics BSums BDivides BSubrings BDomains BHoms BKernels BRingRule BMonomials BPowerSeries BPolyRings BNatIso BMonomialOrders BOneCoeff).run
-
-initialize theCardinalities : IO.Ref (Option HolLibrary.RingTheory.Cardinalities) ← IO.mkRef none
-unsafe def BCardinalities : HolLibrary.RingTheory.Cardinalities :=
-  cached theCardinalities "setupCardinalities" fun _ => do
-    let _ ← IO.mkRef BDegree.poly_deg
-    (HolLibrary.RingTheory.setupCardinalities (deps ()) BBasics BMonomials BPolyRings).run
-
-initialize theEvaluation : IO.Ref (Option HolLibrary.RingTheory.Evaluation) ← IO.mkRef none
-unsafe def BEvaluation : HolLibrary.RingTheory.Evaluation :=
-  cached theEvaluation "setupEvaluation" fun _ => do
-    let _ ← IO.mkRef BCardinalities.CARD_EQ_MONOMIALS_FINITE
-    (HolLibrary.RingTheory.setupEvaluation (deps ()) BBasics BNumbers BSums BProducts BDivides BSubrings BHoms BKernels BMonomials BPowerSeries BPolyRings BHomExtend BRenaming BOneCoeff BDegree).run
-
-initialize theComposing : IO.Ref (Option HolLibrary.RingTheory.Composing) ← IO.mkRef none
-unsafe def BComposing : HolLibrary.RingTheory.Composing :=
-  cached theComposing "setupComposing" fun _ => do
-    let _ ← IO.mkRef BEvaluation.poly_evaluate
-    (HolLibrary.RingTheory.setupComposing (deps ()) BBasics BSums BHoms BKernels BMonomials BPowerSeries BPolyRings BDegree).run
-
-initialize theZerodivisors : IO.Ref (Option HolLibrary.RingTheory.Zerodivisors) ← IO.mkRef none
-unsafe def BZerodivisors : HolLibrary.RingTheory.Zerodivisors :=
-  cached theZerodivisors "setupZerodivisors" fun _ => do
-    let _ ← IO.mkRef BComposing.RING_POWERSERIES_COMPOSE
-    (HolLibrary.RingTheory.setupZerodivisors (deps ()) BBasics BSums BProducts BDivides BIdeals BDomains BHoms BIso BKernels BRingRule BCosets BQuotients BPrimes BSpecialIdeals BRadical BLocalRings BMonomials BPowerSeries BPolyRings BHomExtend BNatIso BRenaming BMonomialOrders BOneCoeff BDegree BEvaluation BComposing).run
-
-initialize theXMinusA : IO.Ref (Option HolLibrary.RingTheory.XMinusA) ← IO.mkRef none
-unsafe def BXMinusA : HolLibrary.RingTheory.XMinusA :=
-  cached theXMinusA "setupXMinusA" fun _ => do
-    let _ ← IO.mkRef BZerodivisors.INTEGRAL_DOMAIN_POWSER_RING
-    (HolLibrary.RingTheory.setupXMinusA (deps ()) BBasics BDivides BDomains BRingRule BPowerSeries BPolyRings BDegree BEvaluation).run
-
-initialize theDivision : IO.Ref (Option HolLibrary.RingTheory.Division) ← IO.mkRef none
-unsafe def BDivision : HolLibrary.RingTheory.Division :=
-  cached theDivision "setupDivision" fun _ => do
-    let _ ← IO.mkRef BXMinusA.POLY_DEG_X_MINUS_A
-    (HolLibrary.RingTheory.setupDivision (deps ()) BBasics BNumbers BSums BDivides BDomains BRules BRingRule BEuclidean BMonomials BPowerSeries BPolyRings BOneCoeff BDegree BEvaluation).run
-
-initialize theHilbert : IO.Ref (Option HolLibrary.RingTheory.Hilbert) ← IO.mkRef none
-unsafe def BHilbert : HolLibrary.RingTheory.Hilbert :=
-  cached theHilbert "setupHilbert" fun _ => do
-    let _ ← IO.mkRef BDivision.POLY_TOP_NONZERO
-    (HolLibrary.RingTheory.setupHilbert (deps ()) BBasics BNumbers BSums BIdeals BRules BHoms BIso BRingRule BSpecialIdeals BNoetherian BMonomials BPowerSeries BPolyRings BNatIso BOneCoeff BDegree BEvaluation BDivision).run
-
-initialize theMonic : IO.Ref (Option HolLibrary.RingTheory.Monic) ← IO.mkRef none
-unsafe def BMonic : HolLibrary.RingTheory.Monic :=
-  cached theMonic "setupMonic" fun _ => do
-    let _ ← IO.mkRef BHilbert.NOETHERIAN_POLY_RING_1
-    (HolLibrary.RingTheory.setupMonic (deps ()) BBasics BProducts BDivides BSubrings BDomains BPrimes BPowerSeries BPolyRings BOneCoeff BDegree BZerodivisors BDivision).run
-
-initialize theReciprocal : IO.Ref (Option HolLibrary.RingTheory.Reciprocal) ← IO.mkRef none
-unsafe def BReciprocal : HolLibrary.RingTheory.Reciprocal :=
-  cached theReciprocal "setupReciprocal" fun _ => do
-    let _ ← IO.mkRef BMonic.monic
-    (HolLibrary.RingTheory.setupReciprocal (deps ()) BBasics BNumbers BSums BDivides BDomains BRingRule BPrimes BPowerSeries BPolyRings BOneCoeff BDegree BEvaluation BZerodivisors BDivision).run
-
-initialize theDerivative : IO.Ref (Option HolLibrary.RingTheory.Derivative) ← IO.mkRef none
-unsafe def BDerivative : HolLibrary.RingTheory.Derivative :=
-  cached theDerivative "setupDerivative" fun _ => do
-    let _ ← IO.mkRef BReciprocal.poly_recip
-    (HolLibrary.RingTheory.setupDerivative (deps ()) BBasics BNumbers BSums BProducts BSubrings BDomains BHoms BRingRule BPowerSeries BPolyRings BOneCoeff BDegree BDivision).run
-
-initialize theSeparable : IO.Ref (Option HolLibrary.RingTheory.Separable) ← IO.mkRef none
-unsafe def BSeparable : HolLibrary.RingTheory.Separable :=
-  cached theSeparable "setupSeparable" fun _ => do
-    let _ ← IO.mkRef BDerivative.poly_deriv
-    (HolLibrary.RingTheory.setupSeparable (deps ()) BBasics BNumbers BDivides BDomains BRingRule BPrimes BSquarefree BUFDs BACCP BGcdDomain BPowerSeries BPolyRings BDegree BEvaluation BZerodivisors BXMinusA BDivision BDerivative).run
-
-initialize theGaussA : IO.Ref (Option HolLibrary.RingTheory.GaussA) ← IO.mkRef none
-unsafe def BGaussA : HolLibrary.RingTheory.GaussA :=
-  cached theGaussA "setupGaussA" fun _ => do
-    let _ ← IO.mkRef BSeparable.POLY_NONCONSTANT_IRREDUCIBLE_IMP_SEPARABLE
-    (HolLibrary.RingTheory.setupGaussA (deps ()) BBasics BDivides BDomains BHoms BPrimes BSpecialIdeals BUFDs BACCP BMonomials BPowerSeries BPolyRings BNatIso BOneCoeff BDegree BZerodivisors BDivision).run
-
-initialize theGaussB : IO.Ref (Option HolLibrary.RingTheory.GaussB) ← IO.mkRef none
-unsafe def BGaussB : HolLibrary.RingTheory.GaussB :=
-  cached theGaussB "setupGaussB" fun _ => do
-    let _ ← IO.mkRef BGaussA.POLY_PRIMITIVE_CONST_CANCEL
-    (HolLibrary.RingTheory.setupGaussB (deps ()) BBasics BNumbers BDivides BIdeals BDomains BIso BRingRule BSpecialIdeals BUFDs BPowerSeries BPolyRings BNatIso BRenaming BOneCoeff BDegree BZerodivisors BDivision BGaussA).run
-
-initialize theGaussC : IO.Ref (Option HolLibrary.RingTheory.GaussC) ← IO.mkRef none
-unsafe def BGaussC : HolLibrary.RingTheory.GaussC :=
-  cached theGaussC "setupGaussC" fun _ => do
-    let _ ← IO.mkRef BGaussB.UFD_POLY_RING
-    (HolLibrary.RingTheory.setupGaussC (deps ()) BBasics BDomains BHoms BRingRule BSquarefree BLocalization BPowerSeries BPolyRings BComposing).run
-
-initialize theGaussD : IO.Ref (Option HolLibrary.RingTheory.GaussD) ← IO.mkRef none
-unsafe def BGaussD : HolLibrary.RingTheory.GaussD :=
-  cached theGaussD "setupGaussD" fun _ => do
-    let _ ← IO.mkRef BGaussC.POLY_CLEAR_DENOMINATORS
-    (HolLibrary.RingTheory.setupGaussD (deps ()) BBasics BDivides BDomains BHoms BKernels BRingRule BPrimes BLocalization BUFDs BPowerSeries BPolyRings BRenaming BDegree BComposing BZerodivisors BGaussB BGaussC).run
-
-initialize theEisenstein : IO.Ref (Option HolLibrary.RingTheory.Eisenstein) ← IO.mkRef none
-unsafe def BEisenstein : HolLibrary.RingTheory.Eisenstein :=
-  cached theEisenstein "setupEisenstein" fun _ => do
-    let _ ← IO.mkRef BGaussD.IRREDUCIBLE_PRIMITIVE_POLY_FRACTION_RING
-    (HolLibrary.RingTheory.setupEisenstein (deps ()) BBasics BNumbers BDivides BIdeals BDomains BHoms BKernels BCosets BQuotients BPrimes BLocalization BSpecialIdeals BUFDs BMonomials BPowerSeries BPolyRings BOneCoeff BDegree BEvaluation BComposing BZerodivisors BDivision BGaussA BGaussD).run
-
-initialize theRingOrder : IO.Ref (Option HolLibrary.RingTheory.RingOrder) ← IO.mkRef none
-unsafe def BRingOrder : HolLibrary.RingTheory.RingOrder :=
-  cached theRingOrder "setupRingOrder" fun _ => do
-    let _ ← IO.mkRef BEisenstein.EISENSTEIN_IRREDUCIBILITY_GEN
-    (HolLibrary.RingTheory.setupRingOrder (deps ()) BBasics BNumbers).run
-
-initialize theFrobenius : IO.Ref (Option HolLibrary.RingTheory.Frobenius) ← IO.mkRef none
-unsafe def BFrobenius : HolLibrary.RingTheory.Frobenius :=
-  cached theFrobenius "setupFrobenius" fun _ => do
-    let _ ← IO.mkRef BRingOrder.RING_ORDER_DIVIDES
-    (HolLibrary.RingTheory.setupFrobenius (deps ()) BBasics BNumbers BSums BDivides BSubrings BDomains BHoms BKernels BCosets BPowerSeries BPolyRings BDegree BEvaluation BXMinusA).run
-
-initialize theIntegralDomainRule : IO.Ref (Option HolLibrary.RingTheory.IntegralDomainRule) ← IO.mkRef none
-unsafe def BIntegralDomainRule : HolLibrary.RingTheory.IntegralDomainRule :=
-  cached theIntegralDomainRule "setupIntegralDomainRule" fun _ => do
-    let _ ← IO.mkRef BFrobenius.RING_ENDOMORPHISM_FROBENIUS
-    (HolLibrary.RingTheory.setupIntegralDomainRule (deps ()) BBasics BDivides BDomains BRules BHoms BIso BKernels BLimits BPolyRings BDegree BCardinalities).run
-
-initialize theRingPullDiv : IO.Ref (Option HolLibrary.RingTheory.RingPullDiv) ← IO.mkRef none
-unsafe def BRingPullDiv : HolLibrary.RingTheory.RingPullDiv :=
-  cached theRingPullDiv "setupRingPullDiv" fun _ => do
-    let _ ← IO.mkRef BIntegralDomainRule.INTEGRAL_DOMAIN_RULE
-    (HolLibrary.RingTheory.setupRingPullDiv (deps ()) BNumbers BDivides BDomains BRules BIntegralDomainRule).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
+  core5 := core5
+  core6 := core6
+  core7 := core7
+  core8 := core8
+
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
+
+/- The bundles, in ringtheory.ml order. -/
+
+initialize BBasics : HolLibrary.RingTheory.Basics ←
+  ioB "setupBasics" <|
+    (HolLibrary.RingTheory.setupBasics deps).run
+
+initialize BNumbers : HolLibrary.RingTheory.Numbers ←
+  ioB "setupNumbers" <|
+    (HolLibrary.RingTheory.setupNumbers deps BBasics).run
+
+initialize BSums : HolLibrary.RingTheory.Sums ←
+  ioB "setupSums" <|
+    (HolLibrary.RingTheory.setupSums deps BBasics BNumbers).run
+
+initialize BProducts : HolLibrary.RingTheory.Products ←
+  ioB "setupProducts" <|
+    (HolLibrary.RingTheory.setupProducts deps BBasics BNumbers).run
+
+initialize BDivides : HolLibrary.RingTheory.Divides ←
+  ioB "setupDivides" <|
+    (HolLibrary.RingTheory.setupDivides deps BBasics BNumbers BSums BProducts).run
+
+initialize BSubrings : HolLibrary.RingTheory.Subrings ←
+  ioB "setupSubrings" <|
+    (HolLibrary.RingTheory.setupSubrings deps BBasics BNumbers BSums BProducts).run
+
+initialize BIdeals : HolLibrary.RingTheory.Ideals ←
+  ioB "setupIdeals" <|
+    (HolLibrary.RingTheory.setupIdeals deps BBasics BNumbers BSums BDivides BSubrings).run
+
+initialize BDomains : HolLibrary.RingTheory.Domains ←
+  ioB "setupDomains" <|
+    (HolLibrary.RingTheory.setupDomains deps BBasics BNumbers BProducts BDivides BSubrings).run
+
+initialize BRules : HolLibrary.RingTheory.Rules ←
+  ioB "setupRules" <|
+    (HolLibrary.RingTheory.setupRules deps BBasics BNumbers BDivides BDomains).run
+
+initialize BHoms : HolLibrary.RingTheory.Homs ←
+  ioB "setupHoms" <|
+    (HolLibrary.RingTheory.setupHoms deps BBasics BNumbers BSums BProducts BDivides BSubrings BIdeals BDomains).run
+
+initialize BIso : HolLibrary.RingTheory.Iso ←
+  ioB "setupIso" <|
+    (HolLibrary.RingTheory.setupIso deps BBasics BHoms).run
+
+initialize BKernels : HolLibrary.RingTheory.Kernels ←
+  ioB "setupKernels" <|
+    (HolLibrary.RingTheory.setupKernels deps BBasics BDivides BSubrings BIdeals BDomains BHoms BIso).run
+
+initialize BProdRings : HolLibrary.RingTheory.ProdRings ←
+  ioB "setupProdRings" <|
+    (HolLibrary.RingTheory.setupProdRings deps BBasics BNumbers BSums BDivides BSubrings BIdeals BHoms BIso).run
+
+initialize BLimits : HolLibrary.RingTheory.Limits ←
+  ioB "setupLimits" <|
+    (HolLibrary.RingTheory.setupLimits deps BBasics BNumbers BHoms).run
+
+initialize BRingRule : HolLibrary.RingTheory.RingRule ←
+  ioB "setupRingRule" <|
+    (HolLibrary.RingTheory.setupRingRule deps BBasics BNumbers BRules BHoms BIso BProdRings BLimits).run
+
+initialize BCosets : HolLibrary.RingTheory.Cosets ←
+  ioB "setupCosets" <|
+    (HolLibrary.RingTheory.setupCosets deps BBasics BNumbers BDivides BSubrings BIdeals BHoms BIso BKernels BProdRings BRingRule).run
+
+initialize BQuotients : HolLibrary.RingTheory.Quotients ←
+  ioB "setupQuotients" <|
+    (HolLibrary.RingTheory.setupQuotients deps BBasics BSubrings BIdeals BHoms BIso BKernels BCosets).run
+
+initialize BPrimes : HolLibrary.RingTheory.Primes ←
+  ioB "setupPrimes" <|
+    (HolLibrary.RingTheory.setupPrimes deps BBasics BNumbers BProducts BDivides BDomains BHoms BKernels).run
+
+initialize BFactorizations : HolLibrary.RingTheory.Factorizations ←
+  ioB "setupFactorizations" <|
+    (HolLibrary.RingTheory.setupFactorizations deps BBasics BProducts BDivides BDomains BPrimes).run
+
+initialize BSquarefree : HolLibrary.RingTheory.Squarefree ←
+  ioB "setupSquarefree" <|
+    (HolLibrary.RingTheory.setupSquarefree deps BBasics BNumbers BDivides BDomains BPrimes).run
+
+initialize BLocalization : HolLibrary.RingTheory.Localization ←
+  ioB "setupLocalization" <|
+    (HolLibrary.RingTheory.setupLocalization deps BBasics BDivides BIdeals BDomains BHoms BIso BKernels BRingRule BSquarefree).run
+
+initialize BSpecialIdeals : HolLibrary.RingTheory.SpecialIdeals ←
+  ioB "setupSpecialIdeals" <|
+    (HolLibrary.RingTheory.setupSpecialIdeals deps BBasics BNumbers BDivides BIdeals BDomains BHoms BIso BKernels BRingRule BCosets BQuotients BPrimes BSquarefree BLocalization).run
+
+initialize BRadical : HolLibrary.RingTheory.Radical ←
+  ioB "setupRadical" <|
+    (HolLibrary.RingTheory.setupRadical deps BBasics BNumbers BSums BDivides BIdeals BDomains BRingRule BSquarefree BSpecialIdeals).run
+
+initialize BUFDs : HolLibrary.RingTheory.UFDs ←
+  ioB "setupUFDs" <|
+    (HolLibrary.RingTheory.setupUFDs deps BBasics BProducts BDivides BIdeals BDomains BHoms BIso BKernels BRingRule BPrimes BFactorizations BSquarefree BLocalization BSpecialIdeals).run
+
+initialize BEuclidean : HolLibrary.RingTheory.Euclidean ←
+  ioB "setupEuclidean" <|
+    (HolLibrary.RingTheory.setupEuclidean deps BBasics BDivides BIdeals BDomains BHoms BIso BQuotients BSpecialIdeals).run
+
+initialize BNoetherian : HolLibrary.RingTheory.Noetherian ←
+  ioB "setupNoetherian" <|
+    (HolLibrary.RingTheory.setupNoetherian deps BBasics BIdeals BHoms BIso BKernels BProdRings BQuotients BSpecialIdeals BUFDs).run
+
+initialize BACCP : HolLibrary.RingTheory.ACCP ←
+  ioB "setupACCP" <|
+    (HolLibrary.RingTheory.setupACCP deps BBasics BProducts BDivides BIdeals BDomains BPrimes BFactorizations BSpecialIdeals BUFDs BNoetherian).run
+
+initialize BRingGcd : HolLibrary.RingTheory.RingGcd ←
+  ioB "setupRingGcd" <|
+    (HolLibrary.RingTheory.setupRingGcd deps BBasics BNumbers BDivides BDomains BUFDs).run
+
+initialize BBezout : HolLibrary.RingTheory.Bezout ←
+  ioB "setupBezout" <|
+    (HolLibrary.RingTheory.setupBezout deps BBasics BDivides BIdeals BHoms BIso BRingRule BQuotients BPrimes BSquarefree BLocalization BSpecialIdeals BUFDs BNoetherian BACCP BRingGcd).run
+
+initialize BGcdDomain : HolLibrary.RingTheory.GcdDomain ←
+  ioB "setupGcdDomain" <|
+    (HolLibrary.RingTheory.setupGcdDomain deps BBasics BNumbers BProducts BDivides BDomains BUFDs BRingGcd BBezout).run
+
+initialize BSquarefreeUFD : HolLibrary.RingTheory.SquarefreeUFD ←
+  ioB "setupSquarefreeUFD" <|
+    (HolLibrary.RingTheory.setupSquarefreeUFD deps BBasics BNumbers BProducts BDivides BDomains BRingRule BPrimes BSquarefree BUFDs BRingGcd BGcdDomain).run
+
+initialize BBooleanRings : HolLibrary.RingTheory.BooleanRings ←
+  ioB "setupBooleanRings" <|
+    (HolLibrary.RingTheory.setupBooleanRings deps BBasics BNumbers BDivides BSubrings BIdeals BDomains BHoms BIso BKernels BProdRings BRingRule BQuotients BPrimes BSquarefree BSpecialIdeals BRadical BBezout).run
+
+initialize BLocalRings : HolLibrary.RingTheory.LocalRings ←
+  ioB "setupLocalRings" <|
+    (HolLibrary.RingTheory.setupLocalRings deps BBasics BIdeals BHoms BIso BQuotients BSquarefree BLocalization BSpecialIdeals BNoetherian).run
+
+initialize BVonNeumann : HolLibrary.RingTheory.VonNeumann ←
+  ioB "setupVonNeumann" <|
+    (HolLibrary.RingTheory.setupVonNeumann deps BBasics BNumbers BDivides BIdeals BDomains BHoms BIso BProdRings BRingRule BQuotients BSquarefree BLocalization BSpecialIdeals BUFDs BBezout BBooleanRings).run
+
+initialize BBoolRing : HolLibrary.RingTheory.BoolRing ←
+  ioB "setupBoolRing" <|
+    (HolLibrary.RingTheory.setupBoolRing deps BBasics BDomains BHoms BIso BRingRule BBooleanRings).run
+
+initialize BIntegerRing : HolLibrary.RingTheory.IntegerRing ←
+  ioB "setupIntegerRing" <|
+    (HolLibrary.RingTheory.setupIntegerRing deps BBasics BNumbers BDivides BIdeals BDomains BHoms BKernels BCosets BUFDs BEuclidean BRingGcd BBezout).run
+
+initialize BIntegerModRing : HolLibrary.RingTheory.IntegerModRing ←
+  ioB "setupIntegerModRing" <|
+    (HolLibrary.RingTheory.setupIntegerModRing deps BBasics BNumbers BDivides BIdeals BDomains BHoms BIso BKernels BProdRings BCosets BQuotients BVonNeumann BIntegerRing).run
+
+initialize BIntegerModConv : HolLibrary.RingTheory.IntegerModConv ←
+  ioB "setupIntegerModConv" <|
+    (HolLibrary.RingTheory.setupIntegerModConv deps BBasics BDivides BIntegerModRing).run
+
+initialize BRealRing : HolLibrary.RingTheory.RealRing ←
+  ioB "setupRealRing" <|
+    (HolLibrary.RingTheory.setupRealRing deps BBasics BNumbers BDivides BDomains).run
+
+initialize BMonomials : HolLibrary.RingTheory.Monomials ←
+  ioB "setupMonomials" <|
+    (HolLibrary.RingTheory.setupMonomials deps).run
+
+initialize BPowerSeries : HolLibrary.RingTheory.PowerSeries ←
+  ioB "setupPowerSeries" <|
+    (HolLibrary.RingTheory.setupPowerSeries deps BBasics BSums BRingRule BMonomials).run
+
+initialize BPolyRings : HolLibrary.RingTheory.PolyRings ←
+  ioB "setupPolyRings" <|
+    (HolLibrary.RingTheory.setupPolyRings deps BBasics BNumbers BSums BProducts BSubrings BHoms BMonomials BPowerSeries).run
+
+initialize BHomExtend : HolLibrary.RingTheory.HomExtend ←
+  ioB "setupHomExtend" <|
+    (HolLibrary.RingTheory.setupHomExtend deps BBasics BNumbers BSums BProducts BSubrings BHoms BRingRule BMonomials BPowerSeries BPolyRings).run
+
+initialize BNatIso : HolLibrary.RingTheory.NatIso ←
+  ioB "setupNatIso" <|
+    (HolLibrary.RingTheory.setupNatIso deps BBasics BSums BProducts BSubrings BHoms BIso BRingRule BMonomials BPowerSeries BPolyRings BHomExtend).run
+
+initialize BRenaming : HolLibrary.RingTheory.Renaming ←
+  ioB "setupRenaming" <|
+    (HolLibrary.RingTheory.setupRenaming deps BBasics BSums BProducts BDivides BHoms BMonomials BPowerSeries BPolyRings BHomExtend BNatIso).run
+
+initialize BMonomialOrders : HolLibrary.RingTheory.MonomialOrders ←
+  ioB "setupMonomialOrders" <|
+    (HolLibrary.RingTheory.setupMonomialOrders deps BMonomials).run
+
+initialize BOneCoeff : HolLibrary.RingTheory.OneCoeff ←
+  ioB "setupOneCoeff" <|
+    (HolLibrary.RingTheory.setupOneCoeff deps BBasics BSums BSubrings BMonomials BPowerSeries BPolyRings).run
+
+initialize BDegree : HolLibrary.RingTheory.Degree ←
+  ioB "setupDegree" <|
+    (HolLibrary.RingTheory.setupDegree deps BBasics BSums BDivides BSubrings BDomains BHoms BKernels BRingRule BMonomials BPowerSeries BPolyRings BNatIso BMonomialOrders BOneCoeff).run
+
+initialize BCardinalities : HolLibrary.RingTheory.Cardinalities ←
+  ioB "setupCardinalities" <|
+    (HolLibrary.RingTheory.setupCardinalities deps BBasics BMonomials BPolyRings).run
+
+initialize BEvaluation : HolLibrary.RingTheory.Evaluation ←
+  ioB "setupEvaluation" <|
+    (HolLibrary.RingTheory.setupEvaluation deps BBasics BNumbers BSums BProducts BDivides BSubrings BHoms BKernels BMonomials BPowerSeries BPolyRings BHomExtend BRenaming BOneCoeff BDegree).run
+
+initialize BComposing : HolLibrary.RingTheory.Composing ←
+  ioB "setupComposing" <|
+    (HolLibrary.RingTheory.setupComposing deps BBasics BSums BHoms BKernels BMonomials BPowerSeries BPolyRings BDegree).run
+
+initialize BZerodivisors : HolLibrary.RingTheory.Zerodivisors ←
+  ioB "setupZerodivisors" <|
+    (HolLibrary.RingTheory.setupZerodivisors deps BBasics BSums BProducts BDivides BIdeals BDomains BHoms BIso BKernels BRingRule BCosets BQuotients BPrimes BSpecialIdeals BRadical BLocalRings BMonomials BPowerSeries BPolyRings BHomExtend BNatIso BRenaming BMonomialOrders BOneCoeff BDegree BEvaluation BComposing).run
+
+initialize BXMinusA : HolLibrary.RingTheory.XMinusA ←
+  ioB "setupXMinusA" <|
+    (HolLibrary.RingTheory.setupXMinusA deps BBasics BDivides BDomains BRingRule BPowerSeries BPolyRings BDegree BEvaluation).run
+
+initialize BDivision : HolLibrary.RingTheory.Division ←
+  ioB "setupDivision" <|
+    (HolLibrary.RingTheory.setupDivision deps BBasics BNumbers BSums BDivides BDomains BRules BRingRule BEuclidean BMonomials BPowerSeries BPolyRings BOneCoeff BDegree BEvaluation).run
+
+initialize BHilbert : HolLibrary.RingTheory.Hilbert ←
+  ioB "setupHilbert" <|
+    (HolLibrary.RingTheory.setupHilbert deps BBasics BNumbers BSums BIdeals BRules BHoms BIso BRingRule BSpecialIdeals BNoetherian BMonomials BPowerSeries BPolyRings BNatIso BOneCoeff BDegree BEvaluation BDivision).run
+
+initialize BMonic : HolLibrary.RingTheory.Monic ←
+  ioB "setupMonic" <|
+    (HolLibrary.RingTheory.setupMonic deps BBasics BProducts BDivides BSubrings BDomains BPrimes BPowerSeries BPolyRings BOneCoeff BDegree BZerodivisors BDivision).run
+
+initialize BReciprocal : HolLibrary.RingTheory.Reciprocal ←
+  ioB "setupReciprocal" <|
+    (HolLibrary.RingTheory.setupReciprocal deps BBasics BNumbers BSums BDivides BDomains BRingRule BPrimes BPowerSeries BPolyRings BOneCoeff BDegree BEvaluation BZerodivisors BDivision).run
+
+initialize BDerivative : HolLibrary.RingTheory.Derivative ←
+  ioB "setupDerivative" <|
+    (HolLibrary.RingTheory.setupDerivative deps BBasics BNumbers BSums BProducts BSubrings BDomains BHoms BRingRule BPowerSeries BPolyRings BOneCoeff BDegree BDivision).run
+
+initialize BSeparable : HolLibrary.RingTheory.Separable ←
+  ioB "setupSeparable" <|
+    (HolLibrary.RingTheory.setupSeparable deps BBasics BNumbers BDivides BDomains BRingRule BPrimes BSquarefree BUFDs BACCP BGcdDomain BPowerSeries BPolyRings BDegree BEvaluation BZerodivisors BXMinusA BDivision BDerivative).run
+
+initialize BGaussA : HolLibrary.RingTheory.GaussA ←
+  ioB "setupGaussA" <|
+    (HolLibrary.RingTheory.setupGaussA deps BBasics BDivides BDomains BHoms BPrimes BSpecialIdeals BUFDs BACCP BMonomials BPowerSeries BPolyRings BNatIso BOneCoeff BDegree BZerodivisors BDivision).run
+
+initialize BGaussB : HolLibrary.RingTheory.GaussB ←
+  ioB "setupGaussB" <|
+    (HolLibrary.RingTheory.setupGaussB deps BBasics BNumbers BDivides BIdeals BDomains BIso BRingRule BSpecialIdeals BUFDs BPowerSeries BPolyRings BNatIso BRenaming BOneCoeff BDegree BZerodivisors BDivision BGaussA).run
+
+initialize BGaussC : HolLibrary.RingTheory.GaussC ←
+  ioB "setupGaussC" <|
+    (HolLibrary.RingTheory.setupGaussC deps BBasics BDomains BHoms BRingRule BSquarefree BLocalization BPowerSeries BPolyRings BComposing).run
+
+initialize BGaussD : HolLibrary.RingTheory.GaussD ←
+  ioB "setupGaussD" <|
+    (HolLibrary.RingTheory.setupGaussD deps BBasics BDivides BDomains BHoms BKernels BRingRule BPrimes BLocalization BUFDs BPowerSeries BPolyRings BRenaming BDegree BComposing BZerodivisors BGaussB BGaussC).run
+
+initialize BEisenstein : HolLibrary.RingTheory.Eisenstein ←
+  ioB "setupEisenstein" <|
+    (HolLibrary.RingTheory.setupEisenstein deps BBasics BNumbers BDivides BIdeals BDomains BHoms BKernels BCosets BQuotients BPrimes BLocalization BSpecialIdeals BUFDs BMonomials BPowerSeries BPolyRings BOneCoeff BDegree BEvaluation BComposing BZerodivisors BDivision BGaussA BGaussD).run
+
+initialize BRingOrder : HolLibrary.RingTheory.RingOrder ←
+  ioB "setupRingOrder" <|
+    (HolLibrary.RingTheory.setupRingOrder deps BBasics BNumbers).run
+
+initialize BFrobenius : HolLibrary.RingTheory.Frobenius ←
+  ioB "setupFrobenius" <|
+    (HolLibrary.RingTheory.setupFrobenius deps BBasics BNumbers BSums BDivides BSubrings BDomains BHoms BKernels BCosets BPowerSeries BPolyRings BDegree BEvaluation BXMinusA).run
+
+initialize BIntegralDomainRule : HolLibrary.RingTheory.IntegralDomainRule ←
+  ioB "setupIntegralDomainRule" <|
+    (HolLibrary.RingTheory.setupIntegralDomainRule deps BBasics BDivides BDomains BRules BHoms BIso BKernels BLimits BPolyRings BDegree BCardinalities).run
+
+initialize BRingPullDiv : HolLibrary.RingTheory.RingPullDiv ←
+  ioB "setupRingPullDiv" <|
+    (HolLibrary.RingTheory.setupRingPullDiv deps BNumbers BDivides BDomains BRules BIntegralDomainRule).run
+
+
 -- Basics
-unsafe def ring_tybij : thm := BBasics.ring_tybij
-unsafe def ring_carrier : thm := BBasics.ring_carrier
-unsafe def ring_0 : thm := BBasics.ring_0
-unsafe def ring_1 : thm := BBasics.ring_1
-unsafe def ring_neg : thm := BBasics.ring_neg
-unsafe def ring_add : thm := BBasics.ring_add
-unsafe def ring_mul : thm := BBasics.ring_mul
-unsafe def ring_sub : thm := BBasics.ring_sub
-unsafe def RINGS_EQ : thm := BBasics.RINGS_EQ
-unsafe def RING_PROPERTIES : thm := BBasics.RING_PROPERTIES
-unsafe def RING_0 : thm := BBasics.RING_0
-unsafe def RING_1 : thm := BBasics.RING_1
-unsafe def RING_NEG : thm := BBasics.RING_NEG
-unsafe def RING_ADD : thm := BBasics.RING_ADD
-unsafe def RING_SUB : thm := BBasics.RING_SUB
-unsafe def RING_MUL : thm := BBasics.RING_MUL
-unsafe def RING_ADD_SYM : thm := BBasics.RING_ADD_SYM
-unsafe def RING_MUL_SYM : thm := BBasics.RING_MUL_SYM
-unsafe def RING_ADD_ASSOC : thm := BBasics.RING_ADD_ASSOC
-unsafe def RING_MUL_ASSOC : thm := BBasics.RING_MUL_ASSOC
-unsafe def RING_ADD_LDISTRIB : thm := BBasics.RING_ADD_LDISTRIB
-unsafe def RING_ADD_RDISTRIB : thm := BBasics.RING_ADD_RDISTRIB
-unsafe def RING_ADD_LZERO : thm := BBasics.RING_ADD_LZERO
-unsafe def RING_ADD_RZERO : thm := BBasics.RING_ADD_RZERO
-unsafe def RING_MUL_LID : thm := BBasics.RING_MUL_LID
-unsafe def RING_MUL_RID : thm := BBasics.RING_MUL_RID
-unsafe def RING_ADD_LNEG : thm := BBasics.RING_ADD_LNEG
-unsafe def RING_ADD_RNEG : thm := BBasics.RING_ADD_RNEG
-unsafe def RING_ADD_AC : thm := BBasics.RING_ADD_AC
-unsafe def RING_MUL_AC : thm := BBasics.RING_MUL_AC
-unsafe def RING_ADD_LCANCEL : thm := BBasics.RING_ADD_LCANCEL
-unsafe def RING_ADD_RCANCEL : thm := BBasics.RING_ADD_RCANCEL
-unsafe def RING_ADD_LCANCEL_IMP : thm := BBasics.RING_ADD_LCANCEL_IMP
-unsafe def RING_ADD_RCANCEL_IMP : thm := BBasics.RING_ADD_RCANCEL_IMP
-unsafe def RING_ADD_EQ_RIGHT : thm := BBasics.RING_ADD_EQ_RIGHT
-unsafe def RING_ADD_EQ_LEFT : thm := BBasics.RING_ADD_EQ_LEFT
-unsafe def RING_LZERO_UNIQUE : thm := BBasics.RING_LZERO_UNIQUE
-unsafe def RING_RZERO_UNIQUE : thm := BBasics.RING_RZERO_UNIQUE
-unsafe def RING_ADD_EQ_0 : thm := BBasics.RING_ADD_EQ_0
-unsafe def RING_LNEG_UNIQUE : thm := BBasics.RING_LNEG_UNIQUE
-unsafe def RING_RNEG_UNIQUE : thm := BBasics.RING_RNEG_UNIQUE
-unsafe def RING_NEG_NEG : thm := BBasics.RING_NEG_NEG
-unsafe def RING_NEG_EQ_SWAP : thm := BBasics.RING_NEG_EQ_SWAP
-unsafe def RING_NEG_EQ : thm := BBasics.RING_NEG_EQ
-unsafe def RING_NEG_0 : thm := BBasics.RING_NEG_0
-unsafe def RING_NEG_EQ_0 : thm := BBasics.RING_NEG_EQ_0
-unsafe def RING_MUL_LZERO : thm := BBasics.RING_MUL_LZERO
-unsafe def RING_MUL_RZERO : thm := BBasics.RING_MUL_RZERO
-unsafe def RING_MUL_LNEG : thm := BBasics.RING_MUL_LNEG
-unsafe def RING_MUL_RNEG : thm := BBasics.RING_MUL_RNEG
-unsafe def RING_NEG_ADD : thm := BBasics.RING_NEG_ADD
-unsafe def RING_SUB_REFL : thm := BBasics.RING_SUB_REFL
-unsafe def RING_SUB_LZERO : thm := BBasics.RING_SUB_LZERO
-unsafe def RING_SUB_RZERO : thm := BBasics.RING_SUB_RZERO
-unsafe def RING_SUB_EQ_0 : thm := BBasics.RING_SUB_EQ_0
-unsafe def RING_SUB_LDISTRIB : thm := BBasics.RING_SUB_LDISTRIB
-unsafe def RING_SUB_RDISTRIB : thm := BBasics.RING_SUB_RDISTRIB
-unsafe def RING_EQ_SUB_LADD : thm := BBasics.RING_EQ_SUB_LADD
-unsafe def RING_EQ_SUB_RADD : thm := BBasics.RING_EQ_SUB_RADD
-unsafe def RING_SUB_TELESCOPE : thm := BBasics.RING_SUB_TELESCOPE
-unsafe def RING_NEG_SUB : thm := BBasics.RING_NEG_SUB
-unsafe def RING_CARRIER_NONEMPTY : thm := BBasics.RING_CARRIER_NONEMPTY
-unsafe def trivial_ring : thm := BBasics.trivial_ring
-unsafe def TRIVIAL_IMP_FINITE_RING : thm := BBasics.TRIVIAL_IMP_FINITE_RING
-unsafe def TRIVIAL_RING_SUBSET : thm := BBasics.TRIVIAL_RING_SUBSET
-unsafe def TRIVIAL_RING : thm := BBasics.TRIVIAL_RING
-unsafe def TRIVIAL_RING_ALT : thm := BBasics.TRIVIAL_RING_ALT
-unsafe def TRIVIAL_RING_10 : thm := BBasics.TRIVIAL_RING_10
-unsafe def RING_CARRIER_HAS_SIZE_1 : thm := BBasics.RING_CARRIER_HAS_SIZE_1
-unsafe def TRIVIAL_RING_HAS_SIZE_1 : thm := BBasics.TRIVIAL_RING_HAS_SIZE_1
-unsafe def RING_CARRIER_HAS_SIZE_2 : thm := BBasics.RING_CARRIER_HAS_SIZE_2
-unsafe def singleton_ring : thm := BBasics.singleton_ring
-unsafe def SINGLETON_RING : thm := BBasics.SINGLETON_RING
-unsafe def TRIVIAL_RING_SINGLETON_RING : thm := BBasics.TRIVIAL_RING_SINGLETON_RING
-unsafe def FINITE_SINGLETON_RING : thm := BBasics.FINITE_SINGLETON_RING
+def ring_tybij : thm := BBasics.ring_tybij
+def ring_carrier : thm := BBasics.ring_carrier
+def ring_0 : thm := BBasics.ring_0
+def ring_1 : thm := BBasics.ring_1
+def ring_neg : thm := BBasics.ring_neg
+def ring_add : thm := BBasics.ring_add
+def ring_mul : thm := BBasics.ring_mul
+def ring_sub : thm := BBasics.ring_sub
+def RINGS_EQ : thm := BBasics.RINGS_EQ
+def RING_PROPERTIES : thm := BBasics.RING_PROPERTIES
+def RING_0 : thm := BBasics.RING_0
+def RING_1 : thm := BBasics.RING_1
+def RING_NEG : thm := BBasics.RING_NEG
+def RING_ADD : thm := BBasics.RING_ADD
+def RING_SUB : thm := BBasics.RING_SUB
+def RING_MUL : thm := BBasics.RING_MUL
+def RING_ADD_SYM : thm := BBasics.RING_ADD_SYM
+def RING_MUL_SYM : thm := BBasics.RING_MUL_SYM
+def RING_ADD_ASSOC : thm := BBasics.RING_ADD_ASSOC
+def RING_MUL_ASSOC : thm := BBasics.RING_MUL_ASSOC
+def RING_ADD_LDISTRIB : thm := BBasics.RING_ADD_LDISTRIB
+def RING_ADD_RDISTRIB : thm := BBasics.RING_ADD_RDISTRIB
+def RING_ADD_LZERO : thm := BBasics.RING_ADD_LZERO
+def RING_ADD_RZERO : thm := BBasics.RING_ADD_RZERO
+def RING_MUL_LID : thm := BBasics.RING_MUL_LID
+def RING_MUL_RID : thm := BBasics.RING_MUL_RID
+def RING_ADD_LNEG : thm := BBasics.RING_ADD_LNEG
+def RING_ADD_RNEG : thm := BBasics.RING_ADD_RNEG
+def RING_ADD_AC : thm := BBasics.RING_ADD_AC
+def RING_MUL_AC : thm := BBasics.RING_MUL_AC
+def RING_ADD_LCANCEL : thm := BBasics.RING_ADD_LCANCEL
+def RING_ADD_RCANCEL : thm := BBasics.RING_ADD_RCANCEL
+def RING_ADD_LCANCEL_IMP : thm := BBasics.RING_ADD_LCANCEL_IMP
+def RING_ADD_RCANCEL_IMP : thm := BBasics.RING_ADD_RCANCEL_IMP
+def RING_ADD_EQ_RIGHT : thm := BBasics.RING_ADD_EQ_RIGHT
+def RING_ADD_EQ_LEFT : thm := BBasics.RING_ADD_EQ_LEFT
+def RING_LZERO_UNIQUE : thm := BBasics.RING_LZERO_UNIQUE
+def RING_RZERO_UNIQUE : thm := BBasics.RING_RZERO_UNIQUE
+def RING_ADD_EQ_0 : thm := BBasics.RING_ADD_EQ_0
+def RING_LNEG_UNIQUE : thm := BBasics.RING_LNEG_UNIQUE
+def RING_RNEG_UNIQUE : thm := BBasics.RING_RNEG_UNIQUE
+def RING_NEG_NEG : thm := BBasics.RING_NEG_NEG
+def RING_NEG_EQ_SWAP : thm := BBasics.RING_NEG_EQ_SWAP
+def RING_NEG_EQ : thm := BBasics.RING_NEG_EQ
+def RING_NEG_0 : thm := BBasics.RING_NEG_0
+def RING_NEG_EQ_0 : thm := BBasics.RING_NEG_EQ_0
+def RING_MUL_LZERO : thm := BBasics.RING_MUL_LZERO
+def RING_MUL_RZERO : thm := BBasics.RING_MUL_RZERO
+def RING_MUL_LNEG : thm := BBasics.RING_MUL_LNEG
+def RING_MUL_RNEG : thm := BBasics.RING_MUL_RNEG
+def RING_NEG_ADD : thm := BBasics.RING_NEG_ADD
+def RING_SUB_REFL : thm := BBasics.RING_SUB_REFL
+def RING_SUB_LZERO : thm := BBasics.RING_SUB_LZERO
+def RING_SUB_RZERO : thm := BBasics.RING_SUB_RZERO
+def RING_SUB_EQ_0 : thm := BBasics.RING_SUB_EQ_0
+def RING_SUB_LDISTRIB : thm := BBasics.RING_SUB_LDISTRIB
+def RING_SUB_RDISTRIB : thm := BBasics.RING_SUB_RDISTRIB
+def RING_EQ_SUB_LADD : thm := BBasics.RING_EQ_SUB_LADD
+def RING_EQ_SUB_RADD : thm := BBasics.RING_EQ_SUB_RADD
+def RING_SUB_TELESCOPE : thm := BBasics.RING_SUB_TELESCOPE
+def RING_NEG_SUB : thm := BBasics.RING_NEG_SUB
+def RING_CARRIER_NONEMPTY : thm := BBasics.RING_CARRIER_NONEMPTY
+def trivial_ring : thm := BBasics.trivial_ring
+def TRIVIAL_IMP_FINITE_RING : thm := BBasics.TRIVIAL_IMP_FINITE_RING
+def TRIVIAL_RING_SUBSET : thm := BBasics.TRIVIAL_RING_SUBSET
+def TRIVIAL_RING : thm := BBasics.TRIVIAL_RING
+def TRIVIAL_RING_ALT : thm := BBasics.TRIVIAL_RING_ALT
+def TRIVIAL_RING_10 : thm := BBasics.TRIVIAL_RING_10
+def RING_CARRIER_HAS_SIZE_1 : thm := BBasics.RING_CARRIER_HAS_SIZE_1
+def TRIVIAL_RING_HAS_SIZE_1 : thm := BBasics.TRIVIAL_RING_HAS_SIZE_1
+def RING_CARRIER_HAS_SIZE_2 : thm := BBasics.RING_CARRIER_HAS_SIZE_2
+def singleton_ring : thm := BBasics.singleton_ring
+def SINGLETON_RING : thm := BBasics.SINGLETON_RING
+def TRIVIAL_RING_SINGLETON_RING : thm := BBasics.TRIVIAL_RING_SINGLETON_RING
+def FINITE_SINGLETON_RING : thm := BBasics.FINITE_SINGLETON_RING
 
 -- Numbers
-unsafe def ring_of_num : thm := BNumbers.ring_of_num
-unsafe def ring_of_int : thm := BNumbers.ring_of_int
-unsafe def RING_OF_NUM : thm := BNumbers.RING_OF_NUM
-unsafe def RING_OF_INT : thm := BNumbers.RING_OF_INT
-unsafe def RING_OF_INT_OF_NUM : thm := BNumbers.RING_OF_INT_OF_NUM
-unsafe def RING_OF_NUM_0 : thm := BNumbers.RING_OF_NUM_0
-unsafe def RING_OF_NUM_1 : thm := BNumbers.RING_OF_NUM_1
-unsafe def RING_OF_NUM_ADD : thm := BNumbers.RING_OF_NUM_ADD
-unsafe def RING_OF_NUM_MUL : thm := BNumbers.RING_OF_NUM_MUL
-unsafe def RING_OF_INT_0 : thm := BNumbers.RING_OF_INT_0
-unsafe def RING_OF_INT_1 : thm := BNumbers.RING_OF_INT_1
-unsafe def RING_OF_INT_CASES : thm := BNumbers.RING_OF_INT_CASES
-unsafe def RING_OF_INT_NEG : thm := BNumbers.RING_OF_INT_NEG
-unsafe def RING_OF_INT_ADD : thm := BNumbers.RING_OF_INT_ADD
-unsafe def RING_OF_INT_MUL : thm := BNumbers.RING_OF_INT_MUL
-unsafe def RING_OF_INT_SUB : thm := BNumbers.RING_OF_INT_SUB
-unsafe def RING_OF_NUM_EQ_0 : thm := BNumbers.RING_OF_NUM_EQ_0
-unsafe def RING_CHAR_EQ_0 : thm := BNumbers.RING_CHAR_EQ_0
-unsafe def RING_CHAR_EQ_1 : thm := BNumbers.RING_CHAR_EQ_1
-unsafe def RING_OF_INT_EQ_0 : thm := BNumbers.RING_OF_INT_EQ_0
-unsafe def RING_OF_INT_EQ : thm := BNumbers.RING_OF_INT_EQ
-unsafe def RING_OF_NUM_EQ : thm := BNumbers.RING_OF_NUM_EQ
-unsafe def RING_OF_INT_REM : thm := BNumbers.RING_OF_INT_REM
-unsafe def RING_OF_NUM_MOD : thm := BNumbers.RING_OF_NUM_MOD
-unsafe def RING_OF_NUM_CHAR : thm := BNumbers.RING_OF_NUM_CHAR
-unsafe def RING_CHAR_INFINITE : thm := BNumbers.RING_CHAR_INFINITE
-unsafe def RING_CHAR_FINITE : thm := BNumbers.RING_CHAR_FINITE
-unsafe def RING_CHAR_UNIQUE : thm := BNumbers.RING_CHAR_UNIQUE
-unsafe def ring_pow : thm := BNumbers.ring_pow
-unsafe def RING_POW : thm := BNumbers.RING_POW
-unsafe def RING_POW_ZERO : thm := BNumbers.RING_POW_ZERO
-unsafe def RING_POW_0 : thm := BNumbers.RING_POW_0
-unsafe def RING_POW_1 : thm := BNumbers.RING_POW_1
-unsafe def RING_POW_2 : thm := BNumbers.RING_POW_2
-unsafe def RING_POW_ONE : thm := BNumbers.RING_POW_ONE
-unsafe def RING_POW_ADD : thm := BNumbers.RING_POW_ADD
-unsafe def RING_POW_MUL : thm := BNumbers.RING_POW_MUL
-unsafe def RING_POW_POW : thm := BNumbers.RING_POW_POW
-unsafe def RING_MUL_POW : thm := BNumbers.RING_MUL_POW
-unsafe def RING_OF_NUM_EXP : thm := BNumbers.RING_OF_NUM_EXP
-unsafe def RING_OF_INT_POW : thm := BNumbers.RING_OF_INT_POW
-unsafe def RING_POW_NEG : thm := BNumbers.RING_POW_NEG
-unsafe def RING_POW_IDEMPOTENT : thm := BNumbers.RING_POW_IDEMPOTENT
-unsafe def RING_OF_NUM_CLAUSES : thm := BNumbers.RING_OF_NUM_CLAUSES
-unsafe def RING_OF_INT_CLAUSES : thm := BNumbers.RING_OF_INT_CLAUSES
+def ring_of_num : thm := BNumbers.ring_of_num
+def ring_of_int : thm := BNumbers.ring_of_int
+def RING_OF_NUM : thm := BNumbers.RING_OF_NUM
+def RING_OF_INT : thm := BNumbers.RING_OF_INT
+def RING_OF_INT_OF_NUM : thm := BNumbers.RING_OF_INT_OF_NUM
+def RING_OF_NUM_0 : thm := BNumbers.RING_OF_NUM_0
+def RING_OF_NUM_1 : thm := BNumbers.RING_OF_NUM_1
+def RING_OF_NUM_ADD : thm := BNumbers.RING_OF_NUM_ADD
+def RING_OF_NUM_MUL : thm := BNumbers.RING_OF_NUM_MUL
+def RING_OF_INT_0 : thm := BNumbers.RING_OF_INT_0
+def RING_OF_INT_1 : thm := BNumbers.RING_OF_INT_1
+def RING_OF_INT_CASES : thm := BNumbers.RING_OF_INT_CASES
+def RING_OF_INT_NEG : thm := BNumbers.RING_OF_INT_NEG
+def RING_OF_INT_ADD : thm := BNumbers.RING_OF_INT_ADD
+def RING_OF_INT_MUL : thm := BNumbers.RING_OF_INT_MUL
+def RING_OF_INT_SUB : thm := BNumbers.RING_OF_INT_SUB
+def RING_OF_NUM_EQ_0 : thm := BNumbers.RING_OF_NUM_EQ_0
+def RING_CHAR_EQ_0 : thm := BNumbers.RING_CHAR_EQ_0
+def RING_CHAR_EQ_1 : thm := BNumbers.RING_CHAR_EQ_1
+def RING_OF_INT_EQ_0 : thm := BNumbers.RING_OF_INT_EQ_0
+def RING_OF_INT_EQ : thm := BNumbers.RING_OF_INT_EQ
+def RING_OF_NUM_EQ : thm := BNumbers.RING_OF_NUM_EQ
+def RING_OF_INT_REM : thm := BNumbers.RING_OF_INT_REM
+def RING_OF_NUM_MOD : thm := BNumbers.RING_OF_NUM_MOD
+def RING_OF_NUM_CHAR : thm := BNumbers.RING_OF_NUM_CHAR
+def RING_CHAR_INFINITE : thm := BNumbers.RING_CHAR_INFINITE
+def RING_CHAR_FINITE : thm := BNumbers.RING_CHAR_FINITE
+def RING_CHAR_UNIQUE : thm := BNumbers.RING_CHAR_UNIQUE
+def ring_pow : thm := BNumbers.ring_pow
+def RING_POW : thm := BNumbers.RING_POW
+def RING_POW_ZERO : thm := BNumbers.RING_POW_ZERO
+def RING_POW_0 : thm := BNumbers.RING_POW_0
+def RING_POW_1 : thm := BNumbers.RING_POW_1
+def RING_POW_2 : thm := BNumbers.RING_POW_2
+def RING_POW_ONE : thm := BNumbers.RING_POW_ONE
+def RING_POW_ADD : thm := BNumbers.RING_POW_ADD
+def RING_POW_MUL : thm := BNumbers.RING_POW_MUL
+def RING_POW_POW : thm := BNumbers.RING_POW_POW
+def RING_MUL_POW : thm := BNumbers.RING_MUL_POW
+def RING_OF_NUM_EXP : thm := BNumbers.RING_OF_NUM_EXP
+def RING_OF_INT_POW : thm := BNumbers.RING_OF_INT_POW
+def RING_POW_NEG : thm := BNumbers.RING_POW_NEG
+def RING_POW_IDEMPOTENT : thm := BNumbers.RING_POW_IDEMPOTENT
+def RING_OF_NUM_CLAUSES : thm := BNumbers.RING_OF_NUM_CLAUSES
+def RING_OF_INT_CLAUSES : thm := BNumbers.RING_OF_INT_CLAUSES
 
 -- Sums
-unsafe def ring_sum : thm := BSums.ring_sum
-unsafe def NEUTRAL_RING_ADD : thm := BSums.NEUTRAL_RING_ADD
-unsafe def MONOIDAL_RING_ADD : thm := BSums.MONOIDAL_RING_ADD
-unsafe def RING_SUM : thm := BSums.RING_SUM
-unsafe def RING_SUM_RESTRICT : thm := BSums.RING_SUM_RESTRICT
-unsafe def RING_SUM_SUPPORT : thm := BSums.RING_SUM_SUPPORT
-unsafe def RING_SUM_TRIVIAL : thm := BSums.RING_SUM_TRIVIAL
-unsafe def RING_SUM_CLAUSES : thm := BSums.RING_SUM_CLAUSES
-unsafe def RING_SUM_SING : thm := BSums.RING_SUM_SING
-unsafe def RING_SUM_CLAUSES_NUMSEG_ALT : thm := BSums.RING_SUM_CLAUSES_NUMSEG_ALT
-unsafe def RING_SUM_CLAUSES_NUMSEG : thm := BSums.RING_SUM_CLAUSES_NUMSEG
-unsafe def RING_SUM_CLAUSES_LEFT : thm := BSums.RING_SUM_CLAUSES_LEFT
-unsafe def RING_SUM_CLAUSES_RIGHT : thm := BSums.RING_SUM_CLAUSES_RIGHT
-unsafe def RING_SUM_UNION : thm := BSums.RING_SUM_UNION
-unsafe def RING_SUM_DIFF : thm := BSums.RING_SUM_DIFF
-unsafe def RING_SUM_INCL_EXCL : thm := BSums.RING_SUM_INCL_EXCL
-unsafe def RING_SUM_CLOSED : thm := BSums.RING_SUM_CLOSED
-unsafe def RING_SUM_RELATED : thm := BSums.RING_SUM_RELATED
-unsafe def RING_SUM_EQ_0 : thm := BSums.RING_SUM_EQ_0
-unsafe def RING_SUM_0 : thm := BSums.RING_SUM_0
-unsafe def RING_SUM_DELETE : thm := BSums.RING_SUM_DELETE
-unsafe def RING_SUM_NEG : thm := BSums.RING_SUM_NEG
-unsafe def RING_SUM_ADD : thm := BSums.RING_SUM_ADD
-unsafe def RING_SUM_SUB : thm := BSums.RING_SUM_SUB
-unsafe def RING_SUM_EQ : thm := BSums.RING_SUM_EQ
-unsafe def RING_SUM_DELTA : thm := BSums.RING_SUM_DELTA
-unsafe def RING_SUM_LMUL : thm := BSums.RING_SUM_LMUL
-unsafe def RING_SUM_RMUL : thm := BSums.RING_SUM_RMUL
-unsafe def RING_SUM_SWAP : thm := BSums.RING_SUM_SWAP
-unsafe def RING_SUM_REFLECT : thm := BSums.RING_SUM_REFLECT
-unsafe def RING_SUM_SUM_PRODUCT : thm := BSums.RING_SUM_SUM_PRODUCT
-unsafe def RING_SUM_SUPERSET : thm := BSums.RING_SUM_SUPERSET
-unsafe def RING_SUM_RESTRICT_SET : thm := BSums.RING_SUM_RESTRICT_SET
-unsafe def RING_SUM_CASES : thm := BSums.RING_SUM_CASES
-unsafe def RING_SUM_IMAGE : thm := BSums.RING_SUM_IMAGE
-unsafe def RING_SUM_EQ_GENERAL_INVERSES : thm := BSums.RING_SUM_EQ_GENERAL_INVERSES
-unsafe def RING_SUM_OFFSET : thm := BSums.RING_SUM_OFFSET
-unsafe def RING_SUM_CONST : thm := BSums.RING_SUM_CONST
-unsafe def RING_SUM_IMAGE_GEN : thm := BSums.RING_SUM_IMAGE_GEN
-unsafe def RING_BINOMIAL_THEOREM : thm := BSums.RING_BINOMIAL_THEOREM
-unsafe def RING_BINOMIAL_FRESHMAN : thm := BSums.RING_BINOMIAL_FRESHMAN
-unsafe def RING_SUM_DIFFS : thm := BSums.RING_SUM_DIFFS
-unsafe def RING_SUM_DIFFS_ALT : thm := BSums.RING_SUM_DIFFS_ALT
-unsafe def RING_GEOM_SERIES_GEN : thm := BSums.RING_GEOM_SERIES_GEN
-unsafe def RING_GEOM_SERIES : thm := BSums.RING_GEOM_SERIES
+def ring_sum : thm := BSums.ring_sum
+def NEUTRAL_RING_ADD : thm := BSums.NEUTRAL_RING_ADD
+def MONOIDAL_RING_ADD : thm := BSums.MONOIDAL_RING_ADD
+def RING_SUM : thm := BSums.RING_SUM
+def RING_SUM_RESTRICT : thm := BSums.RING_SUM_RESTRICT
+def RING_SUM_SUPPORT : thm := BSums.RING_SUM_SUPPORT
+def RING_SUM_TRIVIAL : thm := BSums.RING_SUM_TRIVIAL
+def RING_SUM_CLAUSES : thm := BSums.RING_SUM_CLAUSES
+def RING_SUM_SING : thm := BSums.RING_SUM_SING
+def RING_SUM_CLAUSES_NUMSEG_ALT : thm := BSums.RING_SUM_CLAUSES_NUMSEG_ALT
+def RING_SUM_CLAUSES_NUMSEG : thm := BSums.RING_SUM_CLAUSES_NUMSEG
+def RING_SUM_CLAUSES_LEFT : thm := BSums.RING_SUM_CLAUSES_LEFT
+def RING_SUM_CLAUSES_RIGHT : thm := BSums.RING_SUM_CLAUSES_RIGHT
+def RING_SUM_UNION : thm := BSums.RING_SUM_UNION
+def RING_SUM_DIFF : thm := BSums.RING_SUM_DIFF
+def RING_SUM_INCL_EXCL : thm := BSums.RING_SUM_INCL_EXCL
+def RING_SUM_CLOSED : thm := BSums.RING_SUM_CLOSED
+def RING_SUM_RELATED : thm := BSums.RING_SUM_RELATED
+def RING_SUM_EQ_0 : thm := BSums.RING_SUM_EQ_0
+def RING_SUM_0 : thm := BSums.RING_SUM_0
+def RING_SUM_DELETE : thm := BSums.RING_SUM_DELETE
+def RING_SUM_NEG : thm := BSums.RING_SUM_NEG
+def RING_SUM_ADD : thm := BSums.RING_SUM_ADD
+def RING_SUM_SUB : thm := BSums.RING_SUM_SUB
+def RING_SUM_EQ : thm := BSums.RING_SUM_EQ
+def RING_SUM_DELTA : thm := BSums.RING_SUM_DELTA
+def RING_SUM_LMUL : thm := BSums.RING_SUM_LMUL
+def RING_SUM_RMUL : thm := BSums.RING_SUM_RMUL
+def RING_SUM_SWAP : thm := BSums.RING_SUM_SWAP
+def RING_SUM_REFLECT : thm := BSums.RING_SUM_REFLECT
+def RING_SUM_SUM_PRODUCT : thm := BSums.RING_SUM_SUM_PRODUCT
+def RING_SUM_SUPERSET : thm := BSums.RING_SUM_SUPERSET
+def RING_SUM_RESTRICT_SET : thm := BSums.RING_SUM_RESTRICT_SET
+def RING_SUM_CASES : thm := BSums.RING_SUM_CASES
+def RING_SUM_IMAGE : thm := BSums.RING_SUM_IMAGE
+def RING_SUM_EQ_GENERAL_INVERSES : thm := BSums.RING_SUM_EQ_GENERAL_INVERSES
+def RING_SUM_OFFSET : thm := BSums.RING_SUM_OFFSET
+def RING_SUM_CONST : thm := BSums.RING_SUM_CONST
+def RING_SUM_IMAGE_GEN : thm := BSums.RING_SUM_IMAGE_GEN
+def RING_BINOMIAL_THEOREM : thm := BSums.RING_BINOMIAL_THEOREM
+def RING_BINOMIAL_FRESHMAN : thm := BSums.RING_BINOMIAL_FRESHMAN
+def RING_SUM_DIFFS : thm := BSums.RING_SUM_DIFFS
+def RING_SUM_DIFFS_ALT : thm := BSums.RING_SUM_DIFFS_ALT
+def RING_GEOM_SERIES_GEN : thm := BSums.RING_GEOM_SERIES_GEN
+def RING_GEOM_SERIES : thm := BSums.RING_GEOM_SERIES
 
 -- Products
-unsafe def ring_product : thm := BProducts.ring_product
-unsafe def NEUTRAL_RING_MUL : thm := BProducts.NEUTRAL_RING_MUL
-unsafe def MONOIDAL_RING_MUL : thm := BProducts.MONOIDAL_RING_MUL
-unsafe def RING_PRODUCT : thm := BProducts.RING_PRODUCT
-unsafe def RING_PRODUCT_RESTRICT : thm := BProducts.RING_PRODUCT_RESTRICT
-unsafe def RING_PRODUCT_SUPPORT : thm := BProducts.RING_PRODUCT_SUPPORT
-unsafe def RING_PRODUCT_TRIVIAL : thm := BProducts.RING_PRODUCT_TRIVIAL
-unsafe def RING_PRODUCT_CLAUSES : thm := BProducts.RING_PRODUCT_CLAUSES
-unsafe def RING_PRODUCT_SING : thm := BProducts.RING_PRODUCT_SING
-unsafe def RING_PRODUCT_CLAUSES_NUMSEG_ALT : thm := BProducts.RING_PRODUCT_CLAUSES_NUMSEG_ALT
-unsafe def RING_PRODUCT_CLAUSES_NUMSEG : thm := BProducts.RING_PRODUCT_CLAUSES_NUMSEG
-unsafe def RING_PRODUCT_CLAUSES_LEFT : thm := BProducts.RING_PRODUCT_CLAUSES_LEFT
-unsafe def RING_PRODUCT_UNION : thm := BProducts.RING_PRODUCT_UNION
-unsafe def RING_PRODUCT_INCL_EXCL : thm := BProducts.RING_PRODUCT_INCL_EXCL
-unsafe def RING_PRODUCT_CLOSED : thm := BProducts.RING_PRODUCT_CLOSED
-unsafe def RING_PRODUCT_RELATED : thm := BProducts.RING_PRODUCT_RELATED
-unsafe def RING_PRODUCT_EQ_1 : thm := BProducts.RING_PRODUCT_EQ_1
-unsafe def RING_PRODUCT_1 : thm := BProducts.RING_PRODUCT_1
-unsafe def RING_PRODUCT_0 : thm := BProducts.RING_PRODUCT_0
-unsafe def RING_PRODUCT_MUL : thm := BProducts.RING_PRODUCT_MUL
-unsafe def RING_PRODUCT_EQ : thm := BProducts.RING_PRODUCT_EQ
-unsafe def RING_PRODUCT_DELTA : thm := BProducts.RING_PRODUCT_DELTA
-unsafe def RING_PRODUCT_CONST : thm := BProducts.RING_PRODUCT_CONST
-unsafe def RING_PRODUCT_LMUL : thm := BProducts.RING_PRODUCT_LMUL
-unsafe def RING_PRODUCT_SWAP : thm := BProducts.RING_PRODUCT_SWAP
-unsafe def RING_PRODUCT_REFLECT : thm := BProducts.RING_PRODUCT_REFLECT
-unsafe def RING_PRODUCT_SUPERSET : thm := BProducts.RING_PRODUCT_SUPERSET
-unsafe def RING_PRODUCT_RESTRICT_SET : thm := BProducts.RING_PRODUCT_RESTRICT_SET
-unsafe def RING_PRODUCT_CASES : thm := BProducts.RING_PRODUCT_CASES
-unsafe def RING_PRODUCT_IMAGE : thm := BProducts.RING_PRODUCT_IMAGE
-unsafe def RING_PRODUCT_EQ_GENERAL_INVERSES : thm := BProducts.RING_PRODUCT_EQ_GENERAL_INVERSES
-unsafe def RING_PRODUCT_OFFSET : thm := BProducts.RING_PRODUCT_OFFSET
-unsafe def RING_PRODUCT_IMAGE_GEN : thm := BProducts.RING_PRODUCT_IMAGE_GEN
-unsafe def RING_PRODUCT_NSUM : thm := BProducts.RING_PRODUCT_NSUM
+def ring_product : thm := BProducts.ring_product
+def NEUTRAL_RING_MUL : thm := BProducts.NEUTRAL_RING_MUL
+def MONOIDAL_RING_MUL : thm := BProducts.MONOIDAL_RING_MUL
+def RING_PRODUCT : thm := BProducts.RING_PRODUCT
+def RING_PRODUCT_RESTRICT : thm := BProducts.RING_PRODUCT_RESTRICT
+def RING_PRODUCT_SUPPORT : thm := BProducts.RING_PRODUCT_SUPPORT
+def RING_PRODUCT_TRIVIAL : thm := BProducts.RING_PRODUCT_TRIVIAL
+def RING_PRODUCT_CLAUSES : thm := BProducts.RING_PRODUCT_CLAUSES
+def RING_PRODUCT_SING : thm := BProducts.RING_PRODUCT_SING
+def RING_PRODUCT_CLAUSES_NUMSEG_ALT : thm := BProducts.RING_PRODUCT_CLAUSES_NUMSEG_ALT
+def RING_PRODUCT_CLAUSES_NUMSEG : thm := BProducts.RING_PRODUCT_CLAUSES_NUMSEG
+def RING_PRODUCT_CLAUSES_LEFT : thm := BProducts.RING_PRODUCT_CLAUSES_LEFT
+def RING_PRODUCT_UNION : thm := BProducts.RING_PRODUCT_UNION
+def RING_PRODUCT_INCL_EXCL : thm := BProducts.RING_PRODUCT_INCL_EXCL
+def RING_PRODUCT_CLOSED : thm := BProducts.RING_PRODUCT_CLOSED
+def RING_PRODUCT_RELATED : thm := BProducts.RING_PRODUCT_RELATED
+def RING_PRODUCT_EQ_1 : thm := BProducts.RING_PRODUCT_EQ_1
+def RING_PRODUCT_1 : thm := BProducts.RING_PRODUCT_1
+def RING_PRODUCT_0 : thm := BProducts.RING_PRODUCT_0
+def RING_PRODUCT_MUL : thm := BProducts.RING_PRODUCT_MUL
+def RING_PRODUCT_EQ : thm := BProducts.RING_PRODUCT_EQ
+def RING_PRODUCT_DELTA : thm := BProducts.RING_PRODUCT_DELTA
+def RING_PRODUCT_CONST : thm := BProducts.RING_PRODUCT_CONST
+def RING_PRODUCT_LMUL : thm := BProducts.RING_PRODUCT_LMUL
+def RING_PRODUCT_SWAP : thm := BProducts.RING_PRODUCT_SWAP
+def RING_PRODUCT_REFLECT : thm := BProducts.RING_PRODUCT_REFLECT
+def RING_PRODUCT_SUPERSET : thm := BProducts.RING_PRODUCT_SUPERSET
+def RING_PRODUCT_RESTRICT_SET : thm := BProducts.RING_PRODUCT_RESTRICT_SET
+def RING_PRODUCT_CASES : thm := BProducts.RING_PRODUCT_CASES
+def RING_PRODUCT_IMAGE : thm := BProducts.RING_PRODUCT_IMAGE
+def RING_PRODUCT_EQ_GENERAL_INVERSES : thm := BProducts.RING_PRODUCT_EQ_GENERAL_INVERSES
+def RING_PRODUCT_OFFSET : thm := BProducts.RING_PRODUCT_OFFSET
+def RING_PRODUCT_IMAGE_GEN : thm := BProducts.RING_PRODUCT_IMAGE_GEN
+def RING_PRODUCT_NSUM : thm := BProducts.RING_PRODUCT_NSUM
 
 -- Divides
-unsafe def ring_divides : thm := BDivides.ring_divides
-unsafe def ring_zerodivisor : thm := BDivides.ring_zerodivisor
-unsafe def ring_regular : thm := BDivides.ring_regular
-unsafe def ring_nilpotent : thm := BDivides.ring_nilpotent
-unsafe def ring_unit : thm := BDivides.ring_unit
-unsafe def ring_associates : thm := BDivides.ring_associates
-unsafe def ring_coprime : thm := BDivides.ring_coprime
-unsafe def ring_inv : thm := BDivides.ring_inv
-unsafe def ring_div : thm := BDivides.ring_div
-unsafe def RING_DIVIDES_ALT : thm := BDivides.RING_DIVIDES_ALT
-unsafe def RING_DIVIDES_IN_CARRIER : thm := BDivides.RING_DIVIDES_IN_CARRIER
-unsafe def RING_ZERODIVISOR_IN_CARRIER : thm := BDivides.RING_ZERODIVISOR_IN_CARRIER
-unsafe def RING_REGULAR_IN_CARRIER : thm := BDivides.RING_REGULAR_IN_CARRIER
-unsafe def RING_NILPOTENT_IN_CARRIER : thm := BDivides.RING_NILPOTENT_IN_CARRIER
-unsafe def RING_UNIT_IN_CARRIER : thm := BDivides.RING_UNIT_IN_CARRIER
-unsafe def RING_ASSOCIATES_IN_CARRIER : thm := BDivides.RING_ASSOCIATES_IN_CARRIER
-unsafe def RING_COPRIME_IN_CARRIER : thm := BDivides.RING_COPRIME_IN_CARRIER
-unsafe def RING_INV : thm := BDivides.RING_INV
-unsafe def RING_MUL_RINV : thm := BDivides.RING_MUL_RINV
-unsafe def RING_MUL_LINV : thm := BDivides.RING_MUL_LINV
-unsafe def RING_DIV : thm := BDivides.RING_DIV
-unsafe def RING_CLAUSES : thm := BDivides.RING_CLAUSES
-unsafe def RING_RINV_UNIQUE : thm := BDivides.RING_RINV_UNIQUE
-unsafe def RING_LINV_UNIQUE : thm := BDivides.RING_LINV_UNIQUE
-unsafe def RING_INV_1 : thm := BDivides.RING_INV_1
-unsafe def RING_DIV_1 : thm := BDivides.RING_DIV_1
-unsafe def RING_1_DIV : thm := BDivides.RING_1_DIV
-unsafe def RING_INV_ZERO : thm := BDivides.RING_INV_ZERO
-unsafe def RING_INV_MUL : thm := BDivides.RING_INV_MUL
-unsafe def RING_INV_POW : thm := BDivides.RING_INV_POW
-unsafe def RING_POW_INV : thm := BDivides.RING_POW_INV
-unsafe def RING_INV_INV : thm := BDivides.RING_INV_INV
-unsafe def RING_MUL_RINV_EQ : thm := BDivides.RING_MUL_RINV_EQ
-unsafe def RING_MUL_LINV_EQ : thm := BDivides.RING_MUL_LINV_EQ
-unsafe def RING_UNIT_DIVIDES : thm := BDivides.RING_UNIT_DIVIDES
-unsafe def RING_UNIT_0 : thm := BDivides.RING_UNIT_0
-unsafe def RING_INV_0 : thm := BDivides.RING_INV_0
-unsafe def RING_UNIT_1 : thm := BDivides.RING_UNIT_1
-unsafe def RING_UNIT_NEG : thm := BDivides.RING_UNIT_NEG
-unsafe def RING_UNIT_NEG_EQ : thm := BDivides.RING_UNIT_NEG_EQ
-unsafe def RING_UNIT_INV : thm := BDivides.RING_UNIT_INV
-unsafe def RING_UNIT_MUL : thm := BDivides.RING_UNIT_MUL
-unsafe def RING_UNIT_DIV : thm := BDivides.RING_UNIT_DIV
-unsafe def RING_MUL_IMP_UNITS : thm := BDivides.RING_MUL_IMP_UNITS
-unsafe def RING_UNIT_MUL_EQ : thm := BDivides.RING_UNIT_MUL_EQ
-unsafe def RING_UNIT_POW : thm := BDivides.RING_UNIT_POW
-unsafe def RING_UNIT_POW_EQ : thm := BDivides.RING_UNIT_POW_EQ
-unsafe def RING_UNIT_DIVIDES_ANY : thm := BDivides.RING_UNIT_DIVIDES_ANY
-unsafe def RING_UNIT_DIVISOR : thm := BDivides.RING_UNIT_DIVISOR
-unsafe def RING_UNIT_PRODUCT : thm := BDivides.RING_UNIT_PRODUCT
-unsafe def RING_MUL_LCANCEL : thm := BDivides.RING_MUL_LCANCEL
-unsafe def RING_MUL_RCANCEL : thm := BDivides.RING_MUL_RCANCEL
-unsafe def RING_DIVIDES_REFL : thm := BDivides.RING_DIVIDES_REFL
-unsafe def RING_DIVIDES_TRANS : thm := BDivides.RING_DIVIDES_TRANS
-unsafe def RING_DIVIDES_MORE_DIVISORS : thm := BDivides.RING_DIVIDES_MORE_DIVISORS
-unsafe def RING_DIVIDES_ANTISYM : thm := BDivides.RING_DIVIDES_ANTISYM
-unsafe def RING_DIVIDES_ASSOCIATES : thm := BDivides.RING_DIVIDES_ASSOCIATES
-unsafe def RING_DIVIDES_0 : thm := BDivides.RING_DIVIDES_0
-unsafe def RING_DIVIDES_ZERO : thm := BDivides.RING_DIVIDES_ZERO
-unsafe def RING_DIVIDES_1 : thm := BDivides.RING_DIVIDES_1
-unsafe def RING_DIVIDES_ONE : thm := BDivides.RING_DIVIDES_ONE
-unsafe def RING_UNIT_DIVIDES_ALL : thm := BDivides.RING_UNIT_DIVIDES_ALL
-unsafe def RING_DIVIDES_ADD : thm := BDivides.RING_DIVIDES_ADD
-unsafe def RING_DIVIDES_SUB : thm := BDivides.RING_DIVIDES_SUB
-unsafe def RING_DIVIDES_LNEG : thm := BDivides.RING_DIVIDES_LNEG
-unsafe def RING_DIVIDES_NEG : thm := BDivides.RING_DIVIDES_NEG
-unsafe def RING_DIVIDES_NEG_EQ : thm := BDivides.RING_DIVIDES_NEG_EQ
-unsafe def RING_DIVIDES_RMUL : thm := BDivides.RING_DIVIDES_RMUL
-unsafe def RING_DIVIDES_LMUL : thm := BDivides.RING_DIVIDES_LMUL
-unsafe def RING_DIVIDES_LMUL_REV : thm := BDivides.RING_DIVIDES_LMUL_REV
-unsafe def RING_DIVIDES_RMUL_REV : thm := BDivides.RING_DIVIDES_RMUL_REV
-unsafe def RING_DIVIDES_MUL2 : thm := BDivides.RING_DIVIDES_MUL2
-unsafe def RING_DIVIDES_LMUL2 : thm := BDivides.RING_DIVIDES_LMUL2
-unsafe def RING_DIVIDES_RMUL2 : thm := BDivides.RING_DIVIDES_RMUL2
-unsafe def RING_DIVIDES_SUB_POW : thm := BDivides.RING_DIVIDES_SUB_POW
-unsafe def RING_DIVIDES_PRODUCTS : thm := BDivides.RING_DIVIDES_PRODUCTS
-unsafe def RING_DIVIDES_PRODUCT_SUBSET : thm := BDivides.RING_DIVIDES_PRODUCT_SUBSET
-unsafe def RING_ASSOCIATES_REFL : thm := BDivides.RING_ASSOCIATES_REFL
-unsafe def RING_ASSOCIATES_SYM : thm := BDivides.RING_ASSOCIATES_SYM
-unsafe def RING_ASSOCIATES_TRANS : thm := BDivides.RING_ASSOCIATES_TRANS
-unsafe def RING_ASSOCIATES_SAME_DIVISORS : thm := BDivides.RING_ASSOCIATES_SAME_DIVISORS
-unsafe def RING_ASSOCIATES_0 : thm := BDivides.RING_ASSOCIATES_0
-unsafe def RING_ASSOCIATES_1 : thm := BDivides.RING_ASSOCIATES_1
-unsafe def RING_ASSOCIATES_LNEG : thm := BDivides.RING_ASSOCIATES_LNEG
-unsafe def RING_ASSOCIATES_NEG : thm := BDivides.RING_ASSOCIATES_NEG
-unsafe def RING_ASSOCIATES_NEG_EQ : thm := BDivides.RING_ASSOCIATES_NEG_EQ
-unsafe def RING_ASSOCIATES_MUL : thm := BDivides.RING_ASSOCIATES_MUL
-unsafe def RING_ASSOCIATES_POW : thm := BDivides.RING_ASSOCIATES_POW
-unsafe def RING_ASSOCIATES_PRODUCT : thm := BDivides.RING_ASSOCIATES_PRODUCT
-unsafe def RING_ZERODIVISOR_0 : thm := BDivides.RING_ZERODIVISOR_0
-unsafe def RING_REGULAR_0 : thm := BDivides.RING_REGULAR_0
-unsafe def RING_ZERODIVISOR_1 : thm := BDivides.RING_ZERODIVISOR_1
-unsafe def RING_REGULAR_1 : thm := BDivides.RING_REGULAR_1
-unsafe def RING_ZERODIVISOR_LMUL : thm := BDivides.RING_ZERODIVISOR_LMUL
-unsafe def RING_ZERODIVISOR_RMUL : thm := BDivides.RING_ZERODIVISOR_RMUL
-unsafe def RING_ZERODIVISOR_MUL : thm := BDivides.RING_ZERODIVISOR_MUL
-unsafe def RING_ZERODIVISOR_POW : thm := BDivides.RING_ZERODIVISOR_POW
-unsafe def RING_REGULAR_MUL_EQ : thm := BDivides.RING_REGULAR_MUL_EQ
-unsafe def RING_REGULAR_POW : thm := BDivides.RING_REGULAR_POW
-unsafe def RING_REGULAR_MUL : thm := BDivides.RING_REGULAR_MUL
-unsafe def RING_ZERODIVISOR_NEG : thm := BDivides.RING_ZERODIVISOR_NEG
-unsafe def RING_ZERODIVISOR_NEG_EQ : thm := BDivides.RING_ZERODIVISOR_NEG_EQ
-unsafe def RING_REGULAR_NEG : thm := BDivides.RING_REGULAR_NEG
-unsafe def RING_REGULAR_NEG_EQ : thm := BDivides.RING_REGULAR_NEG_EQ
-unsafe def RING_ZERODIVISOR_IMP_NONUNIT : thm := BDivides.RING_ZERODIVISOR_IMP_NONUNIT
-unsafe def RING_UNIT_IMP_REGULAR : thm := BDivides.RING_UNIT_IMP_REGULAR
-unsafe def RING_DIVIDES_UNIT : thm := BDivides.RING_DIVIDES_UNIT
-unsafe def RING_COPRIME_REFL : thm := BDivides.RING_COPRIME_REFL
-unsafe def RING_COPRIME_SYM : thm := BDivides.RING_COPRIME_SYM
-unsafe def RING_COPRIME_0 : thm := BDivides.RING_COPRIME_0
-unsafe def RING_COPRIME_00 : thm := BDivides.RING_COPRIME_00
-unsafe def RING_COPRIME_DIVISORS : thm := BDivides.RING_COPRIME_DIVISORS
-unsafe def RING_COPRIME_UNIT : thm := BDivides.RING_COPRIME_UNIT
-unsafe def RING_ASSOCIATES_RMUL : thm := BDivides.RING_ASSOCIATES_RMUL
-unsafe def RING_ASSOCIATES_LMUL : thm := BDivides.RING_ASSOCIATES_LMUL
-unsafe def RING_ASSOCIATES_DIVIDES : thm := BDivides.RING_ASSOCIATES_DIVIDES
-unsafe def RING_ASSOCIATES_ASSOCIATES : thm := BDivides.RING_ASSOCIATES_ASSOCIATES
-unsafe def RING_ASSOCIATES_UNIT : thm := BDivides.RING_ASSOCIATES_UNIT
-unsafe def RING_ASSOCIATES_EQ_0 : thm := BDivides.RING_ASSOCIATES_EQ_0
-unsafe def RING_ASSOCIATES_COPRIME : thm := BDivides.RING_ASSOCIATES_COPRIME
-unsafe def RING_ASSOCIATES_ZERODIVISOR : thm := BDivides.RING_ASSOCIATES_ZERODIVISOR
-unsafe def RING_ASSOCIATES_REGULAR : thm := BDivides.RING_ASSOCIATES_REGULAR
-unsafe def RING_ASSOCIATES_NILPOTENT : thm := BDivides.RING_ASSOCIATES_NILPOTENT
-unsafe def RING_NILPOTENT_0 : thm := BDivides.RING_NILPOTENT_0
-unsafe def RING_NILPOTENT_1 : thm := BDivides.RING_NILPOTENT_1
-unsafe def RING_NILPOTENT : thm := BDivides.RING_NILPOTENT
-unsafe def RING_NILPOTENT_POW : thm := BDivides.RING_NILPOTENT_POW
-unsafe def RING_NILPOTENT_IMP_ZERODIVISOR : thm := BDivides.RING_NILPOTENT_IMP_ZERODIVISOR
-unsafe def RING_NILPOTENT_NEG : thm := BDivides.RING_NILPOTENT_NEG
-unsafe def RING_NILPOTENT_NEG_EQ : thm := BDivides.RING_NILPOTENT_NEG_EQ
-unsafe def RING_UNIT_IDEMPOTENT_EQ_1 : thm := BDivides.RING_UNIT_IDEMPOTENT_EQ_1
+def ring_divides : thm := BDivides.ring_divides
+def ring_zerodivisor : thm := BDivides.ring_zerodivisor
+def ring_regular : thm := BDivides.ring_regular
+def ring_nilpotent : thm := BDivides.ring_nilpotent
+def ring_unit : thm := BDivides.ring_unit
+def ring_associates : thm := BDivides.ring_associates
+def ring_coprime : thm := BDivides.ring_coprime
+def ring_inv : thm := BDivides.ring_inv
+def ring_div : thm := BDivides.ring_div
+def RING_DIVIDES_ALT : thm := BDivides.RING_DIVIDES_ALT
+def RING_DIVIDES_IN_CARRIER : thm := BDivides.RING_DIVIDES_IN_CARRIER
+def RING_ZERODIVISOR_IN_CARRIER : thm := BDivides.RING_ZERODIVISOR_IN_CARRIER
+def RING_REGULAR_IN_CARRIER : thm := BDivides.RING_REGULAR_IN_CARRIER
+def RING_NILPOTENT_IN_CARRIER : thm := BDivides.RING_NILPOTENT_IN_CARRIER
+def RING_UNIT_IN_CARRIER : thm := BDivides.RING_UNIT_IN_CARRIER
+def RING_ASSOCIATES_IN_CARRIER : thm := BDivides.RING_ASSOCIATES_IN_CARRIER
+def RING_COPRIME_IN_CARRIER : thm := BDivides.RING_COPRIME_IN_CARRIER
+def RING_INV : thm := BDivides.RING_INV
+def RING_MUL_RINV : thm := BDivides.RING_MUL_RINV
+def RING_MUL_LINV : thm := BDivides.RING_MUL_LINV
+def RING_DIV : thm := BDivides.RING_DIV
+def RING_CLAUSES : thm := BDivides.RING_CLAUSES
+def RING_RINV_UNIQUE : thm := BDivides.RING_RINV_UNIQUE
+def RING_LINV_UNIQUE : thm := BDivides.RING_LINV_UNIQUE
+def RING_INV_1 : thm := BDivides.RING_INV_1
+def RING_DIV_1 : thm := BDivides.RING_DIV_1
+def RING_1_DIV : thm := BDivides.RING_1_DIV
+def RING_INV_ZERO : thm := BDivides.RING_INV_ZERO
+def RING_INV_MUL : thm := BDivides.RING_INV_MUL
+def RING_INV_POW : thm := BDivides.RING_INV_POW
+def RING_POW_INV : thm := BDivides.RING_POW_INV
+def RING_INV_INV : thm := BDivides.RING_INV_INV
+def RING_MUL_RINV_EQ : thm := BDivides.RING_MUL_RINV_EQ
+def RING_MUL_LINV_EQ : thm := BDivides.RING_MUL_LINV_EQ
+def RING_UNIT_DIVIDES : thm := BDivides.RING_UNIT_DIVIDES
+def RING_UNIT_0 : thm := BDivides.RING_UNIT_0
+def RING_INV_0 : thm := BDivides.RING_INV_0
+def RING_UNIT_1 : thm := BDivides.RING_UNIT_1
+def RING_UNIT_NEG : thm := BDivides.RING_UNIT_NEG
+def RING_UNIT_NEG_EQ : thm := BDivides.RING_UNIT_NEG_EQ
+def RING_UNIT_INV : thm := BDivides.RING_UNIT_INV
+def RING_UNIT_MUL : thm := BDivides.RING_UNIT_MUL
+def RING_UNIT_DIV : thm := BDivides.RING_UNIT_DIV
+def RING_MUL_IMP_UNITS : thm := BDivides.RING_MUL_IMP_UNITS
+def RING_UNIT_MUL_EQ : thm := BDivides.RING_UNIT_MUL_EQ
+def RING_UNIT_POW : thm := BDivides.RING_UNIT_POW
+def RING_UNIT_POW_EQ : thm := BDivides.RING_UNIT_POW_EQ
+def RING_UNIT_DIVIDES_ANY : thm := BDivides.RING_UNIT_DIVIDES_ANY
+def RING_UNIT_DIVISOR : thm := BDivides.RING_UNIT_DIVISOR
+def RING_UNIT_PRODUCT : thm := BDivides.RING_UNIT_PRODUCT
+def RING_MUL_LCANCEL : thm := BDivides.RING_MUL_LCANCEL
+def RING_MUL_RCANCEL : thm := BDivides.RING_MUL_RCANCEL
+def RING_DIVIDES_REFL : thm := BDivides.RING_DIVIDES_REFL
+def RING_DIVIDES_TRANS : thm := BDivides.RING_DIVIDES_TRANS
+def RING_DIVIDES_MORE_DIVISORS : thm := BDivides.RING_DIVIDES_MORE_DIVISORS
+def RING_DIVIDES_ANTISYM : thm := BDivides.RING_DIVIDES_ANTISYM
+def RING_DIVIDES_ASSOCIATES : thm := BDivides.RING_DIVIDES_ASSOCIATES
+def RING_DIVIDES_0 : thm := BDivides.RING_DIVIDES_0
+def RING_DIVIDES_ZERO : thm := BDivides.RING_DIVIDES_ZERO
+def RING_DIVIDES_1 : thm := BDivides.RING_DIVIDES_1
+def RING_DIVIDES_ONE : thm := BDivides.RING_DIVIDES_ONE
+def RING_UNIT_DIVIDES_ALL : thm := BDivides.RING_UNIT_DIVIDES_ALL
+def RING_DIVIDES_ADD : thm := BDivides.RING_DIVIDES_ADD
+def RING_DIVIDES_SUB : thm := BDivides.RING_DIVIDES_SUB
+def RING_DIVIDES_LNEG : thm := BDivides.RING_DIVIDES_LNEG
+def RING_DIVIDES_NEG : thm := BDivides.RING_DIVIDES_NEG
+def RING_DIVIDES_NEG_EQ : thm := BDivides.RING_DIVIDES_NEG_EQ
+def RING_DIVIDES_RMUL : thm := BDivides.RING_DIVIDES_RMUL
+def RING_DIVIDES_LMUL : thm := BDivides.RING_DIVIDES_LMUL
+def RING_DIVIDES_LMUL_REV : thm := BDivides.RING_DIVIDES_LMUL_REV
+def RING_DIVIDES_RMUL_REV : thm := BDivides.RING_DIVIDES_RMUL_REV
+def RING_DIVIDES_MUL2 : thm := BDivides.RING_DIVIDES_MUL2
+def RING_DIVIDES_LMUL2 : thm := BDivides.RING_DIVIDES_LMUL2
+def RING_DIVIDES_RMUL2 : thm := BDivides.RING_DIVIDES_RMUL2
+def RING_DIVIDES_SUB_POW : thm := BDivides.RING_DIVIDES_SUB_POW
+def RING_DIVIDES_PRODUCTS : thm := BDivides.RING_DIVIDES_PRODUCTS
+def RING_DIVIDES_PRODUCT_SUBSET : thm := BDivides.RING_DIVIDES_PRODUCT_SUBSET
+def RING_ASSOCIATES_REFL : thm := BDivides.RING_ASSOCIATES_REFL
+def RING_ASSOCIATES_SYM : thm := BDivides.RING_ASSOCIATES_SYM
+def RING_ASSOCIATES_TRANS : thm := BDivides.RING_ASSOCIATES_TRANS
+def RING_ASSOCIATES_SAME_DIVISORS : thm := BDivides.RING_ASSOCIATES_SAME_DIVISORS
+def RING_ASSOCIATES_0 : thm := BDivides.RING_ASSOCIATES_0
+def RING_ASSOCIATES_1 : thm := BDivides.RING_ASSOCIATES_1
+def RING_ASSOCIATES_LNEG : thm := BDivides.RING_ASSOCIATES_LNEG
+def RING_ASSOCIATES_NEG : thm := BDivides.RING_ASSOCIATES_NEG
+def RING_ASSOCIATES_NEG_EQ : thm := BDivides.RING_ASSOCIATES_NEG_EQ
+def RING_ASSOCIATES_MUL : thm := BDivides.RING_ASSOCIATES_MUL
+def RING_ASSOCIATES_POW : thm := BDivides.RING_ASSOCIATES_POW
+def RING_ASSOCIATES_PRODUCT : thm := BDivides.RING_ASSOCIATES_PRODUCT
+def RING_ZERODIVISOR_0 : thm := BDivides.RING_ZERODIVISOR_0
+def RING_REGULAR_0 : thm := BDivides.RING_REGULAR_0
+def RING_ZERODIVISOR_1 : thm := BDivides.RING_ZERODIVISOR_1
+def RING_REGULAR_1 : thm := BDivides.RING_REGULAR_1
+def RING_ZERODIVISOR_LMUL : thm := BDivides.RING_ZERODIVISOR_LMUL
+def RING_ZERODIVISOR_RMUL : thm := BDivides.RING_ZERODIVISOR_RMUL
+def RING_ZERODIVISOR_MUL : thm := BDivides.RING_ZERODIVISOR_MUL
+def RING_ZERODIVISOR_POW : thm := BDivides.RING_ZERODIVISOR_POW
+def RING_REGULAR_MUL_EQ : thm := BDivides.RING_REGULAR_MUL_EQ
+def RING_REGULAR_POW : thm := BDivides.RING_REGULAR_POW
+def RING_REGULAR_MUL : thm := BDivides.RING_REGULAR_MUL
+def RING_ZERODIVISOR_NEG : thm := BDivides.RING_ZERODIVISOR_NEG
+def RING_ZERODIVISOR_NEG_EQ : thm := BDivides.RING_ZERODIVISOR_NEG_EQ
+def RING_REGULAR_NEG : thm := BDivides.RING_REGULAR_NEG
+def RING_REGULAR_NEG_EQ : thm := BDivides.RING_REGULAR_NEG_EQ
+def RING_ZERODIVISOR_IMP_NONUNIT : thm := BDivides.RING_ZERODIVISOR_IMP_NONUNIT
+def RING_UNIT_IMP_REGULAR : thm := BDivides.RING_UNIT_IMP_REGULAR
+def RING_DIVIDES_UNIT : thm := BDivides.RING_DIVIDES_UNIT
+def RING_COPRIME_REFL : thm := BDivides.RING_COPRIME_REFL
+def RING_COPRIME_SYM : thm := BDivides.RING_COPRIME_SYM
+def RING_COPRIME_0 : thm := BDivides.RING_COPRIME_0
+def RING_COPRIME_00 : thm := BDivides.RING_COPRIME_00
+def RING_COPRIME_DIVISORS : thm := BDivides.RING_COPRIME_DIVISORS
+def RING_COPRIME_UNIT : thm := BDivides.RING_COPRIME_UNIT
+def RING_ASSOCIATES_RMUL : thm := BDivides.RING_ASSOCIATES_RMUL
+def RING_ASSOCIATES_LMUL : thm := BDivides.RING_ASSOCIATES_LMUL
+def RING_ASSOCIATES_DIVIDES : thm := BDivides.RING_ASSOCIATES_DIVIDES
+def RING_ASSOCIATES_ASSOCIATES : thm := BDivides.RING_ASSOCIATES_ASSOCIATES
+def RING_ASSOCIATES_UNIT : thm := BDivides.RING_ASSOCIATES_UNIT
+def RING_ASSOCIATES_EQ_0 : thm := BDivides.RING_ASSOCIATES_EQ_0
+def RING_ASSOCIATES_COPRIME : thm := BDivides.RING_ASSOCIATES_COPRIME
+def RING_ASSOCIATES_ZERODIVISOR : thm := BDivides.RING_ASSOCIATES_ZERODIVISOR
+def RING_ASSOCIATES_REGULAR : thm := BDivides.RING_ASSOCIATES_REGULAR
+def RING_ASSOCIATES_NILPOTENT : thm := BDivides.RING_ASSOCIATES_NILPOTENT
+def RING_NILPOTENT_0 : thm := BDivides.RING_NILPOTENT_0
+def RING_NILPOTENT_1 : thm := BDivides.RING_NILPOTENT_1
+def RING_NILPOTENT : thm := BDivides.RING_NILPOTENT
+def RING_NILPOTENT_POW : thm := BDivides.RING_NILPOTENT_POW
+def RING_NILPOTENT_IMP_ZERODIVISOR : thm := BDivides.RING_NILPOTENT_IMP_ZERODIVISOR
+def RING_NILPOTENT_NEG : thm := BDivides.RING_NILPOTENT_NEG
+def RING_NILPOTENT_NEG_EQ : thm := BDivides.RING_NILPOTENT_NEG_EQ
+def RING_UNIT_IDEMPOTENT_EQ_1 : thm := BDivides.RING_UNIT_IDEMPOTENT_EQ_1
 
 -- Subrings
-unsafe def subring_of : thm := BSubrings.subring_of
-unsafe def subring_generated : thm := BSubrings.subring_generated
-unsafe def IN_SUBRING_0 : thm := BSubrings.IN_SUBRING_0
-unsafe def IN_SUBRING_1 : thm := BSubrings.IN_SUBRING_1
-unsafe def IN_SUBRING_NEG : thm := BSubrings.IN_SUBRING_NEG
-unsafe def IN_SUBRING_ADD : thm := BSubrings.IN_SUBRING_ADD
-unsafe def IN_SUBRING_MUL : thm := BSubrings.IN_SUBRING_MUL
-unsafe def IN_SUBRING_SUB : thm := BSubrings.IN_SUBRING_SUB
-unsafe def IN_SUBRING_POW : thm := BSubrings.IN_SUBRING_POW
-unsafe def IN_SUBRING_NUM : thm := BSubrings.IN_SUBRING_NUM
-unsafe def IN_SUBRING_INT : thm := BSubrings.IN_SUBRING_INT
-unsafe def IN_SUBRING_SUM : thm := BSubrings.IN_SUBRING_SUM
-unsafe def IN_SUBRING_PRODUCT : thm := BSubrings.IN_SUBRING_PRODUCT
-unsafe def SUBRING_OF_INTERS : thm := BSubrings.SUBRING_OF_INTERS
-unsafe def SUBRING_OF_INTER : thm := BSubrings.SUBRING_OF_INTER
-unsafe def SUBRING_OF_UNIONS : thm := BSubrings.SUBRING_OF_UNIONS
-unsafe def SUBRING_OF_IMP_SUBSET : thm := BSubrings.SUBRING_OF_IMP_SUBSET
-unsafe def SUBRING_OF_IMP_NONEMPTY : thm := BSubrings.SUBRING_OF_IMP_NONEMPTY
-unsafe def CARRIER_SUBRING_OF : thm := BSubrings.CARRIER_SUBRING_OF
-unsafe def PRIME_SUBRING : thm := BSubrings.PRIME_SUBRING
-unsafe def PRIME_SUBRING_MINIMAL : thm := BSubrings.PRIME_SUBRING_MINIMAL
-unsafe def SUBRING_GENERATED : thm := BSubrings.SUBRING_GENERATED
-unsafe def SUBRING_GENERATED_EQ : thm := BSubrings.SUBRING_GENERATED_EQ
-unsafe def RING_SUB_SUBRING_GENERATED : thm := BSubrings.RING_SUB_SUBRING_GENERATED
-unsafe def RING_POW_SUBRING_GENERATED : thm := BSubrings.RING_POW_SUBRING_GENERATED
-unsafe def RING_OF_NUM_SUBRING_GENERATED : thm := BSubrings.RING_OF_NUM_SUBRING_GENERATED
-unsafe def RING_OF_INT_SUBRING_GENERATED : thm := BSubrings.RING_OF_INT_SUBRING_GENERATED
-unsafe def RING_0_IN_SUBRING_GENERATED : thm := BSubrings.RING_0_IN_SUBRING_GENERATED
-unsafe def RING_1_IN_SUBRING_GENERATED : thm := BSubrings.RING_1_IN_SUBRING_GENERATED
-unsafe def RING_NEG_IN_SUBRING_GENERATED : thm := BSubrings.RING_NEG_IN_SUBRING_GENERATED
-unsafe def RING_ADD_IN_SUBRING_GENERATED : thm := BSubrings.RING_ADD_IN_SUBRING_GENERATED
-unsafe def RING_MUL_IN_SUBRING_GENERATED : thm := BSubrings.RING_MUL_IN_SUBRING_GENERATED
-unsafe def RING_POW_IN_SUBRING_GENERATED : thm := BSubrings.RING_POW_IN_SUBRING_GENERATED
-unsafe def SUBRING_GENERATED_RESTRICT : thm := BSubrings.SUBRING_GENERATED_RESTRICT
-unsafe def SUBRING_SUBRING_GENERATED : thm := BSubrings.SUBRING_SUBRING_GENERATED
-unsafe def SUBRING_GENERATED_MONO : thm := BSubrings.SUBRING_GENERATED_MONO
-unsafe def SUBRING_GENERATED_MINIMAL : thm := BSubrings.SUBRING_GENERATED_MINIMAL
-unsafe def SUBRINGS_GENERATED_EQ : thm := BSubrings.SUBRINGS_GENERATED_EQ
-unsafe def SUBRING_GENERATED_INDUCT : thm := BSubrings.SUBRING_GENERATED_INDUCT
-unsafe def SUBRING_GENERATED_INDUCT_STRONG : thm := BSubrings.SUBRING_GENERATED_INDUCT_STRONG
-unsafe def RING_CARRIER_SUBRING_GENERATED_SUBSET : thm := BSubrings.RING_CARRIER_SUBRING_GENERATED_SUBSET
-unsafe def SUBRING_OF_SUBRING_GENERATED_EQ : thm := BSubrings.SUBRING_OF_SUBRING_GENERATED_EQ
-unsafe def SUBRING_GENERATED_SUPERSET : thm := BSubrings.SUBRING_GENERATED_SUPERSET
-unsafe def FINITE_SUBRING_GENERATED : thm := BSubrings.FINITE_SUBRING_GENERATED
-unsafe def SUBRING_GENERATED_SUBSET_CARRIER : thm := BSubrings.SUBRING_GENERATED_SUBSET_CARRIER
-unsafe def SUBSET_CARRIER_SUBRING_GENERATED : thm := BSubrings.SUBSET_CARRIER_SUBRING_GENERATED
-unsafe def CARRIER_SUBRING_GENERATED_SUBRING : thm := BSubrings.CARRIER_SUBRING_GENERATED_SUBRING
-unsafe def SUBRING_GENERATED_MINIMAL_EQ : thm := BSubrings.SUBRING_GENERATED_MINIMAL_EQ
-unsafe def SUBRING_OF_SUBRING_GENERATED_SUBRING_EQ : thm := BSubrings.SUBRING_OF_SUBRING_GENERATED_SUBRING_EQ
-unsafe def SUBRING_GENERATED_RING_CARRIER : thm := BSubrings.SUBRING_GENERATED_RING_CARRIER
-unsafe def SUBRING_OF_SUBRING_GENERATED : thm := BSubrings.SUBRING_OF_SUBRING_GENERATED
-unsafe def SUBRING_GENERATED_SUBSET_CARRIER_SUBSET : thm := BSubrings.SUBRING_GENERATED_SUBSET_CARRIER_SUBSET
-unsafe def SUBRING_GENERATED_REFL : thm := BSubrings.SUBRING_GENERATED_REFL
-unsafe def SUBRING_GENERATED_INC : thm := BSubrings.SUBRING_GENERATED_INC
-unsafe def SUBRING_GENERATED_INC_GEN : thm := BSubrings.SUBRING_GENERATED_INC_GEN
-unsafe def SUBRING_OF_SUBRING_GENERATED_REV : thm := BSubrings.SUBRING_OF_SUBRING_GENERATED_REV
-unsafe def TRIVIAL_RING_SUBRING_GENERATED : thm := BSubrings.TRIVIAL_RING_SUBRING_GENERATED
-unsafe def SUBRING_GENERATED_BY_SUBRING_GENERATED : thm := BSubrings.SUBRING_GENERATED_BY_SUBRING_GENERATED
-unsafe def SUBRING_GENERATED_INSERT_ZERO : thm := BSubrings.SUBRING_GENERATED_INSERT_ZERO
-unsafe def RING_CARRIER_SUBRING_GENERATED_MONO : thm := BSubrings.RING_CARRIER_SUBRING_GENERATED_MONO
-unsafe def SUBRING_GENERATED_IDEMPOT_GEN : thm := BSubrings.SUBRING_GENERATED_IDEMPOT_GEN
-unsafe def SUBRING_GENERATED_IDEMPOT : thm := BSubrings.SUBRING_GENERATED_IDEMPOT
-unsafe def SUBRING_GENERATED_SUBRING_GENERATED : thm := BSubrings.SUBRING_GENERATED_SUBRING_GENERATED
-unsafe def SUBRING_GENERATED_BY_SUBRING_GENERATED_IDEMPOT : thm := BSubrings.SUBRING_GENERATED_BY_SUBRING_GENERATED_IDEMPOT
-unsafe def SUBRING_GENERATED_UNION_LEFT : thm := BSubrings.SUBRING_GENERATED_UNION_LEFT
-unsafe def SUBRING_GENERATED_UNION_RIGHT : thm := BSubrings.SUBRING_GENERATED_UNION_RIGHT
-unsafe def SUBRING_GENERATED_UNION : thm := BSubrings.SUBRING_GENERATED_UNION
-unsafe def RING_CHAR_SUBRING_GENERATED : thm := BSubrings.RING_CHAR_SUBRING_GENERATED
-unsafe def IN_SUBRING_GENERATED_FINITARY : thm := BSubrings.IN_SUBRING_GENERATED_FINITARY
-unsafe def SUBRING_GENERATED_FINITARY : thm := BSubrings.SUBRING_GENERATED_FINITARY
-unsafe def SUBSET_SUBRING_GENERATED_FINITARY : thm := BSubrings.SUBSET_SUBRING_GENERATED_FINITARY
-unsafe def SUBRING_GENERATED_PRIME_SUBRING : thm := BSubrings.SUBRING_GENERATED_PRIME_SUBRING
-unsafe def RING_CARRIER_SUBRING_GENERATED_0 : thm := BSubrings.RING_CARRIER_SUBRING_GENERATED_0
+def subring_of : thm := BSubrings.subring_of
+def subring_generated : thm := BSubrings.subring_generated
+def IN_SUBRING_0 : thm := BSubrings.IN_SUBRING_0
+def IN_SUBRING_1 : thm := BSubrings.IN_SUBRING_1
+def IN_SUBRING_NEG : thm := BSubrings.IN_SUBRING_NEG
+def IN_SUBRING_ADD : thm := BSubrings.IN_SUBRING_ADD
+def IN_SUBRING_MUL : thm := BSubrings.IN_SUBRING_MUL
+def IN_SUBRING_SUB : thm := BSubrings.IN_SUBRING_SUB
+def IN_SUBRING_POW : thm := BSubrings.IN_SUBRING_POW
+def IN_SUBRING_NUM : thm := BSubrings.IN_SUBRING_NUM
+def IN_SUBRING_INT : thm := BSubrings.IN_SUBRING_INT
+def IN_SUBRING_SUM : thm := BSubrings.IN_SUBRING_SUM
+def IN_SUBRING_PRODUCT : thm := BSubrings.IN_SUBRING_PRODUCT
+def SUBRING_OF_INTERS : thm := BSubrings.SUBRING_OF_INTERS
+def SUBRING_OF_INTER : thm := BSubrings.SUBRING_OF_INTER
+def SUBRING_OF_UNIONS : thm := BSubrings.SUBRING_OF_UNIONS
+def SUBRING_OF_IMP_SUBSET : thm := BSubrings.SUBRING_OF_IMP_SUBSET
+def SUBRING_OF_IMP_NONEMPTY : thm := BSubrings.SUBRING_OF_IMP_NONEMPTY
+def CARRIER_SUBRING_OF : thm := BSubrings.CARRIER_SUBRING_OF
+def PRIME_SUBRING : thm := BSubrings.PRIME_SUBRING
+def PRIME_SUBRING_MINIMAL : thm := BSubrings.PRIME_SUBRING_MINIMAL
+def SUBRING_GENERATED : thm := BSubrings.SUBRING_GENERATED
+def SUBRING_GENERATED_EQ : thm := BSubrings.SUBRING_GENERATED_EQ
+def RING_SUB_SUBRING_GENERATED : thm := BSubrings.RING_SUB_SUBRING_GENERATED
+def RING_POW_SUBRING_GENERATED : thm := BSubrings.RING_POW_SUBRING_GENERATED
+def RING_OF_NUM_SUBRING_GENERATED : thm := BSubrings.RING_OF_NUM_SUBRING_GENERATED
+def RING_OF_INT_SUBRING_GENERATED : thm := BSubrings.RING_OF_INT_SUBRING_GENERATED
+def RING_0_IN_SUBRING_GENERATED : thm := BSubrings.RING_0_IN_SUBRING_GENERATED
+def RING_1_IN_SUBRING_GENERATED : thm := BSubrings.RING_1_IN_SUBRING_GENERATED
+def RING_NEG_IN_SUBRING_GENERATED : thm := BSubrings.RING_NEG_IN_SUBRING_GENERATED
+def RING_ADD_IN_SUBRING_GENERATED : thm := BSubrings.RING_ADD_IN_SUBRING_GENERATED
+def RING_MUL_IN_SUBRING_GENERATED : thm := BSubrings.RING_MUL_IN_SUBRING_GENERATED
+def RING_POW_IN_SUBRING_GENERATED : thm := BSubrings.RING_POW_IN_SUBRING_GENERATED
+def SUBRING_GENERATED_RESTRICT : thm := BSubrings.SUBRING_GENERATED_RESTRICT
+def SUBRING_SUBRING_GENERATED : thm := BSubrings.SUBRING_SUBRING_GENERATED
+def SUBRING_GENERATED_MONO : thm := BSubrings.SUBRING_GENERATED_MONO
+def SUBRING_GENERATED_MINIMAL : thm := BSubrings.SUBRING_GENERATED_MINIMAL
+def SUBRINGS_GENERATED_EQ : thm := BSubrings.SUBRINGS_GENERATED_EQ
+def SUBRING_GENERATED_INDUCT : thm := BSubrings.SUBRING_GENERATED_INDUCT
+def SUBRING_GENERATED_INDUCT_STRONG : thm := BSubrings.SUBRING_GENERATED_INDUCT_STRONG
+def RING_CARRIER_SUBRING_GENERATED_SUBSET : thm := BSubrings.RING_CARRIER_SUBRING_GENERATED_SUBSET
+def SUBRING_OF_SUBRING_GENERATED_EQ : thm := BSubrings.SUBRING_OF_SUBRING_GENERATED_EQ
+def SUBRING_GENERATED_SUPERSET : thm := BSubrings.SUBRING_GENERATED_SUPERSET
+def FINITE_SUBRING_GENERATED : thm := BSubrings.FINITE_SUBRING_GENERATED
+def SUBRING_GENERATED_SUBSET_CARRIER : thm := BSubrings.SUBRING_GENERATED_SUBSET_CARRIER
+def SUBSET_CARRIER_SUBRING_GENERATED : thm := BSubrings.SUBSET_CARRIER_SUBRING_GENERATED
+def CARRIER_SUBRING_GENERATED_SUBRING : thm := BSubrings.CARRIER_SUBRING_GENERATED_SUBRING
+def SUBRING_GENERATED_MINIMAL_EQ : thm := BSubrings.SUBRING_GENERATED_MINIMAL_EQ
+def SUBRING_OF_SUBRING_GENERATED_SUBRING_EQ : thm := BSubrings.SUBRING_OF_SUBRING_GENERATED_SUBRING_EQ
+def SUBRING_GENERATED_RING_CARRIER : thm := BSubrings.SUBRING_GENERATED_RING_CARRIER
+def SUBRING_OF_SUBRING_GENERATED : thm := BSubrings.SUBRING_OF_SUBRING_GENERATED
+def SUBRING_GENERATED_SUBSET_CARRIER_SUBSET : thm := BSubrings.SUBRING_GENERATED_SUBSET_CARRIER_SUBSET
+def SUBRING_GENERATED_REFL : thm := BSubrings.SUBRING_GENERATED_REFL
+def SUBRING_GENERATED_INC : thm := BSubrings.SUBRING_GENERATED_INC
+def SUBRING_GENERATED_INC_GEN : thm := BSubrings.SUBRING_GENERATED_INC_GEN
+def SUBRING_OF_SUBRING_GENERATED_REV : thm := BSubrings.SUBRING_OF_SUBRING_GENERATED_REV
+def TRIVIAL_RING_SUBRING_GENERATED : thm := BSubrings.TRIVIAL_RING_SUBRING_GENERATED
+def SUBRING_GENERATED_BY_SUBRING_GENERATED : thm := BSubrings.SUBRING_GENERATED_BY_SUBRING_GENERATED
+def SUBRING_GENERATED_INSERT_ZERO : thm := BSubrings.SUBRING_GENERATED_INSERT_ZERO
+def RING_CARRIER_SUBRING_GENERATED_MONO : thm := BSubrings.RING_CARRIER_SUBRING_GENERATED_MONO
+def SUBRING_GENERATED_IDEMPOT_GEN : thm := BSubrings.SUBRING_GENERATED_IDEMPOT_GEN
+def SUBRING_GENERATED_IDEMPOT : thm := BSubrings.SUBRING_GENERATED_IDEMPOT
+def SUBRING_GENERATED_SUBRING_GENERATED : thm := BSubrings.SUBRING_GENERATED_SUBRING_GENERATED
+def SUBRING_GENERATED_BY_SUBRING_GENERATED_IDEMPOT : thm := BSubrings.SUBRING_GENERATED_BY_SUBRING_GENERATED_IDEMPOT
+def SUBRING_GENERATED_UNION_LEFT : thm := BSubrings.SUBRING_GENERATED_UNION_LEFT
+def SUBRING_GENERATED_UNION_RIGHT : thm := BSubrings.SUBRING_GENERATED_UNION_RIGHT
+def SUBRING_GENERATED_UNION : thm := BSubrings.SUBRING_GENERATED_UNION
+def RING_CHAR_SUBRING_GENERATED : thm := BSubrings.RING_CHAR_SUBRING_GENERATED
+def IN_SUBRING_GENERATED_FINITARY : thm := BSubrings.IN_SUBRING_GENERATED_FINITARY
+def SUBRING_GENERATED_FINITARY : thm := BSubrings.SUBRING_GENERATED_FINITARY
+def SUBSET_SUBRING_GENERATED_FINITARY : thm := BSubrings.SUBSET_SUBRING_GENERATED_FINITARY
+def SUBRING_GENERATED_PRIME_SUBRING : thm := BSubrings.SUBRING_GENERATED_PRIME_SUBRING
+def RING_CARRIER_SUBRING_GENERATED_0 : thm := BSubrings.RING_CARRIER_SUBRING_GENERATED_0
 
 -- Ideals
-unsafe def ring_ideal : thm := BIdeals.ring_ideal
-unsafe def RING_IDEAL : thm := BIdeals.RING_IDEAL
-unsafe def RING_IDEAL_IMP_SUBSET : thm := BIdeals.RING_IDEAL_IMP_SUBSET
-unsafe def RING_IDEAL_IMP_NONEMPTY : thm := BIdeals.RING_IDEAL_IMP_NONEMPTY
-unsafe def RING_IDEAL_0 : thm := BIdeals.RING_IDEAL_0
-unsafe def IN_RING_IDEAL_0 : thm := BIdeals.IN_RING_IDEAL_0
-unsafe def IN_RING_IDEAL_NEG : thm := BIdeals.IN_RING_IDEAL_NEG
-unsafe def IN_RING_IDEAL_ADD : thm := BIdeals.IN_RING_IDEAL_ADD
-unsafe def IN_RING_IDEAL_SUB : thm := BIdeals.IN_RING_IDEAL_SUB
-unsafe def IN_RING_IDEAL_MUL : thm := BIdeals.IN_RING_IDEAL_MUL
-unsafe def IN_RING_IDEAL_LMUL : thm := BIdeals.IN_RING_IDEAL_LMUL
-unsafe def IN_RING_IDEAL_RMUL : thm := BIdeals.IN_RING_IDEAL_RMUL
-unsafe def RING_MULTIPLE_IN_IDEAL : thm := BIdeals.RING_MULTIPLE_IN_IDEAL
-unsafe def RING_POW_IN_IDEAL : thm := BIdeals.RING_POW_IN_IDEAL
-unsafe def IN_RING_IDEAL_SUM : thm := BIdeals.IN_RING_IDEAL_SUM
-unsafe def RING_ASSOCIATES_IN_IDEAL : thm := BIdeals.RING_ASSOCIATES_IN_IDEAL
-unsafe def RING_IDEAL_INTERS : thm := BIdeals.RING_IDEAL_INTERS
-unsafe def RING_IDEAL_INTER : thm := BIdeals.RING_IDEAL_INTER
-unsafe def RING_IDEAL_UNIONS : thm := BIdeals.RING_IDEAL_UNIONS
-unsafe def RING_IDEAL_EQ_CARRIER : thm := BIdeals.RING_IDEAL_EQ_CARRIER
-unsafe def RING_IDEAL_EQ_CARRIER_UNIT : thm := BIdeals.RING_IDEAL_EQ_CARRIER_UNIT
-unsafe def TRIVIAL_RING_IDEAL : thm := BIdeals.TRIVIAL_RING_IDEAL
-unsafe def RING_IDEAL_CARRIER : thm := BIdeals.RING_IDEAL_CARRIER
-unsafe def RING_IDEAL_SUBRING_GENERATED_EQ : thm := BIdeals.RING_IDEAL_SUBRING_GENERATED_EQ
-unsafe def RING_IDEAL_SUBRING_GENERATED : thm := BIdeals.RING_IDEAL_SUBRING_GENERATED
-unsafe def RING_SUBRING_INTER_IDEAL : thm := BIdeals.RING_SUBRING_INTER_IDEAL
-unsafe def RING_IDEAL_INTER_SUBRING : thm := BIdeals.RING_IDEAL_INTER_SUBRING
-unsafe def ring_setneg : thm := BIdeals.ring_setneg
-unsafe def ring_setadd : thm := BIdeals.ring_setadd
-unsafe def ring_setmul : thm := BIdeals.ring_setmul
-unsafe def RING_NEG_IN_SETNEG : thm := BIdeals.RING_NEG_IN_SETNEG
-unsafe def RING_ADD_IN_SETADD : thm := BIdeals.RING_ADD_IN_SETADD
-unsafe def RING_MUL_IN_SETMUL : thm := BIdeals.RING_MUL_IN_SETMUL
-unsafe def RING_SETNEG_MONO : thm := BIdeals.RING_SETNEG_MONO
-unsafe def RING_SETADD_MONO : thm := BIdeals.RING_SETADD_MONO
-unsafe def RING_SETMUL_MONO : thm := BIdeals.RING_SETMUL_MONO
-unsafe def SUBRING_OF_SETWISE : thm := BIdeals.SUBRING_OF_SETWISE
-unsafe def RING_IDEAL_SETWISE : thm := BIdeals.RING_IDEAL_SETWISE
-unsafe def RING_SETNEG_EQ_EMPTY : thm := BIdeals.RING_SETNEG_EQ_EMPTY
-unsafe def RING_SETADD_EQ_EMPTY : thm := BIdeals.RING_SETADD_EQ_EMPTY
-unsafe def RING_SETMUL_EQ_EMPTY : thm := BIdeals.RING_SETMUL_EQ_EMPTY
-unsafe def RING_SETNEG_SING : thm := BIdeals.RING_SETNEG_SING
-unsafe def RING_SETADD_SING : thm := BIdeals.RING_SETADD_SING
-unsafe def RING_SETMUL_SING : thm := BIdeals.RING_SETMUL_SING
-unsafe def RING_SETNEG : thm := BIdeals.RING_SETNEG
-unsafe def RING_SETADD : thm := BIdeals.RING_SETADD
-unsafe def RING_SETMUL : thm := BIdeals.RING_SETMUL
-unsafe def RING_SETADD_SYM : thm := BIdeals.RING_SETADD_SYM
-unsafe def RING_SETMUL_SYM : thm := BIdeals.RING_SETMUL_SYM
-unsafe def RING_SETADD_LZERO : thm := BIdeals.RING_SETADD_LZERO
-unsafe def RING_SETADD_RZERO : thm := BIdeals.RING_SETADD_RZERO
-unsafe def RING_SETMUL_LID : thm := BIdeals.RING_SETMUL_LID
-unsafe def RING_SETMUL_RID : thm := BIdeals.RING_SETMUL_RID
-unsafe def RING_SETADD_ASSOC : thm := BIdeals.RING_SETADD_ASSOC
-unsafe def RING_SETMUL_ASSOC : thm := BIdeals.RING_SETMUL_ASSOC
-unsafe def RING_SETADD_AC : thm := BIdeals.RING_SETADD_AC
-unsafe def RING_SETMUL_AC : thm := BIdeals.RING_SETMUL_AC
-unsafe def RING_SETADD_SUPERSET_LEFT : thm := BIdeals.RING_SETADD_SUPERSET_LEFT
-unsafe def RING_SETADD_SUPERSET_RIGHT : thm := BIdeals.RING_SETADD_SUPERSET_RIGHT
-unsafe def RING_SETNEG_SETADD : thm := BIdeals.RING_SETNEG_SETADD
-unsafe def RING_SETADD_LDISTRIB : thm := BIdeals.RING_SETADD_LDISTRIB
-unsafe def RING_SETADD_RDISTRIB : thm := BIdeals.RING_SETADD_RDISTRIB
-unsafe def RING_SETNEG_IDEAL : thm := BIdeals.RING_SETNEG_IDEAL
-unsafe def RING_SETNEG_SUBRING : thm := BIdeals.RING_SETNEG_SUBRING
-unsafe def RING_SETADD_LSUBSET : thm := BIdeals.RING_SETADD_LSUBSET
-unsafe def RING_SETADD_RSUBSET : thm := BIdeals.RING_SETADD_RSUBSET
-unsafe def RING_SETADD_LSUBSET_EQ : thm := BIdeals.RING_SETADD_LSUBSET_EQ
-unsafe def RING_SETADD_RSUBSET_EQ : thm := BIdeals.RING_SETADD_RSUBSET_EQ
-unsafe def RING_SETADD_SUBRING : thm := BIdeals.RING_SETADD_SUBRING
-unsafe def RING_SETMUL_SUBRING : thm := BIdeals.RING_SETMUL_SUBRING
-unsafe def RING_SETADD_SUBSET_IDEAL : thm := BIdeals.RING_SETADD_SUBSET_IDEAL
-unsafe def RING_SETADD_IDEAL_LEFT : thm := BIdeals.RING_SETADD_IDEAL_LEFT
-unsafe def RING_SETADD_IDEAL_RIGHT : thm := BIdeals.RING_SETADD_IDEAL_RIGHT
-unsafe def RING_SETMUL_IDEAL_LEFT : thm := BIdeals.RING_SETMUL_IDEAL_LEFT
-unsafe def RING_SETMUL_IDEAL_RIGHT : thm := BIdeals.RING_SETMUL_IDEAL_RIGHT
-unsafe def RING_SETMUL_SUBSET_IDEAL : thm := BIdeals.RING_SETMUL_SUBSET_IDEAL
-unsafe def RING_SETADD_LCANCEL : thm := BIdeals.RING_SETADD_LCANCEL
-unsafe def RING_SETADD_RCANCEL : thm := BIdeals.RING_SETADD_RCANCEL
-unsafe def RING_SETADD_LCANCEL_SET : thm := BIdeals.RING_SETADD_LCANCEL_SET
-unsafe def RING_SETADD_RCANCEL_SET : thm := BIdeals.RING_SETADD_RCANCEL_SET
-unsafe def RING_IDEAL_SETADD : thm := BIdeals.RING_IDEAL_SETADD
-unsafe def SUBRING_SETADD_LEFT : thm := BIdeals.SUBRING_SETADD_LEFT
-unsafe def SUBRING_SETADD_RIGHT : thm := BIdeals.SUBRING_SETADD_RIGHT
-unsafe def RING_IDEAL_QUOTIENT : thm := BIdeals.RING_IDEAL_QUOTIENT
-unsafe def RING_IDEAL_QUOTIENT_RMUL : thm := BIdeals.RING_IDEAL_QUOTIENT_RMUL
-unsafe def RING_IDEAL_QUOTIENT_LMUL : thm := BIdeals.RING_IDEAL_QUOTIENT_LMUL
-unsafe def RING_COMAXIMAL : thm := BIdeals.RING_COMAXIMAL
-unsafe def ideal_generated : thm := BIdeals.ideal_generated
-unsafe def IDEAL_GENERATED_RESTRICT : thm := BIdeals.IDEAL_GENERATED_RESTRICT
-unsafe def RING_IDEAL_IDEAL_GENERATED : thm := BIdeals.RING_IDEAL_IDEAL_GENERATED
-unsafe def IDEAL_GENERATED_NONEMPTY : thm := BIdeals.IDEAL_GENERATED_NONEMPTY
-unsafe def IDEAL_GENERATED_MONO : thm := BIdeals.IDEAL_GENERATED_MONO
-unsafe def IDEAL_GENERATED_MINIMAL : thm := BIdeals.IDEAL_GENERATED_MINIMAL
-unsafe def IDEAL_GENERATED_INDUCT : thm := BIdeals.IDEAL_GENERATED_INDUCT
-unsafe def IDEAL_GENERATED_INDUCT_STRONG : thm := BIdeals.IDEAL_GENERATED_INDUCT_STRONG
-unsafe def IDEAL_GENERATED_SUBSET : thm := BIdeals.IDEAL_GENERATED_SUBSET
-unsafe def FINITE_IDEAL_GENERATED : thm := BIdeals.FINITE_IDEAL_GENERATED
-unsafe def IDEAL_GENERATED_SUBSET_CARRIER : thm := BIdeals.IDEAL_GENERATED_SUBSET_CARRIER
-unsafe def IDEAL_GENERATED_MINIMAL_EQ : thm := BIdeals.IDEAL_GENERATED_MINIMAL_EQ
-unsafe def IDEALS_GENERATED_SUBSET : thm := BIdeals.IDEALS_GENERATED_SUBSET
-unsafe def IDEAL_GENERATED_RING_IDEAL : thm := BIdeals.IDEAL_GENERATED_RING_IDEAL
-unsafe def IDEAL_GENERATED_RING_IDEAL_EQ : thm := BIdeals.IDEAL_GENERATED_RING_IDEAL_EQ
-unsafe def IDEAL_GENERATED_RING_CARRIER : thm := BIdeals.IDEAL_GENERATED_RING_CARRIER
-unsafe def IDEAL_GENERATED_SUBSET_CARRIER_SUBSET : thm := BIdeals.IDEAL_GENERATED_SUBSET_CARRIER_SUBSET
-unsafe def IDEAL_GENERATED_REFL : thm := BIdeals.IDEAL_GENERATED_REFL
-unsafe def IDEAL_GENERATED_INC : thm := BIdeals.IDEAL_GENERATED_INC
-unsafe def IDEAL_GENERATED_INC_GEN : thm := BIdeals.IDEAL_GENERATED_INC_GEN
-unsafe def IDEAL_GENERATED_BY_IDEAL_GENERATED : thm := BIdeals.IDEAL_GENERATED_BY_IDEAL_GENERATED
-unsafe def IDEAL_GENERATED_INSERT_ZERO : thm := BIdeals.IDEAL_GENERATED_INSERT_ZERO
-unsafe def IDEAL_GENERATED_0 : thm := BIdeals.IDEAL_GENERATED_0
-unsafe def IDEAL_GENERATED_EMPTY : thm := BIdeals.IDEAL_GENERATED_EMPTY
-unsafe def IDEAL_GENERATED_SING : thm := BIdeals.IDEAL_GENERATED_SING
-unsafe def IDEAL_GENERATED_SING_ALT : thm := BIdeals.IDEAL_GENERATED_SING_ALT
-unsafe def IN_IDEAL_GENERATED_SING_EQ : thm := BIdeals.IN_IDEAL_GENERATED_SING_EQ
-unsafe def IN_IDEAL_GENERATED_SING : thm := BIdeals.IN_IDEAL_GENERATED_SING
-unsafe def IN_IDEAL_GENERATED_SELF : thm := BIdeals.IN_IDEAL_GENERATED_SELF
-unsafe def IDEAL_GENERATED_SING_EQ_CARRIER : thm := BIdeals.IDEAL_GENERATED_SING_EQ_CARRIER
-unsafe def SUBSET_IDEALS_GENERATED_SING : thm := BIdeals.SUBSET_IDEALS_GENERATED_SING
-unsafe def IDEALS_GENERATED_SING_EQ : thm := BIdeals.IDEALS_GENERATED_SING_EQ
-unsafe def PSUBSET_IDEALS_GENERATED_SING : thm := BIdeals.PSUBSET_IDEALS_GENERATED_SING
-unsafe def IDEAL_GENERATED_EQ_0 : thm := BIdeals.IDEAL_GENERATED_EQ_0
-unsafe def IDEAL_GENERATED_SING_SETMUL_RIGHT : thm := BIdeals.IDEAL_GENERATED_SING_SETMUL_RIGHT
-unsafe def IDEAL_GENERATED_SING_SETMUL_LEFT : thm := BIdeals.IDEAL_GENERATED_SING_SETMUL_LEFT
-unsafe def RING_SETMUL_IDEAL_GENERATED_SING : thm := BIdeals.RING_SETMUL_IDEAL_GENERATED_SING
-unsafe def IDEAL_GENERATED_UNION : thm := BIdeals.IDEAL_GENERATED_UNION
-unsafe def IDEAL_GENERATED_INSERT : thm := BIdeals.IDEAL_GENERATED_INSERT
-unsafe def IDEAL_GENERATED_2 : thm := BIdeals.IDEAL_GENERATED_2
-unsafe def IDEAL_GENERATED_SETADD_SUBSET : thm := BIdeals.IDEAL_GENERATED_SETADD_SUBSET
-unsafe def RING_SCALE_SETMUL : thm := BIdeals.RING_SCALE_SETMUL
-unsafe def RING_IDEAL_SCALE : thm := BIdeals.RING_IDEAL_SCALE
-unsafe def IDEAL_GENERATED_SCALE : thm := BIdeals.IDEAL_GENERATED_SCALE
-unsafe def IDEAL_GENERATED_FINITARY : thm := BIdeals.IDEAL_GENERATED_FINITARY
-unsafe def IDEAL_GENERATED_FINITARY_ALT : thm := BIdeals.IDEAL_GENERATED_FINITARY_ALT
-unsafe def IDEAL_GENERATED_FINITE_IMAGE : thm := BIdeals.IDEAL_GENERATED_FINITE_IMAGE
-unsafe def IDEAL_GENERATED_FINITE : thm := BIdeals.IDEAL_GENERATED_FINITE
-unsafe def IDEAL_GENERATED_EXPLICIT : thm := BIdeals.IDEAL_GENERATED_EXPLICIT
+def ring_ideal : thm := BIdeals.ring_ideal
+def RING_IDEAL : thm := BIdeals.RING_IDEAL
+def RING_IDEAL_IMP_SUBSET : thm := BIdeals.RING_IDEAL_IMP_SUBSET
+def RING_IDEAL_IMP_NONEMPTY : thm := BIdeals.RING_IDEAL_IMP_NONEMPTY
+def RING_IDEAL_0 : thm := BIdeals.RING_IDEAL_0
+def IN_RING_IDEAL_0 : thm := BIdeals.IN_RING_IDEAL_0
+def IN_RING_IDEAL_NEG : thm := BIdeals.IN_RING_IDEAL_NEG
+def IN_RING_IDEAL_ADD : thm := BIdeals.IN_RING_IDEAL_ADD
+def IN_RING_IDEAL_SUB : thm := BIdeals.IN_RING_IDEAL_SUB
+def IN_RING_IDEAL_MUL : thm := BIdeals.IN_RING_IDEAL_MUL
+def IN_RING_IDEAL_LMUL : thm := BIdeals.IN_RING_IDEAL_LMUL
+def IN_RING_IDEAL_RMUL : thm := BIdeals.IN_RING_IDEAL_RMUL
+def RING_MULTIPLE_IN_IDEAL : thm := BIdeals.RING_MULTIPLE_IN_IDEAL
+def RING_POW_IN_IDEAL : thm := BIdeals.RING_POW_IN_IDEAL
+def IN_RING_IDEAL_SUM : thm := BIdeals.IN_RING_IDEAL_SUM
+def RING_ASSOCIATES_IN_IDEAL : thm := BIdeals.RING_ASSOCIATES_IN_IDEAL
+def RING_IDEAL_INTERS : thm := BIdeals.RING_IDEAL_INTERS
+def RING_IDEAL_INTER : thm := BIdeals.RING_IDEAL_INTER
+def RING_IDEAL_UNIONS : thm := BIdeals.RING_IDEAL_UNIONS
+def RING_IDEAL_EQ_CARRIER : thm := BIdeals.RING_IDEAL_EQ_CARRIER
+def RING_IDEAL_EQ_CARRIER_UNIT : thm := BIdeals.RING_IDEAL_EQ_CARRIER_UNIT
+def TRIVIAL_RING_IDEAL : thm := BIdeals.TRIVIAL_RING_IDEAL
+def RING_IDEAL_CARRIER : thm := BIdeals.RING_IDEAL_CARRIER
+def RING_IDEAL_SUBRING_GENERATED_EQ : thm := BIdeals.RING_IDEAL_SUBRING_GENERATED_EQ
+def RING_IDEAL_SUBRING_GENERATED : thm := BIdeals.RING_IDEAL_SUBRING_GENERATED
+def RING_SUBRING_INTER_IDEAL : thm := BIdeals.RING_SUBRING_INTER_IDEAL
+def RING_IDEAL_INTER_SUBRING : thm := BIdeals.RING_IDEAL_INTER_SUBRING
+def ring_setneg : thm := BIdeals.ring_setneg
+def ring_setadd : thm := BIdeals.ring_setadd
+def ring_setmul : thm := BIdeals.ring_setmul
+def RING_NEG_IN_SETNEG : thm := BIdeals.RING_NEG_IN_SETNEG
+def RING_ADD_IN_SETADD : thm := BIdeals.RING_ADD_IN_SETADD
+def RING_MUL_IN_SETMUL : thm := BIdeals.RING_MUL_IN_SETMUL
+def RING_SETNEG_MONO : thm := BIdeals.RING_SETNEG_MONO
+def RING_SETADD_MONO : thm := BIdeals.RING_SETADD_MONO
+def RING_SETMUL_MONO : thm := BIdeals.RING_SETMUL_MONO
+def SUBRING_OF_SETWISE : thm := BIdeals.SUBRING_OF_SETWISE
+def RING_IDEAL_SETWISE : thm := BIdeals.RING_IDEAL_SETWISE
+def RING_SETNEG_EQ_EMPTY : thm := BIdeals.RING_SETNEG_EQ_EMPTY
+def RING_SETADD_EQ_EMPTY : thm := BIdeals.RING_SETADD_EQ_EMPTY
+def RING_SETMUL_EQ_EMPTY : thm := BIdeals.RING_SETMUL_EQ_EMPTY
+def RING_SETNEG_SING : thm := BIdeals.RING_SETNEG_SING
+def RING_SETADD_SING : thm := BIdeals.RING_SETADD_SING
+def RING_SETMUL_SING : thm := BIdeals.RING_SETMUL_SING
+def RING_SETNEG : thm := BIdeals.RING_SETNEG
+def RING_SETADD : thm := BIdeals.RING_SETADD
+def RING_SETMUL : thm := BIdeals.RING_SETMUL
+def RING_SETADD_SYM : thm := BIdeals.RING_SETADD_SYM
+def RING_SETMUL_SYM : thm := BIdeals.RING_SETMUL_SYM
+def RING_SETADD_LZERO : thm := BIdeals.RING_SETADD_LZERO
+def RING_SETADD_RZERO : thm := BIdeals.RING_SETADD_RZERO
+def RING_SETMUL_LID : thm := BIdeals.RING_SETMUL_LID
+def RING_SETMUL_RID : thm := BIdeals.RING_SETMUL_RID
+def RING_SETADD_ASSOC : thm := BIdeals.RING_SETADD_ASSOC
+def RING_SETMUL_ASSOC : thm := BIdeals.RING_SETMUL_ASSOC
+def RING_SETADD_AC : thm := BIdeals.RING_SETADD_AC
+def RING_SETMUL_AC : thm := BIdeals.RING_SETMUL_AC
+def RING_SETADD_SUPERSET_LEFT : thm := BIdeals.RING_SETADD_SUPERSET_LEFT
+def RING_SETADD_SUPERSET_RIGHT : thm := BIdeals.RING_SETADD_SUPERSET_RIGHT
+def RING_SETNEG_SETADD : thm := BIdeals.RING_SETNEG_SETADD
+def RING_SETADD_LDISTRIB : thm := BIdeals.RING_SETADD_LDISTRIB
+def RING_SETADD_RDISTRIB : thm := BIdeals.RING_SETADD_RDISTRIB
+def RING_SETNEG_IDEAL : thm := BIdeals.RING_SETNEG_IDEAL
+def RING_SETNEG_SUBRING : thm := BIdeals.RING_SETNEG_SUBRING
+def RING_SETADD_LSUBSET : thm := BIdeals.RING_SETADD_LSUBSET
+def RING_SETADD_RSUBSET : thm := BIdeals.RING_SETADD_RSUBSET
+def RING_SETADD_LSUBSET_EQ : thm := BIdeals.RING_SETADD_LSUBSET_EQ
+def RING_SETADD_RSUBSET_EQ : thm := BIdeals.RING_SETADD_RSUBSET_EQ
+def RING_SETADD_SUBRING : thm := BIdeals.RING_SETADD_SUBRING
+def RING_SETMUL_SUBRING : thm := BIdeals.RING_SETMUL_SUBRING
+def RING_SETADD_SUBSET_IDEAL : thm := BIdeals.RING_SETADD_SUBSET_IDEAL
+def RING_SETADD_IDEAL_LEFT : thm := BIdeals.RING_SETADD_IDEAL_LEFT
+def RING_SETADD_IDEAL_RIGHT : thm := BIdeals.RING_SETADD_IDEAL_RIGHT
+def RING_SETMUL_IDEAL_LEFT : thm := BIdeals.RING_SETMUL_IDEAL_LEFT
+def RING_SETMUL_IDEAL_RIGHT : thm := BIdeals.RING_SETMUL_IDEAL_RIGHT
+def RING_SETMUL_SUBSET_IDEAL : thm := BIdeals.RING_SETMUL_SUBSET_IDEAL
+def RING_SETADD_LCANCEL : thm := BIdeals.RING_SETADD_LCANCEL
+def RING_SETADD_RCANCEL : thm := BIdeals.RING_SETADD_RCANCEL
+def RING_SETADD_LCANCEL_SET : thm := BIdeals.RING_SETADD_LCANCEL_SET
+def RING_SETADD_RCANCEL_SET : thm := BIdeals.RING_SETADD_RCANCEL_SET
+def RING_IDEAL_SETADD : thm := BIdeals.RING_IDEAL_SETADD
+def SUBRING_SETADD_LEFT : thm := BIdeals.SUBRING_SETADD_LEFT
+def SUBRING_SETADD_RIGHT : thm := BIdeals.SUBRING_SETADD_RIGHT
+def RING_IDEAL_QUOTIENT : thm := BIdeals.RING_IDEAL_QUOTIENT
+def RING_IDEAL_QUOTIENT_RMUL : thm := BIdeals.RING_IDEAL_QUOTIENT_RMUL
+def RING_IDEAL_QUOTIENT_LMUL : thm := BIdeals.RING_IDEAL_QUOTIENT_LMUL
+def RING_COMAXIMAL : thm := BIdeals.RING_COMAXIMAL
+def ideal_generated : thm := BIdeals.ideal_generated
+def IDEAL_GENERATED_RESTRICT : thm := BIdeals.IDEAL_GENERATED_RESTRICT
+def RING_IDEAL_IDEAL_GENERATED : thm := BIdeals.RING_IDEAL_IDEAL_GENERATED
+def IDEAL_GENERATED_NONEMPTY : thm := BIdeals.IDEAL_GENERATED_NONEMPTY
+def IDEAL_GENERATED_MONO : thm := BIdeals.IDEAL_GENERATED_MONO
+def IDEAL_GENERATED_MINIMAL : thm := BIdeals.IDEAL_GENERATED_MINIMAL
+def IDEAL_GENERATED_INDUCT : thm := BIdeals.IDEAL_GENERATED_INDUCT
+def IDEAL_GENERATED_INDUCT_STRONG : thm := BIdeals.IDEAL_GENERATED_INDUCT_STRONG
+def IDEAL_GENERATED_SUBSET : thm := BIdeals.IDEAL_GENERATED_SUBSET
+def FINITE_IDEAL_GENERATED : thm := BIdeals.FINITE_IDEAL_GENERATED
+def IDEAL_GENERATED_SUBSET_CARRIER : thm := BIdeals.IDEAL_GENERATED_SUBSET_CARRIER
+def IDEAL_GENERATED_MINIMAL_EQ : thm := BIdeals.IDEAL_GENERATED_MINIMAL_EQ
+def IDEALS_GENERATED_SUBSET : thm := BIdeals.IDEALS_GENERATED_SUBSET
+def IDEAL_GENERATED_RING_IDEAL : thm := BIdeals.IDEAL_GENERATED_RING_IDEAL
+def IDEAL_GENERATED_RING_IDEAL_EQ : thm := BIdeals.IDEAL_GENERATED_RING_IDEAL_EQ
+def IDEAL_GENERATED_RING_CARRIER : thm := BIdeals.IDEAL_GENERATED_RING_CARRIER
+def IDEAL_GENERATED_SUBSET_CARRIER_SUBSET : thm := BIdeals.IDEAL_GENERATED_SUBSET_CARRIER_SUBSET
+def IDEAL_GENERATED_REFL : thm := BIdeals.IDEAL_GENERATED_REFL
+def IDEAL_GENERATED_INC : thm := BIdeals.IDEAL_GENERATED_INC
+def IDEAL_GENERATED_INC_GEN : thm := BIdeals.IDEAL_GENERATED_INC_GEN
+def IDEAL_GENERATED_BY_IDEAL_GENERATED : thm := BIdeals.IDEAL_GENERATED_BY_IDEAL_GENERATED
+def IDEAL_GENERATED_INSERT_ZERO : thm := BIdeals.IDEAL_GENERATED_INSERT_ZERO
+def IDEAL_GENERATED_0 : thm := BIdeals.IDEAL_GENERATED_0
+def IDEAL_GENERATED_EMPTY : thm := BIdeals.IDEAL_GENERATED_EMPTY
+def IDEAL_GENERATED_SING : thm := BIdeals.IDEAL_GENERATED_SING
+def IDEAL_GENERATED_SING_ALT : thm := BIdeals.IDEAL_GENERATED_SING_ALT
+def IN_IDEAL_GENERATED_SING_EQ : thm := BIdeals.IN_IDEAL_GENERATED_SING_EQ
+def IN_IDEAL_GENERATED_SING : thm := BIdeals.IN_IDEAL_GENERATED_SING
+def IN_IDEAL_GENERATED_SELF : thm := BIdeals.IN_IDEAL_GENERATED_SELF
+def IDEAL_GENERATED_SING_EQ_CARRIER : thm := BIdeals.IDEAL_GENERATED_SING_EQ_CARRIER
+def SUBSET_IDEALS_GENERATED_SING : thm := BIdeals.SUBSET_IDEALS_GENERATED_SING
+def IDEALS_GENERATED_SING_EQ : thm := BIdeals.IDEALS_GENERATED_SING_EQ
+def PSUBSET_IDEALS_GENERATED_SING : thm := BIdeals.PSUBSET_IDEALS_GENERATED_SING
+def IDEAL_GENERATED_EQ_0 : thm := BIdeals.IDEAL_GENERATED_EQ_0
+def IDEAL_GENERATED_SING_SETMUL_RIGHT : thm := BIdeals.IDEAL_GENERATED_SING_SETMUL_RIGHT
+def IDEAL_GENERATED_SING_SETMUL_LEFT : thm := BIdeals.IDEAL_GENERATED_SING_SETMUL_LEFT
+def RING_SETMUL_IDEAL_GENERATED_SING : thm := BIdeals.RING_SETMUL_IDEAL_GENERATED_SING
+def IDEAL_GENERATED_UNION : thm := BIdeals.IDEAL_GENERATED_UNION
+def IDEAL_GENERATED_INSERT : thm := BIdeals.IDEAL_GENERATED_INSERT
+def IDEAL_GENERATED_2 : thm := BIdeals.IDEAL_GENERATED_2
+def IDEAL_GENERATED_SETADD_SUBSET : thm := BIdeals.IDEAL_GENERATED_SETADD_SUBSET
+def RING_SCALE_SETMUL : thm := BIdeals.RING_SCALE_SETMUL
+def RING_IDEAL_SCALE : thm := BIdeals.RING_IDEAL_SCALE
+def IDEAL_GENERATED_SCALE : thm := BIdeals.IDEAL_GENERATED_SCALE
+def IDEAL_GENERATED_FINITARY : thm := BIdeals.IDEAL_GENERATED_FINITARY
+def IDEAL_GENERATED_FINITARY_ALT : thm := BIdeals.IDEAL_GENERATED_FINITARY_ALT
+def IDEAL_GENERATED_FINITE_IMAGE : thm := BIdeals.IDEAL_GENERATED_FINITE_IMAGE
+def IDEAL_GENERATED_FINITE : thm := BIdeals.IDEAL_GENERATED_FINITE
+def IDEAL_GENERATED_EXPLICIT : thm := BIdeals.IDEAL_GENERATED_EXPLICIT
 
 -- Domains
-unsafe def integral_domain : thm := BDomains.integral_domain
-unsafe def field : thm := BDomains.field
-unsafe def INTEGRAL_DOMAIN_IMP_NONTRIVIAL_RING : thm := BDomains.INTEGRAL_DOMAIN_IMP_NONTRIVIAL_RING
-unsafe def FIELD_IMP_NONTRIVIAL_RING : thm := BDomains.FIELD_IMP_NONTRIVIAL_RING
-unsafe def INTEGRAL_DOMAIN_NONTRIVIAL : thm := BDomains.INTEGRAL_DOMAIN_NONTRIVIAL
-unsafe def FIELD_NONTRIVIAL : thm := BDomains.FIELD_NONTRIVIAL
-unsafe def INTEGRAL_DOMAIN_EQ_NO_ZERODIVISORS : thm := BDomains.INTEGRAL_DOMAIN_EQ_NO_ZERODIVISORS
-unsafe def INTEGRAL_DOMAIN_EQ_ALL_REGULAR : thm := BDomains.INTEGRAL_DOMAIN_EQ_ALL_REGULAR
-unsafe def INTEGRAL_DOMAIN_ZERODIVISOR : thm := BDomains.INTEGRAL_DOMAIN_ZERODIVISOR
-unsafe def INTEGRAL_DOMAIN_REGULAR : thm := BDomains.INTEGRAL_DOMAIN_REGULAR
-unsafe def INTEGRAL_DOMAIN_MUL_EQ_0 : thm := BDomains.INTEGRAL_DOMAIN_MUL_EQ_0
-unsafe def INTEGRAL_DOMAIN_POW_EQ_0 : thm := BDomains.INTEGRAL_DOMAIN_POW_EQ_0
-unsafe def INTEGRAL_DOMAIN_NILPOTENT : thm := BDomains.INTEGRAL_DOMAIN_NILPOTENT
-unsafe def INTEGRAL_DOMAIN_PRODUCT_EQ_0 : thm := BDomains.INTEGRAL_DOMAIN_PRODUCT_EQ_0
-unsafe def INTEGRAL_DOMAIN_MUL_LCANCEL : thm := BDomains.INTEGRAL_DOMAIN_MUL_LCANCEL
-unsafe def INTEGRAL_DOMAIN_MUL_LCANCEL_EQ : thm := BDomains.INTEGRAL_DOMAIN_MUL_LCANCEL_EQ
-unsafe def INTEGRAL_DOMAIN_MUL_RCANCEL : thm := BDomains.INTEGRAL_DOMAIN_MUL_RCANCEL
-unsafe def INTEGRAL_DOMAIN_MUL_RCANCEL_EQ : thm := BDomains.INTEGRAL_DOMAIN_MUL_RCANCEL_EQ
-unsafe def INTEGRAL_DOMAIN_DIVIDES_LMUL2 : thm := BDomains.INTEGRAL_DOMAIN_DIVIDES_LMUL2
-unsafe def INTEGRAL_DOMAIN_DIVIDES_RMUL2 : thm := BDomains.INTEGRAL_DOMAIN_DIVIDES_RMUL2
-unsafe def INTEGRAL_DOMAIN_ASSOCIATES_LMUL2 : thm := BDomains.INTEGRAL_DOMAIN_ASSOCIATES_LMUL2
-unsafe def INTEGRAL_DOMAIN_ASSOCIATES_RMUL2 : thm := BDomains.INTEGRAL_DOMAIN_ASSOCIATES_RMUL2
-unsafe def INTEGRAL_DOMAIN_MUL_EQ_SELF : thm := BDomains.INTEGRAL_DOMAIN_MUL_EQ_SELF
-unsafe def INTEGRAL_DOMAIN_DIVIDES_MUL_SELF : thm := BDomains.INTEGRAL_DOMAIN_DIVIDES_MUL_SELF
-unsafe def INTEGRAL_DOMAIN_DIVIDES_ASSOCIATES_MUL_SELF : thm := BDomains.INTEGRAL_DOMAIN_DIVIDES_ASSOCIATES_MUL_SELF
-unsafe def FIELD_EQ_ALL_UNITS : thm := BDomains.FIELD_EQ_ALL_UNITS
-unsafe def FIELD_EQ_ALL_DIVIDE_1 : thm := BDomains.FIELD_EQ_ALL_DIVIDE_1
-unsafe def FIELD_UNIT : thm := BDomains.FIELD_UNIT
-unsafe def FIELD_MUL_LINV : thm := BDomains.FIELD_MUL_LINV
-unsafe def FIELD_MUL_RINV : thm := BDomains.FIELD_MUL_RINV
-unsafe def FIELD_DIVIDES : thm := BDomains.FIELD_DIVIDES
-unsafe def FIELD_ASSOCIATES : thm := BDomains.FIELD_ASSOCIATES
-unsafe def FIELD_COPRIME : thm := BDomains.FIELD_COPRIME
-unsafe def FIELD_IMP_INTEGRAL_DOMAIN : thm := BDomains.FIELD_IMP_INTEGRAL_DOMAIN
-unsafe def FIELD_ZERODIVISOR : thm := BDomains.FIELD_ZERODIVISOR
-unsafe def FIELD_REGULAR : thm := BDomains.FIELD_REGULAR
-unsafe def FIELD_NILPOTENT : thm := BDomains.FIELD_NILPOTENT
-unsafe def FIELD_MUL_EQ_0 : thm := BDomains.FIELD_MUL_EQ_0
-unsafe def FIELD_POW_EQ_0 : thm := BDomains.FIELD_POW_EQ_0
-unsafe def FIELD_PRODUCT_EQ_0 : thm := BDomains.FIELD_PRODUCT_EQ_0
-unsafe def FINITE_INTEGRAL_DOMAIN_IMP_FIELD : thm := BDomains.FINITE_INTEGRAL_DOMAIN_IMP_FIELD
-unsafe def FINITE_INTEGRAL_DOMAIN_EQ_FIELD : thm := BDomains.FINITE_INTEGRAL_DOMAIN_EQ_FIELD
-unsafe def INTEGRAL_DOMAIN_CHAR : thm := BDomains.INTEGRAL_DOMAIN_CHAR
-unsafe def RING_CHAR_DIVIDES_MUL : thm := BDomains.RING_CHAR_DIVIDES_MUL
-unsafe def RING_CHAR_DIVIDES_PRIME : thm := BDomains.RING_CHAR_DIVIDES_PRIME
-unsafe def FINITE_INTEGRAL_DOMAIN_CHAR : thm := BDomains.FINITE_INTEGRAL_DOMAIN_CHAR
-unsafe def INTEGRAL_DOMAIN_SUBRING_GENERATED : thm := BDomains.INTEGRAL_DOMAIN_SUBRING_GENERATED
-unsafe def INTEGRAL_DOMAIN_ASSOCIATES : thm := BDomains.INTEGRAL_DOMAIN_ASSOCIATES
-unsafe def INTEGRAL_DOMAIN_10 : thm := BDomains.INTEGRAL_DOMAIN_10
-unsafe def FIELD_10 : thm := BDomains.FIELD_10
+def integral_domain : thm := BDomains.integral_domain
+def field : thm := BDomains.field
+def INTEGRAL_DOMAIN_IMP_NONTRIVIAL_RING : thm := BDomains.INTEGRAL_DOMAIN_IMP_NONTRIVIAL_RING
+def FIELD_IMP_NONTRIVIAL_RING : thm := BDomains.FIELD_IMP_NONTRIVIAL_RING
+def INTEGRAL_DOMAIN_NONTRIVIAL : thm := BDomains.INTEGRAL_DOMAIN_NONTRIVIAL
+def FIELD_NONTRIVIAL : thm := BDomains.FIELD_NONTRIVIAL
+def INTEGRAL_DOMAIN_EQ_NO_ZERODIVISORS : thm := BDomains.INTEGRAL_DOMAIN_EQ_NO_ZERODIVISORS
+def INTEGRAL_DOMAIN_EQ_ALL_REGULAR : thm := BDomains.INTEGRAL_DOMAIN_EQ_ALL_REGULAR
+def INTEGRAL_DOMAIN_ZERODIVISOR : thm := BDomains.INTEGRAL_DOMAIN_ZERODIVISOR
+def INTEGRAL_DOMAIN_REGULAR : thm := BDomains.INTEGRAL_DOMAIN_REGULAR
+def INTEGRAL_DOMAIN_MUL_EQ_0 : thm := BDomains.INTEGRAL_DOMAIN_MUL_EQ_0
+def INTEGRAL_DOMAIN_POW_EQ_0 : thm := BDomains.INTEGRAL_DOMAIN_POW_EQ_0
+def INTEGRAL_DOMAIN_NILPOTENT : thm := BDomains.INTEGRAL_DOMAIN_NILPOTENT
+def INTEGRAL_DOMAIN_PRODUCT_EQ_0 : thm := BDomains.INTEGRAL_DOMAIN_PRODUCT_EQ_0
+def INTEGRAL_DOMAIN_MUL_LCANCEL : thm := BDomains.INTEGRAL_DOMAIN_MUL_LCANCEL
+def INTEGRAL_DOMAIN_MUL_LCANCEL_EQ : thm := BDomains.INTEGRAL_DOMAIN_MUL_LCANCEL_EQ
+def INTEGRAL_DOMAIN_MUL_RCANCEL : thm := BDomains.INTEGRAL_DOMAIN_MUL_RCANCEL
+def INTEGRAL_DOMAIN_MUL_RCANCEL_EQ : thm := BDomains.INTEGRAL_DOMAIN_MUL_RCANCEL_EQ
+def INTEGRAL_DOMAIN_DIVIDES_LMUL2 : thm := BDomains.INTEGRAL_DOMAIN_DIVIDES_LMUL2
+def INTEGRAL_DOMAIN_DIVIDES_RMUL2 : thm := BDomains.INTEGRAL_DOMAIN_DIVIDES_RMUL2
+def INTEGRAL_DOMAIN_ASSOCIATES_LMUL2 : thm := BDomains.INTEGRAL_DOMAIN_ASSOCIATES_LMUL2
+def INTEGRAL_DOMAIN_ASSOCIATES_RMUL2 : thm := BDomains.INTEGRAL_DOMAIN_ASSOCIATES_RMUL2
+def INTEGRAL_DOMAIN_MUL_EQ_SELF : thm := BDomains.INTEGRAL_DOMAIN_MUL_EQ_SELF
+def INTEGRAL_DOMAIN_DIVIDES_MUL_SELF : thm := BDomains.INTEGRAL_DOMAIN_DIVIDES_MUL_SELF
+def INTEGRAL_DOMAIN_DIVIDES_ASSOCIATES_MUL_SELF : thm := BDomains.INTEGRAL_DOMAIN_DIVIDES_ASSOCIATES_MUL_SELF
+def FIELD_EQ_ALL_UNITS : thm := BDomains.FIELD_EQ_ALL_UNITS
+def FIELD_EQ_ALL_DIVIDE_1 : thm := BDomains.FIELD_EQ_ALL_DIVIDE_1
+def FIELD_UNIT : thm := BDomains.FIELD_UNIT
+def FIELD_MUL_LINV : thm := BDomains.FIELD_MUL_LINV
+def FIELD_MUL_RINV : thm := BDomains.FIELD_MUL_RINV
+def FIELD_DIVIDES : thm := BDomains.FIELD_DIVIDES
+def FIELD_ASSOCIATES : thm := BDomains.FIELD_ASSOCIATES
+def FIELD_COPRIME : thm := BDomains.FIELD_COPRIME
+def FIELD_IMP_INTEGRAL_DOMAIN : thm := BDomains.FIELD_IMP_INTEGRAL_DOMAIN
+def FIELD_ZERODIVISOR : thm := BDomains.FIELD_ZERODIVISOR
+def FIELD_REGULAR : thm := BDomains.FIELD_REGULAR
+def FIELD_NILPOTENT : thm := BDomains.FIELD_NILPOTENT
+def FIELD_MUL_EQ_0 : thm := BDomains.FIELD_MUL_EQ_0
+def FIELD_POW_EQ_0 : thm := BDomains.FIELD_POW_EQ_0
+def FIELD_PRODUCT_EQ_0 : thm := BDomains.FIELD_PRODUCT_EQ_0
+def FINITE_INTEGRAL_DOMAIN_IMP_FIELD : thm := BDomains.FINITE_INTEGRAL_DOMAIN_IMP_FIELD
+def FINITE_INTEGRAL_DOMAIN_EQ_FIELD : thm := BDomains.FINITE_INTEGRAL_DOMAIN_EQ_FIELD
+def INTEGRAL_DOMAIN_CHAR : thm := BDomains.INTEGRAL_DOMAIN_CHAR
+def RING_CHAR_DIVIDES_MUL : thm := BDomains.RING_CHAR_DIVIDES_MUL
+def RING_CHAR_DIVIDES_PRIME : thm := BDomains.RING_CHAR_DIVIDES_PRIME
+def FINITE_INTEGRAL_DOMAIN_CHAR : thm := BDomains.FINITE_INTEGRAL_DOMAIN_CHAR
+def INTEGRAL_DOMAIN_SUBRING_GENERATED : thm := BDomains.INTEGRAL_DOMAIN_SUBRING_GENERATED
+def INTEGRAL_DOMAIN_ASSOCIATES : thm := BDomains.INTEGRAL_DOMAIN_ASSOCIATES
+def INTEGRAL_DOMAIN_10 : thm := BDomains.INTEGRAL_DOMAIN_10
+def FIELD_10 : thm := BDomains.FIELD_10
 
 -- Rules
-unsafe def RING_CARRIER_RULE := BRules.RING_CARRIER_RULE
-unsafe def RING_CARRIER_TAC : HolCore.Tactics.tactic := fun g => BRules.RING_CARRIER_TAC g
-unsafe def RING_POLY_UNIVERSAL_CONV : HolCore.Equal.ioconv := fun t => BRules.RING_POLY_UNIVERSAL_CONV t
-unsafe def RING_INTEGRAL_DOMAIN_UNIVERSAL := BRules.RING_INTEGRAL_DOMAIN_UNIVERSAL
-unsafe def ring_ring_cofactors_universal := BRules.ring_ring_cofactors_universal
+def RING_CARRIER_RULE := BRules.RING_CARRIER_RULE
+def RING_CARRIER_TAC : HolCore.Tactics.tactic := fun g => BRules.RING_CARRIER_TAC g
+def RING_POLY_UNIVERSAL_CONV : HolCore.Equal.ioconv := fun t => BRules.RING_POLY_UNIVERSAL_CONV t
+def RING_INTEGRAL_DOMAIN_UNIVERSAL := BRules.RING_INTEGRAL_DOMAIN_UNIVERSAL
+def ring_ring_cofactors_universal := BRules.ring_ring_cofactors_universal
 
 -- Homs
-unsafe def ring_homomorphism : thm := BHoms.ring_homomorphism
-unsafe def ring_monomorphism : thm := BHoms.ring_monomorphism
-unsafe def ring_epimorphism : thm := BHoms.ring_epimorphism
-unsafe def ring_endomorphism : thm := BHoms.ring_endomorphism
-unsafe def ring_isomorphisms : thm := BHoms.ring_isomorphisms
-unsafe def ring_isomorphism : thm := BHoms.ring_isomorphism
-unsafe def ring_automorphism : thm := BHoms.ring_automorphism
-unsafe def RING_HOMOMORPHISM_EQ : thm := BHoms.RING_HOMOMORPHISM_EQ
-unsafe def RING_MONOMORPHISM_EQ : thm := BHoms.RING_MONOMORPHISM_EQ
-unsafe def RING_EPIMORPHISM_EQ : thm := BHoms.RING_EPIMORPHISM_EQ
-unsafe def RING_ENDOMORPHISM_EQ : thm := BHoms.RING_ENDOMORPHISM_EQ
-unsafe def RING_ISOMORPHISMS_EQ : thm := BHoms.RING_ISOMORPHISMS_EQ
-unsafe def RING_ISOMORPHISM_EQ : thm := BHoms.RING_ISOMORPHISM_EQ
-unsafe def RING_AUTOMORPHISM_EQ : thm := BHoms.RING_AUTOMORPHISM_EQ
-unsafe def RING_ISOMORPHISMS_SYM : thm := BHoms.RING_ISOMORPHISMS_SYM
-unsafe def RING_ISOMORPHISMS_IMP_ISOMORPHISM : thm := BHoms.RING_ISOMORPHISMS_IMP_ISOMORPHISM
-unsafe def RING_ISOMORPHISMS_IMP_ISOMORPHISM_ALT : thm := BHoms.RING_ISOMORPHISMS_IMP_ISOMORPHISM_ALT
-unsafe def RING_HOMOMORPHISM : thm := BHoms.RING_HOMOMORPHISM
-unsafe def RING_ISOMORPHISMS : thm := BHoms.RING_ISOMORPHISMS
-unsafe def RING_HOMOMORPHISM_IN_CARRIER : thm := BHoms.RING_HOMOMORPHISM_IN_CARRIER
-unsafe def RING_HOMOMORPHISM_0 : thm := BHoms.RING_HOMOMORPHISM_0
-unsafe def RING_HOMOMORPHISM_1 : thm := BHoms.RING_HOMOMORPHISM_1
-unsafe def RING_HOMOMORPHISM_NEG : thm := BHoms.RING_HOMOMORPHISM_NEG
-unsafe def RING_HOMOMORPHISM_ADD : thm := BHoms.RING_HOMOMORPHISM_ADD
-unsafe def RING_HOMOMORPHISM_MUL : thm := BHoms.RING_HOMOMORPHISM_MUL
-unsafe def RING_HOMOMORPHISM_SUB : thm := BHoms.RING_HOMOMORPHISM_SUB
-unsafe def RING_HOMOMORPHISM_POW : thm := BHoms.RING_HOMOMORPHISM_POW
-unsafe def RING_HOMOMORPHISM_INV : thm := BHoms.RING_HOMOMORPHISM_INV
-unsafe def FIELD_HOMOMORPHISM_INV : thm := BHoms.FIELD_HOMOMORPHISM_INV
-unsafe def FIELD_HOMOMORPHISM_DIV : thm := BHoms.FIELD_HOMOMORPHISM_DIV
-unsafe def RING_HOMOMORPHISM_RING_OF_NUM : thm := BHoms.RING_HOMOMORPHISM_RING_OF_NUM
-unsafe def RING_HOMOMORPHISM_RING_OF_INT : thm := BHoms.RING_HOMOMORPHISM_RING_OF_INT
-unsafe def RING_CHAR_HOMOMORPHIC_IMAGE : thm := BHoms.RING_CHAR_HOMOMORPHIC_IMAGE
-unsafe def RING_HOMOMORPHISM_SUM : thm := BHoms.RING_HOMOMORPHISM_SUM
-unsafe def RING_HOMOMORPHISM_PRODUCT : thm := BHoms.RING_HOMOMORPHISM_PRODUCT
-unsafe def RING_MONOMORPHISM_SUM : thm := BHoms.RING_MONOMORPHISM_SUM
-unsafe def RING_MONOMORPHISM_PRODUCT : thm := BHoms.RING_MONOMORPHISM_PRODUCT
-unsafe def RING_MONOMORPHISM_SUM_GEN : thm := BHoms.RING_MONOMORPHISM_SUM_GEN
-unsafe def RING_MONOMORPHISM_PRODUCT_GEN : thm := BHoms.RING_MONOMORPHISM_PRODUCT_GEN
-unsafe def RING_HOMOMORPHISMS_EQ_FROM_SUBRING_GENERATED : thm := BHoms.RING_HOMOMORPHISMS_EQ_FROM_SUBRING_GENERATED
-unsafe def RING_MONOMORPHISM_IMP_HOMOMORPHISM : thm := BHoms.RING_MONOMORPHISM_IMP_HOMOMORPHISM
-unsafe def RING_EPIMORPHISM_IMP_HOMOMORPHISM : thm := BHoms.RING_EPIMORPHISM_IMP_HOMOMORPHISM
-unsafe def RING_MONOMORPHISM_INJECTIVE_EQ : thm := BHoms.RING_MONOMORPHISM_INJECTIVE_EQ
-unsafe def RING_MONOMORPHISM_EQ_0 : thm := BHoms.RING_MONOMORPHISM_EQ_0
-unsafe def RING_HOMOMORPHISM_ID : thm := BHoms.RING_HOMOMORPHISM_ID
-unsafe def RING_HOMOMORPHISM_I : thm := BHoms.RING_HOMOMORPHISM_I
-unsafe def RING_MONOMORPHISM_ID : thm := BHoms.RING_MONOMORPHISM_ID
-unsafe def RING_MONOMORPHISM_I : thm := BHoms.RING_MONOMORPHISM_I
-unsafe def RING_EPIMORPHISM_ID : thm := BHoms.RING_EPIMORPHISM_ID
-unsafe def RING_EPIMORPHISM_I : thm := BHoms.RING_EPIMORPHISM_I
-unsafe def RING_ISOMORPHISMS_ID : thm := BHoms.RING_ISOMORPHISMS_ID
-unsafe def RING_ISOMORPHISMS_I : thm := BHoms.RING_ISOMORPHISMS_I
-unsafe def RING_ISOMORPHISM_ID : thm := BHoms.RING_ISOMORPHISM_ID
-unsafe def RING_ISOMORPHISM_I : thm := BHoms.RING_ISOMORPHISM_I
-unsafe def RING_AUTOMORPHISM_ID : thm := BHoms.RING_AUTOMORPHISM_ID
-unsafe def RING_AUTOMORPHISM_I : thm := BHoms.RING_AUTOMORPHISM_I
-unsafe def RING_HOMOMORPHISM_COMPOSE : thm := BHoms.RING_HOMOMORPHISM_COMPOSE
-unsafe def RING_MONOMORPHISM_COMPOSE : thm := BHoms.RING_MONOMORPHISM_COMPOSE
-unsafe def RING_MONOMORPHISM_COMPOSE_REV : thm := BHoms.RING_MONOMORPHISM_COMPOSE_REV
-unsafe def RING_EPIMORPHISM_COMPOSE : thm := BHoms.RING_EPIMORPHISM_COMPOSE
-unsafe def RING_EPIMORPHISM_COMPOSE_REV : thm := BHoms.RING_EPIMORPHISM_COMPOSE_REV
-unsafe def RING_MONOMORPHISM_LEFT_INVERTIBLE : thm := BHoms.RING_MONOMORPHISM_LEFT_INVERTIBLE
-unsafe def RING_EPIMORPHISM_RIGHT_INVERTIBLE : thm := BHoms.RING_EPIMORPHISM_RIGHT_INVERTIBLE
-unsafe def RING_HOMOMORPHISM_INTO_SUBRING : thm := BHoms.RING_HOMOMORPHISM_INTO_SUBRING
-unsafe def RING_HOMOMORPHISM_INTO_SUBRING_EQ_GEN : thm := BHoms.RING_HOMOMORPHISM_INTO_SUBRING_EQ_GEN
-unsafe def RING_HOMOMORPHISM_INTO_SUBRING_EQ : thm := BHoms.RING_HOMOMORPHISM_INTO_SUBRING_EQ
-unsafe def RING_HOMOMORPHISM_FROM_SUBRING_GENERATED : thm := BHoms.RING_HOMOMORPHISM_FROM_SUBRING_GENERATED
-unsafe def RING_MONOMORPHISM_FROM_SUBRING_GENERATED : thm := BHoms.RING_MONOMORPHISM_FROM_SUBRING_GENERATED
-unsafe def RING_HOMOMORPHISM_INCLUSION : thm := BHoms.RING_HOMOMORPHISM_INCLUSION
-unsafe def RING_MONOMORPHISM_INCLUSION : thm := BHoms.RING_MONOMORPHISM_INCLUSION
-unsafe def RING_HOMOMORPHISM_BETWEEN_SUBRINGS : thm := BHoms.RING_HOMOMORPHISM_BETWEEN_SUBRINGS
-unsafe def RING_HOMOMORPHISM_BETWEEN_SUBRINGS_ALT : thm := BHoms.RING_HOMOMORPHISM_BETWEEN_SUBRINGS_ALT
-unsafe def RING_MONOMORPHISM_INTO_SUBRING : thm := BHoms.RING_MONOMORPHISM_INTO_SUBRING
-unsafe def RING_MONOMORPHISM_BETWEEN_SUBRINGS : thm := BHoms.RING_MONOMORPHISM_BETWEEN_SUBRINGS
-unsafe def RING_MONOMORPHISM_INTO_SUPERRING : thm := BHoms.RING_MONOMORPHISM_INTO_SUPERRING
-unsafe def RING_SUM_SUBRING_GENERATED_GEN : thm := BHoms.RING_SUM_SUBRING_GENERATED_GEN
-unsafe def RING_SUM_SUBRING_GENERATED : thm := BHoms.RING_SUM_SUBRING_GENERATED
-unsafe def RING_PRODUCT_SUBRING_GENERATED_GEN : thm := BHoms.RING_PRODUCT_SUBRING_GENERATED_GEN
-unsafe def RING_PRODUCT_SUBRING_GENERATED : thm := BHoms.RING_PRODUCT_SUBRING_GENERATED
-unsafe def SUBRING_GENERATED_BY_HOMOMORPHIC_IMAGE : thm := BHoms.SUBRING_GENERATED_BY_HOMOMORPHIC_IMAGE
-unsafe def RING_EPIMORPHISM_BETWEEN_SUBRINGS : thm := BHoms.RING_EPIMORPHISM_BETWEEN_SUBRINGS
-unsafe def RING_ISOMORPHISM : thm := BHoms.RING_ISOMORPHISM
-unsafe def RING_ISOMORPHISM_SUBSET : thm := BHoms.RING_ISOMORPHISM_SUBSET
-unsafe def SUBRING_OF_HOMOMORPHIC_IMAGE : thm := BHoms.SUBRING_OF_HOMOMORPHIC_IMAGE
-unsafe def RING_IDEAL_EPIMORPHIC_IMAGE : thm := BHoms.RING_IDEAL_EPIMORPHIC_IMAGE
-unsafe def SUBRING_OF_HOMOMORPHIC_PREIMAGE : thm := BHoms.SUBRING_OF_HOMOMORPHIC_PREIMAGE
-unsafe def SUBRING_OF_EPIMORPHIC_PREIMAGE : thm := BHoms.SUBRING_OF_EPIMORPHIC_PREIMAGE
-unsafe def SUBRING_OF_HOMOMORPHIC_EQUALITIES : thm := BHoms.SUBRING_OF_HOMOMORPHIC_EQUALITIES
-unsafe def SUBRING_OF_FIXPOINTS : thm := BHoms.SUBRING_OF_FIXPOINTS
-unsafe def RING_IDEAL_HOMOMORPHIC_PREIMAGE : thm := BHoms.RING_IDEAL_HOMOMORPHIC_PREIMAGE
-unsafe def IDEAL_GENERATED_BY_HOMOMORPHIC_IMAGE : thm := BHoms.IDEAL_GENERATED_BY_HOMOMORPHIC_IMAGE
-unsafe def IDEAL_GENERATED_BY_EPIMORPHIC_IMAGE : thm := BHoms.IDEAL_GENERATED_BY_EPIMORPHIC_IMAGE
-unsafe def RING_MONOMORPHISM_EPIMORPHISM : thm := BHoms.RING_MONOMORPHISM_EPIMORPHISM
-unsafe def SUBRING_MONOMORPHISM_EPIMORPHISM : thm := BHoms.SUBRING_MONOMORPHISM_EPIMORPHISM
-unsafe def RING_ISOMORPHISM_EPIMORPHISM : thm := BHoms.RING_ISOMORPHISM_EPIMORPHISM
-unsafe def RING_ISOMORPHISM_MONOMORPHISM : thm := BHoms.RING_ISOMORPHISM_MONOMORPHISM
-unsafe def RING_ISOMORPHISM_MONOMORPHISM_ALT : thm := BHoms.RING_ISOMORPHISM_MONOMORPHISM_ALT
-unsafe def RING_ISOMORPHISM_IMP_MONOMORPHISM : thm := BHoms.RING_ISOMORPHISM_IMP_MONOMORPHISM
-unsafe def RING_ISOMORPHISM_IMP_EPIMORPHISM : thm := BHoms.RING_ISOMORPHISM_IMP_EPIMORPHISM
-unsafe def RING_ISOMORPHISM_IMP_HOMOMORPHISM : thm := BHoms.RING_ISOMORPHISM_IMP_HOMOMORPHISM
-unsafe def RING_AUTOMORPHISM_IMP_ENDOMORPHISM : thm := BHoms.RING_AUTOMORPHISM_IMP_ENDOMORPHISM
-unsafe def RING_ISOMORPHISMS_ISOMORPHISM : thm := BHoms.RING_ISOMORPHISMS_ISOMORPHISM
-unsafe def RING_ISOMORPHISM_EQ_MONOMORPHISM_FINITE : thm := BHoms.RING_ISOMORPHISM_EQ_MONOMORPHISM_FINITE
-unsafe def RING_ISOMORPHISM_EQ_EPIMORPHISM_FINITE : thm := BHoms.RING_ISOMORPHISM_EQ_EPIMORPHISM_FINITE
-unsafe def RING_ISOMORPHISMS_BETWEEN_SUBRINGS : thm := BHoms.RING_ISOMORPHISMS_BETWEEN_SUBRINGS
-unsafe def RING_ISOMORPHISMS_BETWEEN_SUBRINGS_ALT : thm := BHoms.RING_ISOMORPHISMS_BETWEEN_SUBRINGS_ALT
-unsafe def RING_ISOMORPHISM_BETWEEN_SUBRINGS : thm := BHoms.RING_ISOMORPHISM_BETWEEN_SUBRINGS
-unsafe def RING_ISOMORPHISMS_COMPOSE : thm := BHoms.RING_ISOMORPHISMS_COMPOSE
-unsafe def RING_ISOMORPHISM_COMPOSE : thm := BHoms.RING_ISOMORPHISM_COMPOSE
-unsafe def RING_ISOMORPHISM_COMPOSE_REV : thm := BHoms.RING_ISOMORPHISM_COMPOSE_REV
-unsafe def RING_EPIMORPHISM_ISOMORPHISM_COMPOSE_REV : thm := BHoms.RING_EPIMORPHISM_ISOMORPHISM_COMPOSE_REV
-unsafe def RING_MONOMORPHISM_ISOMORPHISM_COMPOSE_REV : thm := BHoms.RING_MONOMORPHISM_ISOMORPHISM_COMPOSE_REV
-unsafe def RING_ISOMORPHISM_INVERSE : thm := BHoms.RING_ISOMORPHISM_INVERSE
-unsafe def RING_HOMOMORPHISM_FROM_TRIVIAL_RING : thm := BHoms.RING_HOMOMORPHISM_FROM_TRIVIAL_RING
-unsafe def RING_MONOMORPHISM_FROM_TRIVIAL_RING : thm := BHoms.RING_MONOMORPHISM_FROM_TRIVIAL_RING
-unsafe def RING_MONOMORPHISM_TO_TRIVIAL_RING : thm := BHoms.RING_MONOMORPHISM_TO_TRIVIAL_RING
-unsafe def RING_EPIMORPHISM_FROM_TRIVIAL_RING : thm := BHoms.RING_EPIMORPHISM_FROM_TRIVIAL_RING
-unsafe def RING_EPIMORPHISM_TO_TRIVIAL_RING : thm := BHoms.RING_EPIMORPHISM_TO_TRIVIAL_RING
-unsafe def TRIVIAL_RING_MONOMORPHIC_PREIMAGE : thm := BHoms.TRIVIAL_RING_MONOMORPHIC_PREIMAGE
-unsafe def TRIVIAL_RING_HOMOMORPHIC_IMAGE : thm := BHoms.TRIVIAL_RING_HOMOMORPHIC_IMAGE
-unsafe def TRIVIAL_RING_MONOMORPHIC_IMAGE_EQ : thm := BHoms.TRIVIAL_RING_MONOMORPHIC_IMAGE_EQ
-unsafe def RING_NILPOTENT_HOMOMORPHIC_IMAGE : thm := BHoms.RING_NILPOTENT_HOMOMORPHIC_IMAGE
-unsafe def RING_NILPOTENT_MONOMORPHIC_IMAGE_EQ : thm := BHoms.RING_NILPOTENT_MONOMORPHIC_IMAGE_EQ
-unsafe def RING_CHAR_MONOMORPHIC_IMAGE : thm := BHoms.RING_CHAR_MONOMORPHIC_IMAGE
+def ring_homomorphism : thm := BHoms.ring_homomorphism
+def ring_monomorphism : thm := BHoms.ring_monomorphism
+def ring_epimorphism : thm := BHoms.ring_epimorphism
+def ring_endomorphism : thm := BHoms.ring_endomorphism
+def ring_isomorphisms : thm := BHoms.ring_isomorphisms
+def ring_isomorphism : thm := BHoms.ring_isomorphism
+def ring_automorphism : thm := BHoms.ring_automorphism
+def RING_HOMOMORPHISM_EQ : thm := BHoms.RING_HOMOMORPHISM_EQ
+def RING_MONOMORPHISM_EQ : thm := BHoms.RING_MONOMORPHISM_EQ
+def RING_EPIMORPHISM_EQ : thm := BHoms.RING_EPIMORPHISM_EQ
+def RING_ENDOMORPHISM_EQ : thm := BHoms.RING_ENDOMORPHISM_EQ
+def RING_ISOMORPHISMS_EQ : thm := BHoms.RING_ISOMORPHISMS_EQ
+def RING_ISOMORPHISM_EQ : thm := BHoms.RING_ISOMORPHISM_EQ
+def RING_AUTOMORPHISM_EQ : thm := BHoms.RING_AUTOMORPHISM_EQ
+def RING_ISOMORPHISMS_SYM : thm := BHoms.RING_ISOMORPHISMS_SYM
+def RING_ISOMORPHISMS_IMP_ISOMORPHISM : thm := BHoms.RING_ISOMORPHISMS_IMP_ISOMORPHISM
+def RING_ISOMORPHISMS_IMP_ISOMORPHISM_ALT : thm := BHoms.RING_ISOMORPHISMS_IMP_ISOMORPHISM_ALT
+def RING_HOMOMORPHISM : thm := BHoms.RING_HOMOMORPHISM
+def RING_ISOMORPHISMS : thm := BHoms.RING_ISOMORPHISMS
+def RING_HOMOMORPHISM_IN_CARRIER : thm := BHoms.RING_HOMOMORPHISM_IN_CARRIER
+def RING_HOMOMORPHISM_0 : thm := BHoms.RING_HOMOMORPHISM_0
+def RING_HOMOMORPHISM_1 : thm := BHoms.RING_HOMOMORPHISM_1
+def RING_HOMOMORPHISM_NEG : thm := BHoms.RING_HOMOMORPHISM_NEG
+def RING_HOMOMORPHISM_ADD : thm := BHoms.RING_HOMOMORPHISM_ADD
+def RING_HOMOMORPHISM_MUL : thm := BHoms.RING_HOMOMORPHISM_MUL
+def RING_HOMOMORPHISM_SUB : thm := BHoms.RING_HOMOMORPHISM_SUB
+def RING_HOMOMORPHISM_POW : thm := BHoms.RING_HOMOMORPHISM_POW
+def RING_HOMOMORPHISM_INV : thm := BHoms.RING_HOMOMORPHISM_INV
+def FIELD_HOMOMORPHISM_INV : thm := BHoms.FIELD_HOMOMORPHISM_INV
+def FIELD_HOMOMORPHISM_DIV : thm := BHoms.FIELD_HOMOMORPHISM_DIV
+def RING_HOMOMORPHISM_RING_OF_NUM : thm := BHoms.RING_HOMOMORPHISM_RING_OF_NUM
+def RING_HOMOMORPHISM_RING_OF_INT : thm := BHoms.RING_HOMOMORPHISM_RING_OF_INT
+def RING_CHAR_HOMOMORPHIC_IMAGE : thm := BHoms.RING_CHAR_HOMOMORPHIC_IMAGE
+def RING_HOMOMORPHISM_SUM : thm := BHoms.RING_HOMOMORPHISM_SUM
+def RING_HOMOMORPHISM_PRODUCT : thm := BHoms.RING_HOMOMORPHISM_PRODUCT
+def RING_MONOMORPHISM_SUM : thm := BHoms.RING_MONOMORPHISM_SUM
+def RING_MONOMORPHISM_PRODUCT : thm := BHoms.RING_MONOMORPHISM_PRODUCT
+def RING_MONOMORPHISM_SUM_GEN : thm := BHoms.RING_MONOMORPHISM_SUM_GEN
+def RING_MONOMORPHISM_PRODUCT_GEN : thm := BHoms.RING_MONOMORPHISM_PRODUCT_GEN
+def RING_HOMOMORPHISMS_EQ_FROM_SUBRING_GENERATED : thm := BHoms.RING_HOMOMORPHISMS_EQ_FROM_SUBRING_GENERATED
+def RING_MONOMORPHISM_IMP_HOMOMORPHISM : thm := BHoms.RING_MONOMORPHISM_IMP_HOMOMORPHISM
+def RING_EPIMORPHISM_IMP_HOMOMORPHISM : thm := BHoms.RING_EPIMORPHISM_IMP_HOMOMORPHISM
+def RING_MONOMORPHISM_INJECTIVE_EQ : thm := BHoms.RING_MONOMORPHISM_INJECTIVE_EQ
+def RING_MONOMORPHISM_EQ_0 : thm := BHoms.RING_MONOMORPHISM_EQ_0
+def RING_HOMOMORPHISM_ID : thm := BHoms.RING_HOMOMORPHISM_ID
+def RING_HOMOMORPHISM_I : thm := BHoms.RING_HOMOMORPHISM_I
+def RING_MONOMORPHISM_ID : thm := BHoms.RING_MONOMORPHISM_ID
+def RING_MONOMORPHISM_I : thm := BHoms.RING_MONOMORPHISM_I
+def RING_EPIMORPHISM_ID : thm := BHoms.RING_EPIMORPHISM_ID
+def RING_EPIMORPHISM_I : thm := BHoms.RING_EPIMORPHISM_I
+def RING_ISOMORPHISMS_ID : thm := BHoms.RING_ISOMORPHISMS_ID
+def RING_ISOMORPHISMS_I : thm := BHoms.RING_ISOMORPHISMS_I
+def RING_ISOMORPHISM_ID : thm := BHoms.RING_ISOMORPHISM_ID
+def RING_ISOMORPHISM_I : thm := BHoms.RING_ISOMORPHISM_I
+def RING_AUTOMORPHISM_ID : thm := BHoms.RING_AUTOMORPHISM_ID
+def RING_AUTOMORPHISM_I : thm := BHoms.RING_AUTOMORPHISM_I
+def RING_HOMOMORPHISM_COMPOSE : thm := BHoms.RING_HOMOMORPHISM_COMPOSE
+def RING_MONOMORPHISM_COMPOSE : thm := BHoms.RING_MONOMORPHISM_COMPOSE
+def RING_MONOMORPHISM_COMPOSE_REV : thm := BHoms.RING_MONOMORPHISM_COMPOSE_REV
+def RING_EPIMORPHISM_COMPOSE : thm := BHoms.RING_EPIMORPHISM_COMPOSE
+def RING_EPIMORPHISM_COMPOSE_REV : thm := BHoms.RING_EPIMORPHISM_COMPOSE_REV
+def RING_MONOMORPHISM_LEFT_INVERTIBLE : thm := BHoms.RING_MONOMORPHISM_LEFT_INVERTIBLE
+def RING_EPIMORPHISM_RIGHT_INVERTIBLE : thm := BHoms.RING_EPIMORPHISM_RIGHT_INVERTIBLE
+def RING_HOMOMORPHISM_INTO_SUBRING : thm := BHoms.RING_HOMOMORPHISM_INTO_SUBRING
+def RING_HOMOMORPHISM_INTO_SUBRING_EQ_GEN : thm := BHoms.RING_HOMOMORPHISM_INTO_SUBRING_EQ_GEN
+def RING_HOMOMORPHISM_INTO_SUBRING_EQ : thm := BHoms.RING_HOMOMORPHISM_INTO_SUBRING_EQ
+def RING_HOMOMORPHISM_FROM_SUBRING_GENERATED : thm := BHoms.RING_HOMOMORPHISM_FROM_SUBRING_GENERATED
+def RING_MONOMORPHISM_FROM_SUBRING_GENERATED : thm := BHoms.RING_MONOMORPHISM_FROM_SUBRING_GENERATED
+def RING_HOMOMORPHISM_INCLUSION : thm := BHoms.RING_HOMOMORPHISM_INCLUSION
+def RING_MONOMORPHISM_INCLUSION : thm := BHoms.RING_MONOMORPHISM_INCLUSION
+def RING_HOMOMORPHISM_BETWEEN_SUBRINGS : thm := BHoms.RING_HOMOMORPHISM_BETWEEN_SUBRINGS
+def RING_HOMOMORPHISM_BETWEEN_SUBRINGS_ALT : thm := BHoms.RING_HOMOMORPHISM_BETWEEN_SUBRINGS_ALT
+def RING_MONOMORPHISM_INTO_SUBRING : thm := BHoms.RING_MONOMORPHISM_INTO_SUBRING
+def RING_MONOMORPHISM_BETWEEN_SUBRINGS : thm := BHoms.RING_MONOMORPHISM_BETWEEN_SUBRINGS
+def RING_MONOMORPHISM_INTO_SUPERRING : thm := BHoms.RING_MONOMORPHISM_INTO_SUPERRING
+def RING_SUM_SUBRING_GENERATED_GEN : thm := BHoms.RING_SUM_SUBRING_GENERATED_GEN
+def RING_SUM_SUBRING_GENERATED : thm := BHoms.RING_SUM_SUBRING_GENERATED
+def RING_PRODUCT_SUBRING_GENERATED_GEN : thm := BHoms.RING_PRODUCT_SUBRING_GENERATED_GEN
+def RING_PRODUCT_SUBRING_GENERATED : thm := BHoms.RING_PRODUCT_SUBRING_GENERATED
+def SUBRING_GENERATED_BY_HOMOMORPHIC_IMAGE : thm := BHoms.SUBRING_GENERATED_BY_HOMOMORPHIC_IMAGE
+def RING_EPIMORPHISM_BETWEEN_SUBRINGS : thm := BHoms.RING_EPIMORPHISM_BETWEEN_SUBRINGS
+def RING_ISOMORPHISM : thm := BHoms.RING_ISOMORPHISM
+def RING_ISOMORPHISM_SUBSET : thm := BHoms.RING_ISOMORPHISM_SUBSET
+def SUBRING_OF_HOMOMORPHIC_IMAGE : thm := BHoms.SUBRING_OF_HOMOMORPHIC_IMAGE
+def RING_IDEAL_EPIMORPHIC_IMAGE : thm := BHoms.RING_IDEAL_EPIMORPHIC_IMAGE
+def SUBRING_OF_HOMOMORPHIC_PREIMAGE : thm := BHoms.SUBRING_OF_HOMOMORPHIC_PREIMAGE
+def SUBRING_OF_EPIMORPHIC_PREIMAGE : thm := BHoms.SUBRING_OF_EPIMORPHIC_PREIMAGE
+def SUBRING_OF_HOMOMORPHIC_EQUALITIES : thm := BHoms.SUBRING_OF_HOMOMORPHIC_EQUALITIES
+def SUBRING_OF_FIXPOINTS : thm := BHoms.SUBRING_OF_FIXPOINTS
+def RING_IDEAL_HOMOMORPHIC_PREIMAGE : thm := BHoms.RING_IDEAL_HOMOMORPHIC_PREIMAGE
+def IDEAL_GENERATED_BY_HOMOMORPHIC_IMAGE : thm := BHoms.IDEAL_GENERATED_BY_HOMOMORPHIC_IMAGE
+def IDEAL_GENERATED_BY_EPIMORPHIC_IMAGE : thm := BHoms.IDEAL_GENERATED_BY_EPIMORPHIC_IMAGE
+def RING_MONOMORPHISM_EPIMORPHISM : thm := BHoms.RING_MONOMORPHISM_EPIMORPHISM
+def SUBRING_MONOMORPHISM_EPIMORPHISM : thm := BHoms.SUBRING_MONOMORPHISM_EPIMORPHISM
+def RING_ISOMORPHISM_EPIMORPHISM : thm := BHoms.RING_ISOMORPHISM_EPIMORPHISM
+def RING_ISOMORPHISM_MONOMORPHISM : thm := BHoms.RING_ISOMORPHISM_MONOMORPHISM
+def RING_ISOMORPHISM_MONOMORPHISM_ALT : thm := BHoms.RING_ISOMORPHISM_MONOMORPHISM_ALT
+def RING_ISOMORPHISM_IMP_MONOMORPHISM : thm := BHoms.RING_ISOMORPHISM_IMP_MONOMORPHISM
+def RING_ISOMORPHISM_IMP_EPIMORPHISM : thm := BHoms.RING_ISOMORPHISM_IMP_EPIMORPHISM
+def RING_ISOMORPHISM_IMP_HOMOMORPHISM : thm := BHoms.RING_ISOMORPHISM_IMP_HOMOMORPHISM
+def RING_AUTOMORPHISM_IMP_ENDOMORPHISM : thm := BHoms.RING_AUTOMORPHISM_IMP_ENDOMORPHISM
+def RING_ISOMORPHISMS_ISOMORPHISM : thm := BHoms.RING_ISOMORPHISMS_ISOMORPHISM
+def RING_ISOMORPHISM_EQ_MONOMORPHISM_FINITE : thm := BHoms.RING_ISOMORPHISM_EQ_MONOMORPHISM_FINITE
+def RING_ISOMORPHISM_EQ_EPIMORPHISM_FINITE : thm := BHoms.RING_ISOMORPHISM_EQ_EPIMORPHISM_FINITE
+def RING_ISOMORPHISMS_BETWEEN_SUBRINGS : thm := BHoms.RING_ISOMORPHISMS_BETWEEN_SUBRINGS
+def RING_ISOMORPHISMS_BETWEEN_SUBRINGS_ALT : thm := BHoms.RING_ISOMORPHISMS_BETWEEN_SUBRINGS_ALT
+def RING_ISOMORPHISM_BETWEEN_SUBRINGS : thm := BHoms.RING_ISOMORPHISM_BETWEEN_SUBRINGS
+def RING_ISOMORPHISMS_COMPOSE : thm := BHoms.RING_ISOMORPHISMS_COMPOSE
+def RING_ISOMORPHISM_COMPOSE : thm := BHoms.RING_ISOMORPHISM_COMPOSE
+def RING_ISOMORPHISM_COMPOSE_REV : thm := BHoms.RING_ISOMORPHISM_COMPOSE_REV
+def RING_EPIMORPHISM_ISOMORPHISM_COMPOSE_REV : thm := BHoms.RING_EPIMORPHISM_ISOMORPHISM_COMPOSE_REV
+def RING_MONOMORPHISM_ISOMORPHISM_COMPOSE_REV : thm := BHoms.RING_MONOMORPHISM_ISOMORPHISM_COMPOSE_REV
+def RING_ISOMORPHISM_INVERSE : thm := BHoms.RING_ISOMORPHISM_INVERSE
+def RING_HOMOMORPHISM_FROM_TRIVIAL_RING : thm := BHoms.RING_HOMOMORPHISM_FROM_TRIVIAL_RING
+def RING_MONOMORPHISM_FROM_TRIVIAL_RING : thm := BHoms.RING_MONOMORPHISM_FROM_TRIVIAL_RING
+def RING_MONOMORPHISM_TO_TRIVIAL_RING : thm := BHoms.RING_MONOMORPHISM_TO_TRIVIAL_RING
+def RING_EPIMORPHISM_FROM_TRIVIAL_RING : thm := BHoms.RING_EPIMORPHISM_FROM_TRIVIAL_RING
+def RING_EPIMORPHISM_TO_TRIVIAL_RING : thm := BHoms.RING_EPIMORPHISM_TO_TRIVIAL_RING
+def TRIVIAL_RING_MONOMORPHIC_PREIMAGE : thm := BHoms.TRIVIAL_RING_MONOMORPHIC_PREIMAGE
+def TRIVIAL_RING_HOMOMORPHIC_IMAGE : thm := BHoms.TRIVIAL_RING_HOMOMORPHIC_IMAGE
+def TRIVIAL_RING_MONOMORPHIC_IMAGE_EQ : thm := BHoms.TRIVIAL_RING_MONOMORPHIC_IMAGE_EQ
+def RING_NILPOTENT_HOMOMORPHIC_IMAGE : thm := BHoms.RING_NILPOTENT_HOMOMORPHIC_IMAGE
+def RING_NILPOTENT_MONOMORPHIC_IMAGE_EQ : thm := BHoms.RING_NILPOTENT_MONOMORPHIC_IMAGE_EQ
+def RING_CHAR_MONOMORPHIC_IMAGE : thm := BHoms.RING_CHAR_MONOMORPHIC_IMAGE
 
 -- Iso
-unsafe def isomorphic_ring : thm := BIso.isomorphic_ring
-unsafe def RING_ISOMORPHISM_IMP_ISOMORPHIC : thm := BIso.RING_ISOMORPHISM_IMP_ISOMORPHIC
-unsafe def ISOMORPHIC_RING_REFL : thm := BIso.ISOMORPHIC_RING_REFL
-unsafe def ISOMORPHIC_RING_EQ : thm := BIso.ISOMORPHIC_RING_EQ
-unsafe def ISOMORPHIC_RING_SYM : thm := BIso.ISOMORPHIC_RING_SYM
-unsafe def ISOMORPHIC_RING_TRANS : thm := BIso.ISOMORPHIC_RING_TRANS
-unsafe def ISOMORPHIC_RING_TRIVIALITY : thm := BIso.ISOMORPHIC_RING_TRIVIALITY
-unsafe def ISOMORPHIC_TO_TRIVIAL_RING : thm := BIso.ISOMORPHIC_TO_TRIVIAL_RING
-unsafe def ISOMORPHIC_TRIVIAL_RINGS : thm := BIso.ISOMORPHIC_TRIVIAL_RINGS
-unsafe def ISOMORPHIC_RING_SINGLETON_RING : thm := BIso.ISOMORPHIC_RING_SINGLETON_RING
-unsafe def CARD_LE_RING_MONOMORPHIC_IMAGE : thm := BIso.CARD_LE_RING_MONOMORPHIC_IMAGE
-unsafe def CARD_LE_RING_EPIMORPHIC_IMAGE : thm := BIso.CARD_LE_RING_EPIMORPHIC_IMAGE
-unsafe def CARD_EQ_RING_ISOMORPHIC_IMAGE : thm := BIso.CARD_EQ_RING_ISOMORPHIC_IMAGE
-unsafe def ISOMORPHIC_RING_CARD_EQ : thm := BIso.ISOMORPHIC_RING_CARD_EQ
-unsafe def ISOMORPHIC_RING_FINITENESS : thm := BIso.ISOMORPHIC_RING_FINITENESS
-unsafe def ISOMORPHIC_RING_INFINITENESS : thm := BIso.ISOMORPHIC_RING_INFINITENESS
-unsafe def FINITE_RING_MONOMORPHIC_PREIMAGE : thm := BIso.FINITE_RING_MONOMORPHIC_PREIMAGE
-unsafe def FINITE_RING_EPIMORPHIC_IMAGE : thm := BIso.FINITE_RING_EPIMORPHIC_IMAGE
-unsafe def CARD_EQ_RING_MONOMORPHIC_IMAGE : thm := BIso.CARD_EQ_RING_MONOMORPHIC_IMAGE
-unsafe def ISOMORPHIC_RING_SIZE : thm := BIso.ISOMORPHIC_RING_SIZE
-unsafe def ISOMORPHIC_RING_CARD : thm := BIso.ISOMORPHIC_RING_CARD
-unsafe def ISOMORPHIC_RING_CHAR : thm := BIso.ISOMORPHIC_RING_CHAR
-unsafe def ISOMORPHIC_TRANSPORT_OF_RING : thm := BIso.ISOMORPHIC_TRANSPORT_OF_RING
-unsafe def ISOMORPHIC_COPY_OF_RING : thm := BIso.ISOMORPHIC_COPY_OF_RING
-unsafe def ISOMORPHIC_SUBCOPY_OF_RING : thm := BIso.ISOMORPHIC_SUBCOPY_OF_RING
+def isomorphic_ring : thm := BIso.isomorphic_ring
+def RING_ISOMORPHISM_IMP_ISOMORPHIC : thm := BIso.RING_ISOMORPHISM_IMP_ISOMORPHIC
+def ISOMORPHIC_RING_REFL : thm := BIso.ISOMORPHIC_RING_REFL
+def ISOMORPHIC_RING_EQ : thm := BIso.ISOMORPHIC_RING_EQ
+def ISOMORPHIC_RING_SYM : thm := BIso.ISOMORPHIC_RING_SYM
+def ISOMORPHIC_RING_TRANS : thm := BIso.ISOMORPHIC_RING_TRANS
+def ISOMORPHIC_RING_TRIVIALITY : thm := BIso.ISOMORPHIC_RING_TRIVIALITY
+def ISOMORPHIC_TO_TRIVIAL_RING : thm := BIso.ISOMORPHIC_TO_TRIVIAL_RING
+def ISOMORPHIC_TRIVIAL_RINGS : thm := BIso.ISOMORPHIC_TRIVIAL_RINGS
+def ISOMORPHIC_RING_SINGLETON_RING : thm := BIso.ISOMORPHIC_RING_SINGLETON_RING
+def CARD_LE_RING_MONOMORPHIC_IMAGE : thm := BIso.CARD_LE_RING_MONOMORPHIC_IMAGE
+def CARD_LE_RING_EPIMORPHIC_IMAGE : thm := BIso.CARD_LE_RING_EPIMORPHIC_IMAGE
+def CARD_EQ_RING_ISOMORPHIC_IMAGE : thm := BIso.CARD_EQ_RING_ISOMORPHIC_IMAGE
+def ISOMORPHIC_RING_CARD_EQ : thm := BIso.ISOMORPHIC_RING_CARD_EQ
+def ISOMORPHIC_RING_FINITENESS : thm := BIso.ISOMORPHIC_RING_FINITENESS
+def ISOMORPHIC_RING_INFINITENESS : thm := BIso.ISOMORPHIC_RING_INFINITENESS
+def FINITE_RING_MONOMORPHIC_PREIMAGE : thm := BIso.FINITE_RING_MONOMORPHIC_PREIMAGE
+def FINITE_RING_EPIMORPHIC_IMAGE : thm := BIso.FINITE_RING_EPIMORPHIC_IMAGE
+def CARD_EQ_RING_MONOMORPHIC_IMAGE : thm := BIso.CARD_EQ_RING_MONOMORPHIC_IMAGE
+def ISOMORPHIC_RING_SIZE : thm := BIso.ISOMORPHIC_RING_SIZE
+def ISOMORPHIC_RING_CARD : thm := BIso.ISOMORPHIC_RING_CARD
+def ISOMORPHIC_RING_CHAR : thm := BIso.ISOMORPHIC_RING_CHAR
+def ISOMORPHIC_TRANSPORT_OF_RING : thm := BIso.ISOMORPHIC_TRANSPORT_OF_RING
+def ISOMORPHIC_COPY_OF_RING : thm := BIso.ISOMORPHIC_COPY_OF_RING
+def ISOMORPHIC_SUBCOPY_OF_RING : thm := BIso.ISOMORPHIC_SUBCOPY_OF_RING
 
 -- Kernels
-unsafe def ring_kernel : thm := BKernels.ring_kernel
-unsafe def ring_image : thm := BKernels.ring_image
-unsafe def RING_KERNEL_0 : thm := BKernels.RING_KERNEL_0
-unsafe def RING_KERNEL_NONEMPTY : thm := BKernels.RING_KERNEL_NONEMPTY
-unsafe def RING_KERNEL_SUBSET_CARRIER : thm := BKernels.RING_KERNEL_SUBSET_CARRIER
-unsafe def RING_MONOMORPHISM : thm := BKernels.RING_MONOMORPHISM
-unsafe def RING_MONOMORPHISM_ALT : thm := BKernels.RING_MONOMORPHISM_ALT
-unsafe def RING_MONOMORPHISM_ALT_EQ : thm := BKernels.RING_MONOMORPHISM_ALT_EQ
-unsafe def RING_EPIMORPHISM : thm := BKernels.RING_EPIMORPHISM
-unsafe def RING_EPIMORPHISM_ALT : thm := BKernels.RING_EPIMORPHISM_ALT
-unsafe def RING_ISOMORPHISM_RING_KERNEL_RING_IMAGE : thm := BKernels.RING_ISOMORPHISM_RING_KERNEL_RING_IMAGE
-unsafe def RING_ISOMORPHISM_ALT : thm := BKernels.RING_ISOMORPHISM_ALT
-unsafe def CARD_EQ_RING_IMAGE_KERNEL : thm := BKernels.CARD_EQ_RING_IMAGE_KERNEL
-unsafe def RING_IDEAL_RING_KERNEL : thm := BKernels.RING_IDEAL_RING_KERNEL
-unsafe def SUBRING_RING_IMAGE : thm := BKernels.SUBRING_RING_IMAGE
-unsafe def RING_KERNEL_TO_SUBRING_GENERATED : thm := BKernels.RING_KERNEL_TO_SUBRING_GENERATED
-unsafe def RING_IMAGE_TO_SUBRING_GENERATED : thm := BKernels.RING_IMAGE_TO_SUBRING_GENERATED
-unsafe def RING_KERNEL_FROM_SUBRING_GENERATED : thm := BKernels.RING_KERNEL_FROM_SUBRING_GENERATED
-unsafe def RING_IMAGE_FROM_SUBRING_GENERATED : thm := BKernels.RING_IMAGE_FROM_SUBRING_GENERATED
-unsafe def RING_ISOMORPHISM_ONTO_IMAGE : thm := BKernels.RING_ISOMORPHISM_ONTO_IMAGE
-unsafe def SUBRING_IMP_MONOMORPHIC_PROPERTY : thm := BKernels.SUBRING_IMP_MONOMORPHIC_PROPERTY
-unsafe def RING_KERNEL_FROM_TRIVIAL_RING : thm := BKernels.RING_KERNEL_FROM_TRIVIAL_RING
-unsafe def RING_IMAGE_FROM_TRIVIAL_RING : thm := BKernels.RING_IMAGE_FROM_TRIVIAL_RING
-unsafe def RING_KERNEL_TO_TRIVIAL_RING : thm := BKernels.RING_KERNEL_TO_TRIVIAL_RING
-unsafe def RING_IMAGE_TO_TRIVIAL_RING : thm := BKernels.RING_IMAGE_TO_TRIVIAL_RING
-unsafe def RING_HOMOMORPHISM_PREIMAGE_IMAGE_GEN : thm := BKernels.RING_HOMOMORPHISM_PREIMAGE_IMAGE_GEN
-unsafe def RING_HOMOMORPHISM_IMAGE_PREIMAGE : thm := BKernels.RING_HOMOMORPHISM_IMAGE_PREIMAGE
-unsafe def RING_HOMOMORPHISM_PREIMAGE_IMAGE : thm := BKernels.RING_HOMOMORPHISM_PREIMAGE_IMAGE
-unsafe def RING_HOMOMORPHISM_IMAGE_PREIMAGE_EQ : thm := BKernels.RING_HOMOMORPHISM_IMAGE_PREIMAGE_EQ
-unsafe def RING_EPIMORPHISM_IDEAL_CORRESPONDENCE : thm := BKernels.RING_EPIMORPHISM_IDEAL_CORRESPONDENCE
-unsafe def RING_EPIMORPHISM_SUBRING_CORRESPONDENCE : thm := BKernels.RING_EPIMORPHISM_SUBRING_CORRESPONDENCE
-unsafe def RING_EPIMORPHISM_IDEAL_CORRESPONDENCE_ALT : thm := BKernels.RING_EPIMORPHISM_IDEAL_CORRESPONDENCE_ALT
-unsafe def RING_EPIMORPHISM_SUBRING_CORRESPONDENCE_ALT : thm := BKernels.RING_EPIMORPHISM_SUBRING_CORRESPONDENCE_ALT
-unsafe def RING_IDEAL_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_IDEAL_ISOMORPHIC_IMAGE_EQ
-unsafe def RING_DIVIDES_HOMOMORPHIC_IMAGE : thm := BKernels.RING_DIVIDES_HOMOMORPHIC_IMAGE
-unsafe def RING_ASSOCIATES_HOMOMORPHIC_IMAGE : thm := BKernels.RING_ASSOCIATES_HOMOMORPHIC_IMAGE
-unsafe def RING_UNIT_HOMOMORPHIC_IMAGE : thm := BKernels.RING_UNIT_HOMOMORPHIC_IMAGE
-unsafe def RING_DIVIDES_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_DIVIDES_ISOMORPHIC_IMAGE_EQ
-unsafe def RING_ASSOCIATES_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_ASSOCIATES_ISOMORPHIC_IMAGE_EQ
-unsafe def RING_UNIT_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_UNIT_ISOMORPHIC_IMAGE_EQ
-unsafe def RING_ZERODIVISOR_MONOMORPHIC_IMAGE : thm := BKernels.RING_ZERODIVISOR_MONOMORPHIC_IMAGE
-unsafe def RING_ZERODIVISOR_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_ZERODIVISOR_ISOMORPHIC_IMAGE_EQ
-unsafe def RING_REGULAR_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_REGULAR_ISOMORPHIC_IMAGE_EQ
-unsafe def ISOMORPHIC_RING_INTEGRAL_DOMAINNESS : thm := BKernels.ISOMORPHIC_RING_INTEGRAL_DOMAINNESS
-unsafe def INTEGRAL_DOMAIN_MONOMORPHIC_PREIMAGE : thm := BKernels.INTEGRAL_DOMAIN_MONOMORPHIC_PREIMAGE
-unsafe def FIELD_EPIMORPHIC_IMAGE : thm := BKernels.FIELD_EPIMORPHIC_IMAGE
-unsafe def ISOMORPHIC_RING_FIELDNESS : thm := BKernels.ISOMORPHIC_RING_FIELDNESS
-unsafe def RING_HOMOMORPHISM_EPIMORPHISM_FACTOR : thm := BKernels.RING_HOMOMORPHISM_EPIMORPHISM_FACTOR
+def ring_kernel : thm := BKernels.ring_kernel
+def ring_image : thm := BKernels.ring_image
+def RING_KERNEL_0 : thm := BKernels.RING_KERNEL_0
+def RING_KERNEL_NONEMPTY : thm := BKernels.RING_KERNEL_NONEMPTY
+def RING_KERNEL_SUBSET_CARRIER : thm := BKernels.RING_KERNEL_SUBSET_CARRIER
+def RING_MONOMORPHISM : thm := BKernels.RING_MONOMORPHISM
+def RING_MONOMORPHISM_ALT : thm := BKernels.RING_MONOMORPHISM_ALT
+def RING_MONOMORPHISM_ALT_EQ : thm := BKernels.RING_MONOMORPHISM_ALT_EQ
+def RING_EPIMORPHISM : thm := BKernels.RING_EPIMORPHISM
+def RING_EPIMORPHISM_ALT : thm := BKernels.RING_EPIMORPHISM_ALT
+def RING_ISOMORPHISM_RING_KERNEL_RING_IMAGE : thm := BKernels.RING_ISOMORPHISM_RING_KERNEL_RING_IMAGE
+def RING_ISOMORPHISM_ALT : thm := BKernels.RING_ISOMORPHISM_ALT
+def CARD_EQ_RING_IMAGE_KERNEL : thm := BKernels.CARD_EQ_RING_IMAGE_KERNEL
+def RING_IDEAL_RING_KERNEL : thm := BKernels.RING_IDEAL_RING_KERNEL
+def SUBRING_RING_IMAGE : thm := BKernels.SUBRING_RING_IMAGE
+def RING_KERNEL_TO_SUBRING_GENERATED : thm := BKernels.RING_KERNEL_TO_SUBRING_GENERATED
+def RING_IMAGE_TO_SUBRING_GENERATED : thm := BKernels.RING_IMAGE_TO_SUBRING_GENERATED
+def RING_KERNEL_FROM_SUBRING_GENERATED : thm := BKernels.RING_KERNEL_FROM_SUBRING_GENERATED
+def RING_IMAGE_FROM_SUBRING_GENERATED : thm := BKernels.RING_IMAGE_FROM_SUBRING_GENERATED
+def RING_ISOMORPHISM_ONTO_IMAGE : thm := BKernels.RING_ISOMORPHISM_ONTO_IMAGE
+def SUBRING_IMP_MONOMORPHIC_PROPERTY : thm := BKernels.SUBRING_IMP_MONOMORPHIC_PROPERTY
+def RING_KERNEL_FROM_TRIVIAL_RING : thm := BKernels.RING_KERNEL_FROM_TRIVIAL_RING
+def RING_IMAGE_FROM_TRIVIAL_RING : thm := BKernels.RING_IMAGE_FROM_TRIVIAL_RING
+def RING_KERNEL_TO_TRIVIAL_RING : thm := BKernels.RING_KERNEL_TO_TRIVIAL_RING
+def RING_IMAGE_TO_TRIVIAL_RING : thm := BKernels.RING_IMAGE_TO_TRIVIAL_RING
+def RING_HOMOMORPHISM_PREIMAGE_IMAGE_GEN : thm := BKernels.RING_HOMOMORPHISM_PREIMAGE_IMAGE_GEN
+def RING_HOMOMORPHISM_IMAGE_PREIMAGE : thm := BKernels.RING_HOMOMORPHISM_IMAGE_PREIMAGE
+def RING_HOMOMORPHISM_PREIMAGE_IMAGE : thm := BKernels.RING_HOMOMORPHISM_PREIMAGE_IMAGE
+def RING_HOMOMORPHISM_IMAGE_PREIMAGE_EQ : thm := BKernels.RING_HOMOMORPHISM_IMAGE_PREIMAGE_EQ
+def RING_EPIMORPHISM_IDEAL_CORRESPONDENCE : thm := BKernels.RING_EPIMORPHISM_IDEAL_CORRESPONDENCE
+def RING_EPIMORPHISM_SUBRING_CORRESPONDENCE : thm := BKernels.RING_EPIMORPHISM_SUBRING_CORRESPONDENCE
+def RING_EPIMORPHISM_IDEAL_CORRESPONDENCE_ALT : thm := BKernels.RING_EPIMORPHISM_IDEAL_CORRESPONDENCE_ALT
+def RING_EPIMORPHISM_SUBRING_CORRESPONDENCE_ALT : thm := BKernels.RING_EPIMORPHISM_SUBRING_CORRESPONDENCE_ALT
+def RING_IDEAL_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_IDEAL_ISOMORPHIC_IMAGE_EQ
+def RING_DIVIDES_HOMOMORPHIC_IMAGE : thm := BKernels.RING_DIVIDES_HOMOMORPHIC_IMAGE
+def RING_ASSOCIATES_HOMOMORPHIC_IMAGE : thm := BKernels.RING_ASSOCIATES_HOMOMORPHIC_IMAGE
+def RING_UNIT_HOMOMORPHIC_IMAGE : thm := BKernels.RING_UNIT_HOMOMORPHIC_IMAGE
+def RING_DIVIDES_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_DIVIDES_ISOMORPHIC_IMAGE_EQ
+def RING_ASSOCIATES_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_ASSOCIATES_ISOMORPHIC_IMAGE_EQ
+def RING_UNIT_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_UNIT_ISOMORPHIC_IMAGE_EQ
+def RING_ZERODIVISOR_MONOMORPHIC_IMAGE : thm := BKernels.RING_ZERODIVISOR_MONOMORPHIC_IMAGE
+def RING_ZERODIVISOR_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_ZERODIVISOR_ISOMORPHIC_IMAGE_EQ
+def RING_REGULAR_ISOMORPHIC_IMAGE_EQ : thm := BKernels.RING_REGULAR_ISOMORPHIC_IMAGE_EQ
+def ISOMORPHIC_RING_INTEGRAL_DOMAINNESS : thm := BKernels.ISOMORPHIC_RING_INTEGRAL_DOMAINNESS
+def INTEGRAL_DOMAIN_MONOMORPHIC_PREIMAGE : thm := BKernels.INTEGRAL_DOMAIN_MONOMORPHIC_PREIMAGE
+def FIELD_EPIMORPHIC_IMAGE : thm := BKernels.FIELD_EPIMORPHIC_IMAGE
+def ISOMORPHIC_RING_FIELDNESS : thm := BKernels.ISOMORPHIC_RING_FIELDNESS
+def RING_HOMOMORPHISM_EPIMORPHISM_FACTOR : thm := BKernels.RING_HOMOMORPHISM_EPIMORPHISM_FACTOR
 
 -- ProdRings
-unsafe def prod_ring : thm := BProdRings.prod_ring
-unsafe def PROD_RING : thm := BProdRings.PROD_RING
-unsafe def RING_HOMOMORPHISM_PAIRWISE : thm := BProdRings.RING_HOMOMORPHISM_PAIRWISE
-unsafe def RING_HOMOMORPHISM_PAIRED : thm := BProdRings.RING_HOMOMORPHISM_PAIRED
-unsafe def RING_HOMOMORPHISM_DIAG : thm := BProdRings.RING_HOMOMORPHISM_DIAG
-unsafe def RING_MONOMORPHISM_DIAG : thm := BProdRings.RING_MONOMORPHISM_DIAG
-unsafe def RING_HOMOMORPHISM_PAIRED2 : thm := BProdRings.RING_HOMOMORPHISM_PAIRED2
-unsafe def RING_ISOMORPHISMS_PAIRED2 : thm := BProdRings.RING_ISOMORPHISMS_PAIRED2
-unsafe def RING_ISOMORPHISM_PAIRED2 : thm := BProdRings.RING_ISOMORPHISM_PAIRED2
-unsafe def ISOMORPHIC_RING_PROD_RINGS : thm := BProdRings.ISOMORPHIC_RING_PROD_RINGS
-unsafe def RING_HOMOMORPHISM_OF_FST : thm := BProdRings.RING_HOMOMORPHISM_OF_FST
-unsafe def RING_HOMOMORPHISM_OF_SND : thm := BProdRings.RING_HOMOMORPHISM_OF_SND
-unsafe def RING_EPIMORPHISM_OF_FST : thm := BProdRings.RING_EPIMORPHISM_OF_FST
-unsafe def RING_EPIMORPHISM_OF_SND : thm := BProdRings.RING_EPIMORPHISM_OF_SND
-unsafe def RING_HOMOMORPHISM_FST : thm := BProdRings.RING_HOMOMORPHISM_FST
-unsafe def RING_HOMOMORPHISM_SND : thm := BProdRings.RING_HOMOMORPHISM_SND
-unsafe def RING_EPIMORPHISM_FST : thm := BProdRings.RING_EPIMORPHISM_FST
-unsafe def RING_EPIMORPHISM_SND : thm := BProdRings.RING_EPIMORPHISM_SND
-unsafe def RING_ISOMORPHISM_FST : thm := BProdRings.RING_ISOMORPHISM_FST
-unsafe def RING_ISOMORPHISM_SND : thm := BProdRings.RING_ISOMORPHISM_SND
-unsafe def RING_ISOMORPHISMS_PROD_RING_SWAP : thm := BProdRings.RING_ISOMORPHISMS_PROD_RING_SWAP
-unsafe def ISOMORPHIC_RING_PROD_RING_SYM : thm := BProdRings.ISOMORPHIC_RING_PROD_RING_SYM
-unsafe def ISOMORPHIC_RING_PROD_RING_SWAP_LEFT : thm := BProdRings.ISOMORPHIC_RING_PROD_RING_SWAP_LEFT
-unsafe def ISOMORPHIC_RING_PROD_RING_SWAP_RIGHT : thm := BProdRings.ISOMORPHIC_RING_PROD_RING_SWAP_RIGHT
-unsafe def ISOMORPHIC_PROD_TRIVIAL_RING : thm := BProdRings.ISOMORPHIC_PROD_TRIVIAL_RING
-unsafe def TRIVIAL_PROD_RING : thm := BProdRings.TRIVIAL_PROD_RING
-unsafe def FINITE_PROD_RING : thm := BProdRings.FINITE_PROD_RING
-unsafe def CROSS_SUBRING_OF_PROD_RING : thm := BProdRings.CROSS_SUBRING_OF_PROD_RING
-unsafe def PROD_RING_SUBRING_GENERATED : thm := BProdRings.PROD_RING_SUBRING_GENERATED
-unsafe def RING_IDEAL_CROSS : thm := BProdRings.RING_IDEAL_CROSS
-unsafe def RING_IDEAL_PROD_RING : thm := BProdRings.RING_IDEAL_PROD_RING
-unsafe def IDEAL_GENERATED_PAIRWISE : thm := BProdRings.IDEAL_GENERATED_PAIRWISE
-unsafe def IDEAL_GENERATED_CROSS : thm := BProdRings.IDEAL_GENERATED_CROSS
-unsafe def RING_POW_PROD_RING : thm := BProdRings.RING_POW_PROD_RING
-unsafe def RING_DIVIDES_PROD_RING : thm := BProdRings.RING_DIVIDES_PROD_RING
-unsafe def RING_OF_NUM_PROD_RING : thm := BProdRings.RING_OF_NUM_PROD_RING
-unsafe def RING_OF_INT_PROD_RING : thm := BProdRings.RING_OF_INT_PROD_RING
-unsafe def RING_ASSOCIATES_PROD_RING : thm := BProdRings.RING_ASSOCIATES_PROD_RING
-unsafe def RING_ZERODIVISOR_PROD_RING : thm := BProdRings.RING_ZERODIVISOR_PROD_RING
-unsafe def RING_REGULAR_PROD_RING : thm := BProdRings.RING_REGULAR_PROD_RING
-unsafe def RING_NILPOTENT_PROD_RING : thm := BProdRings.RING_NILPOTENT_PROD_RING
-unsafe def product_ring : thm := BProdRings.product_ring
-unsafe def PRODUCT_RING : thm := BProdRings.PRODUCT_RING
-unsafe def TRIVIAL_PRODUCT_RING : thm := BProdRings.TRIVIAL_PRODUCT_RING
-unsafe def ISOMORPHIC_RING_PRODUCT_RING : thm := BProdRings.ISOMORPHIC_RING_PRODUCT_RING
-unsafe def RING_HOMOMORPHISM_COMPONENTWISE : thm := BProdRings.RING_HOMOMORPHISM_COMPONENTWISE
-unsafe def RING_HOMOMORPHISM_COMPONENTWISE_UNIV : thm := BProdRings.RING_HOMOMORPHISM_COMPONENTWISE_UNIV
-unsafe def RING_PRODUCT_INJECTION : thm := BProdRings.RING_PRODUCT_INJECTION
-unsafe def RING_HOMOMORPHISM_DIAGONAL : thm := BProdRings.RING_HOMOMORPHISM_DIAGONAL
-unsafe def RING_HOMOMORPHISM_DIAGONAL_UNIV : thm := BProdRings.RING_HOMOMORPHISM_DIAGONAL_UNIV
-unsafe def RING_MONOMORPHISM_DIAGONAL : thm := BProdRings.RING_MONOMORPHISM_DIAGONAL
-unsafe def RING_MONOMORPHISM_DIAGONAL_UNIV : thm := BProdRings.RING_MONOMORPHISM_DIAGONAL_UNIV
-unsafe def RING_HOMOMORPHISM_PRODUCT_PROJECTION : thm := BProdRings.RING_HOMOMORPHISM_PRODUCT_PROJECTION
-unsafe def RING_EPIMORPHISM_PRODUCT_PROJECTION : thm := BProdRings.RING_EPIMORPHISM_PRODUCT_PROJECTION
-unsafe def RING_ISOMORPHISM_PRODUCT_PROJECTION : thm := BProdRings.RING_ISOMORPHISM_PRODUCT_PROJECTION
-unsafe def CARTESIAN_PRODUCT_SUBRING_OF_PRODUCT_RING : thm := BProdRings.CARTESIAN_PRODUCT_SUBRING_OF_PRODUCT_RING
-unsafe def PRODUCT_RING_SUBRING_GENERATED : thm := BProdRings.PRODUCT_RING_SUBRING_GENERATED
-unsafe def FINITE_PRODUCT_RING : thm := BProdRings.FINITE_PRODUCT_RING
-unsafe def RING_IDEAL_CARTESIAN_PRODUCT : thm := BProdRings.RING_IDEAL_CARTESIAN_PRODUCT
-unsafe def RING_SUM_PRODUCT_RING : thm := BProdRings.RING_SUM_PRODUCT_RING
-unsafe def RING_IDEAL_PRODUCT_RING : thm := BProdRings.RING_IDEAL_PRODUCT_RING
-unsafe def IDEAL_GENERATED_COMPONENTWISE : thm := BProdRings.IDEAL_GENERATED_COMPONENTWISE
-unsafe def IDEAL_GENERATED_CARTESIAN_PRODUCT : thm := BProdRings.IDEAL_GENERATED_CARTESIAN_PRODUCT
-unsafe def RING_POW_PRODUCT_RING : thm := BProdRings.RING_POW_PRODUCT_RING
-unsafe def RING_DIVIDES_PRODUCT_RING : thm := BProdRings.RING_DIVIDES_PRODUCT_RING
-unsafe def RING_ASSOCIATES_PRODUCT_RING : thm := BProdRings.RING_ASSOCIATES_PRODUCT_RING
-unsafe def RING_ZERODIVISOR_PRODUCT_RING : thm := BProdRings.RING_ZERODIVISOR_PRODUCT_RING
-unsafe def RING_REGULAR_PRODUCT_RING : thm := BProdRings.RING_REGULAR_PRODUCT_RING
-unsafe def RING_NILPOTENT_PRODUCT_RING_GEN : thm := BProdRings.RING_NILPOTENT_PRODUCT_RING_GEN
-unsafe def RING_NILPOTENT_PRODUCT_RING : thm := BProdRings.RING_NILPOTENT_PRODUCT_RING
-unsafe def ISOMORPHIC_PRODUCT_RING_DISJOINT_UNION : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_DISJOINT_UNION
-unsafe def ISOMORPHIC_PRODUCT_RING_SING : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_SING
-unsafe def ISOMORPHIC_PRODUCT_RING_SUPPORT : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_SUPPORT
-unsafe def ISOMORPHIC_PRODUCT_RING_SYMDIFF : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_SYMDIFF
-unsafe def ISOMORPHIC_PRODUCT_RING_BIJECTIONS : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_BIJECTIONS
-unsafe def RING_ISOMORPHISMS_PRODUCT_RING_DISJOINT_UNION : thm := BProdRings.RING_ISOMORPHISMS_PRODUCT_RING_DISJOINT_UNION
-unsafe def RING_ISOMORPHISM_PRODUCT_RING_DISJOINT_UNION : thm := BProdRings.RING_ISOMORPHISM_PRODUCT_RING_DISJOINT_UNION
-unsafe def ISOMORPHIC_PRODUCT_RING_INSERT : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_INSERT
+def prod_ring : thm := BProdRings.prod_ring
+def PROD_RING : thm := BProdRings.PROD_RING
+def RING_HOMOMORPHISM_PAIRWISE : thm := BProdRings.RING_HOMOMORPHISM_PAIRWISE
+def RING_HOMOMORPHISM_PAIRED : thm := BProdRings.RING_HOMOMORPHISM_PAIRED
+def RING_HOMOMORPHISM_DIAG : thm := BProdRings.RING_HOMOMORPHISM_DIAG
+def RING_MONOMORPHISM_DIAG : thm := BProdRings.RING_MONOMORPHISM_DIAG
+def RING_HOMOMORPHISM_PAIRED2 : thm := BProdRings.RING_HOMOMORPHISM_PAIRED2
+def RING_ISOMORPHISMS_PAIRED2 : thm := BProdRings.RING_ISOMORPHISMS_PAIRED2
+def RING_ISOMORPHISM_PAIRED2 : thm := BProdRings.RING_ISOMORPHISM_PAIRED2
+def ISOMORPHIC_RING_PROD_RINGS : thm := BProdRings.ISOMORPHIC_RING_PROD_RINGS
+def RING_HOMOMORPHISM_OF_FST : thm := BProdRings.RING_HOMOMORPHISM_OF_FST
+def RING_HOMOMORPHISM_OF_SND : thm := BProdRings.RING_HOMOMORPHISM_OF_SND
+def RING_EPIMORPHISM_OF_FST : thm := BProdRings.RING_EPIMORPHISM_OF_FST
+def RING_EPIMORPHISM_OF_SND : thm := BProdRings.RING_EPIMORPHISM_OF_SND
+def RING_HOMOMORPHISM_FST : thm := BProdRings.RING_HOMOMORPHISM_FST
+def RING_HOMOMORPHISM_SND : thm := BProdRings.RING_HOMOMORPHISM_SND
+def RING_EPIMORPHISM_FST : thm := BProdRings.RING_EPIMORPHISM_FST
+def RING_EPIMORPHISM_SND : thm := BProdRings.RING_EPIMORPHISM_SND
+def RING_ISOMORPHISM_FST : thm := BProdRings.RING_ISOMORPHISM_FST
+def RING_ISOMORPHISM_SND : thm := BProdRings.RING_ISOMORPHISM_SND
+def RING_ISOMORPHISMS_PROD_RING_SWAP : thm := BProdRings.RING_ISOMORPHISMS_PROD_RING_SWAP
+def ISOMORPHIC_RING_PROD_RING_SYM : thm := BProdRings.ISOMORPHIC_RING_PROD_RING_SYM
+def ISOMORPHIC_RING_PROD_RING_SWAP_LEFT : thm := BProdRings.ISOMORPHIC_RING_PROD_RING_SWAP_LEFT
+def ISOMORPHIC_RING_PROD_RING_SWAP_RIGHT : thm := BProdRings.ISOMORPHIC_RING_PROD_RING_SWAP_RIGHT
+def ISOMORPHIC_PROD_TRIVIAL_RING : thm := BProdRings.ISOMORPHIC_PROD_TRIVIAL_RING
+def TRIVIAL_PROD_RING : thm := BProdRings.TRIVIAL_PROD_RING
+def FINITE_PROD_RING : thm := BProdRings.FINITE_PROD_RING
+def CROSS_SUBRING_OF_PROD_RING : thm := BProdRings.CROSS_SUBRING_OF_PROD_RING
+def PROD_RING_SUBRING_GENERATED : thm := BProdRings.PROD_RING_SUBRING_GENERATED
+def RING_IDEAL_CROSS : thm := BProdRings.RING_IDEAL_CROSS
+def RING_IDEAL_PROD_RING : thm := BProdRings.RING_IDEAL_PROD_RING
+def IDEAL_GENERATED_PAIRWISE : thm := BProdRings.IDEAL_GENERATED_PAIRWISE
+def IDEAL_GENERATED_CROSS : thm := BProdRings.IDEAL_GENERATED_CROSS
+def RING_POW_PROD_RING : thm := BProdRings.RING_POW_PROD_RING
+def RING_DIVIDES_PROD_RING : thm := BProdRings.RING_DIVIDES_PROD_RING
+def RING_OF_NUM_PROD_RING : thm := BProdRings.RING_OF_NUM_PROD_RING
+def RING_OF_INT_PROD_RING : thm := BProdRings.RING_OF_INT_PROD_RING
+def RING_ASSOCIATES_PROD_RING : thm := BProdRings.RING_ASSOCIATES_PROD_RING
+def RING_ZERODIVISOR_PROD_RING : thm := BProdRings.RING_ZERODIVISOR_PROD_RING
+def RING_REGULAR_PROD_RING : thm := BProdRings.RING_REGULAR_PROD_RING
+def RING_NILPOTENT_PROD_RING : thm := BProdRings.RING_NILPOTENT_PROD_RING
+def product_ring : thm := BProdRings.product_ring
+def PRODUCT_RING : thm := BProdRings.PRODUCT_RING
+def TRIVIAL_PRODUCT_RING : thm := BProdRings.TRIVIAL_PRODUCT_RING
+def ISOMORPHIC_RING_PRODUCT_RING : thm := BProdRings.ISOMORPHIC_RING_PRODUCT_RING
+def RING_HOMOMORPHISM_COMPONENTWISE : thm := BProdRings.RING_HOMOMORPHISM_COMPONENTWISE
+def RING_HOMOMORPHISM_COMPONENTWISE_UNIV : thm := BProdRings.RING_HOMOMORPHISM_COMPONENTWISE_UNIV
+def RING_PRODUCT_INJECTION : thm := BProdRings.RING_PRODUCT_INJECTION
+def RING_HOMOMORPHISM_DIAGONAL : thm := BProdRings.RING_HOMOMORPHISM_DIAGONAL
+def RING_HOMOMORPHISM_DIAGONAL_UNIV : thm := BProdRings.RING_HOMOMORPHISM_DIAGONAL_UNIV
+def RING_MONOMORPHISM_DIAGONAL : thm := BProdRings.RING_MONOMORPHISM_DIAGONAL
+def RING_MONOMORPHISM_DIAGONAL_UNIV : thm := BProdRings.RING_MONOMORPHISM_DIAGONAL_UNIV
+def RING_HOMOMORPHISM_PRODUCT_PROJECTION : thm := BProdRings.RING_HOMOMORPHISM_PRODUCT_PROJECTION
+def RING_EPIMORPHISM_PRODUCT_PROJECTION : thm := BProdRings.RING_EPIMORPHISM_PRODUCT_PROJECTION
+def RING_ISOMORPHISM_PRODUCT_PROJECTION : thm := BProdRings.RING_ISOMORPHISM_PRODUCT_PROJECTION
+def CARTESIAN_PRODUCT_SUBRING_OF_PRODUCT_RING : thm := BProdRings.CARTESIAN_PRODUCT_SUBRING_OF_PRODUCT_RING
+def PRODUCT_RING_SUBRING_GENERATED : thm := BProdRings.PRODUCT_RING_SUBRING_GENERATED
+def FINITE_PRODUCT_RING : thm := BProdRings.FINITE_PRODUCT_RING
+def RING_IDEAL_CARTESIAN_PRODUCT : thm := BProdRings.RING_IDEAL_CARTESIAN_PRODUCT
+def RING_SUM_PRODUCT_RING : thm := BProdRings.RING_SUM_PRODUCT_RING
+def RING_IDEAL_PRODUCT_RING : thm := BProdRings.RING_IDEAL_PRODUCT_RING
+def IDEAL_GENERATED_COMPONENTWISE : thm := BProdRings.IDEAL_GENERATED_COMPONENTWISE
+def IDEAL_GENERATED_CARTESIAN_PRODUCT : thm := BProdRings.IDEAL_GENERATED_CARTESIAN_PRODUCT
+def RING_POW_PRODUCT_RING : thm := BProdRings.RING_POW_PRODUCT_RING
+def RING_DIVIDES_PRODUCT_RING : thm := BProdRings.RING_DIVIDES_PRODUCT_RING
+def RING_ASSOCIATES_PRODUCT_RING : thm := BProdRings.RING_ASSOCIATES_PRODUCT_RING
+def RING_ZERODIVISOR_PRODUCT_RING : thm := BProdRings.RING_ZERODIVISOR_PRODUCT_RING
+def RING_REGULAR_PRODUCT_RING : thm := BProdRings.RING_REGULAR_PRODUCT_RING
+def RING_NILPOTENT_PRODUCT_RING_GEN : thm := BProdRings.RING_NILPOTENT_PRODUCT_RING_GEN
+def RING_NILPOTENT_PRODUCT_RING : thm := BProdRings.RING_NILPOTENT_PRODUCT_RING
+def ISOMORPHIC_PRODUCT_RING_DISJOINT_UNION : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_DISJOINT_UNION
+def ISOMORPHIC_PRODUCT_RING_SING : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_SING
+def ISOMORPHIC_PRODUCT_RING_SUPPORT : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_SUPPORT
+def ISOMORPHIC_PRODUCT_RING_SYMDIFF : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_SYMDIFF
+def ISOMORPHIC_PRODUCT_RING_BIJECTIONS : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_BIJECTIONS
+def RING_ISOMORPHISMS_PRODUCT_RING_DISJOINT_UNION : thm := BProdRings.RING_ISOMORPHISMS_PRODUCT_RING_DISJOINT_UNION
+def RING_ISOMORPHISM_PRODUCT_RING_DISJOINT_UNION : thm := BProdRings.RING_ISOMORPHISM_PRODUCT_RING_DISJOINT_UNION
+def ISOMORPHIC_PRODUCT_RING_INSERT : thm := BProdRings.ISOMORPHIC_PRODUCT_RING_INSERT
 
 -- Limits
-unsafe def RING_DIRECT_LIMIT : thm := BLimits.RING_DIRECT_LIMIT
-unsafe def RING_MONOMORPHIC_IMAGE_RULE := BLimits.RING_MONOMORPHIC_IMAGE_RULE
+def RING_DIRECT_LIMIT : thm := BLimits.RING_DIRECT_LIMIT
+def RING_MONOMORPHIC_IMAGE_RULE := BLimits.RING_MONOMORPHIC_IMAGE_RULE
 
 -- RingRule
-unsafe def RING_RULE : term → IO (Except String thm) := fun t => (BRingRule.RING_RULE t).run
-unsafe def RING_TAC : HolCore.Tactics.tactic := fun g => BRingRule.RING_TAC g
+def RING_RULE : term → IO (Except String thm) := fun t => (BRingRule.RING_RULE t).run
+def RING_TAC : HolCore.Tactics.tactic := fun g => BRingRule.RING_TAC g
 
 -- Cosets
-unsafe def ring_coset : thm := BCosets.ring_coset
-unsafe def RING_COSET_SETADD : thm := BCosets.RING_COSET_SETADD
-unsafe def RING_COSET : thm := BCosets.RING_COSET
-unsafe def RING_COSET_0 : thm := BCosets.RING_COSET_0
-unsafe def RING_COSET_TRIVIAL : thm := BCosets.RING_COSET_TRIVIAL
-unsafe def RING_COSET_CARRIER : thm := BCosets.RING_COSET_CARRIER
-unsafe def RING_COSET_EQ : thm := BCosets.RING_COSET_EQ
-unsafe def RING_COSET_EQ_IDEAL : thm := BCosets.RING_COSET_EQ_IDEAL
-unsafe def RING_COSET_EQ_EMPTY : thm := BCosets.RING_COSET_EQ_EMPTY
-unsafe def RING_COSET_NONEMPTY : thm := BCosets.RING_COSET_NONEMPTY
-unsafe def IN_RING_COSET_SELF : thm := BCosets.IN_RING_COSET_SELF
-unsafe def UNIONS_RING_COSETS : thm := BCosets.UNIONS_RING_COSETS
-unsafe def RING_COSETS_EQ : thm := BCosets.RING_COSETS_EQ
-unsafe def IN_RING_COSET : thm := BCosets.IN_RING_COSET
-unsafe def RING_COSET_RELATIONAL : thm := BCosets.RING_COSET_RELATIONAL
-unsafe def DISJOINT_RING_COSETS : thm := BCosets.DISJOINT_RING_COSETS
-unsafe def PAIRWISE_DISJOINT_RING_COSETS : thm := BCosets.PAIRWISE_DISJOINT_RING_COSETS
-unsafe def IMAGE_RING_COSET_SWITCH : thm := BCosets.IMAGE_RING_COSET_SWITCH
-unsafe def CARD_EQ_RING_COSETS : thm := BCosets.CARD_EQ_RING_COSETS
-unsafe def CARD_EQ_RING_COSET_IDEAL : thm := BCosets.CARD_EQ_RING_COSET_IDEAL
-unsafe def LAGRANGE_THEOREM_RING_EXPLICIT : thm := BCosets.LAGRANGE_THEOREM_RING_EXPLICIT
-unsafe def LAGRANGE_THEOREM_RING : thm := BCosets.LAGRANGE_THEOREM_RING
-unsafe def PRIME_SUBRING_FINITE : thm := BCosets.PRIME_SUBRING_FINITE
-unsafe def HAS_SIZE_PRIME_SUBRING : thm := BCosets.HAS_SIZE_PRIME_SUBRING
-unsafe def CARD_PRIME_SUBRING : thm := BCosets.CARD_PRIME_SUBRING
-unsafe def FINITE_PRIME_SUBRING : thm := BCosets.FINITE_PRIME_SUBRING
-unsafe def RING_CHAR_DIVIDES_ORDER : thm := BCosets.RING_CHAR_DIVIDES_ORDER
-unsafe def CARD_DIVIDES_RING_MONOMORPHIC_IMAGE : thm := BCosets.CARD_DIVIDES_RING_MONOMORPHIC_IMAGE
-unsafe def CARD_DIVIDES_RING_EPIMORPHIC_IMAGE : thm := BCosets.CARD_DIVIDES_RING_EPIMORPHIC_IMAGE
-unsafe def CARD_RING_COSETS_DIVIDES : thm := BCosets.CARD_RING_COSETS_DIVIDES
-unsafe def RING_SETADD_PROD_RING : thm := BCosets.RING_SETADD_PROD_RING
-unsafe def RING_COSET_PROD_RING : thm := BCosets.RING_COSET_PROD_RING
-unsafe def RING_SETADD_PRODUCT_RING : thm := BCosets.RING_SETADD_PRODUCT_RING
-unsafe def RING_COSET_PRODUCT_RING : thm := BCosets.RING_COSET_PRODUCT_RING
-unsafe def RING_SETNEG_SUBRING_GENERATED : thm := BCosets.RING_SETNEG_SUBRING_GENERATED
-unsafe def RING_SETADD_SUBRING_GENERATED : thm := BCosets.RING_SETADD_SUBRING_GENERATED
-unsafe def RING_SETNEG_COSET : thm := BCosets.RING_SETNEG_COSET
-unsafe def RING_SETADD_COSETS : thm := BCosets.RING_SETADD_COSETS
-unsafe def RING_SETMUL_COSETS : thm := BCosets.RING_SETMUL_COSETS
-unsafe def RING_COSET_IDEAL_GENERATED_SING : thm := BCosets.RING_COSET_IDEAL_GENERATED_SING
-unsafe def RING_COSET_IDEAL_GENERATED_SING_EQ : thm := BCosets.RING_COSET_IDEAL_GENERATED_SING_EQ
+def ring_coset : thm := BCosets.ring_coset
+def RING_COSET_SETADD : thm := BCosets.RING_COSET_SETADD
+def RING_COSET : thm := BCosets.RING_COSET
+def RING_COSET_0 : thm := BCosets.RING_COSET_0
+def RING_COSET_TRIVIAL : thm := BCosets.RING_COSET_TRIVIAL
+def RING_COSET_CARRIER : thm := BCosets.RING_COSET_CARRIER
+def RING_COSET_EQ : thm := BCosets.RING_COSET_EQ
+def RING_COSET_EQ_IDEAL : thm := BCosets.RING_COSET_EQ_IDEAL
+def RING_COSET_EQ_EMPTY : thm := BCosets.RING_COSET_EQ_EMPTY
+def RING_COSET_NONEMPTY : thm := BCosets.RING_COSET_NONEMPTY
+def IN_RING_COSET_SELF : thm := BCosets.IN_RING_COSET_SELF
+def UNIONS_RING_COSETS : thm := BCosets.UNIONS_RING_COSETS
+def RING_COSETS_EQ : thm := BCosets.RING_COSETS_EQ
+def IN_RING_COSET : thm := BCosets.IN_RING_COSET
+def RING_COSET_RELATIONAL : thm := BCosets.RING_COSET_RELATIONAL
+def DISJOINT_RING_COSETS : thm := BCosets.DISJOINT_RING_COSETS
+def PAIRWISE_DISJOINT_RING_COSETS : thm := BCosets.PAIRWISE_DISJOINT_RING_COSETS
+def IMAGE_RING_COSET_SWITCH : thm := BCosets.IMAGE_RING_COSET_SWITCH
+def CARD_EQ_RING_COSETS : thm := BCosets.CARD_EQ_RING_COSETS
+def CARD_EQ_RING_COSET_IDEAL : thm := BCosets.CARD_EQ_RING_COSET_IDEAL
+def LAGRANGE_THEOREM_RING_EXPLICIT : thm := BCosets.LAGRANGE_THEOREM_RING_EXPLICIT
+def LAGRANGE_THEOREM_RING : thm := BCosets.LAGRANGE_THEOREM_RING
+def PRIME_SUBRING_FINITE : thm := BCosets.PRIME_SUBRING_FINITE
+def HAS_SIZE_PRIME_SUBRING : thm := BCosets.HAS_SIZE_PRIME_SUBRING
+def CARD_PRIME_SUBRING : thm := BCosets.CARD_PRIME_SUBRING
+def FINITE_PRIME_SUBRING : thm := BCosets.FINITE_PRIME_SUBRING
+def RING_CHAR_DIVIDES_ORDER : thm := BCosets.RING_CHAR_DIVIDES_ORDER
+def CARD_DIVIDES_RING_MONOMORPHIC_IMAGE : thm := BCosets.CARD_DIVIDES_RING_MONOMORPHIC_IMAGE
+def CARD_DIVIDES_RING_EPIMORPHIC_IMAGE : thm := BCosets.CARD_DIVIDES_RING_EPIMORPHIC_IMAGE
+def CARD_RING_COSETS_DIVIDES : thm := BCosets.CARD_RING_COSETS_DIVIDES
+def RING_SETADD_PROD_RING : thm := BCosets.RING_SETADD_PROD_RING
+def RING_COSET_PROD_RING : thm := BCosets.RING_COSET_PROD_RING
+def RING_SETADD_PRODUCT_RING : thm := BCosets.RING_SETADD_PRODUCT_RING
+def RING_COSET_PRODUCT_RING : thm := BCosets.RING_COSET_PRODUCT_RING
+def RING_SETNEG_SUBRING_GENERATED : thm := BCosets.RING_SETNEG_SUBRING_GENERATED
+def RING_SETADD_SUBRING_GENERATED : thm := BCosets.RING_SETADD_SUBRING_GENERATED
+def RING_SETNEG_COSET : thm := BCosets.RING_SETNEG_COSET
+def RING_SETADD_COSETS : thm := BCosets.RING_SETADD_COSETS
+def RING_SETMUL_COSETS : thm := BCosets.RING_SETMUL_COSETS
+def RING_COSET_IDEAL_GENERATED_SING : thm := BCosets.RING_COSET_IDEAL_GENERATED_SING
+def RING_COSET_IDEAL_GENERATED_SING_EQ : thm := BCosets.RING_COSET_IDEAL_GENERATED_SING_EQ
 
 -- Quotients
-unsafe def quotient_ring : thm := BQuotients.quotient_ring
-unsafe def RING_HOMOMORPHISM_RING_COSET : thm := BQuotients.RING_HOMOMORPHISM_RING_COSET
-unsafe def QUOTIENT_RING : thm := BQuotients.QUOTIENT_RING
-unsafe def RING_EPIMORPHISM_RING_COSET : thm := BQuotients.RING_EPIMORPHISM_RING_COSET
-unsafe def QUOTIENT_RING_CARRIER : thm := BQuotients.QUOTIENT_RING_CARRIER
-unsafe def QUOTIENT_RING_0 : thm := BQuotients.QUOTIENT_RING_0
-unsafe def QUOTIENT_RING_1 : thm := BQuotients.QUOTIENT_RING_1
-unsafe def QUOTIENT_RING_NEG : thm := BQuotients.QUOTIENT_RING_NEG
-unsafe def QUOTIENT_RING_ADD : thm := BQuotients.QUOTIENT_RING_ADD
-unsafe def QUOTIENT_RING_MUL : thm := BQuotients.QUOTIENT_RING_MUL
-unsafe def RING_KERNEL_RING_COSET : thm := BQuotients.RING_KERNEL_RING_COSET
-unsafe def CARD_LE_QUOTIENT_RING : thm := BQuotients.CARD_LE_QUOTIENT_RING
-unsafe def CARD_QUOTIENT_RING_DIVIDES : thm := BQuotients.CARD_QUOTIENT_RING_DIVIDES
-unsafe def QUOTIENT_RING_UNIVERSAL_EXPLICIT : thm := BQuotients.QUOTIENT_RING_UNIVERSAL_EXPLICIT
-unsafe def QUOTIENT_RING_UNIVERSAL : thm := BQuotients.QUOTIENT_RING_UNIVERSAL
-unsafe def QUOTIENT_RING_UNIVERSAL_EPIMORPHISM : thm := BQuotients.QUOTIENT_RING_UNIVERSAL_EPIMORPHISM
-unsafe def FIRST_RING_ISOMORPHISM_THEOREM : thm := BQuotients.FIRST_RING_ISOMORPHISM_THEOREM
-unsafe def FIRST_RING_EPIMORPHISM_THEOREM : thm := BQuotients.FIRST_RING_EPIMORPHISM_THEOREM
-unsafe def SECOND_RING_ISOMORPHISM_THEOREM : thm := BQuotients.SECOND_RING_ISOMORPHISM_THEOREM
-unsafe def THIRD_RING_ISOMORPHISM_THEOREM : thm := BQuotients.THIRD_RING_ISOMORPHISM_THEOREM
-unsafe def QUOTIENT_RING_SUBRING_CORRESPONDENCE : thm := BQuotients.QUOTIENT_RING_SUBRING_CORRESPONDENCE
-unsafe def QUOTIENT_RING_IDEAL_CORRESPONDENCE : thm := BQuotients.QUOTIENT_RING_IDEAL_CORRESPONDENCE
-unsafe def FIRST_RING_ISOMORPHISM_THEOREM_GEN : thm := BQuotients.FIRST_RING_ISOMORPHISM_THEOREM_GEN
-unsafe def FIRST_RING_ISOMORPHISM_THEOREM_GEN_ALT : thm := BQuotients.FIRST_RING_ISOMORPHISM_THEOREM_GEN_ALT
+def quotient_ring : thm := BQuotients.quotient_ring
+def RING_HOMOMORPHISM_RING_COSET : thm := BQuotients.RING_HOMOMORPHISM_RING_COSET
+def QUOTIENT_RING : thm := BQuotients.QUOTIENT_RING
+def RING_EPIMORPHISM_RING_COSET : thm := BQuotients.RING_EPIMORPHISM_RING_COSET
+def QUOTIENT_RING_CARRIER : thm := BQuotients.QUOTIENT_RING_CARRIER
+def QUOTIENT_RING_0 : thm := BQuotients.QUOTIENT_RING_0
+def QUOTIENT_RING_1 : thm := BQuotients.QUOTIENT_RING_1
+def QUOTIENT_RING_NEG : thm := BQuotients.QUOTIENT_RING_NEG
+def QUOTIENT_RING_ADD : thm := BQuotients.QUOTIENT_RING_ADD
+def QUOTIENT_RING_MUL : thm := BQuotients.QUOTIENT_RING_MUL
+def RING_KERNEL_RING_COSET : thm := BQuotients.RING_KERNEL_RING_COSET
+def CARD_LE_QUOTIENT_RING : thm := BQuotients.CARD_LE_QUOTIENT_RING
+def CARD_QUOTIENT_RING_DIVIDES : thm := BQuotients.CARD_QUOTIENT_RING_DIVIDES
+def QUOTIENT_RING_UNIVERSAL_EXPLICIT : thm := BQuotients.QUOTIENT_RING_UNIVERSAL_EXPLICIT
+def QUOTIENT_RING_UNIVERSAL : thm := BQuotients.QUOTIENT_RING_UNIVERSAL
+def QUOTIENT_RING_UNIVERSAL_EPIMORPHISM : thm := BQuotients.QUOTIENT_RING_UNIVERSAL_EPIMORPHISM
+def FIRST_RING_ISOMORPHISM_THEOREM : thm := BQuotients.FIRST_RING_ISOMORPHISM_THEOREM
+def FIRST_RING_EPIMORPHISM_THEOREM : thm := BQuotients.FIRST_RING_EPIMORPHISM_THEOREM
+def SECOND_RING_ISOMORPHISM_THEOREM : thm := BQuotients.SECOND_RING_ISOMORPHISM_THEOREM
+def THIRD_RING_ISOMORPHISM_THEOREM : thm := BQuotients.THIRD_RING_ISOMORPHISM_THEOREM
+def QUOTIENT_RING_SUBRING_CORRESPONDENCE : thm := BQuotients.QUOTIENT_RING_SUBRING_CORRESPONDENCE
+def QUOTIENT_RING_IDEAL_CORRESPONDENCE : thm := BQuotients.QUOTIENT_RING_IDEAL_CORRESPONDENCE
+def FIRST_RING_ISOMORPHISM_THEOREM_GEN : thm := BQuotients.FIRST_RING_ISOMORPHISM_THEOREM_GEN
+def FIRST_RING_ISOMORPHISM_THEOREM_GEN_ALT : thm := BQuotients.FIRST_RING_ISOMORPHISM_THEOREM_GEN_ALT
 
 -- Primes
-unsafe def ring_prime : thm := BPrimes.ring_prime
-unsafe def ring_irreducible : thm := BPrimes.ring_irreducible
-unsafe def RING_PRIME_IN_CARRIER : thm := BPrimes.RING_PRIME_IN_CARRIER
-unsafe def RING_IRREDUCIBLE_IN_CARRIER : thm := BPrimes.RING_IRREDUCIBLE_IN_CARRIER
-unsafe def RING_PRIME_NEG : thm := BPrimes.RING_PRIME_NEG
-unsafe def RING_IRREDUCIBLE_NEG : thm := BPrimes.RING_IRREDUCIBLE_NEG
-unsafe def RING_PRIME_IMP_NONTRIVIAL_RING : thm := BPrimes.RING_PRIME_IMP_NONTRIVIAL_RING
-unsafe def RING_IRREDUCIBLE_IMP_NONTRIVIAL_RING : thm := BPrimes.RING_IRREDUCIBLE_IMP_NONTRIVIAL_RING
-unsafe def FIELD_PRIME : thm := BPrimes.FIELD_PRIME
-unsafe def FIELD_IRREDUCIBLE : thm := BPrimes.FIELD_IRREDUCIBLE
-unsafe def RING_ASSOCIATES_PRIME : thm := BPrimes.RING_ASSOCIATES_PRIME
-unsafe def RING_NONUNIT_DIVIDES_IRREDUCIBLE : thm := BPrimes.RING_NONUNIT_DIVIDES_IRREDUCIBLE
-unsafe def RING_PRIME_DIVIDES_IRREDUCIBLE : thm := BPrimes.RING_PRIME_DIVIDES_IRREDUCIBLE
-unsafe def RING_PRIME_DIVIDES_MUL : thm := BPrimes.RING_PRIME_DIVIDES_MUL
-unsafe def RING_PRIME_DIVIDES_POW : thm := BPrimes.RING_PRIME_DIVIDES_POW
-unsafe def RING_PRIME_DIVIDES_PRODUCT : thm := BPrimes.RING_PRIME_DIVIDES_PRODUCT
-unsafe def INTEGRAL_DOMAIN_PRIME_IMP_IRREDUCIBLE : thm := BPrimes.INTEGRAL_DOMAIN_PRIME_IMP_IRREDUCIBLE
-unsafe def INTEGRAL_DOMAIN_IRREDUCIBLE : thm := BPrimes.INTEGRAL_DOMAIN_IRREDUCIBLE
-unsafe def INTEGRAL_DOMAIN_IRREDUCIBLE_ALT : thm := BPrimes.INTEGRAL_DOMAIN_IRREDUCIBLE_ALT
-unsafe def INTEGRAL_DOMAIN_IRREDUCIBLE_DIVISORS : thm := BPrimes.INTEGRAL_DOMAIN_IRREDUCIBLE_DIVISORS
-unsafe def RING_ASSOCIATES_IRREDUCIBLE : thm := BPrimes.RING_ASSOCIATES_IRREDUCIBLE
-unsafe def INTEGRAL_DOMAIN_DIVIDES_PRIME_LMUL : thm := BPrimes.INTEGRAL_DOMAIN_DIVIDES_PRIME_LMUL
-unsafe def INTEGRAL_DOMAIN_DIVIDES_PRIME_RMUL : thm := BPrimes.INTEGRAL_DOMAIN_DIVIDES_PRIME_RMUL
-unsafe def RING_IRREDUCIBLE_DIVIDES_OR_COPRIME : thm := BPrimes.RING_IRREDUCIBLE_DIVIDES_OR_COPRIME
-unsafe def RING_IRREDUCIBLE_COPRIME_EQ : thm := BPrimes.RING_IRREDUCIBLE_COPRIME_EQ
-unsafe def RING_IRREDUCIBLES_COPRIME_OR_ASSOCIATES : thm := BPrimes.RING_IRREDUCIBLES_COPRIME_OR_ASSOCIATES
-unsafe def INTEGRAL_DOMAIN_PRIME_DIVIDES_OR_COPRIME : thm := BPrimes.INTEGRAL_DOMAIN_PRIME_DIVIDES_OR_COPRIME
-unsafe def INTEGRAL_DOMAIN_PRIME_COPRIME_EQ : thm := BPrimes.INTEGRAL_DOMAIN_PRIME_COPRIME_EQ
-unsafe def INTEGRAL_DOMAIN_PRIMES_COPRIME_OR_ASSOCIATES : thm := BPrimes.INTEGRAL_DOMAIN_PRIMES_COPRIME_OR_ASSOCIATES
-unsafe def INTEGRAL_DOMAIN_PRIMES_DIVIDES_EQ_ASSOCIATES : thm := BPrimes.INTEGRAL_DOMAIN_PRIMES_DIVIDES_EQ_ASSOCIATES
-unsafe def RING_PRIME_ISOMORPHIC_IMAGE_EQ : thm := BPrimes.RING_PRIME_ISOMORPHIC_IMAGE_EQ
-unsafe def RING_IRREDUCIBLE_ISOMORPHIC_IMAGE_EQ : thm := BPrimes.RING_IRREDUCIBLE_ISOMORPHIC_IMAGE_EQ
-unsafe def RING_PRIME_MUL_DIVIDES : thm := BPrimes.RING_PRIME_MUL_DIVIDES
-unsafe def RING_PRIME_MUL_DIVIDES_EQ : thm := BPrimes.RING_PRIME_MUL_DIVIDES_EQ
-unsafe def RING_PRIME_PRODUCT_DIVIDES : thm := BPrimes.RING_PRIME_PRODUCT_DIVIDES
-unsafe def INTEGRAL_DOMAIN_PRIME_PRODUCT_DIVIDES : thm := BPrimes.INTEGRAL_DOMAIN_PRIME_PRODUCT_DIVIDES
+def ring_prime : thm := BPrimes.ring_prime
+def ring_irreducible : thm := BPrimes.ring_irreducible
+def RING_PRIME_IN_CARRIER : thm := BPrimes.RING_PRIME_IN_CARRIER
+def RING_IRREDUCIBLE_IN_CARRIER : thm := BPrimes.RING_IRREDUCIBLE_IN_CARRIER
+def RING_PRIME_NEG : thm := BPrimes.RING_PRIME_NEG
+def RING_IRREDUCIBLE_NEG : thm := BPrimes.RING_IRREDUCIBLE_NEG
+def RING_PRIME_IMP_NONTRIVIAL_RING : thm := BPrimes.RING_PRIME_IMP_NONTRIVIAL_RING
+def RING_IRREDUCIBLE_IMP_NONTRIVIAL_RING : thm := BPrimes.RING_IRREDUCIBLE_IMP_NONTRIVIAL_RING
+def FIELD_PRIME : thm := BPrimes.FIELD_PRIME
+def FIELD_IRREDUCIBLE : thm := BPrimes.FIELD_IRREDUCIBLE
+def RING_ASSOCIATES_PRIME : thm := BPrimes.RING_ASSOCIATES_PRIME
+def RING_NONUNIT_DIVIDES_IRREDUCIBLE : thm := BPrimes.RING_NONUNIT_DIVIDES_IRREDUCIBLE
+def RING_PRIME_DIVIDES_IRREDUCIBLE : thm := BPrimes.RING_PRIME_DIVIDES_IRREDUCIBLE
+def RING_PRIME_DIVIDES_MUL : thm := BPrimes.RING_PRIME_DIVIDES_MUL
+def RING_PRIME_DIVIDES_POW : thm := BPrimes.RING_PRIME_DIVIDES_POW
+def RING_PRIME_DIVIDES_PRODUCT : thm := BPrimes.RING_PRIME_DIVIDES_PRODUCT
+def INTEGRAL_DOMAIN_PRIME_IMP_IRREDUCIBLE : thm := BPrimes.INTEGRAL_DOMAIN_PRIME_IMP_IRREDUCIBLE
+def INTEGRAL_DOMAIN_IRREDUCIBLE : thm := BPrimes.INTEGRAL_DOMAIN_IRREDUCIBLE
+def INTEGRAL_DOMAIN_IRREDUCIBLE_ALT : thm := BPrimes.INTEGRAL_DOMAIN_IRREDUCIBLE_ALT
+def INTEGRAL_DOMAIN_IRREDUCIBLE_DIVISORS : thm := BPrimes.INTEGRAL_DOMAIN_IRREDUCIBLE_DIVISORS
+def RING_ASSOCIATES_IRREDUCIBLE : thm := BPrimes.RING_ASSOCIATES_IRREDUCIBLE
+def INTEGRAL_DOMAIN_DIVIDES_PRIME_LMUL : thm := BPrimes.INTEGRAL_DOMAIN_DIVIDES_PRIME_LMUL
+def INTEGRAL_DOMAIN_DIVIDES_PRIME_RMUL : thm := BPrimes.INTEGRAL_DOMAIN_DIVIDES_PRIME_RMUL
+def RING_IRREDUCIBLE_DIVIDES_OR_COPRIME : thm := BPrimes.RING_IRREDUCIBLE_DIVIDES_OR_COPRIME
+def RING_IRREDUCIBLE_COPRIME_EQ : thm := BPrimes.RING_IRREDUCIBLE_COPRIME_EQ
+def RING_IRREDUCIBLES_COPRIME_OR_ASSOCIATES : thm := BPrimes.RING_IRREDUCIBLES_COPRIME_OR_ASSOCIATES
+def INTEGRAL_DOMAIN_PRIME_DIVIDES_OR_COPRIME : thm := BPrimes.INTEGRAL_DOMAIN_PRIME_DIVIDES_OR_COPRIME
+def INTEGRAL_DOMAIN_PRIME_COPRIME_EQ : thm := BPrimes.INTEGRAL_DOMAIN_PRIME_COPRIME_EQ
+def INTEGRAL_DOMAIN_PRIMES_COPRIME_OR_ASSOCIATES : thm := BPrimes.INTEGRAL_DOMAIN_PRIMES_COPRIME_OR_ASSOCIATES
+def INTEGRAL_DOMAIN_PRIMES_DIVIDES_EQ_ASSOCIATES : thm := BPrimes.INTEGRAL_DOMAIN_PRIMES_DIVIDES_EQ_ASSOCIATES
+def RING_PRIME_ISOMORPHIC_IMAGE_EQ : thm := BPrimes.RING_PRIME_ISOMORPHIC_IMAGE_EQ
+def RING_IRREDUCIBLE_ISOMORPHIC_IMAGE_EQ : thm := BPrimes.RING_IRREDUCIBLE_ISOMORPHIC_IMAGE_EQ
+def RING_PRIME_MUL_DIVIDES : thm := BPrimes.RING_PRIME_MUL_DIVIDES
+def RING_PRIME_MUL_DIVIDES_EQ : thm := BPrimes.RING_PRIME_MUL_DIVIDES_EQ
+def RING_PRIME_PRODUCT_DIVIDES : thm := BPrimes.RING_PRIME_PRODUCT_DIVIDES
+def INTEGRAL_DOMAIN_PRIME_PRODUCT_DIVIDES : thm := BPrimes.INTEGRAL_DOMAIN_PRIME_PRODUCT_DIVIDES
 
 -- Factorizations
-unsafe def RING_DIVIDES_PRIMEFACTS_INJECTION : thm := BFactorizations.RING_DIVIDES_PRIMEFACTS_INJECTION
-unsafe def RING_DIVIDES_PRIMEFACTS_INJECTION_EQ : thm := BFactorizations.RING_DIVIDES_PRIMEFACTS_INJECTION_EQ
-unsafe def RING_DIVIDES_PRIMEFACTS_LE : thm := BFactorizations.RING_DIVIDES_PRIMEFACTS_LE
-unsafe def RING_ASSOCIATES_PRIMEFACTS_BIJECTION : thm := BFactorizations.RING_ASSOCIATES_PRIMEFACTS_BIJECTION
-unsafe def RING_ASSOCIATES_PRIMEFACTS_BIJECTIONS : thm := BFactorizations.RING_ASSOCIATES_PRIMEFACTS_BIJECTIONS
-unsafe def RING_ASSOCIATES_PRIMEFACTS_BIJECTIONS_EQ : thm := BFactorizations.RING_ASSOCIATES_PRIMEFACTS_BIJECTIONS_EQ
-unsafe def RING_ASSOCIATES_PRIMEFACTS_BIJECTION_EQ : thm := BFactorizations.RING_ASSOCIATES_PRIMEFACTS_BIJECTION_EQ
-unsafe def RING_ASSOCIATES_PRIMEFACTS_EQ : thm := BFactorizations.RING_ASSOCIATES_PRIMEFACTS_EQ
-unsafe def RING_DIVIDES_PRIMEFACTS_LT : thm := BFactorizations.RING_DIVIDES_PRIMEFACTS_LT
+def RING_DIVIDES_PRIMEFACTS_INJECTION : thm := BFactorizations.RING_DIVIDES_PRIMEFACTS_INJECTION
+def RING_DIVIDES_PRIMEFACTS_INJECTION_EQ : thm := BFactorizations.RING_DIVIDES_PRIMEFACTS_INJECTION_EQ
+def RING_DIVIDES_PRIMEFACTS_LE : thm := BFactorizations.RING_DIVIDES_PRIMEFACTS_LE
+def RING_ASSOCIATES_PRIMEFACTS_BIJECTION : thm := BFactorizations.RING_ASSOCIATES_PRIMEFACTS_BIJECTION
+def RING_ASSOCIATES_PRIMEFACTS_BIJECTIONS : thm := BFactorizations.RING_ASSOCIATES_PRIMEFACTS_BIJECTIONS
+def RING_ASSOCIATES_PRIMEFACTS_BIJECTIONS_EQ : thm := BFactorizations.RING_ASSOCIATES_PRIMEFACTS_BIJECTIONS_EQ
+def RING_ASSOCIATES_PRIMEFACTS_BIJECTION_EQ : thm := BFactorizations.RING_ASSOCIATES_PRIMEFACTS_BIJECTION_EQ
+def RING_ASSOCIATES_PRIMEFACTS_EQ : thm := BFactorizations.RING_ASSOCIATES_PRIMEFACTS_EQ
+def RING_DIVIDES_PRIMEFACTS_LT : thm := BFactorizations.RING_DIVIDES_PRIMEFACTS_LT
 
 -- Squarefree
-unsafe def ring_squarefree : thm := BSquarefree.ring_squarefree
-unsafe def RING_SQUAREFREE_IN_CARRIER : thm := BSquarefree.RING_SQUAREFREE_IN_CARRIER
-unsafe def RING_UNIT_IMP_SQUAREFREE : thm := BSquarefree.RING_UNIT_IMP_SQUAREFREE
-unsafe def RING_SQUAREFREE_1 : thm := BSquarefree.RING_SQUAREFREE_1
-unsafe def RING_SQUAREFREE_DIVISOR : thm := BSquarefree.RING_SQUAREFREE_DIVISOR
-unsafe def RING_SQUAREFREE_ASSOCIATES : thm := BSquarefree.RING_SQUAREFREE_ASSOCIATES
-unsafe def RING_SQUAREFREE_0 : thm := BSquarefree.RING_SQUAREFREE_0
-unsafe def RING_SQUAREFREE_IMP_NONZERO : thm := BSquarefree.RING_SQUAREFREE_IMP_NONZERO
-unsafe def RING_IRREDUCIBLE_IMP_SQUAREFREE : thm := BSquarefree.RING_IRREDUCIBLE_IMP_SQUAREFREE
-unsafe def RING_PRIME_IMP_SQUAREFREE : thm := BSquarefree.RING_PRIME_IMP_SQUAREFREE
-unsafe def RING_SQUAREFREE_IMP_NO_PRIME_SQUARE : thm := BSquarefree.RING_SQUAREFREE_IMP_NO_PRIME_SQUARE
-unsafe def RING_SQUAREFREE_COPRIME : thm := BSquarefree.RING_SQUAREFREE_COPRIME
-unsafe def RING_SQUAREFREE_COPRIME_DIVISORS : thm := BSquarefree.RING_SQUAREFREE_COPRIME_DIVISORS
-unsafe def RING_SQUAREFREE_MUL_IMP : thm := BSquarefree.RING_SQUAREFREE_MUL_IMP
-unsafe def RING_SQUAREFREE_POW : thm := BSquarefree.RING_SQUAREFREE_POW
-unsafe def ring_multsys : thm := BSquarefree.ring_multsys
-unsafe def RING_MULTSYS : thm := BSquarefree.RING_MULTSYS
-unsafe def RING_MULTSYS_IMP_SUBSET : thm := BSquarefree.RING_MULTSYS_IMP_SUBSET
-unsafe def RING_MULTSYS_IMP_NONEMPTY : thm := BSquarefree.RING_MULTSYS_IMP_NONEMPTY
-unsafe def RING_MULYSYS_1 : thm := BSquarefree.RING_MULYSYS_1
-unsafe def RING_MULYSYS_CARRIER : thm := BSquarefree.RING_MULYSYS_CARRIER
-unsafe def RING_MULTSYS_REGULAR : thm := BSquarefree.RING_MULTSYS_REGULAR
-unsafe def RING_MULTSYS_NONZERO : thm := BSquarefree.RING_MULTSYS_NONZERO
-unsafe def RING_MULTSYS_POWERS : thm := BSquarefree.RING_MULTSYS_POWERS
-unsafe def RING_MULTSYS_UNITS : thm := BSquarefree.RING_MULTSYS_UNITS
-unsafe def RING_MULTSYS_IDEMPOT : thm := BSquarefree.RING_MULTSYS_IDEMPOT
-unsafe def RING_MULTSYS_INTERS : thm := BSquarefree.RING_MULTSYS_INTERS
-unsafe def RING_MULTSYS_INTER : thm := BSquarefree.RING_MULTSYS_INTER
-unsafe def RING_POW_IN_MULTSYS : thm := BSquarefree.RING_POW_IN_MULTSYS
-unsafe def RING_MULTSYS_NILPOTENT_EXISTS : thm := BSquarefree.RING_MULTSYS_NILPOTENT_EXISTS
+def ring_squarefree : thm := BSquarefree.ring_squarefree
+def RING_SQUAREFREE_IN_CARRIER : thm := BSquarefree.RING_SQUAREFREE_IN_CARRIER
+def RING_UNIT_IMP_SQUAREFREE : thm := BSquarefree.RING_UNIT_IMP_SQUAREFREE
+def RING_SQUAREFREE_1 : thm := BSquarefree.RING_SQUAREFREE_1
+def RING_SQUAREFREE_DIVISOR : thm := BSquarefree.RING_SQUAREFREE_DIVISOR
+def RING_SQUAREFREE_ASSOCIATES : thm := BSquarefree.RING_SQUAREFREE_ASSOCIATES
+def RING_SQUAREFREE_0 : thm := BSquarefree.RING_SQUAREFREE_0
+def RING_SQUAREFREE_IMP_NONZERO : thm := BSquarefree.RING_SQUAREFREE_IMP_NONZERO
+def RING_IRREDUCIBLE_IMP_SQUAREFREE : thm := BSquarefree.RING_IRREDUCIBLE_IMP_SQUAREFREE
+def RING_PRIME_IMP_SQUAREFREE : thm := BSquarefree.RING_PRIME_IMP_SQUAREFREE
+def RING_SQUAREFREE_IMP_NO_PRIME_SQUARE : thm := BSquarefree.RING_SQUAREFREE_IMP_NO_PRIME_SQUARE
+def RING_SQUAREFREE_COPRIME : thm := BSquarefree.RING_SQUAREFREE_COPRIME
+def RING_SQUAREFREE_COPRIME_DIVISORS : thm := BSquarefree.RING_SQUAREFREE_COPRIME_DIVISORS
+def RING_SQUAREFREE_MUL_IMP : thm := BSquarefree.RING_SQUAREFREE_MUL_IMP
+def RING_SQUAREFREE_POW : thm := BSquarefree.RING_SQUAREFREE_POW
+def ring_multsys : thm := BSquarefree.ring_multsys
+def RING_MULTSYS : thm := BSquarefree.RING_MULTSYS
+def RING_MULTSYS_IMP_SUBSET : thm := BSquarefree.RING_MULTSYS_IMP_SUBSET
+def RING_MULTSYS_IMP_NONEMPTY : thm := BSquarefree.RING_MULTSYS_IMP_NONEMPTY
+def RING_MULYSYS_1 : thm := BSquarefree.RING_MULYSYS_1
+def RING_MULYSYS_CARRIER : thm := BSquarefree.RING_MULYSYS_CARRIER
+def RING_MULTSYS_REGULAR : thm := BSquarefree.RING_MULTSYS_REGULAR
+def RING_MULTSYS_NONZERO : thm := BSquarefree.RING_MULTSYS_NONZERO
+def RING_MULTSYS_POWERS : thm := BSquarefree.RING_MULTSYS_POWERS
+def RING_MULTSYS_UNITS : thm := BSquarefree.RING_MULTSYS_UNITS
+def RING_MULTSYS_IDEMPOT : thm := BSquarefree.RING_MULTSYS_IDEMPOT
+def RING_MULTSYS_INTERS : thm := BSquarefree.RING_MULTSYS_INTERS
+def RING_MULTSYS_INTER : thm := BSquarefree.RING_MULTSYS_INTER
+def RING_POW_IN_MULTSYS : thm := BSquarefree.RING_POW_IN_MULTSYS
+def RING_MULTSYS_NILPOTENT_EXISTS : thm := BSquarefree.RING_MULTSYS_NILPOTENT_EXISTS
 
 -- Localization
-unsafe def ring_localequiv : thm := BLocalization.ring_localequiv
-unsafe def RING_LOCALEQUIV : thm := BLocalization.RING_LOCALEQUIV
-unsafe def RING_LOCALEQUIV_REFL : thm := BLocalization.RING_LOCALEQUIV_REFL
-unsafe def RING_LOCALEQUIV_SYM : thm := BLocalization.RING_LOCALEQUIV_SYM
-unsafe def RING_LOCALEQUIV_TRANS : thm := BLocalization.RING_LOCALEQUIV_TRANS
-unsafe def RING_LOCALEQUIV_EQUIV : thm := BLocalization.RING_LOCALEQUIV_EQUIV
-unsafe def RING_LOCALEQUIV_NEG : thm := BLocalization.RING_LOCALEQUIV_NEG
-unsafe def RING_LOCALEQUIV_ADD : thm := BLocalization.RING_LOCALEQUIV_ADD
-unsafe def RING_LOCALEQUIV_MUL : thm := BLocalization.RING_LOCALEQUIV_MUL
-unsafe def ring_localization : thm := BLocalization.ring_localization
-unsafe def RING_LOCALIZATION : thm := BLocalization.RING_LOCALIZATION
-unsafe def RING_LOCALIZATION_NEG : thm := BLocalization.RING_LOCALIZATION_NEG
-unsafe def RING_LOCALIZATION_ADD : thm := BLocalization.RING_LOCALIZATION_ADD
-unsafe def RING_LOCALIZATION_MUL : thm := BLocalization.RING_LOCALIZATION_MUL
-unsafe def RING_LOCALIZATION_CARRIER : thm := BLocalization.RING_LOCALIZATION_CARRIER
-unsafe def RING_LOCALIZATION_0 : thm := BLocalization.RING_LOCALIZATION_0
-unsafe def RING_LOCALIZATION_1 : thm := BLocalization.RING_LOCALIZATION_1
-unsafe def TRIVIAL_RING_LOCALIZATION : thm := BLocalization.TRIVIAL_RING_LOCALIZATION
-unsafe def RING_LOCALEQUIV_IN_CARRIER : thm := BLocalization.RING_LOCALEQUIV_IN_CARRIER
-unsafe def RING_UNIT_LOCALEQUIV : thm := BLocalization.RING_UNIT_LOCALEQUIV
-unsafe def RING_UNIT_LOCALEQUIV_EQ : thm := BLocalization.RING_UNIT_LOCALEQUIV_EQ
-unsafe def RING_UNIT_LOCALIZATION : thm := BLocalization.RING_UNIT_LOCALIZATION
-unsafe def RING_LOCALEQUIV_EQ_0_GEN : thm := BLocalization.RING_LOCALEQUIV_EQ_0_GEN
-unsafe def RING_IDEAL_LOCALIZATION : thm := BLocalization.RING_IDEAL_LOCALIZATION
-unsafe def ring_fractionate : thm := BLocalization.ring_fractionate
-unsafe def RING_FRACTIONATE_IN_CARRIER : thm := BLocalization.RING_FRACTIONATE_IN_CARRIER
-unsafe def RING_UNIT_FRACTIONATE : thm := BLocalization.RING_UNIT_FRACTIONATE
-unsafe def RING_FRACTIONATE_EQ_0_GEN : thm := BLocalization.RING_FRACTIONATE_EQ_0_GEN
-unsafe def RING_HOMOMORPHISM_FRACTIONATE : thm := BLocalization.RING_HOMOMORPHISM_FRACTIONATE
-unsafe def RING_MONOMORPHISM_FRACTIONATE_GEN : thm := BLocalization.RING_MONOMORPHISM_FRACTIONATE_GEN
-unsafe def RING_ISOMORPHISM_FRACTIONATE_GEN : thm := BLocalization.RING_ISOMORPHISM_FRACTIONATE_GEN
-unsafe def RING_LOCALIZATION_UNCHANGED : thm := BLocalization.RING_LOCALIZATION_UNCHANGED
-unsafe def RING_LOCALIZATION_UNIVERSAL : thm := BLocalization.RING_LOCALIZATION_UNIVERSAL
-unsafe def RING_LOCALEQUIV_SPLIT_EXPLICIT : thm := BLocalization.RING_LOCALEQUIV_SPLIT_EXPLICIT
-unsafe def RING_LOCALEQUIV_SPLIT : thm := BLocalization.RING_LOCALEQUIV_SPLIT
-unsafe def LOCALEQUIV_MUL_RCANCEL : thm := BLocalization.LOCALEQUIV_MUL_RCANCEL
-unsafe def LOCALEQUIV_MUL_LCANCEL : thm := BLocalization.LOCALEQUIV_MUL_LCANCEL
-unsafe def RING_LOCALIZATION_HOMOMORPHISM_UNIQUE : thm := BLocalization.RING_LOCALIZATION_HOMOMORPHISM_UNIQUE
-unsafe def RING_LOCALIZATION_UNIQUE : thm := BLocalization.RING_LOCALIZATION_UNIQUE
-unsafe def IDEAL_LOCALIZATION_CONTRACTION : thm := BLocalization.IDEAL_LOCALIZATION_CONTRACTION
-unsafe def IDEAL_GENERATED_RING_LOCALIZATION : thm := BLocalization.IDEAL_GENERATED_RING_LOCALIZATION
-unsafe def fraction_ring : thm := BLocalization.fraction_ring
-unsafe def RING_LOCALEQUIV_EQ_0 : thm := BLocalization.RING_LOCALEQUIV_EQ_0
-unsafe def RING_FRACTIONATE_EQ_0 : thm := BLocalization.RING_FRACTIONATE_EQ_0
-unsafe def RING_MONOMORPHISM_FRACTIONATE : thm := BLocalization.RING_MONOMORPHISM_FRACTIONATE
-unsafe def FRACTION_RING_UNIVERSAL : thm := BLocalization.FRACTION_RING_UNIVERSAL
-unsafe def RING_UNIT_FRACTION_RING : thm := BLocalization.RING_UNIT_FRACTION_RING
-unsafe def RING_ZERODIVISOR_FRACTION_RING : thm := BLocalization.RING_ZERODIVISOR_FRACTION_RING
-unsafe def FRACTION_RING_UNIT_EQ_REGULAR : thm := BLocalization.FRACTION_RING_UNIT_EQ_REGULAR
-unsafe def FRACTION_RING_UNIT_OR_ZERODIVISOR : thm := BLocalization.FRACTION_RING_UNIT_OR_ZERODIVISOR
-unsafe def TRIVIAL_FRACTION_RING : thm := BLocalization.TRIVIAL_FRACTION_RING
-unsafe def FRACTION_FIELD : thm := BLocalization.FRACTION_FIELD
-unsafe def FRACTION_DOMAIN : thm := BLocalization.FRACTION_DOMAIN
-unsafe def INTEGRAL_DOMAIN_LOCALIZATION : thm := BLocalization.INTEGRAL_DOMAIN_LOCALIZATION
+def ring_localequiv : thm := BLocalization.ring_localequiv
+def RING_LOCALEQUIV : thm := BLocalization.RING_LOCALEQUIV
+def RING_LOCALEQUIV_REFL : thm := BLocalization.RING_LOCALEQUIV_REFL
+def RING_LOCALEQUIV_SYM : thm := BLocalization.RING_LOCALEQUIV_SYM
+def RING_LOCALEQUIV_TRANS : thm := BLocalization.RING_LOCALEQUIV_TRANS
+def RING_LOCALEQUIV_EQUIV : thm := BLocalization.RING_LOCALEQUIV_EQUIV
+def RING_LOCALEQUIV_NEG : thm := BLocalization.RING_LOCALEQUIV_NEG
+def RING_LOCALEQUIV_ADD : thm := BLocalization.RING_LOCALEQUIV_ADD
+def RING_LOCALEQUIV_MUL : thm := BLocalization.RING_LOCALEQUIV_MUL
+def ring_localization : thm := BLocalization.ring_localization
+def RING_LOCALIZATION : thm := BLocalization.RING_LOCALIZATION
+def RING_LOCALIZATION_NEG : thm := BLocalization.RING_LOCALIZATION_NEG
+def RING_LOCALIZATION_ADD : thm := BLocalization.RING_LOCALIZATION_ADD
+def RING_LOCALIZATION_MUL : thm := BLocalization.RING_LOCALIZATION_MUL
+def RING_LOCALIZATION_CARRIER : thm := BLocalization.RING_LOCALIZATION_CARRIER
+def RING_LOCALIZATION_0 : thm := BLocalization.RING_LOCALIZATION_0
+def RING_LOCALIZATION_1 : thm := BLocalization.RING_LOCALIZATION_1
+def TRIVIAL_RING_LOCALIZATION : thm := BLocalization.TRIVIAL_RING_LOCALIZATION
+def RING_LOCALEQUIV_IN_CARRIER : thm := BLocalization.RING_LOCALEQUIV_IN_CARRIER
+def RING_UNIT_LOCALEQUIV : thm := BLocalization.RING_UNIT_LOCALEQUIV
+def RING_UNIT_LOCALEQUIV_EQ : thm := BLocalization.RING_UNIT_LOCALEQUIV_EQ
+def RING_UNIT_LOCALIZATION : thm := BLocalization.RING_UNIT_LOCALIZATION
+def RING_LOCALEQUIV_EQ_0_GEN : thm := BLocalization.RING_LOCALEQUIV_EQ_0_GEN
+def RING_IDEAL_LOCALIZATION : thm := BLocalization.RING_IDEAL_LOCALIZATION
+def ring_fractionate : thm := BLocalization.ring_fractionate
+def RING_FRACTIONATE_IN_CARRIER : thm := BLocalization.RING_FRACTIONATE_IN_CARRIER
+def RING_UNIT_FRACTIONATE : thm := BLocalization.RING_UNIT_FRACTIONATE
+def RING_FRACTIONATE_EQ_0_GEN : thm := BLocalization.RING_FRACTIONATE_EQ_0_GEN
+def RING_HOMOMORPHISM_FRACTIONATE : thm := BLocalization.RING_HOMOMORPHISM_FRACTIONATE
+def RING_MONOMORPHISM_FRACTIONATE_GEN : thm := BLocalization.RING_MONOMORPHISM_FRACTIONATE_GEN
+def RING_ISOMORPHISM_FRACTIONATE_GEN : thm := BLocalization.RING_ISOMORPHISM_FRACTIONATE_GEN
+def RING_LOCALIZATION_UNCHANGED : thm := BLocalization.RING_LOCALIZATION_UNCHANGED
+def RING_LOCALIZATION_UNIVERSAL : thm := BLocalization.RING_LOCALIZATION_UNIVERSAL
+def RING_LOCALEQUIV_SPLIT_EXPLICIT : thm := BLocalization.RING_LOCALEQUIV_SPLIT_EXPLICIT
+def RING_LOCALEQUIV_SPLIT : thm := BLocalization.RING_LOCALEQUIV_SPLIT
+def LOCALEQUIV_MUL_RCANCEL : thm := BLocalization.LOCALEQUIV_MUL_RCANCEL
+def LOCALEQUIV_MUL_LCANCEL : thm := BLocalization.LOCALEQUIV_MUL_LCANCEL
+def RING_LOCALIZATION_HOMOMORPHISM_UNIQUE : thm := BLocalization.RING_LOCALIZATION_HOMOMORPHISM_UNIQUE
+def RING_LOCALIZATION_UNIQUE : thm := BLocalization.RING_LOCALIZATION_UNIQUE
+def IDEAL_LOCALIZATION_CONTRACTION : thm := BLocalization.IDEAL_LOCALIZATION_CONTRACTION
+def IDEAL_GENERATED_RING_LOCALIZATION : thm := BLocalization.IDEAL_GENERATED_RING_LOCALIZATION
+def fraction_ring : thm := BLocalization.fraction_ring
+def RING_LOCALEQUIV_EQ_0 : thm := BLocalization.RING_LOCALEQUIV_EQ_0
+def RING_FRACTIONATE_EQ_0 : thm := BLocalization.RING_FRACTIONATE_EQ_0
+def RING_MONOMORPHISM_FRACTIONATE : thm := BLocalization.RING_MONOMORPHISM_FRACTIONATE
+def FRACTION_RING_UNIVERSAL : thm := BLocalization.FRACTION_RING_UNIVERSAL
+def RING_UNIT_FRACTION_RING : thm := BLocalization.RING_UNIT_FRACTION_RING
+def RING_ZERODIVISOR_FRACTION_RING : thm := BLocalization.RING_ZERODIVISOR_FRACTION_RING
+def FRACTION_RING_UNIT_EQ_REGULAR : thm := BLocalization.FRACTION_RING_UNIT_EQ_REGULAR
+def FRACTION_RING_UNIT_OR_ZERODIVISOR : thm := BLocalization.FRACTION_RING_UNIT_OR_ZERODIVISOR
+def TRIVIAL_FRACTION_RING : thm := BLocalization.TRIVIAL_FRACTION_RING
+def FRACTION_FIELD : thm := BLocalization.FRACTION_FIELD
+def FRACTION_DOMAIN : thm := BLocalization.FRACTION_DOMAIN
+def INTEGRAL_DOMAIN_LOCALIZATION : thm := BLocalization.INTEGRAL_DOMAIN_LOCALIZATION
 
 -- SpecialIdeals
-unsafe def proper_ideal : thm := BSpecialIdeals.proper_ideal
-unsafe def principal_ideal : thm := BSpecialIdeals.principal_ideal
-unsafe def finitely_generated_ideal : thm := BSpecialIdeals.finitely_generated_ideal
-unsafe def prime_ideal : thm := BSpecialIdeals.prime_ideal
-unsafe def maximal_ideal : thm := BSpecialIdeals.maximal_ideal
-unsafe def PID : thm := BSpecialIdeals.PID
-unsafe def noetherian_ring : thm := BSpecialIdeals.noetherian_ring
-unsafe def PROPER_IMP_RING_IDEAL : thm := BSpecialIdeals.PROPER_IMP_RING_IDEAL
-unsafe def PROPER_IDEAL_IMP_SUBSET : thm := BSpecialIdeals.PROPER_IDEAL_IMP_SUBSET
-unsafe def PROPER_IDEAL_IMP_PSUBSET : thm := BSpecialIdeals.PROPER_IDEAL_IMP_PSUBSET
-unsafe def PRINCIPAL_IMP_RING_IDEAL : thm := BSpecialIdeals.PRINCIPAL_IMP_RING_IDEAL
-unsafe def PRINCIPAL_IDEAL_IMP_SUBSET : thm := BSpecialIdeals.PRINCIPAL_IDEAL_IMP_SUBSET
-unsafe def FINITELY_GENERATED_IMP_RING_IDEAL : thm := BSpecialIdeals.FINITELY_GENERATED_IMP_RING_IDEAL
-unsafe def FINITELY_GENERATED_IDEAL_IMP_SUBSET : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_IMP_SUBSET
-unsafe def FINITELY_GENERATED_IDEAL_SUBSET : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_SUBSET
-unsafe def PRIME_IMP_PROPER_IDEAL : thm := BSpecialIdeals.PRIME_IMP_PROPER_IDEAL
-unsafe def PRIME_IMP_RING_IDEAL : thm := BSpecialIdeals.PRIME_IMP_RING_IDEAL
-unsafe def PRIME_IDEAL_IMP_SUBSET : thm := BSpecialIdeals.PRIME_IDEAL_IMP_SUBSET
-unsafe def PRIME_IDEAL_IMP_PSUBSET : thm := BSpecialIdeals.PRIME_IDEAL_IMP_PSUBSET
-unsafe def MAXIMAL_IMP_PROPER_IDEAL : thm := BSpecialIdeals.MAXIMAL_IMP_PROPER_IDEAL
-unsafe def MAXIMAL_IMP_RING_IDEAL : thm := BSpecialIdeals.MAXIMAL_IMP_RING_IDEAL
-unsafe def MAXIMAL_IDEAL_IMP_SUBSET : thm := BSpecialIdeals.MAXIMAL_IDEAL_IMP_SUBSET
-unsafe def MAXIMAL_IDEAL_IMP_PSUBSET : thm := BSpecialIdeals.MAXIMAL_IDEAL_IMP_PSUBSET
-unsafe def PROPER_IDEAL_0 : thm := BSpecialIdeals.PROPER_IDEAL_0
-unsafe def PRINCIPAL_IMP_FINITELY_GENERATED_IDEAL : thm := BSpecialIdeals.PRINCIPAL_IMP_FINITELY_GENERATED_IDEAL
-unsafe def PID_IMP_INTEGRAL_DOMAIN : thm := BSpecialIdeals.PID_IMP_INTEGRAL_DOMAIN
-unsafe def PID_IMP_NOETHERIAN_RING : thm := BSpecialIdeals.PID_IMP_NOETHERIAN_RING
-unsafe def PRINCIPAL_IDEAL_ALT : thm := BSpecialIdeals.PRINCIPAL_IDEAL_ALT
-unsafe def PRINCIPAL_IDEAL_IDEAL_GENERATED_SING : thm := BSpecialIdeals.PRINCIPAL_IDEAL_IDEAL_GENERATED_SING
-unsafe def PRINCIPAL_IDEAL_0 : thm := BSpecialIdeals.PRINCIPAL_IDEAL_0
-unsafe def FINITELY_GENERATED_IDEAL_0 : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_0
-unsafe def PRINCIPAL_IDEAL_CARRIER : thm := BSpecialIdeals.PRINCIPAL_IDEAL_CARRIER
-unsafe def FINITELY_GENERATED_IDEAL_CARRIER : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_CARRIER
-unsafe def PROPER_IDEAL_ALT : thm := BSpecialIdeals.PROPER_IDEAL_ALT
-unsafe def NONPRINCIPAL_IMP_PROPER_IDEAL : thm := BSpecialIdeals.NONPRINCIPAL_IMP_PROPER_IDEAL
-unsafe def NONFINITELY_GENERATED_IMP_PROPER_IDEAL : thm := BSpecialIdeals.NONFINITELY_GENERATED_IMP_PROPER_IDEAL
-unsafe def FINITELY_GENERATED_IDEAL_ALT : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_ALT
-unsafe def FINITELY_GENERATED_IDEAL_GENERATED : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_GENERATED
-unsafe def FINITELY_GENERATED_IDEAL_SETADD : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_SETADD
-unsafe def PROPER_IDEAL : thm := BSpecialIdeals.PROPER_IDEAL
-unsafe def PROPER_IDEAL_UNIT : thm := BSpecialIdeals.PROPER_IDEAL_UNIT
-unsafe def PROPER_IDEAL_SUBSET_NONUNITS : thm := BSpecialIdeals.PROPER_IDEAL_SUBSET_NONUNITS
-unsafe def PROPER_IDEAL_UNIONS : thm := BSpecialIdeals.PROPER_IDEAL_UNIONS
-unsafe def PROPER_IDEAL_EXISTS : thm := BSpecialIdeals.PROPER_IDEAL_EXISTS
-unsafe def FINITELY_GENERATED_IDEAL_EPIMORPHIC_IMAGE : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_EPIMORPHIC_IMAGE
-unsafe def PRINCIPAL_IDEAL_EPIMORPHIC_IMAGE : thm := BSpecialIdeals.PRINCIPAL_IDEAL_EPIMORPHIC_IMAGE
-unsafe def FINITELY_GENERATED_IDEAL_LOCALIZATION : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_LOCALIZATION
-unsafe def PRINCIPAL_IDEAL_LOCALIZATION : thm := BSpecialIdeals.PRINCIPAL_IDEAL_LOCALIZATION
-unsafe def PROPER_IDEAL_HOMOMORPHIC_PREIMAGE : thm := BSpecialIdeals.PROPER_IDEAL_HOMOMORPHIC_PREIMAGE
-unsafe def PROPER_IDEAL_CORRESPONDENCE : thm := BSpecialIdeals.PROPER_IDEAL_CORRESPONDENCE
-unsafe def PROPER_IDEAL_ISOMORPHIC_IMAGE_EQ : thm := BSpecialIdeals.PROPER_IDEAL_ISOMORPHIC_IMAGE_EQ
-unsafe def PRIME_IDEAL_HOMOMORPHIC_PREIMAGE : thm := BSpecialIdeals.PRIME_IDEAL_HOMOMORPHIC_PREIMAGE
-unsafe def RING_1_NOT_IN_PRIME_IDEAL : thm := BSpecialIdeals.RING_1_NOT_IN_PRIME_IDEAL
-unsafe def RING_UNIT_NOT_IN_PRIME_IDEAL : thm := BSpecialIdeals.RING_UNIT_NOT_IN_PRIME_IDEAL
-unsafe def RING_MUL_IN_PRIME_IDEAL : thm := BSpecialIdeals.RING_MUL_IN_PRIME_IDEAL
-unsafe def RING_POW_IN_PRIME_IDEAL : thm := BSpecialIdeals.RING_POW_IN_PRIME_IDEAL
-unsafe def MAXIMAL_SUPERIDEAL_EXISTS : thm := BSpecialIdeals.MAXIMAL_SUPERIDEAL_EXISTS
-unsafe def MAXIMAL_IDEAL_EXISTS : thm := BSpecialIdeals.MAXIMAL_IDEAL_EXISTS
-unsafe def RING_MULTSYS_NONPRIME : thm := BSpecialIdeals.RING_MULTSYS_NONPRIME
-unsafe def RING_MULTSYS_NONPRIME_EQ : thm := BSpecialIdeals.RING_MULTSYS_NONPRIME_EQ
-unsafe def RING_SATURATED_MULTSYS_NONPRIME : thm := BSpecialIdeals.RING_SATURATED_MULTSYS_NONPRIME
-unsafe def MAXIMAL_EXCLUDING_IMP_PRIME_IDEAL : thm := BSpecialIdeals.MAXIMAL_EXCLUDING_IMP_PRIME_IDEAL
-unsafe def MAXIMAL_IMP_PRIME_IDEAL : thm := BSpecialIdeals.MAXIMAL_IMP_PRIME_IDEAL
-unsafe def MAXIMAL_AMONG_PRIME_IDEALS : thm := BSpecialIdeals.MAXIMAL_AMONG_PRIME_IDEALS
-unsafe def PRIME_IDEAL_0 : thm := BSpecialIdeals.PRIME_IDEAL_0
-unsafe def MAXIMAL_IDEAL_0 : thm := BSpecialIdeals.MAXIMAL_IDEAL_0
-unsafe def PRIME_SUPERIDEAL_EXISTS : thm := BSpecialIdeals.PRIME_SUPERIDEAL_EXISTS
-unsafe def PRIME_IDEAL_EXISTS : thm := BSpecialIdeals.PRIME_IDEAL_EXISTS
-unsafe def PRIME_SUPERIDEAL_EXCLUDING_EXISTS : thm := BSpecialIdeals.PRIME_SUPERIDEAL_EXCLUDING_EXISTS
-unsafe def PRIME_IDEAL_EXCLUDING_EXISTS : thm := BSpecialIdeals.PRIME_IDEAL_EXCLUDING_EXISTS
-unsafe def MAXIMAL_NONFG_IMP_PRIME_IDEAL : thm := BSpecialIdeals.MAXIMAL_NONFG_IMP_PRIME_IDEAL
-unsafe def PRIME_IDEAL_SING : thm := BSpecialIdeals.PRIME_IDEAL_SING
-unsafe def RING_PRIME_IDEAL : thm := BSpecialIdeals.RING_PRIME_IDEAL
-unsafe def PROPER_IDEAL_IDEAL_GENERATED_SING : thm := BSpecialIdeals.PROPER_IDEAL_IDEAL_GENERATED_SING
-unsafe def MAXIMAL_CONTAINING_IDEAL_EXISTS : thm := BSpecialIdeals.MAXIMAL_CONTAINING_IDEAL_EXISTS
-unsafe def UNIONS_MAXIMAL_IDEALS : thm := BSpecialIdeals.UNIONS_MAXIMAL_IDEALS
-unsafe def UNIONS_PROPER_IDEALS : thm := BSpecialIdeals.UNIONS_PROPER_IDEALS
-unsafe def UNIONS_PRIME_IDEALS : thm := BSpecialIdeals.UNIONS_PRIME_IDEALS
-unsafe def PROPER_IDEAL_NONUNITS : thm := BSpecialIdeals.PROPER_IDEAL_NONUNITS
-unsafe def MAXIMAL_IDEAL_NONUNITS : thm := BSpecialIdeals.MAXIMAL_IDEAL_NONUNITS
-unsafe def PRIME_IDEAL_NONUNITS : thm := BSpecialIdeals.PRIME_IDEAL_NONUNITS
-unsafe def RING_IDEAL_NONUNITS : thm := BSpecialIdeals.RING_IDEAL_NONUNITS
-unsafe def RING_IRREDUCIBLE_IMP_MAXIMAL_PRINCIPAL_IDEAL : thm := BSpecialIdeals.RING_IRREDUCIBLE_IMP_MAXIMAL_PRINCIPAL_IDEAL
-unsafe def RING_IRREDUCIBLE_EQ_MAXIMAL_PRINCIPAL_IDEAL : thm := BSpecialIdeals.RING_IRREDUCIBLE_EQ_MAXIMAL_PRINCIPAL_IDEAL
-unsafe def MAXIMAL_IDEAL_SING_IMP_IRREDUCIBLE : thm := BSpecialIdeals.MAXIMAL_IDEAL_SING_IMP_IRREDUCIBLE
-unsafe def RING_IRREDUCIBLE_EQ_MAXIMAL_IDEAL : thm := BSpecialIdeals.RING_IRREDUCIBLE_EQ_MAXIMAL_IDEAL
-unsafe def MAXIMAL_IDEAL_SING : thm := BSpecialIdeals.MAXIMAL_IDEAL_SING
-unsafe def PID_IRREDUCIBLE_EQ_PRIME : thm := BSpecialIdeals.PID_IRREDUCIBLE_EQ_PRIME
-unsafe def FIELD_EQ_TRIVIAL_IDEALS : thm := BSpecialIdeals.FIELD_EQ_TRIVIAL_IDEALS
-unsafe def FIELD_EQ_TRIVIAL_IDEALS_EQ : thm := BSpecialIdeals.FIELD_EQ_TRIVIAL_IDEALS_EQ
-unsafe def FIELD_EQ_NO_PROPER_IDEALS : thm := BSpecialIdeals.FIELD_EQ_NO_PROPER_IDEALS
-unsafe def FIELD_EQ_NO_PROPER_IDEALS_EQ : thm := BSpecialIdeals.FIELD_EQ_NO_PROPER_IDEALS_EQ
-unsafe def FIELD_EQ_PROPER_IMP_MAXIMAL_IDEAL : thm := BSpecialIdeals.FIELD_EQ_PROPER_IMP_MAXIMAL_IDEAL
-unsafe def FIELD_EQ_PROPER_IMP_PRIME_IDEAL : thm := BSpecialIdeals.FIELD_EQ_PROPER_IMP_PRIME_IDEAL
-unsafe def FIELD_IMP_PID : thm := BSpecialIdeals.FIELD_IMP_PID
-unsafe def FIELD_IMP_NOETHERIAN_RING : thm := BSpecialIdeals.FIELD_IMP_NOETHERIAN_RING
-unsafe def PID_MAXIMAL_EQ_PRIME_IDEAL : thm := BSpecialIdeals.PID_MAXIMAL_EQ_PRIME_IDEAL
-unsafe def PID_EQ_INTEGRAL_DOMAIN_PRIME_PRINCIPAL : thm := BSpecialIdeals.PID_EQ_INTEGRAL_DOMAIN_PRIME_PRINCIPAL
-unsafe def TRIVIAL_QUOTIENT_RING : thm := BSpecialIdeals.TRIVIAL_QUOTIENT_RING
-unsafe def INTEGRAL_DOMAIN_QUOTIENT_RING : thm := BSpecialIdeals.INTEGRAL_DOMAIN_QUOTIENT_RING
-unsafe def FIELD_QUOTIENT_RING : thm := BSpecialIdeals.FIELD_QUOTIENT_RING
-unsafe def PRIME_IDEAL_CORRESPONDENCE : thm := BSpecialIdeals.PRIME_IDEAL_CORRESPONDENCE
-unsafe def PRIME_IDEAL_ISOMORPHIC_IMAGE_EQ : thm := BSpecialIdeals.PRIME_IDEAL_ISOMORPHIC_IMAGE_EQ
-unsafe def MAXIMAL_IDEAL_CORRESPONDENCE : thm := BSpecialIdeals.MAXIMAL_IDEAL_CORRESPONDENCE
-unsafe def MAXIMAL_IDEAL_EPIMORPHIC_PREIMAGE : thm := BSpecialIdeals.MAXIMAL_IDEAL_EPIMORPHIC_PREIMAGE
-unsafe def MAXIMAL_IDEAL_ISOMORPHIC_IMAGE_EQ : thm := BSpecialIdeals.MAXIMAL_IDEAL_ISOMORPHIC_IMAGE_EQ
-unsafe def ISOMORPHIC_RING_PIDNESS : thm := BSpecialIdeals.ISOMORPHIC_RING_PIDNESS
-unsafe def FIELD_HOMOMORPHISM_IMP_MONOMORPHISM : thm := BSpecialIdeals.FIELD_HOMOMORPHISM_IMP_MONOMORPHISM
-unsafe def FIELD_EPIMORPHISM_IMP_ISOMORPHISM : thm := BSpecialIdeals.FIELD_EPIMORPHISM_IMP_ISOMORPHISM
-unsafe def RING_EPIMORPHISM_ONTO_FIELD_EXISTS : thm := BSpecialIdeals.RING_EPIMORPHISM_ONTO_FIELD_EXISTS
-unsafe def FIELD_RING_HOMOMORPHISM_MONOMORPHISM : thm := BSpecialIdeals.FIELD_RING_HOMOMORPHISM_MONOMORPHISM
+def proper_ideal : thm := BSpecialIdeals.proper_ideal
+def principal_ideal : thm := BSpecialIdeals.principal_ideal
+def finitely_generated_ideal : thm := BSpecialIdeals.finitely_generated_ideal
+def prime_ideal : thm := BSpecialIdeals.prime_ideal
+def maximal_ideal : thm := BSpecialIdeals.maximal_ideal
+def PID : thm := BSpecialIdeals.PID
+def noetherian_ring : thm := BSpecialIdeals.noetherian_ring
+def PROPER_IMP_RING_IDEAL : thm := BSpecialIdeals.PROPER_IMP_RING_IDEAL
+def PROPER_IDEAL_IMP_SUBSET : thm := BSpecialIdeals.PROPER_IDEAL_IMP_SUBSET
+def PROPER_IDEAL_IMP_PSUBSET : thm := BSpecialIdeals.PROPER_IDEAL_IMP_PSUBSET
+def PRINCIPAL_IMP_RING_IDEAL : thm := BSpecialIdeals.PRINCIPAL_IMP_RING_IDEAL
+def PRINCIPAL_IDEAL_IMP_SUBSET : thm := BSpecialIdeals.PRINCIPAL_IDEAL_IMP_SUBSET
+def FINITELY_GENERATED_IMP_RING_IDEAL : thm := BSpecialIdeals.FINITELY_GENERATED_IMP_RING_IDEAL
+def FINITELY_GENERATED_IDEAL_IMP_SUBSET : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_IMP_SUBSET
+def FINITELY_GENERATED_IDEAL_SUBSET : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_SUBSET
+def PRIME_IMP_PROPER_IDEAL : thm := BSpecialIdeals.PRIME_IMP_PROPER_IDEAL
+def PRIME_IMP_RING_IDEAL : thm := BSpecialIdeals.PRIME_IMP_RING_IDEAL
+def PRIME_IDEAL_IMP_SUBSET : thm := BSpecialIdeals.PRIME_IDEAL_IMP_SUBSET
+def PRIME_IDEAL_IMP_PSUBSET : thm := BSpecialIdeals.PRIME_IDEAL_IMP_PSUBSET
+def MAXIMAL_IMP_PROPER_IDEAL : thm := BSpecialIdeals.MAXIMAL_IMP_PROPER_IDEAL
+def MAXIMAL_IMP_RING_IDEAL : thm := BSpecialIdeals.MAXIMAL_IMP_RING_IDEAL
+def MAXIMAL_IDEAL_IMP_SUBSET : thm := BSpecialIdeals.MAXIMAL_IDEAL_IMP_SUBSET
+def MAXIMAL_IDEAL_IMP_PSUBSET : thm := BSpecialIdeals.MAXIMAL_IDEAL_IMP_PSUBSET
+def PROPER_IDEAL_0 : thm := BSpecialIdeals.PROPER_IDEAL_0
+def PRINCIPAL_IMP_FINITELY_GENERATED_IDEAL : thm := BSpecialIdeals.PRINCIPAL_IMP_FINITELY_GENERATED_IDEAL
+def PID_IMP_INTEGRAL_DOMAIN : thm := BSpecialIdeals.PID_IMP_INTEGRAL_DOMAIN
+def PID_IMP_NOETHERIAN_RING : thm := BSpecialIdeals.PID_IMP_NOETHERIAN_RING
+def PRINCIPAL_IDEAL_ALT : thm := BSpecialIdeals.PRINCIPAL_IDEAL_ALT
+def PRINCIPAL_IDEAL_IDEAL_GENERATED_SING : thm := BSpecialIdeals.PRINCIPAL_IDEAL_IDEAL_GENERATED_SING
+def PRINCIPAL_IDEAL_0 : thm := BSpecialIdeals.PRINCIPAL_IDEAL_0
+def FINITELY_GENERATED_IDEAL_0 : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_0
+def PRINCIPAL_IDEAL_CARRIER : thm := BSpecialIdeals.PRINCIPAL_IDEAL_CARRIER
+def FINITELY_GENERATED_IDEAL_CARRIER : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_CARRIER
+def PROPER_IDEAL_ALT : thm := BSpecialIdeals.PROPER_IDEAL_ALT
+def NONPRINCIPAL_IMP_PROPER_IDEAL : thm := BSpecialIdeals.NONPRINCIPAL_IMP_PROPER_IDEAL
+def NONFINITELY_GENERATED_IMP_PROPER_IDEAL : thm := BSpecialIdeals.NONFINITELY_GENERATED_IMP_PROPER_IDEAL
+def FINITELY_GENERATED_IDEAL_ALT : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_ALT
+def FINITELY_GENERATED_IDEAL_GENERATED : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_GENERATED
+def FINITELY_GENERATED_IDEAL_SETADD : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_SETADD
+def PROPER_IDEAL : thm := BSpecialIdeals.PROPER_IDEAL
+def PROPER_IDEAL_UNIT : thm := BSpecialIdeals.PROPER_IDEAL_UNIT
+def PROPER_IDEAL_SUBSET_NONUNITS : thm := BSpecialIdeals.PROPER_IDEAL_SUBSET_NONUNITS
+def PROPER_IDEAL_UNIONS : thm := BSpecialIdeals.PROPER_IDEAL_UNIONS
+def PROPER_IDEAL_EXISTS : thm := BSpecialIdeals.PROPER_IDEAL_EXISTS
+def FINITELY_GENERATED_IDEAL_EPIMORPHIC_IMAGE : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_EPIMORPHIC_IMAGE
+def PRINCIPAL_IDEAL_EPIMORPHIC_IMAGE : thm := BSpecialIdeals.PRINCIPAL_IDEAL_EPIMORPHIC_IMAGE
+def FINITELY_GENERATED_IDEAL_LOCALIZATION : thm := BSpecialIdeals.FINITELY_GENERATED_IDEAL_LOCALIZATION
+def PRINCIPAL_IDEAL_LOCALIZATION : thm := BSpecialIdeals.PRINCIPAL_IDEAL_LOCALIZATION
+def PROPER_IDEAL_HOMOMORPHIC_PREIMAGE : thm := BSpecialIdeals.PROPER_IDEAL_HOMOMORPHIC_PREIMAGE
+def PROPER_IDEAL_CORRESPONDENCE : thm := BSpecialIdeals.PROPER_IDEAL_CORRESPONDENCE
+def PROPER_IDEAL_ISOMORPHIC_IMAGE_EQ : thm := BSpecialIdeals.PROPER_IDEAL_ISOMORPHIC_IMAGE_EQ
+def PRIME_IDEAL_HOMOMORPHIC_PREIMAGE : thm := BSpecialIdeals.PRIME_IDEAL_HOMOMORPHIC_PREIMAGE
+def RING_1_NOT_IN_PRIME_IDEAL : thm := BSpecialIdeals.RING_1_NOT_IN_PRIME_IDEAL
+def RING_UNIT_NOT_IN_PRIME_IDEAL : thm := BSpecialIdeals.RING_UNIT_NOT_IN_PRIME_IDEAL
+def RING_MUL_IN_PRIME_IDEAL : thm := BSpecialIdeals.RING_MUL_IN_PRIME_IDEAL
+def RING_POW_IN_PRIME_IDEAL : thm := BSpecialIdeals.RING_POW_IN_PRIME_IDEAL
+def MAXIMAL_SUPERIDEAL_EXISTS : thm := BSpecialIdeals.MAXIMAL_SUPERIDEAL_EXISTS
+def MAXIMAL_IDEAL_EXISTS : thm := BSpecialIdeals.MAXIMAL_IDEAL_EXISTS
+def RING_MULTSYS_NONPRIME : thm := BSpecialIdeals.RING_MULTSYS_NONPRIME
+def RING_MULTSYS_NONPRIME_EQ : thm := BSpecialIdeals.RING_MULTSYS_NONPRIME_EQ
+def RING_SATURATED_MULTSYS_NONPRIME : thm := BSpecialIdeals.RING_SATURATED_MULTSYS_NONPRIME
+def MAXIMAL_EXCLUDING_IMP_PRIME_IDEAL : thm := BSpecialIdeals.MAXIMAL_EXCLUDING_IMP_PRIME_IDEAL
+def MAXIMAL_IMP_PRIME_IDEAL : thm := BSpecialIdeals.MAXIMAL_IMP_PRIME_IDEAL
+def MAXIMAL_AMONG_PRIME_IDEALS : thm := BSpecialIdeals.MAXIMAL_AMONG_PRIME_IDEALS
+def PRIME_IDEAL_0 : thm := BSpecialIdeals.PRIME_IDEAL_0
+def MAXIMAL_IDEAL_0 : thm := BSpecialIdeals.MAXIMAL_IDEAL_0
+def PRIME_SUPERIDEAL_EXISTS : thm := BSpecialIdeals.PRIME_SUPERIDEAL_EXISTS
+def PRIME_IDEAL_EXISTS : thm := BSpecialIdeals.PRIME_IDEAL_EXISTS
+def PRIME_SUPERIDEAL_EXCLUDING_EXISTS : thm := BSpecialIdeals.PRIME_SUPERIDEAL_EXCLUDING_EXISTS
+def PRIME_IDEAL_EXCLUDING_EXISTS : thm := BSpecialIdeals.PRIME_IDEAL_EXCLUDING_EXISTS
+def MAXIMAL_NONFG_IMP_PRIME_IDEAL : thm := BSpecialIdeals.MAXIMAL_NONFG_IMP_PRIME_IDEAL
+def PRIME_IDEAL_SING : thm := BSpecialIdeals.PRIME_IDEAL_SING
+def RING_PRIME_IDEAL : thm := BSpecialIdeals.RING_PRIME_IDEAL
+def PROPER_IDEAL_IDEAL_GENERATED_SING : thm := BSpecialIdeals.PROPER_IDEAL_IDEAL_GENERATED_SING
+def MAXIMAL_CONTAINING_IDEAL_EXISTS : thm := BSpecialIdeals.MAXIMAL_CONTAINING_IDEAL_EXISTS
+def UNIONS_MAXIMAL_IDEALS : thm := BSpecialIdeals.UNIONS_MAXIMAL_IDEALS
+def UNIONS_PROPER_IDEALS : thm := BSpecialIdeals.UNIONS_PROPER_IDEALS
+def UNIONS_PRIME_IDEALS : thm := BSpecialIdeals.UNIONS_PRIME_IDEALS
+def PROPER_IDEAL_NONUNITS : thm := BSpecialIdeals.PROPER_IDEAL_NONUNITS
+def MAXIMAL_IDEAL_NONUNITS : thm := BSpecialIdeals.MAXIMAL_IDEAL_NONUNITS
+def PRIME_IDEAL_NONUNITS : thm := BSpecialIdeals.PRIME_IDEAL_NONUNITS
+def RING_IDEAL_NONUNITS : thm := BSpecialIdeals.RING_IDEAL_NONUNITS
+def RING_IRREDUCIBLE_IMP_MAXIMAL_PRINCIPAL_IDEAL : thm := BSpecialIdeals.RING_IRREDUCIBLE_IMP_MAXIMAL_PRINCIPAL_IDEAL
+def RING_IRREDUCIBLE_EQ_MAXIMAL_PRINCIPAL_IDEAL : thm := BSpecialIdeals.RING_IRREDUCIBLE_EQ_MAXIMAL_PRINCIPAL_IDEAL
+def MAXIMAL_IDEAL_SING_IMP_IRREDUCIBLE : thm := BSpecialIdeals.MAXIMAL_IDEAL_SING_IMP_IRREDUCIBLE
+def RING_IRREDUCIBLE_EQ_MAXIMAL_IDEAL : thm := BSpecialIdeals.RING_IRREDUCIBLE_EQ_MAXIMAL_IDEAL
+def MAXIMAL_IDEAL_SING : thm := BSpecialIdeals.MAXIMAL_IDEAL_SING
+def PID_IRREDUCIBLE_EQ_PRIME : thm := BSpecialIdeals.PID_IRREDUCIBLE_EQ_PRIME
+def FIELD_EQ_TRIVIAL_IDEALS : thm := BSpecialIdeals.FIELD_EQ_TRIVIAL_IDEALS
+def FIELD_EQ_TRIVIAL_IDEALS_EQ : thm := BSpecialIdeals.FIELD_EQ_TRIVIAL_IDEALS_EQ
+def FIELD_EQ_NO_PROPER_IDEALS : thm := BSpecialIdeals.FIELD_EQ_NO_PROPER_IDEALS
+def FIELD_EQ_NO_PROPER_IDEALS_EQ : thm := BSpecialIdeals.FIELD_EQ_NO_PROPER_IDEALS_EQ
+def FIELD_EQ_PROPER_IMP_MAXIMAL_IDEAL : thm := BSpecialIdeals.FIELD_EQ_PROPER_IMP_MAXIMAL_IDEAL
+def FIELD_EQ_PROPER_IMP_PRIME_IDEAL : thm := BSpecialIdeals.FIELD_EQ_PROPER_IMP_PRIME_IDEAL
+def FIELD_IMP_PID : thm := BSpecialIdeals.FIELD_IMP_PID
+def FIELD_IMP_NOETHERIAN_RING : thm := BSpecialIdeals.FIELD_IMP_NOETHERIAN_RING
+def PID_MAXIMAL_EQ_PRIME_IDEAL : thm := BSpecialIdeals.PID_MAXIMAL_EQ_PRIME_IDEAL
+def PID_EQ_INTEGRAL_DOMAIN_PRIME_PRINCIPAL : thm := BSpecialIdeals.PID_EQ_INTEGRAL_DOMAIN_PRIME_PRINCIPAL
+def TRIVIAL_QUOTIENT_RING : thm := BSpecialIdeals.TRIVIAL_QUOTIENT_RING
+def INTEGRAL_DOMAIN_QUOTIENT_RING : thm := BSpecialIdeals.INTEGRAL_DOMAIN_QUOTIENT_RING
+def FIELD_QUOTIENT_RING : thm := BSpecialIdeals.FIELD_QUOTIENT_RING
+def PRIME_IDEAL_CORRESPONDENCE : thm := BSpecialIdeals.PRIME_IDEAL_CORRESPONDENCE
+def PRIME_IDEAL_ISOMORPHIC_IMAGE_EQ : thm := BSpecialIdeals.PRIME_IDEAL_ISOMORPHIC_IMAGE_EQ
+def MAXIMAL_IDEAL_CORRESPONDENCE : thm := BSpecialIdeals.MAXIMAL_IDEAL_CORRESPONDENCE
+def MAXIMAL_IDEAL_EPIMORPHIC_PREIMAGE : thm := BSpecialIdeals.MAXIMAL_IDEAL_EPIMORPHIC_PREIMAGE
+def MAXIMAL_IDEAL_ISOMORPHIC_IMAGE_EQ : thm := BSpecialIdeals.MAXIMAL_IDEAL_ISOMORPHIC_IMAGE_EQ
+def ISOMORPHIC_RING_PIDNESS : thm := BSpecialIdeals.ISOMORPHIC_RING_PIDNESS
+def FIELD_HOMOMORPHISM_IMP_MONOMORPHISM : thm := BSpecialIdeals.FIELD_HOMOMORPHISM_IMP_MONOMORPHISM
+def FIELD_EPIMORPHISM_IMP_ISOMORPHISM : thm := BSpecialIdeals.FIELD_EPIMORPHISM_IMP_ISOMORPHISM
+def RING_EPIMORPHISM_ONTO_FIELD_EXISTS : thm := BSpecialIdeals.RING_EPIMORPHISM_ONTO_FIELD_EXISTS
+def FIELD_RING_HOMOMORPHISM_MONOMORPHISM : thm := BSpecialIdeals.FIELD_RING_HOMOMORPHISM_MONOMORPHISM
 
 -- Radical
-unsafe def radical : thm := BRadical.radical
-unsafe def RADICAL_SUBSET : thm := BRadical.RADICAL_SUBSET
-unsafe def RADICAL_MONO : thm := BRadical.RADICAL_MONO
-unsafe def RING_IDEAL_RADICAL : thm := BRadical.RING_IDEAL_RADICAL
-unsafe def RADICAL_0 : thm := BRadical.RADICAL_0
-unsafe def RADICAL_RING_CARRIER : thm := BRadical.RADICAL_RING_CARRIER
-unsafe def RADICAL_ALT : thm := BRadical.RADICAL_ALT
-unsafe def RING_POW_IN_RADICAL : thm := BRadical.RING_POW_IN_RADICAL
-unsafe def INTEGRAL_DOMAIN_NILRADICAL : thm := BRadical.INTEGRAL_DOMAIN_NILRADICAL
-unsafe def FIELD_NILRADICAL : thm := BRadical.FIELD_NILRADICAL
-unsafe def RADICAL : thm := BRadical.RADICAL
-unsafe def RING_NILRADICAL : thm := BRadical.RING_NILRADICAL
-unsafe def INTERS_PRIME_IDEALS : thm := BRadical.INTERS_PRIME_IDEALS
-unsafe def RADICAL_RADICAL : thm := BRadical.RADICAL_RADICAL
-unsafe def RADICAL_EQ_CARRIER : thm := BRadical.RADICAL_EQ_CARRIER
-unsafe def PROPER_RADICAL : thm := BRadical.PROPER_RADICAL
-unsafe def RADICAL_UNIONS : thm := BRadical.RADICAL_UNIONS
-unsafe def RADICAL_UNION : thm := BRadical.RADICAL_UNION
-unsafe def RADICAL_INTER : thm := BRadical.RADICAL_INTER
-unsafe def RADICAL_SETADD : thm := BRadical.RADICAL_SETADD
-unsafe def COMAXIMAL_RADICALS : thm := BRadical.COMAXIMAL_RADICALS
-unsafe def RADICAL_PRIME_IDEAL : thm := BRadical.RADICAL_PRIME_IDEAL
-unsafe def RADICAL_SUBSET_PRIME_IDEAL_EQ : thm := BRadical.RADICAL_SUBSET_PRIME_IDEAL_EQ
-unsafe def RADICAL_IDEAL_PRIME_IDEAL_EQ : thm := BRadical.RADICAL_IDEAL_PRIME_IDEAL_EQ
-unsafe def PRIME_IDEAL_CONTAINS_NILPOTENTS : thm := BRadical.PRIME_IDEAL_CONTAINS_NILPOTENTS
-unsafe def RING_NILPOTENT_ADD : thm := BRadical.RING_NILPOTENT_ADD
-unsafe def RING_NILPOTENT_LMUL : thm := BRadical.RING_NILPOTENT_LMUL
-unsafe def RING_NILPOTENT_RMUL : thm := BRadical.RING_NILPOTENT_RMUL
-unsafe def RING_NILPOTENT_SUB : thm := BRadical.RING_NILPOTENT_SUB
-unsafe def RING_NILPOTENT_SUM : thm := BRadical.RING_NILPOTENT_SUM
-unsafe def RING_ZERODIVISOR_NILPOTENT_CLAUSES : thm := BRadical.RING_ZERODIVISOR_NILPOTENT_CLAUSES
-unsafe def RING_REGULAR_NILPOTENT_CLAUSES : thm := BRadical.RING_REGULAR_NILPOTENT_CLAUSES
-unsafe def RING_UNIT_NILPOTENT_CLAUSES_1 : thm := BRadical.RING_UNIT_NILPOTENT_CLAUSES_1
-unsafe def RING_UNIT_NILPOTENT_CLAUSES : thm := BRadical.RING_UNIT_NILPOTENT_CLAUSES
-unsafe def RING_NILPOTENT_UNIT : thm := BRadical.RING_NILPOTENT_UNIT
-unsafe def UNIQUE_PRIME_IDEAL : thm := BRadical.UNIQUE_PRIME_IDEAL
+def radical : thm := BRadical.radical
+def RADICAL_SUBSET : thm := BRadical.RADICAL_SUBSET
+def RADICAL_MONO : thm := BRadical.RADICAL_MONO
+def RING_IDEAL_RADICAL : thm := BRadical.RING_IDEAL_RADICAL
+def RADICAL_0 : thm := BRadical.RADICAL_0
+def RADICAL_RING_CARRIER : thm := BRadical.RADICAL_RING_CARRIER
+def RADICAL_ALT : thm := BRadical.RADICAL_ALT
+def RING_POW_IN_RADICAL : thm := BRadical.RING_POW_IN_RADICAL
+def INTEGRAL_DOMAIN_NILRADICAL : thm := BRadical.INTEGRAL_DOMAIN_NILRADICAL
+def FIELD_NILRADICAL : thm := BRadical.FIELD_NILRADICAL
+def RADICAL : thm := BRadical.RADICAL
+def RING_NILRADICAL : thm := BRadical.RING_NILRADICAL
+def INTERS_PRIME_IDEALS : thm := BRadical.INTERS_PRIME_IDEALS
+def RADICAL_RADICAL : thm := BRadical.RADICAL_RADICAL
+def RADICAL_EQ_CARRIER : thm := BRadical.RADICAL_EQ_CARRIER
+def PROPER_RADICAL : thm := BRadical.PROPER_RADICAL
+def RADICAL_UNIONS : thm := BRadical.RADICAL_UNIONS
+def RADICAL_UNION : thm := BRadical.RADICAL_UNION
+def RADICAL_INTER : thm := BRadical.RADICAL_INTER
+def RADICAL_SETADD : thm := BRadical.RADICAL_SETADD
+def COMAXIMAL_RADICALS : thm := BRadical.COMAXIMAL_RADICALS
+def RADICAL_PRIME_IDEAL : thm := BRadical.RADICAL_PRIME_IDEAL
+def RADICAL_SUBSET_PRIME_IDEAL_EQ : thm := BRadical.RADICAL_SUBSET_PRIME_IDEAL_EQ
+def RADICAL_IDEAL_PRIME_IDEAL_EQ : thm := BRadical.RADICAL_IDEAL_PRIME_IDEAL_EQ
+def PRIME_IDEAL_CONTAINS_NILPOTENTS : thm := BRadical.PRIME_IDEAL_CONTAINS_NILPOTENTS
+def RING_NILPOTENT_ADD : thm := BRadical.RING_NILPOTENT_ADD
+def RING_NILPOTENT_LMUL : thm := BRadical.RING_NILPOTENT_LMUL
+def RING_NILPOTENT_RMUL : thm := BRadical.RING_NILPOTENT_RMUL
+def RING_NILPOTENT_SUB : thm := BRadical.RING_NILPOTENT_SUB
+def RING_NILPOTENT_SUM : thm := BRadical.RING_NILPOTENT_SUM
+def RING_ZERODIVISOR_NILPOTENT_CLAUSES : thm := BRadical.RING_ZERODIVISOR_NILPOTENT_CLAUSES
+def RING_REGULAR_NILPOTENT_CLAUSES : thm := BRadical.RING_REGULAR_NILPOTENT_CLAUSES
+def RING_UNIT_NILPOTENT_CLAUSES_1 : thm := BRadical.RING_UNIT_NILPOTENT_CLAUSES_1
+def RING_UNIT_NILPOTENT_CLAUSES : thm := BRadical.RING_UNIT_NILPOTENT_CLAUSES
+def RING_NILPOTENT_UNIT : thm := BRadical.RING_NILPOTENT_UNIT
+def UNIQUE_PRIME_IDEAL : thm := BRadical.UNIQUE_PRIME_IDEAL
 
 -- UFDs
-unsafe def UFD : thm := BUFDs.UFD
-unsafe def UFD_IMP_INTEGRAL_DOMAIN : thm := BUFDs.UFD_IMP_INTEGRAL_DOMAIN
-unsafe def PID_IMP_UFD : thm := BUFDs.PID_IMP_UFD
-unsafe def FIELD_IMP_UFD : thm := BUFDs.FIELD_IMP_UFD
-unsafe def ISOMORPHIC_RING_UFDNESS : thm := BUFDs.ISOMORPHIC_RING_UFDNESS
-unsafe def UFD_EQ_PRIMEFACT : thm := BUFDs.UFD_EQ_PRIMEFACT
-unsafe def UFD_EQ_PRIMEFACT_NONUNIT : thm := BUFDs.UFD_EQ_PRIMEFACT_NONUNIT
-unsafe def UFD_PRIME_FACTOR_EXISTS : thm := BUFDs.UFD_PRIME_FACTOR_EXISTS
-unsafe def UFD_IRREDUCIBLE_EQ_PRIME : thm := BUFDs.UFD_IRREDUCIBLE_EQ_PRIME
-unsafe def UFD_EQ_ATOMIC : thm := BUFDs.UFD_EQ_ATOMIC
-unsafe def UFD_EQ_ATOMIC_NONUNIT : thm := BUFDs.UFD_EQ_ATOMIC_NONUNIT
-unsafe def UFD_EQ_UNIQUE_FACTORIZATION : thm := BUFDs.UFD_EQ_UNIQUE_FACTORIZATION
-unsafe def UFD_COPRIME : thm := BUFDs.UFD_COPRIME
-unsafe def UFD_PRIME_FACTOR_INDUCT : thm := BUFDs.UFD_PRIME_FACTOR_INDUCT
-unsafe def UFD_IMP_GCD_EXISTS : thm := BUFDs.UFD_IMP_GCD_EXISTS
-unsafe def PID_EQ_UFD_PRIME_MAXIMAL : thm := BUFDs.PID_EQ_UFD_PRIME_MAXIMAL
-unsafe def RING_DIVIDES_LOCALEQUIV : thm := BUFDs.RING_DIVIDES_LOCALEQUIV
-unsafe def UFD_LOCALIZATION : thm := BUFDs.UFD_LOCALIZATION
-unsafe def PROPER_IDEAL_LOCALIZATION : thm := BUFDs.PROPER_IDEAL_LOCALIZATION
-unsafe def RING_LOCALEQUIV_IN_LOCALIZED_IDEAL : thm := BUFDs.RING_LOCALEQUIV_IN_LOCALIZED_IDEAL
-unsafe def PRIME_IDEAL_LOCALIZATION_CONTRACTION : thm := BUFDs.PRIME_IDEAL_LOCALIZATION_CONTRACTION
-unsafe def PRIME_IDEAL_LOCALIZATION : thm := BUFDs.PRIME_IDEAL_LOCALIZATION
-unsafe def PRIME_IDEAL_LOCALIZATION_EXISTS : thm := BUFDs.PRIME_IDEAL_LOCALIZATION_EXISTS
-unsafe def RING_LOCALIZATION_PRIME_IDEAL_CORRESPONDENCE : thm := BUFDs.RING_LOCALIZATION_PRIME_IDEAL_CORRESPONDENCE
+def UFD : thm := BUFDs.UFD
+def UFD_IMP_INTEGRAL_DOMAIN : thm := BUFDs.UFD_IMP_INTEGRAL_DOMAIN
+def PID_IMP_UFD : thm := BUFDs.PID_IMP_UFD
+def FIELD_IMP_UFD : thm := BUFDs.FIELD_IMP_UFD
+def ISOMORPHIC_RING_UFDNESS : thm := BUFDs.ISOMORPHIC_RING_UFDNESS
+def UFD_EQ_PRIMEFACT : thm := BUFDs.UFD_EQ_PRIMEFACT
+def UFD_EQ_PRIMEFACT_NONUNIT : thm := BUFDs.UFD_EQ_PRIMEFACT_NONUNIT
+def UFD_PRIME_FACTOR_EXISTS : thm := BUFDs.UFD_PRIME_FACTOR_EXISTS
+def UFD_IRREDUCIBLE_EQ_PRIME : thm := BUFDs.UFD_IRREDUCIBLE_EQ_PRIME
+def UFD_EQ_ATOMIC : thm := BUFDs.UFD_EQ_ATOMIC
+def UFD_EQ_ATOMIC_NONUNIT : thm := BUFDs.UFD_EQ_ATOMIC_NONUNIT
+def UFD_EQ_UNIQUE_FACTORIZATION : thm := BUFDs.UFD_EQ_UNIQUE_FACTORIZATION
+def UFD_COPRIME : thm := BUFDs.UFD_COPRIME
+def UFD_PRIME_FACTOR_INDUCT : thm := BUFDs.UFD_PRIME_FACTOR_INDUCT
+def UFD_IMP_GCD_EXISTS : thm := BUFDs.UFD_IMP_GCD_EXISTS
+def PID_EQ_UFD_PRIME_MAXIMAL : thm := BUFDs.PID_EQ_UFD_PRIME_MAXIMAL
+def RING_DIVIDES_LOCALEQUIV : thm := BUFDs.RING_DIVIDES_LOCALEQUIV
+def UFD_LOCALIZATION : thm := BUFDs.UFD_LOCALIZATION
+def PROPER_IDEAL_LOCALIZATION : thm := BUFDs.PROPER_IDEAL_LOCALIZATION
+def RING_LOCALEQUIV_IN_LOCALIZED_IDEAL : thm := BUFDs.RING_LOCALEQUIV_IN_LOCALIZED_IDEAL
+def PRIME_IDEAL_LOCALIZATION_CONTRACTION : thm := BUFDs.PRIME_IDEAL_LOCALIZATION_CONTRACTION
+def PRIME_IDEAL_LOCALIZATION : thm := BUFDs.PRIME_IDEAL_LOCALIZATION
+def PRIME_IDEAL_LOCALIZATION_EXISTS : thm := BUFDs.PRIME_IDEAL_LOCALIZATION_EXISTS
+def RING_LOCALIZATION_PRIME_IDEAL_CORRESPONDENCE : thm := BUFDs.RING_LOCALIZATION_PRIME_IDEAL_CORRESPONDENCE
 
 -- Euclidean
-unsafe def euclidean_ring : thm := BEuclidean.euclidean_ring
-unsafe def EUCLIDEAN_RING : thm := BEuclidean.EUCLIDEAN_RING
-unsafe def EUCLIDEAN_RING_ALT : thm := BEuclidean.EUCLIDEAN_RING_ALT
-unsafe def EUCLIDEAN_IMP_PRINCIPAL_IDEAL_RING : thm := BEuclidean.EUCLIDEAN_IMP_PRINCIPAL_IDEAL_RING
-unsafe def EUCLIDEAN_DOMAIN_IMP_PID : thm := BEuclidean.EUCLIDEAN_DOMAIN_IMP_PID
-unsafe def EUCLIDEAN_RING_UNIVERSAL_SIDE_DIVISOR : thm := BEuclidean.EUCLIDEAN_RING_UNIVERSAL_SIDE_DIVISOR
-unsafe def EUCLIDEAN_RING_EPIMORPHIC_IMAGE : thm := BEuclidean.EUCLIDEAN_RING_EPIMORPHIC_IMAGE
-unsafe def EUCLIDEAN_QUOTIENT_RING : thm := BEuclidean.EUCLIDEAN_QUOTIENT_RING
-unsafe def ISOMORPHIC_RING_EUCLIDEANNESS : thm := BEuclidean.ISOMORPHIC_RING_EUCLIDEANNESS
+def euclidean_ring : thm := BEuclidean.euclidean_ring
+def EUCLIDEAN_RING : thm := BEuclidean.EUCLIDEAN_RING
+def EUCLIDEAN_RING_ALT : thm := BEuclidean.EUCLIDEAN_RING_ALT
+def EUCLIDEAN_IMP_PRINCIPAL_IDEAL_RING : thm := BEuclidean.EUCLIDEAN_IMP_PRINCIPAL_IDEAL_RING
+def EUCLIDEAN_DOMAIN_IMP_PID : thm := BEuclidean.EUCLIDEAN_DOMAIN_IMP_PID
+def EUCLIDEAN_RING_UNIVERSAL_SIDE_DIVISOR : thm := BEuclidean.EUCLIDEAN_RING_UNIVERSAL_SIDE_DIVISOR
+def EUCLIDEAN_RING_EPIMORPHIC_IMAGE : thm := BEuclidean.EUCLIDEAN_RING_EPIMORPHIC_IMAGE
+def EUCLIDEAN_QUOTIENT_RING : thm := BEuclidean.EUCLIDEAN_QUOTIENT_RING
+def ISOMORPHIC_RING_EUCLIDEANNESS : thm := BEuclidean.ISOMORPHIC_RING_EUCLIDEANNESS
 
 -- Noetherian
-unsafe def NOETHERIAN_RING : thm := BNoetherian.NOETHERIAN_RING
-unsafe def NOETHERIAN_RING_EQ_ACC : thm := BNoetherian.NOETHERIAN_RING_EQ_ACC
-unsafe def NOETHERIAN_RING_EQ_MAXIMAL : thm := BNoetherian.NOETHERIAN_RING_EQ_MAXIMAL
-unsafe def NOETHERIAN_RING_EPIMORPHIC_IMAGE : thm := BNoetherian.NOETHERIAN_RING_EPIMORPHIC_IMAGE
-unsafe def NOETHERIAN_QUOTIENT_RING : thm := BNoetherian.NOETHERIAN_QUOTIENT_RING
-unsafe def ISOMORPHIC_RING_NOETHERIANNESS : thm := BNoetherian.ISOMORPHIC_RING_NOETHERIANNESS
-unsafe def NOETHERIAN_PROD_RING : thm := BNoetherian.NOETHERIAN_PROD_RING
-unsafe def NOETHERIAN_PRODUCT_RING : thm := BNoetherian.NOETHERIAN_PRODUCT_RING
-unsafe def NOETHERIAN_RING_EQ_FG_PRIME_IDEALS : thm := BNoetherian.NOETHERIAN_RING_EQ_FG_PRIME_IDEALS
-unsafe def NOETHERIAN_RING_LOCALIZATION : thm := BNoetherian.NOETHERIAN_RING_LOCALIZATION
+def NOETHERIAN_RING : thm := BNoetherian.NOETHERIAN_RING
+def NOETHERIAN_RING_EQ_ACC : thm := BNoetherian.NOETHERIAN_RING_EQ_ACC
+def NOETHERIAN_RING_EQ_MAXIMAL : thm := BNoetherian.NOETHERIAN_RING_EQ_MAXIMAL
+def NOETHERIAN_RING_EPIMORPHIC_IMAGE : thm := BNoetherian.NOETHERIAN_RING_EPIMORPHIC_IMAGE
+def NOETHERIAN_QUOTIENT_RING : thm := BNoetherian.NOETHERIAN_QUOTIENT_RING
+def ISOMORPHIC_RING_NOETHERIANNESS : thm := BNoetherian.ISOMORPHIC_RING_NOETHERIANNESS
+def NOETHERIAN_PROD_RING : thm := BNoetherian.NOETHERIAN_PROD_RING
+def NOETHERIAN_PRODUCT_RING : thm := BNoetherian.NOETHERIAN_PRODUCT_RING
+def NOETHERIAN_RING_EQ_FG_PRIME_IDEALS : thm := BNoetherian.NOETHERIAN_RING_EQ_FG_PRIME_IDEALS
+def NOETHERIAN_RING_LOCALIZATION : thm := BNoetherian.NOETHERIAN_RING_LOCALIZATION
 
 -- ACCP
-unsafe def RING_ACCP : thm := BACCP.RING_ACCP
-unsafe def RING_DIVIDES_WF : thm := BACCP.RING_DIVIDES_WF
-unsafe def RING_PRINCIPAL_IDEALS_WF : thm := BACCP.RING_PRINCIPAL_IDEALS_WF
-unsafe def ACCP_RING_PROPER_DIVISOR_INDUCT : thm := BACCP.ACCP_RING_PROPER_DIVISOR_INDUCT
-unsafe def RING_PROPER_DIVISOR_INDUCT : thm := BACCP.RING_PROPER_DIVISOR_INDUCT
-unsafe def ACCP_DOMAIN_ATOMIC : thm := BACCP.ACCP_DOMAIN_ATOMIC
-unsafe def ACCP_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS : thm := BACCP.ACCP_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS
-unsafe def NOETHERIAN_DOMAIN_ATOMIC : thm := BACCP.NOETHERIAN_DOMAIN_ATOMIC
-unsafe def NOETHERIAN_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS : thm := BACCP.NOETHERIAN_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS
-unsafe def UFD_EQ_ACCP : thm := BACCP.UFD_EQ_ACCP
+def RING_ACCP : thm := BACCP.RING_ACCP
+def RING_DIVIDES_WF : thm := BACCP.RING_DIVIDES_WF
+def RING_PRINCIPAL_IDEALS_WF : thm := BACCP.RING_PRINCIPAL_IDEALS_WF
+def ACCP_RING_PROPER_DIVISOR_INDUCT : thm := BACCP.ACCP_RING_PROPER_DIVISOR_INDUCT
+def RING_PROPER_DIVISOR_INDUCT : thm := BACCP.RING_PROPER_DIVISOR_INDUCT
+def ACCP_DOMAIN_ATOMIC : thm := BACCP.ACCP_DOMAIN_ATOMIC
+def ACCP_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS : thm := BACCP.ACCP_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS
+def NOETHERIAN_DOMAIN_ATOMIC : thm := BACCP.NOETHERIAN_DOMAIN_ATOMIC
+def NOETHERIAN_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS : thm := BACCP.NOETHERIAN_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS
+def UFD_EQ_ACCP : thm := BACCP.UFD_EQ_ACCP
 
 -- RingGcd
-unsafe def ring_gcd : thm := BRingGcd.ring_gcd
-unsafe def RING_GCD_WORKS : thm := BRingGcd.RING_GCD_WORKS
-unsafe def RING_GCD_UNIQUE : thm := BRingGcd.RING_GCD_UNIQUE
-unsafe def RING_GCD_REFL : thm := BRingGcd.RING_GCD_REFL
-unsafe def RING_GCD : thm := BRingGcd.RING_GCD
-unsafe def RING_GCD_EQ : thm := BRingGcd.RING_GCD_EQ
-unsafe def RING_GCD_SYM : thm := BRingGcd.RING_GCD_SYM
-unsafe def RING_GCD_DIVIDES : thm := BRingGcd.RING_GCD_DIVIDES
-unsafe def RING_UNIT_GCD : thm := BRingGcd.RING_UNIT_GCD
-unsafe def RING_GCD_EQ_1 : thm := BRingGcd.RING_GCD_EQ_1
-unsafe def UFD_DIVIDES_GCD : thm := BRingGcd.UFD_DIVIDES_GCD
-unsafe def UFD_DIVIDES_GCD_EQ : thm := BRingGcd.UFD_DIVIDES_GCD_EQ
-unsafe def RING_GCD_00 : thm := BRingGcd.RING_GCD_00
-unsafe def FIELD_GCD : thm := BRingGcd.FIELD_GCD
+def ring_gcd : thm := BRingGcd.ring_gcd
+def RING_GCD_WORKS : thm := BRingGcd.RING_GCD_WORKS
+def RING_GCD_UNIQUE : thm := BRingGcd.RING_GCD_UNIQUE
+def RING_GCD_REFL : thm := BRingGcd.RING_GCD_REFL
+def RING_GCD : thm := BRingGcd.RING_GCD
+def RING_GCD_EQ : thm := BRingGcd.RING_GCD_EQ
+def RING_GCD_SYM : thm := BRingGcd.RING_GCD_SYM
+def RING_GCD_DIVIDES : thm := BRingGcd.RING_GCD_DIVIDES
+def RING_UNIT_GCD : thm := BRingGcd.RING_UNIT_GCD
+def RING_GCD_EQ_1 : thm := BRingGcd.RING_GCD_EQ_1
+def UFD_DIVIDES_GCD : thm := BRingGcd.UFD_DIVIDES_GCD
+def UFD_DIVIDES_GCD_EQ : thm := BRingGcd.UFD_DIVIDES_GCD_EQ
+def RING_GCD_00 : thm := BRingGcd.RING_GCD_00
+def FIELD_GCD : thm := BRingGcd.FIELD_GCD
 
 -- Bezout
-unsafe def bezout_ring : thm := BBezout.bezout_ring
-unsafe def BEZOUT_RING_FINITELY_GENERATED_EQ_PRINCIPAL_IDEAL : thm := BBezout.BEZOUT_RING_FINITELY_GENERATED_EQ_PRINCIPAL_IDEAL
-unsafe def PID_IMP_BEZOUT_RING : thm := BBezout.PID_IMP_BEZOUT_RING
-unsafe def FIELD_IMP_BEZOUT_RING : thm := BBezout.FIELD_IMP_BEZOUT_RING
-unsafe def BEZOUT_RING_2 : thm := BBezout.BEZOUT_RING_2
-unsafe def BEZOUT_RING_SETADD : thm := BBezout.BEZOUT_RING_SETADD
-unsafe def PID_EQ_NOETHERIAN_BEZOUT_DOMAIN : thm := BBezout.PID_EQ_NOETHERIAN_BEZOUT_DOMAIN
-unsafe def BEZOUT_RING_IMP_BEZOUT : thm := BBezout.BEZOUT_RING_IMP_BEZOUT
-unsafe def RING_IMP_GCD_EXISTS : thm := BBezout.RING_IMP_GCD_EXISTS
-unsafe def BEZOUT_RING_IMP_GCD : thm := BBezout.BEZOUT_RING_IMP_GCD
-unsafe def BEZOUT_RING : thm := BBezout.BEZOUT_RING
-unsafe def BEZOUT_RING_COPRIME : thm := BBezout.BEZOUT_RING_COPRIME
-unsafe def BEZOUT_RING_COPRIME_COMAXIMAL : thm := BBezout.BEZOUT_RING_COPRIME_COMAXIMAL
-unsafe def BEZOUT_RING_COMAXIMAL_COPRIME : thm := BBezout.BEZOUT_RING_COMAXIMAL_COPRIME
-unsafe def RING_DIVIDES_GCD : thm := BBezout.RING_DIVIDES_GCD
-unsafe def RING_DIVIDES_GCD_EQ : thm := BBezout.RING_DIVIDES_GCD_EQ
-unsafe def BEZOUT_RING_IRREDUCIBLE_IMP_PRIME : thm := BBezout.BEZOUT_RING_IRREDUCIBLE_IMP_PRIME
-unsafe def BEZOUT_DOMAIN_IRREDUCIBLE_EQ_PRIME : thm := BBezout.BEZOUT_DOMAIN_IRREDUCIBLE_EQ_PRIME
-unsafe def PID_EQ_ACCP_BEZOUT_DOMAIN : thm := BBezout.PID_EQ_ACCP_BEZOUT_DOMAIN
-unsafe def PID_EQ_UFD_BEZOUT_RING : thm := BBezout.PID_EQ_UFD_BEZOUT_RING
-unsafe def PID_EQ_BEZOUT_ATOMIC : thm := BBezout.PID_EQ_BEZOUT_ATOMIC
-unsafe def BEZOUT_RING_EPIMORPHIC_IMAGE : thm := BBezout.BEZOUT_RING_EPIMORPHIC_IMAGE
-unsafe def BEZOUT_QUOTIENT_RING : thm := BBezout.BEZOUT_QUOTIENT_RING
-unsafe def ISOMORPHIC_RING_BEZOUTNESS : thm := BBezout.ISOMORPHIC_RING_BEZOUTNESS
-unsafe def RING_COPRIME_HOMOMORPHIC_IMAGE : thm := BBezout.RING_COPRIME_HOMOMORPHIC_IMAGE
-unsafe def BEZOUT_RING_LOCALIZATION : thm := BBezout.BEZOUT_RING_LOCALIZATION
-unsafe def PID_RING_LOCALIZATION : thm := BBezout.PID_RING_LOCALIZATION
+def bezout_ring : thm := BBezout.bezout_ring
+def BEZOUT_RING_FINITELY_GENERATED_EQ_PRINCIPAL_IDEAL : thm := BBezout.BEZOUT_RING_FINITELY_GENERATED_EQ_PRINCIPAL_IDEAL
+def PID_IMP_BEZOUT_RING : thm := BBezout.PID_IMP_BEZOUT_RING
+def FIELD_IMP_BEZOUT_RING : thm := BBezout.FIELD_IMP_BEZOUT_RING
+def BEZOUT_RING_2 : thm := BBezout.BEZOUT_RING_2
+def BEZOUT_RING_SETADD : thm := BBezout.BEZOUT_RING_SETADD
+def PID_EQ_NOETHERIAN_BEZOUT_DOMAIN : thm := BBezout.PID_EQ_NOETHERIAN_BEZOUT_DOMAIN
+def BEZOUT_RING_IMP_BEZOUT : thm := BBezout.BEZOUT_RING_IMP_BEZOUT
+def RING_IMP_GCD_EXISTS : thm := BBezout.RING_IMP_GCD_EXISTS
+def BEZOUT_RING_IMP_GCD : thm := BBezout.BEZOUT_RING_IMP_GCD
+def BEZOUT_RING : thm := BBezout.BEZOUT_RING
+def BEZOUT_RING_COPRIME : thm := BBezout.BEZOUT_RING_COPRIME
+def BEZOUT_RING_COPRIME_COMAXIMAL : thm := BBezout.BEZOUT_RING_COPRIME_COMAXIMAL
+def BEZOUT_RING_COMAXIMAL_COPRIME : thm := BBezout.BEZOUT_RING_COMAXIMAL_COPRIME
+def RING_DIVIDES_GCD : thm := BBezout.RING_DIVIDES_GCD
+def RING_DIVIDES_GCD_EQ : thm := BBezout.RING_DIVIDES_GCD_EQ
+def BEZOUT_RING_IRREDUCIBLE_IMP_PRIME : thm := BBezout.BEZOUT_RING_IRREDUCIBLE_IMP_PRIME
+def BEZOUT_DOMAIN_IRREDUCIBLE_EQ_PRIME : thm := BBezout.BEZOUT_DOMAIN_IRREDUCIBLE_EQ_PRIME
+def PID_EQ_ACCP_BEZOUT_DOMAIN : thm := BBezout.PID_EQ_ACCP_BEZOUT_DOMAIN
+def PID_EQ_UFD_BEZOUT_RING : thm := BBezout.PID_EQ_UFD_BEZOUT_RING
+def PID_EQ_BEZOUT_ATOMIC : thm := BBezout.PID_EQ_BEZOUT_ATOMIC
+def BEZOUT_RING_EPIMORPHIC_IMAGE : thm := BBezout.BEZOUT_RING_EPIMORPHIC_IMAGE
+def BEZOUT_QUOTIENT_RING : thm := BBezout.BEZOUT_QUOTIENT_RING
+def ISOMORPHIC_RING_BEZOUTNESS : thm := BBezout.ISOMORPHIC_RING_BEZOUTNESS
+def RING_COPRIME_HOMOMORPHIC_IMAGE : thm := BBezout.RING_COPRIME_HOMOMORPHIC_IMAGE
+def BEZOUT_RING_LOCALIZATION : thm := BBezout.BEZOUT_RING_LOCALIZATION
+def PID_RING_LOCALIZATION : thm := BBezout.PID_RING_LOCALIZATION
 
 -- GcdDomain
-unsafe def RING_GCD_LMUL : thm := BGcdDomain.RING_GCD_LMUL
-unsafe def RING_GCD_RMUL : thm := BGcdDomain.RING_GCD_RMUL
-unsafe def RING_COPRIME_DIVPROD_LEFT : thm := BGcdDomain.RING_COPRIME_DIVPROD_LEFT
-unsafe def RING_COPRIME_DIVPROD_RIGHT : thm := BGcdDomain.RING_COPRIME_DIVPROD_RIGHT
-unsafe def RING_DIVIDES_MUL : thm := BGcdDomain.RING_DIVIDES_MUL
-unsafe def RING_DIVIDES_MUL_EQ : thm := BGcdDomain.RING_DIVIDES_MUL_EQ
-unsafe def RING_COPRIME_LMUL : thm := BGcdDomain.RING_COPRIME_LMUL
-unsafe def RING_COPRIME_RMUL : thm := BGcdDomain.RING_COPRIME_RMUL
-unsafe def RING_COPRIME_PRODUCT_EQ : thm := BGcdDomain.RING_COPRIME_PRODUCT_EQ
-unsafe def RING_COPRIME_PRODUCT : thm := BGcdDomain.RING_COPRIME_PRODUCT
-unsafe def RING_COPRIME_RPOW : thm := BGcdDomain.RING_COPRIME_RPOW
-unsafe def RING_COPRIME_LPOW : thm := BGcdDomain.RING_COPRIME_LPOW
-unsafe def RING_COPRIME_PRODUCT_DIVIDES_ALT : thm := BGcdDomain.RING_COPRIME_PRODUCT_DIVIDES_ALT
-unsafe def RING_COPRIME_PRODUCT_DIVIDES : thm := BGcdDomain.RING_COPRIME_PRODUCT_DIVIDES
+def RING_GCD_LMUL : thm := BGcdDomain.RING_GCD_LMUL
+def RING_GCD_RMUL : thm := BGcdDomain.RING_GCD_RMUL
+def RING_COPRIME_DIVPROD_LEFT : thm := BGcdDomain.RING_COPRIME_DIVPROD_LEFT
+def RING_COPRIME_DIVPROD_RIGHT : thm := BGcdDomain.RING_COPRIME_DIVPROD_RIGHT
+def RING_DIVIDES_MUL : thm := BGcdDomain.RING_DIVIDES_MUL
+def RING_DIVIDES_MUL_EQ : thm := BGcdDomain.RING_DIVIDES_MUL_EQ
+def RING_COPRIME_LMUL : thm := BGcdDomain.RING_COPRIME_LMUL
+def RING_COPRIME_RMUL : thm := BGcdDomain.RING_COPRIME_RMUL
+def RING_COPRIME_PRODUCT_EQ : thm := BGcdDomain.RING_COPRIME_PRODUCT_EQ
+def RING_COPRIME_PRODUCT : thm := BGcdDomain.RING_COPRIME_PRODUCT
+def RING_COPRIME_RPOW : thm := BGcdDomain.RING_COPRIME_RPOW
+def RING_COPRIME_LPOW : thm := BGcdDomain.RING_COPRIME_LPOW
+def RING_COPRIME_PRODUCT_DIVIDES_ALT : thm := BGcdDomain.RING_COPRIME_PRODUCT_DIVIDES_ALT
+def RING_COPRIME_PRODUCT_DIVIDES : thm := BGcdDomain.RING_COPRIME_PRODUCT_DIVIDES
 
 -- SquarefreeUFD
-unsafe def RING_SQUAREFREE_GCD : thm := BSquarefreeUFD.RING_SQUAREFREE_GCD
-unsafe def RING_SQUAREFREE_PRIME_EQ : thm := BSquarefreeUFD.RING_SQUAREFREE_PRIME_EQ
-unsafe def RING_SQUAREFREE_PRIME_DIVISOR_EQ : thm := BSquarefreeUFD.RING_SQUAREFREE_PRIME_DIVISOR_EQ
-unsafe def RING_SQUAREFREE_DIVIDES : thm := BSquarefreeUFD.RING_SQUAREFREE_DIVIDES
-unsafe def RING_SQUAREFREE_DIVPOW : thm := BSquarefreeUFD.RING_SQUAREFREE_DIVPOW
-unsafe def RING_SQUAREFREE_DIVPOW_EQ : thm := BSquarefreeUFD.RING_SQUAREFREE_DIVPOW_EQ
-unsafe def RING_SQUAREFREE_DIVIDES_SQUARE : thm := BSquarefreeUFD.RING_SQUAREFREE_DIVIDES_SQUARE
-unsafe def RING_SQUAREFREE_MUL_EQ : thm := BSquarefreeUFD.RING_SQUAREFREE_MUL_EQ
-unsafe def RING_SQUAREFREE_PRODUCT : thm := BSquarefreeUFD.RING_SQUAREFREE_PRODUCT
-unsafe def RING_SQUAREFREE_ALT : thm := BSquarefreeUFD.RING_SQUAREFREE_ALT
-unsafe def RING_SQUAREFREE : thm := BSquarefreeUFD.RING_SQUAREFREE
-unsafe def RING_SQUAREFREE_DECOMPOSITION : thm := BSquarefreeUFD.RING_SQUAREFREE_DECOMPOSITION
+def RING_SQUAREFREE_GCD : thm := BSquarefreeUFD.RING_SQUAREFREE_GCD
+def RING_SQUAREFREE_PRIME_EQ : thm := BSquarefreeUFD.RING_SQUAREFREE_PRIME_EQ
+def RING_SQUAREFREE_PRIME_DIVISOR_EQ : thm := BSquarefreeUFD.RING_SQUAREFREE_PRIME_DIVISOR_EQ
+def RING_SQUAREFREE_DIVIDES : thm := BSquarefreeUFD.RING_SQUAREFREE_DIVIDES
+def RING_SQUAREFREE_DIVPOW : thm := BSquarefreeUFD.RING_SQUAREFREE_DIVPOW
+def RING_SQUAREFREE_DIVPOW_EQ : thm := BSquarefreeUFD.RING_SQUAREFREE_DIVPOW_EQ
+def RING_SQUAREFREE_DIVIDES_SQUARE : thm := BSquarefreeUFD.RING_SQUAREFREE_DIVIDES_SQUARE
+def RING_SQUAREFREE_MUL_EQ : thm := BSquarefreeUFD.RING_SQUAREFREE_MUL_EQ
+def RING_SQUAREFREE_PRODUCT : thm := BSquarefreeUFD.RING_SQUAREFREE_PRODUCT
+def RING_SQUAREFREE_ALT : thm := BSquarefreeUFD.RING_SQUAREFREE_ALT
+def RING_SQUAREFREE : thm := BSquarefreeUFD.RING_SQUAREFREE
+def RING_SQUAREFREE_DECOMPOSITION : thm := BSquarefreeUFD.RING_SQUAREFREE_DECOMPOSITION
 
 -- BooleanRings
-unsafe def boolean_ring : thm := BBooleanRings.boolean_ring
-unsafe def BOOLEAN_RING_SQUARE : thm := BBooleanRings.BOOLEAN_RING_SQUARE
-unsafe def BOOLEAN_RING_DOUBLE : thm := BBooleanRings.BOOLEAN_RING_DOUBLE
-unsafe def BOOLEAN_RING_NEG : thm := BBooleanRings.BOOLEAN_RING_NEG
-unsafe def BOOLEAN_RING_POW : thm := BBooleanRings.BOOLEAN_RING_POW
-unsafe def BOOLEAN_RING_OF_NUM : thm := BBooleanRings.BOOLEAN_RING_OF_NUM
-unsafe def BOOLEAN_RING_CHAR : thm := BBooleanRings.BOOLEAN_RING_CHAR
-unsafe def BOOLEAN_RING_UNIT : thm := BBooleanRings.BOOLEAN_RING_UNIT
-unsafe def BOOLEAN_RING_ZERODIVISOR : thm := BBooleanRings.BOOLEAN_RING_ZERODIVISOR
-unsafe def BOOLEAN_RING_REGULAR : thm := BBooleanRings.BOOLEAN_RING_REGULAR
-unsafe def BOOLEAN_RING_IRREDUCIBLE : thm := BBooleanRings.BOOLEAN_RING_IRREDUCIBLE
-unsafe def BOOLEAN_RING_DIVIDES : thm := BBooleanRings.BOOLEAN_RING_DIVIDES
-unsafe def BOOLEAN_RING_NILPOTENT : thm := BBooleanRings.BOOLEAN_RING_NILPOTENT
-unsafe def BOOLEAN_RING_RADICAL : thm := BBooleanRings.BOOLEAN_RING_RADICAL
-unsafe def TRIVIAL_IMP_BOOLEAN_RING : thm := BBooleanRings.TRIVIAL_IMP_BOOLEAN_RING
-unsafe def BOOLEAN_RING_10 : thm := BBooleanRings.BOOLEAN_RING_10
-unsafe def BOOLEAN_RING_2 : thm := BBooleanRings.BOOLEAN_RING_2
-unsafe def ISOMORPHIC_RING_BOOLEANNESS : thm := BBooleanRings.ISOMORPHIC_RING_BOOLEANNESS
-unsafe def BOOLEAN_RING_EPIMORPHIC_IMAGE : thm := BBooleanRings.BOOLEAN_RING_EPIMORPHIC_IMAGE
-unsafe def BOOLEAN_QUOTIENT_RING : thm := BBooleanRings.BOOLEAN_QUOTIENT_RING
-unsafe def BOOLEAN_RING_SUBRING_GENERATED : thm := BBooleanRings.BOOLEAN_RING_SUBRING_GENERATED
-unsafe def BOOLEAN_RING_MONOMORPHIC_PREIMAGE : thm := BBooleanRings.BOOLEAN_RING_MONOMORPHIC_PREIMAGE
-unsafe def BOOLEAN_PROD_RING : thm := BBooleanRings.BOOLEAN_PROD_RING
-unsafe def BOOLEAN_PRODUCT_RING : thm := BBooleanRings.BOOLEAN_PRODUCT_RING
-unsafe def BOOLEAN_IMP_BEZOUT_RING : thm := BBooleanRings.BOOLEAN_IMP_BEZOUT_RING
-unsafe def BOOLEAN_RING_MAXIMAL_EQ_PRIME_IDEAL : thm := BBooleanRings.BOOLEAN_RING_MAXIMAL_EQ_PRIME_IDEAL
-unsafe def BOOLEAN_RING_MULTSYS : thm := BBooleanRings.BOOLEAN_RING_MULTSYS
-unsafe def BOOLEAN_PROPER_IDEAL_COMPLEMENT : thm := BBooleanRings.BOOLEAN_PROPER_IDEAL_COMPLEMENT
-unsafe def BOOLEAN_INTEGRAL_DOMAIN : thm := BBooleanRings.BOOLEAN_INTEGRAL_DOMAIN
+def boolean_ring : thm := BBooleanRings.boolean_ring
+def BOOLEAN_RING_SQUARE : thm := BBooleanRings.BOOLEAN_RING_SQUARE
+def BOOLEAN_RING_DOUBLE : thm := BBooleanRings.BOOLEAN_RING_DOUBLE
+def BOOLEAN_RING_NEG : thm := BBooleanRings.BOOLEAN_RING_NEG
+def BOOLEAN_RING_POW : thm := BBooleanRings.BOOLEAN_RING_POW
+def BOOLEAN_RING_OF_NUM : thm := BBooleanRings.BOOLEAN_RING_OF_NUM
+def BOOLEAN_RING_CHAR : thm := BBooleanRings.BOOLEAN_RING_CHAR
+def BOOLEAN_RING_UNIT : thm := BBooleanRings.BOOLEAN_RING_UNIT
+def BOOLEAN_RING_ZERODIVISOR : thm := BBooleanRings.BOOLEAN_RING_ZERODIVISOR
+def BOOLEAN_RING_REGULAR : thm := BBooleanRings.BOOLEAN_RING_REGULAR
+def BOOLEAN_RING_IRREDUCIBLE : thm := BBooleanRings.BOOLEAN_RING_IRREDUCIBLE
+def BOOLEAN_RING_DIVIDES : thm := BBooleanRings.BOOLEAN_RING_DIVIDES
+def BOOLEAN_RING_NILPOTENT : thm := BBooleanRings.BOOLEAN_RING_NILPOTENT
+def BOOLEAN_RING_RADICAL : thm := BBooleanRings.BOOLEAN_RING_RADICAL
+def TRIVIAL_IMP_BOOLEAN_RING : thm := BBooleanRings.TRIVIAL_IMP_BOOLEAN_RING
+def BOOLEAN_RING_10 : thm := BBooleanRings.BOOLEAN_RING_10
+def BOOLEAN_RING_2 : thm := BBooleanRings.BOOLEAN_RING_2
+def ISOMORPHIC_RING_BOOLEANNESS : thm := BBooleanRings.ISOMORPHIC_RING_BOOLEANNESS
+def BOOLEAN_RING_EPIMORPHIC_IMAGE : thm := BBooleanRings.BOOLEAN_RING_EPIMORPHIC_IMAGE
+def BOOLEAN_QUOTIENT_RING : thm := BBooleanRings.BOOLEAN_QUOTIENT_RING
+def BOOLEAN_RING_SUBRING_GENERATED : thm := BBooleanRings.BOOLEAN_RING_SUBRING_GENERATED
+def BOOLEAN_RING_MONOMORPHIC_PREIMAGE : thm := BBooleanRings.BOOLEAN_RING_MONOMORPHIC_PREIMAGE
+def BOOLEAN_PROD_RING : thm := BBooleanRings.BOOLEAN_PROD_RING
+def BOOLEAN_PRODUCT_RING : thm := BBooleanRings.BOOLEAN_PRODUCT_RING
+def BOOLEAN_IMP_BEZOUT_RING : thm := BBooleanRings.BOOLEAN_IMP_BEZOUT_RING
+def BOOLEAN_RING_MAXIMAL_EQ_PRIME_IDEAL : thm := BBooleanRings.BOOLEAN_RING_MAXIMAL_EQ_PRIME_IDEAL
+def BOOLEAN_RING_MULTSYS : thm := BBooleanRings.BOOLEAN_RING_MULTSYS
+def BOOLEAN_PROPER_IDEAL_COMPLEMENT : thm := BBooleanRings.BOOLEAN_PROPER_IDEAL_COMPLEMENT
+def BOOLEAN_INTEGRAL_DOMAIN : thm := BBooleanRings.BOOLEAN_INTEGRAL_DOMAIN
 
 -- LocalRings
-unsafe def local_ring : thm := BLocalRings.local_ring
-unsafe def LOCAL_IMP_NONTRIVIAL_RING : thm := BLocalRings.LOCAL_IMP_NONTRIVIAL_RING
-unsafe def LOCAL_RING_IDEAL_NONUNITS : thm := BLocalRings.LOCAL_RING_IDEAL_NONUNITS
-unsafe def FIELD_IMP_LOCAL_RING : thm := BLocalRings.FIELD_IMP_LOCAL_RING
-unsafe def UNIQUE_PRIME_IDEAL_IMP_LOCAL_RING : thm := BLocalRings.UNIQUE_PRIME_IDEAL_IMP_LOCAL_RING
-unsafe def LOCAL_RING_EPIMORPHIC_IMAGE : thm := BLocalRings.LOCAL_RING_EPIMORPHIC_IMAGE
-unsafe def LOCAL_QUOTIENT_RING : thm := BLocalRings.LOCAL_QUOTIENT_RING
-unsafe def ISOMORPHIC_RING_LOCALITY : thm := BLocalRings.ISOMORPHIC_RING_LOCALITY
-unsafe def LOCAL_RING_LOCALIZATION : thm := BLocalRings.LOCAL_RING_LOCALIZATION
-unsafe def NOETHERIAN_LOCAL_RING_LOCALIZATION : thm := BLocalRings.NOETHERIAN_LOCAL_RING_LOCALIZATION
+def local_ring : thm := BLocalRings.local_ring
+def LOCAL_IMP_NONTRIVIAL_RING : thm := BLocalRings.LOCAL_IMP_NONTRIVIAL_RING
+def LOCAL_RING_IDEAL_NONUNITS : thm := BLocalRings.LOCAL_RING_IDEAL_NONUNITS
+def FIELD_IMP_LOCAL_RING : thm := BLocalRings.FIELD_IMP_LOCAL_RING
+def UNIQUE_PRIME_IDEAL_IMP_LOCAL_RING : thm := BLocalRings.UNIQUE_PRIME_IDEAL_IMP_LOCAL_RING
+def LOCAL_RING_EPIMORPHIC_IMAGE : thm := BLocalRings.LOCAL_RING_EPIMORPHIC_IMAGE
+def LOCAL_QUOTIENT_RING : thm := BLocalRings.LOCAL_QUOTIENT_RING
+def ISOMORPHIC_RING_LOCALITY : thm := BLocalRings.ISOMORPHIC_RING_LOCALITY
+def LOCAL_RING_LOCALIZATION : thm := BLocalRings.LOCAL_RING_LOCALIZATION
+def NOETHERIAN_LOCAL_RING_LOCALIZATION : thm := BLocalRings.NOETHERIAN_LOCAL_RING_LOCALIZATION
 
 -- VonNeumann
-unsafe def vnregular_ring : thm := BVonNeumann.vnregular_ring
-unsafe def FIELD_IMP_VNREGULAR_RING : thm := BVonNeumann.FIELD_IMP_VNREGULAR_RING
-unsafe def BOOLEAN_IMP_VNREGULAR_RING : thm := BVonNeumann.BOOLEAN_IMP_VNREGULAR_RING
-unsafe def VNREGULAR_RING_EPIMORPHIC_IMAGE : thm := BVonNeumann.VNREGULAR_RING_EPIMORPHIC_IMAGE
-unsafe def VNREGULAR_QUOTIENT_RING : thm := BVonNeumann.VNREGULAR_QUOTIENT_RING
-unsafe def ISOMORPHIC_RING_VNREGULARITY : thm := BVonNeumann.ISOMORPHIC_RING_VNREGULARITY
-unsafe def VNREGULAR_PROD_RING : thm := BVonNeumann.VNREGULAR_PROD_RING
-unsafe def VNREGULAR_PRODUCT_RING : thm := BVonNeumann.VNREGULAR_PRODUCT_RING
-unsafe def VNREGULAR_IMP_REDUCED_RING : thm := BVonNeumann.VNREGULAR_IMP_REDUCED_RING
-unsafe def VNREGULAR_RING_NILPOTENT : thm := BVonNeumann.VNREGULAR_RING_NILPOTENT
-unsafe def VNREGULAR_RING_REGULAR : thm := BVonNeumann.VNREGULAR_RING_REGULAR
-unsafe def VNREGULAR_DOMAIN : thm := BVonNeumann.VNREGULAR_DOMAIN
-unsafe def VNREGULAR_RING_PRINCIPAL_IDEALS : thm := BVonNeumann.VNREGULAR_RING_PRINCIPAL_IDEALS
-unsafe def VNREGULAR_IMP_BEZOUT_RING : thm := BVonNeumann.VNREGULAR_IMP_BEZOUT_RING
-unsafe def VNREGULAR_RING_FINITELY_GENERATED_IDEALS : thm := BVonNeumann.VNREGULAR_RING_FINITELY_GENERATED_IDEALS
-unsafe def VNREGULAR_RING_IDEAL_IDEMPOT : thm := BVonNeumann.VNREGULAR_RING_IDEAL_IDEMPOT
-unsafe def VNREGULAR_RING : thm := BVonNeumann.VNREGULAR_RING
-unsafe def VNREGULAR_RING_ALT : thm := BVonNeumann.VNREGULAR_RING_ALT
-unsafe def VNREGULAR_RING_LOCALIZATION : thm := BVonNeumann.VNREGULAR_RING_LOCALIZATION
-unsafe def VNREGULAR_FRACTION_RING : thm := BVonNeumann.VNREGULAR_FRACTION_RING
+def vnregular_ring : thm := BVonNeumann.vnregular_ring
+def FIELD_IMP_VNREGULAR_RING : thm := BVonNeumann.FIELD_IMP_VNREGULAR_RING
+def BOOLEAN_IMP_VNREGULAR_RING : thm := BVonNeumann.BOOLEAN_IMP_VNREGULAR_RING
+def VNREGULAR_RING_EPIMORPHIC_IMAGE : thm := BVonNeumann.VNREGULAR_RING_EPIMORPHIC_IMAGE
+def VNREGULAR_QUOTIENT_RING : thm := BVonNeumann.VNREGULAR_QUOTIENT_RING
+def ISOMORPHIC_RING_VNREGULARITY : thm := BVonNeumann.ISOMORPHIC_RING_VNREGULARITY
+def VNREGULAR_PROD_RING : thm := BVonNeumann.VNREGULAR_PROD_RING
+def VNREGULAR_PRODUCT_RING : thm := BVonNeumann.VNREGULAR_PRODUCT_RING
+def VNREGULAR_IMP_REDUCED_RING : thm := BVonNeumann.VNREGULAR_IMP_REDUCED_RING
+def VNREGULAR_RING_NILPOTENT : thm := BVonNeumann.VNREGULAR_RING_NILPOTENT
+def VNREGULAR_RING_REGULAR : thm := BVonNeumann.VNREGULAR_RING_REGULAR
+def VNREGULAR_DOMAIN : thm := BVonNeumann.VNREGULAR_DOMAIN
+def VNREGULAR_RING_PRINCIPAL_IDEALS : thm := BVonNeumann.VNREGULAR_RING_PRINCIPAL_IDEALS
+def VNREGULAR_IMP_BEZOUT_RING : thm := BVonNeumann.VNREGULAR_IMP_BEZOUT_RING
+def VNREGULAR_RING_FINITELY_GENERATED_IDEALS : thm := BVonNeumann.VNREGULAR_RING_FINITELY_GENERATED_IDEALS
+def VNREGULAR_RING_IDEAL_IDEMPOT : thm := BVonNeumann.VNREGULAR_RING_IDEAL_IDEMPOT
+def VNREGULAR_RING : thm := BVonNeumann.VNREGULAR_RING
+def VNREGULAR_RING_ALT : thm := BVonNeumann.VNREGULAR_RING_ALT
+def VNREGULAR_RING_LOCALIZATION : thm := BVonNeumann.VNREGULAR_RING_LOCALIZATION
+def VNREGULAR_FRACTION_RING : thm := BVonNeumann.VNREGULAR_FRACTION_RING
 
 -- BoolRing
-unsafe def bool_ring : thm := BBoolRing.bool_ring
-unsafe def BOOL_RING : thm := BBoolRing.BOOL_RING
-unsafe def FIELD_BOOL_RING : thm := BBoolRing.FIELD_BOOL_RING
-unsafe def NOT_TRIVIAL_BOOL_RING : thm := BBoolRing.NOT_TRIVIAL_BOOL_RING
-unsafe def BOOLEAN_RING_BOOL_RING : thm := BBoolRing.BOOLEAN_RING_BOOL_RING
-unsafe def INTEGRAL_DOMAIN_BOOL_RING : thm := BBoolRing.INTEGRAL_DOMAIN_BOOL_RING
-unsafe def BOOL_RING_CARRIER_HAS_SIZE_2 : thm := BBoolRing.BOOL_RING_CARRIER_HAS_SIZE_2
-unsafe def ISOMORPHIC_RING_BOOL_RING : thm := BBoolRing.ISOMORPHIC_RING_BOOL_RING
+def bool_ring : thm := BBoolRing.bool_ring
+def BOOL_RING : thm := BBoolRing.BOOL_RING
+def FIELD_BOOL_RING : thm := BBoolRing.FIELD_BOOL_RING
+def NOT_TRIVIAL_BOOL_RING : thm := BBoolRing.NOT_TRIVIAL_BOOL_RING
+def BOOLEAN_RING_BOOL_RING : thm := BBoolRing.BOOLEAN_RING_BOOL_RING
+def INTEGRAL_DOMAIN_BOOL_RING : thm := BBoolRing.INTEGRAL_DOMAIN_BOOL_RING
+def BOOL_RING_CARRIER_HAS_SIZE_2 : thm := BBoolRing.BOOL_RING_CARRIER_HAS_SIZE_2
+def ISOMORPHIC_RING_BOOL_RING : thm := BBoolRing.ISOMORPHIC_RING_BOOL_RING
 
 -- IntegerRing
-unsafe def integer_ring : thm := BIntegerRing.integer_ring
-unsafe def INTEGER_RING : thm := BIntegerRing.INTEGER_RING
-unsafe def INTEGER_RING_POW : thm := BIntegerRing.INTEGER_RING_POW
-unsafe def INTEGER_RING_UNIT : thm := BIntegerRing.INTEGER_RING_UNIT
-unsafe def INTEGER_RING_DIVIDES : thm := BIntegerRing.INTEGER_RING_DIVIDES
-unsafe def NOT_TRIVIAL_INTEGER_RING : thm := BIntegerRing.NOT_TRIVIAL_INTEGER_RING
-unsafe def NOT_FIELD_INTEGER_RING : thm := BIntegerRing.NOT_FIELD_INTEGER_RING
-unsafe def RING_HOMOMORPHISM_INTEGER_RING_OF_INT : thm := BIntegerRing.RING_HOMOMORPHISM_INTEGER_RING_OF_INT
-unsafe def RING_MONOMORPHISM_INTEGER_RING_OF_INT : thm := BIntegerRing.RING_MONOMORPHISM_INTEGER_RING_OF_INT
-unsafe def INTEGRAL_DOMAIN_INTEGER_RING : thm := BIntegerRing.INTEGRAL_DOMAIN_INTEGER_RING
-unsafe def EUCLIDEAN_INTEGER_RING : thm := BIntegerRing.EUCLIDEAN_INTEGER_RING
-unsafe def PID_INTEGER_RING : thm := BIntegerRing.PID_INTEGER_RING
-unsafe def UFD_INTEGER_RING : thm := BIntegerRing.UFD_INTEGER_RING
-unsafe def BEZOUT_INTEGER_RING : thm := BIntegerRing.BEZOUT_INTEGER_RING
-unsafe def INTEGER_RING_OF_NUM : thm := BIntegerRing.INTEGER_RING_OF_NUM
-unsafe def INTEGER_RING_OF_INT : thm := BIntegerRing.INTEGER_RING_OF_INT
-unsafe def INTEGER_RING_CHAR : thm := BIntegerRing.INTEGER_RING_CHAR
-unsafe def INTEGER_RING_COPRIME : thm := BIntegerRing.INTEGER_RING_COPRIME
-unsafe def INTEGER_RING_ASSOCIATES : thm := BIntegerRing.INTEGER_RING_ASSOCIATES
-unsafe def INTEGER_RING_GCD : thm := BIntegerRing.INTEGER_RING_GCD
-unsafe def INTEGER_RING_IDEAL_GENERATED_SING : thm := BIntegerRing.INTEGER_RING_IDEAL_GENERATED_SING
-unsafe def INTEGER_RING_COSET_IDEAL_GENERATED_SING : thm := BIntegerRing.INTEGER_RING_COSET_IDEAL_GENERATED_SING
+def integer_ring : thm := BIntegerRing.integer_ring
+def INTEGER_RING : thm := BIntegerRing.INTEGER_RING
+def INTEGER_RING_POW : thm := BIntegerRing.INTEGER_RING_POW
+def INTEGER_RING_UNIT : thm := BIntegerRing.INTEGER_RING_UNIT
+def INTEGER_RING_DIVIDES : thm := BIntegerRing.INTEGER_RING_DIVIDES
+def NOT_TRIVIAL_INTEGER_RING : thm := BIntegerRing.NOT_TRIVIAL_INTEGER_RING
+def NOT_FIELD_INTEGER_RING : thm := BIntegerRing.NOT_FIELD_INTEGER_RING
+def RING_HOMOMORPHISM_INTEGER_RING_OF_INT : thm := BIntegerRing.RING_HOMOMORPHISM_INTEGER_RING_OF_INT
+def RING_MONOMORPHISM_INTEGER_RING_OF_INT : thm := BIntegerRing.RING_MONOMORPHISM_INTEGER_RING_OF_INT
+def INTEGRAL_DOMAIN_INTEGER_RING : thm := BIntegerRing.INTEGRAL_DOMAIN_INTEGER_RING
+def EUCLIDEAN_INTEGER_RING : thm := BIntegerRing.EUCLIDEAN_INTEGER_RING
+def PID_INTEGER_RING : thm := BIntegerRing.PID_INTEGER_RING
+def UFD_INTEGER_RING : thm := BIntegerRing.UFD_INTEGER_RING
+def BEZOUT_INTEGER_RING : thm := BIntegerRing.BEZOUT_INTEGER_RING
+def INTEGER_RING_OF_NUM : thm := BIntegerRing.INTEGER_RING_OF_NUM
+def INTEGER_RING_OF_INT : thm := BIntegerRing.INTEGER_RING_OF_INT
+def INTEGER_RING_CHAR : thm := BIntegerRing.INTEGER_RING_CHAR
+def INTEGER_RING_COPRIME : thm := BIntegerRing.INTEGER_RING_COPRIME
+def INTEGER_RING_ASSOCIATES : thm := BIntegerRing.INTEGER_RING_ASSOCIATES
+def INTEGER_RING_GCD : thm := BIntegerRing.INTEGER_RING_GCD
+def INTEGER_RING_IDEAL_GENERATED_SING : thm := BIntegerRing.INTEGER_RING_IDEAL_GENERATED_SING
+def INTEGER_RING_COSET_IDEAL_GENERATED_SING : thm := BIntegerRing.INTEGER_RING_COSET_IDEAL_GENERATED_SING
 
 -- IntegerModRing
-unsafe def integer_mod_ring : thm := BIntegerModRing.integer_mod_ring
-unsafe def INTEGER_MOD_RING : thm := BIntegerModRing.INTEGER_MOD_RING
-unsafe def IN_INTEGER_MOD_RING_CARRIER : thm := BIntegerModRing.IN_INTEGER_MOD_RING_CARRIER
-unsafe def RING_CARRIER_INTEGER_MOD_RING : thm := BIntegerModRing.RING_CARRIER_INTEGER_MOD_RING
-unsafe def INTEGER_MOD_RING_CARRIER_REM : thm := BIntegerModRing.INTEGER_MOD_RING_CARRIER_REM
-unsafe def INTEGER_MOD_RING_TRIVIAL : thm := BIntegerModRing.INTEGER_MOD_RING_TRIVIAL
-unsafe def INTEGER_MOD_RING_SUB : thm := BIntegerModRing.INTEGER_MOD_RING_SUB
-unsafe def INTEGER_MOD_RING_POW : thm := BIntegerModRing.INTEGER_MOD_RING_POW
-unsafe def INTEGER_MOD_RING_OF_NUM : thm := BIntegerModRing.INTEGER_MOD_RING_OF_NUM
-unsafe def INTEGER_MOD_RING_OF_INT : thm := BIntegerModRing.INTEGER_MOD_RING_OF_INT
-unsafe def INTEGER_MOD_RING_CLAUSES : thm := BIntegerModRing.INTEGER_MOD_RING_CLAUSES
-unsafe def INTEGER_MOD_RING_CHAR : thm := BIntegerModRing.INTEGER_MOD_RING_CHAR
-unsafe def INTEGER_MOD_RING_DIVIDES : thm := BIntegerModRing.INTEGER_MOD_RING_DIVIDES
-unsafe def INTEGER_MOD_RING_ASSOCIATES : thm := BIntegerModRing.INTEGER_MOD_RING_ASSOCIATES
-unsafe def INTEGER_MOD_RING_UNIT : thm := BIntegerModRing.INTEGER_MOD_RING_UNIT
-unsafe def TRIVIAL_INTEGER_MOD_RING : thm := BIntegerModRing.TRIVIAL_INTEGER_MOD_RING
-unsafe def FINITE_INTEGER_MOD_RING : thm := BIntegerModRing.FINITE_INTEGER_MOD_RING
-unsafe def CARD_INTEGER_MOD_RING : thm := BIntegerModRing.CARD_INTEGER_MOD_RING
-unsafe def FIELD_INTEGER_MOD_RING : thm := BIntegerModRing.FIELD_INTEGER_MOD_RING
-unsafe def INTEGRAL_DOMAIN_INTEGER_MOD_RING : thm := BIntegerModRing.INTEGRAL_DOMAIN_INTEGER_MOD_RING
-unsafe def RING_HOMOMORPHISM_INTEGER_MOD_RING_OF_INT : thm := BIntegerModRing.RING_HOMOMORPHISM_INTEGER_MOD_RING_OF_INT
-unsafe def RING_MONOMORPHISM_INTEGER_MOD_RING_OF_INT : thm := BIntegerModRing.RING_MONOMORPHISM_INTEGER_MOD_RING_OF_INT
-unsafe def RING_HOMOMORPHISM_FROM_INTEGER_MOD_RING : thm := BIntegerModRing.RING_HOMOMORPHISM_FROM_INTEGER_MOD_RING
-unsafe def RING_MONOMORPHISM_FROM_INTEGER_MOD_RING : thm := BIntegerModRing.RING_MONOMORPHISM_FROM_INTEGER_MOD_RING
-unsafe def RING_HOMOMORPHISM_INTEGER_MOD_RINGS : thm := BIntegerModRing.RING_HOMOMORPHISM_INTEGER_MOD_RINGS
-unsafe def RING_HOMOMORPHISM_INTEGER_MOD_RINGS_POW : thm := BIntegerModRing.RING_HOMOMORPHISM_INTEGER_MOD_RINGS_POW
-unsafe def RING_HOMOMORPHISM_PROD_INTEGER_MOD_RING : thm := BIntegerModRing.RING_HOMOMORPHISM_PROD_INTEGER_MOD_RING
-unsafe def RING_ISOMORPHISM_PROD_INTEGER_MOD_RING : thm := BIntegerModRing.RING_ISOMORPHISM_PROD_INTEGER_MOD_RING
-unsafe def ISOMORPHIC_PROD_INTEGER_MOD_RING : thm := BIntegerModRing.ISOMORPHIC_PROD_INTEGER_MOD_RING
-unsafe def VNREGULAR_INTEGER_MOD_RING : thm := BIntegerModRing.VNREGULAR_INTEGER_MOD_RING
-unsafe def INTEGER_QUOTIENT_RING_ISOMORPHIC_MOD : thm := BIntegerModRing.INTEGER_QUOTIENT_RING_ISOMORPHIC_MOD
-unsafe def RING_ISOMORPHISM_PRIME_SUBRING : thm := BIntegerModRing.RING_ISOMORPHISM_PRIME_SUBRING
-unsafe def ISOMORPHIC_PRIME_SUBRING : thm := BIntegerModRing.ISOMORPHIC_PRIME_SUBRING
-unsafe def FIELD_PRIME_SUBRING : thm := BIntegerModRing.FIELD_PRIME_SUBRING
+def integer_mod_ring : thm := BIntegerModRing.integer_mod_ring
+def INTEGER_MOD_RING : thm := BIntegerModRing.INTEGER_MOD_RING
+def IN_INTEGER_MOD_RING_CARRIER : thm := BIntegerModRing.IN_INTEGER_MOD_RING_CARRIER
+def RING_CARRIER_INTEGER_MOD_RING : thm := BIntegerModRing.RING_CARRIER_INTEGER_MOD_RING
+def INTEGER_MOD_RING_CARRIER_REM : thm := BIntegerModRing.INTEGER_MOD_RING_CARRIER_REM
+def INTEGER_MOD_RING_TRIVIAL : thm := BIntegerModRing.INTEGER_MOD_RING_TRIVIAL
+def INTEGER_MOD_RING_SUB : thm := BIntegerModRing.INTEGER_MOD_RING_SUB
+def INTEGER_MOD_RING_POW : thm := BIntegerModRing.INTEGER_MOD_RING_POW
+def INTEGER_MOD_RING_OF_NUM : thm := BIntegerModRing.INTEGER_MOD_RING_OF_NUM
+def INTEGER_MOD_RING_OF_INT : thm := BIntegerModRing.INTEGER_MOD_RING_OF_INT
+def INTEGER_MOD_RING_CLAUSES : thm := BIntegerModRing.INTEGER_MOD_RING_CLAUSES
+def INTEGER_MOD_RING_CHAR : thm := BIntegerModRing.INTEGER_MOD_RING_CHAR
+def INTEGER_MOD_RING_DIVIDES : thm := BIntegerModRing.INTEGER_MOD_RING_DIVIDES
+def INTEGER_MOD_RING_ASSOCIATES : thm := BIntegerModRing.INTEGER_MOD_RING_ASSOCIATES
+def INTEGER_MOD_RING_UNIT : thm := BIntegerModRing.INTEGER_MOD_RING_UNIT
+def TRIVIAL_INTEGER_MOD_RING : thm := BIntegerModRing.TRIVIAL_INTEGER_MOD_RING
+def FINITE_INTEGER_MOD_RING : thm := BIntegerModRing.FINITE_INTEGER_MOD_RING
+def CARD_INTEGER_MOD_RING : thm := BIntegerModRing.CARD_INTEGER_MOD_RING
+def FIELD_INTEGER_MOD_RING : thm := BIntegerModRing.FIELD_INTEGER_MOD_RING
+def INTEGRAL_DOMAIN_INTEGER_MOD_RING : thm := BIntegerModRing.INTEGRAL_DOMAIN_INTEGER_MOD_RING
+def RING_HOMOMORPHISM_INTEGER_MOD_RING_OF_INT : thm := BIntegerModRing.RING_HOMOMORPHISM_INTEGER_MOD_RING_OF_INT
+def RING_MONOMORPHISM_INTEGER_MOD_RING_OF_INT : thm := BIntegerModRing.RING_MONOMORPHISM_INTEGER_MOD_RING_OF_INT
+def RING_HOMOMORPHISM_FROM_INTEGER_MOD_RING : thm := BIntegerModRing.RING_HOMOMORPHISM_FROM_INTEGER_MOD_RING
+def RING_MONOMORPHISM_FROM_INTEGER_MOD_RING : thm := BIntegerModRing.RING_MONOMORPHISM_FROM_INTEGER_MOD_RING
+def RING_HOMOMORPHISM_INTEGER_MOD_RINGS : thm := BIntegerModRing.RING_HOMOMORPHISM_INTEGER_MOD_RINGS
+def RING_HOMOMORPHISM_INTEGER_MOD_RINGS_POW : thm := BIntegerModRing.RING_HOMOMORPHISM_INTEGER_MOD_RINGS_POW
+def RING_HOMOMORPHISM_PROD_INTEGER_MOD_RING : thm := BIntegerModRing.RING_HOMOMORPHISM_PROD_INTEGER_MOD_RING
+def RING_ISOMORPHISM_PROD_INTEGER_MOD_RING : thm := BIntegerModRing.RING_ISOMORPHISM_PROD_INTEGER_MOD_RING
+def ISOMORPHIC_PROD_INTEGER_MOD_RING : thm := BIntegerModRing.ISOMORPHIC_PROD_INTEGER_MOD_RING
+def VNREGULAR_INTEGER_MOD_RING : thm := BIntegerModRing.VNREGULAR_INTEGER_MOD_RING
+def INTEGER_QUOTIENT_RING_ISOMORPHIC_MOD : thm := BIntegerModRing.INTEGER_QUOTIENT_RING_ISOMORPHIC_MOD
+def RING_ISOMORPHISM_PRIME_SUBRING : thm := BIntegerModRing.RING_ISOMORPHISM_PRIME_SUBRING
+def ISOMORPHIC_PRIME_SUBRING : thm := BIntegerModRing.ISOMORPHIC_PRIME_SUBRING
+def FIELD_PRIME_SUBRING : thm := BIntegerModRing.FIELD_PRIME_SUBRING
 
 -- IntegerModConv
-unsafe def RING_INV_INTEGER_MOD_RING : thm := BIntegerModConv.RING_INV_INTEGER_MOD_RING
-unsafe def INTEGER_MOD_RING_RED_CONV : HolCore.Equal.ioconv := fun t => BIntegerModConv.INTEGER_MOD_RING_RED_CONV t
+def RING_INV_INTEGER_MOD_RING : thm := BIntegerModConv.RING_INV_INTEGER_MOD_RING
+def INTEGER_MOD_RING_RED_CONV : HolCore.Equal.ioconv := fun t => BIntegerModConv.INTEGER_MOD_RING_RED_CONV t
 
 -- RealRing
-unsafe def real_ring : thm := BRealRing.real_ring
-unsafe def REAL_RING_CLAUSES : thm := BRealRing.REAL_RING_CLAUSES
-unsafe def FIELD_REAL_RING : thm := BRealRing.FIELD_REAL_RING
-unsafe def INTEGRAL_DOMAIN_REAL_RING : thm := BRealRing.INTEGRAL_DOMAIN_REAL_RING
-unsafe def REAL_RING_OF_NUM : thm := BRealRing.REAL_RING_OF_NUM
-unsafe def REAL_RING_OF_INT : thm := BRealRing.REAL_RING_OF_INT
-unsafe def REAL_RING_CHAR : thm := BRealRing.REAL_RING_CHAR
-unsafe def REAL_RING_SUB : thm := BRealRing.REAL_RING_SUB
-unsafe def REAL_RING_INV : thm := BRealRing.REAL_RING_INV
-unsafe def REAL_RING_DIV : thm := BRealRing.REAL_RING_DIV
-unsafe def REAL_RING_POW : thm := BRealRing.REAL_RING_POW
-unsafe def REAL_FIELD_CLAUSES : thm := BRealRing.REAL_FIELD_CLAUSES
+def real_ring : thm := BRealRing.real_ring
+def REAL_RING_CLAUSES : thm := BRealRing.REAL_RING_CLAUSES
+def FIELD_REAL_RING : thm := BRealRing.FIELD_REAL_RING
+def INTEGRAL_DOMAIN_REAL_RING : thm := BRealRing.INTEGRAL_DOMAIN_REAL_RING
+def REAL_RING_OF_NUM : thm := BRealRing.REAL_RING_OF_NUM
+def REAL_RING_OF_INT : thm := BRealRing.REAL_RING_OF_INT
+def REAL_RING_CHAR : thm := BRealRing.REAL_RING_CHAR
+def REAL_RING_SUB : thm := BRealRing.REAL_RING_SUB
+def REAL_RING_INV : thm := BRealRing.REAL_RING_INV
+def REAL_RING_DIV : thm := BRealRing.REAL_RING_DIV
+def REAL_RING_POW : thm := BRealRing.REAL_RING_POW
+def REAL_FIELD_CLAUSES : thm := BRealRing.REAL_FIELD_CLAUSES
 
 -- Monomials
-unsafe def monomial_1 : thm := BMonomials.monomial_1
-unsafe def monomial_mul : thm := BMonomials.monomial_mul
-unsafe def monomial_div : thm := BMonomials.monomial_div
-unsafe def monomial_restrict : thm := BMonomials.monomial_restrict
-unsafe def monomial_divides : thm := BMonomials.monomial_divides
-unsafe def monomial_var : thm := BMonomials.monomial_var
-unsafe def monomial_vars : thm := BMonomials.monomial_vars
-unsafe def monomial_deg : thm := BMonomials.monomial_deg
-unsafe def monomial : thm := BMonomials.monomial
-unsafe def MONOMIAL_POINTWISE_TAC : HolCore.Tactics.tactic := fun g => BMonomials.MONOMIAL_POINTWISE_TAC g
-unsafe def MONOMIAL_TAC : HolCore.Tactics.tactic := fun g => BMonomials.MONOMIAL_TAC g
-unsafe def MONOMIAL_RULE : term → IO (Except String thm) := fun t => (BMonomials.MONOMIAL_RULE t).run
-unsafe def FINITE_MONOMIAL_VARS : thm := BMonomials.FINITE_MONOMIAL_VARS
-unsafe def FINITE_MONOMIAL_VARS_1 : thm := BMonomials.FINITE_MONOMIAL_VARS_1
-unsafe def MONOMIAL_DEG : thm := BMonomials.MONOMIAL_DEG
-unsafe def MONOMIAL_VAR_1 : thm := BMonomials.MONOMIAL_VAR_1
-unsafe def MONOMIAL_VARS_1 : thm := BMonomials.MONOMIAL_VARS_1
-unsafe def MONOMIAL_VARS_EQ_EMPTY : thm := BMonomials.MONOMIAL_VARS_EQ_EMPTY
-unsafe def MONOMIAL_VARS_MUL : thm := BMonomials.MONOMIAL_VARS_MUL
-unsafe def MONOMIAL_VARS_VAR : thm := BMonomials.MONOMIAL_VARS_VAR
-unsafe def MONOMIAL_VARS_RESTRICT : thm := BMonomials.MONOMIAL_VARS_RESTRICT
-unsafe def MONOMIAL_RESTRICT_EQ : thm := BMonomials.MONOMIAL_RESTRICT_EQ
-unsafe def MONOMIAL_RESTRICT_REFL : thm := BMonomials.MONOMIAL_RESTRICT_REFL
-unsafe def MONOMIAL_MONO : thm := BMonomials.MONOMIAL_MONO
-unsafe def MONOMIAL_UNIV : thm := BMonomials.MONOMIAL_UNIV
-unsafe def MONOMIAL_1 : thm := BMonomials.MONOMIAL_1
-unsafe def MONOMIAL_MUL : thm := BMonomials.MONOMIAL_MUL
-unsafe def MONOMIAL_RESTRICT_MUL : thm := BMonomials.MONOMIAL_RESTRICT_MUL
-unsafe def MONOMIAL_MUL_RESTRICT : thm := BMonomials.MONOMIAL_MUL_RESTRICT
-unsafe def MONOMIAL_DIVISOR : thm := BMonomials.MONOMIAL_DIVISOR
-unsafe def MONOMIAL_VAR : thm := BMonomials.MONOMIAL_VAR
-unsafe def MONOMIAL_RESTRICT : thm := BMonomials.MONOMIAL_RESTRICT
-unsafe def MONOMIAL : thm := BMonomials.MONOMIAL
-unsafe def MONOMIAL_UNIV_1 : thm := BMonomials.MONOMIAL_UNIV_1
-unsafe def MONOMIAL_DEG_1 : thm := BMonomials.MONOMIAL_DEG_1
-unsafe def MONOMIAL_DEG_VAR : thm := BMonomials.MONOMIAL_DEG_VAR
-unsafe def MONOMIAL_DEG_EQ_0_ALT : thm := BMonomials.MONOMIAL_DEG_EQ_0_ALT
-unsafe def MONOMIAL_DEG_EQ_0 : thm := BMonomials.MONOMIAL_DEG_EQ_0
-unsafe def MONOMIAL_DIV_DIVIDES : thm := BMonomials.MONOMIAL_DIV_DIVIDES
-unsafe def MONOMIAL_DIV : thm := BMonomials.MONOMIAL_DIV
-unsafe def MONOMIAL_DIVIDES_1 : thm := BMonomials.MONOMIAL_DIVIDES_1
-unsafe def MONOMIAL_DIVIDES_EXISTS : thm := BMonomials.MONOMIAL_DIVIDES_EXISTS
-unsafe def MONOMIAL_VAR_DIVIDES_MUL : thm := BMonomials.MONOMIAL_VAR_DIVIDES_MUL
-unsafe def MONOMIAL_MUL_EQ_VAR : thm := BMonomials.MONOMIAL_MUL_EQ_VAR
-unsafe def MONOMIAL_DEG_MUL : thm := BMonomials.MONOMIAL_DEG_MUL
-unsafe def MONOMIAL_DEG_LE : thm := BMonomials.MONOMIAL_DEG_LE
-unsafe def MONOMIAL_VAR_EQ : thm := BMonomials.MONOMIAL_VAR_EQ
-unsafe def MONOMIAL_MUL_LID : thm := BMonomials.MONOMIAL_MUL_LID
-unsafe def MONOMIAL_MUL_RID : thm := BMonomials.MONOMIAL_MUL_RID
-unsafe def MONOMIAL_MUL_SYM : thm := BMonomials.MONOMIAL_MUL_SYM
-unsafe def MONOMIAL_MUL_ASSOC : thm := BMonomials.MONOMIAL_MUL_ASSOC
-unsafe def MONOMIAL_MUL_AC : thm := BMonomials.MONOMIAL_MUL_AC
-unsafe def MONOMIAL_MUL_EQ_1 : thm := BMonomials.MONOMIAL_MUL_EQ_1
-unsafe def MONOMIAL_MUL_LCANCEL : thm := BMonomials.MONOMIAL_MUL_LCANCEL
-unsafe def MONOMIAL_MUL_RCANCEL : thm := BMonomials.MONOMIAL_MUL_RCANCEL
-unsafe def MONOMIAL_DIVIDES_REFL : thm := BMonomials.MONOMIAL_DIVIDES_REFL
-unsafe def MONOMIAL_DIVIDES_TRANS : thm := BMonomials.MONOMIAL_DIVIDES_TRANS
-unsafe def MONOMIAL_DIVIDES_ANTISYM : thm := BMonomials.MONOMIAL_DIVIDES_ANTISYM
-unsafe def MONOMIAL_DIVIDES_LMUL : thm := BMonomials.MONOMIAL_DIVIDES_LMUL
-unsafe def MONOMIAL_DIVIDES_RMUL : thm := BMonomials.MONOMIAL_DIVIDES_RMUL
-unsafe def MONOMIAL_DIV_LMUL_EQ : thm := BMonomials.MONOMIAL_DIV_LMUL_EQ
-unsafe def MONOMIAL_DIV_LMUL : thm := BMonomials.MONOMIAL_DIV_LMUL
-unsafe def MONOMIAL_DIV_RMUL_EQ : thm := BMonomials.MONOMIAL_DIV_RMUL_EQ
-unsafe def MONOMIAL_DIV_RMUL : thm := BMonomials.MONOMIAL_DIV_RMUL
-unsafe def MONOMIAL_VAR_DIVIDES : thm := BMonomials.MONOMIAL_VAR_DIVIDES
-unsafe def MONOMIAL_VARS_DIVISOR : thm := BMonomials.MONOMIAL_VARS_DIVISOR
-unsafe def MONOMIAL_FINITE_DIVISORS : thm := BMonomials.MONOMIAL_FINITE_DIVISORS
-unsafe def MONOMIAL_FINITE_DIVISORPAIRS : thm := BMonomials.MONOMIAL_FINITE_DIVISORPAIRS
-unsafe def MONOMIAL_INDUCT : thm := BMonomials.MONOMIAL_INDUCT
-unsafe def MONOMIAL_VARS_UNIVARIATE : thm := BMonomials.MONOMIAL_VARS_UNIVARIATE
-unsafe def MONOMIAL_DEG_UNIVARIATE : thm := BMonomials.MONOMIAL_DEG_UNIVARIATE
-unsafe def MONOMIAL_MUL_VAR_ONE : thm := BMonomials.MONOMIAL_MUL_VAR_ONE
-unsafe def MONOMIAL_DEG_ONE : thm := BMonomials.MONOMIAL_DEG_ONE
+def monomial_1 : thm := BMonomials.monomial_1
+def monomial_mul : thm := BMonomials.monomial_mul
+def monomial_div : thm := BMonomials.monomial_div
+def monomial_restrict : thm := BMonomials.monomial_restrict
+def monomial_divides : thm := BMonomials.monomial_divides
+def monomial_var : thm := BMonomials.monomial_var
+def monomial_vars : thm := BMonomials.monomial_vars
+def monomial_deg : thm := BMonomials.monomial_deg
+def monomial : thm := BMonomials.monomial
+def MONOMIAL_POINTWISE_TAC : HolCore.Tactics.tactic := fun g => BMonomials.MONOMIAL_POINTWISE_TAC g
+def MONOMIAL_TAC : HolCore.Tactics.tactic := fun g => BMonomials.MONOMIAL_TAC g
+def MONOMIAL_RULE : term → IO (Except String thm) := fun t => (BMonomials.MONOMIAL_RULE t).run
+def FINITE_MONOMIAL_VARS : thm := BMonomials.FINITE_MONOMIAL_VARS
+def FINITE_MONOMIAL_VARS_1 : thm := BMonomials.FINITE_MONOMIAL_VARS_1
+def MONOMIAL_DEG : thm := BMonomials.MONOMIAL_DEG
+def MONOMIAL_VAR_1 : thm := BMonomials.MONOMIAL_VAR_1
+def MONOMIAL_VARS_1 : thm := BMonomials.MONOMIAL_VARS_1
+def MONOMIAL_VARS_EQ_EMPTY : thm := BMonomials.MONOMIAL_VARS_EQ_EMPTY
+def MONOMIAL_VARS_MUL : thm := BMonomials.MONOMIAL_VARS_MUL
+def MONOMIAL_VARS_VAR : thm := BMonomials.MONOMIAL_VARS_VAR
+def MONOMIAL_VARS_RESTRICT : thm := BMonomials.MONOMIAL_VARS_RESTRICT
+def MONOMIAL_RESTRICT_EQ : thm := BMonomials.MONOMIAL_RESTRICT_EQ
+def MONOMIAL_RESTRICT_REFL : thm := BMonomials.MONOMIAL_RESTRICT_REFL
+def MONOMIAL_MONO : thm := BMonomials.MONOMIAL_MONO
+def MONOMIAL_UNIV : thm := BMonomials.MONOMIAL_UNIV
+def MONOMIAL_1 : thm := BMonomials.MONOMIAL_1
+def MONOMIAL_MUL : thm := BMonomials.MONOMIAL_MUL
+def MONOMIAL_RESTRICT_MUL : thm := BMonomials.MONOMIAL_RESTRICT_MUL
+def MONOMIAL_MUL_RESTRICT : thm := BMonomials.MONOMIAL_MUL_RESTRICT
+def MONOMIAL_DIVISOR : thm := BMonomials.MONOMIAL_DIVISOR
+def MONOMIAL_VAR : thm := BMonomials.MONOMIAL_VAR
+def MONOMIAL_RESTRICT : thm := BMonomials.MONOMIAL_RESTRICT
+def MONOMIAL : thm := BMonomials.MONOMIAL
+def MONOMIAL_UNIV_1 : thm := BMonomials.MONOMIAL_UNIV_1
+def MONOMIAL_DEG_1 : thm := BMonomials.MONOMIAL_DEG_1
+def MONOMIAL_DEG_VAR : thm := BMonomials.MONOMIAL_DEG_VAR
+def MONOMIAL_DEG_EQ_0_ALT : thm := BMonomials.MONOMIAL_DEG_EQ_0_ALT
+def MONOMIAL_DEG_EQ_0 : thm := BMonomials.MONOMIAL_DEG_EQ_0
+def MONOMIAL_DIV_DIVIDES : thm := BMonomials.MONOMIAL_DIV_DIVIDES
+def MONOMIAL_DIV : thm := BMonomials.MONOMIAL_DIV
+def MONOMIAL_DIVIDES_1 : thm := BMonomials.MONOMIAL_DIVIDES_1
+def MONOMIAL_DIVIDES_EXISTS : thm := BMonomials.MONOMIAL_DIVIDES_EXISTS
+def MONOMIAL_VAR_DIVIDES_MUL : thm := BMonomials.MONOMIAL_VAR_DIVIDES_MUL
+def MONOMIAL_MUL_EQ_VAR : thm := BMonomials.MONOMIAL_MUL_EQ_VAR
+def MONOMIAL_DEG_MUL : thm := BMonomials.MONOMIAL_DEG_MUL
+def MONOMIAL_DEG_LE : thm := BMonomials.MONOMIAL_DEG_LE
+def MONOMIAL_VAR_EQ : thm := BMonomials.MONOMIAL_VAR_EQ
+def MONOMIAL_MUL_LID : thm := BMonomials.MONOMIAL_MUL_LID
+def MONOMIAL_MUL_RID : thm := BMonomials.MONOMIAL_MUL_RID
+def MONOMIAL_MUL_SYM : thm := BMonomials.MONOMIAL_MUL_SYM
+def MONOMIAL_MUL_ASSOC : thm := BMonomials.MONOMIAL_MUL_ASSOC
+def MONOMIAL_MUL_AC : thm := BMonomials.MONOMIAL_MUL_AC
+def MONOMIAL_MUL_EQ_1 : thm := BMonomials.MONOMIAL_MUL_EQ_1
+def MONOMIAL_MUL_LCANCEL : thm := BMonomials.MONOMIAL_MUL_LCANCEL
+def MONOMIAL_MUL_RCANCEL : thm := BMonomials.MONOMIAL_MUL_RCANCEL
+def MONOMIAL_DIVIDES_REFL : thm := BMonomials.MONOMIAL_DIVIDES_REFL
+def MONOMIAL_DIVIDES_TRANS : thm := BMonomials.MONOMIAL_DIVIDES_TRANS
+def MONOMIAL_DIVIDES_ANTISYM : thm := BMonomials.MONOMIAL_DIVIDES_ANTISYM
+def MONOMIAL_DIVIDES_LMUL : thm := BMonomials.MONOMIAL_DIVIDES_LMUL
+def MONOMIAL_DIVIDES_RMUL : thm := BMonomials.MONOMIAL_DIVIDES_RMUL
+def MONOMIAL_DIV_LMUL_EQ : thm := BMonomials.MONOMIAL_DIV_LMUL_EQ
+def MONOMIAL_DIV_LMUL : thm := BMonomials.MONOMIAL_DIV_LMUL
+def MONOMIAL_DIV_RMUL_EQ : thm := BMonomials.MONOMIAL_DIV_RMUL_EQ
+def MONOMIAL_DIV_RMUL : thm := BMonomials.MONOMIAL_DIV_RMUL
+def MONOMIAL_VAR_DIVIDES : thm := BMonomials.MONOMIAL_VAR_DIVIDES
+def MONOMIAL_VARS_DIVISOR : thm := BMonomials.MONOMIAL_VARS_DIVISOR
+def MONOMIAL_FINITE_DIVISORS : thm := BMonomials.MONOMIAL_FINITE_DIVISORS
+def MONOMIAL_FINITE_DIVISORPAIRS : thm := BMonomials.MONOMIAL_FINITE_DIVISORPAIRS
+def MONOMIAL_INDUCT : thm := BMonomials.MONOMIAL_INDUCT
+def MONOMIAL_VARS_UNIVARIATE : thm := BMonomials.MONOMIAL_VARS_UNIVARIATE
+def MONOMIAL_DEG_UNIVARIATE : thm := BMonomials.MONOMIAL_DEG_UNIVARIATE
+def MONOMIAL_MUL_VAR_ONE : thm := BMonomials.MONOMIAL_MUL_VAR_ONE
+def MONOMIAL_DEG_ONE : thm := BMonomials.MONOMIAL_DEG_ONE
 
 -- PowerSeries
-unsafe def ring_powerseries : thm := BPowerSeries.ring_powerseries
-unsafe def ring_polynomial : thm := BPowerSeries.ring_polynomial
-unsafe def RING_POLYNOMIAL_IMP_POWERSERIES : thm := BPowerSeries.RING_POLYNOMIAL_IMP_POWERSERIES
-unsafe def poly_vars : thm := BPowerSeries.poly_vars
-unsafe def poly_const : thm := BPowerSeries.poly_const
-unsafe def poly_0 : thm := BPowerSeries.poly_0
-unsafe def poly_1 : thm := BPowerSeries.poly_1
-unsafe def poly_neg : thm := BPowerSeries.poly_neg
-unsafe def poly_add : thm := BPowerSeries.poly_add
-unsafe def poly_sub : thm := BPowerSeries.poly_sub
-unsafe def poly_mul : thm := BPowerSeries.poly_mul
-unsafe def poly_var : thm := BPowerSeries.poly_var
-unsafe def POLY_SUB : thm := BPowerSeries.POLY_SUB
-unsafe def RING_POWERSERIES_MONOMIAL : thm := BPowerSeries.RING_POWERSERIES_MONOMIAL
-unsafe def RING_POLYNOMIAL_MONOMIAL : thm := BPowerSeries.RING_POLYNOMIAL_MONOMIAL
-unsafe def POLY_0 : thm := BPowerSeries.POLY_0
-unsafe def POLY_CONST_0 : thm := BPowerSeries.POLY_CONST_0
-unsafe def POLY_CONST_1 : thm := BPowerSeries.POLY_CONST_1
-unsafe def RING_POWERSERIES_CONST : thm := BPowerSeries.RING_POWERSERIES_CONST
-unsafe def RING_POWERSERIES_VAR : thm := BPowerSeries.RING_POWERSERIES_VAR
-unsafe def RING_POWERSERIES_0 : thm := BPowerSeries.RING_POWERSERIES_0
-unsafe def RING_POWERSERIES_1 : thm := BPowerSeries.RING_POWERSERIES_1
-unsafe def POLY_VAR_MONOMIAL_1 : thm := BPowerSeries.POLY_VAR_MONOMIAL_1
-unsafe def RING_POWERSERIES_NEG : thm := BPowerSeries.RING_POWERSERIES_NEG
-unsafe def RING_POWERSERIES_ADD : thm := BPowerSeries.RING_POWERSERIES_ADD
-unsafe def RING_POWERSERIES_SUB : thm := BPowerSeries.RING_POWERSERIES_SUB
-unsafe def RING_POWERSERIES_MUL : thm := BPowerSeries.RING_POWERSERIES_MUL
-unsafe def RING_POLYNOMIAL_CONST : thm := BPowerSeries.RING_POLYNOMIAL_CONST
-unsafe def RING_POLYNOMIAL_VAR : thm := BPowerSeries.RING_POLYNOMIAL_VAR
-unsafe def POLY_VAR_EQ_CONST : thm := BPowerSeries.POLY_VAR_EQ_CONST
-unsafe def RING_POLYNOMIAL_0 : thm := BPowerSeries.RING_POLYNOMIAL_0
-unsafe def RING_POLYNOMIAL_1 : thm := BPowerSeries.RING_POLYNOMIAL_1
-unsafe def RING_POLYNOMIAL_NEG : thm := BPowerSeries.RING_POLYNOMIAL_NEG
-unsafe def RING_POLYNOMIAL_ADD : thm := BPowerSeries.RING_POLYNOMIAL_ADD
-unsafe def RING_POLYNOMIAL_SUB : thm := BPowerSeries.RING_POLYNOMIAL_SUB
-unsafe def RING_POLYNOMIAL_MUL : thm := BPowerSeries.RING_POLYNOMIAL_MUL
-unsafe def POLY_ADD_SYM : thm := BPowerSeries.POLY_ADD_SYM
-unsafe def POLY_ADD_ASSOC : thm := BPowerSeries.POLY_ADD_ASSOC
-unsafe def POLY_ADD_LZERO : thm := BPowerSeries.POLY_ADD_LZERO
-unsafe def POLY_ADD_RZERO : thm := BPowerSeries.POLY_ADD_RZERO
-unsafe def POLY_ADD_LNEG : thm := BPowerSeries.POLY_ADD_LNEG
-unsafe def POLY_MUL_SYM : thm := BPowerSeries.POLY_MUL_SYM
-unsafe def POLY_ADD_LDISTRIB : thm := BPowerSeries.POLY_ADD_LDISTRIB
-unsafe def POLY_MUL_LID : thm := BPowerSeries.POLY_MUL_LID
-unsafe def POLY_MUL_RID : thm := BPowerSeries.POLY_MUL_RID
-unsafe def POLY_MUL_ASSOC : thm := BPowerSeries.POLY_MUL_ASSOC
-unsafe def POWSER_MUL_0 : thm := BPowerSeries.POWSER_MUL_0
-unsafe def POLY_MUL_0 : thm := BPowerSeries.POLY_MUL_0
-unsafe def POWSER_MUL_MONOMIAL_1 : thm := BPowerSeries.POWSER_MUL_MONOMIAL_1
-unsafe def POLY_MUL_MONOMIAL_1 : thm := BPowerSeries.POLY_MUL_MONOMIAL_1
-unsafe def POWSER_MUL_CONST : thm := BPowerSeries.POWSER_MUL_CONST
-unsafe def POLY_MUL_CONST : thm := BPowerSeries.POLY_MUL_CONST
-unsafe def POWSER_VAR_MUL : thm := BPowerSeries.POWSER_VAR_MUL
-unsafe def POWSER_MUL_VAR : thm := BPowerSeries.POWSER_MUL_VAR
-unsafe def POLY_VAR_MUL : thm := BPowerSeries.POLY_VAR_MUL
-unsafe def POLY_MUL_VAR : thm := BPowerSeries.POLY_MUL_VAR
-unsafe def POLY_VARS_CONST : thm := BPowerSeries.POLY_VARS_CONST
-unsafe def POLY_VARS_0 : thm := BPowerSeries.POLY_VARS_0
-unsafe def POLY_VARS_1 : thm := BPowerSeries.POLY_VARS_1
-unsafe def POLY_VARS_VAR : thm := BPowerSeries.POLY_VARS_VAR
-unsafe def POLY_VARS_NEG : thm := BPowerSeries.POLY_VARS_NEG
-unsafe def POLY_VARS_ADD : thm := BPowerSeries.POLY_VARS_ADD
-unsafe def POLY_VARS_MUL : thm := BPowerSeries.POLY_VARS_MUL
-unsafe def FINITE_POLYNOMIAL_VARS : thm := BPowerSeries.FINITE_POLYNOMIAL_VARS
+def ring_powerseries : thm := BPowerSeries.ring_powerseries
+def ring_polynomial : thm := BPowerSeries.ring_polynomial
+def RING_POLYNOMIAL_IMP_POWERSERIES : thm := BPowerSeries.RING_POLYNOMIAL_IMP_POWERSERIES
+def poly_vars : thm := BPowerSeries.poly_vars
+def poly_const : thm := BPowerSeries.poly_const
+def poly_0 : thm := BPowerSeries.poly_0
+def poly_1 : thm := BPowerSeries.poly_1
+def poly_neg : thm := BPowerSeries.poly_neg
+def poly_add : thm := BPowerSeries.poly_add
+def poly_sub : thm := BPowerSeries.poly_sub
+def poly_mul : thm := BPowerSeries.poly_mul
+def poly_var : thm := BPowerSeries.poly_var
+def POLY_SUB : thm := BPowerSeries.POLY_SUB
+def RING_POWERSERIES_MONOMIAL : thm := BPowerSeries.RING_POWERSERIES_MONOMIAL
+def RING_POLYNOMIAL_MONOMIAL : thm := BPowerSeries.RING_POLYNOMIAL_MONOMIAL
+def POLY_0 : thm := BPowerSeries.POLY_0
+def POLY_CONST_0 : thm := BPowerSeries.POLY_CONST_0
+def POLY_CONST_1 : thm := BPowerSeries.POLY_CONST_1
+def RING_POWERSERIES_CONST : thm := BPowerSeries.RING_POWERSERIES_CONST
+def RING_POWERSERIES_VAR : thm := BPowerSeries.RING_POWERSERIES_VAR
+def RING_POWERSERIES_0 : thm := BPowerSeries.RING_POWERSERIES_0
+def RING_POWERSERIES_1 : thm := BPowerSeries.RING_POWERSERIES_1
+def POLY_VAR_MONOMIAL_1 : thm := BPowerSeries.POLY_VAR_MONOMIAL_1
+def RING_POWERSERIES_NEG : thm := BPowerSeries.RING_POWERSERIES_NEG
+def RING_POWERSERIES_ADD : thm := BPowerSeries.RING_POWERSERIES_ADD
+def RING_POWERSERIES_SUB : thm := BPowerSeries.RING_POWERSERIES_SUB
+def RING_POWERSERIES_MUL : thm := BPowerSeries.RING_POWERSERIES_MUL
+def RING_POLYNOMIAL_CONST : thm := BPowerSeries.RING_POLYNOMIAL_CONST
+def RING_POLYNOMIAL_VAR : thm := BPowerSeries.RING_POLYNOMIAL_VAR
+def POLY_VAR_EQ_CONST : thm := BPowerSeries.POLY_VAR_EQ_CONST
+def RING_POLYNOMIAL_0 : thm := BPowerSeries.RING_POLYNOMIAL_0
+def RING_POLYNOMIAL_1 : thm := BPowerSeries.RING_POLYNOMIAL_1
+def RING_POLYNOMIAL_NEG : thm := BPowerSeries.RING_POLYNOMIAL_NEG
+def RING_POLYNOMIAL_ADD : thm := BPowerSeries.RING_POLYNOMIAL_ADD
+def RING_POLYNOMIAL_SUB : thm := BPowerSeries.RING_POLYNOMIAL_SUB
+def RING_POLYNOMIAL_MUL : thm := BPowerSeries.RING_POLYNOMIAL_MUL
+def POLY_ADD_SYM : thm := BPowerSeries.POLY_ADD_SYM
+def POLY_ADD_ASSOC : thm := BPowerSeries.POLY_ADD_ASSOC
+def POLY_ADD_LZERO : thm := BPowerSeries.POLY_ADD_LZERO
+def POLY_ADD_RZERO : thm := BPowerSeries.POLY_ADD_RZERO
+def POLY_ADD_LNEG : thm := BPowerSeries.POLY_ADD_LNEG
+def POLY_MUL_SYM : thm := BPowerSeries.POLY_MUL_SYM
+def POLY_ADD_LDISTRIB : thm := BPowerSeries.POLY_ADD_LDISTRIB
+def POLY_MUL_LID : thm := BPowerSeries.POLY_MUL_LID
+def POLY_MUL_RID : thm := BPowerSeries.POLY_MUL_RID
+def POLY_MUL_ASSOC : thm := BPowerSeries.POLY_MUL_ASSOC
+def POWSER_MUL_0 : thm := BPowerSeries.POWSER_MUL_0
+def POLY_MUL_0 : thm := BPowerSeries.POLY_MUL_0
+def POWSER_MUL_MONOMIAL_1 : thm := BPowerSeries.POWSER_MUL_MONOMIAL_1
+def POLY_MUL_MONOMIAL_1 : thm := BPowerSeries.POLY_MUL_MONOMIAL_1
+def POWSER_MUL_CONST : thm := BPowerSeries.POWSER_MUL_CONST
+def POLY_MUL_CONST : thm := BPowerSeries.POLY_MUL_CONST
+def POWSER_VAR_MUL : thm := BPowerSeries.POWSER_VAR_MUL
+def POWSER_MUL_VAR : thm := BPowerSeries.POWSER_MUL_VAR
+def POLY_VAR_MUL : thm := BPowerSeries.POLY_VAR_MUL
+def POLY_MUL_VAR : thm := BPowerSeries.POLY_MUL_VAR
+def POLY_VARS_CONST : thm := BPowerSeries.POLY_VARS_CONST
+def POLY_VARS_0 : thm := BPowerSeries.POLY_VARS_0
+def POLY_VARS_1 : thm := BPowerSeries.POLY_VARS_1
+def POLY_VARS_VAR : thm := BPowerSeries.POLY_VARS_VAR
+def POLY_VARS_NEG : thm := BPowerSeries.POLY_VARS_NEG
+def POLY_VARS_ADD : thm := BPowerSeries.POLY_VARS_ADD
+def POLY_VARS_MUL : thm := BPowerSeries.POLY_VARS_MUL
+def FINITE_POLYNOMIAL_VARS : thm := BPowerSeries.FINITE_POLYNOMIAL_VARS
 
 -- PolyRings
-unsafe def powser_ring : thm := BPolyRings.powser_ring
-unsafe def poly_ring : thm := BPolyRings.poly_ring
-unsafe def POWSER_RING : thm := BPolyRings.POWSER_RING
-unsafe def POLY_RING_SUBRING_OF_POWSER_RING : thm := BPolyRings.POLY_RING_SUBRING_OF_POWSER_RING
-unsafe def POLY_RING_AS_SUBRING : thm := BPolyRings.POLY_RING_AS_SUBRING
-unsafe def POLY_RING_AS_SUBRING_ALT : thm := BPolyRings.POLY_RING_AS_SUBRING_ALT
-unsafe def POLY_RING_AS_SUBRING_FINITE : thm := BPolyRings.POLY_RING_AS_SUBRING_FINITE
-unsafe def POLY_CARRIER_SUBRING_OF_POWSER_RING : thm := BPolyRings.POLY_CARRIER_SUBRING_OF_POWSER_RING
-unsafe def RING_MONOMORPHISM_POLY_POWSER : thm := BPolyRings.RING_MONOMORPHISM_POLY_POWSER
-unsafe def POLY_RING : thm := BPolyRings.POLY_RING
-unsafe def POLY_IN_POWSER_RING : thm := BPolyRings.POLY_IN_POWSER_RING
-unsafe def poly_pow : thm := BPolyRings.poly_pow
-unsafe def POLY_POW : thm := BPolyRings.POLY_POW
-unsafe def POLY_POW_ALT : thm := BPolyRings.POLY_POW_ALT
-unsafe def RING_POWERSERIES_POW : thm := BPolyRings.RING_POWERSERIES_POW
-unsafe def RING_POLYNOMIAL_POW : thm := BPolyRings.RING_POLYNOMIAL_POW
-unsafe def POLY_POW_1 : thm := BPolyRings.POLY_POW_1
-unsafe def POLY_POW_0 : thm := BPolyRings.POLY_POW_0
-unsafe def POLY_VARS_POW : thm := BPolyRings.POLY_VARS_POW
-unsafe def POWSER_RING_CLAUSES : thm := BPolyRings.POWSER_RING_CLAUSES
-unsafe def POWSER_CLAUSES : thm := BPolyRings.POWSER_CLAUSES
-unsafe def POLY_RING_CLAUSES : thm := BPolyRings.POLY_RING_CLAUSES
-unsafe def POLY_CLAUSES : thm := BPolyRings.POLY_CLAUSES
-unsafe def POLY_SUBRING_GENERATED_CLAUSES : thm := BPolyRings.POLY_SUBRING_GENERATED_CLAUSES
-unsafe def POLY_CONST_SUBRING_GENERATED : thm := BPolyRings.POLY_CONST_SUBRING_GENERATED
-unsafe def POWSER_MONOMIAL_IN_CARRIER : thm := BPolyRings.POWSER_MONOMIAL_IN_CARRIER
-unsafe def POLY_MONOMIAL_IN_CARRIER : thm := BPolyRings.POLY_MONOMIAL_IN_CARRIER
-unsafe def RING_POLYNOMIAL : thm := BPolyRings.RING_POLYNOMIAL
-unsafe def RING_POWERSERIES : thm := BPolyRings.RING_POWERSERIES
-unsafe def IN_POLY_RING_CARRIER : thm := BPolyRings.IN_POLY_RING_CARRIER
-unsafe def RING_POLYNOMIAL_CARRIER_GEN : thm := BPolyRings.RING_POLYNOMIAL_CARRIER_GEN
-unsafe def RING_POLYNOMIAL_CARRIER : thm := BPolyRings.RING_POLYNOMIAL_CARRIER
-unsafe def POLY_MONOMIALS_FINITE : thm := BPolyRings.POLY_MONOMIALS_FINITE
-unsafe def FINITE_POLY_VARS : thm := BPolyRings.FINITE_POLY_VARS
-unsafe def RING_CARRIER_POLY_RING_FINITE : thm := BPolyRings.RING_CARRIER_POLY_RING_FINITE
-unsafe def POWSER_RING_MONO : thm := BPolyRings.POWSER_RING_MONO
-unsafe def POLY_RING_MONO : thm := BPolyRings.POLY_RING_MONO
-unsafe def POLY_RING_POLY_VARS : thm := BPolyRings.POLY_RING_POLY_VARS
-unsafe def POLY_RING_IN_POLY_VARS : thm := BPolyRings.POLY_RING_IN_POLY_VARS
-unsafe def POLY_RING_IN_FINITE_VARIABLES : thm := BPolyRings.POLY_RING_IN_FINITE_VARIABLES
-unsafe def IN_POLY_RING_SUBRING_GENERATED_FINITARY : thm := BPolyRings.IN_POLY_RING_SUBRING_GENERATED_FINITARY
-unsafe def POLY_VAR : thm := BPolyRings.POLY_VAR
-unsafe def POLY_VAR_UNIV : thm := BPolyRings.POLY_VAR_UNIV
-unsafe def POLY_CONST : thm := BPolyRings.POLY_CONST
-unsafe def POWSER_VAR : thm := BPolyRings.POWSER_VAR
-unsafe def POWSER_VAR_UNIV : thm := BPolyRings.POWSER_VAR_UNIV
-unsafe def POWSER_CONST : thm := BPolyRings.POWSER_CONST
-unsafe def POLY_CONST_NEG : thm := BPolyRings.POLY_CONST_NEG
-unsafe def POLY_CONST_ADD : thm := BPolyRings.POLY_CONST_ADD
-unsafe def POLY_CONST_MUL : thm := BPolyRings.POLY_CONST_MUL
-unsafe def RING_OF_NUM_POWSER_RING : thm := BPolyRings.RING_OF_NUM_POWSER_RING
-unsafe def RING_OF_NUM_POLY_RING : thm := BPolyRings.RING_OF_NUM_POLY_RING
-unsafe def POLY_CONST_OF_NUM : thm := BPolyRings.POLY_CONST_OF_NUM
-unsafe def POLY_CONST_EQ : thm := BPolyRings.POLY_CONST_EQ
-unsafe def POLY_CONST_EQ_0 : thm := BPolyRings.POLY_CONST_EQ_0
-unsafe def POLY_CONST_EQ_1 : thm := BPolyRings.POLY_CONST_EQ_1
-unsafe def POWSER_VAR_MUL_EQ_0 : thm := BPolyRings.POWSER_VAR_MUL_EQ_0
-unsafe def POWSER_VARPOW_MUL_EQ_0 : thm := BPolyRings.POWSER_VARPOW_MUL_EQ_0
-unsafe def RING_HOMOMORPHISM_POLY_CONST : thm := BPolyRings.RING_HOMOMORPHISM_POLY_CONST
-unsafe def RING_MONOMORPHISM_POLY_CONST : thm := BPolyRings.RING_MONOMORPHISM_POLY_CONST
-unsafe def RING_HOMOMORPHISM_POWSER_CONST : thm := BPolyRings.RING_HOMOMORPHISM_POWSER_CONST
-unsafe def RING_MONOMORPHISM_POWSER_CONST : thm := BPolyRings.RING_MONOMORPHISM_POWSER_CONST
-unsafe def RING_HOMOMORPHISM_MONOMIAL_1 : thm := BPolyRings.RING_HOMOMORPHISM_MONOMIAL_1
-unsafe def POWSER_SUM : thm := BPolyRings.POWSER_SUM
-unsafe def POLY_SUM : thm := BPolyRings.POLY_SUM
-unsafe def POLY_RING_VAR_POW : thm := BPolyRings.POLY_RING_VAR_POW
-unsafe def POLY_RING_PRODUCT_VAR_POW : thm := BPolyRings.POLY_RING_PRODUCT_VAR_POW
-unsafe def POLY_RING_PRODUCT_VAR : thm := BPolyRings.POLY_RING_PRODUCT_VAR
-unsafe def POLY_RING_EXPAND : thm := BPolyRings.POLY_RING_EXPAND
-unsafe def POLY_RING_INDUCT : thm := BPolyRings.POLY_RING_INDUCT
-unsafe def POLY_RING_INDUCT_STRONG : thm := BPolyRings.POLY_RING_INDUCT_STRONG
-unsafe def POLY_RING_HOMOMORPHISM_UNIQUE : thm := BPolyRings.POLY_RING_HOMOMORPHISM_UNIQUE
-unsafe def TRIVIAL_POWSER_RING : thm := BPolyRings.TRIVIAL_POWSER_RING
-unsafe def TRIVIAL_POLY_RING : thm := BPolyRings.TRIVIAL_POLY_RING
-unsafe def TRIVIAL_RING_POWSER_0 : thm := BPolyRings.TRIVIAL_RING_POWSER_0
-unsafe def TRIVIAL_RING_POLY_0 : thm := BPolyRings.TRIVIAL_RING_POLY_0
-unsafe def RING_CARRIER_POWSER_RING : thm := BPolyRings.RING_CARRIER_POWSER_RING
-unsafe def POWSER_MONOMIALS : thm := BPolyRings.POWSER_MONOMIALS
-unsafe def RING_CARRIER_POLY_RING : thm := BPolyRings.RING_CARRIER_POLY_RING
-unsafe def POLY_MONOMIALS : thm := BPolyRings.POLY_MONOMIALS
-unsafe def POLY_MONOMIALS_ALT : thm := BPolyRings.POLY_MONOMIALS_ALT
-unsafe def POWSER_RING_EQ : thm := BPolyRings.POWSER_RING_EQ
-unsafe def POWSER_RING_EQ_IMP : thm := BPolyRings.POWSER_RING_EQ_IMP
-unsafe def POLY_RING_EQ : thm := BPolyRings.POLY_RING_EQ
-unsafe def POLY_RING_EQ_IMP : thm := BPolyRings.POLY_RING_EQ_IMP
+def powser_ring : thm := BPolyRings.powser_ring
+def poly_ring : thm := BPolyRings.poly_ring
+def POWSER_RING : thm := BPolyRings.POWSER_RING
+def POLY_RING_SUBRING_OF_POWSER_RING : thm := BPolyRings.POLY_RING_SUBRING_OF_POWSER_RING
+def POLY_RING_AS_SUBRING : thm := BPolyRings.POLY_RING_AS_SUBRING
+def POLY_RING_AS_SUBRING_ALT : thm := BPolyRings.POLY_RING_AS_SUBRING_ALT
+def POLY_RING_AS_SUBRING_FINITE : thm := BPolyRings.POLY_RING_AS_SUBRING_FINITE
+def POLY_CARRIER_SUBRING_OF_POWSER_RING : thm := BPolyRings.POLY_CARRIER_SUBRING_OF_POWSER_RING
+def RING_MONOMORPHISM_POLY_POWSER : thm := BPolyRings.RING_MONOMORPHISM_POLY_POWSER
+def POLY_RING : thm := BPolyRings.POLY_RING
+def POLY_IN_POWSER_RING : thm := BPolyRings.POLY_IN_POWSER_RING
+def poly_pow : thm := BPolyRings.poly_pow
+def POLY_POW : thm := BPolyRings.POLY_POW
+def POLY_POW_ALT : thm := BPolyRings.POLY_POW_ALT
+def RING_POWERSERIES_POW : thm := BPolyRings.RING_POWERSERIES_POW
+def RING_POLYNOMIAL_POW : thm := BPolyRings.RING_POLYNOMIAL_POW
+def POLY_POW_1 : thm := BPolyRings.POLY_POW_1
+def POLY_POW_0 : thm := BPolyRings.POLY_POW_0
+def POLY_VARS_POW : thm := BPolyRings.POLY_VARS_POW
+def POWSER_RING_CLAUSES : thm := BPolyRings.POWSER_RING_CLAUSES
+def POWSER_CLAUSES : thm := BPolyRings.POWSER_CLAUSES
+def POLY_RING_CLAUSES : thm := BPolyRings.POLY_RING_CLAUSES
+def POLY_CLAUSES : thm := BPolyRings.POLY_CLAUSES
+def POLY_SUBRING_GENERATED_CLAUSES : thm := BPolyRings.POLY_SUBRING_GENERATED_CLAUSES
+def POLY_CONST_SUBRING_GENERATED : thm := BPolyRings.POLY_CONST_SUBRING_GENERATED
+def POWSER_MONOMIAL_IN_CARRIER : thm := BPolyRings.POWSER_MONOMIAL_IN_CARRIER
+def POLY_MONOMIAL_IN_CARRIER : thm := BPolyRings.POLY_MONOMIAL_IN_CARRIER
+def RING_POLYNOMIAL : thm := BPolyRings.RING_POLYNOMIAL
+def RING_POWERSERIES : thm := BPolyRings.RING_POWERSERIES
+def IN_POLY_RING_CARRIER : thm := BPolyRings.IN_POLY_RING_CARRIER
+def RING_POLYNOMIAL_CARRIER_GEN : thm := BPolyRings.RING_POLYNOMIAL_CARRIER_GEN
+def RING_POLYNOMIAL_CARRIER : thm := BPolyRings.RING_POLYNOMIAL_CARRIER
+def POLY_MONOMIALS_FINITE : thm := BPolyRings.POLY_MONOMIALS_FINITE
+def FINITE_POLY_VARS : thm := BPolyRings.FINITE_POLY_VARS
+def RING_CARRIER_POLY_RING_FINITE : thm := BPolyRings.RING_CARRIER_POLY_RING_FINITE
+def POWSER_RING_MONO : thm := BPolyRings.POWSER_RING_MONO
+def POLY_RING_MONO : thm := BPolyRings.POLY_RING_MONO
+def POLY_RING_POLY_VARS : thm := BPolyRings.POLY_RING_POLY_VARS
+def POLY_RING_IN_POLY_VARS : thm := BPolyRings.POLY_RING_IN_POLY_VARS
+def POLY_RING_IN_FINITE_VARIABLES : thm := BPolyRings.POLY_RING_IN_FINITE_VARIABLES
+def IN_POLY_RING_SUBRING_GENERATED_FINITARY : thm := BPolyRings.IN_POLY_RING_SUBRING_GENERATED_FINITARY
+def POLY_VAR : thm := BPolyRings.POLY_VAR
+def POLY_VAR_UNIV : thm := BPolyRings.POLY_VAR_UNIV
+def POLY_CONST : thm := BPolyRings.POLY_CONST
+def POWSER_VAR : thm := BPolyRings.POWSER_VAR
+def POWSER_VAR_UNIV : thm := BPolyRings.POWSER_VAR_UNIV
+def POWSER_CONST : thm := BPolyRings.POWSER_CONST
+def POLY_CONST_NEG : thm := BPolyRings.POLY_CONST_NEG
+def POLY_CONST_ADD : thm := BPolyRings.POLY_CONST_ADD
+def POLY_CONST_MUL : thm := BPolyRings.POLY_CONST_MUL
+def RING_OF_NUM_POWSER_RING : thm := BPolyRings.RING_OF_NUM_POWSER_RING
+def RING_OF_NUM_POLY_RING : thm := BPolyRings.RING_OF_NUM_POLY_RING
+def POLY_CONST_OF_NUM : thm := BPolyRings.POLY_CONST_OF_NUM
+def POLY_CONST_EQ : thm := BPolyRings.POLY_CONST_EQ
+def POLY_CONST_EQ_0 : thm := BPolyRings.POLY_CONST_EQ_0
+def POLY_CONST_EQ_1 : thm := BPolyRings.POLY_CONST_EQ_1
+def POWSER_VAR_MUL_EQ_0 : thm := BPolyRings.POWSER_VAR_MUL_EQ_0
+def POWSER_VARPOW_MUL_EQ_0 : thm := BPolyRings.POWSER_VARPOW_MUL_EQ_0
+def RING_HOMOMORPHISM_POLY_CONST : thm := BPolyRings.RING_HOMOMORPHISM_POLY_CONST
+def RING_MONOMORPHISM_POLY_CONST : thm := BPolyRings.RING_MONOMORPHISM_POLY_CONST
+def RING_HOMOMORPHISM_POWSER_CONST : thm := BPolyRings.RING_HOMOMORPHISM_POWSER_CONST
+def RING_MONOMORPHISM_POWSER_CONST : thm := BPolyRings.RING_MONOMORPHISM_POWSER_CONST
+def RING_HOMOMORPHISM_MONOMIAL_1 : thm := BPolyRings.RING_HOMOMORPHISM_MONOMIAL_1
+def POWSER_SUM : thm := BPolyRings.POWSER_SUM
+def POLY_SUM : thm := BPolyRings.POLY_SUM
+def POLY_RING_VAR_POW : thm := BPolyRings.POLY_RING_VAR_POW
+def POLY_RING_PRODUCT_VAR_POW : thm := BPolyRings.POLY_RING_PRODUCT_VAR_POW
+def POLY_RING_PRODUCT_VAR : thm := BPolyRings.POLY_RING_PRODUCT_VAR
+def POLY_RING_EXPAND : thm := BPolyRings.POLY_RING_EXPAND
+def POLY_RING_INDUCT : thm := BPolyRings.POLY_RING_INDUCT
+def POLY_RING_INDUCT_STRONG : thm := BPolyRings.POLY_RING_INDUCT_STRONG
+def POLY_RING_HOMOMORPHISM_UNIQUE : thm := BPolyRings.POLY_RING_HOMOMORPHISM_UNIQUE
+def TRIVIAL_POWSER_RING : thm := BPolyRings.TRIVIAL_POWSER_RING
+def TRIVIAL_POLY_RING : thm := BPolyRings.TRIVIAL_POLY_RING
+def TRIVIAL_RING_POWSER_0 : thm := BPolyRings.TRIVIAL_RING_POWSER_0
+def TRIVIAL_RING_POLY_0 : thm := BPolyRings.TRIVIAL_RING_POLY_0
+def RING_CARRIER_POWSER_RING : thm := BPolyRings.RING_CARRIER_POWSER_RING
+def POWSER_MONOMIALS : thm := BPolyRings.POWSER_MONOMIALS
+def RING_CARRIER_POLY_RING : thm := BPolyRings.RING_CARRIER_POLY_RING
+def POLY_MONOMIALS : thm := BPolyRings.POLY_MONOMIALS
+def POLY_MONOMIALS_ALT : thm := BPolyRings.POLY_MONOMIALS_ALT
+def POWSER_RING_EQ : thm := BPolyRings.POWSER_RING_EQ
+def POWSER_RING_EQ_IMP : thm := BPolyRings.POWSER_RING_EQ_IMP
+def POLY_RING_EQ : thm := BPolyRings.POLY_RING_EQ
+def POLY_RING_EQ_IMP : thm := BPolyRings.POLY_RING_EQ_IMP
 
 -- HomExtend
-unsafe def poly_extend : thm := BHomExtend.poly_extend
-unsafe def POLY_EXTEND_FROM_SUBRING_GENERATED : thm := BHomExtend.POLY_EXTEND_FROM_SUBRING_GENERATED
-unsafe def POLY_EXTEND : thm := BHomExtend.POLY_EXTEND
-unsafe def POLY_EXTEND_SUPERSET : thm := BHomExtend.POLY_EXTEND_SUPERSET
-unsafe def POLY_EXTEND_POLYNOMIAL : thm := BHomExtend.POLY_EXTEND_POLYNOMIAL
-unsafe def POLY_EXTEND_CONST : thm := BHomExtend.POLY_EXTEND_CONST
-unsafe def POLY_EXTEND_0 : thm := BHomExtend.POLY_EXTEND_0
-unsafe def POLY_EXTEND_1 : thm := BHomExtend.POLY_EXTEND_1
-unsafe def POLY_EXTEND_VAR : thm := BHomExtend.POLY_EXTEND_VAR
-unsafe def POLY_EXTEND_NEG : thm := BHomExtend.POLY_EXTEND_NEG
-unsafe def POLY_EXTEND_ADD : thm := BHomExtend.POLY_EXTEND_ADD
-unsafe def POLY_EXTEND_SUB : thm := BHomExtend.POLY_EXTEND_SUB
-unsafe def POLY_EXTEND_MUL : thm := BHomExtend.POLY_EXTEND_MUL
-unsafe def POLY_EXTEND_POW : thm := BHomExtend.POLY_EXTEND_POW
-unsafe def RING_HOMOMORPHISM_POLY_EXTEND : thm := BHomExtend.RING_HOMOMORPHISM_POLY_EXTEND
-unsafe def POLY_EXTEND_RING_SUM : thm := BHomExtend.POLY_EXTEND_RING_SUM
-unsafe def POLY_EXTEND_RING_PRODUCT : thm := BHomExtend.POLY_EXTEND_RING_PRODUCT
-unsafe def POLY_EXTEND_UNIQUE : thm := BHomExtend.POLY_EXTEND_UNIQUE
-unsafe def POLY_EXTEND_EQ : thm := BHomExtend.POLY_EXTEND_EQ
-unsafe def POLY_EXTEND_ID : thm := BHomExtend.POLY_EXTEND_ID
-unsafe def POLY_EXTEND_COMPOSE : thm := BHomExtend.POLY_EXTEND_COMPOSE
-unsafe def POLY_EXTEND_HOMOMORPHIC_IMAGE : thm := BHomExtend.POLY_EXTEND_HOMOMORPHIC_IMAGE
-unsafe def POWSER_EXTEND_AT_0 : thm := BHomExtend.POWSER_EXTEND_AT_0
-unsafe def POLY_EXTEND_AT_0 : thm := BHomExtend.POLY_EXTEND_AT_0
-unsafe def RING_HOMOMORPHISM_POWSER_EXTEND_AT_0 : thm := BHomExtend.RING_HOMOMORPHISM_POWSER_EXTEND_AT_0
-unsafe def POLY_SUBRING_GENERATED : thm := BHomExtend.POLY_SUBRING_GENERATED
-unsafe def RING_HOMOMORPHISMS_EQ_FROM_POLY_RING : thm := BHomExtend.RING_HOMOMORPHISMS_EQ_FROM_POLY_RING
-unsafe def POLY_SUBRING_GENERATED_1 : thm := BHomExtend.POLY_SUBRING_GENERATED_1
-unsafe def IMAGE_POLY_EXTEND : thm := BHomExtend.IMAGE_POLY_EXTEND
-unsafe def IMAGE_POLY_EXTEND_1 : thm := BHomExtend.IMAGE_POLY_EXTEND_1
-unsafe def POLY_EXTEND_INTO_SUBRING_GENERATED : thm := BHomExtend.POLY_EXTEND_INTO_SUBRING_GENERATED
+def poly_extend : thm := BHomExtend.poly_extend
+def POLY_EXTEND_FROM_SUBRING_GENERATED : thm := BHomExtend.POLY_EXTEND_FROM_SUBRING_GENERATED
+def POLY_EXTEND : thm := BHomExtend.POLY_EXTEND
+def POLY_EXTEND_SUPERSET : thm := BHomExtend.POLY_EXTEND_SUPERSET
+def POLY_EXTEND_POLYNOMIAL : thm := BHomExtend.POLY_EXTEND_POLYNOMIAL
+def POLY_EXTEND_CONST : thm := BHomExtend.POLY_EXTEND_CONST
+def POLY_EXTEND_0 : thm := BHomExtend.POLY_EXTEND_0
+def POLY_EXTEND_1 : thm := BHomExtend.POLY_EXTEND_1
+def POLY_EXTEND_VAR : thm := BHomExtend.POLY_EXTEND_VAR
+def POLY_EXTEND_NEG : thm := BHomExtend.POLY_EXTEND_NEG
+def POLY_EXTEND_ADD : thm := BHomExtend.POLY_EXTEND_ADD
+def POLY_EXTEND_SUB : thm := BHomExtend.POLY_EXTEND_SUB
+def POLY_EXTEND_MUL : thm := BHomExtend.POLY_EXTEND_MUL
+def POLY_EXTEND_POW : thm := BHomExtend.POLY_EXTEND_POW
+def RING_HOMOMORPHISM_POLY_EXTEND : thm := BHomExtend.RING_HOMOMORPHISM_POLY_EXTEND
+def POLY_EXTEND_RING_SUM : thm := BHomExtend.POLY_EXTEND_RING_SUM
+def POLY_EXTEND_RING_PRODUCT : thm := BHomExtend.POLY_EXTEND_RING_PRODUCT
+def POLY_EXTEND_UNIQUE : thm := BHomExtend.POLY_EXTEND_UNIQUE
+def POLY_EXTEND_EQ : thm := BHomExtend.POLY_EXTEND_EQ
+def POLY_EXTEND_ID : thm := BHomExtend.POLY_EXTEND_ID
+def POLY_EXTEND_COMPOSE : thm := BHomExtend.POLY_EXTEND_COMPOSE
+def POLY_EXTEND_HOMOMORPHIC_IMAGE : thm := BHomExtend.POLY_EXTEND_HOMOMORPHIC_IMAGE
+def POWSER_EXTEND_AT_0 : thm := BHomExtend.POWSER_EXTEND_AT_0
+def POLY_EXTEND_AT_0 : thm := BHomExtend.POLY_EXTEND_AT_0
+def RING_HOMOMORPHISM_POWSER_EXTEND_AT_0 : thm := BHomExtend.RING_HOMOMORPHISM_POWSER_EXTEND_AT_0
+def POLY_SUBRING_GENERATED : thm := BHomExtend.POLY_SUBRING_GENERATED
+def RING_HOMOMORPHISMS_EQ_FROM_POLY_RING : thm := BHomExtend.RING_HOMOMORPHISMS_EQ_FROM_POLY_RING
+def POLY_SUBRING_GENERATED_1 : thm := BHomExtend.POLY_SUBRING_GENERATED_1
+def IMAGE_POLY_EXTEND : thm := BHomExtend.IMAGE_POLY_EXTEND
+def IMAGE_POLY_EXTEND_1 : thm := BHomExtend.IMAGE_POLY_EXTEND_1
+def POLY_EXTEND_INTO_SUBRING_GENERATED : thm := BHomExtend.POLY_EXTEND_INTO_SUBRING_GENERATED
 
 -- NatIso
-unsafe def RING_ISOMORPHISM_POWSER_RING_TRIVIAL : thm := BNatIso.RING_ISOMORPHISM_POWSER_RING_TRIVIAL
-unsafe def RING_ISOMORPHISM_POLY_RING_TRIVIAL : thm := BNatIso.RING_ISOMORPHISM_POLY_RING_TRIVIAL
-unsafe def ISOMORPHIC_POWSER_RING_TRIVIAL : thm := BNatIso.ISOMORPHIC_POWSER_RING_TRIVIAL
-unsafe def ISOMORPHIC_POLY_RING_TRIVIAL : thm := BNatIso.ISOMORPHIC_POLY_RING_TRIVIAL
-unsafe def RING_ISOMORPHISMS_POWSER_RINGS : thm := BNatIso.RING_ISOMORPHISMS_POWSER_RINGS
-unsafe def ISOMORPHIC_POWSER_RINGS : thm := BNatIso.ISOMORPHIC_POWSER_RINGS
-unsafe def RING_ISOMORPHISMS_POLY_RINGS : thm := BNatIso.RING_ISOMORPHISMS_POLY_RINGS
-unsafe def ISOMORPHIC_POLY_RINGS : thm := BNatIso.ISOMORPHIC_POLY_RINGS
-unsafe def RING_ISOMORPHISMS_POWSER_POWSER_RING : thm := BNatIso.RING_ISOMORPHISMS_POWSER_POWSER_RING
-unsafe def ISOMORPHIC_RING_POWSER_POWSER : thm := BNatIso.ISOMORPHIC_RING_POWSER_POWSER
-unsafe def ISOMORPHIC_RING_POWSER_POWSER_GEN : thm := BNatIso.ISOMORPHIC_RING_POWSER_POWSER_GEN
-unsafe def RING_CARRIER_POWSER_SUBRING_GENERATED : thm := BNatIso.RING_CARRIER_POWSER_SUBRING_GENERATED
-unsafe def RING_CARRIER_POLY_SUBRING_GENERATED : thm := BNatIso.RING_CARRIER_POLY_SUBRING_GENERATED
-unsafe def RING_CARRIER_POWSER_SUBRING_GENERATED_MONO : thm := BNatIso.RING_CARRIER_POWSER_SUBRING_GENERATED_MONO
-unsafe def RING_CARRIER_POLY_SUBRING_GENERATED_MONO : thm := BNatIso.RING_CARRIER_POLY_SUBRING_GENERATED_MONO
-unsafe def RING_CARRIER_POWSER_SUBRING_GENERATED_SUBSET : thm := BNatIso.RING_CARRIER_POWSER_SUBRING_GENERATED_SUBSET
-unsafe def RING_CARRIER_POLY_SUBRING_GENERATED_SUBSET : thm := BNatIso.RING_CARRIER_POLY_SUBRING_GENERATED_SUBSET
-unsafe def SUBRING_POWSER_INTO_SUBRING : thm := BNatIso.SUBRING_POWSER_INTO_SUBRING
-unsafe def SUBRING_POLY_INTO_SUBRING : thm := BNatIso.SUBRING_POLY_INTO_SUBRING
-unsafe def RING_ISOMORPHISMS_POWSER_SUBRING_GENERATED : thm := BNatIso.RING_ISOMORPHISMS_POWSER_SUBRING_GENERATED
-unsafe def ISOMORPHIC_RINGS_POWSER_SUBRING_GENERATED : thm := BNatIso.ISOMORPHIC_RINGS_POWSER_SUBRING_GENERATED
-unsafe def RING_ISOMORPHISMS_POLY_SUBRING_GENERATED : thm := BNatIso.RING_ISOMORPHISMS_POLY_SUBRING_GENERATED
-unsafe def ISOMORPHIC_RINGS_POLY_SUBRING_GENERATED : thm := BNatIso.ISOMORPHIC_RINGS_POLY_SUBRING_GENERATED
-unsafe def RING_ISOMORPHISMS_POLY_POLY_RING : thm := BNatIso.RING_ISOMORPHISMS_POLY_POLY_RING
-unsafe def ISOMORPHIC_RING_POLY_POLY : thm := BNatIso.ISOMORPHIC_RING_POLY_POLY
-unsafe def ISOMORPHIC_RING_POLY_POLY_GEN : thm := BNatIso.ISOMORPHIC_RING_POLY_POLY_GEN
-unsafe def POLY_EXTEND_EXTEND : thm := BNatIso.POLY_EXTEND_EXTEND
+def RING_ISOMORPHISM_POWSER_RING_TRIVIAL : thm := BNatIso.RING_ISOMORPHISM_POWSER_RING_TRIVIAL
+def RING_ISOMORPHISM_POLY_RING_TRIVIAL : thm := BNatIso.RING_ISOMORPHISM_POLY_RING_TRIVIAL
+def ISOMORPHIC_POWSER_RING_TRIVIAL : thm := BNatIso.ISOMORPHIC_POWSER_RING_TRIVIAL
+def ISOMORPHIC_POLY_RING_TRIVIAL : thm := BNatIso.ISOMORPHIC_POLY_RING_TRIVIAL
+def RING_ISOMORPHISMS_POWSER_RINGS : thm := BNatIso.RING_ISOMORPHISMS_POWSER_RINGS
+def ISOMORPHIC_POWSER_RINGS : thm := BNatIso.ISOMORPHIC_POWSER_RINGS
+def RING_ISOMORPHISMS_POLY_RINGS : thm := BNatIso.RING_ISOMORPHISMS_POLY_RINGS
+def ISOMORPHIC_POLY_RINGS : thm := BNatIso.ISOMORPHIC_POLY_RINGS
+def RING_ISOMORPHISMS_POWSER_POWSER_RING : thm := BNatIso.RING_ISOMORPHISMS_POWSER_POWSER_RING
+def ISOMORPHIC_RING_POWSER_POWSER : thm := BNatIso.ISOMORPHIC_RING_POWSER_POWSER
+def ISOMORPHIC_RING_POWSER_POWSER_GEN : thm := BNatIso.ISOMORPHIC_RING_POWSER_POWSER_GEN
+def RING_CARRIER_POWSER_SUBRING_GENERATED : thm := BNatIso.RING_CARRIER_POWSER_SUBRING_GENERATED
+def RING_CARRIER_POLY_SUBRING_GENERATED : thm := BNatIso.RING_CARRIER_POLY_SUBRING_GENERATED
+def RING_CARRIER_POWSER_SUBRING_GENERATED_MONO : thm := BNatIso.RING_CARRIER_POWSER_SUBRING_GENERATED_MONO
+def RING_CARRIER_POLY_SUBRING_GENERATED_MONO : thm := BNatIso.RING_CARRIER_POLY_SUBRING_GENERATED_MONO
+def RING_CARRIER_POWSER_SUBRING_GENERATED_SUBSET : thm := BNatIso.RING_CARRIER_POWSER_SUBRING_GENERATED_SUBSET
+def RING_CARRIER_POLY_SUBRING_GENERATED_SUBSET : thm := BNatIso.RING_CARRIER_POLY_SUBRING_GENERATED_SUBSET
+def SUBRING_POWSER_INTO_SUBRING : thm := BNatIso.SUBRING_POWSER_INTO_SUBRING
+def SUBRING_POLY_INTO_SUBRING : thm := BNatIso.SUBRING_POLY_INTO_SUBRING
+def RING_ISOMORPHISMS_POWSER_SUBRING_GENERATED : thm := BNatIso.RING_ISOMORPHISMS_POWSER_SUBRING_GENERATED
+def ISOMORPHIC_RINGS_POWSER_SUBRING_GENERATED : thm := BNatIso.ISOMORPHIC_RINGS_POWSER_SUBRING_GENERATED
+def RING_ISOMORPHISMS_POLY_SUBRING_GENERATED : thm := BNatIso.RING_ISOMORPHISMS_POLY_SUBRING_GENERATED
+def ISOMORPHIC_RINGS_POLY_SUBRING_GENERATED : thm := BNatIso.ISOMORPHIC_RINGS_POLY_SUBRING_GENERATED
+def RING_ISOMORPHISMS_POLY_POLY_RING : thm := BNatIso.RING_ISOMORPHISMS_POLY_POLY_RING
+def ISOMORPHIC_RING_POLY_POLY : thm := BNatIso.ISOMORPHIC_RING_POLY_POLY
+def ISOMORPHIC_RING_POLY_POLY_GEN : thm := BNatIso.ISOMORPHIC_RING_POLY_POLY_GEN
+def POLY_EXTEND_EXTEND : thm := BNatIso.POLY_EXTEND_EXTEND
 
 -- Renaming
-unsafe def poly_reindex : thm := BRenaming.poly_reindex
-unsafe def RING_ISOMORPHISMS_POWSER_REINDEX : thm := BRenaming.RING_ISOMORPHISMS_POWSER_REINDEX
-unsafe def RING_ISOMORPHISM_POWSER_REINDEX : thm := BRenaming.RING_ISOMORPHISM_POWSER_REINDEX
-unsafe def RING_ISOMORPHISMS_POLY_REINDEX : thm := BRenaming.RING_ISOMORPHISMS_POLY_REINDEX
-unsafe def POLY_VARS_REINDEX : thm := BRenaming.POLY_VARS_REINDEX
-unsafe def RING_ISOMORPHISM_POLY_REINDEX : thm := BRenaming.RING_ISOMORPHISM_POLY_REINDEX
-unsafe def POLY_REINDEX_CONST : thm := BRenaming.POLY_REINDEX_CONST
-unsafe def POLY_REINDEX_VAR : thm := BRenaming.POLY_REINDEX_VAR
-unsafe def MONOMIALS_POLY_REINDEX : thm := BRenaming.MONOMIALS_POLY_REINDEX
-unsafe def POLY_EXTEND_REINDEX : thm := BRenaming.POLY_EXTEND_REINDEX
-unsafe def RING_POWERSERIES_REINDEX : thm := BRenaming.RING_POWERSERIES_REINDEX
-unsafe def POLY_RING_HOMOMORPHISM_I : thm := BRenaming.POLY_RING_HOMOMORPHISM_I
-unsafe def POLY_CONST_DIVIDES_COEFFS : thm := BRenaming.POLY_CONST_DIVIDES_COEFFS
-unsafe def POLY_CONST_DIVIDES_COEFFS_REV : thm := BRenaming.POLY_CONST_DIVIDES_COEFFS_REV
-unsafe def POLY_CONST_DIVIDES_COEFFS_EQ : thm := BRenaming.POLY_CONST_DIVIDES_COEFFS_EQ
-unsafe def POLY_CONST_DIVIDES_CONST : thm := BRenaming.POLY_CONST_DIVIDES_CONST
+def poly_reindex : thm := BRenaming.poly_reindex
+def RING_ISOMORPHISMS_POWSER_REINDEX : thm := BRenaming.RING_ISOMORPHISMS_POWSER_REINDEX
+def RING_ISOMORPHISM_POWSER_REINDEX : thm := BRenaming.RING_ISOMORPHISM_POWSER_REINDEX
+def RING_ISOMORPHISMS_POLY_REINDEX : thm := BRenaming.RING_ISOMORPHISMS_POLY_REINDEX
+def POLY_VARS_REINDEX : thm := BRenaming.POLY_VARS_REINDEX
+def RING_ISOMORPHISM_POLY_REINDEX : thm := BRenaming.RING_ISOMORPHISM_POLY_REINDEX
+def POLY_REINDEX_CONST : thm := BRenaming.POLY_REINDEX_CONST
+def POLY_REINDEX_VAR : thm := BRenaming.POLY_REINDEX_VAR
+def MONOMIALS_POLY_REINDEX : thm := BRenaming.MONOMIALS_POLY_REINDEX
+def POLY_EXTEND_REINDEX : thm := BRenaming.POLY_EXTEND_REINDEX
+def RING_POWERSERIES_REINDEX : thm := BRenaming.RING_POWERSERIES_REINDEX
+def POLY_RING_HOMOMORPHISM_I : thm := BRenaming.POLY_RING_HOMOMORPHISM_I
+def POLY_CONST_DIVIDES_COEFFS : thm := BRenaming.POLY_CONST_DIVIDES_COEFFS
+def POLY_CONST_DIVIDES_COEFFS_REV : thm := BRenaming.POLY_CONST_DIVIDES_COEFFS_REV
+def POLY_CONST_DIVIDES_COEFFS_EQ : thm := BRenaming.POLY_CONST_DIVIDES_COEFFS_EQ
+def POLY_CONST_DIVIDES_CONST : thm := BRenaming.POLY_CONST_DIVIDES_CONST
 
 -- MonomialOrders
-unsafe def POSET_MONOMIAL_DIVIDES : thm := BMonomialOrders.POSET_MONOMIAL_DIVIDES
-unsafe def FLD_MONOMIAL_DIVIDES : thm := BMonomialOrders.FLD_MONOMIAL_DIVIDES
-unsafe def COMPATIBLE_MONOMIAL_ORDER : thm := BMonomialOrders.COMPATIBLE_MONOMIAL_ORDER
-unsafe def WQOSET_COMPATIBLE_MONOMIAL_ORDER : thm := BMonomialOrders.WQOSET_COMPATIBLE_MONOMIAL_ORDER
-unsafe def WF_COMPATIBLE_MONOMIAL_ORDER : thm := BMonomialOrders.WF_COMPATIBLE_MONOMIAL_ORDER
-unsafe def WOSET_COMPATIBLE_MONOMIAL_ORDER : thm := BMonomialOrders.WOSET_COMPATIBLE_MONOMIAL_ORDER
-unsafe def monomial_le : thm := BMonomialOrders.monomial_le
-unsafe def monomial_lt : thm := BMonomialOrders.monomial_lt
-unsafe def PROPERLY_MONOMIAL_LE : thm := BMonomialOrders.PROPERLY_MONOMIAL_LE
-unsafe def MONOMIAL_LE_MONO : thm := BMonomialOrders.MONOMIAL_LE_MONO
-unsafe def MONOMIAL_LT_MONO : thm := BMonomialOrders.MONOMIAL_LT_MONO
-unsafe def MONOMIAL_LE_PROPERLY : thm := BMonomialOrders.MONOMIAL_LE_PROPERLY
-unsafe def MONOMIAL_LT_PROPERLY : thm := BMonomialOrders.MONOMIAL_LT_PROPERLY
-unsafe def MONOMIAL_LE_IMPROPERLY : thm := BMonomialOrders.MONOMIAL_LE_IMPROPERLY
-unsafe def MONOMIAL_LT_IMPROPERLY : thm := BMonomialOrders.MONOMIAL_LT_IMPROPERLY
-unsafe def MONOMIAL_LE_REFL : thm := BMonomialOrders.MONOMIAL_LE_REFL
-unsafe def MONOMIAL_LT_REFL : thm := BMonomialOrders.MONOMIAL_LT_REFL
-unsafe def MONOMIAL_LT_IMP_LE : thm := BMonomialOrders.MONOMIAL_LT_IMP_LE
-unsafe def MONOMIAL_LE_LT : thm := BMonomialOrders.MONOMIAL_LE_LT
-unsafe def MONOMIAL_LE_TRANS : thm := BMonomialOrders.MONOMIAL_LE_TRANS
-unsafe def QOSET_MONOMIAL_LE : thm := BMonomialOrders.QOSET_MONOMIAL_LE
-unsafe def FLD_MONOMIAL_LE : thm := BMonomialOrders.FLD_MONOMIAL_LE
-unsafe def MONOMIAL_LE_LMUL : thm := BMonomialOrders.MONOMIAL_LE_LMUL
-unsafe def MONOMIAL_LE_RMUL : thm := BMonomialOrders.MONOMIAL_LE_RMUL
-unsafe def MONOMIAL_LT_LMUL : thm := BMonomialOrders.MONOMIAL_LT_LMUL
-unsafe def MONOMIAL_LT_RMUL : thm := BMonomialOrders.MONOMIAL_LT_RMUL
-unsafe def MONOMIAL_LE_MUL2 : thm := BMonomialOrders.MONOMIAL_LE_MUL2
-unsafe def MONOMIAL_LE_DIVISOR : thm := BMonomialOrders.MONOMIAL_LE_DIVISOR
-unsafe def MONOMIAL_GE_1 : thm := BMonomialOrders.MONOMIAL_GE_1
-unsafe def MONOMIAL_LE_VARS : thm := BMonomialOrders.MONOMIAL_LE_VARS
-unsafe def MONOMIAL_LT_VARS : thm := BMonomialOrders.MONOMIAL_LT_VARS
-unsafe def MONOMIAL_LE_POSET : thm := BMonomialOrders.MONOMIAL_LE_POSET
-unsafe def MONOMIAL_LE_ANTISYM : thm := BMonomialOrders.MONOMIAL_LE_ANTISYM
-unsafe def MONOMIAL_LET_ANTISYM : thm := BMonomialOrders.MONOMIAL_LET_ANTISYM
-unsafe def MONOMIAL_LTE_ANTISYM : thm := BMonomialOrders.MONOMIAL_LTE_ANTISYM
-unsafe def MONOMIAL_LT_ANTISYM : thm := BMonomialOrders.MONOMIAL_LT_ANTISYM
-unsafe def MONOMIAL_LET_TRANS : thm := BMonomialOrders.MONOMIAL_LET_TRANS
-unsafe def MONOMIAL_LTE_TRANS : thm := BMonomialOrders.MONOMIAL_LTE_TRANS
-unsafe def MONOMIAL_LT_TRANS : thm := BMonomialOrders.MONOMIAL_LT_TRANS
-unsafe def MONOMIAL_LET_MUL2 : thm := BMonomialOrders.MONOMIAL_LET_MUL2
-unsafe def MONOMIAL_LTE_MUL2 : thm := BMonomialOrders.MONOMIAL_LTE_MUL2
-unsafe def MONOMIAL_LT_MUL2 : thm := BMonomialOrders.MONOMIAL_LT_MUL2
-unsafe def POSET_MONOMIAL_LE : thm := BMonomialOrders.POSET_MONOMIAL_LE
-unsafe def MONOMIAL_LE_VARS_EQ : thm := BMonomialOrders.MONOMIAL_LE_VARS_EQ
-unsafe def MONOMIAL_LT_VARS_EQ : thm := BMonomialOrders.MONOMIAL_LT_VARS_EQ
-unsafe def MONOMIAL_LT_TOSET : thm := BMonomialOrders.MONOMIAL_LT_TOSET
-unsafe def MONOMIAL_LE_TOSET : thm := BMonomialOrders.MONOMIAL_LE_TOSET
-unsafe def TOSET_MONOMIAL_LE : thm := BMonomialOrders.TOSET_MONOMIAL_LE
-unsafe def WF_MONOMIAL_LT : thm := BMonomialOrders.WF_MONOMIAL_LT
-unsafe def WOSET_MONOMIAL_LE : thm := BMonomialOrders.WOSET_MONOMIAL_LE
+def POSET_MONOMIAL_DIVIDES : thm := BMonomialOrders.POSET_MONOMIAL_DIVIDES
+def FLD_MONOMIAL_DIVIDES : thm := BMonomialOrders.FLD_MONOMIAL_DIVIDES
+def COMPATIBLE_MONOMIAL_ORDER : thm := BMonomialOrders.COMPATIBLE_MONOMIAL_ORDER
+def WQOSET_COMPATIBLE_MONOMIAL_ORDER : thm := BMonomialOrders.WQOSET_COMPATIBLE_MONOMIAL_ORDER
+def WF_COMPATIBLE_MONOMIAL_ORDER : thm := BMonomialOrders.WF_COMPATIBLE_MONOMIAL_ORDER
+def WOSET_COMPATIBLE_MONOMIAL_ORDER : thm := BMonomialOrders.WOSET_COMPATIBLE_MONOMIAL_ORDER
+def monomial_le : thm := BMonomialOrders.monomial_le
+def monomial_lt : thm := BMonomialOrders.monomial_lt
+def PROPERLY_MONOMIAL_LE : thm := BMonomialOrders.PROPERLY_MONOMIAL_LE
+def MONOMIAL_LE_MONO : thm := BMonomialOrders.MONOMIAL_LE_MONO
+def MONOMIAL_LT_MONO : thm := BMonomialOrders.MONOMIAL_LT_MONO
+def MONOMIAL_LE_PROPERLY : thm := BMonomialOrders.MONOMIAL_LE_PROPERLY
+def MONOMIAL_LT_PROPERLY : thm := BMonomialOrders.MONOMIAL_LT_PROPERLY
+def MONOMIAL_LE_IMPROPERLY : thm := BMonomialOrders.MONOMIAL_LE_IMPROPERLY
+def MONOMIAL_LT_IMPROPERLY : thm := BMonomialOrders.MONOMIAL_LT_IMPROPERLY
+def MONOMIAL_LE_REFL : thm := BMonomialOrders.MONOMIAL_LE_REFL
+def MONOMIAL_LT_REFL : thm := BMonomialOrders.MONOMIAL_LT_REFL
+def MONOMIAL_LT_IMP_LE : thm := BMonomialOrders.MONOMIAL_LT_IMP_LE
+def MONOMIAL_LE_LT : thm := BMonomialOrders.MONOMIAL_LE_LT
+def MONOMIAL_LE_TRANS : thm := BMonomialOrders.MONOMIAL_LE_TRANS
+def QOSET_MONOMIAL_LE : thm := BMonomialOrders.QOSET_MONOMIAL_LE
+def FLD_MONOMIAL_LE : thm := BMonomialOrders.FLD_MONOMIAL_LE
+def MONOMIAL_LE_LMUL : thm := BMonomialOrders.MONOMIAL_LE_LMUL
+def MONOMIAL_LE_RMUL : thm := BMonomialOrders.MONOMIAL_LE_RMUL
+def MONOMIAL_LT_LMUL : thm := BMonomialOrders.MONOMIAL_LT_LMUL
+def MONOMIAL_LT_RMUL : thm := BMonomialOrders.MONOMIAL_LT_RMUL
+def MONOMIAL_LE_MUL2 : thm := BMonomialOrders.MONOMIAL_LE_MUL2
+def MONOMIAL_LE_DIVISOR : thm := BMonomialOrders.MONOMIAL_LE_DIVISOR
+def MONOMIAL_GE_1 : thm := BMonomialOrders.MONOMIAL_GE_1
+def MONOMIAL_LE_VARS : thm := BMonomialOrders.MONOMIAL_LE_VARS
+def MONOMIAL_LT_VARS : thm := BMonomialOrders.MONOMIAL_LT_VARS
+def MONOMIAL_LE_POSET : thm := BMonomialOrders.MONOMIAL_LE_POSET
+def MONOMIAL_LE_ANTISYM : thm := BMonomialOrders.MONOMIAL_LE_ANTISYM
+def MONOMIAL_LET_ANTISYM : thm := BMonomialOrders.MONOMIAL_LET_ANTISYM
+def MONOMIAL_LTE_ANTISYM : thm := BMonomialOrders.MONOMIAL_LTE_ANTISYM
+def MONOMIAL_LT_ANTISYM : thm := BMonomialOrders.MONOMIAL_LT_ANTISYM
+def MONOMIAL_LET_TRANS : thm := BMonomialOrders.MONOMIAL_LET_TRANS
+def MONOMIAL_LTE_TRANS : thm := BMonomialOrders.MONOMIAL_LTE_TRANS
+def MONOMIAL_LT_TRANS : thm := BMonomialOrders.MONOMIAL_LT_TRANS
+def MONOMIAL_LET_MUL2 : thm := BMonomialOrders.MONOMIAL_LET_MUL2
+def MONOMIAL_LTE_MUL2 : thm := BMonomialOrders.MONOMIAL_LTE_MUL2
+def MONOMIAL_LT_MUL2 : thm := BMonomialOrders.MONOMIAL_LT_MUL2
+def POSET_MONOMIAL_LE : thm := BMonomialOrders.POSET_MONOMIAL_LE
+def MONOMIAL_LE_VARS_EQ : thm := BMonomialOrders.MONOMIAL_LE_VARS_EQ
+def MONOMIAL_LT_VARS_EQ : thm := BMonomialOrders.MONOMIAL_LT_VARS_EQ
+def MONOMIAL_LT_TOSET : thm := BMonomialOrders.MONOMIAL_LT_TOSET
+def MONOMIAL_LE_TOSET : thm := BMonomialOrders.MONOMIAL_LE_TOSET
+def TOSET_MONOMIAL_LE : thm := BMonomialOrders.TOSET_MONOMIAL_LE
+def WF_MONOMIAL_LT : thm := BMonomialOrders.WF_MONOMIAL_LT
+def WOSET_MONOMIAL_LE : thm := BMonomialOrders.WOSET_MONOMIAL_LE
 
 -- OneCoeff
-unsafe def EXISTS_FUN_FROM_1 : thm := BOneCoeff.EXISTS_FUN_FROM_1
-unsafe def FORALL_FUN_FROM_1 : thm := BOneCoeff.FORALL_FUN_FROM_1
-unsafe def LAMBDA_1_EQ : thm := BOneCoeff.LAMBDA_1_EQ
-unsafe def FUN_ONE_NUM_EQ : thm := BOneCoeff.FUN_ONE_NUM_EQ
-unsafe def FUN_ONE_EQ_ONE : thm := BOneCoeff.FUN_ONE_EQ_ONE
-unsafe def FINITE_FUN_FROM_1 : thm := BOneCoeff.FINITE_FUN_FROM_1
-unsafe def MONOMIAL_DIVISORS_1 : thm := BOneCoeff.MONOMIAL_DIVISORS_1
-unsafe def coeff : thm := BOneCoeff.coeff
-unsafe def COEFF : thm := BOneCoeff.COEFF
-unsafe def COEFF_0 : thm := BOneCoeff.COEFF_0
-unsafe def FUN_EQ_COEFF : thm := BOneCoeff.FUN_EQ_COEFF
-unsafe def RING_POLYNOMIAL_POWERSERIES_COEFF : thm := BOneCoeff.RING_POLYNOMIAL_POWERSERIES_COEFF
-unsafe def RING_POWERSERIES_COEFF : thm := BOneCoeff.RING_POWERSERIES_COEFF
-unsafe def COEFF_IN_CARRIER : thm := BOneCoeff.COEFF_IN_CARRIER
-unsafe def COEFF_IN_CARRIER_ALT : thm := BOneCoeff.COEFF_IN_CARRIER_ALT
-unsafe def RING_POLYNOMIAL_COEFF : thm := BOneCoeff.RING_POLYNOMIAL_COEFF
-unsafe def COEFF_COMPOSE : thm := BOneCoeff.COEFF_COMPOSE
-unsafe def COEFF_POLY_CONST : thm := BOneCoeff.COEFF_POLY_CONST
-unsafe def COEFF_POLY_0 : thm := BOneCoeff.COEFF_POLY_0
-unsafe def COEFF_POLY_1 : thm := BOneCoeff.COEFF_POLY_1
-unsafe def COEFF_POLY_VAR : thm := BOneCoeff.COEFF_POLY_VAR
-unsafe def COEFF_POLY_NEG : thm := BOneCoeff.COEFF_POLY_NEG
-unsafe def COEFF_POLY_ADD : thm := BOneCoeff.COEFF_POLY_ADD
-unsafe def COEFF_POLY_SUB : thm := BOneCoeff.COEFF_POLY_SUB
-unsafe def COEFF_POLY_MUL_ALT : thm := BOneCoeff.COEFF_POLY_MUL_ALT
-unsafe def COEFF_POLY_MUL : thm := BOneCoeff.COEFF_POLY_MUL
-unsafe def COEFF_POLY_VARPOW : thm := BOneCoeff.COEFF_POLY_VARPOW
-unsafe def COEFF_POLY_LMUL : thm := BOneCoeff.COEFF_POLY_LMUL
-unsafe def COEFF_POLY_RMUL : thm := BOneCoeff.COEFF_POLY_RMUL
-unsafe def COEFF_POLY_VAR_MUL : thm := BOneCoeff.COEFF_POLY_VAR_MUL
-unsafe def COEFF_POLY_MUL_VAR : thm := BOneCoeff.COEFF_POLY_MUL_VAR
-unsafe def COEFF_POLY_VARPOW_MUL : thm := BOneCoeff.COEFF_POLY_VARPOW_MUL
-unsafe def COEFF_POLY_MUL_VARPOW : thm := BOneCoeff.COEFF_POLY_MUL_VARPOW
-unsafe def POLY_MUL_UNIVARIATE : thm := BOneCoeff.POLY_MUL_UNIVARIATE
-unsafe def RING_POLYNOMIAL_SUBRING_COEFF : thm := BOneCoeff.RING_POLYNOMIAL_SUBRING_COEFF
-unsafe def FINITE_COEFF_SUPPORT : thm := BOneCoeff.FINITE_COEFF_SUPPORT
-unsafe def RING_POLYNOMIAL_COEFF_BOUND : thm := BOneCoeff.RING_POLYNOMIAL_COEFF_BOUND
-unsafe def RING_POLYNOMIAL_COEFF_ZERO_FROM : thm := BOneCoeff.RING_POLYNOMIAL_COEFF_ZERO_FROM
+def EXISTS_FUN_FROM_1 : thm := BOneCoeff.EXISTS_FUN_FROM_1
+def FORALL_FUN_FROM_1 : thm := BOneCoeff.FORALL_FUN_FROM_1
+def LAMBDA_1_EQ : thm := BOneCoeff.LAMBDA_1_EQ
+def FUN_ONE_NUM_EQ : thm := BOneCoeff.FUN_ONE_NUM_EQ
+def FUN_ONE_EQ_ONE : thm := BOneCoeff.FUN_ONE_EQ_ONE
+def FINITE_FUN_FROM_1 : thm := BOneCoeff.FINITE_FUN_FROM_1
+def MONOMIAL_DIVISORS_1 : thm := BOneCoeff.MONOMIAL_DIVISORS_1
+def coeff : thm := BOneCoeff.coeff
+def COEFF : thm := BOneCoeff.COEFF
+def COEFF_0 : thm := BOneCoeff.COEFF_0
+def FUN_EQ_COEFF : thm := BOneCoeff.FUN_EQ_COEFF
+def RING_POLYNOMIAL_POWERSERIES_COEFF : thm := BOneCoeff.RING_POLYNOMIAL_POWERSERIES_COEFF
+def RING_POWERSERIES_COEFF : thm := BOneCoeff.RING_POWERSERIES_COEFF
+def COEFF_IN_CARRIER : thm := BOneCoeff.COEFF_IN_CARRIER
+def COEFF_IN_CARRIER_ALT : thm := BOneCoeff.COEFF_IN_CARRIER_ALT
+def RING_POLYNOMIAL_COEFF : thm := BOneCoeff.RING_POLYNOMIAL_COEFF
+def COEFF_COMPOSE : thm := BOneCoeff.COEFF_COMPOSE
+def COEFF_POLY_CONST : thm := BOneCoeff.COEFF_POLY_CONST
+def COEFF_POLY_0 : thm := BOneCoeff.COEFF_POLY_0
+def COEFF_POLY_1 : thm := BOneCoeff.COEFF_POLY_1
+def COEFF_POLY_VAR : thm := BOneCoeff.COEFF_POLY_VAR
+def COEFF_POLY_NEG : thm := BOneCoeff.COEFF_POLY_NEG
+def COEFF_POLY_ADD : thm := BOneCoeff.COEFF_POLY_ADD
+def COEFF_POLY_SUB : thm := BOneCoeff.COEFF_POLY_SUB
+def COEFF_POLY_MUL_ALT : thm := BOneCoeff.COEFF_POLY_MUL_ALT
+def COEFF_POLY_MUL : thm := BOneCoeff.COEFF_POLY_MUL
+def COEFF_POLY_VARPOW : thm := BOneCoeff.COEFF_POLY_VARPOW
+def COEFF_POLY_LMUL : thm := BOneCoeff.COEFF_POLY_LMUL
+def COEFF_POLY_RMUL : thm := BOneCoeff.COEFF_POLY_RMUL
+def COEFF_POLY_VAR_MUL : thm := BOneCoeff.COEFF_POLY_VAR_MUL
+def COEFF_POLY_MUL_VAR : thm := BOneCoeff.COEFF_POLY_MUL_VAR
+def COEFF_POLY_VARPOW_MUL : thm := BOneCoeff.COEFF_POLY_VARPOW_MUL
+def COEFF_POLY_MUL_VARPOW : thm := BOneCoeff.COEFF_POLY_MUL_VARPOW
+def POLY_MUL_UNIVARIATE : thm := BOneCoeff.POLY_MUL_UNIVARIATE
+def RING_POLYNOMIAL_SUBRING_COEFF : thm := BOneCoeff.RING_POLYNOMIAL_SUBRING_COEFF
+def FINITE_COEFF_SUPPORT : thm := BOneCoeff.FINITE_COEFF_SUPPORT
+def RING_POLYNOMIAL_COEFF_BOUND : thm := BOneCoeff.RING_POLYNOMIAL_COEFF_BOUND
+def RING_POLYNOMIAL_COEFF_ZERO_FROM : thm := BOneCoeff.RING_POLYNOMIAL_COEFF_ZERO_FROM
 
 -- Degree
-unsafe def poly_deg : thm := BDegree.poly_deg
-unsafe def POLY_DEG_SUBRING_GENERATED : thm := BDegree.POLY_DEG_SUBRING_GENERATED
-unsafe def POLY_DEG_CONST : thm := BDegree.POLY_DEG_CONST
-unsafe def POLY_DEG_0 : thm := BDegree.POLY_DEG_0
-unsafe def POLY_DEG_1 : thm := BDegree.POLY_DEG_1
-unsafe def POLY_DEG_LE_EQ : thm := BDegree.POLY_DEG_LE_EQ
-unsafe def POLY_DEG_LE : thm := BDegree.POLY_DEG_LE
-unsafe def MONOMIAL_DEG_LE_POLY_DEG : thm := BDegree.MONOMIAL_DEG_LE_POLY_DEG
-unsafe def POLY_DEG_GE_EQ : thm := BDegree.POLY_DEG_GE_EQ
-unsafe def POLY_DEG_GE : thm := BDegree.POLY_DEG_GE
-unsafe def COEFF_ABOVE_DEG : thm := BDegree.COEFF_ABOVE_DEG
-unsafe def POLY_DEG_MONOMIAL_EXISTS : thm := BDegree.POLY_DEG_MONOMIAL_EXISTS
-unsafe def POLY_TOP_MONOMIAL_LE : thm := BDegree.POLY_TOP_MONOMIAL_LE
-unsafe def POLY_TOP_MONOMIAL_LT : thm := BDegree.POLY_TOP_MONOMIAL_LT
-unsafe def POLY_DEG_EQ_0_ALT : thm := BDegree.POLY_DEG_EQ_0_ALT
-unsafe def POLY_DEG_EQ_0 : thm := BDegree.POLY_DEG_EQ_0
-unsafe def POLY_DEG_EQ : thm := BDegree.POLY_DEG_EQ
-unsafe def POLY_DEG_UNIQUE : thm := BDegree.POLY_DEG_UNIQUE
-unsafe def POLY_DEG_VAR : thm := BDegree.POLY_DEG_VAR
-unsafe def COEFF_NONZERO_LE_DEG : thm := BDegree.COEFF_NONZERO_LE_DEG
-unsafe def COEFF_NONZERO_LE : thm := BDegree.COEFF_NONZERO_LE
-unsafe def POLY_DEG_LE_COEFF_EQ : thm := BDegree.POLY_DEG_LE_COEFF_EQ
-unsafe def POLY_DEG_LE_COEFF : thm := BDegree.POLY_DEG_LE_COEFF
-unsafe def POLY_DEG_GE_COEFF_EQ : thm := BDegree.POLY_DEG_GE_COEFF_EQ
-unsafe def POLY_DEG_GE_COEFF : thm := BDegree.POLY_DEG_GE_COEFF
-unsafe def POLY_DEG_EQ_COEFF_EQ : thm := BDegree.POLY_DEG_EQ_COEFF_EQ
-unsafe def POLY_DEG_EQ_COEFF : thm := BDegree.POLY_DEG_EQ_COEFF
-unsafe def POLY_DEG_EQ_FROM_LE : thm := BDegree.POLY_DEG_EQ_FROM_LE
-unsafe def COEFF_POWSER_SUM : thm := BDegree.COEFF_POWSER_SUM
-unsafe def COEFF_POLY_SUM : thm := BDegree.COEFF_POLY_SUM
-unsafe def POLY_DEG_NEG : thm := BDegree.POLY_DEG_NEG
-unsafe def POLY_DEG_ADD_LE : thm := BDegree.POLY_DEG_ADD_LE
-unsafe def POLY_DEG_SUB_LE : thm := BDegree.POLY_DEG_SUB_LE
-unsafe def POLY_DEG_ADD : thm := BDegree.POLY_DEG_ADD
-unsafe def POLY_DEG_SUB : thm := BDegree.POLY_DEG_SUB
-unsafe def POLY_DEG_MUL_LE : thm := BDegree.POLY_DEG_MUL_LE
-unsafe def POLY_DEG_POW_LE : thm := BDegree.POLY_DEG_POW_LE
-unsafe def POLY_DEG_MUL : thm := BDegree.POLY_DEG_MUL
-unsafe def POLY_DEG_CMUL : thm := BDegree.POLY_DEG_CMUL
-unsafe def POLY_MUL_LEADING_COEFF : thm := BDegree.POLY_MUL_LEADING_COEFF
-unsafe def POLY_DEG_MUL_UNIVARIATE : thm := BDegree.POLY_DEG_MUL_UNIVARIATE
-unsafe def POLY_DEG_VAR_MUL : thm := BDegree.POLY_DEG_VAR_MUL
-unsafe def POLY_DEG_MUL_VAR : thm := BDegree.POLY_DEG_MUL_VAR
-unsafe def POLY_DEG_VARPOW_MUL : thm := BDegree.POLY_DEG_VARPOW_MUL
-unsafe def POLY_DEG_MUL_VARPOW : thm := BDegree.POLY_DEG_MUL_VARPOW
-unsafe def INTEGRAL_DOMAIN_POLY_RING : thm := BDegree.INTEGRAL_DOMAIN_POLY_RING
-unsafe def POLY_DEG_POW : thm := BDegree.POLY_DEG_POW
-unsafe def POLY_DEG_DIVIDES_LE : thm := BDegree.POLY_DEG_DIVIDES_LE
-unsafe def POLY_DEG_RING_ADD_LE : thm := BDegree.POLY_DEG_RING_ADD_LE
-unsafe def POLY_DEG_RING_SUB_LE : thm := BDegree.POLY_DEG_RING_SUB_LE
-unsafe def POLY_DEG_RING_SUM_LE : thm := BDegree.POLY_DEG_RING_SUM_LE
-unsafe def POLY_DEG_VAR_POW : thm := BDegree.POLY_DEG_VAR_POW
-unsafe def POLY_POLY_DEG_EQ_0 : thm := BDegree.POLY_POLY_DEG_EQ_0
-unsafe def POLY_VARS_MUL_EQ : thm := BDegree.POLY_VARS_MUL_EQ
-unsafe def POLY_VARS_POW_EQ : thm := BDegree.POLY_VARS_POW_EQ
+def poly_deg : thm := BDegree.poly_deg
+def POLY_DEG_SUBRING_GENERATED : thm := BDegree.POLY_DEG_SUBRING_GENERATED
+def POLY_DEG_CONST : thm := BDegree.POLY_DEG_CONST
+def POLY_DEG_0 : thm := BDegree.POLY_DEG_0
+def POLY_DEG_1 : thm := BDegree.POLY_DEG_1
+def POLY_DEG_LE_EQ : thm := BDegree.POLY_DEG_LE_EQ
+def POLY_DEG_LE : thm := BDegree.POLY_DEG_LE
+def MONOMIAL_DEG_LE_POLY_DEG : thm := BDegree.MONOMIAL_DEG_LE_POLY_DEG
+def POLY_DEG_GE_EQ : thm := BDegree.POLY_DEG_GE_EQ
+def POLY_DEG_GE : thm := BDegree.POLY_DEG_GE
+def COEFF_ABOVE_DEG : thm := BDegree.COEFF_ABOVE_DEG
+def POLY_DEG_MONOMIAL_EXISTS : thm := BDegree.POLY_DEG_MONOMIAL_EXISTS
+def POLY_TOP_MONOMIAL_LE : thm := BDegree.POLY_TOP_MONOMIAL_LE
+def POLY_TOP_MONOMIAL_LT : thm := BDegree.POLY_TOP_MONOMIAL_LT
+def POLY_DEG_EQ_0_ALT : thm := BDegree.POLY_DEG_EQ_0_ALT
+def POLY_DEG_EQ_0 : thm := BDegree.POLY_DEG_EQ_0
+def POLY_DEG_EQ : thm := BDegree.POLY_DEG_EQ
+def POLY_DEG_UNIQUE : thm := BDegree.POLY_DEG_UNIQUE
+def POLY_DEG_VAR : thm := BDegree.POLY_DEG_VAR
+def COEFF_NONZERO_LE_DEG : thm := BDegree.COEFF_NONZERO_LE_DEG
+def COEFF_NONZERO_LE : thm := BDegree.COEFF_NONZERO_LE
+def POLY_DEG_LE_COEFF_EQ : thm := BDegree.POLY_DEG_LE_COEFF_EQ
+def POLY_DEG_LE_COEFF : thm := BDegree.POLY_DEG_LE_COEFF
+def POLY_DEG_GE_COEFF_EQ : thm := BDegree.POLY_DEG_GE_COEFF_EQ
+def POLY_DEG_GE_COEFF : thm := BDegree.POLY_DEG_GE_COEFF
+def POLY_DEG_EQ_COEFF_EQ : thm := BDegree.POLY_DEG_EQ_COEFF_EQ
+def POLY_DEG_EQ_COEFF : thm := BDegree.POLY_DEG_EQ_COEFF
+def POLY_DEG_EQ_FROM_LE : thm := BDegree.POLY_DEG_EQ_FROM_LE
+def COEFF_POWSER_SUM : thm := BDegree.COEFF_POWSER_SUM
+def COEFF_POLY_SUM : thm := BDegree.COEFF_POLY_SUM
+def POLY_DEG_NEG : thm := BDegree.POLY_DEG_NEG
+def POLY_DEG_ADD_LE : thm := BDegree.POLY_DEG_ADD_LE
+def POLY_DEG_SUB_LE : thm := BDegree.POLY_DEG_SUB_LE
+def POLY_DEG_ADD : thm := BDegree.POLY_DEG_ADD
+def POLY_DEG_SUB : thm := BDegree.POLY_DEG_SUB
+def POLY_DEG_MUL_LE : thm := BDegree.POLY_DEG_MUL_LE
+def POLY_DEG_POW_LE : thm := BDegree.POLY_DEG_POW_LE
+def POLY_DEG_MUL : thm := BDegree.POLY_DEG_MUL
+def POLY_DEG_CMUL : thm := BDegree.POLY_DEG_CMUL
+def POLY_MUL_LEADING_COEFF : thm := BDegree.POLY_MUL_LEADING_COEFF
+def POLY_DEG_MUL_UNIVARIATE : thm := BDegree.POLY_DEG_MUL_UNIVARIATE
+def POLY_DEG_VAR_MUL : thm := BDegree.POLY_DEG_VAR_MUL
+def POLY_DEG_MUL_VAR : thm := BDegree.POLY_DEG_MUL_VAR
+def POLY_DEG_VARPOW_MUL : thm := BDegree.POLY_DEG_VARPOW_MUL
+def POLY_DEG_MUL_VARPOW : thm := BDegree.POLY_DEG_MUL_VARPOW
+def INTEGRAL_DOMAIN_POLY_RING : thm := BDegree.INTEGRAL_DOMAIN_POLY_RING
+def POLY_DEG_POW : thm := BDegree.POLY_DEG_POW
+def POLY_DEG_DIVIDES_LE : thm := BDegree.POLY_DEG_DIVIDES_LE
+def POLY_DEG_RING_ADD_LE : thm := BDegree.POLY_DEG_RING_ADD_LE
+def POLY_DEG_RING_SUB_LE : thm := BDegree.POLY_DEG_RING_SUB_LE
+def POLY_DEG_RING_SUM_LE : thm := BDegree.POLY_DEG_RING_SUM_LE
+def POLY_DEG_VAR_POW : thm := BDegree.POLY_DEG_VAR_POW
+def POLY_POLY_DEG_EQ_0 : thm := BDegree.POLY_POLY_DEG_EQ_0
+def POLY_VARS_MUL_EQ : thm := BDegree.POLY_VARS_MUL_EQ
+def POLY_VARS_POW_EQ : thm := BDegree.POLY_VARS_POW_EQ
 
 -- Cardinalities
-unsafe def CARD_EQ_MONOMIALS_FINITE : thm := BCardinalities.CARD_EQ_MONOMIALS_FINITE
-unsafe def CARD_EQ_MONOMIALS_INFINITE : thm := BCardinalities.CARD_EQ_MONOMIALS_INFINITE
-unsafe def CARD_EQ_MONOMIALS_COUNTABLE : thm := BCardinalities.CARD_EQ_MONOMIALS_COUNTABLE
-unsafe def CARD_EQ_POWSER_RING_COUNTABLE : thm := BCardinalities.CARD_EQ_POWSER_RING_COUNTABLE
-unsafe def CARD_EQ_POWSER_RING_FINITE : thm := BCardinalities.CARD_EQ_POWSER_RING_FINITE
-unsafe def CARD_EQ_POWSER_RING_INFINITE : thm := BCardinalities.CARD_EQ_POWSER_RING_INFINITE
-unsafe def CARD_EQ_POLY_RING_COUNTABLE : thm := BCardinalities.CARD_EQ_POLY_RING_COUNTABLE
-unsafe def CARD_EQ_POLY_RING_FINITE : thm := BCardinalities.CARD_EQ_POLY_RING_FINITE
-unsafe def CARD_EQ_POLY_RING_INFINITE : thm := BCardinalities.CARD_EQ_POLY_RING_INFINITE
+def CARD_EQ_MONOMIALS_FINITE : thm := BCardinalities.CARD_EQ_MONOMIALS_FINITE
+def CARD_EQ_MONOMIALS_INFINITE : thm := BCardinalities.CARD_EQ_MONOMIALS_INFINITE
+def CARD_EQ_MONOMIALS_COUNTABLE : thm := BCardinalities.CARD_EQ_MONOMIALS_COUNTABLE
+def CARD_EQ_POWSER_RING_COUNTABLE : thm := BCardinalities.CARD_EQ_POWSER_RING_COUNTABLE
+def CARD_EQ_POWSER_RING_FINITE : thm := BCardinalities.CARD_EQ_POWSER_RING_FINITE
+def CARD_EQ_POWSER_RING_INFINITE : thm := BCardinalities.CARD_EQ_POWSER_RING_INFINITE
+def CARD_EQ_POLY_RING_COUNTABLE : thm := BCardinalities.CARD_EQ_POLY_RING_COUNTABLE
+def CARD_EQ_POLY_RING_FINITE : thm := BCardinalities.CARD_EQ_POLY_RING_FINITE
+def CARD_EQ_POLY_RING_INFINITE : thm := BCardinalities.CARD_EQ_POLY_RING_INFINITE
 
 -- Evaluation
-unsafe def poly_evaluate : thm := BEvaluation.poly_evaluate
-unsafe def POLY_EVALUATE : thm := BEvaluation.POLY_EVALUATE
-unsafe def POLY_EVALUATE_0 : thm := BEvaluation.POLY_EVALUATE_0
-unsafe def POLY_EVALUATE_1 : thm := BEvaluation.POLY_EVALUATE_1
-unsafe def POLY_EVALUATE_VAR : thm := BEvaluation.POLY_EVALUATE_VAR
-unsafe def POLY_EVALUATE_CONST : thm := BEvaluation.POLY_EVALUATE_CONST
-unsafe def POLY_EVALUATE_ADD : thm := BEvaluation.POLY_EVALUATE_ADD
-unsafe def POLY_EVALUATE_SUB : thm := BEvaluation.POLY_EVALUATE_SUB
-unsafe def POLY_EVALUATE_MUL : thm := BEvaluation.POLY_EVALUATE_MUL
-unsafe def POLY_EVALUATE_POW : thm := BEvaluation.POLY_EVALUATE_POW
-unsafe def POLY_EVALUATE_RING_SUM : thm := BEvaluation.POLY_EVALUATE_RING_SUM
-unsafe def POLY_EVALUATE_RING_PRODUCT : thm := BEvaluation.POLY_EVALUATE_RING_PRODUCT
-unsafe def RING_HOMOMORPHISM_POLY_EVALUATE : thm := BEvaluation.RING_HOMOMORPHISM_POLY_EVALUATE
-unsafe def RING_EPIMORPHISM_POLY_EVALUATE : thm := BEvaluation.RING_EPIMORPHISM_POLY_EVALUATE
-unsafe def POLY_EVALUATE_HOMOMORPHIC_IMAGE : thm := BEvaluation.POLY_EVALUATE_HOMOMORPHIC_IMAGE
-unsafe def POLY_EXTEND_EVALUATE : thm := BEvaluation.POLY_EXTEND_EVALUATE
-unsafe def POLY_EVALUATE_EQ : thm := BEvaluation.POLY_EVALUATE_EQ
-unsafe def POWSER_EVALUATE_AT_0 : thm := BEvaluation.POWSER_EVALUATE_AT_0
-unsafe def POLY_EVALUATE_AT_0 : thm := BEvaluation.POLY_EVALUATE_AT_0
-unsafe def RING_HOMOMORPHISM_POWSER_EVALUATE_AT_0 : thm := BEvaluation.RING_HOMOMORPHISM_POWSER_EVALUATE_AT_0
-unsafe def RING_EPIMORPHISM_POWSER_EVALUATE_AT_0 : thm := BEvaluation.RING_EPIMORPHISM_POWSER_EVALUATE_AT_0
-unsafe def POLY_EVALUATE_REINDEX : thm := BEvaluation.POLY_EVALUATE_REINDEX
-unsafe def poly_eval : thm := BEvaluation.poly_eval
-unsafe def POLY_EVAL : thm := BEvaluation.POLY_EVAL
-unsafe def POLY_EVAL_0 : thm := BEvaluation.POLY_EVAL_0
-unsafe def POLY_EVAL_1 : thm := BEvaluation.POLY_EVAL_1
-unsafe def POLY_EVAL_VAR : thm := BEvaluation.POLY_EVAL_VAR
-unsafe def POLY_EVAL_CONST : thm := BEvaluation.POLY_EVAL_CONST
-unsafe def POLY_EVAL_ADD : thm := BEvaluation.POLY_EVAL_ADD
-unsafe def POLY_EVAL_SUB : thm := BEvaluation.POLY_EVAL_SUB
-unsafe def POLY_EVAL_MUL : thm := BEvaluation.POLY_EVAL_MUL
-unsafe def POLY_EVAL_POW : thm := BEvaluation.POLY_EVAL_POW
-unsafe def POLY_EVAL_RING_SUM : thm := BEvaluation.POLY_EVAL_RING_SUM
-unsafe def POLY_EVAL_RING_PRODUCT : thm := BEvaluation.POLY_EVAL_RING_PRODUCT
-unsafe def RING_HOMOMORPHISM_POLY_EVAL : thm := BEvaluation.RING_HOMOMORPHISM_POLY_EVAL
-unsafe def RING_EPIMORPHISM_POLY_EVAL : thm := BEvaluation.RING_EPIMORPHISM_POLY_EVAL
-unsafe def POLY_EVAL_HOMOMORPHIC_IMAGE : thm := BEvaluation.POLY_EVAL_HOMOMORPHIC_IMAGE
-unsafe def POLY_EXTEND_UNIVARIATE : thm := BEvaluation.POLY_EXTEND_UNIVARIATE
-unsafe def POLY_EVAL_EXPAND : thm := BEvaluation.POLY_EVAL_EXPAND
-unsafe def POLY_EXPAND : thm := BEvaluation.POLY_EXPAND
-unsafe def POWSER_EVAL_AT_0 : thm := BEvaluation.POWSER_EVAL_AT_0
-unsafe def POLY_EVAL_AT_0 : thm := BEvaluation.POLY_EVAL_AT_0
-unsafe def RING_HOMOMORPHISM_POWSER_EVAL_AT_0 : thm := BEvaluation.RING_HOMOMORPHISM_POWSER_EVAL_AT_0
-unsafe def RING_EPIMORPHISM_POWSER_EVAL_AT_0 : thm := BEvaluation.RING_EPIMORPHISM_POWSER_EVAL_AT_0
-unsafe def POWSER_RING_HOMOMORPHISM_COEFF_0 : thm := BEvaluation.POWSER_RING_HOMOMORPHISM_COEFF_0
-unsafe def POLY_RING_HOMOMORPHISM_COEFF_0 : thm := BEvaluation.POLY_RING_HOMOMORPHISM_COEFF_0
-unsafe def POWSER_RING_EPIMORPHISM_COEFF_0 : thm := BEvaluation.POWSER_RING_EPIMORPHISM_COEFF_0
-unsafe def POLY_RING_EPIMORPHISM_COEFF_0 : thm := BEvaluation.POLY_RING_EPIMORPHISM_COEFF_0
-unsafe def POLY_EVAL_COEFF : thm := BEvaluation.POLY_EVAL_COEFF
-unsafe def IMAGE_POLY_EVAL : thm := BEvaluation.IMAGE_POLY_EVAL
-unsafe def POLY_VAR_DIVIDES_UNIVARIATE : thm := BEvaluation.POLY_VAR_DIVIDES_UNIVARIATE
+def poly_evaluate : thm := BEvaluation.poly_evaluate
+def POLY_EVALUATE : thm := BEvaluation.POLY_EVALUATE
+def POLY_EVALUATE_0 : thm := BEvaluation.POLY_EVALUATE_0
+def POLY_EVALUATE_1 : thm := BEvaluation.POLY_EVALUATE_1
+def POLY_EVALUATE_VAR : thm := BEvaluation.POLY_EVALUATE_VAR
+def POLY_EVALUATE_CONST : thm := BEvaluation.POLY_EVALUATE_CONST
+def POLY_EVALUATE_ADD : thm := BEvaluation.POLY_EVALUATE_ADD
+def POLY_EVALUATE_SUB : thm := BEvaluation.POLY_EVALUATE_SUB
+def POLY_EVALUATE_MUL : thm := BEvaluation.POLY_EVALUATE_MUL
+def POLY_EVALUATE_POW : thm := BEvaluation.POLY_EVALUATE_POW
+def POLY_EVALUATE_RING_SUM : thm := BEvaluation.POLY_EVALUATE_RING_SUM
+def POLY_EVALUATE_RING_PRODUCT : thm := BEvaluation.POLY_EVALUATE_RING_PRODUCT
+def RING_HOMOMORPHISM_POLY_EVALUATE : thm := BEvaluation.RING_HOMOMORPHISM_POLY_EVALUATE
+def RING_EPIMORPHISM_POLY_EVALUATE : thm := BEvaluation.RING_EPIMORPHISM_POLY_EVALUATE
+def POLY_EVALUATE_HOMOMORPHIC_IMAGE : thm := BEvaluation.POLY_EVALUATE_HOMOMORPHIC_IMAGE
+def POLY_EXTEND_EVALUATE : thm := BEvaluation.POLY_EXTEND_EVALUATE
+def POLY_EVALUATE_EQ : thm := BEvaluation.POLY_EVALUATE_EQ
+def POWSER_EVALUATE_AT_0 : thm := BEvaluation.POWSER_EVALUATE_AT_0
+def POLY_EVALUATE_AT_0 : thm := BEvaluation.POLY_EVALUATE_AT_0
+def RING_HOMOMORPHISM_POWSER_EVALUATE_AT_0 : thm := BEvaluation.RING_HOMOMORPHISM_POWSER_EVALUATE_AT_0
+def RING_EPIMORPHISM_POWSER_EVALUATE_AT_0 : thm := BEvaluation.RING_EPIMORPHISM_POWSER_EVALUATE_AT_0
+def POLY_EVALUATE_REINDEX : thm := BEvaluation.POLY_EVALUATE_REINDEX
+def poly_eval : thm := BEvaluation.poly_eval
+def POLY_EVAL : thm := BEvaluation.POLY_EVAL
+def POLY_EVAL_0 : thm := BEvaluation.POLY_EVAL_0
+def POLY_EVAL_1 : thm := BEvaluation.POLY_EVAL_1
+def POLY_EVAL_VAR : thm := BEvaluation.POLY_EVAL_VAR
+def POLY_EVAL_CONST : thm := BEvaluation.POLY_EVAL_CONST
+def POLY_EVAL_ADD : thm := BEvaluation.POLY_EVAL_ADD
+def POLY_EVAL_SUB : thm := BEvaluation.POLY_EVAL_SUB
+def POLY_EVAL_MUL : thm := BEvaluation.POLY_EVAL_MUL
+def POLY_EVAL_POW : thm := BEvaluation.POLY_EVAL_POW
+def POLY_EVAL_RING_SUM : thm := BEvaluation.POLY_EVAL_RING_SUM
+def POLY_EVAL_RING_PRODUCT : thm := BEvaluation.POLY_EVAL_RING_PRODUCT
+def RING_HOMOMORPHISM_POLY_EVAL : thm := BEvaluation.RING_HOMOMORPHISM_POLY_EVAL
+def RING_EPIMORPHISM_POLY_EVAL : thm := BEvaluation.RING_EPIMORPHISM_POLY_EVAL
+def POLY_EVAL_HOMOMORPHIC_IMAGE : thm := BEvaluation.POLY_EVAL_HOMOMORPHIC_IMAGE
+def POLY_EXTEND_UNIVARIATE : thm := BEvaluation.POLY_EXTEND_UNIVARIATE
+def POLY_EVAL_EXPAND : thm := BEvaluation.POLY_EVAL_EXPAND
+def POLY_EXPAND : thm := BEvaluation.POLY_EXPAND
+def POWSER_EVAL_AT_0 : thm := BEvaluation.POWSER_EVAL_AT_0
+def POLY_EVAL_AT_0 : thm := BEvaluation.POLY_EVAL_AT_0
+def RING_HOMOMORPHISM_POWSER_EVAL_AT_0 : thm := BEvaluation.RING_HOMOMORPHISM_POWSER_EVAL_AT_0
+def RING_EPIMORPHISM_POWSER_EVAL_AT_0 : thm := BEvaluation.RING_EPIMORPHISM_POWSER_EVAL_AT_0
+def POWSER_RING_HOMOMORPHISM_COEFF_0 : thm := BEvaluation.POWSER_RING_HOMOMORPHISM_COEFF_0
+def POLY_RING_HOMOMORPHISM_COEFF_0 : thm := BEvaluation.POLY_RING_HOMOMORPHISM_COEFF_0
+def POWSER_RING_EPIMORPHISM_COEFF_0 : thm := BEvaluation.POWSER_RING_EPIMORPHISM_COEFF_0
+def POLY_RING_EPIMORPHISM_COEFF_0 : thm := BEvaluation.POLY_RING_EPIMORPHISM_COEFF_0
+def POLY_EVAL_COEFF : thm := BEvaluation.POLY_EVAL_COEFF
+def IMAGE_POLY_EVAL : thm := BEvaluation.IMAGE_POLY_EVAL
+def POLY_VAR_DIVIDES_UNIVARIATE : thm := BEvaluation.POLY_VAR_DIVIDES_UNIVARIATE
 
 -- Composing
-unsafe def RING_POWERSERIES_COMPOSE : thm := BComposing.RING_POWERSERIES_COMPOSE
-unsafe def IN_RING_POWERSERIES_CARRIER_COMPOSE : thm := BComposing.IN_RING_POWERSERIES_CARRIER_COMPOSE
-unsafe def RING_POLYNOMIAL_COMPOSE : thm := BComposing.RING_POLYNOMIAL_COMPOSE
-unsafe def IN_RING_POLYNOMIAL_CARRIER_COMPOSE : thm := BComposing.IN_RING_POLYNOMIAL_CARRIER_COMPOSE
-unsafe def POLY_DEG_HOMOMORPHIC_IMAGE : thm := BComposing.POLY_DEG_HOMOMORPHIC_IMAGE
-unsafe def POLY_DEG_MONOMORPHIC_IMAGE : thm := BComposing.POLY_DEG_MONOMORPHIC_IMAGE
-unsafe def POLY_EQ_0_MONOMORPHIC_IMAGE : thm := BComposing.POLY_EQ_0_MONOMORPHIC_IMAGE
-unsafe def RING_HOMOMORPHISM_POWSER_RINGS : thm := BComposing.RING_HOMOMORPHISM_POWSER_RINGS
-unsafe def RING_HOMOMORPHISM_POLY_RINGS : thm := BComposing.RING_HOMOMORPHISM_POLY_RINGS
-unsafe def RING_MONOMORPHISM_POWSER_RINGS : thm := BComposing.RING_MONOMORPHISM_POWSER_RINGS
-unsafe def RING_MONOMORPHISM_POLY_RINGS : thm := BComposing.RING_MONOMORPHISM_POLY_RINGS
-unsafe def RING_EPIMORPHISM_POWSER_RINGS : thm := BComposing.RING_EPIMORPHISM_POWSER_RINGS
-unsafe def RING_EPIMORPHISM_POLY_RINGS : thm := BComposing.RING_EPIMORPHISM_POLY_RINGS
-unsafe def RING_ISOMORPHISM_POWSER_RINGS : thm := BComposing.RING_ISOMORPHISM_POWSER_RINGS
-unsafe def RING_ISOMORPHISM_POLY_RINGS : thm := BComposing.RING_ISOMORPHISM_POLY_RINGS
-unsafe def POLY_COMPOSE_HOMOMORPHISM_VAR : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_VAR
-unsafe def POLY_COMPOSE_HOMOMORPHISM_CONST : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_CONST
-unsafe def POLY_COMPOSE_HOMOMORPHISM_NEG : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_NEG
-unsafe def POLY_COMPOSE_HOMOMORPHISM_MUL : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_MUL
-unsafe def POLY_COMPOSE_HOMOMORPHISM_SUB : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_SUB
-unsafe def POLY_COMPOSE_HOMOMORPHISM_ADD : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_ADD
-unsafe def POLY_COMPOSE_HOMOMORPHISM_POW : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_POW
+def RING_POWERSERIES_COMPOSE : thm := BComposing.RING_POWERSERIES_COMPOSE
+def IN_RING_POWERSERIES_CARRIER_COMPOSE : thm := BComposing.IN_RING_POWERSERIES_CARRIER_COMPOSE
+def RING_POLYNOMIAL_COMPOSE : thm := BComposing.RING_POLYNOMIAL_COMPOSE
+def IN_RING_POLYNOMIAL_CARRIER_COMPOSE : thm := BComposing.IN_RING_POLYNOMIAL_CARRIER_COMPOSE
+def POLY_DEG_HOMOMORPHIC_IMAGE : thm := BComposing.POLY_DEG_HOMOMORPHIC_IMAGE
+def POLY_DEG_MONOMORPHIC_IMAGE : thm := BComposing.POLY_DEG_MONOMORPHIC_IMAGE
+def POLY_EQ_0_MONOMORPHIC_IMAGE : thm := BComposing.POLY_EQ_0_MONOMORPHIC_IMAGE
+def RING_HOMOMORPHISM_POWSER_RINGS : thm := BComposing.RING_HOMOMORPHISM_POWSER_RINGS
+def RING_HOMOMORPHISM_POLY_RINGS : thm := BComposing.RING_HOMOMORPHISM_POLY_RINGS
+def RING_MONOMORPHISM_POWSER_RINGS : thm := BComposing.RING_MONOMORPHISM_POWSER_RINGS
+def RING_MONOMORPHISM_POLY_RINGS : thm := BComposing.RING_MONOMORPHISM_POLY_RINGS
+def RING_EPIMORPHISM_POWSER_RINGS : thm := BComposing.RING_EPIMORPHISM_POWSER_RINGS
+def RING_EPIMORPHISM_POLY_RINGS : thm := BComposing.RING_EPIMORPHISM_POLY_RINGS
+def RING_ISOMORPHISM_POWSER_RINGS : thm := BComposing.RING_ISOMORPHISM_POWSER_RINGS
+def RING_ISOMORPHISM_POLY_RINGS : thm := BComposing.RING_ISOMORPHISM_POLY_RINGS
+def POLY_COMPOSE_HOMOMORPHISM_VAR : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_VAR
+def POLY_COMPOSE_HOMOMORPHISM_CONST : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_CONST
+def POLY_COMPOSE_HOMOMORPHISM_NEG : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_NEG
+def POLY_COMPOSE_HOMOMORPHISM_MUL : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_MUL
+def POLY_COMPOSE_HOMOMORPHISM_SUB : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_SUB
+def POLY_COMPOSE_HOMOMORPHISM_ADD : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_ADD
+def POLY_COMPOSE_HOMOMORPHISM_POW : thm := BComposing.POLY_COMPOSE_HOMOMORPHISM_POW
 
 -- Zerodivisors
-unsafe def INTEGRAL_DOMAIN_POWSER_RING : thm := BZerodivisors.INTEGRAL_DOMAIN_POWSER_RING
-unsafe def RING_UNIT_POLY_CONST : thm := BZerodivisors.RING_UNIT_POLY_CONST
-unsafe def RING_UNIT_POLY_DOMAIN : thm := BZerodivisors.RING_UNIT_POLY_DOMAIN
-unsafe def RING_NILPOTENT_POLY_RING : thm := BZerodivisors.RING_NILPOTENT_POLY_RING
-unsafe def RING_UNIT_POLY_RING : thm := BZerodivisors.RING_UNIT_POLY_RING
-unsafe def RING_UNIT_POLY_RING_1 : thm := BZerodivisors.RING_UNIT_POLY_RING_1
-unsafe def RING_UNIT_POLY_VAR : thm := BZerodivisors.RING_UNIT_POLY_VAR
-unsafe def FIELD_POLY_RING : thm := BZerodivisors.FIELD_POLY_RING
-unsafe def POLY_DEG_UNIT : thm := BZerodivisors.POLY_DEG_UNIT
-unsafe def POLY_DEG_EQ_0_UNIT : thm := BZerodivisors.POLY_DEG_EQ_0_UNIT
-unsafe def IRREDUCIBLE_IMP_POLY_DEG_NZ : thm := BZerodivisors.IRREDUCIBLE_IMP_POLY_DEG_NZ
-unsafe def POLY_DEG_1_IMP_IRREDUCIBLE : thm := BZerodivisors.POLY_DEG_1_IMP_IRREDUCIBLE
-unsafe def RING_UNIT_POWSER_RING : thm := BZerodivisors.RING_UNIT_POWSER_RING
-unsafe def LOCAL_POWSER_RING : thm := BZerodivisors.LOCAL_POWSER_RING
-unsafe def RING_PRIME_POLY_VAR_UNIVARIATE : thm := BZerodivisors.RING_PRIME_POLY_VAR_UNIVARIATE
-unsafe def RING_PRIME_POLY_VAR : thm := BZerodivisors.RING_PRIME_POLY_VAR
-unsafe def RING_IRREDUCIBLE_POLY_VAR : thm := BZerodivisors.RING_IRREDUCIBLE_POLY_VAR
-unsafe def RING_PRIME_POLY_CONST : thm := BZerodivisors.RING_PRIME_POLY_CONST
-unsafe def RING_IRREDUCIBLE_POLY_CONST : thm := BZerodivisors.RING_IRREDUCIBLE_POLY_CONST
+def INTEGRAL_DOMAIN_POWSER_RING : thm := BZerodivisors.INTEGRAL_DOMAIN_POWSER_RING
+def RING_UNIT_POLY_CONST : thm := BZerodivisors.RING_UNIT_POLY_CONST
+def RING_UNIT_POLY_DOMAIN : thm := BZerodivisors.RING_UNIT_POLY_DOMAIN
+def RING_NILPOTENT_POLY_RING : thm := BZerodivisors.RING_NILPOTENT_POLY_RING
+def RING_UNIT_POLY_RING : thm := BZerodivisors.RING_UNIT_POLY_RING
+def RING_UNIT_POLY_RING_1 : thm := BZerodivisors.RING_UNIT_POLY_RING_1
+def RING_UNIT_POLY_VAR : thm := BZerodivisors.RING_UNIT_POLY_VAR
+def FIELD_POLY_RING : thm := BZerodivisors.FIELD_POLY_RING
+def POLY_DEG_UNIT : thm := BZerodivisors.POLY_DEG_UNIT
+def POLY_DEG_EQ_0_UNIT : thm := BZerodivisors.POLY_DEG_EQ_0_UNIT
+def IRREDUCIBLE_IMP_POLY_DEG_NZ : thm := BZerodivisors.IRREDUCIBLE_IMP_POLY_DEG_NZ
+def POLY_DEG_1_IMP_IRREDUCIBLE : thm := BZerodivisors.POLY_DEG_1_IMP_IRREDUCIBLE
+def RING_UNIT_POWSER_RING : thm := BZerodivisors.RING_UNIT_POWSER_RING
+def LOCAL_POWSER_RING : thm := BZerodivisors.LOCAL_POWSER_RING
+def RING_PRIME_POLY_VAR_UNIVARIATE : thm := BZerodivisors.RING_PRIME_POLY_VAR_UNIVARIATE
+def RING_PRIME_POLY_VAR : thm := BZerodivisors.RING_PRIME_POLY_VAR
+def RING_IRREDUCIBLE_POLY_VAR : thm := BZerodivisors.RING_IRREDUCIBLE_POLY_VAR
+def RING_PRIME_POLY_CONST : thm := BZerodivisors.RING_PRIME_POLY_CONST
+def RING_IRREDUCIBLE_POLY_CONST : thm := BZerodivisors.RING_IRREDUCIBLE_POLY_CONST
 
 -- XMinusA
-unsafe def POLY_DEG_X_MINUS_A : thm := BXMinusA.POLY_DEG_X_MINUS_A
-unsafe def POLY_X_MINUS_A_NONZERO : thm := BXMinusA.POLY_X_MINUS_A_NONZERO
-unsafe def POLY_X_MINUS_A_IN_CARRIER : thm := BXMinusA.POLY_X_MINUS_A_IN_CARRIER
-unsafe def POLY_DIVIDES_X_MINUS_A : thm := BXMinusA.POLY_DIVIDES_X_MINUS_A
-unsafe def POLY_DIVIDES_X_MINUS_ROOT : thm := BXMinusA.POLY_DIVIDES_X_MINUS_ROOT
-unsafe def POLY_DIVIDES_X_MINUS_ROOT_EQ : thm := BXMinusA.POLY_DIVIDES_X_MINUS_ROOT_EQ
-unsafe def POLY_DEG_MUL_X_MINUS_A : thm := BXMinusA.POLY_DEG_MUL_X_MINUS_A
-unsafe def POLY_ROOT_BOUND : thm := BXMinusA.POLY_ROOT_BOUND
-unsafe def INFINITE_INTEGRAL_DOMAIN_POLY_EVAL_ALL_ZERO : thm := BXMinusA.INFINITE_INTEGRAL_DOMAIN_POLY_EVAL_ALL_ZERO
+def POLY_DEG_X_MINUS_A : thm := BXMinusA.POLY_DEG_X_MINUS_A
+def POLY_X_MINUS_A_NONZERO : thm := BXMinusA.POLY_X_MINUS_A_NONZERO
+def POLY_X_MINUS_A_IN_CARRIER : thm := BXMinusA.POLY_X_MINUS_A_IN_CARRIER
+def POLY_DIVIDES_X_MINUS_A : thm := BXMinusA.POLY_DIVIDES_X_MINUS_A
+def POLY_DIVIDES_X_MINUS_ROOT : thm := BXMinusA.POLY_DIVIDES_X_MINUS_ROOT
+def POLY_DIVIDES_X_MINUS_ROOT_EQ : thm := BXMinusA.POLY_DIVIDES_X_MINUS_ROOT_EQ
+def POLY_DEG_MUL_X_MINUS_A : thm := BXMinusA.POLY_DEG_MUL_X_MINUS_A
+def POLY_ROOT_BOUND : thm := BXMinusA.POLY_ROOT_BOUND
+def INFINITE_INTEGRAL_DOMAIN_POLY_EVAL_ALL_ZERO : thm := BXMinusA.INFINITE_INTEGRAL_DOMAIN_POLY_EVAL_ALL_ZERO
 
 -- Division
-unsafe def POLY_TOP_NONZERO : thm := BDivision.POLY_TOP_NONZERO
-unsafe def POLY_TOP_TAIL : thm := BDivision.POLY_TOP_TAIL
-unsafe def POLY_TOP_EQ_0 : thm := BDivision.POLY_TOP_EQ_0
-unsafe def POLY_DEG_LT_FROM_LE : thm := BDivision.POLY_DEG_LT_FROM_LE
-unsafe def POLY_DEG_DIVIDES_LE_UNIVARIATE : thm := BDivision.POLY_DEG_DIVIDES_LE_UNIVARIATE
-unsafe def POLY_DIVISION_GEN : thm := BDivision.POLY_DIVISION_GEN
-unsafe def POLY_DIVISION : thm := BDivision.POLY_DIVISION
-unsafe def EUCLIDEAN_POLY_RING : thm := BDivision.EUCLIDEAN_POLY_RING
-unsafe def PID_POLY_RING : thm := BDivision.PID_POLY_RING
-unsafe def POLY_DEG_1_ROOT : thm := BDivision.POLY_DEG_1_ROOT
-unsafe def poly_div : thm := BDivision.poly_div
-unsafe def poly_rem : thm := BDivision.poly_rem
-unsafe def POLY_DIV_REM : thm := BDivision.POLY_DIV_REM
-unsafe def POLY_DIV : thm := BDivision.POLY_DIV
-unsafe def RING_POLYNOMIAL_DIV : thm := BDivision.RING_POLYNOMIAL_DIV
-unsafe def POLY_REM : thm := BDivision.POLY_REM
-unsafe def RING_POLYNOMIAL_REM : thm := BDivision.RING_POLYNOMIAL_REM
-unsafe def POLY_DIV_REM_SIMP : thm := BDivision.POLY_DIV_REM_SIMP
-unsafe def POLY_DEG_REM : thm := BDivision.POLY_DEG_REM
-unsafe def POLY_DEG_REM_ALT : thm := BDivision.POLY_DEG_REM_ALT
-unsafe def POLY_DIVIDES_REM : thm := BDivision.POLY_DIVIDES_REM
-unsafe def POLY_REM_UNIQUE : thm := BDivision.POLY_REM_UNIQUE
+def POLY_TOP_NONZERO : thm := BDivision.POLY_TOP_NONZERO
+def POLY_TOP_TAIL : thm := BDivision.POLY_TOP_TAIL
+def POLY_TOP_EQ_0 : thm := BDivision.POLY_TOP_EQ_0
+def POLY_DEG_LT_FROM_LE : thm := BDivision.POLY_DEG_LT_FROM_LE
+def POLY_DEG_DIVIDES_LE_UNIVARIATE : thm := BDivision.POLY_DEG_DIVIDES_LE_UNIVARIATE
+def POLY_DIVISION_GEN : thm := BDivision.POLY_DIVISION_GEN
+def POLY_DIVISION : thm := BDivision.POLY_DIVISION
+def EUCLIDEAN_POLY_RING : thm := BDivision.EUCLIDEAN_POLY_RING
+def PID_POLY_RING : thm := BDivision.PID_POLY_RING
+def POLY_DEG_1_ROOT : thm := BDivision.POLY_DEG_1_ROOT
+def poly_div : thm := BDivision.poly_div
+def poly_rem : thm := BDivision.poly_rem
+def POLY_DIV_REM : thm := BDivision.POLY_DIV_REM
+def POLY_DIV : thm := BDivision.POLY_DIV
+def RING_POLYNOMIAL_DIV : thm := BDivision.RING_POLYNOMIAL_DIV
+def POLY_REM : thm := BDivision.POLY_REM
+def RING_POLYNOMIAL_REM : thm := BDivision.RING_POLYNOMIAL_REM
+def POLY_DIV_REM_SIMP : thm := BDivision.POLY_DIV_REM_SIMP
+def POLY_DEG_REM : thm := BDivision.POLY_DEG_REM
+def POLY_DEG_REM_ALT : thm := BDivision.POLY_DEG_REM_ALT
+def POLY_DIVIDES_REM : thm := BDivision.POLY_DIVIDES_REM
+def POLY_REM_UNIQUE : thm := BDivision.POLY_REM_UNIQUE
 
 -- Hilbert
-unsafe def NOETHERIAN_POLY_RING_1 : thm := BHilbert.NOETHERIAN_POLY_RING_1
-unsafe def NOETHERIAN_POLY_RING : thm := BHilbert.NOETHERIAN_POLY_RING
-unsafe def KAPLANSKY_LEMMA : thm := BHilbert.KAPLANSKY_LEMMA
-unsafe def NOETHERIAN_POWSER_RING_1 : thm := BHilbert.NOETHERIAN_POWSER_RING_1
-unsafe def NOETHERIAN_POWSER_RING : thm := BHilbert.NOETHERIAN_POWSER_RING
+def NOETHERIAN_POLY_RING_1 : thm := BHilbert.NOETHERIAN_POLY_RING_1
+def NOETHERIAN_POLY_RING : thm := BHilbert.NOETHERIAN_POLY_RING
+def KAPLANSKY_LEMMA : thm := BHilbert.KAPLANSKY_LEMMA
+def NOETHERIAN_POWSER_RING_1 : thm := BHilbert.NOETHERIAN_POWSER_RING_1
+def NOETHERIAN_POWSER_RING : thm := BHilbert.NOETHERIAN_POWSER_RING
 
 -- Monic
-unsafe def monic : thm := BMonic.monic
-unsafe def MONIC_POLY_1 : thm := BMonic.MONIC_POLY_1
-unsafe def MONIC_POLY_0 : thm := BMonic.MONIC_POLY_0
-unsafe def MONIC_IMP_NONZERO : thm := BMonic.MONIC_IMP_NONZERO
-unsafe def MONIC_IN_TRIVIAL_RING : thm := BMonic.MONIC_IN_TRIVIAL_RING
-unsafe def MONIC_POLY_CONST : thm := BMonic.MONIC_POLY_CONST
-unsafe def MONIC_DEG_0 : thm := BMonic.MONIC_DEG_0
-unsafe def MONIC_POLY_VAR : thm := BMonic.MONIC_POLY_VAR
-unsafe def MONIC_SUBRING_GENERATED : thm := BMonic.MONIC_SUBRING_GENERATED
-unsafe def POLY_DEG_MUL_MONIC : thm := BMonic.POLY_DEG_MUL_MONIC
-unsafe def MONIC_POLY_MUL : thm := BMonic.MONIC_POLY_MUL
-unsafe def MONIC_POLY_POW : thm := BMonic.MONIC_POLY_POW
-unsafe def MONIC_POLY_PRODUCT : thm := BMonic.MONIC_POLY_PRODUCT
-unsafe def MONIC_ASSOCIATES_EQ : thm := BMonic.MONIC_ASSOCIATES_EQ
-unsafe def MONIC_CMUL : thm := BMonic.MONIC_CMUL
-unsafe def FIELD_MONIC_ASSOCIATE : thm := BMonic.FIELD_MONIC_ASSOCIATE
-unsafe def FIELD_MONIC_IRREDUCIBLE_ASSOCIATE : thm := BMonic.FIELD_MONIC_IRREDUCIBLE_ASSOCIATE
-unsafe def RING_COPRIME_DISTINCT_MONIC_IRREDUCIBLES : thm := BMonic.RING_COPRIME_DISTINCT_MONIC_IRREDUCIBLES
-unsafe def POLY_DEG_DIVIDES_LE_MONIC : thm := BMonic.POLY_DEG_DIVIDES_LE_MONIC
+def monic : thm := BMonic.monic
+def MONIC_POLY_1 : thm := BMonic.MONIC_POLY_1
+def MONIC_POLY_0 : thm := BMonic.MONIC_POLY_0
+def MONIC_IMP_NONZERO : thm := BMonic.MONIC_IMP_NONZERO
+def MONIC_IN_TRIVIAL_RING : thm := BMonic.MONIC_IN_TRIVIAL_RING
+def MONIC_POLY_CONST : thm := BMonic.MONIC_POLY_CONST
+def MONIC_DEG_0 : thm := BMonic.MONIC_DEG_0
+def MONIC_POLY_VAR : thm := BMonic.MONIC_POLY_VAR
+def MONIC_SUBRING_GENERATED : thm := BMonic.MONIC_SUBRING_GENERATED
+def POLY_DEG_MUL_MONIC : thm := BMonic.POLY_DEG_MUL_MONIC
+def MONIC_POLY_MUL : thm := BMonic.MONIC_POLY_MUL
+def MONIC_POLY_POW : thm := BMonic.MONIC_POLY_POW
+def MONIC_POLY_PRODUCT : thm := BMonic.MONIC_POLY_PRODUCT
+def MONIC_ASSOCIATES_EQ : thm := BMonic.MONIC_ASSOCIATES_EQ
+def MONIC_CMUL : thm := BMonic.MONIC_CMUL
+def FIELD_MONIC_ASSOCIATE : thm := BMonic.FIELD_MONIC_ASSOCIATE
+def FIELD_MONIC_IRREDUCIBLE_ASSOCIATE : thm := BMonic.FIELD_MONIC_IRREDUCIBLE_ASSOCIATE
+def RING_COPRIME_DISTINCT_MONIC_IRREDUCIBLES : thm := BMonic.RING_COPRIME_DISTINCT_MONIC_IRREDUCIBLES
+def POLY_DEG_DIVIDES_LE_MONIC : thm := BMonic.POLY_DEG_DIVIDES_LE_MONIC
 
 -- Reciprocal
-unsafe def poly_recip : thm := BReciprocal.poly_recip
-unsafe def COEFF_POLY_RECIP : thm := BReciprocal.COEFF_POLY_RECIP
-unsafe def RING_POWERSERIES_RECIP : thm := BReciprocal.RING_POWERSERIES_RECIP
-unsafe def RING_POLYNOMIAL_RECIP : thm := BReciprocal.RING_POLYNOMIAL_RECIP
-unsafe def POLY_RECIP_IN_CARRIER : thm := BReciprocal.POLY_RECIP_IN_CARRIER
-unsafe def COEFF_0_POLY_RECIP_EQ_0 : thm := BReciprocal.COEFF_0_POLY_RECIP_EQ_0
-unsafe def POLY_DEG_RECIP_LE : thm := BReciprocal.POLY_DEG_RECIP_LE
-unsafe def POLY_DEG_RECIP : thm := BReciprocal.POLY_DEG_RECIP
-unsafe def POLY_RECIP_RECIP : thm := BReciprocal.POLY_RECIP_RECIP
-unsafe def POLY_VARPOW_RECIP_RECIP : thm := BReciprocal.POLY_VARPOW_RECIP_RECIP
-unsafe def POLY_DIVIDES_RECIP_RECIP : thm := BReciprocal.POLY_DIVIDES_RECIP_RECIP
-unsafe def POLY_RECIP_CONST : thm := BReciprocal.POLY_RECIP_CONST
-unsafe def RING_UNIT_POLY_RECIP : thm := BReciprocal.RING_UNIT_POLY_RECIP
-unsafe def RING_UNIT_POLY_RECIP_EQ : thm := BReciprocal.RING_UNIT_POLY_RECIP_EQ
-unsafe def POLY_RECIP_0 : thm := BReciprocal.POLY_RECIP_0
-unsafe def POLY_RECIP_EQ_0 : thm := BReciprocal.POLY_RECIP_EQ_0
-unsafe def POLY_RECIP_RECIP_EQ : thm := BReciprocal.POLY_RECIP_RECIP_EQ
-unsafe def POLY_RECIP_1 : thm := BReciprocal.POLY_RECIP_1
-unsafe def POLY_RECIP_NEG : thm := BReciprocal.POLY_RECIP_NEG
-unsafe def POLY_RECIP_MUL_GEN : thm := BReciprocal.POLY_RECIP_MUL_GEN
-unsafe def POLY_RECIP_MUL : thm := BReciprocal.POLY_RECIP_MUL
-unsafe def POLY_DIVIDES_RECIP : thm := BReciprocal.POLY_DIVIDES_RECIP
-unsafe def POLY_DIVIDES_RECIP_GALOIS : thm := BReciprocal.POLY_DIVIDES_RECIP_GALOIS
-unsafe def POLY_DIVIDES_RECIP_EQ : thm := BReciprocal.POLY_DIVIDES_RECIP_EQ
-unsafe def RING_PRIME_POLY_RECIP : thm := BReciprocal.RING_PRIME_POLY_RECIP
-unsafe def RING_PRIME_POLY_RECIP_EQ : thm := BReciprocal.RING_PRIME_POLY_RECIP_EQ
-unsafe def RING_IRREDUCIBLE_POLY_RECIP : thm := BReciprocal.RING_IRREDUCIBLE_POLY_RECIP
-unsafe def RING_IRREDUCIBLE_POLY_RECIP_EQ : thm := BReciprocal.RING_IRREDUCIBLE_POLY_RECIP_EQ
-unsafe def POLY_EVAL_RECIP : thm := BReciprocal.POLY_EVAL_RECIP
+def poly_recip : thm := BReciprocal.poly_recip
+def COEFF_POLY_RECIP : thm := BReciprocal.COEFF_POLY_RECIP
+def RING_POWERSERIES_RECIP : thm := BReciprocal.RING_POWERSERIES_RECIP
+def RING_POLYNOMIAL_RECIP : thm := BReciprocal.RING_POLYNOMIAL_RECIP
+def POLY_RECIP_IN_CARRIER : thm := BReciprocal.POLY_RECIP_IN_CARRIER
+def COEFF_0_POLY_RECIP_EQ_0 : thm := BReciprocal.COEFF_0_POLY_RECIP_EQ_0
+def POLY_DEG_RECIP_LE : thm := BReciprocal.POLY_DEG_RECIP_LE
+def POLY_DEG_RECIP : thm := BReciprocal.POLY_DEG_RECIP
+def POLY_RECIP_RECIP : thm := BReciprocal.POLY_RECIP_RECIP
+def POLY_VARPOW_RECIP_RECIP : thm := BReciprocal.POLY_VARPOW_RECIP_RECIP
+def POLY_DIVIDES_RECIP_RECIP : thm := BReciprocal.POLY_DIVIDES_RECIP_RECIP
+def POLY_RECIP_CONST : thm := BReciprocal.POLY_RECIP_CONST
+def RING_UNIT_POLY_RECIP : thm := BReciprocal.RING_UNIT_POLY_RECIP
+def RING_UNIT_POLY_RECIP_EQ : thm := BReciprocal.RING_UNIT_POLY_RECIP_EQ
+def POLY_RECIP_0 : thm := BReciprocal.POLY_RECIP_0
+def POLY_RECIP_EQ_0 : thm := BReciprocal.POLY_RECIP_EQ_0
+def POLY_RECIP_RECIP_EQ : thm := BReciprocal.POLY_RECIP_RECIP_EQ
+def POLY_RECIP_1 : thm := BReciprocal.POLY_RECIP_1
+def POLY_RECIP_NEG : thm := BReciprocal.POLY_RECIP_NEG
+def POLY_RECIP_MUL_GEN : thm := BReciprocal.POLY_RECIP_MUL_GEN
+def POLY_RECIP_MUL : thm := BReciprocal.POLY_RECIP_MUL
+def POLY_DIVIDES_RECIP : thm := BReciprocal.POLY_DIVIDES_RECIP
+def POLY_DIVIDES_RECIP_GALOIS : thm := BReciprocal.POLY_DIVIDES_RECIP_GALOIS
+def POLY_DIVIDES_RECIP_EQ : thm := BReciprocal.POLY_DIVIDES_RECIP_EQ
+def RING_PRIME_POLY_RECIP : thm := BReciprocal.RING_PRIME_POLY_RECIP
+def RING_PRIME_POLY_RECIP_EQ : thm := BReciprocal.RING_PRIME_POLY_RECIP_EQ
+def RING_IRREDUCIBLE_POLY_RECIP : thm := BReciprocal.RING_IRREDUCIBLE_POLY_RECIP
+def RING_IRREDUCIBLE_POLY_RECIP_EQ : thm := BReciprocal.RING_IRREDUCIBLE_POLY_RECIP_EQ
+def POLY_EVAL_RECIP : thm := BReciprocal.POLY_EVAL_RECIP
 
 -- Derivative
-unsafe def poly_deriv : thm := BDerivative.poly_deriv
-unsafe def POLY_DERIV_SUBRING_GENERATED : thm := BDerivative.POLY_DERIV_SUBRING_GENERATED
-unsafe def COEFF_POLY_DERIV : thm := BDerivative.COEFF_POLY_DERIV
-unsafe def RING_POWERSERIES_POLY_DERIV : thm := BDerivative.RING_POWERSERIES_POLY_DERIV
-unsafe def POWSER_DERIV_IN_CARRIER : thm := BDerivative.POWSER_DERIV_IN_CARRIER
-unsafe def RING_POLYNOMIAL_POLY_DERIV : thm := BDerivative.RING_POLYNOMIAL_POLY_DERIV
-unsafe def POLY_DERIV_IN_CARRIER : thm := BDerivative.POLY_DERIV_IN_CARRIER
-unsafe def POLY_DEG_DERIV_LE : thm := BDerivative.POLY_DEG_DERIV_LE
-unsafe def POLY_DEG_DERIV : thm := BDerivative.POLY_DEG_DERIV
-unsafe def POLY_DERIV_NONZERO_CHAR0 : thm := BDerivative.POLY_DERIV_NONZERO_CHAR0
-unsafe def POLY_DERIV_CONST : thm := BDerivative.POLY_DERIV_CONST
-unsafe def POLY_DERIV_0 : thm := BDerivative.POLY_DERIV_0
-unsafe def POLY_DERIV_1 : thm := BDerivative.POLY_DERIV_1
-unsafe def POLY_DERIV_VAR : thm := BDerivative.POLY_DERIV_VAR
-unsafe def POLY_DERIV_ADD : thm := BDerivative.POLY_DERIV_ADD
-unsafe def POLY_DERIV_NEG : thm := BDerivative.POLY_DERIV_NEG
-unsafe def POLY_DERIV_SUB : thm := BDerivative.POLY_DERIV_SUB
-unsafe def POLY_DERIV_CMUL : thm := BDerivative.POLY_DERIV_CMUL
-unsafe def POLY_DERIV_HOMOMORPHIC_IMAGE : thm := BDerivative.POLY_DERIV_HOMOMORPHIC_IMAGE
-unsafe def POLY_DERIV_MUL : thm := BDerivative.POLY_DERIV_MUL
-unsafe def POLY_DERIV_SUM : thm := BDerivative.POLY_DERIV_SUM
-unsafe def POLY_DERIV_PRODUCT : thm := BDerivative.POLY_DERIV_PRODUCT
-unsafe def POLY_DERIV_POW : thm := BDerivative.POLY_DERIV_POW
-unsafe def POLY_DERIV_VAR_POW : thm := BDerivative.POLY_DERIV_VAR_POW
+def poly_deriv : thm := BDerivative.poly_deriv
+def POLY_DERIV_SUBRING_GENERATED : thm := BDerivative.POLY_DERIV_SUBRING_GENERATED
+def COEFF_POLY_DERIV : thm := BDerivative.COEFF_POLY_DERIV
+def RING_POWERSERIES_POLY_DERIV : thm := BDerivative.RING_POWERSERIES_POLY_DERIV
+def POWSER_DERIV_IN_CARRIER : thm := BDerivative.POWSER_DERIV_IN_CARRIER
+def RING_POLYNOMIAL_POLY_DERIV : thm := BDerivative.RING_POLYNOMIAL_POLY_DERIV
+def POLY_DERIV_IN_CARRIER : thm := BDerivative.POLY_DERIV_IN_CARRIER
+def POLY_DEG_DERIV_LE : thm := BDerivative.POLY_DEG_DERIV_LE
+def POLY_DEG_DERIV : thm := BDerivative.POLY_DEG_DERIV
+def POLY_DERIV_NONZERO_CHAR0 : thm := BDerivative.POLY_DERIV_NONZERO_CHAR0
+def POLY_DERIV_CONST : thm := BDerivative.POLY_DERIV_CONST
+def POLY_DERIV_0 : thm := BDerivative.POLY_DERIV_0
+def POLY_DERIV_1 : thm := BDerivative.POLY_DERIV_1
+def POLY_DERIV_VAR : thm := BDerivative.POLY_DERIV_VAR
+def POLY_DERIV_ADD : thm := BDerivative.POLY_DERIV_ADD
+def POLY_DERIV_NEG : thm := BDerivative.POLY_DERIV_NEG
+def POLY_DERIV_SUB : thm := BDerivative.POLY_DERIV_SUB
+def POLY_DERIV_CMUL : thm := BDerivative.POLY_DERIV_CMUL
+def POLY_DERIV_HOMOMORPHIC_IMAGE : thm := BDerivative.POLY_DERIV_HOMOMORPHIC_IMAGE
+def POLY_DERIV_MUL : thm := BDerivative.POLY_DERIV_MUL
+def POLY_DERIV_SUM : thm := BDerivative.POLY_DERIV_SUM
+def POLY_DERIV_PRODUCT : thm := BDerivative.POLY_DERIV_PRODUCT
+def POLY_DERIV_POW : thm := BDerivative.POLY_DERIV_POW
+def POLY_DERIV_VAR_POW : thm := BDerivative.POLY_DERIV_VAR_POW
 
 -- Separable
-unsafe def POLY_NONCONSTANT_IRREDUCIBLE_IMP_SEPARABLE : thm := BSeparable.POLY_NONCONSTANT_IRREDUCIBLE_IMP_SEPARABLE
-unsafe def POLY_IRREDUCIBLE_IMP_SEPARABLE : thm := BSeparable.POLY_IRREDUCIBLE_IMP_SEPARABLE
-unsafe def POLY_SQUARE_DIVIDES_DERIV : thm := BSeparable.POLY_SQUARE_DIVIDES_DERIV
-unsafe def REPEATED_ROOT_POLY_DERIV_ZERO : thm := BSeparable.REPEATED_ROOT_POLY_DERIV_ZERO
-unsafe def POLY_SEPARABLE_IMP_SQUAREFREE : thm := BSeparable.POLY_SEPARABLE_IMP_SQUAREFREE
-unsafe def POLY_SQUARE_DIVIDES_DERIV_EQ : thm := BSeparable.POLY_SQUARE_DIVIDES_DERIV_EQ
-unsafe def POLY_SQUAREFREE_IMP_SEPARABLE : thm := BSeparable.POLY_SQUAREFREE_IMP_SEPARABLE
-unsafe def POLY_SEPARABLE_EQ_SQUAREFREE : thm := BSeparable.POLY_SEPARABLE_EQ_SQUAREFREE
-unsafe def POLY_ROOT_COUNT_IMP_SQUAREFREE : thm := BSeparable.POLY_ROOT_COUNT_IMP_SQUAREFREE
+def POLY_NONCONSTANT_IRREDUCIBLE_IMP_SEPARABLE : thm := BSeparable.POLY_NONCONSTANT_IRREDUCIBLE_IMP_SEPARABLE
+def POLY_IRREDUCIBLE_IMP_SEPARABLE : thm := BSeparable.POLY_IRREDUCIBLE_IMP_SEPARABLE
+def POLY_SQUARE_DIVIDES_DERIV : thm := BSeparable.POLY_SQUARE_DIVIDES_DERIV
+def REPEATED_ROOT_POLY_DERIV_ZERO : thm := BSeparable.REPEATED_ROOT_POLY_DERIV_ZERO
+def POLY_SEPARABLE_IMP_SQUAREFREE : thm := BSeparable.POLY_SEPARABLE_IMP_SQUAREFREE
+def POLY_SQUARE_DIVIDES_DERIV_EQ : thm := BSeparable.POLY_SQUARE_DIVIDES_DERIV_EQ
+def POLY_SQUAREFREE_IMP_SEPARABLE : thm := BSeparable.POLY_SQUAREFREE_IMP_SEPARABLE
+def POLY_SEPARABLE_EQ_SQUAREFREE : thm := BSeparable.POLY_SEPARABLE_EQ_SQUAREFREE
+def POLY_ROOT_COUNT_IMP_SQUAREFREE : thm := BSeparable.POLY_ROOT_COUNT_IMP_SQUAREFREE
 
 -- GaussA
-unsafe def POLY_PRIMITIVE_CONST_CANCEL : thm := BGaussA.POLY_PRIMITIVE_CONST_CANCEL
-unsafe def MAKE_PRIMITIVE_IN_IDEAL : thm := BGaussA.MAKE_PRIMITIVE_IN_IDEAL
-unsafe def POLY_MAKE_PRIMITIVE : thm := BGaussA.POLY_MAKE_PRIMITIVE
-unsafe def RING_PRIME_POLY_RING_MONO : thm := BGaussA.RING_PRIME_POLY_RING_MONO
+def POLY_PRIMITIVE_CONST_CANCEL : thm := BGaussA.POLY_PRIMITIVE_CONST_CANCEL
+def MAKE_PRIMITIVE_IN_IDEAL : thm := BGaussA.MAKE_PRIMITIVE_IN_IDEAL
+def POLY_MAKE_PRIMITIVE : thm := BGaussA.POLY_MAKE_PRIMITIVE
+def RING_PRIME_POLY_RING_MONO : thm := BGaussA.RING_PRIME_POLY_RING_MONO
 
 -- GaussB
-unsafe def UFD_POLY_RING : thm := BGaussB.UFD_POLY_RING
+def UFD_POLY_RING : thm := BGaussB.UFD_POLY_RING
 
 -- GaussC
-unsafe def POLY_CLEAR_DENOMINATORS : thm := BGaussC.POLY_CLEAR_DENOMINATORS
+def POLY_CLEAR_DENOMINATORS : thm := BGaussC.POLY_CLEAR_DENOMINATORS
 
 -- GaussD
-unsafe def IRREDUCIBLE_PRIMITIVE_POLY_FRACTION_RING : thm := BGaussD.IRREDUCIBLE_PRIMITIVE_POLY_FRACTION_RING
+def IRREDUCIBLE_PRIMITIVE_POLY_FRACTION_RING : thm := BGaussD.IRREDUCIBLE_PRIMITIVE_POLY_FRACTION_RING
 
 -- Eisenstein
-unsafe def EISENSTEIN_IRREDUCIBILITY_GEN : thm := BEisenstein.EISENSTEIN_IRREDUCIBILITY_GEN
-unsafe def EISENSTEIN_IRREDUCIBILITY : thm := BEisenstein.EISENSTEIN_IRREDUCIBILITY
-unsafe def EISENSTEIN_IRREDUCIBILITY_FRACTION_RING : thm := BEisenstein.EISENSTEIN_IRREDUCIBILITY_FRACTION_RING
+def EISENSTEIN_IRREDUCIBILITY_GEN : thm := BEisenstein.EISENSTEIN_IRREDUCIBILITY_GEN
+def EISENSTEIN_IRREDUCIBILITY : thm := BEisenstein.EISENSTEIN_IRREDUCIBILITY
+def EISENSTEIN_IRREDUCIBILITY_FRACTION_RING : thm := BEisenstein.EISENSTEIN_IRREDUCIBILITY_FRACTION_RING
 
 -- RingOrder
-unsafe def RING_ORDER_DIVIDES : thm := BRingOrder.RING_ORDER_DIVIDES
-unsafe def RING_POW_EQ_1 : thm := BRingOrder.RING_POW_EQ_1
-unsafe def RING_ORDER_EQ_0 : thm := BRingOrder.RING_ORDER_EQ_0
-unsafe def RING_ORDER_EQ_1 : thm := BRingOrder.RING_ORDER_EQ_1
-unsafe def RING_ORDER_UNIQUE : thm := BRingOrder.RING_ORDER_UNIQUE
-unsafe def RING_POW_RING_ORDER : thm := BRingOrder.RING_POW_RING_ORDER
-unsafe def RING_ORDER_1 : thm := BRingOrder.RING_ORDER_1
-unsafe def RING_POW_GCD_EQ_1 : thm := BRingOrder.RING_POW_GCD_EQ_1
-unsafe def RING_POW_COPRIME_EQ_1 : thm := BRingOrder.RING_POW_COPRIME_EQ_1
-unsafe def RING_ORDER_MUL_DIVIDES_GEN : thm := BRingOrder.RING_ORDER_MUL_DIVIDES_GEN
-unsafe def RING_ORDER_MUL_DIVIDES : thm := BRingOrder.RING_ORDER_MUL_DIVIDES
-unsafe def RING_ORDER_MUL_DIVIDES_LCM : thm := BRingOrder.RING_ORDER_MUL_DIVIDES_LCM
-unsafe def RING_POW_MOD_ORDER_GEN : thm := BRingOrder.RING_POW_MOD_ORDER_GEN
-unsafe def RING_POW_MOD_ORDER : thm := BRingOrder.RING_POW_MOD_ORDER
-unsafe def RING_ORDER_POW : thm := BRingOrder.RING_ORDER_POW
-unsafe def RING_ORDER_POW_GEN : thm := BRingOrder.RING_ORDER_POW_GEN
-unsafe def RING_ORDER_POW_DIVIDES : thm := BRingOrder.RING_ORDER_POW_DIVIDES
-unsafe def RING_ORDER_UNIQUE_PRIME : thm := BRingOrder.RING_ORDER_UNIQUE_PRIME
-unsafe def RING_ORDER_MUL : thm := BRingOrder.RING_ORDER_MUL
+def RING_ORDER_DIVIDES : thm := BRingOrder.RING_ORDER_DIVIDES
+def RING_POW_EQ_1 : thm := BRingOrder.RING_POW_EQ_1
+def RING_ORDER_EQ_0 : thm := BRingOrder.RING_ORDER_EQ_0
+def RING_ORDER_EQ_1 : thm := BRingOrder.RING_ORDER_EQ_1
+def RING_ORDER_UNIQUE : thm := BRingOrder.RING_ORDER_UNIQUE
+def RING_POW_RING_ORDER : thm := BRingOrder.RING_POW_RING_ORDER
+def RING_ORDER_1 : thm := BRingOrder.RING_ORDER_1
+def RING_POW_GCD_EQ_1 : thm := BRingOrder.RING_POW_GCD_EQ_1
+def RING_POW_COPRIME_EQ_1 : thm := BRingOrder.RING_POW_COPRIME_EQ_1
+def RING_ORDER_MUL_DIVIDES_GEN : thm := BRingOrder.RING_ORDER_MUL_DIVIDES_GEN
+def RING_ORDER_MUL_DIVIDES : thm := BRingOrder.RING_ORDER_MUL_DIVIDES
+def RING_ORDER_MUL_DIVIDES_LCM : thm := BRingOrder.RING_ORDER_MUL_DIVIDES_LCM
+def RING_POW_MOD_ORDER_GEN : thm := BRingOrder.RING_POW_MOD_ORDER_GEN
+def RING_POW_MOD_ORDER : thm := BRingOrder.RING_POW_MOD_ORDER
+def RING_ORDER_POW : thm := BRingOrder.RING_ORDER_POW
+def RING_ORDER_POW_GEN : thm := BRingOrder.RING_ORDER_POW_GEN
+def RING_ORDER_POW_DIVIDES : thm := BRingOrder.RING_ORDER_POW_DIVIDES
+def RING_ORDER_UNIQUE_PRIME : thm := BRingOrder.RING_ORDER_UNIQUE_PRIME
+def RING_ORDER_MUL : thm := BRingOrder.RING_ORDER_MUL
 
 -- Frobenius
-unsafe def RING_ENDOMORPHISM_FROBENIUS : thm := BFrobenius.RING_ENDOMORPHISM_FROBENIUS
-unsafe def RING_MONOMORPHISM_FROBENIUS_GEN : thm := BFrobenius.RING_MONOMORPHISM_FROBENIUS_GEN
-unsafe def RING_MONOMORPHISM_FROBENIUS : thm := BFrobenius.RING_MONOMORPHISM_FROBENIUS
-unsafe def RING_AUTOMORPHISM_FROBENIUS : thm := BFrobenius.RING_AUTOMORPHISM_FROBENIUS
-unsafe def FROBENIUS_FIXED : thm := BFrobenius.FROBENIUS_FIXED
+def RING_ENDOMORPHISM_FROBENIUS : thm := BFrobenius.RING_ENDOMORPHISM_FROBENIUS
+def RING_MONOMORPHISM_FROBENIUS_GEN : thm := BFrobenius.RING_MONOMORPHISM_FROBENIUS_GEN
+def RING_MONOMORPHISM_FROBENIUS : thm := BFrobenius.RING_MONOMORPHISM_FROBENIUS
+def RING_AUTOMORPHISM_FROBENIUS : thm := BFrobenius.RING_AUTOMORPHISM_FROBENIUS
+def FROBENIUS_FIXED : thm := BFrobenius.FROBENIUS_FIXED
 
 -- IntegralDomainRule
-unsafe def INTEGRAL_DOMAIN_RULE : term → IO (Except String thm) := fun t => (BIntegralDomainRule.INTEGRAL_DOMAIN_RULE t).run
-unsafe def FIELD_TAC : HolCore.Tactics.tactic := fun g => BIntegralDomainRule.FIELD_TAC g
-unsafe def FIELD_INV_EQ_0 : thm := BIntegralDomainRule.FIELD_INV_EQ_0
-unsafe def FIELD_DIV_EQ_0 : thm := BIntegralDomainRule.FIELD_DIV_EQ_0
+def INTEGRAL_DOMAIN_RULE : term → IO (Except String thm) := fun t => (BIntegralDomainRule.INTEGRAL_DOMAIN_RULE t).run
+def FIELD_TAC : HolCore.Tactics.tactic := fun g => BIntegralDomainRule.FIELD_TAC g
+def FIELD_INV_EQ_0 : thm := BIntegralDomainRule.FIELD_INV_EQ_0
+def FIELD_DIV_EQ_0 : thm := BIntegralDomainRule.FIELD_DIV_EQ_0
 
 -- RingPullDiv
-unsafe def RING_PULL_DIV : thm := BRingPullDiv.RING_PULL_DIV
-unsafe def RING_PULL_DIV_CONV := BRingPullDiv.RING_PULL_DIV_CONV
-unsafe def RING_PULL_DIV_TAC : HolCore.Tactics.tactic := fun g => BRingPullDiv.RING_PULL_DIV_TAC g
+def RING_PULL_DIV : thm := BRingPullDiv.RING_PULL_DIV
+def RING_PULL_DIV_CONV := BRingPullDiv.RING_PULL_DIV_CONV
+def RING_PULL_DIV_TAC : HolCore.Tactics.tactic := fun g => BRingPullDiv.RING_PULL_DIV_TAC g
 
 
 
@@ -3495,79 +3333,7 @@ unsafe def RING_PULL_DIV_TAC : HolCore.Tactics.tactic := fun g => BRingPullDiv.R
 
 
 
--- @@EXPORTS END
-
-/-- `needs "Library/ringtheory.ml"`: build the bundle. -/
-unsafe def ensureRingTheory : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BBasics.ring_tybij
-  let _ ← IO.mkRef BNumbers.ring_of_num
-  let _ ← IO.mkRef BSums.ring_sum
-  let _ ← IO.mkRef BProducts.ring_product
-  let _ ← IO.mkRef BDivides.ring_divides
-  let _ ← IO.mkRef BSubrings.subring_of
-  let _ ← IO.mkRef BIdeals.ring_ideal
-  let _ ← IO.mkRef BDomains.integral_domain
-  let _ ← IO.mkRef BRules.RING_CARRIER_RULE
-  let _ ← IO.mkRef BHoms.ring_homomorphism
-  let _ ← IO.mkRef BIso.isomorphic_ring
-  let _ ← IO.mkRef BKernels.ring_kernel
-  let _ ← IO.mkRef BProdRings.prod_ring
-  let _ ← IO.mkRef BLimits.RING_DIRECT_LIMIT
-  let _ ← IO.mkRef BRingRule.RING_RULE
-  let _ ← IO.mkRef BCosets.ring_coset
-  let _ ← IO.mkRef BQuotients.quotient_ring
-  let _ ← IO.mkRef BPrimes.ring_prime
-  let _ ← IO.mkRef BFactorizations.RING_DIVIDES_PRIMEFACTS_INJECTION
-  let _ ← IO.mkRef BSquarefree.ring_squarefree
-  let _ ← IO.mkRef BLocalization.ring_localequiv
-  let _ ← IO.mkRef BSpecialIdeals.proper_ideal
-  let _ ← IO.mkRef BRadical.radical
-  let _ ← IO.mkRef BUFDs.UFD
-  let _ ← IO.mkRef BEuclidean.euclidean_ring
-  let _ ← IO.mkRef BNoetherian.NOETHERIAN_RING
-  let _ ← IO.mkRef BACCP.RING_ACCP
-  let _ ← IO.mkRef BRingGcd.ring_gcd
-  let _ ← IO.mkRef BBezout.bezout_ring
-  let _ ← IO.mkRef BGcdDomain.RING_GCD_LMUL
-  let _ ← IO.mkRef BSquarefreeUFD.RING_SQUAREFREE_GCD
-  let _ ← IO.mkRef BBooleanRings.boolean_ring
-  let _ ← IO.mkRef BLocalRings.local_ring
-  let _ ← IO.mkRef BVonNeumann.vnregular_ring
-  let _ ← IO.mkRef BBoolRing.bool_ring
-  let _ ← IO.mkRef BIntegerRing.integer_ring
-  let _ ← IO.mkRef BIntegerModRing.integer_mod_ring
-  let _ ← IO.mkRef BIntegerModConv.RING_INV_INTEGER_MOD_RING
-  let _ ← IO.mkRef BRealRing.real_ring
-  let _ ← IO.mkRef BMonomials.monomial_1
-  let _ ← IO.mkRef BPowerSeries.ring_powerseries
-  let _ ← IO.mkRef BPolyRings.powser_ring
-  let _ ← IO.mkRef BHomExtend.poly_extend
-  let _ ← IO.mkRef BNatIso.RING_ISOMORPHISM_POWSER_RING_TRIVIAL
-  let _ ← IO.mkRef BRenaming.poly_reindex
-  let _ ← IO.mkRef BMonomialOrders.POSET_MONOMIAL_DIVIDES
-  let _ ← IO.mkRef BOneCoeff.EXISTS_FUN_FROM_1
-  let _ ← IO.mkRef BDegree.poly_deg
-  let _ ← IO.mkRef BCardinalities.CARD_EQ_MONOMIALS_FINITE
-  let _ ← IO.mkRef BEvaluation.poly_evaluate
-  let _ ← IO.mkRef BComposing.RING_POWERSERIES_COMPOSE
-  let _ ← IO.mkRef BZerodivisors.INTEGRAL_DOMAIN_POWSER_RING
-  let _ ← IO.mkRef BXMinusA.POLY_DEG_X_MINUS_A
-  let _ ← IO.mkRef BDivision.POLY_TOP_NONZERO
-  let _ ← IO.mkRef BHilbert.NOETHERIAN_POLY_RING_1
-  let _ ← IO.mkRef BMonic.monic
-  let _ ← IO.mkRef BReciprocal.poly_recip
-  let _ ← IO.mkRef BDerivative.poly_deriv
-  let _ ← IO.mkRef BSeparable.POLY_NONCONSTANT_IRREDUCIBLE_IMP_SEPARABLE
-  let _ ← IO.mkRef BGaussA.POLY_PRIMITIVE_CONST_CANCEL
-  let _ ← IO.mkRef BGaussB.UFD_POLY_RING
-  let _ ← IO.mkRef BGaussC.POLY_CLEAR_DENOMINATORS
-  let _ ← IO.mkRef BGaussD.IRREDUCIBLE_PRIMITIVE_POLY_FRACTION_RING
-  let _ ← IO.mkRef BEisenstein.EISENSTEIN_IRREDUCIBILITY_GEN
-  let _ ← IO.mkRef BRingOrder.RING_ORDER_DIVIDES
-  let _ ← IO.mkRef BFrobenius.RING_ENDOMORPHISM_FROBENIUS
-  let _ ← IO.mkRef BIntegralDomainRule.FIELD_INV_EQ_0
-  let _ ← IO.mkRef BRingPullDiv.RING_PULL_DIV-- @@ENSURE END
-  pure ()
+/-- `needs "Library/ringtheory.ml"`: already done by importing this module. -/
+def ensureRingTheory : IO Unit := pure ()
 
 end SessionLibrary.RingTheory

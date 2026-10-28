@@ -3,6 +3,7 @@ Translation of HOL Light's Examples/bdd_examples.ml, phrase by phrase.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 import HolExamples.Common
+import SessionLibrary.BDD
 open HolCore.Kernel Session HolLight.Syntax HolExamples
 open SessionLibrary.BDD
 
@@ -50,7 +51,7 @@ namespace HolExamples.BddExamples
 
 #eval phrase 5
 -- let rip02_be = `...`;;
-unsafe def rip02_be : term := keep "rip02_be" fun _ =>
+def rip02_be : term := keep "rip02_be" fun _ =>
   [[(car1 <=> (a1 /\ b1)) /\
     (cout <=> ((a2 \/ b2) /\ car1 \/ a2 /\ b2)) /\
     (som2 <=> ~(a2 <=> ~(b2 <=> car1))) /\
@@ -76,7 +77,7 @@ unsafe def rip02_be : term := keep "rip02_be" fun _ =>
 #eval phrase 8
 -- let add4_be = `...` and vars = map (C (curry mk_var) bool_ty) [...] in
 --   BDD_DEFTAUT vars add4_be;;
-unsafe def add4_be : term := keep "add4_be" fun _ =>
+def add4_be : term := keep "add4_be" fun _ =>
   [[(n3 <=> a_0_) /\
     (n4 <=> a_2_) /\
     (n5 <=> a_4_) /\
@@ -436,7 +437,7 @@ unsafe def add4_be : term := keep "add4_be" fun _ =>
         (o_9_ <=> hulp9) /\
         (o_10_ <=> hulp10) /\
         (o_11_ <=> hulp11)]]
-unsafe def vars : List term := keep "vars" fun _ =>
+def vars : List term := keep "vars" fun _ =>
   (["carryin","anda","andb","exora","exorb",
     "a_0_","b_0_","a_1_","b_1_","a_2_",
     "b_2_","a_3_","b_3_","a_4_","b_4_",

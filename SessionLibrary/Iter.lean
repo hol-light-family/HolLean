@@ -3,14 +3,10 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Iter.lean
 
-  The `unsafe` half of the iter.ml translation: it supplies
-  HolLibrary.Iter's dependencies from Session, builds the bundle once, and
-  exports every name under its HOL Light name.  `ensureIter` is
-  `needs "Library/iter.ml"`.
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Iter.lean by tools/iterdiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the iter.ml translation: it supplies
+  HolLibrary.Iter's dependencies from Session and exports every name under
+  its HOL Light name.  Importing this module is `needs "Library/iter.ml"`:
+  the bundle is built by `initialize` when the module is loaded.
 -/
 
 import Session
@@ -21,12 +17,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Iter
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems iter.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Iter.CoreThms1 where
+def core1 : HolLibrary.Iter.CoreThms1 where
   ADD := Session.ADD
   ADD_AC := Session.ADD_AC
   ADD_SYM := Session.ADD_SYM
@@ -53,10 +45,10 @@ unsafe def core1 (_ : Unit) : HolLibrary.Iter.CoreThms1 where
   WLOG_LT := Session.WLOG_LT
   num_WF := Session.num_WF
   num_WOP := Session.num_WOP
-  o_THM := Session.o_THM-- @@CORE END
+  o_THM := Session.o_THM
 
 /-- What iter.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Iter.IterDeps where
+def deps : HolLibrary.Iter.IterDeps where
   define s := do ExceptT.mk (Session.define (← HolLight.q s))
   num_CONV := Session.num_CONV
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
@@ -68,59 +60,30 @@ unsafe def deps (_ : Unit) : HolLibrary.Iter.IterDeps where
   MESON_TAC := Session.MESON_TAC
   NUMBER_RULE t := ExceptT.mk (Session.NUMBER_RULE t)
   SET_TAC := Session.SET_TAC
-  core1 := core1 ()
+  core1 := core1
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml). -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Iter: {name}"
+/-- iter.ml, run when this module is loaded. -/
+initialize BIter : HolLibrary.Iter.Iter ← do
+  match ← (HolLibrary.Iter.setupIter deps).run with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"setupIter failed: {e}")
 
-/- The single bundle. -/
-
--- @@BUNDLES BEGIN
-initialize theIter : IO.Ref (Option HolLibrary.Iter.Iter) ← IO.mkRef none
-unsafe def BIter : HolLibrary.Iter.Iter :=
-  cached theIter "setupIter" fun _ => do
-    (HolLibrary.Iter.setupIter (deps ())).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Iter
-unsafe def ITER : thm := BIter.ITER
-unsafe def ITER_POINTLESS : thm := BIter.ITER_POINTLESS
-unsafe def ITER_ALT : thm := BIter.ITER_ALT
-unsafe def ITER_ALT_POINTLESS : thm := BIter.ITER_ALT_POINTLESS
-unsafe def ITER_1 : thm := BIter.ITER_1
-unsafe def ITER_ADD : thm := BIter.ITER_ADD
-unsafe def ITER_ADD_POINTLESS : thm := BIter.ITER_ADD_POINTLESS
-unsafe def ITER_MUL : thm := BIter.ITER_MUL
-unsafe def ITER_FIXPOINT : thm := BIter.ITER_FIXPOINT
-unsafe def ORDER_EXISTENCE_GEN : thm := BIter.ORDER_EXISTENCE_GEN
-unsafe def ORDER_EXISTENCE_ITER : thm := BIter.ORDER_EXISTENCE_ITER
-unsafe def ORDER_EXISTENCE_CARD : thm := BIter.ORDER_EXISTENCE_CARD
-unsafe def ORDER_EXISTENCE_FINITE : thm := BIter.ORDER_EXISTENCE_FINITE
+def ITER : thm := BIter.ITER
+def ITER_POINTLESS : thm := BIter.ITER_POINTLESS
+def ITER_ALT : thm := BIter.ITER_ALT
+def ITER_ALT_POINTLESS : thm := BIter.ITER_ALT_POINTLESS
+def ITER_1 : thm := BIter.ITER_1
+def ITER_ADD : thm := BIter.ITER_ADD
+def ITER_ADD_POINTLESS : thm := BIter.ITER_ADD_POINTLESS
+def ITER_MUL : thm := BIter.ITER_MUL
+def ITER_FIXPOINT : thm := BIter.ITER_FIXPOINT
+def ORDER_EXISTENCE_GEN : thm := BIter.ORDER_EXISTENCE_GEN
+def ORDER_EXISTENCE_ITER : thm := BIter.ORDER_EXISTENCE_ITER
+def ORDER_EXISTENCE_CARD : thm := BIter.ORDER_EXISTENCE_CARD
+def ORDER_EXISTENCE_FINITE : thm := BIter.ORDER_EXISTENCE_FINITE
 
-
-
--- @@EXPORTS END
-
-/-- `needs "Library/iter.ml"`: build the bundle. -/
-unsafe def ensureIter : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BIter.ITER  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/iter.ml"`: already done by importing this module. -/
+def ensureIter : IO Unit := pure ()
 
 end SessionLibrary.Iter

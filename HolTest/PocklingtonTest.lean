@@ -11,7 +11,7 @@ the constants and definitions and all 2,553 load messages (including the
 `proving that N is prime` remarks of the load-time examples). -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Pocklington
 
 open HolCore.Kernel HolTest.CommonTest
 

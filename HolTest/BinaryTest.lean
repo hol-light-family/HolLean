@@ -9,7 +9,7 @@ tools/binarydiff/check.sh compares far more structurally: all theorems, the
 constants and definitions. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Binary
 
 open HolCore.Kernel HolTest.CommonTest
 

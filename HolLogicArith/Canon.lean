@@ -15,37 +15,37 @@ namespace HolLogicArith.Canon
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1` bundles; alias the ones we need. -/
-private unsafe def HD : thm := Session.listDefs.HD
-private unsafe def TL : thm := Session.listDefs.TL
-private unsafe def REVERSE : thm := Session.listDefs.REVERSE
-private unsafe def APPEND : thm := Session.listDefs.APPEND
-private unsafe def LENGTH : thm := Session.listDefs.LENGTH
-private unsafe def MAP : thm := Session.listDefs.MAP
-private unsafe def ALL : thm := Session.listDefs.ALL
-private unsafe def ITLIST : thm := Session.listDefs.ITLIST
-private unsafe def MEM : thm := Session.listDefs.MEM
-private unsafe def MAP2 : thm := Session.listDefs.MAP2
-private unsafe def MAP2_DEF : thm := Session.listDefs.MAP2_DEF
-private unsafe def MAP_EQ : thm := Session.listThms1.MAP_EQ
-private unsafe def MAP_EQ_DEGEN : thm := Session.listThms1.MAP_EQ_DEGEN
-private unsafe def MAP_o : thm := Session.listThms1.MAP_o
-private unsafe def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
-private unsafe def ALL_T : thm := Session.listThms1.ALL_T
-private unsafe def ALL_MAP : thm := Session.listThms1.ALL_MAP
-private unsafe def ALL_IMP : thm := Session.listThms1.ALL_IMP
-private unsafe def ITLIST_EXTRA : thm := Session.listThms1.ITLIST_EXTRA
+private def HD : thm := Session.listDefs.HD
+private def TL : thm := Session.listDefs.TL
+private def REVERSE : thm := Session.listDefs.REVERSE
+private def APPEND : thm := Session.listDefs.APPEND
+private def LENGTH : thm := Session.listDefs.LENGTH
+private def MAP : thm := Session.listDefs.MAP
+private def ALL : thm := Session.listDefs.ALL
+private def ITLIST : thm := Session.listDefs.ITLIST
+private def MEM : thm := Session.listDefs.MEM
+private def MAP2 : thm := Session.listDefs.MAP2
+private def MAP2_DEF : thm := Session.listDefs.MAP2_DEF
+private def MAP_EQ : thm := Session.listThms1.MAP_EQ
+private def MAP_EQ_DEGEN : thm := Session.listThms1.MAP_EQ_DEGEN
+private def MAP_o : thm := Session.listThms1.MAP_o
+private def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
+private def ALL_T : thm := Session.listThms1.ALL_T
+private def ALL_MAP : thm := Session.listThms1.ALL_MAP
+private def ALL_IMP : thm := Session.listThms1.ALL_IMP
+private def ITLIST_EXTRA : thm := Session.listThms1.ITLIST_EXTRA
 
 #eval HolLogicArith.Skolem.ensure
 #eval HolLogicArith.FolProp.ensure
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_inductive_definition`, panicking with HOL Light's message on failure. -/
-private unsafe def newInductive (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+private def newInductive (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"new_inductive_definition: {e}"
   | .error e => panic! s!"new_inductive_definition IO: {e}"
@@ -53,18 +53,18 @@ private unsafe def newInductive (tm : term) : thm × thm × thm :=
 /- `new_definition`. -/
 
 #eval phrase 1
-unsafe def terms_triple : thm × thm × thm := keep "terms_triple" fun _ =>
+def terms_triple : thm × thm × thm := keep "terms_triple" fun _ =>
   newInductive
     [[(!x. terms fns (V x)) /\
       (!f l. (f,LENGTH l) IN fns /\ ALL (terms fns) l
              ==> terms fns (Fn f l))]]
-unsafe def terms_RULES : thm := terms_triple.1
-unsafe def terms_INDUCT : thm := terms_triple.2.1
-unsafe def terms_CASES : thm := terms_triple.2.2
+def terms_RULES : thm := terms_triple.1
+def terms_INDUCT : thm := terms_triple.2.1
+def terms_CASES : thm := terms_triple.2.2
 #eval do IO.println terms_RULES; IO.println terms_INDUCT; IO.println terms_CASES
 
 #eval phrase 2
-unsafe def STUPID_CANONDOM_LEMMA : thm := keep "STUPID_CANONDOM_LEMMA" fun _ => (do
+def STUPID_CANONDOM_LEMMA : thm := keep "STUPID_CANONDOM_LEMMA" fun _ => (do
   let lemma0 ← prove
    ([[a SUBSET s /\ b SUBSET s ==> (a UNION b) SUBSET s]]) (SET_TAC [])
   let lemma1 ← prove
@@ -83,7 +83,7 @@ unsafe def STUPID_CANONDOM_LEMMA : thm := keep "STUPID_CANONDOM_LEMMA" fun _ => 
 #eval STUPID_CANONDOM_LEMMA
 
 #eval phrase 3
-unsafe def FINITE_SUBSET_INSTANCE : thm := keep "FINITE_SUBSET_INSTANCE" fun _ => (do
+def FINITE_SUBSET_INSTANCE : thm := keep "FINITE_SUBSET_INSTANCE" fun _ => (do
   prove ([[!t'. FINITE(t')
         ==> t' SUBSET { formsubst v p | P(v) /\ p IN s}
             ==> ?t. FINITE(t) /\ t SUBSET s /\
@@ -115,7 +115,7 @@ unsafe def FINITE_SUBSET_INSTANCE : thm := keep "FINITE_SUBSET_INSTANCE" fun _ =
 #eval FINITE_SUBSET_INSTANCE
 
 #eval phrase 4
-unsafe def FINITE_SUBSET_SKOLEM : thm := keep "FINITE_SUBSET_SKOLEM" fun _ => (do
+def FINITE_SUBSET_SKOLEM : thm := keep "FINITE_SUBSET_SKOLEM" fun _ => (do
   prove ([[!s u. FINITE(u)
         ==> u SUBSET { SKOLEM p | p IN s}
             ==> ?t. FINITE(t) /\ t SUBSET s /\
@@ -148,7 +148,7 @@ unsafe def FINITE_SUBSET_SKOLEM : thm := keep "FINITE_SUBSET_SKOLEM" fun _ => (d
 #eval FINITE_SUBSET_SKOLEM
 
 #eval phrase 5
-unsafe def VALUATION_EXISTS : thm := keep "VALUATION_EXISTS" fun _ => (do
+def VALUATION_EXISTS : thm := keep "VALUATION_EXISTS" fun _ => (do
   prove ([[!M. ~(Dom(M) = EMPTY) ==> ?v:num->A. valuation(M) v]])
    (GEN_TAC THEN REWRITE_TAC [(← HolLight.GSYM MEMBER_NOT_EMPTY)] THEN
     DISCH_THEN (X_CHOOSE_TAC [[a:A]]) THEN
@@ -158,7 +158,7 @@ unsafe def VALUATION_EXISTS : thm := keep "VALUATION_EXISTS" fun _ => (do
 #eval VALUATION_EXISTS
 
 #eval phrase 6
-unsafe def HOLDS_ITLIST_EXISTS : thm := keep "HOLDS_ITLIST_EXISTS" fun _ => (do
+def HOLDS_ITLIST_EXISTS : thm := keep "HOLDS_ITLIST_EXISTS" fun _ => (do
   prove ([[!M xs v. holds M v (ITLIST ?? xs p) <=>
             ?as. (LENGTH as = LENGTH xs) /\
                  ALL (Dom M) as /\
@@ -180,25 +180,25 @@ unsafe def HOLDS_ITLIST_EXISTS : thm := keep "HOLDS_ITLIST_EXISTS" fun _ => (do
 #eval HOLDS_ITLIST_EXISTS
 
 #eval phrase 7
-unsafe def canonical : thm := keep "canonical" fun _ => new_definition
+def canonical : thm := keep "canonical" fun _ => new_definition
   [[canonical (L:(num#num->bool)#(num#num->bool)) M <=>
        (Dom M = terms (FST L)) /\
        (!f. Fun(M) f = Fn f)]]
 #eval canonical
 
 #eval phrase 8
-unsafe def prop_of_model : thm := keep "prop_of_model" fun _ => new_definition
+def prop_of_model : thm := keep "prop_of_model" fun _ => new_definition
   [[prop_of_model M v (Atom p l) <=> holds M v (Atom p l)]]
 #eval prop_of_model
 
 #eval phrase 9
-unsafe def canon_of_prop : thm := keep "canon_of_prop" fun _ => new_definition
+def canon_of_prop : thm := keep "canon_of_prop" fun _ => new_definition
   [[canon_of_prop (L:((num#num)->bool)#((num#num)->bool)) (d:form->bool) =
    terms(FST L),Fn,\p l. d(Atom p l)]]
 #eval canon_of_prop
 
 #eval phrase 10
-unsafe def PHOLDS_PROP_OF_MODEL : thm := keep "PHOLDS_PROP_OF_MODEL" fun _ => (do
+def PHOLDS_PROP_OF_MODEL : thm := keep "PHOLDS_PROP_OF_MODEL" fun _ => (do
   prove ([[!p. qfree(p) ==> (pholds (prop_of_model M v) p <=> holds M v p)]])
    (MATCH_MP_TAC form_INDUCTION THEN
     REWRITE_TAC [qfree, holds, pholds] THEN CONJ_TAC THENL
@@ -209,7 +209,7 @@ unsafe def PHOLDS_PROP_OF_MODEL : thm := keep "PHOLDS_PROP_OF_MODEL" fun _ => (d
 #eval PHOLDS_PROP_OF_MODEL
 
 #eval phrase 11
-unsafe def PROP_OF_CANON_OF_PROP : thm := keep "PROP_OF_CANON_OF_PROP" fun _ => (do
+def PROP_OF_CANON_OF_PROP : thm := keep "PROP_OF_CANON_OF_PROP" fun _ => (do
   prove ([[!p l. prop_of_model (canon_of_prop L d) V (Atom p l) = d (Atom p l)]])
    (REWRITE_TAC [prop_of_model, canon_of_prop, holds, Pred_DEF] THEN
     REPEAT GEN_TAC THEN REPEAT AP_TERM_TAC THEN
@@ -225,7 +225,7 @@ unsafe def PROP_OF_CANON_OF_PROP : thm := keep "PROP_OF_CANON_OF_PROP" fun _ => 
 #eval PROP_OF_CANON_OF_PROP
 
 #eval phrase 12
-unsafe def HOLDS_CANON_OF_PROP : thm := keep "HOLDS_CANON_OF_PROP" fun _ => (do
+def HOLDS_CANON_OF_PROP : thm := keep "HOLDS_CANON_OF_PROP" fun _ => (do
   prove ([[!p. qfree p ==> (holds (canon_of_prop L d) V p <=> pholds d p)]])
    (GEN_TAC THEN DISCH_THEN (fun th => HolLight.tactic_of do
       let mmp ← HolLight.MATCH_MP PHOLDS_PROP_OF_MODEL th
@@ -240,7 +240,7 @@ unsafe def HOLDS_CANON_OF_PROP : thm := keep "HOLDS_CANON_OF_PROP" fun _ => (do
 #eval HOLDS_CANON_OF_PROP
 
 #eval phrase 13
-unsafe def HOLDS_CANON_OF_PROP_GENERAL : thm := keep "HOLDS_CANON_OF_PROP_GENERAL" fun _ => (do
+def HOLDS_CANON_OF_PROP_GENERAL : thm := keep "HOLDS_CANON_OF_PROP_GENERAL" fun _ => (do
   prove ([[qfree p ==> (holds (canon_of_prop L d) v p <=> pholds d (formsubst v p))]])
    (DISCH_THEN (fun th => HolLight.tactic_of do
       let mmp ← HolLight.MATCH_MP PHOLDS_PROP_OF_MODEL th
@@ -262,14 +262,14 @@ unsafe def HOLDS_CANON_OF_PROP_GENERAL : thm := keep "HOLDS_CANON_OF_PROP_GENERA
 #eval HOLDS_CANON_OF_PROP_GENERAL
 
 #eval phrase 14
-unsafe def CANONICAL_CANON_OF_PROP : thm := keep "CANONICAL_CANON_OF_PROP" fun _ => (do
+def CANONICAL_CANON_OF_PROP : thm := keep "CANONICAL_CANON_OF_PROP" fun _ => (do
   prove ([[!d. canonical L (canon_of_prop L d)]])
    (REWRITE_TAC [canonical, canon_of_prop, Dom_DEF, Fun_DEF, FUN_EQ_THM])
   : ExceptT String IO thm).run
 #eval CANONICAL_CANON_OF_PROP
 
 #eval phrase 15
-unsafe def INTERPRETATION_CANON_OF_PROP : thm := keep "INTERPRETATION_CANON_OF_PROP" fun _ => (do
+def INTERPRETATION_CANON_OF_PROP : thm := keep "INTERPRETATION_CANON_OF_PROP" fun _ => (do
   prove ([[!L d. interpretation L (canon_of_prop L d)]])
    (REWRITE_TAC [FORALL_PAIR_THM, IN, ETA_AX,
               interpretation, canon_of_prop, Fun_DEF, Dom_DEF] THEN
@@ -278,14 +278,14 @@ unsafe def INTERPRETATION_CANON_OF_PROP : thm := keep "INTERPRETATION_CANON_OF_P
 #eval INTERPRETATION_CANON_OF_PROP
 
 #eval phrase 16
-unsafe def PROP_VALID_IMP_FOL_VALID : thm := keep "PROP_VALID_IMP_FOL_VALID" fun _ => (do
+def PROP_VALID_IMP_FOL_VALID : thm := keep "PROP_VALID_IMP_FOL_VALID" fun _ => (do
   prove ([[!p. qfree(p) /\ (!d. pholds d p) ==> !M v. holds M v p]])
    (MESON_TAC [PHOLDS_PROP_OF_MODEL])
   : ExceptT String IO thm).run
 #eval PROP_VALID_IMP_FOL_VALID
 
 #eval phrase 17
-unsafe def FOL_VALID_IMP_PROP_VALID : thm := keep "FOL_VALID_IMP_PROP_VALID" fun _ => (do
+def FOL_VALID_IMP_PROP_VALID : thm := keep "FOL_VALID_IMP_PROP_VALID" fun _ => (do
   prove ([[!p. qfree(p) /\
        (!C (v:num->term). canonical(language {p}) C ==> holds C v p)
        ==> !d. pholds d p]])
@@ -294,7 +294,7 @@ unsafe def FOL_VALID_IMP_PROP_VALID : thm := keep "FOL_VALID_IMP_PROP_VALID" fun
 #eval FOL_VALID_IMP_PROP_VALID
 
 #eval phrase 18
-unsafe def SATISFIES_PSATISFIES : thm := keep "SATISFIES_PSATISFIES" fun _ => (do
+def SATISFIES_PSATISFIES : thm := keep "SATISFIES_PSATISFIES" fun _ => (do
   prove ([[(!p. p IN s ==> qfree p) /\ M satisfies s /\ valuation(M) v
    ==> (prop_of_model M v) psatisfies s]])
    (REWRITE_TAC [satisfies, psatisfies] THEN MESON_TAC [PHOLDS_PROP_OF_MODEL])
@@ -302,7 +302,7 @@ unsafe def SATISFIES_PSATISFIES : thm := keep "SATISFIES_PSATISFIES" fun _ => (d
 #eval SATISFIES_PSATISFIES
 
 #eval phrase 19
-unsafe def PSATISFIES_INSTANCES : thm := keep "PSATISFIES_INSTANCES" fun _ => (do
+def PSATISFIES_INSTANCES : thm := keep "PSATISFIES_INSTANCES" fun _ => (do
   prove ([[(!p. p IN s ==> qfree p) /\
    d psatisfies {formsubst v p | (!x. v x IN terms(FST L)) /\ p IN s}
    ==> (canon_of_prop L d) satisfies s]])
@@ -329,7 +329,7 @@ unsafe def PSATISFIES_INSTANCES : thm := keep "PSATISFIES_INSTANCES" fun _ => (d
 #eval PSATISFIES_INSTANCES
 
 #eval phrase 20
-unsafe def SATISFIES_INSTANCES : thm := keep "SATISFIES_INSTANCES" fun _ => (do
+def SATISFIES_INSTANCES : thm := keep "SATISFIES_INSTANCES" fun _ => (do
   prove ([[!M:(A->bool)#(num->A list->A)#(num->A list->bool) s t.
         interpretation(language t) M
         ==> (M satisfies
@@ -355,7 +355,7 @@ unsafe def SATISFIES_INSTANCES : thm := keep "SATISFIES_INSTANCES" fun _ => (do
 #eval SATISFIES_INSTANCES
 
 #eval phrase 21
-unsafe def COMPACT_CANON_QFREE : thm := keep "COMPACT_CANON_QFREE" fun _ => (do
+def COMPACT_CANON_QFREE : thm := keep "COMPACT_CANON_QFREE" fun _ => (do
   prove ([[(!p. p IN s ==> qfree p) /\
    (!t. FINITE t /\ t SUBSET s ==> ?M. interpretation(language ss) M /\
                                        ~(Dom(M):A->bool = EMPTY) /\
@@ -417,7 +417,7 @@ unsafe def COMPACT_CANON_QFREE : thm := keep "COMPACT_CANON_QFREE" fun _ => (do
 #eval COMPACT_CANON_QFREE
 
 #eval phrase 22
-unsafe def INTERPRETATION_RESTRICTLANGUAGE : thm := keep "INTERPRETATION_RESTRICTLANGUAGE" fun _ => (do
+def INTERPRETATION_RESTRICTLANGUAGE : thm := keep "INTERPRETATION_RESTRICTLANGUAGE" fun _ => (do
   prove ([[!M s t. t SUBSET s /\ interpretation(language s) M
          ==> interpretation(language t) M]])
    (REPEAT GEN_TAC THEN
@@ -431,7 +431,7 @@ unsafe def INTERPRETATION_RESTRICTLANGUAGE : thm := keep "INTERPRETATION_RESTRIC
 #eval INTERPRETATION_RESTRICTLANGUAGE
 
 #eval phrase 23
-unsafe def INTERPRETATION_EXTENDLANGUAGE : thm := keep "INTERPRETATION_EXTENDLANGUAGE" fun _ => (do
+def INTERPRETATION_EXTENDLANGUAGE : thm := keep "INTERPRETATION_EXTENDLANGUAGE" fun _ => (do
   prove ([[!M s t.
         interpretation (language t) M /\
         ~(Dom M :A->bool = EMPTY) /\
@@ -467,7 +467,7 @@ unsafe def INTERPRETATION_EXTENDLANGUAGE : thm := keep "INTERPRETATION_EXTENDLAN
 #eval INTERPRETATION_EXTENDLANGUAGE
 
 #eval phrase 24
-unsafe def COMPACT_LS : thm := keep "COMPACT_LS" fun _ => (do
+def COMPACT_LS : thm := keep "COMPACT_LS" fun _ => (do
   prove ([[(!t. FINITE t /\ t SUBSET s ==> ?M. interpretation(language s) M /\
                                        ~(Dom(M):A->bool = EMPTY) /\
                                        M satisfies t)
@@ -538,7 +538,7 @@ unsafe def COMPACT_LS : thm := keep "COMPACT_LS" fun _ => (do
 #eval COMPACT_LS
 
 #eval phrase 25
-unsafe def CANON : thm := keep "CANON" fun _ => (do
+def CANON : thm := keep "CANON" fun _ => (do
   prove ([[!M:(A->bool)#(num->A list->A)#(num->A list->bool) s.
         interpretation (language s) M /\
         ~(Dom(M) = EMPTY) /\
@@ -552,26 +552,26 @@ unsafe def CANON : thm := keep "CANON" fun _ => (do
 #eval CANON
 
 #eval phrase 26
-unsafe def term_of_num : thm := keep "term_of_num" fun _ => new_definition
+def term_of_num : thm := keep "term_of_num" fun _ => new_definition
   [[term_of_num n = (@t. num_of_term t = n)]]
 #eval term_of_num
 
 #eval phrase 27
-unsafe def TERM_OF_NUM : thm := keep "TERM_OF_NUM" fun _ => (do
+def TERM_OF_NUM : thm := keep "TERM_OF_NUM" fun _ => (do
   prove ([[term_of_num(num_of_term t) = t]])
    (REWRITE_TAC [term_of_num, NUM_OF_TERM_INJ])
   : ExceptT String IO thm).run
 #eval TERM_OF_NUM
 
 #eval phrase 28
-unsafe def LOWMOD : thm := keep "LOWMOD" fun _ => new_definition
+def LOWMOD : thm := keep "LOWMOD" fun _ => new_definition
   [[LOWMOD M = {num_of_term t | t IN Dom(M)},
               (\g zs. num_of_term (Fun(M) g (MAP term_of_num zs))),
               (\p zs. Pred(M) p (MAP term_of_num zs))]]
 #eval LOWMOD
 
 #eval phrase 29
-unsafe def LOWMOD_DOM_EMPTY : thm := keep "LOWMOD_DOM_EMPTY" fun _ => (do
+def LOWMOD_DOM_EMPTY : thm := keep "LOWMOD_DOM_EMPTY" fun _ => (do
   prove ([[(Dom(LOWMOD M) = EMPTY) <=> (Dom(M) = EMPTY)]])
    (REWRITE_TAC [Dom_DEF, LOWMOD, EXTENSION, IN_ELIM_THM, NOT_IN_EMPTY] THEN
     MESON_TAC [])
@@ -579,7 +579,7 @@ unsafe def LOWMOD_DOM_EMPTY : thm := keep "LOWMOD_DOM_EMPTY" fun _ => (do
 #eval LOWMOD_DOM_EMPTY
 
 #eval phrase 30
-unsafe def LOWMOD_TERMVAL : thm := keep "LOWMOD_TERMVAL" fun _ => (do
+def LOWMOD_TERMVAL : thm := keep "LOWMOD_TERMVAL" fun _ => (do
   prove ([[!v. valuation (LOWMOD M) v
        ==> !t. termval (LOWMOD M) v t =
                num_of_term (termval M (term_of_num o v) t)]])
@@ -598,7 +598,7 @@ unsafe def LOWMOD_TERMVAL : thm := keep "LOWMOD_TERMVAL" fun _ => (do
 #eval LOWMOD_TERMVAL
 
 #eval phrase 31
-unsafe def LOWMOD_HOLDS : thm := keep "LOWMOD_HOLDS" fun _ => (do
+def LOWMOD_HOLDS : thm := keep "LOWMOD_HOLDS" fun _ => (do
   prove ([[!p v. valuation (LOWMOD M) v
          ==> (holds (LOWMOD M) v p <=> holds M (term_of_num o v) p)]])
    (MATCH_MP_TAC form_INDUCTION THEN
@@ -634,7 +634,7 @@ unsafe def LOWMOD_HOLDS : thm := keep "LOWMOD_HOLDS" fun _ => (do
 #eval LOWMOD_HOLDS
 
 #eval phrase 32
-unsafe def LOWMOD_INTERPRETATION : thm := keep "LOWMOD_INTERPRETATION" fun _ => (do
+def LOWMOD_INTERPRETATION : thm := keep "LOWMOD_INTERPRETATION" fun _ => (do
   prove ([[!L M. interpretation L (LOWMOD M) = interpretation L M]])
    (REWRITE_TAC [FORALL_PAIR_THM, interpretation] THEN
     REWRITE_TAC [Fun_DEF, Dom_DEF, LOWMOD] THEN
@@ -682,7 +682,7 @@ unsafe def LOWMOD_INTERPRETATION : thm := keep "LOWMOD_INTERPRETATION" fun _ => 
 #eval LOWMOD_INTERPRETATION
 
 #eval phrase 33
-unsafe def LS : thm := keep "LS" fun _ => (do
+def LS : thm := keep "LS" fun _ => (do
   prove ([[!M:(A->bool)#(num->A list->A)#(num->A list->bool) s.
         interpretation (language s) M /\
         ~(Dom(M) = EMPTY) /\
@@ -705,7 +705,7 @@ unsafe def LS : thm := keep "LS" fun _ => (do
 #eval LS
 
 #eval phrase 34
-unsafe def UNIFORMITY : thm := keep "UNIFORMITY" fun _ => (do
+def UNIFORMITY : thm := keep "UNIFORMITY" fun _ => (do
   prove ([[qfree p /\ (!C v. ~(Dom C = EMPTY) /\
                      valuation(C) v ==> holds C (v:num->term) (ITLIST ?? xs p))
    ==> ?is. (!i x. MEM i is ==> terms(FST(language {p})) (i x)) /\
@@ -823,9 +823,9 @@ unsafe def UNIFORMITY : thm := keep "UNIFORMITY" fun _ => (do
 #eval UNIFORMITY
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Canon" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Canon" do
   replay (
           HolLogicArith.Skolem.ensure)
   replay (

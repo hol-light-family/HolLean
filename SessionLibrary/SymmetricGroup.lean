@@ -3,14 +3,13 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/SymmetricGroup.lean
 
-  The `unsafe` half of the symmetricgroup.ml translation: it supplies HolLibrary.SymmetricGroup's
-  dependencies from Session and SessionLibrary.Permutations, SessionLibrary.GroupTheory, builds the bundles once, in order,
-  and exports every name under its HOL Light name.  `ensureSymmetricGroup` is
-  `needs "Library/symmetricgroup.ml"` (which first does `needs "Library/permutations.ml"`, `needs "Library/grouptheory.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/SymmetricGroup.lean by tools/symmetricgroupdiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the symmetric_group.ml translation: it supplies
+  HolLibrary.SymmetricGroup's dependencies from Session,
+  SessionLibrary.Permutations and SessionLibrary.GroupTheory, and exports
+  every name under its HOL Light name.  Importing this module is
+  `needs "Library/symmetric_group.ml"`; its `needs` of permutations.ml and
+  grouptheory.ml are the imports of those modules.  The bundles are built by
+  `initialize` when the module is loaded, in file order.
 -/
 
 import Session
@@ -23,12 +22,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.SymmetricGroup
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems symmetric_group.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.SymmetricGroup.CoreThms1 where
+def core1 : HolLibrary.SymmetricGroup.CoreThms1 where
   ABELIAN_QUOTIENT_COMMUTATOR := SessionLibrary.GroupTheory.«ABELIAN_QUOTIENT_COMMUTATOR»
   ADD1 := Session.ADD1
   AND_FORALL_THM := Session.AND_FORALL_THM
@@ -100,7 +95,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.SymmetricGroup.CoreThms1 where
   I_THM := Session.I_THM
   LE_REFL := Session.LE_REFL
 /-- The core theorems symmetric_group.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.SymmetricGroup.CoreThms2 where
+def core2 : HolLibrary.SymmetricGroup.CoreThms2 where
   LT_NZ := Session.LT_NZ
   MEMBER_NOT_EMPTY := Session.MEMBER_NOT_EMPTY
   MULT_SYM := Session.MULT_SYM
@@ -157,13 +152,12 @@ unsafe def core2 (_ : Unit) : HolLibrary.SymmetricGroup.CoreThms2 where
   solvable_group := SessionLibrary.GroupTheory.«solvable_group»
   subgroup_of := SessionLibrary.GroupTheory.«subgroup_of»
 /-- The core theorems symmetric_group.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.SymmetricGroup.CoreThms3 where
+def core3 : HolLibrary.SymmetricGroup.CoreThms3 where
 /-- The core theorems symmetric_group.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.SymmetricGroup.CoreThms4 where
--- @@CORE END
+def core4 : HolLibrary.SymmetricGroup.CoreThms4 where
 
 /-- What symmetricgroup.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.SymmetricGroup.SymmetricGroupDeps where
+def deps : HolLibrary.SymmetricGroup.SymmetricGroupDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
   ARITH_TAC := Session.ARITH_TAC
@@ -174,138 +168,80 @@ unsafe def deps (_ : Unit) : HolLibrary.SymmetricGroup.SymmetricGroupDeps where
   SET_TAC := Session.SET_TAC
   INDUCT_TAC := Session.INDUCT_TAC
   GROUP_RULE t := ExceptT.mk (SessionLibrary.GroupTheory.GROUP_RULE t)
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then permutations.ml, grouptheory.ml, which symmetricgroup.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Permutations.ensurePermutations
-      SessionLibrary.GroupTheory.ensureGroupTheory
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.SymmetricGroup: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in file order; each forces the one before it. -/
+/- The bundles, in symmetric_group.ml order. -/
+initialize BBasics : HolLibrary.SymmetricGroup.Basics ←
+  ioB "setupBasics" (HolLibrary.SymmetricGroup.setupBasics deps).run
+initialize BCayley : HolLibrary.SymmetricGroup.Cayley ←
+  ioB "setupCayley" (HolLibrary.SymmetricGroup.setupCayley deps BBasics).run
+initialize BNotSolvable : HolLibrary.SymmetricGroup.NotSolvable ←
+  ioB "setupNotSolvable" (HolLibrary.SymmetricGroup.setupNotSolvable deps BBasics).run
+initialize BTranspositions : HolLibrary.SymmetricGroup.Transpositions ←
+  ioB "setupTranspositions" (HolLibrary.SymmetricGroup.setupTranspositions deps BBasics).run
+initialize BPcycleMachinery : HolLibrary.SymmetricGroup.PcycleMachinery ←
+  ioB "setupPcycleMachinery" (HolLibrary.SymmetricGroup.setupPcycleMachinery deps BBasics).run
+initialize BPowOrbit : HolLibrary.SymmetricGroup.PowOrbit ←
+  ioB "setupPowOrbit"
+    (HolLibrary.SymmetricGroup.setupPowOrbit deps BBasics BPcycleMachinery).run
+initialize BSwapGen : HolLibrary.SymmetricGroup.SwapGen ←
+  ioB "setupSwapGen" (HolLibrary.SymmetricGroup.setupSwapGen deps BBasics BTranspositions
+    BPcycleMachinery BPowOrbit).run
+initialize BTransitive : HolLibrary.SymmetricGroup.Transitive ←
+  ioB "setupTransitive"
+    (HolLibrary.SymmetricGroup.setupTransitive deps BBasics BCayley BSwapGen).run
 
--- @@BUNDLES BEGIN
-initialize theBasics : IO.Ref (Option HolLibrary.SymmetricGroup.Basics) ← IO.mkRef none
-unsafe def BBasics : HolLibrary.SymmetricGroup.Basics :=
-  cached theBasics "setupBasics" fun _ => do
-    (HolLibrary.SymmetricGroup.setupBasics (deps ())).run
-
-initialize theCayley : IO.Ref (Option HolLibrary.SymmetricGroup.Cayley) ← IO.mkRef none
-unsafe def BCayley : HolLibrary.SymmetricGroup.Cayley :=
-  cached theCayley "setupCayley" fun _ => do
-    let _ ← IO.mkRef BBasics.symmetric_group
-    (HolLibrary.SymmetricGroup.setupCayley (deps ()) BBasics).run
-
-initialize theNotSolvable : IO.Ref (Option HolLibrary.SymmetricGroup.NotSolvable) ← IO.mkRef none
-unsafe def BNotSolvable : HolLibrary.SymmetricGroup.NotSolvable :=
-  cached theNotSolvable "setupNotSolvable" fun _ => do
-    let _ ← IO.mkRef BCayley.CAYLEY_THEOREM_EXPLICIT
-    (HolLibrary.SymmetricGroup.setupNotSolvable (deps ()) BBasics).run
-
-initialize theTranspositions : IO.Ref (Option HolLibrary.SymmetricGroup.Transpositions) ← IO.mkRef none
-unsafe def BTranspositions : HolLibrary.SymmetricGroup.Transpositions :=
-  cached theTranspositions "setupTranspositions" fun _ => do
-    let _ ← IO.mkRef BNotSolvable.CHAIN_STEP_THREE_CYCLES_GEN
-    (HolLibrary.SymmetricGroup.setupTranspositions (deps ()) BBasics).run
-
-initialize thePcycleMachinery : IO.Ref (Option HolLibrary.SymmetricGroup.PcycleMachinery) ← IO.mkRef none
-unsafe def BPcycleMachinery : HolLibrary.SymmetricGroup.PcycleMachinery :=
-  cached thePcycleMachinery "setupPcycleMachinery" fun _ => do
-    let _ ← IO.mkRef BTranspositions.POINT_TRANSPOSITIONS_GENERATE_ALL
-    (HolLibrary.SymmetricGroup.setupPcycleMachinery (deps ()) BBasics).run
-
-initialize thePowOrbit : IO.Ref (Option HolLibrary.SymmetricGroup.PowOrbit) ← IO.mkRef none
-unsafe def BPowOrbit : HolLibrary.SymmetricGroup.PowOrbit :=
-  cached thePowOrbit "setupPowOrbit" fun _ => do
-    let _ ← IO.mkRef BPcycleMachinery.SYMMETRIC_GROUP_POW
-    (HolLibrary.SymmetricGroup.setupPowOrbit (deps ()) BBasics BPcycleMachinery).run
-
-initialize theSwapGen : IO.Ref (Option HolLibrary.SymmetricGroup.SwapGen) ← IO.mkRef none
-unsafe def BSwapGen : HolLibrary.SymmetricGroup.SwapGen :=
-  cached theSwapGen "setupSwapGen" fun _ => do
-    let _ ← IO.mkRef BPowOrbit.PRIME_ORDER_POW_PERM
-    (HolLibrary.SymmetricGroup.setupSwapGen (deps ()) BBasics BTranspositions BPcycleMachinery BPowOrbit).run
-
-initialize theTransitive : IO.Ref (Option HolLibrary.SymmetricGroup.Transitive) ← IO.mkRef none
-unsafe def BTransitive : HolLibrary.SymmetricGroup.Transitive :=
-  cached theTransitive "setupTransitive" fun _ => do
-    let _ ← IO.mkRef BSwapGen.SWAP_CONJUGATE_IN_SUBGROUP
-    (HolLibrary.SymmetricGroup.setupTransitive (deps ()) BBasics BCayley BSwapGen).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Basics
-unsafe def symmetric_group : thm := BBasics.symmetric_group
-unsafe def SYMMETRIC_GROUP : thm := BBasics.SYMMETRIC_GROUP
-unsafe def FINITE_SYMMETRIC_GROUP : thm := BBasics.FINITE_SYMMETRIC_GROUP
-unsafe def CARD_SYMMETRIC_GROUP : thm := BBasics.CARD_SYMMETRIC_GROUP
-unsafe def SYMMETRIC_GROUP_MUL : thm := BBasics.SYMMETRIC_GROUP_MUL
-unsafe def SYMMETRIC_GROUP_INV : thm := BBasics.SYMMETRIC_GROUP_INV
-unsafe def SYMMETRIC_GROUP_ID : thm := BBasics.SYMMETRIC_GROUP_ID
-unsafe def SWAP_IN_SYMMETRIC_GROUP : thm := BBasics.SWAP_IN_SYMMETRIC_GROUP
-unsafe def THREE_CYCLE_IN_SYMMETRIC : thm := BBasics.THREE_CYCLE_IN_SYMMETRIC
+def symmetric_group : thm := BBasics.symmetric_group
+def SYMMETRIC_GROUP : thm := BBasics.SYMMETRIC_GROUP
+def FINITE_SYMMETRIC_GROUP : thm := BBasics.FINITE_SYMMETRIC_GROUP
+def CARD_SYMMETRIC_GROUP : thm := BBasics.CARD_SYMMETRIC_GROUP
+def SYMMETRIC_GROUP_MUL : thm := BBasics.SYMMETRIC_GROUP_MUL
+def SYMMETRIC_GROUP_INV : thm := BBasics.SYMMETRIC_GROUP_INV
+def SYMMETRIC_GROUP_ID : thm := BBasics.SYMMETRIC_GROUP_ID
+def SWAP_IN_SYMMETRIC_GROUP : thm := BBasics.SWAP_IN_SYMMETRIC_GROUP
+def THREE_CYCLE_IN_SYMMETRIC : thm := BBasics.THREE_CYCLE_IN_SYMMETRIC
 
 -- Cayley
-unsafe def CAYLEY_THEOREM_EXPLICIT : thm := BCayley.CAYLEY_THEOREM_EXPLICIT
-unsafe def CAYLEY_THEOREM : thm := BCayley.CAYLEY_THEOREM
-unsafe def SYMMETRIC_GROUP_ACTION : thm := BCayley.SYMMETRIC_GROUP_ACTION
+def CAYLEY_THEOREM_EXPLICIT : thm := BCayley.CAYLEY_THEOREM_EXPLICIT
+def CAYLEY_THEOREM : thm := BCayley.CAYLEY_THEOREM
+def SYMMETRIC_GROUP_ACTION : thm := BCayley.SYMMETRIC_GROUP_ACTION
 
 -- NotSolvable
-unsafe def CHAIN_STEP_THREE_CYCLES_GEN : thm := BNotSolvable.CHAIN_STEP_THREE_CYCLES_GEN
-unsafe def NOT_SOLVABLE_SYMMETRIC_GROUP : thm := BNotSolvable.NOT_SOLVABLE_SYMMETRIC_GROUP
+def CHAIN_STEP_THREE_CYCLES_GEN : thm := BNotSolvable.CHAIN_STEP_THREE_CYCLES_GEN
+def NOT_SOLVABLE_SYMMETRIC_GROUP : thm := BNotSolvable.NOT_SOLVABLE_SYMMETRIC_GROUP
 
 -- Transpositions
-unsafe def POINT_TRANSPOSITIONS_GENERATE_ALL : thm := BTranspositions.POINT_TRANSPOSITIONS_GENERATE_ALL
-unsafe def RESTRICT_SYMMETRIC_GROUP_HOMOMORPHISM : thm := BTranspositions.RESTRICT_SYMMETRIC_GROUP_HOMOMORPHISM
-unsafe def SUBGROUP_RESTRICT_PERMUTES : thm := BTranspositions.SUBGROUP_RESTRICT_PERMUTES
-unsafe def ALL_TRANSPOSITIONS_GENERATE_SYMMETRIC : thm := BTranspositions.ALL_TRANSPOSITIONS_GENERATE_SYMMETRIC
+def POINT_TRANSPOSITIONS_GENERATE_ALL : thm := BTranspositions.POINT_TRANSPOSITIONS_GENERATE_ALL
+def RESTRICT_SYMMETRIC_GROUP_HOMOMORPHISM : thm := BTranspositions.RESTRICT_SYMMETRIC_GROUP_HOMOMORPHISM
+def SUBGROUP_RESTRICT_PERMUTES : thm := BTranspositions.SUBGROUP_RESTRICT_PERMUTES
+def ALL_TRANSPOSITIONS_GENERATE_SYMMETRIC : thm := BTranspositions.ALL_TRANSPOSITIONS_GENERATE_SYMMETRIC
 
 -- PcycleMachinery
-unsafe def SYMMETRIC_GROUP_POW : thm := BPcycleMachinery.SYMMETRIC_GROUP_POW
-unsafe def SYMMETRIC_GROUP_POW_IN : thm := BPcycleMachinery.SYMMETRIC_GROUP_POW_IN
-unsafe def PRIME_ORDER_PERM_NO_FIXPOINT : thm := BPcycleMachinery.PRIME_ORDER_PERM_NO_FIXPOINT
+def SYMMETRIC_GROUP_POW : thm := BPcycleMachinery.SYMMETRIC_GROUP_POW
+def SYMMETRIC_GROUP_POW_IN : thm := BPcycleMachinery.SYMMETRIC_GROUP_POW_IN
+def PRIME_ORDER_PERM_NO_FIXPOINT : thm := BPcycleMachinery.PRIME_ORDER_PERM_NO_FIXPOINT
 
 -- PowOrbit
-unsafe def PRIME_ORDER_POW_PERM : thm := BPowOrbit.PRIME_ORDER_POW_PERM
-unsafe def PRIME_ORDER_PERM_ORBIT : thm := BPowOrbit.PRIME_ORDER_PERM_ORBIT
+def PRIME_ORDER_POW_PERM : thm := BPowOrbit.PRIME_ORDER_POW_PERM
+def PRIME_ORDER_PERM_ORBIT : thm := BPowOrbit.PRIME_ORDER_PERM_ORBIT
 
 -- SwapGen
-unsafe def SWAP_CONJUGATE_IN_SUBGROUP : thm := BSwapGen.SWAP_CONJUGATE_IN_SUBGROUP
-unsafe def TRANSPOSITION_PCYCLE_GENERATES : thm := BSwapGen.TRANSPOSITION_PCYCLE_GENERATES
+def SWAP_CONJUGATE_IN_SUBGROUP : thm := BSwapGen.SWAP_CONJUGATE_IN_SUBGROUP
+def TRANSPOSITION_PCYCLE_GENERATES : thm := BSwapGen.TRANSPOSITION_PCYCLE_GENERATES
 
 -- Transitive
-unsafe def TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC : thm := BTransitive.TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC
--- @@EXPORTS END
-
-/-- `needs "Library/symmetricgroup.ml"`: build the bundles, in order. -/
-unsafe def ensureSymmetricGroup : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BBasics.symmetric_group
-  let _ ← IO.mkRef BCayley.CAYLEY_THEOREM_EXPLICIT
-  let _ ← IO.mkRef BNotSolvable.CHAIN_STEP_THREE_CYCLES_GEN
-  let _ ← IO.mkRef BTranspositions.POINT_TRANSPOSITIONS_GENERATE_ALL
-  let _ ← IO.mkRef BPcycleMachinery.SYMMETRIC_GROUP_POW
-  let _ ← IO.mkRef BPowOrbit.PRIME_ORDER_POW_PERM
-  let _ ← IO.mkRef BSwapGen.SWAP_CONJUGATE_IN_SUBGROUP
-  let _ ← IO.mkRef BTransitive.TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC
-  -- @@ENSURE END
-  pure ()
+def TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC : thm := BTransitive.TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC
+/-- `needs "Library/symmetric_group.ml"`: already done by importing this module. -/
+def ensureSymmetricGroup : IO Unit := pure ()
 
 end SessionLibrary.SymmetricGroup

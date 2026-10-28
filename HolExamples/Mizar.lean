@@ -19,8 +19,8 @@ namespace HolExamples.Mizar
 -- ========================================================================= --
 
 #eval phrase 1
-unsafe def old_parse_term : String → term := keep "old_parse_term" fun _ =>
-  fun s => match unsafeIO (HolCore.Parser.parse_term s) with
+def old_parse_term : String → term := keep "old_parse_term" fun _ =>
+  fun s => match runIO (HolCore.Parser.parse_term s) with
            | .ok (.ok t) => t
            | _ => panic! "old_parse_term"
 #eval IO.println "<fun>"
@@ -32,8 +32,8 @@ abbrev kGSYM := HolCore.Equal.GSYM
 abbrev kAP_TERM := HolCore.Equal.AP_TERM
 abbrev kAP_THM := HolCore.Equal.AP_THM
 abbrev kBETA_CONV := HolCore.Equal.BETA_CONV
-unsafe def kGEN := Session.GEN
-unsafe def kMP := Session.MP
+def kGEN := Session.GEN
+def kMP := Session.MP
 abbrev kmk_abs := HolCore.Kernel.mk_abs
 abbrev kPINST := HolCore.Bool.PINST
 
@@ -42,8 +42,8 @@ abbrev kPINST := HolCore.Bool.PINST
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 2
-unsafe def IMP_CHOOSE_RULE_pth : thm := keep "IMP_CHOOSE_RULE_pth" fun _ =>
-  match unsafeIO ((do
+def IMP_CHOOSE_RULE_pth : thm := keep "IMP_CHOOSE_RULE_pth" fun _ =>
+  match runIO ((do
       let tac := Session.GEN_REWRITE_TAC
           (HolLight.RAND_CONV o HolLight.LAND_CONV o HolLight.RAND_CONV)
           [(← ExceptT.mk (HolLight.GSYM Session.ETA_AX))] THEN
@@ -53,7 +53,7 @@ unsafe def IMP_CHOOSE_RULE_pth : thm := keep "IMP_CHOOSE_RULE_pth" fun _ =>
       : ExceptT String IO thm).run) with
     | .ok (.ok t) => t
     | _ => panic! "IMP_CHOOSE_RULE: pth"
-unsafe def IMP_CHOOSE_RULE (v : term) (th : thm) : Except String thm := do
+def IMP_CHOOSE_RULE (v : term) (th : thm) : Except String thm := do
   let P : term := [[P:A->bool]]
   let Q : term := [[Q:bool]]
   let pth := IMP_CHOOSE_RULE_pth
@@ -74,18 +74,18 @@ unsafe def IMP_CHOOSE_RULE (v : term) (th : thm) : Except String thm := do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 3
-unsafe def split_ppair : preterm → List preterm
+def split_ppair : preterm → List preterm
   | .Combp (.Combp (.Varp "," _) ptm1) ptm2 => ptm1 :: (split_ppair ptm2)
   | ptm => [ptm]
 #eval IO.println "<fun>"
 
 #eval phrase 4
-unsafe def pmk_conj : preterm × preterm → preterm
+def pmk_conj : preterm × preterm → preterm
   | (ptm1, ptm2) => .Combp (.Combp (.Varp "/\\" dpty) ptm1) ptm2
 #eval IO.println "<fun>"
 
 #eval phrase 5
-unsafe def pmk_exists : preterm × preterm → preterm
+def pmk_exists : preterm × preterm → preterm
   | (v, ptm) => .Combp (.Varp "?" dpty) (.Absp v ptm)
 #eval IO.println "<fun>"
 
@@ -94,13 +94,13 @@ unsafe def pmk_exists : preterm × preterm → preterm
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 6
-unsafe def typecheck_in_env (env : List term) (ptm : preterm) : Except String term :=
+def typecheck_in_env (env : List term) (ptm : preterm) : Except String term :=
   let penv := HolCore.Lib.itlist
     (fun v acc => match HolCore.Kernel.dest_var v with
                   | .ok (n, ty) => (n, HolCore.Preterm.pretype_of_type ty) :: acc
                   | .error _ => acc)
     env []
-  match unsafeIO ((do HolCore.Preterm.term_of_preterm (← HolCore.Preterm.retypecheck penv ptm)).run) with
+  match runIO ((do HolCore.Preterm.term_of_preterm (← HolCore.Preterm.retypecheck penv ptm)).run) with
   | .ok r => r
   | .error e => .error (toString e)
 #eval IO.println "<fun>"
@@ -110,7 +110,7 @@ unsafe def typecheck_in_env (env : List term) (ptm : preterm) : Except String te
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 7
-unsafe def delabel {α : Type} (lfs : List (α × preterm)) : preterm :=
+def delabel {α : Type} (lfs : List (α × preterm)) : preterm :=
   (HolCore.Lib.end_itlist (fun a b => pmk_conj (a, b)) (List.map Prod.snd lfs)).toOption.getD
     (.Varp "" dpty)
 #eval IO.println "<fun>"
@@ -120,19 +120,19 @@ unsafe def delabel {α : Type} (lfs : List (α × preterm)) : preterm :=
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 8
-unsafe def thesis : thm := keep "thesis" fun _ => new_definition [[thesis = F]]
+def thesis : thm := keep "thesis" fun _ => new_definition [[thesis = F]]
 #eval thesis
 
 #eval phrase 9
-unsafe def antecedent : thm := keep "antecedent" fun _ => new_definition [[antecedent = F]]
+def antecedent : thm := keep "antecedent" fun _ => new_definition [[antecedent = F]]
 #eval antecedent
 
 #eval phrase 10
-unsafe def contradiction : thm := keep "contradiction" fun _ => new_definition [[contradiction = F]]
+def contradiction : thm := keep "contradiction" fun _ => new_definition [[contradiction = F]]
 #eval contradiction
 
 #eval phrase 11
-unsafe def iter_rhs : thm := keep "iter_rhs" fun _ => new_definition [[... = @x:A. F]]
+def iter_rhs : thm := keep "iter_rhs" fun _ => new_definition [[... = @x:A. F]]
 #eval iter_rhs
 
 -- ------------------------------------------------------------------------- --
@@ -142,27 +142,27 @@ unsafe def iter_rhs : thm := keep "iter_rhs" fun _ => new_definition [[... = @x:
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 12
-unsafe def mizarate_atm : term := keep "mizarate_atm" fun _ => old_parse_term "antecedent"
-unsafe def mizarate_ttm : term := keep "mizarate_ttm" fun _ => old_parse_term "thesis"
-unsafe def mizarate_ctm : term := keep "mizarate_ctm" fun _ => old_parse_term "contradiction"
-unsafe def mizarate_ftm : term := keep "mizarate_ftm" fun _ => old_parse_term "F"
-unsafe def mizarate_filter_env (fvs : List term) : List term :=
+def mizarate_atm : term := keep "mizarate_atm" fun _ => old_parse_term "antecedent"
+def mizarate_ttm : term := keep "mizarate_ttm" fun _ => old_parse_term "thesis"
+def mizarate_ctm : term := keep "mizarate_ctm" fun _ => old_parse_term "contradiction"
+def mizarate_ftm : term := keep "mizarate_ftm" fun _ => old_parse_term "F"
+def mizarate_filter_env (fvs : List term) : List term :=
   let env1 := (fvs.map (fun v => (dest_var v).toOption)).filterMap id
   let sizes := env1.map
     (fun (v, _) => (v, (env1.filter (fun (w, _) => w == v)).length))
   let env2 := env1.filter (fun (v, _) => (HolCore.Lib.assoc v sizes).toOption == some 1)
   env2.map (fun (n, ty) => mk_var n ty)
-unsafe def mizarate_goal_lconsts (gl : HolCore.Tactics.goal) : List term :=
+def mizarate_goal_lconsts (gl : HolCore.Tactics.goal) : List term :=
   let (asl, w) := gl
   HolCore.Lib.itlist (fun p acc => HolCore.Lib.union (frees (concl p.2)) acc) asl (frees w)
-unsafe def mizarate_term (gl : HolCore.Tactics.goal) (ptm : preterm) : Except String term := do
+def mizarate_term (gl : HolCore.Tactics.goal) (ptm : preterm) : Except String term := do
   let (_asl, w) := gl
   let lconsts := mizarate_goal_lconsts gl
   let tm ← typecheck_in_env (mizarate_filter_env lconsts) ptm
   let ant := match HolCore.Basics.dest_imp w with
              | .ok (a, _) => a
              | .error _ => mizarate_atm
-  match unsafeIO ((do
+  match runIO ((do
       let f ← ExceptT.mk (HolCore.Basics.subst
         [(w, mizarate_ttm), (ant, mizarate_atm), (mizarate_ftm, mizarate_ctm)])
       ExceptT.mk (f tm) : ExceptT String IO term).run) with
@@ -179,7 +179,7 @@ unsafe def mizarate_term (gl : HolCore.Tactics.goal) (ptm : preterm) : Except St
 #eval phrase 13
 /-- `GEN_REWRITE_CONV ONCE_DEPTH_CONV ths THENC
     GENERAL_REWRITE_CONV true TOP_DEPTH_CONV (basic_net()) []` -/
-unsafe def LIMITED_ONCE_REWRITE_CONV (ths : List thm) : HolCore.Equal.ioconv :=
+def LIMITED_ONCE_REWRITE_CONV (ths : List thm) : HolCore.Equal.ioconv :=
   let c1 : HolCore.Equal.ioconv := Session.GEN_REWRITE_CONV HolLight.ONCE_DEPTH_CONV ths
   let c2 : HolCore.Equal.ioconv := fun tm => do
     match ← (HolCore.Simp.GENERAL_REWRITE_CONV Session.sessionB true HolLight.TOP_DEPTH_CONV
@@ -187,7 +187,7 @@ unsafe def LIMITED_ONCE_REWRITE_CONV (ths : List thm) : HolCore.Equal.ioconv :=
     | .error e => return .error e
     | .ok c => c tm
   HolLight.thenc_ c1 c2
-unsafe def LIMITED_REWRITE_CONV (n : Nat) (ths : List thm) (tm : term) : IO (Except String thm) := do
+def LIMITED_REWRITE_CONV (n : Nat) (ths : List thm) (tm : term) : IO (Except String thm) := do
   let lorc := LIMITED_ONCE_REWRITE_CONV ths
   let step (th : thm) : IO (Except String thm) :=
     (HolCore.Simp.convRuleIO (HolLight.RAND_CONV lorc) th : IO (Except String thm))
@@ -206,7 +206,7 @@ unsafe def LIMITED_REWRITE_CONV (n : Nat) (ths : List thm) (tm : term) : IO (Exc
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 14
-unsafe def DEFAULT_PROVER (ths : List thm) (tm : term) : IO (Except String thm) := ExceptT.run do
+def DEFAULT_PROVER (ths : List thm) (tm : term) : IO (Except String thm) := ExceptT.run do
   -- FREEZE_THENL fn ths x
   let FREEZE_THENL (fn : List thm → term → IO (Except String thm)) (ths : List thm) (x : term) :
       ExceptT String IO thm := do
@@ -230,13 +230,13 @@ unsafe def DEFAULT_PROVER (ths : List thm) (tm : term) : IO (Except String thm) 
 #eval IO.println "<fun>"
 
 #eval phrase 15
-unsafe def default_prover : IO.Ref (List thm → term → IO (Except String thm)) :=
-  keep "default_prover" fun _ => unsafeBaseIO (IO.mkRef DEFAULT_PROVER)
+def default_prover : IO.Ref (List thm → term → IO (Except String thm)) :=
+  keep "default_prover" fun _ => runBaseIO (IO.mkRef DEFAULT_PROVER)
 #eval IO.println "{contents = <fun>}"
 
 #eval phrase 16
-unsafe def prover_list : IO.Ref (List (String × (List thm → term → IO (Except String thm)))) :=
-  keep "prover_list" fun _ => unsafeBaseIO (IO.mkRef [("rewriting",
+def prover_list : IO.Ref (List (String × (List thm → term → IO (Except String thm)))) :=
+  keep "prover_list" fun _ => runBaseIO (IO.mkRef [("rewriting",
     (fun (ths : List thm) (tm : term) => ExceptT.run (do
       liftExcept (Session.EQT_ELIM (← ExceptT.mk (Session.REWRITE_CONV ths tm))))))])
 #eval do
@@ -256,14 +256,14 @@ unsafe def prover_list : IO.Ref (List (String × (List thm → term → IO (Exce
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 17
-unsafe def default_assumptions : IO.Ref Bool :=
-  keep "default_assumptions" fun _ => unsafeBaseIO (IO.mkRef false)
+def default_assumptions : IO.Ref Bool :=
+  keep "default_assumptions" fun _ => runBaseIO (IO.mkRef false)
 #eval do
   let b ← default_assumptions.get
   IO.println ("{contents = " ++ (if b then "true" else "false") ++ "}")
 
 #eval phrase 18
-unsafe def mklabel (s : String) : IO String := do
+def mklabel (s : String) : IO String := do
   if s == "" && (← default_assumptions.get) then pure "*" else pure s
 #eval IO.println "<fun>"
 
@@ -272,7 +272,7 @@ unsafe def mklabel (s : String) : IO String := do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 19
-unsafe def augments (labs : List String) (th : thm) (asl : List (String × thm)) :
+def augments (labs : List String) (th : thm) (asl : List (String × thm)) :
     IO (Except String (List (String × thm))) := ExceptT.run do
   let augment (nw : String × thm) (asl : List (String × thm)) : List (String × thm) :=
     if asl == [] then [nw]
@@ -289,7 +289,7 @@ unsafe def augments (labs : List String) (th : thm) (asl : List (String × thm))
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 20
-unsafe def L (s : String) (asl : List (String × thm)) : Except String thm :=
+def L (s : String) (asl : List (String × thm)) : Except String thm :=
   if s == "" then .ok asl.head!.2 else HolCore.Lib.assoc s asl
 #eval IO.println "<fun>"
 
@@ -298,7 +298,7 @@ unsafe def L (s : String) (asl : List (String × thm)) : Except String thm :=
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 21
-unsafe def JUSTIFY (jdata : String × List (List (String × thm) → Except String thm))
+def JUSTIFY (jdata : String × List (List (String × thm) → Except String thm))
     (asl : List (String × thm)) (tm : term) : IO (Except String thm) := ExceptT.run do
   let (prover, tlist) := jdata
   let xthms ← liftExcept (tlist.mapM (fun f => f asl))
@@ -316,7 +316,7 @@ unsafe def JUSTIFY (jdata : String × List (List (String × thm) → Except Stri
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 22
-unsafe def JUSTIFY_THEN (wtm : term)
+def JUSTIFY_THEN (wtm : term)
     (jdata : String × List (List (String × thm) → Except String thm))
     (ttac : HolCore.Tactics.thm_tactic) (gl : HolCore.Tactics.goal) :
     IO (Except String HolCore.Tactics.goalstate) := do
@@ -335,7 +335,7 @@ unsafe def JUSTIFY_THEN (wtm : term)
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 23
-unsafe def MIZAR_CONCLUSION_TAC : HolCore.Tactics.thm_tactic :=
+def MIZAR_CONCLUSION_TAC : HolCore.Tactics.thm_tactic :=
   fun th gl => ExceptT.run do
     let t_tm ← ExceptT.mk (HolCore.Parser.parse_term "T")
     -- CONJ_ASSOC_RULE = EQT_ELIM o GEN_REWRITE_RULE RAND_CONV [EQT_INTRO(SPEC_ALL EQ_REFL)]
@@ -373,10 +373,10 @@ unsafe def MIZAR_CONCLUSION_TAC : HolCore.Tactics.thm_tactic :=
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 24
-unsafe def mizar_transitivity_net : IO.Ref (HolCore.Nets.net (thm → IO (Except String thm))) :=
-  keep "mizar_transitivity_net" fun _ => unsafeBaseIO (IO.mkRef HolCore.Nets.empty_net)
+def mizar_transitivity_net : IO.Ref (HolCore.Nets.net (thm → IO (Except String thm))) :=
+  keep "mizar_transitivity_net" fun _ => runBaseIO (IO.mkRef HolCore.Nets.empty_net)
 /-- Render the ref as OCaml's toplevel prints `ref empty_net`. -/
-unsafe def renderNetRef (nt : HolCore.Nets.net (thm → IO (Except String thm))) : String :=
+def renderNetRef (nt : HolCore.Nets.net (thm → IO (Except String thm))) : String :=
   let (.Netnode r) := nt
   let vnet := match r.vnet with | none => "None" | some _ => "Some(...)"
   let tips := if r.tips.isEmpty then "[]" else "[...]"
@@ -387,7 +387,7 @@ unsafe def renderNetRef (nt : HolCore.Nets.net (thm → IO (Except String thm)))
   IO.println (renderNetRef nt)
 
 #eval phrase 25
-unsafe def add_mizar_transitivity_theorem (th : thm) : IO (Except String Unit) := ExceptT.run do
+def add_mizar_transitivity_theorem (th : thm) : IO (Except String Unit) := ExceptT.run do
   let (_vs, bod) := HolCore.Basics.strip_forall (concl th)
   let (pat, _con) ← liftExcept (HolCore.Basics.dest_imp bod)
   let nt ← mizar_transitivity_net.get
@@ -396,7 +396,7 @@ unsafe def add_mizar_transitivity_theorem (th : thm) : IO (Except String Unit) :
 #eval IO.println "<fun>"
 
 #eval phrase 26
-unsafe def TRANSITIVITY_CHAIN {α : Type} (th1 th2 : thm) (ttac : thm → IO (Except String α)) :
+def TRANSITIVITY_CHAIN {α : Type} (th1 th2 : thm) (ttac : thm → IO (Except String α)) :
     IO (Except String α) := ExceptT.run do
   let tm1 := concl th1
   let tm2 := concl th2
@@ -424,7 +424,7 @@ unsafe def TRANSITIVITY_CHAIN {α : Type} (th1 th2 : thm) (ttac : thm → IO (Ex
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 27
-unsafe def MIZAR_SUBSTEP_TAC (labs : List String) (thm_ : thm) : HolCore.Tactics.tactic :=
+def MIZAR_SUBSTEP_TAC (labs : List String) (thm_ : thm) : HolCore.Tactics.tactic :=
   fun (asl, w) => do
     match ← augments labs thm_ asl with
     | .error e => return .error e
@@ -437,7 +437,7 @@ unsafe def MIZAR_SUBSTEP_TAC (labs : List String) (thm_ : thm) : HolCore.Tactics
 #eval IO.println "<fun>"
 
 #eval phrase 28
-unsafe def MIZAR_BISTEP_TAC (termflag : Bool) (labs : List String) (jth : thm) :
+def MIZAR_BISTEP_TAC (termflag : Bool) (labs : List String) (jth : thm) :
     HolCore.Tactics.tactic :=
   if termflag then
     MIZAR_SUBSTEP_TAC labs jth THEN MIZAR_CONCLUSION_TAC jth
@@ -446,7 +446,7 @@ unsafe def MIZAR_BISTEP_TAC (termflag : Bool) (labs : List String) (jth : thm) :
 #eval IO.println "<fun>"
 
 #eval phrase 29
-unsafe def MIZAR_STEP_TAC (termflag : Bool) (lfs : List (String × preterm))
+def MIZAR_STEP_TAC (termflag : Bool) (lfs : List (String × preterm))
     (jdata : String × List (List (String × thm) → Except String thm)) :
     HolCore.Tactics.tactic := fun (asl, w) => do
   let (pr, tls) := jdata
@@ -480,7 +480,7 @@ unsafe def MIZAR_STEP_TAC (termflag : Bool) (lfs : List (String × preterm))
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 30
-unsafe def MIZAR_END_TAC : HolCore.Tactics.tactic := Session.ACCEPT_TAC Session.TRUTH
+def MIZAR_END_TAC : HolCore.Tactics.tactic := Session.ACCEPT_TAC Session.TRUTH
 #eval IO.println "<fun>"
 
 -- ------------------------------------------------------------------------- --
@@ -488,11 +488,11 @@ unsafe def MIZAR_END_TAC : HolCore.Tactics.tactic := Session.ACCEPT_TAC Session.
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 31
-unsafe def MIZAR_ASSUME_f_tm : term := keep "MIZAR_ASSUME_f_tm" fun _ => old_parse_term "F"
-unsafe def MIZAR_ASSUME_CONTRA_HACK (th : thm) : IO (Except String thm) := ExceptT.run do
+def MIZAR_ASSUME_f_tm : term := keep "MIZAR_ASSUME_f_tm" fun _ => old_parse_term "F"
+def MIZAR_ASSUME_CONTRA_HACK (th : thm) : IO (Except String thm) := ExceptT.run do
   let taut ← ExceptT.mk (Session.TAUT (← HolCore.Parser.parse_term "(~p ==> F) <=> p"))
   ExceptT.mk (HolCore.Simp.convRuleIO (Session.REWR_CONV taut) th)
-unsafe def MIZAR_ASSUME_TAC (lfs : List (String × preterm)) : HolCore.Tactics.tactic :=
+def MIZAR_ASSUME_TAC (lfs : List (String × preterm)) : HolCore.Tactics.tactic :=
   fun (asl, w) => do
     let f_tm := MIZAR_ASSUME_f_tm
     match mizarate_term (asl, w) (delabel lfs) with
@@ -541,7 +541,7 @@ unsafe def MIZAR_ASSUME_TAC (lfs : List (String × preterm)) : HolCore.Tactics.t
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 32
-unsafe def MIZAR_LET_TAC (vtys : List preterm × List hol_type) : HolCore.Tactics.tactic :=
+def MIZAR_LET_TAC (vtys : List preterm × List hol_type) : HolCore.Tactics.tactic :=
   fun (asl, w) => do
     let (vlist, tys) := vtys
     match ← (do
@@ -562,7 +562,7 @@ unsafe def MIZAR_LET_TAC (vtys : List preterm × List hol_type) : HolCore.Tactic
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 33
-unsafe def MIZAR_TAKE_TAC (ptm : preterm) : HolCore.Tactics.tactic :=
+def MIZAR_TAKE_TAC (ptm : preterm) : HolCore.Tactics.tactic :=
   fun (asl, w) => do
     match ← (do
       let dw ← liftExcept (HolCore.Basics.dest_exists w)
@@ -577,7 +577,7 @@ unsafe def MIZAR_TAKE_TAC (ptm : preterm) : HolCore.Tactics.tactic :=
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 34
-unsafe def MIZAR_SUFFICES_TAC (new0 : List preterm)
+def MIZAR_SUFFICES_TAC (new0 : List preterm)
     (jdata : String × List (List (String × thm) → Except String thm)) :
     HolCore.Tactics.tactic := fun (asl, w) => do
   match ← (do
@@ -606,7 +606,7 @@ unsafe def MIZAR_SUFFICES_TAC (new0 : List preterm)
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 35
-unsafe def MIZAR_SET_TAC (labptm : String × preterm) : HolCore.Tactics.tactic :=
+def MIZAR_SET_TAC (labptm : String × preterm) : HolCore.Tactics.tactic :=
   fun (asl, w) => do
     let (lab, ptm) := labptm
     match ← (do
@@ -628,7 +628,7 @@ unsafe def MIZAR_SET_TAC (labptm : String × preterm) : HolCore.Tactics.tactic :
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 36
-unsafe def MIZAR_CONSIDER_TAC (vars0 : List preterm) (lfs : List (String × preterm))
+def MIZAR_CONSIDER_TAC (vars0 : List preterm) (lfs : List (String × preterm))
     (jdata : String × List (List (String × thm) → Except String thm)) :
     HolCore.Tactics.tactic := fun (asl, w) => do
   match ← (do
@@ -661,7 +661,7 @@ unsafe def MIZAR_CONSIDER_TAC (vars0 : List preterm) (lfs : List (String × pret
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 37
-unsafe def MIZAR_GIVEN_TAC (vars0 : List preterm) (lfs : List (String × preterm)) :
+def MIZAR_GIVEN_TAC (vars0 : List preterm) (lfs : List (String × preterm)) :
     HolCore.Tactics.tactic := fun (asl, w) => do
   match ← (do
     let ant ← liftExcept (Prod.fst <$> HolCore.Basics.dest_imp w)
@@ -703,7 +703,7 @@ unsafe def MIZAR_GIVEN_TAC (vars0 : List preterm) (lfs : List (String × preterm
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 38
-unsafe def MIZAR_PER_CASES_TAC
+def MIZAR_PER_CASES_TAC
     (jdata : String × List (List (String × thm) → Except String thm)) :
     HolCore.Tactics.tactic := fun (asl, w) => do
   let just : HolCore.Tactics.justification := fun _ ths =>
@@ -726,7 +726,7 @@ unsafe def MIZAR_PER_CASES_TAC
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 39
-unsafe def MIZAR_SUPPOSE_TAC (lfs : List (String × preterm)) : HolCore.Tactics.tactic :=
+def MIZAR_SUPPOSE_TAC (lfs : List (String × preterm)) : HolCore.Tactics.tactic :=
   fun (asl, w) => do
     match mizarate_term (asl, w) (delabel lfs) with
     | .error e => return .error e
@@ -753,7 +753,7 @@ unsafe def MIZAR_SUPPOSE_TAC (lfs : List (String × preterm)) : HolCore.Tactics.
 #eval IO.println "<fun>"
 
 #eval phrase 40
-unsafe def MIZAR_SUPPOSE_REF (lfs : List (String × preterm)) : HolCore.Tactics.refinement :=
+def MIZAR_SUPPOSE_REF (lfs : List (String × preterm)) : HolCore.Tactics.refinement :=
   fun gs => do
     match ← Session.by_ (Session.TRY MIZAR_END_TAC) gs with
     | .error e => return .error e
@@ -765,10 +765,10 @@ unsafe def MIZAR_SUPPOSE_REF (lfs : List (String × preterm)) : HolCore.Tactics.
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 41
-unsafe def MIZAR_RAW_ENDCASE_pthRef : IO.Ref thm :=
-  keep "MIZAR_RAW_ENDCASE_pthRef" fun _ => unsafeBaseIO (IO.mkRef Session.TRUTH)
-unsafe def MIZAR_RAW_ENDCASE_p : term := keep "MIZAR_RAW_ENDCASE_p" fun _ => old_parse_term "p:bool"
-unsafe def MIZAR_RAW_ENDCASE_TAC : HolCore.Tactics.tactic := fun (_asl, w) => do
+def MIZAR_RAW_ENDCASE_pthRef : IO.Ref thm :=
+  keep "MIZAR_RAW_ENDCASE_pthRef" fun _ => runBaseIO (IO.mkRef Session.TRUTH)
+def MIZAR_RAW_ENDCASE_p : term := keep "MIZAR_RAW_ENDCASE_p" fun _ => old_parse_term "p:bool"
+def MIZAR_RAW_ENDCASE_TAC : HolCore.Tactics.tactic := fun (_asl, w) => do
   let pth ← MIZAR_RAW_ENDCASE_pthRef.get
   match ← (do
     let ith ← liftExcept (HolCore.Kernel.INST [(w, MIZAR_RAW_ENDCASE_p)] pth)
@@ -790,7 +790,7 @@ unsafe def MIZAR_RAW_ENDCASE_TAC : HolCore.Tactics.tactic := fun (_asl, w) => do
 
 
 #eval phrase 42
-unsafe def MIZAR_ENDCASE_REF : HolCore.Tactics.refinement := fun gs => do
+def MIZAR_ENDCASE_REF : HolCore.Tactics.refinement := fun gs => do
   match ← Session.by_ (Session.TRY MIZAR_END_TAC) gs with
   | .error e => return .error e
   | .ok gs' => Session.by_ MIZAR_RAW_ENDCASE_TAC gs'
@@ -801,25 +801,25 @@ unsafe def MIZAR_ENDCASE_REF : HolCore.Tactics.refinement := fun gs => do
 -- ------------------------------------------------------------------------- --
 
 /-- `by tac`, as a refinement (parse_step treatments build these). -/
-unsafe def byR (t : HolCore.Tactics.tactic) : HolCore.Tactics.refinement := Session.by_ t
+def byR (t : HolCore.Tactics.tactic) : HolCore.Tactics.refinement := Session.by_ t
 
 #eval phrase 43
-unsafe def mizar_word_list : List String :=
+def mizar_word_list : List String :=
   ["assume", "take", "set", "given", "such", "that",
    "proof", "end", "consider", "suffices", "to", "show",
    "per", "cases", "endcase", "suppose", "be",
    "then", "thus", "hence", "by", "so"]
-unsafe def add_mizar_words : Unit → IO Unit := fun _ => HolCore.Printer.reserve_words mizar_word_list
-unsafe def subtract_mizar_words : Unit → IO Unit := fun _ => HolCore.Printer.unreserve_words mizar_word_list
+def add_mizar_words : Unit → IO Unit := fun _ => HolCore.Printer.reserve_words mizar_word_list
+def subtract_mizar_words : Unit → IO Unit := fun _ => HolCore.Printer.unreserve_words mizar_word_list
 #eval (do IO.println "<fun>"; IO.println "<fun>" : IO Unit)
 
 #eval phrase 44
-unsafe def parse_preform : ParserM preterm :=
+def parse_preform : ParserM preterm :=
   pmapM parse_preterm (fun ptm => .Typing ptm (.Ptycon "bool" []))
 #eval IO.println "<fun>"
 
 #eval phrase 45
-unsafe def parse_fulltype : ParserM hol_type :=
+def parse_fulltype : ParserM hol_type :=
   fun c inp => do
     match ← (liftP parse_pretype) c inp with
     | .error e => return .error e
@@ -830,14 +830,14 @@ unsafe def parse_fulltype : ParserM hol_type :=
 #eval IO.println "<fun>"
 
 #eval phrase 46
-unsafe def parse_ident : ParserM String := fun _ inp => do
+def parse_ident : ParserM String := fun _ inp => do
   match inp with
   | (.Ident n) :: rst => return .ok (n, rst)
   | _ => return .error .noparse
 #eval IO.println "<fun>"
 
 #eval phrase 47
-unsafe def parse_string : ParserM String := fun _ inp => do
+def parse_string : ParserM String := fun _ inp => do
   match inp with
   | (.Ident n) :: rst => return .ok (n, rst)
   | (.Resword n) :: rst => return .ok (n, rst)
@@ -845,7 +845,7 @@ unsafe def parse_string : ParserM String := fun _ inp => do
 #eval IO.println "<fun>"
 
 #eval phrase 48
-unsafe def parse_lform : String → ParserM (String × preterm) := fun oldlab => fun c inp => do
+def parse_lform : String → ParserM (String × preterm) := fun oldlab => fun c inp => do
   match inp with
   | (.Ident n) :: (.Resword ":") :: rst =>
       if oldlab == "" then parse_lform n c rst
@@ -857,12 +857,12 @@ unsafe def parse_lform : String → ParserM (String × preterm) := fun oldlab =>
 #eval IO.println "<fun>"
 
 #eval phrase 49
-unsafe def parse_lforms (oldlab : String) : ParserM (List (String × preterm)) :=
+def parse_lforms (oldlab : String) : ParserM (List (String × preterm)) :=
   plistofM (parse_lform oldlab) (paM (.Resword "and")) "labelled formula"
 #eval IO.println "<fun>"
 
 #eval phrase 50
-unsafe def parse_just (tlink : Bool) :
+def parse_just (tlink : Bool) :
     ParserM (String × List (List (String × thm) → Except String thm)) := fun c inp => do
   if inp == [] then
     if tlink then return .ok (("", [L ""]), inp)
@@ -898,7 +898,7 @@ unsafe def parse_just (tlink : Bool) :
 #eval IO.println "<fun>"
 
 #eval phrase 51
-unsafe def parse_step : Bool → ParserM HolCore.Tactics.refinement := fun tlink => fun c inp =>
+partial def parse_step : Bool → ParserM HolCore.Tactics.refinement := fun tlink => fun c inp =>
   (pfirstM [
     -- assume
     pmapM (pseqM (paM (.Resword "assume")) (parse_lforms ""))
@@ -962,7 +962,7 @@ unsafe def parse_step : Bool → ParserM HolCore.Tactics.refinement := fun tlink
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 52
-unsafe def run_steps (lexemes : List lexcode) : IO HolCore.Tactics.goalstack := do
+partial def run_steps (lexemes : List lexcode) : IO HolCore.Tactics.goalstack := do
   -- compose_steps : builds the composite refinement.
   let rec compose_steps (lexemes : List lexcode) (gs : HolCore.Tactics.goalstate) :
       IO (Except String HolCore.Tactics.goalstate) := do
@@ -984,7 +984,7 @@ unsafe def run_steps (lexemes : List lexcode) : IO HolCore.Tactics.goalstack := 
 -- Include some theorems.                                                    --
 -- ------------------------------------------------------------------------- --
 
-unsafe def do_add_mizar_trans (ths : List thm) : IO Unit := do
+def do_add_mizar_trans (ths : List thm) : IO Unit := do
   for th in ths do
     match ← add_mizar_transitivity_theorem th with
     | .ok _ => pure ()
@@ -1025,7 +1025,7 @@ unsafe def do_add_mizar_trans (ths : List thm) : IO Unit := do
 -- (*** Start parsing quotations as Mizar directives ***)
 
 #eval phrase 60
-unsafe def parse_term_mizar (s : String) : IO HolCore.Tactics.goalstack := do
+def parse_term_mizar (s : String) : IO HolCore.Tactics.goalstack := do
   let c ← mkCtx
   match lex c (HolCore.Lib.explode s) with
   | .error e => throw (IO.userError (HolCore.Parser.perrMsg e))
@@ -1084,7 +1084,7 @@ end"
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 65
-unsafe def parse_term_restored : String → term := old_parse_term
+def parse_term_restored : String → term := old_parse_term
 #eval IO.println "<fun>"
 
 end HolExamples.Mizar

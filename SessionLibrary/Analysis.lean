@@ -3,18 +3,15 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Analysis.lean
 
-  The `unsafe` half of the analysis.ml translation: it supplies
-  HolLibrary.Analysis' dependencies from Session, builds each bundle once,
-  in file order, and exports every name under its HOL Light name.
-  `ensureAnalysis` is `needs "Library/analysis.ml"`.
+  The session half of the analysis.ml translation: it supplies
+  HolLibrary.Analysis' dependencies from Session and exports every name
+  under its HOL Light name.  Importing this module is
+  `needs "Library/analysis.ml"`: each bundle is built by `initialize` when
+  the module is loaded, in file order.
 
   analysis.ml rebinds about a hundred core names (REAL_LE_TRANS, SUM_LE,
   sum, sup, EXPAND_TAC, ...); the versions here are analysis.ml's, so with
   both `Session` and `SessionLibrary.Analysis` open, qualify them.
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Analysis.lean by tools/analysisdiff/gen_session.py (bookkeeping
-  only: field-by-field copies and accessors).
 -/
 
 import Session
@@ -25,12 +22,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Analysis
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems analysis.ml uses, ADD to REAL_ADD_SYM. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Analysis.CoreThms1 where
+def core1 : HolLibrary.Analysis.CoreThms1 where
   ADD := Session.«ADD»
   ADD1 := Session.«ADD1»
   ADD_AC := Session.«ADD_AC»
@@ -122,7 +115,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Analysis.CoreThms1 where
   REAL_ADD_SUB2 := Session.«REAL_ADD_SUB2»
   REAL_ADD_SYM := Session.«REAL_ADD_SYM»
 /-- The core theorems analysis.ml uses, REAL_ARCH to REAL_MUL_RINV. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Analysis.CoreThms2 where
+def core2 : HolLibrary.Analysis.CoreThms2 where
   REAL_ARCH := Session.«REAL_ARCH»
   REAL_ARCH_POW := Session.«REAL_ARCH_POW»
   REAL_ARCH_POW2 := Session.«REAL_ARCH_POW2»
@@ -213,7 +206,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.Analysis.CoreThms2 where
   REAL_MUL_RID := Session.«REAL_MUL_RID»
   REAL_MUL_RINV := Session.«REAL_MUL_RINV»
 /-- The core theorems analysis.ml uses, REAL_MUL_RZERO to sup. -/
-unsafe def core3 (_ : Unit) : HolLibrary.Analysis.CoreThms3 where
+def core3 : HolLibrary.Analysis.CoreThms3 where
   REAL_MUL_RZERO := Session.«REAL_MUL_RZERO»
   REAL_MUL_SYM := Session.«REAL_MUL_SYM»
   REAL_NEG_0 := Session.«REAL_NEG_0»
@@ -301,10 +294,10 @@ unsafe def core3 (_ : Unit) : HolLibrary.Analysis.CoreThms3 where
   real_pow := Session.«real_pow»
   real_sub := Session.«real_sub»
   sum := Session.«sum»
-  sup := Session.«sup»-- @@CORE END
+  sup := Session.«sup»
 
 /-- What analysis.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Analysis.AnalysisDeps where
+def deps : HolLibrary.Analysis.AnalysisDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   new_specification names th := ExceptT.mk (Session.new_specification names th)
   new_type_definition ty names th :=
@@ -331,782 +324,685 @@ unsafe def deps (_ : Unit) : HolLibrary.Analysis.AnalysisDeps where
   REAL_ARITH_TAC := Session.REAL_ARITH_TAC2
   GEN_BETA_CONV := Session.GEN_BETA_CONV
   num_CONV := Session.num_CONV
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`): HOL Light has loaded all of hol_lib.ml before
-    `needs "Library/analysis.ml"`, and analysis.ml's parser changes
-    (priorities, infixes, `sum` overloading) must not apply to core layers
-    that Session would otherwise build later, on first use. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Analysis: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in analysis.ml order.  Each forces the one before it, so that
-   any bundle builds every earlier one first, as HOL Light's load does. -/
+/- The bundles, in analysis.ml order, after the whole of Session (as HOL
+   Light has loaded all of hol_lib.ml before analysis.ml's parser changes:
+   priorities, infixes, `sum` overloading). -/
+initialize BCompat : HolLibrary.Analysis.Compat ←
+  ioB "setupCompat" (HolLibrary.Analysis.setupCompat deps).run
+initialize BNames : HolLibrary.Analysis.Names ←
+  ioB "setupNames" (HolLibrary.Analysis.setupNames deps).run
+initialize BTactics : HolLibrary.Analysis.Tactics ←
+  ioB "setupTactics" (HolLibrary.Analysis.setupTactics deps BCompat).run
+initialize BReals1 : HolLibrary.Analysis.Reals1 ←
+  ioB "setupReals1" (HolLibrary.Analysis.setupReals1 deps BCompat).run
+initialize BReals2 : HolLibrary.Analysis.Reals2 ←
+  ioB "setupReals2" (HolLibrary.Analysis.setupReals2 deps BNames BReals1).run
+initialize BReals3 : HolLibrary.Analysis.Reals3 ←
+  ioB "setupReals3" (HolLibrary.Analysis.setupReals3 deps BTactics BReals1 BReals2).run
+initialize BAbs : HolLibrary.Analysis.Abs ←
+  ioB "setupAbs" (HolLibrary.Analysis.setupAbs deps BNames BReals1 BReals2 BReals3).run
+initialize BPow : HolLibrary.Analysis.Pow ←
+  ioB "setupPow"
+    (HolLibrary.Analysis.setupPow deps BCompat BNames BReals1 BReals2 BReals3 BAbs).run
+initialize BSums : HolLibrary.Analysis.Sums ←
+  ioB "setupSums" (HolLibrary.Analysis.setupSums deps BReals1 BReals2).run
+initialize BSumConv : HolLibrary.Analysis.SumConv ←
+  ioB "setupSumConv" (HolLibrary.Analysis.setupSumConv deps BSums).run
 
--- @@BUNDLES BEGIN
-initialize theCompat : IO.Ref (Option HolLibrary.Analysis.Compat) ← IO.mkRef none
-unsafe def BCompat : HolLibrary.Analysis.Compat :=
-  cached theCompat "setupCompat" fun _ => do
-    (HolLibrary.Analysis.setupCompat (deps ())).run
+initialize BTopology : HolLibrary.Analysis.Topology ←
+  ioB "setupTopology" (HolLibrary.Analysis.setupTopology deps BCompat BTactics BReals1).run
+initialize BMetricTop : HolLibrary.Analysis.MetricTop ←
+  ioB "setupMetricTop" (HolLibrary.Analysis.setupMetricTop deps BReals1 BReals2 BReals3 BAbs
+    BTopology).run
+initialize BNets : HolLibrary.Analysis.Nets ←
+  ioB "setupNets" (HolLibrary.Analysis.setupNets deps BCompat BTactics BReals1 BReals2
+    BReals3 BAbs BTopology BMetricTop).run
+initialize BNetArith : HolLibrary.Analysis.NetArith ←
+  ioB "setupNetArith" (HolLibrary.Analysis.setupNetArith deps BCompat BNames BTactics BReals1
+    BReals2 BReals3 BAbs BSums BMetricTop BNets).run
+initialize BSeqs : HolLibrary.Analysis.Seqs ←
+  ioB "setupSeqs" (HolLibrary.Analysis.setupSeqs deps BCompat BNames BReals1 BReals2 BReals3
+    BAbs BPow BMetricTop BNets BNetArith).run
+initialize BSeqs2 : HolLibrary.Analysis.Seqs2 ←
+  ioB "setupSeqs2" (HolLibrary.Analysis.setupSeqs2 deps BCompat BNames BReals1 BReals2
+    BReals3 BAbs BNets BNetArith BSeqs).run
 
-initialize theNames : IO.Ref (Option HolLibrary.Analysis.Names) ← IO.mkRef none
-unsafe def BNames : HolLibrary.Analysis.Names :=
-  cached theNames "setupNames" fun _ => do
-    let _ ← IO.mkRef BCompat.dest_neg_imp
-    (HolLibrary.Analysis.setupNames (deps ())).run
+initialize BSeqLim : HolLibrary.Analysis.SeqLim ←
+  ioB "setupSeqLim" (HolLibrary.Analysis.setupSeqLim deps BNames BTactics BReals1 BReals2
+    BReals3 BAbs BPow BNetArith BSeqs BSeqs2).run
+initialize BSeries1 : HolLibrary.Analysis.Series1 ←
+  ioB "setupSeries1" (HolLibrary.Analysis.setupSeries1 deps BNames BReals1 BReals2 BReals3
+    BAbs BPow BSums BSeqs BSeqs2 BSeqLim).run
+initialize BSeries2 : HolLibrary.Analysis.Series2 ←
+  ioB "setupSeries2" (HolLibrary.Analysis.setupSeries2 deps BNames BTactics BReals1 BReals2
+    BReals3 BAbs BPow BSums BSeqs BSeqs2 BSeqLim BSeries1).run
+initialize BLims : HolLibrary.Analysis.Lims ←
+  ioB "setupLims" (HolLibrary.Analysis.setupLims deps BTactics BReals1 BReals2 BReals3 BAbs
+    BTopology BMetricTop BNets BNetArith).run
+initialize BDiffs : HolLibrary.Analysis.Diffs ←
+  ioB "setupDiffs" (HolLibrary.Analysis.setupDiffs deps BCompat BNames BTactics BReals1
+    BReals2 BReals3 BAbs BPow BSums BSeries1 BLims).run
+initialize BCont : HolLibrary.Analysis.Cont ←
+  ioB "setupCont" (HolLibrary.Analysis.setupCont deps BCompat BTactics BReals1 BReals2
+    BReals3 BAbs BPow BSeries1 BLims BDiffs).run
+initialize BMvt : HolLibrary.Analysis.Mvt ←
+  ioB "setupMvt" (HolLibrary.Analysis.setupMvt deps BCompat BTactics BReals1 BReals2 BReals3
+    BAbs BLims BDiffs BCont).run
+initialize BInverse : HolLibrary.Analysis.Inverse ←
+  ioB "setupInverse" (HolLibrary.Analysis.setupInverse deps BReals1 BReals2 BReals3 BAbs
+    BLims BDiffs BCont BMvt).run
+initialize BUniform : HolLibrary.Analysis.Uniform ←
+  ioB "setupUniform" (HolLibrary.Analysis.setupUniform deps BReals1 BReals2 BReals3 BPow
+    BSums BSeqs BSeries1 BSeries2 BLims BDiffs BCont BMvt).run
 
-initialize theTactics : IO.Ref (Option HolLibrary.Analysis.Tactics) ← IO.mkRef none
-unsafe def BTactics : HolLibrary.Analysis.Tactics :=
-  cached theTactics "setupTactics" fun _ => do
-    let _ ← IO.mkRef BNames.LESS_EQUAL_ANTISYM
-    (HolLibrary.Analysis.setupTactics (deps ()) BCompat).run
-
-initialize theReals1 : IO.Ref (Option HolLibrary.Analysis.Reals1) ← IO.mkRef none
-unsafe def BReals1 : HolLibrary.Analysis.Reals1 :=
-  cached theReals1 "setupReals1" fun _ => do
-    let _ ← IO.mkRef BTactics.SYM_CANON_CONV
-    (HolLibrary.Analysis.setupReals1 (deps ()) BCompat).run
-
-initialize theReals2 : IO.Ref (Option HolLibrary.Analysis.Reals2) ← IO.mkRef none
-unsafe def BReals2 : HolLibrary.Analysis.Reals2 :=
-  cached theReals2 "setupReals2" fun _ => do
-    let _ ← IO.mkRef BReals1.real_le
-    (HolLibrary.Analysis.setupReals2 (deps ()) BNames BReals1).run
-
-initialize theReals3 : IO.Ref (Option HolLibrary.Analysis.Reals3) ← IO.mkRef none
-unsafe def BReals3 : HolLibrary.Analysis.Reals3 :=
-  cached theReals3 "setupReals3" fun _ => do
-    let _ ← IO.mkRef BReals2.REAL_SUB_REFL
-    (HolLibrary.Analysis.setupReals3 (deps ()) BTactics BReals1 BReals2).run
-
-initialize theAbs : IO.Ref (Option HolLibrary.Analysis.Abs) ← IO.mkRef none
-unsafe def BAbs : HolLibrary.Analysis.Abs :=
-  cached theAbs "setupAbs" fun _ => do
-    let _ ← IO.mkRef BReals3.REAL_HALF_DOUBLE
-    (HolLibrary.Analysis.setupAbs (deps ()) BNames BReals1 BReals2 BReals3).run
-
-initialize thePow : IO.Ref (Option HolLibrary.Analysis.Pow) ← IO.mkRef none
-unsafe def BPow : HolLibrary.Analysis.Pow :=
-  cached thePow "setupPow" fun _ => do
-    let _ ← IO.mkRef BAbs.ABS_ZERO
-    (HolLibrary.Analysis.setupPow (deps ()) BCompat BNames BReals1 BReals2 BReals3 BAbs).run
-
-initialize theSums : IO.Ref (Option HolLibrary.Analysis.Sums) ← IO.mkRef none
-unsafe def BSums : HolLibrary.Analysis.Sums :=
-  cached theSums "setupSums" fun _ => do
-    let _ ← IO.mkRef BPow.pow
-    (HolLibrary.Analysis.setupSums (deps ()) BReals1 BReals2).run
-
-initialize theSumConv : IO.Ref (Option HolLibrary.Analysis.SumConv) ← IO.mkRef none
-unsafe def BSumConv : HolLibrary.Analysis.SumConv :=
-  cached theSumConv "setupSumConv" fun _ => do
-    let _ ← IO.mkRef BSums.sum_EXISTS
-    (HolLibrary.Analysis.setupSumConv (deps ()) BSums).run
-
-initialize theTopology : IO.Ref (Option HolLibrary.Analysis.Topology) ← IO.mkRef none
-unsafe def BTopology : HolLibrary.Analysis.Topology :=
-  cached theTopology "setupTopology" fun _ => do
-    let _ ← IO.mkRef BSumConv.REAL_SUM_CONV
-    (HolLibrary.Analysis.setupTopology (deps ()) BCompat BTactics BReals1).run
-
-initialize theMetricTop : IO.Ref (Option HolLibrary.Analysis.MetricTop) ← IO.mkRef none
-unsafe def BMetricTop : HolLibrary.Analysis.MetricTop :=
-  cached theMetricTop "setupMetricTop" fun _ => do
-    let _ ← IO.mkRef BTopology.re_Union
-    (HolLibrary.Analysis.setupMetricTop (deps ()) BReals1 BReals2 BReals3 BAbs BTopology).run
-
-initialize theNets : IO.Ref (Option HolLibrary.Analysis.Nets) ← IO.mkRef none
-unsafe def BNets : HolLibrary.Analysis.Nets :=
-  cached theNets "setupNets" fun _ => do
-    let _ ← IO.mkRef BMetricTop.mtop
-    (HolLibrary.Analysis.setupNets (deps ()) BCompat BTactics BReals1 BReals2 BReals3 BAbs BTopology BMetricTop).run
-
-initialize theNetArith : IO.Ref (Option HolLibrary.Analysis.NetArith) ← IO.mkRef none
-unsafe def BNetArith : HolLibrary.Analysis.NetArith :=
-  cached theNetArith "setupNetArith" fun _ => do
-    let _ ← IO.mkRef BNets.dorder
-    (HolLibrary.Analysis.setupNetArith (deps ()) BCompat BNames BTactics BReals1 BReals2 BReals3 BAbs BSums BMetricTop BNets).run
-
-initialize theSeqs : IO.Ref (Option HolLibrary.Analysis.Seqs) ← IO.mkRef none
-unsafe def BSeqs : HolLibrary.Analysis.Seqs :=
-  cached theSeqs "setupSeqs" fun _ => do
-    let _ ← IO.mkRef BNetArith.NET_NULL_ADD
-    (HolLibrary.Analysis.setupSeqs (deps ()) BCompat BNames BReals1 BReals2 BReals3 BAbs BPow BMetricTop BNets BNetArith).run
-
-initialize theSeqs2 : IO.Ref (Option HolLibrary.Analysis.Seqs2) ← IO.mkRef none
-unsafe def BSeqs2 : HolLibrary.Analysis.Seqs2 :=
-  cached theSeqs2 "setupSeqs2" fun _ => do
-    let _ ← IO.mkRef BSeqs.tends_num_real
-    (HolLibrary.Analysis.setupSeqs2 (deps ()) BCompat BNames BReals1 BReals2 BReals3 BAbs BNets BNetArith BSeqs).run
-
-initialize theSeqLim : IO.Ref (Option HolLibrary.Analysis.SeqLim) ← IO.mkRef none
-unsafe def BSeqLim : HolLibrary.Analysis.SeqLim :=
-  cached theSeqLim "setupSeqLim" fun _ => do
-    let _ ← IO.mkRef BSeqs2.SEQ_NEG_CONV
-    (HolLibrary.Analysis.setupSeqLim (deps ()) BNames BTactics BReals1 BReals2 BReals3 BAbs BPow BNetArith BSeqs BSeqs2).run
-
-initialize theSeries1 : IO.Ref (Option HolLibrary.Analysis.Series1) ← IO.mkRef none
-unsafe def BSeries1 : HolLibrary.Analysis.Series1 :=
-  cached theSeries1 "setupSeries1" fun _ => do
-    let _ ← IO.mkRef BSeqLim.SEQ_SUC
-    (HolLibrary.Analysis.setupSeries1 (deps ()) BNames BReals1 BReals2 BReals3 BAbs BPow BSums BSeqs BSeqs2 BSeqLim).run
-
-initialize theSeries2 : IO.Ref (Option HolLibrary.Analysis.Series2) ← IO.mkRef none
-unsafe def BSeries2 : HolLibrary.Analysis.Series2 :=
-  cached theSeries2 "setupSeries2" fun _ => do
-    let _ ← IO.mkRef BSeries1.BOLZANO_LEMMA
-    (HolLibrary.Analysis.setupSeries2 (deps ()) BNames BTactics BReals1 BReals2 BReals3 BAbs BPow BSums BSeqs BSeqs2 BSeqLim BSeries1).run
-
-initialize theLims : IO.Ref (Option HolLibrary.Analysis.Lims) ← IO.mkRef none
-unsafe def BLims : HolLibrary.Analysis.Lims :=
-  cached theLims "setupLims" fun _ => do
-    let _ ← IO.mkRef BSeries2.SER_POS_LT_PAIR
-    (HolLibrary.Analysis.setupLims (deps ()) BTactics BReals1 BReals2 BReals3 BAbs BTopology BMetricTop BNets BNetArith).run
-
-initialize theDiffs : IO.Ref (Option HolLibrary.Analysis.Diffs) ← IO.mkRef none
-unsafe def BDiffs : HolLibrary.Analysis.Diffs :=
-  cached theDiffs "setupDiffs" fun _ => do
-    let _ ← IO.mkRef BLims.tends_real_real
-    (HolLibrary.Analysis.setupDiffs (deps ()) BCompat BNames BTactics BReals1 BReals2 BReals3 BAbs BPow BSums BSeries1 BLims).run
-
-initialize theCont : IO.Ref (Option HolLibrary.Analysis.Cont) ← IO.mkRef none
-unsafe def BCont : HolLibrary.Analysis.Cont :=
-  cached theCont "setupCont" fun _ => do
-    let _ ← IO.mkRef BDiffs.IVT
-    (HolLibrary.Analysis.setupCont (deps ()) BCompat BTactics BReals1 BReals2 BReals3 BAbs BPow BSeries1 BLims BDiffs).run
-
-initialize theMvt : IO.Ref (Option HolLibrary.Analysis.Mvt) ← IO.mkRef none
-unsafe def BMvt : HolLibrary.Analysis.Mvt :=
-  cached theMvt "setupMvt" fun _ => do
-    let _ ← IO.mkRef BCont.CONT_BOUNDED
-    (HolLibrary.Analysis.setupMvt (deps ()) BCompat BTactics BReals1 BReals2 BReals3 BAbs BLims BDiffs BCont).run
-
-initialize theInverse : IO.Ref (Option HolLibrary.Analysis.Inverse) ← IO.mkRef none
-unsafe def BInverse : HolLibrary.Analysis.Inverse :=
-  cached theInverse "setupInverse" fun _ => do
-    let _ ← IO.mkRef BMvt.DIFF_LINC
-    (HolLibrary.Analysis.setupInverse (deps ()) BReals1 BReals2 BReals3 BAbs BLims BDiffs BCont BMvt).run
-
-initialize theUniform : IO.Ref (Option HolLibrary.Analysis.Uniform) ← IO.mkRef none
-unsafe def BUniform : HolLibrary.Analysis.Uniform :=
-  cached theUniform "setupUniform" fun _ => do
-    let _ ← IO.mkRef BInverse.CONT_INJ_LEMMA
-    (HolLibrary.Analysis.setupUniform (deps ()) BReals1 BReals2 BReals3 BPow BSums BSeqs BSeries1 BSeries2 BLims BDiffs BCont BMvt).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Compat
-unsafe def dest_neg_imp := BCompat.dest_neg_imp
-unsafe def CONV_OF_RCONV := BCompat.CONV_OF_RCONV
-unsafe def CONV_OF_THM := BCompat.CONV_OF_THM
-unsafe def X_FUN_EQ_CONV := BCompat.X_FUN_EQ_CONV
-unsafe def FUN_EQ_CONV : HolCore.Equal.ioconv := fun t => BCompat.FUN_EQ_CONV t
-unsafe def SINGLE_DEPTH_CONV := BCompat.SINGLE_DEPTH_CONV
-unsafe def OLD_SKOLEM_CONV : HolCore.Equal.ioconv := fun t => BCompat.OLD_SKOLEM_CONV t
-unsafe def X_SKOLEM_CONV := BCompat.X_SKOLEM_CONV
-unsafe def EXISTS_UNIQUE_CONV : HolCore.Equal.ioconv := fun t => BCompat.EXISTS_UNIQUE_CONV t
-unsafe def NOT_FORALL_CONV : HolCore.Equal.ioconv := fun t => BCompat.NOT_FORALL_CONV t
-unsafe def NOT_EXISTS_CONV : HolCore.Equal.ioconv := fun t => BCompat.NOT_EXISTS_CONV t
-unsafe def RIGHT_IMP_EXISTS_CONV : HolCore.Equal.ioconv := fun t => BCompat.RIGHT_IMP_EXISTS_CONV t
-unsafe def FORALL_IMP_CONV : HolCore.Equal.ioconv := fun t => BCompat.FORALL_IMP_CONV t
-unsafe def EXISTS_AND_CONV : HolCore.Equal.ioconv := fun t => BCompat.EXISTS_AND_CONV t
-unsafe def LEFT_IMP_EXISTS_CONV : HolCore.Equal.ioconv := fun t => BCompat.LEFT_IMP_EXISTS_CONV t
-unsafe def LEFT_AND_EXISTS_CONV : HolCore.Equal.ioconv := fun t => BCompat.LEFT_AND_EXISTS_CONV t
-unsafe def RIGHT_AND_EXISTS_CONV : HolCore.Equal.ioconv := fun t => BCompat.RIGHT_AND_EXISTS_CONV t
-unsafe def AND_FORALL_CONV : HolCore.Equal.ioconv := fun t => BCompat.AND_FORALL_CONV t
-unsafe def F_IMP : thm := BCompat.F_IMP
-unsafe def LEFT_AND_OVER_OR : thm := BCompat.LEFT_AND_OVER_OR
-unsafe def RIGHT_AND_OVER_OR : thm := BCompat.RIGHT_AND_OVER_OR
-unsafe def INST_TY_TERM := BCompat.INST_TY_TERM
-unsafe def NOT_MP := BCompat.NOT_MP
-unsafe def MK_ABS := BCompat.MK_ABS
-unsafe def HALF_MK_ABS := BCompat.HALF_MK_ABS
-unsafe def SUBST := BCompat.SUBST
+def dest_neg_imp := BCompat.dest_neg_imp
+def CONV_OF_RCONV := BCompat.CONV_OF_RCONV
+def CONV_OF_THM := BCompat.CONV_OF_THM
+def X_FUN_EQ_CONV := BCompat.X_FUN_EQ_CONV
+def FUN_EQ_CONV : HolCore.Equal.ioconv := fun t => BCompat.FUN_EQ_CONV t
+def SINGLE_DEPTH_CONV := BCompat.SINGLE_DEPTH_CONV
+def OLD_SKOLEM_CONV : HolCore.Equal.ioconv := fun t => BCompat.OLD_SKOLEM_CONV t
+def X_SKOLEM_CONV := BCompat.X_SKOLEM_CONV
+def EXISTS_UNIQUE_CONV : HolCore.Equal.ioconv := fun t => BCompat.EXISTS_UNIQUE_CONV t
+def NOT_FORALL_CONV : HolCore.Equal.ioconv := fun t => BCompat.NOT_FORALL_CONV t
+def NOT_EXISTS_CONV : HolCore.Equal.ioconv := fun t => BCompat.NOT_EXISTS_CONV t
+def RIGHT_IMP_EXISTS_CONV : HolCore.Equal.ioconv := fun t => BCompat.RIGHT_IMP_EXISTS_CONV t
+def FORALL_IMP_CONV : HolCore.Equal.ioconv := fun t => BCompat.FORALL_IMP_CONV t
+def EXISTS_AND_CONV : HolCore.Equal.ioconv := fun t => BCompat.EXISTS_AND_CONV t
+def LEFT_IMP_EXISTS_CONV : HolCore.Equal.ioconv := fun t => BCompat.LEFT_IMP_EXISTS_CONV t
+def LEFT_AND_EXISTS_CONV : HolCore.Equal.ioconv := fun t => BCompat.LEFT_AND_EXISTS_CONV t
+def RIGHT_AND_EXISTS_CONV : HolCore.Equal.ioconv := fun t => BCompat.RIGHT_AND_EXISTS_CONV t
+def AND_FORALL_CONV : HolCore.Equal.ioconv := fun t => BCompat.AND_FORALL_CONV t
+def F_IMP : thm := BCompat.F_IMP
+def LEFT_AND_OVER_OR : thm := BCompat.LEFT_AND_OVER_OR
+def RIGHT_AND_OVER_OR : thm := BCompat.RIGHT_AND_OVER_OR
+def INST_TY_TERM := BCompat.INST_TY_TERM
+def NOT_MP := BCompat.NOT_MP
+def MK_ABS := BCompat.MK_ABS
+def HALF_MK_ABS := BCompat.HALF_MK_ABS
+def SUBST := BCompat.SUBST
 
 -- Names
-unsafe def LESS_EQUAL_ANTISYM : thm := BNames.LESS_EQUAL_ANTISYM
-unsafe def NOT_LESS_0 : thm := BNames.NOT_LESS_0
-unsafe def LESS_LEMMA1 : thm := BNames.LESS_LEMMA1
-unsafe def LESS_SUC_REFL : thm := BNames.LESS_SUC_REFL
-unsafe def LESS_EQ_SUC_REFL : thm := BNames.LESS_EQ_SUC_REFL
-unsafe def LESS_EQUAL_ADD : thm := BNames.LESS_EQUAL_ADD
-unsafe def LESS_EQ_IMP_LESS_SUC : thm := BNames.LESS_EQ_IMP_LESS_SUC
-unsafe def LESS_MONO_ADD : thm := BNames.LESS_MONO_ADD
-unsafe def LESS_SUC : thm := BNames.LESS_SUC
-unsafe def LESS_ADD_1 : thm := BNames.LESS_ADD_1
-unsafe def SUC_SUB1 : thm := BNames.SUC_SUB1
-unsafe def LESS_ADD_SUC : thm := BNames.LESS_ADD_SUC
-unsafe def OR_LESS : thm := BNames.OR_LESS
-unsafe def NOT_SUC_LESS_EQ : thm := BNames.NOT_SUC_LESS_EQ
-unsafe def LESS_LESS_CASES : thm := BNames.LESS_LESS_CASES
-unsafe def SUB_SUB : thm := BNames.SUB_SUB
-unsafe def LESS_CASES_IMP : thm := BNames.LESS_CASES_IMP
-unsafe def SUB_LESS_EQ : thm := BNames.SUB_LESS_EQ
-unsafe def SUB_EQ_EQ_0 : thm := BNames.SUB_EQ_EQ_0
-unsafe def SUB_LEFT_LESS_EQ : thm := BNames.SUB_LEFT_LESS_EQ
-unsafe def SUB_LEFT_GREATER_EQ : thm := BNames.SUB_LEFT_GREATER_EQ
-unsafe def LESS_0_CASES : thm := BNames.LESS_0_CASES
-unsafe def LESS_OR : thm := BNames.LESS_OR
-unsafe def SUB_OLD : thm := BNames.SUB_OLD
+def LESS_EQUAL_ANTISYM : thm := BNames.LESS_EQUAL_ANTISYM
+def NOT_LESS_0 : thm := BNames.NOT_LESS_0
+def LESS_LEMMA1 : thm := BNames.LESS_LEMMA1
+def LESS_SUC_REFL : thm := BNames.LESS_SUC_REFL
+def LESS_EQ_SUC_REFL : thm := BNames.LESS_EQ_SUC_REFL
+def LESS_EQUAL_ADD : thm := BNames.LESS_EQUAL_ADD
+def LESS_EQ_IMP_LESS_SUC : thm := BNames.LESS_EQ_IMP_LESS_SUC
+def LESS_MONO_ADD : thm := BNames.LESS_MONO_ADD
+def LESS_SUC : thm := BNames.LESS_SUC
+def LESS_ADD_1 : thm := BNames.LESS_ADD_1
+def SUC_SUB1 : thm := BNames.SUC_SUB1
+def LESS_ADD_SUC : thm := BNames.LESS_ADD_SUC
+def OR_LESS : thm := BNames.OR_LESS
+def NOT_SUC_LESS_EQ : thm := BNames.NOT_SUC_LESS_EQ
+def LESS_LESS_CASES : thm := BNames.LESS_LESS_CASES
+def SUB_SUB : thm := BNames.SUB_SUB
+def LESS_CASES_IMP : thm := BNames.LESS_CASES_IMP
+def SUB_LESS_EQ : thm := BNames.SUB_LESS_EQ
+def SUB_EQ_EQ_0 : thm := BNames.SUB_EQ_EQ_0
+def SUB_LEFT_LESS_EQ : thm := BNames.SUB_LEFT_LESS_EQ
+def SUB_LEFT_GREATER_EQ : thm := BNames.SUB_LEFT_GREATER_EQ
+def LESS_0_CASES : thm := BNames.LESS_0_CASES
+def LESS_OR : thm := BNames.LESS_OR
+def SUB_OLD : thm := BNames.SUB_OLD
 
 -- Tactics
-unsafe def SYM_CANON_CONV := BTactics.SYM_CANON_CONV
-unsafe def IMP_SUBST_TAC := BTactics.IMP_SUBST_TAC
-unsafe def EXT_CONV : term → IO (Except String thm) := fun t => (BTactics.EXT_CONV t).run
-unsafe def EQUAL_TAC : HolCore.Tactics.tactic := fun g => BTactics.EQUAL_TAC g
-unsafe def X_BETA_CONV := BTactics.X_BETA_CONV
-unsafe def EXACT_CONV := BTactics.EXACT_CONV
-unsafe def HABS_CONV : HolCore.Equal.ioconv := fun t => BTactics.HABS_CONV t
-unsafe def EXPAND_TAC := BTactics.EXPAND_TAC
+def SYM_CANON_CONV := BTactics.SYM_CANON_CONV
+def IMP_SUBST_TAC := BTactics.IMP_SUBST_TAC
+def EXT_CONV : term → IO (Except String thm) := fun t => (BTactics.EXT_CONV t).run
+def EQUAL_TAC : HolCore.Tactics.tactic := fun g => BTactics.EQUAL_TAC g
+def X_BETA_CONV := BTactics.X_BETA_CONV
+def EXACT_CONV := BTactics.EXACT_CONV
+def HABS_CONV : HolCore.Equal.ioconv := fun t => BTactics.HABS_CONV t
+def EXPAND_TAC := BTactics.EXPAND_TAC
 
 -- Reals1
-unsafe def real_le : thm := BReals1.real_le
-unsafe def REAL_10 : thm := BReals1.REAL_10
-unsafe def REAL_LDISTRIB : thm := BReals1.REAL_LDISTRIB
-unsafe def REAL_LT_IADD : thm := BReals1.REAL_LT_IADD
-unsafe def REAL_MUL_RID : thm := BReals1.REAL_MUL_RID
-unsafe def REAL_MUL_RINV : thm := BReals1.REAL_MUL_RINV
-unsafe def REAL_RDISTRIB : thm := BReals1.REAL_RDISTRIB
-unsafe def REAL_EQ_LADD : thm := BReals1.REAL_EQ_LADD
-unsafe def REAL_EQ_RADD : thm := BReals1.REAL_EQ_RADD
-unsafe def REAL_ADD_LID_UNIQ : thm := BReals1.REAL_ADD_LID_UNIQ
-unsafe def REAL_ADD_RID_UNIQ : thm := BReals1.REAL_ADD_RID_UNIQ
-unsafe def REAL_LNEG_UNIQ : thm := BReals1.REAL_LNEG_UNIQ
-unsafe def REAL_RNEG_UNIQ : thm := BReals1.REAL_RNEG_UNIQ
-unsafe def REAL_NEG_ADD : thm := BReals1.REAL_NEG_ADD
-unsafe def REAL_MUL_LZERO : thm := BReals1.REAL_MUL_LZERO
-unsafe def REAL_MUL_RZERO : thm := BReals1.REAL_MUL_RZERO
-unsafe def REAL_NEG_LMUL : thm := BReals1.REAL_NEG_LMUL
-unsafe def REAL_NEG_RMUL : thm := BReals1.REAL_NEG_RMUL
-unsafe def REAL_NEG_NEG : thm := BReals1.REAL_NEG_NEG
-unsafe def REAL_NEG_MUL2 : thm := BReals1.REAL_NEG_MUL2
-unsafe def REAL_LT_LADD : thm := BReals1.REAL_LT_LADD
-unsafe def REAL_LT_RADD : thm := BReals1.REAL_LT_RADD
-unsafe def REAL_NOT_LT : thm := BReals1.REAL_NOT_LT
-unsafe def REAL_LT_ANTISYM : thm := BReals1.REAL_LT_ANTISYM
-unsafe def REAL_LT_GT : thm := BReals1.REAL_LT_GT
-unsafe def REAL_NOT_LE : thm := BReals1.REAL_NOT_LE
-unsafe def REAL_LE_TOTAL : thm := BReals1.REAL_LE_TOTAL
-unsafe def REAL_LE_REFL : thm := BReals1.REAL_LE_REFL
-unsafe def REAL_LE_LT : thm := BReals1.REAL_LE_LT
-unsafe def REAL_LT_LE : thm := BReals1.REAL_LT_LE
-unsafe def REAL_LT_IMP_LE : thm := BReals1.REAL_LT_IMP_LE
-unsafe def REAL_LTE_TRANS : thm := BReals1.REAL_LTE_TRANS
-unsafe def REAL_LE_TRANS : thm := BReals1.REAL_LE_TRANS
-unsafe def REAL_NEG_LT0 : thm := BReals1.REAL_NEG_LT0
-unsafe def REAL_NEG_GT0 : thm := BReals1.REAL_NEG_GT0
-unsafe def REAL_NEG_LE0 : thm := BReals1.REAL_NEG_LE0
-unsafe def REAL_NEG_GE0 : thm := BReals1.REAL_NEG_GE0
-unsafe def REAL_LT_NEGTOTAL : thm := BReals1.REAL_LT_NEGTOTAL
-unsafe def REAL_LE_NEGTOTAL : thm := BReals1.REAL_LE_NEGTOTAL
-unsafe def REAL_LE_MUL : thm := BReals1.REAL_LE_MUL
-unsafe def REAL_LE_SQUARE : thm := BReals1.REAL_LE_SQUARE
-unsafe def REAL_LT_01 : thm := BReals1.REAL_LT_01
-unsafe def REAL_LE_LADD : thm := BReals1.REAL_LE_LADD
-unsafe def REAL_LE_RADD : thm := BReals1.REAL_LE_RADD
-unsafe def REAL_LT_ADD2 : thm := BReals1.REAL_LT_ADD2
-unsafe def REAL_LT_ADD : thm := BReals1.REAL_LT_ADD
-unsafe def REAL_LT_ADDNEG : thm := BReals1.REAL_LT_ADDNEG
-unsafe def REAL_LT_ADDNEG2 : thm := BReals1.REAL_LT_ADDNEG2
-unsafe def REAL_LT_ADD1 : thm := BReals1.REAL_LT_ADD1
-unsafe def REAL_SUB_ADD : thm := BReals1.REAL_SUB_ADD
-unsafe def REAL_SUB_ADD2 : thm := BReals1.REAL_SUB_ADD2
+def real_le : thm := BReals1.real_le
+def REAL_10 : thm := BReals1.REAL_10
+def REAL_LDISTRIB : thm := BReals1.REAL_LDISTRIB
+def REAL_LT_IADD : thm := BReals1.REAL_LT_IADD
+def REAL_MUL_RID : thm := BReals1.REAL_MUL_RID
+def REAL_MUL_RINV : thm := BReals1.REAL_MUL_RINV
+def REAL_RDISTRIB : thm := BReals1.REAL_RDISTRIB
+def REAL_EQ_LADD : thm := BReals1.REAL_EQ_LADD
+def REAL_EQ_RADD : thm := BReals1.REAL_EQ_RADD
+def REAL_ADD_LID_UNIQ : thm := BReals1.REAL_ADD_LID_UNIQ
+def REAL_ADD_RID_UNIQ : thm := BReals1.REAL_ADD_RID_UNIQ
+def REAL_LNEG_UNIQ : thm := BReals1.REAL_LNEG_UNIQ
+def REAL_RNEG_UNIQ : thm := BReals1.REAL_RNEG_UNIQ
+def REAL_NEG_ADD : thm := BReals1.REAL_NEG_ADD
+def REAL_MUL_LZERO : thm := BReals1.REAL_MUL_LZERO
+def REAL_MUL_RZERO : thm := BReals1.REAL_MUL_RZERO
+def REAL_NEG_LMUL : thm := BReals1.REAL_NEG_LMUL
+def REAL_NEG_RMUL : thm := BReals1.REAL_NEG_RMUL
+def REAL_NEG_NEG : thm := BReals1.REAL_NEG_NEG
+def REAL_NEG_MUL2 : thm := BReals1.REAL_NEG_MUL2
+def REAL_LT_LADD : thm := BReals1.REAL_LT_LADD
+def REAL_LT_RADD : thm := BReals1.REAL_LT_RADD
+def REAL_NOT_LT : thm := BReals1.REAL_NOT_LT
+def REAL_LT_ANTISYM : thm := BReals1.REAL_LT_ANTISYM
+def REAL_LT_GT : thm := BReals1.REAL_LT_GT
+def REAL_NOT_LE : thm := BReals1.REAL_NOT_LE
+def REAL_LE_TOTAL : thm := BReals1.REAL_LE_TOTAL
+def REAL_LE_REFL : thm := BReals1.REAL_LE_REFL
+def REAL_LE_LT : thm := BReals1.REAL_LE_LT
+def REAL_LT_LE : thm := BReals1.REAL_LT_LE
+def REAL_LT_IMP_LE : thm := BReals1.REAL_LT_IMP_LE
+def REAL_LTE_TRANS : thm := BReals1.REAL_LTE_TRANS
+def REAL_LE_TRANS : thm := BReals1.REAL_LE_TRANS
+def REAL_NEG_LT0 : thm := BReals1.REAL_NEG_LT0
+def REAL_NEG_GT0 : thm := BReals1.REAL_NEG_GT0
+def REAL_NEG_LE0 : thm := BReals1.REAL_NEG_LE0
+def REAL_NEG_GE0 : thm := BReals1.REAL_NEG_GE0
+def REAL_LT_NEGTOTAL : thm := BReals1.REAL_LT_NEGTOTAL
+def REAL_LE_NEGTOTAL : thm := BReals1.REAL_LE_NEGTOTAL
+def REAL_LE_MUL : thm := BReals1.REAL_LE_MUL
+def REAL_LE_SQUARE : thm := BReals1.REAL_LE_SQUARE
+def REAL_LT_01 : thm := BReals1.REAL_LT_01
+def REAL_LE_LADD : thm := BReals1.REAL_LE_LADD
+def REAL_LE_RADD : thm := BReals1.REAL_LE_RADD
+def REAL_LT_ADD2 : thm := BReals1.REAL_LT_ADD2
+def REAL_LT_ADD : thm := BReals1.REAL_LT_ADD
+def REAL_LT_ADDNEG : thm := BReals1.REAL_LT_ADDNEG
+def REAL_LT_ADDNEG2 : thm := BReals1.REAL_LT_ADDNEG2
+def REAL_LT_ADD1 : thm := BReals1.REAL_LT_ADD1
+def REAL_SUB_ADD : thm := BReals1.REAL_SUB_ADD
+def REAL_SUB_ADD2 : thm := BReals1.REAL_SUB_ADD2
 
 -- Reals2
-unsafe def REAL_SUB_REFL : thm := BReals2.REAL_SUB_REFL
-unsafe def REAL_SUB_0 : thm := BReals2.REAL_SUB_0
-unsafe def REAL_LE_DOUBLE : thm := BReals2.REAL_LE_DOUBLE
-unsafe def REAL_LE_NEGL : thm := BReals2.REAL_LE_NEGL
-unsafe def REAL_LE_NEGR : thm := BReals2.REAL_LE_NEGR
-unsafe def REAL_NEG_EQ0 : thm := BReals2.REAL_NEG_EQ0
-unsafe def REAL_NEG_0 : thm := BReals2.REAL_NEG_0
-unsafe def REAL_NEG_SUB : thm := BReals2.REAL_NEG_SUB
-unsafe def REAL_SUB_LT : thm := BReals2.REAL_SUB_LT
-unsafe def REAL_SUB_LE : thm := BReals2.REAL_SUB_LE
-unsafe def REAL_EQ_LMUL : thm := BReals2.REAL_EQ_LMUL
-unsafe def REAL_EQ_RMUL : thm := BReals2.REAL_EQ_RMUL
-unsafe def REAL_SUB_LDISTRIB : thm := BReals2.REAL_SUB_LDISTRIB
-unsafe def REAL_SUB_RDISTRIB : thm := BReals2.REAL_SUB_RDISTRIB
-unsafe def REAL_NEG_EQ : thm := BReals2.REAL_NEG_EQ
-unsafe def REAL_NEG_MINUS1 : thm := BReals2.REAL_NEG_MINUS1
-unsafe def REAL_INV_NZ : thm := BReals2.REAL_INV_NZ
-unsafe def REAL_INVINV : thm := BReals2.REAL_INVINV
-unsafe def REAL_LT_IMP_NE : thm := BReals2.REAL_LT_IMP_NE
-unsafe def REAL_INV_POS : thm := BReals2.REAL_INV_POS
-unsafe def REAL_LT_LMUL_0 : thm := BReals2.REAL_LT_LMUL_0
-unsafe def REAL_LT_RMUL_0 : thm := BReals2.REAL_LT_RMUL_0
-unsafe def REAL_LT_LMUL_EQ : thm := BReals2.REAL_LT_LMUL_EQ
-unsafe def REAL_LT_RMUL_EQ : thm := BReals2.REAL_LT_RMUL_EQ
-unsafe def REAL_LT_RMUL_IMP : thm := BReals2.REAL_LT_RMUL_IMP
-unsafe def REAL_LT_LMUL_IMP : thm := BReals2.REAL_LT_LMUL_IMP
-unsafe def REAL_LINV_UNIQ : thm := BReals2.REAL_LINV_UNIQ
-unsafe def REAL_RINV_UNIQ : thm := BReals2.REAL_RINV_UNIQ
-unsafe def REAL_NEG_INV : thm := BReals2.REAL_NEG_INV
-unsafe def REAL_INV_1OVER : thm := BReals2.REAL_INV_1OVER
-unsafe def REAL : thm := BReals2.REAL
-unsafe def REAL_POS : thm := BReals2.REAL_POS
-unsafe def REAL_LE : thm := BReals2.REAL_LE
-unsafe def REAL_LT : thm := BReals2.REAL_LT
-unsafe def REAL_INJ : thm := BReals2.REAL_INJ
-unsafe def REAL_ADD : thm := BReals2.REAL_ADD
-unsafe def REAL_MUL : thm := BReals2.REAL_MUL
-unsafe def REAL_INV1 : thm := BReals2.REAL_INV1
-unsafe def REAL_DIV_LZERO : thm := BReals2.REAL_DIV_LZERO
-unsafe def REAL_LT_NZ : thm := BReals2.REAL_LT_NZ
-unsafe def REAL_NZ_IMP_LT : thm := BReals2.REAL_NZ_IMP_LT
-unsafe def REAL_LT_RDIV_0 : thm := BReals2.REAL_LT_RDIV_0
-unsafe def REAL_LT_RDIV : thm := BReals2.REAL_LT_RDIV
-unsafe def REAL_LT_FRACTION_0 : thm := BReals2.REAL_LT_FRACTION_0
-unsafe def REAL_LT_MULTIPLE : thm := BReals2.REAL_LT_MULTIPLE
-unsafe def REAL_LT_FRACTION : thm := BReals2.REAL_LT_FRACTION
-unsafe def REAL_LT_HALF1 : thm := BReals2.REAL_LT_HALF1
-unsafe def REAL_LT_HALF2 : thm := BReals2.REAL_LT_HALF2
-unsafe def REAL_DOUBLE : thm := BReals2.REAL_DOUBLE
+def REAL_SUB_REFL : thm := BReals2.REAL_SUB_REFL
+def REAL_SUB_0 : thm := BReals2.REAL_SUB_0
+def REAL_LE_DOUBLE : thm := BReals2.REAL_LE_DOUBLE
+def REAL_LE_NEGL : thm := BReals2.REAL_LE_NEGL
+def REAL_LE_NEGR : thm := BReals2.REAL_LE_NEGR
+def REAL_NEG_EQ0 : thm := BReals2.REAL_NEG_EQ0
+def REAL_NEG_0 : thm := BReals2.REAL_NEG_0
+def REAL_NEG_SUB : thm := BReals2.REAL_NEG_SUB
+def REAL_SUB_LT : thm := BReals2.REAL_SUB_LT
+def REAL_SUB_LE : thm := BReals2.REAL_SUB_LE
+def REAL_EQ_LMUL : thm := BReals2.REAL_EQ_LMUL
+def REAL_EQ_RMUL : thm := BReals2.REAL_EQ_RMUL
+def REAL_SUB_LDISTRIB : thm := BReals2.REAL_SUB_LDISTRIB
+def REAL_SUB_RDISTRIB : thm := BReals2.REAL_SUB_RDISTRIB
+def REAL_NEG_EQ : thm := BReals2.REAL_NEG_EQ
+def REAL_NEG_MINUS1 : thm := BReals2.REAL_NEG_MINUS1
+def REAL_INV_NZ : thm := BReals2.REAL_INV_NZ
+def REAL_INVINV : thm := BReals2.REAL_INVINV
+def REAL_LT_IMP_NE : thm := BReals2.REAL_LT_IMP_NE
+def REAL_INV_POS : thm := BReals2.REAL_INV_POS
+def REAL_LT_LMUL_0 : thm := BReals2.REAL_LT_LMUL_0
+def REAL_LT_RMUL_0 : thm := BReals2.REAL_LT_RMUL_0
+def REAL_LT_LMUL_EQ : thm := BReals2.REAL_LT_LMUL_EQ
+def REAL_LT_RMUL_EQ : thm := BReals2.REAL_LT_RMUL_EQ
+def REAL_LT_RMUL_IMP : thm := BReals2.REAL_LT_RMUL_IMP
+def REAL_LT_LMUL_IMP : thm := BReals2.REAL_LT_LMUL_IMP
+def REAL_LINV_UNIQ : thm := BReals2.REAL_LINV_UNIQ
+def REAL_RINV_UNIQ : thm := BReals2.REAL_RINV_UNIQ
+def REAL_NEG_INV : thm := BReals2.REAL_NEG_INV
+def REAL_INV_1OVER : thm := BReals2.REAL_INV_1OVER
+def REAL : thm := BReals2.REAL
+def REAL_POS : thm := BReals2.REAL_POS
+def REAL_LE : thm := BReals2.REAL_LE
+def REAL_LT : thm := BReals2.REAL_LT
+def REAL_INJ : thm := BReals2.REAL_INJ
+def REAL_ADD : thm := BReals2.REAL_ADD
+def REAL_MUL : thm := BReals2.REAL_MUL
+def REAL_INV1 : thm := BReals2.REAL_INV1
+def REAL_DIV_LZERO : thm := BReals2.REAL_DIV_LZERO
+def REAL_LT_NZ : thm := BReals2.REAL_LT_NZ
+def REAL_NZ_IMP_LT : thm := BReals2.REAL_NZ_IMP_LT
+def REAL_LT_RDIV_0 : thm := BReals2.REAL_LT_RDIV_0
+def REAL_LT_RDIV : thm := BReals2.REAL_LT_RDIV
+def REAL_LT_FRACTION_0 : thm := BReals2.REAL_LT_FRACTION_0
+def REAL_LT_MULTIPLE : thm := BReals2.REAL_LT_MULTIPLE
+def REAL_LT_FRACTION : thm := BReals2.REAL_LT_FRACTION
+def REAL_LT_HALF1 : thm := BReals2.REAL_LT_HALF1
+def REAL_LT_HALF2 : thm := BReals2.REAL_LT_HALF2
+def REAL_DOUBLE : thm := BReals2.REAL_DOUBLE
 
 -- Reals3
-unsafe def REAL_HALF_DOUBLE : thm := BReals3.REAL_HALF_DOUBLE
-unsafe def REAL_SUB_SUB : thm := BReals3.REAL_SUB_SUB
-unsafe def REAL_LT_ADD_SUB : thm := BReals3.REAL_LT_ADD_SUB
-unsafe def REAL_LT_SUB_RADD : thm := BReals3.REAL_LT_SUB_RADD
-unsafe def REAL_LT_SUB_LADD : thm := BReals3.REAL_LT_SUB_LADD
-unsafe def REAL_LE_SUB_LADD : thm := BReals3.REAL_LE_SUB_LADD
-unsafe def REAL_LE_SUB_RADD : thm := BReals3.REAL_LE_SUB_RADD
-unsafe def REAL_LT_NEG2 : thm := BReals3.REAL_LT_NEG2
-unsafe def REAL_LE_NEG2 : thm := BReals3.REAL_LE_NEG2
-unsafe def REAL_SUB_LZERO : thm := BReals3.REAL_SUB_LZERO
-unsafe def REAL_SUB_RZERO : thm := BReals3.REAL_SUB_RZERO
-unsafe def REAL_LTE_ADD2 : thm := BReals3.REAL_LTE_ADD2
-unsafe def REAL_LTE_ADD : thm := BReals3.REAL_LTE_ADD
-unsafe def REAL_LT_MUL2_ALT : thm := BReals3.REAL_LT_MUL2_ALT
-unsafe def REAL_SUB_LNEG : thm := BReals3.REAL_SUB_LNEG
-unsafe def REAL_SUB_RNEG : thm := BReals3.REAL_SUB_RNEG
-unsafe def REAL_SUB_NEG2 : thm := BReals3.REAL_SUB_NEG2
-unsafe def REAL_SUB_TRIANGLE : thm := BReals3.REAL_SUB_TRIANGLE
-unsafe def REAL_INV_MUL_WEAK : thm := BReals3.REAL_INV_MUL_WEAK
-unsafe def REAL_LE_LMUL_LOCAL : thm := BReals3.REAL_LE_LMUL_LOCAL
-unsafe def REAL_LE_RMUL_EQ : thm := BReals3.REAL_LE_RMUL_EQ
-unsafe def REAL_SUB_INV2 : thm := BReals3.REAL_SUB_INV2
-unsafe def REAL_SUB_SUB2 : thm := BReals3.REAL_SUB_SUB2
-unsafe def REAL_MEAN : thm := BReals3.REAL_MEAN
-unsafe def REAL_EQ_LMUL2 : thm := BReals3.REAL_EQ_LMUL2
-unsafe def REAL_LE_MUL2V : thm := BReals3.REAL_LE_MUL2V
-unsafe def REAL_LE_LDIV : thm := BReals3.REAL_LE_LDIV
-unsafe def REAL_LE_RDIV : thm := BReals3.REAL_LE_RDIV
-unsafe def REAL_LT_1 : thm := BReals3.REAL_LT_1
-unsafe def REAL_LE_LMUL_IMP : thm := BReals3.REAL_LE_LMUL_IMP
-unsafe def REAL_LE_RMUL_IMP : thm := BReals3.REAL_LE_RMUL_IMP
-unsafe def REAL_INV_LT1 : thm := BReals3.REAL_INV_LT1
-unsafe def REAL_LT_IMP_NZ : thm := BReals3.REAL_LT_IMP_NZ
-unsafe def REAL_EQ_RMUL_IMP : thm := BReals3.REAL_EQ_RMUL_IMP
-unsafe def REAL_EQ_LMUL_IMP : thm := BReals3.REAL_EQ_LMUL_IMP
-unsafe def REAL_FACT_NZ : thm := BReals3.REAL_FACT_NZ
-unsafe def REAL_POSSQ : thm := BReals3.REAL_POSSQ
-unsafe def REAL_SUMSQ : thm := BReals3.REAL_SUMSQ
-unsafe def REAL_EQ_NEG : thm := BReals3.REAL_EQ_NEG
-unsafe def REAL_DIV_MUL2 : thm := BReals3.REAL_DIV_MUL2
-unsafe def REAL_MIDDLE1 : thm := BReals3.REAL_MIDDLE1
-unsafe def REAL_MIDDLE2 : thm := BReals3.REAL_MIDDLE2
+def REAL_HALF_DOUBLE : thm := BReals3.REAL_HALF_DOUBLE
+def REAL_SUB_SUB : thm := BReals3.REAL_SUB_SUB
+def REAL_LT_ADD_SUB : thm := BReals3.REAL_LT_ADD_SUB
+def REAL_LT_SUB_RADD : thm := BReals3.REAL_LT_SUB_RADD
+def REAL_LT_SUB_LADD : thm := BReals3.REAL_LT_SUB_LADD
+def REAL_LE_SUB_LADD : thm := BReals3.REAL_LE_SUB_LADD
+def REAL_LE_SUB_RADD : thm := BReals3.REAL_LE_SUB_RADD
+def REAL_LT_NEG2 : thm := BReals3.REAL_LT_NEG2
+def REAL_LE_NEG2 : thm := BReals3.REAL_LE_NEG2
+def REAL_SUB_LZERO : thm := BReals3.REAL_SUB_LZERO
+def REAL_SUB_RZERO : thm := BReals3.REAL_SUB_RZERO
+def REAL_LTE_ADD2 : thm := BReals3.REAL_LTE_ADD2
+def REAL_LTE_ADD : thm := BReals3.REAL_LTE_ADD
+def REAL_LT_MUL2_ALT : thm := BReals3.REAL_LT_MUL2_ALT
+def REAL_SUB_LNEG : thm := BReals3.REAL_SUB_LNEG
+def REAL_SUB_RNEG : thm := BReals3.REAL_SUB_RNEG
+def REAL_SUB_NEG2 : thm := BReals3.REAL_SUB_NEG2
+def REAL_SUB_TRIANGLE : thm := BReals3.REAL_SUB_TRIANGLE
+def REAL_INV_MUL_WEAK : thm := BReals3.REAL_INV_MUL_WEAK
+def REAL_LE_LMUL_LOCAL : thm := BReals3.REAL_LE_LMUL_LOCAL
+def REAL_LE_RMUL_EQ : thm := BReals3.REAL_LE_RMUL_EQ
+def REAL_SUB_INV2 : thm := BReals3.REAL_SUB_INV2
+def REAL_SUB_SUB2 : thm := BReals3.REAL_SUB_SUB2
+def REAL_MEAN : thm := BReals3.REAL_MEAN
+def REAL_EQ_LMUL2 : thm := BReals3.REAL_EQ_LMUL2
+def REAL_LE_MUL2V : thm := BReals3.REAL_LE_MUL2V
+def REAL_LE_LDIV : thm := BReals3.REAL_LE_LDIV
+def REAL_LE_RDIV : thm := BReals3.REAL_LE_RDIV
+def REAL_LT_1 : thm := BReals3.REAL_LT_1
+def REAL_LE_LMUL_IMP : thm := BReals3.REAL_LE_LMUL_IMP
+def REAL_LE_RMUL_IMP : thm := BReals3.REAL_LE_RMUL_IMP
+def REAL_INV_LT1 : thm := BReals3.REAL_INV_LT1
+def REAL_LT_IMP_NZ : thm := BReals3.REAL_LT_IMP_NZ
+def REAL_EQ_RMUL_IMP : thm := BReals3.REAL_EQ_RMUL_IMP
+def REAL_EQ_LMUL_IMP : thm := BReals3.REAL_EQ_LMUL_IMP
+def REAL_FACT_NZ : thm := BReals3.REAL_FACT_NZ
+def REAL_POSSQ : thm := BReals3.REAL_POSSQ
+def REAL_SUMSQ : thm := BReals3.REAL_SUMSQ
+def REAL_EQ_NEG : thm := BReals3.REAL_EQ_NEG
+def REAL_DIV_MUL2 : thm := BReals3.REAL_DIV_MUL2
+def REAL_MIDDLE1 : thm := BReals3.REAL_MIDDLE1
+def REAL_MIDDLE2 : thm := BReals3.REAL_MIDDLE2
 
 -- Abs
-unsafe def ABS_ZERO : thm := BAbs.ABS_ZERO
-unsafe def ABS_0 : thm := BAbs.ABS_0
-unsafe def ABS_1 : thm := BAbs.ABS_1
-unsafe def ABS_NEG : thm := BAbs.ABS_NEG
-unsafe def ABS_TRIANGLE : thm := BAbs.ABS_TRIANGLE
-unsafe def ABS_POS : thm := BAbs.ABS_POS
-unsafe def ABS_MUL : thm := BAbs.ABS_MUL
-unsafe def ABS_LT_MUL2 : thm := BAbs.ABS_LT_MUL2
-unsafe def ABS_SUB : thm := BAbs.ABS_SUB
-unsafe def ABS_NZ : thm := BAbs.ABS_NZ
-unsafe def ABS_INV : thm := BAbs.ABS_INV
-unsafe def ABS_ABS : thm := BAbs.ABS_ABS
-unsafe def ABS_LE : thm := BAbs.ABS_LE
-unsafe def ABS_REFL : thm := BAbs.ABS_REFL
-unsafe def ABS_N : thm := BAbs.ABS_N
-unsafe def ABS_BETWEEN : thm := BAbs.ABS_BETWEEN
-unsafe def ABS_BOUND : thm := BAbs.ABS_BOUND
-unsafe def ABS_STILLNZ : thm := BAbs.ABS_STILLNZ
-unsafe def ABS_CASES : thm := BAbs.ABS_CASES
-unsafe def ABS_BETWEEN1 : thm := BAbs.ABS_BETWEEN1
-unsafe def ABS_SIGN : thm := BAbs.ABS_SIGN
-unsafe def ABS_SIGN2 : thm := BAbs.ABS_SIGN2
-unsafe def ABS_DIV : thm := BAbs.ABS_DIV
-unsafe def ABS_CIRCLE : thm := BAbs.ABS_CIRCLE
-unsafe def REAL_SUB_ABS : thm := BAbs.REAL_SUB_ABS
-unsafe def ABS_SUB_ABS : thm := BAbs.ABS_SUB_ABS
-unsafe def ABS_BETWEEN2 : thm := BAbs.ABS_BETWEEN2
-unsafe def ABS_BOUNDS : thm := BAbs.ABS_BOUNDS
+def ABS_ZERO : thm := BAbs.ABS_ZERO
+def ABS_0 : thm := BAbs.ABS_0
+def ABS_1 : thm := BAbs.ABS_1
+def ABS_NEG : thm := BAbs.ABS_NEG
+def ABS_TRIANGLE : thm := BAbs.ABS_TRIANGLE
+def ABS_POS : thm := BAbs.ABS_POS
+def ABS_MUL : thm := BAbs.ABS_MUL
+def ABS_LT_MUL2 : thm := BAbs.ABS_LT_MUL2
+def ABS_SUB : thm := BAbs.ABS_SUB
+def ABS_NZ : thm := BAbs.ABS_NZ
+def ABS_INV : thm := BAbs.ABS_INV
+def ABS_ABS : thm := BAbs.ABS_ABS
+def ABS_LE : thm := BAbs.ABS_LE
+def ABS_REFL : thm := BAbs.ABS_REFL
+def ABS_N : thm := BAbs.ABS_N
+def ABS_BETWEEN : thm := BAbs.ABS_BETWEEN
+def ABS_BOUND : thm := BAbs.ABS_BOUND
+def ABS_STILLNZ : thm := BAbs.ABS_STILLNZ
+def ABS_CASES : thm := BAbs.ABS_CASES
+def ABS_BETWEEN1 : thm := BAbs.ABS_BETWEEN1
+def ABS_SIGN : thm := BAbs.ABS_SIGN
+def ABS_SIGN2 : thm := BAbs.ABS_SIGN2
+def ABS_DIV : thm := BAbs.ABS_DIV
+def ABS_CIRCLE : thm := BAbs.ABS_CIRCLE
+def REAL_SUB_ABS : thm := BAbs.REAL_SUB_ABS
+def ABS_SUB_ABS : thm := BAbs.ABS_SUB_ABS
+def ABS_BETWEEN2 : thm := BAbs.ABS_BETWEEN2
+def ABS_BOUNDS : thm := BAbs.ABS_BOUNDS
 
 -- Pow
-unsafe def pow : thm := BPow.pow
-unsafe def POW_0 : thm := BPow.POW_0
-unsafe def POW_NZ : thm := BPow.POW_NZ
-unsafe def POW_INV : thm := BPow.POW_INV
-unsafe def POW_ABS : thm := BPow.POW_ABS
-unsafe def POW_PLUS1 : thm := BPow.POW_PLUS1
-unsafe def POW_ADD : thm := BPow.POW_ADD
-unsafe def POW_1 : thm := BPow.POW_1
-unsafe def POW_2 : thm := BPow.POW_2
-unsafe def POW_POS : thm := BPow.POW_POS
-unsafe def POW_LE : thm := BPow.POW_LE
-unsafe def POW_M1 : thm := BPow.POW_M1
-unsafe def POW_MUL : thm := BPow.POW_MUL
-unsafe def REAL_LE_SQUARE_POW : thm := BPow.REAL_LE_SQUARE_POW
-unsafe def ABS_POW2 : thm := BPow.ABS_POW2
-unsafe def REAL_LE1_POW2 : thm := BPow.REAL_LE1_POW2
-unsafe def REAL_LT1_POW2 : thm := BPow.REAL_LT1_POW2
-unsafe def POW_POS_LT : thm := BPow.POW_POS_LT
-unsafe def POW_2_LE1 : thm := BPow.POW_2_LE1
-unsafe def POW_2_LT : thm := BPow.POW_2_LT
-unsafe def POW_MINUS1 : thm := BPow.POW_MINUS1
-unsafe def REAL_SUP_EXISTS : thm := BPow.REAL_SUP_EXISTS
-unsafe def sup_def : thm := BPow.sup_def
-unsafe def sup : thm := BPow.sup
-unsafe def REAL_SUP : thm := BPow.REAL_SUP
-unsafe def REAL_SUP_UBOUND : thm := BPow.REAL_SUP_UBOUND
-unsafe def SETOK_LE_LT : thm := BPow.SETOK_LE_LT
-unsafe def REAL_SUP_LE : thm := BPow.REAL_SUP_LE
-unsafe def REAL_SUP_UBOUND_LE : thm := BPow.REAL_SUP_UBOUND_LE
-unsafe def REAL_ARCH_SIMPLE : thm := BPow.REAL_ARCH_SIMPLE
-unsafe def REAL_ARCH : thm := BPow.REAL_ARCH
-unsafe def REAL_ARCH_LEAST : thm := BPow.REAL_ARCH_LEAST
-unsafe def REAL_POW_LBOUND : thm := BPow.REAL_POW_LBOUND
-unsafe def REAL_ARCH_POW : thm := BPow.REAL_ARCH_POW
-unsafe def REAL_ARCH_POW2 : thm := BPow.REAL_ARCH_POW2
+def pow : thm := BPow.pow
+def POW_0 : thm := BPow.POW_0
+def POW_NZ : thm := BPow.POW_NZ
+def POW_INV : thm := BPow.POW_INV
+def POW_ABS : thm := BPow.POW_ABS
+def POW_PLUS1 : thm := BPow.POW_PLUS1
+def POW_ADD : thm := BPow.POW_ADD
+def POW_1 : thm := BPow.POW_1
+def POW_2 : thm := BPow.POW_2
+def POW_POS : thm := BPow.POW_POS
+def POW_LE : thm := BPow.POW_LE
+def POW_M1 : thm := BPow.POW_M1
+def POW_MUL : thm := BPow.POW_MUL
+def REAL_LE_SQUARE_POW : thm := BPow.REAL_LE_SQUARE_POW
+def ABS_POW2 : thm := BPow.ABS_POW2
+def REAL_LE1_POW2 : thm := BPow.REAL_LE1_POW2
+def REAL_LT1_POW2 : thm := BPow.REAL_LT1_POW2
+def POW_POS_LT : thm := BPow.POW_POS_LT
+def POW_2_LE1 : thm := BPow.POW_2_LE1
+def POW_2_LT : thm := BPow.POW_2_LT
+def POW_MINUS1 : thm := BPow.POW_MINUS1
+def REAL_SUP_EXISTS : thm := BPow.REAL_SUP_EXISTS
+def sup_def : thm := BPow.sup_def
+def sup : thm := BPow.sup
+def REAL_SUP : thm := BPow.REAL_SUP
+def REAL_SUP_UBOUND : thm := BPow.REAL_SUP_UBOUND
+def SETOK_LE_LT : thm := BPow.SETOK_LE_LT
+def REAL_SUP_LE : thm := BPow.REAL_SUP_LE
+def REAL_SUP_UBOUND_LE : thm := BPow.REAL_SUP_UBOUND_LE
+def REAL_ARCH_SIMPLE : thm := BPow.REAL_ARCH_SIMPLE
+def REAL_ARCH : thm := BPow.REAL_ARCH
+def REAL_ARCH_LEAST : thm := BPow.REAL_ARCH_LEAST
+def REAL_POW_LBOUND : thm := BPow.REAL_POW_LBOUND
+def REAL_ARCH_POW : thm := BPow.REAL_ARCH_POW
+def REAL_ARCH_POW2 : thm := BPow.REAL_ARCH_POW2
 
 -- Sums
-unsafe def sum_EXISTS : thm := BSums.sum_EXISTS
-unsafe def sum_DEF : thm := BSums.sum_DEF
-unsafe def sum : thm := BSums.sum
-unsafe def PSUM_SUM : thm := BSums.PSUM_SUM
-unsafe def PSUM_SUM_NUMSEG : thm := BSums.PSUM_SUM_NUMSEG
-unsafe def SUM_TWO : thm := BSums.SUM_TWO
-unsafe def SUM_DIFF : thm := BSums.SUM_DIFF
-unsafe def ABS_SUM : thm := BSums.ABS_SUM
-unsafe def SUM_LE : thm := BSums.SUM_LE
-unsafe def SUM_EQ : thm := BSums.SUM_EQ
-unsafe def SUM_POS : thm := BSums.SUM_POS
-unsafe def SUM_POS_GEN : thm := BSums.SUM_POS_GEN
-unsafe def SUM_ABS : thm := BSums.SUM_ABS
-unsafe def SUM_ABS_LE : thm := BSums.SUM_ABS_LE
-unsafe def SUM_ZERO : thm := BSums.SUM_ZERO
-unsafe def SUM_ADD : thm := BSums.SUM_ADD
-unsafe def SUM_CMUL : thm := BSums.SUM_CMUL
-unsafe def SUM_NEG : thm := BSums.SUM_NEG
-unsafe def SUM_SUB : thm := BSums.SUM_SUB
-unsafe def SUM_SUBST : thm := BSums.SUM_SUBST
-unsafe def SUM_NSUB : thm := BSums.SUM_NSUB
-unsafe def SUM_BOUND : thm := BSums.SUM_BOUND
-unsafe def SUM_GROUP : thm := BSums.SUM_GROUP
-unsafe def SUM_1 : thm := BSums.SUM_1
-unsafe def SUM_2 : thm := BSums.SUM_2
-unsafe def SUM_OFFSET : thm := BSums.SUM_OFFSET
-unsafe def SUM_REINDEX : thm := BSums.SUM_REINDEX
-unsafe def SUM_0 : thm := BSums.SUM_0
-unsafe def SUM_CANCEL : thm := BSums.SUM_CANCEL
-unsafe def SUM_HORNER : thm := BSums.SUM_HORNER
-unsafe def SUM_CONST : thm := BSums.SUM_CONST
-unsafe def SUM_SPLIT : thm := BSums.SUM_SPLIT
-unsafe def SUM_SWAP : thm := BSums.SUM_SWAP
-unsafe def SUM_EQ_0 : thm := BSums.SUM_EQ_0
-unsafe def SUM_MORETERMS_EQ : thm := BSums.SUM_MORETERMS_EQ
-unsafe def SUM_DIFFERENCES_EQ : thm := BSums.SUM_DIFFERENCES_EQ
+def sum_EXISTS : thm := BSums.sum_EXISTS
+def sum_DEF : thm := BSums.sum_DEF
+def sum : thm := BSums.sum
+def PSUM_SUM : thm := BSums.PSUM_SUM
+def PSUM_SUM_NUMSEG : thm := BSums.PSUM_SUM_NUMSEG
+def SUM_TWO : thm := BSums.SUM_TWO
+def SUM_DIFF : thm := BSums.SUM_DIFF
+def ABS_SUM : thm := BSums.ABS_SUM
+def SUM_LE : thm := BSums.SUM_LE
+def SUM_EQ : thm := BSums.SUM_EQ
+def SUM_POS : thm := BSums.SUM_POS
+def SUM_POS_GEN : thm := BSums.SUM_POS_GEN
+def SUM_ABS : thm := BSums.SUM_ABS
+def SUM_ABS_LE : thm := BSums.SUM_ABS_LE
+def SUM_ZERO : thm := BSums.SUM_ZERO
+def SUM_ADD : thm := BSums.SUM_ADD
+def SUM_CMUL : thm := BSums.SUM_CMUL
+def SUM_NEG : thm := BSums.SUM_NEG
+def SUM_SUB : thm := BSums.SUM_SUB
+def SUM_SUBST : thm := BSums.SUM_SUBST
+def SUM_NSUB : thm := BSums.SUM_NSUB
+def SUM_BOUND : thm := BSums.SUM_BOUND
+def SUM_GROUP : thm := BSums.SUM_GROUP
+def SUM_1 : thm := BSums.SUM_1
+def SUM_2 : thm := BSums.SUM_2
+def SUM_OFFSET : thm := BSums.SUM_OFFSET
+def SUM_REINDEX : thm := BSums.SUM_REINDEX
+def SUM_0 : thm := BSums.SUM_0
+def SUM_CANCEL : thm := BSums.SUM_CANCEL
+def SUM_HORNER : thm := BSums.SUM_HORNER
+def SUM_CONST : thm := BSums.SUM_CONST
+def SUM_SPLIT : thm := BSums.SUM_SPLIT
+def SUM_SWAP : thm := BSums.SUM_SWAP
+def SUM_EQ_0 : thm := BSums.SUM_EQ_0
+def SUM_MORETERMS_EQ : thm := BSums.SUM_MORETERMS_EQ
+def SUM_DIFFERENCES_EQ : thm := BSums.SUM_DIFFERENCES_EQ
 
 -- SumConv
-unsafe def REAL_SUM_CONV : HolCore.Equal.ioconv := fun t => BSumConv.REAL_SUM_CONV t
-unsafe def REAL_HORNER_SUM_CONV : HolCore.Equal.ioconv := fun t => BSumConv.REAL_HORNER_SUM_CONV t
+def REAL_SUM_CONV : HolCore.Equal.ioconv := fun t => BSumConv.REAL_SUM_CONV t
+def REAL_HORNER_SUM_CONV : HolCore.Equal.ioconv := fun t => BSumConv.REAL_HORNER_SUM_CONV t
 
 -- Topology
-unsafe def re_Union : thm := BTopology.re_Union
-unsafe def re_union : thm := BTopology.re_union
-unsafe def re_intersect : thm := BTopology.re_intersect
-unsafe def re_null : thm := BTopology.re_null
-unsafe def re_universe : thm := BTopology.re_universe
-unsafe def re_subset : thm := BTopology.re_subset
-unsafe def re_compl : thm := BTopology.re_compl
-unsafe def SUBSETA_REFL : thm := BTopology.SUBSETA_REFL
-unsafe def COMPL_MEM : thm := BTopology.COMPL_MEM
-unsafe def SUBSETA_ANTISYM : thm := BTopology.SUBSETA_ANTISYM
-unsafe def SUBSETA_TRANS : thm := BTopology.SUBSETA_TRANS
-unsafe def istopology : thm := BTopology.istopology
-unsafe def topology_tybij : thm := BTopology.topology_tybij
-unsafe def TOPOLOGY : thm := BTopology.TOPOLOGY
-unsafe def TOPOLOGY_UNION : thm := BTopology.TOPOLOGY_UNION
-unsafe def neigh : thm := BTopology.neigh
-unsafe def OPEN_OWN_NEIGH : thm := BTopology.OPEN_OWN_NEIGH
-unsafe def OPEN_UNOPEN : thm := BTopology.OPEN_UNOPEN
-unsafe def OPEN_SUBOPEN : thm := BTopology.OPEN_SUBOPEN
-unsafe def OPEN_NEIGH : thm := BTopology.OPEN_NEIGH
-unsafe def closed : thm := BTopology.closed
-unsafe def limpt : thm := BTopology.limpt
-unsafe def CLOSED_LIMPT : thm := BTopology.CLOSED_LIMPT
-unsafe def ismet : thm := BTopology.ismet
-unsafe def metric_tybij : thm := BTopology.metric_tybij
-unsafe def METRIC_ISMET : thm := BTopology.METRIC_ISMET
-unsafe def METRIC_ZERO : thm := BTopology.METRIC_ZERO
-unsafe def METRIC_SAME : thm := BTopology.METRIC_SAME
-unsafe def METRIC_POS : thm := BTopology.METRIC_POS
-unsafe def METRIC_SYM : thm := BTopology.METRIC_SYM
-unsafe def METRIC_TRIANGLE : thm := BTopology.METRIC_TRIANGLE
-unsafe def METRIC_NZ : thm := BTopology.METRIC_NZ
+def re_Union : thm := BTopology.re_Union
+def re_union : thm := BTopology.re_union
+def re_intersect : thm := BTopology.re_intersect
+def re_null : thm := BTopology.re_null
+def re_universe : thm := BTopology.re_universe
+def re_subset : thm := BTopology.re_subset
+def re_compl : thm := BTopology.re_compl
+def SUBSETA_REFL : thm := BTopology.SUBSETA_REFL
+def COMPL_MEM : thm := BTopology.COMPL_MEM
+def SUBSETA_ANTISYM : thm := BTopology.SUBSETA_ANTISYM
+def SUBSETA_TRANS : thm := BTopology.SUBSETA_TRANS
+def istopology : thm := BTopology.istopology
+def topology_tybij : thm := BTopology.topology_tybij
+def TOPOLOGY : thm := BTopology.TOPOLOGY
+def TOPOLOGY_UNION : thm := BTopology.TOPOLOGY_UNION
+def neigh : thm := BTopology.neigh
+def OPEN_OWN_NEIGH : thm := BTopology.OPEN_OWN_NEIGH
+def OPEN_UNOPEN : thm := BTopology.OPEN_UNOPEN
+def OPEN_SUBOPEN : thm := BTopology.OPEN_SUBOPEN
+def OPEN_NEIGH : thm := BTopology.OPEN_NEIGH
+def closed : thm := BTopology.closed
+def limpt : thm := BTopology.limpt
+def CLOSED_LIMPT : thm := BTopology.CLOSED_LIMPT
+def ismet : thm := BTopology.ismet
+def metric_tybij : thm := BTopology.metric_tybij
+def METRIC_ISMET : thm := BTopology.METRIC_ISMET
+def METRIC_ZERO : thm := BTopology.METRIC_ZERO
+def METRIC_SAME : thm := BTopology.METRIC_SAME
+def METRIC_POS : thm := BTopology.METRIC_POS
+def METRIC_SYM : thm := BTopology.METRIC_SYM
+def METRIC_TRIANGLE : thm := BTopology.METRIC_TRIANGLE
+def METRIC_NZ : thm := BTopology.METRIC_NZ
 
 -- MetricTop
-unsafe def mtop : thm := BMetricTop.mtop
-unsafe def mtop_istopology : thm := BMetricTop.mtop_istopology
-unsafe def MTOP_OPEN : thm := BMetricTop.MTOP_OPEN
-unsafe def ball : thm := BMetricTop.ball
-unsafe def BALL_OPEN : thm := BMetricTop.BALL_OPEN
-unsafe def BALL_NEIGH : thm := BMetricTop.BALL_NEIGH
-unsafe def MTOP_LIMPT : thm := BMetricTop.MTOP_LIMPT
-unsafe def ISMET_R1 : thm := BMetricTop.ISMET_R1
-unsafe def mr1 : thm := BMetricTop.mr1
-unsafe def MR1_DEF : thm := BMetricTop.MR1_DEF
-unsafe def MR1_ADD : thm := BMetricTop.MR1_ADD
-unsafe def MR1_SUB : thm := BMetricTop.MR1_SUB
-unsafe def MR1_ADD_LE : thm := BMetricTop.MR1_ADD_LE
-unsafe def MR1_SUB_LE : thm := BMetricTop.MR1_SUB_LE
-unsafe def MR1_ADD_LT : thm := BMetricTop.MR1_ADD_LT
-unsafe def MR1_SUB_LT : thm := BMetricTop.MR1_SUB_LT
-unsafe def MR1_BETWEEN1 : thm := BMetricTop.MR1_BETWEEN1
-unsafe def MR1_LIMPT : thm := BMetricTop.MR1_LIMPT
+def mtop : thm := BMetricTop.mtop
+def mtop_istopology : thm := BMetricTop.mtop_istopology
+def MTOP_OPEN : thm := BMetricTop.MTOP_OPEN
+def ball : thm := BMetricTop.ball
+def BALL_OPEN : thm := BMetricTop.BALL_OPEN
+def BALL_NEIGH : thm := BMetricTop.BALL_NEIGH
+def MTOP_LIMPT : thm := BMetricTop.MTOP_LIMPT
+def ISMET_R1 : thm := BMetricTop.ISMET_R1
+def mr1 : thm := BMetricTop.mr1
+def MR1_DEF : thm := BMetricTop.MR1_DEF
+def MR1_ADD : thm := BMetricTop.MR1_ADD
+def MR1_SUB : thm := BMetricTop.MR1_SUB
+def MR1_ADD_LE : thm := BMetricTop.MR1_ADD_LE
+def MR1_SUB_LE : thm := BMetricTop.MR1_SUB_LE
+def MR1_ADD_LT : thm := BMetricTop.MR1_ADD_LT
+def MR1_SUB_LT : thm := BMetricTop.MR1_SUB_LT
+def MR1_BETWEEN1 : thm := BMetricTop.MR1_BETWEEN1
+def MR1_LIMPT : thm := BMetricTop.MR1_LIMPT
 
 -- Nets
-unsafe def dorder : thm := BNets.dorder
-unsafe def tends : thm := BNets.tends
-unsafe def bounded : thm := BNets.bounded
-unsafe def tendsto : thm := BNets.tendsto
-unsafe def DORDER_LEMMA : thm := BNets.DORDER_LEMMA
-unsafe def DORDER_THEN := BNets.DORDER_THEN
-unsafe def DORDER_NGE : thm := BNets.DORDER_NGE
-unsafe def DORDER_TENDSTO : thm := BNets.DORDER_TENDSTO
-unsafe def MTOP_TENDS : thm := BNets.MTOP_TENDS
-unsafe def MTOP_TENDS_UNIQ : thm := BNets.MTOP_TENDS_UNIQ
-unsafe def SEQ_TENDS : thm := BNets.SEQ_TENDS
-unsafe def LIM_TENDS : thm := BNets.LIM_TENDS
-unsafe def LIM_TENDS2 : thm := BNets.LIM_TENDS2
-unsafe def MR1_BOUNDED : thm := BNets.MR1_BOUNDED
-unsafe def NET_NULL : thm := BNets.NET_NULL
-unsafe def NET_CONV_BOUNDED : thm := BNets.NET_CONV_BOUNDED
-unsafe def NET_CONV_NZ : thm := BNets.NET_CONV_NZ
-unsafe def NET_CONV_IBOUNDED : thm := BNets.NET_CONV_IBOUNDED
+def dorder : thm := BNets.dorder
+def tends : thm := BNets.tends
+def bounded : thm := BNets.bounded
+def tendsto : thm := BNets.tendsto
+def DORDER_LEMMA : thm := BNets.DORDER_LEMMA
+def DORDER_THEN := BNets.DORDER_THEN
+def DORDER_NGE : thm := BNets.DORDER_NGE
+def DORDER_TENDSTO : thm := BNets.DORDER_TENDSTO
+def MTOP_TENDS : thm := BNets.MTOP_TENDS
+def MTOP_TENDS_UNIQ : thm := BNets.MTOP_TENDS_UNIQ
+def SEQ_TENDS : thm := BNets.SEQ_TENDS
+def LIM_TENDS : thm := BNets.LIM_TENDS
+def LIM_TENDS2 : thm := BNets.LIM_TENDS2
+def MR1_BOUNDED : thm := BNets.MR1_BOUNDED
+def NET_NULL : thm := BNets.NET_NULL
+def NET_CONV_BOUNDED : thm := BNets.NET_CONV_BOUNDED
+def NET_CONV_NZ : thm := BNets.NET_CONV_NZ
+def NET_CONV_IBOUNDED : thm := BNets.NET_CONV_IBOUNDED
 
 -- NetArith
-unsafe def NET_NULL_ADD : thm := BNetArith.NET_NULL_ADD
-unsafe def NET_NULL_MUL : thm := BNetArith.NET_NULL_MUL
-unsafe def NET_NULL_CMUL : thm := BNetArith.NET_NULL_CMUL
-unsafe def NET_ADD : thm := BNetArith.NET_ADD
-unsafe def NET_NEG : thm := BNetArith.NET_NEG
-unsafe def NET_SUB : thm := BNetArith.NET_SUB
-unsafe def NET_MUL : thm := BNetArith.NET_MUL
-unsafe def NET_INV : thm := BNetArith.NET_INV
-unsafe def NET_DIV : thm := BNetArith.NET_DIV
-unsafe def NET_ABS : thm := BNetArith.NET_ABS
-unsafe def NET_SUM : thm := BNetArith.NET_SUM
-unsafe def NET_LE : thm := BNetArith.NET_LE
+def NET_NULL_ADD : thm := BNetArith.NET_NULL_ADD
+def NET_NULL_MUL : thm := BNetArith.NET_NULL_MUL
+def NET_NULL_CMUL : thm := BNetArith.NET_NULL_CMUL
+def NET_ADD : thm := BNetArith.NET_ADD
+def NET_NEG : thm := BNetArith.NET_NEG
+def NET_SUB : thm := BNetArith.NET_SUB
+def NET_MUL : thm := BNetArith.NET_MUL
+def NET_INV : thm := BNetArith.NET_INV
+def NET_DIV : thm := BNetArith.NET_DIV
+def NET_ABS : thm := BNetArith.NET_ABS
+def NET_SUM : thm := BNetArith.NET_SUM
+def NET_LE : thm := BNetArith.NET_LE
 
 -- Seqs
-unsafe def tends_num_real : thm := BSeqs.tends_num_real
-unsafe def SEQ : thm := BSeqs.SEQ
-unsafe def SEQ_CONST : thm := BSeqs.SEQ_CONST
-unsafe def SEQ_ADD : thm := BSeqs.SEQ_ADD
-unsafe def SEQ_MUL : thm := BSeqs.SEQ_MUL
-unsafe def SEQ_NEG : thm := BSeqs.SEQ_NEG
-unsafe def SEQ_INV : thm := BSeqs.SEQ_INV
-unsafe def SEQ_SUB : thm := BSeqs.SEQ_SUB
-unsafe def SEQ_DIV : thm := BSeqs.SEQ_DIV
-unsafe def SEQ_UNIQ : thm := BSeqs.SEQ_UNIQ
-unsafe def SEQ_NULL : thm := BSeqs.SEQ_NULL
-unsafe def SEQ_SUM : thm := BSeqs.SEQ_SUM
-unsafe def SEQ_TRANSFORM : thm := BSeqs.SEQ_TRANSFORM
-unsafe def convergent : thm := BSeqs.convergent
-unsafe def cauchy : thm := BSeqs.cauchy
-unsafe def lim : thm := BSeqs.lim
-unsafe def SEQ_LIM : thm := BSeqs.SEQ_LIM
-unsafe def subseq : thm := BSeqs.subseq
-unsafe def SUBSEQ_SUC : thm := BSeqs.SUBSEQ_SUC
-unsafe def mono : thm := BSeqs.mono
-unsafe def MONO_SUC : thm := BSeqs.MONO_SUC
-unsafe def MAX_LEMMA : thm := BSeqs.MAX_LEMMA
-unsafe def SEQ_BOUNDED : thm := BSeqs.SEQ_BOUNDED
-unsafe def SEQ_BOUNDED_2 : thm := BSeqs.SEQ_BOUNDED_2
-unsafe def SEQ_CBOUNDED : thm := BSeqs.SEQ_CBOUNDED
-unsafe def SEQ_ICONV : thm := BSeqs.SEQ_ICONV
+def tends_num_real : thm := BSeqs.tends_num_real
+def SEQ : thm := BSeqs.SEQ
+def SEQ_CONST : thm := BSeqs.SEQ_CONST
+def SEQ_ADD : thm := BSeqs.SEQ_ADD
+def SEQ_MUL : thm := BSeqs.SEQ_MUL
+def SEQ_NEG : thm := BSeqs.SEQ_NEG
+def SEQ_INV : thm := BSeqs.SEQ_INV
+def SEQ_SUB : thm := BSeqs.SEQ_SUB
+def SEQ_DIV : thm := BSeqs.SEQ_DIV
+def SEQ_UNIQ : thm := BSeqs.SEQ_UNIQ
+def SEQ_NULL : thm := BSeqs.SEQ_NULL
+def SEQ_SUM : thm := BSeqs.SEQ_SUM
+def SEQ_TRANSFORM : thm := BSeqs.SEQ_TRANSFORM
+def convergent : thm := BSeqs.convergent
+def cauchy : thm := BSeqs.cauchy
+def lim : thm := BSeqs.lim
+def SEQ_LIM : thm := BSeqs.SEQ_LIM
+def subseq : thm := BSeqs.subseq
+def SUBSEQ_SUC : thm := BSeqs.SUBSEQ_SUC
+def mono : thm := BSeqs.mono
+def MONO_SUC : thm := BSeqs.MONO_SUC
+def MAX_LEMMA : thm := BSeqs.MAX_LEMMA
+def SEQ_BOUNDED : thm := BSeqs.SEQ_BOUNDED
+def SEQ_BOUNDED_2 : thm := BSeqs.SEQ_BOUNDED_2
+def SEQ_CBOUNDED : thm := BSeqs.SEQ_CBOUNDED
+def SEQ_ICONV : thm := BSeqs.SEQ_ICONV
 
 -- Seqs2
-unsafe def SEQ_NEG_CONV : thm := BSeqs2.SEQ_NEG_CONV
-unsafe def SEQ_NEG_BOUNDED : thm := BSeqs2.SEQ_NEG_BOUNDED
-unsafe def SEQ_BCONV : thm := BSeqs2.SEQ_BCONV
-unsafe def SEQ_MONOSUB : thm := BSeqs2.SEQ_MONOSUB
-unsafe def SEQ_SBOUNDED : thm := BSeqs2.SEQ_SBOUNDED
-unsafe def SEQ_SUBLE : thm := BSeqs2.SEQ_SUBLE
-unsafe def SEQ_DIRECT : thm := BSeqs2.SEQ_DIRECT
-unsafe def SEQ_CAUCHY : thm := BSeqs2.SEQ_CAUCHY
-unsafe def SEQ_LE : thm := BSeqs2.SEQ_LE
-unsafe def SEQ_LE_0 : thm := BSeqs2.SEQ_LE_0
+def SEQ_NEG_CONV : thm := BSeqs2.SEQ_NEG_CONV
+def SEQ_NEG_BOUNDED : thm := BSeqs2.SEQ_NEG_BOUNDED
+def SEQ_BCONV : thm := BSeqs2.SEQ_BCONV
+def SEQ_MONOSUB : thm := BSeqs2.SEQ_MONOSUB
+def SEQ_SBOUNDED : thm := BSeqs2.SEQ_SBOUNDED
+def SEQ_SUBLE : thm := BSeqs2.SEQ_SUBLE
+def SEQ_DIRECT : thm := BSeqs2.SEQ_DIRECT
+def SEQ_CAUCHY : thm := BSeqs2.SEQ_CAUCHY
+def SEQ_LE : thm := BSeqs2.SEQ_LE
+def SEQ_LE_0 : thm := BSeqs2.SEQ_LE_0
 
 -- SeqLim
-unsafe def SEQ_SUC : thm := BSeqLim.SEQ_SUC
-unsafe def SEQ_ABS : thm := BSeqLim.SEQ_ABS
-unsafe def SEQ_ABS_IMP : thm := BSeqLim.SEQ_ABS_IMP
-unsafe def SEQ_INV0 : thm := BSeqLim.SEQ_INV0
-unsafe def SEQ_POWER_ABS : thm := BSeqLim.SEQ_POWER_ABS
-unsafe def SEQ_POWER : thm := BSeqLim.SEQ_POWER
-unsafe def SEQ_HARMONIC : thm := BSeqLim.SEQ_HARMONIC
-unsafe def SEQ_SUBSEQ : thm := BSeqLim.SEQ_SUBSEQ
-unsafe def SEQ_POW : thm := BSeqLim.SEQ_POW
-unsafe def NEST_LEMMA : thm := BSeqLim.NEST_LEMMA
-unsafe def NEST_LEMMA_UNIQ : thm := BSeqLim.NEST_LEMMA_UNIQ
+def SEQ_SUC : thm := BSeqLim.SEQ_SUC
+def SEQ_ABS : thm := BSeqLim.SEQ_ABS
+def SEQ_ABS_IMP : thm := BSeqLim.SEQ_ABS_IMP
+def SEQ_INV0 : thm := BSeqLim.SEQ_INV0
+def SEQ_POWER_ABS : thm := BSeqLim.SEQ_POWER_ABS
+def SEQ_POWER : thm := BSeqLim.SEQ_POWER
+def SEQ_HARMONIC : thm := BSeqLim.SEQ_HARMONIC
+def SEQ_SUBSEQ : thm := BSeqLim.SEQ_SUBSEQ
+def SEQ_POW : thm := BSeqLim.SEQ_POW
+def NEST_LEMMA : thm := BSeqLim.NEST_LEMMA
+def NEST_LEMMA_UNIQ : thm := BSeqLim.NEST_LEMMA_UNIQ
 
 -- Series1
-unsafe def BOLZANO_LEMMA : thm := BSeries1.BOLZANO_LEMMA
-unsafe def BOLZANO_LEMMA_ALT : thm := BSeries1.BOLZANO_LEMMA_ALT
-unsafe def sums : thm := BSeries1.sums
-unsafe def summable : thm := BSeries1.summable
-unsafe def suminf : thm := BSeries1.suminf
-unsafe def SUM_SUMMABLE : thm := BSeries1.SUM_SUMMABLE
-unsafe def SUMMABLE_SUM : thm := BSeries1.SUMMABLE_SUM
-unsafe def SUM_UNIQ : thm := BSeries1.SUM_UNIQ
-unsafe def SER_UNIQ : thm := BSeries1.SER_UNIQ
-unsafe def SER_0 : thm := BSeries1.SER_0
-unsafe def SER_POS_LE : thm := BSeries1.SER_POS_LE
-unsafe def SER_POS_LT : thm := BSeries1.SER_POS_LT
-unsafe def SER_GROUP : thm := BSeries1.SER_GROUP
-unsafe def SER_PAIR : thm := BSeries1.SER_PAIR
-unsafe def SER_OFFSET : thm := BSeries1.SER_OFFSET
-unsafe def SER_OFFSET_REV : thm := BSeries1.SER_OFFSET_REV
+def BOLZANO_LEMMA : thm := BSeries1.BOLZANO_LEMMA
+def BOLZANO_LEMMA_ALT : thm := BSeries1.BOLZANO_LEMMA_ALT
+def sums : thm := BSeries1.sums
+def summable : thm := BSeries1.summable
+def suminf : thm := BSeries1.suminf
+def SUM_SUMMABLE : thm := BSeries1.SUM_SUMMABLE
+def SUMMABLE_SUM : thm := BSeries1.SUMMABLE_SUM
+def SUM_UNIQ : thm := BSeries1.SUM_UNIQ
+def SER_UNIQ : thm := BSeries1.SER_UNIQ
+def SER_0 : thm := BSeries1.SER_0
+def SER_POS_LE : thm := BSeries1.SER_POS_LE
+def SER_POS_LT : thm := BSeries1.SER_POS_LT
+def SER_GROUP : thm := BSeries1.SER_GROUP
+def SER_PAIR : thm := BSeries1.SER_PAIR
+def SER_OFFSET : thm := BSeries1.SER_OFFSET
+def SER_OFFSET_REV : thm := BSeries1.SER_OFFSET_REV
 
 -- Series2
-unsafe def SER_POS_LT_PAIR : thm := BSeries2.SER_POS_LT_PAIR
-unsafe def SER_ADD : thm := BSeries2.SER_ADD
-unsafe def SER_CMUL : thm := BSeries2.SER_CMUL
-unsafe def SER_NEG : thm := BSeries2.SER_NEG
-unsafe def SER_SUB : thm := BSeries2.SER_SUB
-unsafe def SER_CDIV : thm := BSeries2.SER_CDIV
-unsafe def SER_CAUCHY : thm := BSeries2.SER_CAUCHY
-unsafe def SER_ZERO : thm := BSeries2.SER_ZERO
-unsafe def SER_COMPAR : thm := BSeries2.SER_COMPAR
-unsafe def SER_COMPARA : thm := BSeries2.SER_COMPARA
-unsafe def SER_LE : thm := BSeries2.SER_LE
-unsafe def SER_LE2 : thm := BSeries2.SER_LE2
-unsafe def SER_ACONV : thm := BSeries2.SER_ACONV
-unsafe def SER_ABS : thm := BSeries2.SER_ABS
-unsafe def GP_FINITE : thm := BSeries2.GP_FINITE
-unsafe def GP : thm := BSeries2.GP
-unsafe def ABS_NEG_LEMMA : thm := BSeries2.ABS_NEG_LEMMA
-unsafe def SER_RATIO : thm := BSeries2.SER_RATIO
-unsafe def SEQ_TRUNCATION : thm := BSeries2.SEQ_TRUNCATION
+def SER_POS_LT_PAIR : thm := BSeries2.SER_POS_LT_PAIR
+def SER_ADD : thm := BSeries2.SER_ADD
+def SER_CMUL : thm := BSeries2.SER_CMUL
+def SER_NEG : thm := BSeries2.SER_NEG
+def SER_SUB : thm := BSeries2.SER_SUB
+def SER_CDIV : thm := BSeries2.SER_CDIV
+def SER_CAUCHY : thm := BSeries2.SER_CAUCHY
+def SER_ZERO : thm := BSeries2.SER_ZERO
+def SER_COMPAR : thm := BSeries2.SER_COMPAR
+def SER_COMPARA : thm := BSeries2.SER_COMPARA
+def SER_LE : thm := BSeries2.SER_LE
+def SER_LE2 : thm := BSeries2.SER_LE2
+def SER_ACONV : thm := BSeries2.SER_ACONV
+def SER_ABS : thm := BSeries2.SER_ABS
+def GP_FINITE : thm := BSeries2.GP_FINITE
+def GP : thm := BSeries2.GP
+def ABS_NEG_LEMMA : thm := BSeries2.ABS_NEG_LEMMA
+def SER_RATIO : thm := BSeries2.SER_RATIO
+def SEQ_TRUNCATION : thm := BSeries2.SEQ_TRUNCATION
 
 -- Lims
-unsafe def tends_real_real : thm := BLims.tends_real_real
-unsafe def LIM : thm := BLims.LIM
-unsafe def LIM_CONST : thm := BLims.LIM_CONST
-unsafe def LIM_ADD : thm := BLims.LIM_ADD
-unsafe def LIM_MUL : thm := BLims.LIM_MUL
-unsafe def LIM_NEG : thm := BLims.LIM_NEG
-unsafe def LIM_INV : thm := BLims.LIM_INV
-unsafe def LIM_SUB : thm := BLims.LIM_SUB
-unsafe def LIM_DIV : thm := BLims.LIM_DIV
-unsafe def LIM_NULL : thm := BLims.LIM_NULL
-unsafe def LIM_SUM : thm := BLims.LIM_SUM
-unsafe def LIM_X : thm := BLims.LIM_X
-unsafe def LIM_UNIQ : thm := BLims.LIM_UNIQ
-unsafe def LIM_EQUAL : thm := BLims.LIM_EQUAL
-unsafe def LIM_TRANSFORM : thm := BLims.LIM_TRANSFORM
-unsafe def diffl : thm := BLims.diffl
-unsafe def contl : thm := BLims.contl
-unsafe def differentiable : thm := BLims.differentiable
-unsafe def DIFF_UNIQ : thm := BLims.DIFF_UNIQ
-unsafe def DIFF_CONT : thm := BLims.DIFF_CONT
-unsafe def CONTL_LIM : thm := BLims.CONTL_LIM
-unsafe def CONT_X : thm := BLims.CONT_X
-unsafe def CONT_CONST : thm := BLims.CONT_CONST
-unsafe def CONT_ADD : thm := BLims.CONT_ADD
-unsafe def CONT_MUL : thm := BLims.CONT_MUL
-unsafe def CONT_NEG : thm := BLims.CONT_NEG
-unsafe def CONT_INV : thm := BLims.CONT_INV
-unsafe def CONT_SUB : thm := BLims.CONT_SUB
-unsafe def CONT_DIV : thm := BLims.CONT_DIV
-unsafe def CONT_ABS : thm := BLims.CONT_ABS
-unsafe def CONT_COMPOSE : thm := BLims.CONT_COMPOSE
+def tends_real_real : thm := BLims.tends_real_real
+def LIM : thm := BLims.LIM
+def LIM_CONST : thm := BLims.LIM_CONST
+def LIM_ADD : thm := BLims.LIM_ADD
+def LIM_MUL : thm := BLims.LIM_MUL
+def LIM_NEG : thm := BLims.LIM_NEG
+def LIM_INV : thm := BLims.LIM_INV
+def LIM_SUB : thm := BLims.LIM_SUB
+def LIM_DIV : thm := BLims.LIM_DIV
+def LIM_NULL : thm := BLims.LIM_NULL
+def LIM_SUM : thm := BLims.LIM_SUM
+def LIM_X : thm := BLims.LIM_X
+def LIM_UNIQ : thm := BLims.LIM_UNIQ
+def LIM_EQUAL : thm := BLims.LIM_EQUAL
+def LIM_TRANSFORM : thm := BLims.LIM_TRANSFORM
+def diffl : thm := BLims.diffl
+def contl : thm := BLims.contl
+def differentiable : thm := BLims.differentiable
+def DIFF_UNIQ : thm := BLims.DIFF_UNIQ
+def DIFF_CONT : thm := BLims.DIFF_CONT
+def CONTL_LIM : thm := BLims.CONTL_LIM
+def CONT_X : thm := BLims.CONT_X
+def CONT_CONST : thm := BLims.CONT_CONST
+def CONT_ADD : thm := BLims.CONT_ADD
+def CONT_MUL : thm := BLims.CONT_MUL
+def CONT_NEG : thm := BLims.CONT_NEG
+def CONT_INV : thm := BLims.CONT_INV
+def CONT_SUB : thm := BLims.CONT_SUB
+def CONT_DIV : thm := BLims.CONT_DIV
+def CONT_ABS : thm := BLims.CONT_ABS
+def CONT_COMPOSE : thm := BLims.CONT_COMPOSE
 
 -- Diffs
-unsafe def IVT : thm := BDiffs.IVT
-unsafe def IVT2 : thm := BDiffs.IVT2
-unsafe def DIFF_CONST : thm := BDiffs.DIFF_CONST
-unsafe def DIFF_ADD : thm := BDiffs.DIFF_ADD
-unsafe def DIFF_MUL : thm := BDiffs.DIFF_MUL
-unsafe def DIFF_CMUL : thm := BDiffs.DIFF_CMUL
-unsafe def DIFF_NEG : thm := BDiffs.DIFF_NEG
-unsafe def DIFF_SUB : thm := BDiffs.DIFF_SUB
-unsafe def DIFF_CARAT : thm := BDiffs.DIFF_CARAT
-unsafe def DIFF_CHAIN : thm := BDiffs.DIFF_CHAIN
-unsafe def DIFF_X : thm := BDiffs.DIFF_X
-unsafe def DIFF_POW : thm := BDiffs.DIFF_POW
-unsafe def DIFF_XM1 : thm := BDiffs.DIFF_XM1
-unsafe def DIFF_INV : thm := BDiffs.DIFF_INV
-unsafe def DIFF_DIV : thm := BDiffs.DIFF_DIV
-unsafe def DIFF_SUM : thm := BDiffs.DIFF_SUM
+def IVT : thm := BDiffs.IVT
+def IVT2 : thm := BDiffs.IVT2
+def DIFF_CONST : thm := BDiffs.DIFF_CONST
+def DIFF_ADD : thm := BDiffs.DIFF_ADD
+def DIFF_MUL : thm := BDiffs.DIFF_MUL
+def DIFF_CMUL : thm := BDiffs.DIFF_CMUL
+def DIFF_NEG : thm := BDiffs.DIFF_NEG
+def DIFF_SUB : thm := BDiffs.DIFF_SUB
+def DIFF_CARAT : thm := BDiffs.DIFF_CARAT
+def DIFF_CHAIN : thm := BDiffs.DIFF_CHAIN
+def DIFF_X : thm := BDiffs.DIFF_X
+def DIFF_POW : thm := BDiffs.DIFF_POW
+def DIFF_XM1 : thm := BDiffs.DIFF_XM1
+def DIFF_INV : thm := BDiffs.DIFF_INV
+def DIFF_DIV : thm := BDiffs.DIFF_DIV
+def DIFF_SUM : thm := BDiffs.DIFF_SUM
 
 -- Cont
-unsafe def CONT_BOUNDED : thm := BCont.CONT_BOUNDED
-unsafe def CONT_BOUNDED_ABS : thm := BCont.CONT_BOUNDED_ABS
-unsafe def CONT_HASSUP : thm := BCont.CONT_HASSUP
-unsafe def CONT_ATTAINS : thm := BCont.CONT_ATTAINS
-unsafe def CONT_ATTAINS2 : thm := BCont.CONT_ATTAINS2
-unsafe def CONT_ATTAINS_ALL : thm := BCont.CONT_ATTAINS_ALL
+def CONT_BOUNDED : thm := BCont.CONT_BOUNDED
+def CONT_BOUNDED_ABS : thm := BCont.CONT_BOUNDED_ABS
+def CONT_HASSUP : thm := BCont.CONT_HASSUP
+def CONT_ATTAINS : thm := BCont.CONT_ATTAINS
+def CONT_ATTAINS2 : thm := BCont.CONT_ATTAINS2
+def CONT_ATTAINS_ALL : thm := BCont.CONT_ATTAINS_ALL
 
 -- Mvt
-unsafe def DIFF_LINC : thm := BMvt.DIFF_LINC
-unsafe def DIFF_LDEC : thm := BMvt.DIFF_LDEC
-unsafe def DIFF_LMAX : thm := BMvt.DIFF_LMAX
-unsafe def DIFF_LMIN : thm := BMvt.DIFF_LMIN
-unsafe def DIFF_LCONST : thm := BMvt.DIFF_LCONST
-unsafe def INTERVAL_LEMMA_LT : thm := BMvt.INTERVAL_LEMMA_LT
-unsafe def INTERVAL_LEMMA : thm := BMvt.INTERVAL_LEMMA
-unsafe def ROLLE : thm := BMvt.ROLLE
-unsafe def MVT_LEMMA : thm := BMvt.MVT_LEMMA
-unsafe def MVT : thm := BMvt.MVT
-unsafe def MVT_ALT : thm := BMvt.MVT_ALT
-unsafe def DIFF_ISCONST_END : thm := BMvt.DIFF_ISCONST_END
-unsafe def DIFF_ISCONST : thm := BMvt.DIFF_ISCONST
-unsafe def DIFF_ISCONST_END_SIMPLE : thm := BMvt.DIFF_ISCONST_END_SIMPLE
-unsafe def DIFF_ISCONST_ALL : thm := BMvt.DIFF_ISCONST_ALL
-unsafe def INTERVAL_ABS : thm := BMvt.INTERVAL_ABS
+def DIFF_LINC : thm := BMvt.DIFF_LINC
+def DIFF_LDEC : thm := BMvt.DIFF_LDEC
+def DIFF_LMAX : thm := BMvt.DIFF_LMAX
+def DIFF_LMIN : thm := BMvt.DIFF_LMIN
+def DIFF_LCONST : thm := BMvt.DIFF_LCONST
+def INTERVAL_LEMMA_LT : thm := BMvt.INTERVAL_LEMMA_LT
+def INTERVAL_LEMMA : thm := BMvt.INTERVAL_LEMMA
+def ROLLE : thm := BMvt.ROLLE
+def MVT_LEMMA : thm := BMvt.MVT_LEMMA
+def MVT : thm := BMvt.MVT
+def MVT_ALT : thm := BMvt.MVT_ALT
+def DIFF_ISCONST_END : thm := BMvt.DIFF_ISCONST_END
+def DIFF_ISCONST : thm := BMvt.DIFF_ISCONST
+def DIFF_ISCONST_END_SIMPLE : thm := BMvt.DIFF_ISCONST_END_SIMPLE
+def DIFF_ISCONST_ALL : thm := BMvt.DIFF_ISCONST_ALL
+def INTERVAL_ABS : thm := BMvt.INTERVAL_ABS
 
 -- Inverse
-unsafe def CONT_INJ_LEMMA : thm := BInverse.CONT_INJ_LEMMA
-unsafe def CONT_INJ_LEMMA2 : thm := BInverse.CONT_INJ_LEMMA2
-unsafe def CONT_INJ_RANGE : thm := BInverse.CONT_INJ_RANGE
-unsafe def CONT_INVERSE : thm := BInverse.CONT_INVERSE
-unsafe def DIFF_INVERSE : thm := BInverse.DIFF_INVERSE
-unsafe def DIFF_INVERSE_LT : thm := BInverse.DIFF_INVERSE_LT
+def CONT_INJ_LEMMA : thm := BInverse.CONT_INJ_LEMMA
+def CONT_INJ_LEMMA2 : thm := BInverse.CONT_INJ_LEMMA2
+def CONT_INJ_RANGE : thm := BInverse.CONT_INJ_RANGE
+def CONT_INVERSE : thm := BInverse.CONT_INVERSE
+def DIFF_INVERSE : thm := BInverse.DIFF_INVERSE
+def DIFF_INVERSE_LT : thm := BInverse.DIFF_INVERSE_LT
 
 -- Uniform
-unsafe def IVT_DERIVATIVE_0 : thm := BUniform.IVT_DERIVATIVE_0
-unsafe def IVT_DERIVATIVE_POS : thm := BUniform.IVT_DERIVATIVE_POS
-unsafe def IVT_DERIVATIVE_NEG : thm := BUniform.IVT_DERIVATIVE_NEG
-unsafe def SEQ_CONT_UNIFORM : thm := BUniform.SEQ_CONT_UNIFORM
-unsafe def SER_COMPARA_UNIFORM : thm := BUniform.SER_COMPARA_UNIFORM
-unsafe def SER_COMPARA_UNIFORM_WEAK : thm := BUniform.SER_COMPARA_UNIFORM_WEAK
-unsafe def CONTL : thm := BUniform.CONTL
-unsafe def CONTL_SEQ : thm := BUniform.CONTL_SEQ
-unsafe def SUP_INTERVAL : thm := BUniform.SUP_INTERVAL
-unsafe def CONT_UNIFORM : thm := BUniform.CONT_UNIFORM
-unsafe def CONT_UNIFORM_STRONG : thm := BUniform.CONT_UNIFORM_STRONG
+def IVT_DERIVATIVE_0 : thm := BUniform.IVT_DERIVATIVE_0
+def IVT_DERIVATIVE_POS : thm := BUniform.IVT_DERIVATIVE_POS
+def IVT_DERIVATIVE_NEG : thm := BUniform.IVT_DERIVATIVE_NEG
+def SEQ_CONT_UNIFORM : thm := BUniform.SEQ_CONT_UNIFORM
+def SER_COMPARA_UNIFORM : thm := BUniform.SER_COMPARA_UNIFORM
+def SER_COMPARA_UNIFORM_WEAK : thm := BUniform.SER_COMPARA_UNIFORM_WEAK
+def CONTL : thm := BUniform.CONTL
+def CONTL_SEQ : thm := BUniform.CONTL_SEQ
+def SUP_INTERVAL : thm := BUniform.SUP_INTERVAL
+def CONT_UNIFORM : thm := BUniform.CONT_UNIFORM
+def CONT_UNIFORM_STRONG : thm := BUniform.CONT_UNIFORM_STRONG
 
 
 
@@ -1151,36 +1047,7 @@ unsafe def CONT_UNIFORM_STRONG : thm := BUniform.CONT_UNIFORM_STRONG
 
 
 
--- @@EXPORTS END
-
-/-- `needs "Library/analysis.ml"`: build every bundle, in file order. -/
-unsafe def ensureAnalysis : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BCompat.F_IMP
-  let _ ← IO.mkRef BNames.LESS_EQUAL_ANTISYM
-  let _ ← IO.mkRef BTactics.SYM_CANON_CONV
-  let _ ← IO.mkRef BReals1.real_le
-  let _ ← IO.mkRef BReals2.REAL_SUB_REFL
-  let _ ← IO.mkRef BReals3.REAL_HALF_DOUBLE
-  let _ ← IO.mkRef BAbs.ABS_ZERO
-  let _ ← IO.mkRef BPow.pow
-  let _ ← IO.mkRef BSums.sum_EXISTS
-  let _ ← IO.mkRef BSumConv.REAL_SUM_CONV
-  let _ ← IO.mkRef BTopology.re_Union
-  let _ ← IO.mkRef BMetricTop.mtop
-  let _ ← IO.mkRef BNets.dorder
-  let _ ← IO.mkRef BNetArith.NET_NULL_ADD
-  let _ ← IO.mkRef BSeqs.tends_num_real
-  let _ ← IO.mkRef BSeqs2.SEQ_NEG_CONV
-  let _ ← IO.mkRef BSeqLim.SEQ_SUC
-  let _ ← IO.mkRef BSeries1.BOLZANO_LEMMA
-  let _ ← IO.mkRef BSeries2.SER_POS_LT_PAIR
-  let _ ← IO.mkRef BLims.tends_real_real
-  let _ ← IO.mkRef BDiffs.IVT
-  let _ ← IO.mkRef BCont.CONT_BOUNDED
-  let _ ← IO.mkRef BMvt.DIFF_LINC
-  let _ ← IO.mkRef BInverse.CONT_INJ_LEMMA
-  let _ ← IO.mkRef BUniform.IVT_DERIVATIVE_0  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/analysis.ml"`: already done by importing this module. -/
+def ensureAnalysis : IO Unit := pure ()
 
 end SessionLibrary.Analysis

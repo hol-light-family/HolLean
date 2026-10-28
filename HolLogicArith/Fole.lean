@@ -15,41 +15,41 @@ namespace HolLogicArith.Fole
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1` bundles; alias the ones we need. -/
-private unsafe def HD : thm := Session.listDefs.HD
-private unsafe def TL : thm := Session.listDefs.TL
-private unsafe def LENGTH : thm := Session.listDefs.LENGTH
-private unsafe def MAP : thm := Session.listDefs.MAP
-private unsafe def ALL : thm := Session.listDefs.ALL
-private unsafe def ITLIST : thm := Session.listDefs.ITLIST
-private unsafe def MEM : thm := Session.listDefs.MEM
-private unsafe def EL : thm := Session.listDefs.EL
-private unsafe def ALL2 : thm := Session.listDefs.ALL2
-private unsafe def ALL2_DEF : thm := Session.listDefs.ALL2_DEF
-private unsafe def MAP2 : thm := Session.listDefs.MAP2
-private unsafe def MAP2_DEF : thm := Session.listDefs.MAP2_DEF
-private unsafe def MAP_EQ : thm := Session.listThms1.MAP_EQ
-private unsafe def MAP_o : thm := Session.listThms1.MAP_o
-private unsafe def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
-private unsafe def ALL_T : thm := Session.listThms1.ALL_T
-private unsafe def ALL_MAP : thm := Session.listThms1.ALL_MAP
-private unsafe def ALL_IMP : thm := Session.listThms1.ALL_IMP
-private unsafe def AND_ALL : thm := Session.listThms1.AND_ALL
+private def HD : thm := Session.listDefs.HD
+private def TL : thm := Session.listDefs.TL
+private def LENGTH : thm := Session.listDefs.LENGTH
+private def MAP : thm := Session.listDefs.MAP
+private def ALL : thm := Session.listDefs.ALL
+private def ITLIST : thm := Session.listDefs.ITLIST
+private def MEM : thm := Session.listDefs.MEM
+private def EL : thm := Session.listDefs.EL
+private def ALL2 : thm := Session.listDefs.ALL2
+private def ALL2_DEF : thm := Session.listDefs.ALL2_DEF
+private def MAP2 : thm := Session.listDefs.MAP2
+private def MAP2_DEF : thm := Session.listDefs.MAP2_DEF
+private def MAP_EQ : thm := Session.listThms1.MAP_EQ
+private def MAP_o : thm := Session.listThms1.MAP_o
+private def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
+private def ALL_T : thm := Session.listThms1.ALL_T
+private def ALL_MAP : thm := Session.listThms1.ALL_MAP
+private def ALL_IMP : thm := Session.listThms1.ALL_IMP
+private def AND_ALL : thm := Session.listThms1.AND_ALL
 
 #eval HolLogicArith.Canon.ensure
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 /- fole.ml's one use of a bare simplification conversion with level 4
    (`CONV_TAC o GEN_SIMPLIFY_CONV TOP_DEPTH_SQCONV (basic_ss []) 4`): the same
    engine `SIMP_TAC`/`ASM_SIMP_TAC` use, but at depth 4 instead of 3. -/
-private unsafe def simp4_tac [HolLight.HolBase] (thl : List thm) : HolCore.Tactics.tactic :=
+private def simp4_tac [HolLight.HolBase] (thl : List thm) : HolCore.Tactics.tactic :=
   HolLight.tactic_of do
     let B := HolLight.HolBase.B
     let ss ← ExceptT.mk (HolCore.Simp.basic_ss B [])
@@ -60,17 +60,17 @@ private unsafe def simp4_tac [HolLight.HolBase] (thl : List thm) : HolCore.Tacti
 #eval parse_as_infix ("===", (18, "right"))
 
 #eval phrase 2
-unsafe def Equal_DEF : thm := keep "Equal_DEF" fun _ => new_definition
+def Equal_DEF : thm := keep "Equal_DEF" fun _ => new_definition
   [[s === t = Atom 0 [s; t] ]]
 #eval Equal_DEF
 
 #eval phrase 3
-unsafe def uclose : thm := keep "uclose" fun _ => new_definition
+def uclose : thm := keep "uclose" fun _ => new_definition
   [[uclose p = ITLIST (!!) (list_of_set(FV p)) p]]
 #eval uclose
 
 #eval phrase 4
-unsafe def normal : thm := keep "normal" fun _ => new_definition
+def normal : thm := keep "normal" fun _ => new_definition
   [[normal fns M <=>
         !s t v. valuation(M) v /\
                 s IN terms fns /\
@@ -79,7 +79,7 @@ unsafe def normal : thm := keep "normal" fun _ => new_definition
 #eval normal
 
 #eval phrase 5
-unsafe def Varpairs_DEF : thm := keep "Varpairs_DEF" fun _ => (do
+def Varpairs_DEF : thm := keep "Varpairs_DEF" fun _ => (do
   newRec num_RECURSION
    [[(Varpairs 0 = []) /\
      (Varpairs (SUC n) = CONS (V(2 * n),V(2 * n + 1)) (Varpairs n))]]
@@ -87,14 +87,14 @@ unsafe def Varpairs_DEF : thm := keep "Varpairs_DEF" fun _ => (do
 #eval Varpairs_DEF
 
 #eval phrase 6
-unsafe def Eqaxiom_Func : thm := keep "Eqaxiom_Func" fun _ => new_definition
+def Eqaxiom_Func : thm := keep "Eqaxiom_Func" fun _ => new_definition
   [[Eqaxiom_Func (f,n) =
      uclose (ITLIST (&&) (MAP (\(s,t). s === t) (Varpairs n)) True
              --> Fn f (MAP FST (Varpairs n)) === Fn f (MAP SND (Varpairs n)))]]
 #eval Eqaxiom_Func
 
 #eval phrase 7
-unsafe def Eqaxiom_Pred : thm := keep "Eqaxiom_Pred" fun _ => new_definition
+def Eqaxiom_Pred : thm := keep "Eqaxiom_Pred" fun _ => new_definition
   [[Eqaxiom_Pred (p,n) =
      uclose (ITLIST (&&) (MAP (\(s,t). s === t) (Varpairs n)) True
              --> (Atom p (MAP FST (Varpairs n))
@@ -102,7 +102,7 @@ unsafe def Eqaxiom_Pred : thm := keep "Eqaxiom_Pred" fun _ => new_definition
 #eval Eqaxiom_Pred
 
 #eval phrase 8
-unsafe def Eqaxioms_DEF : thm := keep "Eqaxioms_DEF" fun _ => new_definition
+def Eqaxioms_DEF : thm := keep "Eqaxioms_DEF" fun _ => new_definition
   [[Eqaxioms L = { (!! 0 (V 0 === V 0)) } UNION
                 { (!!0 (!!1 (!!2
                         (V 0 === V 1 --> (V 2 === V 1 --> V 0 === V 2))))) } UNION
@@ -111,7 +111,7 @@ unsafe def Eqaxioms_DEF : thm := keep "Eqaxioms_DEF" fun _ => new_definition
 #eval Eqaxioms_DEF
 
 #eval phrase 9
-unsafe def DOWNFROM : thm := keep "DOWNFROM" fun _ => (do
+def DOWNFROM : thm := keep "DOWNFROM" fun _ => (do
   newRec num_RECURSION
    [[(DOWNFROM 0 = []) /\
      (DOWNFROM (SUC n) = CONS n (DOWNFROM n))]]
@@ -119,14 +119,14 @@ unsafe def DOWNFROM : thm := keep "DOWNFROM" fun _ => (do
 #eval DOWNFROM
 
 #eval phrase 10
-unsafe def SATISFIES_UNION : thm := keep "SATISFIES_UNION" fun _ => (do
+def SATISFIES_UNION : thm := keep "SATISFIES_UNION" fun _ => (do
   prove ([[!M s t. M satisfies (s UNION t) <=> M satisfies s /\ M satisfies t]])
    (REWRITE_TAC [satisfies, IN_UNION] THEN MESON_TAC [])
   : ExceptT String IO thm).run
 #eval SATISFIES_UNION
 
 #eval phrase 11
-unsafe def HOLDS_UCLOSE_ALL : thm := keep "HOLDS_UCLOSE_ALL" fun _ => (do
+def HOLDS_UCLOSE_ALL : thm := keep "HOLDS_UCLOSE_ALL" fun _ => (do
   prove ([[!M x p. (!v:num->A. valuation(M) v ==> holds M v p)
            ==> !v. valuation(M) v ==> holds M v (uclose p)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [uclose] THEN
@@ -137,7 +137,7 @@ unsafe def HOLDS_UCLOSE_ALL : thm := keep "HOLDS_UCLOSE_ALL" fun _ => (do
 #eval HOLDS_UCLOSE_ALL
 
 #eval phrase 12
-unsafe def HOLDS_UCLOSE_ALL_EQ : thm := keep "HOLDS_UCLOSE_ALL_EQ" fun _ => (do
+def HOLDS_UCLOSE_ALL_EQ : thm := keep "HOLDS_UCLOSE_ALL_EQ" fun _ => (do
   prove ([[!M. ~(Dom M :A->bool = {})
        ==> !p. (!v. valuation(M) v ==> holds M v (uclose p)) <=>
                (!v. valuation(M) v ==> holds M v p)]])
@@ -149,7 +149,7 @@ unsafe def HOLDS_UCLOSE_ALL_EQ : thm := keep "HOLDS_UCLOSE_ALL_EQ" fun _ => (do
 #eval HOLDS_UCLOSE_ALL_EQ
 
 #eval phrase 13
-unsafe def UCLOSE_FV_LEMMA : thm := keep "UCLOSE_FV_LEMMA" fun _ => (do
+def UCLOSE_FV_LEMMA : thm := keep "UCLOSE_FV_LEMMA" fun _ => (do
   prove ([[!l p. FV(ITLIST !! l p) = FV(p) DIFF (set_of_list l)]])
    (LIST_INDUCT_TAC THEN
     ASM_REWRITE_TAC [ITLIST, FV, set_of_list] THEN SET_TAC [])
@@ -157,7 +157,7 @@ unsafe def UCLOSE_FV_LEMMA : thm := keep "UCLOSE_FV_LEMMA" fun _ => (do
 #eval UCLOSE_FV_LEMMA
 
 #eval phrase 14
-unsafe def UCLOSE_CLOSED : thm := keep "UCLOSE_CLOSED" fun _ => (do
+def UCLOSE_CLOSED : thm := keep "UCLOSE_CLOSED" fun _ => (do
   prove ([[!p. FV(uclose p) = EMPTY]])
    (GEN_TAC THEN REWRITE_TAC [uclose, UCLOSE_FV_LEMMA] THEN
     SIMP_TAC [SET_OF_LIST_OF_SET, FV_FINITE] THEN SET_TAC [])
@@ -165,7 +165,7 @@ unsafe def UCLOSE_CLOSED : thm := keep "UCLOSE_CLOSED" fun _ => (do
 #eval UCLOSE_CLOSED
 
 #eval phrase 15
-unsafe def HOLDS_UCLOSE_ANY : thm := keep "HOLDS_UCLOSE_ANY" fun _ => (do
+def HOLDS_UCLOSE_ANY : thm := keep "HOLDS_UCLOSE_ANY" fun _ => (do
   prove ([[!M (v:num->A) p.
        holds M v (uclose p)
        ==> ~(Dom M = EMPTY)
@@ -186,7 +186,7 @@ unsafe def HOLDS_UCLOSE_ANY : thm := keep "HOLDS_UCLOSE_ANY" fun _ => (do
 #eval HOLDS_UCLOSE_ANY
 
 #eval phrase 16
-unsafe def SATISFIES_NOT : thm := keep "SATISFIES_NOT" fun _ => (do
+def SATISFIES_NOT : thm := keep "SATISFIES_NOT" fun _ => (do
   prove ([[~(Dom M :A->bool = {})
    ==> (M satisfies E /\ ~(M satisfies {p}) <=>
         M satisfies (Not (uclose p) INSERT E))]])
@@ -209,7 +209,7 @@ unsafe def SATISFIES_NOT : thm := keep "SATISFIES_NOT" fun _ => (do
 #eval SATISFIES_NOT
 
 #eval phrase 17
-unsafe def FUNCTIONS_FORM_UCLOSE : thm := keep "FUNCTIONS_FORM_UCLOSE" fun _ => (do
+def FUNCTIONS_FORM_UCLOSE : thm := keep "FUNCTIONS_FORM_UCLOSE" fun _ => (do
   prove ([[functions_form(uclose p) = functions_form p]])
    (REWRITE_TAC [uclose] THEN
     SPEC_TAC ([[list_of_set (FV p)]], [[l:num list]]) THEN
@@ -218,7 +218,7 @@ unsafe def FUNCTIONS_FORM_UCLOSE : thm := keep "FUNCTIONS_FORM_UCLOSE" fun _ => 
 #eval FUNCTIONS_FORM_UCLOSE
 
 #eval phrase 18
-unsafe def PREDICATES_FORM_UCLOSE : thm := keep "PREDICATES_FORM_UCLOSE" fun _ => (do
+def PREDICATES_FORM_UCLOSE : thm := keep "PREDICATES_FORM_UCLOSE" fun _ => (do
   prove ([[predicates_form(uclose p) = predicates_form p]])
    (REWRITE_TAC [uclose] THEN
     SPEC_TAC ([[list_of_set (FV p)]], [[l:num list]]) THEN
@@ -227,35 +227,35 @@ unsafe def PREDICATES_FORM_UCLOSE : thm := keep "PREDICATES_FORM_UCLOSE" fun _ =
 #eval PREDICATES_FORM_UCLOSE
 
 #eval phrase 19
-unsafe def HOLDS_ANDS : thm := keep "HOLDS_ANDS" fun _ => (do
+def HOLDS_ANDS : thm := keep "HOLDS_ANDS" fun _ => (do
   prove ([[!l. holds M v (ITLIST (&&) l True) <=> ALL (holds M v) l]])
    (LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [ITLIST, ALL, HOLDS])
   : ExceptT String IO thm).run
 #eval HOLDS_ANDS
 
 #eval phrase 20
-unsafe def LENGTH_VARPAIRS : thm := keep "LENGTH_VARPAIRS" fun _ => (do
+def LENGTH_VARPAIRS : thm := keep "LENGTH_VARPAIRS" fun _ => (do
   prove ([[!n. LENGTH (Varpairs n) = n]])
    (INDUCT_TAC THEN ASM_REWRITE_TAC [Varpairs_DEF, LENGTH])
   : ExceptT String IO thm).run
 #eval LENGTH_VARPAIRS
 
 #eval phrase 21
-unsafe def MAP_FST_VARPAIRS : thm := keep "MAP_FST_VARPAIRS" fun _ => (do
+def MAP_FST_VARPAIRS : thm := keep "MAP_FST_VARPAIRS" fun _ => (do
   prove ([[!n. MAP FST (Varpairs n) = MAP (\n. V(2 * n)) (DOWNFROM n)]])
    (INDUCT_TAC THEN ASM_REWRITE_TAC [Varpairs_DEF, DOWNFROM, MAP])
   : ExceptT String IO thm).run
 #eval MAP_FST_VARPAIRS
 
 #eval phrase 22
-unsafe def MAP_SND_VARPAIRS : thm := keep "MAP_SND_VARPAIRS" fun _ => (do
+def MAP_SND_VARPAIRS : thm := keep "MAP_SND_VARPAIRS" fun _ => (do
   prove ([[!n. MAP SND (Varpairs n) = MAP (\n. V(2 * n + 1)) (DOWNFROM n)]])
    (INDUCT_TAC THEN ASM_REWRITE_TAC [Varpairs_DEF, DOWNFROM, MAP])
   : ExceptT String IO thm).run
 #eval MAP_SND_VARPAIRS
 
 #eval phrase 23
-unsafe def MULT_DIV_LEMMA : thm := keep "MULT_DIV_LEMMA" fun _ => (do
+def MULT_DIV_LEMMA : thm := keep "MULT_DIV_LEMMA" fun _ => (do
   prove ([[(!n. (2 * n) DIV 2 = n) /\
    (!n. (2 * n + 1) DIV 2 = n)]])
    (SIMP_TAC [DIV_MULT, ARITH_EQ] THEN
@@ -265,14 +265,14 @@ unsafe def MULT_DIV_LEMMA : thm := keep "MULT_DIV_LEMMA" fun _ => (do
 #eval MULT_DIV_LEMMA
 
 #eval phrase 24
-unsafe def PAIR_LEMMA : thm := keep "PAIR_LEMMA" fun _ => (do
+def PAIR_LEMMA : thm := keep "PAIR_LEMMA" fun _ => (do
   prove ([[!z. (\(x,y). P x y) z = P (FST z) (SND z)]])
    (REWRITE_TAC [FORALL_PAIR_THM])
   : ExceptT String IO thm).run
 #eval PAIR_LEMMA
 
 #eval phrase 25
-unsafe def FORALL_VARPAIRS : thm := keep "FORALL_VARPAIRS" fun _ => (do
+def FORALL_VARPAIRS : thm := keep "FORALL_VARPAIRS" fun _ => (do
   prove ([[!n. ALL P (Varpairs n) <=>
         ALL (\n. P (V (2 * n),V (2 * n + 1))) (DOWNFROM n)]])
    (INDUCT_TAC THEN ASM_REWRITE_TAC [ALL, Varpairs_DEF, DOWNFROM])
@@ -280,7 +280,7 @@ unsafe def FORALL_VARPAIRS : thm := keep "FORALL_VARPAIRS" fun _ => (do
 #eval FORALL_VARPAIRS
 
 #eval phrase 26
-unsafe def FORALL2_VARPAIRS : thm := keep "FORALL2_VARPAIRS" fun _ => (do
+def FORALL2_VARPAIRS : thm := keep "FORALL2_VARPAIRS" fun _ => (do
   prove ([[!n. ALL (\p. Pred M a [termval M v (FST p); termval M v (SND p)])
               (Varpairs n) <=>
        ALL2 (\x y. Pred M a [x;y])
@@ -291,7 +291,7 @@ unsafe def FORALL2_VARPAIRS : thm := keep "FORALL2_VARPAIRS" fun _ => (do
 #eval FORALL2_VARPAIRS
 
 #eval phrase 27
-unsafe def FORALL2_FORALL : thm := keep "FORALL2_FORALL" fun _ => (do
+def FORALL2_FORALL : thm := keep "FORALL2_FORALL" fun _ => (do
   prove ([[!l. ALL2 (\x y. P x y) (MAP f l) (MAP g l) <=>
        ALL (\x. P (f x) (g x)) l]])
    (LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [ALL, MAP, ALL2])
@@ -299,14 +299,14 @@ unsafe def FORALL2_FORALL : thm := keep "FORALL2_FORALL" fun _ => (do
 #eval FORALL2_FORALL
 
 #eval phrase 28
-unsafe def FORALL_DOWNFROM : thm := keep "FORALL_DOWNFROM" fun _ => (do
+def FORALL_DOWNFROM : thm := keep "FORALL_DOWNFROM" fun _ => (do
   prove ([[!n. ALL P (DOWNFROM n) <=> !k. k < n ==> P k]])
    (INDUCT_TAC THEN ASM_REWRITE_TAC [DOWNFROM, ALL, LT] THEN MESON_TAC [])
   : ExceptT String IO thm).run
 #eval FORALL_DOWNFROM
 
 #eval phrase 29
-unsafe def MAP_INDEXED : thm := keep "MAP_INDEXED" fun _ => (do
+def MAP_INDEXED : thm := keep "MAP_INDEXED" fun _ => (do
   let lemma ← prove
    ([[!k n. k < n ==> (SUC n - 1 - k = SUC (n - 1 - k))]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [(← ExceptT.mk (ARITH_RULE [[SUC n - 1 = n]]))] THEN
@@ -328,7 +328,7 @@ unsafe def MAP_INDEXED : thm := keep "MAP_INDEXED" fun _ => (do
 #eval MAP_INDEXED
 
 #eval phrase 30
-unsafe def RECONSTRUCT_TERMVAL : thm := keep "RECONSTRUCT_TERMVAL" fun _ => (do
+def RECONSTRUCT_TERMVAL : thm := keep "RECONSTRUCT_TERMVAL" fun _ => (do
   let lemma ← prove
    ([[!L K. L <= K
            ==> (MAP (\n. if K <= n then a else f n) (DOWNFROM L) =
@@ -362,7 +362,7 @@ unsafe def RECONSTRUCT_TERMVAL : thm := keep "RECONSTRUCT_TERMVAL" fun _ => (do
 #eval RECONSTRUCT_TERMVAL
 
 #eval phrase 31
-unsafe def FORALL_TERMS_STRONG : thm := keep "FORALL_TERMS_STRONG" fun _ => (do
+def FORALL_TERMS_STRONG : thm := keep "FORALL_TERMS_STRONG" fun _ => (do
   let lemma0 ← prove
    ([[(a INSERT b) SUBSET s <=> a IN s /\ b SUBSET s]]) (SET_TAC [])
   let lemma1 ← prove
@@ -390,14 +390,14 @@ unsafe def FORALL_TERMS_STRONG : thm := keep "FORALL_TERMS_STRONG" fun _ => (do
 #eval FORALL_TERMS_STRONG
 
 #eval phrase 32
-unsafe def FORALL_TERMS_RAW : thm := keep "FORALL_TERMS_RAW" fun _ => (do
+def FORALL_TERMS_RAW : thm := keep "FORALL_TERMS_RAW" fun _ => (do
   prove ([[!s t. terms (functions s) t ==> functions_term t SUBSET (functions s)]])
    (REWRITE_TAC [FORALL_TERMS_STRONG])
   : ExceptT String IO thm).run
 #eval FORALL_TERMS_RAW
 
 #eval phrase 33
-unsafe def FORALL_TERMS_INDEXED : thm := keep "FORALL_TERMS_INDEXED" fun _ => (do
+def FORALL_TERMS_INDEXED : thm := keep "FORALL_TERMS_INDEXED" fun _ => (do
   prove ([[!l n. ALL (terms (functions s)) l /\ n < LENGTH l
          ==> functions_term (EL n l) SUBSET functions s]])
    (LIST_INDUCT_TAC THEN REWRITE_TAC [ALL, LENGTH, (← liftExcept (Session.CONJUNCT1 LT))] THEN
@@ -409,7 +409,7 @@ unsafe def FORALL_TERMS_INDEXED : thm := keep "FORALL_TERMS_INDEXED" fun _ => (d
 
 
 #eval phrase 34
-unsafe def NORMAL_THM : thm := keep "NORMAL_THM" fun _ => (do
+def NORMAL_THM : thm := keep "NORMAL_THM" fun _ => (do
   let lemma0 ← prove
    ([[a SUBSET s /\ b SUBSET s ==> (a UNION b) SUBSET s]]) (SET_TAC [])
   let lemma1 ← prove
@@ -987,14 +987,14 @@ unsafe def NORMAL_THM : thm := keep "NORMAL_THM" fun _ => (do
 #eval NORMAL_THM
 
 #eval phrase 35
-unsafe def FUNCTIONS_SUBSET : thm := keep "FUNCTIONS_SUBSET" fun _ => (do
+def FUNCTIONS_SUBSET : thm := keep "FUNCTIONS_SUBSET" fun _ => (do
   prove ([[!s t. t SUBSET s ==> functions t SUBSET functions s]])
    (REWRITE_TAC [SUBSET, functions, IN_ELIM_THM, IN_UNIONS] THEN MESON_TAC [])
   : ExceptT String IO thm).run
 #eval FUNCTIONS_SUBSET
 
 #eval phrase 36
-unsafe def INTERPRETATION_MODIFY_LANGUAGE : thm := keep "INTERPRETATION_MODIFY_LANGUAGE" fun _ => (do
+def INTERPRETATION_MODIFY_LANGUAGE : thm := keep "INTERPRETATION_MODIFY_LANGUAGE" fun _ => (do
   prove ([[!s s' t.
         t SUBSET s /\
         (?M. interpretation (language s) M /\
@@ -1031,7 +1031,7 @@ unsafe def INTERPRETATION_MODIFY_LANGUAGE : thm := keep "INTERPRETATION_MODIFY_L
 #eval INTERPRETATION_MODIFY_LANGUAGE
 
 #eval phrase 37
-unsafe def INTERPRETATION_RESTRICT_LANGUAGE : thm := keep "INTERPRETATION_RESTRICT_LANGUAGE" fun _ => (do
+def INTERPRETATION_RESTRICT_LANGUAGE : thm := keep "INTERPRETATION_RESTRICT_LANGUAGE" fun _ => (do
   prove ([[!s s' t.
         s' SUBSET s /\
         (?M. interpretation (language s) M /\
@@ -1052,7 +1052,7 @@ unsafe def INTERPRETATION_RESTRICT_LANGUAGE : thm := keep "INTERPRETATION_RESTRI
 #eval INTERPRETATION_RESTRICT_LANGUAGE
 
 #eval phrase 38
-unsafe def FUNCTIONS_INSERT : thm := keep "FUNCTIONS_INSERT" fun _ => (do
+def FUNCTIONS_INSERT : thm := keep "FUNCTIONS_INSERT" fun _ => (do
   prove ([[functions(p INSERT s) = functions_form p UNION functions s]])
    (REWRITE_TAC [EXTENSION, functions, IN_UNION, IN_INSERT,
                 IN_UNIONS, IN_ELIM_THM] THEN
@@ -1061,7 +1061,7 @@ unsafe def FUNCTIONS_INSERT : thm := keep "FUNCTIONS_INSERT" fun _ => (do
 #eval FUNCTIONS_INSERT
 
 #eval phrase 39
-unsafe def FUNCTIONS_UNION : thm := keep "FUNCTIONS_UNION" fun _ => (do
+def FUNCTIONS_UNION : thm := keep "FUNCTIONS_UNION" fun _ => (do
   prove ([[functions (s UNION t) = functions s UNION functions t]])
    (REWRITE_TAC [EXTENSION, functions, IN_UNION, IN_UNIONS, IN_ELIM_THM] THEN
     MESON_TAC [])
@@ -1069,7 +1069,7 @@ unsafe def FUNCTIONS_UNION : thm := keep "FUNCTIONS_UNION" fun _ => (do
 #eval FUNCTIONS_UNION
 
 #eval phrase 40
-unsafe def PREDICATES_UNION : thm := keep "PREDICATES_UNION" fun _ => (do
+def PREDICATES_UNION : thm := keep "PREDICATES_UNION" fun _ => (do
   prove ([[predicates (s UNION t) = predicates s UNION predicates t]])
    (REWRITE_TAC [EXTENSION, predicates, IN_UNION, IN_UNIONS, IN_ELIM_THM] THEN
     MESON_TAC [])
@@ -1077,7 +1077,7 @@ unsafe def PREDICATES_UNION : thm := keep "PREDICATES_UNION" fun _ => (do
 #eval PREDICATES_UNION
 
 #eval phrase 41
-unsafe def FUNCTIONS_FORM_UCLOSE_2 : thm := keep "FUNCTIONS_FORM_UCLOSE_2" fun _ => (do
+def FUNCTIONS_FORM_UCLOSE_2 : thm := keep "FUNCTIONS_FORM_UCLOSE_2" fun _ => (do
   prove ([[functions_form(uclose p) = functions_form p]])
    (REWRITE_TAC [uclose] THEN
     SPEC_TAC ([[list_of_set(FV p)]], [[l:num list]]) THEN
@@ -1086,7 +1086,7 @@ unsafe def FUNCTIONS_FORM_UCLOSE_2 : thm := keep "FUNCTIONS_FORM_UCLOSE_2" fun _
 #eval FUNCTIONS_FORM_UCLOSE_2
 
 #eval phrase 42
-unsafe def FUNCTIONS_TERM_FNV1 : thm := keep "FUNCTIONS_TERM_FNV1" fun _ => (do
+def FUNCTIONS_TERM_FNV1 : thm := keep "FUNCTIONS_TERM_FNV1" fun _ => (do
   prove ([[functions_term (Fn p (MAP FST (Varpairs n))) = {(p,n)}]])
    (REWRITE_TAC [functions_term, LENGTH_MAP, LENGTH_VARPAIRS] THEN
     AP_TERM_TAC THEN SPEC_TAC ([[n:num]], [[n:num]]) THEN
@@ -1097,7 +1097,7 @@ unsafe def FUNCTIONS_TERM_FNV1 : thm := keep "FUNCTIONS_TERM_FNV1" fun _ => (do
 #eval FUNCTIONS_TERM_FNV1
 
 #eval phrase 43
-unsafe def FUNCTIONS_FORM_FNV1 : thm := keep "FUNCTIONS_FORM_FNV1" fun _ => (do
+def FUNCTIONS_FORM_FNV1 : thm := keep "FUNCTIONS_FORM_FNV1" fun _ => (do
   prove ([[!n. LIST_UNION (MAP functions_term (MAP FST (Varpairs n))) = EMPTY]])
    (INDUCT_TAC THEN
     REWRITE_TAC [MAP, Varpairs_DEF, functions_term, LIST_UNION] THEN
@@ -1106,7 +1106,7 @@ unsafe def FUNCTIONS_FORM_FNV1 : thm := keep "FUNCTIONS_FORM_FNV1" fun _ => (do
 #eval FUNCTIONS_FORM_FNV1
 
 #eval phrase 44
-unsafe def FUNCTIONS_FORM_FNV2 : thm := keep "FUNCTIONS_FORM_FNV2" fun _ => (do
+def FUNCTIONS_FORM_FNV2 : thm := keep "FUNCTIONS_FORM_FNV2" fun _ => (do
   prove ([[!n. LIST_UNION (MAP functions_term (MAP SND (Varpairs n))) = EMPTY]])
    (INDUCT_TAC THEN
     REWRITE_TAC [MAP, Varpairs_DEF, functions_term, LIST_UNION] THEN
@@ -1115,7 +1115,7 @@ unsafe def FUNCTIONS_FORM_FNV2 : thm := keep "FUNCTIONS_FORM_FNV2" fun _ => (do
 #eval FUNCTIONS_FORM_FNV2
 
 #eval phrase 45
-unsafe def FUNCTIONS_TERM_FNV2 : thm := keep "FUNCTIONS_TERM_FNV2" fun _ => (do
+def FUNCTIONS_TERM_FNV2 : thm := keep "FUNCTIONS_TERM_FNV2" fun _ => (do
   prove ([[functions_term (Fn p (MAP SND (Varpairs n))) = {(p,n)}]])
    (REWRITE_TAC [functions_term, LENGTH_MAP, LENGTH_VARPAIRS] THEN
     AP_TERM_TAC THEN SPEC_TAC ([[n:num]], [[n:num]]) THEN
@@ -1126,7 +1126,7 @@ unsafe def FUNCTIONS_TERM_FNV2 : thm := keep "FUNCTIONS_TERM_FNV2" fun _ => (do
 #eval FUNCTIONS_TERM_FNV2
 
 #eval phrase 46
-unsafe def FUNCTIONS_EQCONJ : thm := keep "FUNCTIONS_EQCONJ" fun _ => (do
+def FUNCTIONS_EQCONJ : thm := keep "FUNCTIONS_EQCONJ" fun _ => (do
   prove ([[!n. functions_form(ITLIST (&&) (MAP (\(s,t). Atom 0 [s; t])
                                        (Varpairs n)) True) = EMPTY]])
    (INDUCT_TAC THEN
@@ -1138,7 +1138,7 @@ unsafe def FUNCTIONS_EQCONJ : thm := keep "FUNCTIONS_EQCONJ" fun _ => (do
 #eval FUNCTIONS_EQCONJ
 
 #eval phrase 47
-unsafe def FUNCTIONS_EQAXIOM_FUNC : thm := keep "FUNCTIONS_EQAXIOM_FUNC" fun _ => (do
+def FUNCTIONS_EQAXIOM_FUNC : thm := keep "FUNCTIONS_EQAXIOM_FUNC" fun _ => (do
   prove ([[!fa. functions_form (Eqaxiom_Func fa) = {fa}]])
    (REWRITE_TAC [FORALL_PAIR_THM, Eqaxiom_Func] THEN
     REWRITE_TAC [FUNCTIONS_FORM_UCLOSE] THEN
@@ -1150,7 +1150,7 @@ unsafe def FUNCTIONS_EQAXIOM_FUNC : thm := keep "FUNCTIONS_EQAXIOM_FUNC" fun _ =
 #eval FUNCTIONS_EQAXIOM_FUNC
 
 #eval phrase 48
-unsafe def FUNCTIONS_EQAXIOM_PRED : thm := keep "FUNCTIONS_EQAXIOM_PRED" fun _ => (do
+def FUNCTIONS_EQAXIOM_PRED : thm := keep "FUNCTIONS_EQAXIOM_PRED" fun _ => (do
   prove ([[!pa. functions_form (Eqaxiom_Pred pa) = EMPTY]])
    (REWRITE_TAC [FORALL_PAIR_THM, Eqaxiom_Pred] THEN
     REWRITE_TAC [FUNCTIONS_FORM_UCLOSE] THEN
@@ -1164,7 +1164,7 @@ unsafe def FUNCTIONS_EQAXIOM_PRED : thm := keep "FUNCTIONS_EQAXIOM_PRED" fun _ =
 #eval FUNCTIONS_EQAXIOM_PRED
 
 #eval phrase 49
-unsafe def FUNCTIONS_EQAXIOM : thm := keep "FUNCTIONS_EQAXIOM" fun _ => (do
+def FUNCTIONS_EQAXIOM : thm := keep "FUNCTIONS_EQAXIOM" fun _ => (do
   prove ([[functions (Eqaxioms (language s)) = functions s]])
    (ONCE_REWRITE_TAC [EXTENSION] THEN
     REWRITE_TAC [functions, Eqaxioms_DEF, IN_UNION, IN_INSERT, NOT_IN_EMPTY] THEN
@@ -1190,7 +1190,7 @@ unsafe def FUNCTIONS_EQAXIOM : thm := keep "FUNCTIONS_EQAXIOM" fun _ => (do
 #eval FUNCTIONS_EQAXIOM
 
 #eval phrase 50
-unsafe def INTERPRETATION_EQAXIOMS : thm := keep "INTERPRETATION_EQAXIOMS" fun _ => (do
+def INTERPRETATION_EQAXIOMS : thm := keep "INTERPRETATION_EQAXIOMS" fun _ => (do
   prove ([[interpretation (language s) M =
    interpretation (language (s UNION (Eqaxioms (language s)))) M]])
    (REWRITE_TAC [interpretation, language] THEN
@@ -1201,7 +1201,7 @@ unsafe def INTERPRETATION_EQAXIOMS : thm := keep "INTERPRETATION_EQAXIOMS" fun _
 #eval INTERPRETATION_EQAXIOMS
 
 #eval phrase 51
-unsafe def TERMS_SUBSET : thm := keep "TERMS_SUBSET" fun _ => (do
+def TERMS_SUBSET : thm := keep "TERMS_SUBSET" fun _ => (do
   prove ([[!f1 f2. f1 SUBSET f2 ==> terms f1 SUBSET terms f2]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [SUBSET, IN] THEN
     MATCH_MP_TAC terms_INDUCT THEN CONJ_TAC THENL
@@ -1213,7 +1213,7 @@ unsafe def TERMS_SUBSET : thm := keep "TERMS_SUBSET" fun _ => (do
 #eval TERMS_SUBSET
 
 #eval phrase 52
-unsafe def EQAXIOMS_UNION : thm := keep "EQAXIOMS_UNION" fun _ => (do
+def EQAXIOMS_UNION : thm := keep "EQAXIOMS_UNION" fun _ => (do
   prove ([[Eqaxioms (language (s UNION t)) =
    Eqaxioms (language s) UNION Eqaxioms (language t)]])
    (REWRITE_TAC [Eqaxioms_DEF, language, FUNCTIONS_UNION, PREDICATES_UNION] THEN
@@ -1223,14 +1223,14 @@ unsafe def EQAXIOMS_UNION : thm := keep "EQAXIOMS_UNION" fun _ => (do
 #eval EQAXIOMS_UNION
 
 #eval phrase 53
-unsafe def EQAXIOMS_SUBSET : thm := keep "EQAXIOMS_SUBSET" fun _ => (do
+def EQAXIOMS_SUBSET : thm := keep "EQAXIOMS_SUBSET" fun _ => (do
   prove ([[s SUBSET t ==> Eqaxioms (language s) SUBSET Eqaxioms (language t)]])
    (REWRITE_TAC [SUBSET_UNION_ABSORPTION, (← HolLight.GSYM EQAXIOMS_UNION)] THEN SIMP_TAC [])
   : ExceptT String IO thm).run
 #eval EQAXIOMS_SUBSET
 
 #eval phrase 54
-unsafe def IN_EQAXIOMS : thm := keep "IN_EQAXIOMS" fun _ => (do
+def IN_EQAXIOMS : thm := keep "IN_EQAXIOMS" fun _ => (do
   prove ([[p IN Eqaxioms (language s)
    ==> (s = EMPTY) \/ ?q. q IN s /\ p IN Eqaxioms (language {q})]])
    (REWRITE_TAC [Eqaxioms_DEF, language] THEN
@@ -1243,7 +1243,7 @@ unsafe def IN_EQAXIOMS : thm := keep "IN_EQAXIOMS" fun _ => (do
 #eval IN_EQAXIOMS
 
 #eval phrase 55
-unsafe def COMPACT_LS_NORM_LEMMA1 : thm := keep "COMPACT_LS_NORM_LEMMA1" fun _ => (do
+def COMPACT_LS_NORM_LEMMA1 : thm := keep "COMPACT_LS_NORM_LEMMA1" fun _ => (do
   let lemma ← prove
    ([[(!t. P t ==> !M. Q t M ==> R t M)
      ==> (!t. P t ==> ?M. Q t M) ==> (!t. P t ==> ?M. R t M)]])
@@ -1268,7 +1268,7 @@ unsafe def COMPACT_LS_NORM_LEMMA1 : thm := keep "COMPACT_LS_NORM_LEMMA1" fun _ =
 #eval COMPACT_LS_NORM_LEMMA1
 
 #eval phrase 56
-unsafe def COMPACT_LS_NORM_LEMMA2a : thm := keep "COMPACT_LS_NORM_LEMMA2a" fun _ => (do
+def COMPACT_LS_NORM_LEMMA2a : thm := keep "COMPACT_LS_NORM_LEMMA2a" fun _ => (do
   let lemma ← prove
    ([[(x INSERT s SUBSET t <=> x IN t /\ s SUBSET t) /\
      (u UNION s SUBSET t <=> u SUBSET t /\ s SUBSET t)]])
@@ -1301,7 +1301,7 @@ unsafe def COMPACT_LS_NORM_LEMMA2a : thm := keep "COMPACT_LS_NORM_LEMMA2a" fun _
 #eval COMPACT_LS_NORM_LEMMA2a
 
 #eval phrase 57
-unsafe def COMPACT_LS_NORM_LEMMA2 : thm := keep "COMPACT_LS_NORM_LEMMA2" fun _ => (do
+def COMPACT_LS_NORM_LEMMA2 : thm := keep "COMPACT_LS_NORM_LEMMA2" fun _ => (do
   let lemma ← prove
    ([[(s:A->bool) SUBSET (t UNION u)
      ==> ?s0 s1. (s = s0 UNION s1) /\ s0 SUBSET t /\ s1 SUBSET u]])
@@ -1342,7 +1342,7 @@ unsafe def COMPACT_LS_NORM_LEMMA2 : thm := keep "COMPACT_LS_NORM_LEMMA2" fun _ =
 #eval COMPACT_LS_NORM_LEMMA2
 
 #eval phrase 58
-unsafe def COMPACT_LS_NORM : thm := keep "COMPACT_LS_NORM" fun _ => (do
+def COMPACT_LS_NORM : thm := keep "COMPACT_LS_NORM" fun _ => (do
   prove ([[(!t. FINITE t /\ t SUBSET s ==> ?M. interpretation(language s) M /\
                                        ~(Dom(M):A->bool = EMPTY) /\
                                        normal (functions s) M /\
@@ -1374,9 +1374,9 @@ unsafe def COMPACT_LS_NORM : thm := keep "COMPACT_LS_NORM" fun _ => (do
 #eval COMPACT_LS_NORM
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Fole" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Fole" do
   replay (
           HolLogicArith.Canon.ensure)
   replay (

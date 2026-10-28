@@ -25,55 +25,55 @@ namespace HolLogicArith.Birkhoff
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1`/`listThms2` bundles; alias the ones we need. -/
-private unsafe def LENGTH : thm := Session.listDefs.LENGTH
-private unsafe def MAP : thm := Session.listDefs.MAP
-private unsafe def ALL : thm := Session.listDefs.ALL
-private unsafe def ITLIST : thm := Session.listDefs.ITLIST
-private unsafe def MEM : thm := Session.listDefs.MEM
-private unsafe def ALL2 : thm := Session.listDefs.ALL2
-private unsafe def CONS_11 : thm := Session.listThms1.CONS_11
-private unsafe def REPLICATE : thm := Session.listDefs.REPLICATE
-private unsafe def MAP_o : thm := Session.listThms1.MAP_o
-private unsafe def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
-private unsafe def LENGTH_REPLICATE : thm := Session.listThms1.LENGTH_REPLICATE
-private unsafe def ALL_MAP : thm := Session.listThms1.ALL_MAP
-private unsafe def ALL_MEM : thm := Session.listThms1.ALL_MEM
-private unsafe def EX_MEM : thm := Session.listThms1.EX_MEM
-private unsafe def MEM_MAP : thm := Session.listThms1.MEM_MAP
-private unsafe def NOT_EX : thm := Session.listThms1.NOT_EX
-private unsafe def ALL2_MAP2 : thm := Session.listThms2.ALL2_MAP2
-private unsafe def ALL2_ALL : thm := Session.listThms2.ALL2_ALL
-private unsafe def AND_ALL2 : thm := Session.listThms2.AND_ALL2
-private unsafe def MONO_ALL2 : thm := Session.MONO_ALL2
+private def LENGTH : thm := Session.listDefs.LENGTH
+private def MAP : thm := Session.listDefs.MAP
+private def ALL : thm := Session.listDefs.ALL
+private def ITLIST : thm := Session.listDefs.ITLIST
+private def MEM : thm := Session.listDefs.MEM
+private def ALL2 : thm := Session.listDefs.ALL2
+private def CONS_11 : thm := Session.listThms1.CONS_11
+private def REPLICATE : thm := Session.listDefs.REPLICATE
+private def MAP_o : thm := Session.listThms1.MAP_o
+private def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
+private def LENGTH_REPLICATE : thm := Session.listThms1.LENGTH_REPLICATE
+private def ALL_MAP : thm := Session.listThms1.ALL_MAP
+private def ALL_MEM : thm := Session.listThms1.ALL_MEM
+private def EX_MEM : thm := Session.listThms1.EX_MEM
+private def MEM_MAP : thm := Session.listThms1.MEM_MAP
+private def NOT_EX : thm := Session.listThms1.NOT_EX
+private def ALL2_MAP2 : thm := Session.listThms2.ALL2_MAP2
+private def ALL2_ALL : thm := Session.listThms2.ALL2_ALL
+private def AND_ALL2 : thm := Session.listThms2.AND_ALL2
+private def MONO_ALL2 : thm := Session.MONO_ALL2
 
 #eval HolLogicArith.Positive.ensure
 #eval HolLogicArith.Prolog.ensure
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 /- `new_inductive_definition`, panicking with HOL Light's message on failure. -/
-private unsafe def newInductive (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+private def newInductive (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"new_inductive_definition: {e}"
   | .error e => panic! s!"new_inductive_definition IO: {e}"
 
 #eval phrase 1
-unsafe def ALL2_SYM : thm := keep "ALL2_SYM" fun _ => (do
+def ALL2_SYM : thm := keep "ALL2_SYM" fun _ => (do
   prove ([[!l1 l2. ALL2 P l1 l2 <=> ALL2 (\x y. P y x) l2 l1]])
    (LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [ALL2])
   : ExceptT String IO thm).run
 #eval ALL2_SYM
 
 #eval phrase 2
-unsafe def MAP_EQ_ALL2 : thm := keep "MAP_EQ_ALL2" fun _ => (do
+def MAP_EQ_ALL2 : thm := keep "MAP_EQ_ALL2" fun _ => (do
   prove ([[!f l1 l2. ALL2 (\x y. f x = f y) l1 l2 ==> (MAP f l1 = MAP f l2)]])
    (GEN_TAC THEN LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN
     ASM_SIMP_TAC [ALL2, MAP, CONS_11] THEN STRIP_TAC THEN
@@ -82,14 +82,14 @@ unsafe def MAP_EQ_ALL2 : thm := keep "MAP_EQ_ALL2" fun _ => (do
 #eval MAP_EQ_ALL2
 
 #eval phrase 3
-unsafe def FORMSUBST_EQ : thm := keep "FORMSUBST_EQ" fun _ => (do
+def FORMSUBST_EQ : thm := keep "FORMSUBST_EQ" fun _ => (do
   prove ([[!i s t. formsubst i (s === t) = (termsubst i s === termsubst i t)]])
    (REWRITE_TAC [Equal_DEF, formsubst, MAP])
   : ExceptT String IO thm).run
 #eval FORMSUBST_EQ
 
 #eval phrase 4
-unsafe def TERMS_UNIV : thm := keep "TERMS_UNIV" fun _ => (do
+def TERMS_UNIV : thm := keep "TERMS_UNIV" fun _ => (do
   prove ([[terms UNIV = UNIV]])
    (REWRITE_TAC [IN_UNIV, EXTENSION] THEN REWRITE_TAC [IN] THEN
     MATCH_MP_TAC term_INDUCT THEN REWRITE_TAC [terms_RULES] THEN
@@ -101,7 +101,7 @@ unsafe def TERMS_UNIV : thm := keep "TERMS_UNIV" fun _ => (do
 #eval TERMS_UNIV
 
 #eval phrase 5
-unsafe def FUNCTIONS_UNIV : thm := keep "FUNCTIONS_UNIV" fun _ => (do
+def FUNCTIONS_UNIV : thm := keep "FUNCTIONS_UNIV" fun _ => (do
   prove ([[functions UNIV = UNIV]])
    (REWRITE_TAC [IN_UNIV, EXTENSION] THEN
     REWRITE_TAC [functions, IN_UNIONS, IN_ELIM_THM, IN_UNIV] THEN
@@ -117,7 +117,7 @@ unsafe def FUNCTIONS_UNIV : thm := keep "FUNCTIONS_UNIV" fun _ => (do
 #eval FUNCTIONS_UNIV
 
 #eval phrase 6
-unsafe def PREDICATES_UNIV : thm := keep "PREDICATES_UNIV" fun _ => (do
+def PREDICATES_UNIV : thm := keep "PREDICATES_UNIV" fun _ => (do
   prove ([[predicates UNIV = UNIV]])
    (REWRITE_TAC [IN_UNIV, EXTENSION] THEN
     REWRITE_TAC [predicates, IN_UNIONS, IN_ELIM_THM, IN_UNIV] THEN
@@ -131,21 +131,21 @@ unsafe def PREDICATES_UNIV : thm := keep "PREDICATES_UNIV" fun _ => (do
 #eval PREDICATES_UNIV
 
 #eval phrase 7
-unsafe def LANGUAGE_UNIV : thm := keep "LANGUAGE_UNIV" fun _ => (do
+def LANGUAGE_UNIV : thm := keep "LANGUAGE_UNIV" fun _ => (do
   prove ([[language UNIV = UNIV,UNIV]])
    (REWRITE_TAC [language, FUNCTIONS_UNIV, PREDICATES_UNIV])
   : ExceptT String IO thm).run
 #eval LANGUAGE_UNIV
 
 #eval phrase 8
-unsafe def EQUAL_INJ : thm := keep "EQUAL_INJ" fun _ => (do
+def EQUAL_INJ : thm := keep "EQUAL_INJ" fun _ => (do
   prove ([[!s t u v. ((s === t) = (u === v)) <=> (s = u) /\ (t = v)]])
    (REWRITE_TAC [Equal_DEF, form_INJ, CONS_11])
   : ExceptT String IO thm).run
 #eval EQUAL_INJ
 
 #eval phrase 9
-unsafe def EQUAL_INJ_ALT : thm := keep "EQUAL_INJ_ALT" fun _ => (do
+def EQUAL_INJ_ALT : thm := keep "EQUAL_INJ_ALT" fun _ => (do
   prove ([[!s t u v. ((s === t) = (u === v)) <=> (u = s) /\ (v = t)]])
    (REWRITE_TAC [EQUAL_INJ, EQ_SYM_EQ])
   : ExceptT String IO thm).run
@@ -155,7 +155,7 @@ unsafe def EQUAL_INJ_ALT : thm := keep "EQUAL_INJ_ALT" fun _ => (do
 #eval parse_as_infix ("|-", (11, "right"))
 
 #eval phrase 11
-unsafe def provable_triple : thm × thm × thm := keep "provable_triple" fun _ =>
+def provable_triple : thm × thm × thm := keep "provable_triple" fun _ =>
   newInductive
    [[(!s t. s === t IN E ==> E |- s === t) /\
      (!t. E |- t === t) /\
@@ -163,29 +163,29 @@ unsafe def provable_triple : thm × thm × thm := keep "provable_triple" fun _ =
      (!s t u. E |- s === t /\ E |- t === u ==> E |- s === u) /\
      (!f a b. ALL2 (\l r. E |- l === r) a b ==> E |- Fn f a === Fn f b) /\
      (!s t i. E |- s === t ==> E |- formsubst i (s === t))]]
-unsafe def provable_RULES : thm := provable_triple.1
-unsafe def provable_INDUCT : thm := provable_triple.2.1
-unsafe def provable_CASES : thm := provable_triple.2.2
+def provable_RULES : thm := provable_triple.1
+def provable_INDUCT : thm := provable_triple.2.1
+def provable_CASES : thm := provable_triple.2.2
 #eval do IO.println provable_RULES; IO.println provable_INDUCT; IO.println provable_CASES
 
 #eval phrase 12
 #eval parse_as_infix ("|--", (11, "right"))
 
 #eval phrase 13
-unsafe def wcprovable_triple : thm × thm × thm := keep "wcprovable_triple" fun _ =>
+def wcprovable_triple : thm × thm × thm := keep "wcprovable_triple" fun _ =>
   newInductive
    [[(!s t i. s === t IN E ==> E |-- formsubst i (s === t)) /\
      (!s t i. s === t IN E ==> E |-- formsubst i (t === s)) /\
      (!t. E |-- t === t) /\
      (!s t u. E |-- s === t /\ E |-- t === u ==> E |-- s === u) /\
      (!f a b. ALL2 (\l r. E |-- l === r) a b ==> E |-- Fn f a === Fn f b)]]
-unsafe def wcprovable_RULES : thm := wcprovable_triple.1
-unsafe def wcprovable_INDUCT : thm := wcprovable_triple.2.1
-unsafe def wcprovable_CASES : thm := wcprovable_triple.2.2
+def wcprovable_RULES : thm := wcprovable_triple.1
+def wcprovable_INDUCT : thm := wcprovable_triple.2.1
+def wcprovable_CASES : thm := wcprovable_triple.2.2
 #eval do IO.println wcprovable_RULES; IO.println wcprovable_INDUCT; IO.println wcprovable_CASES
 
 #eval phrase 14
-unsafe def WCPROVABLE_SYM : thm := keep "WCPROVABLE_SYM" fun _ => (do
+def WCPROVABLE_SYM : thm := keep "WCPROVABLE_SYM" fun _ => (do
   prove ([[!E a. E |-- a ==> !s t. (a = (s === t)) ==> E |-- t === s]])
    (GEN_TAC THEN MATCH_MP_TAC wcprovable_INDUCT THEN
     SIMP_TAC [EQUAL_INJ_ALT, LEFT_FORALL_IMP_THM,
@@ -203,7 +203,7 @@ unsafe def WCPROVABLE_SYM : thm := keep "WCPROVABLE_SYM" fun _ => (do
 #eval WCPROVABLE_SYM
 
 #eval phrase 15
-unsafe def WCPROVABLE_INST : thm := keep "WCPROVABLE_INST" fun _ => (do
+def WCPROVABLE_INST : thm := keep "WCPROVABLE_INST" fun _ => (do
   prove ([[!E a. E |-- a
            ==> !i s t. (a = (s === t)) ==> (E |-- formsubst i (s === t))]])
    (GEN_TAC THEN MATCH_MP_TAC wcprovable_INDUCT THEN
@@ -223,7 +223,7 @@ unsafe def WCPROVABLE_INST : thm := keep "WCPROVABLE_INST" fun _ => (do
 #eval WCPROVABLE_INST
 
 #eval phrase 16
-unsafe def WCPROVABLE_PROVABLE : thm := keep "WCPROVABLE_PROVABLE" fun _ => (do
+def WCPROVABLE_PROVABLE : thm := keep "WCPROVABLE_PROVABLE" fun _ => (do
   prove ([[!E s t. (E |-- s === t) <=> (E |- s === t)]])
    (GEN_TAC THEN
     SUBGOAL_THEN
@@ -258,17 +258,17 @@ unsafe def WCPROVABLE_PROVABLE : thm := keep "WCPROVABLE_PROVABLE" fun _ => (do
 #eval parse_as_infix ("|--_cchain", (11, "right"))
 
 #eval phrase 22
-unsafe def aprovable_triple : thm × thm × thm := keep "aprovable_triple" fun _ =>
+def aprovable_triple : thm × thm × thm := keep "aprovable_triple" fun _ =>
   newInductive
    [[(!s t i. s === t IN E ==> E |--_axiom formsubst i (s === t)) /\
      (!s t i. s === t IN E ==> E |--_axiom formsubst i (t === s))]]
-unsafe def aprovable_RULES : thm := aprovable_triple.1
-unsafe def aprovable_INDUCT : thm := aprovable_triple.2.1
-unsafe def aprovable_CASES : thm := aprovable_triple.2.2
+def aprovable_RULES : thm := aprovable_triple.1
+def aprovable_INDUCT : thm := aprovable_triple.2.1
+def aprovable_CASES : thm := aprovable_triple.2.2
 #eval do IO.println aprovable_RULES; IO.println aprovable_INDUCT; IO.println aprovable_CASES
 
 #eval phrase 23
-unsafe def cprovable_triple : thm × thm × thm := keep "cprovable_triple" fun _ =>
+def cprovable_triple : thm × thm × thm := keep "cprovable_triple" fun _ =>
   newInductive
    [[(!s t. E |--_axiom s === t ==> E |--_achain s === t) /\
      (!s t. E |--_cong s === t ==> E |--_cchain s === t) /\
@@ -279,13 +279,13 @@ unsafe def cprovable_triple : thm × thm × thm := keep "cprovable_triple" fun _
               ==> E |--_cong Fn f a === Fn f b) /\
      (!s t. (s = t) \/ E |--_achain s === t \/ E |--_cchain s === t
             ==> E |--- s === t)]]
-unsafe def cprovable_RULES : thm := cprovable_triple.1
-unsafe def cprovable_INDUCT : thm := cprovable_triple.2.1
-unsafe def cprovable_CASES : thm := cprovable_triple.2.2
+def cprovable_RULES : thm := cprovable_triple.1
+def cprovable_INDUCT : thm := cprovable_triple.2.1
+def cprovable_CASES : thm := cprovable_triple.2.2
 #eval do IO.println cprovable_RULES; IO.println cprovable_INDUCT; IO.println cprovable_CASES
 
 #eval phrase 24
-unsafe def CPROVABLE_PROVABLE_LEMMA : thm := keep "CPROVABLE_PROVABLE_LEMMA" fun _ => (do
+def CPROVABLE_PROVABLE_LEMMA : thm := keep "CPROVABLE_PROVABLE_LEMMA" fun _ => (do
   let cr ← ExceptT.mk (HolLight.SPEC_ALL cprovable_RULES)
   let cr1 ← liftExcept (HolCore.Lib.el 1 (Session.CONJUNCTS cr))
   let cr3 ← liftExcept (HolCore.Lib.el 3 (Session.CONJUNCTS cr))
@@ -383,7 +383,7 @@ unsafe def CPROVABLE_PROVABLE_LEMMA : thm := keep "CPROVABLE_PROVABLE_LEMMA" fun
 #eval CPROVABLE_PROVABLE_LEMMA
 
 #eval phrase 25
-unsafe def CPROVABLE_PROVABLE : thm := keep "CPROVABLE_PROVABLE" fun _ => (do
+def CPROVABLE_PROVABLE : thm := keep "CPROVABLE_PROVABLE" fun _ => (do
   prove ([[!E s t. (E |--- s === t) <=> (E |- s === t)]])
    (REPEAT GEN_TAC THEN EQ_TAC THENL
      [ALL_TAC, MESON_TAC [CPROVABLE_PROVABLE_LEMMA, WCPROVABLE_PROVABLE]] THEN
@@ -406,7 +406,7 @@ unsafe def CPROVABLE_PROVABLE : thm := keep "CPROVABLE_PROVABLE" fun _ => (do
 #eval CPROVABLE_PROVABLE
 
 #eval phrase 26
-unsafe def subterms : thm := keep "subterms" fun _ => (do
+def subterms : thm := keep "subterms" fun _ => (do
   newRec term_RECURSION
    [[(subterms (V x) = {(V x)}) /\
      (subterms (Fn f args) =
@@ -415,26 +415,26 @@ unsafe def subterms : thm := keep "subterms" fun _ => (do
 #eval subterms
 
 #eval phrase 27
-unsafe def subtermsa : thm := keep "subtermsa" fun _ => (do
+def subtermsa : thm := keep "subtermsa" fun _ => (do
   newRec form_RECURSION
    [[subtermsa (Atom P args) = LIST_UNION (MAP subterms args)]]
   : ExceptT String IO thm).run
 #eval subtermsa
 
 #eval phrase 28
-unsafe def subtermss : thm := keep "subtermss" fun _ => new_definition
+def subtermss : thm := keep "subtermss" fun _ => new_definition
   [[subtermss E = UNIONS {subtermsa p | p IN E}]]
 #eval subtermss
 
 #eval phrase 29
-unsafe def SUBTERMS_REFL : thm := keep "SUBTERMS_REFL" fun _ => (do
+def SUBTERMS_REFL : thm := keep "SUBTERMS_REFL" fun _ => (do
   prove ([[!t. t IN subterms t]])
    (MATCH_MP_TAC term_INDUCT THEN REWRITE_TAC [subterms, IN_INSERT])
   : ExceptT String IO thm).run
 #eval SUBTERMS_REFL
 
 #eval phrase 30
-unsafe def esubterms : thm := keep "esubterms" fun _ => new_definition
+def esubterms : thm := keep "esubterms" fun _ => new_definition
   [[esubterms E s t =
         subtermss ((s === t) INSERT {formsubst i p |i,p| p IN E})]]
 #eval esubterms
@@ -452,7 +452,7 @@ unsafe def esubterms : thm := keep "esubterms" fun _ => new_definition
 #eval parse_as_infix ("|--_scchain", (11, "right"))
 
 #eval phrase 35
-unsafe def scprovable_triple : thm × thm × thm := keep "scprovable_triple" fun _ =>
+def scprovable_triple : thm × thm × thm := keep "scprovable_triple" fun _ =>
   newInductive
    [[(!s t. E |--_axiom s === t ==> E |--_sachain s === t) /\
      (!s t. E |--_scong s === t ==> E |--_scchain s === t) /\
@@ -464,13 +464,13 @@ unsafe def scprovable_triple : thm × thm × thm := keep "scprovable_triple" fun
               ==> E |--_scong Fn f a === Fn f b) /\
      (!s t. (s = t) \/ E |--_sachain s === t \/ E |--_scchain s === t
             ==> E |---- s === t)]]
-unsafe def scprovable_RULES : thm := scprovable_triple.1
-unsafe def scprovable_INDUCT : thm := scprovable_triple.2.1
-unsafe def scprovable_CASES : thm := scprovable_triple.2.2
+def scprovable_RULES : thm := scprovable_triple.1
+def scprovable_INDUCT : thm := scprovable_triple.2.1
+def scprovable_CASES : thm := scprovable_triple.2.2
 #eval do IO.println scprovable_RULES; IO.println scprovable_INDUCT; IO.println scprovable_CASES
 
 #eval phrase 36
-unsafe def ESUBTERMS_TRIVIAL_L : thm := keep "ESUBTERMS_TRIVIAL_L" fun _ => (do
+def ESUBTERMS_TRIVIAL_L : thm := keep "ESUBTERMS_TRIVIAL_L" fun _ => (do
   prove ([[!u. u IN subterms s ==> u IN esubterms E s t]])
    (REWRITE_TAC [esubterms, subtermss, IN_UNIONS, IN_INSERT, IN_ELIM_THM] THEN
     REPEAT STRIP_TAC THEN EXISTS_TAC [[subterms s UNION subterms t]] THEN
@@ -481,7 +481,7 @@ unsafe def ESUBTERMS_TRIVIAL_L : thm := keep "ESUBTERMS_TRIVIAL_L" fun _ => (do
 #eval ESUBTERMS_TRIVIAL_L
 
 #eval phrase 37
-unsafe def ESUBTERMS_TRIVIAL_R : thm := keep "ESUBTERMS_TRIVIAL_R" fun _ => (do
+def ESUBTERMS_TRIVIAL_R : thm := keep "ESUBTERMS_TRIVIAL_R" fun _ => (do
   prove ([[!u. u IN subterms t ==> u IN esubterms E s t]])
    (REWRITE_TAC [esubterms, subtermss, IN_UNIONS, IN_INSERT, IN_ELIM_THM] THEN
     REPEAT STRIP_TAC THEN EXISTS_TAC [[subterms s UNION subterms t]] THEN
@@ -492,7 +492,7 @@ unsafe def ESUBTERMS_TRIVIAL_R : thm := keep "ESUBTERMS_TRIVIAL_R" fun _ => (do
 #eval ESUBTERMS_TRIVIAL_R
 
 #eval phrase 38
-unsafe def SCPROVABLE_SUBTERMS : thm := keep "SCPROVABLE_SUBTERMS" fun _ => (do
+def SCPROVABLE_SUBTERMS : thm := keep "SCPROVABLE_SUBTERMS" fun _ => (do
   prove ([[!a. E |--_sachain a
          ==> !s t. (a = (s === t))
                    ==> !u v. s IN esubterms E u v]])
@@ -516,7 +516,7 @@ unsafe def SCPROVABLE_SUBTERMS : thm := keep "SCPROVABLE_SUBTERMS" fun _ => (do
 #eval SCPROVABLE_SUBTERMS
 
 #eval phrase 39
-unsafe def SCPROVABLE_CPROVABLE_LEMMA : thm := keep "SCPROVABLE_CPROVABLE_LEMMA" fun _ => (do
+def SCPROVABLE_CPROVABLE_LEMMA : thm := keep "SCPROVABLE_CPROVABLE_LEMMA" fun _ => (do
   let sr ← ExceptT.mk (HolLight.SPEC_ALL scprovable_RULES)
   let sr2 ← liftExcept (HolCore.Lib.el 2 (Session.CONJUNCTS sr))
   let sr3 ← liftExcept (HolCore.Lib.el 3 (Session.CONJUNCTS sr))
@@ -550,7 +550,7 @@ unsafe def SCPROVABLE_CPROVABLE_LEMMA : thm := keep "SCPROVABLE_CPROVABLE_LEMMA"
 #eval SCPROVABLE_CPROVABLE_LEMMA
 
 #eval phrase 40
-unsafe def SCPROVABLE_CPROVABLE : thm := keep "SCPROVABLE_CPROVABLE" fun _ => (do
+def SCPROVABLE_CPROVABLE : thm := keep "SCPROVABLE_CPROVABLE" fun _ => (do
   prove ([[!E s t. (E |--- s === t) <=> (E |---- s === t)]])
    (REPEAT GEN_TAC THEN EQ_TAC THENL
      [ASM_MESON_TAC [SCPROVABLE_CPROVABLE_LEMMA], ALL_TAC] THEN
@@ -568,14 +568,14 @@ unsafe def SCPROVABLE_CPROVABLE : thm := keep "SCPROVABLE_CPROVABLE" fun _ => (d
 #eval SCPROVABLE_CPROVABLE
 
 #eval phrase 41
-unsafe def SCPROVABLE_PROVABLE : thm := keep "SCPROVABLE_PROVABLE" fun _ => (do
+def SCPROVABLE_PROVABLE : thm := keep "SCPROVABLE_PROVABLE" fun _ => (do
   prove ([[!E s t. (E |--- s === t) <=> (E |- s === t)]])
    (MESON_TAC [SCPROVABLE_CPROVABLE, CPROVABLE_PROVABLE])
   : ExceptT String IO thm).run
 #eval SCPROVABLE_PROVABLE
 
 #eval phrase 42
-unsafe def Eqclause_Func : thm := keep "Eqclause_Func" fun _ => new_definition
+def Eqclause_Func : thm := keep "Eqclause_Func" fun _ => new_definition
   [[Eqclause_Func (f,n) =
       set_of_list
         (CONS (Fn f (MAP FST (Varpairs n)) === Fn f (MAP SND (Varpairs n)))
@@ -583,7 +583,7 @@ unsafe def Eqclause_Func : thm := keep "Eqclause_Func" fun _ => new_definition
 #eval Eqclause_Func
 
 #eval phrase 43
-unsafe def Eqclause_Pred : thm := keep "Eqclause_Pred" fun _ => new_definition
+def Eqclause_Pred : thm := keep "Eqclause_Pred" fun _ => new_definition
   [[Eqclause_Pred (p,n) =
        set_of_list
         (CONS (Atom p (MAP SND (Varpairs n)))
@@ -592,7 +592,7 @@ unsafe def Eqclause_Pred : thm := keep "Eqclause_Pred" fun _ => new_definition
 #eval Eqclause_Pred
 
 #eval phrase 44
-unsafe def Eqclauses_DEF : thm := keep "Eqclauses_DEF" fun _ => new_definition
+def Eqclauses_DEF : thm := keep "Eqclauses_DEF" fun _ => new_definition
   [[Eqclauses L =
      {(V 0 === V 0)} INSERT
      {(Not(V 0 === V 1)), (Not(V 2 === V 1)), (V 0 === V 2)} INSERT
@@ -601,7 +601,7 @@ unsafe def Eqclauses_DEF : thm := keep "Eqclauses_DEF" fun _ => new_definition
 #eval Eqclauses_DEF
 
 #eval phrase 45
-unsafe def EQCLAUSE_EQAXIOM_FUNC : thm := keep "EQCLAUSE_EQAXIOM_FUNC" fun _ => (do
+def EQCLAUSE_EQAXIOM_FUNC : thm := keep "EQCLAUSE_EQAXIOM_FUNC" fun _ => (do
   let taut1 ← ExceptT.mk (TAUT [[(a \/ b) /\ c <=> a /\ c \/ b /\ c]])
   let taut2 ← ExceptT.mk (TAUT [[(a ==> (b <=> c)) ==> (a ==> b <=> a ==> c)]])
   let taut3 ← ExceptT.mk (TAUT [[(~a <=> b) ==> (c \/ a <=> b ==> c)]])
@@ -636,7 +636,7 @@ unsafe def EQCLAUSE_EQAXIOM_FUNC : thm := keep "EQCLAUSE_EQAXIOM_FUNC" fun _ => 
 #eval EQCLAUSE_EQAXIOM_FUNC
 
 #eval phrase 46
-unsafe def Eqaxiom_Pred_imp : thm := keep "Eqaxiom_Pred_imp" fun _ => new_definition
+def Eqaxiom_Pred_imp : thm := keep "Eqaxiom_Pred_imp" fun _ => new_definition
   [[Eqaxiom_Pred_imp (p,n) =
         uclose
          (ITLIST (&&) (MAP (\(s,t). s === t) (Varpairs n)) True
@@ -645,13 +645,13 @@ unsafe def Eqaxiom_Pred_imp : thm := keep "Eqaxiom_Pred_imp" fun _ => new_defini
 #eval Eqaxiom_Pred_imp
 
 #eval phrase 47
-unsafe def lemma : thm := keep "lemma" fun _ => (do
+def lemma : thm := keep "lemma" fun _ => (do
   prove ([[a INSERT s = {a} UNION s]]) (SET_TAC [])
   : ExceptT String IO thm).run
 #eval lemma
 
 #eval phrase 48
-unsafe def EQCLAUSES_EQAXIOMS : thm := keep "EQCLAUSES_EQAXIOMS" fun _ => (do
+def EQCLAUSES_EQAXIOMS : thm := keep "EQCLAUSES_EQAXIOMS" fun _ => (do
   let taut1 ← ExceptT.mk (TAUT [[(a' <=> a) /\ (a ==> (b' <=> b)) ==> (a' /\ b' <=> a /\ b)]])
   let taut2 ← ExceptT.mk (TAUT [[(a \/ b) /\ c <=> a /\ c \/ b /\ c]])
   let taut3 ← ExceptT.mk (TAUT [[(a ==> (b <=> c)) ==> (a ==> b <=> a ==> c)]])
@@ -782,7 +782,7 @@ unsafe def EQCLAUSES_EQAXIOMS : thm := keep "EQCLAUSES_EQAXIOMS" fun _ => (do
 #eval EQCLAUSES_EQAXIOMS
 
 #eval phrase 49
-unsafe def FUNCTIONS_VAREQLIST : thm := keep "FUNCTIONS_VAREQLIST" fun _ => (do
+def FUNCTIONS_VAREQLIST : thm := keep "FUNCTIONS_VAREQLIST" fun _ => (do
   prove ([[!n. functions(set_of_list (MAP (\(s,t). Not(s === t)) (Varpairs n))) = {}]])
    (INDUCT_TAC THEN REWRITE_TAC [Varpairs_DEF, MAP, set_of_list] THENL
      [REWRITE_TAC [functions, NOT_IN_EMPTY, IN_ELIM_THM, EXTENSION, IN_UNIONS],
@@ -794,7 +794,7 @@ unsafe def FUNCTIONS_VAREQLIST : thm := keep "FUNCTIONS_VAREQLIST" fun _ => (do
 #eval FUNCTIONS_VAREQLIST
 
 #eval phrase 50
-unsafe def FUNCTIONS_TERM_FN_VARPAIRS : thm := keep "FUNCTIONS_TERM_FN_VARPAIRS" fun _ => (do
+def FUNCTIONS_TERM_FN_VARPAIRS : thm := keep "FUNCTIONS_TERM_FN_VARPAIRS" fun _ => (do
   prove ([[(!f n. functions_term(Fn f (MAP FST (Varpairs n))) = {(f,n)}) /\
      (!f n. functions_term(Fn f (MAP SND (Varpairs n))) = {(f,n)})]])
    (REWRITE_TAC [functions_term, LENGTH_VARPAIRS, LENGTH_MAP] THEN
@@ -810,7 +810,7 @@ unsafe def FUNCTIONS_TERM_FN_VARPAIRS : thm := keep "FUNCTIONS_TERM_FN_VARPAIRS"
 #eval FUNCTIONS_TERM_FN_VARPAIRS
 
 #eval phrase 51
-unsafe def FUNCTIONS_FORM_PRED_VARPAIRS : thm := keep "FUNCTIONS_FORM_PRED_VARPAIRS" fun _ => (do
+def FUNCTIONS_FORM_PRED_VARPAIRS : thm := keep "FUNCTIONS_FORM_PRED_VARPAIRS" fun _ => (do
   prove ([[(!p n. functions_form(Atom p (MAP FST (Varpairs n))) = {}) /\
      (!p n. functions_form(Atom p (MAP SND (Varpairs n))) = {})]])
    (REWRITE_TAC [functions_form, LENGTH_VARPAIRS, LENGTH_MAP] THEN
@@ -826,7 +826,7 @@ unsafe def FUNCTIONS_FORM_PRED_VARPAIRS : thm := keep "FUNCTIONS_FORM_PRED_VARPA
 #eval FUNCTIONS_FORM_PRED_VARPAIRS
 
 #eval phrase 52
-unsafe def FUNCTIONS_FORM_EQCLAUSE_FUNC : thm := keep "FUNCTIONS_FORM_EQCLAUSE_FUNC" fun _ => (do
+def FUNCTIONS_FORM_EQCLAUSE_FUNC : thm := keep "FUNCTIONS_FORM_EQCLAUSE_FUNC" fun _ => (do
   prove ([[!fn. functions_form(interp(Eqclause_Func fn)) = {fn}]])
    (HolLight.GEN_REWRITE_TAC HolCore.Lib.I [FORALL_PAIR_THM] THEN
     MAP_EVERY X_GEN_TAC [ [[f:num]], [[n:num]] ] THEN
@@ -840,7 +840,7 @@ unsafe def FUNCTIONS_FORM_EQCLAUSE_FUNC : thm := keep "FUNCTIONS_FORM_EQCLAUSE_F
 #eval FUNCTIONS_FORM_EQCLAUSE_FUNC
 
 #eval phrase 53
-unsafe def FUNCTIONS_FORM_EQCLAUSE_PRED : thm := keep "FUNCTIONS_FORM_EQCLAUSE_PRED" fun _ => (do
+def FUNCTIONS_FORM_EQCLAUSE_PRED : thm := keep "FUNCTIONS_FORM_EQCLAUSE_PRED" fun _ => (do
   prove ([[!pn. functions_form(interp(Eqclause_Pred pn)) = {}]])
    (HolLight.GEN_REWRITE_TAC HolCore.Lib.I [FORALL_PAIR_THM] THEN
     MAP_EVERY X_GEN_TAC [ [[p:num]], [[n:num]] ] THEN
@@ -856,7 +856,7 @@ unsafe def FUNCTIONS_FORM_EQCLAUSE_PRED : thm := keep "FUNCTIONS_FORM_EQCLAUSE_P
 #eval FUNCTIONS_FORM_EQCLAUSE_PRED
 
 #eval phrase 54
-unsafe def FUNCTIONS_EQCLAUSES : thm := keep "FUNCTIONS_EQCLAUSES" fun _ => (do
+def FUNCTIONS_EQCLAUSES : thm := keep "FUNCTIONS_EQCLAUSES" fun _ => (do
   let taut1 ← ExceptT.mk (TAUT [[(a \/ b) /\ c <=> a /\ c \/ b /\ c]])
   let taut2 ← ExceptT.mk (TAUT [[a /\ b <=> ~(a ==> ~b)]])
   let taut3 ← ExceptT.mk (TAUT [[(a /\ b) /\ c /\ d <=> b /\ a /\ c /\ d]])
@@ -899,21 +899,21 @@ unsafe def FUNCTIONS_EQCLAUSES : thm := keep "FUNCTIONS_EQCLAUSES" fun _ => (do
 #eval FUNCTIONS_EQCLAUSES
 
 #eval phrase 55
-unsafe def FUNCTIONS_FORM_NOT_UCLOSE : thm := keep "FUNCTIONS_FORM_NOT_UCLOSE" fun _ => (do
+def FUNCTIONS_FORM_NOT_UCLOSE : thm := keep "FUNCTIONS_FORM_NOT_UCLOSE" fun _ => (do
   prove ([[functions_form(Not(uclose p)) = functions_form p]])
    (REWRITE_TAC [Not_DEF, functions_form, FUNCTIONS_FORM_UCLOSE, UNION_EMPTY])
   : ExceptT String IO thm).run
 #eval FUNCTIONS_FORM_NOT_UCLOSE
 
 #eval phrase 56
-unsafe def PREDICATES_FORM_NOT_UCLOSE : thm := keep "PREDICATES_FORM_NOT_UCLOSE" fun _ => (do
+def PREDICATES_FORM_NOT_UCLOSE : thm := keep "PREDICATES_FORM_NOT_UCLOSE" fun _ => (do
   prove ([[predicates_form(Not(uclose p)) = predicates_form p]])
    (REWRITE_TAC [Not_DEF, predicates_form, PREDICATES_FORM_UCLOSE, UNION_EMPTY])
   : ExceptT String IO thm).run
 #eval PREDICATES_FORM_NOT_UCLOSE
 
 #eval phrase 57
-unsafe def FUNCTIONS_INSERT_NOT_UCLOSE : thm := keep "FUNCTIONS_INSERT_NOT_UCLOSE" fun _ => (do
+def FUNCTIONS_INSERT_NOT_UCLOSE : thm := keep "FUNCTIONS_INSERT_NOT_UCLOSE" fun _ => (do
   prove ([[functions(p INSERT s) = functions(Not(uclose p) INSERT s)]])
    (ONCE_REWRITE_TAC [EXTENSION] THEN
     REWRITE_TAC [functions, IN_UNIONS, IN_ELIM_THM] THEN
@@ -922,7 +922,7 @@ unsafe def FUNCTIONS_INSERT_NOT_UCLOSE : thm := keep "FUNCTIONS_INSERT_NOT_UCLOS
 #eval FUNCTIONS_INSERT_NOT_UCLOSE
 
 #eval phrase 58
-unsafe def PREDICATES_INSERT_NOT_UCLOSE : thm := keep "PREDICATES_INSERT_NOT_UCLOSE" fun _ => (do
+def PREDICATES_INSERT_NOT_UCLOSE : thm := keep "PREDICATES_INSERT_NOT_UCLOSE" fun _ => (do
   prove ([[predicates(p INSERT s) = predicates(Not(uclose p) INSERT s)]])
    (ONCE_REWRITE_TAC [EXTENSION] THEN
     REWRITE_TAC [predicates, IN_UNIONS, IN_ELIM_THM] THEN
@@ -931,7 +931,7 @@ unsafe def PREDICATES_INSERT_NOT_UCLOSE : thm := keep "PREDICATES_INSERT_NOT_UCL
 #eval PREDICATES_INSERT_NOT_UCLOSE
 
 #eval phrase 59
-unsafe def LANGUAGE_INSERT_NOT_UCLOSE : thm := keep "LANGUAGE_INSERT_NOT_UCLOSE" fun _ => (do
+def LANGUAGE_INSERT_NOT_UCLOSE : thm := keep "LANGUAGE_INSERT_NOT_UCLOSE" fun _ => (do
   prove ([[language(p INSERT s) = language (Not(uclose p) INSERT s)]])
    (REWRITE_TAC [language, (← HolLight.GSYM FUNCTIONS_INSERT_NOT_UCLOSE),
                 (← HolLight.GSYM PREDICATES_INSERT_NOT_UCLOSE)])
@@ -939,7 +939,7 @@ unsafe def LANGUAGE_INSERT_NOT_UCLOSE : thm := keep "LANGUAGE_INSERT_NOT_UCLOSE"
 #eval LANGUAGE_INSERT_NOT_UCLOSE
 
 #eval phrase 60
-unsafe def lemma1 : thm := keep "lemma1" fun _ => (do
+def lemma1 : thm := keep "lemma1" fun _ => (do
   prove ([[(!m. p m /\ q m /\ r m /\ s m ==> t m) <=>
     ~(?m. p m /\ q m /\ r m /\ s m /\ ~(t m))]])
    (MESON_TAC [])
@@ -947,14 +947,14 @@ unsafe def lemma1 : thm := keep "lemma1" fun _ => (do
 #eval lemma1
 
 #eval phrase 61
-unsafe def lemma2 : thm := keep "lemma2" fun _ => (do
+def lemma2 : thm := keep "lemma2" fun _ => (do
   prove ([[(x INSERT s) UNION t = x INSERT (s UNION t)]])
    (SET_TAC [])
   : ExceptT String IO thm).run
 #eval lemma2
 
 #eval phrase 62
-unsafe def EQCLAUSES_DEFINITE : thm := keep "EQCLAUSES_DEFINITE" fun _ => (do
+def EQCLAUSES_DEFINITE : thm := keep "EQCLAUSES_DEFINITE" fun _ => (do
   let taut1 ← ExceptT.mk (TAUT [[(a ==> c) /\ (b ==> ~c) ==> ((a \/ b) /\ c <=> a)]])
   let taut2 ← ExceptT.mk (TAUT
     [[(a ==> c) /\ (b ==> ~c) /\ (d ==> ~c)
@@ -1047,7 +1047,7 @@ unsafe def EQCLAUSES_DEFINITE : thm := keep "EQCLAUSES_DEFINITE" fun _ => (do
 #eval EQCLAUSES_DEFINITE
 
 #eval phrase 63
-unsafe def EQLOGIC_COMPLETE : thm := keep "EQLOGIC_COMPLETE" fun _ => (do
+def EQLOGIC_COMPLETE : thm := keep "EQLOGIC_COMPLETE" fun _ => (do
   let pr ← ExceptT.mk (HolLight.SPEC_ALL provable_RULES)
   let pr4 ← liftExcept (HolCore.Lib.el 4 (Session.CONJUNCTS pr))
   let taut_nd ← ExceptT.mk (TAUT [[a /\ b /\ c /\ d <=> a /\ b /\ c /\ (b ==> d)]])
@@ -1399,7 +1399,7 @@ unsafe def EQLOGIC_COMPLETE : thm := keep "EQLOGIC_COMPLETE" fun _ => (do
 #eval EQLOGIC_COMPLETE
 
 #eval phrase 64
-unsafe def EQLOGIC_SOUND : thm := keep "EQLOGIC_SOUND" fun _ => (do
+def EQLOGIC_SOUND : thm := keep "EQLOGIC_SOUND" fun _ => (do
   prove ([[!E s t. E |- s === t
              ==> !M:(A->bool)#(num->((A)list->A))#(num->((A)list->bool)).
                           normal UNIV (M) /\ interpretation (UNIV,UNIV) (M) /\
@@ -1444,9 +1444,9 @@ unsafe def EQLOGIC_SOUND : thm := keep "EQLOGIC_SOUND" fun _ => (do
 #eval EQLOGIC_SOUND
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Birkhoff" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Birkhoff" do
   replay (
           HolLogicArith.Positive.ensure)
   replay (

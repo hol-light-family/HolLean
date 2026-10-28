@@ -8,13 +8,13 @@ namespace HolExamples.MultiWf
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- Run `new_inductive_definition`, panicking with HOL Light's message on
    failure (as the toplevel throws). -/
-private unsafe def indDef (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+private def indDef (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! e
   | .error e => panic! (toString e)
@@ -24,21 +24,21 @@ private unsafe def indDef (tm : term) : thm × thm × thm :=
 /- ========================================================================= -/
 
 #eval phrase 1
-unsafe def EMPTY_IS_FINITE : thm := keep "EMPTY_IS_FINITE" fun _ => (do
+def EMPTY_IS_FINITE : thm := keep "EMPTY_IS_FINITE" fun _ => (do
   prove ([[!s. (s = EMPTY) ==> FINITE s]])
    (SIMP_TAC [FINITE_RULES])
   : ExceptT String IO thm).run
 #eval EMPTY_IS_FINITE
 
 #eval phrase 2
-unsafe def SING_IS_FINITE : thm := keep "SING_IS_FINITE" fun _ => (do
+def SING_IS_FINITE : thm := keep "SING_IS_FINITE" fun _ => (do
   prove ([[!s a. (s = {a}) ==> FINITE s]])
    (SIMP_TAC [FINITE_INSERT, FINITE_RULES])
   : ExceptT String IO thm).run
 #eval SING_IS_FINITE
 
 #eval phrase 3
-unsafe def UNION_NONZERO : thm := keep "UNION_NONZERO" fun _ => (do
+def UNION_NONZERO : thm := keep "UNION_NONZERO" fun _ => (do
   prove ([[{a | ~(f a + g a = 0)} = {a | ~(f a = 0)} UNION {a | ~(g a = 0)}]])
    (REWRITE_TAC [ADD_EQ_0, EXTENSION, IN_UNION, IN_ELIM_THM, DE_MORGAN_THM])
   : ExceptT String IO thm).run
@@ -58,7 +58,7 @@ unsafe def UNION_NONZERO : thm := keep "UNION_NONZERO" fun _ => (do
 #eval parse_as_infix ("mdiff", (18, "left"))
 
 #eval phrase 7
-unsafe def multiset_tybij_th : thm := keep "multiset_tybij_th" fun _ => (do
+def multiset_tybij_th : thm := keep "multiset_tybij_th" fun _ => (do
   prove ([[?f. FINITE {a:A | ~(f a = 0)}]])
    (EXISTS_TAC [[\a:A. 0]] THEN
     SIMP_TAC [EMPTY_IS_FINITE, EXTENSION, IN_ELIM_THM, NOT_IN_EMPTY])
@@ -66,32 +66,32 @@ unsafe def multiset_tybij_th : thm := keep "multiset_tybij_th" fun _ => (do
 #eval multiset_tybij_th
 
 #eval phrase 8
-unsafe def multiset_tybij : thm := keep "multiset_tybij" fun _ =>
+def multiset_tybij : thm := keep "multiset_tybij" fun _ =>
   Session.new_type_definition "multiset" "multiset" "multiplicity" multiset_tybij_th
 #eval multiset_tybij
 
 #eval phrase 9
-unsafe def mempty : thm := keep "mempty" fun _ => new_definition
+def mempty : thm := keep "mempty" fun _ => new_definition
  [[mempty = multiset (\b. 0)]]
 #eval mempty
 
 #eval phrase 10
-unsafe def mmember : thm := keep "mmember" fun _ => new_definition
+def mmember : thm := keep "mmember" fun _ => new_definition
  [[a mmember M <=> ~(multiplicity M a = 0)]]
 #eval mmember
 
 #eval phrase 11
-unsafe def msing : thm := keep "msing" fun _ => new_definition
+def msing : thm := keep "msing" fun _ => new_definition
  [[msing a = multiset (\b. if b = a then 1 else 0)]]
 #eval msing
 
 #eval phrase 12
-unsafe def munion : thm := keep "munion" fun _ => new_definition
+def munion : thm := keep "munion" fun _ => new_definition
  [[M munion N = multiset(\b. multiplicity M b + multiplicity N b)]]
 #eval munion
 
 #eval phrase 13
-unsafe def mdiff : thm := keep "mdiff" fun _ => new_definition
+def mdiff : thm := keep "mdiff" fun _ => new_definition
  [[M mdiff N = multiset(\b. multiplicity M b - multiplicity N b)]]
 #eval mdiff
 
@@ -100,7 +100,7 @@ unsafe def mdiff : thm := keep "mdiff" fun _ => new_definition
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 14
-unsafe def MEXTENSION : thm := keep "MEXTENSION" fun _ => (do
+def MEXTENSION : thm := keep "MEXTENSION" fun _ => (do
   prove ([[(M = N) = !a. multiplicity M a = multiplicity N a]])
    (REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM FUN_EQ_THM))] THEN
     CONV_TAC (HolLight.ONCE_DEPTH_CONV (fun t => pure (Session.ETA_CONV t))) THEN
@@ -113,14 +113,14 @@ unsafe def MEXTENSION : thm := keep "MEXTENSION" fun _ => (do
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 15
-unsafe def MULTIPLICITY_MULTISET : thm := keep "MULTIPLICITY_MULTISET" fun _ => (do
+def MULTIPLICITY_MULTISET : thm := keep "MULTIPLICITY_MULTISET" fun _ => (do
   prove ([[FINITE {a | ~(f a = 0)} /\ (f a = y) ==> (multiplicity(multiset f) a = y)]])
    (SIMP_TAC [multiset_tybij])
   : ExceptT String IO thm).run
 #eval MULTIPLICITY_MULTISET
 
 #eval phrase 16
-unsafe def MEMPTY : thm := keep "MEMPTY" fun _ => (do
+def MEMPTY : thm := keep "MEMPTY" fun _ => (do
   prove ([[multiplicity mempty a = 0]])
    (REWRITE_TAC [mempty] THEN MATCH_MP_TAC MULTIPLICITY_MULTISET THEN
     SIMP_TAC [EMPTY_IS_FINITE, EXTENSION, IN_ELIM_THM, NOT_IN_EMPTY])
@@ -128,7 +128,7 @@ unsafe def MEMPTY : thm := keep "MEMPTY" fun _ => (do
 #eval MEMPTY
 
 #eval phrase 17
-unsafe def MSING : thm := keep "MSING" fun _ => (do
+def MSING : thm := keep "MSING" fun _ => (do
   prove ([[multiplicity (msing (a:A)) b = if b = a then 1 else 0]])
    (REWRITE_TAC [msing] THEN MATCH_MP_TAC MULTIPLICITY_MULTISET THEN
     REWRITE_TAC [] THEN MATCH_MP_TAC SING_IS_FINITE THEN EXISTS_TAC [[a:A]] THEN
@@ -138,7 +138,7 @@ unsafe def MSING : thm := keep "MSING" fun _ => (do
 #eval MSING
 
 #eval phrase 18
-unsafe def MUNION : thm := keep "MUNION" fun _ => (do
+def MUNION : thm := keep "MUNION" fun _ => (do
   prove ([[multiplicity (M munion N) a = multiplicity M a + multiplicity N a]])
    (REWRITE_TAC [munion] THEN MATCH_MP_TAC MULTIPLICITY_MULTISET THEN
     REWRITE_TAC [UNION_NONZERO, FINITE_UNION] THEN SIMP_TAC [multiset_tybij] THEN
@@ -147,7 +147,7 @@ unsafe def MUNION : thm := keep "MUNION" fun _ => (do
 #eval MUNION
 
 #eval phrase 19
-unsafe def MDIFF : thm := keep "MDIFF" fun _ => (do
+def MDIFF : thm := keep "MDIFF" fun _ => (do
   prove ([[multiplicity (M mdiff N) (a:A) = multiplicity M a - multiplicity N a]])
    (REWRITE_TAC [mdiff] THEN MATCH_MP_TAC MULTIPLICITY_MULTISET THEN
     REWRITE_TAC [] THEN MATCH_MP_TAC FINITE_SUBSET THEN
@@ -163,7 +163,7 @@ unsafe def MDIFF : thm := keep "MDIFF" fun _ => (do
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 20
-unsafe def MUNION_MEMPTY : thm := keep "MUNION_MEMPTY" fun _ => (do
+def MUNION_MEMPTY : thm := keep "MUNION_MEMPTY" fun _ => (do
   prove ([[~(M munion (msing(a:A)) = mempty)]])
    (REWRITE_TAC [MEXTENSION, MEMPTY, MSING, MUNION] THEN
     DISCH_THEN (MP_TAC o HolLight.SPEC [[a:A]]) THEN
@@ -172,35 +172,35 @@ unsafe def MUNION_MEMPTY : thm := keep "MUNION_MEMPTY" fun _ => (do
 #eval MUNION_MEMPTY
 
 #eval phrase 21
-unsafe def MMEMBER_MUNION : thm := keep "MMEMBER_MUNION" fun _ => (do
+def MMEMBER_MUNION : thm := keep "MMEMBER_MUNION" fun _ => (do
   prove ([[x mmember (M munion N) <=> x mmember M \/ x mmember N]])
    (REWRITE_TAC [mmember, MUNION, ADD_EQ_0, DE_MORGAN_THM])
   : ExceptT String IO thm).run
 #eval MMEMBER_MUNION
 
 #eval phrase 22
-unsafe def MMEMBER_MSING : thm := keep "MMEMBER_MSING" fun _ => (do
+def MMEMBER_MSING : thm := keep "MMEMBER_MSING" fun _ => (do
   prove ([[x mmember (msing a) <=> (x = a)]])
    (REWRITE_TAC [mmember, MSING] THEN COND_CASES_TAC THEN REWRITE_TAC [ARITH_EQ])
   : ExceptT String IO thm).run
 #eval MMEMBER_MSING
 
 #eval phrase 23
-unsafe def MUNION_EMPTY : thm := keep "MUNION_EMPTY" fun _ => (do
+def MUNION_EMPTY : thm := keep "MUNION_EMPTY" fun _ => (do
   prove ([[M munion mempty = M]])
    (REWRITE_TAC [MEXTENSION, MUNION, MEMPTY, ADD_CLAUSES])
   : ExceptT String IO thm).run
 #eval MUNION_EMPTY
 
 #eval phrase 24
-unsafe def MUNION_ASSOC : thm := keep "MUNION_ASSOC" fun _ => (do
+def MUNION_ASSOC : thm := keep "MUNION_ASSOC" fun _ => (do
   prove ([[M1 munion (M2 munion M3) = (M1 munion M2) munion M3]])
    (REWRITE_TAC [MEXTENSION, MUNION, ADD_ASSOC])
   : ExceptT String IO thm).run
 #eval MUNION_ASSOC
 
 #eval phrase 25
-unsafe def MUNION_AC : thm := keep "MUNION_AC" fun _ => (do
+def MUNION_AC : thm := keep "MUNION_AC" fun _ => (do
   prove ([[(M1 munion M2 = M2 munion M1) /\
    ((M1 munion M2) munion M3 = M1 munion M2 munion M3) /\
    (M1 munion M2 munion M3 = M2 munion M1 munion M3)]])
@@ -209,14 +209,14 @@ unsafe def MUNION_AC : thm := keep "MUNION_AC" fun _ => (do
 #eval MUNION_AC
 
 #eval phrase 26
-unsafe def MUNION_11 : thm := keep "MUNION_11" fun _ => (do
+def MUNION_11 : thm := keep "MUNION_11" fun _ => (do
   prove ([[(M1 munion N = M2 munion N) <=> (M1 = M2)]])
    (REWRITE_TAC [MEXTENSION, MUNION, EQ_ADD_RCANCEL])
   : ExceptT String IO thm).run
 #eval MUNION_11
 
 #eval phrase 27
-unsafe def MUNION_INUNION : thm := keep "MUNION_INUNION" fun _ => (do
+def MUNION_INUNION : thm := keep "MUNION_INUNION" fun _ => (do
   prove ([[a mmember (M munion (msing b)) /\ ~(b = a) ==> a mmember M]])
    (REWRITE_TAC [mmember, MUNION, MSING, ADD_EQ_0] THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [ARITH_EQ])
@@ -224,7 +224,7 @@ unsafe def MUNION_INUNION : thm := keep "MUNION_INUNION" fun _ => (do
 #eval MUNION_INUNION
 
 #eval phrase 28
-unsafe def MMEMBER_MDIFF : thm := keep "MMEMBER_MDIFF" fun _ => (do
+def MMEMBER_MDIFF : thm := keep "MMEMBER_MDIFF" fun _ => (do
   prove ([[(a:A) mmember M ==> (M = (M mdiff (msing a)) munion (msing a))]])
    (REWRITE_TAC [mmember, MEXTENSION, MUNION, MDIFF, MSING] THEN
     REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
@@ -237,7 +237,7 @@ unsafe def MMEMBER_MDIFF : thm := keep "MMEMBER_MDIFF" fun _ => (do
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 29
-unsafe def MULTISET_INDUCT_LEMMA1 : thm := keep "MULTISET_INDUCT_LEMMA1" fun _ => (do
+def MULTISET_INDUCT_LEMMA1 : thm := keep "MULTISET_INDUCT_LEMMA1" fun _ => (do
   prove ([[(!M. ({a | ~(multiplicity M a = 0)} SUBSET s) ==> P M) /\
    (!a:A M. P M ==> P (M munion (msing a)))
    ==> !n M. (multiplicity M a = n) /\
@@ -263,7 +263,7 @@ unsafe def MULTISET_INDUCT_LEMMA1 : thm := keep "MULTISET_INDUCT_LEMMA1" fun _ =
 #eval MULTISET_INDUCT_LEMMA1
 
 #eval phrase 30
-unsafe def MULTISET_INDUCT_LEMMA2 : thm := keep "MULTISET_INDUCT_LEMMA2" fun _ => (do
+def MULTISET_INDUCT_LEMMA2 : thm := keep "MULTISET_INDUCT_LEMMA2" fun _ => (do
   prove ([[P mempty /\
    (!a:A M. P M ==> P (M munion (msing a)))
    ==> !s. FINITE s ==> !M. {a:A | ~(multiplicity M a = 0)} SUBSET s ==> P M]])
@@ -279,7 +279,7 @@ unsafe def MULTISET_INDUCT_LEMMA2 : thm := keep "MULTISET_INDUCT_LEMMA2" fun _ =
 #eval MULTISET_INDUCT_LEMMA2
 
 #eval phrase 31
-unsafe def MULTISET_INDUCT : thm := keep "MULTISET_INDUCT" fun _ => (do
+def MULTISET_INDUCT : thm := keep "MULTISET_INDUCT" fun _ => (do
   prove ([[P mempty /\
    (!a:A M. P M ==> P (M munion (msing a)))
    ==> !M. P M]])
@@ -305,11 +305,11 @@ unsafe def MULTISET_INDUCT : thm := keep "MULTISET_INDUCT" fun _ => (do
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 33
-unsafe def WFP_triple : thm × thm × thm := keep "WFP" fun _ =>
+def WFP_triple : thm × thm × thm := keep "WFP" fun _ =>
   indDef [[!x. (!y. y << x ==> WFP(<<) y) ==> WFP(<<) x]]
-unsafe def WFP_RULES : thm := WFP_triple.1
-unsafe def WFP_INDUCT : thm := WFP_triple.2.1
-unsafe def WFP_CASES : thm := WFP_triple.2.2
+def WFP_RULES : thm := WFP_triple.1
+def WFP_INDUCT : thm := WFP_triple.2.1
+def WFP_CASES : thm := WFP_triple.2.2
 #eval (do IO.println (← HolCore.Printer.string_of_thm WFP_RULES)
           IO.println (← HolCore.Printer.string_of_thm WFP_INDUCT)
           IO.println (← HolCore.Printer.string_of_thm WFP_CASES) : IO Unit)
@@ -319,7 +319,7 @@ unsafe def WFP_CASES : thm := WFP_triple.2.2
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 34
-unsafe def WFP_PART_INDUCT : thm := keep "WFP_PART_INDUCT" fun _ => (do
+def WFP_PART_INDUCT : thm := keep "WFP_PART_INDUCT" fun _ => (do
   prove ([[!P. (!x. x IN WFP(<<) /\ (!y. y << x ==> P(y)) ==> P(x))
        ==> !x:A. x IN WFP(<<) ==> P(x)]])
    (GEN_TAC THEN REWRITE_TAC [IN] THEN STRIP_TAC THEN
@@ -333,7 +333,7 @@ unsafe def WFP_PART_INDUCT : thm := keep "WFP_PART_INDUCT" fun _ => (do
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 35
-unsafe def WFP_WF : thm := keep "WFP_WF" fun _ => (do
+def WFP_WF : thm := keep "WFP_WF" fun _ => (do
   prove ([[WF(<<) <=> (WFP(<<) = UNIV:A->bool)]])
    (EQ_TAC THENL
      [REWRITE_TAC [WF_IND, EXTENSION, IN, UNIV] THEN MESON_TAC [WFP_RULES],
@@ -349,7 +349,7 @@ unsafe def WFP_WF : thm := keep "WFP_WF" fun _ => (do
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 36
-unsafe def WFP_DCHAIN : thm := keep "WFP_DCHAIN" fun _ => (do
+def WFP_DCHAIN : thm := keep "WFP_DCHAIN" fun _ => (do
   prove ([[!(<<):A->A->bool.
         WFP(<<) = {a | !x. (!n. x(SUC n) << x n) ==> ~(x 0 = a)}]])
    (GEN_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
@@ -375,7 +375,7 @@ unsafe def WFP_DCHAIN : thm := keep "WFP_DCHAIN" fun _ => (do
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 37
-unsafe def morder : thm := keep "morder" fun _ => new_definition
+def morder : thm := keep "morder" fun _ => new_definition
  [[morder(<<) N M <=> ?M0 a K. (M = M0 munion (msing a)) /\
                                (N = M0 munion K) /\
                                (!b. b mmember K ==> b << a)]]
@@ -386,7 +386,7 @@ unsafe def morder : thm := keep "morder" fun _ => new_definition
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 38
-unsafe def LEMMA_2_0 : thm := keep "LEMMA_2_0" fun _ => (do
+def LEMMA_2_0 : thm := keep "LEMMA_2_0" fun _ => (do
   prove ([[morder(<<) N (M0 munion (msing a))
    ==> (?M. morder(<<) M M0 /\ (N = M munion (msing a))) \/
        (?K. (N = M0 munion K) /\ (!b:A. b mmember K ==> b << a))]])
@@ -417,7 +417,7 @@ unsafe def LEMMA_2_0 : thm := keep "LEMMA_2_0" fun _ => (do
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 39
-unsafe def LEMMA_2_1 : thm := keep "LEMMA_2_1" fun _ => (do
+def LEMMA_2_1 : thm := keep "LEMMA_2_1" fun _ => (do
   prove ([[(!M b:A. b << a /\ M IN WFP(morder(<<))
             ==> (M munion (msing b)) IN WFP(morder(<<))) /\
    M0 IN WFP(morder(<<)) /\
@@ -436,7 +436,7 @@ unsafe def LEMMA_2_1 : thm := keep "LEMMA_2_1" fun _ => (do
 #eval LEMMA_2_1
 
 #eval phrase 40
-unsafe def LEMMA_2_2 : thm := keep "LEMMA_2_2" fun _ => (do
+def LEMMA_2_2 : thm := keep "LEMMA_2_2" fun _ => (do
   prove ([[(!M b. b << a /\ M IN WFP(morder(<<))
           ==> (M munion (msing b)) IN WFP(morder(<<)))
    ==> !M. M IN WFP(morder(<<)) ==> (M munion (msing a)) IN WFP(morder(<<))]])
@@ -446,7 +446,7 @@ unsafe def LEMMA_2_2 : thm := keep "LEMMA_2_2" fun _ => (do
 #eval LEMMA_2_2
 
 #eval phrase 41
-unsafe def LEMMA_2_3 : thm := keep "LEMMA_2_3" fun _ => (do
+def LEMMA_2_3 : thm := keep "LEMMA_2_3" fun _ => (do
   prove ([[WF(<<)
    ==> !a M. M IN WFP(morder(<<)) ==> (M munion (msing a)) IN WFP(morder(<<))]])
    (REWRITE_TAC [WF_IND] THEN DISCH_THEN MATCH_MP_TAC THEN MESON_TAC [LEMMA_2_2])
@@ -454,7 +454,7 @@ unsafe def LEMMA_2_3 : thm := keep "LEMMA_2_3" fun _ => (do
 #eval LEMMA_2_3
 
 #eval phrase 42
-unsafe def LEMMA_2_4 : thm := keep "LEMMA_2_4" fun _ => (do
+def LEMMA_2_4 : thm := keep "LEMMA_2_4" fun _ => (do
   prove ([[WF(<<) ==> !M. M IN WFP(morder(<<))]])
    (DISCH_TAC THEN MATCH_MP_TAC MULTISET_INDUCT THEN CONJ_TAC THENL
      [REWRITE_TAC [IN] THEN MATCH_MP_TAC WFP_RULES THEN
@@ -468,16 +468,16 @@ unsafe def LEMMA_2_4 : thm := keep "LEMMA_2_4" fun _ => (do
 /- ------------------------------------------------------------------------- -/
 
 #eval phrase 43
-unsafe def MORDER_WF : thm := keep "MORDER_WF" fun _ => (do
+def MORDER_WF : thm := keep "MORDER_WF" fun _ => (do
   prove ([[WF(<<) ==> WF(morder(<<))]])
    (SIMP_TAC [WFP_WF, EXTENSION, IN_UNIV, LEMMA_2_4])
   : ExceptT String IO thm).run
 #eval MORDER_WF
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolExamples.MultiWf" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolExamples.MultiWf" do
   replay (
           EMPTY_IS_FINITE)
   replay (

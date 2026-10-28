@@ -13,30 +13,30 @@ namespace HolTutorial.RecursiveDefinitions
    tactic scripts can use them as `(← ar ...)` inside a `prove` the way the
    OCaml inlines `ARITH_RULE`, `NUM_RING`, etc.  `prove` here is the session's
    `prove`, lifted the same way. -/
-private unsafe def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (ARITH_RULE tm)
-private unsafe def rwc (ths : List thm) (tm : term) : ExceptT String IO thm :=
+private def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (ARITH_RULE tm)
+private def rwc (ths : List thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (REWRITE_CONV ths tm)
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 #eval phrase 1
-unsafe def fib : thm := keep "fib" fun _ => define
+def fib : thm := keep "fib" fun _ => define
  [[fib n = if n = 0 \/ n = 1 then 1 else fib(n - 1) + fib(n - 2)]]
 #eval fib
 
 #eval phrase 2
-unsafe def fib2 : thm := keep "fib2" fun _ => define
+def fib2 : thm := keep "fib2" fun _ => define
  [[(fib2 0 = 1) /\
   (fib2 1 = 1) /\
   (fib2 (n + 2) = fib2(n) + fib2(n + 1))]]
 #eval fib2
 
 #eval phrase 3
-unsafe def halve : thm := keep "halve" fun _ => define [[halve (2 * n) = n]]
+def halve : thm := keep "halve" fun _ => define [[halve (2 * n) = n]]
 #eval halve
 
 #eval phrase 4
-unsafe def unknown : thm := keep "unknown" fun _ => define [[unknown n = unknown(n + 1)]]
+def unknown : thm := keep "unknown" fun _ => define [[unknown n = unknown(n + 1)]]
 #eval unknown
 
 #eval phrase 5
@@ -46,13 +46,13 @@ unsafe def unknown : thm := keep "unknown" fun _ => define [[unknown n = unknown
                    else collatz(3 * n + 1)]]
 
 #eval phrase 6
-unsafe def fusc_def : thm := keep "fusc_def" fun _ => define
+def fusc_def : thm := keep "fusc_def" fun _ => define
  [[(fusc (2 * n) = if n = 0 then 0 else fusc(n)) /\
   (fusc (2 * n + 1) = if n = 0 then 1 else fusc(n) + fusc(n + 1))]]
 #eval fusc_def
 
 #eval phrase 7
-unsafe def fusc : thm := keep "fusc" fun _ => (do
+def fusc : thm := keep "fusc" fun _ => (do
   prove ([[fusc 0 = 0 /\
    fusc 1 = 1 /\
    fusc (2 * n) = fusc(n) /\
@@ -63,14 +63,14 @@ unsafe def fusc : thm := keep "fusc" fun _ => (do
 #eval fusc
 
 #eval phrase 8
-unsafe def binom : thm := keep "binom" fun _ => define
+def binom : thm := keep "binom" fun _ => define
  [[(!n. binom(n,0) = 1) /\
   (!k. binom(0,SUC(k)) = 0) /\
   (!n k. binom(SUC(n),SUC(k)) = binom(n,SUC(k)) + binom(n,k))]]
 #eval binom
 
 #eval phrase 9
-unsafe def BINOM_LT : thm := keep "BINOM_LT" fun _ => (do
+def BINOM_LT : thm := keep "BINOM_LT" fun _ => (do
   prove ([[!n k. n < k ==> (binom(n,k) = 0)]])
    (INDUCT_TAC THEN INDUCT_TAC THEN REWRITE_TAC [binom, ARITH, LT_SUC, LT] THEN
     ASM_SIMP_TAC [(← ar [[n < k ==> n < SUC(k)]]), ARITH])
@@ -78,14 +78,14 @@ unsafe def BINOM_LT : thm := keep "BINOM_LT" fun _ => (do
 #eval BINOM_LT
 
 #eval phrase 10
-unsafe def BINOM_REFL : thm := keep "BINOM_REFL" fun _ => (do
+def BINOM_REFL : thm := keep "BINOM_REFL" fun _ => (do
   prove ([[!n. binom(n,n) = 1]])
    (INDUCT_TAC THEN ASM_SIMP_TAC [binom, BINOM_LT, LT, ARITH])
   : ExceptT String IO thm).run
 #eval BINOM_REFL
 
 #eval phrase 11
-unsafe def BINOM_FACT : thm := keep "BINOM_FACT" fun _ => (do
+def BINOM_FACT : thm := keep "BINOM_FACT" fun _ => (do
   prove ([[!n k. FACT n * FACT k * binom(n+k,k) = FACT(n + k)]])
    (INDUCT_TAC THEN REWRITE_TAC [FACT, ADD_CLAUSES, MULT_CLAUSES, BINOM_REFL] THEN
     INDUCT_TAC THEN REWRITE_TAC [ADD_CLAUSES, FACT, MULT_CLAUSES, binom] THEN
@@ -95,7 +95,7 @@ unsafe def BINOM_FACT : thm := keep "BINOM_FACT" fun _ => (do
 #eval BINOM_FACT
 
 #eval phrase 12
-unsafe def BINOMIAL_THEOREM : thm := keep "BINOMIAL_THEOREM" fun _ => (do
+def BINOMIAL_THEOREM : thm := keep "BINOMIAL_THEOREM" fun _ => (do
   prove ([[!n. (x + y) EXP n = nsum(0..n) (\k. binom(n,k) * x EXP k * y EXP (n - k))]])
    (INDUCT_TAC THEN ASM_REWRITE_TAC [EXP] THEN
     REWRITE_TAC [NSUM_SING_NUMSEG, binom, SUB_REFL, EXP, MULT_CLAUSES] THEN

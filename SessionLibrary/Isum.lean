@@ -3,18 +3,14 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Isum.lean
 
-  The `unsafe` half of the isum.ml translation: it supplies
-  HolLibrary.Isum's dependencies from Session, builds the single bundle, and
-  exports every name under its HOL Light name.  `ensureIsum` is
-  `needs "Library/isum.ml"`.
+  The session half of the isum.ml translation: it supplies
+  HolLibrary.Isum's dependencies from Session and exports every name under
+  its HOL Light name.  Importing this module is `needs "Library/isum.ml"`:
+  the bundle is built by `initialize` when the module is loaded.
 
   NOTE.  isum.ml's `INT_OF_REAL_THM` is exported under its HOL Light name,
   which SHADOWS core int.ml's `Session.INT_OF_REAL_THM`; callers qualify the
   clash as `SessionLibrary.Isum.INT_OF_REAL_THM`.
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Isum.lean by tools/isumdiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
 -/
 
 import Session
@@ -25,12 +21,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Isum
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems isum.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Isum.CoreThms1 where
+def core1 : HolLibrary.Isum.CoreThms1 where
   BETA_THM := Session.BETA_THM
   CARD_EQ_SUM := Session.CARD_EQ_SUM
   ETA_AX := Session.ETA_AX
@@ -74,7 +66,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Isum.CoreThms1 where
   SUM_CLAUSES_LEFT := Session.SUM_CLAUSES_LEFT
   SUM_CLAUSES_NUMSEG := Session.SUM_CLAUSES_NUMSEG
 /-- The core theorems isum.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Isum.CoreThms2 where
+def core2 : HolLibrary.Isum.CoreThms2 where
   SUM_CLAUSES_RIGHT := Session.SUM_CLAUSES_RIGHT
   SUM_COMBINE_L := Session.SUM_COMBINE_L
   SUM_COMBINE_R := Session.SUM_COMBINE_R
@@ -118,7 +110,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.Isum.CoreThms2 where
   SUM_POS_LE := Session.SUM_POS_LE
   SUM_POS_LE_NUMSEG := Session.SUM_POS_LE_NUMSEG
 /-- The core theorems isum.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.Isum.CoreThms3 where
+def core3 : HolLibrary.Isum.CoreThms3 where
   SUM_RESTRICT := Session.SUM_RESTRICT
   SUM_RESTRICT_SET := Session.SUM_RESTRICT_SET
   SUM_RMUL := Session.SUM_RMUL
@@ -158,10 +150,10 @@ unsafe def core3 (_ : Unit) : HolLibrary.Isum.CoreThms3 where
   isum := Session.isum
   o_DEF := Session.o_DEF
   sum := Session.sum
-  support := Session.support-- @@CORE END
+  support := Session.support
 
 /-- What isum.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Isum.IsumDeps where
+def deps : HolLibrary.Isum.IsumDeps where
   extend_basic_congs := Session.extend_basic_congs
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
   ASM_MESON_TAC := Session.ASM_MESON_TAC
@@ -169,143 +161,114 @@ unsafe def deps (_ : Unit) : HolLibrary.Isum.IsumDeps where
   NUM_LT_CONV := Session.NUM_LT_CONV
   NUM_LE_CONV := Session.NUM_LE_CONV
   NUM_ADD_CONV := Session.NUM_ADD_CONV
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml). -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Isum: {name}"
+/-- isum.ml, run when this module is loaded. -/
+initialize BIsum : HolLibrary.Isum.Isum ← do
+  match ← (HolLibrary.Isum.setupIsum deps).run with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"setupIsum failed: {e}")
 
-/- The single bundle. -/
-
--- @@BUNDLES BEGIN
-initialize theIsum : IO.Ref (Option HolLibrary.Isum.Isum) ← IO.mkRef none
-unsafe def BIsum : HolLibrary.Isum.Isum :=
-  cached theIsum "setupIsum" fun _ => do
-    (HolLibrary.Isum.setupIsum (deps ())).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Isum
-unsafe def ISUM_SUPPORT : thm := BIsum.ISUM_SUPPORT
-unsafe def int_isum : thm := BIsum.int_isum
-unsafe def INT_OF_REAL_THM := BIsum.INT_OF_REAL_THM
-unsafe def CARD_EQ_ISUM : thm := BIsum.CARD_EQ_ISUM
-unsafe def INT_SUB_POW : thm := BIsum.INT_SUB_POW
-unsafe def ISUM_0 : thm := BIsum.ISUM_0
-unsafe def ISUM_ABS : thm := BIsum.ISUM_ABS
-unsafe def ISUM_ABS_BOUND : thm := BIsum.ISUM_ABS_BOUND
-unsafe def ISUM_ABS_LE : thm := BIsum.ISUM_ABS_LE
-unsafe def ISUM_ABS_NUMSEG : thm := BIsum.ISUM_ABS_NUMSEG
-unsafe def ISUM_ADD : thm := BIsum.ISUM_ADD
-unsafe def ISUM_ADD_NUMSEG : thm := BIsum.ISUM_ADD_NUMSEG
-unsafe def ISUM_ADD_SPLIT : thm := BIsum.ISUM_ADD_SPLIT
-unsafe def ISUM_BIJECTION : thm := BIsum.ISUM_BIJECTION
-unsafe def ISUM_BOUND : thm := BIsum.ISUM_BOUND
-unsafe def ISUM_BOUND_LT : thm := BIsum.ISUM_BOUND_LT
-unsafe def ISUM_BOUND_LT_ALL : thm := BIsum.ISUM_BOUND_LT_ALL
-unsafe def ISUM_CASES : thm := BIsum.ISUM_CASES
-unsafe def ISUM_CLAUSES_LEFT : thm := BIsum.ISUM_CLAUSES_LEFT
-unsafe def ISUM_CLAUSES_NUMSEG : thm := BIsum.ISUM_CLAUSES_NUMSEG
-unsafe def ISUM_CLAUSES_RIGHT : thm := BIsum.ISUM_CLAUSES_RIGHT
-unsafe def ISUM_COMBINE_L : thm := BIsum.ISUM_COMBINE_L
-unsafe def ISUM_COMBINE_R : thm := BIsum.ISUM_COMBINE_R
-unsafe def ISUM_CONST : thm := BIsum.ISUM_CONST
-unsafe def ISUM_CONST_NUMSEG : thm := BIsum.ISUM_CONST_NUMSEG
-unsafe def ISUM_DELETE : thm := BIsum.ISUM_DELETE
-unsafe def ISUM_DELETE_CASES : thm := BIsum.ISUM_DELETE_CASES
-unsafe def ISUM_DELTA : thm := BIsum.ISUM_DELTA
-unsafe def ISUM_DIFF : thm := BIsum.ISUM_DIFF
-unsafe def ISUM_DIFFS : thm := BIsum.ISUM_DIFFS
-unsafe def ISUM_EQ : thm := BIsum.ISUM_EQ
-unsafe def ISUM_EQ_0 : thm := BIsum.ISUM_EQ_0
-unsafe def ISUM_EQ_0_NUMSEG : thm := BIsum.ISUM_EQ_0_NUMSEG
-unsafe def ISUM_EQ_GENERAL : thm := BIsum.ISUM_EQ_GENERAL
-unsafe def ISUM_EQ_GENERAL_INVERSES : thm := BIsum.ISUM_EQ_GENERAL_INVERSES
-unsafe def ISUM_EQ_NUMSEG : thm := BIsum.ISUM_EQ_NUMSEG
-unsafe def ISUM_EQ_SUPERSET : thm := BIsum.ISUM_EQ_SUPERSET
-unsafe def ISUM_GROUP : thm := BIsum.ISUM_GROUP
-unsafe def ISUM_IMAGE : thm := BIsum.ISUM_IMAGE
-unsafe def ISUM_IMAGE_GEN : thm := BIsum.ISUM_IMAGE_GEN
-unsafe def ISUM_IMAGE_LE : thm := BIsum.ISUM_IMAGE_LE
-unsafe def ISUM_IMAGE_NONZERO : thm := BIsum.ISUM_IMAGE_NONZERO
-unsafe def ISUM_INCL_EXCL : thm := BIsum.ISUM_INCL_EXCL
-unsafe def ISUM_INJECTION : thm := BIsum.ISUM_INJECTION
-unsafe def ISUM_LE : thm := BIsum.ISUM_LE
-unsafe def ISUM_LE_INCLUDED : thm := BIsum.ISUM_LE_INCLUDED
-unsafe def ISUM_LE_NUMSEG : thm := BIsum.ISUM_LE_NUMSEG
-unsafe def ISUM_LMUL : thm := BIsum.ISUM_LMUL
-unsafe def ISUM_LT : thm := BIsum.ISUM_LT
-unsafe def ISUM_LT_ALL : thm := BIsum.ISUM_LT_ALL
-unsafe def ISUM_MULTICOUNT : thm := BIsum.ISUM_MULTICOUNT
-unsafe def ISUM_MULTICOUNT_GEN : thm := BIsum.ISUM_MULTICOUNT_GEN
-unsafe def ISUM_NEG : thm := BIsum.ISUM_NEG
-unsafe def ISUM_OFFSET : thm := BIsum.ISUM_OFFSET
-unsafe def ISUM_OFFSET_0 : thm := BIsum.ISUM_OFFSET_0
-unsafe def ISUM_PARTIAL_PRE : thm := BIsum.ISUM_PARTIAL_PRE
-unsafe def ISUM_PARTIAL_SUC : thm := BIsum.ISUM_PARTIAL_SUC
-unsafe def ISUM_POS_BOUND : thm := BIsum.ISUM_POS_BOUND
-unsafe def ISUM_POS_EQ_0 : thm := BIsum.ISUM_POS_EQ_0
-unsafe def ISUM_POS_EQ_0_NUMSEG : thm := BIsum.ISUM_POS_EQ_0_NUMSEG
-unsafe def ISUM_POS_LE : thm := BIsum.ISUM_POS_LE
-unsafe def ISUM_POS_LE_NUMSEG : thm := BIsum.ISUM_POS_LE_NUMSEG
-unsafe def ISUM_RESTRICT : thm := BIsum.ISUM_RESTRICT
-unsafe def ISUM_RESTRICT_SET : thm := BIsum.ISUM_RESTRICT_SET
-unsafe def ISUM_RMUL : thm := BIsum.ISUM_RMUL
-unsafe def ISUM_SING : thm := BIsum.ISUM_SING
-unsafe def ISUM_SING_NUMSEG : thm := BIsum.ISUM_SING_NUMSEG
-unsafe def ISUM_SUB : thm := BIsum.ISUM_SUB
-unsafe def ISUM_SUBSET : thm := BIsum.ISUM_SUBSET
-unsafe def ISUM_SUBSET_SIMPLE : thm := BIsum.ISUM_SUBSET_SIMPLE
-unsafe def ISUM_SUB_NUMSEG : thm := BIsum.ISUM_SUB_NUMSEG
-unsafe def ISUM_ISUM_RESTRICT : thm := BIsum.ISUM_ISUM_RESTRICT
-unsafe def ISUM_SUPERSET : thm := BIsum.ISUM_SUPERSET
-unsafe def ISUM_SWAP : thm := BIsum.ISUM_SWAP
-unsafe def ISUM_SWAP_NUMSEG : thm := BIsum.ISUM_SWAP_NUMSEG
-unsafe def ISUM_TRIV_NUMSEG : thm := BIsum.ISUM_TRIV_NUMSEG
-unsafe def ISUM_UNION : thm := BIsum.ISUM_UNION
-unsafe def ISUM_UNIONS_NONZERO : thm := BIsum.ISUM_UNIONS_NONZERO
-unsafe def ISUM_UNION_EQ : thm := BIsum.ISUM_UNION_EQ
-unsafe def ISUM_UNION_LZERO : thm := BIsum.ISUM_UNION_LZERO
-unsafe def ISUM_UNION_NONZERO : thm := BIsum.ISUM_UNION_NONZERO
-unsafe def ISUM_UNION_RZERO : thm := BIsum.ISUM_UNION_RZERO
-unsafe def ISUM_ZERO_EXISTS : thm := BIsum.ISUM_ZERO_EXISTS
-unsafe def REAL_OF_NUM_ISUM : thm := BIsum.REAL_OF_NUM_ISUM
-unsafe def REAL_OF_NUM_ISUM_NUMSEG : thm := BIsum.REAL_OF_NUM_ISUM_NUMSEG
-unsafe def ISUM_ISUM_PRODUCT : thm := BIsum.ISUM_ISUM_PRODUCT
-unsafe def ADMISSIBLE_ISUM : thm := BIsum.ADMISSIBLE_ISUM
-unsafe def INT_SUB_POW_L1 : thm := BIsum.INT_SUB_POW_L1
-unsafe def INT_SUB_POW_R1 : thm := BIsum.INT_SUB_POW_R1
-unsafe def ISUM_UNIV : thm := BIsum.ISUM_UNIV
-unsafe def ISUM_CLOSED : thm := BIsum.ISUM_CLOSED
-unsafe def ISUM_RELATED : thm := BIsum.ISUM_RELATED
-unsafe def ISUM_CLOSED_NONEMPTY : thm := BIsum.ISUM_CLOSED_NONEMPTY
-unsafe def ISUM_RELATED_NONEMPTY : thm := BIsum.ISUM_RELATED_NONEMPTY
-unsafe def EXPAND_ISUM_CONV : HolCore.Equal.ioconv := fun t => BIsum.EXPAND_ISUM_CONV t
+def ISUM_SUPPORT : thm := BIsum.ISUM_SUPPORT
+def int_isum : thm := BIsum.int_isum
+def INT_OF_REAL_THM := BIsum.INT_OF_REAL_THM
+def CARD_EQ_ISUM : thm := BIsum.CARD_EQ_ISUM
+def INT_SUB_POW : thm := BIsum.INT_SUB_POW
+def ISUM_0 : thm := BIsum.ISUM_0
+def ISUM_ABS : thm := BIsum.ISUM_ABS
+def ISUM_ABS_BOUND : thm := BIsum.ISUM_ABS_BOUND
+def ISUM_ABS_LE : thm := BIsum.ISUM_ABS_LE
+def ISUM_ABS_NUMSEG : thm := BIsum.ISUM_ABS_NUMSEG
+def ISUM_ADD : thm := BIsum.ISUM_ADD
+def ISUM_ADD_NUMSEG : thm := BIsum.ISUM_ADD_NUMSEG
+def ISUM_ADD_SPLIT : thm := BIsum.ISUM_ADD_SPLIT
+def ISUM_BIJECTION : thm := BIsum.ISUM_BIJECTION
+def ISUM_BOUND : thm := BIsum.ISUM_BOUND
+def ISUM_BOUND_LT : thm := BIsum.ISUM_BOUND_LT
+def ISUM_BOUND_LT_ALL : thm := BIsum.ISUM_BOUND_LT_ALL
+def ISUM_CASES : thm := BIsum.ISUM_CASES
+def ISUM_CLAUSES_LEFT : thm := BIsum.ISUM_CLAUSES_LEFT
+def ISUM_CLAUSES_NUMSEG : thm := BIsum.ISUM_CLAUSES_NUMSEG
+def ISUM_CLAUSES_RIGHT : thm := BIsum.ISUM_CLAUSES_RIGHT
+def ISUM_COMBINE_L : thm := BIsum.ISUM_COMBINE_L
+def ISUM_COMBINE_R : thm := BIsum.ISUM_COMBINE_R
+def ISUM_CONST : thm := BIsum.ISUM_CONST
+def ISUM_CONST_NUMSEG : thm := BIsum.ISUM_CONST_NUMSEG
+def ISUM_DELETE : thm := BIsum.ISUM_DELETE
+def ISUM_DELETE_CASES : thm := BIsum.ISUM_DELETE_CASES
+def ISUM_DELTA : thm := BIsum.ISUM_DELTA
+def ISUM_DIFF : thm := BIsum.ISUM_DIFF
+def ISUM_DIFFS : thm := BIsum.ISUM_DIFFS
+def ISUM_EQ : thm := BIsum.ISUM_EQ
+def ISUM_EQ_0 : thm := BIsum.ISUM_EQ_0
+def ISUM_EQ_0_NUMSEG : thm := BIsum.ISUM_EQ_0_NUMSEG
+def ISUM_EQ_GENERAL : thm := BIsum.ISUM_EQ_GENERAL
+def ISUM_EQ_GENERAL_INVERSES : thm := BIsum.ISUM_EQ_GENERAL_INVERSES
+def ISUM_EQ_NUMSEG : thm := BIsum.ISUM_EQ_NUMSEG
+def ISUM_EQ_SUPERSET : thm := BIsum.ISUM_EQ_SUPERSET
+def ISUM_GROUP : thm := BIsum.ISUM_GROUP
+def ISUM_IMAGE : thm := BIsum.ISUM_IMAGE
+def ISUM_IMAGE_GEN : thm := BIsum.ISUM_IMAGE_GEN
+def ISUM_IMAGE_LE : thm := BIsum.ISUM_IMAGE_LE
+def ISUM_IMAGE_NONZERO : thm := BIsum.ISUM_IMAGE_NONZERO
+def ISUM_INCL_EXCL : thm := BIsum.ISUM_INCL_EXCL
+def ISUM_INJECTION : thm := BIsum.ISUM_INJECTION
+def ISUM_LE : thm := BIsum.ISUM_LE
+def ISUM_LE_INCLUDED : thm := BIsum.ISUM_LE_INCLUDED
+def ISUM_LE_NUMSEG : thm := BIsum.ISUM_LE_NUMSEG
+def ISUM_LMUL : thm := BIsum.ISUM_LMUL
+def ISUM_LT : thm := BIsum.ISUM_LT
+def ISUM_LT_ALL : thm := BIsum.ISUM_LT_ALL
+def ISUM_MULTICOUNT : thm := BIsum.ISUM_MULTICOUNT
+def ISUM_MULTICOUNT_GEN : thm := BIsum.ISUM_MULTICOUNT_GEN
+def ISUM_NEG : thm := BIsum.ISUM_NEG
+def ISUM_OFFSET : thm := BIsum.ISUM_OFFSET
+def ISUM_OFFSET_0 : thm := BIsum.ISUM_OFFSET_0
+def ISUM_PARTIAL_PRE : thm := BIsum.ISUM_PARTIAL_PRE
+def ISUM_PARTIAL_SUC : thm := BIsum.ISUM_PARTIAL_SUC
+def ISUM_POS_BOUND : thm := BIsum.ISUM_POS_BOUND
+def ISUM_POS_EQ_0 : thm := BIsum.ISUM_POS_EQ_0
+def ISUM_POS_EQ_0_NUMSEG : thm := BIsum.ISUM_POS_EQ_0_NUMSEG
+def ISUM_POS_LE : thm := BIsum.ISUM_POS_LE
+def ISUM_POS_LE_NUMSEG : thm := BIsum.ISUM_POS_LE_NUMSEG
+def ISUM_RESTRICT : thm := BIsum.ISUM_RESTRICT
+def ISUM_RESTRICT_SET : thm := BIsum.ISUM_RESTRICT_SET
+def ISUM_RMUL : thm := BIsum.ISUM_RMUL
+def ISUM_SING : thm := BIsum.ISUM_SING
+def ISUM_SING_NUMSEG : thm := BIsum.ISUM_SING_NUMSEG
+def ISUM_SUB : thm := BIsum.ISUM_SUB
+def ISUM_SUBSET : thm := BIsum.ISUM_SUBSET
+def ISUM_SUBSET_SIMPLE : thm := BIsum.ISUM_SUBSET_SIMPLE
+def ISUM_SUB_NUMSEG : thm := BIsum.ISUM_SUB_NUMSEG
+def ISUM_ISUM_RESTRICT : thm := BIsum.ISUM_ISUM_RESTRICT
+def ISUM_SUPERSET : thm := BIsum.ISUM_SUPERSET
+def ISUM_SWAP : thm := BIsum.ISUM_SWAP
+def ISUM_SWAP_NUMSEG : thm := BIsum.ISUM_SWAP_NUMSEG
+def ISUM_TRIV_NUMSEG : thm := BIsum.ISUM_TRIV_NUMSEG
+def ISUM_UNION : thm := BIsum.ISUM_UNION
+def ISUM_UNIONS_NONZERO : thm := BIsum.ISUM_UNIONS_NONZERO
+def ISUM_UNION_EQ : thm := BIsum.ISUM_UNION_EQ
+def ISUM_UNION_LZERO : thm := BIsum.ISUM_UNION_LZERO
+def ISUM_UNION_NONZERO : thm := BIsum.ISUM_UNION_NONZERO
+def ISUM_UNION_RZERO : thm := BIsum.ISUM_UNION_RZERO
+def ISUM_ZERO_EXISTS : thm := BIsum.ISUM_ZERO_EXISTS
+def REAL_OF_NUM_ISUM : thm := BIsum.REAL_OF_NUM_ISUM
+def REAL_OF_NUM_ISUM_NUMSEG : thm := BIsum.REAL_OF_NUM_ISUM_NUMSEG
+def ISUM_ISUM_PRODUCT : thm := BIsum.ISUM_ISUM_PRODUCT
+def ADMISSIBLE_ISUM : thm := BIsum.ADMISSIBLE_ISUM
+def INT_SUB_POW_L1 : thm := BIsum.INT_SUB_POW_L1
+def INT_SUB_POW_R1 : thm := BIsum.INT_SUB_POW_R1
+def ISUM_UNIV : thm := BIsum.ISUM_UNIV
+def ISUM_CLOSED : thm := BIsum.ISUM_CLOSED
+def ISUM_RELATED : thm := BIsum.ISUM_RELATED
+def ISUM_CLOSED_NONEMPTY : thm := BIsum.ISUM_CLOSED_NONEMPTY
+def ISUM_RELATED_NONEMPTY : thm := BIsum.ISUM_RELATED_NONEMPTY
+def EXPAND_ISUM_CONV : HolCore.Equal.ioconv := fun t => BIsum.EXPAND_ISUM_CONV t
 
-
-
--- @@EXPORTS END
-
-/-- `needs "Library/isum.ml"`: build the bundle. -/
-unsafe def ensureIsum : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BIsum.ISUM_SUPPORT  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/isum.ml"`: already done by importing this module. -/
+def ensureIsum : IO Unit := pure ()
 
 end SessionLibrary.Isum

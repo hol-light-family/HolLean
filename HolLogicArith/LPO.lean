@@ -20,51 +20,51 @@ namespace HolLogicArith.LPO
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1`/`listThms2` bundles; alias the ones we need. -/
-private unsafe def LENGTH : thm := Session.listDefs.LENGTH
-private unsafe def MAP : thm := Session.listDefs.MAP
-private unsafe def ITLIST : thm := Session.listDefs.ITLIST
-private unsafe def MEM : thm := Session.listDefs.MEM
-private unsafe def HD : thm := Session.listDefs.HD
-private unsafe def TL : thm := Session.listDefs.TL
-private unsafe def APPEND : thm := Session.listDefs.APPEND
-private unsafe def MEM_MAP : thm := Session.listThms1.MEM_MAP
-private unsafe def ALL_MAP : thm := Session.listThms1.ALL_MAP
-private unsafe def ALL_MEM : thm := Session.listThms1.ALL_MEM
-private unsafe def EX_MEM : thm := Session.listThms1.EX_MEM
-private unsafe def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
-private unsafe def NOT_CONS_NIL : thm := Session.listThms1.NOT_CONS_NIL
-private unsafe def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
-private unsafe def MEM_APPEND : thm := Session.listThms1.MEM_APPEND
-private unsafe def LENGTH_APPEND : thm := Session.listThms1.LENGTH_APPEND
+private def LENGTH : thm := Session.listDefs.LENGTH
+private def MAP : thm := Session.listDefs.MAP
+private def ITLIST : thm := Session.listDefs.ITLIST
+private def MEM : thm := Session.listDefs.MEM
+private def HD : thm := Session.listDefs.HD
+private def TL : thm := Session.listDefs.TL
+private def APPEND : thm := Session.listDefs.APPEND
+private def MEM_MAP : thm := Session.listThms1.MEM_MAP
+private def ALL_MAP : thm := Session.listThms1.ALL_MAP
+private def ALL_MEM : thm := Session.listThms1.ALL_MEM
+private def EX_MEM : thm := Session.listThms1.EX_MEM
+private def LENGTH_MAP : thm := Session.listThms1.LENGTH_MAP
+private def NOT_CONS_NIL : thm := Session.listThms1.NOT_CONS_NIL
+private def LENGTH_EQ_NIL : thm := Session.listThms1.LENGTH_EQ_NIL
+private def MEM_APPEND : thm := Session.listThms1.MEM_APPEND
+private def LENGTH_APPEND : thm := Session.listThms1.LENGTH_APPEND
 
 /- `subseq` / `SUBSEQ_SUC` come from the Library/analysis prelude. -/
-private unsafe def subseq : thm := SessionLibrary.Analysis.subseq
-private unsafe def SUBSEQ_SUC : thm := SessionLibrary.Analysis.SUBSEQ_SUC
+private def subseq : thm := SessionLibrary.Analysis.subseq
+private def SUBSEQ_SUC : thm := SessionLibrary.Analysis.SUBSEQ_SUC
 
 #eval HolLogicArith.Given.ensure
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 /- `new_inductive_definition`, panicking with HOL Light's message on failure. -/
-private unsafe def newInductive (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+private def newInductive (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"new_inductive_definition: {e}"
   | .error e => panic! s!"new_inductive_definition IO: {e}"
 
 /- `new_specification` lifted into `ExceptT String IO`. -/
-private unsafe def newSpec (names : List String) (th : thm) : ExceptT String IO thm :=
+private def newSpec (names : List String) (th : thm) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_specification names th)
 
 #eval phrase 1
-unsafe def ITLIST_ADD_1_POS : thm := keep "ITLIST_ADD_1_POS" fun _ => (do
+def ITLIST_ADD_1_POS : thm := keep "ITLIST_ADD_1_POS" fun _ => (do
   prove ([[!l. 0 < ITLIST (+) l 1]])
    (LIST_INDUCT_TAC THEN REWRITE_TAC [ITLIST, ARITH] THEN
     POP_ASSUM MP_TAC THEN ARITH_TAC)
@@ -72,7 +72,7 @@ unsafe def ITLIST_ADD_1_POS : thm := keep "ITLIST_ADD_1_POS" fun _ => (do
 #eval ITLIST_ADD_1_POS
 
 #eval phrase 2
-unsafe def FVT_FUN_EMPTY : thm := keep "FVT_FUN_EMPTY" fun _ => (do
+def FVT_FUN_EMPTY : thm := keep "FVT_FUN_EMPTY" fun _ => (do
   prove ([[!f a args. MEM a args /\ (FVT(Fn f args) = {}) ==> (FVT a = {})]])
    (REWRITE_TAC [FVT, EXTENSION, NOT_IN_EMPTY, IN_LIST_UNION, MEM_MAP,
                  (← HolLight.GSYM EX_MEM), o_THM] THEN MESON_TAC [])
@@ -80,21 +80,21 @@ unsafe def FVT_FUN_EMPTY : thm := keep "FVT_FUN_EMPTY" fun _ => (do
 #eval FVT_FUN_EMPTY
 
 #eval phrase 3
-unsafe def NONWF : thm := keep "NONWF" fun _ => (do
+def NONWF : thm := keep "NONWF" fun _ => (do
   ExceptT.mk (Session.new_definition
     [[NONWF(R) a <=> ?s:num->A. (s 0 = a) /\ (!n. R (s(SUC n)) (s n))]])
   : ExceptT String IO thm).run
 #eval NONWF
 
 #eval phrase 4
-unsafe def WF_NONWF : thm := keep "WF_NONWF" fun _ => (do
+def WF_NONWF : thm := keep "WF_NONWF" fun _ => (do
   prove ([[WF(R) <=> !a. ~(NONWF(R) a)]])
    (REWRITE_TAC [WF_DCHAIN, NONWF] THEN MESON_TAC [])
   : ExceptT String IO thm).run
 #eval WF_NONWF
 
 #eval phrase 5
-unsafe def NONWF_SUCCESSOR : thm := keep "NONWF_SUCCESSOR" fun _ => (do
+def NONWF_SUCCESSOR : thm := keep "NONWF_SUCCESSOR" fun _ => (do
   prove ([[!R a:A b. NONWF(R) b /\ R b a ==> NONWF(R) a]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [NONWF] THEN
     DISCH_THEN (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
@@ -107,7 +107,7 @@ unsafe def NONWF_SUCCESSOR : thm := keep "NONWF_SUCCESSOR" fun _ => (do
 #eval NONWF_SUCCESSOR
 
 #eval phrase 6
-unsafe def WF_NONWF_2 : thm := keep "WF_NONWF_2" fun _ => (do
+def WF_NONWF_2 : thm := keep "WF_NONWF_2" fun _ => (do
   prove ([[WF(\x:A y. R x y /\ ~(NONWF(R) y))]])
    (REWRITE_TAC [WF_DCHAIN, NONWF] THEN
     DISCH_THEN (X_CHOOSE_THEN ([[s:num->A]]) MP_TAC) THEN
@@ -119,7 +119,7 @@ unsafe def WF_NONWF_2 : thm := keep "WF_NONWF_2" fun _ => (do
 #eval WF_NONWF_2
 
 #eval phrase 7
-unsafe def NONWF_INDUCT : thm := keep "NONWF_INDUCT" fun _ => (do
+def NONWF_INDUCT : thm := keep "NONWF_INDUCT" fun _ => (do
   let imp ← do
     let (a, _) ← HolLight.EQ_IMP_RULE WF_IND
     HolLight.MATCH_MP a WF_NONWF_2
@@ -132,7 +132,7 @@ unsafe def NONWF_INDUCT : thm := keep "NONWF_INDUCT" fun _ => (do
 #eval NONWF_INDUCT
 
 #eval phrase 8
-unsafe def WF_MINIMAL_STEP : thm := keep "WF_MINIMAL_STEP" fun _ => (do
+def WF_MINIMAL_STEP : thm := keep "WF_MINIMAL_STEP" fun _ => (do
   prove ([[!m:A->num a.
         NONWF(R) a
         ==> ?b. NONWF(R) b /\ R b a /\
@@ -150,7 +150,7 @@ unsafe def WF_MINIMAL_STEP : thm := keep "WF_MINIMAL_STEP" fun _ => (do
 #eval WF_MINIMAL_STEP
 
 #eval phrase 9
-unsafe def WF_MINIMAL_DCHAIN : thm := keep "WF_MINIMAL_DCHAIN" fun _ => (do
+def WF_MINIMAL_DCHAIN : thm := keep "WF_MINIMAL_DCHAIN" fun _ => (do
   prove ([[!m:A->num.
      WF(R) <=> ~(?t. (!n. R (t(SUC n)) (t n)) /\
                      (!s. NONWF(R) s ==> m(t 0) <= m(s)) /\
@@ -183,7 +183,7 @@ unsafe def WF_MINIMAL_DCHAIN : thm := keep "WF_MINIMAL_DCHAIN" fun _ => (do
 #eval WF_MINIMAL_DCHAIN
 
 #eval phrase 10
-unsafe def SEQUENCE_SUBSEQUENCE : thm := keep "SEQUENCE_SUBSEQUENCE" fun _ => (do
+def SEQUENCE_SUBSEQUENCE : thm := keep "SEQUENCE_SUBSEQUENCE" fun _ => (do
   prove ([[!P (x:num->A).
         (!n. ?m. n < m /\ P(x m)) ==> ?f. subseq f /\ !n. P(x(f n))]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [SKOLEM_THM, FORALL_AND_THM] THEN
@@ -197,7 +197,7 @@ unsafe def SEQUENCE_SUBSEQUENCE : thm := keep "SEQUENCE_SUBSEQUENCE" fun _ => (d
 #eval SEQUENCE_SUBSEQUENCE
 
 #eval phrase 11
-unsafe def SEQUENCE_PARTITION_LEMMA : thm := keep "SEQUENCE_PARTITION_LEMMA" fun _ => (do
+def SEQUENCE_PARTITION_LEMMA : thm := keep "SEQUENCE_PARTITION_LEMMA" fun _ => (do
   prove ([[!x:num->A s. FINITE(s) /\ (!n. x(n) IN s)
                 ==> ?a f. subseq f /\ (!n. x(f n) = a)]])
    (REPEAT GEN_TAC THEN DISCH_TAC THEN
@@ -220,7 +220,7 @@ unsafe def SEQUENCE_PARTITION_LEMMA : thm := keep "SEQUENCE_PARTITION_LEMMA" fun
 #eval SEQUENCE_PARTITION_LEMMA
 
 #eval phrase 12
-unsafe def termsize_EXISTS : thm := keep "termsize_EXISTS" fun _ => (do
+def termsize_EXISTS : thm := keep "termsize_EXISTS" fun _ => (do
   prove ([[?termsize.
      (!x. termsize(V x) = 1) /\
      (!f args. termsize(Fn f args) = ITLIST (+) (MAP termsize args) 1)]])
@@ -237,13 +237,13 @@ unsafe def termsize_EXISTS : thm := keep "termsize_EXISTS" fun _ => (do
 #eval termsize_EXISTS
 
 #eval phrase 13
-unsafe def termsize : thm := keep "termsize" fun _ => (do
+def termsize : thm := keep "termsize" fun _ => (do
   newSpec ["termsize"] termsize_EXISTS
   : ExceptT String IO thm).run
 #eval termsize
 
 #eval phrase 14
-unsafe def LEX_DEF : thm := keep "LEX_DEF" fun _ => (do
+def LEX_DEF : thm := keep "LEX_DEF" fun _ => (do
   newRec Session.list_RECURSION
     [[(LEX(<<) [] l <=> F) /\
    (LEX(<<) (CONS h t) l <=>
@@ -254,7 +254,7 @@ unsafe def LEX_DEF : thm := keep "LEX_DEF" fun _ => (do
 #eval LEX_DEF
 
 #eval phrase 15
-unsafe def LEX : thm := keep "LEX" fun _ => (do
+def LEX : thm := keep "LEX" fun _ => (do
   prove ([[(LEX(<<) [] l <=> F) /\
    (LEX(<<) (CONS h1 t1) [] <=> F) /\
    (LEX(<<) (CONS h1 t1) (CONS h2 t2) <=>
@@ -265,7 +265,7 @@ unsafe def LEX : thm := keep "LEX" fun _ => (do
 #eval LEX
 
 #eval phrase 16
-unsafe def LEX_LENGTH : thm := keep "LEX_LENGTH" fun _ => (do
+def LEX_LENGTH : thm := keep "LEX_LENGTH" fun _ => (do
   prove ([[!l1 l2 R. LEX(R) l1 l2 ==> (LENGTH l1 = LENGTH l2)]])
    (LIST_INDUCT_TAC THEN REWRITE_TAC [LEX] THEN
     LIST_INDUCT_TAC THEN REWRITE_TAC [LEX] THEN
@@ -275,7 +275,7 @@ unsafe def LEX_LENGTH : thm := keep "LEX_LENGTH" fun _ => (do
 #eval LEX_LENGTH
 
 #eval phrase 17
-unsafe def MONO_LEX : thm := keep "MONO_LEX" fun _ => (do
+def MONO_LEX : thm := keep "MONO_LEX" fun _ => (do
   prove ([[(!x:A y:A. R x y ==> S x y) ==> LEX R x y ==> LEX S x y]])
    (DISCH_TAC THEN SPEC_TAC ([[y:A list]], [[y:A list]]) THEN
     SPEC_TAC ([[x:A list]], [[x:A list]]) THEN LIST_INDUCT_TAC THEN
@@ -291,7 +291,7 @@ unsafe def MONO_LEX : thm := keep "MONO_LEX" fun _ => (do
   Session.set_monotonicity_theorems (MONO_LEX :: l)
 
 #eval phrase 19
-unsafe def LEX_MAP : thm := keep "LEX_MAP" fun _ => (do
+def LEX_MAP : thm := keep "LEX_MAP" fun _ => (do
   prove ([[!l1 l2. LEX (\x y. R (f x) (f y)) l1 l2 ==> LEX R (MAP f l1) (MAP f l2)]])
    (LIST_INDUCT_TAC THEN REWRITE_TAC [LEX, MAP] THEN
     LIST_INDUCT_TAC THEN REWRITE_TAC [LEX, MAP] THEN
@@ -300,7 +300,7 @@ unsafe def LEX_MAP : thm := keep "LEX_MAP" fun _ => (do
 #eval LEX_MAP
 
 #eval phrase 20
-unsafe def LEX_REFL : thm := keep "LEX_REFL" fun _ => (do
+def LEX_REFL : thm := keep "LEX_REFL" fun _ => (do
   prove ([[!R l. (!x. MEM x l ==> ~(R x x)) ==> ~(LEX(R) l l)]])
    (GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [LEX, MEM] THEN
     COND_CASES_TAC THEN REWRITE_TAC [] THEN ASM_MESON_TAC [])
@@ -308,7 +308,7 @@ unsafe def LEX_REFL : thm := keep "LEX_REFL" fun _ => (do
 #eval LEX_REFL
 
 #eval phrase 21
-unsafe def LEX_LENGTH_CHAIN : thm := keep "LEX_LENGTH_CHAIN" fun _ => (do
+def LEX_LENGTH_CHAIN : thm := keep "LEX_LENGTH_CHAIN" fun _ => (do
   prove ([[!lis R. (!n. LEX(R) (lis(SUC n)) (lis n))
            ==> !n. LENGTH(lis(n)) = LENGTH(lis(0))]])
    (REPEAT GEN_TAC THEN DISCH_TAC THEN INDUCT_TAC THEN REWRITE_TAC [] THEN
@@ -317,7 +317,7 @@ unsafe def LEX_LENGTH_CHAIN : thm := keep "LEX_LENGTH_CHAIN" fun _ => (do
 #eval LEX_LENGTH_CHAIN
 
 #eval phrase 22
-unsafe def WF_LEX_STRONG_INDUCT : thm := keep "WF_LEX_STRONG_INDUCT" fun _ => (do
+def WF_LEX_STRONG_INDUCT : thm := keep "WF_LEX_STRONG_INDUCT" fun _ => (do
   prove ([[!n lis. (LENGTH(lis 0) = n)
            ==> ~((!n a:A. MEM a (lis n) ==> ~(NONWF(R) a)) /\
                  (!n. LEX(R) (lis(SUC n)) (lis n)))]])
@@ -386,7 +386,7 @@ unsafe def WF_LEX_STRONG_INDUCT : thm := keep "WF_LEX_STRONG_INDUCT" fun _ => (d
 #eval WF_LEX_STRONG_INDUCT
 
 #eval phrase 23
-unsafe def WF_LEX_STRONG : thm := keep "WF_LEX_STRONG" fun _ => (do
+def WF_LEX_STRONG : thm := keep "WF_LEX_STRONG" fun _ => (do
   prove ([[!R lis. ~((!n a:A. MEM a (lis n) ==> ~(NONWF(R) a)) /\
              (!n. LEX(R) (lis(SUC n)) (lis n)))]])
    (MESON_TAC [WF_LEX_STRONG_INDUCT])
@@ -394,7 +394,7 @@ unsafe def WF_LEX_STRONG : thm := keep "WF_LEX_STRONG" fun _ => (do
 #eval WF_LEX_STRONG
 
 #eval phrase 24
-unsafe def LEX_RESTRICT : thm := keep "LEX_RESTRICT" fun _ => (do
+def LEX_RESTRICT : thm := keep "LEX_RESTRICT" fun _ => (do
   prove ([[!P R l1 l2. LEX R l1 l2 /\
                (!a. MEM a l1 ==> P(a)) /\ (!a. MEM a l2 ==> P(a))
                ==> LEX (\x y. P(x) /\ P(y) /\ R x y) l1 l2]])
@@ -416,24 +416,24 @@ unsafe def LEX_RESTRICT : thm := keep "LEX_RESTRICT" fun _ => (do
   pure ()
 
 #eval phrase 27
-unsafe def subterm_triple : thm × thm × thm := keep "subterm_triple" fun _ =>
+def subterm_triple : thm × thm × thm := keep "subterm_triple" fun _ =>
   newInductive
     [[(!t. t subterm t) /\
    (!s a f args. s subterm a /\ MEM a args ==> s subterm (Fn f args))]]
-unsafe def subterm_RULES : thm := subterm_triple.1
-unsafe def subterm_INDUCT : thm := subterm_triple.2.1
-unsafe def subterm_CASES : thm := subterm_triple.2.2
+def subterm_RULES : thm := subterm_triple.1
+def subterm_INDUCT : thm := subterm_triple.2.1
+def subterm_CASES : thm := subterm_triple.2.2
 #eval do IO.println subterm_RULES; IO.println subterm_INDUCT; IO.println subterm_CASES
 
 #eval phrase 28
-unsafe def psubterm : thm := keep "psubterm" fun _ => (do
+def psubterm : thm := keep "psubterm" fun _ => (do
   ExceptT.mk (Session.new_definition
     [[s psubterm t <=> s subterm t /\ ~(s = t)]])
   : ExceptT String IO thm).run
 #eval psubterm
 
 #eval phrase 29
-unsafe def DESCENDANT_SMALLER : thm := keep "DESCENDANT_SMALLER" fun _ => (do
+def DESCENDANT_SMALLER : thm := keep "DESCENDANT_SMALLER" fun _ => (do
   prove ([[!f args s. MEM s args ==> termsize s < termsize (Fn f args)]])
    (GEN_TAC THEN REWRITE_TAC [termsize] THEN
     LIST_INDUCT_TAC THEN REWRITE_TAC [MEM, MAP, ITLIST] THEN
@@ -443,21 +443,21 @@ unsafe def DESCENDANT_SMALLER : thm := keep "DESCENDANT_SMALLER" fun _ => (do
 #eval DESCENDANT_SMALLER
 
 #eval phrase 30
-unsafe def DESCENDANT_DISTINCT : thm := keep "DESCENDANT_DISTINCT" fun _ => (do
+def DESCENDANT_DISTINCT : thm := keep "DESCENDANT_DISTINCT" fun _ => (do
   prove ([[!f args. ~(MEM (Fn f args) args)]])
    (MESON_TAC [DESCENDANT_SMALLER, LT_REFL])
   : ExceptT String IO thm).run
 #eval DESCENDANT_DISTINCT
 
 #eval phrase 31
-unsafe def SUBTERM_REFL : thm := keep "SUBTERM_REFL" fun _ => (do
+def SUBTERM_REFL : thm := keep "SUBTERM_REFL" fun _ => (do
   prove ([[!t. t subterm t]])
    (REWRITE_TAC [subterm_RULES])
   : ExceptT String IO thm).run
 #eval SUBTERM_REFL
 
 #eval phrase 32
-unsafe def SUBTERM_TRANS : thm := keep "SUBTERM_TRANS" fun _ => (do
+def SUBTERM_TRANS : thm := keep "SUBTERM_TRANS" fun _ => (do
   prove ([[!s t u. s subterm t /\ t subterm u ==> s subterm u]])
    (SUBGOAL_THEN ([[!t u. t subterm u ==> !s. s subterm t ==> s subterm u]])
      (fun th => MESON_TAC [th]) THEN MATCH_MP_TAC subterm_INDUCT THEN
@@ -466,7 +466,7 @@ unsafe def SUBTERM_TRANS : thm := keep "SUBTERM_TRANS" fun _ => (do
 #eval SUBTERM_TRANS
 
 #eval phrase 33
-unsafe def SUBTERM_ANTISYM : thm := keep "SUBTERM_ANTISYM" fun _ => (do
+def SUBTERM_ANTISYM : thm := keep "SUBTERM_ANTISYM" fun _ => (do
   prove ([[!s t. s subterm t /\ t subterm s ==> (s = t)]])
    (MATCH_MP_TAC term_INDUCT THEN REPEAT CONJ_TAC THEN REPEAT GEN_TAC THENL
      [ONCE_REWRITE_TAC [subterm_CASES] THEN SIMP_TAC [term_DISTINCT], ALL_TAC] THEN
@@ -480,7 +480,7 @@ unsafe def SUBTERM_ANTISYM : thm := keep "SUBTERM_ANTISYM" fun _ => (do
 #eval SUBTERM_ANTISYM
 
 #eval phrase 34
-unsafe def SUBTERM_FVT : thm := keep "SUBTERM_FVT" fun _ => (do
+def SUBTERM_FVT : thm := keep "SUBTERM_FVT" fun _ => (do
   prove ([[!x t. x IN FVT(t) ==> V(x) subterm t]])
    (GEN_TAC THEN MATCH_MP_TAC term_INDUCT THEN
     SIMP_TAC [FVT, IN_SING, IN_LIST_UNION, SUBTERM_REFL] THEN
@@ -490,21 +490,21 @@ unsafe def SUBTERM_FVT : thm := keep "SUBTERM_FVT" fun _ => (do
 #eval SUBTERM_FVT
 
 #eval phrase 35
-unsafe def PSUBTERM_ANTISYM : thm := keep "PSUBTERM_ANTISYM" fun _ => (do
+def PSUBTERM_ANTISYM : thm := keep "PSUBTERM_ANTISYM" fun _ => (do
   prove ([[!s t. ~(s psubterm t /\ t psubterm s)]])
    (REWRITE_TAC [psubterm] THEN MESON_TAC [SUBTERM_ANTISYM])
   : ExceptT String IO thm).run
 #eval PSUBTERM_ANTISYM
 
 #eval phrase 36
-unsafe def SUBTERM_PSUBTERM_TRANS : thm := keep "SUBTERM_PSUBTERM_TRANS" fun _ => (do
+def SUBTERM_PSUBTERM_TRANS : thm := keep "SUBTERM_PSUBTERM_TRANS" fun _ => (do
   prove ([[!s t u. s subterm t /\ t psubterm u ==> s psubterm u]])
    (REWRITE_TAC [psubterm] THEN MESON_TAC [SUBTERM_TRANS, SUBTERM_ANTISYM])
   : ExceptT String IO thm).run
 #eval SUBTERM_PSUBTERM_TRANS
 
 #eval phrase 37
-unsafe def PSUBTERM_CASES : thm := keep "PSUBTERM_CASES" fun _ => (do
+def PSUBTERM_CASES : thm := keep "PSUBTERM_CASES" fun _ => (do
   prove ([[!s t. s psubterm t <=>
          ?f args u. (t = Fn f args) /\ MEM u args /\ s subterm u]])
    (REPEAT GEN_TAC THEN EQ_TAC THENL
@@ -521,7 +521,7 @@ unsafe def PSUBTERM_CASES : thm := keep "PSUBTERM_CASES" fun _ => (do
 #eval PSUBTERM_CASES
 
 #eval phrase 38
-unsafe def SUBTERM_INSTANTIATION : thm := keep "SUBTERM_INSTANTIATION" fun _ => (do
+def SUBTERM_INSTANTIATION : thm := keep "SUBTERM_INSTANTIATION" fun _ => (do
   prove ([[!i s t. s subterm t ==> (termsubst i s) subterm (termsubst i t)]])
    (GEN_TAC THEN MATCH_MP_TAC subterm_INDUCT THEN
     REWRITE_TAC [termsubst, subterm_RULES] THEN
@@ -530,7 +530,7 @@ unsafe def SUBTERM_INSTANTIATION : thm := keep "SUBTERM_INSTANTIATION" fun _ => 
 #eval SUBTERM_INSTANTIATION
 
 #eval phrase 39
-unsafe def PSUBTERM_INSTANTIATION : thm := keep "PSUBTERM_INSTANTIATION" fun _ => (do
+def PSUBTERM_INSTANTIATION : thm := keep "PSUBTERM_INSTANTIATION" fun _ => (do
   prove ([[!i s t. s psubterm t ==> (termsubst i s) psubterm (termsubst i t)]])
    (REPEAT GEN_TAC THEN ONCE_REWRITE_TAC [PSUBTERM_CASES] THEN
     MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC [[f:num]] THEN
@@ -543,7 +543,7 @@ unsafe def PSUBTERM_INSTANTIATION : thm := keep "PSUBTERM_INSTANTIATION" fun _ =
 #eval PSUBTERM_INSTANTIATION
 
 #eval phrase 40
-unsafe def lpo_triple : thm × thm × thm := keep "lpo_triple" fun _ =>
+def lpo_triple : thm × thm × thm := keep "lpo_triple" fun _ =>
   newInductive
     [[(!x s. x IN FVT(s) /\ ~(s = V x) ==> V x << s) /\
    (!fs sargs ft targs si.
@@ -556,13 +556,13 @@ unsafe def lpo_triple : thm × thm × thm := keep "lpo_triple" fun _ =>
    (!f sargs targs.
           ALL (\ti. ti << Fn f sargs) targs /\ LEX(<<) targs sargs
           ==> Fn f targs << Fn f sargs)]]
-unsafe def lpo_RULES : thm := lpo_triple.1
-unsafe def lpo_INDUCT : thm := lpo_triple.2.1
-unsafe def lpo_CASES : thm := lpo_triple.2.2
+def lpo_RULES : thm := lpo_triple.1
+def lpo_INDUCT : thm := lpo_triple.2.1
+def lpo_CASES : thm := lpo_triple.2.2
 #eval do IO.println lpo_RULES; IO.println lpo_INDUCT; IO.println lpo_CASES
 
 #eval phrase 41
-unsafe def LPO_CASES : thm := keep "LPO_CASES" fun _ => (do
+def LPO_CASES : thm := keep "LPO_CASES" fun _ => (do
   prove ([[(!s x. (s << V x) <=> F) /\
    (!x t. V x << t <=> x IN FVT(t) /\ ~(t = V x)) /\
    (!f fargs g gargs.
@@ -584,7 +584,7 @@ unsafe def LPO_CASES : thm := keep "LPO_CASES" fun _ => (do
 #eval LPO_CASES
 
 #eval phrase 42
-unsafe def LPO_FVT : thm := keep "LPO_FVT" fun _ => (do
+def LPO_FVT : thm := keep "LPO_FVT" fun _ => (do
   prove ([[!s t. s << t ==> FVT(s) SUBSET FVT(t)]])
    (MATCH_MP_TAC lpo_INDUCT THEN REPEAT CONJ_TAC THEN REPEAT GEN_TAC THENL
      [ALL_TAC, SPEC_TAC ([[Fn ft targs]], [[t:term]]), ALL_TAC, ALL_TAC] THEN
@@ -595,7 +595,7 @@ unsafe def LPO_FVT : thm := keep "LPO_FVT" fun _ => (do
 #eval LPO_FVT
 
 #eval phrase 43
-unsafe def LPO_TRANS_INDUCT : thm := keep "LPO_TRANS_INDUCT" fun _ => (do
+def LPO_TRANS_INDUCT : thm := keep "LPO_TRANS_INDUCT" fun _ => (do
   let lr0 ← liftExcept (HolCore.Lib.el 0 (Session.CONJUNCTS lpo_RULES))
   let lr1 ← liftExcept (HolCore.Lib.el 1 (Session.CONJUNCTS lpo_RULES))
   prove ([[!n r s t.
@@ -695,14 +695,14 @@ unsafe def LPO_TRANS_INDUCT : thm := keep "LPO_TRANS_INDUCT" fun _ => (do
 #eval LPO_TRANS_INDUCT
 
 #eval phrase 44
-unsafe def LPO_TRANS : thm := keep "LPO_TRANS" fun _ => (do
+def LPO_TRANS : thm := keep "LPO_TRANS" fun _ => (do
   prove ([[!s t u. s << t /\ t << u ==> s << u]])
    (MESON_TAC [LPO_TRANS_INDUCT])
   : ExceptT String IO thm).run
 #eval LPO_TRANS
 
 #eval phrase 45
-unsafe def LPO_SUBTERM_LEMMA : thm := keep "LPO_SUBTERM_LEMMA" fun _ => (do
+def LPO_SUBTERM_LEMMA : thm := keep "LPO_SUBTERM_LEMMA" fun _ => (do
   prove ([[!f args a. MEM a args ==> a << Fn f args]])
    (GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC term_INDUCT THEN
     ONCE_REWRITE_TAC [LPO_CASES] THEN CONJ_TAC THENL
@@ -715,7 +715,7 @@ unsafe def LPO_SUBTERM_LEMMA : thm := keep "LPO_SUBTERM_LEMMA" fun _ => (do
 #eval LPO_SUBTERM_LEMMA
 
 #eval phrase 46
-unsafe def LPO_SUBTERM : thm := keep "LPO_SUBTERM" fun _ => (do
+def LPO_SUBTERM : thm := keep "LPO_SUBTERM" fun _ => (do
   prove ([[!s t. s subterm t ==> (s = t) \/ s << t]])
    (MATCH_MP_TAC subterm_INDUCT THEN REWRITE_TAC [] THEN REPEAT STRIP_TAC THENL
      [ASM_MESON_TAC [LPO_SUBTERM_LEMMA],
@@ -725,14 +725,14 @@ unsafe def LPO_SUBTERM : thm := keep "LPO_SUBTERM" fun _ => (do
 #eval LPO_SUBTERM
 
 #eval phrase 47
-unsafe def LPO_PSUBTERM : thm := keep "LPO_PSUBTERM" fun _ => (do
+def LPO_PSUBTERM : thm := keep "LPO_PSUBTERM" fun _ => (do
   prove ([[!s t. s psubterm t ==> s << t]])
    (REWRITE_TAC [psubterm] THEN MESON_TAC [LPO_SUBTERM])
   : ExceptT String IO thm).run
 #eval LPO_PSUBTERM
 
 #eval phrase 48
-unsafe def LPO_INSTANTIATION : thm := keep "LPO_INSTANTIATION" fun _ => (do
+def LPO_INSTANTIATION : thm := keep "LPO_INSTANTIATION" fun _ => (do
   let lr1 ← liftExcept (HolCore.Lib.el 1 (Session.CONJUNCTS lpo_RULES))
   let lr2 ← liftExcept (HolCore.Lib.el 2 (Session.CONJUNCTS lpo_RULES))
   let lr3 ← liftExcept (HolCore.Lib.el 3 (Session.CONJUNCTS lpo_RULES))
@@ -759,7 +759,7 @@ unsafe def LPO_INSTANTIATION : thm := keep "LPO_INSTANTIATION" fun _ => (do
 #eval LPO_INSTANTIATION
 
 #eval phrase 49
-unsafe def LPO_CONGRUENCE : thm := keep "LPO_CONGRUENCE" fun _ => (do
+def LPO_CONGRUENCE : thm := keep "LPO_CONGRUENCE" fun _ => (do
   let lrlast ← liftExcept (HolCore.Lib.last (Session.CONJUNCTS lpo_RULES))
   prove ([[!s t. s << t
          ==> Fn f (APPEND largs (CONS s rargs))
@@ -786,7 +786,7 @@ unsafe def LPO_CONGRUENCE : thm := keep "LPO_CONGRUENCE" fun _ => (do
 #eval LPO_CONGRUENCE
 
 #eval phrase 50
-unsafe def LPO_REFL : thm := keep "LPO_REFL" fun _ => (do
+def LPO_REFL : thm := keep "LPO_REFL" fun _ => (do
   prove ([[!t. ~(t << t)]])
    (MATCH_MP_TAC term_INDUCT THEN CONJ_TAC THEN REPEAT GEN_TAC THEN
     ONCE_REWRITE_TAC [LPO_CASES] THEN REWRITE_TAC [] THEN
@@ -798,7 +798,7 @@ unsafe def LPO_REFL : thm := keep "LPO_REFL" fun _ => (do
 #eval LPO_REFL
 
 #eval phrase 51
-unsafe def LPO_WF : thm := keep "LPO_WF" fun _ => (do
+def LPO_WF : thm := keep "LPO_WF" fun _ => (do
   let wmd ← do
     let (_, b) ← HolLight.EQ_IMP_RULE (← HolLight.SPEC_ALL WF_MINIMAL_DCHAIN)
     HolLight.GEN_ALL b
@@ -931,14 +931,14 @@ unsafe def LPO_WF : thm := keep "LPO_WF" fun _ => (do
 #eval LPO_WF
 
 #eval phrase 52
-unsafe def LPO_SUBTERM_NOT : thm := keep "LPO_SUBTERM_NOT" fun _ => (do
+def LPO_SUBTERM_NOT : thm := keep "LPO_SUBTERM_NOT" fun _ => (do
   prove ([[!t s. s subterm t ==> ~(t << s)]])
    (MESON_TAC [LPO_SUBTERM, LPO_TRANS, LPO_REFL])
   : ExceptT String IO thm).run
 #eval LPO_SUBTERM_NOT
 
 #eval phrase 53
-unsafe def LEX_TOTAL : thm := keep "LEX_TOTAL" fun _ => (do
+def LEX_TOTAL : thm := keep "LEX_TOTAL" fun _ => (do
   prove ([[!fargs gargs.
         (LENGTH fargs = LENGTH gargs) /\
         (!fi gi. MEM fi fargs /\ MEM gi gargs
@@ -958,7 +958,7 @@ unsafe def LEX_TOTAL : thm := keep "LEX_TOTAL" fun _ => (do
 #eval LEX_TOTAL
 
 #eval phrase 54
-unsafe def LPO_GROUND_COMPLETE : thm := keep "LPO_GROUND_COMPLETE" fun _ => (do
+def LPO_GROUND_COMPLETE : thm := keep "LPO_GROUND_COMPLETE" fun _ => (do
   prove ([[!s t. (FVT(s) = {}) /\ (FVT(t) = {}) ==> s << t \/ t << s \/ (s = t)]])
    (SUBGOAL_THEN
       ([[!n s t. (termsize(s) + termsize(t) = n) /\ (FVT(s) = {}) /\ (FVT(t) = {})
@@ -1017,9 +1017,9 @@ unsafe def LPO_GROUND_COMPLETE : thm := keep "LPO_GROUND_COMPLETE" fun _ => (do
 #eval LPO_GROUND_COMPLETE
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.LPO" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.LPO" do
   replay (
           HolLogicArith.Given.ensure)
   replay (

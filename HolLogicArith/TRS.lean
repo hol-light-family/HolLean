@@ -14,12 +14,12 @@ namespace HolLogicArith.TRS
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_inductive_definition`, panicking with HOL Light's message on failure. -/
-private unsafe def newInductive (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+private def newInductive (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"new_inductive_definition: {e}"
   | .error e => panic! s!"new_inductive_definition IO: {e}"
@@ -29,16 +29,16 @@ private unsafe def newInductive (tm : term) : thm × thm × thm :=
 -- =========================================================================
 
 #eval phrase 1
-unsafe def TRS_triple : thm × thm × thm := keep "TRS_triple" fun _ =>
+def TRS_triple : thm × thm × thm := keep "TRS_triple" fun _ =>
   newInductive
     [[(!i l r.
            (l,r) IN rws ==> TRS rws (termsubst i l) (termsubst i r)) /\
       (!s t f largs rargs.
            TRS rws s t ==> TRS rws (Fn f (APPEND largs (CONS s rargs)))
                                    (Fn f (APPEND largs (CONS t rargs))))]]
-unsafe def TRS_RULES : thm := TRS_triple.1
-unsafe def TRS_INDUCT : thm := TRS_triple.2.1
-unsafe def TRS_CASES : thm := TRS_triple.2.2
+def TRS_RULES : thm := TRS_triple.1
+def TRS_INDUCT : thm := TRS_triple.2.1
+def TRS_CASES : thm := TRS_triple.2.2
 #eval do IO.println TRS_RULES; IO.println TRS_INDUCT; IO.println TRS_CASES
 
 -- -------------------------------------------------------------------------
@@ -46,7 +46,7 @@ unsafe def TRS_CASES : thm := TRS_triple.2.2
 -- -------------------------------------------------------------------------
 
 #eval phrase 2
-unsafe def CONVERGENT_MODIFY_LEMMA : thm := keep "CONVERGENT_MODIFY_LEMMA" fun _ => (do
+def CONVERGENT_MODIFY_LEMMA : thm := keep "CONVERGENT_MODIFY_LEMMA" fun _ => (do
   prove
    ([[!R S. SN R /\
          CR(RTC R) /\
@@ -75,7 +75,7 @@ unsafe def CONVERGENT_MODIFY_LEMMA : thm := keep "CONVERGENT_MODIFY_LEMMA" fun _
 #eval CONVERGENT_MODIFY_LEMMA
 
 #eval phrase 3
-unsafe def CONVERGENT_MODIFY : thm := keep "CONVERGENT_MODIFY" fun _ => (do
+def CONVERGENT_MODIFY : thm := keep "CONVERGENT_MODIFY" fun _ => (do
   prove
    ([[!R S. SN R /\
          CR(RTC R) /\
@@ -103,7 +103,7 @@ unsafe def CONVERGENT_MODIFY : thm := keep "CONVERGENT_MODIFY" fun _ => (do
 #eval CONVERGENT_MODIFY
 
 #eval phrase 4
-unsafe def EQUIVALENT_JOINABLE_MODIFY : thm := keep "EQUIVALENT_JOINABLE_MODIFY" fun _ => (do
+def EQUIVALENT_JOINABLE_MODIFY : thm := keep "EQUIVALENT_JOINABLE_MODIFY" fun _ => (do
   prove
    ([[!R S. SN R /\
          CR(RTC R) /\
@@ -131,7 +131,7 @@ unsafe def EQUIVALENT_JOINABLE_MODIFY : thm := keep "EQUIVALENT_JOINABLE_MODIFY"
 #eval EQUIVALENT_JOINABLE_MODIFY
 
 #eval phrase 5
-unsafe def EQUIVALENT_RSTC_MODIFY : thm := keep "EQUIVALENT_RSTC_MODIFY" fun _ => (do
+def EQUIVALENT_RSTC_MODIFY : thm := keep "EQUIVALENT_RSTC_MODIFY" fun _ => (do
   prove
    ([[!R S. SN R /\
          CR(RTC R) /\
@@ -149,7 +149,7 @@ unsafe def EQUIVALENT_RSTC_MODIFY : thm := keep "EQUIVALENT_RSTC_MODIFY" fun _ =
 #eval EQUIVALENT_RSTC_MODIFY
 
 #eval phrase 6
-unsafe def EQUIVALENT_MODIFY : thm := keep "EQUIVALENT_MODIFY" fun _ => (do
+def EQUIVALENT_MODIFY : thm := keep "EQUIVALENT_MODIFY" fun _ => (do
   prove
    ([[!R S. SN R /\
          CR(RTC R) /\
@@ -169,7 +169,7 @@ unsafe def EQUIVALENT_MODIFY : thm := keep "EQUIVALENT_MODIFY" fun _ => (do
 -- -------------------------------------------------------------------------
 
 #eval phrase 7
-unsafe def EQUIVALENT_MODIFY_RIGHT : thm := keep "EQUIVALENT_MODIFY_RIGHT" fun _ => (do
+def EQUIVALENT_MODIFY_RIGHT : thm := keep "EQUIVALENT_MODIFY_RIGHT" fun _ => (do
   prove
    ([[!R S S'.
         SN(\x y. R x y \/ S x y) /\
@@ -198,7 +198,7 @@ unsafe def EQUIVALENT_MODIFY_RIGHT : thm := keep "EQUIVALENT_MODIFY_RIGHT" fun _
 -- -------------------------------------------------------------------------
 
 #eval phrase 8
-unsafe def CONVERGENT_DELETE_LEFT : thm := keep "CONVERGENT_DELETE_LEFT" fun _ => (do
+def CONVERGENT_DELETE_LEFT : thm := keep "CONVERGENT_DELETE_LEFT" fun _ => (do
   prove
    ([[!R S. SN(\x y. R x y \/ S x y) /\
          CR(RTC(\x y. R x y \/ S x y)) /\
@@ -218,7 +218,7 @@ unsafe def CONVERGENT_DELETE_LEFT : thm := keep "CONVERGENT_DELETE_LEFT" fun _ =
 -- -------------------------------------------------------------------------
 
 #eval phrase 9
-unsafe def CONVERGENT_MODIFY_LEMMA_2 : thm := keep "CONVERGENT_MODIFY_LEMMA_2" fun _ => (do
+def CONVERGENT_MODIFY_LEMMA_2 : thm := keep "CONVERGENT_MODIFY_LEMMA_2" fun _ => (do
   prove
    ([[!R S S' t.
         SN(\x y. R x y \/ S x y \/ S' x y) /\
@@ -322,9 +322,9 @@ unsafe def CONVERGENT_MODIFY_LEMMA_2 : thm := keep "CONVERGENT_MODIFY_LEMMA_2" f
 #eval CONVERGENT_MODIFY_LEMMA_2
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.TRS" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.TRS" do
   replay (
           HolLogicArith.Given.ensure)
   replay (

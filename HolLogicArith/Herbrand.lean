@@ -15,47 +15,47 @@ namespace HolLogicArith.Herbrand
 
 /- List definitions/theorems used below are exposed by Session as fields of
    the `listDefs`/`listThms1` bundles; alias the ones we need. -/
-private unsafe def LENGTH : thm := Session.listDefs.LENGTH
-private unsafe def ALL : thm := Session.listDefs.ALL
-private unsafe def MAP_EQ_DEGEN : thm := Session.listThms1.MAP_EQ_DEGEN
-private unsafe def MEM_MAP : thm := Session.listThms1.MEM_MAP
-private unsafe def ALL_MEM : thm := Session.listThms1.ALL_MEM
-private unsafe def EX_MEM : thm := Session.listThms1.EX_MEM
+private def LENGTH : thm := Session.listDefs.LENGTH
+private def ALL : thm := Session.listDefs.ALL
+private def MAP_EQ_DEGEN : thm := Session.listThms1.MAP_EQ_DEGEN
+private def MEM_MAP : thm := Session.listThms1.MEM_MAP
+private def ALL_MEM : thm := Session.listThms1.ALL_MEM
+private def EX_MEM : thm := Session.listThms1.EX_MEM
 
 #eval HolLogicArith.Canon.ensure
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_inductive_definition`, panicking with HOL Light's message on failure. -/
-private unsafe def newInductive (tm : term) : thm × thm × thm :=
-  match unsafeIO (Session.new_inductive_definition tm) with
+private def newInductive (tm : term) : thm × thm × thm :=
+  match runIO (Session.new_inductive_definition tm) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"new_inductive_definition: {e}"
   | .error e => panic! s!"new_inductive_definition IO: {e}"
 
 #eval phrase 1
-unsafe def herbase_triple : thm × thm × thm := keep "herbase_triple" fun _ =>
+def herbase_triple : thm × thm × thm := keep "herbase_triple" fun _ =>
   newInductive
     [[(~(?c. (c,0) IN fns) ==> herbase fns (V 0)) /\
       (!f l. (f,LENGTH l) IN fns /\ ALL (herbase fns) l
              ==> herbase fns (Fn f l))]]
-unsafe def herbase_RULES : thm := herbase_triple.1
-unsafe def herbase_INDUCT : thm := herbase_triple.2.1
-unsafe def herbase_CASES : thm := herbase_triple.2.2
+def herbase_RULES : thm := herbase_triple.1
+def herbase_INDUCT : thm := herbase_triple.2.1
+def herbase_CASES : thm := herbase_triple.2.2
 #eval do IO.println herbase_RULES; IO.println herbase_INDUCT; IO.println herbase_CASES
 
 #eval phrase 2
-unsafe def herbrand : thm := keep "herbrand" fun _ => new_definition
+def herbrand : thm := keep "herbrand" fun _ => new_definition
   [[herbrand (L:(num#num->bool)#(num#num->bool)) M <=>
        (Dom M = herbase (FST L)) /\
        (!f. Fun(M) f = Fn f)]]
 #eval herbrand
 
 #eval phrase 3
-unsafe def HERBRAND_INTERPRETATION : thm := keep "HERBRAND_INTERPRETATION" fun _ => (do
+def HERBRAND_INTERPRETATION : thm := keep "HERBRAND_INTERPRETATION" fun _ => (do
   prove ([[!L M. herbrand L M ==> interpretation L M]])
    (HolLight.GEN_REWRITE_TAC HolCore.Lib.I [FORALL_PAIR_THM] THEN
     SIMP_TAC [herbrand, interpretation] THEN
@@ -67,7 +67,7 @@ unsafe def HERBRAND_INTERPRETATION : thm := keep "HERBRAND_INTERPRETATION" fun _
 #eval HERBRAND_INTERPRETATION
 
 #eval phrase 4
-unsafe def HERBASE_FUNCTIONS : thm := keep "HERBASE_FUNCTIONS" fun _ => (do
+def HERBASE_FUNCTIONS : thm := keep "HERBASE_FUNCTIONS" fun _ => (do
   prove ([[!fns t. t IN herbase fns ==> (functions_term t) SUBSET fns]])
    (GEN_TAC THEN REWRITE_TAC [IN] THEN MATCH_MP_TAC herbase_INDUCT THEN
     REWRITE_TAC [functions_term, EMPTY_SUBSET] THEN
@@ -78,7 +78,7 @@ unsafe def HERBASE_FUNCTIONS : thm := keep "HERBASE_FUNCTIONS" fun _ => (do
 #eval HERBASE_FUNCTIONS
 
 #eval phrase 5
-unsafe def HERBASE_NONEMPTY : thm := keep "HERBASE_NONEMPTY" fun _ => (do
+def HERBASE_NONEMPTY : thm := keep "HERBASE_NONEMPTY" fun _ => (do
   prove ([[!fns. ?t. t IN herbase fns]])
    (GEN_TAC THEN REWRITE_TAC [IN] THEN ONCE_REWRITE_TAC [herbase_CASES] THEN
     MESON_TAC [ALL, LENGTH])
@@ -86,7 +86,7 @@ unsafe def HERBASE_NONEMPTY : thm := keep "HERBASE_NONEMPTY" fun _ => (do
 #eval HERBASE_NONEMPTY
 
 #eval phrase 6
-unsafe def HERBRAND_NONEMPTY : thm := keep "HERBRAND_NONEMPTY" fun _ => (do
+def HERBRAND_NONEMPTY : thm := keep "HERBRAND_NONEMPTY" fun _ => (do
   prove ([[!L M. herbrand L M ==> ~(Dom M = {})]])
    (SIMP_TAC [herbrand, Dom_DEF, EXTENSION, NOT_IN_EMPTY] THEN
     REWRITE_TAC [NOT_FORALL_THM, HERBASE_NONEMPTY])
@@ -94,13 +94,13 @@ unsafe def HERBRAND_NONEMPTY : thm := keep "HERBRAND_NONEMPTY" fun _ => (do
 #eval HERBRAND_NONEMPTY
 
 #eval phrase 7
-unsafe def herbrand_of_prop : thm := keep "herbrand_of_prop" fun _ => new_definition
+def herbrand_of_prop : thm := keep "herbrand_of_prop" fun _ => new_definition
   [[herbrand_of_prop (L:((num#num)->bool)#((num#num)->bool)) (d:form->bool) =
    herbase(FST L),Fn,\p l. d(Atom p l)]]
 #eval herbrand_of_prop
 
 #eval phrase 8
-unsafe def PROP_OF_HERBRAND_OF_PROP : thm := keep "PROP_OF_HERBRAND_OF_PROP" fun _ => (do
+def PROP_OF_HERBRAND_OF_PROP : thm := keep "PROP_OF_HERBRAND_OF_PROP" fun _ => (do
   prove ([[!p l. prop_of_model (herbrand_of_prop L d) V (Atom p l) = d (Atom p l)]])
    (REWRITE_TAC [prop_of_model, herbrand_of_prop, holds, Pred_DEF] THEN
     REPEAT GEN_TAC THEN REPEAT AP_TERM_TAC THEN
@@ -116,7 +116,7 @@ unsafe def PROP_OF_HERBRAND_OF_PROP : thm := keep "PROP_OF_HERBRAND_OF_PROP" fun
 #eval PROP_OF_HERBRAND_OF_PROP
 
 #eval phrase 9
-unsafe def HOLDS_HERBRAND_OF_PROP : thm := keep "HOLDS_HERBRAND_OF_PROP" fun _ => (do
+def HOLDS_HERBRAND_OF_PROP : thm := keep "HOLDS_HERBRAND_OF_PROP" fun _ => (do
   prove ([[!p. qfree p ==> (holds (herbrand_of_prop L d) V p <=> pholds d p)]])
    (GEN_TAC THEN DISCH_THEN (fun th => HolLight.tactic_of do
       let mmp ← HolLight.MATCH_MP PHOLDS_PROP_OF_MODEL th
@@ -131,7 +131,7 @@ unsafe def HOLDS_HERBRAND_OF_PROP : thm := keep "HOLDS_HERBRAND_OF_PROP" fun _ =
 #eval HOLDS_HERBRAND_OF_PROP
 
 #eval phrase 10
-unsafe def HOLDS_HERBRAND_OF_PROP_GENERAL : thm := keep "HOLDS_HERBRAND_OF_PROP_GENERAL" fun _ => (do
+def HOLDS_HERBRAND_OF_PROP_GENERAL : thm := keep "HOLDS_HERBRAND_OF_PROP_GENERAL" fun _ => (do
   prove ([[qfree p ==> (holds (herbrand_of_prop L d) v p <=> pholds d (formsubst v p))]])
    (DISCH_THEN (fun th => HolLight.tactic_of do
       let mmp ← HolLight.MATCH_MP PHOLDS_PROP_OF_MODEL th
@@ -153,14 +153,14 @@ unsafe def HOLDS_HERBRAND_OF_PROP_GENERAL : thm := keep "HOLDS_HERBRAND_OF_PROP_
 #eval HOLDS_HERBRAND_OF_PROP_GENERAL
 
 #eval phrase 11
-unsafe def HERBRAND_HERBRAND_OF_PROP : thm := keep "HERBRAND_HERBRAND_OF_PROP" fun _ => (do
+def HERBRAND_HERBRAND_OF_PROP : thm := keep "HERBRAND_HERBRAND_OF_PROP" fun _ => (do
   prove ([[!d. herbrand L (herbrand_of_prop L d)]])
    (REWRITE_TAC [herbrand, herbrand_of_prop, Dom_DEF, Fun_DEF, FUN_EQ_THM])
   : ExceptT String IO thm).run
 #eval HERBRAND_HERBRAND_OF_PROP
 
 #eval phrase 12
-unsafe def INTERPRETATION_HERBRAND_OF_PROP : thm := keep "INTERPRETATION_HERBRAND_OF_PROP" fun _ => (do
+def INTERPRETATION_HERBRAND_OF_PROP : thm := keep "INTERPRETATION_HERBRAND_OF_PROP" fun _ => (do
   prove ([[!L d. interpretation L (herbrand_of_prop L d)]])
    (REWRITE_TAC [FORALL_PAIR_THM, interpretation, herbrand_of_prop, Fun_DEF,
                 Dom_DEF, IN, ETA_AX] THEN
@@ -169,7 +169,7 @@ unsafe def INTERPRETATION_HERBRAND_OF_PROP : thm := keep "INTERPRETATION_HERBRAN
 #eval INTERPRETATION_HERBRAND_OF_PROP
 
 #eval phrase 13
-unsafe def PSATISFIES_HERBRAND_INSTANCES : thm := keep "PSATISFIES_HERBRAND_INSTANCES" fun _ => (do
+def PSATISFIES_HERBRAND_INSTANCES : thm := keep "PSATISFIES_HERBRAND_INSTANCES" fun _ => (do
   prove ([[(!p. p IN s ==> qfree p) /\
    d psatisfies {formsubst v p | (!x. v x IN herbase(FST L)) /\ p IN s}
    ==> (herbrand_of_prop L d) satisfies s]])
@@ -197,14 +197,14 @@ unsafe def PSATISFIES_HERBRAND_INSTANCES : thm := keep "PSATISFIES_HERBRAND_INST
 #eval PSATISFIES_HERBRAND_INSTANCES
 
 #eval phrase 14
-unsafe def SATISFIES_SUBSET : thm := keep "SATISFIES_SUBSET" fun _ => (do
+def SATISFIES_SUBSET : thm := keep "SATISFIES_SUBSET" fun _ => (do
   prove ([[!M s t. s SUBSET t /\ M satisfies t ==> M satisfies s]])
    (REWRITE_TAC [satisfies, SUBSET] THEN MESON_TAC [])
   : ExceptT String IO thm).run
 #eval SATISFIES_SUBSET
 
 #eval phrase 15
-unsafe def HERBASE_SUBSET_TERMS : thm := keep "HERBASE_SUBSET_TERMS" fun _ => (do
+def HERBASE_SUBSET_TERMS : thm := keep "HERBASE_SUBSET_TERMS" fun _ => (do
   prove ([[!t. t IN herbase fns ==> t IN terms fns]])
    (REWRITE_TAC [IN] THEN MATCH_MP_TAC herbase_INDUCT THEN
     CONV_TAC (HolLight.ONCE_DEPTH_CONV (fun t => pure (ETA_CONV t))) THEN REWRITE_TAC [terms_RULES])
@@ -212,7 +212,7 @@ unsafe def HERBASE_SUBSET_TERMS : thm := keep "HERBASE_SUBSET_TERMS" fun _ => (d
 #eval HERBASE_SUBSET_TERMS
 
 #eval phrase 16
-unsafe def HERBRAND_THEOREM : thm := keep "HERBRAND_THEOREM" fun _ => (do
+def HERBRAND_THEOREM : thm := keep "HERBRAND_THEOREM" fun _ => (do
   prove ([[!s. (!p. p IN s ==> qfree p)
        ==> ((?M:(term->bool)#(num->term list->term)#(num->term list->bool).
                  interpretation (language s) M /\ ~(Dom M = {}) /\
@@ -242,9 +242,9 @@ unsafe def HERBRAND_THEOREM : thm := keep "HERBRAND_THEOREM" fun _ => (do
 #eval HERBRAND_THEOREM
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Herbrand" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Herbrand" do
   replay (
           HolLogicArith.Canon.ensure)
   replay (

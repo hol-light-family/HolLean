@@ -2,10 +2,11 @@
 A scratchpad for users of HolLean: put your own `#eval`s here.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 
-`import HolInit` starts the system the way `hol.ml` does: HOL Light's
+`import Session` starts the system the way `hol.ml` does: HOL Light's
 `loads "hol_lib.ml"` runs every source file in dependency order, so by the time
 you get a prompt all the types, constants, parser fixities and theorems exist.
-HolInit reproduces that with an `initialize` block, Lean's analogue of `loads`.
+Session does the same with `initialize`, Lean's analogue of `loads`: each layer
+is built when its module is imported, in hol_lib.ml order.
 
 So write what you would write in HOL Light.  Terms go in `[[ ... ]]`, which is
 this translation's stand-in for HOL Light's backquotes, and results print
@@ -15,13 +16,13 @@ themselves:
     here        #eval REAL_ARITH2 [[!x y. abs (x + y) <= abs x + abs y]]
 
 Nothing needs forcing and no `do`/`match` wrapper is needed - the coercions in
-Session.lean unwrap a quotation into a `term` and a rule result into a `thm`,
+SessionCore/Base.lean unwrap a quotation into a `term` and a rule result into a `thm`,
 and failures panic with HOL Light's own error text.
 
 To keep a result, as HOL Light's `let th = NUM_REDUCE_CONV `2 + 2 * 3`;;`,
 define it; later commands can then use the name:
 
-    unsafe def th : thm := NUM_REDUCE_CONV [[2 + 2 * 3]]
+    def th : thm := NUM_REDUCE_CONV [[2 + 2 * 3]]
     #eval th
 
 ONE SYNTAX WRINKLE: parenthesise a quotation when it is NOT the last argument.
@@ -37,15 +38,15 @@ prints as the goalstack, as in HOL Light:
 HOL Light's online help is available as `#eval help("NAME")` (help.ml),
 e.g. `#eval help("REAL_ARITH")`; an unknown name lists the closest entries.
 
-HolInit brings in HolCore, HolMath and Session, but NOT the test suite, so you
+Session brings in HolCore and HolMath, but NOT the test suite, so you
 do not re-run the project's test assertions.  This file belongs to no Lake
 target and nothing imports it, so whatever you write here cannot break
 `make build`, `make proofs` or `make check`.  Run it with
 
-    make prove                      -- or: lake env lean Prove.lean
+    make prove                      -- or: lake lean Prove.lean
 -/
 
-import HolInit
+import Session
 import Help
 
 open Session HolCore.Kernel
@@ -82,7 +83,7 @@ open Session HolCore.Kernel
 #eval prove ([[!x. x + &0 = x]]) (REWRITE_TAC [REAL_ADD_RID])
 
 -- Keep a result under a name, as HOL Light's `let th = ...;;`.
-unsafe def th : thm := NUM_REDUCE_CONV [[2 + 2 * 3]]
+def th : thm := NUM_REDUCE_CONV [[2 + 2 * 3]]
 #eval th
 #eval concl th
 

@@ -10,7 +10,7 @@ ITER_POINTLESS, ITER_ALT, ITER_1, ...) are tested through conversions on
 concrete inputs instead, so no invented type variable appears. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Iter
 
 open HolCore.Kernel HolTest.CommonTest
 

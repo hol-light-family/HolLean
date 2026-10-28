@@ -9,7 +9,7 @@ tools/carddiff/check.sh compares far more structurally: all 289 theorems,
 the constants and definitions and all 1,285 load messages. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Card
 
 open HolCore.Kernel HolTest.CommonTest
 

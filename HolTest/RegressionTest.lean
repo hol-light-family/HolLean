@@ -110,8 +110,7 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
 -- through conditionals.
 #eval (do
   IO.println s!"(force class layer: {← HolCore.Printer.string_of_thm Session.COND_ID})"
-  let l ← Session.theMonotonicityTheorems.get
-  let ts := l.getD []
+  let ts ← Session.theMonotonicityTheorems.get
   IO.println s!"monotonicity theorems = {ts.length} (7: MONO_COND + 6 defaults)"
   match ts.head? with
   | some t => IO.println s!"  head must be MONO_COND -> {← HolCore.Printer.string_of_thm t}"

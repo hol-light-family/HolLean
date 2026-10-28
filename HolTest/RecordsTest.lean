@@ -9,7 +9,7 @@ compares the whole run with HOL Light structurally.  Invented type
 variables are renumbered in order of appearance. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Records
 
 open HolCore.Kernel Session SessionLibrary.Components SessionLibrary.Records HolTest.CommonTest
 

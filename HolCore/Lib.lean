@@ -649,6 +649,11 @@ def pow2 (n : Int) : Rat := powInt num_2 n
 /-- `pow10 n = power_num num_10 (num n)` (lib.ml 401); `n` may be negative. -/
 def pow10 (n : Int) : Rat := powInt num_10 n
 
+/-- `num` (bignum_zarith.ml 154): `Num.num_of_int`, an int as a "num".
+    Protected, so opening `HolCore.Lib` does not capture the many local
+    names `num`; write `HolCore.Lib.num`. -/
+protected def num (n : Int) : Rat := n
+
 /-- `numdom` (bignum_zarith.ml 158): the numerator and denominator of a
     rational in lowest terms. -/
 def numdom (x : Rat) : Rat × Rat := (x.num, x.den)

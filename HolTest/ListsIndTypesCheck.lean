@@ -360,21 +360,21 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
 
 /- ====================================================================== -/
 /- 5. ind_types.ml: option/sum derived theorems and the store lookups.    -/
-/-    distinctness / injectivity are pure (Except), wrapped with `pure`;   -/
-/-    cases / option_DISTINCT / option_INJ are IO (Except thm).            -/
+/-    distinctness / injectivity / cases / option_DISTINCT / option_INJ  -/
+/-    are IO (Except thm): they read the live stores.                     -/
 /-    Statements taken from Help/*.hlp and ind_types.ml 1049-1055.         -/
 /- ====================================================================== -/
 
 -- Help/distinctness.hlp: distinctness "list"
 #eval (do
   let _ ← (IO.mkRef (concl listDefs.APPEND) : IO (IO.Ref term))
-  ruleOK "distinctness \"list\" (.hlp)" (pure (Session.distinctness "list"))
+  ruleOK "distinctness \"list\" (.hlp)" (Session.distinctness "list")
     "!a0' a1'. ~([] = CONS a0' a1')")
 
 -- Help/injectivity.hlp: injectivity "list"
 #eval (do
   let _ ← (IO.mkRef (concl listDefs.APPEND) : IO (IO.Ref term))
-  ruleOK "injectivity \"list\" (.hlp)" (pure (Session.injectivity "list"))
+  ruleOK "injectivity \"list\" (.hlp)" (Session.injectivity "list")
     "!a0 a1 a0' a1'. CONS a0 a1 = CONS a0' a1' <=> a0 = a0' /\\ a1 = a1'")
 
 -- Help/cases.hlp: cases "list"
@@ -398,11 +398,11 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
 -- distinctness/injectivity/cases on the primitive num type (Help examples).
 #eval (do
   let _ ← (IO.mkRef (concl Session.ADD_SYM) : IO (IO.Ref term))
-  ruleOK "distinctness \"num\" (.hlp)" (pure (Session.distinctness "num"))
+  ruleOK "distinctness \"num\" (.hlp)" (Session.distinctness "num")
     "!n'. ~(0 = SUC n')")
 #eval (do
   let _ ← (IO.mkRef (concl Session.ADD_SYM) : IO (IO.Ref term))
-  ruleOK "injectivity \"num\" (.hlp)" (pure (Session.injectivity "num"))
+  ruleOK "injectivity \"num\" (.hlp)" (Session.injectivity "num")
     "!n n'. SUC n = SUC n' <=> n = n'")
 #eval (do
   let _ ← (IO.mkRef (concl Session.ADD_SYM) : IO (IO.Ref term))
@@ -416,7 +416,7 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
 -- distinctness on a nonexistent type must fail (store lookup miss).
 #eval (do
   let _ ← (IO.mkRef (concl listDefs.APPEND) : IO (IO.Ref term))
-  failsOK "distinctness bogus-type fails" (pure (Session.distinctness "nosuchtype")))
+  failsOK "distinctness bogus-type fails" (Session.distinctness "nosuchtype"))
 
 -- LENGTH_CONV on a non-LENGTH term must fail.
 #eval (do

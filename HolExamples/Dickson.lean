@@ -7,11 +7,11 @@ open HolCore.Kernel Session HolLight.Syntax HolExamples
 open scoped HolLight
 namespace HolExamples.Dickson
 
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 #eval phrase 1
-unsafe def DICKSON : thm := keep "DICKSON" fun _ => (do
+def DICKSON : thm := keep "DICKSON" fun _ => (do
   prove ([[!n x:num->num->num. ?i j. i < j /\ (!k. k < n ==> x i k <= x j k)]])
    (ABBREV_TAC
      [[bad = \n x:num->num->num. !i j. i < j ==> ?k. k < n /\ x j k < x i k]] THEN

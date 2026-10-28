@@ -3,6 +3,8 @@ Translation of HOL Light's Tutorial/Real_analysis.ml, phrase by phrase.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 import HolTutorial.Common
+import SessionLibrary.Analysis
+import SessionLibrary.Transc
 open HolCore.Kernel Session HolLight.Syntax HolTutorial
 open HolCore.Tactics (tactic thm_tactic)
 open HolCore.Lib (funpow)
@@ -27,14 +29,14 @@ def fn : IO Unit := IO.println "<fun>"
 #eval SessionLibrary.Transc.ensureTransc
 
 #eval phrase 3
-unsafe def cheb : thm := keep "cheb" fun _ => define
+def cheb : thm := keep "cheb" fun _ => define
  [[(!x. cheb 0 x = &1) /\
   (!x. cheb 1 x = x) /\
   (!n x. cheb (n + 2) x = &2 * x * cheb (n + 1) x - cheb n x)]]
 #eval cheb
 
 #eval phrase 4
-unsafe def CHEB_INDUCT : thm := keep "CHEB_INDUCT" fun _ => prove
+def CHEB_INDUCT : thm := keep "CHEB_INDUCT" fun _ => prove
  ([[!P. P 0 /\ P 1 /\ (!n. P n /\ P(n + 1) ==> P(n + 2)) ==> !n. P n]])
   (HolLight.tactic_of do
    let aa ← ExceptT.mk (HolLight.GSYM ADD_ASSOC)
@@ -46,7 +48,7 @@ unsafe def CHEB_INDUCT : thm := keep "CHEB_INDUCT" fun _ => prove
 #eval CHEB_INDUCT
 
 #eval phrase 5
-unsafe def CHEB_COS : thm := keep "CHEB_COS" fun _ => prove
+def CHEB_COS : thm := keep "CHEB_COS" fun _ => prove
  ([[!n x. cheb n (cos x) = cos(&n * x)]])
   (HolLight.tactic_of do
    let g1 ← ExceptT.mk (HolLight.GSYM REAL_OF_NUM_ADD)
@@ -60,7 +62,7 @@ unsafe def CHEB_COS : thm := keep "CHEB_COS" fun _ => prove
 #eval CHEB_COS
 
 #eval phrase 6
-unsafe def CHEB_RIPPLE : thm := keep "CHEB_RIPPLE" fun _ => prove
+def CHEB_RIPPLE : thm := keep "CHEB_RIPPLE" fun _ => prove
  ([[!x. abs(x) <= &1 ==> abs(cheb n x) <= &1]])
   (HolLight.tactic_of do
    let g1 ← ExceptT.mk (HolLight.GSYM REAL_BOUNDS_LE)
@@ -74,7 +76,7 @@ unsafe def CHEB_RIPPLE : thm := keep "CHEB_RIPPLE" fun _ => prove
    fun tm -> let m = mk_numeral(dest_numeral tm less num 2) in
              let tm' = mk_comb(mk_comb(add_tm,m),two_tm) in
              SYM(NUM_ADD_CONV tm') -/
-unsafe def NUM_ADD2_CONV : ioconv := fun tm => do
+def NUM_ADD2_CONV : ioconv := fun tm => do
   let add_tm ← (HolLight.q "(+):num->num->num" : IO (Except String term))
   let two_tm ← (HolLight.q "2" : IO (Except String term))
   match (do
@@ -104,7 +106,7 @@ unsafe def NUM_ADD2_CONV : ioconv := fun tm => do
      conv -/
 /-- `COMB2_CONV` for IO conversions (as `Equal.COMB2_CONV`, OCaml evaluating the
     arguments of `MK_COMB` right to left). -/
-unsafe def comb2ConvIO (lconv rconv : ioconv) : ioconv := fun tm => do
+def comb2ConvIO (lconv rconv : ioconv) : ioconv := fun tm => do
   match tm with
   | .Comb l r => do
     match ← rconv r with
@@ -114,7 +116,7 @@ unsafe def comb2ConvIO (lconv rconv : ioconv) : ioconv := fun tm => do
       | .error e => return .error e
       | .ok lth => return MK_COMB lth rth
   | _ => return (.error "COMB2_CONV: Not a combination" : Except String thm)
-unsafe def CHEB_CONV : ioconv :=
+partial def CHEB_CONV : ioconv :=
   let cs := CONJUNCTS cheb
   let pth0 := cs[0]!
   let pth1 := cs[1]!
@@ -142,7 +144,7 @@ unsafe def CHEB_CONV : ioconv :=
     | .error e => failure e
 
 #eval phrase 10
-unsafe def CHEB_2N1 : thm := keep "CHEB_2N1" fun _ => prove
+def CHEB_2N1 : thm := keep "CHEB_2N1" fun _ => prove
  ([[!n x. ((x - &1) * (cheb (2 * n + 1) x - &1) =
           (cheb (n + 1) x - cheb n x) pow 2) /\
          (&2 * (x pow 2 - &1) * (cheb (2 * n + 2) x - &1) =
@@ -165,14 +167,14 @@ unsafe def CHEB_2N1 : thm := keep "CHEB_2N1" fun _ => prove
 #eval CHEB_2N1
 
 #eval phrase 11
-unsafe def IVT_LEMMA1 : thm := keep "IVT_LEMMA1" fun _ => prove
+def IVT_LEMMA1 : thm := keep "IVT_LEMMA1" fun _ => prove
  ([[!f. (!x. f contl x)
        ==> !x y. f(x) <= &0 /\ &0 <= f(y) ==> ?x. f(x) = &0]])
   (ASM_MESON_TAC [IVT, IVT2, REAL_LE_TOTAL])
 #eval IVT_LEMMA1
 
 #eval phrase 12
-unsafe def IVT_LEMMA2 : thm := keep "IVT_LEMMA2" fun _ => prove
+def IVT_LEMMA2 : thm := keep "IVT_LEMMA2" fun _ => prove
  ([[!f. (!x. f contl x) /\ (?x. f(x) <= x) /\ (?y. y <= f(y)) ==> ?x. f(x) = x]])
   (HolLight.tactic_of do
    let lam ← HolLight.q r"\x. f x - x"
@@ -186,9 +188,9 @@ unsafe def IVT_LEMMA2 : thm := keep "IVT_LEMMA2" fun _ => prove
 #eval phrase 13
 /-- `FIRST_ASSUM(UNDISCH_TAC o check is_eq o concl)`: undischarge the first
     assumption whose conclusion is an equation (a failure of `check` elsewhere). -/
-unsafe def undischIsEq : thm_tactic := fun th =>
+def undischIsEq : thm_tactic := fun th =>
   if is_eq (concl th) then UNDISCH_TAC (concl th) else NO_TAC
-unsafe def SARKOVSKII_TRIVIAL : thm := keep "SARKOVSKII_TRIVIAL" fun _ => prove
+def SARKOVSKII_TRIVIAL : thm := keep "SARKOVSKII_TRIVIAL" fun _ => prove
  ([[!f:real->real. (!x. f contl x) /\ (?x. f(f(f(x))) = x) ==> ?x. f(x) = x]])
   (HolLight.tactic_of do
    let lem ← MESON [] (← HolLight.q r"P x \/ P (f x) \/ P (f(f x)) ==> ?x:real. P x")

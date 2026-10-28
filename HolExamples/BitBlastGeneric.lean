@@ -3,6 +3,7 @@ Translation of HOL Light's Examples/bitblast_generic.ml, phrase by phrase.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 import HolExamples.Common
+import SessionLibrary.WordAutomata
 open HolCore.Kernel Session HolLight.Syntax HolExamples
 open SessionLibrary.WordAutomata
 

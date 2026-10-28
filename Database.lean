@@ -8,10 +8,10 @@ theorem of the library, for `search` (help.ml).  The names below are the OCaml
 names, in the OCaml order; each is paired with the Lean theorem it names.
 
 Deviations from database.ml:
-- The list is installed into `Help.theorems` on the first `search`, not at
-  load: reading every theorem forces the whole library, which would otherwise
-  be paid by anything importing this module.  The loader first forces the
-  library in hol_lib.ml load order (see below).
+- The list is installed into `Help.theorems` on the first `search` (or by
+  `load_database`), not when this module is imported.  The theorems
+  themselves are already built: Session builds them at import, in hol_lib.ml
+  order.
 - Six OCaml names are not Lean identifiers or were renamed in the Lean:
   `_FALSITY_` (`FALSITY_DEF`), the pair.ml sugar `_SEQPATTERN`, `_MATCH`, ...
   (fields of `pairSugarDefs`), `Hashek.hashek_*` (`hashekThms`),
@@ -26,14 +26,7 @@ open HolCore.Kernel
 
 namespace Database
 
-/-- The theorem produced by a Session action (`option_DISTINCT`/`option_INJ`
-    are computed on demand there). -/
-private unsafe def run (a : IO (Except String thm)) : thm :=
-  match unsafeIO a with
-  | .ok (.ok th) => th
-  | .ok (.error e) | .error e => panic! s!"Database: {e}"
-
-private unsafe def part0 : List (String × thm) := [
+private def part0 : List (String × thm) := [
   ("ABSORPTION", Session.ABSORPTION),
   ("ABS_SIMP", Session.ABS_SIMP),
   ("ADD", Session.ADD),
@@ -286,7 +279,7 @@ private unsafe def part0 : List (String × thm) := [
   ("DELETE_DELETE", Session.DELETE_DELETE)
 ]
 
-private unsafe def part1 : List (String × thm) := [
+private def part1 : List (String × thm) := [
   ("DELETE_INSERT", Session.DELETE_INSERT),
   ("DELETE_INTER", Session.DELETE_INTER),
   ("DELETE_NON_ELEMENT", Session.DELETE_NON_ELEMENT),
@@ -539,7 +532,7 @@ private unsafe def part1 : List (String × thm) := [
   ("FCONS", Session.raw3Ctx.D2.D.FCONS)
 ]
 
-private unsafe def part2 : List (String × thm) := [
+private def part2 : List (String × thm) := [
   ("FCONS_UNDO", Session.FCONS_UNDO),
   ("FILTER", Session.listDefs.FILTER),
   ("FILTER_APPEND", Session.listThms1.FILTER_APPEND),
@@ -792,7 +785,7 @@ private unsafe def part2 : List (String × thm) := [
   ("HREAL_MUL_LZERO", Session.hrealThms.HREAL_MUL_LZERO)
 ]
 
-private unsafe def part3 : List (String × thm) := [
+private def part3 : List (String × thm) := [
   ("HREAL_MUL_RZERO", Session.hrealThms.HREAL_MUL_RZERO),
   ("HREAL_MUL_SYM", Session.hrealThms.HREAL_MUL_SYM),
   ("HREAL_OF_NUM_ADD", Session.hrealThms.HREAL_OF_NUM_ADD),
@@ -1045,7 +1038,7 @@ private unsafe def part3 : List (String × thm) := [
   ("INT_EQ_SGN_ABS", Session.INT_EQ_SGN_ABS)
 ]
 
-private unsafe def part4 : List (String × thm) := [
+private def part4 : List (String × thm) := [
   ("INT_EQ_SQUARE_ABS", Session.INT_EQ_SQUARE_ABS),
   ("INT_EQ_SUB_LADD", Session.INT_EQ_SUB_LADD),
   ("INT_EQ_SUB_RADD", Session.INT_EQ_SUB_RADD),
@@ -1298,7 +1291,7 @@ private unsafe def part4 : List (String × thm) := [
   ("INT_REM_REFL", Session.INT_REM_REFL)
 ]
 
-private unsafe def part5 : List (String × thm) := [
+private def part5 : List (String × thm) := [
   ("INT_REM_REM", Session.INT_REM_REM),
   ("INT_REM_REM_LE", Session.INT_REM_REM_LE),
   ("INT_REM_REM_MUL", Session.INT_REM_REM_MUL),
@@ -1551,7 +1544,7 @@ private unsafe def part5 : List (String × thm) := [
   ("LT_SUC_LE", Session.LT_SUC_LE)
 ]
 
-private unsafe def part6 : List (String × thm) := [
+private def part6 : List (String × thm) := [
   ("LT_TRANS", Session.LT_TRANS),
   ("MAP", Session.listDefs.MAP),
   ("MAP2", Session.listDefs.MAP2),
@@ -1804,7 +1797,7 @@ private unsafe def part6 : List (String × thm) := [
   ("NSUM_LT", Session.NSUM_LT)
 ]
 
-private unsafe def part7 : List (String × thm) := [
+private def part7 : List (String × thm) := [
   ("NSUM_LT_ALL", Session.NSUM_LT_ALL),
   ("NSUM_MULTICOUNT", Session.NSUM_MULTICOUNT),
   ("NSUM_MULTICOUNT_GEN", Session.NSUM_MULTICOUNT_GEN),
@@ -2057,7 +2050,7 @@ private unsafe def part7 : List (String × thm) := [
   ("REAL_EQ_IMP_LE", Session.REAL_EQ_IMP_LE)
 ]
 
-private unsafe def part8 : List (String × thm) := [
+private def part8 : List (String × thm) := [
   ("REAL_EQ_INV2", Session.REAL_EQ_INV2),
   ("REAL_EQ_LCANCEL_IMP", Session.REAL_EQ_LCANCEL_IMP),
   ("REAL_EQ_LDIV_EQ", Session.REAL_EQ_LDIV_EQ),
@@ -2310,7 +2303,7 @@ private unsafe def part8 : List (String × thm) := [
   ("REAL_POW_EQ_1", Session.REAL_POW_EQ_1)
 ]
 
-private unsafe def part9 : List (String × thm) := [
+private def part9 : List (String × thm) := [
   ("REAL_POW_EQ_1_IMP", Session.REAL_POW_EQ_1_IMP),
   ("REAL_POW_EQ_ABS", Session.REAL_POW_EQ_ABS),
   ("REAL_POW_EQ_EQ", Session.REAL_POW_EQ_EQ),
@@ -2563,7 +2556,7 @@ private unsafe def part9 : List (String × thm) := [
   ("SUM_ADD", Session.SUM_ADD)
 ]
 
-private unsafe def part10 : List (String × thm) := [
+private def part10 : List (String × thm) := [
   ("SUM_ADD_GEN", Session.SUM_ADD_GEN),
   ("SUM_ADD_NUMSEG", Session.SUM_ADD_NUMSEG),
   ("SUM_ADD_SPLIT", Session.SUM_ADD_SPLIT),
@@ -2816,7 +2809,7 @@ private unsafe def part10 : List (String × thm) := [
   ("WF_PSUBSET", Session.WF_PSUBSET)
 ]
 
-private unsafe def part11 : List (String × thm) := [
+private def part11 : List (String × thm) := [
   ("WF_REC", Session.WF_REC),
   ("WF_REC_CASES", Session.WF_REC_CASES),
   ("WF_REC_CASES'", Session.WF_REC_CASES_prime),
@@ -2986,9 +2979,9 @@ private unsafe def part11 : List (String × thm) := [
   ("one_RECURSION", Session.one_RECURSION),
   ("one_axiom", Session.one_axiom),
   ("one_tydef", Session.one_tydef),
-  ("option_DISTINCT", run Session.option_DISTINCT),
+  ("option_DISTINCT", Session.indTypesBoot.option_DISTINCT),
   ("option_INDUCT", Session.option_INDUCT),
-  ("option_INJ", run Session.option_INJ),
+  ("option_INJ", Session.indTypesBoot.option_INJ),
   ("option_RECURSION", Session.option_RECURSION),
   ("pair_INDUCT", Session.pair_INDUCT),
   ("pair_RECURSION", Session.pair_RECURSION),
@@ -3050,24 +3043,14 @@ private unsafe def part11 : List (String × thm) := [
 ]
 
 /-- `theorems := [...]` (database.ml). -/
-unsafe def database : List (String × thm) :=
+def database : List (String × thm) :=
   part0 ++ part1 ++ part2 ++ part3 ++ part4 ++ part5 ++ part6 ++ part7 ++ part8 ++ part9 ++ part10 ++ part11
 
-/- The theorems are lazy, and a layer built out of hol_lib.ml's order parses
-   its proofs under the wrong schematic default type (see HolInit.lean).  So
-   the whole library is first forced in load order by Session's ordered chain
-   (`ensureDefine` runs the int, sets, iterate and cart chains before it),
-   and only then are the theorems read. -/
-private unsafe def loadImpl : IO Unit := do
-  IO.eprintln "Database: loading the whole library in hol_lib.ml order..."
-  let t0 ← IO.monoMsNow
-  Session.ensureDefine
+/-- Install `database` into `Help.theorems`.  (Session has already built
+    every theorem, in hol_lib.ml order, when it was imported.) -/
+def load_database : IO Unit := do
   Help.theorems.set database
-  let n := (← Help.theorems.get).length
-  IO.eprintln s!"Database: {n} theorems ({((← IO.monoMsNow) - t0) / 1000} s)"
-
-/-- Install `database` into `Help.theorems`. -/
-@[implemented_by loadImpl] opaque load_database : IO Unit
+  IO.eprintln s!"Database: {(← Help.theorems.get).length} theorems"
 
 /-- Register the loader, so the first `Help.search` fills `Help.theorems`. -/
 initialize Help.theDatabaseLoader.set (some load_database)

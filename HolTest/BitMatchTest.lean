@@ -10,7 +10,7 @@ compares far more structurally: all 30 theorems, 11 conversion results, the
 constants and definitions and all load messages. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.BitMatch
 
 open HolCore.Kernel HolTest.CommonTest
 

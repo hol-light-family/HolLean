@@ -3,14 +3,12 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Jacobi.lean
 
-  The `unsafe` half of the jacobi.ml translation: it supplies HolLibrary.Jacobi's
-  dependencies from Session and SessionLibrary.Primitive, builds the bundles once, in order,
-  and exports every name under its HOL Light name.  `ensureJacobi` is
-  `needs "Library/jacobi.ml"` (which first does `needs "Library/primitive.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Jacobi.lean by tools/jacobidiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the jacobi.ml translation: it supplies
+  HolLibrary.Jacobi's dependencies from Session and SessionLibrary.Primitive,
+  and exports every name under its HOL Light name.  Importing this module is
+  `needs "Library/jacobi.ml"`; its `needs "Library/primitive.ml"` is the
+  import of SessionLibrary.Primitive.  The bundles are built by `initialize`
+  when the module is loaded, in file order.
 -/
 
 import Session
@@ -22,12 +20,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Jacobi
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems jacobi.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Jacobi.CoreThms1 where
+def core1 : HolLibrary.Jacobi.CoreThms1 where
   ADD1 := Session.ADD1
   ADD_CLAUSES := Session.ADD_CLAUSES
   ADD_SUB := Session.ADD_SUB
@@ -99,7 +93,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Jacobi.CoreThms1 where
   EXISTS_UNIQUE_THM := Session.EXISTS_UNIQUE_THM
   EXP := Session.EXP
 /-- The core theorems jacobi.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Jacobi.CoreThms2 where
+def core2 : HolLibrary.Jacobi.CoreThms2 where
   EXP_1 := Session.EXP_1
   EXP_2 := Session.EXP_2
   EXP_EXP := Session.EXP_EXP
@@ -171,7 +165,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.Jacobi.CoreThms2 where
   INT_OF_NUM_SUB := Session.INT_OF_NUM_SUB
   INT_POW := Session.INT_POW
 /-- The core theorems jacobi.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.Jacobi.CoreThms3 where
+def core3 : HolLibrary.Jacobi.CoreThms3 where
   INT_POW_1 := Session.INT_POW_1
   INT_POW_1_LE := Session.INT_POW_1_LE
   INT_POW_ADD := Session.INT_POW_ADD
@@ -243,7 +237,7 @@ unsafe def core3 (_ : Unit) : HolLibrary.Jacobi.CoreThms3 where
   NUM_OF_INT_MUL := Session.NUM_OF_INT_MUL
   NUM_OF_INT_OF_NUM := Session.NUM_OF_INT_OF_NUM
 /-- The core theorems jacobi.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.Jacobi.CoreThms4 where
+def core4 : HolLibrary.Jacobi.CoreThms4 where
   ODD := Session.ODD
   ODD_EXISTS := Session.ODD_EXISTS
   ODD_MULT := Session.ODD_MULT
@@ -275,10 +269,9 @@ unsafe def core4 (_ : Unit) : HolLibrary.Jacobi.CoreThms4 where
   numseg := Session.numseg
   o_DEF := Session.o_DEF
   o_THM := Session.o_THM
--- @@CORE END
 
 /-- What jacobi.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Jacobi.JacobiDeps where
+def deps : HolLibrary.Jacobi.JacobiDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
   ARITH_TAC := Session.ARITH_TAC
@@ -299,188 +292,120 @@ unsafe def deps (_ : Unit) : HolLibrary.Jacobi.JacobiDeps where
   NUM_REDUCE_CONV := Session.NUM_REDUCE_CONV
   INT_RING t := ExceptT.mk (Session.INT_RING t)
   EXPAND_CASES_CONV := Session.EXPAND_CASES_CONV
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then primitive.ml, which jacobi.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Primitive.ensurePrimitive
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Jacobi: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in file order; each forces the one before it. -/
+/- The bundles, in jacobi.ml order. -/
+initialize BGeneric : HolLibrary.Jacobi.Generic ←
+  ioB "setupGeneric" (HolLibrary.Jacobi.setupGeneric deps).run
+initialize BJacobiDef : HolLibrary.Jacobi.JacobiDef ←
+  ioB "setupJacobiDef" (HolLibrary.Jacobi.setupJacobiDef deps).run
+initialize BJacobiEuler : HolLibrary.Jacobi.JacobiEuler ←
+  ioB "setupJacobiEuler" (HolLibrary.Jacobi.setupJacobiEuler deps BJacobiDef).run
+initialize BGauss : HolLibrary.Jacobi.Gauss ←
+  ioB "setupGauss" (HolLibrary.Jacobi.setupGauss deps BGeneric BJacobiDef BJacobiEuler).run
+initialize BJacobiOf2 : HolLibrary.Jacobi.JacobiOf2 ←
+  ioB "setupJacobiOf2" (HolLibrary.Jacobi.setupJacobiOf2 deps BJacobiDef BJacobiEuler BGauss).run
+initialize BOf2Cases : HolLibrary.Jacobi.Of2Cases ←
+  ioB "setupOf2Cases" (HolLibrary.Jacobi.setupOf2Cases deps BJacobiOf2).run
+initialize BReciprocity : HolLibrary.Jacobi.Reciprocity ←
+  ioB "setupReciprocity"
+    (HolLibrary.Jacobi.setupReciprocity deps BJacobiDef BJacobiEuler BGauss).run
+initialize BJacobi2 : HolLibrary.Jacobi.Jacobi2 ←
+  ioB "setupJacobi2" (HolLibrary.Jacobi.setupJacobi2 deps BJacobiDef).run
+initialize BIntJacobi1 : HolLibrary.Jacobi.IntJacobi1 ←
+  ioB "setupIntJacobi1" (HolLibrary.Jacobi.setupIntJacobi1 deps BJacobiDef BJacobiEuler).run
+initialize BIntJacobi2 : HolLibrary.Jacobi.IntJacobi2 ←
+  ioB "setupIntJacobi2" (HolLibrary.Jacobi.setupIntJacobi2 deps BJacobiDef BJacobiEuler BGauss
+    BOf2Cases BIntJacobi1).run
 
--- @@BUNDLES BEGIN
-initialize theGeneric : IO.Ref (Option HolLibrary.Jacobi.Generic) ← IO.mkRef none
-unsafe def BGeneric : HolLibrary.Jacobi.Generic :=
-  cached theGeneric "setupGeneric" fun _ => do
-    (HolLibrary.Jacobi.setupGeneric (deps ())).run
-
-initialize theJacobiDef : IO.Ref (Option HolLibrary.Jacobi.JacobiDef) ← IO.mkRef none
-unsafe def BJacobiDef : HolLibrary.Jacobi.JacobiDef :=
-  cached theJacobiDef "setupJacobiDef" fun _ => do
-    let _ ← IO.mkRef BGeneric.COPRIME_IPRODUCT
-    (HolLibrary.Jacobi.setupJacobiDef (deps ())).run
-
-initialize theJacobiEuler : IO.Ref (Option HolLibrary.Jacobi.JacobiEuler) ← IO.mkRef none
-unsafe def BJacobiEuler : HolLibrary.Jacobi.JacobiEuler :=
-  cached theJacobiEuler "setupJacobiEuler" fun _ => do
-    let _ ← IO.mkRef BJacobiDef.jacobi
-    (HolLibrary.Jacobi.setupJacobiEuler (deps ()) BJacobiDef).run
-
-initialize theGauss : IO.Ref (Option HolLibrary.Jacobi.Gauss) ← IO.mkRef none
-unsafe def BGauss : HolLibrary.Jacobi.Gauss :=
-  cached theGauss "setupGauss" fun _ => do
-    let _ ← IO.mkRef BJacobiEuler.JACOBI_EULER
-    (HolLibrary.Jacobi.setupGauss (deps ()) BGeneric BJacobiDef BJacobiEuler).run
-
-initialize theJacobiOf2 : IO.Ref (Option HolLibrary.Jacobi.JacobiOf2) ← IO.mkRef none
-unsafe def BJacobiOf2 : HolLibrary.Jacobi.JacobiOf2 :=
-  cached theJacobiOf2 "setupJacobiOf2" fun _ => do
-    let _ ← IO.mkRef BGauss.JACOBI_MINUS1
-    (HolLibrary.Jacobi.setupJacobiOf2 (deps ()) BJacobiDef BJacobiEuler BGauss).run
-
-initialize theOf2Cases : IO.Ref (Option HolLibrary.Jacobi.Of2Cases) ← IO.mkRef none
-unsafe def BOf2Cases : HolLibrary.Jacobi.Of2Cases :=
-  cached theOf2Cases "setupOf2Cases" fun _ => do
-    let _ ← IO.mkRef BJacobiOf2.JACOBI_OF_2
-    (HolLibrary.Jacobi.setupOf2Cases (deps ()) BJacobiOf2).run
-
-initialize theReciprocity : IO.Ref (Option HolLibrary.Jacobi.Reciprocity) ← IO.mkRef none
-unsafe def BReciprocity : HolLibrary.Jacobi.Reciprocity :=
-  cached theReciprocity "setupReciprocity" fun _ => do
-    let _ ← IO.mkRef BOf2Cases.JACOBI_OF_2_CASES
-    (HolLibrary.Jacobi.setupReciprocity (deps ()) BJacobiDef BJacobiEuler BGauss).run
-
-initialize theJacobi2 : IO.Ref (Option HolLibrary.Jacobi.Jacobi2) ← IO.mkRef none
-unsafe def BJacobi2 : HolLibrary.Jacobi.Jacobi2 :=
-  cached theJacobi2 "setupJacobi2" fun _ => do
-    let _ ← IO.mkRef BReciprocity.JACOBI_RECIPROCITY_ALT
-    (HolLibrary.Jacobi.setupJacobi2 (deps ()) BJacobiDef).run
-
-initialize theIntJacobi1 : IO.Ref (Option HolLibrary.Jacobi.IntJacobi1) ← IO.mkRef none
-unsafe def BIntJacobi1 : HolLibrary.Jacobi.IntJacobi1 :=
-  cached theIntJacobi1 "setupIntJacobi1" fun _ => do
-    let _ ← IO.mkRef BJacobi2.JACOBI_EQ_1
-    (HolLibrary.Jacobi.setupIntJacobi1 (deps ()) BJacobiDef BJacobiEuler).run
-
-initialize theIntJacobi2 : IO.Ref (Option HolLibrary.Jacobi.IntJacobi2) ← IO.mkRef none
-unsafe def BIntJacobi2 : HolLibrary.Jacobi.IntJacobi2 :=
-  cached theIntJacobi2 "setupIntJacobi2" fun _ => do
-    let _ ← IO.mkRef BIntJacobi1.int_jacobi
-    (HolLibrary.Jacobi.setupIntJacobi2 (deps ()) BJacobiDef BJacobiEuler BGauss BOf2Cases BIntJacobi1).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Generic
-unsafe def COPRIME_IPRODUCT : thm := BGeneric.COPRIME_IPRODUCT
-unsafe def CONG_IPRODUCT : thm := BGeneric.CONG_IPRODUCT
+def COPRIME_IPRODUCT : thm := BGeneric.COPRIME_IPRODUCT
+def CONG_IPRODUCT : thm := BGeneric.CONG_IPRODUCT
 
 -- JacobiDef
-unsafe def jacobi : thm := BJacobiDef.jacobi
-unsafe def JACOBI_BOUND : thm := BJacobiDef.JACOBI_BOUND
-unsafe def JACOBI_CASES : thm := BJacobiDef.JACOBI_CASES
-unsafe def JACOBI_PRIME : thm := BJacobiDef.JACOBI_PRIME
-unsafe def JACOBI : thm := BJacobiDef.JACOBI
-unsafe def JACOBI_ALT : thm := BJacobiDef.JACOBI_ALT
-unsafe def JACOBI_EQ_0 : thm := BJacobiDef.JACOBI_EQ_0
-unsafe def JACOBI_ZERO : thm := BJacobiDef.JACOBI_ZERO
-unsafe def JACOBI_1 : thm := BJacobiDef.JACOBI_1
-unsafe def JACOBI_0 : thm := BJacobiDef.JACOBI_0
-unsafe def JACOBI_2_CASES : thm := BJacobiDef.JACOBI_2_CASES
-unsafe def JACOBI_2 : thm := BJacobiDef.JACOBI_2
+def jacobi : thm := BJacobiDef.jacobi
+def JACOBI_BOUND : thm := BJacobiDef.JACOBI_BOUND
+def JACOBI_CASES : thm := BJacobiDef.JACOBI_CASES
+def JACOBI_PRIME : thm := BJacobiDef.JACOBI_PRIME
+def JACOBI : thm := BJacobiDef.JACOBI
+def JACOBI_ALT : thm := BJacobiDef.JACOBI_ALT
+def JACOBI_EQ_0 : thm := BJacobiDef.JACOBI_EQ_0
+def JACOBI_ZERO : thm := BJacobiDef.JACOBI_ZERO
+def JACOBI_1 : thm := BJacobiDef.JACOBI_1
+def JACOBI_0 : thm := BJacobiDef.JACOBI_0
+def JACOBI_2_CASES : thm := BJacobiDef.JACOBI_2_CASES
+def JACOBI_2 : thm := BJacobiDef.JACOBI_2
 
 -- JacobiEuler
-unsafe def JACOBI_EULER : thm := BJacobiEuler.JACOBI_EULER
-unsafe def JACOBI_EULER_ALT : thm := BJacobiEuler.JACOBI_EULER_ALT
-unsafe def JACOBI_RMUL : thm := BJacobiEuler.JACOBI_RMUL
-unsafe def JACOBI_LMUL : thm := BJacobiEuler.JACOBI_LMUL
-unsafe def JACOBI_REXP : thm := BJacobiEuler.JACOBI_REXP
-unsafe def JACOBI_LEXP : thm := BJacobiEuler.JACOBI_LEXP
-unsafe def JACOBI_EXP_2 : thm := BJacobiEuler.JACOBI_EXP_2
-unsafe def JACOBI_EXP_2_ALT : thm := BJacobiEuler.JACOBI_EXP_2_ALT
-unsafe def JACOBI_NPRODUCT_RIGHT : thm := BJacobiEuler.JACOBI_NPRODUCT_RIGHT
-unsafe def JACOBI_NPRODUCT_LEFT : thm := BJacobiEuler.JACOBI_NPRODUCT_LEFT
-unsafe def JACOBI_CONG : thm := BJacobiEuler.JACOBI_CONG
-unsafe def JACOBI_MOD_GEN : thm := BJacobiEuler.JACOBI_MOD_GEN
-unsafe def JACOBI_MOD : thm := BJacobiEuler.JACOBI_MOD
-unsafe def JACOBI_SQUARED : thm := BJacobiEuler.JACOBI_SQUARED
+def JACOBI_EULER : thm := BJacobiEuler.JACOBI_EULER
+def JACOBI_EULER_ALT : thm := BJacobiEuler.JACOBI_EULER_ALT
+def JACOBI_RMUL : thm := BJacobiEuler.JACOBI_RMUL
+def JACOBI_LMUL : thm := BJacobiEuler.JACOBI_LMUL
+def JACOBI_REXP : thm := BJacobiEuler.JACOBI_REXP
+def JACOBI_LEXP : thm := BJacobiEuler.JACOBI_LEXP
+def JACOBI_EXP_2 : thm := BJacobiEuler.JACOBI_EXP_2
+def JACOBI_EXP_2_ALT : thm := BJacobiEuler.JACOBI_EXP_2_ALT
+def JACOBI_NPRODUCT_RIGHT : thm := BJacobiEuler.JACOBI_NPRODUCT_RIGHT
+def JACOBI_NPRODUCT_LEFT : thm := BJacobiEuler.JACOBI_NPRODUCT_LEFT
+def JACOBI_CONG : thm := BJacobiEuler.JACOBI_CONG
+def JACOBI_MOD_GEN : thm := BJacobiEuler.JACOBI_MOD_GEN
+def JACOBI_MOD : thm := BJacobiEuler.JACOBI_MOD
+def JACOBI_SQUARED : thm := BJacobiEuler.JACOBI_SQUARED
 
 -- Gauss
-unsafe def JACOBI_MINUS1 : thm := BGauss.JACOBI_MINUS1
-unsafe def JACOBI_MINUS1_CASES : thm := BGauss.JACOBI_MINUS1_CASES
-unsafe def JACOBI_GAUSS_LEMMA : thm := BGauss.JACOBI_GAUSS_LEMMA
+def JACOBI_MINUS1 : thm := BGauss.JACOBI_MINUS1
+def JACOBI_MINUS1_CASES : thm := BGauss.JACOBI_MINUS1_CASES
+def JACOBI_GAUSS_LEMMA : thm := BGauss.JACOBI_GAUSS_LEMMA
 
 -- JacobiOf2
-unsafe def JACOBI_OF_2 : thm := BJacobiOf2.JACOBI_OF_2
+def JACOBI_OF_2 : thm := BJacobiOf2.JACOBI_OF_2
 
 -- Of2Cases
-unsafe def JACOBI_OF_2_CASES : thm := BOf2Cases.JACOBI_OF_2_CASES
+def JACOBI_OF_2_CASES : thm := BOf2Cases.JACOBI_OF_2_CASES
 
 -- Reciprocity
-unsafe def JACOBI_RECIPROCITY_ALT : thm := BReciprocity.JACOBI_RECIPROCITY_ALT
-unsafe def JACOBI_RECIPROCITY : thm := BReciprocity.JACOBI_RECIPROCITY
+def JACOBI_RECIPROCITY_ALT : thm := BReciprocity.JACOBI_RECIPROCITY_ALT
+def JACOBI_RECIPROCITY : thm := BReciprocity.JACOBI_RECIPROCITY
 
 -- Jacobi2
-unsafe def JACOBI_EQ_1 : thm := BJacobi2.JACOBI_EQ_1
-unsafe def JACOBI_NE_MINUS1 : thm := BJacobi2.JACOBI_NE_MINUS1
+def JACOBI_EQ_1 : thm := BJacobi2.JACOBI_EQ_1
+def JACOBI_NE_MINUS1 : thm := BJacobi2.JACOBI_NE_MINUS1
 
 -- IntJacobi1
-unsafe def int_jacobi : thm := BIntJacobi1.int_jacobi
-unsafe def INT_JACOBI_RNEG : thm := BIntJacobi1.INT_JACOBI_RNEG
-unsafe def INT_JACOBI_RABS : thm := BIntJacobi1.INT_JACOBI_RABS
-unsafe def INT_JACOBI_NUMS : thm := BIntJacobi1.INT_JACOBI_NUMS
-unsafe def INT_JACOBI_BOUND : thm := BIntJacobi1.INT_JACOBI_BOUND
-unsafe def INT_JACOBI_CASES : thm := BIntJacobi1.INT_JACOBI_CASES
-unsafe def INT_JACOBI_CONG : thm := BIntJacobi1.INT_JACOBI_CONG
-unsafe def INT_JACOBI_REM_GEN : thm := BIntJacobi1.INT_JACOBI_REM_GEN
-unsafe def INT_JACOBI_REM : thm := BIntJacobi1.INT_JACOBI_REM
-unsafe def INT_JACOBI_1 : thm := BIntJacobi1.INT_JACOBI_1
-unsafe def INT_JACOBI_0 : thm := BIntJacobi1.INT_JACOBI_0
+def int_jacobi : thm := BIntJacobi1.int_jacobi
+def INT_JACOBI_RNEG : thm := BIntJacobi1.INT_JACOBI_RNEG
+def INT_JACOBI_RABS : thm := BIntJacobi1.INT_JACOBI_RABS
+def INT_JACOBI_NUMS : thm := BIntJacobi1.INT_JACOBI_NUMS
+def INT_JACOBI_BOUND : thm := BIntJacobi1.INT_JACOBI_BOUND
+def INT_JACOBI_CASES : thm := BIntJacobi1.INT_JACOBI_CASES
+def INT_JACOBI_CONG : thm := BIntJacobi1.INT_JACOBI_CONG
+def INT_JACOBI_REM_GEN : thm := BIntJacobi1.INT_JACOBI_REM_GEN
+def INT_JACOBI_REM : thm := BIntJacobi1.INT_JACOBI_REM
+def INT_JACOBI_1 : thm := BIntJacobi1.INT_JACOBI_1
+def INT_JACOBI_0 : thm := BIntJacobi1.INT_JACOBI_0
 
 -- IntJacobi2
-unsafe def INT_JACOBI_RMUL : thm := BIntJacobi2.INT_JACOBI_RMUL
-unsafe def INT_JACOBI_LMUL : thm := BIntJacobi2.INT_JACOBI_LMUL
-unsafe def INT_JACOBI_RPOW : thm := BIntJacobi2.INT_JACOBI_RPOW
-unsafe def INT_JACOBI_LPOW : thm := BIntJacobi2.INT_JACOBI_LPOW
-unsafe def INT_JACOBI_2 : thm := BIntJacobi2.INT_JACOBI_2
-unsafe def INT_JACOBI_POW_2 : thm := BIntJacobi2.INT_JACOBI_POW_2
-unsafe def INT_JACOBI_EQ_0 : thm := BIntJacobi2.INT_JACOBI_EQ_0
-unsafe def INT_JACOBI_MINUS1 : thm := BIntJacobi2.INT_JACOBI_MINUS1
-unsafe def INT_JACOBI_OF_2 : thm := BIntJacobi2.INT_JACOBI_OF_2
-unsafe def INT_JACOBI_LNEG : thm := BIntJacobi2.INT_JACOBI_LNEG
-unsafe def INT_JACOBI_SQUARED : thm := BIntJacobi2.INT_JACOBI_SQUARED
--- @@EXPORTS END
-
-/-- `needs "Library/jacobi.ml"`: build the bundles, in order. -/
-unsafe def ensureJacobi : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BGeneric.COPRIME_IPRODUCT
-  let _ ← IO.mkRef BJacobiDef.jacobi
-  let _ ← IO.mkRef BJacobiEuler.JACOBI_EULER
-  let _ ← IO.mkRef BGauss.JACOBI_MINUS1
-  let _ ← IO.mkRef BJacobiOf2.JACOBI_OF_2
-  let _ ← IO.mkRef BOf2Cases.JACOBI_OF_2_CASES
-  let _ ← IO.mkRef BReciprocity.JACOBI_RECIPROCITY_ALT
-  let _ ← IO.mkRef BJacobi2.JACOBI_EQ_1
-  let _ ← IO.mkRef BIntJacobi1.int_jacobi
-  let _ ← IO.mkRef BIntJacobi2.INT_JACOBI_RMUL
-  -- @@ENSURE END
-  pure ()
+def INT_JACOBI_RMUL : thm := BIntJacobi2.INT_JACOBI_RMUL
+def INT_JACOBI_LMUL : thm := BIntJacobi2.INT_JACOBI_LMUL
+def INT_JACOBI_RPOW : thm := BIntJacobi2.INT_JACOBI_RPOW
+def INT_JACOBI_LPOW : thm := BIntJacobi2.INT_JACOBI_LPOW
+def INT_JACOBI_2 : thm := BIntJacobi2.INT_JACOBI_2
+def INT_JACOBI_POW_2 : thm := BIntJacobi2.INT_JACOBI_POW_2
+def INT_JACOBI_EQ_0 : thm := BIntJacobi2.INT_JACOBI_EQ_0
+def INT_JACOBI_MINUS1 : thm := BIntJacobi2.INT_JACOBI_MINUS1
+def INT_JACOBI_OF_2 : thm := BIntJacobi2.INT_JACOBI_OF_2
+def INT_JACOBI_LNEG : thm := BIntJacobi2.INT_JACOBI_LNEG
+def INT_JACOBI_SQUARED : thm := BIntJacobi2.INT_JACOBI_SQUARED
+/-- `needs "Library/jacobi.ml"`: already done by importing this module. -/
+def ensureJacobi : IO Unit := pure ()
 
 end SessionLibrary.Jacobi

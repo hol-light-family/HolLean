@@ -3,14 +3,14 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Primitive.lean
 
-  The `unsafe` half of the primitive.ml translation: it supplies HolLibrary.Primitive's
-  dependencies from Session and SessionLibrary.Integer, SessionLibrary.Isum, SessionLibrary.Binomial, SessionLibrary.Pocklington, SessionLibrary.Multiplicative, builds the bundles once, in order,
-  and exports every name under its HOL Light name.  `ensurePrimitive` is
-  `needs "Library/primitive.ml"` (which first does `needs "Library/integer.ml"`, `needs "Library/isum.ml"`, `needs "Library/binomial.ml"`, `needs "Library/pocklington.ml"`, `needs "Library/multiplicative.ml"`).
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Primitive.lean by tools/primitivediff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the primitive.ml translation: it supplies
+  HolLibrary.Primitive's dependencies from Session and SessionLibrary.Integer,
+  Isum, Binomial, Pocklington and Multiplicative, and exports every name
+  under its HOL Light name.  Importing this module is
+  `needs "Library/primitive.ml"`; its `needs` of integer.ml, isum.ml,
+  binomial.ml, pocklington.ml and multiplicative.ml are the imports of those
+  modules.  The bundles are built by `initialize` when the module is loaded,
+  in file order.
 -/
 
 import Session
@@ -26,12 +26,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Primitive
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems primitive.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Primitive.CoreThms1 where
+def core1 : HolLibrary.Primitive.CoreThms1 where
   ADD1 := Session.ADD1
   ADD_CLAUSES := Session.ADD_CLAUSES
   ADD_EQ_0 := Session.ADD_EQ_0
@@ -103,7 +99,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Primitive.CoreThms1 where
   DIVIDES_PRIMEPOW := SessionLibrary.Prime.«DIVIDES_PRIMEPOW»
   DIVIDES_PRIME_BINOM := SessionLibrary.Binomial.«DIVIDES_PRIME_BINOM»
 /-- The core theorems primitive.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Primitive.CoreThms2 where
+def core2 : HolLibrary.Primitive.CoreThms2 where
   DIVIDES_PRIME_PRIME := SessionLibrary.Prime.«DIVIDES_PRIME_PRIME»
   DIVIDES_REFL := SessionLibrary.Prime.«DIVIDES_REFL»
   DIVIDES_REXP := SessionLibrary.Prime.«DIVIDES_REXP»
@@ -175,7 +171,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.Primitive.CoreThms2 where
   HAS_SIZE_NUMSEG_LT := Session.HAS_SIZE_NUMSEG_LT
   IMP_CONJ := Session.IMP_CONJ
 /-- The core theorems primitive.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.Primitive.CoreThms3 where
+def core3 : HolLibrary.Primitive.CoreThms3 where
   IMP_CONJ_ALT := Session.IMP_CONJ_ALT
   IMP_IMP := Session.IMP_IMP
   INDEX_EQ_0 := SessionLibrary.Prime.«INDEX_EQ_0»
@@ -247,7 +243,7 @@ unsafe def core3 (_ : Unit) : HolLibrary.Primitive.CoreThms3 where
   LCM_SYM := SessionLibrary.Prime.«LCM_SYM»
   LE := Session.LE
 /-- The core theorems primitive.ml uses. -/
-unsafe def core4 (_ : Unit) : HolLibrary.Primitive.CoreThms4 where
+def core4 : HolLibrary.Primitive.CoreThms4 where
   LEFT_FORALL_IMP_THM := Session.LEFT_FORALL_IMP_THM
   LEFT_IMP_EXISTS_THM := Session.LEFT_IMP_EXISTS_THM
   LEFT_OR_DISTRIB := Session.LEFT_OR_DISTRIB
@@ -319,7 +315,7 @@ unsafe def core4 (_ : Unit) : HolLibrary.Primitive.CoreThms4 where
   ORDER_UNIQUE := SessionLibrary.Pocklington.«ORDER_UNIQUE»
   ORDER_UNIQUE_PRIME := SessionLibrary.Pocklington.«ORDER_UNIQUE_PRIME»
 /-- The core theorems primitive.ml uses. -/
-unsafe def core5 (_ : Unit) : HolLibrary.Primitive.CoreThms5 where
+def core5 : HolLibrary.Primitive.CoreThms5 where
   ORDER_WORKS := SessionLibrary.Pocklington.«ORDER_WORKS»
   PHI_0 := SessionLibrary.Pocklington.«PHI_0»
   PHI_1 := SessionLibrary.Pocklington.«PHI_1»
@@ -385,15 +381,14 @@ unsafe def core5 (_ : Unit) : HolLibrary.Primitive.CoreThms5 where
   prime := Session.prime
   real_pow := Session.real_pow
 /-- The core theorems primitive.ml uses. -/
-unsafe def core6 (_ : Unit) : HolLibrary.Primitive.CoreThms6 where
+def core6 : HolLibrary.Primitive.CoreThms6 where
 /-- The core theorems primitive.ml uses. -/
-unsafe def core7 (_ : Unit) : HolLibrary.Primitive.CoreThms7 where
+def core7 : HolLibrary.Primitive.CoreThms7 where
 /-- The core theorems primitive.ml uses. -/
-unsafe def core8 (_ : Unit) : HolLibrary.Primitive.CoreThms8 where
--- @@CORE END
+def core8 : HolLibrary.Primitive.CoreThms8 where
 
 /-- What primitive.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Primitive.PrimitiveDeps where
+def deps : HolLibrary.Primitive.PrimitiveDeps where
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
   ARITH_TAC := Session.ARITH_TAC
   ASM_ARITH_TAC := Session.ASM_ARITH_TAC
@@ -416,274 +411,162 @@ unsafe def deps (_ : Unit) : HolLibrary.Primitive.PrimitiveDeps where
   PRIME_CONV t := ExceptT.mk (SessionLibrary.Pocklington.PRIME_CONV t)
   EXPAND_CASES_CONV := Session.EXPAND_CASES_CONV
   COPRIME_CONV := SessionLibrary.Prime.COPRIME_CONV
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
-  core4 := core4 ()
-  core5 := core5 ()
-  core6 := core6 ()
-  core7 := core7 ()
-  core8 := core8 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
+  core4 := core4
+  core5 := core5
+  core6 := core6
+  core7 := core7
+  core8 := core8
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml), then integer.ml, isum.ml, binomial.ml, pocklington.ml, multiplicative.ml, which primitive.ml needs. -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      SessionLibrary.Integer.ensureInteger
-      SessionLibrary.Isum.ensureIsum
-      SessionLibrary.Binomial.ensureBinomial
-      SessionLibrary.Pocklington.ensurePocklington
-      SessionLibrary.Multiplicative.ensureMultiplicative
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Primitive: {name}"
+/-- Run one bundle's setup at load, failing the load if it fails. -/
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
 
-/- The bundles, in file order; each forces the one before it. -/
+/- The bundles, in primitive.ml order. -/
+initialize BLemma : HolLibrary.Primitive.Lemma ←
+  ioB "setupLemma" (HolLibrary.Primitive.setupLemma deps).run
+initialize BPolyDiff : HolLibrary.Primitive.PolyDiff ←
+  ioB "setupPolyDiff" (HolLibrary.Primitive.setupPolyDiff deps).run
+initialize BLagrange : HolLibrary.Primitive.Lagrange ←
+  ioB "setupLagrange" (HolLibrary.Primitive.setupLagrange deps BPolyDiff).run
+initialize BNumLagrange : HolLibrary.Primitive.NumLagrange ←
+  ioB "setupNumLagrange" (HolLibrary.Primitive.setupNumLagrange deps BLemma BLagrange).run
+initialize BCountOrders : HolLibrary.Primitive.CountOrders ←
+  ioB "setupCountOrders" (HolLibrary.Primitive.setupCountOrders deps BNumLagrange).run
+initialize BPrimitiveRoots : HolLibrary.Primitive.PrimitiveRoots ←
+  ioB "setupPrimitiveRoots" (HolLibrary.Primitive.setupPrimitiveRoots deps BCountOrders).run
+initialize BPrimePows1 : HolLibrary.Primitive.PrimePows1 ←
+  ioB "setupPrimePows1" (HolLibrary.Primitive.setupPrimePows1 deps BPrimitiveRoots).run
+initialize BPrimePows2 : HolLibrary.Primitive.PrimePows2 ←
+  ioB "setupPrimePows2" (HolLibrary.Primitive.setupPrimePows2 deps BPrimePows1).run
+initialize BDouble : HolLibrary.Primitive.Double ←
+  ioB "setupDouble" (HolLibrary.Primitive.setupDouble deps BPrimePows2).run
+initialize BDegenerate : HolLibrary.Primitive.Degenerate ←
+  ioB "setupDegenerate" (HolLibrary.Primitive.setupDegenerate deps).run
+initialize BNegative : HolLibrary.Primitive.Negative ←
+  ioB "setupNegative" (HolLibrary.Primitive.setupNegative deps).run
+initialize BEquivalences : HolLibrary.Primitive.Equivalences ←
+  ioB "setupEquivalences" (HolLibrary.Primitive.setupEquivalences deps BPrimePows2 BDouble
+    BDegenerate BNegative).run
+initialize BCountPrimitiveRoots : HolLibrary.Primitive.CountPrimitiveRoots ←
+  ioB "setupCountPrimitiveRoots"
+    (HolLibrary.Primitive.setupCountPrimitiveRoots deps BEquivalences).run
+initialize BCountRoots : HolLibrary.Primitive.CountRoots ←
+  ioB "setupCountRoots" (HolLibrary.Primitive.setupCountRoots deps BPrimitiveRoots).run
+initialize BQuadraticResidues : HolLibrary.Primitive.QuadraticResidues ←
+  ioB "setupQuadraticResidues" (HolLibrary.Primitive.setupQuadraticResidues deps).run
+initialize BEulerCriterion : HolLibrary.Primitive.EulerCriterion ←
+  ioB "setupEulerCriterion"
+    (HolLibrary.Primitive.setupEulerCriterion deps BEquivalences BCountRoots).run
+initialize BCountRootsOdd : HolLibrary.Primitive.CountRootsOdd ←
+  ioB "setupCountRootsOdd"
+    (HolLibrary.Primitive.setupCountRootsOdd deps BEquivalences BCountRoots).run
+initialize BCountRootsPrimitive : HolLibrary.Primitive.CountRootsPrimitive ←
+  ioB "setupCountRootsPrimitive"
+    (HolLibrary.Primitive.setupCountRootsPrimitive deps BCountRoots BCountRootsOdd).run
+initialize BQuadraticNonresidue : HolLibrary.Primitive.QuadraticNonresidue ←
+  ioB "setupQuadraticNonresidue" (HolLibrary.Primitive.setupQuadraticNonresidue deps
+    BEquivalences BCountRoots BQuadraticResidues).run
 
--- @@BUNDLES BEGIN
-initialize theLemma : IO.Ref (Option HolLibrary.Primitive.Lemma) ← IO.mkRef none
-unsafe def BLemma : HolLibrary.Primitive.Lemma :=
-  cached theLemma "setupLemma" fun _ => do
-    (HolLibrary.Primitive.setupLemma (deps ())).run
-
-initialize thePolyDiff : IO.Ref (Option HolLibrary.Primitive.PolyDiff) ← IO.mkRef none
-unsafe def BPolyDiff : HolLibrary.Primitive.PolyDiff :=
-  cached thePolyDiff "setupPolyDiff" fun _ => do
-    let _ ← IO.mkRef BLemma.INT_PRIME
-    (HolLibrary.Primitive.setupPolyDiff (deps ())).run
-
-initialize theLagrange : IO.Ref (Option HolLibrary.Primitive.Lagrange) ← IO.mkRef none
-unsafe def BLagrange : HolLibrary.Primitive.Lagrange :=
-  cached theLagrange "setupLagrange" fun _ => do
-    let _ ← IO.mkRef BPolyDiff.REAL_POLY_DIFF_EXPLICIT
-    (HolLibrary.Primitive.setupLagrange (deps ()) BPolyDiff).run
-
-initialize theNumLagrange : IO.Ref (Option HolLibrary.Primitive.NumLagrange) ← IO.mkRef none
-unsafe def BNumLagrange : HolLibrary.Primitive.NumLagrange :=
-  cached theNumLagrange "setupNumLagrange" fun _ => do
-    let _ ← IO.mkRef BLagrange.FINITE_INTSEG_RESTRICT
-    (HolLibrary.Primitive.setupNumLagrange (deps ()) BLemma BLagrange).run
-
-initialize theCountOrders : IO.Ref (Option HolLibrary.Primitive.CountOrders) ← IO.mkRef none
-unsafe def BCountOrders : HolLibrary.Primitive.CountOrders :=
-  cached theCountOrders "setupCountOrders" fun _ => do
-    let _ ← IO.mkRef BNumLagrange.NUM_LAGRANGE_LEMMA
-    (HolLibrary.Primitive.setupCountOrders (deps ()) BNumLagrange).run
-
-initialize thePrimitiveRoots : IO.Ref (Option HolLibrary.Primitive.PrimitiveRoots) ← IO.mkRef none
-unsafe def BPrimitiveRoots : HolLibrary.Primitive.PrimitiveRoots :=
-  cached thePrimitiveRoots "setupPrimitiveRoots" fun _ => do
-    let _ ← IO.mkRef BCountOrders.COUNT_ORDERS_MODULO_PRIME
-    (HolLibrary.Primitive.setupPrimitiveRoots (deps ()) BCountOrders).run
-
-initialize thePrimePows1 : IO.Ref (Option HolLibrary.Primitive.PrimePows1) ← IO.mkRef none
-unsafe def BPrimePows1 : HolLibrary.Primitive.PrimePows1 :=
-  cached thePrimePows1 "setupPrimePows1" fun _ => do
-    let _ ← IO.mkRef BPrimitiveRoots.PRIMITIVE_ROOTS_MODULO_PRIME
-    (HolLibrary.Primitive.setupPrimePows1 (deps ()) BPrimitiveRoots).run
-
-initialize thePrimePows2 : IO.Ref (Option HolLibrary.Primitive.PrimePows2) ← IO.mkRef none
-unsafe def BPrimePows2 : HolLibrary.Primitive.PrimePows2 :=
-  cached thePrimePows2 "setupPrimePows2" fun _ => do
-    let _ ← IO.mkRef BPrimePows1.COPRIME_1_PLUS_POWER_STEP
-    (HolLibrary.Primitive.setupPrimePows2 (deps ()) BPrimePows1).run
-
-initialize theDouble : IO.Ref (Option HolLibrary.Primitive.Double) ← IO.mkRef none
-unsafe def BDouble : HolLibrary.Primitive.Double :=
-  cached theDouble "setupDouble" fun _ => do
-    let _ ← IO.mkRef BPrimePows2.PRIMITIVE_ROOT_MODULO_PRIMEPOW
-    (HolLibrary.Primitive.setupDouble (deps ()) BPrimePows2).run
-
-initialize theDegenerate : IO.Ref (Option HolLibrary.Primitive.Degenerate) ← IO.mkRef none
-unsafe def BDegenerate : HolLibrary.Primitive.Degenerate :=
-  cached theDegenerate "setupDegenerate" fun _ => do
-    let _ ← IO.mkRef BDouble.PRIMITIVE_ROOT_MODULO_2
-    (HolLibrary.Primitive.setupDegenerate (deps ())).run
-
-initialize theNegative : IO.Ref (Option HolLibrary.Primitive.Negative) ← IO.mkRef none
-unsafe def BNegative : HolLibrary.Primitive.Negative :=
-  cached theNegative "setupNegative" fun _ => do
-    let _ ← IO.mkRef BDegenerate.PRIMITIVE_ROOT_MODULO_0
-    (HolLibrary.Primitive.setupNegative (deps ())).run
-
-initialize theEquivalences : IO.Ref (Option HolLibrary.Primitive.Equivalences) ← IO.mkRef none
-unsafe def BEquivalences : HolLibrary.Primitive.Equivalences :=
-  cached theEquivalences "setupEquivalences" fun _ => do
-    let _ ← IO.mkRef BNegative.CONG_TO_1_POW2
-    (HolLibrary.Primitive.setupEquivalences (deps ()) BPrimePows2 BDouble BDegenerate BNegative).run
-
-initialize theCountPrimitiveRoots : IO.Ref (Option HolLibrary.Primitive.CountPrimitiveRoots) ← IO.mkRef none
-unsafe def BCountPrimitiveRoots : HolLibrary.Primitive.CountPrimitiveRoots :=
-  cached theCountPrimitiveRoots "setupCountPrimitiveRoots" fun _ => do
-    let _ ← IO.mkRef BEquivalences.PRIMITIVE_ROOT_EXISTS
-    (HolLibrary.Primitive.setupCountPrimitiveRoots (deps ()) BEquivalences).run
-
-initialize theCountRoots : IO.Ref (Option HolLibrary.Primitive.CountRoots) ← IO.mkRef none
-unsafe def BCountRoots : HolLibrary.Primitive.CountRoots :=
-  cached theCountRoots "setupCountRoots" fun _ => do
-    let _ ← IO.mkRef BCountPrimitiveRoots.COUNT_PRIMITIVE_ROOTS_ALT
-    (HolLibrary.Primitive.setupCountRoots (deps ()) BPrimitiveRoots).run
-
-initialize theQuadraticResidues : IO.Ref (Option HolLibrary.Primitive.QuadraticResidues) ← IO.mkRef none
-unsafe def BQuadraticResidues : HolLibrary.Primitive.QuadraticResidues :=
-  cached theQuadraticResidues "setupQuadraticResidues" fun _ => do
-    let _ ← IO.mkRef BCountRoots.COUNT_ROOTS_MODULO_PRIMITIVE_GEN_ALT
-    (HolLibrary.Primitive.setupQuadraticResidues (deps ())).run
-
-initialize theEulerCriterion : IO.Ref (Option HolLibrary.Primitive.EulerCriterion) ← IO.mkRef none
-unsafe def BEulerCriterion : HolLibrary.Primitive.EulerCriterion :=
-  cached theEulerCriterion "setupEulerCriterion" fun _ => do
-    let _ ← IO.mkRef BQuadraticResidues.INT_OF_NUM_POWER_RESIDUE
-    (HolLibrary.Primitive.setupEulerCriterion (deps ()) BEquivalences BCountRoots).run
-
-initialize theCountRootsOdd : IO.Ref (Option HolLibrary.Primitive.CountRootsOdd) ← IO.mkRef none
-unsafe def BCountRootsOdd : HolLibrary.Primitive.CountRootsOdd :=
-  cached theCountRootsOdd "setupCountRootsOdd" fun _ => do
-    let _ ← IO.mkRef BEulerCriterion.GENERALIZED_EULER_CRITERION
-    (HolLibrary.Primitive.setupCountRootsOdd (deps ()) BEquivalences BCountRoots).run
-
-initialize theCountRootsPrimitive : IO.Ref (Option HolLibrary.Primitive.CountRootsPrimitive) ← IO.mkRef none
-unsafe def BCountRootsPrimitive : HolLibrary.Primitive.CountRootsPrimitive :=
-  cached theCountRootsPrimitive "setupCountRootsPrimitive" fun _ => do
-    let _ ← IO.mkRef BCountRootsOdd.COUNT_ROOTS_MODULO_ODD_GEN
-    (HolLibrary.Primitive.setupCountRootsPrimitive (deps ()) BCountRoots BCountRootsOdd).run
-
-initialize theQuadraticNonresidue : IO.Ref (Option HolLibrary.Primitive.QuadraticNonresidue) ← IO.mkRef none
-unsafe def BQuadraticNonresidue : HolLibrary.Primitive.QuadraticNonresidue :=
-  cached theQuadraticNonresidue "setupQuadraticNonresidue" fun _ => do
-    let _ ← IO.mkRef BCountRootsPrimitive.COUNT_ROOTS_MODULO_PRIMITIVE_ALT
-    (HolLibrary.Primitive.setupQuadraticNonresidue (deps ()) BEquivalences BCountRoots BQuadraticResidues).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Lemma
-unsafe def INT_PRIME : thm := BLemma.INT_PRIME
+def INT_PRIME : thm := BLemma.INT_PRIME
 
 -- PolyDiff
-unsafe def REAL_POLY_DIFF_EXPLICIT : thm := BPolyDiff.REAL_POLY_DIFF_EXPLICIT
-unsafe def INT_POLY_DIFF_EXPLICIT : thm := BPolyDiff.INT_POLY_DIFF_EXPLICIT
+def REAL_POLY_DIFF_EXPLICIT : thm := BPolyDiff.REAL_POLY_DIFF_EXPLICIT
+def INT_POLY_DIFF_EXPLICIT : thm := BPolyDiff.INT_POLY_DIFF_EXPLICIT
 
 -- Lagrange
-unsafe def FINITE_INTSEG_RESTRICT : thm := BLagrange.FINITE_INTSEG_RESTRICT
-unsafe def INT_POLY_LAGRANGE : thm := BLagrange.INT_POLY_LAGRANGE
+def FINITE_INTSEG_RESTRICT : thm := BLagrange.FINITE_INTSEG_RESTRICT
+def INT_POLY_LAGRANGE : thm := BLagrange.INT_POLY_LAGRANGE
 
 -- NumLagrange
-unsafe def NUM_LAGRANGE_LEMMA : thm := BNumLagrange.NUM_LAGRANGE_LEMMA
+def NUM_LAGRANGE_LEMMA : thm := BNumLagrange.NUM_LAGRANGE_LEMMA
 
 -- CountOrders
-unsafe def COUNT_ORDERS_MODULO_PRIME : thm := BCountOrders.COUNT_ORDERS_MODULO_PRIME
+def COUNT_ORDERS_MODULO_PRIME : thm := BCountOrders.COUNT_ORDERS_MODULO_PRIME
 
 -- PrimitiveRoots
-unsafe def PRIMITIVE_ROOTS_MODULO_PRIME : thm := BPrimitiveRoots.PRIMITIVE_ROOTS_MODULO_PRIME
-unsafe def PRIMITIVE_ROOT_MODULO_PRIME : thm := BPrimitiveRoots.PRIMITIVE_ROOT_MODULO_PRIME
+def PRIMITIVE_ROOTS_MODULO_PRIME : thm := BPrimitiveRoots.PRIMITIVE_ROOTS_MODULO_PRIME
+def PRIMITIVE_ROOT_MODULO_PRIME : thm := BPrimitiveRoots.PRIMITIVE_ROOT_MODULO_PRIME
 
 -- PrimePows1
-unsafe def COPRIME_1_PLUS_POWER_STEP : thm := BPrimePows1.COPRIME_1_PLUS_POWER_STEP
-unsafe def COPRIME_1_PLUS_POWER : thm := BPrimePows1.COPRIME_1_PLUS_POWER
-unsafe def PRIMITIVE_ROOT_MODULO_PRIMEPOWS : thm := BPrimePows1.PRIMITIVE_ROOT_MODULO_PRIMEPOWS
+def COPRIME_1_PLUS_POWER_STEP : thm := BPrimePows1.COPRIME_1_PLUS_POWER_STEP
+def COPRIME_1_PLUS_POWER : thm := BPrimePows1.COPRIME_1_PLUS_POWER
+def PRIMITIVE_ROOT_MODULO_PRIMEPOWS : thm := BPrimePows1.PRIMITIVE_ROOT_MODULO_PRIMEPOWS
 
 -- PrimePows2
-unsafe def PRIMITIVE_ROOT_MODULO_PRIMEPOW : thm := BPrimePows2.PRIMITIVE_ROOT_MODULO_PRIMEPOW
-unsafe def PRIME_DIVISOR_ORDER_EXISTS : thm := BPrimePows2.PRIME_DIVISOR_ORDER_EXISTS
-unsafe def INJECTIVE_EXP_MODULO_EQ : thm := BPrimePows2.INJECTIVE_EXP_MODULO_EQ
-unsafe def POWER_RESIDUE_MODULO_EQ_ALT : thm := BPrimePows2.POWER_RESIDUE_MODULO_EQ_ALT
-unsafe def POWER_RESIDUE_MODULO_EQ : thm := BPrimePows2.POWER_RESIDUE_MODULO_EQ
+def PRIMITIVE_ROOT_MODULO_PRIMEPOW : thm := BPrimePows2.PRIMITIVE_ROOT_MODULO_PRIMEPOW
+def PRIME_DIVISOR_ORDER_EXISTS : thm := BPrimePows2.PRIME_DIVISOR_ORDER_EXISTS
+def INJECTIVE_EXP_MODULO_EQ : thm := BPrimePows2.INJECTIVE_EXP_MODULO_EQ
+def POWER_RESIDUE_MODULO_EQ_ALT : thm := BPrimePows2.POWER_RESIDUE_MODULO_EQ_ALT
+def POWER_RESIDUE_MODULO_EQ : thm := BPrimePows2.POWER_RESIDUE_MODULO_EQ
 
 -- Double
-unsafe def PRIMITIVE_ROOT_MODULO_2 : thm := BDouble.PRIMITIVE_ROOT_MODULO_2
-unsafe def PRIMITIVE_ROOT_MODULO_4 : thm := BDouble.PRIMITIVE_ROOT_MODULO_4
-unsafe def PRIMITIVE_ROOT_DOUBLE_LEMMA : thm := BDouble.PRIMITIVE_ROOT_DOUBLE_LEMMA
-unsafe def PRIMITIVE_ROOT_MODULO_DOUBLE_PRIMEPOW : thm := BDouble.PRIMITIVE_ROOT_MODULO_DOUBLE_PRIMEPOW
+def PRIMITIVE_ROOT_MODULO_2 : thm := BDouble.PRIMITIVE_ROOT_MODULO_2
+def PRIMITIVE_ROOT_MODULO_4 : thm := BDouble.PRIMITIVE_ROOT_MODULO_4
+def PRIMITIVE_ROOT_DOUBLE_LEMMA : thm := BDouble.PRIMITIVE_ROOT_DOUBLE_LEMMA
+def PRIMITIVE_ROOT_MODULO_DOUBLE_PRIMEPOW : thm := BDouble.PRIMITIVE_ROOT_MODULO_DOUBLE_PRIMEPOW
 
 -- Degenerate
-unsafe def PRIMITIVE_ROOT_MODULO_0 : thm := BDegenerate.PRIMITIVE_ROOT_MODULO_0
-unsafe def PRIMITIVE_ROOT_MODULO_1 : thm := BDegenerate.PRIMITIVE_ROOT_MODULO_1
+def PRIMITIVE_ROOT_MODULO_0 : thm := BDegenerate.PRIMITIVE_ROOT_MODULO_0
+def PRIMITIVE_ROOT_MODULO_1 : thm := BDegenerate.PRIMITIVE_ROOT_MODULO_1
 
 -- Negative
-unsafe def CONG_TO_1_POW2 : thm := BNegative.CONG_TO_1_POW2
-unsafe def NO_PRIMITIVE_ROOT_MODULO_POW2 : thm := BNegative.NO_PRIMITIVE_ROOT_MODULO_POW2
-unsafe def NO_PRIMITIVE_ROOT_MODULO_COMPOSITE : thm := BNegative.NO_PRIMITIVE_ROOT_MODULO_COMPOSITE
+def CONG_TO_1_POW2 : thm := BNegative.CONG_TO_1_POW2
+def NO_PRIMITIVE_ROOT_MODULO_POW2 : thm := BNegative.NO_PRIMITIVE_ROOT_MODULO_POW2
+def NO_PRIMITIVE_ROOT_MODULO_COMPOSITE : thm := BNegative.NO_PRIMITIVE_ROOT_MODULO_COMPOSITE
 
 -- Equivalences
-unsafe def PRIMITIVE_ROOT_EXISTS : thm := BEquivalences.PRIMITIVE_ROOT_EXISTS
-unsafe def PRIMITIVE_ROOT_EXISTS_NONTRIVIAL : thm := BEquivalences.PRIMITIVE_ROOT_EXISTS_NONTRIVIAL
+def PRIMITIVE_ROOT_EXISTS : thm := BEquivalences.PRIMITIVE_ROOT_EXISTS
+def PRIMITIVE_ROOT_EXISTS_NONTRIVIAL : thm := BEquivalences.PRIMITIVE_ROOT_EXISTS_NONTRIVIAL
 
 -- CountPrimitiveRoots
-unsafe def COUNT_PRIMITIVE_ROOTS_ALT : thm := BCountPrimitiveRoots.COUNT_PRIMITIVE_ROOTS_ALT
-unsafe def COUNT_PRIMITIVE_ROOTS : thm := BCountPrimitiveRoots.COUNT_PRIMITIVE_ROOTS
+def COUNT_PRIMITIVE_ROOTS_ALT : thm := BCountPrimitiveRoots.COUNT_PRIMITIVE_ROOTS_ALT
+def COUNT_PRIMITIVE_ROOTS : thm := BCountPrimitiveRoots.COUNT_PRIMITIVE_ROOTS
 
 -- CountRoots
-unsafe def COUNT_ROOTS_MODULO_PRIMITIVE_GEN_ALT : thm := BCountRoots.COUNT_ROOTS_MODULO_PRIMITIVE_GEN_ALT
-unsafe def COUNT_ROOTS_MODULO_PRIMITIVE_GEN : thm := BCountRoots.COUNT_ROOTS_MODULO_PRIMITIVE_GEN
-unsafe def POWER_RESIDUE_MODULO_PRIMITIVE : thm := BCountRoots.POWER_RESIDUE_MODULO_PRIMITIVE
-unsafe def POWER_RESIDUE_MODULO_PRIME_EQ : thm := BCountRoots.POWER_RESIDUE_MODULO_PRIME_EQ
-unsafe def POWER_RESIDUE_MODULO_PRIMITIVE_ORDER_ALT : thm := BCountRoots.POWER_RESIDUE_MODULO_PRIMITIVE_ORDER_ALT
-unsafe def POWER_RESIDUE_MODULO_PRIMITIVE_ORDER : thm := BCountRoots.POWER_RESIDUE_MODULO_PRIMITIVE_ORDER
-unsafe def QUADRATIC_RESIDUE_MODULO_PRIMITIVE_ORDER : thm := BCountRoots.QUADRATIC_RESIDUE_MODULO_PRIMITIVE_ORDER
-unsafe def POWER_RESIDUE_MODULO_PRIMITIVE_POWER : thm := BCountRoots.POWER_RESIDUE_MODULO_PRIMITIVE_POWER
-unsafe def QUADRATIC_RESIDUE_MODULO_PRIMITIVE_POWER : thm := BCountRoots.QUADRATIC_RESIDUE_MODULO_PRIMITIVE_POWER
-unsafe def COUNT_POWER_RESIDUES_MODULO_PRIMITIVE : thm := BCountRoots.COUNT_POWER_RESIDUES_MODULO_PRIMITIVE
-unsafe def COUNT_QUADRATIC_RESIDUES_MODULO_PRIMITIVE : thm := BCountRoots.COUNT_QUADRATIC_RESIDUES_MODULO_PRIMITIVE
+def COUNT_ROOTS_MODULO_PRIMITIVE_GEN_ALT : thm := BCountRoots.COUNT_ROOTS_MODULO_PRIMITIVE_GEN_ALT
+def COUNT_ROOTS_MODULO_PRIMITIVE_GEN : thm := BCountRoots.COUNT_ROOTS_MODULO_PRIMITIVE_GEN
+def POWER_RESIDUE_MODULO_PRIMITIVE : thm := BCountRoots.POWER_RESIDUE_MODULO_PRIMITIVE
+def POWER_RESIDUE_MODULO_PRIME_EQ : thm := BCountRoots.POWER_RESIDUE_MODULO_PRIME_EQ
+def POWER_RESIDUE_MODULO_PRIMITIVE_ORDER_ALT : thm := BCountRoots.POWER_RESIDUE_MODULO_PRIMITIVE_ORDER_ALT
+def POWER_RESIDUE_MODULO_PRIMITIVE_ORDER : thm := BCountRoots.POWER_RESIDUE_MODULO_PRIMITIVE_ORDER
+def QUADRATIC_RESIDUE_MODULO_PRIMITIVE_ORDER : thm := BCountRoots.QUADRATIC_RESIDUE_MODULO_PRIMITIVE_ORDER
+def POWER_RESIDUE_MODULO_PRIMITIVE_POWER : thm := BCountRoots.POWER_RESIDUE_MODULO_PRIMITIVE_POWER
+def QUADRATIC_RESIDUE_MODULO_PRIMITIVE_POWER : thm := BCountRoots.QUADRATIC_RESIDUE_MODULO_PRIMITIVE_POWER
+def COUNT_POWER_RESIDUES_MODULO_PRIMITIVE : thm := BCountRoots.COUNT_POWER_RESIDUES_MODULO_PRIMITIVE
+def COUNT_QUADRATIC_RESIDUES_MODULO_PRIMITIVE : thm := BCountRoots.COUNT_QUADRATIC_RESIDUES_MODULO_PRIMITIVE
 
 -- QuadraticResidues
-unsafe def INT_OF_NUM_POWER_RESIDUE : thm := BQuadraticResidues.INT_OF_NUM_POWER_RESIDUE
-unsafe def QUADRATIC_RESIDUE_MODULO_ODD_POWER : thm := BQuadraticResidues.QUADRATIC_RESIDUE_MODULO_ODD_POWER
-unsafe def QUADRATIC_RESIDUE_MODULO_POWER_2_STABLE : thm := BQuadraticResidues.QUADRATIC_RESIDUE_MODULO_POWER_2_STABLE
-unsafe def QUADRATIC_RESIDUE_MODULO_POWER_2 : thm := BQuadraticResidues.QUADRATIC_RESIDUE_MODULO_POWER_2
+def INT_OF_NUM_POWER_RESIDUE : thm := BQuadraticResidues.INT_OF_NUM_POWER_RESIDUE
+def QUADRATIC_RESIDUE_MODULO_ODD_POWER : thm := BQuadraticResidues.QUADRATIC_RESIDUE_MODULO_ODD_POWER
+def QUADRATIC_RESIDUE_MODULO_POWER_2_STABLE : thm := BQuadraticResidues.QUADRATIC_RESIDUE_MODULO_POWER_2_STABLE
+def QUADRATIC_RESIDUE_MODULO_POWER_2 : thm := BQuadraticResidues.QUADRATIC_RESIDUE_MODULO_POWER_2
 
 -- EulerCriterion
-unsafe def GENERALIZED_EULER_CRITERION : thm := BEulerCriterion.GENERALIZED_EULER_CRITERION
-unsafe def GENERALIZED_EULER_CRITERION_PRIME : thm := BEulerCriterion.GENERALIZED_EULER_CRITERION_PRIME
-unsafe def EULER_CRITERION : thm := BEulerCriterion.EULER_CRITERION
+def GENERALIZED_EULER_CRITERION : thm := BEulerCriterion.GENERALIZED_EULER_CRITERION
+def GENERALIZED_EULER_CRITERION_PRIME : thm := BEulerCriterion.GENERALIZED_EULER_CRITERION_PRIME
+def EULER_CRITERION : thm := BEulerCriterion.EULER_CRITERION
 
 -- CountRootsOdd
-unsafe def COUNT_ROOTS_MODULO_ODD_GEN : thm := BCountRootsOdd.COUNT_ROOTS_MODULO_ODD_GEN
-unsafe def COUNT_ROOTS_MODULO_ODD_ALT_GEN : thm := BCountRootsOdd.COUNT_ROOTS_MODULO_ODD_ALT_GEN
-unsafe def POWER_RESIDUE_MODULO_ODD : thm := BCountRootsOdd.POWER_RESIDUE_MODULO_ODD
+def COUNT_ROOTS_MODULO_ODD_GEN : thm := BCountRootsOdd.COUNT_ROOTS_MODULO_ODD_GEN
+def COUNT_ROOTS_MODULO_ODD_ALT_GEN : thm := BCountRootsOdd.COUNT_ROOTS_MODULO_ODD_ALT_GEN
+def POWER_RESIDUE_MODULO_ODD : thm := BCountRootsOdd.POWER_RESIDUE_MODULO_ODD
 
 -- CountRootsPrimitive
-unsafe def COUNT_ROOTS_MODULO_PRIMITIVE_ALT : thm := BCountRootsPrimitive.COUNT_ROOTS_MODULO_PRIMITIVE_ALT
-unsafe def COUNT_ROOTS_MODULO_PRIMITIVE : thm := BCountRootsPrimitive.COUNT_ROOTS_MODULO_PRIMITIVE
-unsafe def COUNT_ROOTS_MODULO_ODD_ALT : thm := BCountRootsPrimitive.COUNT_ROOTS_MODULO_ODD_ALT
-unsafe def COUNT_ROOTS_MODULO_ODD : thm := BCountRootsPrimitive.COUNT_ROOTS_MODULO_ODD
-unsafe def POWER_RESIDUE_EXISTS : thm := BCountRootsPrimitive.POWER_RESIDUE_EXISTS
+def COUNT_ROOTS_MODULO_PRIMITIVE_ALT : thm := BCountRootsPrimitive.COUNT_ROOTS_MODULO_PRIMITIVE_ALT
+def COUNT_ROOTS_MODULO_PRIMITIVE : thm := BCountRootsPrimitive.COUNT_ROOTS_MODULO_PRIMITIVE
+def COUNT_ROOTS_MODULO_ODD_ALT : thm := BCountRootsPrimitive.COUNT_ROOTS_MODULO_ODD_ALT
+def COUNT_ROOTS_MODULO_ODD : thm := BCountRootsPrimitive.COUNT_ROOTS_MODULO_ODD
+def POWER_RESIDUE_EXISTS : thm := BCountRootsPrimitive.POWER_RESIDUE_EXISTS
 
 -- QuadraticNonresidue
-unsafe def QUADRATIC_NONRESIDUE_EXISTS : thm := BQuadraticNonresidue.QUADRATIC_NONRESIDUE_EXISTS
--- @@EXPORTS END
-
-/-- `needs "Library/primitive.ml"`: build the bundles, in order. -/
-unsafe def ensurePrimitive : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BLemma.INT_PRIME
-  let _ ← IO.mkRef BPolyDiff.REAL_POLY_DIFF_EXPLICIT
-  let _ ← IO.mkRef BLagrange.FINITE_INTSEG_RESTRICT
-  let _ ← IO.mkRef BNumLagrange.NUM_LAGRANGE_LEMMA
-  let _ ← IO.mkRef BCountOrders.COUNT_ORDERS_MODULO_PRIME
-  let _ ← IO.mkRef BPrimitiveRoots.PRIMITIVE_ROOTS_MODULO_PRIME
-  let _ ← IO.mkRef BPrimePows1.COPRIME_1_PLUS_POWER_STEP
-  let _ ← IO.mkRef BPrimePows2.PRIMITIVE_ROOT_MODULO_PRIMEPOW
-  let _ ← IO.mkRef BDouble.PRIMITIVE_ROOT_MODULO_2
-  let _ ← IO.mkRef BDegenerate.PRIMITIVE_ROOT_MODULO_0
-  let _ ← IO.mkRef BNegative.CONG_TO_1_POW2
-  let _ ← IO.mkRef BEquivalences.PRIMITIVE_ROOT_EXISTS
-  let _ ← IO.mkRef BCountPrimitiveRoots.COUNT_PRIMITIVE_ROOTS_ALT
-  let _ ← IO.mkRef BCountRoots.COUNT_ROOTS_MODULO_PRIMITIVE_GEN_ALT
-  let _ ← IO.mkRef BQuadraticResidues.INT_OF_NUM_POWER_RESIDUE
-  let _ ← IO.mkRef BEulerCriterion.GENERALIZED_EULER_CRITERION
-  let _ ← IO.mkRef BCountRootsOdd.COUNT_ROOTS_MODULO_ODD_GEN
-  let _ ← IO.mkRef BCountRootsPrimitive.COUNT_ROOTS_MODULO_PRIMITIVE_ALT
-  let _ ← IO.mkRef BQuadraticNonresidue.QUADRATIC_NONRESIDUE_EXISTS  -- @@ENSURE END
-  pure ()
+def QUADRATIC_NONRESIDUE_EXISTS : thm := BQuadraticNonresidue.QUADRATIC_NONRESIDUE_EXISTS
+/-- `needs "Library/primitive.ml"`: already done by importing this module. -/
+def ensurePrimitive : IO Unit := pure ()
 
 end SessionLibrary.Primitive

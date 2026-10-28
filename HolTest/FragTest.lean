@@ -11,7 +11,7 @@ MONOIDAL_FRAG_ADD) are omitted here; the FRAG_MODULE rule is tested on terms
 given a concrete `:(num)frag` type so its output prints cleanly. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Frag
 
 open HolCore.Kernel HolTest.CommonTest
 

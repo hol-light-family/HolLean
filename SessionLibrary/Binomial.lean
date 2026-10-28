@@ -3,14 +3,11 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Binomial.lean
 
-  The `unsafe` half of the binomial.ml translation: it supplies
-  HolLibrary.Binomial's dependencies from Session, builds the bundle once,
-  and exports every name under its HOL Light name.  `ensureBinomial` is
-  `needs "Library/binomial.ml"`.
-
-  The blocks between `@@CORE` and `@@EXPORTS` markers are generated from
-  HolLibrary/Binomial.lean by tools/binomialdiff/gen_session.py and scope.py
-  (bookkeeping only: field-by-field copies and accessors).
+  The session half of the binomial.ml translation: it supplies
+  HolLibrary.Binomial's dependencies from Session and exports every name
+  under its HOL Light name.  Importing this module is
+  `needs "Library/binomial.ml"`: the bundle is built by `initialize` when the
+  module is loaded.
 -/
 
 import Session
@@ -21,12 +18,8 @@ open HolCore.Equal (ioconv)
 
 namespace SessionLibrary.Binomial
 
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨Session.sessionB, Session.sessionC, Session.sessionT⟩
-
--- @@CORE BEGIN
 /-- The core theorems binomial.ml uses. -/
-unsafe def core1 (_ : Unit) : HolLibrary.Binomial.CoreThms1 where
+def core1 : HolLibrary.Binomial.CoreThms1 where
   ADD1 := Session.ADD1
   ADD_0 := Session.ADD_0
   ADD_AC := Session.ADD_AC
@@ -68,7 +61,7 @@ unsafe def core1 (_ : Unit) : HolLibrary.Binomial.CoreThms1 where
   IN_NUMSEG := Session.IN_NUMSEG
   IN_SING := Session.IN_SING
 /-- The core theorems binomial.ml uses. -/
-unsafe def core2 (_ : Unit) : HolLibrary.Binomial.CoreThms2 where
+def core2 : HolLibrary.Binomial.CoreThms2 where
   LEFT_IMP_EXISTS_THM := Session.LEFT_IMP_EXISTS_THM
   LE_0 := Session.LE_0
   LE_EXISTS := Session.LE_EXISTS
@@ -112,7 +105,7 @@ unsafe def core2 (_ : Unit) : HolLibrary.Binomial.CoreThms2 where
   REAL_OF_NUM_MUL := Session.REAL_OF_NUM_MUL
   REAL_OF_NUM_SUB := Session.REAL_OF_NUM_SUB
 /-- The core theorems binomial.ml uses. -/
-unsafe def core3 (_ : Unit) : HolLibrary.Binomial.CoreThms3 where
+def core3 : HolLibrary.Binomial.CoreThms3 where
   RIGHT_ADD_DISTRIB := Session.RIGHT_ADD_DISTRIB
   SUBSET_EMPTY := Session.SUBSET_EMPTY
   SUB_0 := Session.SUB_0
@@ -130,10 +123,10 @@ unsafe def core3 (_ : Unit) : HolLibrary.Binomial.CoreThms3 where
   SUM_RMUL := Session.SUM_RMUL
   SUM_SING_NUMSEG := Session.SUM_SING_NUMSEG
   SUM_SUM_PRODUCT := Session.SUM_SUM_PRODUCT
-  real_pow := Session.real_pow-- @@CORE END
+  real_pow := Session.real_pow
 
 /-- What binomial.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Binomial.BinomialDeps where
+def deps : HolLibrary.Binomial.BinomialDeps where
   define s := do ExceptT.mk (Session.define (← HolLight.q s))
   mk_numeral := Session.mk_numeral
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
@@ -156,77 +149,48 @@ unsafe def deps (_ : Unit) : HolLibrary.Binomial.BinomialDeps where
   NUM_LT_CONV := Session.NUM_LT_CONV
   NUM_SUB_CONV := Session.NUM_SUB_CONV
   NUM_SUC_CONV := Session.NUM_SUC_CONV
-  core1 := core1 ()
-  core2 := core2 ()
-  core3 := core3 ()
+  core1 := core1
+  core2 := core2
+  core3 := core3
 
-/-- Build a bundle once.  `setup` is a thunk, so that `deps` is not built
-    before the bundle is needed.  The whole core library is built first
-    (`Session.ensureDefine`, and MATCH_CONV's basic conversions, which HOL
-    Light adds loading ind_types.ml). -/
-private unsafe def cached {α : Type} [Inhabited α] (r : IO.Ref (Option α)) (name : String)
-    (setup : Unit → IO (Except String α)) : α :=
-  match unsafeIO (do
-    match ← r.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      let _ ← Session.MATCH_CONV (HolCore.Kernel.mk_var "p" HolCore.Kernel.bool_ty)
-      match ← setup () with
-      | .ok d => do r.set (some d); pure d
-      | .error e => panic! s!"{name} failed: {e}") with
-  | .ok d => d | _ => panic! s!"SessionLibrary.Binomial: {name}"
+/-- binomial.ml, run when this module is loaded. -/
+initialize BBinomial : HolLibrary.Binomial.Binomial ← do
+  match ← (HolLibrary.Binomial.setupBinomial deps).run with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"setupBinomial failed: {e}")
 
-/- The bundle, in binomial.ml order. -/
-
--- @@BUNDLES BEGIN
-initialize theBinomial : IO.Ref (Option HolLibrary.Binomial.Binomial) ← IO.mkRef none
-unsafe def BBinomial : HolLibrary.Binomial.Binomial :=
-  cached theBinomial "setupBinomial" fun _ => do
-    (HolLibrary.Binomial.setupBinomial (deps ())).run
-
--- @@BUNDLES END
-
--- @@EXPORTS BEGIN
 -- Binomial
-unsafe def binom : thm := BBinomial.binom
-unsafe def BINOM_0 : thm := BBinomial.BINOM_0
-unsafe def BINOM_LT : thm := BBinomial.BINOM_LT
-unsafe def BINOM_REFL : thm := BBinomial.BINOM_REFL
-unsafe def BINOM_1 : thm := BBinomial.BINOM_1
-unsafe def BINOM_FACT : thm := BBinomial.BINOM_FACT
-unsafe def BINOM_EQ_0 : thm := BBinomial.BINOM_EQ_0
-unsafe def BINOM_PENULT : thm := BBinomial.BINOM_PENULT
-unsafe def BINOM_GE_TOP : thm := BBinomial.BINOM_GE_TOP
-unsafe def BINOM_TOP_STEP : thm := BBinomial.BINOM_TOP_STEP
-unsafe def BINOM_BOTTOM_STEP : thm := BBinomial.BINOM_BOTTOM_STEP
-unsafe def HAS_SIZE_RESTRICTED_POWERSET : thm := BBinomial.HAS_SIZE_RESTRICTED_POWERSET
-unsafe def CARD_RESTRICTED_POWERSET : thm := BBinomial.CARD_RESTRICTED_POWERSET
-unsafe def BINOMIAL_THEOREM : thm := BBinomial.BINOMIAL_THEOREM
-unsafe def REAL_BINOMIAL_THEOREM : thm := BBinomial.REAL_BINOMIAL_THEOREM
-unsafe def BINOM_TOP_STEP_REAL : thm := BBinomial.BINOM_TOP_STEP_REAL
-unsafe def BINOM_BOTTOM_STEP_REAL : thm := BBinomial.BINOM_BOTTOM_STEP_REAL
-unsafe def REAL_OF_NUM_BINOM : thm := BBinomial.REAL_OF_NUM_BINOM
-unsafe def BINOM_BOTH_STEP_REAL : thm := BBinomial.BINOM_BOTH_STEP_REAL
-unsafe def BINOM_BOTH_STEP : thm := BBinomial.BINOM_BOTH_STEP
-unsafe def BINOM_BOTH_STEP_DOWN : thm := BBinomial.BINOM_BOTH_STEP_DOWN
-unsafe def BINOM : thm := BBinomial.BINOM
-unsafe def DIVIDES_GCD_BINOM : thm := BBinomial.DIVIDES_GCD_BINOM
-unsafe def DIVIDES_COPRIME_BINOM : thm := BBinomial.DIVIDES_COPRIME_BINOM
-unsafe def DIVIDES_PRIME_BINOM : thm := BBinomial.DIVIDES_PRIME_BINOM
-unsafe def BINOM_SYM : thm := BBinomial.BINOM_SYM
-unsafe def BINOM_MUL_SHIFT : thm := BBinomial.BINOM_MUL_SHIFT
-unsafe def APPELL_SEQUENCE : thm := BBinomial.APPELL_SEQUENCE
-unsafe def NUM_BINOM_CONV : term → IO (Except String thm) := fun t => (BBinomial.NUM_BINOM_CONV t).run
+def binom : thm := BBinomial.binom
+def BINOM_0 : thm := BBinomial.BINOM_0
+def BINOM_LT : thm := BBinomial.BINOM_LT
+def BINOM_REFL : thm := BBinomial.BINOM_REFL
+def BINOM_1 : thm := BBinomial.BINOM_1
+def BINOM_FACT : thm := BBinomial.BINOM_FACT
+def BINOM_EQ_0 : thm := BBinomial.BINOM_EQ_0
+def BINOM_PENULT : thm := BBinomial.BINOM_PENULT
+def BINOM_GE_TOP : thm := BBinomial.BINOM_GE_TOP
+def BINOM_TOP_STEP : thm := BBinomial.BINOM_TOP_STEP
+def BINOM_BOTTOM_STEP : thm := BBinomial.BINOM_BOTTOM_STEP
+def HAS_SIZE_RESTRICTED_POWERSET : thm := BBinomial.HAS_SIZE_RESTRICTED_POWERSET
+def CARD_RESTRICTED_POWERSET : thm := BBinomial.CARD_RESTRICTED_POWERSET
+def BINOMIAL_THEOREM : thm := BBinomial.BINOMIAL_THEOREM
+def REAL_BINOMIAL_THEOREM : thm := BBinomial.REAL_BINOMIAL_THEOREM
+def BINOM_TOP_STEP_REAL : thm := BBinomial.BINOM_TOP_STEP_REAL
+def BINOM_BOTTOM_STEP_REAL : thm := BBinomial.BINOM_BOTTOM_STEP_REAL
+def REAL_OF_NUM_BINOM : thm := BBinomial.REAL_OF_NUM_BINOM
+def BINOM_BOTH_STEP_REAL : thm := BBinomial.BINOM_BOTH_STEP_REAL
+def BINOM_BOTH_STEP : thm := BBinomial.BINOM_BOTH_STEP
+def BINOM_BOTH_STEP_DOWN : thm := BBinomial.BINOM_BOTH_STEP_DOWN
+def BINOM : thm := BBinomial.BINOM
+def DIVIDES_GCD_BINOM : thm := BBinomial.DIVIDES_GCD_BINOM
+def DIVIDES_COPRIME_BINOM : thm := BBinomial.DIVIDES_COPRIME_BINOM
+def DIVIDES_PRIME_BINOM : thm := BBinomial.DIVIDES_PRIME_BINOM
+def BINOM_SYM : thm := BBinomial.BINOM_SYM
+def BINOM_MUL_SHIFT : thm := BBinomial.BINOM_MUL_SHIFT
+def APPELL_SEQUENCE : thm := BBinomial.APPELL_SEQUENCE
+def NUM_BINOM_CONV : term → IO (Except String thm) := fun t => (BBinomial.NUM_BINOM_CONV t).run
 
-
-
--- @@EXPORTS END
-
-/-- `needs "Library/binomial.ml"`: build every bundle, in file order. -/
-unsafe def ensureBinomial : IO Unit := do
-  -- @@ENSURE BEGIN
-  let _ ← IO.mkRef BBinomial.binom  -- @@ENSURE END
-  pure ()
+/-- `needs "Library/binomial.ml"`: already done by importing this module. -/
+def ensureBinomial : IO Unit := pure ()
 
 end SessionLibrary.Binomial

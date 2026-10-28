@@ -17,8 +17,8 @@ Deviations from help.ml:
   performs the same edits, command for command, so no external `sed` or script
   file is needed.
 - `omit` is a Lean keyword, so the OCaml `omit` is written `«omit»`.
-- `search` reads `theorems`, which `Database.lean` fills on first use rather
-  than at load (filling it forces every theorem of the library). -/
+- `search` reads `theorems`, which `Database.lean` fills on the first search
+  rather than when this module is imported. -/
 
 import HolCore
 
@@ -232,7 +232,7 @@ def help (s : String) : IO Unit := do IO.print (← helpText s)
 
 initialize theorems : IO.Ref (List (String × thm)) ← IO.mkRef []
 
-/-- Filled in by `Database.lean`: fills `theorems` on first use. -/
+/-- Filled in by `Database.lean`: fills `theorems` on the first search. -/
 initialize theDatabaseLoader : IO.Ref (Option (IO Unit)) ← IO.mkRef none
 
 /- ---------------------------------------------------------------------- -/

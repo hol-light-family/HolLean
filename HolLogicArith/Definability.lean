@@ -13,33 +13,33 @@ namespace HolLogicArith.Definability
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 /- Force an `ExceptT String IO (thm × thm)` to its value, panicking with HOL
    Light's message on failure (as the toplevel `let a,b = ...` would throw). -/
-private unsafe def runObj (m : ExceptT String IO (thm × thm)) : thm × thm :=
-  match unsafeIO m.run with
+private def runObj (m : ExceptT String IO (thm × thm)) : thm × thm :=
+  match runIO m.run with
   | .ok (.ok p) => p
   | .ok (.error e) => panic! s!"OBJECTIFY: {e}"
   | .error e => panic! s!"OBJECTIFY IO: {e}"
 
 -- Prime/rstc library theorems (loaded by make.ml before fol.ml), used in the
 -- proofs below.  The toplevel sees them unqualified; alias them here.
-private unsafe def PRIME_0 : thm := SessionLibrary.Prime.PRIME_0
-private unsafe def PRIME_1 : thm := SessionLibrary.Prime.PRIME_1
-private unsafe def PRIME_GE_2 : thm := SessionLibrary.Prime.PRIME_GE_2
-private unsafe def EUCLID_BOUND : thm := SessionLibrary.Prime.EUCLID_BOUND
-private unsafe def PRIME_POWER_EXISTS_ALT : thm := SessionLibrary.Prime.PRIME_POWER_EXISTS_ALT
-private unsafe def RTC : thm := SessionLibrary.RSTC.RTC
-private unsafe def RTC_CASES_L : thm := SessionLibrary.RSTC.RTC_CASES_L
-private unsafe def RELPOW : thm := SessionLibrary.RSTC.RELPOW
-private unsafe def RTC_RELPOW : thm := SessionLibrary.RSTC.RTC_RELPOW
-private unsafe def RELPOW_SEQUENCE : thm := SessionLibrary.RSTC.RELPOW_SEQUENCE
+private def PRIME_0 : thm := SessionLibrary.Prime.PRIME_0
+private def PRIME_1 : thm := SessionLibrary.Prime.PRIME_1
+private def PRIME_GE_2 : thm := SessionLibrary.Prime.PRIME_GE_2
+private def EUCLID_BOUND : thm := SessionLibrary.Prime.EUCLID_BOUND
+private def PRIME_POWER_EXISTS_ALT : thm := SessionLibrary.Prime.PRIME_POWER_EXISTS_ALT
+private def RTC : thm := SessionLibrary.RSTC.RTC
+private def RTC_CASES_L : thm := SessionLibrary.RSTC.RTC_CASES_L
+private def RELPOW : thm := SessionLibrary.RSTC.RELPOW
+private def RTC_RELPOW : thm := SessionLibrary.RSTC.RTC_RELPOW
+private def RELPOW_SEQUENCE : thm := SessionLibrary.RSTC.RELPOW_SEQUENCE
 
 -- Replay Arithmetic/fol.ml (the one module definability.ml imports).
 #eval HolLogicArith.ArithFol.ensure
@@ -48,19 +48,19 @@ private unsafe def RELPOW_SEQUENCE : thm := SessionLibrary.RSTC.RELPOW_SEQUENCE
 #eval Session.prioritize_num
 
 #eval phrase 2
-unsafe def NPAIR : thm := keep "NPAIR" fun _ => new_definition
+def NPAIR : thm := keep "NPAIR" fun _ => new_definition
   [[NPAIR x y = (x + y) EXP 2 + x + 1]]
 #eval NPAIR
 
 #eval phrase 3
-unsafe def NPAIR_NONZERO : thm := keep "NPAIR_NONZERO" fun _ => (do
+def NPAIR_NONZERO : thm := keep "NPAIR_NONZERO" fun _ => (do
   prove ([[!x y. ~(NPAIR x y = 0)]])
    (REWRITE_TAC [NPAIR, ADD_EQ_0, ARITH])
   : ExceptT String IO thm).run
 #eval NPAIR_NONZERO
 
 #eval phrase 4
-unsafe def NPAIR_INJ_LEMMA : thm := keep "NPAIR_INJ_LEMMA" fun _ => (do
+def NPAIR_INJ_LEMMA : thm := keep "NPAIR_INJ_LEMMA" fun _ => (do
   prove ([[x1 + y1 < x2 + y2 ==> NPAIR x1 y1 < NPAIR x2 y2]])
    (HolLight.tactic_of do
      let ar ← ExceptT.mk (ARITH_RULE [[x + y + 1 < u + v + 1 <=> x + y < u + v]])
@@ -74,7 +74,7 @@ unsafe def NPAIR_INJ_LEMMA : thm := keep "NPAIR_INJ_LEMMA" fun _ => (do
 #eval NPAIR_INJ_LEMMA
 
 #eval phrase 5
-unsafe def NPAIR_INJ : thm := keep "NPAIR_INJ" fun _ => (do
+def NPAIR_INJ : thm := keep "NPAIR_INJ" fun _ => (do
   prove ([[(NPAIR x y = NPAIR x' y') <=> (x = x') /\ (y = y')]])
    (EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
     SUBGOAL_THEN ([[x' + y' = x + y]]) ASSUME_TAC THENL
@@ -86,7 +86,7 @@ unsafe def NPAIR_INJ : thm := keep "NPAIR_INJ" fun _ => (do
 #eval NPAIR_INJ
 
 #eval phrase 6
-unsafe def NPAIR_LT : thm := keep "NPAIR_LT" fun _ => (do
+def NPAIR_LT : thm := keep "NPAIR_LT" fun _ => (do
   prove ([[!x y. x < NPAIR x y /\ y < NPAIR x y]])
    (HolLight.tactic_of do
      let ar ← ExceptT.mk (ARITH_RULE [[x < a + x + 1]])
@@ -100,12 +100,12 @@ unsafe def NPAIR_LT : thm := keep "NPAIR_LT" fun _ => (do
 #eval NPAIR_LT
 
 #eval phrase 7
-unsafe def primepow : thm := keep "primepow" fun _ => new_definition
+def primepow : thm := keep "primepow" fun _ => new_definition
   [[primepow p x <=> prime(p) /\ ?n. x = p EXP n]]
 #eval primepow
 
 #eval phrase 8
-unsafe def divides_DELTA : thm := keep "divides_DELTA" fun _ => (do
+def divides_DELTA : thm := keep "divides_DELTA" fun _ => (do
   prove ([[m divides n <=> ?x. x <= n /\ n = m * x]])
    (HolLight.tactic_of do
      let ar ← ExceptT.mk (ARITH_RULE [[~(m = 0) ==> 1 <= m]])
@@ -121,7 +121,7 @@ unsafe def divides_DELTA : thm := keep "divides_DELTA" fun _ => (do
 #eval divides_DELTA
 
 #eval phrase 9
-unsafe def prime_DELTA : thm := keep "prime_DELTA" fun _ => (do
+def prime_DELTA : thm := keep "prime_DELTA" fun _ => (do
   prove ([[prime(p) <=> 2 <= p /\ !n. n < p ==> n divides p ==> n = 1]])
    (ASM_CASES_TAC [[p = 0]] THEN ASM_REWRITE_TAC [ARITH, PRIME_0] THEN
     ASM_CASES_TAC [[p = 1]] THEN ASM_REWRITE_TAC [ARITH, PRIME_1] THEN EQ_TAC THENL
@@ -131,7 +131,7 @@ unsafe def prime_DELTA : thm := keep "prime_DELTA" fun _ => (do
 #eval prime_DELTA
 
 #eval phrase 10
-unsafe def primepow_DELTA : thm := keep "primepow_DELTA" fun _ => (do
+def primepow_DELTA : thm := keep "primepow_DELTA" fun _ => (do
   prove ([[primepow p x <=>
         prime(p) /\ ~(x = 0) /\
         !z. z <= x ==> z divides x ==> z = 1 \/ p divides z]])
@@ -144,7 +144,7 @@ unsafe def primepow_DELTA : thm := keep "primepow_DELTA" fun _ => (do
 #eval primepow_DELTA
 
 #eval phrase 11
-unsafe def PSEQ : thm := keep "PSEQ" fun _ => (do
+def PSEQ : thm := keep "PSEQ" fun _ => (do
   newRec Session.num_RECURSION
     [[(PSEQ p f m 0 = 0) /\
       (PSEQ p f m (SUC n) = f m + p * PSEQ p f (SUC m) n)]]
@@ -152,7 +152,7 @@ unsafe def PSEQ : thm := keep "PSEQ" fun _ => (do
 #eval PSEQ
 
 #eval phrase 12
-unsafe def PSEQ_SPLIT : thm := keep "PSEQ_SPLIT" fun _ => (do
+def PSEQ_SPLIT : thm := keep "PSEQ_SPLIT" fun _ => (do
   prove ([[!f p n m r.
         PSEQ p f m (n + r) = PSEQ p f m n + p EXP n * PSEQ p f (m + n) r]])
    (GEN_TAC THEN GEN_TAC THEN
@@ -163,7 +163,7 @@ unsafe def PSEQ_SPLIT : thm := keep "PSEQ_SPLIT" fun _ => (do
 #eval PSEQ_SPLIT
 
 #eval phrase 13
-unsafe def PSEQ_1 : thm := keep "PSEQ_1" fun _ => (do
+def PSEQ_1 : thm := keep "PSEQ_1" fun _ => (do
   prove ([[PSEQ p f m 1 = f m]])
    (HolLight.tactic_of do
      let nc ← ExceptT.mk (Session.num_CONV [[1]])
@@ -173,7 +173,7 @@ unsafe def PSEQ_1 : thm := keep "PSEQ_1" fun _ => (do
 #eval PSEQ_1
 
 #eval phrase 14
-unsafe def PSEQ_BOUND : thm := keep "PSEQ_BOUND" fun _ => (do
+def PSEQ_BOUND : thm := keep "PSEQ_BOUND" fun _ => (do
   prove ([[!n. ~(p = 0) /\ (!i. i < n ==> f i < p) ==> PSEQ p f 0 n < p EXP n]])
    (HolLight.tactic_of do
      let sp ← ExceptT.mk (HolLight.SPECL [ [[f:num->num]], [[p:num]], [[n:num]], [[0]], [[1]] ] PSEQ_SPLIT)
@@ -197,7 +197,7 @@ unsafe def PSEQ_BOUND : thm := keep "PSEQ_BOUND" fun _ => (do
 #eval PSEQ_BOUND
 
 #eval phrase 15
-unsafe def RELPOW_LEMMA_1 : thm := keep "RELPOW_LEMMA_1" fun _ => (do
+def RELPOW_LEMMA_1 : thm := keep "RELPOW_LEMMA_1" fun _ => (do
   prove ([[(f 0 = x) /\
    (f n = y) /\
    (!i. i < n ==> R (f i) (f(SUC i)))
@@ -298,7 +298,7 @@ unsafe def RELPOW_LEMMA_1 : thm := keep "RELPOW_LEMMA_1" fun _ => (do
 #eval RELPOW_LEMMA_1
 
 #eval phrase 16
-unsafe def RELPOW_LEMMA_2 : thm := keep "RELPOW_LEMMA_2" fun _ => (do
+def RELPOW_LEMMA_2 : thm := keep "RELPOW_LEMMA_2" fun _ => (do
   prove ([[prime p /\ x < p /\ y < p /\
    (?qx. m = x + p * qx) /\
    (?ry. ry < p EXP n /\ (m = ry + p EXP n * y)) /\
@@ -356,7 +356,7 @@ unsafe def RELPOW_LEMMA_2 : thm := keep "RELPOW_LEMMA_2" fun _ => (do
 #eval RELPOW_LEMMA_2
 
 #eval phrase 17
-unsafe def RELPOW_LEMMA : thm := keep "RELPOW_LEMMA" fun _ => (do
+def RELPOW_LEMMA : thm := keep "RELPOW_LEMMA" fun _ => (do
   prove ([[RELPOW n R x y <=>
         ?m p. prime p /\ x < p /\ y < p /\
               (?qx. m = x + p * qx) /\
@@ -378,7 +378,7 @@ unsafe def RELPOW_LEMMA : thm := keep "RELPOW_LEMMA" fun _ => (do
 #eval RELPOW_LEMMA
 
 #eval phrase 18
-unsafe def RTC_SIGMA : thm := keep "RTC_SIGMA" fun _ => (do
+def RTC_SIGMA : thm := keep "RTC_SIGMA" fun _ => (do
   prove ([[RTC R x y <=>
         ?m p Q. primepow p Q /\ x < p /\ y < p /\
                 (?s. m = x + p * s) /\
@@ -412,40 +412,40 @@ unsafe def RTC_SIGMA : thm := keep "RTC_SIGMA" fun _ => (do
 #eval RTC_SIGMA
 
 #eval phrase 19
-unsafe def arith_pair : thm := keep "arith_pair" fun _ => new_definition
+def arith_pair : thm := keep "arith_pair" fun _ => new_definition
   [[arith_pair s t = (s ++ t) ** (s ++ t) ++ s ++ Suc Z]]
 #eval arith_pair
 
 #eval phrase 20
-unsafe def ARITH_PAIR : thm := keep "ARITH_PAIR" fun _ => (do
+def ARITH_PAIR : thm := keep "ARITH_PAIR" fun _ => (do
   prove ([[!s t v. termval v (arith_pair s t) = NPAIR (termval v s) (termval v t)]])
    (REWRITE_TAC [termval, arith_pair, NPAIR, EXP_2, ARITH_SUC])
   : ExceptT String IO thm).run
 #eval ARITH_PAIR
 
 #eval phrase 21
-unsafe def FVT_PAIR : thm := keep "FVT_PAIR" fun _ => (do
+def FVT_PAIR : thm := keep "FVT_PAIR" fun _ => (do
   prove ([[FVT(arith_pair s t) = FVT(s) UNION FVT(t)]])
    (REWRITE_TAC [arith_pair, FVT] THEN SET_TAC [])
   : ExceptT String IO thm).run
 #eval FVT_PAIR
 
 /- Parse a quotation once (the OCaml toplevel parses each backtick string once
-   when `OBJECTIFY` is defined).  `unsafeIO` resolves the parser's IO here. -/
-private unsafe def ptm (s : String) : term :=
-  match unsafeIO (HolCore.Parser.parse_term s) with
+   when `OBJECTIFY` is defined).  `runIO` resolves the parser's IO here. -/
+private def ptm (s : String) : term :=
+  match runIO (HolCore.Parser.parse_term s) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"parse_term {s}: {e}"
   | .error e => panic! s!"parse_term IO {s}: {e}"
 
-private unsafe def pty (s : String) : hol_type :=
-  match unsafeIO (HolCore.Parser.parse_type s) with
+private def pty (s : String) : hol_type :=
+  match runIO (HolCore.Parser.parse_type s) with
   | .ok (.ok t) => t
   | .ok (.error e) => panic! s!"parse_type {s}: {e}"
   | .error e => panic! s!"parse_type IO {s}: {e}"
 
 #eval phrase 22
-unsafe def OBJECTIFY : List thm → String → thm → ExceptT String IO (thm × thm) :=
+partial def OBJECTIFY : List thm → String → thm → ExceptT String IO (thm × thm) :=
   keep "OBJECTIFY" fun _ =>
   let is_add := is_binop (ptm "(+):num->num->num")
   let is_mul := is_binop (ptm "(*):num->num->num")
@@ -568,7 +568,7 @@ unsafe def OBJECTIFY : List thm → String → thm → ExceptT String IO (thm ×
 #eval IO.println "<fun>"
 
 #eval phrase 23
-unsafe def FV_TAC : List thm → HolCore.Tactics.tactic :=
+def FV_TAC : List thm → HolCore.Tactics.tactic :=
   keep "FV_TAC" fun _ => fun ths =>
   HolLight.tactic_of do
     let ths' := ths ++
@@ -586,59 +586,59 @@ unsafe def FV_TAC : List thm → HolCore.Tactics.tactic :=
 #eval IO.println "<fun>"
 
 #eval phrase 24
-unsafe def arith_divides_pair : thm × thm := keep "arith_divides_pair" fun _ =>
+def arith_divides_pair : thm × thm := keep "arith_divides_pair" fun _ =>
   runObj (OBJECTIFY [] "arith_divides" divides_DELTA)
-unsafe def arith_divides : thm := arith_divides_pair.1
-unsafe def ARITH_DIVIDES : thm := arith_divides_pair.2
+def arith_divides : thm := arith_divides_pair.1
+def ARITH_DIVIDES : thm := arith_divides_pair.2
 #eval do IO.println arith_divides; IO.println ARITH_DIVIDES
 
 #eval phrase 25
-unsafe def FV_DIVIDES : thm := keep "FV_DIVIDES" fun _ => (do
+def FV_DIVIDES : thm := keep "FV_DIVIDES" fun _ => (do
   prove ([[!s t. FV(arith_divides s t) = FVT(s) UNION FVT(t)]])
    (FV_TAC [arith_divides])
   : ExceptT String IO thm).run
 #eval FV_DIVIDES
 
 #eval phrase 26
-unsafe def arith_prime_pair : thm × thm := keep "arith_prime_pair" fun _ =>
+def arith_prime_pair : thm × thm := keep "arith_prime_pair" fun _ =>
   runObj (OBJECTIFY [ARITH_DIVIDES] "arith_prime" prime_DELTA)
-unsafe def arith_prime : thm := arith_prime_pair.1
-unsafe def ARITH_PRIME : thm := arith_prime_pair.2
+def arith_prime : thm := arith_prime_pair.1
+def ARITH_PRIME : thm := arith_prime_pair.2
 #eval do IO.println arith_prime; IO.println ARITH_PRIME
 
 #eval phrase 27
-unsafe def FV_PRIME : thm := keep "FV_PRIME" fun _ => (do
+def FV_PRIME : thm := keep "FV_PRIME" fun _ => (do
   prove ([[!t. FV(arith_prime t) = FVT(t)]])
    (FV_TAC [arith_prime, FVT_NUMERAL, FV_DIVIDES])
   : ExceptT String IO thm).run
 #eval FV_PRIME
 
 #eval phrase 28
-unsafe def arith_primepow_pair : thm × thm := keep "arith_primepow_pair" fun _ =>
+def arith_primepow_pair : thm × thm := keep "arith_primepow_pair" fun _ =>
   runObj (OBJECTIFY [ARITH_PRIME, ARITH_DIVIDES] "arith_primepow" primepow_DELTA)
-unsafe def arith_primepow : thm := arith_primepow_pair.1
-unsafe def ARITH_PRIMEPOW : thm := arith_primepow_pair.2
+def arith_primepow : thm := arith_primepow_pair.1
+def ARITH_PRIMEPOW : thm := arith_primepow_pair.2
 #eval do IO.println arith_primepow; IO.println ARITH_PRIMEPOW
 
 #eval phrase 29
-unsafe def FV_PRIMEPOW : thm := keep "FV_PRIMEPOW" fun _ => (do
+def FV_PRIMEPOW : thm := keep "FV_PRIMEPOW" fun _ => (do
   prove ([[!s t. FV(arith_primepow s t) = FVT(s) UNION FVT(t)]])
    (FV_TAC [arith_primepow, FVT_NUMERAL, FV_DIVIDES, FV_PRIME])
   : ExceptT String IO thm).run
 #eval FV_PRIMEPOW
 
 #eval phrase 30
-unsafe def arith_rtc_pair : thm × thm := keep "arith_rtc_pair" fun _ =>
+def arith_rtc_pair : thm × thm := keep "arith_rtc_pair" fun _ =>
   runObj (do
     let asm ← liftExcept (HolCore.Kernel.ASSUME
       [[!v s t. holds v (R s t) <=> r (termval v s) (termval v t)]])
     OBJECTIFY [ARITH_PRIMEPOW, asm] "arith_rtc" RTC_SIGMA)
-unsafe def arith_rtc : thm := arith_rtc_pair.1
-unsafe def ARITH_RTC : thm := arith_rtc_pair.2
+def arith_rtc : thm := arith_rtc_pair.1
+def ARITH_RTC : thm := arith_rtc_pair.2
 #eval do IO.println arith_rtc; IO.println ARITH_RTC
 
 #eval phrase 31
-unsafe def FV_RTC : thm := keep "FV_RTC" fun _ => (do
+def FV_RTC : thm := keep "FV_RTC" fun _ => (do
   prove ([[!R. (!s t. FV(R s t) = FVT(s) UNION FVT(t))
        ==> !s t. FV(arith_rtc R s t) = FVT(s) UNION FVT(t)]])
    (FV_TAC [arith_rtc, FV_PRIMEPOW])
@@ -646,7 +646,7 @@ unsafe def FV_RTC : thm := keep "FV_RTC" fun _ => (do
 #eval FV_RTC
 
 #eval phrase 32
-unsafe def OBJECTIFY_RTC_pth : thm := keep "OBJECTIFY_RTC_pth" fun _ => (do
+def OBJECTIFY_RTC_pth : thm := keep "OBJECTIFY_RTC_pth" fun _ => (do
   prove ([[(!v x y. holds v (f x y) <=> f' (termval v x) (termval v y))
      ==> !g. (!n. g n = formsubst ((0 |-> n) V)
                                   (arith_rtc f (numeral 0)
@@ -656,7 +656,7 @@ unsafe def OBJECTIFY_RTC_pth : thm := keep "OBJECTIFY_RTC_pth" fun _ => (do
     REWRITE_TAC [termval, o_DEF, ARITH_EQ, valmod,
                 ARITH_PAIR, TERMVAL_NUMERAL])
   : ExceptT String IO thm).run
-unsafe def OBJECTIFY_RTC : thm → String → thm → ExceptT String IO (thm × thm) :=
+def OBJECTIFY_RTC : thm → String → thm → ExceptT String IO (thm × thm) :=
   keep "OBJECTIFY_RTC" fun _ => fun defn nam th => do
     let th1 ← HolLight.MATCH_MP OBJECTIFY_RTC_pth defn
     let v := Prod.fst (← liftExcept (dest_forall (concl th1)))
@@ -667,36 +667,36 @@ unsafe def OBJECTIFY_RTC : thm → String → thm → ExceptT String IO (thm × 
 #eval (do let _ := OBJECTIFY_RTC_pth; IO.println "<fun>" : IO Unit)
 
 #eval phrase 33
-unsafe def RTCP : thm := keep "RTCP" fun _ => new_definition
+def RTCP : thm := keep "RTCP" fun _ => new_definition
   [[RTCP R m x y <=> RTC (R m) x y]]
 #eval RTCP
 
 #eval phrase 34
-unsafe def RTCP_SIGMA : thm := keep "RTCP_SIGMA" fun _ => (do
+def RTCP_SIGMA : thm := keep "RTCP_SIGMA" fun _ => (do
   let inst ← liftExcept (INST [([[(R:num->num->num->bool) m]], [[R:num->num->bool]])] RTC_SIGMA)
   HolLight.REWRITE_RULE [(← HolLight.GSYM RTCP)] inst
   : ExceptT String IO thm).run
 #eval RTCP_SIGMA
 
 #eval phrase 35
-unsafe def arith_rtcp_pair : thm × thm := keep "arith_rtcp_pair" fun _ =>
+def arith_rtcp_pair : thm × thm := keep "arith_rtcp_pair" fun _ =>
   runObj (do
     let asm ← liftExcept (HolCore.Kernel.ASSUME
       [[!v m s t. holds v (R m s t) <=>
                    r (termval v m) (termval v s) (termval v t)]])
     OBJECTIFY [ARITH_PRIMEPOW, asm] "arith_rtcp" RTCP_SIGMA)
-unsafe def arith_rtcp : thm := arith_rtcp_pair.1
-unsafe def ARITH_RTCP : thm := arith_rtcp_pair.2
+def arith_rtcp : thm := arith_rtcp_pair.1
+def ARITH_RTCP : thm := arith_rtcp_pair.2
 #eval do IO.println arith_rtcp; IO.println ARITH_RTCP
 
 #eval phrase 36
-unsafe def ARITH_RTC_PARAMETRIZED : thm := keep "ARITH_RTC_PARAMETRIZED" fun _ => (do
+def ARITH_RTC_PARAMETRIZED : thm := keep "ARITH_RTC_PARAMETRIZED" fun _ => (do
   HolLight.REWRITE_RULE [RTCP] ARITH_RTCP
   : ExceptT String IO thm).run
 #eval ARITH_RTC_PARAMETRIZED
 
 #eval phrase 37
-unsafe def FV_RTCP : thm := keep "FV_RTCP" fun _ => (do
+def FV_RTCP : thm := keep "FV_RTCP" fun _ => (do
   prove ([[!R. (!s t u. FV(R s t u) = FVT(s) UNION FVT(t) UNION FVT(u))
        ==> !s t u. FV(arith_rtcp R s t u) = FVT(s) UNION FVT(t) UNION FVT(u)]])
    (FV_TAC [arith_rtcp, FV_PRIMEPOW])
@@ -704,7 +704,7 @@ unsafe def FV_RTCP : thm := keep "FV_RTCP" fun _ => (do
 #eval FV_RTCP
 
 #eval phrase 38
-unsafe def OBJECTIFY_RTCP_pth : thm := keep "OBJECTIFY_RTCP_pth" fun _ => (do
+def OBJECTIFY_RTCP_pth : thm := keep "OBJECTIFY_RTCP_pth" fun _ => (do
   prove ([[(!v m x y. holds v (f m x y) <=>
                 f' (termval v m) (termval v x) (termval v y))
      ==> !g. (!m n. g m n = formsubst ((1 |-> m) ((0 |-> n) V))
@@ -717,7 +717,7 @@ unsafe def OBJECTIFY_RTCP_pth : thm := keep "OBJECTIFY_RTCP_pth" fun _ => (do
     REWRITE_TAC [termval, o_DEF, ARITH_EQ, valmod,
                 ARITH_PAIR, TERMVAL_NUMERAL])
   : ExceptT String IO thm).run
-unsafe def OBJECTIFY_RTCP : thm → String → thm → ExceptT String IO (thm × thm) :=
+def OBJECTIFY_RTCP : thm → String → thm → ExceptT String IO (thm × thm) :=
   keep "OBJECTIFY_RTCP" fun _ => fun defn nam th => do
     let th1 ← HolLight.MATCH_MP OBJECTIFY_RTCP_pth defn
     let v := Prod.fst (← liftExcept (dest_forall (concl th1)))
@@ -728,7 +728,7 @@ unsafe def OBJECTIFY_RTCP : thm → String → thm → ExceptT String IO (thm ×
 #eval (do let _ := OBJECTIFY_RTCP_pth; IO.println "<fun>" : IO Unit)
 
 #eval phrase 39
-unsafe def PRIMREC_SIGMA : thm := keep "PRIMREC_SIGMA" fun _ => (do
+def PRIMREC_SIGMA : thm := keep "PRIMREC_SIGMA" fun _ => (do
   prove ([[(fn 0 = e) /\
    (!n. fn (SUC n) = f (fn n) n)
    ==> !x y. RTC (\x y. ?n r. (x = NPAIR n r) /\ (y = NPAIR (SUC n) (f r n)))
@@ -748,7 +748,7 @@ unsafe def PRIMREC_SIGMA : thm := keep "PRIMREC_SIGMA" fun _ => (do
 #eval PRIMREC_SIGMA
 
 #eval phrase 40
-unsafe def arith_primrecstep : thm := keep "arith_primrecstep" fun _ => new_definition
+def arith_primrecstep : thm := keep "arith_primrecstep" fun _ => new_definition
   [[arith_primrecstep R s t =
         (formsubst ((0 |-> s) ((1 |-> t) V))
                   (?? 2 (?? 3 (?? 4
@@ -758,7 +758,7 @@ unsafe def arith_primrecstep : thm := keep "arith_primrecstep" fun _ => new_defi
 #eval arith_primrecstep
 
 #eval phrase 41
-unsafe def ARITH_PRIMRECSTEP : thm := keep "ARITH_PRIMRECSTEP" fun _ => (do
+def ARITH_PRIMRECSTEP : thm := keep "ARITH_PRIMRECSTEP" fun _ => (do
   prove ([[(!v x y z. holds v (R x y z) <=>
               (f (termval v x) (termval v y) = termval v z))
     ==> !v s t. holds v (arith_primrecstep R s t) <=>
@@ -772,7 +772,7 @@ unsafe def ARITH_PRIMRECSTEP : thm := keep "ARITH_PRIMRECSTEP" fun _ => (do
 #eval ARITH_PRIMRECSTEP
 
 #eval phrase 42
-unsafe def FV_PRIMRECSTEP : thm := keep "FV_PRIMRECSTEP" fun _ => (do
+def FV_PRIMRECSTEP : thm := keep "FV_PRIMRECSTEP" fun _ => (do
   prove ([[!R. (!s t u. FV(R s t u) SUBSET (FVT(s) UNION FVT(t) UNION FVT(u)))
        ==> !s t. FV(arith_primrecstep R s t) = FVT(s) UNION FVT(t)]])
    (HolLight.tactic_of do
@@ -787,14 +787,14 @@ unsafe def FV_PRIMRECSTEP : thm := keep "FV_PRIMRECSTEP" fun _ => (do
 #eval FV_PRIMRECSTEP
 
 #eval phrase 43
-unsafe def arith_primrec : thm := keep "arith_primrec" fun _ => new_definition
+def arith_primrec : thm := keep "arith_primrec" fun _ => new_definition
   [[arith_primrec R c s t =
         arith_rtc (arith_primrecstep R)
             (arith_pair Z c) (arith_pair s t)]]
 #eval arith_primrec
 
 #eval phrase 44
-unsafe def ARITH_PRIMREC : thm := keep "ARITH_PRIMREC" fun _ => (do
+def ARITH_PRIMREC : thm := keep "ARITH_PRIMREC" fun _ => (do
   prove ([[!fn e f R c.
         (fn 0 = e) /\ (!n. fn (SUC n) = f (fn n) n) /\
         (!v. termval v c = e) /\
@@ -812,7 +812,7 @@ unsafe def ARITH_PRIMREC : thm := keep "ARITH_PRIMREC" fun _ => (do
 #eval ARITH_PRIMREC
 
 #eval phrase 45
-unsafe def FV_PRIMREC : thm := keep "FV_PRIMREC" fun _ => (do
+def FV_PRIMREC : thm := keep "FV_PRIMREC" fun _ => (do
   prove ([[!R c. (FVT c = {}) /\
          (!s t u. FV(R s t u) SUBSET (FVT(s) UNION FVT(t) UNION FVT(u)))
          ==> !s t. FV(arith_primrec R c s t) = FVT(s) UNION FVT(t)]])
@@ -823,9 +823,9 @@ unsafe def FV_PRIMREC : thm := keep "FV_PRIMREC" fun _ => (do
 #eval FV_PRIMREC
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Definability" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Definability" do
   replay (
           HolLogicArith.ArithFol.ensure)
   replay (

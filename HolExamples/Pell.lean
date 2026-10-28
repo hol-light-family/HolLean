@@ -3,17 +3,20 @@ Translation of HOL Light's Examples/pell.ml, phrase by phrase.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 -/
 import HolExamples.Common
+import SessionLibrary.Analysis
+import SessionLibrary.Transc
+import SessionLibrary.Prime
 open HolCore.Kernel Session HolLight.Syntax HolExamples
 open SessionLibrary.Prime
 namespace HolExamples.Pell
 
 /- Helpers: the session's `prove` lifted into `ExceptT String IO`, so tactic
    scripts read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
-private unsafe def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (ARITH_RULE tm)
-private unsafe def rr (tm : term) : ExceptT String IO thm := ExceptT.mk (Session.REAL_ARITH3 tm)
-private unsafe def tt (tm : term) : ExceptT String IO thm := ExceptT.mk (TAUT tm)
+private def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (ARITH_RULE tm)
+private def rr (tm : term) : ExceptT String IO thm := ExceptT.mk (Session.REAL_ARITH3 tm)
+private def tt (tm : term) : ExceptT String IO thm := ExceptT.mk (TAUT tm)
 private def ec {α : Type} (x : Except String α) : ExceptT String IO α := ExceptT.mk (pure x)
 
 -- ========================================================================= --
@@ -37,7 +40,7 @@ private def ec {α : Type} (x : Except String α) : ExceptT String IO α := Exce
 #eval Session.prioritize_real
 
 #eval phrase 5
-unsafe def PELL_INDUCTION : thm := keep "PELL_INDUCTION" fun _ => (do
+def PELL_INDUCTION : thm := keep "PELL_INDUCTION" fun _ => (do
   prove ([[P 0 /\ P 1 /\ (!n. P n /\ P (n + 1) ==> P(n + 2)) ==> !n. P n]])
    (STRIP_TAC THEN
     SUBGOAL_THEN ([[!n. P n /\ P(n + 1)]]) (fun th => REWRITE_TAC [th]) THEN
@@ -51,7 +54,7 @@ unsafe def PELL_INDUCTION : thm := keep "PELL_INDUCTION" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 6
-unsafe def ROOT_NONPOWER : thm := keep "ROOT_NONPOWER" fun _ => (do
+def ROOT_NONPOWER : thm := keep "ROOT_NONPOWER" fun _ => (do
   prove ([[!p q d n. ~(q = 0) /\ (p EXP n = d * q EXP n) ==> ?a. d = a EXP n]])
    (REPEAT GEN_TAC THEN
     ASM_CASES_TAC [[n = 0]] THEN ASM_SIMP_TAC [EXP, MULT_CLAUSES] THEN
@@ -69,7 +72,7 @@ unsafe def ROOT_NONPOWER : thm := keep "ROOT_NONPOWER" fun _ => (do
 #eval ROOT_NONPOWER
 
 #eval phrase 7
-unsafe def INTEGER_SUB_LEMMA : thm := keep "INTEGER_SUB_LEMMA" fun _ => (do
+def INTEGER_SUB_LEMMA : thm := keep "INTEGER_SUB_LEMMA" fun _ => (do
   prove ([[!x y. ?n. (&x - &y) pow 2 = &n pow 2]])
    (REPEAT STRIP_TAC THEN
     DISJ_CASES_THEN MP_TAC (SPECL [ [[&x]], [[&y]] ] Session.REAL_LE_TOTAL) THEN
@@ -81,7 +84,7 @@ unsafe def INTEGER_SUB_LEMMA : thm := keep "INTEGER_SUB_LEMMA" fun _ => (do
 #eval INTEGER_SUB_LEMMA
 
 #eval phrase 8
-unsafe def SQRT_LINEAR_EQ : thm := keep "SQRT_LINEAR_EQ" fun _ => (do
+def SQRT_LINEAR_EQ : thm := keep "SQRT_LINEAR_EQ" fun _ => (do
   prove ([[!a u v x y.
        2 <= a
        ==> ((&u + &v * sqrt(&a pow 2 - &1) = &x + &y * sqrt(&a pow 2 - &1)) <=>
@@ -145,7 +148,7 @@ unsafe def SQRT_LINEAR_EQ : thm := keep "SQRT_LINEAR_EQ" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 9
-unsafe def X_DEF : thm := keep "X_DEF" fun _ => (do
+def X_DEF : thm := keep "X_DEF" fun _ => (do
   let th ← prove ([[!a. ?X. !n. X n = if n = 0 then 1
                        else if n = 1 then a
                        else 2 * a * X(n-1) - X(n-2)]])
@@ -159,7 +162,7 @@ unsafe def X_DEF : thm := keep "X_DEF" fun _ => (do
 #eval X_DEF
 
 #eval phrase 10
-unsafe def X_CLAUSES : thm := keep "X_CLAUSES" fun _ => (do
+def X_CLAUSES : thm := keep "X_CLAUSES" fun _ => (do
   prove ([[(!a. X a 0 = 1) /\
    (!a. X a 1 = a) /\
    (!a n. X a (n + 2) = 2 * a * X a (n + 1) - X a (n))]])
@@ -170,7 +173,7 @@ unsafe def X_CLAUSES : thm := keep "X_CLAUSES" fun _ => (do
 #eval X_CLAUSES
 
 #eval phrase 11
-unsafe def Y_DEF : thm := keep "Y_DEF" fun _ => (do
+def Y_DEF : thm := keep "Y_DEF" fun _ => (do
   let th ← prove ([[!a. ?Y. !n. Y n = if n = 0 then 0
                        else if n = 1 then 1
                        else 2 * a * Y(n-1) - Y(n-2)]])
@@ -184,7 +187,7 @@ unsafe def Y_DEF : thm := keep "Y_DEF" fun _ => (do
 #eval Y_DEF
 
 #eval phrase 12
-unsafe def Y_CLAUSES : thm := keep "Y_CLAUSES" fun _ => (do
+def Y_CLAUSES : thm := keep "Y_CLAUSES" fun _ => (do
   prove ([[(!a. Y a 0 = 0) /\
    (!a. Y a 1 = 1) /\
    (!a n. Y a (n + 2) = 2 * a * Y a (n + 1) - Y a (n))]])
@@ -199,7 +202,7 @@ unsafe def Y_CLAUSES : thm := keep "Y_CLAUSES" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 13
-unsafe def X_INCREASES : thm := keep "X_INCREASES" fun _ => (do
+def X_INCREASES : thm := keep "X_INCREASES" fun _ => (do
   prove ([[!a n. ~(a = 0) ==> X a n <= X a (n + 1)]])
    (GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
     MATCH_MP_TAC num_WF THEN REPEAT STRIP_TAC THEN
@@ -227,7 +230,7 @@ unsafe def X_INCREASES : thm := keep "X_INCREASES" fun _ => (do
 #eval X_INCREASES
 
 #eval phrase 14
-unsafe def Y_INCREASES : thm := keep "Y_INCREASES" fun _ => (do
+def Y_INCREASES : thm := keep "Y_INCREASES" fun _ => (do
   prove ([[!a n. ~(a = 0) ==> Y a n <= Y a (n + 1)]])
    (GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
     MATCH_MP_TAC num_WF THEN REPEAT STRIP_TAC THEN
@@ -258,7 +261,7 @@ unsafe def Y_INCREASES : thm := keep "Y_INCREASES" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 15
-unsafe def XY_POWER_POS : thm := keep "XY_POWER_POS" fun _ => (do
+def XY_POWER_POS : thm := keep "XY_POWER_POS" fun _ => (do
   prove ([[!a n. ~(a = 0) ==> (&(X a n) + &(Y a n) * sqrt(&a pow 2 - &1) =
                        (&a + sqrt(&a pow 2 - &1)) pow n)]])
    (GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
@@ -311,7 +314,7 @@ unsafe def XY_POWER_POS : thm := keep "XY_POWER_POS" fun _ => (do
 #eval XY_POWER_POS
 
 #eval phrase 16
-unsafe def XY_POWER_NEG : thm := keep "XY_POWER_NEG" fun _ => (do
+def XY_POWER_NEG : thm := keep "XY_POWER_NEG" fun _ => (do
   prove ([[!a n. ~(a = 0) ==> (&(X a n) - &(Y a n) * sqrt(&a pow 2 - &1) =
                        (&a - sqrt(&a pow 2 - &1)) pow n)]])
    (GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
@@ -368,7 +371,7 @@ unsafe def XY_POWER_NEG : thm := keep "XY_POWER_NEG" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 17
-unsafe def XY_ARE_SOLUTIONS : thm := keep "XY_ARE_SOLUTIONS" fun _ => (do
+def XY_ARE_SOLUTIONS : thm := keep "XY_ARE_SOLUTIONS" fun _ => (do
   prove ([[!a n. ~(a = 0)
          ==> ((X a n) EXP 2 = (a EXP 2 - 1) * (Y a n) EXP 2 + 1)]])
    (REPEAT STRIP_TAC THEN
@@ -402,14 +405,14 @@ unsafe def XY_ARE_SOLUTIONS : thm := keep "XY_ARE_SOLUTIONS" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 18
-unsafe def X_DEGENERATE : thm := keep "X_DEGENERATE" fun _ => (do
+def X_DEGENERATE : thm := keep "X_DEGENERATE" fun _ => (do
   prove ([[!n. X 1 n = 1]])
    (MATCH_MP_TAC PELL_INDUCTION THEN SIMP_TAC [X_CLAUSES, ARITH])
   : ExceptT String IO thm).run
 #eval X_DEGENERATE
 
 #eval phrase 19
-unsafe def Y_DEGENERATE : thm := keep "Y_DEGENERATE" fun _ => (do
+def Y_DEGENERATE : thm := keep "Y_DEGENERATE" fun _ => (do
   prove ([[!n. Y 1 n = n]])
    (MATCH_MP_TAC PELL_INDUCTION THEN SIMP_TAC [Y_CLAUSES] THEN
     REPEAT STRIP_TAC THEN ARITH_TAC)
@@ -417,7 +420,7 @@ unsafe def Y_DEGENERATE : thm := keep "Y_DEGENERATE" fun _ => (do
 #eval Y_DEGENERATE
 
 #eval phrase 20
-unsafe def REAL_ARCH_POW_MINIMAL : thm := keep "REAL_ARCH_POW_MINIMAL" fun _ => (do
+def REAL_ARCH_POW_MINIMAL : thm := keep "REAL_ARCH_POW_MINIMAL" fun _ => (do
   prove ([[!x y. &1 < x /\ &1 < y
          ==> ?n. x pow n <= y /\ y < x pow (SUC n)]])
    (REPEAT STRIP_TAC THEN
@@ -431,7 +434,7 @@ unsafe def REAL_ARCH_POW_MINIMAL : thm := keep "REAL_ARCH_POW_MINIMAL" fun _ => 
 #eval REAL_ARCH_POW_MINIMAL
 
 #eval phrase 21
-unsafe def SOLUTIONS_INDUCTION : thm := keep "SOLUTIONS_INDUCTION" fun _ => (do
+def SOLUTIONS_INDUCTION : thm := keep "SOLUTIONS_INDUCTION" fun _ => (do
   prove ([[!a x y.
         ~(a = 0) /\ ~(a = 1) /\ ~(y = 0) /\
         (x EXP 2 = (a EXP 2 - 1) * y EXP 2 + 1)
@@ -601,7 +604,7 @@ unsafe def SOLUTIONS_INDUCTION : thm := keep "SOLUTIONS_INDUCTION" fun _ => (do
 #eval SOLUTIONS_INDUCTION
 
 #eval phrase 22
-unsafe def SOLUTIONS_ARE_XY : thm := keep "SOLUTIONS_ARE_XY" fun _ => (do
+def SOLUTIONS_ARE_XY : thm := keep "SOLUTIONS_ARE_XY" fun _ => (do
   prove ([[!a x y.
     ~(a = 0) /\
     (x EXP 2 = (a EXP 2 - 1) * y EXP 2 + 1)
@@ -643,7 +646,7 @@ unsafe def SOLUTIONS_ARE_XY : thm := keep "SOLUTIONS_ARE_XY" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 23
-unsafe def ADDITION_FORMULA_POS : thm := keep "ADDITION_FORMULA_POS" fun _ => (do
+def ADDITION_FORMULA_POS : thm := keep "ADDITION_FORMULA_POS" fun _ => (do
   prove ([[!a m n.
      ~(a = 0)
      ==> ((X a (m + n) = X a m * X a n + (a EXP 2 - 1) * Y a m * Y a n) /\
@@ -680,7 +683,7 @@ unsafe def ADDITION_FORMULA_POS : thm := keep "ADDITION_FORMULA_POS" fun _ => (d
 #eval ADDITION_FORMULA_POS
 
 #eval phrase 24
-unsafe def ADDITION_FORMULA_NEG : thm := keep "ADDITION_FORMULA_NEG" fun _ => (do
+def ADDITION_FORMULA_NEG : thm := keep "ADDITION_FORMULA_NEG" fun _ => (do
   prove ([[!a m n.
      ~(a = 0) /\ m <= n
      ==> ((X a (n - m) = X a m * X a n - (a EXP 2 - 1) * Y a m * Y a n) /\
@@ -738,7 +741,7 @@ unsafe def ADDITION_FORMULA_NEG : thm := keep "ADDITION_FORMULA_NEG" fun _ => (d
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 25
-unsafe def Y_INCREASES_SUC : thm := keep "Y_INCREASES_SUC" fun _ => (do
+def Y_INCREASES_SUC : thm := keep "Y_INCREASES_SUC" fun _ => (do
   prove ([[!a n. ~(a = 0) ==> Y a n < Y a (SUC n)]])
    (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [ADD1, ADDITION_FORMULA_POS] THEN
     REWRITE_TAC [X_CLAUSES, Y_CLAUSES] THEN
@@ -755,7 +758,7 @@ unsafe def Y_INCREASES_SUC : thm := keep "Y_INCREASES_SUC" fun _ => (do
 #eval Y_INCREASES_SUC
 
 #eval phrase 26
-unsafe def Y_INCREASES_LT : thm := keep "Y_INCREASES_LT" fun _ => (do
+def Y_INCREASES_LT : thm := keep "Y_INCREASES_LT" fun _ => (do
   prove ([[!a m n. ~(a = 0) /\ m < n ==> Y a m < Y a n]])
    (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
     GEN_REWRITE_TAC HolLight.LAND_CONV [LT_EXISTS] THEN
@@ -771,14 +774,14 @@ unsafe def Y_INCREASES_LT : thm := keep "Y_INCREASES_LT" fun _ => (do
 #eval Y_INCREASES_LT
 
 #eval phrase 27
-unsafe def Y_INCREASES_LE : thm := keep "Y_INCREASES_LE" fun _ => (do
+def Y_INCREASES_LE : thm := keep "Y_INCREASES_LE" fun _ => (do
   prove ([[!a m n. ~(a = 0) /\ m <= n ==> Y a m <= Y a n]])
    (REWRITE_TAC [LE_LT] THEN MESON_TAC [LE_REFL, Y_INCREASES_LT])
   : ExceptT String IO thm).run
 #eval Y_INCREASES_LE
 
 #eval phrase 28
-unsafe def Y_INJ : thm := keep "Y_INJ" fun _ => (do
+def Y_INJ : thm := keep "Y_INJ" fun _ => (do
   prove ([[!a m n. ~(a = 0) ==> ((Y a m = Y a n) <=> (m = n))]])
    (REPEAT STRIP_TAC THEN EQ_TAC THEN SIMP_TAC [] THEN
     MP_TAC (SPEC ([[a:num]]) Y_INCREASES_LT) THEN ASM_REWRITE_TAC [] THEN
@@ -791,7 +794,7 @@ unsafe def Y_INJ : thm := keep "Y_INJ" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 29
-unsafe def X_INCREASES_LE : thm := keep "X_INCREASES_LE" fun _ => (do
+def X_INCREASES_LE : thm := keep "X_INCREASES_LE" fun _ => (do
   prove ([[!a m n. ~(a = 0) /\ m <= n ==> X a m <= X a n]])
    (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
     GEN_REWRITE_TAC HolLight.LAND_CONV [LE_EXISTS] THEN
@@ -803,7 +806,7 @@ unsafe def X_INCREASES_LE : thm := keep "X_INCREASES_LE" fun _ => (do
 #eval X_INCREASES_LE
 
 #eval phrase 30
-unsafe def X_INCREASES_LT : thm := keep "X_INCREASES_LT" fun _ => (do
+def X_INCREASES_LT : thm := keep "X_INCREASES_LT" fun _ => (do
   prove ([[!a m n. ~(a = 0) /\ ~(a = 1) /\ m < n ==> X a m < X a n]])
    (REPEAT GEN_TAC THEN
     GEN_REWRITE_TAC (HolLight.LAND_CONV o HolLight.ONCE_DEPTH_CONV) [(← ExceptT.mk (HolLight.GSYM LE_SUC_LT))] THEN
@@ -827,14 +830,14 @@ unsafe def X_INCREASES_LT : thm := keep "X_INCREASES_LT" fun _ => (do
 #eval X_INCREASES_LT
 
 #eval phrase 31
-unsafe def X_INCREASES_SUC : thm := keep "X_INCREASES_SUC" fun _ => (do
+def X_INCREASES_SUC : thm := keep "X_INCREASES_SUC" fun _ => (do
   prove ([[!a n. ~(a = 0) /\ ~(a = 1) ==> X a n < X a (SUC n)]])
    (SIMP_TAC [X_INCREASES_LT, LT])
   : ExceptT String IO thm).run
 #eval X_INCREASES_SUC
 
 #eval phrase 32
-unsafe def X_INJ : thm := keep "X_INJ" fun _ => (do
+def X_INJ : thm := keep "X_INJ" fun _ => (do
   prove ([[!a m n. ~(a = 0) /\ ~(a = 1) ==> ((X a m = X a n) <=> (m = n))]])
    (REPEAT STRIP_TAC THEN EQ_TAC THEN SIMP_TAC [] THEN
     MP_TAC (SPEC ([[a:num]]) X_INCREASES_LT) THEN ASM_REWRITE_TAC [] THEN
@@ -847,7 +850,7 @@ unsafe def X_INJ : thm := keep "X_INJ" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 33
-unsafe def XY_COPRIME : thm := keep "XY_COPRIME" fun _ => (do
+def XY_COPRIME : thm := keep "XY_COPRIME" fun _ => (do
   prove ([[!a n. ~(a = 0) ==> coprime(X a n,Y a n)]])
    (REPEAT GEN_TAC THEN
     DISCH_THEN (MP_TAC o HolLight.SPEC ([[n:num]]) o HolLight.MATCH_MP XY_ARE_SOLUTIONS) THEN
@@ -869,7 +872,7 @@ unsafe def XY_COPRIME : thm := keep "XY_COPRIME" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 34
-unsafe def Y_DIVIDES_LEMMA : thm := keep "Y_DIVIDES_LEMMA" fun _ => (do
+def Y_DIVIDES_LEMMA : thm := keep "Y_DIVIDES_LEMMA" fun _ => (do
   prove ([[!a k n. ~(a = 0) ==> (Y a n) divides (Y a (n * k))]])
    (REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN DISCH_TAC THEN
     ONCE_REWRITE_TAC [SWAP_FORALL_THM] THEN GEN_TAC THEN
@@ -885,7 +888,7 @@ unsafe def Y_DIVIDES_LEMMA : thm := keep "Y_DIVIDES_LEMMA" fun _ => (do
 #eval Y_DIVIDES_LEMMA
 
 #eval phrase 35
-unsafe def Y_DIVIDES : thm := keep "Y_DIVIDES" fun _ => (do
+def Y_DIVIDES : thm := keep "Y_DIVIDES" fun _ => (do
   prove ([[!a m n. ~(a = 0) ==> ((Y a m) divides (Y a n) <=> m divides n)]])
    (REPEAT STRIP_TAC THEN EQ_TAC THENL
      [ALL_TAC,
@@ -937,7 +940,7 @@ unsafe def Y_DIVIDES : thm := keep "Y_DIVIDES" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 36
-unsafe def BINOMIAL_TRIVIALITY : thm := keep "BINOMIAL_TRIVIALITY" fun _ => (do
+def BINOMIAL_TRIVIALITY : thm := keep "BINOMIAL_TRIVIALITY" fun _ => (do
   prove ([[!x y d n. ?p q.
       (&x + &y * sqrt(&d)) pow (n + 2) =
       &x pow (n + 2) +
@@ -1011,7 +1014,7 @@ unsafe def BINOMIAL_TRIVIALITY : thm := keep "BINOMIAL_TRIVIALITY" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 37
-unsafe def Y_LOWERBOUND : thm := keep "Y_LOWERBOUND" fun _ => (do
+def Y_LOWERBOUND : thm := keep "Y_LOWERBOUND" fun _ => (do
   prove ([[!a n. (2 * a - 1) EXP n <= Y a (n + 1)]])
    (GEN_TAC THEN INDUCT_TAC THEN REWRITE_TAC [EXP, ARITH, Y_CLAUSES] THEN
     ASM_CASES_TAC [[a = 0]] THEN ASM_REWRITE_TAC [ARITH, MULT_CLAUSES, LE_0] THEN
@@ -1026,7 +1029,7 @@ unsafe def Y_LOWERBOUND : thm := keep "Y_LOWERBOUND" fun _ => (do
 #eval Y_LOWERBOUND
 
 #eval phrase 38
-unsafe def Y_UPPERBOUND : thm := keep "Y_UPPERBOUND" fun _ => (do
+def Y_UPPERBOUND : thm := keep "Y_UPPERBOUND" fun _ => (do
   prove ([[!a n. Y a (n + 1) <= (2 * a) EXP n]])
    (GEN_TAC THEN INDUCT_TAC THEN
     REWRITE_TAC [EXP, ADD_CLAUSES, Y_CLAUSES, LE_REFL] THEN
@@ -1041,7 +1044,7 @@ unsafe def Y_UPPERBOUND : thm := keep "Y_UPPERBOUND" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 39
-unsafe def XY_Y3_CONGRUENCE : thm := keep "XY_Y3_CONGRUENCE" fun _ => (do
+def XY_Y3_CONGRUENCE : thm := keep "XY_Y3_CONGRUENCE" fun _ => (do
   prove ([[!a n k. ~(a = 0)
            ==> ?q. Y a (n * k) =
                    k * (X a n) EXP (k - 1) * Y a n + q * (Y a n) EXP 3]])
@@ -1100,7 +1103,7 @@ unsafe def XY_Y3_CONGRUENCE : thm := keep "XY_Y3_CONGRUENCE" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 40
-unsafe def Y2_DIVIDES : thm := keep "Y2_DIVIDES" fun _ => (do
+def Y2_DIVIDES : thm := keep "Y2_DIVIDES" fun _ => (do
   prove ([[!a m n. ~(a = 0)
            ==> (((Y a m) EXP 2) divides (Y a n) <=> (m * Y a m) divides n)]])
    (REPEAT STRIP_TAC THEN ASM_CASES_TAC [[m = 0]] THENL
@@ -1149,7 +1152,7 @@ unsafe def Y2_DIVIDES : thm := keep "Y2_DIVIDES" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 41
-unsafe def Y_N_MOD2 : thm := keep "Y_N_MOD2" fun _ => (do
+def Y_N_MOD2 : thm := keep "Y_N_MOD2" fun _ => (do
   prove ([[!a n. ~(a = 0) ==> ?q. Y a n = 2 * q + n]])
    (GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
     MATCH_MP_TAC PELL_INDUCTION THEN REWRITE_TAC [Y_CLAUSES] THEN
@@ -1190,7 +1193,7 @@ unsafe def Y_N_MOD2 : thm := keep "Y_N_MOD2" fun _ => (do
 #eval Y_N_MOD2
 
 #eval phrase 42
-unsafe def Y_N_MODA1 : thm := keep "Y_N_MODA1" fun _ => (do
+def Y_N_MODA1 : thm := keep "Y_N_MODA1" fun _ => (do
   prove ([[!a n. ~(a = 0) ==> ?q. Y a n = q * (a - 1) + n]])
    (GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
     ASM_CASES_TAC [[a = 1]] THENL
@@ -1255,7 +1258,7 @@ unsafe def Y_N_MODA1 : thm := keep "Y_N_MODA1" fun _ => (do
 #eval Y_N_MODA1
 
 #eval phrase 43
-unsafe def X_CONGRUENT : thm := keep "X_CONGRUENT" fun _ => (do
+def X_CONGRUENT : thm := keep "X_CONGRUENT" fun _ => (do
   prove ([[!a b c n. ~(a = 0) ==> ?q. X (a + b * c) n = X a n + q * c]])
    (GEN_TAC THEN GEN_TAC THEN GEN_TAC THEN
     REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
@@ -1303,7 +1306,7 @@ unsafe def X_CONGRUENT : thm := keep "X_CONGRUENT" fun _ => (do
 #eval X_CONGRUENT
 
 #eval phrase 44
-unsafe def Y_CONGRUENT : thm := keep "Y_CONGRUENT" fun _ => (do
+def Y_CONGRUENT : thm := keep "Y_CONGRUENT" fun _ => (do
   prove ([[!a b c n. ~(a = 0) ==> ?q. Y (a + b * c) n = Y a n + q * c]])
    (GEN_TAC THEN GEN_TAC THEN GEN_TAC THEN
     REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
@@ -1355,7 +1358,7 @@ unsafe def Y_CONGRUENT : thm := keep "Y_CONGRUENT" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 45
-unsafe def X_CONGRUENT_2NJ_POS : thm := keep "X_CONGRUENT_2NJ_POS" fun _ => (do
+def X_CONGRUENT_2NJ_POS : thm := keep "X_CONGRUENT_2NJ_POS" fun _ => (do
   prove ([[!a n j. ~(a = 0) ==> ?q. X a (2 * n + j) + X a j = q * X a n]])
    (REPEAT STRIP_TAC THEN
     MP_TAC (SPECL [ [[a:num]], [[n:num]], [[n + j:num]] ] ADDITION_FORMULA_POS) THEN
@@ -1374,7 +1377,7 @@ unsafe def X_CONGRUENT_2NJ_POS : thm := keep "X_CONGRUENT_2NJ_POS" fun _ => (do
 #eval X_CONGRUENT_2NJ_POS
 
 #eval phrase 46
-unsafe def X_CONGRUENT_4NJ_POS : thm := keep "X_CONGRUENT_4NJ_POS" fun _ => (do
+def X_CONGRUENT_4NJ_POS : thm := keep "X_CONGRUENT_4NJ_POS" fun _ => (do
   prove ([[!a n j. ~(a = 0) ==> ?q. X a (4 * n + j) = q * X a n + X a j]])
    (REPEAT STRIP_TAC THEN
     MP_TAC (SPECL [ [[a:num]], [[n:num]], [[2 * n + j]] ] X_CONGRUENT_2NJ_POS) THEN
@@ -1394,7 +1397,7 @@ unsafe def X_CONGRUENT_4NJ_POS : thm := keep "X_CONGRUENT_4NJ_POS" fun _ => (do
 #eval X_CONGRUENT_4NJ_POS
 
 #eval phrase 47
-unsafe def X_CONGRUENT_4MNJ_POS : thm := keep "X_CONGRUENT_4MNJ_POS" fun _ => (do
+def X_CONGRUENT_4MNJ_POS : thm := keep "X_CONGRUENT_4MNJ_POS" fun _ => (do
   prove ([[!a m n j. ~(a = 0) ==> ?q. X a (4 * m * n + j) = q * X a n + X a j]])
    (GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN
     DISCH_TAC THEN INDUCT_TAC THEN REWRITE_TAC [MULT_CLAUSES, ADD_CLAUSES] THENL
@@ -1412,7 +1415,7 @@ unsafe def X_CONGRUENT_4MNJ_POS : thm := keep "X_CONGRUENT_4MNJ_POS" fun _ => (d
 #eval X_CONGRUENT_4MNJ_POS
 
 #eval phrase 48
-unsafe def X_CONGRUENT_2NJ_NEG_LEMMA : thm := keep "X_CONGRUENT_2NJ_NEG_LEMMA" fun _ => (do
+def X_CONGRUENT_2NJ_NEG_LEMMA : thm := keep "X_CONGRUENT_2NJ_NEG_LEMMA" fun _ => (do
   prove ([[!a n j. ~(a = 0) /\ j <= n ==> ?q. X a (2 * n - j) + X a j = q * X a n]])
    (REPEAT STRIP_TAC THEN ASM_CASES_TAC [[j = n:num]] THENL
      [EXISTS_TAC [[2]] THEN ASM_REWRITE_TAC [MULT_2, ADD_SUB], ALL_TAC] THEN
@@ -1450,7 +1453,7 @@ unsafe def X_CONGRUENT_2NJ_NEG_LEMMA : thm := keep "X_CONGRUENT_2NJ_NEG_LEMMA" f
 #eval X_CONGRUENT_2NJ_NEG_LEMMA
 
 #eval phrase 49
-unsafe def X_CONGRUENT_2NJ_NEG : thm := keep "X_CONGRUENT_2NJ_NEG" fun _ => (do
+def X_CONGRUENT_2NJ_NEG : thm := keep "X_CONGRUENT_2NJ_NEG" fun _ => (do
   prove ([[!a n j. ~(a = 0) /\ j <= 2 * n ==> ?q. X a (2 * n - j) + X a j = q * X a n]])
    (REPEAT STRIP_TAC THEN
     ASM_CASES_TAC [[j <= n:num]] THEN ASM_SIMP_TAC [X_CONGRUENT_2NJ_NEG_LEMMA] THEN
@@ -1466,7 +1469,7 @@ unsafe def X_CONGRUENT_2NJ_NEG : thm := keep "X_CONGRUENT_2NJ_NEG" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 50
-unsafe def XY_GCD_LEMMA : thm := keep "XY_GCD_LEMMA" fun _ => (do
+def XY_GCD_LEMMA : thm := keep "XY_GCD_LEMMA" fun _ => (do
   prove ([[!a m n. ~(a = 0) /\ m < n
            ==> (gcd(Y a m,Y a n) = Y a (gcd(m,n)))]])
    (GEN_TAC THEN ASM_CASES_TAC [[a = 0]] THEN ASM_REWRITE_TAC [] THEN
@@ -1511,7 +1514,7 @@ unsafe def XY_GCD_LEMMA : thm := keep "XY_GCD_LEMMA" fun _ => (do
 #eval XY_GCD_LEMMA
 
 #eval phrase 51
-unsafe def XY_GCD : thm := keep "XY_GCD" fun _ => (do
+def XY_GCD : thm := keep "XY_GCD" fun _ => (do
   prove ([[!a m n. ~(a = 0) ==> (gcd(Y a m,Y a n) = Y a (gcd(m,n)))]])
    (REPEAT STRIP_TAC THEN
     REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
@@ -1528,7 +1531,7 @@ unsafe def XY_GCD : thm := keep "XY_GCD" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 52
-unsafe def STEP_DOWN_LEMMA : thm := keep "STEP_DOWN_LEMMA" fun _ => (do
+def STEP_DOWN_LEMMA : thm := keep "STEP_DOWN_LEMMA" fun _ => (do
   prove ([[!a i j n q.
         ~(a = 0) /\ ~(a = 1) /\
         i <= j /\ j <= 2 * n /\
@@ -1676,7 +1679,7 @@ unsafe def STEP_DOWN_LEMMA : thm := keep "STEP_DOWN_LEMMA" fun _ => (do
 #eval STEP_DOWN_LEMMA
 
 #eval phrase 53
-unsafe def STEP_DOWN_LEMMA_4_ASYM : thm := keep "STEP_DOWN_LEMMA_4_ASYM" fun _ => (do
+def STEP_DOWN_LEMMA_4_ASYM : thm := keep "STEP_DOWN_LEMMA_4_ASYM" fun _ => (do
   prove ([[!a i j n q.
         ~(a = 0) /\ ~(a = 1) /\
         0 < i /\ i <= n /\ j < 4 * n /\
@@ -1738,7 +1741,7 @@ unsafe def STEP_DOWN_LEMMA_4_ASYM : thm := keep "STEP_DOWN_LEMMA_4_ASYM" fun _ =
 #eval STEP_DOWN_LEMMA_4_ASYM
 
 #eval phrase 54
-unsafe def STEP_DOWN_LEMMA_4 : thm := keep "STEP_DOWN_LEMMA_4" fun _ => (do
+def STEP_DOWN_LEMMA_4 : thm := keep "STEP_DOWN_LEMMA_4" fun _ => (do
   prove ([[!a i j n q1 q2.
         ~(a = 0) /\ ~(a = 1) /\
         0 < i /\ i <= n /\ j < 4 * n /\
@@ -1771,7 +1774,7 @@ unsafe def STEP_DOWN_LEMMA_4 : thm := keep "STEP_DOWN_LEMMA_4" fun _ => (do
 #eval STEP_DOWN_LEMMA_4
 
 #eval phrase 55
-unsafe def STEP_DOWN_LEMMA_STRONG_ASYM : thm := keep "STEP_DOWN_LEMMA_STRONG_ASYM" fun _ => (do
+def STEP_DOWN_LEMMA_STRONG_ASYM : thm := keep "STEP_DOWN_LEMMA_STRONG_ASYM" fun _ => (do
   prove ([[!a i j n c.
         ~(a = 0) /\ ~(a = 1) /\
         0 < i /\ i <= n /\
@@ -1839,7 +1842,7 @@ unsafe def STEP_DOWN_LEMMA_STRONG_ASYM : thm := keep "STEP_DOWN_LEMMA_STRONG_ASY
 #eval STEP_DOWN_LEMMA_STRONG_ASYM
 
 #eval phrase 56
-unsafe def STEP_DOWN_LEMMA_STRONG : thm := keep "STEP_DOWN_LEMMA_STRONG" fun _ => (do
+def STEP_DOWN_LEMMA_STRONG : thm := keep "STEP_DOWN_LEMMA_STRONG" fun _ => (do
   prove ([[!a i j n c1 c2.
         ~(a = 0) /\ ~(a = 1) /\ 0 < i /\ i <= n /\
         (X a i + c1 * X a n = X a j + c2 * X a n)
@@ -1879,7 +1882,7 @@ unsafe def STEP_DOWN_LEMMA_STRONG : thm := keep "STEP_DOWN_LEMMA_STRONG" fun _ =
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 57
-unsafe def Y_DIOPH : thm := keep "Y_DIOPH" fun _ => (do
+def Y_DIOPH : thm := keep "Y_DIOPH" fun _ => (do
   prove ([[~(a = 0) /\ ~(a = 1) /\ ~(y = 0)
    ==> ((y = Y a k) <=>
         ?x u v r b p q s t c d.
@@ -2152,7 +2155,7 @@ unsafe def Y_DIOPH : thm := keep "Y_DIOPH" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 58
-unsafe def BINOMIALISH_LEMMA : thm := keep "BINOMIALISH_LEMMA" fun _ => (do
+def BINOMIALISH_LEMMA : thm := keep "BINOMIALISH_LEMMA" fun _ => (do
   prove ([[!m n. m EXP n * (m - n) <= m * (m - 1) EXP n]])
    (GEN_TAC THEN INDUCT_TAC THEN
     REWRITE_TAC [EXP, SUB_0, MULT_CLAUSES, LE_REFL] THEN
@@ -2171,7 +2174,7 @@ unsafe def BINOMIALISH_LEMMA : thm := keep "BINOMIALISH_LEMMA" fun _ => (do
 #eval BINOMIALISH_LEMMA
 
 #eval phrase 59
-unsafe def XY_EXP_LEMMA : thm := keep "XY_EXP_LEMMA" fun _ => (do
+def XY_EXP_LEMMA : thm := keep "XY_EXP_LEMMA" fun _ => (do
   prove ([[!a k n.
         ~(a = 0) /\
         2 * n * a EXP n < k
@@ -2258,7 +2261,7 @@ unsafe def XY_EXP_LEMMA : thm := keep "XY_EXP_LEMMA" fun _ => (do
 #eval XY_EXP_LEMMA
 
 #eval phrase 60
-unsafe def ABS_LT_REPRESENTATION : thm := keep "ABS_LT_REPRESENTATION" fun _ => (do
+def ABS_LT_REPRESENTATION : thm := keep "ABS_LT_REPRESENTATION" fun _ => (do
   prove ([[!x y z.
     ~(y = 0)
     ==> (abs(&x / &y - &z) < &1 / &2 <=>
@@ -2303,7 +2306,7 @@ unsafe def ABS_LT_REPRESENTATION : thm := keep "ABS_LT_REPRESENTATION" fun _ => 
 #eval ABS_LT_REPRESENTATION
 
 #eval phrase 61
-unsafe def Y_EQ_0 : thm := keep "Y_EQ_0" fun _ => (do
+def Y_EQ_0 : thm := keep "Y_EQ_0" fun _ => (do
   prove ([[!a n. ~(a = 0) ==> ((Y a n = 0) <=> (n = 0))]])
    (REPEAT STRIP_TAC THEN
     SUBST1_TAC (← ExceptT.mk (HolLight.SYM (← ExceptT.mk (HolLight.SPEC ([[a:num]]) (← ExceptT.mk (HolLight.CONJUNCT1 Y_CLAUSES)))))) THEN
@@ -2312,7 +2315,7 @@ unsafe def Y_EQ_0 : thm := keep "Y_EQ_0" fun _ => (do
 #eval Y_EQ_0
 
 #eval phrase 62
-unsafe def XY_EXP : thm := keep "XY_EXP" fun _ => (do
+def XY_EXP : thm := keep "XY_EXP" fun _ => (do
   let lemma1 ← prove ([[(?x y z. (a = x) /\ (b = y) /\ (c = z) /\ P x y z) <=> P a b c]])
     (MESON_TAC [])
   let lemma2 ← (ExceptT.mk (HolLight.CONV_RULE (HolLight.RAND_CONV (HolLight.ONCE_DEPTH_CONV HolLight.SYM_CONV))
@@ -2373,7 +2376,7 @@ unsafe def XY_EXP : thm := keep "XY_EXP" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 63
-unsafe def REAL_SUM_OF_SQUARES : thm := keep "REAL_SUM_OF_SQUARES" fun _ => (do
+def REAL_SUM_OF_SQUARES : thm := keep "REAL_SUM_OF_SQUARES" fun _ => (do
   prove ([[(x pow 2 + y pow 2 = &0) <=> (x = &0) /\ (y = &0)]])
    (REWRITE_TAC [REAL_POW_2] THEN EQ_TAC THEN
     SIMP_TAC [REAL_MUL_LZERO, REAL_ADD_LID] THEN
@@ -2388,7 +2391,7 @@ unsafe def REAL_SUM_OF_SQUARES : thm := keep "REAL_SUM_OF_SQUARES" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 64
-unsafe def DIOPH_CONJ : thm := keep "DIOPH_CONJ" fun _ => (do
+def DIOPH_CONJ : thm := keep "DIOPH_CONJ" fun _ => (do
   prove ([[(x1 = x2) /\ (y1 = y2) <=>
    (x1 * x1 + x2 * x2 + y1 * y1 + y2 * y2 = 2 * x1 * x2 + 2 * y1 * y2)]])
    (REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM REAL_OF_NUM_EQ)),
@@ -2400,7 +2403,7 @@ unsafe def DIOPH_CONJ : thm := keep "DIOPH_CONJ" fun _ => (do
 #eval DIOPH_CONJ
 
 #eval phrase 65
-unsafe def DIOPH_DISJ : thm := keep "DIOPH_DISJ" fun _ => (do
+def DIOPH_DISJ : thm := keep "DIOPH_DISJ" fun _ => (do
   prove ([[(x1 = x2) \/ (y1 = y2) <=>
    (x1 * y1 + x2 * y2 = x1 * y2 + x2 * y1)]])
    (REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM REAL_OF_NUM_EQ)),
@@ -2415,7 +2418,7 @@ unsafe def DIOPH_DISJ : thm := keep "DIOPH_DISJ" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 66
-unsafe def DIOPH_LE : thm := keep "DIOPH_LE" fun _ => (do
+def DIOPH_LE : thm := keep "DIOPH_LE" fun _ => (do
   prove ([[x <= y <=> ?d:num. x + d = y]])
    (REWRITE_TAC [LE_EXISTS] THEN
     AP_TERM_TAC THEN ABS_TAC THEN
@@ -2424,7 +2427,7 @@ unsafe def DIOPH_LE : thm := keep "DIOPH_LE" fun _ => (do
 #eval DIOPH_LE
 
 #eval phrase 67
-unsafe def DIOPH_LT : thm := keep "DIOPH_LT" fun _ => (do
+def DIOPH_LT : thm := keep "DIOPH_LT" fun _ => (do
   prove ([[x < y <=> ?d. x + d + 1 = y]])
    (REWRITE_TAC [LT_EXISTS] THEN
     REWRITE_TAC [ADD1] THEN
@@ -2434,7 +2437,7 @@ unsafe def DIOPH_LT : thm := keep "DIOPH_LT" fun _ => (do
 #eval DIOPH_LT
 
 #eval phrase 68
-unsafe def DIOPH_NE : thm := keep "DIOPH_NE" fun _ => (do
+def DIOPH_NE : thm := keep "DIOPH_NE" fun _ => (do
   prove ([[~(x = y) <=> x < y \/ y < x:num]])
    (ARITH_TAC)
   : ExceptT String IO thm).run
@@ -2445,7 +2448,7 @@ unsafe def DIOPH_NE : thm := keep "DIOPH_NE" fun _ => (do
 -- ------------------------------------------------------------------------- --
 
 #eval phrase 69
-unsafe def Y_0 : thm := keep "Y_0" fun _ => (do
+def Y_0 : thm := keep "Y_0" fun _ => (do
   prove ([[!k. Y 0 k = if k = 1 then 1 else 0]])
    (INDUCT_TAC THEN REWRITE_TAC [Y_CLAUSES, ARITH_EQ] THEN
     SPEC_TAC ([[k:num]], [[k:num]]) THEN
@@ -2456,7 +2459,7 @@ unsafe def Y_0 : thm := keep "Y_0" fun _ => (do
 #eval Y_0
 
 #eval phrase 70
-unsafe def Y_0_TRIV : thm := keep "Y_0_TRIV" fun _ => (do
+def Y_0_TRIV : thm := keep "Y_0_TRIV" fun _ => (do
   prove ([[!k. (Y 0 k = 0) <=> ~(k = 1)]])
    (GEN_TAC THEN REWRITE_TAC [Y_0] THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [ARITH_EQ])
@@ -2464,7 +2467,7 @@ unsafe def Y_0_TRIV : thm := keep "Y_0_TRIV" fun _ => (do
 #eval Y_0_TRIV
 
 #eval phrase 71
-unsafe def DIOPH_Y : thm := keep "DIOPH_Y" fun _ => (do
+def DIOPH_Y : thm := keep "DIOPH_Y" fun _ => (do
   prove ([[(Y a k = y) <=>
         (a = 0) /\ (k = 1) /\ (y = 1) \/
         (a = 0) /\ ~(k = 1) /\ (y = 0) \/
@@ -2502,7 +2505,7 @@ unsafe def DIOPH_Y : thm := keep "DIOPH_Y" fun _ => (do
 #eval DIOPH_Y
 
 #eval phrase 72
-unsafe def DIOPH_EXP_LEMMA : thm := keep "DIOPH_EXP_LEMMA" fun _ => (do
+def DIOPH_EXP_LEMMA : thm := keep "DIOPH_EXP_LEMMA" fun _ => (do
   prove ([[(m EXP n = p) <=>
         (m = 0) /\ (n = 0) /\ (p = 1) \/
         (m = 0) /\ ~(n = 0) /\ (p = 0) \/
@@ -2521,7 +2524,7 @@ unsafe def DIOPH_EXP_LEMMA : thm := keep "DIOPH_EXP_LEMMA" fun _ => (do
 #eval DIOPH_EXP_LEMMA
 
 #eval phrase 73
-unsafe def DIOPH_EXP : thm := keep "DIOPH_EXP" fun _ => (do
+def DIOPH_EXP : thm := keep "DIOPH_EXP" fun _ => (do
   let th1 ← ExceptT.mk (REWRITE_RULE [DIOPH_Y] DIOPH_EXP_LEMMA)
   let th2 ← ExceptT.mk (REWRITE_RULE [EXP_2] th1)
   let th3 ← ExceptT.mk (REWRITE_RULE [DIOPH_NE, DIOPH_LT, DIOPH_LE] th2)

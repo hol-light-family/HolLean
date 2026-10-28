@@ -53,7 +53,38 @@ inductive history where
   | Start : Int → history
   | Mmul  : (Rat × List Int) → history → history
   | Add   : history → history → history
-  deriving Inhabited, Repr, BEq
+  deriving Inhabited, Repr
+
+/-- Equality of histories, for the `run_proof` caches.  A history is a DAG
+    with heavy sharing (the OCaml compares it with physical equality,
+    `assoceq`).  Plain structural comparison walks the shared subterms as a
+    tree, which is exponential; so each node is first tested for pointer
+    equality (`withPtrEqDecEq`), which answers identical shared subterms in
+    one step.  The result is still structural equality. -/
+def historyDecEq : (a b : history) → Decidable (a = b)
+  | .Start m, .Start n =>
+      if h : m = n then isTrue (h ▸ rfl) else isFalse (fun e => by cases e; exact h rfl)
+  | .Mmul m p, .Mmul n q =>
+      if hm : m = n then
+        match withPtrEqDecEq p q (fun _ => historyDecEq p q) with
+        | isTrue hp => isTrue (hm ▸ hp ▸ rfl)
+        | isFalse hp => isFalse (fun e => by cases e; exact hp rfl)
+      else isFalse (fun e => by cases e; exact hm rfl)
+  | .Add p1 p2, .Add q1 q2 =>
+      match withPtrEqDecEq p1 q1 (fun _ => historyDecEq p1 q1) with
+      | isFalse h1 => isFalse (fun e => by cases e; exact h1 rfl)
+      | isTrue h1 =>
+        match withPtrEqDecEq p2 q2 (fun _ => historyDecEq p2 q2) with
+        | isTrue h2 => isTrue (h1 ▸ h2 ▸ rfl)
+        | isFalse h2 => isFalse (fun e => by cases e; exact h2 rfl)
+  | .Start _, .Mmul _ _ => isFalse (fun e => by cases e)
+  | .Start _, .Add _ _ => isFalse (fun e => by cases e)
+  | .Mmul _ _, .Start _ => isFalse (fun e => by cases e)
+  | .Mmul _ _, .Add _ _ => isFalse (fun e => by cases e)
+  | .Add _ _, .Start _ => isFalse (fun e => by cases e)
+  | .Add _ _, .Mmul _ _ => isFalse (fun e => by cases e)
+
+instance : DecidableEq history := fun a b => withPtrEqDecEq a b (fun _ => historyDecEq a b)
 
 /-- A monomial: a coefficient paired with an exponent vector.  The OCaml uses
     the bare pair type `num * int list`. -/
@@ -854,8 +885,8 @@ def holify_polynomial (K : RingParms) (Nm : HolMath.Nums.NumeralConsts)
 
 /-- `run_proof` (grobner.ml 483-490), hoisted from `execute_proof`.  The
     OCaml `assoceq` cache uses physical equality; here it is structural
-    (`BEq history`), which can only hit more often and returns the same
-    theorem. -/
+    (`DecidableEq history`, which tests pointer equality first at every
+    node), which can only hit more often and returns the same theorem. -/
 partial def run_proof
     (initpols : List thm)
     (ADD_RULE : thm → thm → ExceptT String IO thm)

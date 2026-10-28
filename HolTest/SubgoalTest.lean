@@ -67,8 +67,7 @@ private unsafe def expectFail (lbl : String) (act : IO α) (needle : String) : I
   : IO Unit)
 
 -- Help/er.hlp: `er ALL_TAC` rotates one subgoal, and one `b` undoes it all.
--- `ARITH_TAC` is int.ml's; force the library through int.ml in load order
--- first (as HolInit does), or the real layers would be built after it.
+-- `ARITH_TAC` is int.ml's (the whole library is loaded at import).
 #eval (do
   ensureHolPrefixThroughInt
   let _ ← g ([[ x + 1 = 1 + x /\ 1 + 1 = 2 ]])

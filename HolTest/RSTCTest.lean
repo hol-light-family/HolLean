@@ -9,7 +9,7 @@ tools/rstcdiff/check.sh compares far more structurally: all 134 theorems,
 the constants and definitions and all 249 load messages. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.RSTC
 
 open HolCore.Kernel HolTest.CommonTest
 

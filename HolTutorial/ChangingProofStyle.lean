@@ -9,26 +9,26 @@ namespace HolTutorial.ChangingProofStyle
 
 -- let fix ts = MAP_EVERY X_GEN_TAC ts;;
 #eval phrase 1
-unsafe def fix (ts : List term) : tactic := MAP_EVERY X_GEN_TAC ts
+def fix (ts : List term) : tactic := MAP_EVERY X_GEN_TAC ts
 #eval IO.println "<fun>"
 
 -- let assume lab t =
 --   DISCH_THEN(fun th -> if concl th = t then LABEL_TAC lab th
 --                        else failwith "assume");;
 #eval phrase 2
-unsafe def assume (lab : String) (t : term) : tactic :=
+def assume (lab : String) (t : term) : tactic :=
   DISCH_THEN (fun th => if concl th = t then LABEL_TAC lab th
                         else (fun _ => pure (.error "assume")))
 #eval IO.println "<fun>"
 
 -- let we're finished tac = tac;;
 #eval phrase 3
-unsafe def «we're» {α : Type} (_finished : α) (tac : tactic) : tactic := tac
+def «we're» {α : Type} (_finished : α) (tac : tactic) : tactic := tac
 #eval IO.println "<fun>"
 
 -- let suffices_to_prove q tac = SUBGOAL_THEN q (fun th -> MP_TAC th THEN tac);;
 #eval phrase 4
-unsafe def suffices_to_prove (q : term) (tac : tactic) : tactic :=
+def suffices_to_prove (q : term) (tac : tactic) : tactic :=
   SUBGOAL_THEN q (fun th => MP_TAC th THEN tac)
 #eval IO.println "<fun>"
 
@@ -36,21 +36,21 @@ unsafe def suffices_to_prove (q : term) (tac : tactic) : tactic :=
 --   SUBGOAL_THEN t MP_TAC THENL [tac; ALL_TAC] THEN
 --   DISCH_THEN(fun th -> LABEL_TAC lab th);;
 #eval phrase 5
-unsafe def note (lt : String × term) (tac : tactic) : tactic :=
+def note (lt : String × term) (tac : tactic) : tactic :=
   SUBGOAL_THEN lt.2 MP_TAC THENL [tac, ALL_TAC] THEN
   DISCH_THEN (fun th => LABEL_TAC lt.1 th)
 #eval IO.println "<fun>"
 
 -- let have t = note("",t);;
 #eval phrase 6
-unsafe def «have» (t : term) : tactic → tactic := note ("", t)
+def «have» (t : term) : tactic → tactic := note ("", t)
 #eval IO.println "<fun>"
 
 -- let cases (lab,t) tac =
 --   SUBGOAL_THEN t MP_TAC THENL [tac; ALL_TAC] THEN
 --   DISCH_THEN(REPEAT_TCL DISJ_CASES_THEN (LABEL_TAC lab));;
 #eval phrase 7
-unsafe def «cases» (lt : String × term) (tac : tactic) : tactic :=
+def «cases» (lt : String × term) (tac : tactic) : tactic :=
   SUBGOAL_THEN lt.2 MP_TAC THENL [tac, ALL_TAC] THEN
   DISCH_THEN (REPEAT_TCL DISJ_CASES_THEN (LABEL_TAC lt.1))
 #eval IO.println "<fun>"
@@ -59,7 +59,7 @@ unsafe def «cases» (lt : String × term) (tac : tactic) : tactic :=
 --   let tm = mk_exists(x,t) in
 --   SUBGOAL_THEN tm (X_CHOOSE_THEN x (LABEL_TAC lab)) THENL [tac; ALL_TAC];;
 #eval phrase 8
-unsafe def consider (xlt : term × String × term) (tac : tactic) : tactic :=
+def consider (xlt : term × String × term) (tac : tactic) : tactic :=
   let tm : term := match HolCore.Bool.mk_exists xlt.1 xlt.2.2 with
     | .ok t => t | .error e => panic! e
   SUBGOAL_THEN tm (X_CHOOSE_THEN xlt.1 (LABEL_TAC xlt.2.1)) THENL [tac, ALL_TAC]
@@ -67,34 +67,34 @@ unsafe def consider (xlt : term × String × term) (tac : tactic) : tactic :=
 
 -- let trivial = MESON_TAC[];;
 #eval phrase 9
-unsafe def trivial : tactic := MESON_TAC []
+def trivial : tactic := MESON_TAC []
 #eval IO.println "<fun>"
 
 -- let algebra = CONV_TAC NUM_RING;;
 #eval phrase 10
-unsafe def algebra : tactic := CONV_TAC NUM_RING
+def algebra : tactic := CONV_TAC NUM_RING
 #eval IO.println "<fun>"
 
 -- let arithmetic = ARITH_TAC;;
 #eval phrase 11
-unsafe def arithmetic : tactic := ARITH_TAC
+def arithmetic : tactic := ARITH_TAC
 #eval IO.println "<fun>"
 
 -- let by labs tac = MAP_EVERY (fun l -> USE_THEN l MP_TAC) labs THEN tac;;
 #eval phrase 12
-unsafe def «by» (labs : List String) (tac : tactic) : tactic :=
+def «by» (labs : List String) (tac : tactic) : tactic :=
   MAP_EVERY (fun l => USE_THEN l MP_TAC) labs THEN tac
 #eval IO.println "<fun>"
 
 -- let using ths tac = MAP_EVERY MP_TAC ths THEN tac;;
 #eval phrase 13
-unsafe def «using» (ths : List thm) (tac : tactic) : tactic :=
+def «using» (ths : List thm) (tac : tactic) : tactic :=
   MAP_EVERY MP_TAC ths THEN tac
 #eval IO.println "<fun>"
 
 -- let so constr arg tac = constr arg (FIRST_ASSUM MP_TAC THEN tac);;
 #eval phrase 14
-unsafe def so {α β : Type} (constr : α → tactic → β) (arg : α) (tac : tactic) : β :=
+def so {α β : Type} (constr : α → tactic → β) (arg : α) (tac : tactic) : β :=
   constr arg (FIRST_ASSUM MP_TAC THEN tac)
 #eval IO.println "<fun>"
 

@@ -12,7 +12,7 @@ Loading floor.ml (`ensureFloor`) builds every bundle in file order; a proof
 that failed would `panic!`, which the `make verify` PANIC gate catches. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Floor
 
 open HolCore.Kernel Session SessionLibrary.Floor HolTest.CommonTest
 

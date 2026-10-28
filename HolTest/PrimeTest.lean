@@ -12,7 +12,7 @@ Loading prime.ml (`ensurePrime`) builds every bundle in file order; a proof
 that failed would `panic!`, which the `make verify` PANIC gate catches. -/
 
 import HolTest.CommonTest
-import SessionLibrary
+import SessionLibrary.Prime
 
 open HolCore.Kernel Session SessionLibrary.Prime HolTest.CommonTest
 

@@ -19,11 +19,11 @@ namespace HolLogicArith.Tarski
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
    read as the OCaml does. -/
-private unsafe def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
+private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO thm :=
   ExceptT.mk (Session.prove g tac)
 
 /- `new_recursive_definition` lifted into `ExceptT String IO`. -/
-private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
+private def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
   ExceptT.mk (Session.new_recursive_definition ax tm)
 
 -- Replay Arithmetic/definability.ml (the one module tarski.ml imports).
@@ -33,17 +33,17 @@ private unsafe def newRec (ax : thm) (tm : term) : ExceptT String IO thm :=
 #eval Session.prioritize_num
 
 #eval phrase 2
-unsafe def number : thm := keep "number" fun _ => new_definition
+def number : thm := keep "number" fun _ => new_definition
   [[number(x) = 2 * (x DIV 2) + (1 - x MOD 2)]]
 #eval number
 
 #eval phrase 3
-unsafe def denumber : thm := keep "denumber" fun _ => new_definition
+def denumber : thm := keep "denumber" fun _ => new_definition
   [[denumber = number]]
 #eval denumber
 
 #eval phrase 4
-unsafe def NUMBER_DENUMBER : thm := keep "NUMBER_DENUMBER" fun _ => (do
+def NUMBER_DENUMBER : thm := keep "NUMBER_DENUMBER" fun _ => (do
   prove ([[(!s. denumber(number s) = s) /\
    (!n. number(denumber n) = n)]])
    (HolLight.tactic_of do
@@ -59,21 +59,21 @@ unsafe def NUMBER_DENUMBER : thm := keep "NUMBER_DENUMBER" fun _ => (do
 #eval NUMBER_DENUMBER
 
 #eval phrase 5
-unsafe def NUMBER_INJ : thm := keep "NUMBER_INJ" fun _ => (do
+def NUMBER_INJ : thm := keep "NUMBER_INJ" fun _ => (do
   prove ([[!x y. number(x) = number(y) <=> x = y]])
    (MESON_TAC [NUMBER_DENUMBER])
   : ExceptT String IO thm).run
 #eval NUMBER_INJ
 
 #eval phrase 6
-unsafe def NUMBER_SURJ : thm := keep "NUMBER_SURJ" fun _ => (do
+def NUMBER_SURJ : thm := keep "NUMBER_SURJ" fun _ => (do
   prove ([[!y. ?x. number(x) = y]])
    (MESON_TAC [NUMBER_DENUMBER])
   : ExceptT String IO thm).run
 #eval NUMBER_SURJ
 
 #eval phrase 7
-unsafe def gterm : thm := keep "gterm" fun _ => (do
+def gterm : thm := keep "gterm" fun _ => (do
   newRec ArithFol.term_RECURSION
     [[(gterm (V x) = NPAIR 0 (number x)) /\
       (gterm Z = NPAIR 1 0) /\
@@ -84,7 +84,7 @@ unsafe def gterm : thm := keep "gterm" fun _ => (do
 #eval gterm
 
 #eval phrase 8
-unsafe def gform : thm := keep "gform" fun _ => (do
+def gform : thm := keep "gform" fun _ => (do
   newRec ArithFol.form_RECURSION
     [[(gform False = NPAIR 0 0) /\
       (gform True = NPAIR 0 1) /\
@@ -102,7 +102,7 @@ unsafe def gform : thm := keep "gform" fun _ => (do
 #eval gform
 
 #eval phrase 9
-unsafe def GTERM_INJ : thm := keep "GTERM_INJ" fun _ => (do
+def GTERM_INJ : thm := keep "GTERM_INJ" fun _ => (do
   prove ([[!s t. (gterm s = gterm t) <=> (s = t)]])
    (MATCH_MP_TAC term_INDUCT THEN REPEAT CONJ_TAC THENL
      [ALL_TAC,
@@ -117,7 +117,7 @@ unsafe def GTERM_INJ : thm := keep "GTERM_INJ" fun _ => (do
 #eval GTERM_INJ
 
 #eval phrase 10
-unsafe def GFORM_INJ : thm := keep "GFORM_INJ" fun _ => (do
+def GFORM_INJ : thm := keep "GFORM_INJ" fun _ => (do
   prove ([[!p q. (gform p = gform q) <=> (p = q)]])
    (MATCH_MP_TAC form_INDUCT THEN REPEAT CONJ_TAC THENL
      [ALL_TAC,
@@ -139,7 +139,7 @@ unsafe def GFORM_INJ : thm := keep "GFORM_INJ" fun _ => (do
 #eval GFORM_INJ
 
 #eval phrase 11
-unsafe def GTERM_CASES : thm := keep "GTERM_CASES" fun _ => (do
+def GTERM_CASES : thm := keep "GTERM_CASES" fun _ => (do
   let sp ← ExceptT.mk (HolLight.SPEC ([[u:term]]) term_CASES)
   prove ([[((gterm u = NPAIR 0 (number x)) <=> (u = V x)) /\
    ((gterm u = NPAIR 1 0) <=> (u = Z)) /\
@@ -156,7 +156,7 @@ unsafe def GTERM_CASES : thm := keep "GTERM_CASES" fun _ => (do
 #eval GTERM_CASES
 
 #eval phrase 12
-unsafe def GFORM_CASES : thm := keep "GFORM_CASES" fun _ => (do
+def GFORM_CASES : thm := keep "GFORM_CASES" fun _ => (do
   let sp ← ExceptT.mk (HolLight.SPEC ([[r:form]]) form_CASES)
   prove ([[((gform r = NPAIR 0 0) <=> (r = False)) /\
    ((gform r = NPAIR 0 1) <=> (r = True)) /\
@@ -187,12 +187,12 @@ unsafe def GFORM_CASES : thm := keep "GFORM_CASES" fun _ => (do
 #eval GFORM_CASES
 
 #eval phrase 13
-unsafe def gnumeral : thm := keep "gnumeral" fun _ => new_definition
+def gnumeral : thm := keep "gnumeral" fun _ => new_definition
   [[gnumeral m n = (gterm(numeral m) = n)]]
 #eval gnumeral
 
 #eval phrase 14
-unsafe def arith_gnumeral1 : thm := keep "arith_gnumeral1" fun _ => new_definition
+def arith_gnumeral1 : thm := keep "arith_gnumeral1" fun _ => new_definition
   [[arith_gnumeral1 a b = formsubst ((3 |-> a) ((4 |-> b) V))
        (??0 (??1
        (V 3 === arith_pair (V 0) (V 1) &&
@@ -200,7 +200,7 @@ unsafe def arith_gnumeral1 : thm := keep "arith_gnumeral1" fun _ => new_definiti
 #eval arith_gnumeral1
 
 #eval phrase 15
-unsafe def ARITH_GNUMERAL1 : thm := keep "ARITH_GNUMERAL1" fun _ => (do
+def ARITH_GNUMERAL1 : thm := keep "ARITH_GNUMERAL1" fun _ => (do
   prove ([[!v a b. holds v (arith_gnumeral1 a b) <=>
                 ?x y. termval v a = NPAIR x y /\
                       termval v b = NPAIR (SUC x) (NPAIR 2 y)]])
@@ -210,19 +210,19 @@ unsafe def ARITH_GNUMERAL1 : thm := keep "ARITH_GNUMERAL1" fun _ => (do
 #eval ARITH_GNUMERAL1
 
 #eval phrase 16
-unsafe def FV_GNUMERAL1 : thm := keep "FV_GNUMERAL1" fun _ => (do
+def FV_GNUMERAL1 : thm := keep "FV_GNUMERAL1" fun _ => (do
   prove ([[!s t. FV(arith_gnumeral1 s t) = FVT s UNION FVT t]])
    (REWRITE_TAC [arith_gnumeral1] THEN Definability.FV_TAC [FVT_PAIR, FVT_NUMERAL])
   : ExceptT String IO thm).run
 #eval FV_GNUMERAL1
 
 #eval phrase 17
-unsafe def «arith_gnumeral1'» : thm := keep "arith_gnumeral1'" fun _ => new_definition
+def «arith_gnumeral1'» : thm := keep "arith_gnumeral1'" fun _ => new_definition
   [[arith_gnumeral1' x y = arith_rtc arith_gnumeral1 x y]]
 #eval «arith_gnumeral1'»
 
 #eval phrase 18
-unsafe def «ARITH_GNUMERAL1'» : thm := keep "ARITH_GNUMERAL1'" fun _ => (do
+def «ARITH_GNUMERAL1'» : thm := keep "ARITH_GNUMERAL1'" fun _ => (do
   prove ([[!v s t. holds v (arith_gnumeral1' s t) <=>
               RTC (\a b. ?x y. a = NPAIR x y /\
                                b = NPAIR (SUC x) (NPAIR 2 y))
@@ -233,14 +233,14 @@ unsafe def «ARITH_GNUMERAL1'» : thm := keep "ARITH_GNUMERAL1'" fun _ => (do
 #eval «ARITH_GNUMERAL1'»
 
 #eval phrase 19
-unsafe def «FV_GNUMERAL1'» : thm := keep "FV_GNUMERAL1'" fun _ => (do
+def «FV_GNUMERAL1'» : thm := keep "FV_GNUMERAL1'" fun _ => (do
   prove ([[!s t. FV(arith_gnumeral1' s t) = FVT s UNION FVT t]])
    (SIMP_TAC [«arith_gnumeral1'», FV_RTC, FV_GNUMERAL1])
   : ExceptT String IO thm).run
 #eval «FV_GNUMERAL1'»
 
 #eval phrase 20
-unsafe def arith_gnumeral : thm := keep "arith_gnumeral" fun _ => new_definition
+def arith_gnumeral : thm := keep "arith_gnumeral" fun _ => new_definition
   [[arith_gnumeral n p =
         formsubst ((0 |-> n) ((1 |-> p) V))
             (arith_gnumeral1' (arith_pair Z (numeral 3))
@@ -248,7 +248,7 @@ unsafe def arith_gnumeral : thm := keep "arith_gnumeral" fun _ => new_definition
 #eval arith_gnumeral
 
 #eval phrase 21
-unsafe def ARITH_GNUMERAL : thm := keep "ARITH_GNUMERAL" fun _ => (do
+def ARITH_GNUMERAL : thm := keep "ARITH_GNUMERAL" fun _ => (do
   let inst ← liftExcept (INST
    [([[(gterm o numeral)]], [[fn:num->num]]),
     ([[3]], [[e:num]]),
@@ -266,7 +266,7 @@ unsafe def ARITH_GNUMERAL : thm := keep "ARITH_GNUMERAL" fun _ => (do
 #eval ARITH_GNUMERAL
 
 #eval phrase 22
-unsafe def FV_GNUMERAL : thm := keep "FV_GNUMERAL" fun _ => (do
+def FV_GNUMERAL : thm := keep "FV_GNUMERAL" fun _ => (do
   prove ([[!s t. FV(arith_gnumeral s t) =  FVT(s) UNION FVT(t)]])
    (REWRITE_TAC [arith_gnumeral] THEN
     Definability.FV_TAC [«FV_GNUMERAL1'», FVT_PAIR, FVT_NUMERAL])
@@ -274,12 +274,12 @@ unsafe def FV_GNUMERAL : thm := keep "FV_GNUMERAL" fun _ => (do
 #eval FV_GNUMERAL
 
 #eval phrase 23
-unsafe def qdiag : thm := keep "qdiag" fun _ => new_definition
+def qdiag : thm := keep "qdiag" fun _ => new_definition
   [[qdiag x q = qsubst (x,numeral(gform q)) q]]
 #eval qdiag
 
 #eval phrase 24
-unsafe def arith_qdiag : thm := keep "arith_qdiag" fun _ => new_definition
+def arith_qdiag : thm := keep "arith_qdiag" fun _ => new_definition
   [[arith_qdiag x s t =
         formsubst ((1 |-> s) ((2 |-> t) V))
         (?? 3
@@ -293,21 +293,21 @@ unsafe def arith_qdiag : thm := keep "arith_qdiag" fun _ => new_definition
 #eval arith_qdiag
 
 #eval phrase 25
-unsafe def QDIAG_FV : thm := keep "QDIAG_FV" fun _ => (do
+def QDIAG_FV : thm := keep "QDIAG_FV" fun _ => (do
   prove ([[FV(qdiag x q) = FV(q) DELETE x]])
    (REWRITE_TAC [qdiag, FV_QSUBST, FVT_NUMERAL, UNION_EMPTY])
   : ExceptT String IO thm).run
 #eval QDIAG_FV
 
 #eval phrase 26
-unsafe def HOLDS_QDIAG : thm := keep "HOLDS_QDIAG" fun _ => (do
+def HOLDS_QDIAG : thm := keep "HOLDS_QDIAG" fun _ => (do
   prove ([[!v x q. holds v (qdiag x q) = holds ((x |-> gform q) v) q]])
    (SIMP_TAC [qdiag, HOLDS_QSUBST, FVT_NUMERAL, NOT_IN_EMPTY, TERMVAL_NUMERAL])
   : ExceptT String IO thm).run
 #eval HOLDS_QDIAG
 
 #eval phrase 27
-unsafe def ARITH_QDIAG : thm := keep "ARITH_QDIAG" fun _ => (do
+def ARITH_QDIAG : thm := keep "ARITH_QDIAG" fun _ => (do
   prove ([[(termval v s = gform p)
    ==> (holds v (arith_qdiag x s t) <=> (termval v t = gform(qdiag x p)))]])
    (REPEAT STRIP_TAC THEN
@@ -319,7 +319,7 @@ unsafe def ARITH_QDIAG : thm := keep "ARITH_QDIAG" fun _ => (do
 #eval ARITH_QDIAG
 
 #eval phrase 28
-unsafe def FV_QDIAG : thm := keep "FV_QDIAG" fun _ => (do
+def FV_QDIAG : thm := keep "FV_QDIAG" fun _ => (do
   prove ([[!x s t. FV(arith_qdiag x s t) = FVT(s) UNION FVT(t)]])
    (HolLight.tactic_of do
      let taut1 ← ExceptT.mk (TAUT [[(a \/ b) /\ c <=> a /\ c \/ b /\ c]])
@@ -335,14 +335,14 @@ unsafe def FV_QDIAG : thm := keep "FV_QDIAG" fun _ => (do
 #eval FV_QDIAG
 
 #eval phrase 29
-unsafe def diagonalize : thm := keep "diagonalize" fun _ => new_definition
+def diagonalize : thm := keep "diagonalize" fun _ => new_definition
   [[diagonalize x q =
         let y = VARIANT(x INSERT FV(q)) in
         ??y (arith_qdiag x (V x) (V y) && formsubst ((x |-> V y) V) q)]]
 #eval diagonalize
 
 #eval phrase 30
-unsafe def FV_DIAGONALIZE : thm := keep "FV_DIAGONALIZE" fun _ => (do
+def FV_DIAGONALIZE : thm := keep "FV_DIAGONALIZE" fun _ => (do
   prove ([[!x q. FV(diagonalize x q) = x INSERT (FV q)]])
    (REPEAT GEN_TAC THEN REWRITE_TAC [diagonalize] THEN LET_TAC THEN
     REWRITE_TAC [FV, FV_QDIAG, FORMSUBST_FV, EXTENSION, IN_INSERT, IN_DELETE,
@@ -359,7 +359,7 @@ unsafe def FV_DIAGONALIZE : thm := keep "FV_DIAGONALIZE" fun _ => (do
 #eval FV_DIAGONALIZE
 
 #eval phrase 31
-unsafe def ARITH_DIAGONALIZE : thm := keep "ARITH_DIAGONALIZE" fun _ => (do
+def ARITH_DIAGONALIZE : thm := keep "ARITH_DIAGONALIZE" fun _ => (do
   prove ([[(v x = gform p)
    ==> !q. holds v (diagonalize x q) <=> holds ((x |-> gform(qdiag x p)) v) q]])
    (REPEAT STRIP_TAC THEN REWRITE_TAC [diagonalize] THEN LET_TAC THEN
@@ -383,12 +383,12 @@ unsafe def ARITH_DIAGONALIZE : thm := keep "ARITH_DIAGONALIZE" fun _ => (do
 #eval ARITH_DIAGONALIZE
 
 #eval phrase 32
-unsafe def fixpoint : thm := keep "fixpoint" fun _ => new_definition
+def fixpoint : thm := keep "fixpoint" fun _ => new_definition
   [[fixpoint x q = qdiag x (diagonalize x q)]]
 #eval fixpoint
 
 #eval phrase 33
-unsafe def FV_FIXPOINT : thm := keep "FV_FIXPOINT" fun _ => (do
+def FV_FIXPOINT : thm := keep "FV_FIXPOINT" fun _ => (do
   prove ([[!x p. FV(fixpoint x p) = FV(p) DELETE x]])
    (REWRITE_TAC [fixpoint, FV_QDIAG, QDIAG_FV, FV_DIAGONALIZE,
                 FVT_NUMERAL] THEN
@@ -397,7 +397,7 @@ unsafe def FV_FIXPOINT : thm := keep "FV_FIXPOINT" fun _ => (do
 #eval FV_FIXPOINT
 
 #eval phrase 34
-unsafe def HOLDS_FIXPOINT : thm := keep "HOLDS_FIXPOINT" fun _ => (do
+def HOLDS_FIXPOINT : thm := keep "HOLDS_FIXPOINT" fun _ => (do
   prove ([[!x p v. holds v (fixpoint x p) <=>
            holds ((x |-> gform(fixpoint x p)) v) p]])
    (REPEAT GEN_TAC THEN SIMP_TAC [fixpoint, holds, HOLDS_QDIAG] THEN
@@ -412,7 +412,7 @@ unsafe def HOLDS_FIXPOINT : thm := keep "HOLDS_FIXPOINT" fun _ => (do
 #eval HOLDS_FIXPOINT
 
 #eval phrase 35
-unsafe def HOLDS_IFF_FIXPOINT : thm := keep "HOLDS_IFF_FIXPOINT" fun _ => (do
+def HOLDS_IFF_FIXPOINT : thm := keep "HOLDS_IFF_FIXPOINT" fun _ => (do
   prove ([[!x p v. holds v
         (fixpoint x p <-> qsubst (x,numeral(gform(fixpoint x p))) p)]])
    (SIMP_TAC [holds, HOLDS_FIXPOINT, HOLDS_QSUBST, FVT_NUMERAL, NOT_IN_EMPTY,
@@ -421,7 +421,7 @@ unsafe def HOLDS_IFF_FIXPOINT : thm := keep "HOLDS_IFF_FIXPOINT" fun _ => (do
 #eval HOLDS_IFF_FIXPOINT
 
 #eval phrase 36
-unsafe def CARNAP : thm := keep "CARNAP" fun _ => (do
+def CARNAP : thm := keep "CARNAP" fun _ => (do
   prove ([[!x q. ?p. (FV(p) = FV(q) DELETE x) /\
              arithtrue (p <-> qsubst (x,numeral(gform p)) q)]])
    (REPEAT GEN_TAC THEN EXISTS_TAC [[fixpoint x q]] THEN
@@ -430,17 +430,17 @@ unsafe def CARNAP : thm := keep "CARNAP" fun _ => (do
 #eval CARNAP
 
 #eval phrase 37
-unsafe def definable_by : thm := keep "definable_by" fun _ => new_definition
+def definable_by : thm := keep "definable_by" fun _ => new_definition
   [[definable_by P s <=> ?p x. P p /\ (!v. holds v p <=> (v(x)) IN s)]]
 #eval definable_by
 
 #eval phrase 38
-unsafe def definable : thm := keep "definable" fun _ => new_definition
+def definable : thm := keep "definable" fun _ => new_definition
   [[definable s <=> ?p x. !v. holds v p <=> (v(x)) IN s]]
 #eval definable
 
 #eval phrase 39
-unsafe def TARSKI_THEOREM : thm := keep "TARSKI_THEOREM" fun _ => (do
+def TARSKI_THEOREM : thm := keep "TARSKI_THEOREM" fun _ => (do
   let sp ← ExceptT.mk (HolLight.SPECL [ [[x:num]], [[Not p]] ] CARNAP)
   prove ([[~(definable {gform p | arithtrue p})]])
    (REWRITE_TAC [definable, IN_ELIM_THM, NOT_EXISTS_THM] THEN
@@ -454,9 +454,9 @@ unsafe def TARSKI_THEOREM : thm := keep "TARSKI_THEOREM" fun _ => (do
 #eval TARSKI_THEOREM
 
 -- @@ENSURE BEGIN
-/-- Replays this file, once per process (see Common.lean); generated by
-    tools/tutorialdiff/ensuregen.py from the `#eval`s above. -/
-unsafe def ensure : IO Unit := once "HolLogicArith.Tarski" do
+/-- Replays this file, once per process (see Common.lean).  Maintained by
+    hand: keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolLogicArith.Tarski" do
   replay (
           HolLogicArith.Definability.ensure)
   replay (

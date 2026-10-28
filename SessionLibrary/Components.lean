@@ -3,11 +3,12 @@
 /- ---------------------------------------------------------------------- -/
 /- File: SessionLibrary/Components.lean
 
-  The `unsafe` half of the components.ml translation (as
-  SessionLibrary/Floor.lean is for floor.ml): it holds the theorem lists of
-  components.ml 17-50, supplies HolLibrary.Components' dependencies from
-  Session, builds the bundle on first use, and exports every theorem by
-  name.  `ensureComponents` is `needs "Library/components.ml"`.
+  The session half of the components.ml translation: it holds the theorem
+  lists of components.ml 17-50, supplies HolLibrary.Components' dependencies
+  from Session, and exports every theorem by name.  Importing this module is
+  `needs "Library/components.ml"`: the bundle is built by `initialize` when
+  the module is loaded, after the whole of Session (components.ml has no
+  `needs` and no `prioritize_...` call of its own).
 -/
 
 import Session
@@ -17,9 +18,6 @@ open HolCore HolCore.Kernel
 open Session
 
 namespace SessionLibrary.Components
-
-/-- The core bundles, for HolLibrary's tactics. -/
-unsafe instance : HolLight.HolBase := ⟨sessionB, sessionC, sessionT⟩
 
 /- ------------------------------------------------------------------------- -/
 /- Storing useful per-case theorems not true of a general component.         -/
@@ -67,7 +65,7 @@ def add_component_orthogonality_thms (l : List thm) : IO Unit := do
 /- ------------------------------------------------------------------------- -/
 
 /-- What components.ml uses from Session. -/
-unsafe def deps (_ : Unit) : HolLibrary.Components.ComponentsDeps where
+def deps : HolLibrary.Components.ComponentsDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
   new_type_definition ty names th :=
     ExceptT.mk (Session.new_type_definition ty names.1 names.2 th)
@@ -86,67 +84,56 @@ unsafe def deps (_ : Unit) : HolLibrary.Components.ComponentsDeps where
   PAIR_EQ := Session.PAIR_EQ
   o_DEF := Session.o_DEF
 
-initialize theComponents : IO.Ref (Option HolLibrary.Components.Components) ← IO.mkRef none
-
-/-- components.ml runs after the whole of hol.ml (it has no `needs` and no
-    `prioritize_...` call of its own), so the library is loaded first. -/
-private unsafe def BComponents : HolLibrary.Components.Components :=
-  match unsafeIO (do
-    match ← theComponents.get with
-    | some d => pure d
-    | none => do
-      Session.ensureDefine
-      match ← (HolLibrary.Components.setupComponents (deps ())).run with
-      | .ok d => do theComponents.set (some d); pure d
-      | .error e => panic! s!"setupComponents failed: {e}") with
-  | .ok d => d | _ => panic! "SessionLibrary.Components: setupComponents"
+/-- components.ml, run when this module is loaded. -/
+initialize BComponents : HolLibrary.Components.Components ← do
+  match ← (HolLibrary.Components.setupComponents deps).run with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"setupComponents failed: {e}")
 
 /-- The whole components.ml bundle, for records.ml. -/
-unsafe def components : HolLibrary.Components.Components := BComponents
+def components : HolLibrary.Components.Components := BComponents
 
 /- The theorems, by name. -/
-unsafe def component_tybij              : thm := BComponents.component_tybij
-unsafe def COMPONENT_INJ                : thm := BComponents.COMPONENT_INJ
-unsafe def FORALL_COMPONENT             : thm := BComponents.FORALL_COMPONENT
-unsafe def EXISTS_COMPONENT             : thm := BComponents.EXISTS_COMPONENT
-unsafe def read_def                     : thm := BComponents.read_def
-unsafe def write_def                    : thm := BComponents.write_def
-unsafe def read                         : thm := BComponents.read
-unsafe def write                        : thm := BComponents.write
-unsafe def COMPONENT_EQ                 : thm := BComponents.COMPONENT_EQ
-unsafe def entirety                     : thm := BComponents.entirety
-unsafe def READ_ENTIRETY                : thm := BComponents.READ_ENTIRETY
-unsafe def WRITE_ENTIRETY               : thm := BComponents.WRITE_ENTIRETY
-unsafe def READ_WRITE_ENTIRETY          : thm := BComponents.READ_WRITE_ENTIRETY
-unsafe def component_compose            : thm := BComponents.component_compose
-unsafe def COMPONENT_COMPOSE_ASSOC      : thm := BComponents.COMPONENT_COMPOSE_ASSOC
-unsafe def READ_COMPONENT_COMPOSE       : thm := BComponents.READ_COMPONENT_COMPOSE
-unsafe def WRITE_COMPONENT_COMPOSE      : thm := BComponents.WRITE_COMPONENT_COMPOSE
-unsafe def COMPOSE_ENTIRETY             : thm := BComponents.COMPOSE_ENTIRETY
-unsafe def READ_WRITE_COMPONENT_COMPOSE : thm := BComponents.READ_WRITE_COMPONENT_COMPOSE
-unsafe def read_over_write              : thm := BComponents.read_over_write
-unsafe def write_over_write             : thm := BComponents.write_over_write
-unsafe def write_over_read              : thm := BComponents.write_over_read
-unsafe def weak_read_over_write         : thm := BComponents.weak_read_over_write
-unsafe def valid_component              : thm := BComponents.valid_component
-unsafe def VALID_COMPONENT_COMPOSE      : thm := BComponents.VALID_COMPONENT_COMPOSE
-unsafe def VALID_COMPONENT_ENTIRETY     : thm := BComponents.VALID_COMPONENT_ENTIRETY
-unsafe def weakly_valid_component       : thm := BComponents.weakly_valid_component
-unsafe def VALID_IMP_WEAKLY_VALID_COMPONENT : thm := BComponents.VALID_IMP_WEAKLY_VALID_COMPONENT
-unsafe def WEAKLY_VALID_COMPONENT_ENTIRETY : thm := BComponents.WEAKLY_VALID_COMPONENT_ENTIRETY
-unsafe def strongly_valid_component     : thm := BComponents.strongly_valid_component
-unsafe def STRONGLY_VALID_IMP_VALID_COMPONENT : thm := BComponents.STRONGLY_VALID_IMP_VALID_COMPONENT
-unsafe def STRONGLY_VALID_COMPONENT_COMPOSE : thm := BComponents.STRONGLY_VALID_COMPONENT_COMPOSE
-unsafe def STRONGLY_VALID_COMPONENT_ENTIRETY : thm := BComponents.STRONGLY_VALID_COMPONENT_ENTIRETY
-unsafe def extensionally_valid_component : thm := BComponents.extensionally_valid_component
-unsafe def STRONGLY_VALID_IMP_EXTENSIONALLY_VALID_COMPONENT : thm := BComponents.STRONGLY_VALID_IMP_EXTENSIONALLY_VALID_COMPONENT
-unsafe def EXTENSIONALLY_VALID_COMPONENT_ENTIRETY : thm := BComponents.EXTENSIONALLY_VALID_COMPONENT_ENTIRETY
-unsafe def orthogonal_components        : thm := BComponents.orthogonal_components
-unsafe def ORTHOGONAL_COMPONENTS_SYM    : thm := BComponents.ORTHOGONAL_COMPONENTS_SYM
+def component_tybij              : thm := BComponents.component_tybij
+def COMPONENT_INJ                : thm := BComponents.COMPONENT_INJ
+def FORALL_COMPONENT             : thm := BComponents.FORALL_COMPONENT
+def EXISTS_COMPONENT             : thm := BComponents.EXISTS_COMPONENT
+def read_def                     : thm := BComponents.read_def
+def write_def                    : thm := BComponents.write_def
+def read                         : thm := BComponents.read
+def write                        : thm := BComponents.write
+def COMPONENT_EQ                 : thm := BComponents.COMPONENT_EQ
+def entirety                     : thm := BComponents.entirety
+def READ_ENTIRETY                : thm := BComponents.READ_ENTIRETY
+def WRITE_ENTIRETY               : thm := BComponents.WRITE_ENTIRETY
+def READ_WRITE_ENTIRETY          : thm := BComponents.READ_WRITE_ENTIRETY
+def component_compose            : thm := BComponents.component_compose
+def COMPONENT_COMPOSE_ASSOC      : thm := BComponents.COMPONENT_COMPOSE_ASSOC
+def READ_COMPONENT_COMPOSE       : thm := BComponents.READ_COMPONENT_COMPOSE
+def WRITE_COMPONENT_COMPOSE      : thm := BComponents.WRITE_COMPONENT_COMPOSE
+def COMPOSE_ENTIRETY             : thm := BComponents.COMPOSE_ENTIRETY
+def READ_WRITE_COMPONENT_COMPOSE : thm := BComponents.READ_WRITE_COMPONENT_COMPOSE
+def read_over_write              : thm := BComponents.read_over_write
+def write_over_write             : thm := BComponents.write_over_write
+def write_over_read              : thm := BComponents.write_over_read
+def weak_read_over_write         : thm := BComponents.weak_read_over_write
+def valid_component              : thm := BComponents.valid_component
+def VALID_COMPONENT_COMPOSE      : thm := BComponents.VALID_COMPONENT_COMPOSE
+def VALID_COMPONENT_ENTIRETY     : thm := BComponents.VALID_COMPONENT_ENTIRETY
+def weakly_valid_component       : thm := BComponents.weakly_valid_component
+def VALID_IMP_WEAKLY_VALID_COMPONENT : thm := BComponents.VALID_IMP_WEAKLY_VALID_COMPONENT
+def WEAKLY_VALID_COMPONENT_ENTIRETY : thm := BComponents.WEAKLY_VALID_COMPONENT_ENTIRETY
+def strongly_valid_component     : thm := BComponents.strongly_valid_component
+def STRONGLY_VALID_IMP_VALID_COMPONENT : thm := BComponents.STRONGLY_VALID_IMP_VALID_COMPONENT
+def STRONGLY_VALID_COMPONENT_COMPOSE : thm := BComponents.STRONGLY_VALID_COMPONENT_COMPOSE
+def STRONGLY_VALID_COMPONENT_ENTIRETY : thm := BComponents.STRONGLY_VALID_COMPONENT_ENTIRETY
+def extensionally_valid_component : thm := BComponents.extensionally_valid_component
+def STRONGLY_VALID_IMP_EXTENSIONALLY_VALID_COMPONENT : thm := BComponents.STRONGLY_VALID_IMP_EXTENSIONALLY_VALID_COMPONENT
+def EXTENSIONALLY_VALID_COMPONENT_ENTIRETY : thm := BComponents.EXTENSIONALLY_VALID_COMPONENT_ENTIRETY
+def orthogonal_components        : thm := BComponents.orthogonal_components
+def ORTHOGONAL_COMPONENTS_SYM    : thm := BComponents.ORTHOGONAL_COMPONENTS_SYM
 
-/-- `needs "Library/components.ml"`. -/
-unsafe def ensureComponents : IO Unit := do
-  let _ ← IO.mkRef (concl BComponents.component_tybij)
-  pure ()
+/-- `needs "Library/components.ml"`: already done by importing this module. -/
+def ensureComponents : IO Unit := pure ()
 
 end SessionLibrary.Components
