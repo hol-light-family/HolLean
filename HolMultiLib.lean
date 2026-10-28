@@ -32,3 +32,4 @@ import HolMultiLib.Wlog
 import HolMultiLib.WlogExamples
 import HolMultiLib.CVectors
 import HolMultiLib.Paths
+import HolMultiLib.Paracompact
