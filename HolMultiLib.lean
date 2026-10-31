@@ -33,3 +33,8 @@ import HolMultiLib.WlogExamples
 import HolMultiLib.CVectors
 import HolMultiLib.Paths
 import HolMultiLib.Paracompact
+import HolMultiLib.Polytope
+import HolMultiLib.Degree
+import HolMultiLib.Derivatives
+import HolMultiLib.Integration
+import HolMultiLib.Measure
