@@ -4,7 +4,7 @@ by `initialize` when this module is imported, in int.ml order.  As in HOL
 Light, `int` is the default type for overloaded symbols from int.ml 61's
 `overload_interface` (which puts the int operations first; int.ml defines
 `prioritize_int` at 70 but does not call it) until the file's last
-statement, `prioritize_num` (int.ml 2765), which restores `num`.  The two
+statement, `prioritize_num` (int.ml 2796), which restores `num`.  The two
 reduction nets INT_RED_CONV (int.ml 1821) and INT_COMPUTE_CONV (int.ml 1835)
 are built from untyped patterns, so they are built while int priority is
 current.
@@ -560,7 +560,7 @@ initialize intPrimeLayer : HolMath.Int.IntPrime ←
     new_definition IAr.ARITH_RULE ASM_MESON_TAC).run
 def IPr : HolMath.Int.IntPrime := intPrimeLayer
 
-/-- `RealZpow` (int.ml 2633-2761): `real_zpow` and its 22 theorems.  THREE
+/-- `RealZpow` (int.ml 2633-2792): `real_zpow` and its 22 theorems.  THREE
     parser side effects precede the definition (int.ml 2634-2636:
     `make_overloadable "zpow"`, `parse_as_infix("zpow",(24,"left"))`,
     `overload_interface "zpow" real_zpow`), threaded in with `new_definition`;
@@ -584,12 +584,15 @@ initialize realZpowLayer : HolMath.Int.RealZpow ←
     IT6.INT_MUL_LNEG IT7.INT_MUL_RNEG IT2.INT_ADD_SYM IDm.INT_SUB
     T.SWAP_FORALL_THM T.RIGHT_FORALL_IMP_THM T.LEFT_IMP_EXISTS_THM
     arith4.LE_EXISTS
+    REAL_MUL_RID REAL_LE_LMUL REAL_LT_LMUL REAL_POW_LE_1 REAL_POW_LT_1
+    INoI.INT_OF_NUM_OF_INT IT10.INT_SUB_LE IT5.INT_LT_IMP_LE
+    REAL_ARITH3 IA2.INT_ARITH_TAC2 IA2.ASM_INT_ARITH_TAC2
     make_overloadable overload_interface parse_as_infix
     new_definition IA2.INT_ARITH2 IAr.ARITH_RULE MESON_TAC).run
 def RZp : HolMath.Int.RealZpow := realZpowLayer
 
 /- ---------------------------------------------------------------------- -/
-/- `prioritize_num ()` (int.ml 2765), the last statement of int.ml.  Until -/
+/- `prioritize_num ()` (int.ml 2796), the last statement of int.ml.  Until -/
 /- here `int` is the default for overloaded symbols, because int.ml 61's   -/
 /- `overload_interface` put the int operations at the front of the        -/
 /- interface (int.ml defines `prioritize_int` at 70 but never calls it).   -/
@@ -1182,7 +1185,7 @@ def ONE_OR_PRIME_DIVIDES_OR_COPRIME  : thm := IPr.ONE_OR_PRIME_DIVIDES_OR_COPRIM
 def PRIME_COPRIME_EQ_NONDIVISIBLE    : thm := IPr.PRIME_COPRIME_EQ_NONDIVISIBLE
 def ZERO_ONE_OR_PRIME_DIVPROD        : thm := IPr.ZERO_ONE_OR_PRIME_DIVPROD
 def ZERO_ONE_OR_PRIME                : thm := IPr.ZERO_ONE_OR_PRIME
--- RealZpow (int.ml 2633-2761): `real_zpow` and its 22 theorems.
+-- RealZpow (int.ml 2633-2792): `real_zpow` and its 22 theorems.
 def real_zpow        : thm := RZp.real_zpow
 def REAL_POW_ZPOW    : thm := RZp.REAL_POW_ZPOW
 def REAL_ZPOW_NUM    : thm := RZp.REAL_ZPOW_NUM
@@ -1202,7 +1205,9 @@ def REAL_ZPOW_DIV    : thm := RZp.REAL_ZPOW_DIV
 def REAL_ZPOW_ADD    : thm := RZp.REAL_ZPOW_ADD
 def REAL_ZPOW_SUB    : thm := RZp.REAL_ZPOW_SUB
 def REAL_ZPOW_LE     : thm := RZp.REAL_ZPOW_LE
+def REAL_ZPOW_MONO   : thm := RZp.REAL_ZPOW_MONO
 def REAL_ZPOW_LT     : thm := RZp.REAL_ZPOW_LT
+def REAL_ZPOW_MONO_LT : thm := RZp.REAL_ZPOW_MONO_LT
 def REAL_ZPOW_EQ_0   : thm := RZp.REAL_ZPOW_EQ_0
 def REAL_ABS_ZPOW    : thm := RZp.REAL_ABS_ZPOW
 def REAL_SGN_ZPOW    : thm := RZp.REAL_SGN_ZPOW

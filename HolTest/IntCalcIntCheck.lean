@@ -20,7 +20,7 @@ private unsafe def onGoal (prover : term → IO (Except String thm)) (goal : Str
 /- calc_rat.ml (97) BEFORE int.ml (98), so force the num ring, then the    -/
 /- whole real+calc_rat chain, and only then the int layer.  The final      -/
 /- `ensurePrioritizeNum` drives int.ml in its own order (int.ml 70         -/
-/- prioritize_int ... int.ml 2765 prioritize_num), leaving `num` default.  -/
+/- prioritize_int ... int.ml 2796 prioritize_num), leaving `num` default.  -/
 /- Every `div`/`rem`/`zpow`/int-infix parse below depends on this having    -/
 /- run first, exactly as IntTest.lean does.                                -/
 /- ---------------------------------------------------------------------- -/

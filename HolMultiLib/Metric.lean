@@ -3144,6 +3144,7 @@ structure ContMap1 where
   CONTINUOUS_MAP_ID : thm
   TOPOLOGY_FINER_CONTINUOUS_ID : thm
   CONTINUOUS_MAP_CONST : thm
+  CONTINUOUS_MAP_LOCALLY_CONSTANT : thm
   deriving Inhabited
 
 @[nospecialize]
@@ -3152,12 +3153,12 @@ def setupContMap1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : 
   -- @@SCOPE BEGIN
   let { ASM_MESON_TAC, MESON, SET_RULE, SET_TAC, new_definition, .. } := D
   let { AND_FORALL_THM, EMPTY_GSPEC, FORALL_IN_IMAGE, .. } := D.core1
-  let { IMP_CONJ_ALT, NOT_IN_EMPTY, .. } := D.core2
+  let { IMP_CONJ_ALT, IN_ELIM_THM, NOT_IN_EMPTY, .. } := D.core2
   let { SUBSET, SUBSET_REFL, SUBSET_RESTRICT, SUBSET_TRANS, .. } := D.core4
   let { EQ_IMP, .. } := D.core5
   let { CLOSED_IN_DIFF, CLOSED_IN_INTER, CLOSED_IN_SUBSET, CLOSED_IN_TOPSPACE,
-        OPEN_IN_CLOSED_IN_EQ, OPEN_IN_DIFF, OPEN_IN_EMPTY, OPEN_IN_INTER, OPEN_IN_SUBSET,
-        OPEN_IN_TOPSPACE, closed_in, .. } := BTopology
+        OPEN_IN_CLOSED_IN_EQ, OPEN_IN_DIFF, OPEN_IN_EMPTY, OPEN_IN_INTER, OPEN_IN_SUBOPEN,
+        OPEN_IN_SUBSET, OPEN_IN_TOPSPACE, closed_in, .. } := BTopology
   let { CLOSED_IN_CLOSURE_OF, CLOSURE_OF_CLOSED_IN, CLOSURE_OF_MINIMAL, CLOSURE_OF_MONO,
         CLOSURE_OF_RESTRICT, CLOSURE_OF_SUBSET, CLOSURE_OF_SUBSET_EQ,
         CLOSURE_OF_SUBSET_TOPSPACE, CLOSURE_OF_TOPSPACE, .. } := BClosure
@@ -3435,6 +3436,21 @@ def setupContMap1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : 
     ASM_REWRITE_TAC [EMPTY_GSPEC, OPEN_IN_EMPTY] THEN
     REWRITE_TAC [← sr r"{x | x IN s} = s", OPEN_IN_TOPSPACE])
 
+  let CONTINUOUS_MAP_LOCALLY_CONSTANT ← prove
+   r"!top top' (f:A->B).
+        (!x. x IN topspace top ==> f x IN topspace top') /\
+        (!x. x IN topspace top
+             ==> ?u. open_in top u /\ x IN u /\ !y. y IN u ==> f y = f x)
+        ==> continuous_map (top,top') f"
+   (REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [continuous_map] THEN
+    X_GEN_TAC (← q r"v:B->bool") THEN DISCH_TAC THEN
+    ONCE_REWRITE_TAC [OPEN_IN_SUBOPEN] THEN
+    X_GEN_TAC (← q r"x:A") THEN REWRITE_TAC [IN_ELIM_THM] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM (MP_TAC o SPEC (← q r"x:A")) THEN ASM_REWRITE_TAC [] THEN
+    DISCH_THEN (X_CHOOSE_THEN (← q r"u:A->bool") STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC (← q r"u:A->bool") THEN ASM_REWRITE_TAC [] THEN
+    FIRST_ASSUM (MP_TAC o MATCH_MP OPEN_IN_SUBSET) THEN ASM SET_TAC [])
+
   return { continuous_map, CONTINUOUS_MAP, CONTINUOUS_MAP_IMAGE_SUBSET_TOPSPACE,
            CONTINUOUS_MAP_ON_EMPTY, CONTINUOUS_MAP_INTO_EMPTY, CONTINUOUS_MAP_CLOSED_IN,
            OPEN_IN_CONTINUOUS_MAP_PREIMAGE, CLOSED_IN_CONTINUOUS_MAP_PREIMAGE,
@@ -3446,10 +3462,10 @@ def setupContMap1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : 
            CONTINUOUS_MAP_EQ_INTERIOR_PREIMAGE_SUBSET,
            CONTINUOUS_MAP_EQ_INTERIOR_PREIMAGE_SUBSET_ALT,
            CONTINUOUS_MAP_FRONTIER_FRONTIER_PREIMAGE_SUBSET, CONTINUOUS_MAP_ID,
-           TOPOLOGY_FINER_CONTINUOUS_ID, CONTINUOUS_MAP_CONST }
+           TOPOLOGY_FINER_CONTINUOUS_ID, CONTINUOUS_MAP_CONST, CONTINUOUS_MAP_LOCALLY_CONSTANT }
 
 /- ------------------------------------------------------------------------- -/
-/- Continuous maps, part 2.  (metric.ml 2512-2831)                           -/
+/- Continuous maps, part 2.  (metric.ml 2527-2895)                           -/
 /- ------------------------------------------------------------------------- -/
 
 structure ContMap2 where
@@ -3462,6 +3478,8 @@ structure ContMap2 where
   CONTINUOUS_MAP_INTO_SUBTOPOLOGY : thm
   CONTINUOUS_MAP_FROM_SUBTOPOLOGY_MONO : thm
   CONTINUOUS_MAP_FROM_DISCRETE_TOPOLOGY : thm
+  CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY : thm
+  CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY_FIBRES : thm
   PASTING_LEMMA : thm
   PASTING_LEMMA_EXISTS : thm
   PASTING_LEMMA_LOCALLY_FINITE : thm
@@ -3482,13 +3500,13 @@ def setupContMap2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete :
   let { ASM_MESON_TAC, MESON_TAC, SET_RULE, SET_TAC, INTRO_TAC, SUBST_VAR_TAC, .. } := D
   let { COND_ID, ETA_AX, EXISTS_IN_INSERT, FINITE_EMPTY, FINITE_IMAGE, FINITE_INSERT,
         FINITE_RESTRICT, FINITE_SUBSET, FORALL_IN_GSPEC, FORALL_IN_INSERT, .. } := D.core1
-  let { IMP_CONJ, INTER_SUBSET, IN_GSPEC, IN_INTER, MONO_EXISTS, MONO_FORALL, NOT_IN_EMPTY,
-        .. } := D.core2
-  let { RESTRICTION, RIGHT_FORALL_IMP_THM, SUBSET_RESTRICT, SUBSET_TRANS, UNIONS_GSPEC, o_THM,
-        .. } := D.core4
+  let { IMP_CONJ, INTER_SUBSET, IN_ELIM_THM, IN_GSPEC, IN_INTER, IN_SING, MONO_EXISTS,
+        MONO_FORALL, NOT_IN_EMPTY, .. } := D.core2
+  let { RESTRICTION, RIGHT_FORALL_IMP_THM, SING_SUBSET, SUBSET, SUBSET_RESTRICT, SUBSET_TRANS,
+        UNIONS_GSPEC, o_THM, .. } := D.core4
   let { EQ_IMP, MONO_AND, MONO_IMP, .. } := D.core5
-  let { CLOSED_IN_SUBSET, OPEN_IN_CLOSED_IN_EQ, OPEN_IN_SUBSET, OPEN_IN_TOPSPACE,
-        OPEN_IN_UNIONS, closed_in, .. } := BTopology
+  let { CLOSED_IN_SUBSET, OPEN_IN_CLOSED_IN_EQ, OPEN_IN_SUBOPEN, OPEN_IN_SUBSET,
+        OPEN_IN_TOPSPACE, OPEN_IN_UNIONS, closed_in, .. } := BTopology
   let { OPEN_IN_DISCRETE_TOPOLOGY, TOPSPACE_DISCRETE_TOPOLOGY, .. } := BDiscrete
   let { CLOSED_IN_TRANS_FULL, OPEN_IN_SUBTOPOLOGY, OPEN_IN_TRANS_FULL, SUBTOPOLOGY_SUBTOPOLOGY,
         TOPSPACE_SUBTOPOLOGY, .. } := BSubtopology
@@ -3593,6 +3611,55 @@ def setupContMap2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete :
         IMAGE f u SUBSET topspace top"
    (REWRITE_TAC [continuous_map, OPEN_IN_DISCRETE_TOPOLOGY] THEN
     REWRITE_TAC [TOPSPACE_DISCRETE_TOPOLOGY, SUBSET_RESTRICT] THEN SET_TAC [])
+
+  let CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY ← prove
+   r"!top s (f:A->B).
+        continuous_map (top,discrete_topology s) f <=>
+        (!x. x IN topspace top ==> f x IN s) /\
+        (!x. x IN topspace top
+             ==> ?v. open_in top v /\ x IN v /\ !y. y IN v ==> f y = f x)"
+   (REPEAT GEN_TAC THEN
+    REWRITE_TAC [continuous_map, TOPSPACE_DISCRETE_TOPOLOGY,
+                OPEN_IN_DISCRETE_TOPOLOGY] THEN
+    ASM_CASES_TAC (← q r"!x. x IN topspace top ==> (f:A->B) x IN s") THEN
+    ASM_REWRITE_TAC [] THEN EQ_TAC THEN DISCH_TAC THENL
+     [X_GEN_TAC (← q r"x:A") THEN DISCH_TAC THEN
+      EXISTS_TAC (← q r"{y | y IN topspace top /\ (f:A->B) y IN {f x}}") THEN
+      REPEAT CONJ_TAC THENL
+       [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC [SING_SUBSET],
+        ASM_REWRITE_TAC [IN_ELIM_THM, IN_SING],
+        SIMP_TAC [IN_ELIM_THM, IN_SING]],
+      X_GEN_TAC (← q r"u:B->bool") THEN DISCH_TAC THEN
+      ONCE_REWRITE_TAC [OPEN_IN_SUBOPEN] THEN
+      X_GEN_TAC (← q r"x:A") THEN REWRITE_TAC [IN_ELIM_THM] THEN STRIP_TAC THEN
+      FIRST_X_ASSUM (MP_TAC o SPEC (← q r"x:A")) THEN ASM_REWRITE_TAC [] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"v:A->bool") THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN
+      X_GEN_TAC (← q r"y:A") THEN DISCH_TAC THEN
+      SUBGOAL_THEN (← q r"(f:A->B) y = f x") SUBST1_TAC THENL
+       [ASM_MESON_TAC [], ASM_MESON_TAC [OPEN_IN_SUBSET, SUBSET]]])
+
+  let CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY_FIBRES ← prove
+   r"!top u (f:A->B).
+        continuous_map (top,discrete_topology u) f <=>
+        (!x. x IN topspace top ==> f x IN u) /\
+        !y. y IN u ==> open_in top {x | x IN topspace top /\ f x = y}"
+   (REPEAT GEN_TAC THEN
+    REWRITE_TAC [continuous_map, TOPSPACE_DISCRETE_TOPOLOGY,
+                OPEN_IN_DISCRETE_TOPOLOGY] THEN
+    ASM_CASES_TAC (← q r"!x. x IN topspace top ==> (f:A->B) x IN u") THEN
+    ASM_REWRITE_TAC [] THEN EQ_TAC THEN DISCH_TAC THENL
+     [X_GEN_TAC (← q r"y:B") THEN DISCH_TAC THEN
+      FIRST_X_ASSUM (MP_TAC o SPEC (← q r"{y:B}")) THEN
+      ASM_REWRITE_TAC [SING_SUBSET, IN_SING],
+      X_GEN_TAC (← q r"v:B->bool") THEN DISCH_TAC THEN
+      SUBGOAL_THEN
+       (← q r"{x | x IN topspace top /\ (f:A->B) x IN v} =
+        UNIONS {{x | x IN topspace top /\ f x = y} | y IN v}")
+      SUBST1_TAC THENL
+       [REWRITE_TAC [UNIONS_GSPEC] THEN SET_TAC [],
+        MATCH_MP_TAC OPEN_IN_UNIONS THEN REWRITE_TAC [FORALL_IN_GSPEC] THEN
+        ASM SET_TAC []]])
 
   let PASTING_LEMMA ← prove
    r"!top top' (f:K->A->B) g t k.
@@ -3825,14 +3892,14 @@ def setupContMap2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete :
   return { CONTINUOUS_MAP_COMPOSE, CONTINUOUS_MAP_EQ, RESTRICTION_CONTINUOUS_MAP,
            CONTINUOUS_MAP_IN_SUBTOPOLOGY, CONTINUOUS_MAP_FROM_SUBTOPOLOGY,
            CONTINUOUS_MAP_INTO_FULLTOPOLOGY, CONTINUOUS_MAP_INTO_SUBTOPOLOGY,
-           CONTINUOUS_MAP_FROM_SUBTOPOLOGY_MONO, CONTINUOUS_MAP_FROM_DISCRETE_TOPOLOGY,
+           CONTINUOUS_MAP_FROM_SUBTOPOLOGY_MONO, CONTINUOUS_MAP_FROM_DISCRETE_TOPOLOGY, CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY, CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY_FIBRES,
            PASTING_LEMMA, PASTING_LEMMA_EXISTS, PASTING_LEMMA_LOCALLY_FINITE,
            PASTING_LEMMA_EXISTS_LOCALLY_FINITE, PASTING_LEMMA_CLOSED,
            PASTING_LEMMA_EXISTS_CLOSED, CONTINUOUS_MAP_CASES, CONTINUOUS_MAP_CASES_ALT,
            CONTINUOUS_MAP_CASES_FUNCTION, CONTINUOUS_MAP_SEPARATED_UNION }
 
 /- ------------------------------------------------------------------------- -/
-/- Open and closed maps, part 1.  (metric.ml 2836-3093)                      -/
+/- Open and closed maps, part 1.  (metric.ml 2900-3157)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure OpenClosed1 where
@@ -4160,7 +4227,7 @@ def setupOpenClosed1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscret
            OPEN_MAP_RESTRICTION, CLOSED_MAP_RESTRICTION, CLOSED_MAP_CLOSURE_OF_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Open and closed maps, part 2.  (metric.ml 3095-3348)                      -/
+/- Open and closed maps, part 2.  (metric.ml 3159-3412)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure OpenClosed2 where
@@ -4473,7 +4540,7 @@ def setupOpenClosed2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscret
            DISCRETE_SPACE_CLOSED_MAP_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Quotient maps.  (metric.ml 3350-3654)                                     -/
+/- Quotient maps.  (metric.ml 3414-3718)                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure Quotient where
@@ -4498,6 +4565,15 @@ structure Quotient where
   QUOTIENT_MAP_ONTO_IMAGE : thm
   QUOTIENT_MAP_LIFT_EXISTS : thm
   DISCRETE_SPACE_QUOTIENT_MAP_IMAGE : thm
+  quotient_topology : thm
+  OPEN_IN_QUOTIENT_TOPOLOGY : thm
+  TOPSPACE_QUOTIENT_TOPOLOGY : thm
+  CLOSED_IN_QUOTIENT_TOPOLOGY : thm
+  QUOTIENT_MAP_QUOTIENT_TOPOLOGY : thm
+  QUOTIENT_MAP_QUOTIENT_TOPOLOGY_EQ : thm
+  CONTINUOUS_MAP_QUOTIENT_TOPOLOGY : thm
+  CONTINUOUS_MAP_FROM_QUOTIENT_TOPOLOGY : thm
+  OPEN_IN_QUOTIENT_TOPOLOGY_INJ : thm
   deriving Inhabited
 
 @[nospecialize]
@@ -4506,12 +4582,14 @@ def setupQuotient [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete :
     (BOpenClosed1 : OpenClosed1) : ExceptT String IO Quotient := do
   -- @@SCOPE BEGIN
   let { ASM_MESON_TAC, MESON_TAC, SET_RULE, SET_TAC, new_definition, .. } := D
-  let { CONJ_ASSOC, FORALL_IN_GSPEC, FUNCTION_FACTORS_LEFT_GEN, .. } := D.core1
-  let { IMAGE_o, IMP_CONJ, IMP_CONJ_ALT, IN_ELIM_THM, MONO_EXISTS, .. } := D.core2
-  let { SING_SUBSET, SUBSET_DIFF, SUBSET_INTER, SUBSET_REFL, SUBSET_RESTRICT, o_THM,
-        .. } := D.core4
+  let { CONJ_ASSOC, EMPTY_GSPEC, EMPTY_SUBSET, FORALL_IN_GSPEC, FORALL_IN_IMAGE,
+        FUNCTION_FACTORS_LEFT_GEN, .. } := D.core1
+  let { IMAGE_o, IMP_CONJ, IMP_CONJ_ALT, IN_ELIM_THM, MONO_EXISTS, NOT_IN_EMPTY, .. } := D.core2
+  let { SING_SUBSET, SUBSET, SUBSET_ANTISYM, SUBSET_DIFF, SUBSET_INTER, SUBSET_REFL,
+        SUBSET_RESTRICT, o_THM, .. } := D.core4
   let { EQ_IMP, FORALL_AND_THM, MONO_AND, .. } := D.core5
-  let { CLOSED_IN_SUBSET, OPEN_IN_SUBSET, closed_in, .. } := BTopology
+  let { CLOSED_IN_SUBSET, OPEN_IN_EMPTY, OPEN_IN_INTER, OPEN_IN_SUBSET, OPEN_IN_TOPSPACE,
+        OPEN_IN_UNIONS, TOPOLOGY_EQ, closed_in, istopology, topology_tybij, .. } := BTopology
   let { DISCRETE_SPACE_UNIQUE, OPEN_IN_DISCRETE_TOPOLOGY, TOPSPACE_DISCRETE_TOPOLOGY,
         discrete_space, .. } := BDiscrete
   let { CLOSED_IN_CLOSED_SUBTOPOLOGY, OPEN_IN_OPEN_SUBTOPOLOGY, OPEN_IN_SUBSET_TOPSPACE,
@@ -4825,6 +4903,123 @@ def setupQuotient [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete :
     REPEAT STRIP_TAC THEN REWRITE_TAC [DISCRETE_SPACE_UNIQUE] THEN
     ASM_SIMP_TAC [SING_SUBSET])
 
+  /- The quotient topology of top along f (the finest topology on IMAGE f      -/
+  /- (topspace top) making f continuous): v is open iff its preimage is        -/
+  /- (OPEN_IN_QUOTIENT_TOPOLOGY, CLOSED_IN_QUOTIENT_TOPOLOGY), f is a quotient -/
+  /- map onto top' exactly when top' is the quotient topology                  -/
+  /- (QUOTIENT_MAP_QUOTIENT_TOPOLOGY_EQ), a map out of it is continuous iff    -/
+  /- its composite with f is (CONTINUOUS_MAP_FROM_QUOTIENT_TOPOLOGY), and for  -/
+  /- f injective on topspace top its open sets are the images of the open sets -/
+  /- of top (OPEN_IN_QUOTIENT_TOPOLOGY_INJ) and f is a homeomorphism onto it   -/
+  /- (HOMEOMORPHIC_MAP_QUOTIENT_TOPOLOGY, with the homeomorphisms below).      -/
+
+  let quotient_topology ← new_definition
+   r"quotient_topology (top:A topology,f:A->B) =
+        topology {v | v SUBSET IMAGE f (topspace top) /\
+                      open_in top {x | x IN topspace top /\ f x IN v}}"
+
+  let OPEN_IN_QUOTIENT_TOPOLOGY ← prove
+   r"!top f:A->B v.
+        open_in (quotient_topology (top,f)) v <=>
+        v SUBSET IMAGE f (topspace top) /\
+        open_in top {x | x IN topspace top /\ f x IN v}"
+   (REPEAT GEN_TAC THEN REWRITE_TAC [quotient_topology] THEN
+    SUBGOAL_THEN
+     (← q r"open_in (topology {v | v SUBSET IMAGE f (topspace top) /\
+                             open_in top {x | x IN topspace top /\ f x IN v}}) =
+      {v | v SUBSET IMAGE (f:A->B) (topspace top) /\
+           open_in top {x | x IN topspace top /\ f x IN v}}")
+     (fun th => REWRITE_TAC [th, IN_ELIM_THM]) THEN
+    REWRITE_TAC [← GSYM (← CONJUNCT2 topology_tybij)] THEN
+    REWRITE_TAC [istopology, IN_ELIM_THM, EMPTY_SUBSET, NOT_IN_EMPTY] THEN
+    REWRITE_TAC [EMPTY_GSPEC, OPEN_IN_EMPTY] THEN CONJ_TAC THENL
+     [MAP_EVERY X_GEN_TAC [← q r"s:B->bool", ← q r"t:B->bool"] THEN STRIP_TAC THEN
+      CONJ_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
+      SUBGOAL_THEN
+       (← q r"{x | x IN topspace top /\ (f:A->B) x IN s INTER t} =
+        {x | x IN topspace top /\ f x IN s} INTER
+        {x | x IN topspace top /\ f x IN t}")
+      SUBST1_TAC THENL [SET_TAC [], ASM_SIMP_TAC [OPEN_IN_INTER]],
+      X_GEN_TAC (← q r"k:(B->bool)->bool") THEN REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN
+      DISCH_TAC THEN CONJ_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
+      SUBGOAL_THEN
+       (← q r"{x | x IN topspace top /\ (f:A->B) x IN UNIONS k} =
+        UNIONS (IMAGE (\v. {x | x IN topspace top /\ f x IN v}) k)")
+      SUBST1_TAC THENL [SET_TAC [], ALL_TAC] THEN
+      MATCH_MP_TAC OPEN_IN_UNIONS THEN REWRITE_TAC [FORALL_IN_IMAGE] THEN
+      ASM_MESON_TAC []])
+
+  let TOPSPACE_QUOTIENT_TOPOLOGY ← prove
+   r"!top f:A->B.
+        topspace(quotient_topology (top,f)) = IMAGE f (topspace top)"
+   (REPEAT GEN_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+     [MESON_TAC [OPEN_IN_TOPSPACE, OPEN_IN_QUOTIENT_TOPOLOGY],
+      MATCH_MP_TAC OPEN_IN_SUBSET THEN
+      REWRITE_TAC [OPEN_IN_QUOTIENT_TOPOLOGY, SUBSET_REFL] THEN
+      SUBGOAL_THEN
+       (← q r"{x | x IN topspace top /\ (f:A->B) x IN IMAGE f (topspace top)} =
+        topspace top")
+       (fun th => REWRITE_TAC [th, OPEN_IN_TOPSPACE]) THEN
+      SET_TAC []])
+
+  let CLOSED_IN_QUOTIENT_TOPOLOGY ← prove
+   r"!top f:A->B v.
+        closed_in (quotient_topology (top,f)) v <=>
+        v SUBSET IMAGE f (topspace top) /\
+        closed_in top {x | x IN topspace top /\ f x IN v}"
+   (REPEAT GEN_TAC THEN
+    REWRITE_TAC [closed_in, TOPSPACE_QUOTIENT_TOPOLOGY,
+                OPEN_IN_QUOTIENT_TOPOLOGY, SUBSET_DIFF] THEN
+    ASM_CASES_TAC (← q r"v SUBSET IMAGE (f:A->B) (topspace top)") THEN
+    ASM_REWRITE_TAC [] THEN
+    MATCH_MP_TAC (← TAUT (← q r"q /\ (p <=> r) ==> (p <=> q /\ r)")) THEN
+    CONJ_TAC THENL [SET_TAC [], AP_TERM_TAC THEN ASM SET_TAC []])
+
+  let QUOTIENT_MAP_QUOTIENT_TOPOLOGY ← prove
+   r"!top f:A->B. quotient_map (top,quotient_topology (top,f)) f"
+   (REWRITE_TAC [quotient_map, TOPSPACE_QUOTIENT_TOPOLOGY,
+                OPEN_IN_QUOTIENT_TOPOLOGY] THEN
+    SIMP_TAC [])
+
+  let QUOTIENT_MAP_QUOTIENT_TOPOLOGY_EQ ← prove
+   r"!top top' f:A->B.
+        quotient_map (top,top') f <=> quotient_topology (top,f) = top'"
+   (REPEAT GEN_TAC THEN EQ_TAC THENL
+     [REWRITE_TAC [quotient_map, TOPOLOGY_EQ, OPEN_IN_QUOTIENT_TOPOLOGY] THEN
+      STRIP_TAC THEN X_GEN_TAC (← q r"v:B->bool") THEN
+      ASM_CASES_TAC (← q r"v SUBSET topspace(top':B topology)") THEN
+      ASM_SIMP_TAC [] THEN ASM_MESON_TAC [OPEN_IN_SUBSET],
+      DISCH_THEN (SUBST1_TAC o SYM) THEN
+      REWRITE_TAC [QUOTIENT_MAP_QUOTIENT_TOPOLOGY]])
+
+  let CONTINUOUS_MAP_QUOTIENT_TOPOLOGY ← prove
+   r"!top f:A->B. continuous_map (top,quotient_topology (top,f)) f"
+   (MESON_TAC [QUOTIENT_IMP_CONTINUOUS_MAP, QUOTIENT_MAP_QUOTIENT_TOPOLOGY])
+
+  let CONTINUOUS_MAP_FROM_QUOTIENT_TOPOLOGY ← prove
+   r"!top top' (f:A->B) (g:B->C).
+        continuous_map (quotient_topology (top,f),top') g <=>
+        continuous_map (top,top') (g o f)"
+   (MESON_TAC [CONTINUOUS_COMPOSE_QUOTIENT_MAP_EQ,
+              QUOTIENT_MAP_QUOTIENT_TOPOLOGY])
+
+  let OPEN_IN_QUOTIENT_TOPOLOGY_INJ ← prove
+   r"!top f:A->B.
+        (!x y. x IN topspace top /\ y IN topspace top ==> (f x = f y <=> x = y))
+        ==> !v. open_in (quotient_topology (top,f)) v <=>
+                ?w. open_in top w /\ v = IMAGE f w"
+   (REPEAT STRIP_TAC THEN REWRITE_TAC [OPEN_IN_QUOTIENT_TOPOLOGY] THEN
+    EQ_TAC THENL
+     [STRIP_TAC THEN EXISTS_TAC (← q r"{x | x IN topspace top /\ (f:A->B) x IN v}") THEN
+      ASM_REWRITE_TAC [] THEN ASM SET_TAC [],
+      DISCH_THEN (X_CHOOSE_THEN (← q r"w:A->bool")
+       (CONJUNCTS_THEN2 ASSUME_TAC SUBST1_TAC)) THEN
+      FIRST_ASSUM (ASSUME_TAC o MATCH_MP OPEN_IN_SUBSET) THEN CONJ_TAC THENL
+       [ASM SET_TAC [],
+        SUBGOAL_THEN (← q r"{x | x IN topspace top /\ (f:A->B) x IN IMAGE f w} = w")
+         (fun th => ASM_REWRITE_TAC [th]) THEN
+        ASM SET_TAC []]])
+
   return { quotient_map, QUOTIENT_MAP_EQ, QUOTIENT_MAP_COMPOSE, QUOTIENT_MAP_FROM_COMPOSITION,
            QUOTIENT_IMP_CONTINUOUS_MAP, QUOTIENT_IMP_SURJECTIVE_MAP, QUOTIENT_MAP,
            CONTINUOUS_OPEN_IMP_QUOTIENT_MAP, CONTINUOUS_CLOSED_IMP_QUOTIENT_MAP,
@@ -4832,10 +5027,10 @@ def setupQuotient [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete :
            CONTINUOUS_COMPOSE_QUOTIENT_MAP, CONTINUOUS_COMPOSE_QUOTIENT_MAP_EQ,
            QUOTIENT_MAP_COMPOSE_EQ, QUOTIENT_MAP_RESTRICTION, QUOTIENT_MAP_SATURATED_OPEN,
            QUOTIENT_MAP_SATURATED_CLOSED, QUOTIENT_MAP_ONTO_IMAGE, QUOTIENT_MAP_LIFT_EXISTS,
-           DISCRETE_SPACE_QUOTIENT_MAP_IMAGE }
+           DISCRETE_SPACE_QUOTIENT_MAP_IMAGE, quotient_topology, OPEN_IN_QUOTIENT_TOPOLOGY, TOPSPACE_QUOTIENT_TOPOLOGY, CLOSED_IN_QUOTIENT_TOPOLOGY, QUOTIENT_MAP_QUOTIENT_TOPOLOGY, QUOTIENT_MAP_QUOTIENT_TOPOLOGY_EQ, CONTINUOUS_MAP_QUOTIENT_TOPOLOGY, CONTINUOUS_MAP_FROM_QUOTIENT_TOPOLOGY, OPEN_IN_QUOTIENT_TOPOLOGY_INJ }
 
 /- ------------------------------------------------------------------------- -/
-/- A binary product topology, part 1.  (metric.ml 3656-3896)                 -/
+/- A binary product topology, part 1.  (metric.ml 3837-4077)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure Prod1 where
@@ -5136,7 +5331,7 @@ def setupProd1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Di
            CONTINUOUS_MAP_SND_OF }
 
 /- ------------------------------------------------------------------------- -/
-/- A binary product topology, part 2.  (metric.ml 3898-4091)                 -/
+/- A binary product topology, part 2.  (metric.ml 4079-4285)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure Prod2 where
@@ -5147,6 +5342,7 @@ structure Prod2 where
   CONTINUOUS_MAP_OF_FST : thm
   CONTINUOUS_MAP_OF_SND : thm
   CONTINUOUS_MAP_PROD : thm
+  CONTINUOUS_MAP_PROD_TOPOLOGY_ID : thm
   OPEN_MAP_PROD : thm
   IN_PROD_TOPOLOGY_CLOSURE_OF : thm
   CLOSED_MAP_PROD : thm
@@ -5159,12 +5355,12 @@ def setupProd2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Di
     (BProd1 : Prod1) : ExceptT String IO Prod2 := do
   -- @@SCOPE BEGIN
   let { ASM_MESON_TAC, SET_TAC, .. } := D
-  let { CROSS_EMPTY, CROSS_EQ, CROSS_EQ_EMPTY, FORALL_IN_IMAGE, IMAGE_CLAUSES, IMAGE_EQ_EMPTY,
-        IMAGE_FST_CROSS, .. } := D.core1
+  let { CROSS_EMPTY, CROSS_EQ, CROSS_EQ_EMPTY, FORALL_IN_IMAGE, FUN_EQ_THM, IMAGE_CLAUSES,
+        IMAGE_EQ_EMPTY, IMAGE_FST_CROSS, .. } := D.core1
   let { IMAGE_PAIRED_CROSS, IMAGE_SND_CROSS, IMAGE_SUBSET, IMAGE_o, IMP_CONJ, IN_CROSS,
         IN_IMAGE, LEFT_IMP_EXISTS_THM, .. } := D.core2
   let { RIGHT_FORALL_IMP_THM, SUBSET, SUBSET_REFL, SUBSET_TRANS, o_DEF, .. } := D.core4
-  let { DE_MORGAN_THM, EQ_SYM_EQ, EXISTS_PAIR_THM, FORALL_PAIR_THM, LAMBDA_PAIR, PAIR_EQ,
+  let { DE_MORGAN_THM, EQ_IMP, EQ_SYM_EQ, EXISTS_PAIR_THM, FORALL_PAIR_THM, LAMBDA_PAIR, PAIR_EQ,
         .. } := D.core5
   let { CLOSED_IN_EMPTY, CLOSED_IN_TOPSPACE, OPEN_IN_EMPTY, OPEN_IN_SUBOPEN, OPEN_IN_TOPSPACE,
         TOPOLOGY_EQ, .. } := BTopology
@@ -5251,6 +5447,19 @@ def setupProd2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Di
     REWRITE_TAC [CONTINUOUS_MAP_OF_FST, CONTINUOUS_MAP_OF_SND] THEN
     RULE_ASSUM_TAC (REWRITE_RULE [TOPSPACE_PROD_TOPOLOGY, CROSS_EQ_EMPTY]) THEN
     ASM_MESON_TAC [])
+
+  let CONTINUOUS_MAP_PROD_TOPOLOGY_ID ← prove
+   r"!(top1:A topology) (top2:B topology) top3 top4.
+        continuous_map (top1,top3) (\x. x) /\
+        continuous_map (top2,top4) (\x. x)
+        ==> continuous_map (prod_topology top1 top2,prod_topology top3 top4)
+                           (\x. x)"
+   (REPEAT STRIP_TAC THEN
+    MP_TAC (← ISPECL [← q r"top1:A topology", ← q r"top2:B topology", ← q r"top3:A topology",
+                   ← q r"top4:B topology", ← q r"\x:A. x", ← q r"\x:B. x"]
+      CONTINUOUS_MAP_PROD) THEN
+    ASM_REWRITE_TAC [] THEN MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+    REWRITE_TAC [FUN_EQ_THM, FORALL_PAIR_THM])
 
   let OPEN_MAP_PROD ← prove
    r"!top1 top1' top2 top2' (f:A->C) (g:B->D).
@@ -5373,11 +5582,11 @@ def setupProd2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Di
     ASM_MESON_TAC [OPEN_IN_EMPTY, OPEN_IN_TOPSPACE])
 
   return { OPEN_MAP_FST, OPEN_MAP_SND, QUOTIENT_MAP_FST, QUOTIENT_MAP_SND,
-           CONTINUOUS_MAP_OF_FST, CONTINUOUS_MAP_OF_SND, CONTINUOUS_MAP_PROD, OPEN_MAP_PROD,
+           CONTINUOUS_MAP_OF_FST, CONTINUOUS_MAP_OF_SND, CONTINUOUS_MAP_PROD, CONTINUOUS_MAP_PROD_TOPOLOGY_ID, OPEN_MAP_PROD,
            IN_PROD_TOPOLOGY_CLOSURE_OF, CLOSED_MAP_PROD, PROD_TOPOLOGY_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- The usual (Tychonoff) product topology, part 1.  (metric.ml 4093-4296)    -/
+/- The usual (Tychonoff) product topology, part 1.  (metric.ml 4287-4490)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Product1 where
@@ -5629,7 +5838,7 @@ def setupProduct1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete :
            OPEN_IN_PRODUCT_TOPOLOGY_ALT_EXPAND }
 
 /- ------------------------------------------------------------------------- -/
-/- The usual (Tychonoff) product topology, part 2.  (metric.ml 4298-4529)    -/
+/- The usual (Tychonoff) product topology, part 2.  (metric.ml 4492-4723)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Product2 where
@@ -5913,7 +6122,7 @@ def setupProduct2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BContMap1 :
            OPEN_IN_PRODUCT_TOPOLOGY_EMPTY, TOPSPACE_PRODUCT_TOPOLOGY_EMPTY }
 
 /- ------------------------------------------------------------------------- -/
-/- The usual (Tychonoff) product topology, part 3.  (metric.ml 4531-4798)    -/
+/- The usual (Tychonoff) product topology, part 3.  (metric.ml 4725-4992)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Product3 where
@@ -6245,7 +6454,7 @@ def setupProduct3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : 
            IN_PRODUCT_TOPOLOGY_CLOSURE_OF }
 
 /- ------------------------------------------------------------------------- -/
-/- The usual (Tychonoff) product topology, part 4.  (metric.ml 4800-4920)    -/
+/- The usual (Tychonoff) product topology, part 4.  (metric.ml 4994-5114)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Product4 where
@@ -6253,28 +6462,52 @@ structure Product4 where
   DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT_EQ : thm
   DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT : thm
   DISCRETE_SPACE_PRODUCT_TOPOLOGY : thm
+  pointwise_topology : thm
+  TOPSPACE_POINTWISE_PRODUCT : thm
+  TOPSPACE_POINTWISE_TOPOLOGY : thm
+  OPEN_IN_POINTWISE_PRODUCT_AGREE : thm
+  POINTWISE_PRODUCT_NEIGHBOURHOOD : thm
+  CLOSED_IN_POINTWISE_PRODUCT : thm
+  OPEN_IN_POINTWISE_TOPOLOGY_AGREE : thm
+  OPEN_IN_POINTWISE_TOPOLOGY_POINT : thm
+  CLOSED_IN_POINTWISE_TOPOLOGY_AGREE : thm
+  POINTWISE_TOPOLOGY_NEIGHBOURHOOD : thm
+  CLOSURE_OF_POINTWISE_TOPOLOGY : thm
+  CONTINUOUS_MAP_POINTWISE_TOPOLOGY : thm
+  CONTINUOUS_MAP_POINTWISE_EVALUATION : thm
+  CONTINUOUS_MAP_POINTWISE_ACTION : thm
   deriving Inhabited
 
 @[nospecialize]
 def setupProduct4 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Discrete)
-    (BOpenClosed2 : OpenClosed2) (BProduct1 : Product1) (BProduct2 : Product2) :
+    (BOpenClosed2 : OpenClosed2) (BProduct1 : Product1) (BProduct2 : Product2) (BSubtopology : Subtopology) (BContMap2 : ContMap2) (BClosure : Closure) (BProd1 : Prod1) :
     ExceptT String IO Product4 := do
   -- @@SCOPE BEGIN
-  let { ASM_MESON_TAC, MESON_TAC, SET_RULE, SET_TAC, .. } := D
-  let { CARTESIAN_PRODUCT_EQ, CARTESIAN_PRODUCT_EQ_EMPTY, CARTESIAN_PRODUCT_SINGS, CONJ_ASSOC,
-        ETA_AX, FINITE_SING, FINITE_SUBSET, .. } := D.core1
-  let { IMAGE_PROJECTION_CARTESIAN_PRODUCT, IMP_CONJ, IMP_CONJ_ALT, IN_CARTESIAN_PRODUCT,
-        IN_ELIM_THM, IN_SING, LEFT_FORALL_IMP_THM, LEFT_IMP_EXISTS_THM, MEMBER_NOT_EMPTY,
+  let { ASM_MESON_TAC, MESON_TAC, SET_RULE, SET_TAC, new_definition, .. } := D
+  let { CARTESIAN_PRODUCT_EQ, CARTESIAN_PRODUCT_EQ_EMPTY, CARTESIAN_PRODUCT_SINGS,
+        CARTESIAN_PRODUCT_UNIV, COND_RAND, CONJ_ASSOC, ETA_AX, EXTENSION, EXTENSIONAL_UNIV,
+        FINITE_SING, FINITE_SUBSET, FORALL_IN_GSPEC, FORALL_IN_IMAGE, .. } := D.core1
+  let { IMAGE_PROJECTION_CARTESIAN_PRODUCT, IMP_CONJ, IMP_CONJ_ALT, INTER_UNIV,
+        IN_CARTESIAN_PRODUCT, IN_CROSS, IN_DIFF, IN_ELIM_THM, IN_EXTENSIONAL, IN_SING, IN_UNIV,
+        LEFT_FORALL_IMP_THM, LEFT_IMP_EXISTS_THM, MEMBER_NOT_EMPTY, MONO_EXISTS, NOT_FORALL_THM,
         NOT_IMP, NOT_INSERT_EMPTY, .. } := D.core2
-  let { SING_SUBSET, SKOLEM_THM, SUBSET, o_DEF, o_THM, .. } := D.core4
-  let { FORALL_AND_THM, MONO_AND, RIGHT_IMP_EXISTS_THM, .. } := D.core5
-  let { OPEN_IN_EMPTY, OPEN_IN_TOPSPACE, TOPOLOGY_EQ, .. } := BTopology
+  let { SING_SUBSET, SKOLEM_THM, SUBSET, SUBSET_TRANS, SUBSET_UNIV, UNIONS_GSPEC, o_DEF, o_THM,
+        .. } := D.core4
+  let { CONTRAPOS_THM, FORALL_AND_THM, FORALL_PAIR_THM, FORALL_UNWIND_THM2, MONO_AND,
+        NOT_EXISTS_THM, RIGHT_IMP_EXISTS_THM, .. } := D.core5
+  let { OPEN_IN_EMPTY, OPEN_IN_SUBOPEN, OPEN_IN_TOPSPACE, OPEN_IN_UNIONS, TOPOLOGY_EQ, closed_in,
+        .. } := BTopology
   let { DISCRETE_SPACE, DISCRETE_SPACE_TOPSPACE_EMPTY, DISCRETE_SPACE_UNIQUE,
         DISCRETE_TOPOLOGY_UNIQUE, OPEN_IN_DISCRETE_TOPOLOGY,
         SUBTOPOLOGY_EQ_DISCRETE_TOPOLOGY_EMPTY, TOPSPACE_DISCRETE_TOPOLOGY, .. } := BDiscrete
   let { DISCRETE_SPACE_OPEN_MAP_IMAGE, .. } := BOpenClosed2
-  let { TOPSPACE_PRODUCT_TOPOLOGY, product_topology, .. } := BProduct1
-  let { OPEN_IN_CARTESIAN_PRODUCT_GEN, OPEN_MAP_PRODUCT_PROJECTION, .. } := BProduct2
+  let { OPEN_IN_PRODUCT_TOPOLOGY_ALT, TOPSPACE_PRODUCT_TOPOLOGY, product_topology, .. } := BProduct1
+  let { CONTINUOUS_MAP_COMPONENTWISE, OPEN_IN_CARTESIAN_PRODUCT_GEN, OPEN_MAP_PRODUCT_PROJECTION,
+        .. } := BProduct2
+  let { CLOSED_IN_SUBTOPOLOGY, OPEN_IN_SUBTOPOLOGY, TOPSPACE_SUBTOPOLOGY, .. } := BSubtopology
+  let { CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY_FIBRES, CONTINUOUS_MAP_IN_SUBTOPOLOGY, .. } := BContMap2
+  let { IN_CLOSURE_OF, .. } := BClosure
+  let { OPEN_IN_CROSS, TOPSPACE_PROD_TOPOLOGY, .. } := BProd1
   -- @@SCOPE END
   let sr (s : String) : ExceptT String IO thm := do SET_RULE (← q s)
 
@@ -6400,11 +6633,208 @@ def setupProduct4 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete :
       ASM_SIMP_TAC [DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT] THEN
       ASM_SIMP_TAC [PRODUCT_TOPOLOGY_EQ, o_THM]])
 
+  /- The topology of pointwise convergence on a set s of functions A->B, as    -/
+  /- the subspace topology on s of product_topology (:A) (\x.                  -/
+  /- discrete_topology (:B)). The sets of functions agreeing with f on a       -/
+  /- finite set are open and form a base at f                                  -/
+  /- (OPEN_IN_POINTWISE_TOPOLOGY_AGREE, POINTWISE_TOPOLOGY_NEIGHBOURHOOD); a   -/
+  /- set is closed in the product iff it contains every function approximable  -/
+  /- on finite sets by its members (CLOSED_IN_POINTWISE_PRODUCT); a map into   -/
+  /- pointwise_topology s is continuous iff the fibres of its evaluations are  -/
+  /- open (CONTINUOUS_MAP_POINTWISE_TOPOLOGY).                                 -/
+
+  let pointwise_topology ← new_definition
+   r"pointwise_topology (s:(A->B)->bool) =
+        subtopology (product_topology (:A) (\x. discrete_topology (:B))) s"
+
+  let TOPSPACE_POINTWISE_PRODUCT ← prove
+   r"topspace(product_topology (:A) (\x. discrete_topology (:B))) = (:A->B)"
+   (REWRITE_TAC [TOPSPACE_PRODUCT_TOPOLOGY, o_DEF, TOPSPACE_DISCRETE_TOPOLOGY,
+                CARTESIAN_PRODUCT_UNIV])
+
+  let TOPSPACE_POINTWISE_TOPOLOGY ← prove
+   r"!s:(A->B)->bool. topspace(pointwise_topology s) = s"
+   (REWRITE_TAC [pointwise_topology, TOPSPACE_SUBTOPOLOGY,
+                TOPSPACE_POINTWISE_PRODUCT, INTER_UNIV])
+
+  let OPEN_IN_POINTWISE_PRODUCT_AGREE ← prove
+   r"!k (f:A->B).
+        FINITE k
+        ==> open_in (product_topology (:A) (\x. discrete_topology (:B)))
+                    {g | !x. x IN k ==> g x = f x}"
+   (REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"{g | !x. x IN k ==> g x = (f:A->B) x} =
+      cartesian_product (:A) (\x. if x IN k then {f x} else (:B))")
+    SUBST1_TAC THENL
+     [REWRITE_TAC [EXTENSION, IN_CARTESIAN_PRODUCT, IN_ELIM_THM,
+                  EXTENSIONAL_UNIV, IN_UNIV] THEN
+      REWRITE_TAC [COND_RAND, IN_SING, IN_UNIV] THEN
+      REWRITE_TAC [← TAUT (← q r"(if p then q else T) <=> (p ==> q)")],
+      REWRITE_TAC [OPEN_IN_CARTESIAN_PRODUCT_GEN] THEN DISJ2_TAC THEN
+      REWRITE_TAC [TOPSPACE_DISCRETE_TOPOLOGY, OPEN_IN_DISCRETE_TOPOLOGY,
+                  SUBSET_UNIV, IN_UNIV] THEN
+      MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"k:A->bool") THEN
+      ASM_REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN
+      X_GEN_TAC (← q r"i:A") THEN COND_CASES_TAC THEN ASM_REWRITE_TAC []])
+
+  let POINTWISE_PRODUCT_NEIGHBOURHOOD ← prove
+   r"!w (f:A->B).
+        open_in (product_topology (:A) (\x. discrete_topology (:B))) w /\
+        f IN w
+        ==> ?k. FINITE k /\ {g | !x. x IN k ==> g x = f x} SUBSET w"
+   (REWRITE_TAC [OPEN_IN_PRODUCT_TOPOLOGY_ALT] THEN REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM (MP_TAC o SPEC (← q r"f:A->B")) THEN ASM_REWRITE_TAC [] THEN
+    DISCH_THEN (X_CHOOSE_THEN (← q r"u:A->B->bool") STRIP_ASSUME_TAC) THEN
+    EXISTS_TAC
+     (← q r"{i | i IN (:A) /\ ~((u:A->B->bool) i = topspace(discrete_topology (:B)))}")
+    THEN ASM_REWRITE_TAC [] THEN
+    TRANS_TAC SUBSET_TRANS (← q r"cartesian_product (:A) (u:A->B->bool)") THEN
+    ASM_REWRITE_TAC [] THEN
+    UNDISCH_TAC (← q r"(f:A->B) IN cartesian_product (:A) u") THEN
+    REWRITE_TAC [SUBSET, IN_CARTESIAN_PRODUCT, IN_ELIM_THM, EXTENSIONAL_UNIV,
+                IN_UNIV, TOPSPACE_DISCRETE_TOPOLOGY] THEN
+    DISCH_TAC THEN X_GEN_TAC (← q r"g:A->B") THEN DISCH_TAC THEN
+    X_GEN_TAC (← q r"i:A") THEN
+    ASM_CASES_TAC (← q r"(u:A->B->bool) i = (:B)") THEN ASM_SIMP_TAC [IN_UNIV])
+
+  let CLOSED_IN_POINTWISE_PRODUCT ← prove
+   r"!s:(A->B)->bool.
+        closed_in (product_topology (:A) (\x. discrete_topology (:B))) s <=>
+        !f. (!k. FINITE k ==> ?g. g IN s /\ !x. x IN k ==> g x = f x)
+            ==> f IN s"
+   (GEN_TAC THEN
+    REWRITE_TAC [closed_in, TOPSPACE_POINTWISE_PRODUCT, SUBSET_UNIV] THEN
+    EQ_TAC THENL
+     [DISCH_TAC THEN X_GEN_TAC (← q r"f:A->B") THEN
+      ONCE_REWRITE_TAC [← GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN
+      MP_TAC (← ISPECL [← q r"(:A->B) DIFF s", ← q r"f:A->B"]
+                    POINTWISE_PRODUCT_NEIGHBOURHOOD) THEN
+      ASM_REWRITE_TAC [IN_DIFF, IN_UNIV] THEN
+      REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, NOT_EXISTS_THM] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN SET_TAC [],
+      DISCH_TAC THEN ONCE_REWRITE_TAC [OPEN_IN_SUBOPEN] THEN
+      X_GEN_TAC (← q r"f:A->B") THEN REWRITE_TAC [IN_DIFF, IN_UNIV] THEN DISCH_TAC THEN
+      FIRST_X_ASSUM (MP_TAC o SPEC (← q r"f:A->B")) THEN ASM_REWRITE_TAC [] THEN
+      REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, NOT_EXISTS_THM] THEN
+      DISCH_THEN (X_CHOOSE_THEN (← q r"k:A->bool") STRIP_ASSUME_TAC) THEN
+      EXISTS_TAC (← q r"{g | !x. x IN k ==> g x = (f:A->B) x}") THEN
+      ASM_SIMP_TAC [OPEN_IN_POINTWISE_PRODUCT_AGREE] THEN ASM SET_TAC []])
+
+  let OPEN_IN_POINTWISE_TOPOLOGY_AGREE ← prove
+   r"!s k (f:A->B).
+        FINITE k
+        ==> open_in (pointwise_topology s)
+                    {g | g IN s /\ !x. x IN k ==> g x = f x}"
+   (REPEAT STRIP_TAC THEN
+    REWRITE_TAC [pointwise_topology, OPEN_IN_SUBTOPOLOGY] THEN
+    EXISTS_TAC (← q r"{g | !x. x IN k ==> g x = (f:A->B) x}") THEN
+    ASM_SIMP_TAC [OPEN_IN_POINTWISE_PRODUCT_AGREE] THEN SET_TAC [])
+
+  let OPEN_IN_POINTWISE_TOPOLOGY_POINT ← prove
+   r"!s x (y:B).
+        open_in (pointwise_topology s) {g:A->B | g IN s /\ g x = y}"
+   (REPEAT GEN_TAC THEN
+    MP_TAC (← ISPECL [← q r"s:(A->B)->bool", ← q r"{x:A}", ← q r"\z:A. (y:B)"]
+                  OPEN_IN_POINTWISE_TOPOLOGY_AGREE) THEN
+    REWRITE_TAC [FINITE_SING, IN_SING, FORALL_UNWIND_THM2])
+
+  let CLOSED_IN_POINTWISE_TOPOLOGY_AGREE ← prove
+   r"!s k (f:A->B).
+        closed_in (pointwise_topology s)
+                  {g | g IN s /\ !x. x IN k ==> g x = f x}"
+   (REPEAT GEN_TAC THEN
+    REWRITE_TAC [pointwise_topology, CLOSED_IN_SUBTOPOLOGY] THEN
+    EXISTS_TAC (← q r"{g | !x. x IN k ==> g x = (f:A->B) x}") THEN
+    CONJ_TAC THENL [ALL_TAC, SET_TAC []] THEN
+    REWRITE_TAC [CLOSED_IN_POINTWISE_PRODUCT, IN_ELIM_THM] THEN
+    X_GEN_TAC (← q r"h:A->B") THEN DISCH_TAC THEN X_GEN_TAC (← q r"x:A") THEN DISCH_TAC THEN
+    FIRST_X_ASSUM (MP_TAC o SPEC (← q r"{x:A}")) THEN
+    REWRITE_TAC [FINITE_SING, IN_SING, FORALL_UNWIND_THM2] THEN
+    ASM_MESON_TAC [])
+
+  let POINTWISE_TOPOLOGY_NEIGHBOURHOOD ← prove
+   r"!s w (f:A->B).
+        open_in (pointwise_topology s) w /\ f IN w
+        ==> ?k. FINITE k /\ {g | g IN s /\ !x. x IN k ==> g x = f x} SUBSET w"
+   (REWRITE_TAC [pointwise_topology, OPEN_IN_SUBTOPOLOGY] THEN
+    REPEAT STRIP_TAC THEN FIRST_X_ASSUM SUBST_ALL_TAC THEN
+    MP_TAC (← ISPECL [← q r"t:(A->B)->bool", ← q r"f:A->B"]
+                  POINTWISE_PRODUCT_NEIGHBOURHOOD) THEN
+    ANTS_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
+    MATCH_MP_TAC MONO_EXISTS THEN SET_TAC [])
+
+  let CLOSURE_OF_POINTWISE_TOPOLOGY ← prove
+   r"!s t:(A->B)->bool.
+        t SUBSET s
+        ==> (pointwise_topology s) closure_of t =
+            {f | f IN s /\
+                 !k. FINITE k ==> ?g. g IN t /\ !x. x IN k ==> g x = f x}"
+   (REPEAT STRIP_TAC THEN
+    REWRITE_TAC [EXTENSION, IN_CLOSURE_OF, TOPSPACE_POINTWISE_TOPOLOGY,
+                IN_ELIM_THM] THEN
+    X_GEN_TAC (← q r"f:A->B") THEN ASM_CASES_TAC (← q r"(f:A->B) IN s") THEN
+    ASM_REWRITE_TAC [] THEN EQ_TAC THEN DISCH_TAC THENL
+     [X_GEN_TAC (← q r"k:A->bool") THEN DISCH_TAC THEN
+      FIRST_X_ASSUM (MP_TAC o SPEC
+       (← q r"{g | g IN s /\ !x. x IN k ==> g x = (f:A->B) x}")) THEN
+      ASM_SIMP_TAC [OPEN_IN_POINTWISE_TOPOLOGY_AGREE, IN_ELIM_THM] THEN
+      MESON_TAC [],
+      X_GEN_TAC (← q r"w:(A->B)->bool") THEN STRIP_TAC THEN
+      MP_TAC (← ISPECL [← q r"s:(A->B)->bool", ← q r"w:(A->B)->bool", ← q r"f:A->B"]
+                    POINTWISE_TOPOLOGY_NEIGHBOURHOOD) THEN
+      ASM_REWRITE_TAC [] THEN
+      DISCH_THEN (X_CHOOSE_THEN (← q r"k:A->bool") STRIP_ASSUME_TAC) THEN
+      FIRST_X_ASSUM (MP_TAC o SPEC (← q r"k:A->bool")) THEN ASM_REWRITE_TAC [] THEN
+      ASM SET_TAC []])
+
+  let CONTINUOUS_MAP_POINTWISE_TOPOLOGY ← prove
+   r"!top s (g:C->A->B).
+        continuous_map (top,pointwise_topology s) g <=>
+        (!z. z IN topspace top ==> g z IN s) /\
+        !x y. open_in top {z | z IN topspace top /\ g z x = y}"
+   (REPEAT GEN_TAC THEN
+    REWRITE_TAC [pointwise_topology, CONTINUOUS_MAP_IN_SUBTOPOLOGY] THEN
+    REWRITE_TAC [CONTINUOUS_MAP_COMPONENTWISE, IN_UNIV] THEN
+    REWRITE_TAC [CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY_FIBRES, IN_UNIV] THEN
+    REWRITE_TAC [SUBSET, FORALL_IN_IMAGE, IN_EXTENSIONAL, IN_UNIV] THEN
+    MESON_TAC [])
+
+  let CONTINUOUS_MAP_POINTWISE_EVALUATION ← prove
+   r"!s x:A. continuous_map (pointwise_topology s,discrete_topology (:B))
+                          (\f:A->B. f x)"
+   (REPEAT GEN_TAC THEN
+    REWRITE_TAC [CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY_FIBRES, IN_UNIV] THEN
+    REWRITE_TAC [TOPSPACE_POINTWISE_TOPOLOGY, OPEN_IN_POINTWISE_TOPOLOGY_POINT])
+
+  let CONTINUOUS_MAP_POINTWISE_ACTION ← prove
+   r"!s:(A->B)->bool.
+        continuous_map
+         (prod_topology (pointwise_topology s) (discrete_topology (:A)),
+          discrete_topology (:B))
+         (\z. FST z (SND z))"
+   (GEN_TAC THEN
+    REWRITE_TAC [CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY_FIBRES, IN_UNIV] THEN
+    REWRITE_TAC [TOPSPACE_PROD_TOPOLOGY, TOPSPACE_POINTWISE_TOPOLOGY,
+                TOPSPACE_DISCRETE_TOPOLOGY] THEN
+    X_GEN_TAC (← q r"y:B") THEN
+    SUBGOAL_THEN
+     (← q r"{z | z IN (s:(A->B)->bool) CROSS (:A) /\ FST z (SND z) = y} =
+      UNIONS {{f | f IN s /\ f x = y} CROSS {x} | x IN (:A)}")
+    SUBST1_TAC THENL
+     [REWRITE_TAC [UNIONS_GSPEC, EXTENSION, FORALL_PAIR_THM, IN_ELIM_THM,
+                  IN_CROSS, IN_SING, IN_UNIV] THEN
+      MESON_TAC [],
+      MATCH_MP_TAC OPEN_IN_UNIONS THEN
+      REWRITE_TAC [FORALL_IN_GSPEC, IN_UNIV, OPEN_IN_CROSS] THEN
+      REWRITE_TAC [OPEN_IN_POINTWISE_TOPOLOGY_POINT, OPEN_IN_DISCRETE_TOPOLOGY,
+                  SUBSET_UNIV]])
+
   return { PRODUCT_TOPOLOGY_EQ, DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT_EQ,
-           DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT, DISCRETE_SPACE_PRODUCT_TOPOLOGY }
+           DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT, DISCRETE_SPACE_PRODUCT_TOPOLOGY, pointwise_topology, TOPSPACE_POINTWISE_PRODUCT, TOPSPACE_POINTWISE_TOPOLOGY, OPEN_IN_POINTWISE_PRODUCT_AGREE, POINTWISE_PRODUCT_NEIGHBOURHOOD, CLOSED_IN_POINTWISE_PRODUCT, OPEN_IN_POINTWISE_TOPOLOGY_AGREE, OPEN_IN_POINTWISE_TOPOLOGY_POINT, CLOSED_IN_POINTWISE_TOPOLOGY_AGREE, POINTWISE_TOPOLOGY_NEIGHBOURHOOD, CLOSURE_OF_POINTWISE_TOPOLOGY, CONTINUOUS_MAP_POINTWISE_TOPOLOGY, CONTINUOUS_MAP_POINTWISE_EVALUATION, CONTINUOUS_MAP_POINTWISE_ACTION }
 
 /- ------------------------------------------------------------------------- -/
-/- Disjoint sum of arbitarily many spaces.  (metric.ml 4922-5096)            -/
+/- Disjoint sum of arbitarily many spaces.  (metric.ml 5313-5487)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure SumTop where
@@ -6631,7 +7061,7 @@ def setupSumTop [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology 
            CONTINUOUS_MAP_COMPONENT_INJECTION, SUBTOPOLOGY_SUM_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Homeomorphisms, part 1.  (metric.ml 5098-5319)                            -/
+/- Homeomorphisms, part 1.  (metric.ml 5489-5716)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure Homeo1 where
@@ -6648,6 +7078,7 @@ structure Homeo1 where
   HOMEOMORPHIC_MAPS_COMPOSE : thm
   HOMEOMORPHIC_EQ_EVERYTHING_MAP : thm
   HOMEOMORPHIC_IMP_QUOTIENT_MAP : thm
+  HOMEOMORPHIC_MAP_QUOTIENT_TOPOLOGY : thm
   HOMEOMORPHIC_IMP_CONTINUOUS_MAP : thm
   HOMEOMORPHIC_IMP_OPEN_MAP : thm
   HOMEOMORPHIC_IMP_CLOSED_MAP : thm
@@ -6676,8 +7107,8 @@ def setupHomeo1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BContMap1 : C
   let { CONTINUOUS_MAP_COMPOSE, CONTINUOUS_MAP_EQ, .. } := BContMap2
   let { closed_map, open_map, .. } := BOpenClosed1
   let { CONTINUOUS_CLOSED_IMP_QUOTIENT_MAP, CONTINUOUS_OPEN_IMP_QUOTIENT_MAP,
-        INJECTIVE_QUOTIENT_MAP, QUOTIENT_MAP_COMPOSE, QUOTIENT_MAP_EQ, quotient_map,
-        .. } := BQuotient
+        INJECTIVE_QUOTIENT_MAP, QUOTIENT_MAP_COMPOSE, QUOTIENT_MAP_EQ,
+        QUOTIENT_MAP_QUOTIENT_TOPOLOGY, quotient_map, .. } := BQuotient
   -- @@SCOPE END
   let sr (s : String) : ExceptT String IO thm := do SET_RULE (← q s)
 
@@ -6796,6 +7227,12 @@ def setupHomeo1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BContMap1 : C
         homeomorphic_map(top,top') f ==> quotient_map(top,top') f"
    (SIMP_TAC [homeomorphic_map])
 
+  let HOMEOMORPHIC_MAP_QUOTIENT_TOPOLOGY ← prove
+   r"!top f:A->B.
+        (!x y. x IN topspace top /\ y IN topspace top ==> (f x = f y <=> x = y))
+        ==> homeomorphic_map (top,quotient_topology (top,f)) f"
+   (SIMP_TAC [homeomorphic_map, QUOTIENT_MAP_QUOTIENT_TOPOLOGY])
+
   let HOMEOMORPHIC_IMP_CONTINUOUS_MAP ← prove
    r"!top top' f:A->B.
         homeomorphic_map (top,top') f ==> continuous_map (top,top') f"
@@ -6907,7 +7344,7 @@ def setupHomeo1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BContMap1 : C
            HOMEOMORPHIC_MAPS_SYM, HOMEOMORPHIC_MAPS_ID, HOMEOMORPHIC_MAP_ID,
            HOMEOMORPHIC_MAPS_I, HOMEOMORPHIC_MAP_I, HOMEOMORPHIC_MAP_COMPOSE,
            HOMEOMORPHIC_MAPS_COMPOSE, HOMEOMORPHIC_EQ_EVERYTHING_MAP,
-           HOMEOMORPHIC_IMP_QUOTIENT_MAP, HOMEOMORPHIC_IMP_CONTINUOUS_MAP,
+           HOMEOMORPHIC_IMP_QUOTIENT_MAP, HOMEOMORPHIC_MAP_QUOTIENT_TOPOLOGY, HOMEOMORPHIC_IMP_CONTINUOUS_MAP,
            HOMEOMORPHIC_IMP_OPEN_MAP, HOMEOMORPHIC_IMP_CLOSED_MAP,
            HOMEOMORPHIC_IMP_SURJECTIVE_MAP, HOMEOMORPHIC_IMP_INJECTIVE_MAP,
            BIJECTIVE_OPEN_IMP_HOMEOMORPHIC_MAP, BIJECTIVE_CLOSED_IMP_HOMEOMORPHIC_MAP,
@@ -6915,7 +7352,7 @@ def setupHomeo1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BContMap1 : C
            HOMEOMORPHIC_MAPS_MAP, HOMEOMORPHIC_MAPS_IMP_MAP }
 
 /- ------------------------------------------------------------------------- -/
-/- Homeomorphisms, part 2.  (metric.ml 5321-5560)                            -/
+/- Homeomorphisms, part 2.  (metric.ml 5718-5957)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure Homeo2 where
@@ -7226,7 +7663,7 @@ def setupHomeo2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology 
 
 /- ------------------------------------------------------------------------- -/
 /- Relation of homeomorphism between topological spaces.                     -/
-/- (metric.ml 5562-5793)                                                      -/
+/- (metric.ml 5959-6190)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure HomeoSpace where
@@ -7525,7 +7962,7 @@ def setupHomeoSpace [HolBase] (D : MetricDeps) (BSubtopology : Subtopology)
            HOMEOMORPHIC_SPACE_SINGLETON_PRODUCT }
 
 /- ------------------------------------------------------------------------- -/
-/- Embedding maps.  (metric.ml 5795-5967)                                    -/
+/- Embedding maps.  (metric.ml 6192-6364)                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Embedding where
@@ -7759,7 +8196,7 @@ def setupEmbedding [HolBase] (D : MetricDeps) (BTopology : Topology)
 
 /- ------------------------------------------------------------------------- -/
 /- Retraction and section maps (having 1-sided inverses).                    -/
-/- (metric.ml 5969-6258)                                                      -/
+/- (metric.ml 6366-6655)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure Retraction where
@@ -8128,7 +8565,7 @@ def setupRetraction [HolBase] (D : MetricDeps) (BDiscrete : Discrete)
            HOMEOMORPHIC_DISCRETE_SPACES }
 
 /- ------------------------------------------------------------------------- -/
-/- When a subset is a retract of a topological space.  (metric.ml 6260-6405) -/
+/- When a subset is a retract of a topological space.  (metric.ml 6657-6802) -/
 /- ------------------------------------------------------------------------- -/
 
 structure RetractOf where
@@ -8327,7 +8764,7 @@ def setupRetractOf [HolBase] (D : MetricDeps) (BTopology : Topology)
 
 /- ------------------------------------------------------------------------- -/
 /- Compact sets and compact topological spaces, part 1.                      -/
-/- (metric.ml 6407-6631)                                                      -/
+/- (metric.ml 6804-7028)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure Compact1 where
@@ -8611,7 +9048,7 @@ def setupCompact1 [HolBase] (D : MetricDeps) (BTactics : Tactics) (BTopology : T
            COMPACT_IN_UNION, COMPACT_IN_UNIONS, COMPACT_IN_SUBTOPOLOGY_IMP_COMPACT }
 
 /- ------------------------------------------------------------------------- -/
-/- Compact sets, part 2.  (metric.ml 6633-6867)                              -/
+/- Compact sets, part 2.  (metric.ml 7030-7264)                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure Compact2 where
@@ -8907,7 +9344,7 @@ def setupCompact2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete :
            DISCRETE_COMPACT_SPACE_EQ_FINITE }
 
 /- ------------------------------------------------------------------------- -/
-/- Compact sets, part 3.  (metric.ml 6869-7096)                              -/
+/- Compact sets, part 3.  (metric.ml 7266-7493)                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure Compact3 where
@@ -9192,7 +9629,7 @@ def setupCompact3 [HolBase] (D : MetricDeps) (BTactics : Tactics) (BTopology : T
            ALEXANDER_SUBBASE_THEOREM_ALT }
 
 /- ------------------------------------------------------------------------- -/
-/- Compact sets, part 4.  (metric.ml 7098-7292)                              -/
+/- Compact sets, part 4.  (metric.ml 7495-7689)                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure Compact4 where
@@ -9432,7 +9869,7 @@ def setupCompact4 [HolBase] (D : MetricDeps) (BTopology : Topology)
   return { COMPACT_SPACE_PROD_TOPOLOGY, COMPACT_IN_CROSS, COMPACT_SPACE_PRODUCT_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Compact sets, part 5.  (metric.ml 7294-7497)                              -/
+/- Compact sets, part 5.  (metric.ml 7691-7894)                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure Compact5 where
@@ -9687,7 +10124,7 @@ def setupCompact5 [HolBase] (D : MetricDeps) (BTopology : Topology)
            CLOSED_MAP_SND, WALLACE_THEOREM_PROD_TOPOLOGY, LOCALLY_FINITE_COVER_OF_COMPACT_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Separated sets.  (metric.ml 7499-7700)                                    -/
+/- Separated sets.  (metric.ml 7896-8097)                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Separated where
@@ -9946,7 +10383,7 @@ def setupSeparated [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete 
            SEPARATION_OPEN_IN_UNION_GEN, SEPARATED_IN_FULL, HOMEOMORPHIC_MAP_SEPARATION }
 
 /- ------------------------------------------------------------------------- -/
-/- T_1 spaces, part 1.  (metric.ml 7702-7885)                                -/
+/- T_1 spaces, part 1.  (metric.ml 8099-8282)                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure T1a where
@@ -10184,7 +10621,7 @@ def setupT1a [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
            FINITE_T1_SPACE_IMP_DISCRETE_TOPOLOGY, T1_SPACE_SUBTOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- T_1 spaces, part 2.  (metric.ml 7887-8013)                                -/
+/- T_1 spaces, part 2.  (metric.ml 8284-8410)                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure T1b where
@@ -10370,7 +10807,7 @@ def setupT1b [HolBase] (D : MetricDeps) (BTopology : Topology) (BDerived : Deriv
            CARD_LE_TOPSPACE_OPEN_SETS, INFINITE_PERFECT_SET_GEN }
 
 /- ------------------------------------------------------------------------- -/
-/- Hausdorff spaces, part 1.  (metric.ml 8015-8248)                          -/
+/- Hausdorff spaces, part 1.  (metric.ml 8412-8645)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure Hausdorff1 where
@@ -10673,7 +11110,7 @@ def setupHausdorff1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete
            DERIVED_SET_OF_INFINITE_OPEN_IN }
 
 /- ------------------------------------------------------------------------- -/
-/- Hausdorff spaces, part 2.  (metric.ml 8250-8521)                          -/
+/- Hausdorff spaces, part 2.  (metric.ml 8647-8925)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure Hausdorff2 where
@@ -10691,6 +11128,7 @@ structure Hausdorff2 where
   CONTINUOUS_INVERSE_MAP : thm
   HAUSDORFF_SPACE_PROD_TOPOLOGY : thm
   HAUSDORFF_SPACE_PRODUCT_TOPOLOGY : thm
+  HAUSDORFF_SPACE_POINTWISE_TOPOLOGY : thm
   HAUSDORFF_SPACE_CLOSED_NEIGHBOURHOOD : thm
   INFINITE_PERFECT_SET : thm
   deriving Inhabited
@@ -10701,7 +11139,7 @@ def setupHausdorff2 [HolBase] (D : MetricDeps) (BTopology : Topology)
     (BContMap2 : ContMap2) (BOpenClosed1 : OpenClosed1) (BQuotient : Quotient)
     (BProd1 : Prod1) (BProduct1 : Product1) (BHomeo1 : Homeo1) (BHomeoSpace : HomeoSpace)
     (BEmbedding : Embedding) (BRetractOf : RetractOf) (BCompact1 : Compact1)
-    (BCompact2 : Compact2) (BCompact3 : Compact3) (BT1b : T1b) (BHausdorff1 : Hausdorff1) :
+    (BCompact2 : Compact2) (BCompact3 : Compact3) (BT1b : T1b) (BHausdorff1 : Hausdorff1) (BProduct4 : Product4) :
     ExceptT String IO Hausdorff2 := do
   -- @@SCOPE BEGIN
   let { ASM_MESON_TAC, MESON_TAC, SET_TAC, .. } := D
@@ -10735,9 +11173,10 @@ def setupHausdorff2 [HolBase] (D : MetricDeps) (BTopology : Topology)
   let { DISCRETE_COMPACT_IN_EQ_FINITE, .. } := BCompact2
   let { IMAGE_COMPACT_IN, .. } := BCompact3
   let { DERIVED_SET_OF_DERIVED_SET_SUBSET_GEN, INFINITE_PERFECT_SET_GEN, .. } := BT1b
-  let { COMPACT_IN_IMP_CLOSED_IN, FINITE_TOPSPACE_IMP_DISCRETE_TOPOLOGY,
-        HAUSDORFF_IMP_T1_SPACE, HAUSDORFF_SPACE_SUBTOPOLOGY, hausdorff_space,
+  let { COMPACT_IN_IMP_CLOSED_IN, FINITE_TOPSPACE_IMP_DISCRETE_TOPOLOGY, HAUSDORFF_IMP_T1_SPACE,
+        HAUSDORFF_SPACE_DISCRETE_TOPOLOGY, HAUSDORFF_SPACE_SUBTOPOLOGY, hausdorff_space,
         .. } := BHausdorff1
+  let { pointwise_topology, .. } := BProduct4
   -- @@SCOPE END
 
   let HAUSDORFF_SPACE_DISCRETE_COMPACT_IN ← prove
@@ -10972,6 +11411,13 @@ def setupHausdorff2 [HolBase] (D : MetricDeps) (BTopology : Topology)
      [EXISTS_TAC (← q r"u:A->bool"), EXISTS_TAC (← q r"v:A->bool")] THEN
     ASM_REWRITE_TAC [])
 
+  let HAUSDORFF_SPACE_POINTWISE_TOPOLOGY ← prove
+   r"!s:(A->B)->bool. hausdorff_space(pointwise_topology s)"
+   (GEN_TAC THEN REWRITE_TAC [pointwise_topology] THEN
+    MATCH_MP_TAC HAUSDORFF_SPACE_SUBTOPOLOGY THEN
+    REWRITE_TAC [HAUSDORFF_SPACE_PRODUCT_TOPOLOGY,
+                HAUSDORFF_SPACE_DISCRETE_TOPOLOGY])
+
   let HAUSDORFF_SPACE_CLOSED_NEIGHBOURHOOD ← prove
    r"!top:A topology.
         hausdorff_space top <=>
@@ -11018,11 +11464,11 @@ def setupHausdorff2 [HolBase] (D : MetricDeps) (BTopology : Topology)
            COMPACT_HAUSDORFF_SPACE_OPTIMAL, CONTINUOUS_IMP_CLOSED_MAP,
            CONTINUOUS_IMP_QUOTIENT_MAP, CONTINUOUS_IMP_HOMEOMORPHIC_MAP,
            CONTINUOUS_IMP_EMBEDDING_MAP, CONTINUOUS_INVERSE_MAP, HAUSDORFF_SPACE_PROD_TOPOLOGY,
-           HAUSDORFF_SPACE_PRODUCT_TOPOLOGY, HAUSDORFF_SPACE_CLOSED_NEIGHBOURHOOD,
+           HAUSDORFF_SPACE_PRODUCT_TOPOLOGY, HAUSDORFF_SPACE_POINTWISE_TOPOLOGY, HAUSDORFF_SPACE_CLOSED_NEIGHBOURHOOD,
            INFINITE_PERFECT_SET }
 
 /- ------------------------------------------------------------------------- -/
-/- Closed diagonals and graphs.  (metric.ml 8523-8736)                       -/
+/- Closed diagonals and graphs.  (metric.ml 8927-9140)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure Diagonal where
@@ -11295,7 +11741,7 @@ def setupDiagonal [HolBase] (D : MetricDeps) (BTopology : Topology)
            EMBEDDING_MAP_ON_DENSE_SUBTOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- KC spaces, part 1.  (metric.ml 8738-8954)                                 -/
+/- KC spaces, part 1.  (metric.ml 9142-9358)                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure KC1 where
@@ -11582,7 +12028,7 @@ def setupKC1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
            KC_SPACE_COMPACT_PROD_TOPOLOGY, KC_SPACE_PROD_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- KC spaces, part 2.  (metric.ml 8956-9084)                                 -/
+/- KC spaces, part 2.  (metric.ml 9360-9488)                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure KC2 where
@@ -11759,7 +12205,7 @@ def setupKC2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
            KC_SPACE_PROD_TOPOLOGY_GEN }
 
 /- ------------------------------------------------------------------------- -/
-/- Proper maps, part 1.  (metric.ml 9086-9277)                               -/
+/- Proper maps, part 1.  (metric.ml 9490-9681)                               -/
 /- ------------------------------------------------------------------------- -/
 
 structure Proper1 where
@@ -12009,7 +12455,7 @@ def setupProper1 [HolBase] (D : MetricDeps) (BTopology : Topology)
            PROPER_MAP_PAIRED_CONTINUOUS_MAP_RIGHT, PROPER_MAP_PAIRED_CONTINUOUS_MAP_LEFT }
 
 /- ------------------------------------------------------------------------- -/
-/- Proper maps, part 2.  (metric.ml 9279-9490)                               -/
+/- Proper maps, part 2.  (metric.ml 9683-9894)                               -/
 /- ------------------------------------------------------------------------- -/
 
 structure Proper2 where
@@ -12285,7 +12731,7 @@ def setupProper2 [HolBase] (D : MetricDeps) (BTopology : Topology)
            PROPER_MAP_FROM_COMPOSITION_LEFT, PROPER_MAP_FROM_COMPOSITION_RIGHT_INJ }
 
 /- ------------------------------------------------------------------------- -/
-/- Proper maps, part 3.  (metric.ml 9492-9674)                               -/
+/- Proper maps, part 3.  (metric.ml 9896-10078)                               -/
 /- ------------------------------------------------------------------------- -/
 
 structure Proper3 where
@@ -12516,7 +12962,7 @@ def setupProper3 [HolBase] (D : MetricDeps) (BContMap1 : ContMap1) (BContMap2 : 
            PROPER_MAP_FROM_COMPOSITION_RIGHT, CONTINUOUS_EXTENSION_OF_PROPER_MAP_FROM_SUBTOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Perfect maps (proper, continuous and surjective).  (metric.ml 9676-9830)  -/
+/- Perfect maps (proper, continuous and surjective).  (metric.ml 10080-10234)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure Perfect where
@@ -12730,7 +13176,7 @@ def setupPerfect [HolBase] (D : MetricDeps) (BSubtopology : Subtopology)
            PERFECT_MAP_FROM_COMPOSITION_RIGHT, PERFECT_MAP_FROM_COMPOSITION_RIGHT_INJ }
 
 /- ------------------------------------------------------------------------- -/
-/- Preservation theorems for proper or perfect maps.  (metric.ml 9832-9977)  -/
+/- Preservation theorems for proper or perfect maps.  (metric.ml 10236-10381)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure Preserve where
@@ -12930,7 +13376,7 @@ def setupPreserve [HolBase] (D : MetricDeps) (BTopology : Topology)
            COMPACT_SPACE_PERFECT_MAP_IMAGE_EQ, KC_SPACE_PERFECT_MAP_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Lindelof spaces.  (metric.ml 9979-10215)                                  -/
+/- Lindelof spaces.  (metric.ml 10383-10619)                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure Lindelof where
@@ -13229,7 +13675,7 @@ def setupLindelof [HolBase] (D : MetricDeps) (BTopology : Topology)
            LINDELOF_SPACE_PERFECT_MAP_IMAGE, LINDELOF_SPACE_PERFECT_MAP_IMAGE_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- Other countability properties.  (metric.ml 10217-10474)                   -/
+/- Other countability properties.  (metric.ml 10621-10878)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure Countability where
@@ -13563,7 +14009,7 @@ def setupCountability [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscre
 
 /- ------------------------------------------------------------------------- -/
 /- A variant of nets; the "within" modifier; "eventually".                   -/
-/- (metric.ml 10476-10682)                                                    -/
+/- (metric.ml 10880-11086)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Nets where
@@ -13819,7 +14265,7 @@ def setupNets [HolBase] (D : MetricDeps) : ExceptT String IO Nets := do
            EVENTUALLY_FORALL, FORALL_EVENTUALLY, EVENTUALLY_TRIVIAL }
 
 /- ------------------------------------------------------------------------- -/
-/- Sequential limits.  (metric.ml 10684-10897)                               -/
+/- Sequential limits.  (metric.ml 11088-11301)                               -/
 /- ------------------------------------------------------------------------- -/
 
 structure Sequential where
@@ -14094,7 +14540,7 @@ def setupSequential [HolBase] (D : MetricDeps) (BTactics : Tactics) (BNets : Net
            EVENTUALLY_UBOUND_LE_SEQUENTIALLY, EVENTUALLY_LBOUND_LE_SEQUENTIALLY }
 
 /- ------------------------------------------------------------------------- -/
-/- F_sigma and G_delta sets in a topological space.  (metric.ml 10899-11177) -/
+/- F_sigma and G_delta sets in a topological space.  (metric.ml 11303-11581) -/
 /- ------------------------------------------------------------------------- -/
 
 structure FsigmaGdelta where
@@ -14450,7 +14896,7 @@ def setupFsigmaGdelta [HolBase] (D : MetricDeps) (BTopology : Topology)
            FSIGMA_IN_FSIGMA_SUBTOPOLOGY, GDELTA_IN_GDELTA_SUBTOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Borel sets.  (metric.ml 11179-11419)                                      -/
+/- Borel sets.  (metric.ml 11583-11823)                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure Borel where
@@ -14754,7 +15200,7 @@ def setupBorel [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology :
            BOREL_IN_HOMEOMORPHIC_MAPS_IMAGE_EQ, BOREL_IN_HOMEOMORPHIC_MAP_IMAGE_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- Borel measurable maps.  (metric.ml 11421-11570)                           -/
+/- Borel measurable maps.  (metric.ml 11825-11974)                           -/
 /- ------------------------------------------------------------------------- -/
 
 structure BorelMap where
@@ -14944,7 +15390,7 @@ def setupBorelMap [HolBase] (D : MetricDeps) (BTopology : Topology)
            BOREL_MEASURABLE_MAP_INTO_SUBTOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Metric spaces; distance; open ball; submetric.  (metric.ml 11572-11802)   -/
+/- Metric spaces; distance; open ball; submetric.  (metric.ml 11976-12206)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure MetricSpace where
@@ -15230,7 +15676,7 @@ def setupMetricSpace [HolBase] (D : MetricDeps) (BTactics : Tactics) :
            SUBMETRIC_UNIV, SUBMETRIC_SUBMETRIC, SUBMETRIC_MSPACE, SUBMETRIC_RESTRICT }
 
 /- ------------------------------------------------------------------------- -/
-/- Metric topology.  (metric.ml 11803-12179)                                 -/
+/- Metric topology.  (metric.ml 12207-12583)                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MTopology where
@@ -15691,7 +16137,7 @@ def setupMTopology [HolBase] (D : MetricDeps) (BTactics : Tactics) (BTopology : 
            METRIC_INTERIOR_OF_ALT, IN_INTERIOR_OF_MBALL, IN_INTERIOR_OF_MCBALL }
 
 /- ------------------------------------------------------------------------- -/
-/- Bounded sets.  (metric.ml 12181-12331)                                    -/
+/- Bounded sets.  (metric.ml 12585-12735)                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Bounded where
@@ -15890,7 +16336,7 @@ def setupBounded [HolBase] (D : MetricDeps) (BTactics : Tactics) (BClosure : Clo
 
 
 /- ------------------------------------------------------------------------- -/
-/- A decision procedure for metric spaces.  (metric.ml 12333-12631)          -/
+/- A decision procedure for metric spaces.  (metric.ml 12737-13035)          -/
 /- METRIC_ARITH's local functions that do not close over theorems or over    -/
 /- the metric are defined here, at top level, under their OCaml names; the   -/
 /- recursive conversions use `fixConv` for OCaml's `let rec c tm = ... tm`.  -/
@@ -15916,7 +16362,7 @@ def end_itlistIO {α : Type} (f : α → α → ExceptT String IO α) :
   | [x] => pure x
   | h :: t => do f h (← end_itlistIO f t)
 
-/-- `guess_metric` (metric.ml 12413-12419). -/
+/-- `guess_metric` (metric.ml 12817-12823). -/
 partial def guess_metric (tm : term) : Except String term :=
   match tm with
   | .Comb (.Const "mdist" _) m => pure m
@@ -15927,7 +16373,7 @@ partial def guess_metric (tm : term) : Except String term :=
   | .Abs _ bd => guess_metric bd
   | _ => throw "metric not found"
 
-/-- `find_mdist` (metric.ml 12420-12427). -/
+/-- `find_mdist` (metric.ml 12824-12831). -/
 partial def find_mdist (mtm : term) (tm : term) : List term :=
   match tm with
   | .Comb s t =>
@@ -15938,7 +16384,7 @@ partial def find_mdist (mtm : term) (tm : term) : List term :=
   | .Abs v bd => (find_mdist mtm bd).filter (fun x => !(HolCore.Basics.free_in v x))
   | _ => []
 
-/-- `find_eq` (metric.ml 12428-12435). -/
+/-- `find_eq` (metric.ml 12832-12839). -/
 partial def find_eq (mty : hol_type) (tm : term) : List term :=
   match tm with
   | .Comb s t =>
@@ -15952,7 +16398,7 @@ partial def find_eq (mty : hol_type) (tm : term) : List term :=
   | .Abs v bd => (find_eq mty bd).filter (fun x => !(HolCore.Basics.free_in v x))
   | _ => []
 
-/-- `find_points` (metric.ml 12436-12447). -/
+/-- `find_points` (metric.ml 12840-12851). -/
 partial def find_points (mtm : term) (tm : term) : Except String (List term) :=
   match tm with
   | .Comb s t =>
@@ -15970,7 +16416,7 @@ partial def find_points (mtm : term) (tm : term) : Except String (List term) :=
       pure ((← find_points mtm bd).filter (fun x => !(HolCore.Basics.free_in v x)))
   | _ => pure []
 
-/-- `prove_hyps` (metric.ml 12404-12412). -/
+/-- `prove_hyps` (metric.ml 12808-12816). -/
 partial def prove_hyps [HolBase] (EXCLUDED_MIDDLE : thm) (PRESIMP_CONV : ioconv)
     (MESON : List thm → term → ExceptT String IO thm) (th : thm) : ExceptT String IO thm :=
   match hyp th with
@@ -15984,7 +16430,7 @@ partial def prove_hyps [HolBase] (EXCLUDED_MIDDLE : thm) (PRESIMP_CONV : ioconv)
       prove_hyps EXCLUDED_MIDDLE PRESIMP_CONV MESON (← DISJ_CASES emth th nth)
 
 mutual
-/-- `try_points` (metric.ml 12620-12625). -/
+/-- `try_points` (metric.ml 13024-13029). -/
 partial def try_points [HolBase] (SIMPLE_METRIC_ARITH : term → ExceptT String IO thm)
     (points : List term) (v tm : term) (ptl : List term) : ExceptT String IO thm :=
   match ptl with
@@ -15996,7 +16442,7 @@ partial def try_points [HolBase] (SIMPLE_METRIC_ARITH : term → ExceptT String 
         EXISTS (etm, xtm) (← elim_exists SIMPLE_METRIC_ARITH points tm'))
         (fun _ => try_points SIMPLE_METRIC_ARITH points v tm rest)
 
-/-- `elim_exists` (metric.ml 12626-12629). -/
+/-- `elim_exists` (metric.ml 13030-13033). -/
 partial def elim_exists [HolBase] (SIMPLE_METRIC_ARITH : term → ExceptT String IO thm)
     (points : List term) (tm : term) : ExceptT String IO thm :=
   tryCatch (do
@@ -16241,7 +16687,7 @@ def setupMetricArith [HolBase] (D : MetricDeps) (BTactics : Tactics)
 
 /- ------------------------------------------------------------------------- -/
 /- Compact sets are bounded; metric spaces are Hausdorff.                    -/
-/- (metric.ml 12575-12630)                                                    -/
+/- (metric.ml 12979-13034)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure MetricHaus where
@@ -16324,7 +16770,7 @@ def setupMetricHaus [HolBase] (D : MetricDeps) (BTactics : Tactics) (BCompact1 :
   return { COMPACT_IN_IMP_MBOUNDED, HAUSDORFF_SPACE_MTOPOLOGY, T1_SPACE_MTOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- The discrete metric; metrizable spaces.  (metric.ml 12632-12860)          -/
+/- The discrete metric; metrizable spaces.  (metric.ml 13036-13264)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure Metrizable where
@@ -16633,7 +17079,7 @@ def setupMetrizable [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete
 /- ------------------------------------------------------------------------- -/
 /- Separable metrizable spaces are second-countable. Additional              -/
 /- second-countability results including closed map images.                  -/
-/- (metric.ml 12862-13062)                                                    -/
+/- (metric.ml 13266-13466)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure SepMetrizable where
@@ -16870,7 +17316,7 @@ def setupSepMetrizable [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosu
   return { SEPARABLE_METRIZABLE_IMP_SECOND_COUNTABLE, SECOND_COUNTABLE_CLOSED_MAP_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Connected topological spaces.  (metric.ml 13064-13253)                    -/
+/- Connected topological spaces.  (metric.ml 13468-13657)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Connected1 where
@@ -17110,7 +17556,7 @@ def setupConnected1 [HolBase] (D : MetricDeps) (BTopology : Topology)
            CONNECTED_IN_UNIONS }
 
 /- ------------------------------------------------------------------------- -/
-/- Connected topological spaces, continued.  (metric.ml 13255-13466)         -/
+/- Connected topological spaces, continued.  (metric.ml 13659-13870)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure Connected2 where
@@ -17127,27 +17573,36 @@ structure Connected2 where
   CONNECTED_IN_SUBSET_SEPARATED_UNION : thm
   CONNECTED_IN_NONSEPARATED_UNION : thm
   CONNECTED_IN_UNIONS_STRONG : thm
+  irreducible_in : thm
+  IRREDUCIBLE_IN_SING : thm
+  IRREDUCIBLE_IN_CLOSURE_OF : thm
+  IRREDUCIBLE_IN_CONTINUOUS_MAP_IMAGE : thm
+  IRREDUCIBLE_IMP_CONNECTED_IN : thm
+  sober_space : thm
   deriving Inhabited
 
 @[nospecialize]
 def setupConnected2 [HolBase] (D : MetricDeps) (BTopology : Topology)
     (BSubtopology : Subtopology) (BClosure : Closure) (BSeparated : Separated)
-    (BConnected1 : Connected1) : ExceptT String IO Connected2 := do
+    (BConnected1 : Connected1) (BContMap1 : ContMap1) : ExceptT String IO Connected2 := do
   -- @@SCOPE BEGIN
-  let { ASM_MESON_TAC, SET_RULE, SET_TAC, .. } := D
-  let { AND_FORALL_THM, FORALL_IN_GSPEC, .. } := D.core1
-  let { IMP_CONJ, IMP_CONJ_ALT, INTERS_2, INTERS_GSPEC, INTER_SUBSET, IN_ELIM_THM, IN_INTER,
-        IN_UNION, IN_UNIONS, LEFT_IMP_EXISTS_THM, MEMBER_NOT_EMPTY, MONO_EXISTS, .. } := D.core2
-  let { SUBSET, SUBSET_REFL, UNIONS_2, UNION_SUBSET, .. } := D.core4
+  let { ASM_MESON_TAC, MESON_TAC, SET_RULE, SET_TAC, new_definition, .. } := D
+  let { AND_FORALL_THM, FORALL_IN_GSPEC, IMAGE_EQ_EMPTY, .. } := D.core1
+  let { IMAGE_SUBSET, IMP_CONJ, IMP_CONJ_ALT, INTERS_2, INTERS_GSPEC, INTER_SUBSET, IN_ELIM_THM,
+        IN_INTER, IN_UNION, IN_UNIONS, LEFT_IMP_EXISTS_THM, MEMBER_NOT_EMPTY, MONO_EXISTS,
+        NOT_INSERT_EMPTY, .. } := D.core2
+  let { SING_SUBSET, SUBSET, SUBSET_EMPTY, SUBSET_REFL, SUBSET_TRANS, UNIONS_2, UNION_SUBSET,
+        .. } := D.core4
   let { CONTRAPOS_THM, DE_MORGAN_THM, NOT_EXISTS_THM, RIGHT_AND_FORALL_THM, .. } := D.core5
   let { OPEN_IN_SUBSET, .. } := BTopology
   let { SUBTOPOLOGY_TOPSPACE, TOPSPACE_SUBTOPOLOGY, .. } := BSubtopology
-  let { CLOSED_IN_CLOSURE_OF, CLOSED_IN_INTER_CLOSURE_OF, CLOSURE_OF_SUBSET,
-        CLOSURE_OF_SUBSET_INTER, CLOSURE_OF_SUBSET_TOPSPACE,
-        OPEN_IN_INTER_CLOSURE_OF_EQ_EMPTY, .. } := BClosure
+  let { CLOSED_IN_CLOSURE_OF, CLOSED_IN_INTER_CLOSURE_OF, CLOSURE_OF_MINIMAL, CLOSURE_OF_SUBSET,
+        CLOSURE_OF_SUBSET_INTER, CLOSURE_OF_SUBSET_TOPSPACE, OPEN_IN_INTER_CLOSURE_OF_EQ_EMPTY,
+        .. } := BClosure
   let { SEPARATED_IN_MONO, SEPARATED_IN_SYM, separated_in, .. } := BSeparated
   let { CONNECTED_IN, CONNECTED_IN_CLOSED_IN, CONNECTED_IN_TOPSPACE, CONNECTED_IN_UNIONS,
         CONNECTED_SPACE_CLOSED_IN_EQ, connected_in, connected_space, .. } := BConnected1
+  let { CLOSED_IN_CONTINUOUS_MAP_PREIMAGE, CONTINUOUS_MAP_IMAGE_SUBSET_TOPSPACE, .. } := BContMap1
   -- @@SCOPE END
   let sr (s : String) : ExceptT String IO thm := do SET_RULE (← q s)
 
@@ -17364,18 +17819,82 @@ def setupConnected2 [HolBase] (D : MetricDeps) (BTopology : Topology)
       EXISTS_TAC (← q r"x:A") THEN X_GEN_TAC (← q r"v:A->bool") THEN
       DISCH_TAC THEN ASM_REWRITE_TAC [IN_UNION]])
 
+  /- Irreducible sets and sober spaces. A nonempty subset s of topspace top is -/
+  /- irreducible when it lies in one of any two closed sets covering it        -/
+  /- (irreducible_in). Singletons are irreducible (IRREDUCIBLE_IN_SING); so    -/
+  /- are closures and continuous images of irreducible sets                    -/
+  /- (IRREDUCIBLE_IN_CLOSURE_OF, IRREDUCIBLE_IN_CONTINUOUS_MAP_IMAGE), and     -/
+  /- irreducible sets are connected (IRREDUCIBLE_IMP_CONNECTED_IN). A space is -/
+  /- sober when every irreducible closed set is the closure of exactly one     -/
+  /- point (sober_space).                                                      -/
+
+  let irreducible_in ← new_definition
+   r"irreducible_in (top:A topology) s <=>
+        s SUBSET topspace top /\ ~(s = {}) /\
+        !c d. closed_in top c /\ closed_in top d /\ s SUBSET c UNION d
+              ==> s SUBSET c \/ s SUBSET d"
+
+  let IRREDUCIBLE_IN_SING ← prove
+   r"!top a:A. irreducible_in top {a} <=> a IN topspace top"
+   (REWRITE_TAC [irreducible_in, SING_SUBSET, NOT_INSERT_EMPTY, IN_UNION] THEN
+    MESON_TAC [])
+
+  let IRREDUCIBLE_IN_CLOSURE_OF ← prove
+   r"!top s:A->bool.
+        irreducible_in top s ==> irreducible_in top (top closure_of s)"
+   (REWRITE_TAC [irreducible_in, CLOSURE_OF_SUBSET_TOPSPACE] THEN
+    REPEAT STRIP_TAC THENL
+     [ASM_MESON_TAC [CLOSURE_OF_SUBSET, SUBSET_EMPTY],
+      FIRST_X_ASSUM (MP_TAC o SPECL [← q r"c:A->bool", ← q r"d:A->bool"]) THEN
+      ASM_REWRITE_TAC [] THEN ANTS_TAC THENL
+       [ASM_MESON_TAC [CLOSURE_OF_SUBSET, SUBSET_TRANS],
+        ASM_MESON_TAC [CLOSURE_OF_MINIMAL]]])
+
+  let IRREDUCIBLE_IN_CONTINUOUS_MAP_IMAGE ← prove
+   r"!top top' (f:A->B) s.
+        continuous_map (top,top') f /\ irreducible_in top s
+        ==> irreducible_in top' (IMAGE f s)"
+   (REWRITE_TAC [irreducible_in, IMAGE_EQ_EMPTY] THEN REPEAT GEN_TAC THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL
+     [MATCH_MP_TAC SUBSET_TRANS THEN
+      EXISTS_TAC (← q r"IMAGE (f:A->B) (topspace top)") THEN
+      ASM_SIMP_TAC [IMAGE_SUBSET, CONTINUOUS_MAP_IMAGE_SUBSET_TOPSPACE],
+      REPEAT STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPECL
+       [← q r"{x | x IN topspace top /\ (f:A->B) x IN c}",
+        ← q r"{x | x IN topspace top /\ (f:A->B) x IN d}"]) THEN
+      ANTS_TAC THENL [ALL_TAC, ASM SET_TAC []] THEN
+      REPEAT CONJ_TAC THENL
+       [MATCH_MP_TAC CLOSED_IN_CONTINUOUS_MAP_PREIMAGE THEN
+        EXISTS_TAC (← q r"top':B topology") THEN ASM_REWRITE_TAC [],
+        MATCH_MP_TAC CLOSED_IN_CONTINUOUS_MAP_PREIMAGE THEN
+        EXISTS_TAC (← q r"top':B topology") THEN ASM_REWRITE_TAC [],
+        ASM SET_TAC []]])
+
+  let IRREDUCIBLE_IMP_CONNECTED_IN ← prove
+   r"!top s:A->bool. irreducible_in top s ==> connected_in top s"
+   (REWRITE_TAC [irreducible_in, CONNECTED_IN_CLOSED_IN] THEN
+    REPEAT GEN_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC [NOT_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [← q r"c:A->bool", ← q r"d:A->bool"] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM (MP_TAC o SPECL [← q r"c:A->bool", ← q r"d:A->bool"]) THEN
+    ASM_REWRITE_TAC [] THEN ASM SET_TAC [])
+
+  let sober_space ← new_definition
+   r"sober_space (top:A topology) <=>
+        !s. closed_in top s /\ irreducible_in top s
+            ==> ?!x. x IN topspace top /\ top closure_of {x} = s"
+
   return { CONNECTED_IN_UNION, CONNECTED_SPACE_SUBCONNECTED,
            CONNECTED_IN_INTERMEDIATE_CLOSURE_OF, CONNECTED_IN_CLOSURE_OF,
            CONNECTED_IN_SEPARATION, CONNECTED_IN_SEPARATION_ALT, CONNECTED_IN_EQ_NOT_SEPARATED,
            CONNECTED_IN_EQ_NOT_SEPARATED_SUBSET, CONNECTED_SPACE_EQ_NOT_SEPARATED,
            CONNECTED_SPACE_EQ_NOT_SEPARATED_SUBSET, CONNECTED_IN_SUBSET_SEPARATED_UNION,
-           CONNECTED_IN_NONSEPARATED_UNION, CONNECTED_IN_UNIONS_STRONG }
+           CONNECTED_IN_NONSEPARATED_UNION, CONNECTED_IN_UNIONS_STRONG, irreducible_in, IRREDUCIBLE_IN_SING, IRREDUCIBLE_IN_CLOSURE_OF, IRREDUCIBLE_IN_CONTINUOUS_MAP_IMAGE, IRREDUCIBLE_IMP_CONNECTED_IN, sober_space }
 
 /- ------------------------------------------------------------------------- -/
 /- Connectedness of the intersection of a chain of compact connected sets.   -/
 /- This is the general topology version of CONNECTED_CHAIN from topology.ml. -/
 /- Hausdorff is needed to separate disjoint compact sets.                    -/
-/- (metric.ml 13468-13698)                                                    -/
+/- (metric.ml 13938-14168)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Chain where
@@ -17639,7 +18158,7 @@ def setupChain [HolBase] (D : MetricDeps) (BTopology : Topology) (BCompact1 : Co
 
 /- ------------------------------------------------------------------------- -/
 /- More on connectedness: separation, images, discrete spaces.               -/
-/- (metric.ml 13700-13916)                                                    -/
+/- (metric.ml 14170-14386)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Connected3 where
@@ -17929,7 +18448,7 @@ def setupConnected3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete
            CARD_LE_PAIRWISE_SEPARATED_CONNECTED_IN }
 
 /- ------------------------------------------------------------------------- -/
-/- Connectedness of products.  (metric.ml 13918-14222)                       -/
+/- Connectedness of products.  (metric.ml 14388-14692)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure Connected4 where
@@ -18288,7 +18807,7 @@ def setupConnected4 [HolBase] (D : MetricDeps) (BTopology : Topology)
 
 /- ------------------------------------------------------------------------- -/
 /- The notion of "separated between" (complement of "connected between")     -/
-/- (metric.ml 14224-14478)                                                    -/
+/- (metric.ml 14694-14948)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure SepBetween where
@@ -18603,7 +19122,7 @@ def setupSepBetween [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure 
            CONNECTED_SPACE_IMP_SEPARATED_BETWEEN_TRIVIAL }
 
 /- ------------------------------------------------------------------------- -/
-/- Connected components.  (metric.ml 14480-14698)                            -/
+/- Connected components.  (metric.ml 14950-15168)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure Components1 where
@@ -18891,7 +19410,7 @@ def setupComponents1 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology)
            CONNECTED_IN_CONNECTED_COMPONENTS_OF, CONNECTED_COMPONENT_IN_CONNECTED_COMPONENTS_OF }
 
 /- ------------------------------------------------------------------------- -/
-/- Connected components, continued.  (metric.ml 14700-14929)                 -/
+/- Connected components, continued.  (metric.ml 15170-15399)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure Components2 where
@@ -19201,7 +19720,7 @@ def setupComponents2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscret
            CONNECTED_COMPONENT_OF_DISCRETE_TOPOLOGY, CONNECTED_COMPONENTS_OF_DISCRETE_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Connected components: counting, images, products.  (metric.ml 14931-15196) -/
+/- Connected components: counting, images, products.  (metric.ml 15401-15666) -/
 /- ------------------------------------------------------------------------- -/
 
 structure Components3 where
@@ -19536,7 +20055,7 @@ def setupComponents3 [HolBase] (D : MetricDeps) (BContMap1 : ContMap1) (BProd1 :
            CONNECTED_COMPONENTS_OF_PRODUCT_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Monotone (in the general topological sense) maps.  (metric.ml 15198-15379) -/
+/- Monotone (in the general topological sense) maps.  (metric.ml 15668-15849) -/
 /- ------------------------------------------------------------------------- -/
 
 structure Monotone where
@@ -19771,7 +20290,7 @@ def setupMonotone [HolBase] (D : MetricDeps) (BTopology : Topology)
 
 /- ------------------------------------------------------------------------- -/
 /- Neigbourhood bases (useful for "local" properties of various kind).       -/
-/- (metric.ml 15381-15638)                                                    -/
+/- (metric.ml 15851-16108)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure NbhdBase where
@@ -20087,7 +20606,7 @@ def setupNbhdBase [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete :
            FIRST_COUNTABLE_NEIGHBOURHOOD_BASE }
 
 /- ------------------------------------------------------------------------- -/
-/- T_0 spaces and the Kolmogorov quotient.  (metric.ml 15640-15800)          -/
+/- T_0 spaces and the Kolmogorov quotient.  (metric.ml 16110-16270)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure T0a where
@@ -20307,7 +20826,7 @@ def setupT0a [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Disc
            T0_SPACE_RETRACTION_MAP_IMAGE, T0_SPACE_PROD_TOPOLOGY, T0_SPACE_PRODUCT_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- The Kolmogorov quotient.  (metric.ml 15802-16044)                         -/
+/- The Kolmogorov quotient.  (metric.ml 16272-16514)                         -/
 /- ------------------------------------------------------------------------- -/
 
 structure T0b where
@@ -20618,7 +21137,7 @@ def setupT0b [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
 
 /- ------------------------------------------------------------------------- -/
 /- Regular spaces. These are *not* a priori assumed to be Hausdorff/T_1.     -/
-/- (metric.ml 16046-16244)                                                    -/
+/- (metric.ml 16516-16714)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Regular1 where
@@ -20892,7 +21411,7 @@ def setupRegular1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete :
 
 /- ------------------------------------------------------------------------- -/
 /- Regular spaces: compact/closed separation, products.                      -/
-/- (metric.ml 16246-16385)                                                    -/
+/- (metric.ml 16716-16855)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Regular2 where
@@ -21078,7 +21597,7 @@ def setupRegular2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BProd1 : Pr
            REGULAR_SPACE_PROD_TOPOLOGY, REGULAR_SPACE_PRODUCT_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Regular spaces: paired closed maps, images.  (metric.ml 16387-16637)      -/
+/- Regular spaces: paired closed maps, images.  (metric.ml 16857-17107)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure Regular3 where
@@ -21389,7 +21908,7 @@ def setupRegular3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BContMap1 :
            REGULAR_SPACE_PERFECT_MAP_IMAGE, REGULAR_SPACE_PERFECT_MAP_IMAGE_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- Locally compact spaces.  (metric.ml 16639-16845)                          -/
+/- Locally compact spaces.  (metric.ml 17109-17315)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure LocCompact1 where
@@ -21648,7 +22167,7 @@ def setupLocCompact1 [HolBase] (D : MetricDeps) (BTopology : Topology)
            LOCALLY_COMPACT_SPACE_COMPACT_CLOSED_IN, LOCALLY_COMPACT_SPACE_COMPACT_CLOSURE_OF }
 
 /- ------------------------------------------------------------------------- -/
-/- Locally compact spaces, continued.  (metric.ml 16847-17064)               -/
+/- Locally compact spaces, continued.  (metric.ml 17317-17580)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure LocCompact2 where
@@ -21664,6 +22183,7 @@ structure LocCompact2 where
   LOCALLY_COMPACT_SPACE_CLOSED_SUBSET : thm
   LOCALLY_COMPACT_SPACE_OPEN_SUBSET : thm
   LOCALLY_COMPACT_SPACE_DISCRETE_TOPOLOGY : thm
+  FINITE_IN_COMPACT_IMP_CLOSED_DISCRETE : thm
   LOCALLY_COMPACT_SPACE_CONTINUOUS_OPEN_MAP_IMAGE : thm
   deriving Inhabited
 
@@ -21671,20 +22191,21 @@ structure LocCompact2 where
 def setupLocCompact2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Discrete)
     (BSubtopology : Subtopology) (BClosure : Closure) (BOpenClosed1 : OpenClosed1)
     (BCompact1 : Compact1) (BCompact2 : Compact2) (BCompact3 : Compact3) (BKC1 : KC1)
-    (BNbhdBase : NbhdBase) (BRegular1 : Regular1) (BLocCompact1 : LocCompact1) :
+    (BNbhdBase : NbhdBase) (BRegular1 : Regular1) (BLocCompact1 : LocCompact1) (BHausdorff1 : Hausdorff1) :
     ExceptT String IO LocCompact2 := do
   -- @@SCOPE BEGIN
   let { ASM_MESON_TAC, MESON_TAC, SET_TAC, .. } := D
-  let { EXISTS_FINITE_SUBSET_IMAGE, FINITE_IMAGE, FINITE_SING, FORALL_IN_IMAGE, FUN_IN_IMAGE,
-        .. } := D.core1
-  let { IMAGE_SUBSET, IMP_CONJ, IN_INTER, LEFT_IMP_EXISTS_THM, MONO_EXISTS, .. } := D.core2
+  let { EXISTS_FINITE_SUBSET_IMAGE, FINITE_DELETE, FINITE_IMAGE, FINITE_SING, FINITE_SUBSET,
+        FORALL_IN_IMAGE, FUN_IN_IMAGE, .. } := D.core1
+  let { IMAGE_SUBSET, IMP_CONJ, IN_DIFF, IN_INTER, LEFT_IMP_EXISTS_THM, MONO_EXISTS, .. } := D.core2
   let { SING_SUBSET, SKOLEM_THM, SUBSET_INTER, SUBSET_TRANS, .. } := D.core4
   let { RIGHT_IMP_EXISTS_THM, .. } := D.core5
-  let { CLOSED_IN_UNIONS, OPEN_IN_INTER, OPEN_IN_TOPSPACE, OPEN_IN_UNIONS, .. } := BTopology
-  let { CLOSED_IN_DISCRETE_TOPOLOGY, OPEN_IN_DISCRETE_TOPOLOGY, TOPSPACE_DISCRETE_TOPOLOGY,
-        .. } := BDiscrete
-  let { CLOSED_IN_SUBSET_TOPSPACE, OPEN_IN_SUBSET_TOPSPACE, OPEN_IN_SUBTOPOLOGY_INTER_OPEN,
-        TOPSPACE_SUBTOPOLOGY, .. } := BSubtopology
+  let { CLOSED_IN_UNIONS, OPEN_IN_DIFF, OPEN_IN_INTER, OPEN_IN_SUBOPEN, OPEN_IN_SUBSET,
+        OPEN_IN_TOPSPACE, OPEN_IN_UNIONS, closed_in, .. } := BTopology
+  let { CLOSED_IN_DISCRETE_TOPOLOGY, DISCRETE_TOPOLOGY_UNIQUE, OPEN_IN_DISCRETE_TOPOLOGY,
+        TOPSPACE_DISCRETE_TOPOLOGY, .. } := BDiscrete
+  let { CLOSED_IN_SUBSET_TOPSPACE, OPEN_IN_SUBSET_TOPSPACE, OPEN_IN_SUBTOPOLOGY,
+        OPEN_IN_SUBTOPOLOGY_INTER_OPEN, TOPSPACE_SUBTOPOLOGY, .. } := BSubtopology
   let { CLOSED_IN_CLOSURE_OF, CLOSURE_OF_CLOSED_IN, CLOSURE_OF_MONO, CLOSURE_OF_SUBSET,
         .. } := BClosure
   let { open_map, .. } := BOpenClosed1
@@ -21701,6 +22222,7 @@ def setupLocCompact2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscret
         NEIGHBOURHOOD_BASE_IMP_LOCALLY_COMPACT_SPACE, locally_compact_space,
         LOCALLY_COMPACT_HAUSDORFF_IMP_REGULAR_SPACE, LOCALLY_COMPACT_SPACE_NEIGHBOURHOOD_BASE,
         .. } := BLocCompact1
+  let { CLOSED_IN_HAUSDORFF_FINITE, .. } := BHausdorff1
   -- @@SCOPE END
 
   let LOCALLY_COMPACT_SPACE_NEIGHBOURHOOD_BASE_CLOSED_IN ← prove
@@ -21905,6 +22427,52 @@ def setupLocCompact2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscret
     MAP_EVERY EXISTS_TAC [← q r"{x:A}", ← q r"{x:A}"] THEN
     REWRITE_TAC [FINITE_SING] THEN ASM SET_TAC [])
 
+  let FINITE_IN_COMPACT_IMP_CLOSED_DISCRETE ← prove
+   r"!top s:A->bool.
+        hausdorff_space top /\ locally_compact_space top /\
+        s SUBSET topspace top /\
+        (!c. compact_in top c ==> FINITE(s INTER c))
+        ==> closed_in top s /\ subtopology top s = discrete_topology s"
+   (REPEAT GEN_TAC THEN STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"!x:A. x IN topspace top
+            ==> ?u. open_in top u /\ x IN u /\ FINITE(s INTER u)")
+    ASSUME_TAC THENL
+     [X_GEN_TAC (← q r"x:A") THEN DISCH_TAC THEN
+      FIRST_ASSUM (MP_TAC o SPEC (← q r"x:A") o REWRITE_RULE [locally_compact_space]) THEN
+      ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
+      MAP_EVERY X_GEN_TAC [← q r"u:A->bool", ← q r"c:A->bool"] THEN STRIP_TAC THEN
+      EXISTS_TAC (← q r"u:A->bool") THEN ASM_REWRITE_TAC [] THEN
+      MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"s INTER c:A->bool") THEN
+      ASM_SIMP_TAC [] THEN ASM SET_TAC [],
+      ALL_TAC] THEN
+    CONJ_TAC THENL
+     [ASM_REWRITE_TAC [closed_in] THEN ONCE_REWRITE_TAC [OPEN_IN_SUBOPEN] THEN
+      X_GEN_TAC (← q r"x:A") THEN REWRITE_TAC [IN_DIFF] THEN STRIP_TAC THEN
+      FIRST_X_ASSUM (MP_TAC o SPEC (← q r"x:A")) THEN ASM_REWRITE_TAC [] THEN
+      DISCH_THEN (X_CHOOSE_THEN (← q r"u:A->bool") STRIP_ASSUME_TAC) THEN
+      EXISTS_TAC (← q r"u DIFF (s INTER u):A->bool") THEN
+      FIRST_ASSUM (ASSUME_TAC o MATCH_MP OPEN_IN_SUBSET) THEN
+      REPEAT CONJ_TAC THENL
+       [MATCH_MP_TAC OPEN_IN_DIFF THEN ASM_REWRITE_TAC [] THEN
+        MATCH_MP_TAC CLOSED_IN_HAUSDORFF_FINITE THEN ASM_REWRITE_TAC [] THEN
+        ASM SET_TAC [],
+        ASM SET_TAC [],
+        ASM SET_TAC []],
+      CONV_TAC SYM_CONV THEN
+      REWRITE_TAC [DISCRETE_TOPOLOGY_UNIQUE, TOPSPACE_SUBTOPOLOGY] THEN
+      CONJ_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
+      X_GEN_TAC (← q r"x:A") THEN DISCH_TAC THEN
+      FIRST_X_ASSUM (MP_TAC o SPEC (← q r"x:A")) THEN
+      ANTS_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
+      DISCH_THEN (X_CHOOSE_THEN (← q r"u:A->bool") STRIP_ASSUME_TAC) THEN
+      REWRITE_TAC [OPEN_IN_SUBTOPOLOGY] THEN
+      EXISTS_TAC (← q r"u DIFF ((s INTER u) DELETE (x:A))") THEN CONJ_TAC THENL
+       [MATCH_MP_TAC OPEN_IN_DIFF THEN ASM_REWRITE_TAC [] THEN
+        MATCH_MP_TAC CLOSED_IN_HAUSDORFF_FINITE THEN
+        ASM_REWRITE_TAC [FINITE_DELETE] THEN ASM SET_TAC [],
+        ASM SET_TAC []]])
+
   let LOCALLY_COMPACT_SPACE_CONTINUOUS_OPEN_MAP_IMAGE ← prove
    r"!top top' f:A->B.
         continuous_map (top,top') f /\ open_map (top,top') f /\
@@ -21929,11 +22497,11 @@ def setupLocCompact2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscret
            LOCALLY_COMPACT_REGULAR_SPACE_NEIGHBOURHOOD_BASE, LOCALLY_COMPACT_KC_SPACE,
            LOCALLY_COMPACT_KC_SPACE_ALT, LOCALLY_COMPACT_KC_IMP_REGULAR_SPACE,
            KC_LOCALLY_COMPACT_SPACE, LOCALLY_COMPACT_SPACE_CLOSED_SUBSET,
-           LOCALLY_COMPACT_SPACE_OPEN_SUBSET, LOCALLY_COMPACT_SPACE_DISCRETE_TOPOLOGY,
+           LOCALLY_COMPACT_SPACE_OPEN_SUBSET, LOCALLY_COMPACT_SPACE_DISCRETE_TOPOLOGY, FINITE_IN_COMPACT_IMP_CLOSED_DISCRETE,
            LOCALLY_COMPACT_SPACE_CONTINUOUS_OPEN_MAP_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Locally compact subspaces and products.  (metric.ml 17066-17276)          -/
+/- Locally compact subspaces and products.  (metric.ml 17582-17792)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure LocCompact3 where
@@ -22208,7 +22776,7 @@ def setupLocCompact3 [HolBase] (D : MetricDeps) (BTopology : Topology)
 
 /- ------------------------------------------------------------------------- -/
 /- Locally compact spaces: sums, quotient products, perfect maps.            -/
-/- (metric.ml 17278-17512)                                                    -/
+/- (metric.ml 17794-18028)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure LocCompact4 where
@@ -22510,7 +23078,7 @@ def setupLocCompact4 [HolBase] (D : MetricDeps) (BTopology : Topology)
 
 /- ------------------------------------------------------------------------- -/
 /- The most basic facts about usual topology and metric on R.                -/
-/- (metric.ml 17514-17670)                                                    -/
+/- (metric.ml 18030-18186)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure RealTop1 where
@@ -22730,7 +23298,7 @@ def setupRealTop1 [HolBase] (D : MetricDeps) (BTopology : Topology)
 
 /- ------------------------------------------------------------------------- -/
 /- The usual metric on R; closures, interiors and frontiers of half-spaces.  -/
-/- (metric.ml 17672-17968)                                                    -/
+/- (metric.ml 18188-18484)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure RealTop2 where
@@ -23121,7 +23689,7 @@ def setupRealTop2 [HolBase] (D : MetricDeps) (BTopology : Topology)
 
 /- ------------------------------------------------------------------------- -/
 /- Boundedness in R; connectedness and compactness characterizations for R.  -/
-/- (metric.ml 17970-18166)                                                    -/
+/- (metric.ml 18486-18682)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure RealConn1 where
@@ -23373,7 +23941,7 @@ def setupRealConn1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BCompact1 
 
 
 /- ------------------------------------------------------------------------- -/
-/- Compactness in R; real intervals.  (metric.ml 18168-18463)                -/
+/- Compactness in R; real intervals.  (metric.ml 18684-18979)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure RealConn2 where
@@ -23751,7 +24319,7 @@ def setupRealConn2 [HolBase] (D : MetricDeps) (BClosure : Closure) (BInterior : 
            LOCALLY_COMPACT_SPACE_EUCLIDEANREAL }
 
 /- ------------------------------------------------------------------------- -/
-/- Limits at a point in a topological space.  (metric.ml 18465-18574)        -/
+/- Limits at a point in a topological space.  (metric.ml 18981-19090)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure AtPoint where
@@ -23903,7 +24471,7 @@ def setupAtPoint [HolBase] (D : MetricDeps) (BTopology : Topology)
            EVENTUALLY_ATPOINTOF_METRIC }
 
 /- ------------------------------------------------------------------------- -/
-/- Limits in a topological space.  (metric.ml 18576-18740)                   -/
+/- Limits in a topological space.  (metric.ml 19092-19256)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure Limits1 where
@@ -24122,7 +24690,7 @@ def setupLimits1 [HolBase] (D : MetricDeps) (BTopology : Topology)
            LIMIT_TRANSFORM_EVENTUALLY, CONTINUOUS_MAP_LIMIT }
 
 /- ------------------------------------------------------------------------- -/
-/- Limits: products, uniqueness.  (metric.ml 18742-18930)                    -/
+/- Limits: products, uniqueness.  (metric.ml 19258-19446)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Limits2 where
@@ -24360,7 +24928,7 @@ def setupLimits2 [HolBase] (D : MetricDeps) (BTactics : Tactics) (BTopology : To
            LIMIT_HAUSDORFF_UNIQUE, LIMIT_KC_UNIQUE }
 
 /- ------------------------------------------------------------------------- -/
-/- Topological limit in metric spaces.  (metric.ml 18932-19107)              -/
+/- Topological limit in metric spaces.  (metric.ml 19448-19623)              -/
 /- ------------------------------------------------------------------------- -/
 
 structure MetricLim where
@@ -24590,7 +25158,7 @@ def setupMetricLim [HolBase] (D : MetricDeps) (BTactics : Tactics) (BTopology : 
 
 /- ------------------------------------------------------------------------- -/
 /- More sequential characterizations in a metric space.                      -/
-/- (metric.ml 19109-19277)                                                    -/
+/- (metric.ml 19625-19793)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure SeqChar1 where
@@ -24808,7 +25376,7 @@ def setupSeqChar1 [HolBase] (D : MetricDeps) (BNets : Nets) (BSequential : Seque
            LIMIT_ATPOINTOF_SEQUENTIALLY_WITHIN_DECREASING }
 
 /- ------------------------------------------------------------------------- -/
-/- Sequential characterizations, continued.  (metric.ml 19279-19450)         -/
+/- Sequential characterizations, continued.  (metric.ml 19795-19966)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure SeqChar2 where
@@ -25030,7 +25598,7 @@ def setupSeqChar2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : 
            DERIVED_SET_OF_SEQUENTIALLY_DECREASING_ALT, CLOSURE_OF_SEQUENTIALLY }
 
 /- ------------------------------------------------------------------------- -/
-/- Combining theorems for real limits.  (metric.ml 19452-19648)              -/
+/- Combining theorems for real limits.  (metric.ml 19968-20164)              -/
 /- ------------------------------------------------------------------------- -/
 
 structure RealLim where
@@ -25278,7 +25846,7 @@ def setupRealLim [HolBase] (D : MetricDeps) (BNets : Nets) (BRealTop2 : RealTop2
 
 /- ------------------------------------------------------------------------- -/
 /- Closure of Borel measurable functions under pointwise limits.             -/
-/- (metric.ml 19650-19872)                                                    -/
+/- (metric.ml 20166-20388)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure BorelLim where
@@ -25539,7 +26107,7 @@ def setupBorelLim [HolBase] (D : MetricDeps) (BTopology : Topology) (BSequential
   return { BOREL_MEASURABLE_MAP_LIMIT }
 
 /- ------------------------------------------------------------------------- -/
-/- Cauchy sequences and complete metric spaces.  (metric.ml 19874-20031)     -/
+/- Cauchy sequences and complete metric spaces.  (metric.ml 20390-20547)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure Cauchy1 where
@@ -25745,7 +26313,7 @@ def setupCauchy1 [HolBase] (D : MetricDeps) (BTactics : Tactics) (BNets : Nets)
 
 /- ------------------------------------------------------------------------- -/
 /- Interleaving and nested characterizations of completeness.               -/
-/- (metric.ml 20033-20191)                                                    -/
+/- (metric.ml 20549-20707)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Cauchy2 where
@@ -25950,7 +26518,7 @@ def setupCauchy2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : C
 
 /- ------------------------------------------------------------------------- -/
 /- Completeness: singleton nests, FIP, unions and intersections.            -/
-/- (metric.ml 20193-20417)                                                    -/
+/- (metric.ml 20709-20933)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Cauchy3 where
@@ -26229,7 +26797,7 @@ def setupCauchy3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BNets : Nets
            MCOMPLETE_UNIONS, MCOMPLETE_INTERS, MCOMPLETE_INTER }
 
 /- ------------------------------------------------------------------------- -/
-/- Totally bounded subsets of metric spaces.  (metric.ml 20419-20596)        -/
+/- Totally bounded subsets of metric spaces.  (metric.ml 20935-21112)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure TotBdd1 where
@@ -26458,7 +27026,7 @@ def setupTotBdd1 [HolBase] (D : MetricDeps) (BMetricSpace : MetricSpace) (BBound
            TOTALLY_BOUNDED_IN_IMP_MBOUNDED, TOTALLY_BOUNDED_IN_SUBMETRIC }
 
 /- ------------------------------------------------------------------------- -/
-/- Totally bounded subsets, continued.  (metric.ml 20598-20738)              -/
+/- Totally bounded subsets, continued.  (metric.ml 21114-21254)              -/
 /- ------------------------------------------------------------------------- -/
 
 structure TotBdd2 where
@@ -26645,7 +27213,7 @@ def setupTotBdd2 [HolBase] (D : MetricDeps) (BClosure : Closure) (BMetricSpace :
            CAUCHY_IN_IMP_MBOUNDED }
 
 /- ------------------------------------------------------------------------- -/
-/- Compactness in metric spaces.  (metric.ml 20740-20935)                    -/
+/- Compactness in metric spaces.  (metric.ml 21256-21451)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure MCompact1 where
@@ -26893,7 +27461,7 @@ def setupMCompact1 [HolBase] (D : MetricDeps) (BCompact1 : Compact1) (BCompact2 
            LEBESGUE_NUMBER }
 
 /- ------------------------------------------------------------------------- -/
-/- Compactness in metric spaces, continued.  (metric.ml 20937-21091)         -/
+/- Compactness in metric spaces, continued.  (metric.ml 21453-21607)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure MCompact2 where
@@ -27116,7 +27684,7 @@ def setupMCompact2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDerived :
            COMPACT_CLOSURE_OF_IMP_TOTALLY_BOUNDED_IN }
 
 /- ------------------------------------------------------------------------- -/
-/- Compactness in metric spaces, continued.  (metric.ml 21093-21246)         -/
+/- Compactness in metric spaces, continued.  (metric.ml 21609-21762)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure MCompact3 where
@@ -27341,7 +27909,7 @@ def setupMCompact3 [HolBase] (D : MetricDeps) (BDerived : Derived) (BClosure : C
 
 /- ------------------------------------------------------------------------- -/
 /- Pointwise continuity in topological spaces; continuity via bases and      -/
-/- subbases, hence upper and lower semicontinuity.  (metric.ml 21248-21468)  -/
+/- subbases, hence upper and lower semicontinuity.  (metric.ml 21764-21984)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PtCont where
@@ -27620,7 +28188,7 @@ def setupPtCont [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology 
            CONTINUOUS_MAP_UPPER_LOWER_SEMICONTINUOUS_LTE }
 
 /- ------------------------------------------------------------------------- -/
-/- Continuous functions on metric spaces.  (metric.ml 21470-21630)           -/
+/- Continuous functions on metric spaces.  (metric.ml 21986-22146)           -/
 /- ------------------------------------------------------------------------- -/
 
 structure MetricCont where
@@ -27826,7 +28394,7 @@ def setupMetricCont [HolBase] (D : MetricDeps) (BTopology : Topology) (BContMap1
 
 /- ------------------------------------------------------------------------- -/
 /- Combining theorems for continuous functions into the reals.              -/
-/- (metric.ml 21632-21859)                                                    -/
+/- (metric.ml 22148-22375)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure RealCont where
@@ -28124,7 +28692,7 @@ def setupRealCont [HolBase] (D : MetricDeps) (BContMap1 : ContMap1) (BContMap2 :
 /- ------------------------------------------------------------------------- -/
 /- Some elementary results on real limits, proved here for convenience, and  -/
 /- similar elementary results for infinite series of reals.                  -/
-/- (metric.ml 21861-22033)                                                    -/
+/- (metric.ml 22377-22549)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure RealSeries where
@@ -28351,7 +28919,7 @@ def setupRealSeries [HolBase] (D : MetricDeps) (BNets : Nets) (BSequential : Seq
            REAL_SUMMABLE_CAUCHY, REAL_SUMMABLE_COMPARISON, REAL_SERIES_LE }
 
 /- ------------------------------------------------------------------------- -/
-/- Paths and path-connectedness.  (metric.ml 22035-22250)                    -/
+/- Paths and path-connectedness.  (metric.ml 22551-22766)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Paths1 where
@@ -28645,7 +29213,7 @@ def setupPaths1 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology)
            PATH_CONNECTED_IN_EUCLIDEANREAL_INTERVAL }
 
 /- ------------------------------------------------------------------------- -/
-/- Paths and path-connectedness, continued.  (metric.ml 22252-22457)         -/
+/- Paths and path-connectedness, continued.  (metric.ml 22768-22973)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure Paths2 where
@@ -28919,7 +29487,7 @@ def setupPaths2 [HolBase] (D : MetricDeps) (BDiscrete : Discrete) (BSubtopology 
            PATH_CONNECTED_SPACE_PRODUCT_TOPOLOGY, PATH_CONNECTED_IN_CARTESIAN_PRODUCT }
 
 /- ------------------------------------------------------------------------- -/
-/- Path components.  (metric.ml 22459-22676)                                 -/
+/- Path components.  (metric.ml 22975-23192)                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure PathComp1 where
@@ -29202,7 +29770,7 @@ def setupPathComp1 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology)
            PATH_COMPONENT_OF_EQ, PATH_CONNECTED_IN_PATH_COMPONENT_OF }
 
 /- ------------------------------------------------------------------------- -/
-/- Path components, continued.  (metric.ml 22678-22884)                      -/
+/- Path components, continued.  (metric.ml 23194-23400)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PathComp2 where
@@ -29480,7 +30048,7 @@ def setupPathComp2 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology)
            PATH_COMPONENTS_OF_DISJOINT }
 
 /- ------------------------------------------------------------------------- -/
-/- Path components, continued.  (metric.ml 22886-23077)                      -/
+/- Path components, continued.  (metric.ml 23402-23593)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PathComp3 where
@@ -29736,7 +30304,7 @@ def setupPathComp3 [HolBase] (D : MetricDeps) (BDiscrete : Discrete) (BContMap1 
 
 /- ------------------------------------------------------------------------- -/
 /- Special characterizations of classes of functions into and out of R.     -/
-/- (metric.ml 23079-23295)                                                    -/
+/- (metric.ml 23595-23811)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure RealFns1 where
@@ -30012,7 +30580,7 @@ def setupRealFns1 [HolBase] (D : MetricDeps) (BTopology : Topology)
 
 /- ------------------------------------------------------------------------- -/
 /- Special characterizations of functions into and out of R, continued.     -/
-/- (metric.ml 23297-23482)                                                    -/
+/- (metric.ml 23813-23998)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure RealFns2 where
@@ -30250,7 +30818,7 @@ def setupRealFns2 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology)
 
 /- ------------------------------------------------------------------------- -/
 /- Normal spaces including Urysohn's lemma and the Tietze extension theorem. -/
-/- (metric.ml 23485-23669)                                                    -/
+/- (metric.ml 24001-24185)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Normal1 where
@@ -30487,7 +31055,7 @@ def setupNormal1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : C
            NORMAL_T1_IMP_REGULAR_SPACE, COMPACT_HAUSDORFF_OR_REGULAR_IMP_NORMAL_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Normal spaces, continued.  (metric.ml 23671-23878)                        -/
+/- Normal spaces, continued.  (metric.ml 24187-24394)                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure Normal2 where
@@ -30767,7 +31335,7 @@ def setupNormal2 [HolBase] (D : MetricDeps) (BTopology : Topology)
            HEREDITARILY_NORMAL_SPACE_RETRACTION_MAP_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Urysohn's lemma.  (metric.ml 23880-24134)                                 -/
+/- Urysohn's lemma.  (metric.ml 24396-24650)                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure Urysohn where
@@ -31065,7 +31633,7 @@ def setupUrysohn [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : C
 
 /- ------------------------------------------------------------------------- -/
 /- Urysohn characterizations and Tietze for a closed interval.               -/
-/- (metric.ml 24136-24352)                                                    -/
+/- (metric.ml 24652-24868)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Urysohn2 where
@@ -31342,7 +31910,7 @@ def setupUrysohn2 [HolBase] (D : MetricDeps) (BTopology : Topology)
            TIETZE_EXTENSION_CLOSED_REAL_INTERVAL }
 
 /- ------------------------------------------------------------------------- -/
-/- The Tietze extension theorem.  (metric.ml 24354-24499)                    -/
+/- The Tietze extension theorem.  (metric.ml 24870-25015)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Tietze where
@@ -31544,7 +32112,7 @@ def setupTietze [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology 
   return { TIETZE_EXTENSION_REALINTERVAL, NORMAL_SPACE_EQ_TIETZE }
 
 /- ------------------------------------------------------------------------- -/
-/- Normal spaces, continued.  (metric.ml 24501-24638)                        -/
+/- Normal spaces, continued.  (metric.ml 25017-25154)                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure Normal3 where
@@ -31725,7 +32293,7 @@ def setupNormal3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : C
            REGULAR_LINDELOF_IMP_NORMAL_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Hereditarily normal spaces.  (metric.ml 24640-24780)                      -/
+/- Hereditarily normal spaces.  (metric.ml 25156-25296)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure HerNormal where
@@ -31920,7 +32488,7 @@ def setupHerNormal [HolBase] (D : MetricDeps) (BTopology : Topology)
            REGULAR_SECOND_COUNTABLE_HAUSDORFF_IMP_NORMAL_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Completely regular spaces.  (metric.ml 24782-24957)                       -/
+/- Completely regular spaces.  (metric.ml 25298-25473)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure CRegular1 where
@@ -32158,7 +32726,7 @@ def setupCRegular1 [HolBase] (D : MetricDeps) (BTopology : Topology)
            COMPLETELY_REGULAR_SPACE_SUBTOPOLOGY, COMPLETELY_REGULAR_SPACE_RETRACTION_MAP_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Completely regular spaces, continued.  (metric.ml 24959-25156)            -/
+/- Completely regular spaces, continued.  (metric.ml 25475-25672)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure CRegular2 where
@@ -32424,7 +32992,7 @@ def setupCRegular2 [HolBase] (D : MetricDeps) (BTopology : Topology)
            COMPLETELY_REGULAR_SPACE_PRODUCT_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Locally path-connected spaces.  (metric.ml 25158-25397)                   -/
+/- Locally path-connected spaces.  (metric.ml 25674-25913)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LPC1 where
@@ -32734,7 +33302,7 @@ def setupLPC1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
            LOCALLY_PATH_CONNECTED_SPACE_RETRACTION_MAP_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Locally path-connected spaces, continued.  (metric.ml 25399-25497)        -/
+/- Locally path-connected spaces, continued.  (metric.ml 25915-26013)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure LPC2 where
@@ -32889,7 +33457,7 @@ def setupLPC2 [HolBase] (D : MetricDeps) (BDiscrete : Discrete) (BSubtopology : 
            PATH_CONNECTED_EQ_CONNECTED_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Locally path-connected spaces: products and sums.  (metric.ml 25499-25688) -/
+/- Locally path-connected spaces: products and sums.  (metric.ml 26015-26204) -/
 /- ------------------------------------------------------------------------- -/
 
 structure LPC3 where
@@ -33130,7 +33698,7 @@ def setupLPC3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BOpenClosed1 : 
            LOCALLY_PATH_CONNECTED_SPACE_SUM_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Locally connected spaces.  (metric.ml 25690-25920)                        -/
+/- Locally connected spaces.  (metric.ml 26206-26436)                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure LC1 where
@@ -33428,7 +33996,7 @@ def setupLC1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
            LOCALLY_CONNECTED_SPACE_RETRACTION_MAP_IMAGE, HOMEOMORPHIC_LOCALLY_CONNECTED_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Locally connected spaces, continued.  (metric.ml 25922-26009)             -/
+/- Locally connected spaces, continued.  (metric.ml 26438-26525)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure LC2 where
@@ -33574,7 +34142,7 @@ def setupLC2 [HolBase] (D : MetricDeps) (BDiscrete : Discrete) (BSubtopology : S
            FRONTIER_OF_LOCALLY_CONNECTED_SUBSPACE_COMPONENT }
 
 /- ------------------------------------------------------------------------- -/
-/- Locally connected spaces: products and sums.  (metric.ml 26011-26200)     -/
+/- Locally connected spaces: products and sums.  (metric.ml 26527-26716)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure LC3 where
@@ -33814,7 +34382,7 @@ def setupLC3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BOpenClosed1 : O
            LOCALLY_CONNECTED_SPACE_SUM_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Quasi-components.  (metric.ml 26202-26396)                                -/
+/- Quasi-components.  (metric.ml 26718-26912)                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure QC1 where
@@ -34070,7 +34638,7 @@ def setupQC1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
            QUASI_COMPONENTS_OF_EMPTY_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Quasi-components, continued.  (metric.ml 26398-26600)                     -/
+/- Quasi-components, continued.  (metric.ml 26914-27116)                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure QC2 where
@@ -34346,7 +34914,7 @@ def setupQC2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSeparated : Sep
            CONNECTED_SPACE_IFF_QUASI_COMPONENTS_SUBSET_SING, QUASI_COMPONENTS_OF_EQ_SING }
 
 /- ------------------------------------------------------------------------- -/
-/- Quasi-components and separation.  (metric.ml 26601-26775)                 -/
+/- Quasi-components and separation.  (metric.ml 27117-27291)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure QC3 where
@@ -34579,7 +35147,7 @@ def setupQC3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BCompact1 : Comp
            QUASI_COMPONENT_OF_CLOPEN_CASES, QUASI_COMPONENTS_OF_SET }
 
 /- ------------------------------------------------------------------------- -/
-/- Quasi-components versus connected components.  (metric.ml 26777-26954)   -/
+/- Quasi-components versus connected components.  (metric.ml 27293-27470)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure QC4 where
@@ -34826,7 +35394,7 @@ def setupQC4 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Disc
            QUASI_EQ_CONNECTED_COMPONENTS_OF_POINTWISE_ALT }
 
 /- ------------------------------------------------------------------------- -/
-/- When quasi-components equal components.  (metric.ml 26956-27037)          -/
+/- When quasi-components equal components.  (metric.ml 27472-27553)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure QC5 where
@@ -34954,7 +35522,7 @@ def setupQC5 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
 
 /- ------------------------------------------------------------------------- -/
 /- Additional quasicomponent and continuum properties like Boundary Bumping. -/
-/- (metric.ml 27039-27221)                                                    -/
+/- (metric.ml 27555-27737)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure BB1 where
@@ -35201,7 +35769,7 @@ def setupBB1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
            COMPACT_QUASI_EQ_CONNECTED_COMPONENTS_OF }
 
 /- ------------------------------------------------------------------------- -/
-/- Boundary bumping.  (metric.ml 27223-27380)                                -/
+/- Boundary bumping.  (metric.ml 27739-27896)                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure BB2 where
@@ -35414,7 +35982,7 @@ def setupBB2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
 
 /- ------------------------------------------------------------------------- -/
 /- k-spaces (with no Hausdorff-ness assumptions built in).                   -/
-/- (metric.ml 27382-27549)                                                    -/
+/- (metric.ml 27898-28065)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure KSp1 where
@@ -35647,7 +36215,7 @@ def setupKSp1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Dis
            METRIZABLE_IMP_K_SPACE, K_SPACE_MTOPOLOGY, K_SPACE_EUCLIDEANREAL }
 
 /- ------------------------------------------------------------------------- -/
-/- k-spaces and subtopologies.  (metric.ml 27551-27700)                      -/
+/- k-spaces and subtopologies.  (metric.ml 28067-28216)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure KSp2 where
@@ -35841,7 +36409,7 @@ def setupKSp2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 
 /- ------------------------------------------------------------------------- -/
 /- k-spaces as quotients, products, maps from k-spaces.                      -/
-/- (metric.ml 27702-27803)                                                    -/
+/- (metric.ml 28218-28319)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure KSp3 where
@@ -35988,7 +36556,7 @@ def setupKSp3 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap1
            K_SPACE_PROD_TOPOLOGY_RIGHT, CONTINUOUS_MAP_FROM_K_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Maps into k-spaces.  (metric.ml 27805-27995)                              -/
+/- Maps into k-spaces.  (metric.ml 28321-28511)                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure KSp4 where
@@ -36230,7 +36798,7 @@ def setupKSp4 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
            PROPER_EQ_COMPACT_MAP, COMPACT_IMP_PERFECT_MAP }
 
 /- ------------------------------------------------------------------------- -/
-/- More generally, the k-ification functor.  (metric.ml 28002-28109)         -/
+/- More generally, the k-ification functor.  (metric.ml 28518-28625)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure KIF1 where
@@ -36384,7 +36952,7 @@ def setupKIF1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
            K_SPACE_KIFICATION }
 
 /- ------------------------------------------------------------------------- -/
-/- k-ification and maps.  (metric.ml 28111-28219)                            -/
+/- k-ification and maps.  (metric.ml 28627-28735)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure KIF2 where
@@ -36542,7 +37110,7 @@ def setupKIF2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 
 /- ------------------------------------------------------------------------- -/
 /- One-point compactifications and the Alexandroff extension construction.   -/
-/- (metric.ml 28225-28391)                                                    -/
+/- (metric.ml 28741-28907)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure OPC1 where
@@ -36761,7 +37329,7 @@ def setupOPC1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 
 /- ------------------------------------------------------------------------- -/
 /- Basic properties of the Alexandroff compactification.                     -/
-/- (metric.ml 28393-28531)                                                    -/
+/- (metric.ml 28909-29047)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure OPC2 where
@@ -36949,7 +37517,7 @@ def setupOPC2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BContMap1 : Con
 
 /- ------------------------------------------------------------------------- -/
 /- Separation properties of one-point compactifications.                     -/
-/- (metric.ml 28533-28660)                                                    -/
+/- (metric.ml 29049-29176)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure OPC3 where
@@ -37127,7 +37695,7 @@ def setupOPC3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 
 /- ------------------------------------------------------------------------- -/
 /- Regularity and Hausdorffness of one-point compactifications.              -/
-/- (metric.ml 28662-28793)                                                    -/
+/- (metric.ml 29178-29309)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure OPC4 where
@@ -37317,7 +37885,7 @@ def setupOPC4 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
            COMPLETELY_REGULAR_SPACE_ALEXANDROFF_COMPACTIFICATION }
 
 /- ------------------------------------------------------------------------- -/
-/- Hausdorffness via an asymmetric product.  (metric.ml 28795-28962)         -/
+/- Hausdorffness via an asymmetric product.  (metric.ml 29311-29478)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure OPC5 where
@@ -37542,7 +38110,7 @@ def setupOPC5 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
            HAUSDORFF_SPACE_ALEXANDROFF_COMPACTIFICATION_ASYMMETRIC_PROD }
 
 /- ------------------------------------------------------------------------- -/
-/- Uniqueness of one-point compactifications.  (metric.ml 28964-29042)       -/
+/- Uniqueness of one-point compactifications.  (metric.ml 29480-29558)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure OPC6 where
@@ -37666,7 +38234,7 @@ def setupOPC6 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 /- Homotopy of maps p,q : X->Y with property P of all intermediate maps.     -/
 /- We often just want to require that it fixes some subset, but to take in   -/
 /- the case of loop homotopy it's convenient to have a general property P.   -/
-/- (metric.ml 29049-29168)                                                    -/
+/- (metric.ml 29565-29684)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure HOM1 where
@@ -37826,7 +38394,7 @@ def setupHOM1 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap1
            HOMOTOPIC_WITH_SYM }
 
 /- ------------------------------------------------------------------------- -/
-/- Transitivity and composition of homotopies.  (metric.ml 29170-29267)      -/
+/- Transitivity and composition of homotopies.  (metric.ml 29686-29783)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure HOM2 where
@@ -37966,7 +38534,7 @@ def setupHOM2 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap1
            HOMOTOPIC_COMPOSE_CONTINUOUS_MAP_RIGHT }
 
 /- ------------------------------------------------------------------------- -/
-/- More basic homotopy properties.  (metric.ml 29269-29367)                  -/
+/- More basic homotopy properties.  (metric.ml 29785-29883)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure HOM3 where
@@ -38106,7 +38674,7 @@ def setupHOM3 [HolBase] (D : MetricDeps) (BContMap1 : ContMap1) (BContMap2 : Con
 
 /- ------------------------------------------------------------------------- -/
 /- Homotopies in product topologies, and homotopy equivalence of spaces.     -/
-/- (metric.ml 29369-29514)                                                    -/
+/- (metric.ml 29885-30030)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure HOM4 where
@@ -38309,7 +38877,7 @@ def setupHOM4 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap1
 /- subsets of Euclidean space) is a little cryptic because we don't in fact  -/
 /- assume that the constant "a" is in the space. This forces the convention  -/
 /- that the empty space / set is contractible, avoiding some special cases.  -/
-/- (metric.ml 29523-29612)                                                    -/
+/- (metric.ml 30039-30128)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CON1 where
@@ -38446,7 +39014,7 @@ def setupCON1 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap1
            CONTRACTIBLE_IMP_CONNECTED_SPACE, CONTRACTIBLE_SPACE_ALT }
 
 /- ------------------------------------------------------------------------- -/
-/- Nullhomotopy and contractibility.  (metric.ml 29614-29736)                -/
+/- Nullhomotopy and contractibility.  (metric.ml 30130-30252)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure CON2 where
@@ -38609,7 +39177,7 @@ def setupCON2 [HolBase] (D : MetricDeps) (BContMap1 : ContMap1) (BPathComp1 : Pa
            HOMOTOPY_DOMINATED_CONTRACTIBILITY, HOMOTOPY_EQUIVALENT_SPACE_CONTRACTIBILITY }
 
 /- ------------------------------------------------------------------------- -/
-/- More on contractible spaces.  (metric.ml 29738-29883)                     -/
+/- More on contractible spaces.  (metric.ml 30254-30399)                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CON3 where
@@ -38818,7 +39386,7 @@ def setupCON3 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap1
 
 /- ------------------------------------------------------------------------- -/
 /- Completely metrizable (a.k.a. "topologically complete") spaces.           -/
-/- (metric.ml 29888-30017)                                                    -/
+/- (metric.ml 30404-30533)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CMS1 where
@@ -39006,7 +39574,7 @@ def setupCMS1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BContMap1 : Con
 /- ------------------------------------------------------------------------- -/
 /- Product metric. For the nicest fit with the main Euclidean theories, we   -/
 /- make this the Euclidean product, though others would work topologically.  -/
-/- (metric.ml 30023-30160)                                                    -/
+/- (metric.ml 30539-30676)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PM1 where
@@ -39188,7 +39756,7 @@ def setupPM1 [HolBase] (D : MetricDeps) (BBases : Bases) (BProd1 : Prod1)
            MCBALL_SUBSET_PROD_METRIC, MTOPOLOGY_PROD_METRIC }
 
 /- ------------------------------------------------------------------------- -/
-/- Product metrics: metrizability and completeness.  (metric.ml 30162-30276) -/
+/- Product metrics: metrizability and completeness.  (metric.ml 30678-30792) -/
 /- ------------------------------------------------------------------------- -/
 
 structure PM2 where
@@ -39357,7 +39925,7 @@ def setupPM2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Disc
            MCOMPLETE_PROD_METRIC, COMPLETELY_METRIZABLE_SPACE_PROD_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Boundedness in product metrics.  (metric.ml 30278-30381)                  -/
+/- Boundedness in product metrics.  (metric.ml 30794-30897)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PM3 where
@@ -39496,7 +40064,7 @@ def setupPM3 [HolBase] (D : MetricDeps) (BBounded : Bounded) (BCauchy1 : Cauchy1
 
 /- ------------------------------------------------------------------------- -/
 /- Three more restrictive notions of continuity for metric spaces.           -/
-/- (metric.ml 30386-30462)                                                    -/
+/- (metric.ml 30902-30978)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure LIP1 where
@@ -39608,7 +40176,7 @@ def setupLIP1 [HolBase] (D : MetricDeps) (BMetricSpace : MetricSpace) :
            LIPSCHITZ_CONTINUOUS_MAP_ID, LIPSCHITZ_CONTINUOUS_MAP_COMPOSE }
 
 /- ------------------------------------------------------------------------- -/
-/- Uniformly continuous maps.  (metric.ml 30464-30589)                       -/
+/- Uniformly continuous maps.  (metric.ml 30980-31105)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure UC1 where
@@ -39783,7 +40351,7 @@ def setupUC1 [HolBase] (D : MetricDeps) (BNets : Nets) (BSequential : Sequential
            UNIFORMLY_CONTINUOUS_MAP_COMPOSE }
 
 /- ------------------------------------------------------------------------- -/
-/- Cauchy continuous maps.  (metric.ml 30591-30669)                          -/
+/- Cauchy continuous maps.  (metric.ml 31107-31185)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure CC1 where
@@ -39901,7 +40469,7 @@ def setupCC1 [HolBase] (D : MetricDeps) (BMetricSpace : MetricSpace) (BRealTop2 
            CAUCHY_CONTINUOUS_MAP_COMPOSE }
 
 /- ------------------------------------------------------------------------- -/
-/- Relations between the notions of continuity.  (metric.ml 30671-30826)     -/
+/- Relations between the notions of continuity.  (metric.ml 31187-31342)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CC2 where
@@ -40115,7 +40683,7 @@ def setupCC2 [HolBase] (D : MetricDeps) (BContMap1 : ContMap1) (BNets : Nets)
            CAUCHY_IMP_UNIFORMLY_CONTINUOUS_MAP, CONTINUOUS_IMP_UNIFORMLY_CONTINUOUS_MAP }
 
 /- ------------------------------------------------------------------------- -/
-/- Equivalences, and continuity notions for pairs.  (metric.ml 30828-30941)  -/
+/- Equivalences, and continuity notions for pairs.  (metric.ml 31344-31457)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure CC3 where
@@ -40277,7 +40845,7 @@ def setupCC3 [HolBase] (D : MetricDeps) (BPM1 : PM1) (BPM2 : PM2) (BLIP1 : LIP1)
 
 /- ------------------------------------------------------------------------- -/
 /- Images under these maps, and continuity of the metric.                    -/
-/- (metric.ml 30943-31075)                                                    -/
+/- (metric.ml 31459-31591)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CC4 where
@@ -40474,7 +41042,7 @@ def setupCC4 [HolBase] (D : MetricDeps) (BTactics : Tactics) (BContMap1 : ContMa
 
 /- ------------------------------------------------------------------------- -/
 /- Lipschitz continuity of real arithmetic operations.                       -/
-/- (metric.ml 31077-31187)                                                    -/
+/- (metric.ml 31593-31703)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CC5 where
@@ -40630,7 +41198,7 @@ def setupCC5 [HolBase] (D : MetricDeps) (BMetricSpace : MetricSpace) (BRealTop2 
            LOCALLY_LIPSCHITZ_CONTINUOUS_MAP_REAL_MULTIPLICATION }
 
 /- ------------------------------------------------------------------------- -/
-/- Lipschitz continuity of real-valued combinations.  (metric.ml 31189-31364) -/
+/- Lipschitz continuity of real-valued combinations.  (metric.ml 31705-31880) -/
 /- ------------------------------------------------------------------------- -/
 
 structure CC6 where
@@ -40870,7 +41438,7 @@ def setupCC6 [HolBase] (D : MetricDeps) (BInterior : Interior) (BMetricSpace : M
 
 /- ------------------------------------------------------------------------- -/
 /- More real-valued Lipschitz and uniformly continuous maps.                 -/
-/- (metric.ml 31366-31538)                                                    -/
+/- (metric.ml 31882-32054)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CC7 where
@@ -41107,7 +41675,7 @@ def setupCC7 [HolBase] (D : MetricDeps) (BInterior : Interior) (BMetricSpace : M
            UNIFORMLY_CONTINUOUS_MAP_REAL_MIN, UNIFORMLY_CONTINUOUS_MAP_REAL_MUL }
 
 /- ------------------------------------------------------------------------- -/
-/- Real-valued uniformly and Cauchy continuous maps.  (metric.ml 31540-31744) -/
+/- Real-valued uniformly and Cauchy continuous maps.  (metric.ml 32056-32260) -/
 /- ------------------------------------------------------------------------- -/
 
 structure CC8 where
@@ -41379,7 +41947,7 @@ def setupCC8 [HolBase] (D : MetricDeps) (BInterior : Interior) (BMetricSpace : M
            CAUCHY_CONTINUOUS_MAP_REAL_DIV, CAUCHY_CONTINUOUS_MAP_SUM }
 
 /- ------------------------------------------------------------------------- -/
-/- Square roots, and isometries.  (metric.ml 31746-31829)                    -/
+/- Square roots, and isometries.  (metric.ml 32262-32345)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CC9 where
@@ -41511,7 +42079,7 @@ def setupCC9 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap2 
 
 /- ------------------------------------------------------------------------- -/
 /- Extending continuous maps "pointwise" in a regular space.                 -/
-/- (metric.ml 31835-31942)                                                    -/
+/- (metric.ml 32351-32458)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure EXT1 where
@@ -41657,7 +42225,7 @@ def setupEXT1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 
 /- ------------------------------------------------------------------------- -/
 /- Extending Cauchy continuous functions to the closure.                     -/
-/- (metric.ml 31948-32048)                                                    -/
+/- (metric.ml 32464-32564)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CE1 where
@@ -41808,7 +42376,7 @@ def setupCE1 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BClosure :
 
 /- ------------------------------------------------------------------------- -/
 /- Extending Lipschitz continuous functions to the closure.                  -/
-/- (metric.ml 32050-32143)                                                    -/
+/- (metric.ml 32566-32659)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CE2 where
@@ -41952,7 +42520,7 @@ def setupCE2 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BClosure :
 
 /- ------------------------------------------------------------------------- -/
 /- Extending uniformly continuous functions to the closure.                  -/
-/- (metric.ml 32145-32238)                                                    -/
+/- (metric.ml 32661-32754)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CE3 where
@@ -42099,7 +42667,7 @@ def setupCE3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
 
 /- ------------------------------------------------------------------------- -/
 /- Extending Cauchy continuous functions to the closure as Cauchy maps.      -/
-/- (metric.ml 32240-32346)                                                    -/
+/- (metric.ml 32756-32862)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CE4 where
@@ -42249,7 +42817,7 @@ def setupCE4 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BClosure :
            CAUCHY_CONTINUOUS_MAP_EXTENDS_TO_INTERMEDIATE_CLOSURE_OF }
 
 /- ------------------------------------------------------------------------- -/
-/- Lavrentiev extension etc.  (metric.ml 32352-32465)                        -/
+/- Lavrentiev extension etc.  (metric.ml 32868-32981)                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure LAV1 where
@@ -42405,7 +42973,7 @@ def setupLAV1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDerived : Deri
   return { CONVERGENT_EQ_ZERO_OSCILLATION_GEN }
 
 /- ------------------------------------------------------------------------- -/
-/- Lavrentiev extension.  (metric.ml 32467-32610)                            -/
+/- Lavrentiev extension.  (metric.ml 32983-33126)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure LAV2 where
@@ -42600,7 +43168,7 @@ def setupLAV2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
            LAVRENTIEV_EXTENSION }
 
 /- ------------------------------------------------------------------------- -/
-/- Diameter of a set in a metric space.  (metric.ml 32615-32726)            -/
+/- Diameter of a set in a metric space.  (metric.ml 33131-33242)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure DIAM1 where
@@ -42752,7 +43320,7 @@ def setupDIAM1 [HolBase] (D : MetricDeps) (BMetricSpace : MetricSpace)
            MBOUNDED_IMP_IN_MSPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Diameter of a closure.  (metric.ml 32728-32795)                           -/
+/- Diameter of a closure.  (metric.ml 33244-33311)                           -/
 /- ------------------------------------------------------------------------- -/
 
 structure DIAM2 where
@@ -42847,7 +43415,7 @@ def setupDIAM2 [HolBase] (D : MetricDeps) (BClosure : Closure) (BMetricSpace : M
   return { MDIAMETER_CLOSURE }
 
 /- ------------------------------------------------------------------------- -/
-/- More on diameters.  (metric.ml 32797-32912)                               -/
+/- More on diameters.  (metric.ml 33313-33428)                               -/
 /- ------------------------------------------------------------------------- -/
 
 structure DIAM3 where
@@ -43005,7 +43573,7 @@ def setupDIAM3 [HolBase] (D : MetricDeps) (BCompact1 : Compact1) (BCompact3 : Co
            MDIAMETER_SUBSET_MCBALL, MDIAMETER_EQ_0, MDIAMETER_UNION_LE, MDIAMETER_SUBMETRIC }
 
 /- ------------------------------------------------------------------------- -/
-/- Lebesgue covering lemma.  (metric.ml 32914-33009)                         -/
+/- Lebesgue covering lemma.  (metric.ml 33430-33525)                         -/
 /- ------------------------------------------------------------------------- -/
 
 structure LEB where
@@ -43133,7 +43701,7 @@ def setupLEB [HolBase] (D : MetricDeps) (BSubtopology : Subtopology)
 /- ------------------------------------------------------------------------- -/
 /- Well-chained sets in metric spaces (epsilon-chains).                      -/
 /- Generalizes the Euclidean well-chained theory from paths.ml.              -/
-/- (metric.ml 33016-33078)                                                    -/
+/- (metric.ml 33532-33594)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure WC1 where
@@ -43218,7 +43786,7 @@ def setupWC1 [HolBase] (D : MetricDeps) : ExceptT String IO WC1 := do
   return { WELLCHAINED_ELEMENTS, WELLCHAINED_SETS }
 
 /- ------------------------------------------------------------------------- -/
-/- Well-chained sets and connectedness.  (metric.ml 33080-33240)            -/
+/- Well-chained sets and connectedness.  (metric.ml 33596-33756)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure WC2 where
@@ -43421,7 +43989,7 @@ def setupWC2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
    Points a and b are in the same connected component of K iff they can be
    epsilon-chained in K for every epsilon > 0. Uses the fact that in compact
    Hausdorff spaces, quasi-components = connected components.
-   (metric.ml 33242-33380)                                                    -/
+   (metric.ml 33758-33896)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure WC3 where
@@ -43593,7 +44161,7 @@ def setupWC3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
   return { CONNECTED_COMPONENT_OF_EQ_WELLCHAINED }
 
 /- ------------------------------------------------------------------------- -/
-/- Nested compact sets, strict triangle inequality.  (metric.ml 33382-33490) -/
+/- Nested compact sets, strict triangle inequality.  (metric.ml 33898-34006) -/
 /- ------------------------------------------------------------------------- -/
 
 structure NCA where
@@ -43735,7 +44303,7 @@ def setupNCA [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
   return { NESTED_COMPACT_APPROX, MDIST_TRIANGLE_LT }
 
 /- ------------------------------------------------------------------------- -/
-/- Well-chained inters for nested compact sets.  (metric.ml 33492-33618)     -/
+/- Well-chained inters for nested compact sets.  (metric.ml 34008-34134)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure WC4 where
@@ -43892,7 +44460,7 @@ def setupWC4 [HolBase] (D : MetricDeps) (BCompact1 : Compact1) (BMetricSpace : M
 
 /- ------------------------------------------------------------------------- -/
 /- Uniformly locally connected and Property S for metric spaces              -/
-/- (metric.ml 33621-33695)                                                    -/
+/- (metric.ml 34137-34211)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure ULC1 where
@@ -43989,7 +44557,7 @@ def setupULC1 [HolBase] (D : MetricDeps) (BMetricSpace : MetricSpace)
   return { fccoverable_space, ulc_space, fccoverable_in, IN_CLOSURE_OF_IMP_SUBSET_MCBALL }
 
 /- ------------------------------------------------------------------------- -/
-/- Property S and ULC imply local connectedness.  (metric.ml 33697-33832)   -/
+/- Property S and ULC imply local connectedness.  (metric.ml 34213-34348)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure ULC2 where
@@ -44163,7 +44731,7 @@ def setupULC2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : Clos
 
 /- ------------------------------------------------------------------------- -/
 /- Property S for intermediate sets between s and closure s                  -/
-/- (metric.ml 33834-33931)                                                    -/
+/- (metric.ml 34350-34447)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure ULC3 where
@@ -44296,7 +44864,7 @@ def setupULC3 [HolBase] (D : MetricDeps) (BClosure : Closure) (BMetricSpace : Me
            FCCOVERABLE_IN_IMP_LOCALLY_CONNECTED_SPACE, MDIAMETER_SUBSET_MBALL }
 
 /- ------------------------------------------------------------------------- -/
-/- Compact + locally connected implies ULC  (metric.ml 33933-34039)          -/
+/- Compact + locally connected implies ULC  (metric.ml 34449-34555)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure ULC4 where
@@ -44433,7 +45001,7 @@ def setupULC4 [HolBase] (D : MetricDeps) (BMetricSpace : MetricSpace) (BMTopolog
            COMPACT_IN_LOCALLY_CONNECTED_IMP_ULC_SPACE_ALT }
 
 /- ------------------------------------------------------------------------- -/
-/- Totally bounded + ULC implies Property S  (metric.ml 34041-34159)         -/
+/- Totally bounded + ULC implies Property S  (metric.ml 34557-34675)         -/
 /- ------------------------------------------------------------------------- -/
 
 -- Note: For general metric spaces, we need totally_bounded_in rather than
@@ -44582,7 +45150,7 @@ def setupFCC1 [HolBase] (D : MetricDeps) (BMetricSpace : MetricSpace) (BMTopolog
   return { TOTALLY_BOUNDED_ULC_SPACE_IMP_FCCOVERABLE_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Compact locally connected spaces and Property S.  (metric.ml 34161-34221) -/
+/- Compact locally connected spaces and Property S.  (metric.ml 34677-34737) -/
 /- ------------------------------------------------------------------------- -/
 
 -- Note: For general metric spaces, mbounded does NOT imply totally bounded.
@@ -44683,7 +45251,7 @@ def setupFCC2 [HolBase] (D : MetricDeps) (BClosure : Closure) (BCompact1 : Compa
 /- ------------------------------------------------------------------------- -/
 /- Localization of Property S (fccoverability).                              -/
 /- Whyburn, Analytic Topology, Ch. I Sec. 15; H-Y exercises 3-6 to 3-9.    -/
-/- (metric.ml 34223-34866)                                                    -/
+/- (metric.ml 34739-35382)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure LFC1 where
@@ -45383,7 +45951,7 @@ def setupLFC1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
   return { LOCALLY_FCCOVERABLE_SPACE_CHAIN }
 
 /- ------------------------------------------------------------------------- -/
-/- Local fccoverability.  (metric.ml 34868-35039)                            -/
+/- Local fccoverability.  (metric.ml 35384-35555)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure LFC2 where
@@ -45607,7 +46175,7 @@ def setupLFC2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 
 /- ------------------------------------------------------------------------- -/
 /- Locally connected continua; finitely many components.                     -/
-/- (metric.ml 35041-35210)                                                    -/
+/- (metric.ml 35557-35726)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCC where
@@ -45832,7 +46400,7 @@ def setupLCC [HolBase] (D : MetricDeps) (BClosure : Closure) (BCompact1 : Compac
 /- ------------------------------------------------------------------------- -/
 /- Semi-locally connected spaces (finitely many components in complements).  -/
 /- Whyburn, Analytic Topology, Ch. I Sec. 13.                               -/
-/- (metric.ml 35212-35312)                                                    -/
+/- (metric.ml 35728-35828)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure SLC1 where
@@ -45955,7 +46523,7 @@ def setupSLC1 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology)
   return { FINITE_CONNECTED_COMPONENTS_CLOPEN_UNION }
 
 /- ------------------------------------------------------------------------- -/
-/- Semi-local connectedness for connected spaces.  (metric.ml 35313-35578)  -/
+/- Semi-local connectedness for connected spaces.  (metric.ml 35829-36094)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure SLC2 where
@@ -46267,7 +46835,7 @@ def setupSLC2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
   return { SEMI_LOCALLY_CONNECTED_CONNECTED }
 
 /- ------------------------------------------------------------------------- -/
-/- Semi-local connectedness; dyadic rationals.  (metric.ml 35580-35724)      -/
+/- Semi-local connectedness; dyadic rationals.  (metric.ml 36096-36240)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure SLC3 where
@@ -46467,7 +47035,7 @@ def setupSLC3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 /- ------------------------------------------------------------------------- -/
 /- Path-connectivity of complete locally connected metric spaces.            -/
 /- Whyburn, Analytic Topology, Theorems (5.1)-(5.4); H-Y Theorem 3-17.       -/
-/- (metric.ml 35726-35849)                                                    -/
+/- (metric.ml 36242-36365)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PC1 where
@@ -46611,7 +47179,7 @@ def setupPC1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BConnected1 : Co
   return { CHAIN_FROM_OPEN_COVER, CONNECTED_IN_CHAIN_UNIONS }
 
 /- ------------------------------------------------------------------------- -/
-/- Nested intersections of closures.  (metric.ml 35851-36030)                -/
+/- Nested intersections of closures.  (metric.ml 36367-36546)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure CNI where
@@ -46828,7 +47396,7 @@ def setupCNI [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : Closu
   return { COMPACT_NESTED_INTERS }
 
 /- ------------------------------------------------------------------------- -/
-/- Fine covers and chains in open connected sets.  (metric.ml 36032-36118)   -/
+/- Fine covers and chains in open connected sets.  (metric.ml 36548-36634)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PC2 where
@@ -46948,7 +47516,7 @@ def setupPC2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : S
   return { OPEN_CONNECTED_FINE_COVER, CHAIN_IN_OPEN_CONNECTED_SET }
 
 /- ------------------------------------------------------------------------- -/
-/- Chain refinement step.  (metric.ml 36120-36273)                           -/
+/- Chain refinement step.  (metric.ml 36636-36789)                           -/
 /- ------------------------------------------------------------------------- -/
 
 structure CRS where
@@ -47125,7 +47693,7 @@ def setupCRS [HolBase] (D : MetricDeps) (BPC2 : PC2) : ExceptT String IO CRS := 
   return { CHAIN_REFINEMENT_STEP }
 
 /- ------------------------------------------------------------------------- -/
-/- Chain hierarchy.  (metric.ml 36275-36353)                                 -/
+/- Chain hierarchy.  (metric.ml 36791-36869)                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CHH where
@@ -47233,7 +47801,7 @@ def setupCHH [HolBase] (D : MetricDeps) (BTopology : Topology) (BMTopology : MTo
   return { CHAIN_HIERARCHY }
 
 /- ------------------------------------------------------------------------- -/
-/- Dyadic approximation.  (metric.ml 36355-37257)                            -/
+/- Dyadic approximation.  (metric.ml 36871-37773)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure MDA where
@@ -48216,7 +48784,7 @@ def setupMDA [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : Closu
   return { MCOMPLETE_DYADIC_APPROXIMATION }
 
 /- ------------------------------------------------------------------------- -/
-/- Imbedding in a locally connected continuum.  (metric.ml 37258-37484)      -/
+/- Imbedding in a locally connected continuum.  (metric.ml 37774-38000)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure IMB where
@@ -48499,7 +49067,7 @@ def setupIMB [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap1 
 
 /- ------------------------------------------------------------------------- -/
 /- "Capped" equivalent bounded metrics and general product metrics.          -/
-/- (metric.ml 37486-37630)                                                    -/
+/- (metric.ml 38002-38146)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CAP where
@@ -48683,7 +49251,7 @@ def setupCAP [HolBase] (D : MetricDeps) (BTopology : Topology) (BMetricSpace : M
            SUP_METRIC_CARTESIAN_PRODUCT }
 
 /- ------------------------------------------------------------------------- -/
-/- Metrizability of product topologies.  (metric.ml 37632-37987)             -/
+/- Metrizability of product topologies.  (metric.ml 38148-38503)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSPT where
@@ -49107,7 +49675,7 @@ def setupMSPT [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Dis
 
 
 /- ------------------------------------------------------------------------- -/
-/- Urysohn's metrization theorem.  (metric.ml 37989-38040)                   -/
+/- Urysohn's metrization theorem.  (metric.ml 38505-38556)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure URY1 where
@@ -49185,7 +49753,7 @@ def setupURY1 [HolBase] (D : MetricDeps) (BEmbedding : Embedding) (BHausdorff1 :
            METRIZABLE_PRODUCT_EUCLIDEANREAL_NUM }
 
 /- ------------------------------------------------------------------------- -/
-/- Urysohn metrization.  (metric.ml 38042-38382)                             -/
+/- Urysohn metrization.  (metric.ml 38558-38898)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure URY2 where
@@ -49579,7 +50147,7 @@ def setupURY2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 
 /- ------------------------------------------------------------------------- -/
 /- A perfect set in common cases must have cardinality >= c.                 -/
-/- (metric.ml 38383-38669)                                                    -/
+/- (metric.ml 38899-39185)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CGP where
@@ -49931,7 +50499,7 @@ def setupCGP [HolBase] (D : MetricDeps)
 
 /- ------------------------------------------------------------------------- -/
 /- Euclidean space and n-spheres, as subtopologies of infinite product R^N.  -/
-/- (metric.ml 38670-38799)                                                    -/
+/- (metric.ml 39186-39315)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure EUC1 where
@@ -50117,7 +50685,7 @@ def setupEUC1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
            CONTINUOUS_MAP_EUCLIDEAN_SPACE_SUB, HOMEOMORPHIC_EUCLIDEAN_SPACE_PRODUCT_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Euclidean space properties; n-spheres.  (metric.ml 38801-38910)           -/
+/- Euclidean space properties; n-spheres.  (metric.ml 39317-39426)           -/
 /- ------------------------------------------------------------------------- -/
 
 structure EUC2 where
@@ -50298,7 +50866,7 @@ def setupEUC2 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap2
            NONEMPTY_NSPHERE, SUBTOPOLOGY_NSPHERE_EQUATOR, CONTINUOUS_MAP_NSPHERE_REFLECTION }
 
 /- ------------------------------------------------------------------------- -/
-/- Hemispheres and nonsurjective sphere maps.  (metric.ml 38912-39120)       -/
+/- Hemispheres and nonsurjective sphere maps.  (metric.ml 39428-39636)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure NSPH where
@@ -50567,7 +51135,7 @@ def setupNSPH [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap1
            NULLHOMOTOPIC_NONSURJECTIVE_SPHERE_MAP }
 
 /- ------------------------------------------------------------------------- -/
-/- Contractions; Banach fixed-point theorem.  (metric.ml 39122-39257)        -/
+/- Contractions; Banach fixed-point theorem.  (metric.ml 39638-39773)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure BAN where
@@ -50739,7 +51307,7 @@ def setupBAN [HolBase] (D : MetricDeps) (BTactics : Tactics) (BSequential : Sequ
   return { CONTRACTION_IMP_UNIQUE_FIXPOINT, BANACH_FIXPOINT_THM }
 
 /- ------------------------------------------------------------------------- -/
-/- Metric space of bounded functions.  (metric.ml 39259-39422)               -/
+/- Metric space of bounded functions.  (metric.ml 39775-39938)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure FUN1 where
@@ -50937,7 +51505,7 @@ def setupFUN1 [HolBase] (D : MetricDeps) (BTactics : Tactics) (BMetricSpace : Me
            FUNSPACE_MDIST_LE }
 
 /- ------------------------------------------------------------------------- -/
-/- Completeness of the space of bounded functions.  (metric.ml 39424-39550)  -/
+/- Completeness of the space of bounded functions.  (metric.ml 39940-40066)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure FUN2 where
@@ -51099,7 +51667,7 @@ def setupFUN2 [HolBase] (D : MetricDeps) (BTactics : Tactics) (BMetricSpace : Me
   return { MCOMPLETE_FUNSPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Metric space of continuous bounded functions.  (metric.ml 39552-39705)    -/
+/- Metric space of continuous bounded functions.  (metric.ml 40068-40221)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CFUN where
@@ -51301,7 +51869,7 @@ def setupCFUN [HolBase] (D : MetricDeps) (BTactics : Tactics) (BTopology : Topol
 
 /- ------------------------------------------------------------------------- -/
 /- Existence of completion for any metric space M as a subspace of M->R.     -/
-/- (metric.ml 39707-39798)                                                    -/
+/- (metric.ml 40223-40314)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure COMPL where
@@ -51433,7 +52001,7 @@ def setupCOMPL [HolBase] (D : MetricDeps) (BClosure : Closure) (BMetricSpace : M
   return { METRIC_COMPLETION_EXPLICIT, METRIC_COMPLETION, METRIZABLE_SPACE_COMPLETION }
 
 /- ------------------------------------------------------------------------- -/
-/- The Baire Category Theorem.  (metric.ml 39800-40004)                      -/
+/- The Baire Category Theorem.  (metric.ml 40316-40520)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure BAI1 where
@@ -51680,7 +52248,7 @@ def setupBAI1 [HolBase] (D : MetricDeps) (BTactics : Tactics) (BTopology : Topol
   return { METRIC_BAIRE_CATEGORY, METRIC_BAIRE_CATEGORY_ALT }
 
 /- ------------------------------------------------------------------------- -/
-/- Baire category for topological spaces.  (metric.ml 40006-40137)           -/
+/- Baire category for topological spaces.  (metric.ml 40522-40653)           -/
 /- ------------------------------------------------------------------------- -/
 
 structure BAI2 where
@@ -51856,7 +52424,7 @@ def setupBAI2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 
 /- ------------------------------------------------------------------------- -/
 /- Sierpinski-Hausdorff type results about countable closed unions.          -/
-/- (metric.ml 40139-40298)                                                    -/
+/- (metric.ml 40655-40814)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure SIER where
@@ -52067,7 +52635,7 @@ def setupSIER [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
   return { LOCALLY_CONNECTED_NOT_COUNTABLE_CLOSED_UNION, REAL_SIERPINSKI_LEMMA }
 
 /- ------------------------------------------------------------------------- -/
-/- Size bounds on connected or path-connected spaces.  (metric.ml 40300-40531) -/
+/- Size bounds on connected or path-connected spaces.  (metric.ml 40816-41047) -/
 /- ------------------------------------------------------------------------- -/
 
 structure SIZE where
@@ -52370,7 +52938,7 @@ def setupSIZE [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
            PATH_CONNECTED_SPACE_IMP_UNCOUNTABLE }
 
 /- ------------------------------------------------------------------------- -/
-/- The Tychonoff embedding.  (metric.ml 40533-40663)                         -/
+/- The Tychonoff embedding.  (metric.ml 41049-41179)                         -/
 /- ------------------------------------------------------------------------- -/
 
 structure TYCH where
@@ -52554,7 +53122,7 @@ def setupTYCH [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 /- Urysohn and Tietze analogs for completely regular spaces if (one) set is  -/
 /- assumed compact instead of closed. Note that Hausdorffness is *not*       -/
 /- required: inside one proof we factor through the Kolmogorov quotient.     -/
-/- (metric.ml 40665-40811)                                                    -/
+/- (metric.ml 41181-41327)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure URYC where
@@ -52741,7 +53309,7 @@ def setupURYC [HolBase] (D : MetricDeps) (BTopology : Topology) (BContMap1 : Con
            URYSOHN_COMPLETELY_REGULAR_COMPACT_CLOSED_ALT }
 
 /- ------------------------------------------------------------------------- -/
-/- Tietze extension for completely regular spaces.  (metric.ml 40813-40920)  -/
+/- Tietze extension for completely regular spaces.  (metric.ml 41329-41436)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure TIET where
@@ -52901,7 +53469,7 @@ def setupTIET [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap1
 
 /- ------------------------------------------------------------------------- -/
 /- Embedding in products and hence more about completely metrizable spaces.  -/
-/- (metric.ml 40922-41155)                                                    -/
+/- (metric.ml 41438-41671)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure GDP where
@@ -53191,7 +53759,7 @@ def setupGDP [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Disc
   return { GDELTA_HOMEOMORPHIC_SPACE_CLOSED_IN_PRODUCT }
 
 /- ------------------------------------------------------------------------- -/
-/- More about completely metrizable spaces.  (metric.ml 41156-41279)         -/
+/- More about completely metrizable spaces.  (metric.ml 41672-41795)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure CMS2 where
@@ -53379,7 +53947,7 @@ def setupCMS2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
 
 /- ------------------------------------------------------------------------- -/
 /- Locally compact subspaces of metrizable spaces are G-delta; paracompact   -/
-/- spaces.  (metric.ml 41280-41416)                                          -/
+/- spaces.  (metric.ml 41796-41932)                                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure PARA1 where
@@ -53564,7 +54132,7 @@ def setupPARA1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology :
 
 /- ------------------------------------------------------------------------- -/
 /- Paracompact Hausdorff spaces; sigma-locally-finite families.              -/
-/- (metric.ml 41418-41554)                                                    -/
+/- (metric.ml 41934-42070)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PARA2 where
@@ -53744,7 +54312,7 @@ def setupPARA2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : Clo
 
 /- ------------------------------------------------------------------------- -/
 /- Metric covers have sigma-locally-finite refinements.                      -/
-/- (metric.ml 41556-41853)                                                    -/
+/- (metric.ml 42072-42369)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure MCSLF where
@@ -54080,7 +54648,7 @@ def setupMCSLF [HolBase] (D : MetricDeps) (BTopology : Topology) (BIterLocal : I
   return { METRIC_COVER_SIGMA_LOCALLY_FINITE }
 
 /- ------------------------------------------------------------------------- -/
-/- Michael's Lemma, step (1)=>(2).  (metric.ml 41855-42219)                  -/
+/- Michael's Lemma, step (1)=>(2).  (metric.ml 42371-42735)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure SLFC where
@@ -54473,7 +55041,7 @@ def setupSLFC [HolBase] (D : MetricDeps) (BTopology : Topology) (BIterLocal : It
   return { SIGMA_LOCALLY_FINITE_IMP_LOCALLY_FINITE_COVERING }
 
 /- ------------------------------------------------------------------------- -/
-/- Michael's Lemma, steps (2)=>(3) and helpers.  (metric.ml 42221-42348)     -/
+/- Michael's Lemma, steps (2)=>(3) and helpers.  (metric.ml 42737-42864)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure MICH1 where
@@ -54635,7 +55203,7 @@ def setupMICH1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : Clo
            EXPANSION_SET_CONTAINS }
 
 /- ------------------------------------------------------------------------- -/
-/- Michael's Lemma, step (3)=>(4).  (metric.ml 42350-42589)                  -/
+/- Michael's Lemma, step (3)=>(4).  (metric.ml 42866-43105)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure LFO where
@@ -54904,7 +55472,7 @@ def setupLFO [HolBase] (D : MetricDeps) (BTopology : Topology) (BIterLocal : Ite
 
 /- ------------------------------------------------------------------------- -/
 /- Michael's lemma; metrizable spaces are paracompact.                       -/
-/- (metric.ml 42591-42734)                                                    -/
+/- (metric.ml 43107-43250)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure MICH2 where
@@ -55090,7 +55658,7 @@ def setupMICH2 [HolBase] (D : MetricDeps) (BTopology : Topology) (BIterLocal : I
 
 
 /- ------------------------------------------------------------------------- -/
-/- Perfect images of paracompact spaces.  (metric.ml 42736-42927)            -/
+/- Perfect images of paracompact spaces.  (metric.ml 43252-43443)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure PPM where
@@ -55325,7 +55893,7 @@ def setupPPM [HolBase] (D : MetricDeps) (BTopology : Topology) (BIterLocal : Ite
   return { LF_CLOSED_PERFECT_MAP_IMAGE, PARACOMPACT_SPACE_PERFECT_MAP_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- F_sigma subspaces of paracompact spaces.  (metric.ml 42929-43155)         -/
+/- F_sigma subspaces of paracompact spaces.  (metric.ml 43445-43671)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure FSIG where
@@ -55584,7 +56152,7 @@ def setupFSIG [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology : 
   return { PARACOMPACT_SPACE_FSIGMA_SUBSET }
 
 /- ------------------------------------------------------------------------- -/
-/- Helpers for the product theorem.  (metric.ml 43157-43301)                 -/
+/- Helpers for the product theorem.  (metric.ml 43673-43817)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure TUBE where
@@ -55762,7 +56330,7 @@ def setupTUBE [HolBase] (D : MetricDeps) (BTopology : Topology) (BIterLocal : It
   return { LOCALLY_FINITE_PRODUCT_TUBES, COMPACT_TUBE_COVER }
 
 /- ------------------------------------------------------------------------- -/
-/- Product of paracompact with compact.  (metric.ml 43302-43458)             -/
+/- Product of paracompact with compact.  (metric.ml 43818-43974)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure PPC where
@@ -55952,7 +56520,7 @@ def setupPPC [HolBase] (D : MetricDeps) (BTopology : Topology) (BIterLocal : Ite
   return { PARACOMPACT_SPACE_PRODUCT_COMPACT_LEFT, PARACOMPACT_SPACE_PRODUCT_COMPACT_RIGHT }
 
 /- ------------------------------------------------------------------------- -/
-/- Shrinking lemmas in paracompact Hausdorff spaces.  (metric.ml 43460-43624) -/
+/- Shrinking lemmas in paracompact Hausdorff spaces.  (metric.ml 43976-44140) -/
 /- ------------------------------------------------------------------------- -/
 
 structure SHR where
@@ -56150,7 +56718,7 @@ def setupSHR [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : Closu
   return { PARACOMPACT_HAUSDORFF_CLOSURE_REFINEMENT, PARACOMPACT_HAUSDORFF_INDEXED_SHRINKING }
 
 /- ------------------------------------------------------------------------- -/
-/- Partitions of unity.  (metric.ml 43626-43961)                             -/
+/- Partitions of unity.  (metric.ml 44142-44477)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure POU where
@@ -56528,7 +57096,7 @@ def setupPOU [HolBase] (D : MetricDeps) (BTopology : Topology) (BClosure : Closu
   return { CONTINUOUS_MAP_SUM_LOCALLY_FINITE, PARACOMPACT_PARTITION_OF_UNITY }
 
 /- ------------------------------------------------------------------------- -/
-/- Regular Lindelof spaces; perfect preimages.  (metric.ml 43963-44171)      -/
+/- Regular Lindelof spaces; perfect preimages.  (metric.ml 44479-44687)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PPRE where
@@ -56779,7 +57347,7 @@ def setupPPRE [HolBase] (D : MetricDeps) (BTopology : Topology) (BIterLocal : It
            PARACOMPACT_SPACE_PERFECT_MAP_PREIMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- More paracompactness results.  (metric.ml 44172-44316)                    -/
+/- More paracompactness results.  (metric.ml 44688-44832)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PARA3 where
@@ -56966,7 +57534,7 @@ def setupPARA3 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Di
            LINDELOF_HAUSDORFF_REGULAR_EQ_PARACOMPACT }
 
 /- ------------------------------------------------------------------------- -/
-/- Expansion lemma; refinement characterizations.  (metric.ml 44318-44567)   -/
+/- Expansion lemma; refinement characterizations.  (metric.ml 44834-45083)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure EXPL where
@@ -57255,7 +57823,7 @@ def setupEXPL [HolBase] (D : MetricDeps) (BTopology : Topology) (BIterLocal : It
 /- Basic definition of the small inductive dimension relation ind t <= n.    -/
 /- We plan to prove most of the theorems in R^n so this is as good a         -/
 /- definition as any other, but the present stuff works in any top space.    -/
-/- (metric.ml 44569-44818)                                                   -/
+/- (metric.ml 45085-45334)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure DIM1 where
@@ -57573,7 +58141,7 @@ def setupDIM1 [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Dis
 /- ------------------------------------------------------------------------- -/
 /- The Cantor space {0,1}^N and its embedding in the reals as the Cantor set -/
 /- via the ternary Cantor map: a |-> sum_{k=0}^inf 2*a(k) / 3^{k+1}          -/
-/- (metric.ml 44819-44994)                                                   -/
+/- (metric.ml 45335-45510)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CAN1 where
@@ -57817,7 +58385,7 @@ def setupCAN1 [HolBase] (D : MetricDeps) (BDiscrete : Discrete) (BDerived : Deri
            TWOTHIRDS_SUMS, CANTOR_MAP_SUMMABLE, CANTOR_MAP_SUMS, CANTOR_MAP_LE_ONE }
 
 /- ------------------------------------------------------------------------- -/
-/- Cantor map: bounds, continuity, injectivity.  (metric.ml 44995-45183)     -/
+/- Cantor map: bounds, continuity, injectivity.  (metric.ml 45511-45699)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CAN2 where
@@ -58081,7 +58649,7 @@ def setupCAN2 [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap2
 /- Alexandroff-Hausdorff Theorem: H-Y Theorem 3-28.                          -/
 /- Every nonempty compact metrizable space is a continuous image of          -/
 /- the Cantor space.                                                         -/
-/- (metric.ml 45185-45781)                                                   -/
+/- (metric.ml 45701-46297)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCR where
@@ -58723,7 +59291,7 @@ def setupLCR [HolBase] (D : MetricDeps) (BTopology : Topology) (BDerived : Deriv
   return { LOCALLY_CONSTANT_REFINEMENT }
 
 /- ------------------------------------------------------------------------- -/
-/- Main theorem: Alexandroff-Hausdorff.  (metric.ml 45782-46186)             -/
+/- Main theorem: Alexandroff-Hausdorff.  (metric.ml 46298-46702)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure AH where
@@ -59178,7 +59746,7 @@ def setupAH [HolBase] (D : MetricDeps)
 /- Peano space properties: ULC and path-connectedness.                -/
 /- ULC: Whyburn, Analytic Topology, Ch. I Sec. 15 (15.5);             -/
 /- H-Y Theorem 3-13; Willard, General Topology, 31.4.                 -/
-/- (metric.ml 46188-47697)                                            -/
+/- (metric.ml 46704-48213)                                            -/
 /- ------------------------------------------------------------------ -/
 
 structure DFD where
@@ -60754,7 +61322,7 @@ def setupDFD [HolBase] (D : MetricDeps) (BMetricSpace : MetricSpace) (BMTopology
 
 /- ------------------------------------------------------------------------- -/
 /- Nearby paths; compact Peano spaces are path connected.                    -/
-/- (metric.ml 47698-47974)                                                   -/
+/- (metric.ml 48214-48490)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure NPATH where
@@ -61092,7 +61660,7 @@ def setupNPATH [HolBase] (D : MetricDeps) (BClosure : Closure) (BContMap1 : Cont
 /- Willard, General Topology, Theorem 31.5.                                  -/
 /- Every compact, connected, locally connected, metrizable, nonempty space   -/
 /- is a continuous image of [0,1].                                           -/
-/- (metric.ml 47975-49370)                                                   -/
+/- (metric.ml 48491-49886)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PGF where
@@ -62545,7 +63113,7 @@ def setupPGF [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap1 
 
 /- ------------------------------------------------------------------------- -/
 /- Hahn-Mazurkiewicz; path-connectedness of Peano continua.                  -/
-/- (metric.ml 49371-49594)                                                   -/
+/- (metric.ml 49887-50110)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HM where
@@ -62841,7 +63409,7 @@ def setupHM [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BContMap2 :
 
 /- ------------------------------------------------------------------------- -/
 /- Locally path connected spaces from local connectedness.                   -/
-/- (metric.ml 49595-49748)                                                   -/
+/- (metric.ml 50111-50264)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LPCC where
@@ -63058,7 +63626,7 @@ def setupLPCC [HolBase] (D : MetricDeps) (BSubtopology : Subtopology) (BCompact1
 /- for a "locally connected continuum", and seems clearly to be implicitly   -/
 /- assuming that means metrizable. We call out the general topological       -/
 /- hypotheses more explicitly, which do not however include connectedness.   -/
-/- (metric.ml 49749-50146)                                                   -/
+/- (metric.ml 50265-50662)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure KUR where

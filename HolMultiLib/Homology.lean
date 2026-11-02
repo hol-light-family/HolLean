@@ -251,6 +251,7 @@ structure MetThms3 where
   deriving Inhabited
 
 structure HomologyDeps where
+  prioritize_real : IO Unit
   -- definitions
   new_definition : String → ExceptT String IO thm
   new_recursive_definition : thm → String → ExceptT String IO thm
@@ -310,7 +311,7 @@ structure HomologyDeps where
 
 /- ------------------------------------------------------------------------- -/
 /- Standard simplices, all of which are topological subspaces of R^num.      -/
-/- (homology.ml 9-143)                                                       -/
+/- (homology.ml 10-144)                                                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure SSX where
@@ -352,6 +353,8 @@ def setupSSX [HolBase] (D : HomologyDeps) : ExceptT String IO SSX := do
         TOPSPACE_PRODUCT_TOPOLOGY, TOPSPACE_SUBTOPOLOGY, path_connected_in, path_connected_space,
         path_in, .. } := D.met3
   -- @@SCOPE END
+
+  D.prioritize_real
 
   let standard_simplex ← new_definition
    r"standard_simplex p =
@@ -488,7 +491,7 @@ def setupSSX [HolBase] (D : HomologyDeps) : ExceptT String IO SSX := do
 
 /- ------------------------------------------------------------------------- -/
 /- Face map; singular simplices, forcing canonicity outside the intended     -/
-/- domain; singular face.  (homology.ml 144-243)                             -/
+/- domain; singular face.  (homology.ml 145-244)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure SFC where
@@ -623,7 +626,7 @@ def setupSFC [HolBase] (D : HomologyDeps) (BSSX : SSX) : ExceptT String IO SFC :
 
 /- ------------------------------------------------------------------------- -/
 /- Singular chains; boundary homomorphism for singular chains.               -/
-/- (homology.ml 240-413)                                                     -/
+/- (homology.ml 241-414)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure SCH where
@@ -848,7 +851,7 @@ def setupSCH [HolBase] (D : HomologyDeps) (BSFC : SFC) : ExceptT String IO SCH :
 /- ------------------------------------------------------------------------- -/
 /- Factoring out chains in a subtopology for relative homology; relative     -/
 /- cycles Z_p(top,s) where top is a topology and s a subset.                 -/
-/- (homology.ml 414-532)                                                     -/
+/- (homology.ml 415-533)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSR where
@@ -1007,7 +1010,7 @@ def setupMSR [HolBase] (D : HomologyDeps) (BSCH : SCH) : ExceptT String IO MSR :
 
 /- ------------------------------------------------------------------------- -/
 /- Relative boundaries B_p(top,s), where top is a topology and s a subset.   -/
-/- (homology.ml 533-648)                                                     -/
+/- (homology.ml 534-649)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure RBD where
@@ -1162,7 +1165,7 @@ def setupRBD [HolBase] (D : HomologyDeps) (BSCH : SCH) (BMSR : MSR) :
            SINGULAR_RELBOUNDARY_ADD, SINGULAR_RELBOUNDARY_SUB }
 
 /- ------------------------------------------------------------------------- -/
-/- The (relative) homology relation.  (homology.ml 649-771)                  -/
+/- The (relative) homology relation.  (homology.ml 650-772)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure HMR where
@@ -1322,7 +1325,7 @@ def setupHMR [HolBase] (D : HomologyDeps) (BSCH : SCH) (BMSR : MSR) (BRBD : RBD)
 
 /- ------------------------------------------------------------------------- -/
 /- Show that all boundaries are cycles, the key "chain complex" property.    -/
-/- (homology.ml 772-899)                                                     -/
+/- (homology.ml 773-900)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure BDB where
@@ -1488,7 +1491,7 @@ def setupBDB [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSFC : SFC) (BSCH : SCH)
 
 /- ------------------------------------------------------------------------- -/
 /- Operations induced by a continuous map g between topological spaces.      -/
-/- (homology.ml 900-1057)                                                    -/
+/- (homology.ml 901-1058)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure SMP where
@@ -1694,7 +1697,7 @@ def setupSMP [HolBase] (D : HomologyDeps) (BSFC : SFC) (BSCH : SCH) : ExceptT St
            CHAIN_MAP_ID, CHAIN_MAP_I, CHAIN_MAP_COMPOSE }
 
 /- ------------------------------------------------------------------------- -/
-/- Chain maps, boundaries, cycles and boundaries.  (homology.ml 1058-1126)   -/
+/- Chain maps, boundaries, cycles and boundaries.  (homology.ml 1059-1127)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CMP where
@@ -1799,7 +1802,7 @@ def setupCMP [HolBase] (D : HomologyDeps) (BSFC : SFC) (BSCH : SCH) (BMSR : MSR)
 
 /- ------------------------------------------------------------------------- -/
 /- Homology of one-point spaces degenerates except for p = 0.                -/
-/- (homology.ml 1127-1261)                                                   -/
+/- (homology.ml 1128-1262)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure SNG where
@@ -1977,7 +1980,7 @@ def setupSNG [HolBase] (D : HomologyDeps) (BSFC : SFC) (BSCH : SCH) (BMSR : MSR)
 /- Simplicial chains, effectively those resulting from linear maps.          -/
 /- We still allow the map to be singular, so the name is questionable.       -/
 /- These are intended as building-blocks for singular subdivision, rather    -/
-/- than as a basis for simplicial homology.  (homology.ml 1262-1450)         -/
+/- than as a basis for simplicial homology.  (homology.ml 1263-1451)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure SSC where
@@ -2215,7 +2218,7 @@ def setupSSC [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSFC : SFC) (BSCH : SCH)
            SIMPLICIAL_CHAIN_BOUNDARY }
 
 /- ------------------------------------------------------------------------- -/
-/- The cone construction on simplicial simplices.  (homology.ml 1451-1526)   -/
+/- The cone construction on simplicial simplices.  (homology.ml 1452-1527)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure SCN where
@@ -2318,7 +2321,7 @@ def setupSCN [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSSC : SSC) : ExceptT St
   return { simplex_cone, SIMPLICIAL_SIMPLEX_SIMPLEX_CONE }
 
 /- ------------------------------------------------------------------------- -/
-/- Simplicial cones on chains.  (homology.ml 1527-1696)                      -/
+/- Simplicial cones on chains.  (homology.ml 1528-1697)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure SCC where
@@ -2535,7 +2538,7 @@ def setupSCC [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSCH : SCH) (BSMP : SMP)
 
 /- ------------------------------------------------------------------------- -/
 /- Barycentric subdivision of a linear ("simplicial") simplex's image.       -/
-/- (homology.ml 1697-1845)                                                   -/
+/- (homology.ml 1698-1846)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure SBD where
@@ -2727,7 +2730,7 @@ def setupSBD [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSCH : SCH) (BBDB : BDB)
            SIMPLICIAL_CHAIN_SIMPLICIAL_SUBDIVISION, CHAIN_BOUNDARY_SIMPLICIAL_SUBDIVISION }
 
 /- ------------------------------------------------------------------------- -/
-/- Simplicial subdivision shrinks simplices.  (homology.ml 1846-2025)        -/
+/- Simplicial subdivision shrinks simplices.  (homology.ml 1847-2026)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure SHR where
@@ -2947,7 +2950,7 @@ def setupSHR [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSSC : SSC) (BSCN : SCN)
   return { SIMPLICIAL_SUBDIVISION_SHRINKS }
 
 /- ------------------------------------------------------------------------- -/
-/- Now singular subdivision.  (homology.ml 2026-2159)                        -/
+/- Now singular subdivision.  (homology.ml 2027-2160)                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure SGS where
@@ -3127,7 +3130,7 @@ def setupSGS [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSFC : SFC) (BSCH : SCH)
 
 /- ------------------------------------------------------------------------- -/
 /- Singular subdivision of simplicial chains; boundaries of subdivisions.    -/
-/- (homology.ml 2160-2366)                                                   -/
+/- (homology.ml 2161-2367)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure SSS where
@@ -3379,7 +3382,7 @@ def setupSSS [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSFC : SFC) (BSCH : SCH)
            CHAIN_BOUNDARY_SINGULAR_SUBDIVISION, SINGULAR_SUBDIVISION_ZERO }
 
 /- ------------------------------------------------------------------------- -/
-/- A chain homotopy for simplicial subdivision.  (homology.ml 2367-2596)     -/
+/- A chain homotopy for simplicial subdivision.  (homology.ml 2368-2597)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CHS where
@@ -3652,7 +3655,7 @@ def setupCHS [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSCH : SCH) (BBDB : BDB)
   return { CHAIN_HOMOTOPIC_SIMPLICIAL_SUBDIVISION }
 
 /- ------------------------------------------------------------------------- -/
-/- A chain homotopy for singular subdivision.  (homology.ml 2597-2788)       -/
+/- A chain homotopy for singular subdivision.  (homology.ml 2598-2789)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure CHG where
@@ -3888,7 +3891,7 @@ def setupCHG [HolBase] (D : HomologyDeps) (BSFC : SFC) (BSCH : SCH) (BMSR : MSR)
 
 /- ------------------------------------------------------------------------- -/
 /- Excision argument that we keep doing singular subdivision.                -/
-/- (homology.ml 2789-2915)                                                   -/
+/- (homology.ml 2790-2916)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure ITS where
@@ -4044,7 +4047,7 @@ def setupITS [HolBase] (D : HomologyDeps) (BSCH : SCH) (BCMP : CMP) (BSSC : SSC)
 
 /- ------------------------------------------------------------------------- -/
 /- Sufficiently many iterated subdivisions make simplices small.             -/
-/- (homology.ml 2916-3188)                                                   -/
+/- (homology.ml 2917-3189)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure SIS where
@@ -4370,7 +4373,7 @@ def setupSIS [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSFC : SFC) (BSCH : SCH)
   return { SUFFICIENT_ITERATED_SINGULAR_SUBDIVISION_EXISTS }
 
 /- ------------------------------------------------------------------------- -/
-/- Small homologous cycles and excised chains.  (homology.ml 3189-3336)      -/
+/- Small homologous cycles and excised chains.  (homology.ml 3190-3337)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure EXC where
@@ -4563,7 +4566,7 @@ def setupEXC [HolBase] (D : HomologyDeps) (BSFC : SFC) (BSCH : SCH) (BMSR : MSR)
   return { SMALL_HOMOLOGOUS_REL_RELCYCLE_EXISTS, EXCISED_CHAIN_EXISTS, EXCISED_RELCYCLE_EXISTS }
 
 /- ------------------------------------------------------------------------- -/
-/- Homotopy invariance.  (homology.ml 3337-3971)                             -/
+/- Homotopy invariance.  (homology.ml 3338-3972)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure HIV where
@@ -5254,7 +5257,7 @@ def setupHIV [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSFC : SFC) (BSCH : SCH)
 /- Now actually connect to group theory and set up homology groups. Note     -/
 /- that we define homomogy groups for all *integers* p, since this seems to  -/
 /- avoid some special-case reasoning, though they are trivial for p < 0.     -/
-/- (homology.ml 3966-4120)                                                   -/
+/- (homology.ml 3967-4121)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HGP where
@@ -5463,7 +5466,7 @@ def setupHGP [HolBase] (D : HomologyDeps) (BSCH : SCH) (BMSR : MSR) (BRBD : RBD)
 /- Lift the boundary and induced maps to homology groups. We totalize both   -/
 /- quite aggressively to the appropriate group identity in all "undefined"   -/
 /- situations, which makes several of the properties cleaner and simpler.    -/
-/- (homology.ml 4121-4294)                                                   -/
+/- (homology.ml 4122-4295)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HBD where
@@ -5675,7 +5678,7 @@ def setupHBD [HolBase] (D : HomologyDeps) (BSCH : SCH) (BMSR : MSR) (BRBD : RBD)
            HOM_BOUNDARY, HOM_BOUNDARY_TRIVIAL }
 
 /- ------------------------------------------------------------------------- -/
-/- Induced maps on homology groups.  (homology.ml 4295-4476)                 -/
+/- Induced maps on homology groups.  (homology.ml 4296-4477)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure HIN where
@@ -5904,7 +5907,7 @@ def setupHIN [HolBase] (D : HomologyDeps) (BMSR : MSR) (BRBD : RBD) (BHMR : HMR)
 
 /- ------------------------------------------------------------------------- -/
 /- Functoriality of induced maps and naturality of the boundary.             -/
-/- (homology.ml 4477-4659)                                                   -/
+/- (homology.ml 4478-4660)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HIF where
@@ -6125,7 +6128,7 @@ def setupHIF [HolBase] (D : HomologyDeps) (BMSR : MSR) (BHMR : HMR) (BBDB : BDB)
            HOM_INDUCED_ID_GEN, HOM_INDUCED_ID, HOM_INDUCED_COMPOSE, NATURALITY_HOM_INDUCED }
 
 /- ------------------------------------------------------------------------- -/
-/- The first two exactness axioms.  (homology.ml 4660-4832)                  -/
+/- The first two exactness axioms.  (homology.ml 4661-4833)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure HEX where
@@ -6341,7 +6344,7 @@ def setupHEX [HolBase] (D : HomologyDeps) (BSCH : SCH) (BMSR : MSR) (BRBD : RBD)
 
 /- ------------------------------------------------------------------------- -/
 /- Third exactness axiom, dimension and homotopy axioms.                     -/
-/- (homology.ml 4833-4950)                                                   -/
+/- (homology.ml 4834-4951)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HAX where
@@ -6500,7 +6503,7 @@ def setupHAX [HolBase] (D : HomologyDeps) (BSCH : SCH) (BMSR : MSR) (BRBD : RBD)
   return { HOMOLOGY_EXACTNESS_AXIOM_3, HOMOLOGY_DIMENSION_AXIOM, HOMOLOGY_HOMOTOPY_AXIOM }
 
 /- ------------------------------------------------------------------------- -/
-/- Excision axiom.  (homology.ml 4951-5094)                                  -/
+/- Excision axiom.  (homology.ml 4952-5095)                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure HXA where
@@ -6680,7 +6683,7 @@ def setupHXA [HolBase] (D : HomologyDeps) (BSCH : SCH) (BMSR : MSR) (BRBD : RBD)
 /- ------------------------------------------------------------------------- -/
 /- Additivity axiom; not in the original Eilenberg-Steenrod list but usually -/
 /- included nowadays, following Milnor's "On Axiomatic Homology Theory".     -/
-/- (homology.ml 5095-5231)                                                   -/
+/- (homology.ml 5096-5232)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HCS where
@@ -6861,7 +6864,7 @@ def setupHCS [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSFC : SFC) (BSCH : SCH)
   return { GROUP_ISOMORPHISM_CHAIN_GROUP_SUM, GROUP_ISOMORPHISM_CYCLE_GROUP_SUM }
 
 /- ------------------------------------------------------------------------- -/
-/- Additivity axiom.  (homology.ml 5232-5516)                                -/
+/- Additivity axiom.  (homology.ml 5233-5517)                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure HAD where
@@ -7199,7 +7202,7 @@ def setupHAD [HolBase] (D : HomologyDeps) (BSCH : SCH) (BMSR : MSR) (BRBD : RBD)
 /- Special properties of singular homology, in particular the fact that the  -/
 /- zeroth homology group is isomorphic to the free abelian group generated   -/
 /- by the path components, and so the "coefficient group" is the integers.   -/
-/- (homology.ml 5517-5674)                                                   -/
+/- (homology.ml 5518-5675)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HZ0 where
@@ -7408,7 +7411,7 @@ def setupHZ0 [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSFC : SFC) (BSCH : SCH)
 
 /- ------------------------------------------------------------------------- -/
 /- Coefficients, zeroth homology, and basic consequences of the axioms.      -/
-/- (homology.ml 5675-5850)                                                   -/
+/- (homology.ml 5676-5851)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HBP where
@@ -7643,7 +7646,7 @@ def setupHBP [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHIN : HIN) (BHIF : HIF)
            HOMEOMORPHIC_SPACE_IMP_ISOMORPHIC_HOMOLOGY_GROUPS }
 
 /- ------------------------------------------------------------------------- -/
-/- Triviality, homeomorphisms, retracts.  (homology.ml 5851-6060)            -/
+/- Triviality, homeomorphisms, retracts.  (homology.ml 5852-6061)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure HTR where
@@ -7919,7 +7922,7 @@ def setupHTR [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHIN : HIN) (BHIF : HIF)
 
 /- ------------------------------------------------------------------------- -/
 /- Product splitting for retracts, explicit additivity.                      -/
-/- (homology.ml 6061-6188)                                                   -/
+/- (homology.ml 6062-6189)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HPR where
@@ -8081,7 +8084,7 @@ def setupHPR [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHIF : HIF) (BHAX : HAX)
 
 /- ------------------------------------------------------------------------- -/
 /- Generalize exact homology sequence to triples (derived from E-S axioms)   -/
-/- (homology.ml 6189-6236)                                                   -/
+/- (homology.ml 6190-6237)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HRB where
@@ -8161,7 +8164,7 @@ def setupHRB [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHBD : HBD) (BHIN : HIN)
            HOM_RELBOUNDARY_EMPTY, NATURALITY_HOM_INDUCED_RELBOUNDARY }
 
 /- ------------------------------------------------------------------------- -/
-/- First exactness property for triples.  (homology.ml 6237-6349)            -/
+/- First exactness property for triples.  (homology.ml 6238-6350)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure HT1 where
@@ -8307,7 +8310,7 @@ def setupHT1 [HolBase] (D : HomologyDeps) (BHBD : HBD) (BHIN : HIN) (BHIF : HIF)
   return { HOMOLOGY_EXACTNESS_TRIPLE_1 }
 
 /- ------------------------------------------------------------------------- -/
-/- Second exactness property for triples.  (homology.ml 6350-6488)           -/
+/- Second exactness property for triples.  (homology.ml 6351-6489)           -/
 /- ------------------------------------------------------------------------- -/
 
 structure HT2 where
@@ -8480,7 +8483,7 @@ def setupHT2 [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHBD : HBD) (BHIN : HIN)
   return { HOMOLOGY_EXACTNESS_TRIPLE_2 }
 
 /- ------------------------------------------------------------------------- -/
-/- Third exactness property for triples.  (homology.ml 6489-6624)            -/
+/- Third exactness property for triples.  (homology.ml 6490-6625)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure HT3 where
@@ -8651,7 +8654,7 @@ def setupHT3 [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHBD : HBD) (BHIN : HIN)
   return { HOMOLOGY_EXACTNESS_TRIPLE_3 }
 
 /- ------------------------------------------------------------------------- -/
-/- Reduced homology.  (homology.ml 6625-6837)                                -/
+/- Reduced homology.  (homology.ml 6626-6838)                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure HRD where
@@ -8933,7 +8936,7 @@ def setupHRD [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHBD : HBD) (BHIN : HIN)
            TRIVIAL_REDUCED_HOMOLOGY_GROUP_CONTRACTIBLE_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Exactness for reduced homology.  (homology.ml 6838-7047)                  -/
+/- Exactness for reduced homology.  (homology.ml 6839-7048)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure HRX where
@@ -9197,7 +9200,7 @@ def setupHRX [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHIN : HIN) (BHIF : HIF)
 
 /- ------------------------------------------------------------------------- -/
 /- More homology properties of deformations, retracts, contractible spaces.  -/
-/- (homology.ml 7048-7283)                                                   -/
+/- (homology.ml 7049-7284)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HDR where
@@ -9504,7 +9507,7 @@ def setupHDR [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHXA : HXA) (BHBP : HBP)
            DEFORMATION_RETRACT_IMP_ISOMORPHIC_HOMOLOGY_GROUPS, ISOMORPHIC_GROUP_HOMOLOGY_BY_SING }
 
 /- ------------------------------------------------------------------------- -/
-/- Deformations into a subset.  (homology.ml 7284-7458)                      -/
+/- Deformations into a subset.  (homology.ml 7285-7459)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure HDF where
@@ -9730,7 +9733,7 @@ def setupHDF [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHIN : HIN) (BHIF : HIF)
            ISOMORPHIC_GROUP_HOMOLOGY_CONTRACTIBLE_SPACE_SUBTOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Relative homology of contractible pairs.  (homology.ml 7459-7628)         -/
+/- Relative homology of contractible pairs.  (homology.ml 7460-7629)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure HCT where
@@ -9946,7 +9949,7 @@ def setupHCT [HolBase] (D : HomologyDeps) (BHTR : HTR) (BHT1 : HT1) (BHT2 : HT2)
            ISOMORPHIC_RELATIVE_CONTRACTIBLE_SPACE_IMP_HOMOLOGY_GROUPS }
 
 /- ------------------------------------------------------------------------- -/
-/- Homology groups of spheres.  (homology.ml 7629-7946)                      -/
+/- Homology groups of spheres.  (homology.ml 7630-7947)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure HSP where
@@ -10320,7 +10323,7 @@ def setupHSP [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHIN : HIN) (BHIF : HIF)
            GROUP_ISOMORPHISM_RELATIVE_HOMOLOGY_GROUP_UPPER_HEMISPHERE }
 
 /- ------------------------------------------------------------------------- -/
-/- Hemisphere isomorphisms.  (homology.ml 7947-8114)                         -/
+/- Hemisphere isomorphisms.  (homology.ml 7948-8115)                         -/
 /- ------------------------------------------------------------------------- -/
 
 structure HHM where
@@ -10533,7 +10536,7 @@ def setupHHM [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHIN : HIN) (BHIF : HIF)
            GROUP_ISOMORPHISM_LOWER_HEMISPHERE_REDUCED_HOMOLOGY_GROUP }
 
 /- ------------------------------------------------------------------------- -/
-/- Reduced homology of spheres.  (homology.ml 8115-8339)                     -/
+/- Reduced homology of spheres.  (homology.ml 8116-8340)                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure HNS where
@@ -10809,7 +10812,7 @@ def setupHNS [HolBase] (D : HomologyDeps) (BHIN : HIN) (BHIF : HIF) (BHAX : HAX)
            NON_CONTRACTIBLE_SPACE_NSPHERE }
 
 /- ------------------------------------------------------------------------- -/
-/- Brouwer degree of a map f:S^n->S^n.  (homology.ml 8340-8546)              -/
+/- Brouwer degree of a map f:S^n->S^n.  (homology.ml 8341-8547)              -/
 /- ------------------------------------------------------------------------- -/
 
 structure HBR where
@@ -11073,7 +11076,7 @@ def setupHBR [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHIN : HIN) (BHIF : HIF)
            BROUWER_DEGREE2_SECTION_MAP, BROUWER_DEGREE2_HOMEOMORPHIC_MAP }
 
 /- ------------------------------------------------------------------------- -/
-/- Degree of constant maps and of the reflection.  (homology.ml 8547-8820)   -/
+/- Degree of constant maps and of the reflection.  (homology.ml 8548-8821)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HRF where
@@ -11407,7 +11410,7 @@ def setupHRF [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHIN : HIN) (BHIF : HIF)
 
 /- ------------------------------------------------------------------------- -/
 /- Degree invariance mod 2 for map between pairs (S^n,S^{n-1})               -/
-/- (homology.ml 8821-9440)                                                   -/
+/- (homology.ml 8822-9441)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HBO where
@@ -12095,7 +12098,7 @@ def setupHBO [HolBase] (D : HomologyDeps) (BHGP : HGP) (BHBD : HBD) (BHIN : HIN)
 
 /- ------------------------------------------------------------------------- -/
 /- General Jordan-Brouwer separation theorem and invariance of dimension.    -/
-/- (homology.ml 9441-9972)                                                   -/
+/- (homology.ml 9442-9973)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HEC where
@@ -12681,7 +12684,7 @@ def setupHEC [HolBase] (D : HomologyDeps) (BHXA : HXA) (BHDR : HDR) (BHCT : HCT)
   return { RELATIVE_HOMOLOGY_GROUP_EUCLIDEAN_COMPLEMENT_STEP }
 
 /- ------------------------------------------------------------------------- -/
-/- Complements of homeomorphic closed sets.  (homology.ml 9973-10251)        -/
+/- Complements of homeomorphic closed sets.  (homology.ml 9974-10252)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure HCM where
@@ -13001,7 +13004,7 @@ def setupHCM [HolBase] (D : HomologyDeps) (BHTR : HTR) (BHEC : HEC) :
   return { ISOMORPHIC_RELATIVE_HOMOLOGY_GROUPS_EUCLIDEAN_COMPLEMENTS }
 
 /- ------------------------------------------------------------------------- -/
-/- Invariance of dimension for closed subsets.  (homology.ml 10252-10434)    -/
+/- Invariance of dimension for closed subsets.  (homology.ml 10253-10435)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure HID where
@@ -13229,7 +13232,7 @@ def setupHID [HolBase] (D : HomologyDeps) (BHBP : HBP) (BHCT : HCT) (BHCM : HCM)
 
 /- ------------------------------------------------------------------------- -/
 /- Jordan-Brouwer consequences, invariance of dimension.                     -/
-/- (homology.ml 10435-10552)                                                 -/
+/- (homology.ml 10436-10553)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure HJB where
@@ -13389,7 +13392,7 @@ def setupHJB [HolBase] (D : HomologyDeps) (BHBP : HBP) (BHCT : HCT) (BHCM : HCM)
            INVARIANCE_OF_DIMENSION_EUCLIDEAN_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Invariance of domain.  (homology.ml 10553-11435)                          -/
+/- Invariance of domain.  (homology.ml 10554-11436)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure HDM where

@@ -4,10 +4,11 @@
 /- File: SessionLibrary/FieldTheory.lean
 
   The session half of the fieldtheory.ml translation: it supplies
-  HolLibrary.FieldTheory's dependencies from Session, SessionLibrary.Matroids
-  and SessionLibrary.RingTheory, and exports every name under its HOL Light
-  name.  Importing this module is `needs "Library/fieldtheory.ml"`; its
-  `needs` of matroids.ml and ringtheory.ml are the imports of those modules.
+  HolLibrary.FieldTheory's dependencies from Session, SessionLibrary.Matroids,
+  SessionLibrary.RingTheory and SessionLibrary.RingDet, and exports every
+  name under its HOL Light name.  Importing this module is
+  `needs "Library/fieldtheory.ml"`; its `needs` of matroids.ml, ringtheory.ml
+  and ring_det.ml are the imports of those modules.
   The bundles are built by `initialize` when the module is loaded, in file
   order.
 -/
@@ -16,6 +17,7 @@ import Session
 import HolLibrary.FieldTheory
 import SessionLibrary.Matroids
 import SessionLibrary.RingTheory
+import SessionLibrary.RingDet
 
 open HolCore HolCore.Kernel
 open HolCore.Equal (ioconv)
@@ -96,8 +98,318 @@ def core1 : HolLibrary.FieldTheory.CoreThms1 where
   FIELD_HOMOMORPHISM_DIV := SessionLibrary.RingTheory.«FIELD_HOMOMORPHISM_DIV»
 /-- The core theorems fieldtheory.ml uses. -/
 def core10 : HolLibrary.FieldTheory.CoreThms10 where
+  ALGEBRA_NORM_EQ_0_FREE_BASIS := SessionLibrary.RingDet.«ALGEBRA_NORM_EQ_0_FREE_BASIS»
+  ALGEBRA_NORM_FREE_BASIS := SessionLibrary.RingDet.«ALGEBRA_NORM_FREE_BASIS»
+  ALGEBRA_TRACE_FREE_BASIS := SessionLibrary.RingDet.«ALGEBRA_TRACE_FREE_BASIS»
+  ALGEBRA_TRACE_NORM_BASE_FREE_BASIS := SessionLibrary.RingDet.«ALGEBRA_TRACE_NORM_BASE_FREE_BASIS»
+  ALGEBRA_TRACE_NORM_INTERMEDIATE_FREE_BASIS := SessionLibrary.RingDet.«ALGEBRA_TRACE_NORM_INTERMEDIATE_FREE_BASIS»
+  ALGEBRA_TRACE_NORM_IN_CARRIER := SessionLibrary.RingDet.«ALGEBRA_TRACE_NORM_IN_CARRIER»
+  ALGEBRA_TRACE_NORM_NO_PROJECTIVE_BASIS := SessionLibrary.RingDet.«ALGEBRA_TRACE_NORM_NO_PROJECTIVE_BASIS»
+  BASIS_COORDINATES_BASIS := SessionLibrary.RingDet.«BASIS_COORDINATES_BASIS»
+  BEZOUT_RING_COPRIME := SessionLibrary.RingTheory.«BEZOUT_RING_COPRIME»
+  BINOM_FACT := SessionLibrary.Binomial.«BINOM_FACT»
+  CARD_CLAUSES := Session.CARD_CLAUSES
+  CARD_DELETE := Session.CARD_DELETE
+  CARD_EQ_0 := Session.CARD_EQ_0
+  CARD_EQ_CARD_IMP := SessionLibrary.Card.«CARD_EQ_CARD_IMP»
+  CARD_EQ_DISJOINT_UNIONS := SessionLibrary.Card.«CARD_EQ_DISJOINT_UNIONS»
+  CARD_HAS_SIZE_CONG := SessionLibrary.Card.«CARD_HAS_SIZE_CONG»
+  CARD_IMAGE_EQ_INJ := Session.CARD_IMAGE_EQ_INJ
+  CARD_IMAGE_LE := Session.CARD_IMAGE_LE
+  CARD_LE_1 := Session.CARD_LE_1
+  CARD_MUL_C := SessionLibrary.Card.«CARD_MUL_C»
+  CARD_MUL_CONG := SessionLibrary.Card.«CARD_MUL_CONG»
+  CARD_NUMSEG_LT := Session.CARD_NUMSEG_LT
+  CARD_SING := Session.CARD_SING
+  CARD_SUBSET := Session.CARD_SUBSET
+  CARD_SUBSET_EQ := Session.CARD_SUBSET_EQ
+  CARD_SUBSET_LE := Session.CARD_SUBSET_LE
+  COEFF_ABOVE_DEG := SessionLibrary.RingTheory.«COEFF_ABOVE_DEG»
+  COEFF_COMPOSE := SessionLibrary.RingTheory.«COEFF_COMPOSE»
+  COEFF_IN_CARRIER := SessionLibrary.RingTheory.«COEFF_IN_CARRIER»
+  COEFF_IN_CARRIER_ALT := SessionLibrary.RingTheory.«COEFF_IN_CARRIER_ALT»
+  COEFF_POLY_CONST := SessionLibrary.RingTheory.«COEFF_POLY_CONST»
+  COEFF_POLY_LMUL := SessionLibrary.RingTheory.«COEFF_POLY_LMUL»
+  COEFF_POLY_POW_X_MINUS_A_SUBLEADING := SessionLibrary.RingTheory.«COEFF_POLY_POW_X_MINUS_A_SUBLEADING»
+  COEFF_POLY_SUB := SessionLibrary.RingTheory.«COEFF_POLY_SUB»
+  COEFF_POLY_SUM := SessionLibrary.RingTheory.«COEFF_POLY_SUM»
+  COEFF_POLY_VAR := SessionLibrary.RingTheory.«COEFF_POLY_VAR»
+  COEFF_POLY_VARPOW := SessionLibrary.RingTheory.«COEFF_POLY_VARPOW»
+  COEFF_RING_PRODUCT_MONIC_SUBLEADING := SessionLibrary.RingTheory.«COEFF_RING_PRODUCT_MONIC_SUBLEADING»
+  DIVIDES_0 := SessionLibrary.Prime.«DIVIDES_0»
+  DIVIDES_1 := SessionLibrary.Prime.«DIVIDES_1»
+  DIVIDES_LE := Session.DIVIDES_LE
+  DIVIDES_LMUL := SessionLibrary.Prime.«DIVIDES_LMUL»
+  DIVIDES_MUL2 := SessionLibrary.Prime.«DIVIDES_MUL2»
+  DIVIDES_PRIME_PRIME := SessionLibrary.Prime.«DIVIDES_PRIME_PRIME»
+  DIVIDES_REFL := SessionLibrary.Prime.«DIVIDES_REFL»
+  DIVIDES_RMUL := SessionLibrary.Prime.«DIVIDES_RMUL»
+  DIVIDES_TRANS := SessionLibrary.Prime.«DIVIDES_TRANS»
+  EQ_IMP_LE := Session.EQ_IMP_LE
+  EQ_MULT_LCANCEL := Session.EQ_MULT_LCANCEL
+  EQ_TRANS := Session.EQ_TRANS
+  EXISTS_UNIQUE_THM := Session.EXISTS_UNIQUE_THM
+  EXP_1 := Session.EXP_1
+  EXP_EQ_0 := Session.EXP_EQ_0
+  EXP_EXP := Session.EXP_EXP
+  EXTENSIONAL_EQ := Session.EXTENSIONAL_EQ
+  FACT := Session.FACT
+  FIELD_EPIMORPHIC_IMAGE := SessionLibrary.RingTheory.«FIELD_EPIMORPHIC_IMAGE»
+  FIELD_INV_EQ_0 := SessionLibrary.RingTheory.«FIELD_INV_EQ_0»
+  FIELD_MONIC_IRREDUCIBLE_ASSOCIATE := SessionLibrary.RingTheory.«FIELD_MONIC_IRREDUCIBLE_ASSOCIATE»
+  FIELD_POLY_DEG_EQ_0 := SessionLibrary.RingTheory.«FIELD_POLY_DEG_EQ_0»
+  FINITE_CARD_LE_UNIONS := Session.FINITE_CARD_LE_UNIONS
+  FINITE_INTEGRAL_DOMAIN_CHAR := SessionLibrary.RingTheory.«FINITE_INTEGRAL_DOMAIN_CHAR»
+  FINITE_INTEGRAL_DOMAIN_CYCLIC := SessionLibrary.RingTheory.«FINITE_INTEGRAL_DOMAIN_CYCLIC»
+  FINITE_INTEGRAL_DOMAIN_IMP_FIELD := SessionLibrary.RingTheory.«FINITE_INTEGRAL_DOMAIN_IMP_FIELD»
+  FINITE_RING_MONOMORPHIC_PREIMAGE := SessionLibrary.RingTheory.«FINITE_RING_MONOMORPHIC_PREIMAGE»
+  FINITE_SUBRING_GENERATED := SessionLibrary.RingTheory.«FINITE_SUBRING_GENERATED»
+  FREE_BASIS_PROJECTIVE := SessionLibrary.RingDet.«FREE_BASIS_PROJECTIVE»
+  FREE_BASIS_RING_SUM_IMAGE := SessionLibrary.RingDet.«FREE_BASIS_RING_SUM_IMAGE»
+  FREE_BASIS_TRANS := SessionLibrary.RingDet.«FREE_BASIS_TRANS»
+  FROBENIUS_SUM_POWER := SessionLibrary.RingTheory.«FROBENIUS_SUM_POWER»
+  FUNCTION_FACTORS_LEFT_GEN := Session.FUNCTION_FACTORS_LEFT_GEN
+  FUN_EQ_COEFF := SessionLibrary.RingTheory.«FUN_EQ_COEFF»
+  HAS_SIZE_CARD := Session.HAS_SIZE_CARD
+  HAS_SIZE_INDEX := Session.HAS_SIZE_INDEX
+  HAS_SIZE_UNIONS := Session.HAS_SIZE_UNIONS
+  IDEAL_GENERATED_INC_GEN := SessionLibrary.RingTheory.«IDEAL_GENERATED_INC_GEN»
+  IMAGE_EQ := Session.IMAGE_EQ
+  INTEGRAL_DOMAIN_SUBRING_GENERATED := SessionLibrary.RingTheory.«INTEGRAL_DOMAIN_SUBRING_GENERATED»
+  INTERS_IMAGE := Session.INTERS_IMAGE
+  INTER_IDEMPOT := Session.INTER_IDEMPOT
+  IRREDUCIBLE_IMP_POLY_DEG_NZ := SessionLibrary.RingTheory.«IRREDUCIBLE_IMP_POLY_DEG_NZ»
+  IRREDUCIBLE_ROOT_IMP_DEG_EQ_1 := SessionLibrary.RingTheory.«IRREDUCIBLE_ROOT_IMP_DEG_EQ_1»
+  ISOMORPHIC_RING_TRIVIALITY := SessionLibrary.RingTheory.«ISOMORPHIC_RING_TRIVIALITY»
+  LET_TRANS := Session.LET_TRANS
+  LE_1 := Session.LE_1
+  LE_ANTISYM := Session.LE_ANTISYM
+  LE_MULT2 := Session.LE_MULT2
+  LE_MULT_LCANCEL := Session.LE_MULT_LCANCEL
+  LE_TRANS := Session.LE_TRANS
+  LTE_TRANS := Session.LTE_TRANS
+  LT_MULT_RCANCEL := Session.LT_MULT_RCANCEL
+  LT_NZ := Session.LT_NZ
+  LT_REFL := Session.LT_REFL
+  MATROID_BASIS_LARGE_INDEPENDENT := SessionLibrary.Matroids.«MATROID_BASIS_LARGE_INDEPENDENT»
+  MATROID_BASIS_SMALL_SPANNING := SessionLibrary.Matroids.«MATROID_BASIS_SMALL_SPANNING»
+  MATROID_DIMENSION_EQ_CARD := SessionLibrary.Matroids.«MATROID_DIMENSION_EQ_CARD»
+  MATROID_DIMENSION_LE_INDEPENDENT_BOUND := SessionLibrary.Matroids.«MATROID_DIMENSION_LE_INDEPENDENT_BOUND»
+  MONIC_ASSOCIATES_EQ := SessionLibrary.RingTheory.«MONIC_ASSOCIATES_EQ»
+  MONIC_DIVIDES_EQ := SessionLibrary.RingTheory.«MONIC_DIVIDES_EQ»
+  MONIC_IMP_NONZERO := SessionLibrary.RingTheory.«MONIC_IMP_NONZERO»
+  MONIC_POLY_POW := SessionLibrary.RingTheory.«MONIC_POLY_POW»
+  MONIC_POLY_PRODUCT := SessionLibrary.RingTheory.«MONIC_POLY_PRODUCT»
+  MONIC_X_MINUS_A := SessionLibrary.RingTheory.«MONIC_X_MINUS_A»
+  MULT_ASSOC := Session.MULT_ASSOC
+  MULT_CLAUSES := Session.MULT_CLAUSES
+  MULT_EQ_0 := Session.MULT_EQ_0
+  MULT_EQ_1 := Session.MULT_EQ_1
+  MULT_SYM := Session.MULT_SYM
+  MUL_MATRIX_CHARPOLY_BASIS := SessionLibrary.RingDet.«MUL_MATRIX_CHARPOLY_BASIS»
+  MUL_MATRIX_CHARPOLY_INTERMEDIATE := SessionLibrary.RingDet.«MUL_MATRIX_CHARPOLY_INTERMEDIATE»
+  MUL_MATRIX_CHARPOLY_ROOT := SessionLibrary.RingDet.«MUL_MATRIX_CHARPOLY_ROOT»
+  MUL_MATRIX_IN_CARRIER := SessionLibrary.RingDet.«MUL_MATRIX_IN_CARRIER»
+  NSUM_CONST := Session.NSUM_CONST
+  POLY_DEG_0_IMP_SPLITS := SessionLibrary.RingTheory.«POLY_DEG_0_IMP_SPLITS»
+  POLY_DEG_1_IMP_SPLITS := SessionLibrary.RingTheory.«POLY_DEG_1_IMP_SPLITS»
+  POLY_DEG_ASSOCIATES := SessionLibrary.RingTheory.«POLY_DEG_ASSOCIATES»
+  POLY_DEG_DIVIDES_LE := SessionLibrary.RingTheory.«POLY_DEG_DIVIDES_LE»
+  POLY_DEG_MUL := SessionLibrary.RingTheory.«POLY_DEG_MUL»
+  POLY_DEG_POW := SessionLibrary.RingTheory.«POLY_DEG_POW»
+  POLY_DEG_PRODUCT_MONIC := SessionLibrary.RingTheory.«POLY_DEG_PRODUCT_MONIC»
+  POLY_DEG_SUBRING_GENERATED := SessionLibrary.RingTheory.«POLY_DEG_SUBRING_GENERATED»
+  POLY_DEG_SUB_CONST := SessionLibrary.RingTheory.«POLY_DEG_SUB_CONST»
+  POLY_DEG_VAR_POW := SessionLibrary.RingTheory.«POLY_DEG_VAR_POW»
+  POLY_DERIV_0 := SessionLibrary.RingTheory.«POLY_DERIV_0»
+  POLY_DERIV_EQ_0_COEFF := SessionLibrary.RingTheory.«POLY_DERIV_EQ_0_COEFF»
+  POLY_DERIV_EQ_0_EXPLICIT := SessionLibrary.RingTheory.«POLY_DERIV_EQ_0_EXPLICIT»
+  POLY_DERIV_IN_CARRIER := SessionLibrary.RingTheory.«POLY_DERIV_IN_CARRIER»
+  POLY_DERIV_MUL := SessionLibrary.RingTheory.«POLY_DERIV_MUL»
+  POLY_DERIV_NONZERO_CHAR0 := SessionLibrary.RingTheory.«POLY_DERIV_NONZERO_CHAR0»
+  POLY_DIVIDES_X_MINUS_ROOT_EQ := SessionLibrary.RingTheory.«POLY_DIVIDES_X_MINUS_ROOT_EQ»
+  POLY_EVAL_POW := SessionLibrary.RingTheory.«POLY_EVAL_POW»
+  POLY_EVAL_RING_PRODUCT_EQ_0 := SessionLibrary.RingTheory.«POLY_EVAL_RING_PRODUCT_EQ_0»
+  POLY_EVAL_SUBRING_GENERATED := SessionLibrary.RingTheory.«POLY_EVAL_SUBRING_GENERATED»
+  POLY_EXTEND_VARPOW := SessionLibrary.RingTheory.«POLY_EXTEND_VARPOW»
+  POLY_MUL_LID := SessionLibrary.RingTheory.«POLY_MUL_LID»
+  POLY_MUL_SYM := SessionLibrary.RingTheory.«POLY_MUL_SYM»
+  POLY_NONCONSTANT_IMP_NZ := SessionLibrary.RingTheory.«POLY_NONCONSTANT_IMP_NZ»
+  POLY_RING_HOMOMORPHISM_COEFF_0 := SessionLibrary.RingTheory.«POLY_RING_HOMOMORPHISM_COEFF_0»
+  POLY_ROOTS_MONOMORPHIC_IMAGE := SessionLibrary.RingTheory.«POLY_ROOTS_MONOMORPHIC_IMAGE»
+  POLY_ROOTS_SPLIT := SessionLibrary.RingTheory.«POLY_ROOTS_SPLIT»
+  POLY_ROOT_COUNT_IMP_SPLITS := SessionLibrary.RingTheory.«POLY_ROOT_COUNT_IMP_SPLITS»
+  POLY_ROOT_DECOMPOSE := SessionLibrary.RingTheory.«POLY_ROOT_DECOMPOSE»
+  POLY_SEPARABLE_DIVISOR := SessionLibrary.RingTheory.«POLY_SEPARABLE_DIVISOR»
+  POLY_SEPARABLE_EQ_DERIV_NONZERO := SessionLibrary.RingTheory.«POLY_SEPARABLE_EQ_DERIV_NONZERO»
+  POLY_SEPARABLE_FROM_MONOMORPHIC_IMAGE := SessionLibrary.RingTheory.«POLY_SEPARABLE_FROM_MONOMORPHIC_IMAGE»
+  POLY_SEPARABLE_IMP_SQUAREFREE := SessionLibrary.RingTheory.«POLY_SEPARABLE_IMP_SQUAREFREE»
+  POLY_SEPARABLE_MONOMORPHIC_IMAGE := SessionLibrary.RingTheory.«POLY_SEPARABLE_MONOMORPHIC_IMAGE»
+  POLY_SEPARABLE_X_MINUS_A := SessionLibrary.RingTheory.«POLY_SEPARABLE_X_MINUS_A»
+  POLY_SPLITS_0 := SessionLibrary.RingTheory.«POLY_SPLITS_0»
+  POLY_SPLITS_CASES := SessionLibrary.RingTheory.«POLY_SPLITS_CASES»
+  POLY_SPLITS_DIVISOR := SessionLibrary.RingTheory.«POLY_SPLITS_DIVISOR»
+  POLY_SPLITS_EQ_IRREDUCIBLES := SessionLibrary.RingTheory.«POLY_SPLITS_EQ_IRREDUCIBLES»
+  POLY_SPLITS_HOMOMORPHIC_IMAGE := SessionLibrary.RingTheory.«POLY_SPLITS_HOMOMORPHIC_IMAGE»
+  POLY_SPLITS_IN_SUBRING := SessionLibrary.RingTheory.«POLY_SPLITS_IN_SUBRING»
+  POLY_SPLITS_MONOMORPHIC_PREIMAGE := SessionLibrary.RingTheory.«POLY_SPLITS_MONOMORPHIC_PREIMAGE»
+  POLY_SPLITS_PRODUCT := SessionLibrary.RingTheory.«POLY_SPLITS_PRODUCT»
+  POLY_SPLITS_SQUAREFREE_ROOT_COUNT := SessionLibrary.RingTheory.«POLY_SPLITS_SQUAREFREE_ROOT_COUNT»
+  POLY_SPLITS_SQUAREFREE_ROOT_COUNT_EXPLICIT := SessionLibrary.RingTheory.«POLY_SPLITS_SQUAREFREE_ROOT_COUNT_EXPLICIT»
+  PRIME_DIVEXP := SessionLibrary.Prime.«PRIME_DIVEXP»
+  PRIME_GE_2 := SessionLibrary.Prime.«PRIME_GE_2»
+  PRIME_IDEAL_0 := SessionLibrary.RingTheory.«PRIME_IDEAL_0»
+  PRIME_IDEAL_HOMOMORPHIC_PREIMAGE := SessionLibrary.RingTheory.«PRIME_IDEAL_HOMOMORPHIC_PREIMAGE»
+  PRIME_IMP_NZ := SessionLibrary.Prime.«PRIME_IMP_NZ»
+  PRIME_IMP_RING_IDEAL := SessionLibrary.RingTheory.«PRIME_IMP_RING_IDEAL»
+  PRIMITIVE_ROOT_OF_UNITY_EXISTS := SessionLibrary.RingTheory.«PRIMITIVE_ROOT_OF_UNITY_EXISTS»
+  PRODUCT_RING := SessionLibrary.RingTheory.«PRODUCT_RING»
+  PROJECTIVE_BASIS_EXPAND := SessionLibrary.RingDet.«PROJECTIVE_BASIS_EXPAND»
+  PROJECTIVE_BASIS_IN_CARRIER := SessionLibrary.RingDet.«PROJECTIVE_BASIS_IN_CARRIER»
+  RESTRICTION_EXTENSION := Session.RESTRICTION_EXTENSION
+  RESTRICTION_IN_CARTESIAN_PRODUCT := Session.RESTRICTION_IN_CARTESIAN_PRODUCT
+  RESTRICTION_IN_EXTENSIONAL := Session.RESTRICTION_IN_EXTENSIONAL
+  RIGHT_IMP_EXISTS_THM := Session.RIGHT_IMP_EXISTS_THM
+  RING_ASSOCIATES_DIVIDES := SessionLibrary.RingTheory.«RING_ASSOCIATES_DIVIDES»
+  RING_ASSOCIATES_REFL := SessionLibrary.RingTheory.«RING_ASSOCIATES_REFL»
+  RING_AUTOMORPHISM_FROBENIUS := SessionLibrary.RingTheory.«RING_AUTOMORPHISM_FROBENIUS»
+  RING_CHARPOLY := SessionLibrary.RingDet.«RING_CHARPOLY»
+  RING_CHARPOLY_COEFF_0 := SessionLibrary.RingDet.«RING_CHARPOLY_COEFF_0»
+  RING_CHARPOLY_COEFF_TRACE := SessionLibrary.RingDet.«RING_CHARPOLY_COEFF_TRACE»
+  RING_CHARPOLY_MONIC := SessionLibrary.RingDet.«RING_CHARPOLY_MONIC»
+  RING_CHAR_DIVIDES_ORDER := SessionLibrary.RingTheory.«RING_CHAR_DIVIDES_ORDER»
+  RING_CHAR_MONOMORPHIC_IMAGE := SessionLibrary.RingTheory.«RING_CHAR_MONOMORPHIC_IMAGE»
+  RING_CHAR_POLY_RING := SessionLibrary.RingTheory.«RING_CHAR_POLY_RING»
+  RING_CHAR_SUBRING_GENERATED := SessionLibrary.RingTheory.«RING_CHAR_SUBRING_GENERATED»
+  RING_COPRIME_DISTINCT_MONIC_IRREDUCIBLES := SessionLibrary.RingTheory.«RING_COPRIME_DISTINCT_MONIC_IRREDUCIBLES»
+  RING_COPRIME_DIVPROD_RIGHT := SessionLibrary.RingTheory.«RING_COPRIME_DIVPROD_RIGHT»
+  RING_COPRIME_LPOW := SessionLibrary.RingTheory.«RING_COPRIME_LPOW»
+  RING_COPRIME_PRODUCT_DIVIDES := SessionLibrary.RingTheory.«RING_COPRIME_PRODUCT_DIVIDES»
+  RING_COPRIME_RPOW := SessionLibrary.RingTheory.«RING_COPRIME_RPOW»
+  RING_COPRIME_SYM := SessionLibrary.RingTheory.«RING_COPRIME_SYM»
+  RING_DET := SessionLibrary.RingDet.«RING_DET»
+  RING_DIVIDES_SUB := SessionLibrary.RingTheory.«RING_DIVIDES_SUB»
+  RING_DIVIDES_TRANS := SessionLibrary.RingTheory.«RING_DIVIDES_TRANS»
+  RING_ENDOMORPHISM_FROBENIUS_ITERATE := SessionLibrary.RingTheory.«RING_ENDOMORPHISM_FROBENIUS_ITERATE»
+  RING_EPIMORPHISM_IMP_HOMOMORPHISM := SessionLibrary.RingTheory.«RING_EPIMORPHISM_IMP_HOMOMORPHISM»
+  RING_HOMOMORPHISMS_EQ_FROM_SUBRING_GENERATED := SessionLibrary.RingTheory.«RING_HOMOMORPHISMS_EQ_FROM_SUBRING_GENERATED»
+  RING_HOMOMORPHISM_DIAGONAL := SessionLibrary.RingTheory.«RING_HOMOMORPHISM_DIAGONAL»
+  RING_HOMOMORPHISM_FROM_SUBRING_GENERATED := SessionLibrary.RingTheory.«RING_HOMOMORPHISM_FROM_SUBRING_GENERATED»
+  RING_HOMOMORPHISM_FROM_TRIVIAL_RING := SessionLibrary.RingTheory.«RING_HOMOMORPHISM_FROM_TRIVIAL_RING»
+  RING_HOMOMORPHISM_I := SessionLibrary.RingTheory.«RING_HOMOMORPHISM_I»
+  RING_HOMOMORPHISM_IN_CARRIER := SessionLibrary.RingTheory.«RING_HOMOMORPHISM_IN_CARRIER»
 /-- The core theorems fieldtheory.ml uses. -/
 def core11 : HolLibrary.FieldTheory.CoreThms11 where
+  ALGEBRA_NORM_1 := SessionLibrary.RingDet.«ALGEBRA_NORM_1»
+  ALGEBRA_TRACE_0 := SessionLibrary.RingDet.«ALGEBRA_TRACE_0»
+  ALGEBRA_TRACE_SCALAR := SessionLibrary.RingDet.«ALGEBRA_TRACE_SCALAR»
+  ARITH := Session.ARITH
+  CARD_EQ_CARD := SessionLibrary.Card.«CARD_EQ_CARD»
+  CHOOSE_SUBSET_STRONG := Session.CHOOSE_SUBSET_STRONG
+  DIVIDES_ONE := Session.DIVIDES_ONE
+  DIVIDES_REXP := SessionLibrary.Prime.«DIVIDES_REXP»
+  DIVIDES_SUB_1 := SessionLibrary.Prime.«DIVIDES_SUB_1»
+  FIELD_INTEGER_MOD_RING := SessionLibrary.RingTheory.«FIELD_INTEGER_MOD_RING»
+  FINITE_FIELD_CARD_GE_2 := SessionLibrary.RingTheory.«FINITE_FIELD_CARD_GE_2»
+  FINITE_IMAGE_INJ_GENERAL := Session.FINITE_IMAGE_INJ_GENERAL
+  HAS_SIZE_CLAUSES := Session.HAS_SIZE_CLAUSES
+  INFINITE_DIFF_FINITE := Session.INFINITE_DIFF_FINITE
+  INFINITE_NONEMPTY := Session.INFINITE_NONEMPTY
+  INTEGER_MOD_RING_CHAR := SessionLibrary.RingTheory.«INTEGER_MOD_RING_CHAR»
+  ISOMORPHIC_COPY_OF_RING := SessionLibrary.RingTheory.«ISOMORPHIC_COPY_OF_RING»
+  NOT_SUC := Session.NOT_SUC
+  POLY_CONST_MUL := SessionLibrary.RingTheory.«POLY_CONST_MUL»
+  POLY_DEG_SUB := SessionLibrary.RingTheory.«POLY_DEG_SUB»
+  POLY_DEG_VAR := SessionLibrary.RingTheory.«POLY_DEG_VAR»
+  POLY_DERIV_CONST := SessionLibrary.RingTheory.«POLY_DERIV_CONST»
+  POLY_DERIV_SUB := SessionLibrary.RingTheory.«POLY_DERIV_SUB»
+  POLY_DERIV_VAR := SessionLibrary.RingTheory.«POLY_DERIV_VAR»
+  POLY_DERIV_VAR_POW := SessionLibrary.RingTheory.«POLY_DERIV_VAR_POW»
+  POLY_DERIV_VAR_POW_ZERO := SessionLibrary.RingTheory.«POLY_DERIV_VAR_POW_ZERO»
+  POLY_EVAL_VAR_POW_SUB_CONST := SessionLibrary.RingTheory.«POLY_EVAL_VAR_POW_SUB_CONST»
+  POLY_POW_ALT := SessionLibrary.RingTheory.«POLY_POW_ALT»
+  POLY_SUB := SessionLibrary.RingTheory.«POLY_SUB»
+  POLY_VAR_POW_SUB_CONST := SessionLibrary.RingTheory.«POLY_VAR_POW_SUB_CONST»
+  PRIME_1 := SessionLibrary.Prime.«PRIME_1»
+  RING_COPRIME_UNIT := SessionLibrary.RingTheory.«RING_COPRIME_UNIT»
+  RING_HOMOMORPHISM_POW := SessionLibrary.RingTheory.«RING_HOMOMORPHISM_POW»
+  RING_HOMOMORPHISM_PRODUCT := SessionLibrary.RingTheory.«RING_HOMOMORPHISM_PRODUCT»
+  RING_HOMOMORPHISM_RING_OF_NUM := SessionLibrary.RingTheory.«RING_HOMOMORPHISM_RING_OF_NUM»
+  RING_IRREDUCIBLES_COPRIME_OR_ASSOCIATES := SessionLibrary.RingTheory.«RING_IRREDUCIBLES_COPRIME_OR_ASSOCIATES»
+  RING_IRREDUCIBLE_COPRIME_EQ := SessionLibrary.RingTheory.«RING_IRREDUCIBLE_COPRIME_EQ»
+  RING_IRREDUCIBLE_X_MINUS_A := SessionLibrary.RingTheory.«RING_IRREDUCIBLE_X_MINUS_A»
+  RING_ISOMORPHISM_COMPOSE := SessionLibrary.RingTheory.«RING_ISOMORPHISM_COMPOSE»
+  RING_MONOMORPHISM_EPIMORPHISM := SessionLibrary.RingTheory.«RING_MONOMORPHISM_EPIMORPHISM»
+  RING_MONOMORPHISM_FROBENIUS_ITERATE := SessionLibrary.RingTheory.«RING_MONOMORPHISM_FROBENIUS_ITERATE»
+  RING_MONOMORPHISM_INJECTIVE_EQ := SessionLibrary.RingTheory.«RING_MONOMORPHISM_INJECTIVE_EQ»
+  RING_MUL_POW := SessionLibrary.RingTheory.«RING_MUL_POW»
+  RING_MUL_RNEG := SessionLibrary.RingTheory.«RING_MUL_RNEG»
+  RING_NEG_EQ := SessionLibrary.RingTheory.«RING_NEG_EQ»
+  RING_NEG_NEG := SessionLibrary.RingTheory.«RING_NEG_NEG»
+  RING_NONUNIT_DIVIDES_IRREDUCIBLE := SessionLibrary.RingTheory.«RING_NONUNIT_DIVIDES_IRREDUCIBLE»
+  RING_OF_INT := SessionLibrary.RingTheory.«RING_OF_INT»
+  RING_OF_INT_0 := SessionLibrary.RingTheory.«RING_OF_INT_0»
+  RING_OF_INT_1 := SessionLibrary.RingTheory.«RING_OF_INT_1»
+  RING_OF_INT_ADD := SessionLibrary.RingTheory.«RING_OF_INT_ADD»
+  RING_OF_INT_EQ := SessionLibrary.RingTheory.«RING_OF_INT_EQ»
+  RING_OF_INT_EQ_0 := SessionLibrary.RingTheory.«RING_OF_INT_EQ_0»
+  RING_OF_INT_MUL := SessionLibrary.RingTheory.«RING_OF_INT_MUL»
+  RING_OF_INT_NEG := SessionLibrary.RingTheory.«RING_OF_INT_NEG»
+  RING_OF_NUM := SessionLibrary.RingTheory.«RING_OF_NUM»
+  RING_OF_NUM_0 := SessionLibrary.RingTheory.«RING_OF_NUM_0»
+  RING_OF_NUM_1 := SessionLibrary.RingTheory.«RING_OF_NUM_1»
+  RING_OF_NUM_MUL := SessionLibrary.RingTheory.«RING_OF_NUM_MUL»
+  RING_ORDER_UNIQUE := SessionLibrary.RingTheory.«RING_ORDER_UNIQUE»
+  RING_POLYNOMIAL_COEFF := SessionLibrary.RingTheory.«RING_POLYNOMIAL_COEFF»
+  RING_POLYNOMIAL_POW := SessionLibrary.RingTheory.«RING_POLYNOMIAL_POW»
+  RING_POLYNOMIAL_X_MINUS_A := SessionLibrary.RingTheory.«RING_POLYNOMIAL_X_MINUS_A»
+  RING_POWERSERIES_POW := SessionLibrary.RingTheory.«RING_POWERSERIES_POW»
+  RING_POW_1 := SessionLibrary.RingTheory.«RING_POW_1»
+  RING_POW_ADD := SessionLibrary.RingTheory.«RING_POW_ADD»
+  RING_POW_EQ_1 := SessionLibrary.RingTheory.«RING_POW_EQ_1»
+  RING_POW_ONE := SessionLibrary.RingTheory.«RING_POW_ONE»
+  RING_POW_POW := SessionLibrary.RingTheory.«RING_POW_POW»
+  RING_POW_ZERO := SessionLibrary.RingTheory.«RING_POW_ZERO»
+  RING_PRIME_IDEAL := SessionLibrary.RingTheory.«RING_PRIME_IDEAL»
+  RING_PRIME_IN_CARRIER := SessionLibrary.RingTheory.«RING_PRIME_IN_CARRIER»
+  RING_PRODUCT_CONST := SessionLibrary.RingTheory.«RING_PRODUCT_CONST»
+  RING_PRODUCT_EQ_GENERAL_INVERSES := SessionLibrary.RingTheory.«RING_PRODUCT_EQ_GENERAL_INVERSES»
+  RING_PRODUCT_LMUL := SessionLibrary.RingTheory.«RING_PRODUCT_LMUL»
+  RING_PRODUCT_POW := SessionLibrary.RingTheory.«RING_PRODUCT_POW»
+  RING_PRODUCT_POW_NEG := SessionLibrary.RingTheory.«RING_PRODUCT_POW_NEG»
+  RING_PRODUCT_SING := SessionLibrary.RingTheory.«RING_PRODUCT_SING»
+  RING_PRODUCT_UNIONS_PAIRWISE_DISJOINT := SessionLibrary.RingTheory.«RING_PRODUCT_UNIONS_PAIRWISE_DISJOINT»
+  RING_SQUAREFREE_COPRIME := SessionLibrary.RingTheory.«RING_SQUAREFREE_COPRIME»
+  RING_SUB_LZERO := SessionLibrary.RingTheory.«RING_SUB_LZERO»
+  RING_SUM_0 := SessionLibrary.RingTheory.«RING_SUM_0»
+  RING_SUM_CONST := SessionLibrary.RingTheory.«RING_SUM_CONST»
+  RING_SUM_DELTA := SessionLibrary.RingTheory.«RING_SUM_DELTA»
+  RING_SUM_NEG := SessionLibrary.RingTheory.«RING_SUM_NEG»
+  RING_SUM_PRODUCT_RING := SessionLibrary.RingTheory.«RING_SUM_PRODUCT_RING»
+  RING_SUM_UNIONS_PAIRWISE_DISJOINT := SessionLibrary.RingTheory.«RING_SUM_UNIONS_PAIRWISE_DISJOINT»
+  RING_UNIT_1 := SessionLibrary.RingTheory.«RING_UNIT_1»
+  RING_UNIT_NEG := SessionLibrary.RingTheory.«RING_UNIT_NEG»
+  RING_UNIT_POW_EQ := SessionLibrary.RingTheory.«RING_UNIT_POW_EQ»
+  ROOTS_OF_UNITY_BOUND := SessionLibrary.RingTheory.«ROOTS_OF_UNITY_BOUND»
+  ROOTS_OF_UNITY_HAS_SIZE_IMP_CHAR := SessionLibrary.RingTheory.«ROOTS_OF_UNITY_HAS_SIZE_IMP_CHAR»
+  ROOTS_OF_UNITY_HAS_SIZE_NONZERO := SessionLibrary.RingTheory.«ROOTS_OF_UNITY_HAS_SIZE_NONZERO»
+  SUBRING_GENERATED_IDEMPOT_GEN := SessionLibrary.RingTheory.«SUBRING_GENERATED_IDEMPOT_GEN»
+  SUBRING_GENERATED_INSERT := SessionLibrary.RingTheory.«SUBRING_GENERATED_INSERT»
+  SUBRING_GENERATED_INSERT_ZERO := SessionLibrary.RingTheory.«SUBRING_GENERATED_INSERT_ZERO»
+  SUBRING_GENERATED_SUPERSET := SessionLibrary.RingTheory.«SUBRING_GENERATED_SUPERSET»
+  SUBRING_RING_IMAGE := SessionLibrary.RingTheory.«SUBRING_RING_IMAGE»
+  SUB_ADD := Session.SUB_ADD
+  TRIVIAL_RING := SessionLibrary.RingTheory.«TRIVIAL_RING»
+  UFD_COPRIME := SessionLibrary.RingTheory.«UFD_COPRIME»
+  divides := Session.divides
+  eq_c := Session.eq_c
+  free_basis := SessionLibrary.RingDet.«free_basis»
+  monic := SessionLibrary.RingTheory.«monic»
+  pairwise := Session.pairwise
+  poly_deg := SessionLibrary.RingTheory.«poly_deg»
+  poly_separable := SessionLibrary.RingTheory.«poly_separable»
+  ring_associates := SessionLibrary.RingTheory.«ring_associates»
+  ring_coprime := SessionLibrary.RingTheory.«ring_coprime»
 /-- The core theorems fieldtheory.ml uses. -/
 def core12 : HolLibrary.FieldTheory.CoreThms12 where
 /-- The core theorems fieldtheory.ml uses. -/
@@ -680,6 +992,11 @@ def deps : HolLibrary.FieldTheory.FieldTheoryDeps where
   RING_RULE t := ExceptT.mk (SessionLibrary.RingTheory.RING_RULE t)
   basic_ss := Session.basic_ss
   TAUT t := ExceptT.mk (Session.TAUT t)
+  INTEGER_RULE t := ExceptT.mk (Session.INTEGER_RULE t)
+  NUMBER_RULE t := ExceptT.mk (Session.NUMBER_RULE t)
+  SELECT_CONV t := pure (Session.SELECT_CONV t)
+  NUM_FACT_CONV := Session.NUM_FACT_CONV
+  HAS_SIZE_CONV := Session.HAS_SIZE_CONV
   core1 := core1
   core2 := core2
   core3 := core3
@@ -727,7 +1044,7 @@ initialize BSubfieldQuotients : HolLibrary.FieldTheory.SubfieldQuotients ←
 
 initialize BFieldExtension : HolLibrary.FieldTheory.FieldExtension ←
   ioB "setupFieldExtension" <|
-    (HolLibrary.FieldTheory.setupFieldExtension deps BSubfields BSubfieldGenerated).run
+    (HolLibrary.FieldTheory.setupFieldExtension deps BSubfields BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2).run
 
 initialize BRingSpan : HolLibrary.FieldTheory.RingSpan ←
   ioB "setupRingSpan" <|
@@ -751,7 +1068,7 @@ initialize BTowerLaw : HolLibrary.FieldTheory.TowerLaw ←
 
 initialize BFiniteExtension : HolLibrary.FieldTheory.FiniteExtension ←
   ioB "setupFiniteExtension" <|
-    (HolLibrary.FieldTheory.setupFiniteExtension deps BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BFieldExtension BRingSpan BRingMatroid BLinearAlgebra BFinitary BTowerLaw).run
+    (HolLibrary.FieldTheory.setupFiniteExtension deps BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BSubfieldQuotients BFieldExtension BRingSpan BRingMatroid BLinearAlgebra BFinitary BTowerLaw).run
 
 initialize BAlgebraicExtension : HolLibrary.FieldTheory.AlgebraicExtension ←
   ioB "setupAlgebraicExtension" <|
@@ -769,6 +1086,10 @@ initialize BAlgebraicExtMisc : HolLibrary.FieldTheory.AlgebraicExtMisc ←
   ioB "setupAlgebraicExtMisc" <|
     (HolLibrary.FieldTheory.setupAlgebraicExtMisc deps BSubfieldQuotients BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps).run
 
+initialize BMinimalPolynomial : HolLibrary.FieldTheory.MinimalPolynomial ←
+  ioB "setupMinimalPolynomial" <|
+    (HolLibrary.FieldTheory.setupMinimalPolynomial deps BFieldExtension BRingSpan BLinearAlgebra BFinitary BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps).run
+
 initialize BAlgebraicField : HolLibrary.FieldTheory.AlgebraicField ←
   ioB "setupAlgebraicField" <|
     (HolLibrary.FieldTheory.setupAlgebraicField deps BSubfields BSubfieldGenerated BFieldExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BAlgebraicExtMisc).run
@@ -776,6 +1097,10 @@ initialize BAlgebraicField : HolLibrary.FieldTheory.AlgebraicField ←
 initialize BFiniteExt : HolLibrary.FieldTheory.FiniteExt ←
   ioB "setupFiniteExt" <|
     (HolLibrary.FieldTheory.setupFiniteExt deps BFieldExtension BRingSpan BLinearAlgebra BFinitary BFiniteExtension).run
+
+initialize BFiniteFieldSubfields : HolLibrary.FieldTheory.FiniteFieldSubfields ←
+  ioB "setupFiniteFieldSubfields" <|
+    (HolLibrary.FieldTheory.setupFiniteFieldSubfields deps BSubfields BSubfieldGenerated BFieldExtension BFiniteExtension BFiniteExt).run
 
 initialize BAlgDepDefs : HolLibrary.FieldTheory.AlgDepDefs ←
   ioB "setupAlgDepDefs" <|
@@ -795,7 +1120,7 @@ initialize BAlgebraicMatroid : HolLibrary.FieldTheory.AlgebraicMatroid ←
 
 initialize BAlgebraicTrans : HolLibrary.FieldTheory.AlgebraicTrans ←
   ioB "setupAlgebraicTrans" <|
-    (HolLibrary.FieldTheory.setupAlgebraicTrans deps BSubfieldGenerated BSubfieldGenerated1 BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicField BAlgDepDefs BAlgDepSpan BAlgSpanDepIndep BAlgebraicMatroid).run
+    (HolLibrary.FieldTheory.setupAlgebraicTrans deps BSubfieldGenerated BSubfieldGenerated1 BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BMinimalPolynomial BAlgebraicField BAlgDepDefs BAlgDepSpan BAlgSpanDepIndep BAlgebraicMatroid).run
 
 initialize BAlgebraicOverExt : HolLibrary.FieldTheory.AlgebraicOverExt ←
   ioB "setupAlgebraicOverExt" <|
@@ -819,15 +1144,15 @@ initialize BAcfSplit : HolLibrary.FieldTheory.AcfSplit ←
 
 initialize BClosedFieldSplits : HolLibrary.FieldTheory.ClosedFieldSplits ←
   ioB "setupClosedFieldSplits" <|
-    (HolLibrary.FieldTheory.setupClosedFieldSplits deps BAcfBasic BAcfSplit).run
+    (HolLibrary.FieldTheory.setupClosedFieldSplits deps BAcfSplit).run
 
 initialize BSimpleExtendHom : HolLibrary.FieldTheory.SimpleExtendHom ←
   ioB "setupSimpleExtendHom" <|
-    (HolLibrary.FieldTheory.setupSimpleExtendHom deps BAcfBasic).run
+    (HolLibrary.FieldTheory.setupSimpleExtendHom deps BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BMinimalPolynomial BAcfBasic).run
 
 initialize BClosureExtendHom : HolLibrary.FieldTheory.ClosureExtendHom ←
   ioB "setupClosureExtendHom" <|
-    (HolLibrary.FieldTheory.setupClosureExtendHom deps BSubfields BSubfieldGenerated2 BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAcfBasic BSimpleExtendHom).run
+    (HolLibrary.FieldTheory.setupClosureExtendHom deps BSubfields BSubfieldGenerated2 BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicExtMisc BAcfBasic BSimpleExtendHom).run
 
 initialize BPolySquarefree : HolLibrary.FieldTheory.PolySquarefree ←
   ioB "setupPolySquarefree" <|
@@ -840,6 +1165,150 @@ initialize BAlgebraicClosureExistsId : HolLibrary.FieldTheory.AlgebraicClosureEx
 initialize BAlgebraicClosure : HolLibrary.FieldTheory.AlgebraicClosure ←
   ioB "setupAlgebraicClosure" <|
     (HolLibrary.FieldTheory.setupAlgebraicClosure deps BFieldExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtMisc BAlgebraicField BAcfBasic BClosureExtendHom BAlgebraicClosureExistsId).run
+
+initialize BSplitsOver : HolLibrary.FieldTheory.SplitsOver ←
+  ioB "setupSplitsOver" <|
+    (HolLibrary.FieldTheory.setupSplitsOver deps BFieldExtension).run
+
+initialize BSplittingExtension : HolLibrary.FieldTheory.SplittingExtension ←
+  ioB "setupSplittingExtension" <|
+    (HolLibrary.FieldTheory.setupSplittingExtension deps BSubfields BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BMinimalPolynomial BAlgebraicField BAcfSplit BAlgebraicClosureExistsId BAlgebraicClosure BSplitsOver).run
+
+initialize BSplittingUnique : HolLibrary.FieldTheory.SplittingUnique ←
+  ioB "setupSplittingUnique" <|
+    (HolLibrary.FieldTheory.setupSplittingUnique deps BSubfieldGenerated2 BFieldExtension BAlgebraicExtension BAcfBasic BClosureExtendHom BAlgebraicClosure BSplittingExtension).run
+
+initialize BNormalExtension : HolLibrary.FieldTheory.NormalExtension ←
+  ioB "setupNormalExtension" <|
+    (HolLibrary.FieldTheory.setupNormalExtension deps BFieldExtension BAlgebraicExtension BAlgebraicExtMisc BMinimalPolynomial BAcfSplit BSplitsOver).run
+
+initialize BNormalEmbeddings : HolLibrary.FieldTheory.NormalEmbeddings ←
+  ioB "setupNormalEmbeddings" <|
+    (HolLibrary.FieldTheory.setupNormalEmbeddings deps BFieldExtension BAlgebraicExtension BMinimalPolynomial BAcfBasic BAcfSplit BClosureExtendHom BSplitsOver BNormalExtension).run
+
+initialize BFiniteNormal : HolLibrary.FieldTheory.FiniteNormal ←
+  ioB "setupFiniteNormal" <|
+    (HolLibrary.FieldTheory.setupFiniteNormal deps BSubfieldGenerated BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicExtensionProps BMinimalPolynomial BAcfBasic BAlgebraicClosure BSplitsOver BSplittingExtension BNormalExtension BNormalEmbeddings).run
+
+initialize BNormalInvariance : HolLibrary.FieldTheory.NormalInvariance ←
+  ioB "setupNormalInvariance" <|
+    (HolLibrary.FieldTheory.setupNormalInvariance deps BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BFieldExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtMisc BAlgebraicField BAcfBasic BAlgebraicClosure BNormalExtension BNormalEmbeddings).run
+
+initialize BPerfectField : HolLibrary.FieldTheory.PerfectField ←
+  ioB "setupPerfectField" <|
+    (HolLibrary.FieldTheory.setupPerfectField deps BFieldExtension BAlgebraicExtension BAcfBasic BPolySquarefree BAlgebraicClosure).run
+
+initialize BSeparableExtension : HolLibrary.FieldTheory.SeparableExtension ←
+  ioB "setupSeparableExtension" <|
+    (HolLibrary.FieldTheory.setupSeparableExtension deps BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicExtMisc BMinimalPolynomial BAlgebraicTrans BPerfectField).run
+
+initialize BSeparableRoots : HolLibrary.FieldTheory.SeparableRoots ←
+  ioB "setupSeparableRoots" <|
+    (HolLibrary.FieldTheory.setupSeparableRoots deps BFieldExtension BAlgebraicExtension BPolySquarefree BAlgebraicClosure BSplitsOver BPerfectField).run
+
+initialize BHomomorphismsIndependent : HolLibrary.FieldTheory.HomomorphismsIndependent ←
+  ioB "setupHomomorphismsIndependent" <|
+    (HolLibrary.FieldTheory.setupHomomorphismsIndependent deps).run
+
+initialize BHomExtensions : HolLibrary.FieldTheory.HomExtensions ←
+  ioB "setupHomExtensions" <|
+    (HolLibrary.FieldTheory.setupHomExtensions deps BSubfieldGenerated BSubfieldGenerated2 BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BMinimalPolynomial BAlgebraicTrans BAcfBasic BAcfSplit BSimpleExtendHom BClosureExtendHom BSplitsOver BSplittingExtension BFiniteNormal).run
+
+initialize BHomExtensionsCount : HolLibrary.FieldTheory.HomExtensionsCount ←
+  ioB "setupHomExtensionsCount" <|
+    (HolLibrary.FieldTheory.setupHomExtensionsCount deps BFieldExtension BFinitary BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BMinimalPolynomial BAlgebraicField BAcfBasic BAcfSplit BClosureExtendHom BAlgebraicClosure BSplitsOver BSeparableExtension BHomExtensions).run
+
+initialize BSeparableDegree : HolLibrary.FieldTheory.SeparableDegree ←
+  ioB "setupSeparableDegree" <|
+    (HolLibrary.FieldTheory.setupSeparableDegree deps BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BAlgebraicExtMisc BMinimalPolynomial BAlgebraicField BAlgebraicTrans BAcfBasic BAcfSplit BAlgebraicClosure BSplitsOver BSeparableExtension BSeparableRoots BHomExtensions BHomExtensionsCount).run
+
+initialize BSeparablePowers : HolLibrary.FieldTheory.SeparablePowers ←
+  ioB "setupSeparablePowers" <|
+    (HolLibrary.FieldTheory.setupSeparablePowers deps BFieldExtension BAlgebraicExtension BMinimalPolynomial BAlgebraicField BAlgebraicTrans BAlgebraicClosure BSeparableExtension BSeparableRoots).run
+
+initialize BSeparableClosure : HolLibrary.FieldTheory.SeparableClosure ←
+  ioB "setupSeparableClosure" <|
+    (HolLibrary.FieldTheory.setupSeparableClosure deps BSubfields BSubfieldGenerated BFieldExtension BAlgebraicExtension BSeparableExtension BSeparableDegree BSeparablePowers).run
+
+initialize BPurelyInseparable : HolLibrary.FieldTheory.PurelyInseparable ←
+  ioB "setupPurelyInseparable" <|
+    (HolLibrary.FieldTheory.setupPurelyInseparable deps BSubfieldGenerated BSubfieldGenerated2 BFieldExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicExtMisc BAlgebraicField BSeparableExtension BSeparableDegree BSeparablePowers BSeparableClosure).run
+
+initialize BPurelyInseparableDegree : HolLibrary.FieldTheory.PurelyInseparableDegree ←
+  ioB "setupPurelyInseparableDegree" <|
+    (HolLibrary.FieldTheory.setupPurelyInseparableDegree deps BSubfieldGenerated BSubfieldGenerated2 BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BAlgebraicExtMisc BMinimalPolynomial BAlgebraicClosure BPerfectField BHomExtensions BSeparableDegree BSeparablePowers BSeparableClosure BPurelyInseparable).run
+
+initialize BInseparableDegree : HolLibrary.FieldTheory.InseparableDegree ←
+  ioB "setupInseparableDegree" <|
+    (HolLibrary.FieldTheory.setupInseparableDegree deps BSubfieldGenerated BSubfieldGenerated2 BFieldExtension BFiniteExtension BAlgebraicOverBasics BSeparableDegree BSeparableClosure BPurelyInseparable BPurelyInseparableDegree).run
+
+initialize BFreeBasesField : HolLibrary.FieldTheory.FreeBasesField ←
+  ioB "setupFreeBasesField" <|
+    (HolLibrary.FieldTheory.setupFreeBasesField deps BFieldExtension BRingSpan BLinearAlgebra BFinitary BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BMinimalPolynomial).run
+
+initialize BNormTraceBase : HolLibrary.FieldTheory.NormTraceBase ←
+  ioB "setupNormTraceBase" <|
+    (HolLibrary.FieldTheory.setupNormTraceBase deps BFieldExtension BFiniteExtension BFreeBasesField).run
+
+initialize BNormTraceIntermediate : HolLibrary.FieldTheory.NormTraceIntermediate ←
+  ioB "setupNormTraceIntermediate" <|
+    (HolLibrary.FieldTheory.setupNormTraceIntermediate deps BFieldExtension BFiniteExtension BFreeBasesField).run
+
+initialize BFieldCharpoly : HolLibrary.FieldTheory.FieldCharpoly ←
+  ioB "setupFieldCharpoly" <|
+    (HolLibrary.FieldTheory.setupFieldCharpoly deps BSubfieldGenerated BSubfieldGenerated1 BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BMinimalPolynomial BFreeBasesField BNormTraceIntermediate).run
+
+initialize BEmbeddingsPrelims : HolLibrary.FieldTheory.EmbeddingsPrelims ←
+  ioB "setupEmbeddingsPrelims" <|
+    (HolLibrary.FieldTheory.setupEmbeddingsPrelims deps BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicExtensionProps BMinimalPolynomial BAlgebraicTrans BAcfBasic BAcfSplit BHomExtensions BHomExtensionsCount).run
+
+initialize BEmbeddingDivides : HolLibrary.FieldTheory.EmbeddingDivides ←
+  ioB "setupEmbeddingDivides" <|
+    (HolLibrary.FieldTheory.setupEmbeddingDivides deps BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BMinimalPolynomial BAcfBasic BHomExtensions BSeparableDegree BSeparableClosure BPurelyInseparable BPurelyInseparableDegree BInseparableDegree BEmbeddingsPrelims).run
+
+initialize BMinpolyEmbeddings : HolLibrary.FieldTheory.MinpolyEmbeddings ←
+  ioB "setupMinpolyEmbeddings" <|
+    (HolLibrary.FieldTheory.setupMinpolyEmbeddings deps BFieldExtension BMinimalPolynomial BAcfBasic BHomExtensions BSeparableDegree BInseparableDegree BEmbeddingsPrelims BEmbeddingDivides).run
+
+initialize BMinpolyCoeffEmbeddings : HolLibrary.FieldTheory.MinpolyCoeffEmbeddings ←
+  ioB "setupMinpolyCoeffEmbeddings" <|
+    (HolLibrary.FieldTheory.setupMinpolyCoeffEmbeddings deps BFiniteExtension BAlgebraicOverBasics BMinimalPolynomial BAcfBasic BHomExtensions BSeparableDegree BInseparableDegree BEmbeddingsPrelims BMinpolyEmbeddings).run
+
+initialize BTraceNormEmbeddings : HolLibrary.FieldTheory.TraceNormEmbeddings ←
+  ioB "setupTraceNormEmbeddings" <|
+    (HolLibrary.FieldTheory.setupTraceNormEmbeddings deps BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BMinimalPolynomial BAcfBasic BHomExtensions BSeparableDegree BInseparableDegree BFieldCharpoly BEmbeddingsPrelims BMinpolyCoeffEmbeddings).run
+
+initialize BTraceNormSpecial : HolLibrary.FieldTheory.TraceNormSpecial ←
+  ioB "setupTraceNormSpecial" <|
+    (HolLibrary.FieldTheory.setupTraceNormSpecial deps BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicClosure BHomomorphismsIndependent BHomExtensions BHomExtensionsCount BSeparableDegree BPurelyInseparableDegree BInseparableDegree BTraceNormEmbeddings).run
+
+initialize BTraceNormTower : HolLibrary.FieldTheory.TraceNormTower ←
+  ioB "setupTraceNormTower" <|
+    (HolLibrary.FieldTheory.setupTraceNormTower deps BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicClosure BHomExtensions BHomExtensionsCount BInseparableDegree BFreeBasesField BEmbeddingsPrelims BTraceNormEmbeddings).run
+
+initialize BPrimitiveSeparating : HolLibrary.FieldTheory.PrimitiveSeparating ←
+  ioB "setupPrimitiveSeparating" <|
+    (HolLibrary.FieldTheory.setupPrimitiveSeparating deps BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BMinimalPolynomial BAcfBasic BHomExtensions BHomExtensionsCount).run
+
+initialize BPrimitiveTwoGenerators : HolLibrary.FieldTheory.PrimitiveTwoGenerators ←
+  ioB "setupPrimitiveTwoGenerators" <|
+    (HolLibrary.FieldTheory.setupPrimitiveTwoGenerators deps BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicExtensionProps BAlgebraicClosure BSeparableExtension BHomExtensions BHomExtensionsCount BPrimitiveSeparating).run
+
+initialize BPrimitiveElement : HolLibrary.FieldTheory.PrimitiveElement ←
+  ioB "setupPrimitiveElement" <|
+    (HolLibrary.FieldTheory.setupPrimitiveElement deps BFieldExtension BRingSpan BLinearAlgebra BFinitary BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BMinimalPolynomial BFiniteExt BSeparableExtension BSeparableDegree BPrimitiveTwoGenerators).run
+
+initialize BFiniteFieldExistence : HolLibrary.FieldTheory.FiniteFieldExistence ←
+  ioB "setupFiniteFieldExistence" <|
+    (HolLibrary.FieldTheory.setupFiniteFieldExistence deps BSubfields BSubfieldGenerated BFieldExtension BAlgebraicExtension BAcfBasic BAcfSplit BAlgebraicClosure).run
+
+initialize BVarPowSub : HolLibrary.FieldTheory.VarPowSub ←
+  ioB "setupVarPowSub" <|
+    (HolLibrary.FieldTheory.setupVarPowSub deps).run
+
+initialize BFiniteFieldUniqueness : HolLibrary.FieldTheory.FiniteFieldUniqueness ←
+  ioB "setupFiniteFieldUniqueness" <|
+    (HolLibrary.FieldTheory.setupFiniteFieldUniqueness deps BSubfieldGenerated BSubfieldGenerated1 BSubfieldQuotients BFieldExtension BFiniteExt BFiniteFieldSubfields BSplittingExtension BSplittingUnique BSeparableRoots BVarPowSub).run
 
 
 -- Subfields
@@ -854,6 +1323,7 @@ def IN_SUBFIELD_INV : thm := BSubfields.IN_SUBFIELD_INV
 def RING_INV_SUBRING_GENERATED : thm := BSubfields.RING_INV_SUBRING_GENERATED
 def SUBFIELD_OF_FIELD_INV : thm := BSubfields.SUBFIELD_OF_FIELD_INV
 def SUBFIELD_OF_INTERS : thm := BSubfields.SUBFIELD_OF_INTERS
+def SUBFIELD_OF_UNIONS_DIRECTED : thm := BSubfields.SUBFIELD_OF_UNIONS_DIRECTED
 def SUBFIELD_OF_INTER : thm := BSubfields.SUBFIELD_OF_INTER
 def CARRIER_SUBFIELD_OF : thm := BSubfields.CARRIER_SUBFIELD_OF
 def IN_SUBFIELD_0 : thm := BSubfields.IN_SUBFIELD_0
@@ -867,6 +1337,7 @@ def IN_SUBFIELD_SUM : thm := BSubfields.IN_SUBFIELD_SUM
 def IN_SUBFIELD_PRODUCT : thm := BSubfields.IN_SUBFIELD_PRODUCT
 def SUBFIELD_OF_HOMOMORPHIC_EQUALITIES : thm := BSubfields.SUBFIELD_OF_HOMOMORPHIC_EQUALITIES
 def SUBFIELD_OF_FIXPOINTS : thm := BSubfields.SUBFIELD_OF_FIXPOINTS
+def SUBFIELD_OF_COMMON_FIXPOINTS : thm := BSubfields.SUBFIELD_OF_COMMON_FIXPOINTS
 def SUBFIELD_OF_SUBRING_QUOTIENTS : thm := BSubfields.SUBFIELD_OF_SUBRING_QUOTIENTS
 
 -- SubfieldGenerated
@@ -911,12 +1382,14 @@ def SUBFIELD_OF_SUBFIELD_GENERATED_SUBFIELD_EQ : thm := BSubfieldGenerated1.SUBF
 def SUBFIELD_OF_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBFIELD_OF_SUBFIELD_GENERATED
 def SUBFIELD_OF_SUBFIELD_GENERATED_REV : thm := BSubfieldGenerated1.SUBFIELD_OF_SUBFIELD_GENERATED_REV
 def SUBFIELD_GENERATED_IDEMPOT : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_IDEMPOT
+def SUBFIELD_GENERATED_IDEMPOT_GEN : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_IDEMPOT_GEN
 def SUBFIELD_GENERATED_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_SUBFIELD_GENERATED
 def SUBRING_GENERATED_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBRING_GENERATED_SUBFIELD_GENERATED
 def TRIVIAL_RING_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.TRIVIAL_RING_SUBFIELD_GENERATED
 def SUBFIELD_GENERATED_UNION_LEFT : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_UNION_LEFT
 def SUBFIELD_GENERATED_UNION_RIGHT : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_UNION_RIGHT
 def SUBFIELD_GENERATED_UNION : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_UNION
+def SUBFIELD_GENERATED_INSERT : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_INSERT
 
 -- SubfieldGenerated2
 def SUBFIELD_OF_MONOMORPHIC_IMAGE : thm := BSubfieldGenerated2.SUBFIELD_OF_MONOMORPHIC_IMAGE
@@ -927,18 +1400,26 @@ def RING_POW_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_POW_SUBFIELD_G
 def RING_OF_NUM_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_OF_NUM_SUBFIELD_GENERATED
 def RING_OF_INT_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_OF_INT_SUBFIELD_GENERATED
 def RING_CHAR_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_CHAR_SUBFIELD_GENERATED
+def RING_ORDER_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_ORDER_SUBFIELD_GENERATED
 def RING_0_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_0_IN_SUBFIELD_GENERATED
 def RING_1_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_1_IN_SUBFIELD_GENERATED
 def RING_NEG_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_NEG_IN_SUBFIELD_GENERATED
 def RING_ADD_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_ADD_IN_SUBFIELD_GENERATED
 def RING_MUL_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_MUL_IN_SUBFIELD_GENERATED
 def RING_POW_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_POW_IN_SUBFIELD_GENERATED
+def RING_OF_INT_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_OF_INT_IN_SUBFIELD_GENERATED
 def RING_INV_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_INV_SUBFIELD_GENERATED
 def RING_INV_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_INV_IN_SUBFIELD_GENERATED
 def RING_DIV_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_DIV_IN_SUBFIELD_GENERATED
 def SUBFIELD_GENERATED_INDUCT : thm := BSubfieldGenerated2.SUBFIELD_GENERATED_INDUCT
+def RING_HOMOMORPHISMS_EQ_FROM_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_HOMOMORPHISMS_EQ_FROM_SUBFIELD_GENERATED
+def RING_HOMOMORPHISM_SUBFIELD_INCLUSION : thm := BSubfieldGenerated2.RING_HOMOMORPHISM_SUBFIELD_INCLUSION
+def RING_HOMOMORPHISM_FROM_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_HOMOMORPHISM_FROM_SUBFIELD_GENERATED
 def POLY_CONST_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.POLY_CONST_SUBFIELD_GENERATED
 def POLY_SUBFIELD_GENERATED_CLAUSES : thm := BSubfieldGenerated2.POLY_SUBFIELD_GENERATED_CLAUSES
+def POLY_DEG_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.POLY_DEG_SUBFIELD_GENERATED
+def POLY_EVAL_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.POLY_EVAL_SUBFIELD_GENERATED
+def MONIC_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.MONIC_SUBFIELD_GENERATED
 
 -- SubfieldQuotients
 def FIELD_SUBFIELD_GENERATED_UNITS : thm := BSubfieldQuotients.FIELD_SUBFIELD_GENERATED_UNITS
@@ -951,22 +1432,31 @@ def IN_SUBFIELD_GENERATED_FINITARY : thm := BSubfieldQuotients.IN_SUBFIELD_GENER
 def PRIME_SUBFIELD_MINIMAL : thm := BSubfieldQuotients.PRIME_SUBFIELD_MINIMAL
 def PRIME_SUBFIELD_EQ_SUBRING : thm := BSubfieldQuotients.PRIME_SUBFIELD_EQ_SUBRING
 def FROBENIUS_FIXED_FIELD : thm := BSubfieldQuotients.FROBENIUS_FIXED_FIELD
+def PRIME_SUBFIELD_SUBFIELD_GENERATED : thm := BSubfieldQuotients.PRIME_SUBFIELD_SUBFIELD_GENERATED
+def PRIME_SUBFIELD_SUBFIELD : thm := BSubfieldQuotients.PRIME_SUBFIELD_SUBFIELD
+def PRIME_SUBFIELD_MONOMORPHIC_IMAGE : thm := BSubfieldQuotients.PRIME_SUBFIELD_MONOMORPHIC_IMAGE
+def PRIME_SUBFIELD_HOMOMORPHISM_EXISTS : thm := BSubfieldQuotients.PRIME_SUBFIELD_HOMOMORPHISM_EXISTS
 
 -- FieldExtension
 def field_extension : thm := BFieldExtension.field_extension
 def FIELD_EXTENSION_IMP_MONOMORPHISM : thm := BFieldExtension.FIELD_EXTENSION_IMP_MONOMORPHISM
 def FIELD_EXTENSION_IMP_HOMOMORPHISM : thm := BFieldExtension.FIELD_EXTENSION_IMP_HOMOMORPHISM
 def FIELD_EXTENSION_IMP_SUBSET : thm := BFieldExtension.FIELD_EXTENSION_IMP_SUBSET
+def FIELD_EXTENSION_IMP_SUBSET_I : thm := BFieldExtension.FIELD_EXTENSION_IMP_SUBSET_I
 def FIELD_EXTENSION_CARRIER : thm := BFieldExtension.FIELD_EXTENSION_CARRIER
 def FIELD_EXTENSION_FROM_SUBRING_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_FROM_SUBRING_GENERATED
+def FIELD_EXTENSION_FROM_SUBFIELD_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_FROM_SUBFIELD_GENERATED
 def FIELD_EXTENSION_EQ : thm := BFieldExtension.FIELD_EXTENSION_EQ
 def FIELD_EXTENSION_REFL : thm := BFieldExtension.FIELD_EXTENSION_REFL
 def FIELD_EXTENSION_TRANS : thm := BFieldExtension.FIELD_EXTENSION_TRANS
 def FIELD_EXTENSION_TRANS_I : thm := BFieldExtension.FIELD_EXTENSION_TRANS_I
+def FIELD_EXTENSION_INTO_INTERMEDIATE : thm := BFieldExtension.FIELD_EXTENSION_INTO_INTERMEDIATE
+def FIELD_EXTENSION_SUBFIELD_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_SUBFIELD_GENERATED
 def FIELD_EXTENSION_ISOMORPHISM : thm := BFieldExtension.FIELD_EXTENSION_ISOMORPHISM
 def FIELD_EXTENSION_SUBRING_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_SUBRING_GENERATED
 def FIELD_EXTENSION_INTO_SUBRING_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_INTO_SUBRING_GENERATED
 def FIELD_EXTENSION_INTO_SUBFIELD_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_INTO_SUBFIELD_GENERATED
+def RING_ISOMORPHISM_ONTO_SUBFIELD_IMAGE : thm := BFieldExtension.RING_ISOMORPHISM_ONTO_SUBFIELD_IMAGE
 def KRONECKER_FIELD_EXTENSION : thm := BFieldExtension.KRONECKER_FIELD_EXTENSION
 def KRONECKER_SIMPLE_FIELD_EXTENSION : thm := BFieldExtension.KRONECKER_SIMPLE_FIELD_EXTENSION
 def COPRIME_POLY_NO_COMMON_ROOT : thm := BFieldExtension.COPRIME_POLY_NO_COMMON_ROOT
@@ -989,6 +1479,8 @@ def SUBSET_RING_SPAN : thm := BRingSpan.SUBSET_RING_SPAN
 def RING_SPAN_RESTRICT : thm := BRingSpan.RING_SPAN_RESTRICT
 def RING_SPAN_SPAN : thm := BRingSpan.RING_SPAN_SPAN
 def RING_SPAN_FINITARY : thm := BRingSpan.RING_SPAN_FINITARY
+def RING_SPAN_EQ : thm := BRingSpan.RING_SPAN_EQ
+def RING_SPAN_EQ_IMAGE : thm := BRingSpan.RING_SPAN_EQ_IMAGE
 def RING_SPAN_NONEMPTY : thm := BRingSpan.RING_SPAN_NONEMPTY
 def RING_SPAN_SELF : thm := BRingSpan.RING_SPAN_SELF
 def RING_SPAN_EMPTY : thm := BRingSpan.RING_SPAN_EMPTY
@@ -1014,6 +1506,8 @@ def RING_DEPENDENT_IMP_SUBSET : thm := BLinearAlgebra.RING_DEPENDENT_IMP_SUBSET
 def RING_INDEPENDENT_IMP_SUBSET : thm := BLinearAlgebra.RING_INDEPENDENT_IMP_SUBSET
 def RING_SPANNING_IMP_SUBSET : thm := BLinearAlgebra.RING_SPANNING_IMP_SUBSET
 def RING_BASIS_IMP_SUBSET : thm := BLinearAlgebra.RING_BASIS_IMP_SUBSET
+def RING_DEPENDENT_EQ : thm := BLinearAlgebra.RING_DEPENDENT_EQ
+def RING_INDEPENDENT_EQ : thm := BLinearAlgebra.RING_INDEPENDENT_EQ
 def RING_MATROID_INDEPENDENT : thm := BLinearAlgebra.RING_MATROID_INDEPENDENT
 def RING_MATROID_SPANNING : thm := BLinearAlgebra.RING_MATROID_SPANNING
 def RING_MATROID_BASIS : thm := BLinearAlgebra.RING_MATROID_BASIS
@@ -1024,6 +1518,10 @@ def RING_SPANNING_ALT : thm := BLinearAlgebra.RING_SPANNING_ALT
 def RING_SPANNING_IMP_NONEMPTY : thm := BLinearAlgebra.RING_SPANNING_IMP_NONEMPTY
 def RING_INDEPENDENT_EMPTY : thm := BLinearAlgebra.RING_INDEPENDENT_EMPTY
 def RING_INDEPENDENT_NONZERO : thm := BLinearAlgebra.RING_INDEPENDENT_NONZERO
+def RING_DEPENDENT_SING : thm := BLinearAlgebra.RING_DEPENDENT_SING
+def RING_DEPENDENT_ONE : thm := BLinearAlgebra.RING_DEPENDENT_ONE
+def RING_INDEPENDENT_SING : thm := BLinearAlgebra.RING_INDEPENDENT_SING
+def RING_INDEPENDENT_ONE : thm := BLinearAlgebra.RING_INDEPENDENT_ONE
 def RING_DEPENDENT_MONO : thm := BLinearAlgebra.RING_DEPENDENT_MONO
 def RING_INDEPENDENT_MONO : thm := BLinearAlgebra.RING_INDEPENDENT_MONO
 
@@ -1035,10 +1533,14 @@ def RING_DEPENDENT_FINITE : thm := BFinitary.RING_DEPENDENT_FINITE
 def RING_INDEPENDENT_FINITE : thm := BFinitary.RING_INDEPENDENT_FINITE
 def RING_INDEPENDENT_FINITE_EQ : thm := BFinitary.RING_INDEPENDENT_FINITE_EQ
 def RING_DEPENDENT_SPAN_IMAGE : thm := BFinitary.RING_DEPENDENT_SPAN_IMAGE
+def HOMOGENEOUS_SYSTEM_NONTRIVIAL_SOLUTION : thm := BFinitary.HOMOGENEOUS_SYSTEM_NONTRIVIAL_SOLUTION
 def RING_SPAN_SUBSET_SUBRING_GENERATED : thm := BFinitary.RING_SPAN_SUBSET_SUBRING_GENERATED
+def RING_HOMOMORPHISMS_EQ_FROM_RING_SPAN : thm := BFinitary.RING_HOMOMORPHISMS_EQ_FROM_RING_SPAN
 def RING_SPAN_SUBSET_SUBFIELD_GENERATED : thm := BFinitary.RING_SPAN_SUBSET_SUBFIELD_GENERATED
 def RING_INDEPENDENT_INSERT : thm := BFinitary.RING_INDEPENDENT_INSERT
 def RING_INDEPENDENT_CARD_LE_SPANNING : thm := BFinitary.RING_INDEPENDENT_CARD_LE_SPANNING
+def RING_DEPENDENT_MONOMORPHIC_IMAGE : thm := BFinitary.RING_DEPENDENT_MONOMORPHIC_IMAGE
+def RING_INDEPENDENT_MONOMORPHIC_IMAGE : thm := BFinitary.RING_INDEPENDENT_MONOMORPHIC_IMAGE
 
 -- TowerLaw
 def RING_SPANNING_TRANS : thm := BTowerLaw.RING_SPANNING_TRANS
@@ -1059,11 +1561,29 @@ def FINITE_EXTENSION_ANY : thm := BFiniteExtension.FINITE_EXTENSION_ANY
 def FINITE_EXTENSION_ISOMORPHISM : thm := BFiniteExtension.FINITE_EXTENSION_ISOMORPHISM
 def FINITE_EXTENSION_TRANS : thm := BFiniteExtension.FINITE_EXTENSION_TRANS
 def FINITE_EXTENSION_TRANS_EQ : thm := BFiniteExtension.FINITE_EXTENSION_TRANS_EQ
+def FINITE_EXTENSION_SUBFIELD_GENERATED : thm := BFiniteExtension.FINITE_EXTENSION_SUBFIELD_GENERATED
+def FINITE_EXTENSION_EQ_IMAGE : thm := BFiniteExtension.FINITE_EXTENSION_EQ_IMAGE
+def extension_degree : thm := BFiniteExtension.extension_degree
+def EXTENSION_DEGREE_EQ_CARD_BASIS : thm := BFiniteExtension.EXTENSION_DEGREE_EQ_CARD_BASIS
+def EXTENSION_DEGREE_LE_INDEPENDENT_BOUND : thm := BFiniteExtension.EXTENSION_DEGREE_LE_INDEPENDENT_BOUND
+def RING_INDEPENDENT_CARD_LE_EXTENSION_DEGREE : thm := BFiniteExtension.RING_INDEPENDENT_CARD_LE_EXTENSION_DEGREE
+def EXTENSION_DEGREE_EQ_0 : thm := BFiniteExtension.EXTENSION_DEGREE_EQ_0
+def EXTENSION_DEGREE_TOWER_LAW : thm := BFiniteExtension.EXTENSION_DEGREE_TOWER_LAW
+def EXTENSION_DEGREE_ISOMORPHISM : thm := BFiniteExtension.EXTENSION_DEGREE_ISOMORPHISM
+def EXTENSION_DEGREE_REFL : thm := BFiniteExtension.EXTENSION_DEGREE_REFL
+def EXTENSION_DEGREE_EQ_1 : thm := BFiniteExtension.EXTENSION_DEGREE_EQ_1
+def EXTENSION_DEGREE_EQ_IMAGE : thm := BFiniteExtension.EXTENSION_DEGREE_EQ_IMAGE
+def PRIME_SUBFIELD_TOWER_LAW : thm := BFiniteExtension.PRIME_SUBFIELD_TOWER_LAW
+def EXTENSION_DEGREE_EQ_TOWER : thm := BFiniteExtension.EXTENSION_DEGREE_EQ_TOWER
+def EXTENSION_DEGREE_SUBFIELD_GENERATED_DIVIDES : thm := BFiniteExtension.EXTENSION_DEGREE_SUBFIELD_GENERATED_DIVIDES
+def FINITE_EXTENSION_HOMOMORPHIC_IMAGE : thm := BFiniteExtension.FINITE_EXTENSION_HOMOMORPHIC_IMAGE
 def finitely_generated_extension : thm := BFiniteExtension.finitely_generated_extension
 def FINITELY_GENERATED_IMP_FIELD_EXTENSION : thm := BFiniteExtension.FINITELY_GENERATED_IMP_FIELD_EXTENSION
 def FINITE_IMP_FINITELY_GENERATED_EXTENSION : thm := BFiniteExtension.FINITE_IMP_FINITELY_GENERATED_EXTENSION
+def FINITE_EXTENSION_SUBFIELD_GENERATORS : thm := BFiniteExtension.FINITE_EXTENSION_SUBFIELD_GENERATORS
 def FINITELY_GENERATED_EXTENSION : thm := BFiniteExtension.FINITELY_GENERATED_EXTENSION
 def FINITELY_GENERATED_EXTENSION_TRANS : thm := BFiniteExtension.FINITELY_GENERATED_EXTENSION_TRANS
+def SUBFIELD_GENERATED_INSERT_FRACTIONS : thm := BFiniteExtension.SUBFIELD_GENERATED_INSERT_FRACTIONS
 
 -- AlgebraicExtension
 def algebraic_over : thm := BAlgebraicExtension.algebraic_over
@@ -1117,6 +1637,30 @@ def CARD_LE_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtMisc.CARD_LE_ALGEBRAIC_EXT
 def CARD_EQ_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtMisc.CARD_EQ_ALGEBRAIC_EXTENSION
 def RING_AUTOMORPHISM_OF_ALGEBRAIC_EXTENSION : thm := BAlgebraicExtMisc.RING_AUTOMORPHISM_OF_ALGEBRAIC_EXTENSION
 def RING_AUTOMORPHISM_FROBENIUS_GEN : thm := BAlgebraicExtMisc.RING_AUTOMORPHISM_FROBENIUS_GEN
+def minimal_polynomial : thm := BMinimalPolynomial.minimal_polynomial
+def ALGEBRAIC_OVER_EXISTS_MONIC_IRREDUCIBLE : thm := BMinimalPolynomial.ALGEBRAIC_OVER_EXISTS_MONIC_IRREDUCIBLE
+def MINIMAL_POLYNOMIAL : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL
+def MINIMAL_POLYNOMIAL_IN_CARRIER : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_IN_CARRIER
+def MINIMAL_POLYNOMIAL_NONZERO : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_NONZERO
+def MINIMAL_POLYNOMIAL_MONIC : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_MONIC
+def MINIMAL_POLYNOMIAL_IRREDUCIBLE : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_IRREDUCIBLE
+def MINIMAL_POLYNOMIAL_VANISHES : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_VANISHES
+def MINIMAL_POLYNOMIAL_VANISHES_HOMOMORPHIC_IMAGE : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_VANISHES_HOMOMORPHIC_IMAGE
+def MINIMAL_POLYNOMIAL_DIVIDES : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_DIVIDES
+def MINIMAL_POLYNOMIAL_UNIQUE : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_UNIQUE
+def MINIMAL_POLYNOMIAL_ROOTS_IRREDUCIBLE : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_ROOTS_IRREDUCIBLE
+def MINIMAL_POLYNOMIAL_ASSOCIATES_IRREDUCIBLE : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_ASSOCIATES_IRREDUCIBLE
+def RING_DIVIDES_IRREDUCIBLE_ROOT : thm := BMinimalPolynomial.RING_DIVIDES_IRREDUCIBLE_ROOT
+def MINIMAL_POLYNOMIAL_DEG_LE : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_DEG_LE
+def EXTENSION_DEGREE_SIMPLE : thm := BMinimalPolynomial.EXTENSION_DEGREE_SIMPLE
+def MINIMAL_POLYNOMIAL_DEG_EQ_1 : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_DEG_EQ_1
+def MINIMAL_POLYNOMIAL_DEG_DIVIDES_EXTENSION_DEGREE : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_DEG_DIVIDES_EXTENSION_DEGREE
+def MINIMAL_POLYNOMIAL_DEG_LE_EXTENSION_DEGREE : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_DEG_LE_EXTENSION_DEGREE
+def RING_SIMPLE_ALGEBRAIC_EXTENSION_BASIS : thm := BMinimalPolynomial.RING_SIMPLE_ALGEBRAIC_EXTENSION_BASIS
+def MINIMAL_POLYNOMIAL_POWERS_HAS_SIZE : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_POWERS_HAS_SIZE
+def RING_INDEPENDENT_MINIMAL_POLYNOMIAL_POWERS : thm := BMinimalPolynomial.RING_INDEPENDENT_MINIMAL_POLYNOMIAL_POWERS
+def MINIMAL_POLYNOMIAL_POWERS_INDEPENDENT : thm := BMinimalPolynomial.MINIMAL_POLYNOMIAL_POWERS_INDEPENDENT
+def POWER_INJECTIVE_BELOW_MINPOLY_DEG : thm := BMinimalPolynomial.POWER_INJECTIVE_BELOW_MINPOLY_DEG
 
 -- AlgebraicField
 def ALGEBRAIC_OVER_0 : thm := BAlgebraicField.ALGEBRAIC_OVER_0
@@ -1137,6 +1681,7 @@ def FIELD_ALGEBRAIC_OVER : thm := BAlgebraicField.FIELD_ALGEBRAIC_OVER
 def SUBRING_SUBFIELD_ALGEBRAIC_OVER : thm := BAlgebraicField.SUBRING_SUBFIELD_ALGEBRAIC_OVER
 def ALGEBRAIC_OVER_TRANS : thm := BAlgebraicField.ALGEBRAIC_OVER_TRANS
 def ALGEBRAIC_OVER_ALGEBRAIC_EXTENSION : thm := BAlgebraicField.ALGEBRAIC_OVER_ALGEBRAIC_EXTENSION
+def ALGEBRAIC_OVER_POW_EQ : thm := BAlgebraicField.ALGEBRAIC_OVER_POW_EQ
 
 -- FiniteExt
 def FINITE_EQ_FIELD_EXTENSION : thm := BFiniteExt.FINITE_EQ_FIELD_EXTENSION
@@ -1144,7 +1689,15 @@ def HAS_SIZE_FINITE_EXTENSION : thm := BFiniteExt.HAS_SIZE_FINITE_EXTENSION
 def FINITE_FINITE_FIELD_EXTENSION : thm := BFiniteExt.FINITE_FINITE_FIELD_EXTENSION
 def CARD_FINITE_EXTENSION : thm := BFiniteExt.CARD_FINITE_EXTENSION
 def FIELD_EXTENSION_FROM_PRIME_SUBRING : thm := BFiniteExt.FIELD_EXTENSION_FROM_PRIME_SUBRING
+def FIELD_EXTENSION_SUBRING_GENERATED_FINITE : thm := BFiniteExt.FIELD_EXTENSION_SUBRING_GENERATED_FINITE
 def FINITE_INTEGRAL_DOMAIN_SIZE : thm := BFiniteExt.FINITE_INTEGRAL_DOMAIN_SIZE
+def FINITE_FIELD_PRIMITIVE_ELEMENT : thm := BFiniteExt.FINITE_FIELD_PRIMITIVE_ELEMENT
+def FINITE_INTEGRAL_DOMAIN_POW_CARD : thm := BFiniteFieldSubfields.FINITE_INTEGRAL_DOMAIN_POW_CARD
+def RING_ENDOMORPHISM_POW_CARD : thm := BFiniteFieldSubfields.RING_ENDOMORPHISM_POW_CARD
+def RING_POW_FIXPOINTS_BOUND : thm := BFiniteFieldSubfields.RING_POW_FIXPOINTS_BOUND
+def FINITE_SUBFIELD_EXPLICIT : thm := BFiniteFieldSubfields.FINITE_SUBFIELD_EXPLICIT
+def CARD_EXTENSION_DEGREE : thm := BFiniteFieldSubfields.CARD_EXTENSION_DEGREE
+def FINITE_FIELD_INTERMEDIATE_FIELD_EXPLICIT : thm := BFiniteFieldSubfields.FINITE_FIELD_INTERMEDIATE_FIELD_EXPLICIT
 
 -- AlgDepDefs
 def algebraically_dependent : thm := BAlgDepDefs.algebraically_dependent
@@ -1206,6 +1759,8 @@ def ALGEBRAICALLY_DEPENDENT_MONOMORPHIC_IMAGE : thm := BAlgebraicMatroid.ALGEBRA
 
 -- AlgebraicTrans
 def ALGEBRAIC_OVER_MONOMORPHIC_IMAGE : thm := BAlgebraicTrans.ALGEBRAIC_OVER_MONOMORPHIC_IMAGE
+def MINIMAL_POLYNOMIAL_MONOMORPHIC_IMAGE : thm := BAlgebraicTrans.MINIMAL_POLYNOMIAL_MONOMORPHIC_IMAGE
+def MINIMAL_POLYNOMIAL_SUBRING_GENERATED : thm := BAlgebraicTrans.MINIMAL_POLYNOMIAL_SUBRING_GENERATED
 def ALGEBRAIC_SPAN_MONOMORPHIC_IMAGE : thm := BAlgebraicTrans.ALGEBRAIC_SPAN_MONOMORPHIC_IMAGE
 def ALGEBRAICALLY_INDEPENDENT_TRANS : thm := BAlgebraicTrans.ALGEBRAICALLY_INDEPENDENT_TRANS
 def ALGEBRAICALLY_SPANNING_TRANS : thm := BAlgebraicTrans.ALGEBRAICALLY_SPANNING_TRANS
@@ -1245,18 +1800,26 @@ def ALGEBRAICALLY_CLOSED_FIELD_NO_PROPER_ALGEBRAIC_EXTENSION : thm := BAcfBasic.
 -- AcfSplit
 def ALGEBRAICALLY_CLOSED_FIELD_EQ_IRREDUCIBLES : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_EQ_IRREDUCIBLES
 def IRREDUCIBLE_ALGEBRAICALLY_CLOSED_FIELD : thm := BAcfSplit.IRREDUCIBLE_ALGEBRAICALLY_CLOSED_FIELD
+def ALGEBRAICALLY_CLOSED_FIELD_POLY_SPLITS : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_POLY_SPLITS
+def ALGEBRAICALLY_CLOSED_FIELD_PRIMITIVE_ROOT_OF_UNITY : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_PRIMITIVE_ROOT_OF_UNITY
+def ALGEBRAICALLY_CLOSED_FIELD_NTH_ROOT : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_NTH_ROOT
+def ALGEBRAICALLY_CLOSED_FIELD_ROOTS_OF_UNITY_IMAGE : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_ROOTS_OF_UNITY_IMAGE
+def ALGEBRAICALLY_CLOSED_FIELD_EQ_POLY_SPLITS : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_EQ_POLY_SPLITS
+def ALGEBRAICALLY_CLOSED_FIELD_EQ_POLY_SPLITS_ALT : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_EQ_POLY_SPLITS_ALT
 def ALGEBRAICALLY_CLOSED_FIELD_DECOMPOSE : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_DECOMPOSE
 def ALGEBRAICALLY_CLOSED_FIELD_SPLITS : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FIELD_SPLITS
 
 -- ClosedFieldSplits
-def ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT : thm := BClosedFieldSplits.ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT
 def ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS : thm := BClosedFieldSplits.ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS
+def ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT : thm := BClosedFieldSplits.ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT
 
 -- SimpleExtendHom
+def SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM_ROOT : thm := BSimpleExtendHom.SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM_ROOT
 def SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM : thm := BSimpleExtendHom.SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM
 
 -- ClosureExtendHom
 def ALGEBRAIC_CLOSURE_EXTEND_HOMOMORPHISM : thm := BClosureExtendHom.ALGEBRAIC_CLOSURE_EXTEND_HOMOMORPHISM
+def ALGEBRAIC_CLOSURE_EXTEND_HOMOMORPHISM_ROOT : thm := BClosureExtendHom.ALGEBRAIC_CLOSURE_EXTEND_HOMOMORPHISM_ROOT
 
 -- PolySquarefree
 def POLY_SQUAREFREE_ROOT_COUNT_EXPLICIT : thm := BPolySquarefree.POLY_SQUAREFREE_ROOT_COUNT_EXPLICIT
@@ -1269,8 +1832,265 @@ def ALGEBRAIC_CLOSURE_EXISTS_ID : thm := BAlgebraicClosureExistsId.ALGEBRAIC_CLO
 
 -- AlgebraicClosure
 def ALGEBRAIC_CLOSURE_EXISTS : thm := BAlgebraicClosure.ALGEBRAIC_CLOSURE_EXISTS
+def ALGEBRAIC_CLOSURE_EXISTS_BIGENOUGH : thm := BAlgebraicClosure.ALGEBRAIC_CLOSURE_EXISTS_BIGENOUGH
 def ALGEBRAIC_CLOSURE_UNIQUE_EXPLICIT : thm := BAlgebraicClosure.ALGEBRAIC_CLOSURE_UNIQUE_EXPLICIT
 def ALGEBRAIC_CLOSURE_UNIQUE : thm := BAlgebraicClosure.ALGEBRAIC_CLOSURE_UNIQUE
+-- SplitsOver
+def poly_splits_over : thm := BSplitsOver.poly_splits_over
+def POLY_SPLITS_OVER_EQ_IRREDUCIBLES : thm := BSplitsOver.POLY_SPLITS_OVER_EQ_IRREDUCIBLES
+def POLY_SPLITS_OVER_EXPLICIT : thm := BSplitsOver.POLY_SPLITS_OVER_EXPLICIT
+def POLY_SPLITS_OVER_EXTENSION : thm := BSplitsOver.POLY_SPLITS_OVER_EXTENSION
+def POLY_ROOT_BOUND_EXTENSION : thm := BSplitsOver.POLY_ROOT_BOUND_EXTENSION
+def POLY_SPLITS_OVER_SQUAREFREE_ROOT_COUNT : thm := BSplitsOver.POLY_SPLITS_OVER_SQUAREFREE_ROOT_COUNT
+def POLY_SPLITS_OVER_SEPARABLE_ROOT_COUNT : thm := BSplitsOver.POLY_SPLITS_OVER_SEPARABLE_ROOT_COUNT
+
+-- SplittingExtension
+def splitting_extension : thm := BSplittingExtension.splitting_extension
+def SPLITTING_EXTENSION_I : thm := BSplittingExtension.SPLITTING_EXTENSION_I
+def SPLITTING_IMP_FIELD_EXTENSION : thm := BSplittingExtension.SPLITTING_IMP_FIELD_EXTENSION
+def SPLITTING_EXTENSION_IN_POLY_RING : thm := BSplittingExtension.SPLITTING_EXTENSION_IN_POLY_RING
+def SPLITTING_EXTENSION_NONZERO : thm := BSplittingExtension.SPLITTING_EXTENSION_NONZERO
+def SPLITTING_EXTENSION_SPLITS : thm := BSplittingExtension.SPLITTING_EXTENSION_SPLITS
+def SPLITTING_EXTENSION_GENERATED : thm := BSplittingExtension.SPLITTING_EXTENSION_GENERATED
+def SPLITTING_IMP_FINITELY_GENERATED_EXTENSION : thm := BSplittingExtension.SPLITTING_IMP_FINITELY_GENERATED_EXTENSION
+def SPLITTING_IMP_ALGEBRAIC_EXTENSION : thm := BSplittingExtension.SPLITTING_IMP_ALGEBRAIC_EXTENSION
+def SPLITTING_IMP_FINITE_EXTENSION : thm := BSplittingExtension.SPLITTING_IMP_FINITE_EXTENSION
+def SPLITTING_EXTENSION_GENERATED_BY_ROOTS : thm := BSplittingExtension.SPLITTING_EXTENSION_GENERATED_BY_ROOTS
+def SPLITTING_EXTENSION_LIFT : thm := BSplittingExtension.SPLITTING_EXTENSION_LIFT
+def SPLITTING_EXTENSION_FACTOR : thm := BSplittingExtension.SPLITTING_EXTENSION_FACTOR
+def SPLITTING_EXTENSION_DEGREE_DIVIDES_FACT : thm := BSplittingExtension.SPLITTING_EXTENSION_DEGREE_DIVIDES_FACT
+def SPLITTING_EXTENSION_EXISTS_ID : thm := BSplittingExtension.SPLITTING_EXTENSION_EXISTS_ID
+def SPLITTING_EXTENSION_EXISTS : thm := BSplittingExtension.SPLITTING_EXTENSION_EXISTS
+def SPLITTING_EXTENSION_EXISTS_BIGENOUGH : thm := BSplittingExtension.SPLITTING_EXTENSION_EXISTS_BIGENOUGH
+def SPLITTING_EXTENSION_IMAGE : thm := BSplittingExtension.SPLITTING_EXTENSION_IMAGE
+def SPLITTING_EXTENSION_IMAGES_EQ : thm := BSplittingExtension.SPLITTING_EXTENSION_IMAGES_EQ
+
+-- SplittingUnique
+def SPLITTING_EXTENSION_UNIQUE_EXPLICIT : thm := BSplittingUnique.SPLITTING_EXTENSION_UNIQUE_EXPLICIT
+def SPLITTING_EXTENSION_EXTEND_HOMOMORPHISM : thm := BSplittingUnique.SPLITTING_EXTENSION_EXTEND_HOMOMORPHISM
+def SPLITTING_EXTENSION_UNIQUE : thm := BSplittingUnique.SPLITTING_EXTENSION_UNIQUE
+
+-- NormalExtension
+def normal_extension : thm := BNormalExtension.normal_extension
+def NORMAL_IMP_ALGEBRAIC_EXTENSION : thm := BNormalExtension.NORMAL_IMP_ALGEBRAIC_EXTENSION
+def NORMAL_IMP_FIELD_EXTENSION : thm := BNormalExtension.NORMAL_IMP_FIELD_EXTENSION
+def NORMAL_EXTENSION_I : thm := BNormalExtension.NORMAL_EXTENSION_I
+def NORMAL_EXTENSION_ISOMORPHISM : thm := BNormalExtension.NORMAL_EXTENSION_ISOMORPHISM
+def NORMAL_EXTENSION_REFL : thm := BNormalExtension.NORMAL_EXTENSION_REFL
+def ALGEBRAICALLY_CLOSED_IMP_NORMAL_EXTENSION : thm := BNormalExtension.ALGEBRAICALLY_CLOSED_IMP_NORMAL_EXTENSION
+def NORMAL_EXTENSION_EQ_MINIMAL_POLYNOMIALS_SPLIT : thm := BNormalExtension.NORMAL_EXTENSION_EQ_MINIMAL_POLYNOMIALS_SPLIT
+
+-- NormalEmbeddings
+def NORMAL_EXTENSION_IMAGES_EQ : thm := BNormalEmbeddings.NORMAL_EXTENSION_IMAGES_EQ
+def NORMAL_EXTENSION_EQ_EMBEDDINGS : thm := BNormalEmbeddings.NORMAL_EXTENSION_EQ_EMBEDDINGS
+
+-- FiniteNormal
+def SPLITTING_EXTENSION_IMP_NORMAL : thm := BFiniteNormal.SPLITTING_EXTENSION_IMP_NORMAL
+def NORMAL_EXTENSION_GENERATED_BY_ROOTS : thm := BFiniteNormal.NORMAL_EXTENSION_GENERATED_BY_ROOTS
+def SPLITTING_EQ_FINITE_NORMAL_EXTENSION : thm := BFiniteNormal.SPLITTING_EQ_FINITE_NORMAL_EXTENSION
+
+-- NormalInvariance
+def NORMAL_EXTENSION_ISOMORPHIC_IMAGE : thm := BNormalInvariance.NORMAL_EXTENSION_ISOMORPHIC_IMAGE
+def NORMAL_EXTENSION_INTERMEDIATE : thm := BNormalInvariance.NORMAL_EXTENSION_INTERMEDIATE
+def NORMAL_EXTENSION_COMPOSITUM : thm := BNormalInvariance.NORMAL_EXTENSION_COMPOSITUM
+
+-- PerfectField
+def perfect_field : thm := BPerfectField.perfect_field
+def PERFECT_FIELD_IMP_FIELD : thm := BPerfectField.PERFECT_FIELD_IMP_FIELD
+def PERFECT_FIELD_CHAR_0 : thm := BPerfectField.PERFECT_FIELD_CHAR_0
+def PERFECT_FIELD_POLY_DERIV_EQ_0 : thm := BPerfectField.PERFECT_FIELD_POLY_DERIV_EQ_0
+def PERFECT_FIELD_IMP_SEPARABLE : thm := BPerfectField.PERFECT_FIELD_IMP_SEPARABLE
+def PERFECT_FIELD_SEPARABLE_EQ_SQUAREFREE : thm := BPerfectField.PERFECT_FIELD_SEPARABLE_EQ_SQUAREFREE
+def PERFECT_FIELD_EQ_FROBENIUS_AUTOMORPHISM : thm := BPerfectField.PERFECT_FIELD_EQ_FROBENIUS_AUTOMORPHISM
+def PERFECT_FIELD_EQ_FROBENIUS_AUTOMORPHISM_GEN : thm := BPerfectField.PERFECT_FIELD_EQ_FROBENIUS_AUTOMORPHISM_GEN
+def PERFECT_FIELD_EPIMORPHIC_IMAGE : thm := BPerfectField.PERFECT_FIELD_EPIMORPHIC_IMAGE
+def PERFECT_FIELD_ISOMORPHIC_IMAGE : thm := BPerfectField.PERFECT_FIELD_ISOMORPHIC_IMAGE
+def ISOMORPHIC_RING_PERFECT_FIELD : thm := BPerfectField.ISOMORPHIC_RING_PERFECT_FIELD
+def FINITE_FIELD_IMP_PERFECT : thm := BPerfectField.FINITE_FIELD_IMP_PERFECT
+def ALGEBRAICALLY_CLOSED_FIELD_IMP_PERFECT : thm := BPerfectField.ALGEBRAICALLY_CLOSED_FIELD_IMP_PERFECT
+def PERFECT_FIELD_EQ_SEPARABLE_IRREDUCIBLES : thm := BPerfectField.PERFECT_FIELD_EQ_SEPARABLE_IRREDUCIBLES
+def PERFECT_FIELD_EQ_IRREDUCIBLE_DERIV_NONZERO : thm := BPerfectField.PERFECT_FIELD_EQ_IRREDUCIBLE_DERIV_NONZERO
+
+-- SeparableExtension
+def separable_element : thm := BSeparableExtension.separable_element
+def separable_extension : thm := BSeparableExtension.separable_extension
+def SEPARABLE_IMP_ALGEBRAIC_EXTENSION : thm := BSeparableExtension.SEPARABLE_IMP_ALGEBRAIC_EXTENSION
+def SEPARABLE_IMP_FIELD_EXTENSION : thm := BSeparableExtension.SEPARABLE_IMP_FIELD_EXTENSION
+def SEPARABLE_ELEMENT_IMP_ALGEBRAIC : thm := BSeparableExtension.SEPARABLE_ELEMENT_IMP_ALGEBRAIC
+def PERFECT_FIELD_IMP_SEPARABLE_ELEMENT : thm := BSeparableExtension.PERFECT_FIELD_IMP_SEPARABLE_ELEMENT
+def PERFECT_FIELD_IMP_SEPARABLE_EXTENSION : thm := BSeparableExtension.PERFECT_FIELD_IMP_SEPARABLE_EXTENSION
+def SEPARABLE_ELEMENT_CHAR0 : thm := BSeparableExtension.SEPARABLE_ELEMENT_CHAR0
+def SEPARABLE_EXTENSION_CHAR0 : thm := BSeparableExtension.SEPARABLE_EXTENSION_CHAR0
+def SEPARABLE_ELEMENT_IMAGE : thm := BSeparableExtension.SEPARABLE_ELEMENT_IMAGE
+def SEPARABLE_EXTENSION_ISOMORPHISM : thm := BSeparableExtension.SEPARABLE_EXTENSION_ISOMORPHISM
+def SEPARABLE_EXTENSION_REFL : thm := BSeparableExtension.SEPARABLE_EXTENSION_REFL
+def SEPARABLE_EXTENSION_SUBFIELD : thm := BSeparableExtension.SEPARABLE_EXTENSION_SUBFIELD
+def SEPARABLE_ELEMENT_INTERMEDIATE : thm := BSeparableExtension.SEPARABLE_ELEMENT_INTERMEDIATE
+def SEPARABLE_EXTENSION_INTERMEDIATE : thm := BSeparableExtension.SEPARABLE_EXTENSION_INTERMEDIATE
+
+-- SeparableRoots
+def POLY_SEPARABLE_ROOT_COUNT_EQ : thm := BSeparableRoots.POLY_SEPARABLE_ROOT_COUNT_EQ
+def POLY_INSEPARABLE_ROOTS_LT_DEG : thm := BSeparableRoots.POLY_INSEPARABLE_ROOTS_LT_DEG
+def POLY_SPLITS_OVER_SEPARABLE_ROOT_COUNT_EQ : thm := BSeparableRoots.POLY_SPLITS_OVER_SEPARABLE_ROOT_COUNT_EQ
+def POLY_SPLITS_OVER_DISTINCT_ROOTS : thm := BSeparableRoots.POLY_SPLITS_OVER_DISTINCT_ROOTS
+def POLY_SEPARABLE_ROOT_DERIV : thm := BSeparableRoots.POLY_SEPARABLE_ROOT_DERIV
+
+-- HomomorphismsIndependent
+def RING_HOMOMORPHISMS_INDEPENDENT : thm := BHomomorphismsIndependent.RING_HOMOMORPHISMS_INDEPENDENT
+def RING_HOMOMORPHISMS_INDEPENDENT_SET : thm := BHomomorphismsIndependent.RING_HOMOMORPHISMS_INDEPENDENT_SET
+
+-- HomExtensions
+def ring_homomorphism_extensions : thm := BHomExtensions.ring_homomorphism_extensions
+def RESTRICTION_IN_RING_HOMOMORPHISM_EXTENSIONS : thm := BHomExtensions.RESTRICTION_IN_RING_HOMOMORPHISM_EXTENSIONS
+def RING_HOMOMORPHISM_EXTENSIONS_NONEMPTY : thm := BHomExtensions.RING_HOMOMORPHISM_EXTENSIONS_NONEMPTY
+def RING_HOMOMORPHISM_EXTENSIONS_ROOT : thm := BHomExtensions.RING_HOMOMORPHISM_EXTENSIONS_ROOT
+def RING_HOMOMORPHISM_EXTENSIONS_SIMPLE : thm := BHomExtensions.RING_HOMOMORPHISM_EXTENSIONS_SIMPLE
+def FINITE_EXTENSION_NORMAL_CLOSURE : thm := BHomExtensions.FINITE_EXTENSION_NORMAL_CLOSURE
+
+-- HomExtensionsCount
+def RING_HOMOMORPHISM_EXTENSIONS_TOWER : thm := BHomExtensionsCount.RING_HOMOMORPHISM_EXTENSIONS_TOWER
+def CARD_RING_HOMOMORPHISM_EXTENSIONS_LE : thm := BHomExtensionsCount.CARD_RING_HOMOMORPHISM_EXTENSIONS_LE
+def HAS_SIZE_RING_HOMOMORPHISM_EXTENSIONS : thm := BHomExtensionsCount.HAS_SIZE_RING_HOMOMORPHISM_EXTENSIONS
+def CARD_EQ_RING_HOMOMORPHISM_EXTENSIONS : thm := BHomExtensionsCount.CARD_EQ_RING_HOMOMORPHISM_EXTENSIONS
+
+-- SeparableDegree
+def separable_degree : thm := BSeparableDegree.separable_degree
+def SEPARABLE_DEGREE : thm := BSeparableDegree.SEPARABLE_DEGREE
+def HAS_SIZE_SEPARABLE_DEGREE : thm := BSeparableDegree.HAS_SIZE_SEPARABLE_DEGREE
+def SEPARABLE_DEGREE_LE_EXTENSION_DEGREE : thm := BSeparableDegree.SEPARABLE_DEGREE_LE_EXTENSION_DEGREE
+def SEPARABLE_DEGREE_TOWER : thm := BSeparableDegree.SEPARABLE_DEGREE_TOWER
+def SEPARABLE_DEGREE_SIMPLE : thm := BSeparableDegree.SEPARABLE_DEGREE_SIMPLE
+def SEPARABLE_DEGREE_SIMPLE_LT : thm := BSeparableDegree.SEPARABLE_DEGREE_SIMPLE_LT
+def SEPARABLE_DEGREE_EQ_EXTENSION_DEGREE : thm := BSeparableDegree.SEPARABLE_DEGREE_EQ_EXTENSION_DEGREE
+def SEPARABLE_EXTENSION_SIMPLE : thm := BSeparableDegree.SEPARABLE_EXTENSION_SIMPLE
+def SEPARABLE_EXTENSION_TRANS : thm := BSeparableDegree.SEPARABLE_EXTENSION_TRANS
+def SEPARABLE_EXTENSION_TRANS_EQ : thm := BSeparableDegree.SEPARABLE_EXTENSION_TRANS_EQ
+def SEPARABLE_EXTENSION_GENERATED_BY_SEPARABLE : thm := BSeparableDegree.SEPARABLE_EXTENSION_GENERATED_BY_SEPARABLE
+
+-- SeparablePowers
+def SEPARABLE_ELEMENT_MONOMORPHIC_IMAGE : thm := BSeparablePowers.SEPARABLE_ELEMENT_MONOMORPHIC_IMAGE
+def SEPARABLE_ELEMENT_POW_IN_IMAGE : thm := BSeparablePowers.SEPARABLE_ELEMENT_POW_IN_IMAGE
+def SEPARABLE_ELEMENT_POW_EXISTS : thm := BSeparablePowers.SEPARABLE_ELEMENT_POW_EXISTS
+def MINIMAL_POLYNOMIAL_DEG_EQ_CHAR : thm := BSeparablePowers.MINIMAL_POLYNOMIAL_DEG_EQ_CHAR
+
+-- SeparableClosure
+def separable_closure : thm := BSeparableClosure.separable_closure
+def IN_SEPARABLE_CLOSURE : thm := BSeparableClosure.IN_SEPARABLE_CLOSURE
+def SUBFIELD_OF_SEPARABLE_CLOSURE : thm := BSeparableClosure.SUBFIELD_OF_SEPARABLE_CLOSURE
+def SEPARABLE_EXTENSION_SEPARABLE_CLOSURE : thm := BSeparableClosure.SEPARABLE_EXTENSION_SEPARABLE_CLOSURE
+def SEPARABLE_EXTENSION_EQ_SEPARABLE_CLOSURE : thm := BSeparableClosure.SEPARABLE_EXTENSION_EQ_SEPARABLE_CLOSURE
+
+-- PurelyInseparable
+def purely_inseparable_extension : thm := BPurelyInseparable.purely_inseparable_extension
+def PURELY_INSEPARABLE_IMP_ALGEBRAIC_EXTENSION : thm := BPurelyInseparable.PURELY_INSEPARABLE_IMP_ALGEBRAIC_EXTENSION
+def PURELY_INSEPARABLE_IMP_FIELD_EXTENSION : thm := BPurelyInseparable.PURELY_INSEPARABLE_IMP_FIELD_EXTENSION
+def PURELY_INSEPARABLE_OVER_SEPARABLE_CLOSURE : thm := BPurelyInseparable.PURELY_INSEPARABLE_OVER_SEPARABLE_CLOSURE
+def PURELY_INSEPARABLE_EXTENSION_PERFECT : thm := BPurelyInseparable.PURELY_INSEPARABLE_EXTENSION_PERFECT
+def PURELY_INSEPARABLE_EXTENSION_EQ_POW : thm := BPurelyInseparable.PURELY_INSEPARABLE_EXTENSION_EQ_POW
+def PURELY_INSEPARABLE_EXTENSION_TRANS : thm := BPurelyInseparable.PURELY_INSEPARABLE_EXTENSION_TRANS
+def PURELY_INSEPARABLE_OVER_FROBENIUS_IMAGE : thm := BPurelyInseparable.PURELY_INSEPARABLE_OVER_FROBENIUS_IMAGE
+
+-- PurelyInseparableDegree
+def PURELY_INSEPARABLE_EXTENSION_DEGREE : thm := BPurelyInseparableDegree.PURELY_INSEPARABLE_EXTENSION_DEGREE
+def SEPARABLE_DEGREE_EQ_1 : thm := BPurelyInseparableDegree.SEPARABLE_DEGREE_EQ_1
+def SEPARABLE_DEGREE_SEPARABLE_CLOSURE : thm := BPurelyInseparableDegree.SEPARABLE_DEGREE_SEPARABLE_CLOSURE
+
+-- InseparableDegree
+def inseparable_degree : thm := BInseparableDegree.inseparable_degree
+def EXTENSION_DEGREE_SEPARABLE_INSEPARABLE : thm := BInseparableDegree.EXTENSION_DEGREE_SEPARABLE_INSEPARABLE
+def INSEPARABLE_DEGREE_EQ_1 : thm := BInseparableDegree.INSEPARABLE_DEGREE_EQ_1
+def INSEPARABLE_DEGREE_CHAR_POWER : thm := BInseparableDegree.INSEPARABLE_DEGREE_CHAR_POWER
+def INSEPARABLE_DEGREE_TOWER : thm := BInseparableDegree.INSEPARABLE_DEGREE_TOWER
+
+-- FreeBasesField
+def FREE_BASIS_SPANNING_EQ : thm := BFreeBasesField.FREE_BASIS_SPANNING_EQ
+def FREE_BASIS_INDEPENDENT_EQ : thm := BFreeBasesField.FREE_BASIS_INDEPENDENT_EQ
+def FREE_BASIS_FIELD : thm := BFreeBasesField.FREE_BASIS_FIELD
+def FREE_BASIS_SIMPLE_EXTENSION : thm := BFreeBasesField.FREE_BASIS_SIMPLE_EXTENSION
+def FREE_BASIS_EXTENSION_DEGREE : thm := BFreeBasesField.FREE_BASIS_EXTENSION_DEGREE
+def FREE_BASIS_SPANNING_DEGREE : thm := BFreeBasesField.FREE_BASIS_SPANNING_DEGREE
+def FREE_BASIS_FROM_RING_BASIS : thm := BFreeBasesField.FREE_BASIS_FROM_RING_BASIS
+def FREE_BASIS_EXISTS : thm := BFreeBasesField.FREE_BASIS_EXISTS
+def FINITE_EXTENSION_FREE_BASIS : thm := BFreeBasesField.FINITE_EXTENSION_FREE_BASIS
+def FREE_BASIS_IMP_FINITE_EXTENSION : thm := BFreeBasesField.FREE_BASIS_IMP_FINITE_EXTENSION
+def FREE_BASIS_IMP_ALGEBRAIC : thm := BFreeBasesField.FREE_BASIS_IMP_ALGEBRAIC
+def PROJECTIVE_BASIS_EXISTS_FIELD : thm := BFreeBasesField.PROJECTIVE_BASIS_EXISTS_FIELD
+def PROJECTIVE_BASIS_IMP_FINITE_EXTENSION : thm := BFreeBasesField.PROJECTIVE_BASIS_IMP_FINITE_EXTENSION
+
+-- NormTraceBase
+def ALGEBRA_TRACE_NORM_BASE : thm := BNormTraceBase.ALGEBRA_TRACE_NORM_BASE
+def ALGEBRA_NORM_EQ_0 : thm := BNormTraceBase.ALGEBRA_NORM_EQ_0
+
+-- NormTraceIntermediate
+def ALGEBRA_TRACE_NORM_INTERMEDIATE : thm := BNormTraceIntermediate.ALGEBRA_TRACE_NORM_INTERMEDIATE
+def FIELD_CHARPOLY_INTERMEDIATE : thm := BNormTraceIntermediate.FIELD_CHARPOLY_INTERMEDIATE
+
+-- FieldCharpoly
+def FIELD_CHARPOLY_SIMPLE : thm := BFieldCharpoly.FIELD_CHARPOLY_SIMPLE
+def FIELD_CHARPOLY_MINIMAL_POLYNOMIAL : thm := BFieldCharpoly.FIELD_CHARPOLY_MINIMAL_POLYNOMIAL
+def ALGEBRA_TRACE_NORM_SIMPLE : thm := BFieldCharpoly.ALGEBRA_TRACE_NORM_SIMPLE
+def ALGEBRA_TRACE_NORM_MINIMAL_POLYNOMIAL : thm := BFieldCharpoly.ALGEBRA_TRACE_NORM_MINIMAL_POLYNOMIAL
+def ALGEBRA_NORM_MINIMAL_POLYNOMIAL : thm := BFieldCharpoly.ALGEBRA_NORM_MINIMAL_POLYNOMIAL
+def ALGEBRA_TRACE_MINIMAL_POLYNOMIAL : thm := BFieldCharpoly.ALGEBRA_TRACE_MINIMAL_POLYNOMIAL
+
+-- EmbeddingsPrelims
+def ALGEBRAICALLY_CLOSED_FIELD_SINGLE_ROOT : thm := BEmbeddingsPrelims.ALGEBRAICALLY_CLOSED_FIELD_SINGLE_ROOT
+def SUBFIELD_GENERATED_SIMPLE_ALGEBRAIC : thm := BEmbeddingsPrelims.SUBFIELD_GENERATED_SIMPLE_ALGEBRAIC
+def RING_HOMOMORPHISM_EXTENSIONS_SIMPLE_EQ : thm := BEmbeddingsPrelims.RING_HOMOMORPHISM_EXTENSIONS_SIMPLE_EQ
+def RING_HOMOMORPHISM_EXTENSIONS_TOWER_PRODUCT : thm := BEmbeddingsPrelims.RING_HOMOMORPHISM_EXTENSIONS_TOWER_PRODUCT
+def RING_HOMOMORPHISM_EXTENSIONS_TOWER_SUM : thm := BEmbeddingsPrelims.RING_HOMOMORPHISM_EXTENSIONS_TOWER_SUM
+
+-- EmbeddingDivides
+def MINIMAL_POLYNOMIAL_EMBEDDING_DIVIDES : thm := BEmbeddingDivides.MINIMAL_POLYNOMIAL_EMBEDDING_DIVIDES
+
+-- MinpolyEmbeddings
+def MINIMAL_POLYNOMIAL_EMBEDDINGS : thm := BMinpolyEmbeddings.MINIMAL_POLYNOMIAL_EMBEDDINGS
+
+-- MinpolyCoeffEmbeddings
+def MINIMAL_POLYNOMIAL_COEFF_EMBEDDINGS : thm := BMinpolyCoeffEmbeddings.MINIMAL_POLYNOMIAL_COEFF_EMBEDDINGS
+
+-- TraceNormEmbeddings
+def ALGEBRA_TRACE_NORM_EMBEDDINGS_GEN : thm := BTraceNormEmbeddings.ALGEBRA_TRACE_NORM_EMBEDDINGS_GEN
+def ALGEBRA_TRACE_NORM_EMBEDDINGS : thm := BTraceNormEmbeddings.ALGEBRA_TRACE_NORM_EMBEDDINGS
+def ALGEBRA_TRACE_NORM_EMBEDDINGS_SEPARABLE : thm := BTraceNormEmbeddings.ALGEBRA_TRACE_NORM_EMBEDDINGS_SEPARABLE
+
+-- TraceNormSpecial
+def ALGEBRA_TRACE_NORM_PURELY_INSEPARABLE : thm := BTraceNormSpecial.ALGEBRA_TRACE_NORM_PURELY_INSEPARABLE
+def ALGEBRA_TRACE_SURJECTIVE : thm := BTraceNormSpecial.ALGEBRA_TRACE_SURJECTIVE
+
+-- TraceNormTower
+def ALGEBRA_TRACE_NORM_TOWER : thm := BTraceNormTower.ALGEBRA_TRACE_NORM_TOWER
+
+-- PrimitiveSeparating
+def PRIMITIVE_ELEMENT_EQ_SEPARATING_EMBEDDINGS : thm := BPrimitiveSeparating.PRIMITIVE_ELEMENT_EQ_SEPARATING_EMBEDDINGS
+
+-- PrimitiveTwoGenerators
+def PRIMITIVE_ELEMENT_TWO_GENERATORS : thm := BPrimitiveTwoGenerators.PRIMITIVE_ELEMENT_TWO_GENERATORS
+
+-- PrimitiveElement
+def PRIMITIVE_ELEMENT_INFINITE : thm := BPrimitiveElement.PRIMITIVE_ELEMENT_INFINITE
+def PRIMITIVE_ELEMENT_GENSET : thm := BPrimitiveElement.PRIMITIVE_ELEMENT_GENSET
+def PRIMITIVE_ELEMENT_THEOREM : thm := BPrimitiveElement.PRIMITIVE_ELEMENT_THEOREM
+def PRIMITIVE_ELEMENT_THEOREM_EQ : thm := BPrimitiveElement.PRIMITIVE_ELEMENT_THEOREM_EQ
+def SEPARABLE_EXTENSION_BOUNDED_DEGREE : thm := BPrimitiveElement.SEPARABLE_EXTENSION_BOUNDED_DEGREE
+
+-- FiniteFieldExistence
+def ALGEBRAICALLY_CLOSED_FIELD_FINITE_SUBFIELD : thm := BFiniteFieldExistence.ALGEBRAICALLY_CLOSED_FIELD_FINITE_SUBFIELD
+def FINITE_FIELD_EXISTS : thm := BFiniteFieldExistence.FINITE_FIELD_EXISTS
+def FINITE_FIELD_EXISTS_GEN : thm := BFiniteFieldExistence.FINITE_FIELD_EXISTS_GEN
+
+-- VarPowSub
+def POLY_VAR_POW_SUB_VAR : thm := BVarPowSub.POLY_VAR_POW_SUB_VAR
+def POLY_EVAL_VAR_POW_SUB_VAR : thm := BVarPowSub.POLY_EVAL_VAR_POW_SUB_VAR
+def MONIC_VAR_POW_SUB_VAR : thm := BVarPowSub.MONIC_VAR_POW_SUB_VAR
+def POLY_SEPARABLE_VAR_POW_SUB_VAR : thm := BVarPowSub.POLY_SEPARABLE_VAR_POW_SUB_VAR
+def POLY_SEPARABLE_VAR_POW_SUB_CONST : thm := BVarPowSub.POLY_SEPARABLE_VAR_POW_SUB_CONST
+
+-- FiniteFieldUniqueness
+def KUMMER_ROOTS_SEPARABLY_CLOSED : thm := BFiniteFieldUniqueness.KUMMER_ROOTS_SEPARABLY_CLOSED
+def FINITE_FIELD_SPLITTING_EXTENSION : thm := BFiniteFieldUniqueness.FINITE_FIELD_SPLITTING_EXTENSION
+def ISOMORPHIC_FINITE_FIELDS : thm := BFiniteFieldUniqueness.ISOMORPHIC_FINITE_FIELDS
+
 /-- `needs "Library/fieldtheory.ml"`: already done by importing this module. -/
 def ensureFieldTheory : IO Unit := pure ()
 

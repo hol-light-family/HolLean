@@ -4427,13 +4427,15 @@ structure RealZpow where
   REAL_ZPOW_ADD : thm
   REAL_ZPOW_SUB : thm
   REAL_ZPOW_LE : thm
+  REAL_ZPOW_MONO : thm
   REAL_ZPOW_LT : thm
+  REAL_ZPOW_MONO_LT : thm
   REAL_ZPOW_EQ_0 : thm
   REAL_ABS_ZPOW : thm
   REAL_SGN_ZPOW : thm
   deriving Inhabited
 
-/-- int.ml 2634-2762.  `INT_ARITH` is the second version. -/
+/-- int.ml 2634-2793.  `INT_ARITH` is the second version. -/
 @[nospecialize]
 def setupRealZpow [HolBase]
     (INT_POS NUM_OF_INT_OF_NUM FORALL_INT_CASES WLOG_LE : thm)
@@ -4450,6 +4452,10 @@ def setupRealZpow [HolBase]
     (INT_OF_NUM_EQ INT_OF_NUM_ADD INT_OF_NUM_MUL : thm)
     (INT_MUL_LNEG INT_MUL_RNEG INT_ADD_SYM INT_SUB : thm)
     (SWAP_FORALL_THM RIGHT_FORALL_IMP_THM LEFT_IMP_EXISTS_THM LE_EXISTS : thm)
+    (REAL_MUL_RID REAL_LE_LMUL REAL_LT_LMUL REAL_POW_LE_1 REAL_POW_LT_1 : thm)
+    (INT_OF_NUM_OF_INT INT_SUB_LE INT_LT_IMP_LE : thm)
+    (REAL_ARITH' : term → IO (Except String thm))
+    (INT_ARITH_TAC ASM_INT_ARITH_TAC : tactic)
     (make_overloadable' : String → hol_type → IO (Except String Unit))
     (overload_interface' : String → term → IO (Except String Unit))
     (parse_as_infix : String × (Int × String) → IO Unit)
@@ -4466,6 +4472,7 @@ def setupRealZpow [HolBase]
     new_definition' (← q s)
   let INT_ARITH (t : term) : ExceptT String IO thm := INT_ARITH' t
   let ARITH_RULE (t : term) : ExceptT String IO thm := ARITH_RULE' t
+  let REAL_ARITH (t : term) : ExceptT String IO thm := REAL_ARITH' t
 
   make_overloadable "zpow" (← qty r"A->int->A")
   parse_as_infix ("zpow", (24, "left"))
@@ -4579,9 +4586,50 @@ def setupRealZpow [HolBase]
    r"!x n. &0 <= x ==> &0 <= x zpow n"
    (SIMP_TAC [FORALL_INT_CASES, REAL_ZPOW_POW, REAL_LE_INV_EQ, REAL_POW_LE])
 
+  let REAL_ZPOW_MONO ← prove
+   r"!x m n. &1 <= x /\ m <= n ==> x zpow m <= x zpow n"
+   (← do
+    -- OCaml evaluates the later REAL_ARITH first.
+    let r2 ← REAL_ARITH (← q r"&1 <= x:real ==> &0 <= x")
+    let r1 ← REAL_ARITH (← q r"&1 <= x:real ==> ~(x = &0)")
+    pure
+      (REPEAT STRIP_TAC THEN
+       SUBGOAL_THEN (← q r"n:int = m + (n - m)") SUBST1_TAC THENL
+        [INT_ARITH_TAC, ALL_TAC] THEN
+       ASM_SIMP_TAC [REAL_ZPOW_ADD, r1] THEN
+       GEN_REWRITE_TAC LAND_CONV [← GSYM REAL_MUL_RID] THEN
+       MATCH_MP_TAC REAL_LE_LMUL THEN
+       ASM_SIMP_TAC [REAL_ZPOW_LE, r2] THEN
+       SUBGOAL_THEN (← q r"n - m:int = &(num_of_int(n - m))") SUBST1_TAC THENL
+        [CONV_TAC SYM_CONV THEN MATCH_MP_TAC INT_OF_NUM_OF_INT THEN
+         ASM_REWRITE_TAC [INT_SUB_LE],
+         ASM_SIMP_TAC [REAL_ZPOW_NUM, REAL_POW_LE_1]]))
+
   let REAL_ZPOW_LT ← prove
    r"!x n. &0 < x ==> &0 < x zpow n"
    (SIMP_TAC [FORALL_INT_CASES, REAL_ZPOW_POW, REAL_LT_INV_EQ, REAL_POW_LT])
+
+  let REAL_ZPOW_MONO_LT ← prove
+   r"!x m n. &1 < x /\ m < n ==> x zpow m < x zpow n"
+   (← do
+    -- OCaml evaluates the later REAL_ARITH first.
+    let r2 ← REAL_ARITH (← q r"&1 < x:real ==> &0 < x")
+    let r1 ← REAL_ARITH (← q r"&1 < x:real ==> ~(x = &0)")
+    pure
+      (REPEAT STRIP_TAC THEN
+       SUBGOAL_THEN (← q r"n:int = m + (n - m)") SUBST1_TAC THENL
+        [INT_ARITH_TAC, ALL_TAC] THEN
+       ASM_SIMP_TAC [REAL_ZPOW_ADD, r1] THEN
+       GEN_REWRITE_TAC LAND_CONV [← GSYM REAL_MUL_RID] THEN
+       MATCH_MP_TAC REAL_LT_LMUL THEN
+       ASM_SIMP_TAC [REAL_ZPOW_LT, r2] THEN
+       SUBGOAL_THEN (← q r"n - m:int = &(num_of_int(n - m))") SUBST1_TAC THENL
+        [CONV_TAC SYM_CONV THEN MATCH_MP_TAC INT_OF_NUM_OF_INT THEN
+         ASM_SIMP_TAC [INT_SUB_LE, INT_LT_IMP_LE],
+         REWRITE_TAC [REAL_ZPOW_NUM] THEN MATCH_MP_TAC REAL_POW_LT_1 THEN
+         ASM_REWRITE_TAC [← GSYM INT_OF_NUM_EQ] THEN
+         ASM_SIMP_TAC [INT_OF_NUM_OF_INT, INT_SUB_LE, INT_LT_IMP_LE] THEN
+         ASM_INT_ARITH_TAC]))
 
   let REAL_ZPOW_EQ_0 ← prove
    r"!x n. x zpow n = &0 <=> x = &0 /\ ~(n = &0)"
@@ -4602,14 +4650,15 @@ def setupRealZpow [HolBase]
            REAL_ZPOW_2, REAL_ZPOW_ONE, REAL_ZPOW_NEG, REAL_ZPOW_MINUS1,
            REAL_ZPOW_ZERO, REAL_ZPOW_POW, REAL_INV_ZPOW, REAL_ZPOW_INV,
            REAL_ZPOW_ZPOW, REAL_ZPOW_MUL, REAL_ZPOW_DIV, REAL_ZPOW_ADD,
-           REAL_ZPOW_SUB, REAL_ZPOW_LE, REAL_ZPOW_LT, REAL_ZPOW_EQ_0,
+           REAL_ZPOW_SUB, REAL_ZPOW_LE, REAL_ZPOW_MONO, REAL_ZPOW_LT,
+           REAL_ZPOW_MONO_LT, REAL_ZPOW_EQ_0,
            REAL_ABS_ZPOW, REAL_SGN_ZPOW }
 
 /- ---------------------------------------------------------------------- -/
 /- Make sure we give priority to N.                                       -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `prioritize_num()` (int.ml 2765).  Session runs it last. -/
+/-- `prioritize_num()` (int.ml 2796).  Session runs it last. -/
 def prioritize_num (prioritize_overload : hol_type → IO Unit) :
     ExceptT String IO Unit := do
   liftM (prioritize_overload (← (mk_type "num" [] : ExceptT String IO hol_type)))

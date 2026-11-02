@@ -93,6 +93,7 @@ def met : HolMultiLib.Paracompact.MetThms :=
 
 /-- Everything HolMultiLib.Paracompact needs from the session. -/
 def deps : HolMultiLib.Paracompact.ParacompactDeps where
+  prioritize_real := Session.prioritize_real
   new_definition s := do
     let t ← ExceptT.mk (HolCore.Parser.parse_term s)
     ExceptT.mk (Session.new_definition t)
@@ -123,7 +124,7 @@ private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α 
 initialize BPCA : HolMultiLib.Paracompact.PCA ←
   ioB "setupPCA" (HolMultiLib.Paracompact.setupPCA deps).run
 
--- PCA (paracompact.ml 9-208)
+-- PCA (paracompact.ml 10-209)
 def countably_paracompact_space : thm := BPCA.countably_paracompact_space
 def PARACOMPACT_IMP_COUNTABLY_PARACOMPACT_SPACE : thm := BPCA.PARACOMPACT_IMP_COUNTABLY_PARACOMPACT_SPACE
 def METRIZABLE_IMP_COUNTABLY_PARACOMPACT_SPACE : thm := BPCA.METRIZABLE_IMP_COUNTABLY_PARACOMPACT_SPACE
@@ -132,28 +133,28 @@ def COUNTABLY_PARACOMPACT_IMP_DOWKER : thm := BPCA.COUNTABLY_PARACOMPACT_IMP_DOW
 initialize BPCB : HolMultiLib.Paracompact.PCB ←
   ioB "setupPCB" (HolMultiLib.Paracompact.setupPCB deps BPCA).run
 
--- PCB (paracompact.ml 209-419)
+-- PCB (paracompact.ml 210-420)
 def DOWKER_BACKWARD : thm := BPCB.DOWKER_BACKWARD
 def NORMAL_COUNTABLY_PARACOMPACT_CHARACTERIZATION : thm := BPCB.NORMAL_COUNTABLY_PARACOMPACT_CHARACTERIZATION
 
 initialize BPCC : HolMultiLib.Paracompact.PCC ←
   ioB "setupPCC" (HolMultiLib.Paracompact.setupPCC deps BPCA).run
 
--- PCC (paracompact.ml 420-769)
+-- PCC (paracompact.ml 421-770)
 def COUNTABLY_PARACOMPACT_SPACE_CLOSED_SUBSET : thm := BPCC.COUNTABLY_PARACOMPACT_SPACE_CLOSED_SUBSET
 def COUNTABLY_PARACOMPACT_SPACE_PRODUCT_COMPACT : thm := BPCC.COUNTABLY_PARACOMPACT_SPACE_PRODUCT_COMPACT
 
 initialize BPCD : HolMultiLib.Paracompact.PCD ←
   ioB "setupPCD" (HolMultiLib.Paracompact.setupPCD deps).run
 
--- PCD (paracompact.ml 765-1211)
+-- PCD (paracompact.ml 766-1212)
 def CLOSED_G_DELTA_IN_SIGMA_LOCALLY_FINITE_BASE : thm := BPCD.CLOSED_G_DELTA_IN_SIGMA_LOCALLY_FINITE_BASE
 def URYSOHN_FUNCTION_G_DELTA : thm := BPCD.URYSOHN_FUNCTION_G_DELTA
 
 initialize BPCE : HolMultiLib.Paracompact.PCE ←
   ioB "setupPCE" (HolMultiLib.Paracompact.setupPCE deps).run
 
--- PCE (paracompact.ml 1209-1541)
+-- PCE (paracompact.ml 1210-1542)
 def OPEN_SIGMA_LF_CLOSURE_COVER : thm := BPCE.OPEN_SIGMA_LF_CLOSURE_COVER
 def NORMAL_SPACE_SIGMA_LOCALLY_FINITE_BASE : thm := BPCE.NORMAL_SPACE_SIGMA_LOCALLY_FINITE_BASE
 def CLOSED_GDELTA_IN_SIGMA_LF_BASE : thm := BPCE.CLOSED_GDELTA_IN_SIGMA_LF_BASE
@@ -161,25 +162,25 @@ def CLOSED_GDELTA_IN_SIGMA_LF_BASE : thm := BPCE.CLOSED_GDELTA_IN_SIGMA_LF_BASE
 initialize BPCF : HolMultiLib.Paracompact.PCF ←
   ioB "setupPCF" (HolMultiLib.Paracompact.setupPCF deps).run
 
--- PCF (paracompact.ml 1539-1831)
+-- PCF (paracompact.ml 1540-1832)
 def URYSOHN_FUNCTION_CLOSED_GDELTA : thm := BPCF.URYSOHN_FUNCTION_CLOSED_GDELTA
 
 initialize BPCG : HolMultiLib.Paracompact.PCG ←
   ioB "setupPCG" (HolMultiLib.Paracompact.setupPCG deps BPCE BPCF).run
 
--- PCG (paracompact.ml 1828-2988)
+-- PCG (paracompact.ml 1829-2989)
 def NAGATA_SMIRNOV_METRIZATION : thm := BPCG.NAGATA_SMIRNOV_METRIZATION
 
 initialize BPCH : HolMultiLib.Paracompact.PCH ←
   ioB "setupPCH" (HolMultiLib.Paracompact.setupPCH deps).run
 
--- PCH (paracompact.ml 2987-3262)
+-- PCH (paracompact.ml 2988-3263)
 def PARACOMPACT_LOCALLY_METRIZABLE_SIGMA_LF_BASE : thm := BPCH.PARACOMPACT_LOCALLY_METRIZABLE_SIGMA_LF_BASE
 
 initialize BPCI : HolMultiLib.Paracompact.PCI ←
   ioB "setupPCI" (HolMultiLib.Paracompact.setupPCI deps BPCG BPCH).run
 
--- PCI (paracompact.ml 3256-3769)
+-- PCI (paracompact.ml 3257-3770)
 def collectionwise_normal_space : thm := BPCI.collectionwise_normal_space
 def PARACOMPACT_HAUSDORFF_IMP_COLLECTIONWISE_NORMAL : thm := BPCI.PARACOMPACT_HAUSDORFF_IMP_COLLECTIONWISE_NORMAL
 def COLLECTIONWISE_NORMAL_IMP_NORMAL : thm := BPCI.COLLECTIONWISE_NORMAL_IMP_NORMAL
@@ -194,7 +195,7 @@ def SMIRNOV_METRIZATION_SECOND_COUNTABLE : thm := BPCI.SMIRNOV_METRIZATION_SECON
 initialize BPCJ : HolMultiLib.Paracompact.PCJ ←
   ioB "setupPCJ" (HolMultiLib.Paracompact.setupPCJ deps).run
 
--- PCJ (paracompact.ml 3754-4069)
+-- PCJ (paracompact.ml 3755-4070)
 def SHRINK_DISJOINT_LATER : thm := BPCJ.SHRINK_DISJOINT_LATER
 def SHRINK_SEQUENCE_LOCALLY_FINITE : thm := BPCJ.SHRINK_SEQUENCE_LOCALLY_FINITE
 def SHRINK_SEQUENCE_COVERS : thm := BPCJ.SHRINK_SEQUENCE_COVERS
@@ -205,7 +206,7 @@ def POINT_FINITE_CP_CLOSED_IMP_LOCALLY_FINITE : thm := BPCJ.POINT_FINITE_CP_CLOS
 initialize BPCK : HolMultiLib.Paracompact.PCK ←
   ioB "setupPCK" (HolMultiLib.Paracompact.setupPCK deps BPCJ).run
 
--- PCK (paracompact.ml 4067-4477)
+-- PCK (paracompact.ml 4068-4478)
 def CLF_OPEN_CLOSURE_IMP_LF_CLOSED : thm := BPCK.CLF_OPEN_CLOSURE_IMP_LF_CLOSED
 def CP_INDEXED_CLOSED_COVER : thm := BPCK.CP_INDEXED_CLOSED_COVER
 def CP_IMPLIES_NORMAL_SPACE : thm := BPCK.CP_IMPLIES_NORMAL_SPACE
@@ -213,14 +214,14 @@ def CP_IMPLIES_NORMAL_SPACE : thm := BPCK.CP_IMPLIES_NORMAL_SPACE
 initialize BPCL : HolMultiLib.Paracompact.PCL ←
   ioB "setupPCL" (HolMultiLib.Paracompact.setupPCL deps).run
 
--- PCL (paracompact.ml 4474-4683)
+-- PCL (paracompact.ml 4475-4684)
 def DOWKER_DISCRETE_EXPANSION : thm := BPCL.DOWKER_DISCRETE_EXPANSION
 def CLOSED_REFINEMENT_IMP_PARACOMPACT : thm := BPCL.CLOSED_REFINEMENT_IMP_PARACOMPACT
 
 initialize BPCM : HolMultiLib.Paracompact.PCM ←
   ioB "setupPCM" (HolMultiLib.Paracompact.setupPCM deps BPCJ BPCK BPCL).run
 
--- PCM (paracompact.ml 4684-5976)
+-- PCM (paracompact.ml 4685-5977)
 def MICHAEL_PARACOMPACT : thm := BPCM.MICHAEL_PARACOMPACT
 def MICHAEL_PARACOMPACT_EQ : thm := BPCM.MICHAEL_PARACOMPACT_EQ
 def PARACOMPACT_SPACE_CLOSED_MAP_IMAGE : thm := BPCM.PARACOMPACT_SPACE_CLOSED_MAP_IMAGE

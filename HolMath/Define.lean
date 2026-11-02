@@ -325,7 +325,7 @@ structure DefineAdmissibleThms where
         admissible(<<) (\f (k,x). a(x) <= k /\ k <= b(x) /\ p f x)
                        (\(k,x). s x) (\f (k,x). h f x k)
         ==> admissible(<<) p s (\f x. nsum(a(x)..b(x)) (h f x))`.
-      `nsum` is at `:num` (iterate.ml 1288).
+      `nsum` is at `:num` (iterate.ml 1326).
       `REWRITE_TAC[admissible; FORALL_PAIR_THM] THEN REPEAT STRIP_TAC THEN
       MATCH_MP_TAC NSUM_EQ_NUMSEG THEN ASM_MESON_TAC[]`. -/
   ADMISSIBLE_NSUM : thm
@@ -334,7 +334,7 @@ structure DefineAdmissibleThms where
         admissible(<<) (\f (k,x). a(x) <= k /\ k <= b(x) /\ p f x)
                        (\(k,x). s x) (\f (k,x). h f x k)
         ==> admissible(<<) p s (\f x. sum(a(x)..b(x)) (h f x))`.
-      `sum` is at `:real` (iterate.ml 1984), NOT interchangeable with `nsum`.
+      `sum` is at `:real` (iterate.ml 2089), NOT interchangeable with `nsum`.
       `REWRITE_TAC[admissible; FORALL_PAIR_THM] THEN REPEAT STRIP_TAC THEN
       MATCH_MP_TAC SUM_EQ_NUMSEG THEN ASM_MESON_TAC[]`. -/
   ADMISSIBLE_SUM : thm

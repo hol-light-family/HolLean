@@ -73,6 +73,7 @@ structure Iter where
   ITER_ADD_POINTLESS : thm
   ITER_MUL : thm
   ITER_FIXPOINT : thm
+  ITER_INTERTWINE_INVARIANT : thm
   ORDER_EXISTENCE_GEN : thm
   ORDER_EXISTENCE_ITER : thm
   ORDER_EXISTENCE_CARD : thm
@@ -131,6 +132,13 @@ def setupIter [HolBase] (D : IterDeps) :
   let ITER_FIXPOINT ← prove
    r"!f n x. f x = x ==> ITER n f x = x"
    (GEN_TAC THEN INDUCT_TAC THEN ASM_SIMP_TAC [ITER_ALT])
+
+  let ITER_INTERTWINE_INVARIANT ← prove
+   r"!s (f:B->C) h k.
+        (!x. x IN s ==> h x IN s) /\ (!x. x IN s ==> f(h x) = k(f x))
+        ==> !n x. x IN s
+                  ==> ITER n h x IN s /\ f(ITER n h x) = ITER n k (f x)"
+   (REPEAT GEN_TAC THEN STRIP_TAC THEN INDUCT_TAC THEN ASM_SIMP_TAC [ITER])
 
   /- --------------------------------------------------------------------- -/
   /- Existence of "order" or "characteristic" in a general setting.        -/
@@ -255,7 +263,8 @@ def setupIter [HolBase] (D : IterDeps) :
 
   -- @@RETURN BEGIN
   return { ITER, ITER_POINTLESS, ITER_ALT, ITER_ALT_POINTLESS, ITER_1, ITER_ADD,
-           ITER_ADD_POINTLESS, ITER_MUL, ITER_FIXPOINT, ORDER_EXISTENCE_GEN,
+           ITER_ADD_POINTLESS, ITER_MUL, ITER_FIXPOINT, ITER_INTERTWINE_INVARIANT,
+           ORDER_EXISTENCE_GEN,
            ORDER_EXISTENCE_ITER, ORDER_EXISTENCE_CARD, ORDER_EXISTENCE_FINITE }
   -- @@RETURN END
 

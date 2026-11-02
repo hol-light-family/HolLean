@@ -62,6 +62,7 @@ structure MetThms where
   deriving Inhabited
 
 structure SpecialTopologiesDeps where
+  prioritize_real : IO Unit
   -- definitions
   new_definition : String → ExceptT String IO thm
   -- decision procedures
@@ -78,7 +79,7 @@ structure SpecialTopologiesDeps where
   met : MetThms
 
 /- ------------------------------------------------------------------------- -/
-/- The indiscrete (trivial) topology.  (specialtopologies.ml 11-224)          -/
+/- The indiscrete (trivial) topology.  (specialtopologies.ml 12-225)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure STI where
@@ -128,6 +129,8 @@ def setupSTI [HolBase] (D : SpecialTopologiesDeps) : ExceptT String IO STI := do
         path_connected_in, path_connected_space, path_in, t0_space, topology_tybij,
         topspace, .. } := D.met
   -- @@SCOPE END
+
+  D.prioritize_real
 
   let indiscrete_topology ← new_definition
    r"indiscrete_topology (u:A->bool) = topology {{},u}"
@@ -354,7 +357,7 @@ def setupSTI [HolBase] (D : SpecialTopologiesDeps) : ExceptT String IO STI := do
            PATH_CONNECTED_IN_INDISCRETE_TOPOLOGY, NEIGHBOURHOOD_BASE_OF_INDISCRETE_TOPOLOGY }
 
 /- ------------------------------------------------------------------------- -/
-/- Finite-complement (cofinite) topology.  (specialtopologies.ml 225-412)     -/
+/- Finite-complement (cofinite) topology.  (specialtopologies.ml 226-413)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure STF where
@@ -585,7 +588,7 @@ def setupSTF [HolBase] (D : SpecialTopologiesDeps) : ExceptT String IO STF := do
 
 /- ------------------------------------------------------------------------- -/
 /- Countable-complement (cocountable) topology.                              -/
-/- (specialtopologies.ml 413-591)                                            -/
+/- (specialtopologies.ml 414-592)                                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure STC where

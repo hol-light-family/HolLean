@@ -12,7 +12,7 @@
   order.
 
   transc.ml rebinds SYM_CANON_CONV and EXT_CONV (analysis.ml) and
-  DIVISION_0, REAL_DIV_SQRT, SQRT_EVEN_POW2 and SUM_DIFFS (core); the
+  REAL_DIV_SQRT and SQRT_EVEN_POW2 (core); the
   versions here are transc.ml's, so with `Session` or
   `SessionLibrary.Analysis` also open, qualify them.
 -/
@@ -647,7 +647,7 @@ def rsum : thm := BArcSinCos.rsum
 def defint : thm := BArcSinCos.defint
 
 -- Division
-def DIVISION_0 : thm := BDivision.DIVISION_0
+def DIVISION_0_DSIZE : thm := BDivision.DIVISION_0_DSIZE
 def DIVISION_1 : thm := BDivision.DIVISION_1
 def DIVISION_SINGLE : thm := BDivision.DIVISION_SINGLE
 def DIVISION_LHS : thm := BDivision.DIVISION_LHS
@@ -722,7 +722,7 @@ def GAUGE_MIN_FINITE : thm := BSpike.GAUGE_MIN_FINITE
 def INTEGRABLE_CAUCHY : thm := BSpike.INTEGRABLE_CAUCHY
 
 -- Limit
-def SUM_DIFFS : thm := BLimit.SUM_DIFFS
+def PSUM_DIFFS : thm := BLimit.PSUM_DIFFS
 def RSUM_BOUND : thm := BLimit.RSUM_BOUND
 def RSUM_DIFF_BOUND : thm := BLimit.RSUM_DIFF_BOUND
 def INTEGRABLE_LIMIT : thm := BLimit.INTEGRABLE_LIMIT

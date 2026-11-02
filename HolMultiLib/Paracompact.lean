@@ -91,6 +91,7 @@ structure MetThms where
   deriving Inhabited
 
 structure ParacompactDeps where
+  prioritize_real : IO Unit
   -- definitions
   new_definition : String → ExceptT String IO thm
   -- decision procedures
@@ -118,7 +119,7 @@ structure ParacompactDeps where
 
 /- ------------------------------------------------------------------------- -/
 /- Countably paracompact spaces; the forward Dowker direction.               -/
-/- (paracompact.ml 9-208)                                                    -/
+/- (paracompact.ml 10-209)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCA where
@@ -141,6 +142,8 @@ def setupPCA [HolBase] (D : ParacompactDeps) : ExceptT String IO PCA := do
         OPEN_IN_UNIONS, UPPER_BOUND_FINITE_SET, locally_finite_in, paracompact_space,
         .. } := D.met
   -- @@SCOPE END
+
+  D.prioritize_real
 
   /- Engelking Section 5.2: Countably paracompact space -/
   let countably_paracompact_space ← new_definition
@@ -346,7 +349,7 @@ def setupPCA [HolBase] (D : ParacompactDeps) : ExceptT String IO PCA := do
 
 /- ------------------------------------------------------------------------- -/
 /- The backward Dowker direction and the Dowker characterization.            -/
-/- (paracompact.ml 209-419)                                                  -/
+/- (paracompact.ml 210-420)                                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCB where
@@ -594,7 +597,7 @@ def setupPCB [HolBase] (D : ParacompactDeps) (BA : PCA) : ExceptT String IO PCB 
 
 /- ------------------------------------------------------------------------- -/
 /- Closed subspaces and products with a compact space.                       -/
-/- (paracompact.ml 420-769)                                                  -/
+/- (paracompact.ml 421-770)                                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCC where
@@ -970,7 +973,7 @@ def setupPCC [HolBase] (D : ParacompactDeps) (BA : PCA) : ExceptT String IO PCC 
 
 /- ------------------------------------------------------------------------- -/
 /- Nagata-Smirnov metrization (Munkres Sections 39-40): closed G_delta sets  -/
-/- and Urysohn functions.  (paracompact.ml 765-1211)                         -/
+/- and Urysohn functions.  (paracompact.ml 766-1212)                         -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCD where
@@ -1452,7 +1455,7 @@ def setupPCD [HolBase] (D : ParacompactDeps) : ExceptT String IO PCD := do
 
 /- ------------------------------------------------------------------------- -/
 /- Closure covers, normality and closed G_delta sets from a sigma-locally-   -/
-/- finite base.  (paracompact.ml 1209-1541)                                  -/
+/- finite base.  (paracompact.ml 1210-1542)                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCE where
@@ -1812,7 +1815,7 @@ def setupPCE [HolBase] (D : ParacompactDeps) : ExceptT String IO PCE := do
 
 /- ------------------------------------------------------------------------- -/
 /- Munkres Lemma 40.2: closed G_delta sets are zero sets.                    -/
-/- (paracompact.ml 1539-1831)                                                -/
+/- (paracompact.ml 1540-1832)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCF where
@@ -2133,7 +2136,7 @@ def setupPCF [HolBase] (D : ParacompactDeps) : ExceptT String IO PCF := do
   pure { URYSOHN_FUNCTION_CLOSED_GDELTA }
 
 /- ------------------------------------------------------------------------- -/
-/- Nagata-Smirnov metrization (hard direction).  (paracompact.ml 1828-2988)  -/
+/- Nagata-Smirnov metrization (hard direction).  (paracompact.ml 1829-2989)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCG where
@@ -3335,7 +3338,7 @@ def setupPCG [HolBase] (D : ParacompactDeps) (BE : PCE) (BF : PCF) :
 
 /- ------------------------------------------------------------------------- -/
 /- Paracompact Hausdorff locally metrizable spaces have a sigma-locally-     -/
-/- finite base.  (paracompact.ml 2987-3262)                                  -/
+/- finite base.  (paracompact.ml 2988-3263)                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCH where
@@ -3634,7 +3637,7 @@ def setupPCH [HolBase] (D : ParacompactDeps) : ExceptT String IO PCH := do
 
 /- ------------------------------------------------------------------------- -/
 /- Collectionwise normal spaces (Engelking 5.1.17-5.1.18); Smirnov           -/
-/- metrization.  (paracompact.ml 3256-3769)                                  -/
+/- metrization.  (paracompact.ml 3257-3770)                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCI where
@@ -4178,10 +4181,10 @@ def setupPCI [HolBase] (D : ParacompactDeps) (BG : PCG) (BH : PCH) :
 
 /- ------------------------------------------------------------------------- -/
 /- Michael's characterization of paracompactness and sharper closed map      -/
-/- image theorem: shrinking lemmas.  (paracompact.ml 3754-4069)              -/
+/- image theorem: shrinking lemmas.  (paracompact.ml 3755-4070)              -/
 /-                                                                           -/
 /- E. Michael, "Another note on paracompact spaces",                         -/
-/- Proc. Amer. Math. Soc. 8 (1957), 822-828.                                 -/
+/- Proc. Amer. Math. Soc. 8 (1958), 822-828.                                 -/
 /-                                                                           -/
 /- Michael proved that a regular space is paracompact iff every open         -/
 /- cover has a closure-preserving closed refinement. This gives a            -/
@@ -4519,7 +4522,7 @@ def setupPCJ [HolBase] (D : ParacompactDeps) : ExceptT String IO PCJ := do
 
 /- ------------------------------------------------------------------------- -/
 /- Munkres Lemma 41.3 and Michael's Lemma 1; CP closed refinements give      -/
-/- normality.  (paracompact.ml 4067-4477)                                    -/
+/- normality.  (paracompact.ml 4068-4478)                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCK where
@@ -4961,7 +4964,7 @@ def setupPCK [HolBase] (D : ParacompactDeps) (BJ : PCJ) : ExceptT String IO PCK 
 
 /- ------------------------------------------------------------------------- -/
 /- Dowker's expansion lemma; LF closed refinements give paracompactness.     -/
-/- (paracompact.ml 4474-4683)                                                -/
+/- (paracompact.ml 4475-4684)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCL where
@@ -5195,7 +5198,7 @@ def setupPCL [HolBase] (D : ParacompactDeps) : ExceptT String IO PCL := do
 /- ------------------------------------------------------------------------- -/
 /- Michael's theorem: a regular space is paracompact iff every open cover    -/
 /- has a closure-preserving closed refinement; closed map images.            -/
-/- (paracompact.ml 4684-5976)                                                -/
+/- (paracompact.ml 4685-5977)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCM where

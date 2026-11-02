@@ -7,7 +7,7 @@ a group of tests, exclude its file from the build - there is no flag to set.
 
 WHAT THIS FILE VERIFIES, ABOVE ALL.  int.ml is loaded (hol_lib.ml 98) with
 `prioritize_int()` (int.ml 70) in force for its whole 2700-line body, and closes
-with `prioritize_num()` (int.ml 2765) - the VERY LAST effect - to RESTORE `num`
+with `prioritize_num()` (int.ml 2796) - the VERY LAST effect - to RESTORE `num`
 as the default for overloaded symbols.  The two assertions this file exists for:
 
   1. THE PARSER PRIORITY REVERTS TO `num`.  After the int layer has fully run
@@ -86,7 +86,7 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
 /- With the real layer already built (above), reading `ensurePrioritizeNum`-/
 /- now drives ONLY the int chain in int.ml's own order: it forces the       -/
 /- whole int layer under `prioritize_int` (int.ml 70), then runs            -/
-/- `prioritize_num()` (int.ml 2765) LAST, so afterwards the parser default  -/
+/- `prioritize_num()` (int.ml 2796) LAST, so afterwards the parser default  -/
 /- is `num`, matching a fully loaded int.ml.  This `#eval` MUST come before -/
 /- every schematic parse below.                                            -/
 /- ---------------------------------------------------------------------- -/
@@ -361,7 +361,7 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
    sixteen-entry net - so it folds `&2 + &3` but FAILS on a compound whose
    arguments are not yet numerals, exactly as the OCaml does.
    `INT_REDUCE_CONV` is `DEPTH_CONV INT_RED_CONV` and folds the compound.
-   NOTE THE `:int` ANNOTATIONS BELOW ARE LOAD-BEARING.  int.ml 2765 calls
+   NOTE THE `:int` ANNOTATIONS BELOW ARE LOAD-BEARING.  int.ml 2796 calls
    `prioritize_num`, so by the end of the file a schematic `&`-numeral term
    parses as `num` - see (1) above - and an INTEGER reducer then correctly
    declines to touch it.  An earlier draft of this test omitted the annotation

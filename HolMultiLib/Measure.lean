@@ -68,7 +68,7 @@ structure QDetThms where
    DET_PERMUTE_COLUMNS DET_PERMUTE_ROWS DET_TRANSP DET_UPPERTRIANGULAR IN_DIMINDEX_SWAP
    LAMBDA_BETA_PERM ORTHOGONAL_TRANSFORMATION_EXISTS ORTHOGONAL_TRANSFORMATION_INVERSE_o
    ORTHOGONAL_TRANSFORMATION_NEGATION PRODUCT_1 PRODUCT_2 PRODUCT_3 PRODUCT_4
-   RANK_EQ_FULL_DET diagonal_matrix : thm)
+   RANK_EQ_FULL_DET diagonal_matrix INDUCT_MATRIX_ELEMENTARY_ALT : thm)
   deriving Inhabited
 
 structure QIntegrationThms1 where
@@ -219,7 +219,7 @@ structure QPathsThms where
 structure QPermutationsThms where
   (CARD_PERMUTATIONS PERMUTES_FINITE_SURJECTIVE PERMUTES_I PERMUTES_INJECTIVE
    PERMUTES_INVERSE_EQ PERMUTES_SURJECTIVE PERMUTES_SWAP SWAP_GALOIS SWAP_IDEMPOTENT
-   permutes swap : thm)
+   permutes swap REAL_ABS_SIGN_PERMUTATION : thm)
   deriving Inhabited
 
 structure QPolytopeThms where
@@ -234,7 +234,7 @@ structure QSessionThms where
    INFINITE_IMAGE INFINITE_SUPERSET integer INTERS_SUBSET_STRONG INTERS_UNIONS
    INTERSECTION_OF LE_SUC_LT LEFT_OR_FORALL_THM lt_c LT_TRANS MONO_NOT MULT_2 MULT_EQ_0
    MULT_SYM PAIR PAIRWISE_CHAIN_UNIONS PAIRWISE_EMPTY PAIRWISE_UNION PCROSS_UNIONS
-   REAL_ABS_LE REAL_ABS_SIGN REAL_ARCH_LT REAL_ARCH_POW REAL_BOUNDS_LT
+   REAL_ABS_LE REAL_ARCH_LT REAL_ARCH_POW REAL_BOUNDS_LT
    REAL_EQ_ADD_RCANCEL REAL_EQ_MUL_RCANCEL real_INFINITE REAL_LET_ANTISYM REAL_LT_ADDL
    REAL_LT_SUP_FINITE real_min REAL_NEG_GT0 REAL_POW_EQ_1 REAL_POW_EQ_ODD
    REAL_POW_EQ_ODD_EQ REAL_POW_LE2_REV REAL_POW_ZERO real_sgn REAL_SQRT_POW_2
@@ -5713,13 +5713,10 @@ def setupMSP [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC) 
 
 /- ------------------------------------------------------------------------- -/
 /- Induction over matrix row operations, elementary matrices and           -/
-/- elementary linear maps.  (measure.ml 4256-4580)                          -/
+/- elementary linear maps.  (measure.ml 4256-4333)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSQ where
-  INDUCT_MATRIX_ROW_OPERATIONS : thm
-  INDUCT_MATRIX_ELEMENTARY : thm
-  INDUCT_MATRIX_ELEMENTARY_ALT : thm
   INDUCT_LINEAR_ELEMENTARY : thm
   deriving Inhabited
 
@@ -5728,281 +5725,21 @@ set_option maxRecDepth 16384 in
 @[nospecialize]
 def setupMSQ [HolBase] (D : MeasureDeps) : ExceptT String IO MSQ := do
   -- @@SCOPE BEGIN
-  let { AND_FORALL_THM, ARITH, CART_EQ, COND_ID, COND_RAND, COND_RATOR, CONJ_ASSOC,
-        DE_MORGAN_THM, EQ_IMP, EQ_SYM_EQ, EQ_TRANS, ETA_AX, FINITE_RULES, .. } :=
-        D.ig.dv.dg.pt.cvx.core1
-  let { FUN_EQ_THM, IMP_CONJ, IMP_CONJ_ALT, .. } := D.ig.dv.dg.pt.cvx.core2
-  let { IN_INSERT, IN_NUMSEG, LAMBDA_BETA, LEFT_IMP_EXISTS_THM, MONO_AND, MONO_FORALL,
-        MONO_IMP, NOT_FORALL_THM, NOT_IMP, NOT_IN_EMPTY, REAL_ADD_RID, .. } :=
-        D.ig.dv.dg.pt.cvx.core3
-  let { REAL_MUL_LID, REAL_MUL_LINV, REAL_MUL_LZERO, REAL_MUL_RID, REAL_MUL_RZERO, SUBSET,
-        .. } := D.ig.dv.dg.pt.cvx.core5
-  let { num_INDUCTION, o_DEF, SUM_0, SUM_CLAUSES, SUM_DELTA, SUM_SUPERSET, .. } :=
-        D.ig.dv.dg.pt.cvx.core6
-  let { MATRIX_VECTOR_MUL_ASSOC, MATRIX_VECTOR_MUL_LINEAR, MATRIX_WORKS, .. } :=
-        D.ig.dv.dg.pt.cvx.vec2
-  let { matrix_mul, matrix_vector_mul, row, VEC_COMPONENT, VECTOR_ADD_COMPONENT,
-        VECTOR_MUL_COMPONENT, .. } := D.ig.dv.dg.pt.cvx.vec4
-  let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, ASM_MESON_TAC, REAL_ARITH, REAL_ARITH_TAC,
-        REAL_FIELD, REAL_RING, .. } := D.ig.dv.dg.pt.cvx
-  let { LE_0, .. } := D.ig.dv.dg.qsession
-  let { COND_COMPONENT, .. } := D.ig.qvec
-  let { IN_DIMINDEX_SWAP, .. } := D.qdet
+  let { CART_EQ, COND_RAND, COND_RATOR, DE_MORGAN_THM, EQ_IMP, EQ_SYM_EQ, EQ_TRANS, ETA_AX,
+        FINITE_RULES, .. } := D.ig.dv.dg.pt.cvx.core1
+  let { FUN_EQ_THM, .. } := D.ig.dv.dg.pt.cvx.core2
+  let { IN_INSERT, IN_NUMSEG, LAMBDA_BETA, MONO_AND, MONO_FORALL, MONO_IMP, NOT_IN_EMPTY,
+        REAL_ADD_RID, .. } := D.ig.dv.dg.pt.cvx.core3
+  let { REAL_MUL_LID, REAL_MUL_LZERO, SUBSET, .. } := D.ig.dv.dg.pt.cvx.core5
+  let { o_DEF, SUM_0, SUM_CLAUSES, SUM_DELTA, SUM_SUPERSET, .. } := D.ig.dv.dg.pt.cvx.core6
+  let { MATRIX_VECTOR_MUL_ASSOC, MATRIX_VECTOR_MUL_LINEAR, MATRIX_WORKS, .. } := D.ig.dv.dg.pt.cvx.vec2
+  let { matrix_vector_mul, row, VEC_COMPONENT, .. } := D.ig.dv.dg.pt.cvx.vec4
+  let { ASM_ARITH_TAC, .. } := D.ig.dv.dg.pt.cvx
+  let { IN_DIMINDEX_SWAP, INDUCT_MATRIX_ELEMENTARY_ALT, .. } := D.qdet
   let { swap, SWAP_GALOIS, .. } := D.qpermutations
   let { SUM_EQ_NUMSEG, .. } := D.qsession
   let { mat, .. } := D.qvec
   -- @@SCOPE END
-
-  let INDUCT_MATRIX_ROW_OPERATIONS ← prove
-   r"!P:real^N^N->bool.
-        (!A i. 1 <= i /\ i <= dimindex(:N) /\ row i A = vec 0 ==> P A) /\
-        (!A. (!i j. 1 <= i /\ i <= dimindex(:N) /\
-                    1 <= j /\ j <= dimindex(:N) /\ ~(i = j)
-                    ==> A$i$j = &0) ==> P A) /\
-        (!A m n. P A /\ 1 <= m /\ m <= dimindex(:N) /\
-                 1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
-                 ==> P(lambda i j. A$i$(swap(m,n) j))) /\
-        (!A m n c. P A /\ 1 <= m /\ m <= dimindex(:N) /\
-                   1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
-                   ==> P(lambda i. if i = m then row m A + c % row n A
-                                   else row i A))
-        ==> !A. P A"
-   (GEN_TAC THEN
-    DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "zero_row") MP_TAC) THEN
-    DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "diagonal") MP_TAC) THEN
-    DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "swap_cols") (LABEL_TAC "row_op")) THEN
-    SUBGOAL_THEN
-     (← q r"!k A:real^N^N.
-        (!i j. 1 <= i /\ i <= dimindex(:N) /\
-               k <= j /\ j <= dimindex(:N) /\ ~(i = j)
-               ==> A$i$j = &0)
-        ==> P A")
-     (fun th => tactic_of do
-        pure (GEN_TAC THEN MATCH_MP_TAC th THEN
-              EXISTS_TAC (← q r"dimindex(:N) + 1") THEN ARITH_TAC)) THEN
-    MATCH_MP_TAC num_INDUCTION THEN CONJ_TAC THENL
-     [REPEAT STRIP_TAC THEN USE_THEN "diagonal" MATCH_MP_TAC THEN
-      REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-      ASM_REWRITE_TAC [LE_0],
-      ALL_TAC] THEN
-    X_GEN_TAC (← q r"k:num") THEN DISCH_THEN (LABEL_TAC "ind_hyp") THEN
-    DISJ_CASES_THEN2 SUBST1_TAC ASSUME_TAC (← ARITH_RULE (← q r"k = 0 \/ 1 <= k")) THEN
-    ASM_REWRITE_TAC [ARITH] THEN
-    ASM_CASES_TAC (← q r"k <= dimindex(:N)") THENL
-     [ALL_TAC,
-      REPEAT STRIP_TAC THEN REMOVE_THEN "ind_hyp" MATCH_MP_TAC THEN
-      ASM_ARITH_TAC] THEN
-    SUBGOAL_THEN
-     (← q r"!A:real^N^N.
-        ~(A$k$k = &0) /\
-        (!i j. 1 <= i /\ i <= dimindex (:N) /\
-               SUC k <= j /\ j <= dimindex (:N) /\ ~(i = j)
-               ==> A$i$j = &0)
-        ==> P A")
-    (LABEL_TAC "nonzero_hyp") THENL
-     [ALL_TAC,
-      X_GEN_TAC (← q r"A:real^N^N") THEN DISCH_TAC THEN
-      ASM_CASES_TAC (← q r"row k (A:real^N^N) = vec 0") THENL
-       [REMOVE_THEN "zero_row" MATCH_MP_TAC THEN ASM_MESON_TAC [],
-        ALL_TAC] THEN
-      FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV [CART_EQ]) THEN
-      SIMP_TAC [VEC_COMPONENT, row, LAMBDA_BETA] THEN
-      REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, LEFT_IMP_EXISTS_THM] THEN
-      X_GEN_TAC (← q r"l:num") THEN STRIP_TAC THEN
-      ASM_CASES_TAC (← q r"l:num = k") THENL
-       [REMOVE_THEN "nonzero_hyp" MATCH_MP_TAC THEN ASM_MESON_TAC [],
-        ALL_TAC] THEN
-      REMOVE_THEN "swap_cols" (MP_TAC o SPECL
-       [← q r"(lambda i j. (A:real^N^N)$i$swap(k,l) j):real^N^N",
-        ← q r"k:num", ← q r"l:num"]) THEN
-      ASM_SIMP_TAC [LAMBDA_BETA] THEN ANTS_TAC THENL
-       [ALL_TAC,
-        MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
-        SIMP_TAC [CART_EQ, LAMBDA_BETA] THEN
-        REPEAT STRIP_TAC THEN REWRITE_TAC [swap] THEN
-        REPEAT (COND_CASES_TAC THEN ASM_SIMP_TAC [LAMBDA_BETA])] THEN
-      REMOVE_THEN "nonzero_hyp" MATCH_MP_TAC THEN
-      ONCE_REWRITE_TAC [← ARITH_RULE (← q r"SUC k <= i <=> 1 <= i /\ SUC k <= i")] THEN
-      ASM_SIMP_TAC [LAMBDA_BETA] THEN
-      ASM_REWRITE_TAC [swap] THEN MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"] THEN
-      STRIP_TAC THEN SUBGOAL_THEN (← q r"l:num <= k") ASSUME_TAC THENL
-       [FIRST_X_ASSUM (MP_TAC o SPECL [← q r"k:num", ← q r"l:num"]) THEN
-        ASM_REWRITE_TAC [] THEN ARITH_TAC,
-        ALL_TAC] THEN
-      REPEAT (COND_CASES_TAC THEN ASM_REWRITE_TAC []) THEN
-      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN
-      ASM_ARITH_TAC] THEN
-     SUBGOAL_THEN
-     (← q r"!l A:real^N^N.
-        ~(A$k$k = &0) /\
-        (!i j. 1 <= i /\ i <= dimindex (:N) /\
-               SUC k <= j /\ j <= dimindex (:N) /\ ~(i = j)
-               ==> A$i$j = &0) /\
-        (!i. l <= i /\ i <= dimindex(:N) /\ ~(i = k) ==> A$i$k = &0)
-        ==> P A")
-     MP_TAC THENL
-      [ALL_TAC,
-       DISCH_THEN (MP_TAC o SPEC (← q r"dimindex(:N) + 1")) THEN
-       REWRITE_TAC [CONJ_ASSOC, ← ARITH_RULE (← q r"~(n + 1 <= i /\ i <= n)")]] THEN
-     MATCH_MP_TAC num_INDUCTION THEN CONJ_TAC THENL
-      [GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-       DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "main") (LABEL_TAC "aux")) THEN
-       USE_THEN "ind_hyp" MATCH_MP_TAC THEN
-       MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"] THEN STRIP_TAC THEN
-       ASM_CASES_TAC (← q r"j:num = k") THENL
-        [ASM_REWRITE_TAC [] THEN USE_THEN "aux" MATCH_MP_TAC THEN ASM_ARITH_TAC,
-         REMOVE_THEN "main" MATCH_MP_TAC THEN ASM_ARITH_TAC],
-      ALL_TAC] THEN
-    X_GEN_TAC (← q r"l:num") THEN DISCH_THEN (LABEL_TAC "inner_hyp") THEN
-    GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-    DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "main") (LABEL_TAC "aux")) THEN
-    ASM_CASES_TAC (← q r"l:num = k") THENL
-     [REMOVE_THEN "inner_hyp" MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN
-      REPEAT STRIP_TAC THEN REMOVE_THEN "aux" MATCH_MP_TAC THEN ASM_ARITH_TAC,
-      ALL_TAC] THEN
-    DISJ_CASES_TAC (← ARITH_RULE (← q r"l = 0 \/ 1 <= l")) THENL
-     [REMOVE_THEN "ind_hyp" MATCH_MP_TAC THEN
-      MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"] THEN STRIP_TAC THEN
-      ASM_CASES_TAC (← q r"j:num = k") THENL
-       [ASM_REWRITE_TAC [] THEN REMOVE_THEN "aux" MATCH_MP_TAC THEN ASM_ARITH_TAC,
-        REMOVE_THEN "main" MATCH_MP_TAC THEN ASM_ARITH_TAC],
-      ALL_TAC] THEN
-    ASM_CASES_TAC (← q r"l <= dimindex(:N)") THENL
-     [ALL_TAC,
-      REMOVE_THEN "inner_hyp" MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN
-      ASM_ARITH_TAC] THEN
-    REMOVE_THEN "inner_hyp" (MP_TAC o SPECL
-     [← q r"(lambda i. if i = l then row l (A:real^N^N) + --(A$l$k/A$k$k) % row k A
-                else row i A):real^N^N"]) THEN
-    ANTS_TAC THENL
-     [SUBGOAL_THEN (← q r"!i. l <= i ==> 1 <= i") ASSUME_TAC THENL
-       [ASM_ARITH_TAC, ALL_TAC] THEN
-      ONCE_REWRITE_TAC [← ARITH_RULE (← q r"SUC k <= j <=> 1 <= j /\ SUC k <= j")] THEN
-      ASM_SIMP_TAC [LAMBDA_BETA, row, COND_COMPONENT,
-                    VECTOR_ADD_COMPONENT, VECTOR_MUL_COMPONENT] THEN
-      ASM_SIMP_TAC [← REAL_FIELD (← q r"~(y = &0) ==> x + --(x / y) * y = &0")] THEN
-      REWRITE_TAC [AND_FORALL_THM] THEN X_GEN_TAC (← q r"i:num") THEN
-      ASM_CASES_TAC (← q r"i:num = l") THEN ASM_REWRITE_TAC [] THENL
-       [REPEAT STRIP_TAC THEN
-        MATCH_MP_TAC (← REAL_RING (← q r"x = &0 /\ y = &0 ==> x + z * y = &0")) THEN
-        CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC,
-        REPEAT STRIP_TAC THEN REMOVE_THEN "aux" MATCH_MP_TAC THEN ASM_ARITH_TAC],
-      ALL_TAC] THEN
-    DISCH_TAC THEN REMOVE_THEN "row_op" (MP_TAC o SPECL
-     [← q r"(lambda i. if i = l then row l A + --(A$l$k / A$k$k) % row k A
-                else row i (A:real^N^N)):real^N^N",
-      ← q r"l:num", ← q r"k:num", ← q r"(A:real^N^N)$l$k / A$k$k"]) THEN
-    ASM_REWRITE_TAC [] THEN MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
-    ASM_SIMP_TAC [CART_EQ, LAMBDA_BETA, VECTOR_ADD_COMPONENT,
-                  VECTOR_MUL_COMPONENT, row, COND_COMPONENT] THEN
-    REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
-    REAL_ARITH_TAC)
-
-  let INDUCT_MATRIX_ELEMENTARY ← prove
-   r"!P:real^N^N->bool.
-        (!A B. P A /\ P B ==> P(A ** B)) /\
-        (!A i. 1 <= i /\ i <= dimindex(:N) /\ row i A = vec 0 ==> P A) /\
-        (!A. (!i j. 1 <= i /\ i <= dimindex(:N) /\
-                    1 <= j /\ j <= dimindex(:N) /\ ~(i = j)
-                    ==> A$i$j = &0) ==> P A) /\
-        (!m n. 1 <= m /\ m <= dimindex(:N) /\
-               1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
-               ==> P(lambda i j. (mat 1:real^N^N)$i$(swap(m,n) j))) /\
-        (!m n c. 1 <= m /\ m <= dimindex(:N) /\
-                 1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
-                 ==> P(lambda i j. if i = m /\ j = n then c
-                                   else if i = j then &1 else &0))
-        ==> !A. P A"
-   (GEN_TAC THEN
-    DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-    DISCH_THEN (fun th =>
-      MATCH_MP_TAC INDUCT_MATRIX_ROW_OPERATIONS THEN MP_TAC th) THEN
-    REPEAT (MATCH_MP_TAC MONO_AND THEN CONJ_TAC) THEN REWRITE_TAC [] THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (X_GEN_TAC (← q r"A:real^N^N") THEN MP_TAC th)) THEN
-    REPEAT (MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
-    DISCH_THEN (fun th => STRIP_TAC THEN MP_TAC th) THEN ASM_REWRITE_TAC [] THEN
-    UNDISCH_TAC (← q r"(P:real^N^N->bool) A") THENL
-     [REWRITE_TAC [← GSYM IMP_CONJ], REWRITE_TAC [← GSYM IMP_CONJ_ALT]] THEN
-    DISCH_THEN (ANTE_RES_THEN MP_TAC) THEN MATCH_MP_TAC EQ_IMP THEN
-    AP_TERM_TAC THEN REWRITE_TAC [CART_EQ] THEN
-    X_GEN_TAC (← q r"i:num") THEN STRIP_TAC THEN
-    X_GEN_TAC (← q r"j:num") THEN STRIP_TAC THEN
-    ASM_SIMP_TAC [CART_EQ, LAMBDA_BETA, matrix_mul, row] THENL
-     [ASM_SIMP_TAC [mat, IN_DIMINDEX_SWAP, LAMBDA_BETA] THEN
-      ONCE_REWRITE_TAC [COND_RAND] THEN
-      SIMP_TAC [SUM_DELTA, REAL_MUL_RZERO, REAL_MUL_RID] THEN
-      COND_CASES_TAC THEN REWRITE_TAC [] THEN
-      RULE_ASSUM_TAC (REWRITE_RULE [swap, IN_NUMSEG]) THEN ASM_ARITH_TAC,
-      ALL_TAC] THEN
-    ASM_CASES_TAC (← q r"i:num = m") THEN ASM_REWRITE_TAC [] THENL
-     [ALL_TAC,
-      ONCE_REWRITE_TAC [COND_RAND] THEN ONCE_REWRITE_TAC [COND_RATOR] THEN
-      REWRITE_TAC [REAL_MUL_LZERO] THEN
-      GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [EQ_SYM_EQ] THEN
-      ASM_SIMP_TAC [SUM_DELTA, LAMBDA_BETA, IN_NUMSEG, REAL_MUL_LID]] THEN
-    ASM_SIMP_TAC [VECTOR_ADD_COMPONENT, VECTOR_MUL_COMPONENT, LAMBDA_BETA] THEN
-    MATCH_MP_TAC EQ_TRANS THEN
-    EXISTS_TAC
-      (← q r"sum {m,n} (\k. (if k = n then c else if m = k then &1 else &0) *
-                    (A:real^N^N)$k$j)") THEN
-    CONJ_TAC THENL
-     [MATCH_MP_TAC SUM_SUPERSET THEN
-      ASM_SIMP_TAC [SUBSET, IN_INSERT, NOT_IN_EMPTY, DE_MORGAN_THM,
-                    IN_NUMSEG, REAL_MUL_LZERO] THEN
-      ASM_ARITH_TAC,
-      ASM_SIMP_TAC [SUM_CLAUSES, FINITE_RULES, IN_INSERT, NOT_IN_EMPTY] THEN
-      REAL_ARITH_TAC])
-
-  let INDUCT_MATRIX_ELEMENTARY_ALT ← prove
-   r"!P:real^N^N->bool.
-        (!A B. P A /\ P B ==> P(A ** B)) /\
-        (!A i. 1 <= i /\ i <= dimindex(:N) /\ row i A = vec 0 ==> P A) /\
-        (!A. (!i j. 1 <= i /\ i <= dimindex(:N) /\
-                    1 <= j /\ j <= dimindex(:N) /\ ~(i = j)
-                    ==> A$i$j = &0) ==> P A) /\
-        (!m n. 1 <= m /\ m <= dimindex(:N) /\
-               1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
-               ==> P(lambda i j. (mat 1:real^N^N)$i$(swap(m,n) j))) /\
-        (!m n. 1 <= m /\ m <= dimindex(:N) /\
-               1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
-               ==> P(lambda i j. if i = m /\ j = n \/ i = j then &1 else &0))
-        ==> !A. P A"
-   (GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC INDUCT_MATRIX_ELEMENTARY THEN
-    ASM_REWRITE_TAC [] THEN REPEAT STRIP_TAC THEN
-    ASM_CASES_TAC (← q r"c = &0") THENL
-     [FIRST_X_ASSUM (fun th => tactic_of do
-        pure (MATCH_MP_TAC th THEN
-              MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"])) THEN
-      ASM_SIMP_TAC [LAMBDA_BETA, COND_ID],
-      ALL_TAC] THEN
-    SUBGOAL_THEN
-     (← q r"(lambda i j. if i = m /\ j = n then c else if i = j then &1 else &0) =
-  ((lambda i j. if i = j then if j = n then inv c else &1 else &0):real^N^N) **
-    ((lambda i j. if i = m /\ j = n \/ i = j then &1 else &0):real^N^N) **
-    ((lambda i j. if i = j then if j = n then c else &1 else &0):real^N^N)")
-    SUBST1_TAC THENL
-     [ALL_TAC,
-      REPEAT (MATCH_MP_TAC (← ASSUME (← q r"!A B:real^N^N. P A /\ P B ==> P(A ** B)")) THEN
-             CONJ_TAC) THEN
-      ASM_SIMP_TAC [] THEN FIRST_X_ASSUM (fun th => tactic_of do
-        pure (MATCH_MP_TAC th THEN
-              MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"])) THEN
-      ASM_SIMP_TAC [LAMBDA_BETA]] THEN
-    SIMP_TAC [CART_EQ, matrix_mul, LAMBDA_BETA] THEN
-    X_GEN_TAC (← q r"i:num") THEN STRIP_TAC THEN
-    X_GEN_TAC (← q r"j:num") THEN STRIP_TAC THEN
-    ASM_SIMP_TAC [SUM_DELTA, IN_NUMSEG, ← REAL_ARITH
-         (← q r"(if p then &1 else &0) * (if q then c else &0) =
-        if q then if p then c else &0 else &0")] THEN
-    REWRITE_TAC [← REAL_ARITH
-     (← q r"(if p then x else &0) * y = (if p then x * y else &0)")] THEN
-    GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [EQ_SYM_EQ] THEN
-    ASM_SIMP_TAC [SUM_DELTA, IN_NUMSEG] THEN
-    ASM_CASES_TAC (← q r"i:num = m") THEN ASM_REWRITE_TAC [] THEN
-    ASM_CASES_TAC (← q r"j:num = n") THEN ASM_REWRITE_TAC [REAL_MUL_LID, EQ_SYM_EQ] THEN
-    ASM_CASES_TAC (← q r"i:num = n") THEN
-    ASM_SIMP_TAC [REAL_MUL_LINV, REAL_MUL_LID, REAL_MUL_RZERO])
 
   let INDUCT_LINEAR_ELEMENTARY ← prove
    r"!P. (!f g. linear f /\ linear g /\ P f /\ P g ==> P(f o g)) /\
@@ -6082,12 +5819,11 @@ def setupMSQ [HolBase] (D : MeasureDeps) : ExceptT String IO MSQ := do
                       IN_NUMSEG, REAL_MUL_LZERO] THEN
         ASM_ARITH_TAC]])
 
-  pure { INDUCT_MATRIX_ROW_OPERATIONS, INDUCT_MATRIX_ELEMENTARY,
-         INDUCT_MATRIX_ELEMENTARY_ALT, INDUCT_LINEAR_ELEMENTARY }
+  pure { INDUCT_LINEAR_ELEMENTARY }
 
 /- ------------------------------------------------------------------------- -/
 /- Coordinate swaps and shears: Galois lemmas and the measure of a sheared -/
-/- interval.  (measure.ml 4581-4780)                                        -/
+/- interval.  (measure.ml 4334-4533)                                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSR where
@@ -6339,7 +6075,7 @@ def setupMSR [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC) 
   pure { LAMBDA_SWAP_GALOIS, LAMBDA_ADD_GALOIS, HAS_MEASURE_SHEAR_INTERVAL }
 
 /- ------------------------------------------------------------------------- -/
-/- The measure of a linear image scales by |det|.  (measure.ml 4781-4933)  -/
+/- The measure of a linear image scales by |det|.  (measure.ml 4534-4686)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSS where
@@ -6387,8 +6123,7 @@ def setupMSS [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSD : MSD) 
         DET_UPPERTRIANGULAR, diagonal_matrix, IN_DIMINDEX_SWAP, .. } := D.qdet
   let { CONTENT_CLOSED_INTERVAL, .. } := D.qintegration1
   let { PRODUCT_CONST_NUMSEG, .. } := D.qproducts
-  let { PERMUTES_SWAP, SWAP_IDEMPOTENT, .. } := D.qpermutations
-  let { REAL_ABS_SIGN, .. } := D.qsession
+  let { PERMUTES_SWAP, SWAP_IDEMPOTENT, REAL_ABS_SIGN_PERMUTATION, .. } := D.qpermutations
   let { basis, INVERTIBLE_LEFT_INVERSE, LINEAR_SINGULAR_INTO_HYPERPLANE, mat,
         MATRIX_LEFT_INVERTIBLE_INJECTIVE, .. } := D.qvec
   -- @@SCOPE END
@@ -6455,7 +6190,7 @@ def setupMSS [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSD : MSD) 
           rand o lhand o rand o snd) THEN
       ASM_SIMP_TAC [PERMUTES_SWAP, IN_NUMSEG, ETA_AX] THEN
       DISCH_THEN (K ALL_TAC) THEN
-      REWRITE_TAC [DET_I, REAL_ABS_SIGN, REAL_MUL_RID, REAL_MUL_LID] THEN
+      REWRITE_TAC [DET_I, REAL_ABS_SIGN_PERMUTATION, REAL_MUL_RID, REAL_MUL_LID] THEN
       ASM_CASES_TAC (← q r"interval[a:real^N,b] = {}") THENL
        [ASM_SIMP_TAC [IMAGE_CLAUSES, HAS_MEASURE_EMPTY, MEASURE_EMPTY],
         ALL_TAC] THEN
@@ -6551,7 +6286,7 @@ def setupMSS [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSD : MSD) 
 
 /- ------------------------------------------------------------------------- -/
 /- Linear images, orthogonal transformations and isometries; measurable    -/
-/- convex sets.  (measure.ml 4934-5185)                                     -/
+/- convex sets.  (measure.ml 4687-4938)                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure MST where
@@ -6883,7 +6618,7 @@ def setupMST [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSJ : MSJ) 
          MEASURABLE_CONVEX_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- Measure of a standard simplex.  (measure.ml 5183-5409)                   -/
+/- Measure of a standard simplex.  (measure.ml 4936-5162)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSU where
@@ -6938,8 +6673,8 @@ def setupMSU [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSJ : MSJ) 
   let { NEGLIGIBLE_SUBSET, .. } := D.qintegration3
   let { PRODUCT_CONST_NUMSEG, .. } := D.qproducts
   let { CARD_PERMUTATIONS, permutes, PERMUTES_FINITE_SURJECTIVE, PERMUTES_INJECTIVE,
-        PERMUTES_INVERSE_EQ, PERMUTES_SURJECTIVE, .. } := D.qpermutations
-  let { FACT_NZ, HAS_SIZE_NUMSEG_1, REAL_ABS_SIGN, SUM_EQ_NUMSEG, SUM_PARTIAL_PRE,
+        PERMUTES_INVERSE_EQ, PERMUTES_SURJECTIVE, REAL_ABS_SIGN_PERMUTATION, .. } := D.qpermutations
+  let { FACT_NZ, HAS_SIZE_NUMSEG_1, SUM_EQ_NUMSEG, SUM_PARTIAL_PRE,
         SUM_SING_NUMSEG, .. } := D.qsession
   let { basis, BASIS_NE, .. } := D.qvec
   -- @@SCOPE END
@@ -7054,7 +6789,7 @@ def setupMSU [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSJ : MSJ) 
           ASM_SIMP_TAC [SUM_DELTA, IN_NUMSEG]],
         ALL_TAC] THEN
       ASM_SIMP_TAC [PERMUTES_INVERSE, DET_PERMUTE_ROWS, ETA_AX] THEN
-      REWRITE_TAC [REAL_ABS_MUL, REAL_ABS_SIGN, REAL_MUL_LID] THEN
+      REWRITE_TAC [REAL_ABS_MUL, REAL_ABS_SIGN_PERMUTATION, REAL_MUL_LID] THEN
       MATCH_MP_TAC (← REAL_ARITH (← q r"x = &1 ==> abs x = &1")) THEN
       ASM_SIMP_TAC [DET_LOWERTRIANGULAR, ← GSYM NOT_LT, LAMBDA_BETA] THEN
       REWRITE_TAC [LT_REFL, PRODUCT_CONST_NUMSEG, REAL_POW_ONE]])
@@ -7176,7 +6911,7 @@ def setupMSU [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSJ : MSJ) 
 
 /- ------------------------------------------------------------------------- -/
 /- Measure of a general simplex; area of a triangle; volume of a           -/
-/- tetrahedron.  (measure.ml 5411-5555)                                     -/
+/- tetrahedron.  (measure.ml 5164-5308)                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSV where
@@ -7374,7 +7109,7 @@ def setupMSV [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSE : MSE) (BMSJ : MSJ) 
 
 /- ------------------------------------------------------------------------- -/
 /- Measure is continuous with Hausdorff distance; Steinhaus's theorem.     -/
-/- (measure.ml 5557-5785)                                                   -/
+/- (measure.ml 5310-5538)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSW where
@@ -7659,7 +7394,7 @@ def setupMSW [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC) 
 
 /- ------------------------------------------------------------------------- -/
 /- A measurable set with cardinality less than c is negligible; Austin's   -/
-/- lemma.  (measure.ml 5786-5969)                                           -/
+/- lemma.  (measure.ml 5539-5722)                                           -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSX where
@@ -7900,7 +7635,7 @@ def setupMSX [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSW : MSW) 
 
 /- ------------------------------------------------------------------------- -/
 /- Some differentiability-like properties of the indefinite integral: the  -/
-/- one-sided box form.  (measure.ml 5970-6404)                              -/
+/- one-sided box form.  (measure.ml 5723-6157)                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSY where
@@ -8404,7 +8139,7 @@ def setupMSY [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC) 
 
 /- ------------------------------------------------------------------------- -/
 /- Differentiability-like property of the indefinite integral: the         -/
-/- symmetric box form.  (measure.ml 6405-6738)                              -/
+/- symmetric box form.  (measure.ml 6158-6491)                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSZ where
@@ -8808,7 +8543,7 @@ def setupMSZ [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC) 
 
 /- ------------------------------------------------------------------------- -/
 /- The indefinite integral is differentiable almost everywhere; Lebesgue    -/
-/- points.  (measure.ml 6739-6953)                                          -/
+/- points.  (measure.ml 6492-6706)                                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAA where
@@ -9085,7 +8820,7 @@ def setupMSAA [HolBase] (D : MeasureDeps) (BMSF : MSF) (BMST : MST) (BMSY : MSY)
 
 /- ------------------------------------------------------------------------- -/
 /- Measurability of a function on a set; Lebesgue measurability; relation  -/
-/- between measurability and integrability.  (measure.ml 6954-7155)         -/
+/- between measurability and integrability.  (measure.ml 6707-6908)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAB where
@@ -9376,7 +9111,7 @@ def setupMSAB [HolBase] (D : MeasureDeps) (BMSY : MSY) : ExceptT String IO MSAB 
 
 /- ------------------------------------------------------------------------- -/
 /- Composing continuous and measurable functions; a few variants.          -/
-/- (measure.ml 7186-7350)                                                   -/
+/- (measure.ml 6939-7103)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAC where
@@ -9594,7 +9329,7 @@ def setupMSAC [HolBase] (D : MeasureDeps) (BMSAB : MSAB) : ExceptT String IO MSA
          MEASURABLE_ON_COMPOSE_CONTINUOUS_CLOSED_SET_0 }
 
 /- ------------------------------------------------------------------------- -/
-/- Basic closure properties of measurable functions.  (measure.ml 7351-7470)-/
+/- Basic closure properties of measurable functions.  (measure.ml 7104-7223)-/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAD where
@@ -9766,7 +9501,7 @@ def setupMSAD [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAC : MSAC) : Except
 
 /- ------------------------------------------------------------------------- -/
 /- More closure properties of measurable functions: max, min, products,    -/
-/- sums, components, spikes, restriction and cases.  (measure.ml 7471-7740) -/
+/- sums, components, spikes, restriction and cases.  (measure.ml 7224-7493) -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAE where
@@ -10115,7 +9850,7 @@ def setupMSAE [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAC : MSAC) (BMSAD :
 
 /- ------------------------------------------------------------------------- -/
 /- Limits of measurable functions; bilinear products; square integrable    -/
-/- functions.  (measure.ml 7741-8037)                                       -/
+/- functions.  (measure.ml 7494-7790)                                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAF where
@@ -10476,7 +10211,7 @@ def setupMSAF [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAC : MSAC) (BMSAD :
 
 /- ------------------------------------------------------------------------- -/
 /- Natural closure properties of measurable functions under set           -/
-/- operations.  (measure.ml 8038-8183)                                      -/
+/- operations.  (measure.ml 7791-7936)                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAG where
@@ -10674,7 +10409,7 @@ def setupMSAG [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAC : MSAC) (BMSAD :
          MEASURABLE_ON_UNION, MEASURABLE_ON_UNIONS, MEASURABLE_ON_COUNTABLE_UNIONS }
 
 /- ------------------------------------------------------------------------- -/
-/- An existence theorem for "improper" integrals.  (measure.ml 8184-8445)   -/
+/- An existence theorem for "improper" integrals.  (measure.ml 7937-8198)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAH where
@@ -10993,7 +10728,7 @@ def setupMSAH [HolBase] (D : MeasureDeps) (BMSJ : MSJ) (BMSAB : MSAB) (BMSAG : M
 
 /- ------------------------------------------------------------------------- -/
 /- Negligibility of a Lipschitz image of a negligible set.                 -/
-/- (measure.ml 8446-8740)                                                   -/
+/- (measure.ml 8199-8493)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAI where
@@ -11354,7 +11089,7 @@ def setupMSAI [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
 
 /- ------------------------------------------------------------------------- -/
 /- Lipschitz and differentiable images of negligible and low-dimensional   -/
-/- sets.  (measure.ml 8741-8846)                                            -/
+/- sets.  (measure.ml 8494-8599)                                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAJ where
@@ -11507,7 +11242,7 @@ def setupMSAJ [HolBase] (D : MeasureDeps) (BMSAI : MSAI) : ExceptT String IO MSA
 
 /- ------------------------------------------------------------------------- -/
 /- Simplest case of Sard's theorem (we don't need continuity of the        -/
-/- derivative).  (measure.ml 8847-9167)                                     -/
+/- derivative).  (measure.ml 8600-8920)                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAK where
@@ -11899,7 +11634,7 @@ def setupMSAK [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
 
 /- ------------------------------------------------------------------------- -/
 /- Corollaries of Sard; infinite preimages; negligibility of bounded       -/
-/- variation and rectifiable low-dimensional images.  (measure.ml 9168-9351)-/
+/- variation and rectifiable low-dimensional images.  (measure.ml 8921-9104)-/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAL where
@@ -12154,7 +11889,7 @@ def setupMSAL [HolBase] (D : MeasureDeps) (BMSC : MSC) (BMSF : MSF) (BMSAJ : MSA
          NEGLIGIBLE_RECTIFIABLE_PATH_IMAGE, INTERIOR_RECTIFIABLE_PATH_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Properties of Lebesgue measurable sets.  (measure.ml 9352-9686)          -/
+/- Properties of Lebesgue measurable sets.  (measure.ml 9105-9439)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAM where
@@ -12604,7 +12339,7 @@ def setupMSAM [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSG : MSG)
          ABSOLUTELY_INTEGRABLE_ON_LEBESGUE_MEASURABLE_SUBSET }
 
 /- ------------------------------------------------------------------------- -/
-/- Invariance theorems for Lebesgue measurability.  (measure.ml 9687-9820)  -/
+/- Invariance theorems for Lebesgue measurability.  (measure.ml 9440-9573)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAN where
@@ -12785,7 +12520,7 @@ def setupMSAN [HolBase] (D : MeasureDeps) (BMSE : MSE) (BMSAB : MSAB) (BMSAJ : M
 
 /- ------------------------------------------------------------------------- -/
 /- Various common equivalent forms of function measurability: preimages of -/
-/- halfspaces and limits of simple functions.  (measure.ml 9821-10045)      -/
+/- halfspaces and limits of simple functions.  (measure.ml 9574-9798)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAO where
@@ -13070,7 +12805,7 @@ def setupMSAO [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAD : MSAD) (BMSAE :
 
 /- ------------------------------------------------------------------------- -/
 /- Measurability via preimages of halfspaces, intervals, open, closed and  -/
-/- Borel sets, and orthants.  (measure.ml 10046-10287)                      -/
+/- Borel sets, and orthants.  (measure.ml 9799-10040)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAP where
@@ -13382,7 +13117,7 @@ def setupMSAP [HolBase] (D : MeasureDeps) (BMSAD : MSAD) (BMSAM : MSAM) (BMSAO :
 
 /- ------------------------------------------------------------------------- -/
 /- Nonnegative measurable functions are increasing limits of simple        -/
-/- functions.  (measure.ml 10288-10554)                                     -/
+/- functions.  (measure.ml 10041-10307)                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAQ where
@@ -13709,7 +13444,7 @@ def setupMSAQ [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAD : MSAD) (BMSAE :
 
 /- ------------------------------------------------------------------------- -/
 /- Some "iff" variants of integrability on subsets.                         -/
-/- (measure.ml 10555-10662)                                                 -/
+/- (measure.ml 10308-10415)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAR where
@@ -13866,7 +13601,7 @@ def setupMSAR [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAE : MSAE) (BMSAM :
 
 /- ------------------------------------------------------------------------- -/
 /- More connections with measure where Lebesgue measurability is useful.   -/
-/- (measure.ml 10663-10895)                                                 -/
+/- (measure.ml 10416-10648)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAS where
@@ -14180,7 +13915,7 @@ def setupMSAS [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSF : MSF)
 /- ------------------------------------------------------------------------- -/
 /- Continuity of measure with respect to parameters determining a region;  -/
 /- negligibility of a set with uncountably many disjoint translates.        -/
-/- (measure.ml 10896-11024)                                                 -/
+/- (measure.ml 10649-10777)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAT where
@@ -14360,7 +14095,7 @@ def setupMSAT [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSE : MSE)
 
 /- ------------------------------------------------------------------------- -/
 /- Preimage characterizations of measurability using points from a dense   -/
-/- set: halfspaces and intervals.  (measure.ml 11025-11249)                 -/
+/- set: halfspaces and intervals.  (measure.ml 10778-11002)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAU where
@@ -14645,7 +14380,7 @@ def setupMSAU [HolBase] (D : MeasureDeps) (BMSAD : MSAD) (BMSAM : MSAM) (BMSAP :
 
 /- ------------------------------------------------------------------------- -/
 /- Preimage characterizations of measurability using points from a dense   -/
-/- set: orthants.  (measure.ml 11250-11413)                                 -/
+/- set: orthants.  (measure.ml 11003-11166)                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAV where
@@ -14857,7 +14592,7 @@ def setupMSAV [HolBase] (D : MeasureDeps) (BMSAD : MSAD) (BMSAM : MSAM) (BMSAP :
 
 /- ------------------------------------------------------------------------- -/
 /- Localized variants of function measurability equivalents.               -/
-/- (measure.ml 11414-11640)                                                 -/
+/- (measure.ml 11167-11393)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAW where
@@ -15172,7 +14907,7 @@ def setupMSAW [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAM : MSAM) (BMSAO :
 
 /- ------------------------------------------------------------------------- -/
 /- Measurability of analytic sets and related results.                     -/
-/- (measure.ml 11641-11837)                                                 -/
+/- (measure.ml 11394-11590)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAX where
@@ -15428,7 +15163,7 @@ def setupMSAX [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSF : MSF)
 
 /- ------------------------------------------------------------------------- -/
 /- Some additional lemmas about measurability and absolute integrals.      -/
-/- (measure.ml 11838-12021)                                                 -/
+/- (measure.ml 11591-11774)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAY where
@@ -15670,7 +15405,7 @@ def setupMSAY [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAE : MSAE) (BMSAM :
 
 /- ------------------------------------------------------------------------- -/
 /- Regularity properties and Steinhaus, this time for Lebesgue measure.    -/
-/- (measure.ml 12022-12194)                                                 -/
+/- (measure.ml 11775-11947)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSAZ where
@@ -15903,7 +15638,7 @@ def setupMSAZ [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
 /- ------------------------------------------------------------------------- -/
 /- A Lebesgue measurable set is almost an F_sigma or G_delta; existence of -/
 /- nonmeasurable subsets of any set of positive measure.                    -/
-/- (measure.ml 12195-12325)                                                 -/
+/- (measure.ml 11948-12078)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBA where
@@ -16084,7 +15819,7 @@ def setupMSBA [HolBase] (D : MeasureDeps) (BMSB : MSB) (BMSC : MSC) (BMSE : MSE)
 
 /- ------------------------------------------------------------------------- -/
 /- Preserving Lebesgue measurability vs. preserving negligibility;         -/
-/- Lebesgue-Lebesgue measurability.  (measure.ml 12326-12512)               -/
+/- Lebesgue-Lebesgue measurability.  (measure.ml 12079-12265)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBB where
@@ -16335,7 +16070,7 @@ def setupMSBB [HolBase] (D : MeasureDeps) (BMSB : MSB) (BMSJ : MSJ) (BMST : MST)
 
 /- ------------------------------------------------------------------------- -/
 /- Measurability of continuous functions and of compositions.              -/
-/- (measure.ml 12513-12765)                                                 -/
+/- (measure.ml 12266-12518)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBC where
@@ -16654,7 +16389,7 @@ def setupMSBC [HolBase] (D : MeasureDeps) (BMSC : MSC) (BMSAB : MSAB) (BMSAE : M
 
 /- ------------------------------------------------------------------------- -/
 /- Connections between measurability and Baire-ness.                       -/
-/- (measure.ml 12766-12881)                                                 -/
+/- (measure.ml 12519-12634)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBD where
@@ -16823,7 +16558,7 @@ def setupMSBD [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAE : MSAE) (BMSAM :
 
 /- ------------------------------------------------------------------------- -/
 /- Versions of the Lebesgue density theorem, both integral and measure     -/
-/- forms.  (measure.ml 12882-13137)                                         -/
+/- forms.  (measure.ml 12635-12890)                                         -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBE where
@@ -17153,7 +16888,7 @@ def setupMSBE [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
 
 /- ------------------------------------------------------------------------- -/
 /- More refined form of "derivative is zero at a maximum or minimum"       -/
-/- w.r.t. a Lebesgue measurable set of density 1.  (measure.ml 13138-13387) -/
+/- w.r.t. a Lebesgue measurable set of density 1.  (measure.ml 12891-13140) -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBF where
@@ -17467,7 +17202,7 @@ def setupMSBF [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSE : MSE)
          NEGLIGIBLE_POINTS_OF_AMBIGUOUS_DERIVATIVE }
 /- ------------------------------------------------------------------------- -/
 /- Countably many disjoint sets of positive measure; Wiener and Vitali     -/
-/- covering lemmas.  (measure.ml 13388-13752)                               -/
+/- covering lemmas.  (measure.ml 13141-13505)                               -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBG where
@@ -17895,7 +17630,7 @@ def setupMSBG [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSAS : MSA
          VITALI_COVERING_LEMMA_CBALLS_BALLS, VITALI_COVERING_LEMMA_CBALLS,
          VITALI_COVERING_LEMMA_BALLS }
 /- ------------------------------------------------------------------------- -/
-/- Vitali covering theorems.  (measure.ml 13753-13956)                      -/
+/- Vitali covering theorems.  (measure.ml 13506-13709)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBH where
@@ -18161,7 +17896,7 @@ def setupMSBH [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
   pure { VITALI_COVERING_THEOREM_CBALLS, VITALI_COVERING_THEOREM_BALLS }
 /- ------------------------------------------------------------------------- -/
 /- Negligibility is a local property, equivalent to localized zero density. -/
-/- (measure.ml 13957-14169)                                                 -/
+/- (measure.ml 13710-13922)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBI where
@@ -18429,7 +18164,7 @@ def setupMSBI [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
 
 /- ------------------------------------------------------------------------- -/
 /- A handy measurability lemma; Borel measurability of the set of points   -/
-/- of differentiability.  (measure.ml 14170-14504)                          -/
+/- of differentiability.  (measure.ml 13923-14257)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBJ where
@@ -18827,7 +18562,7 @@ def setupMSBJ [HolBase] (D : MeasureDeps) (BMSAM : MSAM) : ExceptT String IO MSB
   pure { LEBESGUE_MEASURABLE_POINTS_OF_CONVERGENCE, BOREL_POINTS_OF_DIFFERENTIABILITY }
 /- ------------------------------------------------------------------------- -/
 /- Lebesgue measurability of the set of points of differentiability.       -/
-/- (measure.ml 14505-15051)                                                 -/
+/- (measure.ml 14258-14804)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBK where
@@ -19483,7 +19218,7 @@ def setupMSBK [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSG : MSG) (BMSJ : MSJ)
          LEBESGUE_MEASURABLE_POINTS_OF_DIFFERENTIABILITY_AT }
 /- ------------------------------------------------------------------------- -/
 /- Measurability of partial derivatives, vector derivatives and the        -/
-/- Jacobian determinant.  (measure.ml 15052-15779)                          -/
+/- Jacobian determinant.  (measure.ml 14805-15532)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBL where
@@ -20338,7 +20073,7 @@ def setupMSBL [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSG : MSG) (BMSJ : MSJ)
          MEASURABLE_ON_VECTOR_DERIVATIVE, MEASURABLE_ON_DET_JACOBIAN }
 /- ------------------------------------------------------------------------- -/
 /- Luzin's theorem (Talvila and Loeb's proof from Marius Junge's notes).    -/
-/- (measure.ml 15780-16163)                                                 -/
+/- (measure.ml 15533-15916)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBM where
@@ -20803,7 +20538,7 @@ def setupMSBM [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
   pure { LUZIN, LUZIN_EQ, LUZIN_EQ_ALT, LUZIN_SIGMA, LUZIN_SIGMA_EXPLICIT }
 /- ------------------------------------------------------------------------- -/
 /- Nested Luzin; measurability of the Banach indicatrix.                    -/
-/- (measure.ml 16164-16376)                                                 -/
+/- (measure.ml 15917-16129)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBN where
@@ -21078,7 +20813,7 @@ def setupMSBN [HolBase] (D : MeasureDeps) (BMSAE : MSAE) (BMSAM : MSAM) (BMSAW :
          MEASURABLE_ON_BANACH_INDICATRIX }
 /- ------------------------------------------------------------------------- -/
 /- A measurable subset on which a function is injective, and approximate    -/
-/- variants.  (measure.ml 16377-16525)                                      -/
+/- variants.  (measure.ml 16130-16278)                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBO where
@@ -21272,7 +21007,7 @@ def setupMSBO [HolBase] (D : MeasureDeps) (BMSB : MSB) (BMSF : MSF) (BMSG : MSG)
          GDELTA_DOMAIN_OF_INJECTIVITY_MEASURABLE }
 /- ------------------------------------------------------------------------- -/
 /- Relations between image measure sizes and preimage cardinality (Banach). -/
-/- (measure.ml 16526-16757)                                                 -/
+/- (measure.ml 16279-16510)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBP where
@@ -21553,7 +21288,7 @@ def setupMSBP [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
          BANACH_SPROPERTY_IMP_LUZIN_NPROPERTY }
 
 /- ------------------------------------------------------------------------- -/
-/- Banach S-property consequences.  (measure.ml 16758-16967)                -/
+/- Banach S-property consequences.  (measure.ml 16511-16720)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBQ where
@@ -21819,7 +21554,7 @@ def setupMSBQ [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
   pure { BANACH_SPROPERTY_OUTER, BANACH_SPROPERTY_IMP_PRESERVES_MEASURABLE,
          BANACH_SPROPERTY_IMP_FINITE_PREIMAGES }
 /- ------------------------------------------------------------------------- -/
-/- Absolute continuity of image measure.  (measure.ml 16968-17165)          -/
+/- Absolute continuity of image measure.  (measure.ml 16721-16918)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBR where
@@ -22080,10 +21815,10 @@ def setupMSBR [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
          ABSOLUTELY_CONTINUOUS_MEASURE_DIFFERENTIABLE_IMAGE }
 /- ------------------------------------------------------------------------- -/
 /- Refined measurability bounds for (locally) Lipschitz images.             -/
-/- (measure.ml 17166-17492)                                                 -/
+/- (measure.ml 16919-17245)                                                 -/
 /- ------------------------------------------------------------------------- -/
 /- Refined measurability bounds for (locally) Lipschitz images.             -/
-/- (measure.ml 17166-17492)                                                 -/
+/- (measure.ml 16919-17245)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBS where
@@ -22484,7 +22219,7 @@ def setupMSBS [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
          MEASURABLE_LIPSCHITZ_IMAGE, MEASURE_LIPSCHITZ_IMAGE }
 /- ------------------------------------------------------------------------- -/
 /- Measurability and measure of bounded differentiable images.              -/
-/- (measure.ml 17493-17755)                                                 -/
+/- (measure.ml 17246-17508)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBT where
@@ -22816,7 +22551,7 @@ def setupMSBT [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
   pure { MEASURABLE_BOUNDED_DIFFERENTIABLE_IMAGE, MEASURE_BOUNDED_DIFFERENTIABLE_IMAGE }
 /- ------------------------------------------------------------------------- -/
 /- Measurability and measure of differentiable images with integrable       -/
-/- Jacobian.  (measure.ml 17756-18040)                                      -/
+/- Jacobian.  (measure.ml 17509-17793)                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBU where
@@ -23166,7 +22901,7 @@ def setupMSBU [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
   pure { MEASURABLE_DIFFERENTIABLE_IMAGE, MEASURE_DIFFERENTIABLE_IMAGE }
 /- ------------------------------------------------------------------------- -/
 /- Negligible preimages under full-rank differentiable maps.                -/
-/- (measure.ml 18041-18144)                                                 -/
+/- (measure.ml 17794-17897)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBV where
@@ -23316,7 +23051,7 @@ def setupMSBV [HolBase] (D : MeasureDeps) (BMSAI : MSAI) (BMSBI : MSBI) : Except
   pure { NEGLIGIBLE_DIFFERENTIABLE_PREIMAGE }
 /- ------------------------------------------------------------------------- -/
 /- A one-way version of change-of-variables not assuming injectivity.       -/
-/- (measure.ml 18145-18690)                                                 -/
+/- (measure.ml 17898-18443)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBW where
@@ -23947,7 +23682,7 @@ def setupMSBW [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSAB : MSAB) (BMSAD : M
   pure { ABSOLUTELY_INTEGRABLE_ON_IMAGE, INTEGRAL_ON_IMAGE_DROP_UBOUND_LE }
 /- ------------------------------------------------------------------------- -/
 /- The classic change-of-variables theorem, invertible version.             -/
-/- (measure.ml 18691-19112)                                                 -/
+/- (measure.ml 18444-18865)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBX where
@@ -24428,7 +24163,7 @@ def setupMSBX [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAK : MSAK) (BMSAM :
   pure { HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_INVERTIBLE }
 /- ------------------------------------------------------------------------- -/
 /- Change of variables for a Lebesgue measurable base set.                  -/
-/- (measure.ml 19113-19508)                                                 -/
+/- (measure.ml 18866-19261)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBY where
@@ -24887,7 +24622,7 @@ def setupMSBY [HolBase] (D : MeasureDeps) (BMSAJ : MSAJ) (BMSAM : MSAM) (BMSAY :
   pure { HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES }
 /- ------------------------------------------------------------------------- -/
 /- Change of variables consequences: 1-D, measure, linear maps.             -/
-/- (measure.ml 19509-19728)                                                 -/
+/- (measure.ml 19262-19481)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSBZ where
@@ -25165,7 +24900,7 @@ def setupMSBZ [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSJ : MSJ) (BMSBX : MSB
 
 /- ------------------------------------------------------------------------- -/
 /- Approximation of L_1 functions by bounded continuous ones.               -/
-/- (measure.ml 19729-20111)                                                 -/
+/- (measure.ml 19482-19864)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCA where
@@ -25621,7 +25356,7 @@ def setupMSCA [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
   pure { ABSOLUTELY_INTEGRABLE_APPROXIMATE_CONTINUOUS }
 /- ------------------------------------------------------------------------- -/
 /- Continuity of the (absolute) integral under translation.                 -/
-/- (measure.ml 20112-20354)                                                 -/
+/- (measure.ml 19865-20107)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCB where
@@ -25918,7 +25653,7 @@ def setupMSCB [HolBase] (D : MeasureDeps) (BMSAM : MSAM) (BMSCA : MSCA) : Except
   pure { CONTINUOUS_ON_ABSOLUTELY_INTEGRABLE_TRANSLATION_NORM }
 /- ------------------------------------------------------------------------- -/
 /- Translation continuity: general versions and measure forms.              -/
-/- (measure.ml 20355-20495)                                                 -/
+/- (measure.ml 20108-20248)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCC where
@@ -26122,7 +25857,7 @@ def setupMSCC [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSE : MSE)
          CONTINUOUS_MEASURE_TRANSLATION_SYMDIFF, CONTINUOUS_MEASURE_TRANSLATION_DIFF }
 /- ------------------------------------------------------------------------- -/
 /- Continuity of the measure of a differentiable image under translation.   -/
-/- (measure.ml 20496-20606)                                                 -/
+/- (measure.ml 20249-20359)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCD where
@@ -26284,7 +26019,7 @@ def setupMSCD [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
   pure { CONTINUOUS_MEASURE_DIFFERENTIABLE_IMAGE_TRANSLATION }
 /- ------------------------------------------------------------------------- -/
 /- A mean-value theorem for integrals over small subintervals.              -/
-/- (measure.ml 20607-20855)                                                 -/
+/- (measure.ml 20360-20608)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCE where
@@ -26598,7 +26333,7 @@ def setupMSCE [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSAM : MSAM) (BMSCC : M
   pure { SUBINTERVAL_MEAN_VALUE_THEOREM }
 /- ------------------------------------------------------------------------- -/
 /- Nested-sequence and pointwise versions of the subinterval mean value     -/
-/- theorem.  (measure.ml 20856-21006)                                       -/
+/- theorem.  (measure.ml 20609-20759)                                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCF where
@@ -26797,7 +26532,7 @@ def setupMSCF [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSCE : MSCE) : ExceptT 
   pure { SUBINTERVAL_MEAN_VALUE_THEOREM_SEQ, SUBINTERVAL_MEAN_VALUE_THEOREM_ALT }
 /- ------------------------------------------------------------------------- -/
 /- An intermediate value result when all points are weak Lebesgue points.   -/
-/- (measure.ml 21007-21311)                                                 -/
+/- (measure.ml 20760-21064)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCG where
@@ -27180,7 +26915,7 @@ def setupMSCG [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSE : MSE)
   pure { WEAK_LEBESGUE_POINTS_IMP_IVT }
 /- ------------------------------------------------------------------------- -/
 /- Saint Raymond: measure of differentiable images of small convex sets.    -/
-/- (measure.ml 21312-21982)                                                 -/
+/- (measure.ml 21065-21735)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCH where
@@ -27960,7 +27695,7 @@ def setupMSCH [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSE : MSE)
   pure { MEASURE_DIFFERENTIABLE_IMAGE_APPROX_GEN, MEASURE_DIFFERENTIABLE_IMAGE_APPROX }
 /- ------------------------------------------------------------------------- -/
 /- Connectedness of the range of the Jacobian determinant.                  -/
-/- (measure.ml 21983-22159)                                                 -/
+/- (measure.ml 21736-21912)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCI where
@@ -28204,7 +27939,7 @@ def setupMSCI [HolBase] (D : MeasureDeps) (BMSB : MSB) (BMSG : MSG) (BMSJ : MSJ)
 
 /- ------------------------------------------------------------------------- -/
 /- Jacobian range: segment and subset versions.                             -/
-/- (measure.ml 22160-22445)                                                 -/
+/- (measure.ml 21913-22198)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCJ where
@@ -28563,7 +28298,7 @@ def setupMSCJ [HolBase] (D : MeasureDeps) (BMSB : MSB) (BMSC : MSC) (BMSG : MSG)
   pure { CONNECTED_JACOBIAN_RANGE_ALT, CONNECTED_JACOBIAN_RANGE_SUBSET }
 /- ------------------------------------------------------------------------- -/
 /- Connectedness of the graph of the Jacobian determinant.                  -/
-/- (measure.ml 22446-22822)                                                 -/
+/- (measure.ml 22199-22575)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCK where
@@ -29011,7 +28746,7 @@ def setupMSCK [HolBase] (D : MeasureDeps) (BMSCJ : MSCJ) : ExceptT String IO MSC
   pure { CONNECTED_JACOBIAN_GRAPH }
 /- ------------------------------------------------------------------------- -/
 /- A derivative-free formulation of (absolute) integration by parts.        -/
-/- (measure.ml 22823-23173)                                                 -/
+/- (measure.ml 22576-22926)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCL where
@@ -29426,7 +29161,7 @@ def setupMSCL [HolBase] (D : MeasureDeps) (BMSAF : MSAF) (BMSAM : MSAM) (BMSBC :
   pure { ABSOLUTE_INTEGRATION_BY_PARTS }
 /- ------------------------------------------------------------------------- -/
 /- Measurability of inverse function (including sections / selections).    -/
-/- (measure.ml 23174-23308)                                                 -/
+/- (measure.ml 22927-23061)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCM where
@@ -29603,7 +29338,7 @@ def setupMSCM [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAE : MSAE) (BMSAM :
          DOUBLE_LEBESGUE_MEASURABLE_RIGHT_INVERSE, MEASURABLE_ON_RIGHT_INVERSE }
 /- ------------------------------------------------------------------------- -/
 /- Egorov's theorem.                                                        -/
-/- (measure.ml 23309-23421)                                                 -/
+/- (measure.ml 23062-23174)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCN where
@@ -29762,7 +29497,7 @@ def setupMSCN [HolBase] (D : MeasureDeps) (BMSB : MSB) (BMSF : MSF) (BMSAD : MSA
   pure { EGOROV }
 /- ------------------------------------------------------------------------- -/
 /- The Lebesgue differentiation theorem (compact interval version).        -/
-/- (measure.ml 23422-24633)                                                 -/
+/- (measure.ml 23175-24386)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCO where
@@ -31080,7 +30815,7 @@ def setupMSCO [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
   pure { LEBESGUE_DIFFERENTIATION_THEOREM_COMPACT }
 /- ------------------------------------------------------------------------- -/
 /- The Lebesgue differentiation theorem: general forms.                     -/
-/- (measure.ml 24634-24742)                                                 -/
+/- (measure.ml 24387-24495)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCP where
@@ -31242,7 +30977,7 @@ def setupMSCP [HolBase] (D : MeasureDeps) (BMSF : MSF) (BMSBI : MSBI) (BMSCO : M
          LEBESGUE_DIFFERENTIATION_THEOREM_DECREASING }
 /- ------------------------------------------------------------------------- -/
 /- Forms of absolute continuity of the indefinite (absolute) integral.     -/
-/- (measure.ml 24743-24886)                                                 -/
+/- (measure.ml 24496-24639)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCQ where
@@ -31439,7 +31174,7 @@ def setupMSCQ [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSC : MSC) (BMSG : MSG)
          ABSOLUTELY_CONTINUOUS_INDEFINITE_INTEGRAL_LEFT }
 /- ------------------------------------------------------------------------- -/
 /- FTC for absolutely continuous functions and its consequences.           -/
-/- (measure.ml 24887-25205)                                                 -/
+/- (measure.ml 24640-24958)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCR where
@@ -31842,7 +31577,7 @@ def setupMSCR [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSG : MSG)
          ABSOLUTE_INTEGRATION_BY_PARTS_SUM }
 /- ------------------------------------------------------------------------- -/
 /- Characterizing absolutely continuous functions as Lebesgue integrals.    -/
-/- (measure.ml 25206-25590)                                                 -/
+/- (measure.ml 24959-25343)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCS where
@@ -32301,7 +32036,7 @@ def setupMSCS [HolBase] (D : MeasureDeps) (BMSCP : MSCP) (BMSCQ : MSCQ) (BMSCR :
 
 /- ------------------------------------------------------------------------- -/
 /- Variation in terms of integral in a more general setting.                -/
-/- (measure.ml 25591-25851)                                                 -/
+/- (measure.ml 25344-25604)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCT where
@@ -32626,7 +32361,7 @@ def setupMSCT [HolBase] (D : MeasureDeps) (BMSCR : MSCR) (BMSCS : MSCS) : Except
          ABSOLUTELY_CONTINUOUS_VECTOR_VARIATION }
 /- ------------------------------------------------------------------------- -/
 /- Converses: equality holds only if the function is absolutely continuous. -/
-/- (measure.ml 25852-25957)                                                 -/
+/- (measure.ml 25605-25710)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCU where
@@ -32767,7 +32502,7 @@ def setupMSCU [HolBase] (D : MeasureDeps) (BMSCS : MSCS) (BMSCT : MSCT) : Except
          VECTOR_VARIATION_INTEGRAL_NORM_DERIVATIVE_REV }
 /- ------------------------------------------------------------------------- -/
 /- Banach-Zarecki and related results.                                      -/
-/- (measure.ml 25958-26551)                                                 -/
+/- (measure.ml 25711-26304)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCV where
@@ -33479,10 +33214,10 @@ def setupMSCV [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
          ABSOLUTELY_CONTINUOUS_DIFFERENTIABLE_BV, ABSOLUTELY_CONTINUOUS_ON_COMPOSE }
 /- ------------------------------------------------------------------------- -/
 /- Converse of baby-Sard and handy corollaries, following Serrin-Varburg.  -/
-/- (measure.ml 26552-26817)                                                 -/
+/- (measure.ml 26305-26570)                                                 -/
 /- ------------------------------------------------------------------------- -/
 /- Converse of baby-Sard and handy corollaries, following Serrin-Varburg.  -/
-/- (measure.ml 26552-26817)                                                 -/
+/- (measure.ml 26305-26570)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCW where
@@ -33806,7 +33541,7 @@ def setupMSCW [HolBase] (D : MeasureDeps) (BMSBV : MSBV) (BMSCR : MSCR) (BMSCS :
 /- ------------------------------------------------------------------------- -/
 /- The indefinite integral of a gauge integrable function has the Luzin N  -/
 /- property.                                                                -/
-/- (measure.ml 26818-27199)                                                 -/
+/- (measure.ml 26571-26952)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCX where
@@ -34257,7 +33992,7 @@ def setupMSCX [HolBase] (D : MeasureDeps) (BMSB : MSB) (BMSC : MSC) (BMSF : MSF)
   pure { NEGLIGIBLE_IMAGE_INDEFINITE_INTEGRAL }
 /- ------------------------------------------------------------------------- -/
 /- Increasing/decreasing/constant from the sign of an a.e. derivative.     -/
-/- (measure.ml 27200-27469)                                                 -/
+/- (measure.ml 26953-27222)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCY where
@@ -34600,7 +34335,7 @@ def setupMSCY [HolBase] (D : MeasureDeps) (BMSC : MSC) (BMST : MST) (BMSAK : MSA
          ZERO_AE_DERIVATIVE_IMP_CONSTANT_GEN, ZERO_AE_DERIVATIVE_IMP_CONSTANT }
 /- ------------------------------------------------------------------------- -/
 /- Convergence in measure implies convergence AE of a subsequence.         -/
-/- (measure.ml 27470-27607)                                                 -/
+/- (measure.ml 27223-27360)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSCZ where
@@ -34777,7 +34512,7 @@ def setupMSCZ [HolBase] (D : MeasureDeps) (BMSC : MSC) (BMSF : MSF) : ExceptT St
   pure { CONVERGENCE_IN_MEASURE, CONVERGENCE_IN_MEASURE_UNIQUE }
 /- ------------------------------------------------------------------------- -/
 /- Basic path notions for AC paths.                                         -/
-/- (measure.ml 27608-27863)                                                 -/
+/- (measure.ml 27361-27616)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDA where
@@ -35074,7 +34809,7 @@ def setupMSDA [HolBase] (D : MeasureDeps) (BMSCS : MSCS) (BMSCV : MSCV) : Except
          ABSOLUTELY_CONTINUOUS_REVERSEPATH, ABSOLUTELY_CONTINUOUS_JOINPATHS }
 /- ------------------------------------------------------------------------- -/
 /- Fubini-type results for measure.                                         -/
-/- (measure.ml 27864-28334)                                                 -/
+/- (measure.ml 27617-28087)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDB where
@@ -35628,7 +35363,7 @@ def setupMSDB [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
   pure { FUBINI_MEASURE }
 /- ------------------------------------------------------------------------- -/
 /- Fubini for measurability and negligibility; negligible products.        -/
-/- (measure.ml 28335-28589)                                                 -/
+/- (measure.ml 28088-28342)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDC where
@@ -35953,7 +35688,7 @@ def setupMSDC [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
 
 /- ------------------------------------------------------------------------- -/
 /- Fubini-Tonelli for measure; measurability of products.                  -/
-/- (measure.ml 28590-28852)                                                 -/
+/- (measure.ml 28343-28605)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDD where
@@ -36285,7 +36020,7 @@ def setupMSDD [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
          HAS_MEASURE_PCROSS, MEASURE_PCROSS }
 /- ------------------------------------------------------------------------- -/
 /- Measurability of a function and of its ordinate set.                    -/
-/- (measure.ml 28853-29060)                                                 -/
+/- (measure.ml 28606-28813)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDE where
@@ -36562,19 +36297,19 @@ def setupMSDE [HolBase] (D : MeasureDeps) (BMSC : MSC) (BMSAC : MSAC) (BMSAM : M
          NEGLIGIBLE_MEASURABLE_FUNCTION_GRAPH }
 /- ------------------------------------------------------------------------- -/
 /- Integrals and "area under curve"; miscellaneous composition lemmas.     -/
-/- (measure.ml 29061-29214)                                                 -/
+/- (measure.ml 28814-28967)                                                 -/
 /- ------------------------------------------------------------------------- -/
 /- Fubini swaps, intervals, Tonelli, and double integrals over products.   -/
-/- (measure.ml 29523-29885)                                                 -/
+/- (measure.ml 29276-29638)                                                 -/
 /- ------------------------------------------------------------------------- -/
 /- Fubini for absolute integrability.                                       -/
-/- (measure.ml 29215-29522)                                                 -/
+/- (measure.ml 28968-29275)                                                 -/
 /- ------------------------------------------------------------------------- -/
 /- Some versions of Fubini where we stay in a fixed space R^n.             -/
-/- (measure.ml 29886-30245)                                                 -/
+/- (measure.ml 29639-29998)                                                 -/
 /- ------------------------------------------------------------------------- -/
 /- Integrals and "area under curve"; miscellaneous composition lemmas.     -/
-/- (measure.ml 29061-29214)                                                 -/
+/- (measure.ml 28814-28967)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDF where
@@ -36779,7 +36514,7 @@ def setupMSDF [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSAB : MSAB) (BMSAE : M
          MEASURABLE_ON_COMPOSE_SUB }
 /- ------------------------------------------------------------------------- -/
 /- Fubini for absolute integrability.                                       -/
-/- (measure.ml 29215-29522)                                                 -/
+/- (measure.ml 28968-29275)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDG where
@@ -37149,7 +36884,7 @@ def setupMSDG [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMST : MST) (BMSAB : MSA
          FUBINI_HAS_ABSOLUTE_INTEGRAL_ALT }
 /- ------------------------------------------------------------------------- -/
 /- Fubini swaps, intervals, Tonelli, and double integrals over products.   -/
-/- (measure.ml 29523-29885)                                                 -/
+/- (measure.ml 29276-29638)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDH where
@@ -37594,7 +37329,7 @@ def setupMSDH [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAD : MSAD) (BMSAE :
          FUBINI_TONELLI_ALT, HAS_DOUBLE_INTEGRAL_PCROSS }
 /- ------------------------------------------------------------------------- -/
 /- Some versions of Fubini where we stay in a fixed space R^n.             -/
-/- (measure.ml 29886-30245)                                                 -/
+/- (measure.ml 29639-29998)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDI where
@@ -38009,7 +37744,7 @@ def setupMSDI [HolBase] (D : MeasureDeps) (BMSC : MSC) (BMSE : MSE) (BMST : MST)
          FUBINI_NEGLIGIBLE_OFFSET }
 /- ------------------------------------------------------------------------- -/
 /- Some basic results about convolution.                                    -/
-/- (measure.ml 30246-30635)                                                 -/
+/- (measure.ml 29999-30388)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDJ where
@@ -38477,7 +38212,7 @@ def setupMSDJ [HolBase] (D : MeasureDeps) (BMSAB : MSAB) (BMSAD : MSAD) (BMSAE :
          CONTINUOUS_ON_CONVOLUTION_L1_LINF, CONTINUOUS_ON_CONVOLUTION_LINF_L1 }
 /- ------------------------------------------------------------------------- -/
 /- Some Steinhaus variants with two different sets of positive measure.    -/
-/- (measure.ml 30636-30728)                                                 -/
+/- (measure.ml 30389-30481)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDK where
@@ -38617,7 +38352,7 @@ def setupMSDK [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMST : MST)
   pure { STEINHAUS_SUMS, STEINHAUS_DIFFS }
 /- ------------------------------------------------------------------------- -/
 /- More refined Ostrowski-style theorems about midpoint convexity.         -/
-/- (measure.ml 30729-31268)                                                 -/
+/- (measure.ml 30482-31021)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDL where
@@ -39261,7 +38996,7 @@ def setupMSDL [HolBase] (D : MeasureDeps) (BMSB : MSB) (BMSC : MSC) (BMSAD : MSA
 
 /- ------------------------------------------------------------------------- -/
 /- Rademacher's theorem (the "simple proof" from Nekvinda and Zajicek).      -/
-/- (measure.ml 31269-31787)                                                 -/
+/- (measure.ml 31022-31540)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDM where
@@ -39872,7 +39607,7 @@ def setupMSDM [HolBase] (D : MeasureDeps) (BMSF : MSF) (BMSAM : MSAM) (BMSBJ : M
   pure { RADEMACHER_UNIV, RADEMACHER, RADEMACHER_OPEN, RADEMACHER_GEN }
 /- ------------------------------------------------------------------------- -/
 /- Stepanov's theorem (Maly's proof, slightly generalized by localization).  -/
-/- (measure.ml 31788-32266)                                                 -/
+/- (measure.ml 31541-32019)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSDN where

@@ -52,14 +52,14 @@ open Session SessionLibrary.SymmetricGroup HolLight.Syntax
 #eval thm' "SUBGROUP_RESTRICT_PERMUTES" SUBGROUP_RESTRICT_PERMUTES
   "|- forall s t h.        t SUBSET s /\\ h subgroup_of symmetric_group s        ==> h INTER group_carrier (symmetric_group t) subgroup_of            symmetric_group t"
 #eval thm' "SYMMETRIC_GROUP_POW" SYMMETRIC_GROUP_POW
-  "|- forall s t sigma n.        group_pow (symmetric_group s) sigma n =        group_pow (symmetric_group t) sigma n"
+  "|- forall s t p n.        group_pow (symmetric_group s) p n = group_pow (symmetric_group t) p n"
 #eval thm' "PRIME_ORDER_PERM_NO_FIXPOINT" PRIME_ORDER_PERM_NO_FIXPOINT
-  "|- forall s sigma a.        FINITE s /\\        prime (CARD s) /\\        sigma permutes s /\\        group_element_order (symmetric_group s) sigma = CARD s /\\        a IN s        ==> ~(sigma a = a)"
+  "|- forall s f a.        FINITE s /\\        prime (CARD s) /\\        f permutes s /\\        group_element_order (symmetric_group s) f = CARD s /\\        a IN s        ==> ~(f a = a)"
 #eval thm' "PRIME_ORDER_PERM_ORBIT" PRIME_ORDER_PERM_ORBIT
-  "|- forall s sigma a x.        FINITE s /\\        prime (CARD s) /\\        sigma permutes s /\\        group_element_order (symmetric_group s) sigma = CARD s /\\        a IN s /\\        x IN s        ==> (exists k.                 k < CARD s /\\ group_pow (symmetric_group s) sigma k a = x)"
+  "|- forall s f a x.        FINITE s /\\        prime (CARD s) /\\        f permutes s /\\        group_element_order (symmetric_group s) f = CARD s /\\        a IN s /\\        x IN s        ==> (exists k. k < CARD s /\\ group_pow (symmetric_group s) f k a = x)"
 #eval thm' "TRANSPOSITION_PCYCLE_GENERATES" TRANSPOSITION_PCYCLE_GENERATES
-  "|- forall s sigma a b h.        FINITE s /\\        prime (CARD s) /\\        h subgroup_of symmetric_group s /\\        sigma IN h /\\        group_element_order (symmetric_group s) sigma = CARD s /\\        swap (a,b) IN h /\\        a IN s /\\        b IN s /\\        ~(a = b)        ==> group_carrier (symmetric_group s) SUBSET h"
+  "|- forall s f a b h.        FINITE s /\\        prime (CARD s) /\\        h subgroup_of symmetric_group s /\\        f IN h /\\        group_element_order (symmetric_group s) f = CARD s /\\        swap (a,b) IN h /\\        a IN s /\\        b IN s /\\        ~(a = b)        ==> group_carrier (symmetric_group s) SUBSET h"
 #eval thm' "TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC" TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC
-  "|- forall s a b h.        FINITE s /\\        prime (CARD s) /\\        h subgroup_of symmetric_group s /\\        (forall x y.             x IN s /\\ y IN s ==> (exists sigma. sigma IN h /\\ sigma x = y)) /\\        swap (a,b) IN h /\\        a IN s /\\        b IN s /\\        ~(a = b)        ==> group_carrier (symmetric_group s) SUBSET h"
+  "|- forall s a b h.        FINITE s /\\        prime (CARD s) /\\        h subgroup_of symmetric_group s /\\        (forall x y. x IN s /\\ y IN s ==> (exists g. g IN h /\\ g x = y)) /\\        swap (a,b) IN h /\\        a IN s /\\        b IN s /\\        ~(a = b)        ==> group_carrier (symmetric_group s) SUBSET h"
 
 end T

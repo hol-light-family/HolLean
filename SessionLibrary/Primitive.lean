@@ -389,6 +389,9 @@ def core8 : HolLibrary.Primitive.CoreThms8 where
 
 /-- What primitive.ml uses from Session. -/
 def deps : HolLibrary.Primitive.PrimitiveDeps where
+  prioritize_int := Session.prioritize_int
+  prioritize_num := Session.prioritize_num
+  prioritize_real := Session.prioritize_real
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
   ARITH_TAC := Session.ARITH_TAC
   ASM_ARITH_TAC := Session.ASM_ARITH_TAC

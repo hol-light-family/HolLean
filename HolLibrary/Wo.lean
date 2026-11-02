@@ -39,7 +39,7 @@ structure CoreThms1 where
    EQ_IMP ETA_AX EXISTS_FINITE_SUBSET_IMAGE EXISTS_IN_IMAGE EXISTS_IN_INSERT
    EXISTS_PAIR_THM EXTENSION FINITE_CROSS FINITE_EMPTY FINITE_IMAGE
    FINITE_INDUCT_STRONG FINITE_NUMSEG_LT FINITE_SING FINITE_SUBSET
-   FINITE_UNION FORALL_AND_THM FORALL_IN_IMAGE FORALL_IN_INSERT
+   FINITE_UNION FORALL_AND_THM FORALL_IN_IMAGE FORALL_IN_IMAGE_2 FORALL_IN_INSERT
    FORALL_PAIR_THM FORALL_UNWIND_THM2 FUN_EQ_THM IMP_CONJ IMP_CONJ_ALT
    IMP_IMP IN INFINITE INFINITE_ENUMERATE_EQ INFINITE_ENUMERATE_SUBSET
    INFINITE_IMAGE INJECTIVE_ALT INJECTIVE_LEFT_INVERSE INSERT_SUBSET IN_CROSS
@@ -1847,15 +1847,16 @@ structure Zorn where
   ZL_SUBSETS : thm
   ZL_SUBSETS_UNIONS : thm
   ZL_SUBSETS_UNIONS_NONEMPTY : thm
+  ZL_SUBSETS_INTERS_NONEMPTY : thm
   deriving Inhabited
 
 @[nospecialize]
 def setupZorn [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs : Segs) (BInseg : Inseg) (BWellOrder : WellOrder) :
     ExceptT String IO Zorn := do
   -- @@SCOPE BEGIN
-  let { ASM_MESON_TAC, GEN_BETA_CONV, MESON_TAC, .. } := D
-  let { COND_ID, DISJ_SYM, ETA_AX, EXTENSION, FORALL_PAIR_THM, FUN_EQ_THM, IN,
-        IN_UNIONS, MONO_FORALL, MONO_IMP, NOT_EXISTS_THM, NOT_FORALL_THM, SUBSET,
+  let { ASM_MESON_TAC, GEN_BETA_CONV, MESON_TAC, SET_RULE, SET_TAC, .. } := D
+  let { COND_ID, DISJ_SYM, ETA_AX, EXTENSION, FORALL_IN_IMAGE, FORALL_IN_IMAGE_2,
+        FORALL_PAIR_THM, FUN_EQ_THM, IN, IN_IMAGE, IN_UNIONS, MONO_FORALL, MONO_IMP, NOT_EXISTS_THM, NOT_FORALL_THM, SUBSET,
         SUBSET_ANTISYM, SUBSET_REFL, SUBSET_TRANS, WF_REC, .. } := D.core1
   let { CHAIN_SUBSET, IN_FLD, PBETA_TAC, POSET_IMP_QOSET, QOSET_FLDEQ, QOSET_REFL,
         QOSET_TRANS, SUBSET_PRED, UNIONS_PRED, chain, poset, .. } := BDefs
@@ -2115,10 +2116,43 @@ def setupZorn [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs : 
       ASM_SIMP_TAC [] THEN MESON_TAC [SUBSET, IN_UNIONS],
       ASM_MESON_TAC []])
 
+  let ZL_SUBSETS_INTERS_NONEMPTY ← prove
+   r"!P. (?x. P x) /\
+       (!c. (?x. x IN c) /\
+            (!x. x IN c ==> P x) /\
+            (!x y. x IN c /\ y IN c ==> x SUBSET y \/ y SUBSET x)
+            ==> P(INTERS c))
+       ==> ?a:A->bool. P a /\ (!x. P x /\ x SUBSET a ==> a = x)"
+   (← do
+    -- OCaml evaluates the SET_RULE calls last-first.
+    let s4 ← SET_RULE (← q r"(:A) DIFF ((:A) DIFF s) = s")
+    let s3 ← SET_RULE (← q r"s SUBSET t ==> (:A) DIFF t SUBSET (:A) DIFF s")
+    let s2 ← SET_RULE (← q r"(:A) DIFF ((:A) DIFF s) = s")
+    let s1 ← SET_RULE (← q r"(:A) DIFF ((:A) DIFF s) = s")
+    pure
+      (REPEAT STRIP_TAC THEN
+       MP_TAC (← ISPEC (← q r"\x:A->bool. P((:A) DIFF x):bool")
+         ZL_SUBSETS_UNIONS_NONEMPTY) THEN
+       REWRITE_TAC [s1] THEN ANTS_TAC THENL
+        [CONJ_TAC THENL
+          [EXISTS_TAC (← q r"(:A) DIFF x") THEN ASM_REWRITE_TAC [s2],
+           X_GEN_TAC (← q r"c:(A->bool)->bool") THEN STRIP_TAC THEN
+           SUBGOAL_THEN (← q r"(:A) DIFF UNIONS c = INTERS (IMAGE (\x. (:A) DIFF x) c)")
+           SUBST1_TAC THENL [SET_TAC [], ALL_TAC] THEN
+           FIRST_X_ASSUM MATCH_MP_TAC THEN
+           REWRITE_TAC [FORALL_IN_IMAGE, FORALL_IN_IMAGE_2, IN_IMAGE] THEN
+           ASM_MESON_TAC [s3]],
+         DISCH_THEN (X_CHOOSE_THEN (← q r"a:A->bool") STRIP_ASSUME_TAC) THEN
+         EXISTS_TAC (← q r"(:A) DIFF a") THEN ASM_REWRITE_TAC [] THEN
+         X_GEN_TAC (← q r"y:A->bool") THEN STRIP_TAC THEN
+         FIRST_X_ASSUM (MP_TAC o SPEC (← q r"(:A) DIFF y")) THEN
+         ASM_REWRITE_TAC [s4] THEN
+         ANTS_TAC THENL [ASM SET_TAC [], SET_TAC []]]))
+
   -- @@RETURN BEGIN
   return { HP, ZL_STRONG, ZL, KL_POSET_LEMMA, KL, POSET_RESTRICTED_SUBSET,
            FLD_RESTRICTED_SUBSET, ZL_SUBSETS, ZL_SUBSETS_UNIONS,
-           ZL_SUBSETS_UNIONS_NONEMPTY }
+           ZL_SUBSETS_UNIONS_NONEMPTY, ZL_SUBSETS_INTERS_NONEMPTY }
   -- @@RETURN END
 
 /-- lib.ml's `el n` on a list of theorems. -/
@@ -2129,7 +2163,7 @@ def elThm (n : Nat) (l : List thm) : ExceptT String IO thm :=
 
 /- ------------------------------------------------------------------------- -/
 /- A form of Tukey's lemma; the order extension theorem (Abian's proof);     -/
-/- every toset contains a cofinal woset.  (wo.ml 1657-1900)                  -/
+/- every toset contains a cofinal woset.  (wo.ml 1684-1927)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure Tukey where

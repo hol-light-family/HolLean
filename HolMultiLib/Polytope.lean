@@ -156,6 +156,7 @@ structure QPthThms where
   deriving Inhabited
 
 structure PolytopeDeps where
+  prioritize_real : IO Unit
   cvx : ConvexDeps
   -- procedures and state convex.ml's deps do not carry
   WF_INDUCT_TAC : term → tactic
@@ -175,7 +176,7 @@ structure PolytopeDeps where
   qpth : QPthThms
 
 /- ------------------------------------------------------------------------- -/
-/- Faces of a (usually convex) set.  (polytope.ml 1-409)                     -/
+/- Faces of a (usually convex) set.  (polytope.ml 1-410)                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure POA where
@@ -257,6 +258,8 @@ def setupPOA [HolBase] (D : PolytopeDeps) : ExceptT String IO POA := do
         relative_frontier, RELATIVE_FRONTIER_SUBSET_FRONTIER, RELATIVE_INTERIOR_EQ_EMPTY,
         RELATIVE_INTERIOR_SUBSET, SUBSET_RELATIVE_INTERIOR, .. } := D.qcvx3
   -- @@SCOPE END
+
+  D.prioritize_real
   parse_as_infix ("face_of", (12, "right"))
 
   let face_of ← new_definition
@@ -674,7 +677,7 @@ def setupPOA [HolBase] (D : PolytopeDeps) : ExceptT String IO POA := do
 
 /- ------------------------------------------------------------------------- -/
 /- Faces of convex hulls; affine sets; finite bounds on intersections of     -/
-/- faces.  (polytope.ml 410-783)                                             -/
+/- faces.  (polytope.ml 411-784)                                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure POB where
@@ -1102,7 +1105,7 @@ def setupPOB [HolBase] (D : PolytopeDeps) (BPOA : POA) : ExceptT String IO POB :
 
 /- ------------------------------------------------------------------------- -/
 /- Faces under images and products; halfspaces; facial partitions.          -/
-/- (polytope.ml 784-1183)                                                    -/
+/- (polytope.ml 785-1184)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure POC where
@@ -1591,7 +1594,7 @@ def setupPOC [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOB : POB) : ExceptT St
 
 /- ------------------------------------------------------------------------- -/
 /- Exposed faces (faces that are intersection with supporting hyperplane).   -/
-/- (polytope.ml 1182-1482)                                                   -/
+/- (polytope.ml 1183-1483)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POD where
@@ -1954,7 +1957,7 @@ def setupPOD [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOB : POB) : ExceptT St
 
 /- ------------------------------------------------------------------------- -/
 /- Extreme points of a set, which are its singleton faces.                   -/
-/- (polytope.ml 1482-1960)                                                   -/
+/- (polytope.ml 1483-1961)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POE where
@@ -2547,7 +2550,7 @@ def setupPOE [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOB : POB) (BPOC : POC)
 
 /- ------------------------------------------------------------------------- -/
 /- Closure and (relative) openness of conic hulls etc.                       -/
-/- (polytope.ml 1959-2613)                                                   -/
+/- (polytope.ml 1960-2614)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POF where
@@ -3311,7 +3314,7 @@ def setupPOF [HolBase] (D : PolytopeDeps) (BPOE : POE) : ExceptT String IO POF :
 
 /- ------------------------------------------------------------------------- -/
 /- Facets; extreme points in low dimension; edges; existence of extreme      -/
-/- points; Krein-Milman.  (polytope.ml 2614-3052)                            -/
+/- points; Krein-Milman.  (polytope.ml 2615-3053)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure POG where
@@ -3847,7 +3850,7 @@ def setupPOG [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOC : POC) (BPOD : POD)
 
 /- ------------------------------------------------------------------------- -/
 /- Applying it to convex hulls of explicitly indicated finite sets.          -/
-/- (polytope.ml 3052-3691)                                                   -/
+/- (polytope.ml 3053-3692)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POH where
@@ -4590,7 +4593,7 @@ def setupPOH [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOB : POB) (BPOE : POE)
 /- If we perturb a set little enough, a point stays inside or outside it.    -/
 /- The "inside" needs convexity in general or we could just remove a         -/
 /- thin path to the point without changing the Hausdorff distance at all.    -/
-/- (polytope.ml 3691-4033)                                                   -/
+/- (polytope.ml 3692-4034)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POI where
@@ -4997,7 +5000,7 @@ def setupPOI [HolBase] (D : PolytopeDeps) (BPOF : POF) : ExceptT String IO POI :
 
 /- ------------------------------------------------------------------------- -/
 /- Polytopes; approximation of bounded convex sets by polytopes; polyhedra.  -/
-/- (polytope.ml 4033-4498)                                                   -/
+/- (polytope.ml 4034-4499)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POJ where
@@ -5583,7 +5586,7 @@ def setupPOJ [HolBase] (D : PolytopeDeps) (BPOG : POG) (BPOH : POH) : ExceptT St
 
 /- ------------------------------------------------------------------------- -/
 /- Canonical polyedron representation making facial structure explicit.     -/
-/- (polytope.ml 4498-5186)                                                   -/
+/- (polytope.ml 4499-5187)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POK where
@@ -6342,7 +6345,7 @@ def setupPOK [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOB : POB) (BPOG : POG)
 
 /- ------------------------------------------------------------------------- -/
 /- More general corollaries from the explicit representation.               -/
-/- (polytope.ml 5186-5566)                                                   -/
+/- (polytope.ml 5187-5567)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POL where
@@ -6795,7 +6798,7 @@ def setupPOL [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOC : POC) (BPOD : POD)
 
 /- ------------------------------------------------------------------------- -/
 /- Polyhedra as having finitely many faces; polytopes vs polyhedra;         -/
-/- polytope as union of convex hulls of facets. (polytope.ml 5566-5964)      -/
+/- polytope as union of convex hulls of facets. (polytope.ml 5567-5965)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure POM where
@@ -7289,7 +7292,7 @@ def setupPOM [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOD : POD) (BPOE : POE)
 
 /- ------------------------------------------------------------------------- -/
 /- Finitely generated cone is polyhedral, and conversely.                    -/
-/- (polytope.ml 5964-6193)                                                   -/
+/- (polytope.ml 5965-6194)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PON where
@@ -7577,7 +7580,7 @@ def setupPON [HolBase] (D : PolytopeDeps) (BPOF : POF) (BPOJ : POJ) (BPOM : POM)
 
 /- ------------------------------------------------------------------------- -/
 /- Decomposition of polyhedron into cone plus polytope and more corollaries. -/
-/- (polytope.ml 6193-6474)                                                   -/
+/- (polytope.ml 6194-6475)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POO where
@@ -7919,7 +7922,7 @@ def setupPOO [HolBase] (D : PolytopeDeps) (BPOD : POD) (BPOJ : POJ) (BPOL : POL)
 
 /- ------------------------------------------------------------------------- -/
 /- Farkas's lemma, separation for polyhedra, frontier of a polytope,         -/
-/- triangles. (polytope.ml 6474-6836)                                        -/
+/- triangles. (polytope.ml 6475-6837)                                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure POP where
@@ -8358,7 +8361,7 @@ def setupPOP [HolBase] (D : PolytopeDeps) (BPOH : POH) (BPOJ : POJ) (BPOL : POL)
 
 /- ------------------------------------------------------------------------- -/
 /- A ridge is the intersection of precisely two facets.                      -/
-/- (polytope.ml 6836-7218)                                                   -/
+/- (polytope.ml 6837-7219)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POQ where
@@ -8787,7 +8790,7 @@ def setupPOQ [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOG : POG) (BPOJ : POJ)
 
 /- ------------------------------------------------------------------------- -/
 /- Lower bounds on then number of 0 and n-1 dimensional faces.               -/
-/- (polytope.ml 7218-7358)                                                   -/
+/- (polytope.ml 7219-7359)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POR where
@@ -8974,7 +8977,7 @@ def setupPOR [HolBase] (D : PolytopeDeps) (BPOG : POG) (BPOJ : POJ) (BPOK : POK)
 
 /- ------------------------------------------------------------------------- -/
 /- The notion of n-simplex where n is an integer >= -1.                      -/
-/- (polytope.ml 7358-7758)                                                   -/
+/- (polytope.ml 7359-7759)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POS where
@@ -9474,7 +9477,7 @@ def setupPOS [HolBase] (D : PolytopeDeps) (BPOB : POB) (BPOE : POE) (BPOG : POG)
          SIMPLEX_0_NOT_IN_AFFINE_HULL, SIMPLEX_EXTREME_POINTS_NONEMPTY }
 
 /- ------------------------------------------------------------------------- -/
-/- Simplicial complexes and triangulations. (polytope.ml 7758-7974)          -/
+/- Simplicial complexes and triangulations. (polytope.ml 7759-7975)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure POT where
@@ -9757,7 +9760,7 @@ def setupPOT [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOC : POC) (BPOE : POE)
 
 /- ------------------------------------------------------------------------- -/
 /- Subdividing a cell complex (not necessarily simplicial).                  -/
-/- (polytope.ml 7974-8131)                                                   -/
+/- (polytope.ml 7975-8132)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POU where
@@ -9957,7 +9960,7 @@ def setupPOU [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOC : POC) (BPOJ : POJ)
 
 /- ------------------------------------------------------------------------- -/
 /- Refining a cell complex to a simplicial complex.                          -/
-/- (polytope.ml 8131-8780)                                                   -/
+/- (polytope.ml 8132-8781)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POV where
@@ -10674,7 +10677,7 @@ def setupPOV [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOH : POH) (BPOJ : POJ)
 
 /- ------------------------------------------------------------------------- -/
 /- Some results on cell division with full-dimensional cells only.           -/
-/- (polytope.ml 8780-8940)                                                   -/
+/- (polytope.ml 8781-8941)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure POW where

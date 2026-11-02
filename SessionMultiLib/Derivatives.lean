@@ -111,6 +111,7 @@ def qvec : HolMultiLib.Derivatives.QVecThms :=
 
 /-- Everything HolMultiLib.Derivatives needs from the session. -/
 def deps : HolMultiLib.Derivatives.DerivativesDeps where
+  prioritize_real := Session.prioritize_real
   dg := SessionMultiLib.Degree.deps
   FIX_TAC := Session.FIX_TAC
   HYP_TAC s rule := Session.HYP_TAC s (fun th => Session.runExceptThm (rule th).run)
@@ -137,7 +138,7 @@ private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α 
 initialize BDVA : HolMultiLib.Derivatives.DVA ←
   ioB "setupDVA" (HolMultiLib.Derivatives.setupDVA deps).run
 
--- DVA (derivatives.ml 1-404)
+-- DVA (derivatives.ml 1-405)
 def has_derivative : thm := BDVA.has_derivative
 def has_derivative_within : thm := BDVA.has_derivative_within
 def has_derivative_at : thm := BDVA.has_derivative_at
@@ -187,7 +188,7 @@ def JACOBIAN_WORKS : thm := BDVA.JACOBIAN_WORKS
 initialize BDVB : HolMultiLib.Derivatives.DVB ←
   ioB "setupDVB" (HolMultiLib.Derivatives.setupDVB deps BDVA).run
 
--- DVB (derivatives.ml 405-786)
+-- DVB (derivatives.ml 406-787)
 def LIM_MUL_NORM_WITHIN : thm := BDVB.LIM_MUL_NORM_WITHIN
 def DIFFERENTIABLE_IMP_CONTINUOUS_WITHIN : thm := BDVB.DIFFERENTIABLE_IMP_CONTINUOUS_WITHIN
 def DIFFERENTIABLE_IMP_CONTINUOUS_AT : thm := BDVB.DIFFERENTIABLE_IMP_CONTINUOUS_AT
@@ -228,7 +229,7 @@ def DIFFERENTIABLE_ON_SUB : thm := BDVB.DIFFERENTIABLE_ON_SUB
 initialize BDVC : HolMultiLib.Derivatives.DVC ←
   ioB "setupDVC" (HolMultiLib.Derivatives.setupDVC deps BDVA).run
 
--- DVC (derivatives.ml 787-1119)
+-- DVC (derivatives.ml 788-1120)
 def FRECHET_DERIVATIVE_UNIQUE_WITHIN : thm := BDVC.FRECHET_DERIVATIVE_UNIQUE_WITHIN
 def FRECHET_DERIVATIVE_UNIQUE_AT : thm := BDVC.FRECHET_DERIVATIVE_UNIQUE_AT
 def HAS_FRECHET_DERIVATIVE_UNIQUE_AT : thm := BDVC.HAS_FRECHET_DERIVATIVE_UNIQUE_AT
@@ -248,7 +249,7 @@ def DIFFERENTIAL_ZERO_MAXMIN : thm := BDVC.DIFFERENTIAL_ZERO_MAXMIN
 initialize BDVD : HolMultiLib.Derivatives.DVD ←
   ioB "setupDVD" (HolMultiLib.Derivatives.setupDVD deps BDVA BDVB BDVC).run
 
--- DVD (derivatives.ml 1120-1577)
+-- DVD (derivatives.ml 1121-1578)
 def ROLLE : thm := BDVD.ROLLE
 def MVT : thm := BDVD.MVT
 def MVT_SIMPLE : thm := BDVD.MVT_SIMPLE
@@ -271,7 +272,7 @@ def DIFFERENTIABLE_FINITE_PREIMAGES_GEN : thm := BDVD.DIFFERENTIABLE_FINITE_PREI
 initialize BDVE : HolMultiLib.Derivatives.DVE ←
   ioB "setupDVE" (HolMultiLib.Derivatives.setupDVE deps BDVA BDVB).run
 
--- DVE (derivatives.ml 1576-2039)
+-- DVE (derivatives.ml 1577-2040)
 def HAS_DERIVATIVE_INVERSE_WITHIN : thm := BDVE.HAS_DERIVATIVE_INVERSE_WITHIN
 def HAS_DERIVATIVE_INVERSE_BASIC : thm := BDVE.HAS_DERIVATIVE_INVERSE_BASIC
 def HAS_DERIVATIVE_INVERSE_BASIC_X : thm := BDVE.HAS_DERIVATIVE_INVERSE_BASIC_X
@@ -290,7 +291,7 @@ def HAS_DERIVATIVE_INVERSE_ON : thm := BDVE.HAS_DERIVATIVE_INVERSE_ON
 initialize BDVF : HolMultiLib.Derivatives.DVF ←
   ioB "setupDVF" (HolMultiLib.Derivatives.setupDVF deps BDVA BDVB BDVD).run
 
--- DVF (derivatives.ml 2040-2299)
+-- DVF (derivatives.ml 2041-2300)
 def HAS_DERIVATIVE_SEQUENCE_LIPSCHITZ : thm := BDVF.HAS_DERIVATIVE_SEQUENCE_LIPSCHITZ
 def HAS_DERIVATIVE_SEQUENCE : thm := BDVF.HAS_DERIVATIVE_SEQUENCE
 def HAS_ANTIDERIVATIVE_SEQUENCE : thm := BDVF.HAS_ANTIDERIVATIVE_SEQUENCE
@@ -300,7 +301,7 @@ def HAS_DERIVATIVE_SERIES : thm := BDVF.HAS_DERIVATIVE_SERIES
 initialize BDVG : HolMultiLib.Derivatives.DVG ←
   ioB "setupDVG" (HolMultiLib.Derivatives.setupDVG deps BDVA BDVB).run
 
--- DVG (derivatives.ml 2300-2500)
+-- DVG (derivatives.ml 2301-2501)
 def HAS_DERIVATIVE_BILINEAR_WITHIN : thm := BDVG.HAS_DERIVATIVE_BILINEAR_WITHIN
 def HAS_DERIVATIVE_BILINEAR_AT : thm := BDVG.HAS_DERIVATIVE_BILINEAR_AT
 def BILINEAR_DIFFERENTIABLE_AT_COMPOSE : thm := BDVG.BILINEAR_DIFFERENTIABLE_AT_COMPOSE
@@ -321,7 +322,7 @@ def DIFFERENTIABLE_ON_SQNORM : thm := BDVG.DIFFERENTIABLE_ON_SQNORM
 initialize BDVH : HolMultiLib.Derivatives.DVH ←
   ioB "setupDVH" (HolMultiLib.Derivatives.setupDVH deps BDVA BDVB).run
 
--- DVH (derivatives.ml 2501-2792)
+-- DVH (derivatives.ml 2502-2793)
 def BAIRE1_PARTIAL_DERIVATIVES : thm := BDVH.BAIRE1_PARTIAL_DERIVATIVES
 def BAIRE1_DET_JACOBIAN : thm := BDVH.BAIRE1_DET_JACOBIAN
 def GATEAUX_DERIVATIVE_WITHIN : thm := BDVH.GATEAUX_DERIVATIVE_WITHIN
@@ -331,19 +332,19 @@ def GATEAUX_DERIVATIVE_LIPSCHITZ : thm := BDVH.GATEAUX_DERIVATIVE_LIPSCHITZ
 initialize BDVI : HolMultiLib.Derivatives.DVI ←
   ioB "setupDVI" (HolMultiLib.Derivatives.setupDVI deps BDVA BDVB BDVD BDVE BDVG).run
 
--- DVI (derivatives.ml 2793-3954)
+-- DVI (derivatives.ml 2794-3955)
 def INVERSE_FUNCTION_THEOREM : thm := BDVI.INVERSE_FUNCTION_THEOREM
 
 initialize BDVJ : HolMultiLib.Derivatives.DVJ ←
   ioB "setupDVJ" (HolMultiLib.Derivatives.setupDVJ deps BDVA BDVB BDVI).run
 
--- DVJ (derivatives.ml 3955-4427)
+-- DVJ (derivatives.ml 3956-4428)
 def JACOBIAN_SIGN_INVARIANCE : thm := BDVJ.JACOBIAN_SIGN_INVARIANCE
 
 initialize BDVK : HolMultiLib.Derivatives.DVK ←
   ioB "setupDVK" (HolMultiLib.Derivatives.setupDVK deps BDVA BDVB BDVD BDVI).run
 
--- DVK (derivatives.ml 4428-4661)
+-- DVK (derivatives.ml 4429-4662)
 def HAS_DERIVATIVE_LOCALLY_INJECTIVE : thm := BDVK.HAS_DERIVATIVE_LOCALLY_INJECTIVE
 def INVERSE_FUNCTION_THEOREM_C1_POINTWISE : thm := BDVK.INVERSE_FUNCTION_THEOREM_C1_POINTWISE
 def INVERSE_FUNCTION_C1 : thm := BDVK.INVERSE_FUNCTION_C1
@@ -351,7 +352,7 @@ def INVERSE_FUNCTION_C1 : thm := BDVK.INVERSE_FUNCTION_C1
 initialize BDVL : HolMultiLib.Derivatives.DVL ←
   ioB "setupDVL" (HolMultiLib.Derivatives.setupDVL deps BDVA BDVB BDVE BDVH BDVI).run
 
--- DVL (derivatives.ml 4662-5142)
+-- DVL (derivatives.ml 4663-5143)
 def INVERSE_FUNCTION_THEOREM_GLOBAL : thm := BDVL.INVERSE_FUNCTION_THEOREM_GLOBAL
 def INVERSE_FUNCTION_THEOREM_SUBSPACE : thm := BDVL.INVERSE_FUNCTION_THEOREM_SUBSPACE
 def INVERSE_FUNCTION_THEOREM_AFFINE : thm := BDVL.INVERSE_FUNCTION_THEOREM_AFFINE
@@ -359,7 +360,7 @@ def INVERSE_FUNCTION_THEOREM_AFFINE : thm := BDVL.INVERSE_FUNCTION_THEOREM_AFFIN
 initialize BDVM : HolMultiLib.Derivatives.DVM ←
   ioB "setupDVM" (HolMultiLib.Derivatives.setupDVM deps BDVA BDVB BDVC BDVD BDVG BDVH).run
 
--- DVM (derivatives.ml 5143-5500)
+-- DVM (derivatives.ml 5144-5501)
 def has_vector_derivative : thm := BDVM.has_vector_derivative
 def vector_derivative : thm := BDVM.vector_derivative
 def VECTOR_DERIVATIVE_WORKS : thm := BDVM.VECTOR_DERIVATIVE_WORKS
@@ -402,7 +403,7 @@ def BAIRE1_VECTOR_DERIVATIVE : thm := BDVM.BAIRE1_VECTOR_DERIVATIVE
 initialize BDVN : HolMultiLib.Derivatives.DVN ←
   ioB "setupDVN" (HolMultiLib.Derivatives.setupDVN deps BDVA BDVB BDVD BDVM).run
 
--- DVN (derivatives.ml 5501-5797)
+-- DVN (derivatives.ml 5502-5798)
 def VECTOR_DERIVATIVE_INCREASING_WITHIN : thm := BDVN.VECTOR_DERIVATIVE_INCREASING_WITHIN
 def NORM_VECTOR_DERIVATIVES_LE_WITHIN : thm := BDVN.NORM_VECTOR_DERIVATIVES_LE_WITHIN
 def NORM_VECTOR_DERIVATIVES_LE_AT : thm := BDVN.NORM_VECTOR_DERIVATIVES_LE_AT

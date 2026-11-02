@@ -273,6 +273,7 @@ def core4 : HolLibrary.Jacobi.CoreThms4 where
 /-- What jacobi.ml uses from Session. -/
 def deps : HolLibrary.Jacobi.JacobiDeps where
   new_definition s := do ExceptT.mk (Session.new_definition (← HolLight.q s))
+  prioritize_real := Session.prioritize_real
   ARITH_RULE t := ExceptT.mk (Session.ARITH_RULE t)
   ARITH_TAC := Session.ARITH_TAC
   ASM_ARITH_TAC := Session.ASM_ARITH_TAC

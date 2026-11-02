@@ -37,23 +37,26 @@ namespace HolLibrary.Card
 
 /-- Theorems card.ml uses from the core library (part 1 of 3). -/
 structure CoreThms1 where
-  (ADD1 AND_FORALL_THM ARB ARITH CARD_BOOL CARD_CLAUSES CARD_CROSS CARD_DIFF
+  (ADD1 AND_FORALL_THM ARB ARITH
+   CARD_BOOL CARD_CLAUSES CARD_CROSS CARD_DIFF CARD_EQ_0
    CARD_IMAGE_INJ CARD_LE_1 CARD_NUMSEG_1 CARD_SING CARD_SUBSET
    CARD_SUBSET_EQ CARD_UNION CARTESIAN_PRODUCT_EQ_EMPTY
    CARTESIAN_PRODUCT_EQ_MEMBERS CART_EQ COMPL_COMPL COND_RAND COND_RATOR
    CONJ_ACI CONJ_ASSOC CONJ_SYM CONS_11 CONTRAPOS_THM COUNTABLE CROSS
-   DE_MORGAN_THM DIFF_EMPTY DIMINDEX_GE_1 DISJOINT DISJOINT_SING EL
+   DE_MORGAN_THM DIFF_EMPTY DIMINDEX_GE_1 DISJOINT DISJOINT_SING DIV_MULT EL
    EMPTY_GSPEC EMPTY_SUBSET EQ_IMP EQ_SYM_EQ EQ_TRANS ETA_AX EXISTS_IN_GSPEC
    EXISTS_IN_IMAGE EXISTS_PAIR_THM EXISTS_REFL EXISTS_SUBSET_IMAGE_INJ
    EXISTS_UNIQUE_ALT EXISTS_UNIQUE_DEF EXISTS_UNIQUE_THM EXP EXTENSION
    EXTENSIONAL FINITE_BOOL FINITE_CROSS FINITE_CROSS_EQ FINITE_DIFF
    FINITE_EMPTY FINITE_IMAGE FINITE_INDEX_NUMBERS FINITE_INDUCT_STRONG
-   FINITE_INSERT FINITE_INTER FINITE_NUMSEG FINITE_POWERSET FINITE_PRODUCT
+   FINITE_INSERT FINITE_INTER FINITE_NUMSEG
+   FINITE_POWERSET FINITE_PRODUCT FINITE_RESTRICT
    FINITE_RESTRICTED_FUNSPACE FINITE_RULES FINITE_SING FINITE_SUBSET
    FINITE_UNION FINITE_UNIONS FORALL_AND_THM FORALL_CURRY FORALL_INT_CASES
    FORALL_IN_GSPEC FORALL_IN_IMAGE FORALL_IN_INSERT FORALL_IN_PCROSS
    FORALL_IN_UNION FORALL_IN_UNIONS FORALL_PAIR_THM FSTCART_PASTECART
-   FUNCTION_FACTORS_LEFT_GEN FUN_EQ_THM HAS_SIZE HD IMAGE_CLAUSES IMAGE_ID
+   FUNCTION_FACTORS_LEFT_GEN FUN_EQ_THM HAS_SIZE
+   HD IMAGE_CLAUSES IMAGE_EQ_EMPTY IMAGE_ID
    IMAGE_SUBSET IMAGE_UNION IMAGE_o IMP_CONJ IMP_CONJ_ALT IMP_IMP IN : thm)
   deriving Inhabited
 
@@ -1690,7 +1693,7 @@ def setupSquare [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
 /- ------------------------------------------------------------------------- -/
 /- Strict monotonicity and cancellation of addition; unions; differences;    -/
 /- bijections of disjoint pieces and subsets; ad-hoc product lemmas.         -/
-/- (card.ml 1246-1528)                                                       -/
+/- (card.ml 1246-1556)                                                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure Cancel where
@@ -1709,6 +1712,7 @@ structure Cancel where
   CARD_LE_DISJOINT_UNIONS : thm
   CARD_EQ_DISJOINT_UNIONS : thm
   CARD_EQ_IMAGE_MUL_FIBRES : thm
+  CARD_EQ_FIBRES_HAS_SIZE : thm
   CARD_DIFF_CONG : thm
   EQ_C_BIJECTIONS_DISJOINT : thm
   EQ_C_BIJECTIONS_SUBSETS : thm
@@ -1724,9 +1728,10 @@ def setupCancel [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
     ExceptT String IO Cancel := do
   -- @@SCOPE BEGIN
   let { ARITH_TAC, ASM_MESON_TAC, MESON_TAC, SET_RULE, SET_TAC, .. } := D
-  let { CARD_DIFF, CONJ_ASSOC, CONTRAPOS_THM, EQ_IMP, EXISTS_IN_IMAGE, EXISTS_PAIR_THM,
-        EXISTS_UNIQUE_THM, FINITE_DIFF, FINITE_SUBSET, FORALL_IN_IMAGE,
-        FORALL_PAIR_THM, IMP_CONJ, IMP_CONJ_ALT, .. } := D.core1
+  let { CARD_DIFF, CARD_EQ_0, CONJ_ASSOC, CONTRAPOS_THM, DIV_MULT, EQ_IMP,
+        EXISTS_IN_IMAGE, EXISTS_PAIR_THM, EXISTS_UNIQUE_THM, FINITE_DIFF, FINITE_IMAGE,
+        FINITE_RESTRICT, FINITE_SUBSET, FORALL_IN_IMAGE, FORALL_PAIR_THM, HAS_SIZE,
+        IMAGE_EQ_EMPTY, IMP_CONJ, IMP_CONJ_ALT, .. } := D.core1
   let { INFINITE, IN_ELIM_PAIR_THM, IN_ELIM_THM, IN_IMAGE, IN_UNIONS,
         LEFT_AND_EXISTS_THM, LEFT_IMP_EXISTS_THM, LE_ADD_LCANCEL, MONO_AND,
         MONO_EXISTS, PAIR_EQ, .. } := D.core2
@@ -1735,12 +1740,12 @@ def setupCancel [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
         le_c, pairwise, .. } := D.core3
   let { CARD_EQ_IMP_LE, CARD_EQ_SYM, CARD_LET_TRANS, CARD_LE_REFL, CARD_LE_TRANS,
         CARD_LTE_TRANS, CARD_LT_IMP_LE, EQ_C_BIJECTIONS, .. } := BBasics
-  let { CARD_EQ_CARD, CARD_EQ_TRANS, CARD_FINITE_CONG, CARD_INFINITE_CONG,
+  let { CARD_EQ_CARD, CARD_EQ_CARD_IMP, CARD_EQ_TRANS, CARD_FINITE_CONG, CARD_INFINITE_CONG,
         CARD_LE_ANTISYM, CARD_LE_CARD, CARD_LE_CONG, CARD_LE_FINITE,
         CARD_LE_FINITE_INFINITE, CARD_LE_IMAGE, CARD_LE_SUBSET, CARD_LE_TOTAL,
         CARD_LT_CARD, CARD_LT_CONG, CARD_NOT_LE, CARD_NOT_LT, LE_C_IMAGE_SUBSET, .. } := BOrder
   let { CARD_ADD_C, CARD_ADD_SYM, CARD_LE_ADD, CARD_LE_ADDL, CARD_LE_ADDR,
-        CARD_MUL_SYM, IN_CARD_MUL, mul_c, .. } := BArith
+        CARD_MUL_C, CARD_MUL_SYM, IN_CARD_MUL, mul_c, .. } := BArith
   let { CARD_ADD2_ABSORB_LT, CARD_ADD_ABSORB_LEFT, CARD_ADD_FINITE, CARD_ADD_FINITE_EQ,
         CARD_DIFF_ABSORB, CARD_MUL_ABSORB_LE, CARD_MUL_FINITE, CARD_SQUARE_INFINITE, .. } := BSquare
   -- @@SCOPE END
@@ -1933,6 +1938,34 @@ def setupCancel [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
     RULE_ASSUM_TAC (REWRITE_RULE [FORALL_IN_IMAGE]) THEN ASM_SIMP_TAC [] THEN
     ASM_MESON_TAC [])
 
+  let CARD_EQ_FIBRES_HAS_SIZE ← prove
+   r"!(f:A->B) s (t:C->bool) a.
+        FINITE s /\ (!x. x IN s ==> {z | z IN s /\ f z = f x} =_c t) /\
+        a IN IMAGE f s
+        ==> {z | z IN s /\ f z = a} HAS_SIZE CARD s DIV CARD(IMAGE f s)"
+   (REPEAT GEN_TAC THEN
+    DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC
+     (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
+    REWRITE_TAC [IN_IMAGE] THEN
+    DISCH_THEN (X_CHOOSE_THEN (← q r"x:A") (CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC)) THEN
+    SUBGOAL_THEN (← q r"{z | z IN s /\ (f:A->B) z = f x} =_c (t:C->bool)")
+    ASSUME_TAC THENL [ASM_SIMP_TAC [], ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"FINITE(t:C->bool)") ASSUME_TAC THENL
+     [FIRST_ASSUM (MP_TAC o MATCH_MP CARD_FINITE_CONG) THEN
+      ASM_SIMP_TAC [FINITE_RESTRICT],
+      ALL_TAC] THEN
+    FIRST_ASSUM (MP_TAC o MATCH_MP CARD_EQ_IMAGE_MUL_FIBRES) THEN
+    ASM_SIMP_TAC [CARD_EQ_CARD, CARD_MUL_FINITE, FINITE_IMAGE, CARD_MUL_C,
+                  FINITE_RESTRICT] THEN
+    DISCH_THEN (SUBST1_TAC o SYM) THEN
+    ASM_SIMP_TAC [HAS_SIZE, FINITE_RESTRICT] THEN
+    SUBGOAL_THEN (← q r"CARD {z | z IN s /\ (f:A->B) z = f x} = CARD(t:C->bool)")
+    SUBST1_TAC THENL
+     [MATCH_MP_TAC CARD_EQ_CARD_IMP THEN ASM_REWRITE_TAC [], ALL_TAC] THEN
+    CONV_TAC SYM_CONV THEN MATCH_MP_TAC DIV_MULT THEN
+    ASM_SIMP_TAC [CARD_EQ_0, FINITE_IMAGE, IMAGE_EQ_EMPTY] THEN
+    ASM SET_TAC [])
+
   let CARD_DIFF_CONG ← prove
    r"!(s:A->bool) s' (t:B->bool) t'.
         s' SUBSET s /\ t' SUBSET t /\
@@ -2051,13 +2084,13 @@ def setupCancel [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
            CARD_LE_ADD_RCANCEL_EQ, CARD_EQ_ADD_LCANCEL, CARD_EQ_ADD_LCANCEL_EQ,
            CARD_EQ_ADD_RCANCEL, CARD_EQ_ADD_RCANCEL_EQ, CARD_LE_UNIONS2, CARD_LE_UNIONS,
            CARD_LE_DISJOINT_UNIONS, CARD_EQ_DISJOINT_UNIONS, CARD_EQ_IMAGE_MUL_FIBRES,
-           CARD_DIFF_CONG, EQ_C_BIJECTIONS_DISJOINT, EQ_C_BIJECTIONS_SUBSETS,
+           CARD_EQ_FIBRES_HAS_SIZE, CARD_DIFF_CONG, EQ_C_BIJECTIONS_DISJOINT, EQ_C_BIJECTIONS_SUBSETS,
            EQ_C_BIJECTIONS_SUBSETS_LT, EQ_C_BIJECTIONS_EXTEND, EQ_C_INVOLUTION,
            CARD_MUL_LT_LEMMA, CARD_MUL_LT_INFINITE }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Cantor's theorem; lemmas about countability.  (card.ml 1543-1882)         -/
+/- Cantor's theorem; lemmas about countability.  (card.ml 1571-1910)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure Countable where
@@ -2479,7 +2512,7 @@ def setupCountable [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) 
 
 /- ------------------------------------------------------------------------- -/
 /- Countable products of vectors; countable subsets of images; countable    -/
-/- unions and intersections of a family.  (card.ml 1866-2190)                -/
+/- unions and intersections of a family.  (card.ml 1894-2218)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure UnionOf where
@@ -2914,7 +2947,7 @@ def setupUnionOf [HolBase] (D : CardDeps) (BCountable : Countable) (ADefs : HolL
 /- ------------------------------------------------------------------------- -/
 /- More countable unions/intersections; a countable chain has an omega-chain; -/
 /- cardinality of lists, cartesian powers and the reals.                     -/
-/- (card.ml 2199-2557)                                                       -/
+/- (card.ml 2227-2585)                                                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure Reals where
@@ -3224,7 +3257,7 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
          [REWRITE_TAC [LE_C, mul_c, EXISTS_PAIR_THM, IN_ELIM_PAIR_THM, IN_UNIV] THEN
           EXISTS_TAC (← q r"\(n,x:real). --(&1) pow n * x") THEN X_GEN_TAC (← q "x:real") THEN
           MATCH_MP_TAC m1 THEN
-          REWRITE_TAC [OR_EXISTS_THM] THEN EXISTS_TAC (← q "abs x") THEN
+          REWRITE_TAC [OR_EXISTS_THM] THEN EXISTS_TAC (← q r"abs(x:real)") THEN
           REWRITE_TAC [IN_ELIM_THM] THEN REAL_ARITH_TAC,
           ALL_TAC] THEN
         MATCH_MP_TAC CARD_LE_MUL THEN REWRITE_TAC [CARD_LE_REFL] THEN
@@ -3244,7 +3277,7 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
         ASM_REWRITE_TAC [] THEN MATCH_MP_TAC m2 THEN
         MP_TAC (← SPEC (← q r"y - x:real") REAL_ARCH) THEN
         ASM_REWRITE_TAC [REAL_SUB_LT, NOT_FORALL_THM] THEN
-        DISCH_THEN (MP_TAC o SPEC (← q r"&2")) THEN MATCH_MP_TAC MONO_EXISTS THEN
+        DISCH_THEN (MP_TAC o SPEC (← q r"&2:real")) THEN MATCH_MP_TAC MONO_EXISTS THEN
         X_GEN_TAC (← q "p:num") THEN DISCH_TAC THEN
         MP_TAC (← ISPEC (← q r"&p * x:real") REAL_ARCH_LT) THEN
         GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN MATCH_MP_TAC MONO_EXISTS THEN
@@ -3364,7 +3397,7 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Cardinal exponentiation.  (card.ml 2559-2826)                             -/
+/- Cardinal exponentiation.  (card.ml 2587-2854)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure Exp where
@@ -3713,7 +3746,7 @@ def mpPartRand [HolBase] (f : term → Except String term) (th : thm) : tactic :
 
 /- ------------------------------------------------------------------------- -/
 /- Restricted and limited powersets; more about cardinality of lists and     -/
-/- restricted powersets; restricted function spaces.  (card.ml 2828-3183)    -/
+/- restricted powersets; restricted function spaces.  (card.ml 2856-3211)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Powerset where
@@ -4175,7 +4208,7 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Cardinality properties of Cartesian products.  (card.ml 3185-3406)        -/
+/- Cardinality properties of Cartesian products.  (card.ml 3213-3434)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure Cartesian where

@@ -140,6 +140,11 @@ structure CoreThms8 where
 
 /-- What primitive.ml uses from Session besides theorems. -/
 structure PrimitiveDeps where
+  -- parser state: primitive.ml 15-17 `prioritize_int()`, `prioritize_num()`,
+  -- `prioritize_real()` (restoring the overload ordering it needs)
+  prioritize_int : IO Unit
+  prioritize_num : IO Unit
+  prioritize_real : IO Unit
   -- decision procedures and tactics
   ARITH_RULE : term → ExceptT String IO thm
   ARITH_TAC : tactic
@@ -191,11 +196,15 @@ structure Lemma where
 def setupLemma [HolBase] (D : PrimitiveDeps) :
     ExceptT String IO Lemma := do
   -- @@SCOPE BEGIN
-  let { ASM_ARITH_TAC, .. } := D
+  let { ASM_ARITH_TAC, prioritize_int, prioritize_num, prioritize_real, .. } := D
   let { ARITH, DIVIDES_0, .. } := D.core1
   let { INT_ABS_NUM, INT_DIVIDES_LABS, INT_FORALL_ABS, INT_OF_NUM_EQ, INT_OF_NUM_GT, .. } := D.core3
   let { int_prime, num_divides, prime, .. } := D.core5
   -- @@SCOPE END
+
+  prioritize_int
+  prioritize_num
+  prioritize_real
 
   let INT_PRIME ← prove
    r"!p. int_prime(&p) <=> prime p"

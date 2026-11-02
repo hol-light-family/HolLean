@@ -17,7 +17,7 @@
   earlier bindings, then analysis.ml's (its bundles are passed to the setups
   that use them, as `(AX : HolLibrary.Analysis.X)`), then the core library's
   (CoreThms1..2).  transc.ml rebinds SYM_CANON_CONV and EXT_CONV (analysis.ml)
-  and DIVISION_0, REAL_DIV_SQRT, SQRT_EVEN_POW2 and SUM_DIFFS (core).
+  and REAL_DIV_SQRT and SQRT_EVEN_POW2 (core).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
   literals right to left, so in a proof the rules nearer the end are
@@ -4506,7 +4506,7 @@ def lastThm (l : List thm) : ExceptT String IO thm :=
 
 structure Division where
   -- @@FIELDS
-  DIVISION_0 : thm
+  DIVISION_0_DSIZE : thm
   DIVISION_1 : thm
   DIVISION_SINGLE : thm
   DIVISION_LHS : thm
@@ -4542,7 +4542,7 @@ def setupDivision [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (ANames : 
   -- @@SCOPE END
   let numc (s : String) : ExceptT String IO thm := do ExceptT.mk (num_CONV (← q s))
 
-  let DIVISION_0 ← prove
+  let DIVISION_0_DSIZE ← prove
    r"!a b. (a = b) ==> (dsize(\n. if (n = 0) then a else b) = 0)"
    (REPEAT GEN_TAC THEN DISCH_THEN SUBST_ALL_TAC THEN REWRITE_TAC [COND_ID] THEN
     REWRITE_TAC [dsize] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
@@ -4792,7 +4792,7 @@ def setupDivision [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (ANames : 
     ASM_REWRITE_TAC [])
 
   -- @@RETURN BEGIN
-  return { DIVISION_0, DIVISION_1, DIVISION_SINGLE, DIVISION_LHS, DIVISION_THM,
+  return { DIVISION_0_DSIZE, DIVISION_1, DIVISION_SINGLE, DIVISION_LHS, DIVISION_THM,
            DIVISION_RHS, DIVISION_LT_GEN, DIVISION_LT, DIVISION_LE, DIVISION_GT,
            DIVISION_EQ, DIVISION_LBOUND, DIVISION_LBOUND_LT, DIVISION_UBOUND,
            DIVISION_UBOUND_LT }
@@ -4823,7 +4823,7 @@ def setupDivAppend [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivisio
         LTE_TRANS, LT_ADD_RCANCEL, LT_IMP_LE, LT_TRANS, NOT_LE, NOT_LT, NOT_SUC, .. } := D.core1
   let { REAL_LET_TRANS, REAL_LT_REFL, SELECT_UNIQUE, SUB_0, SUB_REFL, .. } := D.core2
   let { dsize, fine, gauge, rsum, tdiv, .. } := BArcSinCos
-  let { DIVISION_0, DIVISION_1, DIVISION_EQ, DIVISION_LBOUND, DIVISION_LHS,
+  let { DIVISION_0_DSIZE, DIVISION_1, DIVISION_EQ, DIVISION_LBOUND, DIVISION_LHS,
         DIVISION_LT_GEN, DIVISION_RHS, DIVISION_SINGLE, DIVISION_THM,
         DIVISION_UBOUND_LT, .. } := BDivision
   let { LESS_0_CASES, LESS_EQUAL_ANTISYM, LESS_EQ_SUC_REFL, LESS_OR, LESS_SUC_REFL,
@@ -5193,7 +5193,7 @@ def setupDivAppend [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivisio
          [DISCH_THEN (ASSUME_TAC o MATCH_MP DIVISION_1) THEN
           ASM_REWRITE_TAC [← numc "1", ← CONJUNCT2 LT, NOT_LESS_0] THEN
           DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC [],
-          DISCH_THEN (SUBST1_TAC o MATCH_MP DIVISION_0) THEN
+          DISCH_THEN (SUBST1_TAC o MATCH_MP DIVISION_0_DSIZE) THEN
           REWRITE_TAC [NOT_LESS_0]]]))
 
   -- @@RETURN BEGIN
@@ -6507,7 +6507,7 @@ def setupSpike [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
 
 structure Limit where
   -- @@FIELDS
-  SUM_DIFFS : thm
+  PSUM_DIFFS : thm
   RSUM_BOUND : thm
   RSUM_DIFF_BOUND : thm
   INTEGRABLE_LIMIT : thm
@@ -6550,8 +6550,7 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
   let { CONT_UNIFORM, .. } := AUniform
   -- @@SCOPE END
 
-  -- Rebinds the core SUM_DIFFS.
-  let SUM_DIFFS ← prove
+  let PSUM_DIFFS ← prove
    r"!m n. sum(m,n) (\i. d(SUC i) - d(i)) = d(m + n) - d m"
    (GEN_TAC THEN INDUCT_TAC THEN
     ASM_REWRITE_TAC [sum, ADD_CLAUSES, REAL_SUB_REFL] THEN REAL_ARITH_TAC)
@@ -6582,7 +6581,7 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
         ALL_TAC] THEN
       FIRST_X_ASSUM (CONJUNCTS_THEN ASSUME_TAC o REWRITE_RULE [tdiv]) THEN
       FIRST_ASSUM (ASSUME_TAC o MATCH_MP DIVISION_MONO_LE_SUC) THEN
-      ASM_REWRITE_TAC [real_abs, REAL_SUB_LE, SUM_DIFFS, ADD_CLAUSES] THEN
+      ASM_REWRITE_TAC [real_abs, REAL_SUB_LE, PSUM_DIFFS, ADD_CLAUSES] THEN
       MATCH_MP_TAC ra THEN
       ASM_MESON_TAC [DIVISION_LBOUND, DIVISION_UBOUND]))
 
@@ -6850,7 +6849,7 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
               REAL_LE_TRANS])
 
   -- @@RETURN BEGIN
-  return { SUM_DIFFS, RSUM_BOUND, RSUM_DIFF_BOUND, INTEGRABLE_LIMIT, INTEGRABLE_CONST,
+  return { PSUM_DIFFS, RSUM_BOUND, RSUM_DIFF_BOUND, INTEGRABLE_LIMIT, INTEGRABLE_CONST,
            INTEGRABLE_COMBINE, INTEGRABLE_POINT_SPIKE, INTEGRABLE_CONTINUOUS,
            INTEGRABLE_SPLIT_SIDES, INTEGRABLE_SUBINTERVAL_LEFT,
            INTEGRABLE_SUBINTERVAL_RIGHT, INTEGRABLE_SUBINTERVAL }

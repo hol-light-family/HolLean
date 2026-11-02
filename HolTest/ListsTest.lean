@@ -117,7 +117,7 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
   "|- (PAIRWISE r [] <=> true) /\\ (PAIRWISE r (CONS h t) <=> ALL (r h) t /\\ PAIRWISE r t)"
 
 /- ---------------------------------------------------------------------- -/
-/- Representative theorems (lists.ml 148-697), spanning both halves.      -/
+/- Representative theorems (lists.ml 148-707), spanning both halves.      -/
 /- ---------------------------------------------------------------------- -/
 
 #eval thmCheck "NOT_CONS_NIL" listThms1.NOT_CONS_NIL "|- forall h t. ~(CONS h t = [])"
@@ -147,7 +147,7 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
   "|- forall l. ~(l = []) ==> l = CONS (HD l) (TL l)"
 
 /- ---------------------------------------------------------------------- -/
-/- The two extra monotonicity theorems (lists.ml 722-731) and their       -/
+/- The two extra monotonicity theorems (lists.ml 732-741) and their       -/
 /- REGISTRATION (line 733).                                               -/
 /-                                                                        -/
 /- The registration is the point: `monotonicity_theorems :=               -/
@@ -173,7 +173,7 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
     IO.println s!"monotonicity registration -> MISMATCH ALL={hasAll} ALL2={hasAll2}" : IO Unit)
 
 /- ---------------------------------------------------------------------- -/
-/- The four evaluation conversions (lists.ml 751-876).                    -/
+/- The four evaluation conversions (lists.ml 761-886).                    -/
 /- Expected values from Help/LENGTH_CONV.hlp, Help/EL_CONV.hlp and        -/
 /- Help/REVERSE_CONV.hlp - the documented examples, verbatim.             -/
 /-                                                                        -/
@@ -207,7 +207,7 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
   "|- list_of_seq (\\n. n + 1) 3 = [0 + 1; 1 + 1; 2 + 1]" LIST_OF_SEQ_CONV
 
 /- ---------------------------------------------------------------------- -/
-/- LIST_CONV (lists.ml 740-746): apply a conversion down a list.          -/
+/- LIST_CONV (lists.ml 750-756): apply a conversion down a list.          -/
 /- Expected value from Help/LIST_CONV.hlp, verbatim.                      -/
 /- ---------------------------------------------------------------------- -/
 
@@ -224,7 +224,7 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
       else IO.println s!"LIST_CONV doc -> MISMATCH got={got}" : IO Unit)
 
 /- ---------------------------------------------------------------------- -/
-/- Syntax constructors (lists.ml 702-717).                                -/
+/- Syntax constructors (lists.ml 712-727).                                -/
 /- `mk_flist` expectation from Help/mk_flist.hlp, verbatim.               -/
 /- ---------------------------------------------------------------------- -/
 
@@ -251,7 +251,7 @@ private unsafe def convCheck (lbl expr expected : String) (c : ioconv) : IO Unit
     else IO.println s!"mk_flist [] -> MISMATCH got={e}" : IO Unit)
 
 /- ---------------------------------------------------------------------- -/
-/- The char type and string machinery (lists.ml 877-998).                 -/
+/- The char type and string machinery (lists.ml 887-1008).                 -/
 /-                                                                        -/
 /- `char_INDUCT`/`char_RECURSION` come from `define_type` on an EIGHT-    -/
 /- argument constructor, so these also exercise the ind_types.ml          -/

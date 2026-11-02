@@ -627,6 +627,7 @@ structure ListThms2 where
   BUTLAST_CLAUSES           : thm
   BUTLAST_APPEND            : thm
   APPEND_BUTLAST_LAST       : thm
+  LIST_SNOC_EXISTS          : thm
   LAST_APPEND               : thm
   LENGTH_TL                 : thm
   LAST_REVERSE              : thm
@@ -656,7 +657,7 @@ structure ListThms2 where
   LIST_OF_SEQ               : thm
   deriving Inhabited
 
-/-- lists.ml 405-697.  `list_INDUCT` is the theorem from the list type
+/-- lists.ml 405-707.  `list_INDUCT` is the theorem from the list type
     definition, used directly by `MATCH_MP_TAC list_INDUCT` as in OCaml;
     `list_INDUCT'` is LIST_INDUCT_TAC's own restatement. -/
 @[nospecialize]
@@ -829,6 +830,17 @@ def setupListThms2 [HolBase] (D : ListDefs) (T1 : ListThms1)
    (LIST_INDUCT_TAC THEN REWRITE_TAC [LAST, BUTLAST, NOT_CONS_NIL] THEN
     COND_CASES_TAC THEN ASM_SIMP_TAC [APPEND])
 
+  let LIST_SNOC_EXISTS ← prove
+   r"!l:A list.
+        ~(l = []) ==> ?l0 x. l = APPEND l0 [x] /\ LENGTH l = SUC(LENGTH l0)"
+   (REPEAT STRIP_TAC THEN
+    MAP_EVERY EXISTS_TAC [← q r"BUTLAST(l:A list)", ← q r"LAST(l:A list)"] THEN
+    FIRST_ASSUM (ASSUME_TAC o MATCH_MP APPEND_BUTLAST_LAST) THEN
+    CONJ_TAC THENL [ASM_REWRITE_TAC [], ALL_TAC] THEN
+    FIRST_ASSUM (fun th => tactic_of do
+      pure (GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [← SYM th])) THEN
+    REWRITE_TAC [LENGTH_APPEND, LENGTH, ADD_CLAUSES])
+
   let LAST_APPEND ← prove
    r"!p q:A list. LAST(APPEND p q) = if q = [] then LAST p else LAST q"
    (LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [APPEND, LAST, APPEND_EQ_NIL] THEN
@@ -987,7 +999,7 @@ def setupListThms2 [HolBase] (D : ListDefs) (T1 : ListThms1)
     ALLPAIRS_SYM, ALLPAIRS_MEM, ALLPAIRS_MAP, ALLPAIRS_EQ, ALL2_ALL,
     APPEND_EQ_NIL, APPEND_LCANCEL, APPEND_RCANCEL, LENGTH_MAP2, EL_MAP2,
     MAP_EQ_NIL, INJECTIVE_MAP, SURJECTIVE_MAP, MAP_ID, MAP_I, BUTLAST_CLAUSES,
-    BUTLAST_APPEND, APPEND_BUTLAST_LAST, LAST_APPEND, LENGTH_TL, LAST_REVERSE,
+    BUTLAST_APPEND, APPEND_BUTLAST_LAST, LIST_SNOC_EXISTS, LAST_APPEND, LENGTH_TL, LAST_REVERSE,
     HD_REVERSE, EL_APPEND, EL_TL, EL_CONS, LAST_EL, HD_APPEND, CONS_HD_TL,
     EL_MAP, MAP_REVERSE, ALL_FILTER, APPEND_SING, MEM_APPEND_DECOMPOSE_LEFT,
     MEM_APPEND_DECOMPOSE, PAIRWISE_APPEND, PAIRWISE_MAP, PAIRWISE_IMPLIES,
@@ -1010,14 +1022,14 @@ open HolCore.Tactics (tactic thm_tactic thm_tactical goal THEN)
 open HolCore.Parser (parse_term)
 open HolLight HolLight.Syntax
 
-/-- `mk_cons h t` (lists.ml 702-705). -/
+/-- `mk_cons h t` (lists.ml 712-715). -/
 def mk_cons (h t : term) : IO (Except String term) := ExceptT.run do
   tryWith (do
       let cons ← ExceptT.mk (mk_const "CONS" [(type_of h, aty)])
       liftExcept (do mk_comb (← mk_comb cons h) t))
     (throw "mk_cons")
 
-/-- `mk_list (tms,ty)` (lists.ml 707-712). -/
+/-- `mk_list (tms,ty)` (lists.ml 717-722). -/
 def mk_list (tms : List term) (ty : hol_type) : IO (Except String term) := ExceptT.run do
   tryWith (do
       let nil ← ExceptT.mk (mk_const "NIL" [(ty, aty)])
@@ -1026,7 +1038,7 @@ def mk_list (tms : List term) (ty : hol_type) : IO (Except String term) := Excep
       liftExcept (tms.foldrM (fun tm acc => do (← mk_binop cons tm) acc) nil))
     (throw "mk_list")
 
-/-- `mk_flist tms` (lists.ml 714-716). -/
+/-- `mk_flist tms` (lists.ml 724-726). -/
 def mk_flist (tms : List term) : IO (Except String term) := ExceptT.run do
   tryWith (do ExceptT.mk (mk_list tms (type_of (← liftExcept (hd tms))))) (throw "mk_flist")
 
@@ -1092,14 +1104,14 @@ open HolCore.Tactics (tactic thm_tactic thm_tactical goal THEN)
 open HolCore.Parser (parse_term)
 open HolLight HolLight.Syntax
 
-/-- `LIST_CONV conv tm` (lists.ml 740-746), for a pure conversion. -/
+/-- `LIST_CONV conv tm` (lists.ml 750-756), for a pure conversion. -/
 partial def LIST_CONV (cnv : Equal.conv) : Equal.conv := fun tm =>
   if is_cons tm then Equal.COMB2_CONV (Equal.RAND_CONV cnv) (LIST_CONV cnv) tm
   else match dest_const tm with
     | .error e => .error e
     | .ok (name, _) => if name == "NIL" then .ok (REFL tm) else failwith "LIST_CONV"
 
-/-- `LIST_CONV conv tm` (lists.ml 740-746), for a conversion in `IO`
+/-- `LIST_CONV conv tm` (lists.ml 750-756), for a conversion in `IO`
     (`LIST_CONV num_CONV`). -/
 partial def LIST_CONV_IO [HolBase] (cnv : ioconv) : ioconv := fun tm =>
   if is_cons tm then COMB2_CONV (RAND_CONV cnv) (LIST_CONV_IO cnv) tm
@@ -1107,7 +1119,7 @@ partial def LIST_CONV_IO [HolBase] (cnv : ioconv) : ioconv := fun tm =>
     | .error e => .error e
     | .ok (name, _) => if name == "NIL" then .ok (REFL tm) else failwith "LIST_CONV")
 
-/-- The evaluation conversions of lists.ml 751-876. -/
+/-- The evaluation conversions of lists.ml 761-886. -/
 structure ListEvalConvs where
   LENGTH_CONV : ioconv
   EL_CONV : ioconv
@@ -1122,7 +1134,7 @@ instance : Inhabited ListEvalConvs :=
 private def sortTerms (l : List term) : List term := sort (fun x y => compare x y == .lt) l
 
 /-- `LENGTH_CONV`, `EL_CONV`, `REVERSE_CONV` and `LIST_OF_SEQ_CONV`
-    (lists.ml 751-876): each proves its `pthc` once and returns the
+    (lists.ml 761-886): each proves its `pthc` once and returns the
     conversion. -/
 @[nospecialize]
 partial def setupListEvalConvs [HolBase] (D : ListDefs) (T1 : ListThms1)
@@ -1131,7 +1143,7 @@ partial def setupListEvalConvs [HolBase] (D : ListDefs) (T1 : ListThms1)
   let elemTy (ltm : term) : ExceptT String IO hol_type :=
     liftExcept (do hd (← dest_type (type_of ltm)).2)
 
-  -- LENGTH_CONV (lists.ml 751-778).
+  -- LENGTH_CONV (lists.ml 761-788).
   let len_pthc ← prove
    r"LENGTH(t:A list) = LENGTH t + 0 /\
      LENGTH([]:A list) + n = n /\
@@ -1159,7 +1171,7 @@ partial def setupListEvalConvs [HolBase] (D : ListDefs) (T1 : ListThms1)
       tryWith (do lconv (← INST [(← liftExcept (rand tm), t_tm)] pth_init)) (throw "LENGTH_CONV")
     | _ => throw "LENGTH_CONV"
 
-  -- EL_CONV (lists.ml 780-807).
+  -- EL_CONV (lists.ml 790-817).
   let el_pthc ← prove
     r"EL 0 (CONS (h:A) t) = h /\
       (n = SUC m ==> EL n (CONS h t) = EL m t)"
@@ -1188,7 +1200,7 @@ partial def setupListEvalConvs [HolBase] (D : ListDefs) (T1 : ListThms1)
       tryWith (econv (REFL tm)) (throw "EL_CONV")
     | _ => throw "EL_CONV"
 
-  -- REVERSE_CONV (lists.ml 809-834).
+  -- REVERSE_CONV (lists.ml 819-844).
   let rev_pthc ← prove
    r"l:A list = APPEND l [] /\
      APPEND (REVERSE []) l:A list = l /\
@@ -1213,7 +1225,7 @@ partial def setupListEvalConvs [HolBase] (D : ListDefs) (T1 : ListThms1)
       tryWith (do rconv (← INST [(tm, l_tm)] pth_init)) (throw "REVERSE_CONV")
     | _ => throw "REVERSE_CONV"
 
-  -- LIST_OF_SEQ_CONV (lists.ml 836-876).
+  -- LIST_OF_SEQ_CONV (lists.ml 846-886).
   let los_pthc ← prove
    r"l:A list = APPEND l [] /\
      APPEND (list_of_seq f 0) l:A list = l /\
@@ -1254,7 +1266,7 @@ partial def setupListEvalConvs [HolBase] (D : ListDefs) (T1 : ListThms1)
 
   return { LENGTH_CONV, EL_CONV, REVERSE_CONV, LIST_OF_SEQ_CONV }
 
-/-- `bool_of_term t` (lists.ml 887-891): the truth value denoted by a `T`/`F`
+/-- `bool_of_term t` (lists.ml 897-901): the truth value denoted by a `T`/`F`
     constant.
 
     OCaml:
@@ -1270,7 +1282,7 @@ def bool_of_term (t : term) : Except String Bool :=
   | .Const "F" _ => .ok false
   | _ => failwith "bool_of_term"
 
-/-- `code_of_term t` (lists.ml 892-899): the ASCII code (0-255) of an
+/-- `code_of_term t` (lists.ml 902-909): the ASCII code (0-255) of an
     `ASCII b0 ... b7` term.
 
     OCaml:
@@ -1299,7 +1311,7 @@ def code_of_term (t : term) : Except String Nat := do
     -- `itlist (fun b f -> if b then 1 + 2 * f else 2 * f) bs 0`.
     pure (itlist (fun (b : Bool) (acc : Nat) => if b then 1 + 2 * acc else 2 * acc) bs 0)
 
-/-- `char_of_term = Char.chr o code_of_term` (lists.ml 899).
+/-- `char_of_term = Char.chr o code_of_term` (lists.ml 909).
 
     `o` is the OCaml composition operator; `Char.chr` is Lean `Char.ofNat`.
     This is BOTH the local `char_of_term` AND (per the returned tuple, whose
@@ -1328,7 +1340,7 @@ def stringEscaped (s : String) : String :=
       "\\" ++ d
   String.join (s.toList.map esc)
 
-/-- `dest_string tm` (lists.ml 901-908): the string denoted by a `char list`
+/-- `dest_string tm` (lists.ml 911-918): the string denoted by a `char list`
     term, escaped as OCaml `String.escaped` does.
 
     OCaml:
@@ -1381,7 +1393,7 @@ structure CharStringMachinery where
   consNeqNil  : thm
   deriving Inhabited
 
-/-- Build the `CharStringMachinery` (lists.ml 909-978).  `injectivity_char`
+/-- Build the `CharStringMachinery` (lists.ml 919-988).  `injectivity_char`
     is `injectivity "char"`. -/
 @[nospecialize]
 def setupCharStringMachinery [HolBase] (injectivity_char CONS_11 NOT_CONS_NIL : thm)
@@ -1436,22 +1448,22 @@ def setupCharStringMachinery [HolBase] (injectivity_char CONS_11 NOT_CONS_NIL : 
            xtm, xstm, ytm, ystm, niltm,
            nilEqThm, consEqThm, consNeqThm, nilNeqCons, consNeqNil }
 
-/-- `dest_char` is the closure's `char_of_term` (lists.ml 899, 998). -/
+/-- `dest_char` is the closure's `char_of_term` (lists.ml 909, 1008). -/
 def dest_char : term → Except String Char := char_of_term
 
-/-- `mk_char = mk_code o Char.code` (lists.ml 919). -/
+/-- `mk_char = mk_code o Char.code` (lists.ml 929). -/
 def mk_char (M : CharStringMachinery) (c : Char) : Except String term :=
   match M.codes[c.toNat]? with
   | some t => .ok t
   | none => failwith "mk_char"
 
-/-- `mk_string s` (lists.ml 920-923). -/
+/-- `mk_string s` (lists.ml 930-933). -/
 def mk_string (M : CharStringMachinery) (s : String) : IO (Except String term) := do
   match s.toList.mapM (mk_char M) with
   | .error e => return .error e
   | .ok tms => mk_list tms M.char_ty
 
-/-- The `findneq` of `CHAR_DISTINCTNESS` (lists.ml 949-953). -/
+/-- The `findneq` of `CHAR_DISTINCTNESS` (lists.ml 959-963). -/
 private def findneq : Nat → List term → List term → List term →
     Except String (Nat × List term × Bool × List term × List term)
   | n, pfx, b1 :: a, b2 :: b =>
@@ -1459,7 +1471,7 @@ private def findneq : Nat → List term → List term → List term →
     else findneq (n + 1) (b1 :: pfx) a b
   | _, _, _, _ => failwith ""
 
-/-- `CHAR_DISTINCTNESS c1 c2` (lists.ml 954-956). -/
+/-- `CHAR_DISTINCTNESS c1 c2` (lists.ml 964-966). -/
 def CHAR_DISTINCTNESS (M : CharStringMachinery) (c1 c2 : term) : Except String thm := do
   let (_, a) := strip_comb c1
   let (_, b) := strip_comb c2
@@ -1470,7 +1482,7 @@ def CHAR_DISTINCTNESS (M : CharStringMachinery) (c1 c2 : term) : Except String t
   let pth := if b then M.asciiNeqsFT else M.asciiNeqsTF
   Kernel.INST (List.zip p pp ++ List.zip s1 ss1 ++ List.zip s2 ss2) (← el n pth)
 
-/-- `STRING_DISTINCTNESS s1 s2` (lists.ml 970-978). -/
+/-- `STRING_DISTINCTNESS s1 s2` (lists.ml 980-988). -/
 partial def STRING_DISTINCTNESS [HolBase] (M : CharStringMachinery) (s1 s2 : term) :
     Except String thm := do
   if s1 == M.niltm then
@@ -1489,12 +1501,12 @@ partial def STRING_DISTINCTNESS [HolBase] (M : CharStringMachinery) (s1 s2 : ter
       let itm ← Kernel.INST [(c1, M.xtm), (c2, M.ytm), (s1, M.xstm), (s2, M.ystm)] M.consNeqThm
       HolBase.B.MP itm (← CHAR_DISTINCTNESS M c1 c2)
 
-/-- `CHAR_EQ_CONV` (lists.ml 980-984). -/
+/-- `CHAR_EQ_CONV` (lists.ml 990-994). -/
 def CHAR_EQ_CONV [HolBase] (M : CharStringMachinery) : Equal.conv := fun tm => do
   let (c1, c2) ← dest_eq tm
   if compare c1 c2 == Ordering.eq then HolBase.B.EQT_INTRO (REFL c1) else CHAR_DISTINCTNESS M c1 c2
 
-/-- `STRING_EQ_CONV` (lists.ml 985-988). -/
+/-- `STRING_EQ_CONV` (lists.ml 995-998). -/
 def STRING_EQ_CONV [HolBase] (M : CharStringMachinery) : Equal.conv := fun tm => do
   let (ltm, rtm) ← dest_eq tm
   if compare ltm rtm == Ordering.eq then HolBase.B.EQT_INTRO (REFL ltm) else STRING_DISTINCTNESS M ltm rtm

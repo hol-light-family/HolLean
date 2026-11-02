@@ -218,6 +218,7 @@ def core4 : HolLibrary.CalcReal.CoreThms4 where
 
 /-- What calcreal.ml uses from Session. -/
 def deps : HolLibrary.CalcReal.CalcRealDeps where
+  prioritize_real := Session.prioritize_real
   ARITH_TAC := Session.ARITH_TAC
   MESON_TAC := Session.MESON_TAC
   REAL_ARITH t := ExceptT.mk (Session.REAL_ARITH3 t)

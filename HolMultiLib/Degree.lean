@@ -226,6 +226,7 @@ structure QVecThms where
   deriving Inhabited
 
 structure DegreeDeps where
+  prioritize_real : IO Unit
   pt : PolytopeDeps
   -- procedures polytope.ml's deps do not carry
   prove_general_recursive_function_exists : term → ExceptT String IO thm
@@ -247,7 +248,7 @@ structure DegreeDeps where
 
 /- ------------------------------------------------------------------------- -/
 /- Transfer of Brouwer degree from product topology setting; homotopy of     -/
-/- linear maps.  (degree.ml 1-404)                                           -/
+/- linear maps.  (degree.ml 1-405)                                           -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGA where
@@ -328,6 +329,8 @@ def setupDGA [HolBase] (D : DegreeDeps) : ExceptT String IO DGA := do
   let { LINEAR_INJECTIVE_0, LINEAR_INVERSE_LEFT, MATRIX_I, MATRIX_INV, MATRIX_INVERTIBLE,
         MATRIX_MUL_LID, .. } := D.qvec
   -- @@SCOPE END
+
+  D.prioritize_real
 
   let brouwer_degree1 ← new_definition
    r"brouwer_degree1 n (f:real^N->real^N) =
@@ -729,7 +732,7 @@ def setupDGA [HolBase] (D : DegreeDeps) : ExceptT String IO DGA := do
          HOMOTOPIC_LINEAR_MAPS_IMP, HOMOTOPIC_LINEAR_MAPS_ALT }
 
 /- ------------------------------------------------------------------------- -/
-/- Hairy ball theorem and relatives; retractions.  (degree.ml 405-1102)      -/
+/- Hairy ball theorem and relatives; retractions.  (degree.ml 406-1103)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGB where
@@ -1568,7 +1571,7 @@ def setupDGB [HolBase] (D : DegreeDeps) (BDGA : DGA) : ExceptT String IO DGB := 
 
 /- ------------------------------------------------------------------------- -/
 /- Brouwer fixed-point theorem; the topological dimension of R^n.            -/
-/- (degree.ml 1103-1584)                                                     -/
+/- (degree.ml 1104-1585)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGC where
@@ -2141,7 +2144,7 @@ def setupDGC [HolBase] (D : DegreeDeps) (BDGA : DGA) (BDGB : DGB) : ExceptT Stri
          BROUWER_CUBE, DIMENSION_EQ_AFF_DIM }
 
 /- ------------------------------------------------------------------------- -/
-/- Consequences of the dimension of R^n.  (degree.ml 1582-2316)              -/
+/- Consequences of the dimension of R^n.  (degree.ml 1583-2317)              -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGD where
@@ -3012,7 +3015,7 @@ def setupDGD [HolBase] (D : DegreeDeps) (BDGC : DGC) : ExceptT String IO DGD := 
 
 /- ------------------------------------------------------------------------- -/
 /- Nonseparation: a "simple" set of dimension n can't be separated by sets   -/
-/- of dimension <= n - 2.  (degree.ml 2317-2612)                             -/
+/- of dimension <= n - 2.  (degree.ml 2318-2613)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGE where
@@ -3374,7 +3377,7 @@ def setupDGE [HolBase] (D : DegreeDeps) (BDGD : DGD) : ExceptT String IO DGE := 
 /- ------------------------------------------------------------------------- -/
 /- Absolute retracts (AR), absolute neighbourhood retracts (ANR) and         -/
 /- Euclidean neighbourhood retracts (ENR); the usual properties of ARs and   -/
-/- ANRs.  (degree.ml 2613-3169)                                              -/
+/- ANRs.  (degree.ml 2614-3170)                                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGF where
@@ -4013,7 +4016,7 @@ def setupDGF [HolBase] (D : DegreeDeps) (BDGB : DGB) : ExceptT String IO DGF := 
 
 /- ------------------------------------------------------------------------- -/
 /- Analogous properties of ENRs; some relations among the concepts.         -/
-/- (degree.ml 3170-3429)                                                     -/
+/- (degree.ml 3171-3430)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGG where
@@ -4340,7 +4343,7 @@ def setupDGG [HolBase] (D : DegreeDeps) (BDGB : DGB) (BDGF : DGF) : ExceptT Stri
          ENR_RETRACT_OF_ENR, RETRACT_OF_UNIV, COMPACT_AR }
 
 /- ------------------------------------------------------------------------- -/
-/- More properties of ARs, ANRs and ENRs.  (degree.ml 3430-3946)             -/
+/- More properties of ARs, ANRs and ENRs.  (degree.ml 3431-3947)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGH where
@@ -4993,7 +4996,7 @@ def setupDGH [HolBase] (D : DegreeDeps) (BDGB : DGB) (BDGF : DGF) (BDGG : DGG) :
          ENR_PCROSS, ENR_PCROSS_EQ, AR_PCROSS_EQ, AR_CLOSED_UNION_LOCAL }
 
 /- ------------------------------------------------------------------------- -/
-/- General ANR union lemma (Kuratowski).  (degree.ml 3947-4182)              -/
+/- General ANR union lemma (Kuratowski).  (degree.ml 3948-4183)              -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGI where
@@ -5264,7 +5267,7 @@ def setupDGI [HolBase] (D : DegreeDeps) (BDGF : DGF) : ExceptT String IO DGI := 
   pure { ANR_UNION_EXTENSION_LEMMA }
 
 /- ------------------------------------------------------------------------- -/
-/- Application to closed union.  (degree.ml 4183-4481)                       -/
+/- Application to closed union.  (degree.ml 4184-4482)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGJ where
@@ -5644,7 +5647,7 @@ def setupDGJ [HolBase] (D : DegreeDeps) (BDGB : DGB) (BDGF : DGF) (BDGG : DGG) (
 
 /- ------------------------------------------------------------------------- -/
 /- Application to open union; local ANRs and covering spaces.               -/
-/- (degree.ml 4482-5234)                                                     -/
+/- (degree.ml 4483-5235)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGK where
@@ -6480,7 +6483,7 @@ def setupDGK [HolBase] (D : DegreeDeps) (BDGF : DGF) (BDGG : DGG) (BDGH : DGH) (
          ENR_COVERING_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Original ANR material, now for ENRs.  (degree.ml 5235-5958)               -/
+/- Original ANR material, now for ENRs.  (degree.ml 5236-5959)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGL where
@@ -7366,7 +7369,7 @@ def setupDGL [HolBase] (D : DegreeDeps) (BDGB : DGB) (BDGF : DGF) (BDGG : DGG) (
          ENR_PATH_IMAGE_SIMPLE_PATH, ANR_PATH_IMAGE_SIMPLE_PATH }
 
 /- ------------------------------------------------------------------------- -/
-/- Borsuk homotopy extension theorem.  (degree.ml 5959-6255)                 -/
+/- Borsuk homotopy extension theorem.  (degree.ml 5960-6256)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGM where
@@ -7726,7 +7729,7 @@ def setupDGM [HolBase] (D : DegreeDeps) (BDGB : DGB) (BDGF : DGF) (BDGG : DGG) (
 
 /- ------------------------------------------------------------------------- -/
 /- More homotopy extension results and relations to components.             -/
-/- (degree.ml 6256-6680)                                                     -/
+/- (degree.ml 6257-6681)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGN where
@@ -8228,7 +8231,7 @@ def setupDGN [HolBase] (D : DegreeDeps) (BDGF : DGF) (BDGG : DGG) (BDGH : DGH) (
          COHOMOTOPICALLY_TRIVIAL_ON_COMPONENTS_NULL, COHOMOTOPICALLY_TRIVIAL_1D }
 
 /- ------------------------------------------------------------------------- -/
-/- A few simple lemmas about deformation retracts.  (degree.ml 6681-7086)    -/
+/- A few simple lemmas about deformation retracts.  (degree.ml 6682-7087)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGO where
@@ -8721,7 +8724,7 @@ def setupDGO [HolBase] (D : DegreeDeps) (BDGB : DGB) (BDGF : DGF) (BDGG : DGG) (
 
 /- ------------------------------------------------------------------------- -/
 /- Preservation of fixpoints under (more general notion of) retraction, and  -/
-/- Bohl-type fixed point theorems.  (degree.ml 7087-7405)                    -/
+/- Bohl-type fixed point theorems.  (degree.ml 7088-7406)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGP where
@@ -9102,7 +9105,7 @@ def setupDGP [HolBase] (D : DegreeDeps) (BDGB : DGB) (BDGC : DGC) (BDGL : DGL) :
 
 /- ------------------------------------------------------------------------- -/
 /- Connectivity of retract complements; fixpoints for ANRs; Schauder lemma.  -/
-/- (degree.ml 7406-7704)                                                     -/
+/- (degree.ml 7407-7705)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGQ where
@@ -9474,7 +9477,7 @@ def setupDGQ [HolBase] (D : DegreeDeps) (BDGB : DGB) (BDGC : DGC) (BDGG : DGG) (
 
 /- ------------------------------------------------------------------------- -/
 /- Other fixed-point theorems, Perron-Frobenius, bijections between          -/
-/- intervals.  (degree.ml 7705-7960)                                         -/
+/- intervals.  (degree.ml 7706-7961)                                         -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGR where
@@ -9795,7 +9798,7 @@ def setupDGR [HolBase] (D : DegreeDeps) (BDGB : DGB) (BDGC : DGC) (BDGF : DGF) (
 
 /- ------------------------------------------------------------------------- -/
 /- Fashoda meet theorem, some ad hoc segment lemmas and the Fashoda           -/
-/- corollary pointed out by Tom Hales.  (degree.ml 7961-8391)                -/
+/- corollary pointed out by Tom Hales.  (degree.ml 7962-8392)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGS where
@@ -10289,7 +10292,7 @@ def setupDGS [HolBase] (D : DegreeDeps) (BDGC : DGC) (BDGR : DGR) : ExceptT Stri
 
 /- ------------------------------------------------------------------------- -/
 /- Complement in dimension N >= 2 of a set homeomorphic to an interval is    -/
-/- (path-)connected; application to arcs.  (degree.ml 8392-8525)            -/
+/- (path-)connected; application to arcs.  (degree.ml 8393-8526)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGT where
@@ -10473,7 +10476,7 @@ def setupDGT [HolBase] (D : DegreeDeps) (BDGB : DGB) (BDGF : DGF) (BDGG : DGG) (
 
 /- ------------------------------------------------------------------------- -/
 /- Accessibility for ANR complement components (Hu, "Theory of Retracts").   -/
-/- (degree.ml 8526-9293)                                                     -/
+/- (degree.ml 8527-9294)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGU where
@@ -11336,7 +11339,7 @@ def setupDGU [HolBase] (D : DegreeDeps) (BDGB : DGB) (BDGF : DGF) (BDGH : DGH) (
 
 /- ------------------------------------------------------------------------- -/
 /- Some simple consequences for complement connectivity.                     -/
-/- (degree.ml 9294-9706)                                                     -/
+/- (degree.ml 9295-9707)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure DGV where

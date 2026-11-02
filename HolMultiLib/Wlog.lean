@@ -34,6 +34,7 @@ structure WlogThms where
   deriving Inhabited
 
 structure WlogDeps where
+  prioritize_real : IO Unit
   cvx : HolMultiLib.Convex.ConvexDeps
   /-- vectors.ml's `EXPAND_QUANTS_CONV`. -/
   EXPAND_QUANTS_CONV : thm → ExceptT String IO ioconv
@@ -56,7 +57,7 @@ def itlistIO {α β : Type} (f : α → β → ExceptT String IO β) :
 /- translating so a given plane in R^3 becomes {x | x$3 = &0}; apply plane   -/
 /- rotation to a goal; injection from real^2 -> real^3 plane with zero last  -/
 /- coordinate; apply 3D->2D conversion to a goal; rotating so a given line   -/
-/- from the origin becomes the x-axis.  (wlog.ml 8-389)                      -/
+/- from the origin becomes the x-axis.  (wlog.ml 9-390)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure WLG where
@@ -117,6 +118,8 @@ def setupWLG [HolBase] (D : WlogDeps) : ExceptT String IO WLG := do
         DIM_INJECTIVE_LINEAR_IMAGE, DOT_3, INDEPENDENT_BOUND_GENERAL, QUANTIFY_SURJECTION_THM,
         SPAN_BREAKDOWN_EQ, SPAN_LINEAR_IMAGE, .. } := D.thms
   -- @@SCOPE END
+
+  D.prioritize_real
 
   -- Flyspeck definition of plane, and its invariance theorems.
 

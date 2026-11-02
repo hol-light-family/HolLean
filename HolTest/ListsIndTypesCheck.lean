@@ -172,53 +172,53 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
   stmtOK "MEM_ASSOC (lists.ml 399)" th
     "!(l:(A#B)list) x. MEM (x,ASSOC x l) l <=> MEM x (MAP FST l)")
 
--- LENGTH_TL (lists.ml 550-552): ~(l=[]) ==> ... uses num arith (-,1).
+-- LENGTH_TL (lists.ml 560-562): ~(l=[]) ==> ... uses num arith (-,1).
 #eval (do
   let th := listThms2.LENGTH_TL
   let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-  stmtOK "LENGTH_TL (lists.ml 550)" th
+  stmtOK "LENGTH_TL (lists.ml 560)" th
     "!l:A list. ~(l = []) ==> LENGTH(TL l) = LENGTH l - 1")
 
--- EL_APPEND (lists.ml 563-567): conditional RHS, INDUCT-heavy proof.
+-- EL_APPEND (lists.ml 573-577): conditional RHS, INDUCT-heavy proof.
 #eval (do
   let th := listThms2.EL_APPEND
   let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-  stmtOK "EL_APPEND (lists.ml 563)" th
+  stmtOK "EL_APPEND (lists.ml 573)" th
     "!k l m:A list. EL k (APPEND l m) = if k < LENGTH l then EL k l else EL (k - LENGTH l) m")
 
--- LAST_EL (lists.ml 580-583): ASM_SIMP with EL_CONS/LENGTH_EQ_NIL.
+-- LAST_EL (lists.ml 590-593): ASM_SIMP with EL_CONS/LENGTH_EQ_NIL.
 #eval (do
   let th := listThms2.LAST_EL
   let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-  stmtOK "LAST_EL (lists.ml 580)" th
+  stmtOK "LAST_EL (lists.ml 590)" th
     "!l:A list. ~(l = []) ==> LAST l = EL (LENGTH l - 1) l")
 
--- EL_MAP (lists.ml 594-596).
+-- EL_MAP (lists.ml 604-606).
 #eval (do
   let th := listThms2.EL_MAP
   let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-  stmtOK "EL_MAP (lists.ml 594)" th
+  stmtOK "EL_MAP (lists.ml 604)" th
     "!(f:A->B) n l. n < LENGTH l ==> EL n (MAP f l) = f(EL n l)")
 
--- PAIRWISE_APPEND (lists.ml 628-631): MATCH_MP_TAC list_INDUCT proof.
+-- PAIRWISE_APPEND (lists.ml 638-641): MATCH_MP_TAC list_INDUCT proof.
 #eval (do
   let th := listThms2.PAIRWISE_APPEND
   let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-  stmtOK "PAIRWISE_APPEND (lists.ml 628)" th
+  stmtOK "PAIRWISE_APPEND (lists.ml 638)" th
     "!R:A->A->bool l m. PAIRWISE R (APPEND l m) <=> PAIRWISE R l /\\ PAIRWISE R m /\\ (!x y. MEM x l /\\ MEM y m ==> R x y)")
 
--- PAIRWISE_MAP (lists.ml 636-639): lambda on RHS (o_DEF rewrite).
+-- PAIRWISE_MAP (lists.ml 646-649): lambda on RHS (o_DEF rewrite).
 #eval (do
   let th := listThms2.PAIRWISE_MAP
   let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-  stmtOK "PAIRWISE_MAP (lists.ml 636)" th
+  stmtOK "PAIRWISE_MAP (lists.ml 646)" th
     "!R f:A->B l. PAIRWISE R (MAP f l) <=> PAIRWISE (\\x y. R (f x) (f y)) l")
 
--- LIST_OF_SEQ (lists.ml 689-692): two-clause conjunction, o-composition.
+-- LIST_OF_SEQ (lists.ml 699-702): two-clause conjunction, o-composition.
 #eval (do
   let th := listThms2.LIST_OF_SEQ
   let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-  stmtOK "LIST_OF_SEQ (lists.ml 689)" th
+  stmtOK "LIST_OF_SEQ (lists.ml 699)" th
     "(!(f:num->A). list_of_seq f 0 = []) /\\ (!(f:num->A) n. list_of_seq f (SUC n) = CONS (f 0) (list_of_seq (f o SUC) n))")
 
 /- ====================================================================== -/

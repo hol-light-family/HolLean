@@ -54,7 +54,7 @@ initialize listThms1Layer : HolMath.Lists.ListThms1 ← do
 
 def listThms1 : HolMath.Lists.ListThms1 := listThms1Layer
 
-/-- `ListThms2` (lists.ml 405-697, 51 theorems). -/
+/-- `ListThms2` (lists.ml 405-707, 51 theorems). -/
 initialize listThms2Layer : HolMath.Lists.ListThms2 ←
   ioOk' "setupListThms2" (HolMath.Lists.setupListThms2 listDefs listThms1 list_INDUCT list_INDUCT'
     MESON_TAC ASM_MESON_TAC MESON Nm arith1 arith2 arith3 arith5 triviaLayer CnA o_DEF I_DEF).run
@@ -62,37 +62,37 @@ initialize listThms2Layer : HolMath.Lists.ListThms2 ←
 def listThms2 : HolMath.Lists.ListThms2 := listThms2Layer
 
 /-- The `LENGTH_CONV`/`EL_CONV`/`REVERSE_CONV`/`LIST_OF_SEQ_CONV` proformas
-    (lists.ml 751-876). -/
+    (lists.ml 761-886). -/
 initialize listEvalConvsLayer : HolMath.Lists.ListEvalConvs ←
   ioOk' "setupListEvalConvs" (HolMath.Lists.setupListEvalConvs listDefs listThms1 arith1
     NUM_SUC_CONV num_CONV).run
 
 private def listEvalConvs : HolMath.Lists.ListEvalConvs := listEvalConvsLayer
 
-/-- `LENGTH_CONV` (lists.ml 751-778). -/
+/-- `LENGTH_CONV` (lists.ml 761-788). -/
 def LENGTH_CONV : ioconv := fun tm => listEvalConvs.LENGTH_CONV tm
-/-- `EL_CONV` (lists.ml 780-807). -/
+/-- `EL_CONV` (lists.ml 790-817). -/
 def EL_CONV : ioconv := fun tm => listEvalConvs.EL_CONV tm
-/-- `REVERSE_CONV` (lists.ml 809-834). -/
+/-- `REVERSE_CONV` (lists.ml 819-844). -/
 def REVERSE_CONV : ioconv := fun tm => listEvalConvs.REVERSE_CONV tm
-/-- `LIST_OF_SEQ_CONV` (lists.ml 836-876). -/
+/-- `LIST_OF_SEQ_CONV` (lists.ml 846-886). -/
 def LIST_OF_SEQ_CONV : ioconv := fun tm => listEvalConvs.LIST_OF_SEQ_CONV tm
 
-/-- `LIST_CONV conv` (lists.ml 740-746): apply `conv` down a list. -/
+/-- `LIST_CONV conv` (lists.ml 750-756): apply `conv` down a list. -/
 def LIST_CONV : conv → conv := HolMath.Lists.LIST_CONV
 
 /-- `LIST_CONV` for IO-valued conversions (e.g. `num_CONV`). -/
 def LIST_CONV_IO : ioconv → ioconv := HolMath.Lists.LIST_CONV_IO
 
-/-- `mk_cons h t` (lists.ml 702-705). -/
+/-- `mk_cons h t` (lists.ml 712-715). -/
 def mk_cons : term → term → IO (Except String term) := HolMath.Lists.mk_cons
-/-- `mk_list (tms,ty)` (lists.ml 707-712). -/
+/-- `mk_list (tms,ty)` (lists.ml 717-722). -/
 def mk_list : List term → hol_type → IO (Except String term) := HolMath.Lists.mk_list
-/-- `mk_flist tms` (lists.ml 714-716). -/
+/-- `mk_flist tms` (lists.ml 724-726). -/
 def mk_flist : List term → IO (Except String term) := HolMath.Lists.mk_flist
 
 /-- The two extra monotonicity theorems `MONO_ALL`/`MONO_ALL2` (lists.ml
-    722-731).  Forcing this layer performs the lists.ml 733 registration side
+    722-731).  Forcing this layer performs the lists.ml 743 registration side
     effect:
       `monotonicity_theorems := [MONO_ALL; MONO_ALL2] @ !monotonicity_theorems`
     i.e. it PREPENDS both, in that order, onto the LIVE
@@ -101,7 +101,7 @@ def mk_flist : List term → IO (Except String term) := HolMath.Lists.mk_flist
     additions. -/
 initialize listsMonoLayer : HolMath.Lists.MonoAllThms ← do
   let m ← ioOk' "setupMonoAll" (HolMath.Lists.setupMonoAll listDefs list_INDUCT' ASM_MESON_TAC).run
-  -- lists.ml 733:
+  -- lists.ml 743:
   --   monotonicity_theorems := [MONO_ALL; MONO_ALL2] @ !monotonicity_theorems
   let cur ← theMonotonicityTheorems.get
   theMonotonicityTheorems.set (m.MONO_ALL :: m.MONO_ALL2 :: cur)
@@ -109,9 +109,9 @@ initialize listsMonoLayer : HolMath.Lists.MonoAllThms ← do
 
 def listsMono : HolMath.Lists.MonoAllThms := listsMonoLayer
 
-/-- `MONO_ALL` (lists.ml 722-725). -/
+/-- `MONO_ALL` (lists.ml 732-735). -/
 def MONO_ALL : thm := listsMono.MONO_ALL
-/-- `MONO_ALL2` (lists.ml 727-731). -/
+/-- `MONO_ALL2` (lists.ml 737-741). -/
 def MONO_ALL2 : thm := listsMono.MONO_ALL2
 
 /- ---------------------------------------------------------------------- -/
@@ -123,20 +123,20 @@ def MONO_ALL2 : thm := listsMono.MONO_ALL2
 def new_type_abbrev (s : String) (ty : hol_type) : IO Unit :=
   HolCore.Preterm.new_type_abbrev s ty
 
-/-- `(char_INDUCT, char_RECURSION)` (lists.ml 881-882):
+/-- `(char_INDUCT, char_RECURSION)` (lists.ml 891-892):
     `define_type "char = ASCII bool bool bool bool bool bool bool bool"`.
-    Forcing it also installs the `string` type abbreviation (lists.ml 884). -/
+    Forcing it also installs the `string` type abbreviation (lists.ml 894). -/
 initialize charTypeLayer : thm × thm ← do
   let x ← ioOk' "define_type char"
     (define_type "char = ASCII bool bool bool bool bool bool bool bool")
-  -- lists.ml 884: new_type_abbrev("string",`:char list`).
+  -- lists.ml 894: new_type_abbrev("string",`:char list`).
   let ty ← ioOk' "string abbrev parse" (HolCore.Parser.parse_type "char list")
   new_type_abbrev "string" ty
   pure x
 
-/-- `char_INDUCT` (lists.ml 881). -/
+/-- `char_INDUCT` (lists.ml 891). -/
 def char_INDUCT : thm := charTypeLayer.1
-/-- `char_RECURSION` (lists.ml 882). -/
+/-- `char_RECURSION` (lists.ml 892). -/
 def char_RECURSION : thm := charTypeLayer.2
 
 /-- The `char` `hol_type`, used as `mk_string`'s element type. -/
@@ -145,7 +145,7 @@ initialize charTyLayer : hol_type ←
 
 def charTy : hol_type := charTyLayer
 
-/-- The `CharStringMachinery` bundle (lists.ml 886-998): the pre-proved `ASCII`
+/-- The `CharStringMachinery` bundle (lists.ml 896-1008): the pre-proved `ASCII`
     inequality families, the string-cons lemmas, the 256-entry `codes` array,
     and the schematic variables.  Depends on `injectivity "char"` (populated
     by `define_type "char"`) and the two `lists.ml` cons lemmas
@@ -158,17 +158,17 @@ initialize charStringMachineryLayer : HolMath.Lists.CharStringMachinery ← do
 
 private def charStringMachinery : HolMath.Lists.CharStringMachinery := charStringMachineryLayer
 
-/-- `dest_char` (lists.ml 886, 900): `char_of_term`. -/
+/-- `dest_char` (lists.ml 896, 910): `char_of_term`. -/
 def dest_char : term → Except String Char := HolMath.Lists.dest_char
-/-- `mk_char` (lists.ml 919): the `ASCII` term for a character. -/
+/-- `mk_char` (lists.ml 929): the `ASCII` term for a character. -/
 def mk_char (c : Char) : Except String term := HolMath.Lists.mk_char charStringMachinery c
-/-- `dest_string` (lists.ml 901-908): the (escaped) string a `char list` denotes. -/
+/-- `dest_string` (lists.ml 911-918): the (escaped) string a `char list` denotes. -/
 def dest_string : term → Except String String := HolMath.Lists.dest_string
-/-- `mk_string` (lists.ml 920-923): the `char list` term for a string. -/
+/-- `mk_string` (lists.ml 930-933): the `char list` term for a string. -/
 def mk_string (s : String) : IO (Except String term) := HolMath.Lists.mk_string charStringMachinery s
-/-- `CHAR_EQ_CONV` (lists.ml 980-984): decide equality of two chars. -/
+/-- `CHAR_EQ_CONV` (lists.ml 990-994): decide equality of two chars. -/
 def CHAR_EQ_CONV : conv := HolMath.Lists.CHAR_EQ_CONV charStringMachinery
-/-- `STRING_EQ_CONV` (lists.ml 985-988): decide equality of two strings. -/
+/-- `STRING_EQ_CONV` (lists.ml 995-998): decide equality of two strings. -/
 def STRING_EQ_CONV : conv := HolMath.Lists.STRING_EQ_CONV charStringMachinery
 
 /- ---------------------------------------------------------------------- -/
@@ -176,9 +176,9 @@ def STRING_EQ_CONV : conv := HolMath.Lists.STRING_EQ_CONV charStringMachinery
 /- (the monotonicity registration, the `string` abbrev, the net snapshots) -/
 /- happens where it does in HOL Light:                                     -/
 /-   listThms1.NOT_CONS_NIL, listThms2.ALL_APPEND, listsMono.MONO_ALL,      -/
-/-   listEvalConvs (lists.ml 751-876);                                      -/
-/-   char_INDUCT (lists.ml 881-884, installs the `string` abbrev),          -/
-/-   charStringMachinery (lists.ml 886-998).                                -/
+/-   listEvalConvs (lists.ml 761-886);                                      -/
+/-   char_INDUCT (lists.ml 891-894, installs the `string` abbrev),          -/
+/-   charStringMachinery (lists.ml 896-1008).                                -/
 /- ---------------------------------------------------------------------- -/
 initialize ensureIndTypesListsProcs : Unit ← do
   -- (ind_types.ml 1421-1572 ran above, in `unwindMatchLayer`.)
@@ -187,7 +187,7 @@ initialize ensureIndTypesListsProcs : Unit ← do
   let _ := listThms2.ALL_APPEND
   let _ := listsMono.MONO_ALL
   let _ := listEvalConvs
-  -- lists.ml 881-884: char type + `string` abbrev, BEFORE sets.ml's
+  -- lists.ml 891-894: char type + `string` abbrev, BEFORE sets.ml's
   -- `:string` annotations need it.
   let _ := char_INDUCT
   let _ := charStringMachinery

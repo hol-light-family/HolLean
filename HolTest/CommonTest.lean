@@ -30,7 +30,7 @@ namespace HolTest.CommonTest
    (`grobner_messages`).  Over the whole suite that is over half a million lines, which
    buries the test results in build.log, so every module importing this one
    turns them off.  It also turns off `report_timing` (lib.ml), so the `time`
-   calls some files make while loading (sets.ml 1780, pocklington.ml
+   calls some files make while loading (sets.ml 1793, pocklington.ml
    2606-2614, words.ml) print no `CPU time (user): ...` lines.  Prove.lean keeps HOL Light's defaults.  Other
    warnings (`warn`: benign redefinitions, free variables in a goal) still
    appear. -/

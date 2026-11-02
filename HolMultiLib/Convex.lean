@@ -351,6 +351,7 @@ structure TopThms5 where
   deriving Inhabited
 
 structure ConvexDeps where
+  prioritize_real : IO Unit
   -- definitions and parser state
   new_definition : String → ExceptT String IO thm
   parse_as_infix : String × (Int × String) → IO Unit
@@ -435,7 +436,7 @@ structure ConvexDeps where
 /- ------------------------------------------------------------------------- -/
 /- Some miscelleneous things that are convenient to prove here; affine set   -/
 /- and affine hull; some convenient lemmas about common affine combinations. -/
-/- (convex.ml 15-286)                                                        -/
+/- (convex.ml 16-287)                                                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure AFF where
@@ -502,6 +503,8 @@ def setupAFF [HolBase] (D : ConvexDeps) : ExceptT String IO AFF := do
   let { VECTOR_ADD_RDISTRIB, VECTOR_ADD_SYM, VECTOR_MUL_ASSOC, VECTOR_MUL_EQ_0, VECTOR_MUL_LID,
         VECTOR_MUL_LZERO, bilinear, dist, linear, subspace, .. } := D.vec4
   -- @@SCOPE END
+
+  D.prioritize_real
 
   let TRANSLATION_EQ_IMP ← prove
    r"!P:(real^N->bool)->bool.
@@ -782,7 +785,7 @@ def setupAFF [HolBase] (D : ConvexDeps) : ExceptT String IO AFF := do
            IN_AFFINE_MUL_DIFF_ADD, IN_AFFINE_SUB_MUL_DIFF, AFFINE_DIFFS_SUBSPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Explicit formulations for affine combinations.  (convex.ml 287-526)       -/
+/- Explicit formulations for affine combinations.  (convex.ml 288-527)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure AFX where
@@ -1069,7 +1072,7 @@ def setupAFX [HolBase] (D : ConvexDeps) (BAFF : AFF) : ExceptT String IO AFX := 
 
 /- ------------------------------------------------------------------------- -/
 /- Stepping theorems and hence small special cases; some relations between  -/
-/- affine hull and subspaces.  (convex.ml 532-786)                           -/
+/- affine hull and subspaces.  (convex.ml 533-787)                           -/
 /- ------------------------------------------------------------------------- -/
 
 structure AFS where
@@ -1377,7 +1380,7 @@ def setupAFS [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFX : AFX) :
 
 /- ------------------------------------------------------------------------- -/
 /- Convexity; some invariance theorems for convex sets.                      -/
-/- (convex.ml 789-1049)                                                      -/
+/- (convex.ml 790-1050)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure CVX where
@@ -1714,7 +1717,7 @@ def setupCVX [HolBase] (D : ConvexDeps) : ExceptT String IO CVX := do
 
 /- ------------------------------------------------------------------------- -/
 /- Explicit expressions for convexity in terms of arbitrary sums.            -/
-/- (convex.ml 1053-1241)                                                     -/
+/- (convex.ml 1054-1242)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CVS where
@@ -1949,7 +1952,7 @@ def setupCVS [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) :
            CONVEX_FINITE, AFFINE_PCROSS, AFFINE_PCROSS_EQ, CONVEX_PCROSS, CONVEX_PCROSS_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- Conic sets and conic hull.  (convex.ml 1245-1611)                         -/
+/- Conic sets and conic hull.  (convex.ml 1246-1612)                         -/
 /- ------------------------------------------------------------------------- -/
 
 structure CON where
@@ -2413,7 +2416,7 @@ def setupCON [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) :
 
 /- ------------------------------------------------------------------------- -/
 /- Affine dependence and consequential theorems (from Lars Schewe).         -/
-/- (convex.ml 1615-1760)                                                     -/
+/- (convex.ml 1616-1761)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure AFD where
@@ -2607,7 +2610,7 @@ def setupAFD [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFX : AFX) (BAFS : AFS) :
 
 /- ------------------------------------------------------------------------- -/
 /- Coplanarity, and collinearity in terms of affine hull; a general lemma.   -/
-/- (convex.ml 1764-1979)                                                     -/
+/- (convex.ml 1765-1980)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure COP where
@@ -2885,7 +2888,7 @@ def setupCOP [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFS : AFS) (BCVX : CVX) (
            CONVEX_CONNECTED }
 
 /- ------------------------------------------------------------------------- -/
-/- Convex functions into the reals.  (convex.ml 1982-2290)                   -/
+/- Convex functions into the reals.  (convex.ml 1983-2291)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CVF where
@@ -3269,7 +3272,7 @@ def setupCVF [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) :
 
 /- ------------------------------------------------------------------------- -/
 /- Open and closed balls are convex and hence connected.                     -/
-/- (convex.ml 2294-2461)                                                     -/
+/- (convex.ml 2295-2462)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CVB where
@@ -3494,7 +3497,7 @@ def setupCVB [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCOP : COP) (BCVF : CVF) :
 /- ------------------------------------------------------------------------- -/
 /- A couple of lemmas about components (see Newman IV, 3.3 and 3.4);       -/
 /- condition for an open map's image to contain a ball.                      -/
-/- (convex.ml 2465-2665)                                                     -/
+/- (convex.ml 2466-2666)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CMP where
@@ -3733,7 +3736,7 @@ def setupCMP [HolBase] (D : ConvexDeps) (BCVB : CVB) : ExceptT String IO CMP := 
 
 /- ------------------------------------------------------------------------- -/
 /- Arithmetic operations on sets preserve convexity; some interesting        -/
-/- "cancellation" properties for sum-sets.  (convex.ml 2669-2858)            -/
+/- "cancellation" properties for sum-sets.  (convex.ml 2670-2859)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure CVA where
@@ -3971,7 +3974,7 @@ def setupCVA [HolBase] (D : ConvexDeps) (BCVX : CVX) : ExceptT String IO CVA := 
 
 /- ------------------------------------------------------------------------- -/
 /- Convex hull; stepping theorems for convex hulls of finite sets.           -/
-/- (convex.ml 2862-3011)                                                     -/
+/- (convex.ml 2863-3012)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CVH where
@@ -4174,7 +4177,7 @@ def setupCVH [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVB : CVB) : ExceptT Stri
 
 /- ------------------------------------------------------------------------- -/
 /- Explicit expressions for convex hull; another formulation from Lars       -/
-/- Schewe; a stepping theorem for that expansion.  (convex.ml 3015-3412)     -/
+/- Schewe; a stepping theorem for that expansion.  (convex.ml 3016-3413)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CVE where
@@ -4629,7 +4632,7 @@ def setupCVE [HolBase] (D : ConvexDeps) (BAFS : AFS) (BCVX : CVX) (BCVS : CVS) (
            CONVEX_HULL_UNION_UNIONS, CONVEX_HULL_FINITE_STEP }
 
 /- ------------------------------------------------------------------------- -/
-/- Hence some special cases.  (convex.ml 3417-3589)                          -/
+/- Hence some special cases.  (convex.ml 3418-3590)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure CVP where
@@ -4849,7 +4852,7 @@ def setupCVP [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFX : AFX) (BCVX : CVX) (
 
 /- ------------------------------------------------------------------------- -/
 /- Relations among closure notions and corresponding hulls.                  -/
-/- (convex.ml 3593-3923)                                                     -/
+/- (convex.ml 3594-3924)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CLH where
@@ -5269,7 +5272,7 @@ def setupCLH [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFX : AFX) (BCVX : CVX) (
 
 /- ------------------------------------------------------------------------- -/
 /- Affine independence, spans of conic hulls; nonempty affine sets are       -/
-/- translates of (unique) subspaces.  (convex.ml 3924-4128)                  -/
+/- translates of (unique) subspaces.  (convex.ml 3925-4129)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure AFI where
@@ -5541,7 +5544,7 @@ def setupAFI [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFX : AFX) (BAFS : AFS) (
 /- ------------------------------------------------------------------------- -/
 /- If we take a slice out of a set, we can do it perpendicularly, with the  -/
 /- normal vector to the slice parallel to the affine hull; affine dimension. -/
-/- (convex.ml 4132-4285)                                                     -/
+/- (convex.ml 4133-4286)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure ADA where
@@ -5741,7 +5744,7 @@ def setupADA [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFS : AFS) (BAFD : AFD) (
            AFF_DIM_TRANSLATION_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- Affine dimension, continued.  (convex.ml 4285-4467)                       -/
+/- Affine dimension, continued.  (convex.ml 4286-4468)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure ADB where
@@ -5988,7 +5991,7 @@ def setupADB [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFS : AFS) (BCON : CON) (
            AFF_DIM_LE_DIM }
 
 /- ------------------------------------------------------------------------- -/
-/- Affine dimension, continued.  (convex.ml 4468-4664)                       -/
+/- Affine dimension, continued.  (convex.ml 4469-4665)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure ADC where
@@ -6257,7 +6260,7 @@ def setupADC [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) (BAFD : AFD) (
            AFFINE_HULL_AFFINE_INTER_NONEMPTY_INTERIOR, AFFINE_HULL_AFFINE_INTER_OPEN }
 
 /- ------------------------------------------------------------------------- -/
-/- Affine dimension, continued.  (convex.ml 4667-4880)                       -/
+/- Affine dimension, continued.  (convex.ml 4668-4881)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure ADD where
@@ -6542,7 +6545,7 @@ def setupADD [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFS : AFS) (BCVX : CVX) (
            COPLANAR_AFF_DIM, HOMEOMORPHIC_AFFINE_SETS }
 
 /- ------------------------------------------------------------------------- -/
-/- Affine dimension, continued.  (convex.ml 4881-5197)                       -/
+/- Affine dimension, continued.  (convex.ml 4882-5198)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure ADE where
@@ -6944,7 +6947,7 @@ def setupADE [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFS : AFS) (BCLH : CLH) (
 
 /- ------------------------------------------------------------------------- -/
 /- Existence of a rigid transform between congruent sets.                    -/
-/- (convex.ml 5201-5409)                                                     -/
+/- (convex.ml 5202-5410)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure RGD where
@@ -7200,7 +7203,7 @@ def setupRGD [HolBase] (D : ConvexDeps) (BAFF : AFF) (BADA : ADA) (BADC : ADC) :
            RIGID_TRANSFORMATION_BETWEEN_2 }
 
 /- ------------------------------------------------------------------------- -/
-/- Caratheodory's theorem.  (convex.ml 5413-5532)                            -/
+/- Caratheodory's theorem.  (convex.ml 5414-5533)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure CAR where
@@ -7356,7 +7359,7 @@ def setupCAR [HolBase] (D : ConvexDeps) (BCVS : CVS) (BAFD : AFD) (BCVH : CVH) (
 
 /- ------------------------------------------------------------------------- -/
 /- Some results on decomposing convex hulls, e.g. simplicial subdivision.    -/
-/- (convex.ml 5537-5657)                                                     -/
+/- (convex.ml 5538-5658)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure DCH where
@@ -7513,7 +7516,7 @@ def setupDCH [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFX : AFX) (BAFD : AFD) (
   return { AFFINE_HULL_INTER, CONVEX_HULL_INTER, AFFINE_HULL_INTERS, CONVEX_HULL_INTERS }
 
 /- ------------------------------------------------------------------------- -/
-/- Exchange lemmas for convex hulls.  (convex.ml 5659-5862)                  -/
+/- Exchange lemmas for convex hulls.  (convex.ml 5660-5863)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure EXC where
@@ -7766,7 +7769,7 @@ def setupEXC [HolBase] (D : ConvexDeps) (BAFS : AFS) (BAFD : AFD) (BCVH : CVH) (
 
 /- ------------------------------------------------------------------------- -/
 /- Representing affine hull as hyperplane or finite intersection of them.    -/
-/- (convex.ml 5866-6108)                                                     -/
+/- (convex.ml 5867-6109)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure HYP where
@@ -8080,7 +8083,7 @@ def setupHYP [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFS : AFS) (BAFD : AFD) (
 
 /- ------------------------------------------------------------------------- -/
 /- Existence of rotation into general position w.r.t the axes.               -/
-/- (convex.ml 6112-6431)                                                     -/
+/- (convex.ml 6113-6432)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure ROT where
@@ -8465,7 +8468,7 @@ def setupROT [HolBase] (D : ConvexDeps) (BCLH : CLH) (BADA : ADA) (BADB : ADB) (
 
 /- ------------------------------------------------------------------------- -/
 /- Openness and compactness are preserved by convex hull operation.          -/
-/- (convex.ml 6434-6606)                                                     -/
+/- (convex.ml 6435-6607)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure OCH where
@@ -8686,7 +8689,7 @@ def setupOCH [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVH : CVH) (BCVE : CVE) (
            FINITE_IMP_COMPACT_CONVEX_HULL, CONVEX_HULL_INTERIOR_SUBSET }
 
 /- ------------------------------------------------------------------------- -/
-/- Extremal points of a simplex are some vertices.  (convex.ml 6610-6733)    -/
+/- Extremal points of a simplex are some vertices.  (convex.ml 6611-6734)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure SPX where
@@ -8854,7 +8857,7 @@ def setupSPX [HolBase] (D : ConvexDeps) (BCVB : CVB) (BCVH : CVH) (BCAR : CAR) (
 
 /- ------------------------------------------------------------------------- -/
 /- Closest point of a convex set is unique, with a continuous projection;   -/
-/- relating closest points and orthogonality.  (convex.ml 6737-6918)         -/
+/- relating closest points and orthogonality.  (convex.ml 6738-6919)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure CLP where
@@ -9090,7 +9093,7 @@ def setupCLP [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) (BCLH : CLH) :
 /- ------------------------------------------------------------------------- -/
 /- Using "closest_point" to give orthogonal projection onto a subspace;      -/
 /- stronger separating hyperplane results for affine sets / affine hulls.    -/
-/- (convex.ml 6922-7066)                                                     -/
+/- (convex.ml 6923-7067)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CPS where
@@ -9282,7 +9285,7 @@ def setupCPS [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFS : AFS) (BCLH : CLH) (
 
 /- ------------------------------------------------------------------------- -/
 /- Various point-to-set separating/supporting hyperplane theorems.           -/
-/- (convex.ml 7068-7190)                                                     -/
+/- (convex.ml 7069-7191)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure SEP where
@@ -9445,7 +9448,7 @@ def setupSEP [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCLP : CLP) : ExceptT Stri
            SEPARATING_HYPERPLANE_CLOSED_0 }
 
 /- ------------------------------------------------------------------------- -/
-/- Now set-to-set for closed/compact sets.  (convex.ml 7194-7315)            -/
+/- Now set-to-set for closed/compact sets.  (convex.ml 7195-7316)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure SSC where
@@ -9604,7 +9607,7 @@ def setupSSC [HolBase] (D : ConvexDeps) (BCVA : CVA) (BSEP : SEP) : ExceptT Stri
 
 /- ------------------------------------------------------------------------- -/
 /- General case without assuming closure and getting non-strict separation. -/
-/- (convex.ml 7319-7433)                                                     -/
+/- (convex.ml 7320-7434)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure GNS where
@@ -9766,7 +9769,7 @@ def setupGNS [HolBase] (D : ConvexDeps) (BAFS : AFS) (BCVX : CVX) (BCVA : CVA) (
            SEPARATING_HYPERPLANE_SET_0, SEPARATING_HYPERPLANE_SETS }
 
 /- ------------------------------------------------------------------------- -/
-/- More convexity generalities.  (convex.ml 7437-7683)                       -/
+/- More convexity generalities.  (convex.ml 7438-7684)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure MCG where
@@ -10082,7 +10085,7 @@ def setupMCG [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCOP : COP) (BCVF : CVF) (
 
 /- ------------------------------------------------------------------------- -/
 /- Moving and scaling convex hulls; convex set as intersection of            -/
-/- halfspaces.  (convex.ml 7687-7742)                                        -/
+/- halfspaces.  (convex.ml 7688-7743)                                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure MSH where
@@ -10169,7 +10172,7 @@ def setupMSH [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVA : CVA) (BCVH : CVH) (
            CONVEX_HALFSPACE_INTERSECTION }
 
 /- ------------------------------------------------------------------------- -/
-/- Polar dual of a set.  (convex.ml 7744-7905)                               -/
+/- Polar dual of a set.  (convex.ml 7745-7906)                               -/
 /- ------------------------------------------------------------------------- -/
 
 structure POL where
@@ -10387,7 +10390,7 @@ def setupPOL [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVH : CVH) (BSEP : SEP) (
            POLAR_DUAL_POLAR_DUAL_GEN, POLAR_DUAL_POLAR_DUAL_EQ, POLAR_DUAL_POLAR_DUAL }
 
 /- ------------------------------------------------------------------------- -/
-/- Radon's theorem (from Lars Schewe).  (convex.ml 7909-8111)                -/
+/- Radon's theorem (from Lars Schewe).  (convex.ml 7910-8112)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure RAD where
@@ -10623,7 +10626,7 @@ def setupRAD [HolBase] (D : ConvexDeps) (BAFD : AFD) (BCVE : CVE) : ExceptT Stri
   return { RADON_EX_LEMMA, RADON_S_LEMMA, RADON_V_LEMMA, RADON_PARTITION, RADON }
 
 /- ------------------------------------------------------------------------- -/
-/- Helly's theorem.  (convex.ml 8115-8272)                                   -/
+/- Helly's theorem.  (convex.ml 8116-8273)                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HEL where
@@ -10818,7 +10821,7 @@ def setupHEL [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCLH : CLH) (BRAD : RAD) :
            HELLY_COMPACT }
 
 /- ------------------------------------------------------------------------- -/
-/- Kirchberger's theorem.  (convex.ml 8276-8382)                             -/
+/- Kirchberger's theorem.  (convex.ml 8277-8383)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure KIR where
@@ -10968,7 +10971,7 @@ def setupKIR [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVH : CVH) (BCAR : CAR) (
 
 /- ------------------------------------------------------------------------- -/
 /- Convex hull is "preserved" by a linear function; convexity of general     -/
-/- and special intervals.  (convex.ml 8386-8580)                             -/
+/- and special intervals.  (convex.ml 8387-8581)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure LIN where
@@ -11226,7 +11229,7 @@ def setupLIN [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) (BCON : CON) (
 
 /- ------------------------------------------------------------------------- -/
 /- On real^1, is_interval, convex and connected are all equivalent.          -/
-/- (convex.ml 8584-8688)                                                     -/
+/- (convex.ml 8585-8689)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure ONE where
@@ -11383,7 +11386,7 @@ def setupONE [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) (BCOP : COP) (
            IN_CONVEX_HULL_SEGMENT_1, IN_CONVEX_HULL_INTERVAL_1 }
 
 /- ------------------------------------------------------------------------- -/
-/- Jung's theorem.  (convex.ml 8695-9001)                                    -/
+/- Jung's theorem.  (convex.ml 8696-9002)                                    -/
 /- Proof taken from http://cstheory.wordpress.com/2010/08/07/jungs-theorem/  -/
 /- ------------------------------------------------------------------------- -/
 
@@ -11756,7 +11759,7 @@ def setupJUN [HolBase] (D : ConvexDeps) (BCVB : CVB) (BCVH : CVH) (BCVE : CVE) (
 
 /- ------------------------------------------------------------------------- -/
 /- Kirszbraun's theorem (proof from Federer's "Geometric Measure Theory")    -/
-/- (convex.ml 9008-9648)                                                     -/
+/- (convex.ml 9009-9649)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure KSZ where
@@ -12472,7 +12475,7 @@ def setupKSZ [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVH : CVH) (BCVE : CVE) (
 
 /- ------------------------------------------------------------------------- -/
 /- The Dugundji extension theorem, and Tietze variants as corollaries.       -/
-/- (convex.ml 9652-9881)                                                     -/
+/- (convex.ml 9653-9882)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure DUG where
@@ -12759,7 +12762,7 @@ def setupDUG [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVS : CVS) (BCVB : CVB) (
            TIETZE_OPEN_INTERVAL, TIETZE_OPEN_INTERVAL_1, TIETZE_UNBOUNDED }
 
 /- ------------------------------------------------------------------------- -/
-/- Convex cones and corresponding hulls.  (convex.ml 9887-10145)             -/
+/- Convex cones and corresponding hulls.  (convex.ml 9888-10146)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure CCN where
@@ -13108,7 +13111,7 @@ def setupCCN [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVS : CVS) (BCON : CON) (
 /- ------------------------------------------------------------------------- -/
 /- Epigraphs of convex functions; general bound property of convex           -/
 /- functions; another intermediate value theorem formulation.                -/
-/- (convex.ml 10149-10332)                                                   -/
+/- (convex.ml 10150-10333)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure EPI where
@@ -13345,7 +13348,7 @@ def setupEPI [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVS : CVS) (BCOP : COP) (
 
 /- ------------------------------------------------------------------------- -/
 /- A bound within a convex hull, and so an interval; representation of any   -/
-/- interval as a finite convex hull.  (convex.ml 10336-10554)                -/
+/- interval as a finite convex hull.  (convex.ml 10337-10555)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure CHB where
@@ -13611,7 +13614,7 @@ def setupCHB [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVF : CVF) (BCVH : CVH) (
 
 /- ------------------------------------------------------------------------- -/
 /- Characterizations of convex functions in terms of secants.                -/
-/- (convex.ml 10558-10700)                                                   -/
+/- (convex.ml 10559-10701)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure SEC where
@@ -13794,7 +13797,7 @@ def setupSEC [HolBase] (D : ConvexDeps) (BCVF : CVF) : ExceptT String IO SEC := 
            CONVEX_ON_SECANTS_1_IMP, CONVEX_ON_SECANTS_1 }
 
 /- ------------------------------------------------------------------------- -/
-/- Starlike sets and more stuff about line segments.  (convex.ml 10704-10940) -/
+/- Starlike sets and more stuff about line segments.  (convex.ml 10705-10941) -/
 /- ------------------------------------------------------------------------- -/
 
 structure STL where
@@ -14113,7 +14116,7 @@ def setupSTL [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCON : CON) (BCVB : CVB) (
 
 /- ------------------------------------------------------------------------- -/
 /- It might occasionally be handy to use midpoint convexity only; eliminate  -/
-/- scalings when 0 is not in the affine hull.  (convex.ml 10944-11139)       -/
+/- scalings when 0 is not in the affine hull.  (convex.ml 10945-11140)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure MPC where
@@ -14354,7 +14357,7 @@ def setupMPC [HolBase] (D : ConvexDeps) (BAFS : AFS) (BCVX : CVX) (BCOP : COP) (
            OPEN_SEGMENT_DESCALE }
 
 /- ------------------------------------------------------------------------- -/
-/- Shrinking towards the interior of a convex set.  (convex.ml 11143-11229)  -/
+/- Shrinking towards the interior of a convex set.  (convex.ml 11144-11230)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure SHR where
@@ -14474,7 +14477,7 @@ def setupSHR [HolBase] (D : ConvexDeps) (BCVX : CVX) : ExceptT String IO SHR := 
            IN_INTERIOR_CLOSURE_CONVEX_SEGMENT }
 
 /- ------------------------------------------------------------------------- -/
-/- Relative interior of a set (part 1).  (convex.ml 11233-11429)             -/
+/- Relative interior of a set (part 1).  (convex.ml 11234-11430)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure RIA where
@@ -14747,7 +14750,7 @@ def setupRIA [HolBase] (D : ConvexDeps) (BCON : CON) (BCLH : CLH) (BAFI : AFI) (
            CONIC_HULL_EQ_AFFINE_HULL }
 
 /- ------------------------------------------------------------------------- -/
-/- Relative interior of a set (part 2).  (convex.ml 11431-11634)             -/
+/- Relative interior of a set (part 2).  (convex.ml 11432-11635)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure RIB where
@@ -15026,7 +15029,7 @@ def setupRIB [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) (BCVS : CVS) (
            RELATIVE_FRONTIER_FRONTIER, RELATIVE_FRONTIER_OPEN, AFFINE_HULL_CONVEX_HULL }
 
 /- ------------------------------------------------------------------------- -/
-/- Relative interior of a set (part 3).  (convex.ml 11635-11840)             -/
+/- Relative interior of a set (part 3).  (convex.ml 11636-11841)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure RIC where
@@ -15289,7 +15292,7 @@ def setupRIC [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) (BCON : CON) (
            IN_RELATIVE_INTERIOR_CLOSURE_CONVEX_SEGMENT, INTER_RELATIVE_FRONTIER_CONIC_HULL }
 
 /- ------------------------------------------------------------------------- -/
-/- Relative interior of a set (part 4).  (convex.ml 11840-12058)             -/
+/- Relative interior of a set (part 4).  (convex.ml 11841-12059)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure RID where
@@ -15574,7 +15577,7 @@ def setupRID [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVB : CVB) (BCVH : CVH) (
            DIFFERENT_NORM_3_COLLINEAR_POINTS, OPEN_SEGMENT_SUBSET_BALL }
 
 /- ------------------------------------------------------------------------- -/
-/- Relative interior of a set (part 5).  (convex.ml 12060-12269)             -/
+/- Relative interior of a set (part 5).  (convex.ml 12061-12270)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure RIE where
@@ -15837,7 +15840,7 @@ def setupRIE [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCOP : COP) (BCLH : CLH) (
            RAY_TO_RELATIVE_FRONTIER, RAY_TO_FRONTIER }
 
 /- ------------------------------------------------------------------------- -/
-/- Relative interior of a set (part 6).  (convex.ml 12270-12486)             -/
+/- Relative interior of a set (part 6).  (convex.ml 12271-12487)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure RIF where
@@ -16110,7 +16113,7 @@ def setupRIF [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVH : CVH) (BCLH : CLH) (
            KREIN_MILMAN_RELATIVE_BOUNDARY, KREIN_MILMAN_FRONTIER }
 
 /- ------------------------------------------------------------------------- -/
-/- Relative interior of a set (part 7).  (convex.ml 12488-12666)             -/
+/- Relative interior of a set (part 7).  (convex.ml 12489-12667)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure RIG where
@@ -16346,7 +16349,7 @@ def setupRIG [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVP : CVP) (BCLH : CLH) (
            DIAMETER_RELATIVE_FRONTIER, DIAMETER_ATTAINED_FRONTIER, DIAMETER_FRONTIER }
 
 /- ------------------------------------------------------------------------- -/
-/- Relative interior of a set (part 8).  (convex.ml 12667-12890)             -/
+/- Relative interior of a set (part 8).  (convex.ml 12668-12891)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure RIH where
@@ -16634,7 +16637,7 @@ def setupRIH [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) (BCVB : CVB) (
 
 /- ------------------------------------------------------------------------- -/
 /- Small move from (relative frontier of) convex set; basic closure          -/
-/- properties for "is_interval".  (convex.ml 12894-13071)                    -/
+/- properties for "is_interval".  (convex.ml 12895-13072)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure SMI where
@@ -16861,7 +16864,7 @@ def setupSMI [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVA : CVA) (BCLH : CLH) (
 
 /- ------------------------------------------------------------------------- -/
 /- Shrinking space to a ball while preserving convexity.                     -/
-/- (convex.ml 13075-13235)                                                   -/
+/- (convex.ml 13076-13236)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure SHB where
@@ -17074,7 +17077,7 @@ def setupSHB [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCON : CON) (BCVF : CVF) (
 
 /- ------------------------------------------------------------------------- -/
 /- Some convexity-related properties of Hausdorff distance.                  -/
-/- (convex.ml 13239-13405)                                                   -/
+/- (convex.ml 13240-13406)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HAU where
@@ -17295,7 +17298,7 @@ def setupHAU [HolBase] (D : ConvexDeps) (BCVB : CVB) (BCVA : CVA) (BCVH : CVH) (
 
 /- ------------------------------------------------------------------------- -/
 /- The Blaschke selection principle and related results.                     -/
-/- (convex.ml 13409-13505)                                                   -/
+/- (convex.ml 13410-13506)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure BLA where
@@ -17434,7 +17437,7 @@ def setupBLA [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVH : CVH) (BOCH : OCH) (
 
 /- ------------------------------------------------------------------------- -/
 /- Interior, relative interior and closure interrelations (part 1).          -/
-/- (convex.ml 13511-13697)                                                   -/
+/- (convex.ml 13512-13698)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure IRA where
@@ -17685,7 +17688,7 @@ def setupIRA [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCLH : CLH) (BADA : ADA) (
 
 /- ------------------------------------------------------------------------- -/
 /- Interior, relative interior and closure interrelations (part 2).          -/
-/- (convex.ml 13697-13914)                                                   -/
+/- (convex.ml 13698-13915)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure IRB where
@@ -17977,7 +17980,7 @@ def setupIRB [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) (BCVA : CVA) (
 
 /- ------------------------------------------------------------------------- -/
 /- Interior, relative interior and closure interrelations (part 3).          -/
-/- (convex.ml 13914-14148)                                                   -/
+/- (convex.ml 13915-14149)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure IRC where
@@ -18287,7 +18290,7 @@ def setupIRC [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVS : CVS) (BCOP : COP) (
            RELATIVE_INTERIOR_CBALL_INTER_AFFINE }
 
 /- ------------------------------------------------------------------------- -/
-/- Lemmas about extending nondecreasing functions.  (convex.ml 14154-14281)  -/
+/- Lemmas about extending nondecreasing functions.  (convex.ml 14155-14282)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure NDE where
@@ -18457,7 +18460,7 @@ def setupNDE [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVH : CVH) (BMCG : MCG) (
            INCREASING_EXTENDS_FROM_DENSE }
 
 /- ------------------------------------------------------------------------- -/
-/- More basics about segments (part 1).  (convex.ml 14285-14494)             -/
+/- More basics about segments (part 1).  (convex.ml 14286-14495)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure SGA where
@@ -18746,7 +18749,7 @@ def setupSGA [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFS : AFS) (BCVX : CVX) (
            CONNECTED_SEMIOPEN_SEGMENT, SEGMENT_EQ_EMPTY, FINITE_SEGMENT, SEGMENT_EQ_SING }
 
 /- ------------------------------------------------------------------------- -/
-/- More basics about segments (part 2).  (convex.ml 14494-14717)             -/
+/- More basics about segments (part 2).  (convex.ml 14495-14718)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure SGB where
@@ -19035,7 +19038,7 @@ def setupSGB [HolBase] (D : ConvexDeps) (BAFD : AFD) (BCOP : COP) (BCVH : CVH) (
 
 /- ------------------------------------------------------------------------- -/
 /- More basics about segments (part 3); theorems about strips between bounds -/
-/- on a component.  (convex.ml 14717-14895)                                  -/
+/- on a component.  (convex.ml 14718-14896)                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure SGC where
@@ -19273,7 +19276,7 @@ def setupSGC [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCOP : COP) (BCLH : CLH) (
 
 /- ------------------------------------------------------------------------- -/
 /- Lower-dimensional affine subsets are nowhere dense.                       -/
-/- (convex.ml 14899-14984)                                                   -/
+/- (convex.ml 14900-14985)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure NWD where
@@ -19413,7 +19416,7 @@ def setupNWD [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCLH : CLH) (BADA : ADA) (
 /- ------------------------------------------------------------------------- -/
 /- Homeomorphism of all convex compact sets with same affine dimension, and  -/
 /- in particular all those with nonempty interior (part 1).                  -/
-/- (convex.ml 14995-15343)                                                   -/
+/- (convex.ml 14996-15344)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HMA where
@@ -19833,7 +19836,7 @@ def setupHMA [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCLH : CLH) (BRIA : RIA) (
 /- ------------------------------------------------------------------------- -/
 /- Homeomorphism of all convex compact sets with same affine dimension, and  -/
 /- in particular all those with nonempty interior (part 2).                  -/
-/- (convex.ml 15345-15439)                                                   -/
+/- (convex.ml 15346-15440)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HMB where
@@ -19985,7 +19988,7 @@ def setupHMB [HolBase] (D : ConvexDeps) (BCVB : CVB) (BCLH : CLH) (BADA : ADA) (
 
 /- ------------------------------------------------------------------------- -/
 /- Hence homeomorphism of convex open sets of same affine dimension.         -/
-/- (convex.ml 15443-15537)                                                   -/
+/- (convex.ml 15444-15538)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure HMC where
@@ -20125,7 +20128,7 @@ def setupHMC [HolBase] (D : ConvexDeps) (BCON : CON) (BCLH : CLH) (BAFI : AFI) (
 
 /- ------------------------------------------------------------------------- -/
 /- More refined Lipschitz homeomorphisms between relative frontiers (part 1). -/
-/- (convex.ml 15541-15591)                                                   -/
+/- (convex.ml 15542-15592)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LPA where
@@ -20212,7 +20215,7 @@ def setupLPA [HolBase] (D : ConvexDeps) (BCLH : CLH) (BRIA : RIA) (BRIB : RIB) :
 
 /- ------------------------------------------------------------------------- -/
 /- More refined Lipschitz homeomorphisms between relative frontiers (part 2). -/
-/- (convex.ml 15592-15930)                                                   -/
+/- (convex.ml 15593-15931)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LPB where
@@ -20618,7 +20621,7 @@ def setupLPB [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFS : AFS) (BCOP : COP) (
 
 /- ------------------------------------------------------------------------- -/
 /- More refined Lipschitz homeomorphisms between relative frontiers (part 3). -/
-/- (convex.ml 15931-16031)                                                   -/
+/- (convex.ml 15932-16032)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LPC where
@@ -20763,7 +20766,7 @@ def setupLPC [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCLH : CLH) (BRIA : RIA) (
 
 /- ------------------------------------------------------------------------- -/
 /- More refined Lipschitz homeomorphisms between relative frontiers (part 4). -/
-/- (convex.ml 16032-16214)                                                   -/
+/- (convex.ml 16033-16215)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LPD where
@@ -21000,7 +21003,7 @@ def setupLPD [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) (BCLH : CLH) (
 
 /- ------------------------------------------------------------------------- -/
 /- More about affine dimension of special sets.                              -/
-/- (convex.ml 16221-16305)                                                   -/
+/- (convex.ml 16222-16306)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure ADS where
@@ -21130,7 +21133,7 @@ def setupADS [HolBase] (D : ConvexDeps) (BADA : ADA) (BADB : ADB) (BADD : ADD) (
 /- A complete graph of |R|-many vertices can be embedded in R^3 with the     -/
 /- edges as straight-line segments that intersect only at common endpoints.  -/
 /- Basically, you just scatter the points onto the twisted cubic.            -/
-/- (convex.ml 16311-16432)                                                   -/
+/- (convex.ml 16312-16433)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure GRE where
@@ -21291,7 +21294,7 @@ def setupGRE [HolBase] (D : ConvexDeps) (BADB : ADB) (BADD : ADD) (BADE : ADE) (
 
 /- ------------------------------------------------------------------------- -/
 /- Deducing convexity from midpoint convexity in common cases.               -/
-/- (convex.ml 16436-16541)                                                   -/
+/- (convex.ml 16437-16542)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure MDC where
@@ -21446,7 +21449,7 @@ def setupMDC [HolBase] (D : ConvexDeps) (BCVX : CVX) (BCVF : CVF) (BLIN : LIN) (
 
 /- ------------------------------------------------------------------------- -/
 /- Slightly shaper separating/supporting hyperplane results.                 -/
-/- (convex.ml 16548-16668)                                                   -/
+/- (convex.ml 16549-16669)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure SHP where
@@ -21621,7 +21624,7 @@ def setupSHP [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCVX : CVX) (BGNS : GNS) (
 
 /- ------------------------------------------------------------------------- -/
 /- Containment of rays in unbounded convex sets.                             -/
-/- (convex.ml 16675-16817)                                                   -/
+/- (convex.ml 16676-16818)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure RAY where
@@ -21818,7 +21821,7 @@ def setupRAY [HolBase] (D : ConvexDeps) (BCVX : CVX) (BMCG : MCG) (BRIA : RIA) (
 
 /- ------------------------------------------------------------------------- -/
 /- Containment of rays in unbounded convex sets (continued).                 -/
-/- (convex.ml 16819-16910)                                                   -/
+/- (convex.ml 16820-16911)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CTR where
@@ -21956,7 +21959,7 @@ def setupCTR [HolBase] (D : ConvexDeps) (BAFF : AFF) (BCOP : COP) (BADB : ADB) (
 
 /- ------------------------------------------------------------------------- -/
 /- Explicit formulas for interior and relative interior of convex hull.      -/
-/- (convex.ml 16916-17064)                                                   -/
+/- (convex.ml 16917-17065)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure EXA where
@@ -22154,7 +22157,7 @@ def setupEXA [HolBase] (D : ConvexDeps) (BAFX : AFX) (BCVH : CVH) (BCVE : CVE) (
 
 /- ------------------------------------------------------------------------- -/
 /- Explicit formulas for interior and relative interior of convex hull,      -/
-/- continued. (convex.ml 17065-17277)                                        -/
+/- continued. (convex.ml 17066-17278)                                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure EXB where
@@ -22432,7 +22435,7 @@ def setupEXB [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFX : AFX) (BAFS : AFS) (
 
 /- ------------------------------------------------------------------------- -/
 /- Similar results for closure and (relative or absolute) frontier.          -/
-/- (convex.ml 17282-17456)                                                   -/
+/- (convex.ml 17283-17457)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CFA where
@@ -22661,7 +22664,7 @@ def setupCFA [HolBase] (D : ConvexDeps) (BAFD : AFD) (BCVE : CVE) (BCLH : CLH) (
 
 /- ------------------------------------------------------------------------- -/
 /- Similar things in special case (could use above as lemmas here instead).  -/
-/- (convex.ml 17461-17583)                                                   -/
+/- (convex.ml 17462-17584)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure SIM where
@@ -22823,7 +22826,7 @@ def setupSIM [HolBase] (D : ConvexDeps) (BCVE : CVE) : ExceptT String IO SIM := 
 
 /- ------------------------------------------------------------------------- -/
 /- Barycentres.                                                              -/
-/- (convex.ml 17589-17672)                                                   -/
+/- (convex.ml 17590-17673)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure BAR where
@@ -22954,7 +22957,7 @@ def setupBAR [HolBase] (D : ConvexDeps) (BCLH : CLH) (BADC : ADC) (BRIA : RIA) (
 
 /- ------------------------------------------------------------------------- -/
 /- Construction of regular polyhedra with given parameters.                  -/
-/- (convex.ml 17678-17835)                                                   -/
+/- (convex.ml 17679-17836)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure RPA where
@@ -23159,7 +23162,7 @@ def setupRPA [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFD : AFD) (BCLH : CLH) (
 
 /- ------------------------------------------------------------------------- -/
 /- Construction of regular polyhedra with given parameters, continued.       -/
-/- (convex.ml 17836-17891)                                                   -/
+/- (convex.ml 17837-17892)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure RPB where
@@ -23248,7 +23251,7 @@ def setupRPB [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFD : AFD) (BBAR : BAR) (
 
 /- ------------------------------------------------------------------------- -/
 /- Continuity of convex functions and related results.                       -/
-/- (convex.ml 17896-18087)                                                   -/
+/- (convex.ml 17897-18088)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CNA where
@@ -23499,7 +23502,7 @@ def setupCNA [HolBase] (D : ConvexDeps) (BAFF : AFF) (BAFS : AFS) (BCVF : CVF) (
 
 /- ------------------------------------------------------------------------- -/
 /- Continuity of convex functions and related results, continued.            -/
-/- (convex.ml 18089-18210)                                                   -/
+/- (convex.ml 18090-18211)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CNB where
@@ -23666,7 +23669,7 @@ def setupCNB [HolBase] (D : ConvexDeps) (BRIA : RIA) (BRIB : RIB) (BCNA : CNA) :
 
 /- ------------------------------------------------------------------------- -/
 /- Continuity of convex functions, continued; a convex function on R^1 is    -/
-/- "piecewise monotone". (convex.ml 18212-18329)                             -/
+/- "piecewise monotone". (convex.ml 18213-18330)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure CNC where

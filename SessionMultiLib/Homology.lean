@@ -262,6 +262,7 @@ def met3 : HolMultiLib.Homology.MetThms3 :=
     retract_of_space, retraction_map, retraction_maps, section_map }
 
 def deps : HolMultiLib.Homology.HomologyDeps where
+  prioritize_real := Session.prioritize_real
   new_definition s := do
     let t ← ExceptT.mk (HolCore.Parser.parse_term s)
     ExceptT.mk (Session.new_definition t)
@@ -324,7 +325,7 @@ private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α 
 initialize BSSX : HolMultiLib.Homology.SSX ←
   ioB "setupSSX" (HolMultiLib.Homology.setupSSX deps).run
 
--- SSX (homology.ml 9-143)
+-- SSX (homology.ml 10-144)
 def standard_simplex : thm := BSSX.standard_simplex
 def TOPSPACE_STANDARD_SIMPLEX : thm := BSSX.TOPSPACE_STANDARD_SIMPLEX
 def BASIS_IN_STANDARD_SIMPLEX : thm := BSSX.BASIS_IN_STANDARD_SIMPLEX
@@ -340,7 +341,7 @@ def CONNECTED_IN_STANDARD_SIMPLEX : thm := BSSX.CONNECTED_IN_STANDARD_SIMPLEX
 initialize BSFC : HolMultiLib.Homology.SFC ←
   ioB "setupSFC" (HolMultiLib.Homology.setupSFC deps BSSX).run
 
--- SFC (homology.ml 144-243)
+-- SFC (homology.ml 145-244)
 def simplicial_face : thm := BSFC.simplicial_face
 def SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX : thm := BSFC.SIMPLICIAL_FACE_IN_STANDARD_SIMPLEX
 def singular_simplex : thm := BSFC.singular_simplex
@@ -353,7 +354,7 @@ def SINGULAR_SIMPLEX_SINGULAR_FACE : thm := BSFC.SINGULAR_SIMPLEX_SINGULAR_FACE
 initialize BSCH : HolMultiLib.Homology.SCH ←
   ioB "setupSCH" (HolMultiLib.Homology.setupSCH deps BSFC).run
 
--- SCH (homology.ml 240-413)
+-- SCH (homology.ml 241-414)
 def singular_chain : thm := BSCH.singular_chain
 def SINGULAR_CHAIN_EMPTY : thm := BSCH.SINGULAR_CHAIN_EMPTY
 def SINGULAR_CHAIN_MONO : thm := BSCH.SINGULAR_CHAIN_MONO
@@ -380,7 +381,7 @@ def CHAIN_BOUNDARY_OF : thm := BSCH.CHAIN_BOUNDARY_OF
 initialize BMSR : HolMultiLib.Homology.MSR ←
   ioB "setupMSR" (HolMultiLib.Homology.setupMSR deps BSCH).run
 
--- MSR (homology.ml 414-532)
+-- MSR (homology.ml 415-533)
 def mod_subset : thm := BMSR.mod_subset
 def MOD_SUBSET_EMPTY : thm := BMSR.MOD_SUBSET_EMPTY
 def MOD_SUBSET_REFL : thm := BMSR.MOD_SUBSET_REFL
@@ -401,7 +402,7 @@ def SINGULAR_CYCLE_MONO : thm := BMSR.SINGULAR_CYCLE_MONO
 initialize BRBD : HolMultiLib.Homology.RBD ←
   ioB "setupRBD" (HolMultiLib.Homology.setupRBD deps BSCH BMSR).run
 
--- RBD (homology.ml 533-648)
+-- RBD (homology.ml 534-649)
 def singular_relboundary : thm := BRBD.singular_relboundary
 def SINGULAR_RELBOUNDARY_RESTRICT : thm := BRBD.SINGULAR_RELBOUNDARY_RESTRICT
 def SINGULAR_RELBOUNDARY_ALT : thm := BRBD.SINGULAR_RELBOUNDARY_ALT
@@ -420,7 +421,7 @@ def SINGULAR_RELBOUNDARY_SUB : thm := BRBD.SINGULAR_RELBOUNDARY_SUB
 initialize BHMR : HolMultiLib.Homology.HMR ←
   ioB "setupHMR" (HolMultiLib.Homology.setupHMR deps BSCH BMSR BRBD).run
 
--- HMR (homology.ml 649-771)
+-- HMR (homology.ml 650-772)
 def homologous_rel : thm := BHMR.homologous_rel
 def HOMOLOGOUS_REL_RESTRICT : thm := BHMR.HOMOLOGOUS_REL_RESTRICT
 def HOMOLOGOUS_REL_REFL : thm := BHMR.HOMOLOGOUS_REL_REFL
@@ -436,7 +437,7 @@ def CHAIN_HOMOTOPIC_IMP_HOMOLOGOUS_REL : thm := BHMR.CHAIN_HOMOTOPIC_IMP_HOMOLOG
 initialize BBDB : HolMultiLib.Homology.BDB ←
   ioB "setupBDB" (HolMultiLib.Homology.setupBDB deps BSSX BSFC BSCH BMSR BRBD BHMR).run
 
--- BDB (homology.ml 772-899)
+-- BDB (homology.ml 773-900)
 def CHAIN_BOUNDARY_BOUNDARY : thm := BBDB.CHAIN_BOUNDARY_BOUNDARY
 def CHAIN_BOUNDARY_BOUNDARY_ALT : thm := BBDB.CHAIN_BOUNDARY_BOUNDARY_ALT
 def SINGULAR_RELBOUNDARY_IMP_RELCYCLE : thm := BBDB.SINGULAR_RELBOUNDARY_IMP_RELCYCLE
@@ -445,7 +446,7 @@ def HOMOLOGOUS_REL_SINGULAR_RELCYCLE : thm := BBDB.HOMOLOGOUS_REL_SINGULAR_RELCY
 initialize BSMP : HolMultiLib.Homology.SMP ←
   ioB "setupSMP" (HolMultiLib.Homology.setupSMP deps BSFC BSCH).run
 
--- SMP (homology.ml 900-1057)
+-- SMP (homology.ml 901-1058)
 def simplex_map : thm := BSMP.simplex_map
 def SINGULAR_SIMPLEX_SIMPLEX_MAP : thm := BSMP.SINGULAR_SIMPLEX_SIMPLEX_MAP
 def SIMPLEX_MAP_EQ : thm := BSMP.SIMPLEX_MAP_EQ
@@ -471,7 +472,7 @@ def CHAIN_MAP_COMPOSE : thm := BSMP.CHAIN_MAP_COMPOSE
 initialize BCMP : HolMultiLib.Homology.CMP ←
   ioB "setupCMP" (HolMultiLib.Homology.setupCMP deps BSFC BSCH BMSR BRBD BSMP).run
 
--- CMP (homology.ml 1058-1126)
+-- CMP (homology.ml 1059-1127)
 def SINGULAR_SIMPLEX_CHAIN_MAP_I : thm := BCMP.SINGULAR_SIMPLEX_CHAIN_MAP_I
 def CHAIN_BOUNDARY_CHAIN_MAP : thm := BCMP.CHAIN_BOUNDARY_CHAIN_MAP
 def SINGULAR_RELCYCLE_CHAIN_MAP : thm := BCMP.SINGULAR_RELCYCLE_CHAIN_MAP
@@ -480,7 +481,7 @@ def SINGULAR_RELBOUNDARY_CHAIN_MAP : thm := BCMP.SINGULAR_RELBOUNDARY_CHAIN_MAP
 initialize BSNG : HolMultiLib.Homology.SNG ←
   ioB "setupSNG" (HolMultiLib.Homology.setupSNG deps BSFC BSCH BMSR BRBD).run
 
--- SNG (homology.ml 1127-1261)
+-- SNG (homology.ml 1128-1262)
 def SINGULAR_SIMPLEX_SING : thm := BSNG.SINGULAR_SIMPLEX_SING
 def SINGULAR_CHAIN_SING : thm := BSNG.SINGULAR_CHAIN_SING
 def CHAIN_BOUNDARY_OF_SING : thm := BSNG.CHAIN_BOUNDARY_OF_SING
@@ -491,7 +492,7 @@ def SINGULAR_BOUNDARY_EQ_CYCLE_SING : thm := BSNG.SINGULAR_BOUNDARY_EQ_CYCLE_SIN
 initialize BSSC : HolMultiLib.Homology.SSC ←
   ioB "setupSSC" (HolMultiLib.Homology.setupSSC deps BSSX BSFC BSCH).run
 
--- SSC (homology.ml 1262-1450)
+-- SSC (homology.ml 1263-1451)
 def oriented_simplex : thm := BSSC.oriented_simplex
 def simplicial_simplex : thm := BSSC.simplicial_simplex
 def SIMPLICIAL_SIMPLEX : thm := BSSC.SIMPLICIAL_SIMPLEX
@@ -513,14 +514,14 @@ def SIMPLICIAL_CHAIN_BOUNDARY : thm := BSSC.SIMPLICIAL_CHAIN_BOUNDARY
 initialize BSCN : HolMultiLib.Homology.SCN ←
   ioB "setupSCN" (HolMultiLib.Homology.setupSCN deps BSSX BSSC).run
 
--- SCN (homology.ml 1451-1526)
+-- SCN (homology.ml 1452-1527)
 def simplex_cone : thm := BSCN.simplex_cone
 def SIMPLICIAL_SIMPLEX_SIMPLEX_CONE : thm := BSCN.SIMPLICIAL_SIMPLEX_SIMPLEX_CONE
 
 initialize BSCC : HolMultiLib.Homology.SCC ←
   ioB "setupSCC" (HolMultiLib.Homology.setupSCC deps BSSX BSCH BSMP BSSC BSCN).run
 
--- SCC (homology.ml 1527-1696)
+-- SCC (homology.ml 1528-1697)
 def simplicial_cone : thm := BSCC.simplicial_cone
 def SIMPLICIAL_CHAIN_SIMPLICIAL_CONE : thm := BSCC.SIMPLICIAL_CHAIN_SIMPLICIAL_CONE
 def CHAIN_BOUNDARY_SIMPLICIAL_CONE_OF : thm := BSCC.CHAIN_BOUNDARY_SIMPLICIAL_CONE_OF
@@ -531,7 +532,7 @@ def CHAIN_MAP_SIMPLICIAL_CONE : thm := BSCC.CHAIN_MAP_SIMPLICIAL_CONE
 initialize BSBD : HolMultiLib.Homology.SBD ←
   ioB "setupSBD" (HolMultiLib.Homology.setupSBD deps BSSX BSCH BBDB BSSC BSCC).run
 
--- SBD (homology.ml 1697-1845)
+-- SBD (homology.ml 1698-1846)
 def simplicial_vertex : thm := BSBD.simplicial_vertex
 def SIMPLICIAL_VERTEX_ORIENTED_SIMPLEX : thm := BSBD.SIMPLICIAL_VERTEX_ORIENTED_SIMPLEX
 def simplicial_subdivision : thm := BSBD.simplicial_subdivision
@@ -545,13 +546,13 @@ def CHAIN_BOUNDARY_SIMPLICIAL_SUBDIVISION : thm := BSBD.CHAIN_BOUNDARY_SIMPLICIA
 initialize BSHR : HolMultiLib.Homology.SHR ←
   ioB "setupSHR" (HolMultiLib.Homology.setupSHR deps BSSX BSSC BSCN BSCC BSBD).run
 
--- SHR (homology.ml 1846-2025)
+-- SHR (homology.ml 1847-2026)
 def SIMPLICIAL_SUBDIVISION_SHRINKS : thm := BSHR.SIMPLICIAL_SUBDIVISION_SHRINKS
 
 initialize BSGS : HolMultiLib.Homology.SGS ←
   ioB "setupSGS" (HolMultiLib.Homology.setupSGS deps BSSX BSFC BSCH BSMP BSSC BSBD).run
 
--- SGS (homology.ml 2026-2159)
+-- SGS (homology.ml 2027-2160)
 def singular_subdivision : thm := BSGS.singular_subdivision
 def SINGULAR_SUBDIVISION_0 : thm := BSGS.SINGULAR_SUBDIVISION_0
 def SINGULAR_SUBDIVISION_SUB : thm := BSGS.SINGULAR_SUBDIVISION_SUB
@@ -565,7 +566,7 @@ initialize BSSS : HolMultiLib.Homology.SSS ←
   ioB "setupSSS"
     (HolMultiLib.Homology.setupSSS deps BSSX BSFC BSCH BSMP BCMP BSSC BSCC BSBD BSGS).run
 
--- SSS (homology.ml 2160-2366)
+-- SSS (homology.ml 2161-2367)
 def SINGULAR_SUBDIVISION_SIMPLICIAL_SIMPLEX : thm :=
   BSSS.SINGULAR_SUBDIVISION_SIMPLICIAL_SIMPLEX
 def NATURALITY_SIMPLICIAL_SUBDIVISION : thm := BSSS.NATURALITY_SIMPLICIAL_SUBDIVISION
@@ -576,14 +577,14 @@ initialize BCHS : HolMultiLib.Homology.CHS ←
   ioB "setupCHS"
     (HolMultiLib.Homology.setupCHS deps BSSX BSCH BBDB BSMP BCMP BSSC BSCC BSBD BSSS).run
 
--- CHS (homology.ml 2367-2596)
+-- CHS (homology.ml 2368-2597)
 def CHAIN_HOMOTOPIC_SIMPLICIAL_SUBDIVISION : thm := BCHS.CHAIN_HOMOTOPIC_SIMPLICIAL_SUBDIVISION
 
 initialize BCHG : HolMultiLib.Homology.CHG ←
   ioB "setupCHG"
     (HolMultiLib.Homology.setupCHG deps BSFC BSCH BMSR BHMR BSMP BCMP BSSC BSGS BSSS BCHS).run
 
--- CHG (homology.ml 2597-2788)
+-- CHG (homology.ml 2598-2789)
 def CHAIN_HOMOTOPIC_SINGULAR_SUBDIVISION : thm := BCHG.CHAIN_HOMOTOPIC_SINGULAR_SUBDIVISION
 def HOMOLOGOUS_REL_SINGULAR_SUBDIVISION : thm := BCHG.HOMOLOGOUS_REL_SINGULAR_SUBDIVISION
 
@@ -591,7 +592,7 @@ initialize BITS : HolMultiLib.Homology.ITS ←
   ioB "setupITS"
     (HolMultiLib.Homology.setupITS deps BSCH BCMP BSSC BSBD BSGS BSSS BCHG).run
 
--- ITS (homology.ml 2789-2915)
+-- ITS (homology.ml 2790-2916)
 def ITERATED_SINGULAR_SUBDIVISION : thm := BITS.ITERATED_SINGULAR_SUBDIVISION
 def CHAIN_HOMOTOPIC_ITERATED_SINGULAR_SUBDIVISION : thm :=
   BITS.CHAIN_HOMOTOPIC_ITERATED_SINGULAR_SUBDIVISION
@@ -600,7 +601,7 @@ initialize BSIS : HolMultiLib.Homology.SIS ←
   ioB "setupSIS"
     (HolMultiLib.Homology.setupSIS deps BSSX BSFC BSCH BSMP BSSC BSBD BSHR BSGS BITS).run
 
--- SIS (homology.ml 2916-3188)
+-- SIS (homology.ml 2917-3189)
 def SUFFICIENT_ITERATED_SINGULAR_SUBDIVISION_EXISTS : thm :=
   BSIS.SUFFICIENT_ITERATED_SINGULAR_SUBDIVISION_EXISTS
 
@@ -608,7 +609,7 @@ initialize BEXC : HolMultiLib.Homology.EXC ←
   ioB "setupEXC"
     (HolMultiLib.Homology.setupEXC deps BSFC BSCH BMSR BRBD BHMR BBDB BSGS BSSS BCHG BSIS).run
 
--- EXC (homology.ml 3189-3336)
+-- EXC (homology.ml 3190-3337)
 def SMALL_HOMOLOGOUS_REL_RELCYCLE_EXISTS : thm := BEXC.SMALL_HOMOLOGOUS_REL_RELCYCLE_EXISTS
 def EXCISED_CHAIN_EXISTS : thm := BEXC.EXCISED_CHAIN_EXISTS
 def EXCISED_RELCYCLE_EXISTS : thm := BEXC.EXCISED_RELCYCLE_EXISTS
@@ -617,13 +618,13 @@ initialize BHIV : HolMultiLib.Homology.HIV ←
   ioB "setupHIV"
     (HolMultiLib.Homology.setupHIV deps BSSX BSFC BSCH BMSR BRBD BHMR BSMP BSSC).run
 
--- HIV (homology.ml 3337-3971)
+-- HIV (homology.ml 3338-3972)
 def HOMOTOPIC_IMP_HOMOLOGOUS_REL_CHAIN_MAPS : thm := BHIV.HOMOTOPIC_IMP_HOMOLOGOUS_REL_CHAIN_MAPS
 
 initialize BHGP : HolMultiLib.Homology.HGP ←
   ioB "setupHGP" (HolMultiLib.Homology.setupHGP deps BSCH BMSR BRBD BHMR BBDB).run
 
--- HGP (homology.ml 3966-4120)
+-- HGP (homology.ml 3967-4121)
 def chain_group : thm := BHGP.chain_group
 def CHAIN_GROUP : thm := BHGP.CHAIN_GROUP
 def ABELIAN_CHAIN_GROUP : thm := BHGP.ABELIAN_CHAIN_GROUP
@@ -648,7 +649,7 @@ def HOMOLOGOUS_REL_EQ_RELBOUNDARY : thm := BHGP.HOMOLOGOUS_REL_EQ_RELBOUNDARY
 initialize BHBD : HolMultiLib.Homology.HBD ←
   ioB "setupHBD" (HolMultiLib.Homology.setupHBD deps BSCH BMSR BRBD BHMR BBDB BHGP).run
 
--- HBD (homology.ml 4121-4294)
+-- HBD (homology.ml 4122-4295)
 def GROUP_HOMOMORPHISM_CHAIN_BOUNDARY : thm := BHBD.GROUP_HOMOMORPHISM_CHAIN_BOUNDARY
 def HOM_BOUNDARY_DEFAULT : thm := BHBD.HOM_BOUNDARY_DEFAULT
 def GROUP_HOMOMORPHISM_HOM_BOUNDARY : thm := BHBD.GROUP_HOMOMORPHISM_HOM_BOUNDARY
@@ -660,7 +661,7 @@ def HOM_BOUNDARY_TRIVIAL : thm := BHBD.HOM_BOUNDARY_TRIVIAL
 initialize BHIN : HolMultiLib.Homology.HIN ←
   ioB "setupHIN" (HolMultiLib.Homology.setupHIN deps BMSR BRBD BHMR BSMP BCMP BHGP).run
 
--- HIN (homology.ml 4295-4476)
+-- HIN (homology.ml 4296-4477)
 def GROUP_HOMOMORPHISM_CHAIN_MAP : thm := BHIN.GROUP_HOMOMORPHISM_CHAIN_MAP
 def HOM_INDUCED_DEFAULT : thm := BHIN.HOM_INDUCED_DEFAULT
 def GROUP_HOMOMORPHISM_HOM_INDUCED : thm := BHIN.GROUP_HOMOMORPHISM_HOM_INDUCED
@@ -673,7 +674,7 @@ initialize BHIF : HolMultiLib.Homology.HIF ←
   ioB "setupHIF"
     (HolMultiLib.Homology.setupHIF deps BMSR BHMR BBDB BSMP BCMP BHGP BHBD BHIN).run
 
--- HIF (homology.ml 4477-4659)
+-- HIF (homology.ml 4478-4660)
 def HOM_INDUCED_CHAIN_MAP : thm := BHIF.HOM_INDUCED_CHAIN_MAP
 def HOM_INDUCED_EQ : thm := BHIF.HOM_INDUCED_EQ
 def ABELIAN_RELATIVE_HOMOLOGY_GROUP : thm := BHIF.ABELIAN_RELATIVE_HOMOLOGY_GROUP
@@ -686,7 +687,7 @@ initialize BHEX : HolMultiLib.Homology.HEX ←
   ioB "setupHEX"
     (HolMultiLib.Homology.setupHEX deps BSCH BMSR BRBD BHMR BBDB BSMP BHGP BHBD BHIN BHIF).run
 
--- HEX (homology.ml 4660-4832)
+-- HEX (homology.ml 4661-4833)
 def HOMOLOGY_EXACTNESS_AXIOM_1 : thm := BHEX.HOMOLOGY_EXACTNESS_AXIOM_1
 def HOMOLOGY_EXACTNESS_AXIOM_2 : thm := BHEX.HOMOLOGY_EXACTNESS_AXIOM_2
 
@@ -695,7 +696,7 @@ initialize BHAX : HolMultiLib.Homology.HAX ←
     (HolMultiLib.Homology.setupHAX deps BSCH BMSR BRBD BHMR BBDB BSMP BSNG BHIV BHGP BHIN
       BHIF).run
 
--- HAX (homology.ml 4833-4950)
+-- HAX (homology.ml 4834-4951)
 def HOMOLOGY_EXACTNESS_AXIOM_3 : thm := BHAX.HOMOLOGY_EXACTNESS_AXIOM_3
 def HOMOLOGY_DIMENSION_AXIOM : thm := BHAX.HOMOLOGY_DIMENSION_AXIOM
 def HOMOLOGY_HOMOTOPY_AXIOM : thm := BHAX.HOMOLOGY_HOMOTOPY_AXIOM
@@ -705,13 +706,13 @@ initialize BHXA : HolMultiLib.Homology.HXA ←
     (HolMultiLib.Homology.setupHXA deps BSCH BMSR BRBD BHMR BBDB BSMP BITS BEXC BHGP BHIN
       BHIF).run
 
--- HXA (homology.ml 4951-5094)
+-- HXA (homology.ml 4952-5095)
 def HOMOLOGY_EXCISION_AXIOM : thm := BHXA.HOMOLOGY_EXCISION_AXIOM
 
 initialize BHCS : HolMultiLib.Homology.HCS ←
   ioB "setupHCS" (HolMultiLib.Homology.setupHCS deps BSSX BSFC BSCH BMSR BHGP).run
 
--- HCS (homology.ml 5095-5231)
+-- HCS (homology.ml 5096-5232)
 def GROUP_ISOMORPHISM_CHAIN_GROUP_SUM : thm := BHCS.GROUP_ISOMORPHISM_CHAIN_GROUP_SUM
 def GROUP_ISOMORPHISM_CYCLE_GROUP_SUM : thm := BHCS.GROUP_ISOMORPHISM_CYCLE_GROUP_SUM
 
@@ -719,14 +720,14 @@ initialize BHAD : HolMultiLib.Homology.HAD ←
   ioB "setupHAD"
     (HolMultiLib.Homology.setupHAD deps BSCH BMSR BRBD BHMR BSMP BHGP BHIN BHIF BHCS).run
 
--- HAD (homology.ml 5232-5516)
+-- HAD (homology.ml 5233-5517)
 def HOMOLOGY_ADDITIVITY_AXIOM_GEN : thm := BHAD.HOMOLOGY_ADDITIVITY_AXIOM_GEN
 def HOMOLOGY_ADDITIVITY_AXIOM : thm := BHAD.HOMOLOGY_ADDITIVITY_AXIOM
 
 initialize BHZ0 : HolMultiLib.Homology.HZ0 ←
   ioB "setupHZ0" (HolMultiLib.Homology.setupHZ0 deps BSSX BSFC BSCH BMSR BRBD BHMR BHGP).run
 
--- HZ0 (homology.ml 5517-5674)
+-- HZ0 (homology.ml 5518-5675)
 def GROUP_ISOMORPHISM_INTEGER_ZEROTH_HOMOLOGY_GROUP : thm :=
   BHZ0.GROUP_ISOMORPHISM_INTEGER_ZEROTH_HOMOLOGY_GROUP
 def ISOMORPHIC_GROUP_INTEGER_ZEROTH_HOMOLOGY_GROUP : thm :=
@@ -735,7 +736,7 @@ def ISOMORPHIC_GROUP_INTEGER_ZEROTH_HOMOLOGY_GROUP : thm :=
 initialize BHBP : HolMultiLib.Homology.HBP ←
   ioB "setupHBP" (HolMultiLib.Homology.setupHBP deps BHGP BHIN BHIF BHAX BHAD BHZ0).run
 
--- HBP (homology.ml 5675-5850)
+-- HBP (homology.ml 5676-5851)
 def HOMOLOGY_COEFFICIENTS : thm := BHBP.HOMOLOGY_COEFFICIENTS
 def ZEROTH_HOMOLOGY_GROUP : thm := BHBP.ZEROTH_HOMOLOGY_GROUP
 def ISOMORPHIC_HOMOLOGY_IMP_PATH_COMPONENTS : thm := BHBP.ISOMORPHIC_HOMOLOGY_IMP_PATH_COMPONENTS
@@ -762,7 +763,7 @@ def HOMEOMORPHIC_SPACE_IMP_ISOMORPHIC_HOMOLOGY_GROUPS : thm :=
 initialize BHTR : HolMultiLib.Homology.HTR ←
   ioB "setupHTR" (HolMultiLib.Homology.setupHTR deps BHGP BHIN BHIF BHEX BHAX BHBP).run
 
--- HTR (homology.ml 5851-6060)
+-- HTR (homology.ml 5852-6061)
 def TRIVIAL_RELATIVE_HOMOLOGY_GROUP_GEN : thm := BHTR.TRIVIAL_RELATIVE_HOMOLOGY_GROUP_GEN
 def TRIVIAL_RELATIVE_HOMOLOGY_GROUP_TOPSPACE : thm := BHTR.TRIVIAL_RELATIVE_HOMOLOGY_GROUP_TOPSPACE
 def TRIVIAL_RELATIVE_HOMOLOGY_GROUP_EMPTY : thm := BHTR.TRIVIAL_RELATIVE_HOMOLOGY_GROUP_EMPTY
@@ -790,7 +791,7 @@ def SHORT_EXACT_SEQUENCE_HOM_INDUCED_INCLUSION : thm :=
 initialize BHPR : HolMultiLib.Homology.HPR ←
   ioB "setupHPR" (HolMultiLib.Homology.setupHPR deps BHGP BHIF BHAX BHXA BHBP BHTR).run
 
--- HPR (homology.ml 6061-6188)
+-- HPR (homology.ml 6062-6189)
 def GROUP_ISOMORPHISMS_HOMOLOGY_GROUP_PROD_RETRACT : thm :=
   BHPR.GROUP_ISOMORPHISMS_HOMOLOGY_GROUP_PROD_RETRACT
 def ISOMORPHIC_GROUP_HOMOLOGY_GROUP_PROD_RETRACT : thm :=
@@ -800,7 +801,7 @@ def HOMOLOGY_ADDITIVITY_EXPLICIT : thm := BHPR.HOMOLOGY_ADDITIVITY_EXPLICIT
 initialize BHRB : HolMultiLib.Homology.HRB ←
   ioB "setupHRB" (HolMultiLib.Homology.setupHRB deps BHGP BHBD BHIN BHIF).run
 
--- HRB (homology.ml 6189-6236)
+-- HRB (homology.ml 6190-6237)
 def hom_relboundary : thm := BHRB.hom_relboundary
 def GROUP_HOMOMORPHISM_HOM_RELBOUNDARY : thm := BHRB.GROUP_HOMOMORPHISM_HOM_RELBOUNDARY
 def HOM_RELBOUNDARY : thm := BHRB.HOM_RELBOUNDARY
@@ -810,26 +811,26 @@ def NATURALITY_HOM_INDUCED_RELBOUNDARY : thm := BHRB.NATURALITY_HOM_INDUCED_RELB
 initialize BHT1 : HolMultiLib.Homology.HT1 ←
   ioB "setupHT1" (HolMultiLib.Homology.setupHT1 deps BHBD BHIN BHIF BHEX BHAX BHRB).run
 
--- HT1 (homology.ml 6237-6349)
+-- HT1 (homology.ml 6238-6350)
 def HOMOLOGY_EXACTNESS_TRIPLE_1 : thm := BHT1.HOMOLOGY_EXACTNESS_TRIPLE_1
 
 initialize BHT2 : HolMultiLib.Homology.HT2 ←
   ioB "setupHT2" (HolMultiLib.Homology.setupHT2 deps BHGP BHBD BHIN BHIF BHEX BHAX BHRB).run
 
--- HT2 (homology.ml 6350-6488)
+-- HT2 (homology.ml 6351-6489)
 def HOMOLOGY_EXACTNESS_TRIPLE_2 : thm := BHT2.HOMOLOGY_EXACTNESS_TRIPLE_2
 
 initialize BHT3 : HolMultiLib.Homology.HT3 ←
   ioB "setupHT3"
     (HolMultiLib.Homology.setupHT3 deps BHGP BHBD BHIN BHIF BHEX BHAX BHTR BHRB).run
 
--- HT3 (homology.ml 6489-6624)
+-- HT3 (homology.ml 6490-6625)
 def HOMOLOGY_EXACTNESS_TRIPLE_3 : thm := BHT3.HOMOLOGY_EXACTNESS_TRIPLE_3
 
 initialize BHRD : HolMultiLib.Homology.HRD ←
   ioB "setupHRD" (HolMultiLib.Homology.setupHRD deps BHGP BHBD BHIN BHIF BHAX BHBP BHTR).run
 
--- HRD (homology.ml 6625-6837)
+-- HRD (homology.ml 6626-6838)
 def reduced_homology_group : thm := BHRD.reduced_homology_group
 def GROUP_CARRIER_REDUCED_HOMOLOGY_GROUP : thm := BHRD.GROUP_CARRIER_REDUCED_HOMOLOGY_GROUP
 def GROUP_CARRIER_REDUCED_HOMOLOGY_GROUP_SUBSET : thm :=
@@ -856,7 +857,7 @@ initialize BHRX : HolMultiLib.Homology.HRX ←
   ioB "setupHRX"
     (HolMultiLib.Homology.setupHRX deps BHGP BHIN BHIF BHEX BHAX BHBP BHTR BHRD).run
 
--- HRX (homology.ml 6838-7047)
+-- HRX (homology.ml 6839-7048)
 def GROUP_IMAGE_REDUCED_HOMOLOGY_GROUP : thm := BHRX.GROUP_IMAGE_REDUCED_HOMOLOGY_GROUP
 def HOMOLOGY_EXACTNESS_REDUCED_1 : thm := BHRX.HOMOLOGY_EXACTNESS_REDUCED_1
 def HOMOLOGY_EXACTNESS_REDUCED_2 : thm := BHRX.HOMOLOGY_EXACTNESS_REDUCED_2
@@ -865,7 +866,7 @@ def HOMOLOGY_EXACTNESS_REDUCED_3 : thm := BHRX.HOMOLOGY_EXACTNESS_REDUCED_3
 initialize BHDR : HolMultiLib.Homology.HDR ←
   ioB "setupHDR" (HolMultiLib.Homology.setupHDR deps BHGP BHXA BHBP BHPR BHRD BHRX).run
 
--- HDR (homology.ml 7048-7283)
+-- HDR (homology.ml 7049-7284)
 def GROUP_ISOMORPHISM_RELATIVE_HOMOLOGY_OF_CONTRACTIBLE : thm :=
   BHDR.GROUP_ISOMORPHISM_RELATIVE_HOMOLOGY_OF_CONTRACTIBLE
 def ISOMORPHIC_GROUP_RELATIVE_HOMOLOGY_OF_CONTRACTIBLE : thm :=
@@ -905,7 +906,7 @@ initialize BHDF : HolMultiLib.Homology.HDF ←
   ioB "setupHDF"
     (HolMultiLib.Homology.setupHDF deps BHGP BHIN BHIF BHEX BHAX BHZ0 BHBP BHRD BHDR).run
 
--- HDF (homology.ml 7284-7458)
+-- HDF (homology.ml 7285-7459)
 def GROUP_EPIMORPHISM_HOM_INDUCED_INCLUSION : thm := BHDF.GROUP_EPIMORPHISM_HOM_INDUCED_INCLUSION
 def TRIVIAL_HOMOMORPHISM_HOM_INDUCED_RELATIVIZATION : thm :=
   BHDF.TRIVIAL_HOMOMORPHISM_HOM_INDUCED_RELATIVIZATION
@@ -924,7 +925,7 @@ initialize BHCT : HolMultiLib.Homology.HCT ←
   ioB "setupHCT"
     (HolMultiLib.Homology.setupHCT deps BHTR BHT1 BHT2 BHT3 BHRD BHDR BHDF).run
 
--- HCT (homology.ml 7459-7628)
+-- HCT (homology.ml 7460-7629)
 def TRIVIAL_RELATIVE_HOMOLOGY_GROUP_CONTRACTIBLE_SPACES : thm :=
   BHCT.TRIVIAL_RELATIVE_HOMOLOGY_GROUP_CONTRACTIBLE_SPACES
 def TRIVIAL_RELATIVE_HOMOLOGY_GROUP_ALT : thm := BHCT.TRIVIAL_RELATIVE_HOMOLOGY_GROUP_ALT
@@ -946,7 +947,7 @@ def ISOMORPHIC_RELATIVE_CONTRACTIBLE_SPACE_IMP_HOMOLOGY_GROUPS : thm :=
 initialize BHSP : HolMultiLib.Homology.HSP ←
   ioB "setupHSP" (HolMultiLib.Homology.setupHSP deps BHGP BHIN BHIF BHXA BHDR).run
 
--- HSP (homology.ml 7629-7946)
+-- HSP (homology.ml 7630-7947)
 def GROUP_ISOMORPHISM_REDUCED_HOMOLOGY_GROUP_LOWER_HEMISPHERE : thm :=
   BHSP.GROUP_ISOMORPHISM_REDUCED_HOMOLOGY_GROUP_LOWER_HEMISPHERE
 def GROUP_ISOMORPHISM_RELATIVE_HOMOLOGY_GROUP_UPPER_HEMISPHERE : thm :=
@@ -955,7 +956,7 @@ def GROUP_ISOMORPHISM_RELATIVE_HOMOLOGY_GROUP_UPPER_HEMISPHERE : thm :=
 initialize BHHM : HolMultiLib.Homology.HHM ←
   ioB "setupHHM" (HolMultiLib.Homology.setupHHM deps BHGP BHIN BHIF BHTR BHDR BHSP).run
 
--- HHM (homology.ml 7947-8114)
+-- HHM (homology.ml 7948-8115)
 def GROUP_ISOMORPHISM_UPPER_HEMISPHERE_REDUCED_HOMOLOGY_GROUP : thm :=
   BHHM.GROUP_ISOMORPHISM_UPPER_HEMISPHERE_REDUCED_HOMOLOGY_GROUP
 def GROUP_ISOMORPHISM_REDUCED_HOMOLOGY_GROUP_UPPER_HEMISPHERE : thm :=
@@ -969,7 +970,7 @@ initialize BHNS : HolMultiLib.Homology.HNS ←
   ioB "setupHNS"
     (HolMultiLib.Homology.setupHNS deps BHIN BHIF BHAX BHBP BHRD BHDR BHSP BHHM).run
 
--- HNS (homology.ml 8115-8339)
+-- HNS (homology.ml 8116-8340)
 def REDUCED_HOMOLOGY_GROUP_NSPHERE_STEP : thm := BHNS.REDUCED_HOMOLOGY_GROUP_NSPHERE_STEP
 def REDUCED_HOMOLOGY_GROUP_NSPHERE : thm := BHNS.REDUCED_HOMOLOGY_GROUP_NSPHERE
 def CYCLIC_REDUCED_HOMOLOGY_GROUP_NSPHERE : thm := BHNS.CYCLIC_REDUCED_HOMOLOGY_GROUP_NSPHERE
@@ -979,7 +980,7 @@ def NON_CONTRACTIBLE_SPACE_NSPHERE : thm := BHNS.NON_CONTRACTIBLE_SPACE_NSPHERE
 initialize BHBR : HolMultiLib.Homology.HBR ←
   ioB "setupHBR" (HolMultiLib.Homology.setupHBR deps BHGP BHIN BHIF BHBP BHRD BHNS).run
 
--- HBR (homology.ml 8340-8546)
+-- HBR (homology.ml 8341-8547)
 def brouwer_degree2 : thm := BHBR.brouwer_degree2
 def BROUWER_DEGREE2_EQ : thm := BHBR.BROUWER_DEGREE2_EQ
 def BROUWER_DEGREE2 : thm := BHBR.BROUWER_DEGREE2
@@ -999,7 +1000,7 @@ initialize BHRF : HolMultiLib.Homology.HRF ←
   ioB "setupHRF"
     (HolMultiLib.Homology.setupHRF deps BHGP BHIN BHIF BHBP BHTR BHPR BHRD BHNS BHBR).run
 
--- HRF (homology.ml 8547-8820)
+-- HRF (homology.ml 8548-8821)
 def BROUWER_DEGREE2_NULLHOMOTOPIC : thm := BHRF.BROUWER_DEGREE2_NULLHOMOTOPIC
 def BROUWER_DEGREE2_CONST : thm := BHRF.BROUWER_DEGREE2_CONST
 def BROUWER_DEGREE2_NONSURJECTIVE : thm := BHRF.BROUWER_DEGREE2_NONSURJECTIVE
@@ -1010,34 +1011,34 @@ initialize BHBO : HolMultiLib.Homology.HBO ←
     (HolMultiLib.Homology.setupHBO deps BHGP BHBD BHIN BHIF BHT3 BHRD BHRX BHSP BHHM BHNS
       BHBR).run
 
--- HBO (homology.ml 8821-9440)
+-- HBO (homology.ml 8822-9441)
 def BORSUK_ODD_MAPPING_DEGREE_STEP : thm := BHBO.BORSUK_ODD_MAPPING_DEGREE_STEP
 
 initialize BHEC : HolMultiLib.Homology.HEC ←
   ioB "setupHEC" (HolMultiLib.Homology.setupHEC deps BHXA BHDR BHCT).run
 
--- HEC (homology.ml 9441-9972)
+-- HEC (homology.ml 9442-9973)
 def RELATIVE_HOMOLOGY_GROUP_EUCLIDEAN_COMPLEMENT_STEP : thm :=
   BHEC.RELATIVE_HOMOLOGY_GROUP_EUCLIDEAN_COMPLEMENT_STEP
 
 initialize BHCM : HolMultiLib.Homology.HCM ←
   ioB "setupHCM" (HolMultiLib.Homology.setupHCM deps BHTR BHEC).run
 
--- HCM (homology.ml 9973-10251)
+-- HCM (homology.ml 9974-10252)
 def ISOMORPHIC_RELATIVE_HOMOLOGY_GROUPS_EUCLIDEAN_COMPLEMENTS : thm :=
   BHCM.ISOMORPHIC_RELATIVE_HOMOLOGY_GROUPS_EUCLIDEAN_COMPLEMENTS
 
 initialize BHID : HolMultiLib.Homology.HID ←
   ioB "setupHID" (HolMultiLib.Homology.setupHID deps BHBP BHCT BHCM).run
 
--- HID (homology.ml 10252-10434)
+-- HID (homology.ml 10253-10435)
 def INVARIANCE_OF_DIMENSION_CLOSED_IN_EUCLIDEAN_SPACE : thm :=
   BHID.INVARIANCE_OF_DIMENSION_CLOSED_IN_EUCLIDEAN_SPACE
 
 initialize BHJB : HolMultiLib.Homology.HJB ←
   ioB "setupHJB" (HolMultiLib.Homology.setupHJB deps BHBP BHCT BHCM BHID).run
 
--- HJB (homology.ml 10435-10552)
+-- HJB (homology.ml 10436-10553)
 def ISOMORPHIC_HOMOLOGY_GROUPS_EUCLIDEAN_COMPLEMENTS : thm :=
   BHJB.ISOMORPHIC_HOMOLOGY_GROUPS_EUCLIDEAN_COMPLEMENTS
 def CARD_EQ_PATH_COMPONENTS_EUCLIDEAN_COMPLEMENTS : thm :=
@@ -1051,7 +1052,7 @@ def INVARIANCE_OF_DIMENSION_EUCLIDEAN_SPACE : thm := BHJB.INVARIANCE_OF_DIMENSIO
 initialize BHDM : HolMultiLib.Homology.HDM ←
   ioB "setupHDM" (HolMultiLib.Homology.setupHDM deps BHBP BHDF BHCM).run
 
--- HDM (homology.ml 10553-11435)
+-- HDM (homology.ml 10554-11436)
 def INVARIANCE_OF_DOMAIN_EUCLIDEAN_SPACE : thm := BHDM.INVARIANCE_OF_DOMAIN_EUCLIDEAN_SPACE
 def INVARIANCE_OF_DOMAIN_EUCLIDEAN_SPACE_EMBEDDING_MAP : thm :=
   BHDM.INVARIANCE_OF_DOMAIN_EUCLIDEAN_SPACE_EMBEDDING_MAP

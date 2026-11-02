@@ -9,10 +9,10 @@ tools/transcdiff/check.sh compares far more structurally: all 323 theorems,
 the constants and definitions, the conversion tests in its convs.txt and all
 152 load messages.
 
-Names that transc.ml rebinds (DIVISION_0, REAL_DIV_SQRT, SQRT_EVEN_POW2,
-SUM_DIFFS, SYM_CANON_CONV, EXT_CONV) are qualified with
-`SessionLibrary.Transc.`, since `Session` and SessionLibrary.Analysis have
-their own. -/
+Names that transc.ml rebinds (REAL_DIV_SQRT, SQRT_EVEN_POW2, SYM_CANON_CONV,
+EXT_CONV) are qualified with `SessionLibrary.Transc.`, since `Session` and
+SessionLibrary.Analysis have their own; DIVISION_0_DSIZE and PSUM_DIFFS (once
+transc.ml's DIVISION_0 and SUM_DIFFS) are qualified too. -/
 
 import HolTest.CommonTest
 import SessionLibrary.Transc
@@ -60,7 +60,7 @@ open SessionLibrary.Transc HolLight.Syntax
 #eval thm' "DIFF_ATN" DIFF_ATN "|- forall x. (atn diffl inv (&1 + x pow 2)) x"
 
 -- Gauge integrals.
-#eval thm' "DIVISION_0" SessionLibrary.Transc.DIVISION_0
+#eval thm' "DIVISION_0_DSIZE" SessionLibrary.Transc.DIVISION_0_DSIZE
   "|- forall a b. a = b ==> dsize (\\n. if n = 0 then a else b) = 0"
 #eval thm' "DINT_UNIQ" DINT_UNIQ
   "|- forall a b f k1 k2. a <= b /\\ defint (a,b) f k1 /\\ defint (a,b) f k2 ==> k1 = k2"
@@ -71,7 +71,7 @@ open SessionLibrary.Transc HolLight.Syntax
 #eval thm' "integral" integral "|- forall a b f. integral (a,b) f = (@i. defint (a,b) f i)"
 #eval thm' "INTEGRABLE_CONTINUOUS" INTEGRABLE_CONTINUOUS
   "|- forall f a b. (forall x. a <= x /\\ x <= b ==> f contl x) ==> integrable (a,b) f"
-#eval thm' "SUM_DIFFS" SessionLibrary.Transc.SUM_DIFFS
+#eval thm' "PSUM_DIFFS" SessionLibrary.Transc.PSUM_DIFFS
   "|- forall m n. sum (m,n) (\\i. d (SUC i) - d i) = d (m + n) - d m"
 
 -- Taylor series.

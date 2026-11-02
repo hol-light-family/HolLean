@@ -15,7 +15,7 @@ to each bundle, emitting the literal token MISMATCH if it is degenerate.
 `IO.mkRef (concl th)` SUCCEEDS on a degenerate theorem, so we PRINT the theorem
 and test for `|-  = `.  `make verify` greps for MISMATCH and counts `|-  = `.
 
-RANGES LANDED: iterate.ml 18-165 (IterateSegments), 176-178 (NumsegConvPths),
+RANGES LANDED: iterate.ml 18-203 (IterateSegments), 176-178 (NumsegConvPths),
 196-277 (IterateSortSeg), 281-354 (IterateGeneric), 364-539 (IterateKey1),
 546-703 (IterateKey2), 713-887 (IterateKey3), 896-1184 (IterateOrdered),
 1188-1282 (IterateSpecial), 1288-1461 (IterateNsum1), 1462-1745 (IterateNsum2),
@@ -51,17 +51,17 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
    top-to-bottom load. -/
 #eval Session.ensureIterate
 
--- IterateSegments (iterate.ml 18-165): the segment definition and a real
+-- IterateSegments (iterate.ml 18-203): the segment definition and a real
 -- cardinality result.  `numseg` is the sole new_definition of the range.
 #eval forceOk "IterateSegments/numseg" Session.numseg
 #eval forceOk "IterateSegments/CARD_NUMSEG" Session.CARD_NUMSEG
--- NumsegConvPths (iterate.ml 176-178): the three MESON lemmas.
+-- NumsegConvPths (iterate.ml 214-216): the three MESON lemmas.
 #eval forceOk "NumsegConvPths/pth_0" Session.NUMSEG_CONV_pth_0
 #eval forceOk "NumsegConvPths/pth_2" Session.NUMSEG_CONV_pth_2
--- IterateSortSeg (iterate.ml 196-277): the two structured proofs.
+-- IterateSortSeg (iterate.ml 234-315): the two structured proofs.
 #eval forceOk "IterateSortSeg/TOPOLOGICAL_SORT" Session.TOPOLOGICAL_SORT
 #eval forceOk "IterateSortSeg/FINITE_INT_SEG" Session.FINITE_INT_SEG
--- IterateGeneric (iterate.ml 281-354): the four core definitions and their
+-- IterateGeneric (iterate.ml 319-392): the four core definitions and their
 -- theorems.  Probe each definition plus derived theorems of the bundle.
 #eval forceOk "IterateGeneric/neutral" Session.neutral
 #eval forceOk "IterateGeneric/monoidal" Session.monoidal
@@ -73,9 +73,9 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
 #eval forceOk "IterateGeneric/SUPPORT_CLAUSES" Session.SUPPORT_CLAUSES
 #eval forceOk "IterateGeneric/SUPPORT_DELTA" Session.SUPPORT_DELTA
 #eval forceOk "IterateGeneric/FINITE_SUPPORT_DELTA" Session.FINITE_SUPPORT_DELTA
--- IterateKey1 (iterate.ml 364-539): the structural key lemmas.  Probe several
+-- IterateKey1 (iterate.ml 402-577): the structural key lemmas.  Probe several
 -- theorems that REALLY belong to this bundle (confirmed by grep against
--- iterate.ml 364-539), including the recursion clauses and inclusion-exclusion.
+-- iterate.ml 402-577), including the recursion clauses and inclusion-exclusion.
 #eval forceOk "IterateKey1/ITERATE_SUPPORT" Session.ITERATE_SUPPORT
 #eval forceOk "IterateKey1/ITERATE_CLAUSES_GEN" Session.ITERATE_CLAUSES_GEN
 #eval forceOk "IterateKey1/ITERATE_CLAUSES" Session.ITERATE_CLAUSES
@@ -83,7 +83,7 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
 #eval forceOk "IterateKey1/ITERATE_INCL_EXCL" Session.ITERATE_INCL_EXCL
 #eval forceOk "IterateKey1/ITERATE_CLOSED" Session.ITERATE_CLOSED
 #eval forceOk "IterateKey1/ITERATE_DELETE" Session.ITERATE_DELETE
--- IterateKey2 (iterate.ml 546-703): the mapping/congruence key lemmas.
+-- IterateKey2 (iterate.ml 584-741): the mapping/congruence key lemmas.
 #eval forceOk "IterateKey2/ITERATE_DELTA" Session.ITERATE_DELTA
 #eval forceOk "IterateKey2/ITERATE_IMAGE" Session.ITERATE_IMAGE
 #eval forceOk "IterateKey2/ITERATE_BIJECTION" Session.ITERATE_BIJECTION
@@ -91,7 +91,7 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
 #eval forceOk "IterateKey2/ITERATE_EQ" Session.ITERATE_EQ
 #eval forceOk "IterateKey2/ITERATE_EQ_GENERAL" Session.ITERATE_EQ_GENERAL
 #eval forceOk "IterateKey2/ITERATE_OP" Session.ITERATE_OP
--- IterateKey3 (iterate.ml 713-887): superset/swap/image/cases + numseg clauses.
+-- IterateKey3 (iterate.ml 751-925): superset/swap/image/cases + numseg clauses.
 #eval forceOk "IterateKey3/ITERATE_SUPERSET" Session.ITERATE_SUPERSET
 #eval forceOk "IterateKey3/ITERATE_SWAP" Session.ITERATE_SWAP
 #eval forceOk "IterateKey3/ITERATE_IMAGE_NONZERO" Session.ITERATE_IMAGE_NONZERO
@@ -101,7 +101,7 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
 #eval forceOk "IterateKey3/ITERATE_CLAUSES_NUMSEG" Session.ITERATE_CLAUSES_NUMSEG
 #eval forceOk "IterateKey3/ITERATE_PAIR" Session.ITERATE_PAIR
 #eval forceOk "IterateKey3/ITERATE_REFLECT" Session.ITERATE_REFLECT
--- IterateOrdered (iterate.ml 896-1184): the ordered/non-commutative
+-- IterateOrdered (iterate.ml 934-1222): the ordered/non-commutative
 -- generalisation `iterato` (introduced by new_specification) and its lemmas.
 -- Each probe prints a theorem confirmed by grep to belong to iterate.ml
 -- 896-1184; a degenerate `|-  = ` (from a panicked setup) emits MISMATCH.
@@ -117,7 +117,7 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
 #eval forceOk "IterateOrdered/ITERATO_ITERATE" Session.ITERATO_ITERATE
 #eval forceOk "IterateOrdered/ITERATO_CLAUSES_NUMSEG_LEFT" Session.ITERATO_CLAUSES_NUMSEG_LEFT
 
--- IterateSpecial (iterate.ml 1188-1282): the four iterated operations at three
+-- IterateSpecial (iterate.ml 1226-1320): the four iterated operations at three
 -- types.  Probe each definition plus its recursion clauses (the `*_CLAUSES`
 -- theorems each BELONG to this bundle - grep-confirmed in Iterate.lean).
 #eval forceOk "IterateSpecial/nproduct" Session.nproduct
@@ -163,7 +163,7 @@ private unsafe def thmIs (lbl expected : String) (t : thm) : IO Unit := do
   Session.IN_SUPPORT
 
 /- ====================================================================== -/
-/- (2) RUNTIME TYPE DISCIPLINE (iterate.ml 1188-1282): the four iterated      -/
+/- (2) RUNTIME TYPE DISCIPLINE (iterate.ml 1226-1320): the four iterated      -/
 /-     operations live at THREE types.  Under prioritize_num() a bare numeral -/
 /-     is :num, so each :int/:real definition takes its type from the         -/
 /-     explicit operator annotation.  Confirm the LHS constant's TYPE at      -/
@@ -191,13 +191,13 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
 #eval defTypeIs "isum"     "(A->bool)->(A->int)->int" Session.isum
 
 /- ====================================================================== -/
-/- (3) FORCING GUARD for the nsum half (iterate.ml 1288-1978).             -/
+/- (3) FORCING GUARD for the nsum half (iterate.ml 1326-2083).             -/
 /-     Force each nsum bundle through `ensureIterate` (already run above)   -/
 /-     and PRINT a theorem that REALLY BELONGS to it (grep-confirmed        -/
 /-     against iterate.ml), emitting MISMATCH on the degenerate `|-  = `.   -/
 /- ====================================================================== -/
 
--- IterateNsum1 (iterate.ml 1288-1461): nsum, the clauses, and structured
+-- IterateNsum1 (iterate.ml 1326-1499): nsum, the clauses, and structured
 -- proofs (NSUM_LMUL 1361, NSUM_SWAP 1454) that really belong to this bundle.
 #eval forceOk "IterateNsum1/nsum" Session.nsum
 #eval forceOk "IterateNsum1/NEUTRAL_ADD" Session.NEUTRAL_ADD
@@ -207,8 +207,8 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
 #eval forceOk "IterateNsum1/NSUM_LT" Session.NSUM_LT
 #eval forceOk "IterateNsum1/NSUM_CONST" Session.NSUM_CONST
 #eval forceOk "IterateNsum1/NSUM_SWAP" Session.NSUM_SWAP
--- IterateNsum2 (iterate.ml 1462-1745): the image/counting/subset lemmas and
--- the heaviest structured proofs (grep-confirmed in iterate.ml 1462-1745).
+-- IterateNsum2 (iterate.ml 1500-1783): the image/counting/subset lemmas and
+-- the heaviest structured proofs (grep-confirmed in iterate.ml 1500-1783).
 #eval forceOk "IterateNsum2/NSUM_IMAGE" Session.NSUM_IMAGE
 #eval forceOk "IterateNsum2/NSUM_MULTICOUNT_GEN" Session.NSUM_MULTICOUNT_GEN
 #eval forceOk "IterateNsum2/NSUM_GROUP_RELATION" Session.NSUM_GROUP_RELATION
@@ -216,7 +216,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
 #eval forceOk "IterateNsum2/NSUM_LE_GEN" Session.NSUM_LE_GEN
 #eval forceOk "IterateNsum2/NSUM_UNIONS_NONZERO" Session.NSUM_UNIONS_NONZERO
 #eval forceOk "IterateNsum2/NSUM_CASES" Session.NSUM_CASES
--- IterateNsum3 (iterate.ml 1746-1917): closure/relation induction, numseg
+-- IterateNsum3 (iterate.ml 1784-2022): closure/relation induction, numseg
 -- theorems, modular arithmetic, and the congruence bundle.
 #eval forceOk "IterateNsum3/NSUM_CLOSED" Session.NSUM_CLOSED
 #eval forceOk "IterateNsum3/NSUM_RELATED" Session.NSUM_RELATED
@@ -225,7 +225,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
 #eval forceOk "IterateNsum3/MOD_NSUM_MOD" Session.MOD_NSUM_MOD
 #eval forceOk "IterateNsum3/CONG_NSUM" Session.CONG_NSUM
 #eval forceOk "IterateNsum3/NSUM_CONG" Session.NSUM_CONG
--- IterateNsumCard (iterate.ml 1920-1978): the two cardinality theorems and
+-- IterateNsumCard (iterate.ml 2025-2083): the two cardinality theorems and
 -- EXPAND_NSUM_CONV's three proformas (the conversion itself is tested in (5)).
 #eval forceOk "IterateNsumCard/CARD_UNIONS_IMAGE" Session.CARD_UNIONS_IMAGE
 #eval forceOk "IterateNsumCard/CARD_UNIONS" Session.CARD_UNIONS
@@ -234,7 +234,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
 #eval forceOk "IterateNsumCard/EXPAND_NSUM_CONV_pth_2" Session.EXPAND_NSUM_CONV_pth_2
 
 /- ====================================================================== -/
-/- (4) nsum RUNTIME TYPE + NEUTRAL.  iterate.ml 1286 is prioritize_num(),   -/
+/- (4) nsum RUNTIME TYPE + NEUTRAL.  iterate.ml 1324 is prioritize_num(),   -/
 /-     so `nsum` must type as `(A->bool)->(A->num)->num`, and its CLAUSES    -/
 /-     theorem's neutral (the `{}` case) must be `0` (defect class #5).      -/
 /- ====================================================================== -/
@@ -254,7 +254,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
 #eval thmIs "(4) NEUTRAL_ADD" "|- neutral (+) = 0" Session.NEUTRAL_ADD
 
 /- ====================================================================== -/
-/- (5) BEHAVIOURAL TEST of EXPAND_NSUM_CONV (iterate.ml 1951-1978).  A      -/
+/- (5) BEHAVIOURAL TEST of EXPAND_NSUM_CONV (iterate.ml 2056-2083).  A      -/
 /-     forcing probe CANNOT reach a conversion (it is an `ioconv`, not a     -/
 /-     `thm`), so drive it on a real term.  Task-mandated case: expanding    -/
 /-     `nsum(1..4) f` for a SYMBOLIC `f:num->num` must peel all four         -/
@@ -289,14 +289,14 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
         IO.println s!"(5) EXPAND_NSUM_CONV -> MISMATCH unexpected RHS: {s}" : IO Unit)
 
 /- ====================================================================== -/
-/- (6) FORCING GUARD for the real sum bundles (iterate.ml 1984-2598).       -/
+/- (6) FORCING GUARD for the real sum bundles (iterate.ml 2089-2703).       -/
 /-     `ensureIterate` (run above) forces `ensureIterateSumPrioritizeReal`   -/
-/-     (iterate.ml 1982) then IterateSum1/IterateSum2 IN FILE ORDER.  PRINT  -/
+/-     (iterate.ml 2087) then IterateSum1/IterateSum2 IN FILE ORDER.  PRINT  -/
 /-     a theorem that REALLY BELONGS to each bundle (grep-confirmed against   -/
 /-     iterate.ml), emitting MISMATCH on the degenerate `|-  = `.            -/
 /- ====================================================================== -/
 
--- IterateSum1 (iterate.ml 1984-2211): sum, the clauses, and the structured
+-- IterateSum1 (iterate.ml 2089-2316): sum, the clauses, and the structured
 -- proofs SUM_LMUL (2052), SUM_LT (2086), SUM_POS_LE (2149),
 -- SUM_ZERO_EXISTS (2177), SUM_SWAP (2211) that really belong to this bundle.
 #eval forceOk "IterateSum1/sum" Session.sum
@@ -308,7 +308,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
 #eval forceOk "IterateSum1/SUM_POS_LE" Session.SUM_POS_LE
 #eval forceOk "IterateSum1/SUM_ZERO_EXISTS" Session.SUM_ZERO_EXISTS
 #eval forceOk "IterateSum1/SUM_SWAP" Session.SUM_SWAP
--- IterateSum2 (iterate.ml 2219-2598): the image/count/group/subset/general
+-- IterateSum2 (iterate.ml 2324-2703): the image/count/group/subset/general
 -- lemmas and the heaviest structured proofs (grep-confirmed in 2219-2598).
 #eval forceOk "IterateSum2/SUM_IMAGE" Session.SUM_IMAGE
 #eval forceOk "IterateSum2/SUM_MULTICOUNT_GEN" Session.SUM_MULTICOUNT_GEN
@@ -320,7 +320,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
 
 /- ====================================================================== -/
 /- (7) *** RUNTIME EVIDENCE THAT prioritize_real() TOOK EFFECT. ***         -/
-/-     iterate.ml 1982 is prioritize_real(), THE FILE'S DEFINING HAZARD, so  -/
+/-     iterate.ml 2087 is prioritize_real(), THE FILE'S DEFINING HAZARD, so  -/
 /-     from `sum` (1984) on a BARE NUMERAL parses `:real`, not `:num`.  Do   -/
 /-     NOT assume - PROVE at runtime:                                        -/
 /-       (a) `sum` types as (A->bool)->(A->real)->real (defect class #5:     -/
@@ -350,7 +350,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
 -- (b') NEUTRAL_REAL_ADD is the neutral witness itself: `neutral (+) = &0`.
 #eval thmIs "(7b') NEUTRAL_REAL_ADD" "|- neutral (+) = &0" Session.NEUTRAL_REAL_ADD
 
--- (c) DIRECT parser-state witness.  `prioritize_real` (iterate.ml 1982)
+-- (c) DIRECT parser-state witness.  `prioritize_real` (iterate.ml 2087)
 -- re-maps OVERLOADED symbols (`+`, `<=`, ...) to `:real`; it is exactly what
 -- makes `sum = iterate (+)` resolve `(+)` at `:real` rather than colliding
 -- with `nsum`'s `(+):num->num->num`.  A bare *numeral* alone carries `:num`
@@ -372,7 +372,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
     IO.println s!"(7c) overloaded `x + y` type -> MISMATCH got={after} want=real (before={before})" : IO Unit)
 
 /- ====================================================================== -/
-/- (8) FORCING GUARD for IterateSum3 (iterate.ml 2599-2778): numseg          -/
+/- (8) FORCING GUARD for IterateSum3 (iterate.ml 2704-2883): numseg          -/
 /-     intervals and partial summation.  PRINT a theorem that REALLY BELONGS  -/
 /-     to the bundle (grep-confirmed), MISMATCH on the degenerate `|-  = `.   -/
 /- ====================================================================== -/
@@ -389,9 +389,9 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
 
 /- ---------------------------------------------------------------------- -/
 /- (8b) MIXED-TYPE RUNTIME EVIDENCE for IterateSum3.  Every theorem in     -/
-/-      iterate.ml 2599-2778 sums a `:real` summand over a `m..n` interval  -/
+/-      iterate.ml 2704-2883 sums a `:real` summand over a `m..n` interval  -/
 /-      whose INDICES are `:num` (from `numseg`).  Under prioritize_real    -/
-/-      (iterate.ml 1982) this split is invisible to the compiler (defect   -/
+/-      (iterate.ml 2087) this split is invisible to the compiler (defect   -/
 /-      class #5), so PROVE it at runtime: parse a numseg sum with an       -/
 /-      explicit real summand, confirm the whole `sum(..)` term types as    -/
 /-      `:real`, and confirm the `m..n` interval subterm types as the set   -/
@@ -415,8 +415,8 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
     | _ => IO.println s!"(8b) IS3 mixed-type -> MISMATCH unexpected-shape sum={sqi sumTy}" : IO Unit)
 
 /- ====================================================================== -/
-/- (9) FORCING GUARD for IterateSum4 (iterate.ml 2779-2854) and            -/
-/-     IterateSum5 (iterate.ml 2855-3108).  PRINT a theorem that REALLY     -/
+/- (9) FORCING GUARD for IterateSum4 (iterate.ml 2884-2959) and            -/
+/-     IterateSum5 (iterate.ml 2960-3213).  PRINT a theorem that REALLY     -/
 /-     BELONGS to each bundle (grep-confirmed), MISMATCH on `|-  = `.       -/
 /- ====================================================================== -/
 
@@ -443,7 +443,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
 #eval forceOk "IterateSum5/POLYNOMIAL_FUNCTION_FINITE_ROOTS" Session.POLYNOMIAL_FUNCTION_FINITE_ROOTS
 
 /- ====================================================================== -/
-/- (10) BEHAVIOURAL TEST of EXPAND_SUM_CONV (iterate.ml 2799-2826), the     -/
+/- (10) BEHAVIOURAL TEST of EXPAND_SUM_CONV (iterate.ml 2904-2931), the     -/
 /-      real mirror of the EXPAND_NSUM_CONV test (5).  A forcing probe       -/
 /-      cannot reach a conversion, so drive it on a real term: expanding     -/
 /-      `sum(1..4) (f:num->real)` must peel all four endpoints via `pth_2`   -/
@@ -470,17 +470,17 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
         IO.println s!"(10) EXPAND_SUM_CONV -> MISMATCH unexpected RHS: {s}" : IO Unit)
 
 /- ====================================================================== -/
-/- (11) THE PRIORITIZATION PAIR - iterate.ml 1982 and 3112.               -/
+/- (11) THE PRIORITIZATION PAIR - iterate.ml 2087 and 3217.               -/
 /- ====================================================================== -/
 /- This is iterate.ml's DEFINING HAZARD and the first time in this
    development that prioritization changes PART WAY THROUGH a file:
-       iterate.ml 1982  prioritize_real()   -- before `sum`  (1984)
-       iterate.ml 3112  prioritize_num()    -- RESTORES :num
+       iterate.ml 2087  prioritize_real()   -- before `sum`  (1984)
+       iterate.ml 3217  prioritize_num()    -- RESTORES :num
    Between them a bare numeral parses `:real`; after 3112 it parses `:num`
    again.  The 3112 call is HALF OF A PAIR (defect class #4): dropping it
    would silently mistype every LATER FILE, and NO compile error would say
    so.  It also needs its OWN once-only flag and its OWN direct call to
-   `prioritize_num` - delegating to `ensurePrioritizeNum` (int.ml 2765)
+   `prioritize_num` - delegating to `ensurePrioritizeNum` (int.ml 2796)
    would be a NO-OP, because that flag was set during the int/sets chain
    (defect classes #3 and #4 combined).
    So we assert BOTH directions:
@@ -508,7 +508,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
       IO.println s!"(11b) -> MISMATCH expected num after restore, got {ty}" : IO Unit)
 
 /- ====================================================================== -/
-/- (12) BEHAVIOURAL TEST of NUMSEG_CONV (iterate.ml 175-190).  It is the    -/
+/- (12) BEHAVIOURAL TEST of NUMSEG_CONV (iterate.ml 213-228).  It is the    -/
 /-      FIRST of the file's three conversions and, like the other two, is    -/
 /-      an `ioconv`, NOT a `thm` - a forcing probe (section 0 only forces    -/
 /-      its three MESON pths) proves NOTHING about its behaviour: a          -/
@@ -646,7 +646,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
         IO.println s!"(14b) sum compute -> MISMATCH got={sq} want RHS=&10" : IO Unit)
 
 -- (14c) `iterate` INSTANTIATED at a monoidal operation, exercising the `<<=`
--- order of `iterato`.  ITERATO_ITERATE (iterate.ml 1127) states
+-- order of `iterato`.  ITERATO_ITERATE (iterate.ml 1165) states
 -- `|- !op (<<=). monoidal op ==> iterato (:A) (neutral op) op (<<=) = iterate op`:
 -- it names `iterate`, `iterato`, `monoidal`, AND the order `<<=` in one
 -- theorem.  Assert the statement is non-degenerate and mentions all four.
@@ -661,7 +661,7 @@ private unsafe def defTypeIs (lbl expected : String) (t : thm) : IO Unit := do
   else
     IO.println s!"(14c) ITERATO_ITERATE -> MISMATCH missing monoidal/iterate/iterato/<<=: {sq}" : IO Unit)
 
--- (14d) A `polynomial_function` FACT: POLYNOMIAL_FUNCTION_ADD (iterate.ml 2985)
+-- (14d) A `polynomial_function` FACT: POLYNOMIAL_FUNCTION_ADD (iterate.ml 3090)
 -- `|- !p q. polynomial_function p /\ polynomial_function q
 --           ==> polynomial_function (\x. p x + q x)` - closure under addition.
 #eval thmIs "(14d) POLYNOMIAL_FUNCTION_ADD"

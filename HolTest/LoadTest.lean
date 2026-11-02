@@ -27,8 +27,8 @@ open HolCore.Kernel Session HolTest.CommonTest
   : IO Unit)
 
 -- After the whole load, untyped terms are typed as in HOL Light: overloaded
--- operators default to `num` (iterate.ml 3112), and `&`/`abs`/`max` give
--- `real` (iterate.ml 1982's prioritize_real puts real ahead of int).  The
+-- operators default to `num` (iterate.ml 3217), and `&`/`abs`/`max` give
+-- `real` (iterate.ml 2087's prioritize_real puts real ahead of int).  The
 -- reduction nets of calc_num.ml, calc_int.ml and calc_rat.ml are built from
 -- untyped patterns when those files load, so they key on the types HOL
 -- Light's do.  Expected results are from real HOL Light.

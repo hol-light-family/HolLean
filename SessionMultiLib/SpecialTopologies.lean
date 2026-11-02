@@ -64,6 +64,7 @@ def met : HolMultiLib.SpecialTopologies.MetThms :=
 
 /-- Everything HolMultiLib.SpecialTopologies needs from the session. -/
 def deps : HolMultiLib.SpecialTopologies.SpecialTopologiesDeps where
+  prioritize_real := Session.prioritize_real
   new_definition s := do
     let t ← ExceptT.mk (HolCore.Parser.parse_term s)
     ExceptT.mk (Session.new_definition t)
@@ -85,7 +86,7 @@ private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α 
 initialize BSTI : HolMultiLib.SpecialTopologies.STI ←
   ioB "setupSTI" (HolMultiLib.SpecialTopologies.setupSTI deps).run
 
--- STI (specialtopologies.ml 11-224)
+-- STI (specialtopologies.ml 12-225)
 def indiscrete_topology : thm := BSTI.indiscrete_topology
 def OPEN_IN_INDISCRETE_TOPOLOGY : thm := BSTI.OPEN_IN_INDISCRETE_TOPOLOGY
 def TOPSPACE_INDISCRETE_TOPOLOGY : thm := BSTI.TOPSPACE_INDISCRETE_TOPOLOGY
@@ -117,7 +118,7 @@ def NEIGHBOURHOOD_BASE_OF_INDISCRETE_TOPOLOGY : thm :=
 initialize BSTF : HolMultiLib.SpecialTopologies.STF ←
   ioB "setupSTF" (HolMultiLib.SpecialTopologies.setupSTF deps).run
 
--- STF (specialtopologies.ml 225-412)
+-- STF (specialtopologies.ml 226-413)
 def cofinite_topology : thm := BSTF.cofinite_topology
 def OPEN_IN_COFINITE_TOPOLOGY : thm := BSTF.OPEN_IN_COFINITE_TOPOLOGY
 def TOPSPACE_COFINITE_TOPOLOGY : thm := BSTF.TOPSPACE_COFINITE_TOPOLOGY
@@ -136,7 +137,7 @@ def HAUSDORFF_SPACE_COFINITE_TOPOLOGY : thm := BSTF.HAUSDORFF_SPACE_COFINITE_TOP
 initialize BSTC : HolMultiLib.SpecialTopologies.STC ←
   ioB "setupSTC" (HolMultiLib.SpecialTopologies.setupSTC deps).run
 
--- STC (specialtopologies.ml 413-591)
+-- STC (specialtopologies.ml 414-592)
 def cocountable_topology : thm := BSTC.cocountable_topology
 def OPEN_IN_COCOUNTABLE_TOPOLOGY : thm := BSTC.OPEN_IN_COCOUNTABLE_TOPOLOGY
 def TOPSPACE_COCOUNTABLE_TOPOLOGY : thm := BSTC.TOPSPACE_COCOUNTABLE_TOPOLOGY

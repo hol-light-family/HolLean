@@ -94,7 +94,7 @@ structure CoreThms3 where
 structure CoreThms4 where
   (BETA_THM CONTRAPOS_THM DE_MORGAN_THM EQ_IMP FORALL_AND_THM FORALL_PAIR_THM
    FORALL_SIMP FORALL_UNWIND_THM2 I_O_ID I_THM LEFT_AND_EXISTS_THM MONO_AND MONO_IMP
-   MONO_OR PAIR_EQ RIGHT_AND_EXISTS_THM RIGHT_IMP_EXISTS_THM : thm)
+   MONO_OR PAIR_EQ RIGHT_AND_EXISTS_THM RIGHT_IMP_EXISTS_THM EQ_SYM_EQ IMP_CONJ_ALT : thm)
   deriving Inhabited
 
 /- ------------------------------------------------------------------------- -/
@@ -5309,9 +5309,295 @@ def setupHorizontal [HolBase] (D : DeterminantsDeps) (BDetBasic : DetBasic) (BOr
            ORTHOGONAL_TRANSFORMATION_BETWEEN_ORTHOGONAL_SETS }
 
 /- ------------------------------------------------------------------------- -/
+/- Induction on matrix structure via elementary row operations and           -/
+/- elementary matrices (permutation, scaling, row addition).                 -/
+/- (determinants.ml 4035-4286)                                               -/
+/- ------------------------------------------------------------------------- -/
+
+structure MatrixInduct where
+  INDUCT_MATRIX_ROW_OPERATIONS : thm
+  INDUCT_MATRIX_ELEMENTARY : thm
+  INDUCT_MATRIX_ELEMENTARY_ALT : thm
+  deriving Inhabited
+
+set_option maxHeartbeats 64000000 in
+set_option maxRecDepth 16384 in
+@[nospecialize]
+def setupMatrixInduct [HolBase] (D : DeterminantsDeps) (BTrace : Trace) :
+    ExceptT String IO MatrixInduct := do
+  -- @@SCOPE BEGIN
+  let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, ASM_MESON_TAC, REAL_ARITH,
+        REAL_ARITH_TAC, REAL_FIELD, REAL_RING, .. } := D
+  let { AND_FORALL_THM, ARITH, CART_EQ, COND_ID, COND_RAND, COND_RATOR, CONJ_ASSOC, EQ_TRANS,
+        FINITE_RULES, IMP_CONJ, IN_INSERT, IN_NUMSEG, LAMBDA_BETA, LEFT_IMP_EXISTS_THM, LE_0, .. } := D.core1
+  let { MONO_FORALL, NOT_FORALL_THM, NOT_IMP, NOT_IN_EMPTY, REAL_MUL_LID, REAL_MUL_LINV,
+        REAL_MUL_LZERO, REAL_MUL_RID, REAL_MUL_RZERO, .. } := D.core2
+  let { SUBSET, SUM_CLAUSES, SUM_DELTA, SUM_SUPERSET, num_INDUCTION, .. } := D.core3
+  let { DE_MORGAN_THM, EQ_IMP, EQ_SYM_EQ, IMP_CONJ_ALT, MONO_AND, .. } := D.core4
+  let { COND_COMPONENT, .. } := D.vec1
+  let { VECTOR_ADD_COMPONENT, VECTOR_MUL_COMPONENT, VEC_COMPONENT, mat, matrix_mul, row, .. } := D.vec3
+  let { swap, .. } := D.lib
+  let { IN_DIMINDEX_SWAP, .. } := BTrace
+  -- @@SCOPE END
+
+  let INDUCT_MATRIX_ROW_OPERATIONS ← prove
+   r"!P:real^N^N->bool.
+        (!A i. 1 <= i /\ i <= dimindex(:N) /\ row i A = vec 0 ==> P A) /\
+        (!A. (!i j. 1 <= i /\ i <= dimindex(:N) /\
+                    1 <= j /\ j <= dimindex(:N) /\ ~(i = j)
+                    ==> A$i$j = &0) ==> P A) /\
+        (!A m n. P A /\ 1 <= m /\ m <= dimindex(:N) /\
+                 1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
+                 ==> P(lambda i j. A$i$(swap(m,n) j))) /\
+        (!A m n c. P A /\ 1 <= m /\ m <= dimindex(:N) /\
+                   1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
+                   ==> P(lambda i. if i = m then row m A + c % row n A
+                                   else row i A))
+        ==> !A. P A"
+   (GEN_TAC THEN
+    DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "zero_row") MP_TAC) THEN
+    DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "diagonal") MP_TAC) THEN
+    DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "swap_cols") (LABEL_TAC "row_op")) THEN
+    SUBGOAL_THEN
+     (← q r"!k A:real^N^N.
+        (!i j. 1 <= i /\ i <= dimindex(:N) /\
+               k <= j /\ j <= dimindex(:N) /\ ~(i = j)
+               ==> A$i$j = &0)
+        ==> P A")
+     (fun th => tactic_of do
+        pure (GEN_TAC THEN MATCH_MP_TAC th THEN
+              EXISTS_TAC (← q r"dimindex(:N) + 1") THEN ARITH_TAC)) THEN
+    MATCH_MP_TAC num_INDUCTION THEN CONJ_TAC THENL
+     [REPEAT STRIP_TAC THEN USE_THEN "diagonal" MATCH_MP_TAC THEN
+      REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_REWRITE_TAC [LE_0],
+      ALL_TAC] THEN
+    X_GEN_TAC (← q r"k:num") THEN DISCH_THEN (LABEL_TAC "ind_hyp") THEN
+    DISJ_CASES_THEN2 SUBST1_TAC ASSUME_TAC (← ARITH_RULE (← q r"k = 0 \/ 1 <= k")) THEN
+    ASM_REWRITE_TAC [ARITH] THEN
+    ASM_CASES_TAC (← q r"k <= dimindex(:N)") THENL
+     [ALL_TAC,
+      REPEAT STRIP_TAC THEN REMOVE_THEN "ind_hyp" MATCH_MP_TAC THEN
+      ASM_ARITH_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"!A:real^N^N.
+        ~(A$k$k = &0) /\
+        (!i j. 1 <= i /\ i <= dimindex (:N) /\
+               SUC k <= j /\ j <= dimindex (:N) /\ ~(i = j)
+               ==> A$i$j = &0)
+        ==> P A")
+    (LABEL_TAC "nonzero_hyp") THENL
+     [ALL_TAC,
+      X_GEN_TAC (← q r"A:real^N^N") THEN DISCH_TAC THEN
+      ASM_CASES_TAC (← q r"row k (A:real^N^N) = vec 0") THENL
+       [REMOVE_THEN "zero_row" MATCH_MP_TAC THEN ASM_MESON_TAC [],
+        ALL_TAC] THEN
+      FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV [CART_EQ]) THEN
+      SIMP_TAC [VEC_COMPONENT, row, LAMBDA_BETA] THEN
+      REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, LEFT_IMP_EXISTS_THM] THEN
+      X_GEN_TAC (← q r"l:num") THEN STRIP_TAC THEN
+      ASM_CASES_TAC (← q r"l:num = k") THENL
+       [REMOVE_THEN "nonzero_hyp" MATCH_MP_TAC THEN ASM_MESON_TAC [],
+        ALL_TAC] THEN
+      REMOVE_THEN "swap_cols" (MP_TAC o SPECL
+       [← q r"(lambda i j. (A:real^N^N)$i$swap(k,l) j):real^N^N",
+        ← q r"k:num", ← q r"l:num"]) THEN
+      ASM_SIMP_TAC [LAMBDA_BETA] THEN ANTS_TAC THENL
+       [ALL_TAC,
+        MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+        SIMP_TAC [CART_EQ, LAMBDA_BETA] THEN
+        REPEAT STRIP_TAC THEN REWRITE_TAC [swap] THEN
+        REPEAT (COND_CASES_TAC THEN ASM_SIMP_TAC [LAMBDA_BETA])] THEN
+      REMOVE_THEN "nonzero_hyp" MATCH_MP_TAC THEN
+      ONCE_REWRITE_TAC [← ARITH_RULE (← q r"SUC k <= i <=> 1 <= i /\ SUC k <= i")] THEN
+      ASM_SIMP_TAC [LAMBDA_BETA] THEN
+      ASM_REWRITE_TAC [swap] THEN MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"] THEN
+      STRIP_TAC THEN SUBGOAL_THEN (← q r"l:num <= k") ASSUME_TAC THENL
+       [FIRST_X_ASSUM (MP_TAC o SPECL [← q r"k:num", ← q r"l:num"]) THEN
+        ASM_REWRITE_TAC [] THEN ARITH_TAC,
+        ALL_TAC] THEN
+      REPEAT (COND_CASES_TAC THEN ASM_REWRITE_TAC []) THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN
+      ASM_ARITH_TAC] THEN
+     SUBGOAL_THEN
+     (← q r"!l A:real^N^N.
+        ~(A$k$k = &0) /\
+        (!i j. 1 <= i /\ i <= dimindex (:N) /\
+               SUC k <= j /\ j <= dimindex (:N) /\ ~(i = j)
+               ==> A$i$j = &0) /\
+        (!i. l <= i /\ i <= dimindex(:N) /\ ~(i = k) ==> A$i$k = &0)
+        ==> P A")
+     MP_TAC THENL
+      [ALL_TAC,
+       DISCH_THEN (MP_TAC o SPEC (← q r"dimindex(:N) + 1")) THEN
+       REWRITE_TAC [CONJ_ASSOC, ← ARITH_RULE (← q r"~(n + 1 <= i /\ i <= n)")]] THEN
+     MATCH_MP_TAC num_INDUCTION THEN CONJ_TAC THENL
+      [GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+       DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "main") (LABEL_TAC "aux")) THEN
+       USE_THEN "ind_hyp" MATCH_MP_TAC THEN
+       MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"] THEN STRIP_TAC THEN
+       ASM_CASES_TAC (← q r"j:num = k") THENL
+        [ASM_REWRITE_TAC [] THEN USE_THEN "aux" MATCH_MP_TAC THEN ASM_ARITH_TAC,
+         REMOVE_THEN "main" MATCH_MP_TAC THEN ASM_ARITH_TAC],
+      ALL_TAC] THEN
+    X_GEN_TAC (← q r"l:num") THEN DISCH_THEN (LABEL_TAC "inner_hyp") THEN
+    GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "main") (LABEL_TAC "aux")) THEN
+    ASM_CASES_TAC (← q r"l:num = k") THENL
+     [REMOVE_THEN "inner_hyp" MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN
+      REPEAT STRIP_TAC THEN REMOVE_THEN "aux" MATCH_MP_TAC THEN ASM_ARITH_TAC,
+      ALL_TAC] THEN
+    DISJ_CASES_TAC (← ARITH_RULE (← q r"l = 0 \/ 1 <= l")) THENL
+     [REMOVE_THEN "ind_hyp" MATCH_MP_TAC THEN
+      MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"] THEN STRIP_TAC THEN
+      ASM_CASES_TAC (← q r"j:num = k") THENL
+       [ASM_REWRITE_TAC [] THEN REMOVE_THEN "aux" MATCH_MP_TAC THEN ASM_ARITH_TAC,
+        REMOVE_THEN "main" MATCH_MP_TAC THEN ASM_ARITH_TAC],
+      ALL_TAC] THEN
+    ASM_CASES_TAC (← q r"l <= dimindex(:N)") THENL
+     [ALL_TAC,
+      REMOVE_THEN "inner_hyp" MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN
+      ASM_ARITH_TAC] THEN
+    REMOVE_THEN "inner_hyp" (MP_TAC o SPECL
+     [← q r"(lambda i. if i = l then row l (A:real^N^N) + --(A$l$k/A$k$k) % row k A
+                else row i A):real^N^N"]) THEN
+    ANTS_TAC THENL
+     [SUBGOAL_THEN (← q r"!i. l <= i ==> 1 <= i") ASSUME_TAC THENL
+       [ASM_ARITH_TAC, ALL_TAC] THEN
+      ONCE_REWRITE_TAC [← ARITH_RULE (← q r"SUC k <= j <=> 1 <= j /\ SUC k <= j")] THEN
+      ASM_SIMP_TAC [LAMBDA_BETA, row, COND_COMPONENT,
+                    VECTOR_ADD_COMPONENT, VECTOR_MUL_COMPONENT] THEN
+      ASM_SIMP_TAC [← REAL_FIELD (← q r"~(y = &0) ==> x + --(x / y) * y = &0")] THEN
+      REWRITE_TAC [AND_FORALL_THM] THEN X_GEN_TAC (← q r"i:num") THEN
+      ASM_CASES_TAC (← q r"i:num = l") THEN ASM_REWRITE_TAC [] THENL
+       [REPEAT STRIP_TAC THEN
+        MATCH_MP_TAC (← REAL_RING (← q r"x = &0 /\ y = &0 ==> x + z * y = &0")) THEN
+        CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC,
+        REPEAT STRIP_TAC THEN REMOVE_THEN "aux" MATCH_MP_TAC THEN ASM_ARITH_TAC],
+      ALL_TAC] THEN
+    DISCH_TAC THEN REMOVE_THEN "row_op" (MP_TAC o SPECL
+     [← q r"(lambda i. if i = l then row l A + --(A$l$k / A$k$k) % row k A
+                else row i (A:real^N^N)):real^N^N",
+      ← q r"l:num", ← q r"k:num", ← q r"(A:real^N^N)$l$k / A$k$k"]) THEN
+    ASM_REWRITE_TAC [] THEN MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN
+    ASM_SIMP_TAC [CART_EQ, LAMBDA_BETA, VECTOR_ADD_COMPONENT,
+                  VECTOR_MUL_COMPONENT, row, COND_COMPONENT] THEN
+    REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
+    REAL_ARITH_TAC)
+
+  let INDUCT_MATRIX_ELEMENTARY ← prove
+   r"!P:real^N^N->bool.
+        (!A B. P A /\ P B ==> P(A ** B)) /\
+        (!A i. 1 <= i /\ i <= dimindex(:N) /\ row i A = vec 0 ==> P A) /\
+        (!A. (!i j. 1 <= i /\ i <= dimindex(:N) /\
+                    1 <= j /\ j <= dimindex(:N) /\ ~(i = j)
+                    ==> A$i$j = &0) ==> P A) /\
+        (!m n. 1 <= m /\ m <= dimindex(:N) /\
+               1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
+               ==> P(lambda i j. (mat 1:real^N^N)$i$(swap(m,n) j))) /\
+        (!m n c. 1 <= m /\ m <= dimindex(:N) /\
+                 1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
+                 ==> P(lambda i j. if i = m /\ j = n then c
+                                   else if i = j then &1 else &0))
+        ==> !A. P A"
+   (GEN_TAC THEN
+    DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    DISCH_THEN (fun th =>
+      MATCH_MP_TAC INDUCT_MATRIX_ROW_OPERATIONS THEN MP_TAC th) THEN
+    REPEAT (MATCH_MP_TAC MONO_AND THEN CONJ_TAC) THEN REWRITE_TAC [] THEN
+    DISCH_THEN (fun th => tactic_of do
+      pure (X_GEN_TAC (← q r"A:real^N^N") THEN MP_TAC th)) THEN
+    REPEAT (MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
+    DISCH_THEN (fun th => STRIP_TAC THEN MP_TAC th) THEN ASM_REWRITE_TAC [] THEN
+    UNDISCH_TAC (← q r"(P:real^N^N->bool) A") THENL
+     [REWRITE_TAC [← GSYM IMP_CONJ], REWRITE_TAC [← GSYM IMP_CONJ_ALT]] THEN
+    DISCH_THEN (ANTE_RES_THEN MP_TAC) THEN MATCH_MP_TAC EQ_IMP THEN
+    AP_TERM_TAC THEN REWRITE_TAC [CART_EQ] THEN
+    X_GEN_TAC (← q r"i:num") THEN STRIP_TAC THEN
+    X_GEN_TAC (← q r"j:num") THEN STRIP_TAC THEN
+    ASM_SIMP_TAC [CART_EQ, LAMBDA_BETA, matrix_mul, row] THENL
+     [ASM_SIMP_TAC [mat, IN_DIMINDEX_SWAP, LAMBDA_BETA] THEN
+      ONCE_REWRITE_TAC [COND_RAND] THEN
+      SIMP_TAC [SUM_DELTA, REAL_MUL_RZERO, REAL_MUL_RID] THEN
+      COND_CASES_TAC THEN REWRITE_TAC [] THEN
+      RULE_ASSUM_TAC (REWRITE_RULE [swap, IN_NUMSEG]) THEN ASM_ARITH_TAC,
+      ALL_TAC] THEN
+    ASM_CASES_TAC (← q r"i:num = m") THEN ASM_REWRITE_TAC [] THENL
+     [ALL_TAC,
+      ONCE_REWRITE_TAC [COND_RAND] THEN ONCE_REWRITE_TAC [COND_RATOR] THEN
+      REWRITE_TAC [REAL_MUL_LZERO] THEN
+      GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [EQ_SYM_EQ] THEN
+      ASM_SIMP_TAC [SUM_DELTA, LAMBDA_BETA, IN_NUMSEG, REAL_MUL_LID]] THEN
+    ASM_SIMP_TAC [VECTOR_ADD_COMPONENT, VECTOR_MUL_COMPONENT, LAMBDA_BETA] THEN
+    MATCH_MP_TAC EQ_TRANS THEN
+    EXISTS_TAC
+      (← q r"sum {m,n} (\k. (if k = n then c else if m = k then &1 else &0) *
+                    (A:real^N^N)$k$j)") THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC SUM_SUPERSET THEN
+      ASM_SIMP_TAC [SUBSET, IN_INSERT, NOT_IN_EMPTY, DE_MORGAN_THM,
+                    IN_NUMSEG, REAL_MUL_LZERO] THEN
+      ASM_ARITH_TAC,
+      ASM_SIMP_TAC [SUM_CLAUSES, FINITE_RULES, IN_INSERT, NOT_IN_EMPTY] THEN
+      REAL_ARITH_TAC])
+
+  let INDUCT_MATRIX_ELEMENTARY_ALT ← prove
+   r"!P:real^N^N->bool.
+        (!A B. P A /\ P B ==> P(A ** B)) /\
+        (!A i. 1 <= i /\ i <= dimindex(:N) /\ row i A = vec 0 ==> P A) /\
+        (!A. (!i j. 1 <= i /\ i <= dimindex(:N) /\
+                    1 <= j /\ j <= dimindex(:N) /\ ~(i = j)
+                    ==> A$i$j = &0) ==> P A) /\
+        (!m n. 1 <= m /\ m <= dimindex(:N) /\
+               1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
+               ==> P(lambda i j. (mat 1:real^N^N)$i$(swap(m,n) j))) /\
+        (!m n. 1 <= m /\ m <= dimindex(:N) /\
+               1 <= n /\ n <= dimindex(:N) /\ ~(m = n)
+               ==> P(lambda i j. if i = m /\ j = n \/ i = j then &1 else &0))
+        ==> !A. P A"
+   (GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC INDUCT_MATRIX_ELEMENTARY THEN
+    ASM_REWRITE_TAC [] THEN REPEAT STRIP_TAC THEN
+    ASM_CASES_TAC (← q r"c = &0") THENL
+     [FIRST_X_ASSUM (fun th => tactic_of do
+        pure (MATCH_MP_TAC th THEN
+              MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"])) THEN
+      ASM_SIMP_TAC [LAMBDA_BETA, COND_ID],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"(lambda i j. if i = m /\ j = n then c else if i = j then &1 else &0) =
+  ((lambda i j. if i = j then if j = n then inv c else &1 else &0):real^N^N) **
+    ((lambda i j. if i = m /\ j = n \/ i = j then &1 else &0):real^N^N) **
+    ((lambda i j. if i = j then if j = n then c else &1 else &0):real^N^N)")
+    SUBST1_TAC THENL
+     [ALL_TAC,
+      REPEAT (MATCH_MP_TAC (← ASSUME (← q r"!A B:real^N^N. P A /\ P B ==> P(A ** B)")) THEN
+             CONJ_TAC) THEN
+      ASM_SIMP_TAC [] THEN FIRST_X_ASSUM (fun th => tactic_of do
+        pure (MATCH_MP_TAC th THEN
+              MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"])) THEN
+      ASM_SIMP_TAC [LAMBDA_BETA]] THEN
+    SIMP_TAC [CART_EQ, matrix_mul, LAMBDA_BETA] THEN
+    X_GEN_TAC (← q r"i:num") THEN STRIP_TAC THEN
+    X_GEN_TAC (← q r"j:num") THEN STRIP_TAC THEN
+    ASM_SIMP_TAC [SUM_DELTA, IN_NUMSEG, ← REAL_ARITH
+         (← q r"(if p then &1 else &0) * (if q then c else &0) =
+        if q then if p then c else &0 else &0")] THEN
+    REWRITE_TAC [← REAL_ARITH
+     (← q r"(if p then x else &0) * y = (if p then x * y else &0)")] THEN
+    GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [EQ_SYM_EQ] THEN
+    ASM_SIMP_TAC [SUM_DELTA, IN_NUMSEG] THEN
+    ASM_CASES_TAC (← q r"i:num = m") THEN ASM_REWRITE_TAC [] THEN
+    ASM_CASES_TAC (← q r"j:num = n") THEN ASM_REWRITE_TAC [REAL_MUL_LID, EQ_SYM_EQ] THEN
+    ASM_CASES_TAC (← q r"i:num = n") THEN
+    ASM_SIMP_TAC [REAL_MUL_LINV, REAL_MUL_LID, REAL_MUL_RZERO])
+
+  return { INDUCT_MATRIX_ROW_OPERATIONS, INDUCT_MATRIX_ELEMENTARY,
+           INDUCT_MATRIX_ELEMENTARY_ALT }
+
+/- ------------------------------------------------------------------------- -/
 /- Reflection of a vector about 0 along a line, first part, ending with the  -/
 /- load-time `add_linear_invariants [REFLECT_ALONG_LINEAR_IMAGE]`.           -/
-/- (determinants.ml 4039-4124)                                                -/
+/- (determinants.ml 4291-4376)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure Reflect1 where
@@ -5444,7 +5730,7 @@ def setupReflect1 [HolBase] (D : DeterminantsDeps) (BOrth1 : Orth1) (BOrth2 : Or
 
 /- ------------------------------------------------------------------------- -/
 /- Reflection of a vector about 0 along a line, second part.                 -/
-/- (determinants.ml 4126-4318)                                                -/
+/- (determinants.ml 4378-4570)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure Reflect2 where
@@ -5702,7 +5988,7 @@ def setupReflect2 [HolBase] (D : DeterminantsDeps) (BDetBasic : DetBasic)
 
 /- ------------------------------------------------------------------------- -/
 /- All orthogonal transformations are a composition of reflections.          -/
-/- (determinants.ml 4324-4407)                                                -/
+/- (determinants.ml 4576-4659)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure GenRefl where
@@ -5841,7 +6127,7 @@ partial def repeatIO {α : Type} (f : α → ExceptT String IO α) (x : α) :
 /- Extract scaling, translation and linear invariance theorems.              -/
 /- For the linear case, chain through some basic consequences automatically, -/
 /- e.g. norm-preserving and linear implies injective.                        -/
-/- (determinants.ml 4411-4452)                                                -/
+/- (determinants.ml 4663-4704)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure GeomInv where
@@ -5914,7 +6200,7 @@ def setupGeomInv [HolBase] (D : DeterminantsDeps) (BOrth1 : Orth1) :
 /- "avoid" is the points not to translate. There is also a tactic to help in -/
 /- proving new translation theorems, which uses similar machinery.           -/
 /- Also: rename existential variables in conclusion to fresh genvars.        -/
-/- (determinants.ml 4461-4549)                                                -/
+/- (determinants.ml 4713-4801)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure GeomOrigin where
@@ -6040,7 +6326,7 @@ def setupGeomOrigin [HolBase] (D : DeterminantsDeps) (BGeomInv : GeomInv) :
 /- For general N, it's better to use k = 1 so the side-condition can be      -/
 /- discharged. For dimensions 1, 2 and 3 anything will work automatically.   -/
 /- Could generalize by asking the user to prove theorem 1 <= k <= N.         -/
-/- (determinants.ml 4560-4648)                                                -/
+/- (determinants.ml 4812-4900)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure GeomBasis where
@@ -6177,7 +6463,7 @@ def setupGeomBasis [HolBase] (D : DeterminantsDeps) (BOrth1 : Orth1)
 /- isn't used nearly as often as GEOM_TRANSLATE_CONV / GEOM_TRANSLATE_TAC.   -/
 /- As a small step, some ad-hoc rewrites analogous to FORALL_IN_IMAGE are    -/
 /- tried if the first step doesn't finish the goal, but it's very ad hoc.    -/
-/- (determinants.ml 4659-4716)                                                -/
+/- (determinants.ml 4911-4968)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure GeomTransform where
@@ -6268,7 +6554,7 @@ def setupGeomTransform [HolBase] (D : DeterminantsDeps) (BOrth1 : Orth1)
 /- Scale so that a chosen vector has size 1. Generates a conjunction of      -/
 /- two formulas, one for the zero case (which one hopes is trivial) and      -/
 /- one just like the original goal but with a norm(...) = 1 assumption.      -/
-/- (determinants.ml 4724-4817)                                                -/
+/- (determinants.ml 4976-5069)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure GeomNormalize where
@@ -6391,7 +6677,7 @@ def setupGeomNormalize [HolBase] (D : DeterminantsDeps) (BGeomInv : GeomInv) :
   return { GEOM_NORMALIZE_RULE, GEN_GEOM_NORMALIZE_TAC, GEOM_NORMALIZE_TAC }
 
 /- ------------------------------------------------------------------------- -/
-/- Add invariance theorems for collinearity.  (determinants.ml 4824-4844)    -/
+/- Add invariance theorems for collinearity.  (determinants.ml 5076-5096)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure Collinear where
@@ -6448,7 +6734,7 @@ def setupCollinear [HolBase] (D : DeterminantsDeps) (BGeomOrigin : GeomOrigin) :
 /- same-dimension spaces: given dth = A |- dimindex(:M) = dimindex(:N) and a -/
 /- theorem th involving variables of type real^N, return a corresponding     -/
 /- theorem mapped to type real^M with assumptions A.                         -/
-/- (determinants.ml 4853-4956)                                                -/
+/- (determinants.ml 5105-5208)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure GeomDim where

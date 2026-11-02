@@ -34,9 +34,11 @@ def core1 : HolLibrary.GroupTheory.CoreThms1 where
   ARITH := Session.ARITH
   ARITH_EQ := Session.ARITH_EQ
   BETA_THM := Session.BETA_THM
+  BIJ := Session.BIJ
   CARD_CLAUSES := Session.CARD_CLAUSES
   CARD_CROSS := Session.CARD_CROSS
   CARD_DELETE := Session.CARD_DELETE
+  CARD_DIFF := Session.CARD_DIFF
   CARD_EQ_0 := Session.CARD_EQ_0
   CARD_EQ_BIJECTION := Session.CARD_EQ_BIJECTION
   CARD_EQ_BIJECTIONS := Session.CARD_EQ_BIJECTIONS
@@ -88,11 +90,13 @@ def core1 : HolLibrary.GroupTheory.CoreThms1 where
   CARTESIAN_PRODUCT_EQ := Session.CARTESIAN_PRODUCT_EQ
   CARTESIAN_PRODUCT_EQ_EMPTY := Session.CARTESIAN_PRODUCT_EQ_EMPTY
   CARTESIAN_PRODUCT_SINGS_GEN := Session.CARTESIAN_PRODUCT_SINGS_GEN
+  CHOICE_DEF := Session.CHOICE_DEF
   COND_CLAUSES := Session.COND_CLAUSES
   COND_ID := Session.COND_ID
   COND_RAND := Session.COND_RAND
   COND_RATOR := Session.COND_RATOR
   COND_SWAP := Session.COND_SWAP
+  CONG := Session.CONG
   CONG_NSUM := Session.CONG_NSUM
   CONJ_ASSOC := Session.CONJ_ASSOC
 /-- The core theorems grouptheory.ml uses. -/
@@ -151,6 +155,7 @@ def core2 : HolLibrary.GroupTheory.CoreThms2 where
   DIVIDES_TRANS := SessionLibrary.Prime.«DIVIDES_TRANS»
   DIVIDES_ZERO := SessionLibrary.Prime.«DIVIDES_ZERO»
   DIVISION := Session.DIVISION
+  DIVISION_SIMP := Session.DIVISION_SIMP
   DIV_1 := Session.DIV_1
   DIV_EQ_0 := Session.DIV_EQ_0
   DIV_MULT := Session.DIV_MULT
@@ -164,6 +169,7 @@ def core2 : HolLibrary.GroupTheory.CoreThms2 where
   EQ_C_INVOLUTION := SessionLibrary.Card.«EQ_C_INVOLUTION»
   EQ_EXP := Session.EQ_EXP
   EQ_IMP := Session.EQ_IMP
+  EQ_MULT_RCANCEL := Session.EQ_MULT_RCANCEL
   EQ_SYM_EQ := Session.EQ_SYM_EQ
   EQ_TRANS := Session.EQ_TRANS
   ETA_AX := Session.ETA_AX
@@ -185,6 +191,7 @@ def core2 : HolLibrary.GroupTheory.CoreThms2 where
 def core3 : HolLibrary.GroupTheory.CoreThms3 where
   EXTENSION := Session.EXTENSION
   EXTENSIONAL := Session.EXTENSIONAL
+  EXTENSIONAL_EQ := Session.EXTENSIONAL_EQ
   EXTENSIONAL_UNIV := Session.EXTENSIONAL_UNIV
   FINITE_BOOL := Session.FINITE_BOOL
   FINITE_CARTESIAN_PRODUCT := SessionLibrary.Card.«FINITE_CARTESIAN_PRODUCT»
@@ -194,6 +201,7 @@ def core3 : HolLibrary.GroupTheory.CoreThms3 where
   FINITE_DIFF := Session.FINITE_DIFF
   FINITE_EMPTY := Session.FINITE_EMPTY
   FINITE_FRAG_SUPPORT := SessionLibrary.Frag.«FINITE_FRAG_SUPPORT»
+  FINITE_FUNSPACE := Session.FINITE_FUNSPACE
   FINITE_IMAGE := Session.FINITE_IMAGE
   FINITE_IMAGE_EQ := Session.FINITE_IMAGE_EQ
   FINITE_IMAGE_GEN := Session.FINITE_IMAGE_GEN
@@ -245,6 +253,7 @@ def core3 : HolLibrary.GroupTheory.CoreThms3 where
   FRAG_SUPPORT_OF := SessionLibrary.Frag.«FRAG_SUPPORT_OF»
   FRAG_SUPPORT_SUB := SessionLibrary.Frag.«FRAG_SUPPORT_SUB»
   FRAG_SUPPORT_SUM := SessionLibrary.Frag.«FRAG_SUPPORT_SUM»
+  FUNCTION_FACTORS_LEFT := Session.FUNCTION_FACTORS_LEFT
   FUNCTION_FACTORS_LEFT_GEN := Session.FUNCTION_FACTORS_LEFT_GEN
   FUN_EQ_THM := Session.FUN_EQ_THM
   FUN_IN_IMAGE := Session.FUN_IN_IMAGE
@@ -273,11 +282,13 @@ def core4 : HolLibrary.GroupTheory.CoreThms4 where
   IMP_IMP := Session.IMP_IMP
   IN := Session.IN
   INDEX_DECOMPOSITION := SessionLibrary.Prime.«INDEX_DECOMPOSITION»
+  INDEX_UNIQUE := SessionLibrary.Prime.«INDEX_UNIQUE»
   INFINITE := Session.INFINITE
   INFINITE_IMAGE := Session.INFINITE_IMAGE
   INFINITE_IMAGE_INJ := Session.INFINITE_IMAGE_INJ
   INFINITE_NONEMPTY := Session.INFINITE_NONEMPTY
   INFINITE_SUPERSET := Session.INFINITE_SUPERSET
+  INJ := Session.INJ
   INJECTIVE_ON_ALT := Session.INJECTIVE_ON_ALT
   INJECTIVE_ON_LEFT_INVERSE := Session.INJECTIVE_ON_LEFT_INVERSE
   INSERT_SUBSET := Session.INSERT_SUBSET
@@ -377,6 +388,7 @@ def core5 : HolLibrary.GroupTheory.CoreThms5 where
   ITERATE_CLOSED := Session.ITERATE_CLOSED
   ITERATE_EQ := Session.ITERATE_EQ
   ITERATE_EXPAND_CASES := Session.ITERATE_EXPAND_CASES
+  ITERATE_ITERATE_PRODUCT := Session.ITERATE_ITERATE_PRODUCT
   ITERATE_LCM_DIVIDES_GEN := SessionLibrary.Prime.«ITERATE_LCM_DIVIDES_GEN»
   ITERATE_LCM_EQ_0_GEN := SessionLibrary.Prime.«ITERATE_LCM_EQ_0_GEN»
   ITERATE_OP_GEN := Session.ITERATE_OP_GEN
@@ -419,6 +431,7 @@ def core6 : HolLibrary.GroupTheory.CoreThms6 where
   LT_IMP_LE := Session.LT_IMP_LE
   LT_NZ := Session.LT_NZ
   LT_REFL := Session.LT_REFL
+  LT_SUC := Session.LT_SUC
   MEMBER_NOT_EMPTY := Session.MEMBER_NOT_EMPTY
   MONOIDAL_FRAG_ADD := SessionLibrary.Frag.«MONOIDAL_FRAG_ADD»
   MONO_AND := Session.MONO_AND
@@ -439,6 +452,8 @@ def core6 : HolLibrary.GroupTheory.CoreThms6 where
   NOT_LT := Session.NOT_LT
   NOT_SUC := Session.NOT_SUC
   NSUM_CONST := Session.NSUM_CONST
+  NSUM_EQ := Session.NSUM_EQ
+  NSUM_IMAGE := Session.NSUM_IMAGE
   NSUM_RESTRICT_SET := Session.NSUM_RESTRICT_SET
   NUMSEG_CLAUSES := Session.NUMSEG_CLAUSES
   NUMSEG_LREC := Session.NUMSEG_LREC
@@ -457,6 +472,8 @@ def core6 : HolLibrary.GroupTheory.CoreThms6 where
   PRIMES_INFINITE := SessionLibrary.Prime.«PRIMES_INFINITE»
   PRIME_0 := SessionLibrary.Prime.«PRIME_0»
   PRIME_1 := SessionLibrary.Prime.«PRIME_1»
+  PRIME_2 := SessionLibrary.Prime.«PRIME_2»
+  PRIME_ALT := SessionLibrary.Prime.«PRIME_ALT»
   PRIME_COPRIME_EQ := SessionLibrary.Prime.«PRIME_COPRIME_EQ»
   PRIME_DIVEXP_EQ := SessionLibrary.Prime.«PRIME_DIVEXP_EQ»
   PRIME_DIVIDES_ITERATE_LCM_GEN := SessionLibrary.Prime.«PRIME_DIVIDES_ITERATE_LCM_GEN»
@@ -481,6 +498,7 @@ def core7 : HolLibrary.GroupTheory.CoreThms7 where
   RIGHT_FORALL_IMP_THM := Session.RIGHT_FORALL_IMP_THM
   RIGHT_IMP_EXISTS_THM := Session.RIGHT_IMP_EXISTS_THM
   RIGHT_IMP_FORALL_THM := Session.RIGHT_IMP_FORALL_THM
+  SELECT_AX := Session.SELECT_AX
   SELECT_UNIQUE := Session.SELECT_UNIQUE
   SIMPLE_IMAGE := Session.SIMPLE_IMAGE
   SIMPLE_IMAGE_GEN := Session.SIMPLE_IMAGE_GEN
@@ -506,11 +524,13 @@ def core7 : HolLibrary.GroupTheory.CoreThms7 where
   SUB_ADD := Session.SUB_ADD
   SUB_REFL := Session.SUB_REFL
   SUC_SUB1 := Session.SUC_SUB1
+  SURJ := Session.SURJ
   SURJECTIVE_IFF_INJECTIVE := Session.SURJECTIVE_IFF_INJECTIVE
   SURJECTIVE_IFF_INJECTIVE_GEN := Session.SURJECTIVE_IFF_INJECTIVE_GEN
   SURJECTIVE_ON_RIGHT_INVERSE := Session.SURJECTIVE_ON_RIGHT_INVERSE
   SWAP_EXISTS_THM := Session.SWAP_EXISTS_THM
   SWAP_FORALL_THM := Session.SWAP_FORALL_THM
+  TRANSITIVE_STEPWISE_LE := Session.TRANSITIVE_STEPWISE_LE
   UNIONS_0 := Session.UNIONS_0
   UNIONS_GSPEC := Session.UNIONS_GSPEC
   UNIONS_IMAGE := Session.UNIONS_IMAGE
@@ -544,6 +564,7 @@ def core7 : HolLibrary.GroupTheory.CoreThms7 where
 /-- The core theorems grouptheory.ml uses. -/
 def core8 : HolLibrary.GroupTheory.CoreThms8 where
   neutral := Session.neutral
+  num_CASES := Session.num_CASES
   num_FINITE := Session.num_FINITE
   num_INDUCTION := Session.num_INDUCTION
   num_INFINITE := Session.num_INFINITE
@@ -588,6 +609,8 @@ def deps : HolLibrary.GroupTheory.GroupTheoryDeps where
   INDUCT_TAC := Session.INDUCT_TAC
   num_CONV := Session.num_CONV
   HAS_SIZE_CONV := Session.HAS_SIZE_CONV
+  DIVIDES_CONV := SessionLibrary.Prime.DIVIDES_CONV
+  WF_INDUCT_TAC := Session.WF_INDUCT_TAC
   extend_basic_congs := Session.extend_basic_congs
   NUM_REDUCE_CONV := Session.NUM_REDUCE_CONV
   INT_REDUCE_CONV := Session.INT_REDUCE_CONV
@@ -697,7 +720,7 @@ initialize BSumGroup : HolLibrary.GroupTheory.SumGroup ←
 
 initialize BHomomorphisms : HolLibrary.GroupTheory.Homomorphisms ←
   ioB "setupHomomorphisms" <|
-    (HolLibrary.GroupTheory.setupHomomorphisms deps BBasics BDerived BSubgroupGenerated).run
+    (HolLibrary.GroupTheory.setupHomomorphisms deps BBasics BDerived BGroupProduct BGroupProductClauses BSubgroupGenerated).run
 
 initialize BHomomorphisms1 : HolLibrary.GroupTheory.Homomorphisms1 ←
   ioB "setupHomomorphisms1" <|
@@ -713,7 +736,7 @@ initialize BHomomorphisms3 : HolLibrary.GroupTheory.Homomorphisms3 ←
 
 initialize BHomomorphisms4 : HolLibrary.GroupTheory.Homomorphisms4 ←
   ioB "setupHomomorphisms4" <|
-    (HolLibrary.GroupTheory.setupHomomorphisms4 deps BBasics BDerived BPow BAbelian BProductGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2).run
+    (HolLibrary.GroupTheory.setupHomomorphisms4 deps BBasics BDerived BPow BAbelian BGroupProduct BSubgroups BSubgroupGenerated BProductGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2).run
 
 initialize BIso1 : HolLibrary.GroupTheory.Iso1 ←
   ioB "setupIso1" <|
@@ -725,7 +748,7 @@ initialize BIso2 : HolLibrary.GroupTheory.Iso2 ←
 
 initialize BDirectLimit : HolLibrary.GroupTheory.DirectLimit ←
   ioB "setupDirectLimit" <|
-    (HolLibrary.GroupTheory.setupDirectLimit deps BBasics BHomomorphisms).run
+    (HolLibrary.GroupTheory.setupDirectLimit deps BBasics BSubgroups BSubgroupGenerated BSubgroupGen1 BProductGroup BHomomorphisms BHomomorphisms2).run
 
 initialize BSetwise1 : HolLibrary.GroupTheory.Setwise1 ←
   ioB "setupSetwise1" <|
@@ -749,7 +772,7 @@ initialize BOrbitStabilizer : HolLibrary.GroupTheory.OrbitStabilizer ←
 
 initialize BCosets : HolLibrary.GroupTheory.Cosets ←
   ioB "setupCosets" <|
-    (HolLibrary.GroupTheory.setupCosets deps BBasics BDerived BSubgroups BSetwise1 BSetwise2).run
+    (HolLibrary.GroupTheory.setupCosets deps BBasics BDerived BGroupRule BSubgroups BHomomorphisms BHomomorphisms1 BSetwise1 BSetwise2).run
 
 initialize BCosets1 : HolLibrary.GroupTheory.Cosets1 ←
   ioB "setupCosets1" <|
@@ -757,7 +780,7 @@ initialize BCosets1 : HolLibrary.GroupTheory.Cosets1 ←
 
 initialize BCosets2 : HolLibrary.GroupTheory.Cosets2 ←
   ioB "setupCosets2" <|
-    (HolLibrary.GroupTheory.setupCosets2 deps BBasics BDerived BGroupRule BConjugation BSubgroups BSubgroupGen1 BProdGroup BProductGroup BSetwise1 BGroupActions BGroupOrbits BOrbitStabilizer BCosets).run
+    (HolLibrary.GroupTheory.setupCosets2 deps BBasics BDerived BGroupRule BConjugation BSubgroups BSubgroupGen1 BProdGroup BProductGroup BSetwise1 BGroupActions BGroupOrbits BOrbitStabilizer BCosets BCosets1).run
 
 initialize BCosetProducts : HolLibrary.GroupTheory.CosetProducts ←
   ioB "setupCosetProducts" <|
@@ -765,7 +788,7 @@ initialize BCosetProducts : HolLibrary.GroupTheory.CosetProducts ←
 
 initialize BNormalSubgroups : HolLibrary.GroupTheory.NormalSubgroups ←
   ioB "setupNormalSubgroups" <|
-    (HolLibrary.GroupTheory.setupNormalSubgroups deps BBasics BDerived BAbelian BConjugation BSubgroups BSetwise1 BSetwise2 BGroupActions BCosets BCosets1).run
+    (HolLibrary.GroupTheory.setupNormalSubgroups deps BBasics BDerived BAbelian BConjugation BSubgroups BSetwise1 BSetwise2 BGroupActions BCosets BCosets1 BCosets2).run
 
 initialize BNormalSubgroups2 : HolLibrary.GroupTheory.NormalSubgroups2 ←
   ioB "setupNormalSubgroups2" <|
@@ -785,7 +808,7 @@ initialize BCentralizerNormalizer2 : HolLibrary.GroupTheory.CentralizerNormalize
 
 initialize BQuotientGroups : HolLibrary.GroupTheory.QuotientGroups ←
   ioB "setupQuotientGroups" <|
-    (HolLibrary.GroupTheory.setupQuotientGroups deps BBasics BDerived BPow BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BProductGroup BHomomorphisms BHomomorphisms2 BIso1 BSetwise1 BSetwise2 BCosets BCosets2 BCosetProducts BNormalSubgroups BNormalSubgroups2).run
+    (HolLibrary.GroupTheory.setupQuotientGroups deps BBasics BDerived BPow BAbelian BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BProductGroup BHomomorphisms BHomomorphisms2 BIso1 BSetwise1 BSetwise2 BCosets BCosets1 BCosets2 BCosetProducts BNormalSubgroups BNormalSubgroups2).run
 
 initialize BKernelsImages1 : HolLibrary.GroupTheory.KernelsImages1 ←
   ioB "setupKernelsImages1" <|
@@ -793,11 +816,11 @@ initialize BKernelsImages1 : HolLibrary.GroupTheory.KernelsImages1 ←
 
 initialize BKernelsImages2 : HolLibrary.GroupTheory.KernelsImages2 ←
   ioB "setupKernelsImages2" <|
-    (HolLibrary.GroupTheory.setupKernelsImages2 deps BBasics BDerived BTotalized BSubgroups BSubgroupGen1 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BSetwise1 BSetwise2 BCosets BNormalSubgroups BNormalSubgroups2 BQuotientGroups BKernelsImages1).run
+    (HolLibrary.GroupTheory.setupKernelsImages2 deps BBasics BDerived BTotalized BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BIso2 BSetwise1 BSetwise2 BCosets BNormalSubgroups BNormalSubgroups2 BQuotientGroups BKernelsImages1).run
 
 initialize BSubgroupCorrespondence : HolLibrary.GroupTheory.SubgroupCorrespondence ←
   ioB "setupSubgroupCorrespondence" <|
-    (HolLibrary.GroupTheory.setupSubgroupCorrespondence deps BBasics BDerived BConjugation BSubgroups BHomomorphisms BHomomorphisms1 BHomomorphisms2 BSetwise1 BCosets BNormalSubgroups BConjugate BQuotientGroups BKernelsImages1 BKernelsImages2).run
+    (HolLibrary.GroupTheory.setupSubgroupCorrespondence deps BBasics BDerived BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BIso1 BSetwise1 BCosets BCosets2 BCosetProducts BNormalSubgroups BNormalSubgroups2 BConjugate BQuotientGroups BKernelsImages1 BKernelsImages2).run
 
 initialize BTrivialHomomorphisms : HolLibrary.GroupTheory.TrivialHomomorphisms ←
   ioB "setupTrivialHomomorphisms" <|
@@ -877,7 +900,7 @@ initialize BPowering : HolLibrary.GroupTheory.Powering ←
 
 initialize BSylow2 : HolLibrary.GroupTheory.Sylow2 ←
   ioB "setupSylow2" <|
-    (HolLibrary.GroupTheory.setupSylow2 deps BBasics BGroupRule BConjugation BSubgroups BSubgroupGen1 BHomomorphisms2 BGroupActions BCosets BCosets2 BNormalSubgroups BConjugate BCentralizerNormalizer BCentralizerNormalizer2 BSubgroupCorrespondence BSylow BPowering).run
+    (HolLibrary.GroupTheory.setupSylow2 deps BBasics BGroupRule BConjugation BSubgroups BSubgroupGen1 BHomomorphisms2 BGroupActions BCosets BCosets2 BNormalSubgroups BConjugate BCentralizerNormalizer BCentralizerNormalizer2 BSubgroupCorrespondence BSylowCount BSylow BPowering).run
 
 initialize BPGroupCentre : HolLibrary.GroupTheory.PGroupCentre ←
   ioB "setupPGroupCentre" <|
@@ -957,7 +980,7 @@ initialize BSolvableSubgroup : HolLibrary.GroupTheory.SolvableSubgroup ←
 
 initialize BSolvableQuotient : HolLibrary.GroupTheory.SolvableQuotient ←
   ioB "setupSolvableQuotient" <|
-    (HolLibrary.GroupTheory.setupSolvableQuotient deps BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BHomomorphisms2 BIso2 BNormalSubgroups BQuotientGroups BKernelsImages1 BSubgroupCorrespondence BSolvableGroup).run
+    (HolLibrary.GroupTheory.setupSolvableQuotient deps BBasics BDerived BAbelian BGroupRule BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms4 BIso2 BSetwise1 BGroupActions BCosets BNormalSubgroups BNormalSubgroups2 BQuotientGroups BKernelsImages1 BSubgroupCorrespondence BCyclicGroups1 BCyclicGroups2 BCyclicGroups3 BFinitelyGenerated BFinitelyGeneratedMaximal BSolvableGroup BSolvableImage BSolvableSubgroup).run
 
 initialize BExactSequences : HolLibrary.GroupTheory.ExactSequences ←
   ioB "setupExactSequences" <|
@@ -973,7 +996,7 @@ initialize BFiveLemma : HolLibrary.GroupTheory.FiveLemma ←
 
 initialize BShortFiveLemma : HolLibrary.GroupTheory.ShortFiveLemma ←
   ioB "setupShortFiveLemma" <|
-    (HolLibrary.GroupTheory.setupShortFiveLemma deps BBasics BGroupRule BProdGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BKernelsImages1 BExactSequences BExactSeq BFiveLemma).run
+    (HolLibrary.GroupTheory.setupShortFiveLemma deps BBasics BPow BGroupRule BGroupProduct BSubgroups BSubgroupGenerated BSubgroupGen1 BProdGroup BSumGroup BHomomorphisms BHomomorphisms1 BHomomorphisms2 BHomomorphisms3 BKernelsImages1 BGroupElementOrder BCyclicGroups1 BFinitelyGenerated BFinitelyGeneratedAbelian BExactSequences BExactSeq BFiveLemma).run
 
 
 -- Basics
@@ -1086,6 +1109,13 @@ def ABELIAN_GROUP_MUL_POW : thm := BAbelian.ABELIAN_GROUP_MUL_POW
 def ABELIAN_GROUP_MUL_ZPOW : thm := BAbelian.ABELIAN_GROUP_MUL_ZPOW
 def ABELIAN_GROUP_DIV_ZPOW : thm := BAbelian.ABELIAN_GROUP_DIV_ZPOW
 def ABELIAN_GROUP_MUL_AC : thm := BAbelian.ABELIAN_GROUP_MUL_AC
+def ABELIAN_GROUP_MUL_CANCEL_LEMMA : thm := BAbelian.ABELIAN_GROUP_MUL_CANCEL_LEMMA
+def ABELIAN_GROUP_DIV_DIV : thm := BAbelian.ABELIAN_GROUP_DIV_DIV
+def ABELIAN_GROUP_DIV_EQ_DIV : thm := BAbelian.ABELIAN_GROUP_DIV_EQ_DIV
+def ABELIAN_GROUP_DIV_LCANCEL : thm := BAbelian.ABELIAN_GROUP_DIV_LCANCEL
+def ABELIAN_GROUP_MUL_SOLVE : thm := BAbelian.ABELIAN_GROUP_MUL_SOLVE
+def ABELIAN_GROUP_MUL_DIV_CANCEL : thm := BAbelian.ABELIAN_GROUP_MUL_DIV_CANCEL
+def ABELIAN_GROUP_DIV_EQ : thm := BAbelian.ABELIAN_GROUP_DIV_EQ
 
 -- Totalized
 def group_neg : thm := BTotalized.group_neg
@@ -1163,6 +1193,7 @@ def ABELIAN_GROUP_SUM_CLAUSES : thm := BGroupProductClauses.ABELIAN_GROUP_SUM_CL
 def GROUP_PRODUCT_MUL : thm := BGroupProductMul.GROUP_PRODUCT_MUL
 def GROUP_SUM_MUL : thm := BGroupProductMul.GROUP_SUM_MUL
 def ABELIAN_GROUP_SUM_MUL : thm := BGroupProductMul.ABELIAN_GROUP_SUM_MUL
+def ABELIAN_GROUP_SUM_SWAP : thm := BGroupProductMul.ABELIAN_GROUP_SUM_SWAP
 def GROUP_SUM_INV : thm := BGroupProductMul.GROUP_SUM_INV
 def ABELIAN_GROUP_SUM_INV : thm := BGroupProductMul.ABELIAN_GROUP_SUM_INV
 def GROUP_SUM_POW : thm := BGroupProductMul.GROUP_SUM_POW
@@ -1173,6 +1204,7 @@ def GROUP_SUM_IMAGE : thm := BGroupProductMul.GROUP_SUM_IMAGE
 def ABELIAN_GROUP_PRODUCT_ITERATE : thm := BGroupProductMul.ABELIAN_GROUP_PRODUCT_ITERATE
 def ABELIAN_GROUP_SUM_ITERATE : thm := BGroupProductMul.ABELIAN_GROUP_SUM_ITERATE
 def ABELIAN_GROUP_ITERATE : thm := BGroupProductMul.ABELIAN_GROUP_ITERATE
+def ABELIAN_GROUP_SUM_SUM_PRODUCT : thm := BGroupProductMul.ABELIAN_GROUP_SUM_SUM_PRODUCT
 
 -- Conjugation
 def group_conjugation : thm := BConjugation.group_conjugation
@@ -1316,6 +1348,19 @@ def TRIVIAL_SUM_GROUP : thm := BSumGroup.TRIVIAL_SUM_GROUP
 def CARTESIAN_PRODUCT_SUBGROUP_OF_SUM_GROUP : thm := BSumGroup.CARTESIAN_PRODUCT_SUBGROUP_OF_SUM_GROUP
 def SUM_GROUP_SUBGROUP_GENERATED : thm := BSumGroup.SUM_GROUP_SUBGROUP_GENERATED
 def ABELIAN_SUM_GROUP : thm := BSumGroup.ABELIAN_SUM_GROUP
+def restricted_product_group : thm := BSumGroup.restricted_product_group
+def RESTRICTED_PRODUCT_GROUP_ALT : thm := BSumGroup.RESTRICTED_PRODUCT_GROUP_ALT
+def SUBGROUP_RESTRICTED_PRODUCT_GROUP : thm := BSumGroup.SUBGROUP_RESTRICTED_PRODUCT_GROUP
+def RESTRICTED_PRODUCT_GROUP : thm := BSumGroup.RESTRICTED_PRODUCT_GROUP
+def RESTRICTED_PRODUCT_GROUP_UNIONS : thm := BSumGroup.RESTRICTED_PRODUCT_GROUP_UNIONS
+def RESTRICTED_PRODUCT_GROUP_EQ_SUM_GROUP : thm := BSumGroup.RESTRICTED_PRODUCT_GROUP_EQ_SUM_GROUP
+def RESTRICTED_PRODUCT_GROUP_EQ_PRODUCT_GROUP : thm := BSumGroup.RESTRICTED_PRODUCT_GROUP_EQ_PRODUCT_GROUP
+def RESTRICTED_PRODUCT_GROUP_EQ : thm := BSumGroup.RESTRICTED_PRODUCT_GROUP_EQ
+def RESTRICTED_PRODUCT_GROUP_MONO : thm := BSumGroup.RESTRICTED_PRODUCT_GROUP_MONO
+def SUM_GROUP_SUBGROUP_OF_RESTRICTED_PRODUCT_GROUP : thm := BSumGroup.SUM_GROUP_SUBGROUP_OF_RESTRICTED_PRODUCT_GROUP
+def GROUP_POW_RESTRICTED_PRODUCT_GROUP : thm := BSumGroup.GROUP_POW_RESTRICTED_PRODUCT_GROUP
+def GROUP_ZPOW_RESTRICTED_PRODUCT_GROUP : thm := BSumGroup.GROUP_ZPOW_RESTRICTED_PRODUCT_GROUP
+def CARTESIAN_PRODUCT_SUBGROUP_OF_RESTRICTED_PRODUCT_GROUP : thm := BSumGroup.CARTESIAN_PRODUCT_SUBGROUP_OF_RESTRICTED_PRODUCT_GROUP
 
 -- Homomorphisms
 def group_homomorphism : thm := BHomomorphisms.group_homomorphism
@@ -1326,6 +1371,8 @@ def group_isomorphisms : thm := BHomomorphisms.group_isomorphisms
 def group_isomorphism : thm := BHomomorphisms.group_isomorphism
 def group_automorphism : thm := BHomomorphisms.group_automorphism
 def GROUP_HOMOMORPHISM_EQ : thm := BHomomorphisms.GROUP_HOMOMORPHISM_EQ
+def GROUP_HOMOMORPHISM_RESTRICTION : thm := BHomomorphisms.GROUP_HOMOMORPHISM_RESTRICTION
+def GROUP_SUM_HOMOMORPHIC_IMAGE : thm := BHomomorphisms.GROUP_SUM_HOMOMORPHIC_IMAGE
 def GROUP_MONOMORPHISM_EQ : thm := BHomomorphisms.GROUP_MONOMORPHISM_EQ
 def GROUP_EPIMORPHISM_EQ : thm := BHomomorphisms.GROUP_EPIMORPHISM_EQ
 def GROUP_ENDOMORPHISM_EQ : thm := BHomomorphisms.GROUP_ENDOMORPHISM_EQ
@@ -1358,6 +1405,7 @@ def GROUP_MONOMORPHISM_COMPOSE : thm := BHomomorphisms1.GROUP_MONOMORPHISM_COMPO
 def GROUP_MONOMORPHISM_COMPOSE_REV : thm := BHomomorphisms1.GROUP_MONOMORPHISM_COMPOSE_REV
 def GROUP_EPIMORPHISM_COMPOSE : thm := BHomomorphisms1.GROUP_EPIMORPHISM_COMPOSE
 def GROUP_EPIMORPHISM_COMPOSE_REV : thm := BHomomorphisms1.GROUP_EPIMORPHISM_COMPOSE_REV
+def GROUP_HOMOMORPHISM_EPIMORPHISM_FACTOR : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_EPIMORPHISM_FACTOR
 def GROUP_MONOMORPHISM_LEFT_INVERTIBLE : thm := BHomomorphisms1.GROUP_MONOMORPHISM_LEFT_INVERTIBLE
 def GROUP_EPIMORPHISM_RIGHT_INVERTIBLE : thm := BHomomorphisms1.GROUP_EPIMORPHISM_RIGHT_INVERTIBLE
 def GROUP_HOMOMORPHISM_INTO_SUBGROUP : thm := BHomomorphisms1.GROUP_HOMOMORPHISM_INTO_SUBGROUP
@@ -1445,10 +1493,17 @@ def GROUP_HOMOMORPHISM_COMPONENTWISE : thm := BHomomorphisms4.GROUP_HOMOMORPHISM
 def GROUP_HOMOMORPHISM_COMPONENTWISE_UNIV : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_COMPONENTWISE_UNIV
 def GROUP_HOMOMORPHISM_PRODUCT_PROJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_PRODUCT_PROJECTION
 def GROUP_HOMOMORPHISM_SUM_PROJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_SUM_PROJECTION
+def GROUP_SUM_SUM_GROUP_COMPONENT : thm := BHomomorphisms4.GROUP_SUM_SUM_GROUP_COMPONENT
+def GROUP_SUM_SUM_GROUP_INJECTIONS : thm := BHomomorphisms4.GROUP_SUM_SUM_GROUP_INJECTIONS
 def GROUP_HOMOMORPHISM_PRODUCT_INJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_PRODUCT_INJECTION
 def GROUP_HOMOMORPHISM_SUM_INJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_SUM_INJECTION
 def GROUP_HOMOMORPHISM_PRODUCT : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_PRODUCT
 def GROUP_HOMOMORPHISM_SUM : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_SUM
+def GROUP_HOMOMORPHISM_RESTRICTED_PRODUCT_PROJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_RESTRICTED_PRODUCT_PROJECTION
+def GROUP_HOMOMORPHISM_RESTRICTED_PRODUCT_INJECTION : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_RESTRICTED_PRODUCT_INJECTION
+def GROUP_HOMOMORPHISM_RESTRICTED_PRODUCT : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_RESTRICTED_PRODUCT
+def GROUP_HOMOMORPHISM_RESTRICTED_PRODUCT_COMPONENTWISE : thm := BHomomorphisms4.GROUP_HOMOMORPHISM_RESTRICTED_PRODUCT_COMPONENTWISE
+def ABELIAN_RESTRICTED_PRODUCT_GROUP : thm := BHomomorphisms4.ABELIAN_RESTRICTED_PRODUCT_GROUP
 def GROUP_EPIMORPHISM_PRODUCT_PROJECTION : thm := BHomomorphisms4.GROUP_EPIMORPHISM_PRODUCT_PROJECTION
 def GROUP_ISOMORPHISM_PRODUCT_PROJECTION : thm := BHomomorphisms4.GROUP_ISOMORPHISM_PRODUCT_PROJECTION
 def GROUP_EPIMORPHISM_SUM_PROJECTION : thm := BHomomorphisms4.GROUP_EPIMORPHISM_SUM_PROJECTION
@@ -1510,6 +1565,10 @@ def ISOMORPHIC_COPY_OF_GROUP : thm := BIso2.ISOMORPHIC_COPY_OF_GROUP
 
 -- DirectLimit
 def GROUP_DIRECT_LIMIT : thm := BDirectLimit.GROUP_DIRECT_LIMIT
+def inverse_limit_group : thm := BDirectLimit.inverse_limit_group
+def INVERSE_LIMIT_SUBGROUP_OF_PRODUCT_GROUP : thm := BDirectLimit.INVERSE_LIMIT_SUBGROUP_OF_PRODUCT_GROUP
+def INVERSE_LIMIT_GROUP : thm := BDirectLimit.INVERSE_LIMIT_GROUP
+def GROUP_ISOMORPHISM_INVERSE_LIMIT_GROUP : thm := BDirectLimit.GROUP_ISOMORPHISM_INVERSE_LIMIT_GROUP
 
 -- Setwise1
 def group_setinv : thm := BSetwise1.group_setinv
@@ -1532,10 +1591,12 @@ def GROUP_SETINV_SING : thm := BSetwise1.GROUP_SETINV_SING
 def GROUP_SETMUL_SING : thm := BSetwise1.GROUP_SETMUL_SING
 def GROUP_SETINV : thm := BSetwise1.GROUP_SETINV
 def GROUP_SETMUL : thm := BSetwise1.GROUP_SETMUL
+def IN_GROUP_SETMUL : thm := BSetwise1.IN_GROUP_SETMUL
 def GROUP_SETMUL_LID : thm := BSetwise1.GROUP_SETMUL_LID
 def GROUP_SETMUL_RID : thm := BSetwise1.GROUP_SETMUL_RID
 def GROUP_SETMUL_ASSOC : thm := BSetwise1.GROUP_SETMUL_ASSOC
 def GROUP_SETMUL_SYM : thm := BSetwise1.GROUP_SETMUL_SYM
+def GROUP_SETMUL_SWAP : thm := BSetwise1.GROUP_SETMUL_SWAP
 def GROUP_SETINV_SUBGROUP : thm := BSetwise1.GROUP_SETINV_SUBGROUP
 def GROUP_SETMUL_LSUBSET : thm := BSetwise1.GROUP_SETMUL_LSUBSET
 def GROUP_SETMUL_RSUBSET : thm := BSetwise1.GROUP_SETMUL_RSUBSET
@@ -1546,12 +1607,14 @@ def GROUP_SETMUL_RSUBSET_EQ : thm := BSetwise2.GROUP_SETMUL_RSUBSET_EQ
 def IMAGE_GROUP_CONJUGATION : thm := BSetwise2.IMAGE_GROUP_CONJUGATION
 def IMAGE_GROUP_CONJUGATION_EQ : thm := BSetwise2.IMAGE_GROUP_CONJUGATION_EQ
 def GROUP_SETMUL_SUBGROUP : thm := BSetwise2.GROUP_SETMUL_SUBGROUP
+def GROUP_SETMUL_CARRIER_SUBGROUP : thm := BSetwise2.GROUP_SETMUL_CARRIER_SUBGROUP
 def GROUP_SETMUL_LCANCEL : thm := BSetwise2.GROUP_SETMUL_LCANCEL
 def GROUP_SETMUL_RCANCEL : thm := BSetwise2.GROUP_SETMUL_RCANCEL
 def GROUP_SETMUL_LCANCEL_SET : thm := BSetwise2.GROUP_SETMUL_LCANCEL_SET
 def GROUP_SETMUL_RCANCEL_SET : thm := BSetwise2.GROUP_SETMUL_RCANCEL_SET
 def SUBGROUP_SETMUL_EQ : thm := BSetwise2.SUBGROUP_SETMUL_EQ
 def SUBGROUP_SETMUL : thm := BSetwise2.SUBGROUP_SETMUL
+def SUBGROUP_MODULAR_EQ : thm := BSetwise2.SUBGROUP_MODULAR_EQ
 def SUBGROUP_GENERATED_SETMUL : thm := BSetwise2.SUBGROUP_GENERATED_SETMUL
 def CARRIER_SUBGROUP_GENERATED_UNION : thm := BSetwise2.CARRIER_SUBGROUP_GENERATED_UNION
 
@@ -1638,6 +1701,7 @@ def GROUP_ORBIT_COMMON_INDEX : thm := BOrbitStabilizer.GROUP_ORBIT_COMMON_INDEX
 def right_coset : thm := BCosets.right_coset
 def left_coset : thm := BCosets.left_coset
 def LEFT_COSET_AS_IMAGE : thm := BCosets.LEFT_COSET_AS_IMAGE
+def RIGHT_COSET_AS_IMAGE : thm := BCosets.RIGHT_COSET_AS_IMAGE
 def RIGHT_COSET : thm := BCosets.RIGHT_COSET
 def LEFT_COSET : thm := BCosets.LEFT_COSET
 def IN_RIGHT_COSET : thm := BCosets.IN_RIGHT_COSET
@@ -1667,12 +1731,19 @@ def LEFT_COSET_EQ_EMPTY : thm := BCosets.LEFT_COSET_EQ_EMPTY
 def RIGHT_COSET_NONEMPTY : thm := BCosets.RIGHT_COSET_NONEMPTY
 def LEFT_COSET_NONEMPTY : thm := BCosets.LEFT_COSET_NONEMPTY
 def IN_RIGHT_COSET_SELF : thm := BCosets.IN_RIGHT_COSET_SELF
+def RIGHT_COSET_SUBSET_RIGHT_COSET : thm := BCosets.RIGHT_COSET_SUBSET_RIGHT_COSET
+def RIGHT_COSET_MONO : thm := BCosets.RIGHT_COSET_MONO
+def GROUP_SETMUL_IMAGE_RIGHT_COSET : thm := BCosets.GROUP_SETMUL_IMAGE_RIGHT_COSET
+def COMPATIBLE_SEQUENCE_DIV : thm := BCosets.COMPATIBLE_SEQUENCE_DIV
+def RIGHT_COSET_SEQUENCES_EQ : thm := BCosets.RIGHT_COSET_SEQUENCES_EQ
+def GROUP_SETMUL_RIGHT_COSET_BETWEEN : thm := BCosets.GROUP_SETMUL_RIGHT_COSET_BETWEEN
 
 -- Cosets1
 def IN_LEFT_COSET_SELF : thm := BCosets1.IN_LEFT_COSET_SELF
 def UNIONS_RIGHT_COSETS : thm := BCosets1.UNIONS_RIGHT_COSETS
 def UNIONS_LEFT_COSETS : thm := BCosets1.UNIONS_LEFT_COSETS
 def RIGHT_COSETS_EQ : thm := BCosets1.RIGHT_COSETS_EQ
+def IN_RIGHT_COSET_TRANS : thm := BCosets1.IN_RIGHT_COSET_TRANS
 def LEFT_COSETS_EQ : thm := BCosets1.LEFT_COSETS_EQ
 def DISJOINT_RIGHT_COSETS : thm := BCosets1.DISJOINT_RIGHT_COSETS
 def DISJOINT_LEFT_COSETS : thm := BCosets1.DISJOINT_LEFT_COSETS
@@ -1712,6 +1783,14 @@ def CARD_LEFT_COSETS_DIVIDES : thm := BCosets2.CARD_LEFT_COSETS_DIVIDES
 def CARD_RIGHT_COSETS_DIVIDES : thm := BCosets2.CARD_RIGHT_COSETS_DIVIDES
 def LAGRANGE_THEOREM_LEFT_DIV : thm := BCosets2.LAGRANGE_THEOREM_LEFT_DIV
 def LAGRANGE_THEOREM_RIGHT_DIV : thm := BCosets2.LAGRANGE_THEOREM_RIGHT_DIV
+def group_cosets : thm := BCosets2.group_cosets
+def IN_GROUP_COSETS : thm := BCosets2.IN_GROUP_COSETS
+def GROUP_COSETS_AS_IMAGE : thm := BCosets2.GROUP_COSETS_AS_IMAGE
+def FINITE_GROUP_COSETS : thm := BCosets2.FINITE_GROUP_COSETS
+def LAGRANGE_THEOREM_GROUP_COSETS : thm := BCosets2.LAGRANGE_THEOREM_GROUP_COSETS
+def HAS_SIZE_GROUP_COSETS : thm := BCosets2.HAS_SIZE_GROUP_COSETS
+def CARD_EQ_LEFT_COSETS_GROUP_COSETS : thm := BCosets2.CARD_EQ_LEFT_COSETS_GROUP_COSETS
+def SUBGROUP_INTER_CARD_DIVIDES : thm := BCosets2.SUBGROUP_INTER_CARD_DIVIDES
 def GROUP_SETMUL_PROD_GROUP : thm := BCosets2.GROUP_SETMUL_PROD_GROUP
 def RIGHT_COSET_PROD_GROUP : thm := BCosets2.RIGHT_COSET_PROD_GROUP
 def LEFT_COSET_PROD_GROUP : thm := BCosets2.LEFT_COSET_PROD_GROUP
@@ -1743,6 +1822,7 @@ def NORMAL_SUBGROUP_OF_INTER : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_INTER
 def NORMAL_SUBGROUP_OF_UNIONS : thm := BNormalSubgroups.NORMAL_SUBGROUP_OF_UNIONS
 def NORMAL_SUBGROUP_ACTION_KERNEL : thm := BNormalSubgroups.NORMAL_SUBGROUP_ACTION_KERNEL
 def NORMAL_SUBGROUP_LEFT_EQ_RIGHT_COSETS : thm := BNormalSubgroups.NORMAL_SUBGROUP_LEFT_EQ_RIGHT_COSETS
+def GROUP_COSETS_LEFT_COSETS : thm := BNormalSubgroups.GROUP_COSETS_LEFT_COSETS
 def NORMAL_SUBGROUP_LEFT_SUBSET_RIGHT_COSETS : thm := BNormalSubgroups.NORMAL_SUBGROUP_LEFT_SUBSET_RIGHT_COSETS
 def NORMAL_SUBGROUP_RIGHT_SUBSET_LEFT_COSETS : thm := BNormalSubgroups.NORMAL_SUBGROUP_RIGHT_SUBSET_LEFT_COSETS
 def NORMAL_SUBGROUP_MUL_SYM : thm := BNormalSubgroups.NORMAL_SUBGROUP_MUL_SYM
@@ -1834,6 +1914,9 @@ def CARD_CONJUGATE_SUBSETS : thm := BCentralizerNormalizer2.CARD_CONJUGATE_SUBSE
 -- QuotientGroups
 def quotient_group : thm := BQuotientGroups.quotient_group
 def QUOTIENT_GROUP : thm := BQuotientGroups.QUOTIENT_GROUP
+def QUOTIENT_GROUP_CARRIER : thm := BQuotientGroups.QUOTIENT_GROUP_CARRIER
+def QUOTIENT_GROUP_REPRESENTATIVE : thm := BQuotientGroups.QUOTIENT_GROUP_REPRESENTATIVE
+def COMPATIBLE_RIGHT_COSETS : thm := BQuotientGroups.COMPATIBLE_RIGHT_COSETS
 def ABELIAN_QUOTIENT_GROUP : thm := BQuotientGroups.ABELIAN_QUOTIENT_GROUP
 def FINITE_QUOTIENT_GROUP : thm := BQuotientGroups.FINITE_QUOTIENT_GROUP
 def TRIVIAL_QUOTIENT_GROUP : thm := BQuotientGroups.TRIVIAL_QUOTIENT_GROUP
@@ -1843,8 +1926,11 @@ def QUOTIENT_GROUP_MUL : thm := BQuotientGroups.QUOTIENT_GROUP_MUL
 def QUOTIENT_GROUP_DIV : thm := BQuotientGroups.QUOTIENT_GROUP_DIV
 def QUOTIENT_GROUP_POW : thm := BQuotientGroups.QUOTIENT_GROUP_POW
 def QUOTIENT_GROUP_ZPOW : thm := BQuotientGroups.QUOTIENT_GROUP_ZPOW
+def QUOTIENT_GROUP_TRANSITION : thm := BQuotientGroups.QUOTIENT_GROUP_TRANSITION
 def GROUP_HOMOMORPHISM_RIGHT_COSET : thm := BQuotientGroups.GROUP_HOMOMORPHISM_RIGHT_COSET
 def GROUP_EPIMORPHISM_RIGHT_COSET : thm := BQuotientGroups.GROUP_EPIMORPHISM_RIGHT_COSET
+def RIGHT_COSET_PREIMAGE : thm := BQuotientGroups.RIGHT_COSET_PREIMAGE
+def QUOTIENT_GROUP_BIJ : thm := BQuotientGroups.QUOTIENT_GROUP_BIJ
 def CARD_LE_QUOTIENT_GROUP : thm := BQuotientGroups.CARD_LE_QUOTIENT_GROUP
 def CARD_QUOTIENT_GROUP_DIVIDES : thm := BQuotientGroups.CARD_QUOTIENT_GROUP_DIVIDES
 def TRIVIAL_QUOTIENT_GROUP_EQ : thm := BQuotientGroups.TRIVIAL_QUOTIENT_GROUP_EQ
@@ -1882,6 +1968,7 @@ def GROUP_KERNEL_FROM_SUBGROUP_GENERATED : thm := BKernelsImages1.GROUP_KERNEL_F
 def GROUP_IMAGE_FROM_SUBGROUP_GENERATED : thm := BKernelsImages1.GROUP_IMAGE_FROM_SUBGROUP_GENERATED
 def GROUP_ISOMORPHISM_ONTO_IMAGE : thm := BKernelsImages1.GROUP_ISOMORPHISM_ONTO_IMAGE
 def NORMAL_SUBGROUP_GROUP_KERNEL : thm := BKernelsImages1.NORMAL_SUBGROUP_GROUP_KERNEL
+def NORMAL_SUBGROUP_INTER_SUBGROUP_GENERATED : thm := BKernelsImages1.NORMAL_SUBGROUP_INTER_SUBGROUP_GENERATED
 def GROUP_KERNEL_RIGHT_COSET : thm := BKernelsImages1.GROUP_KERNEL_RIGHT_COSET
 def CARD_EQ_GROUP_IMAGE_KERNEL : thm := BKernelsImages1.CARD_EQ_GROUP_IMAGE_KERNEL
 def CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE : thm := BKernelsImages1.CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE
@@ -1895,8 +1982,11 @@ def GROUP_KERNEL_FROM_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_KERNEL_FROM_T
 def GROUP_IMAGE_FROM_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_IMAGE_FROM_TRIVIAL_GROUP
 def GROUP_KERNEL_TO_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_KERNEL_TO_TRIVIAL_GROUP
 def GROUP_IMAGE_TO_TRIVIAL_GROUP : thm := BKernelsImages2.GROUP_IMAGE_TO_TRIVIAL_GROUP
+def FIRST_GROUP_ISOMORPHISM_THEOREM_EXPLICIT : thm := BKernelsImages2.FIRST_GROUP_ISOMORPHISM_THEOREM_EXPLICIT
 def FIRST_GROUP_ISOMORPHISM_THEOREM : thm := BKernelsImages2.FIRST_GROUP_ISOMORPHISM_THEOREM
+def FIRST_GROUP_EPIMORPHISM_THEOREM_EXPLICIT : thm := BKernelsImages2.FIRST_GROUP_EPIMORPHISM_THEOREM_EXPLICIT
 def FIRST_GROUP_EPIMORPHISM_THEOREM : thm := BKernelsImages2.FIRST_GROUP_EPIMORPHISM_THEOREM
+def FINITE_GROUP_HOMOMORPHISMS_KERNEL : thm := BKernelsImages2.FINITE_GROUP_HOMOMORPHISMS_KERNEL
 def GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_RIGHT : thm := BKernelsImages2.GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_RIGHT
 def GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_LEFT : thm := BKernelsImages2.GROUP_HOMOMORPHISM_PREIMAGE_IMAGE_LEFT
 def GROUP_HOMOMORPHISM_IMAGE_PREIMAGE : thm := BKernelsImages2.GROUP_HOMOMORPHISM_IMAGE_PREIMAGE
@@ -1908,6 +1998,11 @@ def GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE : thm := BKernelsImages2.GROUP_EPI
 def GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT : thm := BSubgroupCorrespondence.GROUP_EPIMORPHISM_SUBGROUP_CORRESPONDENCE_ALT
 def NORMAL_SUBGROUP_OF_HOMOMORPHIC_PREIMAGE : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_OF_HOMOMORPHIC_PREIMAGE
 def NORMAL_SUBGROUP_OF_EPIMORPHIC_IMAGE : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_OF_EPIMORPHIC_IMAGE
+def NORMAL_SUBGROUP_QUOTIENT_GROUP_IMAGE : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_QUOTIENT_GROUP_IMAGE
+def GROUP_PREIMAGE_IMAGE_PREIMAGE : thm := BSubgroupCorrespondence.GROUP_PREIMAGE_IMAGE_PREIMAGE
+def CARD_EQ_GROUP_COSETS_PREIMAGE : thm := BSubgroupCorrespondence.CARD_EQ_GROUP_COSETS_PREIMAGE
+def CARD_EQ_GROUP_COSETS_QUOTIENT_GROUP : thm := BSubgroupCorrespondence.CARD_EQ_GROUP_COSETS_QUOTIENT_GROUP
+def CARD_EQ_GROUP_COSETS_IMAGE_PREIMAGE : thm := BSubgroupCorrespondence.CARD_EQ_GROUP_COSETS_IMAGE_PREIMAGE
 def NORMAL_SUBGROUP_OF_EPIMORPHIC_PREIMAGE_EQ : thm := BSubgroupCorrespondence.NORMAL_SUBGROUP_OF_EPIMORPHIC_PREIMAGE_EQ
 def GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE : thm := BSubgroupCorrespondence.GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE
 def GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE_ALT : thm := BSubgroupCorrespondence.GROUP_EPIMORPHISM_NORMAL_SUBGROUP_CORRESPONDENCE_ALT
@@ -1921,6 +2016,10 @@ def QUOTIENT_SUBGROUP_CORRESPONDENCE : thm := BSubgroupCorrespondence.QUOTIENT_S
 def QUOTIENT_NORMAL_SUBGROUP_CORRESPONDENCE : thm := BSubgroupCorrespondence.QUOTIENT_NORMAL_SUBGROUP_CORRESPONDENCE
 def FIRST_GROUP_ISOMORPHISM_THEOREM_GEN : thm := BSubgroupCorrespondence.FIRST_GROUP_ISOMORPHISM_THEOREM_GEN
 def FIRST_GROUP_ISOMORPHISM_THEOREM_GEN_ALT : thm := BSubgroupCorrespondence.FIRST_GROUP_ISOMORPHISM_THEOREM_GEN_ALT
+def SECOND_GROUP_ISOMORPHISM_THEOREM_EXPLICIT : thm := BSubgroupCorrespondence.SECOND_GROUP_ISOMORPHISM_THEOREM_EXPLICIT
+def SECOND_GROUP_ISOMORPHISM_THEOREM : thm := BSubgroupCorrespondence.SECOND_GROUP_ISOMORPHISM_THEOREM
+def THIRD_GROUP_ISOMORPHISM_THEOREM_EXPLICIT : thm := BSubgroupCorrespondence.THIRD_GROUP_ISOMORPHISM_THEOREM_EXPLICIT
+def THIRD_GROUP_ISOMORPHISM_THEOREM : thm := BSubgroupCorrespondence.THIRD_GROUP_ISOMORPHISM_THEOREM
 def SIMPLE_GROUP_EPIMORPHIC_IMAGE_EQ : thm := BSubgroupCorrespondence.SIMPLE_GROUP_EPIMORPHIC_IMAGE_EQ
 def NO_PROPER_SUBGROUP_EPIMORPHIC_IMAGE_EQ : thm := BSubgroupCorrespondence.NO_PROPER_SUBGROUP_EPIMORPHIC_IMAGE_EQ
 def MAXIMAL_SUBGROUP : thm := BSubgroupCorrespondence.MAXIMAL_SUBGROUP
@@ -1948,6 +2047,7 @@ def GROUP_ZPOW_EQ : thm := BGroupElementOrder.GROUP_ZPOW_EQ
 def GROUP_POW_EQ : thm := BGroupElementOrder.GROUP_POW_EQ
 def GROUP_ZPOW_REM_ELEMENT_ORDER : thm := BGroupElementOrder.GROUP_ZPOW_REM_ELEMENT_ORDER
 def GROUP_POW_MOD_ELEMENT_ORDER : thm := BGroupElementOrder.GROUP_POW_MOD_ELEMENT_ORDER
+def GROUP_POW_PERIODIC : thm := BGroupElementOrder.GROUP_POW_PERIODIC
 def GROUP_ELEMENT_ORDER_EQ_0 : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_EQ_0
 def GROUP_ELEMENT_ORDER_UNIQUE : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_UNIQUE
 def GROUP_ELEMENT_ORDER_EQ_1 : thm := BGroupElementOrder.GROUP_ELEMENT_ORDER_EQ_1
@@ -2118,6 +2218,7 @@ def INTEGER_MOD_GROUP_0 : thm := BIntegerModGroup.INTEGER_MOD_GROUP_0
 def INTEGER_MOD_GROUP_1R : thm := BIntegerModGroup.INTEGER_MOD_GROUP_1R
 def INTEGER_MOD_GROUP_1 : thm := BIntegerModGroup.INTEGER_MOD_GROUP_1
 def GROUP_HOMOMORPHISM_PROD_INTEGER_MOD_GROUP : thm := BIntegerModGroup.GROUP_HOMOMORPHISM_PROD_INTEGER_MOD_GROUP
+def GROUP_HOMOMORPHISM_INTEGER_MOD_GROUP_REM : thm := BIntegerModGroup.GROUP_HOMOMORPHISM_INTEGER_MOD_GROUP_REM
 def TRIVIAL_INTEGER_MOD_GROUP : thm := BIntegerModGroup.TRIVIAL_INTEGER_MOD_GROUP
 def NON_TRIVIAL_INTEGER_GROUP : thm := BIntegerModGroup.NON_TRIVIAL_INTEGER_GROUP
 def GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1 : thm := BIntegerModGroup.GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP_1
@@ -2141,6 +2242,7 @@ def ISOMORPHIC_FINITE_CYCLIC_GROUPS : thm := BCyclicInteger.ISOMORPHIC_FINITE_CY
 def CYCLIC_IMP_COUNTABLE_GROUP : thm := BCyclicInteger.CYCLIC_IMP_COUNTABLE_GROUP
 def SUBGROUP_GENERATED_ELEMENT_ORDER : thm := BCyclicInteger.SUBGROUP_GENERATED_ELEMENT_ORDER
 def CYCLIC_GROUP_ELEMENT_ORDER : thm := BCyclicInteger.CYCLIC_GROUP_ELEMENT_ORDER
+def FINITE_CYCLIC_GROUP_POWERS : thm := BCyclicInteger.FINITE_CYCLIC_GROUP_POWERS
 
 -- CyclicProd
 def CYCLIC_PROD_INTEGER_MOD_GROUP : thm := BCyclicProd.CYCLIC_PROD_INTEGER_MOD_GROUP
@@ -2205,6 +2307,10 @@ def SYLOW_THEOREM_COUNT_NORMALIZER_MUL : thm := BSylow2.SYLOW_THEOREM_COUNT_NORM
 def SYLOW_THEOREM_NORMAL_UNIQUE_EQ : thm := BSylow2.SYLOW_THEOREM_NORMAL_UNIQUE_EQ
 def SYLOW_THEOREM_UNIQUE : thm := BSylow2.SYLOW_THEOREM_UNIQUE
 def SYLOW_THEOREM_COUNT_DIVISOR : thm := BSylow2.SYLOW_THEOREM_COUNT_DIVISOR
+def SYLOW_SUBGROUP_COUNT_1_NORMAL : thm := BSylow2.SYLOW_SUBGROUP_COUNT_1_NORMAL
+def PRIME_3 : thm := BSylow2.PRIME_3
+def GROUP_ORDER_6_NORMAL_SUBGROUP : thm := BSylow2.GROUP_ORDER_6_NORMAL_SUBGROUP
+def GROUP_ORDER_12_NORMAL_SUBGROUP : thm := BSylow2.GROUP_ORDER_12_NORMAL_SUBGROUP
 
 -- PGroupCentre
 def PGROUP_NONTRIVIAL_CENTRE_GEN : thm := BPGroupCentre.PGROUP_NONTRIVIAL_CENTRE_GEN
@@ -2367,6 +2473,14 @@ def SOLVABLE_GROUP_MONOMORPHIC_PREIMAGE : thm := BSolvableSubgroup.SOLVABLE_GROU
 
 -- SolvableQuotient
 def SOLVABLE_GROUP_SOLVABLE_QUOTIENT : thm := BSolvableQuotient.SOLVABLE_GROUP_SOLVABLE_QUOTIENT
+def SUBNORMAL_CHAIN_SUBGROUPS : thm := BSolvableQuotient.SUBNORMAL_CHAIN_SUBGROUPS
+def SOLVABLE_GROUP_NONTRIVIAL_ABELIAN_QUOTIENT : thm := BSolvableQuotient.SOLVABLE_GROUP_NONTRIVIAL_ABELIAN_QUOTIENT
+def SOLVABLE_SIMPLE_GROUP : thm := BSolvableQuotient.SOLVABLE_SIMPLE_GROUP
+def SOLVABLE_GROUP_PRIME_ORDER_CHAIN : thm := BSolvableQuotient.SOLVABLE_GROUP_PRIME_ORDER_CHAIN
+def SOLVABLE_GROUP_CYCLIC_CHAIN : thm := BSolvableQuotient.SOLVABLE_GROUP_CYCLIC_CHAIN
+def SOLVABLE_GROUP_CYCLIC_CHAIN_EQ : thm := BSolvableQuotient.SOLVABLE_GROUP_CYCLIC_CHAIN_EQ
+def IWASAWA_LEMMA : thm := BSolvableQuotient.IWASAWA_LEMMA
+def IWASAWA_SIMPLE : thm := BSolvableQuotient.IWASAWA_SIMPLE
 
 -- ExactSequences
 def group_exactness : thm := BExactSequences.group_exactness
@@ -2381,6 +2495,7 @@ def VERY_SHORT_EXACT_SEQUENCE : thm := BExactSequences.VERY_SHORT_EXACT_SEQUENCE
 def GROUP_EXACTNESS_EQ_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_EQ_TRIVIALITY
 def GROUP_EXACTNESS_IMP_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_IMP_TRIVIALITY
 def GROUP_EXACTNESS_ISOMORPHISM_EQ_TRIVIALITY : thm := BExactSequences.GROUP_EXACTNESS_ISOMORPHISM_EQ_TRIVIALITY
+def SHORT_EXACT_SEQUENCE_TRIVIALITY : thm := BExactSequences.SHORT_EXACT_SEQUENCE_TRIVIALITY
 def GROUP_EXACTNESS_ISOMORPHISM_EQ_MONO_EPI : thm := BExactSequences.GROUP_EXACTNESS_ISOMORPHISM_EQ_MONO_EPI
 def SHORT_EXACT_SEQUENCE_NORMAL_SUBGROUP : thm := BExactSequences.SHORT_EXACT_SEQUENCE_NORMAL_SUBGROUP
 def SHORT_EXACT_SEQUENCE_PROD_GROUP : thm := BExactSequences.SHORT_EXACT_SEQUENCE_PROD_GROUP
@@ -2411,6 +2526,7 @@ def SHORT_FIVE_LEMMA_MONO : thm := BShortFiveLemma.SHORT_FIVE_LEMMA_MONO
 def SHORT_FIVE_LEMMA_EPI : thm := BShortFiveLemma.SHORT_FIVE_LEMMA_EPI
 def SHORT_FIVE_LEMMA : thm := BShortFiveLemma.SHORT_FIVE_LEMMA
 def EXACT_SEQUENCE_HEXAGON_LEMMA : thm := BShortFiveLemma.EXACT_SEQUENCE_HEXAGON_LEMMA
+def FINITELY_GENERATED_ABELIAN_GROUP_EXPONENTS : thm := BShortFiveLemma.FINITELY_GENERATED_ABELIAN_GROUP_EXPONENTS
 
 /-- `needs "Library/grouptheory.ml"`: already done by importing this module. -/
 def ensureGroupTheory : IO Unit := pure ()

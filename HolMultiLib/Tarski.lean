@@ -30,7 +30,7 @@ structure TarskiThms where
   deriving Inhabited
 
 /- ------------------------------------------------------------------------- -/
-/- Axioms 1 to 11.  (tarski.ml 11-261)                                       -/
+/- Axioms 1 to 11.  (tarski.ml 12-262)                                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure TAR where
@@ -81,6 +81,8 @@ def setupTAR [HolBase] (D : HolMultiLib.Convex.ConvexDeps) (T : TarskiThms) :
         BETWEEN_TRANSLATION, FORALL_2, between, BETWEEN_LINEAR_IMAGE_EQ,
         RIGID_TRANSFORMATION_BETWEEN_3, .. } := T
   -- @@SCOPE END
+
+  D.prioritize_real
 
   -- Axiom 1 (reflexivity for equidistance).
 

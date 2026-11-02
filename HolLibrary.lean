@@ -3,7 +3,7 @@ Library root: the files of HOL Light's Library/ directory.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 
 Each module translates one Library/*.ml file (prime.ml is HolLibrary.Prime,
-rabin_test.ml is HolLibrary.RabinTest, ...): every file except
+ring_det.ml is HolLibrary.RingDet, ...): every file except
 tactician_light.ml, which runs tactics given as OCaml source and so has no
 Lean counterpart.  Like HolMath these are pure libraries, with no `unsafe`
 code: each file's theorems are built by setup functions that take what the
@@ -52,7 +52,11 @@ import HolLibrary.CalcReal
 import HolLibrary.WordAutomata
 import HolLibrary.Q
 import HolLibrary.FieldTheory
-import HolLibrary.RabinTest
+import HolLibrary.RingDet
 import HolLibrary.GroupTheory
+import HolLibrary.RingGroups
 import HolLibrary.ModmulGroup
 import HolLibrary.SymmetricGroup
+import HolLibrary.Galois
+import HolLibrary.FiniteFields
+import HolLibrary.Cyclotomic

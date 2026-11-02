@@ -32,7 +32,7 @@ private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α 
 initialize BTAR : HolMultiLib.Tarski.TAR ←
   ioB "setupTAR" (HolMultiLib.Tarski.setupTAR SessionMultiLib.Convex.deps thms).run
 
--- TAR (tarski.ml 11-261)
+-- TAR (tarski.ml 12-262)
 def TARSKI_AXIOM_1_EUCLIDEAN : thm := BTAR.TARSKI_AXIOM_1_EUCLIDEAN
 def TARSKI_AXIOM_2_EUCLIDEAN : thm := BTAR.TARSKI_AXIOM_2_EUCLIDEAN
 def TARSKI_AXIOM_3_EUCLIDEAN : thm := BTAR.TARSKI_AXIOM_3_EUCLIDEAN

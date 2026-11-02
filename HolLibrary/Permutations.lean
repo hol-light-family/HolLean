@@ -36,14 +36,15 @@ namespace HolLibrary.Permutations
 structure CoreThms1 where
   (ADD1 ADD_CLAUSES ARITH ARITH_EQ CARD_CLAUSES CARD_DELETE CARD_EQ_0
    CARD_IMAGE_INJ CARD_SUBSET CARD_UNION CHOOSE_SUBSET_STRONG COND_ID
-   COND_RAND COND_RATOR CONJ_ASSOC DIV_0 EMPTY_GSPEC EQ_SYM EVEN EVEN_ADD
+   COND_RAND COND_RATOR CONJ_ASSOC DE_MORGAN_THM
+   DIV_0 EMPTY_GSPEC EQ_SYM EVEN EVEN_ADD
    EVEN_MULT EVEN_SUB EXISTS_PAIR_THM EXISTS_UNIQUE EXISTS_UNIQUE_THM
    EXTENSION FACT FINITE_CROSS_EQ FINITE_DELETE FINITE_EMPTY FINITE_IMAGE
    FINITE_INDUCT_STRONG FINITE_INSERT FINITE_NUMSEG FINITE_NUMSEG_LT
    FINITE_RESTRICT FINITE_RULES FINITE_SING FINITE_SUBSET FORALL_IN_IMAGE
    FORALL_PAIR_THM FORALL_UNWIND_THM2 FUN_EQ_THM HAS_SIZE HAS_SIZE_IMAGE_INJ
    HAS_SIZE_PRODUCT IMAGE_CLAUSES IMP_CONJ IMP_CONJ_ALT IMP_IMP
-   INJECTIVE_ON_LEFT_INVERSE IN_CROSS IN_DELETE IN_DIFF IN_ELIM_PAIR_THM
+   INJECTIVE_ON_LEFT_INVERSE INSERT_AC IN_CROSS IN_DELETE IN_DIFF IN_ELIM_PAIR_THM
    IN_ELIM_THM IN_IMAGE IN_INSERT IN_NUMSEG IN_SING IN_UNIV ITERATE_BIJECTION
    I_DEF I_O_ID I_THM LAMBDA_PAIR_THM LEFT_AND_EXISTS_THM LEFT_IMP_EXISTS_THM
    LE_ANTISYM LE_REFL : thm)
@@ -286,7 +287,7 @@ def setupPermutes [HolBase] (D : PermutationsDeps) :
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Basic consequences of the definition (permutations.ml 132-280).          -/
+/- Basic consequences of the definition (permutations.ml 132-295).          -/
 /- ------------------------------------------------------------------------- -/
 
 structure BasicCons where
@@ -295,6 +296,7 @@ structure BasicCons where
   PERMUTES_IMAGE : thm
   PERMUTES_INJECTIVE : thm
   PERMUTES_SURJECTIVE : thm
+  PERMUTES_EQ : thm
   PERMUTES_INVERSES_o : thm
   PERMUTES_INVERSES : thm
   PERMUTES_SUBSET : thm
@@ -307,6 +309,7 @@ structure BasicCons where
   PERMUTES_BIJECTIONS : thm
   PERMUTES_INVERSE_FUNCTION : thm
   PERMUTES_ALT : thm
+  PERMUTES : thm
   PERMUTES_RESTRICT_SET : thm
   PERMUTES_RESTRICT : thm
   PERMUTES_CARTESIAN_PRODUCT : thm
@@ -341,6 +344,12 @@ def setupBasicCons [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) :
   let PERMUTES_SURJECTIVE ← prove
    r"!p s. p permutes s ==> !y. ?x. p(x) = y"
    (REWRITE_TAC [permutes] THEN MESON_TAC [])
+
+  let PERMUTES_EQ ← prove
+   r"!p q (s:A->bool).
+        p permutes s /\ q permutes s /\ (!x. x IN s ==> p x = q x) ==> p = q"
+   (REWRITE_TAC [permutes, FUN_EQ_THM] THEN REPEAT STRIP_TAC THEN
+    ASM_CASES_TAC (← q r"(x:A) IN s") THEN ASM_SIMP_TAC [])
 
   let PERMUTES_INVERSES_o ← prove
    r"!p s. p permutes s ==> p o inverse(p) = I /\ inverse(p) o p = I"
@@ -419,6 +428,15 @@ def setupBasicCons [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) :
     EXISTS_TAC (← q r"IMAGE (p:A->A) s") THEN REWRITE_TAC [FORALL_IN_IMAGE] THEN
     ASM SET_TAC []))
 
+  let PERMUTES ← prove
+   r"!(s:A->bool) (f:A->A).
+        f permutes s <=>
+        (!x. ~(x IN s) ==> f x = x) /\
+        (!x. x IN s ==> f x IN s) /\
+        (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) /\
+        (!y. y IN s ==> ?x. x IN s /\ f x = y)"
+   (REWRITE_TAC [PERMUTES_ALT] THEN MESON_TAC [])
+
   let PERMUTES_RESTRICT_SET ← prove
    r"!Q p s:A->bool.
           p permutes s /\ (!x. x IN s ==> (Q(p x) <=> Q x))
@@ -459,16 +477,16 @@ def setupBasicCons [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) :
    (SIMP_TAC [PERMUTES_ALT] THEN SET_TAC [])
 
   -- @@RETURN BEGIN
-  return { PERMUTES_IN_IMAGE, PERMUTES_IMAGE, PERMUTES_INJECTIVE, PERMUTES_SURJECTIVE,
+  return { PERMUTES_IN_IMAGE, PERMUTES_IMAGE, PERMUTES_INJECTIVE, PERMUTES_SURJECTIVE, PERMUTES_EQ,
            PERMUTES_INVERSES_o, PERMUTES_INVERSES, PERMUTES_SUBSET, PERMUTES_EMPTY,
            PERMUTES_SING, PERMUTES_UNIV, PERMUTES_INVERSE_EQ, PERMUTES_SWAP,
            PERMUTES_SUPERSET, PERMUTES_BIJECTIONS, PERMUTES_INVERSE_FUNCTION,
-           PERMUTES_ALT, PERMUTES_RESTRICT_SET, PERMUTES_RESTRICT,
+           PERMUTES_ALT, PERMUTES, PERMUTES_RESTRICT_SET, PERMUTES_RESTRICT,
            PERMUTES_CARTESIAN_PRODUCT, PERMUTES_TRANSFER_BIJECTIONS, PERMUTES_TRANSFER }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Swap conjugation and group properties (permutations.ml 282-350).         -/
+/- Swap conjugation and group properties (permutations.ml 297-385).         -/
 /- ------------------------------------------------------------------------- -/
 
 structure Groups where
@@ -476,6 +494,7 @@ structure Groups where
   SWAP_CONJUGATE : thm
   PERMUTES_ID : thm
   PERMUTES_I : thm
+  PERMUTES_DOUBLETON : thm
   PERMUTES_COMPOSE : thm
   PERMUTES_INVERSE : thm
   PERMUTES_INVERSE_INVERSE : thm
@@ -485,11 +504,12 @@ structure Groups where
 def setupGroups [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BBasicCons : BasicCons) :
     ExceptT String IO Groups := do
   -- @@SCOPE BEGIN
-  let { MESON_TAC, METIS_TAC, .. } := D
-  let { FUN_EQ_THM, I_THM, .. } := D.core1
-  let { o_THM, .. } := D.core2
-  let { SWAP_LEFT, SWAP_OTHER, SWAP_RIGHT, permutes, .. } := BPermutes
-  let { PERMUTES_INVERSES_o, PERMUTES_INVERSE_EQ, .. } := BBasicCons
+  let { ASM_MESON_TAC, MESON_TAC, METIS_TAC, .. } := D
+  let { DE_MORGAN_THM, FUN_EQ_THM, INSERT_AC, IN_INSERT, I_THM, .. } := D.core1
+  let { NOT_IN_EMPTY, o_THM, .. } := D.core2
+  let { SWAP_LEFT, SWAP_OTHER, SWAP_RIGHT, permutes, swap, .. } := BPermutes
+  let { PERMUTES_INJECTIVE, PERMUTES_INVERSES_o, PERMUTES_INVERSE_EQ, PERMUTES_IN_IMAGE,
+        PERMUTES_SING, PERMUTES_SWAP, .. } := BBasicCons
   -- @@SCOPE END
 
   /- Conjugating a swap by a permutation gives a swap of the images: -/
@@ -537,6 +557,26 @@ def setupGroups [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BBasicC
    r"!s. I permutes s"
    (REWRITE_TAC [permutes, I_THM] THEN MESON_TAC [])
 
+  let PERMUTES_DOUBLETON ← prove
+   r"!p a b:A. p permutes {a,b} <=> p = I \/ p = swap(a,b)"
+   (REPEAT GEN_TAC THEN EQ_TAC THENL
+     [DISCH_TAC,
+      STRIP_TAC THEN ASM_SIMP_TAC [PERMUTES_I, PERMUTES_SWAP, IN_INSERT]] THEN
+    ASM_CASES_TAC (← q r"b:A = a") THENL
+     [UNDISCH_TAC (← q r"p permutes {a:A,b}") THEN
+      ASM_REWRITE_TAC [INSERT_AC, PERMUTES_SING] THEN SIMP_TAC [],
+      ALL_TAC] THEN
+    FIRST_ASSUM (ASSUME_TAC o MATCH_MP PERMUTES_INJECTIVE) THEN
+    FIRST_ASSUM (MP_TAC o SPEC (← q r"a:A") o MATCH_MP PERMUTES_IN_IMAGE) THEN
+    FIRST_ASSUM (MP_TAC o SPEC (← q r"b:A") o MATCH_MP PERMUTES_IN_IMAGE) THEN
+    FIRST_ASSUM (MP_TAC o CONJUNCT1 o GEN_REWRITE_RULE I [permutes]) THEN
+    REWRITE_TAC [IN_INSERT, NOT_IN_EMPTY, DE_MORGAN_THM] THEN
+    REPEAT DISCH_TAC THEN REWRITE_TAC [FUN_EQ_THM, I_THM, swap] THEN
+    ASM_CASES_TAC (← q r"(p:A->A) a = a") THENL [DISJ1_TAC, DISJ2_TAC] THEN
+    X_GEN_TAC (← q r"x:A") THEN
+    ASM_CASES_TAC (← q r"x:A = a") THEN ASM_REWRITE_TAC [] THEN
+    ASM_CASES_TAC (← q r"x:A = b") THEN ASM_SIMP_TAC [] THEN ASM_MESON_TAC [])
+
   let PERMUTES_COMPOSE ← prove
    r"!p q s. p permutes s /\ q permutes s ==> (q o p) permutes s"
    (REWRITE_TAC [permutes, o_THM] THEN METIS_TAC [])
@@ -551,12 +591,13 @@ def setupGroups [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BBasicC
    (SIMP_TAC [FUN_EQ_THM] THEN MESON_TAC [PERMUTES_INVERSE_EQ, PERMUTES_INVERSE])
 
   -- @@RETURN BEGIN
-  return { SWAP_CONJUGATE, PERMUTES_ID, PERMUTES_I, PERMUTES_COMPOSE, PERMUTES_INVERSE,
+  return { SWAP_CONJUGATE, PERMUTES_ID, PERMUTES_I, PERMUTES_DOUBLETON, PERMUTES_COMPOSE,
+           PERMUTES_INVERSE,
            PERMUTES_INVERSE_INVERSE }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- The number of permutations on a finite set (permutations.ml 352-430).    -/
+/- The number of permutations on a finite set (permutations.ml 387-465).    -/
 /- ------------------------------------------------------------------------- -/
 
 structure NumPerms where
@@ -650,7 +691,7 @@ def setupNumPerms [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BBasi
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Alternative characterizations of permutation of finite set (432-470).    -/
+/- Alternative characterizations of permutation of finite set (467-512).    -/
 /- ------------------------------------------------------------------------- -/
 
 structure AltChar where
@@ -709,11 +750,12 @@ def setupAltChar [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) :
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Restriction of permutations to subsets (permutations.ml 472-610).        -/
+/- Restriction of permutations to subsets (permutations.ml 514-652).        -/
 /- ------------------------------------------------------------------------- -/
 
 structure Restrict where
   -- @@FIELDS
+  RESTRICT_PERMUTES_EQ : thm
   RESTRICT_PERMUTES_SUBSET : thm
   RESTRICT_I : thm
   RESTRICT_COMPOSE : thm
@@ -729,9 +771,16 @@ def setupRestrict [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BBasi
   let { EQ_SYM, FUN_EQ_THM, IN_IMAGE, I_THM, .. } := D.core1
   let { o_THM, .. } := D.core2
   let { swap, .. } := BPermutes
-  let { PERMUTES_INJECTIVE, PERMUTES_INVERSES_o, PERMUTES_INVERSE_EQ, .. } := BBasicCons
+  let { PERMUTES, PERMUTES_INJECTIVE, PERMUTES_INVERSES_o, PERMUTES_INVERSE_EQ, .. } := BBasicCons
   let { PERMUTES_FINITE_INJECTIVE, .. } := BAltChar
   -- @@SCOPE END
+
+  /- Restriction of f to s permutes s iff f is a bijection of s onto s -/
+  let RESTRICT_PERMUTES_EQ ← prove
+   r"!(f:A->A) s.
+        (\x. if x IN s then f x else x) permutes s <=>
+        IMAGE f s = s /\ (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)"
+   (REWRITE_TAC [PERMUTES] THEN SET_TAC [])
 
   let RESTRICT_PERMUTES_SUBSET ← prove
    r"!s t (f:A->A).
@@ -837,13 +886,13 @@ def setupRestrict [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BBasi
     REPEAT COND_CASES_TAC THEN ASM_MESON_TAC [])
 
   -- @@RETURN BEGIN
-  return { RESTRICT_PERMUTES_SUBSET, RESTRICT_I, RESTRICT_COMPOSE, RESTRICT_INVERSE,
+  return { RESTRICT_PERMUTES_EQ, RESTRICT_PERMUTES_SUBSET, RESTRICT_I, RESTRICT_COMPOSE, RESTRICT_INVERSE,
            RESTRICT_SWAP }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
 /- Permutations of index set for iterated operations; combinations of       -/
-/- transpositions (permutations.ml 612-660).                                -/
+/- transpositions (permutations.ml 654-702).                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure IterSwap where
@@ -929,7 +978,7 @@ def setupIterSwap [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) :
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Three-cycles: pure permutation combinatorics (permutations.ml 662-682).  -/
+/- Three-cycles: pure permutation combinatorics (permutations.ml 704-724).  -/
 /- ------------------------------------------------------------------------- -/
 
 structure ThreeCycle where
@@ -1040,7 +1089,7 @@ def setupThreeCycle [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) :
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Permutations as transposition sequences.  (permutations.ml 683-842)       -/
+/- Permutations as transposition sequences.  (permutations.ml 725-884)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure Swapseq where
@@ -1236,7 +1285,7 @@ def setupSwapseq [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BIterS
 
 /- ------------------------------------------------------------------------- -/
 /- Parity of permutations; composition properties; abstract characterization.-/
-/- (permutations.ml 844-997)                                                 -/
+/- (permutations.ml 886-1039)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure Evenperm where
@@ -1437,7 +1486,7 @@ def setupEvenperm [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BSwap
 
 /- ------------------------------------------------------------------------- -/
 /- Relation to "permutes"; induction by swaps; sign of a permutation.        -/
-/- (permutations.ml 999-1129)                                                -/
+/- (permutations.ml 1041-1171)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure Sign where
@@ -1454,7 +1503,7 @@ structure Sign where
   SIGN_COMPOSE : thm
   SIGN_SWAP : thm
   SIGN_IDEMPOTENT : thm
-  REAL_ABS_SIGN : thm
+  REAL_ABS_SIGN_PERMUTATION : thm
   REAL_SGN_SIGN : thm
   EVENPERM_TRANSFER : thm
   deriving Inhabited
@@ -1574,7 +1623,7 @@ def setupSign [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BBasicCon
    (GEN_TAC THEN REWRITE_TAC [sign] THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN CONV_TAC D.REAL_RAT_REDUCE_CONV)
 
-  let REAL_ABS_SIGN ← prove
+  let REAL_ABS_SIGN_PERMUTATION ← prove
    r"!p. abs(sign p) = &1"
    (REWRITE_TAC [sign] THEN REAL_ARITH_TAC)
 
@@ -1639,12 +1688,12 @@ def setupSign [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BBasicCon
   -- @@RETURN BEGIN
   return { PERMUTATION_PERMUTES, PERMUTATION_RESTRICT, PERMUTES_INDUCT,
            PERMUTES_INDUCT_STRONG, sign, SIGN_NZ, SIGN_I, SIGN_ID, SIGN_INVERSE,
-           SIGN_COMPOSE, SIGN_SWAP, SIGN_IDEMPOTENT, REAL_ABS_SIGN, REAL_SGN_SIGN,
+           SIGN_COMPOSE, SIGN_SWAP, SIGN_IDEMPOTENT, REAL_ABS_SIGN_PERMUTATION, REAL_SGN_SIGN,
            EVENPERM_TRANSFER }
   -- @@RETURN END
 
 /- --------------------------------------------------------------------- -/
-/- Sign transfer and products; more lemmas.  (permutations.ml 1130-1360)  -/
+/- Sign transfer and products; more lemmas.  (permutations.ml 1172-1402)  -/
 /- --------------------------------------------------------------------- -/
 
 structure SignTransfer where
@@ -1931,7 +1980,7 @@ def setupSignTransfer [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (B
 
 /- --------------------------------------------------------------------- -/
 /- The special case of involutions, and cyclic permutations.             -/
-/- (permutations.ml 1356-1507)                                           -/
+/- (permutations.ml 1398-1549)                                           -/
 /- --------------------------------------------------------------------- -/
 
 structure Involution where
@@ -2137,7 +2186,7 @@ def setupInvolution [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BBa
 
 /- --------------------------------------------------------------------- -/
 /- Conversion for `{p | p permutes s}` where s is a set enumeration.      -/
-/- (permutations.ml 1504-1531)                                           -/
+/- (permutations.ml 1546-1573)                                           -/
 /- --------------------------------------------------------------------- -/
 
 structure Permset where
@@ -2189,7 +2238,7 @@ def setupPermset [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BBasic
 
 /- --------------------------------------------------------------------- -/
 /- Sum over a set of permutations (could generalize to iteration).        -/
-/- (permutations.ml 1529-1562)                                           -/
+/- (permutations.ml 1571-1604)                                           -/
 /- --------------------------------------------------------------------- -/
 
 structure SumOver where

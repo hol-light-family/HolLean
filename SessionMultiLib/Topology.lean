@@ -460,11 +460,12 @@ def met3 : HolMultiLib.Topology.MetThms3 :=
     hausdorff_space, homeomorphic_maps, homeomorphic_space, interior_of, is_metric_space, limit,
     lipschitz_continuous_map, locally_finite_in, mbounded, mcomplete, mdiameter, monotone_map,
     net_tybij, netfilter, netlimit, netlimits, nsphere, open_map, paracompact_space,
-    proper_map, quotient_map, separated_in, topology_tybij, topspace, totally_bounded_in,
+    proper_map, quotient_map, second_countable, separated_in, topology_tybij, topspace, totally_bounded_in,
     trivial_limit, uniformly_continuous_map }
 
 /-- What topology.ml uses from hol.ml's library and the files it `needs`. -/
 def deps : HolMultiLib.Topology.TopologyDeps where
+  prioritize_real := Session.prioritize_real
   new_definition s := do
     let t ← ExceptT.mk (HolCore.Parser.parse_term s)
     ExceptT.mk (Session.new_definition t)
@@ -552,7 +553,7 @@ private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α 
 initialize BEUC : HolMultiLib.Topology.EUC ←
   ioB "setupEUC" (HolMultiLib.Topology.setupEUC deps).run
 
--- EUC (topology.ml 15-133)
+-- EUC (topology.ml 16-134)
 def open_def : thm := BEUC.open_def
 def euclidean : thm := BEUC.euclidean
 def euclidean_metric : thm := BEUC.euclidean_metric
@@ -583,7 +584,7 @@ def SUBTOPOLOGY_EUCLIDEAN_EQ_DISCRETE_TOPOLOGY_FINITE : thm :=
 initialize BCLO : HolMultiLib.Topology.CLO ←
   ioB "setupCLO" (HolMultiLib.Topology.setupCLO deps BEUC).run
 
--- CLO (topology.ml 134-237)
+-- CLO (topology.ml 135-238)
 def closed : thm := BCLO.closed
 def CLOSED_IN : thm := BCLO.CLOSED_IN
 def CLOSED_IN_EUCLIDEAN : thm := BCLO.CLOSED_IN_EUCLIDEAN
@@ -609,7 +610,7 @@ def CLOSED_LOCALLY_FINITE_UNIONS : thm := BCLO.CLOSED_LOCALLY_FINITE_UNIONS
 initialize BCWL : HolMultiLib.Topology.CWL ←
   ioB "setupCWL" (HolMultiLib.Topology.setupCWL deps BEUC).run
 
--- CWL (topology.ml 238-420)
+-- CWL (topology.ml 239-421)
 def LIMIT_EQ_LIFT : thm := BCWL.LIMIT_EQ_LIFT
 def LIMIT_EQ_DROP : thm := BCWL.LIMIT_EQ_DROP
 def CONTINUOUS_MAP_EQ_LIFT : thm := BCWL.CONTINUOUS_MAP_EQ_LIFT
@@ -633,7 +634,7 @@ def CONTINUOUS_MAP_EUCLIDEAN_COMPONENT : thm := BCWL.CONTINUOUS_MAP_EUCLIDEAN_CO
 initialize BBAL : HolMultiLib.Topology.BAL ←
   ioB "setupBAL" (HolMultiLib.Topology.setupBAL deps BEUC).run
 
--- BAL (topology.ml 421-681)
+-- BAL (topology.ml 422-682)
 def ball : thm := BBAL.ball
 def IN_BALL : thm := BBAL.IN_BALL
 def MBALL_EUCLIDEAN : thm := BBAL.MBALL_EUCLIDEAN
@@ -689,7 +690,7 @@ def ORTHOGONAL_TRANSFORMATION_SPHERE : thm := BBAL.ORTHOGONAL_TRANSFORMATION_SPH
 initialize BLOC : HolMultiLib.Topology.LOC ←
   ioB "setupLOC" (HolMultiLib.Topology.setupLOC deps BEUC BCLO BBAL).run
 
--- LOC (topology.ml 682-893)
+-- LOC (topology.ml 683-894)
 def OPEN_IN_OPEN : thm := BLOC.OPEN_IN_OPEN
 def OPEN_IN_INTER_OPEN : thm := BLOC.OPEN_IN_INTER_OPEN
 def OPEN_IN_OPEN_INTER : thm := BLOC.OPEN_IN_OPEN_INTER
@@ -719,7 +720,7 @@ def CLOSED_IN_INJECTIVE_LINEAR_IMAGE : thm := BLOC.CLOSED_IN_INJECTIVE_LINEAR_IM
 initialize BEUS : HolMultiLib.Topology.EUS ←
   ioB "setupEUS" (HolMultiLib.Topology.setupEUS deps BEUC BCWL BBAL).run
 
--- EUS (topology.ml 894-1000)
+-- EUS (topology.ml 895-1001)
 def HOMEOMORPHIC_MAPS_EUCLIDEAN_SPACE_EUCLIDEAN_GEN : thm :=
   BEUS.HOMEOMORPHIC_MAPS_EUCLIDEAN_SPACE_EUCLIDEAN_GEN
 def HOMEOMORPHIC_MAPS_EUCLIDEAN_SPACE_EUCLIDEAN : thm :=
@@ -732,7 +733,7 @@ def MANHATTAN : thm := BEUS.MANHATTAN
 initialize BSEG : HolMultiLib.Topology.SEG ←
   ioB "setupSEG" (HolMultiLib.Topology.setupSEG deps).run
 
--- SEG (topology.ml 1001-1239)
+-- SEG (topology.ml 1002-1240)
 def closed_segment : thm := BSEG.closed_segment
 def open_segment : thm := BSEG.open_segment
 def OPEN_SEGMENT_ALT : thm := BSEG.OPEN_SEGMENT_ALT
@@ -763,7 +764,7 @@ def DIST_IN_CLOSED_SEGMENT_2 : thm := BSEG.DIST_IN_CLOSED_SEGMENT_2
 initialize BCON : HolMultiLib.Topology.CON ←
   ioB "setupCON" (HolMultiLib.Topology.setupCON deps BEUC BCLO BCWL BLOC BSEG).run
 
--- CON (topology.ml 1240-1599)
+-- CON (topology.ml 1241-1600)
 def connected : thm := BCON.connected
 def CONNECTED_IN_EUCLIDEAN : thm := BCON.CONNECTED_IN_EUCLIDEAN
 def CONNECTED_SPACE_EUCLIDEAN_SUBTOPOLOGY : thm := BCON.CONNECTED_SPACE_EUCLIDEAN_SUBTOPOLOGY
@@ -795,7 +796,7 @@ def CONNECTED_FROM_OPEN_UNION_AND_INTER : thm := BCON.CONNECTED_FROM_OPEN_UNION_
 initialize BLPT : HolMultiLib.Topology.LPT ←
   ioB "setupLPT" (HolMultiLib.Topology.setupLPT deps BEUC BCLO BBAL BLOC BCON).run
 
--- LPT (topology.ml 1600-1939)
+-- LPT (topology.ml 1601-1940)
 def CONNECTED_INDUCTION : thm := BLPT.CONNECTED_INDUCTION
 def CONNECTED_EQUIVALENCE_RELATION_GEN : thm := BLPT.CONNECTED_EQUIVALENCE_RELATION_GEN
 def CONNECTED_INDUCTION_SIMPLE : thm := BLPT.CONNECTED_INDUCTION_SIMPLE
@@ -836,7 +837,7 @@ def LIMIT_POINT_OF_LOCAL : thm := BLPT.LIMIT_POINT_OF_LOCAL
 initialize BINT : HolMultiLib.Topology.INT ←
   ioB "setupINT" (HolMultiLib.Topology.setupINT deps BEUC BCLO BBAL BLPT).run
 
--- INT (topology.ml 1940-2089)
+-- INT (topology.ml 1941-2090)
 def interior : thm := BINT.interior
 def EUCLIDEAN_INTERIOR_OF : thm := BINT.EUCLIDEAN_INTERIOR_OF
 def INTERIOR_EQ : thm := BINT.INTERIOR_EQ
@@ -868,7 +869,7 @@ def INTERIOR_UNIONS_OPEN_SUBSETS : thm := BINT.INTERIOR_UNIONS_OPEN_SUBSETS
 initialize BCLS1 : HolMultiLib.Topology.CLS1 ←
   ioB "setupCLS1" (HolMultiLib.Topology.setupCLS1 deps BEUC BCLO BLOC BCON BLPT BINT).run
 
--- CLS1 (topology.ml 2090-2331)
+-- CLS1 (topology.ml 2091-2332)
 def closure : thm := BCLS1.closure
 def EUCLIDEAN_CLOSURE_OF : thm := BCLS1.EUCLIDEAN_CLOSURE_OF
 def CLOSURE_APPROACHABLE : thm := BCLS1.CLOSURE_APPROACHABLE
@@ -917,7 +918,7 @@ def INTERIOR_DIFF : thm := BCLS1.INTERIOR_DIFF
 initialize BCLS2 : HolMultiLib.Topology.CLS2 ←
   ioB "setupCLS2" (HolMultiLib.Topology.setupCLS2 deps BEUC BCLO BLOC BCON BLPT BINT BCLS1).run
 
--- CLS2 (topology.ml 2333-2556)
+-- CLS2 (topology.ml 2334-2557)
 def LIMPT_OF_CLOSURE : thm := BCLS2.LIMPT_OF_CLOSURE
 def PERFECT_FROM_CLOSURE : thm := BCLS2.PERFECT_FROM_CLOSURE
 def DENSE_IMP_PERFECT : thm := BCLS2.DENSE_IMP_PERFECT
@@ -943,7 +944,7 @@ def CONNECTED_SEPARATION_ALT : thm := BCLS2.CONNECTED_SEPARATION_ALT
 initialize BFRO1 : HolMultiLib.Topology.FRO1 ←
   ioB "setupFRO1" (HolMultiLib.Topology.setupFRO1 deps BEUC BCLO BBAL BLPT BINT BCLS1).run
 
--- FRO1 (topology.ml 2557-2781)
+-- FRO1 (topology.ml 2558-2782)
 def frontier : thm := BFRO1.frontier
 def EUCLIDEAN_FRONTIER_OF : thm := BFRO1.EUCLIDEAN_FRONTIER_OF
 def FRONTIER_CLOSED : thm := BFRO1.FRONTIER_CLOSED
@@ -981,7 +982,7 @@ def UNION_FRONTIER : thm := BFRO1.UNION_FRONTIER
 initialize BFRO2 : HolMultiLib.Topology.FRO2 ←
   ioB "setupFRO2" (HolMultiLib.Topology.setupFRO2 deps BEUC BCLO BCON BINT BCLS1 BFRO1).run
 
--- FRO2 (topology.ml 2783-2927)
+-- FRO2 (topology.ml 2784-2928)
 def CONNECTED_INTER_FRONTIER : thm := BFRO2.CONNECTED_INTER_FRONTIER
 def FRONTIER_NOT_EMPTY : thm := BFRO2.FRONTIER_NOT_EMPTY
 def FRONTIER_EQ_EMPTY : thm := BFRO2.FRONTIER_EQ_EMPTY
@@ -1000,7 +1001,7 @@ def CONNECTED_CLOSURE_FROM_FRONTIER : thm := BFRO2.CONNECTED_CLOSURE_FROM_FRONTI
 initialize BNET : HolMultiLib.Topology.NET ←
   ioB "setupNET" (HolMultiLib.Topology.setupNET deps BEUC).run
 
--- NET (topology.ml 2928-2995)
+-- NET (topology.ml 2929-2996)
 def «at» : thm := BNET.«at»
 def at_infinity : thm := BNET.at_infinity
 def at_posinfinity : thm := BNET.at_posinfinity
@@ -1020,7 +1021,7 @@ def WITHIN_UNIV : thm := BNET.WITHIN_UNIV
 initialize BEVT : HolMultiLib.Topology.EVT ←
   ioB "setupEVT" (HolMultiLib.Topology.setupEVT deps BEUC BBAL BLOC BLPT BINT BNET).run
 
--- EVT (topology.ml 2997-3266)
+-- EVT (topology.ml 2998-3267)
 def EVENTUALLY_WITHIN : thm := BEVT.EVENTUALLY_WITHIN
 def EVENTUALLY_WITHIN_LE : thm := BEVT.EVENTUALLY_WITHIN_LE
 def EVENTUALLY_WITHIN_TOPOLOGICAL : thm := BEVT.EVENTUALLY_WITHIN_TOPOLOGICAL
@@ -1057,7 +1058,7 @@ def EVENTUALLY_WITHIN_DELETE : thm := BEVT.EVENTUALLY_WITHIN_DELETE
 initialize BLIM1 : HolMultiLib.Topology.LIM1 ←
   ioB "setupLIM1" (HolMultiLib.Topology.setupLIM1 deps BEUC BCWL BLOC BEVT).run
 
--- LIM1 (topology.ml 3267-3376)
+-- LIM1 (topology.ml 3268-3377)
 def tendsto : thm := BLIM1.tendsto
 def LIMIT_EUCLIDEAN : thm := BLIM1.LIMIT_EUCLIDEAN
 def lim : thm := BLIM1.lim
@@ -1078,7 +1079,7 @@ def LIM_EQ_LIFT : thm := BLIM1.LIM_EQ_LIFT
 initialize BLIM2 : HolMultiLib.Topology.LIM2 ←
   ioB "setupLIM2" (HolMultiLib.Topology.setupLIM2 deps BNET BEVT BLIM1).run
 
--- LIM2 (topology.ml 3377-3596)
+-- LIM2 (topology.ml 3378-3597)
 def LIM_WITHIN_LE : thm := BLIM2.LIM_WITHIN_LE
 def LIM_WITHIN : thm := BLIM2.LIM_WITHIN
 def LIM_AT_LE : thm := BLIM2.LIM_AT_LE
@@ -1107,7 +1108,7 @@ def LIM_COMPOSE_AT : thm := BLIM2.LIM_COMPOSE_AT
 initialize BRLM : HolMultiLib.Topology.RLM ←
   ioB "setupRLM" (HolMultiLib.Topology.setupRLM deps BEUC BBAL BLOC BLPT BEVT BLIM1 BLIM2).run
 
--- RLM (topology.ml 3597-3771)
+-- RLM (topology.ml 3598-3772)
 def LIM_AT_WITHIN : thm := BRLM.LIM_AT_WITHIN
 def LIM_WITHIN_OPEN : thm := BRLM.LIM_WITHIN_OPEN
 def LIM_WITHIN_OPEN_IN : thm := BRLM.LIM_WITHIN_OPEN_IN
@@ -1128,7 +1129,7 @@ def CONDENSATION_POINT_ALT : thm := BRLM.CONDENSATION_POINT_ALT
 initialize BARI : HolMultiLib.Topology.ARI ←
   ioB "setupARI" (HolMultiLib.Topology.setupARI deps BLIM1).run
 
--- ARI (topology.ml 3772-4035)
+-- ARI (topology.ml 3773-4036)
 def LIM_LINEAR : thm := BARI.LIM_LINEAR
 def LIM_CONST : thm := BARI.LIM_CONST
 def LIM_CMUL : thm := BARI.LIM_CMUL
@@ -1163,7 +1164,7 @@ initialize BUNQ : HolMultiLib.Topology.UNQ ←
   ioB "setupUNQ"
     (HolMultiLib.Topology.setupUNQ deps BEUC BCLO BBAL BNET BEVT BLIM1 BLIM2 BARI).run
 
--- UNQ (topology.ml 4036-4286)
+-- UNQ (topology.ml 4037-4287)
 def LIM_IN_CLOSED_SET : thm := BUNQ.LIM_IN_CLOSED_SET
 def LIM_NORM_UBOUND : thm := BUNQ.LIM_NORM_UBOUND
 def LIM_NORM_LBOUND : thm := BUNQ.LIM_NORM_LBOUND
@@ -1183,7 +1184,7 @@ initialize BTRN : HolMultiLib.Topology.TRN ←
   ioB "setupTRN"
     (HolMultiLib.Topology.setupTRN deps BBAL BLOC BNET BEVT BLIM2 BARI BUNQ).run
 
--- TRN (topology.ml 4287-4501)
+-- TRN (topology.ml 4288-4502)
 def LIM_TRANSFORM : thm := BTRN.LIM_TRANSFORM
 def LIM_TRANSFORM_EVENTUALLY : thm := BTRN.LIM_TRANSFORM_EVENTUALLY
 def LIM_TRANSFORM_WITHIN : thm := BTRN.LIM_TRANSFORM_WITHIN
@@ -1207,7 +1208,7 @@ initialize BSEQ : HolMultiLib.Topology.SEQ ←
   ioB "setupSEQ"
     (HolMultiLib.Topology.setupSEQ deps BLPT BCLS1 BCLS2 BLIM2 BRLM BARI BTRN).run
 
--- SEQ (topology.ml 4502-4627)
+-- SEQ (topology.ml 4503-4628)
 def CLOSURE_SEQUENTIAL : thm := BSEQ.CLOSURE_SEQUENTIAL
 def CLOSED_CONTAINS_SEQUENTIAL_LIMIT : thm := BSEQ.CLOSED_CONTAINS_SEQUENTIAL_LIMIT
 def CLOSED_SEQUENTIAL_LIMITS : thm := BSEQ.CLOSED_SEQUENTIAL_LIMITS
@@ -1230,7 +1231,7 @@ initialize BCBL : HolMultiLib.Topology.CBL ←
   ioB "setupCBL"
     (HolMultiLib.Topology.setupCBL deps BEUC BBAL BLPT BINT BCLS1 BFRO1 BARI BUNQ BSEQ).run
 
--- CBL (topology.ml 4628-4850)
+-- CBL (topology.ml 4629-4851)
 def CLOSED_CBALL : thm := BCBL.CLOSED_CBALL
 def CLOSURE_CBALL : thm := BCBL.CLOSURE_CBALL
 def IN_INTERIOR_CBALL : thm := BCBL.IN_INTERIOR_CBALL
@@ -1257,7 +1258,7 @@ initialize BBND1 : HolMultiLib.Topology.BND1 ←
     (HolMultiLib.Topology.setupBND1 deps BEUC BBAL BCON BLPT BINT BCLS1 BEVT BLIM1 BUNQ
       BSEQ).run
 
--- BND1 (topology.ml 4851-5082)
+-- BND1 (topology.ml 4852-5083)
 def EVENTUALLY_WITHIN_INTERIOR_INTER : thm := BBND1.EVENTUALLY_WITHIN_INTERIOR_INTER
 def LIM_WITHIN_INTERIOR_INTER : thm := BBND1.LIM_WITHIN_INTERIOR_INTER
 def LIM_WITHIN_INTERIOR : thm := BBND1.LIM_WITHIN_INTERIOR
@@ -1295,7 +1296,7 @@ def COBOUNDED_IMP_UNBOUNDED : thm := BBND1.COBOUNDED_IMP_UNBOUNDED
 initialize BBND2 : HolMultiLib.Topology.BND2 ←
   ioB "setupBND2" (HolMultiLib.Topology.setupBND2 deps BBAL BBND1).run
 
--- BND2 (topology.ml 5083-5320)
+-- BND2 (topology.ml 5084-5321)
 def BOUNDED_LINEAR_IMAGE : thm := BBND2.BOUNDED_LINEAR_IMAGE
 def BOUNDED_LINEAR_IMAGE_EQ : thm := BBND2.BOUNDED_LINEAR_IMAGE_EQ
 def BOUNDED_SCALING : thm := BBND2.BOUNDED_SCALING
@@ -1329,7 +1330,7 @@ def INF_INSERT : thm := BBND2.INF_INSERT
 initialize BBLS : HolMultiLib.Topology.BLS ←
   ioB "setupBLS" (HolMultiLib.Topology.setupBLS deps BBAL BCLS1 BCBL).run
 
--- BLS (topology.ml 5321-5392)
+-- BLS (topology.ml 5322-5393)
 def SUBSET_BALLS : thm := BBLS.SUBSET_BALLS
 def INTER_BALLS_EQ_EMPTY : thm := BBLS.INTER_BALLS_EQ_EMPTY
 
@@ -1338,7 +1339,7 @@ initialize BCPT : HolMultiLib.Topology.CPT ←
     (HolMultiLib.Topology.setupCPT deps BEUC BCLO BCWL BBAL BLOC BLPT BCLS1 BLIM1 BBND1
       BBND2).run
 
--- CPT (topology.ml 5393-5622)
+-- CPT (topology.ml 5394-5623)
 def compact : thm := BCPT.compact
 def COMPACT_IN_EUCLIDEAN : thm := BCPT.COMPACT_IN_EUCLIDEAN
 def COMPACT_SPACE_EUCLIDEAN_SUBTOPOLOGY : thm := BCPT.COMPACT_SPACE_EUCLIDEAN_SUBTOPOLOGY
@@ -1370,7 +1371,7 @@ initialize BCMP : HolMultiLib.Topology.CMP ←
     (HolMultiLib.Topology.setupCMP deps BEUC BBAL BLPT BCLS1 BNET BLIM1 BLIM2 BRLM BARI BUNQ
       BSEQ BBND1 BCPT).run
 
--- CMP (topology.ml 5623-5853)
+-- CMP (topology.ml 5624-5854)
 def CONVERGENT_BOUNDED_MONOTONE_1 : thm := BCMP.CONVERGENT_BOUNDED_MONOTONE_1
 def CONVERGENT_BOUNDED_INCREASING_1 : thm := BCMP.CONVERGENT_BOUNDED_INCREASING_1
 def CONVERGENT_BOUNDED_DECREASING_1 : thm := BCMP.CONVERGENT_BOUNDED_DECREASING_1
@@ -1400,7 +1401,7 @@ initialize BCPP1 : HolMultiLib.Topology.CPP1 ←
     (HolMultiLib.Topology.setupCPP1 deps BEUC BCLO BBAL BLOC BLPT BLIM1 BLIM2 BUNQ BBND1
       BCPT).run
 
--- CPP1 (topology.ml 5854-6047)
+-- CPP1 (topology.ml 5855-6048)
 def SEQUENCE_INFINITE_LEMMA : thm := BCPP1.SEQUENCE_INFINITE_LEMMA
 def LIMPT_OF_SEQUENCE_SUBSEQUENCE : thm := BCPP1.LIMPT_OF_SEQUENCE_SUBSEQUENCE
 def SEQUENCE_UNIQUE_LIMPT : thm := BCPP1.SEQUENCE_UNIQUE_LIMPT
@@ -1428,7 +1429,7 @@ initialize BCPP2 : HolMultiLib.Topology.CPP2 ←
     (HolMultiLib.Topology.setupCPP2 deps BEUC BCLO BBAL BCON BLPT BINT BCLS1 BFRO1 BCBL BBND1
       BCPT BCPP1).run
 
--- CPP2 (topology.ml 6048-6233)
+-- CPP2 (topology.ml 6049-6234)
 def COMPACT_INSERT : thm := BCPP2.COMPACT_INSERT
 def CLOSURE_SING : thm := BCPP2.CLOSURE_SING
 def CLOSURE_INSERT : thm := BCPP2.CLOSURE_INSERT
@@ -1462,7 +1463,7 @@ initialize BNST : HolMultiLib.Topology.NST ←
   ioB "setupNST"
     (HolMultiLib.Topology.setupNST deps BEUC BLOC BLIM2 BUNQ BSEQ BCPT BCMP BCPP1 BCPP2).run
 
--- NST (topology.ml 6234-6464)
+-- NST (topology.ml 6235-6465)
 def BOUNDED_CLOSED_NEST : thm := BNST.BOUNDED_CLOSED_NEST
 def DECREASING_CLOSED_NEST : thm := BNST.DECREASING_CLOSED_NEST
 def DECREASING_CLOSED_NEST_SING : thm := BNST.DECREASING_CLOSED_NEST_SING
@@ -1481,7 +1482,7 @@ initialize BCNT1 : HolMultiLib.Topology.CNT1 ←
   ioB "setupCNT1"
     (HolMultiLib.Topology.setupCNT1 deps BBAL BNET BEVT BLIM1 BLIM2 BRLM BTRN).run
 
--- CNT1 (topology.ml 6465-6623)
+-- CNT1 (topology.ml 6466-6624)
 def continuous : thm := BCNT1.continuous
 def CONTINUOUS_TRIVIAL_LIMIT : thm := BCNT1.CONTINUOUS_TRIVIAL_LIMIT
 def CONTINUOUS_WITHIN : thm := BCNT1.CONTINUOUS_WITHIN
@@ -1506,7 +1507,7 @@ def CONTINUOUS_AT_BALL : thm := BCNT1.CONTINUOUS_AT_BALL
 initialize BCNO : HolMultiLib.Topology.CNO ←
   ioB "setupCNO" (HolMultiLib.Topology.setupCNO deps BEUC).run
 
--- CNO (topology.ml 6625-6727)
+-- CNO (topology.ml 6626-6728)
 def continuous_on : thm := BCNO.continuous_on
 def uniformly_continuous_on : thm := BCNO.uniformly_continuous_on
 def CONTINUOUS_MAP_EUCLIDEAN : thm := BCNO.CONTINUOUS_MAP_EUCLIDEAN
@@ -1523,7 +1524,7 @@ def UNIFORMLY_CONTINUOUS_MAP_DROP_EQ : thm := BCNO.UNIFORMLY_CONTINUOUS_MAP_DROP
 initialize BCSL : HolMultiLib.Topology.CSL ←
   ioB "setupCSL" (HolMultiLib.Topology.setupCSL deps BLPT BINT BLIM2 BRLM BCNT1 BCNO).run
 
--- CSL (topology.ml 6728-6846)
+-- CSL (topology.ml 6729-6847)
 def CONTINUOUS_ON_COMPARISON : thm := BCSL.CONTINUOUS_ON_COMPARISON
 def UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS : thm := BCSL.UNIFORMLY_CONTINUOUS_IMP_CONTINUOUS
 def CONTINUOUS_AT_IMP_CONTINUOUS_ON : thm := BCSL.CONTINUOUS_AT_IMP_CONTINUOUS_ON
@@ -1550,7 +1551,7 @@ initialize BSQC : HolMultiLib.Topology.SQC ←
   ioB "setupSQC"
     (HolMultiLib.Topology.setupSQC deps BEUC BNET BLIM1 BLIM2 BRLM BCNT1 BCNO BCSL).run
 
--- SQC (topology.ml 6847-7141)
+-- SQC (topology.ml 6848-7142)
 def CONTINUOUS_WITHIN_SEQUENTIALLY : thm := BSQC.CONTINUOUS_WITHIN_SEQUENTIALLY
 def CONTINUOUS_AT_SEQUENTIALLY : thm := BSQC.CONTINUOUS_AT_SEQUENTIALLY
 def CONTINUOUS_ON_SEQUENTIALLY : thm := BSQC.CONTINUOUS_ON_SEQUENTIALLY
@@ -1575,7 +1576,7 @@ initialize BCMB : HolMultiLib.Topology.CMB ←
   ioB "setupCMB"
     (HolMultiLib.Topology.setupCMB deps BLIM1 BLIM2 BARI BUNQ BSEQ BCPT BCNT1 BSQC).run
 
--- CMB (topology.ml 7142-7300)
+-- CMB (topology.ml 7143-7301)
 def CONTINUOUS_IMAGE_NESTED_INTERS : thm := BCMB.CONTINUOUS_IMAGE_NESTED_INTERS
 def CONTINUOUS_IMAGE_NESTED_INTERS_GEN : thm := BCMB.CONTINUOUS_IMAGE_NESTED_INTERS_GEN
 def CONTINUOUS_CONST : thm := BCMB.CONTINUOUS_CONST
@@ -1596,7 +1597,7 @@ def CONTINUOUS_COMPONENTWISE_LIFT : thm := BCMB.CONTINUOUS_COMPONENTWISE_LIFT
 initialize BCMS : HolMultiLib.Topology.CMS ←
   ioB "setupCMS" (HolMultiLib.Topology.setupCMS deps BCNO BCSL BCMB).run
 
--- CMS (topology.ml 7301-7403)
+-- CMS (topology.ml 7302-7404)
 def CONTINUOUS_ON_CONST : thm := BCMS.CONTINUOUS_ON_CONST
 def CONTINUOUS_ON_CMUL : thm := BCMS.CONTINUOUS_ON_CMUL
 def CONTINUOUS_ON_NEG : thm := BCMS.CONTINUOUS_ON_NEG
@@ -1616,7 +1617,7 @@ def CONTINUOUS_ON_REFLECT : thm := BCMS.CONTINUOUS_ON_REFLECT
 initialize BUCN : HolMultiLib.Topology.UCN ←
   ioB "setupUCN" (HolMultiLib.Topology.setupUCN deps BARI BBND1 BCNO BSQC).run
 
--- UCN (topology.ml 7404-7568)
+-- UCN (topology.ml 7405-7569)
 def UNIFORMLY_CONTINUOUS_ON_CONST : thm := BUCN.UNIFORMLY_CONTINUOUS_ON_CONST
 def LINEAR_UNIFORMLY_CONTINUOUS_ON : thm := BUCN.LINEAR_UNIFORMLY_CONTINUOUS_ON
 def UNIFORMLY_CONTINUOUS_ON_COMPOSE : thm := BUCN.UNIFORMLY_CONTINUOUS_ON_COMPOSE
@@ -1634,7 +1635,7 @@ def UNIFORMLY_CONTINUOUS_ON_SQRT : thm := BUCN.UNIFORMLY_CONTINUOUS_ON_SQRT
 initialize BIDC : HolMultiLib.Topology.IDC ←
   ioB "setupIDC" (HolMultiLib.Topology.setupIDC deps BEUC BBAL BLOC BNET BCNT1 BCNO BCSL).run
 
--- IDC (topology.ml 7569-7712)
+-- IDC (topology.ml 7570-7713)
 def CONTINUOUS_WITHIN_ID : thm := BIDC.CONTINUOUS_WITHIN_ID
 def CONTINUOUS_AT_ID : thm := BIDC.CONTINUOUS_AT_ID
 def CONTINUOUS_ON_ID : thm := BIDC.CONTINUOUS_ON_ID
@@ -1653,7 +1654,7 @@ def CONTINUOUS_OPEN_IN_PREIMAGE_SUBSET : thm := BIDC.CONTINUOUS_OPEN_IN_PREIMAGE
 initialize BCLC : HolMultiLib.Topology.CLC ←
   ioB "setupCLC" (HolMultiLib.Topology.setupCLC deps BEUC BCLO BLOC BCSL BIDC).run
 
--- CLC (topology.ml 7713-7874)
+-- CLC (topology.ml 7714-7875)
 def CONTINUOUS_ON_CLOSED_GEN : thm := BCLC.CONTINUOUS_ON_CLOSED_GEN
 def CONTINUOUS_ON_CLOSED : thm := BCLC.CONTINUOUS_ON_CLOSED
 def CONTINUOUS_CLOSED_IN_PREIMAGE_GEN : thm := BCLC.CONTINUOUS_CLOSED_IN_PREIMAGE_GEN
@@ -1674,7 +1675,7 @@ initialize BLCP : HolMultiLib.Topology.LCP ←
     (HolMultiLib.Topology.setupLCP deps BCON BLIM2 BARI BUNQ BCPT BCNT1 BCNO BCSL BCMS
       BIDC).run
 
--- LCP (topology.ml 7875-8041)
+-- LCP (topology.ml 7876-8042)
 def LINEAR_LIM_0 : thm := BLCP.LINEAR_LIM_0
 def LINEAR_CONTINUOUS_AT : thm := BLCP.LINEAR_CONTINUOUS_AT
 def LINEAR_CONTINUOUS_WITHIN : thm := BLCP.LINEAR_CONTINUOUS_WITHIN
@@ -1704,7 +1705,7 @@ initialize BPCR1 : HolMultiLib.Topology.PCR1 ←
   ioB "setupPCR1"
     (HolMultiLib.Topology.setupPCR1 deps BEUC BCLO BBAL BLOC BLIM2 BSEQ BBND1 BCPT).run
 
--- PCR1 (topology.ml 8042-8218)
+-- PCR1 (topology.ml 8043-8219)
 def BOUNDED_PCROSS_EQ : thm := BPCR1.BOUNDED_PCROSS_EQ
 def BOUNDED_PCROSS : thm := BPCR1.BOUNDED_PCROSS
 def CLOSED_PCROSS_EQ : thm := BPCR1.CLOSED_PCROSS_EQ
@@ -1721,7 +1722,7 @@ def OPEN_IN_PCROSS_EQ : thm := BPCR1.OPEN_IN_PCROSS_EQ
 initialize BPCR2 : HolMultiLib.Topology.PCR2 ←
   ioB "setupPCR2" (HolMultiLib.Topology.setupPCR2 deps BEUC BINT BPCR1).run
 
--- PCR2 (topology.ml 8219-8389)
+-- PCR2 (topology.ml 8220-8390)
 def INTERIOR_PCROSS : thm := BPCR2.INTERIOR_PCROSS
 def LIPSCHITZ_CONTINUOUS_MAP_PASTING : thm := BPCR2.LIPSCHITZ_CONTINUOUS_MAP_PASTING
 def LIPSCHITZ_CONTINUOUS_MAP_CART_PROJECTIONS : thm :=
@@ -1738,7 +1739,7 @@ def CONTINUOUS_MAP_PASTED : thm := BPCR2.CONTINUOUS_MAP_PASTED
 initialize BQUO1 : HolMultiLib.Topology.QUO1 ←
   ioB "setupQUO1" (HolMultiLib.Topology.setupQUO1 deps BEUC BLOC BCSL BIDC BCLC).run
 
--- QUO1 (topology.ml 8390-8567)
+-- QUO1 (topology.ml 8391-8568)
 def QUASICOMPACT_OPEN_CLOSED : thm := BQUO1.QUASICOMPACT_OPEN_CLOSED
 def QUOTIENT_MAP_IMP_CONTINUOUS_OPEN : thm := BQUO1.QUOTIENT_MAP_IMP_CONTINUOUS_OPEN
 def QUOTIENT_MAP_IMP_CONTINUOUS_CLOSED : thm := BQUO1.QUOTIENT_MAP_IMP_CONTINUOUS_CLOSED
@@ -1754,7 +1755,7 @@ def LIFT_TO_QUOTIENT_SPACE : thm := BQUO1.LIFT_TO_QUOTIENT_SPACE
 initialize BQUO2 : HolMultiLib.Topology.QUO2 ←
   ioB "setupQUO2" (HolMultiLib.Topology.setupQUO2 deps BEUC BCON BIDC BCLC BQUO1).run
 
--- QUO2 (topology.ml 8568-8704)
+-- QUO2 (topology.ml 8569-8705)
 def QUOTIENT_MAP_COMPOSE_EXPLICIT : thm := BQUO2.QUOTIENT_MAP_COMPOSE_EXPLICIT
 def QUOTIENT_MAP_FROM_COMPOSITION_EXPLICIT : thm := BQUO2.QUOTIENT_MAP_FROM_COMPOSITION_EXPLICIT
 def QUOTIENT_MAP_FROM_SUBSET : thm := BQUO2.QUOTIENT_MAP_FROM_SUBSET
@@ -1767,7 +1768,7 @@ initialize BOCM1 : HolMultiLib.Topology.OCM1 ←
   ioB "setupOCM1"
     (HolMultiLib.Topology.setupOCM1 deps BEUC BCLO BLOC BINT BCLS1 BIDC BCLC BQUO1).run
 
--- OCM1 (topology.ml 8705-8900)
+-- OCM1 (topology.ml 8706-8901)
 def CLOSED_MAP_CLOSURES : thm := BOCM1.CLOSED_MAP_CLOSURES
 def OPEN_MAP_INTERIORS : thm := BOCM1.OPEN_MAP_INTERIORS
 def OPEN_MAP_RESTRICT : thm := BOCM1.OPEN_MAP_RESTRICT
@@ -1784,7 +1785,7 @@ def OPEN_MAP_FROM_COMPOSITION_INJECTIVE : thm := BOCM1.OPEN_MAP_FROM_COMPOSITION
 initialize BOCM2 : HolMultiLib.Topology.OCM2 ←
   ioB "setupOCM2" (HolMultiLib.Topology.setupOCM2 deps BEUC BCON BCNO BCLC).run
 
--- OCM2 (topology.ml 8901-9013)
+-- OCM2 (topology.ml 8902-9014)
 def CLOSED_MAP_FROM_COMPOSITION_INJECTIVE : thm := BOCM2.CLOSED_MAP_FROM_COMPOSITION_INJECTIVE
 def OPEN_MAP_CLOSED_SUPERSET_PREIMAGE : thm := BOCM2.OPEN_MAP_CLOSED_SUPERSET_PREIMAGE
 def OPEN_MAP_CLOSED_SUPERSET_PREIMAGE_EQ : thm := BOCM2.OPEN_MAP_CLOSED_SUPERSET_PREIMAGE_EQ
@@ -1799,7 +1800,7 @@ initialize BPRP1 : HolMultiLib.Topology.PRP1 ←
   ioB "setupPRP1"
     (HolMultiLib.Topology.setupPRP1 deps BEUC BCLO BLOC BBND1 BCPT BCSL BCLC BLCP).run
 
--- PRP1 (topology.ml 9014-9140)
+-- PRP1 (topology.ml 9015-9141)
 def PROPER_MAP_INTO_EUCLIDEAN : thm := BPRP1.PROPER_MAP_INTO_EUCLIDEAN
 def PROPER_MAP_EUCLIDEAN : thm := BPRP1.PROPER_MAP_EUCLIDEAN
 def PROPER_MAP : thm := BPRP1.PROPER_MAP
@@ -1815,7 +1816,7 @@ def PROPER_MAP_EUCLIDEAN_FROM_COMPOSITION_RIGHT : thm :=
 initialize BPRP2 : HolMultiLib.Topology.PRP2 ←
   ioB "setupPRP2" (HolMultiLib.Topology.setupPRP2 deps BEUC BCLO BLOC BCPT BPCR1 BPRP1).run
 
--- PRP2 (topology.ml 9141-9276)
+-- PRP2 (topology.ml 9142-9277)
 def PROPER_MAP_FSTCART : thm := BPRP2.PROPER_MAP_FSTCART
 def CLOSED_MAP_FSTCART : thm := BPRP2.CLOSED_MAP_FSTCART
 def PROPER_MAP_SNDCART : thm := BPRP2.PROPER_MAP_SNDCART
@@ -1830,7 +1831,7 @@ initialize BSPP : HolMultiLib.Topology.SPP ←
     (HolMultiLib.Topology.setupSPP deps BEUC BCLO BLOC BSEQ BCPT BCPP1 BNST BCNO BCSL
       BSQC).run
 
--- SPP (topology.ml 9277-9444)
+-- SPP (topology.ml 9278-9445)
 def PROPER_MAP_SEQUENTIALLY_IMP : thm := BSPP.PROPER_MAP_SEQUENTIALLY_IMP
 def PROPER_MAP_SEQUENTIALLY_REV : thm := BSPP.PROPER_MAP_SEQUENTIALLY_REV
 def PROPER_MAP_SEQUENTIALLY : thm := BSPP.PROPER_MAP_SEQUENTIALLY
@@ -1846,7 +1847,7 @@ initialize BHSP : HolMultiLib.Topology.HSP ←
     (HolMultiLib.Topology.setupHSP deps BEUC BCLO BLOC BLPT BCLS1 BLIM1 BLIM2 BARI BCNT1
       BCSL BCLC).run
 
--- HSP (topology.ml 9445-9649)
+-- HSP (topology.ml 9446-9650)
 def LIM_LIFT_DOT : thm := BHSP.LIM_LIFT_DOT
 def CONTINUOUS_AT_LIFT_DOT : thm := BHSP.CONTINUOUS_AT_LIFT_DOT
 def CONTINUOUS_ON_LIFT_DOT : thm := BHSP.CONTINUOUS_ON_LIFT_DOT
@@ -1871,7 +1872,7 @@ def OPEN_POSITIVE_ORTHANT : thm := BHSP.OPEN_POSITIVE_ORTHANT
 initialize BCIH : HolMultiLib.Topology.CIH ←
   ioB "setupCIH" (HolMultiLib.Topology.setupCIH deps BBAL BINT BCLS1 BFRO1 BHSP).run
 
--- CIH (topology.ml 9650-9830)
+-- CIH (topology.ml 9651-9831)
 def INTERIOR_HALFSPACE_LE : thm := BCIH.INTERIOR_HALFSPACE_LE
 def INTERIOR_HALFSPACE_GE : thm := BCIH.INTERIOR_HALFSPACE_GE
 def INTERIOR_HALFSPACE_COMPONENT_LE : thm := BCIH.INTERIOR_HALFSPACE_COMPONENT_LE
@@ -1896,7 +1897,7 @@ def DIM_NONEMPTY_INTERIOR : thm := BCIH.DIM_NONEMPTY_INTERIOR
 initialize BUBH : HolMultiLib.Topology.UBH ←
   ioB "setupUBH" (HolMultiLib.Topology.setupUBH deps BBND1 BBND2 BCIH).run
 
--- UBH (topology.ml 9831-9905)
+-- UBH (topology.ml 9832-9906)
 def UNBOUNDED_HALFSPACE_COMPONENT_LE : thm := BUBH.UNBOUNDED_HALFSPACE_COMPONENT_LE
 def UNBOUNDED_HALFSPACE_COMPONENT_GE : thm := BUBH.UNBOUNDED_HALFSPACE_COMPONENT_GE
 def UNBOUNDED_HALFSPACE_COMPONENT_LT : thm := BUBH.UNBOUNDED_HALFSPACE_COMPONENT_LT
@@ -1910,7 +1911,7 @@ initialize BECF : HolMultiLib.Topology.ECF ←
   ioB "setupECF"
     (HolMultiLib.Topology.setupECF deps BCLO BLPT BCLS1 BSEQ BSQC BCMS BIDC BCLC BHSP).run
 
--- ECF (topology.ml 9906-10061)
+-- ECF (topology.ml 9907-10062)
 def FORALL_IN_INTERMEDIATE_CLOSURE : thm := BECF.FORALL_IN_INTERMEDIATE_CLOSURE
 def FORALL_IN_INTERMEDIATE_CLOSURE_EQ : thm := BECF.FORALL_IN_INTERMEDIATE_CLOSURE_EQ
 def CONTINUOUS_LE_ON_INTERMEDIATE_CLOSURE : thm := BECF.CONTINUOUS_LE_ON_INTERMEDIATE_CLOSURE
@@ -1934,7 +1935,7 @@ initialize BCUC : HolMultiLib.Topology.CUC ←
     (HolMultiLib.Topology.setupCUC deps BEUC BCWL BCLS1 BNET BLIM1 BLIM2 BUNQ BCNT1 BCNO
       BCSL BSQC BIDC).run
 
--- CUC (topology.ml 10062-10230)
+-- CUC (topology.ml 10063-10231)
 def CONTINUOUS_ON_INTERMEDIATE_CLOSURE : thm := BCUC.CONTINUOUS_ON_INTERMEDIATE_CLOSURE
 def CONTINUOUS_ON_INTERMEDIATE_CLOSURE_EQ : thm := BCUC.CONTINUOUS_ON_INTERMEDIATE_CLOSURE_EQ
 def CONTINUOUS_ON_CLOSURE : thm := BCUC.CONTINUOUS_ON_CLOSURE
@@ -1956,7 +1957,7 @@ initialize BCCE : HolMultiLib.Topology.CCE ←
     (HolMultiLib.Topology.setupCCE deps BEUC BCLS1 BLIM1 BBND1 BCPT BCMP BCNO BCSL BSQC BLCP
       BECF BCUC).run
 
--- CCE (topology.ml 10231-10420)
+-- CCE (topology.ml 10232-10421)
 def UNIFORMLY_CONTINUOUS_IMP_CAUCHY_CONTINUOUS : thm :=
   BCCE.UNIFORMLY_CONTINUOUS_IMP_CAUCHY_CONTINUOUS
 def CONTINUOUS_CLOSED_IMP_CAUCHY_CONTINUOUS : thm := BCCE.CONTINUOUS_CLOSED_IMP_CAUCHY_CONTINUOUS
@@ -1976,7 +1977,7 @@ initialize BINV : HolMultiLib.Topology.INV ←
     (HolMultiLib.Topology.setupINV deps BLOC BCON BINT BNET BCNT1 BCSL BCMB BIDC BCLC BLCP
       BECF).run
 
--- INV (topology.ml 10421-10574)
+-- INV (topology.ml 10422-10575)
 def CONTINUOUS_AT_COMPOSE_EQ : thm := BINV.CONTINUOUS_AT_COMPOSE_EQ
 def CONTINUOUS_AT_TRANSLATION : thm := BINV.CONTINUOUS_AT_TRANSLATION
 def CONTINUOUS_AT_LINEAR_IMAGE : thm := BINV.CONTINUOUS_AT_LINEAR_IMAGE
@@ -1992,7 +1993,7 @@ def CONTINUOUS_LEVELSET_OPEN : thm := BINV.CONTINUOUS_LEVELSET_OPEN
 initialize BARC : HolMultiLib.Topology.ARC ←
   ioB "setupARC" (HolMultiLib.Topology.setupARC deps BEUC BINT BBND1 BCMB BIDC BCLC).run
 
--- ARC (topology.ml 10575-10663)
+-- ARC (topology.ml 10576-10664)
 def OPEN_SCALING : thm := BARC.OPEN_SCALING
 def OPEN_SCALING_EQ : thm := BARC.OPEN_SCALING_EQ
 def OPEN_NEGATIONS : thm := BARC.OPEN_NEGATIONS
@@ -2006,7 +2007,7 @@ def OPEN_SUMS : thm := BARC.OPEN_SUMS
 initialize BHEM : HolMultiLib.Topology.HEM ←
   ioB "setupHEM" (HolMultiLib.Topology.setupHEM deps BEUC BCLO BBAL BLOC BCLS1 BCPT BARC).run
 
--- HEM (topology.ml 10664-10854)
+-- HEM (topology.ml 10665-10855)
 def UPPER_HEMICONTINUOUS : thm := BHEM.UPPER_HEMICONTINUOUS
 def LOWER_HEMICONTINUOUS : thm := BHEM.LOWER_HEMICONTINUOUS
 def OPEN_MAP_IFF_LOWER_HEMICONTINUOUS_PREIMAGE : thm :=
@@ -2018,7 +2019,7 @@ def UPPER_LOWER_HEMICONTINUOUS_EXPLICIT : thm := BHEM.UPPER_LOWER_HEMICONTINUOUS
 initialize BCCM1 : HolMultiLib.Topology.CCM1 ←
   ioB "setupCCM1" (HolMultiLib.Topology.setupCCM1 deps BCLO BCON BCLS1).run
 
--- CCM1 (topology.ml 10855-11066)
+-- CCM1 (topology.ml 10856-11067)
 def connected_component : thm := BCCM1.connected_component
 def CONNECTED_COMPONENT_OF_EUCLIDEAN : thm := BCCM1.CONNECTED_COMPONENT_OF_EUCLIDEAN
 def CONNECTED_COMPONENT_IN : thm := BCCM1.CONNECTED_COMPONENT_IN
@@ -2053,7 +2054,7 @@ def CONNECTED_EQ_CONNECTED_COMPONENT_EQ : thm := BCCM1.CONNECTED_EQ_CONNECTED_CO
 initialize BCCM2 : HolMultiLib.Topology.CCM2 ←
   ioB "setupCCM2" (HolMultiLib.Topology.setupCCM2 deps BEUC BLOC BLPT BCLS1 BCLS2 BCCM1).run
 
--- CCM2 (topology.ml 11067-11337)
+-- CCM2 (topology.ml 11068-11338)
 def CONNECTED_COMPONENT_IDEMP : thm := BCCM2.CONNECTED_COMPONENT_IDEMP
 def CONNECTED_COMPONENT_UNIQUE : thm := BCCM2.CONNECTED_COMPONENT_UNIQUE
 def JOINABLE_CONNECTED_COMPONENT_EQ : thm := BCCM2.JOINABLE_CONNECTED_COMPONENT_EQ
@@ -2076,7 +2077,7 @@ initialize BCPN1 : HolMultiLib.Topology.CPN1 ←
   ioB "setupCPN1"
     (HolMultiLib.Topology.setupCPN1 deps BEUC BCON BBND1 BCPT BCLC BCCM1 BCCM2).run
 
--- CPN1 (topology.ml 11338-11509)
+-- CPN1 (topology.ml 11339-11510)
 def components : thm := BCPN1.components
 def EUCLIDEAN_CONNECTED_COMPONENTS_OF : thm := BCPN1.EUCLIDEAN_CONNECTED_COMPONENTS_OF
 def PAIRWISE_SEPARATED_COMPONENTS : thm := BCPN1.PAIRWISE_SEPARATED_COMPONENTS
@@ -2101,7 +2102,7 @@ def CONTINUOUS_ON_COMPONENTS_GEN : thm := BCPN1.CONTINUOUS_ON_COMPONENTS_GEN
 initialize BCPN2 : HolMultiLib.Topology.CPN2 ←
   ioB "setupCPN2" (HolMultiLib.Topology.setupCPN2 deps BEUC BCON BCLC BCCM1 BCCM2 BCPN1).run
 
--- CPN2 (topology.ml 11510-11757)
+-- CPN2 (topology.ml 11511-11758)
 def CONTINUOUS_ON_COMPONENTS_FINITE : thm := BCPN2.CONTINUOUS_ON_COMPONENTS_FINITE
 def COMPONENTS_NONOVERLAP : thm := BCPN2.COMPONENTS_NONOVERLAP
 def COMPONENTS_EQ : thm := BCPN2.COMPONENTS_EQ
@@ -2134,7 +2135,7 @@ initialize BCPN3 : HolMultiLib.Topology.CPN3 ←
     (HolMultiLib.Topology.setupCPN3 deps BCLO BLOC BCON BINT BCLS1 BFRO1 BCCM1 BCCM2 BCPN1
       BCPN2).run
 
--- CPN3 (topology.ml 11758-11994)
+-- CPN3 (topology.ml 11759-11995)
 def IN_COMPONENTS_UNIONS_COMPLEMENT : thm := BCPN3.IN_COMPONENTS_UNIONS_COMPLEMENT
 def CONNECTED_SUBSET_CLOPEN : thm := BCPN3.CONNECTED_SUBSET_CLOPEN
 def CLOPEN_UNIONS_COMPONENTS : thm := BCPN3.CLOPEN_UNIONS_COMPONENTS
@@ -2155,7 +2156,7 @@ initialize BUCC : HolMultiLib.Topology.UCC ←
     (HolMultiLib.Topology.setupUCC deps BEUC BBAL BCLS1 BLIM2 BBND1 BCPT BCMP BNST BCNO BCSL
       BSQC BCCE).run
 
--- UCC (topology.ml 11995-12181)
+-- UCC (topology.ml 11996-12182)
 def COMPACT_UNIFORMLY_EQUICONTINUOUS : thm := BUCC.COMPACT_UNIFORMLY_EQUICONTINUOUS
 def COMPACT_UNIFORMLY_CONTINUOUS : thm := BUCC.COMPACT_UNIFORMLY_CONTINUOUS
 def CONTINUOUS_EQ_CAUCHY_CONTINUOUS_CLOSED : thm := BUCC.CONTINUOUS_EQ_CAUCHY_CONTINUOUS_CLOSED
@@ -2171,9 +2172,9 @@ def CONTINUOUS_UNIFORMLY_CAUCHY_LIMIT : thm := BUCC.CONTINUOUS_UNIFORMLY_CAUCHY_
 initialize BLFR : HolMultiLib.Topology.LFR ←
   ioB "setupLFR"
     (HolMultiLib.Topology.setupLFR deps BEUC BCLO BLPT BLIM1 BLIM2 BBND1 BCPT BCPP1 BCNT1 BCNO
-      BCSL BCLC BPRP1).run
+      BCSL BCLC BPRP1 BCWL).run
 
--- LFR (topology.ml 12182-12304)
+-- LFR (topology.ml 12183-12318)
 def OPEN_LIFT : thm := BLFR.OPEN_LIFT
 def LIMPT_APPROACHABLE_LIFT : thm := BLFR.LIMPT_APPROACHABLE_LIFT
 def CLOSED_LIFT : thm := BLFR.CLOSED_LIFT
@@ -2183,6 +2184,7 @@ def CONTINUOUS_LIFT_NORM_COMPOSE : thm := BLFR.CONTINUOUS_LIFT_NORM_COMPOSE
 def CONTINUOUS_ON_LIFT_NORM_COMPOSE : thm := BLFR.CONTINUOUS_ON_LIFT_NORM_COMPOSE
 def CONTINUOUS_AT_LIFT_NORM : thm := BLFR.CONTINUOUS_AT_LIFT_NORM
 def CONTINUOUS_ON_LIFT_NORM : thm := BLFR.CONTINUOUS_ON_LIFT_NORM
+def CONTINUOUS_MAP_NORM : thm := BLFR.CONTINUOUS_MAP_NORM
 def PROPER_MAP_NORM_SIMPLE : thm := BLFR.PROPER_MAP_NORM_SIMPLE
 def PROPER_MAP_NORM : thm := BLFR.PROPER_MAP_NORM
 def CLOSED_MAP_NORM : thm := BLFR.CLOSED_MAP_NORM
@@ -2196,7 +2198,7 @@ initialize BDST : HolMultiLib.Topology.DST ←
   ioB "setupDST"
     (HolMultiLib.Topology.setupDST deps BCLO BBAL BCBL BBND1 BBND2 BCPT BLCP BLFR).run
 
--- DST (topology.ml 12305-12374)
+-- DST (topology.ml 12319-12388)
 def COMPACT_ATTAINS_SUP : thm := BDST.COMPACT_ATTAINS_SUP
 def COMPACT_ATTAINS_INF : thm := BDST.COMPACT_ATTAINS_INF
 def CONTINUOUS_ATTAINS_SUP : thm := BDST.CONTINUOUS_ATTAINS_SUP
@@ -2208,7 +2210,7 @@ initialize BSMI : HolMultiLib.Topology.SMI ←
   ioB "setupSMI"
     (HolMultiLib.Topology.setupSMI deps BCWL BNET BLIM1 BARI BUNQ BCNT1 BCSL BCMB BCMS).run
 
--- SMI (topology.ml 12375-12505)
+-- SMI (topology.ml 12389-12519)
 def LIM_MUL : thm := BSMI.LIM_MUL
 def LIM_LIFT_POW : thm := BSMI.LIM_LIFT_POW
 def LIM_LIFT_PRODUCT : thm := BSMI.LIM_LIFT_PRODUCT
@@ -2232,7 +2234,7 @@ initialize BPCA1 : HolMultiLib.Topology.PCA1 ←
     (HolMultiLib.Topology.setupPCA1 deps BEUC BCON BLPT BCLS1 BLIM1 BARI BCNT1 BCSL BCMS BIDC
       BLCP BCCM1 BCCM2 BCPN1).run
 
--- PCA1 (topology.ml 12506-12695)
+-- PCA1 (topology.ml 12520-12709)
 def CONTINUOUS_MAP_PASTECART : thm := BPCA1.CONTINUOUS_MAP_PASTECART
 def LIM_PASTECART : thm := BPCA1.LIM_PASTECART
 def LIM_PASTECART_EQ : thm := BPCA1.LIM_PASTECART_EQ
@@ -2254,7 +2256,7 @@ initialize BPCA2 : HolMultiLib.Topology.PCA2 ←
     (HolMultiLib.Topology.setupPCA2 deps BLOC BCON BCLS2 BFRO1 BCPP1 BCSL BCMS BLCP BPCR1
       BPCR2 BDST BPCA1).run
 
--- PCA2 (topology.ml 12696-12876)
+-- PCA2 (topology.ml 12710-12890)
 def CLOSED_IN_PCROSS : thm := BPCA2.CLOSED_IN_PCROSS
 def CLOSED_IN_PCROSS_EQ : thm := BPCA2.CLOSED_IN_PCROSS_EQ
 def FRONTIER_PCROSS : thm := BPCA2.FRONTIER_PCROSS
@@ -2277,7 +2279,7 @@ initialize BDIA1 : HolMultiLib.Topology.DIA1 ←
   ioB "setupDIA1"
     (HolMultiLib.Topology.setupDIA1 deps BEUC BBAL BCLS1 BCBL BBND1 BBND2 BCPT).run
 
--- DIA1 (topology.ml 12877-13042)
+-- DIA1 (topology.ml 12891-13056)
 def diameter : thm := BDIA1.diameter
 def MDIAMETER_EUCLIDEAN : thm := BDIA1.MDIAMETER_EUCLIDEAN
 def DIAMETER_BOUNDED : thm := BDIA1.DIAMETER_BOUNDED
@@ -2302,7 +2304,7 @@ def DIAMETER_BALL : thm := BDIA1.DIAMETER_BALL
 initialize BDIA2 : HolMultiLib.Topology.DIA2 ←
   ioB "setupDIA2" (HolMultiLib.Topology.setupDIA2 deps BBND1 BBND2 BDIA1).run
 
--- DIA2 (topology.ml 13043-13120)
+-- DIA2 (topology.ml 13057-13134)
 def DIAMETER_SCALING : thm := BDIA2.DIAMETER_SCALING
 def DIAMETER_AFFINITY : thm := BDIA2.DIAMETER_AFFINITY
 def DIAMETER_SUMS : thm := BDIA2.DIAMETER_SUMS
@@ -2315,7 +2317,7 @@ initialize BCCC : HolMultiLib.Topology.CCC ←
     (HolMultiLib.Topology.setupCCC deps BCLO BLPT BCLS1 BFRO1 BLIM2 BARI BSEQ BBND2 BCPT BCMP
       BPCA2 BDIA1).run
 
--- CCC (topology.ml 13121-13354)
+-- CCC (topology.ml 13135-13368)
 def CLOSED_SCALING : thm := BCCC.CLOSED_SCALING
 def CLOSED_NEGATIONS : thm := BCCC.CLOSED_NEGATIONS
 def COMPACT_CLOSED_SUMS : thm := BCCC.COMPACT_CLOSED_SUMS
@@ -2338,7 +2340,7 @@ def DIAMETER_LT_SUMS_LEFT : thm := BCCC.DIAMETER_LT_SUMS_LEFT
 initialize BSEP : HolMultiLib.Topology.SEP ←
   ioB "setupSEP" (HolMultiLib.Topology.setupSEP deps BBAL BDST BCCC).run
 
--- SEP (topology.ml 13355-13440)
+-- SEP (topology.ml 13369-13454)
 def COMPACT_SHRINK_ENCLOSING_BALL : thm := BSEP.COMPACT_SHRINK_ENCLOSING_BALL
 def COMPACT_SHRINK_ENCLOSING_BALL_INFTY : thm := BSEP.COMPACT_SHRINK_ENCLOSING_BALL_INFTY
 def SEPARATE_POINT_CLOSED : thm := BSEP.SEPARATE_POINT_CLOSED
@@ -2350,7 +2352,7 @@ initialize BUCS : HolMultiLib.Topology.UCS ←
     (HolMultiLib.Topology.setupUCS deps BCLO BBAL BINT BCLS1 BCBL BBND2 BBLS BCPT BCPP1 BCPP2
       BARC BCCC).run
 
--- UCS (topology.ml 13441-13590)
+-- UCS (topology.ml 13455-13604)
 def CLOSED_UNION_COMPACT_SUBSETS : thm := BUCS.CLOSED_UNION_COMPACT_SUBSETS
 def OPEN_UNION_COMPACT_SUBSETS : thm := BUCS.OPEN_UNION_COMPACT_SUBSETS
 
@@ -2359,7 +2361,7 @@ initialize BCGR : HolMultiLib.Topology.CGR ←
     (HolMultiLib.Topology.setupCGR deps BCLO BLOC BLPT BCSL BCMS BIDC BCLC BLCP BPCR1 BPRP2
       BPCA2).run
 
--- CGR (topology.ml 13591-13661)
+-- CGR (topology.ml 13605-13675)
 def CONTINUOUS_CLOSED_GRAPH_GEN : thm := BCGR.CONTINUOUS_CLOSED_GRAPH_GEN
 def CONTINUOUS_CLOSED_GRAPH_EQ : thm := BCGR.CONTINUOUS_CLOSED_GRAPH_EQ
 def CONTINUOUS_CLOSED_GRAPH : thm := BCGR.CONTINUOUS_CLOSED_GRAPH
@@ -2370,7 +2372,7 @@ initialize BITV1 : HolMultiLib.Topology.ITV1 ←
     (HolMultiLib.Topology.setupITV1 deps BEUC BLPT BINT BCLS1 BFRO1 BLIM2 BRLM BARI BBND1
       BSMI).run
 
--- ITV1 (topology.ml 13662-13860)
+-- ITV1 (topology.ml 13676-13874)
 def OPEN_INTERVAL_LEMMA : thm := BITV1.OPEN_INTERVAL_LEMMA
 def OPEN_INTERVAL : thm := BITV1.OPEN_INTERVAL
 def CLOSED_INTERVAL : thm := BITV1.CLOSED_INTERVAL
@@ -2391,7 +2393,7 @@ def INTERVAL_TRANSLATION : thm := BITV1.INTERVAL_TRANSLATION
 initialize BITV2 : HolMultiLib.Topology.ITV2 ←
   ioB "setupITV2" (HolMultiLib.Topology.setupITV2 deps BBAL BBND1 BDIA1 BITV1).run
 
--- ITV2 (topology.ml 13861-14055)
+-- ITV2 (topology.ml 13875-14069)
 def EMPTY_AS_INTERVAL : thm := BITV2.EMPTY_AS_INTERVAL
 def UNIT_INTERVAL_NONEMPTY : thm := BITV2.UNIT_INTERVAL_NONEMPTY
 def IMAGE_STRETCH_INTERVAL : thm := BITV2.IMAGE_STRETCH_INTERVAL
@@ -2407,7 +2409,7 @@ initialize BITV3 : HolMultiLib.Topology.ITV3 ←
   ioB "setupITV3"
     (HolMultiLib.Topology.setupITV3 deps BCLO BBAL BCON BCBL BBND1 BBLS BCPT BITV1).run
 
--- ITV3 (topology.ml 14056-14190)
+-- ITV3 (topology.ml 14070-14204)
 def IMAGE_TWIZZLE_INTERVAL : thm := BITV3.IMAGE_TWIZZLE_INTERVAL
 def EQ_INTERVAL : thm := BITV3.EQ_INTERVAL
 def CLOSED_INTERVAL_EQ : thm := BITV3.CLOSED_INTERVAL_EQ
@@ -2420,7 +2422,7 @@ def EQ_BALLS : thm := BITV3.EQ_BALLS
 initialize BR1A : HolMultiLib.Topology.R1A ←
   ioB "setupR1A" (HolMultiLib.Topology.setupR1A deps BBAL).run
 
--- R1A (topology.ml 14191-14378)
+-- R1A (topology.ml 14205-14392)
 def IN_INTERVAL_1 : thm := BR1A.IN_INTERVAL_1
 def REAL_INTERVAL_INTERVAL : thm := BR1A.REAL_INTERVAL_INTERVAL
 def INTERVAL_REAL_INTERVAL : thm := BR1A.INTERVAL_REAL_INTERVAL
@@ -2451,7 +2453,7 @@ def CLOSED_DIFF_OPEN_INTERVAL_1 : thm := BR1A.CLOSED_DIFF_OPEN_INTERVAL_1
 initialize BR1B : HolMultiLib.Topology.R1B ←
   ioB "setupR1B" (HolMultiLib.Topology.setupR1B deps BSEG BCON BBND2 BHSP BITV1 BR1A).run
 
--- R1B (topology.ml 14379-14554)
+-- R1B (topology.ml 14393-14568)
 def INTERVAL_1 : thm := BR1B.INTERVAL_1
 def SEGMENT_1 : thm := BR1B.SEGMENT_1
 def OPEN_SEGMENT_1 : thm := BR1B.OPEN_SEGMENT_1
@@ -2463,7 +2465,7 @@ def BOUNDED_SEPARATION_1D : thm := BR1B.BOUNDED_SEPARATION_1D
 initialize BIVG1 : HolMultiLib.Topology.IVG1 ←
   ioB "setupIVG1" (HolMultiLib.Topology.setupIVG1 deps BBND1 BCPT BLFR BDST BITV2).run
 
--- IVG1 (topology.ml 14555-14753)
+-- IVG1 (topology.ml 14569-14767)
 def is_interval : thm := BIVG1.is_interval
 def IS_INTERVAL_INTERVAL : thm := BIVG1.IS_INTERVAL_INTERVAL
 def IS_INTERVAL_EMPTY : thm := BIVG1.IS_INTERVAL_EMPTY
@@ -2480,7 +2482,7 @@ def IS_REALINTERVAL_IS_INTERVAL : thm := BIVG1.IS_REALINTERVAL_IS_INTERVAL
 initialize BIVG2 : HolMultiLib.Topology.IVG2 ←
   ioB "setupIVG2" (HolMultiLib.Topology.setupIVG2 deps BBAL BITV3 BIVG1).run
 
--- IVG2 (topology.ml 14754-14916)
+-- IVG2 (topology.ml 14768-14930)
 def IS_INTERVAL_PCROSS : thm := BIVG2.IS_INTERVAL_PCROSS
 def IS_INTERVAL_PCROSS_EQ : thm := BIVG2.IS_INTERVAL_PCROSS_EQ
 def IS_INTERVAL_INTER : thm := BIVG2.IS_INTERVAL_INTER
@@ -2494,7 +2496,7 @@ def INTERVAL_EQ_SING : thm := BIVG2.INTERVAL_EQ_SING
 initialize BIVG3 : HolMultiLib.Topology.IVG3 ←
   ioB "setupIVG3" (HolMultiLib.Topology.setupIVG3 deps BCLS1 BFRO1 BIVG1 BIVG2).run
 
--- IVG3 (topology.ml 14917-15054)
+-- IVG3 (topology.ml 14931-15068)
 def IS_INTERVAL_SCALING : thm := BIVG3.IS_INTERVAL_SCALING
 def IS_INTERVAL_SCALING_EQ : thm := BIVG3.IS_INTERVAL_SCALING_EQ
 def IS_INTERVAL_REFLECT : thm := BIVG3.IS_INTERVAL_REFLECT
@@ -2504,7 +2506,7 @@ def UNION_INTERVAL_SUBSET_INTERVAL : thm := BIVG3.UNION_INTERVAL_SUBSET_INTERVAL
 initialize BLCB : HolMultiLib.Topology.LCB ←
   ioB "setupLCB" (HolMultiLib.Topology.setupLCB deps BLIM1 BARI BUNQ BHSP).run
 
--- LCB (topology.ml 15055-15156)
+-- LCB (topology.ml 15069-15170)
 def LIM_COMPONENT_UBOUND : thm := BLCB.LIM_COMPONENT_UBOUND
 def LIM_COMPONENT_LBOUND : thm := BLCB.LIM_COMPONENT_LBOUND
 def LIM_COMPONENT_EQ : thm := BLCB.LIM_COMPONENT_EQ
@@ -2519,7 +2521,7 @@ initialize BCLB : HolMultiLib.Topology.CLB ←
     (HolMultiLib.Topology.setupCLB deps BBAL BLOC BCLS1 BCLS2 BCBL BCPT BCSL BCLC BLCP
       BHSP).run
 
--- CLB (topology.ml 15157-15266)
+-- CLB (topology.ml 15171-15280)
 def IMAGE_CLOSURE_SUBSET : thm := BCLB.IMAGE_CLOSURE_SUBSET
 def CLOSURE_IMAGE_CLOSURE : thm := BCLB.CLOSURE_IMAGE_CLOSURE
 def CLOSURE_IMAGE_BOUNDED : thm := BCLB.CLOSURE_IMAGE_BOUNDED
@@ -2534,7 +2536,7 @@ initialize BIMF : HolMultiLib.Topology.IMF ←
     (HolMultiLib.Topology.setupIMF deps BINT BCLS1 BFRO1 BLIM2 BUNQ BSEQ BCPT BNST BLCP BPRP1
       BSPP BCUC BCLB).run
 
--- IMF (topology.ml 15267-15389)
+-- IMF (topology.ml 15281-15403)
 def PROPER_MAP_ESCAPES_FROM_IMAGE : thm := BIMF.PROPER_MAP_ESCAPES_FROM_IMAGE
 def FRONTIER_PROPER_MAP_IMAGE_SUBSET_GEN : thm := BIMF.FRONTIER_PROPER_MAP_IMAGE_SUBSET_GEN
 def FRONTIER_PROPER_MAP_IMAGE_SUBSET : thm := BIMF.FRONTIER_PROPER_MAP_IMAGE_SUBSET
@@ -2549,7 +2551,7 @@ initialize BLRU : HolMultiLib.Topology.LRU ←
     (HolMultiLib.Topology.setupLRU deps BCLO BLPT BCLS2 BEVT BLIM1 BLIM2 BCSL BCMS BIDC BCLC
       BHSP).run
 
--- LRU (topology.ml 15390-15551)
+-- LRU (topology.ml 15404-15565)
 def LIM_WITHIN_UNION : thm := BLRU.LIM_WITHIN_UNION
 def CONTINUOUS_ON_UNION : thm := BLRU.CONTINUOUS_ON_UNION
 def CONTINUOUS_ON_CASES : thm := BLRU.CONTINUOUS_ON_CASES
@@ -2563,7 +2565,7 @@ def CONTINUOUS_ON_CLOPEN_INDICATOR : thm := BLRU.CONTINUOUS_ON_CLOPEN_INDICATOR
 initialize BLLO : HolMultiLib.Topology.LLO ←
   ioB "setupLLO" (HolMultiLib.Topology.setupLLO deps BLIM1 BARI BCNT1 BCSL).run
 
--- LLO (topology.ml 15552-15673); LIM_NULL_ONORM is rebound at 15619, as in HOL Light
+-- LLO (topology.ml 15566-15687); LIM_NULL_ONORM is rebound at 15619, as in HOL Light
 def LIM_NULL_ONORM : thm := BLLO.LIM_NULL_ONORM
 def LIM_NULL_ONORM_COMPONENTWISE : thm := BLLO.LIM_NULL_ONORM_COMPONENTWISE
 def LIM_NULL_MATRIX_ONORM : thm := BLLO.LIM_NULL_MATRIX_ONORM
@@ -2575,7 +2577,7 @@ def CONTINUOUS_ON_MATRIX_COMPONENTWISE : thm := BLLO.CONTINUOUS_ON_MATRIX_COMPON
 initialize BMFV : HolMultiLib.Topology.MFV ←
   ioB "setupMFV" (HolMultiLib.Topology.setupMFV deps BLIM1 BCNT1 BCSL BLCP BLLO).run
 
--- MFV (topology.ml 15674-15785)
+-- MFV (topology.ml 15688-15799)
 def CONTINUOUS_MATRIX_VECTOR_MUL : thm := BMFV.CONTINUOUS_MATRIX_VECTOR_MUL
 def CONTINUOUS_ON_MATRIX_VECTOR_MUL : thm := BMFV.CONTINUOUS_ON_MATRIX_VECTOR_MUL
 def CONTINUOUS_MATRIX_MUL : thm := BMFV.CONTINUOUS_MATRIX_MUL
@@ -2593,7 +2595,7 @@ initialize BIVT : HolMultiLib.Topology.IVT ←
     (HolMultiLib.Topology.setupIVT deps BSEG BCON BLIM2 BARI BBND1 BCMS BLCP BHSP BLFR
       BSMI).run
 
--- IVT (topology.ml 15786-15977)
+-- IVT (topology.ml 15800-15991)
 def CONNECTED_IVT_HYPERPLANE : thm := BIVT.CONNECTED_IVT_HYPERPLANE
 def CONNECTED_IVT_COMPONENT : thm := BIVT.CONNECTED_IVT_COMPONENT
 def MAPPING_CONNECTED_ONTO_SEGMENT : thm := BIVT.MAPPING_CONNECTED_ONTO_SEGMENT
@@ -2603,7 +2605,7 @@ def BOUNDED_DECREASING_CONVERGENT : thm := BIVT.BOUNDED_DECREASING_CONVERGENT
 initialize BHMA : HolMultiLib.Topology.HMA ←
   ioB "setupHMA" (HolMultiLib.Topology.setupHMA deps BEUC BCNO BCSL BIDC BLCP).run
 
--- HMA (topology.ml 15978-16160)
+-- HMA (topology.ml 15992-16174)
 def homeomorphism : thm := BHMA.homeomorphism
 def homeomorphic : thm := BHMA.homeomorphic
 def HOMEOMORPHISM : thm := BHMA.HOMEOMORPHISM
@@ -2636,7 +2638,7 @@ initialize BHMB : HolMultiLib.Topology.HMB ←
   ioB "setupHMB"
     (HolMultiLib.Topology.setupHMB deps BCNO BCSL BCMS BIDC BLCP BQUO1 BPCA1 BHMA).run
 
--- HMB (topology.ml 16161-16348)
+-- HMB (topology.ml 16175-16362)
 def HOMEOMORPHISM_COUNTABILITY : thm := BHMB.HOMEOMORPHISM_COUNTABILITY
 def HOMEOMORPHIC_EMPTY : thm := BHMB.HOMEOMORPHIC_EMPTY
 def HOMEOMORPHIC_MINIMAL : thm := BHMB.HOMEOMORPHIC_MINIMAL
@@ -2661,7 +2663,7 @@ initialize BHMC : HolMultiLib.Topology.HMC ←
     (HolMultiLib.Topology.setupHMC deps BBAL BCSL BCMS BIDC BLCP BQUO1 BSPP BPCA1 BLRU BHMA
       BHMB).run
 
--- HMC (topology.ml 16349-16554)
+-- HMC (topology.ml 16363-16568)
 def HOMEOMORPHIC_SCALING_LEFT : thm := BHMC.HOMEOMORPHIC_SCALING_LEFT
 def HOMEOMORPHIC_SCALING_RIGHT : thm := BHMC.HOMEOMORPHIC_SCALING_RIGHT
 def HOMEOMORPHIC_SUBSPACES : thm := BHMC.HOMEOMORPHIC_SUBSPACES
@@ -2680,7 +2682,7 @@ def HOMEOMORPHIC_GRAPH : thm := BHMC.HOMEOMORPHIC_GRAPH
 initialize BIOM : HolMultiLib.Topology.IOM ←
   ioB "setupIOM" (HolMultiLib.Topology.setupIOM deps BEUC BLOC BIDC BCLC BPRP1 BHMA).run
 
--- IOM (topology.ml 16555-16692)
+-- IOM (topology.ml 16569-16706)
 def CONTINUOUS_ON_INVERSE_OPEN_MAP : thm := BIOM.CONTINUOUS_ON_INVERSE_OPEN_MAP
 def CONTINUOUS_ON_INVERSE_CLOSED_MAP : thm := BIOM.CONTINUOUS_ON_INVERSE_CLOSED_MAP
 def CONTINUOUS_INVERSE_INJECTIVE_PROPER_MAP : thm := BIOM.CONTINUOUS_INVERSE_INJECTIVE_PROPER_MAP
@@ -2697,7 +2699,7 @@ initialize BTFH1 : HolMultiLib.Topology.TFH1 ←
     (HolMultiLib.Topology.setupTFH1 deps BEUC BCLS1 BCSL BLCP BCCM1 BCCM2 BCPN1 BHMA
       BIOM).run
 
--- TFH1 (topology.ml 16693-16872)
+-- TFH1 (topology.ml 16707-16886)
 def HOMEOMORPHISM_OPEN_IN_EQ : thm := BTFH1.HOMEOMORPHISM_OPEN_IN_EQ
 def HOMEOMORPHISM_OPENNESS : thm := BTFH1.HOMEOMORPHISM_OPENNESS
 def HOMEOMORPHISM_CLOSED_IN_EQ : thm := BTFH1.HOMEOMORPHISM_CLOSED_IN_EQ
@@ -2716,7 +2718,7 @@ initialize BTFH2 : HolMultiLib.Topology.TFH2 ←
     (HolMultiLib.Topology.setupTFH2 deps BEUC BLOC BBND1 BCPT BCSL BCMS BIDC BCLC BLCP BQUO1
       BCCC BHMA BTFH1).run
 
--- TFH2 (topology.ml 16873-17070)
+-- TFH2 (topology.ml 16887-17084)
 def DERIVED_SET_OF_TRANSLATION : thm := BTFH2.DERIVED_SET_OF_TRANSLATION
 def CLOSURE_OF_TRANSLATION : thm := BTFH2.CLOSURE_OF_TRANSLATION
 def INTERIOR_OF_TRANSLATION : thm := BTFH2.INTERIOR_OF_TRANSLATION
@@ -2735,7 +2737,7 @@ initialize BCHP : HolMultiLib.Topology.CHP ←
   ioB "setupCHP"
     (HolMultiLib.Topology.setupCHP deps BBAL BCSL BCMS BIDC BLCP BOCM1 BHMA BHMB BIOM).run
 
--- CHP (topology.ml 17071-17219)
+-- CHP (topology.ml 17085-17233)
 def HOMEOMORPHISM_FROM_COMPOSITION_SURJECTIVE : thm :=
   BCHP.HOMEOMORPHISM_FROM_COMPOSITION_SURJECTIVE
 def HOMEOMORPHISM_FROM_COMPOSITION_INJECTIVE : thm :=
@@ -2756,7 +2758,7 @@ initialize BOPC : HolMultiLib.Topology.OPC ←
     (HolMultiLib.Topology.setupOPC deps BEUC BBAL BLOC BCLS1 BCPT BCPP1 BCPP2 BCNT1 BCSL BLCP
       BHMA BTFH1 BTFH2 BCHP).run
 
--- OPC (topology.ml 17220-17325)
+-- OPC (topology.ml 17234-17339)
 def HOMEOMORPHISM_ONE_POINT_COMPACTIFICATIONS : thm :=
   BOPC.HOMEOMORPHISM_ONE_POINT_COMPACTIFICATIONS
 def HOMEOMORPHIC_ONE_POINT_COMPACTIFICATIONS : thm :=
@@ -2768,7 +2770,7 @@ initialize BHOI : HolMultiLib.Topology.HOI ←
     (HolMultiLib.Topology.setupHOI deps BBAL BNET BCSL BCMB BCMS BIDC BHSP BLFR BSMI BR1A BLRU
       BHMA BHMB).run
 
--- HOI (topology.ml 17326-17546)
+-- HOI (topology.ml 17340-17560)
 def HOMEOMORPHIC_OPEN_INTERVALS_1 : thm := BHOI.HOMEOMORPHIC_OPEN_INTERVALS_1
 def HOMEOMORPHIC_OPEN_INTERVAL_UNIV_1 : thm := BHOI.HOMEOMORPHIC_OPEN_INTERVAL_UNIV_1
 def HOMEOMORPHIC_OPEN_INTERVALS : thm := BHOI.HOMEOMORPHIC_OPEN_INTERVALS
@@ -2779,7 +2781,7 @@ initialize BCRD1 : HolMultiLib.Topology.CRD1 ←
   ioB "setupCRD1"
     (HolMultiLib.Topology.setupCRD1 deps BBAL BINT BCBL BCCM1 BITV2 BR1A BIVT BHMA BHOI).run
 
--- CRD1 (topology.ml 17547-17725)
+-- CRD1 (topology.ml 17561-17739)
 def CARD_EQ_EUCLIDEAN : thm := BCRD1.CARD_EQ_EUCLIDEAN
 def UNCOUNTABLE_EUCLIDEAN : thm := BCRD1.UNCOUNTABLE_EUCLIDEAN
 def CARD_EQ_INTERVAL : thm := BCRD1.CARD_EQ_INTERVAL
@@ -2806,7 +2808,7 @@ initialize BCRD2 : HolMultiLib.Topology.CRD2 ←
     (HolMultiLib.Topology.setupCRD2 deps BCLO BBAL BCON BCBL BCMS BLCP BCCM1 BCPN1 BLRU
       BCRD1).run
 
--- CRD2 (topology.ml 17726-17923)
+-- CRD2 (topology.ml 17740-17937)
 def SMALL_IMP_TOTALLY_DISCONNECTED : thm := BCRD2.SMALL_IMP_TOTALLY_DISCONNECTED
 def FINITE_IMP_TOTALLY_DISCONNECTED : thm := BCRD2.FINITE_IMP_TOTALLY_DISCONNECTED
 def CONTINUOUS_DISCONNECTED_RANGE_CONSTANT_EQ : thm :=
@@ -2824,7 +2826,7 @@ def CONTINUOUS_CARD_LT_RANGE_CONSTANT : thm := BCRD2.CONTINUOUS_CARD_LT_RANGE_CO
 initialize BHYP : HolMultiLib.Topology.HYP ←
   ioB "setupHYP" (HolMultiLib.Topology.setupHYP deps BLCP BHMA).run
 
--- HYP (topology.ml 17924-18004)
+-- HYP (topology.ml 17938-18018)
 def HOMEOMORPHIC_HYPERPLANES : thm := BHYP.HOMEOMORPHIC_HYPERPLANES
 def HOMEOMORPHIC_HYPERPLANE_STANDARD_HYPERPLANE : thm :=
   BHYP.HOMEOMORPHIC_HYPERPLANE_STANDARD_HYPERPLANE
@@ -2837,7 +2839,7 @@ initialize BISM : HolMultiLib.Topology.ISM ←
     (HolMultiLib.Topology.setupISM deps BBAL BLPT BCBL BCPT BCMP BCPP1 BCPP2 BSQC BLCP
       BDST).run
 
--- ISM (topology.ml 18005-18108)
+-- ISM (topology.ml 18019-18122)
 def CAUCHY_ISOMETRIC : thm := BISM.CAUCHY_ISOMETRIC
 def COMPLETE_ISOMETRIC_IMAGE : thm := BISM.COMPLETE_ISOMETRIC_IMAGE
 def INJECTIVE_IMP_ISOMETRIC : thm := BISM.INJECTIVE_IMP_ISOMETRIC
@@ -2848,7 +2850,7 @@ initialize BLIO : HolMultiLib.Topology.LIO ←
     (HolMultiLib.Topology.setupLIO deps BEUC BCLO BLOC BINT BCLS1 BFRO1 BBND1 BCPT BCLC BLCP
       BINV BCLB BISM).run
 
--- LIO (topology.ml 18109-18271)
+-- LIO (topology.ml 18123-18285)
 def OPEN_SURJECTIVE_LINEAR_IMAGE : thm := BLIO.OPEN_SURJECTIVE_LINEAR_IMAGE
 def OPEN_BIJECTIVE_LINEAR_IMAGE_EQ : thm := BLIO.OPEN_BIJECTIVE_LINEAR_IMAGE_EQ
 def OPEN_INVERTIBLE_LINEAR_IMAGE : thm := BLIO.OPEN_INVERTIBLE_LINEAR_IMAGE
@@ -2865,7 +2867,7 @@ def FRONTIER_BIJECTIVE_LINEAR_IMAGE : thm := BLIO.FRONTIER_BIJECTIVE_LINEAR_IMAG
 initialize BCOR : HolMultiLib.Topology.COR ←
   ioB "setupCOR" (HolMultiLib.Topology.setupCOR deps BEUC BLPT BCMP BLIO).run
 
--- COR (topology.ml 18272-18421)
+-- COR (topology.ml 18286-18435)
 def IN_INTERIOR_LINEAR_IMAGE : thm := BCOR.IN_INTERIOR_LINEAR_IMAGE
 def LINEAR_OPEN_MAPPING : thm := BCOR.LINEAR_OPEN_MAPPING
 def INTERIOR_INJECTIVE_LINEAR_IMAGE : thm := BCOR.INTERIOR_INJECTIVE_LINEAR_IMAGE
@@ -2886,7 +2888,7 @@ initialize BESP : HolMultiLib.Topology.ESP ←
   ioB "setupESP"
     (HolMultiLib.Topology.setupESP deps BINT BCLS1 BFRO1 BFRO2 BCPP2 BARC BCCC BLIO BCOR).run
 
--- ESP (topology.ml 18422-18524)
+-- ESP (topology.ml 18436-18538)
 def INTERIOR_SCALING : thm := BESP.INTERIOR_SCALING
 def INTERIOR_AFFINITY : thm := BESP.INTERIOR_AFFINITY
 def CLOSURE_SCALING : thm := BESP.CLOSURE_SCALING
@@ -2901,7 +2903,7 @@ def SYMMETRIC_CLOSURE : thm := BESP.SYMMETRIC_CLOSURE
 initialize BCSS : HolMultiLib.Topology.CSS ←
   ioB "setupCSS" (HolMultiLib.Topology.setupCSS deps BCLO BHSP).run
 
--- CSS (topology.ml 18525-18603)
+-- CSS (topology.ml 18539-18617)
 def SUBSPACE_SUBSTANDARD : thm := BCSS.SUBSPACE_SUBSTANDARD
 def CLOSED_SUBSTANDARD : thm := BCSS.CLOSED_SUBSTANDARD
 def DIM_SUBSTANDARD : thm := BCSS.DIM_SUBSTANDARD
@@ -2911,7 +2913,7 @@ initialize BCSB1 : HolMultiLib.Topology.CSB1 ←
     (HolMultiLib.Topology.setupCSB1 deps BBAL BCLS1 BCBL BBND1 BCPT BCMP BCPP1 BCPP2 BCSL BCLC
       BLCP BISM BCSS).run
 
--- CSB1 (topology.ml 18604-18800)
+-- CSB1 (topology.ml 18618-18814)
 def CLOSED_SUBSPACE : thm := BCSB1.CLOSED_SUBSPACE
 def COMPLETE_SUBSPACE : thm := BCSB1.COMPLETE_SUBSPACE
 def CLOSED_SPAN : thm := BCSB1.CLOSED_SPAN
@@ -2927,14 +2929,14 @@ initialize BCSB2 : HolMultiLib.Topology.CSB2 ←
     (HolMultiLib.Topology.setupCSB2 deps BBND1 BCPT BCMS BCLC BLCP BPCR1 BPRP1 BHMA BIOM
       BCSB1).run
 
--- CSB2 (topology.ml 18801-18885)
+-- CSB2 (topology.ml 18815-18899)
 def BASIS_COORDINATES_CONTINUOUS : thm := BCSB2.BASIS_COORDINATES_CONTINUOUS
 def COMPLEMENTARY_SUM_HOMEOMORPHIC_PCROSS : thm := BCSB2.COMPLEMENTARY_SUM_HOMEOMORPHIC_PCROSS
 
 initialize BAFI : HolMultiLib.Topology.AFI ←
   ioB "setupAFI" (HolMultiLib.Topology.setupAFI deps).run
 
--- AFI (topology.ml 18886-18964)
+-- AFI (topology.ml 18900-18978)
 def AFFINITY_INVERSES : thm := BAFI.AFFINITY_INVERSES
 def REAL_AFFINITY_LE : thm := BAFI.REAL_AFFINITY_LE
 def REAL_LE_AFFINITY : thm := BAFI.REAL_LE_AFFINITY
@@ -2951,7 +2953,7 @@ initialize BMID1 : HolMultiLib.Topology.MID1 ←
     (HolMultiLib.Topology.setupMID1 deps BBAL BLPT BLIM1 BLIM2 BARI BTRN BSEQ BCNT1 BCSL BSMI
       BLLO BMFV).run
 
--- MID1 (topology.ml 18965-19174)
+-- MID1 (topology.ml 18979-19188)
 def LIM_LIFT_DET : thm := BMID1.LIM_LIFT_DET
 def LIM_COFACTOR : thm := BMID1.LIM_COFACTOR
 def LIM_MATRIX_TRANSP : thm := BMID1.LIM_MATRIX_TRANSP
@@ -2969,14 +2971,14 @@ initialize BSYL : HolMultiLib.Topology.SYL ←
   ioB "setupSYL"
     (HolMultiLib.Topology.setupSYL deps BCLO BLPT BCBL BCMB BIDC BCLC BMID1).run
 
--- SYL (topology.ml 19175-19314)
+-- SYL (topology.ml 19189-19328)
 def SYLVESTER_DETERMINANT_IDENTITY : thm := BSYL.SYLVESTER_DETERMINANT_IDENTITY
 
 initialize BCFM : HolMultiLib.Topology.CFM ←
   ioB "setupCFM"
     (HolMultiLib.Topology.setupCFM deps BCLO BLPT BCBL BCMB BIDC BCLC BSMI BMID1).run
 
--- CFM (topology.ml 19315-19476)
+-- CFM (topology.ml 19329-19490)
 def COFACTOR_MATRIX_MUL : thm := BCFM.COFACTOR_MATRIX_MUL
 def DET_COFACTOR : thm := BCFM.DET_COFACTOR
 def INVERTIBLE_COFACTOR : thm := BCFM.INVERTIBLE_COFACTOR
@@ -2986,7 +2988,7 @@ def RANK_COFACTOR_EQ_FULL : thm := BCFM.RANK_COFACTOR_EQ_FULL
 initialize BCEZ : HolMultiLib.Topology.CEZ ←
   ioB "setupCEZ" (HolMultiLib.Topology.setupCEZ deps BCFM).run
 
--- CEZ (topology.ml 19477-19654)
+-- CEZ (topology.ml 19491-19668)
 def COFACTOR_EQ_0 : thm := BCEZ.COFACTOR_EQ_0
 def RANK_COFACTOR_EQ_1 : thm := BCEZ.RANK_COFACTOR_EQ_1
 def RANK_COFACTOR : thm := BCEZ.RANK_COFACTOR
@@ -2994,7 +2996,7 @@ def RANK_COFACTOR : thm := BCEZ.RANK_COFACTOR
 initialize BEIG : HolMultiLib.Topology.EIG ←
   ioB "setupEIG" (HolMultiLib.Topology.setupEIG deps BSYL).run
 
--- EIG (topology.ml 19655-19747)
+-- EIG (topology.ml 19669-19761)
 def SAME_EIGENVALUES_TRANSP : thm := BEIG.SAME_EIGENVALUES_TRANSP
 def SAME_EIGENVALUES_SIMILAR : thm := BEIG.SAME_EIGENVALUES_SIMILAR
 def SAME_EIGENVALUES_MATRIX_MUL : thm := BEIG.SAME_EIGENVALUES_MATRIX_MUL
@@ -3005,14 +3007,14 @@ def NORMAL_MATRIX_SAME_EIGENVECTORS_TRANSP : thm := BEIG.NORMAL_MATRIX_SAME_EIGE
 initialize BDOM : HolMultiLib.Topology.DOM ←
   ioB "setupDOM" (HolMultiLib.Topology.setupDOM deps BMID1).run
 
--- DOM (topology.ml 19748-19969)
+-- DOM (topology.ml 19762-19983)
 def DET_OPEN_MAP : thm := BDOM.DET_OPEN_MAP
 
 initialize BSAE : HolMultiLib.Topology.SAE ←
   ioB "setupSAE"
     (HolMultiLib.Topology.setupSAE deps BBAL BCPP1 BCPP2 BIDC BLCP BDST BCSB1).run
 
--- SAE (topology.ml 19970-20188)
+-- SAE (topology.ml 19984-20202)
 def SELF_ADJOINT_HAS_EIGENVECTOR_IN_SUBSPACE : thm :=
   BSAE.SELF_ADJOINT_HAS_EIGENVECTOR_IN_SUBSPACE
 def SELF_ADJOINT_HAS_EIGENVECTOR : thm := BSAE.SELF_ADJOINT_HAS_EIGENVECTOR
@@ -3025,7 +3027,7 @@ def EIGENVALUE_LOWERBOUND_DOT_EQ : thm := BSAE.EIGENVALUE_LOWERBOUND_DOT_EQ
 initialize BDIG : HolMultiLib.Topology.DIG ←
   ioB "setupDIG" (HolMultiLib.Topology.setupDIG deps BSAE).run
 
--- DIG (topology.ml 20185-20283)
+-- DIG (topology.ml 20199-20297)
 def SYMMETRIC_MATRIX_DIAGONALIZABLE_EXPLICIT : thm :=
   BDIG.SYMMETRIC_MATRIX_DIAGONALIZABLE_EXPLICIT
 def SYMMETRIC_MATRIX_IMP_DIAGONALIZABLE : thm := BDIG.SYMMETRIC_MATRIX_IMP_DIAGONALIZABLE
@@ -3035,7 +3037,7 @@ def SYMMETRIC_MATRIX_EQ_DIAGONALIZABLE_ALT : thm := BDIG.SYMMETRIC_MATRIX_EQ_DIA
 initialize BGDR1 : HolMultiLib.Topology.GDR1 ←
   ioB "setupGDR1" (HolMultiLib.Topology.setupGDR1 deps BDIG).run
 
--- GDR1 (topology.ml 20284-20395)
+-- GDR1 (topology.ml 20298-20409)
 def TRACE_MATRIX_INV_LMUL : thm := BGDR1.TRACE_MATRIX_INV_LMUL
 def TRACE_MATRIX_INV_RMUL : thm := BGDR1.TRACE_MATRIX_INV_RMUL
 def IDEMPOTENT_MATRIX_TRACE_EQ_RANK : thm := BGDR1.IDEMPOTENT_MATRIX_TRACE_EQ_RANK
@@ -3045,7 +3047,7 @@ def POSITIVE_DEFINITE_EIGENVALUES : thm := BGDR1.POSITIVE_DEFINITE_EIGENVALUES
 initialize BPSC : HolMultiLib.Topology.PSC ←
   ioB "setupPSC" (HolMultiLib.Topology.setupPSC deps BDIG).run
 
--- PSC (topology.ml 20396-20491)
+-- PSC (topology.ml 20410-20505)
 def POSITIVE_SEMIDEFINITE_COVARIANCE_EQ : thm := BPSC.POSITIVE_SEMIDEFINITE_COVARIANCE_EQ
 def POSITIVE_SEMIDEFINITE_COVARIANCE_EQ_ALT : thm :=
   BPSC.POSITIVE_SEMIDEFINITE_COVARIANCE_EQ_ALT
@@ -3053,7 +3055,7 @@ def POSITIVE_SEMIDEFINITE_COVARIANCE_EQ_ALT : thm :=
 initialize BPSS : HolMultiLib.Topology.PSS ←
   ioB "setupPSS" (HolMultiLib.Topology.setupPSS deps BPSC).run
 
--- PSS (topology.ml 20492-20670)
+-- PSS (topology.ml 20506-20684)
 def POSITIVE_SEMIDEFINITE_SQRT_EQ : thm := BPSS.POSITIVE_SEMIDEFINITE_SQRT_EQ
 def POSITIVE_SEMIDEFINITE_SQRT : thm := BPSS.POSITIVE_SEMIDEFINITE_SQRT
 def POSITIVE_DEFINITE_COVARIANCE_EQ : thm := BPSS.POSITIVE_DEFINITE_COVARIANCE_EQ
@@ -3082,7 +3084,7 @@ initialize BPSO : HolMultiLib.Topology.PSO ←
     (HolMultiLib.Topology.setupPSO deps BCMS BIDC BLCP BHSP BECF BSMI BITV1 BITV2 BR1A BMID1
       BCFM BDIG BPSC BPSS).run
 
--- PSO (topology.ml 20671-20804)
+-- PSO (topology.ml 20685-20818)
 def POSITIVE_SEMIDEFINITE_AND_ORTHOGONAL : thm := BPSO.POSITIVE_SEMIDEFINITE_AND_ORTHOGONAL
 def POSITIVE_SEMIDEFINITE_INV : thm := BPSO.POSITIVE_SEMIDEFINITE_INV
 def POSITIVE_DEFINITE_INV : thm := BPSO.POSITIVE_DEFINITE_INV
@@ -3093,7 +3095,7 @@ def POSITIVE_DEFINITE_COFACTOR_EQ : thm := BPSO.POSITIVE_DEFINITE_COFACTOR_EQ
 initialize BPSU : HolMultiLib.Topology.PSU ←
   ioB "setupPSU" (HolMultiLib.Topology.setupPSU deps BDIG BPSC).run
 
--- PSU (topology.ml 20805-20891)
+-- PSU (topology.ml 20819-20905)
 def POSITIVE_SEMIDEFINITE_COVARIANCE_UNIQUE : thm :=
   BPSU.POSITIVE_SEMIDEFINITE_COVARIANCE_UNIQUE
 def POSITIVE_SEMIDEFINITE_SQRT_UNIQUE : thm := BPSU.POSITIVE_SEMIDEFINITE_SQRT_UNIQUE
@@ -3101,7 +3103,7 @@ def POSITIVE_SEMIDEFINITE_SQRT_UNIQUE : thm := BPSU.POSITIVE_SEMIDEFINITE_SQRT_U
 initialize BPSM : HolMultiLib.Topology.PSM ←
   ioB "setupPSM" (HolMultiLib.Topology.setupPSM deps BEIG BDIG BGDR1 BPSC BPSS).run
 
--- PSM (topology.ml 20892-21085)
+-- PSM (topology.ml 20906-21099)
 def POSITIVE_SEMIDEFINITE_MUL_EQ : thm := BPSM.POSITIVE_SEMIDEFINITE_MUL_EQ
 def POSITIVE_SEMIDEFINITE_MUL : thm := BPSM.POSITIVE_SEMIDEFINITE_MUL
 def POSITIVE_DEFINITE_MUL_EQ : thm := BPSM.POSITIVE_DEFINITE_MUL_EQ
@@ -3116,7 +3118,7 @@ def POSITIVE_DEFINITE_2 : thm := BPSM.POSITIVE_DEFINITE_2
 initialize BODT : HolMultiLib.Topology.ODT ←
   ioB "setupODT" (HolMultiLib.Topology.setupODT deps BDIG).run
 
--- ODT (topology.ml 21086-21336)
+-- ODT (topology.ml 21100-21350)
 def REAL_LE_NORM_MATRIX_MUL_DET : thm := BODT.REAL_LE_NORM_MATRIX_MUL_DET
 def DET_LE_ONORM_POW : thm := BODT.DET_LE_ONORM_POW
 def ONORM_INVERSE_DET_LE_ONORM_POW : thm := BODT.ONORM_INVERSE_DET_LE_ONORM_POW
@@ -3125,7 +3127,7 @@ def ONORM_INVERSE_DET_LE_ONORM_POW_ALT : thm := BODT.ONORM_INVERSE_DET_LE_ONORM_
 initialize BPSN : HolMultiLib.Topology.PSN ←
   ioB "setupPSN" (HolMultiLib.Topology.setupPSN deps BSAE BGDR1 BPSC BPSS).run
 
--- PSN (topology.ml 21337-21516)
+-- PSN (topology.ml 21351-21530)
 def HADAMARD_INEQUALITY_PSD : thm := BPSN.HADAMARD_INEQUALITY_PSD
 def POSITIVE_DEFINITE_NEARBY : thm := BPSN.POSITIVE_DEFINITE_NEARBY
 def POSITIVE_DEFINITE_EQ_CONGRUENT_IDENTITY : thm :=
@@ -3139,13 +3141,13 @@ def POSITIVE_DEFINITE_HADAMARD_PRODUCT : thm := BPSN.POSITIVE_DEFINITE_HADAMARD_
 initialize BRPD : HolMultiLib.Topology.RPD ←
   ioB "setupRPD" (HolMultiLib.Topology.setupRPD deps BDIG).run
 
--- RPD (topology.ml 21513-21702)
+-- RPD (topology.ml 21527-21716)
 def RIGHT_POLAR_DECOMPOSITION : thm := BRPD.RIGHT_POLAR_DECOMPOSITION
 
 initialize BPDC : HolMultiLib.Topology.PDC ←
   ioB "setupPDC" (HolMultiLib.Topology.setupPDC deps BDIG BPSU BRPD).run
 
--- PDC (topology.ml 21703-21981)
+-- PDC (topology.ml 21717-21995)
 def LEFT_POLAR_DECOMPOSITION : thm := BPDC.LEFT_POLAR_DECOMPOSITION
 def RIGHT_POLAR_DECOMPOSITION_INVERTIBLE : thm := BPDC.RIGHT_POLAR_DECOMPOSITION_INVERTIBLE
 def LEFT_POLAR_DECOMPOSITION_INVERTIBLE : thm := BPDC.LEFT_POLAR_DECOMPOSITION_INVERTIBLE
@@ -3168,7 +3170,7 @@ initialize BSUM1 : HolMultiLib.Topology.SUM1 ←
   ioB "setupSUM1"
     (HolMultiLib.Topology.setupSUM1 deps BLIM1 BLIM2 BARI BUNQ BTRN BSEQ).run
 
--- SUM1 (topology.ml 21982-22159)
+-- SUM1 (topology.ml 21996-22173)
 def sums : thm := BSUM1.sums
 def infsum : thm := BSUM1.infsum
 def summable : thm := BSUM1.summable
@@ -3200,7 +3202,7 @@ def SERIES_VSUM : thm := BSUM1.SERIES_VSUM
 initialize BSUM2 : HolMultiLib.Topology.SUM2 ←
   ioB "setupSUM2" (HolMultiLib.Topology.setupSUM2 deps BLIM1 BLIM2 BPCA1 BSUM1).run
 
--- SUM2 (topology.ml 22160-22243)
+-- SUM2 (topology.ml 22174-22257)
 def SUMS_REINDEX : thm := BSUM2.SUMS_REINDEX
 def SUMS_REINDEX_GEN : thm := BSUM2.SUMS_REINDEX_GEN
 def SERIES_EVEN : thm := BSUM2.SERIES_EVEN
@@ -3210,7 +3212,7 @@ def SERIES_PASTECART : thm := BSUM2.SERIES_PASTECART
 initialize BSUM3 : HolMultiLib.Topology.SUM3 ←
   ioB "setupSUM3" (HolMultiLib.Topology.setupSUM3 deps BUNQ BLCB BSUM1 BSUM2).run
 
--- SUM3 (topology.ml 22244-22445)
+-- SUM3 (topology.ml 22258-22459)
 def SUMMABLE_LINEAR : thm := BSUM3.SUMMABLE_LINEAR
 def SUMMABLE_0 : thm := BSUM3.SUMMABLE_0
 def SUMMABLE_ADD : thm := BSUM3.SUMMABLE_ADD
@@ -3239,7 +3241,7 @@ def SERIES_BOUND : thm := BSUM3.SERIES_BOUND
 initialize BINF : HolMultiLib.Topology.INF ←
   ioB "setupINF" (HolMultiLib.Topology.setupINF deps BLIM2 BSUM1 BSUM2 BSUM3).run
 
--- INF (topology.ml 22446-22550)
+-- INF (topology.ml 22460-22564)
 def INFSUM_LINEAR : thm := BINF.INFSUM_LINEAR
 def INFSUM_0 : thm := BINF.INFSUM_0
 def INFSUM_ADD : thm := BINF.INFSUM_ADD
@@ -3256,7 +3258,7 @@ def INFSUM_ODD : thm := BINF.INFSUM_ODD
 initialize BCAU : HolMultiLib.Topology.CAU ←
   ioB "setupCAU" (HolMultiLib.Topology.setupCAU deps BCMP BSUM1 BSUM3).run
 
--- CAU (topology.ml 22551-22663)
+-- CAU (topology.ml 22565-22677)
 def SEQUENCE_CAUCHY_WLOG : thm := BCAU.SEQUENCE_CAUCHY_WLOG
 def VSUM_DIFF_LEMMA : thm := BCAU.VSUM_DIFF_LEMMA
 def NORM_VSUM_TRIVIAL_LEMMA : thm := BCAU.NORM_VSUM_TRIVIAL_LEMMA
@@ -3273,7 +3275,7 @@ initialize BCMT : HolMultiLib.Topology.CMT ←
   ioB "setupCMT"
     (HolMultiLib.Topology.setupCMT deps BLIM2 BBND1 BCMP BNST BSUM1 BSUM3 BCAU).run
 
--- CMT (topology.ml 22664-22843)
+-- CMT (topology.ml 22678-22857)
 def SERIES_CAUCHY_UNIFORM : thm := BCMT.SERIES_CAUCHY_UNIFORM
 def SERIES_GOESTOZERO : thm := BCMT.SERIES_GOESTOZERO
 def SUMMABLE_IMP_TOZERO : thm := BCMT.SUMMABLE_IMP_TOZERO
@@ -3289,7 +3291,7 @@ def SERIES_COMPARISON_UNIFORM : thm := BCMT.SERIES_COMPARISON_UNIFORM
 initialize BRAT : HolMultiLib.Topology.RAT ←
   ioB "setupRAT" (HolMultiLib.Topology.setupRAT deps BBND1 BBND2 BSUM1 BCAU BCMT).run
 
--- RAT (topology.ml 22844-23001)
+-- RAT (topology.ml 22858-23015)
 def SERIES_RATIO : thm := BRAT.SERIES_RATIO
 def SUMMABLE_RATIO : thm := BRAT.SUMMABLE_RATIO
 def SUMMABLE_REAL_GP : thm := BRAT.SUMMABLE_REAL_GP
@@ -3300,7 +3302,7 @@ initialize BDIR : HolMultiLib.Topology.DIR ←
     (HolMultiLib.Topology.setupDIR deps BLIM2 BARI BTRN BSEQ BBND1 BSUM1 BSUM3 BCAU BCMT
       BRAT).run
 
--- DIR (topology.ml 23002-23204)
+-- DIR (topology.ml 23016-23218)
 def SUMMABLE_BILINEAR_PARTIAL_PRE : thm := BDIR.SUMMABLE_BILINEAR_PARTIAL_PRE
 def SERIES_DIRICHLET_BILINEAR : thm := BDIR.SERIES_DIRICHLET_BILINEAR
 def SERIES_DIRICHLET : thm := BDIR.SERIES_DIRICHLET
@@ -3313,7 +3315,7 @@ def SUMMABLE_REARRANGE : thm := BDIR.SUMMABLE_REARRANGE
 initialize BTOE : HolMultiLib.Topology.TOE ←
   ioB "setupTOE" (HolMultiLib.Topology.setupTOE deps BLIM2 BARI BUNQ BTRN).run
 
--- TOE (topology.ml 23205-23335)
+-- TOE (topology.ml 23219-23349)
 def TOEPLITZ_BILINEAR_SERIES_NULL : thm := BTOE.TOEPLITZ_BILINEAR_SERIES_NULL
 def TOEPLITZ_BILINEAR_SERIES : thm := BTOE.TOEPLITZ_BILINEAR_SERIES
 
@@ -3321,7 +3323,7 @@ initialize BLBC : HolMultiLib.Topology.LBC ←
   ioB "setupLBC"
     (HolMultiLib.Topology.setupLBC deps BLIM1 BARI BUNQ BTRN BSEQ BBND1 BCMP BSMI).run
 
--- LBC (topology.ml 23336-23516)
+-- LBC (topology.ml 23350-23530)
 def LIM_BILINEAR_CONVOLUTION : thm := BLBC.LIM_BILINEAR_CONVOLUTION
 def LIM_CESARO : thm := BLBC.LIM_CESARO
 
@@ -3330,7 +3332,7 @@ initialize BSBL : HolMultiLib.Topology.SBL ←
     (HolMultiLib.Topology.setupSBL deps BLIM2 BARI BUNQ BTRN BSEQ BBND1 BCMP BSUM1 BCAU BCMT
       BTOE BLBC).run
 
--- SBL (topology.ml 23517-23648)
+-- SBL (topology.ml 23531-23662)
 def SERIES_BILINEAR : thm := BSBL.SERIES_BILINEAR
 def SERIES_BILINEAR_UNIQUE : thm := BSBL.SERIES_BILINEAR_UNIQUE
 def SUMMABLE_BILINEAR_LEFT : thm := BSBL.SUMMABLE_BILINEAR_LEFT
@@ -3339,7 +3341,7 @@ def SUMMABLE_BILINEAR_RIGHT : thm := BSBL.SUMMABLE_BILINEAR_RIGHT
 initialize BCSM : HolMultiLib.Topology.CSM ←
   ioB "setupCSM" (HolMultiLib.Topology.setupCSM deps BCMP BCAU BCMT BRAT).run
 
--- CSM (topology.ml 23649-23728)
+-- CSM (topology.ml 23663-23742)
 def CAUCHY_EQ_SUMMABLE : thm := BCSM.CAUCHY_EQ_SUMMABLE
 def CAUCHY_ABSOLUTELY_SUMMABLE_SUBSEQUENCE : thm := BCSM.CAUCHY_ABSOLUTELY_SUMMABLE_SUBSEQUENCE
 def ABSOLUTELY_SUMMABLE_IMP_CAUCHY : thm := BCSM.ABSOLUTELY_SUMMABLE_IMP_CAUCHY
@@ -3348,21 +3350,21 @@ def COMPLETE_ABSOLUTELY_SUMMABLE : thm := BCSM.COMPLETE_ABSOLUTELY_SUMMABLE
 initialize BBFX : HolMultiLib.Topology.BFX ←
   ioB "setupBFX" (HolMultiLib.Topology.setupBFX deps BLIM2 BCMP).run
 
--- BFX (topology.ml 23729-23837)
+-- BFX (topology.ml 23743-23851)
 def BANACH_FIX : thm := BBFX.BANACH_FIX
 
 initialize BEDF : HolMultiLib.Topology.EDF ←
   ioB "setupEDF"
     (HolMultiLib.Topology.setupEDF deps BLIM2 BARI BUNQ BCPT BCNO BSQC BLCP BPCR1).run
 
--- EDF (topology.ml 23838-23960)
+-- EDF (topology.ml 23852-23974)
 def EDELSTEIN_FIX : thm := BEDF.EDELSTEIN_FIX
 
 initialize BFXD : HolMultiLib.Topology.FXD ←
   ioB "setupFXD"
     (HolMultiLib.Topology.setupFXD deps BBAL BLIM2 BARI BCPT BCMS BCLC BLCB BBFX BEDF).run
 
--- FXD (topology.ml 23961-24077)
+-- FXD (topology.ml 23975-24091)
 def BANACH_FIX_ITER : thm := BFXD.BANACH_FIX_ITER
 def EDELSTEIN_FIX_ITER : thm := BFXD.EDELSTEIN_FIX_ITER
 def DINI : thm := BFXD.DINI
@@ -3372,7 +3374,7 @@ initialize BCLP : HolMultiLib.Topology.CLP ←
     (HolMultiLib.Topology.setupCLP deps BBAL BSEG BCON BINT BCLS1 BFRO1 BFRO2 BCBL BCNT1 BCNO
       BCSL BDST).run
 
--- CLP (topology.ml 24078-24256)
+-- CLP (topology.ml 24092-24270)
 def closest_point : thm := BCLP.closest_point
 def CLOSEST_POINT_EXISTS : thm := BCLP.CLOSEST_POINT_EXISTS
 def CLOSEST_POINT_IN_SET : thm := BCLP.CLOSEST_POINT_IN_SET
@@ -3393,7 +3395,7 @@ def CLOSEST_POINT_FRONTIER : thm := BCLP.CLOSEST_POINT_FRONTIER
 initialize BSDS : HolMultiLib.Topology.SDS ←
   ioB "setupSDS" (HolMultiLib.Topology.setupSDS deps).run
 
--- SDS (topology.ml 24257-24397)
+-- SDS (topology.ml 24271-24411)
 def setdist : thm := BSDS.setdist
 def SETDIST_EMPTY : thm := BSDS.SETDIST_EMPTY
 def SETDIST_POS_LE : thm := BSDS.SETDIST_POS_LE
@@ -3412,7 +3414,7 @@ def SETDIST_SCALING : thm := BSDS.SETDIST_SCALING
 initialize BSDU : HolMultiLib.Topology.SDU ←
   ioB "setupSDU" (HolMultiLib.Topology.setupSDU deps BBND1 BCNO BSDS).run
 
--- SDU (topology.ml 24398-24451)
+-- SDU (topology.ml 24412-24465)
 def SETDIST_UNIFORMLY_CONTINUOUS_ON : thm := BSDU.SETDIST_UNIFORMLY_CONTINUOUS_ON
 def SETDIST_UNIFORMLY_CONTINUOUS_ON_ALT : thm := BSDU.SETDIST_UNIFORMLY_CONTINUOUS_ON_ALT
 
@@ -3421,7 +3423,7 @@ initialize BSD2 : HolMultiLib.Topology.SD2 ←
     (HolMultiLib.Topology.setupSD2 deps BSEG BCON BINT BCLS1 BFRO1 BFRO2 BCNT1 BCNO BCSL BCMS
       BIDC BECF BLFR BSDS).run
 
--- SD2 (topology.ml 24452-24547)
+-- SD2 (topology.ml 24466-24561)
 def SETDIST_SING_TRIANGLE : thm := BSD2.SETDIST_SING_TRIANGLE
 def CONTINUOUS_AT_LIFT_SETDIST : thm := BSD2.CONTINUOUS_AT_LIFT_SETDIST
 def CONTINUOUS_ON_LIFT_SETDIST : thm := BSD2.CONTINUOUS_ON_LIFT_SETDIST
@@ -3437,7 +3439,7 @@ initialize BSD3 : HolMultiLib.Topology.SD3 ←
     (HolMultiLib.Topology.setupSD3 deps BSEG BCON BCLS1 BCLS2 BFRO1 BFRO2 BBND1 BCPT BCPP1
       BCPP2 BDST BCCC BCLP BSDS BSD2).run
 
--- SD3 (topology.ml 24548-24742)
+-- SD3 (topology.ml 24562-24756)
 def SETDIST_COMPACT_CLOSED : thm := BSD3.SETDIST_COMPACT_CLOSED
 def SETDIST_CLOSED_COMPACT : thm := BSD3.SETDIST_CLOSED_COMPACT
 def SETDIST_EQ_0_COMPACT_CLOSED : thm := BSD3.SETDIST_EQ_0_COMPACT_CLOSED
@@ -3464,7 +3466,7 @@ initialize BSD4 : HolMultiLib.Topology.SD4 ←
     (HolMultiLib.Topology.setupSD4 deps BEUC BCLO BBAL BCLS1 BCBL BBND1 BBLS BLCP BSDS BSD2
       BSD3).run
 
--- SD4 (topology.ml 24743-24827)
+-- SD4 (topology.ml 24757-24841)
 def SETDIST_BALLS : thm := BSD4.SETDIST_BALLS
 def OPEN_TRANSLATION_SUBSET_PREIMAGE : thm := BSD4.OPEN_TRANSLATION_SUBSET_PREIMAGE
 
@@ -3472,7 +3474,7 @@ initialize BUCD : HolMultiLib.Topology.UCD ←
   ioB "setupUCD"
     (HolMultiLib.Topology.setupUCD deps BBAL BLIM2 BARI BBND1 BCPT BCPP2 BCNO BSQC BSDS).run
 
--- UCD (topology.ml 24828-25009)
+-- UCD (topology.ml 24842-25023)
 def UNIFORMLY_CONTINUOUS_ON_SETDIST : thm := BUCD.UNIFORMLY_CONTINUOUS_ON_SETDIST
 def UNIFORMLY_CONTINUOUS_ON_SETDIST_EQ : thm := BUCD.UNIFORMLY_CONTINUOUS_ON_SETDIST_EQ
 
@@ -3480,7 +3482,7 @@ initialize BSPA : HolMultiLib.Topology.SPA ←
   ioB "setupSPA"
     (HolMultiLib.Topology.setupSPA deps BEUC BBAL BLOC BCON BCPT BARC BSDS BSD3).run
 
--- SPA (topology.ml 25010-25077)
+-- SPA (topology.ml 25024-25091)
 def OPEN_IN_SEPARATED_UNION : thm := BSPA.OPEN_IN_SEPARATED_UNION
 def CLOSED_IN_SEPARATED_UNION : thm := BSPA.CLOSED_IN_SEPARATED_UNION
 def COMPACT_IN_SEPARATED_UNION : thm := BSPA.COMPACT_IN_SEPARATED_UNION
@@ -3490,7 +3492,7 @@ initialize BSPB : HolMultiLib.Topology.SPB ←
   ioB "setupSPB"
     (HolMultiLib.Topology.setupSPB deps BEUC BCLO BBAL BCLS1 BBND1 BBND2 BCPT).run
 
--- SPB (topology.ml 25078-25195)
+-- SPB (topology.ml 25092-25209)
 def SEPARATION_CLOSURES : thm := BSPB.SEPARATION_CLOSURES
 def SEPARATION_NORMAL : thm := BSPB.SEPARATION_NORMAL
 def SEPARATION_NORMAL_LOCAL_CLOSURES : thm := BSPB.SEPARATION_NORMAL_LOCAL_CLOSURES
@@ -3507,7 +3509,7 @@ initialize BCLV : HolMultiLib.Topology.CLV ←
     (HolMultiLib.Topology.setupCLV deps BEUC BCLO BLOC BCON BLPT BCLS1 BCLS2 BCPT BCMS BCLC
       BSMI BSD2 BSD3 BSPB).run
 
--- CLV (topology.ml 25196-25291)
+-- CLV (topology.ml 25210-25305)
 def CLOSED_IN_EQ_CONTINUOUS_LEVELSET : thm := BCLV.CLOSED_IN_EQ_CONTINUOUS_LEVELSET
 def CLOSED_EQ_CONTINUOUS_LEVELSET : thm := BCLV.CLOSED_EQ_CONTINUOUS_LEVELSET
 def CONNECTED : thm := BCLV.CONNECTED
@@ -3520,7 +3522,7 @@ initialize BHDA : HolMultiLib.Topology.HDA ←
   ioB "setupHDA"
     (HolMultiLib.Topology.setupHDA deps BCLO BIDC BCLC BHSP BECF BSDS BSD2 BSD3).run
 
--- HDA (topology.ml 25292-25466)
+-- HDA (topology.ml 25306-25480)
 def hausdist : thm := BHDA.hausdist
 def HAUSDIST_POS_LE : thm := BHDA.HAUSDIST_POS_LE
 def HAUSDIST_POS_LT : thm := BHDA.HAUSDIST_POS_LT
@@ -3540,7 +3542,7 @@ initialize BHDB : HolMultiLib.Topology.HDB ←
     (HolMultiLib.Topology.setupHDB deps BBAL BCLS1 BLIM2 BBND1 BBND2 BCPT BCNO BSDS BSD2 BSD3
       BHDA).run
 
--- HDB (topology.ml 25467-25666)
+-- HDB (topology.ml 25481-25680)
 def REAL_HAUSDIST_LE : thm := BHDB.REAL_HAUSDIST_LE
 def REAL_HAUSDIST_LE_SUMS : thm := BHDB.REAL_HAUSDIST_LE_SUMS
 def REAL_LE_HAUSDIST : thm := BHDB.REAL_LE_HAUSDIST
@@ -3557,7 +3559,7 @@ initialize BHDC : HolMultiLib.Topology.HDC ←
     (HolMultiLib.Topology.setupHDC deps BBAL BLOC BCLS1 BBND1 BBND2 BCPT BCPP1 BHEM BSDS BSD2
       BSD3 BHDA BHDB).run
 
--- HDC (topology.ml 25667-25839)
+-- HDC (topology.ml 25681-25853)
 def UPPER_LOWER_HEMICONTINUOUS : thm := BHDC.UPPER_LOWER_HEMICONTINUOUS
 def HAUSDIST_NONTRIVIAL : thm := BHDC.HAUSDIST_NONTRIVIAL
 def HAUSDIST_NONTRIVIAL_ALT : thm := BHDC.HAUSDIST_NONTRIVIAL_ALT
@@ -3572,7 +3574,7 @@ initialize BHDD : HolMultiLib.Topology.HDD ←
     (HolMultiLib.Topology.setupHDD deps BBAL BCLS1 BCBL BBND1 BCPT BIDC BECF BCCC BSDS BSD3
       BSD4 BHDA BHDB BHDC).run
 
--- HDD (topology.ml 25840-25995)
+-- HDD (topology.ml 25854-26009)
 def HAUSDIST_COMPACT_SUMS : thm := BHDD.HAUSDIST_COMPACT_SUMS
 def HAUSDIST_SUMS_LE : thm := BHDD.HAUSDIST_SUMS_LE
 def HAUSDIST_SUMS_LE_LCANCEL : thm := BHDD.HAUSDIST_SUMS_LE_LCANCEL
@@ -3586,7 +3588,7 @@ initialize BHDE : HolMultiLib.Topology.HDE ←
     (HolMultiLib.Topology.setupHDE deps BBAL BLOC BCON BLPT BCLS1 BLIM2 BBND1 BBND2 BBLS BCPT
       BARC BDIA1 BDIA2 BSDS BSD2 BSD3 BHDA BHDB BHDC BHDD).run
 
--- HDE (topology.ml 25996-26133)
+-- HDE (topology.ml 26010-26147)
 def HAUSDIST_ALT : thm := BHDE.HAUSDIST_ALT
 def DIAMETERS_HAUSDIST_BOUND : thm := BHDE.DIAMETERS_HAUSDIST_BOUND
 def CONTINUOUS_DIAMETER : thm := BHDE.CONTINUOUS_DIAMETER
@@ -3596,7 +3598,7 @@ initialize BHDF : HolMultiLib.Topology.HDF ←
   ioB "setupHDF"
     (HolMultiLib.Topology.setupHDF deps BLIM2 BCPT BNST BSDS BSD3 BHDA BHDB).run
 
--- HDF (topology.ml 26134-26212)
+-- HDF (topology.ml 26148-26226)
 def HAUSDIST_COMPACT_INTERS_LIMIT : thm := BHDF.HAUSDIST_COMPACT_INTERS_LIMIT
 
 initialize BCHU : HolMultiLib.Topology.CHU ←
@@ -3604,28 +3606,28 @@ initialize BCHU : HolMultiLib.Topology.CHU ←
     (HolMultiLib.Topology.setupCHU deps BBAL BCLS1 BLIM2 BARI BUNQ BTRN BBND1 BBND2 BCPT BCMP
       BCMT BRAT BCSM BHDA BHDB BHDC).run
 
--- CHU (topology.ml 26213-26461)
+-- CHU (topology.ml 26227-26475)
 def COMPLETE_HAUSDIST_UNIV : thm := BCHU.COMPLETE_HAUSDIST_UNIV
 
 initialize BCHT : HolMultiLib.Topology.CHT ←
   ioB "setupCHT"
     (HolMultiLib.Topology.setupCHT deps BBAL BCLS1 BLIM2 BCPT BHDA BHDB BCHU).run
 
--- CHT (topology.ml 26462-26583)
+-- CHT (topology.ml 26476-26597)
 def COMPLETE_HAUSDIST : thm := BCHT.COMPLETE_HAUSDIST
 def TOTALLY_BOUNDED_HAUSDIST : thm := BCHT.TOTALLY_BOUNDED_HAUSDIST
 
 initialize BCHC : HolMultiLib.Topology.CHC ←
   ioB "setupCHC" (HolMultiLib.Topology.setupCHC deps BBND1 BCPT BHDA BHDC BCHT).run
 
--- CHC (topology.ml 26584-26716)
+-- CHC (topology.ml 26598-26730)
 def COMPACT_HAUSDIST : thm := BCHC.COMPACT_HAUSDIST
 
 initialize BISO : HolMultiLib.Topology.ISO ←
   ioB "setupISO"
     (HolMultiLib.Topology.setupISO deps BLOC BCLS1 BCPT BCMP BCSL BLCP BIOM BSDS BSD3).run
 
--- ISO (topology.ml 26717-26783)
+-- ISO (topology.ml 26731-26797)
 def ISOMETRY_IMP_OPEN_MAP : thm := BISO.ISOMETRY_IMP_OPEN_MAP
 def ISOMETRY_IMP_EMBEDDING : thm := BISO.ISOMETRY_IMP_EMBEDDING
 def ISOMETRY_IMP_HOMEOMORPHISM_COMPACT : thm :=
@@ -3636,7 +3638,7 @@ initialize BURY : HolMultiLib.Topology.URY ←
     (HolMultiLib.Topology.setupURY deps BEUC BCLO BLOC BSEG BLPT BCLS1 BCMS BSMI BSDS BSD2
       BSD3).run
 
--- URY (topology.ml 26784-26943)
+-- URY (topology.ml 26798-26957)
 def URYSOHN_LOCAL_STRONG : thm := BURY.URYSOHN_LOCAL_STRONG
 def URYSOHN_LOCAL : thm := BURY.URYSOHN_LOCAL
 def URYSOHN_STRONG : thm := BURY.URYSOHN_STRONG
@@ -3645,7 +3647,7 @@ def URYSOHN : thm := BURY.URYSOHN
 initialize BDYR : HolMultiLib.Topology.DYR ←
   ioB "setupDYR" (HolMultiLib.Topology.setupDYR deps BCLS1).run
 
--- DYR (topology.ml 26944-27006)
+-- DYR (topology.ml 26958-27020)
 def CLOSURE_DYADIC_RATIONALS : thm := BDYR.CLOSURE_DYADIC_RATIONALS
 def CLOSURE_RATIONAL_COORDINATES : thm := BDYR.CLOSURE_RATIONAL_COORDINATES
 def CLOSURE_DYADIC_RATIONALS_IN_OPEN_SET : thm :=
@@ -3655,8 +3657,9 @@ def CLOSURE_RATIONALS_IN_OPEN_SET : thm := BDYR.CLOSURE_RATIONALS_IN_OPEN_SET
 initialize BSEC : HolMultiLib.Topology.SEC ←
   ioB "setupSEC" (HolMultiLib.Topology.setupSEC deps BEUC BBAL BLOC BCLS1 BDYR).run
 
--- SEC (topology.ml 27007-27185)
+-- SEC (topology.ml 27021-27210)
 def UNIV_SECOND_COUNTABLE : thm := BSEC.UNIV_SECOND_COUNTABLE
+def SECOND_COUNTABLE_EUCLIDEAN : thm := BSEC.SECOND_COUNTABLE_EUCLIDEAN
 def UNIV_SECOND_COUNTABLE_SEQUENCE : thm := BSEC.UNIV_SECOND_COUNTABLE_SEQUENCE
 def SUBSET_SECOND_COUNTABLE : thm := BSEC.SUBSET_SECOND_COUNTABLE
 def SEPARABLE : thm := BSEC.SEPARABLE
@@ -3664,7 +3667,7 @@ def SEPARABLE : thm := BSEC.SEPARABLE
 initialize BLND : HolMultiLib.Topology.LND ←
   ioB "setupLND" (HolMultiLib.Topology.setupLND deps BEUC BLOC BCLS1 BDYR BSEC).run
 
--- LND (topology.ml 27186-27301)
+-- LND (topology.ml 27211-27326)
 def OPEN_SET_RATIONAL_COORDINATES : thm := BLND.OPEN_SET_RATIONAL_COORDINATES
 def OPEN_COUNTABLE_UNION_OPEN_INTERVALS : thm :=
   BLND.OPEN_COUNTABLE_UNION_OPEN_INTERVALS
@@ -3676,7 +3679,7 @@ def LINDELOF_OPEN_IN : thm := BLND.LINDELOF_OPEN_IN
 initialize BCDO : HolMultiLib.Topology.CDO ←
   ioB "setupCDO" (HolMultiLib.Topology.setupCDO deps BEUC BINT BCPT BSEC BLND).run
 
--- CDO (topology.ml 27302-27386)
+-- CDO (topology.ml 27327-27411)
 def COUNTABLE_DISJOINT_OPEN_IN_SUBSETS : thm :=
   BCDO.COUNTABLE_DISJOINT_OPEN_IN_SUBSETS
 def COUNTABLE_DISJOINT_OPEN_SUBSETS : thm := BCDO.COUNTABLE_DISJOINT_OPEN_SUBSETS
@@ -3689,7 +3692,7 @@ initialize BCEO : HolMultiLib.Topology.CEO ←
   ioB "setupCEO"
     (HolMultiLib.Topology.setupCEO deps BCLO BBAL BRLM BBLS BCPT BCPP1 BSEC).run
 
--- CEO (topology.ml 27387-27495)
+-- CEO (topology.ml 27412-27520)
 def CARD_EQ_OPEN_SETS : thm := BCEO.CARD_EQ_OPEN_SETS
 def CARD_EQ_CLOSED_SETS : thm := BCEO.CARD_EQ_CLOSED_SETS
 def CARD_EQ_COMPACT_SETS : thm := BCEO.CARD_EQ_COMPACT_SETS
@@ -3703,7 +3706,7 @@ initialize BCBX : HolMultiLib.Topology.CBX ←
   ioB "setupCBX"
     (HolMultiLib.Topology.setupCBX deps BBAL BLOC BLPT BCLS1 BRLM BCBL BBLS BCEO).run
 
--- CBX (topology.ml 27496-27573)
+-- CBX (topology.ml 27521-27598)
 def LIMPT_OF_CONDENSATION_POINTS : thm := BCBX.LIMPT_OF_CONDENSATION_POINTS
 def CONDENSATION_POINT_OF_CONDENSATION_POINTS : thm :=
   BCBX.CONDENSATION_POINT_OF_CONDENSATION_POINTS
@@ -3714,14 +3717,14 @@ def CANTOR_BENDIXSON : thm := BCBX.CANTOR_BENDIXSON
 initialize BDSC : HolMultiLib.Topology.DSC ←
   ioB "setupDSC" (HolMultiLib.Topology.setupDSC deps BLPT BCLS1 BDYR).run
 
--- DSC (topology.ml 27574-27619)
+-- DSC (topology.ml 27599-27644)
 def DISCRETE_IMP_COUNTABLE : thm := BDSC.DISCRETE_IMP_COUNTABLE
 def UNCOUNTABLE_CONTAINS_LIMIT_POINT : thm := BDSC.UNCOUNTABLE_CONTAINS_LIMIT_POINT
 
 initialize BLRL : HolMultiLib.Topology.LRL ←
   ioB "setupLRL" (HolMultiLib.Topology.setupLRL deps BLPT BNET BEVT BLIM1).run
 
--- LRL (topology.ml 27620-27712)
+-- LRL (topology.ml 27645-27737)
 def EVENTUALLY_WITHIN_RIGHT_ALT_GEN : thm := BLRL.EVENTUALLY_WITHIN_RIGHT_ALT_GEN
 def EVENTUALLY_WITHIN_RIGHT_ALT : thm := BLRL.EVENTUALLY_WITHIN_RIGHT_ALT
 def RIGHT_LIMIT_WITHIN_ALT : thm := BLRL.RIGHT_LIMIT_WITHIN_ALT
@@ -3740,7 +3743,7 @@ initialize BCTL : HolMultiLib.Topology.CTL ←
     (HolMultiLib.Topology.setupCTL deps BLOC BLPT BEVT BLIM1 BLIM2 BCNT1 BITV1 BITV3 BR1A
       BCDO).run
 
--- CTL (topology.ml 27713-27925)
+-- CTL (topology.ml 27738-27950)
 def COUNTABLE_TRIVIAL_RIGHT_LIMITS : thm := BCTL.COUNTABLE_TRIVIAL_RIGHT_LIMITS
 def COUNTABLE_TRIVIAL_LEFT_LIMITS : thm := BCTL.COUNTABLE_TRIVIAL_LEFT_LIMITS
 def COUNTABLE_NONCONTINUOUS_RIGHT_LIMITS : thm :=
@@ -3755,7 +3758,7 @@ initialize BCLH : HolMultiLib.Topology.CLH ←
     (HolMultiLib.Topology.setupCLH deps BEUC BCLO BBAL BLOC BLPT BCLS2 BLIM1 BLIM2 BRLM BUNQ
       BSEQ BBND1 BCPP1 BCSL BSQC BCLC BPRP1 BCCM1 BHMA BDSC).run
 
--- CLH (topology.ml 27926-28185)
+-- CLH (topology.ml 27951-28210)
 def CLOSED_LOCAL_HOMEOMORPHISM_IMP_PROPER_GEN : thm :=
   BCLH.CLOSED_LOCAL_HOMEOMORPHISM_IMP_PROPER_GEN
 def CLOSED_LOCAL_HOMEOMORPHISM_IMP_PROPER : thm :=
@@ -3765,7 +3768,7 @@ initialize BBRT : HolMultiLib.Topology.BRT ←
   ioB "setupBRT"
     (HolMultiLib.Topology.setupBRT deps BCLO BBAL BCON BBND1 BCPT BCPP1 BNST BCLV BSEC).run
 
--- BRT (topology.ml 28186-28313)
+-- BRT (topology.ml 28211-28338)
 def BROUWER_REDUCTION_THEOREM_GEN : thm := BBRT.BROUWER_REDUCTION_THEOREM_GEN
 def BROUWER_REDUCTION_THEOREM : thm := BBRT.BROUWER_REDUCTION_THEOREM
 def MINIMAL_CONTINUUM : thm := BBRT.MINIMAL_CONTINUUM
@@ -3775,7 +3778,7 @@ initialize BARZ : HolMultiLib.Topology.ARZ ←
     (HolMultiLib.Topology.setupARZ deps BBAL BCLS1 BLIM2 BBND1 BBND2 BCPT BCMP BCPP2 BNST
       BCNO BCCE BUCC BSEC).run
 
--- ARZ (topology.ml 28314-28492)
+-- ARZ (topology.ml 28339-28517)
 def FUNCTION_CONVERGENT_SUBSEQUENCE : thm := BARZ.FUNCTION_CONVERGENT_SUBSEQUENCE
 def ARZELA_ASCOLI : thm := BARZ.ARZELA_ASCOLI
 def ARZELA_ASCOLI_LIPSCHITZ : thm := BARZ.ARZELA_ASCOLI_LIPSCHITZ
@@ -3783,7 +3786,7 @@ def ARZELA_ASCOLI_LIPSCHITZ : thm := BARZ.ARZELA_ASCOLI_LIPSCHITZ
 initialize BLCY1 : HolMultiLib.Topology.LCY1 ←
   ioB "setupLCY1" (HolMultiLib.Topology.setupLCY1 deps BEUC BBAL BLOC BBND1 BDIA1).run
 
--- LCY1 (topology.ml 28493-28620)
+-- LCY1 (topology.ml 28518-28645)
 def locally : thm := BLCY1.locally
 def NEIGHBOURHOOD_BASE_OF_EUCLIDEAN : thm := BLCY1.NEIGHBOURHOOD_BASE_OF_EUCLIDEAN
 def LOCALLY_MONO : thm := BLCY1.LOCALLY_MONO
@@ -3799,7 +3802,7 @@ def LOCALLY_AND_SMALL_LE : thm := BLCY1.LOCALLY_AND_SMALL_LE
 initialize BLCY2 : HolMultiLib.Topology.LCY2 ←
   ioB "setupLCY2" (HolMultiLib.Topology.setupLCY2 deps BEUC BBAL BLOC BCPT BLND BLCY1).run
 
--- LCY2 (topology.ml 28621-28780)
+-- LCY2 (topology.ml 28646-28805)
 def LOCALLY_OPEN_BASIS : thm := BLCY2.LOCALLY_OPEN_BASIS
 def LOCALLY_AND_OPEN_IN_IDEMPOT : thm := BLCY2.LOCALLY_AND_OPEN_IN_IDEMPOT
 def LOCALLY_IMP_COUNTABLE_UNION_OF : thm := BLCY2.LOCALLY_IMP_COUNTABLE_UNION_OF
@@ -3810,7 +3813,7 @@ initialize BLCY3 : HolMultiLib.Topology.LCY3 ←
   ioB "setupLCY3"
     (HolMultiLib.Topology.setupLCY3 deps BEUC BBAL BLOC BCLS1 BCBL BPCR1 BLCY1).run
 
--- LCY3 (topology.ml 28781-28921)
+-- LCY3 (topology.ml 28806-28946)
 def LOCALLY_CLOSED_IN_EXPLICIT : thm := BLCY3.LOCALLY_CLOSED_IN_EXPLICIT
 def LOCALLY_CLOSED_IN : thm := BLCY3.LOCALLY_CLOSED_IN
 def LOCALLY_EMPTY : thm := BLCY3.LOCALLY_EMPTY
@@ -3824,7 +3827,7 @@ initialize BLCY4 : HolMultiLib.Topology.LCY4 ←
   ioB "setupLCY4"
     (HolMultiLib.Topology.setupLCY4 deps BLOC BCSL BCMS BIDC BLCP BHMA BLCY1 BLCY2).run
 
--- LCY4 (topology.ml 28922-29053)
+-- LCY4 (topology.ml 28947-29078)
 def HOMEOMORPHISM_LOCALLY : thm := BLCY4.HOMEOMORPHISM_LOCALLY
 def HOMEOMORPHIC_LOCALLY : thm := BLCY4.HOMEOMORPHIC_LOCALLY
 def LOCALLY_TRANSLATION : thm := BLCY4.LOCALLY_TRANSLATION
@@ -3836,7 +3839,7 @@ initialize BLCY5 : HolMultiLib.Topology.LCY5 ←
   ioB "setupLCY5"
     (HolMultiLib.Topology.setupLCY5 deps BEUC BLPT BRLM BCPT BCSL BLND BLCY1).run
 
--- LCY5 (topology.ml 29054-29142)
+-- LCY5 (topology.ml 29079-29167)
 def LOCALLY_COUNTABLE : thm := BLCY5.LOCALLY_COUNTABLE
 def LOCALLY_CONSTANT : thm := BLCY5.LOCALLY_CONSTANT
 def LOCALLY_CONTINUOUS_ON : thm := BLCY5.LOCALLY_CONTINUOUS_ON
@@ -3849,7 +3852,7 @@ initialize BLCC1 : HolMultiLib.Topology.LCC1 ←
     (HolMultiLib.Topology.setupLCC1 deps BEUC BCLO BBAL BLOC BCLS1 BCBL BBND1 BCPT BCPP1 BCPP2
       BLCY1).run
 
--- LCC1 (topology.ml 29143-29343)
+-- LCC1 (topology.ml 29168-29368)
 def LOCALLY_COMPACT_SPACE_SUBTOPOLOGY_EUCLIDEAN : thm :=
   BLCC1.LOCALLY_COMPACT_SPACE_SUBTOPOLOGY_EUCLIDEAN
 def LOCALLY_COMPACT : thm := BLCC1.LOCALLY_COMPACT
@@ -3867,11 +3870,12 @@ initialize BLCC2 : HolMultiLib.Topology.LCC2 ←
     (HolMultiLib.Topology.setupLCC2 deps BEUC BBAL BLOC BCPT BCPP1 BCPP2 BLCP BITV1 BITV2
       BIVG2 BHMA BCHP BLCY1 BLCY2 BLCY3 BLCY4 BLCC1).run
 
--- LCC2 (topology.ml 29344-29465)
+-- LCC2 (topology.ml 29369-29495)
 def IS_INTERVAL_LOCALLY_COMPACT_INTERVAL : thm :=
   BLCC2.IS_INTERVAL_LOCALLY_COMPACT_INTERVAL
 def IS_INTERVAL_IMP_LOCALLY_COMPACT : thm := BLCC2.IS_INTERVAL_IMP_LOCALLY_COMPACT
 def LOCALLY_COMPACT_UNIV : thm := BLCC2.LOCALLY_COMPACT_UNIV
+def LOCALLY_COMPACT_SPACE_EUCLIDEAN : thm := BLCC2.LOCALLY_COMPACT_SPACE_EUCLIDEAN
 def LOCALLY_COMPACT_INTER : thm := BLCC2.LOCALLY_COMPACT_INTER
 def LOCALLY_COMPACT_OPEN_IN : thm := BLCC2.LOCALLY_COMPACT_OPEN_IN
 def LOCALLY_COMPACT_CLOSED_IN : thm := BLCC2.LOCALLY_COMPACT_CLOSED_IN
@@ -3888,7 +3892,7 @@ initialize BLCC3 : HolMultiLib.Topology.LCC3 ←
     (HolMultiLib.Topology.setupLCC3 deps BEUC BCLO BBAL BLOC BLPT BCLS1 BCBL BBND1 BCPT BPCR1
       BHMC BLCY3 BLCC1 BLCC2).run
 
--- LCC3 (topology.ml 29466-29604)
+-- LCC3 (topology.ml 29496-29634)
 def LOCALLY_COMPACT_CLOSED_UNION : thm := BLCC3.LOCALLY_COMPACT_CLOSED_UNION
 def LOCALLY_COMPACT_OPEN_UNIONS : thm := BLCC3.LOCALLY_COMPACT_OPEN_UNIONS
 def LOCALLY_COMPACT_OPEN_UNION : thm := BLCC3.LOCALLY_COMPACT_OPEN_UNION
@@ -3901,7 +3905,7 @@ initialize BLCC4 : HolMultiLib.Topology.LCC4 ←
     (HolMultiLib.Topology.setupLCC4 deps BCLS1 BBND1 BCPT BCSL BIDC BLCP BOCM2 BPRP1
       BLCC1).run
 
--- LCC4 (topology.ml 29605-29712)
+-- LCC4 (topology.ml 29635-29742)
 def LOCALLY_COMPACT_PROPER_IMAGE_EQ : thm := BLCC4.LOCALLY_COMPACT_PROPER_IMAGE_EQ
 def LOCALLY_COMPACT_PROPER_IMAGE : thm := BLCC4.LOCALLY_COMPACT_PROPER_IMAGE
 def LOCALLY_COMPACT_PROPER_CONTINUOUS_PREIMAGE : thm :=
@@ -3912,7 +3916,7 @@ initialize BMUM : HolMultiLib.Topology.MUM ←
     (HolMultiLib.Topology.setupMUM deps BBAL BLOC BCLS1 BLIM2 BUNQ BBND1 BCPT BCPP1 BCSL BSQC
       BIDC BCLC BLCY1 BLCY5 BLCC1).run
 
--- MUM (topology.ml 29713-29822)
+-- MUM (topology.ml 29743-29852)
 def MUMFORD_LEMMA : thm := BMUM.MUMFORD_LEMMA
 def LOCALLY_EQ_COMPACTLY : thm := BMUM.LOCALLY_EQ_COMPACTLY
 
@@ -3921,7 +3925,7 @@ initialize BLCC5 : HolMultiLib.Topology.LCC5 ←
     (HolMultiLib.Topology.setupLCC5 deps BEUC BCLO BLOC BLPT BINT BCLS1 BCMS BIDC BCLC BLCP
       BPCR1 BSMI BPCA1 BHMA BIOM BSD2 BSD3 BLCC1 BLCC2).run
 
--- LCC5 (topology.ml 29823-29959)
+-- LCC5 (topology.ml 29853-29989)
 def LOCALLY_COMPACT_OPEN_INTER_CLOSURE : thm := BLCC5.LOCALLY_COMPACT_OPEN_INTER_CLOSURE
 def LOCALLY_COMPACT_CLOSED_IN_OPEN : thm := BLCC5.LOCALLY_COMPACT_CLOSED_IN_OPEN
 def LOCALLY_COMPACT_HOMEOMORPHISM_PROJECTION_CLOSED : thm :=
@@ -3934,7 +3938,7 @@ initialize BFSG1 : HolMultiLib.Topology.FSG1 ←
   ioB "setupFSG1"
     (HolMultiLib.Topology.setupFSG1 deps BEUC BCLO BLPT BCPT BCPP1 BLCC1 BLCC2).run
 
--- FSG1 (topology.ml 29960-30092)
+-- FSG1 (topology.ml 29990-30122)
 def gdelta : thm := BFSG1.gdelta
 def fsigma : thm := BFSG1.fsigma
 def FSIGMA_IN_EUCLIDEAN : thm := BFSG1.FSIGMA_IN_EUCLIDEAN
@@ -3963,7 +3967,7 @@ def FSIGMA_UNIV : thm := BFSG1.FSIGMA_UNIV
 initialize BFSG2 : HolMultiLib.Topology.FSG2 ←
   ioB "setupFSG2" (HolMultiLib.Topology.setupFSG2 deps BLOC BCLS1 BLCC5 BFSG1).run
 
--- FSG2 (topology.ml 30093-30187)
+-- FSG2 (topology.ml 30123-30217)
 def GDELTA_INTERS : thm := BFSG2.GDELTA_INTERS
 def GDELTA_INTER : thm := BFSG2.GDELTA_INTER
 def GDELTA_DIFF : thm := BFSG2.GDELTA_DIFF
@@ -3985,7 +3989,7 @@ initialize BFSG3 : HolMultiLib.Topology.FSG3 ←
   ioB "setupFSG3"
     (HolMultiLib.Topology.setupFSG3 deps BLOC BCPT BCSL BCLC BLCP BHMA BFSG1 BFSG2).run
 
--- FSG3 (topology.ml 30188-30308)
+-- FSG3 (topology.ml 30218-30338)
 def FSIGMA_CONTINUOUS_IMAGE : thm := BFSG3.FSIGMA_CONTINUOUS_IMAGE
 def HOMEOMORPHIC_FSIGMANESS : thm := BFSG3.HOMEOMORPHIC_FSIGMANESS
 def HOMEOMORPHISM_FSIGMANESS : thm := BFSG3.HOMEOMORPHISM_FSIGMANESS
@@ -3999,7 +4003,7 @@ initialize BFSG4 : HolMultiLib.Topology.FSG4 ←
     (HolMultiLib.Topology.setupFSG4 deps BEUC BCMS BIDC BLCP BPCR1 BPCA1 BCEO BFSG1 BFSG2
       BFSG3).run
 
--- FSG4 (topology.ml 30309-30421)
+-- FSG4 (topology.ml 30339-30451)
 def FSIGMA_PCROSS : thm := BFSG4.FSIGMA_PCROSS
 def FSIGMA_PCROSS_EQ : thm := BFSG4.FSIGMA_PCROSS_EQ
 def GDELTA_PCROSS : thm := BFSG4.GDELTA_PCROSS
@@ -4011,7 +4015,7 @@ initialize BGPC : HolMultiLib.Topology.GPC ←
   ioB "setupGPC"
     (HolMultiLib.Topology.setupGPC deps BEUC BBAL BNET BCMP BCNT1 BFSG1 BFSG2).run
 
--- GPC (topology.ml 30422-30515)
+-- GPC (topology.ml 30452-30545)
 def GDELTA_POINTS_OF_CONVERGENCE_WITHIN : thm :=
   BGPC.GDELTA_POINTS_OF_CONVERGENCE_WITHIN
 def GDELTA_POINTS_OF_CONVERGENCE_AT : thm := BGPC.GDELTA_POINTS_OF_CONVERGENCE_AT
@@ -4023,7 +4027,7 @@ initialize BLAV : HolMultiLib.Topology.LAV ←
     (HolMultiLib.Topology.setupLAV deps BEUC BLPT BCLS1 BCMP BCNO BCSL BCMS BIDC BECF BHMA
       BFSG1 BFSG2 BFSG3).run
 
--- LAV (topology.ml 30516-30686)
+-- LAV (topology.ml 30546-30716)
 def LAVRENTIEV : thm := BLAV.LAVRENTIEV
 def LAVRENTIEV_HOMEOMORPHISM : thm := BLAV.LAVRENTIEV_HOMEOMORPHISM
 def LAVRENTIEV_HOMEOMORPHISM_SELF : thm := BLAV.LAVRENTIEV_HOMEOMORPHISM_SELF
@@ -4033,7 +4037,7 @@ def HOMEOMORPHISM_GDELTANESS : thm := BLAV.HOMEOMORPHISM_GDELTANESS
 initialize BECC1 : HolMultiLib.Topology.ECC1 ←
   ioB "setupECC1" (HolMultiLib.Topology.setupECC1 deps BEUC BSEC BLND).run
 
--- ECC1 (topology.ml 30687-30803)
+-- ECC1 (topology.ml 30717-30833)
 def EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_UNIONS : thm :=
   BECC1.EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_UNIONS
 def COUNTABLE_ASCENDING_CLOPEN_IN_CHAIN : thm := BECC1.COUNTABLE_ASCENDING_CLOPEN_IN_CHAIN
@@ -4041,7 +4045,7 @@ def COUNTABLE_ASCENDING_CLOPEN_IN_CHAIN : thm := BECC1.COUNTABLE_ASCENDING_CLOPE
 initialize BECC2 : HolMultiLib.Topology.ECC2 ←
   ioB "setupECC2" (HolMultiLib.Topology.setupECC2 deps BEUC BCLO BFSG1 BFSG2 BECC1).run
 
--- ECC2 (topology.ml 30804-30930)
+-- ECC2 (topology.ml 30834-30960)
 def EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_INTERS : thm :=
   BECC2.EFFECTIVELY_COUNTABLE_CLOPEN_IN_CHAIN_INTERS
 def COUNTABLE_DESCENDING_CLOPEN_IN_CHAIN : thm := BECC2.COUNTABLE_DESCENDING_CLOPEN_IN_CHAIN
@@ -4057,14 +4061,14 @@ def GDELTA_INTERS_CLOPEN_CHAIN : thm := BECC2.GDELTA_INTERS_CLOPEN_CHAIN
 initialize BCBS : HolMultiLib.Topology.CBS ←
   ioB "setupCBS" (HolMultiLib.Topology.setupCBS deps BECC2).run
 
--- CBS (topology.ml 30931-30989)
+-- CBS (topology.ml 30961-31019)
 def CANTOR_BAIRE_STATIONARY_PRINCIPLE : thm := BCBS.CANTOR_BAIRE_STATIONARY_PRINCIPLE
 
 initialize BBOR1 : HolMultiLib.Topology.BOR1 ←
   ioB "setupBOR1"
     (HolMultiLib.Topology.setupBOR1 deps BEUC BCLO BCPT BCPP1 BLCC1 BLCC2 BFSG1).run
 
--- BOR1 (topology.ml 30990-31112)
+-- BOR1 (topology.ml 31020-31142)
 def borel_RULES : thm := BBOR1.borel_RULES
 def borel_INDUCT : thm := BBOR1.borel_INDUCT
 def borel_CASES : thm := BBOR1.borel_CASES
@@ -4080,7 +4084,7 @@ initialize BBOR2 : HolMultiLib.Topology.BOR2 ←
   ioB "setupBOR2"
     (HolMultiLib.Topology.setupBOR2 deps BEUC BCLO BLOC BCPT BCLC BFSG1 BBOR1).run
 
--- BOR2 (topology.ml 31113-31223)
+-- BOR2 (topology.ml 31143-31253)
 def OPEN_IMP_BOREL : thm := BBOR2.OPEN_IMP_BOREL
 def BOREL_COMPLEMENT : thm := BBOR2.BOREL_COMPLEMENT
 def BOREL_UNIONS : thm := BBOR2.BOREL_UNIONS
@@ -4104,7 +4108,7 @@ initialize BBOR3 : HolMultiLib.Topology.BOR3 ←
     (HolMultiLib.Topology.setupBOR3 deps BEUC BCLS1 BCSL BCMS BIDC BPCR1 BPCA1 BHMA BHMB
       BFSG1 BLAV BBOR1 BBOR2).run
 
--- BOR3 (topology.ml 31224-31339)
+-- BOR3 (topology.ml 31254-31369)
 def HOMEOMORPHIC_BORELNESS : thm := BBOR3.HOMEOMORPHIC_BORELNESS
 def BOREL_TRANSLATION : thm := BBOR3.BOREL_TRANSLATION
 def BOREL_LINEAR_IMAGE : thm := BBOR3.BOREL_LINEAR_IMAGE
@@ -4117,7 +4121,7 @@ initialize BBAI1 : HolMultiLib.Topology.BAI1 ←
   ioB "setupBAI1"
     (HolMultiLib.Topology.setupBAI1 deps BARI BCSL BSQC BCMS BIDC BLCP BPCA1).run
 
--- BAI1 (topology.ml 31340-31493)
+-- BAI1 (topology.ml 31370-31523)
 def baire : thm := BBAI1.baire
 def BAIRE_MONO : thm := BBAI1.BAIRE_MONO
 def CONTINUOUS_ON_IMP_BAIRE : thm := BBAI1.CONTINUOUS_ON_IMP_BAIRE
@@ -4137,7 +4141,7 @@ def BAIRE_VSUM : thm := BBAI1.BAIRE_VSUM
 initialize BBAI2 : HolMultiLib.Topology.BAI2 ←
   ioB "setupBAI2" (HolMultiLib.Topology.setupBAI2 deps BLIM1 BCMS BLFR BBAI1).run
 
--- BAI2 (topology.ml 31494-31556)
+-- BAI2 (topology.ml 31524-31586)
 def BAIRE_PRODUCT : thm := BBAI2.BAIRE_PRODUCT
 def BAIRE_NORM : thm := BBAI2.BAIRE_NORM
 def BAIRE_MAX : thm := BBAI2.BAIRE_MAX
@@ -4149,7 +4153,7 @@ initialize BBUL : HolMultiLib.Topology.BUL ←
     (HolMultiLib.Topology.setupBUL deps BLIM1 BARI BUNQ BTRN BUCC BSUM1 BSUM3 BCMT BRAT BBAI1
       BBAI2).run
 
--- BUL (topology.ml 31557-31788)
+-- BUL (topology.ml 31587-31818)
 def BAIRE_UNIFORM_LIMIT : thm := BBUL.BAIRE_UNIFORM_LIMIT
 
 initialize BBAI3 : HolMultiLib.Topology.BAI3 ←
@@ -4157,7 +4161,7 @@ initialize BBAI3 : HolMultiLib.Topology.BAI3 ←
     (HolMultiLib.Topology.setupBAI3 deps BEUC BCLO BLOC BCLS1 BLIM1 BIDC BCLC BHSP BSDS BSD2
       BSD3 BFSG2 BBAI1 BBUL).run
 
--- BAI3 (topology.ml 31789-31930)
+-- BAI3 (topology.ml 31819-31960)
 def BAIRE_UNIFORM_APPROXIMATION : thm := BBAI3.BAIRE_UNIFORM_APPROXIMATION
 def FSIGMA_BAIRE1_PREIMAGE_OPEN_GEN : thm := BBAI3.FSIGMA_BAIRE1_PREIMAGE_OPEN_GEN
 def FSIGMA_BAIRE1_PREIMAGE_OPEN : thm := BBAI3.FSIGMA_BAIRE1_PREIMAGE_OPEN
@@ -4166,7 +4170,7 @@ def GDELTA_BAIRE1_PREIMAGE_CLOSED : thm := BBAI3.GDELTA_BAIRE1_PREIMAGE_CLOSED
 initialize BBIN1 : HolMultiLib.Topology.BIN1 ←
   ioB "setupBIN1" (HolMultiLib.Topology.setupBIN1 deps BCON BCMS BCRD2 BBAI1).run
 
--- BIN1 (topology.ml 31931-32062)
+-- BIN1 (topology.ml 31961-32092)
 def BAIRE_INDICATOR_EMPTY : thm := BBIN1.BAIRE_INDICATOR_EMPTY
 def BAIRE_INDICATOR_UNIV : thm := BBIN1.BAIRE_INDICATOR_UNIV
 def BAIRE_INDICATOR_REFL : thm := BBIN1.BAIRE_INDICATOR_REFL
@@ -4187,7 +4191,7 @@ initialize BBIN2 : HolMultiLib.Topology.BIN2 ←
     (HolMultiLib.Topology.setupBIN2 deps BEUC BLIM2 BCPT BCPP2 BURY BFSG1 BFSG2 BBAI1
       BBAI3).run
 
--- BIN2 (topology.ml 32063-32165)
+-- BIN2 (topology.ml 32093-32195)
 def BAIRE1_INDICATOR : thm := BBIN2.BAIRE1_INDICATOR
 def GDELTA_BAIRE : thm := BBIN2.GDELTA_BAIRE
 def FSIGMA_BAIRE : thm := BBIN2.FSIGMA_BAIRE
@@ -4201,7 +4205,7 @@ initialize BBIN3 : HolMultiLib.Topology.BIN3 ←
   ioB "setupBIN3"
     (HolMultiLib.Topology.setupBIN3 deps BCMS BIDC BLCP BCSB1 BBAI1 BBIN1 BBIN2).run
 
--- BIN3 (topology.ml 32166-32279)
+-- BIN3 (topology.ml 32196-32309)
 def BAIRE_INDICATOR_TRANSLATION : thm := BBIN3.BAIRE_INDICATOR_TRANSLATION
 def BAIRE_INDICATOR_INJECTIVE_LINEAR_IMAGE : thm :=
   BBIN3.BAIRE_INDICATOR_INJECTIVE_LINEAR_IMAGE
@@ -4219,7 +4223,7 @@ def COUNTABLE_INTERSECTION_OF_BAIRE_INDICATOR_BIJECTIVE_LINEAR_IMAGE : thm :=
 initialize BFSR : HolMultiLib.Topology.FSR ←
   ioB "setupFSR" (HolMultiLib.Topology.setupFSR deps BBIN1 BBIN2).run
 
--- FSR (topology.ml 32280-32316)
+-- FSR (topology.ml 32310-32346)
 def FSIGMA_REDUCTION_GEN_ALT : thm := BFSR.FSIGMA_REDUCTION_GEN_ALT
 def FSIGMA_REDUCTION_GEN_2 : thm := BFSR.FSIGMA_REDUCTION_GEN_2
 def FSIGMA_REDUCTION : thm := BFSR.FSIGMA_REDUCTION
@@ -4229,7 +4233,7 @@ initialize BBIS : HolMultiLib.Topology.BIS ←
     (HolMultiLib.Topology.setupBIS deps BEUC BCLO BLPT BCLS1 BLIM1 BLIM2 BHSP BSDS BSD2 BSD3
       BFSG1 BBAI1 BBAI3 BBIN1 BBIN2 BFSR).run
 
--- BIS (topology.ml 32317-32625)
+-- BIS (topology.ml 32347-32655)
 def BAIRE_INDICATOR_SUC : thm := BBIS.BAIRE_INDICATOR_SUC
 def BAIRE_INDICATOR_DELTA : thm := BBIS.BAIRE_INDICATOR_DELTA
 def FGSIGMA_BAIRE_PREIMAGE_OPEN_ALT : thm := BBIS.FGSIGMA_BAIRE_PREIMAGE_OPEN_ALT
@@ -4239,7 +4243,7 @@ def GDELTA_SEPARATION_GEN : thm := BBIS.GDELTA_SEPARATION_GEN
 initialize BGSP : HolMultiLib.Topology.GSP ←
   ioB "setupGSP" (HolMultiLib.Topology.setupGSP deps BBIN1 BBIN2 BBIS).run
 
--- GSP (topology.ml 32626-32654)
+-- GSP (topology.ml 32656-32684)
 def COUNTABLE_UNION_OF_BAIRE_INDICATOR : thm := BGSP.COUNTABLE_UNION_OF_BAIRE_INDICATOR
 def COUNTABLE_INTERSECTION_OF_BAIRE_INDICATOR : thm :=
   BGSP.COUNTABLE_INTERSECTION_OF_BAIRE_INDICATOR
@@ -4250,7 +4254,7 @@ initialize BFBP : HolMultiLib.Topology.FBP ←
     (HolMultiLib.Topology.setupFBP deps BCLO BLOC BCLS1 BLIM1 BIDC BCLC BLCP BHSP BSDS BSD2
       BSD3 BFSG1 BBAI1 BBIN1 BBIN2 BBIS).run
 
--- FBP (topology.ml 32655-32843)
+-- FBP (topology.ml 32685-32873)
 def FSIGMA_BAIRE_PREIMAGE_OPEN_GEN : thm := BFBP.FSIGMA_BAIRE_PREIMAGE_OPEN_GEN
 def FSIGMA_BAIRE_PREIMAGE_OPEN : thm := BFBP.FSIGMA_BAIRE_PREIMAGE_OPEN
 def GDELTA_BAIRE_PREIMAGE_CLOSED_GEN : thm := BFBP.GDELTA_BAIRE_PREIMAGE_CLOSED_GEN
@@ -4262,7 +4266,7 @@ initialize BBEF : HolMultiLib.Topology.BEF ←
       BCMS BIDC BCLC BSPP BLFR BSMI BHMA BHOI BURY BFSG1 BBAI1 BBAI3 BBIN1 BBIN2 BFSR BBIS
       BFBP).run
 
--- BEF (topology.ml 32844-33165)
+-- BEF (topology.ml 32874-33195)
 def BAIRE_EQ_FSIGMA_PREIMAGE_OPEN_GEN : thm := BBEF.BAIRE_EQ_FSIGMA_PREIMAGE_OPEN_GEN
 
 initialize BBEG : HolMultiLib.Topology.BEG ←
@@ -4270,7 +4274,7 @@ initialize BBEG : HolMultiLib.Topology.BEG ←
     (HolMultiLib.Topology.setupBEG deps BEUC BCLO BLOC BLIM2 BIDC BCTL BFSG1 BFSG2 BBIN1 BBIN2
       BFBP BBEF).run
 
--- BEG (topology.ml 33166-33324)
+-- BEG (topology.ml 33196-33354)
 def BAIRE_EQ_FSIGMA_PREIMAGE_OPEN : thm := BBEG.BAIRE_EQ_FSIGMA_PREIMAGE_OPEN
 def BAIRE_EQ_FSIGMA_PREIMAGE_ALT : thm := BBEG.BAIRE_EQ_FSIGMA_PREIMAGE_ALT
 def BAIRE_EQ_GDELTA_PREIMAGE_CLOSED_GEN : thm := BBEG.BAIRE_EQ_GDELTA_PREIMAGE_CLOSED_GEN
@@ -4287,7 +4291,7 @@ initialize BBXT : HolMultiLib.Topology.BXT ←
     (HolMultiLib.Topology.setupBXT deps BCLO BBAL BLIM1 BUNQ BNST BCLC BHSP BHMA BHOI BBAI1
       BBAI2 BBUL BBIN1 BBIS BFBP BBEG).run
 
--- BXT (topology.ml 33325-33551)
+-- BXT (topology.ml 33355-33581)
 def BAIRE_EXTENSION : thm := BBXT.BAIRE_EXTENSION
 
 initialize BBLV : HolMultiLib.Topology.BLV ←
@@ -4295,7 +4299,7 @@ initialize BBLV : HolMultiLib.Topology.BLV ←
     (HolMultiLib.Topology.setupBLV deps BCLO BBAL BLOC BUNQ BTRN BCBL BCMP BCSL BCMS BCLC
       BFSG1 BLAV BBAI1 BBIN2 BGSP BBEG).run
 
--- BLV (topology.ml 33552-33721)
+-- BLV (topology.ml 33582-33751)
 def BAIRE_LAVRENTIEV : thm := BBLV.BAIRE_LAVRENTIEV
 
 initialize BBCC : HolMultiLib.Topology.BCC ←
@@ -4303,7 +4307,7 @@ initialize BBCC : HolMultiLib.Topology.BCC ←
     (HolMultiLib.Topology.setupBCC deps BCLO BLOC BCPT BIDC BCLC BFSG1 BFSG2 BBAI1 BBIN1 BBIN2
       BBIS BGSP BFBP BBEF).run
 
--- BCC (topology.ml 33722-33880)
+-- BCC (topology.ml 33752-33910)
 def BAIRE_CASES : thm := BBCC.BAIRE_CASES
 def BAIRE_RESTRICT : thm := BBCC.BAIRE_RESTRICT
 def BAIRE_FSIGMA_PREIMAGE_GEN : thm := BBCC.BAIRE_FSIGMA_PREIMAGE_GEN
@@ -4314,7 +4318,7 @@ initialize BHBI : HolMultiLib.Topology.HBI ←
   ioB "setupHBI"
     (HolMultiLib.Topology.setupHBI deps BHMA BFSG3 BLAV BBAI1 BBIN2 BGSP BBCC).run
 
--- HBI (topology.ml 33881-34016)
+-- HBI (topology.ml 33911-34046)
 def HOMEOMORPHIC_BAIRE_INDICATOR : thm := BHBI.HOMEOMORPHIC_BAIRE_INDICATOR
 def HOMEOMORPHIC_COUNTABLE_UNION_OF_BAIRE_INDICATOR : thm :=
   BHBI.HOMEOMORPHIC_COUNTABLE_UNION_OF_BAIRE_INDICATOR
@@ -4324,7 +4328,7 @@ def HOMEOMORPHIC_COUNTABLE_INTERSECTION_OF_BAIRE_INDICATOR : thm :=
 initialize BFGD : HolMultiLib.Topology.FGD ←
   ioB "setupFGD" (HolMultiLib.Topology.setupFGD deps BBIN1 BBIS BGSP).run
 
--- FGD (topology.ml 34017-34138)
+-- FGD (topology.ml 34047-34168)
 def FSIGMA_DISJOINT_GEN : thm := BFGD.FSIGMA_DISJOINT_GEN
 def FSIGMA_GDELTA_GEN : thm := BFGD.FSIGMA_GDELTA_GEN
 def GDELTA_FSIGMA_GEN : thm := BFGD.GDELTA_FSIGMA_GEN
@@ -4334,7 +4338,7 @@ initialize BLBA : HolMultiLib.Topology.LBA ←
   ioB "setupLBA"
     (HolMultiLib.Topology.setupLBA deps BEUC BLOC BLND BLCY1 BLCY5 BBAI1 BBIN1 BBIN2 BBEF).run
 
--- LBA (topology.ml 34139-34202)
+-- LBA (topology.ml 34169-34232)
 def LOCALLY_BAIRE : thm := BLBA.LOCALLY_BAIRE
 def LOCALLY_BAIRE_ALT : thm := BLBA.LOCALLY_BAIRE_ALT
 def LOCALLY_BAIRE_EXPLICIT : thm := BLBA.LOCALLY_BAIRE_EXPLICIT
@@ -4342,7 +4346,7 @@ def LOCALLY_BAIRE_EXPLICIT : thm := BLBA.LOCALLY_BAIRE_EXPLICIT
 initialize BFLC : HolMultiLib.Topology.FLC ←
   ioB "setupFLC" (HolMultiLib.Topology.setupFLC deps BEUC BCPP2 BBAI1 BBIN1 BBIS BFBP).run
 
--- FLC (topology.ml 34203-34352)
+-- FLC (topology.ml 34233-34382)
 def FSIGMA_LOCALLY_GEN : thm := BFLC.FSIGMA_LOCALLY_GEN
 def FSIGMA_LOCALLY_EQ : thm := BFLC.FSIGMA_LOCALLY_EQ
 def FSIGMA_LOCALLY_TRANS : thm := BFLC.FSIGMA_LOCALLY_TRANS
@@ -4355,7 +4359,7 @@ initialize BBMS : HolMultiLib.Topology.BMS ←
   ioB "setupBMS"
     (HolMultiLib.Topology.setupBMS deps BARI BCSL BSQC BCMS BIDC BLCP BLFR BPCA1 BBAI1).run
 
--- BMS (topology.ml 34353-34557)
+-- BMS (topology.ml 34383-34587)
 def borel_measurable_RULES : thm := BBMS.borel_measurable_RULES
 def borel_measurable_INDUCT : thm := BBMS.borel_measurable_INDUCT
 def borel_measurable_CASES : thm := BBMS.borel_measurable_CASES
@@ -4382,7 +4386,7 @@ initialize BBMC : HolMultiLib.Topology.BMC ←
     (HolMultiLib.Topology.setupBMC deps BCLO BCLS1 BLIM1 BCMS BCLC BLCP BHSP BLFR BSDS BSD2 BSD3
       BBOR1 BBOR2 BBMS).run
 
--- BMC (topology.ml 34558-34709)
+-- BMC (topology.ml 34588-34739)
 def BOREL_MEASURABLE_COMPONENTWISE : thm := BBMC.BOREL_MEASURABLE_COMPONENTWISE
 def BOREL_BOREL_MEASURABLE_PREIMAGE : thm := BBMC.BOREL_BOREL_MEASURABLE_PREIMAGE
 
@@ -4391,14 +4395,14 @@ initialize BBMI : HolMultiLib.Topology.BMI ←
     (HolMultiLib.Topology.setupBMI deps BLPT BLIM2 BARI BCPT BCMS BFSG1 BBOR1 BBOR2 BBIN2 BBMS
       BBMC).run
 
--- BMI (topology.ml 34710-34772)
+-- BMI (topology.ml 34740-34802)
 def BOREL_MEASURABLE_INDICATOR : thm := BBMI.BOREL_MEASURABLE_INDICATOR
 def BOREL_MEASURABLE_ON_INDICATOR : thm := BBMI.BOREL_MEASURABLE_ON_INDICATOR
 
 initialize BBPB : HolMultiLib.Topology.BPB ←
   ioB "setupBPB" (HolMultiLib.Topology.setupBPB deps BLIM2 BHSP BBOR2 BBMS BBMC BBMI).run
 
--- BPB (topology.ml 34773-34884)
+-- BPB (topology.ml 34803-34914)
 def BOREL_MEASURABLE_PREIMAGE_BOREL : thm := BBPB.BOREL_MEASURABLE_PREIMAGE_BOREL
 
 initialize BBME : HolMultiLib.Topology.BME ←
@@ -4406,14 +4410,14 @@ initialize BBME : HolMultiLib.Topology.BME ←
     (HolMultiLib.Topology.setupBME deps BBAL BUNQ BTRN BCMP BCMS BFSG1 BLAV BBOR2 BBMS BBMC
       BBPB).run
 
--- BME (topology.ml 34886-35045)
+-- BME (topology.ml 34916-35075)
 def BOREL_MEASURABLE_EXTENSION : thm := BBME.BOREL_MEASURABLE_EXTENSION
 
 initialize BBMX : HolMultiLib.Topology.BMX ←
   ioB "setupBMX"
     (HolMultiLib.Topology.setupBMX deps BEUC BCSL BBOR1 BBOR2 BBMS BBMI BBPB BBME).run
 
--- BMX (topology.ml 35046-35137)
+-- BMX (topology.ml 35076-35167)
 def BOREL_MEASURABLE_COMPOSE : thm := BBMX.BOREL_MEASURABLE_COMPOSE
 def BOREL_MEASURABLE_CASES : thm := BBMX.BOREL_MEASURABLE_CASES
 def BOREL_MEASURABLE_RESTRICT : thm := BBMX.BOREL_MEASURABLE_RESTRICT
@@ -4424,7 +4428,7 @@ def BOREL_MEASURABLE_MAP_EUCLIDEAN : thm := BBMX.BOREL_MEASURABLE_MAP_EUCLIDEAN
 initialize BANA : HolMultiLib.Topology.ANA ←
   ioB "setupANA" (HolMultiLib.Topology.setupANA deps BLOC BCPP1 BLCC1 BLCC2 BBOR1 BBOR2).run
 
--- ANA (topology.ml 35138-35223)
+-- ANA (topology.ml 35168-35253)
 def analytic : thm := BANA.analytic
 def COMPACT_IMP_ANALYTIC : thm := BANA.COMPACT_IMP_ANALYTIC
 def ANALYTIC_EMPTY : thm := BANA.ANALYTIC_EMPTY
@@ -4447,7 +4451,7 @@ initialize BANP : HolMultiLib.Topology.ANP ←
     (HolMultiLib.Topology.setupANP deps BLPT BCPP1 BCSL BCMB BCMS BIDC BLCP BPCR1 BBOR2 BBMS
       BBMC BBME BANA).run
 
--- ANP (topology.ml 35224-35359)
+-- ANP (topology.ml 35254-35389)
 def ANALYTIC_PCROSS : thm := BANP.ANALYTIC_PCROSS
 def ANALYTIC_BOREL_MEASURABLE_PREIMAGE : thm := BANP.ANALYTIC_BOREL_MEASURABLE_PREIMAGE
 def ANALYTIC_CONTINUOUS_PREIMAGE : thm := BANP.ANALYTIC_CONTINUOUS_PREIMAGE
@@ -4457,7 +4461,7 @@ initialize BANH : HolMultiLib.Topology.ANH ←
   ioB "setupANH"
     (HolMultiLib.Topology.setupANH deps BLPT BLCP BHMA BHMB BBMS BBMX BANA BANP).run
 
--- ANH (topology.ml 35360-35426)
+-- ANH (topology.ml 35390-35456)
 def HOMEOMORPHIC_ANALYTICITY : thm := BANH.HOMEOMORPHIC_ANALYTICITY
 def ANALYTIC_TRANSLATION : thm := BANH.ANALYTIC_TRANSLATION
 def ANALYTIC_LINEAR_IMAGE : thm := BANH.ANALYTIC_LINEAR_IMAGE
@@ -4469,7 +4473,7 @@ initialize BCRB : HolMultiLib.Topology.CRB ←
     (HolMultiLib.Topology.setupCRB deps BEUC BBAL BCRD1 BSEC BCEO BBOR2 BBAI1 BBMS BBMC
       BANA).run
 
--- CRB (topology.ml 35427-35509)
+-- CRB (topology.ml 35457-35539)
 def CARD_EQ_ANALYTIC_SETS : thm := BCRB.CARD_EQ_ANALYTIC_SETS
 def CARD_EQ_BOREL_SETS : thm := BCRB.CARD_EQ_BOREL_SETS
 def CARD_EQ_BOREL_MEASURABLE_FUNCTIONS : thm := BCRB.CARD_EQ_BOREL_MEASURABLE_FUNCTIONS
@@ -4479,7 +4483,7 @@ initialize BBIX : HolMultiLib.Topology.BIX ←
   ioB "setupBIX"
     (HolMultiLib.Topology.setupBIX deps BBAL BCLS1 BCPP1 BCSL BDYR BFSG1 BFSG2 BFSG3 BBOR2).run
 
--- BIX (topology.ml 35510-35680)
+-- BIX (topology.ml 35540-35710)
 def FSIGMA_PREIMAGE_CARD_GE : thm := BBIX.FSIGMA_PREIMAGE_CARD_GE
 def GDELTA_PREIMAGE_CARD_LE : thm := BBIX.GDELTA_PREIMAGE_CARD_LE
 def BOREL_PREIMAGE_HAS_SIZE : thm := BBIX.BOREL_PREIMAGE_HAS_SIZE
@@ -4490,7 +4494,7 @@ initialize BBAR : HolMultiLib.Topology.BAR ←
   ioB "setupBAR"
     (HolMultiLib.Topology.setupBAR deps BEUC BCLO BBAL BLOC BINT BCLS1 BLCC1 BLCC2).run
 
--- BAR (topology.ml 35677-35792)
+-- BAR (topology.ml 35707-35822)
 def BAIRE : thm := BBAR.BAIRE
 def BAIRE_ALT : thm := BBAR.BAIRE_ALT
 def NOWHERE_DENSE_COUNTABLE_UNIONS_CLOSED_IN : thm :=
@@ -4503,7 +4507,7 @@ initialize BSIL : HolMultiLib.Topology.SIL ←
     (HolMultiLib.Topology.setupSIL deps BEUC BCLS1 BCPP1 BARC BCCC BCRD1 BESP BLCC2 BFSG1
       BBAR).run
 
--- SIL (topology.ml 35793-35888)
+-- SIL (topology.ml 35823-35918)
 def SILVERMAN_STEINHAUSLIKE : thm := BSIL.SILVERMAN_STEINHAUSLIKE
 def DENSE_GDELTA_IMP_LARGE : thm := BSIL.DENSE_GDELTA_IMP_LARGE
 def NOT_GDELTA_DENSE_COUNTABLE : thm := BSIL.NOT_GDELTA_DENSE_COUNTABLE
@@ -4513,21 +4517,21 @@ initialize BGCM : HolMultiLib.Topology.GCM ←
     (HolMultiLib.Topology.setupGCM deps BCLO BLPT BCPT BCSL BCMS BIDC BCLC BLCP BPCR1 BPRP2 BHSP
       BFSG1 BFSG2).run
 
--- GCM (topology.ml 35889-36002)
+-- GCM (topology.ml 35919-36032)
 def GDELTA_CONTINUOUS_FUNCTION_MINIMA : thm := BGCM.GDELTA_CONTINUOUS_FUNCTION_MINIMA
 
 initialize BGDI : HolMultiLib.Topology.GDI ←
   ioB "setupGDI"
     (HolMultiLib.Topology.setupGDI deps BCLO BLPT BCPP1 BIDC BLCP BPRP1 BHSP BDST BGCM).run
 
--- GDI (topology.ml 36003-36104)
+-- GDI (topology.ml 36033-36134)
 def GDELTA_DOMAIN_OF_INJECTIVITY_CONTINUOUS : thm :=
   BGDI.GDELTA_DOMAIN_OF_INJECTIVITY_CONTINUOUS
 
 initialize BBDI : HolMultiLib.Topology.BDI ←
   ioB "setupBDI" (HolMultiLib.Topology.setupBDI deps BCSL BLCP BFSG1 BBOR2 BGDI).run
 
--- BDI (topology.ml 36105-36188)
+-- BDI (topology.ml 36135-36218)
 def BOREL_DOMAIN_OF_INJECTIVITY_CONTINUOUS_GEN : thm :=
   BBDI.BOREL_DOMAIN_OF_INJECTIVITY_CONTINUOUS_GEN
 def BOREL_DOMAIN_OF_INJECTIVITY_CONTINUOUS : thm :=
@@ -4536,7 +4540,7 @@ def BOREL_DOMAIN_OF_INJECTIVITY_CONTINUOUS : thm :=
 initialize BPCU : HolMultiLib.Topology.PCU ←
   ioB "setupPCU" (HolMultiLib.Topology.setupPCU deps BEUC BCWL BLOC BCNO BCSL).run
 
--- PCU (topology.ml 36189-36295)
+-- PCU (topology.ml 36219-36325)
 def PARACOMPACT_SPACE_EUCLIDEAN : thm := BPCU.PARACOMPACT_SPACE_EUCLIDEAN
 def PARACOMPACT_SPACE_EUCLIDEAN_SUBTOPOLOGY : thm := BPCU.PARACOMPACT_SPACE_EUCLIDEAN_SUBTOPOLOGY
 def PARACOMPACT : thm := BPCU.PARACOMPACT

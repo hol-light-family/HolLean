@@ -101,6 +101,8 @@ structure CoreThms4 where
 structure JacobiDeps where
   -- definitions and parser state
   new_definition : String → ExceptT String IO thm
+  -- jacobi.ml 7 `prioritize_real()`
+  prioritize_real : IO Unit
   -- decision procedures and tactics
   ARITH_RULE : term → ExceptT String IO thm
   ARITH_TAC : tactic
@@ -145,10 +147,12 @@ structure Generic where
 def setupGeneric [HolBase] (D : JacobiDeps) :
     ExceptT String IO Generic := do
   -- @@SCOPE BEGIN
-  let { INTEGER_RULE, .. } := D
+  let { INTEGER_RULE, prioritize_real, .. } := D
   let { IMP_CONJ, INT_COPRIME_1, .. } := D.core2
   let { IPRODUCT_CLOSED, IPRODUCT_RELATED, .. } := D.core3
   -- @@SCOPE END
+
+  prioritize_real
 
   let COPRIME_IPRODUCT ← prove
    r"!s (a:A->int) n.
@@ -814,7 +818,7 @@ def setupJacobiOf2 [HolBase] (D : JacobiDeps) (BJacobiDef : JacobiDef) (BJacobiE
                 EVEN((m EXP 2 - 1) DIV 8 + (n EXP 2 - 1) DIV 8))"
      (← do
       let n1 ← NUMBER_RULE
-       (← q r"e divides d /\ d divides a /\ d divides b
+       (← q r"(e:num) divides d /\ d divides a /\ d divides b
         ==> d * e divides a * b")
       let n0 ← NUMBER_RULE
        (← q r"(d:num) divides a ==> (d divides (a + b) <=> d divides b)")
@@ -991,7 +995,7 @@ def setupReciprocity [HolBase] (D : JacobiDeps) (BJacobiDef : JacobiDef) (BJacob
                 EVEN((m - 1) DIV 2 + (n - 1) DIV 2))"
      (← do
       let n1 ← NUMBER_RULE
-       (← q r"d divides a * b /\ a * b + a + b = c
+       (← q r"(d:num) divides a * b /\ a * b + a + b = c
         ==> (d divides c <=> d divides (a + b))")
       pure (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [← GSYM DIV_ADD, DIVIDES_2, lemma0] THEN
       ASM_SIMP_TAC [DIVIDES_DIVIDES_DIV, ← GSYM DIVIDES_2,
@@ -1253,7 +1257,7 @@ def setupJacobi2 [HolBase] (D : JacobiDeps) (BJacobiDef : JacobiDef) :
          ==> jacobi(a,n) = &1"
    (← do
     let n1 ← NUMBER_RULE
-     (← q r"(a == b) (mod m) /\ n divides m ==> (a == b) (mod n)")
+     (← q r"(a:num == b) (mod m) /\ n divides m ==> (a == b) (mod n)")
     let m2 ← MESON [INT_POW_ONE] (← q r"x:int = &1 ==> x pow n = &1")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"n = 0") THEN
     ASM_SIMP_TAC [COPRIME_0, JACOBI_1] THEN

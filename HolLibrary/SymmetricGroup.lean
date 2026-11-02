@@ -45,13 +45,14 @@ structure CoreThms1 where
    CARD_PERMUTATIONS CARD_SING CARD_SUBSET CARD_SUBSET_EQ
    CARRIER_SUBGROUP_GENERATED_SUBGROUP CARRIER_SUBGROUP_OF
    CAUCHY_GROUP_THEOREM CONJ_ASSOC COPRIME_GCD DIVIDES_FACT_PRIME DIVIDES_LE
-   DIVIDES_REFL DIV_1 EQ_TRANS EXTENSION FINITE_DELETE FINITE_EMPTY
+   DIVIDES_REFL DIV_1 EQ_TRANS EVEN EVENPERM_COMPOSE
+   EVENPERM_I EXTENSION FINITE_DELETE FINITE_EMPTY
    FINITE_INSERT FINITE_NUMSEG_LT FINITE_PERMUTATIONS FINITE_SUBSET
    FORALL_IN_IMAGE FUN_EQ_THM GROUP_ACTION_FROM_SUBGROUP
    GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER GROUP_ELEMENT_ORDER_EQ_1
    GROUP_ELEMENT_ORDER_ID GROUP_ELEMENT_ORDER_POW_GEN
    GROUP_ELEMENT_ORDER_SUBGROUP_GENERATED GROUP_HOMOMORPHISM GROUP_ID
-   GROUP_INV GROUP_ISOMORPHISM_ONTO_IMAGE GROUP_MONOMORPHISM_ALT
+   GROUP_INV GROUP_ISOMORPHISM GROUP_ISOMORPHISM_ONTO_IMAGE GROUP_MONOMORPHISM_ALT
    GROUP_MONOMORPHISM_IMP_HOMOMORPHISM GROUP_MUL GROUP_MUL_ASSOC
    GROUP_MUL_RID GROUP_ORBIT_SUBSET GROUP_POW GROUP_POW_1 GROUP_POW_ADD
    GROUP_POW_EQ_ID IMP_CONJ INTER_SUBSET IN_DELETE IN_DIFF IN_ELIM_THM
@@ -63,18 +64,22 @@ structure CoreThms1 where
 /-- Theorems used from the core library and the parent Library files. -/
 structure CoreThms2 where
   (LT_NZ MEMBER_NOT_EMPTY MULT_SYM NORMAL_SUBGROUP_IMP_SUBGROUP ONE
-   ORBIT_STABILIZER_MUL PAIR_EQ PERMUTES_COMPOSE PERMUTES_I
+   ORBIT_STABILIZER_MUL PAIR_EQ PERMUTATION_COMPOSE
+   PERMUTATION_I PERMUTES_COMPOSE PERMUTES_I
    PERMUTES_INDUCT_STRONG PERMUTES_INJECTIVE PERMUTES_INVERSE
    PERMUTES_INVERSES_o PERMUTES_INVERSE_FUNCTION PERMUTES_IN_IMAGE
    PERMUTES_SUBSET PERMUTES_SUPERSET PERMUTES_SWAP PERMUTES_THREE_CYCLE
    PRIME_0 PRIME_1 PRIME_COPRIME_EQ RESTRICT_COMPOSE RESTRICT_I
    RESTRICT_INVERSE RESTRICT_PERMUTES_SUBSET SUBGROUP_GENERATED
    SUBGROUP_GROUP_IMAGE SUBGROUP_OF_IMP_SUBSET
-   SUBGROUP_OF_SUBGROUP_GENERATED_SUBGROUP_EQ SUBSET SUBSET_ANTISYM_EQ
+   SUBGROUP_OF_SUBGROUP_GENERATED_SUBGROUP_EQ SUBSET
+   SUBSET_ANTISYM SUBSET_ANTISYM_EQ
    SWAP_CONJUGATE SWAP_REFL SWAP_SYM SWAP_TRIPLE SWAP_TRIPLE_ALT
-   THREE_CYCLE_COMMUTATOR THREE_CYCLE_NOT_I divides group_action
-   group_carrier group_conjugation group_homomorphism group_id group_inv
-   group_mul group_pow group_tybij isomorphic_group o_ASSOC o_THM prime
+   THREE_CYCLE_COMMUTATOR THREE_CYCLE_NOT_I divides evenperm group_action
+   group_carrier group_conjugation group_homomorphism
+   group_id group_image group_inv group_monomorphism
+   group_mul group_pow group_tybij isomorphic_group
+   o_ASSOC o_THM permutation prime
    solvable_group subgroup_of : thm)
   deriving Inhabited
 
@@ -608,6 +613,7 @@ structure PcycleMachinery where
   -- @@FIELDS
   SYMMETRIC_GROUP_POW : thm
   SYMMETRIC_GROUP_POW_IN : thm
+  EVENPERM_GROUP_POW : thm
   PRIME_ORDER_PERM_NO_FIXPOINT : thm
   deriving Inhabited
 
@@ -620,78 +626,97 @@ def setupPcycleMachinery [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) :
         GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER, GROUP_ELEMENT_ORDER_EQ_1,
         GROUP_ELEMENT_ORDER_ID, GROUP_POW_EQ_ID, IN_DELETE, IN_DIFF, IN_ELIM_THM,
         I_THM, .. } := D.core1
-  let { PERMUTES_IN_IMAGE, PERMUTES_SUPERSET, PRIME_0, PRIME_1, group_pow, o_THM,
-        prime, .. } := D.core2
+  let { EVEN, EVENPERM_COMPOSE, EVENPERM_I, .. } := D.core1
+  let { PERMUTATION_COMPOSE, PERMUTATION_I, PERMUTES_IN_IMAGE, PERMUTES_SUPERSET, PRIME_0,
+        PRIME_1, group_pow, o_THM, prime, .. } := D.core2
   let { CARD_SYMMETRIC_GROUP, FINITE_SYMMETRIC_GROUP, SYMMETRIC_GROUP, .. } := BBasics
   -- @@SCOPE END
 
   -- group_pow in symmetric_group is independent of the underlying set
   let SYMMETRIC_GROUP_POW ← prove
-   r"!s t (sigma:A->A) n.
-     group_pow (symmetric_group s) sigma n =
-     group_pow (symmetric_group t) sigma n"
+   r"!s t (p:A->A) n.
+     group_pow (symmetric_group s) p n =
+     group_pow (symmetric_group t) p n"
    (GEN_TAC THEN GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
     ASM_REWRITE_TAC [group_pow, SYMMETRIC_GROUP])
 
   -- group_pow in symmetric_group preserves membership
   let SYMMETRIC_GROUP_POW_IN ← prove
-   r"!s (sigma:A->A) n a.
-     sigma permutes s /\ a IN s
-     ==> group_pow (symmetric_group s) sigma n a IN s"
+   r"!s (p:A->A) n a.
+     p permutes s /\ a IN s
+     ==> group_pow (symmetric_group s) p n a IN s"
    (GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
     REWRITE_TAC [group_pow, SYMMETRIC_GROUP, I_THM, o_THM] THENL
      [MESON_TAC [],
       ASM_MESON_TAC [PERMUTES_IN_IMAGE]])
 
+  -- An even power of a permutation is even, an odd power has the parity of
+  -- the permutation.
+  let EVENPERM_GROUP_POW ← prove
+   r"!(p:A->A) s n.
+        permutation p
+        ==> (evenperm(group_pow (symmetric_group s) p n) <=>
+             EVEN n \/ evenperm p)"
+   (REPEAT GEN_TAC THEN DISCH_TAC THEN
+    SUBGOAL_THEN (← q r"!n. permutation(group_pow (symmetric_group s) (p:A->A) n)")
+    ASSUME_TAC THENL
+     [INDUCT_TAC THEN
+      ASM_SIMP_TAC [group_pow, SYMMETRIC_GROUP, PERMUTATION_I,
+                    PERMUTATION_COMPOSE],
+      SPEC_TAC ((← q r"n:num"), (← q r"n:num")) THEN INDUCT_TAC THEN
+      ASM_SIMP_TAC [group_pow, SYMMETRIC_GROUP, EVENPERM_I, EVEN,
+                    EVENPERM_COMPOSE] THEN
+      CONV_TAC TAUT])
+
   -- Element of prime order p in S_p has no fixed points
   let PRIME_ORDER_PERM_NO_FIXPOINT ← prove
-   r"!s (sigma:A->A) a.
+   r"!s (f:A->A) a.
      FINITE s /\ prime(CARD s) /\
-     sigma permutes s /\
-     group_element_order (symmetric_group s) sigma = CARD s /\
+     f permutes s /\
+     group_element_order (symmetric_group s) f = CARD s /\
      a IN s
-     ==> ~(sigma a = a)"
+     ==> ~(f a = a)"
    (← do
     let a1 ← ARITH_RULE (← q r"~(p = 0) /\ ~(p = 1) ==> ~(p <= p - 1)")
     pure (REPEAT STRIP_TAC THEN
-    -- sigma permutes s DELETE a
-    SUBGOAL_THEN (← q r"(sigma:A->A) permutes (s DELETE (a:A))") ASSUME_TAC THENL
+    -- f permutes s DELETE a
+    SUBGOAL_THEN (← q r"(f:A->A) permutes (s DELETE (a:A))") ASSUME_TAC THENL
      [MATCH_MP_TAC PERMUTES_SUPERSET THEN EXISTS_TAC (← q r"s:A->bool") THEN
       ASM_REWRITE_TAC [] THEN REWRITE_TAC [IN_DIFF, IN_DELETE] THEN
       ASM_MESON_TAC [],
       ALL_TAC] THEN
-    SUBGOAL_THEN (← q r"(sigma:A->A) IN
+    SUBGOAL_THEN (← q r"(f:A->A) IN
     group_carrier(symmetric_group(s DELETE (a:A)))") ASSUME_TAC THENL
      [ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM], ALL_TAC] THEN
-    -- sigma^(CARD s) = I in symmetric_group s
+    -- f^(CARD s) = I in symmetric_group s
     SUBGOAL_THEN (← q r"group_pow (symmetric_group (s:A->bool))
-    (sigma:A->A) (CARD s) = group_id(symmetric_group s)") ASSUME_TAC THENL
+    (f:A->A) (CARD s) = group_id(symmetric_group s)") ASSUME_TAC THENL
      [ASM_SIMP_TAC [GROUP_POW_EQ_ID, SYMMETRIC_GROUP, IN_ELIM_THM,
                    DIVIDES_REFL],
       ALL_TAC] THEN
     -- Transfer to symmetric_group(s DELETE a)
     SUBGOAL_THEN (← q r"group_pow (symmetric_group (s DELETE (a:A)))
-    (sigma:A->A) (CARD(s:A->bool)) =
+    (f:A->A) (CARD(s:A->bool)) =
     group_id(symmetric_group(s DELETE a))") ASSUME_TAC THENL
-     [MP_TAC (← ISPECL [← q r"s DELETE (a:A)", ← q r"s:A->bool", ← q "sigma:A->A",
+     [MP_TAC (← ISPECL [← q r"s DELETE (a:A)", ← q r"s:A->bool", ← q "f:A->A",
                       ← q r"CARD(s:A->bool)"] SYMMETRIC_GROUP_POW) THEN
       ASM_REWRITE_TAC [SYMMETRIC_GROUP],
       ALL_TAC] THEN
     -- group_element_order in symm(s DELETE a) divides CARD s
     SUBGOAL_THEN (← q r"group_element_order (symmetric_group(s DELETE (a:A)))
-    (sigma:A->A) divides CARD(s:A->bool)") ASSUME_TAC THENL
+    (f:A->A) divides CARD(s:A->bool)") ASSUME_TAC THENL
      [ASM_SIMP_TAC [← GSYM GROUP_POW_EQ_ID],
       ALL_TAC] THEN
     -- Since prime(CARD s), the order is 1 or CARD s
     SUBGOAL_THEN
       (← q r"group_element_order (symmetric_group(s DELETE (a:A)))
-      (sigma:A->A) = 1 \/
+      (f:A->A) = 1 \/
      group_element_order (symmetric_group(s DELETE (a:A)))
-      (sigma:A->A) = CARD(s:A->bool)") MP_TAC THENL
+      (f:A->A) = CARD(s:A->bool)") MP_TAC THENL
      [ASM_MESON_TAC [prime], ALL_TAC] THEN
     DISCH_THEN DISJ_CASES_TAC THENL
-     [-- Case: order = 1, so sigma = I
-      MP_TAC (← ISPECL [← q r"symmetric_group(s DELETE (a:A))", ← q "sigma:A->A"]
+     [-- Case: order = 1, so f = I
+      MP_TAC (← ISPECL [← q r"symmetric_group(s DELETE (a:A))", ← q "f:A->A"]
         GROUP_ELEMENT_ORDER_EQ_1) THEN
       ASM_REWRITE_TAC [SYMMETRIC_GROUP] THEN DISCH_TAC THEN
       MP_TAC (← ISPEC (← q r"symmetric_group(s:A->bool)") GROUP_ELEMENT_ORDER_ID) THEN
@@ -703,7 +728,7 @@ def setupPcycleMachinery [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) :
           (← q r"FINITE(group_carrier(symmetric_group(s DELETE (a:A))))")
           ASSUME_TAC THENL
          [ASM_SIMP_TAC [FINITE_SYMMETRIC_GROUP, FINITE_DELETE], ALL_TAC] THEN
-        MP_TAC (← ISPECL [← q r"symmetric_group(s DELETE (a:A))", ← q "sigma:A->A"]
+        MP_TAC (← ISPECL [← q r"symmetric_group(s DELETE (a:A))", ← q "f:A->A"]
           GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER) THEN
         ASM_REWRITE_TAC [] THEN
         ASM_SIMP_TAC [CARD_SYMMETRIC_GROUP, FINITE_DELETE, CARD_DELETE],
@@ -711,12 +736,13 @@ def setupPcycleMachinery [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) :
         ASM_MESON_TAC [PRIME_0, PRIME_1, a1]]]))
 
   -- @@RETURN BEGIN
-  return { SYMMETRIC_GROUP_POW, SYMMETRIC_GROUP_POW_IN, PRIME_ORDER_PERM_NO_FIXPOINT }
+  return { SYMMETRIC_GROUP_POW, SYMMETRIC_GROUP_POW_IN, EVENPERM_GROUP_POW,
+           PRIME_ORDER_PERM_NO_FIXPOINT }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
 /- Powers of a prime-order permutation and the orbit it generates.           -/
-/- (symmetric_group.ml 486-634)                                              -/
+/- (symmetric_group.ml 505-653)                                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure PowOrbit where
@@ -738,17 +764,17 @@ def setupPowOrbit [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BPcycle
   let { PRIME_ORDER_PERM_NO_FIXPOINT, SYMMETRIC_GROUP_POW_IN, .. } := BPcycleMachinery
   -- @@SCOPE END
 
-  -- Helper: order of sigma^d is still CARD s when 0 < d < CARD s
+  -- Helper: order of f^d is still CARD s when 0 < d < CARD s
   let PRIME_ORDER_POW_PERM ← prove
-   r"!s (sigma:A->A) d.
+   r"!s (f:A->A) d.
      FINITE s /\ prime(CARD s) /\
-     sigma permutes s /\
-     group_element_order (symmetric_group s) sigma = CARD s /\
+     f permutes s /\
+     group_element_order (symmetric_group s) f = CARD s /\
      0 < d /\ d < CARD s
      ==> group_element_order (symmetric_group s)
-           (group_pow (symmetric_group s) sigma d) = CARD s"
+           (group_pow (symmetric_group s) f d) = CARD s"
    (REPEAT STRIP_TAC THEN
-    MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "sigma:A->A", ← q "d:num"]
+    MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "f:A->A", ← q "d:num"]
       GROUP_ELEMENT_ORDER_POW_GEN) THEN
     ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM] THEN
     ASM_SIMP_TAC [← ARITH_RULE (← q r"0 < d ==> ~(d = 0)")] THEN
@@ -762,21 +788,21 @@ def setupPowOrbit [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BPcycle
 
   -- Orbit of a prime-order permutation covers the whole set
   let PRIME_ORDER_PERM_ORBIT ← prove
-   r"!s (sigma:A->A) a x.
+   r"!s (f:A->A) a x.
      FINITE s /\ prime(CARD s) /\
-     sigma permutes s /\
-     group_element_order (symmetric_group s) sigma = CARD s /\
+     f permutes s /\
+     group_element_order (symmetric_group s) f = CARD s /\
      a IN s /\ x IN s
      ==> ?k. k < CARD s /\
-             group_pow (symmetric_group s) sigma k a = x"
+             group_pow (symmetric_group s) f k a = x"
    (← do
     -- the printing rules bound last-first, as OCaml evaluates the proof
     let a2 ← ARITH_RULE (← q r"~(i < j) /\ ~(i:num = j) ==> j + (i - j) = i")
     let a1 ← ARITH_RULE (← q r"i < j ==> i + (j - i) = j:num")
     pure (REPEAT STRIP_TAC THEN
-    -- Show IMAGE (\k. sigma^k a) {k | k < CARD s} = s
+    -- Show IMAGE (\k. f^k a) {k | k < CARD s} = s
     SUBGOAL_THEN
-      (← q r"IMAGE (\k. group_pow (symmetric_group (s:A->bool)) (sigma:A->A) k a)
+      (← q r"IMAGE (\k. group_pow (symmetric_group (s:A->bool)) (f:A->A) k a)
            {k | k < CARD s} = s") MP_TAC THENL
      [ALL_TAC,
       REWRITE_TAC [EXTENSION, IN_IMAGE, IN_ELIM_THM] THEN
@@ -793,43 +819,43 @@ def setupPowOrbit [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BPcycle
     EXISTS_TAC (← q r"CARD {k:num | k < CARD(s:A->bool)}") THEN CONJ_TAC THENL
      [MATCH_MP_TAC CARD_IMAGE_INJ THEN
       REWRITE_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM] THEN
-      -- Injectivity: sigma^i(a) = sigma^j(a) with i,j < p ==> i = j
+      -- Injectivity: f^i(a) = f^j(a) with i,j < p ==> i = j
       MAP_EVERY X_GEN_TAC [← q "i:num", ← q "j:num"] THEN STRIP_TAC THEN
       -- Suffices to show: for any d with 0 < d < CARD s,
-      --    sigma^d(a) <> a. Then i = j by contradiction.
+      --    f^d(a) <> a. Then i = j by contradiction.
       ASM_CASES_TAC (← q "i:num = j") THEN ASM_REWRITE_TAC [] THEN
       -- Derive a contradictory fixed point
       SUBGOAL_THEN (← q r"?d. 0 < d /\ d < CARD(s:A->bool) /\
-      group_pow (symmetric_group s) (sigma:A->A) d a = a") MP_TAC THENL
+      group_pow (symmetric_group s) (f:A->A) d a = a") MP_TAC THENL
        [ASM_CASES_TAC (← q "i:num < j") THENL
          [EXISTS_TAC (← q "j - i:num") THEN CONJ_TAC THENL
            [ASM_ARITH_TAC, ALL_TAC] THEN
           CONJ_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
-          -- sigma^j(a) = (sigma^i o sigma^{j-i})(a), and
-          --    sigma^j(a) = sigma^i(a)
-          MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "sigma:A->A",
+          -- f^j(a) = (f^i o f^{j-i})(a), and
+          --    f^j(a) = f^i(a)
+          MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "f:A->A",
                           ← q "i:num", ← q "j - i:num"] GROUP_POW_ADD) THEN
           ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM] THEN
           ASM_SIMP_TAC [a1] THEN
           REWRITE_TAC [SYMMETRIC_GROUP, o_THM] THEN DISCH_TAC THEN
           MP_TAC (← ISPECL
-            [← q r"group_pow (symmetric_group (s:A->bool)) (sigma:A->A) i",
+            [← q r"group_pow (symmetric_group (s:A->bool)) (f:A->A) i",
              ← q "s:A->bool"] PERMUTES_INJECTIVE) THEN
           ANTS_TAC THENL
-           [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "sigma:A->A", ← q "i:num"]
+           [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "f:A->A", ← q "i:num"]
               GROUP_POW) THEN
             ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM],
             ALL_TAC] THEN
           DISCH_THEN (fun th => tactic_of do
             let sp ← SPECL
-             [← q r"group_pow (symmetric_group (s:A->bool)) (sigma:A->A) (j - i) (a:A)",
+             [← q r"group_pow (symmetric_group (s:A->bool)) (f:A->A) (j - i) (a:A)",
               ← q "a:A"] th
             pure (MP_TAC (← EQ_IMP_RULE sp).1)) THEN
           ANTS_TAC THENL
            [UNDISCH_TAC
-             (← q r"group_pow (symmetric_group (s:A->bool)) (sigma:A->A) j =
-            group_pow (symmetric_group s) sigma i o
-            group_pow (symmetric_group s) sigma (j - i)") THEN
+             (← q r"group_pow (symmetric_group (s:A->bool)) (f:A->A) j =
+            group_pow (symmetric_group s) f i o
+            group_pow (symmetric_group s) f (j - i)") THEN
             DISCH_THEN (fun th => tactic_of do
               pure (REWRITE_TAC [← GSYM (← REWRITE_RULE [o_THM] (← AP_THM th (← q "a:A")))])) THEN
             ASM_REWRITE_TAC [],
@@ -838,51 +864,51 @@ def setupPowOrbit [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BPcycle
           EXISTS_TAC (← q "i - j:num") THEN CONJ_TAC THENL
            [ASM_ARITH_TAC, ALL_TAC] THEN
           CONJ_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
-          MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "sigma:A->A",
+          MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "f:A->A",
                           ← q "j:num", ← q "i - j:num"] GROUP_POW_ADD) THEN
           ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM] THEN
           ASM_SIMP_TAC [a2] THEN
           REWRITE_TAC [SYMMETRIC_GROUP, o_THM] THEN DISCH_TAC THEN
           MP_TAC (← ISPECL
-            [← q r"group_pow (symmetric_group (s:A->bool)) (sigma:A->A) j",
+            [← q r"group_pow (symmetric_group (s:A->bool)) (f:A->A) j",
              ← q "s:A->bool"] PERMUTES_INJECTIVE) THEN
           ANTS_TAC THENL
-           [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "sigma:A->A", ← q "j:num"]
+           [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "f:A->A", ← q "j:num"]
               GROUP_POW) THEN
             ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM],
             ALL_TAC] THEN
           DISCH_THEN (fun th => tactic_of do
             let sp ← SPECL
-             [← q r"group_pow (symmetric_group (s:A->bool)) (sigma:A->A) (i - j) (a:A)",
+             [← q r"group_pow (symmetric_group (s:A->bool)) (f:A->A) (i - j) (a:A)",
               ← q "a:A"] th
             pure (MP_TAC (← EQ_IMP_RULE sp).1)) THEN
           ANTS_TAC THENL
            [UNDISCH_TAC
-             (← q r"group_pow (symmetric_group (s:A->bool)) (sigma:A->A) i =
-            group_pow (symmetric_group s) sigma j o
-            group_pow (symmetric_group s) sigma (i - j)") THEN
+             (← q r"group_pow (symmetric_group (s:A->bool)) (f:A->A) i =
+            group_pow (symmetric_group s) f j o
+            group_pow (symmetric_group s) f (i - j)") THEN
             DISCH_THEN (fun th => tactic_of do
               pure (REWRITE_TAC [← GSYM (← REWRITE_RULE [o_THM] (← AP_THM th (← q "a:A")))])) THEN
             FIRST_X_ASSUM (fun th => tactic_of do pure (REWRITE_TAC [← SYM th])),
             REWRITE_TAC []]],
         ALL_TAC] THEN
-      -- Now we have d with 0 < d < CARD s and sigma^d(a) = a
+      -- Now we have d with 0 < d < CARD s and f^d(a) = a
       STRIP_TAC THEN
       SUBGOAL_THEN
-        (← q r"group_pow (symmetric_group (s:A->bool)) (sigma:A->A) d
+        (← q r"group_pow (symmetric_group (s:A->bool)) (f:A->A) d
        permutes s") ASSUME_TAC THENL
-       [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "sigma:A->A", ← q "d:num"]
+       [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "f:A->A", ← q "d:num"]
           GROUP_POW) THEN
         ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM],
         ALL_TAC] THEN
       SUBGOAL_THEN
         (← q r"group_element_order (symmetric_group (s:A->bool))
-        (group_pow (symmetric_group s) (sigma:A->A) d) = CARD s")
+        (group_pow (symmetric_group s) (f:A->A) d) = CARD s")
         ASSUME_TAC THENL
        [MATCH_MP_TAC PRIME_ORDER_POW_PERM THEN ASM_REWRITE_TAC [],
         ALL_TAC] THEN
       MP_TAC (← ISPECL [← q "s:A->bool",
-        ← q r"group_pow (symmetric_group (s:A->bool)) (sigma:A->A) d",
+        ← q r"group_pow (symmetric_group (s:A->bool)) (f:A->A) d",
         ← q "a:A"] PRIME_ORDER_PERM_NO_FIXPOINT) THEN
       ASM_REWRITE_TAC [],
       REWRITE_TAC [CARD_NUMSEG_LT]]))
@@ -894,7 +920,7 @@ def setupPowOrbit [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BPcycle
 /- ------------------------------------------------------------------------- -/
 /- Conjugating a transposition inside a subgroup, and a transposition        -/
 /- together with a p-cycle generating the whole symmetric group.             -/
-/- (symmetric_group.ml 635-890)                                              -/
+/- (symmetric_group.ml 654-909)                                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure SwapGen where
@@ -918,33 +944,33 @@ def setupSwapGen [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BTranspo
   let { PRIME_ORDER_PERM_ORBIT, PRIME_ORDER_POW_PERM, .. } := BPowOrbit
   -- @@SCOPE END
 
-  -- Helper: conjugate of swap(a,b) by sigma^k is swap(sigma^k a, sigma^k b)
+  -- Helper: conjugate of swap(a,b) by f^k is swap(f^k a, f^k b)
   let SWAP_CONJUGATE_IN_SUBGROUP ← prove
-   r"!s (sigma:A->A) a b h k.
+   r"!s (f:A->A) a b h k.
      FINITE s /\
      h subgroup_of symmetric_group s /\
-     sigma permutes s /\
-     sigma IN h /\
+     f permutes s /\
+     f IN h /\
      swap(a,b) IN h /\
      a IN s /\ b IN s
-     ==> swap(group_pow (symmetric_group s) sigma k a,
-              group_pow (symmetric_group s) sigma k b) IN h"
+     ==> swap(group_pow (symmetric_group s) f k a,
+              group_pow (symmetric_group s) f k b) IN h"
    (REPEAT STRIP_TAC THEN
     SUBGOAL_THEN
-      (← q r"group_pow (symmetric_group (s:A->bool)) (sigma:A->A) k permutes s")
+      (← q r"group_pow (symmetric_group (s:A->bool)) (f:A->A) k permutes s")
       ASSUME_TAC THENL
-     [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "sigma:A->A", ← q "k:num"]
+     [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "f:A->A", ← q "k:num"]
         GROUP_POW) THEN
       ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM],
       ALL_TAC] THEN
     SUBGOAL_THEN
-      (← q r"swap(group_pow (symmetric_group (s:A->bool)) (sigma:A->A) k a,
-          group_pow (symmetric_group s) sigma k b) =
+      (← q r"swap(group_pow (symmetric_group (s:A->bool)) (f:A->A) k a,
+          group_pow (symmetric_group s) f k b) =
      group_conjugation (symmetric_group s)
-       (group_pow (symmetric_group s) sigma k) (swap(a:A,b))")
+       (group_pow (symmetric_group s) f k) (swap(a:A,b))")
       SUBST1_TAC THENL
      [REWRITE_TAC [group_conjugation, SYMMETRIC_GROUP, o_ASSOC] THEN
-      MP_TAC (← ISPECL [← q r"group_pow (symmetric_group (s:A->bool)) (sigma:A->A) k",
+      MP_TAC (← ISPECL [← q r"group_pow (symmetric_group (s:A->bool)) (f:A->A) k",
                       ← q "s:A->bool", ← q "a:A", ← q "b:A"] SWAP_CONJUGATE) THEN
       ASM_REWRITE_TAC [] THEN
       DISCH_THEN (fun th => tactic_of do pure (REWRITE_TAC [← SYM th])) THEN
@@ -956,19 +982,19 @@ def setupSwapGen [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BTranspo
     ASM_REWRITE_TAC [])
 
   /- A transposition and a p-cycle generate S_p. The key step is showing that
-     swap(a,x) IN h for all x in s, by setting tau = sigma^m where b = tau(a)
-     and inducting on k to get swap(a, tau^k(a)) IN h using SWAP_TRIPLE.      -/
+     swap(a,x) IN h for all x in s, by setting g = f^m where b = g(a)
+     and inducting on k to get swap(a, g^k(a)) IN h using SWAP_TRIPLE.      -/
   let TRANSPOSITION_PCYCLE_GENERATES ← prove
-   r"!s (sigma:A->A) a b h.
+   r"!s (f:A->A) a b h.
      FINITE s /\ prime(CARD s) /\
      h subgroup_of symmetric_group s /\
-     sigma IN h /\
-     group_element_order (symmetric_group s) sigma = CARD s /\
+     f IN h /\
+     group_element_order (symmetric_group s) f = CARD s /\
      swap(a,b) IN h /\
      a IN s /\ b IN s /\ ~(a = b)
      ==> group_carrier(symmetric_group s) SUBSET h"
    (REPEAT STRIP_TAC THEN
-    SUBGOAL_THEN (← q r"(sigma:A->A) permutes s") ASSUME_TAC THENL
+    SUBGOAL_THEN (← q r"(f:A->A) permutes s") ASSUME_TAC THENL
      [MP_TAC (← ISPEC (← q r"symmetric_group(s:A->bool)") SUBGROUP_OF_IMP_SUBSET) THEN
       DISCH_THEN (MP_TAC o SPEC (← q r"h:(A->A)->bool")) THEN
       ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM, SUBSET] THEN
@@ -1007,77 +1033,77 @@ def setupSwapGen [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BTranspo
         CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC []]] THEN
     -- Now prove: for all x IN s with x <> a, swap(a,x) IN h
     X_GEN_TAC (← q "c:A") THEN STRIP_TAC THEN
-    -- b = sigma^m(a) for some m with 0 < m < p by orbit
-    MP_TAC (← ISPECL [← q "s:A->bool", ← q "sigma:A->A", ← q "a:A", ← q "b:A"]
+    -- b = f^m(a) for some m with 0 < m < p by orbit
+    MP_TAC (← ISPECL [← q "s:A->bool", ← q "f:A->A", ← q "a:A", ← q "b:A"]
       PRIME_ORDER_PERM_ORBIT) THEN
     ASM_REWRITE_TAC [] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q "m:num") STRIP_ASSUME_TAC) THEN
     SUBGOAL_THEN (← q "0 < m") ASSUME_TAC THENL
      [ASM_CASES_TAC (← q "m = 0") THEN ASM_REWRITE_TAC [LT_NZ] THEN
       UNDISCH_TAC
-       (← q r"group_pow (symmetric_group (s:A->bool)) (sigma:A->A) m a = b") THEN
+       (← q r"group_pow (symmetric_group (s:A->bool)) (f:A->A) m a = b") THEN
       ASM_REWRITE_TAC [group_pow, SYMMETRIC_GROUP, I_THM] THEN ASM_MESON_TAC [],
       ALL_TAC] THEN
-    -- Let tau = sigma^m. tau permutes s with order p, and tau(a) = b
-    ABBREV_TAC (← q r"tau:A->A = group_pow (symmetric_group s) sigma m") THEN
-    SUBGOAL_THEN (← q r"(tau:A->A) permutes s") ASSUME_TAC THENL
-     [EXPAND_TAC "tau" THEN
-      MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "sigma:A->A", ← q "m:num"]
+    -- Let g = f^m. g permutes s with order p, and g(a) = b
+    ABBREV_TAC (← q r"g:A->A = group_pow (symmetric_group s) f m") THEN
+    SUBGOAL_THEN (← q r"(g:A->A) permutes s") ASSUME_TAC THENL
+     [EXPAND_TAC "g" THEN
+      MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "f:A->A", ← q "m:num"]
         GROUP_POW) THEN
       ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM],
       ALL_TAC] THEN
-    SUBGOAL_THEN (← q r"group_element_order (symmetric_group (s:A->bool)) (tau:A->A) =
+    SUBGOAL_THEN (← q r"group_element_order (symmetric_group (s:A->bool)) (g:A->A) =
                 CARD s") ASSUME_TAC THENL
-     [EXPAND_TAC "tau" THEN
-      MP_TAC (← ISPECL [← q "s:A->bool", ← q "sigma:A->A", ← q "m:num"]
+     [EXPAND_TAC "g" THEN
+      MP_TAC (← ISPECL [← q "s:A->bool", ← q "f:A->A", ← q "m:num"]
         PRIME_ORDER_POW_PERM) THEN
       ASM_REWRITE_TAC [],
       ALL_TAC] THEN
-    SUBGOAL_THEN (← q r"(tau:A->A) a = b") ASSUME_TAC THENL
-     [EXPAND_TAC "tau" THEN ASM_REWRITE_TAC [], ALL_TAC] THEN
-    SUBGOAL_THEN (← q r"(tau:A->A) IN h") ASSUME_TAC THENL
-     [EXPAND_TAC "tau" THEN
+    SUBGOAL_THEN (← q r"(g:A->A) a = b") ASSUME_TAC THENL
+     [EXPAND_TAC "g" THEN ASM_REWRITE_TAC [], ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"(g:A->A) IN h") ASSUME_TAC THENL
+     [EXPAND_TAC "g" THEN
       MATCH_MP_TAC IN_SUBGROUP_POW THEN ASM_REWRITE_TAC [],
       ALL_TAC] THEN
     SUBGOAL_THEN (← q r"swap(a:A,b) IN h") ASSUME_TAC THENL
      [ASM_REWRITE_TAC [], ALL_TAC] THEN
-    -- c = tau^n(a) for some n with 0 < n < p by orbit
-    MP_TAC (← ISPECL [← q "s:A->bool", ← q "tau:A->A", ← q "a:A", ← q "c:A"]
+    -- c = g^n(a) for some n with 0 < n < p by orbit
+    MP_TAC (← ISPECL [← q "s:A->bool", ← q "g:A->A", ← q "a:A", ← q "c:A"]
       PRIME_ORDER_PERM_ORBIT) THEN
     ASM_REWRITE_TAC [] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q "n:num") STRIP_ASSUME_TAC) THEN
     SUBGOAL_THEN (← q "0 < n") ASSUME_TAC THENL
      [ASM_CASES_TAC (← q "n = 0") THEN ASM_REWRITE_TAC [LT_NZ] THEN
       UNDISCH_TAC
-       (← q r"group_pow (symmetric_group (s:A->bool)) (tau:A->A) n a = c") THEN
+       (← q r"group_pow (symmetric_group (s:A->bool)) (g:A->A) n a = c") THEN
       ASM_REWRITE_TAC [group_pow, SYMMETRIC_GROUP, I_THM] THEN ASM_MESON_TAC [],
       ALL_TAC] THEN
-    -- Rewrite c back to tau^n(a) so the induction result can match
-    UNDISCH_TAC (← q r"group_pow (symmetric_group (s:A->bool)) (tau:A->A) n a = c") THEN
+    -- Rewrite c back to g^n(a) so the induction result can match
+    UNDISCH_TAC (← q r"group_pow (symmetric_group (s:A->bool)) (g:A->A) n a = c") THEN
     DISCH_THEN (fun th => tactic_of do pure (REWRITE_TAC [← SYM th])) THEN
-    -- Goal is now: swap(a, group_pow ... tau n a) IN h
+    -- Goal is now: swap(a, group_pow ... g n a) IN h
     SUBGOAL_THEN
       (← q r"!k. 0 < k /\ k < CARD(s:A->bool)
-         ==> swap(a:A, group_pow (symmetric_group s) (tau:A->A) k a) IN h")
+         ==> swap(a:A, group_pow (symmetric_group s) (g:A->A) k a) IN h")
       (fun th => MATCH_MP_TAC th THEN ASM_REWRITE_TAC []) THEN
     INDUCT_TAC THENL [ARITH_TAC, ALL_TAC] THEN
     STRIP_TAC THEN
     ASM_CASES_TAC (← q "k = 0") THENL
-     [-- Base: n = 1, tau^1(a) = tau(a) = b, swap(a,b) IN h
+     [-- Base: n = 1, g^1(a) = g(a) = b, swap(a,b) IN h
       ASM_REWRITE_TAC [ONE, group_pow, SYMMETRIC_GROUP, o_THM, I_THM],
       ALL_TAC] THEN
     SUBGOAL_THEN
-     (← q r"swap(a:A, group_pow (symmetric_group (s:A->bool)) (tau:A->A) k a) IN h")
+     (← q r"swap(a:A, group_pow (symmetric_group (s:A->bool)) (g:A->A) k a) IN h")
     ASSUME_TAC THENL
      [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC, ALL_TAC] THEN
-    -- tau^{SUC k}(a) = tau(tau^k(a))
+    -- g^{SUC k}(a) = g(g^k(a))
     SUBGOAL_THEN
-      (← q r"group_pow (symmetric_group (s:A->bool)) (tau:A->A) (SUC k) a =
-     tau(group_pow (symmetric_group s) tau k a)")
+      (← q r"group_pow (symmetric_group (s:A->bool)) (g:A->A) (SUC k) a =
+     g(group_pow (symmetric_group s) g k a)")
       SUBST1_TAC THENL
      [REWRITE_TAC [group_pow, SYMMETRIC_GROUP, o_THM], ALL_TAC] THEN
     ABBREV_TAC
-      (← q r"x0 = group_pow (symmetric_group (s:A->bool)) (tau:A->A) k (a:A)") THEN
+      (← q r"x0 = group_pow (symmetric_group (s:A->bool)) (g:A->A) k (a:A)") THEN
     -- x0 IN s
     SUBGOAL_THEN (← q r"(x0:A) IN s") ASSUME_TAC THENL
      [EXPAND_TAC "x0" THEN MATCH_MP_TAC SYMMETRIC_GROUP_POW_IN THEN
@@ -1087,71 +1113,71 @@ def setupSwapGen [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BTranspo
     SUBGOAL_THEN (← q r"~((x0:A) = a)") ASSUME_TAC THENL
      [EXPAND_TAC "x0" THEN
       MP_TAC (← ISPECL [← q "s:A->bool",
-        ← q r"group_pow (symmetric_group (s:A->bool)) (tau:A->A) k",
+        ← q r"group_pow (symmetric_group (s:A->bool)) (g:A->A) k",
         ← q "a:A"] PRIME_ORDER_PERM_NO_FIXPOINT) THEN
       ASM_REWRITE_TAC [] THEN ANTS_TAC THENL
        [CONJ_TAC THENL
-         [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "tau:A->A", ← q "k:num"]
+         [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "g:A->A", ← q "k:num"]
             GROUP_POW) THEN
           ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM],
-          MP_TAC (← ISPECL [← q "s:A->bool", ← q "tau:A->A", ← q "k:num"]
+          MP_TAC (← ISPECL [← q "s:A->bool", ← q "g:A->A", ← q "k:num"]
             PRIME_ORDER_POW_PERM) THEN
           ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC],
         REWRITE_TAC []],
       ALL_TAC] THEN
-    -- tau(x0) <> a: tau^{SUC k} has no fixed points
-    SUBGOAL_THEN (← q r"~((tau:A->A) (x0:A) = a)") ASSUME_TAC THENL
+    -- g(x0) <> a: g^{SUC k} has no fixed points
+    SUBGOAL_THEN (← q r"~((g:A->A) (x0:A) = a)") ASSUME_TAC THENL
      [EXPAND_TAC "x0" THEN
       SUBGOAL_THEN
-        (← q r"(tau:A->A) (group_pow (symmetric_group (s:A->bool)) tau k a) =
-       group_pow (symmetric_group s) tau (SUC k) a")
+        (← q r"(g:A->A) (group_pow (symmetric_group (s:A->bool)) g k a) =
+       group_pow (symmetric_group s) g (SUC k) a")
         SUBST1_TAC THENL
        [REWRITE_TAC [group_pow, SYMMETRIC_GROUP, o_THM], ALL_TAC] THEN
       MP_TAC (← ISPECL [← q "s:A->bool",
-        ← q r"group_pow (symmetric_group (s:A->bool)) (tau:A->A) (SUC k)",
+        ← q r"group_pow (symmetric_group (s:A->bool)) (g:A->A) (SUC k)",
         ← q "a:A"] PRIME_ORDER_PERM_NO_FIXPOINT) THEN
       ASM_REWRITE_TAC [] THEN ANTS_TAC THENL
        [CONJ_TAC THENL
-         [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "tau:A->A", ← q "SUC k"]
+         [MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "g:A->A", ← q "SUC k"]
             GROUP_POW) THEN
           ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM],
-          MP_TAC (← ISPECL [← q "s:A->bool", ← q "tau:A->A", ← q "SUC k"]
+          MP_TAC (← ISPECL [← q "s:A->bool", ← q "g:A->A", ← q "SUC k"]
             PRIME_ORDER_POW_PERM) THEN
           ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC],
         REWRITE_TAC []],
       ALL_TAC] THEN
-    -- tau(x0) <> x0: tau has no fixed points
-    SUBGOAL_THEN (← q r"~((tau:A->A) (x0:A) = x0)") ASSUME_TAC THENL
-     [MP_TAC (← ISPECL [← q "s:A->bool", ← q "tau:A->A", ← q "x0:A"]
+    -- g(x0) <> x0: g has no fixed points
+    SUBGOAL_THEN (← q r"~((g:A->A) (x0:A) = x0)") ASSUME_TAC THENL
+     [MP_TAC (← ISPECL [← q "s:A->bool", ← q "g:A->A", ← q "x0:A"]
         PRIME_ORDER_PERM_NO_FIXPOINT) THEN
       ASM_REWRITE_TAC [],
       ALL_TAC] THEN
-    -- swap(x0, tau(x0)) IN h by conjugation
-    SUBGOAL_THEN (← q r"swap(x0:A, (tau:A->A) x0) IN h") ASSUME_TAC THENL
+    -- swap(x0, g(x0)) IN h by conjugation
+    SUBGOAL_THEN (← q r"swap(x0:A, (g:A->A) x0) IN h") ASSUME_TAC THENL
      [EXPAND_TAC "x0" THEN
-      -- tau^k(a) and tau(tau^k(a)) = tau^k(tau(a)) = tau^k(b)
+      -- g^k(a) and g(g^k(a)) = g^k(g(a)) = g^k(b)
       SUBGOAL_THEN
-        (← q r"(tau:A->A)(group_pow (symmetric_group (s:A->bool)) tau k a) =
-       group_pow (symmetric_group s) tau k b")
+        (← q r"(g:A->A)(group_pow (symmetric_group (s:A->bool)) g k a) =
+       group_pow (symmetric_group s) g k b")
         SUBST1_TAC THENL
        [SUBGOAL_THEN
-          (← q r"(tau:A->A)(group_pow (symmetric_group (s:A->bool)) tau k a) =
-         group_pow (symmetric_group s) tau k ((tau:A->A) a)")
+          (← q r"(g:A->A)(group_pow (symmetric_group (s:A->bool)) g k a) =
+         group_pow (symmetric_group s) g k ((g:A->A) a)")
           SUBST1_TAC THENL
-         [-- tau(tau^k(a)) = tau^{k+1}(a) = tau^k(tau(a))
+         [-- g(g^k(a)) = g^{k+1}(a) = g^k(g(a))
           SUBGOAL_THEN
-            (← q r"(tau:A->A)(group_pow (symmetric_group (s:A->bool)) tau k a) =
-           group_pow (symmetric_group s) tau (SUC k) a")
+            (← q r"(g:A->A)(group_pow (symmetric_group (s:A->bool)) g k a) =
+           group_pow (symmetric_group s) g (SUC k) a")
             SUBST1_TAC THENL
            [REWRITE_TAC [group_pow, SYMMETRIC_GROUP, o_THM], ALL_TAC] THEN
           REWRITE_TAC [ADD1] THEN
-          MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "tau:A->A",
+          MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "g:A->A",
                           ← q "k:num", ← q "1"] GROUP_POW_ADD) THEN
           ANTS_TAC THENL
            [ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM], ALL_TAC] THEN
           DISCH_THEN (fun th => tactic_of do pure (REWRITE_TAC [th])) THEN
           REWRITE_TAC [SYMMETRIC_GROUP, o_THM] THEN
-          MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "tau:A->A"]
+          MP_TAC (← ISPECL [← q r"symmetric_group(s:A->bool)", ← q "g:A->A"]
             GROUP_POW_1) THEN
           ANTS_TAC THENL
            [ASM_REWRITE_TAC [SYMMETRIC_GROUP, IN_ELIM_THM], ALL_TAC] THEN
@@ -1160,11 +1186,11 @@ def setupSwapGen [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BTranspo
         ASM_REWRITE_TAC [],
         MATCH_MP_TAC SWAP_CONJUGATE_IN_SUBGROUP THEN ASM_REWRITE_TAC []],
       ALL_TAC] THEN
-    -- swap(a, tau(x0)) = swap(a,x0) o swap(x0,tau x0) o swap(a,x0)
-    SUBGOAL_THEN (← q r"swap(a:A, (tau:A->A) x0) =
+    -- swap(a, g(x0)) = swap(a,x0) o swap(x0,g x0) o swap(a,x0)
+    SUBGOAL_THEN (← q r"swap(a:A, (g:A->A) x0) =
     group_mul (symmetric_group (s:A->bool))
       (swap(a,x0))
-      (group_mul (symmetric_group s) (swap(x0, tau x0)) (swap(a:A,x0)))")
+      (group_mul (symmetric_group s) (swap(x0, g x0)) (swap(a:A,x0)))")
     SUBST1_TAC THENL
      [REWRITE_TAC [SYMMETRIC_GROUP] THEN
       CONV_TAC SYM_CONV THEN MATCH_MP_TAC SWAP_TRIPLE THEN
@@ -1180,12 +1206,13 @@ def setupSwapGen [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BTranspo
 /- ------------------------------------------------------------------------- -/
 /- Main theorem: a transitive subgroup containing a transposition generates  -/
 /- the whole symmetric group when the degree is prime.                       -/
-/- (symmetric_group.ml 891-968)                                              -/
+/- (symmetric_group.ml 910-987)                                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure Transitive where
   -- @@FIELDS
   TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC : thm
+  TRANSITIVE_TRANSPOSITION_SYMMETRIC_ISOMORPHISM : thm
   deriving Inhabited
 
 @[nospecialize]
@@ -1195,9 +1222,10 @@ def setupTransitive [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BCayl
   let { ASM_MESON_TAC, .. } := D
   let { CARRIER_SUBGROUP_GENERATED_SUBGROUP, CAUCHY_GROUP_THEOREM, FINITE_SUBSET,
         GROUP_ACTION_FROM_SUBGROUP, GROUP_ELEMENT_ORDER_SUBGROUP_GENERATED,
-        GROUP_ORBIT_SUBSET, IN_GROUP_ORBIT, .. } := D.core1
-  let { MULT_SYM, ORBIT_STABILIZER_MUL, SUBGROUP_OF_IMP_SUBSET, SUBSET,
-        SUBSET_ANTISYM_EQ, divides, .. } := D.core2
+        GROUP_ISOMORPHISM, GROUP_ORBIT_SUBSET, IN_GROUP_ORBIT, .. } := D.core1
+  let { MULT_SYM, ORBIT_STABILIZER_MUL, SUBGROUP_GROUP_IMAGE, SUBGROUP_OF_IMP_SUBSET, SUBSET,
+        SUBSET_ANTISYM, SUBSET_ANTISYM_EQ, divides, group_homomorphism, group_image,
+        group_monomorphism, .. } := D.core2
   let { FINITE_SYMMETRIC_GROUP, .. } := BBasics
   let { SYMMETRIC_GROUP_ACTION, .. } := BCayley
   let { TRANSPOSITION_PCYCLE_GENERATES, .. } := BSwapGen
@@ -1208,7 +1236,7 @@ def setupTransitive [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BCayl
    r"!s (a:A) b h.
      FINITE s /\ prime(CARD s) /\
      h subgroup_of symmetric_group s /\
-     (!x y. x IN s /\ y IN s ==> ?sigma. sigma IN h /\ sigma x = y) /\
+     (!x y. x IN s /\ y IN s ==> ?g. g IN h /\ g x = y) /\
      swap(a,b) IN h /\
      a IN s /\ b IN s /\ ~(a = b)
      ==> group_carrier(symmetric_group s) SUBSET h"
@@ -1245,8 +1273,8 @@ def setupTransitive [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BCayl
         X_GEN_TAC (← q "y:A") THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
         FIRST_X_ASSUM (MP_TAC o SPECL [← q "a:A", ← q "y:A"]) THEN
         ASM_REWRITE_TAC [] THEN
-        DISCH_THEN (X_CHOOSE_THEN (← q "sigma:A->A") STRIP_ASSUME_TAC) THEN
-        EXISTS_TAC (← q "sigma:A->A") THEN ASM_REWRITE_TAC []],
+        DISCH_THEN (X_CHOOSE_THEN (← q "g:A->A") STRIP_ASSUME_TAC) THEN
+        EXISTS_TAC (← q "g:A->A") THEN ASM_REWRITE_TAC []],
       ALL_TAC] THEN
     -- Step 4: By orbit-stabilizer, CARD s divides CARD h
     SUBGOAL_THEN (← q r"CARD(s:A->bool) divides CARD(h:(A->A)->bool)") ASSUME_TAC THENL
@@ -1264,26 +1292,51 @@ def setupTransitive [HolBase] (D : SymmetricGroupDeps) (BBasics : Basics) (BCayl
       CAUCHY_GROUP_THEOREM) THEN
     ANTS_TAC THENL [ASM_REWRITE_TAC [], ALL_TAC] THEN
     ASM_REWRITE_TAC [] THEN
-    DISCH_THEN (X_CHOOSE_THEN (← q "sigma:A->A") STRIP_ASSUME_TAC) THEN
-    -- Step 6: sigma has order CARD s in symmetric_group s
+    DISCH_THEN (X_CHOOSE_THEN (← q "g:A->A") STRIP_ASSUME_TAC) THEN
+    -- Step 6: g has order CARD s in symmetric_group s
     SUBGOAL_THEN
-      (← q r"group_element_order (symmetric_group (s:A->bool)) (sigma:A->A) = CARD s")
+      (← q r"group_element_order (symmetric_group (s:A->bool)) (g:A->A) = CARD s")
       ASSUME_TAC THENL
      [UNDISCH_TAC
-        (← q r"group_element_order (H:(A->A)group) (sigma:A->A) = CARD(s:A->bool)") THEN
+        (← q r"group_element_order (H:(A->A)group) (g:A->A) = CARD(s:A->bool)") THEN
       EXPAND_TAC "H" THEN
       REWRITE_TAC [GROUP_ELEMENT_ORDER_SUBGROUP_GENERATED],
       ALL_TAC] THEN
-    -- Step 7: sigma IN h
-    SUBGOAL_THEN (← q r"(sigma:A->A) IN h") ASSUME_TAC THENL
+    -- Step 7: g IN h
+    SUBGOAL_THEN (← q r"(g:A->A) IN h") ASSUME_TAC THENL
      [ASM_MESON_TAC [], ALL_TAC] THEN
     -- Step 8: Apply TRANSPOSITION_PCYCLE_GENERATES
     MATCH_MP_TAC TRANSPOSITION_PCYCLE_GENERATES THEN
-    MAP_EVERY EXISTS_TAC [← q "sigma:A->A", ← q "a:A", ← q "b:A"] THEN
+    MAP_EVERY EXISTS_TAC [← q "g:A->A", ← q "a:A", ← q "b:A"] THEN
     ASM_REWRITE_TAC [])
 
+  let TRANSITIVE_TRANSPOSITION_SYMMETRIC_ISOMORPHISM ← prove
+   r"!G (rho:A->B->B) s a b.
+        FINITE s /\ prime(CARD s) /\
+        group_monomorphism(G,symmetric_group s) rho /\
+        (!x y. x IN s /\ y IN s
+               ==> ?g. g IN group_image(G,symmetric_group s) rho /\ g x = y) /\
+        swap(a,b) IN group_image(G,symmetric_group s) rho /\
+        a IN s /\ b IN s /\ ~(a = b)
+        ==> group_isomorphism(G,symmetric_group s) rho"
+   (REPEAT STRIP_TAC THEN
+    FIRST_X_ASSUM (STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [group_monomorphism]) THEN
+    MP_TAC (← ISPECL [← q r"s:B->bool", ← q r"a:B", ← q r"b:B",
+                   ← q r"group_image(G,symmetric_group s) (rho:A->B->B)"]
+      TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC) THEN
+    ASM_SIMP_TAC [SUBGROUP_GROUP_IMAGE] THEN DISCH_TAC THEN
+    ASM_REWRITE_TAC [GROUP_ISOMORPHISM] THEN
+    MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL
+     [FIRST_ASSUM (ACCEPT_TAC o CONJUNCT1 o GEN_REWRITE_RULE I
+       [group_homomorphism]),
+      UNDISCH_TAC
+       (← q r"group_carrier(symmetric_group s) SUBSET
+        group_image(G,symmetric_group s) (rho:A->B->B)") THEN
+      REWRITE_TAC [group_image]])
+
   -- @@RETURN BEGIN
-  return { TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC }
+  return { TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC,
+           TRANSITIVE_TRANSPOSITION_SYMMETRIC_ISOMORPHISM }
   -- @@RETURN END
 
 end HolLibrary.SymmetricGroup

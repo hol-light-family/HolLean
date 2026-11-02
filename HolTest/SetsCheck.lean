@@ -120,42 +120,42 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
              ++ "==> !s. FINITE s ==> P s"))
 
 /- ---------------------------------------------------------------------- -/
-/- (4) Finite / cardinality (sets.ml 1390-2270).                          -/
+/- (4) Finite / cardinality (sets.ml 1403-2283).                          -/
 /- ---------------------------------------------------------------------- -/
 
 #eval (do let th := Session.FINITE_SUBSET
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "FINITE_SUBSET (sets.ml 1390)" th
+          stmtOK "FINITE_SUBSET (sets.ml 1403)" th
             "!(s:A->bool) t. FINITE t /\\ s SUBSET t ==> FINITE s")
 
 #eval (do let th := Session.FINITE_UNION
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "FINITE_UNION (sets.ml 1422)" th
+          stmtOK "FINITE_UNION (sets.ml 1435)" th
             "!(s:A->bool) t. FINITE(s UNION t) <=> FINITE(s) /\\ FINITE(t)")
 
 #eval (do let th := Session.FINITE_INSERT
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "FINITE_INSERT (sets.ml 1433)" th
+          stmtOK "FINITE_INSERT (sets.ml 1446)" th
             "!(s:A->bool) x. FINITE (x INSERT s) <=> FINITE s")
 
 #eval (do let th := Session.CARD_UNION
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "CARD_UNION (sets.ml 2003)" th
+          stmtOK "CARD_UNION (sets.ml 2016)" th
             ("!(s:A->bool) t. FINITE(s) /\\ FINITE(t) /\\ (s INTER t = EMPTY) "
              ++ "==> (CARD (s UNION t) = CARD s + CARD t)"))
 
 #eval (do let th := Session.CARD_SUBSET
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "CARD_SUBSET (sets.ml 2268)" th
+          stmtOK "CARD_SUBSET (sets.ml 2281)" th
             "!(a:A->bool) b. a SUBSET b /\\ FINITE(b) ==> CARD(a) <= CARD(b)")
 
 /- ---------------------------------------------------------------------- -/
-/- (5) HAS_SIZE machinery (sets.ml 2156-2270).                            -/
+/- (5) HAS_SIZE machinery (sets.ml 2169-2283).                            -/
 /- ---------------------------------------------------------------------- -/
 
 #eval (do let th := Session.HAS_SIZE_UNIONS
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "HAS_SIZE_UNIONS (sets.ml 2156)" th
+          stmtOK "HAS_SIZE_UNIONS (sets.ml 2169)" th
             ("!s t:A->B->bool m n. s HAS_SIZE m /\\ "
              ++ "(!x. x IN s ==> t(x) HAS_SIZE n) /\\ "
              ++ "(!x y. x IN s /\\ y IN s /\\ ~(x = y) ==> DISJOINT (t x) (t y)) "
@@ -163,23 +163,23 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
 
 #eval (do let th := Session.CARD_LE_1
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "CARD_LE_1 (sets.ml 2603)" th
+          stmtOK "CARD_LE_1 (sets.ml 2616)" th
             "!s:A->bool. FINITE s /\\ CARD s <= 1 <=> ?a. s SUBSET {a}")
 
 #eval (do let th := Session.INVOLUTION_EVEN_NOFIXPOINTS
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "INVOLUTION_EVEN_NOFIXPOINTS (sets.ml 2613)" th
+          stmtOK "INVOLUTION_EVEN_NOFIXPOINTS (sets.ml 2626)" th
             ("!f (s:A->bool). FINITE s /\\ "
              ++ "(!x. x IN s ==> f x IN s /\\ ~(f x = x) /\\ f(f x) = x) "
              ++ "==> EVEN(CARD s)"))
 
 /- ---------------------------------------------------------------------- -/
-/- (6) ITSET recursor (sets.ml 1943-1980).                                -/
+/- (6) ITSET recursor (sets.ml 1956-1993).                                -/
 /- ---------------------------------------------------------------------- -/
 
 #eval (do let th := Session.FINITE_RECURSION
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "FINITE_RECURSION (sets.ml 1943)" th
+          stmtOK "FINITE_RECURSION (sets.ml 1956)" th
             ("!(f:A->B->B) b. "
              ++ "(!x y s. ~(x = y) ==> (f x (f y s) = f y (f x s))) "
              ++ "==> (ITSET f {} b = b) /\\ "
@@ -188,139 +188,139 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
 
 #eval (do let th := Session.ITSET_EQ
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "ITSET_EQ (sets.ml 1974)" th
+          stmtOK "ITSET_EQ (sets.ml 1987)" th
             ("!s (f:A->B->B) g b. FINITE(s) /\\ (!x. x IN s ==> (f x = g x)) /\\ "
              ++ "(!x y s. ~(x = y) ==> (f x (f y s) = f y (f x s))) /\\ "
              ++ "(!x y s. ~(x = y) ==> (g x (g y s) = g y (g x s))) "
              ++ "==> (ITSET f s b = ITSET g s b)"))
 
 /- ---------------------------------------------------------------------- -/
-/- (7) CROSS / product cardinality (sets.ml 2734-2772).                   -/
+/- (7) CROSS / product cardinality (sets.ml 2747-2789).                   -/
 /- ---------------------------------------------------------------------- -/
 
 #eval (do let th := Session.CROSS
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "CROSS def (sets.ml 2734)" th
+          stmtOK "CROSS def (sets.ml 2747)" th
             "!(s:A->bool) (t:B->bool). s CROSS t = {x,y | x IN s /\\ y IN t}")
 
 #eval (do let th := Session.CROSS_SING
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "CROSS_SING (sets.ml 2763)" th
+          stmtOK "CROSS_SING (sets.ml 2780)" th
             "!x:A y:B. {x} CROSS {y} = {(x,y)}")
 
 #eval (do let th := Session.CROSS_UNIV
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "CROSS_UNIV (sets.ml 2767)" th "(:A) CROSS (:B) = (:A#B)")
+          stmtOK "CROSS_UNIV (sets.ml 2784)" th "(:A) CROSS (:B) = (:A#B)")
 
 #eval (do let th := Session.CARD_CROSS
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "CARD_CROSS (sets.ml 2750)" th
+          stmtOK "CARD_CROSS (sets.ml 2767)" th
             ("!(s:A->bool) (t:B->bool). FINITE s /\\ FINITE t "
              ++ "==> CARD(s CROSS t) = CARD s * CARD t"))
 
 /- ---------------------------------------------------------------------- -/
-/- (8) Funspace / bool cardinality (sets.ml 3328-3413).                   -/
+/- (8) Funspace / bool cardinality (sets.ml 3345-3430).                   -/
 /- ---------------------------------------------------------------------- -/
 
 #eval (do let th := Session.HAS_SIZE_BOOL
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "HAS_SIZE_BOOL (sets.ml 3403)" th "(:bool) HAS_SIZE 2")
+          stmtOK "HAS_SIZE_BOOL (sets.ml 3420)" th "(:bool) HAS_SIZE 2")
 
 #eval (do let th := Session.CARD_BOOL
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "CARD_BOOL (sets.ml 3410)" th "CARD(:bool) = 2")
+          stmtOK "CARD_BOOL (sets.ml 3427)" th "CARD(:bool) = 2")
 
 /- ---------------------------------------------------------------------- -/
-/- (9) Infinity (sets.ml 3612-3691).                                      -/
+/- (9) Infinity (sets.ml 3629-3708).                                      -/
 /- ---------------------------------------------------------------------- -/
 
 #eval (do let th := Session.num_INFINITE
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "num_INFINITE (sets.ml 3612)" th "INFINITE(:num)")
+          stmtOK "num_INFINITE (sets.ml 3629)" th "INFINITE(:num)")
 
 #eval (do let th := Session.string_INFINITE
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "string_INFINITE (sets.ml 3620)" th "INFINITE(:string)")
+          stmtOK "string_INFINITE (sets.ml 3637)" th "INFINITE(:string)")
 
 #eval (do let th := Session.real_INFINITE
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "real_INFINITE (sets.ml 3689)" th "INFINITE(:real)")
+          stmtOK "real_INFINITE (sets.ml 3706)" th "INFINITE(:real)")
 
 /- ---------------------------------------------------------------------- -/
-/- (10) set_of_list / list_of_set / pairwise (sets.ml 3790-3897).         -/
+/- (10) set_of_list / list_of_set / pairwise (sets.ml 3933-4055).         -/
 /- ---------------------------------------------------------------------- -/
 
 #eval (do let th := Session.set_of_list
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "set_of_list def (sets.ml 3790)" th
+          stmtOK "set_of_list def (sets.ml 3933)" th
             ("(set_of_list ([]:A list) = {}) /\\ "
              ++ "(set_of_list (CONS (h:A) t) = h INSERT (set_of_list t))"))
 
 #eval (do let th := Session.IN_SET_OF_LIST
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "IN_SET_OF_LIST (sets.ml 3832)" th
+          stmtOK "IN_SET_OF_LIST (sets.ml 3990)" th
             "!x l:A list. x IN (set_of_list l) <=> MEM x l")
 
 #eval (do let th := Session.SET_OF_LIST_APPEND
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "SET_OF_LIST_APPEND (sets.ml 3838)" th
+          stmtOK "SET_OF_LIST_APPEND (sets.ml 3996)" th
             ("!l1 l2:A list. set_of_list(APPEND l1 l2) = "
              ++ "set_of_list(l1) UNION set_of_list(l2)"))
 
 #eval (do let th := Session.LIST_OF_SET_SING
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "LIST_OF_SET_SING (sets.ml 3858)" th
+          stmtOK "LIST_OF_SET_SING (sets.ml 4016)" th
             "!a:A. list_of_set {a} = [a]")
 
 #eval (do let th := Session.pairwise
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "pairwise def (sets.ml 3894)" th
+          stmtOK "pairwise def (sets.ml 4052)" th
             ("!(s:A->bool) r. pairwise r s <=> "
              ++ "!x y. x IN s /\\ y IN s /\\ ~(x = y) ==> r x y"))
 
 /- ---------------------------------------------------------------------- -/
-/- (11) Cardinal comparisons / countability (sets.ml 4665-4696).          -/
+/- (11) Cardinal comparisons / countability (sets.ml 4845-4876).          -/
 /- ---------------------------------------------------------------------- -/
 
 #eval (do let th := Session.le_c
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "le_c def (sets.ml 4665)" th
+          stmtOK "le_c def (sets.ml 4845)" th
             ("!(t:B->bool) (s:A->bool). s <=_c t <=> ?f:A->B. (!x. x IN s ==> f(x) IN t) /\\ "
              ++ "(!x y. x IN s /\\ y IN s /\\ f(x) = f(y) ==> x = y)"))
 
 #eval (do let th := Session.LE_C
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "LE_C (sets.ml 4684)" th
+          stmtOK "LE_C (sets.ml 4864)" th
             "!s t. s <=_c t <=> ?g:A->B. !x. x IN s ==> ?y. y IN t /\\ g y = x")
 
 #eval (do let th := Session.GE_C
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "GE_C (sets.ml 4690)" th
+          stmtOK "GE_C (sets.ml 4870)" th
             "!s t. s >=_c t <=> ?f:A->B. !y. y IN t ==> ?x. x IN s /\\ (y = f x)")
 
 #eval (do let th := Session.COUNTABLE
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "COUNTABLE def (sets.ml 4694)" th
+          stmtOK "COUNTABLE def (sets.ml 4874)" th
             "!t:A->bool. COUNTABLE t <=> (:num) >=_c t")
 
 /- ---------------------------------------------------------------------- -/
-/- (12) Supremum / infimum (sets.ml 4801-4963).                           -/
+/- (12) Supremum / infimum (sets.ml 4981-5143).                           -/
 /- ---------------------------------------------------------------------- -/
 
 #eval (do let th := Session.SUP_SING
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "SUP_SING (sets.ml 4801)" th "!a. sup {a} = a")
+          stmtOK "SUP_SING (sets.ml 4981)" th "!a. sup {a} = a")
 
 #eval (do let th := Session.SUP_UNION
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "SUP_UNION (sets.ml 4826)" th
+          stmtOK "SUP_UNION (sets.ml 5006)" th
             ("!s t. ~(s = {}) /\\ ~(t = {}) /\\ "
              ++ "(?b. !x. x IN s ==> x <= b) /\\ (?c. !x. x IN t ==> x <= c) "
              ++ "==> sup(s UNION t) = max (sup s) (sup t)"))
 
 #eval (do let th := Session.INF_SING
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "INF_SING (sets.ml 4961)" th "!a. inf {a} = a")
+          stmtOK "INF_SING (sets.ml 5141)" th "!a. inf {a} = a")
 
 /- ---------------------------------------------------------------------- -/
 /- (13) HAS_SIZE_CONV examples (Help/HAS_SIZE_CONV.hlp).                   -/
@@ -442,24 +442,24 @@ open HolCore.Parser HolCore.Bool HolCore.Kernel HolCore.Equal Session
             "!s (f:A->B). IMAGE f s = {y | ?x. x IN s /\\ y = f x}")
 #eval (do let th := Session.BIJECTIONS_HAS_SIZE
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "BIJECTIONS_HAS_SIZE, n free (sets.ml 4600)" th
+          stmtOK "BIJECTIONS_HAS_SIZE, n free (sets.ml 4780)" th
             ("!s t (f:A->B) g. (!x. x IN s ==> f(x) IN t /\\ g(f x) = x) /\\ "
              ++ "(!y. y IN t ==> g(y) IN s /\\ f(g y) = y) /\\ s HAS_SIZE n ==> t HAS_SIZE n"))
 #eval (do let th := Session.REAL_SUP_LE
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "REAL_SUP_LE, s free (sets.ml 4755)" th
+          stmtOK "REAL_SUP_LE, s free (sets.ml 4935)" th
             "!b. ~(s = {}) /\\ (!x. x IN s ==> x <= b) ==> sup s <= b")
 #eval (do let th := Session.REAL_LE_INF
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
-          stmtOK "REAL_LE_INF, s free (sets.ml 4915)" th
+          stmtOK "REAL_LE_INF, s free (sets.ml 5095)" th
             "!b. ~(s = {}) /\\ (!x. x IN s ==> b <= x) ==> b <= inf s")
 
-/- CROSS_EMPTY (sets.ml 2759) gives its `{}`s no type, so they get invented
+/- CROSS_EMPTY (sets.ml 2776) gives its `{}`s no type, so they get invented
    type variables; stating them as `{}:B->bool` and `{}:A->bool` made a
    different theorem that prints the same.  Found by tools/dbdiff/scompare.py. -/
 #eval (do let th := Session.CROSS_EMPTY
           let _ ← (IO.mkRef (concl th) : IO (IO.Ref term))
           let tvs := (HolCore.Kernel.type_vars_in_term (concl th)).map dest_vartype
           IO.println (if tvs.any (fun v => match v with | .ok n => n.startsWith "?" | _ => false)
-                      then "CROSS_EMPTY has invented type variables (sets.ml 2759) -> OK"
-                      else s!"CROSS_EMPTY has invented type variables (sets.ml 2759) -> MISMATCH {tvs.length} vars, none invented"))
+                      then "CROSS_EMPTY has invented type variables (sets.ml 2776) -> OK"
+                      else s!"CROSS_EMPTY has invented type variables (sets.ml 2776) -> MISMATCH {tvs.length} vars, none invented"))

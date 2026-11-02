@@ -84,7 +84,7 @@ open Session in
 def core4 : HolMultiLib.Determinants.CoreThms4 :=
   { BETA_THM, CONTRAPOS_THM, DE_MORGAN_THM, EQ_IMP, FORALL_AND_THM, FORALL_PAIR_THM,
     FORALL_SIMP, FORALL_UNWIND_THM2, I_O_ID, I_THM, LEFT_AND_EXISTS_THM, MONO_AND, MONO_IMP,
-    MONO_OR, PAIR_EQ, RIGHT_AND_EXISTS_THM, RIGHT_IMP_EXISTS_THM }
+    MONO_OR, PAIR_EQ, RIGHT_AND_EXISTS_THM, RIGHT_IMP_EXISTS_THM, EQ_SYM_EQ, IMP_CONJ_ALT }
 
 open SessionMultiLib.Vectors in
 /-- The theorems determinants.ml uses from vectors.ml, ADJOINT_ADJOINT to MATRIX_I. -/
@@ -288,6 +288,8 @@ initialize BHorizontal : HolMultiLib.Determinants.Horizontal ←
   ioB "setupHorizontal"
     (HolMultiLib.Determinants.setupHorizontal deps BDetBasic BOrth1 BOrth2 BIso
       BRotation2).run
+initialize BMatrixInduct : HolMultiLib.Determinants.MatrixInduct ←
+  ioB "setupMatrixInduct" (HolMultiLib.Determinants.setupMatrixInduct deps BTrace).run
 initialize BReflect1 : HolMultiLib.Determinants.Reflect1 ←
   ioB "setupReflect1" (HolMultiLib.Determinants.setupReflect1 deps BOrth1 BOrth2).run
 initialize BReflect2 : HolMultiLib.Determinants.Reflect2 ←
@@ -645,7 +647,10 @@ def ORTHOGONAL_TRANSFORMATION_LOWDIM_HORIZONTAL : thm :=
   BHorizontal.ORTHOGONAL_TRANSFORMATION_LOWDIM_HORIZONTAL
 def ORTHOGONAL_TRANSFORMATION_BETWEEN_ORTHOGONAL_SETS : thm :=
   BHorizontal.ORTHOGONAL_TRANSFORMATION_BETWEEN_ORTHOGONAL_SETS
--- Reflect1 (determinants.ml 4039-4124)
+def INDUCT_MATRIX_ROW_OPERATIONS : thm := BMatrixInduct.INDUCT_MATRIX_ROW_OPERATIONS
+def INDUCT_MATRIX_ELEMENTARY : thm := BMatrixInduct.INDUCT_MATRIX_ELEMENTARY
+def INDUCT_MATRIX_ELEMENTARY_ALT : thm := BMatrixInduct.INDUCT_MATRIX_ELEMENTARY_ALT
+-- Reflect1 (determinants.ml 4291-4376)
 def reflect_along : thm := BReflect1.reflect_along
 def REFLECT_ALONG_ADD : thm := BReflect1.REFLECT_ALONG_ADD
 def REFLECT_ALONG_MUL : thm := BReflect1.REFLECT_ALONG_MUL
@@ -661,7 +666,7 @@ def ORTHOGONAL_TRANSFORMATION_REFLECT_ALONG : thm :=
 def REFLECT_ALONG_EQ_SELF : thm := BReflect1.REFLECT_ALONG_EQ_SELF
 def REFLECT_ALONG_ZERO : thm := BReflect1.REFLECT_ALONG_ZERO
 def REFLECT_ALONG_LINEAR_IMAGE : thm := BReflect1.REFLECT_ALONG_LINEAR_IMAGE
--- Reflect2 (determinants.ml 4126-4318)
+-- Reflect2 (determinants.ml 4378-4570)
 def REFLECT_ALONG_SCALE : thm := BReflect2.REFLECT_ALONG_SCALE
 def REFLECT_ALONG_NEGATION : thm := BReflect2.REFLECT_ALONG_NEGATION
 def REFLECT_ALONG_1D : thm := BReflect2.REFLECT_ALONG_1D
@@ -677,12 +682,12 @@ def REFLECT_ALONG_SURJECTIVE : thm := BReflect2.REFLECT_ALONG_SURJECTIVE
 def REFLECT_ALONG_SWITCH : thm := BReflect2.REFLECT_ALONG_SWITCH
 def ROTOINVERSION_EXISTS_GEN : thm := BReflect2.ROTOINVERSION_EXISTS_GEN
 def ORTHOGONAL_TRANSFORMATION_EXISTS_GEN : thm := BReflect2.ORTHOGONAL_TRANSFORMATION_EXISTS_GEN
--- GenRefl (determinants.ml 4324-4407)
+-- GenRefl (determinants.ml 4576-4659)
 def ORTHOGONAL_TRANSFORMATION_GENERATED_BY_REFLECTIONS : thm :=
   BGenRefl.ORTHOGONAL_TRANSFORMATION_GENERATED_BY_REFLECTIONS
 def ORTHOGONAL_TRANSFORMATION_REFLECT_INDUCT : thm :=
   BGenRefl.ORTHOGONAL_TRANSFORMATION_REFLECT_INDUCT
--- GeomInv (determinants.ml 4411-4452)
+-- GeomInv (determinants.ml 4663-4704)
 def SCALING_THEOREMS (v : term) : ExceptT String IO thm := BGeomInv.SCALING_THEOREMS v
 def TRANSLATION_INVARIANTS (x : term) : ExceptT String IO thm :=
   BGeomInv.TRANSLATION_INVARIANTS x
@@ -690,7 +695,7 @@ def USABLE_CONCLUSION (f : term) (ths : List thm) (th : thm) : ExceptT String IO
   BGeomInv.USABLE_CONCLUSION f ths th
 def LINEAR_INVARIANTS (f : term) (ths : List thm) : ExceptT String IO thm :=
   BGeomInv.LINEAR_INVARIANTS f ths
--- GeomOrigin (determinants.ml 4461-4549)
+-- GeomOrigin (determinants.ml 4713-4801)
 def GEOM_ORIGIN_CONV (avoid : List String) : HolCore.Equal.ioconv :=
   fun tm => BGeomOrigin.GEOM_ORIGIN_CONV avoid tm
 def GEOM_TRANSLATE_CONV (avoid : List String) (a : term) : HolCore.Equal.ioconv :=
@@ -701,27 +706,27 @@ def GEOM_ORIGIN_TAC (x : term) : HolCore.Tactics.tactic := fun g => BGeomOrigin.
 def GEOM_TRANSLATE_TAC (avoid : List String) : HolCore.Tactics.tactic :=
   fun g => BGeomOrigin.GEOM_TRANSLATE_TAC avoid g
 def EXISTS_GENVAR_RULE (th : thm) : ExceptT String IO thm := BGeomOrigin.EXISTS_GENVAR_RULE th
--- GeomBasis (determinants.ml 4560-4648)
+-- GeomBasis (determinants.ml 4812-4900)
 def GEOM_BASIS_MULTIPLE_RULE (k : Int) (tm : term) : ExceptT String IO thm :=
   BGeomBasis.GEOM_BASIS_MULTIPLE_RULE k tm
 def GEOM_BASIS_MULTIPLE_TAC (k : Int) (l : term) : HolCore.Tactics.tactic :=
   fun g => BGeomBasis.GEOM_BASIS_MULTIPLE_TAC k l g
--- GeomTransform (determinants.ml 4659-4716)
+-- GeomTransform (determinants.ml 4911-4968)
 def GEOM_TRANSFORM_TAC (avoid : List String) : HolCore.Tactics.tactic :=
   fun g => BGeomTransform.GEOM_TRANSFORM_TAC avoid g
--- GeomNormalize (determinants.ml 4724-4817)
+-- GeomNormalize (determinants.ml 4976-5069)
 def GEOM_NORMALIZE_RULE (avoid : List String) (tm : term) : ExceptT String IO thm :=
   BGeomNormalize.GEOM_NORMALIZE_RULE avoid tm
 def GEN_GEOM_NORMALIZE_TAC (x : term) (avoid : List String) : HolCore.Tactics.tactic :=
   fun g => BGeomNormalize.GEN_GEOM_NORMALIZE_TAC x avoid g
 def GEOM_NORMALIZE_TAC (x : term) : HolCore.Tactics.tactic :=
   fun g => BGeomNormalize.GEOM_NORMALIZE_TAC x g
--- Collinear (determinants.ml 4824-4844)
+-- Collinear (determinants.ml 5076-5096)
 def COLLINEAR_TRANSLATION_EQ : thm := BCollinear.COLLINEAR_TRANSLATION_EQ
 def COLLINEAR_TRANSLATION : thm := BCollinear.COLLINEAR_TRANSLATION
 def COLLINEAR_LINEAR_IMAGE : thm := BCollinear.COLLINEAR_LINEAR_IMAGE
 def COLLINEAR_LINEAR_IMAGE_EQ : thm := BCollinear.COLLINEAR_LINEAR_IMAGE_EQ
--- GeomDim (determinants.ml 4853-4956)
+-- GeomDim (determinants.ml 5105-5208)
 def GEOM_DROP_DIMENSION_RULE (dth th : thm) : ExceptT String IO thm :=
   BGeomDim.GEOM_DROP_DIMENSION_RULE dth th
 def GEOM_EQUAL_DIMENSION_RULE (dth th : thm) : ExceptT String IO thm :=

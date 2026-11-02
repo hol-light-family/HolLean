@@ -39,7 +39,7 @@ namespace HolLibrary.Matroids
 structure CoreThms1 where
   (ADD1 AND_FORALL_THM CARD_CLAUSES CARD_DIFF CARD_LE_ANTISYM CARD_LE_CARD
    CARD_LE_FINITE CARD_LE_FINITE_INFINITE CARD_LE_IMAGE CARD_LE_SUBSET
-   CARD_LE_TRANS CARD_LE_UNIONS CARD_PSUBSET CARD_SUBSET
+   CARD_LE_TRANS CARD_LE_UNIONS CARD_PSUBSET CARD_SUBSET CARD_SUBSET_LE
    CHOOSE_SUBSET_BETWEEN CHOOSE_SUBSET_STRONG CONJ_ASSOC CONTRAPOS_THM
    DELETE_SUBSET EMPTY_SUBSET EQ_IMP EQ_IMP_LE FINITE_DIFF FINITE_EMPTY
    FINITE_INDUCT_STRONG FINITE_INSERT FINITE_RULES FINITE_SING FINITE_SUBSET
@@ -1709,7 +1709,7 @@ def setupFiniteDim [HolBase] (D : MatroidsDeps) (BMatroidType : MatroidType) (BL
 
 /- ------------------------------------------------------------------------- -/
 /- Dimension of whole matroid and of a subset: basic characterizations.      -/
-/- (matroids.ml 1272-1470)                                                   -/
+/- (matroids.ml 1282-1497)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure Dimension where
@@ -1719,6 +1719,7 @@ structure Dimension where
   MATROID_DIM_ALT : thm
   MATROID_DIMENSION_UNIQUE : thm
   MATROID_DIMENSION_EQ_CARD : thm
+  MATROID_BASIS_SMALL_SPANNING : thm
   MATROID_DIM_UNIQUE_ALT : thm
   MATROID_DIM_UNIQUE : thm
   MATROID_SPAN_DIM_EQ : thm
@@ -1730,11 +1731,13 @@ structure Dimension where
   MATROID_DIM_EQ_CARD : thm
   MATROID_DIMENSION_LE : thm
   MATROID_DIMENSION_FINITE_LE : thm
+  MATROID_DIMENSION_LE_INDEPENDENT_BOUND : thm
   MATROID_DIM_LE : thm
   MATROID_DIM_FINITE_LE : thm
   MATROID_DIM_LE_CARD_GEN : thm
   MATROID_DIM_LE_CARD : thm
   MATROID_DIMENSION_GE_FINITE_CARD : thm
+  MATROID_BASIS_LARGE_INDEPENDENT : thm
   MATROID_DIMENSION_GE : thm
   MATROID_DIMENSION_GE_CARD : thm
   MATROID_DIM_GE_FINITE_CARD : thm
@@ -1750,14 +1753,15 @@ def setupDimension [HolBase] (D : MatroidsDeps) (BMatroidType : MatroidType) (BL
     ExceptT String IO Dimension := do
   -- @@SCOPE BEGIN
   let { ASM_ARITH_TAC, ASM_MESON_TAC, MESON_TAC, SET_TAC, .. } := D
-  let { CARD_SUBSET, EQ_IMP_LE, FINITE_SUBSET, FUN_EQ_THM, HAS_SIZE, LE_REFL, LE_TRANS,
-        SUBSET, .. } := D.core1
+  let { CARD_SUBSET, CARD_SUBSET_LE, EQ_IMP_LE, FINITE_SUBSET, FUN_EQ_THM, HAS_SIZE,
+        LE_REFL, LE_TRANS, SUBSET, .. } := D.core1
   let { SUBSET_REFL, SUBSET_TRANS, .. } := D.core2
   let { MATROID_SPAN_EQ, MATROID_SPAN_INSERT_EQ, MATROID_SPAN_MINIMAL,
         MATROID_SPAN_SUBSET, MATROID_SPAN_SUPERSET, .. } := BMatroidType
   let { MATROID_INDEPENDENT_IMP_SUBSET, MATROID_SPANNING_ALT, matroid_basis,
         matroid_spanning, .. } := BLinearNotions
-  let { MATROID_BASIS_EXISTS, .. } := BIndependentSets
+  let { MATROID_BASIS_EXISTS, MATROID_INDEPENDENT_EXTENDS_TO_BASIS,
+        MATROID_SPANNING_CONTAINS_BASIS, .. } := BIndependentSets
   let { MATROID_BASES_SIZE, MATROID_EQ_SPANS_SIZE,
         MATROID_INDEPENDENT_CARD_LE_SPAN_FINITE, .. } := BSteinitzExchange
   let { MATROID_BASIS_SUBMATROID, MATROID_INDEPENDENT_SUBMATROID,
@@ -1811,6 +1815,16 @@ def setupDimension [HolBase] (D : MatroidsDeps) (BMatroidType : MatroidType) (BL
    r"!(m:A matroid) b.
           matroid_basis m b /\ FINITE b ==> matroid_dimension m = CARD b"
    (MESON_TAC [MATROID_DIMENSION_UNIQUE, HAS_SIZE])
+
+  let MATROID_BASIS_SMALL_SPANNING ← prove
+   r"!(m:A matroid) s.
+          matroid_finite_dimensional m /\
+          matroid_spanning m s /\
+          FINITE s /\ CARD s <= matroid_dimension m
+          ==> matroid_basis m s"
+   (REPEAT STRIP_TAC THEN
+    FIRST_ASSUM (MP_TAC o MATCH_MP MATROID_SPANNING_CONTAINS_BASIS) THEN
+    ASM_MESON_TAC [MATROID_DIMENSION_EQ_CARD, FINITE_SUBSET, CARD_SUBSET_LE])
 
   let MATROID_DIM_UNIQUE_ALT ← prove
    r"!(m:A matroid) s b n.
@@ -1916,6 +1930,15 @@ def setupDimension [HolBase] (D : MatroidsDeps) (BMatroidType : MatroidType) (BL
           ==> matroid_finite_dimensional m /\ matroid_dimension m <= n"
    (MESON_TAC [MATROID_DIMENSION_LE, MATROID_FINITE_DIMENSIONAL])
 
+  let MATROID_DIMENSION_LE_INDEPENDENT_BOUND ← prove
+   r"!(m:A matroid) n.
+          (!s. matroid_independent m s ==> FINITE s /\ CARD s <= n)
+          ==> matroid_finite_dimensional m /\ matroid_dimension m <= n"
+   (REPEAT GEN_TAC THEN DISCH_TAC THEN
+    MP_TAC (← ISPEC (← q r"m:A matroid") MATROID_BASIS_EXISTS) THEN
+    ASM_MESON_TAC [MATROID_FINITE_DIMENSIONAL_BASIS, MATROID_DIMENSION_EQ_CARD,
+                   matroid_basis])
+
   let MATROID_DIM_LE ← prove
    r"!(m:A matroid) s b n.
           FINITE b /\ CARD b <= n /\
@@ -1960,6 +1983,14 @@ def setupDimension [HolBase] (D : MatroidsDeps) (BMatroidType : MatroidType) (BL
    (ASM_MESON_TAC [MATROID_INDEPENDENT_CARD_LE_SPAN_FINITE, matroid_basis,
                   MATROID_FINITE_DIMENSIONAL_BASIS, matroid_spanning,
                   MATROID_INDEPENDENT_IMP_SUBSET, MATROID_DIMENSION_EQ_CARD])
+
+  let MATROID_BASIS_LARGE_INDEPENDENT ← prove
+   r"!(m:A matroid) s.
+          matroid_finite_dimensional m /\
+          matroid_independent m s /\ matroid_dimension m <= CARD s
+          ==> matroid_basis m s"
+   (ASM_MESON_TAC [MATROID_DIMENSION_GE_FINITE_CARD, matroid_basis, LE_TRANS,
+                   CARD_SUBSET_LE, MATROID_INDEPENDENT_EXTENDS_TO_BASIS])
 
   let MATROID_DIMENSION_GE ← prove
    r"!(m:A matroid) b n.
@@ -2017,13 +2048,13 @@ def setupDimension [HolBase] (D : MatroidsDeps) (BMatroidType : MatroidType) (BL
 
   -- @@RETURN BEGIN
   return { MATROID_DIMENSION_ALT, MATROID_DIM_BASIS, MATROID_DIM_ALT,
-           MATROID_DIMENSION_UNIQUE, MATROID_DIMENSION_EQ_CARD, MATROID_DIM_UNIQUE_ALT,
+           MATROID_DIMENSION_UNIQUE, MATROID_DIMENSION_EQ_CARD, MATROID_BASIS_SMALL_SPANNING, MATROID_DIM_UNIQUE_ALT,
            MATROID_DIM_UNIQUE, MATROID_SPAN_DIM_EQ, MATROID_SPAN_INSERT_REFL,
            MATROID_BASIS_EXISTS_DIMENSION, MATROID_BASIS_EXISTS_DIM,
            MATROID_CONTAINS_BASIS_DIM, MATROID_DIM_EQ_CARD_GEN, MATROID_DIM_EQ_CARD,
-           MATROID_DIMENSION_LE, MATROID_DIMENSION_FINITE_LE, MATROID_DIM_LE,
+           MATROID_DIMENSION_LE, MATROID_DIMENSION_FINITE_LE, MATROID_DIMENSION_LE_INDEPENDENT_BOUND, MATROID_DIM_LE,
            MATROID_DIM_FINITE_LE, MATROID_DIM_LE_CARD_GEN, MATROID_DIM_LE_CARD,
-           MATROID_DIMENSION_GE_FINITE_CARD, MATROID_DIMENSION_GE,
+           MATROID_DIMENSION_GE_FINITE_CARD, MATROID_BASIS_LARGE_INDEPENDENT, MATROID_DIMENSION_GE,
            MATROID_DIMENSION_GE_CARD, MATROID_DIM_GE_FINITE_CARD, MATROID_DIM_GE,
            MATROID_DIM_GE_CARD_GEN, MATROID_DIM_GE_CARD,
            FINITE_IMP_MATROID_FINITE_DIM_SPAN, MATROID_INDEPENDENT_IMP_FINITE }
@@ -2031,7 +2062,7 @@ def setupDimension [HolBase] (D : MatroidsDeps) (BMatroidType : MatroidType) (BL
 
 /- ------------------------------------------------------------------------- -/
 /- Monotonicity, equality of spans via dimension, choosing subsets and       -/
-/- subspaces, extending low-dimensional subsets.  (matroids.ml 1472-1677)    -/
+/- subspaces, extending low-dimensional subsets.  (matroids.ml 1499-1704)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure DimSpan where

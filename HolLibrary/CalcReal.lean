@@ -94,6 +94,8 @@ structure CoreThms4 where
 
 /-- What calcreal.ml uses from Session besides theorems. -/
 structure CalcRealDeps where
+  -- parser state: calc_real.ml 7 `prioritize_real()`
+  prioritize_real : IO Unit
   -- decision procedures and tactics
   ARITH_TAC : tactic
   MESON_TAC : List thm → tactic
@@ -134,7 +136,7 @@ structure CalcRealDeps where
   core4 : CoreThms4
 
 /- ------------------------------------------------------------------------- -/
-/- Various trivial lemmas and sundry results.  (calc_real.ml 7-129)          -/
+/- Various trivial lemmas and sundry results.  (calc_real.ml 8-130)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure Lemmas where
@@ -158,7 +160,7 @@ structure Lemmas where
 def setupLemmas [HolBase] (D : CalcRealDeps) :
     ExceptT String IO Lemmas := do
   -- @@SCOPE BEGIN
-  let { INDUCT_TAC, REAL_ARITH, REAL_ARITH_TAC, .. } := D
+  let { INDUCT_TAC, REAL_ARITH, REAL_ARITH_TAC, prioritize_real, .. } := D
   let { ADD1, ADD_CLAUSES, LE_EXISTS, LT_CASES, LT_EXISTS, REAL_ABS_MUL, REAL_ABS_NEG,
         REAL_ABS_NUM, REAL_ABS_POW, REAL_ADD_AC, REAL_ADD_ASSOC, REAL_ADD_LDISTRIB,
         REAL_ADD_RDISTRIB, .. } := D.core1
@@ -171,6 +173,8 @@ def setupLemmas [HolBase] (D : CalcRealDeps) :
   let { REAL_NOT_LT, REAL_OF_NUM_ADD, REAL_OF_NUM_POW, REAL_POS, REAL_POW_ADD,
         REAL_POW_LE, REAL_SUB_LDISTRIB, real_abs, real_pow, real_sub, sum, .. } := D.core3
   -- @@SCOPE END
+
+  prioritize_real
 
   let REAL_SUB_SUM0 ← prove
    r"!x y m. sum(0,m) x - sum(0,m) y = sum(0,m) (\i. x i - y i)"
@@ -313,18 +317,18 @@ def setupLemmas [HolBase] (D : CalcRealDeps) :
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Surely there is already an efficient way to do this...  (calc_real.ml 135) -/
+/- Surely there is already an efficient way to do this...  (calc_real.ml 136) -/
 /- ------------------------------------------------------------------------- -/
 
-/-- `log2`'s inner recursion (calc_real.ml 136-138). -/
+/-- `log2`'s inner recursion (calc_real.ml 137-139). -/
 partial def log2Aux (x y : Rat) : Rat :=
   if x < num_1 then y else log2Aux (quo_num x num_2) (y + num_1)
 
-/-- `log2 x`: least `p >= 0` with `x <= 2^p` (calc_real.ml 135-139). -/
+/-- `log2 x`: least `p >= 0` with `x <= 2^p` (calc_real.ml 136-140). -/
 def log2 (x : Rat) : Rat := log2Aux (x - num_1) num_0
 
 /- ------------------------------------------------------------------------- -/
-/- Theorems justifying the steps.  (calc_real.ml 145-189)                    -/
+/- Theorems justifying the steps.  (calc_real.ml 146-190)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure StepsDown where
@@ -400,7 +404,7 @@ def setupStepsDown [HolBase] (D : CalcRealDeps) (BLemmas : Lemmas) :
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Theorems justifying the steps, continued.  (calc_real.ml 191-430)         -/
+/- Theorems justifying the steps, continued.  (calc_real.ml 192-431)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure StepsInv where
@@ -681,7 +685,7 @@ def setupStepsInv [HolBase] (D : CalcRealDeps) (BLemmas : Lemmas) :
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Theorems justifying the steps, continued.  (calc_real.ml 432-501)         -/
+/- Theorems justifying the steps, continued.  (calc_real.ml 433-502)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure StepsAddMul where
@@ -781,7 +785,7 @@ def setupStepsAddMul [HolBase] (D : CalcRealDeps) (BLemmas : Lemmas) :
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Square root.  (calc_real.ml 507-544)                                      -/
+/- Square root.  (calc_real.ml 508-545)                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure Sqrt where
@@ -1350,7 +1354,7 @@ def setupStepInstances [HolBase] (D : CalcRealDeps) (BLemmas : Lemmas) (BStepLem
 /- Expand the "!k. SUC k < r ==> P k" term for given numeral r.              -/
 /- ------------------------------------------------------------------------- -/
 
-/-- `EXPAND_RANGE_CONV`'s inner recursion `expand_conv` (calc_real.ml 967-977),
+/-- `EXPAND_RANGE_CONV`'s inner recursion `expand_conv` (calc_real.ml 968-978),
     closing over `trivial_conv`, `nontrivial_conv` and `num_CONV`. -/
 partial def expandConv [HolBase] (trivial_conv nontrivial_conv num_CONV : ioconv) :
     ioconv := fun tm => ExceptT.run do
@@ -1661,7 +1665,7 @@ def setupIterExp [HolBase] (D : CalcRealDeps) (BStepInstances : StepInstances) (
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
-/- Iterated versions.  (calc_real.ml 1177-1309)                              -/
+/- Iterated versions.  (calc_real.ml 1178-1310)                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure StepsIter where
@@ -1921,7 +1925,7 @@ def setupStepsIter [HolBase] (D : CalcRealDeps) (BLemmas : Lemmas) (BIterExp : I
 
 /- ------------------------------------------------------------------------- -/
 /- Special version of Taylor series for exponential in limited range.         -/
-/- (calc_real.ml 1311-1476)                                                   -/
+/- (calc_real.ml 1312-1477)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure TaylorExp where
@@ -2145,7 +2149,7 @@ def setupTaylorExp [HolBase] (D : CalcRealDeps) :
 
 /- ------------------------------------------------------------------------- -/
 /- Leading from the summation to the actual function; approximation           -/
-/- theorems; eliminate trivial definitions.  (calc_real.ml 1478-1727)         -/
+/- theorems; eliminate trivial definitions.  (calc_real.ml 1479-1728)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure Approx where
@@ -2302,7 +2306,7 @@ def setupApprox [HolBase] (D : CalcRealDeps) (BLemmas : Lemmas) (BStepsIter : St
   /- Eliminate trivial definitions.                                        -/
   /- --------------------------------------------------------------------- -/
 
-  -- `ELIMINATE_DEF` (calc_real.ml 1706-1721): its `x_tm`, `a_tm` and
+  -- `ELIMINATE_DEF` (calc_real.ml 1707-1722): its `x_tm`, `a_tm` and
   -- `sconv = REWRITE_CONV[ARITH]` are built once, closed over by the rule.
   let ELIMINATE_DEF : List term → thm → ExceptT String IO thm ← do
     let x_tm ← q "x:num"
@@ -2431,7 +2435,7 @@ structure RCtx where
   ELIMINATE_DEF : List term → thm → ExceptT String IO thm
   -- `real_pow` (core; used by `thm_eval`).
   real_pow : thm
-  -- `realcalc_cache = ref []` (calc_real.ml 1728): created once in the setup.
+  -- `realcalc_cache = ref []` (calc_real.ml 1729): created once in the setup.
   realcalc_cache : IO.Ref (List (term × (RawWrapped × ThmWrapped)))
 
 /-- `thm_eval (r,f) n` (calc_real.ml): the `n`-bit theorem, downgraded from a
@@ -2901,11 +2905,11 @@ partial def findNRel [HolBase] (rfn1 rfn2 : RawWrapped) (n : Rat) :
 
 
 /-- The bundle for the overall conversion and the relation conversions
-    (calc_real.ml 1728-2293).  `REALCALC_CONV`, `thm_eval`, `raw_eval`,
+    (calc_real.ml 1729-2294).  `REALCALC_CONV`, `thm_eval`, `raw_eval`,
     `thm_wrap` are the four names of the big OCaml tuple; the rest are the
     relation theorems and conversions. -/
 structure Overall where
-  /-- `realcalc_cache` (1728); `Option` (always `some`) so the bundle can
+  /-- `realcalc_cache` (1729); `Option` (always `some`) so the bundle can
       derive `Inhabited`, as Pocklington's `prime_theorem_cache`. -/
   realcalc_cache : Option (IO.Ref (List (term × (RawWrapped × ThmWrapped))))
   REALCALC_CONV : term → ExceptT String IO (RawWrapped × ThmWrapped)
@@ -2944,7 +2948,7 @@ def setupOverall [HolBase] (D : CalcRealDeps) (BStepsDown : StepsDown) (BStepsIn
   let { EXPAND_RANGE_CONV, .. } := BExpandRange
   let { APPROX_EXP, APPROX_LN, ELIMINATE_DEF, .. } := BApprox
   -- @@SCOPE END
-  -- `realcalc_cache = ref []` (calc_real.ml 1728): created once, here.
+  -- `realcalc_cache = ref []` (calc_real.ml 1729): created once, here.
   let realcalc_cache : IO.Ref (List (term × (RawWrapped × ThmWrapped))) ← IO.mkRef []
 
   -- The operator and variable constants (calc_real.ml, head of the big `let`).
@@ -3068,11 +3072,11 @@ def setupOverall [HolBase] (D : CalcRealDeps) (BStepsDown : StepsDown) (BStepsIn
   let thm_wrap_v : (Rat → ExceptT String IO thm) → IO ThmWrapped :=
     fun f => thm_wrap C.TRUTH f
 
-  -- `REALCALC_PRECONV` (calc_real.ml 2069-2076).
+  -- `REALCALC_PRECONV` (calc_real.ml 2070-2077).
   let REALCALC_PRECONV_v : ioconv → term → ExceptT String IO (RawWrapped × ThmWrapped) :=
     fun conv tm => REALCALC_PRECONV C conv tm
 
-  -- The ordering lemmas (calc_real.ml 2082-2117).
+  -- The ordering lemmas (calc_real.ml 2083-2118).
   let REALCALC_LT ← prove
    r"abs(a - &2 pow n * x) < &1 /\ abs(b - &2 pow n * y) < &1
    ==> &2 <= abs(a - b) ==> (x < y <=> a < b)"
@@ -3106,7 +3110,7 @@ def setupOverall [HolBase] (D : CalcRealDeps) (BStepsDown : StepsDown) (BStepsIn
    ==> &2 <= abs(a - b) ==> ((x = y) <=> F)"
    (ASM_CASES_TAC (← q r"x:real = y") THEN ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC)
 
-  -- `realcalc_rel_conv` (calc_real.ml 2124-2147).
+  -- `realcalc_rel_conv` (calc_real.ml 2125-2148).
   let pops : List (term × (Rat → Rat → Bool)) :=
     [(← q r"(<)", fun a b => decide (a < b)), (← q r"(<=)", fun a b => decide (a ≤ b)),
      (← q r"(>)", fun a b => decide (a > b)), (← q r"(>=)", fun a b => decide (a ≥ b)),
@@ -3123,7 +3127,7 @@ def setupOverall [HolBase] (D : CalcRealDeps) (BStepsDown : StepsDown) (BStepsIn
     let n ← find_n_rel rfn1 rfn2 (num 1)
     pure (pop (← raw_eval rfn1 n) (← raw_eval rfn2 n))
 
-  -- `REALCALC_REL_CONV` (calc_real.ml 2153-2175).
+  -- `REALCALC_REL_CONV` (calc_real.ml 2154-2176).
   let pths : List (term × thm) :=
     [(← q r"(<)", REALCALC_LT), (← q r"(<=)", REALCALC_LE),
      (← q r"(>)", REALCALC_GT), (← q r"(>=)", REALCALC_GE),

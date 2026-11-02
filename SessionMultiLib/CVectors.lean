@@ -109,7 +109,7 @@ def vector_const : thm := BCVA.vector_const
 def vector_map : thm := BCVA.vector_map
 def vector_map2 : thm := BCVA.vector_map2
 def vector_map3 : thm := BCVA.vector_map3
-def FINITE_INDEX_INRANGE_2 : thm := BCVA.FINITE_INDEX_INRANGE_2
+def FINITE_INDEX_INRANGE_4 : thm := BCVA.FINITE_INDEX_INRANGE_4
 def COMPONENT_TAC : thm → HolCore.Tactics.tactic := fun th g => BCVA.COMPONENT_TAC th g
 def VECTOR_CONST_COMPONENT : thm := BCVA.VECTOR_CONST_COMPONENT
 def VECTOR_MAP_COMPONENT : thm := BCVA.VECTOR_MAP_COMPONENT

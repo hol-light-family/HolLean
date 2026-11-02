@@ -4,9 +4,9 @@ in iterate.ml order.  The file's four load-time side effects each have their
 own `initialize` at their file position:
 
   * `parse_as_infix("..",(15,"right"))`             (iterate.ml 16)
-  * `prioritize_num()`                               (iterate.ml 1286)
-  * `prioritize_real()`                              (iterate.ml 1982)
-  * `prioritize_num()`, restoring :num for later     (iterate.ml 3112)
+  * `prioritize_num()`                               (iterate.ml 1324)
+  * `prioritize_real()`                              (iterate.ml 2087)
+  * `prioritize_num()`, restoring :num for later     (iterate.ml 3217)
 
 `NUMSEG_CONV`, `EXPAND_NSUM_CONV` and `EXPAND_SUM_CONV` are conversions
 (`ioconv`).
@@ -103,7 +103,7 @@ def o_THM : thm := Tv.o_THM
     containing `..`. -/
 initialize iterateInfixLayer : Unit ← HolMath.Iterate.setupIterateSegmentsInfix
 
-/-- `IterateSegments` (iterate.ml 18-165): `numseg` and the twenty-seven
+/-- `IterateSegments` (iterate.ml 18-203): `numseg` and the twenty-nine
     segment theorems.  The `..` infix is in force (above). -/
 initialize iterateSegmentsLayer : HolMath.Iterate.IterateSegments ←
   ioOkI "setupIterateSegments" (HolMath.Iterate.setupIterateSegments
@@ -114,18 +114,19 @@ initialize iterateSegmentsLayer : HolMath.Iterate.IterateSegments ←
     HAS_SIZE FINITE_SUBSET FINITE_NUMSEG_LE FINITE_INDUCT_STRONG
     FINITE_IMAGE CARD_EQ_BIJECTIONS
     LE_0 LE_CASES LE_REFL LE_TRANS NOT_LE SUC_SUB1 ADD_CLAUSES
-    LE_EXISTS LEFT_IMP_EXISTS_THM ARITH MONO_EXISTS).run
+    LE_EXISTS LEFT_IMP_EXISTS_THM ARITH MONO_EXISTS
+    num_WOP MEMBER_NOT_EMPTY NOT_LT).run
 
 def ISeg : HolMath.Iterate.IterateSegments := iterateSegmentsLayer
 
-/-- `NumsegConvPths` (iterate.ml 176-178): the three `MESON` lemmas of
+/-- `NumsegConvPths` (iterate.ml 214-216): the three `MESON` lemmas of
     `NUMSEG_CONV`.  Pure over `ISeg`; `ADD1` used only here. -/
 initialize numsegConvPthsLayer : HolMath.Iterate.NumsegConvPths ←
   ioOkI "setupNumsegConvPths" (HolMath.Iterate.setupNumsegConvPths MESON ISeg ADD1).run
 
 def INConv : HolMath.Iterate.NumsegConvPths := numsegConvPthsLayer
 
-/-- `IterateSortSeg` (iterate.ml 196-277): `TOPOLOGICAL_SORT` and
+/-- `IterateSortSeg` (iterate.ml 234-315): `TOPOLOGICAL_SORT` and
     `FINITE_INT_SEG`.  Pure over `ISeg`; `ADD_SUB` used only in
     `TOPOLOGICAL_SORT`. -/
 initialize iterateSortSegLayer : HolMath.Iterate.IterateSortSeg ←
@@ -141,7 +142,7 @@ initialize iterateSortSegLayer : HolMath.Iterate.IterateSortSeg ←
 
 def ISort : HolMath.Iterate.IterateSortSeg := iterateSortSegLayer
 
-/-- `IterateGeneric` (iterate.ml 281-354): the four core `new_definition`s
+/-- `IterateGeneric` (iterate.ml 319-392): the four core `new_definition`s
     `neutral`/`monoidal`/`support`/`iterate` and the ten theorems about them.
     The `iterate` body uses `ITSET` (sets.ml); `CONJ_ACI`/`o_THM`/`COND_RAND`
     used only here. -/
@@ -154,7 +155,7 @@ initialize iterateGenericLayer : HolMath.Iterate.IterateGeneric ←
 
 def IGen : HolMath.Iterate.IterateGeneric := iterateGenericLayer
 
-/-- `IterateKey1` (iterate.ml 364-539): the first eighteen key lemmas,
+/-- `IterateKey1` (iterate.ml 402-577): the first eighteen key lemmas,
     `ITERATE_SUPPORT` through `ITERATE_DELETE`.  Pure over `IGen` plus the
     Sets/Theorems dependencies. -/
 initialize iterateKey1Layer : HolMath.Iterate.IterateKey1 ←
@@ -170,7 +171,7 @@ initialize iterateKey1Layer : HolMath.Iterate.IterateKey1 ←
 
 def IK1 : HolMath.Iterate.IterateKey1 := iterateKey1Layer
 
-/-- `IterateKey2` (iterate.ml 546-703): the eleven mapping and congruence
+/-- `IterateKey2` (iterate.ml 584-741): the eleven mapping and congruence
     lemmas, `ITERATE_DELTA` through `ITERATE_OP`.  Pure over `IGen`/`IK1` plus
     the Sets/Pair/Theorems dependencies, the decision procedures, and
     `GEN_BETA_CONV` (for the paired-abstraction product lemma). -/
@@ -186,7 +187,7 @@ initialize iterateKey2Layer : HolMath.Iterate.IterateKey2 ←
 
 def IK2 : HolMath.Iterate.IterateKey2 := iterateKey2Layer
 
-/-- `IterateKey3` (iterate.ml 713-887): the ten superset/swap/image/cases
+/-- `IterateKey3` (iterate.ml 751-925): the ten superset/swap/image/cases
     lemmas and the four numseg-recursion clauses closing the section.  Pure
     over `IGen`, `ISeg`, and `IK1`/`IK2` plus the extra Sets/arith
     dependencies, the decision procedures, `ARITH_RULE`, `INDUCT_TAC`,
@@ -204,7 +205,7 @@ initialize iterateKey3Layer : HolMath.Iterate.IterateKey3 ←
 
 def IK3 : HolMath.Iterate.IterateKey3 := iterateKey3Layer
 
-/-- `IterateOrdered` (iterate.ml 896-1184): `iterato` (by `new_specification`)
+/-- `IterateOrdered` (iterate.ml 934-1222): `iterato` (by `new_specification`)
     and its eleven lemmas - the ordered/non-commutative generalisation.  Pure
     over `IGen`, `IK1` and `ISeg`, plus the well-foundedness/Skolem/select
     theorems and `new_specification`/`let_CONV`/`LET_TAC`.  `new_specification`
@@ -223,7 +224,7 @@ initialize iterateOrderedLayer : HolMath.Iterate.IterateOrdered ←
 
 def IOrd : HolMath.Iterate.IterateOrdered := iterateOrderedLayer
 
-/-- `IterateSpecial` (iterate.ml 1188-1282): the four iterated operations at
+/-- `IterateSpecial` (iterate.ml 1226-1320): the four iterated operations at
     three types - `nproduct` (:num), `iproduct`/`isum` (:int), `product`
     (:real).  Pure over `IGen` and `IK1`, plus the per-type neutral/monoidal
     identities and the three decision tactics. -/
@@ -237,7 +238,7 @@ initialize iterateSpecialLayer : HolMath.Iterate.IterateSpecial ←
 
 def ISpec : HolMath.Iterate.IterateSpecial := iterateSpecialLayer
 
-/-- `prioritize_num()` (iterate.ml 1286), immediately before `nsum` (1288): the
+/-- `prioritize_num()` (iterate.ml 1324), immediately before `nsum` (1326): the
     eager analogue of Session's `ensureIteratePrioritizeNum` once-only guard.
     It restores `:num` as the default for overloaded symbols so the whole nsum
     half parses bare numerals as `:num`.  `:num` is already in force (int.ml
@@ -245,9 +246,9 @@ def ISpec : HolMath.Iterate.IterateSpecial := iterateSpecialLayer
     file's four LOAD-BEARING prioritize calls, reproduced at its true position
     for fidelity. -/
 initialize iteratePrioritizeNumLayer : Unit ←
-  ioOkI "iterate.ml 1286 prioritize_num" (HolMath.Int.prioritize_num prioritize_overload).run
+  ioOkI "iterate.ml 1324 prioritize_num" (HolMath.Int.prioritize_num prioritize_overload).run
 
-/-- `IterateNsum1` (iterate.ml 1288-1461): the `nsum` definition,
+/-- `IterateNsum1` (iterate.ml 1326-1499): the `nsum` definition,
     `NEUTRAL_ADD`/`MONOIDAL_ADD`, and the twenty-five theorems
     `NSUM_DEGENERATE` to `NSUM_SWAP`.  Runs after the 1286 prioritize_num. -/
 initialize iterateNsum1Layer : HolMath.Iterate.IterateNsum1 ←
@@ -262,7 +263,7 @@ initialize iterateNsum1Layer : HolMath.Iterate.IterateNsum1 ←
 
 def IN1 : HolMath.Iterate.IterateNsum1 := iterateNsum1Layer
 
-/-- `IterateNsum2` (iterate.ml 1462-1745): `NSUM_IMAGE` to `NSUM_CASES` - the
+/-- `IterateNsum2` (iterate.ml 1500-1783): `NSUM_IMAGE` to `NSUM_CASES` - the
     image/superset/restriction lemmas, the counting lemmas, subset
     monotonicity, the transfer lemmas, and `NSUM_UNIONS_NONZERO`.  Pure over
     `IN1` and the `IterateKey*` generics. -/
@@ -279,7 +280,7 @@ initialize iterateNsum2Layer : HolMath.Iterate.IterateNsum2 ←
 
 def IN2 : HolMath.Iterate.IterateNsum2 := iterateNsum2Layer
 
-/-- `IterateNsum3` (iterate.ml 1746-1917): closure/relation induction, the
+/-- `IterateNsum3` (iterate.ml 1784-2022): closure/relation induction, the
     numeral-segment theorems, modular arithmetic, `CONG_NSUM`, and the trailing
     `extend_basic_congs` congruence registration (a side effect, iterate.ml
     1917).  Pure over `IN1`/`IN2`, `ISeg`, and `IK1`/`IK3`. -/
@@ -290,11 +291,12 @@ initialize iterateNsum3Layer : HolMath.Iterate.IterateNsum3 ←
     FINITE_INDUCT_STRONG ISeg.FINITE_NUMSEG ISeg.NUMSEG_SING ETA_AX MOD_ZERO
     MOD_ADD_MOD MOD_MOD_REFL SUC_SUB1 SUB_ADD ADD_CLAUSES LT_REFL
     NOT_LT LE_TRANS EQ_ADD_RCANCEL o_DEF ISeg.IN_NUMSEG IN_ELIM_THM
-    IMP_CONJ RIGHT_FORALL_IMP_THM).run
+    IMP_CONJ RIGHT_FORALL_IMP_THM
+    ASM_ARITH_TAC MESON EXP ARITH LE_MULT_LCANCEL DIVMOD_UNIQ).run
 
 def IN3 : HolMath.Iterate.IterateNsum3 := iterateNsum3Layer
 
-/-- `IterateNsumCard` (iterate.ml 1920-1978): `CARD_UNIONS_IMAGE`,
+/-- `IterateNsumCard` (iterate.ml 2025-2083): `CARD_UNIONS_IMAGE`,
     `CARD_UNIONS`, and `EXPAND_NSUM_CONV` (with its three proformas).  Pure
     over `IN1`/`IN3`. -/
 initialize iterateNsumCardLayer : HolMath.Iterate.IterateNsumCard ←
@@ -307,16 +309,16 @@ initialize iterateNsumCardLayer : HolMath.Iterate.IterateNsumCard ←
 
 def INCard : HolMath.Iterate.IterateNsumCard := iterateNsumCardLayer
 
-/-- `prioritize_real()` (iterate.ml 1982), immediately before `sum` (1984) -
+/-- `prioritize_real()` (iterate.ml 2087), immediately before `sum` (2089) -
     THE FILE'S DEFINING HAZARD, the eager analogue of Session's
     `ensureIterateSumPrioritizeReal` guard.  It makes `:real` the default for
     overloaded symbols, so from here every bare numeral parses as `:real`, not
     `:num`.  Were `sum` parsed under `:num` priority it would COLLIDE with
-    `nsum`.  Runs AFTER the nsum bundles (last is `INCard`, iterate.ml 1978)
+    `nsum`.  Runs AFTER the nsum bundles (last is `INCard`, iterate.ml 2083)
     and BEFORE any `sum` bundle. -/
 initialize iterateSumPrioritizeRealLayer : Unit ← prioritize_real
 
-/-- `IterateSum1` (iterate.ml 1984-2211): the `sum` definition,
+/-- `IterateSum1` (iterate.ml 2089-2316): the `sum` definition,
     `NEUTRAL_REAL_ADD`/`MONOIDAL_REAL_ADD`, and the core
     algebra/ordering/bounds group `SUM_DEGENERATE` to `SUM_SWAP`.  Runs after
     the 1982 prioritize_real so bare numerals parse `:real`. -/
@@ -335,7 +337,7 @@ initialize iterateSum1Layer : HolMath.Iterate.IterateSum1 ←
 
 def IS1 : HolMath.Iterate.IterateSum1 := iterateSum1Layer
 
-/-- `IterateSum2` (iterate.ml 2219-2598): the second `sum` bundle -
+/-- `IterateSum2` (iterate.ml 2324-2703): the second `sum` bundle -
     image/superset/count/group/subset/product/general/closure lemmas,
     `SUM_IMAGE` to `REAL_OF_NUM_SUM_GEN`.  Pure over `IGen`/`IK1`/`IK2`/`IK3`
     and `IS1`; still under prioritize_real. -/
@@ -357,7 +359,7 @@ initialize iterateSum2Layer : HolMath.Iterate.IterateSum2 ←
 
 def IS2 : HolMath.Iterate.IterateSum2 := iterateSum2Layer
 
-/-- `IterateSum3` (iterate.ml 2599-2778): `sum` over numseg intervals
+/-- `IterateSum3` (iterate.ml 2704-2883): `sum` over numseg intervals
     (`SUM_ADD_NUMSEG` to `REAL_OF_NUM_SUM_NUMSEG`) and partial summation
     (`SUM_PARTIAL_SUC` to `SUM_COMBINE_L`).  Pure over `ISeg`, `IK3`, and
     `IS1`/`IS2`; still under prioritize_real. -/
@@ -374,8 +376,8 @@ initialize iterateSum3Layer : HolMath.Iterate.IterateSum3 ←
 
 def IS3 : HolMath.Iterate.IterateSum3 := iterateSum3Layer
 
-/-- `IterateSum4` (iterate.ml 2779-2854): the `sum` congruences (`SUM_CONG`,
-    registered via `extend_basic_congs` - a side effect, iterate.ml 2793),
+/-- `IterateSum4` (iterate.ml 2884-2959): the `sum` congruences (`SUM_CONG`,
+    registered via `extend_basic_congs` - a side effect, iterate.ml 2898),
     `EXPAND_SUM_CONV` (a conversion), and the `REAL_SUB_POW*` rearrangements.
     Pure over `IS1`/`IS2`/`IS3`; still under prioritize_real. -/
 initialize iterateSum4Layer : HolMath.Iterate.IterateSum4 ←
@@ -388,7 +390,7 @@ initialize iterateSum4Layer : HolMath.Iterate.IterateSum4 ←
 
 def IS4 : HolMath.Iterate.IterateSum4 := iterateSum4Layer
 
-/-- `IterateSum5` (iterate.ml 2855-3108): real polynomial functions.  Pure over
+/-- `IterateSum5` (iterate.ml 2960-3213): real polynomial functions.  Pure over
     `IS1`/`IS2`/`IS3`/`IS4` and `ISeg`; still under prioritize_real (iterate.ml
     3112's restore is a later point). -/
 initialize iterateSum5Layer : HolMath.Iterate.IterateSum5 ←
@@ -415,7 +417,7 @@ initialize iterateSum5Layer : HolMath.Iterate.IterateSum5 ←
 
 def IS5 : HolMath.Iterate.IterateSum5 := iterateSum5Layer
 
-/-- `prioritize_num()` (iterate.ml 3112), under the banner "Make natural
+/-- `prioritize_num()` (iterate.ml 3217), under the banner "Make natural
     numbers the default again": the eager analogue of Session's
     `ensureIteratePrioritizeNumRestore` guard.  Half of a pair with the 1982
     prioritize_real: between them a bare numeral parses `:real`; from here it
@@ -424,7 +426,7 @@ def IS5 : HolMath.Iterate.IterateSum5 := iterateSum5Layer
     keep the `:real` parse they were built with; only the default for later
     parsing flips. -/
 initialize iteratePrioritizeNumRestoreLayer : Unit ←
-  ioOkI "iterate.ml 3112 prioritize_num restore" (HolMath.Int.prioritize_num prioritize_overload).run
+  ioOkI "iterate.ml 3217 prioritize_num restore" (HolMath.Int.prioritize_num prioritize_overload).run
 
 /-- `ensureIterate` (Session 10149): all of iterate.ml's load-bearing parser
     state, prioritize side effects and bundles are set up by the `initialize`s
@@ -435,7 +437,7 @@ def ensureIterate : IO Unit := pure ()
 /- ---------------------------------------------------------------------- -/
 /- iterate.ml bare theorem re-exports (same names/order as Session).       -/
 /- ---------------------------------------------------------------------- -/
--- IterateSegments (iterate.ml 18-165)
+-- IterateSegments (iterate.ml 18-203)
 def numseg                : thm := ISeg.numseg
 def FINITE_NUMSEG         : thm := ISeg.FINITE_NUMSEG
 def NUMSEG_COMBINE_R      : thm := ISeg.NUMSEG_COMBINE_R
@@ -462,13 +464,15 @@ def DISJOINT_NUMSEG       : thm := ISeg.DISJOINT_NUMSEG
 def NUMSEG_ADD_SPLIT      : thm := ISeg.NUMSEG_ADD_SPLIT
 def NUMSEG_OFFSET_IMAGE   : thm := ISeg.NUMSEG_OFFSET_IMAGE
 def SUBSET_NUMSEG         : thm := ISeg.SUBSET_NUMSEG
+def UPWARD_CLOSED_NUMSEG  : thm := ISeg.UPWARD_CLOSED_NUMSEG
+def UPWARD_CLOSED_NUMSEG_EQ : thm := ISeg.UPWARD_CLOSED_NUMSEG_EQ
 def NUMSEG_LE             : thm := ISeg.NUMSEG_LE
 def NUMSEG_LT             : thm := ISeg.NUMSEG_LT
--- NumsegConvPths (iterate.ml 176-178)
+-- NumsegConvPths (iterate.ml 214-216)
 def NUMSEG_CONV_pth_0     : thm := INConv.pth_0
 def NUMSEG_CONV_pth_1     : thm := INConv.pth_1
 def NUMSEG_CONV_pth_2     : thm := INConv.pth_2
-/-- `NUMSEG_CONV` (iterate.ml 175-190) fully applied: the CONVERSION evaluating
+/-- `NUMSEG_CONV` (iterate.ml 213-228) fully applied: the CONVERSION evaluating
     `m..n` for specific numerals `m`, `n`, producing `|- m..n = {m,...,n}`.
     Assembled from the three numeral conversions and the `INConv` proformas;
     the template terms are the `INConv` fields (DERIVED from `pth_2`, not
@@ -478,10 +482,10 @@ def NUMSEG_CONV_pth_2     : thm := INConv.pth_2
 def NUMSEG_CONV : ioconv :=
   HolMath.Iterate.NUMSEG_CONV NUM_LT_CONV NUM_LE_CONV NUM_SUC_CONV
     INConv INConv.ns_tm INConv.m_tm INConv.n_tm
--- IterateSortSeg (iterate.ml 196-277)
+-- IterateSortSeg (iterate.ml 234-315)
 def TOPOLOGICAL_SORT      : thm := ISort.TOPOLOGICAL_SORT
 def FINITE_INT_SEG        : thm := ISort.FINITE_INT_SEG
--- IterateGeneric (iterate.ml 281-354)
+-- IterateGeneric (iterate.ml 319-392)
 def neutral               : thm := IGen.neutral
 def monoidal              : thm := IGen.monoidal
 def MONOIDAL_AC           : thm := IGen.MONOIDAL_AC
@@ -495,7 +499,7 @@ def FINITE_SUPPORT        : thm := IGen.FINITE_SUPPORT
 def SUPPORT_CLAUSES       : thm := IGen.SUPPORT_CLAUSES
 def SUPPORT_DELTA         : thm := IGen.SUPPORT_DELTA
 def FINITE_SUPPORT_DELTA  : thm := IGen.FINITE_SUPPORT_DELTA
--- IterateKey1 (iterate.ml 364-539)
+-- IterateKey1 (iterate.ml 402-577)
 def ITERATE_SUPPORT          : thm := IK1.ITERATE_SUPPORT
 def ITERATE_EXPAND_CASES     : thm := IK1.ITERATE_EXPAND_CASES
 def ITERATE_CLAUSES_GEN      : thm := IK1.ITERATE_CLAUSES_GEN
@@ -512,7 +516,7 @@ def ITERATE_SING             : thm := IK1.ITERATE_SING
 def ITERATE_CLOSED_NONEMPTY  : thm := IK1.ITERATE_CLOSED_NONEMPTY
 def ITERATE_RELATED_NONEMPTY : thm := IK1.ITERATE_RELATED_NONEMPTY
 def ITERATE_DELETE           : thm := IK1.ITERATE_DELETE
--- IterateKey2 (iterate.ml 546-703)
+-- IterateKey2 (iterate.ml 584-741)
 def ITERATE_DELTA                : thm := IK2.ITERATE_DELTA
 def ITERATE_IMAGE                : thm := IK2.ITERATE_IMAGE
 def ITERATE_BIJECTION            : thm := IK2.ITERATE_BIJECTION
@@ -524,7 +528,7 @@ def ITERATE_EQ_GENERAL_INVERSES  : thm := IK2.ITERATE_EQ_GENERAL_INVERSES
 def ITERATE_INJECTION            : thm := IK2.ITERATE_INJECTION
 def ITERATE_UNION_NONZERO        : thm := IK2.ITERATE_UNION_NONZERO
 def ITERATE_OP                   : thm := IK2.ITERATE_OP
--- IterateKey3 (iterate.ml 713-887)
+-- IterateKey3 (iterate.ml 751-925)
 def ITERATE_SUPERSET             : thm := IK3.ITERATE_SUPERSET
 def ITERATE_UNIV                 : thm := IK3.ITERATE_UNIV
 def ITERATE_SWAP                 : thm := IK3.ITERATE_SWAP
@@ -537,7 +541,7 @@ def ITERATE_CLAUSES_NUMSEG_LT    : thm := IK3.ITERATE_CLAUSES_NUMSEG_LT
 def ITERATE_CLAUSES_NUMSEG_LE    : thm := IK3.ITERATE_CLAUSES_NUMSEG_LE
 def ITERATE_PAIR                 : thm := IK3.ITERATE_PAIR
 def ITERATE_REFLECT              : thm := IK3.ITERATE_REFLECT
--- IterateOrdered (iterate.ml 896-1184)
+-- IterateOrdered (iterate.ml 934-1222)
 def iterato                      : thm := IOrd.iterato
 def ITERATO_SUPPORT              : thm := IOrd.ITERATO_SUPPORT
 def ITERATO_EXPAND_CASES         : thm := IOrd.ITERATO_EXPAND_CASES
@@ -549,7 +553,7 @@ def ITERATO_INDUCT               : thm := IOrd.ITERATO_INDUCT
 def ITERATO_CLOSED               : thm := IOrd.ITERATO_CLOSED
 def ITERATO_ITERATE              : thm := IOrd.ITERATO_ITERATE
 def ITERATO_CLAUSES_NUMSEG_LEFT  : thm := IOrd.ITERATO_CLAUSES_NUMSEG_LEFT
--- IterateSpecial (iterate.ml 1188-1282)
+-- IterateSpecial (iterate.ml 1226-1320)
 def nproduct          : thm := ISpec.nproduct
 def NEUTRAL_MUL       : thm := ISpec.NEUTRAL_MUL
 def MONOIDAL_MUL      : thm := ISpec.MONOIDAL_MUL
@@ -566,7 +570,7 @@ def isum              : thm := ISpec.isum
 def NEUTRAL_INT_ADD   : thm := ISpec.NEUTRAL_INT_ADD
 def MONOIDAL_INT_ADD  : thm := ISpec.MONOIDAL_INT_ADD
 def ISUM_CLAUSES      : thm := ISpec.ISUM_CLAUSES
--- IterateNsum1 (iterate.ml 1288-1461)
+-- IterateNsum1 (iterate.ml 1326-1499)
 def nsum                 : thm := IN1.nsum
 def NEUTRAL_ADD          : thm := IN1.NEUTRAL_ADD
 def MONOIDAL_ADD         : thm := IN1.MONOIDAL_ADD
@@ -595,7 +599,7 @@ def NSUM_DELETE          : thm := IN1.NSUM_DELETE
 def NSUM_SING            : thm := IN1.NSUM_SING
 def NSUM_DELTA           : thm := IN1.NSUM_DELTA
 def NSUM_SWAP            : thm := IN1.NSUM_SWAP
--- IterateNsum2 (iterate.ml 1462-1745)
+-- IterateNsum2 (iterate.ml 1500-1783)
 def NSUM_IMAGE               : thm := IN2.NSUM_IMAGE
 def NSUM_SUPERSET            : thm := IN2.NSUM_SUPERSET
 def NSUM_UNIV                : thm := IN2.NSUM_UNIV
@@ -630,7 +634,7 @@ def NSUM_INJECTION           : thm := IN2.NSUM_INJECTION
 def NSUM_UNION_NONZERO       : thm := IN2.NSUM_UNION_NONZERO
 def NSUM_UNIONS_NONZERO      : thm := IN2.NSUM_UNIONS_NONZERO
 def NSUM_CASES               : thm := IN2.NSUM_CASES
--- IterateNsum3 (iterate.ml 1746-1917)
+-- IterateNsum3 (iterate.ml 1784-2022)
 def NSUM_CLOSED              : thm := IN3.NSUM_CLOSED
 def NSUM_RELATED             : thm := IN3.NSUM_RELATED
 def NSUM_CLOSED_NONEMPTY     : thm := IN3.NSUM_CLOSED_NONEMPTY
@@ -652,20 +656,24 @@ def NSUM_OFFSET              : thm := IN3.NSUM_OFFSET
 def NSUM_OFFSET_0            : thm := IN3.NSUM_OFFSET_0
 def NSUM_CLAUSES_LEFT        : thm := IN3.NSUM_CLAUSES_LEFT
 def NSUM_CLAUSES_RIGHT       : thm := IN3.NSUM_CLAUSES_RIGHT
+def NSUM_NUMSEG_LAST         : thm := IN3.NSUM_NUMSEG_LAST
+def NSUM_NUMSEG_MONO         : thm := IN3.NSUM_NUMSEG_MONO
 def NSUM_PAIR                : thm := IN3.NSUM_PAIR
 def NSUM_REFLECT             : thm := IN3.NSUM_REFLECT
 def MOD_NSUM_MOD             : thm := IN3.MOD_NSUM_MOD
 def MOD_NSUM_MOD_NUMSEG      : thm := IN3.MOD_NSUM_MOD_NUMSEG
 def CONG_NSUM                : thm := IN3.CONG_NSUM
+def NSUM_DIGITS_BOUND        : thm := IN3.NSUM_DIGITS_BOUND
+def NSUM_DIGITS_UNIQUE       : thm := IN3.NSUM_DIGITS_UNIQUE
 def NSUM_CONG                : thm := IN3.NSUM_CONG
--- IterateNsumCard (iterate.ml 1920-1978)
+-- IterateNsumCard (iterate.ml 2025-2083)
 def CARD_UNIONS_IMAGE        : thm := INCard.CARD_UNIONS_IMAGE
 def CARD_UNIONS              : thm := INCard.CARD_UNIONS
 def EXPAND_NSUM_CONV_pth_0   : thm := INCard.pth_0
 def EXPAND_NSUM_CONV_pth_1   : thm := INCard.pth_1
 def EXPAND_NSUM_CONV_pth_2   : thm := INCard.pth_2
 def EXPAND_NSUM_CONV : ioconv := INCard.EXPAND_NSUM_CONV
--- IterateSum1 (iterate.ml 1984-2211): sum + core algebra/ordering/bounds.
+-- IterateSum1 (iterate.ml 2089-2316): sum + core algebra/ordering/bounds.
 def sum                 : thm := IS1.sum
 def NEUTRAL_REAL_ADD    : thm := IS1.NEUTRAL_REAL_ADD
 def MONOIDAL_REAL_ADD   : thm := IS1.MONOIDAL_REAL_ADD
@@ -701,7 +709,7 @@ def SUM_DELETE_CASES    : thm := IS1.SUM_DELETE_CASES
 def SUM_SING            : thm := IS1.SUM_SING
 def SUM_DELTA           : thm := IS1.SUM_DELTA
 def SUM_SWAP            : thm := IS1.SUM_SWAP
--- IterateSum2 (iterate.ml 2219-2598): image/count/group/subset/general.
+-- IterateSum2 (iterate.ml 2324-2703): image/count/group/subset/general.
 def SUM_IMAGE               : thm := IS2.SUM_IMAGE
 def SUM_SUPERSET            : thm := IS2.SUM_SUPERSET
 def SUM_UNIV                : thm := IS2.SUM_UNIV
@@ -745,7 +753,7 @@ def SUM_RELATED             : thm := IS2.SUM_RELATED
 def SUM_CLOSED_NONEMPTY     : thm := IS2.SUM_CLOSED_NONEMPTY
 def SUM_RELATED_NONEMPTY    : thm := IS2.SUM_RELATED_NONEMPTY
 def REAL_OF_NUM_SUM_GEN     : thm := IS2.REAL_OF_NUM_SUM_GEN
--- IterateSum3 (iterate.ml 2599-2778): numseg intervals + partial summation.
+-- IterateSum3 (iterate.ml 2704-2883): numseg intervals + partial summation.
 def SUM_ADD_NUMSEG          : thm := IS3.SUM_ADD_NUMSEG
 def SUM_SUB_NUMSEG          : thm := IS3.SUM_SUB_NUMSEG
 def SUM_LE_NUMSEG           : thm := IS3.SUM_LE_NUMSEG
@@ -775,7 +783,7 @@ def SUM_DIFFS               : thm := IS3.SUM_DIFFS
 def SUM_DIFFS_ALT           : thm := IS3.SUM_DIFFS_ALT
 def SUM_COMBINE_R           : thm := IS3.SUM_COMBINE_R
 def SUM_COMBINE_L           : thm := IS3.SUM_COMBINE_L
--- IterateSum4 (iterate.ml 2779-2854): congruences, EXPAND_SUM_CONV, REAL_SUB_POW.
+-- IterateSum4 (iterate.ml 2884-2959): congruences, EXPAND_SUM_CONV, REAL_SUB_POW.
 def SUM_CONG                : thm := IS4.SUM_CONG
 def EXPAND_SUM_CONV_pth_0   : thm := IS4.pth_0
 def EXPAND_SUM_CONV_pth_1   : thm := IS4.pth_1
@@ -784,7 +792,7 @@ def EXPAND_SUM_CONV : ioconv := IS4.EXPAND_SUM_CONV
 def REAL_SUB_POW            : thm := IS4.REAL_SUB_POW
 def REAL_SUB_POW_R1         : thm := IS4.REAL_SUB_POW_R1
 def REAL_SUB_POW_L1         : thm := IS4.REAL_SUB_POW_L1
--- IterateSum5 (iterate.ml 2855-3108): real polynomial functions.
+-- IterateSum5 (iterate.ml 2960-3213): real polynomial functions.
 def REAL_SUB_POLYFUN        : thm := IS5.REAL_SUB_POLYFUN
 def REAL_SUB_POLYFUN_ALT    : thm := IS5.REAL_SUB_POLYFUN_ALT
 def REAL_POLYFUN_ROOTBOUND  : thm := IS5.REAL_POLYFUN_ROOTBOUND

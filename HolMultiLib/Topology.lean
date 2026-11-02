@@ -430,12 +430,13 @@ structure MetThms3 where
    euclidean_space eventually frontier_of fsigma_in gdelta_in hausdorff_space homeomorphic_maps
    homeomorphic_space interior_of is_metric_space limit lipschitz_continuous_map
    locally_finite_in mbounded mcomplete mdiameter monotone_map net_tybij netfilter netlimit
-   netlimits nsphere open_map paracompact_space proper_map quotient_map separated_in
+   netlimits nsphere open_map paracompact_space proper_map quotient_map second_countable separated_in
    topology_tybij topspace totally_bounded_in trivial_limit uniformly_continuous_map : thm)
   deriving Inhabited
 
 /-- Everything topology.ml uses from the files it `needs` (and from hol.ml). -/
 structure TopologyDeps where
+  prioritize_real : IO Unit
   -- definitions and parser state
   new_definition : String → ExceptT String IO thm
   new_inductive_definition : String → ExceptT String IO (thm × thm × thm)
@@ -515,7 +516,7 @@ structure TopologyDeps where
 
 /- ------------------------------------------------------------------------- -/
 /- The universal Euclidean topology that we use most of the time.            -/
-/- (topology.ml 15-133)                                                      -/
+/- (topology.ml 16-134)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure EUC where
@@ -564,6 +565,8 @@ def setupEUC [HolBase] (D : TopologyDeps) : ExceptT String IO EUC := do
         REGULAR_SPACE_MTOPOLOGY, SUBTOPOLOGY_EQ_DISCRETE_TOPOLOGY_FINITE, TOPOLOGY_EQ,
         TOPSPACE_SUBTOPOLOGY, is_metric_space, topology_tybij, topspace, .. } := D.met3
   -- @@SCOPE END
+
+  D.prioritize_real
 
   let open_def ← new_definition
    r"open s <=> !x. x IN s ==> ?e. &0 < e /\ !x'. dist(x',x) < e ==> x' IN s"
@@ -689,7 +692,7 @@ def setupEUC [HolBase] (D : TopologyDeps) : ExceptT String IO EUC := do
            SUBTOPOLOGY_EUCLIDEAN_EQ_DISCRETE_TOPOLOGY_FINITE }
 
 /- ------------------------------------------------------------------------- -/
-/- Closed sets.  (topology.ml 134-237)                                       -/
+/- Closed sets.  (topology.ml 135-238)                                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure CLO where
@@ -844,7 +847,7 @@ def setupCLO [HolBase] (D : TopologyDeps) (BEUC : EUC) : ExceptT String IO CLO :
 /- ------------------------------------------------------------------------- -/
 /- Componentwise, lifted and dropped limits and continuity; arithmetic       -/
 /- combining theorems for vector-valued continuous maps.                     -/
-/- (topology.ml 238-420)                                                     -/
+/- (topology.ml 239-421)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CWL where
@@ -1079,7 +1082,7 @@ def setupCWL [HolBase] (D : TopologyDeps) (BEUC : EUC) : ExceptT String IO CWL :
            CONTINUOUS_MAP_DOT, CONTINUOUS_MAP_VSUM, CONTINUOUS_MAP_EUCLIDEAN_COMPONENT }
 
 /- ------------------------------------------------------------------------- -/
-/- Open and closed balls and spheres.  (topology.ml 421-681)                 -/
+/- Open and closed balls and spheres.  (topology.ml 422-682)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BAL where
@@ -1431,7 +1434,7 @@ def setupBAL [HolBase] (D : TopologyDeps) (BEUC : EUC) : ExceptT String IO BAL :
 
 /- ------------------------------------------------------------------------- -/
 /- Basic "localization" results; "transitivity" results; invariance         -/
-/- theorems for relative topology.  (topology.ml 682-893)                    -/
+/- theorems for relative topology.  (topology.ml 683-894)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure LOC where
@@ -1701,7 +1704,7 @@ def setupLOC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL)
 
 /- ------------------------------------------------------------------------- -/
 /- Relating two variants of Euclidean space, one within product topology;    -/
-/- Manhattan metric.  (topology.ml 894-1000)                                 -/
+/- Manhattan metric.  (topology.ml 895-1001)                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure EUS where
@@ -1845,7 +1848,7 @@ def setupEUS [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCWL : CWL) (BBAL : BAL)
 
 /- ------------------------------------------------------------------------- -/
 /- Line segments, with open/closed overloading of (a,b) and [a,b].           -/
-/- (topology.ml 1001-1239)                                                   -/
+/- (topology.ml 1002-1240)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure SEG where
@@ -2155,7 +2158,7 @@ def setupSEG [HolBase] (D : TopologyDeps) : ExceptT String IO SEG := do
            DIST_DECREASES_CLOSED_SEGMENT, DIST_IN_CLOSED_SEGMENT_2 }
 
 /- ------------------------------------------------------------------------- -/
-/- Connectedness.  (topology.ml 1240-1599)                                   -/
+/- Connectedness.  (topology.ml 1241-1600)                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CON where
@@ -2584,7 +2587,7 @@ def setupCON [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BCWL : CWL)
 
 /- ------------------------------------------------------------------------- -/
 /- Sort of induction principle for connected sets; limit points.            -/
-/- (topology.ml 1600-1939)                                                   -/
+/- (topology.ml 1601-1940)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LPT where
@@ -2996,7 +2999,7 @@ def setupLPT [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL)
            CLOSED_IN_SING, CLOSED_IN_INSERT, LIMIT_POINT_OF_LOCAL_IMP, LIMIT_POINT_OF_LOCAL }
 
 /- ------------------------------------------------------------------------- -/
-/- Interior of a set.  (topology.ml 1940-2089)                               -/
+/- Interior of a set.  (topology.ml 1941-2090)                               -/
 /- ------------------------------------------------------------------------- -/
 
 structure INT where
@@ -3208,7 +3211,7 @@ def setupINT [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL)
            INTERIOR_UNIONS_OPEN_SUBSETS }
 
 /- ------------------------------------------------------------------------- -/
-/- Closure of a set, part 1.  (topology.ml 2090-2331)                        -/
+/- Closure of a set, part 1.  (topology.ml 2091-2332)                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure CLS1 where
@@ -3539,7 +3542,7 @@ def setupCLS1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC
            INTERIOR_DIFF }
 
 /- ------------------------------------------------------------------------- -/
-/- Closure of a set, part 2.  (topology.ml 2333-2556)                        -/
+/- Closure of a set, part 2.  (topology.ml 2334-2557)                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure CLS2 where
@@ -3831,7 +3834,7 @@ def setupCLS2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC
            CONNECTED_SEPARATION_ALT }
 
 /- ------------------------------------------------------------------------- -/
-/- Frontier (aka boundary), part 1.  (topology.ml 2557-2781)                 -/
+/- Frontier (aka boundary), part 1.  (topology.ml 2558-2782)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure FRO1 where
@@ -4134,7 +4137,7 @@ def setupFRO1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL
            REGULAR_INTERIOR_IMP_THIN_FRONTIER, UNION_FRONTIER }
 
 /- ------------------------------------------------------------------------- -/
-/- Frontier (aka boundary), part 2.  (topology.ml 2783-2927)                 -/
+/- Frontier (aka boundary), part 2.  (topology.ml 2784-2928)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure FRO2 where
@@ -4332,7 +4335,7 @@ def setupFRO2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BCON : CON
            FRONTIER_OPEN_UNIONS, CONNECTED_CLOSURE_FROM_FRONTIER }
 
 /- ------------------------------------------------------------------------- -/
-/- Useful nets in Euclidean space.  (topology.ml 2928-2995)                  -/
+/- Useful nets in Euclidean space.  (topology.ml 2929-2996)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure NET where
@@ -4437,7 +4440,7 @@ def setupNET [HolBase] (D : TopologyDeps) (BEUC : EUC) : ExceptT String IO NET :
            NETLIMITS_AT_POSINFINITY, AT_NEGINFINITY, NETLIMITS_AT_NEGINFINITY, WITHIN_UNIV }
 
 /- ------------------------------------------------------------------------- -/
-/- The "eventually" property in Euclidean space.  (topology.ml 2997-3266)    -/
+/- The "eventually" property in Euclidean space.  (topology.ml 2998-3267)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure EVT where
@@ -4792,7 +4795,7 @@ def setupEVT [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC)
 
 /- ------------------------------------------------------------------------- -/
 /- Limits, defined as vacuously true when the limit is trivial.              -/
-/- (topology.ml 3267-3376)                                                   -/
+/- (topology.ml 3268-3377)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LIM1 where
@@ -4947,7 +4950,7 @@ def setupLIM1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCWL : CWL) (BLOC : LOC
 
 /- ------------------------------------------------------------------------- -/
 /- Usual definitions of limits; monotonicity; composition of limits.        -/
-/- (topology.ml 3377-3596)                                                   -/
+/- (topology.ml 3378-3597)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LIM2 where
@@ -5219,7 +5222,7 @@ def setupLIM2 [HolBase] (D : TopologyDeps) (BNET : NET) (BEVT : EVT) (BLIM1 : LI
 
 /- ------------------------------------------------------------------------- -/
 /- Restricted vs unrestricted limits; more limit point characterizations;   -/
-/- condensation points.  (topology.ml 3597-3771)                             -/
+/- condensation points.  (topology.ml 3598-3772)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure RLM where
@@ -5446,7 +5449,7 @@ def setupRLM [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC)
            CONDENSATION_POINT_ALT }
 
 /- ------------------------------------------------------------------------- -/
-/- Basic arithmetical combining theorems for limits.  (topology.ml 3772-4035) -/
+/- Basic arithmetical combining theorems for limits.  (topology.ml 3773-4036) -/
 /- ------------------------------------------------------------------------- -/
 
 structure ARI where
@@ -5776,7 +5779,7 @@ def setupARI [HolBase] (D : TopologyDeps) (BLIM1 : LIM1) : ExceptT String IO ARI
 
 /- ------------------------------------------------------------------------- -/
 /- Limit in closed sets; norm bounds; uniqueness; limits in the same space; -/
-/- uniform limits; bilinear limits.  (topology.ml 4036-4286)                 -/
+/- uniform limits; bilinear limits.  (topology.ml 4037-4287)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure UNQ where
@@ -6063,7 +6066,7 @@ def setupUNQ [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL)
 
 /- ------------------------------------------------------------------------- -/
 /- Transformation of limit; linear limits; conditional sequences;           -/
-/- congruence rules.  (topology.ml 4287-4501)                                -/
+/- congruence rules.  (topology.ml 4288-4502)                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure TRN where
@@ -6312,7 +6315,7 @@ def setupTRN [HolBase] (D : TopologyDeps) (BBAL : BAL) (BLOC : LOC) (BNET : NET)
 
 /- ------------------------------------------------------------------------- -/
 /- Useful lemmas on closure and set of possible sequential limits; some     -/
-/- other lemmas about sequences.  (topology.ml 4502-4627)                    -/
+/- other lemmas about sequences.  (topology.ml 4503-4628)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure SEQ where
@@ -6485,7 +6488,7 @@ def setupSEQ [HolBase] (D : TopologyDeps) (BLPT : LPT) (BCLS1 : CLS1) (BCLS2 : C
            SEQ_HARMONIC, SEQ_HARMONIC_RATIO }
 
 /- ------------------------------------------------------------------------- -/
-/- More properties of closed balls.  (topology.ml 4628-4850)                 -/
+/- More properties of closed balls.  (topology.ml 4629-4851)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CBL where
@@ -6779,7 +6782,7 @@ def setupCBL [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLPT : LPT)
 
 /- ------------------------------------------------------------------------- -/
 /- Localization in the interior; connected sets are perfect; boundedness,   -/
-/- part 1.  (topology.ml 4851-5082)                                          -/
+/- part 1.  (topology.ml 4852-5083)                                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure BND1 where
@@ -7086,7 +7089,7 @@ def setupBND1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BCON : CON
 
 /- ------------------------------------------------------------------------- -/
 /- Boundedness, part 2; sups and infs using "bounded".                      -/
-/- (topology.ml 5083-5320)                                                   -/
+/- (topology.ml 5084-5321)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure BND2 where
@@ -7394,7 +7397,7 @@ def setupBND2 [HolBase] (D : TopologyDeps) (BBAL : BAL) (BBND1 : BND1) :
            BOUNDED_HAS_INF, INF_INSERT }
 
 /- ------------------------------------------------------------------------- -/
-/- Subset and overlapping relations on balls.  (topology.ml 5321-5392)       -/
+/- Subset and overlapping relations on balls.  (topology.ml 5322-5393)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure BLS where
@@ -7496,7 +7499,7 @@ def setupBLS [HolBase] (D : TopologyDeps) (BBAL : BAL) (BCLS1 : CLS1) (BCBL : CB
 
 /- ------------------------------------------------------------------------- -/
 /- Compactness (the definition is the one based on convegent subsequences). -/
-/- (topology.ml 5393-5622)                                                   -/
+/- (topology.ml 5394-5623)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CPT where
@@ -7800,7 +7803,7 @@ def setupCPT [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BCWL : CWL)
 
 /- ------------------------------------------------------------------------- -/
 /- Convergence of bounded monotone sequences; completeness; Cauchy-type     -/
-/- criteria for limits at a point.  (topology.ml 5623-5853)                  -/
+/- criteria for limits at a point.  (topology.ml 5624-5854)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure CMP where
@@ -8094,7 +8097,7 @@ def setupCMP [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLPT : LPT)
            CONVERGENT_EQ_CAUCHY_WITHIN, CONVERGENT_EQ_CAUCHY_AT }
 
 /- ------------------------------------------------------------------------- -/
-/- Compactness properties, part 1.  (topology.ml 5854-6047)                  -/
+/- Compactness properties, part 1.  (topology.ml 5855-6048)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure CPP1 where
@@ -8365,7 +8368,7 @@ def setupCPP1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL
 
 /- ------------------------------------------------------------------------- -/
 /- Compactness properties, part 2; finite intersection property.            -/
-/- (topology.ml 6048-6233)                                                   -/
+/- (topology.ml 6049-6234)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CPP2 where
@@ -8623,7 +8626,7 @@ def setupCPP2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL
 
 /- ------------------------------------------------------------------------- -/
 /- Nest and chain properties; escaping from compact sets; Cauchy criteria   -/
-/- for uniform convergence.  (topology.ml 6234-6464)                         -/
+/- for uniform convergence.  (topology.ml 6235-6465)                         -/
 /- ------------------------------------------------------------------------- -/
 
 structure NST where
@@ -8882,7 +8885,7 @@ def setupNST [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLOC : LOC) (BLIM2 : LIM
 
 /- ------------------------------------------------------------------------- -/
 /- Continuity over a net; epsilon-delta forms; versions in terms of open    -/
-/- balls.  (topology.ml 6465-6623)                                           -/
+/- balls.  (topology.ml 6466-6624)                                           -/
 /- ------------------------------------------------------------------------- -/
 
 structure CNT1 where
@@ -9087,7 +9090,7 @@ def setupCNT1 [HolBase] (D : TopologyDeps) (BBAL : BAL) (BNET : NET) (BEVT : EVT
 
 /- ------------------------------------------------------------------------- -/
 /- For setwise continuity, just start from the epsilon-delta definitions.   -/
-/- (topology.ml 6625-6727)                                                   -/
+/- (topology.ml 6626-6728)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CNO where
@@ -9232,7 +9235,7 @@ def setupCNO [HolBase] (D : TopologyDeps) (BEUC : EUC) : ExceptT String IO CNO :
            UNIFORMLY_CONTINUOUS_MAP_DROP_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- Some simple consequential lemmas.  (topology.ml 6728-6846)                -/
+/- Some simple consequential lemmas.  (topology.ml 6729-6847)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure CSL where
@@ -9403,7 +9406,7 @@ def setupCSL [HolBase] (D : TopologyDeps) (BLPT : LPT) (BINT : INT) (BLIM2 : LIM
 
 /- ------------------------------------------------------------------------- -/
 /- Characterization of limits and continuity in terms of sequences.         -/
-/- (topology.ml 6847-7141)                                                   -/
+/- (topology.ml 6848-7142)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure SQC where
@@ -9768,7 +9771,7 @@ def setupSQC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BNET : NET) (BLIM1 : LIM
 
 /- ------------------------------------------------------------------------- -/
 /- Continuous functions and nested compact intersections; combination      -/
-/- results for pointwise continuity.  (topology.ml 7142-7300)                -/
+/- results for pointwise continuity.  (topology.ml 7143-7301)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure CMB where
@@ -9977,7 +9980,7 @@ def setupCMB [HolBase] (D : TopologyDeps) (BLIM1 : LIM1) (BLIM2 : LIM2) (BARI : 
            CONTINUOUS_MAX_1, CONTINUOUS_MIN_1, CONTINUOUS_VSUM, CONTINUOUS_COMPONENTWISE_LIFT }
 
 /- ------------------------------------------------------------------------- -/
-/- Same thing for setwise continuity.  (topology.ml 7301-7403)               -/
+/- Same thing for setwise continuity.  (topology.ml 7302-7404)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure CMS where
@@ -10123,7 +10126,7 @@ def setupCMS [HolBase] (D : TopologyDeps) (BCNO : CNO) (BCSL : CSL) (BCMB : CMB)
 
 /- ------------------------------------------------------------------------- -/
 /- Same thing for uniform continuity, using sequential formulations.        -/
-/- (topology.ml 7404-7568)                                                   -/
+/- (topology.ml 7405-7569)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure UCN where
@@ -10342,7 +10345,7 @@ def setupUCN [HolBase] (D : TopologyDeps) (BARI : ARI) (BBND1 : BND1) (BCNO : CN
 
 /- ------------------------------------------------------------------------- -/
 /- Identity function; composition; continuity in terms of open preimages.  -/
-/- (topology.ml 7569-7712)                                                   -/
+/- (topology.ml 7570-7713)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure IDC where
@@ -10524,7 +10527,7 @@ def setupIDC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC)
 
 /- ------------------------------------------------------------------------- -/
 /- Continuity in terms of closed sets; half-global and global cases.        -/
-/- (topology.ml 7713-7874)                                                   -/
+/- (topology.ml 7714-7875)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CLC where
@@ -10725,7 +10728,7 @@ def setupCLC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC)
 
 /- ------------------------------------------------------------------------- -/
 /- Linear and bilinear functions are continuous; preservation of           -/
-/- compactness and connectedness.  (topology.ml 7875-8041)                   -/
+/- compactness and connectedness.  (topology.ml 7876-8042)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCP where
@@ -10951,7 +10954,7 @@ def setupLCP [HolBase] (D : TopologyDeps) (BCON : CON) (BLIM2 : LIM2) (BARI : AR
 
 /- ------------------------------------------------------------------------- -/
 /- Preservation properties for pasted sets (Cartesian products), part 1.   -/
-/- (topology.ml 8042-8218)                                                   -/
+/- (topology.ml 8043-8219)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCR1 where
@@ -11180,7 +11183,7 @@ def setupPCR1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL
 
 /- ------------------------------------------------------------------------- -/
 /- Preservation properties for pasted sets (Cartesian products), part 2.   -/
-/- (topology.ml 8219-8389)                                                   -/
+/- (topology.ml 8220-8390)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCR2 where
@@ -11402,7 +11405,7 @@ def setupPCR2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BINT : INT) (BPCR1 : PC
            CAUCHY_CONTINUOUS_MAP_PASTED, CONTINUOUS_MAP_PASTEWISE, CONTINUOUS_MAP_PASTED }
 
 /- ------------------------------------------------------------------------- -/
-/- Quotient maps are occasionally useful, part 1.  (topology.ml 8390-8567)   -/
+/- Quotient maps are occasionally useful, part 1.  (topology.ml 8391-8568)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure QUO1 where
@@ -11621,7 +11624,7 @@ def setupQUO1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLOC : LOC) (BCSL : CSL
            CONTINUOUS_ON_COMPOSE_QUOTIENT, LIFT_TO_QUOTIENT_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Quotient maps are occasionally useful, part 2.  (topology.ml 8568-8704)   -/
+/- Quotient maps are occasionally useful, part 2.  (topology.ml 8569-8705)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure QUO2 where
@@ -11797,7 +11800,7 @@ def setupQUO2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCON : CON) (BIDC : IDC
            CONNECTED_MONOTONE_QUOTIENT_PREIMAGE_GEN, CONNECTED_MONOTONE_QUOTIENT_PREIMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- More properties of open and closed maps, part 1.  (topology.ml 8705-8900) -/
+/- More properties of open and closed maps, part 1.  (topology.ml 8706-8901) -/
 /- ------------------------------------------------------------------------- -/
 
 structure OCM1 where
@@ -12040,7 +12043,7 @@ def setupOCM1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC
            OPEN_MAP_FROM_COMPOSITION_INJECTIVE }
 
 /- ------------------------------------------------------------------------- -/
-/- More properties of open and closed maps, part 2.  (topology.ml 8901-9013) -/
+/- More properties of open and closed maps, part 2.  (topology.ml 8902-9014) -/
 /- ------------------------------------------------------------------------- -/
 
 structure OCM2 where
@@ -12189,7 +12192,7 @@ def setupOCM2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCON : CON) (BCNO : CNO
 
 /- ------------------------------------------------------------------------- -/
 /- Proper maps, including projections out of compact sets, part 1.         -/
-/- (topology.ml 9014-9140)                                                   -/
+/- (topology.ml 9015-9141)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PRP1 where
@@ -12362,7 +12365,7 @@ def setupPRP1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC
 
 /- ------------------------------------------------------------------------- -/
 /- Proper maps, including projections out of compact sets, part 2.         -/
-/- (topology.ml 9141-9276)                                                   -/
+/- (topology.ml 9142-9277)                                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PRP2 where
@@ -12539,7 +12542,7 @@ def setupPRP2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC
 
 /- ------------------------------------------------------------------------- -/
 /- Sequential characterizations of proper-ness; pasting functions together  -/
-/- on open sets.  (topology.ml 9277-9444)                                    -/
+/- on open sets.  (topology.ml 9278-9445)                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure SPP where
@@ -12745,7 +12748,7 @@ def setupSPP [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC)
 
 /- ------------------------------------------------------------------------- -/
 /- Closure of halflines, halfspaces and hyperplanes; openness of           -/
-/- halfspaces.  (topology.ml 9445-9649)                                      -/
+/- halfspaces.  (topology.ml 9446-9650)                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure HSP where
@@ -13015,7 +13018,7 @@ def setupHSP [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC)
            OPEN_INTERVAL_LEFT, OPEN_INTERVAL_RIGHT, OPEN_POSITIVE_ORTHANT }
 
 /- ------------------------------------------------------------------------- -/
-/- Closures and interiors of halfspaces.  (topology.ml 9650-9830)            -/
+/- Closures and interiors of halfspaces.  (topology.ml 9651-9831)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure CIH where
@@ -13254,7 +13257,7 @@ def setupCIH [HolBase] (D : TopologyDeps) (BBAL : BAL) (BINT : INT) (BCLS1 : CLS
            DIM_NONEMPTY_INTERIOR }
 
 /- ------------------------------------------------------------------------- -/
-/- Unboundedness of halfspaces.  (topology.ml 9831-9905)                     -/
+/- Unboundedness of halfspaces.  (topology.ml 9832-9906)                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure UBH where
@@ -13368,7 +13371,7 @@ def setupUBH [HolBase] (D : TopologyDeps) (BBND1 : BND1) (BBND2 : BND2) (BCIH : 
 
 /- ------------------------------------------------------------------------- -/
 /- Equality of continuous functions on closure and related results.        -/
-/- (topology.ml 9906-10061)                                                  -/
+/- (topology.ml 9907-10062)                                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure ECF where
@@ -13577,7 +13580,7 @@ def setupECF [HolBase] (D : TopologyDeps) (BCLO : CLO) (BLPT : LPT) (BCLS1 : CLS
 
 /- ------------------------------------------------------------------------- -/
 /- Continuity and uniform continuity relative to closures; continuity      -/
-/- properties for square roots.  (topology.ml 10062-10230)                   -/
+/- properties for square roots.  (topology.ml 10063-10231)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CUC where
@@ -13799,7 +13802,7 @@ def setupCUC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCWL : CWL) (BCLS1 : CLS
 
 /- ------------------------------------------------------------------------- -/
 /- Cauchy continuity, and the extension of functions to closures.          -/
-/- (topology.ml 10231-10420)                                                 -/
+/- (topology.ml 10232-10421)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CCE where
@@ -14051,7 +14054,7 @@ def setupCCE [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLS1 : CLS1) (BLIM1 : L
 
 /- ------------------------------------------------------------------------- -/
 /- Invariance properties; interior of an injective image; avoiding a value; -/
-/- level sets.  (topology.ml 10421-10574)                                    -/
+/- level sets.  (topology.ml 10422-10575)                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure INV where
@@ -14239,7 +14242,7 @@ def setupINV [HolBase] (D : TopologyDeps) (BLOC : LOC) (BCON : CON) (BINT : INT)
            CONTINUOUS_LEVELSET_OPEN_IN, CONTINUOUS_LEVELSET_OPEN }
 
 /- ------------------------------------------------------------------------- -/
-/- Some arithmetical combinations (more to prove).  (topology.ml 10575-10663) -/
+/- Some arithmetical combinations (more to prove).  (topology.ml 10576-10664) -/
 /- ------------------------------------------------------------------------- -/
 
 structure ARC where
@@ -14370,7 +14373,7 @@ def setupARC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BINT : INT) (BBND1 : BND
            OPEN_SUMS }
 
 /- ------------------------------------------------------------------------- -/
-/- Upper and lower hemicontinuous functions.  (topology.ml 10664-10854)      -/
+/- Upper and lower hemicontinuous functions.  (topology.ml 10665-10855)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure HEM where
@@ -14596,7 +14599,7 @@ def setupHEM [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL)
 
 /- ------------------------------------------------------------------------- -/
 /- Connected components, considered as a "connectedness" relation or a set. -/
-/- (topology.ml 10855-11066)                                                 -/
+/- (topology.ml 10856-11067)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CCM1 where
@@ -14874,7 +14877,7 @@ def setupCCM1 [HolBase] (D : TopologyDeps) (BCLO : CLO) (BCON : CON) (BCLS1 : CL
            CONNECTED_EQ_CONNECTED_COMPONENT_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- Connected components, continued.  (topology.ml 11067-11337)               -/
+/- Connected components, continued.  (topology.ml 11068-11338)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure CCM2 where
@@ -15207,7 +15210,7 @@ def setupCCM2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLOC : LOC) (BLPT : LPT
            CONNECTED_CONNECTED_DIFF, CONNECTED_COMPONENT_FINITE }
 
 /- ------------------------------------------------------------------------- -/
-/- The set of connected components of a set.  (topology.ml 11338-11509)      -/
+/- The set of connected components of a set.  (topology.ml 11339-11510)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure CPN1 where
@@ -15438,7 +15441,7 @@ def setupCPN1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCON : CON) (BBND1 : BN
            COMPACT_CONNECTED_COMPONENT, COMPACT_COMPONENTS, CONTINUOUS_ON_COMPONENTS_GEN }
 
 /- ------------------------------------------------------------------------- -/
-/- The set of connected components, continued.  (topology.ml 11510-11757)   -/
+/- The set of connected components, continued.  (topology.ml 11511-11758)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CPN2 where
@@ -15757,7 +15760,7 @@ def setupCPN2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCON : CON) (BCLC : CLC
            COMPONENTS_INTER_COMPONENTS }
 
 /- ------------------------------------------------------------------------- -/
-/- The set of connected components, continued.  (topology.ml 11758-11994)   -/
+/- The set of connected components, continued.  (topology.ml 11759-11995)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CPN3 where
@@ -16055,7 +16058,7 @@ def setupCPN3 [HolBase] (D : TopologyDeps) (BCLO : CLO) (BLOC : LOC) (BCON : CON
 
 /- ------------------------------------------------------------------------- -/
 /- Continuity implies uniform continuity on a compact domain; uniformly     -/
-/- convergent limits of continuous functions.  (topology.ml 11995-12181)     -/
+/- convergent limits of continuous functions.  (topology.ml 11996-12182)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure UCC where
@@ -16296,7 +16299,7 @@ def setupUCC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BCLS1 : CLS
            CONTINUOUS_UNIFORM_LIMIT, CONTINUOUS_UNIFORMLY_CAUCHY_LIMIT }
 
 /- ------------------------------------------------------------------------- -/
-/- Topological stuff lifted from and dropped to R.  (topology.ml 12182-12304) -/
+/- Topological stuff lifted from and dropped to R.  (topology.ml 12183-12318) -/
 /- ------------------------------------------------------------------------- -/
 
 structure LFR where
@@ -16309,6 +16312,7 @@ structure LFR where
   CONTINUOUS_ON_LIFT_NORM_COMPOSE : thm
   CONTINUOUS_AT_LIFT_NORM : thm
   CONTINUOUS_ON_LIFT_NORM : thm
+  CONTINUOUS_MAP_NORM : thm
   PROPER_MAP_NORM_SIMPLE : thm
   PROPER_MAP_NORM : thm
   CLOSED_MAP_NORM : thm
@@ -16322,7 +16326,7 @@ structure LFR where
 @[nospecialize]
 def setupLFR [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLPT : LPT) (BLIM1 : LIM1)
     (BLIM2 : LIM2) (BBND1 : BND1) (BCPT : CPT) (BCPP1 : CPP1) (BCNT1 : CNT1) (BCNO : CNO)
-    (BCSL : CSL) (BCLC : CLC) (BPRP1 : PRP1) : ExceptT String IO LFR := do
+    (BCSL : CSL) (BCLC : CLC) (BPRP1 : PRP1) (BCWL : CWL) : ExceptT String IO LFR := do
   -- @@SCOPE BEGIN
   let { MESON_TAC, SET_RULE, NORM_ARITH, NORM_ARITH_TAC, .. } := D
   let { FORALL_IN_GSPEC, IMP_CONJ, .. } := D.core2
@@ -16336,6 +16340,7 @@ def setupLFR [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLPT : LPT)
   let { VECTOR_SUB_COMPONENT, dist, drop, .. } := D.vec4
   let { EVENTUALLY_MONO, .. } := D.met2
   let { SUBTOPOLOGY_UNIV, .. } := D.met3
+  let { CONTINUOUS_MAP_COMPOSE, .. } := D.met1
   let { open_def, .. } := BEUC
   let { CLOSED_IN, CLOSED_UNIV, .. } := BCLO
   let { CLOSED_LIMPT, LIMPT_APPROACHABLE, .. } := BLPT
@@ -16345,10 +16350,11 @@ def setupLFR [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLPT : LPT)
   let { COMPACT_EQ_BOUNDED_CLOSED, .. } := BCPT
   let { CLOSED_INTER_COMPACT, .. } := BCPP1
   let { CONTINUOUS_AT, continuous, continuous_at, .. } := BCNT1
-  let { continuous_on, .. } := BCNO
+  let { CONTINUOUS_MAP_EUCLIDEAN, continuous_on, .. } := BCNO
   let { CONTINUOUS_ON_EQ_CONTINUOUS_WITHIN, .. } := BCSL
   let { CONTINUOUS_CLOSED_PREIMAGE_UNIV, .. } := BCLC
   let { PROPER_MAP, .. } := BPRP1
+  let { CONTINUOUS_MAP_EQ_LIFT, .. } := BCWL
   -- @@SCOPE END
 
   let OPEN_LIFT ← prove
@@ -16415,6 +16421,19 @@ def setupLFR [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLPT : LPT)
    (REWRITE_TAC [CONTINUOUS_ON_LIFT_RANGE, NORM_LIFT] THEN
     MESON_TAC [REAL_ABS_SUB_NORM, REAL_LET_TRANS])
 
+  let CONTINUOUS_MAP_NORM ← prove
+   r"!top (f:A->real^N).
+        continuous_map (top,euclidean) f
+        ==> continuous_map (top,euclideanreal) (\x. norm(f x))"
+   (REPEAT STRIP_TAC THEN REWRITE_TAC [CONTINUOUS_MAP_EQ_LIFT] THEN
+    SUBGOAL_THEN (← q r"lift o (\x. norm((f:A->real^N) x)) = (lift o norm) o f")
+    SUBST1_TAC THENL [REWRITE_TAC [o_DEF], ALL_TAC] THEN
+    MATCH_MP_TAC CONTINUOUS_MAP_COMPOSE THEN
+    EXISTS_TAC (← q r"euclidean:(real^N)topology") THEN ASM_REWRITE_TAC [] THEN
+    MP_TAC (← ISPECL [← q r"(lift o norm):real^N->real^1", ← q r"(:real^N)"]
+      CONTINUOUS_MAP_EUCLIDEAN) THEN
+    REWRITE_TAC [SUBTOPOLOGY_UNIV, CONTINUOUS_ON_LIFT_NORM])
+
   let PROPER_MAP_NORM_SIMPLE ← prove
    r"!k. compact k ==> compact {x:real^N | lift(norm x) IN k}"
    (REWRITE_TAC [COMPACT_EQ_BOUNDED_CLOSED] THEN REPEAT STRIP_TAC THENL
@@ -16473,13 +16492,13 @@ def setupLFR [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLPT : LPT)
   return { OPEN_LIFT, LIMPT_APPROACHABLE_LIFT, CLOSED_LIFT, CONTINUOUS_AT_LIFT_RANGE,
            CONTINUOUS_ON_LIFT_RANGE, CONTINUOUS_LIFT_NORM_COMPOSE,
            CONTINUOUS_ON_LIFT_NORM_COMPOSE, CONTINUOUS_AT_LIFT_NORM, CONTINUOUS_ON_LIFT_NORM,
-           PROPER_MAP_NORM_SIMPLE, PROPER_MAP_NORM, CLOSED_MAP_NORM,
+           CONTINUOUS_MAP_NORM, PROPER_MAP_NORM_SIMPLE, PROPER_MAP_NORM, CLOSED_MAP_NORM,
            CONTINUOUS_AT_LIFT_COMPONENT, CONTINUOUS_ON_LIFT_COMPONENT,
            CONTINUOUS_AT_LIFT_INFNORM, CONTINUOUS_AT_LIFT_DIST, CONTINUOUS_ON_LIFT_DIST }
 
 /- ------------------------------------------------------------------------- -/
 /- Distance, diameter etc. of/from a set; minimal distance needs only        -/
-/- closure.  (topology.ml 12305-12374)                                        -/
+/- closure.  (topology.ml 12319-12388)                                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure DST where
@@ -16579,7 +16598,7 @@ def setupDST [HolBase] (D : TopologyDeps) (BCLO : CLO) (BBAL : BAL) (BCBL : CBL)
 
 /- ------------------------------------------------------------------------- -/
 /- Limit compositions with a scalar multiplier; continuity of inverse.      -/
-/- (topology.ml 12375-12505)                                                 -/
+/- (topology.ml 12389-12519)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SMI where
@@ -16759,7 +16778,7 @@ def setupSMI [HolBase] (D : TopologyDeps) (BCWL : CWL) (BNET : NET) (BLIM1 : LIM
 
 /- ------------------------------------------------------------------------- -/
 /- More preservation properties for pasted sets (Cartesian products).      -/
-/- (topology.ml 12506-12695)                                                 -/
+/- (topology.ml 12520-12709)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCA1 where
@@ -17018,7 +17037,7 @@ def setupPCA1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCON : CON) (BLPT : LPT
 
 /- ------------------------------------------------------------------------- -/
 /- Pasted sets, continued; hence some useful properties follow quite easily. -/
-/- (topology.ml 12696-12876)                                                 -/
+/- (topology.ml 12710-12890)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCA2 where
@@ -17254,7 +17273,7 @@ def setupPCA2 [HolBase] (D : TopologyDeps) (BLOC : LOC) (BCON : CON) (BCLS2 : CL
            COMPACT_DIFFERENCES, COMPACT_AFFINITY_EQ, COMPACT_AFFINITY, COMPACT_SUP_MAXDISTANCE }
 
 /- ------------------------------------------------------------------------- -/
-/- We can state this in terms of diameter of a set.  (topology.ml 12877-13042) -/
+/- We can state this in terms of diameter of a set.  (topology.ml 12891-13056) -/
 /- ------------------------------------------------------------------------- -/
 
 structure DIA1 where
@@ -17482,7 +17501,7 @@ def setupDIA1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BCLS1 : CL
            BOUNDED_AND_DIAMETER_LE, DIST_LE_DIAMETER, DIAMETER_CBALL, DIAMETER_BALL }
 
 /- ------------------------------------------------------------------------- -/
-/- Diameter, continued.  (topology.ml 13043-13120)                           -/
+/- Diameter, continued.  (topology.ml 13057-13134)                           -/
 /- ------------------------------------------------------------------------- -/
 
 structure DIA2 where
@@ -17596,7 +17615,7 @@ def setupDIA2 [HolBase] (D : TopologyDeps) (BBND1 : BND1) (BBND2 : BND2) (BDIA1 
            DIAMETER_LE_SUMS_LEFT, DIAMETER_UNION_LE }
 
 /- ------------------------------------------------------------------------- -/
-/- Related results with closure as the conclusion.  (topology.ml 13121-13354) -/
+/- Related results with closure as the conclusion.  (topology.ml 13135-13368) -/
 /- ------------------------------------------------------------------------- -/
 
 structure CCC where
@@ -17897,7 +17916,7 @@ def setupCCC [HolBase] (D : TopologyDeps) (BCLO : CLO) (BLPT : LPT) (BCLS1 : CLS
 
 /- ------------------------------------------------------------------------- -/
 /- Shrinking a ball containing a compact set; separation between points and -/
-/- sets.  (topology.ml 13355-13440)                                          -/
+/- sets.  (topology.ml 13369-13454)                                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure SEP where
@@ -18009,7 +18028,7 @@ def setupSEP [HolBase] (D : TopologyDeps) (BBAL : BAL) (BDST : DST) (BCCC : CCC)
 
 /- ------------------------------------------------------------------------- -/
 /- Representing sets as the union of a chain of compact sets.               -/
-/- (topology.ml 13441-13590)                                                 -/
+/- (topology.ml 13455-13604)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure UCS where
@@ -18199,7 +18218,7 @@ def setupUCS [HolBase] (D : TopologyDeps) (BCLO : CLO) (BBAL : BAL) (BINT : INT)
   return { CLOSED_UNION_COMPACT_SUBSETS, OPEN_UNION_COMPACT_SUBSETS }
 
 /- ------------------------------------------------------------------------- -/
-/- Closed-graph characterization of continuity.  (topology.ml 13591-13661)   -/
+/- Closed-graph characterization of continuity.  (topology.ml 13605-13675)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CGR where
@@ -18308,7 +18327,7 @@ def setupCGR [HolBase] (D : TopologyDeps) (BCLO : CLO) (BLOC : LOC) (BLPT : LPT)
            CONTINUOUS_FROM_CLOSED_GRAPH }
 
 /- ------------------------------------------------------------------------- -/
-/- More topological properties of intervals.  (topology.ml 13662-13860)      -/
+/- More topological properties of intervals.  (topology.ml 13676-13874)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure ITV1 where
@@ -18572,7 +18591,7 @@ def setupITV1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLPT : LPT) (BINT : INT
            INTER_INTERVAL_MIXED_EQ_EMPTY, INTERVAL_TRANSLATION }
 
 /- ------------------------------------------------------------------------- -/
-/- Intervals, continued.  (topology.ml 13861-14055)                          -/
+/- Intervals, continued.  (topology.ml 13875-14069)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure ITV2 where
@@ -18822,7 +18841,7 @@ def setupITV2 [HolBase] (D : TopologyDeps) (BBAL : BAL) (BBND1 : BND1) (BDIA1 : 
            DIAMETER_INTERVAL }
 
 /- ------------------------------------------------------------------------- -/
-/- Intervals, continued.  (topology.ml 14056-14190)                          -/
+/- Intervals, continued.  (topology.ml 14070-14204)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure ITV3 where
@@ -19001,7 +19020,7 @@ def setupITV3 [HolBase] (D : TopologyDeps) (BCLO : CLO) (BBAL : BAL) (BCON : CON
            EQ_BALLS }
 
 /- ------------------------------------------------------------------------- -/
-/- Some special cases for intervals in R^1.  (topology.ml 14191-14378)       -/
+/- Some special cases for intervals in R^1.  (topology.ml 14205-14392)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure R1A where
@@ -19246,7 +19265,7 @@ def setupR1A [HolBase] (D : TopologyDeps) (BBAL : BAL) : ExceptT String IO R1A :
            BALL_INTERVAL_0, CBALL_INTERVAL_0, INTER_INTERVAL_1, CLOSED_DIFF_OPEN_INTERVAL_1 }
 
 /- ------------------------------------------------------------------------- -/
-/- Special cases for intervals in R^1, continued.  (topology.ml 14379-14554) -/
+/- Special cases for intervals in R^1, continued.  (topology.ml 14393-14568) -/
 /- ------------------------------------------------------------------------- -/
 
 structure R1B where
@@ -19476,7 +19495,7 @@ def setupR1B [HolBase] (D : TopologyDeps) (BSEG : SEG) (BCON : CON) (BBND2 : BND
 
 /- ------------------------------------------------------------------------- -/
 /- Intervals in general, including infinite and mixtures of open and closed. -/
-/- (topology.ml 14555-14753)                                                 -/
+/- (topology.ml 14569-14767)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure IVG1 where
@@ -19723,7 +19742,7 @@ def setupIVG1 [HolBase] (D : TopologyDeps) (BBND1 : BND1) (BCPT : CPT) (BLFR : L
            IS_REALINTERVAL_IS_INTERVAL }
 
 /- ------------------------------------------------------------------------- -/
-/- Intervals in general, continued.  (topology.ml 14754-14916)               -/
+/- Intervals in general, continued.  (topology.ml 14768-14930)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure IVG2 where
@@ -19932,7 +19951,7 @@ def setupIVG2 [HolBase] (D : TopologyDeps) (BBAL : BAL) (BITV3 : ITV3) (BIVG1 : 
            IS_INTERVAL_SUMS, IS_INTERVAL_SING, INTERVAL_EQ_SING }
 
 /- ------------------------------------------------------------------------- -/
-/- Intervals in general, continued.  (topology.ml 14917-15054)               -/
+/- Intervals in general, continued.  (topology.ml 14931-15068)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure IVG3 where
@@ -20118,7 +20137,7 @@ def setupIVG3 [HolBase] (D : TopologyDeps) (BCLS1 : CLS1) (BFRO1 : FRO1) (BIVG1 
            CARD_FRONTIER_INTERVAL_1, UNION_INTERVAL_SUBSET_INTERVAL }
 
 /- ------------------------------------------------------------------------- -/
-/- Limit component bounds.  (topology.ml 15055-15156)                        -/
+/- Limit component bounds.  (topology.ml 15069-15170)                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCB where
@@ -20257,7 +20276,7 @@ def setupLCB [HolBase] (D : TopologyDeps) (BLIM1 : LIM1) (BARI : ARI) (BUNQ : UN
            LIM_DROP_LE, LIM_DROP_UBOUND, LIM_DROP_LBOUND, LIMIT_PAIR_DROP_LE }
 
 /- ------------------------------------------------------------------------- -/
-/- Also extending closed bounds to closures.  (topology.ml 15157-15266)      -/
+/- Also extending closed bounds to closures.  (topology.ml 15171-15280)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure CLB where
@@ -20410,7 +20429,7 @@ def setupCLB [HolBase] (D : TopologyDeps) (BBAL : BAL) (BLOC : LOC) (BCLS1 : CLS
            CONTINUOUS_MAP_CLOSURES }
 
 /- ------------------------------------------------------------------------- -/
-/- Relating images and frontiers.  (topology.ml 15267-15389)                 -/
+/- Relating images and frontiers.  (topology.ml 15281-15403)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure IMF where
@@ -20575,7 +20594,7 @@ def setupIMF [HolBase] (D : TopologyDeps) (BINT : INT) (BCLS1 : CLS1) (BFRO1 : F
            FRONTIER_PROPER_OPEN_MAP_IMAGE, FRONTIER_CLOPEN_MAP_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Limits relative to a union.  (topology.ml 15390-15551)                    -/
+/- Limits relative to a union.  (topology.ml 15404-15565)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure LRU where
@@ -20784,7 +20803,7 @@ def setupLRU [HolBase] (D : TopologyDeps) (BCLO : CLO) (BLPT : LPT) (BCLS2 : CLS
 
 /- ------------------------------------------------------------------------- -/
 /- Various formulations of limits for linear operators.                    -/
-/- (topology.ml 15552-15673)                                                 -/
+/- (topology.ml 15566-15687)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure LLO where
@@ -20947,7 +20966,7 @@ def setupLLO [HolBase] (D : TopologyDeps) (BLIM1 : LIM1) (BARI : ARI) (BCNT1 : C
 
 /- ------------------------------------------------------------------------- -/
 /- Limits and continuity of matrices as flattened vectors.                 -/
-/- (topology.ml 15674-15785)                                                 -/
+/- (topology.ml 15688-15799)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MFV where
@@ -21101,7 +21120,7 @@ def setupMFV [HolBase] (D : TopologyDeps) (BLIM1 : LIM1) (BCNT1 : CNT1) (BCSL : 
 
 /- ------------------------------------------------------------------------- -/
 /- Intermediate-value formulations; mapping connected sets onto segments;  -/
-/- monotone convergence; cardinality invariance.  (topology.ml 15786-15977)  -/
+/- monotone convergence; cardinality invariance.  (topology.ml 15800-15991)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure IVT where
@@ -21331,7 +21350,7 @@ def setupIVT [HolBase] (D : TopologyDeps) (BSEG : SEG) (BCON : CON) (BLIM2 : LIM
            BOUNDED_INCREASING_CONVERGENT, BOUNDED_DECREASING_CONVERGENT }
 
 /- ------------------------------------------------------------------------- -/
-/- Basic homeomorphism definitions.  (topology.ml 15978-16160)               -/
+/- Basic homeomorphism definitions.  (topology.ml 15992-16174)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure HMA where
@@ -21573,7 +21592,7 @@ def setupHMA [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCNO : CNO) (BCSL : CSL)
            HOMEOMORPHIC_INFINITENESS, HOMEOMORPHISM_INFINITENESS, HOMEOMORPHIC_COUNTABILITY }
 
 /- ------------------------------------------------------------------------- -/
-/- Basic homeomorphism results, continued.  (topology.ml 16161-16348)        -/
+/- Basic homeomorphism results, continued.  (topology.ml 16175-16362)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure HMB where
@@ -21819,7 +21838,7 @@ def setupHMB [HolBase] (D : TopologyDeps) (BCNO : CNO) (BCSL : CSL) (BCMS : CMS)
 
 /- ------------------------------------------------------------------------- -/
 /- Basic homeomorphism results, continued; domain of a continuous function  -/
-/- is homeomorphic to its graph.  (topology.ml 16349-16554)                  -/
+/- is homeomorphic to its graph.  (topology.ml 16363-16568)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure HMC where
@@ -22080,7 +22099,7 @@ def setupHMC [HolBase] (D : TopologyDeps) (BBAL : BAL) (BCSL : CSL) (BCMS : CMS)
            HOMEOMORPHISM_GRAPH, HOMEOMORPHIC_GRAPH }
 
 /- ------------------------------------------------------------------------- -/
-/- Inverse function property for open/closed maps.  (topology.ml 16555-16692) -/
+/- Inverse function property for open/closed maps.  (topology.ml 16569-16706) -/
 /- ------------------------------------------------------------------------- -/
 
 structure IOM where
@@ -22256,7 +22275,7 @@ def setupIOM [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLOC : LOC) (BIDC : IDC)
 
 /- ------------------------------------------------------------------------- -/
 /- Transformation theorems for open, interior etc. under homeomorphism.    -/
-/- (topology.ml 16693-16872)                                                 -/
+/- (topology.ml 16707-16886)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure TFH1 where
@@ -22486,7 +22505,7 @@ def setupTFH1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLS1 : CLS1) (BCSL : C
 
 /- ------------------------------------------------------------------------- -/
 /- Transformation theorems under homeomorphism, continued; relatively weak  -/
-/- hypotheses if the domain is compact.  (topology.ml 16873-17070)           -/
+/- hypotheses if the domain is compact.  (topology.ml 16887-17084)           -/
 /- ------------------------------------------------------------------------- -/
 
 structure TFH2 where
@@ -22745,7 +22764,7 @@ def setupTFH2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLOC : LOC) (BBND1 : BN
 
 /- ------------------------------------------------------------------------- -/
 /- Composition of homeomorphisms; preservation of topological properties;  -/
-/- translation, scaling etc.  (topology.ml 17071-17219)                      -/
+/- translation, scaling etc.  (topology.ml 17085-17233)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure CHP where
@@ -22939,7 +22958,7 @@ def setupCHP [HolBase] (D : TopologyDeps) (BBAL : BAL) (BCSL : CSL) (BCMS : CMS)
            HOMEOMORPHIC_SPHERES }
 
 /- ------------------------------------------------------------------------- -/
-/- Homeomorphism of one-point compactifications.  (topology.ml 17220-17325)  -/
+/- Homeomorphism of one-point compactifications.  (topology.ml 17234-17339)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure OPC where
@@ -23084,7 +23103,7 @@ def setupOPC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC)
 
 /- ------------------------------------------------------------------------- -/
 /- Homeomorphisms between open intervals in real^1 and then in real^N.     -/
-/- (topology.ml 17326-17546)                                                 -/
+/- (topology.ml 17340-17560)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure HOI where
@@ -23356,7 +23375,7 @@ def setupHOI [HolBase] (D : TopologyDeps) (BBAL : BAL) (BNET : NET) (BCSL : CSL)
            HOMEOMORPHIC_OPEN_INTERVALS, HOMEOMORPHIC_OPEN_INTERVAL_UNIV, HOMEOMORPHIC_BALL_UNIV }
 
 /- ------------------------------------------------------------------------- -/
-/- Cardinalities of various useful sets.  (topology.ml 17547-17725)          -/
+/- Cardinalities of various useful sets.  (topology.ml 17561-17739)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure CRD1 where
@@ -23599,7 +23618,7 @@ def setupCRD1 [HolBase] (D : TopologyDeps) (BBAL : BAL) (BINT : INT) (BCBL : CBL
 
 /- ------------------------------------------------------------------------- -/
 /- Cardinalities, continued; "iff" forms of constancy of functions from    -/
-/- connected sets into small sets.  (topology.ml 17726-17923)                -/
+/- connected sets into small sets.  (topology.ml 17740-17937)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure CRD2 where
@@ -23856,7 +23875,7 @@ def setupCRD2 [HolBase] (D : TopologyDeps) (BCLO : CLO) (BBAL : BAL) (BCON : CON
            CONTINUOUS_COUNTABLE_RANGE_CONSTANT, CONTINUOUS_CARD_LT_RANGE_CONSTANT }
 
 /- ------------------------------------------------------------------------- -/
-/- Homeomorphism of hyperplanes.  (topology.ml 17924-18004)                  -/
+/- Homeomorphism of hyperplanes.  (topology.ml 17938-18018)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure HYP where
@@ -23967,7 +23986,7 @@ def setupHYP [HolBase] (D : TopologyDeps) (BLCP : LCP) (BHMA : HMA) : ExceptT St
 
 /- ------------------------------------------------------------------------- -/
 /- "Isometry" (up to constant bounds) of injective linear map etc.          -/
-/- (topology.ml 18005-18108)                                                 -/
+/- (topology.ml 18019-18122)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure ISM where
@@ -24117,7 +24136,7 @@ def setupISM [HolBase] (D : TopologyDeps) (BBAL : BAL) (BLPT : LPT) (BCBL : CBL)
 
 /- ------------------------------------------------------------------------- -/
 /- Relating linear images to open/closed/interior/closure.                 -/
-/- (topology.ml 18109-18271)                                                 -/
+/- (topology.ml 18123-18285)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure LIO where
@@ -24340,7 +24359,7 @@ def setupLIO [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC)
 
 /- ------------------------------------------------------------------------- -/
 /- Corollaries, reformulations and special cases for M = N.                -/
-/- (topology.ml 18272-18421)                                                 -/
+/- (topology.ml 18286-18435)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure COR where
@@ -24542,7 +24561,7 @@ def setupCOR [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLPT : LPT) (BCMP : CMP)
            OPEN_OPEN_RIGHT_PROJECTION, OPEN_MAP_FSTCART, OPEN_MAP_SNDCART }
 
 /- ------------------------------------------------------------------------- -/
-/- Even more special cases.  (topology.ml 18422-18524)                       -/
+/- Even more special cases.  (topology.ml 18436-18538)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure ESP where
@@ -24686,7 +24705,7 @@ def setupESP [HolBase] (D : TopologyDeps) (BINT : INT) (BCLS1 : CLS1) (BFRO1 : F
            CLOSURE_NEGATIONS, SYMMETRIC_CLOSURE }
 
 /- ------------------------------------------------------------------------- -/
-/- Some properties of a canonical subspace.  (topology.ml 18525-18603)       -/
+/- Some properties of a canonical subspace.  (topology.ml 18539-18617)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure CSS where
@@ -24794,7 +24813,7 @@ def setupCSS [HolBase] (D : TopologyDeps) (BCLO : CLO) (BHSP : HSP) : ExceptT St
   return { SUBSPACE_SUBSTANDARD, CLOSED_SUBSTANDARD, DIM_SUBSTANDARD }
 
 /- ------------------------------------------------------------------------- -/
-/- Hence closure and completeness of all subspaces.  (topology.ml 18604-18800) -/
+/- Hence closure and completeness of all subspaces.  (topology.ml 18618-18814) -/
 /- ------------------------------------------------------------------------- -/
 
 structure CSB1 where
@@ -25048,7 +25067,7 @@ def setupCSB1 [HolBase] (D : TopologyDeps) (BBAL : BAL) (BCLS1 : CLS1) (BCBL : C
            BASIS_COORDINATES_LIPSCHITZ, COMPLEMENTARY_SUM_COMPONENTS_LIPSCHITZ }
 
 /- ------------------------------------------------------------------------- -/
-/- Closure and completeness of subspaces, continued.  (topology.ml 18801-18885) -/
+/- Closure and completeness of subspaces, continued.  (topology.ml 18815-18899) -/
 /- ------------------------------------------------------------------------- -/
 
 structure CSB2 where
@@ -25174,7 +25193,7 @@ def setupCSB2 [HolBase] (D : TopologyDeps) (BBND1 : BND1) (BCPT : CPT) (BCMS : C
   return { BASIS_COORDINATES_CONTINUOUS, COMPLEMENTARY_SUM_HOMEOMORPHIC_PCROSS }
 
 /- ------------------------------------------------------------------------- -/
-/- Affine transformations of intervals.  (topology.ml 18886-18964)           -/
+/- Affine transformations of intervals.  (topology.ml 18900-18978)           -/
 /- ------------------------------------------------------------------------- -/
 
 structure AFI where
@@ -25291,7 +25310,7 @@ def setupAFI [HolBase] (D : TopologyDeps) : ExceptT String IO AFI := do
 /- Some matrix identities are easier to deduce for invertible matrices. We   -/
 /- can then extend by continuity, which is why this material needs to be     -/
 /- here after basic topological notions have been defined.                   -/
-/- (topology.ml 18965-19174)                                                 -/
+/- (topology.ml 18979-19188)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MID1 where
@@ -25563,7 +25582,7 @@ def setupMID1 [HolBase] (D : TopologyDeps) (BBAL : BAL) (BLPT : LPT) (BLIM1 : LI
            MATRIX_WLOG_INVERTIBLE }
 
 /- ------------------------------------------------------------------------- -/
-/- Sylvester's determinant identity.  (topology.ml 19175-19314)              -/
+/- Sylvester's determinant identity.  (topology.ml 19189-19328)              -/
 /- ------------------------------------------------------------------------- -/
 
 structure SYL where
@@ -25745,7 +25764,7 @@ def setupSYL [HolBase] (D : TopologyDeps) (BCLO : CLO) (BLPT : LPT) (BCBL : CBL)
   return { SYLVESTER_DETERMINANT_IDENTITY }
 
 /- ------------------------------------------------------------------------- -/
-/- Cofactor identities by continuity.  (topology.ml 19315-19476)             -/
+/- Cofactor identities by continuity.  (topology.ml 19329-19490)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure CFM where
@@ -25958,7 +25977,7 @@ def setupCFM [HolBase] (D : TopologyDeps) (BCLO : CLO) (BLPT : LPT) (BCBL : CBL)
            RANK_COFACTOR_EQ_FULL }
 
 /- ------------------------------------------------------------------------- -/
-/- Rank of the cofactor matrix.  (topology.ml 19477-19654)                   -/
+/- Rank of the cofactor matrix.  (topology.ml 19491-19668)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CEZ where
@@ -26177,7 +26196,7 @@ def setupCEZ [HolBase] (D : TopologyDeps) (BCFM : CFM) : ExceptT String IO CEZ :
   return { COFACTOR_EQ_0, RANK_COFACTOR_EQ_1, RANK_COFACTOR }
 
 /- ------------------------------------------------------------------------- -/
-/- Eigenvalue and eigenvector identities.  (topology.ml 19655-19747)         -/
+/- Eigenvalue and eigenvector identities.  (topology.ml 19669-19761)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure EIG where
@@ -26312,7 +26331,7 @@ def setupEIG [HolBase] (D : TopologyDeps) (BSYL : SYL) : ExceptT String IO EIG :
 
 /- ------------------------------------------------------------------------- -/
 /- Not in so many words, but combining this with intermediate value theorem  -/
-/- implies the determinant is an open map.  (topology.ml 19748-19969)        -/
+/- implies the determinant is an open map.  (topology.ml 19762-19983)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure DOM where
@@ -26576,7 +26595,7 @@ def setupDOM [HolBase] (D : TopologyDeps) (BMID1 : MID1) : ExceptT String IO DOM
 /- Existence of eigenvectors. The proof is only in this file because it uses -/
 /- a few simple results about continuous functions (at least                 -/
 /- CONTINUOUS_ON_LIFT_DOT2, CONTINUOUS_ATTAINS_SUP and CLOSED_SUBSPACE).     -/
-/- (topology.ml 19970-20188)                                                 -/
+/- (topology.ml 19984-20202)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SAE where
@@ -26844,7 +26863,7 @@ def setupSAE [HolBase] (D : TopologyDeps) (BBAL : BAL) (BCPP1 : CPP1) (BCPP2 : C
            EIGENVALUE_LOWERBOUND_DOT, EIGENVALUE_LOWERBOUND_DOT_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- Diagonalization of symmetric matrix.  (topology.ml 20185-20283)           -/
+/- Diagonalization of symmetric matrix.  (topology.ml 20199-20297)           -/
 /- ------------------------------------------------------------------------- -/
 
 structure DIG where
@@ -26975,7 +26994,7 @@ def setupDIG [HolBase] (D : TopologyDeps) (BSAE : SAE) : ExceptT String IO DIG :
 
 /- ------------------------------------------------------------------------- -/
 /- Hence deduce more general results using diagonalization.                  -/
-/- (topology.ml 20284-20395)                                                 -/
+/- (topology.ml 20298-20409)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure GDR1 where
@@ -27123,7 +27142,7 @@ def setupGDR1 [HolBase] (D : TopologyDeps) (BDIG : DIG) : ExceptT String IO GDR1
            POSITIVE_SEMIDEFINITE_EIGENVALUES, POSITIVE_DEFINITE_EIGENVALUES }
 
 /- ------------------------------------------------------------------------- -/
-/- Positive semidefinite covariance.  (topology.ml 20396-20491)              -/
+/- Positive semidefinite covariance.  (topology.ml 20410-20505)              -/
 /- ------------------------------------------------------------------------- -/
 
 structure PSC where
@@ -27253,7 +27272,7 @@ def setupPSC [HolBase] (D : TopologyDeps) (BDIG : DIG) : ExceptT String IO PSC :
 
 /- ------------------------------------------------------------------------- -/
 /- Square roots, determinants and traces of semidefinite matrices.           -/
-/- (topology.ml 20492-20670)                                                 -/
+/- (topology.ml 20506-20684)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure PSS where
@@ -27496,7 +27515,7 @@ def setupPSS [HolBase] (D : TopologyDeps) (BPSC : PSC) : ExceptT String IO PSS :
 
 /- ------------------------------------------------------------------------- -/
 /- Orthogonal, inverse and cofactor of semidefinite matrices.                -/
-/- (topology.ml 20671-20804)                                                 -/
+/- (topology.ml 20685-20818)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure PSO where
@@ -27691,7 +27710,7 @@ def setupPSO [HolBase] (D : TopologyDeps) (BCMS : CMS) (BIDC : IDC) (BLCP : LCP)
            POSITIVE_DEFINITE_COFACTOR_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- Uniqueness of semidefinite square roots.  (topology.ml 20805-20891)       -/
+/- Uniqueness of semidefinite square roots.  (topology.ml 20819-20905)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure PSU where
@@ -27810,7 +27829,7 @@ def setupPSU [HolBase] (D : TopologyDeps) (BDIG : DIG) (BPSC : PSC) : ExceptT St
 
 /- ------------------------------------------------------------------------- -/
 /- Products of semidefinite matrices and the 2x2 case.                       -/
-/- (topology.ml 20892-21085)                                                 -/
+/- (topology.ml 20906-21099)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure PSM where
@@ -28058,7 +28077,7 @@ def setupPSM [HolBase] (D : TopologyDeps) (BEIG : EIG) (BDIG : DIG) (BGDR1 : GDR
            POSITIVE_SEMIDEFINITE_2, POSITIVE_DEFINITE_2_DET, POSITIVE_DEFINITE_2 }
 
 /- ------------------------------------------------------------------------- -/
-/- Determinant and operator norm bounds.  (topology.ml 21086-21336)          -/
+/- Determinant and operator norm bounds.  (topology.ml 21100-21350)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure ODT where
@@ -28365,7 +28384,7 @@ def setupODT [HolBase] (D : TopologyDeps) (BDIG : DIG) : ExceptT String IO ODT :
 
 /- ------------------------------------------------------------------------- -/
 /- Hadamard inequality, nearby and Hadamard products of definite matrices.   -/
-/- (topology.ml 21337-21516)                                                 -/
+/- (topology.ml 21351-21530)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure PSN where
@@ -28600,7 +28619,7 @@ def setupPSN [HolBase] (D : TopologyDeps) (BSAE : SAE) (BGDR1 : GDR1) (BPSC : PS
            POSITIVE_DEFINITE_HADAMARD_PRODUCT }
 
 /- ------------------------------------------------------------------------- -/
-/- Polar decomposition.  (topology.ml 21513-21702)                           -/
+/- Polar decomposition.  (topology.ml 21527-21716)                           -/
 /- ------------------------------------------------------------------------- -/
 
 structure RPD where
@@ -28825,7 +28844,7 @@ def setupRPD [HolBase] (D : TopologyDeps) (BDIG : DIG) : ExceptT String IO RPD :
   return { RIGHT_POLAR_DECOMPOSITION }
 
 /- ------------------------------------------------------------------------- -/
-/- Consequences of polar decomposition.  (topology.ml 21703-21981)           -/
+/- Consequences of polar decomposition.  (topology.ml 21717-21995)           -/
 /- ------------------------------------------------------------------------- -/
 
 structure PDC where
@@ -29162,7 +29181,7 @@ def setupPDC [HolBase] (D : TopologyDeps) (BDIG : DIG) (BPSU : PSU) (BRPD : RPD)
 
 /- ------------------------------------------------------------------------- -/
 /- Infinite sums of vectors. Allow general starting point (and more).        -/
-/- (topology.ml 21982-22159)                                                 -/
+/- (topology.ml 21996-22173)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SUM1 where
@@ -29405,7 +29424,7 @@ def setupSUM1 [HolBase] (D : TopologyDeps) (BLIM1 : LIM1) (BLIM2 : LIM2) (BARI :
 
 /- ------------------------------------------------------------------------- -/
 /- Reindexing, even and odd terms, and pasting of series.                    -/
-/- (topology.ml 22160-22243)                                                 -/
+/- (topology.ml 22174-22257)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SUM2 where
@@ -29524,7 +29543,7 @@ def setupSUM2 [HolBase] (D : TopologyDeps) (BLIM1 : LIM1) (BLIM2 : LIM2) (BPCA1 
 
 /- ------------------------------------------------------------------------- -/
 /- Similar combining theorems just for summability.                          -/
-/- (topology.ml 22244-22445)                                                 -/
+/- (topology.ml 22258-22459)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SUM3 where
@@ -29788,7 +29807,7 @@ def setupSUM3 [HolBase] (D : TopologyDeps) (BUNQ : UNQ) (BLCB : LCB) (BSUM1 : SU
            SUMMABLE_EVEN, SUMMABLE_ODD, SERIES_DROP_LE, SERIES_DROP_POS, SERIES_BOUND }
 
 /- ------------------------------------------------------------------------- -/
-/- Similar combining theorems for infsum.  (topology.ml 22446-22550)         -/
+/- Similar combining theorems for infsum.  (topology.ml 22460-22564)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure INF where
@@ -29933,7 +29952,7 @@ def setupINF [HolBase] (D : TopologyDeps) (BLIM2 : LIM2) (BSUM1 : SUM1) (BSUM2 :
            INFSUM_EVEN, INFSUM_ODD }
 
 /- ------------------------------------------------------------------------- -/
-/- Cauchy criterion for series.  (topology.ml 22551-22663)                   -/
+/- Cauchy criterion for series.  (topology.ml 22565-22677)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure CAU where
@@ -30085,7 +30104,7 @@ def setupCAU [HolBase] (D : TopologyDeps) (BCMP : CMP) (BSUM1 : SUM1) (BSUM3 : S
 
 /- ------------------------------------------------------------------------- -/
 /- Uniform Cauchy criterion, terms tend to zero, comparison tests.           -/
-/- (topology.ml 22664-22843)                                                 -/
+/- (topology.ml 22678-22857)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CMT where
@@ -30301,7 +30320,7 @@ def setupCMT [HolBase] (D : TopologyDeps) (BLIM2 : LIM2) (BBND1 : BND1) (BCMP : 
            SERIES_COMPARISON_UNIFORM }
 
 /- ------------------------------------------------------------------------- -/
-/- Ratio test and boundedness of partial sums.  (topology.ml 22844-23001)    -/
+/- Ratio test and boundedness of partial sums.  (topology.ml 22858-23015)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure RAT where
@@ -30496,7 +30515,7 @@ def setupRAT [HolBase] (D : TopologyDeps) (BBND1 : BND1) (BBND2 : BND2) (BSUM1 :
 
 /- ------------------------------------------------------------------------- -/
 /- General Dirichlet convergence test (could make this uniform on a set),    -/
-/- and rearranging absolutely convergent series.  (topology.ml 23002-23204)  -/
+/- and rearranging absolutely convergent series.  (topology.ml 23016-23218)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure DIR where
@@ -30749,7 +30768,7 @@ def setupDIR [HolBase] (D : TopologyDeps) (BLIM2 : LIM2) (BARI : ARI) (BTRN : TR
 
 /- ------------------------------------------------------------------------- -/
 /- Some general theorems about series averages, convolutions etc.            -/
-/- (topology.ml 23205-23335)                                                 -/
+/- (topology.ml 23219-23349)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure TOE where
@@ -30918,7 +30937,7 @@ def setupTOE [HolBase] (D : TopologyDeps) (BLIM2 : LIM2) (BARI : ARI) (BUNQ : UN
   return { TOEPLITZ_BILINEAR_SERIES_NULL, TOEPLITZ_BILINEAR_SERIES }
 
 /- ------------------------------------------------------------------------- -/
-/- Bilinear convolutions and Cesaro means.  (topology.ml 23336-23516)        -/
+/- Bilinear convolutions and Cesaro means.  (topology.ml 23350-23530)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure LBC where
@@ -31144,7 +31163,7 @@ def setupLBC [HolBase] (D : TopologyDeps) (BLIM1 : LIM1) (BARI : ARI) (BUNQ : UN
 
 /- ------------------------------------------------------------------------- -/
 /- Multiplication (in a general bilinear sense) of series.                   -/
-/- (topology.ml 23517-23648)                                                 -/
+/- (topology.ml 23531-23662)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SBL where
@@ -31323,7 +31342,7 @@ def setupSBL [HolBase] (D : TopologyDeps) (BLIM2 : LIM2) (BARI : ARI) (BUNQ : UN
 
 /- ------------------------------------------------------------------------- -/
 /- Relate Cauchy sequences to summability or absolute convergence.           -/
-/- (topology.ml 23649-23728)                                                 -/
+/- (topology.ml 23663-23742)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CSM where
@@ -31436,7 +31455,7 @@ def setupCSM [HolBase] (D : TopologyDeps) (BCMP : CMP) (BCAU : CAU) (BCMT : CMT)
 
 /- ------------------------------------------------------------------------- -/
 /- Banach fixed point theorem (not really topological...)                    -/
-/- (topology.ml 23729-23837)                                                 -/
+/- (topology.ml 23743-23851)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BFX where
@@ -31574,7 +31593,7 @@ def setupBFX [HolBase] (D : TopologyDeps) (BLIM2 : LIM2) (BCMP : CMP) : ExceptT 
   return { BANACH_FIX }
 
 /- ------------------------------------------------------------------------- -/
-/- Edelstein fixed point theorem.  (topology.ml 23838-23960)                 -/
+/- Edelstein fixed point theorem.  (topology.ml 23852-23974)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure EDF where
@@ -31734,7 +31753,7 @@ def setupEDF [HolBase] (D : TopologyDeps) (BLIM2 : LIM2) (BARI : ARI) (BUNQ : UN
 
 /- ------------------------------------------------------------------------- -/
 /- Simple n-ary generalizations of Banach and Edelstein theorems, and Dini's -/
-/- theorem.  (topology.ml 23961-24077)                                       -/
+/- theorem.  (topology.ml 23975-24091)                                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure FXD where
@@ -31885,7 +31904,7 @@ def setupFXD [HolBase] (D : TopologyDeps) (BBAL : BAL) (BLIM2 : LIM2) (BARI : AR
   return { BANACH_FIX_ITER, EDELSTEIN_FIX_ITER, DINI }
 
 /- ------------------------------------------------------------------------- -/
-/- Closest point of a (closed) set to a point.  (topology.ml 24078-24256)    -/
+/- Closest point of a (closed) set to a point.  (topology.ml 24092-24270)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CLP where
@@ -32119,7 +32138,7 @@ def setupCLP [HolBase] (D : TopologyDeps) (BBAL : BAL) (BSEG : SEG) (BCON : CON)
 
 /- ------------------------------------------------------------------------- -/
 /- More general infimum of distance between two sets.                        -/
-/- (topology.ml 24257-24397)                                                 -/
+/- (topology.ml 24271-24411)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SDS where
@@ -32302,7 +32321,7 @@ def setupSDS [HolBase] (D : TopologyDeps) : ExceptT String IO SDS := do
 
 /- ------------------------------------------------------------------------- -/
 /- Uniform continuity via setdist, and setdist scaling.                      -/
-/- (topology.ml 24398-24451)                                                 -/
+/- (topology.ml 24412-24465)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SDU where
@@ -32386,7 +32405,7 @@ def setupSDU [HolBase] (D : TopologyDeps) (BBND1 : BND1) (BCNO : CNO) (BSDS : SD
 
 /- ------------------------------------------------------------------------- -/
 /- Continuity, subsets, closures and frontiers for setdist.                  -/
-/- (topology.ml 24452-24547)                                                 -/
+/- (topology.ml 24466-24561)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SD2 where
@@ -32534,7 +32553,7 @@ def setupSD2 [HolBase] (D : TopologyDeps) (BSEG : SEG) (BCON : CON) (BINT : INT)
 
 /- ------------------------------------------------------------------------- -/
 /- Attainment, invariance and zero cases for setdist.                        -/
-/- (topology.ml 24548-24742)                                                 -/
+/- (topology.ml 24562-24756)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SD3 where
@@ -32801,7 +32820,7 @@ def setupSD3 [HolBase] (D : TopologyDeps) (BSEG : SEG) (BCON : CON) (BCLS1 : CLS
 
 /- ------------------------------------------------------------------------- -/
 /- Setdist between balls; open translation preimages.                       -/
-/- (topology.ml 24743-24827)                                                 -/
+/- (topology.ml 24757-24841)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SD4 where
@@ -32926,7 +32945,7 @@ def setupSD4 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL)
 
 /- ------------------------------------------------------------------------- -/
 /- A nice characterization of uniform continuity via setdist.                -/
-/- (topology.ml 24828-25009)                                                 -/
+/- (topology.ml 24842-25023)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure UCD where
@@ -33151,7 +33170,7 @@ def setupUCD [HolBase] (D : TopologyDeps) (BBAL : BAL) (BLIM2 : LIM2) (BARI : AR
 
 /- ------------------------------------------------------------------------- -/
 /- Use set distance for an easy proof of separation properties etc.          -/
-/- (topology.ml 25010-25077)                                                 -/
+/- (topology.ml 25024-25091)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SPA where
@@ -33251,7 +33270,7 @@ def setupSPA [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC)
            CONNECTED_IMP_NONSEPARATED_UNION }
 
 /- ------------------------------------------------------------------------- -/
-/- Separation properties.  (topology.ml 25078-25195)                         -/
+/- Separation properties.  (topology.ml 25092-25209)                         -/
 /- ------------------------------------------------------------------------- -/
 
 structure SPB where
@@ -33415,7 +33434,7 @@ def setupSPB [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL)
 
 /- ------------------------------------------------------------------------- -/
 /- Closed sets as level sets; connectedness of the intersection of a chain.  -/
-/- (topology.ml 25196-25291)                                                 -/
+/- (topology.ml 25210-25305)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CLV where
@@ -33554,7 +33573,7 @@ def setupCLV [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC)
            CONNECTED_CHAIN, CONNECTED_CHAIN_GEN, CONNECTED_NEST, CONNECTED_NEST_GEN }
 
 /- ------------------------------------------------------------------------- -/
-/- Hausdorff distance between sets.  (topology.ml 25292-25466)               -/
+/- Hausdorff distance between sets.  (topology.ml 25306-25480)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure HDA where
@@ -33783,7 +33802,7 @@ def setupHDA [HolBase] (D : TopologyDeps) (BCLO : CLO) (BIDC : IDC) (BCLC : CLC)
            HAUSDIST_TRANSLATION, HAUSDIST_LINEAR_IMAGE, HAUSDIST_CLOSURE }
 
 /- ------------------------------------------------------------------------- -/
-/- Bounds for Hausdorff distance.  (topology.ml 25467-25666)                 -/
+/- Bounds for Hausdorff distance.  (topology.ml 25481-25680)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure HDB where
@@ -34043,7 +34062,7 @@ def setupHDB [HolBase] (D : TopologyDeps) (BBAL : BAL) (BCLS1 : CLS1) (BLIM2 : L
 
 /- ------------------------------------------------------------------------- -/
 /- Hemicontinuity, nontrivial forms, unions and the triangle law for         -/
-/- Hausdorff distance.  (topology.ml 25667-25839)                            -/
+/- Hausdorff distance.  (topology.ml 25681-25853)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure HDC where
@@ -34272,7 +34291,7 @@ def setupHDC [HolBase] (D : TopologyDeps) (BBAL : BAL) (BLOC : LOC) (BCLS1 : CLS
            HAUSDIST_TRIANGLE }
 
 /- ------------------------------------------------------------------------- -/
-/- Sums, zero Hausdorff distance, and balls.  (topology.ml 25840-25995)      -/
+/- Sums, zero Hausdorff distance, and balls.  (topology.ml 25854-26009)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure HDD where
@@ -34484,7 +34503,7 @@ def setupHDD [HolBase] (D : TopologyDeps) (BBAL : BAL) (BCLS1 : CLS1) (BCBL : CB
 
 /- ------------------------------------------------------------------------- -/
 /- Alternative form, diameters and connected limits for Hausdorff distance.  -/
-/- (topology.ml 25996-26133)                                                 -/
+/- (topology.ml 26010-26147)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure HDE where
@@ -34677,7 +34696,7 @@ def setupHDE [HolBase] (D : TopologyDeps) (BBAL : BAL) (BLOC : LOC) (BCON : CON)
 
 /- ------------------------------------------------------------------------- -/
 /- Hausdorff limit of a decreasing nest of compact sets.                     -/
-/- (topology.ml 26134-26212)                                                 -/
+/- (topology.ml 26148-26226)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure HDF where
@@ -34793,7 +34812,7 @@ def setupHDF [HolBase] (D : TopologyDeps) (BLIM2 : LIM2) (BCPT : CPT) (BNST : NS
 
 /- ------------------------------------------------------------------------- -/
 /- Hausdorff metric inherits completeness, total boundedness, compactness.   -/
-/- (topology.ml 26213-26461)                                                 -/
+/- (topology.ml 26227-26475)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CHU where
@@ -35092,7 +35111,7 @@ def setupCHU [HolBase] (D : TopologyDeps) (BBAL : BAL) (BCLS1 : CLS1) (BLIM2 : L
   return { COMPLETE_HAUSDIST_UNIV }
 
 /- ------------------------------------------------------------------------- -/
-/- Completeness in a closed set; total boundedness.  (topology.ml 26462-26583) -/
+/- Completeness in a closed set; total boundedness.  (topology.ml 26476-26597) -/
 /- ------------------------------------------------------------------------- -/
 
 structure CHT where
@@ -35251,7 +35270,7 @@ def setupCHT [HolBase] (D : TopologyDeps) (BBAL : BAL) (BCLS1 : CLS1) (BLIM2 : L
   return { COMPLETE_HAUSDIST, TOTALLY_BOUNDED_HAUSDIST }
 
 /- ------------------------------------------------------------------------- -/
-/- Compactness for the Hausdorff metric.  (topology.ml 26584-26716)          -/
+/- Compactness for the Hausdorff metric.  (topology.ml 26598-26730)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure CHC where
@@ -35416,7 +35435,7 @@ def setupCHC [HolBase] (D : TopologyDeps) (BBND1 : BND1) (BCPT : CPT) (BHDA : HD
 
 /- ------------------------------------------------------------------------- -/
 /- Isometries are embeddings, and even surjective in the compact case.       -/
-/- (topology.ml 26717-26783)                                                 -/
+/- (topology.ml 26731-26797)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure ISO where
@@ -35520,7 +35539,7 @@ def setupISO [HolBase] (D : TopologyDeps) (BLOC : LOC) (BCLS1 : CLS1) (BCPT : CP
 
 /- ------------------------------------------------------------------------- -/
 /- Urysohn's lemma (for real^N, where the proof is easy using distances).    -/
-/- (topology.ml 26784-26943)                                                 -/
+/- (topology.ml 26798-26957)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure URY where
@@ -35724,7 +35743,7 @@ def setupURY [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC)
 
 /- ------------------------------------------------------------------------- -/
 /- Density of points with rational, or just dyadic rational, coordinates.    -/
-/- (topology.ml 26944-27006)                                                 -/
+/- (topology.ml 26958-27020)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure DYR where
@@ -35816,11 +35835,12 @@ def setupDYR [HolBase] (D : TopologyDeps) (BCLS1 : CLS1) : ExceptT String IO DYR
            CLOSURE_DYADIC_RATIONALS_IN_OPEN_SET, CLOSURE_RATIONALS_IN_OPEN_SET }
 
 /- ------------------------------------------------------------------------- -/
-/- Various separability-type properties.  (topology.ml 27007-27185)          -/
+/- Various separability-type properties.  (topology.ml 27021-27210)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure SEC where
   UNIV_SECOND_COUNTABLE : thm
+  SECOND_COUNTABLE_EUCLIDEAN : thm
   UNIV_SECOND_COUNTABLE_SEQUENCE : thm
   SUBSET_SECOND_COUNTABLE : thm
   SEPARABLE : thm
@@ -35851,8 +35871,8 @@ def setupSEC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC)
   let { COUNTABLE_RATIONAL, .. } := D.misc
   let { DIST_0, DIST_SYM, .. } := D.vec1
   let { NORM_BASIS, NORM_MUL, .. } := D.vec3
-  let { OPEN_IN_SUBSET, TOPSPACE_SUBTOPOLOGY, .. } := D.met3
-  let { TOPSPACE_EUCLIDEAN, .. } := BEUC
+  let { OPEN_IN_SUBSET, TOPSPACE_SUBTOPOLOGY, second_countable, .. } := D.met3
+  let { OPEN_IN, TOPSPACE_EUCLIDEAN, .. } := BEUC
   let { CENTRE_IN_BALL, IN_BALL, OPEN_BALL, OPEN_CONTAINS_BALL, .. } := BBAL
   let { OPEN_IN_OPEN, OPEN_IN_OPEN_INTER, .. } := BLOC
   let { CLOSURE_APPROACHABLE, .. } := BCLS1
@@ -35905,6 +35925,17 @@ def setupSEC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC)
           REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
           REPEAT (POP_ASSUM MP_TAC) THEN NORM_ARITH_TAC,
           ASM_REAL_ARITH_TAC]]])
+
+  let SECOND_COUNTABLE_EUCLIDEAN ← prove
+   r"second_countable (euclidean:(real^N)topology)"
+   (REWRITE_TAC [second_countable, ← GSYM OPEN_IN] THEN
+    X_CHOOSE_THEN (← q r"b:(real^N->bool)->bool") STRIP_ASSUME_TAC
+      UNIV_SECOND_COUNTABLE THEN
+    EXISTS_TAC (← q r"b:(real^N->bool)->bool") THEN ASM_REWRITE_TAC [] THEN
+    MAP_EVERY X_GEN_TAC [← q r"u:real^N->bool", ← q r"x:real^N"] THEN STRIP_TAC THEN
+    FIRST_X_ASSUM (MP_TAC o SPEC (← q r"u:real^N->bool")) THEN ASM_REWRITE_TAC [] THEN
+    DISCH_THEN (X_CHOOSE_THEN (← q r"c:(real^N->bool)->bool") STRIP_ASSUME_TAC) THEN
+    ASM SET_TAC [])
 
   let UNIV_SECOND_COUNTABLE_SEQUENCE ← prove
    r"?b:num->real^N->bool.
@@ -36035,12 +36066,12 @@ def setupSEC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC)
         REWRITE_TAC [TOPSPACE_SUBTOPOLOGY, TOPSPACE_EUCLIDEAN] THEN
         ASM SET_TAC []]])
 
-  return { UNIV_SECOND_COUNTABLE, UNIV_SECOND_COUNTABLE_SEQUENCE, SUBSET_SECOND_COUNTABLE,
+  return { UNIV_SECOND_COUNTABLE, SECOND_COUNTABLE_EUCLIDEAN, UNIV_SECOND_COUNTABLE_SEQUENCE, SUBSET_SECOND_COUNTABLE,
            SEPARABLE }
 
 /- ------------------------------------------------------------------------- -/
 /- Rational points in open sets, countable unions of intervals, Lindelof.    -/
-/- (topology.ml 27186-27301)                                                 -/
+/- (topology.ml 27211-27326)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure LND where
@@ -36200,7 +36231,7 @@ def setupLND [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLOC : LOC) (BCLS1 : CLS
 
 /- ------------------------------------------------------------------------- -/
 /- Countability of disjoint open, compact-open and clopen families.          -/
-/- (topology.ml 27302-27386)                                                 -/
+/- (topology.ml 27327-27411)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CDO where
@@ -36323,7 +36354,7 @@ def setupCDO [HolBase] (D : TopologyDeps) (BEUC : EUC) (BINT : INT) (BCPT : CPT)
 
 /- ------------------------------------------------------------------------- -/
 /- Cardinality of open, closed and compact sets; condensation points.        -/
-/- (topology.ml 27387-27495)                                                 -/
+/- (topology.ml 27412-27520)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CEO where
@@ -36477,7 +36508,7 @@ def setupCEO [HolBase] (D : TopologyDeps) (BCLO : CLO) (BBAL : BAL) (BRLM : RLM)
 
 /- ------------------------------------------------------------------------- -/
 /- Condensation points of condensation points; Cantor-Bendixson.             -/
-/- (topology.ml 27496-27573)                                                 -/
+/- (topology.ml 27521-27598)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CBX where
@@ -36594,7 +36625,7 @@ def setupCBX [HolBase] (D : TopologyDeps) (BBAL : BAL) (BLOC : LOC) (BLPT : LPT)
 
 /- ------------------------------------------------------------------------- -/
 /- A discrete set is countable, and an uncountable set has a limit point.    -/
-/- (topology.ml 27574-27619)                                                 -/
+/- (topology.ml 27599-27644)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure DSC where
@@ -36666,7 +36697,7 @@ def setupDSC [HolBase] (D : TopologyDeps) (BLPT : LPT) (BCLS1 : CLS1) (BDYR : DY
   return { DISCRETE_IMP_COUNTABLE, UNCOUNTABLE_CONTAINS_LIMIT_POINT }
 
 /- ------------------------------------------------------------------------- -/
-/- Theorems about left and right limits on R^1.  (topology.ml 27620-27712)   -/
+/- Theorems about left and right limits on R^1.  (topology.ml 27645-27737)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure LRL where
@@ -36800,7 +36831,7 @@ def setupLRL [HolBase] (D : TopologyDeps) (BLPT : LPT) (BNET : NET) (BEVT : EVT)
 
 /- ------------------------------------------------------------------------- -/
 /- Countably many trivial or noncontinuous one-sided limits on R^1.          -/
-/- (topology.ml 27713-27925)                                                 -/
+/- (topology.ml 27738-27950)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CTL where
@@ -37067,7 +37098,7 @@ def setupCTL [HolBase] (D : TopologyDeps) (BLOC : LOC) (BLPT : LPT) (BEVT : EVT)
 
 /- ------------------------------------------------------------------------- -/
 /- A closed local homeomorphism is proper: it actually has finite preimages. -/
-/- (topology.ml 27926-28185)                                                 -/
+/- (topology.ml 27951-28210)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CLH where
@@ -37385,7 +37416,7 @@ def setupCLH [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL)
   return { CLOSED_LOCAL_HOMEOMORPHISM_IMP_PROPER_GEN, CLOSED_LOCAL_HOMEOMORPHISM_IMP_PROPER }
 
 /- ------------------------------------------------------------------------- -/
-/- The Brouwer reduction theorem.  (topology.ml 28186-28313)                 -/
+/- The Brouwer reduction theorem.  (topology.ml 28211-28338)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BRT where
@@ -37545,7 +37576,7 @@ def setupBRT [HolBase] (D : TopologyDeps) (BCLO : CLO) (BBAL : BAL) (BCON : CON)
   return { BROUWER_REDUCTION_THEOREM_GEN, BROUWER_REDUCTION_THEOREM, MINIMAL_CONTINUUM }
 
 /- ------------------------------------------------------------------------- -/
-/- The Arzela-Ascoli theorem.  (topology.ml 28314-28492)                     -/
+/- The Arzela-Ascoli theorem.  (topology.ml 28339-28517)                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure ARZ where
@@ -37772,7 +37803,7 @@ def setupARZ [HolBase] (D : TopologyDeps) (BBAL : BAL) (BCLS1 : CLS1) (BLIM2 : L
   return { FUNCTION_CONVERGENT_SUBSEQUENCE, ARZELA_ASCOLI, ARZELA_ASCOLI_LIPSCHITZ }
 
 /- ------------------------------------------------------------------------- -/
-/- Basics about "local" properties in general.  (topology.ml 28493-28620)    -/
+/- Basics about "local" properties in general.  (topology.ml 28518-28645)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCY1 where
@@ -37943,7 +37974,7 @@ def setupLCY1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC
 
 /- ------------------------------------------------------------------------- -/
 /- Local properties: open bases, unions, closed differences.                 -/
-/- (topology.ml 28621-28780)                                                 -/
+/- (topology.ml 28646-28805)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCY2 where
@@ -38148,7 +38179,7 @@ def setupLCY2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC
 
 /- ------------------------------------------------------------------------- -/
 /- Local properties: closed sets, empty, singleton, intersections, products. -/
-/- (topology.ml 28781-28921)                                                 -/
+/- (topology.ml 28806-28946)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCY3 where
@@ -38334,7 +38365,7 @@ def setupLCY3 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC
 
 /- ------------------------------------------------------------------------- -/
 /- Local properties under homeomorphisms, translations, linear and open maps. -/
-/- (topology.ml 28922-29053)                                                 -/
+/- (topology.ml 28947-29078)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCY4 where
@@ -38507,7 +38538,7 @@ def setupLCY4 [HolBase] (D : TopologyDeps) (BLOC : LOC) (BCSL : CSL) (BCMS : CMS
 
 /- ------------------------------------------------------------------------- -/
 /- Local countability, constancy, continuity; locally to compactly.          -/
-/- (topology.ml 29054-29142)                                                 -/
+/- (topology.ml 29079-29167)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCY5 where
@@ -38634,7 +38665,7 @@ def setupLCY5 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLPT : LPT) (BRLM : RLM
            LOCALLY_CONTINUOUS_ON_ALT, LOCALLY_CONTINUOUS_ON_EXPLICIT, LOCALLY_TO_COMPACTLY }
 
 /- ------------------------------------------------------------------------- -/
-/- Local compactness.  (topology.ml 29143-29343)                             -/
+/- Local compactness.  (topology.ml 29168-29368)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCC1 where
@@ -38889,13 +38920,14 @@ def setupLCC1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL
 
 /- ------------------------------------------------------------------------- -/
 /- Local compactness of intervals, intersections, images; locally closed.    -/
-/- (topology.ml 29344-29465)                                                 -/
+/- (topology.ml 29369-29495)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCC2 where
   IS_INTERVAL_LOCALLY_COMPACT_INTERVAL : thm
   IS_INTERVAL_IMP_LOCALLY_COMPACT : thm
   LOCALLY_COMPACT_UNIV : thm
+  LOCALLY_COMPACT_SPACE_EUCLIDEAN : thm
   LOCALLY_COMPACT_INTER : thm
   LOCALLY_COMPACT_OPEN_IN : thm
   LOCALLY_COMPACT_CLOSED_IN : thm
@@ -38922,7 +38954,7 @@ def setupLCC2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC
   let { SUBSET, .. } := D.core5
   let { UNION_OF, .. } := D.core6
   let { INTERVAL_OPEN_SUBSET_CLOSED, INTER_INTERVAL, .. } := D.vec2
-  let { OPEN_IN_IMP_SUBSET, .. } := D.met3
+  let { OPEN_IN_IMP_SUBSET, SUBTOPOLOGY_UNIV, .. } := D.met3
   let { OPEN_INTER, OPEN_IN_REFL, OPEN_UNIV, .. } := BEUC
   let { BALL_SUBSET_CBALL, CENTRE_IN_BALL, OPEN_BALL, .. } := BBAL
   let { CLOSED_IN_CLOSED, OPEN_IN_INTER_OPEN, OPEN_IN_OPEN, .. } := BLOC
@@ -38939,7 +38971,8 @@ def setupLCC2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC
   let { LOCALLY_IMP_COUNTABLE_UNION_OF, .. } := BLCY2
   let { LOCALLY_INTER, .. } := BLCY3
   let { HOMEOMORPHIC_LOCALLY, LOCALLY_INJECTIVE_LINEAR_IMAGE, LOCALLY_TRANSLATION, .. } := BLCY4
-  let { CLOSED_IMP_LOCALLY_COMPACT, OPEN_IMP_LOCALLY_COMPACT, .. } := BLCC1
+  let { CLOSED_IMP_LOCALLY_COMPACT, LOCALLY_COMPACT_SPACE_SUBTOPOLOGY_EUCLIDEAN,
+        OPEN_IMP_LOCALLY_COMPACT, .. } := BLCC1
   -- @@SCOPE END
 
   let IS_INTERVAL_LOCALLY_COMPACT_INTERVAL ← prove
@@ -38978,6 +39011,11 @@ def setupLCC2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC
   let LOCALLY_COMPACT_UNIV ← prove
    r"locally compact (:real^N)"
    (SIMP_TAC [OPEN_IMP_LOCALLY_COMPACT, OPEN_UNIV])
+
+  let LOCALLY_COMPACT_SPACE_EUCLIDEAN ← prove
+   r"locally_compact_space (euclidean:(real^N)topology)"
+   (MP_TAC (← ISPEC (← q r"(:real^N)") LOCALLY_COMPACT_SPACE_SUBTOPOLOGY_EUCLIDEAN) THEN
+    REWRITE_TAC [SUBTOPOLOGY_UNIV, LOCALLY_COMPACT_UNIV])
 
   let LOCALLY_COMPACT_INTER ← prove
    r"!s t:real^N->bool.
@@ -39065,14 +39103,14 @@ def setupLCC2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC
     MP_TAC (← ISPEC (← q r"x:real^N") BALL_SUBSET_CBALL) THEN ASM SET_TAC [])
 
   return { IS_INTERVAL_LOCALLY_COMPACT_INTERVAL, IS_INTERVAL_IMP_LOCALLY_COMPACT,
-           LOCALLY_COMPACT_UNIV, LOCALLY_COMPACT_INTER, LOCALLY_COMPACT_OPEN_IN,
+           LOCALLY_COMPACT_UNIV, LOCALLY_COMPACT_SPACE_EUCLIDEAN, LOCALLY_COMPACT_INTER, LOCALLY_COMPACT_OPEN_IN,
            LOCALLY_COMPACT_CLOSED_IN, LOCALLY_COMPACT_DELETE, SIGMA_COMPACT,
            HOMEOMORPHIC_LOCAL_COMPACTNESS, LOCALLY_COMPACT_TRANSLATION_EQ,
            LOCALLY_COMPACT_LINEAR_IMAGE_EQ, HOMEOMORPHISM_LOCAL_COMPACTNESS, LOCALLY_CLOSED }
 
 /- ------------------------------------------------------------------------- -/
 /- Local compactness of unions and products; open sets in locally compact.   -/
-/- (topology.ml 29466-29604)                                                 -/
+/- (topology.ml 29496-29634)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCC3 where
@@ -39261,7 +39299,7 @@ def setupLCC3 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL
            OPEN_IN_LOCALLY_COMPACT }
 
 /- ------------------------------------------------------------------------- -/
-/- Local compactness under proper maps.  (topology.ml 29605-29712)           -/
+/- Local compactness under proper maps.  (topology.ml 29635-29742)           -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCC4 where
@@ -39404,7 +39442,7 @@ def setupLCC4 [HolBase] (D : TopologyDeps) (BCLS1 : CLS1) (BBND1 : BND1) (BCPT :
 
 /- ------------------------------------------------------------------------- -/
 /- Mumford's lemma; local properties equal compact ones.                     -/
-/- (topology.ml 29713-29822)                                                 -/
+/- (topology.ml 29743-29852)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure MUM where
@@ -39559,7 +39597,7 @@ def setupMUM [HolBase] (D : TopologyDeps) (BBAL : BAL) (BLOC : LOC) (BCLS1 : CLS
 /- ------------------------------------------------------------------------- -/
 /- Locally compact sets are closed in an open set and are homeomorphic       -/
 /- to an absolutely closed set if we have one more dimension to play with.   -/
-/- (topology.ml 29823-29959)                                                 -/
+/- (topology.ml 29853-29989)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure LCC5 where
@@ -39749,7 +39787,7 @@ def setupLCC5 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC
            LOCALLY_COMPACT_CLOSED_DIFF, LOCALLY_COMPACT_CLOSURE_DIFF }
 
 /- ------------------------------------------------------------------------- -/
-/- F_sigma and G_delta sets.  (topology.ml 29960-30092)                      -/
+/- F_sigma and G_delta sets.  (topology.ml 29990-30122)                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure FSG1 where
@@ -39941,7 +39979,7 @@ def setupFSG1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLPT : LPT
            FSIGMA_UNIV }
 
 /- ------------------------------------------------------------------------- -/
-/- Closure properties of F_sigma and G_delta sets.  (topology.ml 30093-30187) -/
+/- Closure properties of F_sigma and G_delta sets.  (topology.ml 30123-30217) -/
 /- ------------------------------------------------------------------------- -/
 
 structure FSG2 where
@@ -40085,7 +40123,7 @@ def setupFSG2 [HolBase] (D : TopologyDeps) (BLOC : LOC) (BCLS1 : CLS1) (BLCC5 : 
 
 /- ------------------------------------------------------------------------- -/
 /- F_sigma and G_delta sets under images and preimages.                      -/
-/- (topology.ml 30188-30308)                                                 -/
+/- (topology.ml 30218-30338)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure FSG3 where
@@ -40248,7 +40286,7 @@ def setupFSG3 [HolBase] (D : TopologyDeps) (BLOC : LOC) (BCPT : CPT) (BCSL : CSL
 
 /- ------------------------------------------------------------------------- -/
 /- F_sigma and G_delta products; cardinality of these classes.              -/
-/- (topology.ml 30309-30421)                                                 -/
+/- (topology.ml 30339-30451)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure FSG4 where
@@ -40409,7 +40447,7 @@ def setupFSG4 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCMS : CMS) (BIDC : IDC
 
 /- ------------------------------------------------------------------------- -/
 /- Points of convergence and continuity form G_delta sets.                   -/
-/- (topology.ml 30422-30515)                                                 -/
+/- (topology.ml 30452-30545)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure GPC where
@@ -40542,7 +40580,7 @@ def setupGPC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BNET : NET)
            GDELTA_POINTS_OF_CONTINUITY_WITHIN, GDELTA_POINTS_OF_CONTINUITY }
 
 /- ------------------------------------------------------------------------- -/
-/- Lavrentiev extension theorem.  (topology.ml 30516-30686)                  -/
+/- Lavrentiev extension theorem.  (topology.ml 30546-30716)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure LAV where
@@ -40760,7 +40798,7 @@ def setupLAV [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLPT : LPT) (BCLS1 : CLS
 
 /- ------------------------------------------------------------------------- -/
 /- Effective countability of closed or open chains.                          -/
-/- (topology.ml 30687-30803)                                                 -/
+/- (topology.ml 30717-30833)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure ECC1 where
@@ -40908,7 +40946,7 @@ def setupECC1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BSEC : SEC) (BLND : LND
 
 /- ------------------------------------------------------------------------- -/
 /- Effective countability of chains: intersections and absolute versions.    -/
-/- (topology.ml 30804-30930)                                                 -/
+/- (topology.ml 30834-30960)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure ECC2 where
@@ -41079,7 +41117,7 @@ def setupECC2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BFSG1 : FS
            FSIGMA_UNIONS_CLOPEN_CHAIN, GDELTA_INTERS_CLOPEN_CHAIN }
 
 /- ------------------------------------------------------------------------- -/
-/- Cantor-Baire stationary principle.  (topology.ml 30931-30989)             -/
+/- Cantor-Baire stationary principle.  (topology.ml 30961-31019)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure CBS where
@@ -41163,7 +41201,7 @@ def setupCBS [HolBase] (D : TopologyDeps) (BECC2 : ECC2) : ExceptT String IO CBS
   return { CANTOR_BAIRE_STATIONARY_PRINCIPLE }
 
 /- ------------------------------------------------------------------------- -/
-/- Very basics about Borel sets.  (topology.ml 30990-31112)                  -/
+/- Very basics about Borel sets.  (topology.ml 31020-31142)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure BOR1 where
@@ -41326,7 +41364,7 @@ def setupBOR1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BCPT : CPT
            BOREL_INDUCT_COMPACT_UNIONS_INTERS, BOREL_INDUCT_CLOSED_UNIONS_INTERS }
 
 /- ------------------------------------------------------------------------- -/
-/- Closure properties of Borel sets.  (topology.ml 31113-31223)              -/
+/- Closure properties of Borel sets.  (topology.ml 31143-31253)              -/
 /- ------------------------------------------------------------------------- -/
 
 structure BOR2 where
@@ -41489,7 +41527,7 @@ def setupBOR2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC
 
 /- ------------------------------------------------------------------------- -/
 /- Borel sets under homeomorphisms; products; Lavrentiev for Borel sets.     -/
-/- (topology.ml 31224-31339)                                                 -/
+/- (topology.ml 31254-31369)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BOR3 where
@@ -41654,7 +41692,7 @@ def setupBOR3 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLS1 : CLS1) (BCSL : C
 /- Baire functions. We only define these for finite indices, since I can't   -/
 /- imagine ever using any indexed by higher ordinals. But this means         -/
 /- that "borel_measurable" is strictly stronger than "baire n for some n".   -/
-/- (topology.ml 31340-31493)                                                 -/
+/- (topology.ml 31370-31523)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BAI1 where
@@ -41853,7 +41891,7 @@ def setupBAI1 [HolBase] (D : TopologyDeps) (BARI : ARI) (BCSL : CSL) (BSQC : SQC
 
 /- ------------------------------------------------------------------------- -/
 /- Baire functions: products, norms, max, min, components.                  -/
-/- (topology.ml 31494-31556)                                                 -/
+/- (topology.ml 31524-31586)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BAI2 where
@@ -41950,7 +41988,7 @@ def setupBAI2 [HolBase] (D : TopologyDeps) (BLIM1 : LIM1) (BCMS : CMS) (BLFR : L
   return { BAIRE_PRODUCT, BAIRE_NORM, BAIRE_MAX, BAIRE_MIN, BAIRE_COMPONENTWISE }
 
 /- ------------------------------------------------------------------------- -/
-/- Uniform limits of Baire functions.  (topology.ml 31557-31788)             -/
+/- Uniform limits of Baire functions.  (topology.ml 31587-31818)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure BUL where
@@ -42234,7 +42272,7 @@ def setupBUL [HolBase] (D : TopologyDeps) (BLIM1 : LIM1) (BARI : ARI) (BUNQ : UN
 
 /- ------------------------------------------------------------------------- -/
 /- Uniform approximation; preimages under Baire-1 functions.                 -/
-/- (topology.ml 31789-31930)                                                 -/
+/- (topology.ml 31819-31960)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BAI3 where
@@ -42433,7 +42471,7 @@ def setupBAI3 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC
 /- We can then express Sigma_n and Pi_n using "COUNTABLE UNION_OF ..." and   -/
 /- "COUNTABLE INTERSECTION_OF ...". While a bit verbose, and breaking down   -/
 /- for the 0 case, it is adequate for use in occasional lemmas.              -/
-/- (topology.ml 31931-32062)                                                 -/
+/- (topology.ml 31961-32092)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BIN1 where
@@ -42608,7 +42646,7 @@ def setupBIN1 [HolBase] (D : TopologyDeps) (BCON : CON) (BCMS : CMS) (BCRD2 : CR
 
 /- ------------------------------------------------------------------------- -/
 /- Baire-1 indicators, F_sigma and G_delta sets; continuous preimages.       -/
-/- (topology.ml 32063-32165)                                                 -/
+/- (topology.ml 32093-32195)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BIN2 where
@@ -42755,7 +42793,7 @@ def setupBIN2 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLIM2 : LIM2) (BCPT : C
 
 /- ------------------------------------------------------------------------- -/
 /- Baire indicators under translations and linear maps.                      -/
-/- (topology.ml 32166-32279)                                                 -/
+/- (topology.ml 32196-32309)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BIN3 where
@@ -42915,7 +42953,7 @@ def setupBIN3 [HolBase] (D : TopologyDeps) (BCMS : CMS) (BIDC : IDC) (BLCP : LCP
 
 /- ------------------------------------------------------------------------- -/
 /- The reduction theorem for Sigma_n sets and consequences.                  -/
-/- (topology.ml 32280-32316)                                                 -/
+/- (topology.ml 32310-32346)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure FSR where
@@ -42973,7 +43011,7 @@ def setupFSR [HolBase] (D : TopologyDeps) (BBIN1 : BIN1) (BBIN2 : BIN2) :
 
 /- ------------------------------------------------------------------------- -/
 /- Baire indicators at successor levels, Delta_n sets, reduction and         -/
-/- separation.  (topology.ml 32317-32625)                                    -/
+/- separation.  (topology.ml 32347-32655)                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure BIS where
@@ -43352,7 +43390,7 @@ def setupBIS [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLPT : LPT)
 
 /- ------------------------------------------------------------------------- -/
 /- Baire indicators of countable unions and intersections; G_delta separation. -/
-/- (topology.ml 32626-32654)                                                 -/
+/- (topology.ml 32656-32684)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure GSP where
@@ -43410,7 +43448,7 @@ def setupGSP [HolBase] (D : TopologyDeps) (BBIN1 : BIN1) (BBIN2 : BIN2) (BBIS : 
 
 /- ------------------------------------------------------------------------- -/
 /- More on Baire functions including the full preimage characterization.     -/
-/- (topology.ml 32655-32843)                                                 -/
+/- (topology.ml 32685-32873)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure FBP where
@@ -43655,7 +43693,7 @@ def setupFBP [HolBase] (D : TopologyDeps) (BCLO : CLO) (BLOC : LOC) (BCLS1 : CLS
 
 /- ------------------------------------------------------------------------- -/
 /- Baire functions characterized by preimages of open sets.                  -/
-/- (topology.ml 32844-33165)                                                 -/
+/- (topology.ml 32874-33195)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BEF where
@@ -44054,7 +44092,7 @@ def setupBEF [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLIM1 : LIM
 
 /- ------------------------------------------------------------------------- -/
 /- Further preimage characterizations; countable discontinuities.            -/
-/- (topology.ml 33166-33324)                                                 -/
+/- (topology.ml 33196-33354)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BEG where
@@ -44263,7 +44301,7 @@ def setupBEG [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BLOC : LOC)
 
 /- ------------------------------------------------------------------------- -/
 /- Extending Baire functions and more miscellaneous properties.              -/
-/- (topology.ml 33325-33551)                                                 -/
+/- (topology.ml 33355-33581)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BXT where
@@ -44544,7 +44582,7 @@ def setupBXT [HolBase] (D : TopologyDeps) (BCLO : CLO) (BBAL : BAL) (BLIM1 : LIM
   return { BAIRE_EXTENSION }
 
 /- ------------------------------------------------------------------------- -/
-/- Lavrentiev-type extension for Baire functions.  (topology.ml 33552-33721)  -/
+/- Lavrentiev-type extension for Baire functions.  (topology.ml 33582-33751)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure BLV where
@@ -44768,7 +44806,7 @@ def setupBLV [HolBase] (D : TopologyDeps) (BCLO : CLO) (BBAL : BAL) (BLOC : LOC)
 
 /- ------------------------------------------------------------------------- -/
 /- Baire functions defined by cases, restrictions and compositions.          -/
-/- (topology.ml 33722-33880)                                                 -/
+/- (topology.ml 33752-33910)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BCC where
@@ -44980,7 +45018,7 @@ def setupBCC [HolBase] (D : TopologyDeps) (BCLO : CLO) (BLOC : LOC) (BCPT : CPT)
 
 /- ------------------------------------------------------------------------- -/
 /- Homeomorphism invariance of Baire indicator classes.                      -/
-/- (topology.ml 33881-34016)                                                 -/
+/- (topology.ml 33911-34046)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure HBI where
@@ -45156,7 +45194,7 @@ def setupHBI [HolBase] (D : TopologyDeps) (BHMA : HMA) (BFSG3 : FSG3) (BLAV : LA
 
 /- ------------------------------------------------------------------------- -/
 /- Disjoint unions and alternation in the Baire indicator hierarchy.         -/
-/- (topology.ml 34017-34138)                                                 -/
+/- (topology.ml 34047-34168)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure FGD where
@@ -45313,7 +45351,7 @@ def setupFGD [HolBase] (D : TopologyDeps) (BBIN1 : BIN1) (BBIS : BIS) (BGSP : GS
   return { FSIGMA_DISJOINT_GEN, FSIGMA_GDELTA_GEN, GDELTA_FSIGMA_GEN, FSIGMA_GDELTA_DISJOINT }
 
 /- ------------------------------------------------------------------------- -/
-/- Baire functions are a local property.  (topology.ml 34139-34202)          -/
+/- Baire functions are a local property.  (topology.ml 34169-34232)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure LBA where
@@ -45417,7 +45455,7 @@ def setupLBA [HolBase] (D : TopologyDeps) (BEUC : EUC) (BLOC : LOC) (BLND : LND)
   return { LOCALLY_BAIRE, LOCALLY_BAIRE_ALT, LOCALLY_BAIRE_EXPLICIT }
 
 /- ------------------------------------------------------------------------- -/
-/- Relative versions of Baire indicator classes.  (topology.ml 34203-34352)  -/
+/- Relative versions of Baire indicator classes.  (topology.ml 34233-34382)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure FLC where
@@ -45612,7 +45650,7 @@ def setupFLC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCPP2 : CPP2) (BBAI1 : B
 /- Basics on Borel measurability. We define it as "Baire function" and later -/
 /- prove (BOREL_MEASURABLE_PREIMAGE_BOREL) that it is equivalent to another  -/
 /- natural definition when the domain is a Borel set.                        -/
-/- (topology.ml 34353-34557)                                                 -/
+/- (topology.ml 34383-34587)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BMS where
@@ -45876,7 +45914,7 @@ def setupBMS [HolBase] (D : TopologyDeps) (BARI : ARI) (BCSL : CSL) (BSQC : SQC)
 
 /- ------------------------------------------------------------------------- -/
 /- Componentwise Borel measurability; preimages of Borel sets.               -/
-/- (topology.ml 34558-34709)                                                 -/
+/- (topology.ml 34588-34739)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BMC where
@@ -46076,7 +46114,7 @@ def setupBMC [HolBase] (D : TopologyDeps) (BCLO : CLO) (BCLS1 : CLS1) (BLIM1 : L
   return { BOREL_MEASURABLE_COMPONENTWISE, BOREL_BOREL_MEASURABLE_PREIMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Borel measurability of indicator functions.  (topology.ml 34710-34772)    -/
+/- Borel measurability of indicator functions.  (topology.ml 34740-34802)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure BMI where
@@ -46182,7 +46220,7 @@ def setupBMI [HolBase] (D : TopologyDeps) (BLPT : LPT) (BLIM2 : LIM2) (BARI : AR
   return { BOREL_MEASURABLE_INDICATOR, BOREL_MEASURABLE_ON_INDICATOR }
 
 /- ------------------------------------------------------------------------- -/
-/- Borel measurability via preimages of Borel sets.  (topology.ml 34773-34884) -/
+/- Borel measurability via preimages of Borel sets.  (topology.ml 34803-34914) -/
 /- ------------------------------------------------------------------------- -/
 
 structure BPB where
@@ -46336,7 +46374,7 @@ def setupBPB [HolBase] (D : TopologyDeps) (BLIM2 : LIM2) (BHSP : HSP) (BBOR2 : B
   return { BOREL_MEASURABLE_PREIMAGE_BOREL }
 
 /- ------------------------------------------------------------------------- -/
-/- Extension of Borel measurable functions.  (topology.ml 34886-35045)       -/
+/- Extension of Borel measurable functions.  (topology.ml 34916-35075)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure BME where
@@ -46543,7 +46581,7 @@ def setupBME [HolBase] (D : TopologyDeps) (BBAL : BAL) (BUNQ : UNQ) (BTRN : TRN)
 
 /- ------------------------------------------------------------------------- -/
 /- Composition, cases and restriction of Borel measurable functions, and the -/
-/- relation with the general borel_measurable_map.  (topology.ml 35046-35137) -/
+/- relation with the general borel_measurable_map.  (topology.ml 35076-35167) -/
 /- ------------------------------------------------------------------------- -/
 
 structure BMX where
@@ -46675,7 +46713,7 @@ def setupBMX [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCSL : CSL) (BBOR1 : BOR
            BOREL_MEASURABLE_MAP_EUCLIDEAN_SUBTOPOLOGY, BOREL_MEASURABLE_MAP_EUCLIDEAN }
 
 /- ------------------------------------------------------------------------- -/
-/- Analytic sets.  (topology.ml 35138-35223)                                 -/
+/- Analytic sets.  (topology.ml 35168-35253)                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure ANA where
@@ -46807,7 +46845,7 @@ def setupANA [HolBase] (D : TopologyDeps) (BLOC : LOC) (BCPP1 : CPP1) (BLCC1 : L
 
 /- ------------------------------------------------------------------------- -/
 /- Products, preimages and continuous images of analytic sets.               -/
-/- (topology.ml 35224-35359)                                                 -/
+/- (topology.ml 35254-35389)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure ANP where
@@ -46991,7 +47029,7 @@ def setupANP [HolBase] (D : TopologyDeps) (BLPT : LPT) (BCPP1 : CPP1) (BCSL : CS
            ANALYTIC_CONTINUOUS_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Invariance and images of analytic sets.  (topology.ml 35360-35426)        -/
+/- Invariance and images of analytic sets.  (topology.ml 35390-35456)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure ANH where
@@ -47099,7 +47137,7 @@ def setupANH [HolBase] (D : TopologyDeps) (BLPT : LPT) (BLCP : LCP) (BHMA : HMA)
 
 /- ------------------------------------------------------------------------- -/
 /- Cardinalities of analytic and Borel sets and of Borel and Baire functions. -/
-/- (topology.ml 35427-35509)                                                 -/
+/- (topology.ml 35457-35539)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CRB where
@@ -47225,7 +47263,7 @@ def setupCRB [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BCRD1 : CRD
 
 /- ------------------------------------------------------------------------- -/
 /- Some Borel variants of the measurability of the Banach indicatrix.        -/
-/- (topology.ml 35510-35680)                                                 -/
+/- (topology.ml 35540-35710)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure BIX where
@@ -47433,7 +47471,7 @@ def setupBIX [HolBase] (D : TopologyDeps) (BBAL : BAL) (BCLS1 : CLS1) (BCPP1 : C
            BOREL_PREIMAGE_FINITE, BOREL_PREIMAGE_INFINITE }
 
 /- ------------------------------------------------------------------------- -/
-/- Forms of the Baire property of dense sets.  (topology.ml 35677-35792)     -/
+/- Forms of the Baire property of dense sets.  (topology.ml 35707-35822)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure BAR where
@@ -47590,7 +47628,7 @@ def setupBAR [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLO : CLO) (BBAL : BAL)
 /- Some cute Baire applications from Silverman's paper in AMM vol. 102       -/
 /- "Intervals Contained in Arithmetic Combinations of Sets". These are       -/
 /- somewhat like the Steinhaus/Piccard theorems. There are other variants.   -/
-/- (topology.ml 35793-35888)                                                 -/
+/- (topology.ml 35823-35918)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure SIL where
@@ -47721,7 +47759,7 @@ def setupSIL [HolBase] (D : TopologyDeps) (BEUC : EUC) (BCLS1 : CLS1) (BCPP1 : C
 /- ------------------------------------------------------------------------- -/
 /- Finding borel subsets where a function is injective (mainly looking       -/
 /- ahead to measure theory but maybe of some independent interest).          -/
-/- (topology.ml 35889-36002)                                                 -/
+/- (topology.ml 35919-36032)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure GCM where
@@ -47882,7 +47920,7 @@ def setupGCM [HolBase] (D : TopologyDeps) (BCLO : CLO) (BLPT : LPT) (BCPT : CPT)
   return { GDELTA_CONTINUOUS_FUNCTION_MINIMA }
 
 /- ------------------------------------------------------------------------- -/
-/- A G_delta domain of injectivity.  (topology.ml 36003-36104)               -/
+/- A G_delta domain of injectivity.  (topology.ml 36033-36134)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure GDI where
@@ -48020,7 +48058,7 @@ def setupGDI [HolBase] (D : TopologyDeps) (BCLO : CLO) (BLPT : LPT) (BCPP1 : CPP
   return { GDELTA_DOMAIN_OF_INJECTIVITY_CONTINUOUS }
 
 /- ------------------------------------------------------------------------- -/
-/- Borel domains of injectivity.  (topology.ml 36105-36188)                  -/
+/- Borel domains of injectivity.  (topology.ml 36135-36218)                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure BDI where
@@ -48140,7 +48178,7 @@ def setupBDI [HolBase] (D : TopologyDeps) (BCSL : CSL) (BLCP : LCP) (BFSG1 : FSG
 /- ------------------------------------------------------------------------- -/
 /- Partitions of unity subordinate to open coverings. Since subsets of       -/
 /- Euclidean space are paracompact, there's a locally finite refinement.     -/
-/- (topology.ml 36189-36295)                                                 -/
+/- (topology.ml 36219-36325)                                                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure PCU where

@@ -388,6 +388,7 @@ structure PHomThms where
   deriving Inhabited
 
 structure PathsDeps where
+  prioritize_real : IO Unit
   cvx : ConvexDeps
   -- procedures convex.ml's deps do not carry
   NUM_RING : term → ExceptT String IO thm
@@ -415,7 +416,7 @@ structure PathsDeps where
 
 /- ------------------------------------------------------------------------- -/
 /- Paths and arcs; relate to topological general case; invariance theorems.  -/
-/- (paths.ml 10-248)                                                          -/
+/- (paths.ml 11-249)                                                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTA where
@@ -475,6 +476,8 @@ def setupPTA [HolBase] (D : PathsDeps) : ExceptT String IO PTA := do
   let { CONTINUOUS_MAP_DROP, CONTINUOUS_MAP_EUCLIDEAN, CONTINUOUS_MAP_LIFT, .. } := D.ptop2
   let { INTERVAL_REAL_INTERVAL, .. } := D.ptop4
   -- @@SCOPE END
+
+  D.prioritize_real
 
   /- ----------------------------------------------------------------------- -/
   /- Paths and arcs.                                                         -/
@@ -723,7 +726,7 @@ def setupPTA [HolBase] (D : PathsDeps) : ExceptT String IO PTA := do
            ARC_LINEAR_IMAGE_EQ, SIMPLE_PATH_CONTINUOUS_IMAGE, ARC_CONTINUOUS_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- Basic lemmas about paths.  (paths.ml 249-421)                             -/
+/- Basic lemmas about paths.  (paths.ml 250-422)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTB where
@@ -968,7 +971,7 @@ def setupPTB [HolBase] (D : PathsDeps) (BA : PTA) : ExceptT String IO PTB := do
            INFINITE_ARC_IMAGE }
 
 /- ------------------------------------------------------------------------- -/
-/- The operations on paths.  (paths.ml 422-812)                              -/
+/- The operations on paths.  (paths.ml 423-813)                              -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTC where
@@ -1419,7 +1422,7 @@ def setupPTC [HolBase] (D : PathsDeps) (BA : PTA) : ExceptT String IO PTC := do
 /- ------------------------------------------------------------------------- -/
 /- Some reversed and "if and only if" versions of joining theorems;          -/
 /- reassociating a joined path; in the case of a loop, symmetry.             -/
-/- (paths.ml 813-1043)                                                       -/
+/- (paths.ml 814-1044)                                                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTD where
@@ -1703,7 +1706,7 @@ def setupPTD [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) :
 
 /- ------------------------------------------------------------------------- -/
 /- Reparametrizing a closed curve to start at some chosen point.             -/
-/- (paths.ml 1044-1194)                                                      -/
+/- (paths.ml 1045-1195)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTE where
@@ -1895,7 +1898,7 @@ def setupPTE [HolBase] (D : PathsDeps) (BA : PTA) : ExceptT String IO PTE := do
            SHIFTPATH_SHIFTPATH, PATH_IMAGE_SHIFTPATH, SIMPLE_PATH_SHIFTPATH }
 
 /- ------------------------------------------------------------------------- -/
-/- Choosing a sub-path of an existing path.  (paths.ml 1195-1400)            -/
+/- Choosing a sub-path of an existing path.  (paths.ml 1196-1401)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTF where
@@ -2166,7 +2169,7 @@ def setupPTF [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) : ExceptT String IO
            PATH_IMAGE_SUBPATH_SUBSET, JOIN_SUBPATHS_MIDDLE }
 
 /- ------------------------------------------------------------------------- -/
-/- Some additional lemmas about choosing sub-paths.  (paths.ml 1401-1767)    -/
+/- Some additional lemmas about choosing sub-paths.  (paths.ml 1402-1768)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTG where
@@ -2577,7 +2580,7 @@ def setupPTG [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BE : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Double arcs; subpaths up to the frontier; combining subpaths.             -/
-/- (paths.ml 1768-1996)                                                      -/
+/- (paths.ml 1769-1997)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTH where
@@ -2864,7 +2867,7 @@ def setupPTH [HolBase] (D : PathsDeps) (BA : PTA) (BF : PTF) (BG : PTG) :
 
 /- ------------------------------------------------------------------------- -/
 /- Special case of straight-line paths; bounding a point away from a path.   -/
-/- (paths.ml 1997-2166)                                                      -/
+/- (paths.ml 1998-2167)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTI where
@@ -3100,7 +3103,7 @@ def setupPTI [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BE : PTE) (BF : PT
            NOT_ON_PATH_CBALL }
 
 /- ------------------------------------------------------------------------- -/
-/- Homeomorphisms of arc images.  (paths.ml 2167-2494)                       -/
+/- Homeomorphisms of arc images.  (paths.ml 2168-2495)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTJ where
@@ -3502,7 +3505,7 @@ def setupPTJ [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BD : PT
 /- ------------------------------------------------------------------------- -/
 /- Path component, as a "joinability" relation and as a set; path            -/
 /- connectedness of a space; general "locally connected implies connected"   -/
-/- type results.  (paths.ml 2495-2868)                                       -/
+/- type results.  (paths.ml 2496-2869)                                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTK where
@@ -3970,7 +3973,7 @@ def setupPTK [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BI : PTI) :
 
 /- ------------------------------------------------------------------------- -/
 /- Some useful lemmas about path-connectedness; bounds on components of a    -/
-/- continuous image.  (paths.ml 2869-3226)                                   -/
+/- continuous image.  (paths.ml 2870-3227)                                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTL where
@@ -4430,7 +4433,7 @@ def setupPTL [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BI : PT
            CARD_LE_CONNECTED_COMPONENTS, CARD_LE_COMPONENTS }
 
 /- ------------------------------------------------------------------------- -/
-/- More stuff about segments.  (paths.ml 3227-3560)                          -/
+/- More stuff about segments.  (paths.ml 3228-3561)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTM where
@@ -4846,7 +4849,7 @@ def setupPTM [HolBase] (D : PathsDeps) (BA : PTA) (BL : PTL) : ExceptT String IO
 
 /- ------------------------------------------------------------------------- -/
 /- Removing points from arcs and simple paths; injective functions into R;   -/
-/- monotonicity; Darboux continuity.  (paths.ml 3561-4031)                   -/
+/- monotonicity; Darboux continuity.  (paths.ml 3562-4032)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTN where
@@ -5420,7 +5423,7 @@ def setupPTN [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BE : PTE) (BI : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Some handy facts about Lipschitz functions; some uncountability results   -/
-/- for relevant sets.  (paths.ml 4032-4449)                                  -/
+/- for relevant sets.  (paths.ml 4033-4450)                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTO where
@@ -5942,7 +5945,7 @@ def setupPTO [HolBase] (D : PathsDeps) (BL : PTL) : ExceptT String IO PTO := do
 
 /- ------------------------------------------------------------------------- -/
 /- Density of sets with small complement, including irrationals.             -/
-/- (paths.ml 4450-4575)                                                      -/
+/- (paths.ml 4451-4576)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTP where
@@ -6110,7 +6113,7 @@ def setupPTP [HolBase] (D : PathsDeps) : ExceptT String IO PTP := do
 /- ------------------------------------------------------------------------- -/
 /- Every path between distinct points contains an arc, and hence that path   -/
 /- connection is equivalent to arcwise connection, for distinct points. The  -/
-/- proof is based on Whyburn's "Topological Analysis".  (paths.ml 4571-5947) -/
+/- proof is based on Whyburn's "Topological Analysis".  (paths.ml 4572-5948) -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTQ where
@@ -7580,7 +7583,7 @@ def setupPTQ [HolBase] (D : PathsDeps) : ExceptT String IO PTQ := do
 
 /- ------------------------------------------------------------------------- -/
 /- Every path between distinct points contains an arc (continued).           -/
-/- (paths.ml 5948-6403)                                                      -/
+/- (paths.ml 5949-6404)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTR where
@@ -8102,7 +8105,7 @@ def setupPTR [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BD : PT
   return { PATH_CONTAINS_ARC, PATH_CONNECTED_ARCWISE, ARC_CONNECTED_TRANS }
 
 /- ------------------------------------------------------------------------- -/
-/- Local connectedness and local path connectedness.  (paths.ml 6404-6704)   -/
+/- Local connectedness and local path connectedness.  (paths.ml 6405-6705)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTS where
@@ -8481,7 +8484,7 @@ def setupPTS [HolBase] (D : PathsDeps) (BB : PTB) (BK : PTK) (BL : PTL) :
 
 /- ------------------------------------------------------------------------- -/
 /- Local connectedness and local path connectedness (continued): finitely    -/
-/- many components; invariance; images; products.  (paths.ml 6705-7116)      -/
+/- many components; invariance; images; products.  (paths.ml 6706-7117)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTT where
@@ -8999,7 +9002,7 @@ def setupPTT [HolBase] (D : PathsDeps) (BA : PTA) (BK : PTK) (BL : PTL) (BS : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Local connectedness (continued): subregions, cardinality, separation,     -/
-/- closed unions.  (paths.ml 7117-7456)                                      -/
+/- closed unions.  (paths.ml 7118-7457)                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTU where
@@ -9403,7 +9406,7 @@ def setupPTU [HolBase] (D : PathsDeps) (BS : PTS) (BT : PTT) :
 
 /- ------------------------------------------------------------------------- -/
 /- Path-connectedness from union and intersection; local path-connectedness  -/
-/- of subregions and of pieces.  (paths.ml 7457-7849)                        -/
+/- of subregions and of pieces.  (paths.ml 7458-7850)                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTV where
@@ -9866,7 +9869,7 @@ def setupPTV [HolBase] (D : PathsDeps) (BA : PTA) (BC : PTC) (BF : PTF) (BK : PT
 /- Two uniform variants of local connectedness. ULC is an abbreviation for   -/
 /- "uniformly locally connected"; FCCOVERABLE ("fine connected coverable")   -/
 /- is more usually called "Property S" (Whyburn, Hocking & Young etc.)       -/
-/- (paths.ml 7850-8140)                                                      -/
+/- (paths.ml 7851-8141)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTW where
@@ -10208,7 +10211,7 @@ def setupPTW [HolBase] (D : PathsDeps) (BS : PTS) : ExceptT String IO PTW := do
            COMPACT_LOCALLY_CONNECTED_EQ_FCCCOVERABLE }
 
 /- ------------------------------------------------------------------------- -/
-/- Localization of "property S".  (paths.ml 8141-8591)                       -/
+/- Localization of "property S".  (paths.ml 8142-8592)                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTX where
@@ -10709,7 +10712,7 @@ def setupPTX [HolBase] (D : PathsDeps) (BS : PTS) (BW : PTW) : ExceptT String IO
   return { LOCALLY_FCCOVERABLE }
 
 /- ------------------------------------------------------------------------- -/
-/- Localization of "property S" (continued).  (paths.ml 8592-9132)           -/
+/- Localization of "property S" (continued).  (paths.ml 8593-9133)           -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTY where
@@ -11316,7 +11319,7 @@ def setupPTY [HolBase] (D : PathsDeps) (BS : PTS) (BW : PTW) : ExceptT String IO
 /- ------------------------------------------------------------------------- -/
 /- Sufficient conditions for "semi-local connectedness"; Euclidean           -/
 /- specializations of metric-space theorems; locally convex sets.            -/
-/- (paths.ml 9133-9411)                                                      -/
+/- (paths.ml 9134-9412)                                                      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PTZ where
@@ -11629,7 +11632,7 @@ def setupPTZ [HolBase] (D : PathsDeps) (BK : PTK) (BL : PTL) (BS : PTS) (BT : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Various sufficient conditions for continuity. These are mainly from the   -/
-/- papers by Klee & Utz, Pervin & Levine, and Tanaka.  (paths.ml 9413-9682)  -/
+/- papers by Klee & Utz, Pervin & Levine, and Tanaka.  (paths.ml 9414-9683)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUA where
@@ -11954,7 +11957,7 @@ def setupPUA [HolBase] (D : PathsDeps) : ExceptT String IO PUA := do
            CONTINUOUS_EQ_COMPACT_CONNECTED_PRESERVING }
 
 /- ------------------------------------------------------------------------- -/
-/- Sufficient conditions for continuity (continued).  (paths.ml 9683-9886)   -/
+/- Sufficient conditions for continuity (continued).  (paths.ml 9684-9887)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUB where
@@ -12221,7 +12224,7 @@ def setupPUB [HolBase] (D : PathsDeps) (BL : PTL) (BS : PTS) (BZ : PTZ) (BUA : P
 
 /- ------------------------------------------------------------------------- -/
 /- Topological characterizations of non-strict monotonicity.                 -/
-/- (paths.ml 9887-10141)                                                     -/
+/- (paths.ml 9888-10142)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUC where
@@ -12542,7 +12545,7 @@ def setupPUC [HolBase] (D : PathsDeps) (BL : PTL) (BN : PTN) (BS : PTS) (BT : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Sura-Bura's results about compact components of sets.                     -/
-/- (paths.ml 10142-10304)                                                    -/
+/- (paths.ml 10143-10305)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUD where
@@ -12748,7 +12751,7 @@ def setupPUD [HolBase] (D : PathsDeps) : ExceptT String IO PUD := do
 
 /- ------------------------------------------------------------------------- -/
 /- Sura-Bura (continued): clopen sets between a component and an open set.   -/
-/- (paths.ml 10305-10557)                                                    -/
+/- (paths.ml 10306-10558)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUE where
@@ -13057,7 +13060,7 @@ def setupPUE [HolBase] (D : PathsDeps) (BS : PTS) (BUD : PUD) : ExceptT String I
   return { COMPONENT_INTERMEDIATE_CLOPEN }
 
 /- ------------------------------------------------------------------------- -/
-/- Sura-Bura (continued): clopen partitions.  (paths.ml 10558-10676)         -/
+/- Sura-Bura (continued): clopen partitions.  (paths.ml 10559-10677)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUF where
@@ -13207,7 +13210,7 @@ def setupPUF [HolBase] (D : PathsDeps) (BUE : PUE) : ExceptT String IO PUF := do
 
 /- ------------------------------------------------------------------------- -/
 /- Relations between components and path components.                         -/
-/- (paths.ml 10677-10999)                                                    -/
+/- (paths.ml 10678-11000)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUG where
@@ -13625,7 +13628,7 @@ def setupPUG [HolBase] (D : PathsDeps) (BK : PTK) (BR : PTR) (BS : PTS) :
 
 /- ------------------------------------------------------------------------- -/
 /- Minimal separating closed sets; "boundary bumping theorems" and           -/
-/- relatives.  (paths.ml 11000-11292)                                        -/
+/- relatives.  (paths.ml 11001-11293)                                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUH where
@@ -13981,7 +13984,7 @@ def setupPUH [HolBase] (D : PathsDeps) (BUD : PUD) (BUG : PUG) : ExceptT String 
            CONNECTED_EQ_COMPONENT_DELETE_NONSEPARATED }
 
 /- ------------------------------------------------------------------------- -/
-/- Boundary bumping theorems (continued).  (paths.ml 11293-11442)            -/
+/- Boundary bumping theorems (continued).  (paths.ml 11294-11443)            -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUI where
@@ -14178,7 +14181,7 @@ def setupPUI [HolBase] (D : PathsDeps) (BUH : PUH) : ExceptT String IO PUI := do
 
 /- ------------------------------------------------------------------------- -/
 /- More compact component properties via the notion of "well-chained".       -/
-/- (paths.ml 11443-11688)                                                    -/
+/- (paths.ml 11444-11689)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUJ where
@@ -14479,7 +14482,7 @@ def setupPUJ [HolBase] (D : PathsDeps) : ExceptT String IO PUJ := do
 
 /- ------------------------------------------------------------------------- -/
 /- Well-chained (continued): limits of components, small continua,           -/
-/- boundary bumping for intersections.  (paths.ml 11689-11954)               -/
+/- boundary bumping for intersections.  (paths.ml 11690-11955)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUK where
@@ -14803,7 +14806,7 @@ def setupPUK [HolBase] (D : PathsDeps) (BUD : PUD) (BUJ : PUJ) : ExceptT String 
 /- ------------------------------------------------------------------------- -/
 /- Equivalence of LC and LPC for locally compact sets; irreducible           -/
 /- separators; lower bounds on norms within segments.                        -/
-/- (paths.ml 11955-12205)                                                    -/
+/- (paths.ml 11956-12206)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUL where
@@ -15106,7 +15109,7 @@ def setupPUL [HolBase] (D : PathsDeps) (BK : PTK) (BL : PTL) (BS : PTS) (BU : PT
            NORM_SEGMENT_LOWERBOUND, NORM_SEGMENT_ORTHOGONAL_LOWERBOUND }
 
 /- ------------------------------------------------------------------------- -/
-/- Accessibility of frontier points.  (paths.ml 12206-12429)                 -/
+/- Accessibility of frontier points.  (paths.ml 12207-12430)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUM where
@@ -15386,7 +15389,7 @@ def setupPUM [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BD : PT
            DENSE_ACCESSIBLE_FRONTIER_POINT_PAIRS }
 
 /- ------------------------------------------------------------------------- -/
-/- Some simple positive connection theorems.  (paths.ml 12430-12600)         -/
+/- Some simple positive connection theorems.  (paths.ml 12431-12601)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUN where
@@ -15616,7 +15619,7 @@ def setupPUN [HolBase] (D : PathsDeps) (BC : PTC) (BI : PTI) (BK : PTK) (BL : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Simple positive connection theorems (continued): open sets minus small    -/
-/- sets, punctured balls, spheres.  (paths.ml 12601-12860)                   -/
+/- sets, punctured balls, spheres.  (paths.ml 12602-12861)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUO where
@@ -15965,7 +15968,7 @@ def setupPUO [HolBase] (D : PathsDeps) (BK : PTK) (BL : PTL) (BO : PTO) (BUN : P
 
 /- ------------------------------------------------------------------------- -/
 /- Finiteness, size and local connectedness of spheres; sphere               -/
-/- intersections.  (paths.ml 12861-13160)                                    -/
+/- intersections.  (paths.ml 12862-13161)                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUP where
@@ -16344,7 +16347,7 @@ def setupPUP [HolBase] (D : PathsDeps) (BO : PTO) (BS : PTS) (BUO : PUO) :
 
 /- ------------------------------------------------------------------------- -/
 /- Annuli, complements of bounded convex sets, sets minus balls and          -/
-/- interior points.  (paths.ml 13161-13465)                                  -/
+/- interior points.  (paths.ml 13162-13466)                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUQ where
@@ -16723,7 +16726,7 @@ def setupPUQ [HolBase] (D : PathsDeps) (BC : PTC) (BH : PTH) (BK : PTK) (BL : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Open sets minus closed balls; convex and open sets minus low-dimensional  -/
-/- sets.  (paths.ml 13466-13724)                                             -/
+/- sets.  (paths.ml 13467-13725)                                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUR where
@@ -17048,7 +17051,7 @@ def setupPUR [HolBase] (D : PathsDeps) (BK : PTK) (BL : PTL) (BS : PTS) (BUG : P
 
 /- ------------------------------------------------------------------------- -/
 /- Bounded frontiers; interiors of arcs and simple paths; existence of       -/
-/- unbounded components.  (paths.ml 13725-13928)                             -/
+/- unbounded components.  (paths.ml 13726-13929)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUS where
@@ -17318,7 +17321,7 @@ def setupPUS [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BF : PTF) (BJ : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Self-homeomorphisms shuffling points about in various ways.               -/
-/- (paths.ml 13929-14161)                                                    -/
+/- (paths.ml 13930-14162)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUT where
@@ -17600,7 +17603,7 @@ def setupPUT [HolBase] (D : PathsDeps) : ExceptT String IO PUT := do
   return { HOMEOMORPHISM_MOVING_POINT_EXISTS }
 
 /- ------------------------------------------------------------------------- -/
-/- Self-homeomorphisms moving finitely many points.  (paths.ml 14162-14261)  -/
+/- Self-homeomorphisms moving finitely many points.  (paths.ml 14163-14262)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUU where
@@ -17741,7 +17744,7 @@ def setupPUU [HolBase] (D : PathsDeps) (BO : PTO) (BUO : PUO) (BUT : PUT) :
 
 /- ------------------------------------------------------------------------- -/
 /- Self-homeomorphisms grouping finitely many points into an open set.       -/
-/- (paths.ml 14262-14603)                                                    -/
+/- (paths.ml 14263-14604)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUV where
@@ -18150,7 +18153,7 @@ def setupPUV [HolBase] (D : PathsDeps) (BUU : PUU) : ExceptT String IO PUV := do
   return { HOMEOMORPHISM_GROUPING_POINTS_EXISTS }
 
 /- ------------------------------------------------------------------------- -/
-/- Grouping points (general form).  (paths.ml 14604-14731)                   -/
+/- Grouping points (general form).  (paths.ml 14605-14732)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUW where
@@ -18317,7 +18320,7 @@ def setupPUW [HolBase] (D : PathsDeps) (BUU : PUU) (BUV : PUV) : ExceptT String 
   return { HOMEOMORPHISM_GROUPING_POINTS_EXISTS_GEN }
 
 /- ------------------------------------------------------------------------- -/
-/- Homeomorphisms moving dense countable subsets.  (paths.ml 14732-15150)    -/
+/- Homeomorphisms moving dense countable subsets.  (paths.ml 14733-15151)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUX where
@@ -18807,7 +18810,7 @@ def setupPUX [HolBase] (D : PathsDeps) (BO : PTO) (BUC : PUC) : ExceptT String I
 
 /- ------------------------------------------------------------------------- -/
 /- Boring but useful lemmas about the number of unbounded components.        -/
-/- (paths.ml 15152-15262)                                                    -/
+/- (paths.ml 15153-15263)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PUY where
@@ -18955,7 +18958,7 @@ def setupPUY [HolBase] (D : PathsDeps) (BM : PTM) (BUS : PUS) : ExceptT String I
 /- ------------------------------------------------------------------------- -/
 /- The "inside" and "outside" of a set, i.e. the points respectively in a    -/
 /- bounded or unbounded connected component of the set's complement.         -/
-/- (paths.ml 15263-15571)                                                    -/
+/- (paths.ml 15264-15572)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVA where
@@ -19349,7 +19352,7 @@ def setupPVA [HolBase] (D : PathsDeps) (BUQ : PUQ) (BUS : PUS) : ExceptT String 
            OUTSIDE_UNION_OUTSIDE_UNION, INSIDE_SUBSET }
 
 /- ------------------------------------------------------------------------- -/
-/- Inside and outside (continued).  (paths.ml 15572-15804)                   -/
+/- Inside and outside (continued).  (paths.ml 15573-15805)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVB where
@@ -19654,7 +19657,7 @@ def setupPVB [HolBase] (D : PathsDeps) (BVA : PVA) : ExceptT String IO PVB := do
 
 /- ------------------------------------------------------------------------- -/
 /- Inside and outside (continued): convex hulls, frontiers, openness and     -/
-/- closures.  (paths.ml 15805-16056)                                         -/
+/- closures.  (paths.ml 15806-16057)                                         -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVC where
@@ -19985,7 +19988,7 @@ def setupPVC [HolBase] (D : PathsDeps) (BUG : PUG) (BVA : PVA) (BVB : PVB) :
 
 /- ------------------------------------------------------------------------- -/
 /- Inside and outside (continued): compact connected sets, components.       -/
-/- (paths.ml 16052-16386)                                                    -/
+/- (paths.ml 16053-16387)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVD where
@@ -20396,7 +20399,7 @@ def setupPVD [HolBase] (D : PathsDeps) (BB : PTB) (BH : PTH) (BI : PTI) (BUS : P
 
 /- ------------------------------------------------------------------------- -/
 /- A Euclidean-centric formulation of homotopy; trivial properties.          -/
-/- (paths.ml 16387-16643)                                                    -/
+/- (paths.ml 16388-16644)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVE where
@@ -20704,7 +20707,7 @@ def setupPVE [HolBase] (D : PathsDeps) : ExceptT String IO PVE := do
 
 /- ------------------------------------------------------------------------- -/
 /- Products, composition, homotopic triviality, clopen unions.               -/
-/- (paths.ml 16644-16923)                                                    -/
+/- (paths.ml 16645-16924)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVF where
@@ -21033,7 +21036,7 @@ def setupPVF [HolBase] (D : PathsDeps) (BK : PTK) (BL : PTL) (BVE : PVE) :
            HOMOTOPIC_TRIVIALITY, HOMOTOPIC_ON_CLOPEN_UNIONS, INESSENTIAL_ON_CLOPEN_UNIONS }
 
 /- ------------------------------------------------------------------------- -/
-/- Homotopy within the space of linear maps.  (paths.ml 16924-17093)         -/
+/- Homotopy within the space of linear maps.  (paths.ml 16925-17094)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVG where
@@ -21266,7 +21269,7 @@ def setupPVG [HolBase] (D : PathsDeps) (BVE : PVE) (BVF : PVF) : ExceptT String 
 
 /- ------------------------------------------------------------------------- -/
 /- Homotopy within the space of linear maps (continued).                     -/
-/- (paths.ml 17094-17395)                                                    -/
+/- (paths.ml 17095-17396)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVH where
@@ -21645,7 +21648,7 @@ def setupPVH [HolBase] (D : PathsDeps) (BVE : PVE) (BVF : PVF) (BVG : PVG) :
            HOMOTOPIC_WITH_LINEAR_POSITIVE_DEFINITE_MAPS, HOMOTOPIC_WITH_LINEAR_MAPS }
 
 /- ------------------------------------------------------------------------- -/
-/- Homotopy of paths, maintaining the same endpoints.  (paths.ml 17396-17554) -/
+/- Homotopy of paths, maintaining the same endpoints.  (paths.ml 17397-17555) -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVI where
@@ -21856,7 +21859,7 @@ def setupPVI [HolBase] (D : PathsDeps) (BA : PTA) (BVE : PVE) : ExceptT String I
 
 /- ------------------------------------------------------------------------- -/
 /- A slightly ad-hoc but useful lemma in constructing homotopies; congruence -/
-/- properties w.r.t. path-combining operations.  (paths.ml 17555-17687)      -/
+/- properties w.r.t. path-combining operations.  (paths.ml 17556-17688)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVJ where
@@ -22027,7 +22030,7 @@ def setupPVJ [HolBase] (D : PathsDeps) (BA : PTA) (BC : PTC) (BVE : PVE) (BVI : 
 
 /- ------------------------------------------------------------------------- -/
 /- Group properties for homotopy of paths (so taking equivalence classes     -/
-/- under homotopy would give the fundamental group).  (paths.ml 17688-17876) -/
+/- under homotopy would give the fundamental group).  (paths.ml 17689-17877) -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVK where
@@ -22267,7 +22270,7 @@ def setupPVK [HolBase] (D : PathsDeps) (BA : PTA) (BC : PTC) (BF : PTF) (BI : PT
            HOMOTOPIC_PATHS_RINV, HOMOTOPIC_PATHS_LINV }
 
 /- ------------------------------------------------------------------------- -/
-/- Cancellation for homotopy of paths.  (paths.ml 17877-17978)               -/
+/- Cancellation for homotopy of paths.  (paths.ml 17878-17979)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVL where
@@ -22398,7 +22401,7 @@ def setupPVL [HolBase] (D : PathsDeps) (BC : PTC) (BVI : PVI) (BVJ : PVJ) (BVK :
 
 /- ------------------------------------------------------------------------- -/
 /- Homotopy of loops without requiring preservation of endpoints.            -/
-/- (paths.ml 17979-18150)                                                    -/
+/- (paths.ml 17980-18151)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVM where
@@ -22622,7 +22625,7 @@ def setupPVM [HolBase] (D : PathsDeps) (BA : PTA) (BE : PTE) (BVE : PVE) :
            HOMOTOPIC_LOOPS_CONTINUOUS_IMAGE, HOMOTOPIC_LOOPS_SHIFTPATH_SELF }
 
 /- ------------------------------------------------------------------------- -/
-/- Relations between the two variants of homotopy.  (paths.ml 18151-18393)   -/
+/- Relations between the two variants of homotopy.  (paths.ml 18152-18394)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVN where
@@ -22917,7 +22920,7 @@ def setupPVN [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BF : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Relating homotopy of trivial loops to path-connectedness; homotopy of     -/
-/- "nearby" function, paths and loops.  (paths.ml 18394-18603)               -/
+/- "nearby" function, paths and loops.  (paths.ml 18395-18604)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVO where
@@ -23178,7 +23181,7 @@ def setupPVO [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BI : PTI) (BK : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Homotopy of non-antipodal sphere maps; retracts, in a general sense,      -/
-/- preserve (co)homotopic triviality.  (paths.ml 18604-18841)                -/
+/- preserve (co)homotopic triviality.  (paths.ml 18605-18842)                -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVP where
@@ -23458,7 +23461,7 @@ def setupPVP [HolBase] (D : PathsDeps) (BVE : PVE) (BVO : PVO) : ExceptT String 
            COHOMOTOPICALLY_TRIVIAL_RETRACTION_GEN, COHOMOTOPICALLY_TRIVIAL_RETRACTION_NULL_GEN }
 
 /- ------------------------------------------------------------------------- -/
-/- Another useful lemma; shifting and adding loops.  (paths.ml 18842-19138)  -/
+/- Another useful lemma; shifting and adding loops.  (paths.ml 18843-19139)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVQ where
@@ -23824,7 +23827,7 @@ def setupPVQ [HolBase] (D : PathsDeps) (BA : PTA) (BC : PTC) (BD : PTD) (BE : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Simply connected sets defined as "all loops are homotopic (as loops)".    -/
-/- (paths.ml 19139-19375)                                                    -/
+/- (paths.ml 19140-19376)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVR where
@@ -24125,7 +24128,7 @@ def setupPVR [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BI : PT
            SIMPLY_CONNECTED_INJECTIVE_LINEAR_IMAGE, HOMEOMORPHISM_SIMPLE_CONNECTEDNESS }
 
 /- ------------------------------------------------------------------------- -/
-/- Simple connectedness of products and nested unions.  (paths.ml 19376-19507) -/
+/- Simple connectedness of products and nested unions.  (paths.ml 19377-19508) -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVS where
@@ -24299,7 +24302,7 @@ def setupPVS [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BI : PTI) (BVE : P
 
 /- ------------------------------------------------------------------------- -/
 /- The (carrier of) the fundamental group: homotopy classes of loops at a.   -/
-/- (paths.ml 19508-19622)                                                    -/
+/- (paths.ml 19509-19623)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVT where
@@ -24456,7 +24459,7 @@ def setupPVT [HolBase] (D : PathsDeps) (BB : PTB) (BC : PTC) (BI : PTI) (BK : PT
 /- A mapping out of a sphere is nullhomotopic iff it extends to the ball.    -/
 /- This even works out in the degenerate cases when the radius is <= 0, and  -/
 /- we also don't need to explicitly assume continuity since it's already     -/
-/- implicit in both sides of the equivalence.  (paths.ml 19623-19851)        -/
+/- implicit in both sides of the equivalence.  (paths.ml 19624-19852)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVU where
@@ -24737,7 +24740,7 @@ def setupPVU [HolBase] (D : PathsDeps) (BVE : PVE) : ExceptT String IO PVU := do
   return { NULLHOMOTOPIC_FROM_SPHERE_EXTENSION }
 
 /- ------------------------------------------------------------------------- -/
-/- Homotopy equivalence.  (paths.ml 19852-20024)                             -/
+/- Homotopy equivalence.  (paths.ml 19853-20025)                             -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVV where
@@ -24966,7 +24969,7 @@ def setupPVV [HolBase] (D : PathsDeps) (BVE : PVE) (BVF : PVF) : ExceptT String 
 
 /- ------------------------------------------------------------------------- -/
 /- Homotopy equivalence preserves (co)homotopic triviality.                  -/
-/- (paths.ml 20025-20243)                                                    -/
+/- (paths.ml 20026-20244)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVW where
@@ -25224,7 +25227,7 @@ def setupPVW [HolBase] (D : PathsDeps) (BVE : PVE) (BVV : PVV) : ExceptT String 
            HOMOTOPY_EQUIVALENT_COHOMOTOPIC_TRIVIALITY_NULL }
 
 /- ------------------------------------------------------------------------- -/
-/- Homotopy invariance of (path) components.  (paths.ml 20244-20545)         -/
+/- Homotopy invariance of (path) components.  (paths.ml 20245-20546)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVX where
@@ -25602,7 +25605,7 @@ def setupPVX [HolBase] (D : PathsDeps) (BK : PTK) (BL : PTL) (BUG : PUG) (BUN : 
            HOMEOMORPHIC_CARD_EQ_PATH_COMPONENTS, FINITE_COMPONENTS_PUNCTURED_CONVEX }
 
 /- ------------------------------------------------------------------------- -/
-/- Contractible sets.  (paths.ml 20546-20804)                                -/
+/- Contractible sets.  (paths.ml 20547-20805)                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVY where
@@ -25952,7 +25955,7 @@ def setupPVY [HolBase] (D : PathsDeps) (BA : PTA) (BI : PTI) (BK : PTK) (BL : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Contractibility of products, invariance under homotopy equivalence and    -/
-/- homeomorphism.  (paths.ml 20805-20944)                                    -/
+/- homeomorphism.  (paths.ml 20806-20945)                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PVZ where
@@ -26145,7 +26148,7 @@ def setupPVZ [HolBase] (D : PathsDeps) (BVE : PVE) (BVV : PVV) (BVY : PVY) :
 
 /- ------------------------------------------------------------------------- -/
 /- Homeomorphisms between punctured spheres and affine sets.                 -/
-/- (paths.ml 20945-21118)                                                    -/
+/- (paths.ml 20946-21119)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWA where
@@ -26365,7 +26368,7 @@ def setupPWA [HolBase] (D : PathsDeps) : ExceptT String IO PWA := do
 
 /- ------------------------------------------------------------------------- -/
 /- Punctured spheres are homeomorphic to affine sets, hence contractible.    -/
-/- (paths.ml 21119-21246)                                                    -/
+/- (paths.ml 21120-21247)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWB where
@@ -26548,7 +26551,7 @@ def setupPWB [HolBase] (D : PathsDeps) (BM : PTM) (BVY : PVY) (BVZ : PVZ) (BWA :
 
 /- ------------------------------------------------------------------------- -/
 /- Connectedness of punctured spheres and their open subsets.                -/
-/- (paths.ml 21247-21436)                                                    -/
+/- (paths.ml 21248-21437)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWC where
@@ -26794,7 +26797,7 @@ def setupPWC [HolBase] (D : PathsDeps) (BUO : PUO) (BUP : PUP) (BUQ : PUQ) (BVX 
 
 /- ------------------------------------------------------------------------- -/
 /- Components of a sphere complement versus those of the stereographic image. -/
-/- (paths.ml 21436-21607)                                                    -/
+/- (paths.ml 21437-21608)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWD where
@@ -27012,7 +27015,7 @@ def setupPWD [HolBase] (D : PathsDeps) (BS : PTS) (BUH : PUH) (BUP : PUP) (BWC :
 
 /- ------------------------------------------------------------------------- -/
 /- Complements of subsets of simple closed curves and circles.               -/
-/- (paths.ml 21608-21670)                                                    -/
+/- (paths.ml 21609-21671)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWE where
@@ -27113,7 +27116,7 @@ def setupPWE [HolBase] (D : PathsDeps) (BB : PTB) (BH : PTH) (BJ : PTJ) :
 /- When dealing with AR, ANR and ANR later, it's useful to know that any set -/
 /- at all is homeomorphic to a closed subset of a convex set, and if the     -/
 /- set is locally compact we can take the convex set to be the universe.     -/
-/- (paths.ml 21671-21790)                                                    -/
+/- (paths.ml 21672-21791)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWF where
@@ -27272,7 +27275,7 @@ def setupPWF [HolBase] (D : PathsDeps) (BWB : PWB) : ExceptT String IO PWF := do
 
 /- ------------------------------------------------------------------------- -/
 /- Simple connectedness of a union. This is essentially a stripped-down      -/
-/- version of the Seifert - Van Kampen theorem.  (paths.ml 21791-22063)      -/
+/- version of the Seifert - Van Kampen theorem.  (paths.ml 21792-22064)      -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWG where
@@ -27605,7 +27608,7 @@ def setupPWG [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BF : PT
   return { SIMPLY_CONNECTED_UNION }
 
 /- ------------------------------------------------------------------------- -/
-/- Basic results about topological dimension.  (paths.ml 22064-22341)        -/
+/- Basic results about topological dimension.  (paths.ml 22065-22342)        -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWH where
@@ -27945,7 +27948,7 @@ def setupPWH [HolBase] (D : PathsDeps) (BWA : PWA) : ExceptT String IO PWH := do
            DIMENSION_DIMENSION_LE }
 
 /- ------------------------------------------------------------------------- -/
-/- Elementary properties of dimension.  (paths.ml 22342-22570)               -/
+/- Elementary properties of dimension.  (paths.ml 22343-22571)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWI where
@@ -28236,7 +28239,7 @@ def setupPWI [HolBase] (D : PathsDeps) (BWH : PWH) : ExceptT String IO PWI := do
 
 /- ------------------------------------------------------------------------- -/
 /- Small inductive dimension; small sets are zero-dimensional.               -/
-/- (paths.ml 22571-22715)                                                    -/
+/- (paths.ml 22572-22716)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWJ where
@@ -28432,7 +28435,7 @@ def setupPWJ [HolBase] (D : PathsDeps) (BWH : PWH) (BWI : PWI) : ExceptT String 
 
 /- ------------------------------------------------------------------------- -/
 /- Subsets of each dimension; unions; zero-dimensional reduction and         -/
-/- separation.  (paths.ml 22716-22908)                                       -/
+/- separation.  (paths.ml 22717-22909)                                       -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWK where
@@ -28671,7 +28674,7 @@ def setupPWK [HolBase] (D : PathsDeps) (BWH : PWH) (BWI : PWI) : ExceptT String 
 
 /- ------------------------------------------------------------------------- -/
 /- Countable closed unions and the decomposition theorem.                    -/
-/- (paths.ml 22909-23250)                                                    -/
+/- (paths.ml 22910-23251)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWL where
@@ -29068,7 +29071,7 @@ def setupPWL [HolBase] (D : PathsDeps) (BWI : PWI) (BWJ : PWJ) (BWK : PWK) :
 
 /- ------------------------------------------------------------------------- -/
 /- Dimension of unions; insertion and deletion of points.                    -/
-/- (paths.ml 23251-23469)                                                    -/
+/- (paths.ml 23252-23470)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWM where
@@ -29345,7 +29348,7 @@ def setupPWM [HolBase] (D : PathsDeps) (BWH : PWH) (BWI : PWI) (BWJ : PWJ) (BWK 
            DIMENSION_LE_EQ_GEN }
 
 /- ------------------------------------------------------------------------- -/
-/- Dimension of products.  (paths.ml 23470-23577)                            -/
+/- Dimension of products.  (paths.ml 23471-23578)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWN where
@@ -29491,7 +29494,7 @@ def setupPWN [HolBase] (D : PathsDeps) (BWH : PWH) (BWI : PWI) (BWM : PWM) :
   return { DIMENSION_PCROSS_LE, DIMENSION_PCROSS_EQ_0 }
 
 /- ------------------------------------------------------------------------- -/
-/- The separation theorem for dimension.  (paths.ml 23578-23714)             -/
+/- The separation theorem for dimension.  (paths.ml 23579-23715)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWO where
@@ -29670,7 +29673,7 @@ def setupPWO [HolBase] (D : PathsDeps) (BWI : PWI) (BWK : PWK) (BWL : PWL) :
   return { DIMENSION_SEPARATION_THEOREM }
 
 /- ------------------------------------------------------------------------- -/
-/- Large and "tiny" inductive dimension.  (paths.ml 23715-23906)             -/
+/- Large and "tiny" inductive dimension.  (paths.ml 23716-23907)             -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWP where
@@ -29917,7 +29920,7 @@ def setupPWP [HolBase] (D : PathsDeps) (BWH : PWH) (BWI : PWI) (BWJ : PWJ) (BWL 
 
 /- ------------------------------------------------------------------------- -/
 /- Points with a given number of rational coordinates.                       -/
-/- (paths.ml 23907-24025)                                                    -/
+/- (paths.ml 23908-24026)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWQ where
@@ -30082,7 +30085,7 @@ def setupPWQ [HolBase] (D : PathsDeps) (BWH : PWH) (BWI : PWI) (BWL : PWL) :
   return { DIMENSION_LE_RATIONAL_COORDINATES, DIMENSION_EXACTLY_RATIONAL_COORDINATES }
 
 /- ------------------------------------------------------------------------- -/
-/- Covering spaces and lifting results for them.  (paths.ml 24026-24199)     -/
+/- Covering spaces and lifting results for them.  (paths.ml 24027-24200)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWR where
@@ -30297,7 +30300,7 @@ def setupPWR [HolBase] (D : PathsDeps) : ExceptT String IO PWR := do
 
 /- ------------------------------------------------------------------------- -/
 /- Local properties of covering spaces; uniqueness of lifts.                 -/
-/- (paths.ml 24200-24439)                                                    -/
+/- (paths.ml 24201-24440)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWS where
@@ -30599,7 +30602,7 @@ def setupPWS [HolBase] (D : PathsDeps) (BA : PTA) (BK : PTK) (BL : PTL) (BWR : P
            COVERING_SPACE_LIFT_UNIQUE, COVERING_SPACE_LIFT_UNIQUE_IDENTITY }
 
 /- ------------------------------------------------------------------------- -/
-/- Lifting homotopies through covering spaces.  (paths.ml 24440-24925)       -/
+/- Lifting homotopies through covering spaces.  (paths.ml 24441-24926)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWT where
@@ -31148,7 +31151,7 @@ def setupPWT [HolBase] (D : PathsDeps) (BWR : PWR) (BWS : PWS) : ExceptT String 
   return { COVERING_SPACE_LIFT_HOMOTOPY }
 
 /- ------------------------------------------------------------------------- -/
-/- Lifting homotopic functions and paths; monodromy.  (paths.ml 24926-25194) -/
+/- Lifting homotopic functions and paths; monodromy.  (paths.ml 24927-25195) -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWU where
@@ -31467,7 +31470,7 @@ def setupPWU [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BVE : PVE) (BVI : 
            COVERING_SPACE_MONODROMY }
 
 /- ------------------------------------------------------------------------- -/
-/- Lifting homotopic paths; loops lift to loops.  (paths.ml 25195-25294)     -/
+/- Lifting homotopic paths; loops lift to loops.  (paths.ml 25196-25295)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWV where
@@ -31609,7 +31612,7 @@ def setupPWV [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BI : PTI) (BVI : P
            COVERING_SPACE_HOMOTOPIC_PATHS_CANCEL, COVERING_SPACE_HOMOTOPIC_PATHS_CANCEL_EQ }
 
 /- ------------------------------------------------------------------------- -/
-/- Lifting of general functions to covering space.  (paths.ml 25296-25642)   -/
+/- Lifting of general functions to covering space.  (paths.ml 25297-25643)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWW where
@@ -32015,7 +32018,7 @@ def setupPWW [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BD : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Lifting corollaries; additional lemmas about covering spaces.             -/
-/- (paths.ml 25643-25851)                                                    -/
+/- (paths.ml 25644-25852)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWX where
@@ -32284,7 +32287,7 @@ def setupPWX [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BI : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Results on finiteness of the number of sheets in a covering space.        -/
-/- (paths.ml 25852-25981)                                                    -/
+/- (paths.ml 25853-25982)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWY where
@@ -32452,7 +32455,7 @@ def setupPWY [HolBase] (D : PathsDeps) (BWR : PWR) : ExceptT String IO PWY := do
            COVERING_SPACE_FINITE_EQ_COMPACT_FIBRE, COVERING_SPACE_CLOSED_MAP }
 
 /- ------------------------------------------------------------------------- -/
-/- Finitely many sheets versus closed and proper maps.  (paths.ml 25982-26126) -/
+/- Finitely many sheets versus closed and proper maps.  (paths.ml 25983-26127) -/
 /- ------------------------------------------------------------------------- -/
 
 structure PWZ where
@@ -32647,7 +32650,7 @@ def setupPWZ [HolBase] (D : PathsDeps) (BWR : PWR) (BWY : PWY) : ExceptT String 
 
 /- ------------------------------------------------------------------------- -/
 /- Compact special cases; a proper local homeomorphism is a covering map.    -/
-/- (paths.ml 26127-26460)                                                    -/
+/- (paths.ml 26128-26461)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXA where
@@ -33039,7 +33042,7 @@ def setupPXA [HolBase] (D : PathsDeps) (BWR : PWR) (BWY : PWY) (BWZ : PWZ) :
 
 /- ------------------------------------------------------------------------- -/
 /- Closed local homeomorphisms; global homeomorphism criteria.               -/
-/- (paths.ml 26461-26623)                                                    -/
+/- (paths.ml 26462-26624)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXB where
@@ -33247,7 +33250,7 @@ def setupPXB [HolBase] (D : PathsDeps) (BL : PTL) (BVR : PVR) (BWX : PWX) (BXA :
            PROPER_LOCALLY_INJECTIVE_OPEN_IMP_HOMEOMORPHISM_GEN }
 
 /- ------------------------------------------------------------------------- -/
-/- A simply connected covering space is universal.  (paths.ml 26624-26892)   -/
+/- A simply connected covering space is universal.  (paths.ml 26625-26893)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXC where
@@ -33571,7 +33574,7 @@ def setupPXC [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BK : PTK) (BS : PT
   return { UNIVERSAL_COVERING_SPACE }
 
 /- ------------------------------------------------------------------------- -/
-/- Size of fundamental group of a covering space.  (paths.ml 26893-27155)    -/
+/- Size of fundamental group of a covering space.  (paths.ml 26894-27156)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXD where
@@ -33893,7 +33896,7 @@ def setupPXD [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BK : PT
 
 /- ------------------------------------------------------------------------- -/
 /- Invariance of dimension and domain in setting of R^n.                     -/
-/- (paths.ml 27155-27322)                                                    -/
+/- (paths.ml 27156-27323)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXE where
@@ -34113,7 +34116,7 @@ def setupPXE [HolBase] (D : PathsDeps) : ExceptT String IO PXE := do
 
 /- ------------------------------------------------------------------------- -/
 /- Invariance of dimension: subspaces, affine sets, convex sets.             -/
-/- (paths.ml 27323-27514)                                                    -/
+/- (paths.ml 27324-27515)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXF where
@@ -34355,7 +34358,7 @@ def setupPXF [HolBase] (D : PathsDeps) (BXE : PXE) : ExceptT String IO PXF := do
            INVARIANCE_OF_DOMAIN_GEN, INJECTIVE_INTO_1D_IMP_OPEN_MAP_UNIV }
 
 /- ------------------------------------------------------------------------- -/
-/- Continuity of inverses from invariance of domain.  (paths.ml 27515-27703) -/
+/- Continuity of inverses from invariance of domain.  (paths.ml 27516-27704) -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXG where
@@ -34598,7 +34601,7 @@ def setupPXG [HolBase] (D : PathsDeps) (BN : PTN) (BS : PTS) (BUC : PUC) (BXF : 
            INVARIANCE_OF_DOMAIN_HOMEOMORPHISM, INVARIANCE_OF_DOMAIN_HOMEOMORPHIC }
 
 /- ------------------------------------------------------------------------- -/
-/- Homeomorphic intervals, interiors and frontiers.  (paths.ml 27704-27870)  -/
+/- Homeomorphic intervals, interiors and frontiers.  (paths.ml 27705-27871)  -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXH where
@@ -34813,7 +34816,7 @@ def setupPXH [HolBase] (D : PathsDeps) (BXF : PXF) (BXG : PXG) : ExceptT String 
 
 /- ------------------------------------------------------------------------- -/
 /- Homeomorphic relative interiors and relative boundaries.                  -/
-/- (paths.ml 27871-28025)                                                    -/
+/- (paths.ml 27872-28026)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXI where
@@ -35016,7 +35019,7 @@ def setupPXI [HolBase] (D : PathsDeps) (BXE : PXE) (BXF : PXF) : ExceptT String 
 
 /- ------------------------------------------------------------------------- -/
 /- Invariance of domain for spheres; homeomorphic balls.                     -/
-/- (paths.ml 28026-28276)                                                    -/
+/- (paths.ml 28027-28277)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXJ where
@@ -35340,7 +35343,7 @@ def setupPXJ [HolBase] (D : PathsDeps) (BWB : PWB) (BXE : PXE) (BXF : PXF) (BXH 
 
 /- ------------------------------------------------------------------------- -/
 /- General forms of the Jordan curve theorem in setting of R^n.              -/
-/- (paths.ml 28277-28503)                                                    -/
+/- (paths.ml 28278-28504)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXK where
@@ -35631,7 +35634,7 @@ def setupPXK [HolBase] (D : PathsDeps) (BUG : PUG) (BUH : PUH) (BUQ : PUQ) (BUR 
   return { CARD_EQ_COMPONENTS_COMPLEMENTS, JORDAN_CURVE_THEOREM_GEN, JORDAN_INSIDE_OUTSIDE_GEN }
 
 /- ------------------------------------------------------------------------- -/
-/- Jordan-Brouwer separation; the Jordan curve theorem.  (paths.ml 28504-28630) -/
+/- Jordan-Brouwer separation; the Jordan curve theorem.  (paths.ml 28505-28631) -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXL where
@@ -35808,7 +35811,7 @@ def setupPXL [HolBase] (D : PathsDeps) (BJ : PTJ) (BUG : PUG) (BUO : PUO) (BVA :
            JORDAN_CURVE_THEOREM, JORDAN_DISCONNECTED, JORDAN_INSIDE_OUTSIDE, JORDAN_COMPONENTS }
 
 /- ------------------------------------------------------------------------- -/
-/- Separation results for homeomorphic sets.  (paths.ml 28631-28877)         -/
+/- Separation results for homeomorphic sets.  (paths.ml 28632-28878)         -/
 /- ------------------------------------------------------------------------- -/
 
 structure PXM where

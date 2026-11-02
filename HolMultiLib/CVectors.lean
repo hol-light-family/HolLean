@@ -113,7 +113,7 @@ structure CVA where
   vector_map : thm
   vector_map2 : thm
   vector_map3 : thm
-  FINITE_INDEX_INRANGE_2 : thm
+  FINITE_INDEX_INRANGE_4 : thm
   COMPONENT_TAC : thm → tactic
   VECTOR_CONST_COMPONENT : thm
   VECTOR_MAP_COMPONENT : thm
@@ -446,13 +446,13 @@ def setupCVA [HolBase] (D : CvectorsDeps) : ExceptT String IO CVA := do
    r"vector_map3 (f:A->B->C->D) (v1:A^N) (v2:B^N) (v3:C^N) :D^N =
     lambda i. f (v1$i) (v2$i) (v3$i)"
 
-  let FINITE_INDEX_INRANGE_2 ← prove
+  let FINITE_INDEX_INRANGE_4 ← prove
    r"!i. ?k. 1 <= k /\ k <= dimindex(:N) /\ (!x:A^N. x$i = x$k)
   /\ (!x:B^N. x$i = x$k) /\ (!x:C^N. x$i = x$k) /\ (!x:D^N. x$i = x$k)"
    (REWRITE_TAC [finite_index] THEN MESON_TAC [FINITE_INDEX_WORKS])
 
   let COMPONENT_TAC (x : thm) : tactic := tactic_of do
-    pure (REPEAT GEN_TAC THEN CHOOSE_TAC (← SPEC_ALL FINITE_INDEX_INRANGE_2)
+    pure (REPEAT GEN_TAC THEN CHOOSE_TAC (← SPEC_ALL FINITE_INDEX_INRANGE_4)
       THEN ASM_SIMP_TAC [x, LAMBDA_BETA])
 
   let VECTOR_CONST_COMPONENT ← prove
@@ -614,7 +614,7 @@ def setupCVA [HolBase] (D : CvectorsDeps) : ExceptT String IO CVA := do
   let VECTOR_ZIP_COMPONENT ← prove
    r"!i v1:A^N v2:B^N. (vector_zip v1 v2)$i = (v1$i,v2$i)"
    (REPEAT GEN_TAC THEN CHOOSE_TAC (← HolLight.INST_TYPE [(← qty "A#B", ← qty "C")] (← SPEC_ALL
-      FINITE_INDEX_INRANGE_2)) THEN ASM_SIMP_TAC [vector_zip, LAMBDA_BETA])
+      FINITE_INDEX_INRANGE_4)) THEN ASM_SIMP_TAC [vector_zip, LAMBDA_BETA])
 
   let vector_unzip ← new_definition
    r"vector_unzip (v:(A#B)^N):(A^N)#(B^N) = vector_map FST v,vector_map SND v"
@@ -638,7 +638,7 @@ def setupCVA [HolBase] (D : CvectorsDeps) : ExceptT String IO CVA := do
            LINEAR_SUMS, real_of_complex, REAL_OF_COMPLEX, REAL_OF_COMPLEX_RE,
            REAL_OF_COMPLEX_CX, REAL_OF_COMPLEX_NORM, REAL_OF_COMPLEX_ADD, REAL_MUL,
            REAL_OF_COMPLEX_MUL, REAL_OF_COMPLEX_0, REAL_COMPLEX_ADD_CNJ, vector_const,
-           vector_map, vector_map2, vector_map3, FINITE_INDEX_INRANGE_2, COMPONENT_TAC,
+           vector_map, vector_map2, vector_map3, FINITE_INDEX_INRANGE_4, COMPONENT_TAC,
            VECTOR_CONST_COMPONENT, VECTOR_MAP_COMPONENT, VECTOR_MAP2_COMPONENT,
            VECTOR_MAP3_COMPONENT, VECTOR_MAP_VECTOR_CONST, VECTOR_MAP_VECTOR_MAP,
            VECTOR_MAP_VECTOR_MAP2, VECTOR_MAP2_LVECTOR_CONST, VECTOR_MAP2_RVECTOR_CONST,

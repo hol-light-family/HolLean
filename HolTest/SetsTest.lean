@@ -69,7 +69,7 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
 #eval forceOk "SetsCross/CROSS" Session.CROSS
 #eval forceOk "SetsFunspace/ARB" Session.ARB
 -- BISECT: the SetsFunspace2 and SetsInfinite probes are temporarily disabled to
--- locate a runaway proof introduced with sets.ml 3325-3697.
+-- locate a runaway proof introduced with sets.ml 3342-3714.
 #eval forceOk "SetsFunspace2/HAS_SIZE_POWERSET" Session.HAS_SIZE_POWERSET
 /- (former quarantine note, retained for the record)
    SetsInfinite was quarantined because
@@ -77,7 +77,7 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
    SFun2 and SInf disabled, 336s with SFun2 re-enabled, but exceeded 660s with
    SInf enabled and had to be killed.  A streaming `--run` probe confirmed the
    prefix completes and the hang is inside `setupSetsInfinite` itself.
-   PRIME SUSPECT: FINITE_REAL_INTERVAL (sets.ml 3631-3696), the heaviest proof
+   PRIME SUSPECT: FINITE_REAL_INTERVAL (sets.ml 3648-3713), the heaviest proof
    in the range - it calls REAL_FIELD (the Grobner-backed field prover) and
    several inline REAL_ARITHs, and opens with
    `SUBGOAL_THEN ... ASSUME_TAC THENL [...; ALL_TAC] THEN ...`, a left-associative
@@ -85,15 +85,15 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
    The quarantine is announced as a MISMATCH so `make verify` stays RED: leaving a
    bundle silently unforced is the latent-defect trap that hid the SetsMisc and
    SetsCross failures for a whole session. -/
-/- SetsInfinite (sets.ml 3554-3697).  The runaway that quarantined this bundle was
-   NOT in its proof scripts: `lists.ml 884`'s `new_type_abbrev("string",`:char
+/- SetsInfinite (sets.ml 3571-3714).  The runaway that quarantined this bundle was
+   NOT in its proof scripts: `lists.ml 894`'s `new_type_abbrev("string",`:char
    list`)` had never run, because the CAF installing it was "forced" with
    `let _ := charType`, which does NOT force a Lean CAF (defect class #3).  So
-   `:string` never expanded to `:char list`, sets.ml 3623's
+   `:string` never expanded to `:char list`, sets.ml 3640's
    `ISPEC `LENGTH:string->num`` could not typecheck, and MESON was handed a wildly
    over-general goal - the doubling inference count (…3016410..6060899..) in the
    trace.  `ensureHolPrefixThroughInt` now forces it where lists.ml would. -/
-/- *** SetsInfinite (sets.ml 3554-3697) REMAINS QUARANTINED - the runaway is NOT
+/- *** SetsInfinite (sets.ml 3571-3714) REMAINS QUARANTINED - the runaway is NOT
    yet located.  Forcing it exceeded 753s and had to be killed. ***
    ELIMINATED SO FAR: (a) it is not SetsFunspace or SetsFunspace2, both of which
    force in ~330s with all probes OK; (b) it is not the prefix, which completes
@@ -101,18 +101,18 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
    abbreviation - that was a genuine and separate defect, now FIXED (see
    `ensureHolPrefixThroughInt`), and `LENGTH:string->num` now parses as a Const,
    but the runaway persisted afterwards.
-   STILL TO CHECK: the eight MESON/SET_TAC sites in range - sets.ml 3560, 3579,
-   3598, 3605, 3610, 3614, 3625, 3684 - and FINITE_REAL_INTERVAL (3631-3696),
+   STILL TO CHECK: the eight MESON/SET_TAC sites in range - sets.ml 3577, 3596,
+   3615, 3622, 3627, 3631, 3642, 3701 - and FINITE_REAL_INTERVAL (3631-3696),
    whose opening `SUBGOAL_THEN ... ASSUME_TAC THENL [...; ALL_TAC] THEN ...` is the
    left-associative shape behind eleven prior defects.
    Announced as a MISMATCH so `make verify` stays RED: a silently unforced bundle
    is the trap that hid the SetsMisc and SetsCross failures for a whole session. -/
-/- SetsInfinite (sets.ml 3554-3697).  This bundle was quarantined for a runaway
+/- SetsInfinite (sets.ml 3571-3714).  This bundle was quarantined for a runaway
    that turned out to be TWO latent defects in EARLIER files, not in sets.ml:
-     (a) `lists.ml 884`'s `new_type_abbrev("string",`:char list`)` never ran,
+     (a) `lists.ml 894`'s `new_type_abbrev("string",`:char list`)` never ran,
          because the CAF installing it was "forced" with `let _ := charType`,
          which does NOT force a Lean CAF (defect class #3).  So `:string` never
-         expanded and sets.ml 3623's `ISPEC `LENGTH:string->num`` could not
+         expanded and sets.ml 3640's `ISPEC `LENGTH:string->num`` could not
          typecheck.
      (b) `REAL_RING` (calc_rat.ml 490) and `REAL_FIELD` (581) were built in the
          wrong order when first reached from the sets path.  REAL_RING PANICKED
@@ -122,12 +122,12 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
          `setupRealField` then diverged outright - checkpoints inside its returned
          closure never printed, proving the hang was in the SETUP, not any goal.
    All three are now forced in `ensureHolPrefixThroughInt` at their hol_lib.ml
-   positions.  sets.ml 3657's REAL_FIELD goal now PROVES. -/
+   positions.  sets.ml 3674's REAL_FIELD goal now PROVES. -/
 #eval forceOk "SetsInfinite/num_INFINITE" Session.num_INFINITE
 #eval forceOk "SetsInfinite/string_INFINITE" Session.string_INFINITE
 #eval forceOk "SetsInfinite/FINITE_REAL_INTERVAL" Session.FINITE_REAL_INTERVAL
 #eval forceOk "SetsInfinite/real_INFINITE" Session.real_INFINITE
-/- SetsList (sets.ml 3697-3997): finite-set indexing, set/list mappings, and the
+/- SetsList (sets.ml 3714-4155): finite-set indexing, set/list mappings, and the
    pairwise property.  `set_of_list`/`list_of_set` are INTRODUCED HERE, not in
    Lists.lean, so this bundle bridges to the list theory.  Probe the heavy
    structured proofs (HAS_SIZE_INDEX, INFINITE_ENUMERATE, LIST_OF_SET_SING and
@@ -145,7 +145,7 @@ private unsafe def forceOk (lbl : String) (th : thm) : IO Unit := do
 #eval forceOk "SetsList/DIFF_UNIONS_PAIRWISE_DISJOINT" Session.DIFF_UNIONS_PAIRWISE_DISJOINT
 #eval forceOk "SetsList/INTER_UNIONS_PAIRWISE_DISJOINT" Session.INTER_UNIONS_PAIRWISE_DISJOINT
 #eval forceOk "SetsList/PSUBSET_UNIONS_PAIRWISE_DISJOINT" Session.PSUBSET_UNIONS_PAIRWISE_DISJOINT
-/- SetsUnionOf (sets.ml 3998-4364): the UNION_OF/INTERSECTION_OF combinators and
+/- SetsUnionOf (sets.ml 4156-4522): the UNION_OF/INTERSECTION_OF combinators and
    their ARBITRARY and FINITE cases.  The two operators' infix fixity is
    registered by `ensureSetsUnionOfInfix` (the 15th/16th parse_as_infix of the
    file).  Probe the two definitions, an idiom, and the heavy structured proofs

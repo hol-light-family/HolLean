@@ -2330,10 +2330,10 @@ def setupSetsInduct [HolBase] (S : SetsCore) (P : SetsProps)
     FINITE_INDUCT_STRONG }
 
 /- ---------------------------------------------------------------------- -/
-/- Useful general properties of functions.  (sets.ml 1273-1382)           -/
+/- Useful general properties of functions.  (sets.ml 1273-1395)           -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The "useful general properties of functions" of sets.ml 1275-1382 - the
+/-- The "useful general properties of functions" of sets.ml 1275-1395 - the
     INJ/SURJ/BIJ left/right-inverse theory and the function-factoring lemmas.
     SEVENTEEN theorems.  None uses `SET_TAC` except `IMAGE_INJECTIVE_IMAGE_OF_
     SUBSET` (which uses `SET_TAC[]` inside a `SUBGOAL_THEN`); the rest are
@@ -2351,44 +2351,47 @@ structure SetsFunctions where
       `MESON[]` lemma then `REWRITE_TAC[lemma; GSYM SKOLEM_THM] THEN
       MESON_TAC[]`. -/
   INJECTIVE_ON_LEFT_INVERSE : thm
-  /-- `BIJECTIVE_ON_LEFT_RIGHT_INVERSE` (sets.ml 1300): a structured proof
+  /-- `INJECTIVE_ON_COMMUTING_SQUARE` (sets.ml @1300): injectivity transfers
+      across a commuting square.  `EXPAND_TAC "t"`, then `ASM_MESON_TAC[]`. -/
+  INJECTIVE_ON_COMMUTING_SQUARE : thm
+  /-- `BIJECTIVE_ON_LEFT_RIGHT_INVERSE` (sets.ml 1313): a structured proof
       ending in `AP_TERM_TAC THEN ABS_TAC THEN EQ_TAC THEN ASM_MESON_TAC[]`. -/
   BIJECTIVE_ON_LEFT_RIGHT_INVERSE : thm
-  /-- `SURJECTIVE_RIGHT_INVERSE` (sets.ml 1313):
+  /-- `SURJECTIVE_RIGHT_INVERSE` (sets.ml 1326):
       `MESON_TAC[SURJECTIVE_ON_RIGHT_INVERSE; IN_UNIV]`. -/
   SURJECTIVE_RIGHT_INVERSE : thm
-  /-- `INJECTIVE_LEFT_INVERSE` (sets.ml 1317): a `REWRITE_RULE[IN_UNIV]`
+  /-- `INJECTIVE_LEFT_INVERSE` (sets.ml 1330): a `REWRITE_RULE[IN_UNIV]`
       specialisation (via `ISPECL`) of `INJECTIVE_ON_LEFT_INVERSE`. -/
   INJECTIVE_LEFT_INVERSE : thm
-  /-- `BIJECTIVE_LEFT_RIGHT_INVERSE` (sets.ml 1323):
+  /-- `BIJECTIVE_LEFT_RIGHT_INVERSE` (sets.ml 1336):
       `GEN_TAC THEN MP_TAC(ISPECL [..] BIJECTIVE_ON_LEFT_RIGHT_INVERSE) THEN
       REWRITE_TAC[IN_UNIV]`. -/
   BIJECTIVE_LEFT_RIGHT_INVERSE : thm
-  /-- `FUNCTION_FACTORS_LEFT_GEN` (sets.ml 1331): `ONCE_REWRITE_TAC[MESON[]..]
+  /-- `FUNCTION_FACTORS_LEFT_GEN` (sets.ml 1344): `ONCE_REWRITE_TAC[MESON[]..]
       THEN REWRITE_TAC[GSYM SKOLEM_THM] THEN MESON_TAC[]`. -/
   FUNCTION_FACTORS_LEFT_GEN : thm
-  /-- `FUNCTION_FACTORS_LEFT` (sets.ml 1339): a `REWRITE_TAC` using `o_THM`,
+  /-- `FUNCTION_FACTORS_LEFT` (sets.ml 1352): a `REWRITE_TAC` using `o_THM`,
       `FUN_EQ_THM` and a `REWRITE_RULE`d `ISPEC` of
       `FUNCTION_FACTORS_LEFT_GEN`. -/
   FUNCTION_FACTORS_LEFT : thm
-  /-- `FUNCTION_FACTORS_RIGHT_GEN` (sets.ml 1344):
+  /-- `FUNCTION_FACTORS_RIGHT_GEN` (sets.ml 1357):
       `REWRITE_TAC[GSYM SKOLEM_THM] THEN MESON_TAC[]`. -/
   FUNCTION_FACTORS_RIGHT_GEN : thm
-  /-- `FUNCTION_FACTORS_RIGHT` (sets.ml 1350):
+  /-- `FUNCTION_FACTORS_RIGHT` (sets.ml 1363):
       `REWRITE_TAC[FUN_EQ_THM; o_THM; GSYM SKOLEM_THM] THEN MESON_TAC[]`. -/
   FUNCTION_FACTORS_RIGHT : thm
-  /-- `SURJECTIVE_FORALL_THM` (sets.ml 1354): `EQ_TAC THENL [MESON_TAC[];
+  /-- `SURJECTIVE_FORALL_THM` (sets.ml 1367): `EQ_TAC THENL [MESON_TAC[];
       ALL_TAC] THEN DISCH_THEN(fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
       MESON_TAC[]`. -/
   SURJECTIVE_FORALL_THM : thm
-  /-- `SURJECTIVE_EXISTS_THM` (sets.ml 1359): `EQ_TAC THENL [MESON_TAC[];
+  /-- `SURJECTIVE_EXISTS_THM` (sets.ml 1372): `EQ_TAC THENL [MESON_TAC[];
       ALL_TAC] THEN DISCH_THEN(MP_TAC o SPEC ..) THEN MESON_TAC[]`. -/
   SURJECTIVE_EXISTS_THM : thm
-  /-- `SURJECTIVE_IMAGE_THM` (sets.ml 1364): `REWRITE_TAC[EXTENSION; IN_IMAGE;
+  /-- `SURJECTIVE_IMAGE_THM` (sets.ml 1377): `REWRITE_TAC[EXTENSION; IN_IMAGE;
       IN_ELIM_THM] THEN EQ_TAC THENL [ALL_TAC; DISCH_THEN(MP_TAC o SPEC ..)]
       THEN MESON_TAC[]`. -/
   SURJECTIVE_IMAGE_THM : thm
-  /-- `IMAGE_INJECTIVE_IMAGE_OF_SUBSET` (sets.ml 1370): a `SUBGOAL_THEN ...
+  /-- `IMAGE_INJECTIVE_IMAGE_OF_SUBSET` (sets.ml 1383): a `SUBGOAL_THEN ...
       STRIP_ASSUME_TAC THENL [..; ..]` proof; the first branch is
       `REWRITE_TAC[GSYM SURJECTIVE_ON_RIGHT_INVERSE] THEN SET_TAC[]`. -/
   IMAGE_INJECTIVE_IMAGE_OF_SUBSET : thm
@@ -2404,7 +2407,8 @@ def setupSetsFunctions [HolBase] (S : SetsCore) (P : SetsProps)
   let MESON (ths : List thm) (t : term) : ExceptT String IO thm := MESON' ths t
   let { EXTENSION, IN_ELIM_THM, .. } := S
   let { IN_UNIV, IN_IMAGE, .. } := P
-  let { RIGHT_AND_EXISTS_THM, .. } := HolBase.T
+  let { FORALL_IN_IMAGE, .. } := P
+  let { RIGHT_AND_EXISTS_THM, IMP_CONJ, RIGHT_FORALL_IMP_THM, .. } := HolBase.T
   let { FUN_EQ_THM, RIGHT_IMP_EXISTS_THM, SKOLEM_THM, .. } := HolBase.C
   let { o_THM, .. } := Tr
 
@@ -2432,6 +2436,19 @@ def setupSetsFunctions [HolBase] (S : SetsCore) (P : SetsProps)
      (← q r"(!x. x IN s ==> (g(f(x)) = x)) <=>
       (!y x. x IN s /\ (y = (f:A->B) x) ==> (g y = x))")
     pure (REWRITE_TAC [lemma, ← GSYM SKOLEM_THM] THEN MESON_TAC []))
+
+  let INJECTIVE_ON_COMMUTING_SQUARE ← prove
+   r"!(f:A->B) (g:C->D) (p:A->C) (q:B->D) s t s'.
+        (!x. x IN s ==> f x IN s') /\
+        (!x y. x IN s' /\ y IN s' /\ q x = q y ==> x = y) /\
+        (!x y. x IN s /\ y IN s /\ p x = p y ==> x = y) /\
+        IMAGE p s = t /\
+        (!x. x IN s ==> q(f x) = g(p x))
+        ==> ((!x y. x IN s /\ y IN s /\ f x = f y ==> x = y) <=>
+             (!x y. x IN t /\ y IN t /\ g x = g y ==> x = y))"
+   (REPEAT STRIP_TAC THEN EXPAND_TAC "t" THEN
+    REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM, FORALL_IN_IMAGE] THEN
+    ASM_MESON_TAC [])
 
   let BIJECTIVE_ON_LEFT_RIGHT_INVERSE ← prove
    r"!(f:A->B) s t.
@@ -2519,7 +2536,8 @@ def setupSetsFunctions [HolBase] (S : SetsCore) (P : SetsProps)
 
   return {
     INJECTIVE_ON_ALT, INJECTIVE_ALT, SURJECTIVE_ON_RIGHT_INVERSE,
-    INJECTIVE_ON_LEFT_INVERSE, BIJECTIVE_ON_LEFT_RIGHT_INVERSE,
+    INJECTIVE_ON_LEFT_INVERSE, INJECTIVE_ON_COMMUTING_SQUARE,
+    BIJECTIVE_ON_LEFT_RIGHT_INVERSE,
     SURJECTIVE_RIGHT_INVERSE, INJECTIVE_LEFT_INVERSE,
     BIJECTIVE_LEFT_RIGHT_INVERSE, FUNCTION_FACTORS_LEFT_GEN,
     FUNCTION_FACTORS_LEFT, FUNCTION_FACTORS_RIGHT_GEN, FUNCTION_FACTORS_RIGHT,
@@ -2527,10 +2545,10 @@ def setupSetsFunctions [HolBase] (S : SetsCore) (P : SetsProps)
     IMAGE_INJECTIVE_IMAGE_OF_SUBSET }
 
 /- ---------------------------------------------------------------------- -/
-/- Basic combining theorems for finite sets.  (sets.ml 1383-1796)         -/
+/- Basic combining theorems for finite sets.  (sets.ml 1396-1809)         -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The "basic combining theorems for finite sets" of sets.ml 1383-1796 -
+/-- The "basic combining theorems for finite sets" of sets.ml 1396-1809 -
     FORTY-SEVEN theorems built on the `FINITE` inductive definition of
     sets.ml 132 (`S.FINITE_RULES`/`S.FINITE_INDUCT`/`S.FINITE_CASES`) and the
     stronger induction `SInd.FINITE_INDUCT_STRONG` of sets.ml 1258.  SIX
@@ -2543,152 +2561,152 @@ def setupSetsFunctions [HolBase] (S : SetsCore) (P : SetsProps)
     almost NONE is a bare `SET_TAC[]` - `SET_TAC` cannot see `FINITE`, so the
     inductive skeleton is explicit. -/
 structure SetsFinite where
-  /-- `FINITE_EMPTY` (sets.ml 1386): `FINITE ({}:A->bool)`.
+  /-- `FINITE_EMPTY` (sets.ml 1399): `FINITE ({}:A->bool)`.
       `REWRITE_TAC[FINITE_RULES]`. -/
   FINITE_EMPTY : thm
-  /-- `FINITE_SUBSET` (sets.ml 1390): a subset of a finite set is finite.  A
+  /-- `FINITE_SUBSET` (sets.ml 1403): a subset of a finite set is finite.  A
       structured `MATCH_MP_TAC FINITE_INDUCT` proof. -/
   FINITE_SUBSET : thm
-  /-- `FINITE_RESTRICT` (sets.ml 1409):
+  /-- `FINITE_RESTRICT` (sets.ml 1422):
       `MESON_TAC[SUBSET_RESTRICT; FINITE_SUBSET]`. -/
   FINITE_RESTRICT : thm
-  /-- `FINITE_UNION_IMP` (sets.ml 1413): `MATCH_MP_TAC FINITE_INDUCT`. -/
+  /-- `FINITE_UNION_IMP` (sets.ml 1426): `MATCH_MP_TAC FINITE_INDUCT`. -/
   FINITE_UNION_IMP : thm
-  /-- `FINITE_UNION` (sets.ml 1422): `EQ_TAC THENL [..; MATCH_ACCEPT_TAC
+  /-- `FINITE_UNION` (sets.ml 1435): `EQ_TAC THENL [..; MATCH_ACCEPT_TAC
       FINITE_UNION_IMP]`. -/
   FINITE_UNION : thm
-  /-- `FINITE_INTER` (sets.ml 1429):
+  /-- `FINITE_INTER` (sets.ml 1442):
       `MESON_TAC[INTER_SUBSET; FINITE_SUBSET]`. -/
   FINITE_INTER : thm
-  /-- `FINITE_INSERT` (sets.ml 1433): `EQ_TAC THEN DISCH_TAC THENL [..; ..]`. -/
+  /-- `FINITE_INSERT` (sets.ml 1446): `EQ_TAC THEN DISCH_TAC THENL [..; ..]`. -/
   FINITE_INSERT : thm
-  /-- `FINITE_SING` (sets.ml 1441):
+  /-- `FINITE_SING` (sets.ml 1454):
       `REWRITE_TAC[FINITE_INSERT; FINITE_RULES]`. -/
   FINITE_SING : thm
-  /-- `FINITE_DELETE_IMP` (sets.ml 1445):
+  /-- `FINITE_DELETE_IMP` (sets.ml 1458):
       `REPEAT STRIP_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN ...`. -/
   FINITE_DELETE_IMP : thm
-  /-- `FINITE_DELETE` (sets.ml 1450): `EQ_TAC THEN REWRITE_TAC[..] THEN
+  /-- `FINITE_DELETE` (sets.ml 1463): `EQ_TAC THEN REWRITE_TAC[..] THEN
       ASM_CASES_TAC` with a `GEN_REWRITE_TAC (RAND_CONV o RAND_CONV)`. -/
   FINITE_DELETE : thm
-  /-- `FINITE_FINITE_UNIONS` (sets.ml 1460): `MATCH_MP_TAC FINITE_INDUCT`. -/
+  /-- `FINITE_FINITE_UNIONS` (sets.ml 1473): `MATCH_MP_TAC FINITE_INDUCT`. -/
   FINITE_FINITE_UNIONS : thm
-  /-- `FINITE_IMAGE_EXPAND` (sets.ml 1467): `MATCH_MP_TAC FINITE_INDUCT` with
+  /-- `FINITE_IMAGE_EXPAND` (sets.ml 1480): `MATCH_MP_TAC FINITE_INDUCT` with
       a `SUBGOAL_THEN` set-equation. -/
   FINITE_IMAGE_EXPAND : thm
-  /-- `FINITE_IMAGE` (sets.ml 1479):
+  /-- `FINITE_IMAGE` (sets.ml 1492):
       `REWRITE_TAC[IMAGE; FINITE_IMAGE_EXPAND]`. -/
   FINITE_IMAGE : thm
-  /-- `FINITE_IMAGE_INJ_GENERAL` (sets.ml 1483): `GEN_REWRITE_RULE I
+  /-- `FINITE_IMAGE_INJ_GENERAL` (sets.ml 1496): `GEN_REWRITE_RULE I
       [INJECTIVE_ON_LEFT_INVERSE]` then `MATCH_MP_TAC FINITE_SUBSET`. -/
   FINITE_IMAGE_INJ_GENERAL : thm
-  /-- `FINITE_FINITE_PREIMAGE_GENERAL` (sets.ml 1494): a `SUBGOAL_THEN`
+  /-- `FINITE_FINITE_PREIMAGE_GENERAL` (sets.ml 1507): a `SUBGOAL_THEN`
       set-equation to a `UNIONS(IMAGE ...)`. -/
   FINITE_FINITE_PREIMAGE_GENERAL : thm
-  /-- `FINITE_FINITE_PREIMAGE` (sets.ml 1508): `MP_TAC(ISPECL [..]
+  /-- `FINITE_FINITE_PREIMAGE` (sets.ml 1521): `MP_TAC(ISPECL [..]
       FINITE_FINITE_PREIMAGE_GENERAL) THEN REWRITE_TAC[IN_UNIV]`. -/
   FINITE_FINITE_PREIMAGE : thm
-  /-- `FINITE_IMAGE_INJ_EQ` (sets.ml 1517): `EQ_TAC THEN ASM_SIMP_TAC
+  /-- `FINITE_IMAGE_INJ_EQ` (sets.ml 1530): `EQ_TAC THEN ASM_SIMP_TAC
       [FINITE_IMAGE]` then a `MATCH_MP FINITE_IMAGE_INJ_GENERAL`. -/
   FINITE_IMAGE_INJ_EQ : thm
-  /-- `FINITE_IMAGE_INJ` (sets.ml 1526): `MP_TAC(SPECL [..]
+  /-- `FINITE_IMAGE_INJ` (sets.ml 1539): `MP_TAC(SPECL [..]
       FINITE_IMAGE_INJ_GENERAL) THEN REWRITE_TAC[IN_UNIV]`. -/
   FINITE_IMAGE_INJ : thm
-  /-- `FINITE_IMAGE_GEN` (sets.ml 1534): `GEN_REWRITE_RULE I
+  /-- `FINITE_IMAGE_GEN` (sets.ml 1547): `GEN_REWRITE_RULE I
       [FUNCTION_FACTORS_LEFT_GEN]` then a `SUBGOAL_THEN`. -/
   FINITE_IMAGE_GEN : thm
-  /-- `INFINITE_IMAGE` (sets.ml 1545): `INJECTIVE_ON_LEFT_INVERSE` then
+  /-- `INFINITE_IMAGE` (sets.ml 1558): `INJECTIVE_ON_LEFT_INVERSE` then
       `REWRITE_TAC[INFINITE; CONTRAPOS_THM]`. -/
   INFINITE_IMAGE : thm
-  /-- `INFINITE_IMAGE_INJ` (sets.ml 1555): `MESON_TAC[INFINITE_IMAGE]`. -/
+  /-- `INFINITE_IMAGE_INJ` (sets.ml 1568): `MESON_TAC[INFINITE_IMAGE]`. -/
   INFINITE_IMAGE_INJ : thm
-  /-- `INFINITE_NONEMPTY` (sets.ml 1560):
+  /-- `INFINITE_NONEMPTY` (sets.ml 1573):
       `MESON_TAC[INFINITE; FINITE_RULES]`. -/
   INFINITE_NONEMPTY : thm
-  /-- `INFINITE_DIFF_FINITE` (sets.ml 1564): `MATCH_MP_TAC(TAUT ...) THEN
+  /-- `INFINITE_DIFF_FINITE` (sets.ml 1577): `MATCH_MP_TAC(TAUT ...) THEN
       REWRITE_TAC[INFINITE]` then `MATCH_MP_TAC FINITE_SUBSET`. -/
   INFINITE_DIFF_FINITE : thm
-  /-- `SUBSET_IMAGE_INJ` (sets.ml 1573): `EQ_TAC THENL [..; MESON_TAC
+  /-- `SUBSET_IMAGE_INJ` (sets.ml 1586): `EQ_TAC THENL [..; MESON_TAC
       [IMAGE_SUBSET]]` with a `MATCH_MP (SET_RULE ...)`. -/
   SUBSET_IMAGE_INJ : thm
-  /-- `SUBSET_IMAGE` (sets.ml 1586): `EQ_TAC THENL [..; MESON_TAC
+  /-- `SUBSET_IMAGE` (sets.ml 1599): `EQ_TAC THENL [..; MESON_TAC
       [IMAGE_SUBSET]] THEN REWRITE_TAC[SUBSET_IMAGE_INJ] THEN
       MATCH_MP_TAC MONO_EXISTS`. -/
   SUBSET_IMAGE : thm
-  /-- `EXISTS_SUBSET_IMAGE` (sets.ml 1591):
+  /-- `EXISTS_SUBSET_IMAGE` (sets.ml 1604):
       `REWRITE_TAC[SUBSET_IMAGE] THEN MESON_TAC[]`. -/
   EXISTS_SUBSET_IMAGE : thm
-  /-- `FORALL_SUBSET_IMAGE` (sets.ml 1596):
+  /-- `FORALL_SUBSET_IMAGE` (sets.ml 1609):
       `REWRITE_TAC[SUBSET_IMAGE] THEN MESON_TAC[]`. -/
   FORALL_SUBSET_IMAGE : thm
-  /-- `EXISTS_SUBSET_IMAGE_INJ` (sets.ml 1602):
+  /-- `EXISTS_SUBSET_IMAGE_INJ` (sets.ml 1615):
       `REWRITE_TAC[SUBSET_IMAGE_INJ] THEN MESON_TAC[]`. -/
   EXISTS_SUBSET_IMAGE_INJ : thm
-  /-- `FORALL_SUBSET_IMAGE_INJ` (sets.ml 1610): `ONCE_REWRITE_TAC[MESON[]
+  /-- `FORALL_SUBSET_IMAGE_INJ` (sets.ml 1623): `ONCE_REWRITE_TAC[MESON[]
       ...] THEN REWRITE_TAC[NOT_IMP; EXISTS_SUBSET_IMAGE_INJ; GSYM
       CONJ_ASSOC]`. -/
   FORALL_SUBSET_IMAGE_INJ : thm
-  /-- `EXISTS_FINITE_SUBSET_IMAGE_INJ` (sets.ml 1620):
+  /-- `EXISTS_FINITE_SUBSET_IMAGE_INJ` (sets.ml 1633):
       `ONCE_REWRITE_TAC[TAUT ...] THEN ... AP_TERM_TAC THEN ABS_TAC THEN
       MESON_TAC[FINITE_IMAGE_INJ_EQ]`. -/
   EXISTS_FINITE_SUBSET_IMAGE_INJ : thm
-  /-- `FORALL_FINITE_SUBSET_IMAGE_INJ` (sets.ml 1630): `ONCE_REWRITE_TAC
+  /-- `FORALL_FINITE_SUBSET_IMAGE_INJ` (sets.ml 1643): `ONCE_REWRITE_TAC
       [MESON[] ...] THEN REWRITE_TAC[NOT_IMP; EXISTS_FINITE_SUBSET_IMAGE_INJ;
       GSYM CONJ_ASSOC]`. -/
   FORALL_FINITE_SUBSET_IMAGE_INJ : thm
-  /-- `EXISTS_FINITE_SUBSET_IMAGE` (sets.ml 1640): `EQ_TAC THENL [..; ..]`. -/
+  /-- `EXISTS_FINITE_SUBSET_IMAGE` (sets.ml 1653): `EQ_TAC THENL [..; ..]`. -/
   EXISTS_FINITE_SUBSET_IMAGE : thm
-  /-- `FORALL_FINITE_SUBSET_IMAGE` (sets.ml 1648): `ONCE_REWRITE_TAC[MESON[]
+  /-- `FORALL_FINITE_SUBSET_IMAGE` (sets.ml 1661): `ONCE_REWRITE_TAC[MESON[]
       ...] THEN REWRITE_TAC[NOT_IMP; GSYM CONJ_ASSOC;
       EXISTS_FINITE_SUBSET_IMAGE]`. -/
   FORALL_FINITE_SUBSET_IMAGE : thm
-  /-- `FINITE_SUBSET_IMAGE` (sets.ml 1656): `EQ_TAC THENL [..; ASM_MESON_TAC
+  /-- `FINITE_SUBSET_IMAGE` (sets.ml 1669): `EQ_TAC THENL [..; ASM_MESON_TAC
       ..] THEN SPEC_TAC(..) THEN REWRITE_TAC[FORALL_FINITE_SUBSET_IMAGE]`. -/
   FINITE_SUBSET_IMAGE : thm
-  /-- `FINITE_SUBSET_IMAGE_IMP` (sets.ml 1665):
+  /-- `FINITE_SUBSET_IMAGE_IMP` (sets.ml 1678):
       `MESON_TAC[SUBSET_REFL; FINITE_SUBSET_IMAGE]`. -/
   FINITE_SUBSET_IMAGE_IMP : thm
-  /-- `FINITE_IMAGE_EQ` (sets.ml 1671):
+  /-- `FINITE_IMAGE_EQ` (sets.ml 1684):
       `MESON_TAC[FINITE_SUBSET_IMAGE; FINITE_IMAGE; SUBSET_REFL]`. -/
   FINITE_IMAGE_EQ : thm
-  /-- `FINITE_IMAGE_EQ_INJ` (sets.ml 1676): `EQ_TAC THENL [..; MESON_TAC
+  /-- `FINITE_IMAGE_EQ_INJ` (sets.ml 1689): `EQ_TAC THENL [..; MESON_TAC
       [FINITE_IMAGE]]` then `MP_TAC(ISPECL [..] SUBSET_IMAGE_INJ)`,
       `MATCH_MP_TAC MONO_EXISTS`, `ASM_METIS_TAC[FINITE_IMAGE_INJ_EQ]`. -/
   FINITE_IMAGE_EQ_INJ : thm
-  /-- `FINITE_DIFF` (sets.ml 1687):
+  /-- `FINITE_DIFF` (sets.ml 1700):
       `MESON_TAC[FINITE_SUBSET; SUBSET_DIFF]`. -/
   FINITE_DIFF : thm
-  /-- `INFINITE_SUPERSET` (sets.ml 1691):
+  /-- `INFINITE_SUPERSET` (sets.ml 1704):
       `REWRITE_TAC[INFINITE] THEN MESON_TAC[FINITE_SUBSET]`. -/
   INFINITE_SUPERSET : thm
-  /-- `FINITE_TRANSITIVITY_CHAIN` (sets.ml 1695):
+  /-- `FINITE_TRANSITIVITY_CHAIN` (sets.ml 1708):
       `MATCH_MP_TAC FINITE_INDUCT_STRONG THEN REWRITE_TAC[NOT_IN_EMPTY]
       THEN SET_TAC[]`. -/
   FINITE_TRANSITIVITY_CHAIN : thm
-  /-- `UNIONS_MAXIMAL_SETS` (sets.ml 1706): a substantial structured proof -
+  /-- `UNIONS_MAXIMAL_SETS` (sets.ml 1719): a substantial structured proof -
       `SIMP_TAC[GSYM SUBSET_ANTISYM_EQ; ..]`, `MATCH_MP_TAC UNIONS_MONO`,
       `MP_TAC(ISPECL [..] FINITE_TRANSITIVITY_CHAIN)` and a `CONJ_TAC` split
       of width FOUR. -/
   UNIONS_MAXIMAL_SETS : thm
-  /-- `FINITE_SUBSET_UNIONS` (sets.ml 1720): `GEN_REWRITE_RULE I [SUBSET]`,
+  /-- `FINITE_SUBSET_UNIONS` (sets.ml 1733): `GEN_REWRITE_RULE I [SUBSET]`,
       `GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV) [..]`, then `SKOLEM_THM`
       and `IMAGE (u:A->A->bool) s`. -/
   FINITE_SUBSET_UNIONS : thm
-  /-- `UNIONS_IN_CHAIN` (sets.ml 1733): `MATCH_MP_TAC FINITE_INDUCT` with a
+  /-- `UNIONS_IN_CHAIN` (sets.ml 1746): `MATCH_MP_TAC FINITE_INDUCT` with a
       `MATCH_MP_TAC(MESON[] ...)` set-lemma. -/
   UNIONS_IN_CHAIN : thm
-  /-- `INTERS_IN_CHAIN` (sets.ml 1751): `MATCH_MP_TAC FINITE_INDUCT` with a
+  /-- `INTERS_IN_CHAIN` (sets.ml 1764): `MATCH_MP_TAC FINITE_INDUCT` with a
       `MATCH_MP_TAC(MESON[] ...)` set-lemma (the `INTERS` dual). -/
   INTERS_IN_CHAIN : thm
-  /-- `FINITE_SUBSET_UNIONS_DIRECTED_EQ` (sets.ml 1769):
+  /-- `FINITE_SUBSET_UNIONS_DIRECTED_EQ` (sets.ml 1782):
       `MATCH_MP_TAC FINITE_INDUCT_STRONG THEN SIMP_TAC[INSERT_SUBSET] THEN
       ASM SET_TAC[]`. -/
   FINITE_SUBSET_UNIONS_DIRECTED_EQ : thm
-  /-- `FINITE_SUBSET_UNIONS_CHAIN_EQ` (sets.ml 1789, `time prove`):
+  /-- `FINITE_SUBSET_UNIONS_CHAIN_EQ` (sets.ml 1802, `time prove`):
       `MATCH_MP_TAC FINITE_SUBSET_UNIONS_DIRECTED_EQ THEN
       ASM_MESON_TAC[SUBSET_REFL]`. -/
   FINITE_SUBSET_UNIONS_CHAIN_EQ : thm
-  /-- `FINITE_SUBSET_UNIONS_CHAIN` (sets.ml 1789):
+  /-- `FINITE_SUBSET_UNIONS_CHAIN` (sets.ml 1802):
       `MESON_TAC[FINITE_SUBSET_UNIONS_CHAIN_EQ]`. -/
   FINITE_SUBSET_UNIONS_CHAIN : thm
   deriving Inhabited
@@ -3163,10 +3181,10 @@ def setupSetsFinite [HolBase] (S : SetsCore) (P : SetsProps)
 
 /- ---------------------------------------------------------------------- -/
 /- Recursion over finite sets; based on Ching-Tsun's code (archive 713).  -/
-/-   (sets.ml 1797-1988)                                                  -/
+/-   (sets.ml 1810-2001)                                                  -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The recursion-over-finite-sets block of sets.ml 1799-1988, credited in
+/-- The recursion-over-finite-sets block of sets.ml 1812-2001, credited in
     the OCaml verbatim to "Ching-Tsun's code (archive 713)".  The auxiliary
     relation `FINREC f b s a n` (a `new_recursive_definition` over `num`) says
     `a` is the result of folding `f` over the `n`-element set `s` from base
@@ -3188,60 +3206,60 @@ def setupSetsFinite [HolBase] (S : SetsCore) (P : SetsProps)
     closures that bind the `Except`-returning `B.SPEC`/`B.CONJUNCT1`/
     `MATCH_MP` before handing on. -/
 structure SetsRecursion where
-  /-- `FINREC` (sets.ml 1800): the `num`-indexed fold relation, defined by
+  /-- `FINREC` (sets.ml 1813): the `num`-indexed fold relation, defined by
       `new_recursive_definition num_RECURSION` with a `0` and a `SUC n`
       clause. -/
   FINREC : thm
-  /-- `FINREC_1_LEMMA` (sets.ml 1807): `FINREC f b s a (SUC 0) <=> ?x. s = {x}
+  /-- `FINREC_1_LEMMA` (sets.ml 1820): `FINREC f b s a (SUC 0) <=> ?x. s = {x}
       /\ a = f x b`.  `REWRITE_TAC[FINREC] THEN REPEAT GEN_TAC THEN AP_TERM_TAC
       THEN ABS_TAC THEN SET_TAC[]`. -/
   FINREC_1_LEMMA : thm
-  /-- `FINREC_SUC_LEMMA` (sets.ml 1812): from a `(SUC n)`-fold, deleting any
+  /-- `FINREC_SUC_LEMMA` (sets.ml 1825): from a `(SUC n)`-fold, deleting any
       member gives an `n`-fold.  A local set-lemma `lem` then
       `INDUCT_TAC THENL [..; ..]` (width 2), with the step branch built from
       `GEN_REWRITE_TAC LAND_CONV [FINREC]`, `X_CHOOSE_THEN`, `ANTE_RES_THEN
       (MP_TAC o SPEC x)` and an inner `CONJ_TAC THENL [..; ..]`. -/
   FINREC_SUC_LEMMA : thm
-  /-- `FINREC_UNIQUE_LEMMA` (sets.ml 1843): the fold result and length are
+  /-- `FINREC_UNIQUE_LEMMA` (sets.ml 1856): the fold result and length are
       unique.  `INDUCT_TAC THEN INDUCT_TAC THENL [..;..;..;..]` (width 4); the
       three base branches are `REWRITE_TAC[FINREC] THEN MESON_TAC[NOT_IN_EMPTY]`
       and the step branch uses `IMP_RES_THEN ASSUME_TAC FINREC_SUC_LEMMA` and a
       `DISCH_THEN(fun th -> MP_TAC(CONJUNCT1 th) THEN MP_TAC th)`. -/
   FINREC_UNIQUE_LEMMA : thm
-  /-- `FINREC_EXISTS_LEMMA` (sets.ml 1859): every finite set has SOME fold.  A
+  /-- `FINREC_EXISTS_LEMMA` (sets.ml 1872): every finite set has SOME fold.  A
       local `lem`, then `MATCH_MP_TAC FINITE_INDUCT_STRONG THEN REPEAT STRIP_TAC
       THENL [..; ..]` (width 2); the step supplies `MATCH_MP lem th` inside a
       `FIRST_ASSUM`. -/
   FINREC_EXISTS_LEMMA : thm
-  /-- `FINREC_FUN_LEMMA` (sets.ml 1869): a general existence+uniqueness to a
+  /-- `FINREC_FUN_LEMMA` (sets.ml 1882): a general existence+uniqueness to a
       function extractor.  `EXISTS_TAC` the choice term, then `EQ_TAC THENL
       [MATCH_MP_TAC SELECT_UNIQUE ..; .. CONV_TAC SELECT_CONV ..]` (width 2). -/
   FINREC_FUN_LEMMA : thm
-  /-- `FINREC_FUN` (sets.ml 1880): under commutativity there is `g` with
+  /-- `FINREC_FUN` (sets.ml 1893): under commutativity there is `g` with
       `g {} = b` and `g (INSERT)` deleting.  Chains `FINREC_UNIQUE_LEMMA`,
       `FINREC_EXISTS_LEMMA` and `FINREC_FUN_LEMMA`, then a `CONJ_TAC THENL`
       (width 2) with an inner `INDUCT_TAC THENL` (width 2) and a
       `SUBGOAL_THEN .. SUBST1_TAC THENL` (width 2) resting on
       `FINITE_SUBSET`. -/
   FINREC_FUN : thm
-  /-- `SET_RECURSION_LEMMA` (sets.ml 1917): recasts `FINREC_FUN` in `INSERT`
+  /-- `SET_RECURSION_LEMMA` (sets.ml 1930): recasts `FINREC_FUN` in `INSERT`
       form with the `if x IN s` guard.  `COND_CASES_TAC THEN ASM_REWRITE_TAC[]
       THEN DISCH_TAC THENL [.. GSYM ABSORPTION ..; .. SUBGOAL_THEN ..]`
       (width 2). -/
   SET_RECURSION_LEMMA : thm
-  /-- `ITSET` (sets.ml 1936): the iterated-set function, `new_definition`
+  /-- `ITSET` (sets.ml 1949): the iterated-set function, `new_definition`
       selecting (by `@g`) the unique `g` characterised by
       `SET_RECURSION_LEMMA`. -/
   ITSET : thm
-  /-- `FINITE_RECURSION` (sets.ml 1943): `ITSET`'s defining clauses.
+  /-- `FINITE_RECURSION` (sets.ml 1956): `ITSET`'s defining clauses.
       `REWRITE_TAC[ITSET] THEN CONV_TAC SELECT_CONV THEN MATCH_MP_TAC
       SET_RECURSION_LEMMA THEN ASM_REWRITE_TAC[]`. -/
   FINITE_RECURSION : thm
-  /-- `FINITE_RECURSION_DELETE` (sets.ml 1955): the delete-form recursion.
+  /-- `FINITE_RECURSION_DELETE` (sets.ml 1968): the delete-form recursion.
       `MATCH_MP FINITE_RECURSION`, then `ASM_CASES_TAC x IN s THENL [..; ..]`
       (width 2) using `FINITE_DELETE_IMP`. -/
   FINITE_RECURSION_DELETE : thm
-  /-- `ITSET_EQ` (sets.ml 1974): `ITSET` respects pointwise-equal commuting
+  /-- `ITSET_EQ` (sets.ml 1987): `ITSET` respects pointwise-equal commuting
       functions.  `ONCE_REWRITE_TAC[T.IMP_CONJ] THEN REWRITE_TAC
       [RIGHT_FORALL_IMP_THM] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
       SIMP_TAC[FINITE_RECURSION; NOT_IN_EMPTY; IN_INSERT] THEN ..`. -/
@@ -3475,11 +3493,11 @@ def setupSetsRecursion [HolBase] (S : SetsCore) (P : SetsProps)
 
 /- ---------------------------------------------------------------------- -/
 /- Cardinality, HAS_SIZE, and the HAS_SIZE numeral expansion.             -/
-/- (sets.ml 1989-2243)                                                    -/
+/- (sets.ml 2002-2256)                                                    -/
 /- ---------------------------------------------------------------------- -/
 
 /-- `let rec EXISTS_HAS_SIZE_AND_CONV tm = ...` inside HAS_SIZE_CONV
-    (sets.ml 2221). -/
+    (sets.ml 2234). -/
 partial def existsHasSizeAndConv [HolBase] (num_CONV qconv_0 qconv_1 : ioconv) :
     ioconv := fun tm =>
   (qconv_0 ORELSEC
@@ -3488,78 +3506,78 @@ partial def existsHasSizeAndConv [HolBase] (num_CONV qconv_0 qconv_1 : ioconv) :
     BINDER_CONV (existsHasSizeAndConv num_CONV qconv_0 qconv_1))) tm
 
 /-- `let rec NOT_IN_INSERT_CONV tm = ...` inside HAS_SIZE_CONV
-    (sets.ml 2226). -/
+    (sets.ml 2239). -/
 partial def notInInsertConv [HolBase] (rconv_0 rconv_1 : ioconv) : ioconv :=
   fun tm =>
   ((rconv_0 THENC notInInsertConv rconv_0 rconv_1) ORELSEC
    (rconv_1 THENC RAND_CONV (notInInsertConv rconv_0 rconv_1)) ORELSEC
    ALL_CONV) tm
 
-/-- The `CARD`/`HAS_SIZE` bundle (sets.ml 1991-2243): finite cardinality,
+/-- The `CARD`/`HAS_SIZE` bundle (sets.ml 2004-2256): finite cardinality,
     its basic clauses, the delete-choice induction principle, the relational
     `HAS_SIZE` predicate with its rewrite form, and the `HAS_SIZE_CONV`
     numeral expansion (returned as an `ioconv`, not a theorem). -/
 structure SetsCard where
-  /-- `CARD` (sets.ml 1992): `CARD s = ITSET (\x n. SUC n) s 0`, an injected
+  /-- `CARD` (sets.ml 2005): `CARD s = ITSET (\x n. SUC n) s 0`, an injected
       `new_definition`. -/
   CARD : thm
-  /-- `CARD_CLAUSES` (sets.ml 1995): `CARD {} = 0` and the `INSERT` step.
+  /-- `CARD_CLAUSES` (sets.ml 2008): `CARD {} = 0` and the `INSERT` step.
       `MP_TAC(ISPECL [..] FINITE_RECURSION) THEN REWRITE_TAC[CARD]`. -/
   CARD_CLAUSES : thm
-  /-- `CARD_UNION` (sets.ml 2003): cardinality is additive on disjoint finite
+  /-- `CARD_UNION` (sets.ml 2016): cardinality is additive on disjoint finite
       sets.  A `TAUT`/`RIGHT_FORALL_IMP_THM` reshuffle, `FINITE_INDUCT_STRONG`,
       then THREE `THENL`s of width 2 (`SUBGOAL_THEN .. SUBST1_TAC`,
       `SUBGOAL_THEN .. STRIP_ASSUME_TAC`, `SUBGOAL_THEN ~(x IN ..)
       ASSUME_TAC`). -/
   CARD_UNION : thm
-  /-- `CARD_DELETE` (sets.ml 2029).  `COND_CASES_TAC THENL [..; ..]` (width 2);
+  /-- `CARD_DELETE` (sets.ml 2042).  `COND_CASES_TAC THENL [..; ..]` (width 2);
       branch 1 uses `GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [th]`. -/
   CARD_DELETE : thm
-  /-- `CARD_UNION_EQ` (sets.ml 2039): `MESON_TAC[CARD_UNION; FINITE_SUBSET;
+  /-- `CARD_UNION_EQ` (sets.ml 2052): `MESON_TAC[CARD_UNION; FINITE_SUBSET;
       SUBSET_UNION]`. -/
   CARD_UNION_EQ : thm
-  /-- `CARD_DIFF` (sets.ml 2045): `MATCH_MP_TAC(ARITH_RULE ..) THEN
+  /-- `CARD_DIFF` (sets.ml 2058): `MATCH_MP_TAC(ARITH_RULE ..) THEN
       MATCH_MP_TAC CARD_UNION_EQ THEN ASM_SIMP_TAC[] THEN ASM SET_TAC[]`. -/
   CARD_DIFF : thm
-  /-- `CARD_EQ_0` (sets.ml 2051): `FINITE_INDUCT_STRONG` then
+  /-- `CARD_EQ_0` (sets.ml 2064): `FINITE_INDUCT_STRONG` then
       `SIMP_TAC[CARD_CLAUSES; NOT_INSERT_EMPTY; NOT_SUC]`. -/
   CARD_EQ_0 : thm
-  /-- `CARD_SING` (sets.ml 2056): `CARD {a} = 1`. -/
+  /-- `CARD_SING` (sets.ml 2069): `CARD {a} = 1`. -/
   CARD_SING : thm
-  /-- `CARD_LE_2` (sets.ml 2060): `CARD{a,b} <= 2`. -/
+  /-- `CARD_LE_2` (sets.ml 2073): `CARD{a,b} <= 2`. -/
   CARD_LE_2 : thm
-  /-- `CARD_LE_3` (sets.ml 2066): `CARD{a,b,c} <= 3`. -/
+  /-- `CARD_LE_3` (sets.ml 2079): `CARD{a,b,c} <= 3`. -/
   CARD_LE_3 : thm
-  /-- `CARD_LE_4` (sets.ml 2072): `CARD{a,b,c,d} <= 4`. -/
+  /-- `CARD_LE_4` (sets.ml 2085): `CARD{a,b,c,d} <= 4`. -/
   CARD_LE_4 : thm
-  /-- `FINITE_INDUCT_DELETE` (sets.ml 2082): induction choosing the deleted
+  /-- `FINITE_INDUCT_DELETE` (sets.ml 2095): induction choosing the deleted
       element.  `WF_INDUCT_TAC \`CARD(s:A->bool)\``, no top-level `THENL`. -/
   FINITE_INDUCT_DELETE : thm
-  /-- `HAS_SIZE` (sets.ml 2100): `s HAS_SIZE n <=> FINITE s /\ CARD s = n`, an
+  /-- `HAS_SIZE` (sets.ml 2113): `s HAS_SIZE n <=> FINITE s /\ CARD s = n`, an
       injected `new_definition`. -/
   HAS_SIZE : thm
-  /-- `HAS_SIZE_CARD` (sets.ml 2103): `SIMP_TAC[HAS_SIZE]`. -/
+  /-- `HAS_SIZE_CARD` (sets.ml 2116): `SIMP_TAC[HAS_SIZE]`. -/
   HAS_SIZE_CARD : thm
-  /-- `HAS_SIZE_0` (sets.ml 2107): `s HAS_SIZE 0 <=> s = {}`. -/
+  /-- `HAS_SIZE_0` (sets.ml 2120): `s HAS_SIZE 0 <=> s = {}`. -/
   HAS_SIZE_0 : thm
-  /-- `HAS_SIZE_SUC` (sets.ml 2121): the delete characterisation of `SUC n`. -/
+  /-- `HAS_SIZE_SUC` (sets.ml 2134): the delete characterisation of `SUC n`. -/
   HAS_SIZE_SUC : thm
-  /-- `HAS_SIZE_UNION` (sets.ml 2144): `SIMP_TAC[HAS_SIZE; FINITE_UNION;
+  /-- `HAS_SIZE_UNION` (sets.ml 2157): `SIMP_TAC[HAS_SIZE; FINITE_UNION;
       DISJOINT; CARD_UNION]`. -/
   HAS_SIZE_UNION : thm
-  /-- `HAS_SIZE_DIFF` (sets.ml 2150): `SIMP_TAC[HAS_SIZE; FINITE_DIFF;
+  /-- `HAS_SIZE_DIFF` (sets.ml 2163): `SIMP_TAC[HAS_SIZE; FINITE_DIFF;
       CARD_DIFF]`. -/
   HAS_SIZE_DIFF : thm
-  /-- `HAS_SIZE_UNIONS` (sets.ml 2156): a disjoint union of `n`-sized sets has
+  /-- `HAS_SIZE_UNIONS` (sets.ml 2169): a disjoint union of `n`-sized sets has
       size `m*n`.  `GEN_REWRITE_TAC (funpow 4 BINDER_CONV o funpow 2 LAND_CONV)
       [HAS_SIZE]`, `FINITE_INDUCT_STRONG`, `CONJ_TAC THENL [..; ALL_TAC]`. -/
   HAS_SIZE_UNIONS : thm
-  /-- `FINITE_HAS_SIZE` (sets.ml 2184): `REWRITE_TAC[HAS_SIZE]`. -/
+  /-- `FINITE_HAS_SIZE` (sets.ml 2197): `REWRITE_TAC[HAS_SIZE]`. -/
   FINITE_HAS_SIZE : thm
-  /-- `HAS_SIZE_CLAUSES` (sets.ml 2192): the rewrite form.  A local
+  /-- `HAS_SIZE_CLAUSES` (sets.ml 2205): the rewrite form.  A local
       `lemma = SET_RULE ..`, then `EQ_TAC THENL [..; ..]` (width 2). -/
   HAS_SIZE_CLAUSES : thm
-  /-- `HAS_SIZE_CONV` (sets.ml 2206): a CONVERSION producing the explicit
+  /-- `HAS_SIZE_CONV` (sets.ml 2219): a CONVERSION producing the explicit
       expansion of `s HAS_SIZE n` for a NUMERAL n.  Machinery, not a theorem;
       returned as an `ioconv`. -/
   HAS_SIZE_CONV : ioconv
@@ -3852,7 +3870,7 @@ def setupSetsCard [HolBase] (S : SetsCore)
 
 /- ---------------------------------------------------------------------- -/
 /- Various useful lemmas about cardinalities of unions etc.               -/
-/- (sets.ml 2244-2652)                                                    -/
+/- (sets.ml 2257-2665)                                                    -/
 /- ---------------------------------------------------------------------- -/
 
 /-- Cardinality lemmas for unions and images, the "choose a smaller subset"
@@ -3862,126 +3880,126 @@ def setupSetsCard [HolBase] (S : SetsCore)
     `HAS_SIZE`, `HAS_SIZE_0`, `HAS_SIZE_SUC`, `HAS_SIZE_UNION`,
     `HAS_SIZE_CONV`). -/
 structure SetsCard2 where
-  /-- `CARD_SUBSET_EQ` (sets.ml 2247): `FINITE b /\ a SUBSET b /\
+  /-- `CARD_SUBSET_EQ` (sets.ml 2260): `FINITE b /\ a SUBSET b /\
       CARD a = CARD b ==> a = b`.  `CARD_UNION` on `a`,`b DIFF a`, then TWO
       width-2 `SUBGOAL_THEN` `THENL`s and a `MP_TAC` one. -/
   CARD_SUBSET_EQ : thm
-  /-- `CARD_SUBSET` (sets.ml 2268): `a SUBSET b /\ FINITE b ==>
+  /-- `CARD_SUBSET` (sets.ml 2281): `a SUBSET b /\ FINITE b ==>
       CARD a <= CARD b`.  Two width-2 `SUBGOAL_THEN` `THENL`s; the second
       has an inner `REPEAT CONJ_TAC THENL [..;..;..]` of width 3. -/
   CARD_SUBSET : thm
-  /-- `CARD_SUBSET_LE` (sets.ml 2284): `MESON[CARD_SUBSET; CARD_SUBSET_EQ;
+  /-- `CARD_SUBSET_LE` (sets.ml 2297): `MESON[CARD_SUBSET; CARD_SUBSET_EQ;
       LE_ANTISYM]`. -/
   CARD_SUBSET_LE : thm
-  /-- `SUBSET_CARD_EQ` (sets.ml 2288): `MESON[CARD_SUBSET_EQ; LE_ANTISYM;
+  /-- `SUBSET_CARD_EQ` (sets.ml 2301): `MESON[CARD_SUBSET_EQ; LE_ANTISYM;
       CARD_SUBSET]`. -/
   SUBSET_CARD_EQ : thm
-  /-- `FINITE_CARD_LE_SUBSET` (sets.ml 2292): `MESON[FINITE_SUBSET;
+  /-- `FINITE_CARD_LE_SUBSET` (sets.ml 2305): `MESON[FINITE_SUBSET;
       CARD_SUBSET; LE_TRANS]`. -/
   FINITE_CARD_LE_SUBSET : thm
-  /-- `CARD_PSUBSET` (sets.ml 2298): `a PSUBSET b /\ FINITE b ==>
+  /-- `CARD_PSUBSET` (sets.ml 2311): `a PSUBSET b /\ FINITE b ==>
       CARD a < CARD b`.  `SET_RULE` rewrite, `LET_TRANS`, no top-level
       `THENL`. -/
   CARD_PSUBSET : thm
-  /-- `CARD_PSUBSET_IMP` (sets.ml 2309): `REWRITE_TAC[PSUBSET] THEN
+  /-- `CARD_PSUBSET_IMP` (sets.ml 2322): `REWRITE_TAC[PSUBSET] THEN
       MESON_TAC[]`. -/
   CARD_PSUBSET_IMP : thm
-  /-- `CARD_PSUBSET_EQ` (sets.ml 2313): `MESON[CARD_PSUBSET_IMP; CARD_PSUBSET;
+  /-- `CARD_PSUBSET_EQ` (sets.ml 2326): `MESON[CARD_PSUBSET_IMP; CARD_PSUBSET;
       LT_REFL]`. -/
   CARD_PSUBSET_EQ : thm
-  /-- `CARD_UNION_LE` (sets.ml 2317): `CARD(s UNION t) <= CARD s + CARD t`.
+  /-- `CARD_UNION_LE` (sets.ml 2330): `CARD(s UNION t) <= CARD s + CARD t`.
       `LE_TRANS`, `ONCE_REWRITE_TAC[SET_RULE ..]`, `CARD_UNION`.  No
       top-level `THENL`. -/
   CARD_UNION_LE : thm
-  /-- `FINITE_CARD_LE_UNION` (sets.ml 2327): `MESON[FINITE_UNION;
+  /-- `FINITE_CARD_LE_UNION` (sets.ml 2340): `MESON[FINITE_UNION;
       CARD_UNION_LE; LE_ADD2; LE_TRANS]`. -/
   FINITE_CARD_LE_UNION : thm
-  /-- `CARD_UNIONS_LE` (sets.ml 2334): `CARD(UNIONS {t x | x IN s}) <= m*n`.
+  /-- `CARD_UNIONS_LE` (sets.ml 2347): `CARD(UNIONS {t x | x IN s}) <= m*n`.
       `GEN_REWRITE_TAC (funpow 4 BINDER_CONV o funpow 2 LAND_CONV) [HAS_SIZE]`,
       `FINITE_INDUCT_STRONG`, ONE `CONJ_TAC THENL [..;..]` of width 2. -/
   CARD_UNIONS_LE : thm
-  /-- `CARD_UNION_GEN` (sets.ml 2358): `CARD(s UNION t) =
+  /-- `CARD_UNION_GEN` (sets.ml 2371): `CARD(s UNION t) =
       (CARD s + CARD t) - CARD(s INTER t)`.  No top-level `THENL`. -/
   CARD_UNION_GEN : thm
-  /-- `CARD_UNION_OVERLAP_EQ` (sets.ml 2369): `CARD(s UNION t) =
+  /-- `CARD_UNION_OVERLAP_EQ` (sets.ml 2382): `CARD(s UNION t) =
       CARD s + CARD t <=> s INTER t = {}`.  No top-level `THENL`. -/
   CARD_UNION_OVERLAP_EQ : thm
-  /-- `CARD_UNION_OVERLAP` (sets.ml 2378): `SIMP_TAC[GSYM
+  /-- `CARD_UNION_OVERLAP` (sets.ml 2391): `SIMP_TAC[GSYM
       CARD_UNION_OVERLAP_EQ] THEN ARITH_TAC`. -/
   CARD_UNION_OVERLAP : thm
-  /-- `CARD_IMAGE_INJ` (sets.ml 2388): `CARD(IMAGE f s) = CARD s` for injective
+  /-- `CARD_IMAGE_INJ` (sets.ml 2401): `CARD(IMAGE f s) = CARD s` for injective
       `f`.  `TAUT` reshuffle, `FINITE_INDUCT_STRONG`, then a
       `COND_CASES_TAC THEN ASM_MESON_TAC[IN_INSERT]`. -/
   CARD_IMAGE_INJ : thm
-  /-- `HAS_SIZE_IMAGE_INJ` (sets.ml 2399): `SIMP_TAC[HAS_SIZE; FINITE_IMAGE]
+  /-- `HAS_SIZE_IMAGE_INJ` (sets.ml 2412): `SIMP_TAC[HAS_SIZE; FINITE_IMAGE]
       THEN MESON_TAC[CARD_IMAGE_INJ]`. -/
   HAS_SIZE_IMAGE_INJ : thm
-  /-- `CARD_IMAGE_LE` (sets.ml 2405): `CARD(IMAGE f s) <= CARD s`.
+  /-- `CARD_IMAGE_LE` (sets.ml 2418): `CARD(IMAGE f s) <= CARD s`.
       `FINITE_INDUCT_STRONG`, `COND_CASES_TAC`, `ARITH_TAC`. -/
   CARD_IMAGE_LE : thm
-  /-- `FINITE_CARD_LE_IMAGE` (sets.ml 2412): `MESON[CARD_IMAGE_LE; LE_TRANS;
+  /-- `FINITE_CARD_LE_IMAGE` (sets.ml 2425): `MESON[CARD_IMAGE_LE; LE_TRANS;
       FINITE_IMAGE]`. -/
   FINITE_CARD_LE_IMAGE : thm
-  /-- `CARD_IMAGE_INJ_EQ` (sets.ml 2417): a "unique preimage" characterisation.
+  /-- `CARD_IMAGE_INJ_EQ` (sets.ml 2430): a "unique preimage" characterisation.
       ONE width-2 `SUBGOAL_THEN .. SUBST1_TAC THENL [..;..]`. -/
   CARD_IMAGE_INJ_EQ : thm
-  /-- `CARD_SUBSET_IMAGE` (sets.ml 2428): `MESON[LE_TRANS; FINITE_IMAGE;
+  /-- `CARD_SUBSET_IMAGE` (sets.ml 2441): `MESON[LE_TRANS; FINITE_IMAGE;
       CARD_IMAGE_LE; CARD_SUBSET]`. -/
   CARD_SUBSET_IMAGE : thm
-  /-- `HAS_SIZE_IMAGE_INJ_EQ` (sets.ml 2432): `(IMAGE f s) HAS_SIZE n <=>
+  /-- `HAS_SIZE_IMAGE_INJ_EQ` (sets.ml 2445): `(IMAGE f s) HAS_SIZE n <=>
       s HAS_SIZE n` for injective `f`.  A `TAUT` split via `CONJ_TAC THENL
       [..;..]` (width 2). -/
   HAS_SIZE_IMAGE_INJ_EQ : thm
-  /-- `CARD_IMAGE_EQ_INJ` (sets.ml 2445): `CARD(IMAGE f s) = CARD s <=>`
+  /-- `CARD_IMAGE_EQ_INJ` (sets.ml 2458): `CARD(IMAGE f s) = CARD s <=>`
       injectivity.  `EQ_TAC THENL [..;..]`, then a `SUBGOAL_THEN .. SUBST1_TAC
       THENL [ASM SET_TAC[]; REWRITE_TAC[]]` (width 2). -/
   CARD_IMAGE_EQ_INJ : thm
-  /-- `EXISTS_SMALL_SUBSET_IMAGE_INJ` (sets.ml 2464): reindex a small subset of
+  /-- `EXISTS_SMALL_SUBSET_IMAGE_INJ` (sets.ml 2477): reindex a small subset of
       `IMAGE f s` by an injective-on subset of `s`.  A `TAUT` reshuffle,
       `EXISTS_SUBSET_IMAGE_INJ`, `AP_TERM_TAC THEN ABS_TAC`, `MESON`. -/
   EXISTS_SMALL_SUBSET_IMAGE_INJ : thm
-  /-- `FORALL_SMALL_SUBSET_IMAGE_INJ` (sets.ml 2478): the `!`-dual, via
+  /-- `FORALL_SMALL_SUBSET_IMAGE_INJ` (sets.ml 2491): the `!`-dual, via
       `(!t. p) <=> ~(?t. ~p)` and `EXISTS_SMALL_SUBSET_IMAGE_INJ`. -/
   FORALL_SMALL_SUBSET_IMAGE_INJ : thm
-  /-- `EXISTS_SMALL_SUBSET_IMAGE` (sets.ml 2488): the non-injective form.
+  /-- `EXISTS_SMALL_SUBSET_IMAGE` (sets.ml 2501): the non-injective form.
       `EQ_TAC THENL [..;..]` (width 2). -/
   EXISTS_SMALL_SUBSET_IMAGE : thm
-  /-- `FORALL_SMALL_SUBSET_IMAGE` (sets.ml 2497): the `!`-dual. -/
+  /-- `FORALL_SMALL_SUBSET_IMAGE` (sets.ml 2510): the `!`-dual. -/
   FORALL_SMALL_SUBSET_IMAGE : thm
-  /-- `CARD_IMAGE_LE2` (sets.ml 2505): `CARD(IMAGE f s) <= CARD(IMAGE g s)`
+  /-- `CARD_IMAGE_LE2` (sets.ml 2518): `CARD(IMAGE f s) <= CARD(IMAGE g s)`
       when `g x = g y ==> f x = f y`.  `FUNCTION_FACTORS_LEFT_GEN`,
       `TRANS_TAC LE_TRANS`, `IMAGE_o`. -/
   CARD_IMAGE_LE2 : thm
-  /-- `CARD_IMAGE_LT2` (sets.ml 2516): the strict version.  ONE width-2
+  /-- `CARD_IMAGE_LT2` (sets.ml 2529): the strict version.  ONE width-2
       `SUBGOAL_THEN .. SUBST1_TAC THENL [ASM SET_TAC[]; ALL_TAC]`. -/
   CARD_IMAGE_LT2 : thm
-  /-- `CHOOSE_SUBSET_STRONG` (sets.ml 2533): `(FINITE s ==> n <= CARD s) ==>
+  /-- `CHOOSE_SUBSET_STRONG` (sets.ml 2546): `(FINITE s ==> n <= CARD s) ==>
       ?t. t SUBSET s /\ t HAS_SIZE n`.  `INDUCT_TAC THEN .. THENL [..;ALL_TAC]`,
       `SET_PROVE_CASES`, then `COND_CASES_TAC`.  Width-2 top `THENL`. -/
   CHOOSE_SUBSET_STRONG : thm
-  /-- `CHOOSE_SUBSET_EQ` (sets.ml 2552): `(FINITE s ==> n <= CARD s) <=>
+  /-- `CHOOSE_SUBSET_EQ` (sets.ml 2565): `(FINITE s ==> n <= CARD s) <=>
       (?t. t SUBSET s /\ t HAS_SIZE n)`.  `EQ_TAC`, `TRANS_TAC LE_TRANS`. -/
   CHOOSE_SUBSET_EQ : thm
-  /-- `CHOOSE_SUBSET` (sets.ml 2560): `MESON[CHOOSE_SUBSET_STRONG]`. -/
+  /-- `CHOOSE_SUBSET` (sets.ml 2573): `MESON[CHOOSE_SUBSET_STRONG]`. -/
   CHOOSE_SUBSET : thm
-  /-- `CHOOSE_SUBSET_BETWEEN` (sets.ml 2564): interpolate a size-`n` set between
+  /-- `CHOOSE_SUBSET_BETWEEN` (sets.ml 2577): interpolate a size-`n` set between
       `s` and `u`.  `CHOOSE_SUBSET_STRONG` on `n - CARD s`,`u DIFF s`;
       `ANTS_TAC THENL [..;..]`, inner `SUBGOAL_THEN .. SUBST1_TAC THENL
       [..;..]`. -/
   CHOOSE_SUBSET_BETWEEN : thm
-  /-- `CARD_LE_UNIONS_CHAIN` (sets.ml 2585): a chain of `<= n`-sized sets has
+  /-- `CARD_LE_UNIONS_CHAIN` (sets.ml 2598): a chain of `<= n`-sized sets has
       union `<= n`.  `GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM]`, `CHOOSE_SUBSET_EQ`,
       `MONO_EXISTS`, `FINITE_SUBSET_UNIONS_CHAIN`.  No top-level `THENL`. -/
   CARD_LE_UNIONS_CHAIN : thm
-  /-- `CARD_LE_1` (sets.ml 2603): `FINITE s /\ CARD s <= 1 <=> ?a. s SUBSET {a}`.
+  /-- `CARD_LE_1` (sets.ml 2616): `FINITE s /\ CARD s <= 1 <=> ?a. s SUBSET {a}`.
       `CONV_TAC(ONCE_DEPTH_CONV HAS_SIZE_CONV) THEN SET_TAC[]`. -/
   CARD_LE_1 : thm
-  /-- `INVOLUTION_EVEN_NOFIXPOINTS` (sets.ml 2613): a fixed-point-free involution
+  /-- `INVOLUTION_EVEN_NOFIXPOINTS` (sets.ml 2626): a fixed-point-free involution
       on a finite set forces `EVEN(CARD s)`.  `ABBREV_TAC`, `num_WF`,
       `SET_PROVE_CASES`, nested `ASM_CASES_TAC`; the final `CONJ_TAC THENL
       [ASM_ARITH_TAC; ASM SET_TAC[]]` is width 2. -/
   INVOLUTION_EVEN_NOFIXPOINTS : thm
-  /-- `INVOLUTION_EVEN_FIXPOINTS` (sets.ml 2638): for an involution the parity
+  /-- `INVOLUTION_EVEN_FIXPOINTS` (sets.ml 2651): for an involution the parity
       of the fixed-point set matches the parity of `CARD s`.  `TRANS_TAC
       EQ_TRANS`, `CONJ_TAC THENL [ALL_TAC; ..]` (width 2),
       `INVOLUTION_EVEN_NOFIXPOINTS`. -/
@@ -4474,120 +4492,123 @@ def setupSetsCard2 [HolBase] (S : SetsCore)
     INVOLUTION_EVEN_NOFIXPOINTS, INVOLUTION_EVEN_FIXPOINTS }
 
 /- ---------------------------------------------------------------------- -/
-/- Cardinality of products, then the CROSS operator.  (sets.ml 2653-2924) -/
+/- Cardinality of products, then the CROSS operator.  (sets.ml 2666-2941) -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `parse_as_infix("CROSS",(22,"right"))` (sets.ml 2732).  Session runs it
+/-- `parse_as_infix("CROSS",(22,"right"))` (sets.ml 2745).  Session runs it
     once, before `setupSetsCross`. -/
 def setupSetsCrossInfix : IO Unit :=
   HolCore.Printer.parse_as_infix ("CROSS", (22, "right"))
 
-/-- The cardinality-of-product theorems (sets.ml 2655-2728) and the Cartesian
-    product operator `CROSS` with its algebra (sets.ml 2731-2924). -/
+/-- The cardinality-of-product theorems (sets.ml 2668-2741) and the Cartesian
+    product operator `CROSS` with its algebra (sets.ml 2744-2941). -/
 structure SetsCross where
-  /-- `HAS_SIZE_PRODUCT_DEPENDENT` (sets.ml 2656): `s HAS_SIZE m /\
+  /-- `HAS_SIZE_PRODUCT_DEPENDENT` (sets.ml 2669): `s HAS_SIZE m /\
       (!x. x IN s ==> t(x) HAS_SIZE n) ==> {x,y | x IN s /\ y IN t(x)}
       HAS_SIZE (m*n)`.  `GEN_REWRITE_TAC (funpow 4 BINDER_CONV o funpow 2
       LAND_CONV) [HAS_SIZE]`, `FINITE_INDUCT_STRONG`, one width-2 `CONJ_TAC
       THENL [..;ALL_TAC]`. -/
   HAS_SIZE_PRODUCT_DEPENDENT : thm
-  /-- `FINITE_PRODUCT_DEPENDENT` (sets.ml 2684): `FINITE s /\
+  /-- `FINITE_PRODUCT_DEPENDENT` (sets.ml 2697): `FINITE s /\
       (!x. x IN s ==> FINITE(t x)) ==> FINITE {f x y | x IN s /\ y IN t x}`.
       `FINITE_SUBSET`, `FINITE_INDUCT_STRONG`; two width-2 `CONJ_TAC`/
       `SUBGOAL_THEN` `THENL`s. -/
   FINITE_PRODUCT_DEPENDENT : thm
-  /-- `FINITE_PRODUCT` (sets.ml 2711): `SIMP_TAC[FINITE_PRODUCT_DEPENDENT]`. -/
+  /-- `FINITE_PRODUCT` (sets.ml 2724): `SIMP_TAC[FINITE_PRODUCT_DEPENDENT]`. -/
   FINITE_PRODUCT : thm
-  /-- `CARD_PRODUCT` (sets.ml 2715): `CARD {x,y | x IN s /\ y IN t} =
+  /-- `CARD_PRODUCT` (sets.ml 2728): `CARD {x,y | x IN s /\ y IN t} =
       CARD s * CARD t`.  `MP_TAC(SPECL [..] HAS_SIZE_PRODUCT_DEPENDENT)`. -/
   CARD_PRODUCT : thm
-  /-- `HAS_SIZE_PRODUCT` (sets.ml 2723): `SIMP_TAC[HAS_SIZE; CARD_PRODUCT;
+  /-- `HAS_SIZE_PRODUCT` (sets.ml 2736): `SIMP_TAC[HAS_SIZE; CARD_PRODUCT;
       FINITE_PRODUCT]`. -/
   HAS_SIZE_PRODUCT : thm
-  /-- `CROSS` (sets.ml 2734, `new_definition`): `(s:A->bool) CROSS (t:B->bool)
+  /-- `CROSS` (sets.ml 2747, `new_definition`): `(s:A->bool) CROSS (t:B->bool)
       = {x,y | x IN s /\ y IN t}`.  Introduces the `CROSS` constant. -/
   CROSS : thm
-  /-- `IN_CROSS` (sets.ml 2737): `(x,y) IN (s CROSS t) <=> x IN s /\ y IN t`. -/
+  /-- `IN_CROSS` (sets.ml 2750): `(x,y) IN (s CROSS t) <=> x IN s /\ y IN t`. -/
   IN_CROSS : thm
-  /-- `HAS_SIZE_CROSS` (sets.ml 2741): `REWRITE_TAC[CROSS; HAS_SIZE_PRODUCT]`. -/
+  /-- `IN_CROSS_FST_SND` (sets.ml @2754): `p IN s CROSS t <=> FST p IN s /\
+      SND p IN t`.  `REWRITE_TAC[FORALL_PAIR_THM; IN_CROSS; FST; SND]`. -/
+  IN_CROSS_FST_SND : thm
+  /-- `HAS_SIZE_CROSS` (sets.ml 2758): `REWRITE_TAC[CROSS; HAS_SIZE_PRODUCT]`. -/
   HAS_SIZE_CROSS : thm
-  /-- `FINITE_CROSS` (sets.ml 2746): `SIMP_TAC[CROSS; FINITE_PRODUCT]`. -/
+  /-- `FINITE_CROSS` (sets.ml 2763): `SIMP_TAC[CROSS; FINITE_PRODUCT]`. -/
   FINITE_CROSS : thm
-  /-- `CARD_CROSS` (sets.ml 2750): `SIMP_TAC[CROSS; CARD_PRODUCT]`. -/
+  /-- `CARD_CROSS` (sets.ml 2767): `SIMP_TAC[CROSS; CARD_PRODUCT]`. -/
   CARD_CROSS : thm
-  /-- `CROSS_EQ_EMPTY` (sets.ml 2754): `s CROSS t = {} <=> s = {} \/ t = {}`. -/
+  /-- `CROSS_EQ_EMPTY` (sets.ml 2771): `s CROSS t = {} <=> s = {} \/ t = {}`. -/
   CROSS_EQ_EMPTY : thm
-  /-- `CROSS_EMPTY` (sets.ml 2759): `REWRITE_TAC[CROSS_EQ_EMPTY]`. -/
+  /-- `CROSS_EMPTY` (sets.ml 2776): `REWRITE_TAC[CROSS_EQ_EMPTY]`. -/
   CROSS_EMPTY : thm
-  /-- `CROSS_SING` (sets.ml 2763): `{x} CROSS {y} = {(x,y)}`. -/
+  /-- `CROSS_SING` (sets.ml 2780): `{x} CROSS {y} = {(x,y)}`. -/
   CROSS_SING : thm
-  /-- `CROSS_UNIV` (sets.ml 2767): `(:A) CROSS (:B) = (:A#B)`. -/
+  /-- `CROSS_UNIV` (sets.ml 2784): `(:A) CROSS (:B) = (:A#B)`. -/
   CROSS_UNIV : thm
-  /-- `FINITE_CROSS_EQ` (sets.ml 2771): `FINITE(s CROSS t) <=> s = {} \/
+  /-- `FINITE_CROSS_EQ` (sets.ml 2788): `FINITE(s CROSS t) <=> s = {} \/
       t = {} \/ FINITE s /\ FINITE t`.  A width-2 `THENL` picking `FST`/`SND`
       `FINITE_IMAGE`, then `MATCH_MP_TAC(REWRITE_RULE[IMP_CONJ_ALT]
       FINITE_SUBSET)`. -/
   FINITE_CROSS_EQ : thm
-  /-- `INFINITE_CROSS_EQ` (sets.ml 2786): `REWRITE_TAC[INFINITE;
+  /-- `INFINITE_CROSS_EQ` (sets.ml 2803): `REWRITE_TAC[INFINITE;
       FINITE_CROSS_EQ] THEN MESON_TAC[FINITE_EMPTY]`. -/
   INFINITE_CROSS_EQ : thm
-  /-- `FINITE_CROSS_UNIV` (sets.ml 2792): `FINITE(:A#B) <=> FINITE(:A) /\
+  /-- `FINITE_CROSS_UNIV` (sets.ml 2809): `FINITE(:A#B) <=> FINITE(:A) /\
       FINITE(:B)`. -/
   FINITE_CROSS_UNIV : thm
-  /-- `INFINITE_CROSS_UNIV` (sets.ml 2796): `INFINITE(:A#B) <=> INFINITE(:A) \/
+  /-- `INFINITE_CROSS_UNIV` (sets.ml 2813): `INFINITE(:A#B) <=> INFINITE(:A) \/
       INFINITE(:B)`. -/
   INFINITE_CROSS_UNIV : thm
-  /-- `FINITE_UNIV_PAIR` (sets.ml 2801): `FINITE(:A#A) <=> FINITE(:A)`. -/
+  /-- `FINITE_UNIV_PAIR` (sets.ml 2818): `FINITE(:A#A) <=> FINITE(:A)`. -/
   FINITE_UNIV_PAIR : thm
-  /-- `INFINITE_UNIV_PAIR` (sets.ml 2805): `INFINITE(:A#A) <=> INFINITE(:A)`. -/
+  /-- `INFINITE_UNIV_PAIR` (sets.ml 2822): `INFINITE(:A#A) <=> INFINITE(:A)`. -/
   INFINITE_UNIV_PAIR : thm
-  /-- `FORALL_IN_CROSS` (sets.ml 2809): `(!z. z IN s CROSS t ==> P z) <=>
+  /-- `FORALL_IN_CROSS` (sets.ml 2826): `(!z. z IN s CROSS t ==> P z) <=>
       (!x y. x IN s /\ y IN t ==> P(x,y))`. -/
   FORALL_IN_CROSS : thm
-  /-- `EXISTS_IN_CROSS` (sets.ml 2814): `(?z. z IN s CROSS t /\ P z) <=>
+  /-- `EXISTS_IN_CROSS` (sets.ml 2831): `(?z. z IN s CROSS t /\ P z) <=>
       (?x y. x IN s /\ y IN t /\ P(x,y))`. -/
   EXISTS_IN_CROSS : thm
-  /-- `SUBSET_CROSS` (sets.ml 2819): `s CROSS t SUBSET s' CROSS t' <=>
+  /-- `SUBSET_CROSS` (sets.ml 2836): `s CROSS t SUBSET s' CROSS t' <=>
       s = {} \/ t = {} \/ s SUBSET s' /\ t SUBSET t'`. -/
   SUBSET_CROSS : thm
-  /-- `CROSS_MONO` (sets.ml 2826): `SIMP_TAC[SUBSET_CROSS]`. -/
+  /-- `CROSS_MONO` (sets.ml 2843): `SIMP_TAC[SUBSET_CROSS]`. -/
   CROSS_MONO : thm
-  /-- `CROSS_EQ` (sets.ml 2830): `s CROSS t = s' CROSS t' <=> ...`.
+  /-- `CROSS_EQ` (sets.ml 2847): `s CROSS t = s' CROSS t' <=> ...`.
       `REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ; SUBSET_CROSS] THEN SET_TAC[]`. -/
   CROSS_EQ : thm
-  /-- `IMAGE_FST_CROSS` (sets.ml 2836): `IMAGE FST (s CROSS t) =
+  /-- `IMAGE_FST_CROSS` (sets.ml 2853): `IMAGE FST (s CROSS t) =
       if t = {} then {} else s`.  `COND_CASES_TAC`, `EXISTS_IN_CROSS`. -/
   IMAGE_FST_CROSS : thm
-  /-- `IMAGE_SND_CROSS` (sets.ml 2844): `IMAGE SND (s CROSS t) =
+  /-- `IMAGE_SND_CROSS` (sets.ml 2861): `IMAGE SND (s CROSS t) =
       if s = {} then {} else t`. -/
   IMAGE_SND_CROSS : thm
-  /-- `IMAGE_PAIRED_CROSS` (sets.ml 2852): `IMAGE (\(x,y). f x,g y) (s CROSS t)
+  /-- `IMAGE_PAIRED_CROSS` (sets.ml 2869): `IMAGE (\(x,y). f x,g y) (s CROSS t)
       = (IMAGE f s) CROSS (IMAGE g t)`. -/
   IMAGE_PAIRED_CROSS : thm
-  /-- `CROSS_INTER` (sets.ml 2859): distributivity of `CROSS` over `INTER`
+  /-- `CROSS_INTER` (sets.ml 2876): distributivity of `CROSS` over `INTER`
       (both sides).  `REPEAT STRIP_TAC THEN CONV_TAC TAUT`. -/
   CROSS_INTER : thm
-  /-- `CROSS_UNION` (sets.ml 2867): distributivity over `UNION` (both
+  /-- `CROSS_UNION` (sets.ml 2884): distributivity over `UNION` (both
       sides). -/
   CROSS_UNION : thm
-  /-- `CROSS_DIFF` (sets.ml 2875): distributivity over `DIFF` (both sides). -/
+  /-- `CROSS_DIFF` (sets.ml 2892): distributivity over `DIFF` (both sides). -/
   CROSS_DIFF : thm
-  /-- `INTER_CROSS` (sets.ml 2883): `(s CROSS t) INTER (s' CROSS t') =
+  /-- `INTER_CROSS` (sets.ml 2900): `(s CROSS t) INTER (s' CROSS t') =
       (s INTER s') CROSS (t INTER t')`. -/
   INTER_CROSS : thm
-  /-- `CROSS_UNIONS_UNIONS` (sets.ml 2889, `fst` of `CONJ_PAIR o prove`):
+  /-- `CROSS_UNIONS_UNIONS` (sets.ml 2906, `fst` of `CONJ_PAIR o prove`):
       `(UNIONS f) CROSS (UNIONS g) = UNIONS {s CROSS t | s IN f /\ t IN g}`. -/
   CROSS_UNIONS_UNIONS : thm
-  /-- `CROSS_UNIONS` (sets.ml 2889, `snd` of `CONJ_PAIR o prove`): the two
+  /-- `CROSS_UNIONS` (sets.ml 2906, `snd` of `CONJ_PAIR o prove`): the two
       single-`UNIONS` distributivities of `CROSS` over `UNIONS`. -/
   CROSS_UNIONS : thm
-  /-- `CROSS_INTERS_INTERS` (sets.ml 2901, `fst` of `CONJ_PAIR o prove`):
+  /-- `CROSS_INTERS_INTERS` (sets.ml 2918, `fst` of `CONJ_PAIR o prove`):
       `(INTERS f) CROSS (INTERS g) = ...` (with the empty-family guards). -/
   CROSS_INTERS_INTERS : thm
-  /-- `CROSS_INTERS` (sets.ml 2901, `snd` of `CONJ_PAIR o prove`): the two
+  /-- `CROSS_INTERS` (sets.ml 2918, `snd` of `CONJ_PAIR o prove`): the two
       single-`INTERS` distributivities of `CROSS` over `INTERS`. -/
   CROSS_INTERS : thm
-  /-- `DISJOINT_CROSS` (sets.ml 2918): `DISJOINT (s CROSS t) (s' CROSS t') <=>
+  /-- `DISJOINT_CROSS` (sets.ml 2935): `DISJOINT (s CROSS t) (s' CROSS t') <=>
       DISJOINT s s' \/ DISJOINT t t'`. -/
   DISJOINT_CROSS : thm
   deriving Inhabited
@@ -4706,6 +4727,10 @@ def setupSetsCross [HolBase] (S : SetsCore)
   let IN_CROSS ← prove
    r"!(x:A) (y:B) s t. (x,y) IN (s CROSS t) <=> x IN s /\ y IN t"
    (REWRITE_TAC [CROSS, IN_ELIM_PAIR_THM])
+
+  let IN_CROSS_FST_SND ← prove
+   r"!(p:X#Y) s t. p IN s CROSS t <=> FST p IN s /\ SND p IN t"
+   (REWRITE_TAC [FORALL_PAIR_THM, IN_CROSS, FST, SND])
 
   let HAS_SIZE_CROSS ← prove
    r"!(s:A->bool) (t:B->bool) m n.
@@ -4892,7 +4917,7 @@ def setupSetsCross [HolBase] (S : SetsCore)
 
   return {
     HAS_SIZE_PRODUCT_DEPENDENT, FINITE_PRODUCT_DEPENDENT, FINITE_PRODUCT,
-    CARD_PRODUCT, HAS_SIZE_PRODUCT, CROSS, IN_CROSS, HAS_SIZE_CROSS,
+    CARD_PRODUCT, HAS_SIZE_PRODUCT, CROSS, IN_CROSS, IN_CROSS_FST_SND, HAS_SIZE_CROSS,
     FINITE_CROSS, CARD_CROSS, CROSS_EQ_EMPTY, CROSS_EMPTY, CROSS_SING,
     CROSS_UNIV, FINITE_CROSS_EQ, INFINITE_CROSS_EQ, FINITE_CROSS_UNIV,
     INFINITE_CROSS_UNIV, FINITE_UNIV_PAIR, INFINITE_UNIV_PAIR, FORALL_IN_CROSS,
@@ -4903,192 +4928,192 @@ def setupSetsCross [HolBase] (S : SetsCore)
 
 /- ---------------------------------------------------------------------- -/
 /- Extensional functions, restriction, and the dependent function space.   -/
-/- (sets.ml 2925-3324)                                                    -/
+/- (sets.ml 2942-3341)                                                    -/
 /- ---------------------------------------------------------------------- -/
 
 /-- Extensional functions (fixed to `ARB` off the domain), restriction of a
     function to an extensional one, the general Cartesian product / dependent
     function space, the product of a family of maps, and the disjoint-union
-    construction (sets.ml 2925-3324).  Depends on the core Sets bundles plus
+    construction (sets.ml 2942-3341).  Depends on the core Sets bundles plus
     `Pr` (`PairThms`, for `FORALL_PAIR_THM`/`PAIR_EQ`), `T` (`LEFT_IMP_EXISTS_THM`),
     `Tr` (`o_THM`), the injected combinator definition `o_DEF`, `C.SKOLEM_THM`,
     and the MESON/`new_definition` helpers. -/
 structure SetsFunspace where
-  /-- `ARB` (sets.ml 2929, `new_definition`): `ARB = (@x:A. F)`, the fixed
+  /-- `ARB` (sets.ml 2946, `new_definition`): `ARB = (@x:A. F)`, the fixed
       "undefined" value used off an extensional function's domain. -/
   ARB : thm
-  /-- `EXTENSIONAL` (sets.ml 2931, `new_definition`): `EXTENSIONAL s =
+  /-- `EXTENSIONAL` (sets.ml 2948, `new_definition`): `EXTENSIONAL s =
       {f | !x. ~(x IN s) ==> f x = ARB}`. -/
   EXTENSIONAL : thm
-  /-- `IN_EXTENSIONAL` (sets.ml 2936): `REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM]`. -/
+  /-- `IN_EXTENSIONAL` (sets.ml 2953): `REWRITE_TAC[EXTENSIONAL; IN_ELIM_THM]`. -/
   IN_EXTENSIONAL : thm
-  /-- `IN_EXTENSIONAL_UNDEFINED` (sets.ml 2940): `SIMP_TAC[IN_EXTENSIONAL]`. -/
+  /-- `IN_EXTENSIONAL_UNDEFINED` (sets.ml 2957): `SIMP_TAC[IN_EXTENSIONAL]`. -/
   IN_EXTENSIONAL_UNDEFINED : thm
-  /-- `EXTENSIONAL_EMPTY` (sets.ml 2944): two `REWRITE_TAC`s, no `THENL`. -/
+  /-- `EXTENSIONAL_EMPTY` (sets.ml 2961): two `REWRITE_TAC`s, no `THENL`. -/
   EXTENSIONAL_EMPTY : thm
-  /-- `EXTENSIONAL_UNIV` (sets.ml 2949): `REWRITE_TAC[EXTENSIONAL; IN_UNIV;
+  /-- `EXTENSIONAL_UNIV` (sets.ml 2966): `REWRITE_TAC[EXTENSIONAL; IN_UNIV;
       IN_ELIM_THM]`. -/
   EXTENSIONAL_UNIV : thm
-  /-- `EXTENSIONAL_EQ` (sets.ml 2953): extensional functions agreeing on the
+  /-- `EXTENSIONAL_EQ` (sets.ml 2970): extensional functions agreeing on the
       domain are equal.  ONE width-2 `ASM_CASES_TAC THENL
       [ASM_SIMP_TAC[]; ASM_MESON_TAC[IN_EXTENSIONAL_UNDEFINED]]`. -/
   EXTENSIONAL_EQ : thm
-  /-- `RESTRICTION` (sets.ml 2967, `new_definition`): `RESTRICTION s f x =
+  /-- `RESTRICTION` (sets.ml 2984, `new_definition`): `RESTRICTION s f x =
       if x IN s then f x else ARB`. -/
   RESTRICTION : thm
-  /-- `RESTRICTION_THM` (sets.ml 2968): `REWRITE_TAC[FUN_EQ_THM; RESTRICTION]`. -/
+  /-- `RESTRICTION_THM` (sets.ml 2985): `REWRITE_TAC[FUN_EQ_THM; RESTRICTION]`. -/
   RESTRICTION_THM : thm
-  /-- `RESTRICTION_DEFINED` (sets.ml 2972): `SIMP_TAC[RESTRICTION]`. -/
+  /-- `RESTRICTION_DEFINED` (sets.ml 2989): `SIMP_TAC[RESTRICTION]`. -/
   RESTRICTION_DEFINED : thm
-  /-- `RESTRICTION_UNDEFINED` (sets.ml 2976): `SIMP_TAC[RESTRICTION]`. -/
+  /-- `RESTRICTION_UNDEFINED` (sets.ml 2993): `SIMP_TAC[RESTRICTION]`. -/
   RESTRICTION_UNDEFINED : thm
-  /-- `RESTRICTION_EQ` (sets.ml 2980): `SIMP_TAC[RESTRICTION_DEFINED]`. -/
+  /-- `RESTRICTION_EQ` (sets.ml 2997): `SIMP_TAC[RESTRICTION_DEFINED]`. -/
   RESTRICTION_EQ : thm
-  /-- `RESTRICTION_IN_EXTENSIONAL` (sets.ml 2984): `SIMP_TAC[IN_EXTENSIONAL;
+  /-- `RESTRICTION_IN_EXTENSIONAL` (sets.ml 3001): `SIMP_TAC[IN_EXTENSIONAL;
       RESTRICTION]`. -/
   RESTRICTION_IN_EXTENSIONAL : thm
-  /-- `RESTRICTION_EXTENSION` (sets.ml 2988): `REWRITE_TAC[RESTRICTION;
+  /-- `RESTRICTION_EXTENSION` (sets.ml 3005): `REWRITE_TAC[RESTRICTION;
       FUN_EQ_THM] THEN MESON_TAC[]`. -/
   RESTRICTION_EXTENSION : thm
-  /-- `RESTRICTION_FIXPOINT` (sets.ml 2993): `REWRITE_TAC[IN_EXTENSIONAL;
+  /-- `RESTRICTION_FIXPOINT` (sets.ml 3010): `REWRITE_TAC[IN_EXTENSIONAL;
       FUN_EQ_THM; RESTRICTION] THEN MESON_TAC[]`. -/
   RESTRICTION_FIXPOINT : thm
-  /-- `RESTRICTION_UNIV` (sets.ml 2997): `REWRITE_TAC[FUN_EQ_THM; RESTRICTION;
+  /-- `RESTRICTION_UNIV` (sets.ml 3014): `REWRITE_TAC[FUN_EQ_THM; RESTRICTION;
       IN_UNIV]`. -/
   RESTRICTION_UNIV : thm
-  /-- `RESTRICTION_RESTRICTION` (sets.ml 3001): `REWRITE_TAC[FUN_EQ_THM;
+  /-- `RESTRICTION_RESTRICTION` (sets.ml 3018): `REWRITE_TAC[FUN_EQ_THM;
       RESTRICTION] THEN SET_TAC[]`. -/
   RESTRICTION_RESTRICTION : thm
-  /-- `RESTRICTION_IDEMP` (sets.ml 3006): `REWRITE_TAC[RESTRICTION_FIXPOINT;
+  /-- `RESTRICTION_IDEMP` (sets.ml 3023): `REWRITE_TAC[RESTRICTION_FIXPOINT;
       RESTRICTION_IN_EXTENSIONAL]`. -/
   RESTRICTION_IDEMP : thm
-  /-- `IMAGE_RESTRICTION` (sets.ml 3010): `REWRITE_TAC[EXTENSION; IN_IMAGE;
+  /-- `IMAGE_RESTRICTION` (sets.ml 3027): `REWRITE_TAC[EXTENSION; IN_IMAGE;
       RESTRICTION] THEN SET_TAC[]`. -/
   IMAGE_RESTRICTION : thm
-  /-- `RESTRICTION_COMPOSE_RIGHT` (sets.ml 3014): `REWRITE_TAC[FUN_EQ_THM;
+  /-- `RESTRICTION_COMPOSE_RIGHT` (sets.ml 3031): `REWRITE_TAC[FUN_EQ_THM;
       o_DEF; RESTRICTION] THEN SIMP_TAC[SUBSET; FORALL_IN_IMAGE] THEN
       SET_TAC[]`.  `o` inside `o_DEF` REWRITE only. -/
   RESTRICTION_COMPOSE_RIGHT : thm
-  /-- `RESTRICTION_COMPOSE_LEFT` (sets.ml 3021): same shape as
+  /-- `RESTRICTION_COMPOSE_LEFT` (sets.ml 3038): same shape as
       `RESTRICTION_COMPOSE_RIGHT`. -/
   RESTRICTION_COMPOSE_LEFT : thm
-  /-- `RESTRICTION_COMPOSE` (sets.ml 3029): `SIMP_TAC[RESTRICTION_COMPOSE_LEFT;
+  /-- `RESTRICTION_COMPOSE` (sets.ml 3046): `SIMP_TAC[RESTRICTION_COMPOSE_LEFT;
       RESTRICTION_COMPOSE_RIGHT]`. -/
   RESTRICTION_COMPOSE : thm
-  /-- `RESTRICTION_UNIQUE` (sets.ml 3036): `REWRITE_TAC[FUN_EQ_THM; RESTRICTION;
+  /-- `RESTRICTION_UNIQUE` (sets.ml 3053): `REWRITE_TAC[FUN_EQ_THM; RESTRICTION;
       EXTENSIONAL; IN_ELIM_THM] THEN MESON_TAC[]`. -/
   RESTRICTION_UNIQUE : thm
-  /-- `RESTRICTION_UNIQUE_ALT` (sets.ml 3042): same shape as
+  /-- `RESTRICTION_UNIQUE_ALT` (sets.ml 3059): same shape as
       `RESTRICTION_UNIQUE`. -/
   RESTRICTION_UNIQUE_ALT : thm
-  /-- `cartesian_product` (sets.ml 3055, `new_definition`): the dependent
+  /-- `cartesian_product` (sets.ml 3072, `new_definition`): the dependent
       function space `{f | EXTENSIONAL k f /\ !i. i IN k ==> f i IN s i}`. -/
   cartesian_product : thm
-  /-- `IN_CARTESIAN_PRODUCT` (sets.ml 3056): `REWRITE_TAC[cartesian_product;
+  /-- `IN_CARTESIAN_PRODUCT` (sets.ml 3073): `REWRITE_TAC[cartesian_product;
       IN_ELIM_THM]`. -/
   IN_CARTESIAN_PRODUCT : thm
-  /-- `CARTESIAN_PRODUCT` (sets.ml 3062): the "conditional membership" form.
+  /-- `CARTESIAN_PRODUCT` (sets.ml 3079): the "conditional membership" form.
       `GEN_REWRITE_TAC I [EXTENSION]`, `REWRITE_TAC`, `MESON_TAC[IN_SING]`.
       No top-level `THENL`.  `I` = id (ZERO). -/
   CARTESIAN_PRODUCT : thm
-  /-- `RESTRICTION_IN_CARTESIAN_PRODUCT` (sets.ml 3069): `REWRITE_TAC[...] THEN
+  /-- `RESTRICTION_IN_CARTESIAN_PRODUCT` (sets.ml 3086): `REWRITE_TAC[...] THEN
       SET_TAC[]`. -/
   RESTRICTION_IN_CARTESIAN_PRODUCT : thm
-  /-- `CARTESIAN_PRODUCT_AS_RESTRICTIONS` (sets.ml 3076): the product as a set
+  /-- `CARTESIAN_PRODUCT_AS_RESTRICTIONS` (sets.ml 3093): the product as a set
       of restrictions.  `GSYM SUBSET_ANTISYM_EQ`, `FORALL_IN_GSPEC`, `X_GEN_TAC`,
       `EXISTS_TAC`, `ASM_MESON_TAC`.  No top-level `THENL`. -/
   CARTESIAN_PRODUCT_AS_RESTRICTIONS : thm
-  /-- `CARTESIAN_PRODUCT_EQ_EMPTY` (sets.ml 3088): empty iff some fibre is empty.
+  /-- `CARTESIAN_PRODUCT_EQ_EMPTY` (sets.ml 3105): empty iff some fibre is empty.
       `GEN_REWRITE_TAC LAND_CONV [EXTENSION]`, a `SET_RULE` rewrite, `SKOLEM_THM`,
       `EQ_TAC THEN DISCH_TAC` (a common tail applied to BOTH branches, so the
       `EQ_TAC` split has NO `THENL`), `FIRST_X_ASSUM(MP_TAC o SPEC ...)`. -/
   CARTESIAN_PRODUCT_EQ_EMPTY : thm
-  /-- `CARTESIAN_PRODUCT_EMPTY` (sets.ml 3100): `cartesian_product {} s =
+  /-- `CARTESIAN_PRODUCT_EMPTY` (sets.ml 3117): `cartesian_product {} s =
       {(\i. ARB)}`.  Three `REWRITE_TAC`s, no `THENL`. -/
   CARTESIAN_PRODUCT_EMPTY : thm
-  /-- `CARTESIAN_PRODUCT_EQ_MEMBERS` (sets.ml 3105): members agreeing on `k`
+  /-- `CARTESIAN_PRODUCT_EQ_MEMBERS` (sets.ml 3122): members agreeing on `k`
       are equal.  `MATCH_MP_TAC EXTENSIONAL_EQ`, `EXISTS_TAC`, `[IN]` rewrite.
       No top-level `THENL`. -/
   CARTESIAN_PRODUCT_EQ_MEMBERS : thm
-  /-- `CARTESIAN_PRODUCT_EQ_MEMBERS_EQ` (sets.ml 3114):
+  /-- `CARTESIAN_PRODUCT_EQ_MEMBERS_EQ` (sets.ml 3131):
       `MESON[CARTESIAN_PRODUCT_EQ_MEMBERS]`. -/
   CARTESIAN_PRODUCT_EQ_MEMBERS_EQ : thm
-  /-- `SUBSET_CARTESIAN_PRODUCT` (sets.ml 3121): a subset characterisation.
+  /-- `SUBSET_CARTESIAN_PRODUCT` (sets.ml 3138): a subset characterisation.
       ONE width-2 top-level `EQ_TAC THENL [ALL_TAC; MESON_TAC[]]`, then a
       `FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [...])`, a `SET_RULE`
       rewrite and `SKOLEM_THM`.  `RAND_CONV` = one level. -/
   SUBSET_CARTESIAN_PRODUCT : thm
-  /-- `CARTESIAN_PRODUCT_EQ` (sets.ml 3141): equality of two products.  ONE
+  /-- `CARTESIAN_PRODUCT_EQ` (sets.ml 3158): equality of two products.  ONE
       width-2 top-level `ASM_REWRITE_TAC[] THENL [ASM_SIMP_TAC[...]; ...]`, the
       second branch a chain ending in `ASM SET_TAC[]`. -/
   CARTESIAN_PRODUCT_EQ : thm
-  /-- `INTER_CARTESIAN_PRODUCT` (sets.ml 3157): `REWRITE_TAC[...] THEN
+  /-- `INTER_CARTESIAN_PRODUCT` (sets.ml 3174): `REWRITE_TAC[...] THEN
       SET_TAC[]`. -/
   INTER_CARTESIAN_PRODUCT : thm
-  /-- `CARTESIAN_PRODUCT_UNIV` (sets.ml 3164): two `REWRITE_TAC`s, no `THENL`. -/
+  /-- `CARTESIAN_PRODUCT_UNIV` (sets.ml 3181): two `REWRITE_TAC`s, no `THENL`. -/
   CARTESIAN_PRODUCT_UNIV : thm
-  /-- `CARTESIAN_PRODUCT_SINGS` (sets.ml 3169): `REWRITE_TAC`s then `MESON_TAC[]`.
+  /-- `CARTESIAN_PRODUCT_SINGS` (sets.ml 3186): `REWRITE_TAC`s then `MESON_TAC[]`.
       No `THENL`. -/
   CARTESIAN_PRODUCT_SINGS : thm
-  /-- `CARTESIAN_PRODUCT_SINGS_GEN` (sets.ml 3175): `REWRITE_TAC`s then
+  /-- `CARTESIAN_PRODUCT_SINGS_GEN` (sets.ml 3192): `REWRITE_TAC`s then
       `MESON_TAC[]`.  No `THENL`. -/
   CARTESIAN_PRODUCT_SINGS_GEN : thm
-  /-- `IMAGE_PROJECTION_CARTESIAN_PRODUCT` (sets.ml 3181): the image of a
+  /-- `IMAGE_PROJECTION_CARTESIAN_PRODUCT` (sets.ml 3198): the image of a
       coordinate projection.  `ASM_CASES_TAC`, `GSYM SUBSET_ANTISYM_EQ`,
       `FIRST_X_ASSUM(MP_TAC o GEN_REWRITE_RULE RAND_CONV [...])`, `SET_RULE`,
       `SKOLEM_THM`, `EXISTS_TAC`, `ASM_MESON_TAC[IN_SING]`.  No top-level
       `THENL` (the `ASM_CASES_TAC` split shares a common tail). -/
   IMAGE_PROJECTION_CARTESIAN_PRODUCT : thm
-  /-- `FORALL_CARTESIAN_PRODUCT_ELEMENTS` (sets.ml 3202): a `!`-over-elements
+  /-- `FORALL_CARTESIAN_PRODUCT_ELEMENTS` (sets.ml 3219): a `!`-over-elements
       characterisation.  ONE width-2 top-level `EQ_TAC THENL [DISCH_TAC;
       MESON_TAC[]]`, then `SET_RULE`/`SKOLEM_THM` and a
       `FIRST_X_ASSUM(MP_TAC o SPECL [..])`. -/
   FORALL_CARTESIAN_PRODUCT_ELEMENTS : thm
-  /-- `FORALL_CARTESIAN_PRODUCT_ELEMENTS_EQ` (sets.ml 3222):
+  /-- `FORALL_CARTESIAN_PRODUCT_ELEMENTS_EQ` (sets.ml 3239):
       `SIMP_TAC[FORALL_CARTESIAN_PRODUCT_ELEMENTS]`. -/
   FORALL_CARTESIAN_PRODUCT_ELEMENTS_EQ : thm
-  /-- `EXISTS_CARTESIAN_PRODUCT_ELEMENT` (sets.ml 3229):
+  /-- `EXISTS_CARTESIAN_PRODUCT_ELEMENT` (sets.ml 3246):
       `REWRITE_TAC[CARTESIAN_PRODUCT_AS_RESTRICTIONS; EXISTS_IN_GSPEC] THEN
       SIMP_TAC[RESTRICTION] THEN MESON_TAC[]`. -/
   EXISTS_CARTESIAN_PRODUCT_ELEMENT : thm
-  /-- `product_map` (sets.ml 3242, `new_definition`): `product_map k f =
+  /-- `product_map` (sets.ml 3259, `new_definition`): `product_map k f =
       \x. RESTRICTION k (\i. f i (x i))`. -/
   product_map : thm
-  /-- `PRODUCT_MAP_RESTRICTION` (sets.ml 3244): `SIMP_TAC[product_map;
+  /-- `PRODUCT_MAP_RESTRICTION` (sets.ml 3261): `SIMP_TAC[product_map;
       RESTRICTION; o_THM; FUN_EQ_THM]`. -/
   PRODUCT_MAP_RESTRICTION : thm
-  /-- `IMAGE_PRODUCT_MAP` (sets.ml 3249): image of a product map is the product
+  /-- `IMAGE_PRODUCT_MAP` (sets.ml 3266): image of a product map is the product
       of the images.  `CARTESIAN_PRODUCT_AS_RESTRICTIONS`,
       `ONCE_REWRITE_TAC[SIMPLE_IMAGE_GEN]`, `GSYM IMAGE_o`,
       `GEN_REWRITE_TAC I [EXTENSION]`, `X_GEN_TAC`, `EQ_TAC THEN STRIP_TAC`
       (common tail, so NO top-level `THENL`), then `ASM SET_TAC[]`.  `I` = id
       (ZERO). -/
   IMAGE_PRODUCT_MAP : thm
-  /-- `disjoint_union` (sets.ml 3267, `new_definition`): `disjoint_union k s =
+  /-- `disjoint_union` (sets.ml 3284, `new_definition`): `disjoint_union k s =
       {(i,x) | i IN k /\ x IN s i}`. -/
   disjoint_union : thm
-  /-- `SUBSET_DISJOINT_UNION` (sets.ml 3269): `REWRITE_TAC[SUBSET;
+  /-- `SUBSET_DISJOINT_UNION` (sets.ml 3286): `REWRITE_TAC[SUBSET;
       disjoint_union; FORALL_IN_GSPEC] THEN REWRITE_TAC[IN_ELIM_PAIR_THM] THEN
       SET_TAC[]`. -/
   SUBSET_DISJOINT_UNION : thm
-  /-- `DISJOINT_UNION_EQ` (sets.ml 3276): `REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ;
+  /-- `DISJOINT_UNION_EQ` (sets.ml 3293): `REWRITE_TAC[GSYM SUBSET_ANTISYM_EQ;
       SUBSET_DISJOINT_UNION] THEN SET_TAC[]`. -/
   DISJOINT_UNION_EQ : thm
-  /-- `SUBSET_DISJOINT_UNION_EXISTS` (sets.ml 3283): a subset of a disjoint
+  /-- `SUBSET_DISJOINT_UNION_EXISTS` (sets.ml 3300): a subset of a disjoint
       union is itself a disjoint union.  ONE width-2 top-level `EQ_TAC THENL
       [DISCH_TAC; MESON_TAC[SUBSET_DISJOINT_UNION]]`, then `EXISTS_TAC`,
       `POP_ASSUM MP_TAC`, `SET_TAC[]`. -/
   SUBSET_DISJOINT_UNION_EXISTS : thm
-  /-- `INTER_DISJOINT_UNION` (sets.ml 3294): `REWRITE_TAC[...] THEN
+  /-- `INTER_DISJOINT_UNION` (sets.ml 3311): `REWRITE_TAC[...] THEN
       MESON_TAC[PAIR_EQ]`. -/
   INTER_DISJOINT_UNION : thm
-  /-- `UNION_DISJOINT_UNION` (sets.ml 3302): `REWRITE_TAC[...] THEN
+  /-- `UNION_DISJOINT_UNION` (sets.ml 3319): `REWRITE_TAC[...] THEN
       MESON_TAC[PAIR_EQ]`. -/
   UNION_DISJOINT_UNION : thm
-  /-- `DISJOINT_UNION_EQ_EMPTY` (sets.ml 3310): `REWRITE_TAC[...] THEN
+  /-- `DISJOINT_UNION_EQ_EMPTY` (sets.ml 3327): `REWRITE_TAC[...] THEN
       SET_TAC[]`. -/
   DISJOINT_UNION_EQ_EMPTY : thm
-  /-- `DISJOINT_DISJOINT_UNION` (sets.ml 3317): `REWRITE_TAC[DISJOINT;
+  /-- `DISJOINT_DISJOINT_UNION` (sets.ml 3334): `REWRITE_TAC[DISJOINT;
       INTER_DISJOINT_UNION; DISJOINT_UNION_EQ_EMPTY]`. -/
   DISJOINT_DISJOINT_UNION : thm
   deriving Inhabited
@@ -5529,11 +5554,11 @@ def setupSetsFunspace [HolBase] (S : SetsCore)
 
 /- ---------------------------------------------------------------------- -/
 /- Cardinality of functions with bounded domain (support) and range;      -/
-/- of bool; of the powerset.  (sets.ml 3325-3553)                         -/
+/- of bool; of the powerset.  (sets.ml 3342-3570)                         -/
 /- ---------------------------------------------------------------------- -/
 
 /-- The cardinality theorems for function spaces, the type `bool`, and hence
-    the powerset, of sets.ml 3325-3548 (TWENTY theorems).  Built on the
+    the powerset, of sets.ml 3342-3565 (TWENTY theorems).  Built on the
     dependent-function-space material of the preceding bundle plus the
     `HAS_SIZE`/`CARD` reasoning of `SCard`/`SCard2`, `HAS_SIZE_PRODUCT`
     (`SCross`) and the `FINITE` lemmas of `SFin`.  The payoff is
@@ -5542,7 +5567,7 @@ def setupSetsFunspace [HolBase] (S : SetsCore)
     inducts over the domain and reduces the successor step to
     `HAS_SIZE_IMAGE_INJ`/`HAS_SIZE_PRODUCT`. -/
 structure SetsFunspace2 where
-  /-- `HAS_SIZE_FUNSPACE` (sets.ml 3328): the set of bounded-support functions
+  /-- `HAS_SIZE_FUNSPACE` (sets.ml 3345): the set of bounded-support functions
       `{f | (!x. x IN s ==> f x IN t) /\ (!x. ~(x IN s) ==> f x = d)}` has size
       `n EXP m` when `s HAS_SIZE m` and `t HAS_SIZE n`.  `INDUCT_TAC` over the
       domain size; THREE top-level width-2 `THENL`s (after
@@ -5554,40 +5579,40 @@ structure SetsFunspace2 where
       thm_tactics; `DISCH_THEN(X_CHOOSE_THEN .. (X_CHOOSE_THEN ..
       STRIP_ASSUME_TAC))`. -/
   HAS_SIZE_FUNSPACE : thm
-  /-- `CARD_FUNSPACE` (sets.ml 3372): `MESON[HAS_SIZE_FUNSPACE; HAS_SIZE]`. -/
+  /-- `CARD_FUNSPACE` (sets.ml 3389): `MESON[HAS_SIZE_FUNSPACE; HAS_SIZE]`. -/
   CARD_FUNSPACE : thm
-  /-- `FINITE_FUNSPACE` (sets.ml 3379): `MESON[HAS_SIZE_FUNSPACE; HAS_SIZE]`. -/
+  /-- `FINITE_FUNSPACE` (sets.ml 3396): `MESON[HAS_SIZE_FUNSPACE; HAS_SIZE]`. -/
   FINITE_FUNSPACE : thm
-  /-- `HAS_SIZE_FUNSPACE_UNIV` (sets.ml 3385): `REPEAT GEN_TAC THEN
+  /-- `HAS_SIZE_FUNSPACE_UNIV` (sets.ml 3402): `REPEAT GEN_TAC THEN
       DISCH_THEN(MP_TAC o MATCH_MP HAS_SIZE_FUNSPACE) THEN
       REWRITE_TAC[IN_UNIV; UNIV_GSPEC]`.  `MP_TAC o MATCH_MP` explicit
       thm_tactic.  No top-level `THENL`. -/
   HAS_SIZE_FUNSPACE_UNIV : thm
-  /-- `CARD_FUNSPACE_UNIV` (sets.ml 3391):
+  /-- `CARD_FUNSPACE_UNIV` (sets.ml 3408):
       `MESON[HAS_SIZE_FUNSPACE_UNIV; HAS_SIZE]`. -/
   CARD_FUNSPACE_UNIV : thm
-  /-- `FINITE_FUNSPACE_UNIV` (sets.ml 3395):
+  /-- `FINITE_FUNSPACE_UNIV` (sets.ml 3412):
       `MESON[HAS_SIZE_FUNSPACE_UNIV; HAS_SIZE]`. -/
   FINITE_FUNSPACE_UNIV : thm
-  /-- `HAS_SIZE_BOOL` (sets.ml 3403): `(:bool) HAS_SIZE 2`.  ONE width-2
+  /-- `HAS_SIZE_BOOL` (sets.ml 3420): `(:bool) HAS_SIZE 2`.  ONE width-2
       top-level `SUBGOAL_THEN (:bool) = {F,T} SUBST1_TAC THENL
       [REWRITE_TAC[..] THEN CONV_TAC TAUT; SIMP_TAC[..]]`.  `CONV_TAC TAUT`. -/
   HAS_SIZE_BOOL : thm
-  /-- `CARD_BOOL` (sets.ml 3410): `MESON[HAS_SIZE_BOOL; HAS_SIZE]`. -/
+  /-- `CARD_BOOL` (sets.ml 3427): `MESON[HAS_SIZE_BOOL; HAS_SIZE]`. -/
   CARD_BOOL : thm
-  /-- `FINITE_BOOL` (sets.ml 3414): `MESON[HAS_SIZE_BOOL; HAS_SIZE]`. -/
+  /-- `FINITE_BOOL` (sets.ml 3431): `MESON[HAS_SIZE_BOOL; HAS_SIZE]`. -/
   FINITE_BOOL : thm
-  /-- `HAS_SIZE_POWERSET` (sets.ml 3422): `{t | t SUBSET s} HAS_SIZE 2 EXP n`.
+  /-- `HAS_SIZE_POWERSET` (sets.ml 3439): `{t | t SUBSET s} HAS_SIZE 2 EXP n`.
       ONE width-2 top-level `SUBGOAL_THEN {t|t SUBSET s} = {funspace} SUBST1_TAC
       THENL [REWRITE_TAC[..]; MATCH_MP_TAC HAS_SIZE_FUNSPACE THEN .. THEN
       CONV_TAC HAS_SIZE_CONV THEN MAP_EVERY EXISTS_TAC [`T`;`F`] THEN .. THEN
       CONV_TAC TAUT]`.  `CONV_TAC HAS_SIZE_CONV` (bare, ZERO). -/
   HAS_SIZE_POWERSET : thm
-  /-- `CARD_POWERSET` (sets.ml 3434): `MESON[HAS_SIZE_POWERSET; HAS_SIZE]`. -/
+  /-- `CARD_POWERSET` (sets.ml 3451): `MESON[HAS_SIZE_POWERSET; HAS_SIZE]`. -/
   CARD_POWERSET : thm
-  /-- `FINITE_POWERSET` (sets.ml 3438): `MESON[HAS_SIZE_POWERSET; HAS_SIZE]`. -/
+  /-- `FINITE_POWERSET` (sets.ml 3455): `MESON[HAS_SIZE_POWERSET; HAS_SIZE]`. -/
   FINITE_POWERSET : thm
-  /-- `FINITE_POWERSET_EQ` (sets.ml 3442): `FINITE {t | t SUBSET s} <=>
+  /-- `FINITE_POWERSET_EQ` (sets.ml 3459): `FINITE {t | t SUBSET s} <=>
       FINITE s`.  `GEN_TAC THEN EQ_TAC THEN REWRITE_TAC[FINITE_POWERSET] THEN
       DISCH_TAC THEN SUBGOAL_THEN FINITE(IMAGE (\x. {x}) s) MP_TAC THENL
       [b1; b2]`.  ONE width-2 top-level `THENL` (the `SUBGOAL_THEN`);
@@ -5596,11 +5621,11 @@ structure SetsFunspace2 where
       `MATCH_MP_TAC EQ_IMP THEN MATCH_MP_TAC FINITE_IMAGE_INJ_EQ THEN
       SET_TAC[]`. -/
   FINITE_POWERSET_EQ : thm
-  /-- `FINITE_RESTRICTED_SUBSETS` (sets.ml 3452): `REPEAT STRIP_TAC THEN
+  /-- `FINITE_RESTRICTED_SUBSETS` (sets.ml 3469): `REPEAT STRIP_TAC THEN
       MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC `{t | t SUBSET s}` THEN
       ASM_SIMP_TAC[FINITE_POWERSET] THEN SET_TAC[]`.  No top-level `THENL`. -/
   FINITE_RESTRICTED_SUBSETS : thm
-  /-- `FINITE_UNIONS` (sets.ml 3458): `FINITE(UNIONS s) <=> FINITE s /\
+  /-- `FINITE_UNIONS` (sets.ml 3475): `FINITE(UNIONS s) <=> FINITE s /\
       (!t. t IN s ==> FINITE t)`.  `GEN_TAC THEN ASM_CASES_TAC FINITE s THEN
       ASM_SIMP_TAC[FINITE_FINITE_UNIONS] THEN
       DISCH_THEN(MP_TAC o MATCH_MP FINITE_POWERSET) THEN POP_ASSUM MP_TAC THEN
@@ -5609,27 +5634,27 @@ structure SetsFunspace2 where
       No top-level `THENL`; `MP_TAC o MATCH_MP` explicit thm_tactic;
       `REWRITE_RULE[IMP_CONJ_ALT] FINITE_SUBSET` bound first. -/
   FINITE_UNIONS : thm
-  /-- `FINITE_CARD_LE_UNIONS` (sets.ml 3467): `REPEAT STRIP_TAC THEN
+  /-- `FINITE_CARD_LE_UNIONS` (sets.ml 3484): `REPEAT STRIP_TAC THEN
       ASM_SIMP_TAC[FINITE_UNIONS; FORALL_IN_GSPEC; FINITE_IMAGE;
       SIMPLE_IMAGE] THEN TRANS_TAC LE_TRANS `CARD s * n` THEN
       ASM_REWRITE_TAC[GSYM SIMPLE_IMAGE; LE_MULT_RCANCEL] THEN
       MATCH_MP_TAC CARD_UNIONS_LE THEN ASM_REWRITE_TAC[HAS_SIZE]`.  No
       top-level `THENL`. -/
   FINITE_CARD_LE_UNIONS : thm
-  /-- `POWERSET_CLAUSES` (sets.ml 3479): the empty and INSERT recursion of the
+  /-- `POWERSET_CLAUSES` (sets.ml 3496): the empty and INSERT recursion of the
       powerset.  TWO top-level width-2 `THENL`s, each `[ALL_TAC; <closer>]`
       with a common tail after: `CONJ_TAC THENL [ALL_TAC; SET_TAC[]]` (bare
       SET_TAC) and `ASM_CASES_TAC (a IN s) THENL [ALL_TAC; ASM SET_TAC[]]`
       (ASM SET_TAC).  `ONCE_REWRITE_TAC[SUBSET]`; `DISJ2_TAC`; `EXISTS_TAC
       `s DELETE a``. -/
   POWERSET_CLAUSES : thm
-  /-- `FINITE_IMAGE_INFINITE` (sets.ml 3495): an infinite set with finite image
+  /-- `FINITE_IMAGE_INFINITE` (sets.ml 3512): an infinite set with finite image
       has an infinite fibre.  ONE width-2 top-level `SUBGOAL_THEN s = UNIONS{..}
       SUBST1_TAC THENL [REWRITE_TAC[UNIONS_GSPEC] THEN SET_TAC[]; ALL_TAC]`
       with a common tail after.  `GEN_REWRITE_TAC I [GSYM CONTRAPOS_THM]`
       (`I` = id, ZERO); an inline `TAUT `~(p /\ q) <=> p ==> ~q``. -/
   FINITE_IMAGE_INFINITE : thm
-  /-- `FINITE_RESTRICTED_POWERSET` (sets.ml 3507): `FINITE {t | t SUBSET s /\
+  /-- `FINITE_RESTRICTED_POWERSET` (sets.ml 3524): `FINITE {t | t SUBSET s /\
       t HAS_SIZE n} <=> FINITE s \/ n = 0`.  Nested `THENL`s: the top-level
       `ASM_CASES_TAC (n = 0) ... THENL [b1; b2]` (width 2); b2 nests
       `ASM_CASES_TAC FINITE s ... THENL [b2a; b2b]` (width 2); b2b nests a
@@ -5637,7 +5662,7 @@ structure SetsFunspace2 where
       common tail) and a `CONJ_TAC THENL [b2b1; b2b2]` (width 2).  `GEN_REWRITE_TAC
       I [SUBSET]` (ZERO); `CHOOSE_SUBSET_BETWEEN`; two inline `SET_RULE`s. -/
   FINITE_RESTRICTED_POWERSET : thm
-  /-- `FINITE_RESTRICTED_FUNSPACE` (sets.ml 3531): the funspace of maps agreeing
+  /-- `FINITE_RESTRICTED_FUNSPACE` (sets.ml 3548): the funspace of maps agreeing
       with `k` off a finite set is finite.  ONE top-level width-2
       `CONJ_TAC THENL [ALL_TAC; <closer>] THEN <tail>`: branch 1 is `ALL_TAC`,
       branch 2 closes the second goal with `ASM SET_TAC[]`, and the tail applies
@@ -5915,67 +5940,67 @@ def setupSetsFunspace2 [HolBase] (S : SetsCore)
     FINITE_RESTRICTED_POWERSET, FINITE_RESTRICTED_FUNSPACE }
 
 /- ---------------------------------------------------------------------- -/
-/- The infinitude results.  (sets.ml 3554-3696)                           -/
+/- The infinitude results.  (sets.ml 3571-3713)                           -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The infinitude theorems of sets.ml 3554-3697.  Built on the num-segment
+/-- The infinitude theorems of sets.ml 3571-3714.  Built on the num-segment
     HAS_SIZE reasoning of `SCard`, the `FINITE`/`FINITE_IMAGE_INJ_EQ` lemmas of
     `SFin`, `FINITE_INDUCT_STRONG` (`SInd`), the list `LENGTH`/`LENGTH_REPLICATE`
     of lists.ml and the real linear/field arithmetic (`REAL_ARITH`/`REAL_FIELD`/
     `REAL_ARITH_TAC`). -/
 structure SetsInfinite where
-  /-- `NUMSEG_CLAUSES_LT` (sets.ml 3557): `{i | i < 0} = {} /\ (!k. {i | i < SUC
+  /-- `NUMSEG_CLAUSES_LT` (sets.ml 3574): `{i | i < 0} = {} /\ (!k. {i | i < SUC
       k} = k INSERT {i | i < k})`.  `REWRITE_TAC[LT] THEN SET_TAC[]`.  No
       top-level `THENL`. -/
   NUMSEG_CLAUSES_LT : thm
-  /-- `HAS_SIZE_NUMSEG_LT` (sets.ml 3562): `{m | m < n} HAS_SIZE n`.
+  /-- `HAS_SIZE_NUMSEG_LT` (sets.ml 3579): `{m | m < n} HAS_SIZE n`.
       `REWRITE_TAC[HAS_SIZE] THEN INDUCT_TAC THEN ASM_SIMP_TAC[..]`.  No
       top-level `THENL`. -/
   HAS_SIZE_NUMSEG_LT : thm
-  /-- `CARD_NUMSEG_LT` (sets.ml 3568): `CARD {m | m < n} = n`.
+  /-- `CARD_NUMSEG_LT` (sets.ml 3585): `CARD {m | m < n} = n`.
       `REWRITE_TAC[REWRITE_RULE[HAS_SIZE] HAS_SIZE_NUMSEG_LT]`.  No `THENL`. -/
   CARD_NUMSEG_LT : thm
-  /-- `FINITE_NUMSEG_LT` (sets.ml 3572): `FINITE {m | m < n}`.
+  /-- `FINITE_NUMSEG_LT` (sets.ml 3589): `FINITE {m | m < n}`.
       `REWRITE_TAC[REWRITE_RULE[HAS_SIZE] HAS_SIZE_NUMSEG_LT]`.  No `THENL`. -/
   FINITE_NUMSEG_LT : thm
-  /-- `NUMSEG_CLAUSES_LE` (sets.ml 3576): `{i | i <= 0} = {0} /\ (!k. {i | i <=
+  /-- `NUMSEG_CLAUSES_LE` (sets.ml 3593): `{i | i <= 0} = {0} /\ (!k. {i | i <=
       SUC k} = SUC k INSERT {i | i <= k})`.  `REWRITE_TAC[LE] THEN SET_TAC[]`.
       No top-level `THENL`. -/
   NUMSEG_CLAUSES_LE : thm
-  /-- `HAS_SIZE_NUMSEG_LE` (sets.ml 3581): `{m | m <= n} HAS_SIZE (n + 1)`.
+  /-- `HAS_SIZE_NUMSEG_LE` (sets.ml 3598): `{m | m <= n} HAS_SIZE (n + 1)`.
       `REWRITE_TAC[GSYM LT_SUC_LE; HAS_SIZE_NUMSEG_LT; ADD1]`.  No `THENL`. -/
   HAS_SIZE_NUMSEG_LE : thm
-  /-- `FINITE_NUMSEG_LE` (sets.ml 3585): `FINITE {m | m <= n}`.
+  /-- `FINITE_NUMSEG_LE` (sets.ml 3602): `FINITE {m | m <= n}`.
       `REWRITE_TAC[REWRITE_RULE[HAS_SIZE] HAS_SIZE_NUMSEG_LE]`.  No `THENL`. -/
   FINITE_NUMSEG_LE : thm
-  /-- `CARD_NUMSEG_LE` (sets.ml 3589): `CARD {m | m <= n} = n + 1`.
+  /-- `CARD_NUMSEG_LE` (sets.ml 3606): `CARD {m | m <= n} = n + 1`.
       `REWRITE_TAC[REWRITE_RULE[HAS_SIZE] HAS_SIZE_NUMSEG_LE]`.  No `THENL`. -/
   CARD_NUMSEG_LE : thm
-  /-- `num_FINITE` (sets.ml 3593): `FINITE s <=> ?a. !x. x IN s ==> x <= a`.
+  /-- `num_FINITE` (sets.ml 3610): `FINITE s <=> ?a. !x. x IN s ==> x <= a`.
       `GEN_TAC THEN EQ_TAC THENL [b1; b2]` - ONE width-2 top-level `THENL`.
       b1: `SPEC_TAC` then `MATCH_MP_TAC FINITE_INDUCT_STRONG` then `MESON_TAC`;
       b2: `DISCH_THEN(X_CHOOSE_TAC ..)` then `MATCH_MP_TAC FINITE_SUBSET` with
       `EXISTS_TAC {m | m <= n}`. -/
   num_FINITE : thm
-  /-- `num_FINITE_AVOID` (sets.ml 3603): `FINITE s ==> ?a. ~(a IN s)`.
+  /-- `num_FINITE_AVOID` (sets.ml 3620): `FINITE s ==> ?a. ~(a IN s)`.
       `MESON_TAC[num_FINITE; LT; NOT_LT]`.  No `THENL`. -/
   num_FINITE_AVOID : thm
-  /-- `num_INFINITE_EQ` (sets.ml 3607): `INFINITE s <=> !N. ?n. N <= n /\ n IN
+  /-- `num_INFINITE_EQ` (sets.ml 3624): `INFINITE s <=> !N. ?n. N <= n /\ n IN
       s`.  `GEN_TAC THEN REWRITE_TAC[INFINITE; num_FINITE] THEN MESON_TAC[..]`.
       No `THENL`. -/
   num_INFINITE_EQ : thm
-  /-- `num_INFINITE` (sets.ml 3612): `INFINITE(:num)`.
+  /-- `num_INFINITE` (sets.ml 3629): `INFINITE(:num)`.
       `REWRITE_TAC[INFINITE] THEN MESON_TAC[num_FINITE_AVOID; IN_UNIV]`.  No
       `THENL`. -/
   num_INFINITE : thm
-  /-- `string_INFINITE` (sets.ml 3620): `INFINITE(:string)`.  `MP_TAC
+  /-- `string_INFINITE` (sets.ml 3637): `INFINITE(:string)`.  `MP_TAC
       num_INFINITE THEN REWRITE_TAC[INFINITE; CONTRAPOS_THM] THEN
       DISCH_THEN(MP_TAC o ISPEC `LENGTH:string->num` o MATCH_MP FINITE_IMAGE)
       THEN MATCH_MP_TAC EQ_IMP THEN AP_TERM_TAC THEN REWRITE_TAC[..] THEN
       MESON_TAC[LENGTH_REPLICATE]`.  No top-level `THENL`; the `o` chain
       `MP_TAC o ISPEC .. o MATCH_MP FINITE_IMAGE` is an explicit thm_tactic. -/
   string_INFINITE : thm
-  /-- `FINITE_REAL_INTERVAL` (sets.ml 3631): the eight interval finiteness
+  /-- `FINITE_REAL_INTERVAL` (sets.ml 3648): the eight interval finiteness
       clauses.  TWO top-level `THENL`s: `SUBGOAL_THEN .. ASSUME_TAC THENL
       [big; ALL_TAC]` (width 2), then after `ASM_REWRITE_TAC[] THEN REPEAT
       CONJ_TAC THEN REPEAT GEN_TAC` a `THENL` with SEVEN branches (width 7 -
@@ -5986,7 +6011,7 @@ structure SetsInfinite where
       `REAL_ARITH`/`REAL_FIELD`; branches 1-4 close with `REAL_ARITH_TAC`,
       5-6 only rewrite, 7 does an `ASM_CASES_TAC` split. -/
   FINITE_REAL_INTERVAL : thm
-  /-- `real_INFINITE` (sets.ml 3689): `INFINITE(:real)`.
+  /-- `real_INFINITE` (sets.ml 3706): `INFINITE(:real)`.
       `REWRITE_TAC[INFINITE] THEN DISCH_THEN(MP_TAC o SPEC `{x | &0 <= x}` o
       MATCH_MP(REWRITE_RULE[T.IMP_CONJ] FINITE_SUBSET)) THEN
       REWRITE_TAC[FINITE_REAL_INTERVAL; SUBSET_UNIV]`.  No top-level `THENL`;
@@ -6183,21 +6208,21 @@ def setupSetsInfinite [HolBase] (S : SetsCore)
 
 /- ---------------------------------------------------------------------- -/
 /- Finite-set indexing, set/list mappings, the pairwise property.         -/
-/- (sets.ml 3697-3997)                                                    -/
+/- (sets.ml 3714-4155)                                                    -/
 /- ---------------------------------------------------------------------- -/
 
 /- Mappings from finite set enumerations to lists (no "setification"). -/
 
-/-- `dest_setenum` (sets.ml 3872). -/
+/-- `dest_setenum` (sets.ml 4030). -/
 def dest_setenum (tm : term) : Except String (List term) :=
   let (l, n) := splitlist (dest_binary "INSERT") tm
   if is_const n && (dest_const n).toOption.map Prod.fst == some "EMPTY" then .ok l
   else failwith "dest_setenum: not a finite set enumeration"
 
-/-- `is_setenum = can dest_setenum` (sets.ml 3878). -/
+/-- `is_setenum = can dest_setenum` (sets.ml 4036). -/
 def is_setenum (tm : term) : Bool := (dest_setenum tm).isOk
 
-/-- `mk_setenum` (sets.ml 3880).  `insert_atm` and `nil_atm` are the parsed
+/-- `mk_setenum` (sets.ml 4038).  `insert_atm` and `nil_atm` are the parsed
     constants `(INSERT):A->(A->bool)->(A->bool)` and `(EMPTY):A->bool`
     (`SetsList.insert_atm`/`nil_atm`), instantiated at the element type. -/
 def mk_setenum (insert_atm nil_atm : term) (lty : List term × hol_type) :
@@ -6208,13 +6233,13 @@ def mk_setenum (insert_atm nil_atm : term) (lty : List term × hol_type) :
   let nil_tm := inst [(ty, aty)] nil_atm
   liftExcept (itlist (fun x acc => do (← mk_binop insert_tm x) (← acc)) l (.ok nil_tm))
 
-/-- `mk_fset l = mk_setenum(l,type_of(hd l))` (sets.ml 3886). -/
+/-- `mk_fset l = mk_setenum(l,type_of(hd l))` (sets.ml 4044). -/
 def mk_fset (insert_atm nil_atm : term) (l : List term) : IO (Except String term) := do
   match l with
   | [] => return failwith "hd"
   | h :: _ => mk_setenum insert_atm nil_atm (l, type_of h)
 
-/-- The theorems of sets.ml 3697-3997, in three OCaml sections:
+/-- The theorems of sets.ml 3714-4155, in three OCaml sections:
 
     * 3699-3786  indexing of finite sets and enumeration of subsets of N in
       order (`HAS_SIZE_INDEX`, `INFINITE_ENUMERATE`, `INFINITE_ENUMERATE_EQ`,
@@ -6226,130 +6251,143 @@ def mk_fset (insert_atm nil_atm : term) (l : List term) : IO (Except String term
     * 3893-3997  the `pairwise` relation (`new_definition`) and its seventeen
       theorems over sets and lists.
 
-    The term utilities of sets.ml 3869-3886 (`dest_setenum`, `is_setenum`,
+    The term utilities of sets.ml 4027-4044 (`dest_setenum`, `is_setenum`,
     `mk_setenum`, `mk_fset`) produce no theorem; they are defined before this
     bundle, as plain functions. -/
 structure SetsList where
-  /-- `mk_setenum`'s `(INSERT):A->(A->bool)->(A->bool)` (sets.ml 3881). -/
+  /-- `mk_setenum`'s `(INSERT):A->(A->bool)->(A->bool)` (sets.ml 4039). -/
   insert_atm : term
-  /-- `mk_setenum`'s `(EMPTY):A->bool` (sets.ml 3882). -/
+  /-- `mk_setenum`'s `(EMPTY):A->bool` (sets.ml 4040). -/
   nil_atm : term
-  /-- `HAS_SIZE_INDEX` (sets.ml 3700): `s HAS_SIZE n ==> ?f. (!m. m<n ==> f m IN
+  /-- `HAS_SIZE_INDEX` (sets.ml 3717): `s HAS_SIZE n ==> ?f. (!m. m<n ==> f m IN
       s) /\ (!x. x IN s ==> ?!m. m<n /\ f m = x)`.  ONE top-level `CONJ_TAC
       THENL [b1; ALL_TAC]` (width 2); uses `CONJUNCTS_THEN2`, `COND_CASES_TAC`,
       `CONV_TAC(ONCE_DEPTH_CONV COND_ELIM_CONV)`, `ASM_CASES_TAC`. -/
   HAS_SIZE_INDEX : thm
-  /-- `INFINITE_ENUMERATE` (sets.ml 3722): `INFINITE s ==> ?r:num->num. (!m n.
+  /-- `INFINITE_ENUMERATE` (sets.ml 3739): `INFINITE s ==> ?r:num->num. (!m n.
       m<n ==> r m < r n) /\ IMAGE r (:num) = s`.  Six top-level `THENL`s (all
       width 2), `prove_recursive_functions_exist num_RECURSION`, `num_WOP`,
       `num_MAX`, `num_WF`, inline `TAUT`/`ARITH_RULE`. -/
   INFINITE_ENUMERATE : thm
-  /-- `INFINITE_ENUMERATE_EQ` (sets.ml 3758): the `<=>` form of
+  /-- `INFINITE_ENUMERATE_EQ` (sets.ml 3775): the `<=>` form of
       `INFINITE_ENUMERATE`.  `MATCH_MP_TAC INFINITE_IMAGE`, `WLOG_LT`; the
       `STRIP_ASSUME_TAC o GSYM` runs `GSYM` first.  No top-level `THENL`. -/
   INFINITE_ENUMERATE_EQ : thm
-  /-- `INFINITE_ENUMERATE_SUBSET` (sets.ml 3767): `INFINITE s <=> ?f:num->A.
+  /-- `INFINITE_ENUMERATE_SUBSET` (sets.ml 3784): `INFINITE s <=> ?f:num->A.
       (!x. f x IN s) /\ (!x y. f x = f y ==> x = y)`.  `EQ_TAC..STRIP_TAC
       THENL [b1; b2]` (width 2); b1 has an inner width-2 `SUBGOAL_THEN`, uses
       `MATCH_MP_TAC(MATCH_MP WF_REC_EXISTS WF_num)` and a `MP_TAC o SPEC o
       MATCH_MP(REWRITE_RULE[T.IMP_CONJ] INFINITE_DIFF_FINITE)` chain (MATCH_MP
       first). -/
   INFINITE_ENUMERATE_SUBSET : thm
-  /-- `set_of_list` (sets.ml 3790): `new_recursive_definition list_RECURSION`
+  /-- `WEAK_CHAIN_STRICT_SUBCHAIN` (sets.ml @3810): a weakly increasing chain
+      with k strict steps contains a strict chain of length k with the same
+      values.  Induction on the chain length. -/
+  WEAK_CHAIN_STRICT_SUBCHAIN : thm
+  /-- `WEAK_CHAIN_STRICT_STEPS_BOUND` (sets.ml @3879): a bound on strict
+      chains bounds the strict steps of a weak chain. -/
+  WEAK_CHAIN_STRICT_STEPS_BOUND : thm
+  /-- `WEAK_CHAIN_PAIR_BOUND` (sets.ml @3893): the length bound for a pair of
+      weak chains, one of which increases strictly at each step. -/
+  WEAK_CHAIN_PAIR_BOUND : thm
+  /-- `set_of_list` (sets.ml 3933): `new_recursive_definition list_RECURSION`
       giving `set_of_list [] = {}` and `set_of_list (CONS h t) = h INSERT
       set_of_list t`.  DEFINED HERE, not in Lists.lean. -/
   set_of_list : thm
-  /-- `list_of_set` (sets.ml 3794): `new_definition` `list_of_set s = @l.
+  /-- `list_of_set` (sets.ml 3937): `new_definition` `list_of_set s = @l.
       set_of_list l = s /\ LENGTH l = CARD s`.  DEFINED HERE, not in
       Lists.lean. -/
   list_of_set : thm
-  /-- `LIST_OF_SET_PROPERTIES` (sets.ml 3797): `FINITE s ==> set_of_list
+  /-- `LIST_OF_SET_PROPERTIES` (sets.ml 3940): `FINITE s ==> set_of_list
       (list_of_set s) = s /\ LENGTH (list_of_set s) = CARD s`.  ONE top-level
       `THENL` width 2 after `CONV_TAC(BINDER_CONV(RAND_CONV SELECT_CONV))` and
       `MATCH_MP_TAC FINITE_INDUCT_STRONG`. -/
   LIST_OF_SET_PROPERTIES : thm
-  /-- `SET_OF_LIST_OF_SET` (sets.ml 3811): `FINITE s ==> set_of_list
+  /-- `SET_OF_LIST_OF_SET` (sets.ml 3954): `FINITE s ==> set_of_list
       (list_of_set s) = s`.  `MESON_TAC[LIST_OF_SET_PROPERTIES]`. -/
   SET_OF_LIST_OF_SET : thm
-  /-- `LENGTH_LIST_OF_SET` (sets.ml 3815): `FINITE s ==> LENGTH (list_of_set s)
+  /-- `LENGTH_LIST_OF_SET` (sets.ml 3958): `FINITE s ==> LENGTH (list_of_set s)
       = CARD s`.  `MESON_TAC[LIST_OF_SET_PROPERTIES]`. -/
   LENGTH_LIST_OF_SET : thm
-  /-- `MEM_LIST_OF_SET` (sets.ml 3819): `FINITE s ==> !x. MEM x (list_of_set s)
+  /-- `MEM_LIST_OF_SET` (sets.ml 3962): `FINITE s ==> !x. MEM x (list_of_set s)
       <=> x IN s`.  `DISCH_THEN(MP_TAC o MATCH_MP SET_OF_LIST_OF_SET)` then
       `DISCH_THEN(fun th -> GEN_REWRITE_TAC (BINDER_CONV o funpow 2 RAND_CONV)
       [GSYM th])`, `SPEC_TAC`, `LIST_INDUCT_TAC`.  No top-level `THENL`. -/
   MEM_LIST_OF_SET : thm
-  /-- `FINITE_SET_OF_LIST` (sets.ml 3828): `FINITE (set_of_list l)`.
+  /-- `FINITE_SET_OF_LIST` (sets.ml 3971): `FINITE (set_of_list l)`.
       `LIST_INDUCT_TAC THEN ASM_SIMP_TAC[set_of_list; FINITE_RULES]`. -/
   FINITE_SET_OF_LIST : thm
-  /-- `IN_SET_OF_LIST` (sets.ml 3832): `x IN set_of_list l <=> MEM x l`.
+  /-- `FINITE_PROPER_PREFIXES` (sets.ml @3975): a list has finitely many
+      proper prefixes.  `LIST_INDUCT_TAC THENL [..; ..]`. -/
+  FINITE_PROPER_PREFIXES : thm
+  /-- `IN_SET_OF_LIST` (sets.ml 3990): `x IN set_of_list l <=> MEM x l`.
       `GEN_TAC THEN LIST_INDUCT_TAC THEN REWRITE_TAC[..] THEN ASM_MESON_TAC[]`. -/
   IN_SET_OF_LIST : thm
-  /-- `SET_OF_LIST_APPEND` (sets.ml 3838): `set_of_list (APPEND l1 l2) =
+  /-- `SET_OF_LIST_APPEND` (sets.ml 3996): `set_of_list (APPEND l1 l2) =
       set_of_list l1 UNION set_of_list l2`.  One-liner `REWRITE_TAC[EXTENSION;
       IN_SET_OF_LIST; IN_UNION; MEM_APPEND]`. -/
   SET_OF_LIST_APPEND : thm
-  /-- `SET_OF_LIST_MAP` (sets.ml 3843): `set_of_list (MAP f l) = IMAGE f
+  /-- `SET_OF_LIST_MAP` (sets.ml 4001): `set_of_list (MAP f l) = IMAGE f
       (set_of_list l)`.  `GEN_TAC THEN LIST_INDUCT_TAC THEN
       ASM_REWRITE_TAC[set_of_list; MAP; IMAGE_CLAUSES]`. -/
   SET_OF_LIST_MAP : thm
-  /-- `SET_OF_LIST_EQ_EMPTY` (sets.ml 3848): `set_of_list l = {} <=> l = []`.
+  /-- `SET_OF_LIST_EQ_EMPTY` (sets.ml 4006): `set_of_list l = {} <=> l = []`.
       `LIST_INDUCT_TAC THEN REWRITE_TAC[..]`. -/
   SET_OF_LIST_EQ_EMPTY : thm
-  /-- `LIST_OF_SET_EMPTY` (sets.ml 3853): `list_of_set {} = []`.
+  /-- `LIST_OF_SET_EMPTY` (sets.ml 4011): `list_of_set {} = []`.
       `REWRITE_TAC[GSYM LENGTH_EQ_NIL] THEN SIMP_TAC[LENGTH_LIST_OF_SET;
       FINITE_EMPTY; CARD_CLAUSES]`. -/
   LIST_OF_SET_EMPTY : thm
-  /-- `LIST_OF_SET_SING` (sets.ml 3858): `list_of_set {a} = [a]`.
+  /-- `LIST_OF_SET_SING` (sets.ml 4016): `list_of_set {a} = [a]`.
       `MATCH_MP_TAC SELECT_UNIQUE` then `MATCH_MP_TAC list_INDUCT`, an inner
       `LIST_INDUCT_TAC`, `DISCH_THEN(K ALL_TAC)`, closing `SET_TAC[]`.  No
       top-level `THENL`. -/
   LIST_OF_SET_SING : thm
-  /-- `pairwise` (sets.ml 3894): `new_definition` `pairwise r s <=> !x y. x IN s
+  /-- `pairwise` (sets.ml 4052): `new_definition` `pairwise r s <=> !x y. x IN s
       /\ y IN s /\ ~(x=y) ==> r x y`. -/
   pairwise : thm
-  /-- `PAIRWISE_EMPTY` (sets.ml 3897): `pairwise r {} <=> T`.
+  /-- `PAIRWISE_EMPTY` (sets.ml 4055): `pairwise r {} <=> T`.
       `REWRITE_TAC[pairwise; NOT_IN_EMPTY] THEN MESON_TAC[]`. -/
   PAIRWISE_EMPTY : thm
-  /-- `PAIRWISE_SING` (sets.ml 3901): `pairwise r {x} <=> T`.
+  /-- `PAIRWISE_SING` (sets.ml 4059): `pairwise r {x} <=> T`.
       `REWRITE_TAC[pairwise; IN_SING] THEN MESON_TAC[]`. -/
   PAIRWISE_SING : thm
-  /-- `PAIRWISE_IMP` (sets.ml 3905): `pairwise P s /\ (!x y. ... ==> Q x y) ==>
+  /-- `PAIRWISE_IMP` (sets.ml 4063): `pairwise P s /\ (!x y. ... ==> Q x y) ==>
       pairwise Q s`.  `REWRITE_TAC[pairwise] THEN SET_TAC[]`. -/
   PAIRWISE_IMP : thm
-  /-- `PAIRWISE_MONO` (sets.ml 3912): `pairwise r s /\ t SUBSET s ==> pairwise r
+  /-- `PAIRWISE_MONO` (sets.ml 4070): `pairwise r s /\ t SUBSET s ==> pairwise r
       t`.  `REWRITE_TAC[pairwise] THEN SET_TAC[]`. -/
   PAIRWISE_MONO : thm
-  /-- `PAIRWISE_AND` (sets.ml 3916): `pairwise R s /\ pairwise R' s <=> pairwise
+  /-- `PAIRWISE_AND` (sets.ml 4074): `pairwise R s /\ pairwise R' s <=> pairwise
       (\x y. R x y /\ R' x y) s`.  `REWRITE_TAC[pairwise] THEN SET_TAC[]`. -/
   PAIRWISE_AND : thm
-  /-- `PAIRWISE_INSERT` (sets.ml 3921): `pairwise r (x INSERT s) <=> (!y. y IN s
+  /-- `PAIRWISE_INSERT` (sets.ml 4079): `pairwise r (x INSERT s) <=> (!y. y IN s
       /\ ~(y=x) ==> r x y /\ r y x) /\ pairwise r s`.
       `REWRITE_TAC[pairwise; IN_INSERT] THEN MESON_TAC[]`. -/
   PAIRWISE_INSERT : thm
-  /-- `PAIRWISE_INSERT_SYMMETRIC` (sets.ml 3928): symmetric-relation variant of
+  /-- `PAIRWISE_INSERT_SYMMETRIC` (sets.ml 4086): symmetric-relation variant of
       `PAIRWISE_INSERT`.  `REWRITE_TAC[PAIRWISE_INSERT] THEN MESON_TAC[]`. -/
   PAIRWISE_INSERT_SYMMETRIC : thm
-  /-- `PAIRWISE_IMAGE` (sets.ml 3935): `pairwise r (IMAGE f s) <=> pairwise (\x
+  /-- `PAIRWISE_IMAGE` (sets.ml 4093): `pairwise r (IMAGE f s) <=> pairwise (\x
       y. ~(f x = f y) ==> r (f x) (f y)) s`.  `REWRITE_TAC[pairwise; IN_IMAGE]
       THEN MESON_TAC[]`. -/
   PAIRWISE_IMAGE : thm
-  /-- `PAIRWISE_UNION` (sets.ml 3941): `pairwise R (s UNION t) <=> pairwise R s
+  /-- `PAIRWISE_UNION` (sets.ml 4099): `pairwise R (s UNION t) <=> pairwise R s
       /\ pairwise R t /\ (!x y. x IN s DIFF t /\ y IN t DIFF s ==> R x y /\ R y
       x)`.  `REWRITE_TAC[pairwise] THEN SET_TAC[]`. -/
   PAIRWISE_UNION : thm
-  /-- `PAIRWISE_CHAIN_UNIONS` (sets.ml 3947): a chain of `pairwise R` sets has
+  /-- `PAIRWISE_CHAIN_UNIONS` (sets.ml 4105): a chain of `pairwise R` sets has
       `pairwise R (UNIONS c)`.  `REWRITE_TAC[pairwise] THEN SET_TAC[]`. -/
   PAIRWISE_CHAIN_UNIONS : thm
-  /-- `DIFF_UNIONS_PAIRWISE_DISJOINT` (sets.ml 3954): for `pairwise DISJOINT s`
+  /-- `DIFF_UNIONS_PAIRWISE_DISJOINT` (sets.ml 4112): for `pairwise DISJOINT s`
       and `t SUBSET s`, `UNIONS s DIFF UNIONS t = UNIONS (s DIFF t)`.
       `MATCH_MP_TAC(SET_RULE ...) THEN CONJ_TAC THENL [b1; b2]` (width 2). -/
   DIFF_UNIONS_PAIRWISE_DISJOINT : thm
-  /-- `INTER_UNIONS_PAIRWISE_DISJOINT` (sets.ml 3968): for `pairwise DISJOINT (s
+  /-- `INTER_UNIONS_PAIRWISE_DISJOINT` (sets.ml 4126): for `pairwise DISJOINT (s
       UNION t)`, `UNIONS s INTER UNIONS t = UNIONS (s INTER t)`.  TWO top-level
       `THENL`s (`EQ_TAC` width 2, then an inner `ASM_CASES_TAC` width 2). -/
   INTER_UNIONS_PAIRWISE_DISJOINT : thm
-  /-- `PSUBSET_UNIONS_PAIRWISE_DISJOINT` (sets.ml 3983): for `pairwise DISJOINT
+  /-- `PSUBSET_UNIONS_PAIRWISE_DISJOINT` (sets.ml 4141): for `pairwise DISJOINT
       v` and `u PSUBSET (v DELETE {})`, `UNIONS u PSUBSET UNIONS v`.
       `CONJ_TAC THENL [b1; ALL_TAC]` (width 2), `W(MP_TAC o PART_MATCH (lhand o
       rand) DIFF_UNIONS_PAIRWISE_DISJOINT o lhand o rand o snd)`, `ANTS_TAC
@@ -6376,8 +6414,15 @@ def setupSetsList [HolBase] (S : SetsCore)
     (COND_ELIM_CONV : ioconv)
     (SELECT_CONV' : term → Except String thm)
     (new_recursive_definition' : thm → term → IO (Except String thm))
-    (new_definition' : term → IO (Except String thm)) :
+    (new_definition' : term → IO (Except String thm))
+    (SMi : SetsMisc) (SCard2 : SetsCard2)
+    (LE LE_REFL LE_TRANS LE_ADD2 APPEND APPEND_EQ_NIL list_CASES : thm)
+    (ASM_ARITH_TAC : tactic)
+    (MESON' : List thm → term → IO (Except String thm)) :
     ExceptT String IO SetsList := do
+  let MESON (ths : List thm) (t : term) : ExceptT String IO thm := MESON' ths t
+  let { EMPTY_GSPEC, .. } := SMi
+  let { CARD_SUBSET, CARD_UNION_LE, .. } := SCard2
   let SET_TAC := SET_TAC S P MESON_TAC
   let SET_RULE := SET_RULE S P MESON_TAC
   let ARITH_RULE (t : term) : ExceptT String IO thm := ARITH_RULE' t
@@ -6392,7 +6437,7 @@ def setupSetsList [HolBase] (S : SetsCore)
   let { num_RECURSION, .. } := Nm
   let { num_MAX, num_WF, num_WOP, WLOG_LT, .. } := Ar4
   let { WF_num, WF_REC_EXISTS, .. } := Wf
-  let { EXTENSION, IN_ELIM_THM, SUBSET, DISJOINT, FINITE_RULES, INFINITE, .. } := S
+  let { EXTENSION, IN_ELIM_THM, SUBSET, DISJOINT, FINITE_RULES, INFINITE, PSUBSET, .. } := S
   let { NOT_IN_EMPTY, IN_UNIV, IN_UNION, IN_UNIONS, IN_INTER, IN_DIFF,
         IN_INSERT, IN_DELETE, IN_SING, IN_IMAGE, FORALL_IN_IMAGE,
         FORALL_IN_GSPEC, UNIONS_IMAGE, .. } := P
@@ -6402,9 +6447,10 @@ def setupSetsList [HolBase] (S : SetsCore)
   let { NOT_INSERT_EMPTY, .. } := SID
   let { FINITE_INDUCT_STRONG, .. } := SInd
   let { FINITE_EMPTY, FINITE_IMAGE, INFINITE_IMAGE, INFINITE_IMAGE_INJ,
-        INFINITE_NONEMPTY, INFINITE_DIFF_FINITE, INFINITE_SUPERSET, .. } := SFin
+        INFINITE_NONEMPTY, INFINITE_DIFF_FINITE, INFINITE_SUPERSET,
+        FINITE_SUBSET, FINITE_UNION_IMP, FINITE_INSERT, .. } := SFin
   let { CARD_CLAUSES, HAS_SIZE_0, HAS_SIZE_SUC, .. } := SCard
-  let { FINITE_NUMSEG_LT, num_FINITE, num_INFINITE, .. } := SInf
+  let { FINITE_NUMSEG_LT, CARD_NUMSEG_LT, num_FINITE, num_INFINITE, .. } := SInf
   let { IMP_CONJ, SWAP_FORALL_THM, FORALL_AND_THM, RIGHT_AND_EXISTS_THM,
         LEFT_IMP_EXISTS_THM, MONO_EXISTS, .. } := HolBase.T
   let { SELECT_UNIQUE, NOT_FORALL_THM, SKOLEM_THM, .. } := HolBase.C
@@ -6505,6 +6551,137 @@ def setupSetsList [HolBase] (S : SetsCore)
        ASM_REWRITE_TAC [SUBSET, FORALL_IN_IMAGE] THEN
        ASM_MESON_TAC [INFINITE_IMAGE_INJ, num_INFINITE]])
 
+  /- A weakly increasing chain of sets with k strict steps contains a strict
+     chain of length k with the same values; hence a bound for the length of a
+     pair of weakly increasing chains, one of which increases strictly at each
+     step. -/
+
+  let WEAK_CHAIN_STRICT_SUBCHAIN ← prove
+   r"!(c:num->A->bool) m.
+        (!i. i < m ==> c i SUBSET c(SUC i))
+        ==> ?d. d 0 = c 0 /\
+                d(CARD {i | i < m /\ ~(c i = c(SUC i))}) = c m /\
+                (!i. i <= CARD {i | i < m /\ ~(c i = c(SUC i))}
+                     ==> ?j. j <= m /\ d i = c j) /\
+                (!i. i < CARD {i | i < m /\ ~(c i = c(SUC i))}
+                     ==> d i PSUBSET d(SUC i))"
+   (← do
+    -- OCaml evaluates the ARITH_RULE calls last-first.
+    let a4 ← ARITH_RULE (← q r"m < SUC m")
+    let a3 ← ARITH_RULE (← q r"j <= m ==> j <= SUC m")
+    let a2 ← ARITH_RULE (← q r"~(SUC k <= k)")
+    let a1 ← ARITH_RULE (← q r"j <= m ==> j <= SUC m")
+    pure
+      (GEN_TAC THEN INDUCT_TAC THENL
+        [DISCH_TAC THEN EXISTS_TAC (← q r"c:num->A->bool") THEN
+         REWRITE_TAC [LT, EMPTY_GSPEC, CARD_CLAUSES, LE] THEN MESON_TAC [],
+         ALL_TAC] THEN
+       DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o check (is_imp o concl)) THEN
+       ANTS_TAC THENL
+        [X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+         ASM_ARITH_TAC,
+         ALL_TAC] THEN
+       ABBREV_TAC (← q r"k = CARD {i | i < m /\ ~((c:num->A->bool) i = c(SUC i))}") THEN
+       DISCH_THEN (X_CHOOSE_THEN (← q r"d:num->A->bool") STRIP_ASSUME_TAC) THEN
+       SUBGOAL_THEN (← q r"FINITE {i | i < m /\ ~((c:num->A->bool) i = c(SUC i))}")
+       ASSUME_TAC THENL
+        [MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"{i:num | i < m}") THEN
+         REWRITE_TAC [FINITE_NUMSEG_LT] THEN SET_TAC [],
+         ALL_TAC] THEN
+       ASM_CASES_TAC (← q r"(c:num->A->bool) m = c(SUC m)") THENL
+        [SUBGOAL_THEN
+          (← q r"{i | i < SUC m /\ ~((c:num->A->bool) i = c(SUC i))} =
+           {i | i < m /\ ~(c i = c(SUC i))}")
+         SUBST1_TAC THENL
+          [REWRITE_TAC [EXTENSION, IN_ELIM_THM, LT] THEN ASM_MESON_TAC [],
+           ASM_REWRITE_TAC []] THEN
+         EXISTS_TAC (← q r"d:num->A->bool") THEN ASM_REWRITE_TAC [] THEN
+         UNDISCH_TAC
+          (← q r"!i. i <= k
+               ==> ?j. j <= m /\ (d:num->A->bool) i = (c:num->A->bool) j") THEN
+         MESON_TAC [a1],
+         ALL_TAC] THEN
+       SUBGOAL_THEN
+        (← q r"{i | i < SUC m /\ ~((c:num->A->bool) i = c(SUC i))} =
+         m INSERT {i | i < m /\ ~(c i = c(SUC i))}")
+       SUBST1_TAC THENL
+        [GEN_REWRITE_TAC I [EXTENSION] THEN
+         REWRITE_TAC [IN_ELIM_THM, IN_INSERT, LT] THEN
+         X_GEN_TAC (← q r"i:num") THEN ASM_CASES_TAC (← q r"i:num = m") THEN ASM_REWRITE_TAC [],
+         ALL_TAC] THEN
+       ASM_SIMP_TAC [CARD_CLAUSES, IN_ELIM_THM, LT_REFL] THEN
+       EXISTS_TAC
+        (← q r"\i. if i <= k then (d:num->A->bool) i else c(SUC m)") THEN
+       REWRITE_TAC [LE_0, a2] THEN ASM_REWRITE_TAC [] THEN
+       CONJ_TAC THENL
+        [X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN COND_CASES_TAC THENL
+          [UNDISCH_TAC
+            (← q r"!i. i <= k
+                 ==> ?j. j <= m /\ (d:num->A->bool) i = (c:num->A->bool) j") THEN
+           DISCH_THEN (MP_TAC o SPEC (← q r"i:num")) THEN ASM_REWRITE_TAC [] THEN
+           MESON_TAC [a3],
+           EXISTS_TAC (← q r"SUC m") THEN REWRITE_TAC [LE_REFL]],
+         X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN
+         ASM_CASES_TAC (← q r"SUC i <= k") THEN ASM_REWRITE_TAC [] THENL
+          [SUBGOAL_THEN (← q r"i:num <= k") (fun th => REWRITE_TAC [th]) THENL
+            [ASM_ARITH_TAC, FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC],
+           ALL_TAC] THEN
+         SUBGOAL_THEN (← q r"i:num = k") SUBST1_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
+         ASM_REWRITE_TAC [LE_REFL, PSUBSET] THEN
+         UNDISCH_TAC (← q r"!i. i < SUC m ==> (c:num->A->bool) i SUBSET c(SUC i)") THEN
+         DISCH_THEN (MP_TAC o SPEC (← q r"m:num")) THEN
+         REWRITE_TAC [a4]]))
+
+  let WEAK_CHAIN_STRICT_STEPS_BOUND ← prove
+   r"!P (c:num->A->bool) m N.
+        (!d n. (!i. i <= n ==> P(d i)) /\
+               (!i. i < n ==> d i PSUBSET d(SUC i))
+               ==> n <= N) /\
+        (!i. i <= m ==> P(c i)) /\ (!i. i < m ==> c i SUBSET c(SUC i))
+        ==> CARD {i | i < m /\ ~(c i = c(SUC i))} <= N"
+   (REPEAT STRIP_TAC THEN
+    MP_TAC (← ISPECL [← q r"c:num->A->bool", ← q r"m:num"] WEAK_CHAIN_STRICT_SUBCHAIN) THEN
+    ASM_REWRITE_TAC [] THEN
+    DISCH_THEN (X_CHOOSE_THEN (← q r"d:num->A->bool") STRIP_ASSUME_TAC) THEN
+    FIRST_X_ASSUM MATCH_MP_TAC THEN EXISTS_TAC (← q r"d:num->A->bool") THEN
+    ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [])
+
+  let WEAK_CHAIN_PAIR_BOUND ← prove
+   r"!P Q (a:num->A->bool) (b:num->B->bool) n M N.
+        (!d m. (!i. i <= m ==> P(d i)) /\
+               (!i. i < m ==> d i PSUBSET d(SUC i))
+               ==> m <= M) /\
+        (!d m. (!i. i <= m ==> Q(d i)) /\
+               (!i. i < m ==> d i PSUBSET d(SUC i))
+               ==> m <= N) /\
+        (!i. i <= n ==> P(a i) /\ Q(b i)) /\
+        (!i. i < n ==> a i SUBSET a(SUC i) /\ b i SUBSET b(SUC i)) /\
+        (!i. i < n ==> ~(a i = a(SUC i)) \/ ~(b i = b(SUC i)))
+        ==> n <= M + N"
+   (REPEAT STRIP_TAC THEN MATCH_MP_TAC LE_TRANS THEN
+    EXISTS_TAC (← q r"CARD {i | i < n /\ ~((a:num->A->bool) i = a(SUC i))} +
+                CARD {i | i < n /\ ~((b:num->B->bool) i = b(SUC i))}") THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC LE_TRANS THEN
+      EXISTS_TAC (← q r"CARD({i | i < n /\ ~((a:num->A->bool) i = a(SUC i))} UNION
+                       {i | i < n /\ ~((b:num->B->bool) i = b(SUC i))})") THEN
+      CONJ_TAC THENL
+       [GEN_REWRITE_TAC LAND_CONV [← GSYM CARD_NUMSEG_LT] THEN
+        MATCH_MP_TAC CARD_SUBSET THEN CONJ_TAC THENL
+         [REWRITE_TAC [SUBSET, IN_UNION, IN_ELIM_THM] THEN
+          X_GEN_TAC (← q r"j:num") THEN DISCH_TAC THEN
+          FIRST_X_ASSUM (MP_TAC o SPEC (← q r"j:num")) THEN ASM_REWRITE_TAC [],
+          MATCH_MP_TAC FINITE_UNION_IMP THEN CONJ_TAC THEN
+          MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"{i:num | i < n}") THEN
+          REWRITE_TAC [FINITE_NUMSEG_LT] THEN SET_TAC []],
+        MATCH_MP_TAC CARD_UNION_LE THEN CONJ_TAC THEN
+        MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"{i:num | i < n}") THEN
+        REWRITE_TAC [FINITE_NUMSEG_LT] THEN SET_TAC []],
+      MATCH_MP_TAC LE_ADD2 THEN CONJ_TAC THEN
+      MATCH_MP_TAC WEAK_CHAIN_STRICT_STEPS_BOUND THENL
+       [EXISTS_TAC (← q r"P:(A->bool)->bool"), EXISTS_TAC (← q r"Q:(B->bool)->bool")] THEN
+      (CONJ_TAC THENL [FIRST_ASSUM ACCEPT_TAC, ASM_SIMP_TAC []])])
+
   /- Mapping between finite sets and lists. -/
 
   let set_of_list ← new_recursive_definition list_RECURSION
@@ -6549,6 +6726,21 @@ def setupSetsList [HolBase] (S : SetsCore)
    r"!l:A list. FINITE(set_of_list l)"
    (LIST_INDUCT_TAC THEN ASM_SIMP_TAC [set_of_list, FINITE_RULES])
 
+  let FINITE_PROPER_PREFIXES ← prove
+   r"!l:A list. FINITE {p | ?a q. l = APPEND p (CONS a q)}"
+   (LIST_INDUCT_TAC THENL
+     [MATCH_MP_TAC (← MESON [FINITE_EMPTY] (← q r"s = {} ==> FINITE(s:A list->bool)")) THEN
+      REWRITE_TAC [EXTENSION, NOT_IN_EMPTY, IN_ELIM_THM] THEN
+      MESON_TAC [APPEND_EQ_NIL, NOT_CONS_NIL],
+      MATCH_MP_TAC FINITE_SUBSET THEN
+      EXISTS_TAC
+       (← q r"[]:A list INSERT IMAGE (CONS (h:A)) {p | ?a q. t = APPEND p (CONS a q)}")
+      THEN ASM_SIMP_TAC [FINITE_INSERT, FINITE_IMAGE] THEN
+      REWRITE_TAC [SUBSET, IN_ELIM_THM, IN_INSERT, IN_IMAGE] THEN
+      X_GEN_TAC (← q r"p:A list") THEN
+      STRUCT_CASES_TAC (← ISPEC (← q r"p:A list") list_CASES) THEN
+      REWRITE_TAC [APPEND, CONS_11, NOT_CONS_NIL] THEN MESON_TAC []])
+
   let IN_SET_OF_LIST ← prove
    r"!x l:A list. x IN (set_of_list l) <=> MEM x l"
    (GEN_TAC THEN LIST_INDUCT_TAC THEN
@@ -6585,7 +6777,7 @@ def setupSetsList [HolBase] (S : SetsCore)
     SIMP_TAC [LENGTH, set_of_list, CONS_11, SUC_INJ, NOT_CONS_NIL, NOT_SUC] THEN
     SET_TAC [])
 
-  -- mk_setenum (sets.ml 3880-3882): its two constants, parsed once.
+  -- mk_setenum (sets.ml 4038-4040): its two constants, parsed once.
   let insert_atm ← q r"(INSERT):A->(A->bool)->(A->bool)"
   let nil_atm ← q r"(EMPTY):A->bool"
 
@@ -6697,9 +6889,11 @@ def setupSetsList [HolBase] (S : SetsCore)
   return {
     insert_atm, nil_atm,
     HAS_SIZE_INDEX, INFINITE_ENUMERATE, INFINITE_ENUMERATE_EQ,
-    INFINITE_ENUMERATE_SUBSET, set_of_list, list_of_set,
+    INFINITE_ENUMERATE_SUBSET, WEAK_CHAIN_STRICT_SUBCHAIN,
+    WEAK_CHAIN_STRICT_STEPS_BOUND, WEAK_CHAIN_PAIR_BOUND, set_of_list, list_of_set,
     LIST_OF_SET_PROPERTIES, SET_OF_LIST_OF_SET, LENGTH_LIST_OF_SET,
-    MEM_LIST_OF_SET, FINITE_SET_OF_LIST, IN_SET_OF_LIST, SET_OF_LIST_APPEND,
+    MEM_LIST_OF_SET, FINITE_SET_OF_LIST, FINITE_PROPER_PREFIXES, IN_SET_OF_LIST,
+    SET_OF_LIST_APPEND,
     SET_OF_LIST_MAP, SET_OF_LIST_EQ_EMPTY, LIST_OF_SET_EMPTY, LIST_OF_SET_SING,
     pairwise, PAIRWISE_EMPTY, PAIRWISE_SING, PAIRWISE_IMP, PAIRWISE_MONO,
     PAIRWISE_AND, PAIRWISE_INSERT, PAIRWISE_INSERT_SYMMETRIC, PAIRWISE_IMAGE,
@@ -6707,161 +6901,161 @@ def setupSetsList [HolBase] (S : SetsCore)
     INTER_UNIONS_PAIRWISE_DISJOINT, PSUBSET_UNIONS_PAIRWISE_DISJOINT }
 
 /- ---------------------------------------------------------------------- -/
-/- UNION_OF and INTERSECTION_OF.  (sets.ml 3998-4364)                      -/
+/- UNION_OF and INTERSECTION_OF.  (sets.ml 4156-4522)                      -/
 /- ---------------------------------------------------------------------- -/
 
 /-- `parse_as_infix("UNION_OF",(20,"right"))` and
-    `parse_as_infix("INTERSECTION_OF",(20,"right"))` (sets.ml 4001-4002).
+    `parse_as_infix("INTERSECTION_OF",(20,"right"))` (sets.ml 4159-4160).
     Session runs it once, before `setupSetsUnionOf`. -/
 def setupSetsUnionOfInfix : IO Unit := do
   HolCore.Printer.parse_as_infix ("UNION_OF", (20, "right"))
   HolCore.Printer.parse_as_infix ("INTERSECTION_OF", (20, "right"))
 
 /-- `UNION_OF` / `INTERSECTION_OF` and the ARBITRARY and FINITE cases
-    (sets.ml 3998-4364).  These combinators - "`s` is a union (resp.
+    (sets.ml 4156-4522).  These combinators - "`s` is a union (resp.
     intersection) of `Q`-sets drawn from a `P`-family" - are used heavily by
     the topology library downstream, so faithfulness here has long reach. -/
 structure SetsUnionOf where
-  /-- `UNION_OF` (sets.ml 4004, `new_definition`): `P UNION_OF Q = \s. ?u. P u
+  /-- `UNION_OF` (sets.ml 4162, `new_definition`): `P UNION_OF Q = \s. ?u. P u
       /\ (!c. c IN u ==> Q c) /\ UNIONS u = s`.  Introduces the `UNION_OF`
       constant; its infix fixity is registered by `setupSetsUnionOfInfix`. -/
   UNION_OF : thm
-  /-- `INTERSECTION_OF` (sets.ml 4009, `new_definition`): `P INTERSECTION_OF Q
+  /-- `INTERSECTION_OF` (sets.ml 4167, `new_definition`): `P INTERSECTION_OF Q
       = \s. ?u. P u /\ (!c. c IN u ==> Q c) /\ INTERS u = s`.  Introduces the
       `INTERSECTION_OF` constant. -/
   INTERSECTION_OF : thm
-  /-- `UNION_OF_INC` (sets.ml 4012): `P {s} /\ Q s ==> (P UNION_OF Q) s`.
+  /-- `UNION_OF_INC` (sets.ml 4170): `P {s} /\ Q s ==> (P UNION_OF Q) s`.
       `EXISTS_TAC {s}`, `ASM_SIMP_TAC[UNIONS_1; IN_SING]`. -/
   UNION_OF_INC : thm
-  /-- `INTERSECTION_OF_INC` (sets.ml 4017): `P {s} /\ Q s ==>
+  /-- `INTERSECTION_OF_INC` (sets.ml 4175): `P {s} /\ Q s ==>
       (P INTERSECTION_OF Q) s`.  `ASM_SIMP_TAC[INTERS_1; IN_SING]`. -/
   INTERSECTION_OF_INC : thm
-  /-- `UNION_OF_MONO` (sets.ml 4022): `REWRITE_TAC[UNION_OF] THEN MESON_TAC`. -/
+  /-- `UNION_OF_MONO` (sets.ml 4180): `REWRITE_TAC[UNION_OF] THEN MESON_TAC`. -/
   UNION_OF_MONO : thm
-  /-- `INTERSECTION_OF_MONO` (sets.ml 4027): `REWRITE_TAC[INTERSECTION_OF] THEN
+  /-- `INTERSECTION_OF_MONO` (sets.ml 4185): `REWRITE_TAC[INTERSECTION_OF] THEN
       MESON_TAC`. -/
   INTERSECTION_OF_MONO : thm
-  /-- `FORALL_UNION_OF` (sets.ml 4033): `REWRITE_TAC[UNION_OF] THEN
+  /-- `FORALL_UNION_OF` (sets.ml 4191): `REWRITE_TAC[UNION_OF] THEN
       MESON_TAC`. -/
   FORALL_UNION_OF : thm
-  /-- `FORALL_INTERSECTION_OF` (sets.ml 4038): `REWRITE_TAC[INTERSECTION_OF]
+  /-- `FORALL_INTERSECTION_OF` (sets.ml 4196): `REWRITE_TAC[INTERSECTION_OF]
       THEN MESON_TAC`. -/
   FORALL_INTERSECTION_OF : thm
-  /-- `UNION_OF_EMPTY` (sets.ml 4043): `P {} ==> (P UNION_OF Q) {}`.
+  /-- `UNION_OF_EMPTY` (sets.ml 4201): `P {} ==> (P UNION_OF Q) {}`.
       `EXISTS_TAC {}`, `ASM_REWRITE_TAC[UNIONS_0; NOT_IN_EMPTY]`. -/
   UNION_OF_EMPTY : thm
-  /-- `INTERSECTION_OF_EMPTY` (sets.ml 4049): `P {} ==>
+  /-- `INTERSECTION_OF_EMPTY` (sets.ml 4207): `P {} ==>
       (P INTERSECTION_OF Q) UNIV`.  `ASM_REWRITE_TAC[INTERS_0; NOT_IN_EMPTY]`. -/
   INTERSECTION_OF_EMPTY : thm
-  /-- `ARBITRARY` (sets.ml 4062, `new_definition`): `ARBITRARY s <=> T`.
+  /-- `ARBITRARY` (sets.ml 4220, `new_definition`): `ARBITRARY s <=> T`.
       Introduces the `ARBITRARY` constant. -/
   ARBITRARY : thm
-  /-- `ARBITRARY_UNION_OF_ALT` (sets.ml 4062): `(ARBITRARY UNION_OF B) s <=>
+  /-- `ARBITRARY_UNION_OF_ALT` (sets.ml 4220): `(ARBITRARY UNION_OF B) s <=>
       !x. x IN s ==> ?u. u IN B /\ x IN u /\ u SUBSET s`.  ONE top-level `THENL`
       (CONJ_TAC, width 2, second branch ALL_TAC), inline `TAUT`, `FORALL_AND_THM`,
       `EXISTS_TAC {u | u IN B /\ u SUBSET s}`, `ASM SET_TAC[]`. -/
   ARBITRARY_UNION_OF_ALT : thm
-  /-- `ARBITRARY_UNION_OF_EMPTY` (sets.ml 4074): `SIMP_TAC[UNION_OF_EMPTY;
+  /-- `ARBITRARY_UNION_OF_EMPTY` (sets.ml 4232): `SIMP_TAC[UNION_OF_EMPTY;
       ARBITRARY]`. -/
   ARBITRARY_UNION_OF_EMPTY : thm
-  /-- `ARBITRARY_INTERSECTION_OF_EMPTY` (sets.ml 4078):
+  /-- `ARBITRARY_INTERSECTION_OF_EMPTY` (sets.ml 4236):
       `SIMP_TAC[INTERSECTION_OF_EMPTY; ARBITRARY]`. -/
   ARBITRARY_INTERSECTION_OF_EMPTY : thm
-  /-- `ARBITRARY_UNION_OF_INC` (sets.ml 4082): `SIMP_TAC[UNION_OF_INC;
+  /-- `ARBITRARY_UNION_OF_INC` (sets.ml 4240): `SIMP_TAC[UNION_OF_INC;
       ARBITRARY]`. -/
   ARBITRARY_UNION_OF_INC : thm
-  /-- `ARBITRARY_INTERSECTION_OF_INC` (sets.ml 4086): `SIMP_TAC[
+  /-- `ARBITRARY_INTERSECTION_OF_INC` (sets.ml 4244): `SIMP_TAC[
       INTERSECTION_OF_INC; ARBITRARY]`. -/
   ARBITRARY_INTERSECTION_OF_INC : thm
-  /-- `ARBITRARY_UNION_OF_COMPLEMENT` (sets.ml 4090): `(ARBITRARY UNION_OF P) s
+  /-- `ARBITRARY_UNION_OF_COMPLEMENT` (sets.ml 4248): `(ARBITRARY UNION_OF P) s
       <=> (ARBITRARY INTERSECTION_OF (\s. P((:A) DIFF s))) ((:A) DIFF s)`.  No
       top-level `THENL`; `X_CHOOSE_THEN .. STRIP_ASSUME_TAC`, `EXISTS_TAC IMAGE
       (\c. UNIV DIFF c) u`, `ONCE_REWRITE_TAC[UNIONS_INTERS; INTERS_UNIONS]`,
       an inline `SET_RULE`. -/
   ARBITRARY_UNION_OF_COMPLEMENT : thm
-  /-- `ARBITRARY_INTERSECTION_OF_COMPLEMENT` (sets.ml 4102): dual.
+  /-- `ARBITRARY_INTERSECTION_OF_COMPLEMENT` (sets.ml 4260): dual.
       `REWRITE_TAC[ARBITRARY_UNION_OF_COMPLEMENT] THEN REWRITE_TAC[ETA_AX;
       COMPL_COMPL]`. -/
   ARBITRARY_INTERSECTION_OF_COMPLEMENT : thm
-  /-- `ARBITRARY_UNION_OF_IDEMPOT` (sets.ml 4108): `ARBITRARY UNION_OF ARBITRARY
+  /-- `ARBITRARY_UNION_OF_IDEMPOT` (sets.ml 4266): `ARBITRARY UNION_OF ARBITRARY
       UNION_OF P = ARBITRARY UNION_OF P`.  ONE top-level `THENL` (CONJ_TAC,
       width 2, second branch `REWRITE_TAC[UNIONS_IMAGE]`); `DISCH_THEN(
       CONJUNCTS_THEN2 MP_TAC (SUBST1_TAC o SYM))` runs `SYM` first, `SKOLEM_THM`,
       `GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)` (depth 2). -/
   ARBITRARY_UNION_OF_IDEMPOT : thm
-  /-- `ARBITRARY_INTERSECTION_OF_IDEMPOT` (sets.ml 4127): dual, via
+  /-- `ARBITRARY_INTERSECTION_OF_IDEMPOT` (sets.ml 4285): dual, via
       `REWRITE_RULE[GSYM FUN_EQ_THM; ETA_AX] ARBITRARY_INTERSECTION_OF_COMPLEMENT`
       then `ARBITRARY_UNION_OF_IDEMPOT`. -/
   ARBITRARY_INTERSECTION_OF_IDEMPOT : thm
-  /-- `ARBITRARY_UNION_OF_UNIONS` (sets.ml 4135): `(!s. s IN u ==> (ARBITRARY
+  /-- `ARBITRARY_UNION_OF_UNIONS` (sets.ml 4293): `(!s. s IN u ==> (ARBITRARY
       UNION_OF P) s) ==> (ARBITRARY UNION_OF P) (UNIONS u)`.  `ONCE_REWRITE_TAC[
       GSYM ARBITRARY_UNION_OF_IDEMPOT]`, `ONCE_REWRITE_TAC[UNION_OF]`. -/
   ARBITRARY_UNION_OF_UNIONS : thm
-  /-- `ARBITRARY_UNION_OF_UNION` (sets.ml 4143): `MATCH_MP_TAC
+  /-- `ARBITRARY_UNION_OF_UNION` (sets.ml 4301): `MATCH_MP_TAC
       ARBITRARY_UNION_OF_UNIONS`, `FORALL_IN_INSERT`, `NOT_IN_EMPTY`. -/
   ARBITRARY_UNION_OF_UNION : thm
-  /-- `ARBITRARY_INTERSECTION_OF_INTERS` (sets.ml 4152): dual of UNIONS. -/
+  /-- `ARBITRARY_INTERSECTION_OF_INTERS` (sets.ml 4310): dual of UNIONS. -/
   ARBITRARY_INTERSECTION_OF_INTERS : thm
-  /-- `ARBITRARY_INTERSECTION_OF_INTER` (sets.ml 4161): dual of UNION. -/
+  /-- `ARBITRARY_INTERSECTION_OF_INTER` (sets.ml 4319): dual of UNION. -/
   ARBITRARY_INTERSECTION_OF_INTER : thm
-  /-- `ARBITRARY_UNION_OF_INTER_EQ` (sets.ml 4170): distributivity-over-INTER
+  /-- `ARBITRARY_UNION_OF_INTER_EQ` (sets.ml 4328): distributivity-over-INTER
       equivalence.  ONE top-level `THENL` (EQ_TAC, width 2, first branch
       `MESON_TAC[ARBITRARY_UNION_OF_INC]`, second `DISCH_TAC`); `GEN_REWRITE_TAC
       (LAND_CONV o ONCE_DEPTH_CONV) [UNION_OF]` (depth 2), `DISCH_THEN(
       STRIP_ASSUME_TAC o GSYM)` (GSYM first), `REPLICATE_TAC 2`. -/
   ARBITRARY_UNION_OF_INTER_EQ : thm
-  /-- `ARBITRARY_UNION_OF_INTER` (sets.ml 4186): `REWRITE_TAC[
+  /-- `ARBITRARY_UNION_OF_INTER` (sets.ml 4344): `REWRITE_TAC[
       ARBITRARY_UNION_OF_INTER_EQ] THEN MESON_TAC[ARBITRARY_UNION_OF_INC]`. -/
   ARBITRARY_UNION_OF_INTER : thm
-  /-- `ARBITRARY_INTERSECTION_OF_UNION_EQ` (sets.ml 4194): dual via COMPLEMENT;
+  /-- `ARBITRARY_INTERSECTION_OF_UNION_EQ` (sets.ml 4352): dual via COMPLEMENT;
       two `MESON[COMPL_COMPL] (!s. P(UNIV DIFF s)) <=> (!s. P s)` rewrites. -/
   ARBITRARY_INTERSECTION_OF_UNION_EQ : thm
-  /-- `ARBITRARY_INTERSECTION_OF_UNION` (sets.ml 4210): `REWRITE_TAC[
+  /-- `ARBITRARY_INTERSECTION_OF_UNION` (sets.ml 4368): `REWRITE_TAC[
       ARBITRARY_INTERSECTION_OF_UNION_EQ] THEN MESON_TAC[
       ARBITRARY_INTERSECTION_OF_INC]`. -/
   ARBITRARY_INTERSECTION_OF_UNION : thm
-  /-- `FINITE_UNION_OF_EMPTY` (sets.ml 4219): `SIMP_TAC[UNION_OF_EMPTY;
+  /-- `FINITE_UNION_OF_EMPTY` (sets.ml 4377): `SIMP_TAC[UNION_OF_EMPTY;
       FINITE_EMPTY]`. -/
   FINITE_UNION_OF_EMPTY : thm
-  /-- `FINITE_INTERSECTION_OF_EMPTY` (sets.ml 4223): `SIMP_TAC[
+  /-- `FINITE_INTERSECTION_OF_EMPTY` (sets.ml 4381): `SIMP_TAC[
       INTERSECTION_OF_EMPTY; FINITE_EMPTY]`. -/
   FINITE_INTERSECTION_OF_EMPTY : thm
-  /-- `FINITE_UNION_OF_INC` (sets.ml 4227): `SIMP_TAC[UNION_OF_INC;
+  /-- `FINITE_UNION_OF_INC` (sets.ml 4385): `SIMP_TAC[UNION_OF_INC;
       FINITE_SING]`. -/
   FINITE_UNION_OF_INC : thm
-  /-- `FINITE_INTERSECTION_OF_INC` (sets.ml 4231): `SIMP_TAC[
+  /-- `FINITE_INTERSECTION_OF_INC` (sets.ml 4389): `SIMP_TAC[
       INTERSECTION_OF_INC; FINITE_SING]`. -/
   FINITE_INTERSECTION_OF_INC : thm
-  /-- `FINITE_UNION_OF_COMPLEMENT` (sets.ml 4235): like the ARBITRARY version
+  /-- `FINITE_UNION_OF_COMPLEMENT` (sets.ml 4393): like the ARBITRARY version
       but `ASM_SIMP_TAC[FINITE_IMAGE; ...]`. -/
   FINITE_UNION_OF_COMPLEMENT : thm
-  /-- `FINITE_INTERSECTION_OF_COMPLEMENT` (sets.ml 4247): dual. -/
+  /-- `FINITE_INTERSECTION_OF_COMPLEMENT` (sets.ml 4405): dual. -/
   FINITE_INTERSECTION_OF_COMPLEMENT : thm
-  /-- `FINITE_UNION_OF_IDEMPOT` (sets.ml 4253): like the ARBITRARY version but
+  /-- `FINITE_UNION_OF_IDEMPOT` (sets.ml 4411): like the ARBITRARY version but
       `ASM_SIMP_TAC[FINITE_IMAGE; FINITE_PRODUCT_DEPENDENT]`.  ONE top-level
       `THENL` (CONJ_TAC, width 2). -/
   FINITE_UNION_OF_IDEMPOT : thm
-  /-- `FINITE_INTERSECTION_OF_IDEMPOT` (sets.ml 4272): dual. -/
+  /-- `FINITE_INTERSECTION_OF_IDEMPOT` (sets.ml 4430): dual. -/
   FINITE_INTERSECTION_OF_IDEMPOT : thm
-  /-- `FINITE_UNION_OF_UNIONS` (sets.ml 4280): `FINITE u /\ (!s. s IN u ==>
+  /-- `FINITE_UNION_OF_UNIONS` (sets.ml 4438): `FINITE u /\ (!s. s IN u ==>
       (FINITE UNION_OF P) s) ==> (FINITE UNION_OF P) (UNIONS u)`. -/
   FINITE_UNION_OF_UNIONS : thm
-  /-- `FINITE_UNION_OF_UNION` (sets.ml 4288): `FINITE_INSERT`, `FORALL_IN_INSERT`,
+  /-- `FINITE_UNION_OF_UNION` (sets.ml 4446): `FINITE_INSERT`, `FORALL_IN_INSERT`,
       `FINITE_EMPTY`, `NOT_IN_EMPTY`. -/
   FINITE_UNION_OF_UNION : thm
-  /-- `FINITE_INTERSECTION_OF_INTERS` (sets.ml 4297): dual of UNIONS. -/
+  /-- `FINITE_INTERSECTION_OF_INTERS` (sets.ml 4455): dual of UNIONS. -/
   FINITE_INTERSECTION_OF_INTERS : thm
-  /-- `FINITE_INTERSECTION_OF_INTER` (sets.ml 4306): dual of UNION. -/
+  /-- `FINITE_INTERSECTION_OF_INTER` (sets.ml 4464): dual of UNION. -/
   FINITE_INTERSECTION_OF_INTER : thm
-  /-- `FINITE_UNION_OF_INTER_EQ` (sets.ml 4315): ONE top-level `THENL` (EQ_TAC,
+  /-- `FINITE_UNION_OF_INTER_EQ` (sets.ml 4473): ONE top-level `THENL` (EQ_TAC,
       width 2), `REPLICATE_TAC 2`. -/
   FINITE_UNION_OF_INTER_EQ : thm
-  /-- `FINITE_UNION_OF_INTER` (sets.ml 4331): `REWRITE_TAC[
+  /-- `FINITE_UNION_OF_INTER` (sets.ml 4489): `REWRITE_TAC[
       FINITE_UNION_OF_INTER_EQ] THEN MESON_TAC[FINITE_UNION_OF_INC]`. -/
   FINITE_UNION_OF_INTER : thm
-  /-- `FINITE_INTERSECTION_OF_UNION_EQ` (sets.ml 4339): dual via COMPLEMENT. -/
+  /-- `FINITE_INTERSECTION_OF_UNION_EQ` (sets.ml 4497): dual via COMPLEMENT. -/
   FINITE_INTERSECTION_OF_UNION_EQ : thm
-  /-- `FINITE_INTERSECTION_OF_UNION` (sets.ml 4355): `REWRITE_TAC[
+  /-- `FINITE_INTERSECTION_OF_UNION` (sets.ml 4513): `REWRITE_TAC[
       FINITE_INTERSECTION_OF_UNION_EQ] THEN MESON_TAC[
       FINITE_INTERSECTION_OF_INC]`. -/
   FINITE_INTERSECTION_OF_UNION : thm
@@ -7291,7 +7485,7 @@ def setupSetsUnionOf [HolBase] (S : SetsCore) (P : SetsProps)
 
 /- ---------------------------------------------------------------------- -/
 /- set_of_list cardinality, injectivity/surjectivity, bijections,          -/
-/- wellfoundedness and the cardinal comparisons (sets.ml 4365-4695).        -/
+/- wellfoundedness and the cardinal comparisons (sets.ml 4523-4875).        -/
 /- ---------------------------------------------------------------------- -/
 
 /-- The finish of the set_of_list section (`CARD_SET_OF_LIST_LE`,
@@ -7300,7 +7494,7 @@ def setupSetsUnionOf [HolBase] (S : SetsCore) (P : SetsProps)
     injectivity/surjectivity rewrites, the finite-set bijection existence
     theorems, `WF_FINITE`/`WF_PSUBSET`, and finally the cardinal-comparison
     definitions `le_c`/`lt_c`/`eq_c`/`ge_c`/`gt_c` with `LE_C`/`GE_C` and the
-    `COUNTABLE` definition (sets.ml 4365-4695).
+    `COUNTABLE` definition (sets.ml 4523-4875).
 
     The five cardinal-comparison infixes `<=_c`, `<_c`, `>=_c`, `>_c`, `=_c`
     were ALREADY registered by `setupSetsInfixes` (sets.ml 28-32, all
@@ -7308,96 +7502,100 @@ def setupSetsUnionOf [HolBase] (S : SetsCore) (P : SetsProps)
     like `s <=_c t` parses as an infix application of the `<=_c` constant once
     `le_c` introduces it. -/
 structure SetsCardComp where
-  /-- `CARD_SET_OF_LIST_LE` (sets.ml 4368):
+  /-- `CARD_SET_OF_LIST_LE` (sets.ml 4526):
       `!l:A list. CARD(set_of_list l) <= LENGTH l`. -/
   CARD_SET_OF_LIST_LE : thm
-  /-- `HAS_SIZE_SET_OF_LIST` (sets.ml 4374):
+  /-- `HAS_SIZE_SET_OF_LIST` (sets.ml 4532):
       `set_of_list l HAS_SIZE LENGTH l <=> PAIRWISE (\x y. ~(x = y)) l`. -/
   HAS_SIZE_SET_OF_LIST : thm
-  /-- `SURJECTIVE_IFF_INJECTIVE_GEN` (sets.ml 4386): on equal-card finite sets
+  /-- `SURJECTIVE_IFF_INJECTIVE_GEN` (sets.ml 4544): on equal-card finite sets
       with `IMAGE f s SUBSET t`, surjectivity onto `t` iff injectivity. -/
   SURJECTIVE_IFF_INJECTIVE_GEN : thm
-  /-- `SURJECTIVE_IFF_INJECTIVE` (sets.ml 4406): the `s = t` special case. -/
+  /-- `SURJECTIVE_IFF_INJECTIVE` (sets.ml 4564): the `s = t` special case. -/
   SURJECTIVE_IFF_INJECTIVE : thm
-  /-- `IMAGE_IMP_INJECTIVE_GEN` (sets.ml 4413): equal card and `IMAGE f s = t`
+  /-- `IMAGE_IMP_INJECTIVE_GEN` (sets.ml 4571): equal card and `IMAGE f s = t`
       force injectivity on `s`. -/
   IMAGE_IMP_INJECTIVE_GEN : thm
-  /-- `IMAGE_IMP_INJECTIVE` (sets.ml 4423): the `IMAGE f s = s` special case. -/
+  /-- `IMAGE_IMP_INJECTIVE` (sets.ml 4581): the `IMAGE f s = s` special case. -/
   IMAGE_IMP_INJECTIVE : thm
-  /-- `HAS_SIZE_IMAGE_INJ_RESTRICT` (sets.ml 4429): transfers a `HAS_SIZE` of a
+  /-- `HAS_SIZE_IMAGE_INJ_RESTRICT` (sets.ml 4587): transfers a `HAS_SIZE` of a
       predicate-restricted subset across an injective equal-card map. -/
   HAS_SIZE_IMAGE_INJ_RESTRICT : thm
-  /-- `CARD_LE_INJ` (sets.ml 4450): `CARD s <= CARD t` on finite sets yields an
+  /-- `CARD_LE_INJ` (sets.ml 4608): `CARD s <= CARD t` on finite sets yields an
       injection of `s` into `t`. -/
   CARD_LE_INJ : thm
-  /-- `FORALL_IN_CLAUSES` (sets.ml 4475): the `{}`/`INSERT` clauses of a bounded
+  /-- `FORALL_IN_CLAUSES` (sets.ml 4633): the `{}`/`INSERT` clauses of a bounded
       universal. -/
   FORALL_IN_CLAUSES : thm
-  /-- `EXISTS_IN_CLAUSES` (sets.ml 4480): the `{}`/`INSERT` clauses of a bounded
+  /-- `EXISTS_IN_CLAUSES` (sets.ml 4638): the `{}`/`INSERT` clauses of a bounded
       existential. -/
   EXISTS_IN_CLAUSES : thm
-  /-- `INJECTIVE_ON_IMAGE` (sets.ml 4489): image-injectivity on subsets of `u`
+  /-- `INJECTIVE_ON_IMAGE` (sets.ml 4647): image-injectivity on subsets of `u`
       iff pointwise injectivity on `u`. -/
   INJECTIVE_ON_IMAGE : thm
-  /-- `INJECTIVE_IMAGE` (sets.ml 4498): the `u = (:A)` special case. -/
+  /-- `INJECTIVE_IMAGE` (sets.ml 4656): the `u = (:A)` special case. -/
   INJECTIVE_IMAGE : thm
-  /-- `SURJECTIVE_ON_IMAGE` (sets.ml 4504): image-surjectivity onto subsets of
+  /-- `SURJECTIVE_ON_IMAGE` (sets.ml 4662): image-surjectivity onto subsets of
       `v` iff pointwise surjectivity onto `v`. -/
   SURJECTIVE_ON_IMAGE : thm
-  /-- `SURJECTIVE_IMAGE` (sets.ml 4514): the `UNIV` special case. -/
+  /-- `SURJECTIVE_IMAGE` (sets.ml 4672): the `UNIV` special case. -/
   SURJECTIVE_IMAGE : thm
-  /-- `INJECTIVE_ON_PREIMAGE` (sets.ml 4520): preimage-injectivity iff
+  /-- `INJECTIVE_ON_PREIMAGE` (sets.ml 4678): preimage-injectivity iff
       `u SUBSET IMAGE f s`. -/
   INJECTIVE_ON_PREIMAGE : thm
-  /-- `SURJECTIVE_ON_PREIMAGE` (sets.ml 4530): preimage-surjectivity iff image
+  /-- `SURJECTIVE_ON_PREIMAGE` (sets.ml 4688): preimage-surjectivity iff image
       subset plus injectivity. -/
   SURJECTIVE_ON_PREIMAGE : thm
-  /-- `INJECTIVE_PREIMAGE` (sets.ml 4545): the universal preimage-injectivity
+  /-- `INJECTIVE_PREIMAGE` (sets.ml 4703): the universal preimage-injectivity
       characterisation, `IMAGE f UNIV = UNIV`. -/
   INJECTIVE_PREIMAGE : thm
-  /-- `SURJECTIVE_PREIMAGE` (sets.ml 4554): the universal preimage-surjectivity
+  /-- `SURJECTIVE_PREIMAGE` (sets.ml 4712): the universal preimage-surjectivity
       characterisation, pointwise injectivity. -/
   SURJECTIVE_PREIMAGE : thm
-  /-- `CARD_EQ_BIJECTION` (sets.ml 4565): equal finite cards give a bijection
+  /-- `CARD_EQ_BIJECTION` (sets.ml 4723): equal finite cards give a bijection
       (surjective and injective on `s`). -/
   CARD_EQ_BIJECTION : thm
-  /-- `CARD_EQ_BIJECTIONS` (sets.ml 4576): equal finite cards give mutually
+  /-- `CARD_EQ_BIJECTIONS` (sets.ml 4734): equal finite cards give mutually
       inverse maps `f`/`g`. -/
   CARD_EQ_BIJECTIONS : thm
-  /-- `CARD_EQ_BIJECTIONS_SPECIAL` (sets.ml 4585): the bijections may be chosen
+  /-- `CARD_EQ_BIJECTIONS_SPECIAL` (sets.ml 4743): the bijections may be chosen
       to swap a distinguished pair `a`/`b`. -/
   CARD_EQ_BIJECTIONS_SPECIAL : thm
-  /-- `BIJECTIONS_HAS_SIZE` (sets.ml 4600): inverse maps transfer `HAS_SIZE`. -/
+  /-- `FINITE_FIBRES_BIJECTIONS` (sets.ml @4758): equal fibre cardinalities
+      give inverse bijections respecting the fibres.  Fibrewise
+      `CARD_EQ_BIJECTIONS`, then `SKOLEM_THM`. -/
+  FINITE_FIBRES_BIJECTIONS : thm
+  /-- `BIJECTIONS_HAS_SIZE` (sets.ml 4780): inverse maps transfer `HAS_SIZE`. -/
   BIJECTIONS_HAS_SIZE : thm
-  /-- `BIJECTIONS_HAS_SIZE_EQ` (sets.ml 4610): inverse maps give
+  /-- `BIJECTIONS_HAS_SIZE_EQ` (sets.ml 4790): inverse maps give
       `s HAS_SIZE n <=> t HAS_SIZE n`. -/
   BIJECTIONS_HAS_SIZE_EQ : thm
-  /-- `BIJECTIONS_CARD_EQ` (sets.ml 4622): inverse maps with one side finite
+  /-- `BIJECTIONS_CARD_EQ` (sets.ml 4802): inverse maps with one side finite
       give `CARD s = CARD t`. -/
   BIJECTIONS_CARD_EQ : thm
-  /-- `WF_FINITE` (sets.ml 4636): an irreflexive transitive relation with
+  /-- `WF_FINITE` (sets.ml 4816): an irreflexive transitive relation with
       finitely many predecessors is wellfounded. -/
   WF_FINITE : thm
-  /-- `WF_PSUBSET` (sets.ml 4654): proper-subset descent within a finite set is
+  /-- `WF_PSUBSET` (sets.ml 4834): proper-subset descent within a finite set is
       wellfounded. -/
   WF_PSUBSET : thm
-  /-- `le_c` (sets.ml 4665): `s <=_c t` iff an injection of `s` into `t`. -/
+  /-- `le_c` (sets.ml 4845): `s <=_c t` iff an injection of `s` into `t`. -/
   le_c : thm
-  /-- `lt_c` (sets.ml 4670): `s <_c t <=> s <=_c t /\ ~(t <=_c s)`. -/
+  /-- `lt_c` (sets.ml 4850): `s <_c t <=> s <=_c t /\ ~(t <=_c s)`. -/
   lt_c : thm
-  /-- `eq_c` (sets.ml 4673): `s =_c t` iff a bijection witnessed by a unique
+  /-- `eq_c` (sets.ml 4853): `s =_c t` iff a bijection witnessed by a unique
       preimage. -/
   eq_c : thm
-  /-- `ge_c` (sets.ml 4678): `s >=_c t <=> t <=_c s`. -/
+  /-- `ge_c` (sets.ml 4858): `s >=_c t <=> t <=_c s`. -/
   ge_c : thm
-  /-- `gt_c` (sets.ml 4681): `s >_c t <=> t <_c s`. -/
+  /-- `gt_c` (sets.ml 4861): `s >_c t <=> t <_c s`. -/
   gt_c : thm
-  /-- `LE_C` (sets.ml 4684): `s <=_c t` via a surjection `g` from `t` covering
+  /-- `LE_C` (sets.ml 4864): `s <=_c t` via a surjection `g` from `t` covering
       `s`. -/
   LE_C : thm
-  /-- `GE_C` (sets.ml 4690): `s >=_c t` via a map `f` from `s` covering `t`. -/
+  /-- `GE_C` (sets.ml 4870): `s >=_c t` via a map `f` from `s` covering `t`. -/
   GE_C : thm
-  /-- `COUNTABLE` (sets.ml 4694): `COUNTABLE t <=> (:num) >=_c t`. -/
+  /-- `COUNTABLE` (sets.ml 4874): `COUNTABLE t <=> (:num) >=_c t`. -/
   COUNTABLE : thm
   deriving Inhabited
 
@@ -7432,7 +7630,7 @@ def setupSetsCardComp [HolBase] (S : SetsCore)
   let { IMAGE_CLAUSES, .. } := SIm
   let { FINITE_INDUCT_STRONG, .. } := SInd
   let { FINITE_SUBSET, FINITE_INSERT, FINITE_DELETE, FINITE_IMAGE,
-        INFINITE_IMAGE_INJ, .. } := SFin
+        INFINITE_IMAGE_INJ, FINITE_RESTRICT, .. } := SFin
   let { CARD_CLAUSES, CARD_DELETE, CARD_EQ_0, HAS_SIZE, .. } := SCard
   let { CARD_SUBSET_EQ, CARD_SUBSET, CARD_IMAGE_INJ, HAS_SIZE_IMAGE_INJ,
         CARD_IMAGE_LE, .. } := SCard2
@@ -7668,6 +7866,28 @@ def setupSetsCardComp [HolBase] (S : SetsCore)
     EXISTS_TAC (← q r"\y. if y = b then a else (g:B->A) y") THEN
     ASM_MESON_TAC [])
 
+  let FINITE_FIBRES_BIJECTIONS ← prove
+   r"!(s:K->bool) (t:L->bool) (p:K->C) (q:L->C).
+        FINITE s /\ FINITE t /\
+        (!z. CARD {x | x IN s /\ p x = z} = CARD {y | y IN t /\ q y = z})
+        ==> ?f g. (!x. x IN s ==> f x IN t /\ g(f x) = x /\ q(f x) = p x) /\
+                  (!y. y IN t ==> g y IN s /\ f(g y) = y)"
+   (REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"!z. ?f g. (!x. x IN {x | x IN s /\ (p:K->C) x = z}
+                     ==> (f:K->L) x IN {y | y IN t /\ (q:L->C) y = z} /\
+                         (g:L->K)(f x) = x) /\
+                (!y. y IN {y | y IN t /\ q y = z}
+                     ==> g y IN {x | x IN s /\ p x = z} /\ f(g y) = y)")
+    MP_TAC THENL
+     [GEN_TAC THEN MATCH_MP_TAC CARD_EQ_BIJECTIONS THEN
+      ASM_SIMP_TAC [FINITE_RESTRICT],
+      REWRITE_TAC [SKOLEM_THM, IN_ELIM_THM] THEN
+      DISCH_THEN (X_CHOOSE_THEN (← q r"f:C->K->L") (X_CHOOSE_TAC (← q r"g:C->L->K"))) THEN
+      EXISTS_TAC (← q r"\x. (f:C->K->L) ((p:K->C) x) x") THEN
+      EXISTS_TAC (← q r"\y. (g:C->L->K) ((q:L->C) y) y") THEN
+      REWRITE_TAC [] THEN ASM_MESON_TAC []])
+
   let BIJECTIONS_HAS_SIZE ← prove
    r"!s t f:A->B g.
         (!x. x IN s ==> f(x) IN t /\ g(f x) = x) /\
@@ -7769,19 +7989,20 @@ def setupSetsCardComp [HolBase] (S : SetsCore)
     SURJECTIVE_ON_IMAGE, SURJECTIVE_IMAGE, INJECTIVE_ON_PREIMAGE,
     SURJECTIVE_ON_PREIMAGE, INJECTIVE_PREIMAGE, SURJECTIVE_PREIMAGE,
     CARD_EQ_BIJECTION, CARD_EQ_BIJECTIONS, CARD_EQ_BIJECTIONS_SPECIAL,
+    FINITE_FIBRES_BIJECTIONS,
     BIJECTIONS_HAS_SIZE, BIJECTIONS_HAS_SIZE_EQ, BIJECTIONS_CARD_EQ, WF_FINITE,
     WF_PSUBSET, le_c, lt_c, eq_c, ge_c, gt_c, LE_C, GE_C, COUNTABLE }
 
 /- ---------------------------------------------------------------------- -/
-/- Supremum and infimum of a set of reals.               (sets.ml 4698-5027) -/
+/- Supremum and infimum of a set of reals.               (sets.ml 4878-5207) -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The `sup`/`inf` bundle of `sets.ml 4698-5027`: the two `new_definition`s
+/-- The `sup`/`inf` bundle of `sets.ml 4878-5207`: the two `new_definition`s
     `sup`/`inf` and the 49 `prove`s that surround them - the finite-set
     characterisations, the completeness-backed `SUP`/`INF`, uniqueness,
     subset/bounds/union/singleton clauses, `REAL_MAX_SUP`/`REAL_MIN_INF` and
     `REAL_SUP_EQ_INF`.  This section introduces NO new `parse_as_infix`; the
-    relational `has_inf`/`has_sup` operators (sets.ml 5030-5031) live in the
+    relational `has_inf`/`has_sup` operators (sets.ml 5210-5211) live in the
     separate `SetsHasInfSup` bundle.  Rests on the real-number layer: `SUP`
     is `REAL_COMPLETE` + `SELECT_CONV`, `INF` reflects it through
     `IMAGE (--)`, and the `_FINITE` clauses run on `REAL_LE_TOTAL`. -/
@@ -8210,17 +8431,17 @@ def setupSetsSup [HolBase] (S : SetsCore) (P : SetsProps)
     INF_LE_ELEMENT, INF_APPROACH, REAL_MIN_INF }
 
 /- ---------------------------------------------------------------------- -/
-/- Relational counterparts of sup and inf.               (sets.ml 5028-5182) -/
+/- Relational counterparts of sup and inf.               (sets.ml 5208-5362) -/
 /- ---------------------------------------------------------------------- -/
 
 /-- `parse_as_infix ("has_inf",(12,"right"))` and
-    `parse_as_infix ("has_sup",(12,"right"))` (sets.ml 5030-5031).  Session
+    `parse_as_infix ("has_sup",(12,"right"))` (sets.ml 5210-5211).  Session
     runs it once, before `setupSetsHasInfSup`. -/
 def setupSetsHasInfSupInfix : IO Unit := do
   HolCore.Printer.parse_as_infix ("has_inf", (12, "right"))
   HolCore.Printer.parse_as_infix ("has_sup", (12, "right"))
 
-/-- The relational sup/inf bundle of `sets.ml 5033-5182`: the two
+/-- The relational sup/inf bundle of `sets.ml 5213-5362`: the two
     `new_definition`s `has_inf`/`has_sup` and the 14 `prove`s connecting them
     to `inf`/`sup` (`HAS_INF_INF`/`HAS_SUP_SUP`, existence, approach, the
     `HAS_INF`/`HAS_SUP` characterisations and the monotone `HAS_INF_LE`/
@@ -8424,10 +8645,10 @@ def setupSetsHasInfSup [HolBase] (SSup : SetsSup)
 
 /- ---------------------------------------------------------------------- -/
 /- Inductive definition of sets, by reducing them to inductive relations. -/
-/- (sets.ml 5183-5217)                                                    -/
+/- (sets.ml 5363-5397)                                                    -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `new_inductive_set` (sets.ml 5186). -/
+/-- `new_inductive_set` (sets.ml 5366). -/
 def new_inductive_set [HolBase] (IN : thm) (and_tm : term)
     (new_inductive_definition : term → IO (Except String (thm × thm × thm)))
     (tm : term) : IO (Except String (thm × thm × thm)) := ExceptT.run do
@@ -8458,7 +8679,7 @@ def new_inductive_set [HolBase] (IN : thm) (and_tm : term)
     let tm := (← dest_binary "IN" tm).2
     pure (strip_comb tm).1
   -- `find_pvars = setify o map rule_head o binops `(/\)``: `and_tm` is that
-  -- quotation, parsed once when sets.ml loads (sets.ml 5209); `rule_head`'s
+  -- quotation, parsed once when sets.ml loads (sets.ml 5389); `rule_head`'s
   -- `(==>)` is inside the function, so parsed per call.
   let find_pvars (tm : term) : ExceptT String IO (List term) := do
     pure (setify (← (binops and_tm tm).mapM rule_head))

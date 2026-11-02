@@ -659,13 +659,14 @@ def CONTINUOUS_MAP_FRONTIER_FRONTIER_PREIMAGE_SUBSET : thm :=
 def CONTINUOUS_MAP_ID : thm := BContMap1.CONTINUOUS_MAP_ID
 def TOPOLOGY_FINER_CONTINUOUS_ID : thm := BContMap1.TOPOLOGY_FINER_CONTINUOUS_ID
 def CONTINUOUS_MAP_CONST : thm := BContMap1.CONTINUOUS_MAP_CONST
+def CONTINUOUS_MAP_LOCALLY_CONSTANT : thm := BContMap1.CONTINUOUS_MAP_LOCALLY_CONSTANT
 
 initialize BContMap2 : HolMultiLib.Metric.ContMap2 ←
   ioB "setupContMap2"
     (HolMultiLib.Metric.setupContMap2 deps BTopology BDiscrete BSubtopology BClosure BFrontier
       BIterLocal BContMap1).run
 
--- ContMap2 (metric.ml 2512-2831)
+-- ContMap2 (metric.ml 2527-2895)
 def CONTINUOUS_MAP_COMPOSE : thm := BContMap2.CONTINUOUS_MAP_COMPOSE
 def CONTINUOUS_MAP_EQ : thm := BContMap2.CONTINUOUS_MAP_EQ
 def RESTRICTION_CONTINUOUS_MAP : thm := BContMap2.RESTRICTION_CONTINUOUS_MAP
@@ -676,6 +677,8 @@ def CONTINUOUS_MAP_INTO_SUBTOPOLOGY : thm := BContMap2.CONTINUOUS_MAP_INTO_SUBTO
 def CONTINUOUS_MAP_FROM_SUBTOPOLOGY_MONO : thm := BContMap2.CONTINUOUS_MAP_FROM_SUBTOPOLOGY_MONO
 def CONTINUOUS_MAP_FROM_DISCRETE_TOPOLOGY : thm :=
   BContMap2.CONTINUOUS_MAP_FROM_DISCRETE_TOPOLOGY
+def CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY : thm := BContMap2.CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY
+def CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY_FIBRES : thm := BContMap2.CONTINUOUS_MAP_INTO_DISCRETE_TOPOLOGY_FIBRES
 def PASTING_LEMMA : thm := BContMap2.PASTING_LEMMA
 def PASTING_LEMMA_EXISTS : thm := BContMap2.PASTING_LEMMA_EXISTS
 def PASTING_LEMMA_LOCALLY_FINITE : thm := BContMap2.PASTING_LEMMA_LOCALLY_FINITE
@@ -695,7 +698,7 @@ initialize BOpenClosed2 : HolMultiLib.Metric.OpenClosed2 ←
     (HolMultiLib.Metric.setupOpenClosed2 deps BTopology BDiscrete BSubtopology BInterior
       BContMap1 BOpenClosed1).run
 
--- OpenClosed1 (metric.ml 2836-3093)
+-- OpenClosed1 (metric.ml 2900-3157)
 def open_map : thm := BOpenClosed1.open_map
 def closed_map : thm := BOpenClosed1.closed_map
 def OPEN_MAP_IMP_SUBSET_TOPSPACE : thm := BOpenClosed1.OPEN_MAP_IMP_SUBSET_TOPSPACE
@@ -727,7 +730,7 @@ def CLOSED_MAP_FROM_SUBTOPOLOGY : thm := BOpenClosed1.CLOSED_MAP_FROM_SUBTOPOLOG
 def OPEN_MAP_RESTRICTION : thm := BOpenClosed1.OPEN_MAP_RESTRICTION
 def CLOSED_MAP_RESTRICTION : thm := BOpenClosed1.CLOSED_MAP_RESTRICTION
 def CLOSED_MAP_CLOSURE_OF_IMAGE : thm := BOpenClosed1.CLOSED_MAP_CLOSURE_OF_IMAGE
--- OpenClosed2 (metric.ml 3095-3348)
+-- OpenClosed2 (metric.ml 3159-3412)
 def OPEN_MAP_INTERIOR_OF_IMAGE_SUBSET : thm := BOpenClosed2.OPEN_MAP_INTERIOR_OF_IMAGE_SUBSET
 def OPEN_MAP_INTERIOR_OF_IMAGE_SUBSET_ALT : thm :=
   BOpenClosed2.OPEN_MAP_INTERIOR_OF_IMAGE_SUBSET_ALT
@@ -753,7 +756,7 @@ initialize BQuotient : HolMultiLib.Metric.Quotient ←
     (HolMultiLib.Metric.setupQuotient deps BTopology BDiscrete BSubtopology BContMap1 BContMap2
       BOpenClosed1).run
 
--- Quotient (metric.ml 3350-3654)
+-- Quotient (metric.ml 3414-3718)
 def quotient_map : thm := BQuotient.quotient_map
 def QUOTIENT_MAP_EQ : thm := BQuotient.QUOTIENT_MAP_EQ
 def QUOTIENT_MAP_COMPOSE : thm := BQuotient.QUOTIENT_MAP_COMPOSE
@@ -775,13 +778,22 @@ def QUOTIENT_MAP_SATURATED_CLOSED : thm := BQuotient.QUOTIENT_MAP_SATURATED_CLOS
 def QUOTIENT_MAP_ONTO_IMAGE : thm := BQuotient.QUOTIENT_MAP_ONTO_IMAGE
 def QUOTIENT_MAP_LIFT_EXISTS : thm := BQuotient.QUOTIENT_MAP_LIFT_EXISTS
 def DISCRETE_SPACE_QUOTIENT_MAP_IMAGE : thm := BQuotient.DISCRETE_SPACE_QUOTIENT_MAP_IMAGE
+def quotient_topology : thm := BQuotient.quotient_topology
+def OPEN_IN_QUOTIENT_TOPOLOGY : thm := BQuotient.OPEN_IN_QUOTIENT_TOPOLOGY
+def TOPSPACE_QUOTIENT_TOPOLOGY : thm := BQuotient.TOPSPACE_QUOTIENT_TOPOLOGY
+def CLOSED_IN_QUOTIENT_TOPOLOGY : thm := BQuotient.CLOSED_IN_QUOTIENT_TOPOLOGY
+def QUOTIENT_MAP_QUOTIENT_TOPOLOGY : thm := BQuotient.QUOTIENT_MAP_QUOTIENT_TOPOLOGY
+def QUOTIENT_MAP_QUOTIENT_TOPOLOGY_EQ : thm := BQuotient.QUOTIENT_MAP_QUOTIENT_TOPOLOGY_EQ
+def CONTINUOUS_MAP_QUOTIENT_TOPOLOGY : thm := BQuotient.CONTINUOUS_MAP_QUOTIENT_TOPOLOGY
+def CONTINUOUS_MAP_FROM_QUOTIENT_TOPOLOGY : thm := BQuotient.CONTINUOUS_MAP_FROM_QUOTIENT_TOPOLOGY
+def OPEN_IN_QUOTIENT_TOPOLOGY_INJ : thm := BQuotient.OPEN_IN_QUOTIENT_TOPOLOGY_INJ
 
 initialize BProd1 : HolMultiLib.Metric.Prod1 ←
   ioB "setupProd1"
     (HolMultiLib.Metric.setupProd1 deps BTopology BDiscrete BSubtopology BBases BClosure
       BInterior BContMap1 BContMap2).run
 
--- Prod1 (metric.ml 3656-3896)
+-- Prod1 (metric.ml 3837-4077)
 def prod_topology : thm := BProd1.prod_topology
 def OPEN_IN_PROD_TOPOLOGY : thm := BProd1.OPEN_IN_PROD_TOPOLOGY
 def TOPSPACE_PROD_TOPOLOGY : thm := BProd1.TOPSPACE_PROD_TOPOLOGY
@@ -806,7 +818,7 @@ initialize BProd2 : HolMultiLib.Metric.Prod2 ←
     (HolMultiLib.Metric.setupProd2 deps BTopology BDiscrete BContMap1 BOpenClosed1 BQuotient
       BProd1).run
 
--- Prod2 (metric.ml 3898-4091)
+-- Prod2 (metric.ml 4079-4285)
 def OPEN_MAP_FST : thm := BProd2.OPEN_MAP_FST
 def OPEN_MAP_SND : thm := BProd2.OPEN_MAP_SND
 def QUOTIENT_MAP_FST : thm := BProd2.QUOTIENT_MAP_FST
@@ -814,6 +826,7 @@ def QUOTIENT_MAP_SND : thm := BProd2.QUOTIENT_MAP_SND
 def CONTINUOUS_MAP_OF_FST : thm := BProd2.CONTINUOUS_MAP_OF_FST
 def CONTINUOUS_MAP_OF_SND : thm := BProd2.CONTINUOUS_MAP_OF_SND
 def CONTINUOUS_MAP_PROD : thm := BProd2.CONTINUOUS_MAP_PROD
+def CONTINUOUS_MAP_PROD_TOPOLOGY_ID : thm := BProd2.CONTINUOUS_MAP_PROD_TOPOLOGY_ID
 def OPEN_MAP_PROD : thm := BProd2.OPEN_MAP_PROD
 def IN_PROD_TOPOLOGY_CLOSURE_OF : thm := BProd2.IN_PROD_TOPOLOGY_CLOSURE_OF
 def CLOSED_MAP_PROD : thm := BProd2.CLOSED_MAP_PROD
@@ -826,7 +839,7 @@ initialize BProduct2 : HolMultiLib.Metric.Product2 ←
   ioB "setupProduct2"
     (HolMultiLib.Metric.setupProduct2 deps BTopology BContMap1 BOpenClosed1 BProduct1).run
 
--- Product1 (metric.ml 4093-4296)
+-- Product1 (metric.ml 4287-4490)
 def product_topology : thm := BProduct1.product_topology
 def TOPSPACE_PRODUCT_TOPOLOGY : thm := BProduct1.TOPSPACE_PRODUCT_TOPOLOGY
 def TOPSPACE_PRODUCT_TOPOLOGY_ALT : thm := BProduct1.TOPSPACE_PRODUCT_TOPOLOGY_ALT
@@ -837,7 +850,7 @@ def PRODUCT_TOPOLOGY_SUBBASE_ALT : thm := BProduct1.PRODUCT_TOPOLOGY_SUBBASE_ALT
 def PRODUCT_TOPOLOGY_BASE_ALT : thm := BProduct1.PRODUCT_TOPOLOGY_BASE_ALT
 def OPEN_IN_PRODUCT_TOPOLOGY_ALT : thm := BProduct1.OPEN_IN_PRODUCT_TOPOLOGY_ALT
 def OPEN_IN_PRODUCT_TOPOLOGY_ALT_EXPAND : thm := BProduct1.OPEN_IN_PRODUCT_TOPOLOGY_ALT_EXPAND
--- Product2 (metric.ml 4298-4529)
+-- Product2 (metric.ml 4492-4723)
 def CONTINUOUS_MAP_COMPONENTWISE : thm := BProduct2.CONTINUOUS_MAP_COMPONENTWISE
 def CONTINUOUS_MAP_COMPONENTWISE_UNIV : thm := BProduct2.CONTINUOUS_MAP_COMPONENTWISE_UNIV
 def CONTINUOUS_MAP_PRODUCT_PROJECTION : thm := BProduct2.CONTINUOUS_MAP_PRODUCT_PROJECTION
@@ -853,7 +866,7 @@ initialize BProduct3 : HolMultiLib.Metric.Product3 ←
     (HolMultiLib.Metric.setupProduct3 deps BTopology BClosure BInterior BContMap1 BContMap2
       BOpenClosed1 BQuotient BProduct1 BProduct2).run
 
--- Product3 (metric.ml 4531-4798)
+-- Product3 (metric.ml 4725-4992)
 def CLOSURE_OF_CARTESIAN_PRODUCT : thm := BProduct3.CLOSURE_OF_CARTESIAN_PRODUCT
 def CLOSED_IN_CARTESIAN_PRODUCT : thm := BProduct3.CLOSED_IN_CARTESIAN_PRODUCT
 def INTERIOR_IN_CARTESIAN_PRODUCT : thm := BProduct3.INTERIOR_IN_CARTESIAN_PRODUCT
@@ -866,20 +879,34 @@ def IN_PRODUCT_TOPOLOGY_CLOSURE_OF : thm := BProduct3.IN_PRODUCT_TOPOLOGY_CLOSUR
 initialize BProduct4 : HolMultiLib.Metric.Product4 ←
   ioB "setupProduct4"
     (HolMultiLib.Metric.setupProduct4 deps BTopology BDiscrete BOpenClosed2 BProduct1
-      BProduct2).run
+      BProduct2 BSubtopology BContMap2 BClosure BProd1).run
 
--- Product4 (metric.ml 4800-4920)
+-- Product4 (metric.ml 4994-5114)
 def PRODUCT_TOPOLOGY_EQ : thm := BProduct4.PRODUCT_TOPOLOGY_EQ
 def DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT_EQ : thm :=
   BProduct4.DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT_EQ
 def DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT : thm := BProduct4.DISCRETE_TOPOLOGY_CARTESIAN_PRODUCT
 def DISCRETE_SPACE_PRODUCT_TOPOLOGY : thm := BProduct4.DISCRETE_SPACE_PRODUCT_TOPOLOGY
+def pointwise_topology : thm := BProduct4.pointwise_topology
+def TOPSPACE_POINTWISE_PRODUCT : thm := BProduct4.TOPSPACE_POINTWISE_PRODUCT
+def TOPSPACE_POINTWISE_TOPOLOGY : thm := BProduct4.TOPSPACE_POINTWISE_TOPOLOGY
+def OPEN_IN_POINTWISE_PRODUCT_AGREE : thm := BProduct4.OPEN_IN_POINTWISE_PRODUCT_AGREE
+def POINTWISE_PRODUCT_NEIGHBOURHOOD : thm := BProduct4.POINTWISE_PRODUCT_NEIGHBOURHOOD
+def CLOSED_IN_POINTWISE_PRODUCT : thm := BProduct4.CLOSED_IN_POINTWISE_PRODUCT
+def OPEN_IN_POINTWISE_TOPOLOGY_AGREE : thm := BProduct4.OPEN_IN_POINTWISE_TOPOLOGY_AGREE
+def OPEN_IN_POINTWISE_TOPOLOGY_POINT : thm := BProduct4.OPEN_IN_POINTWISE_TOPOLOGY_POINT
+def CLOSED_IN_POINTWISE_TOPOLOGY_AGREE : thm := BProduct4.CLOSED_IN_POINTWISE_TOPOLOGY_AGREE
+def POINTWISE_TOPOLOGY_NEIGHBOURHOOD : thm := BProduct4.POINTWISE_TOPOLOGY_NEIGHBOURHOOD
+def CLOSURE_OF_POINTWISE_TOPOLOGY : thm := BProduct4.CLOSURE_OF_POINTWISE_TOPOLOGY
+def CONTINUOUS_MAP_POINTWISE_TOPOLOGY : thm := BProduct4.CONTINUOUS_MAP_POINTWISE_TOPOLOGY
+def CONTINUOUS_MAP_POINTWISE_EVALUATION : thm := BProduct4.CONTINUOUS_MAP_POINTWISE_EVALUATION
+def CONTINUOUS_MAP_POINTWISE_ACTION : thm := BProduct4.CONTINUOUS_MAP_POINTWISE_ACTION
 
 initialize BSumTop : HolMultiLib.Metric.SumTop ←
   ioB "setupSumTop"
     (HolMultiLib.Metric.setupSumTop deps BTopology BSubtopology BContMap1 BOpenClosed1).run
 
--- SumTop (metric.ml 4922-5096)
+-- SumTop (metric.ml 5313-5487)
 def sum_topology : thm := BSumTop.sum_topology
 def OPEN_IN_SUM_TOPOLOGY : thm := BSumTop.OPEN_IN_SUM_TOPOLOGY
 def OPEN_IN_DISJOINT_UNION : thm := BSumTop.OPEN_IN_DISJOINT_UNION
@@ -906,7 +933,7 @@ initialize BHomeo2 : HolMultiLib.Metric.Homeo2 ←
     (HolMultiLib.Metric.setupHomeo2 deps BTopology BSubtopology BDerived BClosure BInterior
       BFrontier BContMap1 BContMap2 BOpenClosed1 BProd1 BProd2 BHomeo1).run
 
--- Homeo1 (metric.ml 5098-5319)
+-- Homeo1 (metric.ml 5489-5716)
 def homeomorphic_map : thm := BHomeo1.homeomorphic_map
 def homeomorphic_maps : thm := BHomeo1.homeomorphic_maps
 def HOMEOMORPHIC_MAP_EQ : thm := BHomeo1.HOMEOMORPHIC_MAP_EQ
@@ -920,6 +947,7 @@ def HOMEOMORPHIC_MAP_COMPOSE : thm := BHomeo1.HOMEOMORPHIC_MAP_COMPOSE
 def HOMEOMORPHIC_MAPS_COMPOSE : thm := BHomeo1.HOMEOMORPHIC_MAPS_COMPOSE
 def HOMEOMORPHIC_EQ_EVERYTHING_MAP : thm := BHomeo1.HOMEOMORPHIC_EQ_EVERYTHING_MAP
 def HOMEOMORPHIC_IMP_QUOTIENT_MAP : thm := BHomeo1.HOMEOMORPHIC_IMP_QUOTIENT_MAP
+def HOMEOMORPHIC_MAP_QUOTIENT_TOPOLOGY : thm := BHomeo1.HOMEOMORPHIC_MAP_QUOTIENT_TOPOLOGY
 def HOMEOMORPHIC_IMP_CONTINUOUS_MAP : thm := BHomeo1.HOMEOMORPHIC_IMP_CONTINUOUS_MAP
 def HOMEOMORPHIC_IMP_OPEN_MAP : thm := BHomeo1.HOMEOMORPHIC_IMP_OPEN_MAP
 def HOMEOMORPHIC_IMP_CLOSED_MAP : thm := BHomeo1.HOMEOMORPHIC_IMP_CLOSED_MAP
@@ -931,7 +959,7 @@ def OPEN_EQ_CONTINUOUS_INVERSE_MAP : thm := BHomeo1.OPEN_EQ_CONTINUOUS_INVERSE_M
 def CLOSED_EQ_CONTINUOUS_INVERSE_MAP : thm := BHomeo1.CLOSED_EQ_CONTINUOUS_INVERSE_MAP
 def HOMEOMORPHIC_MAPS_MAP : thm := BHomeo1.HOMEOMORPHIC_MAPS_MAP
 def HOMEOMORPHIC_MAPS_IMP_MAP : thm := BHomeo1.HOMEOMORPHIC_MAPS_IMP_MAP
--- Homeo2 (metric.ml 5321-5560)
+-- Homeo2 (metric.ml 5718-5957)
 def HOMEOMORPHIC_MAP_MAPS : thm := BHomeo2.HOMEOMORPHIC_MAP_MAPS
 def HOMEOMORPHIC_MAPS_INVOLUTION : thm := BHomeo2.HOMEOMORPHIC_MAPS_INVOLUTION
 def HOMEOMORPHIC_MAP_INVOLUTION : thm := BHomeo2.HOMEOMORPHIC_MAP_INVOLUTION
@@ -958,7 +986,7 @@ initialize BHomeoSpace : HolMultiLib.Metric.HomeoSpace ←
     (HolMultiLib.Metric.setupHomeoSpace deps BSubtopology BContMap1 BProd1 BProd2 BProduct1
       BProduct2 BProduct3 BHomeo1 BHomeo2).run
 
--- HomeoSpace (metric.ml 5562-5793)
+-- HomeoSpace (metric.ml 5959-6190)
 def homeomorphic_space : thm := BHomeoSpace.homeomorphic_space
 def HOMEOMORPHIC_SPACE_REFL : thm := BHomeoSpace.HOMEOMORPHIC_SPACE_REFL
 def HOMEOMORPHIC_SPACE_SYM : thm := BHomeoSpace.HOMEOMORPHIC_SPACE_SYM
@@ -996,7 +1024,7 @@ initialize BEmbedding : HolMultiLib.Metric.Embedding ←
     (HolMultiLib.Metric.setupEmbedding deps BTopology BSubtopology BContMap1 BContMap2
       BOpenClosed1 BQuotient BSumTop BHomeo1 BHomeo2 BHomeoSpace).run
 
--- Embedding (metric.ml 5795-5967)
+-- Embedding (metric.ml 6192-6364)
 def embedding_map : thm := BEmbedding.embedding_map
 def EMBEDDING_MAP_EQ : thm := BEmbedding.EMBEDDING_MAP_EQ
 def EMBEDDING_MAP_COMPOSE : thm := BEmbedding.EMBEDDING_MAP_COMPOSE
@@ -1022,7 +1050,7 @@ initialize BRetraction : HolMultiLib.Metric.Retraction ←
     (HolMultiLib.Metric.setupRetraction deps BDiscrete BSubtopology BContMap1 BContMap2
       BQuotient BProd1 BProduct1 BProduct2 BHomeo1 BHomeo2 BHomeoSpace BEmbedding).run
 
--- Retraction (metric.ml 5969-6258)
+-- Retraction (metric.ml 6366-6655)
 def retraction_maps : thm := BRetraction.retraction_maps
 def section_map : thm := BRetraction.section_map
 def retraction_map : thm := BRetraction.retraction_map
@@ -1064,7 +1092,7 @@ initialize BRetractOf : HolMultiLib.Metric.RetractOf ←
     (HolMultiLib.Metric.setupRetractOf deps BTopology BSubtopology BFrontier BContMap1
       BContMap2 BHomeoSpace BEmbedding BRetraction).run
 
--- RetractOf (metric.ml 6260-6405)
+-- RetractOf (metric.ml 6657-6802)
 def retract_of_space : thm := BRetractOf.retract_of_space
 def RETRACT_OF_SPACE_RETRACTION_MAPS : thm := BRetractOf.RETRACT_OF_SPACE_RETRACTION_MAPS
 def RETRACT_OF_SPACE_SECTION_MAP : thm := BRetractOf.RETRACT_OF_SPACE_SECTION_MAP
@@ -1084,7 +1112,7 @@ initialize BCompact1 : HolMultiLib.Metric.Compact1 ←
   ioB "setupCompact1"
     (HolMultiLib.Metric.setupCompact1 deps BTactics BTopology BSubtopology).run
 
--- Compact1 (metric.ml 6407-6631)
+-- Compact1 (metric.ml 6804-7028)
 def compact_in : thm := BCompact1.compact_in
 def compact_space : thm := BCompact1.compact_space
 def COMPACT_SPACE_ALT : thm := BCompact1.COMPACT_SPACE_ALT
@@ -1114,7 +1142,7 @@ initialize BCompact2 : HolMultiLib.Metric.Compact2 ←
     (HolMultiLib.Metric.setupCompact2 deps BTopology BDiscrete BSubtopology BDerived BClosure
       BCompact1).run
 
--- Compact2 (metric.ml 6633-6867)
+-- Compact2 (metric.ml 7030-7264)
 def COMPACT_IMP_COMPACT_IN_SUBTOPOLOGY : thm := BCompact2.COMPACT_IMP_COMPACT_IN_SUBTOPOLOGY
 def CLOSED_IN_COMPACT_SUBTOPOLOGY : thm := BCompact2.CLOSED_IN_COMPACT_SUBTOPOLOGY
 def COMPACT_SPACE_FIP : thm := BCompact2.COMPACT_SPACE_FIP
@@ -1135,7 +1163,7 @@ initialize BCompact3 : HolMultiLib.Metric.Compact3 ←
     (HolMultiLib.Metric.setupCompact3 deps BTactics BTopology BBases BContMap1 BQuotient
       BHomeo1 BHomeo2 BHomeoSpace BRetraction BCompact1).run
 
--- Compact3 (metric.ml 6869-7096)
+-- Compact3 (metric.ml 7266-7493)
 def IMAGE_COMPACT_IN : thm := BCompact3.IMAGE_COMPACT_IN
 def HOMEOMORPHIC_COMPACT_SPACE : thm := BCompact3.HOMEOMORPHIC_COMPACT_SPACE
 def HOMEOMORPHIC_MAP_COMPACTNESS : thm := BCompact3.HOMEOMORPHIC_MAP_COMPACTNESS
@@ -1150,7 +1178,7 @@ initialize BCompact4 : HolMultiLib.Metric.Compact4 ←
     (HolMultiLib.Metric.setupCompact4 deps BTopology BSubtopology BProd1 BProduct1 BProduct2
       BCompact1 BCompact3).run
 
--- Compact4 (metric.ml 7098-7292)
+-- Compact4 (metric.ml 7495-7689)
 def COMPACT_SPACE_PROD_TOPOLOGY : thm := BCompact4.COMPACT_SPACE_PROD_TOPOLOGY
 def COMPACT_IN_CROSS : thm := BCompact4.COMPACT_IN_CROSS
 def COMPACT_SPACE_PRODUCT_TOPOLOGY : thm := BCompact4.COMPACT_SPACE_PRODUCT_TOPOLOGY
@@ -1160,7 +1188,7 @@ initialize BCompact5 : HolMultiLib.Metric.Compact5 ←
     (HolMultiLib.Metric.setupCompact5 deps BTopology BSubtopology BIterLocal BOpenClosed1
       BOpenClosed2 BProd1 BProduct1 BHomeo1 BHomeo2 BCompact1 BCompact4).run
 
--- Compact5 (metric.ml 7294-7497)
+-- Compact5 (metric.ml 7691-7894)
 def COMPACT_IN_CARTESIAN_PRODUCT : thm := BCompact5.COMPACT_IN_CARTESIAN_PRODUCT
 def TUBE_LEMMA_LEFT : thm := BCompact5.TUBE_LEMMA_LEFT
 def TUBE_LEMMA_RIGHT : thm := BCompact5.TUBE_LEMMA_RIGHT
@@ -1175,7 +1203,7 @@ initialize BSeparated : HolMultiLib.Metric.Separated ←
     (HolMultiLib.Metric.setupSeparated deps BTopology BDiscrete BSubtopology BClosure BHomeo1
       BHomeo2).run
 
--- Separated (metric.ml 7499-7700)
+-- Separated (metric.ml 7896-8097)
 def separated_in : thm := BSeparated.separated_in
 def SEPARATED_IN_EMPTY : thm := BSeparated.SEPARATED_IN_EMPTY
 def SEPARATED_IN_REFL : thm := BSeparated.SEPARATED_IN_REFL
@@ -1200,7 +1228,7 @@ initialize BT1a : HolMultiLib.Metric.T1a ←
   ioB "setupT1a"
     (HolMultiLib.Metric.setupT1a deps BTopology BSubtopology BDerived BClosure BSeparated).run
 
--- T1a (metric.ml 7702-7885)
+-- T1a (metric.ml 8099-8282)
 def t1_space : thm := BT1a.t1_space
 def T1_SPACE_EXPANSIVE : thm := BT1a.T1_SPACE_EXPANSIVE
 def T1_SPACE_ALT : thm := BT1a.T1_SPACE_ALT
@@ -1226,7 +1254,7 @@ initialize BT1b : HolMultiLib.Metric.T1b ←
     (HolMultiLib.Metric.setupT1b deps BTopology BDerived BClosure BOpenClosed1 BProd1 BProduct1
       BProduct3 BHomeo1 BHomeoSpace BRetractOf BT1a).run
 
--- T1b (metric.ml 7887-8013)
+-- T1b (metric.ml 8284-8410)
 def CLOSED_IN_DERIVED_SET_OF_GEN : thm := BT1b.CLOSED_IN_DERIVED_SET_OF_GEN
 def DERIVED_SET_OF_DERIVED_SET_SUBSET_GEN : thm := BT1b.DERIVED_SET_OF_DERIVED_SET_SUBSET_GEN
 def SUBTOPOLOGY_EQ_DISCRETE_TOPOLOGY_GEN_FINITE : thm :=
@@ -1246,7 +1274,7 @@ initialize BHausdorff1 : HolMultiLib.Metric.Hausdorff1 ←
     (HolMultiLib.Metric.setupHausdorff1 deps BTopology BDiscrete BSubtopology BClosure
       BInterior BCompact1 BT1a BT1b).run
 
--- Hausdorff1 (metric.ml 8015-8248)
+-- Hausdorff1 (metric.ml 8412-8645)
 def hausdorff_space : thm := BHausdorff1.hausdorff_space
 def HAUSDORFF_SPACE_EXPANSIVE : thm := BHausdorff1.HAUSDORFF_SPACE_EXPANSIVE
 def HAUSDORFF_SPACE_TOPSPACE_EMPTY : thm := BHausdorff1.HAUSDORFF_SPACE_TOPSPACE_EMPTY
@@ -1276,9 +1304,9 @@ initialize BHausdorff2 : HolMultiLib.Metric.Hausdorff2 ←
   ioB "setupHausdorff2"
     (HolMultiLib.Metric.setupHausdorff2 deps BTopology BSubtopology BDerived BContMap1
       BContMap2 BOpenClosed1 BQuotient BProd1 BProduct1 BHomeo1 BHomeoSpace BEmbedding
-      BRetractOf BCompact1 BCompact2 BCompact3 BT1b BHausdorff1).run
+      BRetractOf BCompact1 BCompact2 BCompact3 BT1b BHausdorff1 BProduct4).run
 
--- Hausdorff2 (metric.ml 8250-8521)
+-- Hausdorff2 (metric.ml 8647-8925)
 def HAUSDORFF_SPACE_DISCRETE_COMPACT_IN : thm := BHausdorff2.HAUSDORFF_SPACE_DISCRETE_COMPACT_IN
 def HAUSDORFF_SPACE_FINITE_TOPSPACE : thm := BHausdorff2.HAUSDORFF_SPACE_FINITE_TOPSPACE
 def DERIVED_SET_OF_DERIVED_SET_SUBSET : thm := BHausdorff2.DERIVED_SET_OF_DERIVED_SET_SUBSET
@@ -1294,6 +1322,7 @@ def CONTINUOUS_IMP_EMBEDDING_MAP : thm := BHausdorff2.CONTINUOUS_IMP_EMBEDDING_M
 def CONTINUOUS_INVERSE_MAP : thm := BHausdorff2.CONTINUOUS_INVERSE_MAP
 def HAUSDORFF_SPACE_PROD_TOPOLOGY : thm := BHausdorff2.HAUSDORFF_SPACE_PROD_TOPOLOGY
 def HAUSDORFF_SPACE_PRODUCT_TOPOLOGY : thm := BHausdorff2.HAUSDORFF_SPACE_PRODUCT_TOPOLOGY
+def HAUSDORFF_SPACE_POINTWISE_TOPOLOGY : thm := BHausdorff2.HAUSDORFF_SPACE_POINTWISE_TOPOLOGY
 def HAUSDORFF_SPACE_CLOSED_NEIGHBOURHOOD : thm :=
   BHausdorff2.HAUSDORFF_SPACE_CLOSED_NEIGHBOURHOOD
 def INFINITE_PERFECT_SET : thm := BHausdorff2.INFINITE_PERFECT_SET
@@ -1303,7 +1332,7 @@ initialize BDiagonal : HolMultiLib.Metric.Diagonal ←
     (HolMultiLib.Metric.setupDiagonal deps BTopology BSubtopology BClosure BContMap1 BContMap2
       BOpenClosed1 BProd1 BHomeo1 BHomeo2 BEmbedding BRetraction BRetractOf BHausdorff1).run
 
--- Diagonal (metric.ml 8523-8736)
+-- Diagonal (metric.ml 8927-9140)
 def HAUSDORFF_SPACE_CLOSED_IN_DIAGONAL : thm := BDiagonal.HAUSDORFF_SPACE_CLOSED_IN_DIAGONAL
 def CLOSED_MAP_DIAG_EQ : thm := BDiagonal.CLOSED_MAP_DIAG_EQ
 def CLOSED_IN_CONTINUOUS_MAPS_EQ : thm := BDiagonal.CLOSED_IN_CONTINUOUS_MAPS_EQ
@@ -1326,7 +1355,7 @@ initialize BKC1 : HolMultiLib.Metric.KC1 ←
       BOpenClosed1 BProd1 BHomeo1 BHomeoSpace BRetraction BCompact1 BCompact3 BCompact4 BT1a
       BHausdorff1 BHausdorff2 BDiagonal).run
 
--- KC1 (metric.ml 8738-8954)
+-- KC1 (metric.ml 9142-9358)
 def kc_space : thm := BKC1.kc_space
 def KC_SPACE_EXPANSIVE : thm := BKC1.KC_SPACE_EXPANSIVE
 def COMPACT_IN_IMP_CLOSED_IN_GEN : thm := BKC1.COMPACT_IN_IMP_CLOSED_IN_GEN
@@ -1349,7 +1378,7 @@ initialize BKC2 : HolMultiLib.Metric.KC2 ←
     (HolMultiLib.Metric.setupKC2 deps BTopology BSubtopology BContMap1 BContMap2 BProd1 BHomeo1
       BHomeoSpace BCompact1 BCompact3 BT1a BHausdorff1 BKC1).run
 
--- KC2 (metric.ml 8956-9084)
+-- KC2 (metric.ml 9360-9488)
 def KC_SPACE_PROD_TOPOLOGY_ALT : thm := BKC2.KC_SPACE_PROD_TOPOLOGY_ALT
 def KC_SPACE_PROD_TOPOLOGY_LEFT : thm := BKC2.KC_SPACE_PROD_TOPOLOGY_LEFT
 def KC_SPACE_PROD_TOPOLOGY_RIGHT : thm := BKC2.KC_SPACE_PROD_TOPOLOGY_RIGHT
@@ -1360,7 +1389,7 @@ initialize BProper1 : HolMultiLib.Metric.Proper1 ←
     (HolMultiLib.Metric.setupProper1 deps BTopology BSubtopology BOpenClosed1 BOpenClosed2
       BHomeo1 BCompact1 BDiagonal).run
 
--- Proper1 (metric.ml 9086-9277)
+-- Proper1 (metric.ml 9490-9681)
 def proper_map : thm := BProper1.proper_map
 def PROPER_IMP_CLOSED_MAP : thm := BProper1.PROPER_IMP_CLOSED_MAP
 def PROPER_MAP_IMP_SUBSET_TOPSPACE : thm := BProper1.PROPER_MAP_IMP_SUBSET_TOPSPACE
@@ -1387,7 +1416,7 @@ initialize BProper2 : HolMultiLib.Metric.Proper2 ←
       BOpenClosed1 BOpenClosed2 BProd1 BCompact1 BCompact3 BCompact4 BCompact5 BT1a BKC1
       BProper1).run
 
--- Proper2 (metric.ml 9279-9490)
+-- Proper2 (metric.ml 9683-9894)
 def COMPACT_IMP_PROPER_MAP_GEN : thm := BProper2.COMPACT_IMP_PROPER_MAP_GEN
 def CONTINUOUS_CLOSED_IMP_PROPER_MAP : thm := BProper2.CONTINUOUS_CLOSED_IMP_PROPER_MAP
 def CONTINUOUS_IMP_PROPER_MAP : thm := BProper2.CONTINUOUS_IMP_PROPER_MAP
@@ -1408,7 +1437,7 @@ initialize BProper3 : HolMultiLib.Metric.Proper3 ←
     (HolMultiLib.Metric.setupProper3 deps BContMap1 BContMap2 BOpenClosed1 BOpenClosed2 BProd1
       BProd2 BHomeo1 BCompact3 BCompact4 BCompact5 BDiagonal BProper1 BProper2).run
 
--- Proper3 (metric.ml 9492-9674)
+-- Proper3 (metric.ml 9896-10078)
 def PROPER_MAP_PROD : thm := BProper3.PROPER_MAP_PROD
 def PROPER_MAP_PAIRED : thm := BProper3.PROPER_MAP_PAIRED
 def PROPER_MAP_PAIRWISE : thm := BProper3.PROPER_MAP_PAIRWISE
@@ -1421,7 +1450,7 @@ initialize BPerfect : HolMultiLib.Metric.Perfect ←
     (HolMultiLib.Metric.setupPerfect deps BSubtopology BContMap1 BContMap2 BQuotient BProd1
       BHomeo1 BCompact1 BKC1 BProper1 BProper2 BProper3).run
 
--- Perfect (metric.ml 9676-9830)
+-- Perfect (metric.ml 10080-10234)
 def perfect_map : thm := BPerfect.perfect_map
 def HOMEOMORPHIC_IMP_PERFECT_MAP : thm := BPerfect.HOMEOMORPHIC_IMP_PERFECT_MAP
 def PERFECT_IMP_QUOTIENT_MAP : thm := BPerfect.PERFECT_IMP_QUOTIENT_MAP
@@ -1448,7 +1477,7 @@ initialize BPreserve : HolMultiLib.Metric.Preserve ←
     (HolMultiLib.Metric.setupPreserve deps BTopology BOpenClosed1 BOpenClosed2 BCompact1
       BCompact3 BT1b BHausdorff1 BHausdorff2 BKC1 BProper1 BProper2 BPerfect).run
 
--- Preserve (metric.ml 9832-9977)
+-- Preserve (metric.ml 10236-10381)
 def DISCRETE_SPACE_PERFECT_MAP_IMAGE : thm := BPreserve.DISCRETE_SPACE_PERFECT_MAP_IMAGE
 def KC_SPACE_PROPER_MAP_IMAGE : thm := BPreserve.KC_SPACE_PROPER_MAP_IMAGE
 def KC_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE : thm := BPreserve.KC_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE
@@ -1473,7 +1502,7 @@ initialize BLindelof : HolMultiLib.Metric.Lindelof ←
     (HolMultiLib.Metric.setupLindelof deps BTopology BSubtopology BIterLocal BContMap1
       BOpenClosed1 BQuotient BRetraction BCompact1 BProper1 BPerfect).run
 
--- Lindelof (metric.ml 9979-10215)
+-- Lindelof (metric.ml 10383-10619)
 def lindelof_space : thm := BLindelof.lindelof_space
 def LINDELOF_SPACE_ALT : thm := BLindelof.LINDELOF_SPACE_ALT
 def COMPACT_IMP_LINDELOF_SPACE : thm := BLindelof.COMPACT_IMP_LINDELOF_SPACE
@@ -1498,7 +1527,7 @@ initialize BCountability : HolMultiLib.Metric.Countability ←
       BContMap1 BOpenClosed1 BQuotient BHomeo1 BHomeoSpace BRetraction BRetractOf
       BLindelof).run
 
--- Countability (metric.ml 10217-10474)
+-- Countability (metric.ml 10621-10878)
 def second_countable : thm := BCountability.second_countable
 def first_countable : thm := BCountability.first_countable
 def separable_space : thm := BCountability.separable_space
@@ -1535,7 +1564,7 @@ def SECOND_COUNTABLE_IMP_LINDELOF_SPACE : thm :=
 initialize BNets : HolMultiLib.Metric.Nets ←
   ioB "setupNets" (HolMultiLib.Metric.setupNets deps).run
 
--- Nets (metric.ml 10476-10682)
+-- Nets (metric.ml 10880-11086)
 def net_tybij : thm := BNets.net_tybij
 def netfilter : thm := BNets.netfilter
 def netlimits : thm := BNets.netlimits
@@ -1571,7 +1600,7 @@ def EVENTUALLY_TRIVIAL : thm := BNets.EVENTUALLY_TRIVIAL
 initialize BSequential : HolMultiLib.Metric.Sequential ←
   ioB "setupSequential" (HolMultiLib.Metric.setupSequential deps BTactics BNets).run
 
--- Sequential (metric.ml 10684-10897)
+-- Sequential (metric.ml 11088-11301)
 def sequentially : thm := BSequential.sequentially
 def SEQUENTIALLY : thm := BSequential.SEQUENTIALLY
 def NETLIMITS_SEQUENTIALLY : thm := BSequential.NETLIMITS_SEQUENTIALLY
@@ -1599,7 +1628,7 @@ initialize BFsigmaGdelta : HolMultiLib.Metric.FsigmaGdelta ←
     (HolMultiLib.Metric.setupFsigmaGdelta deps BTopology BSubtopology BOpenClosed1 BHomeo1
       BHomeo2).run
 
--- FsigmaGdelta (metric.ml 10899-11177)
+-- FsigmaGdelta (metric.ml 11303-11581)
 def fsigma_in : thm := BFsigmaGdelta.fsigma_in
 def gdelta_in : thm := BFsigmaGdelta.gdelta_in
 def FSIGMA_IN_ASCENDING : thm := BFsigmaGdelta.FSIGMA_IN_ASCENDING
@@ -1639,7 +1668,7 @@ initialize BBorel : HolMultiLib.Metric.Borel ←
     (HolMultiLib.Metric.setupBorel deps BTopology BSubtopology BContMap1 BHomeo1 BHomeo2
       BFsigmaGdelta).run
 
--- Borel (metric.ml 11179-11419)
+-- Borel (metric.ml 11583-11823)
 def borel_in_RULES : thm := BBorel.borel_in_RULES
 def borel_in_INDUCT : thm := BBorel.borel_in_INDUCT
 def borel_in_CASES : thm := BBorel.borel_in_CASES
@@ -1672,7 +1701,7 @@ initialize BBorelMap : HolMultiLib.Metric.BorelMap ←
   ioB "setupBorelMap"
     (HolMultiLib.Metric.setupBorelMap deps BTopology BSubtopology BContMap1 BBorel).run
 
--- BorelMap (metric.ml 11421-11570)
+-- BorelMap (metric.ml 11825-11974)
 def borel_measurable_map : thm := BBorelMap.borel_measurable_map
 def BOREL_MEASURABLE_MAP_OPEN_IN : thm := BBorelMap.BOREL_MEASURABLE_MAP_OPEN_IN
 def BOREL_MEASURABLE_MAP_CLOSED_IN : thm := BBorelMap.BOREL_MEASURABLE_MAP_CLOSED_IN
@@ -1691,7 +1720,7 @@ def BOREL_MEASURABLE_MAP_INTO_SUBTOPOLOGY : thm :=
 initialize BMetricSpace : HolMultiLib.Metric.MetricSpace ←
   ioB "setupMetricSpace" (HolMultiLib.Metric.setupMetricSpace deps BTactics).run
 
--- MetricSpace (metric.ml 11572-11802)
+-- MetricSpace (metric.ml 11976-12206)
 def is_metric_space : thm := BMetricSpace.is_metric_space
 def IS_METRIC_SPACE : thm := BMetricSpace.IS_METRIC_SPACE
 def metric_tybij : thm := BMetricSpace.metric_tybij
@@ -1735,7 +1764,7 @@ initialize BMTopology : HolMultiLib.Metric.MTopology ←
     (HolMultiLib.Metric.setupMTopology deps BTactics BTopology BSubtopology BBases BDerived
       BClosure BInterior BMetricSpace).run
 
--- MTopology (metric.ml 11803-12179)
+-- MTopology (metric.ml 12207-12583)
 def mtopology : thm := BMTopology.mtopology
 def IS_TOPOLOGY_METRIC_TOPOLOGY : thm := BMTopology.IS_TOPOLOGY_METRIC_TOPOLOGY
 def OPEN_IN_MTOPOLOGY : thm := BMTopology.OPEN_IN_MTOPOLOGY
@@ -1778,7 +1807,7 @@ initialize BBounded : HolMultiLib.Metric.Bounded ←
   ioB "setupBounded"
     (HolMultiLib.Metric.setupBounded deps BTactics BClosure BMetricSpace BMTopology).run
 
--- Bounded (metric.ml 12181-12331)
+-- Bounded (metric.ml 12585-12735)
 def mbounded : thm := BBounded.mbounded
 def MBOUNDED_POS : thm := BBounded.MBOUNDED_POS
 def MBOUNDED_ALT : thm := BBounded.MBOUNDED_ALT
@@ -1801,7 +1830,7 @@ initialize BMetricArith : HolMultiLib.Metric.MetricArithB ←
   ioB "setupMetricArith"
     (HolMultiLib.Metric.setupMetricArith deps BTactics BMetricSpace BBounded).run
 
--- MetricArith (metric.ml 12333-12573)
+-- MetricArith (metric.ml 12737-12977)
 def METRIC_ARITH (tm : term) : ExceptT String IO thm := BMetricArith.METRIC_ARITH tm
 def METRIC_ARITH_TAC : HolCore.Tactics.tactic := fun g => BMetricArith.METRIC_ARITH_TAC g
 def ASM_METRIC_ARITH_TAC : HolCore.Tactics.tactic :=
@@ -1812,7 +1841,7 @@ initialize BMetricHaus : HolMultiLib.Metric.MetricHaus ←
     (HolMultiLib.Metric.setupMetricHaus deps BTactics BCompact1 BHausdorff1 BMetricSpace
       BMTopology BBounded BMetricArith).run
 
--- MetricHaus (metric.ml 12575-12630)
+-- MetricHaus (metric.ml 12979-13034)
 def COMPACT_IN_IMP_MBOUNDED : thm := BMetricHaus.COMPACT_IN_IMP_MBOUNDED
 def HAUSDORFF_SPACE_MTOPOLOGY : thm := BMetricHaus.HAUSDORFF_SPACE_MTOPOLOGY
 def T1_SPACE_MTOPOLOGY : thm := BMetricHaus.T1_SPACE_MTOPOLOGY
@@ -1823,7 +1852,7 @@ initialize BMetrizable : HolMultiLib.Metric.Metrizable ←
       BHomeoSpace BRetractOf BHausdorff1 BKC1 BCountability BFsigmaGdelta BMetricSpace
       BMTopology BBounded BMetricArith BMetricHaus).run
 
--- Metrizable (metric.ml 12632-12860)
+-- Metrizable (metric.ml 13036-13264)
 def discrete_metric : thm := BMetrizable.discrete_metric
 def DISCRETE_METRIC : thm := BMetrizable.DISCRETE_METRIC
 def MTOPOLOGY_DISCRETE_METRIC : thm := BMetrizable.MTOPOLOGY_DISCRETE_METRIC
@@ -1853,7 +1882,7 @@ initialize BSepMetrizable : HolMultiLib.Metric.SepMetrizable ←
     (HolMultiLib.Metric.setupSepMetrizable deps BTopology BClosure BContMap1 BOpenClosed1
       BCompact1 BT1a BHausdorff1 BCountability BMetricSpace BMTopology BMetrizable).run
 
--- SepMetrizable (metric.ml 12862-13062)
+-- SepMetrizable (metric.ml 13266-13466)
 def SEPARABLE_METRIZABLE_IMP_SECOND_COUNTABLE : thm :=
   BSepMetrizable.SEPARABLE_METRIZABLE_IMP_SECOND_COUNTABLE
 def SECOND_COUNTABLE_CLOSED_MAP_IMAGE : thm := BSepMetrizable.SECOND_COUNTABLE_CLOSED_MAP_IMAGE
@@ -1862,7 +1891,7 @@ initialize BConnected1 : HolMultiLib.Metric.Connected1 ←
   ioB "setupConnected1"
     (HolMultiLib.Metric.setupConnected1 deps BTopology BSubtopology BFrontier).run
 
--- Connected1 (metric.ml 13064-13253)
+-- Connected1 (metric.ml 13468-13657)
 def connected_space : thm := BConnected1.connected_space
 def connected_in : thm := BConnected1.connected_in
 def CONNECTED_IN_SUBSET_TOPSPACE : thm := BConnected1.CONNECTED_IN_SUBSET_TOPSPACE
@@ -1887,9 +1916,9 @@ def CONNECTED_IN_UNIONS : thm := BConnected1.CONNECTED_IN_UNIONS
 initialize BConnected2 : HolMultiLib.Metric.Connected2 ←
   ioB "setupConnected2"
     (HolMultiLib.Metric.setupConnected2 deps BTopology BSubtopology BClosure BSeparated
-      BConnected1).run
+      BConnected1 BContMap1).run
 
--- Connected2 (metric.ml 13255-13466)
+-- Connected2 (metric.ml 13659-13870)
 def CONNECTED_IN_UNION : thm := BConnected2.CONNECTED_IN_UNION
 def CONNECTED_SPACE_SUBCONNECTED : thm := BConnected2.CONNECTED_SPACE_SUBCONNECTED
 def CONNECTED_IN_INTERMEDIATE_CLOSURE_OF : thm :=
@@ -1907,12 +1936,18 @@ def CONNECTED_IN_SUBSET_SEPARATED_UNION : thm :=
   BConnected2.CONNECTED_IN_SUBSET_SEPARATED_UNION
 def CONNECTED_IN_NONSEPARATED_UNION : thm := BConnected2.CONNECTED_IN_NONSEPARATED_UNION
 def CONNECTED_IN_UNIONS_STRONG : thm := BConnected2.CONNECTED_IN_UNIONS_STRONG
+def irreducible_in : thm := BConnected2.irreducible_in
+def IRREDUCIBLE_IN_SING : thm := BConnected2.IRREDUCIBLE_IN_SING
+def IRREDUCIBLE_IN_CLOSURE_OF : thm := BConnected2.IRREDUCIBLE_IN_CLOSURE_OF
+def IRREDUCIBLE_IN_CONTINUOUS_MAP_IMAGE : thm := BConnected2.IRREDUCIBLE_IN_CONTINUOUS_MAP_IMAGE
+def IRREDUCIBLE_IMP_CONNECTED_IN : thm := BConnected2.IRREDUCIBLE_IMP_CONNECTED_IN
+def sober_space : thm := BConnected2.sober_space
 
 initialize BChain : HolMultiLib.Metric.Chain ←
   ioB "setupChain"
     (HolMultiLib.Metric.setupChain deps BTopology BCompact1 BHausdorff1 BConnected1).run
 
--- Chain (metric.ml 13468-13698)
+-- Chain (metric.ml 13938-14168)
 def CONNECTED_IN_CHAIN : thm := BChain.CONNECTED_IN_CHAIN
 def CONNECTED_IN_CHAIN_GEN : thm := BChain.CONNECTED_IN_CHAIN_GEN
 def CONNECTED_IN_NEST : thm := BChain.CONNECTED_IN_NEST
@@ -1924,7 +1959,7 @@ initialize BConnected3 : HolMultiLib.Metric.Connected3 ←
       BFrontier BContMap1 BQuotient BHomeo1 BHomeo2 BHomeoSpace BRetraction BSeparated BT1a
       BHausdorff1 BConnected1 BConnected2).run
 
--- Connected3 (metric.ml 13700-13916)
+-- Connected3 (metric.ml 14170-14386)
 def CONNECTED_IN_EQ_SUBSET_SEPARATED_UNION : thm :=
   BConnected3.CONNECTED_IN_EQ_SUBSET_SEPARATED_UNION
 def CONNECTED_IN_CLOPEN_CASES : thm := BConnected3.CONNECTED_IN_CLOPEN_CASES
@@ -1949,7 +1984,7 @@ initialize BConnected4 : HolMultiLib.Metric.Connected4 ←
     (HolMultiLib.Metric.setupConnected4 deps BTopology BSubtopology BContMap1 BProd1 BProduct1
       BProduct2 BConnected1 BConnected3).run
 
--- Connected4 (metric.ml 13918-14222)
+-- Connected4 (metric.ml 14388-14692)
 def CONNECTED_SPACE_PROD_TOPOLOGY : thm := BConnected4.CONNECTED_SPACE_PROD_TOPOLOGY
 def CONNECTED_IN_CROSS : thm := BConnected4.CONNECTED_IN_CROSS
 def CONNECTED_SPACE_PRODUCT_TOPOLOGY : thm := BConnected4.CONNECTED_SPACE_PRODUCT_TOPOLOGY
@@ -1960,7 +1995,7 @@ initialize BSepBetween : HolMultiLib.Metric.SepBetween ←
     (HolMultiLib.Metric.setupSepBetween deps BTopology BClosure BInterior BFrontier BCompact1
       BSeparated BConnected1).run
 
--- SepBetween (metric.ml 14224-14478)
+-- SepBetween (metric.ml 14694-14948)
 def separated_between : thm := BSepBetween.separated_between
 def SEPARATED_BETWEEN_ALT : thm := BSepBetween.SEPARATED_BETWEEN_ALT
 def SEPARATED_BETWEEN : thm := BSepBetween.SEPARATED_BETWEEN
@@ -1989,7 +2024,7 @@ initialize BComponents1 : HolMultiLib.Metric.Components1 ←
   ioB "setupComponents1"
     (HolMultiLib.Metric.setupComponents1 deps BSubtopology BConnected1 BConnected2).run
 
--- Components1 (metric.ml 14480-14698)
+-- Components1 (metric.ml 14950-15168)
 def connected_component_of : thm := BComponents1.connected_component_of
 def connected_components_of : thm := BComponents1.connected_components_of
 def CONNECTED_COMPONENT_IN_TOPSPACE : thm := BComponents1.CONNECTED_COMPONENT_IN_TOPSPACE
@@ -2036,7 +2071,7 @@ initialize BComponents2 : HolMultiLib.Metric.Components2 ←
     (HolMultiLib.Metric.setupComponents2 deps BTopology BDiscrete BSubtopology BClosure
       BSeparated BConnected1 BConnected2 BConnected3 BComponents1).run
 
--- Components2 (metric.ml 14700-14929)
+-- Components2 (metric.ml 15170-15399)
 def CONNECTED_SPACE_IFF_COMPONENTS_EQ : thm := BComponents2.CONNECTED_SPACE_IFF_COMPONENTS_EQ
 def CONNECTED_COMPONENTS_OF_EQ_EMPTY : thm := BComponents2.CONNECTED_COMPONENTS_OF_EQ_EMPTY
 def CONNECTED_COMPONENTS_OF_EMPTY_SPACE : thm :=
@@ -2081,7 +2116,7 @@ initialize BComponents3 : HolMultiLib.Metric.Components3 ←
       BHomeo2 BSeparated BConnected1 BConnected2 BConnected3 BConnected4 BComponents1
       BComponents2).run
 
--- Components3 (metric.ml 14931-15196)
+-- Components3 (metric.ml 15401-15666)
 def CARD_LE_CONNNECTED_COMPONENTS_CONNECTED_IN : thm :=
   BComponents3.CARD_LE_CONNNECTED_COMPONENTS_CONNECTED_IN
 def CARD_LE_CONNECTED_COMPONENTS_ALT : thm := BComponents3.CARD_LE_CONNECTED_COMPONENTS_ALT
@@ -2104,7 +2139,7 @@ initialize BMonotone : HolMultiLib.Metric.Monotone ←
     (HolMultiLib.Metric.setupMonotone deps BTopology BSubtopology BContMap1 BContMap2
       BOpenClosed1 BQuotient BHomeo1 BEmbedding BRetraction BConnected1).run
 
--- Monotone (metric.ml 15198-15379)
+-- Monotone (metric.ml 15668-15849)
 def monotone_map : thm := BMonotone.monotone_map
 def MONOTONE_MAP : thm := BMonotone.MONOTONE_MAP
 def MONOTONE_MAP_IN_SUBTOPOLOGY : thm := BMonotone.MONOTONE_MAP_IN_SUBTOPOLOGY
@@ -2126,7 +2161,7 @@ initialize BNbhdBase : HolMultiLib.Metric.NbhdBase ←
     (HolMultiLib.Metric.setupNbhdBase deps BTopology BDiscrete BSubtopology BBases BInterior
       BCountability).run
 
--- NbhdBase (metric.ml 15381-15638)
+-- NbhdBase (metric.ml 15851-16108)
 def neighbourhood_base_at : thm := BNbhdBase.neighbourhood_base_at
 def neighbourhood_base_of : thm := BNbhdBase.neighbourhood_base_of
 def NEIGHBOURHOOD_BASE_OF : thm := BNbhdBase.NEIGHBOURHOOD_BASE_OF
@@ -2159,7 +2194,7 @@ initialize BT0a : HolMultiLib.Metric.T0a ←
     (HolMultiLib.Metric.setupT0a deps BTopology BDiscrete BSubtopology BClosure BProd1
       BProduct1 BProduct3 BHomeo1 BHomeo2 BHomeoSpace BRetractOf BT1a BHausdorff1).run
 
--- T0a (metric.ml 15640-15800)
+-- T0a (metric.ml 16110-16270)
 def t0_space : thm := BT0a.t0_space
 def T0_SPACE_EXPANSIVE : thm := BT0a.T0_SPACE_EXPANSIVE
 def T1_IMP_T0_SPACE : thm := BT0a.T1_IMP_T0_SPACE
@@ -2180,7 +2215,7 @@ initialize BT0b : HolMultiLib.Metric.T0b ←
     (HolMultiLib.Metric.setupT0b deps BTopology BSubtopology BContMap1 BContMap2 BOpenClosed1
       BQuotient BRetraction BRetractOf BT0a).run
 
--- T0b (metric.ml 15802-16044)
+-- T0b (metric.ml 16272-16514)
 def kolmogorov_quotient : thm := BT0b.kolmogorov_quotient
 def KOLMOGOROV_QUOTIENT_IN_OPEN : thm := BT0b.KOLMOGOROV_QUOTIENT_IN_OPEN
 def KOLMOGOROV_QUOTIENT_IN_TOPSPACE : thm := BT0b.KOLMOGOROV_QUOTIENT_IN_TOPSPACE
@@ -2213,7 +2248,7 @@ initialize BRegular1 : HolMultiLib.Metric.Regular1 ←
       BHomeo2 BHomeoSpace BRetractOf BCompact1 BHausdorff1 BHausdorff2 BKC1 BMetricSpace
       BMTopology BMetrizable BNbhdBase BT0a).run
 
--- Regular1 (metric.ml 16046-16244)
+-- Regular1 (metric.ml 16516-16714)
 def regular_space : thm := BRegular1.regular_space
 def HOMEOMORPHIC_REGULAR_SPACE : thm := BRegular1.HOMEOMORPHIC_REGULAR_SPACE
 def REGULAR_SPACE : thm := BRegular1.REGULAR_SPACE
@@ -2238,7 +2273,7 @@ initialize BRegular2 : HolMultiLib.Metric.Regular2 ←
     (HolMultiLib.Metric.setupRegular2 deps BTopology BProd1 BProduct1 BProduct2 BProduct3
       BHomeoSpace BCompact1 BNbhdBase BRegular1).run
 
--- Regular2 (metric.ml 16246-16385)
+-- Regular2 (metric.ml 16716-16855)
 def REGULAR_SPACE_COMPACT_CLOSED_SEPARATION : thm :=
   BRegular2.REGULAR_SPACE_COMPACT_CLOSED_SEPARATION
 def REGULAR_SPACE_COMPACT_CLOSED_SETS : thm := BRegular2.REGULAR_SPACE_COMPACT_CLOSED_SETS
@@ -2251,7 +2286,7 @@ initialize BRegular3 : HolMultiLib.Metric.Regular3 ←
       BProd1 BHomeo1 BHomeo2 BCompact1 BT1a BHausdorff1 BProper1 BPerfect BNbhdBase BRegular1
       BRegular2).run
 
--- Regular3 (metric.ml 16387-16637)
+-- Regular3 (metric.ml 16857-17107)
 def CLOSED_MAP_PAIRED_GEN : thm := BRegular3.CLOSED_MAP_PAIRED_GEN
 def CLOSED_MAP_PAIRED : thm := BRegular3.CLOSED_MAP_PAIRED
 def CLOSED_MAP_PAIRWISE : thm := BRegular3.CLOSED_MAP_PAIRWISE
@@ -2271,7 +2306,7 @@ initialize BLocCompact1 : HolMultiLib.Metric.LocCompact1 ←
       BHomeoSpace BRetraction BRetractOf BCompact1 BCompact3 BHausdorff1 BNbhdBase
       BRegular1).run
 
--- LocCompact1 (metric.ml 16639-16845)
+-- LocCompact1 (metric.ml 17109-17315)
 def locally_compact_space : thm := BLocCompact1.locally_compact_space
 def HOMEOMORPHIC_LOCALLY_COMPACT_SPACE : thm := BLocCompact1.HOMEOMORPHIC_LOCALLY_COMPACT_SPACE
 def LOCALLY_COMPACT_SPACE_RETRACTION_MAP_IMAGE : thm :=
@@ -2293,9 +2328,9 @@ def LOCALLY_COMPACT_SPACE_COMPACT_CLOSURE_OF : thm :=
 initialize BLocCompact2 : HolMultiLib.Metric.LocCompact2 ←
   ioB "setupLocCompact2"
     (HolMultiLib.Metric.setupLocCompact2 deps BTopology BDiscrete BSubtopology BClosure
-      BOpenClosed1 BCompact1 BCompact2 BCompact3 BKC1 BNbhdBase BRegular1 BLocCompact1).run
+      BOpenClosed1 BCompact1 BCompact2 BCompact3 BKC1 BNbhdBase BRegular1 BLocCompact1 BHausdorff1).run
 
--- LocCompact2 (metric.ml 16847-17064)
+-- LocCompact2 (metric.ml 17317-17580)
 def LOCALLY_COMPACT_SPACE_NEIGHBOURHOOD_BASE_CLOSED_IN : thm :=
   BLocCompact2.LOCALLY_COMPACT_SPACE_NEIGHBOURHOOD_BASE_CLOSED_IN
 def LOCALLY_COMPACT_SPACE_NEIGHBOURHOOD_BASE_CLOSURE_OF : thm :=
@@ -2316,6 +2351,7 @@ def LOCALLY_COMPACT_SPACE_CLOSED_SUBSET : thm :=
 def LOCALLY_COMPACT_SPACE_OPEN_SUBSET : thm := BLocCompact2.LOCALLY_COMPACT_SPACE_OPEN_SUBSET
 def LOCALLY_COMPACT_SPACE_DISCRETE_TOPOLOGY : thm :=
   BLocCompact2.LOCALLY_COMPACT_SPACE_DISCRETE_TOPOLOGY
+def FINITE_IN_COMPACT_IMP_CLOSED_DISCRETE : thm := BLocCompact2.FINITE_IN_COMPACT_IMP_CLOSED_DISCRETE
 def LOCALLY_COMPACT_SPACE_CONTINUOUS_OPEN_MAP_IMAGE : thm :=
   BLocCompact2.LOCALLY_COMPACT_SPACE_CONTINUOUS_OPEN_MAP_IMAGE
 
@@ -2325,7 +2361,7 @@ initialize BLocCompact3 : HolMultiLib.Metric.LocCompact3 ←
       BProduct1 BProduct2 BCompact1 BCompact3 BCompact4 BCompact5 BHausdorff1 BLocCompact1
       BLocCompact2).run
 
--- LocCompact3 (metric.ml 17066-17276)
+-- LocCompact3 (metric.ml 17582-17792)
 def LOCALLY_COMPACT_SUBSPACE_OPEN_IN_CLOSURE_OF : thm :=
   BLocCompact3.LOCALLY_COMPACT_SUBSPACE_OPEN_IN_CLOSURE_OF
 def LOCALLY_COMPACT_SUBSPACE_CLOSED_INTER_OPEN_IN : thm :=
@@ -2348,7 +2384,7 @@ initialize BLocCompact4 : HolMultiLib.Metric.LocCompact4 ←
       BCompact1 BCompact3 BCompact5 BProper1 BPerfect BNbhdBase BLocCompact1
       BLocCompact2).run
 
--- LocCompact4 (metric.ml 17278-17512)
+-- LocCompact4 (metric.ml 17794-18028)
 def LOCALLY_COMPACT_SPACE_SUM_TOPOLOGY : thm := BLocCompact4.LOCALLY_COMPACT_SPACE_SUM_TOPOLOGY
 def QUOTIENT_MAP_PROD_RIGHT : thm := BLocCompact4.QUOTIENT_MAP_PROD_RIGHT
 def QUOTIENT_MAP_PROD_LEFT : thm := BLocCompact4.QUOTIENT_MAP_PROD_LEFT
@@ -2363,7 +2399,7 @@ def LOCALLY_COMPACT_SPACE_PERFECT_MAP_IMAGE_EQ : thm :=
 initialize BRealTop1 : HolMultiLib.Metric.RealTop1 ←
   ioB "setupRealTop1" (HolMultiLib.Metric.setupRealTop1 deps BTopology BSubtopology).run
 
--- RealTop1 (metric.ml 17514-17670)
+-- RealTop1 (metric.ml 18030-18186)
 def real_open : thm := BRealTop1.real_open
 def real_closed : thm := BRealTop1.real_closed
 def euclideanreal : thm := BRealTop1.euclideanreal
@@ -2401,7 +2437,7 @@ initialize BRealTop2 : HolMultiLib.Metric.RealTop2 ←
       BFrontier BHausdorff1 BMetricSpace BMTopology BMetricHaus BMetrizable BRegular1
       BLocCompact2 BLocCompact3 BRealTop1).run
 
--- RealTop2 (metric.ml 17672-17968)
+-- RealTop2 (metric.ml 18188-18484)
 def real_euclidean_metric : thm := BRealTop2.real_euclidean_metric
 def REAL_EUCLIDEAN_METRIC : thm := BRealTop2.REAL_EUCLIDEAN_METRIC
 def MTOPOLOGY_REAL_EUCLIDEAN_METRIC : thm := BRealTop2.MTOPOLOGY_REAL_EUCLIDEAN_METRIC
@@ -2452,7 +2488,7 @@ initialize BRealConn1 : HolMultiLib.Metric.RealConn1 ←
     (HolMultiLib.Metric.setupRealConn1 deps BTopology BCompact1 BCompact3 BHausdorff1
       BMTopology BBounded BMetricHaus BConnected1 BRealTop1 BRealTop2).run
 
--- RealConn1 (metric.ml 17970-18166)
+-- RealConn1 (metric.ml 18486-18682)
 def real_bounded : thm := BRealConn1.real_bounded
 def REAL_BOUNDED_POS : thm := BRealConn1.REAL_BOUNDED_POS
 def MBOUNDED_REAL_EUCLIDEAN_METRIC : thm := BRealConn1.MBOUNDED_REAL_EUCLIDEAN_METRIC
@@ -2469,7 +2505,7 @@ initialize BRealConn2 : HolMultiLib.Metric.RealConn2 ←
     (HolMultiLib.Metric.setupRealConn2 deps BClosure BInterior BFrontier BCompact1
       BMetricSpace BMTopology BConnected2 BLocCompact1 BRealTop1 BRealTop2 BRealConn1).run
 
--- RealConn2 (metric.ml 18168-18463)
+-- RealConn2 (metric.ml 18684-18979)
 def real_compact_def : thm := BRealConn2.real_compact_def
 def REAL_COMPACT_EQ_BOUNDED_CLOSED : thm := BRealConn2.REAL_COMPACT_EQ_BOUNDED_CLOSED
 def REAL_COMPACT_IMP_BOUNDED : thm := BRealConn2.REAL_COMPACT_IMP_BOUNDED
@@ -2507,7 +2543,7 @@ initialize BAtPoint : HolMultiLib.Metric.AtPoint ←
     (HolMultiLib.Metric.setupAtPoint deps BTopology BSubtopology BDerived BNets BMetricSpace
       BMTopology).run
 
--- AtPoint (metric.ml 18465-18574)
+-- AtPoint (metric.ml 18981-19090)
 def atpointof : thm := BAtPoint.atpointof
 def ATPOINTOF : thm := BAtPoint.ATPOINTOF
 def NETLIMITS_ATPOINTOF : thm := BAtPoint.NETLIMITS_ATPOINTOF
@@ -2526,7 +2562,7 @@ initialize BLimits1 : HolMultiLib.Metric.Limits1 ←
     (HolMultiLib.Metric.setupLimits1 deps BTopology BSubtopology BContMap1 BT1a BNets
       BSequential BRealTop1 BAtPoint).run
 
--- Limits1 (metric.ml 18576-18740)
+-- Limits1 (metric.ml 19092-19256)
 def limit : thm := BLimits1.limit
 def LIMIT_IMP_WITHIN : thm := BLimits1.LIMIT_IMP_WITHIN
 def LIMIT_IN_TOPSPACE : thm := BLimits1.LIMIT_IN_TOPSPACE
@@ -2551,7 +2587,7 @@ initialize BLimits2 : HolMultiLib.Metric.Limits2 ←
     (HolMultiLib.Metric.setupLimits2 deps BTactics BTopology BProd1 BProduct1 BCompact1
       BHausdorff1 BKC1 BNets BSequential BLimits1).run
 
--- Limits2 (metric.ml 18742-18930)
+-- Limits2 (metric.ml 19258-19446)
 def LIMIT_PAIRWISE : thm := BLimits2.LIMIT_PAIRWISE
 def LIMIT_COMPONENTWISE : thm := BLimits2.LIMIT_COMPONENTWISE
 def COMPACT_IN_SEQUENCE_WITH_LIMIT : thm := BLimits2.COMPACT_IN_SEQUENCE_WITH_LIMIT
@@ -2563,7 +2599,7 @@ initialize BMetricLim : HolMultiLib.Metric.MetricLim ←
     (HolMultiLib.Metric.setupMetricLim deps BTactics BTopology BNets BSequential BMetricSpace
       BMTopology BMetricHaus BRealTop2 BAtPoint BLimits1 BLimits2).run
 
--- MetricLim (metric.ml 18932-19107)
+-- MetricLim (metric.ml 19448-19623)
 def LIMIT_IN_MSPACE : thm := BMetricLim.LIMIT_IN_MSPACE
 def LIMIT_METRIC_UNIQUE : thm := BMetricLim.LIMIT_METRIC_UNIQUE
 def LIMIT_METRIC : thm := BMetricLim.LIMIT_METRIC
@@ -2584,7 +2620,7 @@ initialize BSeqChar1 : HolMultiLib.Metric.SeqChar1 ←
     (HolMultiLib.Metric.setupSeqChar1 deps BNets BSequential BMetricSpace BMTopology BAtPoint
       BLimits1 BMetricLim).run
 
--- SeqChar1 (metric.ml 19109-19277)
+-- SeqChar1 (metric.ml 19625-19793)
 def EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY : thm :=
   BSeqChar1.EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY
 def EVENTUALLY_ATPOINTOF_WITHIN_SEQUENTIALLY_INJ : thm :=
@@ -2607,7 +2643,7 @@ initialize BSeqChar2 : HolMultiLib.Metric.SeqChar2 ←
     (HolMultiLib.Metric.setupSeqChar2 deps BTopology BClosure BNets BSequential BMTopology
       BAtPoint BLimits1 BMetricLim BSeqChar1).run
 
--- SeqChar2 (metric.ml 19279-19450)
+-- SeqChar2 (metric.ml 19795-19966)
 def LIMIT_ATPOINTOF_SEQUENTIALLY : thm := BSeqChar2.LIMIT_ATPOINTOF_SEQUENTIALLY
 def LIMIT_ATPOINTOF_SEQUENTIALLY_INJ : thm := BSeqChar2.LIMIT_ATPOINTOF_SEQUENTIALLY_INJ
 def LIMIT_ATPOINTOF_SEQUENTIALLY_DECREASING : thm :=
@@ -2626,7 +2662,7 @@ initialize BRealLim : HolMultiLib.Metric.RealLim ←
   ioB "setupRealLim"
     (HolMultiLib.Metric.setupRealLim deps BNets BRealTop2 BLimits1 BMetricLim).run
 
--- RealLim (metric.ml 19452-19648)
+-- RealLim (metric.ml 19968-20164)
 def LIMIT_REAL_MUL : thm := BRealLim.LIMIT_REAL_MUL
 def LIMIT_REAL_LMUL : thm := BRealLim.LIMIT_REAL_LMUL
 def LIMIT_REAL_LMUL_EQ : thm := BRealLim.LIMIT_REAL_LMUL_EQ
@@ -2651,7 +2687,7 @@ initialize BBorelLim : HolMultiLib.Metric.BorelLim ←
     (HolMultiLib.Metric.setupBorelLim deps BTopology BSequential BBorel BBorelMap BMetricSpace
       BMTopology BMetricArith BMetrizable BLimits1 BMetricLim).run
 
--- BorelLim (metric.ml 19650-19872)
+-- BorelLim (metric.ml 20166-20388)
 def BOREL_MEASURABLE_MAP_LIMIT : thm := BBorelLim.BOREL_MEASURABLE_MAP_LIMIT
 
 initialize BCauchy1 : HolMultiLib.Metric.Cauchy1 ←
@@ -2659,7 +2695,7 @@ initialize BCauchy1 : HolMultiLib.Metric.Cauchy1 ←
     (HolMultiLib.Metric.setupCauchy1 deps BTactics BNets BSequential BMetricSpace BMetricArith
       BLimits1 BMetricLim).run
 
--- Cauchy1 (metric.ml 19874-20031)
+-- Cauchy1 (metric.ml 20390-20547)
 def cauchy_in : thm := BCauchy1.cauchy_in
 def mcomplete : thm := BCauchy1.mcomplete
 def MCOMPLETE : thm := BCauchy1.MCOMPLETE
@@ -2681,7 +2717,7 @@ initialize BCauchy2 : HolMultiLib.Metric.Cauchy2 ←
     (HolMultiLib.Metric.setupCauchy2 deps BTopology BClosure BNets BSequential BMetricSpace
       BMTopology BMetricArith BRealTop2 BMetricLim BCauchy1).run
 
--- Cauchy2 (metric.ml 20033-20191)
+-- Cauchy2 (metric.ml 20549-20707)
 def CAUCHY_IN_INTERLEAVING_GEN : thm := BCauchy2.CAUCHY_IN_INTERLEAVING_GEN
 def CAUCHY_IN_INTERLEAVING : thm := BCauchy2.CAUCHY_IN_INTERLEAVING
 def MCOMPLETE_NEST : thm := BCauchy2.MCOMPLETE_NEST
@@ -2691,7 +2727,7 @@ initialize BCauchy3 : HolMultiLib.Metric.Cauchy3 ←
     (HolMultiLib.Metric.setupCauchy3 deps BTopology BNets BSequential BMetricSpace BMTopology
       BMetricArith BLimits1 BMetricLim BCauchy1 BCauchy2).run
 
--- Cauchy3 (metric.ml 20193-20417)
+-- Cauchy3 (metric.ml 20709-20933)
 def MCOMPLETE_NEST_SING : thm := BCauchy3.MCOMPLETE_NEST_SING
 def MCOMPLETE_FIP : thm := BCauchy3.MCOMPLETE_FIP
 def MCOMPLETE_FIP_SING : thm := BCauchy3.MCOMPLETE_FIP_SING
@@ -2704,7 +2740,7 @@ initialize BTotBdd1 : HolMultiLib.Metric.TotBdd1 ←
   ioB "setupTotBdd1"
     (HolMultiLib.Metric.setupTotBdd1 deps BMetricSpace BBounded BMetricArith BCauchy1).run
 
--- TotBdd1 (metric.ml 20419-20596)
+-- TotBdd1 (metric.ml 20935-21112)
 def totally_bounded_in : thm := BTotBdd1.totally_bounded_in
 def TOTALLY_BOUNDED_IN_EMPTY : thm := BTotBdd1.TOTALLY_BOUNDED_IN_EMPTY
 def FINITE_IMP_TOTALLY_BOUNDED_IN : thm := BTotBdd1.FINITE_IMP_TOTALLY_BOUNDED_IN
@@ -2722,7 +2758,7 @@ initialize BTotBdd2 : HolMultiLib.Metric.TotBdd2 ←
     (HolMultiLib.Metric.setupTotBdd2 deps BClosure BMetricSpace BMTopology BMetricArith
       BCauchy1 BTotBdd1).run
 
--- TotBdd2 (metric.ml 20598-20738)
+-- TotBdd2 (metric.ml 21114-21254)
 def TOTALLY_BOUNDED_IN_ABSOLUTE : thm := BTotBdd2.TOTALLY_BOUNDED_IN_ABSOLUTE
 def TOTALLY_BOUNDED_IN_CLOSURE_OF : thm := BTotBdd2.TOTALLY_BOUNDED_IN_CLOSURE_OF
 def TOTALLY_BOUNDED_IN_CLOSURE_OF_EQ : thm := BTotBdd2.TOTALLY_BOUNDED_IN_CLOSURE_OF_EQ
@@ -2736,7 +2772,7 @@ initialize BMCompact1 : HolMultiLib.Metric.MCompact1 ←
     (HolMultiLib.Metric.setupMCompact1 deps BCompact1 BCompact2 BNets BSequential BMetricSpace
       BMTopology BMetricArith BLimits1 BMetricLim BCauchy1 BTotBdd1).run
 
--- MCompact1 (metric.ml 20740-20935)
+-- MCompact1 (metric.ml 21256-21451)
 def BOLZANO_WEIERSTRASS_PROPERTY : thm := BMCompact1.BOLZANO_WEIERSTRASS_PROPERTY
 def COMPACT_IN_EQ_BOLZANO_WEIERSTRASS : thm := BMCompact1.COMPACT_IN_EQ_BOLZANO_WEIERSTRASS
 def COMPACT_IN_SEQUENTIALLY : thm := BMCompact1.COMPACT_IN_SEQUENTIALLY
@@ -2750,7 +2786,7 @@ initialize BMCompact2 : HolMultiLib.Metric.MCompact2 ←
       BNets BSequential BMetricSpace BMTopology BMetrizable BLimits1 BMetricLim BCauchy1
       BCauchy2 BTotBdd1 BMCompact1).run
 
--- MCompact2 (metric.ml 20937-21091)
+-- MCompact2 (metric.ml 21453-21607)
 def COMPACT_SPACE_SEQUENTIALLY : thm := BMCompact2.COMPACT_SPACE_SEQUENTIALLY
 def COMPACT_SPACE_EQ_BOLZANO_WEIERSTRASS : thm := BMCompact2.COMPACT_SPACE_EQ_BOLZANO_WEIERSTRASS
 def COMPACT_SPACE_NEST : thm := BMCompact2.COMPACT_SPACE_NEST
@@ -2772,7 +2808,7 @@ initialize BMCompact3 : HolMultiLib.Metric.MCompact3 ←
       BRealTop2 BRealConn1 BLimits1 BMetricLim BCauchy1 BTotBdd1 BTotBdd2 BMCompact1
       BMCompact2).run
 
--- MCompact3 (metric.ml 21093-21246)
+-- MCompact3 (metric.ml 21609-21762)
 def TOTALLY_BOUNDED_IN_EQ_COMPACT_CLOSURE_OF : thm :=
   BMCompact3.TOTALLY_BOUNDED_IN_EQ_COMPACT_CLOSURE_OF
 def COMPACT_CLOSURE_OF_EQ_BOLZANO_WEIERSTRASS : thm :=
@@ -2791,7 +2827,7 @@ initialize BPtCont : HolMultiLib.Metric.PtCont ←
     (HolMultiLib.Metric.setupPtCont deps BTopology BSubtopology BBases BContMap1 BRealTop1
       BRealTop2 BAtPoint BLimits1).run
 
--- PtCont (metric.ml 21248-21468)
+-- PtCont (metric.ml 21764-21984)
 def topcontinuous_at : thm := BPtCont.topcontinuous_at
 def TOPCONTINUOUS_AT_ATPOINTOF : thm := BPtCont.TOPCONTINUOUS_AT_ATPOINTOF
 def CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT : thm := BPtCont.CONTINUOUS_MAP_EQ_TOPCONTINUOUS_AT
@@ -2821,7 +2857,7 @@ initialize BMetricCont : HolMultiLib.Metric.MetricCont ←
     (HolMultiLib.Metric.setupMetricCont deps BTopology BContMap1 BNets BSequential BMetricSpace
       BMTopology BMetricArith BLimits1 BMetricLim BCauchy1 BPtCont).run
 
--- MetricCont (metric.ml 21470-21630)
+-- MetricCont (metric.ml 21986-22146)
 def METRIC_CONTINUOUS_MAP : thm := BMetricCont.METRIC_CONTINUOUS_MAP
 def CONTINUOUS_MAP_TO_METRIC : thm := BMetricCont.CONTINUOUS_MAP_TO_METRIC
 def CONTINUOUS_MAP_FROM_METRIC : thm := BMetricCont.CONTINUOUS_MAP_FROM_METRIC
@@ -2835,7 +2871,7 @@ initialize BRealCont : HolMultiLib.Metric.RealCont ←
     (HolMultiLib.Metric.setupRealCont deps BContMap1 BContMap2 BHomeo1 BRealTop1 BRealTop2
       BRealLim BPtCont).run
 
--- RealCont (metric.ml 21632-21859)
+-- RealCont (metric.ml 22148-22375)
 def CONTINUOUS_MAP_REAL_CONST : thm := BRealCont.CONTINUOUS_MAP_REAL_CONST
 def CONTINUOUS_MAP_REAL_MUL : thm := BRealCont.CONTINUOUS_MAP_REAL_MUL
 def CONTINUOUS_MAP_REAL_POW : thm := BRealCont.CONTINUOUS_MAP_REAL_POW
@@ -2867,7 +2903,7 @@ initialize BRealSeries : HolMultiLib.Metric.RealSeries ←
     (HolMultiLib.Metric.setupRealSeries deps BNets BSequential BRealTop1 BRealTop2 BLimits1
       BMetricLim BRealLim BCauchy1 BMCompact3).run
 
--- RealSeries (metric.ml 21861-22033)
+-- RealSeries (metric.ml 22377-22549)
 def tendsto_real_def : thm := BRealSeries.tendsto_real_def
 def reallim : thm := BRealSeries.reallim
 def TENDSTO_REAL_EPS_DELTA : thm := BRealSeries.TENDSTO_REAL_EPS_DELTA
@@ -2893,7 +2929,7 @@ initialize BPaths1 : HolMultiLib.Metric.Paths1 ←
       BHomeo2 BHomeoSpace BRetraction BConnected1 BConnected2 BConnected3 BRealTop1 BRealConn1
       BRealCont).run
 
--- Paths1 (metric.ml 22035-22250)
+-- Paths1 (metric.ml 22551-22766)
 def path_in : thm := BPaths1.path_in
 def PATH_IN_COMPOSE : thm := BPaths1.PATH_IN_COMPOSE
 def PATH_IN_SUBTOPOLOGY : thm := BPaths1.PATH_IN_SUBTOPOLOGY
@@ -2928,7 +2964,7 @@ initialize BPaths2 : HolMultiLib.Metric.Paths2 ←
     (HolMultiLib.Metric.setupPaths2 deps BDiscrete BSubtopology BContMap1 BProd1 BProduct1
       BProduct2 BCompact1 BCompact3 BConnected3 BRealTop1 BRealConn1 BPaths1).run
 
--- Paths2 (metric.ml 22252-22457)
+-- Paths2 (metric.ml 22768-22973)
 def PATH_CONNECTED_IN_PATH_IMAGE : thm := BPaths2.PATH_CONNECTED_IN_PATH_IMAGE
 def CONNECTED_IN_PATH_IMAGE : thm := BPaths2.CONNECTED_IN_PATH_IMAGE
 def COMPACT_IN_PATH_IMAGE : thm := BPaths2.COMPACT_IN_PATH_IMAGE
@@ -2950,7 +2986,7 @@ initialize BPathComp1 : HolMultiLib.Metric.PathComp1 ←
     (HolMultiLib.Metric.setupPathComp1 deps BSubtopology BContMap1 BContMap2 BRealTop1
       BRealCont BPaths1 BPaths2).run
 
--- PathComp1 (metric.ml 22459-22676)
+-- PathComp1 (metric.ml 22975-23192)
 def path_component_of : thm := BPathComp1.path_component_of
 def path_components_of : thm := BPathComp1.path_components_of
 def PATH_COMPONENT_IN_TOPSPACE : thm := BPathComp1.PATH_COMPONENT_IN_TOPSPACE
@@ -2982,7 +3018,7 @@ initialize BPathComp2 : HolMultiLib.Metric.PathComp2 ←
   ioB "setupPathComp2"
     (HolMultiLib.Metric.setupPathComp2 deps BSubtopology BComponents1 BPaths1 BPathComp1).run
 
--- PathComp2 (metric.ml 22678-22884)
+-- PathComp2 (metric.ml 23194-23400)
 def UNIONS_PATH_COMPONENTS_OF : thm := BPathComp2.UNIONS_PATH_COMPONENTS_OF
 def PATH_COMPONENTS_OF_MAXIMAL : thm := BPathComp2.PATH_COMPONENTS_OF_MAXIMAL
 def PAIRWISE_DISJOINT_PATH_COMPONENTS_OF : thm := BPathComp2.PAIRWISE_DISJOINT_PATH_COMPONENTS_OF
@@ -3017,7 +3053,7 @@ initialize BPathComp3 : HolMultiLib.Metric.PathComp3 ←
     (HolMultiLib.Metric.setupPathComp3 deps BDiscrete BContMap1 BProd1 BProduct1 BProduct2
       BHomeo1 BHomeo2 BPaths1 BPaths2 BPathComp1 BPathComp2).run
 
--- PathComp3 (metric.ml 22886-23077)
+-- PathComp3 (metric.ml 23402-23593)
 def PATH_COMPONENTS_OF_OVERLAP : thm := BPathComp3.PATH_COMPONENTS_OF_OVERLAP
 def CARD_LE_PATH_COMPONENTS_OF_TOPSPACE : thm := BPathComp3.CARD_LE_PATH_COMPONENTS_OF_TOPSPACE
 def FINITE_PATH_COMPONENTS_OF_FINITE : thm := BPathComp3.FINITE_PATH_COMPONENTS_OF_FINITE
@@ -3039,7 +3075,7 @@ initialize BRealFns1 : HolMultiLib.Metric.RealFns1 ←
       BHomeo2 BEmbedding BCompact1 BHausdorff2 BMetricSpace BMTopology BConnected1 BConnected3
       BMonotone BRealTop1 BRealTop2 BRealConn1 BMetricCont BPaths1 BPaths2).run
 
--- RealFns1 (metric.ml 23079-23295)
+-- RealFns1 (metric.ml 23595-23811)
 def EMBEDDING_MAP_INTO_EUCLIDEANREAL : thm := BRealFns1.EMBEDDING_MAP_INTO_EUCLIDEANREAL
 def MONOTONE_MAP_INTO_EUCLIDEANREAL_ALT : thm := BRealFns1.MONOTONE_MAP_INTO_EUCLIDEANREAL_ALT
 
@@ -3048,7 +3084,7 @@ initialize BRealFns2 : HolMultiLib.Metric.RealFns2 ←
     (HolMultiLib.Metric.setupRealFns2 deps BSubtopology BCompact1 BCompact3 BConnected1
       BConnected3 BMonotone BRealTop1 BRealConn1 BRealConn2 BRealFns1).run
 
--- RealFns2 (metric.ml 23297-23482)
+-- RealFns2 (metric.ml 23813-23998)
 def MONOTONE_MAP_INTO_EUCLIDEANREAL : thm := BRealFns2.MONOTONE_MAP_INTO_EUCLIDEANREAL
 def MONOTONE_MAP_EUCLIDEANREAL_ALT : thm := BRealFns2.MONOTONE_MAP_EUCLIDEANREAL_ALT
 def MONOTONE_MAP_EUCLIDEANREAL : thm := BRealFns2.MONOTONE_MAP_EUCLIDEANREAL
@@ -3061,7 +3097,7 @@ initialize BNormal1 : HolMultiLib.Metric.Normal1 ←
     (HolMultiLib.Metric.setupNormal1 deps BTopology BClosure BContMap1 BHomeo1 BHomeoSpace
       BRetraction BCompact1 BT1a BHausdorff1 BRegular1 BRegular2).run
 
--- Normal1 (metric.ml 23485-23669)
+-- Normal1 (metric.ml 24001-24185)
 def normal_space : thm := BNormal1.normal_space
 def NORMAL_SPACE_RETRACTION_MAP_IMAGE : thm := BNormal1.NORMAL_SPACE_RETRACTION_MAP_IMAGE
 def HOMEOMORPHIC_NORMAL_SPACE : thm := BNormal1.HOMEOMORPHIC_NORMAL_SPACE
@@ -3082,7 +3118,7 @@ initialize BNormal2 : HolMultiLib.Metric.Normal2 ←
       BContMap2 BOpenClosed1 BHomeo1 BHomeoSpace BRetractOf BSeparated BFsigmaGdelta
       BMetricSpace BMTopology BMetricArith BMetrizable BNormal1).run
 
--- Normal2 (metric.ml 23671-23878)
+-- Normal2 (metric.ml 24187-24394)
 def NORMAL_SPACE_MTOPOLOGY : thm := BNormal2.NORMAL_SPACE_MTOPOLOGY
 def METRIZABLE_IMP_NORMAL_SPACE : thm := BNormal2.METRIZABLE_IMP_NORMAL_SPACE
 def NORMAL_SPACE_DISCRETE_TOPOLOGY : thm := BNormal2.NORMAL_SPACE_DISCRETE_TOPOLOGY
@@ -3103,7 +3139,7 @@ initialize BUrysohn : HolMultiLib.Metric.Urysohn ←
     (HolMultiLib.Metric.setupUrysohn deps BTopology BClosure BContMap2 BMetricSpace BRealTop2
       BMetricCont BRealCont BNormal1).run
 
--- Urysohn (metric.ml 23880-24134)
+-- Urysohn (metric.ml 24396-24650)
 def URYSOHN_LEMMA : thm := BUrysohn.URYSOHN_LEMMA
 
 initialize BUrysohn2 : HolMultiLib.Metric.Urysohn2 ←
@@ -3112,7 +3148,7 @@ initialize BUrysohn2 : HolMultiLib.Metric.Urysohn2 ←
       BSequential BMetricSpace BMTopology BRealTop1 BRealTop2 BMetricLim BMCompact3
       BMetricCont BRealCont BNormal1 BUrysohn).run
 
--- Urysohn2 (metric.ml 24136-24352)
+-- Urysohn2 (metric.ml 24652-24868)
 def URYSOHN_LEMMA_ALT : thm := BUrysohn2.URYSOHN_LEMMA_ALT
 def NORMAL_SPACE_EQ_URYSOHN_GEN_ALT : thm := BUrysohn2.NORMAL_SPACE_EQ_URYSOHN_GEN_ALT
 def NORMAL_SPACE_EQ_URYSOHN_GEN : thm := BUrysohn2.NORMAL_SPACE_EQ_URYSOHN_GEN
@@ -3127,7 +3163,7 @@ initialize BTietze : HolMultiLib.Metric.Tietze ←
       BCompact1 BHausdorff1 BBounded BRealTop1 BRealTop2 BRealConn1 BRealConn2 BRealCont
       BUrysohn BUrysohn2).run
 
--- Tietze (metric.ml 24354-24499)
+-- Tietze (metric.ml 24870-25015)
 def TIETZE_EXTENSION_REALINTERVAL : thm := BTietze.TIETZE_EXTENSION_REALINTERVAL
 def NORMAL_SPACE_EQ_TIETZE : thm := BTietze.NORMAL_SPACE_EQ_TIETZE
 
@@ -3136,7 +3172,7 @@ initialize BNormal3 : HolMultiLib.Metric.Normal3 ←
     (HolMultiLib.Metric.setupNormal3 deps BTopology BClosure BT1b BHausdorff1 BProper1
       BPerfect BLindelof BRegular1 BNormal1 BNormal2).run
 
--- Normal3 (metric.ml 24501-24638)
+-- Normal3 (metric.ml 25017-25154)
 def NORMAL_SPACE_PERFECT_MAP_IMAGE : thm := BNormal3.NORMAL_SPACE_PERFECT_MAP_IMAGE
 def HAUSDORFF_NORMAL_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE : thm :=
   BNormal3.HAUSDORFF_NORMAL_SPACE_CLOSED_CONTINUOUS_MAP_IMAGE
@@ -3149,7 +3185,7 @@ initialize BHerNormal : HolMultiLib.Metric.HerNormal ←
     (HolMultiLib.Metric.setupHerNormal deps BTopology BSubtopology BBases BClosure BSeparated
       BProper1 BPerfect BCountability BMetrizable BRegular1 BNormal1 BNormal2 BNormal3).run
 
--- HerNormal (metric.ml 24640-24780)
+-- HerNormal (metric.ml 25156-25296)
 def HEREDITARILY_NORMAL_SPACE : thm := BHerNormal.HEREDITARILY_NORMAL_SPACE
 def HEREDITARILY_NORMAL_SEPARATION : thm := BHerNormal.HEREDITARILY_NORMAL_SEPARATION
 def METRIZABLE_IMP_HEREDITARILY_NORMAL_SPACE : thm :=
@@ -3170,7 +3206,7 @@ initialize BCRegular1 : HolMultiLib.Metric.CRegular1 ←
       BHomeoSpace BRetractOf BT1a BHausdorff1 BMetricHaus BMetrizable BNbhdBase BRegular1
       BRealCont BNormal2 BUrysohn2).run
 
--- CRegular1 (metric.ml 24782-24957)
+-- CRegular1 (metric.ml 25298-25473)
 def completely_regular_space : thm := BCRegular1.completely_regular_space
 def HOMEOMORPHIC_COMPLETELY_REGULAR_SPACE : thm :=
   BCRegular1.HOMEOMORPHIC_COMPLETELY_REGULAR_SPACE
@@ -3196,7 +3232,7 @@ initialize BCRegular2 : HolMultiLib.Metric.CRegular2 ←
       BProd2 BProduct1 BProduct2 BHomeoSpace BCompact1 BNbhdBase BRegular1 BLocCompact1
       BLocCompact2 BRealTop1 BRealCont BNormal1 BUrysohn BCRegular1).run
 
--- CRegular2 (metric.ml 24959-25156)
+-- CRegular2 (metric.ml 25475-25672)
 def COMPLETELY_REGULAR_IMP_REGULAR_SPACE : thm :=
   BCRegular2.COMPLETELY_REGULAR_IMP_REGULAR_SPACE
 def LOCALLY_COMPACT_REGULAR_IMP_COMPLETELY_REGULAR_SPACE : thm :=
@@ -3212,7 +3248,7 @@ initialize BLPC1 : HolMultiLib.Metric.LPC1 ←
     (HolMultiLib.Metric.setupLPC1 deps BTopology BSubtopology BContMap2 BQuotient BHomeo1
       BHomeoSpace BRetraction BNbhdBase BPaths1 BPathComp1 BPathComp2).run
 
--- LPC1 (metric.ml 25158-25397)
+-- LPC1 (metric.ml 25674-25913)
 def weakly_locally_path_connected_at : thm := BLPC1.weakly_locally_path_connected_at
 def locally_path_connected_at : thm := BLPC1.locally_path_connected_at
 def locally_path_connected_space : thm := BLPC1.locally_path_connected_space
@@ -3247,7 +3283,7 @@ initialize BLPC2 : HolMultiLib.Metric.LPC2 ←
       BComponents1 BNbhdBase BRealTop1 BRealTop2 BPaths1 BPaths2 BPathComp1 BPathComp2
       BLPC1).run
 
--- LPC2 (metric.ml 25399-25497)
+-- LPC2 (metric.ml 25915-26013)
 def LOCALLY_PATH_CONNECTED_SPACE_EUCLIDEANREAL : thm :=
   BLPC2.LOCALLY_PATH_CONNECTED_SPACE_EUCLIDEANREAL
 def LOCALLY_PATH_CONNECTED_IS_REALINTERVAL : thm := BLPC2.LOCALLY_PATH_CONNECTED_IS_REALINTERVAL
@@ -3265,7 +3301,7 @@ initialize BLPC3 : HolMultiLib.Metric.LPC3 ←
     (HolMultiLib.Metric.setupLPC3 deps BTopology BOpenClosed1 BProd1 BProd2 BProduct1
       BProduct2 BProduct3 BSumTop BEmbedding BNbhdBase BPaths1 BPaths2 BLPC1).run
 
--- LPC3 (metric.ml 25499-25688)
+-- LPC3 (metric.ml 26015-26204)
 def LOCALLY_PATH_CONNECTED_SPACE_PROD_TOPOLOGY : thm :=
   BLPC3.LOCALLY_PATH_CONNECTED_SPACE_PROD_TOPOLOGY
 def LOCALLY_PATH_CONNECTED_SPACE_PRODUCT_TOPOLOGY : thm :=
@@ -3279,7 +3315,7 @@ initialize BLC1 : HolMultiLib.Metric.LC1 ←
       BHomeoSpace BRetraction BConnected1 BConnected3 BComponents1 BNbhdBase BPaths1
       BLPC1).run
 
--- LC1 (metric.ml 25690-25920)
+-- LC1 (metric.ml 26206-26436)
 def weakly_locally_connected_at : thm := BLC1.weakly_locally_connected_at
 def locally_connected_at : thm := BLC1.locally_connected_at
 def locally_connected_space : thm := BLC1.locally_connected_space
@@ -3310,7 +3346,7 @@ initialize BLC2 : HolMultiLib.Metric.LC2 ←
       BConnected1 BConnected3 BComponents1 BComponents2 BNbhdBase BPaths1 BLPC1 BLPC2
       BLC1).run
 
--- LC2 (metric.ml 25922-26009)
+-- LC2 (metric.ml 26438-26525)
 def LOCALLY_CONNECTED_SPACE_EUCLIDEANREAL : thm := BLC2.LOCALLY_CONNECTED_SPACE_EUCLIDEANREAL
 def LOCALLY_CONNECTED_IS_REALINTERVAL : thm := BLC2.LOCALLY_CONNECTED_IS_REALINTERVAL
 def LOCALLY_CONNECTED_REAL_INTERVAL : thm := BLC2.LOCALLY_CONNECTED_REAL_INTERVAL
@@ -3330,7 +3366,7 @@ initialize BLC3 : HolMultiLib.Metric.LC3 ←
     (HolMultiLib.Metric.setupLC3 deps BTopology BOpenClosed1 BProd1 BProd2 BProduct1 BProduct2
       BProduct3 BSumTop BEmbedding BConnected1 BConnected3 BConnected4 BNbhdBase BLC1).run
 
--- LC3 (metric.ml 26011-26200)
+-- LC3 (metric.ml 26527-26716)
 def LOCALLY_CONNECTED_SPACE_PROD_TOPOLOGY : thm := BLC3.LOCALLY_CONNECTED_SPACE_PROD_TOPOLOGY
 def LOCALLY_CONNECTED_SPACE_PRODUCT_TOPOLOGY : thm :=
   BLC3.LOCALLY_CONNECTED_SPACE_PRODUCT_TOPOLOGY
@@ -3339,7 +3375,7 @@ def LOCALLY_CONNECTED_SPACE_SUM_TOPOLOGY : thm := BLC3.LOCALLY_CONNECTED_SPACE_S
 initialize BQC1 : HolMultiLib.Metric.QC1 ←
   ioB "setupQC1" (HolMultiLib.Metric.setupQC1 deps BTopology BSubtopology BSeparated).run
 
--- QC1 (metric.ml 26202-26396)
+-- QC1 (metric.ml 26718-26912)
 def quasi_component_of : thm := BQC1.quasi_component_of
 def quasi_components_of : thm := BQC1.quasi_components_of
 def QUASI_COMPONENT_IN_TOPSPACE : thm := BQC1.QUASI_COMPONENT_IN_TOPSPACE
@@ -3371,7 +3407,7 @@ initialize BQC2 : HolMultiLib.Metric.QC2 ←
     (HolMultiLib.Metric.setupQC2 deps BTopology BSeparated BConnected1 BConnected3
       BComponents1 BPathComp2 BQC1).run
 
--- QC2 (metric.ml 26398-26600)
+-- QC2 (metric.ml 26914-27116)
 def CLOSED_IN_QUASI_COMPONENT_OF : thm := BQC2.CLOSED_IN_QUASI_COMPONENT_OF
 def CLOSED_IN_QUASI_COMPONENTS_OF : thm := BQC2.CLOSED_IN_QUASI_COMPONENTS_OF
 def OPEN_IN_FINITE_QUASI_COMPONENTS : thm := BQC2.OPEN_IN_FINITE_QUASI_COMPONENTS
@@ -3407,7 +3443,7 @@ initialize BQC3 : HolMultiLib.Metric.QC3 ←
     (HolMultiLib.Metric.setupQC3 deps BTopology BCompact1 BConnected1 BSepBetween BComponents1
       BQC1 BQC2).run
 
--- QC3 (metric.ml 26601-26775)
+-- QC3 (metric.ml 27117-27291)
 def QUASI_COMPONENTS_OF_CONNECTED_SPACE : thm := BQC3.QUASI_COMPONENTS_OF_CONNECTED_SPACE
 def SEPARATED_BETWEEN_SINGS : thm := BQC3.SEPARATED_BETWEEN_SINGS
 def QUASI_COMPONENT_NONSEPARATED : thm := BQC3.QUASI_COMPONENT_NONSEPARATED
@@ -3432,7 +3468,7 @@ initialize BQC4 : HolMultiLib.Metric.QC4 ←
     (HolMultiLib.Metric.setupQC4 deps BTopology BDiscrete BSubtopology BContMap1 BHomeo1
       BHomeo2 BConnected1 BComponents1 BComponents2 BLC1 BQC1 BQC2 BQC3).run
 
--- QC4 (metric.ml 26777-26954)
+-- QC4 (metric.ml 27293-27470)
 def OPEN_QUASI_EQ_CONNECTED_COMPONENTS_OF : thm := BQC4.OPEN_QUASI_EQ_CONNECTED_COMPONENTS_OF
 def QUASI_COMPONENT_OF_CONTINUOUS_IMAGE : thm := BQC4.QUASI_COMPONENT_OF_CONTINUOUS_IMAGE
 def QUASI_COMPONENT_OF_DISCRETE_TOPOLOGY : thm := BQC4.QUASI_COMPONENT_OF_DISCRETE_TOPOLOGY
@@ -3458,7 +3494,7 @@ initialize BQC5 : HolMultiLib.Metric.QC5 ←
     (HolMultiLib.Metric.setupQC5 deps BTopology BSubtopology BCompact1 BConnected1 BSepBetween
       BComponents2 BNormal1 BLC1 BQC1 BQC2 BQC3 BQC4).run
 
--- QC5 (metric.ml 26956-27037)
+-- QC5 (metric.ml 27472-27553)
 def QUASI_EQ_CONNECTED_COMPONENTS_OF_INCLUSION : thm :=
   BQC5.QUASI_EQ_CONNECTED_COMPONENTS_OF_INCLUSION
 def QUASI_EQ_CONNECTED_COMPONENTS_OF : thm := BQC5.QUASI_EQ_CONNECTED_COMPONENTS_OF
@@ -3470,7 +3506,7 @@ initialize BBB1 : HolMultiLib.Metric.BB1 ←
       BHausdorff1 BConnected1 BSepBetween BComponents1 BComponents2 BLocCompact2 BQC1 BQC2
       BQC3 BQC5).run
 
--- BB1 (metric.ml 27039-27221)
+-- BB1 (metric.ml 27555-27737)
 def CUT_WIRE_FENCE_THEOREM_GEN : thm := BBB1.CUT_WIRE_FENCE_THEOREM_GEN
 def CUT_WIRE_FENCE_THEOREM : thm := BBB1.CUT_WIRE_FENCE_THEOREM
 def SEPARATED_BETWEEN_FROM_CLOSED_SUBTOPOLOGY : thm :=
@@ -3491,7 +3527,7 @@ initialize BBB2 : HolMultiLib.Metric.BB2 ←
       BCompact1 BHausdorff1 BConnected1 BConnected2 BSepBetween BComponents1 BComponents2
       BLocCompact1 BLocCompact2 BBB1).run
 
--- BB2 (metric.ml 27223-27380)
+-- BB2 (metric.ml 27739-27896)
 def BOUNDARY_BUMPING_THEOREM_CLOSED_GEN : thm := BBB2.BOUNDARY_BUMPING_THEOREM_CLOSED_GEN
 def BOUNDARY_BUMPING_THEOREM_CLOSED : thm := BBB2.BOUNDARY_BUMPING_THEOREM_CLOSED
 def INTERMEDIATE_CONTINUUM_EXISTS : thm := BBB2.INTERMEDIATE_CONTINUUM_EXISTS
@@ -3504,7 +3540,7 @@ initialize BKSp1 : HolMultiLib.Metric.KSp1 ←
       BContMap2 BQuotient BHomeo1 BHomeoSpace BRetraction BCompact1 BCompact3 BPerfect BNets
       BMTopology BMetrizable BLocCompact1 BRealTop2 BLimits1 BLimits2 BMetricLim).run
 
--- KSp1 (metric.ml 27382-27549)
+-- KSp1 (metric.ml 27898-28065)
 def k_space : thm := BKSp1.k_space
 def K_SPACE : thm := BKSp1.K_SPACE
 def K_SPACE_OPEN : thm := BKSp1.K_SPACE_OPEN
@@ -3525,7 +3561,7 @@ initialize BKSp2 : HolMultiLib.Metric.KSp2 ←
     (HolMultiLib.Metric.setupKSp2 deps BTopology BSubtopology BCompact1 BHausdorff1 BKC1
       BRegular1 BLocCompact1 BLocCompact2 BKSp1).run
 
--- KSp2 (metric.ml 27551-27700)
+-- KSp2 (metric.ml 28067-28216)
 def K_SPACE_CLOSED_SUBTOPOLOGY : thm := BKSp2.K_SPACE_CLOSED_SUBTOPOLOGY
 def K_SPACE_SUBTOPOLOGY : thm := BKSp2.K_SPACE_SUBTOPOLOGY
 def K_SPACE_SUBTOPOLOGY_OPEN : thm := BKSp2.K_SPACE_SUBTOPOLOGY_OPEN
@@ -3537,7 +3573,7 @@ initialize BKSp3 : HolMultiLib.Metric.KSp3 ←
     (HolMultiLib.Metric.setupKSp3 deps BSubtopology BContMap1 BContMap2 BQuotient BSumTop
       BCompact1 BLocCompact1 BLocCompact3 BLocCompact4 BKSp1).run
 
--- KSp3 (metric.ml 27702-27803)
+-- KSp3 (metric.ml 28218-28319)
 def K_SPACE_AS_QUOTIENT_EXPLICIT : thm := BKSp3.K_SPACE_AS_QUOTIENT_EXPLICIT
 def K_SPACE_AS_QUOTIENT : thm := BKSp3.K_SPACE_AS_QUOTIENT
 def K_SPACE_PROD_TOPOLOGY_LEFT : thm := BKSp3.K_SPACE_PROD_TOPOLOGY_LEFT
@@ -3549,7 +3585,7 @@ initialize BKSp4 : HolMultiLib.Metric.KSp4 ←
     (HolMultiLib.Metric.setupKSp4 deps BTopology BSubtopology BContMap1 BOpenClosed1
       BQuotient BCompact1 BKC1 BProper1 BProper2 BPerfect BKSp1).run
 
--- KSp4 (metric.ml 27805-27995)
+-- KSp4 (metric.ml 28321-28511)
 def CLOSED_MAP_INTO_K_SPACE : thm := BKSp4.CLOSED_MAP_INTO_K_SPACE
 def OPEN_MAP_INTO_K_SPACE : thm := BKSp4.OPEN_MAP_INTO_K_SPACE
 def QUOTIENT_MAP_INTO_K_SPACE : thm := BKSp4.QUOTIENT_MAP_INTO_K_SPACE
@@ -3566,7 +3602,7 @@ initialize BKIF1 : HolMultiLib.Metric.KIF1 ←
   ioB "setupKIF1"
     (HolMultiLib.Metric.setupKIF1 deps BTopology BSubtopology BCompact1 BKSp1).run
 
--- KIF1 (metric.ml 28002-28109)
+-- KIF1 (metric.ml 28518-28625)
 def kification : thm := BKIF1.kification
 def OPEN_IN_KIFICATION : thm := BKIF1.OPEN_IN_KIFICATION
 def OPEN_IN_KIFICATION_FINER : thm := BKIF1.OPEN_IN_KIFICATION_FINER
@@ -3584,7 +3620,7 @@ initialize BKIF2 : HolMultiLib.Metric.KIF2 ←
     (HolMultiLib.Metric.setupKIF2 deps BTopology BSubtopology BContMap1 BHomeoSpace BCompact1
       BCompact3 BProper1 BPerfect BKSp1 BKSp4 BKIF1).run
 
--- KIF2 (metric.ml 28111-28219)
+-- KIF2 (metric.ml 28627-28735)
 def CONTINUOUS_MAP_INTO_KIFICATION : thm := BKIF2.CONTINUOUS_MAP_INTO_KIFICATION
 def CONTINUOUS_MAP_FROM_KIFICATION : thm := BKIF2.CONTINUOUS_MAP_FROM_KIFICATION
 def CONTINUOUS_MAP_KIFICATION : thm := BKIF2.CONTINUOUS_MAP_KIFICATION
@@ -3599,7 +3635,7 @@ initialize BOPC1 : HolMultiLib.Metric.OPC1 ←
     (HolMultiLib.Metric.setupOPC1 deps BTopology BSubtopology BClosure BInterior BCompact1 BT1a
       BKC1 BKSp1 BKSp2).run
 
--- OPC1 (metric.ml 28225-28391)
+-- OPC1 (metric.ml 28741-28907)
 def ONE_POINT_COMPACTIFICATION_DENSE : thm := BOPC1.ONE_POINT_COMPACTIFICATION_DENSE
 def ONE_POINT_COMPACTIFICATION_INTERIOR : thm := BOPC1.ONE_POINT_COMPACTIFICATION_INTERIOR
 def KC_SPACE_ONE_POINT_COMPACTIFICATION_GEN : thm :=
@@ -3612,7 +3648,7 @@ initialize BOPC2 : HolMultiLib.Metric.OPC2 ←
     (HolMultiLib.Metric.setupOPC2 deps BTopology BContMap1 BOpenClosed1 BHomeoSpace BEmbedding
       BCompact1 BCompact3 BOPC1).run
 
--- OPC2 (metric.ml 28393-28531)
+-- OPC2 (metric.ml 28909-29047)
 def TOPSPACE_ALEXANDROFF_COMPACTIFICATION : thm := BOPC2.TOPSPACE_ALEXANDROFF_COMPACTIFICATION
 def CLOSED_IN_ALEXANDROFF_COMPACTIFICATION : thm := BOPC2.CLOSED_IN_ALEXANDROFF_COMPACTIFICATION
 def CLOSED_IN_ALEXANDROFF_COMPACTIFICATION_IMAGE_INL : thm :=
@@ -3631,7 +3667,7 @@ initialize BOPC3 : HolMultiLib.Metric.OPC3 ←
     (HolMultiLib.Metric.setupOPC3 deps BTopology BSubtopology BOpenClosed1 BHomeo2 BHomeoSpace
       BEmbedding BCompact1 BCompact3 BT1a BT1b BKC1 BT0a BKSp1 BOPC1 BOPC2).run
 
--- OPC3 (metric.ml 28533-28660)
+-- OPC3 (metric.ml 29049-29176)
 def T0_SPACE_ONE_POINT_COMPACTIFICATION : thm := BOPC3.T0_SPACE_ONE_POINT_COMPACTIFICATION
 def T0_SPACE_ALEXANDROFF_COMPACTIFICATION : thm := BOPC3.T0_SPACE_ALEXANDROFF_COMPACTIFICATION
 def T1_SPACE_ONE_POINT_COMPACTIFICATION : thm := BOPC3.T1_SPACE_ONE_POINT_COMPACTIFICATION
@@ -3645,7 +3681,7 @@ initialize BOPC4 : HolMultiLib.Metric.OPC4 ←
       BEmbedding BCompact1 BCompact3 BHausdorff1 BHausdorff2 BNbhdBase BRegular1 BLocCompact1
       BLocCompact2 BCRegular2 BOPC2 BOPC3).run
 
--- OPC4 (metric.ml 28662-28793)
+-- OPC4 (metric.ml 29178-29309)
 def REGULAR_SPACE_ONE_POINT_COMPACTIFICATION : thm :=
   BOPC4.REGULAR_SPACE_ONE_POINT_COMPACTIFICATION
 def REGULAR_SPACE_ALEXANDROFF_COMPACTIFICATION : thm :=
@@ -3663,7 +3699,7 @@ initialize BOPC5 : HolMultiLib.Metric.OPC5 ←
       BProd1 BHomeoSpace BEmbedding BRetraction BCompact1 BCompact3 BCompact4 BT1a BHausdorff1
       BHausdorff2 BDiagonal BKC1 BKSp1 BKSp2 BOPC2).run
 
--- OPC5 (metric.ml 28795-28962)
+-- OPC5 (metric.ml 29311-29478)
 def HAUSDORFF_SPACE_ONE_POINT_COMPACTIFICATION_ASYMMETRIC_PROD : thm :=
   BOPC5.HAUSDORFF_SPACE_ONE_POINT_COMPACTIFICATION_ASYMMETRIC_PROD
 def HAUSDORFF_SPACE_ALEXANDROFF_COMPACTIFICATION_ASYMMETRIC_PROD : thm :=
@@ -3674,7 +3710,7 @@ initialize BOPC6 : HolMultiLib.Metric.OPC6 ←
     (HolMultiLib.Metric.setupOPC6 deps BTopology BSubtopology BQuotient BHomeo1 BHomeoSpace
       BCompact1 BT1a BKC1 BOPC1 BOPC2).run
 
--- OPC6 (metric.ml 28964-29042)
+-- OPC6 (metric.ml 29480-29558)
 def KC_SPACE_AS_COMPACTIFICATION_UNIQUE : thm := BOPC6.KC_SPACE_AS_COMPACTIFICATION_UNIQUE
 def KC_SPACE_AS_COMPACTIFICATION_UNIQUE_EXPLICIT : thm :=
   BOPC6.KC_SPACE_AS_COMPACTIFICATION_UNIQUE_EXPLICIT
@@ -3685,7 +3721,7 @@ initialize BHOM1 : HolMultiLib.Metric.HOM1 ←
     (HolMultiLib.Metric.setupHOM1 deps BSubtopology BContMap1 BContMap2 BProd1 BProd2
       BRealTop1 BRealCont).run
 
--- HOM1 (metric.ml 29049-29168)
+-- HOM1 (metric.ml 29565-29684)
 def homotopic_with : thm := BHOM1.homotopic_with
 def HOMOTOPIC_WITH : thm := BHOM1.HOMOTOPIC_WITH
 def HOMOTOPIC_WITH_IMP_CONTINUOUS_MAPS : thm := BHOM1.HOMOTOPIC_WITH_IMP_CONTINUOUS_MAPS
@@ -3699,7 +3735,7 @@ initialize BHOM2 : HolMultiLib.Metric.HOM2 ←
     (HolMultiLib.Metric.setupHOM2 deps BSubtopology BContMap1 BContMap2 BProd1 BProd2
       BRealTop1 BRealCont BHOM1).run
 
--- HOM2 (metric.ml 29170-29267)
+-- HOM2 (metric.ml 29686-29783)
 def HOMOTOPIC_WITH_TRANS : thm := BHOM2.HOMOTOPIC_WITH_TRANS
 def HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_MAP_LEFT : thm :=
   BHOM2.HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_MAP_LEFT
@@ -3713,7 +3749,7 @@ initialize BHOM3 : HolMultiLib.Metric.HOM3 ←
     (HolMultiLib.Metric.setupHOM3 deps BContMap1 BContMap2 BProd1 BProd2 BPaths1 BPathComp1
       BHOM1).run
 
--- HOM3 (metric.ml 29269-29367)
+-- HOM3 (metric.ml 29785-29883)
 def HOMOTOPIC_FROM_SUBTOPOLOGY : thm := BHOM3.HOMOTOPIC_FROM_SUBTOPOLOGY
 def HOMOTOPIC_ON_EMPTY : thm := BHOM3.HOMOTOPIC_ON_EMPTY
 def HOMOTOPIC_CONSTANT_MAPS : thm := BHOM3.HOMOTOPIC_CONSTANT_MAPS
@@ -3725,7 +3761,7 @@ initialize BHOM4 : HolMultiLib.Metric.HOM4 ←
     (HolMultiLib.Metric.setupHOM4 deps BSubtopology BContMap1 BContMap2 BProd1 BProd2 BProduct2
       BHomeo1 BHomeoSpace BRetraction BRetractOf BHOM1 BHOM2 BHOM3).run
 
--- HOM4 (metric.ml 29369-29514)
+-- HOM4 (metric.ml 29885-30030)
 def HOMOTOPIC_WITH_PRODUCT_TOPOLOGY : thm := BHOM4.HOMOTOPIC_WITH_PRODUCT_TOPOLOGY
 def homotopy_equivalent_space : thm := BHOM4.homotopy_equivalent_space
 def HOMEOMORPHIC_IMP_HOMOTOPY_EQUIVALENT_SPACE : thm :=
@@ -3744,7 +3780,7 @@ initialize BCON1 : HolMultiLib.Metric.CON1 ←
     (HolMultiLib.Metric.setupCON1 deps BSubtopology BContMap1 BContMap2 BProd1 BPaths1
       BPathComp1 BHOM1 BHOM2 BHOM3).run
 
--- CON1 (metric.ml 29523-29612)
+-- CON1 (metric.ml 30039-30128)
 def contractible_space : thm := BCON1.contractible_space
 def CONTRACTIBLE_SPACE_EMPTY : thm := BCON1.CONTRACTIBLE_SPACE_EMPTY
 def CONTRACTIBLE_SPACE_SING : thm := BCON1.CONTRACTIBLE_SPACE_SING
@@ -3760,7 +3796,7 @@ initialize BCON2 : HolMultiLib.Metric.CON2 ←
     (HolMultiLib.Metric.setupCON2 deps BContMap1 BPathComp1 BHOM1 BHOM2 BHOM3 BHOM4
       BCON1).run
 
--- CON2 (metric.ml 29614-29736)
+-- CON2 (metric.ml 30130-30252)
 def NULLHOMOTOPIC_THROUGH_CONTRACTIBLE_SPACE : thm :=
   BCON2.NULLHOMOTOPIC_THROUGH_CONTRACTIBLE_SPACE
 def NULLHOMOTOPIC_INTO_CONTRACTIBLE_SPACE : thm := BCON2.NULLHOMOTOPIC_INTO_CONTRACTIBLE_SPACE
@@ -3777,7 +3813,7 @@ initialize BCON3 : HolMultiLib.Metric.CON3 ←
     (HolMultiLib.Metric.setupCON3 deps BSubtopology BContMap1 BContMap2 BProd1 BProduct1
       BRetraction BRealTop1 BRealCont BPaths1 BPaths2 BHOM1 BHOM2 BHOM3 BHOM4 BCON1 BCON2).run
 
--- CON3 (metric.ml 29738-29883)
+-- CON3 (metric.ml 30254-30399)
 def HOMEOMORPHIC_SPACE_CONTRACTIBILITY : thm := BCON3.HOMEOMORPHIC_SPACE_CONTRACTIBILITY
 def CONTRACTIBLE_EQ_HOMOTOPY_EQUIVALENT_SINGLETON_SUBTOPOLOGY : thm :=
   BCON3.CONTRACTIBLE_EQ_HOMOTOPY_EQUIVALENT_SINGLETON_SUBTOPOLOGY
@@ -3795,7 +3831,7 @@ initialize BCMS1 : HolMultiLib.Metric.CMS1 ←
       BDiagonal BMetricSpace BMTopology BMetrizable BRealTop2 BLimits1 BCauchy1 BMCompact2
       BMCompact3).run
 
--- CMS1 (metric.ml 29888-30017)
+-- CMS1 (metric.ml 30404-30533)
 def completely_metrizable_space : thm := BCMS1.completely_metrizable_space
 def COMPLETELY_METRIZABLE_IMP_METRIZABLE_SPACE : thm :=
   BCMS1.COMPLETELY_METRIZABLE_IMP_METRIZABLE_SPACE
@@ -3817,7 +3853,7 @@ initialize BPM1 : HolMultiLib.Metric.PM1 ←
   ioB "setupPM1"
     (HolMultiLib.Metric.setupPM1 deps BBases BProd1 BMetricSpace BMTopology).run
 
--- PM1 (metric.ml 30023-30160)
+-- PM1 (metric.ml 30539-30676)
 def prod_metric : thm := BPM1.prod_metric
 def PROD_METRIC : thm := BPM1.PROD_METRIC
 def COMPONENT_LE_PROD_METRIC : thm := BPM1.COMPONENT_LE_PROD_METRIC
@@ -3833,7 +3869,7 @@ initialize BPM2 : HolMultiLib.Metric.PM2 ←
     (HolMultiLib.Metric.setupPM2 deps BTopology BDiscrete BSubtopology BProd1 BHomeoSpace
       BHausdorff1 BHausdorff2 BMetricSpace BMetrizable BLimits2 BCauchy1 BCMS1 BPM1).run
 
--- PM2 (metric.ml 30162-30276)
+-- PM2 (metric.ml 30678-30792)
 def SUBMETRIC_PROD_METRIC : thm := BPM2.SUBMETRIC_PROD_METRIC
 def METRIZABLE_SPACE_PROD_TOPOLOGY : thm := BPM2.METRIZABLE_SPACE_PROD_TOPOLOGY
 def CAUCHY_IN_PROD_METRIC : thm := BPM2.CAUCHY_IN_PROD_METRIC
@@ -3845,7 +3881,7 @@ initialize BPM3 : HolMultiLib.Metric.PM3 ←
   ioB "setupPM3"
     (HolMultiLib.Metric.setupPM3 deps BBounded BCauchy1 BTotBdd1 BPM1 BPM2).run
 
--- PM3 (metric.ml 30278-30381)
+-- PM3 (metric.ml 30794-30897)
 def MBOUNDED_CROSS : thm := BPM3.MBOUNDED_CROSS
 def MBOUNDED_PROD_METRIC : thm := BPM3.MBOUNDED_PROD_METRIC
 def TOTALLY_BOUNDED_IN_CROSS : thm := BPM3.TOTALLY_BOUNDED_IN_CROSS
@@ -3854,7 +3890,7 @@ def TOTALLY_BOUNDED_IN_PROD_METRIC : thm := BPM3.TOTALLY_BOUNDED_IN_PROD_METRIC
 initialize BLIP1 : HolMultiLib.Metric.LIP1 ←
   ioB "setupLIP1" (HolMultiLib.Metric.setupLIP1 deps BMetricSpace).run
 
--- LIP1 (metric.ml 30386-30462)
+-- LIP1 (metric.ml 30902-30978)
 def lipschitz_continuous_map : thm := BLIP1.lipschitz_continuous_map
 def LIPSCHITZ_CONTINUOUS_MAP_POS : thm := BLIP1.LIPSCHITZ_CONTINUOUS_MAP_POS
 def LIPSCHITZ_CONTINUOUS_MAP_EQ : thm := BLIP1.LIPSCHITZ_CONTINUOUS_MAP_EQ
@@ -3873,7 +3909,7 @@ initialize BUC1 : HolMultiLib.Metric.UC1 ←
     (HolMultiLib.Metric.setupUC1 deps BNets BSequential BMetricSpace BMetricArith BRealTop2
       BMetricLim).run
 
--- UC1 (metric.ml 30464-30589)
+-- UC1 (metric.ml 30980-31105)
 def uniformly_continuous_map : thm := BUC1.uniformly_continuous_map
 def UNIFORMLY_CONTINUOUS_MAP_SEQUENTIALLY : thm := BUC1.UNIFORMLY_CONTINUOUS_MAP_SEQUENTIALLY
 def UNIFORMLY_CONTINUOUS_MAP_SEQUENTIALLY_ALT : thm :=
@@ -3894,7 +3930,7 @@ initialize BCC1 : HolMultiLib.Metric.CC1 ←
   ioB "setupCC1"
     (HolMultiLib.Metric.setupCC1 deps BMetricSpace BRealTop2 BCauchy1).run
 
--- CC1 (metric.ml 30591-30669)
+-- CC1 (metric.ml 31107-31185)
 def cauchy_continuous_map : thm := BCC1.cauchy_continuous_map
 def CAUCHY_CONTINUOUS_MAP_IMAGE : thm := BCC1.CAUCHY_CONTINUOUS_MAP_IMAGE
 def CAUCHY_CONTINUOUS_MAP_EQ : thm := BCC1.CAUCHY_CONTINUOUS_MAP_EQ
@@ -3913,7 +3949,7 @@ initialize BCC2 : HolMultiLib.Metric.CC2 ←
       BLimits1 BMetricLim BSeqChar2 BCauchy1 BCauchy2 BTotBdd1 BMCompact2 BPtCont BLIP1 BUC1
       BCC1).run
 
--- CC2 (metric.ml 30671-30826)
+-- CC2 (metric.ml 31187-31342)
 def LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP : thm := BCC2.LIPSCHITZ_IMP_UNIFORMLY_CONTINUOUS_MAP
 def UNIFORMLY_IMP_CAUCHY_CONTINUOUS_MAP : thm := BCC2.UNIFORMLY_IMP_CAUCHY_CONTINUOUS_MAP
 def LOCALLY_CAUCHY_CONTINUOUS_MAP : thm := BCC2.LOCALLY_CAUCHY_CONTINUOUS_MAP
@@ -3932,7 +3968,7 @@ initialize BCC3 : HolMultiLib.Metric.CC3 ←
   ioB "setupCC3"
     (HolMultiLib.Metric.setupCC3 deps BPM1 BPM2 BLIP1 BUC1 BCC1 BCC2).run
 
--- CC3 (metric.ml 30828-30941)
+-- CC3 (metric.ml 31344-31457)
 def CONTINUOUS_EQ_CAUCHY_CONTINUOUS_MAP : thm := BCC3.CONTINUOUS_EQ_CAUCHY_CONTINUOUS_MAP
 def CONTINUOUS_EQ_UNIFORMLY_CONTINUOUS_MAP : thm := BCC3.CONTINUOUS_EQ_UNIFORMLY_CONTINUOUS_MAP
 def CAUCHY_EQ_UNIFORMLY_CONTINUOUS_MAP : thm := BCC3.CAUCHY_EQ_UNIFORMLY_CONTINUOUS_MAP
@@ -3949,7 +3985,7 @@ initialize BCC4 : HolMultiLib.Metric.CC4 ←
     (HolMultiLib.Metric.setupCC4 deps BTactics BContMap1 BContMap2 BProd1 BMetricSpace
       BMTopology BBounded BMetricArith BRealTop2 BTotBdd1 BPM1 BLIP1 BUC1 BCC1 BCC2 BCC3).run
 
--- CC4 (metric.ml 30943-31075)
+-- CC4 (metric.ml 31459-31591)
 def MBOUNDED_LIPSCHITZ_CONTINUOUS_IMAGE : thm := BCC4.MBOUNDED_LIPSCHITZ_CONTINUOUS_IMAGE
 def TOTALLY_BOUNDED_IN_CAUCHY_CONTINUOUS_IMAGE : thm :=
   BCC4.TOTALLY_BOUNDED_IN_CAUCHY_CONTINUOUS_IMAGE
@@ -3967,7 +4003,7 @@ initialize BCC5 : HolMultiLib.Metric.CC5 ←
   ioB "setupCC5"
     (HolMultiLib.Metric.setupCC5 deps BMetricSpace BRealTop2 BRealConn1 BPM1 BPM3 BLIP1).run
 
--- CC5 (metric.ml 31077-31187)
+-- CC5 (metric.ml 31593-31703)
 def LIPSCHITZ_CONTINUOUS_MAP_REAL_LEFT_MULTIPLICATION : thm :=
   BCC5.LIPSCHITZ_CONTINUOUS_MAP_REAL_LEFT_MULTIPLICATION
 def LIPSCHITZ_CONTINUOUS_MAP_REAL_RIGHT_MULTIPLICATION : thm :=
@@ -3988,7 +4024,7 @@ initialize BCC6 : HolMultiLib.Metric.CC6 ←
     (HolMultiLib.Metric.setupCC6 deps BInterior BMetricSpace BMTopology BBounded BRealTop1
       BRealTop2 BRealConn1 BPM3 BLIP1 BCC2 BCC3 BCC5).run
 
--- CC6 (metric.ml 31189-31364)
+-- CC6 (metric.ml 31705-31880)
 def CAUCHY_CONTINUOUS_MAP_REAL_MULTIPLICATION : thm :=
   BCC6.CAUCHY_CONTINUOUS_MAP_REAL_MULTIPLICATION
 def LOCALLY_LIPSCHITZ_CONTINUOUS_MAP_REAL_INVERSION : thm :=
@@ -4011,7 +4047,7 @@ initialize BCC7 : HolMultiLib.Metric.CC7 ←
     (HolMultiLib.Metric.setupCC7 deps BInterior BMetricSpace BMTopology BRealTop1 BRealTop2
       BRealConn1 BPM3 BLIP1 BUC1 BCC2 BCC3 BCC5 BCC6).run
 
--- CC7 (metric.ml 31366-31538)
+-- CC7 (metric.ml 31882-32054)
 def LIPSCHITZ_CONTINUOUS_MAP_REAL_DIV : thm := BCC7.LIPSCHITZ_CONTINUOUS_MAP_REAL_DIV
 def LIPSCHITZ_CONTINUOUS_MAP_SUM : thm := BCC7.LIPSCHITZ_CONTINUOUS_MAP_SUM
 def UNIFORMLY_CONTINUOUS_MAP_FST : thm := BCC7.UNIFORMLY_CONTINUOUS_MAP_FST
@@ -4032,7 +4068,7 @@ initialize BCC8 : HolMultiLib.Metric.CC8 ←
     (HolMultiLib.Metric.setupCC8 deps BInterior BMetricSpace BMTopology BRealTop1 BRealTop2
       BRealConn1 BUC1 BCC1 BCC2 BCC3 BCC5 BCC6 BCC7).run
 
--- CC8 (metric.ml 31540-31744)
+-- CC8 (metric.ml 32056-32260)
 def UNIFORMLY_CONTINUOUS_MAP_REAL_DIV : thm := BCC8.UNIFORMLY_CONTINUOUS_MAP_REAL_DIV
 def UNIFORMLY_CONTINUOUS_MAP_SUM : thm := BCC8.UNIFORMLY_CONTINUOUS_MAP_SUM
 def CAUCHY_CONTINUOUS_MAP_FST : thm := BCC8.CAUCHY_CONTINUOUS_MAP_FST
@@ -4056,7 +4092,7 @@ initialize BCC9 : HolMultiLib.Metric.CC9 ←
     (HolMultiLib.Metric.setupCC9 deps BSubtopology BContMap2 BHomeo1 BHomeo2 BEmbedding
       BMetricSpace BMTopology BRealTop2 BLIP1 BUC1 BCC1 BCC2).run
 
--- CC9 (metric.ml 31746-31829)
+-- CC9 (metric.ml 32262-32345)
 def UNIFORMLY_CONTINUOUS_MAP_SQUARE_ROOT : thm := BCC9.UNIFORMLY_CONTINUOUS_MAP_SQUARE_ROOT
 def CONTINUOUS_MAP_SQUARE_ROOT : thm := BCC9.CONTINUOUS_MAP_SQUARE_ROOT
 def UNIFORMLY_CONTINUOUS_MAP_SQRT : thm := BCC9.UNIFORMLY_CONTINUOUS_MAP_SQRT
@@ -4070,7 +4106,7 @@ initialize BEXT1 : HolMultiLib.Metric.EXT1 ←
     (HolMultiLib.Metric.setupEXT1 deps BTopology BSubtopology BClosure BNets BNbhdBase BRegular1
       BAtPoint BLimits1 BPtCont).run
 
--- EXT1 (metric.ml 31835-31942)
+-- EXT1 (metric.ml 32351-32458)
 def CONTINUOUS_MAP_ON_INTERMEDIATE_CLOSURE_OF : thm :=
   BEXT1.CONTINUOUS_MAP_ON_INTERMEDIATE_CLOSURE_OF
 def CONTINUOUS_MAP_ON_INTERMEDIATE_CLOSURE_OF_EQ : thm :=
@@ -4084,7 +4120,7 @@ initialize BCE1 : HolMultiLib.Metric.CE1 ←
       BMTopology BMetricArith BRegular1 BLimits1 BMetricLim BSeqChar1 BSeqChar2 BRealLim
       BCauchy1 BCauchy2 BCC1 BCC2 BEXT1).run
 
--- CE1 (metric.ml 31948-32048)
+-- CE1 (metric.ml 32464-32564)
 def CAUCHY_CONTINUOUS_MAP_EXTENDS_TO_CONTINUOUS_CLOSURE_OF : thm :=
   BCE1.CAUCHY_CONTINUOUS_MAP_EXTENDS_TO_CONTINUOUS_CLOSURE_OF
 def CAUCHY_CONTINUOUS_MAP_EXTENDS_TO_CONTINUOUS_INTERMEDIATE_CLOSURE_OF : thm :=
@@ -4095,7 +4131,7 @@ initialize BCE2 : HolMultiLib.Metric.CE2 ←
     (HolMultiLib.Metric.setupCE2 deps BSubtopology BClosure BContMap1 BContMap2 BProd1
       BMetricSpace BMTopology BRealTop1 BRealCont BLIP1 BCC2 BCC4 BCE1).run
 
--- CE2 (metric.ml 32050-32143)
+-- CE2 (metric.ml 32566-32659)
 def LIPSCHITZ_CONTINUOUS_MAP_ON_INTERMEDIATE_CLOSURE : thm :=
   BCE2.LIPSCHITZ_CONTINUOUS_MAP_ON_INTERMEDIATE_CLOSURE
 def LIPSCHITZ_CONTINUOUS_MAP_EXTENDS_TO_CLOSURE_OF : thm :=
@@ -4108,7 +4144,7 @@ initialize BCE3 : HolMultiLib.Metric.CE3 ←
     (HolMultiLib.Metric.setupCE3 deps BTopology BSubtopology BClosure BContMap1 BContMap2
       BProd1 BMetricSpace BMTopology BRealTop1 BRealCont BUC1 BCC2 BCC4 BCE1).run
 
--- CE3 (metric.ml 32145-32238)
+-- CE3 (metric.ml 32661-32754)
 def UNIFORMLY_CONTINUOUS_MAP_ON_INTERMEDIATE_CLOSURE : thm :=
   BCE3.UNIFORMLY_CONTINUOUS_MAP_ON_INTERMEDIATE_CLOSURE
 def UNIFORMLY_CONTINUOUS_MAP_EXTENDS_TO_CLOSURE_OF : thm :=
@@ -4121,7 +4157,7 @@ initialize BCE4 : HolMultiLib.Metric.CE4 ←
     (HolMultiLib.Metric.setupCE4 deps BSubtopology BClosure BContMap1 BSequential BMetricSpace
       BMTopology BMetricArith BCauchy1 BMetricCont BCC1 BCE1).run
 
--- CE4 (metric.ml 32240-32346)
+-- CE4 (metric.ml 32756-32862)
 def CAUCHY_CONTINUOUS_MAP_ON_INTERMEDIATE_CLOSURE : thm :=
   BCE4.CAUCHY_CONTINUOUS_MAP_ON_INTERMEDIATE_CLOSURE
 def CAUCHY_CONTINUOUS_MAP_EXTENDS_TO_CLOSURE_OF : thm :=
@@ -4134,7 +4170,7 @@ initialize BLAV1 : HolMultiLib.Metric.LAV1 ←
     (HolMultiLib.Metric.setupLAV1 deps BTopology BDerived BClosure BNets BMetricSpace BMTopology
       BMetricArith BAtPoint BLimits1 BMetricLim BCauchy3).run
 
--- LAV1 (metric.ml 32352-32465)
+-- LAV1 (metric.ml 32868-32981)
 def CONVERGENT_EQ_ZERO_OSCILLATION_GEN : thm := BLAV1.CONVERGENT_EQ_ZERO_OSCILLATION_GEN
 
 initialize BLAV2 : HolMultiLib.Metric.LAV2 ←
@@ -4143,7 +4179,7 @@ initialize BLAV2 : HolMultiLib.Metric.LAV2 ←
       BFsigmaGdelta BMetricSpace BMTopology BMetrizable BRegular1 BAtPoint BPtCont BMetricCont
       BCMS1 BEXT1 BLAV1).run
 
--- LAV2 (metric.ml 32467-32610)
+-- LAV2 (metric.ml 32983-33126)
 def GDELTA_IN_POINTS_OF_CONVERGENCE_WITHIN : thm := BLAV2.GDELTA_IN_POINTS_OF_CONVERGENCE_WITHIN
 def LAVRENTIEV_EXTENSION_GEN : thm := BLAV2.LAVRENTIEV_EXTENSION_GEN
 def LAVRENTIEV_EXTENSION : thm := BLAV2.LAVRENTIEV_EXTENSION
@@ -4152,7 +4188,7 @@ initialize BDIAM1 : HolMultiLib.Metric.DIAM1 ←
   ioB "setupDIAM1"
     (HolMultiLib.Metric.setupDIAM1 deps BMetricSpace BMTopology BBounded BMetricArith).run
 
--- DIAM1 (metric.ml 32615-32726)
+-- DIAM1 (metric.ml 33131-33242)
 def mdiameter : thm := BDIAM1.mdiameter
 def MDIAMETER_EMPTY : thm := BDIAM1.MDIAMETER_EMPTY
 def MDIAMETER_SING : thm := BDIAM1.MDIAMETER_SING
@@ -4169,7 +4205,7 @@ initialize BDIAM2 : HolMultiLib.Metric.DIAM2 ←
     (HolMultiLib.Metric.setupDIAM2 deps BClosure BMetricSpace BMTopology BBounded BMetricArith
       BDIAM1).run
 
--- DIAM2 (metric.ml 32728-32795)
+-- DIAM2 (metric.ml 33244-33311)
 def MDIAMETER_CLOSURE : thm := BDIAM2.MDIAMETER_CLOSURE
 
 initialize BDIAM3 : HolMultiLib.Metric.DIAM3 ←
@@ -4177,7 +4213,7 @@ initialize BDIAM3 : HolMultiLib.Metric.DIAM3 ←
     (HolMultiLib.Metric.setupDIAM3 deps BCompact1 BCompact3 BCompact4 BMetricSpace BMTopology
       BBounded BRealConn2 BCC4 BDIAM1).run
 
--- DIAM3 (metric.ml 32797-32912)
+-- DIAM3 (metric.ml 33313-33428)
 def MDIAMETER_COMPACT_ATTAINED : thm := BDIAM3.MDIAMETER_COMPACT_ATTAINED
 def MDIAMETER_SUBSET_MCBALL_NONEMPTY : thm := BDIAM3.MDIAMETER_SUBSET_MCBALL_NONEMPTY
 def MDIAMETER_SUBSET_MCBALL : thm := BDIAM3.MDIAMETER_SUBSET_MCBALL
@@ -4190,14 +4226,14 @@ initialize BLEB : HolMultiLib.Metric.LEB ←
     (HolMultiLib.Metric.setupLEB deps BSubtopology BMetricSpace BBounded BMetricHaus BMCompact1
       BDIAM1).run
 
--- LEB (metric.ml 32914-33009)
+-- LEB (metric.ml 33430-33525)
 def LEBESGUE_COVERING_LEMMA : thm := BLEB.LEBESGUE_COVERING_LEMMA
 def LEBESGUE_COVERING_LEMMA_GEN : thm := BLEB.LEBESGUE_COVERING_LEMMA_GEN
 
 initialize BWC1 : HolMultiLib.Metric.WC1 ←
   ioB "setupWC1" (HolMultiLib.Metric.setupWC1 deps).run
 
--- WC1 (metric.ml 33016-33078)
+-- WC1 (metric.ml 33532-33594)
 def WELLCHAINED_ELEMENTS : thm := BWC1.WELLCHAINED_ELEMENTS
 def WELLCHAINED_SETS : thm := BWC1.WELLCHAINED_SETS
 
@@ -4206,7 +4242,7 @@ initialize BWC2 : HolMultiLib.Metric.WC2 ←
     (HolMultiLib.Metric.setupWC2 deps BTopology BSubtopology BCompact1 BMetricSpace BMTopology
       BConnected1 BComponents1 BMCompact1 BWC1).run
 
--- WC2 (metric.ml 33080-33240)
+-- WC2 (metric.ml 33596-33756)
 def EPSILON_ABSORBING_IMP_CLOPEN : thm := BWC2.EPSILON_ABSORBING_IMP_CLOPEN
 def CONNECTED_IN_IMP_WELLCHAINED : thm := BWC2.CONNECTED_IN_IMP_WELLCHAINED
 def CONNECTED_COMPONENT_OF_IMP_WELLCHAINED : thm := BWC2.CONNECTED_COMPONENT_OF_IMP_WELLCHAINED
@@ -4217,7 +4253,7 @@ initialize BWC3 : HolMultiLib.Metric.WC3 ←
     (HolMultiLib.Metric.setupWC3 deps BTopology BSubtopology BCompact1 BHausdorff1 BMetricSpace
       BMTopology BMetricHaus BComponents1 BMCompact1 BQC1 BQC5 BWC1 BWC2).run
 
--- WC3 (metric.ml 33242-33380)
+-- WC3 (metric.ml 33758-33896)
 def CONNECTED_COMPONENT_OF_EQ_WELLCHAINED : thm := BWC3.CONNECTED_COMPONENT_OF_EQ_WELLCHAINED
 
 initialize BNCA : HolMultiLib.Metric.NCA ←
@@ -4225,7 +4261,7 @@ initialize BNCA : HolMultiLib.Metric.NCA ←
     (HolMultiLib.Metric.setupNCA deps BTopology BSubtopology BCompact1 BCompact2 BHausdorff1
       BMetricSpace BMTopology BMetricHaus).run
 
--- NCA (metric.ml 33382-33490)
+-- NCA (metric.ml 33898-34006)
 def NESTED_COMPACT_APPROX : thm := BNCA.NESTED_COMPACT_APPROX
 def MDIST_TRIANGLE_LT : thm := BNCA.MDIST_TRIANGLE_LT
 
@@ -4233,13 +4269,13 @@ initialize BWC4 : HolMultiLib.Metric.WC4 ←
   ioB "setupWC4"
     (HolMultiLib.Metric.setupWC4 deps BCompact1 BMetricSpace BMTopology BNCA).run
 
--- WC4 (metric.ml 33492-33618)
+-- WC4 (metric.ml 34008-34134)
 def WELLCHAINED_INTERS : thm := BWC4.WELLCHAINED_INTERS
 
 initialize BULC1 : HolMultiLib.Metric.ULC1 ←
   ioB "setupULC1" (HolMultiLib.Metric.setupULC1 deps BMetricSpace BMTopology BDIAM1).run
 
--- ULC1 (metric.ml 33621-33695)
+-- ULC1 (metric.ml 34137-34211)
 def fccoverable_space : thm := BULC1.fccoverable_space
 def ulc_space : thm := BULC1.ulc_space
 def fccoverable_in : thm := BULC1.fccoverable_in
@@ -4250,7 +4286,7 @@ initialize BULC2 : HolMultiLib.Metric.ULC2 ←
     (HolMultiLib.Metric.setupULC2 deps BTopology BClosure BMetricSpace BMTopology BConnected1
       BConnected2 BLC1 BDIAM1 BULC1).run
 
--- ULC2 (metric.ml 33697-33832)
+-- ULC2 (metric.ml 34213-34348)
 def FCCOVERABLE_SPACE_IMP_LOCALLY_CONNECTED_SPACE : thm :=
   BULC2.FCCOVERABLE_SPACE_IMP_LOCALLY_CONNECTED_SPACE
 def ULC_SPACE_IMP_LOCALLY_CONNECTED_SPACE : thm := BULC2.ULC_SPACE_IMP_LOCALLY_CONNECTED_SPACE
@@ -4260,7 +4296,7 @@ initialize BULC3 : HolMultiLib.Metric.ULC3 ←
     (HolMultiLib.Metric.setupULC3 deps BClosure BMetricSpace BMTopology BBounded BConnected1
       BConnected2 BDIAM1 BDIAM2 BDIAM3 BULC1 BULC2).run
 
--- ULC3 (metric.ml 33834-33931)
+-- ULC3 (metric.ml 34350-34447)
 def FCCOVERABLE_SPACE_EQ_FCCOVERABLE_IN_MSPACE : thm :=
   BULC3.FCCOVERABLE_SPACE_EQ_FCCOVERABLE_IN_MSPACE
 def FCCOVERABLE_SPACE_INTERMEDIATE_CLOSURE : thm := BULC3.FCCOVERABLE_SPACE_INTERMEDIATE_CLOSURE
@@ -4275,7 +4311,7 @@ initialize BULC4 : HolMultiLib.Metric.ULC4 ←
     (HolMultiLib.Metric.setupULC4 deps BMetricSpace BMTopology BBounded BConnected1 BMCompact1
       BLC1 BDIAM1 BULC1 BULC3).run
 
--- ULC4 (metric.ml 33933-34039)
+-- ULC4 (metric.ml 34449-34555)
 def COMPACT_IN_LOCALLY_CONNECTED_IMP_ULC_SPACE : thm :=
   BULC4.COMPACT_IN_LOCALLY_CONNECTED_IMP_ULC_SPACE
 def COMPACT_IN_LOCALLY_CONNECTED_IMP_ULC_SPACE_ALT : thm :=
@@ -4286,7 +4322,7 @@ initialize BFCC1 : HolMultiLib.Metric.FCC1 ←
     (HolMultiLib.Metric.setupFCC1 deps BMetricSpace BMTopology BBounded BConnected1 BTotBdd1
       BDIAM1 BULC1).run
 
--- FCC1 (metric.ml 34041-34159)
+-- FCC1 (metric.ml 34557-34675)
 def TOTALLY_BOUNDED_ULC_SPACE_IMP_FCCOVERABLE_SPACE : thm :=
   BFCC1.TOTALLY_BOUNDED_ULC_SPACE_IMP_FCCOVERABLE_SPACE
 
@@ -4295,7 +4331,7 @@ initialize BFCC2 : HolMultiLib.Metric.FCC2 ←
     (HolMultiLib.Metric.setupFCC2 deps BClosure BCompact1 BHausdorff1 BMTopology BMetricHaus
       BConnected2 BMCompact2 BDIAM2 BULC1 BULC2 BULC4 BFCC1).run
 
--- FCC2 (metric.ml 34161-34221)
+-- FCC2 (metric.ml 34677-34737)
 def COMPACT_IN_LOCALLY_CONNECTED_IMP_FCCOVERABLE_SPACE : thm :=
   BFCC2.COMPACT_IN_LOCALLY_CONNECTED_IMP_FCCOVERABLE_SPACE
 def COMPACT_IN_LOCALLY_CONNECTED_EQ_FCCOVERABLE_SPACE : thm :=
@@ -4307,7 +4343,7 @@ initialize BLFC1 : HolMultiLib.Metric.LFC1 ←
       BConnected1 BConnected2 BComponents1 BComponents2 BNbhdBase BLC1 BDIAM1 BDIAM3 BULC1
       BULC3).run
 
--- LFC1 (metric.ml 34223-34866)
+-- LFC1 (metric.ml 34739-35382)
 def LOCALLY_FCCOVERABLE_SPACE_CHAIN : thm := BLFC1.LOCALLY_FCCOVERABLE_SPACE_CHAIN
 
 initialize BLFC2 : HolMultiLib.Metric.LFC2 ←
@@ -4316,7 +4352,7 @@ initialize BLFC2 : HolMultiLib.Metric.LFC2 ←
       BMetricSpace BMTopology BBounded BMetricHaus BConnected1 BNbhdBase BLocCompact1 BLC1
       BDIAM3 BULC1 BULC3 BFCC2 BLFC1).run
 
--- LFC2 (metric.ml 34868-35039)
+-- LFC2 (metric.ml 35384-35555)
 def FCCOVERABLE_IN_COMPACT_LOCALLY_CONNECTED : thm :=
   BLFC2.FCCOVERABLE_IN_COMPACT_LOCALLY_CONNECTED
 def LOCALLY_FCCOVERABLE_SPACE : thm := BLFC2.LOCALLY_FCCOVERABLE_SPACE
@@ -4327,7 +4363,7 @@ initialize BLCC : HolMultiLib.Metric.LCC ←
       BMetricHaus BConnected1 BConnected2 BComponents1 BComponents2 BNbhdBase BLocCompact1 BLC1
       BULC1 BULC3 BFCC2 BLFC2).run
 
--- LCC (metric.ml 35041-35210)
+-- LCC (metric.ml 35557-35726)
 def LOCALLY_CONNECTED_CONTINUUM_SPACE : thm := BLCC.LOCALLY_CONNECTED_CONTINUUM_SPACE
 def COMPACT_IN_LOCALLY_CONNECTED_EQ_FCCOVERABLE_SPACE_ALT : thm :=
   BLCC.COMPACT_IN_LOCALLY_CONNECTED_EQ_FCCOVERABLE_SPACE_ALT
@@ -4338,7 +4374,7 @@ initialize BSLC1 : HolMultiLib.Metric.SLC1 ←
   ioB "setupSLC1"
     (HolMultiLib.Metric.setupSLC1 deps BSubtopology BConnected1 BConnected3 BComponents1).run
 
--- SLC1 (metric.ml 35212-35312)
+-- SLC1 (metric.ml 35728-35828)
 def FINITE_CONNECTED_COMPONENTS_CLOPEN_UNION : thm :=
   BSLC1.FINITE_CONNECTED_COMPONENTS_CLOPEN_UNION
 
@@ -4347,7 +4383,7 @@ initialize BSLC2 : HolMultiLib.Metric.SLC2 ←
     (HolMultiLib.Metric.setupSLC2 deps BTopology BSubtopology BClosure BCompact1 BMTopology
       BMetricHaus BConnected1 BConnected2 BComponents1 BNbhdBase BLocCompact2 BLC1).run
 
--- SLC2 (metric.ml 35313-35578)
+-- SLC2 (metric.ml 35829-36094)
 def SEMI_LOCALLY_CONNECTED_CONNECTED : thm := BSLC2.SEMI_LOCALLY_CONNECTED_CONNECTED
 
 initialize BSLC3 : HolMultiLib.Metric.SLC3 ←
@@ -4356,7 +4392,7 @@ initialize BSLC3 : HolMultiLib.Metric.SLC3 ←
       BMTopology BMetricHaus BConnected1 BComponents1 BComponents2 BLocCompact1 BLocCompact2
       BRealTop1 BRealTop2 BLC1 BLCC BSLC1 BSLC2).run
 
--- SLC3 (metric.ml 35580-35724)
+-- SLC3 (metric.ml 36096-36240)
 def SEMI_LOCALLY_CONNECTED_GEN_SPACE : thm := BSLC3.SEMI_LOCALLY_CONNECTED_GEN_SPACE
 def SEMI_LOCALLY_CONNECTED_COMPACT_SPACE : thm := BSLC3.SEMI_LOCALLY_CONNECTED_COMPACT_SPACE
 def CLOSURE_OF_DYADIC_RATIONALS_IN_UNIT_INTERVAL : thm :=
@@ -4365,7 +4401,7 @@ def CLOSURE_OF_DYADIC_RATIONALS_IN_UNIT_INTERVAL : thm :=
 initialize BPC1 : HolMultiLib.Metric.PC1 ←
   ioB "setupPC1" (HolMultiLib.Metric.setupPC1 deps BTopology BConnected1 BConnected2).run
 
--- PC1 (metric.ml 35726-35849)
+-- PC1 (metric.ml 36242-36365)
 def CHAIN_FROM_OPEN_COVER : thm := BPC1.CHAIN_FROM_OPEN_COVER
 def CONNECTED_IN_CHAIN_UNIONS : thm := BPC1.CONNECTED_IN_CHAIN_UNIONS
 
@@ -4374,7 +4410,7 @@ initialize BCNI : HolMultiLib.Metric.CNI ←
     (HolMultiLib.Metric.setupCNI deps BTopology BClosure BCompact1 BMetricSpace BMTopology
       BBounded BCauchy1 BTotBdd1 BTotBdd2 BMCompact2 BDIAM1 BDIAM2).run
 
--- CNI (metric.ml 35851-36030)
+-- CNI (metric.ml 36367-36546)
 def COMPACT_NESTED_INTERS : thm := BCNI.COMPACT_NESTED_INTERS
 
 initialize BPC2 : HolMultiLib.Metric.PC2 ←
@@ -4382,21 +4418,21 @@ initialize BPC2 : HolMultiLib.Metric.PC2 ←
     (HolMultiLib.Metric.setupPC2 deps BTopology BSubtopology BClosure BMetricSpace BMTopology
       BConnected1 BLC1 BPC1).run
 
--- PC2 (metric.ml 36032-36118)
+-- PC2 (metric.ml 36548-36634)
 def OPEN_CONNECTED_FINE_COVER : thm := BPC2.OPEN_CONNECTED_FINE_COVER
 def CHAIN_IN_OPEN_CONNECTED_SET : thm := BPC2.CHAIN_IN_OPEN_CONNECTED_SET
 
 initialize BCRS : HolMultiLib.Metric.CRS ←
   ioB "setupCRS" (HolMultiLib.Metric.setupCRS deps BPC2).run
 
--- CRS (metric.ml 36120-36273)
+-- CRS (metric.ml 36636-36789)
 def CHAIN_REFINEMENT_STEP : thm := BCRS.CHAIN_REFINEMENT_STEP
 
 initialize BCHH : HolMultiLib.Metric.CHH ←
   ioB "setupCHH"
     (HolMultiLib.Metric.setupCHH deps BTopology BMTopology BConnected1 BPC2 BCRS).run
 
--- CHH (metric.ml 36275-36353)
+-- CHH (metric.ml 36791-36869)
 def CHAIN_HIERARCHY : thm := BCHH.CHAIN_HIERARCHY
 
 initialize BMDA : HolMultiLib.Metric.MDA ←
@@ -4404,7 +4440,7 @@ initialize BMDA : HolMultiLib.Metric.MDA ←
     (HolMultiLib.Metric.setupMDA deps BTopology BClosure BMetricSpace BMTopology BConnected1
       BPC2).run
 
--- MDA (metric.ml 36355-37257)
+-- MDA (metric.ml 36871-37773)
 def MCOMPLETE_DYADIC_APPROXIMATION : thm := BMDA.MCOMPLETE_DYADIC_APPROXIMATION
 
 initialize BIMB : HolMultiLib.Metric.IMB ←
@@ -4413,7 +4449,7 @@ initialize BIMB : HolMultiLib.Metric.IMB ←
       BHausdorff1 BHausdorff2 BMetricSpace BMTopology BMetricHaus BConnected1 BConnected3
       BRealTop1 BRealTop2 BRealConn1 BLC1 BLC2 BUC1 BCC2 BCE3 BSLC3 BMDA).run
 
--- IMB (metric.ml 37258-37484)
+-- IMB (metric.ml 37774-38000)
 def MCOMPLETE_IMBEDDING_IN_LC_CONTINUUM : thm := BIMB.MCOMPLETE_IMBEDDING_IN_LC_CONTINUUM
 def MCOMPLETE_IMBEDDING_IN_LC_CONTINUUM_IN : thm :=
   BIMB.MCOMPLETE_IMBEDDING_IN_LC_CONTINUUM_IN
@@ -4423,7 +4459,7 @@ initialize BCAP : HolMultiLib.Metric.CAP ←
     (HolMultiLib.Metric.setupCAP deps BTopology BMetricSpace BMTopology BMetricArith
       BCauchy1).run
 
--- CAP (metric.ml 37486-37630)
+-- CAP (metric.ml 38002-38146)
 def capped_metric : thm := BCAP.capped_metric
 def CAPPED_METRIC : thm := BCAP.CAPPED_METRIC
 def MDIST_CAPPED : thm := BCAP.MDIST_CAPPED
@@ -4439,7 +4475,7 @@ initialize BMSPT : HolMultiLib.Metric.MSPT ←
       BHomeoSpace BT1a BT1b BNets BSequential BMetricSpace BMTopology BMetrizable BLimits2
       BCauchy1 BCMS1 BCAP).run
 
--- MSPT (metric.ml 37632-37987)
+-- MSPT (metric.ml 38148-38503)
 def METRIZABLE_SPACE_PRODUCT_TOPOLOGY : thm := BMSPT.METRIZABLE_SPACE_PRODUCT_TOPOLOGY
 def COMPLETELY_METRIZABLE_SPACE_PRODUCT_TOPOLOGY : thm :=
   BMSPT.COMPLETELY_METRIZABLE_SPACE_PRODUCT_TOPOLOGY
@@ -4448,7 +4484,7 @@ initialize BURY1 : HolMultiLib.Metric.URY1 ←
   ioB "setupURY1"
     (HolMultiLib.Metric.setupURY1 deps BEmbedding BHausdorff1 BMetrizable BRealTop2 BMSPT).run
 
--- URY1 (metric.ml 37989-38040)
+-- URY1 (metric.ml 38505-38556)
 def EMBEDDING_INTO_METRIZABLE_IMP_METRIZABLE : thm :=
   BURY1.EMBEDDING_INTO_METRIZABLE_IMP_METRIZABLE
 def SEPARATING_FUNCTIONS_INJECTIVE : thm := BURY1.SEPARATING_FUNCTIONS_INJECTIVE
@@ -4460,7 +4496,7 @@ initialize BURY2 : HolMultiLib.Metric.URY2 ←
       BOpenClosed1 BProduct1 BProduct2 BHomeo1 BEmbedding BCountability BMetrizable BRegular1
       BRealTop1 BUrysohn BHerNormal BURY1).run
 
--- URY2 (metric.ml 38042-38382)
+-- URY2 (metric.ml 38558-38898)
 def URYSOHN_METRIZATION : thm := BURY2.URYSOHN_METRIZATION
 def URYSOHN_METRIZATION_EQ : thm := BURY2.URYSOHN_METRIZATION_EQ
 
@@ -4472,7 +4508,7 @@ initialize BCGP : HolMultiLib.Metric.CGP ←
       BMetricSpace BMTopology BMetricArith BNbhdBase BRegular1 BLocCompact1 BLocCompact2
       BCauchy1 BCauchy3 BMCompact3 BCMS1).run
 
--- CGP (metric.ml 38383-38669)
+-- CGP (metric.ml 38899-39185)
 def CARD_GE_PERFECT_SET : thm := BCGP.CARD_GE_PERFECT_SET
 
 initialize BEUC1 : HolMultiLib.Metric.EUC1 ←
@@ -4480,7 +4516,7 @@ initialize BEUC1 : HolMultiLib.Metric.EUC1 ←
     (HolMultiLib.Metric.setupEUC1 deps BTopology BSubtopology BContMap1 BContMap2 BProduct1
       BProduct2 BHomeo1 BHomeoSpace BRealTop1 BRealCont BCMS1 BMSPT).run
 
--- EUC1 (metric.ml 38670-38799)
+-- EUC1 (metric.ml 39186-39315)
 def euclidean_space : thm := BEUC1.euclidean_space
 def TOPSPACE_EUCLIDEAN_SPACE : thm := BEUC1.TOPSPACE_EUCLIDEAN_SPACE
 def NONEMPTY_EUCLIDEAN_SPACE : thm := BEUC1.NONEMPTY_EUCLIDEAN_SPACE
@@ -4501,7 +4537,7 @@ initialize BEUC2 : HolMultiLib.Metric.EUC2 ←
       BCompact4 BHausdorff1 BHausdorff2 BLocCompact1 BLocCompact3 BRealTop1 BRealTop2
       BRealConn2 BRealCont BPaths1 BLPC1 BLPC2 BLPC3 BLC1 BCON1 BCON3 BEUC1).run
 
--- EUC2 (metric.ml 38801-38910)
+-- EUC2 (metric.ml 39317-39426)
 def CONTRACTIBLE_EUCLIDEAN_SPACE : thm := BEUC2.CONTRACTIBLE_EUCLIDEAN_SPACE
 def PATH_CONNECTED_EUCLIDEAN_SPACE : thm := BEUC2.PATH_CONNECTED_EUCLIDEAN_SPACE
 def CONNECTED_EUCLIDEAN_SPACE : thm := BEUC2.CONNECTED_EUCLIDEAN_SPACE
@@ -4523,7 +4559,7 @@ initialize BNSPH : HolMultiLib.Metric.NSPH ←
       BProduct1 BProduct2 BHomeo1 BHomeoSpace BRealTop1 BRealCont BHOM1 BCON1 BCON3 BCC9
       BEUC1 BEUC2).run
 
--- NSPH (metric.ml 38912-39120)
+-- NSPH (metric.ml 39428-39636)
 def CONTRACTIBLE_SPACE_UPPER_HEMISPHERE : thm := BNSPH.CONTRACTIBLE_SPACE_UPPER_HEMISPHERE
 def CONTRACTIBLE_SPACE_LOWER_HEMISPHERE : thm := BNSPH.CONTRACTIBLE_SPACE_LOWER_HEMISPHERE
 def NULLHOMOTOPIC_NONSURJECTIVE_SPHERE_MAP : thm :=
@@ -4534,14 +4570,14 @@ initialize BBAN : HolMultiLib.Metric.BAN ←
     (HolMultiLib.Metric.setupBAN deps BTactics BSequential BMetricSpace BLimits1 BMetricLim
       BCauchy1 BLIP1 BCC2 BCC4).run
 
--- BAN (metric.ml 39122-39257)
+-- BAN (metric.ml 39638-39773)
 def CONTRACTION_IMP_UNIQUE_FIXPOINT : thm := BBAN.CONTRACTION_IMP_UNIQUE_FIXPOINT
 def BANACH_FIXPOINT_THM : thm := BBAN.BANACH_FIXPOINT_THM
 
 initialize BFUN1 : HolMultiLib.Metric.FUN1 ←
   ioB "setupFUN1" (HolMultiLib.Metric.setupFUN1 deps BTactics BMetricSpace BBounded).run
 
--- FUN1 (metric.ml 39259-39422)
+-- FUN1 (metric.ml 39775-39938)
 def funspace : thm := BFUN1.funspace
 def FUNSPACE : thm := BFUN1.FUNSPACE
 def FUNSPACE_IMP_WELLDEFINED : thm := BFUN1.FUNSPACE_IMP_WELLDEFINED
@@ -4556,7 +4592,7 @@ initialize BFUN2 : HolMultiLib.Metric.FUN2 ←
     (HolMultiLib.Metric.setupFUN2 deps BTactics BMetricSpace BMTopology BBounded BMetricLim
       BCauchy1 BFUN1).run
 
--- FUN2 (metric.ml 39424-39550)
+-- FUN2 (metric.ml 39940-40066)
 def MCOMPLETE_FUNSPACE : thm := BFUN2.MCOMPLETE_FUNSPACE
 
 initialize BCFUN : HolMultiLib.Metric.CFUN ←
@@ -4564,7 +4600,7 @@ initialize BCFUN : HolMultiLib.Metric.CFUN ←
     (HolMultiLib.Metric.setupCFUN deps BTactics BTopology BContMap1 BCompact3 BMetricSpace
       BMetricHaus BMetricLim BCauchy1 BMetricCont BFUN1 BFUN2).run
 
--- CFUN (metric.ml 39552-39705)
+-- CFUN (metric.ml 40068-40221)
 def cfunspace : thm := BCFUN.cfunspace
 def CFUNSPACE : thm := BCFUN.CFUNSPACE
 def CFUNSPACE_SUBSET_FUNSPACE : thm := BCFUN.CFUNSPACE_SUBSET_FUNSPACE
@@ -4582,7 +4618,7 @@ initialize BCOMPL : HolMultiLib.Metric.COMPL ←
     (HolMultiLib.Metric.setupCOMPL deps BClosure BMetricSpace BMTopology BBounded
       BMetricArith BMetrizable BRealTop2 BCauchy1 BMCompact3 BCMS1 BCC9 BFUN1 BFUN2).run
 
--- COMPL (metric.ml 39707-39798)
+-- COMPL (metric.ml 40223-40314)
 def METRIC_COMPLETION_EXPLICIT : thm := BCOMPL.METRIC_COMPLETION_EXPLICIT
 def METRIC_COMPLETION : thm := BCOMPL.METRIC_COMPLETION
 def METRIZABLE_SPACE_COMPLETION : thm := BCOMPL.METRIZABLE_SPACE_COMPLETION
@@ -4592,7 +4628,7 @@ initialize BBAI1 : HolMultiLib.Metric.BAI1 ←
     (HolMultiLib.Metric.setupBAI1 deps BTactics BTopology BClosure BInterior BSequential
       BMetricSpace BMTopology BMetricLim BCauchy1).run
 
--- BAI1 (metric.ml 39800-40004)
+-- BAI1 (metric.ml 40316-40520)
 def METRIC_BAIRE_CATEGORY : thm := BBAI1.METRIC_BAIRE_CATEGORY
 def METRIC_BAIRE_CATEGORY_ALT : thm := BBAI1.METRIC_BAIRE_CATEGORY_ALT
 
@@ -4601,7 +4637,7 @@ initialize BBAI2 : HolMultiLib.Metric.BAI2 ←
     (HolMultiLib.Metric.setupBAI2 deps BTopology BSubtopology BClosure BInterior BCompact1
       BCompact2 BNbhdBase BRegular1 BLocCompact1 BLocCompact2 BCMS1 BBAI1).run
 
--- BAI2 (metric.ml 40006-40137)
+-- BAI2 (metric.ml 40522-40653)
 def BAIRE_CATEGORY_ALT : thm := BBAI2.BAIRE_CATEGORY_ALT
 def BAIRE_CATEGORY : thm := BBAI2.BAIRE_CATEGORY
 
@@ -4611,7 +4647,7 @@ initialize BSIER : HolMultiLib.Metric.SIER ←
       BHausdorff1 BMTopology BConnected1 BConnected3 BNbhdBase BLocCompact2 BRealTop1
       BRealConn1 BLC1 BLC2 BCMS1 BBAI2).run
 
--- SIER (metric.ml 40139-40298)
+-- SIER (metric.ml 40655-40814)
 def LOCALLY_CONNECTED_NOT_COUNTABLE_CLOSED_UNION : thm :=
   BSIER.LOCALLY_CONNECTED_NOT_COUNTABLE_CLOSED_UNION
 def REAL_SIERPINSKI_LEMMA : thm := BSIER.REAL_SIERPINSKI_LEMMA
@@ -4622,7 +4658,7 @@ initialize BSIZE : HolMultiLib.Metric.SIZE ←
       BT1a BT1b BHausdorff1 BLindelof BConnected1 BConnected3 BNbhdBase BRegular1 BRealTop1
       BRealConn1 BPaths1 BPaths2 BNormal1 BUrysohn2 BNormal3 BCRegular1 BSIER).run
 
--- SIZE (metric.ml 40300-40531)
+-- SIZE (metric.ml 40816-41047)
 def CONNECTED_SPACE_IMP_CARD_GE_ALT : thm := BSIZE.CONNECTED_SPACE_IMP_CARD_GE_ALT
 def CONNECTED_SPACE_IMP_CARD_GE_GEN : thm := BSIZE.CONNECTED_SPACE_IMP_CARD_GE_GEN
 def CONNECTED_SPACE_IMP_CARD_GE : thm := BSIZE.CONNECTED_SPACE_IMP_CARD_GE
@@ -4639,7 +4675,7 @@ initialize BTYCH : HolMultiLib.Metric.TYCH ←
       BHomeo1 BHomeo2 BEmbedding BHausdorff1 BMetricSpace BBounded BRealTop1 BRealTop2
       BRealConn1 BLimits1 BPtCont BCRegular1 BCFUN).run
 
--- TYCH (metric.ml 40533-40663)
+-- TYCH (metric.ml 41049-41179)
 def COMPLETELY_REGULAR_SPACE_CUBE_EMBEDDING_EXPLICIT : thm :=
   BTYCH.COMPLETELY_REGULAR_SPACE_CUBE_EMBEDDING_EXPLICIT
 def COMPLETELY_REGULAR_SPACE_CUBE_EMBEDDING : thm :=
@@ -4650,7 +4686,7 @@ initialize BURYC : HolMultiLib.Metric.URYC ←
     (HolMultiLib.Metric.setupURYC deps BTopology BContMap1 BContMap2 BCompact1 BRealTop1
       BRealCont BCRegular1).run
 
--- URYC (metric.ml 40665-40811)
+-- URYC (metric.ml 41181-41327)
 def URYSOHN_COMPLETELY_REGULAR_CLOSED_COMPACT : thm :=
   BURYC.URYSOHN_COMPLETELY_REGULAR_CLOSED_COMPACT
 def URYSOHN_COMPLETELY_REGULAR_COMPACT_CLOSED : thm :=
@@ -4664,7 +4700,7 @@ initialize BTIET : HolMultiLib.Metric.TIET ←
       BEmbedding BCompact1 BCompact3 BCompact4 BHausdorff1 BHausdorff2 BT0a BT0b BRegular1
       BRealTop2 BRealConn1 BNormal1 BTietze BCRegular1 BCRegular2 BTYCH).run
 
--- TIET (metric.ml 40813-40920)
+-- TIET (metric.ml 41329-41436)
 def TIETZE_EXTENSION_COMPLETELY_REGULAR : thm := BTIET.TIETZE_EXTENSION_COMPLETELY_REGULAR
 
 initialize BGDP : HolMultiLib.Metric.GDP ←
@@ -4673,7 +4709,7 @@ initialize BGDP : HolMultiLib.Metric.GDP ←
       BContMap2 BProd1 BProduct1 BProduct2 BHomeoSpace BEmbedding BDiagonal BMetricSpace
       BMTopology BMetricArith BMetrizable BRealTop1 BRealTop2 BRealCont BLIP1 BCC2).run
 
--- GDP (metric.ml 40922-41155)
+-- GDP (metric.ml 41438-41671)
 def GDELTA_HOMEOMORPHIC_SPACE_CLOSED_IN_PRODUCT : thm :=
   BGDP.GDELTA_HOMEOMORPHIC_SPACE_CLOSED_IN_PRODUCT
 
@@ -4684,7 +4720,7 @@ initialize BCMS2 : HolMultiLib.Metric.CMS2 ←
       BMetricHaus BMetrizable BLocCompact1 BLocCompact3 BCMS1 BPM2 BCC9 BLAV2 BMSPT BCOMPL
       BGDP).run
 
--- CMS2 (metric.ml 41156-41279)
+-- CMS2 (metric.ml 41672-41795)
 def OPEN_HOMEOMORPHIC_SPACE_CLOSED_IN_PRODUCT : thm :=
   BCMS2.OPEN_HOMEOMORPHIC_SPACE_CLOSED_IN_PRODUCT
 def COMPLETELY_METRIZABLE_SPACE_GDELTA_IN_ALT : thm :=
@@ -4701,7 +4737,7 @@ initialize BPARA1 : HolMultiLib.Metric.PARA1 ←
     (HolMultiLib.Metric.setupPARA1 deps BTopology BSubtopology BIterLocal BContMap1 BHomeo1
       BHomeoSpace BRetraction BCompact1 BFsigmaGdelta BMetrizable BCMS1 BCMS2).run
 
--- PARA1 (metric.ml 41280-41416)
+-- PARA1 (metric.ml 41796-41932)
 def LOCALLY_COMPACT_SPACE_IMP_GDELTA_IN : thm := BPARA1.LOCALLY_COMPACT_SPACE_IMP_GDELTA_IN
 def COMPLETELY_METRIZABLE_SPACE_EQ_GDELTA_IN : thm :=
   BPARA1.COMPLETELY_METRIZABLE_SPACE_EQ_GDELTA_IN
@@ -4719,7 +4755,7 @@ initialize BPARA2 : HolMultiLib.Metric.PARA2 ←
     (HolMultiLib.Metric.setupPARA2 deps BTopology BClosure BIterLocal BHausdorff1 BRegular1
       BNormal1 BPARA1).run
 
--- PARA2 (metric.ml 41418-41554)
+-- PARA2 (metric.ml 41934-42070)
 def PARACOMPACT_HAUSDORFF_IMP_REGULAR_SPACE : thm :=
   BPARA2.PARACOMPACT_HAUSDORFF_IMP_REGULAR_SPACE
 def PARACOMPACT_HAUSDORFF_IMP_NORMAL_SPACE : thm :=
@@ -4732,13 +4768,13 @@ initialize BMCSLF : HolMultiLib.Metric.MCSLF ←
     (HolMultiLib.Metric.setupMCSLF deps BTopology BIterLocal BMetricSpace BMTopology
       BMetricArith BPARA2).run
 
--- MCSLF (metric.ml 41556-41853)
+-- MCSLF (metric.ml 42072-42369)
 def METRIC_COVER_SIGMA_LOCALLY_FINITE : thm := BMCSLF.METRIC_COVER_SIGMA_LOCALLY_FINITE
 
 initialize BSLFC : HolMultiLib.Metric.SLFC ←
   ioB "setupSLFC" (HolMultiLib.Metric.setupSLFC deps BTopology BIterLocal BPARA2).run
 
--- SLFC (metric.ml 41855-42219)
+-- SLFC (metric.ml 42371-42735)
 def SIGMA_LOCALLY_FINITE_IMP_LOCALLY_FINITE_COVERING : thm :=
   BSLFC.SIGMA_LOCALLY_FINITE_IMP_LOCALLY_FINITE_COVERING
 
@@ -4746,7 +4782,7 @@ initialize BMICH1 : HolMultiLib.Metric.MICH1 ←
   ioB "setupMICH1"
     (HolMultiLib.Metric.setupMICH1 deps BTopology BClosure BIterLocal BNbhdBase BRegular1).run
 
--- MICH1 (metric.ml 42221-42348)
+-- MICH1 (metric.ml 42737-42864)
 def REGULAR_CLOSURE_REFINEMENT_COVERS : thm := BMICH1.REGULAR_CLOSURE_REFINEMENT_COVERS
 def LF_COVERING_IMP_LF_CLOSED : thm := BMICH1.LF_COVERING_IMP_LF_CLOSED
 def EXPANSION_SET_OPEN : thm := BMICH1.EXPANSION_SET_OPEN
@@ -4755,7 +4791,7 @@ def EXPANSION_SET_CONTAINS : thm := BMICH1.EXPANSION_SET_CONTAINS
 initialize BLFO : HolMultiLib.Metric.LFO ←
   ioB "setupLFO" (HolMultiLib.Metric.setupLFO deps BTopology BIterLocal BMICH1).run
 
--- LFO (metric.ml 42350-42589)
+-- LFO (metric.ml 42866-43105)
 def LF_COVERING_IMP_LF_OPEN : thm := BLFO.LF_COVERING_IMP_LF_OPEN
 
 initialize BMICH2 : HolMultiLib.Metric.MICH2 ←
@@ -4763,7 +4799,7 @@ initialize BMICH2 : HolMultiLib.Metric.MICH2 ←
     (HolMultiLib.Metric.setupMICH2 deps BTopology BIterLocal BCompact1 BMTopology BMetrizable
       BRegular1 BPARA1 BMCSLF BSLFC BMICH1 BLFO).run
 
--- MICH2 (metric.ml 42591-42734)
+-- MICH2 (metric.ml 43107-43250)
 def MICHAEL_LEMMA : thm := BMICH2.MICHAEL_LEMMA
 def METRIZABLE_IMP_PARACOMPACT_SPACE : thm := BMICH2.METRIZABLE_IMP_PARACOMPACT_SPACE
 def PARACOMPACT_SPACE_MTOPOLOGY : thm := BMICH2.PARACOMPACT_SPACE_MTOPOLOGY
@@ -4774,7 +4810,7 @@ initialize BPPM : HolMultiLib.Metric.PPM ←
     (HolMultiLib.Metric.setupPPM deps BTopology BIterLocal BContMap1 BOpenClosed1 BHausdorff1
       BProper1 BPerfect BPreserve BNormal1 BNormal3 BPARA1 BPARA2 BMICH1 BLFO BMICH2).run
 
--- PPM (metric.ml 42736-42927)
+-- PPM (metric.ml 43252-43443)
 def LF_CLOSED_PERFECT_MAP_IMAGE : thm := BPPM.LF_CLOSED_PERFECT_MAP_IMAGE
 def PARACOMPACT_SPACE_PERFECT_MAP_IMAGE : thm := BPPM.PARACOMPACT_SPACE_PERFECT_MAP_IMAGE
 
@@ -4783,7 +4819,7 @@ initialize BFSIG : HolMultiLib.Metric.FSIG ←
     (HolMultiLib.Metric.setupFSIG deps BTopology BSubtopology BIterLocal BFsigmaGdelta
       BRegular1 BPARA1 BPARA2 BMICH2).run
 
--- FSIG (metric.ml 42929-43155)
+-- FSIG (metric.ml 43445-43671)
 def PARACOMPACT_SPACE_FSIGMA_SUBSET : thm := BFSIG.PARACOMPACT_SPACE_FSIGMA_SUBSET
 
 initialize BTUBE : HolMultiLib.Metric.TUBE ←
@@ -4791,7 +4827,7 @@ initialize BTUBE : HolMultiLib.Metric.TUBE ←
     (HolMultiLib.Metric.setupTUBE deps BTopology BIterLocal BProd1 BCompact1 BCompact4
       BCompact5).run
 
--- TUBE (metric.ml 43157-43301)
+-- TUBE (metric.ml 43673-43817)
 def LOCALLY_FINITE_PRODUCT_TUBES : thm := BTUBE.LOCALLY_FINITE_PRODUCT_TUBES
 def COMPACT_TUBE_COVER : thm := BTUBE.COMPACT_TUBE_COVER
 
@@ -4800,7 +4836,7 @@ initialize BPPC : HolMultiLib.Metric.PPC ←
     (HolMultiLib.Metric.setupPPC deps BTopology BIterLocal BProd1 BHomeoSpace BPARA1
       BTUBE).run
 
--- PPC (metric.ml 43302-43458)
+-- PPC (metric.ml 43818-43974)
 def PARACOMPACT_SPACE_PRODUCT_COMPACT_LEFT : thm := BPPC.PARACOMPACT_SPACE_PRODUCT_COMPACT_LEFT
 def PARACOMPACT_SPACE_PRODUCT_COMPACT_RIGHT : thm :=
   BPPC.PARACOMPACT_SPACE_PRODUCT_COMPACT_RIGHT
@@ -4810,7 +4846,7 @@ initialize BSHR : HolMultiLib.Metric.SHR ←
     (HolMultiLib.Metric.setupSHR deps BTopology BClosure BIterLocal BRegular1 BPARA1
       BPARA2).run
 
--- SHR (metric.ml 43460-43624)
+-- SHR (metric.ml 43976-44140)
 def PARACOMPACT_HAUSDORFF_CLOSURE_REFINEMENT : thm :=
   BSHR.PARACOMPACT_HAUSDORFF_CLOSURE_REFINEMENT
 def PARACOMPACT_HAUSDORFF_INDEXED_SHRINKING : thm :=
@@ -4821,7 +4857,7 @@ initialize BPOU : HolMultiLib.Metric.POU ←
     (HolMultiLib.Metric.setupPOU deps BTopology BClosure BContMap2 BAtPoint BLimits1 BPtCont
       BRealCont BUrysohn BPARA2 BSHR).run
 
--- POU (metric.ml 43626-43961)
+-- POU (metric.ml 44142-44477)
 def CONTINUOUS_MAP_SUM_LOCALLY_FINITE : thm := BPOU.CONTINUOUS_MAP_SUM_LOCALLY_FINITE
 def PARACOMPACT_PARTITION_OF_UNITY : thm := BPOU.PARACOMPACT_PARTITION_OF_UNITY
 
@@ -4830,7 +4866,7 @@ initialize BPPRE : HolMultiLib.Metric.PPRE ←
     (HolMultiLib.Metric.setupPPRE deps BTopology BIterLocal BContMap1 BOpenClosed2 BCompact1
       BProper1 BPerfect BLindelof BCountability BPARA1 BPARA2 BMICH2).run
 
--- PPRE (metric.ml 43963-44171)
+-- PPRE (metric.ml 44479-44687)
 def REGULAR_LINDELOF_IMP_PARACOMPACT_SPACE : thm := BPPRE.REGULAR_LINDELOF_IMP_PARACOMPACT_SPACE
 def SECOND_COUNTABLE_REGULAR_IMP_PARACOMPACT_SPACE : thm :=
   BPPRE.SECOND_COUNTABLE_REGULAR_IMP_PARACOMPACT_SPACE
@@ -4841,7 +4877,7 @@ initialize BPARA3 : HolMultiLib.Metric.PARA3 ←
     (HolMultiLib.Metric.setupPARA3 deps BTopology BDiscrete BIterLocal BContMap1 BOpenClosed1
       BHomeo1 BHomeo2 BCountability BLocCompact1 BPARA1 BPARA2 BPPRE).run
 
--- PARA3 (metric.ml 44172-44316)
+-- PARA3 (metric.ml 44688-44832)
 def LOCALLY_FINITE_IN_HOMEOMORPHIC_IMAGE : thm := BPARA3.LOCALLY_FINITE_IN_HOMEOMORPHIC_IMAGE
 def PARACOMPACT_SPACE_DISCRETE_TOPOLOGY : thm := BPARA3.PARACOMPACT_SPACE_DISCRETE_TOPOLOGY
 def SECOND_COUNTABLE_LOCALLY_COMPACT_HAUSDORFF_IMP_PARACOMPACT : thm :=
@@ -4853,7 +4889,7 @@ initialize BEXPL : HolMultiLib.Metric.EXPL ←
   ioB "setupEXPL"
     (HolMultiLib.Metric.setupEXPL deps BTopology BIterLocal BPARA1 BPARA2 BMICH1 BLFO).run
 
--- EXPL (metric.ml 44318-44567)
+-- EXPL (metric.ml 44834-45083)
 def PARACOMPACT_HAUSDORFF_EXPANSION_LEMMA : thm := BEXPL.PARACOMPACT_HAUSDORFF_EXPANSION_LEMMA
 def PARACOMPACT_SPACE_EQ_CLOSED_REFINEMENT : thm := BEXPL.PARACOMPACT_SPACE_EQ_CLOSED_REFINEMENT
 def PARACOMPACT_SPACE_EQ_LOCALLY_FINITE_REFINEMENT : thm :=
@@ -4865,7 +4901,7 @@ initialize BDIM1 : HolMultiLib.Metric.DIM1 ←
       BContMap1 BContMap2 BOpenClosed1 BHomeo1 BHomeo2 BHomeoSpace BRetractOf BNbhdBase
       BRealTop1 BCRegular1 BCRegular2).run
 
--- DIM1 (metric.ml 44569-44818)
+-- DIM1 (metric.ml 45085-45334)
 def DIMENSION_LE_RULES : thm := BDIM1.DIMENSION_LE_RULES
 def DIMENSION_LE_INDUCT : thm := BDIM1.DIMENSION_LE_INDUCT
 def DIMENSION_LE_CASES : thm := BDIM1.DIMENSION_LE_CASES
@@ -4891,7 +4927,7 @@ initialize BCAN1 : HolMultiLib.Metric.CAN1 ←
       BCompact2 BCompact4 BHausdorff1 BHausdorff2 BMetrizable BNbhdBase BRealSeries BMSPT
       BDIM1).run
 
--- CAN1 (metric.ml 44819-44994)
+-- CAN1 (metric.ml 45335-45510)
 def cantor_space : thm := BCAN1.cantor_space
 def cantor_term : thm := BCAN1.cantor_term
 def cantor_map : thm := BCAN1.cantor_map
@@ -4919,7 +4955,7 @@ initialize BCAN2 : HolMultiLib.Metric.CAN2 ←
       BCompact1 BCompact3 BHausdorff1 BHausdorff2 BSequential BRealTop1 BRealTop2 BMetricCont
       BRealCont BRealSeries BCAN1).run
 
--- CAN2 (metric.ml 44995-45183)
+-- CAN2 (metric.ml 45511-45699)
 def CANTOR_MAP_GE_PARTIAL_SUM : thm := BCAN2.CANTOR_MAP_GE_PARTIAL_SUM
 def CANTOR_MAP_PARTIAL_SUM_BOUND : thm := BCAN2.CANTOR_MAP_PARTIAL_SUM_BOUND
 def CANTOR_MAP_POS : thm := BCAN2.CANTOR_MAP_POS
@@ -4943,7 +4979,7 @@ initialize BLCR : HolMultiLib.Metric.LCR ←
     (HolMultiLib.Metric.setupLCR deps BTopology BDerived BCompact1 BHausdorff1 BMetricSpace
       BMTopology BMetricHaus BNbhdBase BTotBdd1 BMCompact2 BDIAM1 BDIM1 BCAN1).run
 
--- LCR (metric.ml 45185-45781)
+-- LCR (metric.ml 45701-46297)
 def LOCALLY_CONSTANT_REFINEMENT : thm := BLCR.LOCALLY_CONSTANT_REFINEMENT
 
 initialize BAH : HolMultiLib.Metric.AH ←
@@ -4953,7 +4989,7 @@ initialize BAH : HolMultiLib.Metric.AH ←
       BTopology BContMap1 BCompact1 BCompact2 BMetricSpace BMTopology BBounded BMetricHaus
       BMetrizable BCauchy3 BMCompact2 BDIAM1 BCAN1 BLCR).run
 
--- AH (metric.ml 45782-46186)
+-- AH (metric.ml 46298-46702)
 def ALEXANDROFF_HAUSDORFF : thm := BAH.ALEXANDROFF_HAUSDORFF
 
 initialize BDFD : HolMultiLib.Metric.DFD ←
@@ -4961,7 +4997,7 @@ initialize BDFD : HolMultiLib.Metric.DFD ←
     (HolMultiLib.Metric.setupDFD deps BMetricSpace BMTopology BConnected1 BRealTop2 BUC1 BDIAM1
       BWC2).run
 
--- DFD (metric.ml 46188-47697)
+-- DFD (metric.ml 46704-48213)
 def DENSE_FUNCTION_ON_DYADIC : thm := BDFD.DENSE_FUNCTION_ON_DYADIC
 
 initialize BNPATH : HolMultiLib.Metric.NPATH ←
@@ -4970,7 +5006,7 @@ initialize BNPATH : HolMultiLib.Metric.NPATH ←
       BMetricHaus BMetrizable BRealTop1 BRealTop2 BMCompact2 BPaths1 BPaths2 BLPC1 BLPC2 BUC1
       BCC2 BCE3 BDIAM1 BULC1 BULC4 BDFD).run
 
--- NPATH (metric.ml 47698-47974)
+-- NPATH (metric.ml 48214-48490)
 def COMPACT_LOCALLY_CONNECTED_NEARBY_PATH : thm := BNPATH.COMPACT_LOCALLY_CONNECTED_NEARBY_PATH
 def COMPACT_METRIZABLE_LOCALLY_CONNECTED_IMP_LOCALLY_PATH_CONNECTED : thm :=
   BNPATH.COMPACT_METRIZABLE_LOCALLY_CONNECTED_IMP_LOCALLY_PATH_CONNECTED
@@ -4982,7 +5018,7 @@ initialize BPGF : HolMultiLib.Metric.PGF ←
     (HolMultiLib.Metric.setupPGF deps BSubtopology BContMap1 BMetricSpace BMTopology BMetricHaus
       BMetrizable BRealTop1 BRealTop2 BMetricCont BPaths1 BPaths2 BPathComp1 BDIAM1 BNPATH).run
 
--- PGF (metric.ml 47975-49370)
+-- PGF (metric.ml 48491-49886)
 def PEANO_GAP_FILLING_EXTENSION : thm := BPGF.PEANO_GAP_FILLING_EXTENSION
 
 initialize BHM : HolMultiLib.Metric.HM ←
@@ -4992,7 +5028,7 @@ initialize BHM : HolMultiLib.Metric.HM ←
       BConnected1 BConnected3 BRegular1 BRealTop1 BRealTop2 BRealConn1 BPaths1 BLC1 BLC2 BIMB
       BURY2 BCAN1 BCAN2 BAH BPGF).run
 
--- HM (metric.ml 49371-49594)
+-- HM (metric.ml 49887-50110)
 def HAHN_MAZURKIEWICZ_IMP : thm := BHM.HAHN_MAZURKIEWICZ_IMP
 def HAHN_MAZURKIEWICZ : thm := BHM.HAHN_MAZURKIEWICZ
 def COMPACT_CONNECTED_LOCALLY_CONNECTED_IMP_PATH_CONNECTED : thm :=
@@ -5007,7 +5043,7 @@ initialize BLPCC : HolMultiLib.Metric.LPCC ←
     (HolMultiLib.Metric.setupLPCC deps BSubtopology BCompact1 BMTopology BConnected1 BNbhdBase
       BLocCompact2 BMCompact2 BPaths1 BLPC1 BLPC2 BLC1 BCMS1 BLCC BCMS2 BHM).run
 
--- LPCC (metric.ml 49595-49748)
+-- LPCC (metric.ml 50111-50264)
 def LOCALLY_COMPACT_CONNECTED_IMP_PATH_CONNECTED_SPACE : thm :=
   BLPCC.LOCALLY_COMPACT_CONNECTED_IMP_PATH_CONNECTED_SPACE
 def LOCALLY_COMPACT_LOCALLY_CONNECTED_IMP_LOCALLY_PATH_CONNECTED_SPACE : thm :=
@@ -5031,7 +5067,7 @@ initialize BKUR : HolMultiLib.Metric.KUR ←
       BHomeoSpace BCompact1 BCompact3 BSeparated BHausdorff1 BConnected1 BConnected2
       BComponents1 BComponents2 BComponents3 BHerNormal BLC1).run
 
--- KUR (metric.ml 49749-50146)
+-- KUR (metric.ml 50265-50662)
 def SEPARATION_BY_CLOSED_INTERMEDIATES_COUNT : thm :=
   BKUR.SEPARATION_BY_CLOSED_INTERMEDIATES_COUNT
 def SEPARATION_BY_CLOSED_INTERMEDIATES_GEN : thm := BKUR.SEPARATION_BY_CLOSED_INTERMEDIATES_GEN

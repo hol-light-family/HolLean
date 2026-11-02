@@ -82,7 +82,7 @@ private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α 
 initialize BCXA : HolMultiLib.Complexes.CXA ←
   ioB "setupCXA" (HolMultiLib.Complexes.setupCXA deps).run
 
--- CXA (complexes.ml 10-138)
+-- CXA (complexes.ml 10-139)
 /-- `prioritize_complex()` (complexes.ml 12). -/
 def prioritize_complex : ExceptT String IO Unit := BCXA.prioritize_complex
 def RE_DEF : thm := BCXA.RE_DEF
@@ -106,16 +106,16 @@ def complex_add : thm := BCXA.complex_add
 def complex_sub : thm := BCXA.complex_sub
 def complex_norm : thm := BCXA.complex_norm
 def COMPLEX_SQNORM : thm := BCXA.COMPLEX_SQNORM
-/-- `SIMPLE_COMPLEX_ARITH_TAC` (complexes.ml 131). -/
+/-- `SIMPLE_COMPLEX_ARITH_TAC` (complexes.ml 132). -/
 def SIMPLE_COMPLEX_ARITH_TAC : HolCore.Tactics.tactic := fun g => BCXA.SIMPLE_COMPLEX_ARITH_TAC g
-/-- `SIMPLE_COMPLEX_ARITH tm` (complexes.ml 137). -/
+/-- `SIMPLE_COMPLEX_ARITH tm` (complexes.ml 138). -/
 def SIMPLE_COMPLEX_ARITH : term → IO (Except String thm) := fun t =>
   (BCXA.SIMPLE_COMPLEX_ARITH t).run
 
 initialize BCXB : HolMultiLib.Complexes.CXB ←
   ioB "setupCXB" (HolMultiLib.Complexes.setupCXB BCXA).run
 
--- CXB (complexes.ml 140-366)
+-- CXB (complexes.ml 141-367)
 def COMPLEX_ADD_SYM : thm := BCXB.COMPLEX_ADD_SYM
 def COMPLEX_ADD_ASSOC : thm := BCXB.COMPLEX_ADD_ASSOC
 def COMPLEX_ADD_LID : thm := BCXB.COMPLEX_ADD_LID
@@ -176,7 +176,7 @@ def COMPLEX_MUL_2 : thm := BCXB.COMPLEX_MUL_2
 initialize BCXC : HolMultiLib.Complexes.CXC ←
   ioB "setupCXC" (HolMultiLib.Complexes.setupCXC deps BCXA BCXB).run
 
--- CXC (complexes.ml 368-612)
+-- CXC (complexes.ml 369-613)
 def II_NZ : thm := BCXC.II_NZ
 def COMPLEX_MUL_LINV : thm := BCXC.COMPLEX_MUL_LINV
 def COMPLEX_ENTIRE : thm := BCXC.COMPLEX_ENTIRE
@@ -230,56 +230,56 @@ def IM_DIV_CX : thm := BCXC.IM_DIV_CX
 initialize BCXD : HolMultiLib.Complexes.CXD ←
   ioB "setupCXD" (HolMultiLib.Complexes.setupCXD deps BCXA BCXB BCXC).run
 
--- CXD (complexes.ml 615-768)
-/-- `is_complex_const` (complexes.ml 618). -/
+-- CXD (complexes.ml 616-769)
+/-- `is_complex_const` (complexes.ml 619). -/
 def is_complex_const : term → Bool := fun t => BCXD.is_complex_const t
-/-- `dest_complex_const` (complexes.ml 624). -/
+/-- `dest_complex_const` (complexes.ml 625). -/
 def dest_complex_const : term → Except String Rat := fun t => BCXD.dest_complex_const t
-/-- `mk_complex_const` (complexes.ml 631). -/
+/-- `mk_complex_const` (complexes.ml 632). -/
 def mk_complex_const : Rat → Except String term := fun r => BCXD.mk_complex_const r
-/-- `COMPLEX_RAT_EQ_CONV` (complexes.ml 640). -/
+/-- `COMPLEX_RAT_EQ_CONV` (complexes.ml 641). -/
 def COMPLEX_RAT_EQ_CONV : term → IO (Except String thm) := fun t => BCXD.COMPLEX_RAT_EQ_CONV t
-/-- `COMPLEX_RAT_MUL_CONV` (complexes.ml 643). -/
+/-- `COMPLEX_RAT_MUL_CONV` (complexes.ml 644). -/
 def COMPLEX_RAT_MUL_CONV : term → IO (Except String thm) := fun t =>
   BCXD.COMPLEX_RAT_MUL_CONV t
-/-- `COMPLEX_RAT_ADD_CONV` (complexes.ml 646). -/
+/-- `COMPLEX_RAT_ADD_CONV` (complexes.ml 647). -/
 def COMPLEX_RAT_ADD_CONV : term → IO (Except String thm) := fun t =>
   BCXD.COMPLEX_RAT_ADD_CONV t
-/-- `COMPLEX_RAT_POW_CONV` (complexes.ml 649). -/
+/-- `COMPLEX_RAT_POW_CONV` (complexes.ml 650). -/
 def COMPLEX_RAT_POW_CONV : term → IO (Except String thm) := fun t =>
   BCXD.COMPLEX_RAT_POW_CONV t
 def COMPLEX_POLY_CLAUSES : thm := BCXD.COMPLEX_POLY_CLAUSES
 def COMPLEX_POLY_NEG_CLAUSES : thm := BCXD.COMPLEX_POLY_NEG_CLAUSES
-/-- `COMPLEX_POLY_NEG_CONV` (complexes.ml 683). -/
+/-- `COMPLEX_POLY_NEG_CONV` (complexes.ml 684). -/
 def COMPLEX_POLY_NEG_CONV : term → IO (Except String thm) := fun t =>
   BCXD.COMPLEX_POLY_NEG_CONV t
-/-- `COMPLEX_POLY_ADD_CONV` (complexes.ml 683). -/
+/-- `COMPLEX_POLY_ADD_CONV` (complexes.ml 684). -/
 def COMPLEX_POLY_ADD_CONV : term → IO (Except String thm) := fun t =>
   BCXD.COMPLEX_POLY_ADD_CONV t
-/-- `COMPLEX_POLY_SUB_CONV` (complexes.ml 683). -/
+/-- `COMPLEX_POLY_SUB_CONV` (complexes.ml 684). -/
 def COMPLEX_POLY_SUB_CONV : term → IO (Except String thm) := fun t =>
   BCXD.COMPLEX_POLY_SUB_CONV t
-/-- `COMPLEX_POLY_MUL_CONV` (complexes.ml 684). -/
+/-- `COMPLEX_POLY_MUL_CONV` (complexes.ml 685). -/
 def COMPLEX_POLY_MUL_CONV : term → IO (Except String thm) := fun t =>
   BCXD.COMPLEX_POLY_MUL_CONV t
-/-- `COMPLEX_POLY_POW_CONV` (complexes.ml 684). -/
+/-- `COMPLEX_POLY_POW_CONV` (complexes.ml 685). -/
 def COMPLEX_POLY_POW_CONV : term → IO (Except String thm) := fun t =>
   BCXD.COMPLEX_POLY_POW_CONV t
-/-- `COMPLEX_RAT_INV_CONV` (complexes.ml 694). -/
+/-- `COMPLEX_RAT_INV_CONV` (complexes.ml 695). -/
 def COMPLEX_RAT_INV_CONV : term → IO (Except String thm) := fun t =>
   BCXD.COMPLEX_RAT_INV_CONV t
-/-- `COMPLEX_POLY_CONV` (complexes.ml 697, the redefinition). -/
+/-- `COMPLEX_POLY_CONV` (complexes.ml 698, the redefinition). -/
 def COMPLEX_POLY_CONV : term → IO (Except String thm) := fun t => BCXD.COMPLEX_POLY_CONV t
-/-- `COMPLEX_RING` (complexes.ml 737). -/
+/-- `COMPLEX_RING` (complexes.ml 738). -/
 def COMPLEX_RING : term → IO (Except String thm) := fun t => BCXD.COMPLEX_RING t
-/-- `complex_ideal_cofactors` (complexes.ml 737). -/
+/-- `complex_ideal_cofactors` (complexes.ml 738). -/
 def complex_ideal_cofactors : List term → term → IO (Except String (List term)) :=
   fun ts t => BCXD.complex_ideal_cofactors ts t
 
 initialize BCXE : HolMultiLib.Complexes.CXE ←
   ioB "setupCXE" (HolMultiLib.Complexes.setupCXE deps BCXA BCXB BCXC BCXD).run
 
--- CXE (complexes.ml 771-893)
+-- CXE (complexes.ml 772-894)
 def COMPLEX_INV_0 : thm := BCXE.COMPLEX_INV_0
 def COMPLEX_INV_1 : thm := BCXE.COMPLEX_INV_1
 def COMPLEX_INV_MUL : thm := BCXE.COMPLEX_INV_MUL
@@ -292,13 +292,13 @@ def RE_COMPLEX_INV_GT_0 : thm := BCXE.RE_COMPLEX_INV_GT_0
 def RE_COMPLEX_INV_GE_0 : thm := BCXE.RE_COMPLEX_INV_GE_0
 def COMPLEX_EQ_MUL_LCANCEL : thm := BCXE.COMPLEX_EQ_MUL_LCANCEL
 def COMPLEX_EQ_MUL_RCANCEL : thm := BCXE.COMPLEX_EQ_MUL_RCANCEL
-/-- `COMPLEX_FIELD` (complexes.ml 846). -/
+/-- `COMPLEX_FIELD` (complexes.ml 847). -/
 def COMPLEX_FIELD : term → IO (Except String thm) := fun t => BCXE.COMPLEX_FIELD t
 
 initialize BCXF : HolMultiLib.Complexes.CXF ←
   ioB "setupCXF" (HolMultiLib.Complexes.setupCXF deps BCXA BCXB BCXC BCXE).run
 
--- CXF (complexes.ml 895-1036)
+-- CXF (complexes.ml 896-1037)
 def COMPLEX_DIV_1 : thm := BCXF.COMPLEX_DIV_1
 def COMPLEX_DIV_LMUL : thm := BCXF.COMPLEX_DIV_LMUL
 def COMPLEX_DIV_RMUL : thm := BCXF.COMPLEX_DIV_RMUL
@@ -326,7 +326,7 @@ def COMPLEX_POW_EQ_1 : thm := BCXF.COMPLEX_POW_EQ_1
 initialize BCXG : HolMultiLib.Complexes.CXG ←
   ioB "setupCXG" (HolMultiLib.Complexes.setupCXG deps BCXA BCXB BCXC BCXE BCXF).run
 
--- CXG (complexes.ml 1038-1301)
+-- CXG (complexes.ml 1039-1302)
 def cnj : thm := BCXG.cnj
 def CNJ_INJ : thm := BCXG.CNJ_INJ
 def CNJ_CNJ : thm := BCXG.CNJ_CNJ
@@ -377,7 +377,7 @@ def COMPLEX_L1_LE_NORM : thm := BCXG.COMPLEX_L1_LE_NORM
 initialize BCXH : HolMultiLib.Complexes.CXH ←
   ioB "setupCXH" (HolMultiLib.Complexes.setupCXH deps BCXA BCXB BCXC BCXD BCXF BCXG).run
 
--- CXH (complexes.ml 1303-1566)
+-- CXH (complexes.ml 1304-1567)
 def csqrt : thm := BCXH.csqrt
 def CSQRT : thm := BCXH.CSQRT
 def CX_SQRT : thm := BCXH.CX_SQRT
@@ -409,7 +409,7 @@ def COMPLEX_ORTHOGONAL_TRANSFORMATION : thm := BCXH.COMPLEX_ORTHOGONAL_TRANSFORM
 initialize BCXI : HolMultiLib.Complexes.CXI ←
   ioB "setupCXI" (HolMultiLib.Complexes.setupCXI deps BCXA BCXB BCXC BCXD BCXE BCXG).run
 
--- CXI (complexes.ml 1568-1793)
+-- CXI (complexes.ml 1569-1794)
 def RE_VSUM : thm := BCXI.RE_VSUM
 def IM_VSUM : thm := BCXI.IM_VSUM
 def VSUM_COMPLEX_LMUL : thm := BCXI.VSUM_COMPLEX_LMUL
@@ -453,7 +453,7 @@ initialize BCXJ : HolMultiLib.Complexes.CXJ ←
   ioB "setupCXJ" (HolMultiLib.Complexes.setupCXJ deps BCXA BCXB BCXC BCXD BCXE BCXF
     BCXI).run
 
--- CXJ (complexes.ml 1795-2089)
+-- CXJ (complexes.ml 1796-2090)
 def REAL_NORM : thm := BCXJ.REAL_NORM
 def REAL_NORM_POS : thm := BCXJ.REAL_NORM_POS
 def COMPLEX_NORM_VSUM_SUM_RE : thm := BCXJ.COMPLEX_NORM_VSUM_SUM_RE
@@ -477,7 +477,7 @@ def COMPLEX_POLYFUN_EQ_CONST : thm := BCXJ.COMPLEX_POLYFUN_EQ_CONST
 initialize BCXK : HolMultiLib.Complexes.CXK ←
   ioB "setupCXK" (HolMultiLib.Complexes.setupCXK deps BCXA BCXB BCXC BCXE BCXF BCXG).run
 
--- CXK (complexes.ml 2091-2249)
+-- CXK (complexes.ml 2092-2250)
 def cproduct : thm := BCXK.cproduct
 def NEUTRAL_COMPLEX_MUL : thm := BCXK.NEUTRAL_COMPLEX_MUL
 def MONOIDAL_COMPLEX_MUL : thm := BCXK.MONOIDAL_COMPLEX_MUL

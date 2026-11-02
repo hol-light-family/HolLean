@@ -80,7 +80,7 @@ structure ComplexesDeps where
 /- parts; real injection and imaginary unit; complex multiplication; various -/
 /- handy rewrites; pseudo-definitions of other general vector concepts over  -/
 /- R^2; crude tactic to automate very simple algebraic equivalences.        -/
-/- (complexes.ml 10-138)                                                     -/
+/- (complexes.ml 10-139)                                                     -/
 /- ------------------------------------------------------------------------- -/
 
 structure CXA where
@@ -127,6 +127,7 @@ def setupCXA [HolBase] (D : ComplexesDeps) : ExceptT String IO CXA := do
   new_type_abbrev "complex" (← qty "real^2")
 
   let prioritize_complex : ExceptT String IO Unit := do
+    D.cvx.prioritize_real
     overload_interface "--" (← q r"vector_neg:complex->complex")
     overload_interface "+" (← q r"vector_add:complex->complex->complex")
     overload_interface "-" (← q r"vector_sub:complex->complex->complex")
@@ -249,7 +250,7 @@ def setupCXA [HolBase] (D : ComplexesDeps) : ExceptT String IO CXA := do
 
 /- ------------------------------------------------------------------------- -/
 /- Basic algebraic properties that can be proved automatically by this.      -/
-/- (complexes.ml 140-366)                                                    -/
+/- (complexes.ml 141-367)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CXB where
@@ -561,7 +562,7 @@ def setupCXB [HolBase] (BCXA : CXA) : ExceptT String IO CXB := do
 /- powers; homomorphic embedding properties for Cx mapping; some "linear"    -/
 /- things hold for Re and Im too; an "expansion" theorem into the           -/
 /- traditional notation; real and complex parts of ii and multiples; limited -/
-/- "multiplicative" theorems for Re and Im.  (complexes.ml 368-612)          -/
+/- "multiplicative" theorems for Re and Im.  (complexes.ml 369-613)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure CXC where
@@ -883,11 +884,11 @@ def setupCXC [HolBase] (D : ComplexesDeps) (BCXA : CXA) (BCXB : CXB) :
 /- Syntax constructors etc. for complex constants; conversions for           -/
 /- arithmetic on complex constants; complex polynomial normalizer, extended  -/
 /- to handle "inv" and division by constants; complex number version of the  -/
-/- usual ring procedure.  (complexes.ml 615-768)                             -/
+/- usual ring procedure.  (complexes.ml 616-769)                             -/
 /- ------------------------------------------------------------------------- -/
 
 /-- What the redefined `COMPLEX_POLY_CONV` binds before its `let rec`
-    (complexes.ml 698-705), with the conversions it calls. -/
+    (complexes.ml 699-706), with the conversions it calls. -/
 structure ComplexPolyConvEnv where
   neg_tm : term
   inv_tm : term
@@ -900,7 +901,7 @@ structure ComplexPolyConvEnv where
   P : HolMath.Normalizer.PolynomialConvs
   COMPLEX_RAT_INV_CONV : ioconv
 
-/-- The `let rec COMPLEX_POLY_CONV tm` of complexes.ml 706-731. -/
+/-- The `let rec COMPLEX_POLY_CONV tm` of complexes.ml 707-732. -/
 partial def COMPLEX_POLY_CONV_rec [HolBase] (E : ComplexPolyConvEnv) : ioconv :=
   fun tm => ExceptT.run do
   let COMPLEX_POLY_CONV := COMPLEX_POLY_CONV_rec E
@@ -947,7 +948,7 @@ structure CXD where
   COMPLEX_POLY_MUL_CONV : ioconv
   COMPLEX_POLY_POW_CONV : ioconv
   COMPLEX_RAT_INV_CONV : ioconv
-  /-- The redefined `COMPLEX_POLY_CONV` (complexes.ml 697). -/
+  /-- The redefined `COMPLEX_POLY_CONV` (complexes.ml 698). -/
   COMPLEX_POLY_CONV : ioconv
   COMPLEX_RING : term → IO (Except String thm)
   complex_ideal_cofactors : List term → term → IO (Except String (List term))
@@ -1112,7 +1113,7 @@ def setupCXD [HolBase] (D : ComplexesDeps) (BCXA : CXA) (BCXB : CXB) (BCXC : CXC
 
 /- ------------------------------------------------------------------------- -/
 /- Most basic properties of inverses; and also field procedure.              -/
-/- (complexes.ml 771-893)                                                    -/
+/- (complexes.ml 772-894)                                                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure CXE where
@@ -1284,7 +1285,7 @@ def setupCXE [HolBase] (D : ComplexesDeps) (BCXA : CXA) (BCXB : CXB) (BCXC : CXC
            RE_COMPLEX_INV_GE_0, COMPLEX_EQ_MUL_LCANCEL, COMPLEX_EQ_MUL_RCANCEL, COMPLEX_FIELD }
 
 /- ------------------------------------------------------------------------- -/
-/- More trivial lemmas; norms (aka "moduli").  (complexes.ml 895-1036)       -/
+/- More trivial lemmas; norms (aka "moduli").  (complexes.ml 896-1037)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure CXF where
@@ -1485,7 +1486,7 @@ def setupCXF [HolBase] (D : ComplexesDeps) (BCXA : CXA) (BCXB : CXB) (BCXC : CXC
 /- ------------------------------------------------------------------------- -/
 /- Complex conjugate; conjugation is an automorphism; slightly ad hoc        -/
 /- theorems relating multiplication, inverse and conjugation; norm versus    -/
-/- components for complex numbers.  (complexes.ml 1038-1301)                 -/
+/- components for complex numbers.  (complexes.ml 1039-1302)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure CXG where
@@ -1834,7 +1835,7 @@ def setupCXG [HolBase] (D : ComplexesDeps) (BCXA : CXA) (BCXB : CXB) (BCXC : CXC
 
 /- ------------------------------------------------------------------------- -/
 /- Complex square roots; a few more complex-specific cases of vector notions. -/
-/- (complexes.ml 1303-1566)                                                  -/
+/- (complexes.ml 1304-1567)                                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure CXH where
@@ -2178,7 +2179,7 @@ def setupCXH [HolBase] (D : ComplexesDeps) (BCXA : CXA) (BCXB : CXB) (BCXC : CXC
 
 /- ------------------------------------------------------------------------- -/
 /- Complex-specific theorems about sums; the complex numbers that are real   -/
-/- (zero imaginary part).  (complexes.ml 1568-1793)                          -/
+/- (zero imaginary part).  (complexes.ml 1569-1794)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure CXI where
@@ -2488,7 +2489,7 @@ def setupCXI [HolBase] (D : ComplexesDeps) (BCXA : CXA) (BCXB : CXB) (BCXC : CXC
 /- ------------------------------------------------------------------------- -/
 /- Useful bound-type theorems for real quantities; geometric progression;    -/
 /- basics about polynomial functions: extremal behaviour and root counts.    -/
-/- (complexes.ml 1795-2089)                                                  -/
+/- (complexes.ml 1796-2090)                                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure CXJ where
@@ -2854,7 +2855,7 @@ def setupCXJ [HolBase] (D : ComplexesDeps) (BCXA : CXA) (BCXB : CXB) (BCXC : CXC
            COMPLEX_POLYFUN_FINITE_ROOTS, COMPLEX_POLYFUN_EQ_0, COMPLEX_POLYFUN_EQ_CONST }
 
 /- ------------------------------------------------------------------------- -/
-/- Complex products.  (complexes.ml 2091-2249)                               -/
+/- Complex products.  (complexes.ml 2092-2250)                               -/
 /- ------------------------------------------------------------------------- -/
 
 structure CXK where

@@ -668,7 +668,7 @@ private def cutState : HolCore.Meson.folState × HolCore.Meson.tup :=
 
 -- Functions that were translated but not bound in Session under their OCaml
 -- names (ORDERED_REWR_CONV, CONJ_ACI_RULE, DISJ_ACI_RULE, GABS_CONV,
--- LIST_INDUCT_TAC), or not translated at all (sets.ml 3872-3886: dest_setenum,
+-- LIST_INDUCT_TAC), or not translated at all (sets.ml 4030-4044: dest_setenum,
 -- is_setenum, mk_setenum, mk_fset).  Expected results are the Help/*.hlp
 -- examples, checked against real HOL Light by tools/hlpdiff.
 #eval (do

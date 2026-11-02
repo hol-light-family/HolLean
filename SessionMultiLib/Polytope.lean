@@ -153,6 +153,7 @@ def qpth : HolMultiLib.Polytope.QPthThms :=
 
 /-- Everything HolMultiLib.Polytope needs from the session. -/
 def deps : HolMultiLib.Polytope.PolytopeDeps where
+  prioritize_real := Session.prioritize_real
   cvx := SessionMultiLib.Convex.deps
   WF_INDUCT_TAC := Session.WF_INDUCT_TAC
   prove_recursive_functions_exist ax t := ExceptT.mk (Session.prove_recursive_functions_exist ax t)
@@ -179,7 +180,7 @@ private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α 
 initialize BPOA : HolMultiLib.Polytope.POA ←
   ioB "setupPOA" (HolMultiLib.Polytope.setupPOA deps).run
 
--- POA (polytope.ml 1-409)
+-- POA (polytope.ml 1-410)
 def face_of : thm := BPOA.face_of
 def FACE_OF_TRANSLATION_EQ : thm := BPOA.FACE_OF_TRANSLATION_EQ
 def FACE_OF_LINEAR_IMAGE : thm := BPOA.FACE_OF_LINEAR_IMAGE
@@ -219,7 +220,7 @@ def FACE_OF_AFF_DIM_LT : thm := BPOA.FACE_OF_AFF_DIM_LT
 initialize BPOB : HolMultiLib.Polytope.POB ←
   ioB "setupPOB" (HolMultiLib.Polytope.setupPOB deps BPOA).run
 
--- POB (polytope.ml 410-783)
+-- POB (polytope.ml 411-784)
 def FACE_OF_CONVEX_HULLS : thm := BPOB.FACE_OF_CONVEX_HULLS
 def FACE_OF_CONVEX_HULL_INSERT : thm := BPOB.FACE_OF_CONVEX_HULL_INSERT
 def FACE_OF_AFFINE_TRIVIAL : thm := BPOB.FACE_OF_AFFINE_TRIVIAL
@@ -230,7 +231,7 @@ def INTERS_FACES_FINITE_ALTBOUND : thm := BPOB.INTERS_FACES_FINITE_ALTBOUND
 initialize BPOC : HolMultiLib.Polytope.POC ←
   ioB "setupPOC" (HolMultiLib.Polytope.setupPOC deps BPOA BPOB).run
 
--- POC (polytope.ml 784-1183)
+-- POC (polytope.ml 785-1184)
 def FACES_OF_TRANSLATION : thm := BPOC.FACES_OF_TRANSLATION
 def FACES_OF_LINEAR_IMAGE : thm := BPOC.FACES_OF_LINEAR_IMAGE
 def FACE_OF_CONIC : thm := BPOC.FACE_OF_CONIC
@@ -256,7 +257,7 @@ def FACE_OF_INTER_AS_INTER_OF_FACE : thm := BPOC.FACE_OF_INTER_AS_INTER_OF_FACE
 initialize BPOD : HolMultiLib.Polytope.POD ←
   ioB "setupPOD" (HolMultiLib.Polytope.setupPOD deps BPOA BPOB).run
 
--- POD (polytope.ml 1182-1482)
+-- POD (polytope.ml 1183-1483)
 def exposed_face_of : thm := BPOD.exposed_face_of
 def EXPOSED_FACE_OF_IMP_FACE_OF : thm := BPOD.EXPOSED_FACE_OF_IMP_FACE_OF
 def EMPTY_EXPOSED_FACE_OF : thm := BPOD.EMPTY_EXPOSED_FACE_OF
@@ -276,7 +277,7 @@ def RELATIVE_BOUNDARY_POINT_IN_EXPOSED_FACE : thm := BPOD.RELATIVE_BOUNDARY_POIN
 initialize BPOE : HolMultiLib.Polytope.POE ←
   ioB "setupPOE" (HolMultiLib.Polytope.setupPOE deps BPOA BPOB BPOC BPOD).run
 
--- POE (polytope.ml 1482-1960)
+-- POE (polytope.ml 1483-1961)
 def extreme_point_of : thm := BPOE.extreme_point_of
 def EXTREME_POINT_RELATIVE_FRONTIER : thm := BPOE.EXTREME_POINT_RELATIVE_FRONTIER
 def EXTREME_POINT_OF_STILLCONVEX_IMP : thm := BPOE.EXTREME_POINT_OF_STILLCONVEX_IMP
@@ -317,7 +318,7 @@ def EXTREME_POINT_OF_CBALL : thm := BPOE.EXTREME_POINT_OF_CBALL
 initialize BPOF : HolMultiLib.Polytope.POF ←
   ioB "setupPOF" (HolMultiLib.Polytope.setupPOF deps BPOE).run
 
--- POF (polytope.ml 1959-2613)
+-- POF (polytope.ml 1960-2614)
 def CLOSED_IN_CONIC_HULL : thm := BPOF.CLOSED_IN_CONIC_HULL
 def CLOSED_CONIC_HULL : thm := BPOF.CLOSED_CONIC_HULL
 def CONIC_CLOSURE : thm := BPOF.CONIC_CLOSURE
@@ -344,7 +345,7 @@ def RELATIVE_INTERIOR_CONIC_HULL_0 : thm := BPOF.RELATIVE_INTERIOR_CONIC_HULL_0
 initialize BPOG : HolMultiLib.Polytope.POG ←
   ioB "setupPOG" (HolMultiLib.Polytope.setupPOG deps BPOA BPOC BPOD BPOE BPOF).run
 
--- POG (polytope.ml 2614-3052)
+-- POG (polytope.ml 2615-3053)
 def facet_of : thm := BPOG.facet_of
 def FACET_OF_EMPTY : thm := BPOG.FACET_OF_EMPTY
 def FACET_OF_REFL : thm := BPOG.FACET_OF_REFL
@@ -372,7 +373,7 @@ def KREIN_MILMAN_EQ : thm := BPOG.KREIN_MILMAN_EQ
 initialize BPOH : HolMultiLib.Polytope.POH ←
   ioB "setupPOH" (HolMultiLib.Polytope.setupPOH deps BPOA BPOB BPOE BPOG).run
 
--- POH (polytope.ml 3052-3691)
+-- POH (polytope.ml 3053-3692)
 def KREIN_MILMAN_POLYTOPE : thm := BPOH.KREIN_MILMAN_POLYTOPE
 def EXTREME_POINTS_OF_CONVEX_HULL_EQ : thm := BPOH.EXTREME_POINTS_OF_CONVEX_HULL_EQ
 def EXTREME_POINT_OF_CONVEX_HULL_EQ : thm := BPOH.EXTREME_POINT_OF_CONVEX_HULL_EQ
@@ -400,7 +401,7 @@ def HAUSDIST_FRONTIERS_CONVEX : thm := BPOH.HAUSDIST_FRONTIERS_CONVEX
 initialize BPOI : HolMultiLib.Polytope.POI ←
   ioB "setupPOI" (HolMultiLib.Polytope.setupPOI deps BPOF).run
 
--- POI (polytope.ml 3691-4033)
+-- POI (polytope.ml 3692-4034)
 def HAUSDIST_STILL_OUTSIDE : thm := BPOI.HAUSDIST_STILL_OUTSIDE
 def HAUSDIST_STILL_INSIDE : thm := BPOI.HAUSDIST_STILL_INSIDE
 def HAUSDIST_STILL_INSIDE_INTERIOR : thm := BPOI.HAUSDIST_STILL_INSIDE_INTERIOR
@@ -414,7 +415,7 @@ def CONVEX_SYMDIFF_CLOSE_TO_FRONTIER : thm := BPOI.CONVEX_SYMDIFF_CLOSE_TO_FRONT
 initialize BPOJ : HolMultiLib.Polytope.POJ ←
   ioB "setupPOJ" (HolMultiLib.Polytope.setupPOJ deps BPOG BPOH).run
 
--- POJ (polytope.ml 4033-4498)
+-- POJ (polytope.ml 4034-4499)
 def polytope : thm := BPOJ.polytope
 def POLYTOPE_TRANSLATION_EQ : thm := BPOJ.POLYTOPE_TRANSLATION_EQ
 def POLYTOPE_LINEAR_IMAGE : thm := BPOJ.POLYTOPE_LINEAR_IMAGE
@@ -463,7 +464,7 @@ def POLYHEDRON_AFFINE_HULL : thm := BPOJ.POLYHEDRON_AFFINE_HULL
 initialize BPOK : HolMultiLib.Polytope.POK ←
   ioB "setupPOK" (HolMultiLib.Polytope.setupPOK deps BPOA BPOB BPOG BPOJ).run
 
--- POK (polytope.ml 4498-5186)
+-- POK (polytope.ml 4499-5187)
 def POLYHEDRON_INTER_AFFINE : thm := BPOK.POLYHEDRON_INTER_AFFINE
 def POLYHEDRON_INTER_AFFINE_PARALLEL : thm := BPOK.POLYHEDRON_INTER_AFFINE_PARALLEL
 def POLYHEDRON_INTER_AFFINE_PARALLEL_MINIMAL : thm := BPOK.POLYHEDRON_INTER_AFFINE_PARALLEL_MINIMAL
@@ -476,7 +477,7 @@ def FACE_OF_POLYHEDRON_EXPLICIT : thm := BPOK.FACE_OF_POLYHEDRON_EXPLICIT
 initialize BPOL : HolMultiLib.Polytope.POL ←
   ioB "setupPOL" (HolMultiLib.Polytope.setupPOL deps BPOA BPOC BPOD BPOE BPOG BPOJ BPOK).run
 
--- POL (polytope.ml 5186-5566)
+-- POL (polytope.ml 5187-5567)
 def FACET_OF_POLYHEDRON : thm := BPOL.FACET_OF_POLYHEDRON
 def FACE_OF_POLYHEDRON : thm := BPOL.FACE_OF_POLYHEDRON
 def FACE_OF_POLYHEDRON_SUBSET_FACET : thm := BPOL.FACE_OF_POLYHEDRON_SUBSET_FACET
@@ -498,7 +499,7 @@ def POLYHEDRON : thm := BPOL.POLYHEDRON
 initialize BPOM : HolMultiLib.Polytope.POM ←
   ioB "setupPOM" (HolMultiLib.Polytope.setupPOM deps BPOA BPOD BPOE BPOG BPOJ BPOL).run
 
--- POM (polytope.ml 5566-5964)
+-- POM (polytope.ml 5567-5965)
 def POLYHEDRON_EQ_FINITE_EXPOSED_FACES : thm := BPOM.POLYHEDRON_EQ_FINITE_EXPOSED_FACES
 def POLYHEDRON_EQ_FINITE_FACES : thm := BPOM.POLYHEDRON_EQ_FINITE_FACES
 def POLYHEDRON_TRANSLATION_EQ : thm := BPOM.POLYHEDRON_TRANSLATION_EQ
@@ -518,7 +519,7 @@ def POLYTOPE_UNION_CONVEX_HULL_FACETS : thm := BPOM.POLYTOPE_UNION_CONVEX_HULL_F
 initialize BPON : HolMultiLib.Polytope.PON ←
   ioB "setupPON" (HolMultiLib.Polytope.setupPON deps BPOF BPOJ BPOM).run
 
--- PON (polytope.ml 5964-6193)
+-- PON (polytope.ml 5965-6194)
 def POLYHEDRON_CONVEX_CONE_HULL : thm := BPON.POLYHEDRON_CONVEX_CONE_HULL
 def CLOSED_CONVEX_CONE_HULL : thm := BPON.CLOSED_CONVEX_CONE_HULL
 def POLYHEDRON_CONVEX_CONE_HULL_POLYTOPE : thm := BPON.POLYHEDRON_CONVEX_CONE_HULL_POLYTOPE
@@ -530,7 +531,7 @@ def FINITELY_GENERATED_CONIC_POLYHEDRON : thm := BPON.FINITELY_GENERATED_CONIC_P
 initialize BPOO : HolMultiLib.Polytope.POO ←
   ioB "setupPOO" (HolMultiLib.Polytope.setupPOO deps BPOD BPOJ BPOL BPOM BPON).run
 
--- POO (polytope.ml 6193-6474)
+-- POO (polytope.ml 6194-6475)
 def POLYHEDRON_POLYTOPE_SUMS : thm := BPOO.POLYHEDRON_POLYTOPE_SUMS
 def POLYHEDRON_AS_CONE_PLUS_CONV : thm := BPOO.POLYHEDRON_AS_CONE_PLUS_CONV
 def POLYHEDRON_LINEAR_IMAGE : thm := BPOO.POLYHEDRON_LINEAR_IMAGE
@@ -540,7 +541,7 @@ def POLYHEDRAL_CONVEX_CONE : thm := BPOO.POLYHEDRAL_CONVEX_CONE
 initialize BPOP : HolMultiLib.Polytope.POP ←
   ioB "setupPOP" (HolMultiLib.Polytope.setupPOP deps BPOH BPOJ BPOL BPOM BPOO).run
 
--- POP (polytope.ml 6474-6836)
+-- POP (polytope.ml 6475-6837)
 def FARKAS_LEMMA : thm := BPOP.FARKAS_LEMMA
 def FARKAS_LEMMA_ALT : thm := BPOP.FARKAS_LEMMA_ALT
 def SEPARATING_HYPERPLANE_POLYHEDRA : thm := BPOP.SEPARATING_HYPERPLANE_POLYHEDRA
@@ -555,20 +556,20 @@ def INTERIOR_OF_TRIANGLE : thm := BPOP.INTERIOR_OF_TRIANGLE
 initialize BPOQ : HolMultiLib.Polytope.POQ ←
   ioB "setupPOQ" (HolMultiLib.Polytope.setupPOQ deps BPOA BPOG BPOJ BPOK BPOL).run
 
--- POQ (polytope.ml 6836-7218)
+-- POQ (polytope.ml 6837-7219)
 def POLYHEDRON_RIDGE_TWO_FACETS : thm := BPOQ.POLYHEDRON_RIDGE_TWO_FACETS
 
 initialize BPOR : HolMultiLib.Polytope.POR ←
   ioB "setupPOR" (HolMultiLib.Polytope.setupPOR deps BPOG BPOJ BPOK BPOL BPOM).run
 
--- POR (polytope.ml 7218-7358)
+-- POR (polytope.ml 7219-7359)
 def POLYTOPE_VERTEX_LOWER_BOUND : thm := BPOR.POLYTOPE_VERTEX_LOWER_BOUND
 def POLYTOPE_FACET_LOWER_BOUND : thm := BPOR.POLYTOPE_FACET_LOWER_BOUND
 
 initialize BPOS : HolMultiLib.Polytope.POS ←
   ioB "setupPOS" (HolMultiLib.Polytope.setupPOS deps BPOB BPOE BPOG BPOH BPOJ BPOM).run
 
--- POS (polytope.ml 7358-7758)
+-- POS (polytope.ml 7359-7759)
 def simplex : thm := BPOS.simplex
 def SIMPLEX_TRANSLATION_EQ : thm := BPOS.SIMPLEX_TRANSLATION_EQ
 def SIMPLEX_LINEAR_IMAGE_EQ : thm := BPOS.SIMPLEX_LINEAR_IMAGE_EQ
@@ -610,7 +611,7 @@ def SIMPLEX_EXTREME_POINTS_NONEMPTY : thm := BPOS.SIMPLEX_EXTREME_POINTS_NONEMPT
 initialize BPOT : HolMultiLib.Polytope.POT ←
   ioB "setupPOT" (HolMultiLib.Polytope.setupPOT deps BPOA BPOC BPOE BPOG BPOJ BPOS).run
 
--- POT (polytope.ml 7758-7974)
+-- POT (polytope.ml 7759-7975)
 def simplicial_complex : thm := BPOT.simplicial_complex
 def triangulation : thm := BPOT.triangulation
 def SIMPLICIAL_COMPLEX_TRANSLATION : thm := BPOT.SIMPLICIAL_COMPLEX_TRANSLATION
@@ -633,13 +634,13 @@ def TRIANGULATION_SUBFACES : thm := BPOT.TRIANGULATION_SUBFACES
 initialize BPOU : HolMultiLib.Polytope.POU ←
   ioB "setupPOU" (HolMultiLib.Polytope.setupPOU deps BPOA BPOC BPOJ BPOM).run
 
--- POU (polytope.ml 7974-8131)
+-- POU (polytope.ml 7975-8132)
 def CELL_COMPLEX_SUBDIVISION_EXISTS : thm := BPOU.CELL_COMPLEX_SUBDIVISION_EXISTS
 
 initialize BPOV : HolMultiLib.Polytope.POV ←
   ioB "setupPOV" (HolMultiLib.Polytope.setupPOV deps BPOA BPOH BPOJ BPOL BPOM BPOS BPOT BPOU).run
 
--- POV (polytope.ml 8131-8780)
+-- POV (polytope.ml 8132-8781)
 def SIMPLICIAL_SUBDIVISION_OF_CELL_COMPLEX_LOWDIM : thm := BPOV.SIMPLICIAL_SUBDIVISION_OF_CELL_COMPLEX_LOWDIM
 def SIMPLICIAL_SUBDIVISION_OF_CELL_COMPLEX : thm := BPOV.SIMPLICIAL_SUBDIVISION_OF_CELL_COMPLEX
 def FINE_SIMPLICIAL_SUBDIVISION_OF_CELL_COMPLEX : thm := BPOV.FINE_SIMPLICIAL_SUBDIVISION_OF_CELL_COMPLEX
@@ -647,7 +648,7 @@ def FINE_SIMPLICIAL_SUBDIVISION_OF_CELL_COMPLEX : thm := BPOV.FINE_SIMPLICIAL_SU
 initialize BPOW : HolMultiLib.Polytope.POW ←
   ioB "setupPOW" (HolMultiLib.Polytope.setupPOW deps BPOJ BPOS BPOT BPOV).run
 
--- POW (polytope.ml 8780-8940)
+-- POW (polytope.ml 8781-8941)
 def REGULAR_CLOSED_UNIONS_FAT_CELLS_UNIV : thm := BPOW.REGULAR_CLOSED_UNIONS_FAT_CELLS_UNIV
 def CONVEX_UNIONS_FULLDIM_CELLS : thm := BPOW.CONVEX_UNIONS_FULLDIM_CELLS
 def TRIANGULAR_SUBDIVISION_OF_CELL_COMPLEX : thm := BPOW.TRIANGULAR_SUBDIVISION_OF_CELL_COMPLEX

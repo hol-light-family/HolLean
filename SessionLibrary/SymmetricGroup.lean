@@ -48,6 +48,9 @@ def core1 : HolLibrary.SymmetricGroup.CoreThms1 where
   DIVIDES_REFL := SessionLibrary.Prime.«DIVIDES_REFL»
   DIV_1 := Session.DIV_1
   EQ_TRANS := Session.EQ_TRANS
+  EVEN := Session.EVEN
+  EVENPERM_COMPOSE := SessionLibrary.Permutations.«EVENPERM_COMPOSE»
+  EVENPERM_I := SessionLibrary.Permutations.«EVENPERM_I»
   EXTENSION := Session.EXTENSION
   FINITE_DELETE := Session.FINITE_DELETE
   FINITE_EMPTY := Session.FINITE_EMPTY
@@ -66,6 +69,7 @@ def core1 : HolLibrary.SymmetricGroup.CoreThms1 where
   GROUP_HOMOMORPHISM := SessionLibrary.GroupTheory.«GROUP_HOMOMORPHISM»
   GROUP_ID := SessionLibrary.GroupTheory.«GROUP_ID»
   GROUP_INV := SessionLibrary.GroupTheory.«GROUP_INV»
+  GROUP_ISOMORPHISM := SessionLibrary.GroupTheory.«GROUP_ISOMORPHISM»
   GROUP_ISOMORPHISM_ONTO_IMAGE := SessionLibrary.GroupTheory.«GROUP_ISOMORPHISM_ONTO_IMAGE»
   GROUP_MONOMORPHISM_ALT := SessionLibrary.GroupTheory.«GROUP_MONOMORPHISM_ALT»
   GROUP_MONOMORPHISM_IMP_HOMOMORPHISM := SessionLibrary.GroupTheory.«GROUP_MONOMORPHISM_IMP_HOMOMORPHISM»
@@ -103,6 +107,8 @@ def core2 : HolLibrary.SymmetricGroup.CoreThms2 where
   ONE := Session.ONE
   ORBIT_STABILIZER_MUL := SessionLibrary.GroupTheory.«ORBIT_STABILIZER_MUL»
   PAIR_EQ := Session.PAIR_EQ
+  PERMUTATION_COMPOSE := SessionLibrary.Permutations.«PERMUTATION_COMPOSE»
+  PERMUTATION_I := SessionLibrary.Permutations.«PERMUTATION_I»
   PERMUTES_COMPOSE := SessionLibrary.Permutations.«PERMUTES_COMPOSE»
   PERMUTES_I := SessionLibrary.Permutations.«PERMUTES_I»
   PERMUTES_INDUCT_STRONG := SessionLibrary.Permutations.«PERMUTES_INDUCT_STRONG»
@@ -127,6 +133,7 @@ def core2 : HolLibrary.SymmetricGroup.CoreThms2 where
   SUBGROUP_OF_IMP_SUBSET := SessionLibrary.GroupTheory.«SUBGROUP_OF_IMP_SUBSET»
   SUBGROUP_OF_SUBGROUP_GENERATED_SUBGROUP_EQ := SessionLibrary.GroupTheory.«SUBGROUP_OF_SUBGROUP_GENERATED_SUBGROUP_EQ»
   SUBSET := Session.SUBSET
+  SUBSET_ANTISYM := Session.SUBSET_ANTISYM
   SUBSET_ANTISYM_EQ := Session.SUBSET_ANTISYM_EQ
   SWAP_CONJUGATE := SessionLibrary.Permutations.«SWAP_CONJUGATE»
   SWAP_REFL := SessionLibrary.Permutations.«SWAP_REFL»
@@ -136,18 +143,22 @@ def core2 : HolLibrary.SymmetricGroup.CoreThms2 where
   THREE_CYCLE_COMMUTATOR := SessionLibrary.Permutations.«THREE_CYCLE_COMMUTATOR»
   THREE_CYCLE_NOT_I := SessionLibrary.Permutations.«THREE_CYCLE_NOT_I»
   divides := Session.divides
+  evenperm := SessionLibrary.Permutations.«evenperm»
   group_action := SessionLibrary.GroupTheory.«group_action»
   group_carrier := SessionLibrary.GroupTheory.«group_carrier»
   group_conjugation := SessionLibrary.GroupTheory.«group_conjugation»
   group_homomorphism := SessionLibrary.GroupTheory.«group_homomorphism»
   group_id := SessionLibrary.GroupTheory.«group_id»
+  group_image := SessionLibrary.GroupTheory.«group_image»
   group_inv := SessionLibrary.GroupTheory.«group_inv»
+  group_monomorphism := SessionLibrary.GroupTheory.«group_monomorphism»
   group_mul := SessionLibrary.GroupTheory.«group_mul»
   group_pow := SessionLibrary.GroupTheory.«group_pow»
   group_tybij := SessionLibrary.GroupTheory.«group_tybij»
   isomorphic_group := SessionLibrary.GroupTheory.«isomorphic_group»
   o_ASSOC := Session.o_ASSOC
   o_THM := Session.o_THM
+  permutation := SessionLibrary.Permutations.«permutation»
   prime := Session.prime
   solvable_group := SessionLibrary.GroupTheory.«solvable_group»
   subgroup_of := SessionLibrary.GroupTheory.«subgroup_of»
@@ -229,6 +240,7 @@ def ALL_TRANSPOSITIONS_GENERATE_SYMMETRIC : thm := BTranspositions.ALL_TRANSPOSI
 -- PcycleMachinery
 def SYMMETRIC_GROUP_POW : thm := BPcycleMachinery.SYMMETRIC_GROUP_POW
 def SYMMETRIC_GROUP_POW_IN : thm := BPcycleMachinery.SYMMETRIC_GROUP_POW_IN
+def EVENPERM_GROUP_POW : thm := BPcycleMachinery.EVENPERM_GROUP_POW
 def PRIME_ORDER_PERM_NO_FIXPOINT : thm := BPcycleMachinery.PRIME_ORDER_PERM_NO_FIXPOINT
 
 -- PowOrbit
@@ -241,6 +253,7 @@ def TRANSPOSITION_PCYCLE_GENERATES : thm := BSwapGen.TRANSPOSITION_PCYCLE_GENERA
 
 -- Transitive
 def TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC : thm := BTransitive.TRANSITIVE_TRANSPOSITION_GENERATES_SYMMETRIC
+def TRANSITIVE_TRANSPOSITION_SYMMETRIC_ISOMORPHISM : thm := BTransitive.TRANSITIVE_TRANSPOSITION_SYMMETRIC_ISOMORPHISM
 /-- `needs "Library/symmetric_group.ml"`: already done by importing this module. -/
 def ensureSymmetricGroup : IO Unit := pure ()
 

@@ -18,7 +18,7 @@
   hypothesis and then instantiated.
 
   `prioritize_num`/`prioritize_real` calls bracket the file and set which type
-  a bare numeral gets at parse time: the real half (iterate.ml 1982-3111,
+  a bare numeral gets at parse time: the real half (iterate.ml 2087-3216,
   `sum` through `polynomial_function`) parses numerals as `:real`, and line
   3112 restores `:num` for later files.  The one parser declaration is
   `parse_as_infix("..",(15,"right"))` (iterate.ml 16), the segment notation
@@ -133,10 +133,16 @@ structure IterateSegments where
       `!m n p q. (m..n) SUBSET (p..q) <=> n < m \/ p <= m /\ n <= q`.
       `EQ_TAC THENL [MESON_TAC[..]; ARITH_TAC]` - TWO goals, TWO branches. -/
   SUBSET_NUMSEG : thm
-  /-- `NUMSEG_LE` (iterate.ml 161): `!n. {x | x <= n} = 0..n`.  The first of
-      the comprehension-equivalence pair (iterate.ml 158-171). -/
+  /-- `UPWARD_CLOSED_NUMSEG` (iterate.ml @157): an upward-closed subset of
+      `1..s` is the final segment `((s + 1) - CARD S)..s`. -/
+  UPWARD_CLOSED_NUMSEG : thm
+  /-- `UPWARD_CLOSED_NUMSEG_EQ` (iterate.ml @184): two upward-closed subsets of
+      `1..s` with the same cardinality are equal. -/
+  UPWARD_CLOSED_NUMSEG_EQ : thm
+  /-- `NUMSEG_LE` (iterate.ml 199): `!n. {x | x <= n} = 0..n`.  The first of
+      the comprehension-equivalence pair (iterate.ml 196-209). -/
   NUMSEG_LE : thm
-  /-- `NUMSEG_LT` (iterate.ml 165):
+  /-- `NUMSEG_LT` (iterate.ml 203):
       `!n. {x | x < n} = if n = 0 then {} else 0..(n-1)`. -/
   NUMSEG_LT : thm
   deriving Inhabited
@@ -154,7 +160,8 @@ def setupIterateSegments [HolBase]
      FINITE_SUBSET FINITE_NUMSEG_LE FINITE_INDUCT_STRONG FINITE_IMAGE
      CARD_EQ_BIJECTIONS
      LE_0 LE_CASES LE_REFL LE_TRANS NOT_LE SUC_SUB1 ADD_CLAUSES
-     LE_EXISTS LEFT_IMP_EXISTS_THM ARITH MONO_EXISTS : thm) :
+     LE_EXISTS LEFT_IMP_EXISTS_THM ARITH MONO_EXISTS : thm)
+    (num_WOP MEMBER_NOT_EMPTY NOT_LT : thm) :
     ExceptT String IO IterateSegments := do
   let new_definition (s : String) : ExceptT String IO thm := do
     new_definition' (← q s)
@@ -301,6 +308,44 @@ def setupIterateSegments [HolBase]
    (REPEAT GEN_TAC THEN REWRITE_TAC [SUBSET, IN_NUMSEG] THEN
     EQ_TAC THENL [MESON_TAC [LE_TRANS, NOT_LE, LE_REFL], ARITH_TAC])
 
+  let UPWARD_CLOSED_NUMSEG ← prove
+   r"!s S. S SUBSET 1..s /\ (!i j. i IN S /\ i <= j /\ j <= s ==> j IN S)
+         ==> S = ((s + 1) - CARD S)..s"
+   (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"S:num->bool = {}") THENL
+     [ASM_REWRITE_TAC [CARD_CLAUSES] THEN CONV_TAC SYM_CONV THEN
+      REWRITE_TAC [NUMSEG_EMPTY] THEN ARITH_TAC,
+      ALL_TAC] THEN
+    MP_TAC (← ISPEC (← q r"\j:num. j IN S") num_WOP) THEN
+    REWRITE_TAC [] THEN ASM_REWRITE_TAC [MEMBER_NOT_EMPTY] THEN
+    DISCH_THEN (X_CHOOSE_THEN (← q r"m:num") STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN (← q r"1 <= m /\ m <= s") STRIP_ASSUME_TAC THENL
+     [UNDISCH_TAC (← q r"S SUBSET 1..s") THEN REWRITE_TAC [SUBSET, IN_NUMSEG] THEN
+      ASM_MESON_TAC [],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"S = m..s") ASSUME_TAC THENL
+     [REWRITE_TAC [EXTENSION, IN_NUMSEG] THEN X_GEN_TAC (← q r"j:num") THEN
+      EQ_TAC THENL
+       [DISCH_TAC THEN CONJ_TAC THENL
+         [ASM_MESON_TAC [NOT_LT],
+          UNDISCH_TAC (← q r"S SUBSET 1..s") THEN REWRITE_TAC [SUBSET, IN_NUMSEG] THEN
+          ASM_MESON_TAC []],
+        STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+        EXISTS_TAC (← q r"m:num") THEN ASM_REWRITE_TAC []],
+      ALL_TAC] THEN
+    ASM_REWRITE_TAC [CARD_NUMSEG] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+    ASM_ARITH_TAC)
+
+  let UPWARD_CLOSED_NUMSEG_EQ ← prove
+   r"!s U V.
+        U SUBSET 1..s /\ (!i j. i IN U /\ i <= j /\ j <= s ==> j IN U) /\
+        V SUBSET 1..s /\ (!i j. i IN V /\ i <= j /\ j <= s ==> j IN V) /\
+        CARD U = CARD V
+        ==> U = V"
+   (REPEAT STRIP_TAC THEN
+    MP_TAC (← SPECL [← q r"s:num", ← q r"V:num->bool"] UPWARD_CLOSED_NUMSEG) THEN
+    MP_TAC (← SPECL [← q r"s:num", ← q r"U:num->bool"] UPWARD_CLOSED_NUMSEG) THEN
+    ASM_REWRITE_TAC [] THEN MESON_TAC [])
+
   /- ---------------------------------------------------------------------- -/
   /- Equivalence with the more ad-hoc comprehension notation.               -/
   /- ---------------------------------------------------------------------- -/
@@ -321,30 +366,31 @@ def setupIterateSegments [HolBase]
     EMPTY_NUMSEG, FINITE_SUBSET_NUMSEG, CARD_NUMSEG_LEMMA, CARD_NUMSEG,
     HAS_SIZE_NUMSEG, CARD_NUMSEG_1, HAS_SIZE_NUMSEG_1, NUMSEG_CLAUSES,
     FINITE_INDEX_NUMSEG, FINITE_INDEX_NUMBERS, INTER_NUMSEG, DISJOINT_NUMSEG,
-    NUMSEG_ADD_SPLIT, NUMSEG_OFFSET_IMAGE, SUBSET_NUMSEG, NUMSEG_LE, NUMSEG_LT }
+    NUMSEG_ADD_SPLIT, NUMSEG_OFFSET_IMAGE, SUBSET_NUMSEG, UPWARD_CLOSED_NUMSEG,
+    UPWARD_CLOSED_NUMSEG_EQ, NUMSEG_LE, NUMSEG_LT }
 
 /- ---------------------------------------------------------------------- -/
 /- Conversion to evaluate m..n for specific numerals.                     -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The three `MESON` lemmas of `NUMSEG_CONV` (iterate.ml 176-178), exposed so
+/-- The three `MESON` lemmas of `NUMSEG_CONV` (iterate.ml 214-216), exposed so
     a later behavioural check of the conversion has its raw material.  These
     ARE theorems; the conversion built from them (below) is NOT. -/
 structure NumsegConvPths where
-  /-- `pth_0` (iterate.ml 176): `MESON[NUMSEG_EMPTY] \`n < m ==> m..n = {}\``. -/
+  /-- `pth_0` (iterate.ml 214): `MESON[NUMSEG_EMPTY] \`n < m ==> m..n = {}\``. -/
   pth_0 : thm
-  /-- `pth_1` (iterate.ml 177): `MESON[NUMSEG_SING] \`m..m = {m}\``. -/
+  /-- `pth_1` (iterate.ml 215): `MESON[NUMSEG_SING] \`m..m = {m}\``. -/
   pth_1 : thm
-  /-- `pth_2` (iterate.ml 178):
+  /-- `pth_2` (iterate.ml 216):
       `MESON[NUMSEG_LREC; ADD1] \`m <= n ==> m..n = m INSERT (SUC m..n)\``. -/
   pth_2 : thm
-  /-- `ns_tm = \`(..)\``, `m_tm = \`m:num\``, `n_tm = \`n:num\`` (iterate.ml 179). -/
+  /-- `ns_tm = \`(..)\``, `m_tm = \`m:num\``, `n_tm = \`n:num\`` (iterate.ml 217). -/
   ns_tm : term
   m_tm : term
   n_tm : term
   deriving Inhabited
 
-/-- `pth_0`, `pth_1` and `pth_2` of `NUMSEG_CONV` (iterate.ml 175-177). -/
+/-- `pth_0`, `pth_1` and `pth_2` of `NUMSEG_CONV` (iterate.ml 213-215). -/
 @[nospecialize]
 def setupNumsegConvPths [HolBase]
     (MESON' : List thm → term → IO (Except String thm))
@@ -360,7 +406,7 @@ def setupNumsegConvPths [HolBase]
   let n_tm ← q r"n:num"
   return { pth_0, pth_1, pth_2, ns_tm, m_tm, n_tm }
 
-/-- `let rec NUMSEG_CONV tm = ...` (iterate.ml 179). -/
+/-- `let rec NUMSEG_CONV tm = ...` (iterate.ml 217). -/
 partial def NUMSEG_CONV [HolBase]
     (NUM_LT_CONV NUM_LE_CONV NUM_SUC_CONV : ioconv)
     (P : NumsegConvPths) (ns_tm m_tm n_tm : term) : ioconv := fun tm => ExceptT.run do
@@ -382,19 +428,19 @@ partial def NUMSEG_CONV [HolBase]
 /- Topological sorting of a finite set.                                   -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `TOPOLOGICAL_SORT` (iterate.ml 196) and `FINITE_INT_SEG` (iterate.ml 256):
+/-- `TOPOLOGICAL_SORT` (iterate.ml 234) and `FINITE_INT_SEG` (iterate.ml 294):
     the two structured proofs closing the segment sections.  Kept separate
     from `IterateSegments` because they need the general order `<<` (already a
     registered infix from wf.ml) and the integer machinery. -/
 structure IterateSortSeg where
-  /-- `TOPOLOGICAL_SORT` (iterate.ml 196): any antisymmetric transitive order
+  /-- `TOPOLOGICAL_SORT` (iterate.ml 234): any antisymmetric transitive order
       `<<` on a finite set admits an index `f : 1..n` respecting it.  A deep
       proof: an inner `SUBGOAL_THEN .. ASSUME_TAC THENL [..;ALL_TAC]` (width 2),
       two `INDUCT_TAC THENL [..;ALL_TAC]` (width 2), a `SUBGOAL_THEN ..
       THENL [..;ALL_TAC]` (width 2), a `CONJ_TAC THENL [bA;bB]` (width 2), and
       inside the branches two more `ASM_CASES_TAC .. THENL` (widths 2). -/
   TOPOLOGICAL_SORT : thm
-  /-- `FINITE_INT_SEG` (iterate.ml 256): the four integer segments (closed,
+  /-- `FINITE_INT_SEG` (iterate.ml 294): the four integer segments (closed,
       half-open both ways, open) are finite.  `MATCH_MP_TAC(TAUT ..) THEN
       CONJ_TAC THENL [b1; b2]` - width 2, two branches. -/
   FINITE_INT_SEG : thm
@@ -520,62 +566,62 @@ def setupIterateSortSeg [HolBase]
 /- ---------------------------------------------------------------------- -/
 
 /-- The FOUR core definitions the whole file rests on, plus the theorems
-    directly about them (iterate.ml 281-354).  `iterate op s f` folds the
+    directly about them (iterate.ml 319-392).  `iterate op s f` folds the
     binary `op` over the SUPPORT of `f` on `s` - the points where `f` differs
     from `op`'s neutral element - using the set fold `ITSET`; `nsum`,
     `nproduct`, `sum`, `product`, `isum`, `iproduct` are all specialisations,
-    and the 528-line key-lemmas section (iterate.ml 361-889) is proved against
+    and the 528-line key-lemmas section (iterate.ml 399-927) is proved against
     the abstract `monoidal op` hypothesis defined here.  Under `prioritize_num`
     (iterate.ml 10) every bare numeral is `:num`. -/
 structure IterateGeneric where
-  /-- `neutral` (iterate.ml 281): `neutral op = @x:A. !y. (op x y = y) /\
+  /-- `neutral` (iterate.ml 319): `neutral op = @x:A. !y. (op x y = y) /\
       (op y x = y)`.  `new_definition`; the body is a SELECT (`@`) term - the
       two-sided identity of `op`. -/
   neutral : thm
-  /-- `monoidal` (iterate.ml 284): `monoidal op <=> (!x y. op x y = op y x) /\
+  /-- `monoidal` (iterate.ml 322): `monoidal op <=> (!x y. op x y = op y x) /\
       (!x y z. op x (op y z) = op (op x y) z) /\ (!x:A. op (neutral op) x =
       x)` - commutative, associative, with `neutral op` a left identity.
       `new_definition`. -/
   monoidal : thm
-  /-- `MONOIDAL_AC` (iterate.ml 289): the AC consequences of `monoidal op`
+  /-- `MONOIDAL_AC` (iterate.ml 327): the AC consequences of `monoidal op`
       (both identities, commutativity, associativity, left-commutativity).
       `REWRITE_TAC[monoidal] THEN MESON_TAC[]`. -/
   MONOIDAL_AC : thm
-  /-- `support` (iterate.ml 298): `support op (f:A->B) s = {x | x IN s /\
+  /-- `support` (iterate.ml 336): `support op (f:A->B) s = {x | x IN s /\
       ~(f x = neutral op)}`.  `new_definition`. -/
   support : thm
-  /-- `iterate` (iterate.ml 301): `iterate op s (f:A->B) = if
+  /-- `iterate` (iterate.ml 339): `iterate op s (f:A->B) = if
       FINITE(support op f s) then ITSET (\x a. op (f x) a) (support op f s)
       (neutral op) else neutral op`.  `new_definition`. -/
   iterate : thm
-  /-- `IN_SUPPORT` (iterate.ml 307): `!op (f:A->B) x s. x IN (support op f s)
+  /-- `IN_SUPPORT` (iterate.ml 345): `!op (f:A->B) x s. x IN (support op f s)
       <=> x IN s /\ ~(f x = neutral op)`. -/
   IN_SUPPORT : thm
-  /-- `SUPPORT_SUPPORT` (iterate.ml 311):
+  /-- `SUPPORT_SUPPORT` (iterate.ml 349):
       `!op (f:A->B) s. support op f (support op f s) = support op f s`.
       `REWRITE_TAC[support; IN_ELIM_THM; EXTENSION] THEN REWRITE_TAC[CONJ_ACI]`
       - TWO separate `REWRITE_TAC`s in sequence. -/
   SUPPORT_SUPPORT : thm
-  /-- `SUPPORT_EMPTY` (iterate.ml 315): `!op (f:A->B) s. (!x. x IN s ==> f(x) =
+  /-- `SUPPORT_EMPTY` (iterate.ml 353): `!op (f:A->B) s. (!x. x IN s ==> f(x) =
       neutral op) <=> support op f s = {}`. -/
   SUPPORT_EMPTY : thm
-  /-- `SUPPORT_SUBSET` (iterate.ml 320):
+  /-- `SUPPORT_SUBSET` (iterate.ml 358):
       `!op (f:A->B) s. (support op f s) SUBSET s`. -/
   SUPPORT_SUBSET : thm
-  /-- `FINITE_SUPPORT` (iterate.ml 324):
+  /-- `FINITE_SUPPORT` (iterate.ml 362):
       `!op (f:A->B) s. FINITE s ==> FINITE(support op f s)`. -/
   FINITE_SUPPORT : thm
-  /-- `SUPPORT_CLAUSES` (iterate.ml 328): the seven support/set-operation
+  /-- `SUPPORT_CLAUSES` (iterate.ml 366): the seven support/set-operation
       clauses (EMPTY, INSERT, DELETE, UNION, INTER, DIFF, IMAGE).  The IMAGE
       clause uses `o` composition inside (`support op (g o f)`).  Proof:
       one big `REWRITE_TAC[..]` THEN `REPEAT STRIP_TAC THEN TRY COND_CASES_TAC
       THEN ASM_MESON_TAC[]`. -/
   SUPPORT_CLAUSES : thm
-  /-- `SUPPORT_DELTA` (iterate.ml 346): `!op s (f:A->B) a. support op (\x. if
+  /-- `SUPPORT_DELTA` (iterate.ml 384): `!op s (f:A->B) a. support op (\x. if
       x = a then f(x) else neutral op) s = if a IN s then support op f {a}
       else {}`.  `REPEAT COND_CASES_TAC`. -/
   SUPPORT_DELTA : thm
-  /-- `FINITE_SUPPORT_DELTA` (iterate.ml 354): `!op (f:A->B) a. FINITE(support
+  /-- `FINITE_SUPPORT_DELTA` (iterate.ml 392): `!op (f:A->B) a. FINITE(support
       op (\x. if x = a then f(x) else neutral op) s)`. -/
   FINITE_SUPPORT_DELTA : thm
   deriving Inhabited
@@ -679,79 +725,79 @@ def setupIterateGeneric [HolBase]
 /- Key lemmas about the generic notion.                                   -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The FIRST key-lemmas bundle, iterate.ml 364-539: the eighteen structural
+/-- The FIRST key-lemmas bundle, iterate.ml 402-577: the eighteen structural
     lemmas from `ITERATE_SUPPORT` to `ITERATE_DELETE` - support-invariance,
     the `iterate` recursion clauses, union/difference/inclusion-exclusion,
     the closure/relation induction principles, `ITERATE_EQ_NEUTRAL`,
     `ITERATE_SING`, the nonempty variants and `ITERATE_DELETE`. -/
 structure IterateKey1 where
-  /-- `ITERATE_SUPPORT` (iterate.ml 364): `!op (f:A->B) s. iterate op
+  /-- `ITERATE_SUPPORT` (iterate.ml 402): `!op (f:A->B) s. iterate op
       (support op f s) f = iterate op s f`.  `SIMP_TAC[iterate;
       SUPPORT_SUPPORT]`. -/
   ITERATE_SUPPORT : thm
-  /-- `ITERATE_EXPAND_CASES` (iterate.ml 368): `iterate op s f = if
+  /-- `ITERATE_EXPAND_CASES` (iterate.ml 406): `iterate op s f = if
       FINITE(support op f s) then iterate op (support op f s) f else neutral
       op`.  `SIMP_TAC[iterate; SUPPORT_SUPPORT]`. -/
   ITERATE_EXPAND_CASES : thm
-  /-- `ITERATE_CLAUSES_GEN` (iterate.ml 375): the empty/insert recursion under
+  /-- `ITERATE_CLAUSES_GEN` (iterate.ml 413): the empty/insert recursion under
       a FINITE-SUPPORT hypothesis.  `ONCE_REWRITE_TAC[AND_FORALL_THM]`, an
       `ISPECL [..] FINITE_RECURSION`, `ANTS_TAC THENL [..;ALL_TAC]` (width 2),
       a `GEN_REWRITE_TAC (LAND_CONV o RATOR_CONV o LAND_CONV) [COND_RAND]`
       (THREE conversion levels, LAND runs FIRST). -/
   ITERATE_CLAUSES_GEN : thm
-  /-- `ITERATE_CLAUSES` (iterate.ml 394): the empty/insert recursion under a
+  /-- `ITERATE_CLAUSES` (iterate.ml 432): the empty/insert recursion under a
       FINITE hypothesis.  `SIMP_TAC[ITERATE_CLAUSES_GEN; FINITE_SUPPORT]`. -/
   ITERATE_CLAUSES : thm
-  /-- `ITERATE_UNION` (iterate.ml 404): iterate over a disjoint union splits.
+  /-- `ITERATE_UNION` (iterate.ml 442): iterate over a disjoint union splits.
       Local `lemma` proved by `SET_TAC[]`; `MATCH_MP_TAC
       FINITE_INDUCT_STRONG`. -/
   ITERATE_UNION : thm
-  /-- `ITERATE_UNION_GEN` (iterate.ml 421): the support-based union split.
+  /-- `ITERATE_UNION_GEN` (iterate.ml 459): the support-based union split.
       `ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT] THEN SIMP_TAC[SUPPORT_CLAUSES;
       ITERATE_UNION]`. -/
   ITERATE_UNION_GEN : thm
-  /-- `ITERATE_DIFF` (iterate.ml 430): `op (iterate op (s DIFF t) f) (iterate
+  /-- `ITERATE_DIFF` (iterate.ml 468): `op (iterate op (s DIFF t) f) (iterate
       op t f) = iterate op s f`.  Local `lemma` by `SET_TAC[]`; then bare
       `MESON_TAC[..]`. -/
   ITERATE_DIFF : thm
-  /-- `ITERATE_DIFF_GEN` (iterate.ml 441): the support-based difference split.
+  /-- `ITERATE_DIFF_GEN` (iterate.ml 479): the support-based difference split.
       `ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT] THEN SIMP_TAC[SUPPORT_CLAUSES;
       ITERATE_DIFF]`. -/
   ITERATE_DIFF_GEN : thm
-  /-- `ITERATE_INCL_EXCL` (iterate.ml 450): the two-set inclusion-exclusion
+  /-- `ITERATE_INCL_EXCL` (iterate.ml 488): the two-set inclusion-exclusion
       identity.  Three `GEN_REWRITE_TAC` with `SET_RULE` rewrites at
       `LAND_CONV o LAND_CONV o ONCE_DEPTH_CONV` and `LAND_CONV o RAND_CONV o
       ONCE_DEPTH_CONV` (THREE levels each, LAND/RAND run FIRST), a big
       `ASM_SIMP_TAC` with four DISJOINT `SET_RULE`s, then `FIRST_X_ASSUM(fun th
       -> REWRITE_TAC[MATCH_MP MONOIDAL_AC th])`. -/
   ITERATE_INCL_EXCL : thm
-  /-- `ITERATE_CLOSED` (iterate.ml 471): a predicate closed under `op` and
+  /-- `ITERATE_CLOSED` (iterate.ml 509): a predicate closed under `op` and
       holding at `neutral` holds at the iterate.  `ONCE_REWRITE_TAC
       [ITERATE_EXPAND_CASES]`, `SPEC_TAC(support op f s, s)`, `MATCH_MP_TAC
       FINITE_INDUCT_STRONG`. -/
   ITERATE_CLOSED : thm
-  /-- `ITERATE_RELATED` (iterate.ml 483): a congruence for a relation `R`
+  /-- `ITERATE_RELATED` (iterate.ml 521): a congruence for a relation `R`
       preserved by `op`.  `REWRITE_TAC[IMP_CONJ] THEN MATCH_MP_TAC
       FINITE_INDUCT_STRONG`. -/
   ITERATE_RELATED : thm
-  /-- `ITERATE_EQ_NEUTRAL` (iterate.ml 496): if `f` is `neutral` on `s` the
+  /-- `ITERATE_EQ_NEUTRAL` (iterate.ml 534): if `f` is `neutral` on `s` the
       iterate is `neutral`.  `SUBGOAL_THEN (support = {}) ASSUME_TAC THENL
       [b1; b2]` (width 2). -/
   ITERATE_EQ_NEUTRAL : thm
-  /-- `ITERATE_SING` (iterate.ml 505): `iterate op {x} f = f x`.
+  /-- `ITERATE_SING` (iterate.ml 543): `iterate op {x} f = f x`.
       `SIMP_TAC[ITERATE_CLAUSES; FINITE_RULES; NOT_IN_EMPTY] THEN
       MESON_TAC[monoidal]`. -/
   ITERATE_SING : thm
-  /-- `ITERATE_CLOSED_NONEMPTY` (iterate.ml 510): the closure principle for a
+  /-- `ITERATE_CLOSED_NONEMPTY` (iterate.ml 548): the closure principle for a
       predicate closed only under `op` (no `neutral` obligation), on a NONEMPTY
       finite set.  `MATCH_MP_TAC FINITE_INDUCT_STRONG`, `ASM_CASES_TAC (t =
       {})`. -/
   ITERATE_CLOSED_NONEMPTY : thm
-  /-- `ITERATE_RELATED_NONEMPTY` (iterate.ml 523): the relation congruence on a
+  /-- `ITERATE_RELATED_NONEMPTY` (iterate.ml 561): the relation congruence on a
       NONEMPTY finite set.  `MATCH_MP_TAC FINITE_INDUCT_STRONG`, `ASM_CASES_TAC
       (t = {})`. -/
   ITERATE_RELATED_NONEMPTY : thm
-  /-- `ITERATE_DELETE` (iterate.ml 539): `op (f a) (iterate op (s DELETE a) f)
+  /-- `ITERATE_DELETE` (iterate.ml 577): `op (f a) (iterate op (s DELETE a) f)
       = iterate op s f`.  Bare `MESON_TAC[..]`. -/
   ITERATE_DELETE : thm
   deriving Inhabited
@@ -972,30 +1018,30 @@ def setupIterateKey1 [HolBase]
     ITERATE_EQ_NEUTRAL, ITERATE_SING, ITERATE_CLOSED_NONEMPTY,
     ITERATE_RELATED_NONEMPTY, ITERATE_DELETE }
 
-/-- The SECOND key-lemmas bundle, iterate.ml 546-703: the eleven mapping and
+/-- The SECOND key-lemmas bundle, iterate.ml 584-741: the eleven mapping and
     congruence lemmas from `ITERATE_DELTA` to `ITERATE_OP` - the delta
     evaluation, image/bijection reindexing, the iterate-of-iterate PRODUCT
     identity, `ITERATE_EQ` and its restrict/general/inverse variants,
     injection, the nonzero union split and `ITERATE_OP`. -/
 structure IterateKey2 where
-  /-- `ITERATE_DELTA` (iterate.ml 546): `iterate op s (\x. if x = a then f x
+  /-- `ITERATE_DELTA` (iterate.ml 584): `iterate op s (\x. if x = a then f x
       else neutral op) = if a IN s then f a else neutral op`.
       `ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT] THEN REWRITE_TAC[SUPPORT_DELTA]
       THEN REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC[..] THEN
       REWRITE_TAC[SUPPORT_CLAUSES] THEN COND_CASES_TAC THEN ASM_SIMP_TAC`. -/
   ITERATE_DELTA : thm
-  /-- `ITERATE_IMAGE` (iterate.ml 556): reindexing along an injection.  An
+  /-- `ITERATE_IMAGE` (iterate.ml 594): reindexing along an injection.  An
       inner `SUBGOAL_THEN .. ASSUME_TAC THENL [b1; b2]` (width 2); the second
       branch closes with a nested `REPEAT STRIP_TAC THENL [b; b]` (width 2)
       inside a `MATCH_MP_TAC(TAUT ..)`. -/
   ITERATE_IMAGE : thm
-  /-- `ITERATE_BIJECTION` (iterate.ml 578): invariance under a bijection of the
+  /-- `ITERATE_BIJECTION` (iterate.ml 616): invariance under a bijection of the
       index set.  `MATCH_MP_TAC EQ_TRANS`, `CONJ_TAC THENL [b1; b2]` (width 2);
       the second branch does `FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
       (INST_TYPE [aty,bty] ITERATE_IMAGE))` - the `o` composes `MATCH_MP` after
       `MATCH_MP (INST_TYPE ..)`. -/
   ITERATE_BIJECTION : thm
-  /-- `ITERATE_ITERATE_PRODUCT` (iterate.ml 591): a double iterate over a
+  /-- `ITERATE_ITERATE_PRODUCT` (iterate.ml 629): a double iterate over a
       dependent index set collapses to one over the product.  The file's
       heaviest key lemma (33 lines).  `MATCH_MP_TAC FINITE_INDUCT_STRONG`, TWO
       `FIRST_ASSUM(fun th -> W(MP_TAC o PART_MATCH (lhand o rand) (MATCH_MP TH
@@ -1003,37 +1049,37 @@ structure IterateKey2 where
       followed by `ANTS_TAC THENL [..; ALL_TAC]` (width 2), and two
       `CONV_TAC(ONCE_DEPTH_CONV GEN_BETA_CONV)`. -/
   ITERATE_ITERATE_PRODUCT : thm
-  /-- `ITERATE_EQ` (iterate.ml 624): pointwise-equal functions give equal
+  /-- `ITERATE_EQ` (iterate.ml 662): pointwise-equal functions give equal
       iterates.  `ONCE_REWRITE_TAC[ITERATE_EXPAND_CASES]`, a `SUBGOAL_THEN
       (support g s = support f s) SUBST1_TAC THENL [b1; ALL_TAC]` (width 2), a
       `SUBGOAL_THEN .. MP_TAC THENL [ASM_MESON_TAC[..]; REWRITE_TAC[IMP_CONJ]]`
       (width 2), `SPEC_TAC` then `MATCH_MP_TAC FINITE_INDUCT_STRONG`. -/
   ITERATE_EQ : thm
-  /-- `ITERATE_RESTRICT_SET` (iterate.ml 640): iterate over a comprehension
+  /-- `ITERATE_RESTRICT_SET` (iterate.ml 678): iterate over a comprehension
       subset equals iterate with a guarded function.  `ONCE_REWRITE_TAC[GSYM
       ITERATE_SUPPORT]`, a `MESON[]` rewrite lemma, then
       `FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_EQ)`. -/
   ITERATE_RESTRICT_SET : thm
-  /-- `ITERATE_EQ_GENERAL` (iterate.ml 652): reindexing by a general bijection
+  /-- `ITERATE_EQ_GENERAL` (iterate.ml 690): reindexing by a general bijection
       `h`.  A `SUBGOAL_THEN (t = IMAGE h s) SUBST1_TAC THENL [b1; ALL_TAC]`
       (width 2), `MATCH_MP_TAC EQ_TRANS`, `CONJ_TAC THENL [b1; b2]` (width 2),
       with `CONV_TAC SYM_CONV` and `FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
       ITERATE_IMAGE)`. -/
   ITERATE_EQ_GENERAL : thm
-  /-- `ITERATE_EQ_GENERAL_INVERSES` (iterate.ml 668): the two-sided-inverse
+  /-- `ITERATE_EQ_GENERAL_INVERSES` (iterate.ml 706): the two-sided-inverse
       reindexing form.  `FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP
       ITERATE_EQ_GENERAL) THEN EXISTS_TAC `h:A->B` THEN ASM_MESON_TAC[]`. -/
   ITERATE_EQ_GENERAL_INVERSES : thm
-  /-- `ITERATE_INJECTION` (iterate.ml 678): invariance under an injective
+  /-- `ITERATE_INJECTION` (iterate.ml 716): invariance under an injective
       self-map of a finite set.  `CONV_TAC SYM_CONV`, `FIRST_X_ASSUM
       (MATCH_MP_TAC o MATCH_MP ITERATE_BIJECTION)`, then an `ISPECL [..]
       SURJECTIVE_IFF_INJECTIVE`. -/
   ITERATE_INJECTION : thm
-  /-- `ITERATE_UNION_NONZERO` (iterate.ml 690): the union split when `f` is
+  /-- `ITERATE_UNION_NONZERO` (iterate.ml 728): the union split when `f` is
       neutral on the intersection.  `ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT]`,
       `FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_UNION)`. -/
   ITERATE_UNION_NONZERO : thm
-  /-- `ITERATE_OP` (iterate.ml 703): iterate distributes over a pointwise `op`.
+  /-- `ITERATE_OP` (iterate.ml 741): iterate distributes over a pointwise `op`.
       `MATCH_MP_TAC FINITE_INDUCT_STRONG THEN ASM_SIMP_TAC[ITERATE_CLAUSES;
       MONOIDAL_AC]`. -/
   ITERATE_OP : thm
@@ -1237,73 +1283,73 @@ def setupIterateKey2 [HolBase]
     ITERATE_EQ_GENERAL_INVERSES, ITERATE_INJECTION, ITERATE_UNION_NONZERO,
     ITERATE_OP }
 
-/-- The THIRD key-lemmas bundle, iterate.ml 713-887: the ten superset/swap/
+/-- The THIRD key-lemmas bundle, iterate.ml 751-925: the ten superset/swap/
     image/cases lemmas and the four numseg-recursion clauses closing the
     section - `ITERATE_SUPERSET`, `ITERATE_UNIV`, `ITERATE_SWAP`,
     `ITERATE_IMAGE_NONZERO`, `ITERATE_IMAGE_GEN`, `ITERATE_CASES`,
     `ITERATE_OP_GEN`, the three `ITERATE_CLAUSES_NUMSEG*`, `ITERATE_PAIR` and
     `ITERATE_REFLECT`. -/
 structure IterateKey3 where
-  /-- `ITERATE_SUPERSET` (iterate.ml 713): iterate is unchanged by enlarging
+  /-- `ITERATE_SUPERSET` (iterate.ml 751): iterate is unchanged by enlarging
       the set with `neutral` points.  `ONCE_REWRITE_TAC[GSYM ITERATE_SUPPORT]
       THEN AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC[support; EXTENSION;
       IN_ELIM_THM] THEN ASM_MESON_TAC[SUBSET]`. -/
   ITERATE_SUPERSET : thm
-  /-- `ITERATE_UNIV` (iterate.ml 723): iterate over any superset of the
+  /-- `ITERATE_UNIV` (iterate.ml 761): iterate over any superset of the
       support equals iterate over `UNIV`.  `CONV_TAC SYM_CONV THEN
       FIRST_X_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_SUPERSET) THEN ASM
       SET_TAC[]`. -/
   ITERATE_UNIV : thm
-  /-- `ITERATE_SWAP` (iterate.ml 732): two nested iterates over finite sets
+  /-- `ITERATE_SWAP` (iterate.ml 770): two nested iterates over finite sets
       commute.  `MATCH_MP_TAC FINITE_INDUCT_STRONG THEN ASM_SIMP_TAC
       [ITERATE_CLAUSES] THEN ASM_SIMP_TAC[ITERATE_EQ_NEUTRAL; GSYM
       ITERATE_OP]`. -/
   ITERATE_SWAP : thm
-  /-- `ITERATE_IMAGE_NONZERO` (iterate.ml 744): reindexing along a map that
+  /-- `ITERATE_IMAGE_NONZERO` (iterate.ml 782): reindexing along a map that
       collapses only on `neutral` values.  `MATCH_MP_TAC FINITE_INDUCT_STRONG`,
       `MAP_EVERY X_GEN_TAC [a; s]`, a `SUBGOAL_THEN .. SUBST1_TAC THENL
       [ASM_MESON_TAC[]; ALL_TAC]` (width 2), `COND_CASES_TAC`, another
       `SUBGOAL_THEN .. SUBST1_TAC` then `ASM_MESON_TAC[MONOIDAL_AC]`. -/
   ITERATE_IMAGE_NONZERO : thm
-  /-- `ITERATE_IMAGE_GEN` (iterate.ml 763): iterate over `s` grouped by the
+  /-- `ITERATE_IMAGE_GEN` (iterate.ml 801): iterate over `s` grouped by the
       fibres of `f`.  `MATCH_MP_TAC EQ_TRANS`, `CONJ_TAC THENL [b1; b2]`
       (width 2); `b1` uses `FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_EQ)`
       and a `SUBGOAL_THEN .. SUBST1_TAC THENL [ASM SET_TAC[]; ..]` (width 2);
       `b2` uses `ITERATE_RESTRICT_SET` and `W(MP_TAC o PART_MATCH (lhand o
       rand) (MATCH_MP ITERATE_SWAP th) o lhand o snd)`. -/
   ITERATE_IMAGE_GEN : thm
-  /-- `ITERATE_CASES` (iterate.ml 783): iterate of a conditional splits into
+  /-- `ITERATE_CASES` (iterate.ml 821): iterate of a conditional splits into
       the two guarded sub-iterates.  `MATCH_MP_TAC EQ_TRANS`, `CONJ_TAC THENL
       [b1; b2]` (width 2); `b1` `FIRST_ASSUM(fun th -> ASM_SIMP_TAC[GSYM
       (MATCH_MP ITERATE_UNION th); FINITE_RESTRICT; SET_RULE ..])`; `b2`
       `BINOP_TAC THEN FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_EQ)`. -/
   ITERATE_CASES : thm
-  /-- `ITERATE_OP_GEN` (iterate.ml 802): the support-based pointwise-`op`
+  /-- `ITERATE_OP_GEN` (iterate.ml 840): the support-based pointwise-`op`
       split.  `MATCH_MP_TAC EQ_TRANS`, `CONJ_TAC THENL [CONV_TAC SYM_CONV;
       ASM_SIMP_TAC[ITERATE_OP; FINITE_UNION] THEN BINOP_TAC]` (width 2), then
       `FIRST_ASSUM(MATCH_MP_TAC o MATCH_MP ITERATE_SUPERSET)`. -/
   ITERATE_OP_GEN : thm
-  /-- `ITERATE_CLAUSES_NUMSEG` (iterate.ml 819): the `m..0` / `m..SUC n`
+  /-- `ITERATE_CLAUSES_NUMSEG` (iterate.ml 857): the `m..0` / `m..SUC n`
       recursion.  `REWRITE_TAC[NUMSEG_CLAUSES] THEN REPEAT STRIP_TAC THEN
       COND_CASES_TAC THEN ASM_SIMP_TAC[..] THEN REWRITE_TAC[ARITH_RULE
       `~(SUC n <= n)`; NOT_IN_EMPTY] THEN ASM_MESON_TAC[monoidal]`. -/
   ITERATE_CLAUSES_NUMSEG : thm
-  /-- `ITERATE_CLAUSES_NUMSEG_LT` (iterate.ml 831): the `{i | i < k}`
+  /-- `ITERATE_CLAUSES_NUMSEG_LT` (iterate.ml 869): the `{i | i < k}`
       recursion.  `SIMP_TAC[NUMSEG_CLAUSES_LT; ITERATE_CLAUSES;
       FINITE_NUMSEG_LT] THEN REWRITE_TAC[IN_ELIM_THM; LT_REFL; monoidal] THEN
       MESON_TAC[]`. -/
   ITERATE_CLAUSES_NUMSEG_LT : thm
-  /-- `ITERATE_CLAUSES_NUMSEG_LE` (iterate.ml 839): the `{i | i <= k}`
+  /-- `ITERATE_CLAUSES_NUMSEG_LE` (iterate.ml 877): the `{i | i <= k}`
       recursion.  `SIMP_TAC[NUMSEG_CLAUSES_LE; ITERATE_CLAUSES;
       FINITE_NUMSEG_LE; ITERATE_SING] THEN REWRITE_TAC[monoidal; IN_ELIM_THM;
       ARITH_RULE `~(SUC k <= k)`] THEN MESON_TAC[]`. -/
   ITERATE_CLAUSES_NUMSEG_LE : thm
-  /-- `ITERATE_PAIR` (iterate.ml 849): pairing consecutive terms of a
+  /-- `ITERATE_PAIR` (iterate.ml 887): pairing consecutive terms of a
       `2*m..2*n+1` iterate.  `INDUCT_TAC THEN CONV_TAC NUM_REDUCE_CONV THENL
       [b1; b2]` (width 2); `b1` uses `num_CONV \`1\``, `b2` several
       `ARITH_RULE` rewrites and `ASM_MESON_TAC[monoidal]`. -/
   ITERATE_PAIR : thm
-  /-- `ITERATE_REFLECT` (iterate.ml 867): reflecting the index range `m..n` to
+  /-- `ITERATE_REFLECT` (iterate.ml 905): reflecting the index range `m..n` to
       `0..n-m`.  `REWRITE_TAC[GSYM NUMSEG_EMPTY]`, `COND_CASES_TAC THENL [b1;
       b2]` (width 2) where `b2` starts `RULE_ASSUM_TAC(REWRITE_RULE
       [NUMSEG_EMPTY; NOT_LT])`, a `FIRST_ASSUM(MP_TAC o ISPECL [..] o MATCH_MP
@@ -1532,36 +1578,36 @@ def setupIterateKey3 [HolBase]
 /- ---------------------------------------------------------------------- -/
 
 /-- The ordered/non-commutative generalisation `iterato` and its eleven
-    lemmas (iterate.ml 896-1184).  `iterato dom neut op (<<=) k f` folds `op`
+    lemmas (iterate.ml 934-1222).  `iterato dom neut op (<<=) k f` folds `op`
     over the points of `k` where `f` lands in `dom DIFF {neut}`, visiting them
     in the order fixed by `<<=`, so unlike `iterate` it makes sense for a
     NON-COMMUTATIVE `op`; `dom`/`neut` refine the notions of domain and neutral
     element.  Lemmas mirror the generic key lemmas with `ITERATE` -> `ITERATO`.
 
-    `iterato` (iterate.ml 896) is `new_specification ["iterato"] o prove`: the
+    `iterato` (iterate.ml 934) is `new_specification ["iterato"] o prove`: the
     existence theorem is proved first, then fed to the threaded
     `new_specification`.  `<<=` is not declared in iterate.ml - it comes from
     `realax.ml` and is already registered - and here it is a bound relation
     variable (`iterato` quantifies over an arbitrary order), not a constant. -/
 structure IterateOrdered where
-  /-- `iterato` (iterate.ml 896): the constant introduced by
+  /-- `iterato` (iterate.ml 934): the constant introduced by
       `new_specification ["iterato"]` from the proved existence theorem.  Its
       defining property is the guarded well-founded recursion:
       `iterato dom neut op (<<=) k f = if FINITE{support} /\ ~empty then let
       i = (minimal-or-arbitrary support element) in op (f i) (iterato ... (k
       DELETE i) ...) else neut`. -/
   iterato : thm
-  /-- `ITERATO_SUPPORT` (iterate.ml 933): restricting to the support set does
+  /-- `ITERATO_SUPPORT` (iterate.ml 971): restricting to the support set does
       not change the iteration (mirrors `ITERATE_SUPPORT`).  `ONCE_REWRITE_TAC
       [iterato]`, a `SET_RULE`, `COND_CASES_TAC THEN ... LET_TAC THEN
       CONV_TAC(ONCE_DEPTH_CONV let_CONV)`, `AP_TERM/AP_THM/AP_TERM`, `ASM
       SET_TAC[]`. -/
   ITERATO_SUPPORT : thm
-  /-- `ITERATO_EXPAND_CASES` (iterate.ml 945): the finite/infinite case split
+  /-- `ITERATO_EXPAND_CASES` (iterate.ml 983): the finite/infinite case split
       (mirrors `ITERATE_EXPAND_CASES`).  `COND_CASES_TAC THENL [b1; b2]` width
       2; `b2` is `GEN_REWRITE_TAC LAND_CONV [iterato] THEN ASM_REWRITE_TAC[]`. -/
   ITERATO_EXPAND_CASES : thm
-  /-- `ITERATO_CLAUSES_GEN` (iterate.ml 955): the empty/insert recursion under
+  /-- `ITERATO_CLAUSES_GEN` (iterate.ml 993): the empty/insert recursion under
       the general order hypotheses (mirrors `ITERATE_CLAUSES_GEN`).  `CONJ_TAC
       THENL [b1; b2]` (width 2), `ASM_CASES_TAC`, two `SET_RULE`s, a
       `COND_CASES_TAC THENL [c1; c2]` (width 2, `c1` uses `GEN_REWRITE_RULE I
@@ -1571,12 +1617,12 @@ structure IterateOrdered where
       [ALL_TAC; ..]` (width 2), `SELECT_UNIQUE`, `EQ_TAC .. SIMP_TAC[] THENL
       [ALL_TAC; ASM SET_TAC[]]` (width 2), final `ASM_CASES_TAC`. -/
   ITERATO_CLAUSES_GEN : thm
-  /-- `ITERATO_CLAUSES` (iterate.ml 1004): the empty/insert recursion for a
+  /-- `ITERATO_CLAUSES` (iterate.ml 1042): the empty/insert recursion for a
       genuine strict order (mirrors `ITERATE_CLAUSES`).  `REPEAT STRIP_TAC THEN
       REWRITE_TAC[ITERATO_CLAUSES_GEN] THEN MATCH_MP_TAC(CONJUNCT2(SPEC_ALL
       ITERATO_CLAUSES_GEN)) THEN ASM_MESON_TAC[]`. -/
   ITERATO_CLAUSES : thm
-  /-- `ITERATO_CLAUSES_EXISTS` (iterate.ml 1017): a nonempty support yields an
+  /-- `ITERATO_CLAUSES_EXISTS` (iterate.ml 1055): a nonempty support yields an
       element realising one recursion step.  `CONJ_TAC THENL [b1; b2]` (width
       2); the `GEN_REWRITE_TAC (BINDER_CONV o RAND_CONV o RAND_CONV o LAND_CONV)
       [iterato]` chain (LAND runs first), `LET_TAC`, a `GEN_REWRITE_TAC
@@ -1584,27 +1630,27 @@ structure IterateOrdered where
       four RAND levels), `MATCH_MP_TAC o MATCH_MP (MESON[] ...)`, `COND_CASES_TAC
       THENL [DISCH_TAC; ASM SET_TAC[]]` (width 2), `SELECT_RULE`. -/
   ITERATO_CLAUSES_EXISTS : thm
-  /-- `ITERATO_EQ` (iterate.ml 1039): pointwise-equal functions give equal
+  /-- `ITERATO_EQ` (iterate.ml 1077): pointwise-equal functions give equal
       iterations (mirrors `ITERATE_EQ`).  `ONCE_REWRITE_TAC
       [ITERATO_EXPAND_CASES]`, a `num_WF` induction on `CARD`, `ONCE_REWRITE_TAC
       [iterato]`, `LET_TAC THEN CONV_TAC(TOP_DEPTH_CONV let_CONV)`, `BINOP_TAC
       THENL [ASM_MESON_TAC[]; ALL_TAC]` (width 2), `CARD_PSUBSET`. -/
   ITERATO_EQ : thm
-  /-- `ITERATO_INDUCT` (iterate.ml 1078): an induction principle over the
+  /-- `ITERATO_INDUCT` (iterate.ml 1116): an induction principle over the
       iteration (mirrors `ITERATE_CLOSED`-style induction).  A `num_WF`
       induction, `ITERATO_CLAUSES_EXISTS`, `MATCH_MP_TAC(TAUT ..)`,
       `CARD_DELETE`, `CARD_EQ_0`. -/
   ITERATO_INDUCT : thm
-  /-- `ITERATO_CLOSED` (iterate.ml 1119): a predicate closed under `neut` and
+  /-- `ITERATO_CLOSED` (iterate.ml 1157): a predicate closed under `neut` and
       `op` holds of the iteration (mirrors `ITERATE_CLOSED`).  `REPEAT STRIP_TAC
       THEN MATCH_MP_TAC ITERATO_INDUCT THEN ASM_SIMP_TAC[]`. -/
   ITERATO_CLOSED : thm
-  /-- `ITERATO_ITERATE` (iterate.ml 1127): for a `monoidal op`, `iterato` over
+  /-- `ITERATO_ITERATE` (iterate.ml 1165): for a `monoidal op`, `iterato` over
       the full universe with `neutral op` collapses to the commutative
       `iterate op`.  A `num_WF` induction using both `ITERATE_CLAUSES` and
       `ITERATO_CLAUSES_EXISTS`, `ITERATO_SUPPORT`/`ITERATE_SUPPORT`. -/
   ITERATO_ITERATE : thm
-  /-- `ITERATO_CLAUSES_NUMSEG_LEFT` (iterate.ml 1167): the left-recursion of
+  /-- `ITERATO_CLAUSES_NUMSEG_LEFT` (iterate.ml 1205): the left-recursion of
       `iterato` over a numeral segment `m..n` with the ORDINARY order `<=` (a
       real constant, not the `<<=` variable).  Uses `ITERATO_CLAUSES_GEN`,
       `NUMSEG_LREC`, `COND_CASES_TAC THENL [..; ..]` (width 2) and `ANTS_TAC
@@ -1975,7 +2021,7 @@ def setupIterateOrdered [HolBase]
 /- intgers load "Library/isum.ml".                                        -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The four specialisations of `iterate` (iterate.ml 1188-1282), where the
+/-- The four specialisations of `iterate` (iterate.ml 1226-1320), where the
     OCaml "just more or less expresses the basic definition and clausal form
     of the recursion".  Each of `nproduct`/`iproduct`/`product`/`isum` is a
     `new_definition` folding a binary operation with `iterate`; each carries a
@@ -2000,44 +2046,44 @@ def setupIterateOrdered [HolBase]
     type and the three decision tactics
     `ARITH_TAC`/`INT_ARITH_TAC`/`REAL_ARITH_TAC`. -/
 structure IterateSpecial where
-  /-- `nproduct` (iterate.ml 1194): `nproduct = iterate (( * ):num->num->num)`,
+  /-- `nproduct` (iterate.ml 1232): `nproduct = iterate (( * ):num->num->num)`,
       the finite product over `:num`.  `new_definition`. -/
   nproduct : thm
-  /-- `NEUTRAL_MUL` (iterate.ml 1197): `neutral(( * ):num->num->num) = 1`. -/
+  /-- `NEUTRAL_MUL` (iterate.ml 1235): `neutral(( * ):num->num->num) = 1`. -/
   NEUTRAL_MUL : thm
-  /-- `MONOIDAL_MUL` (iterate.ml 1202): `monoidal(( * ):num->num->num)`. -/
+  /-- `MONOIDAL_MUL` (iterate.ml 1240): `monoidal(( * ):num->num->num)`. -/
   MONOIDAL_MUL : thm
-  /-- `NPRODUCT_CLAUSES` (iterate.ml 1206): the empty/insert recursion for
+  /-- `NPRODUCT_CLAUSES` (iterate.ml 1244): the empty/insert recursion for
       `nproduct` (neutral `1`, step `f(x) * ...`). -/
   NPRODUCT_CLAUSES : thm
-  /-- `iproduct` (iterate.ml 1216): `iproduct = iterate (( * ):int->int->int)`,
+  /-- `iproduct` (iterate.ml 1254): `iproduct = iterate (( * ):int->int->int)`,
       the finite product over `:int`.  `new_definition`. -/
   iproduct : thm
-  /-- `NEUTRAL_INT_MUL` (iterate.ml 1219): `neutral(( * ):int->int->int) = &1`. -/
+  /-- `NEUTRAL_INT_MUL` (iterate.ml 1257): `neutral(( * ):int->int->int) = &1`. -/
   NEUTRAL_INT_MUL : thm
-  /-- `MONOIDAL_INT_MUL` (iterate.ml 1224): `monoidal(( * ):int->int->int)`. -/
+  /-- `MONOIDAL_INT_MUL` (iterate.ml 1262): `monoidal(( * ):int->int->int)`. -/
   MONOIDAL_INT_MUL : thm
-  /-- `IPRODUCT_CLAUSES` (iterate.ml 1228): the empty/insert recursion for
+  /-- `IPRODUCT_CLAUSES` (iterate.ml 1266): the empty/insert recursion for
       `iproduct` (neutral `&1`, step `f(x) * ...`). -/
   IPRODUCT_CLAUSES : thm
-  /-- `product` (iterate.ml 1238): `product = iterate (( * ):real->real->real)`,
+  /-- `product` (iterate.ml 1276): `product = iterate (( * ):real->real->real)`,
       the finite product over `:real`.  `new_definition`. -/
   product : thm
-  /-- `NEUTRAL_REAL_MUL` (iterate.ml 1241): `neutral(( * ):real->real->real) = &1`. -/
+  /-- `NEUTRAL_REAL_MUL` (iterate.ml 1279): `neutral(( * ):real->real->real) = &1`. -/
   NEUTRAL_REAL_MUL : thm
-  /-- `MONOIDAL_REAL_MUL` (iterate.ml 1246): `monoidal(( * ):real->real->real)`. -/
+  /-- `MONOIDAL_REAL_MUL` (iterate.ml 1284): `monoidal(( * ):real->real->real)`. -/
   MONOIDAL_REAL_MUL : thm
-  /-- `PRODUCT_CLAUSES` (iterate.ml 1250): the empty/insert recursion for
+  /-- `PRODUCT_CLAUSES` (iterate.ml 1288): the empty/insert recursion for
       `product` (neutral `&1`, step `f(x) * ...`). -/
   PRODUCT_CLAUSES : thm
-  /-- `isum` (iterate.ml 1260): `isum = iterate ((+):int->int->int)`, the
+  /-- `isum` (iterate.ml 1298): `isum = iterate ((+):int->int->int)`, the
       finite sum over `:int`.  `new_definition`. -/
   isum : thm
-  /-- `NEUTRAL_INT_ADD` (iterate.ml 1263): `neutral((+):int->int->int) = &0`. -/
+  /-- `NEUTRAL_INT_ADD` (iterate.ml 1301): `neutral((+):int->int->int) = &0`. -/
   NEUTRAL_INT_ADD : thm
-  /-- `MONOIDAL_INT_ADD` (iterate.ml 1268): `monoidal((+):int->int->int)`. -/
+  /-- `MONOIDAL_INT_ADD` (iterate.ml 1306): `monoidal((+):int->int->int)`. -/
   MONOIDAL_INT_ADD : thm
-  /-- `ISUM_CLAUSES` (iterate.ml 1272): the empty/insert recursion for `isum`
+  /-- `ISUM_CLAUSES` (iterate.ml 1310): the empty/insert recursion for `isum`
       (neutral `&0`, step `f(x) + ...`). -/
   ISUM_CLAUSES : thm
   deriving Inhabited
@@ -2153,72 +2199,72 @@ def setupIterateSpecial [HolBase]
 
 /- ---------------------------------------------------------------------- -/
 /- Sums of natural numbers.                                               -/
-/- (`prioritize_num()` at iterate.ml 1286 is run by Session.)             -/
+/- (`prioritize_num()` at iterate.ml 1324 is run by Session.)             -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The FIRST nsum bundle, iterate.ml 1288-1461: the `nsum` definition, the
+/-- The FIRST nsum bundle, iterate.ml 1326-1499: the `nsum` definition, the
     additive neutral/monoidal identities, and the twenty-five theorems from
     `NSUM_DEGENERATE` to `NSUM_SWAP` - the recursion clauses, union/difference/
     inclusion-exclusion, support-invariance, additivity, the ordering lemmas
     (`NSUM_LE`/`NSUM_LT`/...), `NSUM_CONST`, the positivity lemmas, and
     delta/singleton/swap. -/
 structure IterateNsum1 where
-  /-- `nsum` (iterate.ml 1288): `nsum = iterate ((+):num->num->num)`, the finite
+  /-- `nsum` (iterate.ml 1326): `nsum = iterate ((+):num->num->num)`, the finite
       sum over `:num`.  `new_definition`; neutral `0`. -/
   nsum : thm
-  /-- `NEUTRAL_ADD` (iterate.ml 1291): `neutral((+):num->num->num) = 0`. -/
+  /-- `NEUTRAL_ADD` (iterate.ml 1329): `neutral((+):num->num->num) = 0`. -/
   NEUTRAL_ADD : thm
-  /-- `MONOIDAL_ADD` (iterate.ml 1296): `monoidal((+):num->num->num)`. -/
+  /-- `MONOIDAL_ADD` (iterate.ml 1334): `monoidal((+):num->num->num)`. -/
   MONOIDAL_ADD : thm
-  /-- `NSUM_DEGENERATE` (iterate.ml 1300): infinite support gives `nsum = 0`. -/
+  /-- `NSUM_DEGENERATE` (iterate.ml 1338): infinite support gives `nsum = 0`. -/
   NSUM_DEGENERATE : thm
-  /-- `NSUM_CLAUSES` (iterate.ml 1305): the empty/insert recursion clauses. -/
+  /-- `NSUM_CLAUSES` (iterate.ml 1343): the empty/insert recursion clauses. -/
   NSUM_CLAUSES : thm
-  /-- `NSUM_UNION` (iterate.ml 1315): sum over a disjoint union. -/
+  /-- `NSUM_UNION` (iterate.ml 1353): sum over a disjoint union. -/
   NSUM_UNION : thm
-  /-- `NSUM_DIFF` (iterate.ml 1321): sum over a set difference. -/
+  /-- `NSUM_DIFF` (iterate.ml 1359): sum over a set difference. -/
   NSUM_DIFF : thm
-  /-- `NSUM_INCL_EXCL` (iterate.ml 1329): the inclusion-exclusion identity. -/
+  /-- `NSUM_INCL_EXCL` (iterate.ml 1367): the inclusion-exclusion identity. -/
   NSUM_INCL_EXCL : thm
-  /-- `NSUM_SUPPORT` (iterate.ml 1336): `nsum (support (+) f s) f = nsum s f`. -/
+  /-- `NSUM_SUPPORT` (iterate.ml 1374): `nsum (support (+) f s) f = nsum s f`. -/
   NSUM_SUPPORT : thm
-  /-- `NSUM_ADD` (iterate.ml 1340): additivity of the summand. -/
+  /-- `NSUM_ADD` (iterate.ml 1378): additivity of the summand. -/
   NSUM_ADD : thm
-  /-- `NSUM_ADD_GEN` (iterate.ml 1345): additivity under finite support. -/
+  /-- `NSUM_ADD_GEN` (iterate.ml 1383): additivity under finite support. -/
   NSUM_ADD_GEN : thm
-  /-- `NSUM_EQ_0` (iterate.ml 1352): a summand identically `0` gives `nsum = 0`. -/
+  /-- `NSUM_EQ_0` (iterate.ml 1390): a summand identically `0` gives `nsum = 0`. -/
   NSUM_EQ_0 : thm
-  /-- `NSUM_0` (iterate.ml 1357): `nsum s (\n. 0) = 0`. -/
+  /-- `NSUM_0` (iterate.ml 1395): `nsum s (\n. 0) = 0`. -/
   NSUM_0 : thm
-  /-- `NSUM_LMUL` (iterate.ml 1361): `nsum s (\x. c * f x) = c * nsum s f`. -/
+  /-- `NSUM_LMUL` (iterate.ml 1399): `nsum s (\x. c * f x) = c * nsum s f`. -/
   NSUM_LMUL : thm
-  /-- `NSUM_RMUL` (iterate.ml 1374): `nsum s (\x. f x * c) = nsum s f * c`. -/
+  /-- `NSUM_RMUL` (iterate.ml 1412): `nsum s (\x. f x * c) = nsum s f * c`. -/
   NSUM_RMUL : thm
-  /-- `NSUM_LE` (iterate.ml 1378): monotonicity in the summand. -/
+  /-- `NSUM_LE` (iterate.ml 1416): monotonicity in the summand. -/
   NSUM_LE : thm
-  /-- `NSUM_LT` (iterate.ml 1386): strict monotonicity with a strict witness. -/
+  /-- `NSUM_LT` (iterate.ml 1424): strict monotonicity with a strict witness. -/
   NSUM_LT : thm
-  /-- `NSUM_LT_ALL` (iterate.ml 1399): strict monotonicity, everywhere strict. -/
+  /-- `NSUM_LT_ALL` (iterate.ml 1437): strict monotonicity, everywhere strict. -/
   NSUM_LT_ALL : thm
-  /-- `NSUM_EQ` (iterate.ml 1405): extensional equality of the summand. -/
+  /-- `NSUM_EQ` (iterate.ml 1443): extensional equality of the summand. -/
   NSUM_EQ : thm
-  /-- `NSUM_CONST` (iterate.ml 1410): `nsum s (\n. c) = CARD s * c`. -/
+  /-- `NSUM_CONST` (iterate.ml 1448): `nsum s (\n. c) = CARD s * c`. -/
   NSUM_CONST : thm
-  /-- `NSUM_POS_BOUND` (iterate.ml 1416): a bound on the sum bounds each term. -/
+  /-- `NSUM_POS_BOUND` (iterate.ml 1454): a bound on the sum bounds each term. -/
   NSUM_POS_BOUND : thm
-  /-- `NSUM_EQ_0_IFF` (iterate.ml 1424): `nsum s f = 0 <=> all terms 0`. -/
+  /-- `NSUM_EQ_0_IFF` (iterate.ml 1462): `nsum s f = 0 <=> all terms 0`. -/
   NSUM_EQ_0_IFF : thm
-  /-- `NSUM_POS_LT` (iterate.ml 1429): a positive term gives a positive sum. -/
+  /-- `NSUM_POS_LT` (iterate.ml 1467): a positive term gives a positive sum. -/
   NSUM_POS_LT : thm
-  /-- `NSUM_POS_LT_ALL` (iterate.ml 1435): all-positive terms give positive sum. -/
+  /-- `NSUM_POS_LT_ALL` (iterate.ml 1473): all-positive terms give positive sum. -/
   NSUM_POS_LT_ALL : thm
-  /-- `NSUM_DELETE` (iterate.ml 1441): `f a + nsum (s DELETE a) f = nsum s f`. -/
+  /-- `NSUM_DELETE` (iterate.ml 1479): `f a + nsum (s DELETE a) f = nsum s f`. -/
   NSUM_DELETE : thm
-  /-- `NSUM_SING` (iterate.ml 1445): `nsum {x} f = f x`. -/
+  /-- `NSUM_SING` (iterate.ml 1483): `nsum {x} f = f x`. -/
   NSUM_SING : thm
-  /-- `NSUM_DELTA` (iterate.ml 1449): sum of a delta function. -/
+  /-- `NSUM_DELTA` (iterate.ml 1487): sum of a delta function. -/
   NSUM_DELTA : thm
-  /-- `NSUM_SWAP` (iterate.ml 1454): exchange of two finite summations. -/
+  /-- `NSUM_SWAP` (iterate.ml 1492): exchange of two finite summations. -/
   NSUM_SWAP : thm
   deriving Inhabited
 
@@ -2427,80 +2473,80 @@ def setupIterateNsum1 [HolBase]
     NSUM_CONST, NSUM_POS_BOUND, NSUM_EQ_0_IFF, NSUM_POS_LT, NSUM_POS_LT_ALL,
     NSUM_DELETE, NSUM_SING, NSUM_DELTA, NSUM_SWAP }
 
-/-- The SECOND nsum bundle, iterate.ml 1462-1745: `NSUM_IMAGE` to `NSUM_CASES`
+/-- The SECOND nsum bundle, iterate.ml 1500-1783: `NSUM_IMAGE` to `NSUM_CASES`
     - the image/superset/restriction lemmas, the counting lemmas
     (`NSUM_MULTICOUNT`/`NSUM_GROUP`/...), subset monotonicity, the
     bijection/injection/product transfer lemmas, and `NSUM_UNIONS_NONZERO`.
     This bundle carries ALL the section's heaviest structured proofs and nine
     of its twelve THENL sites. -/
 structure IterateNsum2 where
-  /-- `NSUM_IMAGE` (iterate.ml 1462): sum over an injective image. -/
+  /-- `NSUM_IMAGE` (iterate.ml 1500): sum over an injective image. -/
   NSUM_IMAGE : thm
-  /-- `NSUM_SUPERSET` (iterate.ml 1469): drop zero-valued extra points. -/
+  /-- `NSUM_SUPERSET` (iterate.ml 1507): drop zero-valued extra points. -/
   NSUM_SUPERSET : thm
-  /-- `NSUM_UNIV` (iterate.ml 1475): sum over the universe via the support. -/
+  /-- `NSUM_UNIV` (iterate.ml 1513): sum over the universe via the support. -/
   NSUM_UNIV : thm
-  /-- `NSUM_UNION_RZERO` (iterate.ml 1480): union whose right excess is zero. -/
+  /-- `NSUM_UNION_RZERO` (iterate.ml 1518): union whose right excess is zero. -/
   NSUM_UNION_RZERO : thm
-  /-- `NSUM_UNION_LZERO` (iterate.ml 1488): union whose left excess is zero. -/
+  /-- `NSUM_UNION_LZERO` (iterate.ml 1526): union whose left excess is zero. -/
   NSUM_UNION_LZERO : thm
-  /-- `NSUM_RESTRICT` (iterate.ml 1494): restricting the summand to the set. -/
+  /-- `NSUM_RESTRICT` (iterate.ml 1532): restricting the summand to the set. -/
   NSUM_RESTRICT : thm
-  /-- `NSUM_BOUND` (iterate.ml 1499): `nsum s f <= CARD s * b`. -/
+  /-- `NSUM_BOUND` (iterate.ml 1537): `nsum s f <= CARD s * b`. -/
   NSUM_BOUND : thm
-  /-- `NSUM_BOUND_GEN` (iterate.ml 1504): bound via `b DIV CARD s`. -/
+  /-- `NSUM_BOUND_GEN` (iterate.ml 1542): bound via `b DIV CARD s`. -/
   NSUM_BOUND_GEN : thm
-  /-- `NSUM_BOUND_LT` (iterate.ml 1512): strict bound with a strict witness. -/
+  /-- `NSUM_BOUND_LT` (iterate.ml 1550): strict bound with a strict witness. -/
   NSUM_BOUND_LT : thm
-  /-- `NSUM_BOUND_LT_ALL` (iterate.ml 1520): strict bound, everywhere strict. -/
+  /-- `NSUM_BOUND_LT_ALL` (iterate.ml 1558): strict bound, everywhere strict. -/
   NSUM_BOUND_LT_ALL : thm
-  /-- `NSUM_BOUND_LT_GEN` (iterate.ml 1525): strict bound via `b DIV CARD s`. -/
+  /-- `NSUM_BOUND_LT_GEN` (iterate.ml 1563): strict bound via `b DIV CARD s`. -/
   NSUM_BOUND_LT_GEN : thm
-  /-- `NSUM_UNION_EQ` (iterate.ml 1534): a partition into `s`/`t` gives `u`. -/
+  /-- `NSUM_UNION_EQ` (iterate.ml 1572): a partition into `s`/`t` gives `u`. -/
   NSUM_UNION_EQ : thm
-  /-- `NSUM_EQ_SUPERSET` (iterate.ml 1540): equal on `t`, zero on `s DIFF t`. -/
+  /-- `NSUM_EQ_SUPERSET` (iterate.ml 1578): equal on `t`, zero on `s DIFF t`. -/
   NSUM_EQ_SUPERSET : thm
-  /-- `NSUM_RESTRICT_SET` (iterate.ml 1548): sum over `{x | x IN s /\ P x}`. -/
+  /-- `NSUM_RESTRICT_SET` (iterate.ml 1586): sum over `{x | x IN s /\ P x}`. -/
   NSUM_RESTRICT_SET : thm
-  /-- `NSUM_NSUM_RESTRICT` (iterate.ml 1553): swap of restricted double sums. -/
+  /-- `NSUM_NSUM_RESTRICT` (iterate.ml 1591): swap of restricted double sums. -/
   NSUM_NSUM_RESTRICT : thm
-  /-- `CARD_EQ_NSUM` (iterate.ml 1561): `CARD s = nsum s (\x. 1)`. -/
+  /-- `CARD_EQ_NSUM` (iterate.ml 1599): `CARD s = nsum s (\x. 1)`. -/
   CARD_EQ_NSUM : thm
-  /-- `NSUM_MULTICOUNT_GEN` (iterate.ml 1565): a general counting identity. -/
+  /-- `NSUM_MULTICOUNT_GEN` (iterate.ml 1603): a general counting identity. -/
   NSUM_MULTICOUNT_GEN : thm
-  /-- `NSUM_MULTICOUNT` (iterate.ml 1582): the uniform-multiplicity count. -/
+  /-- `NSUM_MULTICOUNT` (iterate.ml 1620): the uniform-multiplicity count. -/
   NSUM_MULTICOUNT : thm
-  /-- `NSUM_IMAGE_GEN` (iterate.ml 1592): fibre decomposition of a sum. -/
+  /-- `NSUM_IMAGE_GEN` (iterate.ml 1630): fibre decomposition of a sum. -/
   NSUM_IMAGE_GEN : thm
-  /-- `NSUM_GROUP` (iterate.ml 1600): grouping a sum by a function's value. -/
+  /-- `NSUM_GROUP` (iterate.ml 1638): grouping a sum by a function's value. -/
   NSUM_GROUP : thm
-  /-- `NSUM_GROUP_RELATION` (iterate.ml 1610): grouping by a relation. -/
+  /-- `NSUM_GROUP_RELATION` (iterate.ml 1648): grouping by a relation. -/
   NSUM_GROUP_RELATION : thm
-  /-- `NSUM_SUBSET` (iterate.ml 1624): subset monotonicity via a zero excess. -/
+  /-- `NSUM_SUBSET` (iterate.ml 1662): subset monotonicity via a zero excess. -/
   NSUM_SUBSET : thm
-  /-- `NSUM_SUBSET_SIMPLE` (iterate.ml 1637): subset monotonicity, simple. -/
+  /-- `NSUM_SUBSET_SIMPLE` (iterate.ml 1675): subset monotonicity, simple. -/
   NSUM_SUBSET_SIMPLE : thm
-  /-- `NSUM_LE_GEN` (iterate.ml 1642): monotonicity under a finite support. -/
+  /-- `NSUM_LE_GEN` (iterate.ml 1680): monotonicity under a finite support. -/
   NSUM_LE_GEN : thm
-  /-- `NSUM_MUL_BOUND` (iterate.ml 1657): `nsum s (a*b) <= nsum s a * nsum s b`. -/
+  /-- `NSUM_MUL_BOUND` (iterate.ml 1695): `nsum s (a*b) <= nsum s a * nsum s b`. -/
   NSUM_MUL_BOUND : thm
-  /-- `NSUM_IMAGE_NONZERO` (iterate.ml 1668): image sum with zero collisions. -/
+  /-- `NSUM_IMAGE_NONZERO` (iterate.ml 1706): image sum with zero collisions. -/
   NSUM_IMAGE_NONZERO : thm
-  /-- `NSUM_BIJECTION` (iterate.ml 1676): sum invariance under a bijection. -/
+  /-- `NSUM_BIJECTION` (iterate.ml 1714): sum invariance under a bijection. -/
   NSUM_BIJECTION : thm
-  /-- `NSUM_NSUM_PRODUCT` (iterate.ml 1684): double sum as a product sum. -/
+  /-- `NSUM_NSUM_PRODUCT` (iterate.ml 1722): double sum as a product sum. -/
   NSUM_NSUM_PRODUCT : thm
-  /-- `NSUM_EQ_GENERAL` (iterate.ml 1692): equality via a transfer function. -/
+  /-- `NSUM_EQ_GENERAL` (iterate.ml 1730): equality via a transfer function. -/
   NSUM_EQ_GENERAL : thm
-  /-- `NSUM_EQ_GENERAL_INVERSES` (iterate.ml 1700): equality via inverses. -/
+  /-- `NSUM_EQ_GENERAL_INVERSES` (iterate.ml 1738): equality via inverses. -/
   NSUM_EQ_GENERAL_INVERSES : thm
-  /-- `NSUM_INJECTION` (iterate.ml 1708): sum invariance under an injection. -/
+  /-- `NSUM_INJECTION` (iterate.ml 1746): sum invariance under an injection. -/
   NSUM_INJECTION : thm
-  /-- `NSUM_UNION_NONZERO` (iterate.ml 1717): union sum with zero overlap. -/
+  /-- `NSUM_UNION_NONZERO` (iterate.ml 1755): union sum with zero overlap. -/
   NSUM_UNION_NONZERO : thm
-  /-- `NSUM_UNIONS_NONZERO` (iterate.ml 1724): union of a family, zero overlap. -/
+  /-- `NSUM_UNIONS_NONZERO` (iterate.ml 1762): union of a family, zero overlap. -/
   NSUM_UNIONS_NONZERO : thm
-  /-- `NSUM_CASES` (iterate.ml 1739): split a summand by a predicate. -/
+  /-- `NSUM_CASES` (iterate.ml 1777): split a summand by a predicate. -/
   NSUM_CASES : thm
   deriving Inhabited
 
@@ -2836,66 +2882,77 @@ def setupIterateNsum2 [HolBase]
     NSUM_EQ_GENERAL_INVERSES, NSUM_INJECTION, NSUM_UNION_NONZERO,
     NSUM_UNIONS_NONZERO, NSUM_CASES }
 
-/-- The THIRD nsum bundle, iterate.ml 1746-1917: the closure/relation
+/-- The THIRD nsum bundle, iterate.ml 1784-2022: the closure/relation
     induction principles (`NSUM_CLOSED`/`NSUM_RELATED` and their nonempty
     variants), the numeral-segment theorems (`NSUM_*_NUMSEG`, the numseg
     recursion clauses, offset/split/reflect/pair), the modular-arithmetic
     lemmas (`MOD_NSUM_MOD`), the congruence `CONG_NSUM`, and the final
     `extend_basic_congs` registration of the three nsum congruence rules. -/
 structure IterateNsum3 where
-  /-- `NSUM_CLOSED` (iterate.ml 1746): a closed predicate is preserved. -/
+  /-- `NSUM_CLOSED` (iterate.ml 1784): a closed predicate is preserved. -/
   NSUM_CLOSED : thm
-  /-- `NSUM_RELATED` (iterate.ml 1754): a compatible relation lifts to sums. -/
+  /-- `NSUM_RELATED` (iterate.ml 1792): a compatible relation lifts to sums. -/
   NSUM_RELATED : thm
-  /-- `NSUM_CLOSED_NONEMPTY` (iterate.ml 1766): closure, nonempty variant. -/
+  /-- `NSUM_CLOSED_NONEMPTY` (iterate.ml 1804): closure, nonempty variant. -/
   NSUM_CLOSED_NONEMPTY : thm
-  /-- `NSUM_RELATED_NONEMPTY` (iterate.ml 1776): relation, nonempty variant. -/
+  /-- `NSUM_RELATED_NONEMPTY` (iterate.ml 1814): relation, nonempty variant. -/
   NSUM_RELATED_NONEMPTY : thm
-  /-- `NSUM_ADD_NUMSEG` (iterate.ml 1787): additivity over `m..n`. -/
+  /-- `NSUM_ADD_NUMSEG` (iterate.ml 1825): additivity over `m..n`. -/
   NSUM_ADD_NUMSEG : thm
-  /-- `NSUM_LE_NUMSEG` (iterate.ml 1791): monotonicity over `m..n`. -/
+  /-- `NSUM_LE_NUMSEG` (iterate.ml 1829): monotonicity over `m..n`. -/
   NSUM_LE_NUMSEG : thm
-  /-- `NSUM_EQ_NUMSEG` (iterate.ml 1796): extensional equality over `m..n`. -/
+  /-- `NSUM_EQ_NUMSEG` (iterate.ml 1834): extensional equality over `m..n`. -/
   NSUM_EQ_NUMSEG : thm
-  /-- `NSUM_CONST_NUMSEG` (iterate.ml 1801): `nsum(m..n)(\n. c) = (n+1-m)*c`. -/
+  /-- `NSUM_CONST_NUMSEG` (iterate.ml 1839): `nsum(m..n)(\n. c) = (n+1-m)*c`. -/
   NSUM_CONST_NUMSEG : thm
-  /-- `NSUM_EQ_0_NUMSEG` (iterate.ml 1805): zero summand over `m..n`. -/
+  /-- `NSUM_EQ_0_NUMSEG` (iterate.ml 1843): zero summand over `m..n`. -/
   NSUM_EQ_0_NUMSEG : thm
-  /-- `NSUM_EQ_0_IFF_NUMSEG` (iterate.ml 1809): `nsum(m..n) f = 0 <=> ...`. -/
+  /-- `NSUM_EQ_0_IFF_NUMSEG` (iterate.ml 1847): `nsum(m..n) f = 0 <=> ...`. -/
   NSUM_EQ_0_IFF_NUMSEG : thm
-  /-- `NSUM_TRIV_NUMSEG` (iterate.ml 1813): `n < m ==> nsum(m..n) f = 0`. -/
+  /-- `NSUM_TRIV_NUMSEG` (iterate.ml 1851): `n < m ==> nsum(m..n) f = 0`. -/
   NSUM_TRIV_NUMSEG : thm
-  /-- `NSUM_SING_NUMSEG` (iterate.ml 1817): `nsum(n..n) f = f n`. -/
+  /-- `NSUM_SING_NUMSEG` (iterate.ml 1855): `nsum(n..n) f = f n`. -/
   NSUM_SING_NUMSEG : thm
-  /-- `NSUM_CLAUSES_NUMSEG` (iterate.ml 1821): the `m..0`/`m..SUC n` clauses. -/
+  /-- `NSUM_CLAUSES_NUMSEG` (iterate.ml 1859): the `m..0`/`m..SUC n` clauses. -/
   NSUM_CLAUSES_NUMSEG : thm
-  /-- `NSUM_CLAUSES_NUMSEG_LT` (iterate.ml 1828): the `{i | i < k}` clauses. -/
+  /-- `NSUM_CLAUSES_NUMSEG_LT` (iterate.ml 1866): the `{i | i < k}` clauses. -/
   NSUM_CLAUSES_NUMSEG_LT : thm
-  /-- `NSUM_CLAUSES_NUMSEG_LE` (iterate.ml 1834): the `{i | i <= k}` clauses. -/
+  /-- `NSUM_CLAUSES_NUMSEG_LE` (iterate.ml 1872): the `{i | i <= k}` clauses. -/
   NSUM_CLAUSES_NUMSEG_LE : thm
-  /-- `NSUM_SWAP_NUMSEG` (iterate.ml 1840): exchange of two segment sums. -/
+  /-- `NSUM_SWAP_NUMSEG` (iterate.ml 1878): exchange of two segment sums. -/
   NSUM_SWAP_NUMSEG : thm
-  /-- `NSUM_ADD_SPLIT` (iterate.ml 1846): split `m..(n+p)` at `n`. -/
+  /-- `NSUM_ADD_SPLIT` (iterate.ml 1884): split `m..(n+p)` at `n`. -/
   NSUM_ADD_SPLIT : thm
-  /-- `NSUM_OFFSET` (iterate.ml 1852): `nsum(m+p..n+p) f = nsum(m..n)(f(.+p))`. -/
+  /-- `NSUM_OFFSET` (iterate.ml 1890): `nsum(m+p..n+p) f = nsum(m..n)(f(.+p))`. -/
   NSUM_OFFSET : thm
-  /-- `NSUM_OFFSET_0` (iterate.ml 1857): offset to a zero-based segment. -/
+  /-- `NSUM_OFFSET_0` (iterate.ml 1895): offset to a zero-based segment. -/
   NSUM_OFFSET_0 : thm
-  /-- `NSUM_CLAUSES_LEFT` (iterate.ml 1861): peel the left endpoint. -/
+  /-- `NSUM_CLAUSES_LEFT` (iterate.ml 1899): peel the left endpoint. -/
   NSUM_CLAUSES_LEFT : thm
-  /-- `NSUM_CLAUSES_RIGHT` (iterate.ml 1866): peel the right endpoint. -/
+  /-- `NSUM_CLAUSES_RIGHT` (iterate.ml 1904): peel the right endpoint. -/
   NSUM_CLAUSES_RIGHT : thm
-  /-- `NSUM_PAIR` (iterate.ml 1871): pair adjacent terms `2i`,`2i+1`. -/
+  /-- `NSUM_NUMSEG_LAST` (iterate.ml @1909): peel the last term of `1..j`. -/
+  NSUM_NUMSEG_LAST : thm
+  /-- `NSUM_NUMSEG_MONO` (iterate.ml @1913): `nsum(1..a) k <= nsum(1..b) k`
+      for `a <= b`. -/
+  NSUM_NUMSEG_MONO : thm
+  /-- `NSUM_PAIR` (iterate.ml 1918): pair adjacent terms `2i`,`2i+1`. -/
   NSUM_PAIR : thm
-  /-- `NSUM_REFLECT` (iterate.ml 1876): reflect the summation index. -/
+  /-- `NSUM_REFLECT` (iterate.ml 1923): reflect the summation index. -/
   NSUM_REFLECT : thm
-  /-- `MOD_NSUM_MOD` (iterate.ml 1882): push a sum under `MOD n`. -/
+  /-- `MOD_NSUM_MOD` (iterate.ml 1929): push a sum under `MOD n`. -/
   MOD_NSUM_MOD : thm
-  /-- `MOD_NSUM_MOD_NUMSEG` (iterate.ml 1892): the `m..n` variant. -/
+  /-- `MOD_NSUM_MOD_NUMSEG` (iterate.ml 1939): the `m..n` variant. -/
   MOD_NSUM_MOD_NUMSEG : thm
-  /-- `CONG_NSUM` (iterate.ml 1897): congruence `(mod n)` of two sums. -/
+  /-- `CONG_NSUM` (iterate.ml 1944): congruence `(mod n)` of two sums. -/
   CONG_NSUM : thm
-  /-- `NSUM_CONG` (iterate.ml 1907): the three-way congruence theorem whose
+  /-- `NSUM_DIGITS_BOUND` (iterate.ml @1956): a base-`e` digit sum over `1..n`
+      is below `e EXP n`. -/
+  NSUM_DIGITS_BOUND : thm
+  /-- `NSUM_DIGITS_UNIQUE` (iterate.ml @1972): base-`e` digits over `1..n` are
+      determined by their sum. -/
+  NSUM_DIGITS_UNIQUE : thm
+  /-- `NSUM_CONG` (iterate.ml 2012): the three-way congruence theorem whose
       `SPEC_ALL`'d conjuncts are registered with `extend_basic_congs`. -/
   NSUM_CONG : thm
   deriving Inhabited
@@ -2913,19 +2970,23 @@ def setupIterateNsum3 [HolBase]
     (FINITE_INDUCT_STRONG FINITE_NUMSEG NUMSEG_SING ETA_AX MOD_ZERO
      MOD_ADD_MOD MOD_MOD_REFL SUC_SUB1 SUB_ADD ADD_CLAUSES LT_REFL NOT_LT
      LE_TRANS EQ_ADD_RCANCEL o_DEF IN_NUMSEG IN_ELIM_THM
-     IMP_CONJ RIGHT_FORALL_IMP_THM : thm) :
+     IMP_CONJ RIGHT_FORALL_IMP_THM : thm)
+    (ASM_ARITH_TAC : tactic)
+    (MESON' : List thm → term → IO (Except String thm))
+    (EXP ARITH LE_MULT_LCANCEL DIVMOD_UNIQ : thm) :
     ExceptT String IO IterateNsum3 := do
   let ARITH_RULE (t : term) : ExceptT String IO thm := ARITH_RULE' t
+  let MESON (ths : List thm) (t : term) : ExceptT String IO thm := MESON' ths t
   let { ITERATE_CLOSED, ITERATE_RELATED, ITERATE_CLOSED_NONEMPTY,
         ITERATE_RELATED_NONEMPTY, .. } := IK1
   let { ITERATE_CLAUSES_NUMSEG, ITERATE_CLAUSES_NUMSEG_LT, ITERATE_CLAUSES_NUMSEG_LE,
         ITERATE_PAIR, ITERATE_REFLECT, .. } := IK3
   let { CARD_NUMSEG, NUMSEG_ADD_SPLIT, DISJOINT_NUMSEG, NUMSEG_OFFSET_IMAGE,
-        NUMSEG_LREC, .. } := ISeg
+        NUMSEG_LREC, SUBSET_NUMSEG, .. } := ISeg
   let { nsum, NEUTRAL_ADD, MONOIDAL_ADD, NSUM_CLAUSES, NSUM_ADD, NSUM_EQ,
         NSUM_EQ_0, NSUM_LE, NSUM_CONST, NSUM_SING, NSUM_UNION, NSUM_EQ_0_IFF,
         NSUM_SWAP, .. } := N1
-  let { NSUM_IMAGE, .. } := N2
+  let { NSUM_IMAGE, NSUM_SUBSET_SIMPLE, .. } := N2
 
   let NSUM_CLOSED ← prove
    r"!P f:A->num s.
@@ -3052,6 +3113,15 @@ def setupIterateNsum3 [HolBase]
    (GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN
     SIMP_TAC [LT_REFL, NSUM_CLAUSES_NUMSEG, SUC_SUB1])
 
+  let NSUM_NUMSEG_LAST ← prove
+   r"!k j. 1 <= j ==> nsum(1..j) k = nsum(1..j-1) k + k j"
+   (SIMP_TAC [NSUM_CLAUSES_RIGHT, ← ARITH_RULE (← q r"1 <= j ==> 0 < j")])
+
+  let NSUM_NUMSEG_MONO ← prove
+   r"!k a b. a <= b ==> nsum(1..a) k <= nsum(1..b) k"
+   (REPEAT STRIP_TAC THEN MATCH_MP_TAC NSUM_SUBSET_SIMPLE THEN
+    REWRITE_TAC [FINITE_NUMSEG, SUBSET_NUMSEG] THEN ASM_ARITH_TAC)
+
   let NSUM_PAIR ← prove
    r"!f m n. nsum(2*m..2*n+1) f = nsum(m..n) (\i. f(2*i) + f(2*i+1))"
    (MP_TAC (← MATCH_MP ITERATE_PAIR MONOIDAL_ADD) THEN
@@ -3088,8 +3158,66 @@ def setupIterateNsum3 [HolBase]
     ASM_REWRITE_TAC [] THEN DISCH_THEN MATCH_MP_TAC THEN
     CONV_TAC NUMBER_RULE)
 
+  /- Base-e digit sums over 1..n, written with the weights e^(i-1). -/
+
+  let NSUM_DIGITS_BOUND ← prove
+   r"!e n a.
+        (!i. i IN 1..n ==> a i < e)
+        ==> nsum(1..n) (\i. e EXP (i - 1) * a i) < e EXP n"
+   (GEN_TAC THEN REWRITE_TAC [IN_NUMSEG] THEN INDUCT_TAC THEN
+    REWRITE_TAC [NSUM_CLAUSES_NUMSEG, ← ARITH_RULE (← q r"1 <= SUC n"), EXP, ARITH] THEN
+    REWRITE_TAC [← ARITH_RULE (← q r"SUC n - 1 = n")] THEN
+    X_GEN_TAC (← q r"a:num->num") THEN DISCH_TAC THEN
+    MATCH_MP_TAC (← ARITH_RULE
+     (← q r"s < e /\ e * (x + 1) <= e * b ==> s + e * x < b * e")) THEN
+    CONJ_TAC THENL
+     [FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_MESON_TAC [← ARITH_RULE (← q r"i <= n ==> i <= SUC n")],
+      REWRITE_TAC [LE_MULT_LCANCEL, ← ARITH_RULE (← q r"b + 1 <= c <=> b < c")] THEN
+      DISJ2_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ARITH_TAC])
+
+  let NSUM_DIGITS_UNIQUE ← prove
+   r"!e n a b.
+        (!i. i IN 1..n ==> a i < e /\ b i < e) /\
+        nsum(1..n) (\i. e EXP (i - 1) * a i) =
+        nsum(1..n) (\i. e EXP (i - 1) * b i)
+        ==> !i. i IN 1..n ==> a i = b i"
+   (GEN_TAC THEN INDUCT_TAC THENL
+     [REWRITE_TAC [IN_NUMSEG] THEN ARITH_TAC, ALL_TAC] THEN
+    REPEAT GEN_TAC THEN
+    REWRITE_TAC [NSUM_CLAUSES_NUMSEG, ← ARITH_RULE (← q r"1 <= SUC n")] THEN
+    REWRITE_TAC [← ARITH_RULE (← q r"SUC n - 1 = n")] THEN STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"a(SUC n):num = b(SUC n) /\
+      nsum(1..n) (\i. e EXP (i - 1) * a i) =
+      nsum(1..n) (\i. e EXP (i - 1) * b i)")
+    STRIP_ASSUME_TAC THENL
+     [MATCH_MP_TAC (← MESON [DIVMOD_UNIQ]
+       (← q r"!M N q r q' r'.
+          (M = q * N + r /\ r < N) /\ (M = q' * N + r' /\ r' < (N:num))
+          ==> q = q' /\ r = r'")) THEN
+      MAP_EVERY EXISTS_TAC
+       [← q r"nsum(1..n) (\i. e EXP (i - 1) * a i) + e EXP n * a(SUC n)",
+        ← q r"e EXP n"] THEN
+      REPEAT CONJ_TAC THENL
+       [ARITH_TAC,
+        MATCH_MP_TAC NSUM_DIGITS_BOUND,
+        ASM_ARITH_TAC,
+        MATCH_MP_TAC NSUM_DIGITS_BOUND] THEN
+      RULE_ASSUM_TAC (REWRITE_RULE [IN_NUMSEG]) THEN REWRITE_TAC [IN_NUMSEG] THEN
+      ASM_MESON_TAC [← ARITH_RULE (← q r"i <= n ==> i <= SUC n")],
+      ALL_TAC] THEN
+    X_GEN_TAC (← q r"i:num") THEN REWRITE_TAC [IN_NUMSEG] THEN STRIP_TAC THEN
+    ASM_CASES_TAC (← q r"i = SUC n") THEN ASM_REWRITE_TAC [] THEN
+    FIRST_X_ASSUM (MP_TAC o SPECL [← q r"a:num->num", ← q r"b:num->num"]) THEN
+    ANTS_TAC THENL
+     [ASM_REWRITE_TAC [IN_NUMSEG] THEN
+      RULE_ASSUM_TAC (REWRITE_RULE [IN_NUMSEG]) THEN
+      ASM_MESON_TAC [← ARITH_RULE (← q r"i <= n ==> i <= SUC n")],
+      DISCH_THEN MATCH_MP_TAC THEN REWRITE_TAC [IN_NUMSEG] THEN ASM_ARITH_TAC])
+
   -- `let th = prove (...) in extend_basic_congs (map SPEC_ALL (CONJUNCTS th))`
-  -- (iterate.ml 1906); kept as the field NSUM_CONG.
+  -- (iterate.ml 2011); kept as the field NSUM_CONG.
   let NSUM_CONG ← prove
    r"(!f g s:A->bool.
         (!x. x IN s ==> f(x) = g(x))
@@ -3108,38 +3236,39 @@ def setupIterateNsum3 [HolBase]
     NSUM_EQ_0_NUMSEG, NSUM_EQ_0_IFF_NUMSEG, NSUM_TRIV_NUMSEG, NSUM_SING_NUMSEG,
     NSUM_CLAUSES_NUMSEG, NSUM_CLAUSES_NUMSEG_LT, NSUM_CLAUSES_NUMSEG_LE,
     NSUM_SWAP_NUMSEG, NSUM_ADD_SPLIT, NSUM_OFFSET, NSUM_OFFSET_0,
-    NSUM_CLAUSES_LEFT, NSUM_CLAUSES_RIGHT, NSUM_PAIR, NSUM_REFLECT,
-    MOD_NSUM_MOD, MOD_NSUM_MOD_NUMSEG, CONG_NSUM, NSUM_CONG }
+    NSUM_CLAUSES_LEFT, NSUM_CLAUSES_RIGHT, NSUM_NUMSEG_LAST, NSUM_NUMSEG_MONO,
+    NSUM_PAIR, NSUM_REFLECT, MOD_NSUM_MOD, MOD_NSUM_MOD_NUMSEG, CONG_NSUM,
+    NSUM_DIGITS_BOUND, NSUM_DIGITS_UNIQUE, NSUM_CONG }
 
 /- ---------------------------------------------------------------------- -/
 /- Thanks to finite sums, we can express cardinality of finite union.     -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The cardinality/expansion bundle, iterate.ml 1920-1978: `CARD_UNIONS_IMAGE`
+/-- The cardinality/expansion bundle, iterate.ml 2025-2083: `CARD_UNIONS_IMAGE`
     and `CARD_UNIONS` (cardinality of a finite disjoint union via `nsum`), the
     three `EXPAND_NSUM_CONV` proformas, and `EXPAND_NSUM_CONV` itself (an
     `ioconv`, tested behaviourally). -/
 structure IterateNsumCard where
-  /-- `CARD_UNIONS_IMAGE` (iterate.ml 1923): `CARD(UNIONS(IMAGE f s)) =
+  /-- `CARD_UNIONS_IMAGE` (iterate.ml 2028): `CARD(UNIONS(IMAGE f s)) =
       nsum s (\i. CARD(f i))` for a disjoint image family. -/
   CARD_UNIONS_IMAGE : thm
-  /-- `CARD_UNIONS` (iterate.ml 1939): `CARD(UNIONS s) = nsum s CARD` for a
+  /-- `CARD_UNIONS` (iterate.ml 2044): `CARD(UNIONS s) = nsum s CARD` for a
       pairwise-disjoint finite family. -/
   CARD_UNIONS : thm
-  /-- `EXPAND_NSUM_CONV`'s `pth_0` (iterate.ml 1953): `n < m ==> nsum(m..n) f
+  /-- `EXPAND_NSUM_CONV`'s `pth_0` (iterate.ml 2058): `n < m ==> nsum(m..n) f
       = 0`. -/
   pth_0 : thm
-  /-- `EXPAND_NSUM_CONV`'s `pth_1` (iterate.ml 1954): `nsum(m..m) f = f m`. -/
+  /-- `EXPAND_NSUM_CONV`'s `pth_1` (iterate.ml 2059): `nsum(m..m) f = f m`. -/
   pth_1 : thm
-  /-- `EXPAND_NSUM_CONV`'s `pth_2` (iterate.ml 1955): `m <= n ==> nsum(m..n) f
+  /-- `EXPAND_NSUM_CONV`'s `pth_2` (iterate.ml 2060): `m <= n ==> nsum(m..n) f
       = f m + nsum(m+1..n) f`. -/
   pth_2 : thm
-  /-- `EXPAND_NSUM_CONV` (iterate.ml 1948-1978): expand `nsum(m..n) f` for
+  /-- `EXPAND_NSUM_CONV` (iterate.ml 2053-2083): expand `nsum(m..n) f` for
       numeral `m`, `n`.  A CONVERSION, so probed behaviourally. -/
   EXPAND_NSUM_CONV : ioconv
   deriving Inhabited
 
-/-- `let rec conv tm = ...` inside EXPAND_NSUM_CONV (iterate.ml 1957). -/
+/-- `let rec conv tm = ...` inside EXPAND_NSUM_CONV (iterate.ml 2062). -/
 partial def expandNsumConvImpl [HolBase]
     (NUM_LT_CONV NUM_LE_CONV NUM_ADD_CONV : ioconv)
     (pth_0 pth_1 pth_2 : thm) (ns_tm f_tm m_tm n_tm : term) : ioconv :=
@@ -3220,84 +3349,84 @@ def setupIterateNsumCard [HolBase]
 
 /- ---------------------------------------------------------------------- -/
 /- Sums of real numbers.                                                  -/
-/- (`prioritize_real()` at iterate.ml 1982 is run by Session.)            -/
+/- (`prioritize_real()` at iterate.ml 2087 is run by Session.)            -/
 /- ---------------------------------------------------------------------- -/
 
-/-- iterate.ml 1984-2211: the `sum` definition and the first thirty-three
+/-- iterate.ml 2089-2316: the `sum` definition and the first thirty-three
     theorems, `SUM_DEGENERATE` through `SUM_SWAP`. -/
 structure IterateSum1 where
-  /-- `sum` (iterate.ml 1984): `sum = iterate ((+):real->real->real)`, the
+  /-- `sum` (iterate.ml 2089): `sum = iterate ((+):real->real->real)`, the
       finite sum over `:real`.  `new_definition`; neutral `&0`. -/
   sum : thm
-  /-- `NEUTRAL_REAL_ADD` (iterate.ml 1987): `neutral((+):real->real->real)
+  /-- `NEUTRAL_REAL_ADD` (iterate.ml 2092): `neutral((+):real->real->real)
       = &0`. -/
   NEUTRAL_REAL_ADD : thm
-  /-- `MONOIDAL_REAL_ADD` (iterate.ml 1992): `monoidal((+):real->real->real)`. -/
+  /-- `MONOIDAL_REAL_ADD` (iterate.ml 2097): `monoidal((+):real->real->real)`. -/
   MONOIDAL_REAL_ADD : thm
-  /-- `SUM_DEGENERATE` (iterate.ml 1996): infinite support gives `sum = &0`. -/
+  /-- `SUM_DEGENERATE` (iterate.ml 2101): infinite support gives `sum = &0`. -/
   SUM_DEGENERATE : thm
-  /-- `SUM_CLAUSES` (iterate.ml 2001): the empty/insert recursion clauses. -/
+  /-- `SUM_CLAUSES` (iterate.ml 2106): the empty/insert recursion clauses. -/
   SUM_CLAUSES : thm
-  /-- `SUM_UNION` (iterate.ml 2011): sum over a disjoint union. -/
+  /-- `SUM_UNION` (iterate.ml 2116): sum over a disjoint union. -/
   SUM_UNION : thm
-  /-- `SUM_DIFF` (iterate.ml 2017): sum over a set difference. -/
+  /-- `SUM_DIFF` (iterate.ml 2122): sum over a set difference. -/
   SUM_DIFF : thm
-  /-- `SUM_INCL_EXCL` (iterate.ml 2021): the inclusion-exclusion identity. -/
+  /-- `SUM_INCL_EXCL` (iterate.ml 2126): the inclusion-exclusion identity. -/
   SUM_INCL_EXCL : thm
-  /-- `SUM_SUPPORT` (iterate.ml 2028): `sum (support (+) f s) f = sum s f`. -/
+  /-- `SUM_SUPPORT` (iterate.ml 2133): `sum (support (+) f s) f = sum s f`. -/
   SUM_SUPPORT : thm
-  /-- `SUM_ADD` (iterate.ml 2032): additivity of the summand. -/
+  /-- `SUM_ADD` (iterate.ml 2137): additivity of the summand. -/
   SUM_ADD : thm
-  /-- `SUM_ADD_GEN` (iterate.ml 2036): additivity under finite support. -/
+  /-- `SUM_ADD_GEN` (iterate.ml 2141): additivity under finite support. -/
   SUM_ADD_GEN : thm
-  /-- `SUM_EQ_0` (iterate.ml 2043): a summand identically `&0` gives `&0`. -/
+  /-- `SUM_EQ_0` (iterate.ml 2148): a summand identically `&0` gives `&0`. -/
   SUM_EQ_0 : thm
-  /-- `SUM_0` (iterate.ml 2048): `sum s (\n. &0) = &0`. -/
+  /-- `SUM_0` (iterate.ml 2153): `sum s (\n. &0) = &0`. -/
   SUM_0 : thm
-  /-- `SUM_LMUL` (iterate.ml 2052): `sum s (\x. c * f x) = c * sum s f`. -/
+  /-- `SUM_LMUL` (iterate.ml 2157): `sum s (\x. c * f x) = c * sum s f`. -/
   SUM_LMUL : thm
-  /-- `SUM_RMUL` (iterate.ml 2066): `sum s (\x. f x * c) = sum s f * c`. -/
+  /-- `SUM_RMUL` (iterate.ml 2171): `sum s (\x. f x * c) = sum s f * c`. -/
   SUM_RMUL : thm
-  /-- `SUM_NEG` (iterate.ml 2070): `sum s (\x. --(f x)) = --(sum s f)`. -/
+  /-- `SUM_NEG` (iterate.ml 2175): `sum s (\x. --(f x)) = --(sum s f)`. -/
   SUM_NEG : thm
-  /-- `SUM_SUB` (iterate.ml 2075): subtractivity of the summand. -/
+  /-- `SUM_SUB` (iterate.ml 2180): subtractivity of the summand. -/
   SUM_SUB : thm
-  /-- `SUM_LE` (iterate.ml 2079): monotonicity in the summand. -/
+  /-- `SUM_LE` (iterate.ml 2184): monotonicity in the summand. -/
   SUM_LE : thm
-  /-- `SUM_LT` (iterate.ml 2086): strict monotonicity with a strict witness. -/
+  /-- `SUM_LT` (iterate.ml 2191): strict monotonicity with a strict witness. -/
   SUM_LT : thm
-  /-- `SUM_LT_ALL` (iterate.ml 2099): strict monotonicity, everywhere strict. -/
+  /-- `SUM_LT_ALL` (iterate.ml 2204): strict monotonicity, everywhere strict. -/
   SUM_LT_ALL : thm
-  /-- `SUM_POS_LT` (iterate.ml 2105): a positive term gives a positive sum. -/
+  /-- `SUM_POS_LT` (iterate.ml 2210): a positive term gives a positive sum. -/
   SUM_POS_LT : thm
-  /-- `SUM_POS_LT_ALL` (iterate.ml 2117): all-positive terms give positive sum. -/
+  /-- `SUM_POS_LT_ALL` (iterate.ml 2222): all-positive terms give positive sum. -/
   SUM_POS_LT_ALL : thm
-  /-- `SUM_EQ` (iterate.ml 2123): extensional equality of the summand. -/
+  /-- `SUM_EQ` (iterate.ml 2228): extensional equality of the summand. -/
   SUM_EQ : thm
-  /-- `SUM_ABS` (iterate.ml 2128): the triangle inequality for finite sums. -/
+  /-- `SUM_ABS` (iterate.ml 2233): the triangle inequality for finite sums. -/
   SUM_ABS : thm
-  /-- `SUM_ABS_LE` (iterate.ml 2134): a bound via the absolute-value sum. -/
+  /-- `SUM_ABS_LE` (iterate.ml 2239): a bound via the absolute-value sum. -/
   SUM_ABS_LE : thm
-  /-- `SUM_CONST` (iterate.ml 2143): `sum s (\n. c) = &(CARD s) * c`. -/
+  /-- `SUM_CONST` (iterate.ml 2248): `sum s (\n. c) = &(CARD s) * c`. -/
   SUM_CONST : thm
-  /-- `SUM_POS_LE` (iterate.ml 2149): nonnegative terms give a nonnegative sum. -/
+  /-- `SUM_POS_LE` (iterate.ml 2254): nonnegative terms give a nonnegative sum. -/
   SUM_POS_LE : thm
-  /-- `SUM_POS_BOUND` (iterate.ml 2160): a bound on the sum bounds each term. -/
+  /-- `SUM_POS_BOUND` (iterate.ml 2265): a bound on the sum bounds each term. -/
   SUM_POS_BOUND : thm
-  /-- `SUM_POS_EQ_0` (iterate.ml 2170): a zero sum of nonnegatives is all zero. -/
+  /-- `SUM_POS_EQ_0` (iterate.ml 2275): a zero sum of nonnegatives is all zero. -/
   SUM_POS_EQ_0 : thm
-  /-- `SUM_ZERO_EXISTS` (iterate.ml 2177): a zero sum is all zero or has a
+  /-- `SUM_ZERO_EXISTS` (iterate.ml 2282): a zero sum is all zero or has a
       strictly negative and a strictly positive term. -/
   SUM_ZERO_EXISTS : thm
-  /-- `SUM_DELETE` (iterate.ml 2190): `sum (s DELETE a) f = sum s f - f a`. -/
+  /-- `SUM_DELETE` (iterate.ml 2295): `sum (s DELETE a) f = sum s f - f a`. -/
   SUM_DELETE : thm
-  /-- `SUM_DELETE_CASES` (iterate.ml 2195): the case split of `SUM_DELETE`. -/
+  /-- `SUM_DELETE_CASES` (iterate.ml 2300): the case split of `SUM_DELETE`. -/
   SUM_DELETE_CASES : thm
-  /-- `SUM_SING` (iterate.ml 2202): `sum {x} f = f x`. -/
+  /-- `SUM_SING` (iterate.ml 2307): `sum {x} f = f x`. -/
   SUM_SING : thm
-  /-- `SUM_DELTA` (iterate.ml 2206): sum of a delta function. -/
+  /-- `SUM_DELTA` (iterate.ml 2311): sum of a delta function. -/
   SUM_DELTA : thm
-  /-- `SUM_SWAP` (iterate.ml 2211): exchange of two finite summations. -/
+  /-- `SUM_SWAP` (iterate.ml 2316): exchange of two finite summations. -/
   SUM_SWAP : thm
   deriving Inhabited
 
@@ -3578,95 +3707,95 @@ def setupIterateSum1 [HolBase]
     SUM_CONST, SUM_POS_LE, SUM_POS_BOUND, SUM_POS_EQ_0, SUM_ZERO_EXISTS,
     SUM_DELETE, SUM_DELETE_CASES, SUM_SING, SUM_DELTA, SUM_SWAP }
 
-/-- iterate.ml 2219-2598: the second `sum` bundle - image/superset/restriction,
+/-- iterate.ml 2324-2703: the second `sum` bundle - image/superset/restriction,
     counting, subset monotonicity, product/general transfer, and the
     closure/relation lemmas, `SUM_IMAGE` through `REAL_OF_NUM_SUM_GEN`. -/
 structure IterateSum2 where
-  /-- `SUM_IMAGE` (iterate.ml 2219): sum over an injective image. -/
+  /-- `SUM_IMAGE` (iterate.ml 2324): sum over an injective image. -/
   SUM_IMAGE : thm
-  /-- `SUM_SUPERSET` (iterate.ml 2226): drop points where the summand is `&0`. -/
+  /-- `SUM_SUPERSET` (iterate.ml 2331): drop points where the summand is `&0`. -/
   SUM_SUPERSET : thm
-  /-- `SUM_UNIV` (iterate.ml 2232): extend a sum to the universe. -/
+  /-- `SUM_UNIV` (iterate.ml 2337): extend a sum to the universe. -/
   SUM_UNIV : thm
-  /-- `SUM_UNION_RZERO` (iterate.ml 2237): union with a right zero part. -/
+  /-- `SUM_UNION_RZERO` (iterate.ml 2342): union with a right zero part. -/
   SUM_UNION_RZERO : thm
-  /-- `SUM_UNION_LZERO` (iterate.ml 2246): union with a left zero part. -/
+  /-- `SUM_UNION_LZERO` (iterate.ml 2351): union with a left zero part. -/
   SUM_UNION_LZERO : thm
-  /-- `SUM_RESTRICT` (iterate.ml 2252): restrict the summand to the set. -/
+  /-- `SUM_RESTRICT` (iterate.ml 2357): restrict the summand to the set. -/
   SUM_RESTRICT : thm
-  /-- `SUM_BOUND` (iterate.ml 2257): a pointwise bound bounds the sum. -/
+  /-- `SUM_BOUND` (iterate.ml 2362): a pointwise bound bounds the sum. -/
   SUM_BOUND : thm
-  /-- `SUM_BOUND_GEN` (iterate.ml 2262): the averaged form of `SUM_BOUND`. -/
+  /-- `SUM_BOUND_GEN` (iterate.ml 2367): the averaged form of `SUM_BOUND`. -/
   SUM_BOUND_GEN : thm
-  /-- `SUM_ABS_BOUND` (iterate.ml 2268): an absolute pointwise bound. -/
+  /-- `SUM_ABS_BOUND` (iterate.ml 2373): an absolute pointwise bound. -/
   SUM_ABS_BOUND : thm
-  /-- `SUM_BOUND_LT` (iterate.ml 2275): a strict pointwise bound. -/
+  /-- `SUM_BOUND_LT` (iterate.ml 2380): a strict pointwise bound. -/
   SUM_BOUND_LT : thm
-  /-- `SUM_BOUND_LT_ALL` (iterate.ml 2283): everywhere strict pointwise bound. -/
+  /-- `SUM_BOUND_LT_ALL` (iterate.ml 2388): everywhere strict pointwise bound. -/
   SUM_BOUND_LT_ALL : thm
-  /-- `SUM_BOUND_LT_GEN` (iterate.ml 2288): the averaged strict form. -/
+  /-- `SUM_BOUND_LT_GEN` (iterate.ml 2393): the averaged strict form. -/
   SUM_BOUND_LT_GEN : thm
-  /-- `SUM_UNION_EQ` (iterate.ml 2294): a partition equation for sums. -/
+  /-- `SUM_UNION_EQ` (iterate.ml 2399): a partition equation for sums. -/
   SUM_UNION_EQ : thm
-  /-- `SUM_EQ_SUPERSET` (iterate.ml 2300): equality up to a zero superset. -/
+  /-- `SUM_EQ_SUPERSET` (iterate.ml 2405): equality up to a zero superset. -/
   SUM_EQ_SUPERSET : thm
-  /-- `SUM_RESTRICT_SET` (iterate.ml 2308): sum over a comprehension. -/
+  /-- `SUM_RESTRICT_SET` (iterate.ml 2413): sum over a comprehension. -/
   SUM_RESTRICT_SET : thm
-  /-- `SUM_SUM_RESTRICT` (iterate.ml 2313): swap two restricted sums. -/
+  /-- `SUM_SUM_RESTRICT` (iterate.ml 2418): swap two restricted sums. -/
   SUM_SUM_RESTRICT : thm
-  /-- `CARD_EQ_SUM` (iterate.ml 2321): `&(CARD s) = sum s (\x. &1)`. -/
+  /-- `CARD_EQ_SUM` (iterate.ml 2426): `&(CARD s) = sum s (\x. &1)`. -/
   CARD_EQ_SUM : thm
-  /-- `SUM_MULTICOUNT_GEN` (iterate.ml 2325): the general counting identity. -/
+  /-- `SUM_MULTICOUNT_GEN` (iterate.ml 2430): the general counting identity. -/
   SUM_MULTICOUNT_GEN : thm
-  /-- `SUM_MULTICOUNT` (iterate.ml 2344): the uniform counting identity. -/
+  /-- `SUM_MULTICOUNT` (iterate.ml 2449): the uniform counting identity. -/
   SUM_MULTICOUNT : thm
-  /-- `SUM_IMAGE_GEN` (iterate.ml 2354): the general image decomposition. -/
+  /-- `SUM_IMAGE_GEN` (iterate.ml 2459): the general image decomposition. -/
   SUM_IMAGE_GEN : thm
-  /-- `SUM_GROUP` (iterate.ml 2362): grouping by a function's fibres. -/
+  /-- `SUM_GROUP` (iterate.ml 2467): grouping by a function's fibres. -/
   SUM_GROUP : thm
-  /-- `SUM_GROUP_RELATION` (iterate.ml 2372): grouping by a relation. -/
+  /-- `SUM_GROUP_RELATION` (iterate.ml 2477): grouping by a relation. -/
   SUM_GROUP_RELATION : thm
-  /-- `REAL_OF_NUM_SUM` (iterate.ml 2386): `&(nsum s f) = sum s (\x. &(f x))`. -/
+  /-- `REAL_OF_NUM_SUM` (iterate.ml 2491): `&(nsum s f) = sum s (\x. &(f x))`. -/
   REAL_OF_NUM_SUM : thm
-  /-- `SUM_SUBSET` (iterate.ml 2391): subset monotonicity with sign control. -/
+  /-- `SUM_SUBSET` (iterate.ml 2496): subset monotonicity with sign control. -/
   SUM_SUBSET : thm
-  /-- `SUM_SUBSET_SIMPLE` (iterate.ml 2409): the simple subset form. -/
+  /-- `SUM_SUBSET_SIMPLE` (iterate.ml 2514): the simple subset form. -/
   SUM_SUBSET_SIMPLE : thm
-  /-- `SUM_MUL_BOUND` (iterate.ml 2416): a product bound for two sums. -/
+  /-- `SUM_MUL_BOUND` (iterate.ml 2521): a product bound for two sums. -/
   SUM_MUL_BOUND : thm
-  /-- `SUM_IMAGE_NONZERO` (iterate.ml 2427): image sum with a nonzero clause. -/
+  /-- `SUM_IMAGE_NONZERO` (iterate.ml 2532): image sum with a nonzero clause. -/
   SUM_IMAGE_NONZERO : thm
-  /-- `SUM_BIJECTION` (iterate.ml 2435): sum invariance under a bijection. -/
+  /-- `SUM_BIJECTION` (iterate.ml 2540): sum invariance under a bijection. -/
   SUM_BIJECTION : thm
-  /-- `SUM_SUM_PRODUCT` (iterate.ml 2443): the iterated-product identity. -/
+  /-- `SUM_SUM_PRODUCT` (iterate.ml 2548): the iterated-product identity. -/
   SUM_SUM_PRODUCT : thm
-  /-- `SUM_EQ_GENERAL` (iterate.ml 2451): equality via a general correspondence. -/
+  /-- `SUM_EQ_GENERAL` (iterate.ml 2556): equality via a general correspondence. -/
   SUM_EQ_GENERAL : thm
-  /-- `SUM_EQ_GENERAL_INVERSES` (iterate.ml 2459): equality via inverse maps. -/
+  /-- `SUM_EQ_GENERAL_INVERSES` (iterate.ml 2564): equality via inverse maps. -/
   SUM_EQ_GENERAL_INVERSES : thm
-  /-- `SUM_INJECTION` (iterate.ml 2467): sum invariance under an injection. -/
+  /-- `SUM_INJECTION` (iterate.ml 2572): sum invariance under an injection. -/
   SUM_INJECTION : thm
-  /-- `SUM_UNION_NONZERO` (iterate.ml 2476): union sum with a nonzero overlap. -/
+  /-- `SUM_UNION_NONZERO` (iterate.ml 2581): union sum with a nonzero overlap. -/
   SUM_UNION_NONZERO : thm
-  /-- `SUM_UNIONS_NONZERO` (iterate.ml 2483): a nonzero union-of-family sum. -/
+  /-- `SUM_UNIONS_NONZERO` (iterate.ml 2588): a nonzero union-of-family sum. -/
   SUM_UNIONS_NONZERO : thm
-  /-- `SUM_CASES` (iterate.ml 2498): split a sum by a predicate. -/
+  /-- `SUM_CASES` (iterate.ml 2603): split a sum by a predicate. -/
   SUM_CASES : thm
-  /-- `SUM_CASES_1` (iterate.ml 2505): the single-point case split. -/
+  /-- `SUM_CASES_1` (iterate.ml 2610): the single-point case split. -/
   SUM_CASES_1 : thm
-  /-- `SUM_LE_INCLUDED` (iterate.ml 2513): a bound via an inclusion map. -/
+  /-- `SUM_LE_INCLUDED` (iterate.ml 2618): a bound via an inclusion map. -/
   SUM_LE_INCLUDED : thm
-  /-- `SUM_IMAGE_LE` (iterate.ml 2539): a bound for an image sum. -/
+  /-- `SUM_IMAGE_LE` (iterate.ml 2644): a bound for an image sum. -/
   SUM_IMAGE_LE : thm
-  /-- `SUM_CLOSED` (iterate.ml 2549): a closure property of the sum. -/
+  /-- `SUM_CLOSED` (iterate.ml 2654): a closure property of the sum. -/
   SUM_CLOSED : thm
-  /-- `SUM_RELATED` (iterate.ml 2557): a relation preserved by the sum. -/
+  /-- `SUM_RELATED` (iterate.ml 2662): a relation preserved by the sum. -/
   SUM_RELATED : thm
-  /-- `SUM_CLOSED_NONEMPTY` (iterate.ml 2569): closure over a nonempty set. -/
+  /-- `SUM_CLOSED_NONEMPTY` (iterate.ml 2674): closure over a nonempty set. -/
   SUM_CLOSED_NONEMPTY : thm
-  /-- `SUM_RELATED_NONEMPTY` (iterate.ml 2579): relation over a nonempty set. -/
+  /-- `SUM_RELATED_NONEMPTY` (iterate.ml 2684): relation over a nonempty set. -/
   SUM_RELATED_NONEMPTY : thm
-  /-- `REAL_OF_NUM_SUM_GEN` (iterate.ml 2590): the finite-support transfer. -/
+  /-- `REAL_OF_NUM_SUM_GEN` (iterate.ml 2695): the finite-support transfer. -/
   REAL_OF_NUM_SUM_GEN : thm
   deriving Inhabited
 
@@ -4107,66 +4236,66 @@ def setupIterateSum2 [HolBase]
 /- Specialize them to sums over intervals of numbers.                     -/
 /- ---------------------------------------------------------------------- -/
 
-/-- iterate.ml 2599-2778: `sum` specialised to intervals of numbers, and
+/-- iterate.ml 2704-2883: `sum` specialised to intervals of numbers, and
     partial summation.  `SUM_ADD_NUMSEG` through `SUM_COMBINE_L`. -/
 structure IterateSum3 where
-  /-- `SUM_ADD_NUMSEG` (iterate.ml 2602): additivity over a segment. -/
+  /-- `SUM_ADD_NUMSEG` (iterate.ml 2707): additivity over a segment. -/
   SUM_ADD_NUMSEG : thm
-  /-- `SUM_SUB_NUMSEG` (iterate.ml 2606): subtractivity over a segment. -/
+  /-- `SUM_SUB_NUMSEG` (iterate.ml 2711): subtractivity over a segment. -/
   SUM_SUB_NUMSEG : thm
-  /-- `SUM_LE_NUMSEG` (iterate.ml 2610): monotonicity over a segment. -/
+  /-- `SUM_LE_NUMSEG` (iterate.ml 2715): monotonicity over a segment. -/
   SUM_LE_NUMSEG : thm
-  /-- `SUM_EQ_NUMSEG` (iterate.ml 2615): extensional equality over a segment. -/
+  /-- `SUM_EQ_NUMSEG` (iterate.ml 2720): extensional equality over a segment. -/
   SUM_EQ_NUMSEG : thm
-  /-- `SUM_ABS_NUMSEG` (iterate.ml 2620): the triangle inequality on a segment. -/
+  /-- `SUM_ABS_NUMSEG` (iterate.ml 2725): the triangle inequality on a segment. -/
   SUM_ABS_NUMSEG : thm
-  /-- `SUM_CONST_NUMSEG` (iterate.ml 2624): sum of a constant over a segment. -/
+  /-- `SUM_CONST_NUMSEG` (iterate.ml 2729): sum of a constant over a segment. -/
   SUM_CONST_NUMSEG : thm
-  /-- `SUM_EQ_0_NUMSEG` (iterate.ml 2628): a zero summand over a segment. -/
+  /-- `SUM_EQ_0_NUMSEG` (iterate.ml 2733): a zero summand over a segment. -/
   SUM_EQ_0_NUMSEG : thm
-  /-- `SUM_TRIV_NUMSEG` (iterate.ml 2632): the empty-segment sum. -/
+  /-- `SUM_TRIV_NUMSEG` (iterate.ml 2737): the empty-segment sum. -/
   SUM_TRIV_NUMSEG : thm
-  /-- `SUM_POS_LE_NUMSEG` (iterate.ml 2636): nonnegativity over a segment. -/
+  /-- `SUM_POS_LE_NUMSEG` (iterate.ml 2741): nonnegativity over a segment. -/
   SUM_POS_LE_NUMSEG : thm
-  /-- `SUM_POS_EQ_0_NUMSEG` (iterate.ml 2640): a zero nonnegative segment sum. -/
+  /-- `SUM_POS_EQ_0_NUMSEG` (iterate.ml 2745): a zero nonnegative segment sum. -/
   SUM_POS_EQ_0_NUMSEG : thm
-  /-- `SUM_SING_NUMSEG` (iterate.ml 2645): `sum(n..n) f = f n`. -/
+  /-- `SUM_SING_NUMSEG` (iterate.ml 2750): `sum(n..n) f = f n`. -/
   SUM_SING_NUMSEG : thm
-  /-- `SUM_CLAUSES_NUMSEG` (iterate.ml 2649): the segment recursion clauses. -/
+  /-- `SUM_CLAUSES_NUMSEG` (iterate.ml 2754): the segment recursion clauses. -/
   SUM_CLAUSES_NUMSEG : thm
-  /-- `SUM_CLAUSES_NUMSEG_LT` (iterate.ml 2656): the `< k` recursion clauses. -/
+  /-- `SUM_CLAUSES_NUMSEG_LT` (iterate.ml 2761): the `< k` recursion clauses. -/
   SUM_CLAUSES_NUMSEG_LT : thm
-  /-- `SUM_CLAUSES_NUMSEG_LE` (iterate.ml 2662): the `<= k` recursion clauses. -/
+  /-- `SUM_CLAUSES_NUMSEG_LE` (iterate.ml 2767): the `<= k` recursion clauses. -/
   SUM_CLAUSES_NUMSEG_LE : thm
-  /-- `SUM_SWAP_NUMSEG` (iterate.ml 2668): exchange of two segment sums. -/
+  /-- `SUM_SWAP_NUMSEG` (iterate.ml 2773): exchange of two segment sums. -/
   SUM_SWAP_NUMSEG : thm
-  /-- `SUM_ADD_SPLIT` (iterate.ml 2674): split a segment at `n`. -/
+  /-- `SUM_ADD_SPLIT` (iterate.ml 2779): split a segment at `n`. -/
   SUM_ADD_SPLIT : thm
-  /-- `SUM_OFFSET` (iterate.ml 2680): shift a segment by `p`. -/
+  /-- `SUM_OFFSET` (iterate.ml 2785): shift a segment by `p`. -/
   SUM_OFFSET : thm
-  /-- `SUM_OFFSET_0` (iterate.ml 2686): normalise a segment to start at `0`. -/
+  /-- `SUM_OFFSET_0` (iterate.ml 2791): normalise a segment to start at `0`. -/
   SUM_OFFSET_0 : thm
-  /-- `SUM_CLAUSES_LEFT` (iterate.ml 2690): peel the left endpoint. -/
+  /-- `SUM_CLAUSES_LEFT` (iterate.ml 2795): peel the left endpoint. -/
   SUM_CLAUSES_LEFT : thm
-  /-- `SUM_CLAUSES_RIGHT` (iterate.ml 2695): peel the right endpoint. -/
+  /-- `SUM_CLAUSES_RIGHT` (iterate.ml 2800): peel the right endpoint. -/
   SUM_CLAUSES_RIGHT : thm
-  /-- `SUM_PAIR` (iterate.ml 2700): pair consecutive terms. -/
+  /-- `SUM_PAIR` (iterate.ml 2805): pair consecutive terms. -/
   SUM_PAIR : thm
-  /-- `SUM_REFLECT` (iterate.ml 2705): reflect a segment. -/
+  /-- `SUM_REFLECT` (iterate.ml 2810): reflect a segment. -/
   SUM_REFLECT : thm
-  /-- `REAL_OF_NUM_SUM_NUMSEG` (iterate.ml 2711): the segment transfer. -/
+  /-- `REAL_OF_NUM_SUM_NUMSEG` (iterate.ml 2816): the segment transfer. -/
   REAL_OF_NUM_SUM_NUMSEG : thm
-  /-- `SUM_PARTIAL_SUC` (iterate.ml 2719): summation by parts (successor). -/
+  /-- `SUM_PARTIAL_SUC` (iterate.ml 2824): summation by parts (successor). -/
   SUM_PARTIAL_SUC : thm
-  /-- `SUM_PARTIAL_PRE` (iterate.ml 2735): summation by parts (predecessor). -/
+  /-- `SUM_PARTIAL_PRE` (iterate.ml 2840): summation by parts (predecessor). -/
   SUM_PARTIAL_PRE : thm
-  /-- `SUM_DIFFS` (iterate.ml 2747): a telescoping sum. -/
+  /-- `SUM_DIFFS` (iterate.ml 2852): a telescoping sum. -/
   SUM_DIFFS : thm
-  /-- `SUM_DIFFS_ALT` (iterate.ml 2755): the reversed telescoping sum. -/
+  /-- `SUM_DIFFS_ALT` (iterate.ml 2860): the reversed telescoping sum. -/
   SUM_DIFFS_ALT : thm
-  /-- `SUM_COMBINE_R` (iterate.ml 2762): combine adjacent segments (right). -/
+  /-- `SUM_COMBINE_R` (iterate.ml 2867): combine adjacent segments (right). -/
   SUM_COMBINE_R : thm
-  /-- `SUM_COMBINE_L` (iterate.ml 2770): combine adjacent segments (left). -/
+  /-- `SUM_COMBINE_L` (iterate.ml 2875): combine adjacent segments (left). -/
   SUM_COMBINE_L : thm
   deriving Inhabited
 
@@ -4389,34 +4518,34 @@ def setupIterateSum3 [HolBase]
 /- redex or we'll get a loop since f(x) will lambda-reduce recursively.   -/
 /- ---------------------------------------------------------------------- -/
 
-/-- iterate.ml 2779-2854: `sum` congruences (with the eta requirement),
+/-- iterate.ml 2884-2959: `sum` congruences (with the eta requirement),
     `EXPAND_SUM_CONV`, and the special algebraic rearrangements. -/
 structure IterateSum4 where
-  /-- `SUM_CONG` (the anonymous `th`, iterate.ml 2783): the three congruence
+  /-- `SUM_CONG` (the anonymous `th`, iterate.ml 2888): the three congruence
       rules registered with `extend_basic_congs`.  The eta redex `\i. f i` is
       ESSENTIAL - without it `f(x)` would lambda-reduce recursively and loop
       (iterate.ml comment 2779-2781). -/
   SUM_CONG : thm
-  /-- `EXPAND_SUM_CONV`'s `pth_0` (iterate.ml 2801): `n < m ==> sum(m..n) f
+  /-- `EXPAND_SUM_CONV`'s `pth_0` (iterate.ml 2906): `n < m ==> sum(m..n) f
       = &0`. -/
   pth_0 : thm
-  /-- `EXPAND_SUM_CONV`'s `pth_1` (iterate.ml 2802): `sum(m..m) f = f m`. -/
+  /-- `EXPAND_SUM_CONV`'s `pth_1` (iterate.ml 2907): `sum(m..m) f = f m`. -/
   pth_1 : thm
-  /-- `EXPAND_SUM_CONV`'s `pth_2` (iterate.ml 2803): `m <= n ==> sum(m..n) f
+  /-- `EXPAND_SUM_CONV`'s `pth_2` (iterate.ml 2908): `m <= n ==> sum(m..n) f
       = f m + sum(m+1..n) f`. -/
   pth_2 : thm
-  /-- `EXPAND_SUM_CONV` (iterate.ml 2799-2826): expand `sum(m..n) f` for
+  /-- `EXPAND_SUM_CONV` (iterate.ml 2904-2931): expand `sum(m..n) f` for
       numeral `m`, `n`.  A CONVERSION, so probed behaviourally. -/
   EXPAND_SUM_CONV : ioconv
-  /-- `REAL_SUB_POW` (iterate.ml 2830): `x pow n - y pow n` factorisation. -/
+  /-- `REAL_SUB_POW` (iterate.ml 2935): `x pow n - y pow n` factorisation. -/
   REAL_SUB_POW : thm
-  /-- `REAL_SUB_POW_R1` (iterate.ml 2843): the `y = &1` case. -/
+  /-- `REAL_SUB_POW_R1` (iterate.ml 2948): the `y = &1` case. -/
   REAL_SUB_POW_R1 : thm
-  /-- `REAL_SUB_POW_L1` (iterate.ml 2849): the `x = &1` case. -/
+  /-- `REAL_SUB_POW_L1` (iterate.ml 2954): the `x = &1` case. -/
   REAL_SUB_POW_L1 : thm
   deriving Inhabited
 
-/-- `let rec conv tm = ...` inside EXPAND_SUM_CONV (iterate.ml 2803). -/
+/-- `let rec conv tm = ...` inside EXPAND_SUM_CONV (iterate.ml 2908). -/
 partial def expandSumConvImpl [HolBase]
     (NUM_LT_CONV NUM_LE_CONV NUM_ADD_CONV : ioconv)
     (pth_0 pth_1 pth_2 : thm) (ns_tm f_tm m_tm n_tm : term) : ioconv :=
@@ -4457,7 +4586,7 @@ def setupIterateSum4 [HolBase]
   let { SUM_CLAUSES_LEFT, SUM_SING_NUMSEG, SUM_TRIV_NUMSEG, SUM_DIFFS_ALT, .. } := IS3
 
   -- `let th = prove (...) in extend_basic_congs (map SPEC_ALL (CONJUNCTS th))`
-  -- (iterate.ml 2783); kept as the field SUM_CONG.
+  -- (iterate.ml 2888); kept as the field SUM_CONG.
   let SUM_CONG ← prove
    r"(!f g s:A->bool.
         (!x. x IN s ==> f(x) = g(x))
@@ -4525,54 +4654,54 @@ def setupIterateSum4 [HolBase]
 /- Some useful facts about real polynomial functions.                     -/
 /- ---------------------------------------------------------------------- -/
 
-/-- iterate.ml 2855-3108: real polynomial functions.  The `REAL_SUB_POLYFUN*`
+/-- iterate.ml 2960-3213: real polynomial functions.  The `REAL_SUB_POLYFUN*`
     factorisations, the root-bound theorems, `polynomial_function` and its
     closure properties. -/
 structure IterateSum5 where
-  /-- `REAL_SUB_POLYFUN` (iterate.ml 2858): the polynomial difference formula. -/
+  /-- `REAL_SUB_POLYFUN` (iterate.ml 2963): the polynomial difference formula. -/
   REAL_SUB_POLYFUN : thm
-  /-- `REAL_SUB_POLYFUN_ALT` (iterate.ml 2878): the reindexed difference. -/
+  /-- `REAL_SUB_POLYFUN_ALT` (iterate.ml 2983): the reindexed difference. -/
   REAL_SUB_POLYFUN_ALT : thm
-  /-- `REAL_POLYFUN_ROOTBOUND` (iterate.ml 2893): a degree-`n` polynomial has
+  /-- `REAL_POLYFUN_ROOTBOUND` (iterate.ml 2998): a degree-`n` polynomial has
       at most `n` roots. -/
   REAL_POLYFUN_ROOTBOUND : thm
-  /-- `REAL_POLYFUN_FINITE_ROOTS` (iterate.ml 2925): finitely many roots iff
+  /-- `REAL_POLYFUN_FINITE_ROOTS` (iterate.ml 3030): finitely many roots iff
       not identically zero. -/
   REAL_POLYFUN_FINITE_ROOTS : thm
-  /-- `REAL_POLYFUN_EQ_0` (iterate.ml 2935): identically zero iff all
+  /-- `REAL_POLYFUN_EQ_0` (iterate.ml 3040): identically zero iff all
       coefficients zero. -/
   REAL_POLYFUN_EQ_0 : thm
-  /-- `REAL_POLYFUN_EQ_CONST` (iterate.ml 2945): identically constant. -/
+  /-- `REAL_POLYFUN_EQ_CONST` (iterate.ml 3050): identically constant. -/
   REAL_POLYFUN_EQ_CONST : thm
-  /-- `polynomial_function` (iterate.ml 2966): the definition. -/
+  /-- `polynomial_function` (iterate.ml 3071): the definition. -/
   polynomial_function : thm
-  /-- `POLYNOMIAL_FUNCTION_CONST` (iterate.ml 2969). -/
+  /-- `POLYNOMIAL_FUNCTION_CONST` (iterate.ml 3074). -/
   POLYNOMIAL_FUNCTION_CONST : thm
-  /-- `POLYNOMIAL_FUNCTION_ID` (iterate.ml 2975). -/
+  /-- `POLYNOMIAL_FUNCTION_ID` (iterate.ml 3080). -/
   POLYNOMIAL_FUNCTION_ID : thm
-  /-- `POLYNOMIAL_FUNCTION_I` (iterate.ml 2981). -/
+  /-- `POLYNOMIAL_FUNCTION_I` (iterate.ml 3086). -/
   POLYNOMIAL_FUNCTION_I : thm
-  /-- `POLYNOMIAL_FUNCTION_ADD` (iterate.ml 2985). -/
+  /-- `POLYNOMIAL_FUNCTION_ADD` (iterate.ml 3090). -/
   POLYNOMIAL_FUNCTION_ADD : thm
-  /-- `POLYNOMIAL_FUNCTION_LMUL` (iterate.ml 3000). -/
+  /-- `POLYNOMIAL_FUNCTION_LMUL` (iterate.ml 3105). -/
   POLYNOMIAL_FUNCTION_LMUL : thm
-  /-- `POLYNOMIAL_FUNCTION_RMUL` (iterate.ml 3008). -/
+  /-- `POLYNOMIAL_FUNCTION_RMUL` (iterate.ml 3113). -/
   POLYNOMIAL_FUNCTION_RMUL : thm
-  /-- `POLYNOMIAL_FUNCTION_NEG` (iterate.ml 3012). -/
+  /-- `POLYNOMIAL_FUNCTION_NEG` (iterate.ml 3117). -/
   POLYNOMIAL_FUNCTION_NEG : thm
-  /-- `POLYNOMIAL_FUNCTION_SUB` (iterate.ml 3018). -/
+  /-- `POLYNOMIAL_FUNCTION_SUB` (iterate.ml 3123). -/
   POLYNOMIAL_FUNCTION_SUB : thm
-  /-- `POLYNOMIAL_FUNCTION_MUL` (iterate.ml 3023). -/
+  /-- `POLYNOMIAL_FUNCTION_MUL` (iterate.ml 3128). -/
   POLYNOMIAL_FUNCTION_MUL : thm
-  /-- `POLYNOMIAL_FUNCTION_SUM` (iterate.ml 3052). -/
+  /-- `POLYNOMIAL_FUNCTION_SUM` (iterate.ml 3157). -/
   POLYNOMIAL_FUNCTION_SUM : thm
-  /-- `POLYNOMIAL_FUNCTION_POW` (iterate.ml 3061). -/
+  /-- `POLYNOMIAL_FUNCTION_POW` (iterate.ml 3166). -/
   POLYNOMIAL_FUNCTION_POW : thm
-  /-- `POLYNOMIAL_FUNCTION_INDUCT` (iterate.ml 3067). -/
+  /-- `POLYNOMIAL_FUNCTION_INDUCT` (iterate.ml 3172). -/
   POLYNOMIAL_FUNCTION_INDUCT : thm
-  /-- `POLYNOMIAL_FUNCTION_o` (iterate.ml 3084). -/
+  /-- `POLYNOMIAL_FUNCTION_o` (iterate.ml 3189). -/
   POLYNOMIAL_FUNCTION_o : thm
-  /-- `POLYNOMIAL_FUNCTION_FINITE_ROOTS` (iterate.ml 3093). -/
+  /-- `POLYNOMIAL_FUNCTION_FINITE_ROOTS` (iterate.ml 3198). -/
   POLYNOMIAL_FUNCTION_FINITE_ROOTS : thm
   deriving Inhabited
 
@@ -4902,7 +5031,7 @@ def setupIterateSum5 [HolBase]
 
 /- ---------------------------------------------------------------------- -/
 /- Make natural numbers the default again.                                -/
-/- (`prioritize_num()` at iterate.ml 3112 is run by Session.)             -/
+/- (`prioritize_num()` at iterate.ml 3217 is run by Session.)             -/
 /- ---------------------------------------------------------------------- -/
 
 end HolMath.Iterate

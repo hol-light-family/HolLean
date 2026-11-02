@@ -116,6 +116,7 @@ structure QVecThms where
   deriving Inhabited
 
 structure DerivativesDeps where
+  prioritize_real : IO Unit
   dg : DegreeDeps
   -- procedures degree.ml's deps do not carry
   FIX_TAC : String → tactic
@@ -136,7 +137,7 @@ structure DerivativesDeps where
 
 /- ------------------------------------------------------------------------- -/
 /- Derivatives over nets, combining theorems, differentiability, Frechet     -/
-/- derivative and Jacobian matrix.  (derivatives.ml 1-404)                   -/
+/- derivative and Jacobian matrix.  (derivatives.ml 1-405)                   -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVA where
@@ -223,6 +224,8 @@ def setupDVA [HolBase] (D : DerivativesDeps) : ExceptT String IO DVA := do
   let { LINEAR_COMPONENTWISE, LINEAR_COMPOSE_CMUL, LINEAR_PASTECART_EQ,
         LINEAR_VMUL_COMPONENT, PASTECART_SUB, VECTOR_NEG_MINUS1, .. } := D.qvec
   -- @@SCOPE END
+
+  D.prioritize_real
 
   parse_as_infix ("has_derivative", (12, "right"))
 
@@ -603,7 +606,7 @@ def setupDVA [HolBase] (D : DerivativesDeps) : ExceptT String IO DVA := do
 
 /- ------------------------------------------------------------------------- -/
 /- Differentiability implies continuity; multiplied-out variant; the chain   -/
-/- rule; composition rules.  (derivatives.ml 405-786)                        -/
+/- rule; composition rules.  (derivatives.ml 406-787)                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVB where
@@ -1065,7 +1068,7 @@ def setupDVB [HolBase] (D : DerivativesDeps) (BDVA : DVA) : ExceptT String IO DV
 
 /- ------------------------------------------------------------------------- -/
 /- Uniqueness of derivative; components of the differential at a local      -/
-/- maximum or minimum.  (derivatives.ml 787-1119)                            -/
+/- maximum or minimum.  (derivatives.ml 788-1120)                            -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVC where
@@ -1460,7 +1463,7 @@ def setupDVC [HolBase] (D : DerivativesDeps) (BDVA : DVA) : ExceptT String IO DV
 
 /- ------------------------------------------------------------------------- -/
 /- Rolle, the mean value theorems, bounds on and from derivatives, zero      -/
-/- derivatives, discreteness of preimages.  (derivatives.ml 1120-1577)       -/
+/- derivatives, discreteness of preimages.  (derivatives.ml 1121-1578)       -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVD where
@@ -1991,7 +1994,7 @@ def setupDVD [HolBase] (D : DerivativesDeps) (BDVA : DVA) (BDVB : DVB) (BDVC : D
 
 /- ------------------------------------------------------------------------- -/
 /- Differentiability of inverse functions; surjectivity via Brouwer;         -/
-/- Sussmann's open mapping theorem.  (derivatives.ml 1576-2039)              -/
+/- Sussmann's open mapping theorem.  (derivatives.ml 1577-2040)              -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVE where
@@ -2495,7 +2498,7 @@ def setupDVE [HolBase] (D : DerivativesDeps) (BDVA : DVA) (BDVB : DVB) : ExceptT
 
 /- ------------------------------------------------------------------------- -/
 /- Uniformly convergent sequences of derivatives; antiderivatives; series.   -/
-/- (derivatives.ml 2040-2299)                                                -/
+/- (derivatives.ml 2041-2300)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVF where
@@ -2796,7 +2799,7 @@ def setupDVF [HolBase] (D : DerivativesDeps) (BDVA : DVA) (BDVB : DVB) (BDVD : D
          HAS_ANTIDERIVATIVE_SEQUENCE, HAS_ANTIDERIVATIVE_LIMIT, HAS_DERIVATIVE_SERIES }
 
 /- ------------------------------------------------------------------------- -/
-/- Derivative with composed bilinear function.  (derivatives.ml 2300-2500)   -/
+/- Derivative with composed bilinear function.  (derivatives.ml 2301-2501)   -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVG where
@@ -3059,7 +3062,7 @@ def setupDVG [HolBase] (D : DerivativesDeps) (BDVA : DVA) (BDVB : DVB) : ExceptT
 
 /- ------------------------------------------------------------------------- -/
 /- Partial derivatives and jacobians are Baire functions; Frechet and        -/
-/- Gateaux derivatives.  (derivatives.ml 2501-2792)                          -/
+/- Gateaux derivatives.  (derivatives.ml 2502-2793)                          -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVH where
@@ -3419,7 +3422,7 @@ def setupDVH [HolBase] (D : DerivativesDeps) (BDVA : DVA) (BDVB : DVB) : ExceptT
 
 /- ------------------------------------------------------------------------- -/
 /- Strong form of the inverse function theorem not assuming continuity of    -/
-/- the derivative (Saint Raymond).  (derivatives.ml 2793-3954)               -/
+/- the derivative (Saint Raymond).  (derivatives.ml 2794-3955)               -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVI where
@@ -4697,7 +4700,7 @@ def setupDVI [HolBase] (D : DerivativesDeps) (BDVA : DVA) (BDVB : DVB) (BDVD : D
 
 /- ------------------------------------------------------------------------- -/
 /- Sign invariance of nonvanishing Jacobian (also from Saint Raymond).       -/
-/- (derivatives.ml 3955-4427)                                                -/
+/- (derivatives.ml 3956-4428)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVJ where
@@ -5242,7 +5245,7 @@ def setupDVJ [HolBase] (D : DerivativesDeps) (BDVA : DVA) (BDVB : DVB) (BDVI : D
 /- ------------------------------------------------------------------------- -/
 /- Invertible derivative continuous at a point implies local injectivity;    -/
 /- more conventional "C1" inverse function theorems.                         -/
-/- (derivatives.ml 4428-4661)                                                -/
+/- (derivatives.ml 4429-4662)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVK where
@@ -5521,7 +5524,7 @@ def setupDVK [HolBase] (D : DerivativesDeps) (BDVA : DVA) (BDVB : DVB) (BDVD : D
 
 /- ------------------------------------------------------------------------- -/
 /- Hadamard-style global inverse function theorem; localized variants on     -/
-/- subspaces and affine sets.  (derivatives.ml 4662-5142)                    -/
+/- subspaces and affine sets.  (derivatives.ml 4663-5143)                    -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVL where
@@ -6066,7 +6069,7 @@ def setupDVL [HolBase] (D : DerivativesDeps) (BDVA : DVA) (BDVB : DVB) (BDVE : D
          INVERSE_FUNCTION_THEOREM_AFFINE }
 
 /- ------------------------------------------------------------------------- -/
-/- Considering derivative R(^1)->R^n as a vector.  (derivatives.ml 5143-5500) -/
+/- Considering derivative R(^1)->R^n as a vector.  (derivatives.ml 5144-5501) -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVM where
@@ -6530,7 +6533,7 @@ def setupDVM [HolBase] (D : DerivativesDeps) (BDVA : DVA) (BDVB : DVB) (BDVC : D
 
 /- ------------------------------------------------------------------------- -/
 /- Bounds on derivatives from function properties; Kachurovskii's theorem.  -/
-/- (derivatives.ml 5501-5797)                                                -/
+/- (derivatives.ml 5502-5798)                                                -/
 /- ------------------------------------------------------------------------- -/
 
 structure DVN where
