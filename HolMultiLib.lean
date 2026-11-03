@@ -38,3 +38,10 @@ import HolMultiLib.Degree
 import HolMultiLib.Derivatives
 import HolMultiLib.Integration
 import HolMultiLib.Measure
+import HolMultiLib.Canal
+import HolMultiLib.Transcendentals
+import HolMultiLib.RealAnalysis
+import HolMultiLib.Geom
+import HolMultiLib.LpSpaces
+import HolMultiLib.MoreTop
+import HolMultiLib.Cauchy

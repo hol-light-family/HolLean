@@ -1,0 +1,1059 @@
+/- ---------------------------------------------------------------------- -/
+/- Session wiring for Multivariate/transcendentals.ml.                    -/
+/- ---------------------------------------------------------------------- -/
+/- File: SessionMultiLib/Transcendentals.lean
+
+  The session half of the transcendentals.ml translation: it supplies
+  HolMultiLib.Transcendentals's dependencies and exports every theorem by name.
+  Importing this module is `needs "Multivariate/transcendentals.ml"`: its own `needs` are
+  its imports, and each bundle is built by `initialize` when the module is
+  loaded, in file order.
+-/
+
+import SessionMultiLib.Measure
+import SessionMultiLib.Canal
+import HolMultiLib.Transcendentals
+
+open HolCore HolCore.Kernel
+
+namespace SessionMultiLib.Transcendentals
+
+/- The theorem groups (names only; each group's names come from one file). -/
+
+open SessionMultiLib.Topology in
+def qtopology : HolMultiLib.Transcendentals.QTopologyThms :=
+  { CLOSED_PCROSS, CONTINUOUS_AT_COMPOSE, CONTINUOUS_DISCRETE_RANGE_CONSTANT,
+    CONTINUOUS_ON_LIFT_DET, CONTINUOUS_WITHIN_CLOSED_NONTRIVIAL,
+    EVENTUALLY_AT_POSINFINITY, LIM_CASES_FINITE_SEQUENTIALLY,
+    LIM_POSINFINITY_SEQUENTIALLY, RIGHT_POLAR_DECOMPOSITION_INVERTIBLE,
+    SERIES_FINITE_SUPPORT, SERIES_RATIO, SERIES_TERMS_TOZERO, sphere, SUMMABLE_EQ,
+    SUMMABLE_FROM_ELSEWHERE }
+
+open SessionMultiLib.Vectors in
+def qvectors : HolMultiLib.Transcendentals.QVectorsThms :=
+  { DOT_SQUARE_NORM, LINEAR_EQ_MATRIX, MATRIX_ADD, MATRIX_ADD_LID, MATRIX_ADD_RID,
+    MATRIX_CMUL_LID, MATRIX_CMUL_LZERO, NORM_EQ_1, VSUM_ADD_SPLIT, VSUM_CLAUSES_RIGHT,
+    VSUM_PAIR_0 }
+
+open Session in
+def qsession : HolMultiLib.Transcendentals.QSessionThms :=
+  { ADD_ASSOC, ARITH_EVEN, ARITH_ODD, HAS_SIZE_NUMSEG_LT, INT_ABS_MUL, INT_ABS_NUM,
+    int_abstr, int_congruent, INT_ENTIRE, INT_LT_LMUL_EQ, int_mul_th, int_rep,
+    INT_SUB_0, int_sub_th, is_int, LT_NZ, LT_POW2_REFL, NOT_EVEN, num_congruent, ODD,
+    ODD_ADD, ODD_MULT, REAL_ADD_RINV, REAL_EQ_INV2, REAL_EQ_SGN_ABS, REAL_INV_1_LE,
+    REAL_INV_SGN, REAL_LT_NEGTOTAL, REAL_LT_RSQRT, REAL_LT_SQUARE, REAL_LT_SUB_RADD,
+    REAL_MUL_2, REAL_MUL_POS_LE, REAL_OF_NUM_SUB_CASES, REAL_POW_1_LE, REAL_POW_LT2,
+    REAL_POW_LT2_REV, REAL_POW_POW, REAL_POW_SUB, REAL_SGN_0, REAL_SGN_ABS,
+    REAL_SGN_INV, REAL_SGN_NEG, REAL_SGN_POW, REAL_SGN_POW_2, REAL_SGN_REAL_SGN,
+    REAL_SUB_RNEG, SQRT_UNIQUE_GEN, SUC_INJ, SUM_ADD_SPLIT }
+
+open SessionLibrary.Floor in
+def qfloor : HolMultiLib.Transcendentals.QFloorThms :=
+  { FRAC_FLOOR, INTEGER_ABS, INTEGER_CASES, INTEGER_NEG }
+
+open SessionMultiLib.Determinants in
+def qdeterminants : HolMultiLib.Transcendentals.QDeterminantsThms :=
+  { POSITIVE_DEFINITE_ADD, POSITIVE_DEFINITE_CMUL, POSITIVE_SEMIDEFINITE_ADD,
+    POSITIVE_SEMIDEFINITE_CMUL, ROTATION_EXISTS }
+
+open SessionMultiLib.Paths in
+def qpaths : HolMultiLib.Transcendentals.QPathsThms :=
+  { homotopic_loops, HOMOTOPIC_LOOPS_EQ, HOMOTOPIC_LOOPS_REFL, HOMOTOPIC_LOOPS_TRANS,
+    HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_LEFT, HOMOTOPIC_WITH_COMPOSE_CONTINUOUS_RIGHT,
+    HOMOTOPIC_WITH_ORTHOGONAL_TRANSFORMATIONS_GEN,
+    HOMOTOPIC_WITH_ORTHOGONAL_TRANSFORMATIONS_UNIV,
+    HOMOTOPY_EQUIVALENT_HOMOTOPIC_TRIVIALITY, LINEPATH_REFL,
+    PATH_CONNECTED_EQ_HOMOTOPIC_POINTS, simply_connected,
+    SIMPLY_CONNECTED_EQ_CONTRACTIBLE_LOOP_SOME }
+
+open SessionMultiLib.Metric in
+def qmetric : HolMultiLib.Transcendentals.QMetricThms :=
+  { HOMOTOPIC_WITH_IMP_PROPERTY }
+
+open SessionMultiLib.Convex in
+def qconvex : HolMultiLib.Transcendentals.QConvexThms :=
+  { CONVEX_CONNECTED_1, CONVEX_HALFSPACE_COMPONENT_GT, CONVEX_HALFSPACE_COMPONENT_LT }
+
+open SessionMultiLib.Degree in
+def qdegree : HolMultiLib.Transcendentals.QDegreeThms :=
+  { HOMOTOPIC_LINEAR_MAPS_ALT, HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_IMP }
+
+open SessionMultiLib.Misc in
+def qmisc : HolMultiLib.Transcendentals.QMiscThms :=
+  { ABS_SQUARE_LT_1, IN_FROM }
+
+open SessionMultiLib.Derivatives in
+def qderivatives : HolMultiLib.Transcendentals.QDerivativesThms :=
+  { DIFFERENTIABLE_AT_IMP_DIFFERENTIABLE_ON, HAS_DERIVATIVE_BILINEAR_AT }
+
+open SessionMultiLib.Measure in
+def qmeasure : HolMultiLib.Transcendentals.QMeasureThms :=
+  { CONTINUOUS_IMP_MEASURABLE_ON_LEBESGUE_MEASURABLE_SUBSET,
+    FUBINI_HAS_ABSOLUTE_INTEGRAL, FUBINI_TONELLI,
+    HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES, LEBESGUE_MEASURABLE_CONVEX,
+    LEBESGUE_MEASURABLE_INTER, LEBESGUE_MEASURABLE_UNIV,
+    MEASURABLE_ON_CONTINUOUS_COMPOSE, MEASURABLE_ON_LINEAR_IMAGE_EQ_GEN,
+    MEASURABLE_ON_MUL, MEASURABLE_ON_SPIKE_SET, MEASURABLE_ON_UNIV,
+    NEGLIGIBLE_DIFFERENTIABLE_PREIMAGE, NEGLIGIBLE_IMP_LEBESGUE_MEASURABLE }
+
+open SessionMultiLib.Integration in
+def qintegration : HolMultiLib.Transcendentals.QIntegrationThms :=
+  { ABSOLUTELY_INTEGRABLE_SPIKE_EQ, ABSOLUTELY_INTEGRABLE_TWIZZLE_EQ,
+    INTEGRAL_TWIZZLE_EQ }
+
+open SessionLibrary.Permutations in
+def qpermutations : HolMultiLib.Transcendentals.QPermutationsThms :=
+  { PERMUTES_ID }
+
+def deps : HolMultiLib.Transcendentals.TranscendentalsDeps where
+  cn := SessionMultiLib.Canal.deps
+  EXPAND_VSUM_CONV := SessionMultiLib.Vectors.EXPAND_VSUM_CONV
+  HORNER_SUM_CONV := SessionMultiLib.Misc.HORNER_SUM_CONV
+  NUMBER_RULE t := ExceptT.mk (Session.NUMBER_RULE t)
+  kna := SessionMultiLib.Canal.BKNA
+  knb := SessionMultiLib.Canal.BKNB
+  knc := SessionMultiLib.Canal.BKNC
+  knd := SessionMultiLib.Canal.BKND
+  kne := SessionMultiLib.Canal.BKNE
+  knf := SessionMultiLib.Canal.BKNF
+  kng := SessionMultiLib.Canal.BKNG
+  knh := SessionMultiLib.Canal.BKNH
+  kni := SessionMultiLib.Canal.BKNI
+  knj := SessionMultiLib.Canal.BKNJ
+  knk := SessionMultiLib.Canal.BKNK
+  knl := SessionMultiLib.Canal.BKNL
+  knm := SessionMultiLib.Canal.BKNM
+  knn := SessionMultiLib.Canal.BKNN
+  kno := SessionMultiLib.Canal.BKNO
+  knp := SessionMultiLib.Canal.BKNP
+  knq := SessionMultiLib.Canal.BKNQ
+  knr := SessionMultiLib.Canal.BKNR
+  kns := SessionMultiLib.Canal.BKNS
+  qtopology := qtopology
+  qvectors := qvectors
+  qsession := qsession
+  qfloor := qfloor
+  qdeterminants := qdeterminants
+  qpaths := qpaths
+  qmetric := qmetric
+  qconvex := qconvex
+  qdegree := qdegree
+  qmisc := qmisc
+  qderivatives := qderivatives
+  qmeasure := qmeasure
+  qintegration := qintegration
+  qpermutations := qpermutations
+
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
+
+/- The bundles, in transcendentals.ml order. -/
+
+initialize BTSA : HolMultiLib.Transcendentals.TSA ←
+  ioB "setupTSA" (HolMultiLib.Transcendentals.setupTSA deps).run
+
+-- TSA (transcendentals.ml 10-313)
+def cexp : thm := BTSA.cexp
+def CEXP_0 : thm := BTSA.CEXP_0
+def CEXP_CONVERGES_UNIFORMLY_CAUCHY : thm := BTSA.CEXP_CONVERGES_UNIFORMLY_CAUCHY
+def CEXP_CONVERGES : thm := BTSA.CEXP_CONVERGES
+def CEXP_CONVERGES_UNIQUE : thm := BTSA.CEXP_CONVERGES_UNIQUE
+def CEXP_CONVERGES_UNIFORMLY : thm := BTSA.CEXP_CONVERGES_UNIFORMLY
+def HAS_COMPLEX_DERIVATIVE_CEXP : thm := BTSA.HAS_COMPLEX_DERIVATIVE_CEXP
+def COMPLEX_DIFFERENTIABLE_AT_CEXP : thm := BTSA.COMPLEX_DIFFERENTIABLE_AT_CEXP
+def COMPLEX_DIFFERENTIABLE_WITHIN_CEXP : thm := BTSA.COMPLEX_DIFFERENTIABLE_WITHIN_CEXP
+def CONTINUOUS_AT_CEXP : thm := BTSA.CONTINUOUS_AT_CEXP
+def CONTINUOUS_WITHIN_CEXP : thm := BTSA.CONTINUOUS_WITHIN_CEXP
+def CONTINUOUS_ON_CEXP : thm := BTSA.CONTINUOUS_ON_CEXP
+def HOLOMORPHIC_ON_CEXP : thm := BTSA.HOLOMORPHIC_ON_CEXP
+def CEXP_ADD_MUL : thm := BTSA.CEXP_ADD_MUL
+def CEXP_NEG_RMUL : thm := BTSA.CEXP_NEG_RMUL
+def CEXP_NEG_LMUL : thm := BTSA.CEXP_NEG_LMUL
+def CEXP_NEG : thm := BTSA.CEXP_NEG
+def CEXP_ADD : thm := BTSA.CEXP_ADD
+def CEXP_SUB : thm := BTSA.CEXP_SUB
+def CEXP_NZ : thm := BTSA.CEXP_NZ
+def CEXP_N : thm := BTSA.CEXP_N
+def CEXP_VSUM : thm := BTSA.CEXP_VSUM
+def LIM_CEXP_MINUS_1 : thm := BTSA.LIM_CEXP_MINUS_1
+def CEXP_BOUND_BLEMMA : thm := BTSA.CEXP_BOUND_BLEMMA
+def CEXP_BOUND_HALF : thm := BTSA.CEXP_BOUND_HALF
+def CEXP_BOUND_LEMMA : thm := BTSA.CEXP_BOUND_LEMMA
+
+initialize BTSB : HolMultiLib.Transcendentals.TSB ←
+  ioB "setupTSB" (HolMultiLib.Transcendentals.setupTSB deps BTSA).run
+
+-- TSB (transcendentals.ml 314-603)
+def ccos : thm := BTSB.ccos
+def csin : thm := BTSB.csin
+def CSIN_0 : thm := BTSB.CSIN_0
+def CCOS_0 : thm := BTSB.CCOS_0
+def CSIN_CIRCLE : thm := BTSB.CSIN_CIRCLE
+def CSIN_ADD : thm := BTSB.CSIN_ADD
+def CCOS_ADD : thm := BTSB.CCOS_ADD
+def CSIN_NEG : thm := BTSB.CSIN_NEG
+def CCOS_NEG : thm := BTSB.CCOS_NEG
+def CSIN_DOUBLE : thm := BTSB.CSIN_DOUBLE
+def CCOS_DOUBLE : thm := BTSB.CCOS_DOUBLE
+def CSIN_SUB : thm := BTSB.CSIN_SUB
+def CCOS_SUB : thm := BTSB.CCOS_SUB
+def COMPLEX_MUL_CSIN_CSIN : thm := BTSB.COMPLEX_MUL_CSIN_CSIN
+def COMPLEX_MUL_CSIN_CCOS : thm := BTSB.COMPLEX_MUL_CSIN_CCOS
+def COMPLEX_MUL_CCOS_CSIN : thm := BTSB.COMPLEX_MUL_CCOS_CSIN
+def COMPLEX_MUL_CCOS_CCOS : thm := BTSB.COMPLEX_MUL_CCOS_CCOS
+def COMPLEX_ADD_CSIN : thm := BTSB.COMPLEX_ADD_CSIN
+def COMPLEX_SUB_CSIN : thm := BTSB.COMPLEX_SUB_CSIN
+def COMPLEX_ADD_CCOS : thm := BTSB.COMPLEX_ADD_CCOS
+def COMPLEX_SUB_CCOS : thm := BTSB.COMPLEX_SUB_CCOS
+def CCOS_DOUBLE_CCOS : thm := BTSB.CCOS_DOUBLE_CCOS
+def CCOS_DOUBLE_CSIN : thm := BTSB.CCOS_DOUBLE_CSIN
+def CEXP_EULER : thm := BTSB.CEXP_EULER
+def DEMOIVRE : thm := BTSB.DEMOIVRE
+def exp : thm := BTSB.exp
+def CNJ_CEXP : thm := BTSB.CNJ_CEXP
+def REAL_EXP : thm := BTSB.REAL_EXP
+def CX_EXP : thm := BTSB.CX_EXP
+def REAL_EXP_ADD : thm := BTSB.REAL_EXP_ADD
+def REAL_EXP_0 : thm := BTSB.REAL_EXP_0
+def REAL_EXP_ADD_MUL : thm := BTSB.REAL_EXP_ADD_MUL
+def REAL_EXP_NEG_MUL : thm := BTSB.REAL_EXP_NEG_MUL
+def REAL_EXP_NEG_MUL2 : thm := BTSB.REAL_EXP_NEG_MUL2
+def REAL_EXP_NEG : thm := BTSB.REAL_EXP_NEG
+def REAL_EXP_N : thm := BTSB.REAL_EXP_N
+def REAL_EXP_SUB : thm := BTSB.REAL_EXP_SUB
+def REAL_EXP_NZ : thm := BTSB.REAL_EXP_NZ
+def REAL_EXP_POS_LE : thm := BTSB.REAL_EXP_POS_LE
+def REAL_EXP_POS_LT : thm := BTSB.REAL_EXP_POS_LT
+def REAL_EXP_LE_X : thm := BTSB.REAL_EXP_LE_X
+def REAL_EXP_LT_1 : thm := BTSB.REAL_EXP_LT_1
+def REAL_EXP_MONO_IMP : thm := BTSB.REAL_EXP_MONO_IMP
+def REAL_EXP_MONO_LT : thm := BTSB.REAL_EXP_MONO_LT
+def REAL_EXP_MONO_LE : thm := BTSB.REAL_EXP_MONO_LE
+def REAL_EXP_INJ : thm := BTSB.REAL_EXP_INJ
+def REAL_EXP_EQ_1 : thm := BTSB.REAL_EXP_EQ_1
+def REAL_ABS_EXP : thm := BTSB.REAL_ABS_EXP
+def REAL_EXP_SUM : thm := BTSB.REAL_EXP_SUM
+def REAL_EXP_BOUND_LEMMA : thm := BTSB.REAL_EXP_BOUND_LEMMA
+
+initialize BTSC : HolMultiLib.Transcendentals.TSC ←
+  ioB "setupTSC" (HolMultiLib.Transcendentals.setupTSC deps BTSA BTSB).run
+
+-- TSC (transcendentals.ml 604-938)
+def sin : thm := BTSC.sin
+def cos : thm := BTSC.cos
+def CNJ_CSIN : thm := BTSC.CNJ_CSIN
+def CNJ_CCOS : thm := BTSC.CNJ_CCOS
+def REAL_SIN : thm := BTSC.REAL_SIN
+def REAL_COS : thm := BTSC.REAL_COS
+def CX_SIN : thm := BTSC.CX_SIN
+def CX_COS : thm := BTSC.CX_COS
+def HAS_COMPLEX_DERIVATIVE_CSIN : thm := BTSC.HAS_COMPLEX_DERIVATIVE_CSIN
+def COMPLEX_DIFFERENTIABLE_AT_CSIN : thm := BTSC.COMPLEX_DIFFERENTIABLE_AT_CSIN
+def COMPLEX_DIFFERENTIABLE_WITHIN_CSIN : thm := BTSC.COMPLEX_DIFFERENTIABLE_WITHIN_CSIN
+def HAS_COMPLEX_DERIVATIVE_CCOS : thm := BTSC.HAS_COMPLEX_DERIVATIVE_CCOS
+def COMPLEX_DIFFERENTIABLE_AT_CCOS : thm := BTSC.COMPLEX_DIFFERENTIABLE_AT_CCOS
+def COMPLEX_DIFFERENTIABLE_WITHIN_CCOS : thm := BTSC.COMPLEX_DIFFERENTIABLE_WITHIN_CCOS
+def CONTINUOUS_AT_CSIN : thm := BTSC.CONTINUOUS_AT_CSIN
+def CONTINUOUS_WITHIN_CSIN : thm := BTSC.CONTINUOUS_WITHIN_CSIN
+def CONTINUOUS_ON_CSIN : thm := BTSC.CONTINUOUS_ON_CSIN
+def HOLOMORPHIC_ON_CSIN : thm := BTSC.HOLOMORPHIC_ON_CSIN
+def CONTINUOUS_AT_CCOS : thm := BTSC.CONTINUOUS_AT_CCOS
+def CONTINUOUS_WITHIN_CCOS : thm := BTSC.CONTINUOUS_WITHIN_CCOS
+def CONTINUOUS_ON_CCOS : thm := BTSC.CONTINUOUS_ON_CCOS
+def HOLOMORPHIC_ON_CCOS : thm := BTSC.HOLOMORPHIC_ON_CCOS
+def SIN_0 : thm := BTSC.SIN_0
+def COS_0 : thm := BTSC.COS_0
+def SIN_CIRCLE : thm := BTSC.SIN_CIRCLE
+def SIN_ADD : thm := BTSC.SIN_ADD
+def COS_ADD : thm := BTSC.COS_ADD
+def SIN_NEG : thm := BTSC.SIN_NEG
+def COS_NEG : thm := BTSC.COS_NEG
+def SIN_DOUBLE : thm := BTSC.SIN_DOUBLE
+def COS_DOUBLE : thm := BTSC.COS_DOUBLE
+def COS_DOUBLE_COS : thm := BTSC.COS_DOUBLE_COS
+def SIN_BOUND : thm := BTSC.SIN_BOUND
+def COS_BOUND : thm := BTSC.COS_BOUND
+def SIN_BOUNDS : thm := BTSC.SIN_BOUNDS
+def COS_BOUNDS : thm := BTSC.COS_BOUNDS
+def COS_ABS : thm := BTSC.COS_ABS
+def SIN_SUB : thm := BTSC.SIN_SUB
+def COS_SUB : thm := BTSC.COS_SUB
+def REAL_MUL_SIN_SIN : thm := BTSC.REAL_MUL_SIN_SIN
+def REAL_MUL_SIN_COS : thm := BTSC.REAL_MUL_SIN_COS
+def REAL_MUL_COS_SIN : thm := BTSC.REAL_MUL_COS_SIN
+def REAL_MUL_COS_COS : thm := BTSC.REAL_MUL_COS_COS
+def REAL_ADD_SIN : thm := BTSC.REAL_ADD_SIN
+def REAL_SUB_SIN : thm := BTSC.REAL_SUB_SIN
+def REAL_ADD_COS : thm := BTSC.REAL_ADD_COS
+def REAL_SUB_COS : thm := BTSC.REAL_SUB_COS
+def COS_DOUBLE_SIN : thm := BTSC.COS_DOUBLE_SIN
+def EULER : thm := BTSC.EULER
+def RE_CEXP : thm := BTSC.RE_CEXP
+def IM_CEXP : thm := BTSC.IM_CEXP
+def RE_CSIN : thm := BTSC.RE_CSIN
+def IM_CSIN : thm := BTSC.IM_CSIN
+def RE_CCOS : thm := BTSC.RE_CCOS
+def IM_CCOS : thm := BTSC.IM_CCOS
+def IVT_INCREASING_RE : thm := BTSC.IVT_INCREASING_RE
+def IVT_DECREASING_RE : thm := BTSC.IVT_DECREASING_RE
+def IVT_INCREASING_IM : thm := BTSC.IVT_INCREASING_IM
+def IVT_DECREASING_IM : thm := BTSC.IVT_DECREASING_IM
+
+initialize BTSD : HolMultiLib.Transcendentals.TSD ←
+  ioB "setupTSD" (HolMultiLib.Transcendentals.setupTSD deps BTSA BTSB BTSC).run
+
+-- TSD (transcendentals.ml 939-1175)
+def log_def : thm := BTSD.log_def
+def EXP_LOG : thm := BTSD.EXP_LOG
+def LOG_EXP : thm := BTSD.LOG_EXP
+def REAL_EXP_LOG : thm := BTSD.REAL_EXP_LOG
+def LOG_MUL : thm := BTSD.LOG_MUL
+def LOG_INJ : thm := BTSD.LOG_INJ
+def LOG_1 : thm := BTSD.LOG_1
+def LOG_INV : thm := BTSD.LOG_INV
+def LOG_DIV : thm := BTSD.LOG_DIV
+def LOG_MONO_LT : thm := BTSD.LOG_MONO_LT
+def LOG_MONO_LT_IMP : thm := BTSD.LOG_MONO_LT_IMP
+def LOG_MONO_LT_REV : thm := BTSD.LOG_MONO_LT_REV
+def LOG_MONO_LE : thm := BTSD.LOG_MONO_LE
+def LOG_MONO_LE_IMP : thm := BTSD.LOG_MONO_LE_IMP
+def LOG_MONO_LE_REV : thm := BTSD.LOG_MONO_LE_REV
+def LOG_POW : thm := BTSD.LOG_POW
+def LOG_LE_STRONG : thm := BTSD.LOG_LE_STRONG
+def LOG_LE : thm := BTSD.LOG_LE
+def LOG_LT_X : thm := BTSD.LOG_LT_X
+def LOG_POS : thm := BTSD.LOG_POS
+def LOG_POS_LT : thm := BTSD.LOG_POS_LT
+def LOG_PRODUCT : thm := BTSD.LOG_PRODUCT
+def SIN_NEARZERO : thm := BTSD.SIN_NEARZERO
+def SIN_NONTRIVIAL : thm := BTSD.SIN_NONTRIVIAL
+def COS_NONTRIVIAL : thm := BTSD.COS_NONTRIVIAL
+def COS_DOUBLE_BOUND : thm := BTSD.COS_DOUBLE_BOUND
+def COS_GOESNEGATIVE_LEMMA : thm := BTSD.COS_GOESNEGATIVE_LEMMA
+def COS_GOESNEGATIVE : thm := BTSD.COS_GOESNEGATIVE
+def COS_HASZERO : thm := BTSD.COS_HASZERO
+def SIN_HASZERO : thm := BTSD.SIN_HASZERO
+def SIN_HASZERO_MINIMAL : thm := BTSD.SIN_HASZERO_MINIMAL
+def pi : thm := BTSD.pi
+def PI_WORKS : thm := BTSD.PI_WORKS
+
+initialize BTSE : HolMultiLib.Transcendentals.TSE ←
+  ioB "setupTSE" (HolMultiLib.Transcendentals.setupTSE deps BTSB BTSC BTSD).run
+
+-- TSE (transcendentals.ml 1176-1454)
+def PI_POS : thm := BTSE.PI_POS
+def PI_POS_LE : thm := BTSE.PI_POS_LE
+def PI_NZ : thm := BTSE.PI_NZ
+def REAL_ABS_PI : thm := BTSE.REAL_ABS_PI
+def SIN_PI : thm := BTSE.SIN_PI
+def SIN_POS_PI : thm := BTSE.SIN_POS_PI
+def COS_PI2 : thm := BTSE.COS_PI2
+def COS_PI : thm := BTSE.COS_PI
+def SIN_PI2 : thm := BTSE.SIN_PI2
+def SIN_COS : thm := BTSE.SIN_COS
+def COS_SIN : thm := BTSE.COS_SIN
+def SIN_PERIODIC_PI : thm := BTSE.SIN_PERIODIC_PI
+def COS_PERIODIC_PI : thm := BTSE.COS_PERIODIC_PI
+def SIN_PERIODIC : thm := BTSE.SIN_PERIODIC
+def COS_PERIODIC : thm := BTSE.COS_PERIODIC
+def SIN_NPI : thm := BTSE.SIN_NPI
+def COS_NPI : thm := BTSE.COS_NPI
+def COS_POS_PI2 : thm := BTSE.COS_POS_PI2
+def SIN_POS_PI2 : thm := BTSE.SIN_POS_PI2
+def COS_POS_PI : thm := BTSE.COS_POS_PI
+def COS_POS_PI_LE : thm := BTSE.COS_POS_PI_LE
+def SIN_POS_PI_LE : thm := BTSE.SIN_POS_PI_LE
+def SIN_PIMUL_EQ_0 : thm := BTSE.SIN_PIMUL_EQ_0
+def SIN_EQ_0 : thm := BTSE.SIN_EQ_0
+def COS_EQ_0 : thm := BTSE.COS_EQ_0
+def SIN_ZERO_PI : thm := BTSE.SIN_ZERO_PI
+def COS_ZERO_PI : thm := BTSE.COS_ZERO_PI
+def SIN_ZERO : thm := BTSE.SIN_ZERO
+def COS_ZERO : thm := BTSE.COS_ZERO
+def COS_ONE_2PI : thm := BTSE.COS_ONE_2PI
+def SIN_COS_SQRT : thm := BTSE.SIN_COS_SQRT
+def SIN_EQ_0_PI : thm := BTSE.SIN_EQ_0_PI
+def COS_TREBLE_COS : thm := BTSE.COS_TREBLE_COS
+def COS_PI6 : thm := BTSE.COS_PI6
+def SIN_PI6 : thm := BTSE.SIN_PI6
+def SIN_POS_PI_REV : thm := BTSE.SIN_POS_PI_REV
+def SIN_PI3 : thm := BTSE.SIN_PI3
+def COS_PI3 : thm := BTSE.COS_PI3
+def CEXP_II_PI : thm := BTSE.CEXP_II_PI
+
+initialize BTSF : HolMultiLib.Transcendentals.TSF ←
+  ioB "setupTSF" (HolMultiLib.Transcendentals.setupTSF deps BTSA BTSB BTSC BTSE).run
+
+-- TSF (transcendentals.ml 1455-1912)
+def SIN_TOTAL_POS : thm := BTSF.SIN_TOTAL_POS
+def SINCOS_TOTAL_PI2 : thm := BTSF.SINCOS_TOTAL_PI2
+def SINCOS_TOTAL_PI : thm := BTSF.SINCOS_TOTAL_PI
+def SINCOS_TOTAL_2PI : thm := BTSF.SINCOS_TOTAL_2PI
+def CIRCLE_SINCOS : thm := BTSF.CIRCLE_SINCOS
+def CX_PI_NZ : thm := BTSF.CX_PI_NZ
+def COMPLEX_UNIMODULAR_POLAR : thm := BTSF.COMPLEX_UNIMODULAR_POLAR
+def SIN_INTEGER_2PI : thm := BTSF.SIN_INTEGER_2PI
+def SIN_INTEGER_PI : thm := BTSF.SIN_INTEGER_PI
+def COS_INTEGER_2PI : thm := BTSF.COS_INTEGER_2PI
+def SINCOS_PRINCIPAL_VALUE : thm := BTSF.SINCOS_PRINCIPAL_VALUE
+def CEXP_COMPLEX : thm := BTSF.CEXP_COMPLEX
+def NORM_COSSIN : thm := BTSF.NORM_COSSIN
+def NORM_CEXP : thm := BTSF.NORM_CEXP
+def NORM_CEXP_II : thm := BTSF.NORM_CEXP_II
+def NORM_CEXP_IMAGINARY : thm := BTSF.NORM_CEXP_IMAGINARY
+def CEXP_EQ_1 : thm := BTSF.CEXP_EQ_1
+def CEXP_EQ : thm := BTSF.CEXP_EQ
+def COMPLEX_EQ_CEXP : thm := BTSF.COMPLEX_EQ_CEXP
+def CEXP_INTEGER_2PI : thm := BTSF.CEXP_INTEGER_2PI
+def CEXP_LIPSCHITZ_BOUNDED : thm := BTSF.CEXP_LIPSCHITZ_BOUNDED
+def SIN_COS_EQ : thm := BTSF.SIN_COS_EQ
+def SIN_COS_INJ : thm := BTSF.SIN_COS_INJ
+def CEXP_II_NE_1 : thm := BTSF.CEXP_II_NE_1
+def CSIN_EQ_0 : thm := BTSF.CSIN_EQ_0
+def CCOS_EQ_0 : thm := BTSF.CCOS_EQ_0
+def CCOS_EQ_1 : thm := BTSF.CCOS_EQ_1
+def CSIN_EQ_1 : thm := BTSF.CSIN_EQ_1
+def CSIN_EQ_MINUS1 : thm := BTSF.CSIN_EQ_MINUS1
+def CCOS_EQ_MINUS1 : thm := BTSF.CCOS_EQ_MINUS1
+def COS_EQ_1 : thm := BTSF.COS_EQ_1
+def SIN_EQ_1 : thm := BTSF.SIN_EQ_1
+def SIN_EQ_MINUS1 : thm := BTSF.SIN_EQ_MINUS1
+def COS_EQ_MINUS1 : thm := BTSF.COS_EQ_MINUS1
+def DIST_CEXP_II_1 : thm := BTSF.DIST_CEXP_II_1
+def CX_SINH : thm := BTSF.CX_SINH
+def CX_COSH : thm := BTSF.CX_COSH
+def NORM_CCOS_POW_2 : thm := BTSF.NORM_CCOS_POW_2
+def NORM_CSIN_POW_2 : thm := BTSF.NORM_CSIN_POW_2
+def CSIN_EQ : thm := BTSF.CSIN_EQ
+def CCOS_EQ : thm := BTSF.CCOS_EQ
+def SIN_EQ : thm := BTSF.SIN_EQ
+def COS_EQ : thm := BTSF.COS_EQ
+def NORM_CCOS_LE : thm := BTSF.NORM_CCOS_LE
+def NORM_CCOS_PLUS1_LE : thm := BTSF.NORM_CCOS_PLUS1_LE
+
+initialize BTSG : HolMultiLib.Transcendentals.TSG ←
+  ioB "setupTSG" (HolMultiLib.Transcendentals.setupTSG deps BTSA BTSB BTSF).run
+
+-- TSG (transcendentals.ml 1913-2088)
+def TAYLOR_CEXP : thm := BTSG.TAYLOR_CEXP
+def E_APPROX_32 : thm := BTSG.E_APPROX_32
+def TAYLOR_CSIN_RAW : thm := BTSG.TAYLOR_CSIN_RAW
+def TAYLOR_CSIN : thm := BTSG.TAYLOR_CSIN
+def CSIN_CONVERGES : thm := BTSG.CSIN_CONVERGES
+def TAYLOR_CCOS_RAW : thm := BTSG.TAYLOR_CCOS_RAW
+def TAYLOR_CCOS : thm := BTSG.TAYLOR_CCOS
+def CCOS_CONVERGES : thm := BTSG.CCOS_CONVERGES
+
+initialize BTSH : HolMultiLib.Transcendentals.TSH ←
+  ioB "setupTSH" (HolMultiLib.Transcendentals.setupTSH deps BTSA BTSB BTSC BTSE BTSF).run
+
+-- TSH (transcendentals.ml 2089-2363)
+def Arg_DEF : thm := BTSH.Arg_DEF
+def ARG_0 : thm := BTSH.ARG_0
+def ARG : thm := BTSH.ARG
+def COMPLEX_NORM_EQ_1_CEXP : thm := BTSH.COMPLEX_NORM_EQ_1_CEXP
+def ARG_UNIQUE : thm := BTSH.ARG_UNIQUE
+def ARG_MUL_CX : thm := BTSH.ARG_MUL_CX
+def ARG_DIV_CX : thm := BTSH.ARG_DIV_CX
+def ARG_LT_NZ : thm := BTSH.ARG_LT_NZ
+def ARG_LE_PI : thm := BTSH.ARG_LE_PI
+def ARG_LT_PI : thm := BTSH.ARG_LT_PI
+def ARG_EQ_0 : thm := BTSH.ARG_EQ_0
+def ARG_NUM : thm := BTSH.ARG_NUM
+def ARG_EQ_PI : thm := BTSH.ARG_EQ_PI
+def ARG_EQ_0_PI : thm := BTSH.ARG_EQ_0_PI
+def ARG_INV : thm := BTSH.ARG_INV
+def ARG_EQ : thm := BTSH.ARG_EQ
+def ARG_INV_EQ_0 : thm := BTSH.ARG_INV_EQ_0
+def ARG_LE_DIV_SUM : thm := BTSH.ARG_LE_DIV_SUM
+def ARG_LE_DIV_SUM_EQ : thm := BTSH.ARG_LE_DIV_SUM_EQ
+def REAL_SUB_ARG : thm := BTSH.REAL_SUB_ARG
+def REAL_ADD_ARG : thm := BTSH.REAL_ADD_ARG
+def ARG_MUL : thm := BTSH.ARG_MUL
+def ARG_CNJ : thm := BTSH.ARG_CNJ
+def ARG_REAL : thm := BTSH.ARG_REAL
+def ARG_CEXP : thm := BTSH.ARG_CEXP
+
+initialize BTSI : HolMultiLib.Transcendentals.TSI ←
+  ioB "setupTSI" (HolMultiLib.Transcendentals.setupTSI deps BTSA BTSB BTSC BTSE BTSF BTSH).run
+
+-- TSI (transcendentals.ml 2364-2633)
+def rotate2d : thm := BTSI.rotate2d
+def LINEAR_ROTATE2D : thm := BTSI.LINEAR_ROTATE2D
+def ROTATE2D_ADD_VECTORS : thm := BTSI.ROTATE2D_ADD_VECTORS
+def ROTATE2D_SUB : thm := BTSI.ROTATE2D_SUB
+def NORM_ROTATE2D : thm := BTSI.NORM_ROTATE2D
+def ROTATE2D_0 : thm := BTSI.ROTATE2D_0
+def ROTATE2D_EQ_0 : thm := BTSI.ROTATE2D_EQ_0
+def ROTATE2D_ZERO : thm := BTSI.ROTATE2D_ZERO
+def ORTHOGONAL_TRANSFORMATION_ROTATE2D : thm := BTSI.ORTHOGONAL_TRANSFORMATION_ROTATE2D
+def ROTATE2D_POLAR : thm := BTSI.ROTATE2D_POLAR
+def MATRIX_ROTATE2D : thm := BTSI.MATRIX_ROTATE2D
+def DET_MATRIX_ROTATE2D : thm := BTSI.DET_MATRIX_ROTATE2D
+def ROTATION_ROTATE2D : thm := BTSI.ROTATION_ROTATE2D
+def ROTATE2D_ADD : thm := BTSI.ROTATE2D_ADD
+def ROTATE2D_COMPLEX : thm := BTSI.ROTATE2D_COMPLEX
+def ROTATE2D_PI2 : thm := BTSI.ROTATE2D_PI2
+def ROTATE2D_PI : thm := BTSI.ROTATE2D_PI
+def ROTATE2D_NPI : thm := BTSI.ROTATE2D_NPI
+def ROTATE2D_2PI : thm := BTSI.ROTATE2D_2PI
+def ARG_ROTATE2D : thm := BTSI.ARG_ROTATE2D
+def ARG_ROTATE2D_UNIQUE : thm := BTSI.ARG_ROTATE2D_UNIQUE
+def ARG_ROTATE2D_UNIQUE_2PI : thm := BTSI.ARG_ROTATE2D_UNIQUE_2PI
+def COMPLEX_DIV_ROTATION : thm := BTSI.COMPLEX_DIV_ROTATION
+def ROTATION_ROTATE2D_EXISTS_GEN : thm := BTSI.ROTATION_ROTATE2D_EXISTS_GEN
+def ROTATION_ROTATE2D_EXISTS : thm := BTSI.ROTATION_ROTATE2D_EXISTS
+def ROTATION_ROTATE2D_EXISTS_ORTHOGONAL : thm := BTSI.ROTATION_ROTATE2D_EXISTS_ORTHOGONAL
+def ROTATION_ROTATE2D_EXISTS_ORTHOGONAL_ORIENTED : thm := BTSI.ROTATION_ROTATE2D_EXISTS_ORTHOGONAL_ORIENTED
+def ROTATE2D_EQ : thm := BTSI.ROTATE2D_EQ
+def ROTATE2D_SUB_ARG : thm := BTSI.ROTATE2D_SUB_ARG
+def ROTATION_MATRIX_ROTATE2D : thm := BTSI.ROTATION_MATRIX_ROTATE2D
+def ROTATION_MATRIX_ROTATE2D_EQ : thm := BTSI.ROTATION_MATRIX_ROTATE2D_EQ
+
+initialize BTSJ : HolMultiLib.Transcendentals.TSJ ←
+  ioB "setupTSJ" (HolMultiLib.Transcendentals.setupTSJ deps).run
+
+-- TSJ (transcendentals.ml 2634-3009)
+def NULLHOMOTOPIC_ORTHOGONAL_TRANSFORMATION : thm := BTSJ.NULLHOMOTOPIC_ORTHOGONAL_TRANSFORMATION
+def HOMOTOPIC_SPECIAL_ORTHOGONAL_TRANSFORMATIONS : thm := BTSJ.HOMOTOPIC_SPECIAL_ORTHOGONAL_TRANSFORMATIONS
+def HOMOTOPIC_WITH_ORTHOGONAL_TRANSFORMATIONS_UNIV : thm := BTSJ.HOMOTOPIC_WITH_ORTHOGONAL_TRANSFORMATIONS_UNIV
+def HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_SPHERE : thm := BTSJ.HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_SPHERE
+def HOMOTOPIC_LINEAR_MAPS : thm := BTSJ.HOMOTOPIC_LINEAR_MAPS
+def HOMOTOPIC_LINEAR_POSITIVE_SEMIDEFINITE_MAPS : thm := BTSJ.HOMOTOPIC_LINEAR_POSITIVE_SEMIDEFINITE_MAPS
+def HOMOTOPIC_LINEAR_POSITIVE_DEFINITE_MAPS : thm := BTSJ.HOMOTOPIC_LINEAR_POSITIVE_DEFINITE_MAPS
+def HOMOTOPIC_RESTRICTED_LINEAR_MAPS : thm := BTSJ.HOMOTOPIC_RESTRICTED_LINEAR_MAPS
+def HOMOTOPIC_INVERTIBLE_LINEAR_MAPS_ALT : thm := BTSJ.HOMOTOPIC_INVERTIBLE_LINEAR_MAPS_ALT
+def HOMOTOPIC_INVERTIBLE_LINEAR_MAPS : thm := BTSJ.HOMOTOPIC_INVERTIBLE_LINEAR_MAPS
+
+initialize BTSK : HolMultiLib.Transcendentals.TSK ←
+  ioB "setupTSK" (HolMultiLib.Transcendentals.setupTSK deps BTSA BTSB BTSC BTSE BTSJ).run
+
+-- TSK (transcendentals.ml 3010-3338)
+def HOMOTOPIC_LINEAR_MAPS_EQ : thm := BTSK.HOMOTOPIC_LINEAR_MAPS_EQ
+def HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_EQ : thm := BTSK.HOMOTOPIC_ORTHOGONAL_TRANSFORMATIONS_EQ
+def HOMOTOPIC_ANTIPODAL_IDENTITY_MAP : thm := BTSK.HOMOTOPIC_ANTIPODAL_IDENTITY_MAP
+def ctan : thm := BTSK.ctan
+def CTAN_0 : thm := BTSK.CTAN_0
+def CTAN_NEG : thm := BTSK.CTAN_NEG
+def CTAN_ADD : thm := BTSK.CTAN_ADD
+def CTAN_DOUBLE : thm := BTSK.CTAN_DOUBLE
+def CCOT_DOUBLE : thm := BTSK.CCOT_DOUBLE
+def CTAN_CCOT_DOUBLE : thm := BTSK.CTAN_CCOT_DOUBLE
+def CTAN_SUB : thm := BTSK.CTAN_SUB
+def COMPLEX_ADD_CTAN : thm := BTSK.COMPLEX_ADD_CTAN
+def COMPLEX_SUB_CTAN : thm := BTSK.COMPLEX_SUB_CTAN
+def CTAN_CEXP : thm := BTSK.CTAN_CEXP
+def HAS_COMPLEX_DERIVATIVE_CTAN : thm := BTSK.HAS_COMPLEX_DERIVATIVE_CTAN
+def COMPLEX_DIFFERENTIABLE_AT_CTAN : thm := BTSK.COMPLEX_DIFFERENTIABLE_AT_CTAN
+def COMPLEX_DIFFERENTIABLE_WITHIN_CTAN : thm := BTSK.COMPLEX_DIFFERENTIABLE_WITHIN_CTAN
+def CONTINUOUS_AT_CTAN : thm := BTSK.CONTINUOUS_AT_CTAN
+def CONTINUOUS_WITHIN_CTAN : thm := BTSK.CONTINUOUS_WITHIN_CTAN
+def CONTINUOUS_ON_CTAN : thm := BTSK.CONTINUOUS_ON_CTAN
+def HOLOMORPHIC_ON_CTAN : thm := BTSK.HOLOMORPHIC_ON_CTAN
+def tan_def : thm := BTSK.tan_def
+def CNJ_CTAN : thm := BTSK.CNJ_CTAN
+def REAL_TAN : thm := BTSK.REAL_TAN
+def CX_TAN : thm := BTSK.CX_TAN
+def tan : thm := BTSK.tan
+def TAN_0 : thm := BTSK.TAN_0
+def TAN_PI : thm := BTSK.TAN_PI
+def TAN_NPI : thm := BTSK.TAN_NPI
+def TAN_NEG : thm := BTSK.TAN_NEG
+def TAN_PERIODIC_PI : thm := BTSK.TAN_PERIODIC_PI
+def TAN_PERIODIC_NPI : thm := BTSK.TAN_PERIODIC_NPI
+def TAN_ADD : thm := BTSK.TAN_ADD
+def TAN_SUB : thm := BTSK.TAN_SUB
+def TAN_DOUBLE : thm := BTSK.TAN_DOUBLE
+def COT_DOUBLE : thm := BTSK.COT_DOUBLE
+def TAN_COT_DOUBLE : thm := BTSK.TAN_COT_DOUBLE
+def REAL_ADD_TAN : thm := BTSK.REAL_ADD_TAN
+def REAL_SUB_TAN : thm := BTSK.REAL_SUB_TAN
+def TAN_PI4 : thm := BTSK.TAN_PI4
+def TAN_POS_PI2 : thm := BTSK.TAN_POS_PI2
+def TAN_POS_PI2_LE : thm := BTSK.TAN_POS_PI2_LE
+def COS_TAN : thm := BTSK.COS_TAN
+def SIN_TAN : thm := BTSK.SIN_TAN
+
+initialize BTSL : HolMultiLib.Transcendentals.TSL ←
+  ioB "setupTSL" (HolMultiLib.Transcendentals.setupTSL deps BTSB BTSC BTSE BTSG BTSK).run
+
+-- TSL (transcendentals.ml 3339-3528)
+def SIN_MONO_LT : thm := BTSL.SIN_MONO_LT
+def SIN_MONO_LE : thm := BTSL.SIN_MONO_LE
+def SIN_MONO_LT_EQ : thm := BTSL.SIN_MONO_LT_EQ
+def SIN_MONO_LE_EQ : thm := BTSL.SIN_MONO_LE_EQ
+def SIN_INJ_PI : thm := BTSL.SIN_INJ_PI
+def COS_MONO_LT : thm := BTSL.COS_MONO_LT
+def COS_MONO_LE : thm := BTSL.COS_MONO_LE
+def COS_MONO_LT_EQ : thm := BTSL.COS_MONO_LT_EQ
+def COS_MONO_LE_EQ : thm := BTSL.COS_MONO_LE_EQ
+def COS_INJ_PI : thm := BTSL.COS_INJ_PI
+def REAL_ABS_COS_MONO_LE_EQ : thm := BTSL.REAL_ABS_COS_MONO_LE_EQ
+def TAN_MONO_LT : thm := BTSL.TAN_MONO_LT
+def TAN_MONO_LE : thm := BTSL.TAN_MONO_LE
+def TAN_MONO_LT_EQ : thm := BTSL.TAN_MONO_LT_EQ
+def TAN_MONO_LE_EQ : thm := BTSL.TAN_MONO_LE_EQ
+def TAN_BOUND_PI2 : thm := BTSL.TAN_BOUND_PI2
+def TAN_COT : thm := BTSL.TAN_COT
+def REAL_ABS_SIN_BOUND_LT : thm := BTSL.REAL_ABS_SIN_BOUND_LT
+def REAL_ABS_SIN_BOUND_LE : thm := BTSL.REAL_ABS_SIN_BOUND_LE
+def SIN_PI6_STRADDLE : thm := BTSL.SIN_PI6_STRADDLE
+def PI_APPROX_32 : thm := BTSL.PI_APPROX_32
+def PI2_BOUNDS : thm := BTSL.PI2_BOUNDS
+
+initialize BTSM : HolMultiLib.Transcendentals.TSM ←
+  ioB "setupTSM" (HolMultiLib.Transcendentals.setupTSM deps BTSA BTSB BTSC BTSD BTSE BTSF).run
+
+-- TSM (transcendentals.ml 3529-3677)
+def clog : thm := BTSM.clog
+def EXISTS_COMPLEX' : thm := BTSM.EXISTS_COMPLEX'
+def CLOG_WORKS : thm := BTSM.CLOG_WORKS
+def CEXP_CLOG : thm := BTSM.CEXP_CLOG
+def CLOG_CEXP : thm := BTSM.CLOG_CEXP
+def CLOG_EQ : thm := BTSM.CLOG_EQ
+def CLOG_UNIQUE : thm := BTSM.CLOG_UNIQUE
+def RE_CLOG : thm := BTSM.RE_CLOG
+def EXISTS_COMPLEX_ROOT : thm := BTSM.EXISTS_COMPLEX_ROOT
+def HAS_COMPLEX_DERIVATIVE_CLOG : thm := BTSM.HAS_COMPLEX_DERIVATIVE_CLOG
+def COMPLEX_DIFFERENTIABLE_AT_CLOG : thm := BTSM.COMPLEX_DIFFERENTIABLE_AT_CLOG
+def COMPLEX_DIFFERENTIABLE_WITHIN_CLOG : thm := BTSM.COMPLEX_DIFFERENTIABLE_WITHIN_CLOG
+def CONTINUOUS_AT_CLOG : thm := BTSM.CONTINUOUS_AT_CLOG
+def CONTINUOUS_WITHIN_CLOG : thm := BTSM.CONTINUOUS_WITHIN_CLOG
+def CONTINUOUS_ON_CLOG : thm := BTSM.CONTINUOUS_ON_CLOG
+def HOLOMORPHIC_ON_CLOG : thm := BTSM.HOLOMORPHIC_ON_CLOG
+def CX_LOG : thm := BTSM.CX_LOG
+
+initialize BTSN : HolMultiLib.Transcendentals.TSN ←
+  ioB "setupTSN" (HolMultiLib.Transcendentals.setupTSN deps BTSA BTSB BTSC BTSE BTSF BTSM).run
+
+-- TSN (transcendentals.ml 3678-3947)
+def RE_CLOG_POS_LT : thm := BTSN.RE_CLOG_POS_LT
+def RE_CLOG_POS_LE : thm := BTSN.RE_CLOG_POS_LE
+def IM_CLOG_POS_LT : thm := BTSN.IM_CLOG_POS_LT
+def IM_CLOG_POS_LE : thm := BTSN.IM_CLOG_POS_LE
+def RE_CLOG_POS_LT_IMP : thm := BTSN.RE_CLOG_POS_LT_IMP
+def IM_CLOG_POS_LT_IMP : thm := BTSN.IM_CLOG_POS_LT_IMP
+def IM_CLOG_EQ_0 : thm := BTSN.IM_CLOG_EQ_0
+def IM_CLOG_EQ_PI : thm := BTSN.IM_CLOG_EQ_PI
+def CNJ_CLOG : thm := BTSN.CNJ_CLOG
+def CLOG_INV : thm := BTSN.CLOG_INV
+def CLOG_1 : thm := BTSN.CLOG_1
+def CLOG_NEG_1 : thm := BTSN.CLOG_NEG_1
+def CLOG_II : thm := BTSN.CLOG_II
+def CLOG_NEG_II : thm := BTSN.CLOG_NEG_II
+def CSQRT_CEXP_CLOG : thm := BTSN.CSQRT_CEXP_CLOG
+def CNJ_CSQRT : thm := BTSN.CNJ_CSQRT
+def HAS_COMPLEX_DERIVATIVE_CSQRT : thm := BTSN.HAS_COMPLEX_DERIVATIVE_CSQRT
+def COMPLEX_DIFFERENTIABLE_AT_CSQRT : thm := BTSN.COMPLEX_DIFFERENTIABLE_AT_CSQRT
+def COMPLEX_DIFFERENTIABLE_WITHIN_CSQRT : thm := BTSN.COMPLEX_DIFFERENTIABLE_WITHIN_CSQRT
+def CONTINUOUS_AT_CSQRT : thm := BTSN.CONTINUOUS_AT_CSQRT
+def CONTINUOUS_WITHIN_CSQRT : thm := BTSN.CONTINUOUS_WITHIN_CSQRT
+def CONTINUOUS_ON_CSQRT : thm := BTSN.CONTINUOUS_ON_CSQRT
+def HOLOMORPHIC_ON_CSQRT : thm := BTSN.HOLOMORPHIC_ON_CSQRT
+def CONTINUOUS_WITHIN_CSQRT_POSREAL : thm := BTSN.CONTINUOUS_WITHIN_CSQRT_POSREAL
+
+initialize BTSO : HolMultiLib.Transcendentals.TSO ←
+  ioB "setupTSO" (HolMultiLib.Transcendentals.setupTSO deps BTSA BTSB BTSC BTSD BTSE BTSF BTSM BTSN).run
+
+-- TSO (transcendentals.ml 3948-4197)
+def cpow : thm := BTSO.cpow
+def CPOW_0 : thm := BTSO.CPOW_0
+def CPOW_N : thm := BTSO.CPOW_N
+def CPOW_1 : thm := BTSO.CPOW_1
+def CPOW_ADD : thm := BTSO.CPOW_ADD
+def CPOW_SUC : thm := BTSO.CPOW_SUC
+def CPOW_NEG : thm := BTSO.CPOW_NEG
+def CPOW_SUB : thm := BTSO.CPOW_SUB
+def CEXP_MUL_CPOW : thm := BTSO.CEXP_MUL_CPOW
+def CPOW_EQ_0 : thm := BTSO.CPOW_EQ_0
+def NORM_CPOW_REAL : thm := BTSO.NORM_CPOW_REAL
+def CPOW_REAL_REAL : thm := BTSO.CPOW_REAL_REAL
+def NORM_CPOW_REAL_MONO : thm := BTSO.NORM_CPOW_REAL_MONO
+def CPOW_MUL_REAL : thm := BTSO.CPOW_MUL_REAL
+def HAS_COMPLEX_DERIVATIVE_CPOW : thm := BTSO.HAS_COMPLEX_DERIVATIVE_CPOW
+def HAS_COMPLEX_DERIVATIVE_CPOW_RIGHT : thm := BTSO.HAS_COMPLEX_DERIVATIVE_CPOW_RIGHT
+def COMPLEX_DIFFERENTIABLE_CPOW_RIGHT : thm := BTSO.COMPLEX_DIFFERENTIABLE_CPOW_RIGHT
+def HOLOMORPHIC_ON_CPOW_RIGHT : thm := BTSO.HOLOMORPHIC_ON_CPOW_RIGHT
+def CONTINUOUS_ON_CPOW_RIGHT : thm := BTSO.CONTINUOUS_ON_CPOW_RIGHT
+def CLOG_MUL : thm := BTSO.CLOG_MUL
+def CLOG_MUL_SIMPLE : thm := BTSO.CLOG_MUL_SIMPLE
+def CLOG_MUL_CX : thm := BTSO.CLOG_MUL_CX
+def CLOG_MUL_POS : thm := BTSO.CLOG_MUL_POS
+def CLOG_DIV_POS : thm := BTSO.CLOG_DIV_POS
+def CLOG_NEG : thm := BTSO.CLOG_NEG
+def CLOG_MUL_II : thm := BTSO.CLOG_MUL_II
+
+initialize BTSP : HolMultiLib.Transcendentals.TSP ←
+  ioB "setupTSP" (HolMultiLib.Transcendentals.setupTSP deps BTSA BTSB BTSC BTSE BTSF BTSK BTSM BTSN).run
+
+-- TSP (transcendentals.ml 4198-4410)
+def unwinding : thm := BTSP.unwinding
+def UNWINDING_2PI : thm := BTSP.UNWINDING_2PI
+def CLOG_MUL_UNWINDING : thm := BTSP.CLOG_MUL_UNWINDING
+def catn : thm := BTSP.catn
+def CATN_0 : thm := BTSP.CATN_0
+def IM_COMPLEX_DIV_LEMMA : thm := BTSP.IM_COMPLEX_DIV_LEMMA
+def RE_COMPLEX_DIV_LEMMA : thm := BTSP.RE_COMPLEX_DIV_LEMMA
+def CTAN_CATN : thm := BTSP.CTAN_CATN
+def CATN_CTAN : thm := BTSP.CATN_CTAN
+def RE_CATN_BOUNDS : thm := BTSP.RE_CATN_BOUNDS
+def HAS_COMPLEX_DERIVATIVE_CATN : thm := BTSP.HAS_COMPLEX_DERIVATIVE_CATN
+def COMPLEX_DIFFERENTIABLE_AT_CATN : thm := BTSP.COMPLEX_DIFFERENTIABLE_AT_CATN
+def COMPLEX_DIFFERENTIABLE_WITHIN_CATN : thm := BTSP.COMPLEX_DIFFERENTIABLE_WITHIN_CATN
+def CONTINUOUS_AT_CATN : thm := BTSP.CONTINUOUS_AT_CATN
+def CONTINUOUS_WITHIN_CATN : thm := BTSP.CONTINUOUS_WITHIN_CATN
+def CONTINUOUS_ON_CATN : thm := BTSP.CONTINUOUS_ON_CATN
+def HOLOMORPHIC_ON_CATN : thm := BTSP.HOLOMORPHIC_ON_CATN
+
+initialize BTSQ : HolMultiLib.Transcendentals.TSQ ←
+  ioB "setupTSQ" (HolMultiLib.Transcendentals.setupTSQ deps BTSA BTSC BTSE BTSF BTSK BTSL BTSM BTSP).run
+
+-- TSQ (transcendentals.ml 4411-4603)
+def atn : thm := BTSQ.atn
+def CX_ATN : thm := BTSQ.CX_ATN
+def ATN_TAN : thm := BTSQ.ATN_TAN
+def ATN_BOUND : thm := BTSQ.ATN_BOUND
+def ATN_BOUNDS : thm := BTSQ.ATN_BOUNDS
+def TAN_ATN : thm := BTSQ.TAN_ATN
+def ATN_0 : thm := BTSQ.ATN_0
+def ATN_1 : thm := BTSQ.ATN_1
+def ATN_NEG : thm := BTSQ.ATN_NEG
+def ATN_MONO_LT : thm := BTSQ.ATN_MONO_LT
+def ATN_MONO_LT_EQ : thm := BTSQ.ATN_MONO_LT_EQ
+def ATN_MONO_LE_EQ : thm := BTSQ.ATN_MONO_LE_EQ
+def ATN_INJ : thm := BTSQ.ATN_INJ
+def ATN_POS_LT : thm := BTSQ.ATN_POS_LT
+def ATN_POS_LE : thm := BTSQ.ATN_POS_LE
+def ATN_LT_PI4_POS : thm := BTSQ.ATN_LT_PI4_POS
+def ATN_LT_PI4_NEG : thm := BTSQ.ATN_LT_PI4_NEG
+def ATN_LT_PI4 : thm := BTSQ.ATN_LT_PI4
+def ATN_LE_PI4 : thm := BTSQ.ATN_LE_PI4
+def COS_ATN_NZ : thm := BTSQ.COS_ATN_NZ
+def TAN_SEC : thm := BTSQ.TAN_SEC
+def COS_ATN : thm := BTSQ.COS_ATN
+def SIN_ATN : thm := BTSQ.SIN_ATN
+def ATN_ABS : thm := BTSQ.ATN_ABS
+def ATN_ADD : thm := BTSQ.ATN_ADD
+def ATN_INV : thm := BTSQ.ATN_INV
+def ATN_ADD_SMALL : thm := BTSQ.ATN_ADD_SMALL
+
+initialize BTSR : HolMultiLib.Transcendentals.TSR ←
+  ioB "setupTSR" (HolMultiLib.Transcendentals.setupTSR deps BTSP BTSQ).run
+
+-- TSR (transcendentals.ml 4604-4690)
+def MACHIN : thm := BTSR.MACHIN
+def MACHIN_EULER : thm := BTSR.MACHIN_EULER
+def MACHIN_GAUSS : thm := BTSR.MACHIN_GAUSS
+def ATN_ABS_LE_X : thm := BTSR.ATN_ABS_LE_X
+def ATN_LE_X : thm := BTSR.ATN_LE_X
+def TAN_ABS_GE_X : thm := BTSR.TAN_ABS_GE_X
+def TAN_TOTAL : thm := BTSR.TAN_TOTAL
+def TAN_TOTAL_POS : thm := BTSR.TAN_TOTAL_POS
+def TAN_TOTAL_LEMMA : thm := BTSR.TAN_TOTAL_LEMMA
+def RE_POW_2 : thm := BTSR.RE_POW_2
+def IM_POW_2 : thm := BTSR.IM_POW_2
+
+initialize BTSS : HolMultiLib.Transcendentals.TSS ←
+  ioB "setupTSS" (HolMultiLib.Transcendentals.setupTSS deps BTSA BTSB BTSC BTSE BTSM BTSN BTSR).run
+
+-- TSS (transcendentals.ml 4691-4888)
+def casn : thm := BTSS.casn
+def CASN_BODY_LEMMA : thm := BTSS.CASN_BODY_LEMMA
+def CSIN_CASN : thm := BTSS.CSIN_CASN
+def CASN_CSIN : thm := BTSS.CASN_CSIN
+def CASN_UNIQUE : thm := BTSS.CASN_UNIQUE
+def CASN_0 : thm := BTSS.CASN_0
+def CASN_1 : thm := BTSS.CASN_1
+def CASN_NEG_1 : thm := BTSS.CASN_NEG_1
+def HAS_COMPLEX_DERIVATIVE_CASN : thm := BTSS.HAS_COMPLEX_DERIVATIVE_CASN
+def COMPLEX_DIFFERENTIABLE_AT_CASN : thm := BTSS.COMPLEX_DIFFERENTIABLE_AT_CASN
+def COMPLEX_DIFFERENTIABLE_WITHIN_CASN : thm := BTSS.COMPLEX_DIFFERENTIABLE_WITHIN_CASN
+def CONTINUOUS_AT_CASN : thm := BTSS.CONTINUOUS_AT_CASN
+def CONTINUOUS_WITHIN_CASN : thm := BTSS.CONTINUOUS_WITHIN_CASN
+def CONTINUOUS_ON_CASN : thm := BTSS.CONTINUOUS_ON_CASN
+def HOLOMORPHIC_ON_CASN : thm := BTSS.HOLOMORPHIC_ON_CASN
+
+initialize BTST : HolMultiLib.Transcendentals.TST ←
+  ioB "setupTST" (HolMultiLib.Transcendentals.setupTST deps BTSA BTSB BTSC BTSE BTSM BTSN BTSR).run
+
+-- TST (transcendentals.ml 4889-5106)
+def cacs : thm := BTST.cacs
+def CACS_BODY_LEMMA : thm := BTST.CACS_BODY_LEMMA
+def CCOS_CACS : thm := BTST.CCOS_CACS
+def CACS_CCOS : thm := BTST.CACS_CCOS
+def CACS_UNIQUE : thm := BTST.CACS_UNIQUE
+def CACS_0 : thm := BTST.CACS_0
+def CACS_1 : thm := BTST.CACS_1
+def CACS_NEG_1 : thm := BTST.CACS_NEG_1
+def HAS_COMPLEX_DERIVATIVE_CACS : thm := BTST.HAS_COMPLEX_DERIVATIVE_CACS
+def COMPLEX_DIFFERENTIABLE_AT_CACS : thm := BTST.COMPLEX_DIFFERENTIABLE_AT_CACS
+def COMPLEX_DIFFERENTIABLE_WITHIN_CACS : thm := BTST.COMPLEX_DIFFERENTIABLE_WITHIN_CACS
+def CONTINUOUS_AT_CACS : thm := BTST.CONTINUOUS_AT_CACS
+def CONTINUOUS_WITHIN_CACS : thm := BTST.CONTINUOUS_WITHIN_CACS
+def CONTINUOUS_ON_CACS : thm := BTST.CONTINUOUS_ON_CACS
+def HOLOMORPHIC_ON_CACS : thm := BTST.HOLOMORPHIC_ON_CACS
+
+initialize BTSU : HolMultiLib.Transcendentals.TSU ←
+  ioB "setupTSU" (HolMultiLib.Transcendentals.setupTSU deps BTSM BTSN BTSS BTST).run
+
+-- TSU (transcendentals.ml 5107-5183)
+def CASN_RANGE_LEMMA : thm := BTSU.CASN_RANGE_LEMMA
+def CACS_RANGE_LEMMA : thm := BTSU.CACS_RANGE_LEMMA
+def RE_CASN : thm := BTSU.RE_CASN
+def RE_CACS : thm := BTSU.RE_CACS
+def CASN_BOUNDS : thm := BTSU.CASN_BOUNDS
+def CACS_BOUNDS : thm := BTSU.CACS_BOUNDS
+def RE_CACS_BOUNDS : thm := BTSU.RE_CACS_BOUNDS
+def RE_CACS_BOUND : thm := BTSU.RE_CACS_BOUND
+def RE_CASN_BOUNDS : thm := BTSU.RE_CASN_BOUNDS
+def RE_CASN_BOUND : thm := BTSU.RE_CASN_BOUND
+
+initialize BTSV : HolMultiLib.Transcendentals.TSV ←
+  ioB "setupTSV" (HolMultiLib.Transcendentals.setupTSV deps BTSA BTSB BTSC BTSE BTSF BTSL BTSM BTSS BTST BTSU).run
+
+-- TSV (transcendentals.ml 5184-5410)
+def CCOS_CASN_NZ : thm := BTSV.CCOS_CASN_NZ
+def CSIN_CACS_NZ : thm := BTSV.CSIN_CACS_NZ
+def CCOS_CSIN_CSQRT : thm := BTSV.CCOS_CSIN_CSQRT
+def CSIN_CCOS_CSQRT : thm := BTSV.CSIN_CCOS_CSQRT
+def CASN_CACS_SQRT_POS : thm := BTSV.CASN_CACS_SQRT_POS
+def CACS_CASN_SQRT_POS : thm := BTSV.CACS_CASN_SQRT_POS
+def CSIN_CACS : thm := BTSV.CSIN_CACS
+def CCOS_CASN : thm := BTSV.CCOS_CASN
+def asn : thm := BTSV.asn
+def REAL_ASN : thm := BTSV.REAL_ASN
+def CX_ASN : thm := BTSV.CX_ASN
+def SIN_ASN : thm := BTSV.SIN_ASN
+def ASN_SIN : thm := BTSV.ASN_SIN
+def ASN_BOUNDS_LT : thm := BTSV.ASN_BOUNDS_LT
+def ASN_0 : thm := BTSV.ASN_0
+def ASN_1 : thm := BTSV.ASN_1
+def ASN_NEG_1 : thm := BTSV.ASN_NEG_1
+def ASN_BOUNDS : thm := BTSV.ASN_BOUNDS
+def ASN_BOUNDS_PI2 : thm := BTSV.ASN_BOUNDS_PI2
+def ASN_NEG : thm := BTSV.ASN_NEG
+def COS_ASN_NZ : thm := BTSV.COS_ASN_NZ
+def ASN_MONO_LT_EQ : thm := BTSV.ASN_MONO_LT_EQ
+def ASN_MONO_LE_EQ : thm := BTSV.ASN_MONO_LE_EQ
+def ASN_MONO_LT : thm := BTSV.ASN_MONO_LT
+def ASN_MONO_LE : thm := BTSV.ASN_MONO_LE
+def COS_ASN : thm := BTSV.COS_ASN
+
+initialize BTSW : HolMultiLib.Transcendentals.TSW ←
+  ioB "setupTSW" (HolMultiLib.Transcendentals.setupTSW deps BTSC BTSE BTSF BTSK BTSL BTSM BTSQ BTSS BTST BTSU BTSV).run
+
+-- TSW (transcendentals.ml 5411-5682)
+def acs : thm := BTSW.acs
+def REAL_ACS : thm := BTSW.REAL_ACS
+def CX_ACS : thm := BTSW.CX_ACS
+def COS_ACS : thm := BTSW.COS_ACS
+def ACS_COS : thm := BTSW.ACS_COS
+def ACS_BOUNDS_LT : thm := BTSW.ACS_BOUNDS_LT
+def ACS_0 : thm := BTSW.ACS_0
+def ACS_1 : thm := BTSW.ACS_1
+def ACS_NEG_1 : thm := BTSW.ACS_NEG_1
+def ACS_BOUNDS : thm := BTSW.ACS_BOUNDS
+def ACS_NEG : thm := BTSW.ACS_NEG
+def SIN_ACS_NZ : thm := BTSW.SIN_ACS_NZ
+def ACS_MONO_LT_EQ : thm := BTSW.ACS_MONO_LT_EQ
+def ACS_MONO_LE_EQ : thm := BTSW.ACS_MONO_LE_EQ
+def ACS_MONO_LT : thm := BTSW.ACS_MONO_LT
+def ACS_MONO_LE : thm := BTSW.ACS_MONO_LE
+def SIN_ACS : thm := BTSW.SIN_ACS
+def ACS_INJ : thm := BTSW.ACS_INJ
+def ACS_ATN : thm := BTSW.ACS_ATN
+def ASN_PLUS_ACS : thm := BTSW.ASN_PLUS_ACS
+def ASN_ACS : thm := BTSW.ASN_ACS
+def ACS_ASN : thm := BTSW.ACS_ASN
+def ASN_ATN : thm := BTSW.ASN_ATN
+def ASN_ACS_SQRT_POS : thm := BTSW.ASN_ACS_SQRT_POS
+def ASN_ACS_SQRT_NEG : thm := BTSW.ASN_ACS_SQRT_NEG
+def ACS_ASN_SQRT_POS : thm := BTSW.ACS_ASN_SQRT_POS
+def ACS_ASN_SQRT_NEG : thm := BTSW.ACS_ASN_SQRT_NEG
+def CONTINUOUS_ON_CASN_REAL : thm := BTSW.CONTINUOUS_ON_CASN_REAL
+def CONTINUOUS_WITHIN_CASN_REAL : thm := BTSW.CONTINUOUS_WITHIN_CASN_REAL
+def CONTINUOUS_ON_CACS_REAL : thm := BTSW.CONTINUOUS_ON_CACS_REAL
+def CONTINUOUS_WITHIN_CACS_REAL : thm := BTSW.CONTINUOUS_WITHIN_CACS_REAL
+
+initialize BTSX : HolMultiLib.Transcendentals.TSX ←
+  ioB "setupTSX" (HolMultiLib.Transcendentals.setupTSX deps BTSA BTSB BTSD BTSF BTSG BTSM BTSN BTSO).run
+
+-- TSX (transcendentals.ml 5683-6015)
+def LIM_CX_OVER_CEXP : thm := BTSX.LIM_CX_OVER_CEXP
+def LIM_Z_TIMES_CLOG : thm := BTSX.LIM_Z_TIMES_CLOG
+def LIM_LOG_OVER_Z : thm := BTSX.LIM_LOG_OVER_Z
+def LIM_LOG_OVER_POWER : thm := BTSX.LIM_LOG_OVER_POWER
+def LIM_LOG_OVER_X : thm := BTSX.LIM_LOG_OVER_X
+def LIM_LOG_OVER_POWER_N : thm := BTSX.LIM_LOG_OVER_POWER_N
+def LIM_LOG_OVER_N : thm := BTSX.LIM_LOG_OVER_N
+def LIM_1_OVER_POWER : thm := BTSX.LIM_1_OVER_POWER
+def LIM_INV_Z_OFFSET : thm := BTSX.LIM_INV_Z_OFFSET
+def LIM_INV_Z : thm := BTSX.LIM_INV_Z
+def LIM_INV_X_OFFSET : thm := BTSX.LIM_INV_X_OFFSET
+def LIM_INV_X : thm := BTSX.LIM_INV_X
+def LIM_INV_N_OFFSET : thm := BTSX.LIM_INV_N_OFFSET
+def LIM_1_OVER_N : thm := BTSX.LIM_1_OVER_N
+def LIM_INV_N : thm := BTSX.LIM_INV_N
+def LIM_INV_Z_POW_OFFSET : thm := BTSX.LIM_INV_Z_POW_OFFSET
+def LIM_INV_Z_POW : thm := BTSX.LIM_INV_Z_POW
+def LIM_INV_X_POW_OFFSET : thm := BTSX.LIM_INV_X_POW_OFFSET
+def LIM_INV_X_POW : thm := BTSX.LIM_INV_X_POW
+def LIM_INV_N_POW_OFFSET : thm := BTSX.LIM_INV_N_POW_OFFSET
+def LIM_INV_N_POW : thm := BTSX.LIM_INV_N_POW
+def LIM_1_OVER_LOG : thm := BTSX.LIM_1_OVER_LOG
+def LIM_N_TIMES_POWN : thm := BTSX.LIM_N_TIMES_POWN
+def LIM_N_OVER_POWN : thm := BTSX.LIM_N_OVER_POWN
+def LIM_POWN : thm := BTSX.LIM_POWN
+def LIM_CSIN_OVER_X : thm := BTSX.LIM_CSIN_OVER_X
+
+initialize BTSY : HolMultiLib.Transcendentals.TSY ←
+  ioB "setupTSY" (HolMultiLib.Transcendentals.setupTSY deps BTSA BTSB BTSC BTSE BTSF).run
+
+-- TSY (transcendentals.ml 6016-6141)
+def COMPLEX_ROOT_POLYFUN : thm := BTSY.COMPLEX_ROOT_POLYFUN
+def COMPLEX_ROOT_UNITY : thm := BTSY.COMPLEX_ROOT_UNITY
+def COMPLEX_ROOT_UNITY_EQ : thm := BTSY.COMPLEX_ROOT_UNITY_EQ
+def COMPLEX_ROOT_UNITY_EQ_1 : thm := BTSY.COMPLEX_ROOT_UNITY_EQ_1
+def FINITE_CARD_COMPLEX_ROOTS_UNITY : thm := BTSY.FINITE_CARD_COMPLEX_ROOTS_UNITY
+def FINITE_COMPLEX_ROOTS_UNITY : thm := BTSY.FINITE_COMPLEX_ROOTS_UNITY
+def FINITE_CARD_COMPLEX_ROOTS_UNITY_EXPLICIT : thm := BTSY.FINITE_CARD_COMPLEX_ROOTS_UNITY_EXPLICIT
+def COMPLEX_ROOTS_UNITY : thm := BTSY.COMPLEX_ROOTS_UNITY
+def CARD_COMPLEX_ROOTS_UNITY : thm := BTSY.CARD_COMPLEX_ROOTS_UNITY
+def HAS_SIZE_COMPLEX_ROOTS_UNITY : thm := BTSY.HAS_SIZE_COMPLEX_ROOTS_UNITY
+def COMPLEX_NOT_ROOT_UNITY : thm := BTSY.COMPLEX_NOT_ROOT_UNITY
+
+initialize BTSZ : HolMultiLib.Transcendentals.TSZ ←
+  ioB "setupTSZ" (HolMultiLib.Transcendentals.setupTSZ deps BTSA BTSB BTSC BTSE BTSH BTSI BTSM BTSO BTSQ).run
+
+-- TSZ (transcendentals.ml 6142-6372)
+def ARG_CLOG : thm := BTSZ.ARG_CLOG
+def CONTINUOUS_AT_ARG : thm := BTSZ.CONTINUOUS_AT_ARG
+def CONTINUOUS_ON_ARG : thm := BTSZ.CONTINUOUS_ON_ARG
+def CONTINUOUS_WITHIN_UPPERHALF_ARG : thm := BTSZ.CONTINUOUS_WITHIN_UPPERHALF_ARG
+def CONTINUOUS_ON_UPPERHALF_ARG : thm := BTSZ.CONTINUOUS_ON_UPPERHALF_ARG
+def CONTINUOUS_ON_COMPOSE_ARG : thm := BTSZ.CONTINUOUS_ON_COMPOSE_ARG
+def OPEN_ARG_LTT : thm := BTSZ.OPEN_ARG_LTT
+def OPEN_ARG_GT : thm := BTSZ.OPEN_ARG_GT
+def CLOSED_ARG_LE : thm := BTSZ.CLOSED_ARG_LE
+def ARG_ATAN_UPPERHALF : thm := BTSZ.ARG_ATAN_UPPERHALF
+
+initialize BTSAA : HolMultiLib.Transcendentals.TSAA ←
+  ioB "setupTSAA" (HolMultiLib.Transcendentals.setupTSAA deps BTSB BTSD).run
+
+-- TSAA (transcendentals.ml 6373-6572)
+def root : thm := BTSAA.root
+def ROOT_0 : thm := BTSAA.ROOT_0
+def ROOT_1 : thm := BTSAA.ROOT_1
+def ROOT_2 : thm := BTSAA.ROOT_2
+def ROOT_NEG : thm := BTSAA.ROOT_NEG
+def ROOT_WORKS : thm := BTSAA.ROOT_WORKS
+def REAL_POW_ROOT : thm := BTSAA.REAL_POW_ROOT
+def ROOT_POS_LT : thm := BTSAA.ROOT_POS_LT
+def ROOT_POS_LE : thm := BTSAA.ROOT_POS_LE
+def ROOT_LT_0 : thm := BTSAA.ROOT_LT_0
+def ROOT_LE_0 : thm := BTSAA.ROOT_LE_0
+def ROOT_EQ_0 : thm := BTSAA.ROOT_EQ_0
+def REAL_ROOT_MUL : thm := BTSAA.REAL_ROOT_MUL
+def REAL_ROOT_POW_GEN : thm := BTSAA.REAL_ROOT_POW_GEN
+def REAL_ROOT_POW : thm := BTSAA.REAL_ROOT_POW
+def ROOT_UNIQUE : thm := BTSAA.ROOT_UNIQUE
+def REAL_ROOT_INV : thm := BTSAA.REAL_ROOT_INV
+def REAL_ROOT_DIV : thm := BTSAA.REAL_ROOT_DIV
+def ROOT_MONO_LT : thm := BTSAA.ROOT_MONO_LT
+def ROOT_MONO_LE : thm := BTSAA.ROOT_MONO_LE
+def ROOT_MONO_LT_EQ : thm := BTSAA.ROOT_MONO_LT_EQ
+def ROOT_MONO_LE_EQ : thm := BTSAA.ROOT_MONO_LE_EQ
+def ROOT_INJ : thm := BTSAA.ROOT_INJ
+def REAL_ROOT_LE : thm := BTSAA.REAL_ROOT_LE
+def REAL_LE_ROOT : thm := BTSAA.REAL_LE_ROOT
+def LOG_ROOT : thm := BTSAA.LOG_ROOT
+def ROOT_EXP_LOG : thm := BTSAA.ROOT_EXP_LOG
+def ROOT_PRODUCT : thm := BTSAA.ROOT_PRODUCT
+def SQRT_PRODUCT : thm := BTSAA.SQRT_PRODUCT
+
+initialize BTSAB : HolMultiLib.Transcendentals.TSAB ←
+  ioB "setupTSAB" (HolMultiLib.Transcendentals.setupTSAB deps BTSB BTSD BTSO BTSAA).run
+
+-- TSAB (transcendentals.ml 6573-6912)
+def rpow : thm := BTSAB.rpow
+def RPOW_POW : thm := BTSAB.RPOW_POW
+def RPOW_0 : thm := BTSAB.RPOW_0
+def RPOW_NEG : thm := BTSAB.RPOW_NEG
+def RPOW_ZERO : thm := BTSAB.RPOW_ZERO
+def RPOW_POS_LT : thm := BTSAB.RPOW_POS_LT
+def RPOW_POS_LE : thm := BTSAB.RPOW_POS_LE
+def RPOW_LT2 : thm := BTSAB.RPOW_LT2
+def RPOW_LE2 : thm := BTSAB.RPOW_LE2
+def REAL_ABS_RPOW : thm := BTSAB.REAL_ABS_RPOW
+def RPOW_ONE : thm := BTSAB.RPOW_ONE
+def RPOW_RPOW : thm := BTSAB.RPOW_RPOW
+def RPOW_LNEG : thm := BTSAB.RPOW_LNEG
+def RPOW_EQ_0 : thm := BTSAB.RPOW_EQ_0
+def RPOW_MUL : thm := BTSAB.RPOW_MUL
+def RPOW_INV : thm := BTSAB.RPOW_INV
+def REAL_INV_RPOW : thm := BTSAB.REAL_INV_RPOW
+def RPOW_DIV : thm := BTSAB.RPOW_DIV
+def RPOW_PRODUCT : thm := BTSAB.RPOW_PRODUCT
+def RPOW_ADD : thm := BTSAB.RPOW_ADD
+def RPOW_SUB : thm := BTSAB.RPOW_SUB
+def RPOW_ADD_ALT : thm := BTSAB.RPOW_ADD_ALT
+def RPOW_SUB_ALT : thm := BTSAB.RPOW_SUB_ALT
+def RPOW_SQRT : thm := BTSAB.RPOW_SQRT
+def RPOW_MONO_LE : thm := BTSAB.RPOW_MONO_LE
+def RPOW_MONO_LT : thm := BTSAB.RPOW_MONO_LT
+def RPOW_MONO_LE_EQ : thm := BTSAB.RPOW_MONO_LE_EQ
+def RPOW_MONO_LT_EQ : thm := BTSAB.RPOW_MONO_LT_EQ
+def RPOW_INJ : thm := BTSAB.RPOW_INJ
+def RPOW_LE_1 : thm := BTSAB.RPOW_LE_1
+def RPOW_LT_1 : thm := BTSAB.RPOW_LT_1
+def RPOW_MONO_INV : thm := BTSAB.RPOW_MONO_INV
+def RPOW_1_LE : thm := BTSAB.RPOW_1_LE
+def REAL_ROOT_RPOW : thm := BTSAB.REAL_ROOT_RPOW
+def LOG_RPOW : thm := BTSAB.LOG_RPOW
+def LOG_SQRT : thm := BTSAB.LOG_SQRT
+def RPOW_ADD_INTEGER : thm := BTSAB.RPOW_ADD_INTEGER
+def NORM_CPOW : thm := BTSAB.NORM_CPOW
+def REAL_MAX_RPOW : thm := BTSAB.REAL_MAX_RPOW
+def REAL_MIN_RPOW : thm := BTSAB.REAL_MIN_RPOW
+
+initialize BTSAC : HolMultiLib.Transcendentals.TSAC ←
+  ioB "setupTSAC" (HolMultiLib.Transcendentals.setupTSAC deps BTSO BTSAB).run
+
+-- TSAC (transcendentals.ml 6913-7005)
+def SUMMABLE_ZETA : thm := BTSAC.SUMMABLE_ZETA
+def SUMMABLE_ZETA_INTEGER : thm := BTSAC.SUMMABLE_ZETA_INTEGER
+
+initialize BTSAD : HolMultiLib.Transcendentals.TSAD ←
+  ioB "setupTSAD" (HolMultiLib.Transcendentals.setupTSAD deps BTSA BTSE BTSF BTSH BTSZ).run
+
+-- TSAD (transcendentals.ml 7006-7259)
+def HOMOTOPIC_CIRCLEMAPS_IMP_HOMOTOPIC_LOOPS : thm := BTSAD.HOMOTOPIC_CIRCLEMAPS_IMP_HOMOTOPIC_LOOPS
+def HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_CIRCLEMAPS : thm := BTSAD.HOMOTOPIC_LOOPS_IMP_HOMOTOPIC_CIRCLEMAPS
+def SIMPLY_CONNECTED_EQ_HOMOTOPIC_CIRCLEMAPS : thm := BTSAD.SIMPLY_CONNECTED_EQ_HOMOTOPIC_CIRCLEMAPS
+def SIMPLY_CONNECTED_EQ_CONTRACTIBLE_CIRCLEMAP : thm := BTSAD.SIMPLY_CONNECTED_EQ_CONTRACTIBLE_CIRCLEMAP
+def HOMOTOPY_EQUIVALENT_SIMPLE_CONNECTEDNESS : thm := BTSAD.HOMOTOPY_EQUIVALENT_SIMPLE_CONNECTEDNESS
+
+initialize BTSAE : HolMultiLib.Transcendentals.TSAE ←
+  ioB "setupTSAE" (HolMultiLib.Transcendentals.setupTSAE deps BTSA BTSB BTSC BTSE BTSF BTSH).run
+
+-- TSAE (transcendentals.ml 7260-7387)
+def HAS_DERIVATIVE_POLAR : thm := BTSAE.HAS_DERIVATIVE_POLAR
+def HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_POLAR : thm := BTSAE.HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_POLAR
+def ABSOLUTELY_INTEGRABLE_CHANGE_OF_VARIABLES_POLAR : thm := BTSAE.ABSOLUTELY_INTEGRABLE_CHANGE_OF_VARIABLES_POLAR
+
+initialize BTSAF : HolMultiLib.Transcendentals.TSAF ←
+  ioB "setupTSAF" (HolMultiLib.Transcendentals.setupTSAF deps BTSC BTSAE).run
+
+-- TSAF (transcendentals.ml 7388-7608)
+def FUBINI_POLAR : thm := BTSAF.FUBINI_POLAR
+def FUBINI_TONELLI_POLAR : thm := BTSAF.FUBINI_TONELLI_POLAR
+
+-- @@WIRING-END
+
+/-- `needs "Multivariate/transcendentals.ml"`: importing this module has built every
+    bundle; this is a no-op kept for symmetry with the other wiring files. -/
+def ensureTranscendentals : IO Unit := pure ()
+
+end SessionMultiLib.Transcendentals
