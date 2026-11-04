@@ -1,0 +1,586 @@
+/- ---------------------------------------------------------------------- -/
+/- Session wiring for Multivariate/flyspeck.ml.                           -/
+/- ---------------------------------------------------------------------- -/
+/- File: SessionMultiLib/Flyspeck.lean
+
+  The session half of the flyspeck.ml translation: it supplies
+  HolMultiLib.Flyspeck's dependencies and exports every theorem by name.
+  Importing this module is `needs "Multivariate/flyspeck.ml"`: its own `needs` are
+  its imports, and each bundle is built by `initialize` when the module is
+  loaded, in file order.
+-/
+
+import SessionMultiLib.Polytope
+import SessionMultiLib.RealAnalysis
+import SessionMultiLib.Geom
+import SessionMultiLib.Cross
+import SessionMultiLib.Determinants
+import HolMultiLib.Flyspeck
+
+open HolCore HolCore.Kernel
+
+namespace SessionMultiLib.Flyspeck
+
+/- The theorem groups (names only; each group's names come from one file). -/
+
+open SessionMultiLib.Convex in
+def qconvex : HolMultiLib.Flyspeck.QConvexThms :=
+  { AFFINE_HULL_FINITE_STEP_GEN, AFFINE_HULL_INSERT_SPAN,
+    AFFINE_HULL_INSERT_SUBSET_SPAN, AFFINE_HULL_LINEAR_IMAGE, COLLINEAR_3_AFFINE_HULL,
+    COLLINEAR_3_IN_AFFINE_HULL, COLLINEAR_AFFINE_HULL, COLLINEAR_AFFINE_HULL_COLLINEAR,
+    coplanar, COPLANAR_3, COPLANAR_AFFINE_HULL_COPLANAR, COPLANAR_EMPTY,
+    COPLANAR_SUBSET, SPAN_CONVEX_CONE_ALLSIGNS }
+
+open SessionMultiLib.Vectors in
+def qvectors : HolMultiLib.Flyspeck.QVectorsThms :=
+  { BASIS_EQ_0, CARD_EQ_DIM, COLLINEAR_3_DOT_MULTIPLES, DIM_INJECTIVE_LINEAR_IMAGE,
+    DOT_CAUCHY_SCHWARZ_EQUAL, DROPOUT_ADD, DROPOUT_MUL, DROPOUT_SUB, INDEPENDENT_3,
+    INDEPENDENT_BOUND, INDEPENDENT_BOUND_GENERAL, INDEPENDENT_EXPLICIT,
+    INDEPENDENT_MONO, LOWDIM_EXPAND_BASIS, NORM_LT_SQUARE_ALT, RANK_ROW, SPAN_3,
+    SPAN_BREAKDOWN_EQ, SPAN_CARD_GE_DIM, SPAN_LINEAR_IMAGE, SPAN_MUL_EQ, SPAN_NEG_EQ,
+    VSUM_ADD_GEN }
+
+open SessionMultiLib.Measure in
+def qmeasure : HolMultiLib.Flyspeck.QMeasureThms :=
+  { HAS_MEASURE_EMPTY, HAS_MEASURE_MEASURE, HAS_MEASURE_STRETCH, MEASURABLE_BALL,
+    MEASURABLE_CBALL, MEASURABLE_CONVEX_HULL, MEASURABLE_LINEAR_IMAGE,
+    MEASURABLE_NEGLIGIBLE_SYMDIFF, MEASURABLE_TRANSLATION, MEASURE_DISJOINT_UNION,
+    MEASURE_INTERIOR, MEASURE_NEGLIGIBLE_SYMDIFF, MEASURE_ORTHOGONAL_IMAGE_EQ,
+    MEASURE_TETRAHEDRON, MEASURE_TRANSLATION, MEASURE_UNION, MEASURE_UNIQUE,
+    NEGLIGIBLE_AFFINE_HULL_3, NEGLIGIBLE_CONVEX_FRONTIER, NEGLIGIBLE_CONVEX_HULL,
+    NEGLIGIBLE_HYPERPLANE, NEGLIGIBLE_LOWDIM, NEGLIGIBLE_SPHERE,
+    NEGLIGIBLE_TRANSLATION_REV, STARLIKE_NEGLIGIBLE_STRONG }
+
+open SessionMultiLib.Determinants in
+def qdeterminants : HolMultiLib.Flyspeck.QDeterminantsThms :=
+  { COLLINEAR_LINEAR_IMAGE_EQ, COLLINEAR_TRANSLATION_EQ,
+    ORTHOGONAL_TRANSFORMATION_INVERSE, ORTHOGONAL_TRANSFORMATION_SURJECTIVE,
+    ROTATION_LOWDIM_HORIZONTAL }
+
+open Session in
+def qsession : HolMultiLib.Flyspeck.QSessionThms :=
+  { EXISTS_PAIRED_THM, INSERT_UNION, INSERT_UNION_EQ, ITERATE_EXPAND_CASES, LET_DEF, LET_END_DEF,
+    REAL_CONVEX_BOUND2_LT, SUM_CASES_1 }
+
+open SessionMultiLib.Polytope in
+def qpolytope : HolMultiLib.Flyspeck.QPolytopeThms :=
+  { EDGE_OF_IMP_SUBSET, EDGE_OF_LINEAR_IMAGE, EXTREME_POINTS_OF_LINEAR_IMAGE, face_of,
+    FACE_OF_IMP_SUBSET, FACE_OF_POLYHEDRON_SUBSET_FACET, facet_of, FACET_OF_REFL,
+    POLYHEDRON_CONVEX_CONE_HULL, POLYHEDRON_IMP_CLOSED, polytope,
+    POLYTOPE_IMP_POLYHEDRON, SUBSET_OF_FACE_OF }
+
+open SessionLibrary.Floor in
+def qfloor : HolMultiLib.Flyspeck.QFloorThms :=
+  { REAL_EQ_INTEGERS_IMP }
+
+open SessionMultiLib.Topology in
+def qtopology : HolMultiLib.Flyspeck.QTopologyThms :=
+  { ball, BOUNDED_SUBSET_OPEN_INTERVAL, CONTINUOUS_CLOSED_PREIMAGE_CONSTANT,
+    CONTINUOUS_ON_UNION_LOCAL }
+
+def deps : HolMultiLib.Flyspeck.FlyspeckDeps where
+  gm := SessionMultiLib.Geom.deps
+  gea := SessionMultiLib.Geom.BGEA
+  geb := SessionMultiLib.Geom.BGEB
+  gec := SessionMultiLib.Geom.BGEC
+  ged := SessionMultiLib.Geom.BGED
+  gee := SessionMultiLib.Geom.BGEE
+  crd := SessionMultiLib.Cross.deps
+  crs := SessionMultiLib.Cross.BCRS
+  qconvex := qconvex
+  qvectors := qvectors
+  qmeasure := qmeasure
+  qdeterminants := qdeterminants
+  qsession := qsession
+  qpolytope := qpolytope
+  qfloor := qfloor
+  qtopology := qtopology
+  geominv := SessionMultiLib.Determinants.BGeomInv
+  geomorigin := SessionMultiLib.Determinants.BGeomOrigin
+  EXPAND_QUANTS_CONV := SessionMultiLib.Vectors.EXPAND_QUANTS_CONV
+  PARTIAL_EXPAND_QUANTS_CONV := SessionMultiLib.Vectors.PARTIAL_EXPAND_QUANTS_CONV
+  let_CONV := Session.let_CONV
+  override_interface s t := ExceptT.mk (Session.override_interface s t)
+  basic_congs := Session.basic_congs
+  set_basic_congs := Session.set_basic_congs
+
+private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
+
+/- The bundles, in flyspeck.ml order. -/
+
+initialize BFYA : HolMultiLib.Flyspeck.FYA ←
+  ioB "setupFYA" (HolMultiLib.Flyspeck.setupFYA deps).run
+
+-- FYA (flyspeck.ml 1-271)
+def NORM_CROSS_SIN : thm := BFYA.NORM_CROSS_SIN
+def COPLANAR_INSERT_0_NEG : thm := BFYA.COPLANAR_INSERT_0_NEG
+def COPLANAR_IMP_NEGLIGIBLE : thm := BFYA.COPLANAR_IMP_NEGLIGIBLE
+def NOT_COPLANAR_0_4_IMP_INDEPENDENT : thm := BFYA.NOT_COPLANAR_0_4_IMP_INDEPENDENT
+def NOT_COPLANAR_NOT_COLLINEAR : thm := BFYA.NOT_COPLANAR_NOT_COLLINEAR
+def SUBSET_AFFINE_HULL_SPECIAL_SCALE : thm := BFYA.SUBSET_AFFINE_HULL_SPECIAL_SCALE
+def COLLINEAR_SPECIAL_SCALE : thm := BFYA.COLLINEAR_SPECIAL_SCALE
+def COLLINEAR_SCALE_ALL : thm := BFYA.COLLINEAR_SCALE_ALL
+def COPLANAR_SPECIAL_SCALE : thm := BFYA.COPLANAR_SPECIAL_SCALE
+def COPLANAR_SCALE_ALL : thm := BFYA.COPLANAR_SCALE_ALL
+def DROPOUT_BASIS_3 : thm := BFYA.DROPOUT_BASIS_3
+def COLLINEAR_BASIS_3 : thm := BFYA.COLLINEAR_BASIS_3
+def OPEN_DROPOUT_3 : thm := BFYA.OPEN_DROPOUT_3
+def SLICE_DROPOUT_3 : thm := BFYA.SLICE_DROPOUT_3
+def NOT_COPLANAR_IMP_NOT_COLLINEAR_DROPOUT_3 : thm := BFYA.NOT_COPLANAR_IMP_NOT_COLLINEAR_DROPOUT_3
+def SLICE_312 : thm := BFYA.SLICE_312
+def SLICE_123 : thm := BFYA.SLICE_123
+def pad2d3d : thm := BFYA.pad2d3d
+def FORALL_PAD2D3D_THM : thm := BFYA.FORALL_PAD2D3D_THM
+def QUANTIFY_PAD2D3D_THM : thm := BFYA.QUANTIFY_PAD2D3D_THM
+def LINEAR_PAD2D3D : thm := BFYA.LINEAR_PAD2D3D
+def INJECTIVE_PAD2D3D : thm := BFYA.INJECTIVE_PAD2D3D
+def NORM_PAD2D3D : thm := BFYA.NORM_PAD2D3D
+
+initialize BFYB : HolMultiLib.Flyspeck.FYB ←
+  ioB "setupFYB" (HolMultiLib.Flyspeck.setupFYB deps BFYA).run
+
+-- FYB (flyspeck.ml 272-604)
+/-- `PAD2D3D_QUANTIFY_CONV` (flyspeck.ml 276). -/
+def PAD2D3D_QUANTIFY_CONV : term → IO (Except String thm) := fun t =>
+  BFYB.PAD2D3D_QUANTIFY_CONV t
+/-- `PAD2D3D_TAC` (flyspeck.ml 288). -/
+def PAD2D3D_TAC : HolCore.Tactics.tactic := fun g => BFYB.PAD2D3D_TAC g
+def plane : thm := BFYB.plane
+def PLANE_TRANSLATION_EQ : thm := BFYB.PLANE_TRANSLATION_EQ
+def PLANE_TRANSLATION : thm := BFYB.PLANE_TRANSLATION
+def PLANE_LINEAR_IMAGE_EQ : thm := BFYB.PLANE_LINEAR_IMAGE_EQ
+def PLANE_LINEAR_IMAGE : thm := BFYB.PLANE_LINEAR_IMAGE
+def AFFINE_PLANE : thm := BFYB.AFFINE_PLANE
+def ROTATION_PLANE_HORIZONTAL : thm := BFYB.ROTATION_PLANE_HORIZONTAL
+def ROTATION_HORIZONTAL_PLANE : thm := BFYB.ROTATION_HORIZONTAL_PLANE
+def COPLANAR : thm := BFYB.COPLANAR
+def COPLANAR_DET_EQ_0 : thm := BFYB.COPLANAR_DET_EQ_0
+def COPLANAR_CROSS_DOT : thm := BFYB.COPLANAR_CROSS_DOT
+def PLANE_AFFINE_HULL_3 : thm := BFYB.PLANE_AFFINE_HULL_3
+def AFFINE_HULL_3_GENERATED : thm := BFYB.AFFINE_HULL_3_GENERATED
+
+initialize BFYC : HolMultiLib.Flyspeck.FYC ←
+  ioB "setupFYC" (HolMultiLib.Flyspeck.setupFYC deps BFYB).run
+
+-- FYC (flyspeck.ml 605-918)
+/-- `GEOM_HORIZONTAL_PLANE_RULE tm` (flyspeck.ml 609). -/
+def GEOM_HORIZONTAL_PLANE_RULE (tm : term) : ExceptT String IO thm :=
+  BFYC.GEOM_HORIZONTAL_PLANE_RULE tm
+/-- `GEOM_HORIZONTAL_PLANE_TAC p` (flyspeck.ml 670). -/
+def GEOM_HORIZONTAL_PLANE_TAC (p : term) : HolCore.Tactics.tactic := fun g =>
+  BFYC.GEOM_HORIZONTAL_PLANE_TAC p g
+def lin_combo : thm := BFYC.lin_combo
+def affsign : thm := BFYC.affsign
+def sgn_gt : thm := BFYC.sgn_gt
+def sgn_ge : thm := BFYC.sgn_ge
+def sgn_lt : thm := BFYC.sgn_lt
+def sgn_le : thm := BFYC.sgn_le
+def aff_gt_def : thm := BFYC.aff_gt_def
+def aff_ge_def : thm := BFYC.aff_ge_def
+def aff_lt_def : thm := BFYC.aff_lt_def
+def aff_le_def : thm := BFYC.aff_le_def
+def AFFSIGN : thm := BFYC.AFFSIGN
+def AFFSIGN_ALT : thm := BFYC.AFFSIGN_ALT
+def IN_AFFSIGN : thm := BFYC.IN_AFFSIGN
+def AFFSIGN_DISJOINT_DIFF : thm := BFYC.AFFSIGN_DISJOINT_DIFF
+def AFF_GE_DISJOINT_DIFF : thm := BFYC.AFF_GE_DISJOINT_DIFF
+def AFFSIGN_INJECTIVE_LINEAR_IMAGE : thm := BFYC.AFFSIGN_INJECTIVE_LINEAR_IMAGE
+def AFF_GE_INJECTIVE_LINEAR_IMAGE : thm := BFYC.AFF_GE_INJECTIVE_LINEAR_IMAGE
+def AFF_GT_INJECTIVE_LINEAR_IMAGE : thm := BFYC.AFF_GT_INJECTIVE_LINEAR_IMAGE
+def AFF_LE_INJECTIVE_LINEAR_IMAGE : thm := BFYC.AFF_LE_INJECTIVE_LINEAR_IMAGE
+def AFF_LT_INJECTIVE_LINEAR_IMAGE : thm := BFYC.AFF_LT_INJECTIVE_LINEAR_IMAGE
+def IN_AFFSIGN_TRANSLATION : thm := BFYC.IN_AFFSIGN_TRANSLATION
+def AFFSIGN_TRANSLATION : thm := BFYC.AFFSIGN_TRANSLATION
+def AFF_GE_TRANSLATION : thm := BFYC.AFF_GE_TRANSLATION
+def AFF_GT_TRANSLATION : thm := BFYC.AFF_GT_TRANSLATION
+def AFF_LE_TRANSLATION : thm := BFYC.AFF_LE_TRANSLATION
+def AFF_LT_TRANSLATION : thm := BFYC.AFF_LT_TRANSLATION
+
+initialize BFYD : HolMultiLib.Flyspeck.FYD ←
+  ioB "setupFYD" (HolMultiLib.Flyspeck.setupFYD deps BFYC).run
+
+-- FYD (flyspeck.ml 919-1067)
+/-- `AFF_TAC` (flyspeck.ml 920). -/
+def AFF_TAC : HolCore.Tactics.tactic := fun g => BFYD.AFF_TAC g
+def AFF_GE_1_1 : thm := BFYD.AFF_GE_1_1
+def AFF_GE_1_2 : thm := BFYD.AFF_GE_1_2
+def AFF_GE_2_1 : thm := BFYD.AFF_GE_2_1
+def AFF_GT_1_1 : thm := BFYD.AFF_GT_1_1
+def AFF_GT_1_2 : thm := BFYD.AFF_GT_1_2
+def AFF_GT_2_1 : thm := BFYD.AFF_GT_2_1
+def AFF_GT_3_1 : thm := BFYD.AFF_GT_3_1
+def AFF_LT_1_1 : thm := BFYD.AFF_LT_1_1
+def AFF_LT_2_1 : thm := BFYD.AFF_LT_2_1
+def AFF_GE_1_2_0 : thm := BFYD.AFF_GE_1_2_0
+def AFF_GE_1_1_0 : thm := BFYD.AFF_GE_1_1_0
+def AFF_GE_2_1_0 : thm := BFYD.AFF_GE_2_1_0
+
+initialize BFYE : HolMultiLib.Flyspeck.FYE ←
+  ioB "setupFYE" (HolMultiLib.Flyspeck.setupFYE deps BFYC BFYD).run
+
+-- FYE (flyspeck.ml 1068-1383)
+def CONVEX_AFFSIGN : thm := BFYE.CONVEX_AFFSIGN
+def CONVEX_AFF_GE : thm := BFYE.CONVEX_AFF_GE
+def CONVEX_AFF_LE : thm := BFYE.CONVEX_AFF_LE
+def CONVEX_AFF_GT : thm := BFYE.CONVEX_AFF_GT
+def CONVEX_AFF_LT : thm := BFYE.CONVEX_AFF_LT
+def AFFSIGN_SUBSET_AFFINE_HULL : thm := BFYE.AFFSIGN_SUBSET_AFFINE_HULL
+def AFF_GE_SUBSET_AFFINE_HULL : thm := BFYE.AFF_GE_SUBSET_AFFINE_HULL
+def AFF_LE_SUBSET_AFFINE_HULL : thm := BFYE.AFF_LE_SUBSET_AFFINE_HULL
+def AFF_GT_SUBSET_AFFINE_HULL : thm := BFYE.AFF_GT_SUBSET_AFFINE_HULL
+def AFF_LT_SUBSET_AFFINE_HULL : thm := BFYE.AFF_LT_SUBSET_AFFINE_HULL
+def AFFSIGN_EQ_AFFINE_HULL : thm := BFYE.AFFSIGN_EQ_AFFINE_HULL
+def AFF_GE_EQ_AFFINE_HULL : thm := BFYE.AFF_GE_EQ_AFFINE_HULL
+def AFF_LE_EQ_AFFINE_HULL : thm := BFYE.AFF_LE_EQ_AFFINE_HULL
+def AFF_GT_EQ_AFFINE_HULL : thm := BFYE.AFF_GT_EQ_AFFINE_HULL
+def AFF_LT_EQ_AFFINE_HULL : thm := BFYE.AFF_LT_EQ_AFFINE_HULL
+def AFFSIGN_SUBSET_AFFSIGN : thm := BFYE.AFFSIGN_SUBSET_AFFSIGN
+def AFF_GT_SUBSET_AFF_GE : thm := BFYE.AFF_GT_SUBSET_AFF_GE
+def AFFSIGN_MONO_LEFT : thm := BFYE.AFFSIGN_MONO_LEFT
+def AFFSIGN_MONO_SHUFFLE : thm := BFYE.AFFSIGN_MONO_SHUFFLE
+def AFF_GT_MONO_LEFT : thm := BFYE.AFF_GT_MONO_LEFT
+def AFF_GE_MONO_LEFT : thm := BFYE.AFF_GE_MONO_LEFT
+def AFF_LT_MONO_LEFT : thm := BFYE.AFF_LT_MONO_LEFT
+def AFF_LE_MONO_LEFT : thm := BFYE.AFF_LE_MONO_LEFT
+def AFFSIGN_MONO_RIGHT : thm := BFYE.AFFSIGN_MONO_RIGHT
+def AFF_GE_MONO_RIGHT : thm := BFYE.AFF_GE_MONO_RIGHT
+def AFF_LE_MONO_RIGHT : thm := BFYE.AFF_LE_MONO_RIGHT
+def AFFINE_HULL_SUBSET_AFFSIGN : thm := BFYE.AFFINE_HULL_SUBSET_AFFSIGN
+def AFFINE_HULL_SUBSET_AFF_GE : thm := BFYE.AFFINE_HULL_SUBSET_AFF_GE
+def AFF_GE_AFF_GT_DECOMP : thm := BFYE.AFF_GE_AFF_GT_DECOMP
+def AFFSIGN_SPECIAL_SCALE : thm := BFYE.AFFSIGN_SPECIAL_SCALE
+def AFF_GE_SPECIAL_SCALE : thm := BFYE.AFF_GE_SPECIAL_SCALE
+def AFF_LE_SPECIAL_SCALE : thm := BFYE.AFF_LE_SPECIAL_SCALE
+def AFF_GT_SPECIAL_SCALE : thm := BFYE.AFF_GT_SPECIAL_SCALE
+def AFF_LT_SPECIAL_SCALE : thm := BFYE.AFF_LT_SPECIAL_SCALE
+def AFF_GE_SCALE_LEMMA : thm := BFYE.AFF_GE_SCALE_LEMMA
+
+initialize BFYF : HolMultiLib.Flyspeck.FYF ←
+  ioB "setupFYF" (HolMultiLib.Flyspeck.setupFYF deps BFYA BFYC BFYD BFYE).run
+
+-- FYF (flyspeck.ml 1384-1781)
+def AFFSIGN_0 : thm := BFYF.AFFSIGN_0
+def AFF_GE_0_AFFINE_MULTIPLE_CONVEX : thm := BFYF.AFF_GE_0_AFFINE_MULTIPLE_CONVEX
+def AFF_GE_0_MULTIPLE_AFFINE_CONVEX : thm := BFYF.AFF_GE_0_MULTIPLE_AFFINE_CONVEX
+def AFF_GE_0_AFFINE_CONVEX_CONE : thm := BFYF.AFF_GE_0_AFFINE_CONVEX_CONE
+def AFF_GE_0_N : thm := BFYF.AFF_GE_0_N
+def AFF_GE_0_CONVEX_HULL : thm := BFYF.AFF_GE_0_CONVEX_HULL
+def AFF_GE_0_CONVEX_HULL_ALT : thm := BFYF.AFF_GE_0_CONVEX_HULL_ALT
+def AFF_GE_0_CONVEX_CONE_NEGATIONS : thm := BFYF.AFF_GE_0_CONVEX_CONE_NEGATIONS
+def CONVEX_HULL_AFF_GE : thm := BFYF.CONVEX_HULL_AFF_GE
+def POLYHEDRON_AFF_GE : thm := BFYF.POLYHEDRON_AFF_GE
+def CLOSED_AFF_GE : thm := BFYF.CLOSED_AFF_GE
+def CONIC_AFF_GE_0 : thm := BFYF.CONIC_AFF_GE_0
+def ANGLES_ADD_AFF_GE : thm := BFYF.ANGLES_ADD_AFF_GE
+def AFF_GE_2_1_0_DROPOUT_3 : thm := BFYF.AFF_GE_2_1_0_DROPOUT_3
+def AFF_GE_2_1_0_SEMIALGEBRAIC : thm := BFYF.AFF_GE_2_1_0_SEMIALGEBRAIC
+def HALFLINE_REFL : thm := BFYF.HALFLINE_REFL
+def HALFLINE_EXPLICIT : thm := BFYF.HALFLINE_EXPLICIT
+def HALFLINE : thm := BFYF.HALFLINE
+def CLOSED_HALFLINE : thm := BFYF.CLOSED_HALFLINE
+def SEGMENT_SUBSET_HALFLINE : thm := BFYF.SEGMENT_SUBSET_HALFLINE
+def ENDS_IN_HALFLINE : thm := BFYF.ENDS_IN_HALFLINE
+def HALFLINE_SUBSET_AFFINE_HULL : thm := BFYF.HALFLINE_SUBSET_AFFINE_HULL
+def HALFLINE_INTER_COMPACT_SEGMENT : thm := BFYF.HALFLINE_INTER_COMPACT_SEGMENT
+
+initialize BFYG : HolMultiLib.Flyspeck.FYG ←
+  ioB "setupFYG" (HolMultiLib.Flyspeck.setupFYG deps BFYC BFYE BFYF).run
+
+-- FYG (flyspeck.ml 1782-2003)
+def conv0 : thm := BFYG.conv0
+def CONV0_INJECTIVE_LINEAR_IMAGE : thm := BFYG.CONV0_INJECTIVE_LINEAR_IMAGE
+def CONV0_TRANSLATION : thm := BFYG.CONV0_TRANSLATION
+def CONV0_SUBSET_CONVEX_HULL : thm := BFYG.CONV0_SUBSET_CONVEX_HULL
+def CONV0_AFF_GT : thm := BFYG.CONV0_AFF_GT
+def CONVEX_HULL_CONV0_DECOMP : thm := BFYG.CONVEX_HULL_CONV0_DECOMP
+def CONVEX_CONV0 : thm := BFYG.CONVEX_CONV0
+def BOUNDED_CONV0 : thm := BFYG.BOUNDED_CONV0
+def MEASURABLE_CONV0 : thm := BFYG.MEASURABLE_CONV0
+def NEGLIGIBLE_CONVEX_HULL_DIFF_CONV0 : thm := BFYG.NEGLIGIBLE_CONVEX_HULL_DIFF_CONV0
+def MEASURE_CONV0_CONVEX_HULL : thm := BFYG.MEASURE_CONV0_CONVEX_HULL
+def orthonormal : thm := BFYG.orthonormal
+def ORTHONORMAL_LINEAR_IMAGE : thm := BFYG.ORTHONORMAL_LINEAR_IMAGE
+def ORTHONORMAL_PERMUTE : thm := BFYG.ORTHONORMAL_PERMUTE
+def ORTHONORMAL_CROSS : thm := BFYG.ORTHONORMAL_CROSS
+def ORTHONORMAL_IMP_NONZERO : thm := BFYG.ORTHONORMAL_IMP_NONZERO
+def ORTHONORMAL_IMP_DISTINCT : thm := BFYG.ORTHONORMAL_IMP_DISTINCT
+def ORTHONORMAL_IMP_INDEPENDENT : thm := BFYG.ORTHONORMAL_IMP_INDEPENDENT
+def ORTHONORMAL_IMP_SPANNING : thm := BFYG.ORTHONORMAL_IMP_SPANNING
+def ORTHONORMAL_IMP_INDEPENDENT_EXPLICIT_0 : thm := BFYG.ORTHONORMAL_IMP_INDEPENDENT_EXPLICIT_0
+def ORTHONORMAL_IMP_INDEPENDENT_EXPLICIT : thm := BFYG.ORTHONORMAL_IMP_INDEPENDENT_EXPLICIT
+def arcV : thm := BFYG.arcV
+def ARCV_ANGLE : thm := BFYG.ARCV_ANGLE
+def ARCV_LINEAR_IMAGE_EQ : thm := BFYG.ARCV_LINEAR_IMAGE_EQ
+def ARCV_TRANSLATION_EQ : thm := BFYG.ARCV_TRANSLATION_EQ
+
+initialize BFYH : HolMultiLib.Flyspeck.FYH ←
+  ioB "setupFYH" (HolMultiLib.Flyspeck.setupFYH deps BFYA BFYB BFYG).run
+
+-- FYH (flyspeck.ml 2004-2146)
+def AZIM_EXISTS : thm := BFYH.AZIM_EXISTS
+def azim_spec : thm := BFYH.azim_spec
+
+initialize BFYI : HolMultiLib.Flyspeck.FYI ←
+  ioB "setupFYI" (HolMultiLib.Flyspeck.setupFYI deps BFYA BFYD BFYE BFYF BFYG BFYH).run
+
+-- FYI (flyspeck.ml 2147-2569)
+def azim_def : thm := BFYI.azim_def
+def azim : thm := BFYI.azim
+def AZIM_UNIQUE : thm := BFYI.AZIM_UNIQUE
+def AZIM_TRANSLATION : thm := BFYI.AZIM_TRANSLATION
+def AZIM_LINEAR_IMAGE : thm := BFYI.AZIM_LINEAR_IMAGE
+def AZIM_DEGENERATE : thm := BFYI.AZIM_DEGENERATE
+def AZIM_REFL_ALT : thm := BFYI.AZIM_REFL_ALT
+def AZIM_SPECIAL_SCALE : thm := BFYI.AZIM_SPECIAL_SCALE
+def AZIM_SCALE_ALL : thm := BFYI.AZIM_SCALE_ALL
+def AZIM_ARG : thm := BFYI.AZIM_ARG
+def REAL_CONTINUOUS_AT_AZIM_SHARP : thm := BFYI.REAL_CONTINUOUS_AT_AZIM_SHARP
+def REAL_CONTINUOUS_AT_AZIM : thm := BFYI.REAL_CONTINUOUS_AT_AZIM
+def AZIM_REFL : thm := BFYI.AZIM_REFL
+def AZIM_EQ : thm := BFYI.AZIM_EQ
+
+initialize BFYJ : HolMultiLib.Flyspeck.FYJ ←
+  ioB "setupFYJ" (HolMultiLib.Flyspeck.setupFYJ deps BFYA BFYC BFYD BFYE BFYF BFYI).run
+
+-- FYJ (flyspeck.ml 2570-2991)
+def AZIM_EQ_ALT : thm := BFYJ.AZIM_EQ_ALT
+def AZIM_EQ_0 : thm := BFYJ.AZIM_EQ_0
+def AZIM_EQ_0_ALT : thm := BFYJ.AZIM_EQ_0_ALT
+def AZIM_EQ_0_GE : thm := BFYJ.AZIM_EQ_0_GE
+def AZIM_COMPL_EQ_0 : thm := BFYJ.AZIM_COMPL_EQ_0
+def AZIM_COMPL : thm := BFYJ.AZIM_COMPL
+def AZIM_EQ_PI_SYM : thm := BFYJ.AZIM_EQ_PI_SYM
+def AZIM_EQ_0_SYM : thm := BFYJ.AZIM_EQ_0_SYM
+def AZIM_EQ_0_GE_ALT : thm := BFYJ.AZIM_EQ_0_GE_ALT
+def AZIM_EQ_PI : thm := BFYJ.AZIM_EQ_PI
+def AZIM_EQ_PI_ALT : thm := BFYJ.AZIM_EQ_PI_ALT
+def AZIM_EQ_0_PI_IMP_COPLANAR : thm := BFYJ.AZIM_EQ_0_PI_IMP_COPLANAR
+def AZIM_SAME_WITHIN_AFF_GE : thm := BFYJ.AZIM_SAME_WITHIN_AFF_GE
+def AZIM_SAME_WITHIN_AFF_GE_ALT : thm := BFYJ.AZIM_SAME_WITHIN_AFF_GE_ALT
+def COLLINEAR_WITHIN_AFF_GE_COLLINEAR : thm := BFYJ.COLLINEAR_WITHIN_AFF_GE_COLLINEAR
+def AZIM_EQ_IMP : thm := BFYJ.AZIM_EQ_IMP
+def AZIM_EQ_0_GE_IMP : thm := BFYJ.AZIM_EQ_0_GE_IMP
+def REAL_SGN_SIN_AZIM : thm := BFYJ.REAL_SGN_SIN_AZIM
+def AZIM_IN_UPPER_HALFSPACE : thm := BFYJ.AZIM_IN_UPPER_HALFSPACE
+
+initialize BFYK : HolMultiLib.Flyspeck.FYK ←
+  ioB "setupFYK" (HolMultiLib.Flyspeck.setupFYK deps BFYA BFYB BFYC BFYG BFYI BFYJ).run
+
+-- FYK (flyspeck.ml 2992-3330)
+def dihV : thm := BFYK.dihV
+def DIHV : thm := BFYK.DIHV
+def DIHV_TRANSLATION_EQ : thm := BFYK.DIHV_TRANSLATION_EQ
+def DIHV_LINEAR_IMAGE : thm := BFYK.DIHV_LINEAR_IMAGE
+def DIHV_SPECIAL_SCALE : thm := BFYK.DIHV_SPECIAL_SCALE
+def DIHV_RANGE : thm := BFYK.DIHV_RANGE
+def COS_AZIM_DIHV : thm := BFYK.COS_AZIM_DIHV
+def AZIM_DIHV_SAME : thm := BFYK.AZIM_DIHV_SAME
+def AZIM_DIHV_COMPL : thm := BFYK.AZIM_DIHV_COMPL
+def AZIM_DIVH : thm := BFYK.AZIM_DIVH
+def AZIM_DIHV_EQ_0 : thm := BFYK.AZIM_DIHV_EQ_0
+def AZIM_DIHV_EQ_PI : thm := BFYK.AZIM_DIHV_EQ_PI
+def AZIM_EQ_0_PI_EQ_COPLANAR : thm := BFYK.AZIM_EQ_0_PI_EQ_COPLANAR
+def DIHV_EQ_0_PI_EQ_COPLANAR : thm := BFYK.DIHV_EQ_0_PI_EQ_COPLANAR
+def DIHV_SYM : thm := BFYK.DIHV_SYM
+def DIHV_NEG : thm := BFYK.DIHV_NEG
+def DIHV_NEG_0 : thm := BFYK.DIHV_NEG_0
+def DIHV_ARCV : thm := BFYK.DIHV_ARCV
+def AZIM_DIHV_SAME_STRONG : thm := BFYK.AZIM_DIHV_SAME_STRONG
+def AZIM_ARCV : thm := BFYK.AZIM_ARCV
+def COLLINEAR_AZIM_0_OR_PI : thm := BFYK.COLLINEAR_AZIM_0_OR_PI
+def REAL_CONTINUOUS_WITHIN_DIHV_COMPOSE : thm := BFYK.REAL_CONTINUOUS_WITHIN_DIHV_COMPOSE
+def REAL_CONTINUOUS_AT_DIHV_COMPOSE : thm := BFYK.REAL_CONTINUOUS_AT_DIHV_COMPOSE
+def REAL_CONTINUOUS_WITHINREAL_DIHV_COMPOSE : thm := BFYK.REAL_CONTINUOUS_WITHINREAL_DIHV_COMPOSE
+def REAL_CONTINUOUS_ATREAL_DIHV_COMPOSE : thm := BFYK.REAL_CONTINUOUS_ATREAL_DIHV_COMPOSE
+def REAL_CONTINUOUS_AT_DIHV : thm := BFYK.REAL_CONTINUOUS_AT_DIHV
+
+initialize BFYL : HolMultiLib.Flyspeck.FYL ←
+  ioB "setupFYL" (HolMultiLib.Flyspeck.setupFYL deps BFYB BFYC BFYF BFYI BFYJ BFYK).run
+
+-- FYL (flyspeck.ml 3331-3528)
+def REAL_CONTINUOUS_WITHIN_AZIM_COMPOSE : thm := BFYL.REAL_CONTINUOUS_WITHIN_AZIM_COMPOSE
+def REAL_CONTINUOUS_AT_AZIM_COMPOSE : thm := BFYL.REAL_CONTINUOUS_AT_AZIM_COMPOSE
+def REAL_CONTINUOUS_WITHINREAL_AZIM_COMPOSE : thm := BFYL.REAL_CONTINUOUS_WITHINREAL_AZIM_COMPOSE
+def REAL_CONTINUOUS_ATREAL_AZIM_COMPOSE : thm := BFYL.REAL_CONTINUOUS_ATREAL_AZIM_COMPOSE
+
+initialize BFYM : HolMultiLib.Flyspeck.FYM ←
+  ioB "setupFYM" (HolMultiLib.Flyspeck.setupFYM deps BFYA BFYG BFYI BFYJ).run
+
+-- FYM (flyspeck.ml 3529-3773)
+def ZENITH_EXISTS : thm := BFYM.ZENITH_EXISTS
+def SPHERICAL_COORDINATES : thm := BFYM.SPHERICAL_COORDINATES
+def wedge : thm := BFYM.wedge
+def WEDGE_ALT : thm := BFYM.WEDGE_ALT
+def WEDGE_TRANSLATION : thm := BFYM.WEDGE_TRANSLATION
+def WEDGE_LINEAR_IMAGE : thm := BFYM.WEDGE_LINEAR_IMAGE
+def WEDGE_SPECIAL_SCALE : thm := BFYM.WEDGE_SPECIAL_SCALE
+def WEDGE_DEGENERATE : thm := BFYM.WEDGE_DEGENERATE
+
+initialize BFYN : HolMultiLib.Flyspeck.FYN ←
+  ioB "setupFYN" (HolMultiLib.Flyspeck.setupFYN deps BFYA BFYC BFYE BFYI BFYJ BFYM).run
+
+-- FYN (flyspeck.ml 3774-4053)
+def AFF_GT_LEMMA : thm := BFYN.AFF_GT_LEMMA
+def WEDGE_LUNE_GT : thm := BFYN.WEDGE_LUNE_GT
+def WEDGE_LUNE_GE : thm := BFYN.WEDGE_LUNE_GE
+def WEDGE_LUNE : thm := BFYN.WEDGE_LUNE
+
+initialize BFYO : HolMultiLib.Flyspeck.FYO ←
+  ioB "setupFYO" (HolMultiLib.Flyspeck.setupFYO deps BFYA BFYD BFYE BFYF BFYI BFYJ BFYK BFYM BFYN).run
+
+-- FYO (flyspeck.ml 4054-4395)
+def WEDGE : thm := BFYO.WEDGE
+def OPEN_WEDGE : thm := BFYO.OPEN_WEDGE
+def ARG_EQ_SUBSET_HALFLINE : thm := BFYO.ARG_EQ_SUBSET_HALFLINE
+def ARG_DIV_EQ_SUBSET_HALFLINE : thm := BFYO.ARG_DIV_EQ_SUBSET_HALFLINE
+def COPLANAR_AZIM_EQ : thm := BFYO.COPLANAR_AZIM_EQ
+
+initialize BFYP : HolMultiLib.Flyspeck.FYP ←
+  ioB "setupFYP" (HolMultiLib.Flyspeck.setupFYP deps BFYA BFYG).run
+
+-- FYP (flyspeck.ml 4396-4777)
+def delta_x : thm := BFYP.delta_x
+def VOLUME_OF_CLOSED_TETRAHEDRON : thm := BFYP.VOLUME_OF_CLOSED_TETRAHEDRON
+def VOLUME_OF_TETRAHEDRON : thm := BFYP.VOLUME_OF_TETRAHEDRON
+def AREA_UNIT_CBALL : thm := BFYP.AREA_UNIT_CBALL
+def AREA_CBALL : thm := BFYP.AREA_CBALL
+def AREA_BALL : thm := BFYP.AREA_BALL
+def VOLUME_CBALL : thm := BFYP.VOLUME_CBALL
+def VOLUME_BALL : thm := BFYP.VOLUME_BALL
+def rconesgn : thm := BFYP.rconesgn
+def rcone_gt : thm := BFYP.rcone_gt
+def rcone_ge : thm := BFYP.rcone_ge
+def rcone_eq : thm := BFYP.rcone_eq
+def frustum : thm := BFYP.frustum
+def frustt : thm := BFYP.frustt
+def FRUSTUM_DEGENERATE : thm := BFYP.FRUSTUM_DEGENERATE
+def CONVEX_RCONE_GT : thm := BFYP.CONVEX_RCONE_GT
+def OPEN_RCONE_GT : thm := BFYP.OPEN_RCONE_GT
+def RCONE_GT_NEG : thm := BFYP.RCONE_GT_NEG
+def VOLUME_FRUSTT_STRONG : thm := BFYP.VOLUME_FRUSTT_STRONG
+def VOLUME_FRUSTT : thm := BFYP.VOLUME_FRUSTT
+
+initialize BFYQ : HolMultiLib.Flyspeck.FYQ ←
+  ioB "setupFYQ" (HolMultiLib.Flyspeck.setupFYQ deps BFYA BFYP).run
+
+-- FYQ (flyspeck.ml 4778-5065)
+def scale : thm := BFYQ.scale
+def normball : thm := BFYQ.normball
+def ellipsoid : thm := BFYQ.ellipsoid
+def NORMBALL_BALL : thm := BFYQ.NORMBALL_BALL
+def MEASURE_SCALE : thm := BFYQ.MEASURE_SCALE
+def MEASURE_ELLIPSOID : thm := BFYQ.MEASURE_ELLIPSOID
+def MEASURABLE_ELLIPSOID : thm := BFYQ.MEASURABLE_ELLIPSOID
+def conic_cap : thm := BFYQ.conic_cap
+def CONIC_CAP_DEGENERATE : thm := BFYQ.CONIC_CAP_DEGENERATE
+def BOUNDED_CONIC_CAP : thm := BFYQ.BOUNDED_CONIC_CAP
+def MEASURABLE_CONIC_CAP : thm := BFYQ.MEASURABLE_CONIC_CAP
+def VOLUME_CONIC_CAP_STRONG : thm := BFYQ.VOLUME_CONIC_CAP_STRONG
+def VOLUME_CONIC_CAP : thm := BFYQ.VOLUME_CONIC_CAP
+
+initialize BFYR : HolMultiLib.Flyspeck.FYR ←
+  ioB "setupFYR" (HolMultiLib.Flyspeck.setupFYR deps BFYP).run
+
+-- FYR (flyspeck.ml 5066-5441)
+def NEGLIGIBLE_CIRCULAR_CONE_0_NONPARALLEL : thm := BFYR.NEGLIGIBLE_CIRCULAR_CONE_0_NONPARALLEL
+def NEGLIGIBLE_CIRCULAR_CONE_0 : thm := BFYR.NEGLIGIBLE_CIRCULAR_CONE_0
+def NEGLIGIBLE_CIRCULAR_CONE : thm := BFYR.NEGLIGIBLE_CIRCULAR_CONE
+def NEGLIGIBLE_RCONE_EQ : thm := BFYR.NEGLIGIBLE_RCONE_EQ
+def NEGLIGIBLE_ARG_EQ : thm := BFYR.NEGLIGIBLE_ARG_EQ
+def MEASURABLE_CLOSED_SECTOR_LE : thm := BFYR.MEASURABLE_CLOSED_SECTOR_LE
+def MEASURABLE_CLOSED_SECTOR_LT : thm := BFYR.MEASURABLE_CLOSED_SECTOR_LT
+def MEASURABLE_CLOSED_SECTOR_LTE : thm := BFYR.MEASURABLE_CLOSED_SECTOR_LTE
+def MEASURE_CLOSED_SECTOR_LE : thm := BFYR.MEASURE_CLOSED_SECTOR_LE
+def HAS_MEASURE_OPEN_SECTOR_LT : thm := BFYR.HAS_MEASURE_OPEN_SECTOR_LT
+def MEASURE_OPEN_SECTOR_LT : thm := BFYR.MEASURE_OPEN_SECTOR_LT
+def HAS_MEASURE_OPEN_SECTOR_LT_GEN : thm := BFYR.HAS_MEASURE_OPEN_SECTOR_LT_GEN
+
+initialize BFYS : HolMultiLib.Flyspeck.FYS ←
+  ioB "setupFYS" (HolMultiLib.Flyspeck.setupFYS deps BFYA BFYC BFYE BFYI BFYJ BFYK BFYM BFYN BFYO BFYP BFYR).run
+
+-- FYS (flyspeck.ml 5442-5632)
+def MEASURABLE_BALL_WEDGE : thm := BFYS.MEASURABLE_BALL_WEDGE
+def VOLUME_BALL_WEDGE : thm := BFYS.VOLUME_BALL_WEDGE
+def HAS_MEASURE_LUNE : thm := BFYS.HAS_MEASURE_LUNE
+def HAS_MEASURE_LUNE_SIMPLE : thm := BFYS.HAS_MEASURE_LUNE_SIMPLE
+
+initialize BFYT : HolMultiLib.Flyspeck.FYT ←
+  ioB "setupFYT" (HolMultiLib.Flyspeck.setupFYT deps BFYA BFYC BFYE BFYK BFYP BFYS).run
+
+-- FYT (flyspeck.ml 5634-5971)
+def MEASURABLE_BALL_AFF_GT : thm := BFYT.MEASURABLE_BALL_AFF_GT
+def AFF_GT_SHUFFLE : thm := BFYT.AFF_GT_SHUFFLE
+def MEASURE_BALL_AFF_GT_SHUFFLE_LEMMA : thm := BFYT.MEASURE_BALL_AFF_GT_SHUFFLE_LEMMA
+def MEASURE_BALL_AFF_GT_SHUFFLE : thm := BFYT.MEASURE_BALL_AFF_GT_SHUFFLE
+def MEASURE_LUNE_DECOMPOSITION : thm := BFYT.MEASURE_LUNE_DECOMPOSITION
+def SOLID_TRIANGLE_CONGRUENT_NEG : thm := BFYT.SOLID_TRIANGLE_CONGRUENT_NEG
+def VOLUME_SOLID_TRIANGLE : thm := BFYT.VOLUME_SOLID_TRIANGLE
+
+initialize BFYU : HolMultiLib.Flyspeck.FYU ←
+  ioB "setupFYU" (HolMultiLib.Flyspeck.setupFYU deps BFYA BFYI BFYM BFYO BFYP BFYR).run
+
+-- FYU (flyspeck.ml 5972-6143)
+def MEASURABLE_BOUNDED_INTER_OPEN : thm := BFYU.MEASURABLE_BOUNDED_INTER_OPEN
+def SLICE_SPECIAL_WEDGE : thm := BFYU.SLICE_SPECIAL_WEDGE
+def VOLUME_FRUSTT_WEDGE : thm := BFYU.VOLUME_FRUSTT_WEDGE
+
+initialize BFYV : HolMultiLib.Flyspeck.FYV ←
+  ioB "setupFYV" (HolMultiLib.Flyspeck.setupFYV deps BFYA BFYI BFYM BFYO BFYP BFYQ BFYR BFYS BFYU).run
+
+-- FYV (flyspeck.ml 6144-6544)
+def VOLUME_CONIC_CAP_WEDGE_WEAK : thm := BFYV.VOLUME_CONIC_CAP_WEDGE_WEAK
+def BOUNDED_CONIC_CAP_WEDGE : thm := BFYV.BOUNDED_CONIC_CAP_WEDGE
+def MEASURABLE_CONIC_CAP_WEDGE : thm := BFYV.MEASURABLE_CONIC_CAP_WEDGE
+def VOLUME_CONIC_CAP_COMPL : thm := BFYV.VOLUME_CONIC_CAP_COMPL
+def VOLUME_CONIC_CAP_WEDGE_MEDIUM : thm := BFYV.VOLUME_CONIC_CAP_WEDGE_MEDIUM
+def VOLUME_CONIC_CAP_WEDGE : thm := BFYV.VOLUME_CONIC_CAP_WEDGE
+
+initialize BFYW : HolMultiLib.Flyspeck.FYW ←
+  ioB "setupFYW" (HolMultiLib.Flyspeck.setupFYW deps BFYA BFYB BFYC BFYG BFYM BFYO BFYP BFYQ BFYR BFYS BFYT BFYU BFYV).run
+
+-- FYW (flyspeck.ml 6545-6816)
+def cone : thm := BFYW.cone
+def cone0 : thm := BFYW.cone0
+def solid_triangle : thm := BFYW.solid_triangle
+def rect : thm := BFYW.rect
+def RECT_INTERVAL : thm := BFYW.RECT_INTERVAL
+def RCONE_GE_GT : thm := BFYW.RCONE_GE_GT
+def RCONE_GT_GE : thm := BFYW.RCONE_GT_GE
+def is_sphere : thm := BFYW.is_sphere
+def c_cone : thm := BFYW.c_cone
+def circular_cone : thm := BFYW.circular_cone
+def NULLSET_RULES : thm := BFYW.NULLSET_RULES
+def primitive : thm := BFYW.primitive
+def MEASURABLE_RULES : thm := BFYW.MEASURABLE_RULES
+def vol_solid_triangle : thm := BFYW.vol_solid_triangle
+def vol_frustt_wedge : thm := BFYW.vol_frustt_wedge
+def vol_conic_cap_wedge : thm := BFYW.vol_conic_cap_wedge
+def vol_conv : thm := BFYW.vol_conv
+def vol_rect : thm := BFYW.vol_rect
+def vol_ball_wedge : thm := BFYW.vol_ball_wedge
+def SDIFF : thm := BFYW.SDIFF
+def volume_props : thm := BFYW.volume_props
+
+initialize BFYX : HolMultiLib.Flyspeck.FYX ←
+  ioB "setupFYX" (HolMultiLib.Flyspeck.setupFYX deps).run
+
+-- FYX (flyspeck.ml 6817-7010)
+def POLYHEDRON_COLLINEAR_FACES_STRONG : thm := BFYX.POLYHEDRON_COLLINEAR_FACES_STRONG
+def POLYHEDRON_COLLINEAR_FACES : thm := BFYX.POLYHEDRON_COLLINEAR_FACES
+def vertices : thm := BFYX.vertices
+def edges : thm := BFYX.edges
+def VERTICES_TRANSLATION : thm := BFYX.VERTICES_TRANSLATION
+def VERTICES_LINEAR_IMAGE : thm := BFYX.VERTICES_LINEAR_IMAGE
+def EDGES_TRANSLATION : thm := BFYX.EDGES_TRANSLATION
+def EDGES_LINEAR_IMAGE : thm := BFYX.EDGES_LINEAR_IMAGE
+
+-- @@WIRING-END
+
+/-- `needs "Multivariate/flyspeck.ml"`: importing this module has built every
+    bundle; this is a no-op kept for symmetry with the other wiring files. -/
+def ensureFlyspeck : IO Unit := pure ()
+
+end SessionMultiLib.Flyspeck

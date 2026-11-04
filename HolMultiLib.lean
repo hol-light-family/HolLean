@@ -45,3 +45,5 @@ import HolMultiLib.Geom
 import HolMultiLib.LpSpaces
 import HolMultiLib.MoreTop
 import HolMultiLib.Cauchy
+import HolMultiLib.Gamma
+import HolMultiLib.Flyspeck
