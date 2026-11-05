@@ -19,6 +19,7 @@ open HolLibrary.BDD (Tables Bdd VTable UTable CTable BDDThms)
     with the Session import).  Built once, eagerly.  A failed setup throws, as
     Session panics. -/
 initialize BBDDThms : BDDThms ← do
+  if !(← Session.bundlesWanted) then return default
   Session.ensureDefine
   match ← (HolLibrary.BDD.setupBDD (fun ths t => ExceptT.mk (Session.MESON ths t))).run with
   | .ok k => pure k

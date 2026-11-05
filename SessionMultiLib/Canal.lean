@@ -111,7 +111,19 @@ def deps : HolMultiLib.Canal.CanalDeps where
   qmeasure := qmeasure
   qfloor := qfloor
 
-private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+private def ioB {α : Type} [Inhabited α] (name : String) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return default
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
+
+/-- `ioB` for a bundle type with `IO.Ref` fields, which has no `Inhabited`
+    instance: `placeholder` builds the stand-in used when the bundles are
+    skipped (`Session.bundlesWanted`, SessionCore/Base.lean). -/
+private def ioBP {α : Type} (name : String) (placeholder : IO α) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return (← placeholder)
   match ← x with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"{name} failed: {e}")
@@ -446,8 +458,16 @@ def COMPLEX_DIFFERENTIABLE_EQ_CONFORMAL : thm := BKNJ.COMPLEX_DIFFERENTIABLE_EQ_
 def HOLOMORPHIC_CONSTANT_RE : thm := BKNJ.HOLOMORPHIC_CONSTANT_RE
 def HOLOMORPHIC_CONSTANT_IM : thm := BKNJ.HOLOMORPHIC_CONSTANT_IM
 
+/-- The stand-in for `BKNK` while a wiring module is compiled. -/
+private def BKNKPlaceholder : IO HolMultiLib.Canal.KNK := do
+  let r ← IO.mkRef []
+  return { complex_differentiation_theorems := r, add_complex_differentiation_theorems := default,
+           GEN_COMPLEX_DIFF_CONV := default, COMPLEX_DIFF_CONV := default,
+           GEN_COMPLEX_DIFF_TAC := default, COMPLEX_DIFF_TAC := default,
+           COMPLEX_DIFFERENTIABLE_TAC := default }
+
 initialize BKNK : HolMultiLib.Canal.KNK ←
-  ioB "setupKNK" (HolMultiLib.Canal.setupKNK deps BKNE BKNF).run
+  ioBP "setupKNK" BKNKPlaceholder (HolMultiLib.Canal.setupKNK deps BKNE BKNF).run
 
 -- KNK (canal.ml 2406-2488)
 def complex_differentiation_theorems : IO.Ref (List thm) :=

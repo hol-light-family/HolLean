@@ -71,6 +71,7 @@ def deps : HolLibrary.Bitsize.BitsizeDeps where
 
 /-- bitsize.ml, run when this module is loaded. -/
 initialize BBitsize : HolLibrary.Bitsize.Bitsize ← do
+  if !(← Session.bundlesWanted) then return default
   match ← (HolLibrary.Bitsize.setupBitsize deps).run with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"setupBitsize failed: {e}")

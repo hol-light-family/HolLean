@@ -167,6 +167,7 @@ def deps : HolLibrary.Isum.IsumDeps where
 
 /-- isum.ml, run when this module is loaded. -/
 initialize BIsum : HolLibrary.Isum.Isum ← do
+  if !(← Session.bundlesWanted) then return default
   match ← (HolLibrary.Isum.setupIsum deps).run with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"setupIsum failed: {e}")

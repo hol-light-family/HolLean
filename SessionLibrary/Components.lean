@@ -86,6 +86,7 @@ def deps : HolLibrary.Components.ComponentsDeps where
 
 /-- components.ml, run when this module is loaded. -/
 initialize BComponents : HolLibrary.Components.Components ← do
+  if !(← Session.bundlesWanted) then return default
   match ← (HolLibrary.Components.setupComponents deps).run with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"setupComponents failed: {e}")

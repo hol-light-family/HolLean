@@ -228,4 +228,31 @@ private def beginQuietLoad : IO LoadFlags := do
 /-- The switches saved by the quiet load (see above). -/
 initialize loadFlags : LoadFlags ← beginQuietLoad
 
+/- ---------------------------------------------------------------------- -/
+/- Skipping the library bundles while a wiring module is compiled.        -/
+/- ---------------------------------------------------------------------- -/
+
+/- Lean runs every `initialize` of the imported modules before it
+   elaborates a file, so compiling SessionMultiLib.Gamma would re-prove all
+   of the Multivariate library it imports.  The wiring modules
+   (SessionLibrary/, SessionMultiLib/) contain no `#eval` and only name
+   bundle fields, so they do not need the bundles to be compiled.  With
+   HOLLEAN_REPLAY=0 in the environment the bundle initialisers return
+   placeholders and prove nothing.  The Makefile's `check` builds the wiring
+   libraries that way first, then everything else with the proofs on; every
+   wiring module is imported by a test or example module, whose compilation
+   runs all the proofs.  Never set it for a build of anything that
+   evaluates (tests, translations, the executable). -/
+
+/-- The cached answer of `bundlesWanted`. -/
+initialize bundlesWantedCache : IO.Ref (Option Bool) ← IO.mkRef none
+
+/-- Whether the library bundles should be built (their proofs run) in this
+    process: false only when HOLLEAN_REPLAY=0 (see above). -/
+def bundlesWanted : IO Bool := do
+  if let some b := ← bundlesWantedCache.get then return b
+  let b := (← IO.getEnv "HOLLEAN_REPLAY") != some "0"
+  bundlesWantedCache.set (some b)
+  return b
+
 end Session

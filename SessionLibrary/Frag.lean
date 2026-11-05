@@ -102,6 +102,7 @@ def deps : HolLibrary.Frag.FragDeps where
 
 /-- frag.ml, run when this module is loaded. -/
 initialize BFrag : HolLibrary.Frag.Frag ← do
+  if !(← Session.bundlesWanted) then return default
   match ← (HolLibrary.Frag.setupFrag deps).run with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"setupFrag failed: {e}")

@@ -92,6 +92,7 @@ def deps : HolLibrary.Agm.AgmDeps where
 /-- agm.ml, run when this module is loaded (after products.ml, which agm.ml
     needs: the import of SessionLibrary.Products). -/
 initialize BAgm : HolLibrary.Agm.Agm ← do
+  if !(← Session.bundlesWanted) then return default
   match ← (HolLibrary.Agm.setupAgm deps).run with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"setupAgm failed: {e}")

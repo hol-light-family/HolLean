@@ -1015,7 +1015,9 @@ def deps : HolLibrary.FieldTheory.FieldTheoryDeps where
   core16 := core16
 
 /-- Run one bundle's setup at load, failing the load if it fails. -/
-private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+private def ioB {α : Type} [Inhabited α] (name : String) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return default
   match ← x with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"{name} failed: {e}")

@@ -61,8 +61,10 @@ See the HolTest directory for further examples of HOL Lean code.
 | `HolTest/` | the test suite (about 3,850 checks), including the examples from HOL Light's help files and its UnitTests; built only by `make test` and `make check` |
 | `Hol.lean` | the `hollean` executable (`hol.ml`); it does not import the tests |
 | `HolTrace/`, `HolTrace.lean` | the `holtrace` executable: a proof reconstructor for [HOLTrace](https://holtrace.cr.yp.to) files (see `HolTrace/README.md`) |
+| `SessionMultiLib/MultivariateDatabase.lean` | `Multivariate/multivariate_database.ml`: the same for `make.ml`'s files (17,529 theorems) |
+| `SessionMultiLib/ComplexDatabase.lean` | `Multivariate/complex_database.ml`: importing it loads the files `make_complex.ml` loads and makes `search` see all 20,954 of their theorems |
 | `HolTutorial/` | translations of HOL Light's Tutorial/ files, one toplevel session each in Prove.lean style (built by `make tutorial` and `make check`); Vectors.ml (it needs Examples/sos.ml and Rqe/) and the two files that load it are not translated yet |
-| `HolExamples/` | translations of 35 files of HOL Light's Examples/ (those whose dependencies are translated, except sos.ml, which needs the external solver csdp), in the same style (built by `make examples` and `make check`; BitBlast takes about 10 minutes) |
+| `HolExamples/` | translations of 43 files of HOL Light's Examples/ (those whose dependencies are translated, except sos.ml, which needs the external solver csdp), in the same style (built by `make examples` and `make check`; BitBlast takes about 10 minutes) |
 | `HolLogicArith/` | translations of HOL Light's Logic/ (18 files) and Arithmetic/ (8 files; its fol.ml is `ArithFol`), in the same style; each module imports the files its make.ml loads before it (built by `make logic` and `make check`) |
 | `Prove.lean` | your scratchpad |
 
@@ -104,7 +106,7 @@ You need Lean 4 (installed with `elan`; the version is fixed in `lean-toolchain`
 * `make build` builds everything except the tests: the `hollean` executable and HOL Light's Library/ and Multivariate/ files.  A build from scratch takes a while, mostly compiling to C.
 * `make test` builds and runs the tests (the HolTest library; nothing else imports them) and prints assertion counts per module.  There is no output until the build finishes.
 * `make verify` checks the build log for errors, warnings, failed tests, panics, and `unsafe` or `sorry` in the pure libraries, and runs `checks/InitGate.lean`, which rejects any `initialize` of function type (Lean never runs such an initialiser in compiled code).
-* `make check` does a clean build of everything, including the tests and the translations, followed by `make verify`.  From scratch it took about three and a half hours on the author's machine.
+* `make check` does a clean build of everything, including the tests and the translations, followed by `make verify`.  From scratch it takes about two and a half hours on the author's machine.  It first builds the wiring libraries (SessionLibrary, SessionMultiLib) with `HOLLEAN_REPLAY=0`, so that compiling them does not re-prove the library files they import; the proofs run when the tests and translations are compiled.
 * `make tutorial` builds the tutorial translations (HolTutorial), printing each session's output; `make examples` and `make logic` do the same for HolExamples and HolLogicArith.
 * `make help` lists the other targets.
 

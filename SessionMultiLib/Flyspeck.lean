@@ -104,7 +104,13 @@ def deps : HolMultiLib.Flyspeck.FlyspeckDeps where
   basic_congs := Session.basic_congs
   set_basic_congs := Session.set_basic_congs
 
-private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+/- These bundle types derive only `Nonempty`; `ioB` needs `Inhabited` for its
+   placeholder (`Session.bundlesWanted`, SessionCore/Base.lean). -/
+deriving instance Inhabited for HolMultiLib.Flyspeck.FYB, HolMultiLib.Flyspeck.FYC, HolMultiLib.Flyspeck.FYD
+
+private def ioB {α : Type} [Inhabited α] (name : String) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return default
   match ← x with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"{name} failed: {e}")

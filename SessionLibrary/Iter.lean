@@ -64,6 +64,7 @@ def deps : HolLibrary.Iter.IterDeps where
 
 /-- iter.ml, run when this module is loaded. -/
 initialize BIter : HolLibrary.Iter.Iter ← do
+  if !(← Session.bundlesWanted) then return default
   match ← (HolLibrary.Iter.setupIter deps).run with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"setupIter failed: {e}")

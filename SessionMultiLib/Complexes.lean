@@ -72,7 +72,9 @@ def deps : HolMultiLib.Complexes.ComplexesDeps where
     pure (HolMath.Grobner.RING' R, HolMath.Grobner.ideal_cofactors R)
   cpx := cpx
 
-private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+private def ioB {α : Type} [Inhabited α] (name : String) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return default
   match ← x with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"{name} failed: {e}")

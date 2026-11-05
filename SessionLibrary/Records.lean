@@ -50,6 +50,7 @@ instance : Inhabited DefineRecordTypeBox := ⟨⟨fun _ => throw "define_record_
 /-- records.ml's load: `tweak` (records.ml 35-37), run when this module is
     loaded. -/
 initialize defineRecordTypeBox : DefineRecordTypeBox ← do
+  if !(← Session.bundlesWanted) then return default
   match ← (HolLibrary.Records.setupRecords deps).run with
   | .ok f => pure ⟨f⟩
   | .error e => throw (IO.userError s!"setupRecords failed: {e}")

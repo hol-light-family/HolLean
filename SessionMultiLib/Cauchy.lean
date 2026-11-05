@@ -214,7 +214,9 @@ def deps : HolMultiLib.Cauchy.CauchyDeps where
   LET_TAC := Session.LET_TAC
   let_CONV := Session.let_CONV
 
-private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+private def ioB {α : Type} [Inhabited α] (name : String) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return default
   match ← x with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"{name} failed: {e}")

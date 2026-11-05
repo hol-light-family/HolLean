@@ -155,6 +155,7 @@ def deps : HolLibrary.Binomial.BinomialDeps where
 
 /-- binomial.ml, run when this module is loaded. -/
 initialize BBinomial : HolLibrary.Binomial.Binomial ← do
+  if !(← Session.bundlesWanted) then return default
   match ← (HolLibrary.Binomial.setupBinomial deps).run with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"setupBinomial failed: {e}")

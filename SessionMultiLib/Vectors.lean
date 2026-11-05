@@ -216,7 +216,19 @@ def deps : HolMultiLib.Vectors.VectorsDeps where
   lib := lib
 
 /-- Run one bundle's setup at load, failing the load if it fails. -/
-private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+private def ioB {α : Type} [Inhabited α] (name : String) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return default
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
+
+/-- `ioB` for a bundle type with `IO.Ref` fields, which has no `Inhabited`
+    instance: `placeholder` builds the stand-in used when the bundles are
+    skipped (`Session.bundlesWanted`, SessionCore/Base.lean). -/
+private def ioBP {α : Type} (name : String) (placeholder : IO α) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return (← placeholder)
   match ← x with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"{name} failed: {e}")
@@ -415,8 +427,24 @@ initialize BBetween : HolMultiLib.Vectors.Between ←
       BLiftDrop1 BLiftDrop2 BInfnorm BCollinear).run
 initialize BInterval : HolMultiLib.Vectors.Interval ←
   ioB "setupInterval" (HolMultiLib.Vectors.setupInterval deps BVectorArith).run
+/-- The stand-in for `BInvariance1` while a wiring module is compiled. -/
+private def BInvariance1Placeholder : IO HolMultiLib.Vectors.Invariance1 := do
+  let r1 ← IO.mkRef []
+  let r2 ← IO.mkRef []
+  let r3 ← IO.mkRef []
+  return { WLOG_LINEAR_INJECTIVE_IMAGE_2 := default, WLOG_LINEAR_INJECTIVE_IMAGE_2_ALT := default,
+           WLOG_LINEAR_INJECTIVE_IMAGE := default, WLOG_LINEAR_INJECTIVE_IMAGE_ALT := default,
+           LINEAR_INVARIANT_RULE := default, SUBSPACE_LINEAR_IMAGE_EQ := default,
+           invariant_under_linear := r1, invariant_under_translation := r2,
+           scaling_theorems := r3, COUNTABLE_UNION_OF_BIJECTIVE_IMAGE := default,
+           COUNTABLE_INTERSECTION_OF_BIJECTIVE_IMAGE := default,
+           AFFINITY_SCALING_TRANSLATION := default, LINEAR_SCALING := default,
+           INJECTIVE_SCALING := default, SURJECTIVE_SCALING := default,
+           SCALING_INVARIANT := default, add_scaling_theorems := default,
+           add_linear_invariants := default, add_translation_invariants := default }
+
 initialize BInvariance1 : HolMultiLib.Vectors.Invariance1 ←
-  ioB "setupInvariance1"
+  ioBP "setupInvariance1" BInvariance1Placeholder
     (HolMultiLib.Vectors.setupInvariance1 deps BVectorArith BNorm1 BLinear BSubspace BLinEq
       BIso).run
 initialize BInvariance2 : HolMultiLib.Vectors.Invariance2 ←

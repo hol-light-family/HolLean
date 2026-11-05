@@ -274,7 +274,23 @@ def deps : HolMultiLib.RealAnalysis.RealAnalysisDeps where
   EXPAND_SUM_CONV := Session.EXPAND_SUM_CONV
   mk_small_numeral := Session.mk_small_numeral
 
-private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+/- These bundle types derive only `Nonempty`; `ioB` needs `Inhabited` for its
+   placeholder (`Session.bundlesWanted`, SessionCore/Base.lean). -/
+deriving instance Inhabited for HolMultiLib.RealAnalysis.RZBF, HolMultiLib.RealAnalysis.RZBN
+
+private def ioB {α : Type} [Inhabited α] (name : String) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return default
+  match ← x with
+  | .ok d => pure d
+  | .error e => throw (IO.userError s!"{name} failed: {e}")
+
+/-- `ioB` for a bundle type with `IO.Ref` fields, which has no `Inhabited`
+    instance: `placeholder` builds the stand-in used when the bundles are
+    skipped (`Session.bundlesWanted`, SessionCore/Base.lean). -/
+private def ioBP {α : Type} (name : String) (placeholder : IO α) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return (← placeholder)
   match ← x with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"{name} failed: {e}")
@@ -906,8 +922,18 @@ def REAL_DIFFERENTIABLE_WITHIN_ACS : thm := BRZP.REAL_DIFFERENTIABLE_WITHIN_ACS
 def REAL_CONTINUOUS_AT_ACS : thm := BRZP.REAL_CONTINUOUS_AT_ACS
 def REAL_CONTINUOUS_WITHIN_ACS : thm := BRZP.REAL_CONTINUOUS_WITHIN_ACS
 
+/-- The stand-in for `BRZQ` while a wiring module is compiled. -/
+private def BRZQPlaceholder : IO HolMultiLib.RealAnalysis.RZQ := do
+  let r ← IO.mkRef []
+  return { DIFFERENTIABLE_NORM_AT := default, DIFFERENTIABLE_ON_NORM := default,
+           REAL_CONTINUOUS_WITHIN_ASN_STRONG := default, REAL_CONTINUOUS_ON_ASN := default,
+           REAL_CONTINUOUS_WITHIN_ACS_STRONG := default, REAL_CONTINUOUS_ON_ACS := default,
+           real_differentiation_theorems := r, add_real_differentiation_theorems := default,
+           REAL_DIFF_CONV := default, REAL_DIFF_TAC := default,
+           REAL_DIFFERENTIABLE_TAC := default }
+
 initialize BRZQ : HolMultiLib.RealAnalysis.RZQ ←
-  ioB "setupRZQ" (HolMultiLib.RealAnalysis.setupRZQ deps BRZH BRZJ BRZK BRZL BRZN BRZO BRZP).run
+  ioBP "setupRZQ" BRZQPlaceholder (HolMultiLib.RealAnalysis.setupRZQ deps BRZH BRZJ BRZK BRZL BRZN BRZO BRZP).run
 
 -- RZQ (realanalysis.ml 4240-4428)
 def DIFFERENTIABLE_NORM_AT : thm := BRZQ.DIFFERENTIABLE_NORM_AT

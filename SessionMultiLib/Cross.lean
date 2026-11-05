@@ -48,7 +48,9 @@ def deps : HolMultiLib.Cross.CrossDeps where
   REAL_RING t := ExceptT.mk (Session.REAL_RING t)
   thms := thms
 
-private def ioB {α : Type} (name : String) (x : IO (Except String α)) : IO α := do
+private def ioB {α : Type} [Inhabited α] (name : String) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return default
   match ← x with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"{name} failed: {e}")

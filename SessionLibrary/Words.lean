@@ -496,7 +496,9 @@ def deps : HolLibrary.Words.WordsDeps where
   core4 := core4
 
 /-- Build a bundle once, eagerly (a failed setup throws, as Session panics). -/
-private def ioW {α : Type} (what : String) (x : IO (Except String α)) : IO α := do
+private def ioW {α : Type} [Inhabited α] (what : String) (x : IO (Except String α)) :
+    IO α := do
+  if !(← Session.bundlesWanted) then return default
   match ← x with
   | .ok v => pure v
   | .error e => throw (IO.userError s!"{what} failed: {e}")

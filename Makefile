@@ -78,6 +78,11 @@ LAKE ?= lake
 # import the tests) and HOL Light's Library/ files.  The test suite is the
 # HolTest library, built only by `make test` and `make check`.
 BUILD_TARGETS ?= hollean @/HolLibrary @/SessionLibrary @/HolMultiLib @/SessionMultiLib
+# The wiring libraries.  `make check` builds them first with HOLLEAN_REPLAY=0,
+# so that compiling a wiring module does not re-prove the library files it
+# imports (SessionCore/Base.lean, `bundlesWanted`); the proofs run when the
+# test and translation modules that import them are compiled.
+WIRING_TARGETS ?= @/SessionLibrary @/SessionMultiLib
 TEST_TARGETS ?= @/HolTest
 # The tutorial translations (every module under HolTutorial/): built by
 # `make tutorial` and `make check`.
@@ -295,7 +300,8 @@ distclean: clean
 # gate broke rather than dying silently.
 check: clean
 	@echo "==> building from scratch (THREADS=$(THREADS))"
-	@$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(BUILD_TARGETS) $(TEST_TARGETS) $(TUTORIAL_TARGETS) $(EXAMPLES_TARGETS) $(LOGIC_TARGETS) > $(BUILD_LOG) 2>&1 || true
+	@{ $(LEAN_ENV) HOLLEAN_REPLAY=0 $(LAKE) build $(LAKEFLAGS) $(WIRING_TARGETS) && \
+	   $(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(BUILD_TARGETS) $(TEST_TARGETS) $(TUTORIAL_TARGETS) $(EXAMPLES_TARGETS) $(LOGIC_TARGETS); } > $(BUILD_LOG) 2>&1 || true
 	@$(MAKE) --no-print-directory verify
 
 ## verify: apply the acceptance gates to an existing build log
