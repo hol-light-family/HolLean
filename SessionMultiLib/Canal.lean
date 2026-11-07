@@ -114,7 +114,7 @@ def deps : HolMultiLib.Canal.CanalDeps where
 private def ioB {α : Type} [Inhabited α] (name : String) (x : IO (Except String α)) :
     IO α := do
   if !(← Session.bundlesWanted) then return default
-  match ← x with
+  match ← Session.quietly x with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"{name} failed: {e}")
 
@@ -124,7 +124,7 @@ private def ioB {α : Type} [Inhabited α] (name : String) (x : IO (Except Strin
 private def ioBP {α : Type} (name : String) (placeholder : IO α) (x : IO (Except String α)) :
     IO α := do
   if !(← Session.bundlesWanted) then return (← placeholder)
-  match ← x with
+  match ← Session.quietly x with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"{name} failed: {e}")
 

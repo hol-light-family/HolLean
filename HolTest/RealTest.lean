@@ -96,7 +96,7 @@ private unsafe def provesTac (lbl goal : String) : IO Unit := do
   | .error e => IO.println s!"{lbl} parse ERR: {e}"
   | .ok tm =>
     let want := squash ("|- " ++ (← HolCore.Printer.string_of_term tm))
-    match ← Session.prove tm Session.REAL_ARITH_TAC with
+    match ← Session.prove tm Session.REAL_ARITH_TAC1 with
     | .error e => IO.println s!"{lbl} -> MISMATCH failed to prove: {e}"
     | .ok th =>
       let got := squash (← HolCore.Printer.string_of_thm th)
@@ -110,7 +110,7 @@ private unsafe def failsTac (lbl goal wantMsg : String) : IO Unit := do
   match ← HolCore.Parser.parse_term goal with
   | .error e => IO.println s!"{lbl} parse ERR: {e}"
   | .ok tm =>
-    match ← Session.prove tm Session.REAL_ARITH_TAC with
+    match ← Session.prove tm Session.REAL_ARITH_TAC1 with
     | .error e =>
       if wantMsg == "" || (e.splitOn wantMsg).length > 1 then
         IO.println s!"{lbl} -> OK (correctly fails: {e})"

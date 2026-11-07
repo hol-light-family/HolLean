@@ -499,7 +499,7 @@ def deps : HolLibrary.Words.WordsDeps where
 private def ioW {α : Type} [Inhabited α] (what : String) (x : IO (Except String α)) :
     IO α := do
   if !(← Session.bundlesWanted) then return default
-  match ← x with
+  match ← Session.quietly x with
   | .ok v => pure v
   | .error e => throw (IO.userError s!"{what} failed: {e}")
 

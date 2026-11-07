@@ -21,7 +21,7 @@ open HolLibrary.BDD (Tables Bdd VTable UTable CTable BDDThms)
 initialize BBDDThms : BDDThms ← do
   if !(← Session.bundlesWanted) then return default
   Session.ensureDefine
-  match ← (HolLibrary.BDD.setupBDD (fun ths t => ExceptT.mk (Session.MESON ths t))).run with
+  match ← Session.quietly (HolLibrary.BDD.setupBDD (fun ths t => ExceptT.mk (Session.MESON ths t))).run with
   | .ok k => pure k
   | .error e => throw (IO.userError s!"setupBDD failed: {e}")
 

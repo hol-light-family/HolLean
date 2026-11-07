@@ -2748,7 +2748,9 @@ partial def REALCALC_CONV [HolBase] (C : RCtx) (tm : term) :
     let thm_fn : Rat → ExceptT String IO thm := fun acc => do
       let th1 ← thm_eval C tfn acc
       let th2 ← MATCH_MP C.REALCALC_NEG th1
-      tryWith (EQ_MP (← ExceptT.mk ((LAND_CONV (RAND_CONV (LAND_CONV C.REAL_INT_NEG_CONV)))
+      -- `do`: the conversion's failure must be caught by tryWith (OCaml's
+      -- `try ... with Failure _ -> th2`), not lifted out of it.
+      tryWith (do EQ_MP (← ExceptT.mk ((LAND_CONV (RAND_CONV (LAND_CONV C.REAL_INT_NEG_CONV)))
                                       (concl th2))) th2)
               (pure th2)
     pure ((← (raw_wrap raw_fn : IO RawWrapped)), (← (thm_wrap C.TRUTH thm_fn : IO ThmWrapped)))

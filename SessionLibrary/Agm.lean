@@ -93,7 +93,7 @@ def deps : HolLibrary.Agm.AgmDeps where
     needs: the import of SessionLibrary.Products). -/
 initialize BAgm : HolLibrary.Agm.Agm ← do
   if !(← Session.bundlesWanted) then return default
-  match ← (HolLibrary.Agm.setupAgm deps).run with
+  match ← Session.quietly (HolLibrary.Agm.setupAgm deps).run with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"setupAgm failed: {e}")
 

@@ -111,7 +111,7 @@ def deps : HolLibrary.Binary.BinaryDeps where
 /-- binary.ml, run when this module is loaded. -/
 initialize BBinary : HolLibrary.Binary.Binary ← do
   if !(← Session.bundlesWanted) then return default
-  match ← (HolLibrary.Binary.setupBinary deps).run with
+  match ← Session.quietly (HolLibrary.Binary.setupBinary deps).run with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"setupBinary failed: {e}")
 

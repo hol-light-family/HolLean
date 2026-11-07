@@ -40,7 +40,7 @@ def deps : HolLibrary.Q.QDeps where
 /-- The `Rules` bundle (q.ml), built when this module is loaded. -/
 initialize BRules : HolLibrary.Q.Rules ← do
   if !(← Session.bundlesWanted) then return default
-  match ← (HolLibrary.Q.setupRules deps).run with
+  match ← Session.quietly (HolLibrary.Q.setupRules deps).run with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"setupRules failed: {e}")
 

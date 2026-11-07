@@ -228,6 +228,29 @@ private def beginQuietLoad : IO LoadFlags := do
 /-- The switches saved by the quiet load (see above). -/
 initialize loadFlags : LoadFlags ← beginQuietLoad
 
+/-- Run `x` (a Library/ or Multivariate/ bundle's setup, run by an
+    `initialize` while a module is imported) with the printing switches off,
+    as the core load is, and restore them after: output printed during
+    import has no reader, and `lake build` attaches it to every `#eval`
+    message of the importing file (see above).  HOLLEAN_SHOW_LOAD=1 or 2
+    keeps the output, as for the core load. -/
+def quietly {α : Type} (x : IO α) : IO α := do
+  let level := ((← IO.getEnv "HOLLEAN_SHOW_LOAD").bind String.toNat?).getD 0
+  if level != 0 then return ← x
+  let v ← HolCore.Lib.verbose.get
+  let t ← HolCore.Preterm.type_invention_warning.get
+  let g ← HolMath.Grobner.grobner_messages.get
+  let r ← HolCore.Lib.report_timing.get
+  HolCore.Lib.verbose.set false
+  HolCore.Preterm.type_invention_warning.set false
+  HolMath.Grobner.grobner_messages.set false
+  HolCore.Lib.report_timing.set false
+  try x finally
+    HolCore.Lib.verbose.set v
+    HolCore.Preterm.type_invention_warning.set t
+    HolMath.Grobner.grobner_messages.set g
+    HolCore.Lib.report_timing.set r
+
 /- ---------------------------------------------------------------------- -/
 /- Skipping the library bundles while a wiring module is compiled.        -/
 /- ---------------------------------------------------------------------- -/

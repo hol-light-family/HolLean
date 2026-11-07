@@ -19,8 +19,9 @@
 #     Help, Database  help.ml and database.ml
 #     HolToplevel     helpers for the translated toplevel sessions
 #     HolTest         the test suite, each module on its own
-#     HolTutorial, HolExamples, HolLogicArith  the translations of HOL Light's
-#                     Tutorial/, Examples/, Logic/ and Arithmetic/ files
+#     HolTutorial, HolExamples, HolLogicArith, Hol100  the translations of
+#                     HOL Light's Tutorial/, Examples/, Logic/, Arithmetic/
+#                     and 100/ files
 #     hollean         the executable, rooted at Hol.lean (the default target)
 #     holtrace        the HOLTrace proof reconstructor (HolTrace.lean)
 #
@@ -92,6 +93,8 @@ EXAMPLES_TARGETS ?= @/HolExamples
 # The Logic/ and Arithmetic/ translations (HolLogicArith/): `make logic`,
 # `make check`.
 LOGIC_TARGETS ?= @/HolLogicArith
+# The 100/ translations (Hol100/): `make hundred`, `make check`.
+HUNDRED_TARGETS ?= @/Hol100
 
 # --- Parallelism -----------------------------------------------------------
 #
@@ -218,9 +221,9 @@ PURE_SRC ?= HolCore HolMath HolLibrary HolMultiLib
 # module, so every module in them is listed.
 INITGATE_MODULES ?= Session HolToplevel \
   $(subst /,.,$(patsubst %.lean,%,$(wildcard SessionLibrary/*.lean SessionMultiLib/*.lean HolTest/*.lean \
-    HolTutorial/*.lean HolExamples/*.lean HolLogicArith/*.lean)))
+    HolTutorial/*.lean HolExamples/*.lean HolLogicArith/*.lean Hol100/*.lean)))
 
-.PHONY: all build core math session proofs prove rebuild clean distclean check verify test test-module module help build-O3 test-O3 check-O3 tutorial examples logic
+.PHONY: all build core math session proofs prove rebuild clean distclean check verify test test-module module help build-O3 test-O3 check-O3 tutorial examples logic hundred
 
 # ---------------------------------------------------------------------------
 # Building
@@ -301,7 +304,7 @@ distclean: clean
 check: clean
 	@echo "==> building from scratch (THREADS=$(THREADS))"
 	@{ $(LEAN_ENV) HOLLEAN_REPLAY=0 $(LAKE) build $(LAKEFLAGS) $(WIRING_TARGETS) && \
-	   $(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(BUILD_TARGETS) $(TEST_TARGETS) $(TUTORIAL_TARGETS) $(EXAMPLES_TARGETS) $(LOGIC_TARGETS); } > $(BUILD_LOG) 2>&1 || true
+	   $(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(BUILD_TARGETS) $(TEST_TARGETS) $(TUTORIAL_TARGETS) $(EXAMPLES_TARGETS) $(LOGIC_TARGETS) $(HUNDRED_TARGETS); } > $(BUILD_LOG) 2>&1 || true
 	@$(MAKE) --no-print-directory verify
 
 ## verify: apply the acceptance gates to an existing build log
@@ -407,6 +410,10 @@ examples:
 ## logic: build (and so run) the Logic/ and Arithmetic/ translations (HolLogicArith/), printing their output
 logic:
 	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(LOGIC_TARGETS)
+
+## hundred: build (and so run) the 100/ translations (Hol100/), printing their output
+hundred:
+	$(LEAN_ENV) $(LAKE) build $(LAKEFLAGS) $(HUNDRED_TARGETS)
 
 ## test-module: run ONE test module standalone, e.g. make test-module M=HolTest/WfTest.lean
 test-module:

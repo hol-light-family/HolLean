@@ -179,6 +179,12 @@ lean_lib HolTutorial where
 lean_lib HolExamples where
   globs := #[.submodules `HolExamples]
 
+/- Translations of the files of HOL Light's 100/ (proofs of theorems from
+   the "top 100 theorems" list), in the same style as HolExamples, each
+   built on its own.  Built by `make hundred` and `make check`. -/
+lean_lib Hol100 where
+  globs := #[.submodules `Hol100]
+
 /- Translations of HOL Light's Logic/ and Arithmetic/, in the same style as
    HolTutorial, each built on its own; each module imports the ones
    Logic/make.ml (Arithmetic/make.ml) loads before it.  Built by

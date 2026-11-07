@@ -337,8 +337,8 @@ def REAL_GT_EXISTS : thm := keep "REAL_GT_EXISTS" fun _ => (do
 /-  lfn_dlo                                                               -/
 /- ---------------------------------------------------------------------- -/
 def LFN_DLO_CONV (tm : term) : IO (Except String thm) := (do
-  let r1 ← ExceptT.mk (Session.REAL_ARITH2 [[~(s < t) <=> ((s = t) \/ (t < s))]])
-  let r2 ← ExceptT.mk (Session.REAL_ARITH2 [[~(s = t) <=> (s < t \/ t < s)]])
+  let r1 ← ExceptT.mk (Session.REAL_ARITH [[~(s < t) <=> ((s = t) \/ (t < s))]])
+  let r2 ← ExceptT.mk (Session.REAL_ARITH [[~(s = t) <=> (s < t \/ t < s)]])
   ExceptT.mk (Session.PURE_REWRITE_CONV [r1, r2] tm)
   : ExceptT String IO thm).run
 #eval IO.println "<fun>"
@@ -478,9 +478,9 @@ partial def DLOBASIC_CONV (fm0 : term) : IO (Except String thm) :=
 /- Overall quantifier elimination.                                           -/
 /- ------------------------------------------------------------------------- -/
 def AFN_DLO_CONV (_vars : List term) (tm : term) : IO (Except String thm) := (do
-  let r1 ← ExceptT.mk (Session.REAL_ARITH2 [[s <= t <=> ~(t < s)]])
-  let r2 ← ExceptT.mk (Session.REAL_ARITH2 [[s >= t <=> ~(s < t)]])
-  let r3 ← ExceptT.mk (Session.REAL_ARITH2 [[s > t <=> t < s]])
+  let r1 ← ExceptT.mk (Session.REAL_ARITH [[s <= t <=> ~(t < s)]])
+  let r2 ← ExceptT.mk (Session.REAL_ARITH [[s >= t <=> ~(s < t)]])
+  let r3 ← ExceptT.mk (Session.REAL_ARITH [[s > t <=> t < s]])
   ExceptT.mk (Session.PURE_REWRITE_CONV [r1, r2, r3] tm)
   : ExceptT String IO thm).run
 #eval IO.println "<fun>"

@@ -59,7 +59,7 @@ def REAL_POW2_CLAUSES : thm := keep "REAL_POW2_CLAUSES" fun _ => (do
            REAL_INV_LE_1] THEN
     SIMP_TAC [REAL_LE_INV_EQ, REAL_LT_INV_EQ, REAL_POW_LT, REAL_POW_LE,
            REAL_OF_NUM_LE, REAL_OF_NUM_LT, ARITH,
-           (← ExceptT.mk (Session.REAL_ARITH2 [[&1 - x <= &1 <=> &0 <= x]]))] THEN
+           (← ExceptT.mk (Session.REAL_ARITH [[&1 - x <= &1 <=> &0 <= x]]))] THEN
     GEN_TAC THEN ASM_CASES_TAC [[n = 0]] THEN ASM_REWRITE_TAC [] THEN
     CONV_TAC REAL_RAT_REDUCE_CONV THEN
     MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC [[inv(&2 pow 1)]] THEN
@@ -102,10 +102,10 @@ def REAL_POW2_THM : thm := keep "REAL_POW2_THM" fun _ => (do
 #eval phrase 6
 -- let BOUND_SUMPROD_RULE = ... (recursive conversion-style rule over goals)
 def pth_add6 : thm := keep "pth_add6" fun _ => (do
-  ExceptT.mk (Session.REAL_ARITH2 [[abs(x1) <= b1 /\ abs(x2) <= b2 ==> abs(x1 + x2) <= b1 + b2]])
+  ExceptT.mk (Session.REAL_ARITH [[abs(x1) <= b1 /\ abs(x2) <= b2 ==> abs(x1 + x2) <= b1 + b2]])
   : ExceptT String IO thm).run
 def pth_sub6 : thm := keep "pth_sub6" fun _ => (do
-  ExceptT.mk (Session.REAL_ARITH2 [[abs(x1) <= b1 /\ abs(x2) <= b2 ==> abs(x1 - x2) <= b1 + b2]])
+  ExceptT.mk (Session.REAL_ARITH [[abs(x1) <= b1 /\ abs(x2) <= b2 ==> abs(x1 - x2) <= b1 + b2]])
   : ExceptT String IO thm).run
 def pth_mul6 : thm := keep "pth_mul6" fun _ => (do
   prove ([[abs(x1) <= b1 /\ abs(x2) <= b2 ==> abs(x1 * x2) <= b1 * b2]])
@@ -113,7 +113,7 @@ def pth_mul6 : thm := keep "pth_mul6" fun _ => (do
     SIMP_TAC [REAL_LE_MUL2, REAL_ABS_POS])
   : ExceptT String IO thm).run
 def pth_neg6 : thm := keep "pth_neg6" fun _ => (do
-  ExceptT.mk (Session.REAL_ARITH2 [[abs(x1) <= b1 ==> abs(--x1) <= b1]])
+  ExceptT.mk (Session.REAL_ARITH [[abs(x1) <= b1 ==> abs(--x1) <= b1]])
   : ExceptT String IO thm).run
 def pth_pow6 : thm := keep "pth_pow6" fun _ => (do
   prove ([[abs(x) <= b1 ==> abs(x pow n) <= b1 pow n]])
@@ -121,10 +121,10 @@ def pth_pow6 : thm := keep "pth_pow6" fun _ => (do
     MATCH_MP_TAC REAL_POW_LE2 THEN ASM_REWRITE_TAC [REAL_ABS_POS])
   : ExceptT String IO thm).run
 def pth_abs6 : thm := keep "pth_abs6" fun _ => (do
-  ExceptT.mk (Session.REAL_ARITH2 [[abs(x) <= b ==> abs(abs(x)) <= b]])
+  ExceptT.mk (Session.REAL_ARITH [[abs(x) <= b ==> abs(abs(x)) <= b]])
   : ExceptT String IO thm).run
 def pth_triv6 : thm := keep "pth_triv6" fun _ => (do
-  ExceptT.mk (Session.REAL_ARITH2 [[abs(x) <= abs(x)]])
+  ExceptT.mk (Session.REAL_ARITH [[abs(x) <= abs(x)]])
   : ExceptT String IO thm).run
 def n_tm6 : term := [[n:num]]
 
@@ -163,7 +163,7 @@ partial def BOUND_SUMPROD_RULE : (List (String × thm) × term) → ExceptT Stri
       let th2 ← go asl (← ec (rand trm))
       HolLight.MATCH_MP pth (← HolLight.CONJ th1 th2)
     let branch_triv : ExceptT String IO thm :=
-      ExceptT.mk (Session.PART_MATCH (fun t => Except.ok t) pth_triv6 tm)
+      ExceptT.mk (Session.PART_MATCH rator pth_triv6 tm)
     HolLight.tryWith branch_assum
       (HolLight.tryWith branch_neg
         (HolLight.tryWith branch_pow
@@ -174,7 +174,7 @@ partial def BOUND_SUMPROD_RULE : (List (String × thm) × term) → ExceptT Stri
 #eval phrase 7
 -- let BOUND_SUMPROD_TAC = ...
 def pth7 : thm := keep "pth7" fun _ => (do
-  ExceptT.mk (Session.REAL_ARITH2 [[x <= a ==> (!b. a <= b ==> x <= b) /\
+  ExceptT.mk (Session.REAL_ARITH [[x <= a ==> (!b. a <= b ==> x <= b) /\
                              (!b. a < b ==> x < b)]])
   : ExceptT String IO thm).run
 def le_tm7 : term := [[(<=):real->real->bool]]
@@ -270,7 +270,7 @@ def REAL_ATN_POWSER_DIFFS_SUM : thm := keep "REAL_ATN_POWSER_DIFFS_SUM" fun _ =>
       REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM REAL_POW_MUL))] THEN
       REWRITE_TAC [REAL_MUL_LNEG, REAL_MUL_LID], ALL_TAC] THEN
     SUBGOAL_THEN ([[(\n. --(x pow 2) pow n) sums inv (&1 + x pow 2)]]) MP_TAC THENL
-     [ONCE_REWRITE_TAC [(← ExceptT.mk (Session.REAL_ARITH2 [[&1 + x = &1 - (--x)]]))] THEN
+     [ONCE_REWRITE_TAC [(← ExceptT.mk (Session.REAL_ARITH [[&1 + x = &1 - (--x)]]))] THEN
       MATCH_MP_TAC GP THEN
       REWRITE_TAC [REAL_ABS_NEG, REAL_ABS_POW] THEN
       GEN_REWRITE_TAC HolLight.RAND_CONV [(← ExceptT.mk (HolLight.GSYM REAL_MUL_LID))] THEN
@@ -322,15 +322,15 @@ def REAL_ATN_POWSER_DIFFS_DIFFS_SUMMABLE : thm := keep "REAL_ATN_POWSER_DIFFS_DI
     REWRITE_TAC [real_div, (← ExceptT.mk (HolLight.GSYM REAL_MUL_ASSOC))] THEN
     REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM real_div))] THEN
     REWRITE_TAC [ADD1, (← ExceptT.mk (HolLight.GSYM REAL_OF_NUM_ADD))] THEN
-    ONCE_REWRITE_TAC [(← ExceptT.mk (Session.REAL_ARITH2 [[x + &1 <= y <=> &1 <= y - x * &1]]))] THEN
+    ONCE_REWRITE_TAC [(← ExceptT.mk (Session.REAL_ARITH [[x + &1 <= y <=> &1 <= y - x * &1]]))] THEN
     REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM Session.REAL_SUB_LDISTRIB))] THEN
     SUBGOAL_THEN ([[?N. &1 <= &N * (c / abs x - &1)]]) STRIP_ASSUME_TAC THENL
      [ALL_TAC,
       EXISTS_TAC [[N:num]] THEN REWRITE_TAC [GE] THEN REPEAT STRIP_TAC THEN
-      FIRST_ASSUM (MATCH_MP_TAC o HolLight.MATCH_MP (← ExceptT.mk (Session.REAL_ARITH2
+      FIRST_ASSUM (MATCH_MP_TAC o HolLight.MATCH_MP (← ExceptT.mk (Session.REAL_ARITH
        [[&1 <= x ==> x <= y ==> &1 <= y]]))) THEN
       MATCH_MP_TAC REAL_LE_RMUL THEN
-      ASM_SIMP_TAC [(← ExceptT.mk (Session.REAL_ARITH2 [[a <= b ==> a <= b + &1]])),
+      ASM_SIMP_TAC [(← ExceptT.mk (Session.REAL_ARITH [[a <= b ==> a <= b + &1]])),
                    REAL_OF_NUM_LE, Session.REAL_LE_RADD] THEN
       REWRITE_TAC [Session.REAL_LE_SUB_LADD, REAL_ADD_LID] THEN
       ASM_SIMP_TAC [REAL_LE_RDIV_EQ, (← ExceptT.mk (HolLight.GSYM REAL_ABS_NZ)), REAL_MUL_LID,
@@ -375,13 +375,13 @@ def REAL_ATN_POWSER : thm := keep "REAL_ATN_POWSER" fun _ => (do
      ([[suminf (\n. (if EVEN n then &0
                  else --(&1) pow ((n - 1) DIV 2) / &n) * x pow n) = atn(x)]])
      (fun th => REWRITE_TAC [th]) THEN
-    ONCE_REWRITE_TAC [(← ExceptT.mk (Session.REAL_ARITH2 [[(a = b) <=> (a - b = &0)]]))] THEN
+    ONCE_REWRITE_TAC [(← ExceptT.mk (Session.REAL_ARITH [[(a = b) <=> (a - b = &0)]]))] THEN
     SUBGOAL_THEN
      ([[suminf (\n. (if EVEN n then &0
                  else --(&1) pow ((n - 1) DIV 2) / &n) * &0 pow n) -
     atn(&0) = &0]])
     MP_TAC THENL
-     [MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH2 [[(a = &0) /\ (b = &0) ==> (a - b = &0)]])) THEN
+     [MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH [[(a = &0) /\ (b = &0) ==> (a - b = &0)]])) THEN
       CONJ_TAC THENL
        [CONV_TAC HolLight.SYM_CONV THEN MATCH_MP_TAC SUM_UNIQ THEN
         MP_TAC (← ExceptT.mk (HolLight.SPEC ([[&0]]) GP)) THEN
@@ -395,14 +395,14 @@ def REAL_ATN_POWSER : thm := keep "REAL_ATN_POWSER" fun _ => (do
         REWRITE_TAC [REAL_ENTIRE, REAL_POW_EQ_0] THEN ASM_MESON_TAC [EVEN],
         GEN_REWRITE_TAC (HolLight.LAND_CONV o HolLight.RAND_CONV) [(← ExceptT.mk (HolLight.GSYM TAN_0))] THEN
         MATCH_MP_TAC TAN_ATN THEN
-        SIMP_TAC [PI2_BOUNDS, (← ExceptT.mk (Session.REAL_ARITH2 [[&0 < x ==> --x < &0]]))]],
+        SIMP_TAC [PI2_BOUNDS, (← ExceptT.mk (Session.REAL_ARITH [[&0 < x ==> --x < &0]]))]],
       ALL_TAC] THEN
     ASM_CASES_TAC [[x = &0]] THEN ASM_REWRITE_TAC [] THEN
     DISCH_THEN (fun th => HolLight.tactic_of do pure (GEN_REWRITE_TAC HolLight.RAND_CONV [(← HolLight.SYM th)])) THEN
     MP_TAC (← ExceptT.mk (HolLight.SPEC ([[\x. suminf (\n. (if EVEN n then &0
                        else --(&1) pow ((n - 1) DIV 2) / &n) * x pow n) -
           atn x]]) DIFF_ISCONST_END_SIMPLE)) THEN
-    FIRST_ASSUM (DISJ_CASES_TAC o HolLight.MATCH_MP (← ExceptT.mk (Session.REAL_ARITH2
+    FIRST_ASSUM (DISJ_CASES_TAC o HolLight.MATCH_MP (← ExceptT.mk (Session.REAL_ARITH
       [[~(x = &0) ==> &0 < x \/ x < &0]])))
     THENL
      [DISCH_THEN (MP_TAC o HolLight.SPECL [ [[&0]], [[x:real]] ]),
@@ -434,7 +434,7 @@ def MCLAURIN_ATN_SIMPLE : thm := keep "MCLAURIN_ATN_SIMPLE" fun _ => (do
                <= &2 * abs(x) pow n]])
    (REPEAT STRIP_TAC THEN SUBGOAL_THEN ([[abs(x) < &1]]) ASSUME_TAC THENL
      [MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC [[inv(&2 pow k)]] THEN
-      ASM_REWRITE_TAC [(← ExceptT.mk (Session.REAL_ARITH2 [[a < &1 <=> &0 < &1 - a]])), REAL_POW2_CLAUSES],
+      ASM_REWRITE_TAC [(← ExceptT.mk (Session.REAL_ARITH [[a < &1 <=> &0 < &1 - a]])), REAL_POW2_CLAUSES],
       ALL_TAC] THEN
     FIRST_ASSUM (MP_TAC o HolLight.MATCH_MP REAL_ATN_POWSER) THEN
     DISCH_THEN (fun th => HolLight.tactic_of do
@@ -443,12 +443,12 @@ def MCLAURIN_ATN_SIMPLE : thm := keep "MCLAURIN_ATN_SIMPLE" fun _ => (do
     DISCH_THEN (MP_TAC o HolLight.MATCH_MP SER_OFFSET) THEN
     DISCH_THEN (MP_TAC o HolLight.SPEC [[n:num]]) THEN ASM_REWRITE_TAC [] THEN
     DISCH_THEN (MP_TAC o HolLight.MATCH_MP SUM_UNIQ) THEN
-    MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH2
+    MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH
      [[abs(r) <= e ==> (f - s = r) ==> abs(f - s) <= e]])) THEN
     SUBGOAL_THEN
      ([[(\m. abs(x) pow (m + n)) sums (abs(x) pow n) * inv(&1 - abs(x))]])
     ASSUME_TAC THENL
-     [FIRST_ASSUM (MP_TAC o HolLight.MATCH_MP GP o HolLight.MATCH_MP (← ExceptT.mk (Session.REAL_ARITH2
+     [FIRST_ASSUM (MP_TAC o HolLight.MATCH_MP GP o HolLight.MATCH_MP (← ExceptT.mk (Session.REAL_ARITH
         [[abs(x) < &1 ==> abs(abs x) < &1]]))) THEN
       DISCH_THEN (MP_TAC o HolLight.SPEC [[abs(x) pow n]] o HolLight.MATCH_MP SER_CMUL) THEN
       ONCE_REWRITE_TAC [ADD_SYM] THEN REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM REAL_POW_ADD))],
@@ -461,7 +461,7 @@ def MCLAURIN_ATN_SIMPLE : thm := keep "MCLAURIN_ATN_SIMPLE" fun _ => (do
       MATCH_MP_TAC REAL_LE_LMUL THEN SIMP_TAC [REAL_ABS_POS, REAL_POW_LE] THEN
       GEN_REWRITE_TAC HolLight.RAND_CONV [(← ExceptT.mk (HolLight.GSYM REAL_INV_INV))] THEN
       MATCH_MP_TAC REAL_LE_INV2 THEN
-      ONCE_REWRITE_TAC [(← ExceptT.mk (Session.REAL_ARITH2 [[a <= &1 - b <=> b <= &1 - a]]))] THEN
+      ONCE_REWRITE_TAC [(← ExceptT.mk (Session.REAL_ARITH [[a <= &1 - b <=> b <= &1 - a]]))] THEN
       CONV_TAC REAL_RAT_REDUCE_CONV THEN
       MATCH_MP_TAC Session.REAL_LE_TRANS THEN EXISTS_TAC [[inv(&2 pow k)]] THEN
       ASM_REWRITE_TAC [] THEN REWRITE_TAC [real_div, REAL_MUL_LID] THEN
@@ -515,7 +515,7 @@ def MCLAURIN_ATN_APPROX : thm := keep "MCLAURIN_ATN_APPROX" fun _ => (do
      [ASM_REWRITE_TAC [SessionLibrary.Analysis.sum, Session.REAL_SUB_RZERO, MULT_CLAUSES, SUB_0] THEN
       MP_TAC (← ExceptT.mk (HolLight.SPECL [ [[x:real]], [[2]], [[k:num]] ] MCLAURIN_ATN_SIMPLE)) THEN
       ASM_REWRITE_TAC [] THEN
-      MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH2
+      MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH
        [[abs(y) + d <= e ==> abs(x - y) <= d ==> abs(x) <= e]])) THEN
       CONV_TAC (HolLight.ONCE_DEPTH_CONV REAL_SUM_CONV) THEN
       REWRITE_TAC [real_pow, REAL_POW_1] THEN CONV_TAC NUM_REDUCE_CONV THEN
@@ -578,15 +578,25 @@ def mclaurin_atn_rule (k0 p0 : Int) : ExceptT String IO (List Rat) := do
   let ns := if n % 2 == 0 then List.range n else List.range (n - 1)
   pure (ns.map (fun m => if m % 2 == 0 then (0 : Rat) else
                   (if (m - 1) % 4 == 0 then id else Neg.neg) ((1 : Rat) / (Rat.ofInt (Int.ofNat m)))))
-/- NOTE: `MCLAURIN_ATN_RULE` is a `<fun>` value the toplevel never executes;
-   its full port needs `ceiling_num`/`REAL_HORNER_SUM_CONV` plumbing not yet
-   available uniformly in the session, so only its type (and `<fun>` print) is
-   reproduced here. -/
 def MCLAURIN_ATN_RULE (k0 p0 : Int) : ExceptT String IO thm := do
   if k0 == 0 then ec (.error "MCLAURIN_ATN_RULE: must have |x| <= 1/2") else
-  let _ := pth16
-  let _ := (k_tm16, n_tm16, inv_tm16, le_tm16, pow2_tm16, x_tm16, round_num, p0)
-  ec (.error "MCLAURIN_ATN_RULE")
+  let k : Rat := k0
+  let p : Rat := p0
+  let n := ceiling_num ((p + k) / k)
+  let th1 ← HolLight.INST [(← ec (mk_numeral k), k_tm16), (← ec (mk_numeral n), n_tm16)] pth16
+  let th2 ← HolLight.ASSUME (← ec (HolCore.Equal.lhand (← ec (HolCore.Equal.lhand (concl th1)))))
+  let th3 ← HolLight.EQF_ELIM (← ExceptT.mk (NUM_REDUCE_CONV
+    (← ec (rand (← ec (rand (← ec (HolCore.Equal.lhand (concl th1)))))))))
+  let th4 ← HolLight.MP th1 (← HolLight.CONJ th2 th3)
+  let th5 ← HolLight.CONV_RULE (HolLight.ONCE_DEPTH_CONV SessionLibrary.Analysis.REAL_HORNER_SUM_CONV) th4
+  let th6 ← HolLight.REWRITE_RULE [real_pow] th5
+  let th7 ← HolLight.CONV_RULE (NUM_REDUCE_CONV THENC HolLight.LAND_CONV REAL_RAT_REDUCE_CONV)
+    (← HolLight.BETA_RULE th6)
+  let tm1 ← ec (mk_comb inv_tm16 (← ec (mk_comb pow2_tm16 (← ec (mk_numeral p)))))
+  let tm2 ← ec (mk_comb (← ec (mk_comb le_tm16 (← ec (rand (concl th7))))) tm1)
+  let th8 ← HolLight.EQT_ELIM (← ExceptT.mk ((NUM_REDUCE_CONV THENC REAL_RAT_REDUCE_CONV) tm2))
+  let th9 ← HolLight.MATCH_MP Session.REAL_LE_TRANS (← HolLight.CONJ th7 th8)
+  HolLight.GEN x_tm16 (← HolLight.DISCH_ALL th9)
 #eval (do IO.println "<fun>"; IO.println "<fun>" : IO Unit)
 
 /- ------------------------------------------------------------------------- -/
@@ -597,7 +607,7 @@ def MCLAURIN_ATN_RULE (k0 p0 : Int) : ExceptT String IO thm := do
 def TAN_ADD_ATN_SIDECOND : thm := keep "TAN_ADD_ATN_SIDECOND" fun _ => (do
   prove ([[!x y. ~(x * y = &1) ==> ~(cos(atn x + atn y) = &0)]])
    (REPEAT GEN_TAC THEN DISCH_TAC THEN
-    REWRITE_TAC [COS_ADD, (← ExceptT.mk (Session.REAL_ARITH2 [[(a - b = &0) <=> (a = b)]]))] THEN
+    REWRITE_TAC [COS_ADD, (← ExceptT.mk (Session.REAL_ARITH [[(a - b = &0) <=> (a = b)]]))] THEN
     DISCH_THEN (MP_TAC o HolLight.AP_TERM [[(*) (inv(cos(atn x)))]]) THEN
     SIMP_TAC [REAL_MUL_ASSOC, REAL_MUL_LINV, COS_ATN_NZ, REAL_MUL_LID] THEN
     DISCH_THEN (MP_TAC o HolLight.AP_TERM [[(*) (inv(cos(atn y)))]]) THEN
@@ -616,7 +626,7 @@ def ATN_ADD : thm := keep "ATN_ADD" fun _ => (do
     SUBGOAL_THEN ([[tan(atn(x) + atn(y)) = (x + y) / (&1 - x * y)]]) MP_TAC THENL
      [ASM_SIMP_TAC [ATN_TAN, TAN_ADD, COS_ATN_NZ, TAN_ADD_ATN_SIDECOND],
       DISCH_THEN (SUBST1_TAC o HolLight.SYM) THEN CONV_TAC HolLight.SYM_CONV THEN
-      ASM_SIMP_TAC [TAN_ATN, (← ExceptT.mk (Session.REAL_ARITH2 [[abs(x) < e ==> --e < x /\ x < e]]))]])
+      ASM_SIMP_TAC [TAN_ATN, (← ExceptT.mk (Session.REAL_ARITH [[abs(x) < e ==> --e < x /\ x < e]]))]])
   : ExceptT String IO thm).run
 #eval ATN_ADD
 
@@ -627,7 +637,7 @@ def ATN_ADD_SMALL_LEMMA_POS : thm := keep "ATN_ADD_SMALL_LEMMA_POS" fun _ => (do
    (REPEAT STRIP_TAC THEN REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM Session.REAL_LT_SUB_LADD))] THEN
     SUBGOAL_THEN ([[pi / &2 - atn y = atn(tan(pi / &2 - atn y))]]) SUBST1_TAC THENL
      [CONV_TAC HolLight.SYM_CONV THEN MATCH_MP_TAC TAN_ATN THEN
-      MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH2
+      MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH
        [[&0 < x /\ x < a ==> --a < a - x /\ a - x < a]])) THEN
       REWRITE_TAC [ATN_BOUNDS] THEN
       GEN_REWRITE_TAC HolLight.LAND_CONV [(← ExceptT.mk (HolLight.GSYM ATN_0))] THEN
@@ -642,7 +652,7 @@ def ATN_ADD_SMALL_LEMMA_POS : thm := keep "ATN_ADD_SMALL_LEMMA_POS" fun _ => (do
 def ATN_ADD_SMALL_LEMMA : thm := keep "ATN_ADD_SMALL_LEMMA" fun _ => (do
   prove ([[!x y. abs(x * y) < &1 ==> abs(atn(x) + atn(y)) < pi / &2]])
    (REPEAT STRIP_TAC THEN
-    MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH2
+    MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH
      [[--a < x /\ x < a /\ --a < y /\ y < a /\
     (&0 < y ==> x + y < a) /\
     (&0 < --y ==> --x + --y < a)
@@ -650,11 +660,11 @@ def ATN_ADD_SMALL_LEMMA : thm := keep "ATN_ADD_SMALL_LEMMA" fun _ => (do
     REWRITE_TAC [ATN_BOUNDS] THEN CONJ_TAC THEN
     REPEAT STRIP_TAC THEN REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM ATN_NEG))] THEN
     MATCH_MP_TAC ATN_ADD_SMALL_LEMMA_POS THEN
-    ASM_SIMP_TAC [(← ExceptT.mk (Session.REAL_ARITH2 [[abs(x) < &1 ==> x < &1]])),
-                 (← ExceptT.mk (Session.REAL_ARITH2 [[(--x) * (--y) = x * y]]))] THEN
-    FIRST_ASSUM (MATCH_MP_TAC o HolLight.MATCH_MP (← ExceptT.mk (Session.REAL_ARITH2
+    ASM_SIMP_TAC [(← ExceptT.mk (Session.REAL_ARITH [[abs(x) < &1 ==> x < &1]])),
+                 (← ExceptT.mk (Session.REAL_ARITH [[(--x) * (--y) = x * y]]))] THEN
+    FIRST_ASSUM (MATCH_MP_TAC o HolLight.MATCH_MP (← ExceptT.mk (Session.REAL_ARITH
      [[&0 < y ==> (z <= &0 ==> y <= &0) ==> &0 < z]]))) THEN
-    MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH2
+    MATCH_MP_TAC (← ExceptT.mk (Session.REAL_ARITH
      [[(y < &0 ==> z < &0) /\ ((y = &0) ==> (z = &0))
     ==> y <= &0 ==> z <= &0]])) THEN
     SIMP_TAC [ATN_0, (← ExceptT.mk (HolLight.GSYM ATN_NEG))] THEN
@@ -859,41 +869,129 @@ def POLY : List Rat → Rat → Rat
 
 #eval phrase 40
 -- let atn_approx_conv,ATN_APPROX_CONV = ...  (<fun> values)
-/- NOTE: `atn_approx_conv`/`ATN_APPROX_CONV` are `<fun>` values the toplevel
-   never executes; the full port needs the `MCLAURIN_ATN_RULE` machinery
-   (`ceiling_num`/`REAL_HORNER_SUM_CONV`), so only the type and `<fun>` print
-   are reproduced. -/
+/-- `log_2` of atn_approx_conv (OCaml's local `let rec log_2`). -/
+private partial def log_2 (x : Rat) : Rat :=
+  if x <= 1 then log_2 (2 * x) - 1
+  else if x > 2 then log_2 (x / 2) + 1
+  else 1
+def ATN_APPROX_pth : thm := keep "ATN_APPROX_pth" fun _ => (do
+  prove ([[!p. abs(atn(&0) - &0) <= inv(&2 pow p)]])
+   (SIMP_TAC [ATN_0, SessionLibrary.Analysis.REAL_SUB_REFL, REAL_ABS_NUM, REAL_LE_INV_EQ, REAL_POW_LE, SessionLibrary.Analysis.REAL_POS])
+  : ExceptT String IO thm).run
 def atn_approx_conv (p : Int) (r : Rat) : ExceptT String IO Rat := do
   if r == 0 then pure HolCore.Lib.num_0 else
-  let _ := (mclaurin_atn_rule, POLY, p, r)
-  ec (.error "atn_approx_conv")
+  let k := (-(log_2 (if r < 0 then -r else r))).floor
+  if k < 1 then ec (.error "atn_approx_conv: argument too big") else
+  let rats ← mclaurin_atn_rule k p
+  pure (POLY rats r)
 def ATN_APPROX_CONV (p : Int) (tm : term) : ExceptT String IO thm := do
+  let atn_tm ← ExceptT.mk [[atn]]
   let (atm, rtm) ← ec (dest_comb tm)
-  let _ := (atm, rtm, MCLAURIN_ATN_RULE, p)
-  ec (.error "ATN_APPROX_CONV")
-#eval (do IO.println "<fun>"; IO.println "<fun>" : IO Unit)
+  if atm != atn_tm then ec (.error "ATN_APPROX_CONV") else
+  let r ← ec (rat_of_term rtm)
+  if r == 0 then HolLight.SPEC (← ec (mk_small_numeral p)) ATN_APPROX_pth else
+  let k := (-(log_2 (if r < 0 then -r else r))).floor
+  if k < 1 then ec (.error "ATN_APPROX_CONV: argument too big") else
+  let th1 ← MCLAURIN_ATN_RULE k p
+  let th2 ← HolLight.SPEC rtm th1
+  let th3 ← HolLight.MP th2 (← HolLight.EQT_ELIM
+    (← ExceptT.mk (REAL_RAT_REDUCE_CONV (← ec (HolCore.Equal.lhand (concl th2))))))
+  HolLight.CONV_RULE (HolLight.LAND_CONV (HolLight.RAND_CONV (HolLight.RAND_CONV REAL_RAT_REDUCE_CONV))) th3
+#eval (do replay ATN_APPROX_pth; IO.println "<fun>"; IO.println "<fun>" : IO Unit)
+
 
 #eval phrase 41
-/- NOTE: `pi_approx_rule`/`PI_APPROX_RULE` are `<fun>` values the toplevel
-   never executes; the full port needs the approximation machinery above. -/
+def PI_APPROX_pth : thm := keep "PI_APPROX_pth" fun _ => (do
+  let h3 ← ExceptT.mk (Session.REAL_ARITH [[(x1 + x2 + x3) - (y1 + y2 + y3) =
+                            (x1 - y1) + (x2 - y2) + (x3 - y3)]])
+  let h2 ← ExceptT.mk (Session.REAL_ARITH [[&0 < x ==> &0 < abs(x)]])
+  prove ([[(q1 = p + 5) /\
+     (q2 = p + 6) /\
+     abs(atn(&1 / &8) - a1) <= inv(&2 pow q1) /\
+     abs(atn(&1 / &57) - a2) <= inv(&2 pow q2) /\
+     abs(atn(&1 / &239) - a3) <= inv(&2 pow q2)
+     ==> abs(pi - (&24 * a1 + &8 * a2 + &4 * a3)) <= inv(&2 pow p)]])
+   (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
+    ASM_REWRITE_TAC [] THEN POP_ASSUM_LIST (fun _ => ALL_TAC) THEN STRIP_TAC THEN
+    MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN EXISTS_TAC [[abs(inv(&2 pow 2))]] THEN
+    SIMP_TAC [REAL_POW2_CLAUSES, h2] THEN
+    REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM REAL_ABS_MUL))] THEN
+    REWRITE_TAC [REAL_ABS_INV, REAL_ABS_POW, REAL_ABS_NUM] THEN
+    REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM REAL_INV_MUL)), (← ExceptT.mk (HolLight.GSYM REAL_POW_ADD))] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    REWRITE_TAC [SessionLibrary.Analysis.REAL_SUB_LDISTRIB, REAL_ADD_LDISTRIB, REAL_MUL_ASSOC] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV THEN
+    REWRITE_TAC [real_div, REAL_MUL_LID] THEN
+    GEN_REWRITE_TAC (HolLight.LAND_CONV o HolLight.RAND_CONV o HolLight.LAND_CONV) [REAL_MUL_SYM] THEN
+    REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM real_div)), MACHINLIKE_1] THEN
+    REWRITE_TAC [h3] THEN
+    REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM SessionLibrary.Analysis.REAL_SUB_LDISTRIB))] THEN BOUND_SUMPROD_TAC THEN
+    GEN_REWRITE_TAC (HolLight.LAND_CONV o HolLight.ONCE_DEPTH_CONV) [ADD_SYM] THEN
+    REWRITE_TAC [REAL_POW_ADD, REAL_INV_MUL, REAL_MUL_ASSOC] THEN
+    SIMP_TAC [(← ExceptT.mk (HolLight.GSYM REAL_ADD_RDISTRIB)), SessionLibrary.Analysis.REAL_LE_RMUL_EQ, REAL_POW2_CLAUSES] THEN
+    CONV_TAC REAL_RAT_REDUCE_CONV)
+  : ExceptT String IO thm).run
 def pi_approx_rule (p : Int) : ExceptT String IO Rat := do
-  let _ := (atn_approx_conv, BOUND_SUMPROD_TAC, MACHINLIKE_1, p)
-  ec (.error "pi_approx_rule")
+  let q1 := p + 5
+  let q2 := p + 6
+  let a1 ← atn_approx_conv q1 (1 / 8)
+  let a2 ← atn_approx_conv q2 (1 / 57)
+  let a3 ← atn_approx_conv q2 (1 / 239)
+  pure (24 * a1 + 8 * a2 + 4 * a3)
 def PI_APPROX_RULE (p : Int) : ExceptT String IO thm := do
-  let _ := (ATN_APPROX_CONV, p)
-  ec (.error "PI_APPROX_RULE")
-#eval (do IO.println "<fun>"; IO.println "<fun>" : IO Unit)
+  let q1 := p + 5
+  let q2 := p + 6
+  let th1 ← ATN_APPROX_CONV q1 (← ExceptT.mk [[atn(&1 / &8)]])
+  let th2 ← ATN_APPROX_CONV q2 (← ExceptT.mk [[atn(&1 / &57)]])
+  let th3 ← ATN_APPROX_CONV q2 (← ExceptT.mk [[atn(&1 / &239)]])
+  let th4 ← HolLight.INST [(← ec (mk_small_numeral p), ← ExceptT.mk [[p:num]]),
+                           (← ec (mk_small_numeral q1), ← ExceptT.mk [[q1:num]]),
+                           (← ec (mk_small_numeral q2), ← ExceptT.mk [[q2:num]])] PI_APPROX_pth
+  let ant ← ec (HolCore.Equal.lhand (concl th4))
+  let th5 ← HolLight.EQT_ELIM (← ExceptT.mk (NUM_REDUCE_CONV (← ec (HolCore.Equal.lhand ant))))
+  let th6 ← HolLight.EQT_ELIM (← ExceptT.mk (NUM_REDUCE_CONV (← ec (HolCore.Equal.lhand (← ec (rand ant))))))
+  let th7 ← HolLight.MATCH_MP th4 (← HolLight.end_itlist HolLight.CONJ [th5, th6, th1, th2, th3])
+  HolLight.CONV_RULE (HolLight.LAND_CONV (HolLight.RAND_CONV (HolLight.RAND_CONV REAL_RAT_REDUCE_CONV))) th7
+#eval (do replay PI_APPROX_pth; IO.println "<fun>"; IO.println "<fun>" : IO Unit)
 
 #eval phrase 42
-/- NOTE: `pi_approx_binary_rule`/`PI_APPROX_BINARY_RULE` are `<fun>` values the
-   toplevel never executes; the full port needs the approximation machinery. -/
+def PI_APPROX_BINARY_pth : thm := keep "PI_APPROX_BINARY_pth" fun _ => (do
+  let h5 ← ExceptT.mk (ARITH_RULE [[SUC p - p = 1]])
+  let h4 ← ExceptT.mk (ARITH_RULE [[~(SUC p <= p)]])
+  let h3 ← ExceptT.mk (Session.REAL_ARITH [[&0 < x ==> &0 < abs(x)]])
+  let h1 ← ExceptT.mk (Session.REAL_ARITH [[abs(x - r) <= q ==> abs(r - r') <= p - q ==> abs(x - r') <= p]])
+  prove ([[abs(x - r) <= inv(&2 pow (SUC p))
+     ==> !a. abs(&2 pow p * r - a) <= inv(&2)
+             ==> abs(x - a / &2 pow p) <= inv(&2 pow p)]])
+   (REPEAT STRIP_TAC THEN
+    FIRST_ASSUM (MATCH_MP_TAC o HolLight.MATCH_MP h1) THEN
+    MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN EXISTS_TAC [[abs(&2 pow p)]] THEN
+    SIMP_TAC [h3, REAL_POW2_THM] THEN
+    REWRITE_TAC [(← ExceptT.mk (HolLight.GSYM REAL_ABS_MUL)), SessionLibrary.Analysis.REAL_SUB_LDISTRIB] THEN
+    SIMP_TAC [REAL_ABS_POW, REAL_ABS_NUM, (← ExceptT.mk (HolLight.GSYM real_div)),
+             REAL_DIV_LMUL, SessionLibrary.Analysis.REAL_LT_IMP_NZ, REAL_POW2_CLAUSES,
+             REAL_DIV_POW2, REAL_OF_NUM_EQ, ARITH_EQ,
+             LE_REFL, h4, h5, SUB_REFL] THEN
+    UNDISCH_TAC [[abs (&2 pow p * r - a) <= inv (&2)]] THEN
+    CONV_TAC NUM_REDUCE_CONV THEN CONV_TAC REAL_RAT_REDUCE_CONV)
+  : ExceptT String IO thm).run
 def pi_approx_binary_rule (p : Int) : ExceptT String IO Rat := do
-  let _ := (pi_approx_rule, round_num, p)
-  ec (.error "pi_approx_binary_rule")
+  let ppow : Rat := (2 : Rat) ^ p.toNat
+  let r ← pi_approx_rule (p + 1)
+  let a := round_num (ppow * r)
+  pure (a / ppow)
 def PI_APPROX_BINARY_RULE (p : Int) : ExceptT String IO thm := do
-  let _ := (PI_APPROX_RULE, p)
-  ec (.error "PI_APPROX_BINARY_RULE")
-#eval (do IO.println "<fun>"; IO.println "<fun>" : IO Unit)
+  let ppow : Rat := (2 : Rat) ^ p.toNat
+  let th1 ← PI_APPROX_RULE (p + 1)
+  let th2 ← HolLight.CONV_RULE (HolCore.Lib.funpow 3 HolLight.RAND_CONV num_CONV) th1
+  let r ← ec (rat_of_term (← ec (rand (← ec (rand (← ec (HolCore.Equal.lhand (concl th2))))))))
+  let th3 ← HolLight.SPEC (← ec (mk_realintconst (round_num (ppow * r))))
+    (← HolLight.MATCH_MP PI_APPROX_BINARY_pth th2)
+  let th4 ← HolLight.MP th3 (← HolLight.EQT_ELIM
+    (← ExceptT.mk (REAL_RAT_REDUCE_CONV (← ec (HolCore.Equal.lhand (concl th3))))))
+  HolLight.CONV_RULE (HolLight.LAND_CONV (HolLight.RAND_CONV (HolLight.RAND_CONV REAL_RAT_REDUCE_CONV))) th4
+#eval (do replay PI_APPROX_BINARY_pth; IO.println "<fun>"; IO.println "<fun>" : IO Unit)
 
 /- ------------------------------------------------------------------------- -/
 /- Rule to expand atn(r) for rational r into more easily calculable bits.    -/
@@ -931,5 +1029,77 @@ def ATN_EXPAND_CONV (tm : term) : ExceptT String IO thm := do
   let xtm ← ec (addF addR)
   HolLight.SYM (← ExceptT.mk (MACHIN_CONV xtm))
 #eval IO.println "<fun>"
+
+-- @@ENSURE BEGIN
+/-- Replays this file, once per process (see Common.lean); generated by
+    tools/tutorialdiff/ensuregen.py; keep it in step with the `#eval`s above. -/
+def ensure : IO Unit := once "HolExamples.Machin" do
+  replay (
+          SessionLibrary.Transc.ensureTransc)
+  replay (
+          REAL_LE_1_POW2)
+  replay (
+          REAL_LT_1_POW2)
+  replay (
+          REAL_POW2_CLAUSES)
+  replay (
+          REAL_POW2_THM)
+  replay (
+          REAL_ATN_POWSER_SUMMABLE)
+  replay (
+          REAL_ATN_POWSER_DIFFS_SUMMABLE)
+  replay (
+          REAL_ATN_POWSER_DIFFS_SUM)
+  replay (
+          REAL_ATN_POWSER_DIFFS_DIFFS_SUMMABLE)
+  replay (
+          REAL_ATN_POWSER_DIFFL)
+  replay (
+          REAL_ATN_POWSER)
+  replay (
+          MCLAURIN_ATN_SIMPLE)
+  replay (
+          MCLAURIN_ATN_APPROX)
+  replay (
+          TAN_ADD_ATN_SIDECOND)
+  replay (
+          ATN_ADD)
+  replay (
+          ATN_ADD_SMALL_LEMMA_POS)
+  replay (
+          ATN_ADD_SMALL_LEMMA)
+  replay (
+          ATN_ADD_SMALL)
+  replay (
+          MACHIN_1)
+  replay (
+          MACHIN_2)
+  replay (
+          MACHIN_3)
+  replay (
+          MACHIN_4)
+  replay (
+          EULER)
+  replay (
+          GAUSS_MACHIN)
+  replay (
+          STRASSNITZKY_MACHIN)
+  replay (
+          MACHINLIKE_1)
+  replay (
+          MACHINLIKE_2)
+  replay (
+          MACHINLIKE_3)
+  replay (
+          MACHINLIKE_4)
+  replay (
+          MACHINLIKE_5)
+  replay (
+          (do replay ATN_APPROX_pth; IO.println "<fun>"; IO.println "<fun>" : IO Unit))
+  replay (
+          (do replay PI_APPROX_pth; IO.println "<fun>"; IO.println "<fun>" : IO Unit))
+  replay (
+          (do replay PI_APPROX_BINARY_pth; IO.println "<fun>"; IO.println "<fun>" : IO Unit))
+-- @@ENSURE END
 
 end HolExamples.Machin

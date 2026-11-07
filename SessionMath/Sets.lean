@@ -233,7 +233,7 @@ initialize setsInfiniteLayer : HolMath.Sets.SetsInfinite ← do
   | .ok ty => new_type_abbrev "string" ty
   ioOk' "setupSetsInfinite" (HolMath.Sets.setupSetsInfinite SC SP SIn SMi SFin SCard SInd
     MESON_TAC INDUCT_TAC
-    REAL_ARITH2 REAL_FIELD REAL_ARITH_TAC
+    REAL_ARITH REAL_FIELD REAL_ARITH_TAC
     arith2.LT arith2.LE arith1.ADD1 arith2.LT_SUC_LE arith3.NOT_LT arith3.LT_REFL
     arith3.LE_CASES arith3.LE_TRANS arith3.NOT_LE arith3.LT_IMP_LE arith2.LE_SUC_LT
     listThms1.LENGTH_REPLICATE
@@ -298,7 +298,7 @@ initialize setsSupLayer : HolMath.Sets.SetsSup ←
   ioOk' "setupSetsSup" (HolMath.Sets.setupSetsSup SC SP
     MESON_TAC ASM_MESON_TAC REFUTE_THEN
     INTRO_TAC SELECT_CONV
-    REAL_ARITH2 REAL_ARITH_TAC IMP_CONJ
+    REAL_ARITH REAL_ARITH_TAC IMP_CONJ
     SIn.MEMBER_NOT_EMPTY SP.IN_IMAGE SFin.FINITE_INSERT
     SFin.FINITE_EMPTY SID.NOT_INSERT_EMPTY
     SP.NOT_IN_EMPTY SP.IN_INSERT SP.IN_SING SP.FORALL_IN_INSERT

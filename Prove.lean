@@ -13,7 +13,7 @@ this translation's stand-in for HOL Light's backquotes, and results print
 themselves:
 
     HOL Light   REAL_ARITH `!x y. abs(x + y) <= abs x + abs y`;;
-    here        #eval REAL_ARITH2 [[!x y. abs (x + y) <= abs x + abs y]]
+    here        #eval REAL_ARITH [[!x y. abs (x + y) <= abs x + abs y]]
 
 Nothing needs forcing and no `do`/`match` wrapper is needed - the coercions in
 SessionCore/Base.lean unwrap a quotation into a `term` and a rule result into a `thm`,
@@ -65,15 +65,14 @@ open Session HolCore.Kernel
 #eval REAL_ADD_SYM
 #eval REAL_ADD_AC
 
--- Prove a goal with the linear real decision procedure (realarith.ml).
--- `REAL_ARITH2` is the version that file leaves in place: it handles abs, max
--- and min, and INTEGER constants.  Rational constants such as `/ &2` are
--- handled by calc_rat.ml's `REAL_ARITH3`.
-#eval REAL_ARITH2 [[!x y. abs (x + y) <= abs x + abs y]]
+-- Prove a goal with the linear real decision procedure.  `REAL_ARITH` is
+-- calc_rat.ml's final version, as in HOL Light: it handles abs, max, min and
+-- rational constants such as `/ &2`.
+#eval REAL_ARITH [[!x y. abs (x + y) <= abs x + abs y]]
 -- Without `:real` the variables would be natural numbers (the default after
 -- loading, as in HOL Light), and REAL_ARITH would fail.
-#eval REAL_ARITH2 [[!x y z:real. x <= y /\ y <= z ==> x <= z]]
-#eval REAL_ARITH2 [[!x y. max x y >= x]]
+#eval REAL_ARITH [[!x y z:real. x <= y /\ y <= z ==> x <= z]]
+#eval REAL_ARITH [[!x y. max x y >= x]]
 
 -- Evaluate arithmetic.
 #eval NUM_REDUCE_CONV [[2 + 2 * 3]]

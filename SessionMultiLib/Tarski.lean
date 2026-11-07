@@ -27,7 +27,7 @@ def thms : HolMultiLib.Tarski.TarskiThms :=
 private def ioB {α : Type} [Inhabited α] (name : String) (x : IO (Except String α)) :
     IO α := do
   if !(← Session.bundlesWanted) then return default
-  match ← x with
+  match ← Session.quietly x with
   | .ok d => pure d
   | .error e => throw (IO.userError s!"{name} failed: {e}")
 

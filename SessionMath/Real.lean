@@ -147,10 +147,12 @@ def realThms10 : HolMath.Real.RealThms10 := RT10
 /-- The `real.ml` eleventh block (1657-1993). -/
 def realThms11 : HolMath.Real.RealThms11 := RT11
 
-/-- `REAL_ARITH_TAC` (real.ml 106): `CONV_TAC REAL_ARITH`, with `REAL_ARITH2`
-    pre-supplied.  NOTE: `ASM_REAL_ARITH_TAC` is NOT defined in real.ml — it
-    arrives with calc_rat.ml — so it is not exposed here. -/
-def REAL_ARITH_TAC : tactic := HolMath.Real.REAL_ARITH_TAC REAL_ARITH2
+/-- `REAL_ARITH_TAC1` is real.ml 106's `REAL_ARITH_TAC`: `CONV_TAC REAL_ARITH`,
+    with `REAL_ARITH2` pre-supplied.  calc_rat.ml redefines `REAL_ARITH_TAC`;
+    `Session.REAL_ARITH_TAC` is that final version (SessionMath/CalcRat.lean).
+    NOTE: `ASM_REAL_ARITH_TAC` is NOT defined in real.ml — it arrives with
+    calc_rat.ml — so it is not exposed here. -/
+def REAL_ARITH_TAC1 : tactic := HolMath.Real.REAL_ARITH_TAC REAL_ARITH2
 
 /-- `REAL_LE_IMP` (real.ml 597-599): a RULE, given `th` returns `GEN_ALL
     (MATCH_MP le_pth (SPEC_ALL th))`. -/

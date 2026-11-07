@@ -324,6 +324,22 @@ def REAL_ARITH_TAC2 : tactic := FRA.REAL_ARITH_TAC2
     into the goal, then `REAL_ARITH_TAC2`.  First appears here. -/
 def ASM_REAL_ARITH_TAC : tactic := FRA.ASM_REAL_ARITH_TAC
 
+/- HOL Light's names for the final versions.  HOL Light's later definitions
+   replace the earlier ones; here the plain names are the final versions and
+   the numbered ones stay available: GEN_REAL_ARITH1/2 and REAL_ARITH1/2
+   (realarith.ml), REAL_ARITH_TAC1 (real.ml), and GEN_REAL_ARITH3,
+   REAL_ARITH3 and REAL_ARITH_TAC2 (the same functions as below). -/
+/-- `GEN_REAL_ARITH` (calc_rat.ml 537), the final version: `GEN_REAL_ARITH3`. -/
+def GEN_REAL_ARITH :
+    (((List thm × List thm × List thm) →
+      HolMath.RealArith.positivstellensatz → IO (Except String thm)) →
+     (List thm × List thm × List thm) → IO (Except String thm)) →
+    term → IO (Except String thm) := GEN_REAL_ARITH3
+/-- `REAL_ARITH` (calc_rat.ml 544), the final version: `REAL_ARITH3`. -/
+def REAL_ARITH : term → IO (Except String thm) := REAL_ARITH3
+/-- `REAL_ARITH_TAC` (calc_rat.ml 553), the final version: `REAL_ARITH_TAC2`. -/
+def REAL_ARITH_TAC : tactic := REAL_ARITH_TAC2
+
 /-- `RealFieldTrans` (calc_rat.ml 560-577): the three equivalential
     transitivity forms.  Uses this file's FINAL `REAL_ARITH` (`REAL_ARITH3`). -/
 initialize realFieldTransLayer : HolMath.CalcRat.RealFieldTrans ←
