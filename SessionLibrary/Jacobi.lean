@@ -47,6 +47,7 @@ def core1 : HolLibrary.Jacobi.CoreThms1 where
   CONG_MULT := SessionLibrary.Pocklington.«CONG_MULT»
   CONG_MULT_LCANCEL := SessionLibrary.Pocklington.«CONG_MULT_LCANCEL»
   CONG_REFL := SessionLibrary.Pocklington.«CONG_REFL»
+  CONG_SOLVE := SessionLibrary.Pocklington.«CONG_SOLVE»
   CONG_SQUARE_1_PRIME_POWER := SessionLibrary.Pocklington.«CONG_SQUARE_1_PRIME_POWER»
   CONG_SUB := SessionLibrary.Pocklington.«CONG_SUB»
   CONG_SYM := SessionLibrary.Pocklington.«CONG_SYM»
@@ -104,6 +105,7 @@ def core2 : HolLibrary.Jacobi.CoreThms2 where
   FINITE_CROSS_EQ := Session.FINITE_CROSS_EQ
   FINITE_INDUCT_STRONG := Session.FINITE_INDUCT_STRONG
   FINITE_NUMSEG := Session.FINITE_NUMSEG
+  FINITE_NUMSEG_LT := Session.FINITE_NUMSEG_LT
   FINITE_RESTRICT := Session.FINITE_RESTRICT
   FINITE_SPECIAL_DIVISORS := SessionLibrary.Prime.«FINITE_SPECIAL_DIVISORS»
   FINITE_SUBSET := Session.FINITE_SUBSET
@@ -204,6 +206,8 @@ def core3 : HolLibrary.Jacobi.CoreThms3 where
   IPRODUCT_RESTRICT_SET := SessionLibrary.Products.«IPRODUCT_RESTRICT_SET»
   IPRODUCT_SING := SessionLibrary.Products.«IPRODUCT_SING»
   IPRODUCT_SUPERSET := SessionLibrary.Products.«IPRODUCT_SUPERSET»
+  ISUM_EQ_GENERAL_INVERSES := SessionLibrary.Isum.«ISUM_EQ_GENERAL_INVERSES»
+  ISUM_LMUL := SessionLibrary.Isum.«ISUM_LMUL»
   LEFT_ADD_DISTRIB := Session.LEFT_ADD_DISTRIB
   LEFT_IMP_EXISTS_THM := Session.LEFT_IMP_EXISTS_THM
   LEFT_SUB_DISTRIB := Session.LEFT_SUB_DISTRIB
@@ -220,6 +224,7 @@ def core3 : HolLibrary.Jacobi.CoreThms3 where
   MOD_LT_EQ := Session.MOD_LT_EQ
   MOD_MULT := Session.MOD_MULT
   MOD_MULT_ADD := Session.MOD_MULT_ADD
+  MOD_MULT_RMOD := Session.MOD_MULT_RMOD
   MOD_ZERO := Session.MOD_ZERO
   MONO_FORALL := Session.MONO_FORALL
   MULT_ASSOC := Session.MULT_ASSOC
@@ -257,6 +262,7 @@ def core4 : HolLibrary.Jacobi.CoreThms4 where
   PRIME_GE_2 := SessionLibrary.Prime.«PRIME_GE_2»
   PRIME_IMP_NZ := SessionLibrary.Prime.«PRIME_IMP_NZ»
   PRIME_ODD := SessionLibrary.Prime.«PRIME_ODD»
+  QUADRATIC_NONRESIDUE_EXISTS := SessionLibrary.Primitive.«QUADRATIC_NONRESIDUE_EXISTS»
   RIGHT_FORALL_IMP_THM := Session.RIGHT_FORALL_IMP_THM
   SING_GSPEC := Session.SING_GSPEC
   SUBSET := Session.SUBSET
@@ -323,7 +329,7 @@ initialize BReciprocity : HolLibrary.Jacobi.Reciprocity ←
   ioB "setupReciprocity"
     (HolLibrary.Jacobi.setupReciprocity deps BJacobiDef BJacobiEuler BGauss).run
 initialize BJacobi2 : HolLibrary.Jacobi.Jacobi2 ←
-  ioB "setupJacobi2" (HolLibrary.Jacobi.setupJacobi2 deps BJacobiDef).run
+  ioB "setupJacobi2" (HolLibrary.Jacobi.setupJacobi2 deps BJacobiDef BJacobiEuler).run
 initialize BIntJacobi1 : HolLibrary.Jacobi.IntJacobi1 ←
   ioB "setupIntJacobi1" (HolLibrary.Jacobi.setupIntJacobi1 deps BJacobiDef BJacobiEuler).run
 initialize BIntJacobi2 : HolLibrary.Jacobi.IntJacobi2 ←
@@ -382,6 +388,7 @@ def JACOBI_RECIPROCITY : thm := BReciprocity.JACOBI_RECIPROCITY
 -- Jacobi2
 def JACOBI_EQ_1 : thm := BJacobi2.JACOBI_EQ_1
 def JACOBI_NE_MINUS1 : thm := BJacobi2.JACOBI_NE_MINUS1
+def JACOBI_SUM_RESIDUES : thm := BJacobi2.JACOBI_SUM_RESIDUES
 
 -- IntJacobi1
 def int_jacobi : thm := BIntJacobi1.int_jacobi

@@ -8,7 +8,7 @@ open HolCore.Kernel Session HolLight.Syntax HolExamples
 open SessionLibrary.Card SessionLibrary.Prime SessionLibrary.GroupTheory
 open SessionMultiLib.Misc SessionMultiLib.Vectors SessionMultiLib.Determinants
 open SessionMultiLib.Metric SessionMultiLib.Topology SessionMultiLib.Convex
-open SessionMultiLib.Complexes SessionMultiLib.Transcendentals
+open SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes SessionMultiLib.Transcendentals
 namespace HolExamples.ComplexPolygon
 
 /- Helpers: the session's `prove` lifted into `ExceptT String IO`, so tactic

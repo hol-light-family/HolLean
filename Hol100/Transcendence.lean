@@ -7,8 +7,9 @@ import SessionLibrary.Products
 import SessionLibrary.RingTheory
 import SessionLibrary.FieldTheory
 import SessionMultiLib.Cauchy
+import SessionMultiLib.ComplexRing
 open HolCore.Kernel Session HolLight.Syntax HolExamples Hol100
-open SessionLibrary.Products SessionLibrary.Binomial SessionLibrary.Iter SessionLibrary.Prime SessionLibrary.Wo SessionLibrary.Permutations SessionLibrary.Floor SessionLibrary.Frag SessionLibrary.Card SessionLibrary.Pocklington SessionLibrary.Matroids SessionMultiLib.Misc SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionLibrary.RingTheory SessionMultiLib.Metric SessionLibrary.RingDet SessionMultiLib.Determinants SessionLibrary.FieldTheory SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.Complexes SessionMultiLib.Paths SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals SessionMultiLib.RealAnalysis SessionMultiLib.MoreTop SessionMultiLib.Cauchy
+open SessionLibrary.Products SessionLibrary.Binomial SessionLibrary.Iter SessionLibrary.Prime SessionLibrary.Wo SessionLibrary.Permutations SessionLibrary.Floor SessionLibrary.Frag SessionLibrary.Card SessionLibrary.Pocklington SessionLibrary.Matroids SessionMultiLib.Misc SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionLibrary.RingTheory SessionMultiLib.Metric SessionLibrary.RingDet SessionMultiLib.Determinants SessionLibrary.FieldTheory SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes SessionMultiLib.Paths SessionMultiLib.ComplexRing SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals SessionMultiLib.RealAnalysis SessionMultiLib.MoreTop SessionMultiLib.Cauchy
 namespace Hol100.Transcendence
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
@@ -17,7 +18,6 @@ private def prove (g : term) (tac : HolCore.Tactics.tactic) : ExceptT String IO 
   ExceptT.mk (Session.prove g tac)
 private def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (ARITH_RULE tm)
 private def cf (tm : term) : ExceptT String IO thm := ExceptT.mk (COMPLEX_FIELD tm)
-private def cr (tm : term) : ExceptT String IO thm := ExceptT.mk (COMPLEX_RING tm)
 private def rf (tm : term) : ExceptT String IO thm := ExceptT.mk (REAL_FIELD tm)
 private def rgl (tm : term) : ExceptT String IO thm := ExceptT.mk (RING_RULE tm)
 private def rr (tm : term) : ExceptT String IO thm := ExceptT.mk (Session.REAL_ARITH3 tm)
@@ -272,231 +272,235 @@ The proof here focuses more on identities of formal power series.
 #eval SessionMultiLib.Cauchy.ensureCauchy
 
 #eval phrase 7
+-- needs "Multivariate/complex_ring.ml";;
+#eval SessionMultiLib.ComplexRing.ensureComplexRing
+
+#eval phrase 8
 #eval Session.prioritize_real
 
 /- to ensure portability -/
 /- ===== tactics -/
 
-#eval phrase 8
+#eval phrase 9
 -- let rw ...;;
 def rw : List thm → HolCore.Tactics.tactic := REWRITE_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 9
+#eval phrase 10
 -- let once_rw ...;;
 def once_rw : List thm → HolCore.Tactics.tactic := ONCE_REWRITE_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 10
+#eval phrase 11
 -- let qed ...;;
 def qed : List thm → HolCore.Tactics.tactic := ASM_MESON_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 11
+#eval phrase 12
 -- let simp ...;;
 def simp : List thm → HolCore.Tactics.tactic := ASM_SIMP_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 12
+#eval phrase 13
 -- let simporqed ...;;
 def simporqed : HolCore.Tactics.tactic := (simp [] THEN qed []) ORELSE (simp [])
 #eval IO.println "<fun>"
 
-#eval phrase 13
+#eval phrase 14
 -- let pass ...;;
 def pass : HolCore.Tactics.tactic := ALL_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 14
+#eval phrase 15
 -- let case ...;;
 def case' : term → HolCore.Tactics.tactic := ASM_CASES_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 15
+#eval phrase 16
 -- let conjunction ...;;
 def conjunction : HolCore.Tactics.tactic := CONJ_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 16
+#eval phrase 17
 -- let splitiff ...;;
 def splitiff : HolCore.Tactics.tactic := EQ_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 17
+#eval phrase 18
 -- let know ...;;
 def know (t : term) : ExceptT String IO thm := HolLight.ASSUME t
 #eval IO.println "<fun>"
 
-#eval phrase 18
+#eval phrase 19
 -- let sufficesby_bare x ...;;
 def sufficesby_bare (x : thm) : HolCore.Tactics.tactic := MATCH_MP_TAC x
 #eval IO.println "<fun>"
 
-#eval phrase 19
+#eval phrase 20
 -- let sufficesby x ...;;
 def sufficesby (x : thm) : HolCore.Tactics.tactic := HolLight.tactic_of do
   pure (sufficesby_bare (← HolLight.REWRITE_RULE [← HolLight.GSYM IMP_CONJ] x))
 #eval IO.println "<fun>"
 
-#eval phrase 20
+#eval phrase 21
 -- let intro ...;;
 def intro : HolCore.Tactics.tactic := REPEAT STRIP_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 21
+#eval phrase 22
 -- let intro_genonly ...;;
 def intro_genonly : HolCore.Tactics.tactic := REPEAT GEN_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 22
+#eval phrase 23
 -- let intro_gendisch ...;;
 def intro_gendisch : HolCore.Tactics.tactic := REPEAT GEN_TAC THEN REPEAT DISCH_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 23
+#eval phrase 24
 -- let subgoal t ...;;
 def subgoal (t : term) : HolCore.Tactics.tactic := SUBGOAL_THEN t ASSUME_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 24
+#eval phrase 25
 -- let witness ...;;
 def witness : term → HolCore.Tactics.tactic := EXISTS_TAC
 #eval IO.println "<fun>"
 
-#eval phrase 25
+#eval phrase 26
 -- let proven_if t why ...;;
 def proven_if (t : term) (why : List thm) : HolCore.Tactics.tactic := case' t THENL [qed why, pass]
 #eval IO.println "<fun>"
 
-#eval phrase 26
+#eval phrase 27
 -- let labelhavetac L t tac ...;;
 def labelhavetac (L : String) (t : term) (tac : HolCore.Tactics.tactic) : HolCore.Tactics.tactic :=
   SUBGOAL_THEN t MP_TAC THENL [tac, pass] THEN DISCH_THEN (fun th => LABEL_TAC L th)
 #eval IO.println "<fun>"
 
-#eval phrase 27
+#eval phrase 28
 -- let havetac ...;;
 def havetac : term → HolCore.Tactics.tactic → HolCore.Tactics.tactic := labelhavetac ""
 #eval IO.println "<fun>"
 
-#eval phrase 28
+#eval phrase 29
 -- let labelhave L t why ...;;
 def labelhave (L : String) (t : term) (why : List thm) : HolCore.Tactics.tactic := labelhavetac L t (qed why)
 #eval IO.println "<fun>"
 
-#eval phrase 29
+#eval phrase 30
 -- let have t why ...;;
 def have' (t : term) (why : List thm) : HolCore.Tactics.tactic := havetac t (qed why)
 #eval IO.println "<fun>"
 
-#eval phrase 30
+#eval phrase 31
 -- let have_rw t why ...;;
 def have_rw (t : term) (why : List thm) : HolCore.Tactics.tactic := HolLight.tactic_of do
   pure (have' t why THEN once_rw [← know t])
 #eval IO.println "<fun>"
 
-#eval phrase 31
+#eval phrase 32
 -- let labelspecialize L v th ...;;
 def labelspecialize (L : String) (v : List term) (th : thm) : HolCore.Tactics.tactic := HolLight.tactic_of do
   pure (LABEL_TAC L (← HolLight.UNDISCH_ALL (← HolLight.REWRITE_RULE [IMP_CONJ] (← HolLight.ISPECL v th))))
 #eval IO.println "<fun>"
 
-#eval phrase 32
+#eval phrase 33
 -- let specialize = ...;;
 def specialize : List term → thm → HolCore.Tactics.tactic := labelspecialize ""
 #eval IO.println "<fun>"
 
-#eval phrase 33
+#eval phrase 34
 -- let specialize_assuming v th ...;;
 def specialize_assuming (v : List term) (th : thm) : HolCore.Tactics.tactic := HolLight.tactic_of do
   pure (ASSUME_TAC (← HolLight.REWRITE_RULE [IMP_CONJ] (← HolLight.ISPECL v th)))
 #eval IO.println "<fun>"
 
-#eval phrase 34
+#eval phrase 35
 -- let specialize_assuming_nosplit v th ...;;
 def specialize_assuming_nosplit (v : List term) (th : thm) : HolCore.Tactics.tactic := HolLight.tactic_of do
   pure (ASSUME_TAC (← HolLight.UNDISCH_ALL (← HolLight.ISPECL v th)))
 #eval IO.println "<fun>"
 
-#eval phrase 35
+#eval phrase 36
 -- let specialize_forward v th ...;;
 def specialize_forward (v : List term) (th : thm) : HolCore.Tactics.tactic := HolLight.tactic_of do
   pure (ASSUME_TAC (← HolLight.UNDISCH_ALL (← HolLight.EQ_IMP_RULE (← HolLight.UNDISCH_ALL
     (← HolLight.REWRITE_RULE [IMP_CONJ] (← HolLight.ISPECL v th)))).1))
 #eval IO.println "<fun>"
 
-#eval phrase 36
+#eval phrase 37
 -- let specialize_reverse v th ...;;
 def specialize_reverse (v : List term) (th : thm) : HolCore.Tactics.tactic := HolLight.tactic_of do
   pure (ASSUME_TAC (← HolLight.UNDISCH_ALL (← HolLight.EQ_IMP_RULE (← HolLight.UNDISCH_ALL
     (← HolLight.REWRITE_RULE [IMP_CONJ] (← HolLight.ISPECL v th)))).2))
 #eval IO.println "<fun>"
 
-#eval phrase 37
+#eval phrase 38
 -- let recall = ...;;
 def «recall» : thm → HolCore.Tactics.tactic := specialize []
 #eval IO.println "<fun>"
 
-#eval phrase 38
+#eval phrase 39
 -- let complex_field_fact t ...;;
 def complex_field_fact (t : term) : ExceptT String IO HolCore.Tactics.tactic := do
   pure («recall» (← ExceptT.mk (COMPLEX_FIELD t)))
 #eval IO.println "<fun>"
 
-#eval phrase 39
+#eval phrase 40
 -- let real_field_fact t ...;;
 def real_field_fact (t : term) : ExceptT String IO HolCore.Tactics.tactic := do
   pure («recall» (← ExceptT.mk (REAL_FIELD t)))
 #eval IO.println "<fun>"
 
-#eval phrase 40
+#eval phrase 41
 -- let real_linear_fact t ...;;
 def real_linear_fact (t : term) : ExceptT String IO HolCore.Tactics.tactic := do
   pure («recall» (← ExceptT.mk (Session.REAL_ARITH3 t)))
 #eval IO.println "<fun>"
 
-#eval phrase 41
+#eval phrase 42
 -- let int_linear_fact t ...;;
 def int_linear_fact (t : term) : ExceptT String IO HolCore.Tactics.tactic := do
   pure («recall» (← ExceptT.mk (INT_ARITH t)))
 #eval IO.println "<fun>"
 
-#eval phrase 42
+#eval phrase 43
 -- let num_linear_fact t ...;;
 def num_linear_fact (t : term) : ExceptT String IO HolCore.Tactics.tactic := do
   pure («recall» (← ExceptT.mk (ARITH_RULE t)))
 #eval IO.println "<fun>"
 
-#eval phrase 43
+#eval phrase 44
 -- let set_fact_using t why ...;;
 def set_fact_using (t : term) (why : List thm) : HolCore.Tactics.tactic := havetac t (SET_TAC why)
 #eval IO.println "<fun>"
 
-#eval phrase 44
+#eval phrase 45
 -- let set_fact t ...;;
 def set_fact (t : term) : ExceptT String IO HolCore.Tactics.tactic := do
   pure («recall» (← ExceptT.mk (SET_RULE t)))
 #eval IO.println "<fun>"
 
-#eval phrase 45
+#eval phrase 46
 -- let set_fact_assuming t ...;;
 def set_fact_assuming (t : term) : ExceptT String IO HolCore.Tactics.tactic := do
   pure (specialize_assuming [] (← ExceptT.mk (SET_RULE t)))
 #eval IO.println "<fun>"
 
-#eval phrase 46
+#eval phrase 47
 -- let def n d ...;;
 def def' (n d : term) : ExceptT String IO HolCore.Tactics.tactic := do
   let eq ← ExceptT.mk (do match ← (mk_eq : IO _) with | .ok f => pure (f (n, d)) | .error e => pure (.error e))
   pure (X_CHOOSE_TAC n (← ExceptT.mk (MESON [] (← ec (HolCore.Bool.mk_exists n eq)))))
 #eval IO.println "<fun>"
 
-#eval phrase 47
+#eval phrase 48
 -- let removelabeled L ...;;
 def removelabeled (L : String) : HolCore.Tactics.tactic := REMOVE_THEN L (fun _ => ALL_TAC)
 #eval IO.println "<fun>"
 
-#eval phrase 48
+#eval phrase 49
 -- let choose n p why ...;;
 def choose (n p : term) (why : List thm) : HolCore.Tactics.tactic := HolLight.tactic_of do
   let ex ← ec (HolCore.Bool.mk_exists n p)
@@ -505,7 +509,7 @@ def choose (n p : term) (why : List thm) : HolCore.Tactics.tactic := HolLight.ta
     removelabeled "choosetmp")
 #eval IO.println "<fun>"
 
-#eval phrase 49
+#eval phrase 50
 -- let choose2 n1 n2 p why ...;;
 def choose2 (n1 n2 p : term) (why : List thm) : HolCore.Tactics.tactic := HolLight.tactic_of do
   pure (choose n1 (← ec (HolCore.Bool.mk_exists n2 p)) why THEN choose n2 p [])
@@ -513,7 +517,7 @@ def choose2 (n1 n2 p : term) (why : List thm) : HolCore.Tactics.tactic := HolLig
 
 /- ===== sets -/
 
-#eval phrase 50
+#eval phrase 51
 def subset_y : thm := keep "subset_y" fun _ => (do
   prove ([[
   !S U:X->bool.
@@ -524,7 +528,7 @@ def subset_y : thm := keep "subset_y" fun _ => (do
   : ExceptT String IO thm).run
 #eval subset_y
 
-#eval phrase 51
+#eval phrase 52
 def extension_z : thm := keep "extension_z" fun _ => (do
   prove ([[
   !S:X->bool T.
@@ -535,7 +539,7 @@ def extension_z : thm := keep "extension_z" fun _ => (do
   : ExceptT String IO thm).run
 #eval extension_z
 
-#eval phrase 52
+#eval phrase 53
 def insert_delete_nonmember : thm := keep "insert_delete_nonmember" fun _ => (do
   prove ([[
   !(x:X) S.
@@ -546,7 +550,7 @@ def insert_delete_nonmember : thm := keep "insert_delete_nonmember" fun _ => (do
   : ExceptT String IO thm).run
 #eval insert_delete_nonmember
 
-#eval phrase 53
+#eval phrase 54
 def surjective_finite : thm := keep "surjective_finite" fun _ => (do
   prove ([[
   !f p:T->bool.
@@ -562,7 +566,7 @@ def surjective_finite : thm := keep "surjective_finite" fun _ => (do
   : ExceptT String IO thm).run
 #eval surjective_finite
 
-#eval phrase 54
+#eval phrase 55
 def is_inters : thm := keep "is_inters" fun _ => (do
   prove ([[
   !(x:X->bool) u.
@@ -574,7 +578,7 @@ def is_inters : thm := keep "is_inters" fun _ => (do
   : ExceptT String IO thm).run
 #eval is_inters
 
-#eval phrase 55
+#eval phrase 56
 def card_empty : thm := keep "card_empty" fun _ => (do
   prove ([[
   CARD ({}:X->bool) = 0
@@ -585,7 +589,7 @@ def card_empty : thm := keep "card_empty" fun _ => (do
 
 /- just to avoid SUC from CARD_CLAUSES -/
 
-#eval phrase 56
+#eval phrase 57
 def card_insert : thm := keep "card_insert" fun _ => (do
   prove ([[
   !x:X S.
@@ -598,7 +602,7 @@ def card_insert : thm := keep "card_insert" fun _ => (do
   : ExceptT String IO thm).run
 #eval card_insert
 
-#eval phrase 57
+#eval phrase 58
 def subset_full_card : thm := keep "subset_full_card" fun _ => (do
   prove ([[
   !S:X->bool U.
@@ -612,7 +616,7 @@ def subset_full_card : thm := keep "subset_full_card" fun _ => (do
   : ExceptT String IO thm).run
 #eval subset_full_card
 
-#eval phrase 58
+#eval phrase 59
 def finite_subsets_card : thm := keep "finite_subsets_card" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[{U:X->bool | U SUBSET S /\ CARD U = n} SUBSET {U:X->bool | U SUBSET S}]])
   prove ([[
@@ -626,7 +630,7 @@ def finite_subsets_card : thm := keep "finite_subsets_card" fun _ => (do
   : ExceptT String IO thm).run
 #eval finite_subsets_card
 
-#eval phrase 59
+#eval phrase 60
 def subsets_full_card : thm := keep "subsets_full_card" fun _ => (do
   prove ([[
   !S:X->bool.
@@ -640,7 +644,7 @@ def subsets_full_card : thm := keep "subsets_full_card" fun _ => (do
   : ExceptT String IO thm).run
 #eval subsets_full_card
 
-#eval phrase 60
+#eval phrase 61
 def subsets_card_0 : thm := keep "subsets_card_0" fun _ => (do
   prove ([[
   !S:X->bool.
@@ -655,7 +659,7 @@ def subsets_card_0 : thm := keep "subsets_card_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval subsets_card_0
 
-#eval phrase 61
+#eval phrase 62
 def subsets_full_card_empty : thm := keep "subsets_full_card_empty" fun _ => (do
   prove ([[
   {U:X->bool | U SUBSET {} /\ CARD U = 0}
@@ -667,7 +671,7 @@ def subsets_full_card_empty : thm := keep "subsets_full_card_empty" fun _ => (do
   : ExceptT String IO thm).run
 #eval subsets_full_card_empty
 
-#eval phrase 62
+#eval phrase 63
 def subsets_card_toobig : thm := keep "subsets_card_toobig" fun _ => (do
   prove ([[
   !S:X->bool n.
@@ -681,7 +685,7 @@ def subsets_card_toobig : thm := keep "subsets_card_toobig" fun _ => (do
   : ExceptT String IO thm).run
 #eval subsets_card_toobig
 
-#eval phrase 63
+#eval phrase 64
 def powerset_insert_disjoint : thm := keep "powerset_insert_disjoint" fun _ => (do
   prove ([[
   !S:X->bool t.
@@ -699,7 +703,7 @@ def powerset_insert_disjoint : thm := keep "powerset_insert_disjoint" fun _ => (
   : ExceptT String IO thm).run
 #eval powerset_insert_disjoint
 
-#eval phrase 64
+#eval phrase 65
 def image_card_powerset : thm := keep "image_card_powerset" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[0 <= n]])
   prove ([[
@@ -725,7 +729,7 @@ def image_card_powerset : thm := keep "image_card_powerset" fun _ => (do
   : ExceptT String IO thm).run
 #eval image_card_powerset
 
-#eval phrase 65
+#eval phrase 66
 def le_lt_numseg : thm := keep "le_lt_numseg" fun _ => (do
   prove ([[
   !a b.
@@ -737,7 +741,7 @@ def le_lt_numseg : thm := keep "le_lt_numseg" fun _ => (do
   : ExceptT String IO thm).run
 #eval le_lt_numseg
 
-#eval phrase 66
+#eval phrase 67
 def finite_le_lt : thm := keep "finite_le_lt" fun _ => (do
   prove ([[
   !a b.
@@ -751,7 +755,7 @@ def finite_le_lt : thm := keep "finite_le_lt" fun _ => (do
 
 /- warning: this is normal notation only if a<=b -/
 
-#eval phrase 67
+#eval phrase 68
 def card_le_lt : thm := keep "card_le_lt" fun _ => (do
   prove ([[
   !a b.
@@ -764,7 +768,7 @@ def card_le_lt : thm := keep "card_le_lt" fun _ => (do
   : ExceptT String IO thm).run
 #eval card_le_lt
 
-#eval phrase 68
+#eval phrase 69
 def insert_empty : thm := keep "insert_empty" fun _ => (do
   prove ([[
   !x:X.
@@ -774,7 +778,7 @@ def insert_empty : thm := keep "insert_empty" fun _ => (do
   : ExceptT String IO thm).run
 #eval insert_empty
 
-#eval phrase 69
+#eval phrase 70
 def max_finite : thm := keep "max_finite" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[~(x <= m:num) ==> x < n ==> m < n]])
   prove ([[
@@ -805,7 +809,7 @@ def max_finite : thm := keep "max_finite" fun _ => (do
   : ExceptT String IO thm).run
 #eval max_finite
 
-#eval phrase 70
+#eval phrase 71
 def image_surj : thm := keep "image_surj" fun _ => (do
   prove ([[
   !f:X->Y A B.
@@ -817,7 +821,7 @@ def image_surj : thm := keep "image_surj" fun _ => (do
   : ExceptT String IO thm).run
 #eval image_surj
 
-#eval phrase 71
+#eval phrase 72
 def elim_image_subset_u : thm := keep "elim_image_subset_u" fun _ => (do
   prove ([[
   !A B f:X->Y.
@@ -828,7 +832,7 @@ def elim_image_subset_u : thm := keep "elim_image_subset_u" fun _ => (do
   : ExceptT String IO thm).run
 #eval elim_image_subset_u
 
-#eval phrase 72
+#eval phrase 73
 def elim_image_subset_v : thm := keep "elim_image_subset_v" fun _ => (do
   prove ([[
   !A B f:X->Y.
@@ -839,7 +843,7 @@ def elim_image_subset_v : thm := keep "elim_image_subset_v" fun _ => (do
   : ExceptT String IO thm).run
 #eval elim_image_subset_v
 
-#eval phrase 73
+#eval phrase 74
 def select_foreach : thm := keep "select_foreach" fun _ => (do
   prove ([[
   !S P.
@@ -852,7 +856,7 @@ def select_foreach : thm := keep "select_foreach" fun _ => (do
 
 /- XXX: there must be a better way to do renaming -/
 
-#eval phrase 74
+#eval phrase 75
 def o_def_s : thm := keep "o_def_s" fun _ => (do
   prove ([[
   !f:Y->Z g:X->Y.
@@ -862,7 +866,7 @@ def o_def_s : thm := keep "o_def_s" fun _ => (do
   : ExceptT String IO thm).run
 #eval o_def_s
 
-#eval phrase 75
+#eval phrase 76
 def in_image_cd : thm := keep "in_image_cd" fun _ => (do
   prove ([[
   !d s f:X->Y.
@@ -873,7 +877,7 @@ def in_image_cd : thm := keep "in_image_cd" fun _ => (do
   : ExceptT String IO thm).run
 #eval in_image_cd
 
-#eval phrase 76
+#eval phrase 77
 def in_image_vw : thm := keep "in_image_vw" fun _ => (do
   prove ([[
   !w s f:X->Y.
@@ -886,7 +890,7 @@ def in_image_vw : thm := keep "in_image_vw" fun _ => (do
 
 /- ===== pairs -/
 
-#eval phrase 77
+#eval phrase 78
 def lambda_pair_ab : thm := keep "lambda_pair_ab" fun _ => (do
   prove ([[
   !f:A#B->C.
@@ -896,7 +900,7 @@ def lambda_pair_ab : thm := keep "lambda_pair_ab" fun _ => (do
   : ExceptT String IO thm).run
 #eval lambda_pair_ab
 
-#eval phrase 78
+#eval phrase 79
 def injective_pair_rewrite : thm := keep "injective_pair_rewrite" fun _ => (do
   prove ([[
   !f:A#B->L.
@@ -908,7 +912,7 @@ def injective_pair_rewrite : thm := keep "injective_pair_rewrite" fun _ => (do
   : ExceptT String IO thm).run
 #eval injective_pair_rewrite
 
-#eval phrase 79
+#eval phrase 80
 def image_pair : thm := keep "image_pair" fun _ => (do
   prove ([[
   !P f:A->B->C.
@@ -933,7 +937,7 @@ def image_pair : thm := keep "image_pair" fun _ => (do
 
 /- ===== functions -/
 
-#eval phrase 80
+#eval phrase 81
 def functions : thm := keep "functions" fun _ => new_definition
  [[
   functions (A:X->bool) (B:Y->bool)
@@ -941,7 +945,7 @@ def functions : thm := keep "functions" fun _ => new_definition
 ]]
 #eval functions
 
-#eval phrase 81
+#eval phrase 82
 def in_functions : thm := keep "in_functions" fun _ => (do
   prove ([[
   !A:X->bool B:Y->bool f.
@@ -952,7 +956,7 @@ def in_functions : thm := keep "in_functions" fun _ => (do
   : ExceptT String IO thm).run
 #eval in_functions
 
-#eval phrase 82
+#eval phrase 83
 def fun_eq_thm_e : thm := keep "fun_eq_thm_e" fun _ => (do
   prove ([[
   !f g:X->Y.
@@ -962,7 +966,7 @@ def fun_eq_thm_e : thm := keep "fun_eq_thm_e" fun _ => (do
   : ExceptT String IO thm).run
 #eval fun_eq_thm_e
 
-#eval phrase 83
+#eval phrase 84
 def fun_eq_thm_v : thm := keep "fun_eq_thm_v" fun _ => (do
   prove ([[
   !f g:X->Y.
@@ -972,7 +976,7 @@ def fun_eq_thm_v : thm := keep "fun_eq_thm_v" fun _ => (do
   : ExceptT String IO thm).run
 #eval fun_eq_thm_v
 
-#eval phrase 84
+#eval phrase 85
 def image_functions_subset : thm := keep "image_functions_subset" fun _ => (do
   prove ([[
   !A:X->bool B:Y->bool f.
@@ -985,7 +989,7 @@ def image_functions_subset : thm := keep "image_functions_subset" fun _ => (do
 
 /- XXX: factor most image_functions_subset applications via this -/
 
-#eval phrase 85
+#eval phrase 86
 def functions_to : thm := keep "functions_to" fun _ => (do
   prove ([[
   !A:X->bool B:Y->bool f x.
@@ -997,7 +1001,7 @@ def functions_to : thm := keep "functions_to" fun _ => (do
   : ExceptT String IO thm).run
 #eval functions_to
 
-#eval phrase 86
+#eval phrase 87
 def finite_functions : thm := keep "finite_functions" fun _ => (do
   prove ([[
   !A:X->bool B:Y->bool.
@@ -1016,7 +1020,7 @@ def finite_functions : thm := keep "finite_functions" fun _ => (do
   : ExceptT String IO thm).run
 #eval finite_functions
 
-#eval phrase 87
+#eval phrase 88
 def functions_empty : thm := keep "functions_empty" fun _ => (do
   prove ([[
   !B:Y->bool.
@@ -1028,7 +1032,7 @@ def functions_empty : thm := keep "functions_empty" fun _ => (do
   : ExceptT String IO thm).run
 #eval functions_empty
 
-#eval phrase 88
+#eval phrase 89
 def functions_insert : thm := keep "functions_insert" fun _ => (do
   prove ([[
   !A:X->bool B:Y->bool i:X.
@@ -1052,7 +1056,7 @@ def functions_insert : thm := keep "functions_insert" fun _ => (do
   : ExceptT String IO thm).run
 #eval functions_insert
 
-#eval phrase 89
+#eval phrase 90
 def functions_insert_injective : thm := keep "functions_insert_injective" fun _ => (do
   prove ([[
   !A:X->bool B:Y->bool i:X v w.
@@ -1071,7 +1075,7 @@ def functions_insert_injective : thm := keep "functions_insert_injective" fun _ 
 
 /- ===== permutations -/
 
-#eval phrase 90
+#eval phrase 91
 def perm : thm := keep "perm" fun _ => new_definition
  [[
   perm (S:X->bool) (f:X->X)
@@ -1079,7 +1083,7 @@ def perm : thm := keep "perm" fun _ => new_definition
 ]]
 #eval perm
 
-#eval phrase 91
+#eval phrase 92
 def perm_in_permutes : thm := keep "perm_in_permutes" fun _ => (do
   prove ([[
   !S:X->bool f.
@@ -1089,7 +1093,7 @@ def perm_in_permutes : thm := keep "perm_in_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval perm_in_permutes
 
-#eval phrase 92
+#eval phrase 93
 def perm_set_permutes : thm := keep "perm_set_permutes" fun _ => (do
   prove ([[
   !S:X->bool.
@@ -1099,7 +1103,7 @@ def perm_set_permutes : thm := keep "perm_set_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval perm_set_permutes
 
-#eval phrase 93
+#eval phrase 94
 def card_perm : thm := keep "card_perm" fun _ => (do
   prove ([[
   !S:X->bool.
@@ -1110,7 +1114,7 @@ def card_perm : thm := keep "card_perm" fun _ => (do
   : ExceptT String IO thm).run
 #eval card_perm
 
-#eval phrase 94
+#eval phrase 95
 def finite_perm : thm := keep "finite_perm" fun _ => (do
   prove ([[
   !S:X->bool.
@@ -1121,7 +1125,7 @@ def finite_perm : thm := keep "finite_perm" fun _ => (do
   : ExceptT String IO thm).run
 #eval finite_perm
 
-#eval phrase 95
+#eval phrase 96
 def permutes_o_inverse_refl_o : thm := keep "permutes_o_inverse_refl_o" fun _ => (do
   prove ([[
   !A:X->bool f:X->X g:Y->X.
@@ -1135,7 +1139,7 @@ def permutes_o_inverse_refl_o : thm := keep "permutes_o_inverse_refl_o" fun _ =>
   : ExceptT String IO thm).run
 #eval permutes_o_inverse_refl_o
 
-#eval phrase 96
+#eval phrase 97
 def inverse_permutes_o_refl_o : thm := keep "inverse_permutes_o_refl_o" fun _ => (do
   prove ([[
   !A:X->bool f:X->X g:Y->X.
@@ -1149,7 +1153,7 @@ def inverse_permutes_o_refl_o : thm := keep "inverse_permutes_o_refl_o" fun _ =>
   : ExceptT String IO thm).run
 #eval inverse_permutes_o_refl_o
 
-#eval phrase 97
+#eval phrase 98
 def image_permutes_o_perm : thm := keep "image_permutes_o_perm" fun _ => (do
   prove ([[
   !A:X->bool f:X->X.
@@ -1165,7 +1169,7 @@ def image_permutes_o_perm : thm := keep "image_permutes_o_perm" fun _ => (do
   : ExceptT String IO thm).run
 #eval image_permutes_o_perm
 
-#eval phrase 98
+#eval phrase 99
 def image_permutes_o_functions_perm : thm := keep "image_permutes_o_functions_perm" fun _ => (do
   let h1 ← def' ([[y:(X->X)->Y]]) (← ExceptT.mk [[\i:X->X. x (inverse f:X->X o i):Y]])
   prove ([[
@@ -1199,7 +1203,7 @@ def image_permutes_o_functions_perm : thm := keep "image_permutes_o_functions_pe
   : ExceptT String IO thm).run
 #eval image_permutes_o_functions_perm
 
-#eval phrase 99
+#eval phrase 100
 def injective_permutes_arbo_functions : thm := keep "injective_permutes_arbo_functions" fun _ => (do
   prove ([[
   !A:X->bool B:Y->bool p:Y->Y f g.
@@ -1216,7 +1220,7 @@ def injective_permutes_arbo_functions : thm := keep "injective_permutes_arbo_fun
   : ExceptT String IO thm).run
 #eval injective_permutes_arbo_functions
 
-#eval phrase 100
+#eval phrase 101
 def image_permutes_arbo_functions : thm := keep "image_permutes_arbo_functions" fun _ => (do
   prove ([[
   !A:X->bool B:Y->bool p:Y->Y.
@@ -1242,7 +1246,7 @@ def image_permutes_arbo_functions : thm := keep "image_permutes_arbo_functions" 
   : ExceptT String IO thm).run
 #eval image_permutes_arbo_functions
 
-#eval phrase 101
+#eval phrase 102
 def injective_permutes_arbo_functions_functions : thm := keep "injective_permutes_arbo_functions_functions" fun _ => (do
   prove ([[
   !A:X->bool B:Y->bool C:Z->bool p:Y->Y f g.
@@ -1270,7 +1274,7 @@ def injective_permutes_arbo_functions_functions : thm := keep "injective_permute
   : ExceptT String IO thm).run
 #eval injective_permutes_arbo_functions_functions
 
-#eval phrase 102
+#eval phrase 103
 def image_permutes_arbo_functions_functions : thm := keep "image_permutes_arbo_functions_functions" fun _ => (do
   prove ([[
   !A:X->bool B:Y->bool C:Z->bool p:Y->Y.
@@ -1317,7 +1321,7 @@ def image_permutes_arbo_functions_functions : thm := keep "image_permutes_arbo_f
 
 /- ===== naturals -/
 
-#eval phrase 103
+#eval phrase 104
 def min_le : thm := keep "min_le" fun _ => (do
   prove ([[
   !a b.
@@ -1329,7 +1333,7 @@ def min_le : thm := keep "min_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval min_le
 
-#eval phrase 104
+#eval phrase 105
 def le_min : thm := keep "le_min" fun _ => (do
   prove ([[
   !a b c.
@@ -1341,7 +1345,7 @@ def le_min : thm := keep "le_min" fun _ => (do
   : ExceptT String IO thm).run
 #eval le_min
 
-#eval phrase 105
+#eval phrase 106
 def max_le : thm := keep "max_le" fun _ => (do
   prove ([[
   !a b c.
@@ -1353,7 +1357,7 @@ def max_le : thm := keep "max_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval max_le
 
-#eval phrase 106
+#eval phrase 107
 def fact_1 : thm := keep "fact_1" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[1 = SUC 0]])
   prove ([[
@@ -1364,7 +1368,7 @@ def fact_1 : thm := keep "fact_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval fact_1
 
-#eval phrase 107
+#eval phrase 108
 def binom_stair_sum : thm := keep "binom_stair_sum" fun _ => (do
   let h6 ← num_linear_fact (← ExceptT.mk [[~(e = 0) ==> SUC n + e - 1 = n+e]])
   let h5 ← ar (← ExceptT.mk [[SUC n+e = SUC(n+e)]])
@@ -1396,7 +1400,7 @@ def binom_stair_sum : thm := keep "binom_stair_sum" fun _ => (do
 
 /- simpler special case of NSUM_REFLECT -/
 
-#eval phrase 108
+#eval phrase 109
 def nsum_reflect_0 : thm := keep "nsum_reflect_0" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[n-0 = n]])
   let h1 ← num_linear_fact (← ExceptT.mk [[~(n < 0)]])
@@ -1413,7 +1417,7 @@ def nsum_reflect_0 : thm := keep "nsum_reflect_0" fun _ => (do
 
 /- GEN `b` NSUM_DELTA modulo order of variables -/
 
-#eval phrase 109
+#eval phrase 110
 def nsum_delta : thm := keep "nsum_delta" fun _ => (do
   prove ([[
   !s a:X b.
@@ -1424,7 +1428,7 @@ def nsum_delta : thm := keep "nsum_delta" fun _ => (do
   : ExceptT String IO thm).run
 #eval nsum_delta
 
-#eval phrase 110
+#eval phrase 111
 def term_le_nsum : thm := keep "term_le_nsum" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[a <= a + b:num]])
   prove ([[
@@ -1437,7 +1441,7 @@ def term_le_nsum : thm := keep "term_le_nsum" fun _ => (do
   : ExceptT String IO thm).run
 #eval term_le_nsum
 
-#eval phrase 111
+#eval phrase 112
 def binom_reverse_stair_sum : thm := keep "binom_reverse_stair_sum" fun _ => (do
   prove ([[
   !e n.
@@ -1452,7 +1456,7 @@ def binom_reverse_stair_sum : thm := keep "binom_reverse_stair_sum" fun _ => (do
   : ExceptT String IO thm).run
 #eval binom_reverse_stair_sum
 
-#eval phrase 112
+#eval phrase 113
 def fact_binom_lemma_37 : thm := keep "fact_binom_lemma_37" fun _ => (do
   let h3 ← num_linear_fact (← ExceptT.mk [[i < n ==> n = 1 + (n-1)]])
   let h2 ← num_linear_fact (← ExceptT.mk [[i < n ==> n-1+1 = n]])
@@ -1482,7 +1486,7 @@ def fact_binom_lemma_37 : thm := keep "fact_binom_lemma_37" fun _ => (do
   : ExceptT String IO thm).run
 #eval fact_binom_lemma_37
 
-#eval phrase 113
+#eval phrase 114
 def properly_le : thm := keep "properly_le" fun _ => (do
   prove ([[
   properly (<=) = (<):num->num->bool
@@ -1492,7 +1496,7 @@ def properly_le : thm := keep "properly_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval properly_le
 
-#eval phrase 114
+#eval phrase 115
 def o_permutes_subset : thm := keep "o_permutes_subset" fun _ => (do
   prove ([[
   !A S f:X->X.
@@ -1505,7 +1509,7 @@ def o_permutes_subset : thm := keep "o_permutes_subset" fun _ => (do
   : ExceptT String IO thm).run
 #eval o_permutes_subset
 
-#eval phrase 115
+#eval phrase 116
 def image_permutes_subset : thm := keep "image_permutes_subset" fun _ => (do
   prove ([[
   !A S f:X->X.
@@ -1518,7 +1522,7 @@ def image_permutes_subset : thm := keep "image_permutes_subset" fun _ => (do
   : ExceptT String IO thm).run
 #eval image_permutes_subset
 
-#eval phrase 116
+#eval phrase 117
 def image_inverse_permutes : thm := keep "image_inverse_permutes" fun _ => (do
   prove ([[
   !A S f:X->X.
@@ -1532,7 +1536,7 @@ def image_inverse_permutes : thm := keep "image_inverse_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval image_inverse_permutes
 
-#eval phrase 117
+#eval phrase 118
 def image_o_permutes : thm := keep "image_o_permutes" fun _ => (do
   prove ([[
   !A S f:X->X.
@@ -1545,7 +1549,7 @@ def image_o_permutes : thm := keep "image_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval image_o_permutes
 
-#eval phrase 118
+#eval phrase 119
 def o_image_permutes : thm := keep "o_image_permutes" fun _ => (do
   prove ([[
   !A S f:X->X.
@@ -1558,7 +1562,7 @@ def o_image_permutes : thm := keep "o_image_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval o_image_permutes
 
-#eval phrase 119
+#eval phrase 120
 def card_image_permutes : thm := keep "card_image_permutes" fun _ => (do
   prove ([[
   !A S f:X->X.
@@ -1573,7 +1577,7 @@ def card_image_permutes : thm := keep "card_image_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval card_image_permutes
 
-#eval phrase 120
+#eval phrase 121
 def card_o_permutes : thm := keep "card_o_permutes" fun _ => (do
   prove ([[
   !A S f:X->X.
@@ -1591,7 +1595,7 @@ def card_o_permutes : thm := keep "card_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval card_o_permutes
 
-#eval phrase 121
+#eval phrase 122
 def o_permutes_cancel : thm := keep "o_permutes_cancel" fun _ => (do
   prove ([[
   !S f:X->X g h:X->Y.
@@ -1610,14 +1614,14 @@ def o_permutes_cancel : thm := keep "o_permutes_cancel" fun _ => (do
 
 /- ===== sets of naturals -/
 
-#eval phrase 122
+#eval phrase 123
 def range : thm := keep "range" fun _ => new_definition
  [[
   range = (>):num->num->bool
 ]]
 #eval range
 
-#eval phrase 123
+#eval phrase 124
 def range_lt : thm := keep "range_lt" fun _ => (do
   prove ([[
   !n i.
@@ -1627,7 +1631,7 @@ def range_lt : thm := keep "range_lt" fun _ => (do
   : ExceptT String IO thm).run
 #eval range_lt
 
-#eval phrase 124
+#eval phrase 125
 def range_set_lt : thm := keep "range_set_lt" fun _ => (do
   prove ([[
   !n.
@@ -1637,7 +1641,7 @@ def range_set_lt : thm := keep "range_set_lt" fun _ => (do
   : ExceptT String IO thm).run
 #eval range_set_lt
 
-#eval phrase 125
+#eval phrase 126
 def range_0 : thm := keep "range_0" fun _ => (do
   prove ([[
   range 0 = {}
@@ -1647,7 +1651,7 @@ def range_0 : thm := keep "range_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval range_0
 
-#eval phrase 126
+#eval phrase 127
 def range_add_1_delete_refl : thm := keep "range_add_1_delete_refl" fun _ => (do
   prove ([[
   !n.
@@ -1658,7 +1662,7 @@ def range_add_1_delete_refl : thm := keep "range_add_1_delete_refl" fun _ => (do
   : ExceptT String IO thm).run
 #eval range_add_1_delete_refl
 
-#eval phrase 127
+#eval phrase 128
 def finite_range : thm := keep "finite_range" fun _ => (do
   prove ([[
   !n.
@@ -1669,7 +1673,7 @@ def finite_range : thm := keep "finite_range" fun _ => (do
   : ExceptT String IO thm).run
 #eval finite_range
 
-#eval phrase 128
+#eval phrase 129
 def card_range : thm := keep "card_range" fun _ => (do
   prove ([[
   !n.
@@ -1680,7 +1684,7 @@ def card_range : thm := keep "card_range" fun _ => (do
   : ExceptT String IO thm).run
 #eval card_range
 
-#eval phrase 129
+#eval phrase 130
 def swap_permutes_range : thm := keep "swap_permutes_range" fun _ => (do
   prove ([[
   !n i j.
@@ -1695,7 +1699,7 @@ def swap_permutes_range : thm := keep "swap_permutes_range" fun _ => (do
 
 /- maybe use ITSET? -/
 
-#eval phrase 130
+#eval phrase 131
 def finite_ordering : thm := keep "finite_ordering" fun _ => (do
   let h7 ← num_linear_fact (← ExceptT.mk [[v < CARD(S:X->bool) ==> v < 1 + CARD S]])
   let h6 ← num_linear_fact (← ExceptT.mk [[v < CARD(S:X->bool) ==> ~(v = CARD S)]])
@@ -1737,7 +1741,7 @@ def finite_ordering : thm := keep "finite_ordering" fun _ => (do
 
 /- XXX: relies on CARD S always being finite -/
 
-#eval phrase 131
+#eval phrase 132
 def injective_finite_ordering : thm := keep "injective_finite_ordering" fun _ => (do
   prove ([[
   !S:X->bool f.
@@ -1754,7 +1758,7 @@ def injective_finite_ordering : thm := keep "injective_finite_ordering" fun _ =>
 
 /- XXX: relies on CARD S always being finite -/
 
-#eval phrase 132
+#eval phrase 133
 def bij_finite_ordering : thm := keep "bij_finite_ordering" fun _ => (do
   prove ([[
   !S:X->bool f.
@@ -1769,7 +1773,7 @@ def bij_finite_ordering : thm := keep "bij_finite_ordering" fun _ => (do
   : ExceptT String IO thm).run
 #eval bij_finite_ordering
 
-#eval phrase 133
+#eval phrase 134
 def image_numseg_antidiagonal : thm := keep "image_numseg_antidiagonal" fun _ => (do
   prove ([[
   !d:num.
@@ -1788,7 +1792,7 @@ def image_numseg_antidiagonal : thm := keep "image_numseg_antidiagonal" fun _ =>
   : ExceptT String IO thm).run
 #eval image_numseg_antidiagonal
 
-#eval phrase 134
+#eval phrase 135
 def numseg_le_lt_reflect : thm := keep "numseg_le_lt_reflect" fun _ => (do
   prove ([[
   !m n:num.
@@ -1804,7 +1808,7 @@ def numseg_le_lt_reflect : thm := keep "numseg_le_lt_reflect" fun _ => (do
   : ExceptT String IO thm).run
 #eval numseg_le_lt_reflect
 
-#eval phrase 135
+#eval phrase 136
 def numseg_le_reflect_0 : thm := keep "numseg_le_reflect_0" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[x <= n ==> x = n - (n - x):num]])
   let h2 ← ar (← ExceptT.mk [[n - a <= n:num]])
@@ -1824,7 +1828,7 @@ def numseg_le_reflect_0 : thm := keep "numseg_le_reflect_0" fun _ => (do
 
 /- ===== reals -/
 
-#eval phrase 136
+#eval phrase 137
 def real_of_num_plus_minus_minus : thm := keep "real_of_num_plus_minus_minus" fun _ => (do
   let h3 ← num_linear_fact (← ExceptT.mk [[(a+b)-a-b = 0]])
   let h2 ← num_linear_fact (← ExceptT.mk [[b <= (a+b)-a:num]])
@@ -1841,7 +1845,7 @@ def real_of_num_plus_minus_minus : thm := keep "real_of_num_plus_minus_minus" fu
   : ExceptT String IO thm).run
 #eval real_of_num_plus_minus_minus
 
-#eval phrase 137
+#eval phrase 138
 def fact_binom_lemma_37_real : thm := keep "fact_binom_lemma_37_real" fun _ => (do
   prove ([[
   !n i.
@@ -1859,7 +1863,7 @@ def fact_binom_lemma_37_real : thm := keep "fact_binom_lemma_37_real" fun _ => (
 
 /- ===== integer sums -/
 
-#eval phrase 138
+#eval phrase 139
 def isum_integer_sum : thm := keep "isum_integer_sum" fun _ => (do
   prove ([[
   !(f:X->int) S.
@@ -1876,7 +1880,7 @@ def isum_integer_sum : thm := keep "isum_integer_sum" fun _ => (do
   : ExceptT String IO thm).run
 #eval isum_integer_sum
 
-#eval phrase 139
+#eval phrase 140
 def sum_real_of_int : thm := keep "sum_real_of_int" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -1895,7 +1899,7 @@ def sum_real_of_int : thm := keep "sum_real_of_int" fun _ => (do
   : ExceptT String IO thm).run
 #eval sum_real_of_int
 
-#eval phrase 140
+#eval phrase 141
 def int_of_num_sum : thm := keep "int_of_num_sum" fun _ => (do
   prove ([[
   !(f:X->num) S.
@@ -1910,7 +1914,7 @@ def int_of_num_sum : thm := keep "int_of_num_sum" fun _ => (do
 
 /- ===== rings -/
 
-#eval phrase 141
+#eval phrase 142
 def ring_div_refl : thm := keep "ring_div_refl" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -1926,7 +1930,7 @@ def ring_div_refl : thm := keep "ring_div_refl" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_div_refl
 
-#eval phrase 142
+#eval phrase 143
 def ring_add_sub_cancel : thm := keep "ring_add_sub_cancel" fun _ => (do
   prove ([[
   !(r:R ring) a b.
@@ -1938,7 +1942,7 @@ def ring_add_sub_cancel : thm := keep "ring_add_sub_cancel" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_add_sub_cancel
 
-#eval phrase 143
+#eval phrase 144
 def ring_sum_image_injective : thm := keep "ring_sum_image_injective" fun _ => (do
   prove ([[
   !r (f:K->L) (g:L->A) s.
@@ -1949,7 +1953,7 @@ def ring_sum_image_injective : thm := keep "ring_sum_image_injective" fun _ => (
   : ExceptT String IO thm).run
 #eval ring_sum_image_injective
 
-#eval phrase 144
+#eval phrase 145
 def ring_sum_image_injective_pair : thm := keep "ring_sum_image_injective_pair" fun _ => (do
   prove ([[
   !r (f:A#B->L) (g:L->X) s.
@@ -1962,7 +1966,7 @@ def ring_sum_image_injective_pair : thm := keep "ring_sum_image_injective_pair" 
   : ExceptT String IO thm).run
 #eval ring_sum_image_injective_pair
 
-#eval phrase 145
+#eval phrase 146
 def ring_sum_delete2 : thm := keep "ring_sum_delete2" fun _ => (do
   prove ([[
   !(r:R ring) S (f:X->R) s.
@@ -1979,7 +1983,7 @@ def ring_sum_delete2 : thm := keep "ring_sum_delete2" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_delete2
 
-#eval phrase 146
+#eval phrase 147
 def ring_sum_shift1 : thm := keep "ring_sum_shift1" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[~(0+1 <= 0)]])
   let h2 ← ar (← ExceptT.mk [[0 <= n+1]])
@@ -2006,7 +2010,7 @@ def ring_sum_shift1 : thm := keep "ring_sum_shift1" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_shift1
 
-#eval phrase 147
+#eval phrase 148
 def ring_sum_insert_top : thm := keep "ring_sum_insert_top" fun _ => (do
   let h4 ← ar (← ExceptT.mk [[~(n+1 <= n)]])
   let h3 ← ar (← ExceptT.mk [[0 <= n+1]])
@@ -2035,7 +2039,7 @@ def ring_sum_insert_top : thm := keep "ring_sum_insert_top" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_insert_top
 
-#eval phrase 148
+#eval phrase 149
 def ring_mul_sum_mul_delete : thm := keep "ring_mul_sum_mul_delete" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> ~(x IN S) ==> ~(x IN S DELETE s)]])
   let h1 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> ~(x IN S) ==> (x INSERT S) DELETE s = x INSERT (S DELETE s)]])
@@ -2078,7 +2082,7 @@ def ring_mul_sum_mul_delete : thm := keep "ring_mul_sum_mul_delete" fun _ => (do
 
 /- simpler special case of RING_SUM_REFLECT -/
 
-#eval phrase 149
+#eval phrase 150
 def ring_sum_numseg_le_reflect : thm := keep "ring_sum_numseg_le_reflect" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[x <= n /\ y <= n /\ n-x = n-y ==> x = y:num]])
   prove ([[
@@ -2100,7 +2104,7 @@ def ring_sum_numseg_le_reflect : thm := keep "ring_sum_numseg_le_reflect" fun _ 
   : ExceptT String IO thm).run
 #eval ring_sum_numseg_le_reflect
 
-#eval phrase 150
+#eval phrase 151
 def ring_sum_numseg_le_offset : thm := keep "ring_sum_numseg_le_offset" fun _ => (do
   let h5 ← ar (← ExceptT.mk [[(b+n)-n = b:num]])
   let h4 ← ar (← ExceptT.mk [[0+n = n]])
@@ -2127,7 +2131,7 @@ def ring_sum_numseg_le_offset : thm := keep "ring_sum_numseg_le_offset" fun _ =>
   : ExceptT String IO thm).run
 #eval ring_sum_numseg_le_offset
 
-#eval phrase 151
+#eval phrase 152
 def ring_sum_numseg_le_expand : thm := keep "ring_sum_numseg_le_expand" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[0 <= 0]])
   prove ([[
@@ -2149,7 +2153,7 @@ def ring_sum_numseg_le_expand : thm := keep "ring_sum_numseg_le_expand" fun _ =>
   : ExceptT String IO thm).run
 #eval ring_sum_numseg_le_expand
 
-#eval phrase 152
+#eval phrase 153
 def num_in_subring : thm := keep "num_in_subring" fun _ => (do
   prove ([[
   !(r:R ring) s.
@@ -2163,7 +2167,7 @@ def num_in_subring : thm := keep "num_in_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval num_in_subring
 
-#eval phrase 153
+#eval phrase 154
 def int_in_subring : thm := keep "int_in_subring" fun _ => (do
   prove ([[
   !(r:R ring) s.
@@ -2176,7 +2180,7 @@ def int_in_subring : thm := keep "int_in_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval int_in_subring
 
-#eval phrase 154
+#eval phrase 155
 def ring_sum_subring_generated : thm := keep "ring_sum_subring_generated" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[(!x:X. x IN A ==> (f x):R IN S) ==> {x | x IN A /\ f x IN S} = A]])
   prove ([[
@@ -2193,7 +2197,7 @@ def ring_sum_subring_generated : thm := keep "ring_sum_subring_generated" fun _ 
   : ExceptT String IO thm).run
 #eval ring_sum_subring_generated
 
-#eval phrase 155
+#eval phrase 156
 def ring_sum_subring_generated_v2 : thm := keep "ring_sum_subring_generated_v2" fun _ => (do
   prove ([[
   !(r:R ring) S A (f:X->R).
@@ -2208,7 +2212,7 @@ def ring_sum_subring_generated_v2 : thm := keep "ring_sum_subring_generated_v2" 
   : ExceptT String IO thm).run
 #eval ring_sum_subring_generated_v2
 
-#eval phrase 156
+#eval phrase 157
 def ring_sum_in_subring : thm := keep "ring_sum_in_subring" fun _ => (do
   prove ([[
   !(r:R ring) G S (f:X->R).
@@ -2219,7 +2223,7 @@ def ring_sum_in_subring : thm := keep "ring_sum_in_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_in_subring
 
-#eval phrase 157
+#eval phrase 158
 def ring_product_subring_generated : thm := keep "ring_product_subring_generated" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[(!x:X. x IN A ==> (f x):R IN S) ==> {x | x IN A /\ f x IN S} = A]])
   prove ([[
@@ -2236,7 +2240,7 @@ def ring_product_subring_generated : thm := keep "ring_product_subring_generated
   : ExceptT String IO thm).run
 #eval ring_product_subring_generated
 
-#eval phrase 158
+#eval phrase 159
 def ring_product_subring_generated_v2 : thm := keep "ring_product_subring_generated_v2" fun _ => (do
   prove ([[
   !(r:R ring) S A (f:X->R).
@@ -2251,7 +2255,7 @@ def ring_product_subring_generated_v2 : thm := keep "ring_product_subring_genera
   : ExceptT String IO thm).run
 #eval ring_product_subring_generated_v2
 
-#eval phrase 159
+#eval phrase 160
 def ring_product_in_subring : thm := keep "ring_product_in_subring" fun _ => (do
   prove ([[
   !(r:R ring) G S (f:X->R).
@@ -2262,7 +2266,7 @@ def ring_product_in_subring : thm := keep "ring_product_in_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_product_in_subring
 
-#eval phrase 160
+#eval phrase 161
 def ring_pow_in_subring : thm := keep "ring_pow_in_subring" fun _ => (do
   prove ([[
   !(r:R ring) G f n.
@@ -2273,7 +2277,7 @@ def ring_pow_in_subring : thm := keep "ring_pow_in_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_pow_in_subring
 
-#eval phrase 161
+#eval phrase 162
 def ring_sum_1 : thm := keep "ring_sum_1" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[CARD S + 1 = SUC(CARD(S:X->bool))]])
   prove ([[
@@ -2290,7 +2294,7 @@ def ring_sum_1 : thm := keep "ring_sum_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_1
 
-#eval phrase 162
+#eval phrase 163
 def ring_sum_num : thm := keep "ring_sum_num" fun _ => (do
   prove ([[
   !(r:R ring) (f:X->num) S.
@@ -2306,7 +2310,7 @@ def ring_sum_num : thm := keep "ring_sum_num" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_num
 
-#eval phrase 163
+#eval phrase 164
 def ring_pow_sub1 : thm := keep "ring_pow_sub1" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[~(d = 0) ==> 1 + (d-1) = d:num]])
   prove ([[
@@ -2323,7 +2327,7 @@ def ring_pow_sub1 : thm := keep "ring_pow_sub1" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_pow_sub1
 
-#eval phrase 164
+#eval phrase 165
 def ring_pow_product : thm := keep "ring_pow_product" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -2346,7 +2350,7 @@ def ring_pow_product : thm := keep "ring_pow_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_pow_product
 
-#eval phrase 165
+#eval phrase 166
 def ring_sum_numseg_0_diff : thm := keep "ring_sum_numseg_0_diff" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[0 <= 0]])
   prove ([[
@@ -2366,7 +2370,7 @@ def ring_sum_numseg_0_diff : thm := keep "ring_sum_numseg_0_diff" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_numseg_0_diff
 
-#eval phrase 166
+#eval phrase 167
 def ring_sum_numseg_0_diff_reflect : thm := keep "ring_sum_numseg_0_diff_reflect" fun _ => (do
   prove ([[
   !(r:R ring) m n f.
@@ -2388,7 +2392,7 @@ def ring_sum_numseg_0_diff_reflect : thm := keep "ring_sum_numseg_0_diff_reflect
   : ExceptT String IO thm).run
 #eval ring_sum_numseg_0_diff_reflect
 
-#eval phrase 167
+#eval phrase 168
 def ring_pow_is_product : thm := keep "ring_pow_is_product" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[~(SUC n <= n)]])
   let h2 ← ar (← ExceptT.mk [[1 <= SUC n]])
@@ -2409,7 +2413,7 @@ def ring_pow_is_product : thm := keep "ring_pow_is_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_pow_is_product
 
-#eval phrase 168
+#eval phrase 169
 def ring_sum_sub : thm := keep "ring_sum_sub" fun _ => (do
   prove ([[
   !(r:R ring) f g S.
@@ -2430,7 +2434,7 @@ def ring_sum_sub : thm := keep "ring_sum_sub" fun _ => (do
 
 /- XXX: merge this into ring_ord_unique -/
 
-#eval phrase 169
+#eval phrase 170
 def unique_prime_valuation_lemma : thm := keep "unique_prime_valuation_lemma" fun _ => (do
   let h3 ← num_linear_fact (← ExceptT.mk [[e < d:num ==> d-e = 1 + (d-e-1)]])
   let h2 ← num_linear_fact (← ExceptT.mk [[e < d:num ==> d = e + (d-e)]])
@@ -2468,7 +2472,7 @@ def unique_prime_valuation_lemma : thm := keep "unique_prime_valuation_lemma" fu
 
 /- XXX: merge this into ring_ord_unique -/
 
-#eval phrase 170
+#eval phrase 171
 def unique_prime_valuation : thm := keep "unique_prime_valuation" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[d <= e:num ==> e <= d ==> d = e]])
   prove ([[
@@ -2494,7 +2498,7 @@ def unique_prime_valuation : thm := keep "unique_prime_valuation" fun _ => (do
   : ExceptT String IO thm).run
 #eval unique_prime_valuation
 
-#eval phrase 171
+#eval phrase 172
 def ring_sum_const : thm := keep "ring_sum_const" fun _ => (do
   prove ([[
   !(r:R ring) c S.
@@ -2507,7 +2511,7 @@ def ring_sum_const : thm := keep "ring_sum_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_const
 
-#eval phrase 172
+#eval phrase 173
 def ring_product_const : thm := keep "ring_product_const" fun _ => (do
   prove ([[
   !(r:R ring) c S.
@@ -2519,7 +2523,7 @@ def ring_product_const : thm := keep "ring_product_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_product_const
 
-#eval phrase 173
+#eval phrase 174
 def ring_of_num_injective_lemma : thm := keep "ring_of_num_injective_lemma" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[m < n ==> ~(n-m = 0)]])
   let h1 ← num_linear_fact (← ExceptT.mk [[m < n:num ==> n = (n-m)+m]])
@@ -2542,7 +2546,7 @@ def ring_of_num_injective_lemma : thm := keep "ring_of_num_injective_lemma" fun 
 
 /- compare RING_CHAR_EQ_0, RING_OF_NUM_EQ -/
 
-#eval phrase 174
+#eval phrase 175
 def ring_of_num_injective : thm := keep "ring_of_num_injective" fun _ => (do
   prove ([[
   !(r:R ring) m n.
@@ -2557,7 +2561,7 @@ def ring_of_num_injective : thm := keep "ring_of_num_injective" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_of_num_injective
 
-#eval phrase 175
+#eval phrase 176
 def ring_of_num_nonzero : thm := keep "ring_of_num_nonzero" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -2569,7 +2573,7 @@ def ring_of_num_nonzero : thm := keep "ring_of_num_nonzero" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_of_num_nonzero
 
-#eval phrase 176
+#eval phrase 177
 def neg_ring_of_num_nonzero : thm := keep "neg_ring_of_num_nonzero" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -2581,7 +2585,7 @@ def neg_ring_of_num_nonzero : thm := keep "neg_ring_of_num_nonzero" fun _ => (do
   : ExceptT String IO thm).run
 #eval neg_ring_of_num_nonzero
 
-#eval phrase 177
+#eval phrase 178
 def ring_pow_neg_1_mul_refl : thm := keep "ring_pow_neg_1_mul_refl" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -2598,7 +2602,7 @@ def ring_pow_neg_1_mul_refl : thm := keep "ring_pow_neg_1_mul_refl" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_pow_neg_1_mul_refl
 
-#eval phrase 178
+#eval phrase 179
 def ring_pow_neg_1_plus1 : thm := keep "ring_pow_neg_1_plus1" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -2611,7 +2615,7 @@ def ring_pow_neg_1_plus1 : thm := keep "ring_pow_neg_1_plus1" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_pow_neg_1_plus1
 
-#eval phrase 179
+#eval phrase 180
 def ring_sum_cross_mul : thm := keep "ring_sum_cross_mul" fun _ => (do
   prove ([[
   !(r:R ring) P Q (f:X->R) (g:Y->R).
@@ -2630,7 +2634,7 @@ def ring_sum_cross_mul : thm := keep "ring_sum_cross_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_cross_mul
 
-#eval phrase 180
+#eval phrase 181
 def ring_product_1_plus_expand : thm := keep "ring_product_1_plus_expand" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -2677,7 +2681,7 @@ def ring_product_1_plus_expand : thm := keep "ring_product_1_plus_expand" fun _ 
   : ExceptT String IO thm).run
 #eval ring_product_1_plus_expand
 
-#eval phrase 181
+#eval phrase 182
 def ring_product_sum_expand : thm := keep "ring_product_sum_expand" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!p:X. p IN P ==> p IN x INSERT P]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT P]])
@@ -2723,7 +2727,7 @@ def ring_product_sum_expand : thm := keep "ring_product_sum_expand" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_product_sum_expand
 
-#eval phrase 182
+#eval phrase 183
 def sub_in_subring : thm := keep "sub_in_subring" fun _ => (do
   let h1 ← rgl (← ExceptT.mk [[a = ring_add(r:R ring) (ring_sub r a b) b]])
   prove ([[
@@ -2745,7 +2749,7 @@ def sub_in_subring : thm := keep "sub_in_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval sub_in_subring
 
-#eval phrase 183
+#eval phrase 184
 def ring_sum_eq_name_d : thm := keep "ring_sum_eq_name_d" fun _ => (do
   prove ([[
   !(r:R ring) f g S:X->bool.
@@ -2756,7 +2760,7 @@ def ring_sum_eq_name_d : thm := keep "ring_sum_eq_name_d" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_eq_name_d
 
-#eval phrase 184
+#eval phrase 185
 def ring_product_delete : thm := keep "ring_product_delete" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[(t:X) IN S ==> t INSERT (S DELETE t) = S]])
   prove ([[
@@ -2774,7 +2778,7 @@ def ring_product_delete : thm := keep "ring_product_delete" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_product_delete
 
-#eval phrase 185
+#eval phrase 186
 def ring_divides_pow_pow : thm := keep "ring_divides_pow_pow" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[e <= f ==> f = e+(f-e):num]])
   prove ([[
@@ -2791,7 +2795,7 @@ def ring_divides_pow_pow : thm := keep "ring_divides_pow_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_divides_pow_pow
 
-#eval phrase 186
+#eval phrase 187
 def ring_product_collect : thm := keep "ring_product_collect" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[{x:X | x IN S /\ f x = a:R} SUBSET S]])
   prove ([[
@@ -2821,7 +2825,7 @@ def ring_product_collect : thm := keep "ring_product_collect" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_product_collect
 
-#eval phrase 187
+#eval phrase 188
 def ring_coprime_1 : thm := keep "ring_coprime_1" fun _ => (do
   prove ([[
   !(r:R ring) a.
@@ -2835,7 +2839,7 @@ def ring_coprime_1 : thm := keep "ring_coprime_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_coprime_1
 
-#eval phrase 188
+#eval phrase 189
 def ring_coprime_product : thm := keep "ring_coprime_product" fun _ => (do
   prove ([[
   !(r:R ring) f:X->R a S.
@@ -2851,7 +2855,7 @@ def ring_coprime_product : thm := keep "ring_coprime_product" fun _ => (do
 
 /- compare product_coprime_primes_divides below -/
 
-#eval phrase 189
+#eval phrase 190
 def ring_product_divides_if_coprime : thm := keep "ring_product_divides_if_coprime" fun _ => (do
   prove ([[
   !(r:R ring) f:X->R a S.
@@ -2871,7 +2875,7 @@ def ring_product_divides_if_coprime : thm := keep "ring_product_divides_if_copri
   : ExceptT String IO thm).run
 #eval ring_product_divides_if_coprime
 
-#eval phrase 190
+#eval phrase 191
 def ring_coprime_lpow : thm := keep "ring_coprime_lpow" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[SUC n = n+1]])
   prove ([[
@@ -2891,7 +2895,7 @@ def ring_coprime_lpow : thm := keep "ring_coprime_lpow" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_coprime_lpow
 
-#eval phrase 191
+#eval phrase 192
 def ring_coprime_rpow : thm := keep "ring_coprime_rpow" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[SUC n = n+1]])
   prove ([[
@@ -2911,7 +2915,7 @@ def ring_coprime_rpow : thm := keep "ring_coprime_rpow" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_coprime_rpow
 
-#eval phrase 192
+#eval phrase 193
 def ring_coprime_lrpow : thm := keep "ring_coprime_lrpow" fun _ => (do
   prove ([[
   !(r:R ring) a b m n.
@@ -2923,7 +2927,7 @@ def ring_coprime_lrpow : thm := keep "ring_coprime_lrpow" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_coprime_lrpow
 
-#eval phrase 193
+#eval phrase 194
 def ring_coprime_associates_prime : thm := keep "ring_coprime_associates_prime" fun _ => (do
   prove ([[
   !(r:R ring) p q.
@@ -2951,7 +2955,7 @@ def ring_coprime_associates_prime : thm := keep "ring_coprime_associates_prime" 
   : ExceptT String IO thm).run
 #eval ring_coprime_associates_prime
 
-#eval phrase 194
+#eval phrase 195
 def ring_divides_associates_prime : thm := keep "ring_divides_associates_prime" fun _ => (do
   prove ([[
   !(r:R ring) p q.
@@ -2972,7 +2976,7 @@ def ring_divides_associates_prime : thm := keep "ring_divides_associates_prime" 
   : ExceptT String IO thm).run
 #eval ring_divides_associates_prime
 
-#eval phrase 195
+#eval phrase 196
 def ring_divides_product : thm := keep "ring_divides_product" fun _ => (do
   prove ([[
   !(r:R ring) S t:X f.
@@ -2987,7 +2991,7 @@ def ring_divides_product : thm := keep "ring_divides_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_divides_product
 
-#eval phrase 196
+#eval phrase 197
 def ring_sum_restrict_subset : thm := keep "ring_sum_restrict_subset" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[S SUBSET U:X->bool ==> {x | x IN U /\ S x} = S]])
   prove ([[
@@ -3007,7 +3011,7 @@ def ring_sum_restrict_subset : thm := keep "ring_sum_restrict_subset" fun _ => (
   : ExceptT String IO thm).run
 #eval ring_sum_restrict_subset
 
-#eval phrase 197
+#eval phrase 198
 def ring_sum_range_add_1 : thm := keep "ring_sum_range_add_1" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[n < n+1]])
   prove ([[
@@ -3027,7 +3031,7 @@ def ring_sum_range_add_1 : thm := keep "ring_sum_range_add_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_range_add_1
 
-#eval phrase 198
+#eval phrase 199
 def ring_sum_range_add_1_sub : thm := keep "ring_sum_range_add_1_sub" fun _ => (do
   prove ([[
   !(r:R ring) n c:num->R.
@@ -3042,7 +3046,7 @@ def ring_sum_range_add_1_sub : thm := keep "ring_sum_range_add_1_sub" fun _ => (
   : ExceptT String IO thm).run
 #eval ring_sum_range_add_1_sub
 
-#eval phrase 199
+#eval phrase 200
 def ring_exp_sum : thm := keep "ring_exp_sum" fun _ => (do
   prove ([[
   !(a:A ring) (b:B ring) E:A->B f:X->A S:X->bool.
@@ -3072,7 +3076,7 @@ def ring_exp_sum : thm := keep "ring_exp_sum" fun _ => (do
 
 /- ===== ring_hasQ: contains copy of Q -/
 
-#eval phrase 200
+#eval phrase 201
 def ring_hasQ : thm := keep "ring_hasQ" fun _ => new_definition
  [[
   ring_hasQ (r:R ring)
@@ -3083,7 +3087,7 @@ def ring_hasQ : thm := keep "ring_hasQ" fun _ => new_definition
 ]]
 #eval ring_hasQ
 
-#eval phrase 201
+#eval phrase 202
 def ring_hasQ_neg : thm := keep "ring_hasQ_neg" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -3098,7 +3102,7 @@ def ring_hasQ_neg : thm := keep "ring_hasQ_neg" fun _ => (do
 /- ===== numpreimages -/
 /- XXX: inherits weirdness of CARD in infinite case -/
 
-#eval phrase 202
+#eval phrase 203
 def numpreimages : thm := keep "numpreimages" fun _ => new_definition
  [[
   numpreimages (f:X->Y) (S:X->bool) y
@@ -3106,7 +3110,7 @@ def numpreimages : thm := keep "numpreimages" fun _ => new_definition
 ]]
 #eval numpreimages
 
-#eval phrase 203
+#eval phrase 204
 def image_numpreimages : thm := keep "image_numpreimages" fun _ => (do
   prove ([[
   !S:X->bool f:X->Y.
@@ -3125,7 +3129,7 @@ def image_numpreimages : thm := keep "image_numpreimages" fun _ => (do
 
 /- warmup for numpreimages_permutes_o_perm -/
 
-#eval phrase 204
+#eval phrase 205
 def numpreimages_o_permutes : thm := keep "numpreimages_o_permutes" fun _ => (do
   prove ([[
   !S:X->bool f:X->Y g:X->X.
@@ -3146,7 +3150,7 @@ def numpreimages_o_permutes : thm := keep "numpreimages_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval numpreimages_o_permutes
 
-#eval phrase 205
+#eval phrase 206
 def numpreimages_permutes_o_perm : thm := keep "numpreimages_permutes_o_perm" fun _ => (do
   prove ([[
   !A:X->bool f:X->X g:(X->X)->Y.
@@ -3183,7 +3187,7 @@ def numpreimages_permutes_o_perm : thm := keep "numpreimages_permutes_o_perm" fu
   : ExceptT String IO thm).run
 #eval numpreimages_permutes_o_perm
 
-#eval phrase 206
+#eval phrase 207
 def ring_sum_fiber_o : thm := keep "ring_sum_fiber_o" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool f:X->Y g:Y->R y.
@@ -3201,7 +3205,7 @@ def ring_sum_fiber_o : thm := keep "ring_sum_fiber_o" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_fiber_o
 
-#eval phrase 207
+#eval phrase 208
 def ring_product_fiber_o : thm := keep "ring_product_fiber_o" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool f:X->Y g:Y->R y.
@@ -3219,7 +3223,7 @@ def ring_product_fiber_o : thm := keep "ring_product_fiber_o" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_product_fiber_o
 
-#eval phrase 208
+#eval phrase 209
 def ring_sum_o : thm := keep "ring_sum_o" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool f:X->Y g:Y->R.
@@ -3244,7 +3248,7 @@ def ring_sum_o : thm := keep "ring_sum_o" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_o
 
-#eval phrase 209
+#eval phrase 210
 def ring_sum_o_v2 : thm := keep "ring_sum_o_v2" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool f:X->Y g:Y->R.
@@ -3260,7 +3264,7 @@ def ring_sum_o_v2 : thm := keep "ring_sum_o_v2" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_o_v2
 
-#eval phrase 210
+#eval phrase 211
 def ring_sum_o_v3 : thm := keep "ring_sum_o_v3" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool f:X->Y U:Y->bool g:Y->R.
@@ -3291,7 +3295,7 @@ def ring_sum_o_v3 : thm := keep "ring_sum_o_v3" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_o_v3
 
-#eval phrase 211
+#eval phrase 212
 def ring_product_o : thm := keep "ring_product_o" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool f:X->Y g:Y->R.
@@ -3316,7 +3320,7 @@ def ring_product_o : thm := keep "ring_product_o" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_product_o
 
-#eval phrase 212
+#eval phrase 213
 def ring_product_o_v2 : thm := keep "ring_product_o_v2" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool f:X->Y g:Y->R.
@@ -3334,7 +3338,7 @@ def ring_product_o_v2 : thm := keep "ring_product_o_v2" fun _ => (do
 
 /- ===== squarefree elements of rings -/
 
-#eval phrase 213
+#eval phrase 214
 def not_squarefree_if_divisible_by_square : thm := keep "not_squarefree_if_divisible_by_square" fun _ => (do
   prove ([[!(r:R ring) a b.
      integral_domain r ==>
@@ -3347,7 +3351,7 @@ def not_squarefree_if_divisible_by_square : thm := keep "not_squarefree_if_divis
   : ExceptT String IO thm).run
 #eval not_squarefree_if_divisible_by_square
 
-#eval phrase 214
+#eval phrase 215
 def product_coprime_primes_divides : thm := keep "product_coprime_primes_divides" fun _ => (do
   prove ([[
   !(r:R ring) P b.
@@ -3370,7 +3374,7 @@ def product_coprime_primes_divides : thm := keep "product_coprime_primes_divides
 
 /- ring_squarefree_if_product_coprime_primes: now needs UFD hypothesis -/
 
-#eval phrase 215
+#eval phrase 216
 def ring_squarefree_if_product_coprime_primes_indexed : thm := keep "ring_squarefree_if_product_coprime_primes_indexed" fun _ => (do
   prove ([[!(r:R ring) S (f:X->R).
      UFD r ==>
@@ -3387,7 +3391,7 @@ def ring_squarefree_if_product_coprime_primes_indexed : thm := keep "ring_square
   : ExceptT String IO thm).run
 #eval ring_squarefree_if_product_coprime_primes_indexed
 
-#eval phrase 216
+#eval phrase 217
 def ring_squarefree_if_product_coprime_primes : thm := keep "ring_squarefree_if_product_coprime_primes" fun _ => (do
   prove ([[!(r:R ring) P.
      UFD r ==>
@@ -3402,11 +3406,11 @@ def ring_squarefree_if_product_coprime_primes : thm := keep "ring_squarefree_if_
   : ExceptT String IO thm).run
 #eval ring_squarefree_if_product_coprime_primes
 
-#eval phrase 217
+#eval phrase 218
 def ring_squarefree_if_unit : thm := RING_UNIT_IMP_SQUAREFREE
 #eval ring_squarefree_if_unit
 
-#eval phrase 218
+#eval phrase 219
 def ring_squarefree_if_prime : thm := keep "ring_squarefree_if_prime" fun _ => (do
   prove ([[!(r:R ring) p.
      integral_domain r ==> ring_prime r p ==> ring_squarefree r p]])
@@ -3414,7 +3418,7 @@ def ring_squarefree_if_prime : thm := keep "ring_squarefree_if_prime" fun _ => (
   : ExceptT String IO thm).run
 #eval ring_squarefree_if_prime
 
-#eval phrase 219
+#eval phrase 220
 def ring_coprime_if_unit : thm := keep "ring_coprime_if_unit" fun _ => (do
   prove ([[
   !(r:R ring) a b.
@@ -3427,7 +3431,7 @@ def ring_coprime_if_unit : thm := keep "ring_coprime_if_unit" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_coprime_if_unit
 
-#eval phrase 220
+#eval phrase 221
 def ring_product_divides_factor_by_factor : thm := keep "ring_product_divides_factor_by_factor" fun _ => (do
   prove ([[
   !(r:R ring) (f:X->R) (g:X->R) S.
@@ -3439,7 +3443,7 @@ def ring_product_divides_factor_by_factor : thm := keep "ring_product_divides_fa
   : ExceptT String IO thm).run
 #eval ring_product_divides_factor_by_factor
 
-#eval phrase 221
+#eval phrase 222
 def ring_sum_delta_delta : thm := keep "ring_sum_delta_delta" fun _ => (do
   let h7 ← set_fact (← ExceptT.mk [[!s:X. (s:X) IN S DELETE t DELETE u ==> ~(s = t) /\ ~(s = u)]])
   let h6 ← set_fact (← ExceptT.mk [[u IN S ==> ~(t = u) ==> (u:X) INSERT (S DELETE t DELETE u) = S DELETE t]])
@@ -3495,7 +3499,7 @@ def ring_sum_delta_delta : thm := keep "ring_sum_delta_delta" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sum_delta_delta
 
-#eval phrase 222
+#eval phrase 223
 def ring_product_delta_delta : thm := keep "ring_product_delta_delta" fun _ => (do
   let h7 ← set_fact (← ExceptT.mk [[!s:X. (s:X) IN S DELETE t DELETE u ==> ~(s = t) /\ ~(s = u)]])
   let h6 ← set_fact (← ExceptT.mk [[u IN S ==> ~(t = u) ==> (u:X) INSERT (S DELETE t DELETE u) = S DELETE t]])
@@ -3551,7 +3555,7 @@ def ring_product_delta_delta : thm := keep "ring_product_delta_delta" fun _ => (
   : ExceptT String IO thm).run
 #eval ring_product_delta_delta
 
-#eval phrase 223
+#eval phrase 224
 def square_divides_product_if_factor_divides_factor : thm := keep "square_divides_product_if_factor_divides_factor" fun _ => (do
   let h1 ← def' ([[q:X->R]]) (← ExceptT.mk [[\s:X. if s = t then f t else if s = u then f t else ring_1(r:R ring)]])
   prove ([[
@@ -3581,7 +3585,7 @@ def square_divides_product_if_factor_divides_factor : thm := keep "square_divide
   : ExceptT String IO thm).run
 #eval square_divides_product_if_factor_divides_factor
 
-#eval phrase 224
+#eval phrase 225
 def prime_divides_prime_and : thm := keep "prime_divides_prime_and" fun _ => (do
   prove ([[
   !(r:R ring) p q a.
@@ -3601,7 +3605,7 @@ def prime_divides_prime_and : thm := keep "prime_divides_prime_and" fun _ => (do
   : ExceptT String IO thm).run
 #eval prime_divides_prime_and
 
-#eval phrase 225
+#eval phrase 226
 def ring_squarefree_associates : thm := keep "ring_squarefree_associates" fun _ => (do
   prove ([[!(r:R ring) f g.
      ring_associates r f g ==>
@@ -3613,7 +3617,7 @@ def ring_squarefree_associates : thm := keep "ring_squarefree_associates" fun _ 
 
 /- ===== power series and polynomials -/
 
-#eval phrase 226
+#eval phrase 227
 def poly_neg_subring : thm := keep "poly_neg_subring" fun _ => (do
   prove ([[
   !(r:R ring) S (p:(V->num)->R).
@@ -3624,7 +3628,7 @@ def poly_neg_subring : thm := keep "poly_neg_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_neg_subring
 
-#eval phrase 227
+#eval phrase 228
 def poly_add_subring : thm := keep "poly_add_subring" fun _ => (do
   prove ([[
   !(r:R ring) S (p:(V->num)->R) q.
@@ -3635,7 +3639,7 @@ def poly_add_subring : thm := keep "poly_add_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_add_subring
 
-#eval phrase 228
+#eval phrase 229
 def poly_mul_subring : thm := keep "poly_mul_subring" fun _ => (do
   prove ([[
   !(r:R ring) S (p:(V->num)->R) q.
@@ -3657,7 +3661,7 @@ def poly_mul_subring : thm := keep "poly_mul_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_mul_subring
 
-#eval phrase 229
+#eval phrase 230
 def poly_sub_subring : thm := keep "poly_sub_subring" fun _ => (do
   prove ([[
   !(r:R ring) S (p:(V->num)->R) q.
@@ -3668,7 +3672,7 @@ def poly_sub_subring : thm := keep "poly_sub_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sub_subring
 
-#eval phrase 230
+#eval phrase 231
 def poly_deg_subring : thm := keep "poly_deg_subring" fun _ => (do
   prove ([[
   !(r:R ring) G (p:(V->num)->R).
@@ -3679,7 +3683,7 @@ def poly_deg_subring : thm := keep "poly_deg_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_deg_subring
 
-#eval phrase 231
+#eval phrase 232
 def poly_evaluate_subring : thm := keep "poly_evaluate_subring" fun _ => (do
   prove ([[
   !(r:R ring) S (p:(V->num)->R) z.
@@ -3714,7 +3718,7 @@ def poly_evaluate_subring : thm := keep "poly_evaluate_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_evaluate_subring
 
-#eval phrase 232
+#eval phrase 233
 def poly_eval_subring : thm := keep "poly_eval_subring" fun _ => (do
   prove ([[
   !(r:R ring) S p z.
@@ -3729,7 +3733,7 @@ def poly_eval_subring : thm := keep "poly_eval_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_eval_subring
 
-#eval phrase 233
+#eval phrase 234
 def ring_powerseries_subring : thm := keep "ring_powerseries_subring" fun _ => (do
   prove ([[
   !(r:R ring) G (p:(V->num)->R).
@@ -3741,7 +3745,7 @@ def ring_powerseries_subring : thm := keep "ring_powerseries_subring" fun _ => (
   : ExceptT String IO thm).run
 #eval ring_powerseries_subring
 
-#eval phrase 234
+#eval phrase 235
 def ring_polynomial_if_subring : thm := keep "ring_polynomial_if_subring" fun _ => (do
   let h1 ← set_fact_assuming (← ExceptT.mk [[ring_0 (subring_generated r G) = ring_0(r:R ring) ==> {m:V->num | ~(p m = ring_0 r)} = {m | ~(p m = ring_0 (subring_generated r G))}]])
   prove ([[
@@ -3756,7 +3760,7 @@ def ring_polynomial_if_subring : thm := keep "ring_polynomial_if_subring" fun _ 
   : ExceptT String IO thm).run
 #eval ring_polynomial_if_subring
 
-#eval phrase 235
+#eval phrase 236
 def deg_zero_ring : thm := keep "deg_zero_ring" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[!m:V->num. p m IN {ring_0(r:R ring)} ==> p m = ring_0 r]])
   prove ([[
@@ -3776,7 +3780,7 @@ def deg_zero_ring : thm := keep "deg_zero_ring" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_zero_ring
 
-#eval phrase 236
+#eval phrase 237
 def poly_const_subring : thm := keep "poly_const_subring" fun _ => (do
   prove ([[
   !(r:R ring) S c.
@@ -3787,7 +3791,7 @@ def poly_const_subring : thm := keep "poly_const_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_const_subring
 
-#eval phrase 237
+#eval phrase 238
 def poly_0_subring : thm := keep "poly_0_subring" fun _ => (do
   prove ([[
   !(r:R ring) S.
@@ -3798,7 +3802,7 @@ def poly_0_subring : thm := keep "poly_0_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_0_subring
 
-#eval phrase 238
+#eval phrase 239
 def poly_1_subring : thm := keep "poly_1_subring" fun _ => (do
   prove ([[
   !(r:R ring) S.
@@ -3809,7 +3813,7 @@ def poly_1_subring : thm := keep "poly_1_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_1_subring
 
-#eval phrase 239
+#eval phrase 240
 def POWSER_MUL_0 : thm := keep "POWSER_MUL_0" fun _ => (do
   prove ([[(!r (p:(V->num)->A).
         ring_powerseries r p ==> poly_mul r p (poly_0 r) = poly_0 r) /\
@@ -3824,7 +3828,7 @@ def POWSER_MUL_0 : thm := keep "POWSER_MUL_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval POWSER_MUL_0
 
-#eval phrase 240
+#eval phrase 241
 def powser_ring_carrier : thm := keep "powser_ring_carrier" fun _ => (do
   prove ([[
   !r:R ring. !s:V->bool.
@@ -3834,7 +3838,7 @@ def powser_ring_carrier : thm := keep "powser_ring_carrier" fun _ => (do
   : ExceptT String IO thm).run
 #eval powser_ring_carrier
 
-#eval phrase 241
+#eval phrase 242
 def poly_ring_carrier : thm := keep "poly_ring_carrier" fun _ => (do
   prove ([[
   !r:R ring. !s:V->bool.
@@ -3844,7 +3848,7 @@ def poly_ring_carrier : thm := keep "poly_ring_carrier" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ring_carrier
 
-#eval phrase 242
+#eval phrase 243
 def poly_in_full_ring : thm := keep "poly_in_full_ring" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[poly_vars(r:R ring) p SUBSET (:V)]])
   prove ([[
@@ -3859,7 +3863,7 @@ def poly_in_full_ring : thm := keep "poly_in_full_ring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_in_full_ring
 
-#eval phrase 243
+#eval phrase 244
 def series_in_full_ring : thm := keep "series_in_full_ring" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[poly_vars(r:R ring) p SUBSET (:V)]])
   prove ([[
@@ -3874,7 +3878,7 @@ def series_in_full_ring : thm := keep "series_in_full_ring" fun _ => (do
   : ExceptT String IO thm).run
 #eval series_in_full_ring
 
-#eval phrase 244
+#eval phrase 245
 def poly_sub_ldistrib_lemma : thm := keep "poly_sub_ldistrib_lemma" fun _ => (do
   prove ([[
   !(r:R ring) p1 p2 p3.
@@ -3888,7 +3892,7 @@ def poly_sub_ldistrib_lemma : thm := keep "poly_sub_ldistrib_lemma" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sub_ldistrib_lemma
 
-#eval phrase 245
+#eval phrase 246
 def poly_sub_ldistrib : thm := keep "poly_sub_ldistrib" fun _ => (do
   prove ([[!r p1 p2 (p3:(V->num)->R).
       ring_powerseries r p1 ==>
@@ -3911,7 +3915,7 @@ def poly_sub_ldistrib : thm := keep "poly_sub_ldistrib" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sub_ldistrib
 
-#eval phrase 246
+#eval phrase 247
 def poly_sub_rdistrib_lemma : thm := keep "poly_sub_rdistrib_lemma" fun _ => (do
   prove ([[
   !(r:R ring) p1 p2 p3.
@@ -3925,7 +3929,7 @@ def poly_sub_rdistrib_lemma : thm := keep "poly_sub_rdistrib_lemma" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sub_rdistrib_lemma
 
-#eval phrase 247
+#eval phrase 248
 def poly_sub_rdistrib : thm := keep "poly_sub_rdistrib" fun _ => (do
   prove ([[!r p1 p2 (p3:(V->num)->R).
       ring_powerseries r p1 ==>
@@ -3948,7 +3952,7 @@ def poly_sub_rdistrib : thm := keep "poly_sub_rdistrib" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sub_rdistrib
 
-#eval phrase 248
+#eval phrase 249
 def poly_sub_0 : thm := keep "poly_sub_0" fun _ => (do
   let h2 ← rgl (← ExceptT.mk [[ring_add (r:R ring) p (ring_neg r (ring_0 r)) = p]])
   let h1 ← set_fact (← ExceptT.mk [[ring_powerseries r (p:(V->num)->R) ==> p IN {q | ring_powerseries r q /\ poly_vars r q SUBSET (:V)}]])
@@ -3972,7 +3976,7 @@ def poly_sub_0 : thm := keep "poly_sub_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sub_0
 
-#eval phrase 249
+#eval phrase 250
 def poly_0_sub : thm := keep "poly_0_sub" fun _ => (do
   let h2 ← rgl (← ExceptT.mk [[ring_add (r:R ring) (ring_0 r) (ring_neg r p) = ring_neg r p]])
   let h1 ← set_fact (← ExceptT.mk [[ring_powerseries r (p:(V->num)->R) ==> p IN {q | ring_powerseries r q /\ poly_vars r q SUBSET (:V)}]])
@@ -3996,7 +4000,7 @@ def poly_0_sub : thm := keep "poly_0_sub" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_0_sub
 
-#eval phrase 250
+#eval phrase 251
 def poly_vars_empty : thm := keep "poly_vars_empty" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R.
@@ -4020,7 +4024,7 @@ def poly_vars_empty : thm := keep "poly_vars_empty" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_vars_empty
 
-#eval phrase 251
+#eval phrase 252
 def poly_neg_in_poly_ring : thm := keep "poly_neg_in_poly_ring" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R S.
@@ -4031,7 +4035,7 @@ def poly_neg_in_poly_ring : thm := keep "poly_neg_in_poly_ring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_neg_in_poly_ring
 
-#eval phrase 252
+#eval phrase 253
 def poly_add_in_poly_ring : thm := keep "poly_add_in_poly_ring" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R q S.
@@ -4043,7 +4047,7 @@ def poly_add_in_poly_ring : thm := keep "poly_add_in_poly_ring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_add_in_poly_ring
 
-#eval phrase 253
+#eval phrase 254
 def poly_sub_in_poly_ring : thm := keep "poly_sub_in_poly_ring" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R q S.
@@ -4056,7 +4060,7 @@ def poly_sub_in_poly_ring : thm := keep "poly_sub_in_poly_ring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sub_in_poly_ring
 
-#eval phrase 254
+#eval phrase 255
 def poly_mul_in_poly_ring : thm := keep "poly_mul_in_poly_ring" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R q S.
@@ -4068,7 +4072,7 @@ def poly_mul_in_poly_ring : thm := keep "poly_mul_in_poly_ring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_mul_in_poly_ring
 
-#eval phrase 255
+#eval phrase 256
 def poly_var_o_permutes : thm := keep "poly_var_o_permutes" fun _ => (do
   prove ([[
   !(r:R ring) v:V S f:V->V m.
@@ -4083,7 +4087,7 @@ def poly_var_o_permutes : thm := keep "poly_var_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_var_o_permutes
 
-#eval phrase 256
+#eval phrase 257
 def poly_neg_o_permutes : thm := keep "poly_neg_o_permutes" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R (f:V->W) m.
@@ -4094,7 +4098,7 @@ def poly_neg_o_permutes : thm := keep "poly_neg_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_neg_o_permutes
 
-#eval phrase 257
+#eval phrase 258
 def poly_add_o_permutes : thm := keep "poly_add_o_permutes" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R q (f:V->W) m.
@@ -4105,7 +4109,7 @@ def poly_add_o_permutes : thm := keep "poly_add_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_add_o_permutes
 
-#eval phrase 258
+#eval phrase 259
 def poly_sub_o_permutes : thm := keep "poly_sub_o_permutes" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R q (f:V->W) m.
@@ -4116,7 +4120,7 @@ def poly_sub_o_permutes : thm := keep "poly_sub_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sub_o_permutes
 
-#eval phrase 259
+#eval phrase 260
 def poly_mul_o_permutes : thm := keep "poly_mul_o_permutes" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R q S f m.
@@ -4163,7 +4167,7 @@ def poly_mul_o_permutes : thm := keep "poly_mul_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_mul_o_permutes
 
-#eval phrase 260
+#eval phrase 261
 def monomial_1_o_permutes : thm := keep "monomial_1_o_permutes" fun _ => (do
   prove ([[
   !f S.
@@ -4174,7 +4178,7 @@ def monomial_1_o_permutes : thm := keep "monomial_1_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval monomial_1_o_permutes
 
-#eval phrase 261
+#eval phrase 262
 def monomial_1_o_permutes_eq : thm := keep "monomial_1_o_permutes_eq" fun _ => (do
   prove ([[
   !m:V->num f S.
@@ -4193,7 +4197,7 @@ def monomial_1_o_permutes_eq : thm := keep "monomial_1_o_permutes_eq" fun _ => (
   : ExceptT String IO thm).run
 #eval monomial_1_o_permutes_eq
 
-#eval phrase 262
+#eval phrase 263
 def poly_const_o_permutes : thm := keep "poly_const_o_permutes" fun _ => (do
   prove ([[
   !(r:R ring) c (f:V->V) S.
@@ -4205,7 +4209,7 @@ def poly_const_o_permutes : thm := keep "poly_const_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_const_o_permutes
 
-#eval phrase 263
+#eval phrase 264
 def poly_0_o_permutes : thm := keep "poly_0_o_permutes" fun _ => (do
   prove ([[
   !(r:R ring) (f:V->V) S.
@@ -4216,7 +4220,7 @@ def poly_0_o_permutes : thm := keep "poly_0_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_0_o_permutes
 
-#eval phrase 264
+#eval phrase 265
 def poly_1_o_permutes : thm := keep "poly_1_o_permutes" fun _ => (do
   prove ([[
   !(r:R ring) (f:V->V) S.
@@ -4227,7 +4231,7 @@ def poly_1_o_permutes : thm := keep "poly_1_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_1_o_permutes
 
-#eval phrase 265
+#eval phrase 266
 def finite_monomial_vars_permutes_lemma : thm := keep "finite_monomial_vars_permutes_lemma" fun _ => (do
   prove ([[
   !m:V->num f:V->V S.
@@ -4243,7 +4247,7 @@ def finite_monomial_vars_permutes_lemma : thm := keep "finite_monomial_vars_perm
   : ExceptT String IO thm).run
 #eval finite_monomial_vars_permutes_lemma
 
-#eval phrase 266
+#eval phrase 267
 def finite_monomial_vars_permutes : thm := keep "finite_monomial_vars_permutes" fun _ => (do
   prove ([[
   !m:V->num f:V->V S.
@@ -4263,7 +4267,7 @@ def finite_monomial_vars_permutes : thm := keep "finite_monomial_vars_permutes" 
   : ExceptT String IO thm).run
 #eval finite_monomial_vars_permutes
 
-#eval phrase 267
+#eval phrase 268
 def infinite_monomial_vars_permutes : thm := keep "infinite_monomial_vars_permutes" fun _ => (do
   prove ([[
   !m:V->num f:V->V S.
@@ -4276,7 +4280,7 @@ def infinite_monomial_vars_permutes : thm := keep "infinite_monomial_vars_permut
   : ExceptT String IO thm).run
 #eval infinite_monomial_vars_permutes
 
-#eval phrase 268
+#eval phrase 269
 def powerseries_o_permutes : thm := keep "powerseries_o_permutes" fun _ => (do
   prove ([[
   !(r:R ring) p (f:V->V) S.
@@ -4290,7 +4294,7 @@ def powerseries_o_permutes : thm := keep "powerseries_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval powerseries_o_permutes
 
-#eval phrase 269
+#eval phrase 270
 def polynomial_o_permutes : thm := keep "polynomial_o_permutes" fun _ => (do
   prove ([[
   !(r:R ring) p (f:V->V) S.
@@ -4319,7 +4323,7 @@ def polynomial_o_permutes : thm := keep "polynomial_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval polynomial_o_permutes
 
-#eval phrase 270
+#eval phrase 271
 def poly_var_subring : thm := keep "poly_var_subring" fun _ => (do
   prove ([[
   !(r:R ring) G v:V.
@@ -4331,7 +4335,7 @@ def poly_var_subring : thm := keep "poly_var_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_var_subring
 
-#eval phrase 271
+#eval phrase 272
 def poly_vars_subring : thm := keep "poly_vars_subring" fun _ => (do
   prove ([[
   !(r:R ring) G p:(V->num)->R.
@@ -4343,7 +4347,7 @@ def poly_vars_subring : thm := keep "poly_vars_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_vars_subring
 
-#eval phrase 272
+#eval phrase 273
 def ring_powerseries_if_polynomial : thm := keep "ring_powerseries_if_polynomial" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R.
@@ -4354,7 +4358,7 @@ def ring_powerseries_if_polynomial : thm := keep "ring_powerseries_if_polynomial
   : ExceptT String IO thm).run
 #eval ring_powerseries_if_polynomial
 
-#eval phrase 273
+#eval phrase 274
 def ring_polynomial_subring_var : thm := keep "ring_polynomial_subring_var" fun _ => (do
   prove ([[
   !(r:R ring) G v:V.
@@ -4364,7 +4368,7 @@ def ring_polynomial_subring_var : thm := keep "ring_polynomial_subring_var" fun 
   : ExceptT String IO thm).run
 #eval ring_polynomial_subring_var
 
-#eval phrase 274
+#eval phrase 275
 def ring_sum_poly_o_permutes : thm := keep "ring_sum_poly_o_permutes" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -4397,7 +4401,7 @@ def ring_sum_poly_o_permutes : thm := keep "ring_sum_poly_o_permutes" fun _ => (
   : ExceptT String IO thm).run
 #eval ring_sum_poly_o_permutes
 
-#eval phrase 275
+#eval phrase 276
 def ring_product_poly_o_permutes_waterfall : thm := keep "ring_product_poly_o_permutes_waterfall" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -4436,7 +4440,7 @@ def ring_product_poly_o_permutes_waterfall : thm := keep "ring_product_poly_o_pe
   : ExceptT String IO thm).run
 #eval ring_product_poly_o_permutes_waterfall
 
-#eval phrase 276
+#eval phrase 277
 def ring_product_poly_o_permutes : thm := keep "ring_product_poly_o_permutes" fun _ => (do
   prove ([[
   !(r:R ring) p:X->(V->num)->R m f U S.
@@ -4453,7 +4457,7 @@ def ring_product_poly_o_permutes : thm := keep "ring_product_poly_o_permutes" fu
 /- ===== x_series(r) = the ring r[[x]] -/
 /- ===== x_poly(r) = the ring r[x] -/
 
-#eval phrase 277
+#eval phrase 278
 def x_series : thm := keep "x_series" fun _ => new_definition
  [[
   x_series (r:R ring) =
@@ -4461,7 +4465,7 @@ def x_series : thm := keep "x_series" fun _ => new_definition
 ]]
 #eval x_series
 
-#eval phrase 278
+#eval phrase 279
 def x_poly : thm := keep "x_poly" fun _ => new_definition
  [[
   x_poly (r:R ring) =
@@ -4471,7 +4475,7 @@ def x_poly : thm := keep "x_poly" fun _ => new_definition
 
 /- XXX: factor more definitions through this -/
 
-#eval phrase 279
+#eval phrase 280
 def series_from_coeffs : thm := keep "series_from_coeffs" fun _ => new_definition
  [[
   series_from_coeffs (f:num->R)
@@ -4479,7 +4483,7 @@ def series_from_coeffs : thm := keep "series_from_coeffs" fun _ => new_definitio
 ]]
 #eval series_from_coeffs
 
-#eval phrase 280
+#eval phrase 281
 def x_poly_vars_1 : thm := keep "x_poly_vars_1" fun _ => (do
   prove ([[
   !r:R ring.
@@ -4491,7 +4495,7 @@ def x_poly_vars_1 : thm := keep "x_poly_vars_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_poly_vars_1
 
-#eval phrase 281
+#eval phrase 282
 def x_series_carrier : thm := keep "x_series_carrier" fun _ => (do
   prove ([[
   !r:R ring.
@@ -4507,7 +4511,7 @@ def x_series_carrier : thm := keep "x_series_carrier" fun _ => (do
 
 /- XXX: merge with x_series_use, generalize everything -/
 
-#eval phrase 282
+#eval phrase 283
 def powser_use : thm := keep "powser_use" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -4522,7 +4526,7 @@ def powser_use : thm := keep "powser_use" fun _ => (do
   : ExceptT String IO thm).run
 #eval powser_use
 
-#eval phrase 283
+#eval phrase 284
 def x_series_use : thm := keep "x_series_use" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -4538,7 +4542,7 @@ def x_series_use : thm := keep "x_series_use" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_series_use
 
-#eval phrase 284
+#eval phrase 285
 def x_poly_carrier : thm := keep "x_poly_carrier" fun _ => (do
   prove ([[
   !r:R ring.
@@ -4554,7 +4558,7 @@ def x_poly_carrier : thm := keep "x_poly_carrier" fun _ => (do
 
 /- XXX: merge with x_poly_use, generalize everything -/
 
-#eval phrase 285
+#eval phrase 286
 def poly_use : thm := keep "poly_use" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -4569,7 +4573,7 @@ def poly_use : thm := keep "poly_use" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_use
 
-#eval phrase 286
+#eval phrase 287
 def x_poly_use : thm := keep "x_poly_use" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -4585,7 +4589,7 @@ def x_poly_use : thm := keep "x_poly_use" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_poly_use
 
-#eval phrase 287
+#eval phrase 288
 def x_series_sub_use : thm := keep "x_series_sub_use" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -4597,7 +4601,7 @@ def x_series_sub_use : thm := keep "x_series_sub_use" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_series_sub_use
 
-#eval phrase 288
+#eval phrase 289
 def x_poly_sub_use : thm := keep "x_poly_sub_use" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -4609,7 +4613,7 @@ def x_poly_sub_use : thm := keep "x_poly_sub_use" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_poly_sub_use
 
-#eval phrase 289
+#eval phrase 290
 def x_poly_carrier_in_series_carrier : thm := keep "x_poly_carrier_in_series_carrier" fun _ => (do
   prove ([[
   !r:R ring.
@@ -4623,7 +4627,7 @@ def x_poly_carrier_in_series_carrier : thm := keep "x_poly_carrier_in_series_car
   : ExceptT String IO thm).run
 #eval x_poly_carrier_in_series_carrier
 
-#eval phrase 290
+#eval phrase 291
 def x_poly_carrier_subset_series_carrier : thm := keep "x_poly_carrier_subset_series_carrier" fun _ => (do
   prove ([[
   !r:R ring.
@@ -4633,7 +4637,7 @@ def x_poly_carrier_subset_series_carrier : thm := keep "x_poly_carrier_subset_se
   : ExceptT String IO thm).run
 #eval x_poly_carrier_subset_series_carrier
 
-#eval phrase 291
+#eval phrase 292
 def x_poly_subring_in_poly_carrier : thm := keep "x_poly_subring_in_poly_carrier" fun _ => (do
   prove ([[
   !(r:R ring) G p.
@@ -4645,7 +4649,7 @@ def x_poly_subring_in_poly_carrier : thm := keep "x_poly_subring_in_poly_carrier
   : ExceptT String IO thm).run
 #eval x_poly_subring_in_poly_carrier
 
-#eval phrase 292
+#eval phrase 293
 def ring_of_num_x_series : thm := keep "ring_of_num_x_series" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -4662,7 +4666,7 @@ def ring_of_num_x_series : thm := keep "ring_of_num_x_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_of_num_x_series
 
-#eval phrase 293
+#eval phrase 294
 def ring_char_x_series : thm := keep "ring_char_x_series" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -4678,14 +4682,14 @@ def ring_char_x_series : thm := keep "ring_char_x_series" fun _ => (do
 
 /- ===== x_monomial -/
 
-#eval phrase 294
+#eval phrase 295
 def x_monomial : thm := keep "x_monomial" fun _ => new_definition
  [[
   x_monomial (d:num) = \v:1. d
 ]]
 #eval x_monomial
 
-#eval phrase 295
+#eval phrase 296
 def x_monomial_deg : thm := keep "x_monomial_deg" fun _ => (do
   prove ([[
   !d. monomial_deg(x_monomial d) = d
@@ -4694,7 +4698,7 @@ def x_monomial_deg : thm := keep "x_monomial_deg" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_monomial_deg
 
-#eval phrase 296
+#eval phrase 297
 def x_monomial_0_monomial_1 : thm := keep "x_monomial_0_monomial_1" fun _ => (do
   prove ([[
   x_monomial 0 = monomial_1
@@ -4703,7 +4707,7 @@ def x_monomial_0_monomial_1 : thm := keep "x_monomial_0_monomial_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_monomial_0_monomial_1
 
-#eval phrase 297
+#eval phrase 298
 def x_monomial_add : thm := keep "x_monomial_add" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[0+0 = 0]])
   prove ([[
@@ -4715,7 +4719,7 @@ def x_monomial_add : thm := keep "x_monomial_add" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_monomial_add
 
-#eval phrase 298
+#eval phrase 299
 def x_monomial_surjective : thm := keep "x_monomial_surjective" fun _ => (do
   prove ([[
   !m. ?d. x_monomial d = m
@@ -4725,7 +4729,7 @@ def x_monomial_surjective : thm := keep "x_monomial_surjective" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_monomial_surjective
 
-#eval phrase 299
+#eval phrase 300
 def x_monomial_injective : thm := keep "x_monomial_injective" fun _ => (do
   prove ([[
   !d e.
@@ -4737,7 +4741,7 @@ def x_monomial_injective : thm := keep "x_monomial_injective" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_monomial_injective
 
-#eval phrase 300
+#eval phrase 301
 def ring_sum_image_x_monomial : thm := keep "ring_sum_image_x_monomial" fun _ => (do
   prove ([[
   !(r:R ring) (g:(1->num)->R) s.
@@ -4747,7 +4751,7 @@ def ring_sum_image_x_monomial : thm := keep "ring_sum_image_x_monomial" fun _ =>
   : ExceptT String IO thm).run
 #eval ring_sum_image_x_monomial
 
-#eval phrase 301
+#eval phrase 302
 def x_series_monomial_mul_finite : thm := keep "x_series_monomial_mul_finite" fun _ => (do
   prove ([[
   !m:1->num.
@@ -4757,7 +4761,7 @@ def x_series_monomial_mul_finite : thm := keep "x_series_monomial_mul_finite" fu
   : ExceptT String IO thm).run
 #eval x_series_monomial_mul_finite
 
-#eval phrase 302
+#eval phrase 303
 def x_monomial_pair_injective : thm := keep "x_monomial_pair_injective" fun _ => (do
   prove ([[
   !(a,b) (c,d).
@@ -4772,7 +4776,7 @@ def x_monomial_pair_injective : thm := keep "x_monomial_pair_injective" fun _ =>
   : ExceptT String IO thm).run
 #eval x_monomial_pair_injective
 
-#eval phrase 303
+#eval phrase 304
 def ring_sum_image_x_monomial_pair : thm := keep "ring_sum_image_x_monomial_pair" fun _ => (do
   prove ([[
   !(r:R ring) (g:(1->num)#(1->num)->R) (s:num#num->bool).
@@ -4786,7 +4790,7 @@ def ring_sum_image_x_monomial_pair : thm := keep "ring_sum_image_x_monomial_pair
   : ExceptT String IO thm).run
 #eval ring_sum_image_x_monomial_pair
 
-#eval phrase 304
+#eval phrase 305
 def x_monomial_factorizations : thm := keep "x_monomial_factorizations" fun _ => (do
   prove ([[
   !d (m:1->num) (n:1->num).
@@ -4801,7 +4805,7 @@ def x_monomial_factorizations : thm := keep "x_monomial_factorizations" fun _ =>
   : ExceptT String IO thm).run
 #eval x_monomial_factorizations
 
-#eval phrase 305
+#eval phrase 306
 def x_monomial_factorizations_set : thm := keep "x_monomial_factorizations_set" fun _ => (do
   prove ([[
   !d.
@@ -4824,14 +4828,14 @@ def x_monomial_factorizations_set : thm := keep "x_monomial_factorizations_set" 
 
 /- ===== coeff d p = coefficient of x^d in p -/
 
-#eval phrase 306
+#eval phrase 307
 def coeff_x_monomial : thm := keep "coeff_x_monomial" fun _ => (do
   prove ([[!d (p:(1->num)->R). coeff d p = p(x_monomial d)]])
    (REWRITE_TAC [coeff, x_monomial])
   : ExceptT String IO thm).run
 #eval coeff_x_monomial
 
-#eval phrase 307
+#eval phrase 308
 def eq_coeff : thm := keep "eq_coeff" fun _ => (do
   prove ([[
   !(r:R ring) (p:(1->num)->R) q.
@@ -4842,7 +4846,7 @@ def eq_coeff : thm := keep "eq_coeff" fun _ => (do
   : ExceptT String IO thm).run
 #eval eq_coeff
 
-#eval phrase 308
+#eval phrase 309
 def coeff_series_in_ring : thm := keep "coeff_series_in_ring" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -4853,7 +4857,7 @@ def coeff_series_in_ring : thm := keep "coeff_series_in_ring" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_series_in_ring
 
-#eval phrase 309
+#eval phrase 310
 def coeff_series_from_coeffs : thm := keep "coeff_series_from_coeffs" fun _ => (do
   prove ([[
   !(r:R ring) (f:num->R) d.
@@ -4863,7 +4867,7 @@ def coeff_series_from_coeffs : thm := keep "coeff_series_from_coeffs" fun _ => (
   : ExceptT String IO thm).run
 #eval coeff_series_from_coeffs
 
-#eval phrase 310
+#eval phrase 311
 def series_from_coeffs_coeff : thm := keep "series_from_coeffs_coeff" fun _ => (do
   prove ([[
   !(r:R ring) f:(1->num)->R.
@@ -4875,7 +4879,7 @@ def series_from_coeffs_coeff : thm := keep "series_from_coeffs_coeff" fun _ => (
   : ExceptT String IO thm).run
 #eval series_from_coeffs_coeff
 
-#eval phrase 311
+#eval phrase 312
 def series_series_from_coeffs : thm := keep "series_series_from_coeffs" fun _ => (do
   prove ([[
   !(r:R ring) (f:num->R).
@@ -4887,7 +4891,7 @@ def series_series_from_coeffs : thm := keep "series_series_from_coeffs" fun _ =>
   : ExceptT String IO thm).run
 #eval series_series_from_coeffs
 
-#eval phrase 312
+#eval phrase 313
 def poly_series_from_coeffs : thm := keep "poly_series_from_coeffs" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[{m:1->num | m one IN {d | ~(f d = ring_0 r)}} = {m | ~(f(m one) = ring_0(r:R ring))}]])
   let h1 ← set_fact (← ExceptT.mk [[{d | x_monomial d IN {m | ~(f (m one) = ring_0 r)}} = {d | ~(f((x_monomial d) one) = ring_0(r:R ring))}]])
@@ -4916,7 +4920,7 @@ def poly_series_from_coeffs : thm := keep "poly_series_from_coeffs" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_series_from_coeffs
 
-#eval phrase 313
+#eval phrase 314
 def poly_coeff : thm := keep "poly_coeff" fun _ => (do
   prove ([[
   !(r:R ring) p:(1->num)->R.
@@ -4929,7 +4933,7 @@ def poly_coeff : thm := keep "poly_coeff" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_coeff
 
-#eval phrase 314
+#eval phrase 315
 def ring_polynomial_subring_if_coeffs : thm := keep "ring_polynomial_subring_if_coeffs" fun _ => (do
   prove ([[
   !(r:R ring) (p:(1->num)->R).
@@ -4941,7 +4945,7 @@ def ring_polynomial_subring_if_coeffs : thm := keep "ring_polynomial_subring_if_
   : ExceptT String IO thm).run
 #eval ring_polynomial_subring_if_coeffs
 
-#eval phrase 315
+#eval phrase 316
 def coeff_series_carrier_in_ring : thm := keep "coeff_series_carrier_in_ring" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -4953,7 +4957,7 @@ def coeff_series_carrier_in_ring : thm := keep "coeff_series_carrier_in_ring" fu
   : ExceptT String IO thm).run
 #eval coeff_series_carrier_in_ring
 
-#eval phrase 316
+#eval phrase 317
 def coeff_poly_in_ring : thm := keep "coeff_poly_in_ring" fun _ => (do
   prove ([[
   !(r:R ring) d p.
@@ -4964,7 +4968,7 @@ def coeff_poly_in_ring : thm := keep "coeff_poly_in_ring" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_poly_in_ring
 
-#eval phrase 317
+#eval phrase 318
 def coeff_poly_carrier_in_ring : thm := keep "coeff_poly_carrier_in_ring" fun _ => (do
   prove ([[
   !(r:R ring) d p.
@@ -4975,7 +4979,7 @@ def coeff_poly_carrier_in_ring : thm := keep "coeff_poly_carrier_in_ring" fun _ 
   : ExceptT String IO thm).run
 #eval coeff_poly_carrier_in_ring
 
-#eval phrase 318
+#eval phrase 319
 def coeff_poly_const : thm := keep "coeff_poly_const" fun _ => (do
   prove ([[
   !(r:R ring) c:R d.
@@ -4986,7 +4990,7 @@ def coeff_poly_const : thm := keep "coeff_poly_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_poly_const
 
-#eval phrase 319
+#eval phrase 320
 def coeff_poly_0 : thm := keep "coeff_poly_0" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -4997,7 +5001,7 @@ def coeff_poly_0 : thm := keep "coeff_poly_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_poly_0
 
-#eval phrase 320
+#eval phrase 321
 def coeff_poly_1 : thm := keep "coeff_poly_1" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -5008,7 +5012,7 @@ def coeff_poly_1 : thm := keep "coeff_poly_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_poly_1
 
-#eval phrase 321
+#eval phrase 322
 def coeff_poly_neg : thm := keep "coeff_poly_neg" fun _ => (do
   prove ([[
   !(r:R ring) p d.
@@ -5019,7 +5023,7 @@ def coeff_poly_neg : thm := keep "coeff_poly_neg" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_poly_neg
 
-#eval phrase 322
+#eval phrase 323
 def coeff_poly_add : thm := keep "coeff_poly_add" fun _ => (do
   prove ([[
   !(r:R ring) p q d.
@@ -5030,7 +5034,7 @@ def coeff_poly_add : thm := keep "coeff_poly_add" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_poly_add
 
-#eval phrase 323
+#eval phrase 324
 def coeff_series_add : thm := keep "coeff_series_add" fun _ => (do
   prove ([[
   !(r:R ring) p q d.
@@ -5041,7 +5045,7 @@ def coeff_series_add : thm := keep "coeff_series_add" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_series_add
 
-#eval phrase 324
+#eval phrase 325
 def coeff_poly_sub : thm := keep "coeff_poly_sub" fun _ => (do
   prove ([[
   !(r:R ring) p q d.
@@ -5052,7 +5056,7 @@ def coeff_poly_sub : thm := keep "coeff_poly_sub" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_poly_sub
 
-#eval phrase 325
+#eval phrase 326
 def coeff_poly_mul_lemma : thm := keep "coeff_poly_mul_lemma" fun _ => (do
   prove ([[
   !(r:R ring) p q.
@@ -5066,7 +5070,7 @@ def coeff_poly_mul_lemma : thm := keep "coeff_poly_mul_lemma" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_poly_mul_lemma
 
-#eval phrase 326
+#eval phrase 327
 def coeff_poly_mul : thm := keep "coeff_poly_mul" fun _ => (do
   prove ([[
   !(r:R ring) p q d.
@@ -5081,7 +5085,7 @@ def coeff_poly_mul : thm := keep "coeff_poly_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_poly_mul
 
-#eval phrase 327
+#eval phrase 328
 def coeff_poly_mul_oneindex : thm := keep "coeff_poly_mul_oneindex" fun _ => (do
   prove ([[
   !(r:R ring) d p q.
@@ -5094,7 +5098,7 @@ def coeff_poly_mul_oneindex : thm := keep "coeff_poly_mul_oneindex" fun _ => (do
 
 /- XXX: use this to prove coeff_poly_const_times -/
 
-#eval phrase 328
+#eval phrase 329
 def poly_const_times : thm := keep "poly_const_times" fun _ => (do
   prove ([[
   !(r:R ring) c:R p:(V->num)->R.
@@ -5107,7 +5111,7 @@ def poly_const_times : thm := keep "poly_const_times" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_const_times
 
-#eval phrase 329
+#eval phrase 330
 def coeff_poly_const_times : thm := keep "coeff_poly_const_times" fun _ => (do
   prove ([[
   !(r:R ring) c:R p d.
@@ -5120,7 +5124,7 @@ def coeff_poly_const_times : thm := keep "coeff_poly_const_times" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_poly_const_times
 
-#eval phrase 330
+#eval phrase 331
 def coeff_times_poly_const : thm := keep "coeff_times_poly_const" fun _ => (do
   prove ([[
   !(r:R ring) c:R p d.
@@ -5133,7 +5137,7 @@ def coeff_times_poly_const : thm := keep "coeff_times_poly_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_times_poly_const
 
-#eval phrase 331
+#eval phrase 332
 def polynomial_if_coeff : thm := keep "polynomial_if_coeff" fun _ => (do
   prove ([[
   !(r:R ring) p n.
@@ -5145,7 +5149,7 @@ def polynomial_if_coeff : thm := keep "polynomial_if_coeff" fun _ => (do
   : ExceptT String IO thm).run
 #eval polynomial_if_coeff
 
-#eval phrase 332
+#eval phrase 333
 def deg_le_coeff : thm := keep "deg_le_coeff" fun _ => (do
   prove ([[
   !(r:R ring) p n.
@@ -5157,7 +5161,7 @@ def deg_le_coeff : thm := keep "deg_le_coeff" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_le_coeff
 
-#eval phrase 333
+#eval phrase 334
 def deg_coeff : thm := keep "deg_coeff" fun _ => (do
   prove ([[
   !(r:R ring) p n.
@@ -5170,7 +5174,7 @@ def deg_coeff : thm := keep "deg_coeff" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_coeff
 
-#eval phrase 334
+#eval phrase 335
 def topcoeff_nonzero : thm := keep "topcoeff_nonzero" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -5181,7 +5185,7 @@ def topcoeff_nonzero : thm := keep "topcoeff_nonzero" fun _ => (do
   : ExceptT String IO thm).run
 #eval topcoeff_nonzero
 
-#eval phrase 335
+#eval phrase 336
 def coeff_deg_le : thm := keep "coeff_deg_le" fun _ => (do
   prove ([[
   !(r:R ring) p n d.
@@ -5194,7 +5198,7 @@ def coeff_deg_le : thm := keep "coeff_deg_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_deg_le
 
-#eval phrase 336
+#eval phrase 337
 def coeff_le_deg : thm := keep "coeff_le_deg" fun _ => (do
   prove ([[
   !(r:R ring) p d.
@@ -5206,7 +5210,7 @@ def coeff_le_deg : thm := keep "coeff_le_deg" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_le_deg
 
-#eval phrase 337
+#eval phrase 338
 def finite_coeff : thm := keep "finite_coeff" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -5217,7 +5221,7 @@ def finite_coeff : thm := keep "finite_coeff" fun _ => (do
   : ExceptT String IO thm).run
 #eval finite_coeff
 
-#eval phrase 338
+#eval phrase 339
 def poly_if_coeff : thm := keep "poly_if_coeff" fun _ => (do
   prove ([[
   !(r:R ring) p n.
@@ -5229,7 +5233,7 @@ def poly_if_coeff : thm := keep "poly_if_coeff" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_if_coeff
 
-#eval phrase 339
+#eval phrase 340
 def deg_coeff_from_le : thm := keep "deg_coeff_from_le" fun _ => (do
   prove ([[
   !(r:R ring) p n.
@@ -5242,7 +5246,7 @@ def deg_coeff_from_le : thm := keep "deg_coeff_from_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_coeff_from_le
 
-#eval phrase 340
+#eval phrase 341
 def poly_eval_expand_coeff : thm := keep "poly_eval_expand_coeff" fun _ => (do
   prove ([[
   !(r:R ring) p x n.
@@ -5257,7 +5261,7 @@ def poly_eval_expand_coeff : thm := keep "poly_eval_expand_coeff" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_eval_expand_coeff
 
-#eval phrase 341
+#eval phrase 342
 def deg_mul_const_le : thm := keep "deg_mul_const_le" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[poly_deg r (p:(V->num)->R) + 0 = poly_deg r (p:(V->num)->R)]])
   prove ([[
@@ -5276,7 +5280,7 @@ def deg_mul_const_le : thm := keep "deg_mul_const_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_mul_const_le
 
-#eval phrase 342
+#eval phrase 343
 def deg_const_mul_le : thm := keep "deg_const_mul_le" fun _ => (do
   prove ([[
   !(r:R ring) (p:(V->num)->R) c.
@@ -5289,7 +5293,7 @@ def deg_const_mul_le : thm := keep "deg_const_mul_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_const_mul_le
 
-#eval phrase 343
+#eval phrase 344
 def poly_mul_const_const : thm := keep "poly_mul_const_const" fun _ => (do
   prove ([[
   !(r:R ring) (p:(V->num)->R) c d.
@@ -5303,7 +5307,7 @@ def poly_mul_const_const : thm := keep "poly_mul_const_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_mul_const_const
 
-#eval phrase 344
+#eval phrase 345
 def poly_mul_const_const_1 : thm := keep "poly_mul_const_const_1" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[ring_polynomial r (p:(V->num)->R) ==> p IN {q | ring_polynomial r q /\ poly_vars r q SUBSET (:V)}]])
   prove ([[
@@ -5325,7 +5329,7 @@ def poly_mul_const_const_1 : thm := keep "poly_mul_const_const_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_mul_const_const_1
 
-#eval phrase 345
+#eval phrase 346
 def deg_mul_const_const_1 : thm := keep "deg_mul_const_const_1" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[a <= b /\ b <= a ==> a = b:num]])
   let h1 ← def' ([[q:(V->num)->R]]) (← ExceptT.mk [[poly_mul r (p:(V->num)->R) (poly_const r c)]])
@@ -5348,7 +5352,7 @@ def deg_mul_const_const_1 : thm := keep "deg_mul_const_const_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_mul_const_const_1
 
-#eval phrase 346
+#eval phrase 347
 def deg_mul_unit_const : thm := keep "deg_mul_unit_const" fun _ => (do
   prove ([[
   !(r:R ring) (p:(V->num)->R) c.
@@ -5364,7 +5368,7 @@ def deg_mul_unit_const : thm := keep "deg_mul_unit_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_mul_unit_const
 
-#eval phrase 347
+#eval phrase 348
 def associates_if_mul_unit_const : thm := keep "associates_if_mul_unit_const" fun _ => (do
   prove ([[
   !(r:R ring) (p:(V->num)->R) c.
@@ -5394,7 +5398,7 @@ def associates_if_mul_unit_const : thm := keep "associates_if_mul_unit_const" fu
 
 /- ===== cx^d -/
 
-#eval phrase 348
+#eval phrase 349
 def const_x_pow : thm := keep "const_x_pow" fun _ => new_definition
  [[
   const_x_pow (r:R ring) (c:R) (d:num)
@@ -5402,7 +5406,7 @@ def const_x_pow : thm := keep "const_x_pow" fun _ => new_definition
 ]]
 #eval const_x_pow
 
-#eval phrase 349
+#eval phrase 350
 def const_x_pow_0 : thm := keep "const_x_pow_0" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -5414,7 +5418,7 @@ def const_x_pow_0 : thm := keep "const_x_pow_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval const_x_pow_0
 
-#eval phrase 350
+#eval phrase 351
 def const_0_x_pow : thm := keep "const_0_x_pow" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -5424,7 +5428,7 @@ def const_0_x_pow : thm := keep "const_0_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval const_0_x_pow
 
-#eval phrase 351
+#eval phrase 352
 def const_x_pow_series : thm := keep "const_x_pow_series" fun _ => (do
   prove ([[
   !(r:R ring) c d.
@@ -5437,7 +5441,7 @@ def const_x_pow_series : thm := keep "const_x_pow_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval const_x_pow_series
 
-#eval phrase 352
+#eval phrase 353
 def const_x_pow_poly_lemma : thm := keep "const_x_pow_poly_lemma" fun _ => (do
   prove ([[
   !(r:R ring) d:num.
@@ -5448,7 +5452,7 @@ def const_x_pow_poly_lemma : thm := keep "const_x_pow_poly_lemma" fun _ => (do
   : ExceptT String IO thm).run
 #eval const_x_pow_poly_lemma
 
-#eval phrase 353
+#eval phrase 354
 def const_x_pow_poly_lemma2 : thm := keep "const_x_pow_poly_lemma2" fun _ => (do
   prove ([[
   !(r:R ring) d:num.
@@ -5458,7 +5462,7 @@ def const_x_pow_poly_lemma2 : thm := keep "const_x_pow_poly_lemma2" fun _ => (do
   : ExceptT String IO thm).run
 #eval const_x_pow_poly_lemma2
 
-#eval phrase 354
+#eval phrase 355
 def const_x_pow_poly : thm := keep "const_x_pow_poly" fun _ => (do
   prove ([[
   !(r:R ring) c d.
@@ -5473,7 +5477,7 @@ def const_x_pow_poly : thm := keep "const_x_pow_poly" fun _ => (do
   : ExceptT String IO thm).run
 #eval const_x_pow_poly
 
-#eval phrase 355
+#eval phrase 356
 def coeff_const_x_pow : thm := keep "coeff_const_x_pow" fun _ => (do
   prove ([[
   !(r:R ring) c d e.
@@ -5484,7 +5488,7 @@ def coeff_const_x_pow : thm := keep "coeff_const_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_const_x_pow
 
-#eval phrase 356
+#eval phrase 357
 def coeff_const_x_pow_times : thm := keep "coeff_const_x_pow_times" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[d:num <= e <=> ~(e < d)]])
   prove ([[
@@ -5507,7 +5511,7 @@ def coeff_const_x_pow_times : thm := keep "coeff_const_x_pow_times" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_const_x_pow_times
 
-#eval phrase 357
+#eval phrase 358
 def deg_const_x_pow_le : thm := keep "deg_const_x_pow_le" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[d <= d:num]])
   prove ([[
@@ -5522,7 +5526,7 @@ def deg_const_x_pow_le : thm := keep "deg_const_x_pow_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_const_x_pow_le
 
-#eval phrase 358
+#eval phrase 359
 def deg_const_x_pow : thm := keep "deg_const_x_pow" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[d <= d:num]])
   prove ([[
@@ -5539,7 +5543,7 @@ def deg_const_x_pow : thm := keep "deg_const_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_const_x_pow
 
-#eval phrase 359
+#eval phrase 360
 def eval_const_x_pow : thm := keep "eval_const_x_pow" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[n <= n:num]])
   prove ([[
@@ -5563,7 +5567,7 @@ def eval_const_x_pow : thm := keep "eval_const_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval eval_const_x_pow
 
-#eval phrase 360
+#eval phrase 361
 def subring_const_x_pow : thm := keep "subring_const_x_pow" fun _ => (do
   prove ([[
   !(r:R ring) S c n.
@@ -5575,7 +5579,7 @@ def subring_const_x_pow : thm := keep "subring_const_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval subring_const_x_pow
 
-#eval phrase 361
+#eval phrase 362
 def const_1_x_pow : thm := keep "const_1_x_pow" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -5589,7 +5593,7 @@ def const_1_x_pow : thm := keep "const_1_x_pow" fun _ => (do
 
 /- ===== x^d -/
 
-#eval phrase 362
+#eval phrase 363
 def x_pow : thm := keep "x_pow" fun _ => new_definition
  [[
   x_pow (r:R ring) (d:num)
@@ -5597,7 +5601,7 @@ def x_pow : thm := keep "x_pow" fun _ => new_definition
 ]]
 #eval x_pow
 
-#eval phrase 363
+#eval phrase 364
 def x_pow_1 : thm := keep "x_pow_1" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -5608,7 +5612,7 @@ def x_pow_1 : thm := keep "x_pow_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_pow_1
 
-#eval phrase 364
+#eval phrase 365
 def x_pow_0 : thm := keep "x_pow_0" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -5618,7 +5622,7 @@ def x_pow_0 : thm := keep "x_pow_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_pow_0
 
-#eval phrase 365
+#eval phrase 366
 def x_pow_poly : thm := keep "x_pow_poly" fun _ => (do
   prove ([[
   !(r:R ring) d.
@@ -5628,7 +5632,7 @@ def x_pow_poly : thm := keep "x_pow_poly" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_pow_poly
 
-#eval phrase 366
+#eval phrase 367
 def x_pow_series : thm := keep "x_pow_series" fun _ => (do
   prove ([[
   !(r:R ring) d.
@@ -5638,7 +5642,7 @@ def x_pow_series : thm := keep "x_pow_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_pow_series
 
-#eval phrase 367
+#eval phrase 368
 def coeff_x_pow : thm := keep "coeff_x_pow" fun _ => (do
   prove ([[
   !(r:R ring) d e.
@@ -5649,7 +5653,7 @@ def coeff_x_pow : thm := keep "coeff_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_x_pow
 
-#eval phrase 368
+#eval phrase 369
 def coeff_x_pow_times : thm := keep "coeff_x_pow_times" fun _ => (do
   prove ([[
   !(r:R ring) d p e.
@@ -5664,7 +5668,7 @@ def coeff_x_pow_times : thm := keep "coeff_x_pow_times" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_x_pow_times
 
-#eval phrase 369
+#eval phrase 370
 def x_pow_add : thm := keep "x_pow_add" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[d = m + n <=> (~(d < m) /\ d - m = n:num)]])
   prove ([[
@@ -5680,7 +5684,7 @@ def x_pow_add : thm := keep "x_pow_add" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_pow_add
 
-#eval phrase 370
+#eval phrase 371
 def deg_x_pow_le : thm := keep "deg_x_pow_le" fun _ => (do
   prove ([[
   !(r:R ring) d.
@@ -5690,7 +5694,7 @@ def deg_x_pow_le : thm := keep "deg_x_pow_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_x_pow_le
 
-#eval phrase 371
+#eval phrase 372
 def deg_x_pow : thm := keep "deg_x_pow" fun _ => (do
   prove ([[
   !(r:R ring) d.
@@ -5701,7 +5705,7 @@ def deg_x_pow : thm := keep "deg_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_x_pow
 
-#eval phrase 372
+#eval phrase 373
 def eval_x_pow : thm := keep "eval_x_pow" fun _ => (do
   prove ([[
   !(r:R ring) n x.
@@ -5717,7 +5721,7 @@ def eval_x_pow : thm := keep "eval_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval eval_x_pow
 
-#eval phrase 373
+#eval phrase 374
 def subring_x_pow : thm := keep "subring_x_pow" fun _ => (do
   prove ([[
   !(r:R ring) S n.
@@ -5730,7 +5734,7 @@ def subring_x_pow : thm := keep "subring_x_pow" fun _ => (do
 
 /- ===== x-c -/
 
-#eval phrase 374
+#eval phrase 375
 def x_minus_const : thm := keep "x_minus_const" fun _ => new_definition
  [[
   x_minus_const (r:R ring) (c:R)
@@ -5738,7 +5742,7 @@ def x_minus_const : thm := keep "x_minus_const" fun _ => new_definition
 ]]
 #eval x_minus_const
 
-#eval phrase 375
+#eval phrase 376
 def x_minus_const_poly : thm := keep "x_minus_const_poly" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -5749,7 +5753,7 @@ def x_minus_const_poly : thm := keep "x_minus_const_poly" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_minus_const_poly
 
-#eval phrase 376
+#eval phrase 377
 def x_minus_const_series : thm := keep "x_minus_const_series" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -5760,7 +5764,7 @@ def x_minus_const_series : thm := keep "x_minus_const_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_minus_const_series
 
-#eval phrase 377
+#eval phrase 378
 def coeff_x_minus_const : thm := keep "coeff_x_minus_const" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[~(0 = 1)]])
   prove ([[
@@ -5778,7 +5782,7 @@ def coeff_x_minus_const : thm := keep "coeff_x_minus_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_x_minus_const
 
-#eval phrase 378
+#eval phrase 379
 def coeff_x_minus_const_times : thm := keep "coeff_x_minus_const_times" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[~(e:num = 0) ==> ~(e < 1)]])
   let h1 ← ar (← ExceptT.mk [[0 < 1]])
@@ -5805,7 +5809,7 @@ def coeff_x_minus_const_times : thm := keep "coeff_x_minus_const_times" fun _ =>
   : ExceptT String IO thm).run
 #eval coeff_x_minus_const_times
 
-#eval phrase 379
+#eval phrase 380
 def x_minus_const_0 : thm := keep "x_minus_const_0" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -5820,7 +5824,7 @@ def x_minus_const_0 : thm := keep "x_minus_const_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_minus_const_0
 
-#eval phrase 380
+#eval phrase 381
 def deg_x_minus_const_le : thm := keep "deg_x_minus_const_le" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[1 <= 1:num]])
   let h1 ← ar (← ExceptT.mk [[0 <= 1:num]])
@@ -5836,7 +5840,7 @@ def deg_x_minus_const_le : thm := keep "deg_x_minus_const_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_x_minus_const_le
 
-#eval phrase 381
+#eval phrase 382
 def deg_x_minus_const : thm := keep "deg_x_minus_const" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[1 <= 1:num]])
   let h1 ← ar (← ExceptT.mk [[0 <= 1:num]])
@@ -5854,7 +5858,7 @@ def deg_x_minus_const : thm := keep "deg_x_minus_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_x_minus_const
 
-#eval phrase 382
+#eval phrase 383
 def x_minus_const_nonzero : thm := keep "x_minus_const_nonzero" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[~(0 = 1)]])
   prove ([[
@@ -5867,7 +5871,7 @@ def x_minus_const_nonzero : thm := keep "x_minus_const_nonzero" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_minus_const_nonzero
 
-#eval phrase 383
+#eval phrase 384
 def eval_x_minus_const : thm := keep "eval_x_minus_const" fun _ => (do
   prove ([[
   !(r:R ring) c x.
@@ -5887,7 +5891,7 @@ def eval_x_minus_const : thm := keep "eval_x_minus_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval eval_x_minus_const
 
-#eval phrase 384
+#eval phrase 385
 def eval_x_minus_const_refl : thm := keep "eval_x_minus_const_refl" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -5900,7 +5904,7 @@ def eval_x_minus_const_refl : thm := keep "eval_x_minus_const_refl" fun _ => (do
   : ExceptT String IO thm).run
 #eval eval_x_minus_const_refl
 
-#eval phrase 385
+#eval phrase 386
 def x_minus_const_not_unit : thm := keep "x_minus_const_not_unit" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[~(1 = 0)]])
   prove ([[
@@ -5920,7 +5924,7 @@ def x_minus_const_not_unit : thm := keep "x_minus_const_not_unit" fun _ => (do
 
 /- ===== 1-cx -/
 
-#eval phrase 386
+#eval phrase 387
 def one_minus_constx : thm := keep "one_minus_constx" fun _ => new_definition
  [[
   one_minus_constx (r:R ring) (c:R)
@@ -5928,7 +5932,7 @@ def one_minus_constx : thm := keep "one_minus_constx" fun _ => new_definition
 ]]
 #eval one_minus_constx
 
-#eval phrase 387
+#eval phrase 388
 def one_minus_constx_poly : thm := keep "one_minus_constx_poly" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -5939,7 +5943,7 @@ def one_minus_constx_poly : thm := keep "one_minus_constx_poly" fun _ => (do
   : ExceptT String IO thm).run
 #eval one_minus_constx_poly
 
-#eval phrase 388
+#eval phrase 389
 def one_minus_constx_series : thm := keep "one_minus_constx_series" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -5950,7 +5954,7 @@ def one_minus_constx_series : thm := keep "one_minus_constx_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval one_minus_constx_series
 
-#eval phrase 389
+#eval phrase 390
 def coeff_one_minus_constx : thm := keep "coeff_one_minus_constx" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[~(0 = 1)]])
   prove ([[
@@ -5968,7 +5972,7 @@ def coeff_one_minus_constx : thm := keep "coeff_one_minus_constx" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_one_minus_constx
 
-#eval phrase 390
+#eval phrase 391
 def coeff_one_minus_constx_times : thm := keep "coeff_one_minus_constx_times" fun _ => (do
   let h5 ← ar (← ExceptT.mk [[e - 0 = e:num]])
   let h4 ← ar (← ExceptT.mk [[~(e:num = 0) ==> ~(e < 1)]])
@@ -6000,7 +6004,7 @@ def coeff_one_minus_constx_times : thm := keep "coeff_one_minus_constx_times" fu
   : ExceptT String IO thm).run
 #eval coeff_one_minus_constx_times
 
-#eval phrase 391
+#eval phrase 392
 def deg_one_minus_constx_le : thm := keep "deg_one_minus_constx_le" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[1 <= 1:num]])
   let h1 ← ar (← ExceptT.mk [[0 <= 1:num]])
@@ -6016,7 +6020,7 @@ def deg_one_minus_constx_le : thm := keep "deg_one_minus_constx_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_one_minus_constx_le
 
-#eval phrase 392
+#eval phrase 393
 def eval_one_minus_constx : thm := keep "eval_one_minus_constx" fun _ => (do
   prove ([[
   !(r:R ring) c x.
@@ -6035,7 +6039,7 @@ def eval_one_minus_constx : thm := keep "eval_one_minus_constx" fun _ => (do
   : ExceptT String IO thm).run
 #eval eval_one_minus_constx
 
-#eval phrase 393
+#eval phrase 394
 def nonzero_one_minus_constx : thm := keep "nonzero_one_minus_constx" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -6054,7 +6058,7 @@ def nonzero_one_minus_constx : thm := keep "nonzero_one_minus_constx" fun _ => (
 /- in r[[x]]; different topology from SUMS_GP etc. -/
 /- infinite_geometric_series r c = sum c^n x^n -/
 
-#eval phrase 394
+#eval phrase 395
 def infinite_geometric_series : thm := keep "infinite_geometric_series" fun _ => new_definition
  [[
   infinite_geometric_series (r:R ring) (c) =
@@ -6062,7 +6066,7 @@ def infinite_geometric_series : thm := keep "infinite_geometric_series" fun _ =>
 ]]
 #eval infinite_geometric_series
 
-#eval phrase 395
+#eval phrase 396
 def infinite_geometric_series_powerseries : thm := keep "infinite_geometric_series_powerseries" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -6077,7 +6081,7 @@ def infinite_geometric_series_powerseries : thm := keep "infinite_geometric_seri
 
 /- sum c^n x^n is in r[[x]] -/
 
-#eval phrase 396
+#eval phrase 397
 def infinite_geometric_series_x_series : thm := keep "infinite_geometric_series_x_series" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -6089,7 +6093,7 @@ def infinite_geometric_series_x_series : thm := keep "infinite_geometric_series_
   : ExceptT String IO thm).run
 #eval infinite_geometric_series_x_series
 
-#eval phrase 397
+#eval phrase 398
 def coeff_infinite_geometric_series : thm := keep "coeff_infinite_geometric_series" fun _ => (do
   prove ([[
   !(r:R ring) c e.
@@ -6102,7 +6106,7 @@ def coeff_infinite_geometric_series : thm := keep "coeff_infinite_geometric_seri
 
 /- (1-cx) sum c^n x^n = 1 -/
 
-#eval phrase 398
+#eval phrase 399
 def infinite_geometric_series_inverse : thm := keep "infinite_geometric_series_inverse" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -6126,7 +6130,7 @@ def infinite_geometric_series_inverse : thm := keep "infinite_geometric_series_i
 
 /- ===== poly_pow -/
 
-#eval phrase 399
+#eval phrase 400
 def poly_pow : thm := keep "poly_pow" fun _ => new_definition
  [[
   poly_pow (r:R ring)
@@ -6134,7 +6138,7 @@ def poly_pow : thm := keep "poly_pow" fun _ => new_definition
 ]]
 #eval poly_pow
 
-#eval phrase 400
+#eval phrase 401
 def poly_pow_series : thm := keep "poly_pow_series" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R n.
@@ -6145,7 +6149,7 @@ def poly_pow_series : thm := keep "poly_pow_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_pow_series
 
-#eval phrase 401
+#eval phrase 402
 def poly_pow_poly : thm := keep "poly_pow_poly" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R n.
@@ -6156,7 +6160,7 @@ def poly_pow_poly : thm := keep "poly_pow_poly" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_pow_poly
 
-#eval phrase 402
+#eval phrase 403
 def poly_pow_in_poly_ring : thm := keep "poly_pow_in_poly_ring" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R n S.
@@ -6167,7 +6171,7 @@ def poly_pow_in_poly_ring : thm := keep "poly_pow_in_poly_ring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_pow_in_poly_ring
 
-#eval phrase 403
+#eval phrase 404
 def x_series_use_pow : thm := keep "x_series_use_pow" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -6177,7 +6181,7 @@ def x_series_use_pow : thm := keep "x_series_use_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_series_use_pow
 
-#eval phrase 404
+#eval phrase 405
 def x_poly_use_pow : thm := keep "x_poly_use_pow" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -6188,7 +6192,7 @@ def x_poly_use_pow : thm := keep "x_poly_use_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_poly_use_pow
 
-#eval phrase 405
+#eval phrase 406
 def poly_ring_use_pow : thm := keep "poly_ring_use_pow" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -6199,7 +6203,7 @@ def poly_ring_use_pow : thm := keep "poly_ring_use_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ring_use_pow
 
-#eval phrase 406
+#eval phrase 407
 def poly_pow_0 : thm := keep "poly_pow_0" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R.
@@ -6210,7 +6214,7 @@ def poly_pow_0 : thm := keep "poly_pow_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_pow_0
 
-#eval phrase 407
+#eval phrase 408
 def poly_pow_1 : thm := keep "poly_pow_1" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R.
@@ -6225,7 +6229,7 @@ def poly_pow_1 : thm := keep "poly_pow_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_pow_1
 
-#eval phrase 408
+#eval phrase 409
 def poly_1_pow : thm := keep "poly_1_pow" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -6235,7 +6239,7 @@ def poly_1_pow : thm := keep "poly_1_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_1_pow
 
-#eval phrase 409
+#eval phrase 410
 def poly_pow_add : thm := keep "poly_pow_add" fun _ => (do
   prove ([[
   !(r:R ring) (p:(V->num)->R) m n.
@@ -6250,7 +6254,7 @@ def poly_pow_add : thm := keep "poly_pow_add" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_pow_add
 
-#eval phrase 410
+#eval phrase 411
 def x_pow_pow : thm := keep "x_pow_pow" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[m*(n+1) = m*n+m]])
   let h2 ← ar (← ExceptT.mk [[SUC n = n+1]])
@@ -6268,7 +6272,7 @@ def x_pow_pow : thm := keep "x_pow_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_pow_pow
 
-#eval phrase 411
+#eval phrase 412
 def poly_pow_mul : thm := keep "poly_pow_mul" fun _ => (do
   prove ([[
   !(r:R ring) (p:(V->num)->R) m n.
@@ -6283,7 +6287,7 @@ def poly_pow_mul : thm := keep "poly_pow_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_pow_mul
 
-#eval phrase 412
+#eval phrase 413
 def poly_mul_pow : thm := keep "poly_mul_pow" fun _ => (do
   prove ([[
   !(r:R ring) (p:(V->num)->R) q n.
@@ -6301,7 +6305,7 @@ def poly_mul_pow : thm := keep "poly_mul_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_mul_pow
 
-#eval phrase 413
+#eval phrase 414
 def poly_deg_pow_le : thm := keep "poly_deg_pow_le" fun _ => (do
   prove ([[
   !(r:R ring) (p:(V->num)->R) n.
@@ -6312,7 +6316,7 @@ def poly_deg_pow_le : thm := keep "poly_deg_pow_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_deg_pow_le
 
-#eval phrase 414
+#eval phrase 415
 def coeff_pow_infinite_geometric_series : thm := keep "coeff_pow_infinite_geometric_series" fun _ => (do
   let h6 ← rgl (← ExceptT.mk [[ring_mul(r:R ring) A M = N ==> ring_mul r A (ring_mul r B M) = ring_mul r B N]])
   let h5 ← num_linear_fact (← ExceptT.mk [[a <= n:num ==> a + (n-a) = n]])
@@ -6361,7 +6365,7 @@ def coeff_pow_infinite_geometric_series : thm := keep "coeff_pow_infinite_geomet
   : ExceptT String IO thm).run
 #eval coeff_pow_infinite_geometric_series
 
-#eval phrase 415
+#eval phrase 416
 def pow_infinite_geometric_series : thm := keep "pow_infinite_geometric_series" fun _ => (do
   prove ([[
   !(r:R ring) c e.
@@ -6376,7 +6380,7 @@ def pow_infinite_geometric_series : thm := keep "pow_infinite_geometric_series" 
   : ExceptT String IO thm).run
 #eval pow_infinite_geometric_series
 
-#eval phrase 416
+#eval phrase 417
 def pow_infinite_geometric_series_inverse_lemma : thm := keep "pow_infinite_geometric_series_inverse_lemma" fun _ => (do
   prove ([[
   !(r:R ring) c e.
@@ -6397,7 +6401,7 @@ def pow_infinite_geometric_series_inverse_lemma : thm := keep "pow_infinite_geom
 
 /- (1-cx)^(e+1) sum binom(n+e,e) c^n x^n = 1 -/
 
-#eval phrase 417
+#eval phrase 418
 def pow_infinite_geometric_series_inverse : thm := keep "pow_infinite_geometric_series_inverse" fun _ => (do
   prove ([[
   !(r:R ring) c e.
@@ -6415,7 +6419,7 @@ def pow_infinite_geometric_series_inverse : thm := keep "pow_infinite_geometric_
   : ExceptT String IO thm).run
 #eval pow_infinite_geometric_series_inverse
 
-#eval phrase 418
+#eval phrase 419
 def poly_pow_o_permutes : thm := keep "poly_pow_o_permutes" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[SUC n = 1 + n]])
   prove ([[
@@ -6444,7 +6448,7 @@ def poly_pow_o_permutes : thm := keep "poly_pow_o_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_pow_o_permutes
 
-#eval phrase 419
+#eval phrase 420
 def eval_poly_pow_multi : thm := keep "eval_poly_pow_multi" fun _ => (do
   let h3 ← set_fact (← ExceptT.mk [[poly_pow r (p:(V->num)->R) n IN {q | ring_polynomial r q /\ poly_vars r q SUBSET U} ==> poly_vars r (poly_pow r p n) SUBSET U]])
   let h2 ← set_fact (← ExceptT.mk [[(p:(V->num)->R) IN {q | ring_polynomial r q /\ poly_vars r q SUBSET U} ==> poly_vars r p SUBSET U]])
@@ -6484,7 +6488,7 @@ def eval_poly_pow_multi : thm := keep "eval_poly_pow_multi" fun _ => (do
   : ExceptT String IO thm).run
 #eval eval_poly_pow_multi
 
-#eval phrase 420
+#eval phrase 421
 def poly_const_pow : thm := keep "poly_const_pow" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[SUC n = 1+n]])
   prove ([[
@@ -6506,7 +6510,7 @@ def poly_const_pow : thm := keep "poly_const_pow" fun _ => (do
 
 /- ===== x_monomial_shift: x^d |-> x^(d+1) -/
 
-#eval phrase 421
+#eval phrase 422
 def x_monomial_shift : thm := keep "x_monomial_shift" fun _ => new_definition
  [[
   x_monomial_shift (m:1->num)
@@ -6514,7 +6518,7 @@ def x_monomial_shift : thm := keep "x_monomial_shift" fun _ => new_definition
 ]]
 #eval x_monomial_shift
 
-#eval phrase 422
+#eval phrase 423
 def x_monomial_shift_eq_x_monomial : thm := keep "x_monomial_shift_eq_x_monomial" fun _ => (do
   prove ([[
   !m d.
@@ -6532,7 +6536,7 @@ def x_monomial_shift_eq_x_monomial : thm := keep "x_monomial_shift_eq_x_monomial
   : ExceptT String IO thm).run
 #eval x_monomial_shift_eq_x_monomial
 
-#eval phrase 423
+#eval phrase 424
 def x_monomial_shift_is_not_monomial_1 : thm := keep "x_monomial_shift_is_not_monomial_1" fun _ => (do
   prove ([[
   !m.
@@ -6543,7 +6547,7 @@ def x_monomial_shift_is_not_monomial_1 : thm := keep "x_monomial_shift_is_not_mo
   : ExceptT String IO thm).run
 #eval x_monomial_shift_is_not_monomial_1
 
-#eval phrase 424
+#eval phrase 425
 def x_monomial_shift_mul : thm := keep "x_monomial_shift_mul" fun _ => (do
   prove ([[
   !m n.
@@ -6556,7 +6560,7 @@ def x_monomial_shift_mul : thm := keep "x_monomial_shift_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_monomial_shift_mul
 
-#eval phrase 425
+#eval phrase 426
 def x_monomial_mul_shift : thm := keep "x_monomial_mul_shift" fun _ => (do
   prove ([[
   !m n.
@@ -6569,7 +6573,7 @@ def x_monomial_mul_shift : thm := keep "x_monomial_mul_shift" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_monomial_mul_shift
 
-#eval phrase 426
+#eval phrase 427
 def x_monomial_shift_injective : thm := keep "x_monomial_shift_injective" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[m + 1 = n + 1 ==> m = n]])
   prove ([[
@@ -6584,7 +6588,7 @@ def x_monomial_shift_injective : thm := keep "x_monomial_shift_injective" fun _ 
 
 /- ===== univariate derivatives -/
 
-#eval phrase 427
+#eval phrase 428
 def x_derivative : thm := keep "x_derivative" fun _ => new_definition
  [[
   x_derivative (r:R ring) (p:(1->num)->R)
@@ -6594,7 +6598,7 @@ def x_derivative : thm := keep "x_derivative" fun _ => new_definition
 ]]
 #eval x_derivative
 
-#eval phrase 428
+#eval phrase 429
 def X_DERIVATIVE_EQ_POLY_DERIV : thm := keep "X_DERIVATIVE_EQ_POLY_DERIV" fun _ => (do
   prove ([[
   !(r:R ring) p. x_derivative r p = poly_deriv r p]])
@@ -6604,7 +6608,7 @@ def X_DERIVATIVE_EQ_POLY_DERIV : thm := keep "X_DERIVATIVE_EQ_POLY_DERIV" fun _ 
   : ExceptT String IO thm).run
 #eval X_DERIVATIVE_EQ_POLY_DERIV
 
-#eval phrase 429
+#eval phrase 430
 def x_derivative_series : thm := keep "x_derivative_series" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -6615,7 +6619,7 @@ def x_derivative_series : thm := keep "x_derivative_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_series
 
-#eval phrase 430
+#eval phrase 431
 def x_derivative_polynomial : thm := keep "x_derivative_polynomial" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -6626,7 +6630,7 @@ def x_derivative_polynomial : thm := keep "x_derivative_polynomial" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_polynomial
 
-#eval phrase 431
+#eval phrase 432
 def coeff_x_derivative : thm := keep "coeff_x_derivative" fun _ => (do
   prove ([[
   !(r:R ring) p d.
@@ -6637,7 +6641,7 @@ def coeff_x_derivative : thm := keep "coeff_x_derivative" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_x_derivative
 
-#eval phrase 432
+#eval phrase 433
 def x_derivative_add_series : thm := keep "x_derivative_add_series" fun _ => (do
   prove ([[
   !(r:R ring) p q.
@@ -6650,7 +6654,7 @@ def x_derivative_add_series : thm := keep "x_derivative_add_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_add_series
 
-#eval phrase 433
+#eval phrase 434
 def x_derivative_neg_series : thm := keep "x_derivative_neg_series" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -6662,7 +6666,7 @@ def x_derivative_neg_series : thm := keep "x_derivative_neg_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_neg_series
 
-#eval phrase 434
+#eval phrase 435
 def x_derivative_sub_series : thm := keep "x_derivative_sub_series" fun _ => (do
   prove ([[
   !(r:R ring) p q.
@@ -6675,7 +6679,7 @@ def x_derivative_sub_series : thm := keep "x_derivative_sub_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_sub_series
 
-#eval phrase 435
+#eval phrase 436
 def x_derivative_poly_const : thm := keep "x_derivative_poly_const" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -6685,7 +6689,7 @@ def x_derivative_poly_const : thm := keep "x_derivative_poly_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_poly_const
 
-#eval phrase 436
+#eval phrase 437
 def x_derivative_poly_0 : thm := keep "x_derivative_poly_0" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -6695,7 +6699,7 @@ def x_derivative_poly_0 : thm := keep "x_derivative_poly_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_poly_0
 
-#eval phrase 437
+#eval phrase 438
 def x_derivative_poly_1 : thm := keep "x_derivative_poly_1" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -6705,7 +6709,7 @@ def x_derivative_poly_1 : thm := keep "x_derivative_poly_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_poly_1
 
-#eval phrase 438
+#eval phrase 439
 def x_derivative_poly_const_mul_series : thm := keep "x_derivative_poly_const_mul_series" fun _ => (do
   prove ([[
   !(r:R ring) c p.
@@ -6718,7 +6722,7 @@ def x_derivative_poly_const_mul_series : thm := keep "x_derivative_poly_const_mu
   : ExceptT String IO thm).run
 #eval x_derivative_poly_const_mul_series
 
-#eval phrase 439
+#eval phrase 440
 def x_derivative_const_x_pow : thm := keep "x_derivative_const_x_pow" fun _ => (do
   let h2 ← num_linear_fact (← ExceptT.mk [[~(d+1 = e:num) /\ ~(e = 0) ==> ~(d = e-1)]])
   let h1 ← num_linear_fact (← ExceptT.mk [[d+1 = e:num ==> d = e-1]])
@@ -6743,7 +6747,7 @@ def x_derivative_const_x_pow : thm := keep "x_derivative_const_x_pow" fun _ => (
   : ExceptT String IO thm).run
 #eval x_derivative_const_x_pow
 
-#eval phrase 440
+#eval phrase 441
 def x_derivative_x_pow : thm := keep "x_derivative_x_pow" fun _ => (do
   prove ([[
   !(r:R ring) e.
@@ -6757,7 +6761,7 @@ def x_derivative_x_pow : thm := keep "x_derivative_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_x_pow
 
-#eval phrase 441
+#eval phrase 442
 def x_derivative_mul : thm := keep "x_derivative_mul" fun _ => (do
   prove ([[
   !(r:R ring) p q.
@@ -6772,7 +6776,7 @@ def x_derivative_mul : thm := keep "x_derivative_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_mul
 
-#eval phrase 442
+#eval phrase 443
 def x_derivative_mul_const : thm := keep "x_derivative_mul_const" fun _ => (do
   prove ([[
   !(r:R ring) c q.
@@ -6785,7 +6789,7 @@ def x_derivative_mul_const : thm := keep "x_derivative_mul_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_mul_const
 
-#eval phrase 443
+#eval phrase 444
 def x_derivative_x_minus_const : thm := keep "x_derivative_x_minus_const" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[1-1 = 0:num]])
   prove ([[
@@ -6807,7 +6811,7 @@ def x_derivative_x_minus_const : thm := keep "x_derivative_x_minus_const" fun _ 
   : ExceptT String IO thm).run
 #eval x_derivative_x_minus_const
 
-#eval phrase 444
+#eval phrase 445
 def x_derivative_one_minus_constx : thm := keep "x_derivative_one_minus_constx" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[1-1 = 0:num]])
   let h1 ← ar (← ExceptT.mk [[0-1 = 0:num]])
@@ -6835,7 +6839,7 @@ def x_derivative_one_minus_constx : thm := keep "x_derivative_one_minus_constx" 
   : ExceptT String IO thm).run
 #eval x_derivative_one_minus_constx
 
-#eval phrase 445
+#eval phrase 446
 def x_derivative_subring : thm := keep "x_derivative_subring" fun _ => (do
   prove ([[
   !(r:R ring) G p.
@@ -6848,7 +6852,7 @@ def x_derivative_subring : thm := keep "x_derivative_subring" fun _ => (do
 
 /- basically: derivative of sp/sq is derivative of p/q -/
 
-#eval phrase 446
+#eval phrase 447
 def x_derivative_ratio_scaling : thm := keep "x_derivative_ratio_scaling" fun _ => (do
   let h1 ← rgl (← ExceptT.mk [[ring_sub(r:R ring) (ring_mul r (ring_add r (ring_mul r (S) p) (ring_mul r s (P))) (ring_mul r s q)) (ring_mul r (ring_mul r s p) (ring_add r (ring_mul r (S) q) (ring_mul r s (Q)))) = ring_mul r (ring_pow r s 2) (ring_sub r (ring_mul r (P) q) (ring_mul r p (Q)))]])
   prove ([[
@@ -6890,7 +6894,7 @@ def x_derivative_ratio_scaling : thm := keep "x_derivative_ratio_scaling" fun _ 
 
 /- ===== sums of finite sequences of power series -/
 
-#eval phrase 447
+#eval phrase 448
 def poly_sum : thm := keep "poly_sum" fun _ => new_definition
  [[
   poly_sum (r:R ring) (S:X->bool) (p:X->(1->num)->R)
@@ -6898,7 +6902,7 @@ def poly_sum : thm := keep "poly_sum" fun _ => new_definition
 ]]
 #eval poly_sum
 
-#eval phrase 448
+#eval phrase 449
 def poly_sum_empty : thm := keep "poly_sum_empty" fun _ => (do
   prove ([[
   !(r:R ring) p:X->(1->num)->R.
@@ -6910,7 +6914,7 @@ def poly_sum_empty : thm := keep "poly_sum_empty" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sum_empty
 
-#eval phrase 449
+#eval phrase 450
 def poly_sum_insert : thm := keep "poly_sum_insert" fun _ => (do
   prove ([[
   !(r:R ring) p:X->(1->num)->R S t.
@@ -6926,7 +6930,7 @@ def poly_sum_insert : thm := keep "poly_sum_insert" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sum_insert
 
-#eval phrase 450
+#eval phrase 451
 def poly_sum_delete2 : thm := keep "poly_sum_delete2" fun _ => (do
   prove ([[
   !(r:R ring) S p:X->(1->num)->R t.
@@ -6943,7 +6947,7 @@ def poly_sum_delete2 : thm := keep "poly_sum_delete2" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sum_delete2
 
-#eval phrase 451
+#eval phrase 452
 def poly_sum_series : thm := keep "poly_sum_series" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -6967,7 +6971,7 @@ def poly_sum_series : thm := keep "poly_sum_series" fun _ => (do
 
 /- XXX: merge into poly_sum_series -/
 
-#eval phrase 452
+#eval phrase 453
 def series_sum_series_multi : thm := keep "series_sum_series_multi" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -6989,7 +6993,7 @@ def series_sum_series_multi : thm := keep "series_sum_series_multi" fun _ => (do
   : ExceptT String IO thm).run
 #eval series_sum_series_multi
 
-#eval phrase 453
+#eval phrase 454
 def poly_sum_ring_sum_x_poly : thm := keep "poly_sum_ring_sum_x_poly" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7012,7 +7016,7 @@ def poly_sum_ring_sum_x_poly : thm := keep "poly_sum_ring_sum_x_poly" fun _ => (
   : ExceptT String IO thm).run
 #eval poly_sum_ring_sum_x_poly
 
-#eval phrase 454
+#eval phrase 455
 def poly_sum_poly : thm := keep "poly_sum_poly" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7034,7 +7038,7 @@ def poly_sum_poly : thm := keep "poly_sum_poly" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sum_poly
 
-#eval phrase 455
+#eval phrase 456
 def poly_sum_eq : thm := keep "poly_sum_eq" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool p:X->(1->num)->R q:X->(1->num)->R.
@@ -7045,7 +7049,7 @@ def poly_sum_eq : thm := keep "poly_sum_eq" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sum_eq
 
-#eval phrase 456
+#eval phrase 457
 def coeff_poly_sum : thm := keep "coeff_poly_sum" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7071,7 +7075,7 @@ def coeff_poly_sum : thm := keep "coeff_poly_sum" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_poly_sum
 
-#eval phrase 457
+#eval phrase 458
 def x_derivative_sum : thm := keep "x_derivative_sum" fun _ => (do
   prove ([[
   !(r:R ring) p (S:X->bool).
@@ -7084,7 +7088,7 @@ def x_derivative_sum : thm := keep "x_derivative_sum" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_sum
 
-#eval phrase 458
+#eval phrase 459
 def poly_deg_sum_le : thm := keep "poly_deg_sum_le" fun _ => (do
   let h4 ← ar (← ExceptT.mk [[d <= n /\ e <= n /\ c <= MAX d e ==> c <= n:num]])
   let h3 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -7109,7 +7113,7 @@ def poly_deg_sum_le : thm := keep "poly_deg_sum_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_deg_sum_le
 
-#eval phrase 459
+#eval phrase 460
 def poly_sum_lmul : thm := keep "poly_sum_lmul" fun _ => (do
   prove ([[
   !(r:R ring) (p:X->(1->num)->R) c S.
@@ -7128,7 +7132,7 @@ def poly_sum_lmul : thm := keep "poly_sum_lmul" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sum_lmul
 
-#eval phrase 460
+#eval phrase 461
 def poly_sum_const : thm := keep "poly_sum_const" fun _ => (do
   prove ([[
   !(r:R ring) (p:(1->num)->R) S.
@@ -7147,7 +7151,7 @@ def poly_sum_const : thm := keep "poly_sum_const" fun _ => (do
 
 /- XXX: merge into poly_sum_poly -/
 
-#eval phrase 461
+#eval phrase 462
 def poly_sum_poly_multi : thm := keep "poly_sum_poly_multi" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7173,7 +7177,7 @@ def poly_sum_poly_multi : thm := keep "poly_sum_poly_multi" fun _ => (do
 
 /- XXX: merge -/
 
-#eval phrase 462
+#eval phrase 463
 def poly_sum_subring_multi : thm := keep "poly_sum_subring_multi" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7200,7 +7204,7 @@ def poly_sum_subring_multi : thm := keep "poly_sum_subring_multi" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_sum_subring_multi
 
-#eval phrase 463
+#eval phrase 464
 def ring_polynomial_subring_sum : thm := keep "ring_polynomial_subring_sum" fun _ => (do
   prove ([[
   !(r:R ring) G p:X->(V->num)->R S.
@@ -7213,7 +7217,7 @@ def ring_polynomial_subring_sum : thm := keep "ring_polynomial_subring_sum" fun 
   : ExceptT String IO thm).run
 #eval ring_polynomial_subring_sum
 
-#eval phrase 464
+#eval phrase 465
 def poly_sum_restrict_subset : thm := keep "poly_sum_restrict_subset" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[S SUBSET U:X->bool ==> {x | x IN U /\ S x} = S]])
   prove ([[
@@ -7234,7 +7238,7 @@ def poly_sum_restrict_subset : thm := keep "poly_sum_restrict_subset" fun _ => (
   : ExceptT String IO thm).run
 #eval poly_sum_restrict_subset
 
-#eval phrase 465
+#eval phrase 466
 def poly_const_sum : thm := keep "poly_const_sum" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -7260,7 +7264,7 @@ def poly_const_sum : thm := keep "poly_const_sum" fun _ => (do
 
 /- ===== products of finite sequences of power series -/
 
-#eval phrase 466
+#eval phrase 467
 def poly_product : thm := keep "poly_product" fun _ => new_definition
  [[
   poly_product (r:R ring) (S:X->bool) (p:X->(1->num)->R)
@@ -7268,7 +7272,7 @@ def poly_product : thm := keep "poly_product" fun _ => new_definition
 ]]
 #eval poly_product
 
-#eval phrase 467
+#eval phrase 468
 def poly_product_empty : thm := keep "poly_product_empty" fun _ => (do
   prove ([[
   !(r:R ring) p:X->(1->num)->R.
@@ -7280,7 +7284,7 @@ def poly_product_empty : thm := keep "poly_product_empty" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_empty
 
-#eval phrase 468
+#eval phrase 469
 def poly_product_insert : thm := keep "poly_product_insert" fun _ => (do
   prove ([[
   !(r:R ring) p:X->(1->num)->R S t.
@@ -7296,7 +7300,7 @@ def poly_product_insert : thm := keep "poly_product_insert" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_insert
 
-#eval phrase 469
+#eval phrase 470
 def poly_product_1 : thm := keep "poly_product_1" fun _ => (do
   prove ([[
   !(r:R ring) S.
@@ -7309,7 +7313,7 @@ def poly_product_1 : thm := keep "poly_product_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_1
 
-#eval phrase 470
+#eval phrase 471
 def poly_product_eq : thm := keep "poly_product_eq" fun _ => (do
   prove ([[
   !(r:R ring) p:X->(1->num)->R q S.
@@ -7323,7 +7327,7 @@ def poly_product_eq : thm := keep "poly_product_eq" fun _ => (do
 
 /- XXX: merge into poly_product_series -/
 
-#eval phrase 471
+#eval phrase 472
 def poly_product_series_multi : thm := keep "poly_product_series_multi" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7347,7 +7351,7 @@ def poly_product_series_multi : thm := keep "poly_product_series_multi" fun _ =>
 
 /- XXX: merge into poly_product_poly -/
 
-#eval phrase 472
+#eval phrase 473
 def poly_product_poly_multi : thm := keep "poly_product_poly_multi" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7371,7 +7375,7 @@ def poly_product_poly_multi : thm := keep "poly_product_poly_multi" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_poly_multi
 
-#eval phrase 473
+#eval phrase 474
 def poly_product_series : thm := keep "poly_product_series" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7393,7 +7397,7 @@ def poly_product_series : thm := keep "poly_product_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_series
 
-#eval phrase 474
+#eval phrase 475
 def poly_product_poly : thm := keep "poly_product_poly" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7415,7 +7419,7 @@ def poly_product_poly : thm := keep "poly_product_poly" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_poly
 
-#eval phrase 475
+#eval phrase 476
 def poly_product_ring_product_x_poly : thm := keep "poly_product_ring_product_x_poly" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7440,7 +7444,7 @@ def poly_product_ring_product_x_poly : thm := keep "poly_product_ring_product_x_
   : ExceptT String IO thm).run
 #eval poly_product_ring_product_x_poly
 
-#eval phrase 476
+#eval phrase 477
 def poly_product_pow : thm := keep "poly_product_pow" fun _ => (do
   prove ([[
   !(r:R ring) S (p:X->(1->num)->R) n.
@@ -7458,7 +7462,7 @@ def poly_product_pow : thm := keep "poly_product_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_pow
 
-#eval phrase 477
+#eval phrase 478
 def poly_mul_sum_mul_delete : thm := keep "poly_mul_sum_mul_delete" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool f:X->(1->num)->R g:X->(1->num)->R x.
@@ -7481,7 +7485,7 @@ def poly_mul_sum_mul_delete : thm := keep "poly_mul_sum_mul_delete" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_mul_sum_mul_delete
 
-#eval phrase 478
+#eval phrase 479
 def x_derivative_product : thm := keep "x_derivative_product" fun _ => (do
   prove ([[
   !(r:R ring) p (S:X->bool).
@@ -7498,7 +7502,7 @@ def x_derivative_product : thm := keep "x_derivative_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_product
 
-#eval phrase 479
+#eval phrase 480
 def poly_product_const : thm := keep "poly_product_const" fun _ => (do
   prove ([[
   !(r:R ring) (p:(1->num)->R) S.
@@ -7513,7 +7517,7 @@ def poly_product_const : thm := keep "poly_product_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_const
 
-#eval phrase 480
+#eval phrase 481
 def poly_pow_is_product : thm := keep "poly_pow_is_product" fun _ => (do
   prove ([[
   !(r:R ring) (p:(1->num)->R) n.
@@ -7527,7 +7531,7 @@ def poly_pow_is_product : thm := keep "poly_pow_is_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_pow_is_product
 
-#eval phrase 481
+#eval phrase 482
 def x_derivative_pow : thm := keep "x_derivative_pow" fun _ => (do
   prove ([[
   !(r:R ring) p n.
@@ -7548,7 +7552,7 @@ def x_derivative_pow : thm := keep "x_derivative_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_pow
 
-#eval phrase 482
+#eval phrase 483
 def eval_poly_product : thm := keep "eval_poly_product" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7577,7 +7581,7 @@ def eval_poly_product : thm := keep "eval_poly_product" fun _ => (do
 
 /- XXX: merge into poly_product_subring; generalize other poly_product theorems -/
 
-#eval phrase 483
+#eval phrase 484
 def poly_product_subring_multi : thm := keep "poly_product_subring_multi" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7604,7 +7608,7 @@ def poly_product_subring_multi : thm := keep "poly_product_subring_multi" fun _ 
   : ExceptT String IO thm).run
 #eval poly_product_subring_multi
 
-#eval phrase 484
+#eval phrase 485
 def poly_product_subring : thm := keep "poly_product_subring" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7630,7 +7634,7 @@ def poly_product_subring : thm := keep "poly_product_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_subring
 
-#eval phrase 485
+#eval phrase 486
 def ring_polynomial_subring_product : thm := keep "ring_polynomial_subring_product" fun _ => (do
   prove ([[
   !(r:R ring) G p:X->(V->num)->R S.
@@ -7643,7 +7647,7 @@ def ring_polynomial_subring_product : thm := keep "ring_polynomial_subring_produ
   : ExceptT String IO thm).run
 #eval ring_polynomial_subring_product
 
-#eval phrase 486
+#eval phrase 487
 def poly_product_image : thm := keep "poly_product_image" fun _ => (do
   prove ([[
   !(r:R ring) S (f:X->Y) (g:Y->(1->num)->R).
@@ -7657,7 +7661,7 @@ def poly_product_image : thm := keep "poly_product_image" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_image
 
-#eval phrase 487
+#eval phrase 488
 def poly_deg_product_le : thm := keep "poly_deg_product_le" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[d <= dx + ds ==> dx <= nx ==> ds <= ns ==> d <= nx + ns:num]])
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -7687,7 +7691,7 @@ def poly_deg_product_le : thm := keep "poly_deg_product_le" fun _ => (do
 
 /- should factor via poly_deg_product_le -/
 
-#eval phrase 488
+#eval phrase 489
 def poly_deg_product_each_le : thm := keep "poly_deg_product_each_le" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[a <= b + c ==> b <= n ==> c <= S * n ==> a <= SUC(S) * n]])
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -7715,7 +7719,7 @@ def poly_deg_product_each_le : thm := keep "poly_deg_product_each_le" fun _ => (
   : ExceptT String IO thm).run
 #eval poly_deg_product_each_le
 
-#eval phrase 489
+#eval phrase 490
 def poly_product_delete : thm := keep "poly_product_delete" fun _ => (do
   prove ([[
   !(r:R ring) S t f:X->((1->num)->R).
@@ -7732,7 +7736,7 @@ def poly_product_delete : thm := keep "poly_product_delete" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_delete
 
-#eval phrase 490
+#eval phrase 491
 def poly_pow_subring : thm := keep "poly_pow_subring" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[SUC n = 1+n]])
   prove ([[
@@ -7752,7 +7756,7 @@ def poly_pow_subring : thm := keep "poly_pow_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_pow_subring
 
-#eval phrase 491
+#eval phrase 492
 def poly_product_botcoeff1 : thm := keep "poly_product_botcoeff1" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[0-0=0]])
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -7777,7 +7781,7 @@ def poly_product_botcoeff1 : thm := keep "poly_product_botcoeff1" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_product_botcoeff1
 
-#eval phrase 492
+#eval phrase 493
 def poly_product_in_poly_ring : thm := keep "poly_product_in_poly_ring" fun _ => (do
   let h3 ← set_fact (← ExceptT.mk [[(p(x:X):(V->num)->R) IN {q | ring_polynomial r q /\ poly_vars r q SUBSET E} ==> ring_polynomial r (p x)]])
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -7805,7 +7809,7 @@ def poly_product_in_poly_ring : thm := keep "poly_product_in_poly_ring" fun _ =>
   : ExceptT String IO thm).run
 #eval poly_product_in_poly_ring
 
-#eval phrase 493
+#eval phrase 494
 def powser_product_o_permutes : thm := keep "powser_product_o_permutes" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7849,7 +7853,7 @@ def powser_product_o_permutes : thm := keep "powser_product_o_permutes" fun _ =>
   : ExceptT String IO thm).run
 #eval powser_product_o_permutes
 
-#eval phrase 494
+#eval phrase 495
 def poly_product_o_permutes : thm := keep "poly_product_o_permutes" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -7895,7 +7899,7 @@ def poly_product_o_permutes : thm := keep "poly_product_o_permutes" fun _ => (do
 
 /- XXX: merge into eval_poly_product -/
 
-#eval phrase 495
+#eval phrase 496
 def eval_poly_product_multi : thm := keep "eval_poly_product_multi" fun _ => (do
   let h5 ← set_fact (← ExceptT.mk [[ring_product (poly_ring r (:V)) (S:X->bool) p IN {q | ring_polynomial(r:R ring) q /\ poly_vars r q SUBSET U} ==> poly_vars r (ring_product (poly_ring r (:V)) S p) SUBSET U]])
   let h4 ← set_fact (← ExceptT.mk [[p(x:X):(V->num)->R IN {q | ring_polynomial(r:R ring) q /\ poly_vars r q SUBSET U} ==> poly_vars r (p x) SUBSET U]])
@@ -7943,7 +7947,7 @@ def eval_poly_product_multi : thm := keep "eval_poly_product_multi" fun _ => (do
   : ExceptT String IO thm).run
 #eval eval_poly_product_multi
 
-#eval phrase 496
+#eval phrase 497
 def poly_product_restrict_subset : thm := keep "poly_product_restrict_subset" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[S SUBSET U:X->bool ==> {x | x IN U /\ S x} = S]])
   prove ([[
@@ -7964,7 +7968,7 @@ def poly_product_restrict_subset : thm := keep "poly_product_restrict_subset" fu
   : ExceptT String IO thm).run
 #eval poly_product_restrict_subset
 
-#eval phrase 497
+#eval phrase 498
 def poly_const_product : thm := keep "poly_const_product" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -7990,7 +7994,7 @@ def poly_const_product : thm := keep "poly_const_product" fun _ => (do
 
 /- ===== monic_vanishing_at: prod_i (x-c_i) -/
 
-#eval phrase 498
+#eval phrase 499
 def monic_vanishing_at : thm := keep "monic_vanishing_at" fun _ => new_definition
  [[
   monic_vanishing_at (r:R ring) (S:X->bool) (c:X->R)
@@ -7998,7 +8002,7 @@ def monic_vanishing_at : thm := keep "monic_vanishing_at" fun _ => new_definitio
 ]]
 #eval monic_vanishing_at
 
-#eval phrase 499
+#eval phrase 500
 def monic_vanishing_at_empty : thm := keep "monic_vanishing_at_empty" fun _ => (do
   prove ([[
   !(r:R ring) c:X->R.
@@ -8008,7 +8012,7 @@ def monic_vanishing_at_empty : thm := keep "monic_vanishing_at_empty" fun _ => (
   : ExceptT String IO thm).run
 #eval monic_vanishing_at_empty
 
-#eval phrase 500
+#eval phrase 501
 def monic_vanishing_at_insert : thm := keep "monic_vanishing_at_insert" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool c t.
@@ -8026,7 +8030,7 @@ def monic_vanishing_at_insert : thm := keep "monic_vanishing_at_insert" fun _ =>
   : ExceptT String IO thm).run
 #eval monic_vanishing_at_insert
 
-#eval phrase 501
+#eval phrase 502
 def monic_vanishing_at_plus1 : thm := keep "monic_vanishing_at_plus1" fun _ => (do
   let h3 ← set_fact (← ExceptT.mk [[~(n < n) ==> ~(n IN {i:num | i < n})]])
   let h2 ← num_linear_fact (← ExceptT.mk [[~(n < n:num)]])
@@ -8048,7 +8052,7 @@ def monic_vanishing_at_plus1 : thm := keep "monic_vanishing_at_plus1" fun _ => (
   : ExceptT String IO thm).run
 #eval monic_vanishing_at_plus1
 
-#eval phrase 502
+#eval phrase 503
 def monic_vanishing_at_eq : thm := keep "monic_vanishing_at_eq" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool c d.
@@ -8060,7 +8064,7 @@ def monic_vanishing_at_eq : thm := keep "monic_vanishing_at_eq" fun _ => (do
   : ExceptT String IO thm).run
 #eval monic_vanishing_at_eq
 
-#eval phrase 503
+#eval phrase 504
 def monic_vanishing_at_poly : thm := keep "monic_vanishing_at_poly" fun _ => (do
   prove ([[
   !(r:R ring) S c:X->R.
@@ -8075,7 +8079,7 @@ def monic_vanishing_at_poly : thm := keep "monic_vanishing_at_poly" fun _ => (do
   : ExceptT String IO thm).run
 #eval monic_vanishing_at_poly
 
-#eval phrase 504
+#eval phrase 505
 def monic_vanishing_at_series : thm := keep "monic_vanishing_at_series" fun _ => (do
   prove ([[
   !(r:R ring) S c:X->R.
@@ -8087,7 +8091,7 @@ def monic_vanishing_at_series : thm := keep "monic_vanishing_at_series" fun _ =>
   : ExceptT String IO thm).run
 #eval monic_vanishing_at_series
 
-#eval phrase 505
+#eval phrase 506
 def x_derivative_monic_vanishing_at : thm := keep "x_derivative_monic_vanishing_at" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[!t:X. t IN S DELETE s ==> t IN S]])
   prove ([[
@@ -8114,7 +8118,7 @@ def x_derivative_monic_vanishing_at : thm := keep "x_derivative_monic_vanishing_
   : ExceptT String IO thm).run
 #eval x_derivative_monic_vanishing_at
 
-#eval phrase 506
+#eval phrase 507
 def eval_monic_vanishing_at : thm := keep "eval_monic_vanishing_at" fun _ => (do
   prove ([[
   !(r:R ring) S (c:X->R) z.
@@ -8135,7 +8139,7 @@ def eval_monic_vanishing_at : thm := keep "eval_monic_vanishing_at" fun _ => (do
 
 /- compare INTEGRAL_DOMAIN_PRODUCT_EQ_0 -/
 
-#eval phrase 507
+#eval phrase 508
 def ring_product_eq_0 : thm := keep "ring_product_eq_0" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[~(t:X IN (S DELETE t))]])
   let h1 ← set_fact (← ExceptT.mk [[t:X IN S ==> S = t INSERT (S DELETE t)]])
@@ -8156,7 +8160,7 @@ def ring_product_eq_0 : thm := keep "ring_product_eq_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_product_eq_0
 
-#eval phrase 508
+#eval phrase 509
 def eval_monic_vanishing_at_refl : thm := keep "eval_monic_vanishing_at_refl" fun _ => (do
   prove ([[
   !(r:R ring) S (c:X->R) t.
@@ -8174,7 +8178,7 @@ def eval_monic_vanishing_at_refl : thm := keep "eval_monic_vanishing_at_refl" fu
   : ExceptT String IO thm).run
 #eval eval_monic_vanishing_at_refl
 
-#eval phrase 509
+#eval phrase 510
 def monic_vanishing_at_image : thm := keep "monic_vanishing_at_image" fun _ => (do
   prove ([[
   !(r:R ring) S (f:X->Y) (g:Y->R).
@@ -8192,7 +8196,7 @@ def monic_vanishing_at_image : thm := keep "monic_vanishing_at_image" fun _ => (
 
 /- ===== monic polynomials -/
 
-#eval phrase 510
+#eval phrase 511
 def monic_zero_ring : thm := keep "monic_zero_ring" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[!x. x IN {ring_0(r:R ring)} ==> x = ring_0 r]])
   prove ([[
@@ -8210,7 +8214,7 @@ def monic_zero_ring : thm := keep "monic_zero_ring" fun _ => (do
   : ExceptT String IO thm).run
 #eval monic_zero_ring
 
-#eval phrase 511
+#eval phrase 512
 def monic_poly_0 : thm := keep "monic_poly_0" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -8220,7 +8224,7 @@ def monic_poly_0 : thm := keep "monic_poly_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval monic_poly_0
 
-#eval phrase 512
+#eval phrase 513
 def monic_poly_1 : thm := keep "monic_poly_1" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -8230,7 +8234,7 @@ def monic_poly_1 : thm := keep "monic_poly_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval monic_poly_1
 
-#eval phrase 513
+#eval phrase 514
 def poly_1_if_monic_deg_0 : thm := keep "poly_1_if_monic_deg_0" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -8243,7 +8247,7 @@ def poly_1_if_monic_deg_0 : thm := keep "poly_1_if_monic_deg_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_1_if_monic_deg_0
 
-#eval phrase 514
+#eval phrase 515
 def monic_x_pow : thm := keep "monic_x_pow" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -8256,7 +8260,7 @@ def monic_x_pow : thm := keep "monic_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval monic_x_pow
 
-#eval phrase 515
+#eval phrase 516
 def monic_x_minus_const : thm := keep "monic_x_minus_const" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -8270,7 +8274,7 @@ def monic_x_minus_const : thm := keep "monic_x_minus_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval monic_x_minus_const
 
-#eval phrase 516
+#eval phrase 517
 def deg_monic_poly_mul : thm := keep "deg_monic_poly_mul" fun _ => (do
   prove ([[
   !(r:R ring) p q.
@@ -8284,7 +8288,7 @@ def deg_monic_poly_mul : thm := keep "deg_monic_poly_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_monic_poly_mul
 
-#eval phrase 517
+#eval phrase 518
 def monic_poly_mul : thm := keep "monic_poly_mul" fun _ => (do
   prove ([[
   !(r:R ring) p q.
@@ -8298,7 +8302,7 @@ def monic_poly_mul : thm := keep "monic_poly_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval monic_poly_mul
 
-#eval phrase 518
+#eval phrase 519
 def monic_poly_product : thm := keep "monic_poly_product" fun _ => (do
   prove ([[
   !(r:R ring) p (S:X->bool).
@@ -8315,7 +8319,7 @@ def monic_poly_product : thm := keep "monic_poly_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval monic_poly_product
 
-#eval phrase 519
+#eval phrase 520
 def monic_vanishing_at_monic : thm := keep "monic_vanishing_at_monic" fun _ => (do
   prove ([[
   !(r:R ring) S:X->bool c.
@@ -8331,7 +8335,7 @@ def monic_vanishing_at_monic : thm := keep "monic_vanishing_at_monic" fun _ => (
   : ExceptT String IO thm).run
 #eval monic_vanishing_at_monic
 
-#eval phrase 520
+#eval phrase 521
 def monic_subring : thm := keep "monic_subring" fun _ => (do
   prove ([[
   !(r:R ring) G p.
@@ -8344,7 +8348,7 @@ def monic_subring : thm := keep "monic_subring" fun _ => (do
 
 /- ===== r[x] when r is a field -/
 
-#eval phrase 521
+#eval phrase 522
 def PID_x_poly_field : thm := keep "PID_x_poly_field" fun _ => (do
   prove ([[
   !r:R ring.
@@ -8354,7 +8358,7 @@ def PID_x_poly_field : thm := keep "PID_x_poly_field" fun _ => (do
   : ExceptT String IO thm).run
 #eval PID_x_poly_field
 
-#eval phrase 522
+#eval phrase 523
 def UFD_x_poly_field : thm := keep "UFD_x_poly_field" fun _ => (do
   prove ([[
   !r:R ring.
@@ -8364,7 +8368,7 @@ def UFD_x_poly_field : thm := keep "UFD_x_poly_field" fun _ => (do
   : ExceptT String IO thm).run
 #eval UFD_x_poly_field
 
-#eval phrase 523
+#eval phrase 524
 def integral_domain_x_poly_field : thm := keep "integral_domain_x_poly_field" fun _ => (do
   prove ([[
   !r:R ring.
@@ -8374,7 +8378,7 @@ def integral_domain_x_poly_field : thm := keep "integral_domain_x_poly_field" fu
   : ExceptT String IO thm).run
 #eval integral_domain_x_poly_field
 
-#eval phrase 524
+#eval phrase 525
 def prime_iff_irreducible_over_field : thm := keep "prime_iff_irreducible_over_field" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -8385,7 +8389,7 @@ def prime_iff_irreducible_over_field : thm := keep "prime_iff_irreducible_over_f
   : ExceptT String IO thm).run
 #eval prime_iff_irreducible_over_field
 
-#eval phrase 525
+#eval phrase 526
 def squarefree_if_irreducible_over_field : thm := keep "squarefree_if_irreducible_over_field" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -8397,7 +8401,7 @@ def squarefree_if_irreducible_over_field : thm := keep "squarefree_if_irreducibl
   : ExceptT String IO thm).run
 #eval squarefree_if_irreducible_over_field
 
-#eval phrase 526
+#eval phrase 527
 def x_poly_field_monic_associate : thm := keep "x_poly_field_monic_associate" fun _ => (do
   prove ([[
   !(r:R ring) (p:(1->num)->R).
@@ -8412,7 +8416,7 @@ def x_poly_field_monic_associate : thm := keep "x_poly_field_monic_associate" fu
   : ExceptT String IO thm).run
 #eval x_poly_field_monic_associate
 
-#eval phrase 527
+#eval phrase 528
 def mul_unit_const_if_associates : thm := keep "mul_unit_const_if_associates" fun _ => (do
   prove ([[
   !(r:R ring) (p:(V->num)->R) q.
@@ -8430,7 +8434,7 @@ def mul_unit_const_if_associates : thm := keep "mul_unit_const_if_associates" fu
   : ExceptT String IO thm).run
 #eval mul_unit_const_if_associates
 
-#eval phrase 528
+#eval phrase 529
 def monic_associates : thm := keep "monic_associates" fun _ => (do
   prove ([[
   !(r:R ring) p q.
@@ -8446,7 +8450,7 @@ def monic_associates : thm := keep "monic_associates" fun _ => (do
   : ExceptT String IO thm).run
 #eval monic_associates
 
-#eval phrase 529
+#eval phrase 530
 def no_square_divisor_if_coprime_derivative : thm := keep "no_square_divisor_if_coprime_derivative" fun _ => (do
   prove ([[!(r:R ring) p q.
      field r ==>
@@ -8460,7 +8464,7 @@ def no_square_divisor_if_coprime_derivative : thm := keep "no_square_divisor_if_
   : ExceptT String IO thm).run
 #eval no_square_divisor_if_coprime_derivative
 
-#eval phrase 530
+#eval phrase 531
 def nonzero_if_coprime_derivative : thm := keep "nonzero_if_coprime_derivative" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -8474,7 +8478,7 @@ def nonzero_if_coprime_derivative : thm := keep "nonzero_if_coprime_derivative" 
   : ExceptT String IO thm).run
 #eval nonzero_if_coprime_derivative
 
-#eval phrase 531
+#eval phrase 532
 def squarefree_if_coprime_derivative : thm := keep "squarefree_if_coprime_derivative" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -8487,7 +8491,7 @@ def squarefree_if_coprime_derivative : thm := keep "squarefree_if_coprime_deriva
   : ExceptT String IO thm).run
 #eval squarefree_if_coprime_derivative
 
-#eval phrase 532
+#eval phrase 533
 def deg_x_derivative_le : thm := keep "deg_x_derivative_le" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -8500,7 +8504,7 @@ def deg_x_derivative_le : thm := keep "deg_x_derivative_le" fun _ => (do
 
 /- warning: 0 - 1 = 0 -/
 
-#eval phrase 533
+#eval phrase 534
 def deg_x_derivative : thm := keep "deg_x_derivative" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -8513,7 +8517,7 @@ def deg_x_derivative : thm := keep "deg_x_derivative" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_x_derivative
 
-#eval phrase 534
+#eval phrase 535
 def x_derivative_nonzero : thm := keep "x_derivative_nonzero" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[1 <= n <=> ~(n = 0)]])
   prove ([[
@@ -8529,7 +8533,7 @@ def x_derivative_nonzero : thm := keep "x_derivative_nonzero" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_derivative_nonzero
 
-#eval phrase 535
+#eval phrase 536
 def deg_divides : thm := keep "deg_divides" fun _ => (do
   let h3 ← num_linear_fact (← ExceptT.mk [[poly_deg r (poly_mul r p (u:(V->num)->R)) = poly_deg r p + poly_deg r u ==> poly_deg r p <= poly_deg r (poly_mul r p u)]])
   let h2 ← set_fact (← ExceptT.mk [[(u:(V->num)->R) IN {f | ring_polynomial r f /\ poly_vars r f SUBSET S} ==> ring_polynomial r u]])
@@ -8556,7 +8560,7 @@ def deg_divides : thm := keep "deg_divides" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_divides
 
-#eval phrase 536
+#eval phrase 537
 def poly_deg_product : thm := keep "poly_deg_product" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -8589,7 +8593,7 @@ def poly_deg_product : thm := keep "poly_deg_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_deg_product
 
-#eval phrase 537
+#eval phrase 538
 def deg_prime : thm := keep "deg_prime" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -8614,7 +8618,7 @@ def deg_prime : thm := keep "deg_prime" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_prime
 
-#eval phrase 538
+#eval phrase 539
 def deg_0_if_unit : thm := keep "deg_0_if_unit" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[0 = d + e ==> d = 0]])
   prove ([[
@@ -8639,7 +8643,7 @@ def deg_0_if_unit : thm := keep "deg_0_if_unit" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_0_if_unit
 
-#eval phrase 539
+#eval phrase 540
 def prime_if_deg_1 : thm := keep "prime_if_deg_1" fun _ => (do
   let h4 ← num_linear_fact (← ExceptT.mk [[1 <= n ==> n <= 1 ==> n = 1]])
   let h3 ← ar (← ExceptT.mk [[~(x = 0) ==> 1 <= x]])
@@ -8683,7 +8687,7 @@ def prime_if_deg_1 : thm := keep "prime_if_deg_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval prime_if_deg_1
 
-#eval phrase 540
+#eval phrase 541
 def coprime_prime_derivative : thm := keep "coprime_prime_derivative" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -8698,7 +8702,7 @@ def coprime_prime_derivative : thm := keep "coprime_prime_derivative" fun _ => (
   : ExceptT String IO thm).run
 #eval coprime_prime_derivative
 
-#eval phrase 541
+#eval phrase 542
 def square_divides_if_also_divides_derivative : thm := keep "square_divides_if_also_divides_derivative" fun _ => (do
   let h1 ← rgl (← ExceptT.mk [[ring_mul(r:R ring) p Q = ring_add r (ring_mul r p' q) (ring_mul r p q') /\ ring_add r (ring_mul r p x) (ring_mul r p' y) = ring_1 r ==> ring_mul r p q = ring_mul r (ring_mul r p p) (ring_sub r (ring_add r (ring_mul r Q y) (ring_mul r x q)) (ring_mul r q' y))]])
   prove ([[
@@ -8750,7 +8754,7 @@ def square_divides_if_also_divides_derivative : thm := keep "square_divides_if_a
   : ExceptT String IO thm).run
 #eval square_divides_if_also_divides_derivative
 
-#eval phrase 542
+#eval phrase 543
 def poly_divides_product : thm := keep "poly_divides_product" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[~(t:X IN (S DELETE t))]])
   let h1 ← set_fact (← ExceptT.mk [[(t:X) IN S ==> t INSERT (S DELETE t) = S]])
@@ -8775,7 +8779,7 @@ def poly_divides_product : thm := keep "poly_divides_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_divides_product
 
-#eval phrase 543
+#eval phrase 544
 def poly_divides_sum : thm := keep "poly_divides_sum" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -8802,7 +8806,7 @@ def poly_divides_sum : thm := keep "poly_divides_sum" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_divides_sum
 
-#eval phrase 544
+#eval phrase 545
 def poly_divides_delta : thm := keep "poly_divides_delta" fun _ => (do
   let h3 ← set_fact (← ExceptT.mk [[!s:X. s IN S DELETE t ==> ~(s = t)]])
   let h2 ← rgl (← ExceptT.mk [[A = ring_sub(r:R ring) B C ==> C = ring_sub r B A]])
@@ -8836,7 +8840,7 @@ def poly_divides_delta : thm := keep "poly_divides_delta" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_divides_delta
 
-#eval phrase 545
+#eval phrase 546
 def coprime_product : thm := keep "coprime_product" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -8867,7 +8871,7 @@ def coprime_product : thm := keep "coprime_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval coprime_product
 
-#eval phrase 546
+#eval phrase 547
 def divides_factor_and_derivative_product : thm := keep "divides_factor_and_derivative_product" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[t IN S /\ s IN S /\ ~(s = t:X) ==> t IN S DELETE s]])
   prove ([[
@@ -8914,7 +8918,7 @@ def divides_factor_and_derivative_product : thm := keep "divides_factor_and_deri
   : ExceptT String IO thm).run
 #eval divides_factor_and_derivative_product
 
-#eval phrase 547
+#eval phrase 548
 def coprime_derivative_if_squarefree : thm := keep "coprime_derivative_if_squarefree" fun _ => (do
   prove ([[
   !(r:R ring) f.
@@ -8930,7 +8934,7 @@ def coprime_derivative_if_squarefree : thm := keep "coprime_derivative_if_square
   : ExceptT String IO thm).run
 #eval coprime_derivative_if_squarefree
 
-#eval phrase 548
+#eval phrase 549
 def gcd_poly_linear_combination : thm := keep "gcd_poly_linear_combination" fun _ => (do
   prove ([[
   !(r:R ring) a b.
@@ -8958,7 +8962,7 @@ def gcd_poly_linear_combination : thm := keep "gcd_poly_linear_combination" fun 
   : ExceptT String IO thm).run
 #eval gcd_poly_linear_combination
 
-#eval phrase 549
+#eval phrase 550
 def linear_combination_if_coprime_poly : thm := keep "linear_combination_if_coprime_poly" fun _ => (do
   prove ([[
   !(r:R ring) a b.
@@ -8982,7 +8986,7 @@ def linear_combination_if_coprime_poly : thm := keep "linear_combination_if_copr
   : ExceptT String IO thm).run
 #eval linear_combination_if_coprime_poly
 
-#eval phrase 550
+#eval phrase 551
 def coprime_poly_if_linear_combination : thm := keep "coprime_poly_if_linear_combination" fun _ => (do
   let h1 ← rgl (← ExceptT.mk [[a = ring_mul(r:R ring) d u /\ b = ring_mul r d v /\ ring_add r (ring_mul r a x) (ring_mul r b y) = ring_1 r ==> ring_mul r d (ring_add r (ring_mul r u x) (ring_mul r v y)) = ring_1 r]])
   prove ([[
@@ -9026,7 +9030,7 @@ def coprime_poly_if_linear_combination : thm := keep "coprime_poly_if_linear_com
   : ExceptT String IO thm).run
 #eval coprime_poly_if_linear_combination
 
-#eval phrase 551
+#eval phrase 552
 def nonzero_poly_mul : thm := keep "nonzero_poly_mul" fun _ => (do
   prove ([[
   !(r:R ring) p (q:(1->num)->R).
@@ -9044,7 +9048,7 @@ def nonzero_poly_mul : thm := keep "nonzero_poly_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval nonzero_poly_mul
 
-#eval phrase 552
+#eval phrase 553
 def nonzero_poly_pow : thm := keep "nonzero_poly_pow" fun _ => (do
   prove ([[
   !(r:R ring) (p:(1->num)->R) n.
@@ -9060,7 +9064,7 @@ def nonzero_poly_pow : thm := keep "nonzero_poly_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval nonzero_poly_pow
 
-#eval phrase 553
+#eval phrase 554
 def nonzero_poly_product : thm := keep "nonzero_poly_product" fun _ => (do
   prove ([[
   !(r:R ring) S p.
@@ -9076,7 +9080,7 @@ def nonzero_poly_product : thm := keep "nonzero_poly_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval nonzero_poly_product
 
-#eval phrase 554
+#eval phrase 555
 def irred_x_minus_const : thm := keep "irred_x_minus_const" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -9098,7 +9102,7 @@ def irred_x_minus_const : thm := keep "irred_x_minus_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval irred_x_minus_const
 
-#eval phrase 555
+#eval phrase 556
 def monic_factorization : thm := keep "monic_factorization" fun _ => (do
   let h3 ← def' ([[q:num->(1->num)->R]]) (← ExceptT.mk [[\i:num. @qi. ring_polynomial(r:R ring) qi /\ monic r qi /\ ring_associates(x_poly r) (p i) qi]])
   let h2 ← set_fact (← ExceptT.mk [[(!i. ~(i IN 1..0)) ==> 1..0 = {}]])
@@ -9161,7 +9165,7 @@ def monic_factorization : thm := keep "monic_factorization" fun _ => (do
   : ExceptT String IO thm).run
 #eval monic_factorization
 
-#eval phrase 556
+#eval phrase 557
 def monic_factorization_exponents : thm := keep "monic_factorization_exponents" fun _ => (do
   let h4 ← set_fact (← ExceptT.mk [[{x' | x' IN 1..n /\ q x' = q x:(1->num)->R} SUBSET 1..n]])
   let h3 ← set_fact (← ExceptT.mk [[~(i:num IN {})]])
@@ -9237,7 +9241,7 @@ def monic_factorization_exponents : thm := keep "monic_factorization_exponents" 
 
 /- ===== polynomial reversal -/
 
-#eval phrase 557
+#eval phrase 558
 def x_truncreverse : thm := keep "x_truncreverse" fun _ => new_definition
  [[
   x_truncreverse (r:R ring) n (p:(1->num)->R)
@@ -9245,7 +9249,7 @@ def x_truncreverse : thm := keep "x_truncreverse" fun _ => new_definition
 ]]
 #eval x_truncreverse
 
-#eval phrase 558
+#eval phrase 559
 def coeff_x_truncreverse : thm := keep "coeff_x_truncreverse" fun _ => (do
   prove ([[
   !(r:R ring) n p d.
@@ -9256,7 +9260,7 @@ def coeff_x_truncreverse : thm := keep "coeff_x_truncreverse" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_x_truncreverse
 
-#eval phrase 559
+#eval phrase 560
 def x_truncreverse_series : thm := keep "x_truncreverse_series" fun _ => (do
   prove ([[
   !(r:R ring) n p.
@@ -9269,7 +9273,7 @@ def x_truncreverse_series : thm := keep "x_truncreverse_series" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_series
 
-#eval phrase 560
+#eval phrase 561
 def x_truncreverse_poly : thm := keep "x_truncreverse_poly" fun _ => (do
   prove ([[
   !(r:R ring) n p.
@@ -9283,7 +9287,7 @@ def x_truncreverse_poly : thm := keep "x_truncreverse_poly" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_poly
 
-#eval phrase 561
+#eval phrase 562
 def deg_x_truncreverse_le : thm := keep "deg_x_truncreverse_le" fun _ => (do
   prove ([[
   !(r:R ring) n p.
@@ -9297,7 +9301,7 @@ def deg_x_truncreverse_le : thm := keep "deg_x_truncreverse_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_x_truncreverse_le
 
-#eval phrase 562
+#eval phrase 563
 def x_truncreverse_poly_add : thm := keep "x_truncreverse_poly_add" fun _ => (do
   prove ([[
   !(r:R ring) n p q.
@@ -9311,7 +9315,7 @@ def x_truncreverse_poly_add : thm := keep "x_truncreverse_poly_add" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_poly_add
 
-#eval phrase 563
+#eval phrase 564
 def x_truncreverse_poly_sub : thm := keep "x_truncreverse_poly_sub" fun _ => (do
   prove ([[
   !(r:R ring) n p q.
@@ -9325,7 +9329,7 @@ def x_truncreverse_poly_sub : thm := keep "x_truncreverse_poly_sub" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_poly_sub
 
-#eval phrase 564
+#eval phrase 565
 def x_truncreverse_poly_const : thm := keep "x_truncreverse_poly_const" fun _ => (do
   let h3 ← num_linear_fact (← ExceptT.mk [[~(d = n) ==> ~(d <= n) \/ ~(n - d = 0)]])
   let h2 ← num_linear_fact (← ExceptT.mk [[n - n = 0:num]])
@@ -9349,7 +9353,7 @@ def x_truncreverse_poly_const : thm := keep "x_truncreverse_poly_const" fun _ =>
   : ExceptT String IO thm).run
 #eval x_truncreverse_poly_const
 
-#eval phrase 565
+#eval phrase 566
 def x_truncreverse_0_poly_const : thm := keep "x_truncreverse_0_poly_const" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -9360,7 +9364,7 @@ def x_truncreverse_0_poly_const : thm := keep "x_truncreverse_0_poly_const" fun 
   : ExceptT String IO thm).run
 #eval x_truncreverse_0_poly_const
 
-#eval phrase 566
+#eval phrase 567
 def x_truncreverse_poly_1 : thm := keep "x_truncreverse_poly_1" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -9371,7 +9375,7 @@ def x_truncreverse_poly_1 : thm := keep "x_truncreverse_poly_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_poly_1
 
-#eval phrase 567
+#eval phrase 568
 def x_truncreverse_poly_0 : thm := keep "x_truncreverse_poly_0" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -9382,7 +9386,7 @@ def x_truncreverse_poly_0 : thm := keep "x_truncreverse_poly_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_poly_0
 
-#eval phrase 568
+#eval phrase 569
 def x_truncreverse_poly_sum : thm := keep "x_truncreverse_poly_sum" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -9409,7 +9413,7 @@ def x_truncreverse_poly_sum : thm := keep "x_truncreverse_poly_sum" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_poly_sum
 
-#eval phrase 569
+#eval phrase 570
 def x_truncreverse_const_x_pow : thm := keep "x_truncreverse_const_x_pow" fun _ => (do
   let h3 ← num_linear_fact (← ExceptT.mk [[~(d = 0) ==> ~(d <= n) \/ ~(n - d = n)]])
   let h2 ← num_linear_fact (← ExceptT.mk [[n-0 = n:num]])
@@ -9433,7 +9437,7 @@ def x_truncreverse_const_x_pow : thm := keep "x_truncreverse_const_x_pow" fun _ 
   : ExceptT String IO thm).run
 #eval x_truncreverse_const_x_pow
 
-#eval phrase 570
+#eval phrase 571
 def x_truncreverse_x_pow : thm := keep "x_truncreverse_x_pow" fun _ => (do
   prove ([[
   !(r:R ring) n.
@@ -9444,7 +9448,7 @@ def x_truncreverse_x_pow : thm := keep "x_truncreverse_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_x_pow
 
-#eval phrase 571
+#eval phrase 572
 def x_truncreverse_x_minus_const : thm := keep "x_truncreverse_x_minus_const" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -9460,7 +9464,7 @@ def x_truncreverse_x_minus_const : thm := keep "x_truncreverse_x_minus_const" fu
   : ExceptT String IO thm).run
 #eval x_truncreverse_x_minus_const
 
-#eval phrase 572
+#eval phrase 573
 def x_truncreverse_one_minus_constx : thm := keep "x_truncreverse_one_minus_constx" fun _ => (do
   prove ([[
   !(r:R ring) c.
@@ -9476,7 +9480,7 @@ def x_truncreverse_one_minus_constx : thm := keep "x_truncreverse_one_minus_cons
   : ExceptT String IO thm).run
 #eval x_truncreverse_one_minus_constx
 
-#eval phrase 573
+#eval phrase 574
 def x_truncreverse_mul : thm := keep "x_truncreverse_mul" fun _ => (do
   let h18 ← ar (← ExceptT.mk [[~(a <= m+n) ==> ~(a-n <= m:num)]])
   let h17 ← ar (← ExceptT.mk [[~(d <= a) ==> ~(a < n) ==> ~(d-(a-n) <= n:num)]])
@@ -9551,7 +9555,7 @@ def x_truncreverse_mul : thm := keep "x_truncreverse_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_mul
 
-#eval phrase 574
+#eval phrase 575
 def x_truncreverse_product : thm := keep "x_truncreverse_product" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -9581,7 +9585,7 @@ def x_truncreverse_product : thm := keep "x_truncreverse_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_product
 
-#eval phrase 575
+#eval phrase 576
 def x_truncreverse_pow : thm := keep "x_truncreverse_pow" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[(n+1)-1 = n]])
   prove ([[
@@ -9606,7 +9610,7 @@ def x_truncreverse_pow : thm := keep "x_truncreverse_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_pow
 
-#eval phrase 576
+#eval phrase 577
 def deg_monic_vanishing_at : thm := keep "deg_monic_vanishing_at" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[C + 1 = 1 + C]])
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -9639,7 +9643,7 @@ def deg_monic_vanishing_at : thm := keep "deg_monic_vanishing_at" fun _ => (do
   : ExceptT String IO thm).run
 #eval deg_monic_vanishing_at
 
-#eval phrase 577
+#eval phrase 578
 def deg_monic_vanishing_at_le : thm := keep "deg_monic_vanishing_at_le" fun _ => (do
   prove ([[
   !(r:R ring) c:X->R S.
@@ -9653,7 +9657,7 @@ def deg_monic_vanishing_at_le : thm := keep "deg_monic_vanishing_at_le" fun _ =>
   : ExceptT String IO thm).run
 #eval deg_monic_vanishing_at_le
 
-#eval phrase 578
+#eval phrase 579
 def topcoeff_monic_vanishing_at : thm := keep "topcoeff_monic_vanishing_at" fun _ => (do
   prove ([[
   !(r:R ring) c:X->R S.
@@ -9675,7 +9679,7 @@ def topcoeff_monic_vanishing_at : thm := keep "topcoeff_monic_vanishing_at" fun 
 
 /- could use HAS_SIZE, RESTRICTED_POWERSET, etc. -/
 
-#eval phrase 579
+#eval phrase 580
 def coeff_monic_vanishing_at_lemma : thm := keep "coeff_monic_vanishing_at_lemma" fun _ => (do
   let h3 ← set_fact (← ExceptT.mk [[a IN {U | U SUBSET S /\ CARD U = n - 1} ==> (a:X->bool) SUBSET S]])
   let h2 ← num_linear_fact (← ExceptT.mk [[~(n = 0) ==> n = (n-1)+1]])
@@ -9757,7 +9761,7 @@ def coeff_monic_vanishing_at_lemma : thm := keep "coeff_monic_vanishing_at_lemma
   : ExceptT String IO thm).run
 #eval coeff_monic_vanishing_at_lemma
 
-#eval phrase 580
+#eval phrase 581
 def coeff_monic_vanishing_at_lemma2 : thm := keep "coeff_monic_vanishing_at_lemma2" fun _ => (do
   let h2 ← rgl (← ExceptT.mk [[
     ring_sub(r:R ring) (ring_mul r (ring_neg r (M)) (N)) (ring_mul r (C) (ring_mul r (M) (N1))) = ring_mul r (ring_neg r (M)) (ring_add r (N) (ring_mul r (C) (N1)))
@@ -9805,7 +9809,7 @@ def coeff_monic_vanishing_at_lemma2 : thm := keep "coeff_monic_vanishing_at_lemm
   : ExceptT String IO thm).run
 #eval coeff_monic_vanishing_at_lemma2
 
-#eval phrase 581
+#eval phrase 582
 def coeff_monic_vanishing_at : thm := keep "coeff_monic_vanishing_at" fun _ => (do
   let h12 ← num_linear_fact (← ExceptT.mk [[n <= CARD(S:X->bool) ==> n-1 <= CARD S]])
   let h11 ← num_linear_fact (← ExceptT.mk [[~(n = 0) ==> n <= CARD(S:X->bool) + 1 ==> ~(n = CARD S + 1) ==> (CARD S + 1) - n = CARD S - (n - 1)]])
@@ -9873,7 +9877,7 @@ def coeff_monic_vanishing_at : thm := keep "coeff_monic_vanishing_at" fun _ => (
   : ExceptT String IO thm).run
 #eval coeff_monic_vanishing_at
 
-#eval phrase 582
+#eval phrase 583
 def x_truncreverse_monic_vanishing_at : thm := keep "x_truncreverse_monic_vanishing_at" fun _ => (do
   let h3 ← num_linear_fact (← ExceptT.mk [[CARD (S:X->bool) + 1 = 1 + CARD S]])
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -9904,7 +9908,7 @@ def x_truncreverse_monic_vanishing_at : thm := keep "x_truncreverse_monic_vanish
   : ExceptT String IO thm).run
 #eval x_truncreverse_monic_vanishing_at
 
-#eval phrase 583
+#eval phrase 584
 def x_truncreverse_derivative_monic_vanishing_at : thm := keep "x_truncreverse_derivative_monic_vanishing_at" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[!s:X. !t:X. t IN (S DELETE s) ==> t IN S]])
   prove ([[
@@ -9931,7 +9935,7 @@ def x_truncreverse_derivative_monic_vanishing_at : thm := keep "x_truncreverse_d
   : ExceptT String IO thm).run
 #eval x_truncreverse_derivative_monic_vanishing_at
 
-#eval phrase 584
+#eval phrase 585
 def x_truncreverse_subring : thm := keep "x_truncreverse_subring" fun _ => (do
   prove ([[
   !(r:R ring) G n (p:(1->num)->R).
@@ -9942,7 +9946,7 @@ def x_truncreverse_subring : thm := keep "x_truncreverse_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_truncreverse_subring
 
-#eval phrase 585
+#eval phrase 586
 def botcoeff1_if_x_truncreverse_monic : thm := keep "botcoeff1_if_x_truncreverse_monic" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[d - 0 = d]])
   let h1 ← ar (← ExceptT.mk [[0 <= d]])
@@ -9955,7 +9959,7 @@ def botcoeff1_if_x_truncreverse_monic : thm := keep "botcoeff1_if_x_truncreverse
   : ExceptT String IO thm).run
 #eval botcoeff1_if_x_truncreverse_monic
 
-#eval phrase 586
+#eval phrase 587
 def nonzero_if_x_truncreverse_monic : thm := keep "nonzero_if_x_truncreverse_monic" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -9970,7 +9974,7 @@ def nonzero_if_x_truncreverse_monic : thm := keep "nonzero_if_x_truncreverse_mon
 /- ===== newton identities -/
 /- (prod_i x_i) sum_i 1/x_i = sum_i prod_(j!=i) x_i -/
 
-#eval phrase 587
+#eval phrase 588
 def product_times_sum_reciprocals : thm := keep "product_times_sum_reciprocals" fun _ => (do
   let h6 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> ~(x IN S) ==> ~(x IN S DELETE s)]])
   let h5 ← rgl (← ExceptT.mk [[ring_mul(r:R ring) F0 G0 = ring_1 r ==> ring_mul r (ring_mul r F0 F1) (ring_add r G0 G1) = ring_add r F1 (ring_mul r F0 (ring_mul r F1 G1))]])
@@ -10020,7 +10024,7 @@ def product_times_sum_reciprocals : thm := keep "product_times_sum_reciprocals" 
   : ExceptT String IO thm).run
 #eval product_times_sum_reciprocals
 
-#eval phrase 588
+#eval phrase 589
 def newton_identities_natural : thm := keep "newton_identities_natural" fun _ => (do
   let h2 ← sr (← ExceptT.mk [[ring_powerseries(r:R ring) (p:(1->num)->R) ==> p IN {q | ring_powerseries r q}]])
   let h1 ← sr (← ExceptT.mk [[ring_powerseries(r:R ring) (p:(1->num)->R) ==> p IN {q | ring_powerseries r q}]])
@@ -10046,7 +10050,7 @@ def newton_identities_natural : thm := keep "newton_identities_natural" fun _ =>
   : ExceptT String IO thm).run
 #eval newton_identities_natural
 
-#eval phrase 589
+#eval phrase 590
 def newton_identities_monic_vanishing_at : thm := keep "newton_identities_monic_vanishing_at" fun _ => (do
   prove ([[
   !(r:R ring) c:X->R S.
@@ -10066,7 +10070,7 @@ def newton_identities_monic_vanishing_at : thm := keep "newton_identities_monic_
 
 /- maybe the most canonical form -/
 
-#eval phrase 590
+#eval phrase 591
 def newton_identities : thm := keep "newton_identities" fun _ => (do
   prove ([[
   !(r:R ring) c:X->R S d.
@@ -10095,7 +10099,7 @@ def newton_identities : thm := keep "newton_identities" fun _ => (do
 
 /- pulling out the leading 1 -/
 
-#eval phrase 591
+#eval phrase 592
 def newton_identities_recurrence : thm := keep "newton_identities_recurrence" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[x - 0 = x]])
   let h2 ← rgl (← ExceptT.mk [[ring_sub(r:R ring) x (ring_sub r x y) = y]])
@@ -10134,7 +10138,7 @@ def newton_identities_recurrence : thm := keep "newton_identities_recurrence" fu
   : ExceptT String IO thm).run
 #eval newton_identities_recurrence
 
-#eval phrase 592
+#eval phrase 593
 def powersums_subring_if_poly_subring : thm := keep "powersums_subring_if_poly_subring" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[1 <= a /\ a <= d ==> d-a < d]])
   prove ([[
@@ -10178,7 +10182,7 @@ def powersums_subring_if_poly_subring : thm := keep "powersums_subring_if_poly_s
 /- the D=1 case boils down to powersums_subring_if_poly_subring_denominators -/
 /- but giving shorter proof of that case feels better -/
 
-#eval phrase 593
+#eval phrase 594
 def powersums_subring_if_poly_subring_denominators_waterfall : thm := keep "powersums_subring_if_poly_subring_denominators_waterfall" fun _ => (do
   let h4 ← num_linear_fact (← ExceptT.mk [[1 <= x ==> x <= j ==> j-x < j]])
   let h3 ← rgl (← ExceptT.mk [[ring_mul(r:R ring) (ring_mul r x y) (ring_mul r a b) = ring_mul r (ring_mul r x a) (ring_mul r y b)]])
@@ -10262,7 +10266,7 @@ def powersums_subring_if_poly_subring_denominators_waterfall : thm := keep "powe
   : ExceptT String IO thm).run
 #eval powersums_subring_if_poly_subring_denominators_waterfall
 
-#eval phrase 594
+#eval phrase 595
 def powersums_subring_if_poly_subring_denominators : thm := keep "powersums_subring_if_poly_subring_denominators" fun _ => (do
   prove ([[
   !(r:R ring) G S c:X->R D j.
@@ -10284,7 +10288,7 @@ def powersums_subring_if_poly_subring_denominators : thm := keep "powersums_subr
 
 /- ===== reverse Newton recurrence: coeffs from power sums -/
 
-#eval phrase 595
+#eval phrase 596
 def newton_identities_reverse : thm := keep "newton_identities_reverse" fun _ => (do
   let h12 ← rgl (← ExceptT.mk [[
         ring_mul(r:R ring) Sn C = ring_add r (ring_mul r C (ring_add r Sn n)) (ring_mul r (ring_neg r n) C)
@@ -10376,7 +10380,7 @@ def newton_identities_reverse : thm := keep "newton_identities_reverse" fun _ =>
   : ExceptT String IO thm).run
 #eval newton_identities_reverse
 
-#eval phrase 596
+#eval phrase 597
 def coeff_poly_subring_if_powersums_subring_lemma : thm := keep "coeff_poly_subring_if_powersums_subring_lemma" fun _ => (do
   let h5 ← rgl (← ExceptT.mk [[
     ring_mul(r:R ring) u v = ring_1 r ==>
@@ -10432,7 +10436,7 @@ def coeff_poly_subring_if_powersums_subring_lemma : thm := keep "coeff_poly_subr
   : ExceptT String IO thm).run
 #eval coeff_poly_subring_if_powersums_subring_lemma
 
-#eval phrase 597
+#eval phrase 598
 def coeff_poly_subring_if_powersums_subring : thm := keep "coeff_poly_subring_if_powersums_subring" fun _ => (do
   let h2 ← num_linear_fact (← ExceptT.mk [[CARD S - n <= CARD(S:X->bool)]])
   let h1 ← num_linear_fact (← ExceptT.mk [[n <= CARD(S:X->bool) ==> CARD S - (CARD S - n) = n]])
@@ -10460,7 +10464,7 @@ def coeff_poly_subring_if_powersums_subring : thm := keep "coeff_poly_subring_if
   : ExceptT String IO thm).run
 #eval coeff_poly_subring_if_powersums_subring
 
-#eval phrase 598
+#eval phrase 599
 def poly_subring_if_powersums_subring : thm := keep "poly_subring_if_powersums_subring" fun _ => (do
   prove ([[
   !(r:R ring) G S c:X->R.
@@ -10477,7 +10481,7 @@ def poly_subring_if_powersums_subring : thm := keep "poly_subring_if_powersums_s
   : ExceptT String IO thm).run
 #eval poly_subring_if_powersums_subring
 
-#eval phrase 599
+#eval phrase 600
 def symfun_subring_if_powersums_subring : thm := keep "symfun_subring_if_powersums_subring" fun _ => (do
   prove ([[
   !(r:R ring) G S c:X->R n.
@@ -10508,7 +10512,7 @@ def symfun_subring_if_powersums_subring : thm := keep "symfun_subring_if_powersu
 /- ===== generalized Newton identities for 1/(1-cx)^(e+1) -/
 /- note: the e=0 case is given somewhat shorter proofs above -/
 
-#eval phrase 600
+#eval phrase 601
 def pow_newton_identities_natural : thm := keep "pow_newton_identities_natural" fun _ => (do
   let h3 ← sr (← ExceptT.mk [[ring_powerseries(r:R ring) (p:(1->num)->R) ==> p IN {q | ring_powerseries r q}]])
   let h2 ← def' ([[q:X->(1->num)->R]]) (← ExceptT.mk [[\s:X. series_from_coeffs (\n. ring_mul(r:R ring) (ring_of_num r (binom (n + e,e))) (ring_pow r (c s) n))]])
@@ -10554,7 +10558,7 @@ def pow_newton_identities_natural : thm := keep "pow_newton_identities_natural" 
   : ExceptT String IO thm).run
 #eval pow_newton_identities_natural
 
-#eval phrase 601
+#eval phrase 602
 def pow_newton_identities_monic_vanishing_at : thm := keep "pow_newton_identities_monic_vanishing_at" fun _ => (do
   prove ([[
   !(r:R ring) c:X->R S e.
@@ -10586,7 +10590,7 @@ def pow_newton_identities_monic_vanishing_at : thm := keep "pow_newton_identitie
   : ExceptT String IO thm).run
 #eval pow_newton_identities_monic_vanishing_at
 
-#eval phrase 602
+#eval phrase 603
 def scaled_pow_newton_identities_monic_vanishing_at_lemma : thm := keep "scaled_pow_newton_identities_monic_vanishing_at_lemma" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[~(d < e:num) ==> d-e+e = d]])
   prove ([[
@@ -10640,7 +10644,7 @@ def scaled_pow_newton_identities_monic_vanishing_at_lemma : thm := keep "scaled_
   : ExceptT String IO thm).run
 #eval scaled_pow_newton_identities_monic_vanishing_at_lemma
 
-#eval phrase 603
+#eval phrase 604
 def scaled_pow_newton_rightside : thm := keep "scaled_pow_newton_rightside" fun _ => new_definition
  [[
   scaled_pow_newton_rightside (r:R ring) (c:X->R) (S:X->bool) (e:num)
@@ -10656,7 +10660,7 @@ def scaled_pow_newton_rightside : thm := keep "scaled_pow_newton_rightside" fun 
 ]]
 #eval scaled_pow_newton_rightside
 
-#eval phrase 604
+#eval phrase 605
 def scaled_pow_newton_identities_monic_vanishing_at : thm := keep "scaled_pow_newton_identities_monic_vanishing_at" fun _ => (do
   prove ([[
   !(r:R ring) c:X->R S e.
@@ -10691,7 +10695,7 @@ def scaled_pow_newton_identities_monic_vanishing_at : thm := keep "scaled_pow_ne
   : ExceptT String IO thm).run
 #eval scaled_pow_newton_identities_monic_vanishing_at
 
-#eval phrase 605
+#eval phrase 606
 def poly_pow_newton_identities_monic_vanishing_at_lemma : thm := keep "poly_pow_newton_identities_monic_vanishing_at_lemma" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[!s:X. s IN S DELETE t ==> s IN S]])
   prove ([[
@@ -10712,7 +10716,7 @@ def poly_pow_newton_identities_monic_vanishing_at_lemma : thm := keep "poly_pow_
   : ExceptT String IO thm).run
 #eval poly_pow_newton_identities_monic_vanishing_at_lemma
 
-#eval phrase 606
+#eval phrase 607
 def poly_pow_newton_identities_monic_vanishing_at : thm := keep "poly_pow_newton_identities_monic_vanishing_at" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[!s t:X. s IN S DELETE t ==> s IN S]])
   prove ([[
@@ -10736,7 +10740,7 @@ def poly_pow_newton_identities_monic_vanishing_at : thm := keep "poly_pow_newton
   : ExceptT String IO thm).run
 #eval poly_pow_newton_identities_monic_vanishing_at
 
-#eval phrase 607
+#eval phrase 608
 def poly_scaled_pow_newton_rightside : thm := keep "poly_scaled_pow_newton_rightside" fun _ => (do
   prove ([[
   !(r:R ring) c:X->R S e.
@@ -10749,7 +10753,7 @@ def poly_scaled_pow_newton_rightside : thm := keep "poly_scaled_pow_newton_right
   : ExceptT String IO thm).run
 #eval poly_scaled_pow_newton_rightside
 
-#eval phrase 608
+#eval phrase 609
 def deg_pow_newton_identities_monic_vanishing_at_lemma : thm := keep "deg_pow_newton_identities_monic_vanishing_at_lemma" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[(e+1)*1 = e+1]])
   let h1 ← set_fact (← ExceptT.mk [[!s t:X. s IN S DELETE t ==> s IN S]])
@@ -10776,7 +10780,7 @@ def deg_pow_newton_identities_monic_vanishing_at_lemma : thm := keep "deg_pow_ne
   : ExceptT String IO thm).run
 #eval deg_pow_newton_identities_monic_vanishing_at_lemma
 
-#eval phrase 609
+#eval phrase 610
 def deg_pow_newton_identities_monic_vanishing_at : thm := keep "deg_pow_newton_identities_monic_vanishing_at" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[!s t:X. s IN S DELETE t ==> s IN S]])
   prove ([[
@@ -10803,7 +10807,7 @@ def deg_pow_newton_identities_monic_vanishing_at : thm := keep "deg_pow_newton_i
   : ExceptT String IO thm).run
 #eval deg_pow_newton_identities_monic_vanishing_at
 
-#eval phrase 610
+#eval phrase 611
 def deg_scaled_pow_newton_rightside : thm := keep "deg_scaled_pow_newton_rightside" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[d <= d1 + d2 /\ d1 <= e:num /\ d2 <= C ==> d <= e + C]])
   prove ([[
@@ -10823,162 +10827,28 @@ def deg_scaled_pow_newton_rightside : thm := keep "deg_scaled_pow_newton_rightsi
   : ExceptT String IO thm).run
 #eval deg_scaled_pow_newton_rightside
 
-/- ===== the ring of complex numbers -/
-
-#eval phrase 611
-def complex_ring : thm := keep "complex_ring" fun _ => new_definition
- [[
-  complex_ring = ring((:complex),Cx(&0),Cx(&1),( -- ),( + ),( * ))
-]]
-#eval complex_ring
+/- ===== the ring of complex numbers: see Multivariate/complex_ring.ml -/
 
 #eval phrase 612
-def complex_of_num : thm := keep "complex_of_num" fun _ => new_definition
- [[
-  complex_of_num(n:num) = Cx(real_of_num n)
-]]
-#eval complex_of_num
-
-#eval phrase 613
-def complex_of_int : thm := keep "complex_of_int" fun _ => new_definition
- [[
-  complex_of_int(n:int) = Cx(real_of_int n)
-]]
-#eval complex_of_int
-
-#eval phrase 614
-def complex_ring_clauses : thm := keep "complex_ring_clauses" fun _ => (do
-  prove ([[ring_carrier complex_ring = (:complex) /\
-   ring_0 complex_ring = Cx(&0) /\
-   ring_1 complex_ring = Cx(&1) /\
-   ring_neg complex_ring = ( -- ) /\
-   ring_add complex_ring = ( + ) /\
-   ring_mul complex_ring = ( * )]])
-   (PURE_REWRITE_TAC [(← HolLight.GSYM PAIR_EQ), ring_carrier, ring_0, ring_1, ring_neg, ring_add, ring_mul,
-      BETA_THM, PAIR] THEN
-    PURE_REWRITE_TAC [complex_ring, (← HolLight.GSYM (← HolLight.CONJUNCT2 ring_tybij))] THEN
-    REWRITE_TAC [IN_UNIV] THEN CONV_TAC cr)
-  : ExceptT String IO thm).run
-#eval complex_ring_clauses
-
-#eval phrase 615
 def in_complex_ring : thm := keep "in_complex_ring" fun _ => (do
   prove ([[
   !z.
   z IN ring_carrier complex_ring
 ]])
-   (qed [complex_ring_clauses, IN_UNIV])
+   (qed [COMPLEX_RING_CLAUSES, IN_UNIV])
   : ExceptT String IO thm).run
 #eval in_complex_ring
 
-#eval phrase 616
-def field_complex : thm := keep "field_complex" fun _ => (do
-  let h1 ← rr (← ExceptT.mk [[~(&1 = &0:real)]])
-  prove ([[
-  field complex_ring
-]])
-   (rw [field, complex_ring_clauses, IN_UNIV] THEN
-    qed [CX_INJ, COMPLEX_MUL_RINV, h1])
-  : ExceptT String IO thm).run
-#eval field_complex
-
-#eval phrase 617
-def integral_domain_complex : thm := keep "integral_domain_complex" fun _ => (do
-  prove ([[
-  integral_domain complex_ring
-]])
-   (qed [field_complex, FIELD_IMP_INTEGRAL_DOMAIN])
-  : ExceptT String IO thm).run
-#eval integral_domain_complex
-
-#eval phrase 618
-def ring_of_num_complex : thm := keep "ring_of_num_complex" fun _ => (do
-  prove ([[
-  ring_of_num complex_ring = complex_of_num
-]])
-   (rw [FUN_EQ_THM, complex_of_num] THEN
-    INDUCT_TAC THEN
-    simp [ring_of_num, complex_ring_clauses] THEN
-    rw [(← HolLight.GSYM CX_ADD), REAL_OF_NUM_SUC])
-  : ExceptT String IO thm).run
-#eval ring_of_num_complex
-
-#eval phrase 619
-def ring_of_int_complex : thm := keep "ring_of_int_complex" fun _ => (do
-  prove ([[
-  ring_of_int complex_ring = complex_of_int
-]])
-   (rw [FUN_EQ_THM] THEN
-    rw [FORALL_INT_CASES, RING_OF_INT_CASES] THEN
-    rw [ring_of_num_complex, complex_of_num] THEN
-    rw [complex_of_int, int_of_num_th, int_neg_th, CX_NEG] THEN
-    rw [complex_ring_clauses])
-  : ExceptT String IO thm).run
-#eval ring_of_int_complex
-
-#eval phrase 620
-def ring_char_complex : thm := keep "ring_char_complex" fun _ => (do
-  prove ([[
-  ring_char complex_ring = 0
-]])
-   (rw [RING_CHAR_EQ_0, ring_of_num_complex, complex_of_num, complex_ring_clauses, CX_INJ, REAL_OF_NUM_EQ])
-  : ExceptT String IO thm).run
-#eval ring_char_complex
-
-#eval phrase 621
-def ring_sub_complex : thm := keep "ring_sub_complex" fun _ => (do
-  prove ([[
-  ring_sub complex_ring = (-)
-]])
-   (rw [FUN_EQ_THM, ring_sub, complex_ring_clauses, complex_sub])
-  : ExceptT String IO thm).run
-#eval ring_sub_complex
-
 /- from Complex/complexnumbers.ml -/
 
-#eval phrase 622
+#eval phrase 613
 def COMPLEX_MUL_RINV_UNIQ : thm := keep "COMPLEX_MUL_RINV_UNIQ" fun _ => (do
   prove ([[!w z. w * z = Cx(&1) ==> inv w = z]])
    (CONV_TAC cf)
   : ExceptT String IO thm).run
 #eval COMPLEX_MUL_RINV_UNIQ
 
-#eval phrase 623
-def ring_inv_complex : thm := keep "ring_inv_complex" fun _ => (do
-  prove ([[
-  ring_inv complex_ring = inv
-]])
-   (rw [FUN_EQ_THM, ring_inv, complex_ring_clauses] THEN
-    simp [FIELD_UNIT, field_complex, complex_ring_clauses, IN_UNIV, COND_SWAP] THEN
-    intro THEN
-    case' ([[x = Cx(&0)]]) THENL [qed [COMPLEX_INV_0],
-      qed [COMPLEX_MUL_RINV, COMPLEX_MUL_RINV_UNIQ]])
-  : ExceptT String IO thm).run
-#eval ring_inv_complex
-
-#eval phrase 624
-def ring_div_complex : thm := keep "ring_div_complex" fun _ => (do
-  prove ([[
-  ring_div complex_ring = (/)
-]])
-   (rw [FUN_EQ_THM, ring_div, complex_ring_clauses, ring_inv_complex, complex_div])
-  : ExceptT String IO thm).run
-#eval ring_div_complex
-
-#eval phrase 625
-def ring_pow_complex : thm := keep "ring_pow_complex" fun _ => (do
-  prove ([[
-  ring_pow complex_ring = (pow)
-]])
-   (rw [FUN_EQ_THM] THEN
-    GEN_TAC THEN
-    INDUCT_TAC THEN
-    simp [ring_pow, complex_ring_clauses] THEN
-    qed [complex_pow])
-  : ExceptT String IO thm).run
-#eval ring_pow_complex
-
-#eval phrase 626
+#eval phrase 614
 def complex_field_clauses : thm := keep "complex_field_clauses" fun _ => (do
   prove ([[ring_carrier complex_ring = (:complex) /\
    ring_0 complex_ring = Cx(&0) /\
@@ -10986,50 +10856,16 @@ def complex_field_clauses : thm := keep "complex_field_clauses" fun _ => (do
    ring_neg complex_ring = ( -- ) /\
    ring_add complex_ring = ( + ) /\
    ring_mul complex_ring = ( * ) /\
-   ring_of_num complex_ring = complex_of_num /\
+   ring_of_num complex_ring = (\n. Cx(&n)) /\
    ring_sub complex_ring = (-) /\
    ring_inv complex_ring = inv /\
    ring_div complex_ring = (/) /\
    ring_pow complex_ring = (pow)]])
-   (rw [complex_ring_clauses, ring_of_num_complex, ring_sub_complex, ring_inv_complex, ring_div_complex, ring_pow_complex])
+   (rw [COMPLEX_RING_CLAUSES, COMPLEX_RING_OF_NUM, COMPLEX_RING_SUB, COMPLEX_RING_INV, COMPLEX_RING_DIV, COMPLEX_RING_POW])
   : ExceptT String IO thm).run
 #eval complex_field_clauses
 
-#eval phrase 627
-def vsum_ring_sum_complex : thm := keep "vsum_ring_sum_complex" fun _ => (do
-  prove ([[
-  !(f:X->complex) S.
-  FINITE S ==>
-  vsum S f =
-  ring_sum complex_ring S f
-]])
-   (GEN_TAC THEN
-    sufficesby FINITE_INDUCT_STRONG THEN
-    intro THENL [rw [VSUM_CLAUSES, RING_SUM_CLAUSES] THEN
-      rw [complex_ring_clauses, COMPLEX_VEC_0],
-      simp [VSUM_CLAUSES, RING_SUM_CLAUSES, in_complex_ring] THEN
-      rw [complex_ring_clauses]])
-  : ExceptT String IO thm).run
-#eval vsum_ring_sum_complex
-
-#eval phrase 628
-def cproduct_ring_product_complex : thm := keep "cproduct_ring_product_complex" fun _ => (do
-  prove ([[
-  !(f:X->complex) S.
-  FINITE S ==>
-  cproduct S f =
-  ring_product complex_ring S f
-]])
-   (GEN_TAC THEN
-    sufficesby FINITE_INDUCT_STRONG THEN
-    intro THENL [rw [CPRODUCT_CLAUSES, RING_PRODUCT_CLAUSES] THEN
-      rw [complex_ring_clauses],
-      simp [CPRODUCT_CLAUSES, RING_PRODUCT_CLAUSES, in_complex_ring] THEN
-      rw [complex_ring_clauses]])
-  : ExceptT String IO thm).run
-#eval cproduct_ring_product_complex
-
-#eval phrase 629
+#eval phrase 615
 def vsum_delta_complex : thm := keep "vsum_delta_complex" fun _ => (do
   prove ([[
   !(S:X->bool) t a.
@@ -11042,18 +10878,18 @@ def vsum_delta_complex : thm := keep "vsum_delta_complex" fun _ => (do
   : ExceptT String IO thm).run
 #eval vsum_delta_complex
 
-#eval phrase 630
+#eval phrase 616
 def ring_1_0_complex : thm := keep "ring_1_0_complex" fun _ => (do
   prove ([[
   ~(ring_1 complex_ring = ring_0 complex_ring)
 ]])
-   (qed [integral_domain_complex, integral_domain])
+   (qed [INTEGRAL_DOMAIN_COMPLEX_RING, integral_domain])
   : ExceptT String IO thm).run
 #eval ring_1_0_complex
 
 /- ===== \C[x] -/
 
-#eval phrase 631
+#eval phrase 617
 def series_complex : thm := keep "series_complex" fun _ => (do
   prove ([[
   !(p:(1->num)->complex).
@@ -11064,18 +10900,18 @@ def series_complex : thm := keep "series_complex" fun _ => (do
   : ExceptT String IO thm).run
 #eval series_complex
 
-#eval phrase 632
+#eval phrase 618
 def complex_coeff_x_pow_times : thm := keep "complex_coeff_x_pow_times" fun _ => (do
   prove ([[
   !d p e.
   coeff e (poly_mul complex_ring (x_pow complex_ring d) p)
   = if e < d then Cx(&0) else coeff (e - d) p
 ]])
-   (qed [coeff_x_pow_times, series_complex, complex_ring_clauses])
+   (qed [coeff_x_pow_times, series_complex, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval complex_coeff_x_pow_times
 
-#eval phrase 633
+#eval phrase 619
 def poly_1_0_complex : thm := keep "poly_1_0_complex" fun _ => (do
   prove ([[
   ~(poly_1 complex_ring = poly_0 complex_ring:(V->num)->complex)
@@ -11087,32 +10923,32 @@ def poly_1_0_complex : thm := keep "poly_1_0_complex" fun _ => (do
 
 /- ===== copy of \Z inside \C -/
 
-#eval phrase 634
+#eval phrase 620
 def ZinC : thm := keep "ZinC" fun _ => new_definition
  [[
-  ZinC = {z:complex | ?i:int. z = complex_of_int i}
+  ZinC = {z:complex | ?i:int. z = Cx(real_of_int i)}
 ]]
 #eval ZinC
 
-#eval phrase 635
+#eval phrase 621
 def ZinC_ring : thm := keep "ZinC_ring" fun _ => new_definition
  [[
   ZinC_ring = ring(ZinC,Cx(&0),Cx(&1),( -- ),( + ),( * ))
 ]]
 #eval ZinC_ring
 
-#eval phrase 636
+#eval phrase 622
 def ii_not_in_ZinC : thm := keep "ii_not_in_ZinC" fun _ => (do
   prove ([[
   ~(ii IN ZinC)
 ]])
-   (rw [ZinC, IN_ELIM_THM, complex_of_int] THEN
+   (rw [ZinC, IN_ELIM_THM] THEN
     rw [ii, COMPLEX_EQ, CX_DEF, IM] THEN
     ARITH_TAC)
   : ExceptT String IO thm).run
 #eval ii_not_in_ZinC
 
-#eval phrase 637
+#eval phrase 623
 def half_not_in_ZinC : thm := keep "half_not_in_ZinC" fun _ => (do
   let h3 ← num_linear_fact (← ExceptT.mk [[1 = SUC(2 * 0)]])
   let h2 ← num_linear_fact (← ExceptT.mk [[&1 = &2 * &n:int ==> 1 = 2 * n]])
@@ -11120,7 +10956,7 @@ def half_not_in_ZinC : thm := keep "half_not_in_ZinC" fun _ => (do
   prove ([[
   ~(Cx(&1 / &2) IN ZinC)
 ]])
-   (rw [ZinC, IN_ELIM_THM, complex_of_int] THEN
+   (rw [ZinC, IN_ELIM_THM] THEN
     rw [CX_INJ] THEN
     intro THEN
     h1 THEN
@@ -11140,28 +10976,28 @@ def half_not_in_ZinC : thm := keep "half_not_in_ZinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval half_not_in_ZinC
 
-#eval phrase 638
+#eval phrase 624
 def num_in_ZinC : thm := keep "num_in_ZinC" fun _ => (do
   prove ([[
   !d. Cx(&d) IN ZinC
 ]])
    (intro THEN
-    rw [ZinC, IN_ELIM_THM, complex_of_int] THEN
+    rw [ZinC, IN_ELIM_THM] THEN
     witness ([[&d:int]]) THEN
     rw [int_of_num_th])
   : ExceptT String IO thm).run
 #eval num_in_ZinC
 
-#eval phrase 639
+#eval phrase 625
 def int_in_ZinC : thm := keep "int_in_ZinC" fun _ => (do
   prove ([[
-  !i. complex_of_int i IN ZinC
+  !i. Cx(real_of_int i) IN ZinC
 ]])
    (SET_TAC [ZinC])
   : ExceptT String IO thm).run
 #eval int_in_ZinC
 
-#eval phrase 640
+#eval phrase 626
 def ZinC_0 : thm := keep "ZinC_0" fun _ => (do
   prove ([[
   Cx(&0) IN ZinC
@@ -11170,7 +11006,7 @@ def ZinC_0 : thm := keep "ZinC_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval ZinC_0
 
-#eval phrase 641
+#eval phrase 627
 def ZinC_1 : thm := keep "ZinC_1" fun _ => (do
   prove ([[
   Cx(&1) IN ZinC
@@ -11179,13 +11015,13 @@ def ZinC_1 : thm := keep "ZinC_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval ZinC_1
 
-#eval phrase 642
+#eval phrase 628
 def neg_in_ZinC : thm := keep "neg_in_ZinC" fun _ => (do
   prove ([[
   !x:complex.
   x IN ZinC ==> --x IN ZinC
 ]])
-   (rw [ZinC, IN_ELIM_THM, complex_of_int] THEN
+   (rw [ZinC, IN_ELIM_THM] THEN
     intro THEN
     witness ([[int_neg i]]) THEN
     rw [(← HolLight.GSYM REAL_OF_INT_CLAUSES), CX_NEG] THEN
@@ -11193,13 +11029,13 @@ def neg_in_ZinC : thm := keep "neg_in_ZinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval neg_in_ZinC
 
-#eval phrase 643
+#eval phrase 629
 def add_in_ZinC : thm := keep "add_in_ZinC" fun _ => (do
   prove ([[
   !x:complex y:complex.
   x IN ZinC /\ y IN ZinC ==> x+y IN ZinC
 ]])
-   (rw [ZinC, IN_ELIM_THM, complex_of_int] THEN
+   (rw [ZinC, IN_ELIM_THM] THEN
     intro THEN
     witness ([[i+i':int]]) THEN
     rw [(← HolLight.GSYM REAL_OF_INT_CLAUSES), CX_ADD] THEN
@@ -11207,13 +11043,13 @@ def add_in_ZinC : thm := keep "add_in_ZinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval add_in_ZinC
 
-#eval phrase 644
+#eval phrase 630
 def mul_in_ZinC : thm := keep "mul_in_ZinC" fun _ => (do
   prove ([[
   !x:complex y:complex.
   x IN ZinC /\ y IN ZinC ==> x*y IN ZinC
 ]])
-   (rw [ZinC, IN_ELIM_THM, complex_of_int] THEN
+   (rw [ZinC, IN_ELIM_THM] THEN
     intro THEN
     witness ([[i*i':int]]) THEN
     rw [(← HolLight.GSYM REAL_OF_INT_CLAUSES), CX_MUL] THEN
@@ -11221,7 +11057,7 @@ def mul_in_ZinC : thm := keep "mul_in_ZinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval mul_in_ZinC
 
-#eval phrase 645
+#eval phrase 631
 def ZinC_ring_clauses : thm := keep "ZinC_ring_clauses" fun _ => (do
   prove ([[
   ring_carrier ZinC_ring = ZinC /\
@@ -11239,38 +11075,38 @@ def ZinC_ring_clauses : thm := keep "ZinC_ring_clauses" fun _ => (do
   : ExceptT String IO thm).run
 #eval ZinC_ring_clauses
 
-#eval phrase 646
+#eval phrase 632
 def ZinC_subring_complex : thm := keep "ZinC_subring_complex" fun _ => (do
   prove ([[
   ZinC subring_of complex_ring
 ]])
    (rw [subring_of] THEN
-    rw [complex_ring_clauses] THEN
+    rw [COMPLEX_RING_CLAUSES] THEN
     rw [ZinC_0, ZinC_1, neg_in_ZinC, add_in_ZinC, mul_in_ZinC, SUBSET_UNIV])
   : ExceptT String IO thm).run
 #eval ZinC_subring_complex
 
-#eval phrase 647
+#eval phrase 633
 def ZinC_subring_generated_carrier : thm := keep "ZinC_subring_generated_carrier" fun _ => (do
-  let h1 ← set_fact (← ExceptT.mk [[x IN {z | ?i. z = complex_of_int i} ==> ?i. x = complex_of_int i]])
+  let h1 ← set_fact (← ExceptT.mk [[x IN {z | ?i. z = Cx(real_of_int i)} ==> ?i. x = Cx(real_of_int i)]])
   prove ([[
   ZinC = INTERS {S | S subring_of complex_ring}
 ]])
    (rw [INTERS] THEN
     rw [ZinC, IN_ELIM_THM, EXTENSION] THEN
     intro THEN
-    splitiff THENL [rw [(← HolLight.GSYM ring_of_int_complex)] THEN
+    splitiff THENL [rw [(← HolLight.GSYM (← HolLight.REWRITE_RULE [FUN_EQ_THM] COMPLEX_RING_OF_INT))] THEN
       qed [int_in_subring],
       intro THEN
       have' ([[ZinC subring_of complex_ring]]) [ZinC_subring_complex] THEN
       have' ([[x IN ZinC]]) [] THEN
-      have' ([[x IN {z | ?i. z = complex_of_int i}]]) [ZinC] THEN
+      have' ([[x IN {z | ?i. z = Cx(real_of_int i)}]]) [ZinC] THEN
       h1 THEN
       qed []])
   : ExceptT String IO thm).run
 #eval ZinC_subring_generated_carrier
 
-#eval phrase 648
+#eval phrase 634
 def subring_complex_empty_lemma : thm := keep "subring_complex_empty_lemma" fun _ => (do
   prove ([[
   INTERS {S | S subring_of complex_ring /\ (:complex) INTER {} SUBSET S} = ZinC
@@ -11280,29 +11116,29 @@ def subring_complex_empty_lemma : thm := keep "subring_complex_empty_lemma" fun 
   : ExceptT String IO thm).run
 #eval subring_complex_empty_lemma
 
-#eval phrase 649
+#eval phrase 635
 def subring_complex_empty : thm := keep "subring_complex_empty" fun _ => (do
   prove ([[
   subring_generated complex_ring {} = ZinC_ring
 ]])
    (rw [subring_generated] THEN
-    rw [complex_ring_clauses] THEN
+    rw [COMPLEX_RING_CLAUSES] THEN
     rw [ZinC_ring, subring_complex_empty_lemma])
   : ExceptT String IO thm).run
 #eval subring_complex_empty
 
-#eval phrase 650
+#eval phrase 636
 def ring_char_ZinC : thm := keep "ring_char_ZinC" fun _ => (do
   prove ([[
   ring_char ZinC_ring = 0
 ]])
-   («recall» ring_char_complex THEN
+   («recall» RING_CHAR_COMPLEX_RING THEN
     specialize [([[complex_ring]]), ([[{}:complex->bool]])] RING_CHAR_SUBRING_GENERATED THEN
     qed [subring_complex_empty])
   : ExceptT String IO thm).run
 #eval ring_char_ZinC
 
-#eval phrase 651
+#eval phrase 637
 def subring_complex_ZinC_lemma : thm := keep "subring_complex_ZinC_lemma" fun _ => (do
   prove ([[
   INTERS {S | S subring_of complex_ring /\ (:complex) INTER ZinC SUBSET S} = ZinC
@@ -11312,50 +11148,50 @@ def subring_complex_ZinC_lemma : thm := keep "subring_complex_ZinC_lemma" fun _ 
   : ExceptT String IO thm).run
 #eval subring_complex_ZinC_lemma
 
-#eval phrase 652
+#eval phrase 638
 def subring_complex_ZinC : thm := keep "subring_complex_ZinC" fun _ => (do
   prove ([[
   subring_generated complex_ring ZinC = ZinC_ring
 ]])
    (rw [subring_generated] THEN
-    rw [complex_ring_clauses] THEN
+    rw [COMPLEX_RING_CLAUSES] THEN
     rw [ZinC_ring, subring_complex_ZinC_lemma])
   : ExceptT String IO thm).run
 #eval subring_complex_ZinC
 
-#eval phrase 653
+#eval phrase 639
 def ring_of_num_ZinC : thm := keep "ring_of_num_ZinC" fun _ => (do
   prove ([[
-  ring_of_num ZinC_ring = complex_of_num
+  ring_of_num ZinC_ring = (\n. Cx(&n))
 ]])
-   (rw [FUN_EQ_THM, complex_of_num] THEN
+   (rw [FUN_EQ_THM] THEN
     INDUCT_TAC THEN
     simp [ring_of_num, ZinC_ring_clauses] THEN
     rw [(← HolLight.GSYM CX_ADD), REAL_OF_NUM_SUC])
   : ExceptT String IO thm).run
 #eval ring_of_num_ZinC
 
-#eval phrase 654
+#eval phrase 640
 def ring_pow_ZinC : thm := keep "ring_pow_ZinC" fun _ => (do
   prove ([[
   ring_pow ZinC_ring = (pow)
 ]])
-   (qed [RING_POW_SUBRING_GENERATED, ring_pow_complex, subring_complex_empty])
+   (qed [RING_POW_SUBRING_GENERATED, COMPLEX_RING_POW, subring_complex_empty])
   : ExceptT String IO thm).run
 #eval ring_pow_ZinC
 
-#eval phrase 655
+#eval phrase 641
 def integral_domain_ZinC : thm := keep "integral_domain_ZinC" fun _ => (do
   prove ([[
   integral_domain ZinC_ring
 ]])
-   (qed [integral_domain_complex, INTEGRAL_DOMAIN_SUBRING_GENERATED, subring_complex_empty])
+   (qed [INTEGRAL_DOMAIN_COMPLEX_RING, INTEGRAL_DOMAIN_SUBRING_GENERATED, subring_complex_empty])
   : ExceptT String IO thm).run
 #eval integral_domain_ZinC
 
 /- ===== \Z[x] -/
 
-#eval phrase 656
+#eval phrase 642
 def poly_complex_if_poly_ZinC : thm := keep "poly_complex_if_poly_ZinC" fun _ => (do
   prove ([[
   !p:(V->num)->complex.
@@ -11364,25 +11200,25 @@ def poly_complex_if_poly_ZinC : thm := keep "poly_complex_if_poly_ZinC" fun _ =>
 ]])
    (rw [ring_polynomial] THEN
     rw [ring_powerseries] THEN
-    rw [complex_ring_clauses, ZinC_ring_clauses] THEN
+    rw [COMPLEX_RING_CLAUSES, ZinC_ring_clauses] THEN
     qed [IN_UNIV])
   : ExceptT String IO thm).run
 #eval poly_complex_if_poly_ZinC
 
-#eval phrase 657
+#eval phrase 643
 def poly_0_ZinC_eq_poly_0_complex : thm := keep "poly_0_ZinC_eq_poly_0_complex" fun _ => (do
   prove ([[
   poly_0 ZinC_ring = (poly_0 complex_ring):(V->num)->complex
 ]])
    (rw [poly_0, poly_const] THEN
-    rw [ZinC_ring_clauses, complex_ring_clauses])
+    rw [ZinC_ring_clauses, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval poly_0_ZinC_eq_poly_0_complex
 
-#eval phrase 658
+#eval phrase 644
 def zero_if_ZinC_norm_lt1 : thm := keep "zero_if_ZinC_norm_lt1" fun _ => (do
   let h2 ← num_linear_fact (← ExceptT.mk [[~(n = 0) ==> 1 <= n]])
-  let h1 ← set_fact (← ExceptT.mk [[z IN {z | ?i. z = complex_of_int i} ==> ?i. z = complex_of_int i]])
+  let h1 ← set_fact (← ExceptT.mk [[z IN {z | ?i. z = Cx(real_of_int i)} ==> ?i. z = Cx(real_of_int i)]])
   prove ([[
   !z.
   z IN ZinC ==>
@@ -11390,10 +11226,10 @@ def zero_if_ZinC_norm_lt1 : thm := keep "zero_if_ZinC_norm_lt1" fun _ => (do
   z = Cx(&0)
 ]])
    (intro THEN
-    have' ([[z IN {z | ?i. z = complex_of_int i}]]) [ZinC] THEN
+    have' ([[z IN {z | ?i. z = Cx(real_of_int i)}]]) [ZinC] THEN
     h1 THEN
-    choose ([[i:int]]) ([[z = complex_of_int i]]) [ZinC] THEN
-    have' ([[z = Cx(real_of_int i)]]) [complex_of_int] THEN
+    choose ([[i:int]]) ([[z = Cx(real_of_int i)]]) [ZinC] THEN
+    have' ([[z = Cx(real_of_int i)]]) [] THEN
     have' ([[norm(z:complex) = abs(real_of_int i)]]) [COMPLEX_NORM_CX] THEN
     choose ([[n:num]]) ([[abs(real_of_int i) = &n]]) [INTEGER_REAL_OF_INT, integer] THEN
     proven_if ([[n = 0]]) [REAL_ABS_ZERO] THEN
@@ -11404,7 +11240,7 @@ def zero_if_ZinC_norm_lt1 : thm := keep "zero_if_ZinC_norm_lt1" fun _ => (do
   : ExceptT String IO thm).run
 #eval zero_if_ZinC_norm_lt1
 
-#eval phrase 659
+#eval phrase 645
 def zero_if_ZinC_scale_bound : thm := keep "zero_if_ZinC_scale_bound" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[~(c = Cx(&0)) ==> c*z = Cx(&0) ==> z = Cx(&0)]])
   prove ([[
@@ -11426,21 +11262,21 @@ def zero_if_ZinC_scale_bound : thm := keep "zero_if_ZinC_scale_bound" fun _ => (
 
 /- ===== copy of \Q inside \C -/
 
-#eval phrase 660
+#eval phrase 646
 def QinC : thm := keep "QinC" fun _ => new_definition
  [[
-  QinC = {z:complex | ?i:int d:num. ~(d = 0) /\ Cx(&d) * z = complex_of_int i}
+  QinC = {z:complex | ?i:int d:num. ~(d = 0) /\ Cx(&d) * z = Cx(real_of_int i)}
 ]]
 #eval QinC
 
-#eval phrase 661
+#eval phrase 647
 def QinC_ring : thm := keep "QinC_ring" fun _ => new_definition
  [[
   QinC_ring = ring(QinC,Cx(&0),Cx(&1),( -- ),( + ),( * ))
 ]]
 #eval QinC_ring
 
-#eval phrase 662
+#eval phrase 648
 def ZinC_in_QinC : thm := keep "ZinC_in_QinC" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[~(1 = 0)]])
   prove ([[
@@ -11455,7 +11291,7 @@ def ZinC_in_QinC : thm := keep "ZinC_in_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval ZinC_in_QinC
 
-#eval phrase 663
+#eval phrase 649
 def ZinC_subset_QinC : thm := keep "ZinC_subset_QinC" fun _ => (do
   prove ([[
   ZinC SUBSET QinC
@@ -11464,7 +11300,7 @@ def ZinC_subset_QinC : thm := keep "ZinC_subset_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval ZinC_subset_QinC
 
-#eval phrase 664
+#eval phrase 650
 def QinC_0 : thm := keep "QinC_0" fun _ => (do
   prove ([[
   Cx(&0) IN QinC
@@ -11473,7 +11309,7 @@ def QinC_0 : thm := keep "QinC_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval QinC_0
 
-#eval phrase 665
+#eval phrase 651
 def QinC_1 : thm := keep "QinC_1" fun _ => (do
   prove ([[
   Cx(&1) IN QinC
@@ -11482,13 +11318,12 @@ def QinC_1 : thm := keep "QinC_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval QinC_1
 
-#eval phrase 666
+#eval phrase 652
 def neg_in_QinC : thm := keep "neg_in_QinC" fun _ => (do
   prove ([[
   !z. z IN QinC ==> --z IN QinC
 ]])
    (rw [QinC, IN_ELIM_THM] THEN
-    rw [complex_of_int] THEN
     intro THEN
     witness ([[--i:int]]) THEN
     witness ([[d:num]]) THEN
@@ -11498,7 +11333,7 @@ def neg_in_QinC : thm := keep "neg_in_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval neg_in_QinC
 
-#eval phrase 667
+#eval phrase 653
 def add_in_QinC : thm := keep "add_in_QinC" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[(Cx(&d) * Cx(&d'))*(y+z) = (Cx(&d)*y)*Cx(&d') + (Cx(&d')*z)*Cx(&d)]])
   prove ([[
@@ -11507,7 +11342,6 @@ def add_in_QinC : thm := keep "add_in_QinC" fun _ => (do
   y+z IN QinC
 ]])
    (rw [QinC, IN_ELIM_THM] THEN
-    rw [complex_of_int] THEN
     intro THEN
     witness ([[i * &d'+i' * &d:int]]) THEN
     witness ([[d*d':num]]) THEN
@@ -11522,7 +11356,7 @@ def add_in_QinC : thm := keep "add_in_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval add_in_QinC
 
-#eval phrase 668
+#eval phrase 654
 def mul_in_QinC : thm := keep "mul_in_QinC" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[(Cx(&d)*Cx(&d'))*(y*z) = (Cx(&d)*y)*(Cx(&d')*z)]])
   prove ([[
@@ -11531,7 +11365,6 @@ def mul_in_QinC : thm := keep "mul_in_QinC" fun _ => (do
   y*z IN QinC
 ]])
    (rw [QinC, IN_ELIM_THM] THEN
-    rw [complex_of_int] THEN
     intro THEN
     witness ([[i*i':int]]) THEN
     witness ([[d*d':num]]) THEN
@@ -11544,7 +11377,7 @@ def mul_in_QinC : thm := keep "mul_in_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval mul_in_QinC
 
-#eval phrase 669
+#eval phrase 655
 def QinC_ring_clauses : thm := keep "QinC_ring_clauses" fun _ => (do
   prove ([[
   ring_carrier QinC_ring = QinC /\
@@ -11562,7 +11395,7 @@ def QinC_ring_clauses : thm := keep "QinC_ring_clauses" fun _ => (do
   : ExceptT String IO thm).run
 #eval QinC_ring_clauses
 
-#eval phrase 670
+#eval phrase 656
 def ZinC_subring_QinC : thm := keep "ZinC_subring_QinC" fun _ => (do
   prove ([[
   ZinC subring_of QinC_ring
@@ -11573,18 +11406,18 @@ def ZinC_subring_QinC : thm := keep "ZinC_subring_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval ZinC_subring_QinC
 
-#eval phrase 671
+#eval phrase 657
 def QinC_subring_complex : thm := keep "QinC_subring_complex" fun _ => (do
   prove ([[
   QinC subring_of complex_ring
 ]])
    (rw [subring_of] THEN
-    rw [complex_ring_clauses] THEN
+    rw [COMPLEX_RING_CLAUSES] THEN
     rw [QinC_0, QinC_1, neg_in_QinC, add_in_QinC, mul_in_QinC, SUBSET_UNIV])
   : ExceptT String IO thm).run
 #eval QinC_subring_complex
 
-#eval phrase 672
+#eval phrase 658
 def series_QinC_if_series_ZinC : thm := keep "series_QinC_if_series_ZinC" fun _ => (do
   prove ([[
   !p:(V->num)->complex.
@@ -11597,7 +11430,7 @@ def series_QinC_if_series_ZinC : thm := keep "series_QinC_if_series_ZinC" fun _ 
   : ExceptT String IO thm).run
 #eval series_QinC_if_series_ZinC
 
-#eval phrase 673
+#eval phrase 659
 def poly_QinC_if_poly_ZinC : thm := keep "poly_QinC_if_poly_ZinC" fun _ => (do
   prove ([[
   !p:(V->num)->complex.
@@ -11611,7 +11444,7 @@ def poly_QinC_if_poly_ZinC : thm := keep "poly_QinC_if_poly_ZinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_QinC_if_poly_ZinC
 
-#eval phrase 674
+#eval phrase 660
 def poly_complex_if_poly_QinC : thm := keep "poly_complex_if_poly_QinC" fun _ => (do
   prove ([[
   !p:(V->num)->complex.
@@ -11620,12 +11453,12 @@ def poly_complex_if_poly_QinC : thm := keep "poly_complex_if_poly_QinC" fun _ =>
 ]])
    (rw [ring_polynomial] THEN
     rw [ring_powerseries] THEN
-    rw [complex_ring_clauses, QinC_ring_clauses] THEN
+    rw [COMPLEX_RING_CLAUSES, QinC_ring_clauses] THEN
     qed [IN_UNIV])
   : ExceptT String IO thm).run
 #eval poly_complex_if_poly_QinC
 
-#eval phrase 675
+#eval phrase 661
 def series_complex_if_series_QinC : thm := keep "series_complex_if_series_QinC" fun _ => (do
   prove ([[
   !p:(V->num)->complex.
@@ -11633,32 +11466,32 @@ def series_complex_if_series_QinC : thm := keep "series_complex_if_series_QinC" 
   ring_powerseries complex_ring p
 ]])
    (rw [ring_powerseries] THEN
-    rw [complex_ring_clauses, QinC_ring_clauses] THEN
+    rw [COMPLEX_RING_CLAUSES, QinC_ring_clauses] THEN
     qed [IN_UNIV])
   : ExceptT String IO thm).run
 #eval series_complex_if_series_QinC
 
-#eval phrase 676
+#eval phrase 662
 def poly_0_QinC_eq_poly_0_complex : thm := keep "poly_0_QinC_eq_poly_0_complex" fun _ => (do
   prove ([[
   poly_0 QinC_ring = (poly_0 complex_ring):(V->num)->complex
 ]])
    (rw [poly_0, poly_const] THEN
-    rw [QinC_ring_clauses, complex_ring_clauses])
+    rw [QinC_ring_clauses, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval poly_0_QinC_eq_poly_0_complex
 
-#eval phrase 677
+#eval phrase 663
 def poly_1_QinC_eq_poly_1_complex : thm := keep "poly_1_QinC_eq_poly_1_complex" fun _ => (do
   prove ([[
   poly_1 QinC_ring = (poly_1 complex_ring):(V->num)->complex
 ]])
    (rw [poly_1, poly_const] THEN
-    rw [QinC_ring_clauses, complex_ring_clauses])
+    rw [QinC_ring_clauses, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval poly_1_QinC_eq_poly_1_complex
 
-#eval phrase 678
+#eval phrase 664
 def poly_neg_QinC_eq_poly_neg_complex : thm := keep "poly_neg_QinC_eq_poly_neg_complex" fun _ => (do
   prove ([[
   !p:(V->num)->complex.
@@ -11666,11 +11499,11 @@ def poly_neg_QinC_eq_poly_neg_complex : thm := keep "poly_neg_QinC_eq_poly_neg_c
   = poly_neg complex_ring p
 ]])
    (rw [poly_neg] THEN
-    rw [QinC_ring_clauses, complex_ring_clauses])
+    rw [QinC_ring_clauses, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval poly_neg_QinC_eq_poly_neg_complex
 
-#eval phrase 679
+#eval phrase 665
 def poly_add_QinC_eq_poly_add_complex : thm := keep "poly_add_QinC_eq_poly_add_complex" fun _ => (do
   prove ([[
   !p:(V->num)->complex q.
@@ -11678,11 +11511,11 @@ def poly_add_QinC_eq_poly_add_complex : thm := keep "poly_add_QinC_eq_poly_add_c
   = poly_add complex_ring p q
 ]])
    (rw [poly_add] THEN
-    rw [QinC_ring_clauses, complex_ring_clauses])
+    rw [QinC_ring_clauses, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval poly_add_QinC_eq_poly_add_complex
 
-#eval phrase 680
+#eval phrase 666
 def x_pow_QinC_eq_x_pow_complex : thm := keep "x_pow_QinC_eq_x_pow_complex" fun _ => (do
   prove ([[
   !n.
@@ -11690,11 +11523,11 @@ def x_pow_QinC_eq_x_pow_complex : thm := keep "x_pow_QinC_eq_x_pow_complex" fun 
 ]])
    (intro THEN
     sufficesby eq_coeff THEN
-    rw [coeff_x_pow, QinC_ring_clauses, complex_ring_clauses])
+    rw [coeff_x_pow, QinC_ring_clauses, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval x_pow_QinC_eq_x_pow_complex
 
-#eval phrase 681
+#eval phrase 667
 def poly_0_ZinC_eq_poly_0_QinC : thm := keep "poly_0_ZinC_eq_poly_0_QinC" fun _ => (do
   prove ([[
   poly_0 ZinC_ring = (poly_0 QinC_ring):(V->num)->complex
@@ -11703,28 +11536,30 @@ def poly_0_ZinC_eq_poly_0_QinC : thm := keep "poly_0_ZinC_eq_poly_0_QinC" fun _ 
   : ExceptT String IO thm).run
 #eval poly_0_ZinC_eq_poly_0_QinC
 
-#eval phrase 682
+#eval phrase 668
 def ring_of_num_QinC : thm := keep "ring_of_num_QinC" fun _ => (do
   prove ([[
-  ring_of_num QinC_ring = complex_of_num
+  ring_of_num QinC_ring = (\n. Cx(&n))
 ]])
-   (rw [FUN_EQ_THM, complex_of_num] THEN
+   (rw [FUN_EQ_THM] THEN
     INDUCT_TAC THEN
     simp [ring_of_num, QinC_ring_clauses] THEN
     rw [(← HolLight.GSYM CX_ADD), REAL_OF_NUM_SUC])
   : ExceptT String IO thm).run
 #eval ring_of_num_QinC
 
-#eval phrase 683
+#eval phrase 669
 def num_in_QinC : thm := keep "num_in_QinC" fun _ => (do
   prove ([[
   !n. Cx(&n) IN QinC
 ]])
-   (rw [(← HolLight.GSYM complex_of_num), (← HolLight.GSYM ring_of_num_QinC), (← HolLight.GSYM QinC_ring_clauses), RING_OF_NUM])
+   (GEN_TAC THEN
+    MP_TAC (← HolLight.ISPECL [([[QinC_ring]]), ([[n:num]])] RING_OF_NUM) THEN
+    rw [ring_of_num_QinC, QinC_ring_clauses])
   : ExceptT String IO thm).run
 #eval num_in_QinC
 
-#eval phrase 684
+#eval phrase 670
 def num_over_num_in_QinC : thm := keep "num_over_num_in_QinC" fun _ => (do
   let h2 ← complex_field_fact (← ExceptT.mk [[~(Cx (&d) = Cx (&0)) ==> Cx (&d) * Cx (&n) / Cx (&d) = Cx (&n)]])
   let h1 ← ar (← ExceptT.mk [[~(1 = 0)]])
@@ -11735,14 +11570,14 @@ def num_over_num_in_QinC : thm := keep "num_over_num_in_QinC" fun _ => (do
     intro THEN
     case' ([[d = 0]]) THENL [witness ([[&0:int]]) THEN
       witness ([[1:num]]) THEN
-      rw [complex_of_int, (← HolLight.GSYM REAL_OF_INT_CLAUSES)] THEN
+      rw [(← HolLight.GSYM REAL_OF_INT_CLAUSES)] THEN
       simp [complex_div] THEN
       rw [COMPLEX_INV_0] THEN
       rw [COMPLEX_MUL_RZERO] THEN
       qed [h1],
       witness ([[&n:int]]) THEN
       witness ([[d:num]]) THEN
-      rw [complex_of_int, (← HolLight.GSYM REAL_OF_INT_CLAUSES)] THEN
+      rw [(← HolLight.GSYM REAL_OF_INT_CLAUSES)] THEN
       have' ([[~(d = 0) ==> ~(&d = &0:real)]]) [REAL_OF_NUM_EQ] THEN
       have' ([[~(Cx(&d) = Cx(&0))]]) [CX_INJ] THEN
       h2 THEN
@@ -11750,7 +11585,7 @@ def num_over_num_in_QinC : thm := keep "num_over_num_in_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval num_over_num_in_QinC
 
-#eval phrase 685
+#eval phrase 671
 def neg_num_over_num_in_QinC : thm := keep "neg_num_over_num_in_QinC" fun _ => (do
   prove ([[
   !n d. -- (Cx(&n) / Cx(&d)) IN QinC
@@ -11759,7 +11594,7 @@ def neg_num_over_num_in_QinC : thm := keep "neg_num_over_num_in_QinC" fun _ => (
   : ExceptT String IO thm).run
 #eval neg_num_over_num_in_QinC
 
-#eval phrase 686
+#eval phrase 672
 def field_QinC : thm := keep "field_QinC" fun _ => (do
   let h5 ← complex_field_fact (← ExceptT.mk [[Cx(&d)*x = -- Cx(&n) ==> ~(Cx(&n) = Cx(&0)) ==> x * -- (Cx(&d) / Cx(&n)) = Cx(&1)]])
   let h4 ← complex_field_fact (← ExceptT.mk [[Cx(&d)*x = Cx(&n) ==> ~(Cx(&n) = Cx(&0)) ==> x * Cx(&d) / Cx(&n) = Cx(&1)]])
@@ -11772,24 +11607,24 @@ def field_QinC : thm := keep "field_QinC" fun _ => (do
    (rw [field] THEN
     rw [QinC_ring_clauses] THEN
     intro THENL [qed [CX_INJ, h1],
-      choose2 ([[i:int]]) ([[d:num]]) ([[~(d = 0) /\ Cx(&d) * x = complex_of_int i]]) [QinC, IN_ELIM_THM] THEN
+      choose2 ([[i:int]]) ([[d:num]]) ([[~(d = 0) /\ Cx(&d) * x = Cx(real_of_int i)]]) [QinC, IN_ELIM_THM] THEN
       choose ([[n:num]]) ([[real_of_int i = &n \/ real_of_int i = -- &n]]) [dest_int_rep] THEN
       case' ([[n = 0]]) THENL [h2 THEN
         have' ([[real_of_int i = &0]]) [] THEN
-        have' ([[complex_of_int i = Cx(&0)]]) [complex_of_int] THEN
+        have' ([[Cx(real_of_int i) = Cx(&0)]]) [] THEN
         have' ([[Cx(&d) * x = Cx(&0)]]) [] THEN
         h3 THEN
         have' ([[&d = &0:real]]) [CX_INJ] THEN
         qed [REAL_OF_NUM_EQ], pass] THEN
       have' ([[~(n = 0) ==> ~(&n = &0:real)]]) [REAL_OF_NUM_EQ] THEN
       have' ([[~(Cx(&n) = Cx(&0))]]) [CX_INJ] THEN
-      case' ([[real_of_int i = &n]]) THENL [have' ([[complex_of_int i = Cx(&n)]]) [complex_of_int] THEN
+      case' ([[real_of_int i = &n]]) THENL [have' ([[Cx(real_of_int i) = Cx(&n)]]) [] THEN
         witness ([[Cx(&d) / Cx(&n)]]) THEN
         have' ([[Cx(&d) * x = Cx(&n)]]) [] THEN
         h4 THEN
         qed [num_over_num_in_QinC],
         have' ([[real_of_int i = -- &n]]) [] THEN
-        have' ([[complex_of_int i = Cx(-- &n)]]) [complex_of_int] THEN
+        have' ([[Cx(real_of_int i) = Cx(-- &n)]]) [] THEN
         witness ([[-- (Cx(&d) / Cx(&n))]]) THEN
         have' ([[Cx(&d) * x = -- Cx(&n)]]) [CX_NEG] THEN
         h5 THEN
@@ -11797,7 +11632,7 @@ def field_QinC : thm := keep "field_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval field_QinC
 
-#eval phrase 687
+#eval phrase 673
 def integral_domain_QinC : thm := keep "integral_domain_QinC" fun _ => (do
   prove ([[
   integral_domain QinC_ring
@@ -11806,7 +11641,7 @@ def integral_domain_QinC : thm := keep "integral_domain_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval integral_domain_QinC
 
-#eval phrase 688
+#eval phrase 674
 def QinC_over_num : thm := keep "QinC_over_num" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[~(Cx(&e) = Cx(&0)) ==> (Cx(&d) * Cx(&e)) * z / Cx(&e) = Cx(&d) * z]])
   prove ([[
@@ -11829,7 +11664,7 @@ def QinC_over_num : thm := keep "QinC_over_num" fun _ => (do
   : ExceptT String IO thm).run
 #eval QinC_over_num
 
-#eval phrase 689
+#eval phrase 675
 def div_in_QinC : thm := keep "div_in_QinC" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[~(z = Cx(&0)) ==> z * zinv = Cx(&1) ==> y / z = y * zinv]])
   prove ([[
@@ -11845,7 +11680,7 @@ def div_in_QinC : thm := keep "div_in_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval div_in_QinC
 
-#eval phrase 690
+#eval phrase 676
 def QinC_to_ZinC : thm := keep "QinC_to_ZinC" fun _ => (do
   prove ([[
   !z.
@@ -11857,7 +11692,7 @@ def QinC_to_ZinC : thm := keep "QinC_to_ZinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval QinC_to_ZinC
 
-#eval phrase 691
+#eval phrase 677
 def multi_QinC_to_ZinC : thm := keep "multi_QinC_to_ZinC" fun _ => (do
   prove ([[
   !S f:X->complex.
@@ -11882,7 +11717,7 @@ def multi_QinC_to_ZinC : thm := keep "multi_QinC_to_ZinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval multi_QinC_to_ZinC
 
-#eval phrase 692
+#eval phrase 678
 def subring_complex_QinC_lemma : thm := keep "subring_complex_QinC_lemma" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[!x. x IN {S | S subring_of complex_ring /\ (:complex) INTER QinC SUBSET S} ==> QinC SUBSET x]])
   prove ([[
@@ -11895,33 +11730,33 @@ def subring_complex_QinC_lemma : thm := keep "subring_complex_QinC_lemma" fun _ 
   : ExceptT String IO thm).run
 #eval subring_complex_QinC_lemma
 
-#eval phrase 693
+#eval phrase 679
 def subring_complex_QinC : thm := keep "subring_complex_QinC" fun _ => (do
   prove ([[
   subring_generated complex_ring QinC = QinC_ring
 ]])
    (rw [subring_generated] THEN
-    rw [complex_ring_clauses] THEN
+    rw [COMPLEX_RING_CLAUSES] THEN
     rw [QinC_ring, subring_complex_QinC_lemma])
   : ExceptT String IO thm).run
 #eval subring_complex_QinC
 
-#eval phrase 694
+#eval phrase 680
 def ring_char_QinC : thm := keep "ring_char_QinC" fun _ => (do
   prove ([[
   ring_char QinC_ring = 0
 ]])
-   (qed [ring_char_complex, RING_CHAR_SUBRING_GENERATED, subring_complex_QinC])
+   (qed [RING_CHAR_COMPLEX_RING, RING_CHAR_SUBRING_GENERATED, subring_complex_QinC])
   : ExceptT String IO thm).run
 #eval ring_char_QinC
 
-#eval phrase 695
+#eval phrase 681
 def ring_hasQ_QinC : thm := keep "ring_hasQ_QinC" fun _ => (do
   prove ([[
   ring_hasQ QinC_ring
 ]])
    (rw [ring_hasQ, ring_char_QinC] THEN
-    rw [ring_of_num_QinC, complex_of_num, ring_unit] THEN
+    rw [ring_of_num_QinC, ring_unit] THEN
     GEN_TAC THEN DISCH_TAC THEN
     have' ([[Cx(&n) IN ring_carrier QinC_ring]]) [num_in_QinC, QinC_ring_clauses] THEN
     simp [] THEN
@@ -11930,7 +11765,7 @@ def ring_hasQ_QinC : thm := keep "ring_hasQ_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_hasQ_QinC
 
-#eval phrase 696
+#eval phrase 682
 def ring_sub_QinC : thm := keep "ring_sub_QinC" fun _ => (do
   prove ([[
   ring_sub QinC_ring = (-)
@@ -11939,7 +11774,7 @@ def ring_sub_QinC : thm := keep "ring_sub_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_sub_QinC
 
-#eval phrase 697
+#eval phrase 683
 def x_minus_const_QinC_eq_x_minus_const_complex : thm := keep "x_minus_const_QinC_eq_x_minus_const_complex" fun _ => (do
   prove ([[
   !c.
@@ -11948,13 +11783,13 @@ def x_minus_const_QinC_eq_x_minus_const_complex : thm := keep "x_minus_const_Qin
    (intro THEN
     rw [x_minus_const] THEN
     rw [poly_sub, poly_const] THEN
-    rw [ring_sub_QinC, ring_sub_complex] THEN
+    rw [ring_sub_QinC, COMPLEX_RING_SUB] THEN
     rw [x_pow_QinC_eq_x_pow_complex] THEN
-    rw [QinC_ring_clauses, complex_ring_clauses])
+    rw [QinC_ring_clauses, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval x_minus_const_QinC_eq_x_minus_const_complex
 
-#eval phrase 698
+#eval phrase 684
 def subring_QinC_empty_lemma : thm := keep "subring_QinC_empty_lemma" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[x subring_of complex_ring ==> INTERS {S | S subring_of complex_ring} SUBSET x]])
   prove ([[
@@ -11971,7 +11806,7 @@ def subring_QinC_empty_lemma : thm := keep "subring_QinC_empty_lemma" fun _ => (
   : ExceptT String IO thm).run
 #eval subring_QinC_empty_lemma
 
-#eval phrase 699
+#eval phrase 685
 def subring_QinC_empty : thm := keep "subring_QinC_empty" fun _ => (do
   prove ([[
   subring_generated QinC_ring {} = ZinC_ring
@@ -11982,7 +11817,7 @@ def subring_QinC_empty : thm := keep "subring_QinC_empty" fun _ => (do
   : ExceptT String IO thm).run
 #eval subring_QinC_empty
 
-#eval phrase 700
+#eval phrase 686
 def ring_1_0_QinC : thm := keep "ring_1_0_QinC" fun _ => (do
   prove ([[
   ~(ring_1 QinC_ring = ring_0 QinC_ring)
@@ -11991,16 +11826,16 @@ def ring_1_0_QinC : thm := keep "ring_1_0_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_1_0_QinC
 
-#eval phrase 701
+#eval phrase 687
 def ring_pow_QinC : thm := keep "ring_pow_QinC" fun _ => (do
   prove ([[
   ring_pow QinC_ring = (pow)
 ]])
-   (qed [RING_POW_SUBRING_GENERATED, ring_pow_complex, subring_complex_QinC])
+   (qed [RING_POW_SUBRING_GENERATED, COMPLEX_RING_POW, subring_complex_QinC])
   : ExceptT String IO thm).run
 #eval ring_pow_QinC
 
-#eval phrase 702
+#eval phrase 688
 def sum_QinC_eq_sum_complex : thm := keep "sum_QinC_eq_sum_complex" fun _ => (do
   prove ([[
   !S f.
@@ -12015,7 +11850,7 @@ def sum_QinC_eq_sum_complex : thm := keep "sum_QinC_eq_sum_complex" fun _ => (do
   : ExceptT String IO thm).run
 #eval sum_QinC_eq_sum_complex
 
-#eval phrase 703
+#eval phrase 689
 def poly_mul_QinC_eq_poly_mul_complex : thm := keep "poly_mul_QinC_eq_poly_mul_complex" fun _ => (do
   prove ([[
   !p:(V->num)->complex q.
@@ -12030,7 +11865,7 @@ def poly_mul_QinC_eq_poly_mul_complex : thm := keep "poly_mul_QinC_eq_poly_mul_c
     subgoal ([[ring_sum QinC_ring {m1,m2 | !y. monomial_mul m1 m2 y = x y} (\(m1,m2). ring_mul QinC_ring (p(m1:V->num)) (q m2)) = ring_sum QinC_ring {m1,m2 | !y. monomial_mul m1 m2 y = x y} (\(m1,m2). ring_mul complex_ring (p m1) (q m2))]]) THENL [sufficesby RING_SUM_EQ THEN
       intro THEN
       rw [LAMBDA_PAIR, BETA_THM] THEN
-      qed [QinC_ring_clauses, complex_ring_clauses], pass] THEN
+      qed [QinC_ring_clauses, COMPLEX_RING_CLAUSES], pass] THEN
     simp [] THEN
     sufficesby sum_QinC_eq_sum_complex THEN
     rw [IN_ELIM_THM, LAMBDA_PAIR] THEN
@@ -12038,11 +11873,11 @@ def poly_mul_QinC_eq_poly_mul_complex : thm := keep "poly_mul_QinC_eq_poly_mul_c
     simp [FST, SND] THEN
     have' ([[p(m1:V->num) IN ring_carrier(QinC_ring)]]) [ring_powerseries] THEN
     have' ([[q(m2:V->num) IN ring_carrier(QinC_ring)]]) [ring_powerseries] THEN
-    qed [RING_MUL, QinC_ring_clauses, complex_ring_clauses])
+    qed [RING_MUL, QinC_ring_clauses, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval poly_mul_QinC_eq_poly_mul_complex
 
-#eval phrase 704
+#eval phrase 690
 def ring_divides_poly_complex_if_ring_divides_poly_QinC : thm := keep "ring_divides_poly_complex_if_ring_divides_poly_QinC" fun _ => (do
   prove ([[
   !p:(1->num)->complex q.
@@ -12060,7 +11895,7 @@ def ring_divides_poly_complex_if_ring_divides_poly_QinC : thm := keep "ring_divi
 
 /- ===== \Q[x] -/
 
-#eval phrase 705
+#eval phrase 691
 def PID_x_poly_QinC : thm := keep "PID_x_poly_QinC" fun _ => (do
   prove ([[
   PID (x_poly QinC_ring)
@@ -12069,7 +11904,7 @@ def PID_x_poly_QinC : thm := keep "PID_x_poly_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval PID_x_poly_QinC
 
-#eval phrase 706
+#eval phrase 692
 def integral_domain_x_poly_QinC : thm := keep "integral_domain_x_poly_QinC" fun _ => (do
   prove ([[
   integral_domain (x_poly QinC_ring)
@@ -12078,7 +11913,7 @@ def integral_domain_x_poly_QinC : thm := keep "integral_domain_x_poly_QinC" fun 
   : ExceptT String IO thm).run
 #eval integral_domain_x_poly_QinC
 
-#eval phrase 707
+#eval phrase 693
 def UFD_x_poly_QinC : thm := keep "UFD_x_poly_QinC" fun _ => (do
   prove ([[
   UFD (x_poly QinC_ring)
@@ -12087,7 +11922,7 @@ def UFD_x_poly_QinC : thm := keep "UFD_x_poly_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval UFD_x_poly_QinC
 
-#eval phrase 708
+#eval phrase 694
 def x_poly_mul_in_QinC_eq_0 : thm := keep "x_poly_mul_in_QinC_eq_0" fun _ => (do
   prove ([[
   !(p:(1->num)->complex) (q:(1->num)->complex).
@@ -12101,7 +11936,7 @@ def x_poly_mul_in_QinC_eq_0 : thm := keep "x_poly_mul_in_QinC_eq_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval x_poly_mul_in_QinC_eq_0
 
-#eval phrase 709
+#eval phrase 695
 def x_poly_ZinC_denominator_is_QinC : thm := keep "x_poly_ZinC_denominator_is_QinC" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[(!d. ~(coeff d p / Cx(&e) = ring_0 QinC_ring) ==> ~(coeff d p = ring_0 ZinC_ring)) ==> {d | ~(coeff d p / Cx(&e) = ring_0 QinC_ring)} SUBSET {d | ~(coeff d p = ring_0 ZinC_ring)}]])
   prove ([[
@@ -12125,7 +11960,7 @@ def x_poly_ZinC_denominator_is_QinC : thm := keep "x_poly_ZinC_denominator_is_Qi
   : ExceptT String IO thm).run
 #eval x_poly_ZinC_denominator_is_QinC
 
-#eval phrase 710
+#eval phrase 696
 def x_poly_ZinC_denominator_is_QinC_v2_lemma : thm := keep "x_poly_ZinC_denominator_is_QinC_v2_lemma" fun _ => (do
   prove ([[
   !(p:(1->num)->complex) e.
@@ -12139,12 +11974,12 @@ def x_poly_ZinC_denominator_is_QinC_v2_lemma : thm := keep "x_poly_ZinC_denomina
     rw [coeff_series_from_coeffs] THEN
     have' ([[Cx(&1) / Cx(&e) IN ring_carrier complex_ring]]) [in_complex_ring] THEN
     simp [coeff_poly_const_times] THEN
-    rw [complex_ring_clauses] THEN
+    rw [COMPLEX_RING_CLAUSES] THEN
     CONV_TAC cf)
   : ExceptT String IO thm).run
 #eval x_poly_ZinC_denominator_is_QinC_v2_lemma
 
-#eval phrase 711
+#eval phrase 697
 def poly_const_QinC : thm := keep "poly_const_QinC" fun _ => (do
   prove ([[
   !c.
@@ -12156,7 +11991,7 @@ def poly_const_QinC : thm := keep "poly_const_QinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_const_QinC
 
-#eval phrase 712
+#eval phrase 698
 def poly_const_QinC_poly_const_complex : thm := keep "poly_const_QinC_poly_const_complex" fun _ => (do
   prove ([[
   !c.
@@ -12167,7 +12002,7 @@ def poly_const_QinC_poly_const_complex : thm := keep "poly_const_QinC_poly_const
   : ExceptT String IO thm).run
 #eval poly_const_QinC_poly_const_complex
 
-#eval phrase 713
+#eval phrase 699
 def poly_mul_QinC_poly_mul_complex : thm := keep "poly_mul_QinC_poly_mul_complex" fun _ => (do
   prove ([[
   !(p:(1->num)->complex) (q:(1->num)->complex).
@@ -12180,7 +12015,7 @@ def poly_mul_QinC_poly_mul_complex : thm := keep "poly_mul_QinC_poly_mul_complex
   : ExceptT String IO thm).run
 #eval poly_mul_QinC_poly_mul_complex
 
-#eval phrase 714
+#eval phrase 700
 def x_poly_ZinC_denominator_is_QinC_v2_lemma2 : thm := keep "x_poly_ZinC_denominator_is_QinC_v2_lemma2" fun _ => (do
   prove ([[
   !(p:(1->num)->complex) e.
@@ -12197,7 +12032,7 @@ def x_poly_ZinC_denominator_is_QinC_v2_lemma2 : thm := keep "x_poly_ZinC_denomin
   : ExceptT String IO thm).run
 #eval x_poly_ZinC_denominator_is_QinC_v2_lemma2
 
-#eval phrase 715
+#eval phrase 701
 def x_poly_ZinC_denominator_is_QinC_v2 : thm := keep "x_poly_ZinC_denominator_is_QinC_v2" fun _ => (do
   prove ([[
   !(p:(1->num)->complex) e.
@@ -12215,7 +12050,7 @@ def x_poly_ZinC_denominator_is_QinC_v2 : thm := keep "x_poly_ZinC_denominator_is
 
 /- XXX: should factor proof through multi_QinC_to_ZinC -/
 
-#eval phrase 716
+#eval phrase 702
 def x_poly_QinC_is_ZinC_denominator : thm := keep "x_poly_QinC_is_ZinC_denominator" fun _ => (do
   prove ([[
   !p:(1->num)->complex.
@@ -12252,7 +12087,7 @@ def x_poly_QinC_is_ZinC_denominator : thm := keep "x_poly_QinC_is_ZinC_denominat
   : ExceptT String IO thm).run
 #eval x_poly_QinC_is_ZinC_denominator
 
-#eval phrase 717
+#eval phrase 703
 def x_poly_QinC_is_ZinC_denominator_v2_lemma : thm := keep "x_poly_QinC_is_ZinC_denominator_v2_lemma" fun _ => (do
   prove ([[
   !(p:(1->num)->complex) e.
@@ -12266,11 +12101,11 @@ def x_poly_QinC_is_ZinC_denominator_v2_lemma : thm := keep "x_poly_QinC_is_ZinC_
     rw [coeff_series_from_coeffs] THEN
     have' ([[Cx(&e) IN ring_carrier complex_ring]]) [in_complex_ring] THEN
     simp [coeff_poly_const_times] THEN
-    rw [complex_ring_clauses])
+    rw [COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval x_poly_QinC_is_ZinC_denominator_v2_lemma
 
-#eval phrase 718
+#eval phrase 704
 def x_poly_QinC_is_ZinC_denominator_v2_lemma2 : thm := keep "x_poly_QinC_is_ZinC_denominator_v2_lemma2" fun _ => (do
   prove ([[
   !(p:(1->num)->complex) e.
@@ -12287,7 +12122,7 @@ def x_poly_QinC_is_ZinC_denominator_v2_lemma2 : thm := keep "x_poly_QinC_is_ZinC
   : ExceptT String IO thm).run
 #eval x_poly_QinC_is_ZinC_denominator_v2_lemma2
 
-#eval phrase 719
+#eval phrase 705
 def x_poly_QinC_is_ZinC_denominator_v2 : thm := keep "x_poly_QinC_is_ZinC_denominator_v2" fun _ => (do
   prove ([[
   !p:(1->num)->complex.
@@ -12304,7 +12139,7 @@ def x_poly_QinC_is_ZinC_denominator_v2 : thm := keep "x_poly_QinC_is_ZinC_denomi
   : ExceptT String IO thm).run
 #eval x_poly_QinC_is_ZinC_denominator_v2
 
-#eval phrase 720
+#eval phrase 706
 def ring_hasQ_subring_series_complex : thm := keep "ring_hasQ_subring_series_complex" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[~(Cx(&n) = Cx(&0)) ==> Cx (&n) * Cx (&1) / Cx (&n) = Cx(&1)]])
   prove ([[
@@ -12319,7 +12154,7 @@ def ring_hasQ_subring_series_complex : thm := keep "ring_hasQ_subring_series_com
    (rw [ring_hasQ] THEN
     intro THENL [rw [RING_CHAR_SUBRING_GENERATED] THEN
       rw [ring_char_x_series] THEN
-      rw [ring_char_complex],
+      rw [RING_CHAR_COMPLEX_RING],
       rw [ring_unit] THEN
       intro THENL [qed [RING_OF_NUM],
         witness ([[poly_const QinC_ring (Cx(&1) / Cx(&n)):(1->num)->complex]]) THEN
@@ -12334,9 +12169,9 @@ def ring_hasQ_subring_series_complex : thm := keep "ring_hasQ_subring_series_com
           rw [ring_of_num_x_series] THEN
           rw [(← HolLight.GSYM x_series_use)] THEN
           rw [poly_const_QinC_poly_const_complex] THEN
-          rw [ring_of_num_complex, complex_of_num] THEN
+          rw [COMPLEX_RING_OF_NUM] THEN
           simp [(← HolLight.GSYM POLY_CONST_MUL), in_complex_ring] THEN
-          rw [complex_ring_clauses, poly_1] THEN
+          rw [COMPLEX_RING_CLAUSES, poly_1] THEN
           have' ([[~(&n = &0:real)]]) [REAL_OF_NUM_EQ] THEN
           have' ([[~(Cx(&n) = Cx(&0))]]) [CX_INJ] THEN
           h1 THEN
@@ -12346,7 +12181,7 @@ def ring_hasQ_subring_series_complex : thm := keep "ring_hasQ_subring_series_com
 
 /- ===== algebraic numbers -/
 
-#eval phrase 721
+#eval phrase 707
 def algebraic_number : thm := keep "algebraic_number" fun _ => new_definition
  [[
   algebraic_number (z:complex)
@@ -12357,7 +12192,7 @@ def algebraic_number : thm := keep "algebraic_number" fun _ => new_definition
 ]]
 #eval algebraic_number
 
-#eval phrase 722
+#eval phrase 708
 def algebraic_number_ZinC_explicit : thm := keep "algebraic_number_ZinC_explicit" fun _ => (do
   let h1 ← rr (← ExceptT.mk [[~(&1 = &0:real)]])
   prove ([[
@@ -12386,7 +12221,7 @@ def algebraic_number_ZinC_explicit : thm := keep "algebraic_number_ZinC_explicit
   : ExceptT String IO thm).run
 #eval algebraic_number_ZinC_explicit
 
-#eval phrase 723
+#eval phrase 709
 def algebraic_number_ZinC : thm := keep "algebraic_number_ZinC" fun _ => (do
   prove ([[
   !z.
@@ -12397,7 +12232,7 @@ def algebraic_number_ZinC : thm := keep "algebraic_number_ZinC" fun _ => (do
   : ExceptT String IO thm).run
 #eval algebraic_number_ZinC
 
-#eval phrase 724
+#eval phrase 710
 def algebraic_number_ii : thm := keep "algebraic_number_ii" fun _ => (do
   let h13 ← ar (← ExceptT.mk [[~(0 = 1)]])
   let h12 ← ar (← ExceptT.mk [[~(0 = 2)]])
@@ -12450,13 +12285,13 @@ def algebraic_number_ii : thm := keep "algebraic_number_ii" fun _ => (do
     simp [h12, h13,
       RING_ADD_LZERO, RING_ADD_RZERO, RING_MUL_LID, RING_MUL_LZERO,
       RING_CLAUSES] THEN
-    rw [ring_pow_complex, complex_ring_clauses] THEN
+    rw [COMPLEX_RING_POW, COMPLEX_RING_CLAUSES] THEN
     simp [COMPLEX_POW_II_2, complex_pow] THEN
     CONV_TAC cf)
   : ExceptT String IO thm).run
 #eval algebraic_number_ii
 
-#eval phrase 725
+#eval phrase 711
 def algebraic_number_half : thm := keep "algebraic_number_half" fun _ => (do
   let h8 ← ar (← ExceptT.mk [[~(0 = 1)]])
   let h7 ← ar (← ExceptT.mk [[~(1 = 0)]])
@@ -12472,7 +12307,7 @@ def algebraic_number_half : thm := keep "algebraic_number_half" fun _ => (do
    (rw [algebraic_number] THEN
     intro THEN
     witness ([[poly_sub ZinC_ring (const_x_pow ZinC_ring (Cx(&2)) 1) (x_pow ZinC_ring 0)]]) THEN
-    intro THENL [have' ([[Cx(&2) IN ring_carrier ZinC_ring]]) [complex_of_num, RING_OF_NUM, ring_of_num_ZinC] THEN
+    intro THENL [have' ([[Cx(&2) IN ring_carrier ZinC_ring]]) [RING_OF_NUM, ring_of_num_ZinC] THEN
       qed [x_pow_poly, const_x_pow_poly, RING_POLYNOMIAL_SUB],
       have' ([[coeff 0 (const_x_pow ZinC_ring (Cx(&2)) 1) = ring_0 ZinC_ring]]) [coeff_const_x_pow, h1] THEN
       have' ([[coeff 0 (x_pow ZinC_ring 0) = ring_1 ZinC_ring]]) [coeff_x_pow] THEN
@@ -12507,13 +12342,13 @@ def algebraic_number_half : thm := keep "algebraic_number_half" fun _ => (do
     simp [h8,
       RING_ADD_LZERO, RING_ADD_RZERO, RING_MUL_LID, RING_MUL_LZERO,
       RING_CLAUSES] THEN
-    rw [ring_pow_complex, complex_ring_clauses, ring_sub_complex] THEN
+    rw [COMPLEX_RING_POW, COMPLEX_RING_CLAUSES, COMPLEX_RING_SUB] THEN
     simp [complex_pow, COMPLEX_POW_1] THEN
     CONV_TAC cf)
   : ExceptT String IO thm).run
 #eval algebraic_number_half
 
-#eval phrase 726
+#eval phrase 712
 def algebraic_number_if_monic_vanishing_at : thm := keep "algebraic_number_if_monic_vanishing_at" fun _ => (do
   prove ([[
   !S (c:X->complex) s.
@@ -12531,16 +12366,16 @@ def algebraic_number_if_monic_vanishing_at : thm := keep "algebraic_number_if_mo
       have' ([[monic complex_ring (poly_0 ZinC_ring)]]) [] THEN
       have' ([[monic complex_ring (poly_0 complex_ring)]]) [poly_0_ZinC_eq_poly_0_complex] THEN
       have' ([[ring_1 complex_ring = ring_0 complex_ring]]) [monic_poly_0] THEN
-      qed [field_complex, field],
+      qed [FIELD_COMPLEX_RING, field],
       have' ([[!s:X. s IN S ==> c s IN ring_carrier complex_ring]]) [in_complex_ring] THEN
       simp [eval_monic_vanishing_at_refl] THEN
-      rw [complex_ring_clauses]])
+      rw [COMPLEX_RING_CLAUSES]])
   : ExceptT String IO thm).run
 #eval algebraic_number_if_monic_vanishing_at
 
 /- ===== algebraic numbers via \Q[x] -/
 
-#eval phrase 727
+#eval phrase 713
 def algebraic_number_root_QinC_poly : thm := keep "algebraic_number_root_QinC_poly" fun _ => (do
   prove ([[
   !z:complex.
@@ -12575,12 +12410,12 @@ def algebraic_number_root_QinC_poly : thm := keep "algebraic_number_root_QinC_po
         have' ([[z IN ring_carrier complex_ring]]) [in_complex_ring] THEN
         have' ([[ring_polynomial complex_ring (poly_const QinC_ring (Cx(&e)):(1->num)->complex)]]) [poly_complex_if_poly_QinC] THEN
         have' ([[ring_polynomial complex_ring (p:(1->num)->complex)]]) [poly_complex_if_poly_QinC] THEN
-        simp [POLY_EVAL_MUL, complex_ring_clauses] THEN
+        simp [POLY_EVAL_MUL, COMPLEX_RING_CLAUSES] THEN
         qed [COMPLEX_MUL_RZERO, POLY_EVAL]]])
   : ExceptT String IO thm).run
 #eval algebraic_number_root_QinC_poly
 
-#eval phrase 728
+#eval phrase 714
 def algebraic_number_if_monic_vanishing_at_QinC : thm := keep "algebraic_number_if_monic_vanishing_at_QinC" fun _ => (do
   prove ([[
   !S (c:X->complex) s.
@@ -12598,14 +12433,14 @@ def algebraic_number_if_monic_vanishing_at_QinC : thm := keep "algebraic_number_
       have' ([[monic complex_ring (poly_0 QinC_ring)]]) [] THEN
       have' ([[monic complex_ring (poly_0 complex_ring)]]) [poly_0_QinC_eq_poly_0_complex] THEN
       have' ([[ring_1 complex_ring = ring_0 complex_ring]]) [monic_poly_0] THEN
-      qed [field_complex, field],
+      qed [FIELD_COMPLEX_RING, field],
       have' ([[!s:X. s IN S ==> c s IN ring_carrier complex_ring]]) [in_complex_ring] THEN
       simp [eval_monic_vanishing_at_refl] THEN
-      rw [complex_ring_clauses]])
+      rw [COMPLEX_RING_CLAUSES]])
   : ExceptT String IO thm).run
 #eval algebraic_number_if_monic_vanishing_at_QinC
 
-#eval phrase 729
+#eval phrase 715
 def algebraic_number_if_root_irreducible_QinC_poly : thm := keep "algebraic_number_if_root_irreducible_QinC_poly" fun _ => (do
   prove ([[
   !z:complex.
@@ -12623,7 +12458,7 @@ def algebraic_number_if_root_irreducible_QinC_poly : thm := keep "algebraic_numb
   : ExceptT String IO thm).run
 #eval algebraic_number_if_root_irreducible_QinC_poly
 
-#eval phrase 730
+#eval phrase 716
 def algebraic_number_is_root_irreducible_QinC_poly : thm := keep "algebraic_number_is_root_irreducible_QinC_poly" fun _ => (do
   let h1 ← def' ([[qprod:(1->num)->complex]]) (← ExceptT.mk [[(ring_product(x_poly QinC_ring) (1..n) q)]])
   prove ([[
@@ -12658,9 +12493,9 @@ def algebraic_number_is_root_irreducible_QinC_poly : thm := keep "algebraic_numb
     have' ([[ring_polynomial complex_ring (p:(1->num)->complex)]]) [poly_complex_if_poly_QinC] THEN
     have' ([[ring_polynomial complex_ring (c:(1->num)->complex)]]) [poly_complex_if_poly_QinC] THEN
     have' ([[poly_eval complex_ring qprod z = ring_mul complex_ring (poly_eval complex_ring p z) (poly_eval complex_ring c z)]]) [POLY_EVAL_MUL] THEN
-    have' ([[poly_eval complex_ring qprod z = ring_mul complex_ring (ring_0 complex_ring) (poly_eval complex_ring c z)]]) [complex_ring_clauses] THEN
+    have' ([[poly_eval complex_ring qprod z = ring_mul complex_ring (ring_0 complex_ring) (poly_eval complex_ring c z)]]) [COMPLEX_RING_CLAUSES] THEN
     have' ([[poly_eval complex_ring qprod z = ring_0 complex_ring]]) [RING_MUL_LZERO, POLY_EVAL] THEN
-    have' ([[poly_eval complex_ring qprod z = Cx(&0)]]) [complex_ring_clauses] THEN
+    have' ([[poly_eval complex_ring qprod z = Cx(&0)]]) [COMPLEX_RING_CLAUSES] THEN
     have' ([[FINITE (1..n)]]) [FINITE_NUMSEG] THEN
     have' ([[!i. i IN 1..n ==> 1 <= i /\ i <= n]]) [IN_NUMSEG] THEN
     have' ([[!i. i IN 1..n ==> q i IN ring_carrier(x_poly QinC_ring)]]) [ring_prime] THEN
@@ -12673,7 +12508,7 @@ def algebraic_number_is_root_irreducible_QinC_poly : thm := keep "algebraic_numb
     specialize [([[complex_ring]]), ([[QinC]]), ([[q:num->(1->num)->complex]]), ([[1..n]])] poly_product_subring THEN
     have' ([[qprod = poly_product complex_ring (1..n) q]]) [subring_complex_QinC] THEN
     have' ([[ring_product complex_ring (1..n) (\i. poly_eval complex_ring (q i) z) = ring_0 complex_ring]]) [] THEN
-    have' ([[integral_domain complex_ring]]) [integral_domain_complex] THEN
+    have' ([[integral_domain complex_ring]]) [INTEGRAL_DOMAIN_COMPLEX_RING] THEN
     specialize [([[complex_ring]]), ([[1..n]]), ([[\i. poly_eval complex_ring (q(i:num)) z]])] INTEGRAL_DOMAIN_PRODUCT_EQ_0 THEN
     choose ([[i:num]]) ([[i IN 1..n /\ poly_eval complex_ring (q i) z = ring_0 complex_ring]]) [] THEN
     witness ([[q(i:num):(1->num)->complex]]) THEN
@@ -12687,7 +12522,7 @@ def algebraic_number_is_root_irreducible_QinC_poly : thm := keep "algebraic_numb
   : ExceptT String IO thm).run
 #eval algebraic_number_is_root_irreducible_QinC_poly
 
-#eval phrase 731
+#eval phrase 717
 def algebraic_number_root_irreducible_QinC_poly : thm := keep "algebraic_number_root_irreducible_QinC_poly" fun _ => (do
   prove ([[
   !z:complex.
@@ -12703,7 +12538,7 @@ def algebraic_number_root_irreducible_QinC_poly : thm := keep "algebraic_number_
   : ExceptT String IO thm).run
 #eval algebraic_number_root_irreducible_QinC_poly
 
-#eval phrase 732
+#eval phrase 718
 def algebraic_number_is_root_monic_irreducible_QinC_poly : thm := keep "algebraic_number_is_root_monic_irreducible_QinC_poly" fun _ => (do
   prove ([[
   !z:complex.
@@ -12731,11 +12566,11 @@ def algebraic_number_is_root_monic_irreducible_QinC_poly : thm := keep "algebrai
     have' ([[ring_polynomial complex_ring (p:(1->num)->complex)]]) [poly_complex_if_poly_QinC] THEN
     have' ([[ring_polynomial complex_ring (w:(1->num)->complex)]]) [poly_complex_if_poly_QinC] THEN
     specialize [([[complex_ring]]), ([[p:(1->num)->complex]]), ([[w:(1->num)->complex]]), ([[z:complex]])] POLY_EVAL_MUL THEN
-    qed [COMPLEX_MUL_LZERO, complex_ring_clauses])
+    qed [COMPLEX_MUL_LZERO, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval algebraic_number_is_root_monic_irreducible_QinC_poly
 
-#eval phrase 733
+#eval phrase 719
 def coprimes_sharing_root : thm := keep "coprimes_sharing_root" fun _ => (do
   let h1 ← def' ([[g:(1->num)->R]]) (← ExceptT.mk [[ring_gcd(x_poly(s:R ring)) (p,q)]])
   prove ([[
@@ -12798,7 +12633,7 @@ def coprimes_sharing_root : thm := keep "coprimes_sharing_root" fun _ => (do
   : ExceptT String IO thm).run
 #eval coprimes_sharing_root
 
-#eval phrase 734
+#eval phrase 720
 def algebraic_number_is_root_unique_monic_irreducible_QinC_poly_lemma : thm := keep "algebraic_number_is_root_unique_monic_irreducible_QinC_poly_lemma" fun _ => (do
   prove ([[
   !(z:complex) p q.
@@ -12816,14 +12651,14 @@ def algebraic_number_is_root_unique_monic_irreducible_QinC_poly_lemma : thm := k
     have' ([[QinC_ring = subring_generated complex_ring QinC]]) [subring_complex_QinC] THEN
     have' ([[field QinC_ring]]) [field_QinC] THEN
     have' ([[z IN ring_carrier complex_ring]]) [in_complex_ring] THEN
-    have' ([[poly_eval complex_ring p z = ring_0 complex_ring]]) [complex_ring_clauses] THEN
-    have' ([[poly_eval complex_ring q z = ring_0 complex_ring]]) [complex_ring_clauses] THEN
+    have' ([[poly_eval complex_ring p z = ring_0 complex_ring]]) [COMPLEX_RING_CLAUSES] THEN
+    have' ([[poly_eval complex_ring q z = ring_0 complex_ring]]) [COMPLEX_RING_CLAUSES] THEN
     specialize [([[complex_ring]]), ([[QinC_ring]]), ([[QinC]]), ([[p:(1->num)->complex]]), ([[q:(1->num)->complex]]), ([[z:complex]])] coprimes_sharing_root THEN
     qed [])
   : ExceptT String IO thm).run
 #eval algebraic_number_is_root_unique_monic_irreducible_QinC_poly_lemma
 
-#eval phrase 735
+#eval phrase 721
 def algebraic_number_is_root_unique_monic_irreducible_QinC_poly_simple : thm := keep "algebraic_number_is_root_unique_monic_irreducible_QinC_poly_simple" fun _ => (do
   prove ([[
   !(z:complex) p q.
@@ -12845,7 +12680,7 @@ def algebraic_number_is_root_unique_monic_irreducible_QinC_poly_simple : thm := 
   : ExceptT String IO thm).run
 #eval algebraic_number_is_root_unique_monic_irreducible_QinC_poly_simple
 
-#eval phrase 736
+#eval phrase 722
 def algebraic_number_is_root_unique_monic_irreducible_QinC_poly : thm := keep "algebraic_number_is_root_unique_monic_irreducible_QinC_poly" fun _ => (do
   prove ([[
   !z:complex.
@@ -12863,7 +12698,7 @@ def algebraic_number_is_root_unique_monic_irreducible_QinC_poly : thm := keep "a
   : ExceptT String IO thm).run
 #eval algebraic_number_is_root_unique_monic_irreducible_QinC_poly
 
-#eval phrase 737
+#eval phrase 723
 def algebraic_number_QinC_explicit : thm := keep "algebraic_number_QinC_explicit" fun _ => (do
   let h1 ← rr (← ExceptT.mk [[~(&1 = &0:real)]])
   prove ([[
@@ -12896,7 +12731,7 @@ def algebraic_number_QinC_explicit : thm := keep "algebraic_number_QinC_explicit
   : ExceptT String IO thm).run
 #eval algebraic_number_QinC_explicit
 
-#eval phrase 738
+#eval phrase 724
 def algebraic_number_QinC : thm := keep "algebraic_number_QinC" fun _ => (do
   prove ([[
   !z.
@@ -12915,15 +12750,15 @@ def algebraic_number_QinC : thm := keep "algebraic_number_QinC" fun _ => (do
 /- general notions into the ones used in this file; the last one gives it    -/
 /- explicitly.                                                               -/
 
-#eval phrase 739
+#eval phrase 725
 def FIELD_EXTENSION_QINC_COMPLEX : thm := keep "FIELD_EXTENSION_QINC_COMPLEX" fun _ => (do
   prove ([[field_extension (QinC_ring,complex_ring) I]])
-   (REWRITE_TAC [field_extension, field_QinC, field_complex] THEN
+   (REWRITE_TAC [field_extension, field_QinC, FIELD_COMPLEX_RING] THEN
     REWRITE_TAC [(← HolLight.GSYM subring_complex_QinC), I_DEF, RING_MONOMORPHISM_INCLUSION])
   : ExceptT String IO thm).run
 #eval FIELD_EXTENSION_QINC_COMPLEX
 
-#eval phrase 740
+#eval phrase 726
 def POLY_EXTEND_QINC_COMPLEX : thm := keep "POLY_EXTEND_QINC_COMPLEX" fun _ => (do
   prove ([[!p z. poly_extend (QinC_ring,complex_ring) I (\v:1. z) p =
          poly_eval complex_ring p z]])
@@ -12932,16 +12767,16 @@ def POLY_EXTEND_QINC_COMPLEX : thm := keep "POLY_EXTEND_QINC_COMPLEX" fun _ => (
   : ExceptT String IO thm).run
 #eval POLY_EXTEND_QINC_COMPLEX
 
-#eval phrase 741
+#eval phrase 727
 def ALGEBRAIC_OVER_QINC_COMPLEX : thm := keep "ALGEBRAIC_OVER_QINC_COMPLEX" fun _ => (do
   prove ([[!z. algebraic_over (QinC_ring,complex_ring) I z <=> algebraic_number z]])
    (REWRITE_TAC [algebraic_over, algebraic_number_root_QinC_poly,
-                POLY_EXTEND_QINC_COMPLEX, complex_ring_clauses, IN_UNIV,
+                POLY_EXTEND_QINC_COMPLEX, COMPLEX_RING_CLAUSES, IN_UNIV,
                 (← HolLight.GSYM x_poly), (← HolLight.GSYM x_poly_use)])
   : ExceptT String IO thm).run
 #eval ALGEBRAIC_OVER_QINC_COMPLEX
 
-#eval phrase 742
+#eval phrase 728
 def MINIMAL_POLYNOMIAL_QINC_COMPLEX : thm := keep "MINIMAL_POLYNOMIAL_QINC_COMPLEX" fun _ => (do
   prove ([[!z. minimal_polynomial (QinC_ring,complex_ring) I z =
        if algebraic_number z
@@ -12952,12 +12787,12 @@ def MINIMAL_POLYNOMIAL_QINC_COMPLEX : thm := keep "MINIMAL_POLYNOMIAL_QINC_COMPL
                  poly_eval complex_ring p z = Cx(&0))
        else poly_0 QinC_ring]])
    (REWRITE_TAC [minimal_polynomial, ALGEBRAIC_OVER_QINC_COMPLEX,
-                POLY_EXTEND_QINC_COMPLEX, complex_ring_clauses,
+                POLY_EXTEND_QINC_COMPLEX, COMPLEX_RING_CLAUSES,
                 (← HolLight.GSYM x_poly), (← HolLight.GSYM x_poly_use)])
   : ExceptT String IO thm).run
 #eval MINIMAL_POLYNOMIAL_QINC_COMPLEX
 
-#eval phrase 743
+#eval phrase 729
 def algebraic_has_minimal_polynomial : thm := keep "algebraic_has_minimal_polynomial" fun _ => (do
   prove ([[
   !z:complex.
@@ -12972,7 +12807,7 @@ def algebraic_has_minimal_polynomial : thm := keep "algebraic_has_minimal_polyno
   : ExceptT String IO thm).run
 #eval algebraic_has_minimal_polynomial
 
-#eval phrase 744
+#eval phrase 730
 def maybe_algebraic_minimal_polynomial : thm := keep "maybe_algebraic_minimal_polynomial" fun _ => (do
   prove ([[
   !z:complex.
@@ -12985,11 +12820,11 @@ def maybe_algebraic_minimal_polynomial : thm := keep "maybe_algebraic_minimal_po
       qed [RING_POLYNOMIAL_0],
       qed [algebraic_has_minimal_polynomial],
       have' ([[minimal_polynomial (QinC_ring,complex_ring) I z = poly_0 QinC_ring]]) [MINIMAL_POLYNOMIAL_QINC_COMPLEX] THEN
-      qed [POLY_EVAL_0, complex_ring_clauses, poly_0_QinC_eq_poly_0_complex]])
+      qed [POLY_EVAL_0, COMPLEX_RING_CLAUSES, poly_0_QinC_eq_poly_0_complex]])
   : ExceptT String IO thm).run
 #eval maybe_algebraic_minimal_polynomial
 
-#eval phrase 745
+#eval phrase 731
 def minimal_polynomial_QinC : thm := keep "minimal_polynomial_QinC" fun _ => (do
   prove ([[
   !z:complex.
@@ -13007,7 +12842,7 @@ def minimal_polynomial_QinC : thm := keep "minimal_polynomial_QinC" fun _ => (do
 
 /- ===== using fundamental theorem of algebra -/
 
-#eval phrase 746
+#eval phrase 732
 def poly_eval_vsum_lemma : thm := keep "poly_eval_vsum_lemma" fun _ => (do
   prove ([[
   !(p:(1->num)->complex) z n.
@@ -13017,15 +12852,15 @@ def poly_eval_vsum_lemma : thm := keep "poly_eval_vsum_lemma" fun _ => (do
 ]])
    (intro THEN
     have' ([[FINITE (0..n)]]) [FINITE_NUMSEG] THEN
-    simp [vsum_ring_sum_complex] THEN
+    simp [(← HolLight.GSYM COMPLEX_RING_SUM)] THEN
     sufficesby RING_SUM_EQ THEN
     intro THEN
     rw [BETA_THM] THEN
-    rw [complex_ring_clauses, ring_pow_complex])
+    rw [COMPLEX_RING_CLAUSES, COMPLEX_RING_POW])
   : ExceptT String IO thm).run
 #eval poly_eval_vsum_lemma
 
-#eval phrase 747
+#eval phrase 733
 def poly_eval_vsum : thm := keep "poly_eval_vsum" fun _ => (do
   prove ([[
   !(p:(1->num)->complex) z n.
@@ -13040,7 +12875,7 @@ def poly_eval_vsum : thm := keep "poly_eval_vsum" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_eval_vsum
 
-#eval phrase 748
+#eval phrase 734
 def nonconstant_complex_root : thm := keep "nonconstant_complex_root" fun _ => (do
   let h4 ← ar (← ExceptT.mk [[n <= n:num]])
   let h3 ← ar (← ExceptT.mk [[~(1 <= 0)]])
@@ -13059,7 +12894,7 @@ def nonconstant_complex_root : thm := keep "nonconstant_complex_root" fun _ => (
       have' ([[n IN 1..n]]) [IN_NUMSEG, h2] THEN
       have' ([[~(p = poly_0 complex_ring:(1->num)->complex)]]) [POLY_DEG_0, h3] THEN
       have' ([[~(coeff n p = ring_0 complex_ring)]]) [topcoeff_nonzero] THEN
-      qed [complex_ring_clauses],
+      qed [COMPLEX_RING_CLAUSES],
       specialize_assuming [([[\i. coeff i p:complex]]), ([[n:num]])] FTA THEN
       choose ([[z:complex]]) ([[vsum(0..n) (\i. coeff i p * z pow i) = Cx(&0)]]) [] THEN
       witness ([[z:complex]]) THEN
@@ -13067,7 +12902,7 @@ def nonconstant_complex_root : thm := keep "nonconstant_complex_root" fun _ => (
   : ExceptT String IO thm).run
 #eval nonconstant_complex_root
 
-#eval phrase 749
+#eval phrase 735
 def nonconstant_complex_x_minus_root : thm := keep "nonconstant_complex_x_minus_root" fun _ => (do
   prove ([[
   !p:(1->num)->complex.
@@ -13077,7 +12912,7 @@ def nonconstant_complex_x_minus_root : thm := keep "nonconstant_complex_x_minus_
 ]])
    (intro THEN
     choose ([[z:complex]]) ([[poly_eval complex_ring p z = Cx(&0)]]) [nonconstant_complex_root] THEN
-    have' ([[poly_eval complex_ring p z = ring_0 complex_ring]]) [complex_ring_clauses] THEN
+    have' ([[poly_eval complex_ring p z = ring_0 complex_ring]]) [COMPLEX_RING_CLAUSES] THEN
     have' ([[z IN ring_carrier complex_ring]]) [in_complex_ring] THEN
     have' ([[p IN ring_carrier(poly_ring complex_ring (:1))]]) [x_poly, x_poly_use] THEN
     specialize [([[complex_ring]]), ([[z:complex]]), ([[p:(1->num)->complex]])] POLY_DIVIDES_X_MINUS_ROOT THEN
@@ -13090,7 +12925,7 @@ def nonconstant_complex_x_minus_root : thm := keep "nonconstant_complex_x_minus_
   : ExceptT String IO thm).run
 #eval nonconstant_complex_x_minus_root
 
-#eval phrase 750
+#eval phrase 736
 def associates_monic_vanishing_at_if_complex_lemma : thm := keep "associates_monic_vanishing_at_if_complex_lemma" fun _ => (do
   let h5 ← ar (← ExceptT.mk [[SUC n = n+1]])
   let h4 ← ar (← ExceptT.mk [[~(n < n:num)]])
@@ -13112,7 +12947,7 @@ def associates_monic_vanishing_at_if_complex_lemma : thm := keep "associates_mon
       rw [monic_vanishing_at_empty] THEN
       choose ([[c:complex]]) ([[c IN ring_carrier complex_ring /\ p = poly_const complex_ring c:(1->num)->complex]]) [POLY_DEG_EQ_0] THEN
       have' ([[~(c = ring_0 complex_ring)]]) [poly_0] THEN
-      have' ([[field complex_ring]]) [field_complex] THEN
+      have' ([[field complex_ring]]) [FIELD_COMPLEX_RING] THEN
       have' ([[ring_unit complex_ring c]]) [FIELD_UNIT] THEN
       have' ([[ring_unit(x_poly complex_ring) p]]) [RING_UNIT_POLY_CONST, x_poly] THEN
       have' ([[ring_associates(x_poly complex_ring) p (ring_1(x_poly complex_ring))]]) [RING_ASSOCIATES_1] THEN
@@ -13122,11 +12957,11 @@ def associates_monic_vanishing_at_if_complex_lemma : thm := keep "associates_mon
       choose2 ([[z:complex]]) ([[q:(1->num)->complex]]) ([[ring_polynomial complex_ring q /\ p = poly_mul complex_ring (x_minus_const complex_ring z) q]]) [nonconstant_complex_x_minus_root] THEN
       have' ([[z IN ring_carrier complex_ring]]) [in_complex_ring] THEN
       have' ([[ring_polynomial complex_ring (x_minus_const complex_ring z)]]) [x_minus_const_poly] THEN
-      have' ([[integral_domain complex_ring]]) [integral_domain_complex] THEN
+      have' ([[integral_domain complex_ring]]) [INTEGRAL_DOMAIN_COMPLEX_RING] THEN
       have' ([[~(x_minus_const complex_ring z = poly_0 complex_ring)]]) [x_minus_const_nonzero, integral_domain] THEN
       have' ([[~(q = poly_0 complex_ring:(1->num)->complex)]]) [POLY_MUL_0, x_poly_use, x_minus_const_poly] THEN
       specialize_assuming [([[complex_ring]]), ([[x_minus_const complex_ring z]]), ([[q:(1->num)->complex]])] POLY_DEG_MUL THEN
-      have' ([[poly_deg complex_ring (p:(1->num)->complex) = poly_deg complex_ring (x_minus_const complex_ring z) + poly_deg complex_ring (q:(1->num)->complex)]]) [integral_domain_complex, x_poly_use] THEN
+      have' ([[poly_deg complex_ring (p:(1->num)->complex) = poly_deg complex_ring (x_minus_const complex_ring z) + poly_deg complex_ring (q:(1->num)->complex)]]) [INTEGRAL_DOMAIN_COMPLEX_RING, x_poly_use] THEN
       have' ([[SUC n = 1 + poly_deg complex_ring (q:(1->num)->complex)]]) [deg_x_minus_const, integral_domain] THEN
       h2 THEN
       have' ([[x_minus_const complex_ring z IN ring_carrier(x_poly complex_ring)]]) [x_poly_use] THEN
@@ -13148,7 +12983,7 @@ def associates_monic_vanishing_at_if_complex_lemma : thm := keep "associates_mon
   : ExceptT String IO thm).run
 #eval associates_monic_vanishing_at_if_complex_lemma
 
-#eval phrase 751
+#eval phrase 737
 def associates_monic_vanishing_at_if_complex : thm := keep "associates_monic_vanishing_at_if_complex" fun _ => (do
   prove ([[
   !p:(1->num)->complex.
@@ -13164,7 +12999,7 @@ def associates_monic_vanishing_at_if_complex : thm := keep "associates_monic_van
   : ExceptT String IO thm).run
 #eval associates_monic_vanishing_at_if_complex
 
-#eval phrase 752
+#eval phrase 738
 def monic_vanishing_at_if_monic_complex : thm := keep "monic_vanishing_at_if_monic_complex" fun _ => (do
   prove ([[
   !p:(1->num)->complex.
@@ -13173,17 +13008,17 @@ def monic_vanishing_at_if_monic_complex : thm := keep "monic_vanishing_at_if_mon
   ?c. p = monic_vanishing_at complex_ring {i | i < poly_deg complex_ring p} c
 ]])
    (intro THEN
-    have' ([[~(p:(1->num)->complex = poly_0 complex_ring)]]) [monic_poly_0, field_complex, field] THEN
+    have' ([[~(p:(1->num)->complex = poly_0 complex_ring)]]) [monic_poly_0, FIELD_COMPLEX_RING, field] THEN
     specialize [([[p:(1->num)->complex]])] associates_monic_vanishing_at_if_complex THEN
     choose ([[c:num->complex]]) ([[ring_associates (x_poly complex_ring) p (monic_vanishing_at complex_ring {i | i < poly_deg complex_ring p} c)]]) [] THEN
     have' ([[!i. i IN {i | i < poly_deg complex_ring (p:(1->num)->complex)} ==> c i IN ring_carrier complex_ring]]) [in_complex_ring] THEN
     specialize [([[poly_deg complex_ring (p:(1->num)->complex)]])] FINITE_NUMSEG_LT THEN
     have' ([[monic complex_ring (monic_vanishing_at complex_ring {i | i < poly_deg complex_ring (p:(1->num)->complex)} c)]]) [monic_vanishing_at_monic] THEN
-    qed [monic_associates, field_complex])
+    qed [monic_associates, FIELD_COMPLEX_RING])
   : ExceptT String IO thm).run
 #eval monic_vanishing_at_if_monic_complex
 
-#eval phrase 753
+#eval phrase 739
 def monic_QinC_squarefree_complex_squarefree_lemma : thm := keep "monic_QinC_squarefree_complex_squarefree_lemma" fun _ => (do
   let h1 ← rgl (← ExceptT.mk [[
         p = ring_mul(r:R ring) C qpd ==>
@@ -13212,7 +13047,7 @@ def monic_QinC_squarefree_complex_squarefree_lemma : thm := keep "monic_QinC_squ
 /- XXX: and should do more elementary proof via gcd computation being preserved by field extensions -/
 /- XXX: e.g., formulate via resultants -/
 
-#eval phrase 754
+#eval phrase 740
 def monic_QinC_squarefree_complex_squarefree : thm := keep "monic_QinC_squarefree_complex_squarefree" fun _ => (do
   let h3 ← def' ([[qp'd:(1->num)->complex]]) (← ExceptT.mk [[poly_mul complex_ring q p'd:(1->num)->complex]])
   let h2 ← def' ([[qpd:(1->num)->complex]]) (← ExceptT.mk [[poly_mul complex_ring q pd:(1->num)->complex]])
@@ -13248,7 +13083,7 @@ def monic_QinC_squarefree_complex_squarefree : thm := keep "monic_QinC_squarefre
       have' ([[ring_polynomial complex_ring (x:(1->num)->complex)]]) [ring_polynomial_if_subring] THEN
       have' ([[ring_polynomial complex_ring (y:(1->num)->complex)]]) [ring_polynomial_if_subring] THEN
       have' ([[ring_coprime (x_poly complex_ring) (p,x_derivative complex_ring p)]]) [] THEN
-      qed [squarefree_if_coprime_derivative, field_complex],
+      qed [squarefree_if_coprime_derivative, FIELD_COMPLEX_RING],
       intro THEN
       proven_if ([[ring_coprime(x_poly QinC_ring) (p,x_derivative QinC_ring p)]]) [squarefree_if_coprime_derivative, field_QinC] THEN
       have' ([[p IN ring_carrier(x_poly QinC_ring)]]) [x_poly_use] THEN
@@ -13317,11 +13152,11 @@ def monic_QinC_squarefree_complex_squarefree : thm := keep "monic_QinC_squarefre
       have' ([[x_derivative QinC_ring p = ring_mul(x_poly complex_ring) d p'd]]) [ring_polynomial, x_poly_use, poly_mul_subring] THEN
       have' ([[ring_divides(x_poly complex_ring) d (x_derivative QinC_ring p)]]) [ring_divides] THEN
       have' ([[ring_divides(x_poly complex_ring) (x_minus_const complex_ring z) (x_derivative QinC_ring p)]]) [RING_DIVIDES_TRANS] THEN
-      have' ([[integral_domain(x_poly complex_ring)]]) [integral_domain_x_poly_field, field_complex] THEN
-      have' ([[~(monic complex_ring (poly_0 complex_ring))]]) [monic_poly_0, field, field_complex] THEN
+      have' ([[integral_domain(x_poly complex_ring)]]) [integral_domain_x_poly_field, FIELD_COMPLEX_RING] THEN
+      have' ([[~(monic complex_ring (poly_0 complex_ring))]]) [monic_poly_0, field, FIELD_COMPLEX_RING] THEN
       have' ([[~(p = ring_0(x_poly complex_ring))]]) [x_poly_use] THEN
       have' ([[x_minus_const complex_ring z IN ring_carrier(x_poly complex_ring)]]) [x_poly_use] THEN
-      have' ([[~ring_unit(x_poly complex_ring) (x_minus_const complex_ring z)]]) [x_minus_const_not_unit, integral_domain_complex] THEN
+      have' ([[~ring_unit(x_poly complex_ring) (x_minus_const complex_ring z)]]) [x_minus_const_not_unit, INTEGRAL_DOMAIN_COMPLEX_RING] THEN
       specialize_assuming [([[x_poly complex_ring]]), ([[p:(1->num)->complex]]), ([[x_minus_const complex_ring z:(1->num)->complex]])] not_squarefree_if_divisible_by_square THEN
       have' ([[p = ring_mul(x_poly complex_ring) (poly_mul complex_ring (x_minus_const complex_ring z) (x_minus_const complex_ring z)) (poly_sub complex_ring qp'd (x_derivative complex_ring qpd))]]) [x_poly_use] THEN
       have' ([[p = ring_mul(x_poly complex_ring) (ring_mul(x_poly complex_ring) (x_minus_const complex_ring z) (x_minus_const complex_ring z)) (poly_sub complex_ring qp'd (x_derivative complex_ring qpd))]]) [x_poly_use] THEN
@@ -13335,7 +13170,7 @@ def monic_QinC_squarefree_complex_squarefree : thm := keep "monic_QinC_squarefre
   : ExceptT String IO thm).run
 #eval monic_QinC_squarefree_complex_squarefree
 
-#eval phrase 755
+#eval phrase 741
 def monic_squarefree_complex_roots : thm := keep "monic_squarefree_complex_roots" fun _ => (do
   let h2 ← def' ([[d:num->(1->num)->complex]]) (← ExceptT.mk [[\j:num. if j = e then x_minus_const complex_ring (c e) else if j = f then x_minus_const complex_ring (c e) else ring_1(x_poly complex_ring)]])
   let h1 ← def' ([[S:num->bool]]) (← ExceptT.mk [[{i | i < poly_deg complex_ring (p:(1->num)->complex)}]])
@@ -13370,10 +13205,10 @@ def monic_squarefree_complex_roots : thm := keep "monic_squarefree_complex_roots
         specialize [([[x_poly complex_ring]]), ([[x_minus_const complex_ring (c(s:num))]])] RING_DIVIDES_1 THEN
         qed [], pass] THEN
       specialize [([[x_poly complex_ring]]), ([[d:num->(1->num)->complex]]), ([[\i:num. x_minus_const complex_ring (c i):(1->num)->complex]]), ([[S:num->bool]])] ring_product_divides_factor_by_factor THEN
-      have' ([[integral_domain(x_poly complex_ring)]]) [integral_domain_x_poly_field, field_complex] THEN
-      have' ([[~(monic complex_ring (poly_0 complex_ring))]]) [monic_poly_0, field, field_complex] THEN
+      have' ([[integral_domain(x_poly complex_ring)]]) [integral_domain_x_poly_field, FIELD_COMPLEX_RING] THEN
+      have' ([[~(monic complex_ring (poly_0 complex_ring))]]) [monic_poly_0, field, FIELD_COMPLEX_RING] THEN
       have' ([[~(p = ring_0(x_poly complex_ring))]]) [x_poly_use] THEN
-      have' ([[~ring_unit(x_poly complex_ring) (x_minus_const complex_ring (c(e:num)))]]) [x_minus_const_not_unit, integral_domain_complex] THEN
+      have' ([[~ring_unit(x_poly complex_ring) (x_minus_const complex_ring (c(e:num)))]]) [x_minus_const_not_unit, INTEGRAL_DOMAIN_COMPLEX_RING] THEN
       proven_if ([[e = f:num]]) [] THEN
       have' ([[ring_product (x_poly complex_ring) (S:num->bool) d = ring_mul (x_poly complex_ring) (x_minus_const complex_ring (c e)) (x_minus_const complex_ring (c(e:num)))]]) [] THEN
       have' ([[!s:num. s IN S ==> c s IN ring_carrier complex_ring]]) [in_complex_ring] THEN
@@ -13393,7 +13228,7 @@ def monic_squarefree_complex_roots : thm := keep "monic_squarefree_complex_roots
   : ExceptT String IO thm).run
 #eval monic_squarefree_complex_roots
 
-#eval phrase 756
+#eval phrase 742
 def QinC_monic_irreducible_complex_roots : thm := keep "QinC_monic_irreducible_complex_roots" fun _ => (do
   prove ([[
   !p:(1->num)->complex.
@@ -13416,7 +13251,7 @@ def QinC_monic_irreducible_complex_roots : thm := keep "QinC_monic_irreducible_c
 
 /- ===== complex_root -/
 
-#eval phrase 757
+#eval phrase 743
 def complex_root : thm := keep "complex_root" fun _ => new_definition
  [[
   complex_root p (z:complex)
@@ -13424,18 +13259,18 @@ def complex_root : thm := keep "complex_root" fun _ => new_definition
 ]]
 #eval complex_root
 
-#eval phrase 758
+#eval phrase 744
 def complex_root_ring : thm := keep "complex_root_ring" fun _ => (do
   prove ([[
   !p z.
   complex_root p z
   <=> poly_eval complex_ring p z = ring_0 complex_ring
 ]])
-   (qed [complex_root, complex_ring_clauses])
+   (qed [complex_root, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval complex_root_ring
 
-#eval phrase 759
+#eval phrase 745
 def complex_root_divides : thm := keep "complex_root_divides" fun _ => (do
   prove ([[
   !p q.
@@ -13457,7 +13292,7 @@ def complex_root_divides : thm := keep "complex_root_divides" fun _ => (do
   : ExceptT String IO thm).run
 #eval complex_root_divides
 
-#eval phrase 760
+#eval phrase 746
 def complex_root_associates : thm := keep "complex_root_associates" fun _ => (do
   prove ([[
   !p q.
@@ -13468,7 +13303,7 @@ def complex_root_associates : thm := keep "complex_root_associates" fun _ => (do
   : ExceptT String IO thm).run
 #eval complex_root_associates
 
-#eval phrase 761
+#eval phrase 747
 def complex_root_le_deg : thm := keep "complex_root_le_deg" fun _ => (do
   prove ([[
   !p.
@@ -13479,16 +13314,16 @@ def complex_root_le_deg : thm := keep "complex_root_le_deg" fun _ => (do
   )
 ]])
    (GEN_TAC THEN REPEAT DISCH_TAC THEN
-    «recall» integral_domain_complex THEN
+    «recall» INTEGRAL_DOMAIN_COMPLEX_RING THEN
     have' ([[p IN ring_carrier(poly_ring complex_ring (:1))]]) [x_poly_use, x_poly] THEN
     have' ([[~(p = ring_0(poly_ring complex_ring (:1)))]]) [x_poly_use, x_poly] THEN
     specialize [([[complex_ring]]), ([[p:(1->num)->complex]])] POLY_ROOT_BOUND THEN
     subgoal ([[complex_root p = { x | x IN ring_carrier complex_ring /\ poly_eval complex_ring p x = ring_0 complex_ring}]]) THENL [rw [EXTENSION, IN, IN_ELIM_THM, complex_root_ring] THEN
-      qed [complex_ring_clauses, UNIV], qed []])
+      qed [COMPLEX_RING_CLAUSES, UNIV], qed []])
   : ExceptT String IO thm).run
 #eval complex_root_le_deg
 
-#eval phrase 762
+#eval phrase 748
 def complex_root_monic_vanishing_at : thm := keep "complex_root_monic_vanishing_at" fun _ => (do
   prove ([[
   !S.
@@ -13502,7 +13337,7 @@ def complex_root_monic_vanishing_at : thm := keep "complex_root_monic_vanishing_
       have' ([[x IN ring_carrier complex_ring]]) [in_complex_ring] THEN
       have' ([[!s. s IN S ==> I s IN ring_carrier complex_ring]]) [in_complex_ring] THEN
       specialize [([[complex_ring]]), ([[S:complex->bool]]), ([[I:complex->complex]]), ([[x:complex]])] eval_monic_vanishing_at THEN
-      «recall» integral_domain_complex THEN
+      «recall» INTEGRAL_DOMAIN_COMPLEX_RING THEN
       have' ([[ring_product complex_ring S (\s. ring_sub complex_ring x (I s)) = ring_0 complex_ring]]) [] THEN
       choose ([[s:complex]]) ([[s IN S /\ ring_sub complex_ring x (I s) = ring_0 complex_ring]]) [INTEGRAL_DOMAIN_PRODUCT_EQ_0] THEN
       have' ([[x = I s:complex]]) [RING_SUB_EQ_0, in_complex_ring] THEN
@@ -13515,7 +13350,7 @@ def complex_root_monic_vanishing_at : thm := keep "complex_root_monic_vanishing_
   : ExceptT String IO thm).run
 #eval complex_root_monic_vanishing_at
 
-#eval phrase 763
+#eval phrase 749
 def monic_vanishing_at_complex_root : thm := keep "monic_vanishing_at_complex_root" fun _ => (do
   prove ([[
   !p.
@@ -13530,7 +13365,7 @@ def monic_vanishing_at_complex_root : thm := keep "monic_vanishing_at_complex_ro
   : ExceptT String IO thm).run
 #eval monic_vanishing_at_complex_root
 
-#eval phrase 764
+#eval phrase 750
 def complex_root_if_x_minus_const_divides : thm := keep "complex_root_if_x_minus_const_divides" fun _ => (do
   prove ([[
   !p z.
@@ -13547,11 +13382,11 @@ def complex_root_if_x_minus_const_divides : thm := keep "complex_root_if_x_minus
     simp [complex_root] THEN
     simp [eval_x_minus_const_refl, in_complex_ring] THEN
     simp [RING_MUL_LZERO, POLY_EVAL] THEN
-    qed [complex_ring_clauses])
+    qed [COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval complex_root_if_x_minus_const_divides
 
-#eval phrase 765
+#eval phrase 751
 def complex_root_x_pow : thm := keep "complex_root_x_pow" fun _ => (do
   prove ([[
   !n.
@@ -13562,16 +13397,16 @@ def complex_root_x_pow : thm := keep "complex_root_x_pow" fun _ => (do
     rw [x_pow_QinC_eq_x_pow_complex] THEN
     case' ([[n = 0]]) THENL [simp [EXTENSION, EMPTY, IN_ELIM_THM, IN, complex_root] THEN
       simp [eval_x_pow, in_complex_ring, RING_POW_0] THEN
-      qed [ring_1_0_complex, complex_ring_clauses], pass] THEN
+      qed [ring_1_0_complex, COMPLEX_RING_CLAUSES], pass] THEN
     simp [EXTENSION, IN_SING] THEN
     simp [IN, complex_root] THEN
     intro THEN
     simp [eval_x_pow, in_complex_ring] THEN
-    qed [COMPLEX_POW_EQ_0, ring_pow_complex])
+    qed [COMPLEX_POW_EQ_0, COMPLEX_RING_POW])
   : ExceptT String IO thm).run
 #eval complex_root_x_pow
 
-#eval phrase 766
+#eval phrase 752
 def complex_root_x_minus_const : thm := keep "complex_root_x_minus_const" fun _ => (do
   prove ([[
   !c.
@@ -13581,12 +13416,12 @@ def complex_root_x_minus_const : thm := keep "complex_root_x_minus_const" fun _ 
    (intro THEN
     rw [EXTENSION, IN_SING, IN, complex_root] THEN
     intro THEN
-    simp [eval_x_minus_const, in_complex_ring, complex_ring_clauses, ring_sub_complex] THEN
+    simp [eval_x_minus_const, in_complex_ring, COMPLEX_RING_CLAUSES, COMPLEX_RING_SUB] THEN
     CONV_TAC cf)
   : ExceptT String IO thm).run
 #eval complex_root_x_minus_const
 
-#eval phrase 767
+#eval phrase 753
 def not_coprime_QinC_if_shared_complex_root : thm := keep "not_coprime_QinC_if_shared_complex_root" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[~(Cx(&0) = Cx(&1))]])
   prove ([[
@@ -13614,17 +13449,17 @@ def not_coprime_QinC_if_shared_complex_root : thm := keep "not_coprime_QinC_if_s
       ([[p:(1->num)->complex]]),
       ([[x:(1->num)->complex]]),
       ([[z:complex]])] POLY_EVAL_MUL THEN
-    have' ([[poly_eval complex_ring (poly_mul complex_ring p x) z = Cx(&0)]]) [complex_root, complex_ring_clauses, COMPLEX_MUL_LZERO] THEN
+    have' ([[poly_eval complex_ring (poly_mul complex_ring p x) z = Cx(&0)]]) [complex_root, COMPLEX_RING_CLAUSES, COMPLEX_MUL_LZERO] THEN
     specialize [([[complex_ring]]),
       ([[q:(1->num)->complex]]),
       ([[y:(1->num)->complex]]),
       ([[z:complex]])] POLY_EVAL_MUL THEN
-    have' ([[poly_eval complex_ring (poly_mul complex_ring q y) z = Cx(&0)]]) [complex_root, complex_ring_clauses, COMPLEX_MUL_LZERO] THEN
+    have' ([[poly_eval complex_ring (poly_mul complex_ring q y) z = Cx(&0)]]) [complex_root, COMPLEX_RING_CLAUSES, COMPLEX_MUL_LZERO] THEN
     specialize [([[complex_ring]]),
       ([[poly_mul complex_ring p x:(1->num)->complex]]),
       ([[poly_mul complex_ring q y:(1->num)->complex]]),
       ([[z:complex]])] POLY_EVAL_ADD THEN
-    have' ([[poly_eval complex_ring (poly_add complex_ring (poly_mul complex_ring p x) (poly_mul complex_ring q y)) z = Cx(&0)]]) [COMPLEX_ADD_LID, complex_ring_clauses] THEN
+    have' ([[poly_eval complex_ring (poly_add complex_ring (poly_mul complex_ring p x) (poly_mul complex_ring q y)) z = Cx(&0)]]) [COMPLEX_ADD_LID, COMPLEX_RING_CLAUSES] THEN
     have' ([[poly_mul complex_ring p x = poly_mul QinC_ring p x:(1->num)->complex]]) [poly_mul_subring, subring_complex_QinC, ring_polynomial] THEN
     have' ([[poly_mul complex_ring q y = poly_mul QinC_ring q y:(1->num)->complex]]) [poly_mul_subring, subring_complex_QinC, ring_polynomial] THEN
     have' ([[poly_add complex_ring (poly_mul complex_ring p x) (poly_mul complex_ring q y) = poly_add QinC_ring (poly_mul QinC_ring p x) (poly_mul QinC_ring q y):(1->num)->complex]]) [poly_add_subring, subring_complex_QinC, ring_polynomial] THEN
@@ -13632,13 +13467,13 @@ def not_coprime_QinC_if_shared_complex_root : thm := keep "not_coprime_QinC_if_s
       rw [x_poly_use] THEN
       qed [], pass] THEN
     have' ([[poly_eval complex_ring (poly_1 complex_ring) z = Cx(&0)]]) [] THEN
-    have' ([[poly_eval complex_ring (poly_1 complex_ring) z = Cx(&1)]]) [POLY_EVAL_1, complex_ring_clauses] THEN
+    have' ([[poly_eval complex_ring (poly_1 complex_ring) z = Cx(&1)]]) [POLY_EVAL_1, COMPLEX_RING_CLAUSES] THEN
     h1 THEN
     qed [])
   : ExceptT String IO thm).run
 #eval not_coprime_QinC_if_shared_complex_root
 
-#eval phrase 768
+#eval phrase 754
 def complex_root_minimal_polynomial_refl : thm := keep "complex_root_minimal_polynomial_refl" fun _ => (do
   prove ([[
   !z:complex.
@@ -13649,7 +13484,7 @@ def complex_root_minimal_polynomial_refl : thm := keep "complex_root_minimal_pol
   : ExceptT String IO thm).run
 #eval complex_root_minimal_polynomial_refl
 
-#eval phrase 769
+#eval phrase 755
 def minimal_polynomial_divides : thm := keep "minimal_polynomial_divides" fun _ => (do
   prove ([[
   !z:complex p:(1->num)->complex.
@@ -13681,7 +13516,7 @@ def minimal_polynomial_divides : thm := keep "minimal_polynomial_divides" fun _ 
 
 /- ===== complex_root_powersums: sum_{z:p(z)=0} z^n -/
 
-#eval phrase 770
+#eval phrase 756
 def complex_root_powersums : thm := keep "complex_root_powersums" fun _ => new_definition
  [[
   complex_root_powersums p n
@@ -13689,18 +13524,18 @@ def complex_root_powersums : thm := keep "complex_root_powersums" fun _ => new_d
 ]]
 #eval complex_root_powersums
 
-#eval phrase 771
+#eval phrase 757
 def complex_root_powersums_ring : thm := keep "complex_root_powersums_ring" fun _ => (do
   prove ([[
   !p n.
   complex_root_powersums p n
   = ring_sum complex_ring (complex_root p) (\z. ring_pow complex_ring z n)
 ]])
-   (rw [complex_root_powersums, ring_pow_complex])
+   (rw [complex_root_powersums, COMPLEX_RING_POW])
   : ExceptT String IO thm).run
 #eval complex_root_powersums_ring
 
-#eval phrase 772
+#eval phrase 758
 def complex_root_powersums_QinC_monic_irreducible_QinC : thm := keep "complex_root_powersums_QinC_monic_irreducible_QinC" fun _ => (do
   prove ([[
   !(p:(1->num)->complex) n.
@@ -13743,7 +13578,7 @@ but D^n sum_z z^n is rational, ergo integer.
 This again boils down to Newton's identities.
 -/
 
-#eval phrase 773
+#eval phrase 759
 def complex_root_powersums_QinC_monic_irreducible_ZinC : thm := keep "complex_root_powersums_QinC_monic_irreducible_ZinC" fun _ => (do
   prove ([[
   !(p:(1->num)->complex) D n.
@@ -13758,21 +13593,21 @@ def complex_root_powersums_QinC_monic_irreducible_ZinC : thm := keep "complex_ro
     «recall» subring_complex_empty THEN
     choose ([[S:complex->bool]]) ([[FINITE S /\ p = monic_vanishing_at complex_ring S I]]) [QinC_monic_irreducible_complex_roots] THEN
     have' ([[complex_root p = S]]) [complex_root_monic_vanishing_at] THEN
-    have' ([[~(ring_1 complex_ring = ring_0 complex_ring)]]) [field_complex, field] THEN
+    have' ([[~(ring_1 complex_ring = ring_0 complex_ring)]]) [FIELD_COMPLEX_RING, field] THEN
     have' ([[ring_polynomial complex_ring (p:(1->num)->complex)]]) [poly_complex_if_poly_QinC] THEN
     «recall» subring_complex_QinC THEN
     have' ([[monic complex_ring (p:(1->num)->complex)]]) [monic_subring] THEN
-    have' ([[~(p:(1->num)->complex = poly_0 complex_ring)]]) [monic_poly_0, field_complex, field] THEN
+    have' ([[~(p:(1->num)->complex = poly_0 complex_ring)]]) [monic_poly_0, FIELD_COMPLEX_RING, field] THEN
     have' ([[FINITE (complex_root p)]]) [complex_root_le_deg] THEN
     have' ([[poly_deg complex_ring (p:(1->num)->complex) = CARD(S:complex->bool)]]) [deg_monic_vanishing_at, in_complex_ring] THEN
     have' ([[!s. s IN complex_root p ==> I s IN ring_carrier complex_ring]]) [in_complex_ring] THEN
-    subgoal ([[!n. ring_mul complex_ring (ring_pow complex_ring D n) (coeff (CARD(complex_root p) - n) (monic_vanishing_at complex_ring (complex_root p) I)) IN ring_carrier(subring_generated complex_ring {})]]) THENL [simp [complex_ring_clauses, ring_pow_complex, ZinC_ring_clauses] THEN
+    subgoal ([[!n. ring_mul complex_ring (ring_pow complex_ring D n) (coeff (CARD(complex_root p) - n) (monic_vanishing_at complex_ring (complex_root p) I)) IN ring_carrier(subring_generated complex_ring {})]]) THENL [simp [COMPLEX_RING_CLAUSES, COMPLEX_RING_POW, ZinC_ring_clauses] THEN
       qed [], pass] THEN
     have' ([[D IN ring_carrier complex_ring]]) [in_complex_ring] THEN
     specialize [([[complex_ring]]), ([[{}:complex->bool]]), ([[complex_root p]]), ([[I:complex->complex]]), ([[D:complex]]), ([[n:num]])] powersums_subring_if_poly_subring_denominators THEN
-    have' ([[(D pow n) * (ring_sum complex_ring (complex_root p) (\s. ring_pow complex_ring (I s) n)) IN ring_carrier (subring_generated complex_ring {})]]) [complex_ring_clauses, ring_pow_complex] THEN
+    have' ([[(D pow n) * (ring_sum complex_ring (complex_root p) (\s. ring_pow complex_ring (I s) n)) IN ring_carrier (subring_generated complex_ring {})]]) [COMPLEX_RING_CLAUSES, COMPLEX_RING_POW] THEN
     have' ([[(D pow n) * (ring_sum complex_ring (complex_root p) (\s. ring_pow complex_ring (I s) n)) IN ZinC]]) [ZinC_ring_clauses] THEN
-    have' ([[!s. ring_pow complex_ring (I s) n = ring_pow complex_ring s n]]) [I_DEF, ring_pow_complex] THEN
+    have' ([[!s. ring_pow complex_ring (I s) n = ring_pow complex_ring s n]]) [I_DEF, COMPLEX_RING_POW] THEN
     qed [RING_SUM_EQ])
   : ExceptT String IO thm).run
 #eval complex_root_powersums_QinC_monic_irreducible_ZinC
@@ -13781,7 +13616,7 @@ def complex_root_powersums_QinC_monic_irreducible_ZinC : thm := keep "complex_ro
 /- meaning: D where all D^i p_(deg p - i) are integers -/
 /- equivalently: Dz is algebraic integer for each root z -/
 
-#eval phrase 774
+#eval phrase 760
 def denominator_if_monic_QinC : thm := keep "denominator_if_monic_QinC" fun _ => (do
   let h5 ← num_linear_fact (← ExceptT.mk [[n <= n:num]])
   let h4 ← num_linear_fact (← ExceptT.mk [[~(i <= n) ==> n - i = n - n:num]])
@@ -13812,21 +13647,21 @@ def denominator_if_monic_QinC : thm := keep "denominator_if_monic_QinC" fun _ =>
       «recall» subring_complex_QinC THEN
       have' ([[monic complex_ring (p:(1->num)->complex)]]) [monic_subring] THEN
       have' ([[coeff (poly_deg complex_ring p) p = ring_1 complex_ring]]) [monic] THEN
-      qed [complex_ring_clauses, ZinC_1], pass] THEN
+      qed [COMPLEX_RING_CLAUSES, ZinC_1], pass] THEN
     h3 THEN
     have' ([[Cx(&d) pow i = Cx(&d) pow (i-1) * Cx(&d)]]) [COMPLEX_POW_ADD, COMPLEX_POW_1] THEN
     simp [(← HolLight.GSYM COMPLEX_MUL_ASSOC)] THEN
-    have' ([[Cx(&d) pow (i-1) IN ZinC]]) [ring_pow_ZinC, RING_POW, ring_pow_complex, ZinC_ring_clauses] THEN
+    have' ([[Cx(&d) pow (i-1) IN ZinC]]) [ring_pow_ZinC, RING_POW, COMPLEX_RING_POW, ZinC_ring_clauses] THEN
     subgoal ([[Cx(&d) * coeff(n-i) p IN ZinC]]) THENL [proven_if ([[i <= n:num]]) [IN_NUMSEG_0] THEN
       h4 THEN
       h5 THEN
       have' ([[n IN 0..n]]) [IN_NUMSEG_0] THEN
       qed [], pass] THEN
-    qed [ZinC_ring_clauses, RING_MUL, complex_ring_clauses])
+    qed [ZinC_ring_clauses, RING_MUL, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval denominator_if_monic_QinC
 
-#eval phrase 775
+#eval phrase 761
 def denominator_reverse : thm := keep "denominator_reverse" fun _ => (do
   prove ([[
   !(p:(1->num)->complex).
@@ -13841,7 +13676,7 @@ def denominator_reverse : thm := keep "denominator_reverse" fun _ => (do
   : ExceptT String IO thm).run
 #eval denominator_reverse
 
-#eval phrase 776
+#eval phrase 762
 def denominator_reverse_mul : thm := keep "denominator_reverse_mul" fun _ => (do
   let h2 ← complex_field_fact (← ExceptT.mk [[((D:complex) pow s * D pow (i-s)) * coeff s p * coeff (i - s) q = (D pow s * coeff s p) * (D pow (i-s) * coeff (i-s) q)]])
   let h1 ← num_linear_fact (← ExceptT.mk [[s <= i:num ==> i = s + (i-s)]])
@@ -13875,7 +13710,7 @@ def denominator_reverse_mul : thm := keep "denominator_reverse_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval denominator_reverse_mul
 
-#eval phrase 777
+#eval phrase 763
 def denominator_reverse_product : thm := keep "denominator_reverse_product" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -13909,7 +13744,7 @@ def denominator_reverse_product : thm := keep "denominator_reverse_product" fun 
   : ExceptT String IO thm).run
 #eval denominator_reverse_product
 
-#eval phrase 778
+#eval phrase 764
 def denominator_reverse_pow : thm := keep "denominator_reverse_pow" fun _ => (do
   prove ([[
   !p D n.
@@ -13928,7 +13763,7 @@ def denominator_reverse_pow : thm := keep "denominator_reverse_pow" fun _ => (do
 
 /- ===== distinct minpolys -/
 
-#eval phrase 779
+#eval phrase 765
 def distinct_minpolys : thm := keep "distinct_minpolys" fun _ => new_definition
  [[
   distinct_minpolys P <=>
@@ -13940,7 +13775,7 @@ def distinct_minpolys : thm := keep "distinct_minpolys" fun _ => new_definition
 ]]
 #eval distinct_minpolys
 
-#eval phrase 780
+#eval phrase 766
 def polynomial_product_distinct_minpolys : thm := keep "polynomial_product_distinct_minpolys" fun _ => (do
   prove ([[
   !P.
@@ -13955,7 +13790,7 @@ def polynomial_product_distinct_minpolys : thm := keep "polynomial_product_disti
   : ExceptT String IO thm).run
 #eval polynomial_product_distinct_minpolys
 
-#eval phrase 781
+#eval phrase 767
 def monic_product_distinct_minpolys : thm := keep "monic_product_distinct_minpolys" fun _ => (do
   prove ([[
   !P.
@@ -13971,7 +13806,7 @@ def monic_product_distinct_minpolys : thm := keep "monic_product_distinct_minpol
   : ExceptT String IO thm).run
 #eval monic_product_distinct_minpolys
 
-#eval phrase 782
+#eval phrase 768
 def distinct_minpolys_nonzero : thm := keep "distinct_minpolys_nonzero" fun _ => (do
   prove ([[
   !P p.
@@ -13983,7 +13818,7 @@ def distinct_minpolys_nonzero : thm := keep "distinct_minpolys_nonzero" fun _ =>
   : ExceptT String IO thm).run
 #eval distinct_minpolys_nonzero
 
-#eval phrase 783
+#eval phrase 769
 def distinct_minpolys_reverse_nonzero : thm := keep "distinct_minpolys_reverse_nonzero" fun _ => (do
   prove ([[
   !P p.
@@ -14001,7 +13836,7 @@ def distinct_minpolys_reverse_nonzero : thm := keep "distinct_minpolys_reverse_n
   : ExceptT String IO thm).run
 #eval distinct_minpolys_reverse_nonzero
 
-#eval phrase 784
+#eval phrase 770
 def distinct_minpolys_total_deg : thm := keep "distinct_minpolys_total_deg" fun _ => (do
   prove ([[
   !P.
@@ -14023,7 +13858,7 @@ def distinct_minpolys_total_deg : thm := keep "distinct_minpolys_total_deg" fun 
   : ExceptT String IO thm).run
 #eval distinct_minpolys_total_deg
 
-#eval phrase 785
+#eval phrase 771
 def distinct_minpolys_monic_vanishing_at_simple : thm := keep "distinct_minpolys_monic_vanishing_at_simple" fun _ => (do
   prove ([[
   !p.
@@ -14042,7 +13877,7 @@ def distinct_minpolys_monic_vanishing_at_simple : thm := keep "distinct_minpolys
   : ExceptT String IO thm).run
 #eval distinct_minpolys_monic_vanishing_at_simple
 
-#eval phrase 786
+#eval phrase 772
 def distinct_minpolys_monic_vanishing_at : thm := keep "distinct_minpolys_monic_vanishing_at" fun _ => (do
   prove ([[
   !P p.
@@ -14054,7 +13889,7 @@ def distinct_minpolys_monic_vanishing_at : thm := keep "distinct_minpolys_monic_
   : ExceptT String IO thm).run
 #eval distinct_minpolys_monic_vanishing_at
 
-#eval phrase 787
+#eval phrase 773
 def distinct_minpolys_deg_nonzero : thm := keep "distinct_minpolys_deg_nonzero" fun _ => (do
   prove ([[
   !P p.
@@ -14071,7 +13906,7 @@ def distinct_minpolys_deg_nonzero : thm := keep "distinct_minpolys_deg_nonzero" 
   : ExceptT String IO thm).run
 #eval distinct_minpolys_deg_nonzero
 
-#eval phrase 788
+#eval phrase 774
 def distinct_minpolys_finite_root_simple : thm := keep "distinct_minpolys_finite_root_simple" fun _ => (do
   prove ([[
   !p.
@@ -14089,7 +13924,7 @@ def distinct_minpolys_finite_root_simple : thm := keep "distinct_minpolys_finite
   : ExceptT String IO thm).run
 #eval distinct_minpolys_finite_root_simple
 
-#eval phrase 789
+#eval phrase 775
 def distinct_minpolys_finite_root : thm := keep "distinct_minpolys_finite_root" fun _ => (do
   prove ([[
   !P p.
@@ -14101,7 +13936,7 @@ def distinct_minpolys_finite_root : thm := keep "distinct_minpolys_finite_root" 
   : ExceptT String IO thm).run
 #eval distinct_minpolys_finite_root
 
-#eval phrase 790
+#eval phrase 776
 def distinct_minpolys_card_root : thm := keep "distinct_minpolys_card_root" fun _ => (do
   prove ([[
   !P p.
@@ -14119,11 +13954,11 @@ def distinct_minpolys_card_root : thm := keep "distinct_minpolys_card_root" fun 
     have' ([[!c. c IN complex_root p ==> I c IN ring_carrier complex_ring]]) [in_complex_ring] THEN
     have' ([[FINITE (complex_root p)]]) [distinct_minpolys_finite_root] THEN
     specialize [([[complex_ring]]), ([[I:complex->complex]]), ([[complex_root p]])] deg_monic_vanishing_at THEN
-    qed [deg_monic_vanishing_at, field_complex, field])
+    qed [deg_monic_vanishing_at, FIELD_COMPLEX_RING, field])
   : ExceptT String IO thm).run
 #eval distinct_minpolys_card_root
 
-#eval phrase 791
+#eval phrase 777
 def distinct_minpolys_denominator : thm := keep "distinct_minpolys_denominator" fun _ => (do
   let h3 ← def' ([[q:complex]]) (← ExceptT.mk [[ring_product ZinC_ring (P DELETE (p:(1->num)->complex)) denom]])
   let h2 ← def' ([[D:complex]]) (← ExceptT.mk [[ring_product ZinC_ring P (denom:((1->num)->complex)->complex)]])
@@ -14164,7 +13999,7 @@ def distinct_minpolys_denominator : thm := keep "distinct_minpolys_denominator" 
   : ExceptT String IO thm).run
 #eval distinct_minpolys_denominator
 
-#eval phrase 792
+#eval phrase 778
 def weighted_powersums_distinct_minpolys : thm := keep "weighted_powersums_distinct_minpolys" fun _ => (do
   prove ([[
   !P D B n.
@@ -14173,7 +14008,7 @@ def weighted_powersums_distinct_minpolys : thm := keep "weighted_powersums_disti
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   D pow n *
   (ring_sum complex_ring P
-     (\p. (complex_of_int(B p)) * complex_root_powersums p n))
+     (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))
   IN ZinC
 ]])
    (intro THEN
@@ -14184,24 +14019,24 @@ def weighted_powersums_distinct_minpolys : thm := keep "weighted_powersums_disti
       have' ([[!i. D pow i * coeff(poly_deg complex_ring p - i) p IN ZinC]]) [] THEN
       specialize [([[p:(1->num)->complex]]), ([[D:complex]]), ([[n:num]])] complex_root_powersums_QinC_monic_irreducible_ZinC THEN
       qed [], pass] THEN
-    have' ([[!p. p IN P ==> (complex_of_int(B p)) * (D pow n * complex_root_powersums p n) IN ZinC]]) [ZinC_ring_clauses, int_in_ZinC, RING_MUL] THEN
-    have' ([[!p. p IN P ==> ((complex_of_int(B p)) * D pow n) * complex_root_powersums p n IN ZinC]]) [COMPLEX_MUL_ASSOC] THEN
-    have' ([[!p. p IN P ==> (D pow n * (complex_of_int(B p))) * complex_root_powersums p n IN ZinC]]) [COMPLEX_MUL_SYM] THEN
-    have' ([[!p. p IN P ==> D pow n * ((complex_of_int(B p)) * complex_root_powersums p n) IN ZinC]]) [COMPLEX_MUL_ASSOC] THEN
+    have' ([[!p. p IN P ==> (Cx(real_of_int(B p))) * (D pow n * complex_root_powersums p n) IN ZinC]]) [ZinC_ring_clauses, int_in_ZinC, RING_MUL] THEN
+    have' ([[!p. p IN P ==> ((Cx(real_of_int(B p))) * D pow n) * complex_root_powersums p n IN ZinC]]) [COMPLEX_MUL_ASSOC] THEN
+    have' ([[!p. p IN P ==> (D pow n * (Cx(real_of_int(B p)))) * complex_root_powersums p n IN ZinC]]) [COMPLEX_MUL_SYM] THEN
+    have' ([[!p. p IN P ==> D pow n * ((Cx(real_of_int(B p))) * complex_root_powersums p n) IN ZinC]]) [COMPLEX_MUL_ASSOC] THEN
     have' ([[D pow n IN ring_carrier complex_ring]]) [in_complex_ring] THEN
-    have' ([[!p. p IN P ==> (complex_of_int(B p)) * complex_root_powersums p n IN ring_carrier complex_ring]]) [in_complex_ring] THEN
-    specialize [([[complex_ring]]), ([[\p. (complex_of_int(B p)) * complex_root_powersums p n]]), ([[(D pow n):complex]]), ([[P:((1->num)->complex)->bool]])] (← HolLight.GSYM RING_SUM_LMUL) THEN
-    have' ([[(D pow n) * (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n)) = ring_sum complex_ring P (\x. (D pow n) * ((complex_of_int(B x)) * complex_root_powersums x n))]]) [complex_ring_clauses, RING_SUM_EQ] THEN
+    have' ([[!p. p IN P ==> (Cx(real_of_int(B p))) * complex_root_powersums p n IN ring_carrier complex_ring]]) [in_complex_ring] THEN
+    specialize [([[complex_ring]]), ([[\p. (Cx(real_of_int(B p))) * complex_root_powersums p n]]), ([[(D pow n):complex]]), ([[P:((1->num)->complex)->bool]])] (← HolLight.GSYM RING_SUM_LMUL) THEN
+    have' ([[(D pow n) * (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n)) = ring_sum complex_ring P (\x. (D pow n) * ((Cx(real_of_int(B x))) * complex_root_powersums x n))]]) [COMPLEX_RING_CLAUSES, RING_SUM_EQ] THEN
     simp [] THEN
     «recall» subring_complex_empty THEN
-    have' ([[!p. p IN P ==> D pow n * (complex_of_int(B p)) * complex_root_powersums p n IN ring_carrier(subring_generated complex_ring {})]]) [ZinC_ring_clauses] THEN
-    specialize [([[complex_ring]]), ([[{}:complex->bool]]), ([[P:((1->num)->complex)->bool]]), ([[\x. D pow n * (complex_of_int(B x)) * complex_root_powersums x n]])] ring_sum_subring_generated_v2 THEN
-    have' ([[ring_sum complex_ring P (\x. D pow n * (complex_of_int(B x)) * complex_root_powersums x n) = ring_sum ZinC_ring P (\x. D pow n * (complex_of_int(B x)) * complex_root_powersums x n)]]) [] THEN
+    have' ([[!p. p IN P ==> D pow n * (Cx(real_of_int(B p))) * complex_root_powersums p n IN ring_carrier(subring_generated complex_ring {})]]) [ZinC_ring_clauses] THEN
+    specialize [([[complex_ring]]), ([[{}:complex->bool]]), ([[P:((1->num)->complex)->bool]]), ([[\x. D pow n * (Cx(real_of_int(B x))) * complex_root_powersums x n]])] ring_sum_subring_generated_v2 THEN
+    have' ([[ring_sum complex_ring P (\x. D pow n * (Cx(real_of_int(B x))) * complex_root_powersums x n) = ring_sum ZinC_ring P (\x. D pow n * (Cx(real_of_int(B x))) * complex_root_powersums x n)]]) [] THEN
     qed [RING_SUM, ZinC_ring_clauses])
   : ExceptT String IO thm).run
 #eval weighted_powersums_distinct_minpolys
 
-#eval phrase 793
+#eval phrase 779
 def distinct_minpolys_distinct_roots : thm := keep "distinct_minpolys_distinct_roots" fun _ => (do
   prove ([[
   !P p q z.
@@ -14228,7 +14063,7 @@ def distinct_minpolys_distinct_roots : thm := keep "distinct_minpolys_distinct_r
   : ExceptT String IO thm).run
 #eval distinct_minpolys_distinct_roots
 
-#eval phrase 794
+#eval phrase 780
 def distinct_minpolys_zero_root : thm := keep "distinct_minpolys_zero_root" fun _ => (do
   let h1 ← def' ([[S:((1->num)->complex)->bool]]) (← ExceptT.mk [[\p. p = q \/ p = x_pow QinC_ring 1]])
   prove ([[
@@ -14258,7 +14093,7 @@ def distinct_minpolys_zero_root : thm := keep "distinct_minpolys_zero_root" fun 
   : ExceptT String IO thm).run
 #eval distinct_minpolys_zero_root
 
-#eval phrase 795
+#eval phrase 781
 def monic_factorization_distinct_minpolys : thm := keep "monic_factorization_distinct_minpolys" fun _ => (do
   prove ([[
   !f.
@@ -14282,7 +14117,7 @@ def monic_factorization_distinct_minpolys : thm := keep "monic_factorization_dis
   : ExceptT String IO thm).run
 #eval monic_factorization_distinct_minpolys
 
-#eval phrase 796
+#eval phrase 782
 def multi_monic_factorization_distinct_minpolys : thm := keep "multi_monic_factorization_distinct_minpolys" fun _ => (do
   let h3 ← def' ([[e:X->((1->num)->complex)->num]]) (← ExceptT.mk [[\s:X. @d. poly_product QinC_ring P (\p. poly_pow QinC_ring p (d p)) = f s:(1->num)->complex]])
   let h2 ← def' ([[P:((1->num)->complex)->bool]]) (← ExceptT.mk [[UNIONS { Q s:((1->num)->complex)->bool| s:X IN S }]])
@@ -14350,7 +14185,7 @@ def multi_monic_factorization_distinct_minpolys : thm := keep "multi_monic_facto
 
 /- ===== more on binomial coefficients -/
 
-#eval phrase 797
+#eval phrase 783
 def binom_coeff : thm := keep "binom_coeff" fun _ => (do
   let h12 ← ar (← ExceptT.mk [[SUC d1 - 1 = d1]])
   let h11 ← num_linear_fact (← ExceptT.mk [[~(d = 0) ==> d1 = d-1 ==> d = SUC d1]])
@@ -14426,7 +14261,7 @@ def binom_coeff : thm := keep "binom_coeff" fun _ => (do
   : ExceptT String IO thm).run
 #eval binom_coeff
 
-#eval phrase 798
+#eval phrase 784
 def binom_sum : thm := keep "binom_sum" fun _ => (do
   prove ([[
   !m n d.
@@ -14449,7 +14284,7 @@ def binom_sum : thm := keep "binom_sum" fun _ => (do
   : ExceptT String IO thm).run
 #eval binom_sum
 
-#eval phrase 799
+#eval phrase 785
 def binom_rowsum : thm := keep "binom_rowsum" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[1+1 = 2]])
   prove ([[
@@ -14467,7 +14302,7 @@ def binom_rowsum : thm := keep "binom_rowsum" fun _ => (do
   : ExceptT String IO thm).run
 #eval binom_rowsum
 
-#eval phrase 800
+#eval phrase 786
 def binom_rowsum_partial : thm := keep "binom_rowsum_partial" fun _ => (do
   let h2 ← num_linear_fact (← ExceptT.mk [[~(0 <= x /\ x <= m) ==> m < x]])
   let h1 ← ar (← ExceptT.mk [[0 <= 0]])
@@ -14491,7 +14326,7 @@ def binom_rowsum_partial : thm := keep "binom_rowsum_partial" fun _ => (do
 
 /- ===== bounds on (reversed) coefficients in terms of roots -/
 
-#eval phrase 801
+#eval phrase 787
 def coeff_root_bound_1 : thm := keep "coeff_root_bound_1" fun _ => (do
   let h3 ← real_field_fact (← ExceptT.mk [[abs(&0):real <= A pow d * &0]])
   let h2 ← num_linear_fact (← ExceptT.mk [[~(d = 0) ==> 0 < d]])
@@ -14503,11 +14338,11 @@ def coeff_root_bound_1 : thm := keep "coeff_root_bound_1" fun _ => (do
 ]])
    (intro THEN
     rw [coeff_poly_1] THEN
-    case' ([[d = 0]]) THENL [simp [complex_ring_clauses] THEN
+    case' ([[d = 0]]) THENL [simp [COMPLEX_RING_CLAUSES] THEN
       rw [real_pow, binom, COMPLEX_NORM_CX] THEN
       h1 THEN
       qed [], pass] THEN
-    simp [complex_ring_clauses] THEN
+    simp [COMPLEX_RING_CLAUSES] THEN
     rw [COMPLEX_NORM_CX] THEN
     h2 THEN
     simp [BINOM_LT] THEN
@@ -14516,7 +14351,7 @@ def coeff_root_bound_1 : thm := keep "coeff_root_bound_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_root_bound_1
 
-#eval phrase 802
+#eval phrase 788
 def coeff_root_bound_one_minus_constx : thm := keep "coeff_root_bound_one_minus_constx" fun _ => (do
   let h4 ← real_field_fact (← ExceptT.mk [[abs(&0):real <= A pow d * &0]])
   let h3 ← num_linear_fact (← ExceptT.mk [[~(d = 0) ==> ~(d = 1) ==> 1 < d]])
@@ -14530,15 +14365,15 @@ def coeff_root_bound_one_minus_constx : thm := keep "coeff_root_bound_one_minus_
 ]])
    (intro THEN
     simp [coeff_one_minus_constx, in_complex_ring] THEN
-    case' ([[d = 0]]) THENL [simp [complex_ring_clauses] THEN
+    case' ([[d = 0]]) THENL [simp [COMPLEX_RING_CLAUSES] THEN
       rw [real_pow, binom, COMPLEX_NORM_CX] THEN
       h1 THEN
       qed [], pass] THEN
-    case' ([[d = 1]]) THENL [simp [complex_ring_clauses] THEN
+    case' ([[d = 1]]) THENL [simp [COMPLEX_RING_CLAUSES] THEN
       rw [REAL_POW_1, BINOM_REFL, NORM_NEG] THEN
       h2 THEN
       qed [], pass] THEN
-    simp [complex_ring_clauses] THEN
+    simp [COMPLEX_RING_CLAUSES] THEN
     rw [COMPLEX_NORM_CX] THEN
     h3 THEN
     simp [BINOM_LT] THEN
@@ -14547,7 +14382,7 @@ def coeff_root_bound_one_minus_constx : thm := keep "coeff_root_bound_one_minus_
   : ExceptT String IO thm).run
 #eval coeff_root_bound_one_minus_constx
 
-#eval phrase 803
+#eval phrase 789
 def coeff_root_bound_mul : thm := keep "coeff_root_bound_mul" fun _ => (do
   let h2 ← real_linear_fact (← ExceptT.mk [[((A:real) pow a * &(binom (m,a))) * A pow (d - a) * &(binom (n,d - a)) = (A pow a * A pow (d-a)) * &(binom (m,a)) * &(binom (n,d - a))]])
   let h1 ← num_linear_fact (← ExceptT.mk [[a <= d:num ==> d = a + (d-a)]])
@@ -14559,8 +14394,8 @@ def coeff_root_bound_mul : thm := keep "coeff_root_bound_mul" fun _ => (do
 ]])
    (intro THEN
     rw [coeff_poly_mul_oneindex] THEN
-    rw [complex_ring_clauses] THEN
-    simp [(← HolLight.GSYM vsum_ring_sum_complex), FINITE_NUMSEG] THEN
+    rw [COMPLEX_RING_CLAUSES] THEN
+    simp [COMPLEX_RING_SUM, FINITE_NUMSEG] THEN
     subgoal ([[!a. a IN (0..d) ==> norm(coeff a p * coeff (d-a) q) <= A pow d * &(binom(m,a)*binom(n,d-a))]]) THENL [intro THEN
       rw [(← HolLight.GSYM REAL_OF_NUM_MUL)] THEN
       have' ([[norm(coeff a (p:(1->num)->complex) * coeff (d-a) (q:(1->num)->complex)) = norm(coeff a p) * norm(coeff (d-a) q)]]) [COMPLEX_NORM_MUL] THEN
@@ -14579,7 +14414,7 @@ def coeff_root_bound_mul : thm := keep "coeff_root_bound_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval coeff_root_bound_mul
 
-#eval phrase 804
+#eval phrase 790
 def coeff_root_bound_product : thm := keep "coeff_root_bound_product" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -14603,7 +14438,7 @@ def coeff_root_bound_product : thm := keep "coeff_root_bound_product" fun _ => (
 
 /- or can prove this via coeff_root_bound_product -/
 
-#eval phrase 805
+#eval phrase 791
 def coeff_root_bound_pow : thm := keep "coeff_root_bound_pow" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[m*n+m = m*(n+1)]])
   let h2 ← ar (← ExceptT.mk [[SUC n = n + 1]])
@@ -14628,7 +14463,7 @@ def coeff_root_bound_pow : thm := keep "coeff_root_bound_pow" fun _ => (do
 
 /- ===== first-order Stirling lower bound -/
 
-#eval phrase 806
+#eval phrase 792
 def factorial_lower_bound : thm := keep "factorial_lower_bound" fun _ => (do
   let h11 ← real_field_fact (← ExceptT.mk [[&0 < exp(&1) ==> (&n + &1) / exp (&1) * &(FACT n) * exp (&1) = (&n + &1) * &(FACT n)]])
   let h10 ← real_field_fact (← ExceptT.mk [[~(&n = &0:real) ==> (&n / exp (&1) * (&n + &1) / &n) = ((&n + &1) / exp (&1))]])
@@ -14689,7 +14524,7 @@ def factorial_lower_bound : thm := keep "factorial_lower_bound" fun _ => (do
 
 /- ===== poly_ord p z: order of vanishing of polynomial p at z -/
 
-#eval phrase 807
+#eval phrase 793
 def poly_ord : thm := keep "poly_ord" fun _ => new_definition
  [[
   poly_ord (p:(1->num)->complex) (z:complex)
@@ -14709,7 +14544,7 @@ def poly_ord : thm := keep "poly_ord" fun _ => new_definition
 ]]
 #eval poly_ord
 
-#eval phrase 808
+#eval phrase 794
 def poly_ord_exists_lemma : thm := keep "poly_ord_exists_lemma" fun _ => (do
   let h2 ← num_linear_fact (← ExceptT.mk [[SUC n = 1 + poly_deg complex_ring (q:(1->num)->complex) ==> poly_deg complex_ring q = n]])
   let h1 ← ar (← ExceptT.mk [[~(0 = 1)]])
@@ -14738,21 +14573,21 @@ def poly_ord_exists_lemma : thm := keep "poly_ord_exists_lemma" fun _ => (do
       choose ([[c:complex]]) ([[(p:(1->num)->complex) = poly_const complex_ring c]]) [POLY_DEG_EQ_0] THEN
       have' ([[poly_eval complex_ring p z = c]]) [POLY_EVAL_CONST, in_complex_ring] THEN
       have' ([[~(c = ring_0 complex_ring)]]) [poly_0] THEN
-      have' ([[~(c = Cx(&0))]]) [complex_ring_clauses] THEN
+      have' ([[~(c = Cx(&0))]]) [COMPLEX_RING_CLAUSES] THEN
       qed [complex_root], pass] THEN
     intro THEN
     case' ([[~(complex_root p z)]]) THENL [witness ([[0]]) THEN
       witness ([[p:(1->num)->complex]]) THEN
       rw [poly_pow_0] THEN
       simp [POLY_MUL_LID, series_complex], pass] THEN
-    have' ([[poly_eval complex_ring p z = ring_0 complex_ring]]) [complex_root, complex_ring_clauses] THEN
+    have' ([[poly_eval complex_ring p z = ring_0 complex_ring]]) [complex_root, COMPLEX_RING_CLAUSES] THEN
     have' ([[z IN ring_carrier complex_ring]]) [in_complex_ring] THEN
     have' ([[p IN ring_carrier(poly_ring complex_ring (:1))]]) [x_poly, x_poly_use] THEN
     specialize [([[complex_ring]]), ([[z:complex]]), ([[p:(1->num)->complex]])] POLY_DIVIDES_X_MINUS_ROOT THEN
     have' ([[poly_sub complex_ring (poly_var complex_ring one) (poly_const complex_ring z) = x_minus_const complex_ring z]]) [x_minus_const, x_pow_1] THEN
     have' ([[ring_divides(x_poly complex_ring) (x_minus_const complex_ring z) p]]) [x_poly] THEN
     choose ([[q:(1->num)->complex]]) ([[q IN ring_carrier(x_poly complex_ring) /\ (p:(1->num)->complex) = ring_mul(x_poly complex_ring) (x_minus_const complex_ring z) q]]) [ring_divides] THEN
-    have' ([[integral_domain complex_ring]]) [integral_domain_complex] THEN
+    have' ([[integral_domain complex_ring]]) [INTEGRAL_DOMAIN_COMPLEX_RING] THEN
     have' ([[poly_deg complex_ring (x_minus_const complex_ring z) = 1]]) [deg_x_minus_const, integral_domain] THEN
     have' ([[ring_polynomial complex_ring (x_minus_const complex_ring z)]]) [x_minus_const_poly] THEN
     have' ([[ring_polynomial complex_ring (q:(1->num)->complex)]]) [x_poly_use] THEN
@@ -14774,7 +14609,7 @@ def poly_ord_exists_lemma : thm := keep "poly_ord_exists_lemma" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_exists_lemma
 
-#eval phrase 809
+#eval phrase 795
 def poly_ord_exists_lemma2 : thm := keep "poly_ord_exists_lemma2" fun _ => (do
   prove ([[
   !p:(1->num)->complex.
@@ -14798,7 +14633,7 @@ def poly_ord_exists_lemma2 : thm := keep "poly_ord_exists_lemma2" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_exists_lemma2
 
-#eval phrase 810
+#eval phrase 796
 def poly_ord_exists : thm := keep "poly_ord_exists" fun _ => (do
   prove ([[
   !p:(1->num)->complex.
@@ -14821,7 +14656,7 @@ def poly_ord_exists : thm := keep "poly_ord_exists" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_exists
 
-#eval phrase 811
+#eval phrase 797
 def poly_ord_unique : thm := keep "poly_ord_unique" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[~(0 = 1)]])
   prove ([[
@@ -14843,11 +14678,11 @@ def poly_ord_unique : thm := keep "poly_ord_unique" fun _ => (do
    (REPEAT GEN_TAC THEN
     REPEAT DISCH_TAC THEN
     subgoal ([[~((q:(1->num)->complex) = poly_0 complex_ring)]]) THENL [intro THEN
-      have' ([[poly_eval complex_ring q z = Cx(&0)]]) [POLY_EVAL_0, complex_ring_clauses] THEN
+      have' ([[poly_eval complex_ring q z = Cx(&0)]]) [POLY_EVAL_0, COMPLEX_RING_CLAUSES] THEN
       qed [complex_root], pass] THEN
     subgoal ([[~((p:(1->num)->complex) = poly_0 complex_ring)]]) THENL [intro THEN
       have' ([[p = ring_mul(x_poly complex_ring) (ring_pow(x_poly complex_ring) (x_minus_const complex_ring z) e) q]]) [x_poly_use, x_poly_use_pow] THEN
-      have' ([[integral_domain(x_poly complex_ring)]]) [integral_domain_x_poly_field, field_complex] THEN
+      have' ([[integral_domain(x_poly complex_ring)]]) [integral_domain_x_poly_field, FIELD_COMPLEX_RING] THEN
       have' ([[p = ring_0(x_poly complex_ring)]]) [x_poly_use] THEN
       have' ([[~(q = ring_0(x_poly complex_ring))]]) [x_poly_use] THEN
       have' ([[ring_polynomial complex_ring (x_minus_const complex_ring z)]]) [x_minus_const_poly, in_complex_ring] THEN
@@ -14856,7 +14691,7 @@ def poly_ord_unique : thm := keep "poly_ord_unique" fun _ => (do
       have' ([[ring_pow(x_poly complex_ring) (x_minus_const complex_ring z) e = ring_0(x_poly complex_ring)]]) [integral_domain, x_poly_use] THEN
       have' ([[x_minus_const complex_ring z = ring_0(x_poly complex_ring)]]) [INTEGRAL_DOMAIN_POW_EQ_0, x_poly_use] THEN
       have' ([[x_minus_const complex_ring z = poly_0 complex_ring]]) [x_poly_use] THEN
-      have' ([[poly_deg complex_ring (x_minus_const complex_ring z) = 1]]) [deg_x_minus_const, integral_domain, integral_domain_complex, in_complex_ring] THEN
+      have' ([[poly_deg complex_ring (x_minus_const complex_ring z) = 1]]) [deg_x_minus_const, integral_domain, INTEGRAL_DOMAIN_COMPLEX_RING, in_complex_ring] THEN
       have' ([[~(x_minus_const complex_ring z = poly_0 complex_ring)]]) [POLY_DEG_0, h1] THEN
       qed [], pass] THEN
     have' ([[ring_polynomial complex_ring (x_minus_const complex_ring z)]]) [x_minus_const_poly, in_complex_ring] THEN
@@ -14864,7 +14699,7 @@ def poly_ord_unique : thm := keep "poly_ord_unique" fun _ => (do
     have' ([[ring_polynomial complex_ring (p:(1->num)->complex)]]) [RING_POLYNOMIAL_MUL] THEN
     specialize [([[p:(1->num)->complex]])] poly_ord_exists THEN
     choose ([[f:(1->num)->complex]]) ([[ring_polynomial complex_ring f /\ ~(complex_root f z) /\ p = poly_mul complex_ring (poly_pow complex_ring (x_minus_const complex_ring z) (poly_ord p z)) (f)]]) [] THEN
-    «recall» field_complex THEN
+    «recall» FIELD_COMPLEX_RING THEN
     have' ([[poly_deg complex_ring (x_minus_const complex_ring z) = 1]]) [deg_x_minus_const, field, in_complex_ring] THEN
     have' ([[ring_prime(x_poly complex_ring) (x_minus_const complex_ring z)]]) [prime_if_deg_1] THEN
     have' ([[integral_domain(x_poly complex_ring)]]) [integral_domain_x_poly_field] THEN
@@ -14879,7 +14714,7 @@ def poly_ord_unique : thm := keep "poly_ord_unique" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_unique
 
-#eval phrase 812
+#eval phrase 798
 def poly_ord_unique_0 : thm := keep "poly_ord_unique_0" fun _ => (do
   prove ([[
   !p:(1->num)->complex z.
@@ -14895,7 +14730,7 @@ def poly_ord_unique_0 : thm := keep "poly_ord_unique_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_unique_0
 
-#eval phrase 813
+#eval phrase 799
 def poly_ord_unique_1 : thm := keep "poly_ord_unique_1" fun _ => (do
   prove ([[
   !p:(1->num)->complex q z.
@@ -14917,7 +14752,7 @@ def poly_ord_unique_1 : thm := keep "poly_ord_unique_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_unique_1
 
-#eval phrase 814
+#eval phrase 800
 def poly_ord_const : thm := keep "poly_ord_const" fun _ => (do
   prove ([[
   !c z.
@@ -14935,7 +14770,7 @@ def poly_ord_const : thm := keep "poly_ord_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_const
 
-#eval phrase 815
+#eval phrase 801
 def poly_ord_1 : thm := keep "poly_ord_1" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[~(Cx(&1) = Cx(&0))]])
   prove ([[
@@ -14946,13 +14781,13 @@ def poly_ord_1 : thm := keep "poly_ord_1" fun _ => (do
 ]])
    (rw [poly_1] THEN
     h1 THEN
-    have' ([[~(ring_1 complex_ring = Cx(&0))]]) [complex_ring_clauses] THEN
+    have' ([[~(ring_1 complex_ring = Cx(&0))]]) [COMPLEX_RING_CLAUSES] THEN
     specialize [([[ring_1 complex_ring]])] poly_ord_const THEN
-    qed [poly_1_0_complex, complex_ring_clauses])
+    qed [poly_1_0_complex, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval poly_ord_1
 
-#eval phrase 816
+#eval phrase 802
 def poly_ord_x_minus_const : thm := keep "poly_ord_x_minus_const" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[~(z = c:complex) ==> ~(z - c = Cx(&0))]])
   prove ([[
@@ -14965,10 +14800,10 @@ def poly_ord_x_minus_const : thm := keep "poly_ord_x_minus_const" fun _ => (do
    (REPEAT GEN_TAC THEN
     have' ([[ring_polynomial complex_ring (x_minus_const complex_ring c)]]) [x_minus_const_poly, in_complex_ring] THEN
     case' ([[z = c:complex]]) THENL [specialize_assuming [([[x_minus_const complex_ring c]]), ([[poly_1 complex_ring:(1->num)->complex]]), ([[z:complex]])] poly_ord_unique_1 THEN
-      have' ([[~complex_root (poly_1 complex_ring) z]]) [complex_root, POLY_EVAL_1, field_complex, field, complex_ring_clauses] THEN
+      have' ([[~complex_root (poly_1 complex_ring) z]]) [complex_root, POLY_EVAL_1, FIELD_COMPLEX_RING, field, COMPLEX_RING_CLAUSES] THEN
       have' ([[x_minus_const complex_ring c = poly_mul complex_ring (x_minus_const complex_ring c) (poly_1 complex_ring)]]) [RING_POLYNOMIAL_1, complex_root, POLY_MUL_SYM, POLY_MUL_LID, series_complex] THEN
       qed [RING_POLYNOMIAL_1], pass] THEN
-    have' ([[poly_eval complex_ring (x_minus_const complex_ring c) z = z - c]]) [eval_x_minus_const, in_complex_ring, ring_sub_complex] THEN
+    have' ([[poly_eval complex_ring (x_minus_const complex_ring c) z = z - c]]) [eval_x_minus_const, in_complex_ring, COMPLEX_RING_SUB] THEN
     h1 THEN
     have' ([[~(poly_eval complex_ring (x_minus_const complex_ring c) z = Cx(&0))]]) [] THEN
     have' ([[~(complex_root(x_minus_const complex_ring c) z)]]) [complex_root] THEN
@@ -14976,7 +14811,7 @@ def poly_ord_x_minus_const : thm := keep "poly_ord_x_minus_const" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_x_minus_const
 
-#eval phrase 817
+#eval phrase 803
 def poly_ord_mul : thm := keep "poly_ord_mul" fun _ => (do
   let h1 ← rgl (← ExceptT.mk [[p = ring_mul(r:R ring) d f ==> q = ring_mul r e g ==> ring_mul r p q = ring_mul r (ring_mul r d e) (ring_mul r f g)]])
   prove ([[
@@ -15000,7 +14835,7 @@ def poly_ord_mul : thm := keep "poly_ord_mul" fun _ => (do
       simp [POLY_EVAL_MUL, in_complex_ring] THEN
       have' ([[~(poly_eval complex_ring f z = Cx(&0))]]) [complex_root] THEN
       have' ([[~(poly_eval complex_ring g z = Cx(&0))]]) [complex_root] THEN
-      qed [COMPLEX_ENTIRE, complex_ring_clauses], pass] THEN
+      qed [COMPLEX_ENTIRE, COMPLEX_RING_CLAUSES], pass] THEN
     have' ([[p = ring_mul(x_poly complex_ring) (poly_pow complex_ring (x_minus_const complex_ring z) (poly_ord p z)) f]]) [x_poly_use] THEN
     have' ([[q = ring_mul(x_poly complex_ring) (poly_pow complex_ring (x_minus_const complex_ring z) (poly_ord q z)) g]]) [x_poly_use] THEN
     specialize_assuming [([[x_poly(complex_ring)]]),
@@ -15022,7 +14857,7 @@ def poly_ord_mul : thm := keep "poly_ord_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_mul
 
-#eval phrase 818
+#eval phrase 804
 def poly_ord_product : thm := keep "poly_ord_product" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -15052,13 +14887,13 @@ def poly_ord_product : thm := keep "poly_ord_product" fun _ => (do
       h2 THEN
       simp [poly_product_insert, NSUM_CLAUSES] THEN
       have' ([[~(poly_product complex_ring (S:X->bool) p = poly_0(complex_ring))]]) [poly_product_ring_product_x_poly, x_poly_use] THEN
-      have' ([[~(poly_mul complex_ring (p(x:X)) (poly_product complex_ring S p) = poly_0 complex_ring)]]) [nonzero_poly_mul, series_complex, integral_domain_complex] THEN
+      have' ([[~(poly_mul complex_ring (p(x:X)) (poly_product complex_ring S p) = poly_0 complex_ring)]]) [nonzero_poly_mul, series_complex, INTEGRAL_DOMAIN_COMPLEX_RING] THEN
       specialize_assuming [([[p(x:X):(1->num)->complex]]), ([[poly_product complex_ring (S:X->bool) p]]), ([[z:complex]])] poly_ord_mul THEN
       qed [poly_product_poly]])
   : ExceptT String IO thm).run
 #eval poly_ord_product
 
-#eval phrase 819
+#eval phrase 805
 def poly_ord_monic_vanishing_at : thm := keep "poly_ord_monic_vanishing_at" fun _ => (do
   prove ([[
   !S c z.
@@ -15089,7 +14924,7 @@ def poly_ord_monic_vanishing_at : thm := keep "poly_ord_monic_vanishing_at" fun 
   : ExceptT String IO thm).run
 #eval poly_ord_monic_vanishing_at
 
-#eval phrase 820
+#eval phrase 806
 def poly_ord_monic_vanishing_at_numpreimages : thm := keep "poly_ord_monic_vanishing_at_numpreimages" fun _ => (do
   prove ([[
   !S:X->bool c z.
@@ -15110,7 +14945,7 @@ def poly_ord_monic_vanishing_at_numpreimages : thm := keep "poly_ord_monic_vanis
   : ExceptT String IO thm).run
 #eval poly_ord_monic_vanishing_at_numpreimages
 
-#eval phrase 821
+#eval phrase 807
 def poly_ord_one_minus_constx : thm := keep "poly_ord_one_minus_constx" fun _ => (do
   let h4 ← complex_field_fact (← ExceptT.mk [[~(c * z = Cx(&1)) ==> ~(Cx(&1) - c * z = Cx(&0))]])
   let h3 ← complex_field_fact (← ExceptT.mk [[c * z = Cx(&1) ==> ~(--c = Cx(&0))]])
@@ -15126,18 +14961,18 @@ def poly_ord_one_minus_constx : thm := keep "poly_ord_one_minus_constx" fun _ =>
    (REPEAT GEN_TAC THEN
     have' ([[ring_polynomial complex_ring (one_minus_constx complex_ring c)]]) [one_minus_constx_poly, in_complex_ring] THEN
     case' ([[c * z = Cx(&1)]]) THENL [specialize_assuming [([[one_minus_constx complex_ring c]]), ([[poly_1 complex_ring:(1->num)->complex]]), ([[z:complex]])] poly_ord_unique_1 THEN
-      have' ([[~complex_root (poly_1 complex_ring) z]]) [complex_root, POLY_EVAL_1, field_complex, field, complex_ring_clauses] THEN
+      have' ([[~complex_root (poly_1 complex_ring) z]]) [complex_root, POLY_EVAL_1, FIELD_COMPLEX_RING, field, COMPLEX_RING_CLAUSES] THEN
       subgoal ([[one_minus_constx complex_ring c = poly_mul complex_ring (x_minus_const complex_ring z) (poly_const complex_ring (--c))]]) THENL [sufficesby eq_coeff THEN
         intro THEN
         simp [coeff_times_poly_const, series_complex, in_complex_ring] THEN
         simp [coeff_one_minus_constx, in_complex_ring] THEN
         simp [coeff_x_minus_const, in_complex_ring] THEN
         case' ([[d = 0]]) THENL [simp [h1] THEN
-          rw [complex_ring_clauses] THEN
+          rw [COMPLEX_RING_CLAUSES] THEN
           h2 THEN
           qed [], pass] THEN
         case' ([[d = 1]]) THENL [simp [] THEN
-          rw [complex_ring_clauses] THEN
+          rw [COMPLEX_RING_CLAUSES] THEN
           CONV_TAC cf, pass] THEN
         qed [RING_MUL_RZERO, in_complex_ring], pass] THEN
       subgoal ([[~complex_root (poly_const complex_ring (--c)) z]]) THENL [rw [complex_root] THEN
@@ -15146,7 +14981,7 @@ def poly_ord_one_minus_constx : thm := keep "poly_ord_one_minus_constx" fun _ =>
         qed [], pass] THEN
       specialize_assuming [([[one_minus_constx complex_ring c]]), ([[poly_const complex_ring (--c):(1->num)->complex]]), ([[z:complex]])] poly_ord_unique_1 THEN
       qed [one_minus_constx_poly, in_complex_ring, RING_POLYNOMIAL_CONST], pass] THEN
-    have' ([[poly_eval complex_ring (one_minus_constx complex_ring c) z = Cx(&1) - c * z]]) [eval_one_minus_constx, in_complex_ring, ring_sub_complex, complex_ring_clauses] THEN
+    have' ([[poly_eval complex_ring (one_minus_constx complex_ring c) z = Cx(&1) - c * z]]) [eval_one_minus_constx, in_complex_ring, COMPLEX_RING_SUB, COMPLEX_RING_CLAUSES] THEN
     h4 THEN
     have' ([[~(poly_eval complex_ring (one_minus_constx complex_ring c) z = Cx(&0))]]) [] THEN
     have' ([[~(complex_root(one_minus_constx complex_ring c) z)]]) [complex_root] THEN
@@ -15154,7 +14989,7 @@ def poly_ord_one_minus_constx : thm := keep "poly_ord_one_minus_constx" fun _ =>
   : ExceptT String IO thm).run
 #eval poly_ord_one_minus_constx
 
-#eval phrase 822
+#eval phrase 808
 def poly_ord_pow : thm := keep "poly_ord_pow" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[1 * e = e]])
   let h2 ← ar (← ExceptT.mk [[SUC n = n + 1]])
@@ -15186,7 +15021,7 @@ def poly_ord_pow : thm := keep "poly_ord_pow" fun _ => (do
 
 /- strict special case of poly_ord_x_pow -/
 
-#eval phrase 823
+#eval phrase 809
 def poly_ord_x_pow_1 : thm := keep "poly_ord_x_pow_1" fun _ => (do
   prove ([[
   !z.
@@ -15196,11 +15031,11 @@ def poly_ord_x_pow_1 : thm := keep "poly_ord_x_pow_1" fun _ => (do
   = if z = Cx(&0) then 1 else 0
 ]])
    (rw [(← HolLight.GSYM x_minus_const_0)] THEN
-    qed [poly_ord_x_minus_const, complex_ring_clauses])
+    qed [poly_ord_x_minus_const, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval poly_ord_x_pow_1
 
-#eval phrase 824
+#eval phrase 810
 def poly_ord_x_pow : thm := keep "poly_ord_x_pow" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[n*0 = 0]])
   let h2 ← ar (← ExceptT.mk [[n*1 = n]])
@@ -15223,7 +15058,7 @@ def poly_ord_x_pow : thm := keep "poly_ord_x_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_x_pow
 
-#eval phrase 825
+#eval phrase 811
 def poly_ord_mul_0 : thm := keep "poly_ord_mul_0" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[0+0 = 0]])
   prove ([[
@@ -15249,7 +15084,7 @@ def poly_ord_mul_0 : thm := keep "poly_ord_mul_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_mul_0
 
-#eval phrase 826
+#eval phrase 812
 def poly_ord_ge_if : thm := keep "poly_ord_ge_if" fun _ => (do
   prove ([[
   !p:(1->num)->complex f n.
@@ -15269,7 +15104,7 @@ def poly_ord_ge_if : thm := keep "poly_ord_ge_if" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_ge_if
 
-#eval phrase 827
+#eval phrase 813
 def poly_ord_ge : thm := keep "poly_ord_ge" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[n <= poly_ord p z ==> poly_ord p z = n + (poly_ord p z - n)]])
   prove ([[
@@ -15300,7 +15135,7 @@ def poly_ord_ge : thm := keep "poly_ord_ge" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_ge
 
-#eval phrase 828
+#eval phrase 814
 def poly_ord_mul_ge_ge : thm := keep "poly_ord_mul_ge_ge" fun _ => (do
   let h1 ← rgl (← ExceptT.mk [[ring_mul(r:R ring) (ring_mul r M f) (ring_mul r N f') = ring_mul r (ring_mul r M N) (ring_mul r f f')]])
   prove ([[
@@ -15335,7 +15170,7 @@ def poly_ord_mul_ge_ge : thm := keep "poly_ord_mul_ge_ge" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_mul_ge_ge
 
-#eval phrase 829
+#eval phrase 815
 def poly_ord_mul_ge_ge0 : thm := keep "poly_ord_mul_ge_ge0" fun _ => (do
   prove ([[
   !p:(1->num)->complex q z n.
@@ -15359,7 +15194,7 @@ def poly_ord_mul_ge_ge0 : thm := keep "poly_ord_mul_ge_ge0" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_mul_ge_ge0
 
-#eval phrase 830
+#eval phrase 816
 def poly_ord_mul_ge0_ge : thm := keep "poly_ord_mul_ge0_ge" fun _ => (do
   prove ([[
   !p:(1->num)->complex q z n.
@@ -15378,7 +15213,7 @@ def poly_ord_mul_ge0_ge : thm := keep "poly_ord_mul_ge0_ge" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_mul_ge0_ge
 
-#eval phrase 831
+#eval phrase 817
 def poly_ord_neg_ge : thm := keep "poly_ord_neg_ge" fun _ => (do
   prove ([[
   !p:(1->num)->complex z n.
@@ -15396,7 +15231,7 @@ def poly_ord_neg_ge : thm := keep "poly_ord_neg_ge" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_neg_ge
 
-#eval phrase 832
+#eval phrase 818
 def poly_ord_add_ge : thm := keep "poly_ord_add_ge" fun _ => (do
   prove ([[
   !p:(1->num)->complex q z n.
@@ -15415,7 +15250,7 @@ def poly_ord_add_ge : thm := keep "poly_ord_add_ge" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_add_ge
 
-#eval phrase 833
+#eval phrase 819
 def poly_ord_sum_ge : thm := keep "poly_ord_sum_ge" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -15438,7 +15273,7 @@ def poly_ord_sum_ge : thm := keep "poly_ord_sum_ge" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_sum_ge
 
-#eval phrase 834
+#eval phrase 820
 def poly_ord_sub_ge : thm := keep "poly_ord_sub_ge" fun _ => (do
   prove ([[
   !p:(1->num)->complex q z n.
@@ -15453,7 +15288,7 @@ def poly_ord_sub_ge : thm := keep "poly_ord_sub_ge" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_sub_ge
 
-#eval phrase 835
+#eval phrase 821
 def poly_ord_add_dominant : thm := keep "poly_ord_add_dominant" fun _ => (do
   let h7 ← num_linear_fact (← ExceptT.mk [[poly_ord (poly_add complex_ring p q) z <= poly_ord q z ==> poly_ord q z <= poly_ord(poly_add complex_ring p q) z ==> poly_ord (poly_add complex_ring p q) z = poly_ord q z]])
   let h6 ← num_linear_fact (← ExceptT.mk [[~(poly_ord q z < poly_ord (poly_add complex_ring p q) z) ==> poly_ord(poly_add complex_ring p q) z <= poly_ord q z]])
@@ -15500,7 +15335,7 @@ def poly_ord_add_dominant : thm := keep "poly_ord_add_dominant" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_add_dominant
 
-#eval phrase 836
+#eval phrase 822
 def poly_ord_sub_dominant : thm := keep "poly_ord_sub_dominant" fun _ => (do
   let h7 ← num_linear_fact (← ExceptT.mk [[poly_ord (poly_sub complex_ring p q) z <= poly_ord q z ==> poly_ord q z <= poly_ord(poly_sub complex_ring p q) z ==> poly_ord (poly_sub complex_ring p q) z = poly_ord q z]])
   let h6 ← num_linear_fact (← ExceptT.mk [[~(poly_ord q z < poly_ord (poly_sub complex_ring p q) z) ==> poly_ord(poly_sub complex_ring p q) z <= poly_ord q z]])
@@ -15545,7 +15380,7 @@ def poly_ord_sub_dominant : thm := keep "poly_ord_sub_dominant" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_sub_dominant
 
-#eval phrase 837
+#eval phrase 823
 def poly_ord_sum_dominant : thm := keep "poly_ord_sum_dominant" fun _ => (do
   prove ([[
   !p z n S t.
@@ -15578,7 +15413,7 @@ def poly_ord_sum_dominant : thm := keep "poly_ord_sum_dominant" fun _ => (do
 
 /- order of derivative of p/q when p/q has no pole at z -/
 
-#eval phrase 838
+#eval phrase 824
 def poly_ord_derivative_ge : thm := keep "poly_ord_derivative_ge" fun _ => (do
   prove ([[
   !p:(1->num)->complex q PqpQ z.
@@ -15618,7 +15453,7 @@ def poly_ord_derivative_ge : thm := keep "poly_ord_derivative_ge" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_ord_derivative_ge
 
-#eval phrase 839
+#eval phrase 825
 def poly_ord_derivative_pole_lemma : thm := keep "poly_ord_derivative_pole_lemma" fun _ => (do
   let h9 ← rgl (← ExceptT.mk [[ring_mul (r:R ring) PM PN1 = PMN1 ==> ring_mul r PM1 PN = PMN1 ==> ring_sub r (ring_mul r (ring_mul r M (ring_mul r (ring_1 r) PM1)) PN) (ring_mul r PM (ring_mul r N (ring_mul r (ring_1 r) PN1))) = ring_mul r (ring_sub r M N) PMN1]])
   let h8 ← num_linear_fact (← ExceptT.mk [[~(n = 0) ==> m+(n-1) = (m+n)-1]])
@@ -15701,7 +15536,7 @@ def poly_ord_derivative_pole_lemma : thm := keep "poly_ord_derivative_pole_lemma
 
 /- order of derivative of p/q when p/q has a pole at z -/
 
-#eval phrase 840
+#eval phrase 826
 def poly_ord_derivative_pole : thm := keep "poly_ord_derivative_pole" fun _ => (do
   let h5 ← num_linear_fact (← ExceptT.mk [[poly_ord p z < poly_ord q z ==> (poly_ord p z + poly_ord q z) - 1 < poly_ord p z + poly_ord q z]])
   let h4 ← rgl (← ExceptT.mk [[ring_mul(r:R ring) (ring_mul r (ring_sub r P Q) MN1) (ring_mul r f g) = ring_mul r MN1 (ring_mul r (ring_sub r P Q) (ring_mul r f g))]])
@@ -15782,15 +15617,15 @@ def poly_ord_derivative_pole : thm := keep "poly_ord_derivative_pole" fun _ => (
       have' ([[ring_polynomial complex_ring (poly_mul complex_ring (poly_sub complex_ring (poly_const complex_ring (ring_of_num complex_ring (poly_ord p z))) (poly_const complex_ring (ring_of_num complex_ring (poly_ord q z)))) (poly_mul complex_ring f g:(1->num)->complex))]]) [RING_POLYNOMIAL_MUL, RING_POLYNOMIAL_SUB, RING_POLYNOMIAL_CONST, in_complex_ring] THEN
       subgoal ([[~complex_root (poly_mul complex_ring (poly_sub complex_ring (poly_const complex_ring (ring_of_num complex_ring (poly_ord p z))) (poly_const complex_ring (ring_of_num complex_ring (poly_ord q z)))) (poly_mul complex_ring f g)) z]]) THENL [rw [complex_root] THEN
         simp [POLY_EVAL_MUL, POLY_EVAL_SUB, POLY_EVAL_CONST, in_complex_ring, RING_POLYNOMIAL_MUL, RING_POLYNOMIAL_SUB, RING_POLYNOMIAL_CONST] THEN
-        «recall» integral_domain_complex THEN
+        «recall» INTEGRAL_DOMAIN_COMPLEX_RING THEN
         have' ([[~(poly_eval complex_ring f z = Cx(&0))]]) [complex_root] THEN
         have' ([[~(poly_eval complex_ring g z = Cx(&0))]]) [complex_root] THEN
-        have' ([[~(ring_mul complex_ring (poly_eval complex_ring f z) (poly_eval complex_ring g z) = Cx(&0))]]) [complex_ring_clauses, COMPLEX_ENTIRE] THEN
+        have' ([[~(ring_mul complex_ring (poly_eval complex_ring f z) (poly_eval complex_ring g z) = Cx(&0))]]) [COMPLEX_RING_CLAUSES, COMPLEX_ENTIRE] THEN
         h2 THEN
-        have' ([[~(ring_of_num complex_ring (poly_ord p z) = ring_of_num complex_ring (poly_ord q z))]]) [ring_of_num_injective, ring_char_complex] THEN
+        have' ([[~(ring_of_num complex_ring (poly_ord p z) = ring_of_num complex_ring (poly_ord q z))]]) [ring_of_num_injective, RING_CHAR_COMPLEX_RING] THEN
         h3 THEN
-        have' ([[~(ring_sub complex_ring (ring_of_num complex_ring (poly_ord p z)) (ring_of_num complex_ring (poly_ord q z)) = Cx(&0))]]) [ring_sub_complex] THEN
-        qed [complex_ring_clauses, COMPLEX_ENTIRE], pass] THEN
+        have' ([[~(ring_sub complex_ring (ring_of_num complex_ring (poly_ord p z)) (ring_of_num complex_ring (poly_ord q z)) = Cx(&0))]]) [COMPLEX_RING_SUB] THEN
+        qed [COMPLEX_RING_CLAUSES, COMPLEX_ENTIRE], pass] THEN
       subgoal ([[poly_mul complex_ring (poly_mul complex_ring (poly_sub complex_ring (poly_const complex_ring (ring_of_num complex_ring (poly_ord p z))) (poly_const complex_ring (ring_of_num complex_ring (poly_ord q z)))) (poly_pow complex_ring (x_minus_const complex_ring z) ((poly_ord p z + poly_ord q z) - 1))) (poly_mul complex_ring f g) = poly_mul complex_ring (poly_pow complex_ring (x_minus_const complex_ring z) ((poly_ord p z + poly_ord q z) - 1)) (poly_mul complex_ring (poly_sub complex_ring (poly_const complex_ring (ring_of_num complex_ring (poly_ord p z))) (poly_const complex_ring (ring_of_num complex_ring (poly_ord q z)))) (poly_mul complex_ring f g))]]) THENL [rw [x_series_use, x_series_sub_use] THEN
         qed [x_series_use, series_complex, h4], pass] THEN
       specialize [([[poly_mul complex_ring (poly_mul complex_ring (poly_sub complex_ring (poly_const complex_ring (ring_of_num complex_ring (poly_ord p z))) (poly_const complex_ring (ring_of_num complex_ring (poly_ord q z)))) (poly_pow complex_ring (x_minus_const complex_ring z) ((poly_ord p z + poly_ord q z) - 1))) (poly_mul complex_ring f g)]]), ([[poly_mul complex_ring (poly_sub complex_ring (poly_const complex_ring (ring_of_num complex_ring (poly_ord p z))) (poly_const complex_ring (ring_of_num complex_ring (poly_ord q z)))) (poly_mul complex_ring f g:(1->num)->complex)]]), ([[(poly_ord p z + poly_ord q z) - 1]])] poly_ord_unique THEN
@@ -15817,7 +15652,7 @@ def poly_ord_derivative_pole : thm := keep "poly_ord_derivative_pole" fun _ => (
   : ExceptT String IO thm).run
 #eval poly_ord_derivative_pole
 
-#eval phrase 841
+#eval phrase 827
 def ord_minpoly : thm := keep "ord_minpoly" fun _ => (do
   prove ([[
   !P q y.
@@ -15848,7 +15683,7 @@ def ord_minpoly : thm := keep "ord_minpoly" fun _ => (do
   : ExceptT String IO thm).run
 #eval ord_minpoly
 
-#eval phrase 842
+#eval phrase 828
 def ord_pow_minpoly : thm := keep "ord_pow_minpoly" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[n * 0 = 0]])
   let h1 ← ar (← ExceptT.mk [[n * 1 = n]])
@@ -15875,7 +15710,7 @@ def ord_pow_minpoly : thm := keep "ord_pow_minpoly" fun _ => (do
   : ExceptT String IO thm).run
 #eval ord_pow_minpoly
 
-#eval phrase 843
+#eval phrase 829
 def ord_product_distinct_minpolys : thm := keep "ord_product_distinct_minpolys" fun _ => (do
   prove ([[
   !P e z.
@@ -15913,7 +15748,7 @@ def ord_product_distinct_minpolys : thm := keep "ord_product_distinct_minpolys" 
   : ExceptT String IO thm).run
 #eval ord_product_distinct_minpolys
 
-#eval phrase 844
+#eval phrase 830
 def ord_product_distinct_minpolys_root : thm := keep "ord_product_distinct_minpolys_root" fun _ => (do
   prove ([[
   !P q e z.
@@ -15938,7 +15773,7 @@ def ord_product_distinct_minpolys_root : thm := keep "ord_product_distinct_minpo
   : ExceptT String IO thm).run
 #eval ord_product_distinct_minpolys_root
 
-#eval phrase 845
+#eval phrase 831
 def sum_root_decomposition_if_monic_vanishing_at_factorization_lemma : thm := keep "sum_root_decomposition_if_monic_vanishing_at_factorization_lemma" fun _ => (do
   prove ([[
   !P:((1->num)->complex)->bool S:X->bool e:((1->num)->complex)->num c:X->complex g:complex->complex.
@@ -15970,9 +15805,9 @@ def sum_root_decomposition_if_monic_vanishing_at_factorization_lemma : thm := ke
       rw [BETA_THM] THEN
       intro THEN
       have' ([[FINITE(complex_root a)]]) [distinct_minpolys_finite_root] THEN
-      simp [(← HolLight.GSYM vsum_ring_sum_complex)] THEN
+      simp [COMPLEX_RING_SUM] THEN
       simp [(← HolLight.GSYM VSUM_COMPLEX_LMUL)] THEN
-      simp [vsum_ring_sum_complex] THEN
+      simp [(← HolLight.GSYM COMPLEX_RING_SUM)] THEN
       subgoal ([[complex_root a SUBSET {y | ~(numpreimages c (S:X->bool) y = 0)}]]) THENL [rw [SUBSET, IN_ELIM_THM] THEN
         intro THEN
         have' ([[(if complex_root a x then e a else 0) <= nsum P (\p. if complex_root p x then e p else 0)]]) [term_le_nsum] THEN
@@ -15984,7 +15819,7 @@ def sum_root_decomposition_if_monic_vanishing_at_factorization_lemma : thm := ke
         ([[complex_root a]]),
         ([[{y:complex | ~(numpreimages c (S:X->bool) y = 0)}]]),
         ([[\y:complex. ring_mul complex_ring (Cx(&(e(a:(1->num)->complex)))) (g y)]])] ring_sum_restrict_subset THEN
-      rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+      rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
       qed [], pass] THEN
     simp [] THEN
     simp [(← HolLight.GSYM image_numpreimages)] THEN
@@ -16010,10 +15845,10 @@ def sum_root_decomposition_if_monic_vanishing_at_factorization_lemma : thm := ke
     subgoal ([[ring_sum complex_ring P (\p. if a IN complex_root p then Cx (&(e p)) * g a else Cx (&0)) = ring_sum complex_ring P (\p. if p = q then Cx(&(e q)) * g a else Cx(&0))]]) THENL [sufficesby RING_SUM_EQ THEN
       qed [distinct_minpolys_distinct_roots, IN], pass] THEN
     simp [] THEN
-    rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+    rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
     simp [RING_SUM_DELTA] THEN
     rw [in_complex_ring] THEN
-    rw [ring_of_num_complex, complex_of_num] THEN
+    rw [COMPLEX_RING_OF_NUM] THEN
     subgoal ([[e(q:(1->num)->complex) = numpreimages c S (c(v:X):complex)]]) THENL [rw [(← HolLight.GSYM (← know ([[!z. nsum P (\p. if complex_root p z then e p else 0) = numpreimages (c:X->complex) S z]])))] THEN
       subgoal ([[nsum P (\p. if complex_root p (c(v:X)) then e p else 0) = nsum P (\p. if p = q then e q else 0)]]) THENL [sufficesby NSUM_EQ THEN
         qed [distinct_minpolys_distinct_roots], pass] THEN
@@ -16023,7 +15858,7 @@ def sum_root_decomposition_if_monic_vanishing_at_factorization_lemma : thm := ke
   : ExceptT String IO thm).run
 #eval sum_root_decomposition_if_monic_vanishing_at_factorization_lemma
 
-#eval phrase 846
+#eval phrase 832
 def sum_root_decomposition_if_monic_vanishing_at_factorization : thm := keep "sum_root_decomposition_if_monic_vanishing_at_factorization" fun _ => (do
   let h1 ← def' ([[Q:((1->num)->complex)->bool]]) (← ExceptT.mk [[{p:(1->num)->complex | p IN P /\ ~(e p = 0)}]])
   prove ([[
@@ -16066,7 +15901,7 @@ def sum_root_decomposition_if_monic_vanishing_at_factorization : thm := keep "su
         rw [BETA_THM] THEN
         intro THEN
         simp [IN_ELIM_THM] THEN
-        case' ([[e(a:(1->num)->complex) = 0]]) THENL [rw [complex_ring_clauses] THEN
+        case' ([[e(a:(1->num)->complex) = 0]]) THENL [rw [COMPLEX_RING_CLAUSES] THEN
           have' ([[Cx (&0) * ring_sum complex_ring (complex_root a) g = Cx(&0)]]) [COMPLEX_MUL_LZERO] THEN
           simp [], pass] THEN
         simp [], pass] THEN
@@ -16077,7 +15912,7 @@ def sum_root_decomposition_if_monic_vanishing_at_factorization : thm := keep "su
 
 /- ===== core transcendence arguments -/
 
-#eval phrase 847
+#eval phrase 833
 def transcendence_v_denom : thm := keep "transcendence_v_denom" fun _ => (do
   let h2 ← complex_field_fact (← ExceptT.mk [[(D:complex) pow n = D pow s * D pow (n-s) ==> D pow n * Cx (&(FACT (n - s) * binom (n,s))) * u s = D pow (n-s) * Cx (&(FACT (n - s) * binom (n,s))) * (D pow s * u s)]])
   let h1 ← num_linear_fact (← ExceptT.mk [[s <= n ==> n = s + (n-s):num]])
@@ -16087,7 +15922,7 @@ def transcendence_v_denom : thm := keep "transcendence_v_denom" fun _ => (do
   distinct_minpolys P ==>
   D IN ZinC ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   !n vn.
   vn = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) ==>
   D pow n * vn IN ZinC
@@ -16098,8 +15933,8 @@ def transcendence_v_denom : thm := keep "transcendence_v_denom" fun _ => (do
       have' ([[FINITE (0..n)]]) [FINITE_NUMSEG] THEN
       have' ([[!i. i IN (0..n) ==> Cx (&(FACT (n - i) * binom (n,i))) * u i IN ring_carrier complex_ring]]) [in_complex_ring] THEN
       specialize [([[complex_ring]]), ([[\i. Cx (&(FACT (n - i) * binom (n,i))) * u i]]), ([[(D:complex) pow n]]), ([[0..n]])] (← HolLight.GSYM RING_SUM_LMUL) THEN
-      have' ([[D pow n * vn = ring_sum complex_ring (0..n) (\x. ring_mul complex_ring (D pow n) (Cx (&(FACT (n - x) * binom (n,x))) * u x))]]) [complex_ring_clauses] THEN
-      qed [RING_SUM_EQ, complex_ring_clauses], pass] THEN
+      have' ([[D pow n * vn = ring_sum complex_ring (0..n) (\x. ring_mul complex_ring (D pow n) (Cx (&(FACT (n - x) * binom (n,x))) * u x))]]) [COMPLEX_RING_CLAUSES] THEN
+      qed [RING_SUM_EQ, COMPLEX_RING_CLAUSES], pass] THEN
     «recall» subring_complex_empty THEN
     subgoal ([[ring_sum complex_ring (0..n) (\i. D pow n * Cx (&(FACT (n - i) * binom (n,i))) * u i) IN ring_carrier(subring_generated complex_ring {})]]) THENL [sufficesby ring_sum_in_subring THEN
       intro THEN
@@ -16120,7 +15955,7 @@ def transcendence_v_denom : thm := keep "transcendence_v_denom" fun _ => (do
 
 /- could do transcendence_v_denom by specializing to k = 0 -/
 
-#eval phrase 848
+#eval phrase 834
 def transcendence_w_denom : thm := keep "transcendence_w_denom" fun _ => (do
   let h5 ← cf (← ExceptT.mk [[(x * Cx(&0)) / y = Cx(&0)]])
   let h4 ← complex_field_fact (← ExceptT.mk [[
@@ -16139,7 +15974,7 @@ def transcendence_w_denom : thm := keep "transcendence_w_denom" fun _ => (do
   distinct_minpolys P ==>
   D IN ZinC ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   !n k wn.
   wn = (if k <= n then ring_sum complex_ring (0..n-k) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) else Cx(&0)) ==>
   (D pow (n-k) * wn) / Cx(&(FACT k)) IN ZinC
@@ -16151,8 +15986,8 @@ def transcendence_w_denom : thm := keep "transcendence_w_denom" fun _ => (do
         have' ([[FINITE (0..n-k)]]) [FINITE_NUMSEG] THEN
         have' ([[!i. i IN (0..n-k) ==> Cx (&(FACT (n - i) * binom (n,i))) * u i IN ring_carrier complex_ring]]) [in_complex_ring] THEN
         specialize [([[complex_ring]]), ([[\i. Cx (&(FACT (n - i) * binom (n,i))) * u i]]), ([[(D:complex) pow (n-k) / Cx(&(FACT k))]]), ([[0..n-k]])] (← HolLight.GSYM RING_SUM_LMUL) THEN
-        have' ([[(D pow (n-k) / Cx(&(FACT k))) * wn = ring_sum complex_ring (0..n-k) (\x. ring_mul complex_ring ((D pow (n-k) / Cx(&(FACT k)))) (Cx (&(FACT (n - x) * binom (n,x))) * u x))]]) [complex_ring_clauses] THEN
-        qed [RING_SUM_EQ, complex_ring_clauses], pass] THEN
+        have' ([[(D pow (n-k) / Cx(&(FACT k))) * wn = ring_sum complex_ring (0..n-k) (\x. ring_mul complex_ring ((D pow (n-k) / Cx(&(FACT k)))) (Cx (&(FACT (n - x) * binom (n,x))) * u x))]]) [COMPLEX_RING_CLAUSES] THEN
+        qed [RING_SUM_EQ, COMPLEX_RING_CLAUSES], pass] THEN
       «recall» subring_complex_empty THEN
       subgoal ([[ring_sum complex_ring (0..n-k) (\i. D pow (n-k) / Cx(&(FACT k)) * Cx (&(FACT (n - i) * binom (n,i))) * u i) IN ring_carrier(subring_generated complex_ring {})]]) THENL [sufficesby ring_sum_in_subring THEN
         intro THEN
@@ -16190,7 +16025,7 @@ def transcendence_w_denom : thm := keep "transcendence_w_denom" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_w_denom
 
-#eval phrase 849
+#eval phrase 835
 def transcendence_H_poly : thm := keep "transcendence_H_poly" fun _ => (do
   prove ([[
   !P H t.
@@ -16209,7 +16044,7 @@ def transcendence_H_poly : thm := keep "transcendence_H_poly" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_H_poly
 
-#eval phrase 850
+#eval phrase 836
 def transcendence_Gp_poly : thm := keep "transcendence_Gp_poly" fun _ => (do
   prove ([[
   !P p.
@@ -16229,7 +16064,7 @@ def transcendence_Gp_poly : thm := keep "transcendence_Gp_poly" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_Gp_poly
 
-#eval phrase 851
+#eval phrase 837
 def transcendence_H_product : thm := keep "transcendence_H_product" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[d <= d:num]])
   prove ([[
@@ -16251,7 +16086,7 @@ def transcendence_H_product : thm := keep "transcendence_H_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_H_product
 
-#eval phrase 852
+#eval phrase 838
 def transcendence_H_product_complex_ring : thm := keep "transcendence_H_product_complex_ring" fun _ => (do
   prove ([[
   !P H t.
@@ -16270,7 +16105,7 @@ def transcendence_H_product_complex_ring : thm := keep "transcendence_H_product_
   : ExceptT String IO thm).run
 #eval transcendence_H_product_complex_ring
 
-#eval phrase 853
+#eval phrase 839
 def transcendence_H_botcoeff1 : thm := keep "transcendence_H_botcoeff1" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[0 <= x]])
   let h1 ← ar (← ExceptT.mk [[x - 0 = x]])
@@ -16296,7 +16131,7 @@ def transcendence_H_botcoeff1 : thm := keep "transcendence_H_botcoeff1" fun _ =>
   : ExceptT String IO thm).run
 #eval transcendence_H_botcoeff1
 
-#eval phrase 854
+#eval phrase 840
 def transcendence_H_denom : thm := keep "transcendence_H_denom" fun _ => (do
   prove ([[
   !P H D t.
@@ -16318,7 +16153,7 @@ def transcendence_H_denom : thm := keep "transcendence_H_denom" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_H_denom
 
-#eval phrase 855
+#eval phrase 841
 def transcendence_H_pow_denom : thm := keep "transcendence_H_pow_denom" fun _ => (do
   prove ([[
   !P H D t k.
@@ -16340,7 +16175,7 @@ def transcendence_H_pow_denom : thm := keep "transcendence_H_pow_denom" fun _ =>
   : ExceptT String IO thm).run
 #eval transcendence_H_pow_denom
 
-#eval phrase 856
+#eval phrase 842
 def transcendence_newton_pe : thm := keep "transcendence_newton_pe" fun _ => (do
   prove ([[
   !P p e.
@@ -16371,7 +16206,7 @@ def transcendence_newton_pe : thm := keep "transcendence_newton_pe" fun _ => (do
     have' ([[ring_polynomial complex_ring (p:(1->num)->complex)]]) [poly_complex_if_poly_QinC] THEN
     «recall» subring_complex_QinC THEN
     have' ([[monic complex_ring (p:(1->num)->complex)]]) [monic_subring] THEN
-    have' ([[~(p:(1->num)->complex = poly_0 complex_ring)]]) [monic_poly_0, field_complex, field] THEN
+    have' ([[~(p:(1->num)->complex = poly_0 complex_ring)]]) [monic_poly_0, FIELD_COMPLEX_RING, field] THEN
     have' ([[ring_squarefree(x_poly QinC_ring) p]]) [squarefree_if_irreducible_over_field, field_QinC] THEN
     have' ([[ring_squarefree(x_poly complex_ring) p]]) [monic_QinC_squarefree_complex_squarefree] THEN
     have' ([[monic_vanishing_at complex_ring (complex_root p) I = p]]) [monic_vanishing_at_complex_root] THEN
@@ -16385,12 +16220,12 @@ def transcendence_newton_pe : thm := keep "transcendence_newton_pe" fun _ => (do
       sufficesby eq_coeff THEN
       intro THEN
       simp [coeff_series_from_coeffs] THEN
-      simp [ring_of_num_complex, complex_of_num, I_THM], pass] THEN
+      simp [COMPLEX_RING_OF_NUM, I_THM], pass] THEN
     qed [])
   : ExceptT String IO thm).run
 #eval transcendence_newton_pe
 
-#eval phrase 857
+#eval phrase 843
 def transcendence_newton_He_Ge : thm := keep "transcendence_newton_He_Ge" fun _ => (do
   let h2 ← def' ([[Z:(1->num)->complex]]) (← ExceptT.mk [[poly_sum complex_ring (complex_root p) (\s.  series_from_coeffs (\n. ring_mul complex_ring (Cx(&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))]])
   let h1 ← def' ([[revp:(1->num)->complex]]) (← ExceptT.mk [[x_truncreverse QinC_ring (poly_deg complex_ring p) p]])
@@ -16439,7 +16274,7 @@ def transcendence_newton_He_Ge : thm := keep "transcendence_newton_He_Ge" fun _ 
   : ExceptT String IO thm).run
 #eval transcendence_newton_He_Ge
 
-#eval phrase 858
+#eval phrase 844
 def transcendence_newton_Hk : thm := keep "transcendence_newton_Hk" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[e < k ==> k = (k-(e+1))+(e+1)]])
   prove ([[
@@ -16483,9 +16318,9 @@ def transcendence_newton_Hk : thm := keep "transcendence_newton_Hk" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_newton_Hk
 
-#eval phrase 859
+#eval phrase 845
 def transcendence_newton_Hk_psum : thm := keep "transcendence_newton_Hk_psum" fun _ => (do
-  let h1 ← complex_field_fact (← ExceptT.mk [[Cx (&(FACT e * binom (d,e))) * (complex_of_int(B a)) * ring_sum complex_ring (complex_root a) (\z. z pow (d - e)) = (complex_of_int(B a)) * Cx (&(FACT e * binom (d,e))) * ring_sum complex_ring (complex_root a) (\z. z pow (d - e))]])
+  let h1 ← complex_field_fact (← ExceptT.mk [[Cx (&(FACT e * binom (d,e))) * (Cx(real_of_int(B a))) * ring_sum complex_ring (complex_root a) (\z. z pow (d - e)) = (Cx(real_of_int(B a))) * Cx (&(FACT e * binom (d,e))) * ring_sum complex_ring (complex_root a) (\z. z pow (d - e))]])
   prove ([[
   !P B t H G u e k.
   FINITE P ==>
@@ -16493,7 +16328,7 @@ def transcendence_newton_Hk_psum : thm := keep "transcendence_newton_Hk_psum" fu
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
   (!p. p IN P ==> G p = poly_product complex_ring (P DELETE p) (\q. x_truncreverse QinC_ring (poly_deg complex_ring q) q)) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   e < k ==>
   poly_mul complex_ring (
     poly_pow complex_ring H k
@@ -16505,7 +16340,7 @@ def transcendence_newton_Hk_psum : thm := keep "transcendence_newton_Hk_psum" fu
   =
   poly_sum complex_ring P (\p:(1->num)->complex.
     poly_mul complex_ring (
-      poly_const complex_ring ((complex_of_int(B p)))
+      poly_const complex_ring ((Cx(real_of_int(B p))))
     ) (
       poly_mul complex_ring (
         poly_pow complex_ring H (k-(e+1))
@@ -16520,42 +16355,42 @@ def transcendence_newton_Hk_psum : thm := keep "transcendence_newton_Hk_psum" fu
   )
 ]])
    (intro THEN
-    subgoal ([[series_from_coeffs (\n. Cx(&(FACT(e) * binom(n,e))) * u(n-e)) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx(&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))]]) THENL [sufficesby eq_coeff THEN
+    subgoal ([[series_from_coeffs (\n. Cx(&(FACT(e) * binom(n,e))) * u(n-e)) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx(&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))]]) THENL [sufficesby eq_coeff THEN
       intro THEN
       rw [coeff_series_from_coeffs] THEN
       simp [coeff_poly_sum, series_complex] THEN
       simp [coeff_poly_const_times, series_complex, in_complex_ring] THEN
-      rw [complex_ring_clauses] THEN
-      subgoal ([[ring_sum complex_ring P (\a. (complex_of_int(B a)) * coeff d (poly_sum complex_ring (complex_root a) (\s. series_from_coeffs (\n. Cx (&(FACT e * binom (n,e))) * ring_pow complex_ring s (n - e))))) = ring_sum complex_ring P (\a. (complex_of_int(B a)) * ring_sum complex_ring (complex_root a) (\s. Cx (&(FACT e * binom (d,e))) * ring_pow complex_ring s (d - e)))]]) THENL [sufficesby RING_SUM_EQ THEN
+      rw [COMPLEX_RING_CLAUSES] THEN
+      subgoal ([[ring_sum complex_ring P (\a. (Cx(real_of_int(B a))) * coeff d (poly_sum complex_ring (complex_root a) (\s. series_from_coeffs (\n. Cx (&(FACT e * binom (n,e))) * ring_pow complex_ring s (n - e))))) = ring_sum complex_ring P (\a. (Cx(real_of_int(B a))) * ring_sum complex_ring (complex_root a) (\s. Cx (&(FACT e * binom (d,e))) * ring_pow complex_ring s (d - e)))]]) THENL [sufficesby RING_SUM_EQ THEN
         intro THEN
         have' ([[FINITE(complex_root a)]]) [distinct_minpolys_finite_root] THEN
         simp [coeff_poly_sum, series_complex] THEN
         rw [coeff_series_from_coeffs], pass] THEN
       simp [] THEN
-      subgoal ([[Cx (&(FACT e * binom (d,e))) * ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p (d - e)) = ring_sum complex_ring P (\p. Cx (&(FACT e * binom (d,e))) * (complex_of_int(B p)) * complex_root_powersums p (d - e))]]) THENL [rw [(← HolLight.GSYM complex_ring_clauses)] THEN
-        specialize_assuming [([[complex_ring]]), ([[\p. ring_mul complex_ring ((complex_of_int(B p))) (complex_root_powersums p (d - e))]]), ([[Cx(&(FACT e * binom(d,e)))]]), ([[P:((1->num)->complex)->bool]])] RING_SUM_LMUL THEN
+      subgoal ([[Cx (&(FACT e * binom (d,e))) * ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p (d - e)) = ring_sum complex_ring P (\p. Cx (&(FACT e * binom (d,e))) * (Cx(real_of_int(B p))) * complex_root_powersums p (d - e))]]) THENL [rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
+        specialize_assuming [([[complex_ring]]), ([[\p. ring_mul complex_ring ((Cx(real_of_int(B p)))) (complex_root_powersums p (d - e))]]), ([[Cx(&(FACT e * binom(d,e)))]]), ([[P:((1->num)->complex)->bool]])] RING_SUM_LMUL THEN
         qed [in_complex_ring], pass] THEN
       simp [] THEN
       sufficesby RING_SUM_EQ THEN
       intro THEN
-      rw [complex_root_powersums, ring_pow_complex] THEN
-      subgoal ([[ring_sum complex_ring (complex_root a) (\s. Cx (&(FACT e * binom (d,e))) * s pow (d - e)) = Cx (&(FACT e * binom (d,e))) * ring_sum complex_ring (complex_root a) (\s. s pow (d - e))]]) THENL [rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+      rw [complex_root_powersums, COMPLEX_RING_POW] THEN
+      subgoal ([[ring_sum complex_ring (complex_root a) (\s. Cx (&(FACT e * binom (d,e))) * s pow (d - e)) = Cx (&(FACT e * binom (d,e))) * ring_sum complex_ring (complex_root a) (\s. s pow (d - e))]]) THENL [rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
         have' ([[FINITE(complex_root a)]]) [distinct_minpolys_finite_root] THEN
         specialize_assuming [([[complex_ring]]), ([[\s:complex. s pow (d-e)]]), ([[Cx(&(FACT e * binom(d,e)))]]), ([[complex_root a]])] RING_SUM_LMUL THEN
         qed [in_complex_ring], pass] THEN
       simp [] THEN
       h1 THEN
       qed [], pass] THEN
-    subgoal ([[poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))))]]) THENL [specialize_assuming [([[complex_ring]]), ([[\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))]]), ([[poly_pow complex_ring H k:(1->num)->complex]]), ([[P:((1->num)->complex)->bool]])] poly_sum_lmul THEN
+    subgoal ([[poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))))]]) THENL [specialize_assuming [([[complex_ring]]), ([[\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))]]), ([[poly_pow complex_ring H k:(1->num)->complex]]), ([[P:((1->num)->complex)->bool]])] poly_sum_lmul THEN
       qed [series_complex], pass] THEN
-    subgoal ([[poly_sum complex_ring P (\p. poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))]]) THENL [sufficesby poly_sum_eq THEN
+    subgoal ([[poly_sum complex_ring P (\p. poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_sum complex_ring (complex_root p) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))) = poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))]]) THENL [sufficesby poly_sum_eq THEN
       intro THEN
       rw [BETA_THM] THEN
-      have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_mul complex_ring (poly_pow complex_ring H k) (poly_const complex_ring ((complex_of_int(B s))))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))]]) [POLY_MUL_ASSOC, series_complex] THEN
-      have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (poly_const complex_ring ((complex_of_int(B(s:(1->num)->complex))))) = poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_pow complex_ring H k):(1->num)->complex]]) [POLY_MUL_SYM, series_complex] THEN
-      have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_pow complex_ring H k)) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))]]) [] THEN
-      have' ([[poly_mul complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_pow complex_ring H k)) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))) = poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))]]) [POLY_MUL_ASSOC, series_complex] THEN
-      have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B s)))) (poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))]]) [] THEN
+      have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_mul complex_ring (poly_pow complex_ring H k) (poly_const complex_ring ((Cx(real_of_int(B s)))))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))]]) [POLY_MUL_ASSOC, series_complex] THEN
+      have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (poly_const complex_ring ((Cx(real_of_int(B(s:(1->num)->complex)))))) = poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_pow complex_ring H k):(1->num)->complex]]) [POLY_MUL_SYM, series_complex] THEN
+      have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_pow complex_ring H k)) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))]]) [] THEN
+      have' ([[poly_mul complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_pow complex_ring H k)) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))) = poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))]]) [POLY_MUL_ASSOC, series_complex] THEN
+      have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e)))))) = poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B s))))) (poly_mul complex_ring (poly_pow complex_ring H k) (poly_sum complex_ring (complex_root s) (\s. series_from_coeffs (\n. ring_mul complex_ring (Cx (&(FACT e * binom (n,e)))) (ring_pow complex_ring s (n - e))))))]]) [] THEN
       have' ([[G(s:(1->num)->complex) = poly_product complex_ring (P DELETE s) (\q. x_truncreverse QinC_ring (poly_deg complex_ring q) q)]]) [] THEN
       subgoal ([[poly_product complex_ring (P DELETE s) (\q. x_truncreverse QinC_ring (poly_deg complex_ring q) q) = poly_product complex_ring (P DELETE s) (\q. x_truncreverse complex_ring (poly_deg complex_ring q) q)]]) THENL [sufficesby poly_product_eq THEN
         qed [x_truncreverse_subring, subring_complex_QinC], pass] THEN
@@ -16567,7 +16402,7 @@ def transcendence_newton_Hk_psum : thm := keep "transcendence_newton_Hk_psum" fu
   : ExceptT String IO thm).run
 #eval transcendence_newton_Hk_psum
 
-#eval phrase 860
+#eval phrase 846
 def transcendence_Huv_lemma : thm := keep "transcendence_Huv_lemma" fun _ => (do
   prove ([[
   !H u k.
@@ -16624,7 +16459,7 @@ def transcendence_Huv_lemma : thm := keep "transcendence_Huv_lemma" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_Huv_lemma
 
-#eval phrase 861
+#eval phrase 847
 def transcendence_H_main : thm := keep "transcendence_H_main" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[s IN {e | e < k} ==> s < k:num]])
   prove ([[
@@ -16634,7 +16469,7 @@ def transcendence_H_main : thm := keep "transcendence_H_main" fun _ => (do
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
   (!p. p IN P ==> G p = poly_product complex_ring (P DELETE p) (\p. x_truncreverse QinC_ring (poly_deg complex_ring p) p)) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   poly_mul complex_ring (
     poly_pow complex_ring H k
   ) (
@@ -16647,7 +16482,7 @@ def transcendence_H_main : thm := keep "transcendence_H_main" fun _ => (do
   = poly_sum complex_ring {e | e < k} (\e:num.
       poly_sum complex_ring P (\p:(1->num)->complex.
         poly_mul complex_ring (
-          poly_const complex_ring ((complex_of_int(B p)))
+          poly_const complex_ring ((Cx(real_of_int(B p))))
         ) (
           poly_mul complex_ring (
             poly_pow complex_ring H (k-(e+1))
@@ -16672,7 +16507,7 @@ def transcendence_H_main : thm := keep "transcendence_H_main" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_H_main
 
-#eval phrase 862
+#eval phrase 848
 def transcendence_Htimes_poly : thm := keep "transcendence_Htimes_poly" fun _ => (do
   let h1 ← def' ([[G:((1->num)->complex)->((1->num)->complex)]]) (← ExceptT.mk [[\p. poly_product complex_ring (P DELETE p) (\p. x_truncreverse QinC_ring (poly_deg complex_ring p) p)]])
   prove ([[
@@ -16681,7 +16516,7 @@ def transcendence_Htimes_poly : thm := keep "transcendence_Htimes_poly" fun _ =>
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   ring_polynomial complex_ring (
     poly_mul complex_ring (
       poly_pow complex_ring H k
@@ -16696,11 +16531,11 @@ def transcendence_Htimes_poly : thm := keep "transcendence_Htimes_poly" fun _ =>
 ]])
    (intro THEN
     h1 THEN
-    have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e)))) = poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))]]) [transcendence_H_main] THEN
+    have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e)))) = poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))]]) [transcendence_H_main] THEN
     have' ([[FINITE {e:num | e < k}]]) [FINITE_NUMSEG_LT] THEN
-    subgoal ([[!e. e IN {e | e < k} ==> ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))]]) THENL [intro THEN
-      subgoal ([[!p:(1->num)->complex. p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))]]) THENL [intro THEN
-        have' ([[ring_polynomial complex_ring (poly_const complex_ring ((complex_of_int(B(p:(1->num)->complex)))):(1->num)->complex)]]) [RING_POLYNOMIAL_CONST, in_complex_ring] THEN
+    subgoal ([[!e. e IN {e | e < k} ==> ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))]]) THENL [intro THEN
+      subgoal ([[!p:(1->num)->complex. p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))]]) THENL [intro THEN
+        have' ([[ring_polynomial complex_ring (poly_const complex_ring ((Cx(real_of_int(B(p:(1->num)->complex))))):(1->num)->complex)]]) [RING_POLYNOMIAL_CONST, in_complex_ring] THEN
         have' ([[ring_polynomial complex_ring (poly_pow complex_ring H (k - (e + 1)):(1->num)->complex)]]) [transcendence_H_poly, poly_pow_poly, poly_complex_if_poly_QinC] THEN
         have' ([[ring_polynomial complex_ring (poly_pow complex_ring (G(p:(1->num)->complex)) (e + 1):(1->num)->complex)]]) [poly_pow_poly, transcendence_Gp_poly, poly_complex_if_poly_QinC] THEN
         have' ([[FINITE(complex_root p)]]) [distinct_minpolys_finite_root] THEN
@@ -16711,7 +16546,7 @@ def transcendence_Htimes_poly : thm := keep "transcendence_Htimes_poly" fun _ =>
   : ExceptT String IO thm).run
 #eval transcendence_Htimes_poly
 
-#eval phrase 863
+#eval phrase 849
 def transcendence_H_deg_G_lemma : thm := keep "transcendence_H_deg_G_lemma" fun _ => (do
   let h2 ← num_linear_fact (← ExceptT.mk [[d <= g + s ==> g <= (e+1)*n ==> s <= e + (p-1)*(e+1) ==> d <= e+(n+(p-1))*(e+1)]])
   let h1 ← num_linear_fact (← ExceptT.mk [[~(p = 0) ==> (p+n)-1 = n+(p-1)]])
@@ -16731,7 +16566,7 @@ def transcendence_H_deg_G_lemma : thm := keep "transcendence_H_deg_G_lemma" fun 
   : ExceptT String IO thm).run
 #eval transcendence_H_deg_G_lemma
 
-#eval phrase 864
+#eval phrase 850
 def transcendence_H_deg_G : thm := keep "transcendence_H_deg_G" fun _ => (do
   prove ([[
   !P t p Gp e.
@@ -16778,7 +16613,7 @@ def transcendence_H_deg_G : thm := keep "transcendence_H_deg_G" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_H_deg_G
 
-#eval phrase 865
+#eval phrase 851
 def transcendence_H_deg_HG : thm := keep "transcendence_H_deg_HG" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[d <= h+g ==> g <= e + (t-1)*(e+1) ==> h <= (k-(e+1))*t ==> d <= e+(t-1)*(e+1)+t*(k-(e+1))]])
   prove ([[
@@ -16820,7 +16655,7 @@ def transcendence_H_deg_HG : thm := keep "transcendence_H_deg_HG" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_H_deg_HG
 
-#eval phrase 866
+#eval phrase 852
 def transcendence_H_deg_HG_simpler : thm := keep "transcendence_H_deg_HG_simpler" fun _ => (do
   let h4 ← num_linear_fact (← ExceptT.mk [[e < k ==> (t-1)*(e+1) + (t-1)*(k-(e+1)) = (t-1)*k ==> e + (t-1)*(e+1) + (t-1)*(k-(e+1)) + (k-(e+1)) = ((t-1)*k + 1*k) - 1]])
   let h3 ← num_linear_fact (← ExceptT.mk [[e < k ==> (e+1) + (k-(e+1)) = k]])
@@ -16864,7 +16699,7 @@ def transcendence_H_deg_HG_simpler : thm := keep "transcendence_H_deg_HG_simpler
   : ExceptT String IO thm).run
 #eval transcendence_H_deg_HG_simpler
 
-#eval phrase 867
+#eval phrase 853
 def transcendence_H_deg_overall : thm := keep "transcendence_H_deg_overall" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[e IN {e:num | e < k} ==> e < k]])
   let h1 ← def' ([[G:((1->num)->complex)->((1->num)->complex)]]) (← ExceptT.mk [[\p. poly_product complex_ring (P DELETE p) (\p. x_truncreverse QinC_ring (poly_deg complex_ring p) p)]])
@@ -16874,7 +16709,7 @@ def transcendence_H_deg_overall : thm := keep "transcendence_H_deg_overall" fun 
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   poly_deg complex_ring (
     poly_mul complex_ring (
       poly_pow complex_ring H k
@@ -16889,7 +16724,7 @@ def transcendence_H_deg_overall : thm := keep "transcendence_H_deg_overall" fun 
 ]])
    (intro THEN
     h1 THEN
-    have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e)))) = poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))]]) [transcendence_H_main] THEN
+    have' ([[poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e)))) = poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))]]) [transcendence_H_main] THEN
     have' ([[FINITE {e:num | e < k}]]) [FINITE_NUMSEG_LT] THEN
     subgoal ([[!e p. e IN {e | e < k} ==> p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))]]) THENL [intro THEN
       have' ([[ring_polynomial complex_ring (poly_pow complex_ring H (k - (e + 1)):(1->num)->complex)]]) [transcendence_H_poly, poly_pow_poly, poly_complex_if_poly_QinC] THEN
@@ -16897,25 +16732,25 @@ def transcendence_H_deg_overall : thm := keep "transcendence_H_deg_overall" fun 
       have' ([[FINITE(complex_root p)]]) [distinct_minpolys_finite_root] THEN
       have' ([[ring_polynomial complex_ring (scaled_pow_newton_rightside complex_ring I (complex_root p) e)]]) [poly_scaled_pow_newton_rightside, in_complex_ring] THEN
       qed [RING_POLYNOMIAL_MUL], pass] THEN
-    subgoal ([[!e p. e IN {e | e < k} ==> p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))]]) THENL [intro THEN
-      have' ([[ring_polynomial complex_ring (poly_const complex_ring ((complex_of_int(B(p:(1->num)->complex)))):(1->num)->complex)]]) [RING_POLYNOMIAL_CONST, in_complex_ring] THEN
+    subgoal ([[!e p. e IN {e | e < k} ==> p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))]]) THENL [intro THEN
+      have' ([[ring_polynomial complex_ring (poly_const complex_ring ((Cx(real_of_int(B(p:(1->num)->complex))))):(1->num)->complex)]]) [RING_POLYNOMIAL_CONST, in_complex_ring] THEN
       qed [RING_POLYNOMIAL_MUL], pass] THEN
-    have' ([[!e. e IN {e | e < k} ==> ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))]]) [poly_sum_poly] THEN
-    subgoal ([[!e. e IN {e | e < k} ==> poly_deg complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) <= t*k-1]]) THENL [intro THEN
+    have' ([[!e. e IN {e | e < k} ==> ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))]]) [poly_sum_poly] THEN
+    subgoal ([[!e. e IN {e | e < k} ==> poly_deg complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) <= t*k-1]]) THENL [intro THEN
       h2 THEN
-      have' ([[!p:(1->num)->complex. p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))]]) [] THEN
+      have' ([[!p:(1->num)->complex. p IN P ==> ring_polynomial complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))]]) [] THEN
       have' ([[!p:(1->num)->complex. p IN P ==> poly_deg complex_ring (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))) <= t*k-1]]) [transcendence_H_deg_HG_simpler] THEN
-      have' ([[!p:(1->num)->complex. p IN P ==> poly_deg complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) <= poly_deg complex_ring (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))]]) [deg_const_mul_le, in_complex_ring] THEN
-      have' ([[!p:(1->num)->complex. p IN P ==> poly_deg complex_ring (poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) <= t*k-1]]) [LE_TRANS] THEN
-      specialize [([[complex_ring]]), ([[\p:(1->num)->complex. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))]]), ([[t*k-1]]), ([[P:((1->num)->complex)->bool]])] poly_deg_sum_le THEN
+      have' ([[!p:(1->num)->complex. p IN P ==> poly_deg complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) <= poly_deg complex_ring (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))]]) [deg_const_mul_le, in_complex_ring] THEN
+      have' ([[!p:(1->num)->complex. p IN P ==> poly_deg complex_ring (poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) <= t*k-1]]) [LE_TRANS] THEN
+      specialize [([[complex_ring]]), ([[\p:(1->num)->complex. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))]]), ([[t*k-1]]), ([[P:((1->num)->complex)->bool]])] poly_deg_sum_le THEN
       qed [], pass] THEN
-    subgoal ([[poly_deg complex_ring (poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))) <= t*k-1]]) THENL [specialize_assuming [([[complex_ring]]), ([[\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((complex_of_int(B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))]]), ([[t*k-1]]), ([[{e:num | e < k}]])] poly_deg_sum_le THEN
+    subgoal ([[poly_deg complex_ring (poly_sum complex_ring {e | e < k} (\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))))) <= t*k-1]]) THENL [specialize_assuming [([[complex_ring]]), ([[\e. poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring ((Cx(real_of_int(B p))))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))]]), ([[t*k-1]]), ([[{e:num | e < k}]])] poly_deg_sum_le THEN
       qed [], pass] THEN
     qed [transcendence_H_main])
   : ExceptT String IO thm).run
 #eval transcendence_H_deg_overall
 
-#eval phrase 868
+#eval phrase 854
 def transcendence_vw_diff : thm := keep "transcendence_vw_diff" fun _ => (do
   let h10 ← num_linear_fact (← ExceptT.mk [[~(k <= n) ==> ~(k = 0)]])
   let h9 ← num_linear_fact (← ExceptT.mk [[~(a <= n) ==> n < a:num]])
@@ -16948,7 +16783,7 @@ def transcendence_vw_diff : thm := keep "transcendence_vw_diff" fun _ => (do
         have' ([[FACT(n-(n-a)) = FACT(a)]]) [] THEN
         qed [], pass] THEN
       have' ([[ring_sub complex_ring (ring_sum complex_ring (0..n) (\i. Cx (&(FACT (n - i) * binom (n,i))) * u i)) (ring_sum complex_ring (0..n - k) (\i. Cx (&(FACT (n - i) * binom (n,i))) * u i)) = ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e))]]) [] THEN
-      qed [ring_sub_complex],
+      qed [COMPLEX_RING_SUB],
       have' ([[wn = Cx(&0)]]) [] THEN
       h6 THEN
       specialize [([[complex_ring]]), ([[n:num]]), ([[\i. Cx (&(FACT (n - i) * binom (n,i))) * u i]])] ring_sum_numseg_le_reflect THEN
@@ -16969,7 +16804,7 @@ def transcendence_vw_diff : thm := keep "transcendence_vw_diff" fun _ => (do
         rw [BETA_THM] THEN
         proven_if ([[a <= n:num]]) [] THEN
         h9 THEN
-        simp [BINOM_LT, MULT_0, COMPLEX_MUL_LZERO, complex_ring_clauses], pass] THEN
+        simp [BINOM_LT, MULT_0, COMPLEX_MUL_LZERO, COMPLEX_RING_CLAUSES], pass] THEN
       have' ([[vn - wn = ring_sum complex_ring (0..k - 1) (\a. Cx (&(FACT a * binom (n,a))) * u (n - a))]]) [] THEN
       h10 THEN
       have' ([[{e:num | e < k} = (0..k-1)]]) [NUMSEG_LT] THEN
@@ -16977,13 +16812,13 @@ def transcendence_vw_diff : thm := keep "transcendence_vw_diff" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_vw_diff
 
-#eval phrase 869
+#eval phrase 855
 def transcendence_vw_diff_series : thm := keep "transcendence_vw_diff_series" fun _ => (do
   prove ([[
   !P B u v w.
   FINITE P ==>
   distinct_minpolys P ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n. w n = if k <= n then ring_sum complex_ring (0..n-k) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) else Cx(&0)) ==>
   poly_sub complex_ring (
@@ -17001,12 +16836,12 @@ def transcendence_vw_diff_series : thm := keep "transcendence_vw_diff_series" fu
     sufficesby eq_coeff THEN
     intro THEN
     rw [coeff_poly_sub, coeff_series_from_coeffs] THEN
-    rw [ring_sub_complex] THEN
+    rw [COMPLEX_RING_SUB] THEN
     qed [transcendence_vw_diff])
   : ExceptT String IO thm).run
 #eval transcendence_vw_diff_series
 
-#eval phrase 870
+#eval phrase 856
 def transcendence_vw_diff_series_H : thm := keep "transcendence_vw_diff_series_H" fun _ => (do
   prove ([[
   !P B t H u v w k.
@@ -17014,7 +16849,7 @@ def transcendence_vw_diff_series_H : thm := keep "transcendence_vw_diff_series_H
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n. w n = if k <= n then ring_sum complex_ring (0..n-k) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) else Cx(&0)) ==>
   poly_sub complex_ring (
@@ -17048,30 +16883,30 @@ def transcendence_vw_diff_series_H : thm := keep "transcendence_vw_diff_series_H
   : ExceptT String IO thm).run
 #eval transcendence_vw_diff_series_H
 
-#eval phrase 871
+#eval phrase 857
 def transcendence_uv_trivial : thm := keep "transcendence_uv_trivial" fun _ => (do
   prove ([[
   !P B u v.
   P = {} ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n. u n = Cx(&0) /\ v n = Cx(&0))
 ]])
    (REPEAT GEN_TAC THEN
     REPEAT DISCH_TAC THEN
-    have' ([[!d:num. u d = Cx(&0)]]) [RING_SUM_CLAUSES, complex_ring_clauses] THEN
+    have' ([[!d:num. u d = Cx(&0)]]) [RING_SUM_CLAUSES, COMPLEX_RING_CLAUSES] THEN
     subgoal ([[!d:num. ring_sum complex_ring (0..d) (\i. Cx (&(FACT (d - i) * binom (d,i))) * u i) = Cx(&0)]]) THENL [intro THEN
-      rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+      rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
       sufficesby RING_SUM_EQ_0 THEN
       intro THEN
       rw [BETA_THM] THEN
-      rw [complex_ring_clauses] THEN
+      rw [COMPLEX_RING_CLAUSES] THEN
       qed [COMPLEX_MUL_RZERO],
       qed []])
   : ExceptT String IO thm).run
 #eval transcendence_uv_trivial
 
-#eval phrase 872
+#eval phrase 858
 def transcendence_vw_match : thm := keep "transcendence_vw_match" fun _ => (do
   let h7 ← ar (← ExceptT.mk [[d-0 = d]])
   let h6 ← num_linear_fact (← ExceptT.mk [[k = 0 ==> k <= d]])
@@ -17086,7 +16921,7 @@ def transcendence_vw_match : thm := keep "transcendence_vw_match" fun _ => (do
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n k. k*t <= n ==>
          (!d. w d = if k <= d then ring_sum complex_ring (0..d-k) (\i. Cx(&(FACT(d-i) * binom(d,i))) * u i) else Cx(&0)) ==>
@@ -17111,14 +16946,14 @@ def transcendence_vw_match : thm := keep "transcendence_vw_match" fun _ => (do
     case' ([[P = {}:((1->num)->complex)->bool]]) THENL [have' ([[!n:num. u n = Cx(&0)]]) [transcendence_uv_trivial] THEN
       have' ([[!n:num. v n = Cx(&0)]]) [transcendence_uv_trivial] THEN
       subgoal ([[!d:num. (if k <= d then ring_sum complex_ring (0..d-k) (\i. Cx (&(FACT (d - i) * binom (d,i))) * u i) else Cx(&0)) = Cx(&0)]]) THENL [intro THEN
-        rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+        rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
         rw [COND_ELIM_THM] THEN
         sufficesby (← prove ([[x:A = y ==> (if p then x else y) = y]])
      (qed [])) THEN
         sufficesby RING_SUM_EQ_0 THEN
         intro THEN
         rw [BETA_THM] THEN
-        rw [complex_ring_clauses] THEN
+        rw [COMPLEX_RING_CLAUSES] THEN
         qed [COMPLEX_MUL_RZERO], pass] THEN
       have' ([[!n:num. w n = Cx(&0)]]) [] THEN
       have' ([[v = w:num->complex]]) [FUN_EQ_THM] THEN
@@ -17138,7 +16973,7 @@ def transcendence_vw_match : thm := keep "transcendence_vw_match" fun _ => (do
       ([[w:num->complex]]),
       ([[k:num]])] transcendence_vw_diff_series_H THEN
     specialize [([[complex_ring]]), ([[poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)]]), ([[poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w)]]), ([[n:num]])] coeff_poly_sub THEN
-    have' ([[(coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v))) - (coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w))) = coeff n (poly_sub complex_ring (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w)))]]) [ring_sub_complex] THEN
+    have' ([[(coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v))) - (coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w))) = coeff n (poly_sub complex_ring (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w)))]]) [COMPLEX_RING_SUB] THEN
     specialize [([[P:((1->num)->complex)->bool]]),
       ([[B:((1->num)->complex)->int]]),
       ([[t:num]]),
@@ -17151,7 +16986,7 @@ def transcendence_vw_match : thm := keep "transcendence_vw_match" fun _ => (do
       ([[H:(1->num)->complex]]),
       ([[u:num->complex]]),
       ([[k:num]])] transcendence_Htimes_poly THEN
-    case' ([[coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e))))) = ring_0 complex_ring]]) THENL [have' ([[coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e))))) = Cx(&0)]]) [complex_ring_clauses] THEN
+    case' ([[coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e))))) = ring_0 complex_ring]]) THENL [have' ([[coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e))))) = Cx(&0)]]) [COMPLEX_RING_CLAUSES] THEN
       have' ([[coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) - coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs w)) = Cx(&0)]]) [] THEN
       qed [h3],
       specialize [([[complex_ring]]), ([[poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs (\n. ring_sum complex_ring {e | e < k} (\e. Cx (&(FACT e * binom (n,e))) * u (n - e))))]]), ([[t*k-1]]), ([[n:num]])] coeff_deg_le THEN
@@ -17176,7 +17011,7 @@ def transcendence_vw_match : thm := keep "transcendence_vw_match" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_vw_match
 
-#eval phrase 873
+#eval phrase 859
 def transcendence_Hw_denom : thm := keep "transcendence_Hw_denom" fun _ => (do
   let h2 ← complex_field_fact (← ExceptT.mk [[D pow (n - k) = D pow (n - s - k) * D pow s ==> D pow (n - k) / Cx (&(FACT k)) * coeff s (poly_pow complex_ring H k) * w (n - s) = (D pow s * coeff s (poly_pow complex_ring H k)) * (D pow ((n-s)-k) * w(n-s)) / Cx(&(FACT k))]])
   let h1 ← num_linear_fact (← ExceptT.mk [[s <= n ==> k <= n-s:num ==> n-k = (n-s-k)+s]])
@@ -17188,7 +17023,7 @@ def transcendence_Hw_denom : thm := keep "transcendence_Hw_denom" fun _ => (do
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n k. k*t <= n ==>
          (!d. w d = if k <= d then ring_sum complex_ring (0..d-k) (\i. Cx(&(FACT(d-i) * binom(d,i))) * u i) else Cx(&0)) ==>
          (D pow (n-k) / Cx(&(FACT k))) *
@@ -17207,10 +17042,10 @@ def transcendence_Hw_denom : thm := keep "transcendence_Hw_denom" fun _ => (do
     have' ([[FINITE (0..n)]]) [FINITE_NUMSEG] THEN
     have' ([[!i. i IN 0..n ==> ring_mul complex_ring (coeff i (poly_pow complex_ring H k)) (coeff (n - i) (series_from_coeffs w)) IN ring_carrier complex_ring]]) [in_complex_ring] THEN
     specialize [([[complex_ring]]), ([[(\a. ring_mul complex_ring (coeff a (poly_pow complex_ring H k)) (coeff (n - a) (series_from_coeffs w)))]]), ([[D pow (n-k) / Cx(&(FACT k))]]), ([[0..n]])] (← HolLight.GSYM RING_SUM_LMUL) THEN
-    have' ([[(D pow (n - k) / Cx(&(FACT k))) * ring_sum complex_ring (0..n) (\a. ring_mul complex_ring (coeff a (poly_pow complex_ring H k)) (coeff (n - a) (series_from_coeffs w))) = ring_sum complex_ring (0..n) (\x. ring_mul complex_ring (D pow (n - k) / Cx(&(FACT k))) (ring_mul complex_ring (coeff x (poly_pow complex_ring H k)) (coeff (n - x) (series_from_coeffs w))))]]) [complex_ring_clauses] THEN
+    have' ([[(D pow (n - k) / Cx(&(FACT k))) * ring_sum complex_ring (0..n) (\a. ring_mul complex_ring (coeff a (poly_pow complex_ring H k)) (coeff (n - a) (series_from_coeffs w))) = ring_sum complex_ring (0..n) (\x. ring_mul complex_ring (D pow (n - k) / Cx(&(FACT k))) (ring_mul complex_ring (coeff x (poly_pow complex_ring H k)) (coeff (n - x) (series_from_coeffs w))))]]) [COMPLEX_RING_CLAUSES] THEN
     subgoal ([[ring_sum complex_ring (0..n) (\x. ring_mul complex_ring (D pow (n - k) / Cx(&(FACT k))) (ring_mul complex_ring (coeff x (poly_pow complex_ring H k)) (coeff (n - x) (series_from_coeffs w)))) IN ZinC]]) THENL [rw [(← HolLight.GSYM ZinC_ring_clauses), (← HolLight.GSYM subring_complex_empty), coeff_series_from_coeffs] THEN
       sufficesby ring_sum_in_subring THEN
-      rw [complex_ring_clauses, subring_complex_empty] THEN
+      rw [COMPLEX_RING_CLAUSES, subring_complex_empty] THEN
       intro THEN
       rw [BETA_THM] THEN
       have' ([[s <= n:num]]) [IN_NUMSEG_0] THEN
@@ -17236,7 +17071,7 @@ def transcendence_Hw_denom : thm := keep "transcendence_Hw_denom" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_Hw_denom
 
-#eval phrase 874
+#eval phrase 860
 def transcendence_Hv_denom : thm := keep "transcendence_Hv_denom" fun _ => (do
   let h1 ← def' ([[w:num->complex]]) (← ExceptT.mk [[\n. if k <= n then ring_sum complex_ring (0..n-k) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) else Cx(&0)]])
   prove ([[
@@ -17247,7 +17082,7 @@ def transcendence_Hv_denom : thm := keep "transcendence_Hv_denom" fun _ => (do
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n k. k*t <= n ==>
          (D pow (n-k) / Cx(&(FACT k))) *
@@ -17282,7 +17117,7 @@ def transcendence_Hv_denom : thm := keep "transcendence_Hv_denom" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_Hv_denom
 
-#eval phrase 875
+#eval phrase 861
 def transcendence_u_tail : thm := keep "transcendence_u_tail" fun _ => (do
   let h1 ← real_linear_fact (← ExceptT.mk [[&0 <= &(FACT n):real]])
   prove ([[
@@ -17290,8 +17125,8 @@ def transcendence_u_tail : thm := keep "transcendence_u_tail" fun _ => (do
   FINITE P ==>
   distinct_minpolys P ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   !n.
   norm(vsum(0..n) (\i. u i / Cx(&(FACT i))))
   <= (sum P (\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p))) * exp A * A pow (n + 1) / &(FACT n)
@@ -17324,52 +17159,52 @@ def transcendence_u_tail : thm := keep "transcendence_u_tail" fun _ => (do
       sufficesby VSUM_EQ THEN
       intro THEN
       rw [BETA_THM] THEN
-      simp [vsum_ring_sum_complex] THEN
-      rw [complex_div, (← HolLight.GSYM complex_ring_clauses)] THEN
+      simp [(← HolLight.GSYM COMPLEX_RING_SUM)] THEN
+      rw [complex_div, (← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
       sufficesby (← HolLight.GSYM RING_SUM_RMUL) THEN
       qed [in_complex_ring], pass] THEN
     subgoal ([[!p. p IN P ==> norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. complex_root_powersums p i / Cx(&(FACT i)))) <= &(poly_deg complex_ring p) * exp A * A pow (n+1) / &(FACT n)]]) THENL [intro THEN
       have' ([[FINITE(complex_root p)]]) [distinct_minpolys_finite_root] THEN
-      simp [vsum_ring_sum_complex] THEN
-      rw [(← HolLight.GSYM ring_sub_complex)] THEN
+      simp [(← HolLight.GSYM COMPLEX_RING_SUM)] THEN
+      rw [(← HolLight.GSYM COMPLEX_RING_SUB)] THEN
       simp [(← HolLight.GSYM ring_sum_sub), in_complex_ring] THEN
-      simp [(← HolLight.GSYM vsum_ring_sum_complex)] THEN
+      simp [COMPLEX_RING_SUM] THEN
       specialize [([[complex_root p]])] VSUM_NORM_LE THEN
       have' ([[!z. z IN complex_root p ==> norm(cexp z - vsum (0..n) (\i. z pow i / Cx (&(FACT i)))) <= exp A * A pow (n + 1) / &(FACT n)]]) [IN] THEN
       have' ([[norm(vsum (complex_root p) (\z. cexp z - vsum (0..n) (\i. z pow i / Cx (&(FACT i))))) <= sum (complex_root p) (\z. exp A * A pow (n + 1) / &(FACT n))]]) [VSUM_NORM_LE] THEN
       specialize [([[exp A * A pow (n + 1) / &(FACT n)]]), ([[complex_root p]])] SUM_CONST THEN
       have' ([[CARD(complex_root p) = poly_deg complex_ring p]]) [distinct_minpolys_card_root] THEN
-      rw [ring_sub_complex] THEN
+      rw [COMPLEX_RING_SUB] THEN
       qed [], pass] THEN
-    subgoal ([[!p. p IN P ==> norm (complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int(B p) * complex_root_powersums p i) / Cx (&(FACT i)))) <= abs(real_of_int(B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n)]]) THENL [intro THEN
-      subgoal ([[vsum (0..n) (\i. (complex_of_int(B p) * complex_root_powersums p i) / Cx (&(FACT i))) = vsum (0..n) (\i. complex_of_int(B p) * (complex_root_powersums p i / Cx (&(FACT i))))]]) THENL [sufficesby VSUM_EQ THEN
+    subgoal ([[!p. p IN P ==> norm (Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int(B p)) * complex_root_powersums p i) / Cx (&(FACT i)))) <= abs(real_of_int(B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n)]]) THENL [intro THEN
+      subgoal ([[vsum (0..n) (\i. (Cx(real_of_int(B p)) * complex_root_powersums p i) / Cx (&(FACT i))) = vsum (0..n) (\i. Cx(real_of_int(B p)) * (complex_root_powersums p i / Cx (&(FACT i))))]]) THENL [sufficesby VSUM_EQ THEN
         rw [complex_div] THEN
         qed [COMPLEX_MUL_ASSOC], pass] THEN
-      subgoal ([[vsum (0..n) (\i. complex_of_int(B p) * (complex_root_powersums p i / Cx (&(FACT i)))) = complex_of_int(B p) * vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i))))]]) THENL [specialize [([[complex_of_int(B(p:(1->num)->complex))]]), ([[\i. complex_root_powersums p i / Cx (&(FACT i))]])] VSUM_COMPLEX_LMUL THEN
+      subgoal ([[vsum (0..n) (\i. Cx(real_of_int(B p)) * (complex_root_powersums p i / Cx (&(FACT i)))) = Cx(real_of_int(B p)) * vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i))))]]) THENL [specialize [([[Cx(real_of_int(B(p:(1->num)->complex)))]]), ([[\i. complex_root_powersums p i / Cx (&(FACT i))]])] VSUM_COMPLEX_LMUL THEN
         qed [FINITE_NUMSEG], pass] THEN
-      have' ([[vsum (0..n) (\i. (complex_of_int(B p) * complex_root_powersums p i) / Cx (&(FACT i))) = complex_of_int(B p) * vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i))))]]) [] THEN
-      have' ([[complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int(B p) * complex_root_powersums p i) / Cx (&(FACT i))) = complex_of_int(B p) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))]]) [COMPLEX_SUB_LDISTRIB] THEN
-      have' ([[norm(complex_of_int(B p) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))) = norm(complex_of_int(B p)) * norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))]]) [COMPLEX_NORM_MUL] THEN
-      have' ([[norm(complex_of_int(B(p:(1->num)->complex))) = abs(real_of_int(B p))]]) [complex_of_int, COMPLEX_NORM_CX] THEN
-      have' ([[norm(complex_of_int(B p) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))) = abs(real_of_int(B p)) * norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))]]) [] THEN
+      have' ([[vsum (0..n) (\i. (Cx(real_of_int(B p)) * complex_root_powersums p i) / Cx (&(FACT i))) = Cx(real_of_int(B p)) * vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i))))]]) [] THEN
+      have' ([[Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int(B p)) * complex_root_powersums p i) / Cx (&(FACT i))) = Cx(real_of_int(B p)) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))]]) [COMPLEX_SUB_LDISTRIB] THEN
+      have' ([[norm(Cx(real_of_int(B p)) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))) = norm(Cx(real_of_int(B p))) * norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))]]) [COMPLEX_NORM_MUL] THEN
+      have' ([[norm(Cx(real_of_int(B(p:(1->num)->complex)))) = abs(real_of_int(B p))]]) [COMPLEX_NORM_CX] THEN
+      have' ([[norm(Cx(real_of_int(B p)) * (ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))) = abs(real_of_int(B p)) * norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i)))))]]) [] THEN
       have' ([[abs(real_of_int(B p)) * norm(ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_root_powersums p i / Cx (&(FACT i))))) <= abs(real_of_int(B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n)]]) [REAL_ABS_POS, REAL_LE_LMUL] THEN
       qed [REAL_LE_TRANS], pass] THEN
-    subgoal ([[norm(vsum P (\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))))) <= sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n))]]) THENL [specialize [([[P:((1->num)->complex)->bool]]), ([[\p. (complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))))]]), ([[\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n)]])] VSUM_NORM_LE THEN
-      specialize [([[\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp]]), ([[\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i)))]]), ([[P:((1->num)->complex)->bool]])] VSUM_SUB THEN
-      have' ([[vsum P (\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i)))) = vsum P (\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp) - vsum P (\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))))]]) [] THEN
-      have' ([[vsum P (\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i)))) = -- vsum P (\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))))]]) [vsum_ring_sum_complex, COMPLEX_SUB_LZERO] THEN
-      have' ([[norm(vsum P (\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))))) = norm(vsum P (\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i)))))]]) [NORM_NEG] THEN
+    subgoal ([[norm(vsum P (\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))))) <= sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n))]]) THENL [specialize [([[P:((1->num)->complex)->bool]]), ([[\p. (Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))))]]), ([[\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n)]])] VSUM_NORM_LE THEN
+      specialize [([[\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp]]), ([[\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i)))]]), ([[P:((1->num)->complex)->bool]])] VSUM_SUB THEN
+      have' ([[vsum P (\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i)))) = vsum P (\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp) - vsum P (\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))))]]) [] THEN
+      have' ([[vsum P (\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i)))) = -- vsum P (\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))))]]) [(← HolLight.GSYM COMPLEX_RING_SUM), COMPLEX_SUB_LZERO] THEN
+      have' ([[norm(vsum P (\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp - vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))))) = norm(vsum P (\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i)))))]]) [NORM_NEG] THEN
       qed [], pass] THEN
-    subgoal ([[vsum P (\p. vsum (0..n) (\i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i)))) = vsum(0..n) (\i. u i / Cx(&(FACT i)))]]) THENL [have' ([[FINITE (0..n)]]) [FINITE_NUMSEG] THEN
-      specialize [([[\p i. (complex_of_int (B p) * complex_root_powersums p i) / Cx (&(FACT i))]]), ([[P:((1->num)->complex)->bool]]), ([[0..n]])] VSUM_SWAP THEN
+    subgoal ([[vsum P (\p. vsum (0..n) (\i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i)))) = vsum(0..n) (\i. u i / Cx(&(FACT i)))]]) THENL [have' ([[FINITE (0..n)]]) [FINITE_NUMSEG] THEN
+      specialize [([[\p i. (Cx(real_of_int (B p)) * complex_root_powersums p i) / Cx (&(FACT i))]]), ([[P:((1->num)->complex)->bool]]), ([[0..n]])] VSUM_SWAP THEN
       simp [] THEN
       sufficesby VSUM_EQ THEN
       intro THEN
       rw [BETA_THM] THEN
-      simp [vsum_ring_sum_complex] THEN
+      simp [(← HolLight.GSYM COMPLEX_RING_SUM)] THEN
       rw [complex_div] THEN
-      specialize_assuming [([[complex_ring]]), ([[\p. ring_mul complex_ring (complex_of_int (B p)) (complex_root_powersums p x)]]), ([[inv(Cx(&(FACT x)))]]), ([[P:((1->num)->complex)->bool]])] RING_SUM_RMUL THEN
-      simp [(← HolLight.GSYM complex_ring_clauses)] THEN
+      specialize_assuming [([[complex_ring]]), ([[\p. ring_mul complex_ring (Cx(real_of_int (B p))) (complex_root_powersums p x)]]), ([[inv(Cx(&(FACT x)))]]), ([[P:((1->num)->complex)->bool]])] RING_SUM_RMUL THEN
+      simp [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
       qed [in_complex_ring], pass] THEN
     have' ([[norm(vsum(0..n) (\i. u i / Cx(&(FACT i)))) <= sum P (\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n))]]) [] THEN
     subgoal ([[sum P (\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p) * exp A * A pow (n + 1) / &(FACT n)) = sum P (\p:(1->num)->complex. (abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A * A pow (n + 1) / &(FACT n))]]) THENL [rw [REAL_DIV] THEN
@@ -17381,17 +17216,17 @@ def transcendence_u_tail : thm := keep "transcendence_u_tail" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_u_tail
 
-#eval phrase 876
+#eval phrase 862
 def transcendence_v_bound : thm := keep "transcendence_v_bound" fun _ => (do
   let h2 ← real_field_fact (← ExceptT.mk [[~(&(FACT n) = &0:real) ==> &(FACT n) * sum P (\p. abs (real_of_int (B(p:(1->num)->complex))) * &(poly_deg complex_ring p)) * exp A * A pow (n + 1) / &(FACT n) = sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A * A pow (n + 1)]])
-  let h1 ← complex_field_fact (← ExceptT.mk [[~(Cx(&(FACT x)) = Cx(&0)) ==> ~(Cx(&(FACT(n-x))) = Cx(&0)) ==> (Cx (&(FACT (n - x))) * Cx (&(FACT n)) / (Cx (&(FACT (n - x))) * Cx (&(FACT x)))) * complex_of_int (B x') * complex_root_powersums x' x = Cx (&(FACT n)) * (complex_of_int (B x') * complex_root_powersums x' x) / Cx (&(FACT x))]])
+  let h1 ← complex_field_fact (← ExceptT.mk [[~(Cx(&(FACT x)) = Cx(&0)) ==> ~(Cx(&(FACT(n-x))) = Cx(&0)) ==> (Cx (&(FACT (n - x))) * Cx (&(FACT n)) / (Cx (&(FACT (n - x))) * Cx (&(FACT x)))) * Cx(real_of_int (B x')) * complex_root_powersums x' x = Cx (&(FACT n)) * (Cx(real_of_int (B x')) * complex_root_powersums x' x) / Cx (&(FACT x))]])
   prove ([[
   !P A B u.
   FINITE P ==>
   distinct_minpolys P ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   !n vn.
   vn = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) ==>
   norm vn
@@ -17399,7 +17234,7 @@ def transcendence_v_bound : thm := keep "transcendence_v_bound" fun _ => (do
 ]])
    (intro THEN
     subgoal ([[ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i) = Cx(&(FACT n)) * vsum(0..n) (\i. u i / Cx(&(FACT i)))]]) THENL [have' ([[FINITE(0..n)]]) [FINITE_NUMSEG] THEN
-      simp [(← HolLight.GSYM vsum_ring_sum_complex)] THEN
+      simp [COMPLEX_RING_SUM] THEN
       simp [(← HolLight.GSYM VSUM_COMPLEX_LMUL)] THEN
       sufficesby VSUM_EQ THEN
       intro THEN
@@ -17438,7 +17273,7 @@ def transcendence_v_bound : thm := keep "transcendence_v_bound" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_v_bound
 
-#eval phrase 877
+#eval phrase 863
 def transcendence_p_bound : thm := keep "transcendence_p_bound" fun _ => (do
   prove ([[
   !P p A.
@@ -17466,7 +17301,7 @@ def transcendence_p_bound : thm := keep "transcendence_p_bound" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_p_bound
 
-#eval phrase 878
+#eval phrase 864
 def transcendence_H_bound : thm := keep "transcendence_H_bound" fun _ => (do
   prove ([[
   !P A t H.
@@ -17485,7 +17320,7 @@ def transcendence_H_bound : thm := keep "transcendence_H_bound" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_H_bound
 
-#eval phrase 879
+#eval phrase 865
 def transcendence_Hk_bound : thm := keep "transcendence_Hk_bound" fun _ => (do
   prove ([[
   !P A t H k.
@@ -17502,7 +17337,7 @@ def transcendence_Hk_bound : thm := keep "transcendence_Hk_bound" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_Hk_bound
 
-#eval phrase 880
+#eval phrase 866
 def transcendence_A_nonnegative : thm := keep "transcendence_A_nonnegative" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[~(complex_root p = {}) ==> ?z:complex. z IN complex_root p]])
   let h1 ← set_fact (← ExceptT.mk [[~(P = {}) ==> ?p:(1->num)->complex. p IN P]])
@@ -17529,7 +17364,7 @@ def transcendence_A_nonnegative : thm := keep "transcendence_A_nonnegative" fun 
   : ExceptT String IO thm).run
 #eval transcendence_A_nonnegative
 
-#eval phrase 881
+#eval phrase 867
 def transcendence_Hv_bound : thm := keep "transcendence_Hv_bound" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[0 <= x]])
   let h2 ← real_linear_fact (← ExceptT.mk [[(A pow x * &(binom (k * t,x))) * sum P (\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A * A pow (n - x + 1) = &(binom (k * t,x)) * sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A * (A pow x * A pow (n-x+1))]])
@@ -17538,11 +17373,11 @@ def transcendence_Hv_bound : thm := keep "transcendence_Hv_bound" fun _ => (do
   !P A B t H u v.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n k. norm (
            coeff n (
@@ -17556,7 +17391,7 @@ def transcendence_Hv_bound : thm := keep "transcendence_Hv_bound" fun _ => (do
   )
 ]])
    (intro THEN
-    rw [coeff_poly_mul_oneindex, complex_ring_clauses, coeff_series_from_coeffs] THEN
+    rw [coeff_poly_mul_oneindex, COMPLEX_RING_CLAUSES, coeff_series_from_coeffs] THEN
     specialize [([[P:((1->num)->complex)->bool]]), ([[A:real]]), ([[t:num]])] transcendence_Hk_bound THEN
     have' ([[!d. norm(coeff d (poly_pow complex_ring H k)) <= A pow d * &(binom(k*t,d))]]) [] THEN
     specialize [([[P:((1->num)->complex)->bool]]), ([[A:real]]), ([[B:((1->num)->complex)->int]]), ([[u:num->complex]])] transcendence_v_bound THEN
@@ -17591,25 +17426,25 @@ def transcendence_Hv_bound : thm := keep "transcendence_Hv_bound" fun _ => (do
         simp [SUM_CLAUSES] THEN
         CONV_TAC rf], pass] THEN
     have' ([[sum (0..n) (\d. &(binom (k * t,d))) * sum P (\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A * A pow (n + 1) <= &2 pow (k * t) * sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A * A pow (n + 1)]]) [REAL_LE_RMUL] THEN
-    have' ([[norm (ring_sum complex_ring (0..n) (\a. coeff a (poly_pow complex_ring H k) * v (n - a))) = norm (vsum (0..n) (\a. coeff a (poly_pow complex_ring H k) * v (n - a)))]]) [vsum_ring_sum_complex] THEN
+    have' ([[norm (ring_sum complex_ring (0..n) (\a. coeff a (poly_pow complex_ring H k) * v (n - a))) = norm (vsum (0..n) (\a. coeff a (poly_pow complex_ring H k) * v (n - a)))]]) [(← HolLight.GSYM COMPLEX_RING_SUM)] THEN
     qed [REAL_LE_TRANS])
   : ExceptT String IO thm).run
 #eval transcendence_Hv_bound
 
-#eval phrase 882
+#eval phrase 868
 def transcendence_Hv_zero : thm := keep "transcendence_Hv_zero" fun _ => (do
   prove ([[
   !P A D B t H u v.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   D IN ZinC ==>
   ~(D = Cx(&0)) ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n k. k*t <= n ==>
          norm(D pow (n-k) / Cx(&(FACT k))) * &2 pow (k * t) * sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A * A pow (n + 1) < &1 ==>
@@ -17640,12 +17475,12 @@ def transcendence_Hv_zero : thm := keep "transcendence_Hv_zero" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_Hv_zero
 
-#eval phrase 883
+#eval phrase 869
 def transcendence_Hv_zero_Ptrivial : thm := keep "transcendence_Hv_zero_Ptrivial" fun _ => (do
   prove ([[
   !P H u v.
   P = {} ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   (!n k. coeff n (
            poly_mul complex_ring (
@@ -17658,9 +17493,9 @@ def transcendence_Hv_zero_Ptrivial : thm := keep "transcendence_Hv_zero_Ptrivial
 ]])
    (intro THEN
     have' ([[!n:num. v n = Cx(&0)]]) [transcendence_uv_trivial] THEN
-    have' ([[!n:num. v n = ring_0 complex_ring]]) [complex_ring_clauses] THEN
+    have' ([[!n:num. v n = ring_0 complex_ring]]) [COMPLEX_RING_CLAUSES] THEN
     rw [coeff_poly_mul_oneindex, coeff_series_from_coeffs] THEN
-    rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+    rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
     sufficesby RING_SUM_EQ_0 THEN
     intro THEN
     rw [BETA_THM] THEN
@@ -17675,7 +17510,7 @@ def transcendence_Hv_zero_Ptrivial : thm := keep "transcendence_Hv_zero_Ptrivial
 /- and the first max(1,...) is a proxy for that^(1/k) -/
 /- and 10 is a proxy for something like 1+1/k -/
 
-#eval phrase 884
+#eval phrase 870
 def transcendence_Hv_zero_k0 : thm := keep "transcendence_Hv_zero_k0" fun _ => (do
   let h14 ← real_field_fact (← ExceptT.mk [[&0 < &(FACT k) ==> &(FACT k) * inv(&(FACT k)) = &1]])
   let h13 ← real_field_fact (← ExceptT.mk [[&0 < &(FACT k) ==> (norm(D:complex) pow (n - k) * &2 pow (k * t) * (sum P (\p:(1->num)->complex. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A) * A pow (n + 1)) * inv(&(FACT k)) = norm D pow (n - k) / abs (&(FACT k)) * &2 pow (k * t) * sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A * A pow (n + 1)]])
@@ -17695,14 +17530,14 @@ def transcendence_Hv_zero_k0 : thm := keep "transcendence_Hv_zero_k0" fun _ => (
   !P A D B t H u v k0.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   D IN ZinC ==>
   ~(D = Cx(&0)) ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   1 <= k0 ==>
   norm(D) pow (10*t) * &2 pow t * max (&1) (sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A) * (max (&1) A) pow (10*t+1) * exp(&1) < &k0 ==>
@@ -17797,7 +17632,7 @@ def transcendence_Hv_zero_k0 : thm := keep "transcendence_Hv_zero_k0" fun _ => (
   : ExceptT String IO thm).run
 #eval transcendence_Hv_zero_k0
 
-#eval phrase 885
+#eval phrase 871
 def transcendence_Hv_induction : thm := keep "transcendence_Hv_induction" fun _ => (do
   let h11 ← ar (← ExceptT.mk [[0 <= n]])
   let h10 ← num_linear_fact (← ExceptT.mk [[a <= t ==> k*t <= (10*k)*t-1*t ==> k*t <= (10*k*t+j+1)-a]])
@@ -17814,14 +17649,14 @@ def transcendence_Hv_induction : thm := keep "transcendence_Hv_induction" fun _ 
   !P A D B t H u v k0.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   D IN ZinC ==>
   ~(D = Cx(&0)) ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   1 <= k0 ==>
   norm(D) pow (10*t) * &2 pow t * max (&1) (sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A) * (max (&1) A) pow (10*t+1) * exp(&1) < &k0 ==>
@@ -17867,14 +17702,14 @@ def transcendence_Hv_induction : thm := keep "transcendence_Hv_induction" fun _ 
     subgoal ([[ring_sum complex_ring (0..n) (\i. ring_mul complex_ring (coeff i H) (coeff (n-i) (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)))) = ring_sum complex_ring (0..n) (\i. if i = 0 then (coeff 0 H) * (coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v))) else ring_0 complex_ring)]]) THENL [sufficesby RING_SUM_EQ THEN
       intro THEN
       rw [BETA_THM] THEN
-      proven_if ([[a = 0]]) [h7, complex_ring_clauses] THEN
+      proven_if ([[a = 0]]) [h7, COMPLEX_RING_CLAUSES] THEN
       case' ([[a <= t:num]]) THENL [h8 THEN
         have' ([[n-a <= 10*k*t+j]]) [] THEN
         h9 THEN
         have' ([[k*t <= (10*k)*t-1*t]]) [LE_MULT2, LE_REFL, RIGHT_SUB_DISTRIB] THEN
         h10 THEN
         have' ([[k*t <= n-a:num]]) [] THEN
-        have' ([[coeff (n-a) (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) = ring_0 complex_ring]]) [complex_ring_clauses] THEN
+        have' ([[coeff (n-a) (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) = ring_0 complex_ring]]) [COMPLEX_RING_CLAUSES] THEN
         qed [RING_MUL_RZERO, in_complex_ring], pass] THEN
       have' ([[H = x_truncreverse complex_ring t (poly_product QinC_ring P I)]]) [x_truncreverse_subring, subring_complex_QinC] THEN
       have' ([[poly_deg complex_ring (H:(1->num)->complex) <= t]]) [deg_x_truncreverse_le, series_complex] THEN
@@ -17892,21 +17727,21 @@ def transcendence_Hv_induction : thm := keep "transcendence_Hv_induction" fun _ 
   : ExceptT String IO thm).run
 #eval transcendence_Hv_induction
 
-#eval phrase 886
+#eval phrase 872
 def transcendence_Hv_noupperbound : thm := keep "transcendence_Hv_noupperbound" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[n <= 10*k*t+n]])
   prove ([[
   !P A D B t H u v k0.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   D IN ZinC ==>
   ~(D = Cx(&0)) ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   1 <= k0 ==>
   norm(D) pow (10*t) * &2 pow t * max (&1) (sum P (\p. abs (real_of_int (B p)) * &(poly_deg complex_ring p)) * exp A) * (max (&1) A) pow (10*t+1) * exp(&1) < &k0 ==>
@@ -17933,20 +17768,20 @@ def transcendence_Hv_noupperbound : thm := keep "transcendence_Hv_noupperbound" 
   : ExceptT String IO thm).run
 #eval transcendence_Hv_noupperbound
 
-#eval phrase 887
+#eval phrase 873
 def transcendence_Hv_kexists : thm := keep "transcendence_Hv_kexists" fun _ => (do
   prove ([[
   !P A D B t H u v.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!p z. p IN P ==> complex_root p z ==> norm z <= A) ==>
   D IN ZinC ==>
   ~(D = Cx(&0)) ==>
   (!p i. p IN P ==> D pow i * (coeff (poly_deg complex_ring p - i) p) IN ZinC) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   ?k. 1 <= k /\
   !n. k*t <= n ==>
@@ -17981,7 +17816,7 @@ def transcendence_Hv_kexists : thm := keep "transcendence_Hv_kexists" fun _ => (
 
 /- could use sup in proof but sum seems a bit easier -/
 
-#eval phrase 888
+#eval phrase 874
 def transcendence_Hv_kexists_v2 : thm := keep "transcendence_Hv_kexists_v2" fun _ => (do
   let h4 ← real_linear_fact (← ExceptT.mk [[&0 <= sum(P DELETE p) (\p. sum(complex_root p) norm) ==> sum(P DELETE p) (\p. sum(complex_root p) norm) = sum P (\p. sum(complex_root p) norm) - sum(complex_root p) norm ==> sum(complex_root p) norm <= sum P (\p. sum(complex_root p) norm)]])
   let h3 ← real_linear_fact (← ExceptT.mk [[&0 <= sum (complex_root p DELETE z) norm ==> sum (complex_root p DELETE z) norm = sum (complex_root p) norm - norm z ==> norm z <= sum(complex_root p) norm]])
@@ -17991,10 +17826,10 @@ def transcendence_Hv_kexists_v2 : thm := keep "transcendence_Hv_kexists_v2" fun 
   !P B t H u v.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   ?k. 1 <= k /\
   !n. k*t <= n ==>
@@ -18035,16 +17870,16 @@ def transcendence_Hv_kexists_v2 : thm := keep "transcendence_Hv_kexists_v2" fun 
   : ExceptT String IO thm).run
 #eval transcendence_Hv_kexists_v2
 
-#eval phrase 889
+#eval phrase 875
 def transcendence_Hv_poly : thm := keep "transcendence_Hv_poly" fun _ => (do
   prove ([[
   !P B t H u v.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)) ==>
   ?k. 1 <= k /\
   ring_polynomial complex_ring (
@@ -18064,11 +17899,11 @@ def transcendence_Hv_poly : thm := keep "transcendence_Hv_poly" fun _ => (do
       ([[v:num->complex]])] transcendence_Hv_kexists_v2 THEN
     choose ([[k:num]]) ([[1 <= k /\ !n. k*t <= n ==> coeff n (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs v)) = Cx(&0)]]) [] THEN
     witness ([[k:num]]) THEN
-    qed [poly_if_coeff, series_complex, complex_ring_clauses])
+    qed [poly_if_coeff, series_complex, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval transcendence_Hv_poly
 
-#eval phrase 890
+#eval phrase 876
 def transcendence_uv_diffeq : thm := keep "transcendence_uv_diffeq" fun _ => (do
   let h25 ← ar (← ExceptT.mk [[d <= d:num]])
   let h24 ← num_linear_fact (← ExceptT.mk [[x <= d ==> ~(x = d) ==> x < d:num]])
@@ -18121,7 +17956,7 @@ def transcendence_uv_diffeq : thm := keep "transcendence_uv_diffeq" fun _ => (do
    (intro THEN
     sufficesby eq_coeff THEN
     intro THEN
-    rw [coeff_series_from_coeffs, coeff_poly_sub, complex_coeff_x_pow_times, coeff_x_derivative, complex_ring_clauses, ring_sub_complex, ring_of_num_complex, complex_of_num] THEN
+    rw [coeff_series_from_coeffs, coeff_poly_sub, complex_coeff_x_pow_times, coeff_x_derivative, COMPLEX_RING_CLAUSES, COMPLEX_RING_SUB, COMPLEX_RING_OF_NUM] THEN
     simp [] THEN
     case' ([[d = 0]]) THENL [simp [h1, h2] THEN
       rw [RING_SUM_CLAUSES_NUMSEG, in_complex_ring, binom, h3, FACT, h4] THEN
@@ -18129,14 +17964,14 @@ def transcendence_uv_diffeq : thm := keep "transcendence_uv_diffeq" fun _ => (do
     h5 THEN
     case' ([[d = 1]]) THENL [simp [h6, h7] THEN
       rw [RING_SUM_CLAUSES_NUMSEG, h8, in_complex_ring, h9] THEN
-      rw [h10, h11, h12, h13, FACT, binom, h14, h15, complex_ring_clauses, fact_1] THEN
+      rw [h10, h11, h12, h13, FACT, binom, h14, h15, COMPLEX_RING_CLAUSES, fact_1] THEN
       CONV_TAC cf, pass] THEN
     h16 THEN
     h17 THEN
     h18 THEN
     specialize [([[complex_ring]]), ([[d-1]]), ([[d:num]])] ring_sum_numseg_le_expand THEN
     simp [] THEN
-    simp [(← HolLight.GSYM vsum_ring_sum_complex), FINITE_NUMSEG, complex_ring_clauses] THEN
+    simp [COMPLEX_RING_SUM, FINITE_NUMSEG, COMPLEX_RING_CLAUSES] THEN
     simp [(← HolLight.GSYM VSUM_COMPLEX_LMUL), FINITE_NUMSEG] THEN
     simp [(← HolLight.GSYM VSUM_SUB), FINITE_NUMSEG] THEN
     subgoal ([[vsum (0..d) (\x. Cx (&(FACT (d - x) * binom (d,x))) * u x - (if x <= d - 1 then Cx (&(FACT (d - 1 - x) * binom (d - 1,x))) * u x else Cx (&0)) - Cx (&(d - 1)) * (if x <= d - 1 then Cx (&(FACT (d - 1 - x) * binom (d - 1,x))) * u x else Cx (&0))) = vsum (0..d) (\i. if i = d then u d else Cx(&0))]]) THENL [sufficesby VSUM_EQ THEN
@@ -18156,7 +17991,7 @@ def transcendence_uv_diffeq : thm := keep "transcendence_uv_diffeq" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_uv_diffeq
 
-#eval phrase 891
+#eval phrase 877
 def ord_product_one_minus_constx_I : thm := keep "ord_product_one_minus_constx_I" fun _ => (do
   let h3 ← complex_field_fact (← ExceptT.mk [[y*yinv = Cx(&1) ==> Cx(&1) - a*yinv = Cx(&0) ==> a = y]])
   let h2 ← ar (← ExceptT.mk [[1 + 0 = 1]])
@@ -18173,15 +18008,15 @@ def ord_product_one_minus_constx_I : thm := keep "ord_product_one_minus_constx_I
   )
 ]])
    (REPEAT GEN_TAC THEN REPEAT DISCH_TAC THEN
-    have' ([[~(poly_product complex_ring S (\z. one_minus_constx complex_ring (I z)) = poly_0 complex_ring)]]) [nonzero_poly_product, integral_domain_complex, nonzero_one_minus_constx, in_complex_ring, integral_domain] THEN
+    have' ([[~(poly_product complex_ring S (\z. one_minus_constx complex_ring (I z)) = poly_0 complex_ring)]]) [nonzero_poly_product, INTEGRAL_DOMAIN_COMPLEX_RING, nonzero_one_minus_constx, in_complex_ring, integral_domain] THEN
     case' ([[(y:complex) IN S]]) THENL [specialize_assuming [([[complex_ring]]), ([[S:complex->bool]]), ([[y:complex]]), ([[\z. one_minus_constx complex_ring (I z)]])] poly_product_delete THEN
       have' ([[poly_product complex_ring (S) (\z. one_minus_constx complex_ring (I z)) = poly_mul complex_ring (one_minus_constx complex_ring y) (poly_product complex_ring ((S) DELETE y) (\z. one_minus_constx complex_ring (I z)))]]) [series_complex, IN, I_THM] THEN
       have' ([[FINITE (S DELETE (y:complex))]]) [FINITE_DELETE] THEN
-      subgoal ([[~(poly_eval complex_ring (poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z))) yinv = Cx(&0))]]) THENL [simp [eval_poly_product, in_complex_ring, one_minus_constx_poly, eval_one_minus_constx, I_THM, complex_ring_clauses, ring_sub_complex] THEN
+      subgoal ([[~(poly_eval complex_ring (poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z))) yinv = Cx(&0))]]) THENL [simp [eval_poly_product, in_complex_ring, one_minus_constx_poly, eval_one_minus_constx, I_THM, COMPLEX_RING_CLAUSES, COMPLEX_RING_SUB] THEN
         intro THEN
-        have' ([[ring_product complex_ring (S DELETE y) (\a. Cx (&1) - a * yinv) = ring_0 complex_ring]]) [complex_ring_clauses] THEN
-        choose ([[a:complex]]) ([[a IN S DELETE y /\ Cx (&1) - a * yinv = ring_0 complex_ring]]) [INTEGRAL_DOMAIN_PRODUCT_EQ_0, integral_domain_complex] THEN
-        have' ([[Cx(&1) - a*yinv = Cx(&0)]]) [complex_ring_clauses] THEN
+        have' ([[ring_product complex_ring (S DELETE y) (\a. Cx (&1) - a * yinv) = ring_0 complex_ring]]) [COMPLEX_RING_CLAUSES] THEN
+        choose ([[a:complex]]) ([[a IN S DELETE y /\ Cx (&1) - a * yinv = ring_0 complex_ring]]) [INTEGRAL_DOMAIN_PRODUCT_EQ_0, INTEGRAL_DOMAIN_COMPLEX_RING] THEN
+        have' ([[Cx(&1) - a*yinv = Cx(&0)]]) [COMPLEX_RING_CLAUSES] THEN
         h1 THEN
         qed [IN_DELETE], pass] THEN
       have' ([[~(complex_root (poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z))) yinv)]]) [complex_root] THEN
@@ -18189,7 +18024,7 @@ def ord_product_one_minus_constx_I : thm := keep "ord_product_one_minus_constx_I
       specialize [([[poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z))]]), ([[yinv:complex]])] poly_ord_unique_0 THEN
       have' ([[poly_ord (poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z))) yinv = 0]]) [] THEN
       have' ([[poly_ord (one_minus_constx complex_ring y) yinv = 1]]) [poly_ord_one_minus_constx] THEN
-      have' ([[~(one_minus_constx complex_ring y = poly_0 complex_ring)]]) [nonzero_one_minus_constx, field, field_complex, in_complex_ring] THEN
+      have' ([[~(one_minus_constx complex_ring y = poly_0 complex_ring)]]) [nonzero_one_minus_constx, field, FIELD_COMPLEX_RING, in_complex_ring] THEN
       have' ([[ring_polynomial complex_ring (one_minus_constx complex_ring y)]]) [one_minus_constx_poly, in_complex_ring] THEN
       have' ([[ring_polynomial complex_ring (poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z)))]]) [poly_product_poly, FINITE_DELETE, one_minus_constx_poly, in_complex_ring] THEN
       have' ([[~(poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z)) = poly_0(complex_ring))]]) [poly_product_ring_product_x_poly, x_poly_use] THEN
@@ -18198,11 +18033,11 @@ def ord_product_one_minus_constx_I : thm := keep "ord_product_one_minus_constx_I
       have' ([[poly_ord (poly_product complex_ring (S) (\z. one_minus_constx complex_ring (I z))) yinv = poly_ord (one_minus_constx complex_ring y) yinv + poly_ord (poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z))) yinv]]) [] THEN
       have' ([[poly_ord (poly_product complex_ring (S) (\z. one_minus_constx complex_ring (I z))) yinv = 1 + poly_ord (poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z))) yinv]]) [] THEN
       qed [h2], pass] THEN
-    subgoal ([[~(poly_eval complex_ring (poly_product complex_ring S (\z. one_minus_constx complex_ring (I z))) yinv = Cx(&0))]]) THENL [simp [eval_poly_product, in_complex_ring, one_minus_constx_poly, eval_one_minus_constx, I_THM, complex_ring_clauses, ring_sub_complex] THEN
+    subgoal ([[~(poly_eval complex_ring (poly_product complex_ring S (\z. one_minus_constx complex_ring (I z))) yinv = Cx(&0))]]) THENL [simp [eval_poly_product, in_complex_ring, one_minus_constx_poly, eval_one_minus_constx, I_THM, COMPLEX_RING_CLAUSES, COMPLEX_RING_SUB] THEN
       intro THEN
-      have' ([[ring_product complex_ring (S) (\a. Cx (&1) - a * yinv) = ring_0 complex_ring]]) [complex_ring_clauses] THEN
-      choose ([[a:complex]]) ([[a IN S /\ Cx (&1) - a * yinv = ring_0 complex_ring]]) [INTEGRAL_DOMAIN_PRODUCT_EQ_0, integral_domain_complex] THEN
-      have' ([[Cx(&1) - a*yinv = Cx(&0)]]) [complex_ring_clauses] THEN
+      have' ([[ring_product complex_ring (S) (\a. Cx (&1) - a * yinv) = ring_0 complex_ring]]) [COMPLEX_RING_CLAUSES] THEN
+      choose ([[a:complex]]) ([[a IN S /\ Cx (&1) - a * yinv = ring_0 complex_ring]]) [INTEGRAL_DOMAIN_PRODUCT_EQ_0, INTEGRAL_DOMAIN_COMPLEX_RING] THEN
+      have' ([[Cx(&1) - a*yinv = Cx(&0)]]) [COMPLEX_RING_CLAUSES] THEN
       h3 THEN
       qed [], pass] THEN
     have' ([[~(complex_root (poly_product complex_ring S (\z. one_minus_constx complex_ring (I z))) yinv)]]) [complex_root] THEN
@@ -18211,7 +18046,7 @@ def ord_product_one_minus_constx_I : thm := keep "ord_product_one_minus_constx_I
   : ExceptT String IO thm).run
 #eval ord_product_one_minus_constx_I
 
-#eval phrase 892
+#eval phrase 878
 def ord_sum_product_one_minus_constx_I : thm := keep "ord_sum_product_one_minus_constx_I" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[0 < 1]])
   let h1 ← ar (← ExceptT.mk [[1 <= 1]])
@@ -18253,7 +18088,7 @@ def ord_sum_product_one_minus_constx_I : thm := keep "ord_sum_product_one_minus_
       have' ([[y IN S DELETE(s:complex)]]) [IN_DELETE] THEN
       specialize [([[S DELETE(s:complex)]])] ord_product_one_minus_constx_I THEN
       qed [h1, FINITE_DELETE], pass] THEN
-    have' ([[~(poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z)) = poly_0 complex_ring)]]) [nonzero_poly_product, integral_domain_complex, nonzero_one_minus_constx, integral_domain, in_complex_ring] THEN
+    have' ([[~(poly_product complex_ring (S DELETE y) (\z. one_minus_constx complex_ring (I z)) = poly_0 complex_ring)]]) [nonzero_poly_product, INTEGRAL_DOMAIN_COMPLEX_RING, nonzero_one_minus_constx, integral_domain, in_complex_ring] THEN
     specialize [([[S DELETE(y:complex)]]),
       ([[y:complex]]),
       ([[yinv:complex]])] ord_product_one_minus_constx_I THEN
@@ -18268,7 +18103,7 @@ def ord_sum_product_one_minus_constx_I : thm := keep "ord_sum_product_one_minus_
   : ExceptT String IO thm).run
 #eval ord_sum_product_one_minus_constx_I
 
-#eval phrase 893
+#eval phrase 879
 def transcendence_ord_revp : thm := keep "transcendence_ord_revp" fun _ => (do
   prove ([[
   !P p y yinv.
@@ -18296,7 +18131,7 @@ def transcendence_ord_revp : thm := keep "transcendence_ord_revp" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_ord_revp
 
-#eval phrase 894
+#eval phrase 880
 def transcendence_ord_H : thm := keep "transcendence_ord_H" fun _ => (do
   prove ([[
   !P t H.
@@ -18329,7 +18164,7 @@ def transcendence_ord_H : thm := keep "transcendence_ord_H" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_ord_H
 
-#eval phrase 895
+#eval phrase 881
 def transcendence_ord_Hk : thm := keep "transcendence_ord_Hk" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[k * 1 = k]])
   prove ([[
@@ -18348,21 +18183,21 @@ def transcendence_ord_Hk : thm := keep "transcendence_ord_Hk" fun _ => (do
    (intro THEN
     have' ([[ring_polynomial complex_ring (H:(1->num)->complex)]]) [transcendence_H_poly] THEN
     have' ([[coeff 0 (H:(1->num)->complex) = Cx(&1)]]) [transcendence_H_botcoeff1] THEN
-    have' ([[~(H = poly_0 complex_ring:(1->num)->complex)]]) [coeff_poly_0, complex_ring_clauses, ring_1_0_complex] THEN
+    have' ([[~(H = poly_0 complex_ring:(1->num)->complex)]]) [coeff_poly_0, COMPLEX_RING_CLAUSES, ring_1_0_complex] THEN
     specialize [([[H:(1->num)->complex]]), ([[k:num]]), ([[yinv:complex]])] poly_ord_pow THEN
     have' ([[poly_ord H yinv = 1]]) [transcendence_ord_H] THEN
     qed [h1])
   : ExceptT String IO thm).run
 #eval transcendence_ord_Hk
 
-#eval phrase 896
+#eval phrase 882
 def transcendence_ord_Hu : thm := keep "transcendence_ord_Hu" fun _ => (do
   let h13 ← ar (← ExceptT.mk [[0 < 1]])
   let h12 ← ar (← ExceptT.mk [[0 + 1 = 1]])
   let h11 ← ar (← ExceptT.mk [[0+1 = 1]])
   let h10 ← ar (← ExceptT.mk [[0 + 1 = 1]])
   let h9 ← ar (← ExceptT.mk [[0+1 = 1]])
-  let h8 ← def' ([[Z:((1->num)->complex)->((1->num)->complex)]]) (← ExceptT.mk [[\p. poly_mul complex_ring (poly_const complex_ring (complex_of_int (B p))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))]])
+  let h8 ← def' ([[Z:((1->num)->complex)->((1->num)->complex)]]) (← ExceptT.mk [[\p. poly_mul complex_ring (poly_const complex_ring (Cx(real_of_int (B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))]])
   let h7 ← ar (← ExceptT.mk [[1 - (0+1) = 0]])
   let h6 ← ar (← ExceptT.mk [[1 * 1 = 1]])
   let h5 ← ar (← ExceptT.mk [[d - 0 = d]])
@@ -18376,7 +18211,7 @@ def transcendence_ord_Hu : thm := keep "transcendence_ord_Hu" fun _ => (do
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   (!q y yinv.
     q IN P ==>
     ~(B q = &0) ==>
@@ -18414,7 +18249,7 @@ def transcendence_ord_Hu : thm := keep "transcendence_ord_Hu" fun _ => (do
     subgoal ([[ring_polynomial complex_ring (poly_pow complex_ring H (k - (e + 1))) /\ ~(poly_pow complex_ring H (k - (e + 1)) = poly_0 complex_ring) /\ poly_ord(poly_pow complex_ring H (k - (e + 1))) yinv = 0]]) THENL [have_rw ([[k - (e+1) = 0]]) [h7] THEN
       rw [poly_pow_0, poly_ord_1], pass] THEN
     h8 THEN
-    subgoal ([[ring_polynomial complex_ring (Z q) /\ ~(Z q = poly_0 complex_ring) /\ poly_ord(Z(q:(1->num)->complex)) yinv = 0]]) THENL [subgoal ([[ring_polynomial complex_ring (poly_const complex_ring (complex_of_int (B q)):(1->num)->complex) /\ ~(poly_const complex_ring (complex_of_int (B(q:(1->num)->complex))) = poly_0 complex_ring:(1->num)->complex) /\ poly_ord(poly_const complex_ring (complex_of_int (B(q:(1->num)->complex)))) yinv = 0]]) THENL [have' ([[~(complex_of_int (B(q:(1->num)->complex)) = Cx(&0))]]) [complex_of_int, CX_INJ, int_eq, REAL_OF_INT_CLAUSES] THEN
+    subgoal ([[ring_polynomial complex_ring (Z q) /\ ~(Z q = poly_0 complex_ring) /\ poly_ord(Z(q:(1->num)->complex)) yinv = 0]]) THENL [subgoal ([[ring_polynomial complex_ring (poly_const complex_ring (Cx(real_of_int (B q))):(1->num)->complex) /\ ~(poly_const complex_ring (Cx(real_of_int (B(q:(1->num)->complex)))) = poly_0 complex_ring:(1->num)->complex) /\ poly_ord(poly_const complex_ring (Cx(real_of_int (B(q:(1->num)->complex))))) yinv = 0]]) THENL [have' ([[~(Cx(real_of_int (B(q:(1->num)->complex))) = Cx(&0))]]) [CX_INJ, int_eq, REAL_OF_INT_CLAUSES] THEN
         qed [poly_ord_const], pass] THEN
       subgoal ([[ring_polynomial complex_ring (scaled_pow_newton_rightside complex_ring I (complex_root q) e) /\ ~(scaled_pow_newton_rightside complex_ring I (complex_root q) e = poly_0 complex_ring) /\ poly_ord(scaled_pow_newton_rightside complex_ring I (complex_root q) e) yinv = 0]]) THENL [rw [scaled_pow_newton_rightside] THEN
         simp [FACT, RING_OF_NUM_1, h9, const_1_x_pow] THEN
@@ -18448,10 +18283,10 @@ def transcendence_ord_Hu : thm := keep "transcendence_ord_Hu" fun _ => (do
         qed [NSUM_0], pass] THEN
       specialize_assuming_nosplit [([[poly_pow complex_ring (G(q:(1->num)->complex)) (e + 1):(1->num)->complex]]), ([[scaled_pow_newton_rightside complex_ring I (complex_root q) e]]), ([[yinv:complex]])] poly_ord_mul_0 THEN
       specialize_assuming_nosplit [([[poly_pow complex_ring H (k - (e + 1)):(1->num)->complex]]), ([[poly_mul complex_ring (poly_pow complex_ring (G(q:(1->num)->complex)) (e + 1):(1->num)->complex) (scaled_pow_newton_rightside complex_ring I (complex_root q) e)]]), ([[yinv:complex]])] poly_ord_mul_0 THEN
-      specialize_assuming_nosplit [([[poly_const complex_ring (complex_of_int (B(q:(1->num)->complex))):(1->num)->complex]]), ([[poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1)):(1->num)->complex) (poly_mul complex_ring (poly_pow complex_ring (G(q:(1->num)->complex)) (e + 1):(1->num)->complex) (scaled_pow_newton_rightside complex_ring I (complex_root q) e))]]), ([[yinv:complex]])] poly_ord_mul_0 THEN
+      specialize_assuming_nosplit [([[poly_const complex_ring (Cx(real_of_int (B(q:(1->num)->complex)))):(1->num)->complex]]), ([[poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1)):(1->num)->complex) (poly_mul complex_ring (poly_pow complex_ring (G(q:(1->num)->complex)) (e + 1):(1->num)->complex) (scaled_pow_newton_rightside complex_ring I (complex_root q) e))]]), ([[yinv:complex]])] poly_ord_mul_0 THEN
       qed [], pass] THEN
     subgoal ([[!p:(1->num)->complex. p IN P ==> ~(p = q) ==> (ring_polynomial complex_ring (Z p) /\ (Z p = poly_0 complex_ring \/ 1 <= poly_ord (Z p:(1->num)->complex) yinv))]]) THENL [GEN_TAC THEN REPEAT DISCH_TAC THEN
-      have' ([[ring_polynomial complex_ring (poly_const complex_ring (complex_of_int (B(p:(1->num)->complex))):(1->num)->complex)]]) [RING_POLYNOMIAL_CONST, in_complex_ring] THEN
+      have' ([[ring_polynomial complex_ring (poly_const complex_ring (Cx(real_of_int (B(p:(1->num)->complex)))):(1->num)->complex)]]) [RING_POLYNOMIAL_CONST, in_complex_ring] THEN
       subgoal ([[ring_polynomial complex_ring (scaled_pow_newton_rightside complex_ring I (complex_root p) e)]]) THENL [rw [scaled_pow_newton_rightside] THEN
         simp [FACT, RING_OF_NUM_1, h11, const_1_x_pow] THEN
         simp [POLY_MUL_LID, poly_pow_1, series_complex] THEN
@@ -18487,15 +18322,15 @@ def transcendence_ord_Hu : thm := keep "transcendence_ord_Hu" fun _ => (do
         ([[poly_mul complex_ring (poly_pow complex_ring (G(p:(1->num)->complex)) (e + 1):(1->num)->complex) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)]]),
         ([[yinv:complex]]),
         ([[1]])] poly_ord_mul_ge0_ge THEN
-      have' ([[ring_polynomial complex_ring (poly_const complex_ring (complex_of_int (B(p:(1->num)->complex))):(1->num)->complex)]]) [] THEN
+      have' ([[ring_polynomial complex_ring (poly_const complex_ring (Cx(real_of_int (B(p:(1->num)->complex)))):(1->num)->complex)]]) [] THEN
       have' ([[ring_polynomial complex_ring (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))]]) [] THEN
       have' ([[poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)) = poly_0 complex_ring \/ 1 <= poly_ord (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))) yinv]]) [] THEN
-      specialize [([[poly_const complex_ring (complex_of_int (B(p:(1->num)->complex):int)):(1->num)->complex]]),
+      specialize [([[poly_const complex_ring (Cx(real_of_int (B(p:(1->num)->complex):int))):(1->num)->complex]]),
         ([[poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1)):(1->num)->complex) (poly_mul complex_ring (poly_pow complex_ring (G(p:(1->num)->complex)) (e + 1):(1->num)->complex) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))]]),
         ([[yinv:complex]]),
         ([[1]])] poly_ord_mul_ge0_ge THEN
       qed [], pass] THEN
-    subgoal ([[ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (complex_of_int (B p))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) /\ ~(poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (complex_of_int (B p))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) = poly_0 complex_ring) /\ poly_ord(poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (complex_of_int (B p))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) yinv = 0]]) THENL [have' ([[!s:(1->num)->complex. s IN P ==> ring_polynomial complex_ring (Z s:(1->num)->complex)]]) [] THEN
+    subgoal ([[ring_polynomial complex_ring (poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (Cx(real_of_int (B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) /\ ~(poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (Cx(real_of_int (B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e)))) = poly_0 complex_ring) /\ poly_ord(poly_sum complex_ring P (\p. poly_mul complex_ring (poly_const complex_ring (Cx(real_of_int (B p)))) (poly_mul complex_ring (poly_pow complex_ring H (k - (e + 1))) (poly_mul complex_ring (poly_pow complex_ring (G p) (e + 1)) (scaled_pow_newton_rightside complex_ring I (complex_root p) e))))) yinv = 0]]) THENL [have' ([[!s:(1->num)->complex. s IN P ==> ring_polynomial complex_ring (Z s:(1->num)->complex)]]) [] THEN
       have' ([[!s:(1->num)->complex. s IN P ==> ~(s = q) ==> Z s = poly_0 complex_ring \/ 1 <= poly_ord (Z s) yinv]]) [] THEN
       have' ([[~(Z(q:(1->num)->complex) = poly_0 complex_ring:(1->num)->complex)]]) [] THEN
       have' ([[poly_ord (Z(q:(1->num)->complex)) yinv < 1]]) [h13] THEN
@@ -18505,7 +18340,7 @@ def transcendence_ord_Hu : thm := keep "transcendence_ord_Hu" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_ord_Hu
 
-#eval phrase 897
+#eval phrase 883
 def transcendence_ord_Hku : thm := keep "transcendence_ord_Hku" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[(k-1)+0 = k-1]])
   let h1 ← num_linear_fact (← ExceptT.mk [[1 <= k ==> k = (k-1)+1]])
@@ -18515,7 +18350,7 @@ def transcendence_ord_Hku : thm := keep "transcendence_ord_Hku" fun _ => (do
   distinct_minpolys P ==>
   t = nsum P (\p. poly_deg complex_ring p) ==>
   H = x_truncreverse QinC_ring t (poly_product QinC_ring P I) ==>
-  (!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))) ==>
+  (!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))) ==>
   1 <= k ==>
   (!q y yinv.
     q IN P ==>
@@ -18552,10 +18387,10 @@ def transcendence_ord_Hku : thm := keep "transcendence_ord_Hku" fun _ => (do
     have' ([[poly_ord (poly_pow complex_ring H (k-1)) yinv = k-1]]) [transcendence_ord_Hk] THEN
     have' ([[ring_polynomial complex_ring (H:(1->num)->complex)]]) [transcendence_H_poly] THEN
     have' ([[coeff 0 (H:(1->num)->complex) = Cx(&1)]]) [transcendence_H_botcoeff1] THEN
-    have' ([[~(H = poly_0 complex_ring:(1->num)->complex)]]) [coeff_poly_0, complex_ring_clauses, ring_1_0_complex] THEN
+    have' ([[~(H = poly_0 complex_ring:(1->num)->complex)]]) [coeff_poly_0, COMPLEX_RING_CLAUSES, ring_1_0_complex] THEN
     have' ([[ring_polynomial complex_ring (poly_pow complex_ring H (k - 1):(1->num)->complex)]]) [poly_pow_poly] THEN
     have' ([[ring_polynomial complex_ring (poly_mul complex_ring H (series_from_coeffs u))]]) [] THEN
-    have' ([[~(poly_pow complex_ring H (k - 1) = poly_0 complex_ring:(1->num)->complex)]]) [nonzero_poly_pow, integral_domain_complex, series_complex] THEN
+    have' ([[~(poly_pow complex_ring H (k - 1) = poly_0 complex_ring:(1->num)->complex)]]) [nonzero_poly_pow, INTEGRAL_DOMAIN_COMPLEX_RING, series_complex] THEN
     have' ([[~(poly_mul complex_ring H (series_from_coeffs u) = poly_0 complex_ring)]]) [] THEN
     specialize [([[poly_pow complex_ring H (k-1):(1->num)->complex]]), ([[poly_mul complex_ring H (series_from_coeffs u)]]), ([[yinv:complex]])] poly_ord_mul THEN
     have' ([[poly_ord (poly_mul complex_ring (poly_pow complex_ring H k) (series_from_coeffs u)) yinv = poly_ord (poly_pow complex_ring H (k - 1)) yinv + poly_ord (poly_mul complex_ring H (series_from_coeffs u)) yinv]]) [] THEN
@@ -18571,7 +18406,7 @@ satisfy U = V - xV - x^2 V'
 then U cannot have a pole of order 1 at any nonzero point
 -/
 
-#eval phrase 898
+#eval phrase 884
 def transcendence_pole_order_ne1 : thm := keep "transcendence_pole_order_ne1" fun _ => (do
   let h9 ← num_linear_fact (← ExceptT.mk [[poly_ord e yinv + 1 = poly_ord g yinv ==> poly_ord e yinv + poly_ord g yinv = (poly_ord f yinv + poly_ord g yinv) - 1 ==> ~(poly_ord f yinv < poly_ord g yinv)]])
   let h8 ← num_linear_fact (← ExceptT.mk [[poly_ord e yinv + 1 = poly_ord g yinv ==> (poly_ord f yinv + poly_ord g yinv) - 1 < poly_ord f yinv + poly_ord g yinv]])
@@ -18706,21 +18541,21 @@ def transcendence_pole_order_ne1 : thm := keep "transcendence_pole_order_ne1" fu
   : ExceptT String IO thm).run
 #eval transcendence_pole_order_ne1
 
-#eval phrase 899
+#eval phrase 885
 def transcendence_mostly_0 : thm := keep "transcendence_mostly_0" fun _ => (do
   let h8 ← num_linear_fact (← ExceptT.mk [[1 <= k ==> (k-1)+1 = k]])
   let h7 ← def' ([[V:(1->num)->complex]]) (← ExceptT.mk [[series_from_coeffs v:(1->num)->complex]])
   let h6 ← def' ([[U:(1->num)->complex]]) (← ExceptT.mk [[series_from_coeffs u:(1->num)->complex]])
   let h5 ← def' ([[yinv:complex]]) (← ExceptT.mk [[inv y:complex]])
   let h4 ← def' ([[v:num->complex]]) (← ExceptT.mk [[\n. ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)]])
-  let h3 ← def' ([[u:num->complex]]) (← ExceptT.mk [[\n. ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n)]])
+  let h3 ← def' ([[u:num->complex]]) (← ExceptT.mk [[\n. ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n)]])
   let h2 ← def' ([[H:(1->num)->complex]]) (← ExceptT.mk [[x_truncreverse QinC_ring t (poly_product QinC_ring P I):(1->num)->complex]])
   let h1 ← def' ([[t:num]]) (← ExceptT.mk [[nsum P (\p. poly_deg complex_ring (p:(1->num)->complex))]])
   prove ([[
   !P B q y.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   q IN P ==>
   ~(B q = &0) ==>
   complex_root q y ==>
@@ -18730,7 +18565,7 @@ def transcendence_mostly_0 : thm := keep "transcendence_mostly_0" fun _ => (do
     h1 THEN
     h2 THEN
     h3 THEN
-    have' ([[!n. u n = (ring_sum complex_ring P (\p. (complex_of_int(B p)) * complex_root_powersums p n))]]) [] THEN
+    have' ([[!n. u n = (ring_sum complex_ring P (\p. (Cx(real_of_int(B p))) * complex_root_powersums p n))]]) [] THEN
     h4 THEN
     have' ([[!n. v n = ring_sum complex_ring (0..n) (\i. Cx(&(FACT(n-i) * binom(n,i))) * u i)]]) [] THEN
     case' ([[~(y = Cx(&0))]]) THENL [h5 THEN
@@ -18757,8 +18592,8 @@ def transcendence_mostly_0 : thm := keep "transcendence_mostly_0" fun _ => (do
       have' ([[ring_polynomial complex_ring (poly_mul complex_ring (poly_pow complex_ring H k) V:(1->num)->complex)]]) [] THEN
       have' ([[ring_polynomial complex_ring (poly_pow complex_ring H k:(1->num)->complex)]]) [poly_pow_poly, transcendence_H_poly] THEN
       have' ([[coeff 0 (H:(1->num)->complex) = Cx(&1)]]) [transcendence_H_botcoeff1] THEN
-      have' ([[~(H = poly_0 complex_ring:(1->num)->complex)]]) [coeff_poly_0, complex_ring_clauses, ring_1_0_complex] THEN
-      have' ([[~(poly_pow complex_ring H k = poly_0 complex_ring:(1->num)->complex)]]) [nonzero_poly_pow, integral_domain_complex, series_complex] THEN
+      have' ([[~(H = poly_0 complex_ring:(1->num)->complex)]]) [coeff_poly_0, COMPLEX_RING_CLAUSES, ring_1_0_complex] THEN
+      have' ([[~(poly_pow complex_ring H k = poly_0 complex_ring:(1->num)->complex)]]) [nonzero_poly_pow, INTEGRAL_DOMAIN_COMPLEX_RING, series_complex] THEN
       have' ([[~(poly_mul complex_ring (poly_pow complex_ring H k) U = poly_0 complex_ring:(1->num)->complex)]]) [] THEN
       have' ([[poly_ord (poly_pow complex_ring H k) yinv = k]]) [transcendence_ord_Hk] THEN
       have' ([[poly_ord (poly_mul complex_ring (poly_pow complex_ring H k) U) yinv = k-1]]) [] THEN
@@ -18776,14 +18611,14 @@ def transcendence_mostly_0 : thm := keep "transcendence_mostly_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval transcendence_mostly_0
 
-#eval phrase 900
+#eval phrase 886
 def transcendence_mostly_0_x : thm := keep "transcendence_mostly_0_x" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[~(poly_deg complex_ring (q:(1->num)->complex) = 0) ==> 1 <= poly_deg complex_ring q]])
   prove ([[
   !P B q.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   q IN P ==>
   ~(B q = &0) ==>
   q = x_pow QinC_ring 1
@@ -18800,42 +18635,42 @@ def transcendence_mostly_0_x : thm := keep "transcendence_mostly_0_x" fun _ => (
   : ExceptT String IO thm).run
 #eval transcendence_mostly_0_x
 
-#eval phrase 901
+#eval phrase 887
 def transcendence_all_0 : thm := keep "transcendence_all_0" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[~(1 = 0)]])
   prove ([[
   !P B.
   FINITE P ==>
   distinct_minpolys P ==>
-  ring_sum complex_ring P (\p. complex_of_int(B p) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
+  ring_sum complex_ring P (\p. Cx(real_of_int(B p)) * ring_sum complex_ring (complex_root p) cexp) = Cx(&0) ==>
   (!q. q IN P ==> B q = &0)
 ]])
    (intro THEN
-    case' ([[q = x_pow QinC_ring 1]]) THENL [subgoal ([[ring_sum complex_ring P (\p. complex_of_int (B p) * ring_sum complex_ring (complex_root p) cexp) = ring_sum complex_ring P (\p. if p = x_pow QinC_ring 1 then complex_of_int (B(x_pow QinC_ring 1)) * ring_sum complex_ring (complex_root(x_pow QinC_ring 1)) cexp else ring_0 complex_ring)]]) THENL [sufficesby RING_SUM_EQ THEN
+    case' ([[q = x_pow QinC_ring 1]]) THENL [subgoal ([[ring_sum complex_ring P (\p. Cx(real_of_int (B p)) * ring_sum complex_ring (complex_root p) cexp) = ring_sum complex_ring P (\p. if p = x_pow QinC_ring 1 then Cx(real_of_int (B(x_pow QinC_ring 1))) * ring_sum complex_ring (complex_root(x_pow QinC_ring 1)) cexp else ring_0 complex_ring)]]) THENL [sufficesby RING_SUM_EQ THEN
         intro THEN
         rw [BETA_THM] THEN
         proven_if ([[a = x_pow QinC_ring 1]]) [] THEN
         have' ([[B(a:(1->num)->complex) = &0:int]]) [transcendence_mostly_0_x] THEN
-        simp [complex_of_int, (← HolLight.GSYM REAL_OF_INT_CLAUSES)] THEN
-        qed [COMPLEX_MUL_LZERO, complex_ring_clauses], pass] THEN
-      have' ([[ring_sum complex_ring P (\p. if p = x_pow QinC_ring 1 then complex_of_int (B(x_pow QinC_ring 1)) * ring_sum complex_ring (complex_root(x_pow QinC_ring 1)) cexp else ring_0 complex_ring) = Cx(&0)]]) [] THEN
+        simp [(← HolLight.GSYM REAL_OF_INT_CLAUSES)] THEN
+        qed [COMPLEX_MUL_LZERO, COMPLEX_RING_CLAUSES], pass] THEN
+      have' ([[ring_sum complex_ring P (\p. if p = x_pow QinC_ring 1 then Cx(real_of_int (B(x_pow QinC_ring 1))) * ring_sum complex_ring (complex_root(x_pow QinC_ring 1)) cexp else ring_0 complex_ring) = Cx(&0)]]) [] THEN
       specialize [([[complex_ring]]),
         ([[P:((1->num)->complex)->bool]]),
         ([[x_pow QinC_ring 1]]),
-        ([[complex_of_int (B (x_pow QinC_ring 1)) * ring_sum complex_ring (complex_root (x_pow QinC_ring 1)) cexp]])] RING_SUM_DELTA THEN
-      have' ([[complex_of_int (B (x_pow QinC_ring 1)) * ring_sum complex_ring (complex_root (x_pow QinC_ring 1)) cexp = Cx(&0)]]) [in_complex_ring] THEN
+        ([[Cx(real_of_int (B (x_pow QinC_ring 1))) * ring_sum complex_ring (complex_root (x_pow QinC_ring 1)) cexp]])] RING_SUM_DELTA THEN
+      have' ([[Cx(real_of_int (B (x_pow QinC_ring 1))) * ring_sum complex_ring (complex_root (x_pow QinC_ring 1)) cexp = Cx(&0)]]) [in_complex_ring] THEN
       subgoal ([[ring_sum complex_ring (complex_root (x_pow QinC_ring 1)) cexp = Cx(&1)]]) THENL [rw [complex_root_x_pow, h1, RING_SUM_SING, in_complex_ring, CEXP_0], pass] THEN
-      have' ([[complex_of_int (B (x_pow QinC_ring 1)) * Cx(&1) = Cx(&0)]]) [] THEN
-      have' ([[complex_of_int (B (x_pow QinC_ring 1)) = Cx(&0)]]) [COMPLEX_MUL_RID] THEN
-      have' ([[real_of_int (B (x_pow QinC_ring 1)) = &0]]) [complex_of_int, CX_INJ] THEN
+      have' ([[Cx(real_of_int (B (x_pow QinC_ring 1))) * Cx(&1) = Cx(&0)]]) [] THEN
+      have' ([[Cx(real_of_int (B (x_pow QinC_ring 1))) = Cx(&0)]]) [COMPLEX_MUL_RID] THEN
+      have' ([[real_of_int (B (x_pow QinC_ring 1)) = &0]]) [CX_INJ] THEN
       qed [REAL_OF_INT_CLAUSES], pass] THEN
     qed [transcendence_mostly_0_x])
   : ExceptT String IO thm).run
 #eval transcendence_all_0
 
-#eval phrase 902
+#eval phrase 888
 def transcendence_all_0_ZinC : thm := keep "transcendence_all_0_ZinC" fun _ => (do
-  let h1 ← def' ([[intB:((1->num)->complex)->int]]) (← ExceptT.mk [[\p:(1->num)->complex. @i. B p = complex_of_int i]])
+  let h1 ← def' ([[intB:((1->num)->complex)->int]]) (← ExceptT.mk [[\p:(1->num)->complex. @i. B p = Cx(real_of_int i)]])
   prove ([[
   !P B.
   FINITE P ==>
@@ -18846,22 +18681,22 @@ def transcendence_all_0_ZinC : thm := keep "transcendence_all_0_ZinC" fun _ => (
 ]])
    (intro THEN
     h1 THEN
-    subgoal ([[!q:(1->num)->complex. q IN P ==> B q = complex_of_int(intB q)]]) THENL [intro THEN
+    subgoal ([[!q:(1->num)->complex. q IN P ==> B q = Cx(real_of_int(intB q))]]) THENL [intro THEN
       simp [] THEN
       have' ([[B(q:(1->num)->complex) IN ZinC]]) [] THEN
       qed [ZinC, IN_ELIM_THM], pass] THEN
-    subgoal ([[ring_sum complex_ring P (\p. complex_of_int (intB p) * ring_sum complex_ring (complex_root p) cexp) = ring_sum complex_ring P (\p. B p * ring_sum complex_ring (complex_root p) cexp)]]) THENL [sufficesby RING_SUM_EQ THEN
+    subgoal ([[ring_sum complex_ring P (\p. Cx(real_of_int (intB p)) * ring_sum complex_ring (complex_root p) cexp) = ring_sum complex_ring P (\p. B p * ring_sum complex_ring (complex_root p) cexp)]]) THENL [sufficesby RING_SUM_EQ THEN
       qed [], pass] THEN
-    have' ([[ring_sum complex_ring P (\p. complex_of_int (intB p) * ring_sum complex_ring (complex_root p) cexp) = Cx (&0)]]) [] THEN
+    have' ([[ring_sum complex_ring P (\p. Cx(real_of_int (intB p)) * ring_sum complex_ring (complex_root p) cexp) = Cx (&0)]]) [] THEN
     specialize_assuming [([[P:((1->num)->complex)->bool]]),
       ([[intB:((1->num)->complex)->int]])] transcendence_all_0 THEN
     have' ([[intB(p:(1->num)->complex) = &0:int]]) [] THEN
-    have' ([[B(p:(1->num)->complex) = complex_of_int(&0)]]) [] THEN
-    qed [complex_of_int, REAL_OF_INT_CLAUSES])
+    have' ([[B(p:(1->num)->complex) = Cx(real_of_int(&0))]]) [] THEN
+    qed [REAL_OF_INT_CLAUSES])
   : ExceptT String IO thm).run
 #eval transcendence_all_0_ZinC
 
-#eval phrase 903
+#eval phrase 889
 def transcendence_all_0_QinC : thm := keep "transcendence_all_0_QinC" fun _ => (do
   let h2 ← complex_field_fact (← ExceptT.mk [[~(Cx(&d) = Cx(&0)) ==> Cx(&d) * B(p:(1->num)->complex) = Cx(&0) ==> B p = Cx(&0)]])
   let h1 ← def' ([[C:((1->num)->complex)->complex]]) (← ExceptT.mk [[\p:(1->num)->complex. Cx(&d) * B p]])
@@ -18878,9 +18713,9 @@ def transcendence_all_0_QinC : thm := keep "transcendence_all_0_QinC" fun _ => (
     h1 THEN
     have' ([[!p:(1->num)->complex. p IN P ==> C p IN ZinC]]) [] THEN
     subgoal ([[ring_sum complex_ring P (\p. C p * ring_sum complex_ring (complex_root p) cexp) = Cx(&0)]]) THENL [simp [(← HolLight.GSYM COMPLEX_MUL_ASSOC)] THEN
-      simp [(← HolLight.GSYM vsum_ring_sum_complex)] THEN
+      simp [COMPLEX_RING_SUM] THEN
       simp [VSUM_COMPLEX_LMUL] THEN
-      simp [vsum_ring_sum_complex] THEN
+      simp [(← HolLight.GSYM COMPLEX_RING_SUM)] THEN
       simp [COMPLEX_MUL_RZERO], pass] THEN
     have' ([[C(p:(1->num)->complex) = Cx(&0)]]) [transcendence_all_0_ZinC] THEN
     have' ([[Cx(&d) * B(p:(1->num)->complex) = Cx(&0)]]) [] THEN
@@ -18891,7 +18726,7 @@ def transcendence_all_0_QinC : thm := keep "transcendence_all_0_QinC" fun _ => (
   : ExceptT String IO thm).run
 #eval transcendence_all_0_QinC
 
-#eval phrase 904
+#eval phrase 890
 def transcendence_all_0_QinC_weight1 : thm := keep "transcendence_all_0_QinC_weight1" fun _ => (do
   let h2 ← complex_field_fact (← ExceptT.mk [[~(Cx(&1) = Cx(&0))]])
   let h1 ← def' ([[B:((1->num)->complex)->complex]]) (← ExceptT.mk [[\p:(1->num)->complex. Cx(&1)]])
@@ -18915,7 +18750,7 @@ def transcendence_all_0_QinC_weight1 : thm := keep "transcendence_all_0_QinC_wei
   : ExceptT String IO thm).run
 #eval transcendence_all_0_QinC_weight1
 
-#eval phrase 905
+#eval phrase 891
 def transcendence_all_0_QinC_monic_vanishing_at : thm := keep "transcendence_all_0_QinC_monic_vanishing_at" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[~(e = 0) ==> e <= n ==> ~(n = 0)]])
   let h1 ← set_fact (← ExceptT.mk [[!z. {s:X | s IN S /\ c s = z:complex} = {s:X | s IN S /\ z = c s:complex}]])
@@ -18962,7 +18797,7 @@ def transcendence_all_0_QinC_monic_vanishing_at : thm := keep "transcendence_all
             specialize [([[complex_ring]]),
               ([[cexp a]]),
               ([[{x:X | x IN S /\ c x = a:complex}]])] ring_sum_const THEN
-            qed [ring_of_num_complex, complex_of_num, complex_ring_clauses], pass] THEN
+            qed [COMPLEX_RING_OF_NUM, COMPLEX_RING_CLAUSES], pass] THEN
           simporqed, pass] THEN
         subgoal ([[ring_sum complex_ring (IMAGE (c:X->complex) S) (\z. Cx(&(nsum P (\p. if complex_root p z then e p else 0))) * cexp z) = Cx(&0)]]) THENL [subgoal ([[ring_sum complex_ring (IMAGE (c:X->complex) S) (\z. Cx(&(nsum P (\p. if complex_root p z then e p else 0))) * cexp z) = ring_sum complex_ring (IMAGE c S) (\z. Cx(&(CARD {x:X | x IN S /\ c x = z})) * cexp z)]]) THENL [sufficesby RING_SUM_EQ THEN
             simporqed, pass] THEN
@@ -18970,11 +18805,10 @@ def transcendence_all_0_QinC_monic_vanishing_at : thm := keep "transcendence_all
         subgoal ([[ring_sum complex_ring (IMAGE (c:X->complex) S) (\z. Cx(&(nsum P (\p. if complex_root p z then e p else 0))) * cexp z) = ring_sum complex_ring (IMAGE (c:X->complex) S) (\z. ring_sum complex_ring P (\p. Cx(&(if complex_root p z then e p else 0)) * cexp z))]]) THENL [sufficesby RING_SUM_EQ THEN
           rw [BETA_THM] THEN
           intro THEN
-          simp [(← HolLight.GSYM vsum_ring_sum_complex)] THEN
+          simp [COMPLEX_RING_SUM] THEN
           simp [VSUM_COMPLEX_RMUL] THEN
-          simp [vsum_ring_sum_complex] THEN
-          rw [(← HolLight.GSYM complex_of_num)] THEN
-          rw [(← HolLight.GSYM ring_of_num_complex)] THEN
+          simp [(← HolLight.GSYM COMPLEX_RING_SUM)] THEN
+          rw [(← HolLight.GSYM (← HolLight.REWRITE_RULE [FUN_EQ_THM] COMPLEX_RING_OF_NUM))] THEN
           simp [ring_sum_num], pass] THEN
         qed [], pass] THEN
       subgoal ([[ring_sum complex_ring (IMAGE (c:X->complex) S) (\z. ring_sum complex_ring P (\p. Cx(&(if complex_root p z then e p else 0)) * cexp z)) = ring_sum complex_ring P (\p. ring_sum complex_ring (IMAGE (c:X->complex) S) (\z. Cx(&(if complex_root p z then e p else 0)) * cexp z))]]) THENL [specialize_assuming [([[complex_ring]]),
@@ -18989,7 +18823,7 @@ def transcendence_all_0_QinC_monic_vanishing_at : thm := keep "transcendence_all
         sufficesby RING_SUM_EQ THEN
         rw [BETA_THM, IN] THEN
         intro THEN
-        rw [complex_ring_clauses] THEN
+        rw [COMPLEX_RING_CLAUSES] THEN
         qed [COMPLEX_MUL_LZERO], pass] THEN
       have' ([[ring_sum complex_ring P (\p. ring_sum complex_ring (IMAGE (c:X->complex) S) (\z. if z IN complex_root p then Cx(&(e p)) * cexp z else ring_0 complex_ring)) = Cx(&0)]]) [] THEN
       subgoal ([[ring_sum complex_ring P (\p. ring_sum complex_ring (IMAGE (c:X->complex) S) (\z. if z IN complex_root p then Cx(&(e p)) * cexp z else ring_0 complex_ring)) = ring_sum complex_ring P (\p. ring_sum complex_ring {z | z IN IMAGE (c:X->complex) S /\ z IN complex_root p} (\z. Cx(&(e p)) * cexp z))]]) THENL [sufficesby RING_SUM_EQ THEN
@@ -19016,7 +18850,7 @@ def transcendence_all_0_QinC_monic_vanishing_at : thm := keep "transcendence_all
         intro THEN
         simp [] THEN
         have' ([[FINITE(complex_root a)]]) [distinct_minpolys_finite_root] THEN
-        simp [(← HolLight.GSYM vsum_ring_sum_complex)] THEN
+        simp [COMPLEX_RING_SUM] THEN
         simp [VSUM_COMPLEX_LMUL], pass] THEN
       qed [], pass] THEN
     specialize_assuming [([[P:((1->num)->complex)->bool]]),
@@ -19037,7 +18871,7 @@ def transcendence_all_0_QinC_monic_vanishing_at : thm := keep "transcendence_all
   : ExceptT String IO thm).run
 #eval transcendence_all_0_QinC_monic_vanishing_at
 
-#eval phrase 906
+#eval phrase 892
 def transcendence_weighted_QinC_monic_vanishing_at : thm := keep "transcendence_weighted_QinC_monic_vanishing_at" fun _ => (do
   let h1 ← def' ([[B:((1->num)->complex)->complex]]) (← ExceptT.mk [[\p:(1->num)->complex. ring_sum complex_ring S (\s:X. b s * Cx(&(e s p)))]])
   prove ([[
@@ -19072,7 +18906,7 @@ def transcendence_weighted_QinC_monic_vanishing_at : thm := keep "transcendence_
     have' ([[FINITE(P:((1->num)->complex)->bool)]]) [] THEN
     have' ([[distinct_minpolys P]]) [] THEN
     subgoal ([[ring_sum complex_ring P (\p. B p * ring_sum complex_ring (complex_root p) cexp) = Cx (&0)]]) THENL [simp [] THEN
-      simp [(← HolLight.GSYM vsum_ring_sum_complex)] THEN
+      simp [COMPLEX_RING_SUM] THEN
       simp [(← HolLight.GSYM VSUM_COMPLEX_RMUL)] THEN
       specialize_assuming [([[\p s:X. (b s * Cx(&(e s p))) * ring_sum complex_ring (complex_root p) cexp]]),
         ([[P:((1->num)->complex)->bool]]),
@@ -19080,7 +18914,7 @@ def transcendence_weighted_QinC_monic_vanishing_at : thm := keep "transcendence_
       simp [] THEN
       rw [(← HolLight.GSYM COMPLEX_MUL_ASSOC)] THEN
       simp [VSUM_COMPLEX_LMUL] THEN
-      subgoal ([[!s:X. s IN S ==> vsum P (\p. (Cx (&(e s p))) * ring_sum complex_ring (complex_root p) cexp) = ring_sum complex_ring (f s:Y->bool) (cexp o c)]]) THENL [simp [vsum_ring_sum_complex] THEN
+      subgoal ([[!s:X. s IN S ==> vsum P (\p. (Cx (&(e s p))) * ring_sum complex_ring (complex_root p) cexp) = ring_sum complex_ring (f s:Y->bool) (cexp o c)]]) THENL [simp [(← HolLight.GSYM COMPLEX_RING_SUM)] THEN
         intro THEN
         have' ([[FINITE(f(s:X):Y->bool)]]) [] THEN
         have' ([[poly_product QinC_ring P (\p. poly_pow QinC_ring p (e s p)) = monic_vanishing_at complex_ring (f(s:X):Y->bool) c]]) [] THEN
@@ -19091,7 +18925,7 @@ def transcendence_weighted_QinC_monic_vanishing_at : thm := keep "transcendence_
           ([[cexp]])] sum_root_decomposition_if_monic_vanishing_at_factorization THEN
         qed [], pass] THEN
       simp [] THEN
-      qed [vsum_ring_sum_complex], pass] THEN
+      qed [(← HolLight.GSYM COMPLEX_RING_SUM)], pass] THEN
     subgoal ([[!p:(1->num)->complex. p IN P ==> B p = Cx(&0)]]) THENL [specialize_assuming [([[P:((1->num)->complex)->bool]]),
         ([[B:((1->num)->complex)->complex]])] transcendence_all_0_QinC THEN
       qed [], pass] THEN
@@ -19115,7 +18949,7 @@ def transcendence_weighted_QinC_monic_vanishing_at : thm := keep "transcendence_
         simp [] THEN
         qed [COMPLEX_MUL_RZERO], pass] THEN
       simp [] THEN
-      rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+      rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
       rw [RING_SUM_0], pass] THEN
     simp [] THEN
     choose ([[q:(1->num)->complex]]) ([[q IN P /\ complex_root q a]]) [] THEN
@@ -19133,7 +18967,7 @@ def transcendence_weighted_QinC_monic_vanishing_at : thm := keep "transcendence_
 /- ===== e is transcendental -/
 /- warmup, marginally easier -/
 
-#eval phrase 907
+#eval phrase 893
 def e_is_irrational : thm := keep "e_is_irrational" fun _ => (do
   let h10 ← complex_field_fact (← ExceptT.mk [[--cexp(Cx(&1)) = Cx(&0) ==> cexp(Cx(&1)) = Cx(&0)]])
   let h9 ← ar (← ExceptT.mk [[0 <= 1]])
@@ -19178,7 +19012,7 @@ def e_is_irrational : thm := keep "e_is_irrational" fun _ => (do
       rw [RING_SUM_SING, in_complex_ring] THEN
       have_rw ([[B (x_minus_const QinC_ring (Cx (&0))) = --cexp(Cx(&1))]]) [] THEN
       have_rw ([[B (x_minus_const QinC_ring (Cx (&1))) = Cx(&1)]]) [h8] THEN
-      rw [complex_ring_clauses, CEXP_0] THEN
+      rw [COMPLEX_RING_CLAUSES, CEXP_0] THEN
       CONV_TAC cf, pass] THEN
     subgoal ([[!p:(1->num)->complex. p IN P ==> B p IN QinC]]) THENL [intro THEN
       have' ([[--cexp(Cx(&1)) IN QinC]]) [neg_in_QinC] THEN
@@ -19193,7 +19027,7 @@ def e_is_irrational : thm := keep "e_is_irrational" fun _ => (do
   : ExceptT String IO thm).run
 #eval e_is_irrational
 
-#eval phrase 908
+#eval phrase 894
 def e_is_transcendental : thm := keep "e_is_transcendental" fun _ => (do
   let h6 ← ar (← ExceptT.mk [[d <= d:num]])
   let h5 ← def' ([[B:((1->num)->complex)->complex]]) (← ExceptT.mk [[\q:(1->num)->complex. coeff (@n. q = x_minus_const QinC_ring (Cx(&n))) (p:(1->num)->complex)]])
@@ -19238,7 +19072,7 @@ def e_is_transcendental : thm := keep "e_is_transcendental" fun _ => (do
         sufficesby RING_SUM_EQ THEN
         intro THEN
         rw [BETA_THM, o_THM] THEN
-        rw [complex_ring_clauses, ring_pow_complex] THEN
+        rw [COMPLEX_RING_CLAUSES, COMPLEX_RING_POW] THEN
         rw [complex_root_x_minus_const, x_minus_const_QinC_eq_x_minus_const_complex] THEN
         rw [(← HolLight.GSYM CEXP_N), COMPLEX_MUL_RID] THEN
         have' ([[B (x_minus_const QinC_ring (Cx (&a))) = coeff a p:complex]]) [] THEN
@@ -19261,7 +19095,7 @@ def e_is_transcendental : thm := keep "e_is_transcendental" fun _ => (do
 
 /- ===== algebraic numbers closed under mul, add -/
 
-#eval phrase 909
+#eval phrase 895
 def algebraic_number_mul : thm := keep "algebraic_number_mul" fun _ => (do
   let h1 ← def' ([[pq:(1->num)->complex]]) (← ExceptT.mk [[monic_vanishing_at complex_ring (complex_root p CROSS complex_root q) (\(y,z). y*z)]])
   prove ([[
@@ -19285,7 +19119,7 @@ def algebraic_number_mul : thm := keep "algebraic_number_mul" fun _ => (do
     subgoal ([[ring_polynomial QinC_ring (pq:(1->num)->complex)]]) THENL [have' ([[ring_hasQ (subring_generated complex_ring QinC)]]) [ring_hasQ_QinC, subring_complex_QinC] THEN
       subgoal ([[!d. ring_sum complex_ring (complex_root p CROSS complex_root q) (\s. ring_pow complex_ring ((\(y,z). y * z) s) d) IN ring_carrier (subring_generated complex_ring QinC)]]) THENL [intro THEN
         rw [subring_complex_QinC] THEN
-        rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+        rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
         rw [LAMBDA_PAIR] THEN
         simp [RING_MUL_POW, in_complex_ring] THEN
         rw [(← HolLight.GSYM LAMBDA_PAIR)] THEN
@@ -19297,7 +19131,7 @@ def algebraic_number_mul : thm := keep "algebraic_number_mul" fun _ => (do
           ([[\x. ring_pow complex_ring x d]]),
           ([[\y. ring_pow complex_ring y d]])] ring_sum_cross_mul THEN
         simp [] THEN
-        rw [ring_pow_complex, complex_ring_clauses, (← HolLight.GSYM complex_root_powersums), QinC_ring_clauses] THEN
+        rw [COMPLEX_RING_POW, COMPLEX_RING_CLAUSES, (← HolLight.GSYM complex_root_powersums), QinC_ring_clauses] THEN
         qed [mul_in_QinC], pass] THEN
       specialize_assuming [([[complex_ring]]),
         ([[QinC]]),
@@ -19312,7 +19146,7 @@ def algebraic_number_mul : thm := keep "algebraic_number_mul" fun _ => (do
 
 /- or can prove this more directly on poly coeffs -/
 
-#eval phrase 910
+#eval phrase 896
 def algebraic_number_neg : thm := keep "algebraic_number_neg" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[--z = (-- Cx(&1)) * z]])
   prove ([[
@@ -19329,7 +19163,7 @@ def algebraic_number_neg : thm := keep "algebraic_number_neg" fun _ => (do
   : ExceptT String IO thm).run
 #eval algebraic_number_neg
 
-#eval phrase 911
+#eval phrase 897
 def algebraic_number_add : thm := keep "algebraic_number_add" fun _ => (do
   let h1 ← def' ([[pq:(1->num)->complex]]) (← ExceptT.mk [[monic_vanishing_at complex_ring (complex_root p CROSS complex_root q) (\(y,z). y+z)]])
   prove ([[
@@ -19352,7 +19186,7 @@ def algebraic_number_add : thm := keep "algebraic_number_add" fun _ => (do
     have' ([[(y,z) IN complex_root p CROSS complex_root q]]) [IN_CROSS] THEN
     subgoal ([[ring_polynomial QinC_ring (pq:(1->num)->complex)]]) THENL [have' ([[ring_hasQ (subring_generated complex_ring QinC)]]) [ring_hasQ_QinC, subring_complex_QinC] THEN
       subgoal ([[!d. ring_sum complex_ring (complex_root p CROSS complex_root q) (\s. ring_pow complex_ring ((\(y,z). y + z) s) d) IN ring_carrier (subring_generated complex_ring QinC)]]) THENL [intro THEN
-        rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+        rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
         rw [LAMBDA_PAIR] THEN
         simp [RING_MUL_POW, in_complex_ring] THEN
         rw [(← HolLight.GSYM LAMBDA_PAIR)] THEN
@@ -19403,8 +19237,8 @@ def algebraic_number_add : thm := keep "algebraic_number_add" fun _ => (do
           ([[\x. ring_pow complex_ring x s]]),
           ([[\y. ring_pow complex_ring y (d - s)]])] ring_sum_cross_mul THEN
         simp [] THEN
-        rw [ring_of_num_complex, ring_pow_complex, complex_ring_clauses, (← HolLight.GSYM complex_root_powersums), QinC_ring_clauses, subring_complex_QinC] THEN
-        qed [mul_in_QinC, num_in_QinC, complex_of_num], pass] THEN
+        rw [COMPLEX_RING_OF_NUM, COMPLEX_RING_POW, COMPLEX_RING_CLAUSES, (← HolLight.GSYM complex_root_powersums), QinC_ring_clauses, subring_complex_QinC] THEN
+        qed [mul_in_QinC, num_in_QinC], pass] THEN
       specialize_assuming [([[complex_ring]]),
         ([[QinC]]),
         ([[complex_root p CROSS complex_root q]]),
@@ -19416,18 +19250,18 @@ def algebraic_number_add : thm := keep "algebraic_number_add" fun _ => (do
   : ExceptT String IO thm).run
 #eval algebraic_number_add
 
-#eval phrase 912
+#eval phrase 898
 def algebraic_number_subring : thm := keep "algebraic_number_subring" fun _ => (do
   prove ([[
   algebraic_number subring_of complex_ring
 ]])
    (rw [subring_of] THEN
-    rw [complex_ring_clauses, IN, SUBSET] THEN
+    rw [COMPLEX_RING_CLAUSES, IN, SUBSET] THEN
     qed [IN_UNIV, IN, algebraic_number_ZinC, ZinC_0, ZinC_1, algebraic_number_neg, algebraic_number_add, algebraic_number_mul])
   : ExceptT String IO thm).run
 #eval algebraic_number_subring
 
-#eval phrase 913
+#eval phrase 899
 def algebraic_number_sum : thm := keep "algebraic_number_sum" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -19439,19 +19273,19 @@ def algebraic_number_sum : thm := keep "algebraic_number_sum" fun _ => (do
 ]])
    (GEN_TAC THEN
     sufficesby FINITE_INDUCT_STRONG THEN
-    intro THENL [rw [RING_SUM_CLAUSES, complex_ring_clauses] THEN
+    intro THENL [rw [RING_SUM_CLAUSES, COMPLEX_RING_CLAUSES] THEN
       qed [algebraic_number_ZinC, num_in_ZinC],
       h1 THEN
       h2 THEN
       simp [RING_SUM_CLAUSES, in_complex_ring] THEN
-      rw [complex_ring_clauses] THEN
+      rw [COMPLEX_RING_CLAUSES] THEN
       qed [algebraic_number_add]])
   : ExceptT String IO thm).run
 #eval algebraic_number_sum
 
 /- ===== expformal c: the power series exp(cx) -/
 
-#eval phrase 914
+#eval phrase 900
 def expformal : thm := keep "expformal" fun _ => new_definition
  [[
   expformal (c:complex)
@@ -19459,7 +19293,7 @@ def expformal : thm := keep "expformal" fun _ => new_definition
 ]]
 #eval expformal
 
-#eval phrase 915
+#eval phrase 901
 def mul_expformal : thm := keep "mul_expformal" fun _ => (do
   let h2 ← complex_field_fact (← ExceptT.mk [[
     ~(Cx(&(FACT d)) = Cx(&0)) ==>
@@ -19475,9 +19309,9 @@ def mul_expformal : thm := keep "mul_expformal" fun _ => (do
     sufficesby eq_coeff THEN
     intro THEN
     rw [coeff_poly_mul_oneindex, expformal, coeff_series_from_coeffs] THEN
-    rw [(← HolLight.GSYM ring_pow_complex), (← HolLight.GSYM complex_ring_clauses)] THEN
+    rw [(← HolLight.GSYM COMPLEX_RING_POW), (← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
     simp [RING_BINOMIAL_THEOREM, in_complex_ring] THEN
-    simp [(← HolLight.GSYM vsum_ring_sum_complex), FINITE_NUMSEG] THEN
+    simp [COMPLEX_RING_SUM, FINITE_NUMSEG] THEN
     rw [complex_div] THEN
     simp [(← HolLight.GSYM VSUM_COMPLEX_RMUL), FINITE_NUMSEG] THEN
     rw [(← HolLight.GSYM complex_div)] THEN
@@ -19489,21 +19323,21 @@ def mul_expformal : thm := keep "mul_expformal" fun _ => (do
     have' ([[FACT(d-x) * FACT x * binom(d,x) = FACT d]]) [BINOM_FACT] THEN
     have' ([[&(FACT(d-x)) * &(FACT x) * &(binom(d,x)) = &(FACT d):real]]) [REAL_OF_NUM_MUL] THEN
     have' ([[Cx(&(FACT(d-x))) * Cx(&(FACT x)) * Cx(&(binom(d,x))) = Cx(&(FACT d))]]) [CX_MUL] THEN
-    rw [complex_ring_clauses, ring_pow_complex] THEN
-    rw [ring_of_num_complex, complex_of_num] THEN
+    rw [COMPLEX_RING_CLAUSES, COMPLEX_RING_POW] THEN
+    rw [COMPLEX_RING_OF_NUM] THEN
     have' ([[~(Cx(&(FACT d)) = Cx(&0))]]) [CX_INJ, REAL_OF_NUM_EQ, FACT_NZ] THEN
     h2 THEN
     qed [])
   : ExceptT String IO thm).run
 #eval mul_expformal
 
-#eval phrase 916
+#eval phrase 902
 def expformal_0 : thm := keep "expformal_0" fun _ => (do
   prove ([[
   expformal(Cx(&0)) = poly_1 complex_ring
 ]])
    (sufficesby eq_coeff THEN
-    rw [expformal, coeff_series_from_coeffs, coeff_poly_1, complex_ring_clauses] THEN
+    rw [expformal, coeff_series_from_coeffs, coeff_poly_1, COMPLEX_RING_CLAUSES] THEN
     rw [COMPLEX_POW_ZERO] THEN
     intro THEN
     case' ([[d = 0]]) THENL [simp [FACT] THEN
@@ -19513,7 +19347,7 @@ def expformal_0 : thm := keep "expformal_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval expformal_0
 
-#eval phrase 917
+#eval phrase 903
 def pow_expformal : thm := keep "pow_expformal" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[SUC n = n + 1]])
   prove ([[
@@ -19528,7 +19362,7 @@ def pow_expformal : thm := keep "pow_expformal" fun _ => (do
   : ExceptT String IO thm).run
 #eval pow_expformal
 
-#eval phrase 918
+#eval phrase 904
 def product_expformal : thm := keep "product_expformal" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -19541,15 +19375,15 @@ def product_expformal : thm := keep "product_expformal" fun _ => (do
    (GEN_TAC THEN
     sufficesby FINITE_INDUCT_STRONG THEN
     intro THENL [rw [poly_product_empty, RING_SUM_CLAUSES] THEN
-      rw [expformal_0, complex_ring_clauses],
+      rw [expformal_0, COMPLEX_RING_CLAUSES],
       h1 THEN
       h2 THEN
       simp [poly_product_insert, RING_SUM_CLAUSES, in_complex_ring, series_complex] THEN
-      qed [mul_expformal, complex_ring_clauses]])
+      qed [mul_expformal, COMPLEX_RING_CLAUSES]])
   : ExceptT String IO thm).run
 #eval product_expformal
 
-#eval phrase 919
+#eval phrase 905
 def product_expformal_I : thm := keep "product_expformal_I" fun _ => (do
   prove ([[
   !S.
@@ -19565,7 +19399,7 @@ def product_expformal_I : thm := keep "product_expformal_I" fun _ => (do
   : ExceptT String IO thm).run
 #eval product_expformal_I
 
-#eval phrase 920
+#eval phrase 906
 def expformal_powersums_QinC : thm := keep "expformal_powersums_QinC" fun _ => (do
   prove ([[
   !S c:X->complex.
@@ -19576,7 +19410,7 @@ def expformal_powersums_QinC : thm := keep "expformal_powersums_QinC" fun _ => (
    (GEN_TAC THEN GEN_TAC THEN DISCH_TAC THEN
     rw [coeff_series_in_ring] THEN
     simp [coeff_poly_sum, series_complex, expformal, coeff_series_from_coeffs, QinC_ring_clauses] THEN
-    simp [(← HolLight.GSYM vsum_ring_sum_complex)] THEN
+    simp [COMPLEX_RING_SUM] THEN
     rw [complex_div] THEN
     simp [VSUM_COMPLEX_RMUL] THEN
     rw [(← HolLight.GSYM complex_div)] THEN
@@ -19589,7 +19423,7 @@ def expformal_powersums_QinC : thm := keep "expformal_powersums_QinC" fun _ => (
   : ExceptT String IO thm).run
 #eval expformal_powersums_QinC
 
-#eval phrase 921
+#eval phrase 907
 def pow_expformal_powersums_QinC : thm := keep "pow_expformal_powersums_QinC" fun _ => (do
   prove ([[
   !S m.
@@ -19603,9 +19437,9 @@ def pow_expformal_powersums_QinC : thm := keep "pow_expformal_powersums_QinC" fu
 ]])
    (intro THEN
     subgoal ([[!n. ring_sum complex_ring S (\z. (Cx(&m) * z) pow n) IN QinC]]) THENL [rw [COMPLEX_POW_MUL] THEN
-      simp [(← HolLight.GSYM vsum_ring_sum_complex)] THEN
+      simp [COMPLEX_RING_SUM] THEN
       simp [VSUM_COMPLEX_LMUL] THEN
-      simp [vsum_ring_sum_complex] THEN
+      simp [(← HolLight.GSYM COMPLEX_RING_SUM)] THEN
       intro THEN
       have' ([[Cx(&m) IN QinC]]) [num_in_QinC] THEN
       have' ([[Cx(&m) pow n IN QinC]]) [ring_pow_QinC, RING_POW, QinC_ring_clauses] THEN
@@ -19617,7 +19451,7 @@ def pow_expformal_powersums_QinC : thm := keep "pow_expformal_powersums_QinC" fu
   : ExceptT String IO thm).run
 #eval pow_expformal_powersums_QinC
 
-#eval phrase 922
+#eval phrase 908
 def carrier_QinC_series_subring_generated_refl : thm := keep "carrier_QinC_series_subring_generated_refl" fun _ => (do
   prove ([[
   ring_carrier(subring_generated
@@ -19639,7 +19473,7 @@ def carrier_QinC_series_subring_generated_refl : thm := keep "carrier_QinC_serie
   : ExceptT String IO thm).run
 #eval carrier_QinC_series_subring_generated_refl
 
-#eval phrase 923
+#eval phrase 909
 def symfun_expformal_powersums_QinC : thm := keep "symfun_expformal_powersums_QinC" fun _ => (do
   prove ([[
   !S m.
@@ -19671,7 +19505,7 @@ def symfun_expformal_powersums_QinC : thm := keep "symfun_expformal_powersums_Qi
   : ExceptT String IO thm).run
 #eval symfun_expformal_powersums_QinC
 
-#eval phrase 924
+#eval phrase 910
 def symfun_expformal_powersums_QinC_v2 : thm := keep "symfun_expformal_powersums_QinC_v2" fun _ => (do
   prove ([[
   !S m.
@@ -19691,7 +19525,7 @@ def symfun_expformal_powersums_QinC_v2 : thm := keep "symfun_expformal_powersums
   : ExceptT String IO thm).run
 #eval symfun_expformal_powersums_QinC_v2
 
-#eval phrase 925
+#eval phrase 911
 def symfun_expformal_powersums_QinC_v3 : thm := keep "symfun_expformal_powersums_QinC_v3" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[~(Cx(&(FACT d)) = Cx(&0)) ==> Cx (&(FACT d)) * ring_sum complex_ring x I pow d / Cx (&(FACT d)) = ring_sum complex_ring x I pow d]])
   prove ([[
@@ -19717,7 +19551,7 @@ def symfun_expformal_powersums_QinC_v3 : thm := keep "symfun_expformal_powersums
     have' ([[ring_sum complex_ring {U | U SUBSET S /\ CARD U = m} (\U. (ring_sum complex_ring U I) pow d / Cx (&(FACT d))) IN QinC]]) [] THEN
     have' ([[Cx(&(FACT d)) IN QinC]]) [num_in_QinC] THEN
     have' ([[Cx(&(FACT d)) * ring_sum complex_ring {U | U SUBSET S /\ CARD U = m} (\U. (ring_sum complex_ring U I) pow d / Cx (&(FACT d))) IN QinC]]) [mul_in_QinC] THEN
-    have' ([[Cx(&(FACT d)) * vsum {U | U SUBSET S /\ CARD U = m} (\U. (ring_sum complex_ring U I) pow d / Cx (&(FACT d))) IN QinC]]) [vsum_ring_sum_complex] THEN
+    have' ([[Cx(&(FACT d)) * vsum {U | U SUBSET S /\ CARD U = m} (\U. (ring_sum complex_ring U I) pow d / Cx (&(FACT d))) IN QinC]]) [(← HolLight.GSYM COMPLEX_RING_SUM)] THEN
     subgoal ([[Cx(&(FACT d)) * vsum {U | U SUBSET S /\ CARD U = m} (\U. (ring_sum complex_ring U I) pow d / Cx (&(FACT d))) = vsum {U | U SUBSET S /\ CARD U = m} (\U. Cx(&(FACT d)) * ((ring_sum complex_ring U I) pow d / Cx (&(FACT d))))]]) THENL [simp [VSUM_COMPLEX_LMUL], pass] THEN
     have' ([[vsum {U | U SUBSET S /\ CARD U = m} (\U. Cx(&(FACT d)) * ((ring_sum complex_ring U I) pow d / Cx (&(FACT d)))) IN QinC]]) [] THEN
     subgoal ([[vsum {U | U SUBSET S /\ CARD U = m} (\U. Cx (&(FACT d)) * ring_sum complex_ring U I pow d / Cx (&(FACT d))) = vsum {U | U SUBSET S /\ CARD U = m} (\U. ring_sum complex_ring U I pow d)]]) THENL [sufficesby VSUM_EQ THEN
@@ -19728,11 +19562,11 @@ def symfun_expformal_powersums_QinC_v3 : thm := keep "symfun_expformal_powersums
       have' ([[~(Cx(&(FACT d)) = Cx(&0))]]) [CX_INJ] THEN
       h1 THEN
       qed [], pass] THEN
-    qed [vsum_ring_sum_complex])
+    qed [(← HolLight.GSYM COMPLEX_RING_SUM)])
   : ExceptT String IO thm).run
 #eval symfun_expformal_powersums_QinC_v3
 
-#eval phrase 926
+#eval phrase 912
 def resolvent_if_powersums_QinC : thm := keep "resolvent_if_powersums_QinC" fun _ => (do
   prove ([[
   !S m.
@@ -19748,7 +19582,7 @@ def resolvent_if_powersums_QinC : thm := keep "resolvent_if_powersums_QinC" fun 
     have' ([[ring_hasQ (subring_generated complex_ring QinC)]]) [ring_hasQ_QinC, subring_complex_QinC] THEN
     specialize [([[S:complex->bool]]), ([[m:num]])] finite_subsets_card THEN
     have' ([[!s. s IN {U | U SUBSET S /\ CARD U = m} ==> ring_sum complex_ring s I IN ring_carrier complex_ring]]) [in_complex_ring] THEN
-    subgoal ([[!d. ring_sum complex_ring {U | U SUBSET S /\ CARD U = m} (\s. ring_pow complex_ring (ring_sum complex_ring s I) d) IN ring_carrier (subring_generated complex_ring QinC)]]) THENL [rw [ring_pow_complex] THEN
+    subgoal ([[!d. ring_sum complex_ring {U | U SUBSET S /\ CARD U = m} (\s. ring_pow complex_ring (ring_sum complex_ring s I) d) IN ring_carrier (subring_generated complex_ring QinC)]]) THENL [rw [COMPLEX_RING_POW] THEN
       qed [symfun_expformal_powersums_QinC_v3, QinC_ring_clauses, subring_complex_QinC], pass] THEN
     specialize [([[complex_ring]]),
       ([[QinC]]),
@@ -19760,7 +19594,7 @@ def resolvent_if_powersums_QinC : thm := keep "resolvent_if_powersums_QinC" fun 
 
 /- can alternatively prove this via symmetric-function argument -/
 
-#eval phrase 927
+#eval phrase 913
 def resolvent_if_poly_QinC : thm := keep "resolvent_if_poly_QinC" fun _ => (do
   prove ([[
   !S m.
@@ -19784,13 +19618,13 @@ def resolvent_if_poly_QinC : thm := keep "resolvent_if_poly_QinC" fun _ => (do
       have' ([[!n. coeff n (monic_vanishing_at complex_ring S I) IN ring_carrier(subring_generated complex_ring QinC)]]) [subring_complex_QinC, coeff_poly_in_ring] THEN
       have' ([[ring_sum complex_ring S (\s. ring_pow complex_ring (I s) n) IN ring_carrier (subring_generated complex_ring QinC)]]) [in_complex_ring] THEN
       subgoal ([[ring_sum complex_ring S (\s. ring_pow complex_ring (I s) n) = ring_sum complex_ring S (\z. z pow n)]]) THENL [sufficesby RING_SUM_EQ THEN
-        rw [BETA_THM, I_THM, ring_pow_complex], pass] THEN
+        rw [BETA_THM, I_THM, COMPLEX_RING_POW], pass] THEN
       qed [subring_complex_QinC, QinC_ring_clauses], pass] THEN
     qed [resolvent_if_powersums_QinC])
   : ExceptT String IO thm).run
 #eval resolvent_if_poly_QinC
 
-#eval phrase 928
+#eval phrase 914
 def prod_resolvent_if_poly_QinC_lemma : thm := keep "prod_resolvent_if_poly_QinC_lemma" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[{x:complex->bool | x IN {U | U SUBSET S} /\ CARD x = a} = {U | U SUBSET S /\ CARD U = a}]])
   prove ([[
@@ -19823,7 +19657,7 @@ def prod_resolvent_if_poly_QinC_lemma : thm := keep "prod_resolvent_if_poly_QinC
   : ExceptT String IO thm).run
 #eval prod_resolvent_if_poly_QinC_lemma
 
-#eval phrase 929
+#eval phrase 915
 def prod_resolvent_if_poly_QinC : thm := keep "prod_resolvent_if_poly_QinC" fun _ => (do
   prove ([[
   !S.
@@ -19849,7 +19683,7 @@ def prod_resolvent_if_poly_QinC : thm := keep "prod_resolvent_if_poly_QinC" fun 
 
 /- ===== pi is transcendental -/
 
-#eval phrase 930
+#eval phrase 916
 def pi_is_transcendental : thm := keep "pi_is_transcendental" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[cexp (ii * Cx pi) = --Cx (&1) ==> Cx(&1) + cexp(ii * Cx pi) = Cx(&0)]])
   prove ([[
@@ -19868,8 +19702,8 @@ def pi_is_transcendental : thm := keep "pi_is_transcendental" fun _ => (do
         ([[ii * Cx pi]]),
         ([[\z. Cx(&1) + cexp z]])] ring_product_delete THEN
       have' ([[ring_product complex_ring (complex_root f) (\z. Cx (&1) + cexp z) = ring_mul complex_ring (Cx (&1) + cexp (ii * Cx pi)) (ring_product complex_ring (complex_root f DELETE (ii * Cx pi)) (\z. Cx (&1) + cexp z))]]) [IN, in_complex_ring] THEN
-      simp [complex_ring_clauses, COMPLEX_MUL_LZERO], pass] THEN
-    subgoal ([[ring_product complex_ring (complex_root f) (\z. Cx(&1) + cexp z) = ring_sum complex_ring {S | S SUBSET complex_root f} (\S. ring_product complex_ring S cexp)]]) THENL [rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+      simp [COMPLEX_RING_CLAUSES, COMPLEX_MUL_LZERO], pass] THEN
+    subgoal ([[ring_product complex_ring (complex_root f) (\z. Cx(&1) + cexp z) = ring_sum complex_ring {S | S SUBSET complex_root f} (\S. ring_product complex_ring S cexp)]]) THENL [rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
       specialize_assuming [([[complex_ring]]),
         ([[cexp]]),
         ([[complex_root f]])] ring_product_1_plus_expand THEN
@@ -19879,7 +19713,7 @@ def pi_is_transcendental : thm := keep "pi_is_transcendental" fun _ => (do
       rw [BETA_THM, IN_ELIM_THM] THEN
       intro THEN
       have' ([[FINITE(a:complex->bool)]]) [FINITE_SUBSET] THEN
-      simp [(← HolLight.GSYM vsum_ring_sum_complex), (← HolLight.GSYM cproduct_ring_product_complex), CEXP_VSUM, I_THM], pass] THEN
+      simp [COMPLEX_RING_SUM, COMPLEX_RING_PRODUCT, CEXP_VSUM, I_THM], pass] THEN
     have' ([[ring_sum complex_ring {S | S SUBSET complex_root f} (\S. cexp (ring_sum complex_ring S I)) = Cx(&0)]]) [] THEN
     have' ([[monic_vanishing_at complex_ring (complex_root f) I = f]]) [distinct_minpolys_monic_vanishing_at_simple] THEN
     have' ([[ring_polynomial QinC_ring (monic_vanishing_at complex_ring (complex_root f) I)]]) [] THEN
@@ -19896,7 +19730,7 @@ def pi_is_transcendental : thm := keep "pi_is_transcendental" fun _ => (do
 
 /- ===== more on monomials -/
 
-#eval phrase 931
+#eval phrase 917
 def monomial_pow : thm := keep "monomial_pow" fun _ => new_definition
  [[
   monomial_pow (m:V->num) (e:num)
@@ -19904,7 +19738,7 @@ def monomial_pow : thm := keep "monomial_pow" fun _ => new_definition
 ]]
 #eval monomial_pow
 
-#eval phrase 932
+#eval phrase 918
 def monomial_product : thm := keep "monomial_product" fun _ => new_definition
  [[
   monomial_product (S:X->bool) (m:X->V->num)
@@ -19912,7 +19746,7 @@ def monomial_product : thm := keep "monomial_product" fun _ => new_definition
 ]]
 #eval monomial_product
 
-#eval phrase 933
+#eval phrase 919
 def finite_monomial_vars_permutation : thm := keep "finite_monomial_vars_permutation" fun _ => (do
   prove ([[
   !m:V->num f:V->V.
@@ -19934,7 +19768,7 @@ def finite_monomial_vars_permutation : thm := keep "finite_monomial_vars_permuta
   : ExceptT String IO thm).run
 #eval finite_monomial_vars_permutation
 
-#eval phrase 934
+#eval phrase 920
 def finite_monomial_vars_swap : thm := keep "finite_monomial_vars_swap" fun _ => (do
   prove ([[
   !m:num->num i.
@@ -19945,7 +19779,7 @@ def finite_monomial_vars_swap : thm := keep "finite_monomial_vars_swap" fun _ =>
   : ExceptT String IO thm).run
 #eval finite_monomial_vars_swap
 
-#eval phrase 935
+#eval phrase 921
 def monomial_eq_swap : thm := keep "monomial_eq_swap" fun _ => (do
   prove ([[
   !m:V->num i j.
@@ -19957,7 +19791,7 @@ def monomial_eq_swap : thm := keep "monomial_eq_swap" fun _ => (do
   : ExceptT String IO thm).run
 #eval monomial_eq_swap
 
-#eval phrase 936
+#eval phrase 922
 def monomial_le_swap : thm := keep "monomial_le_swap" fun _ => (do
   let h7 ← num_linear_fact (← ExceptT.mk [[i+1 < j ==> ~(j = i+1)]])
   let h6 ← num_linear_fact (← ExceptT.mk [[i+1 < j ==> ~(j = i)]])
@@ -20001,7 +19835,7 @@ def monomial_le_swap : thm := keep "monomial_le_swap" fun _ => (do
   : ExceptT String IO thm).run
 #eval monomial_le_swap
 
-#eval phrase 937
+#eval phrase 923
 def monomial_induction : thm := keep "monomial_induction" fun _ => (do
   prove ([[
   !P:(num->num)->bool.
@@ -20017,7 +19851,7 @@ def monomial_induction : thm := keep "monomial_induction" fun _ => (do
   : ExceptT String IO thm).run
 #eval monomial_induction
 
-#eval phrase 938
+#eval phrase 924
 def monomial_le_mul2_eq : thm := keep "monomial_le_mul2_eq" fun _ => (do
   prove ([[
   !m n M N:num->num.
@@ -20038,7 +19872,7 @@ def monomial_le_mul2_eq : thm := keep "monomial_le_mul2_eq" fun _ => (do
   : ExceptT String IO thm).run
 #eval monomial_le_mul2_eq
 
-#eval phrase 939
+#eval phrase 925
 def monomial_pow_0 : thm := keep "monomial_pow_0" fun _ => (do
   prove ([[
   !m:V->num.
@@ -20049,7 +19883,7 @@ def monomial_pow_0 : thm := keep "monomial_pow_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval monomial_pow_0
 
-#eval phrase 940
+#eval phrase 926
 def monomial_pow_1 : thm := keep "monomial_pow_1" fun _ => (do
   prove ([[
   !m:V->num.
@@ -20060,7 +19894,7 @@ def monomial_pow_1 : thm := keep "monomial_pow_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval monomial_pow_1
 
-#eval phrase 941
+#eval phrase 927
 def monomial_pow_add : thm := keep "monomial_pow_add" fun _ => (do
   prove ([[
   !m:V->num d e.
@@ -20072,7 +19906,7 @@ def monomial_pow_add : thm := keep "monomial_pow_add" fun _ => (do
   : ExceptT String IO thm).run
 #eval monomial_pow_add
 
-#eval phrase 942
+#eval phrase 928
 def monomial_1_le : thm := keep "monomial_1_le" fun _ => (do
   let h3 ← set_fact (← ExceptT.mk [[~(j IN {i:num | ~(m i = 0)}) ==> m j = 0]])
   let h2 ← ar (← ExceptT.mk [[~(x = 0) ==> 0 < x]])
@@ -20102,7 +19936,7 @@ def monomial_1_le : thm := keep "monomial_1_le" fun _ => (do
   : ExceptT String IO thm).run
 #eval monomial_1_le
 
-#eval phrase 943
+#eval phrase 929
 def monomial_product_empty : thm := keep "monomial_product_empty" fun _ => (do
   prove ([[
   monomial_product ({}:X->bool) (m:X->V->num)
@@ -20113,7 +19947,7 @@ def monomial_product_empty : thm := keep "monomial_product_empty" fun _ => (do
   : ExceptT String IO thm).run
 #eval monomial_product_empty
 
-#eval phrase 944
+#eval phrase 930
 def monomial_product_insert : thm := keep "monomial_product_insert" fun _ => (do
   prove ([[
   !(S:X->bool) (m:X->V->num) t.
@@ -20129,7 +19963,7 @@ def monomial_product_insert : thm := keep "monomial_product_insert" fun _ => (do
 
 /- ===== support -/
 
-#eval phrase 945
+#eval phrase 931
 def support_lt : thm := keep "support_lt" fun _ => new_definition
  [[
   support_lt (r:R ring) (p:(num->num)->R) (M:num->num)
@@ -20137,7 +19971,7 @@ def support_lt : thm := keep "support_lt" fun _ => new_definition
 ]]
 #eval support_lt
 
-#eval phrase 946
+#eval phrase 932
 def support_le : thm := keep "support_le" fun _ => new_definition
  [[
   support_le (r:R ring) (p:(num->num)->R) (M:num->num)
@@ -20145,7 +19979,7 @@ def support_le : thm := keep "support_le" fun _ => new_definition
 ]]
 #eval support_le
 
-#eval phrase 947
+#eval phrase 933
 def support_le1 : thm := keep "support_le1" fun _ => new_definition
  [[
   support_le1 (r:R ring) (p:(num->num)->R) (M:num->num)
@@ -20155,7 +19989,7 @@ def support_le1 : thm := keep "support_le1" fun _ => new_definition
 
 /- POLY_TOP_MONOMIAL_LE is deg first -/
 
-#eval phrase 948
+#eval phrase 934
 def poly_first_monomial : thm := keep "poly_first_monomial" fun _ => (do
   let h1 ← def' ([[M:(num->num)->bool]]) (← ExceptT.mk [[{m:num->num | ~(p m = ring_0(r:R ring))}]])
   prove ([[
@@ -20184,7 +20018,7 @@ def poly_first_monomial : thm := keep "poly_first_monomial" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_first_monomial
 
-#eval phrase 949
+#eval phrase 935
 def support_le_0 : thm := keep "support_le_0" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -20194,7 +20028,7 @@ def support_le_0 : thm := keep "support_le_0" fun _ => (do
   : ExceptT String IO thm).run
 #eval support_le_0
 
-#eval phrase 950
+#eval phrase 936
 def support_le_exists : thm := keep "support_le_exists" fun _ => (do
   prove ([[
   !(r:R ring) p:(num->num)->R.
@@ -20205,7 +20039,7 @@ def support_le_exists : thm := keep "support_le_exists" fun _ => (do
   : ExceptT String IO thm).run
 #eval support_le_exists
 
-#eval phrase 951
+#eval phrase 937
 def support_le_mul : thm := keep "support_le_mul" fun _ => (do
   prove ([[
   !(r:R ring) p q M N.
@@ -20238,7 +20072,7 @@ def support_le_mul : thm := keep "support_le_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval support_le_mul
 
-#eval phrase 952
+#eval phrase 938
 def support_le_mul_top : thm := keep "support_le_mul_top" fun _ => (do
   prove ([[
   !(r:R ring) p q M N.
@@ -20267,7 +20101,7 @@ def support_le_mul_top : thm := keep "support_le_mul_top" fun _ => (do
   : ExceptT String IO thm).run
 #eval support_le_mul_top
 
-#eval phrase 953
+#eval phrase 939
 def support_le1_mul : thm := keep "support_le1_mul" fun _ => (do
   prove ([[
   !(r:R ring) p q M N.
@@ -20282,7 +20116,7 @@ def support_le1_mul : thm := keep "support_le1_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval support_le1_mul
 
-#eval phrase 954
+#eval phrase 940
 def support_le_poly_1 : thm := keep "support_le_poly_1" fun _ => (do
   prove ([[
   !(r:R ring) m.
@@ -20294,7 +20128,7 @@ def support_le_poly_1 : thm := keep "support_le_poly_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval support_le_poly_1
 
-#eval phrase 955
+#eval phrase 941
 def support_le1_poly_1 : thm := keep "support_le1_poly_1" fun _ => (do
   prove ([[
   !(r:R ring).
@@ -20305,7 +20139,7 @@ def support_le1_poly_1 : thm := keep "support_le1_poly_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval support_le1_poly_1
 
-#eval phrase 956
+#eval phrase 942
 def support_le1_pow : thm := keep "support_le1_pow" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[SUC e = e+1]])
   prove ([[
@@ -20325,7 +20159,7 @@ def support_le1_pow : thm := keep "support_le1_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval support_le1_pow
 
-#eval phrase 957
+#eval phrase 943
 def support_le1_product : thm := keep "support_le1_product" fun _ => (do
   let h3 ← set_fact (← ExceptT.mk [[ring_product(poly_ring(r:R ring) (:num)) (S:X->bool) p IN {q | ring_polynomial r q /\ poly_vars r q SUBSET (:num)} ==> ring_polynomial r (ring_product(poly_ring(r:R ring) (:num)) (S:X->bool) p)]])
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -20356,7 +20190,7 @@ def support_le1_product : thm := keep "support_le1_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval support_le1_product
 
-#eval phrase 958
+#eval phrase 944
 def support_le_cancel : thm := keep "support_le_cancel" fun _ => (do
   prove ([[
   !(r:R ring) p q M.
@@ -20396,7 +20230,7 @@ def support_le_cancel : thm := keep "support_le_cancel" fun _ => (do
 
 /- ===== symmetric functions -/
 
-#eval phrase 959
+#eval phrase 945
 def elementary_sympoly_range : thm := keep "elementary_sympoly_range" fun _ => new_definition
  [[
   elementary_sympoly_range (r:R ring) n d
@@ -20408,7 +20242,7 @@ def elementary_sympoly_range : thm := keep "elementary_sympoly_range" fun _ => n
 ]]
 #eval elementary_sympoly_range
 
-#eval phrase 960
+#eval phrase 946
 def elementary_sympoly_range_subring : thm := keep "elementary_sympoly_range_subring" fun _ => (do
   prove ([[
   !(r:R ring) G n d.
@@ -20420,7 +20254,7 @@ def elementary_sympoly_range_subring : thm := keep "elementary_sympoly_range_sub
   : ExceptT String IO thm).run
 #eval elementary_sympoly_range_subring
 
-#eval phrase 961
+#eval phrase 947
 def powerseries_elementary_sympoly_range : thm := keep "powerseries_elementary_sympoly_range" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[~(1 = 0)]])
   prove ([[
@@ -20438,7 +20272,7 @@ def powerseries_elementary_sympoly_range : thm := keep "powerseries_elementary_s
   : ExceptT String IO thm).run
 #eval powerseries_elementary_sympoly_range
 
-#eval phrase 962
+#eval phrase 948
 def polynomial_elementary_sympoly_range : thm := keep "polynomial_elementary_sympoly_range" fun _ => (do
   prove ([[
   !(r:R ring) n d.
@@ -20459,7 +20293,7 @@ def polynomial_elementary_sympoly_range : thm := keep "polynomial_elementary_sym
   : ExceptT String IO thm).run
 #eval polynomial_elementary_sympoly_range
 
-#eval phrase 963
+#eval phrase 949
 def elementary_sympoly_range_in_poly_ring : thm := keep "elementary_sympoly_range_in_poly_ring" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[s = {i:num | ~(m i = 0)} ==> x IN s ==> ~(m x = 0)]])
   prove ([[
@@ -20479,7 +20313,7 @@ def elementary_sympoly_range_in_poly_ring : thm := keep "elementary_sympoly_rang
   : ExceptT String IO thm).run
 #eval elementary_sympoly_range_in_poly_ring
 
-#eval phrase 964
+#eval phrase 950
 def eval_elementary_sympoly_range : thm := keep "eval_elementary_sympoly_range" fun _ => (do
   let h2 ← ar (← ExceptT.mk [[~(1 = 0)]])
   let h1 ← num_linear_fact (← ExceptT.mk [[~(1 = 0)]])
@@ -20519,7 +20353,7 @@ def eval_elementary_sympoly_range : thm := keep "eval_elementary_sympoly_range" 
   : ExceptT String IO thm).run
 #eval eval_elementary_sympoly_range
 
-#eval phrase 965
+#eval phrase 951
 def eval_elementary_sympoly_range_coeff : thm := keep "eval_elementary_sympoly_range_coeff" fun _ => (do
   prove ([[
   !(r:R ring) n d c.
@@ -20549,7 +20383,7 @@ def eval_elementary_sympoly_range_coeff : thm := keep "eval_elementary_sympoly_r
   : ExceptT String IO thm).run
 #eval eval_elementary_sympoly_range_coeff
 
-#eval phrase 966
+#eval phrase 952
 def elementary_sympoly_range_o_permutes : thm := keep "elementary_sympoly_range_o_permutes" fun _ => (do
   let h3 ← def' ([[y:num]]) (← ExceptT.mk [[inverse f (x:num):num]])
   let h2 ← def' ([[V:num->bool]]) (← ExceptT.mk [[IMAGE (f:num->num) (U:num->bool)]])
@@ -20594,7 +20428,7 @@ def elementary_sympoly_range_o_permutes : thm := keep "elementary_sympoly_range_
   : ExceptT String IO thm).run
 #eval elementary_sympoly_range_o_permutes
 
-#eval phrase 967
+#eval phrase 953
 def elementary_sympoly_range_le : thm := keep "elementary_sympoly_range_le" fun _ => (do
   let h8 ← set_fact (← ExceptT.mk [[n - d <= j ==> j < n ==> j IN {i:num | n-d <= i /\ i < n}]])
   let h7 ← num_linear_fact (← ExceptT.mk [[n-d <= i ==> i < j ==> n-d <= j:num]])
@@ -20651,7 +20485,7 @@ def elementary_sympoly_range_le : thm := keep "elementary_sympoly_range_le" fun 
   : ExceptT String IO thm).run
 #eval elementary_sympoly_range_le
 
-#eval phrase 968
+#eval phrase 954
 def support_le_elementary_sympoly_range : thm := keep "support_le_elementary_sympoly_range" fun _ => (do
   prove ([[
   !(r:R ring) n d.
@@ -20664,7 +20498,7 @@ def support_le_elementary_sympoly_range : thm := keep "support_le_elementary_sym
   : ExceptT String IO thm).run
 #eval support_le_elementary_sympoly_range
 
-#eval phrase 969
+#eval phrase 955
 def support_le1_elementary_sympoly_range : thm := keep "support_le1_elementary_sympoly_range" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[d <= n:num ==> n-(n-d) = d]])
   prove ([[
@@ -20685,7 +20519,7 @@ def support_le1_elementary_sympoly_range : thm := keep "support_le1_elementary_s
   : ExceptT String IO thm).run
 #eval support_le1_elementary_sympoly_range
 
-#eval phrase 970
+#eval phrase 956
 def support_le1_pow_elementary_sympoly_range : thm := keep "support_le1_pow_elementary_sympoly_range" fun _ => (do
   prove ([[
   !(r:R ring) n d e.
@@ -20707,7 +20541,7 @@ def support_le1_pow_elementary_sympoly_range : thm := keep "support_le1_pow_elem
   : ExceptT String IO thm).run
 #eval support_le1_pow_elementary_sympoly_range
 
-#eval phrase 971
+#eval phrase 957
 def support_le1_product_pow_elementary_sympoly_range : thm := keep "support_le1_product_pow_elementary_sympoly_range" fun _ => (do
   prove ([[
   !(r:R ring) n e.
@@ -20734,7 +20568,7 @@ def support_le1_product_pow_elementary_sympoly_range : thm := keep "support_le1_
   : ExceptT String IO thm).run
 #eval support_le1_product_pow_elementary_sympoly_range
 
-#eval phrase 972
+#eval phrase 958
 def support_le1_product_pow_elementary_sympoly_range_v2 : thm := keep "support_le1_product_pow_elementary_sympoly_range_v2" fun _ => (do
   prove ([[
   !(r:R ring) n e.
@@ -20758,7 +20592,7 @@ def support_le1_product_pow_elementary_sympoly_range_v2 : thm := keep "support_l
   : ExceptT String IO thm).run
 #eval support_le1_product_pow_elementary_sympoly_range_v2
 
-#eval phrase 973
+#eval phrase 959
 def symmetric_subring_if_poly_subring_lemma : thm := keep "symmetric_subring_if_poly_subring_lemma" fun _ => (do
   let h15 ← set_fact (← ExceptT.mk [[ring_product(poly_ring (r:R ring) (:num)) (1..n) (\d. poly_pow r (elementary_sympoly_range r n d) (e d)) IN {q | ring_polynomial r q /\ poly_vars r q SUBSET range n} ==> i IN poly_vars r (ring_product (poly_ring r (:num)) (1..n) (\d. poly_pow r (elementary_sympoly_range r n d) (e d))) ==> i IN range n]])
   let h14 ← def' ([[s:(num->num)->R]]) (← ExceptT.mk [[poly_sub(r:R ring) p (poly_mul r (poly_const r (p t)) (ring_product (poly_ring r (:num)) (1..n) (\d. poly_pow r (elementary_sympoly_range r n d) (e d))))]])
@@ -21036,7 +20870,7 @@ def symmetric_subring_if_poly_subring_lemma : thm := keep "symmetric_subring_if_
   : ExceptT String IO thm).run
 #eval symmetric_subring_if_poly_subring_lemma
 
-#eval phrase 974
+#eval phrase 960
 def symmetric_subring_if_poly_subring_range : thm := keep "symmetric_subring_if_poly_subring_range" fun _ => (do
   prove ([[
   !(r:R ring) G n c:num->R p.
@@ -21063,7 +20897,7 @@ def symmetric_subring_if_poly_subring_range : thm := keep "symmetric_subring_if_
 
 /- ===== poly_reindex: reindexing polynomial variables -/
 
-#eval phrase 975
+#eval phrase 961
 def poly_vars_poly_reindex : thm := keep "poly_vars_poly_reindex" fun _ => (do
   prove ([[
   !(r:R ring) A B q f:X->Y.
@@ -21075,7 +20909,7 @@ def poly_vars_poly_reindex : thm := keep "poly_vars_poly_reindex" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_vars_poly_reindex
 
-#eval phrase 976
+#eval phrase 962
 def powerseries_poly_reindex : thm := keep "powerseries_poly_reindex" fun _ => (do
   prove ([[
   !(r:R ring) A B q f:X->Y.
@@ -21087,7 +20921,7 @@ def powerseries_poly_reindex : thm := keep "powerseries_poly_reindex" fun _ => (
   : ExceptT String IO thm).run
 #eval powerseries_poly_reindex
 
-#eval phrase 977
+#eval phrase 963
 def monomials_poly_reindex : thm := keep "monomials_poly_reindex" fun _ => (do
   prove ([[
   !(r:R ring) A B q f:X->Y.
@@ -21103,7 +20937,7 @@ def monomials_poly_reindex : thm := keep "monomials_poly_reindex" fun _ => (do
   : ExceptT String IO thm).run
 #eval monomials_poly_reindex
 
-#eval phrase 978
+#eval phrase 964
 def polynomial_poly_reindex : thm := keep "polynomial_poly_reindex" fun _ => (do
   prove ([[
   !(r:R ring) A B q f:X->Y.
@@ -21121,7 +20955,7 @@ def polynomial_poly_reindex : thm := keep "polynomial_poly_reindex" fun _ => (do
   : ExceptT String IO thm).run
 #eval polynomial_poly_reindex
 
-#eval phrase 979
+#eval phrase 965
 def poly_reindex_permutes : thm := keep "poly_reindex_permutes" fun _ => (do
   let h3 ← set_fact (← ExceptT.mk [[a:X IN {i | ~(m i = 0)} ==> ~(m a = 0)]])
   let h2 ← def' ([[h:Y->Y]]) (← ExceptT.mk [[\y:Y. if y IN B then f(g(@x:X. x IN A /\ f x = y)) else y]])
@@ -21186,7 +21020,7 @@ def poly_reindex_permutes : thm := keep "poly_reindex_permutes" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_reindex_permutes
 
-#eval phrase 980
+#eval phrase 966
 def poly_evaluate_poly_reindex : thm := keep "poly_evaluate_poly_reindex" fun _ => (do
   prove ([[
   !(r:R ring) A B q f:X->Y c:Y->R.
@@ -21200,7 +21034,7 @@ def poly_evaluate_poly_reindex : thm := keep "poly_evaluate_poly_reindex" fun _ 
   : ExceptT String IO thm).run
 #eval poly_evaluate_poly_reindex
 
-#eval phrase 981
+#eval phrase 967
 def poly_reindex_subring : thm := keep "poly_reindex_subring" fun _ => (do
   prove ([[
   !(r:R ring) G A B q f:X->Y.
@@ -21212,7 +21046,7 @@ def poly_reindex_subring : thm := keep "poly_reindex_subring" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_reindex_subring
 
-#eval phrase 982
+#eval phrase 968
 def symmetric_subring_if_poly_subring : thm := keep "symmetric_subring_if_poly_subring" fun _ => (do
   let h1 ← def' ([[p:(num->num)->R]]) (← ExceptT.mk [[poly_reindex (r:R ring) q (f:num->X) (range(CARD S)) (S:X->bool)]])
   prove ([[
@@ -21279,7 +21113,7 @@ def symmetric_subring_if_poly_subring : thm := keep "symmetric_subring_if_poly_s
 /- ===== ring_ord -/
 /- XXX: should factor poly_ord and some of the UFD theorems above via this -/
 
-#eval phrase 983
+#eval phrase 969
 def ring_ord : thm := keep "ring_ord" fun _ => new_definition
  [[
   ring_ord (r:R ring) (p:R) (a:R)
@@ -21295,7 +21129,7 @@ def ring_ord : thm := keep "ring_ord" fun _ => new_definition
 
 /- could prove via ring_ord_unit -/
 
-#eval phrase 984
+#eval phrase 970
 def ring_ord_1 : thm := keep "ring_ord_1" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[~(y = 0) ==> y = 1+(y-1)]])
   prove ([[
@@ -21327,7 +21161,7 @@ def ring_ord_1 : thm := keep "ring_ord_1" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_1
 
-#eval phrase 985
+#eval phrase 971
 def ring_ord_notdivides : thm := keep "ring_ord_notdivides" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[~(y = 0) ==> y = 1+(y-1)]])
   prove ([[
@@ -21366,7 +21200,7 @@ def ring_ord_notdivides : thm := keep "ring_ord_notdivides" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_notdivides
 
-#eval phrase 986
+#eval phrase 972
 def ring_ord_unit : thm := keep "ring_ord_unit" fun _ => (do
   prove ([[
   !(r:R ring) p v.
@@ -21382,7 +21216,7 @@ def ring_ord_unit : thm := keep "ring_ord_unit" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_unit
 
-#eval phrase 987
+#eval phrase 973
 def ring_ord_pow_refl : thm := keep "ring_ord_pow_refl" fun _ => (do
   let h2 ← num_linear_fact (← ExceptT.mk [[e < y:num ==> y = e+((y-1-e)+1)]])
   let h1 ← num_linear_fact (← ExceptT.mk [[y < e:num ==> e = y+((e-1-y)+1)]])
@@ -21431,7 +21265,7 @@ def ring_ord_pow_refl : thm := keep "ring_ord_pow_refl" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_pow_refl
 
-#eval phrase 988
+#eval phrase 974
 def ring_ord_refl : thm := keep "ring_ord_refl" fun _ => (do
   prove ([[
   !(r:R ring) p.
@@ -21445,7 +21279,7 @@ def ring_ord_refl : thm := keep "ring_ord_refl" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_refl
 
-#eval phrase 989
+#eval phrase 975
 def ring_ord_exists : thm := keep "ring_ord_exists" fun _ => (do
   let h1 ← rgl (← ExceptT.mk [[E1:R = ring_mul r E p ==> a = ring_mul r p b ==> b = ring_mul r E u ==> a = ring_mul r E1 u]])
   prove ([[
@@ -21494,7 +21328,7 @@ def ring_ord_exists : thm := keep "ring_ord_exists" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_exists
 
-#eval phrase 990
+#eval phrase 976
 def ring_ord_unique_lemma : thm := keep "ring_ord_unique_lemma" fun _ => (do
   let h2 ← rgl (← ExceptT.mk [[ring_mul r (E:R) u = ring_mul r X v ==> E = ring_mul r X (ring_mul r p E1F) ==> ring_mul r X (ring_mul r p (ring_mul r E1F u)) = ring_mul r X v]])
   let h1 ← num_linear_fact (← ExceptT.mk [[~(e <= f) ==> e = f+(1+(e-1-f))]])
@@ -21530,7 +21364,7 @@ def ring_ord_unique_lemma : thm := keep "ring_ord_unique_lemma" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_unique_lemma
 
-#eval phrase 991
+#eval phrase 977
 def ring_ord_unique : thm := keep "ring_ord_unique" fun _ => (do
   prove ([[
   !(r:R ring) p e f u v.
@@ -21552,7 +21386,7 @@ def ring_ord_unique : thm := keep "ring_ord_unique" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_unique
 
-#eval phrase 992
+#eval phrase 978
 def ring_ord_exists_unique : thm := keep "ring_ord_exists_unique" fun _ => (do
   prove ([[
   !(r:R ring) p a.
@@ -21582,7 +21416,7 @@ def ring_ord_exists_unique : thm := keep "ring_ord_exists_unique" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_exists_unique
 
-#eval phrase 993
+#eval phrase 979
 def divides_pow_ring_ord : thm := keep "divides_pow_ring_ord" fun _ => (do
   prove ([[
   !(r:R ring) p a.
@@ -21604,7 +21438,7 @@ def divides_pow_ring_ord : thm := keep "divides_pow_ring_ord" fun _ => (do
   : ExceptT String IO thm).run
 #eval divides_pow_ring_ord
 
-#eval phrase 994
+#eval phrase 980
 def divides_le_pow_ring_ord : thm := keep "divides_le_pow_ring_ord" fun _ => (do
   prove ([[
   !(r:R ring) p a e.
@@ -21622,7 +21456,7 @@ def divides_le_pow_ring_ord : thm := keep "divides_le_pow_ring_ord" fun _ => (do
   : ExceptT String IO thm).run
 #eval divides_le_pow_ring_ord
 
-#eval phrase 995
+#eval phrase 981
 def nonzero_ring_ord_if_divides : thm := keep "nonzero_ring_ord_if_divides" fun _ => (do
   prove ([[
   !(r:R ring) p a.
@@ -21648,7 +21482,7 @@ def nonzero_ring_ord_if_divides : thm := keep "nonzero_ring_ord_if_divides" fun 
   : ExceptT String IO thm).run
 #eval nonzero_ring_ord_if_divides
 
-#eval phrase 996
+#eval phrase 982
 def ring_ord_mul : thm := keep "ring_ord_mul" fun _ => (do
   prove ([[
   !(r:R ring) p a b.
@@ -21694,7 +21528,7 @@ def ring_ord_mul : thm := keep "ring_ord_mul" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_mul
 
-#eval phrase 997
+#eval phrase 983
 def ring_ord_pow : thm := keep "ring_ord_pow" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[SUC e = 1+e]])
   prove ([[
@@ -21725,7 +21559,7 @@ def ring_ord_pow : thm := keep "ring_ord_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_pow
 
-#eval phrase 998
+#eval phrase 984
 def ring_ord_product_waterfall : thm := keep "ring_ord_product_waterfall" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -21756,7 +21590,7 @@ def ring_ord_product_waterfall : thm := keep "ring_ord_product_waterfall" fun _ 
   : ExceptT String IO thm).run
 #eval ring_ord_product_waterfall
 
-#eval phrase 999
+#eval phrase 985
 def ring_ord_product : thm := keep "ring_ord_product" fun _ => (do
   prove ([[
   !(r:R ring) p S a.
@@ -21777,7 +21611,7 @@ def ring_ord_product : thm := keep "ring_ord_product" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_product
 
-#eval phrase 1000
+#eval phrase 986
 def ring_ord_divides : thm := keep "ring_ord_divides" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[e <= e+f:num]])
   prove ([[
@@ -21801,7 +21635,7 @@ def ring_ord_divides : thm := keep "ring_ord_divides" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_divides
 
-#eval phrase 1001
+#eval phrase 987
 def ring_ord_prime_divides : thm := keep "ring_ord_prime_divides" fun _ => (do
   prove ([[
   !(r:R ring) p b.
@@ -21818,7 +21652,7 @@ def ring_ord_prime_divides : thm := keep "ring_ord_prime_divides" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_prime_divides
 
-#eval phrase 1002
+#eval phrase 988
 def ring_ord_gcd : thm := keep "ring_ord_gcd" fun _ => (do
   prove ([[
   !(r:R ring) p a b.
@@ -21850,7 +21684,7 @@ def ring_ord_gcd : thm := keep "ring_ord_gcd" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_gcd
 
-#eval phrase 1003
+#eval phrase 989
 def ring_ord_associates : thm := keep "ring_ord_associates" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[e+0 = e]])
   prove ([[
@@ -21877,7 +21711,7 @@ def ring_ord_associates : thm := keep "ring_ord_associates" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_associates
 
-#eval phrase 1004
+#eval phrase 990
 def ring_associates_ord : thm := keep "ring_associates_ord" fun _ => (do
   prove ([[
   !(r:R ring) p q a.
@@ -21920,7 +21754,7 @@ def ring_associates_ord : thm := keep "ring_associates_ord" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_associates_ord
 
-#eval phrase 1005
+#eval phrase 991
 def ring_ord_prime : thm := keep "ring_ord_prime" fun _ => (do
   prove ([[
   !(r:R ring) p q.
@@ -21943,7 +21777,7 @@ def ring_ord_prime : thm := keep "ring_ord_prime" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_prime
 
-#eval phrase 1006
+#eval phrase 992
 def primefact_ord_waterfall : thm := keep "primefact_ord_waterfall" fun _ => (do
   let h8 ← ar (← ExceptT.mk [[1+0 = 1]])
   let h7 ← ar (← ExceptT.mk [[e*0 = 0]])
@@ -22098,7 +21932,7 @@ def primefact_ord_waterfall : thm := keep "primefact_ord_waterfall" fun _ => (do
   : ExceptT String IO thm).run
 #eval primefact_ord_waterfall
 
-#eval phrase 1007
+#eval phrase 993
 def primefact_ord : thm := keep "primefact_ord" fun _ => (do
   prove ([[
   !(r:R ring) a.
@@ -22116,7 +21950,7 @@ def primefact_ord : thm := keep "primefact_ord" fun _ => (do
   : ExceptT String IO thm).run
 #eval primefact_ord
 
-#eval phrase 1008
+#eval phrase 994
 def primefact_divides : thm := keep "primefact_divides" fun _ => (do
   prove ([[
   !(r:R ring) n q e b.
@@ -22145,7 +21979,7 @@ def primefact_divides : thm := keep "primefact_divides" fun _ => (do
   : ExceptT String IO thm).run
 #eval primefact_divides
 
-#eval phrase 1009
+#eval phrase 995
 def ring_ord_divides_eq : thm := keep "ring_ord_divides_eq" fun _ => (do
   prove ([[
   !(r:R ring) a b.
@@ -22178,7 +22012,7 @@ def ring_ord_divides_eq : thm := keep "ring_ord_divides_eq" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_divides_eq
 
-#eval phrase 1010
+#eval phrase 996
 def ring_ord_associates_eq : thm := keep "ring_ord_associates_eq" fun _ => (do
   prove ([[
   !(r:R ring) a b.
@@ -22209,7 +22043,7 @@ def ring_ord_associates_eq : thm := keep "ring_ord_associates_eq" fun _ => (do
 
 /- ===== lcm -/
 
-#eval phrase 1011
+#eval phrase 997
 def lcm_exists : thm := keep "lcm_exists" fun _ => (do
   let h4 ← ar (← ExceptT.mk [[e+0 = e]])
   let h3 ← num_linear_fact (← ExceptT.mk [[ring_ord r (p:R) (ring_gcd r (a,b)) = ring_ord r p b ==> ring_ord r p b = ring_ord r p (ring_gcd r (a,b)) + ring_ord r p v ==> ring_ord r p v = 0]])
@@ -22297,7 +22131,7 @@ def lcm_exists : thm := keep "lcm_exists" fun _ => (do
   : ExceptT String IO thm).run
 #eval lcm_exists
 
-#eval phrase 1012
+#eval phrase 998
 def lcm_set_exists : thm := keep "lcm_set_exists" fun _ => (do
   let h3 ← set_fact (← ExceptT.mk [[~(s = x:X) ==> s IN x INSERT S ==> s IN S]])
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
@@ -22336,7 +22170,7 @@ def lcm_set_exists : thm := keep "lcm_set_exists" fun _ => (do
   : ExceptT String IO thm).run
 #eval lcm_set_exists
 
-#eval phrase 1013
+#eval phrase 999
 def lcm_set_units : thm := keep "lcm_set_units" fun _ => (do
   prove ([[
   !(r:R ring) a S c.
@@ -22355,7 +22189,7 @@ def lcm_set_units : thm := keep "lcm_set_units" fun _ => (do
   : ExceptT String IO thm).run
 #eval lcm_set_units
 
-#eval phrase 1014
+#eval phrase 1000
 def zero_lcm_set : thm := keep "zero_lcm_set" fun _ => (do
   let h1 ← def' ([[d:R]]) (← ExceptT.mk [[ring_product r S (a:X->R)]])
   prove ([[
@@ -22387,7 +22221,7 @@ def zero_lcm_set : thm := keep "zero_lcm_set" fun _ => (do
 
 /- could extract from zero_lcm_set -/
 
-#eval phrase 1015
+#eval phrase 1001
 def zero_lcm : thm := keep "zero_lcm" fun _ => (do
   let h1 ← def' ([[d:R]]) (← ExceptT.mk [[ring_mul r a b:R]])
   prove ([[
@@ -22417,7 +22251,7 @@ def zero_lcm : thm := keep "zero_lcm" fun _ => (do
   : ExceptT String IO thm).run
 #eval zero_lcm
 
-#eval phrase 1016
+#eval phrase 1002
 def ring_ord_lcm_set : thm := keep "ring_ord_lcm_set" fun _ => (do
   let h2 ← rgl (← ExceptT.mk [[c = ring_mul r p u:R ==> u = ring_mul r c v ==> ring_mul r c (ring_1 r) = ring_mul r c (ring_mul r p v)]])
   let h1 ← num_linear_fact (← ExceptT.mk [[ring_ord r p (a(t:X):R) < ring_ord r p c ==> 1 <= ring_ord r p c]])
@@ -22486,7 +22320,7 @@ def ring_ord_lcm_set : thm := keep "ring_ord_lcm_set" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_lcm_set
 
-#eval phrase 1017
+#eval phrase 1003
 def ring_ord_lcm : thm := keep "ring_ord_lcm" fun _ => (do
   let h6 ← num_linear_fact (← ExceptT.mk [[~(ring_ord r p (a:R) <= ring_ord r p b) ==> ring_ord r p b <= ring_ord r p a]])
   let h5 ← ar (← ExceptT.mk [[~(1 = 0)]])
@@ -22540,7 +22374,7 @@ def ring_ord_lcm : thm := keep "ring_ord_lcm" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_lcm
 
-#eval phrase 1018
+#eval phrase 1004
 def ring_ord_squarefree : thm := keep "ring_ord_squarefree" fun _ => (do
   let h1 ← num_linear_fact (← ExceptT.mk [[1 <= ring_ord r (q(a':num)) (a:R) ==> ring_ord r (q a') a <= 1 ==> ring_ord r (q a') a = 1]])
   prove ([[
@@ -22598,7 +22432,7 @@ def ring_ord_squarefree : thm := keep "ring_ord_squarefree" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_ord_squarefree
 
-#eval phrase 1019
+#eval phrase 1005
 def ring_squarefree_lcm : thm := keep "ring_squarefree_lcm" fun _ => (do
   prove ([[
   !(r:R ring) a b c.
@@ -22630,7 +22464,7 @@ def ring_squarefree_lcm : thm := keep "ring_squarefree_lcm" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_squarefree_lcm
 
-#eval phrase 1020
+#eval phrase 1006
 def ring_squarefree_lcm_set : thm := keep "ring_squarefree_lcm_set" fun _ => (do
   let h4 ← ar (← ExceptT.mk [[0 <= 1]])
   let h3 ← ar (← ExceptT.mk [[0 <= 0]])
@@ -22690,7 +22524,7 @@ def ring_squarefree_lcm_set : thm := keep "ring_squarefree_lcm_set" fun _ => (do
   : ExceptT String IO thm).run
 #eval ring_squarefree_lcm_set
 
-#eval phrase 1021
+#eval phrase 1007
 def ring_prime_divides_lcm_set : thm := keep "ring_prime_divides_lcm_set" fun _ => (do
   let h2 ← num_linear_fact (← ExceptT.mk [[ring_ord r (p:R) c <= 0 ==> ring_ord r p c = 0]])
   let h1 ← ar (← ExceptT.mk [[0 <= 0]])
@@ -22737,7 +22571,7 @@ def ring_prime_divides_lcm_set : thm := keep "ring_prime_divides_lcm_set" fun _ 
 
 /- ===== polynomial lcm -/
 
-#eval phrase 1022
+#eval phrase 1008
 def poly_lcm_set_exists : thm := keep "poly_lcm_set_exists" fun _ => (do
   prove ([[
   !(r:R ring) a S.
@@ -22766,7 +22600,7 @@ def poly_lcm_set_exists : thm := keep "poly_lcm_set_exists" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_lcm_set_exists
 
-#eval phrase 1023
+#eval phrase 1009
 def monic_lcm_set_exists : thm := keep "monic_lcm_set_exists" fun _ => (do
   prove ([[
   !(r:R ring) a S.
@@ -22804,7 +22638,7 @@ def monic_lcm_set_exists : thm := keep "monic_lcm_set_exists" fun _ => (do
 
 /- ===== more on algebraic numbers -/
 
-#eval phrase 1024
+#eval phrase 1010
 def minimal_squarefree_from_algebraic_set : thm := keep "minimal_squarefree_from_algebraic_set" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[Cx(&0) * (poly_eval complex_ring u x) = Cx(&0)]])
   prove ([[
@@ -22861,7 +22695,7 @@ def minimal_squarefree_from_algebraic_set : thm := keep "minimal_squarefree_from
           ([[minimal_polynomial (QinC_ring,complex_ring) I x]]),
           ([[u:(1->num)->complex]])] poly_mul_subring THEN
         qed [x_poly_use], pass] THEN
-      subgoal ([[poly_eval complex_ring (poly_mul complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) u) x = (poly_eval complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) x) * (poly_eval complex_ring u x)]]) THENL [rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+      subgoal ([[poly_eval complex_ring (poly_mul complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) u) x = (poly_eval complex_ring (minimal_polynomial (QinC_ring,complex_ring) I x) x) * (poly_eval complex_ring u x)]]) THENL [rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
         specialize_assuming [([[complex_ring]]),
           ([[minimal_polynomial (QinC_ring,complex_ring) I x]]),
           ([[u:(1->num)->complex]]),
@@ -22907,7 +22741,7 @@ def minimal_squarefree_from_algebraic_set : thm := keep "minimal_squarefree_from
   : ExceptT String IO thm).run
 #eval minimal_squarefree_from_algebraic_set
 
-#eval phrase 1025
+#eval phrase 1011
 def squarefree_from_algebraic_set : thm := keep "squarefree_from_algebraic_set" fun _ => (do
   prove ([[
   !S.
@@ -22924,7 +22758,7 @@ def squarefree_from_algebraic_set : thm := keep "squarefree_from_algebraic_set" 
   : ExceptT String IO thm).run
 #eval squarefree_from_algebraic_set
 
-#eval phrase 1026
+#eval phrase 1012
 def squarefree_from_algebraic_set_avoiding_0 : thm := keep "squarefree_from_algebraic_set_avoiding_0" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[s - (Cx(&0)) = Cx(&0) ==> s = Cx(&0)]])
   prove ([[
@@ -22951,7 +22785,7 @@ def squarefree_from_algebraic_set_avoiding_0 : thm := keep "squarefree_from_alge
       have' ([[poly_eval complex_ring (x_minus_const complex_ring (Cx(&0))) s = Cx(&0)]]) [maybe_algebraic_minimal_polynomial] THEN
       have' ([[poly_eval complex_ring (x_minus_const complex_ring (Cx(&0))) s = ring_sub complex_ring s (Cx(&0))]]) [eval_x_minus_const, in_complex_ring] THEN
       have' ([[ring_sub complex_ring s (Cx(&0)) = Cx(&0)]]) [] THEN
-      have' ([[s - (Cx(&0)) = Cx(&0)]]) [ring_sub_complex] THEN
+      have' ([[s - (Cx(&0)) = Cx(&0)]]) [COMPLEX_RING_SUB] THEN
       h1 THEN
       qed [], pass] THEN
     qed [])
@@ -22960,7 +22794,7 @@ def squarefree_from_algebraic_set_avoiding_0 : thm := keep "squarefree_from_alge
 
 /- ===== more on multivariate polynomials -/
 
-#eval phrase 1027
+#eval phrase 1013
 def poly_vars_sum_poly_subset : thm := keep "poly_vars_sum_poly_subset" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -22988,7 +22822,7 @@ def poly_vars_sum_poly_subset : thm := keep "poly_vars_sum_poly_subset" fun _ =>
   : ExceptT String IO thm).run
 #eval poly_vars_sum_poly_subset
 
-#eval phrase 1028
+#eval phrase 1014
 def poly_vars_product_poly_subset : thm := keep "poly_vars_product_poly_subset" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -23016,7 +22850,7 @@ def poly_vars_product_poly_subset : thm := keep "poly_vars_product_poly_subset" 
   : ExceptT String IO thm).run
 #eval poly_vars_product_poly_subset
 
-#eval phrase 1029
+#eval phrase 1015
 def poly_vars_pow : thm := keep "poly_vars_pow" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[SUC n = 1+n]])
   prove ([[
@@ -23038,7 +22872,7 @@ def poly_vars_pow : thm := keep "poly_vars_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_vars_pow
 
-#eval phrase 1030
+#eval phrase 1016
 def poly_vars_pow_subset : thm := keep "poly_vars_pow_subset" fun _ => (do
   prove ([[
   !(r:R ring) p:(V->num)->R n U.
@@ -23050,7 +22884,7 @@ def poly_vars_pow_subset : thm := keep "poly_vars_pow_subset" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_vars_pow_subset
 
-#eval phrase 1031
+#eval phrase 1017
 def poly_evaluate_pow : thm := keep "poly_evaluate_pow" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[SUC n = 1+n]])
   prove ([[
@@ -23078,7 +22912,7 @@ def poly_evaluate_pow : thm := keep "poly_evaluate_pow" fun _ => (do
   : ExceptT String IO thm).run
 #eval poly_evaluate_pow
 
-#eval phrase 1032
+#eval phrase 1018
 def poly_evaluate_sum : thm := keep "poly_evaluate_sum" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -23104,7 +22938,7 @@ def poly_evaluate_sum : thm := keep "poly_evaluate_sum" fun _ => (do
 
 /- XXX: limit q v condition to variables appearing -/
 
-#eval phrase 1033
+#eval phrase 1019
 def poly_evaluate_product : thm := keep "poly_evaluate_product" fun _ => (do
   let h2 ← set_fact (← ExceptT.mk [[!s:X. s IN S ==> s IN x INSERT S]])
   let h1 ← set_fact (← ExceptT.mk [[(x:X) IN x INSERT S]])
@@ -23133,7 +22967,7 @@ def poly_evaluate_product : thm := keep "poly_evaluate_product" fun _ => (do
 /- can prove this via det -/
 /- or via transpose and monic_vanishing_at -/
 
-#eval phrase 1034
+#eval phrase 1020
 def vandermonde_indep_range : thm := keep "vandermonde_indep_range" fun _ => (do
   let h13 ← num_linear_fact (← ExceptT.mk [[i < n+1 ==> ~(i < n) ==> i = n]])
   let h12 ← num_linear_fact (← ExceptT.mk [[0 < n+1]])
@@ -23250,7 +23084,7 @@ def vandermonde_indep_range : thm := keep "vandermonde_indep_range" fun _ => (do
   : ExceptT String IO thm).run
 #eval vandermonde_indep_range
 
-#eval phrase 1035
+#eval phrase 1021
 def vandermonde_indep : thm := keep "vandermonde_indep" fun _ => (do
   prove ([[
   !(r:R ring) S c v.
@@ -23301,7 +23135,7 @@ def vandermonde_indep : thm := keep "vandermonde_indep" fun _ => (do
   : ExceptT String IO thm).run
 #eval vandermonde_indep
 
-#eval phrase 1036
+#eval phrase 1022
 def expformal_linearly_independent : thm := keep "expformal_linearly_independent" fun _ => (do
   let h1 ← complex_field_fact (← ExceptT.mk [[~(Cx (&(FACT d)) = Cx (&0)) ==> ring_sum complex_ring S (\z. B z * z pow d) / Cx (&(FACT d)) = Cx (&0) ==> ring_sum complex_ring S (\z. B z * z pow d) = Cx (&0)]])
   prove ([[
@@ -23318,7 +23152,7 @@ def expformal_linearly_independent : thm := keep "expformal_linearly_independent
 ]])
    (intro THEN
     subgoal ([[!d. ring_sum complex_ring S (\z:complex. B z * z pow d) = Cx(&0)]]) THENL [intro THEN
-      have' ([[coeff d (poly_0 complex_ring) = Cx(&0)]]) [coeff_poly_0, complex_ring_clauses] THEN
+      have' ([[coeff d (poly_0 complex_ring) = Cx(&0)]]) [coeff_poly_0, COMPLEX_RING_CLAUSES] THEN
       subgoal ([[coeff d (poly_sum complex_ring S (\z. poly_mul complex_ring (poly_const complex_ring (B z)) (expformal z))) = ring_sum complex_ring S (\z. coeff d (poly_mul complex_ring (poly_const complex_ring (B z)) (expformal z)))]]) THENL [specialize [([[complex_ring]]),
           ([[\z. poly_mul complex_ring (poly_const complex_ring (B z)) (expformal z)]])] coeff_poly_sum THEN
         qed [series_complex], pass] THEN
@@ -23326,9 +23160,9 @@ def expformal_linearly_independent : thm := keep "expformal_linearly_independent
         rw [BETA_THM] THEN
         intro THEN
         simp [coeff_poly_const_times, series_complex, in_complex_ring] THEN
-        rw [expformal, coeff_series_from_coeffs, complex_ring_clauses] THEN
+        rw [expformal, coeff_series_from_coeffs, COMPLEX_RING_CLAUSES] THEN
         CONV_TAC cf, pass] THEN
-      subgoal ([[ring_sum complex_ring S (\z. (B z * z pow d) / Cx(&(FACT d))) = ring_sum complex_ring S (\z. B z * z pow d) / Cx(&(FACT d))]]) THENL [simp [(← HolLight.GSYM vsum_ring_sum_complex)] THEN
+      subgoal ([[ring_sum complex_ring S (\z. (B z * z pow d) / Cx(&(FACT d))) = ring_sum complex_ring S (\z. B z * z pow d) / Cx(&(FACT d))]]) THENL [simp [COMPLEX_RING_SUM] THEN
         rw [complex_div] THEN
         specialize [([[inv(Cx(&(FACT d)))]]),
           ([[\z:complex. B z * z pow d]]),
@@ -23340,21 +23174,21 @@ def expformal_linearly_independent : thm := keep "expformal_linearly_independent
       have' ([[~(Cx(&(FACT d)) = Cx(&0))]]) [CX_INJ] THEN
       h1 THEN
       qed [], pass] THEN
-    «recall» integral_domain_complex THEN
+    «recall» INTEGRAL_DOMAIN_COMPLEX_RING THEN
     have' ([[!s:complex. s IN S ==> B s IN ring_carrier complex_ring]]) [in_complex_ring] THEN
     have' ([[!s:complex. s IN S ==> I s IN ring_carrier complex_ring]]) [in_complex_ring] THEN
     have' ([[!s t:complex. s IN S ==> t IN S ==> I s = I t ==> s = t]]) [I_THM] THEN
-    subgoal ([[!e. e < CARD S ==> ring_sum complex_ring S (\s. ring_mul complex_ring (B s) (ring_pow complex_ring (I s) e)) = ring_0 complex_ring]]) THENL [rw [I_THM, ring_pow_complex, complex_ring_clauses] THEN
+    subgoal ([[!e. e < CARD S ==> ring_sum complex_ring S (\s. ring_mul complex_ring (B s) (ring_pow complex_ring (I s) e)) = ring_0 complex_ring]]) THENL [rw [I_THM, COMPLEX_RING_POW, COMPLEX_RING_CLAUSES] THEN
       qed [], pass] THEN
     specialize [([[complex_ring]]),
       ([[S:complex->bool]]),
       ([[B:complex->complex]]),
       ([[I:complex->complex]])] vandermonde_indep THEN
-    qed [complex_ring_clauses])
+    qed [COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval expformal_linearly_independent
 
-#eval phrase 1037
+#eval phrase 1023
 def expformal_perm_linearly_independent : thm := keep "expformal_perm_linearly_independent" fun _ => (do
   prove ([[
   !S:complex->bool B:complex->complex i:complex->complex.
@@ -23391,7 +23225,7 @@ def expformal_perm_linearly_independent : thm := keep "expformal_perm_linearly_i
 
 /- ===== expanding prod_pi sum c_z exp(pi(z)) -/
 
-#eval phrase 1038
+#eval phrase 1024
 def ring_product_perm_sum_mul_exp_expand : thm := keep "ring_product_perm_sum_mul_exp_expand" fun _ => (do
   prove ([[
   !(a:A ring) (b:B ring) E:A->B c:A->B S:A->bool.
@@ -23485,7 +23319,7 @@ def ring_product_perm_sum_mul_exp_expand : thm := keep "ring_product_perm_sum_mu
   : ExceptT String IO thm).run
 #eval ring_product_perm_sum_mul_exp_expand
 
-#eval phrase 1039
+#eval phrase 1025
 def product_perm_sum_mul_cexp_expand : thm := keep "product_perm_sum_mul_cexp_expand" fun _ => (do
   prove ([[
   !c:complex->complex S:complex->bool.
@@ -23510,18 +23344,18 @@ def product_perm_sum_mul_cexp_expand : thm := keep "product_perm_sum_mul_cexp_ex
   )
 ]])
    (intro THEN
-    rw [(← HolLight.GSYM ring_pow_complex)] THEN
-    rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+    rw [(← HolLight.GSYM COMPLEX_RING_POW)] THEN
+    rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
     specialize_assuming [([[complex_ring]]),
       ([[complex_ring]]),
       ([[cexp]]),
       ([[c:complex->complex]]),
       ([[S:complex->bool]])] ring_product_perm_sum_mul_exp_expand THEN
-    qed [in_complex_ring, CEXP_0, CEXP_ADD, SUBSET, complex_ring_clauses])
+    qed [in_complex_ring, CEXP_0, CEXP_ADD, SUBSET, COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval product_perm_sum_mul_cexp_expand
 
-#eval phrase 1040
+#eval phrase 1026
 def product_perm_sum_mul_expformal_expand : thm := keep "product_perm_sum_mul_expformal_expand" fun _ => (do
   prove ([[
   !c:complex->((1->num)->complex) S:complex->bool.
@@ -23554,11 +23388,11 @@ def product_perm_sum_mul_expformal_expand : thm := keep "product_perm_sum_mul_ex
       ([[expformal]]),
       ([[c:complex->(1->num)->complex]]),
       ([[S:complex->bool]])] ring_product_perm_sum_mul_exp_expand THEN
-    qed [complex_ring_clauses, in_complex_ring, series_complex, x_series_use, expformal_0, mul_expformal, SUBSET])
+    qed [COMPLEX_RING_CLAUSES, in_complex_ring, series_complex, x_series_use, expformal_0, mul_expformal, SUBSET])
   : ExceptT String IO thm).run
 #eval product_perm_sum_mul_expformal_expand
 
-#eval phrase 1041
+#eval phrase 1027
 def product_perm_sum_mul_expformal_expand_v2 : thm := keep "product_perm_sum_mul_expformal_expand_v2" fun _ => (do
   prove ([[
   !c:complex->((1->num)->complex) S:complex->bool.
@@ -23627,7 +23461,7 @@ def product_perm_sum_mul_expformal_expand_v2 : thm := keep "product_perm_sum_mul
   : ExceptT String IO thm).run
 #eval product_perm_sum_mul_expformal_expand_v2
 
-#eval phrase 1042
+#eval phrase 1028
 def product_perm_sum_mul_expformal_expand_v3 : thm := keep "product_perm_sum_mul_expformal_expand_v3" fun _ => (do
   prove ([[
   !c:complex->complex S:complex->bool.
@@ -23678,7 +23512,7 @@ def product_perm_sum_mul_expformal_expand_v3 : thm := keep "product_perm_sum_mul
       specialize [([[complex_ring]]),
         ([[ring_product complex_ring {z | ~(s z = 0)} (\z:complex. c z pow s z)]]),
         ([[Cx(&(numpreimages (\f. ring_sum complex_ring (perm S) (\i. i (f i))) {f | f IN functions (perm S) S /\ numpreimages f (perm S) = s} a))]])] POLY_CONST_MUL THEN
-      rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+      rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
       simp [] THEN
       subgoal ([[FINITE {z:complex | ~(s z = 0)}]]) THENL [choose ([[f:(complex->complex)->complex]]) ([[s:complex->num = (\f. numpreimages f (perm S)) f /\ f IN functions (perm S) S]]) [IN_IMAGE] THEN
         have' ([[s = numpreimages (f:(complex->complex)->complex) (perm S)]]) [] THEN
@@ -23695,7 +23529,7 @@ def product_perm_sum_mul_expformal_expand_v3 : thm := keep "product_perm_sum_mul
         rw [BETA_THM] THEN
         intro THEN
         have' ([[c(a':complex) IN ring_carrier complex_ring]]) [in_complex_ring] THEN
-        rw [(← HolLight.GSYM ring_pow_complex)] THEN
+        rw [(← HolLight.GSYM COMPLEX_RING_POW)] THEN
         simp [poly_const_pow, x_series_use_pow], pass] THEN
       simp [], pass] THEN
     rw [(← HolLight.GSYM poly_sum)] THEN
@@ -23719,13 +23553,13 @@ def product_perm_sum_mul_expformal_expand_v3 : thm := keep "product_perm_sum_mul
       ([[expformal a]])] RING_MUL_ASSOC THEN
     simp [] THEN
     rw [ring_of_num_x_series] THEN
-    rw [ring_of_num_complex, complex_of_num])
+    rw [COMPLEX_RING_OF_NUM])
   : ExceptT String IO thm).run
 #eval product_perm_sum_mul_expformal_expand_v3
 
 /- ===== more general transcendence results, part 1: alpha symmetrization -/
 
-#eval phrase 1043
+#eval phrase 1029
 def zero_sum_QinC_exp_squarefree_roots_lemma_sym_powersums : thm := keep "zero_sum_QinC_exp_squarefree_roots_lemma_sym_powersums" fun _ => (do
   let h1 ← def' ([[Z:(complex->num)->complex]]) (← ExceptT.mk [[ring_sum(poly_ring complex_ring (:complex)) {f | f IN functions (perm(complex_root p)) (complex_root p) /\ numpreimages f (perm(complex_root p)) = e} (\f. poly_pow complex_ring (ring_sum(poly_ring complex_ring (:complex)) (perm(complex_root p)) (\i. poly_var complex_ring (i (f i)))) d)]])
   prove ([[
@@ -23767,7 +23601,7 @@ def zero_sum_QinC_exp_squarefree_roots_lemma_sym_powersums : thm := keep "zero_s
         ([[I:complex->complex]]),
         ([[d:num]])] poly_evaluate_pow THEN
       simp [] THEN
-      rw [ring_pow_complex] THEN
+      rw [COMPLEX_RING_POW] THEN
       subgoal ([[poly_evaluate complex_ring (ring_sum (poly_ring complex_ring (:real^2)) (perm (complex_root p)) (\i. poly_var complex_ring (i (a i)))) I = ring_sum complex_ring (perm (complex_root p)) (\i. i (a i))]]) THENL [have' ([[!s. s IN perm (complex_root p) ==> ring_polynomial complex_ring (poly_var complex_ring (s (a s)))]]) [RING_POLYNOMIAL_VAR] THEN
         specialize [([[complex_ring]]),
           ([[\i:complex->complex. poly_var complex_ring (i (a i))]]),
@@ -23922,7 +23756,7 @@ def zero_sum_QinC_exp_squarefree_roots_lemma_sym_powersums : thm := keep "zero_s
   : ExceptT String IO thm).run
 #eval zero_sum_QinC_exp_squarefree_roots_lemma_sym_powersums
 
-#eval phrase 1044
+#eval phrase 1030
 def zero_sum_QinC_exp_squarefree_roots_lemma_sym_coeff_poly : thm := keep "zero_sum_QinC_exp_squarefree_roots_lemma_sym_coeff_poly" fun _ => (do
   prove ([[
   !p e n.
@@ -23940,7 +23774,7 @@ def zero_sum_QinC_exp_squarefree_roots_lemma_sym_coeff_poly : thm := keep "zero_
     «recall» QinC_ring_clauses THEN
     subgoal ([[!d. ring_sum complex_ring {f | f IN functions (perm (complex_root p)) (complex_root p) /\ numpreimages f (perm (complex_root p)) = e} (\s. ring_pow complex_ring (ring_sum complex_ring (perm (complex_root p)) (\i. i (s i))) d) IN ring_carrier (subring_generated complex_ring QinC)]]) THENL [specialize [([[p:(1->num)->complex]]),
         ([[e:complex->num]])] zero_sum_QinC_exp_squarefree_roots_lemma_sym_powersums THEN
-      rw [ring_pow_complex] THEN
+      rw [COMPLEX_RING_POW] THEN
       qed [], pass] THEN
     have' ([[ring_polynomial complex_ring (p:(1->num)->complex)]]) [poly_complex_if_poly_QinC] THEN
     have' ([[~(p = poly_0 QinC_ring:(1->num)->complex)]]) [monic_poly_0, ring_1_0_QinC] THEN
@@ -23960,7 +23794,7 @@ def zero_sum_QinC_exp_squarefree_roots_lemma_sym_coeff_poly : thm := keep "zero_
   : ExceptT String IO thm).run
 #eval zero_sum_QinC_exp_squarefree_roots_lemma_sym_coeff_poly
 
-#eval phrase 1045
+#eval phrase 1031
 def zero_sum_QinC_exp_squarefree_roots_lemma_sym_poly : thm := keep "zero_sum_QinC_exp_squarefree_roots_lemma_sym_poly" fun _ => (do
   prove ([[
   !p e.
@@ -23992,7 +23826,7 @@ def zero_sum_QinC_exp_squarefree_roots_lemma_sym_poly : thm := keep "zero_sum_Qi
   : ExceptT String IO thm).run
 #eval zero_sum_QinC_exp_squarefree_roots_lemma_sym_poly
 
-#eval phrase 1046
+#eval phrase 1032
 def zero_sum_QinC_exp_squarefree_roots_lemma_denouement : thm := keep "zero_sum_QinC_exp_squarefree_roots_lemma_denouement" fun _ => (do
   prove ([[
   !S:complex->bool B:complex->complex.
@@ -24028,14 +23862,14 @@ def zero_sum_QinC_exp_squarefree_roots_lemma_denouement : thm := keep "zero_sum_
     subgoal ([[ring_product (x_series complex_ring) (perm S) (\i. ring_sum (x_series complex_ring) S (\z. poly_mul complex_ring (poly_const complex_ring (B z)) (expformal (i z)))) = ring_0(x_series complex_ring)]]) THENL [specialize [([[B:complex->complex]]),
         ([[S:complex->bool]])] product_perm_sum_mul_expformal_expand_v3 THEN
       simp [] THEN
-      rw [(← HolLight.GSYM complex_ring_clauses), POLY_CONST_0] THEN
+      rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES), POLY_CONST_0] THEN
       subgoal ([[ring_sum (x_series complex_ring) (IMAGE (\f. ring_sum complex_ring (perm S) (\i. i (f i))) (functions (perm S) S)) (\a. poly_mul complex_ring (poly_0 complex_ring) (expformal a)) = ring_sum (x_series complex_ring) (IMAGE (\f. ring_sum complex_ring (perm S) (\i. i (f i))) (functions (perm S) S)) (\a. ring_0(x_series complex_ring))]]) THENL [sufficesby RING_SUM_EQ THEN
         intro THEN
         have' ([[ring_powerseries complex_ring (expformal a)]]) [series_complex] THEN
         simp [POWSER_MUL_0] THEN
         rw [x_series_use], pass] THEN
       simp [RING_SUM_0], pass] THEN
-    have' ([[integral_domain complex_ring]]) [integral_domain_complex] THEN
+    have' ([[integral_domain complex_ring]]) [INTEGRAL_DOMAIN_COMPLEX_RING] THEN
     have' ([[integral_domain(x_series complex_ring)]]) [INTEGRAL_DOMAIN_POWSER_RING, x_series] THEN
     have' ([[FINITE(perm(S:complex->bool))]]) [finite_perm] THEN
     choose ([[i:complex->complex]]) ([[i IN perm(S:complex->bool) /\ ring_sum (x_series complex_ring) S (\z. poly_mul complex_ring (poly_const complex_ring (B z)) (expformal (i z))) = ring_0 (x_series complex_ring)]]) [INTEGRAL_DOMAIN_PRODUCT_EQ_0] THEN
@@ -24045,7 +23879,7 @@ def zero_sum_QinC_exp_squarefree_roots_lemma_denouement : thm := keep "zero_sum_
   : ExceptT String IO thm).run
 #eval zero_sum_QinC_exp_squarefree_roots_lemma_denouement
 
-#eval phrase 1047
+#eval phrase 1033
 def zero_sum_QinC_exp_squarefree_roots : thm := keep "zero_sum_QinC_exp_squarefree_roots" fun _ => (do
   prove ([[
   !p B.
@@ -24067,7 +23901,7 @@ def zero_sum_QinC_exp_squarefree_roots : thm := keep "zero_sum_QinC_exp_squarefr
       specialize [([[B:complex->complex]]),
         ([[complex_root p]])] (← HolLight.GSYM product_perm_sum_mul_cexp_expand) THEN
       simp [] THEN
-      rw [complex_ring_clauses] THEN
+      rw [COMPLEX_RING_CLAUSES] THEN
       have' ([[I IN perm(complex_root p)]]) [IN, perm, PERMUTES_I] THEN
       subgoal ([[ring_sum complex_ring (complex_root p) (\z. (B z) * cexp (I z)) = Cx(&0)]]) THENL [rw [I_THM] THEN
         qed [], pass] THEN
@@ -24077,7 +23911,7 @@ def zero_sum_QinC_exp_squarefree_roots : thm := keep "zero_sum_QinC_exp_squarefr
         ([[I:complex->complex]]),
         ([[\i. ring_sum complex_ring (complex_root p) (\z. (B z) * cexp (i z))]])] ring_product_delete THEN
       simp [] THEN
-      rw [complex_ring_clauses] THEN
+      rw [COMPLEX_RING_CLAUSES] THEN
       CONV_TAC cf, pass] THEN
     have' ([[!e. ring_polynomial QinC_ring (monic_vanishing_at complex_ring {f | f IN functions (perm (complex_root p)) (complex_root p) /\ numpreimages f (perm (complex_root p)) = e} (\f. ring_sum complex_ring (perm (complex_root p)) (\i. i (f i))))]]) [zero_sum_QinC_exp_squarefree_roots_lemma_sym_poly] THEN
     have' ([[FINITE(IMAGE (\f. numpreimages f (perm (complex_root p))) (functions (perm (complex_root p)) (complex_root p)))]]) [FINITE_IMAGE] THEN
@@ -24088,7 +23922,7 @@ def zero_sum_QinC_exp_squarefree_roots : thm := keep "zero_sum_QinC_exp_squarefr
       sufficesby ring_product_in_subring THEN
       rw [IN_ELIM_THM, BETA_THM] THEN
       intro THEN
-      rw [(← HolLight.GSYM ring_pow_complex)] THEN
+      rw [(← HolLight.GSYM COMPLEX_RING_POW)] THEN
       sufficesby ring_pow_in_subring THEN
       rw [QinC_ring_clauses, subring_complex_QinC] THEN
       subgoal ([[s' IN {y:complex | ~(numpreimages x (perm(complex_root p)) y = 0)}]]) THENL [rw [IN_ELIM_THM] THEN
@@ -24115,7 +23949,7 @@ def zero_sum_QinC_exp_squarefree_roots : thm := keep "zero_sum_QinC_exp_squarefr
   : ExceptT String IO thm).run
 #eval zero_sum_QinC_exp_squarefree_roots
 
-#eval phrase 1048
+#eval phrase 1034
 def zero_sum_QinC_exp_algebraic : thm := keep "zero_sum_QinC_exp_algebraic" fun _ => (do
   let h1 ← def' ([[C:complex->complex]]) (← ExceptT.mk [[\z:complex. if z IN S then B z else Cx(&0)]])
   prove ([[
@@ -24139,7 +23973,7 @@ def zero_sum_QinC_exp_algebraic : thm := keep "zero_sum_QinC_exp_algebraic" fun 
           rw [BETA_THM] THEN
           intro THEN
           rw [(← know ([[C = (\z:complex. if z IN S then B z else Cx(&0))]]))] THEN
-          rw [complex_ring_clauses] THEN
+          rw [COMPLEX_RING_CLAUSES] THEN
           qed [COMPLEX_MUL_LZERO], pass] THEN
         rw [(← know ([[ring_sum complex_ring (complex_root p) (\z. C z * cexp z) = ring_sum complex_ring (complex_root p) (\s. if s IN S then C s * cexp s else ring_0 complex_ring)]]))] THEN
         have' ([[S SUBSET complex_root p]]) [] THEN
@@ -24159,7 +23993,7 @@ def zero_sum_QinC_exp_algebraic : thm := keep "zero_sum_QinC_exp_algebraic" fun 
   : ExceptT String IO thm).run
 #eval zero_sum_QinC_exp_algebraic
 
-#eval phrase 1049
+#eval phrase 1035
 def transcendental_if_exp_nonzero_algebraic : thm := keep "transcendental_if_exp_nonzero_algebraic" fun _ => (do
   let h3 ← ar (← ExceptT.mk [[~(1 = 0)]])
   let h2 ← complex_field_fact (← ExceptT.mk [[~(a = Cx(&0)) ==> Cx(&x)*a = Cx(&y)*a ==> Cx(&x) = Cx(&y)]])
@@ -24198,7 +24032,7 @@ def transcendental_if_exp_nonzero_algebraic : thm := keep "transcendental_if_exp
         subgoal ([[(@i. Cx(&a')*a = Cx(&i)*a) = a']]) THENL [sufficesby SELECT_UNIQUE THEN
           qed [], pass] THEN
         rw [(← know ([[(@i. Cx(&a')*a = Cx(&i)*a) = a']]))] THEN
-        rw [complex_ring_clauses, ring_pow_complex] THEN
+        rw [COMPLEX_RING_CLAUSES, COMPLEX_RING_POW] THEN
         rw [coeff_x_monomial, x_monomial, CEXP_N], pass] THEN
       qed [], pass] THEN
     specialize [([[IMAGE (\i. Cx(&i) * a) (0..poly_deg complex_ring(f:(1->num)->complex))]]),
@@ -24217,7 +24051,7 @@ def transcendental_if_exp_nonzero_algebraic : thm := keep "transcendental_if_exp
 
 /- ===== expanding prod_f sum_y f(y) exp(y) -/
 
-#eval phrase 1050
+#eval phrase 1036
 def ring_product_functions_sum_mul_exp_expand : thm := keep "ring_product_functions_sum_mul_exp_expand" fun _ => (do
   prove ([[
   !(a:A ring) (b:B ring) E:A->B c:C->B Y:A->bool Z:C->bool.
@@ -24319,7 +24153,7 @@ def ring_product_functions_sum_mul_exp_expand : thm := keep "ring_product_functi
   : ExceptT String IO thm).run
 #eval ring_product_functions_sum_mul_exp_expand
 
-#eval phrase 1051
+#eval phrase 1037
 def product_functions_sum_mul_cexp_expand : thm := keep "product_functions_sum_mul_cexp_expand" fun _ => (do
   prove ([[
   !Y:complex->bool Z:complex->bool.
@@ -24349,8 +24183,8 @@ def product_functions_sum_mul_cexp_expand : thm := keep "product_functions_sum_m
       have' ([[Y SUBSET ring_carrier complex_ring]]) [SUBSET, in_complex_ring] THEN
       have' ([[Z SUBSET ring_carrier complex_ring]]) [SUBSET, in_complex_ring] THEN
       have' ([[!x. x IN ring_carrier complex_ring ==> cexp x IN ring_carrier complex_ring]]) [in_complex_ring] THEN
-      have' ([[cexp (ring_0 complex_ring) = ring_1 complex_ring]]) [CEXP_0, complex_ring_clauses] THEN
-      have' ([[!x y. cexp (ring_add complex_ring x y) = ring_mul complex_ring (cexp x) (cexp y)]]) [CEXP_ADD, complex_ring_clauses] THEN
+      have' ([[cexp (ring_0 complex_ring) = ring_1 complex_ring]]) [CEXP_0, COMPLEX_RING_CLAUSES] THEN
+      have' ([[!x y. cexp (ring_add complex_ring x y) = ring_mul complex_ring (cexp x) (cexp y)]]) [CEXP_ADD, COMPLEX_RING_CLAUSES] THEN
       have' ([[IMAGE I Z SUBSET ring_carrier complex_ring]]) [IMAGE_I, SUBSET, in_complex_ring] THEN
       specialize [([[complex_ring]]),
         ([[complex_ring]]),
@@ -24360,11 +24194,11 @@ def product_functions_sum_mul_cexp_expand : thm := keep "product_functions_sum_m
       rw [I_THM], pass] THEN
     simp [] THEN
     sufficesby RING_SUM_EQ THEN
-    rw [complex_ring_clauses])
+    rw [COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval product_functions_sum_mul_cexp_expand
 
-#eval phrase 1052
+#eval phrase 1038
 def product_functions_sum_mul_expformal_expand : thm := keep "product_functions_sum_mul_expformal_expand" fun _ => (do
   prove ([[
   !Y:complex->bool Z:complex->bool.
@@ -24396,8 +24230,8 @@ def product_functions_sum_mul_expformal_expand : thm := keep "product_functions_
 ]])
    (intro THEN
     have' ([[!x. x IN ring_carrier complex_ring ==> expformal x IN ring_carrier (x_series complex_ring)]]) [series_complex, x_series_use] THEN
-    have' ([[expformal (ring_0 complex_ring) = ring_1 (x_series complex_ring)]]) [expformal_0, complex_ring_clauses, x_series_use] THEN
-    have' ([[!x y. expformal (ring_add complex_ring x y) = ring_mul (x_series complex_ring) (expformal x) (expformal y)]]) [mul_expformal, complex_ring_clauses, x_series_use] THEN
+    have' ([[expformal (ring_0 complex_ring) = ring_1 (x_series complex_ring)]]) [expformal_0, COMPLEX_RING_CLAUSES, x_series_use] THEN
+    have' ([[!x y. expformal (ring_add complex_ring x y) = ring_mul (x_series complex_ring) (expformal x) (expformal y)]]) [mul_expformal, COMPLEX_RING_CLAUSES, x_series_use] THEN
     have' ([[Y SUBSET ring_carrier complex_ring]]) [SUBSET, in_complex_ring] THEN
     have' ([[IMAGE (\c. poly_const complex_ring c) Z SUBSET ring_carrier (x_series complex_ring)]]) [SUBSET, series_complex, x_series_use] THEN
     specialize [([[complex_ring]]),
@@ -24436,7 +24270,7 @@ def product_functions_sum_mul_expformal_expand : thm := keep "product_functions_
 
 /- ===== more general transcendence results, part 2: beta symmetrization -/
 
-#eval phrase 1053
+#eval phrase 1039
 def zero_sum_nonzero_algebraic_exp_algebraic_lemma_sym : thm := keep "zero_sum_nonzero_algebraic_exp_algebraic_lemma_sym" fun _ => (do
   let h1 ← def' ([[Z:(complex->num)->complex]]) (← ExceptT.mk [[ring_sum (poly_ring complex_ring (:complex)) {g | g IN functions (functions S (complex_root p)) S /\ ring_sum complex_ring (functions S (complex_root p)) g = s} (\g. ring_product (poly_ring complex_ring (:complex)) (functions S (complex_root p)) (\f. poly_var complex_ring (f (g f))))]])
   prove ([[
@@ -24610,7 +24444,7 @@ def zero_sum_nonzero_algebraic_exp_algebraic_lemma_sym : thm := keep "zero_sum_n
   : ExceptT String IO thm).run
 #eval zero_sum_nonzero_algebraic_exp_algebraic_lemma_sym
 
-#eval phrase 1054
+#eval phrase 1040
 def zero_sum_nonzero_algebraic_exp_algebraic : thm := keep "zero_sum_nonzero_algebraic_exp_algebraic" fun _ => (do
   prove ([[
   !S B.
@@ -24642,10 +24476,10 @@ def zero_sum_nonzero_algebraic_exp_algebraic : thm := keep "zero_sum_nonzero_alg
         ([[\y:complex. if y IN S then B y else ARB:complex]]),
         ([[\f. ring_sum complex_ring S (\y. ring_mul complex_ring (f y) (cexp y))]])] ring_product_delete THEN
       subgoal ([[ring_sum complex_ring S (\y. ring_mul complex_ring (if y IN S then B y else ARB) (cexp y)) = Cx(&0)]]) THENL [subgoal ([[ring_sum complex_ring S (\y. ring_mul complex_ring (if y IN S then B y else ARB) (cexp y)) = ring_sum complex_ring S (\s. B s * cexp s)]]) THENL [sufficesby RING_SUM_EQ THEN
-          qed [complex_ring_clauses], pass] THEN
+          qed [COMPLEX_RING_CLAUSES], pass] THEN
         qed [], pass] THEN
       simp [] THEN
-      rw [complex_ring_clauses] THEN
+      rw [COMPLEX_RING_CLAUSES] THEN
       CONV_TAC cf, pass] THEN
     specialize [([[S:complex->bool]]),
       ([[complex_root p]])] product_functions_sum_mul_cexp_expand THEN
@@ -24669,10 +24503,10 @@ def zero_sum_nonzero_algebraic_exp_algebraic : thm := keep "zero_sum_nonzero_alg
       simp [] THEN
       sufficesby RING_SUM_EQ_0 THEN
       rw [IN_IMAGE, BETA_THM] THEN
-      rw [(← HolLight.GSYM x_series_use), (← HolLight.GSYM complex_ring_clauses)] THEN
+      rw [(← HolLight.GSYM x_series_use), (← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
       rw [(← HolLight.GSYM poly_0)] THEN
       qed [POWSER_MUL_0, series_complex], pass] THEN
-    have' ([[integral_domain (x_series complex_ring)]]) [INTEGRAL_DOMAIN_POWSER_RING, integral_domain_complex, x_series] THEN
+    have' ([[integral_domain (x_series complex_ring)]]) [INTEGRAL_DOMAIN_POWSER_RING, INTEGRAL_DOMAIN_COMPLEX_RING, x_series] THEN
     choose ([[f:complex->complex]]) ([[f:complex->complex IN functions S (complex_root p) /\ ring_sum (x_series complex_ring) S (\y. ring_mul (x_series complex_ring) (poly_const complex_ring (f y)) (expformal y)) = ring_0 (x_series complex_ring)]]) [INTEGRAL_DOMAIN_PRODUCT_EQ_0] THEN
     subgoal ([[poly_sum complex_ring S (\y. poly_mul complex_ring (poly_const complex_ring (f y)) (expformal y)) = poly_0 complex_ring]]) THENL [rw [x_series_use, poly_sum] THEN
       qed [], pass] THEN
@@ -24685,7 +24519,7 @@ def zero_sum_nonzero_algebraic_exp_algebraic : thm := keep "zero_sum_nonzero_alg
   : ExceptT String IO thm).run
 #eval zero_sum_nonzero_algebraic_exp_algebraic
 
-#eval phrase 1055
+#eval phrase 1041
 def zero_sum_algebraic_exp_algebraic : thm := keep "zero_sum_algebraic_exp_algebraic" fun _ => (do
   let h1 ← set_fact (← ExceptT.mk [[{s:complex | s IN S /\ ~(B s = ring_0 complex_ring)} SUBSET S]])
   prove ([[
@@ -24698,7 +24532,7 @@ def zero_sum_algebraic_exp_algebraic : thm := keep "zero_sum_algebraic_exp_algeb
 ]])
    (intro THEN
     h1 THEN
-    subgoal ([[ring_sum complex_ring {s | s IN S /\ ~(B s = ring_0 complex_ring)} (\s. B s * cexp s) = Cx(&0)]]) THENL [rw [(← HolLight.GSYM complex_ring_clauses)] THEN
+    subgoal ([[ring_sum complex_ring {s | s IN S /\ ~(B s = ring_0 complex_ring)} (\s. B s * cexp s) = Cx(&0)]]) THENL [rw [(← HolLight.GSYM COMPLEX_RING_CLAUSES)] THEN
       specialize [([[complex_ring]]),
         ([[{s:complex | s IN S /\ ~(B s = ring_0 complex_ring)}]]),
         ([[S:complex->bool]]),
@@ -24707,41 +24541,41 @@ def zero_sum_algebraic_exp_algebraic : thm := keep "zero_sum_algebraic_exp_algeb
       subgoal ([[ring_sum complex_ring S (\s. if s IN {s | s IN S /\ ~(B s = ring_0 complex_ring)} then ring_mul complex_ring (B s) (cexp s) else ring_0 complex_ring) = ring_sum complex_ring S (\s. B s * cexp s)]]) THENL [sufficesby RING_SUM_EQ THEN
         rw [BETA_THM, IN_ELIM_THM] THEN
         intro THEN
-        rw [complex_ring_clauses] THEN
+        rw [COMPLEX_RING_CLAUSES] THEN
         simp [] THEN
         CONV_TAC cf, pass] THEN
-      qed [complex_ring_clauses], pass] THEN
+      qed [COMPLEX_RING_CLAUSES], pass] THEN
     specialize [([[S:complex->bool]]),
       ([[\s:complex. ~(B s = ring_0 complex_ring)]])] FINITE_RESTRICT THEN
     have' ([[{s:complex | s IN S /\ ~(B s = ring_0 complex_ring)} SUBSET algebraic_number]]) [SUBSET_TRANS] THEN
     have' ([[!s:complex. s IN {s | s IN S /\ ~(B s = ring_0 complex_ring)} ==> algebraic_number (B s)]]) [SUBSET] THEN
     subgoal ([[!s:complex. s IN {s | s IN S /\ ~(B s = ring_0 complex_ring)} ==> ~(B s = Cx (&0))]]) THENL [rw [IN_ELIM_THM] THEN
-      qed [complex_ring_clauses], pass] THEN
+      qed [COMPLEX_RING_CLAUSES], pass] THEN
     specialize [([[{s:complex | s IN S /\ ~(B s = ring_0 complex_ring)}]]),
       ([[B:complex->complex]])] zero_sum_nonzero_algebraic_exp_algebraic THEN
-    HolLight.ASM SET_TAC [complex_ring_clauses])
+    HolLight.ASM SET_TAC [COMPLEX_RING_CLAUSES])
   : ExceptT String IO thm).run
 #eval zero_sum_algebraic_exp_algebraic
 
 /- ===== re-print highlighted theorems -/
 
-#eval phrase 1056
+#eval phrase 1042
 -- let e_is_irrational = e_is_irrational;;
 #eval e_is_irrational
 
-#eval phrase 1057
+#eval phrase 1043
 -- let e_is_transcendental = e_is_transcendental;;
 #eval e_is_transcendental
 
-#eval phrase 1058
+#eval phrase 1044
 -- let pi_is_transcendental = pi_is_transcendental;;
 #eval pi_is_transcendental
 
-#eval phrase 1059
+#eval phrase 1045
 -- let transcendental_if_exp_nonzero_algebraic = transcendental_if_exp_nonzero_algebraic;;
 #eval transcendental_if_exp_nonzero_algebraic
 
-#eval phrase 1060
+#eval phrase 1046
 -- let zero_sum_algebraic_exp_algebraic = zero_sum_algebraic_exp_algebraic;;
 #eval zero_sum_algebraic_exp_algebraic
 

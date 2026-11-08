@@ -35,7 +35,10 @@ def core1 : HolLibrary.RingDet.CoreThms1 where
   CARD_CLAUSES := Session.CARD_CLAUSES
   CARD_DELETE := Session.CARD_DELETE
   CARD_EQ_0 := Session.CARD_EQ_0
+  CARD_IMAGE_INJ := Session.CARD_IMAGE_INJ
   CARD_NUMSEG_LT := Session.CARD_NUMSEG_LT
+  CARD_SUBSET := Session.CARD_SUBSET
+  CARD_SUBSET_EQ := Session.CARD_SUBSET_EQ
   CARTESIAN_PRODUCT_EMPTY := Session.CARTESIAN_PRODUCT_EMPTY
   COEFF_ABOVE_DEG := SessionLibrary.RingTheory.«COEFF_ABOVE_DEG»
   COEFF_COMPOSE := SessionLibrary.RingTheory.«COEFF_COMPOSE»
@@ -89,12 +92,15 @@ def core2 : HolLibrary.RingDet.CoreThms2 where
   EVENPERM_TRANSFER := SessionLibrary.Permutations.«EVENPERM_TRANSFER»
   EVEN_ADD := Session.EVEN_ADD
   EVEN_MULT := Session.EVEN_MULT
+  EXISTS_IN_IMAGE := Session.EXISTS_IN_IMAGE
   EXISTS_PAIR_THM := Session.EXISTS_PAIR_THM
   EXTENSION := Session.EXTENSION
   EXTENSIONAL := Session.EXTENSIONAL
   FIELD_IMP_INTEGRAL_DOMAIN := SessionLibrary.RingTheory.«FIELD_IMP_INTEGRAL_DOMAIN»
+  FIELD_MUL_LINV := SessionLibrary.RingTheory.«FIELD_MUL_LINV»
   FIELD_MUL_RINV := SessionLibrary.RingTheory.«FIELD_MUL_RINV»
   FIELD_NONTRIVIAL := SessionLibrary.RingTheory.«FIELD_NONTRIVIAL»
+  FIELD_REAL_RING := SessionLibrary.RingTheory.«FIELD_REAL_RING»
   FINITE_CARTESIAN_PRODUCT := SessionLibrary.Card.«FINITE_CARTESIAN_PRODUCT»
   FINITE_CROSS := Session.FINITE_CROSS
   FINITE_DELETE := Session.FINITE_DELETE
@@ -120,14 +126,17 @@ def core2 : HolLibrary.RingDet.CoreThms2 where
   HAS_SIZE_FUNSPACE := Session.HAS_SIZE_FUNSPACE
   HAS_SIZE_IMAGE_INJ := Session.HAS_SIZE_IMAGE_INJ
   HAS_SIZE_NUMSEG_LT := Session.HAS_SIZE_NUMSEG_LT
+  IMAGE_CLAUSES := Session.IMAGE_CLAUSES
   IMAGE_COMPOSE_PERMUTATIONS_L := SessionLibrary.Permutations.«IMAGE_COMPOSE_PERMUTATIONS_L»
   IMAGE_COMPOSE_PERMUTATIONS_R := SessionLibrary.Permutations.«IMAGE_COMPOSE_PERMUTATIONS_R»
+  IMAGE_EQ_EMPTY := Session.IMAGE_EQ_EMPTY
   IMAGE_INVERSE_PERMUTATIONS := SessionLibrary.Permutations.«IMAGE_INVERSE_PERMUTATIONS»
   IMAGE_RESTRICTION := Session.IMAGE_RESTRICTION
   IMP_CONJ := Session.IMP_CONJ
   IMP_CONJ_ALT := Session.IMP_CONJ_ALT
   IMP_IMP := Session.IMP_IMP
   INJECTIVE_ON_LEFT_INVERSE := Session.INJECTIVE_ON_LEFT_INVERSE
+  INSERT_SUBSET := Session.INSERT_SUBSET
   INSERT_UNION_EQ := Session.INSERT_UNION_EQ
   INTEGRAL_DOMAIN_MUL_EQ_0 := SessionLibrary.RingTheory.«INTEGRAL_DOMAIN_MUL_EQ_0»
   INTEGRAL_DOMAIN_MUL_LCANCEL := SessionLibrary.RingTheory.«INTEGRAL_DOMAIN_MUL_LCANCEL»
@@ -201,6 +210,8 @@ def core3 : HolLibrary.RingDet.CoreThms3 where
 
 /-- The core theorems ring_det.ml uses. -/
 def core4 : HolLibrary.RingDet.CoreThms4 where
+  IN_RING_IDEAL_0 := SessionLibrary.RingTheory.«IN_RING_IDEAL_0»
+  IN_UNIV := Session.IN_UNIV
   OUTR := Session.raw3Ctx.D2.OUTR
   PAIR_EQ := Session.PAIR_EQ
   PERMUTATION_PERMUTES := SessionLibrary.Permutations.«PERMUTATION_PERMUTES»
@@ -257,6 +268,24 @@ def core4 : HolLibrary.RingDet.CoreThms4 where
   POLY_DERIV_CONST := SessionLibrary.RingTheory.«POLY_DERIV_CONST»
   POLY_DERIV_HOMOMORPHIC_IMAGE := SessionLibrary.RingTheory.«POLY_DERIV_HOMOMORPHIC_IMAGE»
   POLY_DERIV_IN_CARRIER := SessionLibrary.RingTheory.«POLY_DERIV_IN_CARRIER»
+  REAL_ABS_MUL := Session.REAL_ABS_MUL
+  REAL_ABS_NZ := Session.REAL_ABS_NZ
+  REAL_ABS_POS := Session.REAL_ABS_POS
+  REAL_LE_RMUL := Session.REAL_LE_RMUL
+  REAL_LE_TRANS := Session.REAL_LE_TRANS
+  REAL_LT_LMUL := Session.REAL_LT_LMUL
+  REAL_NOT_LE := Session.REAL_NOT_LE
+  REAL_RING_CLAUSES := SessionLibrary.RingTheory.«REAL_RING_CLAUSES»
+  REAL_RING_SUM := SessionLibrary.RingTheory.«REAL_RING_SUM»
+  RING_ADD_EQ_0 := SessionLibrary.RingTheory.«RING_ADD_EQ_0»
+  RING_COSET_EQ := SessionLibrary.RingTheory.«RING_COSET_EQ»
+  RING_NEG_0 := SessionLibrary.RingTheory.«RING_NEG_0»
+  RING_UNIT_IN_CARRIER := SessionLibrary.RingTheory.«RING_UNIT_IN_CARRIER»
+  SUM_ABS := Session.SUM_ABS
+  SUM_DELETE := Session.SUM_DELETE
+  SUM_LE := Session.SUM_LE
+  SUM_LMUL := Session.SUM_LMUL
+  SUP_FINITE_LEMMA := Session.SUP_FINITE_LEMMA
 
 /-- The core theorems ring_det.ml uses. -/
 def core5 : HolLibrary.RingDet.CoreThms5 where
@@ -507,6 +536,7 @@ def deps : HolLibrary.RingDet.RingDetDeps where
   RING_RULE t := ExceptT.mk (SessionLibrary.RingTheory.RING_RULE t)
   distinctness s := ExceptT.mk (Session.distinctness s)
   injectivity s := ExceptT.mk (Session.injectivity s)
+  REAL_ARITH_TAC := Session.REAL_ARITH_TAC
   core1 := core1
   core2 := core2
   core3 := core3
@@ -620,7 +650,7 @@ initialize BProdAlgebras : HolLibrary.RingDet.ProdAlgebras ←
 
 initialize BBasisDiscriminant : HolLibrary.RingDet.BasisDiscriminant ←
   ioB "setupBasisDiscriminant" <|
-    (HolLibrary.RingDet.setupBasisDiscriminant deps BDet BDetRows BCofactors BFieldDet BTrace BFreeBases BTraceNormAlgebra BTraceNormMisc BBaseChange).run
+    (HolLibrary.RingDet.setupBasisDiscriminant deps BDet BDetRows BCofactors BFieldDet BTrace BFreeBases BMulMatrix BTraceNormAlgebra BTraceNormMisc BBaseChange).run
 
 initialize BNilpotent : HolLibrary.RingDet.Nilpotent ←
   ioB "setupNilpotent" <|
@@ -694,6 +724,9 @@ def RING_DET_ROW_0 : thm := BDetRows.RING_DET_ROW_0
 def RING_DET_ROWS_MUL : thm := BDetRows.RING_DET_ROWS_MUL
 def RING_DET_COLUMNS_MUL : thm := BDetRows.RING_DET_COLUMNS_MUL
 def RING_DET_ROW_OPERATION : thm := BDetRows.RING_DET_ROW_OPERATION
+def RING_DET_ROW_NEG_SUM : thm := BDetRows.RING_DET_ROW_NEG_SUM
+def RING_DET_ROWS_SAME_IMAGE : thm := BDetRows.RING_DET_ROWS_SAME_IMAGE
+def RING_DET_ROWS_OMIT : thm := BDetRows.RING_DET_ROWS_OMIT
 def RING_SUM_PRODUCT_CARTESIAN_PRODUCT : thm := BDetRows.RING_SUM_PRODUCT_CARTESIAN_PRODUCT
 def RING_DET_MULTILINEAR : thm := BDetRows.RING_DET_MULTILINEAR
 def RING_DET_HOMOMORPHISM : thm := BDetRows.RING_DET_HOMOMORPHISM
@@ -701,6 +734,7 @@ def RING_DET_HOMOMORPHISM : thm := BDetRows.RING_DET_HOMOMORPHISM
 -- Cofactors
 def RING_DET_DIAGONAL : thm := BCofactors.RING_DET_DIAGONAL
 def RING_DET_I : thm := BCofactors.RING_DET_I
+def RING_DET_DIAGONAL_CONGRUENCE : thm := BCofactors.RING_DET_DIAGONAL_CONGRUENCE
 def ring_cofactor : thm := BCofactors.ring_cofactor
 def RING_COFACTOR : thm := BCofactors.RING_COFACTOR
 def RING_COFACTOR_EQ : thm := BCofactors.RING_COFACTOR_EQ
@@ -709,8 +743,12 @@ def RING_DET_COFACTOR_EXPANSION : thm := BCofactors.RING_DET_COFACTOR_EXPANSION
 def RING_DET_ADJUGATE_ROWS : thm := BCofactors.RING_DET_ADJUGATE_ROWS
 def RING_COFACTOR_TRANSP : thm := BCofactors.RING_COFACTOR_TRANSP
 def RING_DET_ADJUGATE_COLUMNS : thm := BCofactors.RING_DET_ADJUGATE_COLUMNS
+def RING_MATRIX_SOLVE : thm := BCofactors.RING_MATRIX_SOLVE
+def RING_DET_CRAMER : thm := BCofactors.RING_DET_CRAMER
 def RING_DET_CLOSED : thm := BCofactors.RING_DET_CLOSED
 def RING_DET_SUBRING : thm := BCofactors.RING_DET_SUBRING
+def RING_COFACTOR_SUBRING : thm := BCofactors.RING_COFACTOR_SUBRING
+def RING_DET_CRAMER_SUBRING : thm := BCofactors.RING_DET_CRAMER_SUBRING
 def RING_COFACTOR_EQ_GEN : thm := BCofactors.RING_COFACTOR_EQ_GEN
 def RING_COFACTOR_INSERT : thm := BCofactors.RING_COFACTOR_INSERT
 def RING_DET_DEPENDENT_ROWS_MUL : thm := BCofactors.RING_DET_DEPENDENT_ROWS_MUL
@@ -720,6 +758,7 @@ def RING_DET_DEPENDENT_ROWS : thm := BCofactors.RING_DET_DEPENDENT_ROWS
 def RING_DET_MINOR_SELECTION : thm := BFieldDet.RING_DET_MINOR_SELECTION
 def RING_DET_INDEPENDENT_ROWS : thm := BFieldDet.RING_DET_INDEPENDENT_ROWS
 def RING_DET_EQ_0_ROWS : thm := BFieldDet.RING_DET_EQ_0_ROWS
+def RING_DET_REAL_DIAGONALLY_DOMINANT : thm := BFieldDet.RING_DET_REAL_DIAGONALLY_DOMINANT
 def RING_DET_DEPENDENT_COLUMNS_MUL : thm := BFieldDet.RING_DET_DEPENDENT_COLUMNS_MUL
 def RING_DET_DEPENDENT_COLUMNS_MUL_IDEAL : thm := BFieldDet.RING_DET_DEPENDENT_COLUMNS_MUL_IDEAL
 def RING_DET_DEPENDENT_COLUMNS : thm := BFieldDet.RING_DET_DEPENDENT_COLUMNS
@@ -802,6 +841,7 @@ def FREE_BASIS_INDEPENDENT : thm := BFreeBases.FREE_BASIS_INDEPENDENT
 def FREE_BASIS_MONOMORPHISM : thm := BFreeBases.FREE_BASIS_MONOMORPHISM
 def FREE_BASIS_UNIQUE : thm := BFreeBases.FREE_BASIS_UNIQUE
 def FREE_BASIS_DELTA : thm := BFreeBases.FREE_BASIS_DELTA
+def FREE_BASIS_SCALE : thm := BFreeBases.FREE_BASIS_SCALE
 def FREE_BASIS_HAS_SIZE : thm := BFreeBases.FREE_BASIS_HAS_SIZE
 def FREE_BASIS_RING_DIVIDES : thm := BFreeBases.FREE_BASIS_RING_DIVIDES
 def FREE_BASIS_QUOTIENT_RING_PRINCIPAL : thm := BFreeBases.FREE_BASIS_QUOTIENT_RING_PRINCIPAL
@@ -867,6 +907,7 @@ def ALGEBRA_NORM_PROJECTIVE_BASIS_ALT : thm := BTraceNormBasis.ALGEBRA_NORM_PROJ
 -- TraceNormAlgebra
 def ALGEBRA_TRACE_FREE_BASIS : thm := BTraceNormAlgebra.ALGEBRA_TRACE_FREE_BASIS
 def ALGEBRA_NORM_FREE_BASIS : thm := BTraceNormAlgebra.ALGEBRA_NORM_FREE_BASIS
+def ALGEBRA_TRACE_FREE_BASIS_MATRIX : thm := BTraceNormAlgebra.ALGEBRA_TRACE_FREE_BASIS_MATRIX
 def ALGEBRA_TRACE_NORM_NO_PROJECTIVE_BASIS : thm := BTraceNormAlgebra.ALGEBRA_TRACE_NORM_NO_PROJECTIVE_BASIS
 def ALGEBRA_TRACE_NORM_IN_CARRIER : thm := BTraceNormAlgebra.ALGEBRA_TRACE_NORM_IN_CARRIER
 def ALGEBRA_TRACE_ADD : thm := BTraceNormAlgebra.ALGEBRA_TRACE_ADD
@@ -910,6 +951,9 @@ def MUL_MATRIX_CHARPOLY_ROOT : thm := BBaseChange.MUL_MATRIX_CHARPOLY_ROOT
 
 -- FreeTowers
 def RING_SUM_MOD_DIV : thm := BFreeTowers.RING_SUM_MOD_DIV
+def ADD_MULT_LT_MULT : thm := BFreeTowers.ADD_MULT_LT_MULT
+def RING_SUM_NUMSEG_DIV_SLICE : thm := BFreeTowers.RING_SUM_NUMSEG_DIV_SLICE
+def RING_SUM_PRODUCT_INDEX : thm := BFreeTowers.RING_SUM_PRODUCT_INDEX
 def FREE_BASIS_TRANS : thm := BFreeTowers.FREE_BASIS_TRANS
 def BASIS_COORDINATES_TRANS : thm := BFreeTowers.BASIS_COORDINATES_TRANS
 def MUL_MATRIX_TRANS : thm := BFreeTowers.MUL_MATRIX_TRANS
@@ -933,6 +977,8 @@ def BASIS_DISCRIMINANT_DEGENERATE : thm := BBasisDiscriminant.BASIS_DISCRIMINANT
 def BASIS_DISCRIMINANT_EQ_0 : thm := BBasisDiscriminant.BASIS_DISCRIMINANT_EQ_0
 def BASIS_DISCRIMINANT_NONZERO : thm := BBasisDiscriminant.BASIS_DISCRIMINANT_NONZERO
 def BASIS_DISCRIMINANT_TIMES_COORD : thm := BBasisDiscriminant.BASIS_DISCRIMINANT_TIMES_COORD
+def BASIS_DISCRIMINANT_MUL : thm := BBasisDiscriminant.BASIS_DISCRIMINANT_MUL
+def ALGEBRA_TRACE_DUAL_BASIS_EXISTS : thm := BBasisDiscriminant.ALGEBRA_TRACE_DUAL_BASIS_EXISTS
 
 -- Nilpotent
 def RING_POLYNOMIAL_MUL_MATRIX : thm := BNilpotent.RING_POLYNOMIAL_MUL_MATRIX

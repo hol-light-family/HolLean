@@ -143,6 +143,7 @@ structure Modmul where
   HAS_SIZE_MODMUL_GROUP : thm
   ABELIAN_MODMUL_GROUP : thm
   TRIVIAL_MODMUL_GROUP : thm
+  MODMUL_GROUP_CONG_EQ : thm
   deriving Inhabited
 
 @[nospecialize]
@@ -151,12 +152,12 @@ def setupModmul [HolBase] (D : ModmulGroupDeps) :
   -- @@SCOPE BEGIN
   let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, ASM_MESON_TAC, MESON_TAC, NUMBER_RULE,
         new_definition, .. } := D
-  let { AND_FORALL_THM, ARITH, CARD_SING, CONJ_SYM, COPRIME_LMOD, COPRIME_LMUL,
-        COPRIME_SYM, FINITE_NUMSEG, FINITE_SING, FINITE_SUBSET, FUN_EQ_THM, HAS_SIZE,
-        INVERSE_MOD_BOUND, INVERSE_MOD_LMUL_EQ, INVERSE_MOD_RMUL_EQ, IN_ELIM_THM,
-        IN_NUMSEG, LE_0, LE_REFL, MOD_LT, MOD_LT_EQ, MOD_MOD_REFL, MOD_MULT_MOD2,
-        MOD_UNIQUE, MULT_ASSOC, MULT_CLAUSES, MULT_SYM, PAIR_EQ, PHI_1, PHI_2, PHI_ALT,
-        PHI_LOWERBOUND_2, SINGLETON_GROUP, .. } := D.core1
+  let { AND_FORALL_THM, ARITH, CARD_SING, CONG_IMP_EQ, CONJ_SYM, COPRIME_LMOD,
+        COPRIME_LMUL, COPRIME_SYM, FINITE_NUMSEG, FINITE_SING, FINITE_SUBSET,
+        FUN_EQ_THM, HAS_SIZE, INVERSE_MOD_BOUND, INVERSE_MOD_LMUL_EQ,
+        INVERSE_MOD_RMUL_EQ, IN_ELIM_THM, IN_NUMSEG, IN_SING, LE_0, LE_REFL, MOD_LT,
+        MOD_LT_EQ, MOD_MOD_REFL, MOD_MULT_MOD2, MOD_UNIQUE, MULT_ASSOC, MULT_CLAUSES,
+        MULT_SYM, PAIR_EQ, PHI_1, PHI_2, PHI_ALT, PHI_LOWERBOUND_2, SINGLETON_GROUP, .. } := D.core1
   let { SUBSET, TRIVIAL_GROUP_HAS_SIZE_1, abelian_group, group_carrier, group_id,
         group_inv, group_mul, group_tybij, inverse_mod, .. } := D.core2
   -- @@SCOPE END
@@ -247,9 +248,18 @@ def setupModmul [HolBase] (D : ModmulGroupDeps) :
     CONJ_TAC THENL [ALL_TAC, MATCH_MP_TAC PHI_LOWERBOUND_2] THEN
     ASM_ARITH_TAC)
 
+  let MODMUL_GROUP_CONG_EQ ← prove
+   r"!n a b. a IN group_carrier(modmul_group n) /\
+           b IN group_carrier(modmul_group n) /\ (a == b) (mod n)
+           ==> a = b"
+   (REPEAT GEN_TAC THEN REWRITE_TAC [MODMUL_GROUP] THEN
+    COND_CASES_TAC THEN REWRITE_TAC [IN_SING, IN_ELIM_THM] THEN
+    MESON_TAC [CONG_IMP_EQ])
+
   -- @@RETURN BEGIN
   return { modmul_group, MODMUL_GROUP, FINITE_MODMUL_GROUP, ORDER_MODMUL_GROUP,
-           HAS_SIZE_MODMUL_GROUP, ABELIAN_MODMUL_GROUP, TRIVIAL_MODMUL_GROUP }
+           HAS_SIZE_MODMUL_GROUP, ABELIAN_MODMUL_GROUP, TRIVIAL_MODMUL_GROUP,
+           MODMUL_GROUP_CONG_EQ }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/

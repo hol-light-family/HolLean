@@ -50,6 +50,7 @@ def core1 : HolLibrary.Pocklington.CoreThms1 where
   COMPLETE_FACTOR_INDUCT := SessionLibrary.Prime.«COMPLETE_FACTOR_INDUCT»
   COND_CLAUSES := Session.COND_CLAUSES
   COND_ID := Session.COND_ID
+  COND_RAND := Session.COND_RAND
   CONG := Session.CONG
   CONG_DIV2 := Session.CONG_DIV2
   CONG_LMOD := Session.CONG_LMOD
@@ -183,14 +184,22 @@ def core3 : HolLibrary.Pocklington.CoreThms3 where
   INDEX_PRIME := SessionLibrary.Prime.«INDEX_PRIME»
   INDUCT_COPRIME_ALT := SessionLibrary.Prime.«INDUCT_COPRIME_ALT»
   INDUCT_COPRIME_STRONG := SessionLibrary.Prime.«INDUCT_COPRIME_STRONG»
+  INT_ABS_NEG := Session.INT_ABS_NEG
+  INT_ABS_NUM := Session.INT_ABS_NUM
+  INT_ABS_POS := Session.INT_ABS_POS
+  INT_ABS_POW := Session.INT_ABS_POW
+  INT_DIVIDES_ABS := Session.INT_DIVIDES_ABS
+  INT_EQ_MUL_LCANCEL := Session.INT_EQ_MUL_LCANCEL
   INT_IMAGE := Session.INT_IMAGE
   INT_MUL_RZERO := Session.INT_MUL_RZERO
   INT_OF_NUM_ADD := Session.INT_OF_NUM_ADD
   INT_OF_NUM_EQ := Session.INT_OF_NUM_EQ
   INT_OF_NUM_LT := Session.INT_OF_NUM_LT
   INT_OF_NUM_MUL := Session.INT_OF_NUM_MUL
+  INT_OF_NUM_OF_INT := Session.INT_OF_NUM_OF_INT
   INT_OF_NUM_POW := Session.INT_OF_NUM_POW
   INT_OF_NUM_SUB := Session.INT_OF_NUM_SUB
+  INT_POW2_ABS := Session.INT_POW2_ABS
   IN_CROSS := Session.IN_CROSS
   IN_ELIM_PAIR_THM := Session.IN_ELIM_PAIR_THM
   IN_ELIM_THM := Session.IN_ELIM_THM
@@ -249,6 +258,11 @@ def core3 : HolLibrary.Pocklington.CoreThms3 where
   MONO_EXISTS := Session.MONO_EXISTS
 /-- The core theorems pocklington.ml uses. -/
 def core4 : HolLibrary.Pocklington.CoreThms4 where
+  ALL_IMP := Session.listThms1.ALL_IMP
+  ALL_MEM := Session.listThms1.ALL_MEM
+  LT_MULT_RCANCEL := Session.LT_MULT_RCANCEL
+  MOD_LE := Session.MOD_LE
+  MOD_MULT := Session.MOD_MULT
   MULT_AC := Session.MULT_AC
   MULT_ASSOC := Session.MULT_ASSOC
   MULT_CLAUSES := Session.MULT_CLAUSES
@@ -266,6 +280,7 @@ def core4 : HolLibrary.Pocklington.CoreThms4 where
   NOT_ODD := Session.NOT_ODD
   NOT_SUC := Session.NOT_SUC
   NPRODUCT_CLAUSES := Session.NPRODUCT_CLAUSES
+  NUM_OF_INT_OF_NUM := Session.NUM_OF_INT_OF_NUM
   ODD_EXISTS := Session.ODD_EXISTS
   ORDER_EXISTENCE_ITER := SessionLibrary.Iter.«ORDER_EXISTENCE_ITER»
   OR_EXISTS_THM := Session.OR_EXISTS_THM
@@ -280,6 +295,7 @@ def core4 : HolLibrary.Pocklington.CoreThms4 where
   PRIME_COPRIME := SessionLibrary.Prime.«PRIME_COPRIME»
   PRIME_COPRIME_EQ := SessionLibrary.Prime.«PRIME_COPRIME_EQ»
   PRIME_DIVEXP_EQ := SessionLibrary.Prime.«PRIME_DIVEXP_EQ»
+  PRIME_DIVPROD := SessionLibrary.Prime.«PRIME_DIVPROD»
   PRIME_DIVPROD_POW_EQ := SessionLibrary.Prime.«PRIME_DIVPROD_POW_EQ»
   PRIME_DIVPROD_POW_GEN_EQ := SessionLibrary.Prime.«PRIME_DIVPROD_POW_GEN_EQ»
   PRIME_EXP := SessionLibrary.Prime.«PRIME_EXP»
@@ -309,23 +325,18 @@ def core4 : HolLibrary.Pocklington.CoreThms4 where
   divides := Session.divides
   index_def := SessionLibrary.Prime.«index_def»
   int_congruent := Session.int_congruent
+  int_divides := Session.int_divides
   int_of_num := Session.int_of_num
   nproduct := Session.nproduct
   num_FINITE := Session.num_FINITE
   num_INDUCTION := Session.num_INDUCTION
   num_MAX := Session.num_MAX
+  num_WF := Session.num_WF
   num_WOP := Session.num_WOP
   num_congruent := Session.num_congruent
   num_divides := Session.num_divides
   pairwise := Session.pairwise
   prime := Session.prime
-  MOD_LE := Session.MOD_LE
-  MOD_MULT := Session.MOD_MULT
-  PRIME_DIVPROD := SessionLibrary.Prime.«PRIME_DIVPROD»
-  ALL_IMP := Session.listThms1.ALL_IMP
-  ALL_MEM := Session.listThms1.ALL_MEM
-  num_WF := Session.num_WF
-  LT_MULT_RCANCEL := Session.LT_MULT_RCANCEL
 
 /-- What pocklington.ml uses from Session. -/
 def deps : HolLibrary.Pocklington.PocklingtonDeps where
@@ -363,6 +374,7 @@ def deps : HolLibrary.Pocklington.PocklingtonDeps where
   mk_numeral := Session.mk_numeral
   mk_small_numeral := Session.mk_small_numeral
   mk_flist := Session.mk_flist
+  ASM_INT_ARITH_TAC := Session.ASM_INT_ARITH_TAC
   core1 := core1
   core2 := core2
   core3 := core3
@@ -515,6 +527,9 @@ def SQUAREFREE_NPRODUCT : thm := BSquarefree.SQUAREFREE_NPRODUCT
 def SQUAREFREE_EXPAND : thm := BSquarefree.SQUAREFREE_EXPAND
 def SQUAREFREE_EXPAND_EQ : thm := BSquarefree.SQUAREFREE_EXPAND_EQ
 def SQUAREFREE_DECOMPOSITION : thm := BSquarefree.SQUAREFREE_DECOMPOSITION
+def INT_SQUAREFREE_DIVPOW : thm := BSquarefree.INT_SQUAREFREE_DIVPOW
+def INT_SQUAREFREE_MUL_SQUARE : thm := BSquarefree.INT_SQUAREFREE_MUL_SQUARE
+def INT_SQUAREFREE_DECOMPOSITION : thm := BSquarefree.INT_SQUAREFREE_DECOMPOSITION
 def CONG_MOD_SQUAREFREE : thm := BSquarefree.CONG_MOD_SQUAREFREE
 def CONG_MOD_SQUAREFREE_EQ : thm := BSquarefree.CONG_MOD_SQUAREFREE_EQ
 

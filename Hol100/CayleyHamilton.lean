@@ -6,7 +6,7 @@ import Hol100.Common
 import SessionMultiLib.Complexes
 import SessionMultiLib.MSum
 open HolCore.Kernel Session HolLight.Syntax HolExamples Hol100
-open SessionLibrary.Floor SessionLibrary.Wo SessionLibrary.Permutations SessionLibrary.Products SessionLibrary.Iter SessionLibrary.Card SessionLibrary.Matroids SessionMultiLib.Misc SessionMultiLib.Vectors SessionMultiLib.MSum SessionMultiLib.Metric SessionMultiLib.Determinants SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.Complexes
+open SessionLibrary.Floor SessionLibrary.Wo SessionLibrary.Permutations SessionLibrary.Products SessionLibrary.Iter SessionLibrary.Card SessionLibrary.Matroids SessionMultiLib.Misc SessionMultiLib.Vectors SessionMultiLib.MSum SessionMultiLib.Metric SessionMultiLib.Determinants SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes
 namespace Hol100.CayleyHamilton
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts

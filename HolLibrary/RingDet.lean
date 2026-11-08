@@ -69,7 +69,9 @@ namespace HolLibrary.RingDet
 /-- Theorems used from the core library and the parent Library files. -/
 structure CoreThms1 where
   (ADD1 ADD_CLAUSES ADD_EQ_0 ADD_SUB ADD_SUB2 AND_FORALL_THM ARITH ARITH_EQ
-   CARD_CLAUSES CARD_DELETE CARD_EQ_0 CARD_NUMSEG_LT CARTESIAN_PRODUCT_EMPTY
+   CARD_CLAUSES CARD_DELETE CARD_EQ_0
+   CARD_IMAGE_INJ CARD_NUMSEG_LT
+   CARD_SUBSET CARD_SUBSET_EQ CARTESIAN_PRODUCT_EMPTY
    COEFF_ABOVE_DEG COEFF_COMPOSE COEFF_IN_CARRIER_ALT COEFF_NONZERO_LE_DEG
    COEFF_POLY_0 COEFF_POLY_1 COEFF_POLY_ADD COEFF_POLY_CONST
    COEFF_POLY_DERIV COEFF_POLY_LMUL COEFF_POLY_MUL COEFF_POLY_MUL_VARPOW
@@ -85,16 +87,20 @@ structure CoreThms1 where
 /-- Theorems used from the core library and the parent Library files. -/
 structure CoreThms2 where
   (EVENPERM_ID EVENPERM_INVERSE EVENPERM_SWAP EVENPERM_TRANSFER EVEN_ADD
-   EVEN_MULT EXISTS_PAIR_THM EXTENSION EXTENSIONAL FIELD_IMP_INTEGRAL_DOMAIN
-   FIELD_MUL_RINV FIELD_NONTRIVIAL FINITE_CARTESIAN_PRODUCT FINITE_CROSS
+   EVEN_MULT EXISTS_IN_IMAGE EXISTS_PAIR_THM
+   EXTENSION EXTENSIONAL FIELD_IMP_INTEGRAL_DOMAIN FIELD_MUL_LINV
+   FIELD_MUL_RINV FIELD_NONTRIVIAL
+   FIELD_REAL_RING FINITE_CARTESIAN_PRODUCT FINITE_CROSS
    FINITE_DELETE FINITE_HAS_SIZE FINITE_IMAGE FINITE_INDUCT_STRONG
    FINITE_INSERT FINITE_NUMSEG FINITE_NUMSEG_LT FINITE_PERMUTATIONS
    FINITE_POWERSET FINITE_RESTRICT FINITE_SING FINITE_SUBSET FINITE_UNION
    FORALL_IN_GSPEC FORALL_IN_IMAGE FORALL_IN_INSERT FORALL_PAIR_THM
    FUN_EQ_COEFF FUN_EQ_THM FUN_IN_IMAGE HAS_SIZE_FUNSPACE HAS_SIZE_IMAGE_INJ
-   HAS_SIZE_NUMSEG_LT IMAGE_COMPOSE_PERMUTATIONS_L
-   IMAGE_COMPOSE_PERMUTATIONS_R IMAGE_INVERSE_PERMUTATIONS IMAGE_RESTRICTION
-   IMP_CONJ IMP_CONJ_ALT IMP_IMP INJECTIVE_ON_LEFT_INVERSE INSERT_UNION_EQ
+   HAS_SIZE_NUMSEG_LT IMAGE_CLAUSES IMAGE_COMPOSE_PERMUTATIONS_L
+   IMAGE_COMPOSE_PERMUTATIONS_R IMAGE_EQ_EMPTY
+   IMAGE_INVERSE_PERMUTATIONS IMAGE_RESTRICTION
+   IMP_CONJ IMP_CONJ_ALT IMP_IMP
+   INJECTIVE_ON_LEFT_INVERSE INSERT_SUBSET INSERT_UNION_EQ
    INTEGRAL_DOMAIN_MUL_EQ_0 INTEGRAL_DOMAIN_MUL_LCANCEL
    INTEGRAL_DOMAIN_POLY_RING INTEGRAL_DOMAIN_POW_EQ_0 IN_CARTESIAN_PRODUCT
    IN_CROSS IN_DELETE IN_DIFF IN_ELIM_PAIR_THM IN_ELIM_THM : thm)
@@ -116,7 +122,8 @@ structure CoreThms3 where
 
 /-- Theorems used from the core library and the parent Library files. -/
 structure CoreThms4 where
-  (OUTR PAIR_EQ PERMUTATION_PERMUTES PERMUTATION_SWAP PERMUTES_COMPOSE
+  (OUTR IN_RING_IDEAL_0 IN_UNIV PAIR_EQ
+   PERMUTATION_PERMUTES PERMUTATION_SWAP PERMUTES_COMPOSE
    PERMUTES_CYCLIC_N PERMUTES_EMPTY PERMUTES_FINITE_INJECTIVE
    PERMUTES_FINITE_SURJECTIVE PERMUTES_I PERMUTES_IMAGE PERMUTES_INJECTIVE
    PERMUTES_INVERSE PERMUTES_INVERSES PERMUTES_INVERSES_o
@@ -131,7 +138,12 @@ structure CoreThms4 where
    POLY_DEG_RING_SUM_LE POLY_DEG_RING_SUM_VARPOW_REV POLY_DEG_SUB_CONST
    POLY_DEG_VAR POLY_DEG_VARPOW_MUL POLY_DEG_VAR_POW POLY_DEG_X_MINUS_A
    POLY_DERIV_CMUL POLY_DERIV_CONST POLY_DERIV_HOMOMORPHIC_IMAGE
-   POLY_DERIV_IN_CARRIER : thm)
+   POLY_DERIV_IN_CARRIER REAL_ABS_MUL REAL_ABS_NZ
+   REAL_ABS_POS REAL_LE_RMUL REAL_LE_TRANS
+   REAL_LT_LMUL REAL_NOT_LE REAL_RING_CLAUSES
+   REAL_RING_SUM RING_ADD_EQ_0 RING_COSET_EQ
+   RING_NEG_0 RING_UNIT_IN_CARRIER SUM_ABS
+   SUM_DELETE SUM_LE SUM_LMUL SUP_FINITE_LEMMA : thm)
   deriving Inhabited
 
 /-- Theorems used from the core library and the parent Library files. -/
@@ -233,6 +245,7 @@ structure RingDetDeps where
   -- the constructor theorems of a type (ind_types.ml)
   distinctness : String → ExceptT String IO thm
   injectivity : String → ExceptT String IO thm
+  REAL_ARITH_TAC : tactic
   core1 : CoreThms1
   core2 : CoreThms2
   core3 : CoreThms3
@@ -583,6 +596,9 @@ structure DetRows where
   RING_DET_ROWS_MUL : thm
   RING_DET_COLUMNS_MUL : thm
   RING_DET_ROW_OPERATION : thm
+  RING_DET_ROW_NEG_SUM : thm
+  RING_DET_ROWS_SAME_IMAGE : thm
+  RING_DET_ROWS_OMIT : thm
   RING_SUM_PRODUCT_CARTESIAN_PRODUCT : thm
   RING_DET_MULTILINEAR : thm
   RING_DET_HOMOMORPHISM : thm
@@ -592,28 +608,33 @@ structure DetRows where
 def setupDetRows [HolBase] (D : RingDetDeps) (BDet : Det) :
     ExceptT String IO DetRows := do
   -- @@SCOPE BEGIN
-  let { ASM_MESON_TAC, MESON_TAC, RING_RULE, SET_TAC, .. } := D
-  let { CARTESIAN_PRODUCT_EMPTY, CROSS, DISJOINT, EQ_TRANS, ETA_AX, EVENPERM_COMPOSE, .. } := D.core1
+  let { ARITH_TAC, ASM_ARITH_TAC, ASM_MESON_TAC, MESON, MESON_TAC, NUM_REDUCE_CONV,
+        RING_RULE, SET_RULE, SET_TAC, .. } := D
+  let { CARD_CLAUSES, CARD_EQ_0, CARD_IMAGE_INJ, CARD_SUBSET, CARD_SUBSET_EQ,
+        CARTESIAN_PRODUCT_EMPTY, CROSS, DISJOINT, EQ_TRANS, ETA_AX, EVENPERM_COMPOSE, .. } := D.core1
   let { EVENPERM_SWAP, EXISTS_PAIR_THM, EXTENSION, EXTENSIONAL,
         FINITE_CARTESIAN_PRODUCT, FINITE_DELETE, FINITE_IMAGE, FINITE_INDUCT_STRONG,
-        FINITE_PERMUTATIONS, FINITE_SUBSET, FORALL_IN_INSERT, FORALL_PAIR_THM,
-        FUN_EQ_THM, IMP_CONJ, IN_CARTESIAN_PRODUCT, IN_CROSS, IN_DELETE, IN_ELIM_THM, .. } := D.core2
+        FINITE_PERMUTATIONS, FINITE_SUBSET, FORALL_IN_IMAGE, FORALL_IN_INSERT,
+        FORALL_PAIR_THM, FUN_EQ_THM, FUN_IN_IMAGE, IMAGE_CLAUSES, IMP_CONJ,
+        INSERT_SUBSET, IN_CARTESIAN_PRODUCT, IN_CROSS, IN_DELETE, IN_ELIM_THM, .. } := D.core2
   let { IN_IMAGE, IN_INSERT, IN_INTER, IN_UNION, I_O_ID, I_THM, LAMBDA_PAIR_THM,
         LEFT_IMP_EXISTS_THM, NOT_IN_EMPTY, .. } := D.core3
   let { PAIR_EQ, PERMUTATION_PERMUTES, PERMUTATION_SWAP, PERMUTES_COMPOSE,
-        PERMUTES_IN_IMAGE, PERMUTES_SWAP, .. } := D.core4
-  let { RIGHT_FORALL_IMP_THM, RING_0, RING_1, RING_ADD, RING_ADD_RDISTRIB,
-        RING_ADD_RNEG, RING_ADD_RZERO, .. } := D.core5
+        PERMUTES_FINITE_INJECTIVE, PERMUTES_IN_IMAGE, PERMUTES_SWAP, RING_ADD_EQ_0,
+        RING_NEG_0, .. } := D.core4
+  let { RIGHT_FORALL_IMP_THM, RIGHT_IMP_EXISTS_THM, RING_0, RING_1, RING_ADD,
+        RING_ADD_RDISTRIB, RING_ADD_RNEG, RING_ADD_RZERO, .. } := D.core5
   let { RING_HOMOMORPHISM_MUL, RING_HOMOMORPHISM_PRODUCT, RING_HOMOMORPHISM_SUM,
         RING_MUL, RING_MUL_ASSOC, RING_MUL_LID, RING_MUL_LNEG, RING_MUL_LZERO,
-        RING_MUL_RZERO, RING_MUL_SYM, .. } := D.core6
+        RING_MUL_RZERO, RING_MUL_SYM, RING_NEG, RING_NEG_NEG, .. } := D.core6
   let { RING_PRODUCT, RING_PRODUCT_CLAUSES, RING_PRODUCT_EQ, RING_PRODUCT_MUL,
-        RING_SUM, RING_SUM_ADD, RING_SUM_EQ, RING_SUM_EQ_0, RING_SUM_IMAGE,
-        RING_SUM_LMUL, .. } := D.core7
-  let { RING_SUM_RMUL, RING_SUM_SING, RING_SUM_SUM_PRODUCT, RING_SUM_SWAP,
-        RING_SUM_UNION, SWAP_IDEMPOTENT, o_ASSOC, o_DEF, o_THM, swap, .. } := D.core8
-  let { RING_DET, RING_DET_EQ, RING_DET_TRANSP, RING_HOMOMORPHISM_SIGN,
-        RING_PRODUCT_PERMUTE, RING_SIGN, ring_det, ring_sign, .. } := BDet
+        RING_SUM, RING_SUM_ADD, RING_SUM_CLAUSES, RING_SUM_DELTA, RING_SUM_EQ,
+        RING_SUM_EQ_0, RING_SUM_IMAGE, RING_SUM_LMUL, .. } := D.core7
+  let { RING_SUM_NEG, RING_SUM_RMUL, RING_SUM_SING, RING_SUM_SUM_PRODUCT,
+        RING_SUM_SWAP, RING_SUM_UNION, SKOLEM_THM, SUBSET, SWAP_IDEMPOTENT, o_ASSOC,
+        o_DEF, o_THM, swap, .. } := D.core8
+  let { RING_DET, RING_DET_EQ, RING_DET_PERMUTE_ROWS, RING_DET_TRANSP,
+        RING_HOMOMORPHISM_SIGN, RING_PRODUCT_PERMUTE, RING_SIGN, ring_det, ring_sign, .. } := BDet
   -- @@SCOPE END
 
   let RING_DET_IDENTICAL_ROWS ← prove
@@ -902,6 +923,251 @@ def setupDetRows [HolBase] (D : RingDetDeps) (BDet : Det) :
      [MATCH_MP_TAC RING_DET_EQ THEN MESON_TAC [], ALL_TAC] THEN
     ASM_SIMP_TAC [RING_MUL_RZERO, RING_ADD_RZERO, RING_DET])
 
+  /- Replacing row k by minus the sum of all rows negates the determinant. -/
+  let RING_DET_ROW_NEG_SUM ← prove
+   r"!(r:B ring) s (f:A->A->B) k.
+        FINITE s /\ k IN s /\
+        (!i j. i IN s /\ j IN s ==> f i j IN ring_carrier r)
+        ==> ring_det r s
+              (\i j. if i = k then ring_neg r (ring_sum r s (\l. f l j))
+                     else f i j) =
+            ring_neg r (ring_det r s f)"
+   (REPEAT STRIP_TAC THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_det r s
+        (\i j. if i = k then ring_sum r s (\l. ring_neg r ((f:A->A->B) l j))
+               else f i j)") THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC RING_DET_EQ THEN MAP_EVERY X_GEN_TAC [← q r"i:A", ← q r"j:A"] THEN
+      STRIP_TAC THEN REWRITE_TAC [] THEN COND_CASES_TAC THEN REWRITE_TAC [] THEN
+      CONV_TAC SYM_CONV THEN MATCH_MP_TAC RING_SUM_NEG THEN ASM_SIMP_TAC [],
+      ALL_TAC] THEN
+    MP_TAC (← ISPECL [← q r"r:B ring", ← q r"s:A->bool", ← q r"f:A->A->B", ← q r"k:A",
+                      ← q r"s:A->bool", ← q r"\l j. ring_neg r ((f:A->A->B) l j)"]
+      RING_DET_ROW_SUM) THEN
+    ASM_SIMP_TAC [RING_NEG] THEN DISCH_THEN SUBST1_TAC THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_sum r s (\l. if l = k then ring_neg r (ring_det r s (f:A->A->B))
+                        else ring_0 r)") THEN
+    CONJ_TAC THENL
+     [ALL_TAC, ASM_SIMP_TAC [RING_SUM_DELTA, RING_NEG, RING_DET]] THEN
+    MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"l:A") THEN DISCH_TAC THEN
+    REWRITE_TAC [] THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_det r s
+        (\i j. if i = k then ring_mul r (ring_neg r (ring_1 r))
+                                        ((f:A->A->B) l j)
+               else f i j)") THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC RING_DET_EQ THEN MAP_EVERY X_GEN_TAC [← q r"i:A", ← q r"j:A"] THEN
+      STRIP_TAC THEN REWRITE_TAC [] THEN COND_CASES_TAC THEN REWRITE_TAC [] THEN
+      ASM_SIMP_TAC [RING_MUL_LNEG, RING_MUL_LID, RING_1],
+      ALL_TAC] THEN
+    MP_TAC (← ISPECL [← q r"r:B ring", ← q r"s:A->bool", ← q r"f:A->A->B", ← q r"k:A",
+                      ← q r"ring_neg r (ring_1 r):B", ← q r"\j. (f:A->A->B) l j"]
+      RING_DET_ROW_CMUL) THEN
+    ASM_SIMP_TAC [RING_NEG, RING_1] THEN DISCH_THEN SUBST1_TAC THEN
+    SIMP_TAC [RING_MUL_LNEG, RING_MUL_LID, RING_1, RING_DET] THEN
+    COND_CASES_TAC THENL
+     [AP_TERM_TAC THEN MATCH_MP_TAC RING_DET_EQ THEN REPEAT STRIP_TAC THEN
+      REWRITE_TAC [] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [],
+      MATCH_MP_TAC (← MESON [RING_NEG_0]
+       (← q r"x = ring_0 r ==> ring_neg r x = ring_0 (r:B ring)")) THEN
+      MP_TAC (← ISPECL [← q r"r:B ring", ← q r"s:A->bool",
+                        ← q r"\i j. if i = k then (f:A->A->B) l j else f i j",
+                        ← q r"k:A", ← q r"l:A"] RING_DET_IDENTICAL_ROWS) THEN
+      ASM_REWRITE_TAC [] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_MESON_TAC []])
+
+  /- --------------------------------------------------------------------- -/
+  /- Minors on selected rows. For an array f with rows indexed by C and an -/
+  /- injective map p from s to C, the minor on the rows p(s) is the        -/
+  /- determinant of the array (f (p i) j) on s. Two such minors on the     -/
+  /- same set of rows agree up to sign (RING_DET_ROWS_SAME_IMAGE). If the  -/
+  /- rows in a finite set P sum to zero and CARD s = CARD P - 1, all the   -/
+  /- minors on rows from P agree up to sign (RING_DET_ROWS_OMIT).          -/
+  /- --------------------------------------------------------------------- -/
+
+  let RING_DET_ROWS_SAME_IMAGE ← prove
+   r"!(r:B ring) s (f:C->A->B) p p'.
+        FINITE s /\
+        (!i j. i IN s /\ j IN s /\ p i = p j ==> i = j) /\
+        (!i j. i IN s /\ j IN s /\ p' i = p' j ==> i = j) /\
+        IMAGE p s = IMAGE p' s
+        ==> ring_det r s (\i j. f (p' i) j) =
+            ring_det r s (\i j. f (p i) j) \/
+            ring_det r s (\i j. f (p' i) j) =
+            ring_neg r (ring_det r s (\i j. f (p i) j))"
+   (REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN (← q r"!i. i IN s ==> ?l. l IN s /\ (p:A->C) l = p' i")
+    MP_TAC THENL
+     [REPEAT STRIP_TAC THEN
+      SUBGOAL_THEN (← q r"(p':A->C) i IN IMAGE (p:A->C) s") MP_TAC THENL
+       [ASM_SIMP_TAC [FUN_IN_IMAGE], REWRITE_TAC [IN_IMAGE]] THEN
+      MESON_TAC [],
+      REWRITE_TAC [RIGHT_IMP_EXISTS_THM, SKOLEM_THM]] THEN
+    DISCH_THEN (X_CHOOSE_TAC (← q r"q:A->A")) THEN
+    SUBGOAL_THEN (← q r"(\i. if i IN s then (q:A->A) i else i) permutes s")
+    ASSUME_TAC THENL
+     [MP_TAC (← ISPECL [← q r"s:A->bool", ← q r"\i. if i IN s then (q:A->A) i else i"]
+        PERMUTES_FINITE_INJECTIVE) THEN
+      ANTS_TAC THENL [FIRST_ASSUM ACCEPT_TAC, DISCH_THEN SUBST1_TAC] THEN
+      REWRITE_TAC [] THEN REPEAT CONJ_TAC THENL
+       [MESON_TAC [],
+        FIRST_ASSUM (fun th => SIMP_TAC [th]),
+        MAP_EVERY X_GEN_TAC [← q r"x:A", ← q r"y:A"] THEN STRIP_TAC THEN
+        UNDISCH_TAC (← q r"(if x IN s then (q:A->A) x else x) =
+                     (if y IN s then q y else y)") THEN
+        ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
+        SUBGOAL_THEN (← q r"(p':A->C) x = p' y") MP_TAC THENL
+         [ASM_MESON_TAC [], ASM_MESON_TAC []]],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"ring_det r s (\i j. (f:C->A->B) (p' i) j) =
+      ring_det r s
+        (\i j. (\i j. f ((p:A->C) i) j)
+               ((\i. if i IN s then (q:A->A) i else i) i) j)")
+    SUBST1_TAC THENL
+     [MATCH_MP_TAC RING_DET_EQ THEN ASM_SIMP_TAC [],
+      ASM_SIMP_TAC [RING_DET_PERMUTE_ROWS]] THEN
+    REWRITE_TAC [ring_sign] THEN COND_CASES_TAC THEN
+    SIMP_TAC [RING_MUL_LID, RING_MUL_LNEG, RING_1, RING_DET])
+
+  let RING_DET_ROWS_OMIT ← prove
+   r"!(r:B ring) (P:C->bool) (s:A->bool) (f:C->A->B) p p'.
+        FINITE P /\ FINITE s /\ CARD s = CARD P - 1 /\
+        (!v j. v IN P /\ j IN s ==> f v j IN ring_carrier r) /\
+        (!j. j IN s ==> ring_sum r P (\v. f v j) = ring_0 r) /\
+        (!i. i IN s ==> p i IN P) /\
+        (!i j. i IN s /\ j IN s /\ p i = p j ==> i = j) /\
+        (!i. i IN s ==> p' i IN P) /\
+        (!i j. i IN s /\ j IN s /\ p' i = p' j ==> i = j)
+        ==> ring_det r s (\i j. f (p' i) j) =
+            ring_det r s (\i j. f (p i) j) \/
+            ring_det r s (\i j. f (p' i) j) =
+            ring_neg r (ring_det r s (\i j. f (p i) j))"
+   (← do
+    -- OCaml's order (right to left): the second SET_RULE, then the first
+    let s2 ← SET_RULE (← q r"~(t SUBSET u) ==> ?x:C. x IN t /\ ~(x IN u)")
+    let s1 ← SET_RULE (← q r"~(t SUBSET u) ==> ?x:C. x IN t /\ ~(x IN u)")
+    pure (REPEAT GEN_TAC THEN
+    DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC
+     (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC
+     (CONJUNCTS_THEN2 (LABEL_TAC "sum")
+     (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 (LABEL_TAC "pinj")
+     (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "p'inj"))))))))) THEN
+    ASM_CASES_TAC (← q r"IMAGE (p:A->C) s = IMAGE p' s") THENL
+     [MATCH_MP_TAC RING_DET_ROWS_SAME_IMAGE THEN
+      ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"CARD(IMAGE (p:A->C) s) = CARD(s:A->bool) /\
+                  CARD(IMAGE (p':A->C) s) = CARD s")
+    STRIP_ASSUME_TAC THENL
+     [CONJ_TAC THEN MATCH_MP_TAC CARD_IMAGE_INJ THEN
+      ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"?b:C. b IN IMAGE p (s:A->bool) /\ ~(b IN IMAGE p' s)")
+    STRIP_ASSUME_TAC THENL
+     [MATCH_MP_TAC s1 THEN
+      DISCH_TAC THEN UNDISCH_TAC (← q r"~(IMAGE (p:A->C) s = IMAGE p' s)") THEN
+      REWRITE_TAC [] THEN MATCH_MP_TAC CARD_SUBSET_EQ THEN
+      ASM_REWRITE_TAC [] THEN MATCH_MP_TAC FINITE_IMAGE THEN
+      ASM_REWRITE_TAC [],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"?a:C. a IN P /\ ~(a IN IMAGE p (s:A->bool))")
+    STRIP_ASSUME_TAC THENL
+     [MATCH_MP_TAC s2 THEN
+      DISCH_TAC THEN
+      MP_TAC (← ISPECL [← q r"P:C->bool", ← q r"IMAGE (p:A->C) s"] CARD_SUBSET) THEN
+      ANTS_TAC THENL
+       [ASM_REWRITE_TAC [] THEN MATCH_MP_TAC FINITE_IMAGE THEN
+        ASM_REWRITE_TAC [],
+        ALL_TAC] THEN
+      ASM_REWRITE_TAC [] THEN
+      ASM_CASES_TAC (← q r"P:C->bool = {}") THENL
+       [ALL_TAC,
+        SUBGOAL_THEN (← q r"~(CARD(P:C->bool) = 0)") MP_TAC THENL
+         [ASM_MESON_TAC [CARD_EQ_0], ARITH_TAC]] THEN
+      DISCH_TAC THEN UNDISCH_TAC (← q r"~(IMAGE (p:A->C) s = IMAGE p' s)") THEN
+      SUBGOAL_THEN (← q r"s:A->bool = {}") (fun th => REWRITE_TAC [th, IMAGE_CLAUSES])
+      THEN UNDISCH_TAC (← q r"CARD(s:A->bool) = CARD(P:C->bool) - 1") THEN
+      ASM_REWRITE_TAC [CARD_CLAUSES] THEN CONV_TAC NUM_REDUCE_CONV THEN
+      ASM_MESON_TAC [CARD_EQ_0],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"P = (a:C) INSERT IMAGE p (s:A->bool)") ASSUME_TAC THENL
+     [CONV_TAC SYM_CONV THEN MATCH_MP_TAC CARD_SUBSET_EQ THEN
+      SUBGOAL_THEN (← q r"FINITE(IMAGE (p:A->C) s)") ASSUME_TAC THENL
+       [MATCH_MP_TAC FINITE_IMAGE THEN ASM_REWRITE_TAC [], ALL_TAC] THEN
+      ASM_REWRITE_TAC [INSERT_SUBSET] THEN
+      ASM_SIMP_TAC [CARD_CLAUSES] THEN CONJ_TAC THENL
+       [REWRITE_TAC [SUBSET, FORALL_IN_IMAGE] THEN ASM_MESON_TAC [],
+        ALL_TAC] THEN
+      SUBGOAL_THEN (← q r"~(CARD(P:C->bool) = 0)") MP_TAC THENL
+       [ASM_MESON_TAC [CARD_EQ_0, NOT_IN_EMPTY], ASM_ARITH_TAC],
+      ALL_TAC] THEN
+    UNDISCH_TAC (← q r"(b:C) IN IMAGE p (s:A->bool)") THEN REWRITE_TAC [IN_IMAGE] THEN
+    DISCH_THEN (X_CHOOSE_THEN (← q r"i0:A") STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN
+     (← q r"!i j:A. i IN s /\ j IN s /\
+              (if i = i0 then (a:C) else p i) = (if j = i0 then a else p j)
+              ==> i = j")
+    ASSUME_TAC THENL
+     [REPEAT GEN_TAC THEN
+      MAP_EVERY ASM_CASES_TAC [← q r"i:A = i0", ← q r"j:A = i0"] THEN
+      ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [FUN_IN_IMAGE],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"IMAGE (\i:A. if i = i0 then (a:C) else p i) s = IMAGE p' s")
+    ASSUME_TAC THENL
+     [CONV_TAC SYM_CONV THEN MATCH_MP_TAC CARD_SUBSET_EQ THEN
+      REPEAT CONJ_TAC THENL
+       [MATCH_MP_TAC FINITE_IMAGE THEN ASM_REWRITE_TAC [],
+        REWRITE_TAC [SUBSET, FORALL_IN_IMAGE] THEN X_GEN_TAC (← q r"i:A") THEN
+        DISCH_TAC THEN
+        SUBGOAL_THEN (← q r"(p':A->C) i IN (a:C) INSERT IMAGE (p:A->C) s") MP_TAC THENL
+         [ASM_MESON_TAC [], ALL_TAC] THEN
+        REWRITE_TAC [IN_INSERT, IN_IMAGE] THEN STRIP_TAC THENL
+         [EXISTS_TAC (← q r"i0:A") THEN ASM_REWRITE_TAC [],
+          EXISTS_TAC (← q r"x:A") THEN ASM_REWRITE_TAC [] THEN
+          COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
+          UNDISCH_TAC (← q r"~((b:C) IN IMAGE p' (s:A->bool))") THEN
+          ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [FUN_IN_IMAGE]],
+        MP_TAC (← ISPECL [← q r"\i:A. if i = i0 then (a:C) else p i", ← q r"s:A->bool"]
+          CARD_IMAGE_INJ) THEN
+        ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN SUBST1_TAC] THEN
+        ASM_REWRITE_TAC []],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"ring_det r s (\i j. (f:C->A->B) (if i = i0 then a else p i) j) =
+      ring_neg r (ring_det r s (\i j. f ((p:A->C) i) j))")
+    ASSUME_TAC THENL
+     [MP_TAC (← BETA_RULE (← ISPECL [← q r"r:B ring", ← q r"s:A->bool",
+                               ← q r"\i j. (f:C->A->B) ((p:A->C) i) j", ← q r"i0:A"]
+        RING_DET_ROW_NEG_SUM)) THEN
+      ANTS_TAC THENL [ASM_MESON_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN
+      MATCH_MP_TAC RING_DET_EQ THEN MAP_EVERY X_GEN_TAC [← q r"i:A", ← q r"j:A"] THEN
+      STRIP_TAC THEN REWRITE_TAC [] THEN COND_CASES_TAC THEN REWRITE_TAC [] THEN
+      REMOVE_THEN "sum" (MP_TAC o SPEC (← q r"j:A")) THEN ASM_REWRITE_TAC [] THEN
+      SUBGOAL_THEN (← q r"FINITE(IMAGE (p:A->C) s)") ASSUME_TAC THENL
+       [MATCH_MP_TAC FINITE_IMAGE THEN ASM_REWRITE_TAC [], ALL_TAC] THEN
+      SUBGOAL_THEN (← q r"(f:C->A->B) a j IN ring_carrier r /\
+                    ring_sum r s (\l. f ((p:A->C) l) j) IN ring_carrier r")
+      STRIP_ASSUME_TAC THENL
+       [REWRITE_TAC [RING_SUM] THEN ASM_MESON_TAC [], ALL_TAC] THEN
+      MP_TAC (← ISPECL [← q r"r:B ring", ← q r"a:C", ← q r"\v:C. (f:C->A->B) v j",
+                        ← q r"IMAGE (p:A->C) s"] (← CONJUNCT2 RING_SUM_CLAUSES)) THEN
+      ANTS_TAC THENL [FIRST_ASSUM ACCEPT_TAC, DISCH_THEN SUBST1_TAC] THEN
+      ASM_REWRITE_TAC [] THEN
+      MP_TAC (← ISPECL [← q r"r:B ring", ← q r"p:A->C", ← q r"\v:C. (f:C->A->B) v j",
+                        ← q r"s:A->bool"] RING_SUM_IMAGE) THEN
+      ANTS_TAC THENL [ASM_MESON_TAC [], DISCH_THEN SUBST1_TAC] THEN
+      REWRITE_TAC [o_DEF] THEN ASM_SIMP_TAC [RING_ADD_EQ_0] THEN
+      DISCH_THEN (SUBST1_TAC o SYM) THEN ASM_SIMP_TAC [RING_NEG_NEG],
+      ALL_TAC] THEN
+    MP_TAC (← ISPECL [← q r"r:B ring", ← q r"s:A->bool", ← q r"f:C->A->B",
+                      ← q r"\i:A. if i = i0 then (a:C) else p i", ← q r"p':A->C"]
+      RING_DET_ROWS_SAME_IMAGE) THEN
+    ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [], ALL_TAC] THEN
+    ASM_SIMP_TAC [RING_NEG_NEG, RING_DET] THEN MESON_TAC []))
+
   /- --------------------------------------------------------------------- -/
   /- Expansion of all rows as sums: a sum over the cartesian product.      -/
   /- --------------------------------------------------------------------- -/
@@ -1054,8 +1320,9 @@ def setupDetRows [HolBase] (D : RingDetDeps) (BDet : Det) :
   return { RING_DET_IDENTICAL_ROWS, RING_DET_IDENTICAL_COLUMNS, RING_PRODUCT_DELETE,
            RING_DET_ROW_EXPANSION, RING_DET_ROW_CMUL, RING_DET_ROW_ADD, RING_DET_ROW_SUM,
            RING_DET_ROW_0, RING_DET_ROWS_MUL, RING_DET_COLUMNS_MUL,
-           RING_DET_ROW_OPERATION, RING_SUM_PRODUCT_CARTESIAN_PRODUCT,
-           RING_DET_MULTILINEAR, RING_DET_HOMOMORPHISM }
+           RING_DET_ROW_OPERATION, RING_DET_ROW_NEG_SUM, RING_DET_ROWS_SAME_IMAGE,
+           RING_DET_ROWS_OMIT, RING_SUM_PRODUCT_CARTESIAN_PRODUCT, RING_DET_MULTILINEAR,
+           RING_DET_HOMOMORPHISM }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
@@ -1068,6 +1335,7 @@ structure Cofactors where
   -- @@FIELDS
   RING_DET_DIAGONAL : thm
   RING_DET_I : thm
+  RING_DET_DIAGONAL_CONGRUENCE : thm
   ring_cofactor : thm
   RING_COFACTOR : thm
   RING_COFACTOR_EQ : thm
@@ -1076,8 +1344,12 @@ structure Cofactors where
   RING_DET_ADJUGATE_ROWS : thm
   RING_COFACTOR_TRANSP : thm
   RING_DET_ADJUGATE_COLUMNS : thm
+  RING_MATRIX_SOLVE : thm
+  RING_DET_CRAMER : thm
   RING_DET_CLOSED : thm
   RING_DET_SUBRING : thm
+  RING_COFACTOR_SUBRING : thm
+  RING_DET_CRAMER_SUBRING : thm
   RING_COFACTOR_EQ_GEN : thm
   RING_COFACTOR_INSERT : thm
   RING_DET_DEPENDENT_ROWS_MUL : thm
@@ -1092,19 +1364,24 @@ def setupCofactors [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows)
   let { EQ_TRANS, .. } := D.core1
   let { EXTENSION, FINITE_INSERT, FUN_EQ_THM, INTEGRAL_DOMAIN_MUL_EQ_0, IN_DIFF,
         IN_ELIM_THM, .. } := D.core2
-  let { IN_INSERT, I_THM, NOT_FORALL_THM, .. } := D.core3
-  let { PERMUTES_I, PERMUTES_INJECTIVE, PERMUTES_INVERSE, PERMUTES_INVERSES,
-        PERMUTES_IN_IMAGE, PERMUTES_SUBSET, PERMUTES_SUPERSET, .. } := D.core4
-  let { RING_0, RING_1, .. } := D.core5
-  let { RING_MUL, RING_MUL_LID, RING_MUL_LZERO, RING_MUL_RID, RING_MUL_RZERO,
-        RING_MUL_SYM, .. } := D.core6
-  let { RING_PRODUCT, RING_PRODUCT_1, RING_PRODUCT_CLOSED, RING_PRODUCT_EQ,
-        RING_PRODUCT_ZERO, RING_SUM_CLOSED, RING_SUM_DELTA, RING_SUM_EQ, .. } := D.core7
-  let { RING_SUM_RESTRICT_SET, permutes, subring_of, .. } := D.core8
+  let { IN_INSERT, IN_SUBRING_0, IN_SUBRING_1, IN_SUBRING_MUL, IN_SUBRING_SUM, I_THM,
+        NOT_FORALL_THM, .. } := D.core3
+  let { IN_RING_IDEAL_0, PERMUTES_I, PERMUTES_INJECTIVE, PERMUTES_INVERSE,
+        PERMUTES_INVERSES, PERMUTES_IN_IMAGE, PERMUTES_SUBSET, PERMUTES_SUPERSET,
+        RING_COSET_EQ, .. } := D.core4
+  let { QUOTIENT_RING_0, RING_0, RING_1, RING_COSET_EQ_IDEAL, .. } := D.core5
+  let { RING_HOMOMORPHISM_IN_CARRIER, RING_HOMOMORPHISM_POW,
+        RING_HOMOMORPHISM_RING_COSET, RING_INV, RING_MUL, RING_MUL_ASSOC, RING_MUL_LID,
+        RING_MUL_LZERO, RING_MUL_RID, RING_MUL_RINV, RING_MUL_RZERO, RING_MUL_SYM, .. } := D.core6
+  let { RING_POW, RING_PRODUCT, RING_PRODUCT_1, RING_PRODUCT_CLOSED,
+        RING_PRODUCT_CONST, RING_PRODUCT_EQ, RING_PRODUCT_ZERO, RING_SUB_RZERO,
+        RING_SUM, RING_SUM_CLOSED, RING_SUM_DELTA, RING_SUM_EQ, RING_SUM_LMUL, .. } := D.core7
+  let { RING_SUM_RESTRICT_SET, RING_SUM_RMUL, RING_SUM_SWAP, SUBSET, permutes,
+        subring_of, .. } := D.core8
   let { RING_DET, RING_DET_EQ, RING_DET_TRANSP, RING_SIGN, RING_SIGN_I, ring_det,
         ring_sign, .. } := BDet
-  let { RING_DET_IDENTICAL_ROWS, RING_DET_ROW_0, RING_DET_ROW_CMUL,
-        RING_DET_ROW_EXPANSION, RING_DET_ROW_SUM, .. } := BDetRows
+  let { RING_DET_HOMOMORPHISM, RING_DET_IDENTICAL_ROWS, RING_DET_ROW_0,
+        RING_DET_ROW_CMUL, RING_DET_ROW_EXPANSION, RING_DET_ROW_SUM, .. } := BDetRows
   -- @@SCOPE END
 
   let RING_DET_DIAGONAL ← prove
@@ -1142,6 +1419,48 @@ def setupCofactors [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows)
    (REPEAT STRIP_TAC THEN
     wPart lhand (fun t => do lhand (← rand t)) RING_DET_DIAGONAL THEN
     ASM_SIMP_TAC [RING_PRODUCT_1])
+
+  /- A matrix congruent to t I modulo p has determinant t^n modulo p.     -/
+  let RING_DET_DIAGONAL_CONGRUENCE ← prove
+   r"!r p (g:B->bool) (m:B->B->A) t.
+        ring_ideal r p /\ FINITE g /\ t IN ring_carrier r /\
+        (!i j. i IN g /\ j IN g ==> m i j IN ring_carrier r) /\
+        (!i j. i IN g /\ j IN g
+               ==> ring_sub r (m i j) (if i = j then t else ring_0 r) IN p)
+        ==> ring_sub r (ring_det r g m) (ring_pow r t (CARD g)) IN p"
+   (← do
+    let t0 ← q r"ring_0 r:A"
+    pure (REPEAT STRIP_TAC THEN
+    FIRST_ASSUM (ASSUME_TAC o MATCH_MP RING_HOMOMORPHISM_RING_COSET) THEN
+    SUBGOAL_THEN
+     (← q r"ring_coset r p (ring_det r g (m:B->B->A)) =
+      ring_coset r p (ring_pow r t (CARD(g:B->bool)))")
+    MP_TAC THENL
+     [ALL_TAC, ASM_SIMP_TAC [RING_COSET_EQ, RING_DET, RING_POW]] THEN
+    MP_TAC (← ISPECL [← q r"r:A ring", ← q r"quotient_ring r (p:A->bool)",
+                      ← q r"ring_coset r (p:A->bool)", ← q r"g:B->bool", ← q r"m:B->B->A"]
+      RING_DET_HOMOMORPHISM) THEN
+    ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_det (quotient_ring r p) (g:B->bool)
+        (\i j. if i = j then ring_coset r p (t:A)
+               else ring_0(quotient_ring r p))") THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC RING_DET_EQ THEN MAP_EVERY X_GEN_TAC [← q r"i:B", ← q r"j:B"] THEN
+      STRIP_TAC THEN REWRITE_TAC [] THEN
+      FIRST_X_ASSUM (MP_TAC o SPECL [← q r"i:B", ← q r"j:B"] o check (fun th =>
+        can (find_term (fun t => t == t0)) (concl th))) THEN
+      ASM_REWRITE_TAC [] THEN COND_CASES_TAC THEN
+      ASM_SIMP_TAC [← GSYM RING_COSET_EQ, RING_0, QUOTIENT_RING_0] THEN
+      ASM_SIMP_TAC [RING_COSET_EQ_IDEAL, RING_SUB_RZERO, RING_0,
+                    IN_RING_IDEAL_0],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"ring_coset r p (t:A) IN ring_carrier(quotient_ring r p)")
+    ASSUME_TAC THENL
+     [ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER], ALL_TAC] THEN
+    ASM_SIMP_TAC [RING_DET_DIAGONAL, RING_PRODUCT_CONST] THEN
+    FIRST_ASSUM (fun th => tactic_of do
+      pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_POW th]))))
 
   /- --------------------------------------------------------------------- -/
   /- Cofactors (row i replaced by the unit vector e_j), cofactor expansion -/
@@ -1279,6 +1598,115 @@ def setupCofactors [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows)
     MP_TAC (← ISPECL [← q "r:B ring", ← q "s:A->bool", ← q "f:A->A->B"] RING_DET_TRANSP) THEN
     ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN MESON_TAC [])
 
+  /- A square system whose determinant is a unit is solvable; the         -/
+  /- adjugate gives the solution.                                          -/
+  let RING_MATRIX_SOLVE ← prove
+   r"!(r:B ring) s (m:A->A->B) e.
+        FINITE s /\
+        (!i j. i IN s /\ j IN s ==> m i j IN ring_carrier r) /\
+        (!i. i IN s ==> e i IN ring_carrier r) /\
+        ring_unit r (ring_det r s m)
+        ==> ?c. (!j. j IN s ==> c j IN ring_carrier r) /\
+                !i. i IN s
+                    ==> ring_sum r s (\j. ring_mul r (m i j) (c j)) = e i"
+   (REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"?v. (!i. i IN s ==> (v:A->B) i IN ring_carrier r) /\
+          (!i. i IN s ==> ring_mul r (ring_det r s m) (v i) = e i)")
+    STRIP_ASSUME_TAC THENL
+     [EXISTS_TAC (← q r"\i. ring_mul r (ring_inv r (ring_det r s (m:A->A->B)))
+                                 ((e:A->B) i)") THEN REWRITE_TAC [] THEN
+      ASM_SIMP_TAC [RING_MUL, RING_INV, RING_DET] THEN
+      ASM_SIMP_TAC [RING_MUL_ASSOC, RING_INV, RING_DET] THEN
+      ASM_SIMP_TAC [RING_MUL_RINV, RING_MUL_LID],
+      ALL_TAC] THEN
+    EXISTS_TAC
+     (← q r"\j. ring_sum r s
+            (\i'. ring_mul r (ring_cofactor r s (m:A->A->B) i' j) (v i'))") THEN
+    ASM_SIMP_TAC [RING_SUM] THEN
+    X_GEN_TAC (← q r"i:A") THEN DISCH_TAC THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_sum r s
+       (\i'. ring_mul r
+              (ring_sum r s
+                (\j. ring_mul r ((m:A->A->B) i j) (ring_cofactor r s m i' j)))
+              ((v:A->B) i'))") THEN
+    CONJ_TAC THENL
+     [TRANS_TAC EQ_TRANS
+       (← q r"ring_sum r s (\j. ring_sum r s
+          (\i'. ring_mul r ((m:A->A->B) i j)
+                  (ring_mul r (ring_cofactor r s m i' j) ((v:A->B) i'))))") THEN
+      CONJ_TAC THENL
+       [MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"j:A") THEN DISCH_TAC THEN
+        ASM_SIMP_TAC [← GSYM RING_SUM_LMUL, RING_MUL, RING_COFACTOR],
+        ALL_TAC] THEN
+      wPart lhand (fun t => do lhand (← rand t)) RING_SUM_SWAP THEN
+      ANTS_TAC THENL
+       [ASM_SIMP_TAC [RING_MUL, RING_COFACTOR], DISCH_THEN SUBST1_TAC] THEN
+      MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"i':A") THEN DISCH_TAC THEN
+      REWRITE_TAC [] THEN
+      ASM_SIMP_TAC [← GSYM RING_SUM_RMUL, RING_MUL, RING_COFACTOR] THEN
+      MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"j:A") THEN DISCH_TAC THEN
+      ASM_SIMP_TAC [RING_MUL_ASSOC, RING_COFACTOR],
+      ALL_TAC] THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_sum r s (\i'. if i' = i then (e:A->B) i else ring_0 r)") THEN
+    CONJ_TAC THENL [ALL_TAC, ASM_SIMP_TAC [RING_SUM_DELTA]] THEN
+    MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"i':A") THEN DISCH_TAC THEN
+    ASM_SIMP_TAC [RING_DET_ADJUGATE_ROWS] THEN
+    ASM_CASES_TAC (← q r"i':A = i") THEN ASM_SIMP_TAC [RING_MUL_LZERO])
+
+  /- Cramer rule through the adjugate: if A y = b then det(A) y_l is the   -/
+  /- sum of the cof(A)_il b_i.                                             -/
+  let RING_DET_CRAMER ← prove
+   r"!(r:B ring) s (a:A->A->B) y b.
+        FINITE s /\
+        (!i j. i IN s /\ j IN s ==> a i j IN ring_carrier r) /\
+        (!j. j IN s ==> y j IN ring_carrier r) /\
+        (!i. i IN s ==> ring_sum r s (\j. ring_mul r (a i j) (y j)) = b i)
+        ==> !l. l IN s
+                ==> ring_mul r (ring_det r s a) (y l) =
+                    ring_sum r s
+                      (\i. ring_mul r (ring_cofactor r s a i l) (b i))"
+   (REPEAT GEN_TAC THEN STRIP_TAC THEN X_GEN_TAC (← q r"l:A") THEN DISCH_TAC THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_sum r s
+        (\i. ring_mul r (ring_cofactor r s a i l)
+               (ring_sum r s (\j. ring_mul r ((a:A->A->B) i j) (y j))))") THEN
+    CONJ_TAC THENL
+     [ALL_TAC,
+      MATCH_MP_TAC RING_SUM_EQ THEN ASM_SIMP_TAC []] THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_sum r s
+        (\i. ring_sum r s
+               (\j. ring_mul r (ring_mul r (ring_cofactor r s a i l)
+                                  ((a:A->A->B) i j)) (y j)))") THEN
+    CONJ_TAC THENL
+     [ALL_TAC,
+      MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"i:A") THEN DISCH_TAC THEN
+      REWRITE_TAC [] THEN
+      ASM_SIMP_TAC [← GSYM RING_SUM_LMUL, RING_COFACTOR, RING_MUL] THEN
+      MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"j:A") THEN DISCH_TAC THEN
+      REWRITE_TAC [] THEN CONV_TAC SYM_CONV THEN
+      MATCH_MP_TAC RING_MUL_ASSOC THEN ASM_SIMP_TAC [RING_COFACTOR]] THEN
+    wPart rand (fun t => do lhand (← rand t)) RING_SUM_SWAP THEN
+    ANTS_TAC THENL
+     [ASM_SIMP_TAC [RING_MUL, RING_COFACTOR], DISCH_THEN SUBST1_TAC] THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_sum r s
+        (\j. if j = l then ring_mul r (ring_det r s a) ((y:A->B) l)
+             else ring_0 r)") THEN
+    CONJ_TAC THENL
+     [ASM_SIMP_TAC [RING_SUM_DELTA, RING_MUL, RING_DET],
+      MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"j:A") THEN DISCH_TAC THEN
+      REWRITE_TAC [] THEN
+      ASM_SIMP_TAC [RING_SUM_RMUL, RING_MUL, RING_COFACTOR] THEN
+      MP_TAC (← ISPECL [← q r"r:B ring", ← q r"s:A->bool", ← q r"a:A->A->B", ← q r"l:A", ← q r"j:A"]
+        RING_DET_ADJUGATE_COLUMNS) THEN
+      ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN
+      COND_CASES_TAC THEN ASM_SIMP_TAC [RING_MUL_LZERO] THEN
+      ASM_MESON_TAC []])
+
   /- --------------------------------------------------------------------- -/
   /- Closure: the determinant lies in any subset of the ring closed under  -/
   /- the ring operations and containing the entries (e.g. a subring).      -/
@@ -1315,6 +1743,38 @@ def setupCofactors [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows)
     MP_TAC (← ISPECL [← q "r:B ring", ← q r"\x:B. x IN h", ← q "s:A->bool", ← q "f:A->A->B"]
       RING_DET_CLOSED) THEN
     ASM_SIMP_TAC [])
+
+  /- Cofactors of a matrix with entries in a subring lie in the subring.  -/
+  let RING_COFACTOR_SUBRING ← prove
+   r"!(r:B ring) h s (a:A->A->B) i j.
+        h subring_of r /\ (!i j. i IN s /\ j IN s ==> a i j IN h)
+        ==> ring_cofactor r s a i j IN h"
+   (REPEAT STRIP_TAC THEN REWRITE_TAC [ring_cofactor] THEN
+    MATCH_MP_TAC RING_DET_SUBRING THEN ASM_REWRITE_TAC [] THEN
+    REPEAT STRIP_TAC THEN REPEAT COND_CASES_TAC THEN
+    ASM_SIMP_TAC [IN_SUBRING_0, IN_SUBRING_1])
+
+  /- Cramer over a subring: if A y = b with A and b over the subring h,   -/
+  /- then det(A) y_l lies in h.                                            -/
+  let RING_DET_CRAMER_SUBRING ← prove
+   r"!(r:B ring) h s (a:A->A->B) y b.
+        h subring_of r /\ FINITE s /\
+        (!i j. i IN s /\ j IN s ==> a i j IN h) /\
+        (!j. j IN s ==> y j IN ring_carrier r) /\
+        (!i. i IN s ==> b i IN h) /\
+        (!i. i IN s ==> ring_sum r s (\j. ring_mul r (a i j) (y j)) = b i)
+        ==> !l. l IN s ==> ring_mul r (ring_det r s a) (y l) IN h"
+   (REPEAT GEN_TAC THEN STRIP_TAC THEN
+    SUBGOAL_THEN (← q r"!i j. i IN s /\ j IN s ==> (a:A->A->B) i j IN ring_carrier r")
+    ASSUME_TAC THENL
+     [ASM_MESON_TAC [subring_of, SUBSET], ALL_TAC] THEN
+    MP_TAC (← ISPECL [← q r"r:B ring", ← q r"s:A->bool", ← q r"a:A->A->B", ← q r"y:A->B", ← q r"b:A->B"]
+      RING_DET_CRAMER) THEN
+    ASM_REWRITE_TAC [] THEN DISCH_TAC THEN X_GEN_TAC (← q r"l:A") THEN DISCH_TAC THEN
+    ASM_SIMP_TAC [] THEN MATCH_MP_TAC IN_SUBRING_SUM THEN
+    ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q r"i:A") THEN DISCH_TAC THEN
+    MATCH_MP_TAC IN_SUBRING_MUL THEN ASM_SIMP_TAC [] THEN
+    MATCH_MP_TAC RING_COFACTOR_SUBRING THEN ASM_SIMP_TAC [])
 
   /- --------------------------------------------------------------------- -/
   /- Cofactors only depend on the entries outside their row and column;    -/
@@ -1439,10 +1899,12 @@ def setupCofactors [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows)
     ASM_SIMP_TAC [INTEGRAL_DOMAIN_MUL_EQ_0, RING_DET])
 
   -- @@RETURN BEGIN
-  return { RING_DET_DIAGONAL, RING_DET_I, ring_cofactor, RING_COFACTOR, RING_COFACTOR_EQ,
-           RING_DET_ROW_COFACTOR_EXPANSION, RING_DET_COFACTOR_EXPANSION,
-           RING_DET_ADJUGATE_ROWS, RING_COFACTOR_TRANSP, RING_DET_ADJUGATE_COLUMNS,
-           RING_DET_CLOSED, RING_DET_SUBRING, RING_COFACTOR_EQ_GEN, RING_COFACTOR_INSERT,
+  return { RING_DET_DIAGONAL, RING_DET_I, RING_DET_DIAGONAL_CONGRUENCE, ring_cofactor,
+           RING_COFACTOR, RING_COFACTOR_EQ, RING_DET_ROW_COFACTOR_EXPANSION,
+           RING_DET_COFACTOR_EXPANSION, RING_DET_ADJUGATE_ROWS, RING_COFACTOR_TRANSP,
+           RING_DET_ADJUGATE_COLUMNS, RING_MATRIX_SOLVE, RING_DET_CRAMER,
+           RING_DET_CLOSED, RING_DET_SUBRING, RING_COFACTOR_SUBRING,
+           RING_DET_CRAMER_SUBRING, RING_COFACTOR_EQ_GEN, RING_COFACTOR_INSERT,
            RING_DET_DEPENDENT_ROWS_MUL, RING_DET_DEPENDENT_ROWS }
   -- @@RETURN END
 
@@ -1458,6 +1920,7 @@ structure FieldDet where
   RING_DET_MINOR_SELECTION : thm
   RING_DET_INDEPENDENT_ROWS : thm
   RING_DET_EQ_0_ROWS : thm
+  RING_DET_REAL_DIAGONALLY_DOMINANT : thm
   RING_DET_DEPENDENT_COLUMNS_MUL : thm
   RING_DET_DEPENDENT_COLUMNS_MUL_IDEAL : thm
   RING_DET_DEPENDENT_COLUMNS : thm
@@ -1474,14 +1937,19 @@ structure FieldDet where
 def setupFieldDet [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows) (BCofactors : Cofactors) :
     ExceptT String IO FieldDet := do
   -- @@SCOPE BEGIN
-  let { ARITH_RULE, ASM_MESON_TAC, MESON_TAC, NUM_REDUCE_CONV, RING_RULE, SET_TAC,
-        TAUT, .. } := D
+  let { ARITH_RULE, ASM_MESON_TAC, MESON_TAC, NUM_REDUCE_CONV, REAL_ARITH_TAC,
+        RING_RULE, SET_TAC, TAUT, .. } := D
   let { CARD_CLAUSES, CARD_EQ_0, CONTRAPOS_THM, EQ_TRANS, .. } := D.core1
-  let { FIELD_IMP_INTEGRAL_DOMAIN, FINITE_INDUCT_STRONG, FINITE_INSERT,
-        FINITE_PERMUTATIONS, FUN_EQ_THM, IMP_CONJ, INTEGRAL_DOMAIN_MUL_EQ_0,
-        INTEGRAL_DOMAIN_MUL_LCANCEL, IN_CARTESIAN_PRODUCT, IN_ELIM_THM, .. } := D.core2
+  let { EXISTS_IN_IMAGE, FIELD_IMP_INTEGRAL_DOMAIN, FIELD_REAL_RING, FINITE_DELETE,
+        FINITE_IMAGE, FINITE_INDUCT_STRONG, FINITE_INSERT, FINITE_PERMUTATIONS,
+        FORALL_IN_IMAGE, FUN_EQ_THM, IMAGE_EQ_EMPTY, IMP_CONJ,
+        INTEGRAL_DOMAIN_MUL_EQ_0, INTEGRAL_DOMAIN_MUL_LCANCEL, IN_CARTESIAN_PRODUCT,
+        IN_DELETE, IN_ELIM_THM, .. } := D.core2
   let { IN_INSERT, MONO_FORALL, NOT_EXISTS_THM, NOT_FORALL_THM, NOT_IMP, NOT_IN_EMPTY, .. } := D.core3
-  let { PERMUTES_INJECTIVE, PERMUTES_IN_IMAGE, PERMUTES_SWAP, .. } := D.core4
+  let { IN_UNIV, PERMUTES_INJECTIVE, PERMUTES_IN_IMAGE, PERMUTES_SWAP, REAL_ABS_MUL,
+        REAL_ABS_NZ, REAL_ABS_POS, REAL_LE_RMUL, REAL_LE_TRANS, REAL_LT_LMUL,
+        REAL_NOT_LE, REAL_RING_CLAUSES, REAL_RING_SUM, SUM_ABS, SUM_DELETE, SUM_LE,
+        SUM_LMUL, SUP_FINITE_LEMMA, .. } := D.core4
   let { QUOTIENT_RING_0, QUOTIENT_RING_MUL, RESTRICTION_DEFINED,
         RESTRICTION_IN_CARTESIAN_PRODUCT, RESTRICTION_UNIQUE, RING_0,
         RING_COSET_EQ_IDEAL, .. } := D.core5
@@ -1644,6 +2112,53 @@ def setupFieldDet [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows) 
       STRIP_TAC THEN MATCH_MP_TAC RING_DET_DEPENDENT_ROWS THEN
       EXISTS_TAC (← q "c:A->B") THEN ASM_SIMP_TAC [FIELD_IMP_INTEGRAL_DOMAIN] THEN
       ASM_MESON_TAC []])
+
+  /- Over the reals, a matrix that is strictly diagonally dominant by     -/
+  /- columns, |m j j| > sum of the |m i j| for i <> j, is nonsingular     -/
+  /- (the Levy-Desplanques theorem).                                       -/
+  let RING_DET_REAL_DIAGONALLY_DOMINANT ← prove
+   r"!s (m:K->K->real).
+        FINITE s /\
+        (!j. j IN s ==> sum (s DELETE j) (\i. abs(m i j)) < abs(m j j))
+        ==> ~(ring_det real_ring s m = &0)"
+   (REPEAT GEN_TAC THEN STRIP_TAC THEN
+    MP_TAC (← ISPECL [← q r"real_ring", ← q r"s:K->bool", ← q r"m:K->K->real"]
+      RING_DET_INDEPENDENT_ROWS) THEN
+    REWRITE_TAC [FIELD_REAL_RING, REAL_RING_CLAUSES, IN_UNIV, REAL_RING_SUM] THEN
+    DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN
+    X_GEN_TAC (← q r"c:K->real") THEN DISCH_THEN (LABEL_TAC "rel") THEN
+    ASM_CASES_TAC (← q r"s:K->bool = {}") THEN ASM_REWRITE_TAC [NOT_IN_EMPTY] THEN
+    MP_TAC (← ISPEC (← q r"IMAGE (\i:K. abs(c i:real)) s") SUP_FINITE_LEMMA) THEN
+    ASM_SIMP_TAC [FINITE_IMAGE, IMAGE_EQ_EMPTY, EXISTS_IN_IMAGE,
+                  FORALL_IN_IMAGE] THEN
+    DISCH_THEN (X_CHOOSE_THEN (← q r"j:K") STRIP_ASSUME_TAC) THEN
+    ASM_CASES_TAC (← q r"(c:K->real) j = &0") THENL
+     [X_GEN_TAC (← q r"i:K") THEN DISCH_TAC THEN
+      FIRST_X_ASSUM (MP_TAC o SPEC (← q r"i:K")) THEN ASM_REWRITE_TAC [] THEN
+      REAL_ARITH_TAC,
+      ALL_TAC] THEN
+    MATCH_MP_TAC (← TAUT (← q r"F ==> p")) THEN
+    SUBGOAL_THEN
+     (← q r"abs((c:K->real) j) * abs(m j j) <=
+      abs(c j) * sum (s DELETE j) (\i. abs(m i (j:K)))")
+    MP_TAC THENL
+     [ALL_TAC,
+      REWRITE_TAC [REAL_NOT_LE] THEN MATCH_MP_TAC REAL_LT_LMUL THEN
+      ASM_SIMP_TAC [← GSYM REAL_ABS_NZ]] THEN
+    MP_TAC (← ISPECL [← q r"\i:K. (c:K->real) i * m i (j:K)", ← q r"s:K->bool", ← q r"j:K"]
+      SUM_DELETE) THEN
+    REMOVE_THEN "rel" (MP_TAC o SPEC (← q r"j:K")) THEN ASM_REWRITE_TAC [] THEN
+    DISCH_THEN SUBST1_TAC THEN DISCH_TAC THEN
+    REWRITE_TAC [← GSYM REAL_ABS_MUL] THEN
+    SUBGOAL_THEN (← q r"abs((c:K->real) j * m j j) =
+                  abs(sum (s DELETE j) (\i. c i * m i (j:K)))")
+    SUBST1_TAC THENL [ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC, ALL_TAC] THEN
+    TRANS_TAC REAL_LE_TRANS
+     (← q r"sum (s DELETE j) (\i. abs((c:K->real) i * m i (j:K)))") THEN
+    ASM_SIMP_TAC [SUM_ABS, FINITE_DELETE, ← GSYM SUM_LMUL] THEN
+    MATCH_MP_TAC SUM_LE THEN ASM_SIMP_TAC [FINITE_DELETE, IN_DELETE] THEN
+    REPEAT STRIP_TAC THEN REWRITE_TAC [REAL_ABS_MUL] THEN
+    MATCH_MP_TAC REAL_LE_RMUL THEN ASM_SIMP_TAC [REAL_ABS_POS])
 
   /- --------------------------------------------------------------------- -/
   /- Column versions (via transposition).                                  -/
@@ -2000,10 +2515,11 @@ def setupFieldDet [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows) 
 
   -- @@RETURN BEGIN
   return { RING_DET_MINOR_SELECTION, RING_DET_INDEPENDENT_ROWS, RING_DET_EQ_0_ROWS,
-           RING_DET_DEPENDENT_COLUMNS_MUL, RING_DET_DEPENDENT_COLUMNS_MUL_IDEAL,
-           RING_DET_DEPENDENT_COLUMNS, RING_DET_INDEPENDENT_COLUMNS,
-           RING_DET_EQ_0_COLUMNS, RING_COFACTOR_INSERT_SWAP, RING_DET_LAPLACE_INSERT,
-           RING_DET_MUL, RING_DET_SIMILAR, RING_DET_COFACTOR }
+           RING_DET_REAL_DIAGONALLY_DOMINANT, RING_DET_DEPENDENT_COLUMNS_MUL,
+           RING_DET_DEPENDENT_COLUMNS_MUL_IDEAL, RING_DET_DEPENDENT_COLUMNS,
+           RING_DET_INDEPENDENT_COLUMNS, RING_DET_EQ_0_COLUMNS,
+           RING_COFACTOR_INSERT_SWAP, RING_DET_LAPLACE_INSERT, RING_DET_MUL,
+           RING_DET_SIMILAR, RING_DET_COFACTOR }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
@@ -4585,6 +5101,7 @@ structure FreeBases where
   FREE_BASIS_MONOMORPHISM : thm
   FREE_BASIS_UNIQUE : thm
   FREE_BASIS_DELTA : thm
+  FREE_BASIS_SCALE : thm
   FREE_BASIS_HAS_SIZE : thm
   FREE_BASIS_RING_DIVIDES : thm
   FREE_BASIS_QUOTIENT_RING_PRINCIPAL : thm
@@ -4608,20 +5125,21 @@ structure FreeBases where
 def setupFreeBases [HolBase] (D : RingDetDeps) :
     ExceptT String IO FreeBases := do
   -- @@SCOPE BEGIN
-  let { ASM_MESON_TAC, MESON_TAC, SELECT_CONV, new_definition, .. } := D
+  let { ASM_MESON_TAC, MESON_TAC, RING_RULE, SELECT_CONV, new_definition, .. } := D
   let { EQ_TRANS, .. } := D.core1
-  let { FINITE_HAS_SIZE, FINITE_INDUCT_STRONG, FINITE_NUMSEG_LT, FORALL_IN_GSPEC,
-        FORALL_IN_IMAGE, FORALL_IN_INSERT, FUN_EQ_THM, HAS_SIZE_FUNSPACE,
-        HAS_SIZE_IMAGE_INJ, HAS_SIZE_NUMSEG_LT, IMP_CONJ, IN_ELIM_THM, .. } := D.core2
-  let { IN_IDEAL_GENERATED_SING_EQ, IN_IMAGE, LT_NZ, MONO_EXISTS, .. } := D.core3
+  let { FIELD_IMP_INTEGRAL_DOMAIN, FIELD_MUL_LINV, FINITE_HAS_SIZE,
+        FINITE_INDUCT_STRONG, FINITE_NUMSEG_LT, FORALL_IN_GSPEC, FORALL_IN_IMAGE,
+        FORALL_IN_INSERT, FUN_EQ_THM, HAS_SIZE_FUNSPACE, HAS_SIZE_IMAGE_INJ,
+        HAS_SIZE_NUMSEG_LT, IMP_CONJ, IMP_IMP, INTEGRAL_DOMAIN_MUL_EQ_0, IN_ELIM_THM, .. } := D.core2
+  let { IN_IDEAL_GENERATED_SING_EQ, IN_IMAGE, LT_NZ, MONO_EXISTS, MONO_FORALL, .. } := D.core3
   let { QUOTIENT_RING, QUOTIENT_RING_0, QUOTIENT_RING_HOMOMORPHISM_EXISTS,
         RIGHT_AND_EXISTS_THM, RIGHT_FORALL_IMP_THM, RIGHT_IMP_EXISTS_THM, RING_0,
         RING_1, RING_ADD, RING_ADD_LZERO, RING_ADD_RDISTRIB, RING_COSET_EQ_IDEAL, .. } := D.core5
   let { RING_HOMOMORPHISM_0, RING_HOMOMORPHISM_IN_CARRIER, RING_HOMOMORPHISM_MUL,
         RING_HOMOMORPHISM_RING_COSET, RING_HOMOMORPHISM_SUB, RING_HOMOMORPHISM_SUM,
-        RING_IDEAL_IDEAL_GENERATED, RING_IDEAL_IMP_SUBSET, RING_MONOMORPHISM_ALT,
-        RING_MUL, RING_MUL_AC, RING_MUL_ASSOC, RING_MUL_LID, RING_MUL_LZERO,
-        RING_MUL_RZERO, RING_MUL_SYM, .. } := D.core6
+        RING_IDEAL_IDEAL_GENERATED, RING_IDEAL_IMP_SUBSET, RING_INV,
+        RING_MONOMORPHISM_ALT, RING_MUL, RING_MUL_AC, RING_MUL_ASSOC, RING_MUL_LID,
+        RING_MUL_LZERO, RING_MUL_RZERO, RING_MUL_SYM, .. } := D.core6
   let { RING_SUB, RING_SUB_EQ_0, RING_SUB_RDISTRIB, RING_SUB_REFL, RING_SUM,
         RING_SUM_ADD, RING_SUM_CLAUSES, RING_SUM_DELTA, RING_SUM_EQ, RING_SUM_EQ_0,
         RING_SUM_IMAGE, RING_SUM_LMUL, .. } := D.core7
@@ -4767,6 +5285,67 @@ def setupFreeBases [HolBase] (D : RingDetDeps) :
       X_GEN_TAC (← q "i:num") THEN DISCH_TAC THEN COND_CASES_TAC THEN
       ASM_SIMP_TAC [RING_MUL_LID, RING_MUL_LZERO],
       ASM_SIMP_TAC [RING_SUM_DELTA, IN_ELIM_THM]])
+
+  /- Rescaling a free basis by units of the base field.                   -/
+  let FREE_BASIS_SCALE ← prove
+   r"!k:A ring l:B ring h n g u.
+        field k /\ ring_homomorphism(k,l) h /\ free_basis (k,l) h n g /\
+        (!i. i < n ==> u i IN ring_carrier k /\ ~(u i = ring_0 k))
+        ==> free_basis (k,l) h n (\i. ring_mul l (h(u i)) (g i))"
+   (← do
+    let tinv ← q r"ring_inv:A ring->A->A"
+    let r1 ← RING_RULE
+       (← q r"ring_mul (r:B ring) v u = ring_1 r
+        ==> ring_mul r c g = ring_mul r (ring_mul r c v) (ring_mul r u g)")
+    pure (REPEAT GEN_TAC THEN REWRITE_TAC [free_basis] THEN
+    DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC
+     (CONJUNCTS_THEN2 (CONJUNCTS_THEN2 ASSUME_TAC
+       (CONJUNCTS_THEN2 (LABEL_TAC "span") (LABEL_TAC "indep")))
+      ASSUME_TAC))) THEN
+    FIRST_ASSUM (STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [ring_homomorphism]) THEN
+    RULE_ASSUM_TAC (REWRITE_RULE [SUBSET, FORALL_IN_IMAGE]) THEN
+    SUBGOAL_THEN
+     (← q r"!i. i < n ==> ring_inv k ((u:num->A) i) IN ring_carrier k /\
+                    ring_mul k (ring_inv k (u i)) (u i) = ring_1 k")
+    ASSUME_TAC THENL
+     [ASM_SIMP_TAC [RING_INV, FIELD_MUL_LINV], ALL_TAC] THEN
+    REPEAT CONJ_TAC THENL
+     [X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN MATCH_MP_TAC RING_MUL THEN
+      ASM_SIMP_TAC [],
+      REMOVE_THEN "indep" (K ALL_TAC) THEN
+      X_GEN_TAC (← q r"y:B") THEN DISCH_TAC THEN
+      REMOVE_THEN "span" (MP_TAC o SPEC (← q r"y:B")) THEN ASM_REWRITE_TAC [] THEN
+      DISCH_THEN (X_CHOOSE_THEN (← q r"c:num->A") STRIP_ASSUME_TAC) THEN
+      EXISTS_TAC (← q r"\i. ring_mul k ((c:num->A) i) (ring_inv k (u i))") THEN
+      ASM_SIMP_TAC [RING_MUL] THEN
+      FIRST_X_ASSUM (SUBST1_TAC o check (fun th =>
+        match lhs (concl th) with | .ok t => is_var t | .error _ => false)) THEN
+      MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"i:num") THEN
+      REWRITE_TAC [IN_ELIM_THM] THEN DISCH_TAC THEN
+      ASM_SIMP_TAC [RING_INV, RING_MUL] THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] r1) THEN
+      ASM_SIMP_TAC [RING_INV] THEN
+      TRANS_TAC EQ_TRANS
+       (← q r"(h:A->B) (ring_mul k (ring_inv k ((u:num->A) i)) (u i))") THEN
+      CONJ_TAC THENL
+       [CONV_TAC SYM_CONV THEN FIRST_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC [],
+        FIRST_X_ASSUM (MP_TAC o SPEC (← q r"i:num") o check (fun th =>
+          can (find_term (fun t => t == tinv)) (concl th))) THEN
+        ASM_REWRITE_TAC [] THEN STRIP_TAC THEN ASM_REWRITE_TAC []],
+      REMOVE_THEN "span" (K ALL_TAC) THEN
+      X_GEN_TAC (← q r"c:num->A") THEN STRIP_TAC THEN
+      REMOVE_THEN "indep"
+       (MP_TAC o SPEC (← q r"\i. ring_mul k ((c:num->A) i) (u i)")) THEN
+      ASM_SIMP_TAC [RING_MUL] THEN ANTS_TAC THENL
+       [FIRST_X_ASSUM (fun th => tactic_of do
+          pure (GEN_REWRITE_TAC RAND_CONV [← SYM th])) THEN
+        MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"i:num") THEN
+        REWRITE_TAC [IN_ELIM_THM] THEN DISCH_TAC THEN
+        ASM_SIMP_TAC [] THEN MATCH_MP_TAC (← GSYM RING_MUL_ASSOC) THEN
+        ASM_SIMP_TAC [],
+        MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC (← q r"i:num") THEN
+        ASM_CASES_TAC (← q r"i:num < n") THEN ASM_REWRITE_TAC [] THEN
+        ASM_SIMP_TAC [INTEGRAL_DOMAIN_MUL_EQ_0, FIELD_IMP_INTEGRAL_DOMAIN]]]))
 
   let FREE_BASIS_HAS_SIZE ← prove
    r"!(h:A->B) k l n g.
@@ -5281,7 +5860,7 @@ def setupFreeBases [HolBase] (D : RingDetDeps) :
   return { free_basis, basis_coordinates, mul_matrix, projective_basis, algebra_trace,
            algebra_norm, FREE_BASIS_IN_CARRIER, FREE_BASIS_INDEPENDENT,
            FREE_BASIS_MONOMORPHISM, FREE_BASIS_UNIQUE, FREE_BASIS_DELTA,
-           FREE_BASIS_HAS_SIZE, FREE_BASIS_RING_DIVIDES,
+           FREE_BASIS_SCALE, FREE_BASIS_HAS_SIZE, FREE_BASIS_RING_DIVIDES,
            FREE_BASIS_QUOTIENT_RING_PRINCIPAL, FREE_BASIS_RING_SUM_IMAGE,
            BASIS_COORDINATES, BASIS_COORDINATES_OUTSIDE, BASIS_COORDINATES_IN_CARRIER,
            BASIS_COORDINATES_EXPAND, BASIS_COORDINATES_UNIQUE, BASIS_COORDINATES_EQ,
@@ -6393,6 +6972,7 @@ structure TraceNormAlgebra where
   -- @@FIELDS
   ALGEBRA_TRACE_FREE_BASIS : thm
   ALGEBRA_NORM_FREE_BASIS : thm
+  ALGEBRA_TRACE_FREE_BASIS_MATRIX : thm
   ALGEBRA_TRACE_NORM_NO_PROJECTIVE_BASIS : thm
   ALGEBRA_TRACE_NORM_IN_CARRIER : thm
   ALGEBRA_TRACE_ADD : thm
@@ -6430,8 +7010,9 @@ def setupTraceNormAlgebra [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors :
   let { RING_DET_DIAGONAL, RING_DET_I, .. } := BCofactors
   let { RING_DET_MUL, .. } := BFieldDet
   let { RING_SUM_DELTA_MUL, .. } := BBlocks
-  let { BASIS_COORDINATES_BASIS, BASIS_COORDINATES_IN_CARRIER, FREE_BASIS_IN_CARRIER,
-        algebra_norm, algebra_trace, mul_matrix, .. } := BFreeBases
+  let { BASIS_COORDINATES_BASIS, BASIS_COORDINATES_IN_CARRIER,
+        BASIS_COORDINATES_UNIQUE, FREE_BASIS_IN_CARRIER, algebra_norm, algebra_trace,
+        mul_matrix, .. } := BFreeBases
   let { MUL_MATRIX_SCALAR, .. } := BMulMatrix
   let { FREE_BASIS_PROJECTIVE, PROJECTIVE_BASIS_0, PROJECTIVE_BASIS_ADD,
         PROJECTIVE_BASIS_IN_CARRIER, PROJECTIVE_BASIS_LMUL, PROJECTIVE_BASIS_MUL, .. } := BProjectiveBases
@@ -6478,6 +7059,26 @@ def setupTraceNormAlgebra [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors :
         ASM_SIMP_TAC [BASIS_COORDINATES_BASIS] THEN
         REWRITE_TAC [m2] THEN
         ASM_SIMP_TAC [RING_ADD_RZERO, BASIS_COORDINATES_IN_CARRIER]])))
+
+  /- The trace in a free basis g from any matrix c of x: x g_j = sum_i   -/
+  /- c_j i g_i gives Tr(x) = sum_i c_i i.                                 -/
+  let ALGEBRA_TRACE_FREE_BASIS_MATRIX ← prove
+   r"!(h:A->B) k l n g c x.
+        ring_homomorphism(k,l) h /\ free_basis (k,l) h n g /\
+        x IN ring_carrier l /\
+        (!i j. i < n /\ j < n ==> c j i IN ring_carrier k) /\
+        (!j. j < n
+             ==> ring_mul l x (g j) =
+                 ring_sum l {i | i < n} (\i. ring_mul l (h(c j i)) (g i)))
+        ==> algebra_trace (k,l) h x = ring_sum k {i | i < n} (\i. c i i)"
+   (REPEAT STRIP_TAC THEN
+    ASM_SIMP_TAC [ALGEBRA_TRACE_FREE_BASIS, mul_matrix] THEN
+    MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"i:num") THEN
+    REWRITE_TAC [IN_ELIM_THM] THEN DISCH_TAC THEN
+    MP_TAC (← ISPECL [← q r"h:A->B", ← q r"k:A ring", ← q r"l:B ring", ← q r"n:num", ← q r"g:num->B",
+                      ← q r"ring_mul l x ((g:num->B) i)", ← q r"(c:num->num->A) i"]
+      BASIS_COORDINATES_UNIQUE) THEN
+    ASM_SIMP_TAC [])
 
   let ALGEBRA_TRACE_NORM_NO_PROJECTIVE_BASIS ← prove
    r"!(h:A->B) k l x.
@@ -6802,11 +7403,11 @@ def setupTraceNormAlgebra [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors :
 
   -- @@RETURN BEGIN
   return { ALGEBRA_TRACE_FREE_BASIS, ALGEBRA_NORM_FREE_BASIS,
-           ALGEBRA_TRACE_NORM_NO_PROJECTIVE_BASIS, ALGEBRA_TRACE_NORM_IN_CARRIER,
-           ALGEBRA_TRACE_ADD, ALGEBRA_TRACE_SCALAR, ALGEBRA_NORM_MUL,
-           ALGEBRA_TRACE_NORM_BASE_FREE_BASIS, ALGEBRA_TRACE_0, ALGEBRA_NORM_1,
-           ALGEBRA_TRACE_NEG, ALGEBRA_TRACE_SUB, ALGEBRA_NORM_POW, ALGEBRA_TRACE_SUM,
-           ALGEBRA_NORM_PRODUCT }
+           ALGEBRA_TRACE_FREE_BASIS_MATRIX, ALGEBRA_TRACE_NORM_NO_PROJECTIVE_BASIS,
+           ALGEBRA_TRACE_NORM_IN_CARRIER, ALGEBRA_TRACE_ADD, ALGEBRA_TRACE_SCALAR,
+           ALGEBRA_NORM_MUL, ALGEBRA_TRACE_NORM_BASE_FREE_BASIS, ALGEBRA_TRACE_0,
+           ALGEBRA_NORM_1, ALGEBRA_TRACE_NEG, ALGEBRA_TRACE_SUB, ALGEBRA_NORM_POW,
+           ALGEBRA_TRACE_SUM, ALGEBRA_NORM_PRODUCT }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
@@ -7307,15 +7908,13 @@ def setupUnits [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows) (BC
   let { RING_HOMOMORPHISM_0, RING_HOMOMORPHISM_1, RING_HOMOMORPHISM_IN_CARRIER,
         RING_HOMOMORPHISM_SUB, RING_INV, RING_INV_1,
         RING_MONOMORPHISM_IMP_HOMOMORPHISM, RING_MONOMORPHISM_INJECTIVE_EQ, RING_MUL,
-        RING_MUL_ASSOC, RING_MUL_LID, RING_MUL_LZERO, RING_MUL_RID, RING_MUL_RINV,
-        RING_MUL_RZERO, RING_MUL_SYM, .. } := D.core6
+        RING_MUL_LZERO, RING_MUL_RID, RING_MUL_RINV, RING_MUL_RZERO, RING_MUL_SYM, .. } := D.core6
   let { RING_RINV_UNIQUE, RING_SUB, RING_SUB_REFL, RING_SUM, RING_SUM_ADD,
-        RING_SUM_CLAUSES, RING_SUM_DELTA, RING_SUM_EQ, RING_SUM_EQ_0, RING_SUM_LMUL, .. } := D.core7
-  let { RING_SUM_RMUL, RING_SUM_SUB, RING_SUM_SWAP, SUBSET, TRIVIAL_RING_SUBSET,
-        ring_inv, ring_unit, .. } := D.core8
+        RING_SUM_CLAUSES, RING_SUM_EQ, RING_SUM_EQ_0, RING_SUM_LMUL, .. } := D.core7
+  let { RING_SUM_SUB, SUBSET, TRIVIAL_RING_SUBSET, ring_inv, ring_unit, .. } := D.core8
   let { RING_DET, RING_DET_EQ, .. } := BDet
   let { RING_DET_HOMOMORPHISM, RING_DET_ROW_0, .. } := BDetRows
-  let { RING_COFACTOR, RING_DET_ADJUGATE_ROWS, RING_DET_DEPENDENT_ROWS_MUL, .. } := BCofactors
+  let { RING_DET_DEPENDENT_ROWS_MUL, RING_MATRIX_SOLVE, .. } := BCofactors
   let { RING_SUM_DELTA_MUL, .. } := BBlocks
   let { BASIS_COORDINATES_EXPAND, .. } := BFreeBases
   let { EXTENSION_MUL_LINCOMB, MUL_MATRIX_0, .. } := BMulMatrix
@@ -7332,59 +7931,6 @@ def setupUnits [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows) (BC
         x IN ring_carrier l
         ==> (ring_unit k (algebra_norm(k,l) h x) <=> ring_unit l x)"
    (← do
-    let lemma ← prove
-     r"!(r:A ring) s (m:K->K->A) e.
-          FINITE s /\ (!i j. i IN s /\ j IN s ==> m i j IN ring_carrier r) /\
-          (!i. i IN s ==> e i IN ring_carrier r) /\ ring_unit r (ring_det r s m)
-          ==> ?c. (!j. j IN s ==> c j IN ring_carrier r) /\
-                  !i. i IN s
-                      ==> ring_sum r s (\j. ring_mul r (m i j) (c j)) = e i"
-     (REPEAT STRIP_TAC THEN
-      SUBGOAL_THEN
-       (← q r"?v. (!i. i IN s ==> (v:K->A) i IN ring_carrier r) /\
-            (!i. i IN s ==> ring_mul r (ring_det r s m) (v i) = e i)")
-      STRIP_ASSUME_TAC THENL
-       [EXISTS_TAC (← q r"\i. ring_mul r (ring_inv r (ring_det r s (m:K->K->A)))
-                                   ((e:K->A) i)") THEN REWRITE_TAC [] THEN
-        ASM_SIMP_TAC [RING_MUL, RING_INV, RING_DET] THEN
-        ASM_SIMP_TAC [RING_MUL_ASSOC, RING_INV, RING_DET] THEN
-        ASM_SIMP_TAC [RING_MUL_RINV, RING_MUL_LID],
-        ALL_TAC] THEN
-      EXISTS_TAC
-       (← q r"\j. ring_sum r s
-              (\i'. ring_mul r (ring_cofactor r s (m:K->K->A) i' j) (v i'))") THEN
-      ASM_SIMP_TAC [RING_SUM] THEN
-      X_GEN_TAC (← q "i:K") THEN DISCH_TAC THEN
-      TRANS_TAC EQ_TRANS
-       (← q r"ring_sum r s
-         (\i'. ring_mul r
-                (ring_sum r s
-                  (\j. ring_mul r ((m:K->K->A) i j) (ring_cofactor r s m i' j)))
-                ((v:K->A) i'))") THEN
-      CONJ_TAC THENL
-       [TRANS_TAC EQ_TRANS
-         (← q r"ring_sum r s (\j. ring_sum r s
-            (\i'. ring_mul r ((m:K->K->A) i j)
-                    (ring_mul r (ring_cofactor r s m i' j) ((v:K->A) i'))))") THEN
-        CONJ_TAC THENL
-         [MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q "j:K") THEN DISCH_TAC THEN
-          ASM_SIMP_TAC [← GSYM RING_SUM_LMUL, RING_MUL, RING_COFACTOR],
-          ALL_TAC] THEN
-        wPart lhand (fun t => do lhand (← rand t)) RING_SUM_SWAP THEN
-        ANTS_TAC THENL
-         [ASM_SIMP_TAC [RING_MUL, RING_COFACTOR], DISCH_THEN SUBST1_TAC] THEN
-        MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q "i':K") THEN DISCH_TAC THEN
-        REWRITE_TAC [] THEN
-        ASM_SIMP_TAC [← GSYM RING_SUM_RMUL, RING_MUL, RING_COFACTOR] THEN
-        MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q "j:K") THEN DISCH_TAC THEN
-        ASM_SIMP_TAC [RING_MUL_ASSOC, RING_COFACTOR],
-        ALL_TAC] THEN
-      TRANS_TAC EQ_TRANS
-       (← q r"ring_sum r s (\i'. if i' = i then (e:K->A) i else ring_0 r)") THEN
-      CONJ_TAC THENL [ALL_TAC, ASM_SIMP_TAC [RING_SUM_DELTA]] THEN
-      MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q "i':K") THEN DISCH_TAC THEN
-      ASM_SIMP_TAC [RING_DET_ADJUGATE_ROWS] THEN
-      ASM_CASES_TAC (← q "i':K = i") THEN ASM_SIMP_TAC [RING_MUL_LZERO])
     -- right to left: the four RING_RULEs, last one first
     let r4 ← RING_RULE
      (← q r"y = ring_sub r (ring_1 r) (ring_mul r u y)
@@ -7435,7 +7981,7 @@ def setupUnits [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows) (BC
      [← q "k:A ring", ← q r"{i:num | i < n}",
       ← q r"\i j. ring_add k (if i = j then ring_1 k else ring_0 k)
                         ((f:num->B->A) i (ring_mul l u ((e:num->B) j)))",
-      ← q r"\i. (f:num->B->A) i (ring_1 l)"] lemma) THEN
+      ← q r"\i. (f:num->B->A) i (ring_1 l)"] RING_MATRIX_SOLVE) THEN
     ASM_SIMP_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM, RING_ADD] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q "c:num->A")
       (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "c"))) THEN
@@ -8100,6 +8646,9 @@ structure FreeTowers where
   RING_SUM_MOD_DIV : thm
   FREE_BASIS_TRANS : thm
   BASIS_COORDINATES_TRANS : thm
+  ADD_MULT_LT_MULT : thm
+  RING_SUM_NUMSEG_DIV_SLICE : thm
+  RING_SUM_PRODUCT_INDEX : thm
   MUL_MATRIX_TRANS : thm
   ALGEBRA_TRACE_NORM_INTERMEDIATE_FREE_BASIS : thm
   MUL_MATRIX_CHARPOLY_INTERMEDIATE : thm
@@ -8111,7 +8660,7 @@ def setupFreeTowers [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors : Cofac
   -- @@SCOPE BEGIN
   let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, ASM_MESON_TAC, MESON, MESON_TAC, .. } := D
   let { ADD_CLAUSES, CARD_NUMSEG_LT, CROSS, DIVISION, DIV_LT, DIV_MULT_ADD,
-        EMPTY_GSPEC, EQ_TRANS, .. } := D.core1
+        EMPTY_GSPEC, EQ_TRANS, ETA_AX, .. } := D.core1
   let { EXISTS_PAIR_THM, EXTENSION, FINITE_NUMSEG_LT, FORALL_IN_IMAGE, FORALL_PAIR_THM,
         IN_CROSS, IN_ELIM_THM, .. } := D.core2
   let { IN_IMAGE, LEFT_IMP_EXISTS_THM, LE_MULT_LCANCEL, LT, LTE_TRANS, LT_ADD_RCANCEL,
@@ -8123,9 +8672,9 @@ def setupFreeTowers [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors : Cofac
         RING_MUL_RZERO, RING_POLYNOMIAL_0, RING_POLYNOMIAL_CONST,
         RING_POLYNOMIAL_IMP_POWERSERIES, .. } := D.core6
   let { RING_POLYNOMIAL_SUB, RING_POLYNOMIAL_VAR, RING_POW, RING_POW_ONE,
-        RING_SUB_REFL, RING_SUM, RING_SUM_CLAUSES, RING_SUM_CONST, RING_SUM_EQ,
-        RING_SUM_EQ_0, RING_SUM_IMAGE, .. } := D.core7
-  let { RING_SUM_RMUL, RING_SUM_SUM_PRODUCT, SUBSET, SUBSET_UNIV, o_THM,
+        RING_SUB_REFL, RING_SUM, RING_SUM_0, RING_SUM_CLAUSES, RING_SUM_CONST,
+        RING_SUM_DELTA, RING_SUM_EQ, RING_SUM_EQ_0, RING_SUM_IMAGE, .. } := D.core7
+  let { RING_SUM_RMUL, RING_SUM_SUM_PRODUCT, RING_SUM_SWAP, SUBSET, SUBSET_UNIV, o_THM,
         ring_homomorphism, .. } := D.core8
   let { RING_DET, RING_DET_EMPTY, RING_DET_EQ, .. } := BDet
   let { RING_DET_I, .. } := BCofactors
@@ -8413,6 +8962,93 @@ def setupFreeTowers [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors : Cofac
         MATCH_MP_TAC lemma1 THEN ASM_REWRITE_TAC []])
     pure (FREE_BASIS_TRANS, th2))
 
+  /- The index i + m * j of a pair i < m, j < n is below m * n (the       -/
+  /- indexing of RING_SUM_MOD_DIV).                                        -/
+  let ADD_MULT_LT_MULT ← prove
+   r"!a b m n:num. a < m /\ b < n ==> a + m * b < m * n"
+   (REPEAT STRIP_TAC THEN TRANS_TAC LTE_TRANS (← q r"m + m * b:num") THEN
+    ASM_REWRITE_TAC [LT_ADD_RCANCEL] THEN
+    REWRITE_TAC [← ARITH_RULE (← q r"m + m * b = m * (b + 1)"), LE_MULT_LCANCEL] THEN
+    ASM_ARITH_TAC)
+
+  /- The terms of one level l of a sum over {s | s < f * e} (from         -/
+  /- RING_SUM_MOD_DIV).                                                    -/
+  let RING_SUM_NUMSEG_DIV_SLICE ← prove
+   r"!(r:A ring) f e l (x:num->A).
+        l < e /\ (!s. s < f * e ==> x s IN ring_carrier r)
+        ==> ring_sum r {s | s < f * e}
+              (\s. if s DIV f = l then x s else ring_0 r) =
+            ring_sum r {j | j < f} (\j. x (j + f * l))"
+   (REPEAT STRIP_TAC THEN
+    MP_TAC (← ISPECL
+     [← q r"r:A ring", ← q r"f:num", ← q r"e:num",
+      ← q r"\j l':num. if l' = l then (x:num->A) (j + f * l') else ring_0 r"]
+     RING_SUM_MOD_DIV) THEN
+    REWRITE_TAC [] THEN ANTS_TAC THENL
+     [MAP_EVERY X_GEN_TAC [← q r"j:num", ← q r"l':num"] THEN STRIP_TAC THEN
+      COND_CASES_TAC THEN REWRITE_TAC [RING_0] THEN
+      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC [ADD_MULT_LT_MULT],
+      ALL_TAC] THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"(a:A) = a' /\ (b:A) = b' ==> a' = b' ==> a = b")) THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"s:num") THEN
+      REWRITE_TAC [IN_ELIM_THM] THEN DISCH_TAC THEN
+      COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN AP_TERM_TAC THEN
+      MP_TAC (← SPECL [← q r"s:num", ← q r"f:num"] DIVISION) THEN
+      ANTS_TAC THENL [ASM_MESON_TAC [MULT_CLAUSES, ← CONJUNCT1 LT], ALL_TAC] THEN
+      ASM_REWRITE_TAC [] THEN ARITH_TAC,
+      ALL_TAC] THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_sum r {l':num | l' < e}
+        (\l'. if l' = l then ring_sum r {j | j < f} (\j. (x:num->A) (j + f * l))
+              else ring_0 r)") THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC [RING_SUM_DELTA, IN_ELIM_THM, RING_SUM] THEN
+      ASM_REWRITE_TAC [],
+      MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"l':num") THEN DISCH_TAC THEN
+      REWRITE_TAC [] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [RING_SUM_0]])
+
+  /- A sum over the product indices u < n m, u = i + n j, as a double sum. -/
+  let RING_SUM_PRODUCT_INDEX ← prove
+   r"!(r:A ring) n m (g:num->A) (e:num->A) f.
+        ~(n = 0) /\ (!u. g u IN ring_carrier r) /\
+        (!i. i < n ==> e i IN ring_carrier r) /\
+        (!j. j < m ==> f j IN ring_carrier r)
+        ==> ring_sum r {u | u < n * m}
+              (\u. ring_mul r (g u) (ring_mul r (e(u MOD n)) (f(u DIV n)))) =
+            ring_sum r {i | i < n}
+              (\i. ring_sum r {j | j < m}
+                     (\j. ring_mul r (g(i + n * j))
+                                     (ring_mul r (e i) (f j))))"
+   (REPEAT STRIP_TAC THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_sum r {t | t < n * m}
+        (\t. ring_mul r ((g:num->A) ((t MOD n) + n * (t DIV n)))
+               (ring_mul r ((e:num->A) (t MOD n)) ((f:num->A) (t DIV n))))") THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"t:num") THEN
+      REWRITE_TAC [IN_ELIM_THM] THEN DISCH_TAC THEN REWRITE_TAC [] THEN
+      MP_TAC (← SPECL [← q r"t:num", ← q r"n:num"] DIVISION) THEN ASM_REWRITE_TAC [] THEN
+      DISCH_THEN (fun th => tactic_of do pure (GEN_REWRITE_TAC
+       (LAND_CONV o LAND_CONV o RAND_CONV o ONCE_DEPTH_CONV) [← CONJUNCT1 th])) THEN
+      REWRITE_TAC [← ARITH_RULE (← q r"a * n + b = b + n * a:num")],
+      ALL_TAC] THEN
+    MP_TAC (← ISPECL [← q r"r:A ring", ← q r"n:num", ← q r"m:num",
+      ← q r"\i j. ring_mul r ((g:num->A) (i + n * j))
+               (ring_mul r ((e:num->A) i) ((f:num->A) j))"] RING_SUM_MOD_DIV) THEN
+    REWRITE_TAC [] THEN ANTS_TAC THENL
+     [REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_MUL THEN ASM_SIMP_TAC [RING_MUL],
+      DISCH_THEN SUBST1_TAC] THEN
+    MP_TAC (← ISPECL [← q r"r:A ring",
+      ← q r"\j i. ring_mul r ((g:num->A) (i + n * j))
+               (ring_mul r ((e:num->A) i) ((f:num->A) j))",
+      ← q r"{j:num | j < m}", ← q r"{i:num | i < n}"] RING_SUM_SWAP) THEN
+    REWRITE_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM, ETA_AX] THEN
+    ANTS_TAC THENL
+     [REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_MUL THEN ASM_SIMP_TAC [RING_MUL],
+      DISCH_THEN SUBST1_TAC THEN REWRITE_TAC []])
+
   let MUL_MATRIX_TRANS ← prove
    r"!(f:A->B) (g:B->C) k l m p q b c y t u.
         ring_homomorphism(k,l) f /\ ring_homomorphism(l,m) g /\
@@ -8623,7 +9259,8 @@ def setupFreeTowers [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors : Cofac
       REWRITE_TAC [POLY_RING_CLAUSES]))
 
   -- @@RETURN BEGIN
-  return { RING_SUM_MOD_DIV, FREE_BASIS_TRANS, BASIS_COORDINATES_TRANS, MUL_MATRIX_TRANS,
+  return { RING_SUM_MOD_DIV, FREE_BASIS_TRANS, BASIS_COORDINATES_TRANS, ADD_MULT_LT_MULT,
+           RING_SUM_NUMSEG_DIV_SLICE, RING_SUM_PRODUCT_INDEX, MUL_MATRIX_TRANS,
            ALGEBRA_TRACE_NORM_INTERMEDIATE_FREE_BASIS, MUL_MATRIX_CHARPOLY_INTERMEDIATE }
   -- @@RETURN END
 
@@ -9194,32 +9831,37 @@ structure BasisDiscriminant where
   BASIS_DISCRIMINANT_EQ_0 : thm
   BASIS_DISCRIMINANT_NONZERO : thm
   BASIS_DISCRIMINANT_TIMES_COORD : thm
+  BASIS_DISCRIMINANT_MUL : thm
+  ALGEBRA_TRACE_DUAL_BASIS_EXISTS : thm
   deriving Inhabited
 
 @[nospecialize]
-def setupBasisDiscriminant [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows) (BCofactors : Cofactors) (BFieldDet : FieldDet) (BTrace : Trace) (BFreeBases : FreeBases) (BTraceNormAlgebra : TraceNormAlgebra) (BTraceNormMisc : TraceNormMisc) (BBaseChange : BaseChange) :
+def setupBasisDiscriminant [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows) (BCofactors : Cofactors) (BFieldDet : FieldDet) (BTrace : Trace) (BFreeBases : FreeBases) (BMulMatrix : MulMatrix) (BTraceNormAlgebra : TraceNormAlgebra) (BTraceNormMisc : TraceNormMisc) (BBaseChange : BaseChange) :
     ExceptT String IO BasisDiscriminant := do
   -- @@SCOPE BEGIN
   let { ASM_MESON_TAC, RING_RULE, TAUT, new_definition, .. } := D
-  let { CONTRAPOS_THM, EQ_TRANS, .. } := D.core1
+  let { CONTRAPOS_THM, EQ_TRANS, ETA_AX, .. } := D.core1
   let { FIELD_IMP_INTEGRAL_DOMAIN, FIELD_MUL_RINV, FINITE_NUMSEG_LT, IN_ELIM_THM, .. } := D.core2
   let { IN_SUBRING_0, IN_SUBRING_1, IN_SUBRING_MUL, IN_SUBRING_SUM, NOT_EXISTS_THM,
         NOT_FORALL_THM, NOT_IMP, .. } := D.core3
+  let { RING_UNIT_IN_CARRIER, .. } := D.core4
   let { RING_1, .. } := D.core5
   let { RING_HOMOMORPHISM_0, RING_HOMOMORPHISM_1, RING_HOMOMORPHISM_MUL, RING_INV,
-        RING_MUL, RING_MUL_LZERO, RING_MUL_RID, RING_MUL_RZERO, RING_MUL_SYM,
-        RING_OF_NUM, .. } := D.core6
-  let { RING_SUM, RING_SUM_DELTA, RING_SUM_EQ, RING_SUM_EQ_0, .. } := D.core7
+        RING_MUL, RING_MUL_ASSOC, RING_MUL_LINV, RING_MUL_LZERO, RING_MUL_RID,
+        RING_MUL_RZERO, RING_MUL_SYM, RING_OF_NUM, .. } := D.core6
+  let { RING_SUM, RING_SUM_DELTA, RING_SUM_EQ, RING_SUM_EQ_0, RING_SUM_LMUL, .. } := D.core7
   let { o_THM, .. } := D.core8
   let { RING_DET, RING_DET_EQ, RING_DET_TRANSP, .. } := BDet
   let { RING_DET_HOMOMORPHISM, .. } := BDetRows
-  let { RING_COFACTOR, RING_DET_ADJUGATE_COLUMNS, RING_DET_DEPENDENT_ROWS,
-        RING_DET_SUBRING, ring_cofactor, .. } := BCofactors
+  let { RING_COFACTOR, RING_DET_ADJUGATE_COLUMNS, RING_DET_ADJUGATE_ROWS,
+        RING_DET_DEPENDENT_ROWS, RING_DET_SUBRING, ring_cofactor, .. } := BCofactors
   let { RING_DET_EQ_0_ROWS, RING_DET_MUL, .. } := BFieldDet
   let { RING_SUM_MUL_SWAP, .. } := BTrace
   let { BASIS_COORDINATES, BASIS_COORDINATES_EXPAND, BASIS_COORDINATES_IN_CARRIER,
         FREE_BASIS_INDEPENDENT, FREE_BASIS_IN_CARRIER, .. } := BFreeBases
-  let { ALGEBRA_TRACE_NORM_BASE_FREE_BASIS, ALGEBRA_TRACE_NORM_IN_CARRIER, .. } := BTraceNormAlgebra
+  let { MUL_MATRIX_EXPAND, MUL_MATRIX_IN_CARRIER, .. } := BMulMatrix
+  let { ALGEBRA_NORM_FREE_BASIS, ALGEBRA_TRACE_NORM_BASE_FREE_BASIS,
+        ALGEBRA_TRACE_NORM_IN_CARRIER, .. } := BTraceNormAlgebra
   let { ALGEBRA_TRACE_LINCOMB_MUL, ALGEBRA_TRACE_MUL_LINCOMB, .. } := BTraceNormMisc
   let { ALGEBRA_TRACE_NORM_HOMOMORPHIC_IMAGE, .. } := BBaseChange
   -- @@SCOPE END
@@ -9531,11 +10173,124 @@ def setupBasisDiscriminant [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : 
       DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC RING_SUM_EQ THEN
       ASM_SIMP_TAC [IN_ELIM_THM]])
 
+  /- The trace form twisted by x has the determinant N(x) d(g)            -/
+  /- (BASIS_DISCRIMINANT_MUL), and a family with unit discriminant has a  -/
+  /- trace dual family (ALGEBRA_TRACE_DUAL_BASIS_EXISTS).                  -/
+  /- The trace matrix twisted by x: det(Tr(x g_i g_j)) = N(x) d(g).        -/
+  let BASIS_DISCRIMINANT_MUL ← prove
+   r"!(h:A->B) k l n g x.
+        ring_homomorphism(k,l) h /\ free_basis (k,l) h n g /\
+        x IN ring_carrier l
+        ==> ring_det k {i | i < n}
+              (\i j. algebra_trace (k,l) h
+                       (ring_mul l x (ring_mul l (g i) (g j)))) =
+            ring_mul k (algebra_norm (k,l) h x)
+                       (basis_discriminant (k,l) h n g)"
+   (REPEAT STRIP_TAC THEN
+    FIRST_ASSUM (ASSUME_TAC o MATCH_MP FREE_BASIS_IN_CARRIER) THEN
+    ASM_SIMP_TAC [ALGEBRA_NORM_FREE_BASIS, basis_discriminant] THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_det k {i | i < n}
+        (\i j. ring_sum k {a | a < n}
+                 (\a. ring_mul k (mul_matrix (k,l) (h:A->B) n g x a i)
+                        (algebra_trace (k,l) h (ring_mul l (g a) (g j)))))") THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC RING_DET_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN
+      MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"] THEN STRIP_TAC THEN
+      SUBGOAL_THEN
+       (← q r"ring_mul l x (ring_mul l (g i) (g j)) =
+        ring_mul l (ring_sum l {a | a < n}
+          (\a. ring_mul l ((h:A->B)(mul_matrix (k,l) h n g x a i)) (g a)))
+          (g j)")
+      SUBST1_TAC THENL
+       [ASM_SIMP_TAC [MUL_MATRIX_EXPAND] THEN MATCH_MP_TAC RING_MUL_ASSOC THEN
+        ASM_SIMP_TAC [],
+        MP_TAC (← ISPECL [← q r"h:A->B", ← q r"k:A ring", ← q r"l:B ring", ← q r"{a:num | a < n}",
+                          ← q r"\a. mul_matrix (k,l) (h:A->B) n g x a i", ← q r"g:num->B",
+                          ← q r"(g:num->B) j"] ALGEBRA_TRACE_LINCOMB_MUL) THEN
+        ASM_SIMP_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM, MUL_MATRIX_IN_CARRIER]],
+      ALL_TAC] THEN
+    MP_TAC (← ISPECL [← q r"k:A ring", ← q r"{i:num | i < n}",
+                      ← q r"\i a. mul_matrix (k,l) (h:A->B) n g x a i",
+                      ← q r"\a j. algebra_trace (k,l) (h:A->B)
+                            (ring_mul l (g a) ((g:num->B) j))"]
+      RING_DET_MUL) THEN
+    ASM_SIMP_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM, MUL_MATRIX_IN_CARRIER,
+                  ALGEBRA_TRACE_NORM_IN_CARRIER] THEN
+    DISCH_THEN SUBST1_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
+    MP_TAC (← ISPECL [← q r"k:A ring", ← q r"{i:num | i < n}",
+                      ← q r"mul_matrix (k,l) (h:A->B) n g x"] RING_DET_TRANSP) THEN
+    REWRITE_TAC [FINITE_NUMSEG_LT, ETA_AX])
+
+  /- The trace dual basis: if the discriminant e of w is a unit, the v_j = -/
+  /- sum_m e^-1 C_jm w_m, with C the cofactors of the trace matrix         -/
+  /- (Tr(w_i w_m)), satisfy Tr(w_i v_j) = 1 or 0 as i = j or not          -/
+  /- (RING_DET_ADJUGATE_ROWS).                                             -/
+  let ALGEBRA_TRACE_DUAL_BASIS_EXISTS ← prove
+   r"!(h:A->B) k l n w.
+        ring_homomorphism(k,l) h /\ (!i. i < n ==> w i IN ring_carrier l) /\
+        ring_unit k (basis_discriminant (k,l) h n w)
+        ==> ?w'. (!j. w' j IN ring_carrier l) /\
+                 !i j. i < n /\ j < n
+                       ==> algebra_trace (k,l) h (ring_mul l (w i) (w' j)) =
+                           if i = j then ring_1 k else ring_0 k"
+   (← do
+    let r1 ← RING_RULE
+       (← q r"ring_mul (r:A ring) (ring_mul r a b) c =
+        ring_mul r a (ring_mul r c b)")
+    pure (REPEAT GEN_TAC THEN
+    ABBREV_TAC
+     (← q r"G = \i j. algebra_trace (k,l) (h:A->B)
+                  (ring_mul l ((w:num->B) i) (w j))") THEN
+    REWRITE_TAC [basis_discriminant] THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN
+    ABBREV_TAC (← q r"e = ring_det k {i | i < n} (G:num->num->A)") THEN
+    SUBGOAL_THEN (← q r"!i j. (G:num->num->A) i j IN ring_carrier k") ASSUME_TAC THENL
+     [EXPAND_TAC "G" THEN REWRITE_TAC [ALGEBRA_TRACE_NORM_IN_CARRIER],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"(e:A) IN ring_carrier k /\ ring_inv k e IN ring_carrier k /\
+      ring_mul k (ring_inv k e) e = ring_1 k")
+    STRIP_ASSUME_TAC THENL
+     [ASM_SIMP_TAC [RING_INV, RING_MUL_LINV, RING_UNIT_IN_CARRIER], ALL_TAC] THEN
+    EXISTS_TAC
+     (← q r"\j. ring_sum l {m | m < n}
+            (\m. ring_mul l
+                  ((h:A->B)(ring_mul k (ring_inv k e)
+                             (ring_cofactor k {i | i < n} G j m)))
+                  ((w:num->B) m))") THEN
+    REWRITE_TAC [RING_SUM] THEN
+    MAP_EVERY X_GEN_TAC [← q r"i:num", ← q r"j:num"] THEN STRIP_TAC THEN
+    MP_TAC (← ISPECL [← q r"h:A->B", ← q r"k:A ring", ← q r"l:B ring", ← q r"{m:num | m < n}",
+                      ← q r"\m. ring_mul k (ring_inv k e)
+                          (ring_cofactor k {i | i < n} (G:num->num->A) j m)",
+                      ← q r"w:num->B", ← q r"(w:num->B) i"] ALGEBRA_TRACE_MUL_LINCOMB) THEN
+    ASM_SIMP_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM, RING_MUL, RING_COFACTOR] THEN
+    DISCH_THEN SUBST1_TAC THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"ring_mul k (ring_inv k e)
+        (ring_sum k {m | m < n}
+          (\m. ring_mul k ((G:num->num->A) i m)
+                          (ring_cofactor k {i | i < n} G j m)))") THEN
+    CONJ_TAC THENL
+     [ASM_SIMP_TAC [← GSYM RING_SUM_LMUL, FINITE_NUMSEG_LT, RING_MUL,
+                    RING_COFACTOR] THEN
+      MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"m:num") THEN
+      REWRITE_TAC [IN_ELIM_THM] THEN DISCH_TAC THEN
+      SUBGOAL_THEN
+       (← q r"algebra_trace (k,l) (h:A->B) (ring_mul l ((w:num->B) i) (w m)) =
+        (G:num->num->A) i m")
+      SUBST1_TAC THENL [EXPAND_TAC "G" THEN REWRITE_TAC [], ALL_TAC] THEN
+      MATCH_MP_TAC r1 THEN
+      ASM_REWRITE_TAC [RING_COFACTOR],
+      ASM_SIMP_TAC [RING_DET_ADJUGATE_ROWS, FINITE_NUMSEG_LT, IN_ELIM_THM] THEN
+      COND_CASES_TAC THEN ASM_SIMP_TAC [RING_MUL_RZERO]]))
+
   -- @@RETURN BEGIN
   return { basis_discriminant, BASIS_DISCRIMINANT_HOMOMORPHIC_IMAGE,
            BASIS_DISCRIMINANT_CHANGE_OF_BASIS, TRACE_FORM_NONDEGENERATE,
            BASIS_DISCRIMINANT_DEGENERATE, BASIS_DISCRIMINANT_EQ_0,
-           BASIS_DISCRIMINANT_NONZERO, BASIS_DISCRIMINANT_TIMES_COORD }
+           BASIS_DISCRIMINANT_NONZERO, BASIS_DISCRIMINANT_TIMES_COORD,
+           BASIS_DISCRIMINANT_MUL, ALGEBRA_TRACE_DUAL_BASIS_EXISTS }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/

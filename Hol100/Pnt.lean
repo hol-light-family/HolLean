@@ -7,7 +7,7 @@ import SessionMultiLib.Cauchy
 import SessionLibrary.Pocklington
 import HolExamples.Mangoldt
 open HolCore.Kernel Session HolLight.Syntax HolExamples Hol100
-open SessionLibrary.Binomial SessionLibrary.Iter SessionLibrary.Prime SessionLibrary.Permutations SessionLibrary.Floor SessionLibrary.Wo SessionLibrary.Products SessionLibrary.Frag SessionLibrary.Card SessionLibrary.Pocklington SessionLibrary.Matroids SessionMultiLib.Misc SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionMultiLib.Metric SessionMultiLib.Determinants SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.Complexes SessionMultiLib.Paths SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals SessionMultiLib.RealAnalysis HolExamples.Mangoldt SessionMultiLib.MoreTop SessionMultiLib.Cauchy
+open SessionLibrary.Binomial SessionLibrary.Iter SessionLibrary.Prime SessionLibrary.Permutations SessionLibrary.Floor SessionLibrary.Wo SessionLibrary.Products SessionLibrary.Frag SessionLibrary.Card SessionLibrary.Pocklington SessionLibrary.Matroids SessionMultiLib.Misc SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionMultiLib.Metric SessionMultiLib.Determinants SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes SessionMultiLib.Paths SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals SessionMultiLib.RealAnalysis HolExamples.Mangoldt SessionMultiLib.MoreTop SessionMultiLib.Cauchy
 namespace Hol100.Pnt
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
@@ -72,7 +72,7 @@ private def patConvIO (pat : term) (c : HolCore.Equal.ioconv) : HolCore.Equal.io
 #eval Session.prioritize_real
 
 #eval phrase 5
-#eval (do let _ ← SessionMultiLib.Complexes.prioritize_complex.run : IO Unit)
+#eval (do let _ ← SessionMultiLib.ComplexAlgebra.prioritize_complex.run : IO Unit)
 
 /- ------------------------------------------------------------------------- -/
 /- A few miscelleneous lemmas.                                               -/
@@ -4744,7 +4744,7 @@ def ensure : IO Unit := once "Hol100.Pnt" do
   replay (
           Session.prioritize_real)
   replay (
-          (do let _ ← SessionMultiLib.Complexes.prioritize_complex.run : IO Unit))
+          (do let _ ← SessionMultiLib.ComplexAlgebra.prioritize_complex.run : IO Unit))
   replay (
           LT_NORM_CPOW_NUM)
   replay (

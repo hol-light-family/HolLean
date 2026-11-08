@@ -11556,7 +11556,7 @@ def setupKYAM [HolBase] (D : CauchyDeps) (BKYAE : KYAE) (BKYAF : KYAF) : ExceptT
         .. } := D.mt.ra.ts.cn.cxc
   let { COMPLEX_FIELD, .. } := D.mt.ra.ts.cn.cxe
   let { COMPLEX_NORM_DIV, COMPLEX_NORM_MUL, COMPLEX_NORM_NZ, .. } := D.mt.ra.ts.cn.cxf
-  let { COMPLEX_POLYFUN_EXTREMAL, .. } := D.mt.ra.ts.cn.cxj
+  let { COMPLEX_POLYFUN_EXTREMAL, .. } := D.mt.ra.ts.cn.cxn
   let { LIM_AT_INFINITY, .. } := D.mt.ra.ts.cn.qtopology
   let { ASM_MESON_TAC, MESON_TAC, REAL_ARITH, REAL_ARITH_TAC, REAL_FIELD,
         .. } := D.mt.ra.ts.cn.cx.cvx
@@ -18931,7 +18931,7 @@ def setupKYBJ [HolBase] (D : CauchyDeps) (BKYAM : KYAM) (BKYAW : KYAW) (BKYBC : 
   let { COMPLEX_INV_INV, .. } := D.mt.ra.ts.cn.cxe
   let { COMPLEX_INV_EQ_0, COMPLEX_NORM_0, COMPLEX_NORM_INV, COMPLEX_NORM_NZ,
         .. } := D.mt.ra.ts.cn.cxf
-  let { COMPLEX_POLYFUN_EXTREMAL, .. } := D.mt.ra.ts.cn.cxj
+  let { COMPLEX_POLYFUN_EXTREMAL, .. } := D.mt.ra.ts.cn.cxn
   let { LIM_AT_INFINITY, .. } := D.mt.ra.ts.cn.qtopology
   let { CLOSED_DIFF, .. } := D.mt.ra.ts.cn.ms.qtopology1
   let { ASM_ARITH_TAC, ASM_MESON_TAC, ASM_REAL_ARITH_TAC, MESON_TAC, NORM_ARITH,

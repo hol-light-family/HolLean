@@ -51,7 +51,8 @@ structure CoreThms1 where
    CARD_DELETE CARD_DIFF CARD_EQ_0 CARD_EQ_BIJECTION
    CARD_EQ_BIJECTIONS CARD_EQ_BIJECTIONS_SPECIAL CARD_EQ_CARD
    CARD_EQ_CARD_IMP CARD_EQ_CONG CARD_EQ_FINITE_SUBSETS CARD_EQ_IMAGE
-   CARD_EQ_IMAGES CARD_EQ_IMAGE_MUL_FIBRES CARD_EQ_IMP_LE CARD_EQ_LIST_GEN
+   CARD_EQ_IMAGES CARD_EQ_IMAGE_MUL_FIBRES
+   CARD_EQ_IMP_LE CARD_EQ_LIST_GEN CARD_EQ_NSUM
    CARD_EQ_REFL CARD_EQ_REFL_IMP CARD_EQ_SYM CARD_EQ_TRANS CARD_EXP_C
    CARD_EXP_FINITE_EQ CARD_FINITE_CONG CARD_HAS_SIZE_CONG CARD_IMAGE_INJ
    CARD_IMAGE_LE CARD_LE_ANTISYM CARD_LE_COUNTABLE_INFINITE
@@ -155,8 +156,8 @@ structure CoreThms6 where
    MEMBER_NOT_EMPTY MONOIDAL_FRAG_ADD MONO_AND MONO_EXISTS MONO_FORALL
    MONO_OR MULT_ASSOC MULT_CLAUSES MULT_EQ_0 MULT_SYM NEUTRAL_FRAG_ADD
    NOT_EXISTS_THM NOT_FORALL_THM NOT_IMP NOT_INSERT_EMPTY NOT_IN_EMPTY NOT_LE
-   NOT_LT NOT_SUC NSUM_CONST NSUM_EQ
-   NSUM_IMAGE NSUM_RESTRICT_SET NUMSEG_CLAUSES NUMSEG_LREC
+   NOT_LT NOT_SUC NSUM_CONST NSUM_DELTA NSUM_EQ NSUM_GROUP
+   NSUM_IMAGE NSUM_RESTRICT_SET NSUM_SWAP NUMSEG_CLAUSES NUMSEG_LREC
    NUMSEG_RREC NUMSEG_SING NUM_GCD NUM_OF_INT_OF_NUM ONE_OR_PRIME
    ONE_OR_PRIME_DIVIDES_OR_COPRIME PAIR PAIRWISE_IMAGE PAIRWISE_IMP
    PAIRWISE_MONO PAIR_EQ PRIMEPOW_DIVIDES_INDEX PRIMES_INFINITE PRIME_0
@@ -9413,6 +9414,7 @@ structure Cosets1 where
   -- @@FIELDS
   IN_LEFT_COSET_SELF : thm
   UNIONS_RIGHT_COSETS : thm
+  SUBGROUP_COMPLEMENT_RIGHT_COSETS : thm
   UNIONS_LEFT_COSETS : thm
   RIGHT_COSETS_EQ : thm
   IN_RIGHT_COSET_TRANS : thm
@@ -9444,23 +9446,25 @@ def setupCosets1 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : 
   let { ASM_MESON_TAC, MESON_TAC, SET_RULE, SET_TAC, TAUT, .. } := D
   let { CARD_HAS_SIZE_CONG, .. } := D.core1
   let { DISJOINT, DISJOINT_EMPTY_REFL, EQ_C_INVOLUTION, EQ_TRANS, .. } := D.core2
-  let { FORALL_AND_THM, FORALL_IN_GSPEC, FORALL_UNWIND_THM2, .. } := D.core3
+  let { EXTENSION, FORALL_AND_THM, FORALL_IN_GSPEC, FORALL_UNWIND_THM2, .. } := D.core3
   let { IMAGE_SUBSET, IMP_CONJ, INJECTIVE_ON_ALT, .. } := D.core4
-  let { IN_ELIM_THM, IN_INTER, IN_SING, .. } := D.core5
-  let { LEFT_FORALL_IMP_THM, LEFT_IMP_EXISTS_THM, MEMBER_NOT_EMPTY, MONO_EXISTS,
-        PAIRWISE_IMAGE, .. } := D.core6
+  let { IN_DIFF, IN_ELIM_THM, IN_INTER, IN_SING, IN_UNIONS, .. } := D.core5
+  let { LEFT_AND_EXISTS_THM, LEFT_FORALL_IMP_THM, LEFT_IMP_EXISTS_THM,
+        MEMBER_NOT_EMPTY, MONO_EXISTS, PAIRWISE_IMAGE, .. } := D.core6
   let { RIGHT_FORALL_IMP_THM, SIMPLE_IMAGE, SING_SUBSET, SUBSET, SUBSET_ANTISYM_EQ,
         UNIONS_GSPEC, UNIONS_SUBSET, eq_c, .. } := D.core7
   let { pairwise, .. } := D.core8
   let { GROUP_ID, GROUP_INV, GROUP_MUL, GROUP_MUL_ASSOC, GROUP_MUL_LID, GROUP_MUL_LINV,
         GROUP_MUL_RID, GROUP_MUL_RINV, OPPOSITE_GROUP, .. } := BBasics
-  let { GROUP_INV_INV, GROUP_LINV_EQ, GROUP_MUL_RCANCEL, GROUP_RINV_EQ, group_div, .. } := BDerived
+  let { GROUP_INV_INV, GROUP_INV_MUL, GROUP_LINV_EQ, GROUP_MUL_RCANCEL, GROUP_RINV_EQ,
+        group_div, .. } := BDerived
   let { SUBGROUP_OF_IMP_SUBSET, SUBGROUP_OF_OPPOSITE_GROUP, subgroup_of, .. } := BSubgroups
   let { GROUP_SETMUL, GROUP_SETMUL_ASSOC, GROUP_SETMUL_SING, group_setmul, .. } := BSetwise1
-  let { GROUP_SETINV_LEFT_COSET_GEN, GROUP_SETINV_RIGHT_COSET_GEN, IN_RIGHT_COSET_SELF,
-        LEFT_COSET, LEFT_COSET_EQ_SUBGROUP, LEFT_COSET_ID, LEFT_COSET_OPPOSITE_GROUP,
-        RIGHT_COSET, RIGHT_COSET_AS_IMAGE, RIGHT_COSET_EQ, RIGHT_COSET_EQ_SUBGROUP,
-        RIGHT_COSET_ID, RIGHT_COSET_NONEMPTY, left_coset, right_coset, .. } := BCosets
+  let { GROUP_SETINV_LEFT_COSET_GEN, GROUP_SETINV_RIGHT_COSET_GEN, IN_RIGHT_COSET,
+        IN_RIGHT_COSET_SELF, LEFT_COSET, LEFT_COSET_EQ_SUBGROUP, LEFT_COSET_ID,
+        LEFT_COSET_OPPOSITE_GROUP, RIGHT_COSET, RIGHT_COSET_AS_IMAGE, RIGHT_COSET_EQ,
+        RIGHT_COSET_EQ_SUBGROUP, RIGHT_COSET_ID, RIGHT_COSET_NONEMPTY, left_coset,
+        right_coset, .. } := BCosets
   -- @@SCOPE END
 
   let IN_LEFT_COSET_SELF ← prove
@@ -9479,6 +9483,34 @@ def setupCosets1 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : 
     ASM_SIMP_TAC [RIGHT_COSET, SUBGROUP_OF_IMP_SUBSET] THEN
     REWRITE_TAC [UNIONS_GSPEC, IN_ELIM_THM, SUBSET] THEN
     ASM_MESON_TAC [IN_RIGHT_COSET_SELF])
+
+  let SUBGROUP_COMPLEMENT_RIGHT_COSETS ← prove
+   r"!G h:A->bool.
+        h subgroup_of G
+        ==> group_carrier G DIFF h =
+            UNIONS {right_coset G h x | x | x IN group_carrier G DIFF h}"
+   (REPEAT STRIP_TAC THEN
+    FIRST_ASSUM (ASSUME_TAC o MATCH_MP SUBGROUP_OF_IMP_SUBSET) THEN
+    GEN_REWRITE_TAC I [EXTENSION] THEN
+    REWRITE_TAC [IN_UNIONS, IN_DIFF, IN_ELIM_THM] THEN
+    X_GEN_TAC (← q r"y:A") THEN EQ_TAC THENL
+     [STRIP_TAC THEN EXISTS_TAC (← q r"right_coset G h (y:A)") THEN
+      ASM_SIMP_TAC [IN_RIGHT_COSET_SELF] THEN ASM_MESON_TAC [],
+      REWRITE_TAC [LEFT_IMP_EXISTS_THM, LEFT_AND_EXISTS_THM] THEN
+      MAP_EVERY X_GEN_TAC [← q r"c:A->bool", ← q r"x:A"] THEN
+      STRIP_TAC THEN FIRST_X_ASSUM SUBST_ALL_TAC THEN
+      SUBGOAL_THEN (← q r"(y:A) IN group_carrier G") ASSUME_TAC THENL
+       [ASM_MESON_TAC [RIGHT_COSET, SUBSET], ALL_TAC] THEN
+      ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
+      UNDISCH_TAC (← q r"(y:A) IN right_coset G h x") THEN
+      ASM_SIMP_TAC [IN_RIGHT_COSET] THEN DISCH_TAC THEN
+      UNDISCH_TAC (← q r"~((x:A) IN h)") THEN REWRITE_TAC [] THEN
+      SUBGOAL_THEN
+       (← q r"x = group_mul G (group_inv G (group_mul G y (group_inv G x))) (y:A)")
+      SUBST1_TAC THENL
+       [ASM_SIMP_TAC [GROUP_INV_MUL, GROUP_INV_INV, GROUP_INV,
+                      ← GSYM GROUP_MUL_ASSOC, GROUP_MUL_LINV, GROUP_MUL_RID],
+        ASM_MESON_TAC [subgroup_of]]])
 
   let UNIONS_LEFT_COSETS ← prove
    r"!G h:A->bool.
@@ -9699,9 +9731,9 @@ def setupCosets1 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : 
               SUBGROUP_OF_IMP_SUBSET])
 
   -- @@RETURN BEGIN
-  return { IN_LEFT_COSET_SELF, UNIONS_RIGHT_COSETS, UNIONS_LEFT_COSETS, RIGHT_COSETS_EQ,
-           IN_RIGHT_COSET_TRANS, LEFT_COSETS_EQ, DISJOINT_RIGHT_COSETS,
-           DISJOINT_LEFT_COSETS, PAIRWISE_DISJOINT_RIGHT_COSETS,
+  return { IN_LEFT_COSET_SELF, UNIONS_RIGHT_COSETS, SUBGROUP_COMPLEMENT_RIGHT_COSETS,
+           UNIONS_LEFT_COSETS, RIGHT_COSETS_EQ, IN_RIGHT_COSET_TRANS, LEFT_COSETS_EQ,
+           DISJOINT_RIGHT_COSETS, DISJOINT_LEFT_COSETS, PAIRWISE_DISJOINT_RIGHT_COSETS,
            PAIRWISE_DISJOINT_LEFT_COSETS, IMAGE_RIGHT_COSET_SWITCH,
            IMAGE_LEFT_COSET_SWITCH, CARD_EQ_LEFT_RIGHT_COSETS,
            HAS_SIZE_LEFT_RIGHT_COSETS, CARD_EQ_RIGHT_COSETS, GROUP_ID_IN_LEFT_COSET_GEN,
@@ -10375,9 +10407,9 @@ structure NormalSubgroups where
   NORMAL_SUBGROUP_OF_UNIONS : thm
   NORMAL_SUBGROUP_ACTION_KERNEL : thm
   NORMAL_SUBGROUP_LEFT_EQ_RIGHT_COSETS : thm
+  GROUP_COSETS_LEFT_COSETS : thm
   NORMAL_SUBGROUP_LEFT_SUBSET_RIGHT_COSETS : thm
   NORMAL_SUBGROUP_RIGHT_SUBSET_LEFT_COSETS : thm
-  GROUP_COSETS_LEFT_COSETS : thm
   NORMAL_SUBGROUP_MUL_SYM : thm
   TRIVIAL_NORMAL_SUBGROUP_OF : thm
   CARRIER_NORMAL_SUBGROUP_OF : thm
@@ -10735,10 +10767,10 @@ def setupNormalSubgroups [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDe
            ABELIAN_GROUP_CONJUGATION, NORMAL_SUBGROUP_OF_INTERS,
            NORMAL_SUBGROUP_OF_INTER, NORMAL_SUBGROUP_OF_UNIONS,
            NORMAL_SUBGROUP_ACTION_KERNEL, NORMAL_SUBGROUP_LEFT_EQ_RIGHT_COSETS,
-           NORMAL_SUBGROUP_LEFT_SUBSET_RIGHT_COSETS,
-           NORMAL_SUBGROUP_RIGHT_SUBSET_LEFT_COSETS, GROUP_COSETS_LEFT_COSETS,
-           NORMAL_SUBGROUP_MUL_SYM, TRIVIAL_NORMAL_SUBGROUP_OF,
-           CARRIER_NORMAL_SUBGROUP_OF, GROUP_SETINV_RIGHT_COSET, GROUP_SETINV_LEFT_COSET }
+           GROUP_COSETS_LEFT_COSETS, NORMAL_SUBGROUP_LEFT_SUBSET_RIGHT_COSETS,
+           NORMAL_SUBGROUP_RIGHT_SUBSET_LEFT_COSETS, NORMAL_SUBGROUP_MUL_SYM,
+           TRIVIAL_NORMAL_SUBGROUP_OF, CARRIER_NORMAL_SUBGROUP_OF,
+           GROUP_SETINV_RIGHT_COSET, GROUP_SETINV_LEFT_COSET }
   -- @@RETURN END
 
 structure NormalSubgroups2 where
@@ -12318,6 +12350,7 @@ structure KernelsImages1 where
   NORMAL_SUBGROUP_INTER_SUBGROUP_GENERATED : thm
   GROUP_KERNEL_RIGHT_COSET : thm
   CARD_EQ_GROUP_IMAGE_KERNEL : thm
+  CARD_IMAGE_SUBGROUP_KERNEL : thm
   CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE : thm
   CARD_DIVIDES_GROUP_EPIMORPHIC_IMAGE : thm
   deriving Inhabited
@@ -12327,11 +12360,12 @@ def setupKernelsImages1 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDer
     ExceptT String IO KernelsImages1 := do
   -- @@SCOPE BEGIN
   let { ASM_MESON_TAC, MESON_TAC, NUMBER_RULE, SET_RULE, SET_TAC, TAUT, new_definition, .. } := D
-  let { CARD_CROSS, CARD_EQ_CARD_IMP, CARD_EQ_IMAGE, CARD_EQ_IMAGE_MUL_FIBRES,
-        CARD_EQ_REFL_IMP, CARD_EQ_TRANS, .. } := D.core1
+  let { CARD_CROSS, CARD_EQ_CARD, CARD_EQ_CARD_IMP, CARD_EQ_IMAGE,
+        CARD_EQ_IMAGE_MUL_FIBRES, CARD_EQ_REFL_IMP, CARD_EQ_TRANS, CARD_MUL_C,
+        CARD_MUL_FINITE, .. } := D.core1
   let { CROSS, .. } := D.core2
-  let { EXTENSION, FINITE_CROSS, FINITE_IMAGE, FINITE_RESTRICT, FORALL_IN_IMAGE,
-        FORALL_IN_IMAGE_2, .. } := D.core3
+  let { EXTENSION, FINITE_CROSS, FINITE_IMAGE, FINITE_INTER, FINITE_RESTRICT,
+        FORALL_IN_IMAGE, FORALL_IN_IMAGE_2, .. } := D.core3
   let { IMAGE_o, IMP_CONJ_ALT, .. } := D.core4
   let { IN_ELIM_THM, IN_IMAGE, IN_INTER, IN_SING, .. } := D.core5
   let { NOT_IN_EMPTY, .. } := D.core6
@@ -12591,6 +12625,30 @@ def setupKernelsImages1 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDer
     ASM_SIMP_TAC [GROUP_MUL, GROUP_INV, GROUP_MUL_RID, GROUP_MUL_LID,
                  GROUP_MUL_LINV, GROUP_MUL_ASSOC, GROUP_MUL_RINV])
 
+  let CARD_IMAGE_SUBGROUP_KERNEL ← prove
+   r"!G H (f:A->B) s.
+        group_homomorphism(G,H) f /\ s subgroup_of G /\ FINITE s
+        ==> CARD(IMAGE f s) * CARD(s INTER group_kernel(G,H) f) = CARD s"
+   (REPEAT STRIP_TAC THEN
+    MP_TAC (← ISPECL [← q r"subgroup_generated G (s:A->bool)", ← q r"H:B group", ← q r"f:A->B"]
+      CARD_EQ_GROUP_IMAGE_KERNEL) THEN
+    ANTS_TAC THENL
+     [ASM_SIMP_TAC [GROUP_HOMOMORPHISM_FROM_SUBGROUP_GENERATED], ALL_TAC] THEN
+    ASM_SIMP_TAC [group_image, group_kernel, CARRIER_SUBGROUP_GENERATED_SUBGROUP]
+      THEN
+    SUBGOAL_THEN
+     (← q r"{x | x IN s /\ (f:A->B) x = group_id H} =
+      s INTER {x | x IN group_carrier G /\ f x = group_id H}")
+    SUBST1_TAC THENL
+     [FIRST_ASSUM (MP_TAC o MATCH_MP SUBGROUP_OF_IMP_SUBSET) THEN SET_TAC [],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"FINITE(IMAGE (f:A->B) s) /\
+      FINITE(s INTER {x | x IN group_carrier G /\ f x = group_id H})")
+    STRIP_ASSUME_TAC THENL
+     [ASM_SIMP_TAC [FINITE_IMAGE, FINITE_INTER], ALL_TAC] THEN
+    ASM_SIMP_TAC [CARD_EQ_CARD, CARD_MUL_FINITE, CARD_MUL_C])
+
   let CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE ← prove
    r"!G H (f:A->B).
           group_monomorphism(G,H) f /\ FINITE(group_carrier H)
@@ -12628,8 +12686,8 @@ def setupKernelsImages1 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDer
            GROUP_KERNEL_FROM_SUBGROUP_GENERATED, GROUP_IMAGE_FROM_SUBGROUP_GENERATED,
            GROUP_ISOMORPHISM_ONTO_IMAGE, NORMAL_SUBGROUP_GROUP_KERNEL,
            NORMAL_SUBGROUP_INTER_SUBGROUP_GENERATED, GROUP_KERNEL_RIGHT_COSET,
-           CARD_EQ_GROUP_IMAGE_KERNEL, CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE,
-           CARD_DIVIDES_GROUP_EPIMORPHIC_IMAGE }
+           CARD_EQ_GROUP_IMAGE_KERNEL, CARD_IMAGE_SUBGROUP_KERNEL,
+           CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE, CARD_DIVIDES_GROUP_EPIMORPHIC_IMAGE }
   -- @@RETURN END
 
 structure KernelsImages2 where
@@ -15710,36 +15768,63 @@ structure CyclicGroups3 where
   MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX : thm
   GROUP_ZPOW_CANCEL : thm
   GROUP_POW_CANCEL : thm
+  CYCLIC_SUBGROUP_TORSION_SUBGROUP : thm
+  CARD_RESTRICT_POW_EQ_ID : thm
+  CARD_CONJUGATES_IN_TORSION : thm
+  CARD_CONJUGATES_IN_ORDER : thm
+  CARD_CONJUGATES_IN_TORSION_NSUM : thm
+  GROUP_CONJUGATION_SUBGROUP_GENERATED_SING : thm
+  CYCLIC_SUBGROUP_GENERATED_EQ : thm
+  CYCLIC_SUBGROUP_CONJUGATE : thm
+  CARD_CONJUGATES_INTO_CYCLIC : thm
+  CARD_CONJUGATES_INTO_CYCLIC_GENERATORS : thm
+  CARD_CYCLIC_SUBGROUP_DIVISION : thm
   deriving Inhabited
 
 @[nospecialize]
-def setupCyclicGroups3 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : Derived) (BPow : Pow) (BSubgroups : Subgroups) (BSubgroupGenerated : SubgroupGenerated) (BSubgroupGen1 : SubgroupGen1) (BCosets2 : Cosets2) (BNormalSubgroups : NormalSubgroups) (BQuotientGroups : QuotientGroups) (BSubgroupCorrespondence : SubgroupCorrespondence) (BGroupElementOrder : GroupElementOrder) (BGroupElementOrder2 : GroupElementOrder2) (BCyclicGroups1 : CyclicGroups1) (BCyclicGroups2 : CyclicGroups2) :
+def setupCyclicGroups3 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : Derived) (BPow : Pow) (BAbelian : Abelian) (BConjugation : Conjugation) (BSubgroups : Subgroups) (BSubgroupGenerated : SubgroupGenerated) (BSubgroupGen1 : SubgroupGen1) (BSubgroupGen2 : SubgroupGen2) (BHomomorphisms2 : Homomorphisms2) (BCosets : Cosets) (BCosets1 : Cosets1) (BCosets2 : Cosets2) (BNormalSubgroups : NormalSubgroups) (BCentralizerNormalizer : CentralizerNormalizer) (BQuotientGroups : QuotientGroups) (BSubgroupCorrespondence : SubgroupCorrespondence) (BGroupElementOrder : GroupElementOrder) (BGroupElementOrder2 : GroupElementOrder2) (BCyclicGroups1 : CyclicGroups1) (BCyclicGroups2 : CyclicGroups2) :
     ExceptT String IO CyclicGroups3 := do
   -- @@SCOPE BEGIN
   let { ASM_MESON_TAC, HAS_SIZE_CONV, INTEGER_RULE, MESON, MESON_TAC, NUMBER_RULE,
-        NUM_RING, SET_RULE, TAUT, .. } := D
-  let { CARD_EQ_0, CARD_IMAGE_INJ, CONJ_ASSOC, .. } := D.core1
+        NUM_RING, SET_RULE, SET_TAC, TAUT, .. } := D
+  let { CARD_CLAUSES, CARD_EQ_0, CARD_EQ_CARD_IMP, CARD_EQ_NSUM, CARD_IMAGE_INJ,
+        CARD_SUBSET_EQ, CONJ_ASSOC, .. } := D.core1
   let { DE_MORGAN_THM, DIVIDES_DIV_MULT, DIVIDES_ZERO, DIV_MULT, EQ_TRANS, .. } := D.core2
-  let { EXTENSION, FORALL_UNWIND_THM2, GCD, HAS_SIZE, HAS_SIZE_0, .. } := D.core3
-  let { IMP_CONJ, IMP_IMP, INT_CONG_LREM, .. } := D.core4
-  let { INT_OF_NUM_REM, IN_ELIM_THM, IN_UNIV, .. } := D.core5
+  let { EXTENSION, FINITE_RESTRICT, FINITE_SUBSET, FORALL_IN_IMAGE, FORALL_UNWIND_THM2,
+        GCD, HAS_SIZE, HAS_SIZE_0, .. } := D.core3
+  let { IMAGE_CLAUSES, IMP_CONJ, IMP_IMP, INT_CONG_LREM, .. } := D.core4
+  let { INT_OF_NUM_REM, IN_ELIM_THM, IN_IMAGE, IN_SING, IN_UNIV, .. } := D.core5
   let { LEFT_AND_EXISTS_THM, LEFT_IMP_EXISTS_THM, MULT_EQ_0, MULT_SYM, NOT_IN_EMPTY,
+        NSUM_CONST, NSUM_DELTA, NSUM_EQ, NSUM_GROUP, NSUM_RESTRICT_SET, NSUM_SWAP,
         NUM_GCD, .. } := D.core6
-  let { RIGHT_FORALL_IMP_THM, RIGHT_IMP_FORALL_THM, SING_SUBSET, SUBSET_ANTISYM,
-        SWAP_EXISTS_THM, SWAP_FORALL_THM, UNWIND_THM2, divides, .. } := D.core7
+  let { RIGHT_FORALL_IMP_THM, RIGHT_IMP_FORALL_THM, SING_SUBSET, SUBSET,
+        SUBSET_ANTISYM, SUBSET_RESTRICT, SUBSET_TRANS, SWAP_EXISTS_THM,
+        SWAP_FORALL_THM, UNWIND_THM2, divides, .. } := D.core7
   let { num_coprime, num_divides, prime, .. } := D.core8
-  let { GROUP_CARRIER_NONEMPTY, TRIVIAL_GROUP_HAS_SIZE_1, .. } := BBasics
-  let { GROUP_POW, .. } := BDerived
-  let { GROUP_NPOW, GROUP_ZPOW, GROUP_ZPOW_1, GROUP_ZPOW_MUL, .. } := BPow
-  let { FINITE_RESTRICTED_SUBGROUPS, FINITE_SUBGROUPS, .. } := BSubgroups
-  let { SUBGROUP_GENERATED_MINIMAL, SUBGROUP_SUBGROUP_GENERATED, .. } := BSubgroupGenerated
-  let { FINITE_SUBGROUP_GENERATED, .. } := BSubgroupGen1
+  let { GROUP_CARRIER_NONEMPTY, GROUP_ID, GROUP_INV, GROUP_MUL, GROUP_MUL_LID,
+        TRIVIAL_GROUP_HAS_SIZE_1, .. } := BBasics
+  let { GROUP_INV_ID, GROUP_INV_POW, GROUP_POW, GROUP_POW_ID, .. } := BDerived
+  let { GROUP_MUL_POW, GROUP_NPOW, GROUP_ZPOW, GROUP_ZPOW_1, GROUP_ZPOW_MUL, .. } := BPow
+  let { abelian_group, .. } := BAbelian
+  let { GROUP_CONJUGATION, GROUP_CONJUGATION_EQ, GROUP_CONJUGATION_RINV,
+        IMAGE_GROUP_CONJUGATION_BY_INV, IMAGE_GROUP_CONJUGATION_BY_MUL,
+        IMAGE_GROUP_CONJUGATION_SUBSET, .. } := BConjugation
+  let { FINITE_RESTRICTED_SUBGROUPS, FINITE_SUBGROUPS, subgroup_of, .. } := BSubgroups
+  let { GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET, SUBGROUP_GENERATED,
+        SUBGROUP_GENERATED_MINIMAL, SUBGROUP_SUBGROUP_GENERATED, .. } := BSubgroupGenerated
+  let { FINITE_SUBGROUP_GENERATED, SUBGROUP_GENERATED_INC, .. } := BSubgroupGen1
+  let { ABELIAN_GROUP_SUBGROUP_GENERATED_GEN, .. } := BSubgroupGen2
+  let { GROUP_HOMOMORPHISM_CONJUGATION, SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE, .. } := BHomomorphisms2
+  let { IN_RIGHT_COSET, RIGHT_COSET, .. } := BCosets
+  let { CARD_EQ_RIGHT_COSET_SUBGROUP, .. } := BCosets1
   let { LAGRANGE_THEOREM, .. } := BCosets2
   let { ABELIAN_GROUP_NORMAL_SUBGROUP, .. } := BNormalSubgroups
+  let { FINITE_GROUP_NORMALIZER, GROUP_NORMALIZER_CONJUGATION_EQ,
+        GROUP_NORMALIZER_SUBSET_CARRIER, SUBGROUP_GROUP_NORMALIZER, .. } := BCentralizerNormalizer
   let { QUOTIENT_GROUP, TRIVIAL_QUOTIENT_GROUP_EQ, .. } := BQuotientGroups
   let { MAXIMAL_SUBGROUP, .. } := BSubgroupCorrespondence
   let { GROUP_POW_EQ_ID, GROUP_ZPOW_EQ, .. } := BGroupElementOrder
-  let { GROUP_ELEMENT_ORDER_POW_GEN, .. } := BGroupElementOrder2
+  let { GROUP_ELEMENT_ORDER_CONJUGATION, GROUP_ELEMENT_ORDER_POW_GEN, .. } := BGroupElementOrder2
   let { CARRIER_SUBGROUP_GENERATED_BY_SING, SUBGROUP_OF_CYCLIC_GROUP_EXPLICIT,
         cyclic_group, .. } := BCyclicGroups1
   let { CARD_CYCLIC_SUBGROUP_ORDER, NO_PROPER_SUBGROUPS_EQ_CYCLIC_PRIME_ORDER,
@@ -15985,13 +16070,429 @@ def setupCyclicGroups3 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDeri
           ==> x = y"
    (REWRITE_TAC [num_coprime, ← GSYM GROUP_NPOW, GROUP_ZPOW_CANCEL])
 
+  /- --------------------------------------------------------------------- -/
+  /- Cyclic subgroups, their torsion subgroups and their conjugates:       -/
+  /- counting the conjugators of an element into subsets of a cyclic       -/
+  /- subgroup, and the elements of a finite group generating a conjugate   -/
+  /- of a cyclic subgroup (CARD_CYCLIC_SUBGROUP_DIVISION).                 -/
+  /- --------------------------------------------------------------------- -/
+
+  let CYCLIC_SUBGROUP_TORSION_SUBGROUP ← prove
+   r"!G (x:A) d.
+        x IN group_carrier G
+        ==> {y | y IN group_carrier(subgroup_generated G {x}) /\
+                 group_pow G y d = group_id G} subgroup_of G"
+   (REPEAT STRIP_TAC THEN
+    ABBREV_TAC (← q r"h = group_carrier(subgroup_generated G {x:A})") THEN
+    SUBGOAL_THEN (← q r"(h:A->bool) subgroup_of G") ASSUME_TAC THENL
+     [EXPAND_TAC "h" THEN REWRITE_TAC [SUBGROUP_SUBGROUP_GENERATED], ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"!y z:A. y IN h /\ z IN h ==> group_mul G y z = group_mul G z y")
+    ASSUME_TAC THENL
+     [MP_TAC (← ISPECL [← q r"G:A group", ← q r"{x:A}"]
+        ABELIAN_GROUP_SUBGROUP_GENERATED_GEN) THEN
+      REWRITE_TAC [IN_SING] THEN ANTS_TAC THENL [MESON_TAC [], ALL_TAC] THEN
+      ASM_REWRITE_TAC [abelian_group, ← CONJUNCT2 SUBGROUP_GENERATED],
+      ALL_TAC] THEN
+    FIRST_ASSUM (STRIP_ASSUME_TAC o GEN_REWRITE_RULE I [subgroup_of]) THEN
+    REWRITE_TAC [subgroup_of, SUBSET, IN_ELIM_THM] THEN
+    REPEAT CONJ_TAC THENL
+     [ASM SET_TAC [],
+      ASM_REWRITE_TAC [],
+      REWRITE_TAC [GROUP_POW_ID],
+      X_GEN_TAC (← q r"y:A") THEN STRIP_TAC THEN ASM_SIMP_TAC [] THEN
+      SUBGOAL_THEN (← q r"(y:A) IN group_carrier G") ASSUME_TAC THENL
+       [ASM SET_TAC [], ALL_TAC] THEN
+      ASM_SIMP_TAC [← GSYM GROUP_INV_POW, GROUP_INV_ID],
+      MAP_EVERY X_GEN_TAC [← q r"y:A", ← q r"z:A"] THEN STRIP_TAC THEN ASM_SIMP_TAC [] THEN
+      SUBGOAL_THEN (← q r"(y:A) IN group_carrier G /\ (z:A) IN group_carrier G")
+      STRIP_ASSUME_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
+      ASM_SIMP_TAC [GROUP_MUL_POW, GROUP_MUL_LID, GROUP_ID]])
+
+  let CARD_RESTRICT_POW_EQ_ID ← prove
+   r"!G (h:A->bool) d.
+        FINITE h /\ h SUBSET group_carrier G
+        ==> CARD {y | y IN h /\ group_pow G y d = group_id G} =
+            nsum {e | e divides d}
+                 (\e. CARD {y | y IN h /\ group_element_order G y = e})"
+   (REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"{y | y IN h /\ group_pow G y d = group_id G} =
+      {y:A | y IN h /\ group_element_order G y divides d}")
+    SUBST1_TAC THENL
+     [REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN
+      ASM_MESON_TAC [GROUP_POW_EQ_ID, SUBSET],
+      ALL_TAC] THEN
+    MP_TAC (← ISPECL [← q r"group_element_order G:A->num", ← q r"\x:A. 1",
+                      ← q r"{y:A | y IN h /\ group_element_order G y divides d}",
+                      ← q r"{e | e divides (d:num)}"] NSUM_GROUP) THEN
+    ANTS_TAC THENL
+     [ASM_SIMP_TAC [FINITE_RESTRICT] THEN
+      REWRITE_TAC [SUBSET, FORALL_IN_IMAGE, IN_ELIM_THM] THEN SIMP_TAC [],
+      ALL_TAC] THEN
+    ASM_SIMP_TAC [← GSYM CARD_EQ_NSUM, FINITE_RESTRICT] THEN
+    DISCH_THEN (SUBST1_TAC o SYM) THEN MATCH_MP_TAC NSUM_EQ THEN
+    REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC (← q r"e:num") THEN DISCH_TAC THEN
+    AP_TERM_TAC THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN ASM_MESON_TAC [])
+
+  let CARD_CONJUGATES_IN_TORSION ← prove
+   r"!G (h:A->bool) f d.
+        f IN group_carrier G
+        ==> CARD {g | g IN group_carrier G /\
+                      group_conjugation G g f IN
+                      {y | y IN h /\ group_pow G y d = group_id G}} =
+            if group_element_order G f divides d
+            then CARD {g | g IN group_carrier G /\
+                           group_conjugation G g f IN h}
+            else 0"
+   (REPEAT STRIP_TAC THEN REWRITE_TAC [IN_ELIM_THM] THEN
+    SUBGOAL_THEN
+     (← q r"!g. g IN group_carrier G
+          ==> (group_pow G (group_conjugation G g f) d = group_id G <=>
+               group_element_order G (f:A) divides d)")
+    ASSUME_TAC THENL
+     [REPEAT STRIP_TAC THEN
+      ASM_SIMP_TAC [GROUP_POW_EQ_ID, GROUP_CONJUGATION,
+                    GROUP_ELEMENT_ORDER_CONJUGATION],
+      ALL_TAC] THEN
+    COND_CASES_TAC THENL
+     [AP_TERM_TAC THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN ASM_MESON_TAC [],
+      MATCH_MP_TAC (← MESON [CARD_CLAUSES] (← q r"(s:A->bool) = {} ==> CARD s = 0")) THEN
+      REWRITE_TAC [EXTENSION, IN_ELIM_THM, NOT_IN_EMPTY] THEN ASM_MESON_TAC []])
+
+  let CARD_CONJUGATES_IN_ORDER ← prove
+   r"!G (h:A->bool) f e.
+        f IN group_carrier G
+        ==> CARD {g | g IN group_carrier G /\
+                      group_conjugation G g f IN
+                      {y | y IN h /\ group_element_order G y = e}} =
+            if group_element_order G f = e
+            then CARD {g | g IN group_carrier G /\
+                           group_conjugation G g f IN h}
+            else 0"
+   (REPEAT STRIP_TAC THEN REWRITE_TAC [IN_ELIM_THM] THEN
+    SUBGOAL_THEN
+     (← q r"!g. g IN group_carrier G
+          ==> group_element_order G (group_conjugation G g f) =
+              group_element_order G (f:A)")
+    ASSUME_TAC THENL
+     [ASM_SIMP_TAC [GROUP_ELEMENT_ORDER_CONJUGATION], ALL_TAC] THEN
+    COND_CASES_TAC THENL
+     [AP_TERM_TAC THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN ASM_MESON_TAC [],
+      MATCH_MP_TAC (← MESON [CARD_CLAUSES] (← q r"(s:A->bool) = {} ==> CARD s = 0")) THEN
+      REWRITE_TAC [EXTENSION, IN_ELIM_THM, NOT_IN_EMPTY] THEN ASM_MESON_TAC []])
+
+  let CARD_CONJUGATES_IN_TORSION_NSUM ← prove
+   r"!G (h:A->bool) f d.
+        f IN group_carrier G
+        ==> CARD {g | g IN group_carrier G /\
+                      group_conjugation G g f IN
+                      {y | y IN h /\ group_pow G y d = group_id G}} =
+            nsum {e | e divides d}
+                 (\e. CARD {g | g IN group_carrier G /\
+                                group_conjugation G g f IN
+                                {y | y IN h /\ group_element_order G y = e}})"
+   (REPEAT STRIP_TAC THEN
+    ASM_SIMP_TAC [CARD_CONJUGATES_IN_ORDER, CARD_CONJUGATES_IN_TORSION] THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"nsum {e | e divides d}
+           (\e. if e = group_element_order G (f:A)
+                then CARD {g | g IN group_carrier G /\
+                               group_conjugation G g f IN h}
+                else 0)") THEN
+    CONJ_TAC THENL
+     [REWRITE_TAC [NSUM_DELTA, IN_ELIM_THM],
+      MATCH_MP_TAC NSUM_EQ THEN X_GEN_TAC (← q r"e:num") THEN DISCH_TAC THEN
+      REWRITE_TAC [] THEN
+      ASM_CASES_TAC (← q r"e = group_element_order G (f:A)") THEN
+      ASM_REWRITE_TAC []])
+
+  let GROUP_CONJUGATION_SUBGROUP_GENERATED_SING ← prove
+   r"!G a x:A.
+        a IN group_carrier G /\ x IN group_carrier G
+        ==> group_carrier(subgroup_generated G {group_conjugation G a x}) =
+            IMAGE (group_conjugation G a)
+                  (group_carrier(subgroup_generated G {x}))"
+   (REPEAT STRIP_TAC THEN
+    MP_TAC (← ISPECL [← q r"G:A group", ← q r"G:A group", ← q r"group_conjugation G (a:A)",
+                      ← q r"{x:A}"] SUBGROUP_GENERATED_BY_HOMOMORPHIC_IMAGE) THEN
+    ASM_SIMP_TAC [GROUP_HOMOMORPHISM_CONJUGATION, SING_SUBSET, IMAGE_CLAUSES])
+
+  let CYCLIC_SUBGROUP_GENERATED_EQ ← prove
+   r"!G x y:A.
+        FINITE(group_carrier G) /\ x IN group_carrier G /\ y IN group_carrier G
+        ==> (group_carrier(subgroup_generated G {y}) =
+             group_carrier(subgroup_generated G {x}) <=>
+             y IN group_carrier(subgroup_generated G {x}) /\
+             group_element_order G y = group_element_order G x)"
+   (REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"!z:A. z IN group_carrier G
+            ==> FINITE(group_carrier(subgroup_generated G {z})) /\
+                CARD(group_carrier(subgroup_generated G {z})) =
+                group_element_order G z")
+    ASSUME_TAC THENL
+     [X_GEN_TAC (← q r"z:A") THEN DISCH_TAC THEN
+      MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL
+       [ASM_MESON_TAC [FINITE_SUBSET, GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET],
+        ASM_MESON_TAC [CARD_CYCLIC_SUBGROUP_ORDER]],
+      ALL_TAC] THEN
+    EQ_TAC THENL
+     [DISCH_TAC THEN CONJ_TAC THENL
+       [FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN
+        MATCH_MP_TAC SUBGROUP_GENERATED_INC THEN ASM SET_TAC [],
+        ASM_MESON_TAC []],
+      STRIP_TAC THEN MATCH_MP_TAC CARD_SUBSET_EQ THEN ASM_SIMP_TAC [] THEN
+      MATCH_MP_TAC SUBGROUP_GENERATED_MINIMAL THEN
+      ASM_REWRITE_TAC [SING_SUBSET, SUBGROUP_SUBGROUP_GENERATED]])
+
+  let CYCLIC_SUBGROUP_CONJUGATE ← prove
+   r"!G x y:A.
+        FINITE(group_carrier G) /\ x IN group_carrier G /\ y IN group_carrier G
+        ==> ((?g. g IN group_carrier G /\
+                  group_carrier(subgroup_generated G {y}) =
+                  IMAGE (group_conjugation G g)
+                        (group_carrier(subgroup_generated G {x}))) <=>
+             (?g. g IN group_carrier G /\
+                  group_conjugation G g y IN
+                  group_carrier(subgroup_generated G {x})) /\
+             group_element_order G y = group_element_order G x)"
+   (REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"!z:A. group_carrier(subgroup_generated G {z}) SUBSET group_carrier G")
+    ASSUME_TAC THENL
+     [REWRITE_TAC [GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET], ALL_TAC] THEN
+    EQ_TAC THENL
+     [DISCH_THEN (X_CHOOSE_THEN (← q r"g:A") STRIP_ASSUME_TAC) THEN
+      SUBGOAL_THEN
+       (← q r"group_carrier(subgroup_generated G
+          {group_conjugation G (group_inv G g) (y:A)}) =
+        group_carrier(subgroup_generated G {x})")
+      MP_TAC THENL
+       [ASM_SIMP_TAC [GROUP_CONJUGATION_SUBGROUP_GENERATED_SING, GROUP_INV] THEN
+        ASM_SIMP_TAC [IMAGE_GROUP_CONJUGATION_BY_INV,
+                      IMAGE_GROUP_CONJUGATION_SUBSET],
+        ALL_TAC] THEN
+      ASM_SIMP_TAC [CYCLIC_SUBGROUP_GENERATED_EQ, GROUP_CONJUGATION, GROUP_INV,
+                    GROUP_ELEMENT_ORDER_CONJUGATION] THEN
+      ASM_MESON_TAC [GROUP_INV],
+      DISCH_THEN (CONJUNCTS_THEN2 (X_CHOOSE_THEN (← q r"g:A") STRIP_ASSUME_TAC)
+        ASSUME_TAC) THEN
+      EXISTS_TAC (← q r"group_inv G g:A") THEN ASM_SIMP_TAC [GROUP_INV] THEN
+      CONV_TAC SYM_CONV THEN
+      ASM_SIMP_TAC [IMAGE_GROUP_CONJUGATION_BY_INV,
+                    IMAGE_GROUP_CONJUGATION_SUBSET] THEN
+      ASM_SIMP_TAC [← GSYM GROUP_CONJUGATION_SUBGROUP_GENERATED_SING] THEN
+      ASM_SIMP_TAC [CYCLIC_SUBGROUP_GENERATED_EQ, GROUP_CONJUGATION,
+                    GROUP_ELEMENT_ORDER_CONJUGATION]])
+
+  let CARD_CONJUGATES_INTO_CYCLIC ← prove
+   r"!G x y:A.
+        FINITE(group_carrier G) /\ x IN group_carrier G /\
+        y IN group_carrier G /\
+        group_element_order G y = group_element_order G x /\
+        (?g. g IN group_carrier G /\
+             group_conjugation G g y IN group_carrier(subgroup_generated G {x}))
+        ==> CARD {g | g IN group_carrier G /\
+                      group_conjugation G g y IN
+                      group_carrier(subgroup_generated G {x})} =
+            CARD(group_normalizer G
+                  (group_carrier(subgroup_generated G {x})))"
+   (REPEAT GEN_TAC THEN
+    DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC
+     (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC
+      (X_CHOOSE_THEN (← q r"g0:A") STRIP_ASSUME_TAC))))) THEN
+    ABBREV_TAC (← q r"C = group_carrier(subgroup_generated G {x:A})") THEN
+    ABBREV_TAC (← q r"N = group_normalizer G (C:A->bool)") THEN
+    SUBGOAL_THEN
+     (← q r"C SUBSET group_carrier G /\
+      !z:A. group_carrier(subgroup_generated G {z}) SUBSET group_carrier G")
+    STRIP_ASSUME_TAC THENL
+     [EXPAND_TAC "C" THEN REWRITE_TAC [GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"!g. g IN group_carrier G
+          ==> (group_conjugation G g y IN C <=>
+               IMAGE (group_conjugation G g)
+                     (group_carrier(subgroup_generated G {y:A})) = C)")
+    ASSUME_TAC THENL
+     [REPEAT STRIP_TAC THEN
+      ASM_SIMP_TAC [← GSYM GROUP_CONJUGATION_SUBGROUP_GENERATED_SING] THEN
+      EXPAND_TAC "C" THEN
+      ASM_SIMP_TAC [CYCLIC_SUBGROUP_GENERATED_EQ, GROUP_CONJUGATION,
+                    GROUP_ELEMENT_ORDER_CONJUGATION],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"group_carrier(subgroup_generated G {y:A}) =
+      IMAGE (group_conjugation G (group_inv G g0)) C")
+    ASSUME_TAC THENL
+     [CONV_TAC SYM_CONV THEN
+      ASM_SIMP_TAC [IMAGE_GROUP_CONJUGATION_BY_INV] THEN ASM_MESON_TAC [],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"(N:A->bool) SUBSET group_carrier G") ASSUME_TAC THENL
+     [EXPAND_TAC "N" THEN REWRITE_TAC [GROUP_NORMALIZER_SUBSET_CARRIER],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"{g | g IN group_carrier G /\ group_conjugation G g y IN C} =
+      right_coset G N (g0:A)")
+    SUBST1_TAC THENL
+     [GEN_REWRITE_TAC I [EXTENSION] THEN X_GEN_TAC (← q r"g:A") THEN
+      REWRITE_TAC [IN_ELIM_THM] THEN
+      ASM_CASES_TAC (← q r"(g:A) IN group_carrier G") THENL
+       [ASM_SIMP_TAC [IN_RIGHT_COSET] THEN
+        EXPAND_TAC "N" THEN REWRITE_TAC [GROUP_NORMALIZER_CONJUGATION_EQ] THEN
+        ASM_SIMP_TAC [IN_ELIM_THM, GROUP_MUL, GROUP_INV,
+                      ← SET_RULE (← q r"(s:A->bool) SUBSET u ==> u INTER s = s")] THEN
+        ASM_SIMP_TAC [IMAGE_GROUP_CONJUGATION_BY_MUL, GROUP_INV],
+        ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [RIGHT_COSET, SUBSET]],
+      ALL_TAC] THEN
+    MATCH_MP_TAC CARD_EQ_CARD_IMP THEN CONJ_TAC THENL
+     [EXPAND_TAC "N" THEN ASM_SIMP_TAC [FINITE_GROUP_NORMALIZER],
+      MATCH_MP_TAC CARD_EQ_RIGHT_COSET_SUBGROUP THEN
+      EXISTS_TAC (← q r"g0:A") THEN EXPAND_TAC "N" THEN
+      ASM_SIMP_TAC [GROUP_INV, SUBGROUP_GROUP_NORMALIZER]])
+
+  let CARD_CONJUGATES_INTO_CYCLIC_GENERATORS ← prove
+   r"!G x y:A.
+        FINITE(group_carrier G) /\ x IN group_carrier G /\ y IN group_carrier G
+        ==> CARD {g | g IN group_carrier G /\
+                      group_conjugation G g y IN
+                      {z | z IN group_carrier(subgroup_generated G {x}) /\
+                           group_element_order G z =
+                           group_element_order G x}} =
+            if ?g. g IN group_carrier G /\
+                   group_carrier(subgroup_generated G {y}) =
+                   IMAGE (group_conjugation G g)
+                         (group_carrier(subgroup_generated G {x}))
+            then CARD(group_normalizer G
+                       (group_carrier(subgroup_generated G {x})))
+            else 0"
+   (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [CARD_CONJUGATES_IN_ORDER] THEN
+    MP_TAC (← ISPECL [← q r"G:A group", ← q r"x:A", ← q r"y:A"] CYCLIC_SUBGROUP_CONJUGATE) THEN
+    ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN
+    ASM_CASES_TAC (← q r"group_element_order G (y:A) = group_element_order G x") THEN
+    ASM_REWRITE_TAC [] THEN COND_CASES_TAC THENL
+     [MATCH_MP_TAC CARD_CONJUGATES_INTO_CYCLIC THEN ASM_REWRITE_TAC [],
+      MATCH_MP_TAC (← MESON [CARD_CLAUSES] (← q r"(s:A->bool) = {} ==> CARD s = 0")) THEN
+      ASM SET_TAC []])
+
+  let CARD_CYCLIC_SUBGROUP_DIVISION ← prove
+   r"!G x:A.
+        FINITE(group_carrier G) /\ x IN group_carrier G
+        ==> CARD {y | y IN group_carrier G /\
+                      ?g. g IN group_carrier G /\
+                          group_carrier(subgroup_generated G {y}) =
+                          IMAGE (group_conjugation G g)
+                                (group_carrier(subgroup_generated G {x}))} *
+            CARD(group_normalizer G
+                  (group_carrier(subgroup_generated G {x}))) =
+            CARD(group_carrier G) *
+            CARD {y | y IN group_carrier(subgroup_generated G {x}) /\
+                      group_element_order G y = group_element_order G x}"
+   (REPEAT STRIP_TAC THEN
+    ABBREV_TAC (← q r"C = group_carrier(subgroup_generated G {x:A})") THEN
+    ABBREV_TAC (← q r"N = group_normalizer G (C:A->bool)") THEN
+    ABBREV_TAC
+     (← q r"gen = {y | y IN C /\
+                 group_element_order G y = group_element_order G (x:A)}") THEN
+    ABBREV_TAC
+     (← q r"D = {y | y IN group_carrier G /\
+               ?g. g IN group_carrier G /\
+                   group_carrier(subgroup_generated G {y}) =
+                   IMAGE (group_conjugation G g) (C:A->bool)}") THEN
+    SUBGOAL_THEN (← q r"C SUBSET group_carrier(G:A group)") ASSUME_TAC THENL
+     [EXPAND_TAC "C" THEN REWRITE_TAC [GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"(gen:A->bool) SUBSET C") ASSUME_TAC THENL
+     [EXPAND_TAC "gen" THEN REWRITE_TAC [SUBSET_RESTRICT], ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"(D:A->bool) SUBSET group_carrier G") ASSUME_TAC THENL
+     [EXPAND_TAC "D" THEN REWRITE_TAC [SUBSET_RESTRICT], ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"FINITE(D:A->bool) /\ FINITE(gen:A->bool)")
+    STRIP_ASSUME_TAC THENL
+     [CONJ_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
+      EXISTS_TAC (← q r"group_carrier G:A->bool") THEN ASM_REWRITE_TAC [] THEN
+      ASM_MESON_TAC [SUBSET_TRANS],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"!y. y IN group_carrier(G:A group)
+          ==> CARD {g | g IN group_carrier G /\
+                        group_conjugation G g y IN gen} =
+              if y IN D then CARD(N:A->bool) else 0")
+    ASSUME_TAC THENL
+     [X_GEN_TAC (← q r"y:A") THEN DISCH_TAC THEN
+      MP_TAC (← ISPECL [← q r"G:A group", ← q r"x:A", ← q r"y:A"]
+        CARD_CONJUGATES_INTO_CYCLIC_GENERATORS) THEN
+      ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN
+      EXPAND_TAC "D" THEN ASM_REWRITE_TAC [IN_ELIM_THM],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"nsum (group_carrier(G:A group))
+           (\y:A. CARD {g | g IN group_carrier G /\
+                            group_conjugation G g y IN gen}) =
+      CARD(D:A->bool) * CARD(N:A->bool)")
+    MP_TAC THENL
+     [TRANS_TAC EQ_TRANS
+       (← q r"nsum (group_carrier(G:A group))
+             (\y:A. if y IN D then CARD(N:A->bool) else 0)") THEN
+      CONJ_TAC THENL [MATCH_MP_TAC NSUM_EQ THEN ASM_SIMP_TAC [], ALL_TAC] THEN
+      REWRITE_TAC [← GSYM NSUM_RESTRICT_SET] THEN
+      SUBGOAL_THEN (← q r"{y:A | y IN group_carrier G /\ y IN D} = D") SUBST1_TAC THENL
+       [ASM SET_TAC [], ASM_SIMP_TAC [NSUM_CONST]],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"nsum (group_carrier(G:A group))
+           (\y:A. CARD {g | g IN group_carrier G /\
+                            group_conjugation G g y IN gen}) =
+      CARD(group_carrier G) * CARD(gen:A->bool)")
+    (fun th => REWRITE_TAC [th] THEN MESON_TAC []) THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"nsum (group_carrier(G:A group))
+           (\y:A. nsum (group_carrier(G:A group))
+                    (\g. if group_conjugation G g y IN gen then 1 else 0))") THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC NSUM_EQ THEN X_GEN_TAC (← q r"y:A") THEN DISCH_TAC THEN
+      REWRITE_TAC [] THEN
+      SIMP_TAC [CARD_EQ_NSUM, FINITE_RESTRICT,
+                ← ASSUME (← q r"FINITE(group_carrier(G:A group))")] THEN
+      REWRITE_TAC [NSUM_RESTRICT_SET],
+      ALL_TAC] THEN
+    wPart lhand (fun t => do lhand (← rand t)) NSUM_SWAP THEN
+    ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"nsum (group_carrier(G:A group)) (\g:A. CARD(gen:A->bool))") THEN
+    CONJ_TAC THENL [ALL_TAC, ASM_SIMP_TAC [NSUM_CONST]] THEN
+    MATCH_MP_TAC NSUM_EQ THEN X_GEN_TAC (← q r"g:A") THEN DISCH_TAC THEN
+    REWRITE_TAC [← GSYM NSUM_RESTRICT_SET] THEN
+    ASM_SIMP_TAC [← GSYM CARD_EQ_NSUM, FINITE_RESTRICT] THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"CARD(IMAGE (group_conjugation G g)
+                 {y:A | y IN group_carrier G /\
+                        group_conjugation G g y IN gen})") THEN
+    CONJ_TAC THENL
+     [CONV_TAC SYM_CONV THEN MATCH_MP_TAC CARD_IMAGE_INJ THEN
+      ASM_SIMP_TAC [FINITE_RESTRICT] THEN
+      REWRITE_TAC [IN_ELIM_THM] THEN ASM_MESON_TAC [GROUP_CONJUGATION_EQ],
+      AP_TERM_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN X_GEN_TAC (← q r"z:A") THEN
+      REWRITE_TAC [IN_IMAGE, IN_ELIM_THM] THEN EQ_TAC THENL
+       [STRIP_TAC THEN ASM_REWRITE_TAC [],
+        DISCH_TAC THEN EXISTS_TAC (← q r"group_conjugation G (group_inv G g) z:A") THEN
+        SUBGOAL_THEN (← q r"(z:A) IN group_carrier G") ASSUME_TAC THENL
+         [ASM SET_TAC [], ALL_TAC] THEN
+        ASM_SIMP_TAC [GROUP_CONJUGATION_RINV, GROUP_CONJUGATION, GROUP_INV]]])
+
   -- @@RETURN BEGIN
   return { ABELIAN_SIMPLE_GROUP, PRIME_ORDER_IMP_CYCLIC_GROUP,
            GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER, GROUP_POW_GROUP_ORDER,
            GROUP_ZPOW_REM_ORDER, GROUP_POW_MOD_ORDER, SUBGROUP_OF_FINITE_CYCLIC_GROUP,
            COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS, COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS_ALL,
            MAXIMAL_SUBGROUP_PRIME_INDEX, PRIME_INDEX_MAXIMAL_PROPER_SUBGROUP,
-           MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX, GROUP_ZPOW_CANCEL, GROUP_POW_CANCEL }
+           MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX, GROUP_ZPOW_CANCEL, GROUP_POW_CANCEL,
+           CYCLIC_SUBGROUP_TORSION_SUBGROUP, CARD_RESTRICT_POW_EQ_ID,
+           CARD_CONJUGATES_IN_TORSION, CARD_CONJUGATES_IN_ORDER,
+           CARD_CONJUGATES_IN_TORSION_NSUM, GROUP_CONJUGATION_SUBGROUP_GENERATED_SING,
+           CYCLIC_SUBGROUP_GENERATED_EQ, CYCLIC_SUBGROUP_CONJUGATE,
+           CARD_CONJUGATES_INTO_CYCLIC, CARD_CONJUGATES_INTO_CYCLIC_GENERATORS,
+           CARD_CYCLIC_SUBGROUP_DIVISION }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
@@ -16901,26 +17402,31 @@ def setupFinitelyGeneratedSubgroups [HolBase] (D : GroupTheoryDeps) (BBasics : B
 structure FinitelyGeneratedMaximal where
   -- @@FIELDS
   FINITELY_GENERATED_ABELIAN_SUBGROUP : thm
+  FINITELY_GENERATED_ABELIAN_GROUP_POW : thm
   MAXIMAL_SUBGROUP_EXISTS : thm
   MAXIMAL_NORMAL_SUBGROUP_EXISTS : thm
   deriving Inhabited
 
 @[nospecialize]
-def setupFinitelyGeneratedMaximal [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgroups : Subgroups) (BSubgroupGenerated : SubgroupGenerated) (BSubgroupGen2 : SubgroupGen2) (BNormalSubgroups : NormalSubgroups) (BFinitelyGenerated : FinitelyGenerated) (BFinitelyGeneratedSubgroups : FinitelyGeneratedSubgroups) :
+def setupFinitelyGeneratedMaximal [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : Derived) (BGroupProduct : GroupProduct) (BGroupProductMul : GroupProductMul) (BSubgroups : Subgroups) (BSubgroupGenerated : SubgroupGenerated) (BSubgroupGen2 : SubgroupGen2) (BNormalSubgroups : NormalSubgroups) (BFinitelyGenerated : FinitelyGenerated) (BFinitelyGeneratedSubgroups : FinitelyGeneratedSubgroups) :
     ExceptT String IO FinitelyGeneratedMaximal := do
   -- @@SCOPE BEGIN
   let { ASM_MESON_TAC, MESON_TAC, SET_RULE, SET_TAC, TAUT, .. } := D
-  let { CONJ_ASSOC, .. } := D.core1
+  let { COND_RAND, CONJ_ASSOC, .. } := D.core1
   let { EMPTY_SUBSET, .. } := D.core2
-  let { EXTENSION, FINITE_POWERSET_EQ, FINITE_SUBSET, .. } := D.core3
-  let { IN_UNIONS, .. } := D.core5
+  let { EXTENSION, FINITE_IMAGE, FINITE_POWERSET_EQ, FINITE_RESTRICT, FINITE_SUBSET,
+        FINITE_UNION, FUN_IN_IMAGE, .. } := D.core3
+  let { IN_IMAGE, IN_SING, IN_UNION, IN_UNIONS, .. } := D.core5
   let { LEFT_AND_EXISTS_THM, LEFT_IMP_EXISTS_THM, MEMBER_NOT_EMPTY, MONO_EXISTS,
         NOT_EXISTS_THM, NOT_IMP, .. } := D.core6
-  let { RIGHT_AND_EXISTS_THM, RIGHT_IMP_FORALL_THM, SUBSET_REFL, SUBSET_TRANS, WF,
-        WF_FINITE, ZL_SUBSETS_UNIONS_NONEMPTY, .. } := D.core7
-  let { trivial_group, .. } := BBasics
+  let { RIGHT_AND_EXISTS_THM, RIGHT_IMP_FORALL_THM, SING_SUBSET, SUBSET, SUBSET_REFL,
+        SUBSET_TRANS, WF, WF_FINITE, ZL_SUBSETS_UNIONS_NONEMPTY, .. } := D.core7
+  let { GROUP_INV, trivial_group, .. } := BBasics
+  let { GROUP_POW, GROUP_POW_0, GROUP_POW_1, GROUP_POW_ADD, .. } := BDerived
+  let { GROUP_SUM_EQ, GROUP_SUM_ID, GROUP_SUM_SING, GROUP_SUM_SUPERSET, .. } := BGroupProduct
+  let { ABELIAN_GROUP_SUM_MUL, .. } := BGroupProductMul
   let { SUBGROUP_OF_IMP_SUBSET, SUBGROUP_OF_UNIONS, TRIVIAL_SUBGROUP_OF, subgroup_of, .. } := BSubgroups
-  let { SUBGROUP_GENERATED_MINIMAL, .. } := BSubgroupGenerated
+  let { SUBGROUP_GENERATED_INDUCT_LEFT, SUBGROUP_GENERATED_MINIMAL, .. } := BSubgroupGenerated
   let { SUBGROUP_GENERATED_IDEMPOT, .. } := BSubgroupGen2
   let { NORMAL_SUBGROUP_OF_IMP_SUBSET, NORMAL_SUBGROUP_OF_UNIONS,
         TRIVIAL_NORMAL_SUBGROUP_OF, normal_subgroup_of, .. } := BNormalSubgroups
@@ -16939,6 +17445,50 @@ def setupFinitelyGeneratedMaximal [HolBase] (D : GroupTheoryDeps) (BBasics : Bas
           FINITELY_GENERATED_ABELIAN_SUBGROUP_EXPLICIT) THEN
     ASM_REWRITE_TAC [finitely_generated_group] THEN
     MESON_TAC [SUBGROUP_GENERATED_IDEMPOT, SUBSET_REFL])
+
+  let FINITELY_GENERATED_ABELIAN_GROUP_POW ← prove
+   r"!G:A group.
+        abelian_group G /\ finitely_generated_group G
+        ==> ?s. FINITE s /\ s SUBSET group_carrier G /\
+                !x. x IN group_carrier G
+                    ==> ?n. x = group_sum G s (\y. group_pow G y (n y))"
+   (GEN_TAC THEN REWRITE_TAC [FINITELY_GENERATED_GROUP] THEN
+    DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC
+     (X_CHOOSE_THEN (← q r"t:A->bool") STRIP_ASSUME_TAC)) THEN
+    SUBGOAL_THEN (← q r"?s. FINITE s /\ (!x:A. x IN s ==> x IN group_carrier G) /\
+                      !x:A. x IN t ==> x IN s /\ group_inv G x IN s")
+    (X_CHOOSE_THEN (← q r"s:A->bool") STRIP_ASSUME_TAC) THENL
+     [EXISTS_TAC (← q r"t UNION IMAGE (group_inv G) t:A->bool") THEN
+      ASM_SIMP_TAC [FINITE_UNION, FINITE_IMAGE, IN_UNION, FUN_IN_IMAGE] THEN
+      UNDISCH_TAC (← q r"(t:A->bool) SUBSET group_carrier G") THEN
+      REWRITE_TAC [SUBSET, IN_IMAGE] THEN MESON_TAC [GROUP_INV],
+      EXISTS_TAC (← q r"s:A->bool") THEN ASM_REWRITE_TAC [SUBSET]] THEN
+    ABBREV_TAC (← q r"P = \x:A. ?n. x = group_sum G s (\y. group_pow G y (n y))") THEN
+    SUBGOAL_THEN (← q r"!x y:A. P x /\ P y ==> P(group_mul G x y)") ASSUME_TAC THENL
+     [EXPAND_TAC "P" THEN REWRITE_TAC [] THEN REPEAT GEN_TAC THEN
+      DISCH_THEN (CONJUNCTS_THEN2 (X_CHOOSE_THEN (← q r"m:A->num") SUBST1_TAC)
+                                (X_CHOOSE_THEN (← q r"n:A->num") SUBST1_TAC)) THEN
+      EXISTS_TAC (← q r"\y:A. (m:A->num) y + n y") THEN REWRITE_TAC [] THEN
+      wPart lhand (fun t => do rand (← rand t)) ABELIAN_GROUP_SUM_MUL THEN
+      ASM_SIMP_TAC [FINITE_RESTRICT, GROUP_POW] THEN
+      DISCH_THEN (SUBST1_TAC o SYM) THEN
+      MATCH_MP_TAC GROUP_SUM_EQ THEN ASM_SIMP_TAC [GROUP_POW_ADD],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"!w:A. w IN s ==> P w") ASSUME_TAC THENL
+     [EXPAND_TAC "P" THEN X_GEN_TAC (← q r"w:A") THEN DISCH_TAC THEN
+      EXISTS_TAC (← q r"\y:A. if y = w then 1 else 0") THEN
+      REWRITE_TAC [COND_RAND, GROUP_POW_0] THEN
+      MP_TAC (← ISPECL [← q r"G:A group", ← q r"s:A->bool", ← q r"{w:A}",
+        ← q r"\y:A. if y = w then group_pow G y 1 else group_id G"]
+        GROUP_SUM_SUPERSET) THEN
+      ASM_SIMP_TAC [SING_SUBSET, IN_SING, GROUP_SUM_SING, GROUP_POW_1],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"!x:A. x IN group_carrier(subgroup_generated G t) ==> P x")
+    MP_TAC THENL
+     [MATCH_MP_TAC SUBGROUP_GENERATED_INDUCT_LEFT THEN ASM_SIMP_TAC [] THEN
+      EXPAND_TAC "P" THEN EXISTS_TAC (← q r"\y:A. 0") THEN
+      REWRITE_TAC [GROUP_POW_0, GROUP_SUM_ID],
+      ASM_REWRITE_TAC [] THEN EXPAND_TAC "P" THEN REWRITE_TAC []])
 
   let MAXIMAL_SUBGROUP_EXISTS ← prove
    r"!G:A group.
@@ -17073,8 +17623,8 @@ def setupFinitelyGeneratedMaximal [HolBase] (D : GroupTheoryDeps) (BBasics : Bas
     ASM_REWRITE_TAC [NOT_IMP] THEN ASM SET_TAC []))
 
   -- @@RETURN BEGIN
-  return { FINITELY_GENERATED_ABELIAN_SUBGROUP, MAXIMAL_SUBGROUP_EXISTS,
-           MAXIMAL_NORMAL_SUBGROUP_EXISTS }
+  return { FINITELY_GENERATED_ABELIAN_SUBGROUP, FINITELY_GENERATED_ABELIAN_GROUP_POW,
+           MAXIMAL_SUBGROUP_EXISTS, MAXIMAL_NORMAL_SUBGROUP_EXISTS }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
@@ -18889,6 +19439,7 @@ structure Sylow2 where
   SYLOW_THEOREM_CONJUGATE_ALT : thm
   SYLOW_THEOREM_CONJUGATE : thm
   SYLOW_THEOREM_CONJUGATE_EQ : thm
+  NORMAL_PGROUP_SUBSET_COPRIME_INDEX : thm
   SYLOW_THEOREM_PGROUP_SUPERSET : thm
   SYLOW_THEOREM_NORMAL_UNIQUE : thm
   SYLOW_THEOREM_COUNT_NORMALIZER : thm
@@ -18912,22 +19463,24 @@ def setupSylow2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BGroupRule :
         CARD_IMAGE_INJ, CARD_IMAGE_LE, CARD_SING, CARD_SUBSET_EQ, CARD_SUBSET_LE,
         CARD_UNIONS, CONG, .. } := D.core1
   let { DELETE_SUBSET, DE_MORGAN_THM, DIVIDES_DIVIDES_DIV, DIVIDES_LE, EQ_IMP,
-        EQ_TRANS, EXISTS_IN_GSPEC, EXISTS_IN_IMAGE, EXISTS_UNIQUE, EXISTS_UNIQUE_THM,
-        EXP_1, EXP_ADD, .. } := D.core2
+        EQ_MULT_RCANCEL, EQ_TRANS, EXISTS_IN_GSPEC, EXISTS_IN_IMAGE, EXISTS_UNIQUE,
+        EXISTS_UNIQUE_THM, EXP_1, EXP_ADD, .. } := D.core2
   let { EXTENSION, FINITE_DELETE, FINITE_DIFF, FINITE_IMAGE, FINITE_INTER,
         FINITE_SUBSET, FORALL_IN_IMAGE, FUN_EQ_THM, HAS_SIZE, .. } := D.core3
-  let { IMP_CONJ, INDEX_UNIQUE, INTER_SUBSET, .. } := D.core4
+  let { IMAGE_SUBSET, IMP_CONJ, INDEX_UNIQUE, INTER_SUBSET, .. } := D.core4
   let { IN_DELETE, IN_DIFF, IN_ELIM_THM, IN_SING, IN_UNIONS, .. } := D.core5
   let { LEFT_IMP_EXISTS_THM, LE_REFL, MONO_EXISTS, MULT_CLAUSES, NOT_EXISTS_THM,
         NSUM_CONST, NSUM_EQ, NSUM_IMAGE, PRIMEPOW_DIVIDES_INDEX, PRIME_1, PRIME_2,
         PRIME_ALT, .. } := D.core6
-  let { RIGHT_FORALL_IMP_THM, SIMPLE_IMAGE, SUBSET, SUBSET_TRANS, UNIONS_SUBSET, .. } := D.core7
+  let { RIGHT_FORALL_IMP_THM, SIMPLE_IMAGE, SUBSET, SUBSET_REFL, SUBSET_TRANS,
+        UNIONS_SUBSET, .. } := D.core7
   let { o_THM, prime, .. } := D.core8
-  let { GROUP_CARRIER_NONEMPTY, GROUP_INV, GROUP_MUL, .. } := BBasics
+  let { GROUP_CARRIER_NONEMPTY, GROUP_INV, GROUP_MUL, GROUP_MUL_LINV, .. } := BBasics
   let { GROUP_TAC, .. } := BGroupRule
-  let { GROUP_CONJUGATION_EQ, IN_IMAGE_GROUP_CONJUGATION, group_conjugation, .. } := BConjugation
+  let { GROUP_CONJUGATION_EQ, IMAGE_GROUP_CONJUGATION_BY_ID,
+        IMAGE_GROUP_CONJUGATION_BY_MUL, IN_IMAGE_GROUP_CONJUGATION, group_conjugation, .. } := BConjugation
   let { FINITE_RESTRICTED_SUBGROUPS, IN_SUBGROUP_ID, IN_SUBGROUP_INV,
-        SUBGROUP_OF_IMP_SUBSET, subgroup_of, .. } := BSubgroups
+        SUBGROUP_OF_IMP_NONEMPTY, SUBGROUP_OF_IMP_SUBSET, subgroup_of, .. } := BSubgroups
   let { CARRIER_SUBGROUP_GENERATED_SUBGROUP,
         SUBGROUP_OF_SUBGROUP_GENERATED_SUBGROUP_EQ, .. } := BSubgroupGen1
   let { GROUP_HOMOMORPHISM_CONJUGATION, SUBGROUP_OF_HOMOMORPHIC_IMAGE, .. } := BHomomorphisms2
@@ -18935,7 +19488,8 @@ def setupSylow2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BGroupRule :
   let { LEFT_COSET_AS_IMAGE, LEFT_COSET_EQ, LEFT_COSET_LEFT_COSET, .. } := BCosets
   let { GROUP_ACTION_LEFT_COSET_MULTIPLICATION, LAGRANGE_THEOREM,
         LAGRANGE_THEOREM_LEFT, SUBGROUP_INTER_CARD_DIVIDES, .. } := BCosets2
-  let { normal_subgroup_of, .. } := BNormalSubgroups
+  let { NORMAL_SUBGROUP_CONJUGATION_EQ, NORMAL_SUBGROUP_IMP_SUBGROUP,
+        normal_subgroup_of, .. } := BNormalSubgroups
   let { GROUP_CONJUGATE_IMP_CARD_EQ, group_conjugate, .. } := BConjugate
   let { FINITE_GROUP_NORMALIZER, GROUP_NORMALIZER_SUBSET,
         GROUP_NORMALIZER_SUBSET_CARRIER, NORMAL_SUBGROUP_NORMALIZER_EQ_CARRIER,
@@ -19048,6 +19602,50 @@ def setupSylow2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BGroupRule :
     FIRST_X_ASSUM (MP_TAC o MATCH_MP GROUP_CONJUGATE_IMP_CARD_EQ) THEN
     ONCE_REWRITE_TAC [CARD_EQ_SYM] THEN
     ASM_MESON_TAC [CARD_EQ_CARD_IMP, FINITE_SUBSET, SUBGROUP_OF_IMP_SUBSET])
+
+  let NORMAL_PGROUP_SUBSET_COPRIME_INDEX ← prove
+   r"!G n c p m j.
+        FINITE(group_carrier G) /\ prime p /\
+        n normal_subgroup_of G /\ CARD n = p EXP j /\
+        c subgroup_of G /\ CARD(group_carrier G) = m * CARD c /\
+        ~(p divides m)
+        ==> (n:A->bool) SUBSET c"
+   (REPEAT STRIP_TAC THEN
+    FIRST_ASSUM (ASSUME_TAC o MATCH_MP NORMAL_SUBGROUP_IMP_SUBGROUP) THEN
+    SUBGOAL_THEN (← q r"FINITE(c:A->bool) /\ FINITE(n:A->bool)") STRIP_ASSUME_TAC THENL
+     [CONJ_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
+      EXISTS_TAC (← q r"group_carrier G:A->bool") THEN
+      ASM_SIMP_TAC [SUBGROUP_OF_IMP_SUBSET],
+      ALL_TAC] THEN
+    MP_TAC (← ISPECL [← q r"G:A group", ← q r"p:num", ← q r"j:num", ← q r"c:A->bool", ← q r"n:A->bool"]
+      SYLOW_THEOREM_CONJUGATE_GEN) THEN
+    ANTS_TAC THENL
+     [ASM_REWRITE_TAC [] THEN CONJ_TAC THENL
+       [ASM_SIMP_TAC [SIMPLE_IMAGE, FINITE_IMAGE], ALL_TAC] THEN
+      SUBGOAL_THEN (← q r"~(CARD(c:A->bool) = 0)") ASSUME_TAC THENL
+       [ASM_MESON_TAC [CARD_EQ_0, SUBGROUP_OF_IMP_NONEMPTY], ALL_TAC] THEN
+      MP_TAC (← ISPECL [← q r"G:A group", ← q r"c:A->bool"] LAGRANGE_THEOREM_LEFT) THEN
+      ASM_REWRITE_TAC [EQ_MULT_RCANCEL] THEN
+      DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC [],
+      DISCH_THEN (X_CHOOSE_THEN (← q r"a:A") STRIP_ASSUME_TAC)] THEN
+    FIRST_ASSUM (MP_TAC o SPEC (← q r"group_inv G (a:A)") o CONJUNCT2 o
+      GEN_REWRITE_RULE I [NORMAL_SUBGROUP_CONJUGATION_EQ]) THEN
+    ASM_SIMP_TAC [GROUP_INV] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN
+    TRANS_TAC SUBSET_TRANS
+     (← q r"IMAGE (group_conjugation G (group_inv G a))
+            (IMAGE (group_conjugation G a) (c:A->bool))") THEN
+    CONJ_TAC THENL [ASM_SIMP_TAC [IMAGE_SUBSET], ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"IMAGE (group_conjugation G (group_inv G a))
+            (IMAGE (group_conjugation G a) (c:A->bool)) = c")
+    (fun th => REWRITE_TAC [th, SUBSET_REFL]) THEN
+    MP_TAC (← ISPECL [← q r"G:A group", ← q r"c:A->bool", ← q r"group_inv G (a:A)", ← q r"a:A"]
+      IMAGE_GROUP_CONJUGATION_BY_MUL) THEN
+    ANTS_TAC THENL
+     [ASM_SIMP_TAC [GROUP_INV, SUBGROUP_OF_IMP_SUBSET], ALL_TAC] THEN
+    DISCH_THEN (SUBST1_TAC o SYM) THEN
+    ASM_SIMP_TAC [GROUP_MUL_LINV, IMAGE_GROUP_CONJUGATION_BY_ID,
+                  SUBGROUP_OF_IMP_SUBSET])
 
   let SYLOW_THEOREM_PGROUP_SUPERSET ← prove
    r"!G p k (h:A->bool).
@@ -19404,12 +20002,12 @@ def setupSylow2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BGroupRule :
   -- @@RETURN BEGIN
   return { SYLOW_THEOREM_CONJUGATE_GEN, SYLOW_THEOREM_CONJUGATE_SUBSET,
            SYLOW_THEOREM_CONJUGATE_ALT, SYLOW_THEOREM_CONJUGATE,
-           SYLOW_THEOREM_CONJUGATE_EQ, SYLOW_THEOREM_PGROUP_SUPERSET,
-           SYLOW_THEOREM_NORMAL_UNIQUE, SYLOW_THEOREM_COUNT_NORMALIZER,
-           SYLOW_THEOREM_COUNT_NORMALIZER_MUL, SYLOW_THEOREM_NORMAL_UNIQUE_EQ,
-           SYLOW_THEOREM_UNIQUE, SYLOW_THEOREM_COUNT_DIVISOR,
-           SYLOW_SUBGROUP_COUNT_1_NORMAL, PRIME_3, GROUP_ORDER_6_NORMAL_SUBGROUP,
-           GROUP_ORDER_12_NORMAL_SUBGROUP }
+           SYLOW_THEOREM_CONJUGATE_EQ, NORMAL_PGROUP_SUBSET_COPRIME_INDEX,
+           SYLOW_THEOREM_PGROUP_SUPERSET, SYLOW_THEOREM_NORMAL_UNIQUE,
+           SYLOW_THEOREM_COUNT_NORMALIZER, SYLOW_THEOREM_COUNT_NORMALIZER_MUL,
+           SYLOW_THEOREM_NORMAL_UNIQUE_EQ, SYLOW_THEOREM_UNIQUE,
+           SYLOW_THEOREM_COUNT_DIVISOR, SYLOW_SUBGROUP_COUNT_1_NORMAL, PRIME_3,
+           GROUP_ORDER_6_NORMAL_SUBGROUP, GROUP_ORDER_12_NORMAL_SUBGROUP }
   -- @@RETURN END
 
 structure PGroupCentre where

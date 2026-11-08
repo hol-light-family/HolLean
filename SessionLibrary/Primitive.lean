@@ -220,6 +220,7 @@ def core3 : HolLibrary.Primitive.CoreThms3 where
   INT_POW := Session.INT_POW
   INT_POW_1 := Session.INT_POW_1
   INT_POW_ADD := Session.INT_POW_ADD
+  INT_POW_EQ_0 := Session.INT_POW_EQ_0
   INT_POW_MUL := Session.INT_POW_MUL
   INT_POW_NEG := Session.INT_POW_NEG
   INT_POW_POW := Session.INT_POW_POW
@@ -414,6 +415,8 @@ def deps : HolLibrary.Primitive.PrimitiveDeps where
   PRIME_CONV t := ExceptT.mk (SessionLibrary.Pocklington.PRIME_CONV t)
   EXPAND_CASES_CONV := Session.EXPAND_CASES_CONV
   COPRIME_CONV := SessionLibrary.Prime.COPRIME_CONV
+  TAUT t := ExceptT.mk (Session.TAUT t)
+  INT_REDUCE_CONV := Session.INT_REDUCE_CONV
   core1 := core1
   core2 := core2
   core3 := core3
@@ -551,6 +554,7 @@ def INT_OF_NUM_POWER_RESIDUE : thm := BQuadraticResidues.INT_OF_NUM_POWER_RESIDU
 def QUADRATIC_RESIDUE_MODULO_ODD_POWER : thm := BQuadraticResidues.QUADRATIC_RESIDUE_MODULO_ODD_POWER
 def QUADRATIC_RESIDUE_MODULO_POWER_2_STABLE : thm := BQuadraticResidues.QUADRATIC_RESIDUE_MODULO_POWER_2_STABLE
 def QUADRATIC_RESIDUE_MODULO_POWER_2 : thm := BQuadraticResidues.QUADRATIC_RESIDUE_MODULO_POWER_2
+def INT_QUADRATIC_RESIDUE_MODULO_POWER_2 : thm := BQuadraticResidues.INT_QUADRATIC_RESIDUE_MODULO_POWER_2
 
 -- EulerCriterion
 def GENERALIZED_EULER_CRITERION : thm := BEulerCriterion.GENERALIZED_EULER_CRITERION

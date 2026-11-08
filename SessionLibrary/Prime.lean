@@ -483,6 +483,7 @@ def INDEX_LT                     : thm := BIndex.INDEX_LT
 def INDEX_1                      : thm := BIndex.INDEX_1
 def INDEX_MUL                    : thm := BIndex.INDEX_MUL
 def INDEX_EXP                    : thm := BIndex.INDEX_EXP
+def INDEX_NPRODUCT : thm := BIndex.INDEX_NPRODUCT
 def INDEX_FACT                   : thm := BIndex.INDEX_FACT
 def INDEX_FACT_ALT               : thm := BIndex.INDEX_FACT_ALT
 def INDEX_FACT_UNBOUNDED         : thm := BIndex.INDEX_FACT_UNBOUNDED

@@ -50,7 +50,8 @@ structure QSessionThms where
    REAL_MUL_POS_LE REAL_OF_NUM_SUB_CASES REAL_POW_1_LE REAL_POW_LT2 REAL_POW_LT2_REV
    REAL_POW_POW REAL_POW_SUB REAL_SGN_0 REAL_SGN_ABS REAL_SGN_INV REAL_SGN_NEG
    REAL_SGN_POW REAL_SGN_POW_2 REAL_SGN_REAL_SGN REAL_SUB_RNEG SQRT_UNIQUE_GEN
-   SUC_INJ SUM_ADD_SPLIT : thm)
+   SUC_INJ SUM_ADD_SPLIT CROSS FORALL_INT_CASES HAS_SIZE_FUNSPACE NPRODUCT_CLAUSES
+   REAL_ZPOW_POW : thm)
   deriving Inhabited
 
 structure QFloorThms where
@@ -609,6 +610,8 @@ structure TSB where
   REAL_ABS_EXP : thm
   REAL_EXP_SUM : thm
   REAL_EXP_BOUND_LEMMA : thm
+  REAL_EXP_LE_INV_1_SUB : thm
+  REAL_INV_1_SUB_LE_EXP : thm
   deriving Inhabited
 
 set_option maxHeartbeats 32000000 in
@@ -644,14 +647,15 @@ def setupTSB [HolBase] (D : TranscendentalsDeps) (BTSA : TSA) : ExceptT String I
   let { INTER_UNIV, .. } := D.cn.cx.cvx.core2
   let { MONO_FORALL, MULT_CLAUSES, REAL_ADD_ASSOC, REAL_ADD_SYM, REAL_DIV_1,
         .. } := D.cn.cx.cvx.core3
-  let { REAL_LE_ADD, REAL_LE_ADDR, REAL_LE_ANTISYM, REAL_LE_DIV, REAL_LE_MUL,
-        REAL_LE_POW_2, REAL_LE_RDIV_EQ, REAL_LT_LE, REAL_LT_RDIV_EQ,
-        .. } := D.cn.cx.cvx.core4
+  let { REAL_LE_ADD, REAL_LE_ADDR, REAL_LE_ANTISYM, REAL_LE_DIV, REAL_LE_INV2,
+        REAL_LE_LDIV_EQ, REAL_LE_MUL, REAL_LE_POW_2, REAL_LE_RDIV_EQ, REAL_LE_TRANS,
+        REAL_LT_LE, REAL_LT_RDIV_EQ, .. } := D.cn.cx.cvx.core4
   let { REAL_MUL_LID, REAL_NOT_LT, REAL_OF_NUM_EQ, REAL_OF_NUM_LT, REAL_OF_NUM_MUL,
         REAL_OF_NUM_SUC, REAL_POS, REAL_POW_LE, REAL_SUB_LT, .. } := D.cn.cx.cvx.core5
   let { real_abs, real_pow, SUM_CLAUSES, SUM_CLAUSES_LEFT, SUM_CLAUSES_NUMSEG,
         .. } := D.cn.cx.cvx.core6
   let { EVENTUALLY_SEQUENTIALLY, TRIVIAL_LIMIT_SEQUENTIALLY, .. } := D.cn.cx.cvx.met
+  let { REAL_INV_INV, .. } := D.cn.ms.ig.dv.qsession
   let { sums, .. } := D.cn.ms.ig.dv.qtopology2
   let { EVEN_EXISTS, EVEN_OR_ODD, ODD_EXISTS, SUM_PAIR, SUM_POS_LE_NUMSEG,
         .. } := D.cn.ms.ig.dv.dg.qsession
@@ -935,6 +939,28 @@ def setupTSB [HolBase] (D : TranscendentalsDeps) (BTSA : TSA) : ExceptT String I
     REWRITE_TAC [← GSYM CX_EXP, COMPLEX_NORM_CX, RE_CX] THEN
     ASM_REAL_ARITH_TAC)
 
+  let REAL_EXP_LE_INV_1_SUB ← prove
+   r"!x. x < &1 ==> exp x <= inv(&1 - x)"
+   (REPEAT STRIP_TAC THEN
+    GEN_REWRITE_TAC LAND_CONV [← GSYM REAL_INV_INV] THEN
+    MATCH_MP_TAC REAL_LE_INV2 THEN CONJ_TAC THENL
+     [ASM_REAL_ARITH_TAC, ALL_TAC] THEN
+    REWRITE_TAC [← GSYM REAL_EXP_NEG] THEN
+    MP_TAC (← SPEC (← q r"--x:real") REAL_EXP_LE_X) THEN REAL_ARITH_TAC)
+
+  let REAL_INV_1_SUB_LE_EXP ← prove
+   r"!x. &0 <= x /\ x <= inv(&2) ==> inv(&1 - x) <= exp(x + &2 * x pow 2)"
+   (REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+    EXISTS_TAC (← q r"&1 + ((x:real) + &2 * x pow 2)") THEN
+    REWRITE_TAC [REAL_EXP_LE_X] THEN
+    ONCE_REWRITE_TAC [← REAL_ARITH (← q r"inv(y:real) = &1 / y")] THEN
+    SUBGOAL_THEN (← q r"&0 < &1 - (x:real)") ASSUME_TAC THENL
+     [ASM_REAL_ARITH_TAC, ASM_SIMP_TAC [REAL_LE_LDIV_EQ]] THEN
+    SUBGOAL_THEN (← q r"&0 <= (x:real) pow 2 * (&1 - &2 * x)") MP_TAC THENL
+     [MATCH_MP_TAC REAL_LE_MUL THEN REWRITE_TAC [REAL_LE_POW_2] THEN
+      ASM_REAL_ARITH_TAC,
+      REAL_ARITH_TAC])
+
   pure { ccos, csin, CSIN_0, CCOS_0, CSIN_CIRCLE, CSIN_ADD, CCOS_ADD, CSIN_NEG, CCOS_NEG,
          CSIN_DOUBLE, CCOS_DOUBLE, CSIN_SUB, CCOS_SUB, COMPLEX_MUL_CSIN_CSIN,
          COMPLEX_MUL_CSIN_CCOS, COMPLEX_MUL_CCOS_CSIN, COMPLEX_MUL_CCOS_CCOS,
@@ -944,7 +970,7 @@ def setupTSB [HolBase] (D : TranscendentalsDeps) (BTSA : TSA) : ExceptT String I
          REAL_EXP_NEG_MUL2, REAL_EXP_NEG, REAL_EXP_N, REAL_EXP_SUB, REAL_EXP_NZ,
          REAL_EXP_POS_LE, REAL_EXP_POS_LT, REAL_EXP_LE_X, REAL_EXP_LT_1,
          REAL_EXP_MONO_IMP, REAL_EXP_MONO_LT, REAL_EXP_MONO_LE, REAL_EXP_INJ,
-         REAL_EXP_EQ_1, REAL_ABS_EXP, REAL_EXP_SUM, REAL_EXP_BOUND_LEMMA }
+         REAL_EXP_EQ_1, REAL_ABS_EXP, REAL_EXP_SUM, REAL_EXP_BOUND_LEMMA, REAL_EXP_LE_INV_1_SUB, REAL_INV_1_SUB_LE_EXP }
 /- ------------------------------------------------------------------------- -/
 /- Real trig functions, their reality, derivatives of complex versions; a    -/
 /- slew of theorems for compatibility with the old transc.ml; real/imaginary -/
@@ -1413,6 +1439,7 @@ structure TSD where
   LOG_MONO_LE_IMP : thm
   LOG_MONO_LE_REV : thm
   LOG_POW : thm
+  LOG_ZPOW : thm
   LOG_LE_STRONG : thm
   LOG_LE : thm
   LOG_LT_X : thm
@@ -1446,6 +1473,7 @@ def setupTSD [HolBase] (D : TranscendentalsDeps) (BTSA : TSA) (BTSB : TSB) (BTSC
         IVT_INCREASING_RE, SIN_CIRCLE, SIN_DOUBLE, .. } := BTSC
   let { CLOSED_HALFSPACE_IM_EQ, CLOSED_HALFSPACE_RE_GE, .. } := D.kna
   let { has_complex_derivative, HAS_COMPLEX_DERIVATIVE_IMP_CONTINUOUS_AT, .. } := D.kne
+  let { FORALL_INT_CASES, REAL_ZPOW_POW, .. } := D.qsession
   let { COMPLEX_EQ, FORALL_COMPLEX, IM, RE, .. } := D.cn.cxa
   let { COMPLEX_MUL_LID, COMPLEX_MUL_LZERO, COMPLEX_SUB_RZERO, .. } := D.cn.cxb
   let { COMPLEX_NORM_CX, CX_INJ, CX_SUB, IM_CX, RE_CX, .. } := D.cn.cxc
@@ -1472,7 +1500,7 @@ def setupTSD [HolBase] (D : TranscendentalsDeps) (BTSA : TSA) (BTSB : TSB) (BTSC
   let { CLOSED_INTER, CLOSED_SING, .. } := D.cn.cx.cvx.top1
   let { DISTANCE_ATTAINS_INF, .. } := D.cn.cx.cvx.top3
   let { REAL_INV_INV, .. } := D.cn.ms.ig.dv.qsession
-  let { REAL_LT_TRANS, .. } := D.cn.ms.ig.dv.dg.qsession
+  let { int_neg_th, int_of_num_th, REAL_LT_TRANS, .. } := D.cn.ms.ig.dv.dg.qsession
   let { CONTINUOUS_CLOSED_PREIMAGE, .. } := D.cn.ms.ig.dv.dg.pt.qtop
   -- @@SCOPE END
 
@@ -1557,6 +1585,12 @@ def setupTSD [HolBase] (D : TranscendentalsDeps) (BTSA : TSA) (BTSB : TSB) (BTSC
    r"!n x. &0 < x ==> (log(x pow n) = &n * log(x))"
    (REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC [← GSYM REAL_EXP_INJ] THEN
     ASM_SIMP_TAC [REAL_EXP_N, EXP_LOG, REAL_POW_LT])
+
+  let LOG_ZPOW ← prove
+   r"!x n. &0 < x ==> log(x zpow n) = real_of_int n * log x"
+   (GEN_TAC THEN REWRITE_TAC [FORALL_INT_CASES, REAL_ZPOW_POW] THEN
+    SIMP_TAC [LOG_POW, LOG_INV, REAL_POW_LT, int_of_num_th, int_neg_th] THEN
+    REAL_ARITH_TAC)
 
   let LOG_LE_STRONG ← prove
    r"!x. &0 < &1 + x ==> log(&1 + x) <= x"
@@ -1708,7 +1742,7 @@ def setupTSD [HolBase] (D : TranscendentalsDeps) (BTSA : TSA) (BTSB : TSB) (BTSC
 
   pure { log_def, EXP_LOG, LOG_EXP, REAL_EXP_LOG, LOG_MUL, LOG_INJ, LOG_1, LOG_INV,
          LOG_DIV, LOG_MONO_LT, LOG_MONO_LT_IMP, LOG_MONO_LT_REV, LOG_MONO_LE,
-         LOG_MONO_LE_IMP, LOG_MONO_LE_REV, LOG_POW, LOG_LE_STRONG, LOG_LE, LOG_LT_X,
+         LOG_MONO_LE_IMP, LOG_MONO_LE_REV, LOG_POW, LOG_ZPOW, LOG_LE_STRONG, LOG_LE, LOG_LT_X,
          LOG_POS, LOG_POS_LT, LOG_PRODUCT, SIN_NEARZERO, SIN_NONTRIVIAL, COS_NONTRIVIAL,
          COS_DOUBLE_BOUND, COS_GOESNEGATIVE_LEMMA, COS_GOESNEGATIVE, COS_HASZERO,
          SIN_HASZERO, SIN_HASZERO_MINIMAL, pi, PI_WORKS }
@@ -5332,6 +5366,8 @@ structure TSO where
   CPOW_REAL_REAL : thm
   NORM_CPOW_REAL_MONO : thm
   CPOW_MUL_REAL : thm
+  CPOW_NUM_EXP : thm
+  CPOW_NPRODUCT : thm
   HAS_COMPLEX_DERIVATIVE_CPOW : thm
   HAS_COMPLEX_DERIVATIVE_CPOW_RIGHT : thm
   COMPLEX_DIFFERENTIABLE_CPOW_RIGHT : thm
@@ -5366,7 +5402,8 @@ def setupTSO [HolBase] (D : TranscendentalsDeps) (BTSA : TSA) (BTSB : TSB) (BTSC
   let { COMPLEX_DIFFERENTIABLE_CONST, .. } := D.kng
   let { HOLOMORPHIC_ON_COMPOSE, .. } := D.knh
   let { add_complex_differentiation_theorems, COMPLEX_DIFF_TAC, .. } := D.knk
-  let { complex_div, complex_sub, SIMPLE_COMPLEX_ARITH, .. } := D.cn.cxa
+  let { NPRODUCT_CLAUSES, .. } := D.qsession
+  let { complex_div, complex_pow, complex_sub, SIMPLE_COMPLEX_ARITH, .. } := D.cn.cxa
   let { COMPLEX_ADD_LDISTRIB, COMPLEX_ADD_RDISTRIB, COMPLEX_MUL_LID, COMPLEX_MUL_LNEG,
         COMPLEX_MUL_LZERO, COMPLEX_MUL_RZERO, COMPLEX_MUL_SYM, COMPLEX_SUB_LZERO,
         COMPLEX_SUB_RDISTRIB, .. } := D.cn.cxb
@@ -5375,14 +5412,17 @@ def setupTSO [HolBase] (D : TranscendentalsDeps) (BTSA : TSA) (BTSB : TSB) (BTSC
   let { COMPLEX_RING, .. } := D.cn.cxd
   let { COMPLEX_FIELD, COMPLEX_INV_0, RE_COMPLEX_INV_GT_0, .. } := D.cn.cxe
   let { COMPLEX_NORM_NZ, .. } := D.cn.cxf
-  let { REAL, .. } := D.cn.cxi
-  let { ASM_MESON_TAC, MESON, new_definition, parse_as_infix, REAL_ARITH, REAL_ARITH_TAC,
-        REAL_RAT_REDUCE_CONV, .. } := D.cn.cx.cvx
-  let { ARITH_EQ, CONJ_ASSOC, ETA_AX, FORALL_AND_THM, .. } := D.cn.cx.cvx.core1
+  let { REAL, REAL_CX, .. } := D.cn.cxi
+  let { CPRODUCT_CLAUSES, .. } := D.cn.cxk
+  let { ASM_MESON_TAC, INDUCT_TAC, MESON, new_definition, parse_as_infix, REAL_ARITH,
+        REAL_ARITH_TAC, REAL_RAT_REDUCE_CONV, .. } := D.cn.cx.cvx
+  let { ARITH_EQ, CONJ_ASSOC, ETA_AX, EXP, FINITE_INDUCT_STRONG, FORALL_AND_THM,
+        .. } := D.cn.cx.cvx.core1
   let { REAL_ADD_LID, REAL_ADD_RID, .. } := D.cn.cx.cvx.core3
   let { REAL_LE_RMUL_EQ, REAL_LT_IMP_NZ, REAL_LT_MUL, REAL_LT_REFL,
         .. } := D.cn.cx.cvx.core4
-  let { REAL_OF_NUM_EQ, .. } := D.cn.cx.cvx.core5
+  let { REAL_OF_NUM_EQ, REAL_OF_NUM_MUL, REAL_POS, RIGHT_FORALL_IMP_THM,
+        .. } := D.cn.cx.cvx.core5
   let { o_DEF, .. } := D.cn.cx.cvx.core6
   let { NORM_NEG, .. } := D.cn.cx.cvx.vec3
   let { dist, .. } := D.cn.cx.cvx.vec4
@@ -5478,6 +5518,23 @@ def setupTSO [HolBase] (D : TranscendentalsDeps) (BTSA : TSA) (BTSB : TSB) (BTSC
     REWRITE_TAC [← GSYM CEXP_ADD, ← GSYM COMPLEX_ADD_LDISTRIB] THEN
     ASM_SIMP_TAC [← GSYM CX_LOG, ← GSYM CX_ADD, ← GSYM CX_MUL, REAL_LT_MUL] THEN
     ASM_SIMP_TAC [LOG_MUL])
+
+  let CPOW_NUM_EXP ← prove
+   r"!b n z. Cx(&(b EXP n)) cpow z = (Cx(&b) cpow z) pow n"
+   (GEN_TAC THEN INDUCT_TAC THEN
+    ASM_REWRITE_TAC [EXP, complex_pow, CPOW_1] THEN
+    GEN_TAC THEN REWRITE_TAC [← GSYM REAL_OF_NUM_MUL, CX_MUL] THEN
+    ASM_SIMP_TAC [CPOW_MUL_REAL, REAL_CX, RE_CX, REAL_POS])
+
+  let CPOW_NPRODUCT ← prove
+   r"!s (f:A->num) z.
+        FINITE s
+        ==> Cx(&(nproduct s f)) cpow z = cproduct s (\i. Cx(&(f i)) cpow z)"
+   (REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+    SIMP_TAC [NPRODUCT_CLAUSES, CPRODUCT_CLAUSES, CPOW_1] THEN
+    REPEAT STRIP_TAC THEN REWRITE_TAC [← GSYM REAL_OF_NUM_MUL, CX_MUL] THEN
+    ASM_SIMP_TAC [CPOW_MUL_REAL, REAL_CX, RE_CX, REAL_POS])
 
   let HAS_COMPLEX_DERIVATIVE_CPOW ← prove
    r"!s z. (Im z = &0 ==> &0 < Re z)
@@ -5633,7 +5690,7 @@ def setupTSO [HolBase] (D : TranscendentalsDeps) (BTSA : TSA) (BTSB : TSB) (BTSC
 
   pure { cpow, CPOW_0, CPOW_N, CPOW_1, CPOW_ADD, CPOW_SUC, CPOW_NEG, CPOW_SUB,
          CEXP_MUL_CPOW, CPOW_EQ_0, NORM_CPOW_REAL, CPOW_REAL_REAL, NORM_CPOW_REAL_MONO,
-         CPOW_MUL_REAL, HAS_COMPLEX_DERIVATIVE_CPOW, HAS_COMPLEX_DERIVATIVE_CPOW_RIGHT,
+         CPOW_MUL_REAL, CPOW_NUM_EXP, CPOW_NPRODUCT, HAS_COMPLEX_DERIVATIVE_CPOW, HAS_COMPLEX_DERIVATIVE_CPOW_RIGHT,
          COMPLEX_DIFFERENTIABLE_CPOW_RIGHT, HOLOMORPHIC_ON_CPOW_RIGHT,
          CONTINUOUS_ON_CPOW_RIGHT, CLOG_MUL, CLOG_MUL_SIMPLE, CLOG_MUL_CX, CLOG_MUL_POS,
          CLOG_DIV_POS, CLOG_NEG, CLOG_MUL_II }
@@ -6211,7 +6268,8 @@ def setupTSR [HolBase] (D : TranscendentalsDeps) (BTSP : TSP) (BTSQ : TSQ) : Exc
   let { complex_mul, IM, RE, .. } := D.cn.cxa
   let { COMPLEX_SUB_RZERO, .. } := D.cn.cxb
   let { COMPLEX_NORM_CX, COMPLEX_POW_2, CX_ADD, CX_INV, CX_POW, .. } := D.cn.cxc
-  let { CONVEX_REAL, real, REAL, REAL_CX, .. } := D.cn.cxi
+  let { real, REAL, REAL_CX, .. } := D.cn.cxi
+  let { CONVEX_REAL, .. } := D.cn.cxm
   let { MESON_TAC, num_CONV, REAL_ARITH_TAC, REAL_RAT_REDUCE_CONV, .. } := D.cn.cx.cvx
   let { REAL_LE_SQUARE, real_sub, .. } := D.cn.cx.cpx
   let { IN, .. } := D.cn.cx.cvx.core2
@@ -8877,6 +8935,7 @@ structure TSAB where
   REAL_INV_RPOW : thm
   RPOW_DIV : thm
   RPOW_PRODUCT : thm
+  REAL_ZPOW_RPOW : thm
   RPOW_ADD : thm
   RPOW_SUB : thm
   RPOW_ADD_ALT : thm
@@ -8891,11 +8950,13 @@ structure TSAB where
   RPOW_LT_1 : thm
   RPOW_MONO_INV : thm
   RPOW_1_LE : thm
+  RPOW_ADD_LE : thm
   REAL_ROOT_RPOW : thm
   LOG_RPOW : thm
   LOG_SQRT : thm
   RPOW_ADD_INTEGER : thm
   NORM_CPOW : thm
+  CX_RPOW : thm
   REAL_MAX_RPOW : thm
   REAL_MIN_RPOW : thm
   deriving Inhabited
@@ -8909,28 +8970,29 @@ def setupTSAB [HolBase] (D : TranscendentalsDeps) (BTSB : TSB) (BTSD : TSD) (BTS
         REAL_EXP_N, REAL_EXP_NEG, REAL_EXP_NZ, REAL_EXP_POS_LT, .. } := BTSB
   let { EXP_LOG, LOG_1, LOG_EXP, LOG_INV, LOG_MONO_LT_IMP, LOG_MUL, LOG_POS, LOG_POS_LT,
         .. } := BTSD
-  let { NORM_CPOW_REAL, .. } := BTSO
+  let { CPOW_REAL_REAL, NORM_CPOW_REAL, .. } := BTSO
   let { ROOT_0, ROOT_EXP_LOG, ROOT_UNIQUE, .. } := BTSAA
-  let { ARITH_ODD, is_int, ODD, ODD_MULT, REAL_EQ_INV2, REAL_INV_1_LE,
-        REAL_OF_NUM_SUB_CASES, REAL_POW_SUB, .. } := D.qsession
+  let { ARITH_ODD, FORALL_INT_CASES, is_int, ODD, ODD_MULT, REAL_EQ_INV2, REAL_INV_1_LE,
+        REAL_OF_NUM_SUB_CASES, REAL_POW_SUB, REAL_ZPOW_POW, .. } := D.qsession
   let { RE_CX, .. } := D.cn.cxc
   let { COMPLEX_NORM_NZ, .. } := D.cn.cxf
+  let { REAL_CX, .. } := D.cn.cxi
   let { REAL_NORM, .. } := D.cn.cxj
   let { REAL_POW_ZERO, .. } := D.cn.ms.qsession
-  let { ARITH_RULE, ASM_MESON_TAC, ASM_REAL_ARITH_TAC, MESON_TAC, new_definition,
-        parse_as_infix, REAL_ARITH, REAL_ARITH_TAC, REAL_FIELD, REAL_RAT_REDUCE_CONV,
-        REAL_RING, .. } := D.cn.cx.cvx
+  let { ARITH_RULE, ASM_MESON_TAC, ASM_REAL_ARITH_TAC, INDUCT_TAC, MESON_TAC,
+        new_definition, parse_as_infix, REAL_ARITH, REAL_ARITH_TAC, REAL_FIELD,
+        REAL_RAT_REDUCE_CONV, REAL_RING, .. } := D.cn.cx.cvx
   let { PRODUCT_CLAUSES, REAL_ABS_ZERO, REAL_POW_1, REAL_POW_ADD, real_sub,
         .. } := D.cn.cx.cpx
   let { ARITH, COND_ID, FINITE_INDUCT_STRONG, .. } := D.cn.cx.cvx.core1
   let { IMP_CONJ, .. } := D.cn.cx.cvx.core2
   let { LEFT_IMP_EXISTS_THM, REAL_ABS_INV, REAL_ABS_NEG, REAL_ABS_NUM, REAL_ADD_LDISTRIB,
-        REAL_ADD_LID, REAL_ADD_RDISTRIB, REAL_DIV_1, .. } := D.cn.cx.cvx.core3
+        REAL_ADD_LID, REAL_ADD_RDISTRIB, REAL_ADD_RID, REAL_DIV_1, .. } := D.cn.cx.cvx.core3
   let { REAL_ENTIRE, REAL_EQ_NEG2, REAL_INV_0, REAL_INV_1, REAL_INV_1_LT, REAL_INV_EQ_0,
-        REAL_INV_MUL, REAL_INV_NEG, REAL_LE_ANTISYM, REAL_LE_INV2, REAL_LE_LT,
-        REAL_LE_REFL, REAL_LE_RMUL, REAL_LE_TRANS, REAL_LT_01, REAL_LT_IMP_LE,
-        REAL_LT_IMP_NE, REAL_LT_IMP_NZ, REAL_LT_INV_EQ, REAL_LT_LE, REAL_LT_LMUL_EQ,
-        REAL_LT_MUL, REAL_LT_REFL, .. } := D.cn.cx.cvx.core4
+        REAL_INV_MUL, REAL_INV_NEG, REAL_LE_ANTISYM, REAL_LE_INV2, REAL_LE_LDIV_EQ,
+        REAL_LE_LT, REAL_LE_RDIV_EQ, REAL_LE_REFL, REAL_LE_RMUL, REAL_LE_TRANS, REAL_LT_01,
+        REAL_LT_DIV, REAL_LT_IMP_LE, REAL_LT_IMP_NE, REAL_LT_IMP_NZ, REAL_LT_INV_EQ,
+        REAL_LT_LE, REAL_LT_LMUL_EQ, REAL_LT_MUL, REAL_LT_REFL, .. } := D.cn.cx.cvx.core4
   let { REAL_MUL_AC, REAL_MUL_LID, REAL_MUL_LNEG, REAL_MUL_LZERO, REAL_MUL_RNEG,
         REAL_MUL_RZERO, REAL_NEG_0, REAL_NEG_ADD, REAL_NEG_EQ_0, REAL_NEG_NEG, REAL_NOT_LE,
         REAL_NOT_LT, REAL_OF_NUM_ADD, REAL_OF_NUM_EQ, REAL_OF_NUM_MUL, REAL_POS,
@@ -9105,6 +9167,16 @@ def setupTSAB [HolBase] (D : TranscendentalsDeps) (BTSB : TSB) (BTSD : TSD) (BTS
     MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
     ASM_SIMP_TAC [PRODUCT_CLAUSES, RPOW_MUL, RPOW_ONE])
 
+  let REAL_ZPOW_RPOW ← prove
+   r"!x n y. &0 < x ==> (x zpow n) rpow y = (x rpow y) zpow n"
+   (REPEAT GEN_TAC THEN DISCH_TAC THEN
+    SUBGOAL_THEN (← q r"!m. (x pow m) rpow y = (x rpow y) pow m") ASSUME_TAC THENL
+     [INDUCT_TAC THEN ASM_REWRITE_TAC [real_pow, RPOW_ONE, RPOW_MUL],
+      ALL_TAC] THEN
+    SPEC_TAC ((← q r"n:int"), (← q r"n:int")) THEN
+    REWRITE_TAC [FORALL_INT_CASES, REAL_ZPOW_POW] THEN
+    ASM_REWRITE_TAC [RPOW_INV])
+
   let RPOW_ADD ← prove
    r"!x y z. &0 < x ==> x rpow (y + z) = x rpow y * x rpow z"
    (REPEAT STRIP_TAC THEN
@@ -9197,6 +9269,39 @@ def setupTSAB [HolBase] (D : TranscendentalsDeps) (BTSB : TSB) (BTSD : TSD) (BTS
      [MATCH_MP_TAC RPOW_LE2 THEN ASM_REAL_ARITH_TAC,
       REWRITE_TAC [RPOW_ONE, REAL_LE_REFL]])
 
+  let RPOW_ADD_LE ← prove
+   r"!x y s. &0 <= x /\ &0 <= y /\ &0 < s /\ s <= &1
+           ==> (x + y) rpow s <= x rpow s + y rpow s"
+   (REPEAT STRIP_TAC THEN
+    ASM_CASES_TAC (← q r"(x:real) = &0") THENL
+     [ASM_SIMP_TAC [REAL_ADD_LID, RPOW_ZERO, REAL_LT_IMP_NZ, REAL_LE_REFL],
+      ALL_TAC] THEN
+    ASM_CASES_TAC (← q r"(y:real) = &0") THENL
+     [ASM_SIMP_TAC [REAL_ADD_RID, RPOW_ZERO, REAL_LT_IMP_NZ, REAL_LE_REFL],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"&0 < (x:real) /\ &0 < y /\ &0 < x + y") STRIP_ASSUME_TAC THENL
+     [ASM_REAL_ARITH_TAC, ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"!t. &0 < t /\ t <= &1 ==> t <= t rpow s") ASSUME_TAC THENL
+     [REPEAT STRIP_TAC THEN
+      MP_TAC (← ISPECL [(← q r"(&1:real)"), (← q r"s:real"), (← q r"t:real")] RPOW_MONO_INV) THEN
+      ASM_REWRITE_TAC [RPOW_POW, REAL_POW_1],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"x / (x + y) <= (x / (x + y)) rpow s /\ y / (x + y) <= (y / (x + y)) rpow s")
+    STRIP_ASSUME_TAC THENL
+     [CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+      ASM_SIMP_TAC [REAL_LT_DIV, REAL_LE_LDIV_EQ] THEN ASM_REAL_ARITH_TAC,
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"&0 < (x + y) rpow s") ASSUME_TAC THENL
+     [ASM_SIMP_TAC [RPOW_POS_LT], ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"&1 <= (x rpow s + y rpow s) / (x + y) rpow s") MP_TAC THENL
+     [REWRITE_TAC [real_div, REAL_ADD_RDISTRIB] THEN
+      REWRITE_TAC [← GSYM real_div, ← GSYM RPOW_DIV] THEN
+      SUBGOAL_THEN (← q r"x / (x + y) + y / (x + y) = &1") MP_TAC THENL
+       [UNDISCH_TAC (← q r"&0 < (x:real) + y") THEN CONV_TAC REAL_FIELD, ALL_TAC] THEN
+      ASM_REAL_ARITH_TAC,
+      ASM_SIMP_TAC [REAL_LE_RDIV_EQ, REAL_MUL_LID]])
+
   let REAL_ROOT_RPOW ← prove
    r"!n x. ~(n = 0) /\ (&0 <= x \/ ODD n) ==> root n x = x rpow (inv(&n))"
    (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"x = &0") THEN
@@ -9251,6 +9356,10 @@ def setupTSAB [HolBase] (D : TranscendentalsDeps) (BTSB : TSB) (BTSD : TSD) (BTS
     ASM_CASES_TAC (← q r"w = Cx(&0)") THEN ASM_REWRITE_TAC [RE_CX, REAL_LT_REFL] THEN
     SIMP_TAC [REAL_NORM, real_abs, REAL_LT_IMP_LE])
 
+  let CX_RPOW ← prove
+   r"!x y. &0 < x ==> Cx(x rpow y) = Cx x cpow Cx y"
+   (SIMP_TAC [rpow, CPOW_REAL_REAL, REAL_CX, RE_CX])
+
   let REAL_MAX_RPOW ← prove
    r"!x y z. &0 <= x /\ &0 <= y /\ &0 <= z
            ==> max (x rpow z) (y rpow z) = (max x y) rpow z"
@@ -9267,11 +9376,11 @@ def setupTSAB [HolBase] (D : TranscendentalsDeps) (BTSB : TSB) (BTSD : TSD) (BTS
 
   pure { rpow, RPOW_POW, RPOW_0, RPOW_NEG, RPOW_ZERO, RPOW_POS_LT, RPOW_POS_LE, RPOW_LT2,
          RPOW_LE2, REAL_ABS_RPOW, RPOW_ONE, RPOW_RPOW, RPOW_LNEG, RPOW_EQ_0, RPOW_MUL,
-         RPOW_INV, REAL_INV_RPOW, RPOW_DIV, RPOW_PRODUCT, RPOW_ADD, RPOW_SUB,
+         RPOW_INV, REAL_INV_RPOW, RPOW_DIV, RPOW_PRODUCT, REAL_ZPOW_RPOW, RPOW_ADD, RPOW_SUB,
          RPOW_ADD_ALT, RPOW_SUB_ALT, RPOW_SQRT, RPOW_MONO_LE, RPOW_MONO_LT,
          RPOW_MONO_LE_EQ, RPOW_MONO_LT_EQ, RPOW_INJ, RPOW_LE_1, RPOW_LT_1,
-         RPOW_MONO_INV, RPOW_1_LE, REAL_ROOT_RPOW, LOG_RPOW, LOG_SQRT,
-         RPOW_ADD_INTEGER, NORM_CPOW, REAL_MAX_RPOW, REAL_MIN_RPOW }
+         RPOW_MONO_INV, RPOW_1_LE, RPOW_ADD_LE, REAL_ROOT_RPOW, LOG_RPOW, LOG_SQRT,
+         RPOW_ADD_INTEGER, NORM_CPOW, CX_RPOW, REAL_MAX_RPOW, REAL_MIN_RPOW }
 /- ------------------------------------------------------------------------- -/
 /- Summability of zeta function series.                                      -/
 /- (transcendentals.ml 6913-7005)                                           -/
@@ -9280,6 +9389,8 @@ def setupTSAB [HolBase] (D : TranscendentalsDeps) (BTSB : TSB) (BTSD : TSD) (BTS
 structure TSAC where
   SUMMABLE_ZETA : thm
   SUMMABLE_ZETA_INTEGER : thm
+  LIM_CPRODUCT : thm
+  CPRODUCT_VSUM_POW : thm
   deriving Inhabited
 
 set_option maxHeartbeats 64000000 in
@@ -9290,37 +9401,43 @@ def setupTSAC [HolBase] (D : TranscendentalsDeps) (BTSO : TSO) (BTSAB : TSAB) : 
   let { CPOW_N, NORM_CPOW_REAL, .. } := BTSO
   let { REAL_INV_RPOW, rpow, RPOW_0, RPOW_ADD, RPOW_INV, RPOW_LE2, RPOW_LE_1, RPOW_LT_1,
         RPOW_MONO_LE, RPOW_NEG, RPOW_POS_LE, RPOW_POS_LT, RPOW_POW, RPOW_RPOW, .. } := BTSAB
-  let { SERIES_CX_LIFT, .. } := D.knb
+  let { LIM_COMPLEX_MUL, SERIES_CX_LIFT, .. } := D.knb
   let { SERIES_ABSCONV_IMP_CONV, .. } := D.knm
   let { SUMMABLE_EQ, SUMMABLE_FROM_ELSEWHERE, .. } := D.qtopology
-  let { LT_POW2_REFL, SUM_ADD_SPLIT, .. } := D.qsession
+  let { CROSS, HAS_SIZE_FUNSPACE, LT_POW2_REFL, SUM_ADD_SPLIT, .. } := D.qsession
   let { IN_FROM, .. } := D.qmisc
   let { CX_INJ, RE_CX, .. } := D.cn.cxc
   let { COMPLEX_NORM_INV, .. } := D.cn.cxf
-  let { REAL_CX, .. } := D.cn.cxi
+  let { REAL_CX, VSUM_COMPLEX_LMUL, VSUM_COMPLEX_RMUL, .. } := D.cn.cxi
+  let { CPRODUCT_CLAUSES, CPRODUCT_EQ, .. } := D.cn.cxk
   let { summable, .. } := D.cn.qtopology
   let { FROM_INTER_NUMSEG, .. } := D.cn.ms.qmisc
   let { MULT_2, SUM_SING_NUMSEG, .. } := D.cn.ms.qsession
-  let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, ASM_REAL_ARITH_TAC, INDUCT_TAC, MESON,
-        REAL_ARITH, .. } := D.cn.cx.cvx
-  let { LE_0, .. } := D.cn.cx.cpx
+  let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, ASM_MESON_TAC, ASM_REAL_ARITH_TAC,
+        INDUCT_TAC, MESON, REAL_ARITH, .. } := D.cn.cx.cvx
+  let { LE_0, VSUM_VSUM_PRODUCT, .. } := D.cn.cx.cpx
   let { CONVERGENT_BOUNDED_MONOTONE, SUM_GP, .. } := D.cn.ms.ig.qmisc
-  let { SUM_CONST_NUMSEG, .. } := D.cn.ms.ig.qsession
+  let { FINITE_CROSS, IN_CROSS, SUM_CONST_NUMSEG, .. } := D.cn.ms.ig.qsession
   let { DIST_REAL, VSUM_REAL, .. } := D.cn.ms.ig.qvec
-  let { ARITH, EXP, FINITE_NUMSEG, .. } := D.cn.cx.cvx.core1
-  let { IMP_CONJ, .. } := D.cn.cx.cvx.core2
-  let { LE_1, LE_REFL, LT_IMP_LE, REAL_DIV_1, .. } := D.cn.cx.cvx.core3
+  let { ARITH, CARD_NUMSEG, EQ_TRANS, EXISTS_PAIR_THM, EXP, EXTENSION,
+        FINITE_INDUCT_STRONG, FINITE_NUMSEG, .. } := D.cn.cx.cvx.core1
+  let { FORALL_PAIR_THM, FUN_EQ_THM, HAS_SIZE, IMP_CONJ, IN_ELIM_PAIR_THM,
+        .. } := D.cn.cx.cvx.core2
+  let { IN_ELIM_THM, IN_IMAGE, IN_INSERT, IN_NUMSEG, IN_SING, LE_1, LE_REFL,
+        LEFT_IMP_EXISTS_THM, LT_IMP_LE, NOT_IN_EMPTY, PAIR_EQ, REAL_DIV_1,
+        .. } := D.cn.cx.cvx.core3
   let { REAL_INV_LE_1, REAL_INV_LT_1, REAL_INV_POW, REAL_LE_ADD2, REAL_LE_DIV,
         REAL_LE_INV2, REAL_LE_INV_EQ, REAL_LE_LMUL, REAL_LE_RMUL, REAL_LE_TRANS,
         .. } := D.cn.cx.cvx.core4
   let { REAL_MUL_LID, REAL_MUL_LZERO, REAL_MUL_SYM, REAL_NOT_LE, REAL_OF_NUM_EQ,
         REAL_OF_NUM_LE, REAL_OF_NUM_LT, REAL_OF_NUM_POW, REAL_OF_NUM_SUC, REAL_POS,
-        REAL_POW_2, REAL_POW_LE, REAL_POW_LT, REAL_SUB_LE, .. } := D.cn.cx.cvx.core5
+        REAL_POW_2, REAL_POW_LE, REAL_POW_LT, REAL_SUB_LE, RIGHT_FORALL_IMP_THM,
+        .. } := D.cn.cx.cvx.core5
   let { o_DEF, real_abs, real_div, real_pow, SUM_CLAUSES_NUMSEG, SUM_LE_NUMSEG, SUM_LMUL,
         SUM_SUBSET_SIMPLE, .. } := D.cn.cx.cvx.core6
   let { LIFT_DROP, .. } := D.cn.cx.cvx.vec2
-  let { drop, .. } := D.cn.cx.cvx.vec4
-  let { LIM_SEQUENTIALLY, .. } := D.cn.cx.cvx.top4
+  let { drop, VSUM_EQ, VSUM_IMAGE, VSUM_SING, .. } := D.cn.cx.cvx.vec4
+  let { LIM_CONST, LIM_SEQUENTIALLY, .. } := D.cn.cx.cvx.top4
   let { sums, .. } := D.cn.ms.ig.dv.qtopology2
   let { LT, SUBSET_NUMSEG, SUM_POS_LE_NUMSEG, .. } := D.cn.ms.ig.dv.dg.qsession
   -- @@SCOPE END
@@ -9414,7 +9531,106 @@ def setupTSAC [HolBase] (D : TranscendentalsDeps) (BTSO : TSO) (BTSAB : TSAB) : 
     MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] SUMMABLE_EQ) THEN
     SIMP_TAC [IN_FROM, CPOW_N, CX_INJ, REAL_OF_NUM_EQ, LE_1])
 
-  pure { SUMMABLE_ZETA, SUMMABLE_ZETA_INTEGER }
+  /- ---------------------------------------------------------------------- -/
+  /- Finite products: limits, and the expansion of a product of truncated   -/
+  /- geometric series (the finite form of an Euler product).                -/
+  /- ---------------------------------------------------------------------- -/
+
+  let LIM_CPRODUCT ← prove
+   r"!net (f:A->B->complex) l s.
+        FINITE s /\ (!i. i IN s ==> ((\x. f i x) --> l i) net)
+        ==> ((\x. cproduct s (\i. f i x)) --> cproduct s l) net"
+   (GEN_TAC THEN GEN_TAC THEN GEN_TAC THEN
+    REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+    SIMP_TAC [CPRODUCT_CLAUSES, LIM_CONST, IN_INSERT] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_COMPLEX_MUL THEN
+    ASM_SIMP_TAC [])
+
+  let CPRODUCT_VSUM_POW ← prove
+   r"!s (x:A->complex) E.
+        FINITE s
+        ==> cproduct s (\i. vsum(0..E) (\j. x i pow j)) =
+            vsum {e | (!i. i IN s ==> e i <= E) /\
+                      (!i. ~(i IN s) ==> e i = 0)}
+                 (\e. cproduct s (\i. x i pow (e i)))"
+   (← do
+    let cross_lemma ← prove
+     r"!s t (f:num->complex) (g:(A->num)->complex).
+          FINITE s /\ FINITE t
+          ==> vsum (s CROSS t) (\z. f(FST z) * g(SND z)) =
+              vsum s f * vsum t g"
+     (REPEAT STRIP_TAC THEN
+      ASM_SIMP_TAC [← GSYM VSUM_COMPLEX_RMUL] THEN
+      ASM_SIMP_TAC [← GSYM VSUM_COMPLEX_LMUL] THEN
+      W (MP_TAC o PART_MATCH (lhand o rand) VSUM_VSUM_PRODUCT o rand o snd) THEN
+      ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN
+      REWRITE_TAC [CROSS] THEN MATCH_MP_TAC VSUM_EQ THEN
+      REWRITE_TAC [FORALL_PAIR_THM, IN_ELIM_PAIR_THM])
+    pure (REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN CONJ_TAC THENL
+     [REPEAT GEN_TAC THEN REWRITE_TAC [CPRODUCT_CLAUSES, NOT_IN_EMPTY] THEN
+      SUBGOAL_THEN (← q r"{e:A->num | !i. e i = 0} = {\i. 0}") SUBST1_TAC THENL
+       [REWRITE_TAC [EXTENSION, IN_SING] THEN
+        REWRITE_TAC [IN_ELIM_THM, FUN_EQ_THM],
+        ALL_TAC] THEN
+      REWRITE_TAC [VSUM_SING, CPRODUCT_CLAUSES],
+      ALL_TAC] THEN
+    MAP_EVERY X_GEN_TAC [(← q r"a:A"), (← q r"t:A->bool")] THEN STRIP_TAC THEN
+    MAP_EVERY X_GEN_TAC [(← q r"x:A->complex"), (← q r"E:num")] THEN
+    ASM_SIMP_TAC [CPRODUCT_CLAUSES] THEN
+    ABBREV_TAC
+     (← q r"Ft = {e | (!i. i IN t ==> e i <= E) /\ (!i:A. ~(i IN t) ==> e i = 0)}") THEN
+    SUBGOAL_THEN (← q r"FINITE(Ft:(A->num)->bool)") ASSUME_TAC THENL
+     [EXPAND_TAC "Ft" THEN
+      MP_TAC (← ISPECL [(← q "0"), (← q "E + 1"), (← q "0..E"), (← q r"CARD(t:A->bool)"),
+                        (← q r"t:A->bool")]
+        HAS_SIZE_FUNSPACE) THEN
+      ASM_REWRITE_TAC [HAS_SIZE, CARD_NUMSEG, FINITE_NUMSEG, IN_NUMSEG, LE_0] THEN
+      ANTS_TAC THENL [ARITH_TAC, SIMP_TAC []],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"{e | (!i. i IN a INSERT t ==> e i <= E) /\
+         (!i:A. ~(i IN a INSERT t) ==> e i = 0)} =
+    IMAGE (\(j,e) i. if i = a then j else e i) ((0..E) CROSS Ft)")
+    SUBST1_TAC THENL
+     [EXPAND_TAC "Ft" THEN
+      REWRITE_TAC [EXTENSION, IN_ELIM_THM, IN_IMAGE, EXISTS_PAIR_THM, IN_CROSS,
+                   IN_NUMSEG, LE_0, IN_INSERT] THEN
+      X_GEN_TAC (← q r"e:A->num") THEN EQ_TAC THENL
+       [STRIP_TAC THEN
+        MAP_EVERY EXISTS_TAC
+          [(← q r"(e:A->num) a"), (← q r"\i. if i = a then 0 else (e:A->num) i")] THEN
+        REWRITE_TAC [FUN_EQ_THM] THEN ASM_MESON_TAC [],
+        REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
+        MAP_EVERY X_GEN_TAC [(← q r"j:num"), (← q r"f:A->num")] THEN STRIP_TAC THEN
+        ASM_REWRITE_TAC [] THEN ASM_MESON_TAC []],
+      ALL_TAC] THEN
+    W (MP_TAC o PART_MATCH (lhand o rand) VSUM_IMAGE o rand o snd) THEN
+    ANTS_TAC THENL
+     [ASM_SIMP_TAC [FINITE_CROSS, FINITE_NUMSEG] THEN
+      REWRITE_TAC [FORALL_PAIR_THM, IN_CROSS] THEN
+      MAP_EVERY X_GEN_TAC [(← q r"j1:num"), (← q r"f1:A->num"), (← q r"j2:num"), (← q r"f2:A->num")] THEN
+      EXPAND_TAC "Ft" THEN REWRITE_TAC [IN_ELIM_THM, PAIR_EQ, FUN_EQ_THM] THEN
+      STRIP_TAC THEN CONJ_TAC THENL
+       [FIRST_X_ASSUM (MP_TAC o SPEC (← q r"a:A")) THEN REWRITE_TAC [],
+        X_GEN_TAC (← q r"i:A") THEN FIRST_X_ASSUM (MP_TAC o SPEC (← q r"i:A")) THEN
+        ASM_CASES_TAC (← q r"i:A = a") THEN ASM_SIMP_TAC []],
+      DISCH_THEN SUBST1_TAC] THEN
+    TRANS_TAC EQ_TRANS
+     (← q r"vsum ((0..E) CROSS Ft)
+        (\z. (x:A->complex) a pow (FST z) * cproduct t
+         (\i. x i pow (SND z i)))") THEN
+    CONJ_TAC THENL
+     [ASM_SIMP_TAC [cross_lemma, FINITE_NUMSEG] THEN ASM_REWRITE_TAC [],
+      MATCH_MP_TAC VSUM_EQ THEN REWRITE_TAC [FORALL_PAIR_THM, IN_CROSS, o_DEF] THEN
+      MAP_EVERY X_GEN_TAC [(← q r"j:num"), (← q r"f:A->num")] THEN
+      EXPAND_TAC "Ft" THEN REWRITE_TAC [IN_ELIM_THM] THEN STRIP_TAC THEN
+      AP_TERM_TAC THEN
+      MATCH_MP_TAC CPRODUCT_EQ THEN X_GEN_TAC (← q r"i:A") THEN DISCH_TAC THEN
+      REWRITE_TAC [] THEN COND_CASES_TAC THEN ASM_MESON_TAC []]))
+
+  pure { SUMMABLE_ZETA, SUMMABLE_ZETA_INTEGER, LIM_CPRODUCT, CPRODUCT_VSUM_POW }
 /- ------------------------------------------------------------------------- -/
 /- Formulation of loop homotopy in terms of maps out of S^1                  -/
 /- (transcendentals.ml 7006-7259)                                           -/

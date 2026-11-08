@@ -7,7 +7,7 @@ import SessionLibrary.Prime
 import SessionLibrary.Floor
 import SessionMultiLib.Transcendentals
 open HolCore.Kernel Session HolLight.Syntax HolExamples Hol100
-open SessionLibrary.Prime SessionLibrary.Floor SessionLibrary.Permutations SessionLibrary.Iter SessionLibrary.Wo SessionLibrary.Products SessionLibrary.Frag SessionLibrary.Card SessionLibrary.Matroids SessionMultiLib.Misc SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionMultiLib.Metric SessionMultiLib.Determinants SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.Complexes SessionMultiLib.Paths SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals
+open SessionLibrary.Prime SessionLibrary.Floor SessionLibrary.Permutations SessionLibrary.Iter SessionLibrary.Wo SessionLibrary.Products SessionLibrary.Frag SessionLibrary.Card SessionLibrary.Matroids SessionMultiLib.Misc SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionMultiLib.Metric SessionMultiLib.Determinants SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes SessionMultiLib.Paths SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals
 namespace Hol100.Constructible
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts

@@ -25,7 +25,10 @@ import HolMultiLib.Topology
 import HolMultiLib.Homology
 import HolMultiLib.SpecialTopologies
 import HolMultiLib.Convex
+import HolMultiLib.ComplexAlgebra
 import HolMultiLib.Complexes
+import HolMultiLib.ComplexRing
+import HolMultiLib.ComplexField
 import HolMultiLib.Cross
 import HolMultiLib.Tarski
 import HolMultiLib.Wlog

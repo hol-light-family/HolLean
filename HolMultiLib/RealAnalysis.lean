@@ -955,6 +955,7 @@ structure RZC where
   REAL_SERIES_LMUL : thm
   REAL_SERIES_RMUL : thm
   REAL_SERIES_NEG : thm
+  REAL_SERIES_FINITE_SUM : thm
   REAL_SUMS_IFF : thm
   REAL_SUMS_EQ : thm
   REAL_SERIES_FINITE_SUPPORT : thm
@@ -1006,14 +1007,14 @@ def setupRZC [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) : Except
   let { LE_0, .. } := D.ts.cn.cx.cpx
   let { UPPER_BOUND_FINITE_SET, .. } := D.ts.cn.ms.ig.qmisc
   let { NORM_REAL, .. } := D.ts.cn.ms.ig.qvec
-  let { COND_RAND, ETA_AX, EXTENSION, FINITE_INTER, FINITE_NUMSEG, FINITE_SUBSET,
+  let { COND_RAND, ETA_AX, EXTENSION, FINITE_INDUCT_STRONG, FINITE_INTER, FINITE_NUMSEG, FINITE_SUBSET,
         .. } := D.ts.cn.cx.cvx.core1
   let { FUN_EQ_THM, IMAGE_o, IMP_CONJ, IN_DIFF, INTER_EMPTY, INTER_UNIV,
         .. } := D.ts.cn.cx.cvx.core2
-  let { IN_ELIM_THM, IN_INTER, IN_NUMSEG, IN_UNION, LE_TRANS, LEFT_IMP_EXISTS_THM,
+  let { IN_ELIM_THM, IN_INSERT, IN_INTER, IN_NUMSEG, IN_UNION, LE_TRANS, LEFT_IMP_EXISTS_THM,
         MONO_EXISTS, REAL_ABS_NUM, .. } := D.ts.cn.cx.cvx.core3
   let { REAL_LE_TRANS, .. } := D.ts.cn.cx.cvx.core4
-  let { REAL_SUB_REFL, REAL_SUB_RZERO, SIMPLE_IMAGE, SUBSET, .. } := D.ts.cn.cx.cvx.core5
+  let { REAL_SUB_REFL, REAL_SUB_RZERO, RIGHT_FORALL_IMP_THM, SIMPLE_IMAGE, SUBSET, .. } := D.ts.cn.cx.cvx.core5
   let { numseg, o_DEF, o_THM, SUM_0, SUM_ADD, SUM_CLAUSES, SUM_EQ, SUM_LMUL, SUM_NEG,
         SUM_RMUL, SUM_SUB, SUM_SUBSET_SIMPLE, SUM_SUPERSET, .. } := D.ts.cn.cx.cvx.core6
   let { DROP_CMUL, DROP_VSUM, EXISTS_LIFT, LIFT_CMUL, LIFT_DROP, LIFT_EQ, LIFT_NUM, NORM_1,
@@ -1226,6 +1227,25 @@ def setupRZC [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) : Except
    r"!x x0 s. (x real_sums x0) s ==> ((\n. --(x n)) real_sums (--x0)) s"
    (SIMP_TAC [real_sums, FINITE_INTER_NUMSEG, SUM_NEG, REALLIM_NEG])
 
+  let REAL_SERIES_FINITE_SUM ← prove
+   r"!(f:A->num->real) l k s.
+        FINITE k /\ (!i. i IN k ==> (f i real_sums l i) s)
+        ==> ((\n. sum k (\i. f i n)) real_sums (sum k l)) s"
+   (← do
+    let skl ← q r"sum k (l:A->real)"
+    pure (GEN_TAC THEN GEN_TAC THEN REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+    SIMP_TAC [SUM_CLAUSES, REAL_SERIES_0, IN_INSERT] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_SERIES_ADD THEN CONJ_TAC THENL
+     [REWRITE_TAC [ETA_AX] THEN FIRST_X_ASSUM (MATCH_MP_TAC o check (α := thm) (fun th =>
+        HolCore.Basics.is_forall (concl th) &&
+        (HolCore.Basics.dest_forall (concl th)).toOption.any (fun (p : term × term) => let b := p.2;
+           (lhand b).toOption.any HolCore.Basics.is_disj))) THEN
+      REWRITE_TAC [],
+      FIRST_X_ASSUM (MATCH_MP_TAC o check (α := thm) (fun th =>
+        HolCore.Basics.is_forall (concl th) && HolCore.Basics.free_in skl (concl th))) THEN
+      ASM_SIMP_TAC []]))
+
   let REAL_SUMS_IFF ← prove
    r"!f g k. (!x. x IN k ==> f x = g x)
            ==> ((f real_sums l) k <=> (g real_sums l) k)"
@@ -1433,7 +1453,7 @@ def setupRZC [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) : Except
          REAL_SUMMABLE_FROM_ELSEWHERE, REAL_SUMMABLE_FROM_ELSEWHERE_EQ,
          REAL_SERIES_GOESTOZERO, REAL_SUMMABLE_IMP_TOZERO, REAL_SUMMABLE_IMP_BOUNDED,
          REAL_SUMMABLE_IMP_REAL_SUMS_BOUNDED, REAL_SERIES_0, REAL_SERIES_ADD,
-         REAL_SERIES_SUB, REAL_SERIES_LMUL, REAL_SERIES_RMUL, REAL_SERIES_NEG,
+         REAL_SERIES_SUB, REAL_SERIES_LMUL, REAL_SERIES_RMUL, REAL_SERIES_NEG, REAL_SERIES_FINITE_SUM,
          REAL_SUMS_IFF, REAL_SUMS_EQ, REAL_SERIES_FINITE_SUPPORT, REAL_SERIES_DIFFS,
          REAL_SERIES_TRIVIAL, REAL_SERIES_RESTRICT, REAL_SERIES_SUM, REAL_SUMS_REINDEX,
          REAL_SERIES_EVEN, REAL_SERIES_ODD, REAL_INFSUM, REAL_PARTIAL_SUMS_LE_INFSUM,
@@ -1717,6 +1737,7 @@ structure RZE where
   REAL_SUMMABLE_COMPARISON : thm
   REAL_SERIES_COMPARISON_UNIFORM : thm
   REAL_SUMMABLE_POS_SUBSET : thm
+  REAL_SUMMABLE_POS_PARTIAL_BOUND : thm
   REAL_SERIES_RATIO : thm
   BOUNDED_PARTIAL_REAL_SUMS : thm
   REAL_SERIES_DIRICHLET : thm
@@ -1726,6 +1747,7 @@ structure RZE where
   REAL_SUMMABLE_GP : thm
   REAL_SUMMABLE_ZETA : thm
   REAL_SUMMABLE_ZETA_INTEGER : thm
+  DIRICHLET_SERIES_FINITE_PERTURBATION : thm
   REAL_ABEL_LEMMA : thm
   REAL_POWER_SERIES_CONV_IMP_ABSCONV : thm
   POWER_REAL_SERIES_CONV_IMP_ABSCONV_WEAK : thm
@@ -1736,18 +1758,22 @@ structure RZE where
 set_option maxHeartbeats 64000000 in
 set_option maxRecDepth 16384 in
 @[nospecialize]
-def setupRZE [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZC : RZC) (BRZD : RZD) : ExceptT String IO RZE := do
+def setupRZE [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) (BRZC : RZC) (BRZD : RZD) : ExceptT String IO RZE := do
   -- @@SCOPE BEGIN
   let { REAL_BOUNDED, TENDSTO_REAL, .. } := BRZA
-  let { REAL_SERIES_CAUCHY, REAL_SERIES_MUL, real_summable, REAL_SUMMABLE,
+  let { CONVERGENT_REAL_BOUNDED_MONOTONE, REALLIM_UBOUND, .. } := BRZB
+  let { REAL_INFSUM_UNIQUE, REAL_SERIES_CAUCHY, REAL_SERIES_FINITE_SUPPORT,
+        REAL_SERIES_FROM, REAL_SERIES_MUL, real_summable, REAL_SUMMABLE,
         REAL_SUMMABLE_COMPLEX, REAL_SUMMABLE_FROM_ELSEWHERE,
-        REAL_SUMMABLE_FROM_ELSEWHERE_EQ, REAL_SUMS, REAL_SUMS_COMPLEX, .. } := BRZC
-  let { REAL_SUMMABLE_SUBSET, .. } := BRZD
+        REAL_SUMMABLE_FROM_ELSEWHERE_EQ, REAL_SUMS, REAL_SUMS_COMPLEX, REAL_SUMS_EQ,
+        REAL_SUMS_SUMMABLE, .. } := BRZC
+  let { REAL_INFSUM_SUB, REAL_SUMMABLE_SUB, REAL_SUMMABLE_SUBSET, .. } := BRZD
   let { CX_EXP, .. } := D.tsb
   let { CX_LOG, .. } := D.tsm
   let { cpow, .. } := D.tso
-  let { rpow, .. } := D.tsab
+  let { rpow, RPOW_LE_1, .. } := D.tsab
   let { SUMMABLE_ZETA, SUMMABLE_ZETA_INTEGER, .. } := D.tsac
+  let { REAL_BOUNDED_POS, .. } := D.qmetric
   let { SERIES_CAUCHY_UNIFORM, SUMMABLE_COMPARISON, .. } := D.qtopology
   let { SUMMABLE_GP, SUMS_GP, .. } := D.ts.knn
   let { ABEL_LEMMA, POWER_SERIES_CONV_IMP_ABSCONV, POWER_SERIES_CONV_IMP_ABSCONV_WEAK,
@@ -1757,22 +1783,29 @@ def setupRZE [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZC : RZC) (BRZD : 
   let { COMPLEX_NORM_CX, CX_ABS, CX_DIV, CX_INJ, CX_INV, CX_MUL, CX_POW, CX_SUB, RE_CX,
         .. } := D.ts.cn.cxc
   let { BOUNDED_PARTIAL_SUMS, SERIES_COMPARISON, SERIES_DIRICHLET, .. } := D.ts.cn.qtopology
-  let { ARITH_RULE, ASM_MESON_TAC, INTRO_TAC, REAL_ARITH, SET_RULE, .. } := D.ts.cn.cx.cvx
+  let { ARITH_RULE, ASM_MESON_TAC, INTRO_TAC, MESON_TAC, REAL_ARITH, REAL_ARITH_TAC,
+        SET_RULE, .. } := D.ts.cn.cx.cvx
   let { REAL_ABS_0, .. } := D.ts.cn.ms.ig.qsession
   let { SUM_VSUM, VSUM_REAL, .. } := D.ts.cn.ms.ig.qvec
-  let { ETA_AX, FINITE_INTER, FINITE_NUMSEG, .. } := D.ts.cn.cx.cvx.core1
-  let { GE, IMP_CONJ, .. } := D.ts.cn.cx.cvx.core2
-  let { IN_INTER, IN_NUMSEG, LE_1, LEFT_IMP_EXISTS_THM, MONO_FORALL, MONO_IMP,
-        .. } := D.ts.cn.cx.cvx.core3
-  let { REAL_LE_REFL, REAL_LET_TRANS, .. } := D.ts.cn.cx.cvx.core4
-  let { REAL_OF_NUM_EQ, REAL_OF_NUM_LT, .. } := D.ts.cn.cx.cvx.core5
-  let { o_DEF, o_THM, SUM_ABS_LE, .. } := D.ts.cn.cx.cvx.core6
+  let { CARD_SUBSET, ETA_AX, FINITE_INTER, FINITE_NUMSEG, .. } := D.ts.cn.cx.cvx.core1
+  let { FORALL_IN_IMAGE, FUN_EQ_THM, GE, IMP_CONJ, INTER_SUBSET,
+        .. } := D.ts.cn.cx.cvx.core2
+  let { IN_INTER, IN_NUMSEG, IN_UNIV, LE_1, LEFT_IMP_EXISTS_THM, MONO_FORALL, MONO_IMP,
+        REAL_ABS_DIV, REAL_ABS_POS, .. } := D.ts.cn.cx.cvx.core3
+  let { REAL_LE_ADDR, REAL_LE_LDIV_EQ, REAL_LE_LMUL, REAL_LE_REFL, REAL_LE_RMUL,
+        REAL_LE_TRANS, REAL_LET_TRANS, .. } := D.ts.cn.cx.cvx.core4
+  let { REAL_MUL_LZERO, REAL_MUL_RID, REAL_MUL_SYM, REAL_OF_NUM_EQ, REAL_OF_NUM_LE,
+        REAL_OF_NUM_LT, REAL_SUB_REFL, .. } := D.ts.cn.cx.cvx.core5
+  let { o_DEF, o_THM, real_div, SUM_ABS_LE, SUM_CLAUSES_NUMSEG, SUM_CONST, SUM_EQ,
+        .. } := D.ts.cn.cx.cvx.core6
   let { DIST_LIFT, .. } := D.ts.cn.cx.cvx.vec1
   let { DROP_SUB, EXISTS_LIFT, LIFT_CMUL, LIFT_DROP, LIFT_NUM, NORM_1,
         .. } := D.ts.cn.cx.cvx.vec2
   let { NORM_LIFT, .. } := D.ts.cn.cx.cvx.vec3
   let { dist, .. } := D.ts.cn.cx.cvx.vec4
+  let { EVENTUALLY_SEQUENTIALLY, TRIVIAL_LIMIT_SEQUENTIALLY, .. } := D.ts.cn.cx.cvx.met
   let { FINITE_INTER_NUMSEG, .. } := D.ts.cn.ms.ig.dv.qmisc
+  let { SUM_POS_LE_NUMSEG, .. } := D.ts.cn.ms.ig.dv.dg.qsession
   let { LIFT_SUM, .. } := D.ts.cn.ms.ig.dv.dg.qvec
   -- @@SCOPE END
 
@@ -1850,6 +1883,41 @@ def setupRZE [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZC : RZC) (BRZD : 
     COND_CASES_TAC THEN REWRITE_TAC [REAL_ABS_0] THEN
     ASM_SIMP_TAC [← REAL_ARITH (← q r"abs x <= x <=> &0 <= x")])
 
+  let REAL_SUMMABLE_POS_PARTIAL_BOUND ← prove
+   r"!f:num->real k B.
+        (!n. k <= n ==> &0 <= f n) /\ (!n. sum(k..n) f <= B)
+        ==> real_summable (from k) f /\ real_infsum (from k) f <= B"
+   (← do
+    let bR ← q r"B:real"
+    pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
+    SUBGOAL_THEN (← q r"!n. &0 <= sum(k..n) (f:num->real)") ASSUME_TAC THENL
+     [GEN_TAC THEN MATCH_MP_TAC SUM_POS_LE_NUMSEG THEN ASM_SIMP_TAC [],
+      ALL_TAC] THEN
+    MP_TAC (← ISPEC (← q r"\n. sum(k..n) (f:num->real)")
+      CONVERGENT_REAL_BOUNDED_MONOTONE) THEN
+    ANTS_TAC THENL
+     [REWRITE_TAC [REAL_BOUNDED_POS, FORALL_IN_IMAGE, IN_UNIV] THEN
+      CONJ_TAC THENL
+       [EXISTS_TAC (← q r"abs B + &1:real") THEN CONJ_TAC THENL
+         [REAL_ARITH_TAC,
+          X_GEN_TAC (← q r"n:num") THEN
+          FIRST_X_ASSUM (MP_TAC o SPEC (← q r"n:num") o check (α := thm) (fun th =>
+            HolCore.Basics.free_in bR (concl th))) THEN
+          FIRST_X_ASSUM (MP_TAC o SPEC (← q r"n:num")) THEN REAL_ARITH_TAC],
+        DISJ1_TAC THEN X_GEN_TAC (← q r"n:num") THEN
+        REWRITE_TAC [SUM_CLAUSES_NUMSEG] THEN COND_CASES_TAC THEN
+        ASM_SIMP_TAC [REAL_LE_ADDR, REAL_LE_REFL]],
+      ALL_TAC] THEN
+    DISCH_THEN (X_CHOOSE_TAC (← q r"l:real")) THEN
+    SUBGOAL_THEN (← q r"((f:num->real) real_sums l) (from k)") ASSUME_TAC THENL
+     [ASM_REWRITE_TAC [REAL_SERIES_FROM], ALL_TAC] THEN
+    CONJ_TAC THENL [ASM_MESON_TAC [real_summable], ALL_TAC] THEN
+    FIRST_ASSUM (SUBST1_TAC o MATCH_MP REAL_INFSUM_UNIQUE) THEN
+    MATCH_MP_TAC (← ISPEC (← q r"sequentially") REALLIM_UBOUND) THEN
+    EXISTS_TAC (← q r"\n. sum(k..n) (f:num->real)") THEN
+    ASM_REWRITE_TAC [TRIVIAL_LIMIT_SEQUENTIALLY, EVENTUALLY_SEQUENTIALLY] THEN
+    MESON_TAC []))
+
   let REAL_SERIES_RATIO ← prove
    r"!c a s N.
       c < &1 /\
@@ -1924,6 +1992,69 @@ def setupRZE [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZC : RZC) (BRZD : 
    (REWRITE_TAC [REAL_SUMMABLE_COMPLEX, CX_INV, CX_POW,
                  SUMMABLE_ZETA_INTEGER, o_DEF])
 
+  let DIRICHLET_SERIES_FINITE_PERTURBATION ← prove
+   r"!(a:num->real) b t B s.
+        FINITE t /\ (!m. ~(m IN t) ==> a m = b m) /\
+        (!m. abs(a m - b m) <= B) /\ &0 <= s /\
+        real_summable (from 1) (\m. a m / &m rpow s)
+        ==> real_summable (from 1) (\m. b m / &m rpow s) /\
+            abs(real_infsum (from 1) (\m. a m / &m rpow s) -
+                real_infsum (from 1) (\m. b m / &m rpow s))
+            <= B * &(CARD t)"
+   (← do
+    let ra3 ← REAL_ARITH (← q r"&1 <= (x:real) ==> &0 < x")
+    let ra2 ← REAL_ARITH (← q r"&1 <= (x:real) ==> &1 <= abs x")
+    let ra1 ← REAL_ARITH (← q r"abs((x:real) - (x - y)) = abs y")
+    pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"((\m. (a m - b m) / &m rpow s) real_sums
+     sum (t INTER from 1) (\m. (a m - b m) / &m rpow s)) (from 1)")
+    ASSUME_TAC THENL
+     [MATCH_MP_TAC REAL_SUMS_EQ THEN
+      EXISTS_TAC (← q r"\m. if 1 <= m then ((a:num->real) m - b m) / &m rpow s
+                    else &0") THEN
+      CONJ_TAC THENL [SIMP_TAC [IN_FROM], ALL_TAC] THEN
+      SUBGOAL_THEN
+       (← q r"sum (t INTER from 1) (\m. ((a:num->real) m - b m) / &m rpow s) =
+      sum (t INTER from 1)
+          (\m. if 1 <= m then (a m - b m) / &m rpow s else &0)")
+      SUBST1_TAC THENL
+       [MATCH_MP_TAC SUM_EQ THEN SIMP_TAC [IN_INTER, IN_FROM], ALL_TAC] THEN
+      MATCH_MP_TAC REAL_SERIES_FINITE_SUPPORT THEN
+      ASM_SIMP_TAC [FINITE_INTER, IN_INTER, IN_FROM] THEN
+      X_GEN_TAC (← q r"m:num") THEN COND_CASES_TAC THEN
+      ASM_SIMP_TAC [REAL_SUB_REFL, real_div, REAL_MUL_LZERO],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"(\m. b m / &m rpow s) = (\m. a m / &m rpow s - (a m - b m) / &m rpow s)")
+    SUBST1_TAC THENL
+     [REWRITE_TAC [FUN_EQ_THM] THEN REAL_ARITH_TAC, ALL_TAC] THEN
+    FIRST_ASSUM (ASSUME_TAC o MATCH_MP REAL_SUMS_SUMMABLE) THEN
+    ASM_SIMP_TAC [REAL_SUMMABLE_SUB, REAL_INFSUM_SUB] THEN
+    FIRST_ASSUM (SUBST1_TAC o MATCH_MP REAL_INFSUM_UNIQUE) THEN
+    REWRITE_TAC [ra1] THEN
+    MATCH_MP_TAC REAL_LE_TRANS THEN
+    EXISTS_TAC (← q r"sum (t INTER from 1) (\m:num. B)") THEN CONJ_TAC THENL
+     [MATCH_MP_TAC SUM_ABS_LE THEN ASM_SIMP_TAC [FINITE_INTER] THEN
+      X_GEN_TAC (← q r"m:num") THEN REWRITE_TAC [IN_INTER, IN_FROM] THEN STRIP_TAC THEN
+      REWRITE_TAC [REAL_ABS_DIV] THEN
+      SUBGOAL_THEN (← q r"&1 <= abs(&m rpow s)") ASSUME_TAC THENL
+       [MATCH_MP_TAC ra2 THEN
+        MATCH_MP_TAC RPOW_LE_1 THEN ASM_REWRITE_TAC [REAL_OF_NUM_LE],
+        ALL_TAC] THEN
+      ASM_SIMP_TAC [REAL_LE_LDIV_EQ, ra3] THEN
+      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC (← q r"B:real") THEN
+      ASM_REWRITE_TAC [] THEN
+      GEN_REWRITE_TAC LAND_CONV [← GSYM REAL_MUL_RID] THEN
+      MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC [] THEN
+      ASM_MESON_TAC [REAL_ABS_POS, REAL_LE_TRANS],
+      ASM_SIMP_TAC [SUM_CONST, FINITE_INTER] THEN
+      GEN_REWRITE_TAC RAND_CONV [REAL_MUL_SYM] THEN MATCH_MP_TAC REAL_LE_RMUL THEN
+      CONJ_TAC THENL
+       [REWRITE_TAC [REAL_OF_NUM_LE] THEN MATCH_MP_TAC CARD_SUBSET THEN
+        ASM_REWRITE_TAC [INTER_SUBSET],
+        ASM_MESON_TAC [REAL_ABS_POS, REAL_LE_TRANS]]]))
+
   let REAL_ABEL_LEMMA ← prove
    r"!a M r r0.
         &0 <= r /\ r < r0 /\
@@ -1981,10 +2112,10 @@ def setupRZE [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZC : RZC) (BRZD : 
     ASM_REWRITE_TAC [])
 
   pure { REAL_SERIES_CAUCHY_UNIFORM, REAL_SERIES_COMPARISON, REAL_SUMMABLE_COMPARISON,
-         REAL_SERIES_COMPARISON_UNIFORM, REAL_SUMMABLE_POS_SUBSET, REAL_SERIES_RATIO,
+         REAL_SERIES_COMPARISON_UNIFORM, REAL_SUMMABLE_POS_SUBSET, REAL_SUMMABLE_POS_PARTIAL_BOUND, REAL_SERIES_RATIO,
          BOUNDED_PARTIAL_REAL_SUMS, REAL_SERIES_DIRICHLET, REAL_SERIES_ABSCONV_IMP_CONV,
          SERIES_NORMCONV_IMP_CONV, REAL_SUMS_GP, REAL_SUMMABLE_GP, REAL_SUMMABLE_ZETA,
-         REAL_SUMMABLE_ZETA_INTEGER, REAL_ABEL_LEMMA, REAL_POWER_SERIES_CONV_IMP_ABSCONV,
+         REAL_SUMMABLE_ZETA_INTEGER, DIRICHLET_SERIES_FINITE_PERTURBATION, REAL_ABEL_LEMMA, REAL_POWER_SERIES_CONV_IMP_ABSCONV,
          POWER_REAL_SERIES_CONV_IMP_ABSCONV_WEAK, REAL_SUMMABLE_MUL_LEFT,
          REAL_SUMMABLE_MUL_RIGHT }
 /- ------------------------------------------------------------------------- -/
@@ -2003,6 +2134,7 @@ structure RZF where
   TRIVIAL_LIMIT_ATREAL : thm
   EVENTUALLY_WITHINREAL : thm
   EVENTUALLY_WITHINREAL_LE : thm
+  TRIVIAL_LIMIT_ATREAL_RIGHT : thm
   LIM_WITHINREAL_LE : thm
   LIM_WITHINREAL : thm
   LIM_ATREAL : thm
@@ -2049,7 +2181,8 @@ def setupRZF [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) : Except
   let { LIM_TRANSFORM_WITHIN_SET_IMP, .. } := D.ts.cn.ms.ig.qtopology
   let { CONJ_ASSOC, .. } := D.ts.cn.cx.cvx.core1
   let { IMP_CONJ, .. } := D.ts.cn.cx.cvx.core2
-  let { IN_UNIV, MONO_FORALL, NOT_EXISTS_THM, REAL_ABS_SUB, .. } := D.ts.cn.cx.cvx.core3
+  let { IN_ELIM_THM, IN_UNIV, MONO_FORALL, NOT_EXISTS_THM, REAL_ABS_SUB,
+        .. } := D.ts.cn.cx.cvx.core3
   let { REAL_LT_MIN, .. } := D.ts.cn.cx.cvx.core4
   let { SUBSET, .. } := D.ts.cn.cx.cvx.core5
   let { o_DEF, .. } := D.ts.cn.cx.cvx.core6
@@ -2109,6 +2242,14 @@ def setupRZF [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) : Except
    (REWRITE_TAC [EVENTUALLY_WITHINREAL] THEN
     ONCE_REWRITE_TAC [← TAUT (← q r"a /\ b /\ c ==> d <=> c ==> a /\ b ==> d")] THEN
     REWRITE_TAC [APPROACHABLE_LT_LE])
+
+  let TRIVIAL_LIMIT_ATREAL_RIGHT ← prove
+   r"!a. ~trivial_limit(atreal a within {x | a < x})"
+   (REWRITE_TAC [trivial_limit, EVENTUALLY_WITHINREAL, IN_ELIM_THM] THEN
+    REWRITE_TAC [NOT_EXISTS_THM] THEN
+    MAP_EVERY X_GEN_TAC [(← q r"a:real"), (← q r"d:real")] THEN
+    DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o SPEC (← q r"a + d / &2"))) THEN
+    ASM_REAL_ARITH_TAC)
 
   let LIM_WITHINREAL_LE ← prove
    r"!f:real->real^N l a s.
@@ -2304,7 +2445,7 @@ def setupRZF [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) : Except
 
   pure { atreal, ATREAL, NETLIMIT_ATREAL, NETLIMIT_WITHINREAL, WITHINREAL_UNIV,
          EVENTUALLY_ATREAL, TRIVIAL_LIMIT_ATREAL, EVENTUALLY_WITHINREAL,
-         EVENTUALLY_WITHINREAL_LE, LIM_WITHINREAL_LE, LIM_WITHINREAL, LIM_ATREAL,
+         EVENTUALLY_WITHINREAL_LE, TRIVIAL_LIMIT_ATREAL_RIGHT, LIM_WITHINREAL_LE, LIM_WITHINREAL, LIM_ATREAL,
          REALLIM_WITHINREAL_LE, REALLIM_WITHINREAL, REALLIM_ATREAL,
          REALLIM_AT_POSINFINITY, REALLIM_AT_NEGINFINITY, LIM_ATREAL_WITHINREAL,
          REALLIM_AT_WITHIN, REALLIM_ATREAL_WITHINREAL, REALLIM_WITHIN_SUBSET,
@@ -6127,6 +6268,7 @@ structure RZR where
   REALLIM_LOG_OVER_N : thm
   REALLIM_1_OVER_LOG : thm
   REALLIM_POWN : thm
+  REAL_POW_EVENTUALLY_LT : thm
   REALLIM_X_TIMES_LOG : thm
   REALLIM_ROOT_REFL : thm
   REALLIM_SIN_OVER_X : thm
@@ -6178,8 +6320,8 @@ def setupRZR [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) (BRZF : 
   let { FORALL_AND_THM, .. } := D.ts.cn.cx.cvx.core1
   let { IMP_CONJ, IN, .. } := D.ts.cn.cx.cvx.core2
   let { IN_ELIM_THM, LE_1, MONO_AND, MONO_EXISTS, MONO_FORALL, MONO_IMP, REAL_ABS_INV,
-        REAL_ABS_MUL, REAL_ABS_NUM, .. } := D.ts.cn.cx.cvx.core3
-  let { REAL_LE_INV2, REAL_LE_REFL, REAL_LT_IMP_LE, REAL_LTE_TRANS,
+        REAL_ABS_MUL, REAL_ABS_NUM, REAL_ARCH_POW_INV, .. } := D.ts.cn.cx.cvx.core3
+  let { REAL_LE_INV2, REAL_LE_REFL, REAL_LET_TRANS, REAL_LT_IMP_LE, REAL_LTE_TRANS,
         .. } := D.ts.cn.cx.cvx.core4
   let { REAL_MUL_LID, REAL_MUL_LINV, REAL_OF_NUM_LE, REAL_OF_NUM_LT, REAL_POW_LT,
         REAL_SUB_RDISTRIB, REAL_SUB_RZERO, .. } := D.ts.cn.cx.cvx.core5
@@ -6187,6 +6329,7 @@ def setupRZR [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) (BRZF : 
   let { dist, .. } := D.ts.cn.cx.cvx.vec4
   let { EVENTUALLY_MONO, EVENTUALLY_SEQUENTIALLY, .. } := D.ts.cn.cx.cvx.met
   let { LIM_WITHIN, .. } := D.ts.cn.cx.cvx.top4
+  let { REAL_POW_MONO_INV, .. } := D.ts.cn.ms.ig.dv.qsession
   let { LIM_AT, .. } := D.ts.cn.ms.ig.dv.qtopology1
   let { LIM_TRANSFORM_EVENTUALLY, .. } := D.ts.cn.ms.ig.dv.qtopology2
   let { REAL_ABS_POW, .. } := D.ts.cn.ms.ig.dv.dg.qsession
@@ -6232,6 +6375,17 @@ def setupRZR [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) (BRZF : 
    (REWRITE_TAC [REALLIM_COMPLEX, o_DEF, CX_POW] THEN
     REPEAT STRIP_TAC THEN MATCH_MP_TAC LIM_POWN THEN
     ASM_REWRITE_TAC [COMPLEX_NORM_CX])
+
+  let REAL_POW_EVENTUALLY_LT ← prove
+   r"!(x:real) (e:real). &0 <= x /\ x < &1 /\ &0 < e
+         ==> eventually (\n. x pow n < e) sequentially"
+   (REPEAT STRIP_TAC THEN REWRITE_TAC [EVENTUALLY_SEQUENTIALLY] THEN
+    MP_TAC (← ISPECL [(← q r"x:real"), (← q r"e:real")] REAL_ARCH_POW_INV) THEN
+    ASM_REWRITE_TAC [] THEN MATCH_MP_TAC MONO_EXISTS THEN
+    X_GEN_TAC (← q r"N:num") THEN DISCH_TAC THEN X_GEN_TAC (← q r"n:num") THEN
+    DISCH_TAC THEN TRANS_TAC REAL_LET_TRANS (← q r"(x:real) pow N") THEN
+    ASM_REWRITE_TAC [] THEN MATCH_MP_TAC REAL_POW_MONO_INV THEN
+    ASM_SIMP_TAC [REAL_LT_IMP_LE])
 
   let REALLIM_X_TIMES_LOG ← prove
    r"((\x. x * log x) ---> &0) (atreal(&0) within {x | &0 <= x})"
@@ -6380,7 +6534,7 @@ def setupRZR [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) (BRZF : 
                     REAL_DIFFERENTIABLE_AT_RPOW]])
 
   pure { REALLIM_1_OVER_N_OFFSET, REALLIM_1_OVER_N, REALLIM_1_OVER_POW, REALLIM_LOG_OVER_N,
-         REALLIM_1_OVER_LOG, REALLIM_POWN, REALLIM_X_TIMES_LOG, REALLIM_ROOT_REFL,
+         REALLIM_1_OVER_LOG, REALLIM_POWN, REAL_POW_EVENTUALLY_LT, REALLIM_X_TIMES_LOG, REALLIM_ROOT_REFL,
          REALLIM_SIN_OVER_X, REALLIM_RPOW_COMPOSE, REAL_CONTINUOUS_RPOW_COMPOSE_WITHIN,
          HAS_REAL_DERIVATIVE_RPOW, HAS_REAL_DERIVATIVE_RPOW_RIGHT,
          REAL_DIFFERENTIABLE_AT_RPOW, REAL_DIFFERENTIABLE_AT_RPOW_RIGHT,
@@ -9150,6 +9304,8 @@ structure RZAC where
   REAL_SUM_INTEGRAL_LBOUND_DECREASING : thm
   REAL_SUM_INTEGRAL_BOUNDS_INCREASING : thm
   REAL_SUM_INTEGRAL_BOUNDS_DECREASING : thm
+  RPOW_TELESCOPE_BOUNDS : thm
+  REAL_INFSUM_ZETA_BOUNDS : thm
   HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_1_ALT : thm
   ABSOLUTELY_INTEGRABLE_CHANGE_OF_VARIABLES_1_ALT : thm
   REALLIM_POSINFINITY_SEQUENTIALLY : thm
@@ -9162,33 +9318,47 @@ structure RZAC where
 set_option maxHeartbeats 64000000 in
 set_option maxRecDepth 16384 in
 @[nospecialize]
-def setupRZAC [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZF : RZF) (BRZL : RZL) (BRZN : RZN) (BRZO : RZO) (BRZT : RZT) : ExceptT String IO RZAC := do
+def setupRZAC [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZB : RZB) (BRZC : RZC) (BRZE : RZE) (BRZF : RZF) (BRZL : RZL) (BRZN : RZN) (BRZO : RZO) (BRZR : RZR) (BRZS : RZS) (BRZT : RZT) : ExceptT String IO RZAC := do
   -- @@SCOPE BEGIN
-  let { TENDSTO_REAL, .. } := BRZA
+  let { REALLIM_CONST, REALLIM_RMUL, REALLIM_SUB, TENDSTO_REAL, .. } := BRZA
+  let { REALLIM_LE, REALLIM_UBOUND, .. } := BRZB
+  let { REAL_SERIES_FROM, REAL_SUMS_INFSUM, .. } := BRZC
+  let { REAL_SUMMABLE_ZETA, .. } := BRZE
   let { LIM_ATREAL, .. } := BRZF
   let { HAS_REAL_VECTOR_DERIVATIVE_WITHIN, .. } := BRZL
-  let { HAS_REAL_DERIVATIVE_WITHIN_SUBSET, .. } := BRZN
+  let { HAS_REAL_DERIVATIVE_ATREAL_WITHIN, HAS_REAL_DERIVATIVE_WITHIN_SUBSET, .. } := BRZN
   let { HAS_REAL_DERIVATIVE_NEG, .. } := BRZO
+  let { HAS_REAL_DERIVATIVE_RPOW, REALLIM_1_OVER_N_OFFSET, .. } := BRZR
+  let { REALLIM_RPOW, .. } := BRZS
   let { REAL_MVT_SIMPLE, .. } := BRZT
+  let { RPOW_INV, RPOW_LE2, RPOW_NEG, RPOW_ONE, RPOW_POS_LE, RPOW_POS_LT, RPOW_ZERO,
+        .. } := D.tsab
   let { LIM_AT_NEGINFINITY, .. } := D.qtopology
   let { IN_REAL_INTERVAL, .. } := D.qmisc
   let { SUM_DIFFS_ALT, .. } := D.qsession
   let { HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_1, .. } := D.qmeasure
   let { LIM_POSINFINITY_SEQUENTIALLY, .. } := D.ts.qtopology
+  let { LT_NZ, .. } := D.ts.qsession
   let { RE_NEG, RE_SUB, .. } := D.ts.cn.cxc
-  let { ARITH_RULE, ASM_REAL_ARITH_TAC, MESON_TAC, REAL_ARITH, .. } := D.ts.cn.cx.cvx
+  let { SUM_SING_NUMSEG, .. } := D.ts.cn.ms.qsession
+  let { ARITH_RULE, ASM_REAL_ARITH_TAC, INDUCT_TAC, MESON_TAC, REAL_ARITH, REAL_ARITH_TAC,
+        REAL_FIELD, .. } := D.ts.cn.cx.cvx
   let { REAL_ADD_SUB, .. } := D.ts.cn.cx.cpx
   let { LIM_AT_POSINFINITY, .. } := D.ts.cn.ms.ig.qtopology
-  let { ARITH, ETA_AX, .. } := D.ts.cn.cx.cvx.core1
-  let { FORALL_IN_IMAGE, IMAGE_ID, IMAGE_o, .. } := D.ts.cn.cx.cvx.core2
-  let { REAL_ABS_INV, .. } := D.ts.cn.cx.cvx.core3
-  let { REAL_LE_NEG2, REAL_LE_REFL, REAL_LE_TRANS, REAL_LT_DIV, REAL_LT_INV_EQ,
-        .. } := D.ts.cn.cx.cvx.core4
-  let { REAL_MUL_LID, REAL_MUL_LINV, REAL_MUL_RID, REAL_OF_NUM_ADD, REAL_OF_NUM_LE,
-        REAL_OF_NUM_LT, REAL_SUB_RZERO, SUBSET, .. } := D.ts.cn.cx.cvx.core5
-  let { o_DEF, real_div, real_ge, SUM_LE_NUMSEG, SUM_NEG, .. } := D.ts.cn.cx.cvx.core6
+  let { ARITH, EQ_IMP, ETA_AX, .. } := D.ts.cn.cx.cvx.core1
+  let { FORALL_IN_IMAGE, FUN_EQ_THM, IMAGE_ID, IMAGE_o, .. } := D.ts.cn.cx.cvx.core2
+  let { REAL_ABS_INV, REAL_ADD_LID, .. } := D.ts.cn.cx.cvx.core3
+  let { REAL_INV_1, REAL_LE_DIV, REAL_LE_INV2, REAL_LE_NEG2, REAL_LE_REFL, REAL_LE_TRANS,
+        REAL_LT_DIV, REAL_LT_INV_EQ, .. } := D.ts.cn.cx.cvx.core4
+  let { REAL_MUL_LID, REAL_MUL_LINV, REAL_MUL_LZERO, REAL_MUL_RID, REAL_OF_NUM_ADD,
+        REAL_OF_NUM_LE, REAL_OF_NUM_LT, REAL_OF_NUM_SUC, REAL_POS, REAL_SUB_REFL,
+        REAL_SUB_RZERO, SUBSET, .. } := D.ts.cn.cx.cvx.core5
+  let { o_DEF, real_div, real_ge, SUM_CLAUSES_NUMSEG, SUM_LE_NUMSEG, SUM_NEG,
+        .. } := D.ts.cn.cx.cvx.core6
   let { LIFT_DROP, .. } := D.ts.cn.cx.cvx.vec2
   let { dist, .. } := D.ts.cn.cx.cvx.vec4
+  let { EVENTUALLY_SEQUENTIALLY, EVENTUALLY_TRUE, TRIVIAL_LIMIT_SEQUENTIALLY,
+        .. } := D.ts.cn.cx.cvx.met
   let { REAL_INV_INV, .. } := D.ts.cn.ms.ig.dv.qsession
   let { REAL_LT_INV2, .. } := D.ts.cn.ms.ig.dv.dg.qsession
   -- @@SCOPE END
@@ -9330,6 +9500,130 @@ def setupRZAC [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZF : RZF) (BRZL :
     REWRITE_TAC [SUBSET, IN_REAL_INTERVAL] THEN
     RULE_ASSUM_TAC (REWRITE_RULE [← GSYM REAL_OF_NUM_LE]) THEN ASM_REAL_ARITH_TAC)
 
+  let RPOW_TELESCOPE_BOUNDS ← prove
+   r"!x s. &0 < x /\ &1 < s
+         ==> inv((x + &1) rpow s) <=
+             (x rpow (&1 - s) - (x + &1) rpow (&1 - s)) / (s - &1) /\
+             (x rpow (&1 - s) - (x + &1) rpow (&1 - s)) / (s - &1) <=
+             inv(x rpow s)"
+   (← do
+    let ra2 ← REAL_ARITH (← q r"(&1 - s) - &1 = --s:real")
+    let ra1 ← REAL_ARITH (← q r"(x + &1) - x = &1:real")
+    pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
+    MP_TAC (← ISPECL [(← q r"\y:real. y rpow (&1 - s)"),
+                      (← q r"\y:real. (&1 - s) * y rpow ((&1 - s) - &1)"),
+                      (← q r"x:real"), (← q r"x + &1:real")] REAL_MVT_SIMPLE) THEN
+    ANTS_TAC THENL
+     [CONJ_TAC THENL [REAL_ARITH_TAC, ALL_TAC] THEN
+      X_GEN_TAC (← q r"y:real") THEN REWRITE_TAC [IN_REAL_INTERVAL] THEN STRIP_TAC THEN
+      MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+      MATCH_MP_TAC HAS_REAL_DERIVATIVE_RPOW THEN ASM_REAL_ARITH_TAC,
+      ALL_TAC] THEN
+    REWRITE_TAC [IN_REAL_INTERVAL, ra1,
+                 REAL_MUL_RID, ra2] THEN
+    DISCH_THEN (X_CHOOSE_THEN (← q r"y:real") STRIP_ASSUME_TAC) THEN
+    SUBGOAL_THEN
+     (← q r"(x rpow (&1 - s) - (x + &1) rpow (&1 - s)) / (s - &1) = inv(y rpow s)")
+    SUBST1_TAC THENL
+     [REWRITE_TAC [← GSYM RPOW_NEG] THEN
+      FIRST_X_ASSUM (MP_TAC o check (α := thm) (fun th => is_eq (concl th))) THEN
+      UNDISCH_TAC (← q r"&1 < s:real") THEN CONV_TAC REAL_FIELD,
+      ALL_TAC] THEN
+    CONJ_TAC THEN MATCH_MP_TAC REAL_LE_INV2 THEN
+    (CONJ_TAC THENL [MATCH_MP_TAC RPOW_POS_LT, MATCH_MP_TAC RPOW_LE2]) THEN
+    ASM_REAL_ARITH_TAC))
+
+  let REAL_INFSUM_ZETA_BOUNDS ← prove
+   r"!s. &1 < s
+       ==> inv(s - &1) <= real_infsum (from 1) (\m. inv(&m rpow s)) /\
+           real_infsum (from 1) (\m. inv(&m rpow s)) <= s / (s - &1)"
+   (← do
+    let r11 ← REAL_ARITH (← q r"&1 < s:real ==> &0 <= s - &1")
+    let r10 ← REAL_ARITH
+       (← q r"&0 <= x / d ==> &1 + (&1 - x) / d <= &1 + &1 / d")
+    let r9 ← REAL_ARITH (← q r"y <= z ==> x <= y ==> x <= z:real")
+    let r8 ← REAL_ARITH (← q r"&1 < s:real ==> ~(s - &1 = &0)")
+    let r7 ← REAL_ARITH (← q r"inv x = (&1 - &0) * inv x")
+    let r6 ← REAL_ARITH (← q r"(n + &1) + &1 = n + &2:real")
+    let a5 ← ARITH_RULE (← q r"1 <= SUC n")
+    let a4 ← ARITH_RULE (← q r"~(n = 0) ==> 1 <= n")
+    let a3 ← ARITH_RULE (← q r"~(n = 0) ==> 1 <= n")
+    let a2 ← ARITH_RULE (← q r"1 <= SUC n")
+    let a1 ← ARITH_RULE (← q r"~(1 <= 0)")
+    pure (GEN_TAC THEN DISCH_TAC THEN
+    MP_TAC (← SPECL [(← q "1"), (← q r"s:real")] REAL_SUMMABLE_ZETA) THEN
+    ASM_REWRITE_TAC [] THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
+    FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE I [← GSYM REAL_SUMS_INFSUM]) THEN
+    REWRITE_TAC [REAL_SERIES_FROM] THEN
+    ABBREV_TAC (← q r"Z = real_infsum (from 1) (\m. inv(&m rpow s))") THEN
+    DISCH_TAC THEN
+    SUBGOAL_THEN
+     (← q r"!n. 1 <= n
+        ==> sum(1..n) (\m. inv(&m rpow s)) <=
+            &1 + (&1 - &n rpow (&1 - s)) / (s - &1)")
+    ASSUME_TAC THENL
+     [INDUCT_TAC THEN REWRITE_TAC [a1] THEN
+      ASM_CASES_TAC (← q r"n = 0") THENL
+       [ASM_REWRITE_TAC [SUM_SING_NUMSEG, ARITH] THEN
+        REWRITE_TAC [RPOW_ONE, REAL_INV_1] THEN REAL_ARITH_TAC,
+        ALL_TAC] THEN
+      ASM_SIMP_TAC [SUM_CLAUSES_NUMSEG, a2,
+                    a3] THEN
+      FIRST_X_ASSUM (MP_TAC o check (HolCore.Basics.is_imp o concl)) THEN
+      ASM_SIMP_TAC [a4] THEN
+      MP_TAC (← SPECL [(← q r"&n:real"), (← q r"s:real")] RPOW_TELESCOPE_BOUNDS) THEN
+      ASM_SIMP_TAC [REAL_OF_NUM_LT, LT_NZ, ← GSYM REAL_OF_NUM_SUC] THEN
+      REAL_ARITH_TAC,
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"!n. (&1 - (&n + &1) rpow (&1 - s)) / (s - &1) <=
+        sum(1..n) (\m. inv(&m rpow s))")
+    ASSUME_TAC THENL
+     [INDUCT_TAC THENL
+       [REWRITE_TAC [SUM_CLAUSES_NUMSEG, ARITH, REAL_ADD_LID, RPOW_ONE] THEN
+        REWRITE_TAC [REAL_SUB_REFL, real_div, REAL_MUL_LZERO, REAL_LE_REFL],
+        ALL_TAC] THEN
+      REWRITE_TAC [SUM_CLAUSES_NUMSEG, a5] THEN
+      MP_TAC (← SPECL [(← q r"&n + &1:real"), (← q r"s:real")] RPOW_TELESCOPE_BOUNDS) THEN
+      ASM_REWRITE_TAC [← GSYM REAL_OF_NUM_SUC] THEN
+      ANTS_TAC THENL [REAL_ARITH_TAC, ALL_TAC] THEN
+      FIRST_X_ASSUM (MP_TAC o check (HolCore.Basics.is_binary "real_le" o concl)) THEN
+      REWRITE_TAC [r6] THEN
+      REAL_ARITH_TAC,
+      ALL_TAC] THEN
+    CONJ_TAC THENL
+     [MATCH_MP_TAC (← ISPEC (← q r"sequentially") REALLIM_LE) THEN
+      EXISTS_TAC (← q r"\n. (&1 - (&n + &1) rpow (&1 - s)) / (s - &1)") THEN
+      EXISTS_TAC (← q r"\n. sum(1..n) (\m. inv(&m rpow s))") THEN
+      ASM_REWRITE_TAC [TRIVIAL_LIMIT_SEQUENTIALLY, EVENTUALLY_TRUE] THEN
+      REWRITE_TAC [real_div, REAL_MUL_LID] THEN
+      GEN_REWRITE_TAC LAND_CONV [r7] THEN
+      MATCH_MP_TAC REALLIM_RMUL THEN MATCH_MP_TAC REALLIM_SUB THEN
+      REWRITE_TAC [REALLIM_CONST] THEN
+      MP_TAC (← ISPECL [(← q r"sequentially"), (← q r"\n. inv(&n + &1)"), (← q r"&0:real"),
+                        (← q r"s - &1:real")] REALLIM_RPOW) THEN
+      REWRITE_TAC [REALLIM_1_OVER_N_OFFSET, RPOW_ZERO] THEN
+      ANTS_TAC THENL [ASM_REAL_ARITH_TAC, ALL_TAC] THEN
+      ASM_SIMP_TAC [r8] THEN
+      MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_THM_TAC THEN
+      AP_TERM_TAC THEN REWRITE_TAC [FUN_EQ_THM] THEN X_GEN_TAC (← q r"n:num") THEN
+      REWRITE_TAC [RPOW_INV, ← GSYM RPOW_NEG] THEN AP_TERM_TAC THEN
+      REAL_ARITH_TAC,
+      MATCH_MP_TAC (← ISPEC (← q r"sequentially") REALLIM_UBOUND) THEN
+      EXISTS_TAC (← q r"\n. sum(1..n) (\m. inv(&m rpow s))") THEN
+      ASM_REWRITE_TAC [TRIVIAL_LIMIT_SEQUENTIALLY, EVENTUALLY_SEQUENTIALLY] THEN
+      EXISTS_TAC (← q "1") THEN X_GEN_TAC (← q r"n:num") THEN DISCH_TAC THEN
+      FIRST_X_ASSUM (MP_TAC o SPEC (← q r"n:num") o check (α := thm) (fun th =>
+        HolCore.Basics.is_forall (concl th) &&
+        (HolCore.Basics.dest_forall (concl th)).toOption.any (fun (p : term × term) => let b := p.2; HolCore.Basics.is_imp b))) THEN
+      ASM_REWRITE_TAC [] THEN
+      MATCH_MP_TAC r9 THEN
+      SUBGOAL_THEN (← q r"s / (s - &1) = &1 + &1 / (s - &1)") SUBST1_TAC THENL
+       [UNDISCH_TAC (← q r"&1 < s:real") THEN CONV_TAC REAL_FIELD, ALL_TAC] THEN
+      MATCH_MP_TAC r10 THEN
+      MATCH_MP_TAC REAL_LE_DIV THEN
+      ASM_SIMP_TAC [RPOW_POS_LE, REAL_POS, r11]]))
+
   -- Some variants with real derivatives.
 
   let HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_1_ALT ← prove
@@ -9421,7 +9715,7 @@ def setupRZAC [HolBase] (D : RealAnalysisDeps) (BRZA : RZA) (BRZF : RZF) (BRZL :
 
   pure { REAL_SUM_INTEGRAL_UBOUND_INCREASING, REAL_SUM_INTEGRAL_UBOUND_DECREASING,
          REAL_SUM_INTEGRAL_LBOUND_INCREASING, REAL_SUM_INTEGRAL_LBOUND_DECREASING,
-         REAL_SUM_INTEGRAL_BOUNDS_INCREASING, REAL_SUM_INTEGRAL_BOUNDS_DECREASING,
+         REAL_SUM_INTEGRAL_BOUNDS_INCREASING, REAL_SUM_INTEGRAL_BOUNDS_DECREASING, RPOW_TELESCOPE_BOUNDS, REAL_INFSUM_ZETA_BOUNDS,
          HAS_ABSOLUTE_INTEGRAL_CHANGE_OF_VARIABLES_1_ALT,
          ABSOLUTELY_INTEGRABLE_CHANGE_OF_VARIABLES_1_ALT,
          REALLIM_POSINFINITY_SEQUENTIALLY, LIM_ZERO_POSINFINITY, LIM_ZERO_NEGINFINITY,

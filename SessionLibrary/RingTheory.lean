@@ -106,6 +106,7 @@ def core2 : HolLibrary.RingTheory.CoreThms2 where
   COND_SWAP := Session.COND_SWAP
   CONG := Session.CONG
   CONG_IMP_EQ := SessionLibrary.Pocklington.«CONG_IMP_EQ»
+  CONG_SOLVE := SessionLibrary.Pocklington.«CONG_SOLVE»
   CONG_SYM := SessionLibrary.Pocklington.«CONG_SYM»
   CONJ_ACI := Session.CONJ_ACI
   CONJ_ASSOC := Session.CONJ_ASSOC
@@ -332,8 +333,10 @@ def core4 : HolLibrary.RingTheory.CoreThms4 where
 /-- The core theorems ringtheory.ml uses. -/
 def core5 : HolLibrary.RingTheory.CoreThms5 where
   INT_REM_EQ := Session.INT_REM_EQ
+  INT_REM_EQ_0 := Session.INT_REM_EQ_0
   INT_REM_EQ_SELF := Session.INT_REM_EQ_SELF
   INT_REM_LT := Session.INT_REM_LT
+  INT_REM_MOD_SELF := Session.INT_REM_MOD_SELF
   INT_REM_POS := Session.INT_REM_POS
   INT_REM_POS_EQ := Session.INT_REM_POS_EQ
   INT_REM_REFL := Session.INT_REM_REFL
@@ -422,6 +425,7 @@ def core6 : HolLibrary.RingTheory.CoreThms6 where
   MOD_LT := Session.MOD_LT
   MOD_LT_EQ := Session.MOD_LT_EQ
   MOD_MULT_ADD := Session.MOD_MULT_ADD
+  MOD_MULT_RMOD := Session.MOD_MULT_RMOD
   MONO_AND := Session.MONO_AND
   MONO_EXISTS := Session.MONO_EXISTS
   MONO_FORALL := Session.MONO_FORALL
@@ -458,6 +462,7 @@ def core6 : HolLibrary.RingTheory.CoreThms6 where
   NUMSEG_CLAUSES_LT := Session.NUMSEG_CLAUSES_LT
   NUMSEG_EMPTY := Session.NUMSEG_EMPTY
   NUMSEG_LREC := Session.NUMSEG_LREC
+  NUMSEG_LT := Session.NUMSEG_LT
   NUMSEG_OFFSET_IMAGE := Session.NUMSEG_OFFSET_IMAGE
   NUMSEG_RREC := Session.NUMSEG_RREC
   NUMSEG_SING := Session.NUMSEG_SING
@@ -529,6 +534,7 @@ def core7 : HolLibrary.RingTheory.CoreThms7 where
   SUB_REFL := Session.SUB_REFL
   SUB_SUC := Session.SUB_SUC
   SUC_INJ := Session.SUC_INJ
+  SUC_SUB1 := Session.SUC_SUB1
   SURJ := Session.SURJ
   SURJECTIVE_IFF_INJECTIVE := Session.SURJECTIVE_IFF_INJECTIVE
   SURJECTIVE_IFF_INJECTIVE_GEN := Session.SURJECTIVE_IFF_INJECTIVE_GEN
@@ -792,11 +798,11 @@ initialize BRingRule : HolLibrary.RingTheory.RingRule ←
 
 initialize BCosets : HolLibrary.RingTheory.Cosets ←
   ioB "setupCosets" <|
-    (HolLibrary.RingTheory.setupCosets deps BBasics BNumbers BDivides BSubrings BIdeals BHoms BIso BKernels BProdRings BRingRule).run
+    (HolLibrary.RingTheory.setupCosets deps BBasics BNumbers BSums BDivides BSubrings BIdeals BHoms BIso BKernels BProdRings BRingRule).run
 
 initialize BQuotients : HolLibrary.RingTheory.Quotients ←
   ioB "setupQuotients" <|
-    (HolLibrary.RingTheory.setupQuotients deps BBasics BSubrings BIdeals BHoms BIso BKernels BRingRule BCosets).run
+    (HolLibrary.RingTheory.setupQuotients deps BBasics BNumbers BSums BSubrings BIdeals BHoms BIso BKernels BRingRule BCosets).run
 
 initialize BPrimes : HolLibrary.RingTheory.Primes ←
   ioB "setupPrimes" <|
@@ -856,7 +862,7 @@ initialize BBezout : HolLibrary.RingTheory.Bezout ←
 
 initialize BGcdDomain : HolLibrary.RingTheory.GcdDomain ←
   ioB "setupGcdDomain" <|
-    (HolLibrary.RingTheory.setupGcdDomain deps BBasics BNumbers BProducts BDivides BDomains BPrimes BSpecialIdeals2 BUFDs BRingGcd BBezout).run
+    (HolLibrary.RingTheory.setupGcdDomain deps BBasics BNumbers BSums BProducts BDivides BIdeals BDomains BRingRule BPrimes BSpecialIdeals BSpecialIdeals2 BUFDs BRingGcd BBezout).run
 
 initialize BSquarefreeUFD : HolLibrary.RingTheory.SquarefreeUFD ←
   ioB "setupSquarefreeUFD" <|
@@ -904,7 +910,7 @@ initialize BPowerSeries : HolLibrary.RingTheory.PowerSeries ←
 
 initialize BPolyRings : HolLibrary.RingTheory.PolyRings ←
   ioB "setupPolyRings" <|
-    (HolLibrary.RingTheory.setupPolyRings deps BBasics BNumbers BSums BProducts BSubrings BHoms BMonomials BPowerSeries).run
+    (HolLibrary.RingTheory.setupPolyRings deps BBasics BNumbers BSums BProducts BSubrings BHoms BIntegerModRing BMonomials BPowerSeries).run
 
 initialize BHomExtend : HolLibrary.RingTheory.HomExtend ←
   ioB "setupHomExtend" <|
@@ -948,19 +954,19 @@ initialize BZerodivisors : HolLibrary.RingTheory.Zerodivisors ←
 
 initialize BXMinusA : HolLibrary.RingTheory.XMinusA ←
   ioB "setupXMinusA" <|
-    (HolLibrary.RingTheory.setupXMinusA deps BBasics BNumbers BDivides BDomains BRingRule BPrimes BPowerSeries BPolyRings BDegree BEvaluation BZerodivisors).run
+    (HolLibrary.RingTheory.setupXMinusA deps BBasics BNumbers BDivides BDomains BRingRule BPrimes BPowerSeries BPolyRings BOneCoeff BDegree BEvaluation BZerodivisors).run
 
 initialize BDivision : HolLibrary.RingTheory.Division ←
   ioB "setupDivision" <|
-    (HolLibrary.RingTheory.setupDivision deps BBasics BNumbers BSums BDivides BIdeals BDomains BRules BIso BKernels BRingRule BCosets BQuotients BPrimes BSpecialIdeals2 BEuclidean BMonomials BPowerSeries BPolyRings BOneCoeff BDegree BEvaluation BZerodivisors).run
+    (HolLibrary.RingTheory.setupDivision deps BBasics BNumbers BSums BDivides BIdeals BDomains BRules BHoms BIso BKernels BRingRule BCosets BQuotients BPrimes BSpecialIdeals2 BEuclidean BMonomials BPowerSeries BPolyRings BOneCoeff BDegree BEvaluation BComposing BZerodivisors).run
 
 initialize BHilbert : HolLibrary.RingTheory.Hilbert ←
   ioB "setupHilbert" <|
-    (HolLibrary.RingTheory.setupHilbert deps BBasics BNumbers BSums BIdeals BRules BHoms BIso BRingRule BSpecialIdeals BNoetherian BMonomials BPowerSeries BPolyRings BNatIso BOneCoeff BDegree BEvaluation BDivision).run
+    (HolLibrary.RingTheory.setupHilbert deps BBasics BNumbers BSums BIdeals BRules BHoms BIso BRingRule BSpecialIdeals BNoetherian BMonomials BPowerSeries BPolyRings BHomExtend BNatIso BOneCoeff BDegree BEvaluation BDivision).run
 
 initialize BMonic : HolLibrary.RingTheory.Monic ←
   ioB "setupMonic" <|
-    (HolLibrary.RingTheory.setupMonic deps BBasics BNumbers BSums BProducts BDivides BSubrings BIdeals BDomains BHoms BKernels BRingRule BPrimes BSpecialIdeals BMonomials BPowerSeries BPolyRings BHomExtend BOneCoeff BDegree BComposing BZerodivisors BXMinusA BDivision).run
+    (HolLibrary.RingTheory.setupMonic deps BBasics BNumbers BSums BProducts BDivides BSubrings BIdeals BDomains BHoms BKernels BRingRule BPrimes BSpecialIdeals BSpecialIdeals2 BMonomials BPowerSeries BPolyRings BHomExtend BOneCoeff BDegree BEvaluation BComposing BZerodivisors BXMinusA BDivision).run
 
 initialize BSplits : HolLibrary.RingTheory.Splits ←
   ioB "setupSplits" <|
@@ -1000,7 +1006,7 @@ initialize BEisenstein : HolLibrary.RingTheory.Eisenstein ←
 
 initialize BRingOrder : HolLibrary.RingTheory.RingOrder ←
   ioB "setupRingOrder" <|
-    (HolLibrary.RingTheory.setupRingOrder deps BBasics BNumbers BDivides BSubrings BIdeals BDomains BHoms BRingRule BSquarefree BPowerSeries BPolyRings BDegree BEvaluation BXMinusA BSplits BDerivative BSeparable).run
+    (HolLibrary.RingTheory.setupRingOrder deps BBasics BNumbers BSums BDivides BSubrings BIdeals BDomains BHoms BRingRule BSquarefree BPowerSeries BPolyRings BDegree BEvaluation BXMinusA BSplits BDerivative BSeparable).run
 
 initialize BFrobenius : HolLibrary.RingTheory.Frobenius ←
   ioB "setupFrobenius" <|
@@ -1118,6 +1124,7 @@ def RING_OF_INT_EQ_0_CHAR_0 : thm := BNumbers.RING_OF_INT_EQ_0_CHAR_0
 def RING_OF_INT_EQ_CHAR_0 : thm := BNumbers.RING_OF_INT_EQ_CHAR_0
 def RING_OF_NUM_EQ : thm := BNumbers.RING_OF_NUM_EQ
 def RING_OF_INT_REM : thm := BNumbers.RING_OF_INT_REM
+def RING_OF_INT_REM_CHAR_DIVIDES : thm := BNumbers.RING_OF_INT_REM_CHAR_DIVIDES
 def RING_OF_NUM_MOD : thm := BNumbers.RING_OF_NUM_MOD
 def RING_OF_NUM_CHAR : thm := BNumbers.RING_OF_NUM_CHAR
 def RING_CHAR_INFINITE : thm := BNumbers.RING_CHAR_INFINITE
@@ -1179,6 +1186,7 @@ def RING_SUM_RESTRICT_SET : thm := BSums.RING_SUM_RESTRICT_SET
 def RING_SUM_CASES : thm := BSums.RING_SUM_CASES
 def RING_SUM_IMAGE : thm := BSums.RING_SUM_IMAGE
 def RING_SUM_EQ_GENERAL_INVERSES : thm := BSums.RING_SUM_EQ_GENERAL_INVERSES
+def RING_SUM_MOD_MULT_REINDEX : thm := BSums.RING_SUM_MOD_MULT_REINDEX
 def RING_SUM_MUL_MOD_DIV : thm := BSums.RING_SUM_MUL_MOD_DIV
 def RING_SUM_OFFSET : thm := BSums.RING_SUM_OFFSET
 def RING_SUM_NUMSEG_LT_ADD : thm := BSums.RING_SUM_NUMSEG_LT_ADD
@@ -1191,6 +1199,7 @@ def RING_SUM_DIFFS : thm := BSums.RING_SUM_DIFFS
 def RING_SUM_DIFFS_ALT : thm := BSums.RING_SUM_DIFFS_ALT
 def RING_GEOM_SERIES_GEN : thm := BSums.RING_GEOM_SERIES_GEN
 def RING_GEOM_SERIES : thm := BSums.RING_GEOM_SERIES
+def RING_GEOMETRIC_SUM : thm := BSums.RING_GEOMETRIC_SUM
 
 -- Products
 def ring_product : thm := BProducts.ring_product
@@ -1580,6 +1589,8 @@ def IDEAL_GENERATED_SING_SETMUL_LEFT : thm := BIdeals.IDEAL_GENERATED_SING_SETMU
 def RING_SETMUL_IDEAL_GENERATED_SING : thm := BIdeals.RING_SETMUL_IDEAL_GENERATED_SING
 def IDEAL_GENERATED_UNION : thm := BIdeals.IDEAL_GENERATED_UNION
 def IDEAL_GENERATED_INSERT : thm := BIdeals.IDEAL_GENERATED_INSERT
+def IDEAL_GENERATED_INSERT_EQ : thm := BIdeals.IDEAL_GENERATED_INSERT_EQ
+def IDEAL_GENERATED_PAIR_EQ : thm := BIdeals.IDEAL_GENERATED_PAIR_EQ
 def IN_IDEAL_GENERATED_INSERT_IDEAL : thm := BIdeals.IN_IDEAL_GENERATED_INSERT_IDEAL
 def IDEAL_GENERATED_2 : thm := BIdeals.IDEAL_GENERATED_2
 def IDEAL_GENERATED_SETADD_SUBSET : thm := BIdeals.IDEAL_GENERATED_SETADD_SUBSET
@@ -1592,6 +1603,7 @@ def IDEAL_GENERATED_FINITE_IMAGE : thm := BIdeals.IDEAL_GENERATED_FINITE_IMAGE
 def IDEAL_GENERATED_FINITE : thm := BIdeals.IDEAL_GENERATED_FINITE
 def IDEAL_GENERATED_EXPLICIT : thm := BIdeals.IDEAL_GENERATED_EXPLICIT
 def IDEAL_GENERATED_ADJOIN_EXPLICIT : thm := BIdeals.IDEAL_GENERATED_ADJOIN_EXPLICIT
+def IDEAL_GENERATED_ADJOIN_ROOT_UNIT : thm := BIdeals.IDEAL_GENERATED_ADJOIN_ROOT_UNIT
 
 -- Domains
 def integral_domain : thm := BDomains.integral_domain
@@ -1696,6 +1708,7 @@ def RING_HOMOMORPHISM_SUM : thm := BHoms.RING_HOMOMORPHISM_SUM
 def RING_HOMOMORPHISM_SUM_MUL : thm := BHoms.RING_HOMOMORPHISM_SUM_MUL
 def RING_HOMOMORPHISM_PRODUCT : thm := BHoms.RING_HOMOMORPHISM_PRODUCT
 def RING_HOMOMORPHISM_PRODUCT_POW : thm := BHoms.RING_HOMOMORPHISM_PRODUCT_POW
+def IMAGE_HOMOMORPHISM_MUL : thm := BHoms.IMAGE_HOMOMORPHISM_MUL
 def RING_MONOMORPHISM_SUM : thm := BHoms.RING_MONOMORPHISM_SUM
 def RING_MONOMORPHISM_PRODUCT : thm := BHoms.RING_MONOMORPHISM_PRODUCT
 def RING_MONOMORPHISM_SUM_GEN : thm := BHoms.RING_MONOMORPHISM_SUM_GEN
@@ -1996,9 +2009,12 @@ def IN_RING_COSET : thm := BCosets.IN_RING_COSET
 def RING_COSET_CHOICE : thm := BCosets.RING_COSET_CHOICE
 def RING_COSET_RELATIONAL : thm := BCosets.RING_COSET_RELATIONAL
 def RING_IDEAL_ADD_IN_EQ : thm := BCosets.RING_IDEAL_ADD_IN_EQ
+def IN_RING_IDEAL_SUB_SYM : thm := BCosets.IN_RING_IDEAL_SUB_SYM
 def RING_IDEAL_SUB_TRANS : thm := BCosets.RING_IDEAL_SUB_TRANS
 def IN_RING_IDEAL_SUB_ADD : thm := BCosets.IN_RING_IDEAL_SUB_ADD
 def IN_RING_IDEAL_SUB_MUL : thm := BCosets.IN_RING_IDEAL_SUB_MUL
+def IN_RING_IDEAL_SUB_SUM_RESTRICT : thm := BCosets.IN_RING_IDEAL_SUB_SUM_RESTRICT
+def RING_POW_ADD_SQUARE_CONGRUENCE : thm := BCosets.RING_POW_ADD_SQUARE_CONGRUENCE
 def DISJOINT_RING_COSETS : thm := BCosets.DISJOINT_RING_COSETS
 def PAIRWISE_DISJOINT_RING_COSETS : thm := BCosets.PAIRWISE_DISJOINT_RING_COSETS
 def IMAGE_RING_COSET_SWITCH : thm := BCosets.IMAGE_RING_COSET_SWITCH
@@ -2042,6 +2058,8 @@ def QUOTIENT_RING_NEG : thm := BQuotients.QUOTIENT_RING_NEG
 def QUOTIENT_RING_ADD : thm := BQuotients.QUOTIENT_RING_ADD
 def QUOTIENT_RING_MUL : thm := BQuotients.QUOTIENT_RING_MUL
 def RING_KERNEL_RING_COSET : thm := BQuotients.RING_KERNEL_RING_COSET
+def QUOTIENT_RING_LINCOMB_LIFT : thm := BQuotients.QUOTIENT_RING_LINCOMB_LIFT
+def RING_CHAR_QUOTIENT_RING_DIVIDES : thm := BQuotients.RING_CHAR_QUOTIENT_RING_DIVIDES
 def CARD_LE_QUOTIENT_RING : thm := BQuotients.CARD_LE_QUOTIENT_RING
 def CARD_QUOTIENT_RING_DIVIDES : thm := BQuotients.CARD_QUOTIENT_RING_DIVIDES
 def QUOTIENT_RING_UNIVERSAL_EXPLICIT : thm := BQuotients.QUOTIENT_RING_UNIVERSAL_EXPLICIT
@@ -2216,6 +2234,7 @@ def FRACTION_FIELD : thm := BLocalization2.FRACTION_FIELD
 def FRACTION_DOMAIN : thm := BLocalization2.FRACTION_DOMAIN
 def field_of_fractions : thm := BLocalization2.field_of_fractions
 def FIELD_OF_FRACTIONS_IMP_INTEGRAL_DOMAIN : thm := BLocalization2.FIELD_OF_FRACTIONS_IMP_INTEGRAL_DOMAIN
+def FIELD_OF_FRACTIONS_IMP_MONOMORPHISM : thm := BLocalization2.FIELD_OF_FRACTIONS_IMP_MONOMORPHISM
 def FIELD_OF_FRACTIONS_FRACTION_RING : thm := BLocalization2.FIELD_OF_FRACTIONS_FRACTION_RING
 def FIELD_OF_FRACTIONS_EQ : thm := BLocalization2.FIELD_OF_FRACTIONS_EQ
 def FIELD_OF_FRACTIONS_ISOMORPHISM_RIGHT : thm := BLocalization2.FIELD_OF_FRACTIONS_ISOMORPHISM_RIGHT
@@ -2395,6 +2414,12 @@ def JACOBSON_RADICAL_SUBSET : thm := BRadical.JACOBSON_RADICAL_SUBSET
 def RING_IDEAL_JACOBSON_RADICAL : thm := BRadical.RING_IDEAL_JACOBSON_RADICAL
 def IN_JACOBSON_RADICAL : thm := BRadical.IN_JACOBSON_RADICAL
 def RING_UNIT_LIFT_JACOBSON_RADICAL : thm := BRadical.RING_UNIT_LIFT_JACOBSON_RADICAL
+def RING_UNIT_QUOTIENT_RING_COSET : thm := BRadical.RING_UNIT_QUOTIENT_RING_COSET
+def RING_UNIT_QUOTIENT_RING_COSET_EQ : thm := BRadical.RING_UNIT_QUOTIENT_RING_COSET_EQ
+def RING_UNIT_QUOTIENT_RING_COSET_MUL : thm := BRadical.RING_UNIT_QUOTIENT_RING_COSET_MUL
+def RING_UNIT_QUOTIENT_RING_COSET_POW : thm := BRadical.RING_UNIT_QUOTIENT_RING_COSET_POW
+def RING_UNIT_QUOTIENT_RING_MAXIMAL : thm := BRadical.RING_UNIT_QUOTIENT_RING_MAXIMAL
+def RING_UNIT_QUOTIENT_RING_RADICAL : thm := BRadical.RING_UNIT_QUOTIENT_RING_RADICAL
 def JACOBSON_RADICAL_EQ_INTERS_MAXIMAL_IDEALS : thm := BRadical.JACOBSON_RADICAL_EQ_INTERS_MAXIMAL_IDEALS
 def NILRADICAL_SUBSET_JACOBSON_RADICAL : thm := BRadical.NILRADICAL_SUBSET_JACOBSON_RADICAL
 def minimal_prime_over : thm := BRadical.minimal_prime_over
@@ -2554,6 +2579,8 @@ def RING_COPRIME_PRODUCT_DIVIDES_ALT : thm := BGcdDomain.RING_COPRIME_PRODUCT_DI
 def RING_COPRIME_PRODUCT_DIVIDES : thm := BGcdDomain.RING_COPRIME_PRODUCT_DIVIDES
 def PID_COPRIME_PRIME_POWERS : thm := BGcdDomain.PID_COPRIME_PRIME_POWERS
 def PID_DIVIDES_PRIME_POWERS : thm := BGcdDomain.PID_DIVIDES_PRIME_POWERS
+def UFD_DIVISOR_PRIME_POW_SUC : thm := BGcdDomain.UFD_DIVISOR_PRIME_POW_SUC
+def PID_ANNIHILATOR_ATTAINED : thm := BGcdDomain.PID_ANNIHILATOR_ATTAINED
 
 -- SquarefreeUFD
 def RING_SQUAREFREE_GCD : thm := BSquarefreeUFD.RING_SQUAREFREE_GCD
@@ -2670,6 +2697,7 @@ def ISOMORPHIC_RING_BOOL_RING : thm := BBoolRing.ISOMORPHIC_RING_BOOL_RING
 def integer_ring : thm := BIntegerRing.integer_ring
 def INTEGER_RING : thm := BIntegerRing.INTEGER_RING
 def INTEGER_RING_POW : thm := BIntegerRing.INTEGER_RING_POW
+def INTEGER_RING_SUB : thm := BIntegerRing.INTEGER_RING_SUB
 def INTEGER_RING_SUM : thm := BIntegerRing.INTEGER_RING_SUM
 def INTEGER_RING_PRODUCT : thm := BIntegerRing.INTEGER_RING_PRODUCT
 def INTEGER_RING_UNIT : thm := BIntegerRing.INTEGER_RING_UNIT
@@ -2726,6 +2754,8 @@ def RING_ISOMORPHISM_PROD_INTEGER_MOD_RING : thm := BIntegerModRing.RING_ISOMORP
 def ISOMORPHIC_PROD_INTEGER_MOD_RING : thm := BIntegerModRing.ISOMORPHIC_PROD_INTEGER_MOD_RING
 def VNREGULAR_INTEGER_MOD_RING : thm := BIntegerModRing.VNREGULAR_INTEGER_MOD_RING
 def INTEGER_QUOTIENT_RING_ISOMORPHIC_MOD : thm := BIntegerModRing.INTEGER_QUOTIENT_RING_ISOMORPHIC_MOD
+def RING_EPIMORPHISM_INTEGER_MOD_RING : thm := BIntegerModRing.RING_EPIMORPHISM_INTEGER_MOD_RING
+def RING_KERNEL_INTEGER_MOD_RING : thm := BIntegerModRing.RING_KERNEL_INTEGER_MOD_RING
 def RING_ISOMORPHISM_PRIME_SUBRING : thm := BIntegerModRing.RING_ISOMORPHISM_PRIME_SUBRING
 def ISOMORPHIC_PRIME_SUBRING : thm := BIntegerModRing.ISOMORPHIC_PRIME_SUBRING
 def FIELD_PRIME_SUBRING : thm := BIntegerModRing.FIELD_PRIME_SUBRING
@@ -2979,6 +3009,7 @@ def POWSER_RING_EQ : thm := BPolyRings.POWSER_RING_EQ
 def POWSER_RING_EQ_IMP : thm := BPolyRings.POWSER_RING_EQ_IMP
 def POLY_RING_EQ : thm := BPolyRings.POLY_RING_EQ
 def POLY_RING_EQ_IMP : thm := BPolyRings.POLY_RING_EQ_IMP
+def POLY_RING_INTEGER_MOD_RING_OF_INT : thm := BPolyRings.POLY_RING_INTEGER_MOD_RING_OF_INT
 
 -- HomExtend
 def poly_extend : thm := BHomExtend.poly_extend
@@ -3363,6 +3394,7 @@ def POLY_DEG_X_MINUS_A : thm := BXMinusA.POLY_DEG_X_MINUS_A
 def POLY_X_MINUS_A_NONZERO : thm := BXMinusA.POLY_X_MINUS_A_NONZERO
 def POLY_X_MINUS_A_IN_CARRIER : thm := BXMinusA.POLY_X_MINUS_A_IN_CARRIER
 def RING_POLYNOMIAL_X_MINUS_A : thm := BXMinusA.RING_POLYNOMIAL_X_MINUS_A
+def COEFF_POLY_MUL_X_MINUS : thm := BXMinusA.COEFF_POLY_MUL_X_MINUS
 def POLY_DIVIDES_X_MINUS_A : thm := BXMinusA.POLY_DIVIDES_X_MINUS_A
 def POLY_DIVIDES_X_MINUS_ROOT : thm := BXMinusA.POLY_DIVIDES_X_MINUS_ROOT
 def POLY_DIVIDES_X_MINUS_ROOT_EQ : thm := BXMinusA.POLY_DIVIDES_X_MINUS_ROOT_EQ
@@ -3378,8 +3410,12 @@ def POLY_TOP_NONZERO : thm := BDivision.POLY_TOP_NONZERO
 def POLY_TOP_TAIL : thm := BDivision.POLY_TOP_TAIL
 def POLY_TOP_EQ_0 : thm := BDivision.POLY_TOP_EQ_0
 def POLY_DEG_LT_FROM_LE : thm := BDivision.POLY_DEG_LT_FROM_LE
+def POLY_DEG_PSEUDO_DIVISION_STEP : thm := BDivision.POLY_DEG_PSEUDO_DIVISION_STEP
+def RING_IDEAL_POLY_LEAST_DEGREE_ROOT : thm := BDivision.RING_IDEAL_POLY_LEAST_DEGREE_ROOT
 def POLY_DEG_DIVIDES_LE_UNIVARIATE : thm := BDivision.POLY_DEG_DIVIDES_LE_UNIVARIATE
 def POLY_DIVISION_GEN : thm := BDivision.POLY_DIVISION_GEN
+def RING_IDEAL_POLY_COEFF : thm := BDivision.RING_IDEAL_POLY_COEFF
+def POLY_DIVISION_COEFF_IDEAL : thm := BDivision.POLY_DIVISION_COEFF_IDEAL
 def POLY_DIVISION : thm := BDivision.POLY_DIVISION
 def EUCLIDEAN_POLY_RING : thm := BDivision.EUCLIDEAN_POLY_RING
 def PID_POLY_RING : thm := BDivision.PID_POLY_RING
@@ -3404,6 +3440,7 @@ def MAXIMAL_IDEAL_POLY_RING_EPIMORPHISM : thm := BDivision.MAXIMAL_IDEAL_POLY_RI
 -- Hilbert
 def NOETHERIAN_POLY_RING_1 : thm := BHilbert.NOETHERIAN_POLY_RING_1
 def NOETHERIAN_POLY_RING : thm := BHilbert.NOETHERIAN_POLY_RING
+def NOETHERIAN_RING_FINITELY_GENERATED_ALGEBRA : thm := BHilbert.NOETHERIAN_RING_FINITELY_GENERATED_ALGEBRA
 def KAPLANSKY_LEMMA : thm := BHilbert.KAPLANSKY_LEMMA
 def NOETHERIAN_POWSER_RING_1 : thm := BHilbert.NOETHERIAN_POWSER_RING_1
 def NOETHERIAN_POWSER_RING : thm := BHilbert.NOETHERIAN_POWSER_RING
@@ -3423,6 +3460,9 @@ def MONIC_EQ_X_MINUS_A : thm := BMonic.MONIC_EQ_X_MINUS_A
 def MONIC_SUBRING_GENERATED : thm := BMonic.MONIC_SUBRING_GENERATED
 def MONIC_HOMOMORPHIC_IMAGE : thm := BMonic.MONIC_HOMOMORPHIC_IMAGE
 def MONIC_EPIMORPHIC_PREIMAGE : thm := BMonic.MONIC_EPIMORPHIC_PREIMAGE
+def POLY_EXTEND_MONIC_UNIVARIATE : thm := BMonic.POLY_EXTEND_MONIC_UNIVARIATE
+def RING_MONIC_RELATION_FACTOR : thm := BMonic.RING_MONIC_RELATION_FACTOR
+def SUBRING_GENERATED_MONIC_ROOT_SPAN : thm := BMonic.SUBRING_GENERATED_MONIC_ROOT_SPAN
 def POLY_DEG_MUL_MONIC : thm := BMonic.POLY_DEG_MUL_MONIC
 def POLY_DEG_LMUL_MONIC : thm := BMonic.POLY_DEG_LMUL_MONIC
 def POLY_DEG_RMUL_MONIC : thm := BMonic.POLY_DEG_RMUL_MONIC
@@ -3453,6 +3493,9 @@ def POLY_DEG_DIVIDES_LE_MONIC : thm := BMonic.POLY_DEG_DIVIDES_LE_MONIC
 def MONIC_DIVIDES_EQ : thm := BMonic.MONIC_DIVIDES_EQ
 def MONIC_FACTOR_COEFFS_PRIME_IDEAL : thm := BMonic.MONIC_FACTOR_COEFFS_PRIME_IDEAL
 def POLY_ROOT_DECOMPOSE : thm := BMonic.POLY_ROOT_DECOMPOSE
+def FIELD_POLY_COFACTOR_COEFFS : thm := BMonic.FIELD_POLY_COFACTOR_COEFFS
+def POLY_LAGRANGE_INTERPOLATION : thm := BMonic.POLY_LAGRANGE_INTERPOLATION
+def RING_SUM_LAGRANGE_COEFF : thm := BMonic.RING_SUM_LAGRANGE_COEFF
 def poly_splits : thm := BSplits.poly_splits
 def POLY_SPLITS_IN_CARRIER : thm := BSplits.POLY_SPLITS_IN_CARRIER
 def POLY_SPLITS_CONST : thm := BSplits.POLY_SPLITS_CONST
@@ -3544,7 +3587,9 @@ def POLY_DERIV_CMUL : thm := BDerivative.POLY_DERIV_CMUL
 def POLY_DERIV_HOMOMORPHIC_IMAGE : thm := BDerivative.POLY_DERIV_HOMOMORPHIC_IMAGE
 def POLY_DERIV_MUL : thm := BDerivative.POLY_DERIV_MUL
 def POLY_EVALUATE_TAYLOR : thm := BDerivative.POLY_EVALUATE_TAYLOR
+def POLY_EVAL_TAYLOR : thm := BDerivative.POLY_EVAL_TAYLOR
 def POLY_EVALUATE_SUB_IN_IDEAL : thm := BDerivative.POLY_EVALUATE_SUB_IN_IDEAL
+def POLY_EVAL_SUB_IN_IDEAL : thm := BDerivative.POLY_EVAL_SUB_IN_IDEAL
 def POLY_DERIV_SUM : thm := BDerivative.POLY_DERIV_SUM
 def POLY_DERIV_PRODUCT : thm := BDerivative.POLY_DERIV_PRODUCT
 def POLY_DERIV_POW : thm := BDerivative.POLY_DERIV_POW
@@ -3637,6 +3682,8 @@ def FINITE_FIELD_CARD_ROOTS_OF_UNITY : thm := BRingOrder.FINITE_FIELD_CARD_ROOTS
 def INTEGRAL_DOMAIN_ROOTS_OF_UNITY_CYCLIC : thm := BRingOrder.INTEGRAL_DOMAIN_ROOTS_OF_UNITY_CYCLIC
 def ROOTS_OF_UNITY_RING_ORDER : thm := BRingOrder.ROOTS_OF_UNITY_RING_ORDER
 def ROOTS_OF_UNITY_RING_ORDER_DIVISOR : thm := BRingOrder.ROOTS_OF_UNITY_RING_ORDER_DIVISOR
+def ROOT_OF_UNITY_IN_SUBRING_GENERATED : thm := BRingOrder.ROOT_OF_UNITY_IN_SUBRING_GENERATED
+def RING_SUM_ROOT_OF_UNITY_POWERS : thm := BRingOrder.RING_SUM_ROOT_OF_UNITY_POWERS
 def RING_ENDOMORPHISM_ROOT_OF_UNITY : thm := BRingOrder.RING_ENDOMORPHISM_ROOT_OF_UNITY
 def ROOTS_OF_UNITY_HAS_SIZE_NONZERO : thm := BRingOrder.ROOTS_OF_UNITY_HAS_SIZE_NONZERO
 def ROOTS_OF_UNITY_HAS_SIZE_PRIMITIVE : thm := BRingOrder.ROOTS_OF_UNITY_HAS_SIZE_PRIMITIVE
@@ -3664,6 +3711,8 @@ def INTEGRAL_DOMAIN_RULE : term → IO (Except String thm) := fun t => (BIntegra
 def FIELD_TAC : HolCore.Tactics.tactic := fun g => BIntegralDomainRule.FIELD_TAC g
 def FIELD_INV_EQ_0 : thm := BIntegralDomainRule.FIELD_INV_EQ_0
 def FIELD_DIV_EQ_0 : thm := BIntegralDomainRule.FIELD_DIV_EQ_0
+def FIELD_ADD_INV_EQ : thm := BIntegralDomainRule.FIELD_ADD_INV_EQ
+def FIELD_DIV_EQ_MUL : thm := BIntegralDomainRule.FIELD_DIV_EQ_MUL
 
 -- RingPullDiv
 def RING_PULL_DIV : thm := BRingPullDiv.RING_PULL_DIV

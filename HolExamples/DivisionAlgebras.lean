@@ -8,7 +8,7 @@ open HolCore.Kernel Session HolLight.Syntax HolExamples
 open SessionMultiLib.Misc SessionMultiLib.Vectors SessionMultiLib.Determinants
 open SessionMultiLib.Metric SessionMultiLib.Topology SessionMultiLib.Convex
 open SessionMultiLib.Paths SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration
-open SessionMultiLib.Complexes SessionMultiLib.Canal SessionMultiLib.Transcendentals
+open SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes SessionMultiLib.Canal SessionMultiLib.Transcendentals
 open SessionMultiLib.RealAnalysis SessionMultiLib.MoreTop
 namespace HolExamples.DivisionAlgebras
 

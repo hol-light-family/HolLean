@@ -10,7 +10,7 @@ import SessionLibrary.Pocklington
 import SessionLibrary.Multiplicative
 import HolExamples.Mangoldt
 open HolCore.Kernel Session HolLight.Syntax HolExamples Hol100
-open SessionLibrary.Products SessionLibrary.Iter SessionLibrary.Prime SessionLibrary.Permutations SessionLibrary.Floor SessionLibrary.Wo SessionLibrary.Frag SessionLibrary.Agm SessionLibrary.Card SessionLibrary.Pocklington SessionLibrary.Matroids SessionMultiLib.Misc SessionLibrary.Multiplicative SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionMultiLib.Metric SessionMultiLib.Determinants SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.Complexes SessionMultiLib.Paths SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals HolExamples.Mangoldt
+open SessionLibrary.Products SessionLibrary.Iter SessionLibrary.Prime SessionLibrary.Permutations SessionLibrary.Floor SessionLibrary.Wo SessionLibrary.Frag SessionLibrary.Agm SessionLibrary.Card SessionLibrary.Pocklington SessionLibrary.Matroids SessionMultiLib.Misc SessionLibrary.Multiplicative SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionMultiLib.Metric SessionMultiLib.Determinants SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes SessionMultiLib.Paths SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals HolExamples.Mangoldt
 namespace Hol100.Dirichlet
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
@@ -63,7 +63,7 @@ private def tt (tm : term) : ExceptT String IO thm := ExceptT.mk (TAUT tm)
 #eval Session.prioritize_real
 
 #eval phrase 8
-#eval (do let _ ← SessionMultiLib.Complexes.prioritize_complex.run : IO Unit)
+#eval (do let _ ← SessionMultiLib.ComplexAlgebra.prioritize_complex.run : IO Unit)
 
 /- ------------------------------------------------------------------------- -/
 /- Rearranging a certain kind of double sum.                                 -/

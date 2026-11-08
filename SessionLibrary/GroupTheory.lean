@@ -52,6 +52,7 @@ def core1 : HolLibrary.GroupTheory.CoreThms1 where
   CARD_EQ_IMAGE_MUL_FIBRES := SessionLibrary.Card.«CARD_EQ_IMAGE_MUL_FIBRES»
   CARD_EQ_IMP_LE := SessionLibrary.Card.«CARD_EQ_IMP_LE»
   CARD_EQ_LIST_GEN := SessionLibrary.Card.«CARD_EQ_LIST_GEN»
+  CARD_EQ_NSUM := Session.CARD_EQ_NSUM
   CARD_EQ_REFL := SessionLibrary.Card.«CARD_EQ_REFL»
   CARD_EQ_REFL_IMP := SessionLibrary.Card.«CARD_EQ_REFL_IMP»
   CARD_EQ_SYM := SessionLibrary.Card.«CARD_EQ_SYM»
@@ -452,9 +453,12 @@ def core6 : HolLibrary.GroupTheory.CoreThms6 where
   NOT_LT := Session.NOT_LT
   NOT_SUC := Session.NOT_SUC
   NSUM_CONST := Session.NSUM_CONST
+  NSUM_DELTA := Session.NSUM_DELTA
   NSUM_EQ := Session.NSUM_EQ
+  NSUM_GROUP := Session.NSUM_GROUP
   NSUM_IMAGE := Session.NSUM_IMAGE
   NSUM_RESTRICT_SET := Session.NSUM_RESTRICT_SET
+  NSUM_SWAP := Session.NSUM_SWAP
   NUMSEG_CLAUSES := Session.NUMSEG_CLAUSES
   NUMSEG_LREC := Session.NUMSEG_LREC
   NUMSEG_RREC := Session.NUMSEG_RREC
@@ -854,7 +858,7 @@ initialize BCyclicGroups2 : HolLibrary.GroupTheory.CyclicGroups2 ←
 
 initialize BCyclicGroups3 : HolLibrary.GroupTheory.CyclicGroups3 ←
   ioB "setupCyclicGroups3" <|
-    (HolLibrary.GroupTheory.setupCyclicGroups3 deps BBasics BDerived BPow BSubgroups BSubgroupGenerated BSubgroupGen1 BCosets2 BNormalSubgroups BQuotientGroups BSubgroupCorrespondence BGroupElementOrder BGroupElementOrder2 BCyclicGroups1 BCyclicGroups2).run
+    (HolLibrary.GroupTheory.setupCyclicGroups3 deps BBasics BDerived BPow BAbelian BConjugation BSubgroups BSubgroupGenerated BSubgroupGen1 BSubgroupGen2 BHomomorphisms2 BCosets BCosets1 BCosets2 BNormalSubgroups BCentralizerNormalizer BQuotientGroups BSubgroupCorrespondence BGroupElementOrder BGroupElementOrder2 BCyclicGroups1 BCyclicGroups2).run
 
 initialize BFinitelyGenerated : HolLibrary.GroupTheory.FinitelyGenerated ←
   ioB "setupFinitelyGenerated" <|
@@ -866,7 +870,7 @@ initialize BFinitelyGeneratedSubgroups : HolLibrary.GroupTheory.FinitelyGenerate
 
 initialize BFinitelyGeneratedMaximal : HolLibrary.GroupTheory.FinitelyGeneratedMaximal ←
   ioB "setupFinitelyGeneratedMaximal" <|
-    (HolLibrary.GroupTheory.setupFinitelyGeneratedMaximal deps BBasics BSubgroups BSubgroupGenerated BSubgroupGen2 BNormalSubgroups BFinitelyGenerated BFinitelyGeneratedSubgroups).run
+    (HolLibrary.GroupTheory.setupFinitelyGeneratedMaximal deps BBasics BDerived BGroupProduct BGroupProductMul BSubgroups BSubgroupGenerated BSubgroupGen2 BNormalSubgroups BFinitelyGenerated BFinitelyGeneratedSubgroups).run
 
 initialize BIntegerGroup : HolLibrary.GroupTheory.IntegerGroup ←
   ioB "setupIntegerGroup" <|
@@ -1743,6 +1747,7 @@ def GROUP_SETMUL_RIGHT_COSET_BETWEEN : thm := BCosets.GROUP_SETMUL_RIGHT_COSET_B
 -- Cosets1
 def IN_LEFT_COSET_SELF : thm := BCosets1.IN_LEFT_COSET_SELF
 def UNIONS_RIGHT_COSETS : thm := BCosets1.UNIONS_RIGHT_COSETS
+def SUBGROUP_COMPLEMENT_RIGHT_COSETS : thm := BCosets1.SUBGROUP_COMPLEMENT_RIGHT_COSETS
 def UNIONS_LEFT_COSETS : thm := BCosets1.UNIONS_LEFT_COSETS
 def RIGHT_COSETS_EQ : thm := BCosets1.RIGHT_COSETS_EQ
 def IN_RIGHT_COSET_TRANS : thm := BCosets1.IN_RIGHT_COSET_TRANS
@@ -1973,6 +1978,7 @@ def NORMAL_SUBGROUP_GROUP_KERNEL : thm := BKernelsImages1.NORMAL_SUBGROUP_GROUP_
 def NORMAL_SUBGROUP_INTER_SUBGROUP_GENERATED : thm := BKernelsImages1.NORMAL_SUBGROUP_INTER_SUBGROUP_GENERATED
 def GROUP_KERNEL_RIGHT_COSET : thm := BKernelsImages1.GROUP_KERNEL_RIGHT_COSET
 def CARD_EQ_GROUP_IMAGE_KERNEL : thm := BKernelsImages1.CARD_EQ_GROUP_IMAGE_KERNEL
+def CARD_IMAGE_SUBGROUP_KERNEL : thm := BKernelsImages1.CARD_IMAGE_SUBGROUP_KERNEL
 def CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE : thm := BKernelsImages1.CARD_DIVIDES_GROUP_MONOMORPHIC_IMAGE
 def CARD_DIVIDES_GROUP_EPIMORPHIC_IMAGE : thm := BKernelsImages1.CARD_DIVIDES_GROUP_EPIMORPHIC_IMAGE
 
@@ -2164,6 +2170,17 @@ def PRIME_INDEX_MAXIMAL_PROPER_SUBGROUP : thm := BCyclicGroups3.PRIME_INDEX_MAXI
 def MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX : thm := BCyclicGroups3.MAXIMAL_PROPER_SUBGROUP_PRIME_INDEX
 def GROUP_ZPOW_CANCEL : thm := BCyclicGroups3.GROUP_ZPOW_CANCEL
 def GROUP_POW_CANCEL : thm := BCyclicGroups3.GROUP_POW_CANCEL
+def CYCLIC_SUBGROUP_TORSION_SUBGROUP : thm := BCyclicGroups3.CYCLIC_SUBGROUP_TORSION_SUBGROUP
+def CARD_RESTRICT_POW_EQ_ID : thm := BCyclicGroups3.CARD_RESTRICT_POW_EQ_ID
+def CARD_CONJUGATES_IN_TORSION : thm := BCyclicGroups3.CARD_CONJUGATES_IN_TORSION
+def CARD_CONJUGATES_IN_ORDER : thm := BCyclicGroups3.CARD_CONJUGATES_IN_ORDER
+def CARD_CONJUGATES_IN_TORSION_NSUM : thm := BCyclicGroups3.CARD_CONJUGATES_IN_TORSION_NSUM
+def GROUP_CONJUGATION_SUBGROUP_GENERATED_SING : thm := BCyclicGroups3.GROUP_CONJUGATION_SUBGROUP_GENERATED_SING
+def CYCLIC_SUBGROUP_GENERATED_EQ : thm := BCyclicGroups3.CYCLIC_SUBGROUP_GENERATED_EQ
+def CYCLIC_SUBGROUP_CONJUGATE : thm := BCyclicGroups3.CYCLIC_SUBGROUP_CONJUGATE
+def CARD_CONJUGATES_INTO_CYCLIC : thm := BCyclicGroups3.CARD_CONJUGATES_INTO_CYCLIC
+def CARD_CONJUGATES_INTO_CYCLIC_GENERATORS : thm := BCyclicGroups3.CARD_CONJUGATES_INTO_CYCLIC_GENERATORS
+def CARD_CYCLIC_SUBGROUP_DIVISION : thm := BCyclicGroups3.CARD_CYCLIC_SUBGROUP_DIVISION
 
 -- FinitelyGenerated
 def finitely_generated_group : thm := BFinitelyGenerated.finitely_generated_group
@@ -2187,6 +2204,7 @@ def FINITELY_GENERATED_ABELIAN_SUBGROUP_EXPLICIT : thm := BFinitelyGeneratedSubg
 
 -- FinitelyGeneratedMaximal
 def FINITELY_GENERATED_ABELIAN_SUBGROUP : thm := BFinitelyGeneratedMaximal.FINITELY_GENERATED_ABELIAN_SUBGROUP
+def FINITELY_GENERATED_ABELIAN_GROUP_POW : thm := BFinitelyGeneratedMaximal.FINITELY_GENERATED_ABELIAN_GROUP_POW
 def MAXIMAL_SUBGROUP_EXISTS : thm := BFinitelyGeneratedMaximal.MAXIMAL_SUBGROUP_EXISTS
 def MAXIMAL_NORMAL_SUBGROUP_EXISTS : thm := BFinitelyGeneratedMaximal.MAXIMAL_NORMAL_SUBGROUP_EXISTS
 
@@ -2302,6 +2320,7 @@ def SYLOW_THEOREM_CONJUGATE_SUBSET : thm := BSylow2.SYLOW_THEOREM_CONJUGATE_SUBS
 def SYLOW_THEOREM_CONJUGATE_ALT : thm := BSylow2.SYLOW_THEOREM_CONJUGATE_ALT
 def SYLOW_THEOREM_CONJUGATE : thm := BSylow2.SYLOW_THEOREM_CONJUGATE
 def SYLOW_THEOREM_CONJUGATE_EQ : thm := BSylow2.SYLOW_THEOREM_CONJUGATE_EQ
+def NORMAL_PGROUP_SUBSET_COPRIME_INDEX : thm := BSylow2.NORMAL_PGROUP_SUBSET_COPRIME_INDEX
 def SYLOW_THEOREM_PGROUP_SUPERSET : thm := BSylow2.SYLOW_THEOREM_PGROUP_SUPERSET
 def SYLOW_THEOREM_NORMAL_UNIQUE : thm := BSylow2.SYLOW_THEOREM_NORMAL_UNIQUE
 def SYLOW_THEOREM_COUNT_NORMALIZER : thm := BSylow2.SYLOW_THEOREM_COUNT_NORMALIZER

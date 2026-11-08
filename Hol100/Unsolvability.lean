@@ -5,8 +5,10 @@ Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 import Hol100.Common
 import SessionMultiLib.Cauchy
 import SessionLibrary.Galois
+import SessionMultiLib.ComplexRing
+import SessionMultiLib.ComplexField
 open HolCore.Kernel Session HolLight.Syntax HolExamples Hol100
-open SessionLibrary.Binomial SessionLibrary.Iter SessionLibrary.Permutations SessionLibrary.Frag SessionLibrary.Prime SessionLibrary.Wo SessionLibrary.Products SessionLibrary.Floor SessionLibrary.Card SessionLibrary.Matroids SessionLibrary.Pocklington SessionMultiLib.Misc SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionLibrary.SymmetricGroup SessionLibrary.RingTheory SessionMultiLib.Metric SessionLibrary.RingDet SessionMultiLib.Determinants SessionLibrary.FieldTheory SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.Complexes SessionLibrary.Galois SessionMultiLib.Paths SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals SessionMultiLib.RealAnalysis SessionMultiLib.MoreTop SessionMultiLib.Cauchy
+open SessionLibrary.Binomial SessionLibrary.Iter SessionLibrary.Permutations SessionLibrary.Frag SessionLibrary.Prime SessionLibrary.Wo SessionLibrary.Floor SessionLibrary.Products SessionLibrary.Card SessionLibrary.Matroids SessionLibrary.Pocklington SessionMultiLib.Misc SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionLibrary.SymmetricGroup SessionLibrary.RingTheory SessionMultiLib.Metric SessionLibrary.RingDet SessionMultiLib.Determinants SessionLibrary.FieldTheory SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.ComplexAlgebra SessionLibrary.Galois SessionMultiLib.Complexes SessionMultiLib.Paths SessionMultiLib.ComplexRing SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals SessionMultiLib.RealAnalysis SessionMultiLib.MoreTop SessionMultiLib.Cauchy SessionMultiLib.ComplexField
 namespace Hol100.Unsolvability
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
@@ -23,6 +25,8 @@ private def keepIO {α : Type} [Inhabited α] (name : String) (f : Unit → IO (
     | .ok (.error e) => panic! s!"keepIO {name}: {e}"
     | .error e => panic! s!"keepIO {name}: {e}"
 private def ar (tm : term) : ExceptT String IO thm := ExceptT.mk (ARITH_RULE tm)
+private def cr (tm : term) : ExceptT String IO thm := ExceptT.mk (COMPLEX_RING tm)
+private def ir (tm : term) : ExceptT String IO thm := ExceptT.mk (INTEGER_RULE tm)
 private def rr (tm : term) : ExceptT String IO thm := ExceptT.mk (Session.REAL_ARITH3 tm)
 private def tt (tm : term) : ExceptT String IO thm := ExceptT.mk (TAUT tm)
 
@@ -39,7 +43,15 @@ private def tt (tm : term) : ExceptT String IO thm := ExceptT.mk (TAUT tm)
 #eval SessionLibrary.Galois.ensureGalois
 
 #eval phrase 3
-#eval (do let _ ← SessionMultiLib.Complexes.prioritize_complex.run : IO Unit)
+-- needs "Multivariate/complex_ring.ml";;
+#eval SessionMultiLib.ComplexRing.ensureComplexRing
+
+#eval phrase 4
+-- needs "Multivariate/complex_field.ml";;
+#eval SessionMultiLib.ComplexField.ensureComplexField
+
+#eval phrase 5
+#eval (do let _ ← SessionMultiLib.ComplexAlgebra.prioritize_complex.run : IO Unit)
 
 /- ------------------------------------------------------------------------- -/
 /- The polynomial x^5 - 4 * x + 2 is irreducible over the rationals by the   -/
@@ -51,135 +63,13 @@ private def tt (tm : term) : ExceptT String IO thm := ExceptT.mk (TAUT tm)
 /- degree at least 5, the Galois group is the full symmetric group) applies. -/
 /- ------------------------------------------------------------------------- -/
 /- ------------------------------------------------------------------------- -/
-/- The field of complex numbers as a ring. The definition is the same as in  -/
-/- 100/transcendence.ml, so loading both files is a benign redefinition.     -/
+/- The field of complex numbers as a ring (complex_ring and its arithmetic,  -/
+/- with complex conjugation an automorphism RING_AUTOMORPHISM_CNJ, are in    -/
+/- Multivariate/complex_ring.ml): algebraic closure is proved in             -/
+/- Multivariate/complex_field.ml; conjugation permutes the complex numbers.  -/
 /- ------------------------------------------------------------------------- -/
 
-#eval phrase 4
-def complex_ring : thm := keep "complex_ring" fun _ => new_definition
- [[complex_ring = ring((:complex),Cx(&0),Cx(&1),( -- ),( + ),( * ))]]
-#eval complex_ring
-
-#eval phrase 5
-def COMPLEX_RING_CLAUSES : thm := keep "COMPLEX_RING_CLAUSES" fun _ => (do
-  prove ([[ring_carrier complex_ring = (:complex) /\
-   ring_0 complex_ring = Cx(&0) /\
-   ring_1 complex_ring = Cx(&1) /\
-   ring_neg complex_ring = ( -- ) /\
-   ring_add complex_ring = ( + ) /\
-   ring_mul complex_ring = ( * )]])
-   (PURE_REWRITE_TAC [(← HolLight.GSYM PAIR_EQ), ring_carrier, ring_0, ring_1, ring_neg, ring_add, ring_mul,
-      BETA_THM, PAIR] THEN
-    PURE_REWRITE_TAC [complex_ring, (← HolLight.GSYM (← HolLight.CONJUNCT2 ring_tybij))] THEN
-    REWRITE_TAC [IN_UNIV] THEN CONV_TAC COMPLEX_RING)
-  : ExceptT String IO thm).run
-#eval COMPLEX_RING_CLAUSES
-
 #eval phrase 6
-def FIELD_COMPLEX_RING : thm := keep "FIELD_COMPLEX_RING" fun _ => (do
-  prove ([[field complex_ring]])
-   (REWRITE_TAC [field, COMPLEX_RING_CLAUSES, IN_UNIV, CX_INJ] THEN
-    CONV_TAC REAL_RAT_REDUCE_CONV THEN MESON_TAC [COMPLEX_MUL_RINV])
-  : ExceptT String IO thm).run
-#eval FIELD_COMPLEX_RING
-
-#eval phrase 7
-def COMPLEX_RING_OF_NUM : thm := keep "COMPLEX_RING_OF_NUM" fun _ => (do
-  prove ([[ring_of_num complex_ring = \n. Cx(&n)]])
-   (REWRITE_TAC [FUN_EQ_THM] THEN INDUCT_TAC THEN
-    ASM_REWRITE_TAC [ring_of_num, COMPLEX_RING_CLAUSES, (← HolLight.GSYM REAL_OF_NUM_SUC),
-                    CX_ADD])
-  : ExceptT String IO thm).run
-#eval COMPLEX_RING_OF_NUM
-
-#eval phrase 8
-def COMPLEX_RING_OF_INT : thm := keep "COMPLEX_RING_OF_INT" fun _ => (do
-  prove ([[ring_of_int complex_ring = \n. Cx(real_of_int n)]])
-   (REWRITE_TAC [FUN_EQ_THM, RING_OF_INT_CASES, FORALL_INT_CASES] THEN
-    REWRITE_TAC [int_neg_th, int_of_num_th, COMPLEX_RING_OF_NUM] THEN
-    REWRITE_TAC [COMPLEX_RING_CLAUSES, CX_NEG])
-  : ExceptT String IO thm).run
-#eval COMPLEX_RING_OF_INT
-
-#eval phrase 9
-def COMPLEX_RING_CHAR : thm := keep "COMPLEX_RING_CHAR" fun _ => (do
-  prove ([[ring_char complex_ring = 0]])
-   (REWRITE_TAC [RING_CHAR_EQ_0, COMPLEX_RING_OF_NUM, COMPLEX_RING_CLAUSES,
-                CX_INJ, REAL_OF_NUM_EQ])
-  : ExceptT String IO thm).run
-#eval COMPLEX_RING_CHAR
-
-#eval phrase 10
-def COMPLEX_RING_INV : thm := keep "COMPLEX_RING_INV" fun _ => (do
-  prove ([[ring_inv complex_ring = inv]])
-   (REWRITE_TAC [FUN_EQ_THM, ring_inv, COMPLEX_RING_CLAUSES] THEN
-    SIMP_TAC [FIELD_UNIT, FIELD_COMPLEX_RING, COMPLEX_RING_CLAUSES,
-             IN_UNIV, COND_SWAP] THEN
-    GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [COMPLEX_INV_0] THEN
-    MATCH_MP_TAC SELECT_UNIQUE THEN POP_ASSUM MP_TAC THEN
-    CONV_TAC COMPLEX_FIELD)
-  : ExceptT String IO thm).run
-#eval COMPLEX_RING_INV
-
-#eval phrase 11
-def COMPLEX_RING_POW : thm := keep "COMPLEX_RING_POW" fun _ => (do
-  prove ([[ring_pow complex_ring = (pow)]])
-   (REWRITE_TAC [FUN_EQ_THM] THEN GEN_TAC THEN INDUCT_TAC THEN
-    ASM_REWRITE_TAC [ring_pow, complex_pow, COMPLEX_RING_CLAUSES])
-  : ExceptT String IO thm).run
-#eval COMPLEX_RING_POW
-
-#eval phrase 12
-def COMPLEX_RING_SUM : thm := keep "COMPLEX_RING_SUM" fun _ => (do
-  prove ([[!s (f:A->complex). FINITE s ==> ring_sum complex_ring s f = vsum s f]])
-   (REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-    SIMP_TAC [RING_SUM_CLAUSES, VSUM_CLAUSES, COMPLEX_RING_CLAUSES, IN_UNIV,
-             COMPLEX_VEC_0])
-  : ExceptT String IO thm).run
-#eval COMPLEX_RING_SUM
-
-#eval phrase 13
-def POLY_EVAL_COMPLEX_RING : thm := keep "POLY_EVAL_COMPLEX_RING" fun _ => (do
-  prove ([[!p z. p IN ring_carrier(poly_ring complex_ring (:1))
-         ==> poly_eval complex_ring p z =
-             vsum(0..poly_deg complex_ring p) (\i. coeff i p * z pow i)]])
-   (SIMP_TAC [POLY_EVAL_EXPAND, COMPLEX_RING_CLAUSES, IN_UNIV,
-             COMPLEX_RING_SUM, FINITE_NUMSEG, COMPLEX_RING_POW])
-  : ExceptT String IO thm).run
-#eval POLY_EVAL_COMPLEX_RING
-
-#eval phrase 14
-def ALGEBRAICALLY_CLOSED_FIELD_COMPLEX_RING : thm := keep "ALGEBRAICALLY_CLOSED_FIELD_COMPLEX_RING" fun _ => (do
-  prove ([[algebraically_closed_field complex_ring]])
-   (REWRITE_TAC [algebraically_closed_field, FIELD_COMPLEX_RING] THEN
-    X_GEN_TAC ([[p:(1->num)->complex]]) THEN STRIP_TAC THEN
-    MP_TAC (← HolLight.ISPECL [([[complex_ring]]), ([[p:(1->num)->complex]])] POLY_TOP_NONZERO) THEN
-    ANTS_TAC THENL
-     [ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
-      UNDISCH_TAC ([[~(poly_deg complex_ring (p:(1->num)->complex) = 0)]]) THEN
-      ASM_REWRITE_TAC [POLY_RING_CLAUSES, POLY_DEG_0],
-      REWRITE_TAC [COMPLEX_RING_CLAUSES] THEN DISCH_TAC] THEN
-    ASM_SIMP_TAC [POLY_EVAL_COMPLEX_RING, COMPLEX_RING_CLAUSES, IN_UNIV] THEN
-    MP_TAC (← HolLight.ISPECL [([[\i. coeff i (p:(1->num)->complex)]]),
-                   ([[poly_deg complex_ring (p:(1->num)->complex)]])] FTA) THEN
-    REWRITE_TAC [] THEN DISCH_THEN MATCH_MP_TAC THEN DISJ2_TAC THEN
-    DISCH_THEN (MP_TAC o HolLight.SPEC ([[poly_deg complex_ring (p:(1->num)->complex)]])) THEN
-    ASM_SIMP_TAC [IN_NUMSEG, LE_REFL, LE_1])
-  : ExceptT String IO thm).run
-#eval ALGEBRAICALLY_CLOSED_FIELD_COMPLEX_RING
-
-#eval phrase 15
-def RING_AUTOMORPHISM_CNJ : thm := keep "RING_AUTOMORPHISM_CNJ" fun _ => (do
-  prove ([[ring_automorphism complex_ring cnj]])
-   (REWRITE_TAC [ring_automorphism, ring_isomorphism, ring_isomorphisms] THEN
-    EXISTS_TAC ([[cnj]]) THEN
-    REWRITE_TAC [ring_homomorphism, COMPLEX_RING_CLAUSES, SUBSET_UNIV,
-                IN_UNIV] THEN
-    REWRITE_TAC [CNJ_NEG, CNJ_ADD, CNJ_MUL, CNJ_CX, CNJ_CNJ])
-  : ExceptT String IO thm).run
-#eval RING_AUTOMORPHISM_CNJ
-
-#eval phrase 16
 def PERMUTES_CNJ : thm := keep "PERMUTES_CNJ" fun _ => (do
   prove ([[cnj permutes (:complex)]])
    (REWRITE_TAC [PERMUTES_UNIV] THEN MESON_TAC [CNJ_CNJ])
@@ -191,7 +81,7 @@ def PERMUTES_CNJ : thm := keep "PERMUTES_CNJ" fun _ => (do
 /- degree in any extension where it splits, for example in C.                -/
 /- ------------------------------------------------------------------------- -/
 
-#eval phrase 17
+#eval phrase 7
 def POLY_SPLITS_OVER_ALGEBRAICALLY_CLOSED_FIELD : thm := keep "POLY_SPLITS_OVER_ALGEBRAICALLY_CLOSED_FIELD" fun _ => (do
   prove ([[!(h:A->B) k l p.
         field_extension (k,l) h /\ algebraically_closed_field l /\
@@ -204,7 +94,7 @@ def POLY_SPLITS_OVER_ALGEBRAICALLY_CLOSED_FIELD : thm := keep "POLY_SPLITS_OVER_
   : ExceptT String IO thm).run
 #eval POLY_SPLITS_OVER_ALGEBRAICALLY_CLOSED_FIELD
 
-#eval phrase 18
+#eval phrase 8
 def POLY_SPLITS_OVER_IRREDUCIBLE_ROOT_COUNT : thm := keep "POLY_SPLITS_OVER_IRREDUCIBLE_ROOT_COUNT" fun _ => (do
   prove ([[!(h:A->B) k l p.
         field_extension (k,l) h /\ ring_char k = 0 /\
@@ -223,15 +113,15 @@ def POLY_SPLITS_OVER_IRREDUCIBLE_ROOT_COUNT : thm := keep "POLY_SPLITS_OVER_IRRE
   : ExceptT String IO thm).run
 #eval POLY_SPLITS_OVER_IRREDUCIBLE_ROOT_COUNT
 
-#eval phrase 19
+#eval phrase 9
 def RING_CHAR_FIELD_EXTENSION_COMPLEX_RING : thm := keep "RING_CHAR_FIELD_EXTENSION_COMPLEX_RING" fun _ => (do
   prove ([[!(h:A->complex) k. field_extension (k,complex_ring) h ==> ring_char k = 0]])
    (REWRITE_TAC [field_extension] THEN
-    MESON_TAC [RING_CHAR_MONOMORPHIC_IMAGE, COMPLEX_RING_CHAR])
+    MESON_TAC [RING_CHAR_MONOMORPHIC_IMAGE, RING_CHAR_COMPLEX_RING])
   : ExceptT String IO thm).run
 #eval RING_CHAR_FIELD_EXTENSION_COMPLEX_RING
 
-#eval phrase 20
+#eval phrase 10
 def COMPLEX_ROOTS_IRREDUCIBLE : thm := keep "COMPLEX_ROOTS_IRREDUCIBLE" fun _ => (do
   prove ([[!(h:A->complex) k p.
         field_extension (k,complex_ring) h /\
@@ -254,7 +144,7 @@ def COMPLEX_ROOTS_IRREDUCIBLE : thm := keep "COMPLEX_ROOTS_IRREDUCIBLE" fun _ =>
 /- embedded in C they are radical elements in the sense of galois.ml.        -/
 /- ------------------------------------------------------------------------- -/
 
-#eval phrase 21
+#eval phrase 11
 -- let radical_number_RULES,radical_number_INDUCT,radical_number_CASES = new_inductive_definition ...
 def radical_number_RULES_defs : thm × thm × thm :=
   keepIO "radical_number_RULES_defs" fun _ => new_inductive_definition
@@ -270,7 +160,7 @@ def radical_number_INDUCT : thm := radical_number_RULES_defs.2.1
 def radical_number_CASES : thm := radical_number_RULES_defs.2.2
 #eval do IO.println (repr radical_number_RULES); IO.println (repr radical_number_INDUCT); IO.println (repr radical_number_CASES)
 
-#eval phrase 22
+#eval phrase 12
 def RADICAL_NUMBER_IMP_RADICAL_ELEMENT : thm := keep "RADICAL_NUMBER_IMP_RADICAL_ELEMENT" fun _ => (do
   prove ([[!(h:A->complex) k z.
         field_extension(k,complex_ring) h /\ radical_number z
@@ -307,7 +197,7 @@ def RADICAL_NUMBER_IMP_RADICAL_ELEMENT : thm := keep "RADICAL_NUMBER_IMP_RADICAL
 /- expressible by radicals: complex conjugation moves exactly two roots.     -/
 /- ------------------------------------------------------------------------- -/
 
-#eval phrase 23
+#eval phrase 13
 def NOT_RADICAL_ROOT_REAL_FIELD : thm := keep "NOT_RADICAL_ROOT_REAL_FIELD" fun _ => (do
   prove ([[!(h:A->complex) k p.
         field_extension (k,complex_ring) h /\
@@ -336,7 +226,7 @@ def NOT_RADICAL_ROOT_REAL_FIELD : thm := keep "NOT_RADICAL_ROOT_REAL_FIELD" fun 
 /- ring homomorphism into C is a field extension with real values.           -/
 /- ------------------------------------------------------------------------- -/
 
-#eval phrase 24
+#eval phrase 14
 def RING_HOMOMORPHISM_FRACTION_RING_INTEGER_RING : thm := keep "RING_HOMOMORPHISM_FRACTION_RING_INTEGER_RING" fun _ => (do
   prove ([[!(h:(int#int->bool)->A) r n.
         ring_homomorphism(fraction_ring integer_ring,r) h
@@ -356,7 +246,7 @@ def RING_HOMOMORPHISM_FRACTION_RING_INTEGER_RING : thm := keep "RING_HOMOMORPHIS
   : ExceptT String IO thm).run
 #eval RING_HOMOMORPHISM_FRACTION_RING_INTEGER_RING
 
-#eval phrase 25
+#eval phrase 15
 def RING_HOMOMORPHISM_FRACTION_RING_INTEGER_RING_EXISTS : thm := keep "RING_HOMOMORPHISM_FRACTION_RING_INTEGER_RING_EXISTS" fun _ => (do
   prove ([[?h. ring_homomorphism(fraction_ring integer_ring,complex_ring) h]])
    (MP_TAC (← HolLight.ISPECL [([[integer_ring]]), ([[complex_ring]]), ([[ring_of_int complex_ring]])] FRACTION_RING_UNIVERSAL) THEN
@@ -369,7 +259,7 @@ def RING_HOMOMORPHISM_FRACTION_RING_INTEGER_RING_EXISTS : thm := keep "RING_HOMO
   : ExceptT String IO thm).run
 #eval RING_HOMOMORPHISM_FRACTION_RING_INTEGER_RING_EXISTS
 
-#eval phrase 26
+#eval phrase 16
 def FIELD_EXTENSION_FRACTION_RING_INTEGER_RING : thm := keep "FIELD_EXTENSION_FRACTION_RING_INTEGER_RING" fun _ => (do
   let h1 ← tt (← ExceptT.mk [[~p ==> p \/ q ==> q]])
   prove ([[!h:(int#int->bool)->complex.
@@ -388,7 +278,7 @@ def FIELD_EXTENSION_FRACTION_RING_INTEGER_RING : thm := keep "FIELD_EXTENSION_FR
   : ExceptT String IO thm).run
 #eval FIELD_EXTENSION_FRACTION_RING_INTEGER_RING
 
-#eval phrase 27
+#eval phrase 17
 def REAL_FRACTION_RING_INTEGER_RING : thm := keep "REAL_FRACTION_RING_INTEGER_RING" fun _ => (do
   prove ([[!(h:(int#int->bool)->complex) x.
         ring_homomorphism(fraction_ring integer_ring,complex_ring) h /\
@@ -410,7 +300,7 @@ def REAL_FRACTION_RING_INTEGER_RING : thm := keep "REAL_FRACTION_RING_INTEGER_RI
   : ExceptT String IO thm).run
 #eval REAL_FRACTION_RING_INTEGER_RING
 
-#eval phrase 28
+#eval phrase 18
 def NOT_RADICAL_ROOT_RATIONAL : thm := keep "NOT_RADICAL_ROOT_RATIONAL" fun _ => (do
   prove ([[!(h:(int#int->bool)->complex) p.
         ring_homomorphism(fraction_ring integer_ring,complex_ring) h /\
@@ -433,7 +323,7 @@ def NOT_RADICAL_ROOT_RATIONAL : thm := keep "NOT_RADICAL_ROOT_RATIONAL" fun _ =>
 /- Eisenstein criterion with the prime 2.                                    -/
 /- ------------------------------------------------------------------------- -/
 
-#eval phrase 29
+#eval phrase 19
 def QUINTIC_RATIONAL_IRREDUCIBLE : thm := keep "QUINTIC_RATIONAL_IRREDUCIBLE" fun _ => (do
   let h1 ← ar (← ExceptT.mk [[k < 5 <=> k = 0 \/ k = 1 \/ k = 2 \/ k = 3 \/ k = 4]])
   prove ([[?p. ring_irreducible (poly_ring (fraction_ring integer_ring) (:1)) p /\
@@ -475,7 +365,7 @@ def QUINTIC_RATIONAL_IRREDUCIBLE : thm := keep "QUINTIC_RATIONAL_IRREDUCIBLE" fu
         DISCH_THEN (MP_TAC o HolLight.MATCH_MP INT_DIVIDES_LE) THEN INT_ARITH_TAC,
         REWRITE_TAC [h1] THEN
         REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
-        CONV_TAC NUM_REDUCE_CONV THEN CONV_TAC INTEGER_RULE,
+        CONV_TAC NUM_REDUCE_CONV THEN CONV_TAC ir,
         DISCH_THEN (MP_TAC o HolLight.MATCH_MP INT_DIVIDES_LE) THEN INT_ARITH_TAC],
       MP_TAC (← HolLight.ISPECL [([[integer_ring]]), ([[fraction_ring integer_ring]]),
                      ([[ring_fractionate integer_ring
@@ -493,10 +383,12 @@ def QUINTIC_RATIONAL_IRREDUCIBLE : thm := keep "QUINTIC_RATIONAL_IRREDUCIBLE" fu
         pure (REWRITE_TAC [(← HolLight.MATCH_MP RING_HOMOMORPHISM_FRACTION_RING_INTEGER_RING th)])),
       ALL_TAC] THEN
     SUBGOAL_THEN ([[ring_monomorphism(integer_ring,complex_ring) (ring_of_int complex_ring)]]) ASSUME_TAC THENL
-     [REWRITE_TAC [RING_MONOMORPHISM_INTEGER_RING_OF_INT, COMPLEX_RING_CHAR],
+     [REWRITE_TAC [RING_MONOMORPHISM_INTEGER_RING_OF_INT, RING_CHAR_COMPLEX_RING],
       ALL_TAC] THEN
-    HolCore.Lib.W (MP_TAC o HolLight.PART_MATCH (HolCore.Equal.lhand o HolCore.Kernel.rand) POLY_EVAL_COMPLEX_RING o
-      HolCore.Equal.lhand o HolLight.snd) THEN
+    HolCore.Lib.W (fun (_, w) => HolLight.tactic_of do
+        let x1 ← ec (HolCore.Equal.lhand w)
+        let x2 ← ExceptT.mk (HolLight.PART_MATCH (HolCore.Equal.lhand o HolCore.Kernel.rand) POLY_EVAL_COMPLEX_RING x1)
+        pure (MP_TAC x2)) THEN
     ANTS_TAC THENL
      [MATCH_MP_TAC IN_RING_POLYNOMIAL_CARRIER_COMPOSE THEN
       EXISTS_TAC ([[integer_ring]]) THEN
@@ -510,7 +402,7 @@ def QUINTIC_RATIONAL_IRREDUCIBLE : thm := keep "QUINTIC_RATIONAL_IRREDUCIBLE" fu
     CONV_TAC (HolLight.ONCE_DEPTH_CONV EXPAND_VSUM_CONV) THEN
     CONV_TAC NUM_REDUCE_CONV THEN
     REWRITE_TAC [COMPLEX_RING_OF_INT, int_of_num_th, int_neg_th, CX_NEG] THEN
-    CONV_TAC COMPLEX_RING)
+    CONV_TAC cr)
   : ExceptT String IO thm).run
 #eval QUINTIC_RATIONAL_IRREDUCIBLE
 
@@ -520,10 +412,10 @@ def QUINTIC_RATIONAL_IRREDUCIBLE : thm := keep "QUINTIC_RATIONAL_IRREDUCIBLE" fu
 /- 5 * x^4 - 4 has only two real roots.                                      -/
 /- ------------------------------------------------------------------------- -/
 
-#eval phrase 30
+#eval phrase 20
 #eval Session.prioritize_real
 
-#eval phrase 31
+#eval phrase 21
 def HAS_REAL_DERIVATIVE_QUINTIC : thm := keep "HAS_REAL_DERIVATIVE_QUINTIC" fun _ => (do
   prove ([[!x. ((\x. x pow 5 - &4 * x + &2)
         has_real_derivative (&5 * x pow 4 - &4)) (atreal x)]])
@@ -532,7 +424,7 @@ def HAS_REAL_DERIVATIVE_QUINTIC : thm := keep "HAS_REAL_DERIVATIVE_QUINTIC" fun 
   : ExceptT String IO thm).run
 #eval HAS_REAL_DERIVATIVE_QUINTIC
 
-#eval phrase 32
+#eval phrase 22
 def REAL_CONTINUOUS_ON_QUINTIC : thm := keep "REAL_CONTINUOUS_ON_QUINTIC" fun _ => (do
   prove ([[!s. (\x. x pow 5 - &4 * x + &2) real_continuous_on s]])
    (GEN_TAC THEN MATCH_MP_TAC REAL_DIFFERENTIABLE_ON_IMP_REAL_CONTINUOUS_ON THEN
@@ -541,7 +433,7 @@ def REAL_CONTINUOUS_ON_QUINTIC : thm := keep "REAL_CONTINUOUS_ON_QUINTIC" fun _ 
   : ExceptT String IO thm).run
 #eval REAL_CONTINUOUS_ON_QUINTIC
 
-#eval phrase 33
+#eval phrase 23
 def QUINTIC_AT_LEAST_3_REAL_ROOTS : thm := keep "QUINTIC_AT_LEAST_3_REAL_ROOTS" fun _ => (do
   prove ([[?a b c. a < b /\ b < c /\
            a pow 5 - &4 * a + &2 = &0 /\
@@ -571,7 +463,7 @@ def QUINTIC_AT_LEAST_3_REAL_ROOTS : thm := keep "QUINTIC_AT_LEAST_3_REAL_ROOTS" 
   : ExceptT String IO thm).run
 #eval QUINTIC_AT_LEAST_3_REAL_ROOTS
 
-#eval phrase 34
+#eval phrase 24
 def QUINTIC_AT_MOST_3_REAL_ROOTS : thm := keep "QUINTIC_AT_MOST_3_REAL_ROOTS" fun _ => (do
   prove ([[~(?a b c d. a < b /\ b < c /\ c < d /\
                a pow 5 - &4 * a + &2 = &0 /\
@@ -601,7 +493,7 @@ def QUINTIC_AT_MOST_3_REAL_ROOTS : thm := keep "QUINTIC_AT_MOST_3_REAL_ROOTS" fu
   : ExceptT String IO thm).run
 #eval QUINTIC_AT_MOST_3_REAL_ROOTS
 
-#eval phrase 35
+#eval phrase 25
 def QUINTIC_REAL_ROOTS : thm := keep "QUINTIC_REAL_ROOTS" fun _ => (do
   let h1 ← rr (← ExceptT.mk [[a < b /\ b < c /\ ~(x < a) /\ ~(a < x /\ x < b) /\
       ~(b < x /\ x < c) /\ ~(c < x)
@@ -628,10 +520,10 @@ def QUINTIC_REAL_ROOTS : thm := keep "QUINTIC_REAL_ROOTS" fun _ => (do
   : ExceptT String IO thm).run
 #eval QUINTIC_REAL_ROOTS
 
-#eval phrase 36
-#eval (do let _ ← SessionMultiLib.Complexes.prioritize_complex.run : IO Unit)
+#eval phrase 26
+#eval (do let _ ← SessionMultiLib.ComplexAlgebra.prioritize_complex.run : IO Unit)
 
-#eval phrase 37
+#eval phrase 27
 def QUINTIC_COMPLEX_REAL_ROOTS : thm := keep "QUINTIC_COMPLEX_REAL_ROOTS" fun _ => (do
   prove ([[{z | z pow 5 - Cx(&4) * z + Cx(&2) = Cx(&0) /\ real z} HAS_SIZE 3]])
    (SUBGOAL_THEN ([[{z | z pow 5 - Cx(&4) * z + Cx(&2) = Cx(&0) /\ real z} =
@@ -650,7 +542,7 @@ def QUINTIC_COMPLEX_REAL_ROOTS : thm := keep "QUINTIC_COMPLEX_REAL_ROOTS" fun _ 
   : ExceptT String IO thm).run
 #eval QUINTIC_COMPLEX_REAL_ROOTS
 
-#eval phrase 38
+#eval phrase 28
 def QUINTIC_NONREAL_ROOTS : thm := keep "QUINTIC_NONREAL_ROOTS" fun _ => (do
   prove ([[{z | z pow 5 - Cx(&4) * z + Cx(&2) = Cx(&0) /\ ~real z} HAS_SIZE 2]])
    (X_CHOOSE_THEN ([[p:(1->num)->(int#int->bool)]]) STRIP_ASSUME_TAC QUINTIC_RATIONAL_IRREDUCIBLE THEN
@@ -673,7 +565,7 @@ def QUINTIC_NONREAL_ROOTS : thm := keep "QUINTIC_NONREAL_ROOTS" fun _ => (do
 /- The main theorem.                                                         -/
 /- ------------------------------------------------------------------------- -/
 
-#eval phrase 39
+#eval phrase 29
 def NOT_RADICAL_QUINTIC_ROOT : thm := keep "NOT_RADICAL_QUINTIC_ROOT" fun _ => (do
   prove ([[~(?z. radical_number z /\ z pow 5 - Cx(&4) * z + Cx(&2) = Cx(&0))]])
    (X_CHOOSE_THEN ([[p:(1->num)->(int#int->bool)]]) STRIP_ASSUME_TAC QUINTIC_RATIONAL_IRREDUCIBLE THEN

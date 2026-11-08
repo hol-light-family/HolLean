@@ -85,7 +85,7 @@ structure CoreThms3 where
    INT_DIVIDES_REFL INT_EXISTS_POS INT_FORALL_ABS INT_LT_SUB_RADD
    INT_MUL_LZERO INT_MUL_RID INT_OF_NUM_ADD INT_OF_NUM_EQ INT_OF_NUM_GT
    INT_OF_NUM_LE INT_OF_NUM_LT INT_OF_NUM_MUL INT_OF_NUM_POW INT_OF_NUM_SUB
-   INT_POW INT_POW_1 INT_POW_ADD INT_POW_MUL INT_POW_NEG INT_POW_POW
+   INT_POW INT_POW_1 INT_POW_ADD INT_POW_EQ_0 INT_POW_MUL INT_POW_NEG INT_POW_POW
    INT_PRIME_DIVPROD_EQ INT_SUB_REFL IN_ELIM_PAIR_THM IN_ELIM_THM IN_IMAGE
    IN_NUMSEG ISUM_0 ISUM_CASES ISUM_CLAUSES_NUMSEG ISUM_CLAUSES_RIGHT
    ISUM_SING ISUM_SING_NUMSEG ITERATE_CLAUSES ITERATE_EQ ITERATE_SING
@@ -169,6 +169,8 @@ structure PrimitiveDeps where
   PRIME_CONV : term → ExceptT String IO thm  -- Pocklington's PRIME_CONV
   EXPAND_CASES_CONV : ioconv          -- HOL Light's EXPAND_CASES_CONV
   COPRIME_CONV : ioconv               -- pocklington.ml's COPRIME_CONV
+  TAUT : term → ExceptT String IO thm
+  INT_REDUCE_CONV : ioconv
   core1 : CoreThms1
   core2 : CoreThms2
   core3 : CoreThms3
@@ -283,7 +285,8 @@ structure Lagrange where
 def setupLagrange [HolBase] (D : PrimitiveDeps) (BPolyDiff : PolyDiff) :
     ExceptT String IO Lagrange := do
   -- @@SCOPE BEGIN
-  let { ARITH_RULE, ASM_INT_ARITH_TAC, ASM_MESON_TAC, INTEGER_RULE, MESON, SET_RULE, .. } := D
+  let { ARITH_RULE, ASM_INT_ARITH_TAC, ASM_MESON_TAC, INTEGER_RULE, MESON, SET_RULE,
+        TAUT, .. } := D
   let { CARD_CLAUSES, .. } := D.core1
   let { EXISTS_REFL, FINITE_INT_SEG, FINITE_RESTRICT, .. } := D.core2
   let { IMP_IMP, INT_CONG, INT_CONG_0_DIVIDES, INT_CONG_SYM, INT_CONG_TRANS,
@@ -459,7 +462,7 @@ structure CountOrders where
 def setupCountOrders [HolBase] (D : PrimitiveDeps) (BNumLagrange : NumLagrange) :
     ExceptT String IO CountOrders := do
   -- @@SCOPE BEGIN
-  let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, ASM_MESON_TAC, MESON_TAC, SET_RULE, .. } := D
+  let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, ASM_MESON_TAC, MESON_TAC, SET_RULE, TAUT, .. } := D
   let { ADD_SUB, CARD_CLAUSES, CARD_EQ_NSUM, CARD_IMAGE_INJ, CARD_NUMSEG_LT,
         CARD_SUBSET_IMAGE, CARD_SUBSET_LE, CONG, CONG_EXP, CONG_IMP_EQ, COPRIME_SYM,
         DE_MORGAN_THM, DIVIDES_MOD, .. } := D.core1
@@ -652,7 +655,7 @@ def setupPrimePows1 [HolBase] (D : PrimitiveDeps) (BPrimitiveRoots : PrimitiveRo
     ExceptT String IO PrimePows1 := do
   -- @@SCOPE BEGIN
   let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, ASM_MESON_TAC, INDUCT_TAC, INTEGER_RULE,
-        MESON_TAC, NUMBER_RULE, .. } := D
+        MESON_TAC, NUMBER_RULE, TAUT, .. } := D
   let { ADD_CLAUSES, ARITH, BINOMIAL_THEOREM, BINOM_1, BINOM_PENULT, BINOM_REFL,
         CONG_TO_1, CONJ_SYM, COPRIME_EXP_DIVPROD, COPRIME_LEXP, COPRIME_SYM, DIVIDES_0,
         DIVIDES_ADD, DIVIDES_EXP_LE, DIVIDES_LMUL, DIVIDES_MUL2, DIVIDES_PRIMEPOW,
@@ -1190,7 +1193,8 @@ structure Negative where
 def setupNegative [HolBase] (D : PrimitiveDeps) :
     ExceptT String IO Negative := do
   -- @@SCOPE BEGIN
-  let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, INDUCT_TAC, NUMBER_RULE, NUM_REDUCE_CONV, .. } := D
+  let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, INDUCT_TAC, NUMBER_RULE, NUM_REDUCE_CONV,
+        TAUT, .. } := D
   let { ADD_CLAUSES, ADD_EQ_0, ARITH, CONG_CHINESE_EQ, CONG_EXP, CONG_TO_1, COPRIME_2,
         COPRIME_LEXP, DE_MORGAN_THM, .. } := D.core1
   let { EQ_MULT_LCANCEL, EVEN_ADD, EVEN_EXISTS, EVEN_EXP, EVEN_MULT, EVEN_OR_ODD,
@@ -1305,7 +1309,7 @@ def setupEquivalences [HolBase] (D : PrimitiveDeps) (BPrimePows2 : PrimePows2) (
     ExceptT String IO Equivalences := do
   -- @@SCOPE BEGIN
   let { ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, ASM_MESON_TAC, MESON_TAC,
-        NUM_REDUCE_CONV, PRIME_CONV, .. } := D
+        NUM_REDUCE_CONV, PRIME_CONV, TAUT, .. } := D
   let { ARITH, COND_ID, CONG_MOD, CONTRAPOS_THM, COPRIME_2, COPRIME_LEXP, COPRIME_LMUL,
         COPRIME_REXP, COPRIME_RMUL, COPRIME_SYM, DE_MORGAN_THM, DIVIDES_MOD, .. } := D.core1
   let { DIVIDES_REFL, DIVISION, EQ_TRANS, EXP, EXP_1, EXP_EQ_0, EXP_EQ_1, EXP_MONO_LE,
@@ -1859,6 +1863,7 @@ structure QuadraticResidues where
   QUADRATIC_RESIDUE_MODULO_ODD_POWER : thm
   QUADRATIC_RESIDUE_MODULO_POWER_2_STABLE : thm
   QUADRATIC_RESIDUE_MODULO_POWER_2 : thm
+  INT_QUADRATIC_RESIDUE_MODULO_POWER_2 : thm
   deriving Inhabited
 
 @[nospecialize]
@@ -1866,15 +1871,15 @@ def setupQuadraticResidues [HolBase] (D : PrimitiveDeps) :
     ExceptT String IO QuadraticResidues := do
   -- @@SCOPE BEGIN
   let { ARITH_RULE, ASM_ARITH_TAC, EXPAND_CASES_CONV, INTEGER_RULE, INT_ARITH,
-        MESON_TAC, NUMBER_RULE, NUM_REDUCE_CONV, .. } := D
-  let { ADD1, ARITH, CONG, CONG_MOD_0, CONG_MOD_1, CONG_SYM, COPRIME_2, DIVIDES_2,
-        DIVIDES_EXP_LE_IMP, .. } := D.core1
+        INT_REDUCE_CONV, MESON_TAC, NUMBER_RULE, NUM_REDUCE_CONV, TAUT, .. } := D
+  let { ADD1, ARITH, ARITH_EQ, CONG, CONG_MOD_0, CONG_MOD_1, CONG_SYM, COPRIME_2,
+        DIVIDES_2, DIVIDES_EXP_LE_IMP, .. } := D.core1
   let { EXISTS_INT_CASES, EXP, EXP_ONE, FORALL_AND_THM, IMP_CONJ, .. } := D.core2
   let { INT_2_DIVIDES_ADD, INT_2_DIVIDES_MUL, INT_2_DIVIDES_POW, INT_CONG_MOD_0,
         INT_CONG_NUM_EXISTS, INT_CONG_POW, INT_CONG_SOLVE, INT_CONG_TRANS,
         INT_COPRIME_LMUL, INT_DIVIDES_ADD, INT_DIVIDES_LMUL, INT_DIVIDES_POW_LE_IMP,
         INT_DIVIDES_REFL, INT_OF_NUM_EQ, INT_OF_NUM_MUL, INT_OF_NUM_POW, INT_POW,
-        INT_POW_1, INT_POW_ADD, INT_POW_MUL, INT_POW_NEG, INT_POW_POW, .. } := D.core3
+        INT_POW_1, INT_POW_ADD, INT_POW_EQ_0, INT_POW_MUL, INT_POW_NEG, INT_POW_POW, .. } := D.core3
   let { MOD_EXP_MOD, MONO_EXISTS, MULT_CLAUSES, NOT_EVEN, NOT_SUC, ODD_MOD_EVEN, .. } := D.core4
   let { RIGHT_FORALL_IMP_THM, int_congruent, num_INDUCTION, num_congruent, num_coprime,
         num_divides, .. } := D.core5
@@ -2019,9 +2024,55 @@ def setupQuadraticResidues [HolBase] (D : PrimitiveDeps) :
     REPEAT CONJ_TAC THEN
     CONV_TAC EXPAND_CASES_CONV THEN CONV_TAC NUM_REDUCE_CONV))
 
+  let INT_QUADRATIC_RESIDUE_MODULO_POWER_2 ← prove
+   r"!a:int k.
+        ~(&2 divides a) /\ 3 <= k
+        ==> ((?x:int. (x pow 2 == a) (mod (&2 pow k))) <=> (a == &1) (mod &8))"
+   (← do
+    -- OCaml's order (right to left): the second INTEGER_RULE, TAUT, the first
+    let r3 ← INTEGER_RULE
+         (← q r"!m a n d:int. d divides n /\ (m == a) (mod n)
+                        ==> (d divides m <=> d divides a)")
+    let t2 ← TAUT (← q r"(p <=> q) ==> ~q ==> ~p")
+    let r1 ← INTEGER_RULE
+         (← q r"!m a b n d:int. d divides n /\ (m == a) (mod n)
+                          ==> ((a == b) (mod d) <=> (m == b) (mod d))")
+    pure (REPEAT STRIP_TAC THEN
+    MP_TAC (← ISPECL [← q r"a:int", ← q r"(&2:int) pow k"] INT_CONG_NUM_EXISTS) THEN
+    REWRITE_TAC [INT_POW_EQ_0, INT_OF_NUM_EQ, ARITH_EQ] THEN
+    DISCH_THEN (X_CHOOSE_TAC (← q r"m:num")) THEN
+    SUBGOAL_THEN (← q r"(&8:int) divides &2 pow k /\ (&2:int) divides &2 pow k")
+    STRIP_ASSUME_TAC THENL
+     [SUBGOAL_THEN (← q r"&8:int = &2 pow 3") SUBST1_TAC THENL
+       [CONV_TAC INT_REDUCE_CONV,
+        GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [← GSYM INT_POW_1] THEN
+        CONJ_TAC THEN MATCH_MP_TAC INT_DIVIDES_POW_LE_IMP THEN
+        ASM_ARITH_TAC],
+      ALL_TAC] THEN
+    SUBGOAL_THEN
+     (← q r"((?x:int. (x pow 2 == a) (mod (&2 pow k))) <=>
+       (?x:int. (x pow 2 == &m) (mod (&2 pow k)))) /\
+      ((a == &1) (mod &8) <=> (&m:int == &1) (mod &8)) /\
+      ODD m")
+    (CONJUNCTS_THEN2 SUBST1_TAC (CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC)) THENL
+     [REWRITE_TAC [← GSYM NOT_EVEN, ← GSYM DIVIDES_2, num_divides] THEN
+      REPEAT CONJ_TAC THENL
+       [AP_TERM_TAC THEN ABS_TAC THEN
+        UNDISCH_TAC (← q r"(&m:int == a) (mod (&2 pow k))") THEN CONV_TAC INTEGER_RULE,
+        MATCH_MP_TAC r1 THEN
+        EXISTS_TAC (← q r"(&2:int) pow k") THEN ASM_REWRITE_TAC [],
+        UNDISCH_TAC (← q r"~(&2 divides (a:int))") THEN
+        MATCH_MP_TAC t2 THEN
+        MATCH_MP_TAC r3 THEN
+        EXISTS_TAC (← q r"(&2:int) pow k") THEN ASM_REWRITE_TAC []],
+      REWRITE_TAC [INT_OF_NUM_POW, ← GSYM INT_OF_NUM_POWER_RESIDUE,
+                   ← GSYM num_congruent] THEN
+      ASM_SIMP_TAC [QUADRATIC_RESIDUE_MODULO_POWER_2]]))
+
   -- @@RETURN BEGIN
   return { INT_OF_NUM_POWER_RESIDUE, QUADRATIC_RESIDUE_MODULO_ODD_POWER,
-           QUADRATIC_RESIDUE_MODULO_POWER_2_STABLE, QUADRATIC_RESIDUE_MODULO_POWER_2 }
+           QUADRATIC_RESIDUE_MODULO_POWER_2_STABLE, QUADRATIC_RESIDUE_MODULO_POWER_2,
+           INT_QUADRATIC_RESIDUE_MODULO_POWER_2 }
   -- @@RETURN END
 
 structure EulerCriterion where
@@ -2429,7 +2480,7 @@ def setupQuadraticNonresidue [HolBase] (D : PrimitiveDeps) (BEquivalences : Equi
     ExceptT String IO QuadraticNonresidue := do
   -- @@SCOPE BEGIN
   let { ARITH_RULE, ASM_ARITH_TAC, ASM_MESON_TAC, COPRIME_CONV, EXPAND_CASES_CONV,
-        MESON, MESON_TAC, NUMBER_RULE, NUM_REDUCE_CONV, SET_RULE, SET_TAC, .. } := D
+        MESON, MESON_TAC, NUMBER_RULE, NUM_REDUCE_CONV, SET_RULE, SET_TAC, TAUT, .. } := D
   let { ARITH, ARITH_EQ, CARD_PSUBSET_IMP, CHINESE_REMAINDER_UNIQUE, CONG,
         CONG_COPRIME, CONJ_SYM, CONTRAPOS_THM, COPRIME_0, COPRIME_1, COPRIME_LEXP,
         COPRIME_LMUL, COPRIME_REFL, COPRIME_SYM, .. } := D.core1

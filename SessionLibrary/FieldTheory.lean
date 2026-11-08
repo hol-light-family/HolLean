@@ -26,6 +26,10 @@ namespace SessionLibrary.FieldTheory
 
 /-- The core theorems fieldtheory.ml uses. -/
 def core1 : HolLibrary.FieldTheory.CoreThms1 where
+  ADD1 := Session.ADD1
+  ADD_CLAUSES := Session.ADD_CLAUSES
+  ADD_EQ_0 := Session.ADD_EQ_0
+  ADD_SUB := Session.ADD_SUB
   AND_FORALL_THM := Session.AND_FORALL_THM
   ARITH_EQ := Session.ARITH_EQ
   CANTOR_THM_UNIV := SessionLibrary.Card.«CANTOR_THM_UNIV»
@@ -68,6 +72,9 @@ def core1 : HolLibrary.FieldTheory.CoreThms1 where
   CARD_SING_LE := SessionLibrary.Card.«CARD_SING_LE»
   CARRIER_SUBRING_GENERATED_SUBRING := SessionLibrary.RingTheory.«CARRIER_SUBRING_GENERATED_SUBRING»
   CARRIER_SUBRING_OF := SessionLibrary.RingTheory.«CARRIER_SUBRING_OF»
+  COEFF_POLY_0 := SessionLibrary.RingTheory.«COEFF_POLY_0»
+  COEFF_POLY_ADD := SessionLibrary.RingTheory.«COEFF_POLY_ADD»
+  COEFF_POLY_VAR_MUL := SessionLibrary.RingTheory.«COEFF_POLY_VAR_MUL»
   COND_ID := Session.COND_ID
   COND_RAND := Session.COND_RAND
   COND_RATOR := Session.COND_RATOR
@@ -432,6 +439,7 @@ def core2 : HolLibrary.FieldTheory.CoreThms2 where
   FIELD_POLY_RING := SessionLibrary.RingTheory.«FIELD_POLY_RING»
   FIELD_PRIME_SUBRING := SessionLibrary.RingTheory.«FIELD_PRIME_SUBRING»
   FIELD_QUOTIENT_RING := SessionLibrary.RingTheory.«FIELD_QUOTIENT_RING»
+  FIELD_REGULAR := SessionLibrary.RingTheory.«FIELD_REGULAR»
   FIELD_RING_HOMOMORPHISM_MONOMORPHISM := SessionLibrary.RingTheory.«FIELD_RING_HOMOMORPHISM_MONOMORPHISM»
   FIELD_UNIT := SessionLibrary.RingTheory.«FIELD_UNIT»
   FINITE_1 := Session.FINITE_1
@@ -468,6 +476,7 @@ def core2 : HolLibrary.FieldTheory.CoreThms2 where
   FORALL_IN_INSERT := Session.FORALL_IN_INSERT
   FORALL_IN_UNION := Session.FORALL_IN_UNION
   FORALL_IN_UNIONS := Session.FORALL_IN_UNIONS
+  FORALL_ONE_THM := Session.FORALL_ONE_THM
   FORALL_PAIR_THM := Session.FORALL_PAIR_THM
   FORALL_UNWIND_THM1 := Session.FORALL_UNWIND_THM1
   FORALL_UNWIND_THM2 := Session.FORALL_UNWIND_THM2
@@ -479,6 +488,8 @@ def core2 : HolLibrary.FieldTheory.CoreThms2 where
   HAS_SIZE_FUNSPACE := Session.HAS_SIZE_FUNSPACE
   HAS_SIZE_IMAGE_INJ := Session.HAS_SIZE_IMAGE_INJ
   IDEAL_GENERATED_0 := SessionLibrary.RingTheory.«IDEAL_GENERATED_0»
+  IDEAL_GENERATED_FINITE := SessionLibrary.RingTheory.«IDEAL_GENERATED_FINITE»
+  IDEAL_GENERATED_INC := SessionLibrary.RingTheory.«IDEAL_GENERATED_INC»
   IDEAL_GENERATED_MINIMAL := SessionLibrary.RingTheory.«IDEAL_GENERATED_MINIMAL»
   IDEAL_GENERATED_SING_EQ_CARRIER := SessionLibrary.RingTheory.«IDEAL_GENERATED_SING_EQ_CARRIER»
   IMAGE_CLAUSES := Session.IMAGE_CLAUSES
@@ -529,6 +540,9 @@ def core3 : HolLibrary.FieldTheory.CoreThms3 where
   IN_NUMSEG := Session.IN_NUMSEG
   IN_POLY_RING_CARRIER := SessionLibrary.RingTheory.«IN_POLY_RING_CARRIER»
   IN_POLY_RING_SUBRING_GENERATED_FINITARY := SessionLibrary.RingTheory.«IN_POLY_RING_SUBRING_GENERATED_FINITARY»
+  IN_RING_IDEAL_0 := SessionLibrary.RingTheory.«IN_RING_IDEAL_0»
+  IN_RING_IDEAL_ADD := SessionLibrary.RingTheory.«IN_RING_IDEAL_ADD»
+  IN_RING_IDEAL_LMUL := SessionLibrary.RingTheory.«IN_RING_IDEAL_LMUL»
   IN_RING_POLYNOMIAL_CARRIER_COMPOSE := SessionLibrary.RingTheory.«IN_RING_POLYNOMIAL_CARRIER_COMPOSE»
   IN_SING := Session.IN_SING
   IN_SUBRING_0 := SessionLibrary.RingTheory.«IN_SUBRING_0»
@@ -548,6 +562,8 @@ def core3 : HolLibrary.FieldTheory.CoreThms3 where
   ISOMORPHIC_RING_FIELDNESS := SessionLibrary.RingTheory.«ISOMORPHIC_RING_FIELDNESS»
   ISOMORPHIC_SUBCOPY_OF_RING := SessionLibrary.RingTheory.«ISOMORPHIC_SUBCOPY_OF_RING»
   ISOMORPHIC_TRANSPORT_OF_RING := SessionLibrary.RingTheory.«ISOMORPHIC_TRANSPORT_OF_RING»
+  ITER := SessionLibrary.Iter.«ITER»
+  ITER_1 := SessionLibrary.Iter.«ITER_1»
   I_DEF := Session.I_DEF
   I_O_ID := Session.I_O_ID
   I_THM := Session.I_THM
@@ -587,6 +603,7 @@ def core4 : HolLibrary.FieldTheory.CoreThms4 where
   MONO_OR := Session.MONO_OR
   MUL_C_UNIV := SessionLibrary.Card.«MUL_C_UNIV»
   NOETHERIAN_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS := SessionLibrary.RingTheory.«NOETHERIAN_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS»
+  NOETHERIAN_RING_FINITELY_GENERATED_ALGEBRA := SessionLibrary.RingTheory.«NOETHERIAN_RING_FINITELY_GENERATED_ALGEBRA»
   NOT_EXISTS_THM := Session.NOT_EXISTS_THM
   NOT_FORALL_THM := Session.NOT_FORALL_THM
   NOT_IMP := Session.NOT_IMP
@@ -595,8 +612,10 @@ def core4 : HolLibrary.FieldTheory.CoreThms4 where
   NOT_LE := Session.NOT_LE
   NOT_LT := Session.NOT_LT
   NUMSEG_CLAUSES_LT := Session.NUMSEG_CLAUSES_LT
+  NUMSEG_SING := Session.NUMSEG_SING
   PAIR_EQ := Session.PAIR_EQ
   PID := SessionLibrary.RingTheory.«PID»
+  PID_ANNIHILATOR_ATTAINED := SessionLibrary.RingTheory.«PID_ANNIHILATOR_ATTAINED»
   PID_IMP_BEZOUT_RING := SessionLibrary.RingTheory.«PID_IMP_BEZOUT_RING»
   PID_IMP_UFD := SessionLibrary.RingTheory.«PID_IMP_UFD»
   PID_MAXIMAL_EQ_PRIME_IDEAL := SessionLibrary.RingTheory.«PID_MAXIMAL_EQ_PRIME_IDEAL»
@@ -618,11 +637,16 @@ def core4 : HolLibrary.FieldTheory.CoreThms4 where
   POLY_DEG_1_IMP_IRREDUCIBLE := SessionLibrary.RingTheory.«POLY_DEG_1_IMP_IRREDUCIBLE»
   POLY_DEG_1_ROOT := SessionLibrary.RingTheory.«POLY_DEG_1_ROOT»
   POLY_DEG_ADD := SessionLibrary.RingTheory.«POLY_DEG_ADD»
+  POLY_DEG_ADD_LE := SessionLibrary.RingTheory.«POLY_DEG_ADD_LE»
   POLY_DEG_CONST := SessionLibrary.RingTheory.«POLY_DEG_CONST»
+  POLY_DEG_DIVIDES_LE_UNIVARIATE := SessionLibrary.RingTheory.«POLY_DEG_DIVIDES_LE_UNIVARIATE»
   POLY_DEG_EQ_0 := SessionLibrary.RingTheory.«POLY_DEG_EQ_0»
+  POLY_DEG_EQ_COEFF := SessionLibrary.RingTheory.«POLY_DEG_EQ_COEFF»
   POLY_DEG_GE_EQ := SessionLibrary.RingTheory.«POLY_DEG_GE_EQ»
+  POLY_DEG_LE_COEFF := SessionLibrary.RingTheory.«POLY_DEG_LE_COEFF»
   POLY_DEG_LE_EQ := SessionLibrary.RingTheory.«POLY_DEG_LE_EQ»
   POLY_DEG_MONOMORPHIC_IMAGE := SessionLibrary.RingTheory.«POLY_DEG_MONOMORPHIC_IMAGE»
+  POLY_DEG_MUL_LE := SessionLibrary.RingTheory.«POLY_DEG_MUL_LE»
   POLY_DEG_MUL_X_MINUS_A := SessionLibrary.RingTheory.«POLY_DEG_MUL_X_MINUS_A»
   POLY_DEG_UNIT := SessionLibrary.RingTheory.«POLY_DEG_UNIT»
   POLY_DEG_X_MINUS_A := SessionLibrary.RingTheory.«POLY_DEG_X_MINUS_A»
@@ -663,6 +687,7 @@ def core5 : HolLibrary.FieldTheory.CoreThms5 where
   POLY_MUL_RID := SessionLibrary.RingTheory.«POLY_MUL_RID»
   POLY_RING := SessionLibrary.RingTheory.«POLY_RING»
   POLY_RING_CLAUSES := SessionLibrary.RingTheory.«POLY_RING_CLAUSES»
+  POLY_RING_INDUCT_STRONG := SessionLibrary.RingTheory.«POLY_RING_INDUCT_STRONG»
   POLY_RING_IN_FINITE_VARIABLES := SessionLibrary.RingTheory.«POLY_RING_IN_FINITE_VARIABLES»
   POLY_RING_MONO := SessionLibrary.RingTheory.«POLY_RING_MONO»
   POLY_ROOT_BOUND := SessionLibrary.RingTheory.«POLY_ROOT_BOUND»
@@ -694,10 +719,12 @@ def core5 : HolLibrary.FieldTheory.CoreThms5 where
   RING_1_IN_SUBRING_GENERATED := SessionLibrary.RingTheory.«RING_1_IN_SUBRING_GENERATED»
   RING_ADD := SessionLibrary.RingTheory.«RING_ADD»
   RING_ADD_ASSOC := SessionLibrary.RingTheory.«RING_ADD_ASSOC»
+  RING_ADD_EQ_LEFT := SessionLibrary.RingTheory.«RING_ADD_EQ_LEFT»
   RING_ADD_IN_SUBRING_GENERATED := SessionLibrary.RingTheory.«RING_ADD_IN_SUBRING_GENERATED»
   RING_ADD_LDISTRIB := SessionLibrary.RingTheory.«RING_ADD_LDISTRIB»
   RING_ADD_LNEG := SessionLibrary.RingTheory.«RING_ADD_LNEG»
   RING_ADD_LZERO := SessionLibrary.RingTheory.«RING_ADD_LZERO»
+  RING_ADD_RDISTRIB := SessionLibrary.RingTheory.«RING_ADD_RDISTRIB»
   RING_ADD_RNEG := SessionLibrary.RingTheory.«RING_ADD_RNEG»
   RING_ADD_RZERO := SessionLibrary.RingTheory.«RING_ADD_RZERO»
   RING_ADD_SYM := SessionLibrary.RingTheory.«RING_ADD_SYM»
@@ -745,6 +772,10 @@ def core6 : HolLibrary.FieldTheory.CoreThms6 where
   RING_HOMOMORPHISM_RING_COSET := SessionLibrary.RingTheory.«RING_HOMOMORPHISM_RING_COSET»
   RING_HOMOMORPHISM_SUB := SessionLibrary.RingTheory.«RING_HOMOMORPHISM_SUB»
   RING_HOMOMORPHISM_SUM := SessionLibrary.RingTheory.«RING_HOMOMORPHISM_SUM»
+  RING_IDEAL := SessionLibrary.RingTheory.«RING_IDEAL»
+  RING_IDEAL_IDEAL_GENERATED := SessionLibrary.RingTheory.«RING_IDEAL_IDEAL_GENERATED»
+  RING_IDEAL_IMP_SUBSET := SessionLibrary.RingTheory.«RING_IDEAL_IMP_SUBSET»
+  RING_IDEAL_POLY_LEAST_DEGREE_ROOT := SessionLibrary.RingTheory.«RING_IDEAL_POLY_LEAST_DEGREE_ROOT»
   RING_IDEAL_RING_KERNEL := SessionLibrary.RingTheory.«RING_IDEAL_RING_KERNEL»
   RING_INV := SessionLibrary.RingTheory.«RING_INV»
   RING_INV_0 := SessionLibrary.RingTheory.«RING_INV_0»
@@ -810,6 +841,7 @@ def core7 : HolLibrary.FieldTheory.CoreThms7 where
   RING_POWERSERIES_VAR := SessionLibrary.RingTheory.«RING_POWERSERIES_VAR»
   RING_POW_2 := SessionLibrary.RingTheory.«RING_POW_2»
   RING_POW_IN_SUBRING_GENERATED := SessionLibrary.RingTheory.«RING_POW_IN_SUBRING_GENERATED»
+  RING_POW_RING_ORDER := SessionLibrary.RingTheory.«RING_POW_RING_ORDER»
   RING_POW_SUBRING_GENERATED := SessionLibrary.RingTheory.«RING_POW_SUBRING_GENERATED»
   RING_PRODUCT := SessionLibrary.RingTheory.«RING_PRODUCT»
   RING_PRODUCT_CLAUSES := SessionLibrary.RingTheory.«RING_PRODUCT_CLAUSES»
@@ -817,6 +849,10 @@ def core7 : HolLibrary.FieldTheory.CoreThms7 where
   RING_PRODUCT_CLAUSES_NUMSEG_ALT := SessionLibrary.RingTheory.«RING_PRODUCT_CLAUSES_NUMSEG_ALT»
   RING_PRODUCT_EQ := SessionLibrary.RingTheory.«RING_PRODUCT_EQ»
   RING_RINV_UNIQUE := SessionLibrary.RingTheory.«RING_RINV_UNIQUE»
+  RING_SETMUL := SessionLibrary.RingTheory.«RING_SETMUL»
+  RING_SETMUL_ASSOC := SessionLibrary.RingTheory.«RING_SETMUL_ASSOC»
+  RING_SETMUL_MONO := SessionLibrary.RingTheory.«RING_SETMUL_MONO»
+  RING_SETMUL_SYM := SessionLibrary.RingTheory.«RING_SETMUL_SYM»
   RING_SQUAREFREE_IMP_NONZERO := SessionLibrary.RingTheory.«RING_SQUAREFREE_IMP_NONZERO»
   RING_SQUAREFREE_IN_CARRIER := SessionLibrary.RingTheory.«RING_SQUAREFREE_IN_CARRIER»
   RING_SUB := SessionLibrary.RingTheory.«RING_SUB»
@@ -825,13 +861,16 @@ def core7 : HolLibrary.FieldTheory.CoreThms7 where
   RING_SUB_REFL := SessionLibrary.RingTheory.«RING_SUB_REFL»
   RING_SUB_RZERO := SessionLibrary.RingTheory.«RING_SUB_RZERO»
   RING_SUM := SessionLibrary.RingTheory.«RING_SUM»
+  RING_SUM_ADD := SessionLibrary.RingTheory.«RING_SUM_ADD»
   RING_SUM_CASES := SessionLibrary.RingTheory.«RING_SUM_CASES»
   RING_SUM_CLAUSES := SessionLibrary.RingTheory.«RING_SUM_CLAUSES»
+  RING_SUM_CLAUSES_LEFT := SessionLibrary.RingTheory.«RING_SUM_CLAUSES_LEFT»
   RING_SUM_CLOSED := SessionLibrary.RingTheory.«RING_SUM_CLOSED»
   RING_SUM_EQ := SessionLibrary.RingTheory.«RING_SUM_EQ»
   RING_SUM_EQ_0 := SessionLibrary.RingTheory.«RING_SUM_EQ_0»
   RING_SUM_IMAGE := SessionLibrary.RingTheory.«RING_SUM_IMAGE»
   RING_SUM_LMUL := SessionLibrary.RingTheory.«RING_SUM_LMUL»
+  RING_SUM_OFFSET := SessionLibrary.RingTheory.«RING_SUM_OFFSET»
   RING_SUM_RESTRICT_SET := SessionLibrary.RingTheory.«RING_SUM_RESTRICT_SET»
   RING_SUM_RMUL := SessionLibrary.RingTheory.«RING_SUM_RMUL»
   RING_SUM_SING := SessionLibrary.RingTheory.«RING_SUM_SING»
@@ -842,6 +881,7 @@ def core7 : HolLibrary.FieldTheory.CoreThms7 where
   RING_UNIT_NOT_IN_PRIME_IDEAL := SessionLibrary.RingTheory.«RING_UNIT_NOT_IN_PRIME_IDEAL»
   RING_UNIT_POLY_CONST := SessionLibrary.RingTheory.«RING_UNIT_POLY_CONST»
   RING_UNIT_POLY_DOMAIN := SessionLibrary.RingTheory.«RING_UNIT_POLY_DOMAIN»
+  ROOT_OF_UNITY_IN_SUBRING_GENERATED := SessionLibrary.RingTheory.«ROOT_OF_UNITY_IN_SUBRING_GENERATED»
   SELECT_UNIQUE := Session.SELECT_UNIQUE
   SIMPLE_IMAGE := Session.SIMPLE_IMAGE
   SIMPLE_IMAGE_GEN := Session.SIMPLE_IMAGE_GEN
@@ -909,6 +949,7 @@ def core8 : HolLibrary.FieldTheory.CoreThms8 where
   chain := SessionLibrary.Wo.«chain»
   coeff := SessionLibrary.RingTheory.«coeff»
   field := SessionLibrary.RingTheory.«field»
+  finitely_generated_ideal := SessionLibrary.RingTheory.«finitely_generated_ideal»
   integral_domain := SessionLibrary.RingTheory.«integral_domain»
   isomorphic_ring := SessionLibrary.RingTheory.«isomorphic_ring»
   le_c := Session.le_c
@@ -921,6 +962,7 @@ def core8 : HolLibrary.FieldTheory.CoreThms8 where
   matroid_spanning := SessionLibrary.Matroids.«matroid_spanning»
   matroid_tybij := SessionLibrary.Matroids.«matroid_tybij»
   mul_c := SessionLibrary.Card.«mul_c»
+  noetherian_ring := SessionLibrary.RingTheory.«noetherian_ring»
   num_INDUCTION := Session.num_INDUCTION
   num_INFINITE := Session.num_INFINITE
   num_WF := Session.num_WF
@@ -932,6 +974,7 @@ def core9 : HolLibrary.FieldTheory.CoreThms9 where
   o_THM := Session.o_THM
   one := Session.one
   poly_0 := SessionLibrary.RingTheory.«poly_0»
+  poly_1 := SessionLibrary.RingTheory.«poly_1»
   poly_const := SessionLibrary.RingTheory.«poly_const»
   poly_eval := SessionLibrary.RingTheory.«poly_eval»
   poly_evaluate := SessionLibrary.RingTheory.«poly_evaluate»
@@ -964,6 +1007,7 @@ def core9 : HolLibrary.FieldTheory.CoreThms9 where
   ring_pow := SessionLibrary.RingTheory.«ring_pow»
   ring_powerseries := SessionLibrary.RingTheory.«ring_powerseries»
   ring_prime := SessionLibrary.RingTheory.«ring_prime»
+  ring_setmul := SessionLibrary.RingTheory.«ring_setmul»
   ring_squarefree := SessionLibrary.RingTheory.«ring_squarefree»
   ring_sub := SessionLibrary.RingTheory.«ring_sub»
   ring_tybij := SessionLibrary.RingTheory.«ring_tybij»
@@ -997,6 +1041,7 @@ def deps : HolLibrary.FieldTheory.FieldTheoryDeps where
   SELECT_CONV t := pure (Session.SELECT_CONV t)
   NUM_FACT_CONV := Session.NUM_FACT_CONV
   HAS_SIZE_CONV := Session.HAS_SIZE_CONV
+  NUM_REDUCE_CONV := Session.NUM_REDUCE_CONV
   core1 := core1
   core2 := core2
   core3 := core3
@@ -1146,7 +1191,7 @@ initialize BAcfSplit : HolLibrary.FieldTheory.AcfSplit ←
 
 initialize BClosedFieldSplits : HolLibrary.FieldTheory.ClosedFieldSplits ←
   ioB "setupClosedFieldSplits" <|
-    (HolLibrary.FieldTheory.setupClosedFieldSplits deps BAcfSplit).run
+    (HolLibrary.FieldTheory.setupClosedFieldSplits deps BAcfBasic BAcfSplit).run
 
 initialize BSimpleExtendHom : HolLibrary.FieldTheory.SimpleExtendHom ←
   ioB "setupSimpleExtendHom" <|
@@ -1262,7 +1307,7 @@ initialize BFieldCharpoly : HolLibrary.FieldTheory.FieldCharpoly ←
 
 initialize BEmbeddingsPrelims : HolLibrary.FieldTheory.EmbeddingsPrelims ←
   ioB "setupEmbeddingsPrelims" <|
-    (HolLibrary.FieldTheory.setupEmbeddingsPrelims deps BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicExtensionProps BMinimalPolynomial BAlgebraicTrans BAcfBasic BAcfSplit BHomExtensions BHomExtensionsCount).run
+    (HolLibrary.FieldTheory.setupEmbeddingsPrelims deps BSubfields BSubfieldGenerated BSubfieldGenerated1 BSubfieldGenerated2 BFieldExtension BFiniteExtension BAlgebraicExtension BAlgebraicOverBasics BAlgebraicExtensionProps BMinimalPolynomial BAlgebraicTrans BAcfBasic BAcfSplit BHomExtensions BHomExtensionsCount).run
 
 initialize BEmbeddingDivides : HolLibrary.FieldTheory.EmbeddingDivides ←
   ioB "setupEmbeddingDivides" <|
@@ -1375,6 +1420,7 @@ def SUBFIELD_GENERATED_MINIMAL_EQ : thm := BSubfieldGenerated1.SUBFIELD_GENERATE
 def SUBFIELD_GENERATED_RING_CARRIER : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_RING_CARRIER
 def SUBFIELD_GENERATED_SUBSET_CARRIER_SUBSET : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_SUBSET_CARRIER_SUBSET
 def SUBFIELD_GENERATED_BY_SUBFIELD_GENERATED : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_BY_SUBFIELD_GENERATED
+def SUBFIELD_GENERATED_SUBSET_EQ : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_SUBSET_EQ
 def SUBFIELD_GENERATED_REFL : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_REFL
 def SUBFIELD_GENERATED_INC : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_INC
 def SUBFIELD_GENERATED_INC_GEN : thm := BSubfieldGenerated1.SUBFIELD_GENERATED_INC_GEN
@@ -1403,6 +1449,8 @@ def RING_OF_NUM_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_OF_NUM_SUBF
 def RING_OF_INT_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_OF_INT_SUBFIELD_GENERATED
 def RING_CHAR_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_CHAR_SUBFIELD_GENERATED
 def RING_ORDER_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_ORDER_SUBFIELD_GENERATED
+def SUBFIELD_GENERATED_ROOT_OF_UNITY : thm := BSubfieldGenerated2.SUBFIELD_GENERATED_ROOT_OF_UNITY
+def SUBFIELD_GENERATED_ROOT_OF_UNITY_EQ : thm := BSubfieldGenerated2.SUBFIELD_GENERATED_ROOT_OF_UNITY_EQ
 def RING_0_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_0_IN_SUBFIELD_GENERATED
 def RING_1_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_1_IN_SUBFIELD_GENERATED
 def RING_NEG_IN_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_NEG_IN_SUBFIELD_GENERATED
@@ -1417,6 +1465,7 @@ def SUBFIELD_GENERATED_INDUCT : thm := BSubfieldGenerated2.SUBFIELD_GENERATED_IN
 def RING_HOMOMORPHISMS_EQ_FROM_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_HOMOMORPHISMS_EQ_FROM_SUBFIELD_GENERATED
 def RING_HOMOMORPHISM_SUBFIELD_INCLUSION : thm := BSubfieldGenerated2.RING_HOMOMORPHISM_SUBFIELD_INCLUSION
 def RING_HOMOMORPHISM_FROM_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_HOMOMORPHISM_FROM_SUBFIELD_GENERATED
+def RING_SUM_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.RING_SUM_SUBFIELD_GENERATED
 def POLY_CONST_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.POLY_CONST_SUBFIELD_GENERATED
 def POLY_SUBFIELD_GENERATED_CLAUSES : thm := BSubfieldGenerated2.POLY_SUBFIELD_GENERATED_CLAUSES
 def POLY_DEG_SUBFIELD_GENERATED : thm := BSubfieldGenerated2.POLY_DEG_SUBFIELD_GENERATED
@@ -1458,6 +1507,7 @@ def FIELD_EXTENSION_ISOMORPHISM : thm := BFieldExtension.FIELD_EXTENSION_ISOMORP
 def FIELD_EXTENSION_SUBRING_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_SUBRING_GENERATED
 def FIELD_EXTENSION_INTO_SUBRING_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_INTO_SUBRING_GENERATED
 def FIELD_EXTENSION_INTO_SUBFIELD_GENERATED : thm := BFieldExtension.FIELD_EXTENSION_INTO_SUBFIELD_GENERATED
+def FIELD_EXTENSION_SUBFIELD_GENERATED_SUBSET : thm := BFieldExtension.FIELD_EXTENSION_SUBFIELD_GENERATED_SUBSET
 def RING_ISOMORPHISM_ONTO_SUBFIELD_IMAGE : thm := BFieldExtension.RING_ISOMORPHISM_ONTO_SUBFIELD_IMAGE
 def KRONECKER_FIELD_EXTENSION : thm := BFieldExtension.KRONECKER_FIELD_EXTENSION
 def KRONECKER_SIMPLE_FIELD_EXTENSION : thm := BFieldExtension.KRONECKER_SIMPLE_FIELD_EXTENSION
@@ -1478,6 +1528,8 @@ def RING_SPAN_SUPERSET : thm := BRingSpan.RING_SPAN_SUPERSET
 def RING_SPAN_SUPERSET_EQ : thm := BRingSpan.RING_SPAN_SUPERSET_EQ
 def RING_SPAN_MONO : thm := BRingSpan.RING_SPAN_MONO
 def SUBSET_RING_SPAN : thm := BRingSpan.SUBSET_RING_SPAN
+def RING_SPAN_MINIMAL : thm := BRingSpan.RING_SPAN_MINIMAL
+def RING_SPAN_EQ_SELF : thm := BRingSpan.RING_SPAN_EQ_SELF
 def RING_SPAN_RESTRICT : thm := BRingSpan.RING_SPAN_RESTRICT
 def RING_SPAN_SPAN : thm := BRingSpan.RING_SPAN_SPAN
 def RING_SPAN_FINITARY : thm := BRingSpan.RING_SPAN_FINITARY
@@ -1491,9 +1543,18 @@ def RING_SPAN_SUB : thm := BRingSpan.RING_SPAN_SUB
 def RING_SPAN_SUM : thm := BRingSpan.RING_SPAN_SUM
 def RING_SPAN_UNION : thm := BRingSpan.RING_SPAN_UNION
 def RING_SPAN_SING : thm := BRingSpan.RING_SPAN_SING
+def RING_SPAN_SING_IMAGE : thm := BRingSpan.RING_SPAN_SING_IMAGE
 def RING_SPAN_EXCHANGE : thm := BRingSpan.RING_SPAN_EXCHANGE
 def RING_SPAN_FINITE : thm := BRingSpan.RING_SPAN_FINITE
 def RING_SPAN_HOMOMORPHIC_IMAGE : thm := BRingSpan.RING_SPAN_HOMOMORPHIC_IMAGE
+def RING_SPAN_SETMUL_SPAN : thm := BRingSpan.RING_SPAN_SETMUL_SPAN
+def RING_SPAN_SETMUL_ASSOC : thm := BRingSpan.RING_SPAN_SETMUL_ASSOC
+def RING_SPAN_SETMUL_SYM : thm := BRingSpan.RING_SPAN_SETMUL_SYM
+def RING_SETMUL_SING_LEFT : thm := BRingSpan.RING_SETMUL_SING_LEFT
+def RING_SPAN_IMAGE_MUL : thm := BRingSpan.RING_SPAN_IMAGE_MUL
+def RING_SPAN_SETMUL_IMAGE_MUL : thm := BRingSpan.RING_SPAN_SETMUL_IMAGE_MUL
+def RING_SETMUL_IMAGE_MUL : thm := BRingSpan.RING_SETMUL_IMAGE_MUL
+def RING_SPAN_IMAGE_IDEAL_GENERATED : thm := BRingSpan.RING_SPAN_IMAGE_IDEAL_GENERATED
 
 -- RingMatroid
 def ring_matroid : thm := BRingMatroid.ring_matroid
@@ -1543,6 +1604,10 @@ def RING_INDEPENDENT_INSERT : thm := BFinitary.RING_INDEPENDENT_INSERT
 def RING_INDEPENDENT_CARD_LE_SPANNING : thm := BFinitary.RING_INDEPENDENT_CARD_LE_SPANNING
 def RING_DEPENDENT_MONOMORPHIC_IMAGE : thm := BFinitary.RING_DEPENDENT_MONOMORPHIC_IMAGE
 def RING_INDEPENDENT_MONOMORPHIC_IMAGE : thm := BFinitary.RING_INDEPENDENT_MONOMORPHIC_IMAGE
+def NOETHERIAN_RING_SPAN_SUBMODULE : thm := BFinitary.NOETHERIAN_RING_SPAN_SUBMODULE
+def NOETHERIAN_RING_FINITE_ALGEBRA : thm := BFinitary.NOETHERIAN_RING_FINITE_ALGEBRA
+def POLY_ITER_MODULE : thm := BFinitary.POLY_ITER_MODULE
+def CYCLIC_VECTOR_EXISTS : thm := BFinitary.CYCLIC_VECTOR_EXISTS
 
 -- TowerLaw
 def RING_SPANNING_TRANS : thm := BTowerLaw.RING_SPANNING_TRANS
@@ -1568,6 +1633,7 @@ def FINITE_EXTENSION_EQ_IMAGE : thm := BFiniteExtension.FINITE_EXTENSION_EQ_IMAG
 def extension_degree : thm := BFiniteExtension.extension_degree
 def EXTENSION_DEGREE_EQ_CARD_BASIS : thm := BFiniteExtension.EXTENSION_DEGREE_EQ_CARD_BASIS
 def EXTENSION_DEGREE_LE_INDEPENDENT_BOUND : thm := BFiniteExtension.EXTENSION_DEGREE_LE_INDEPENDENT_BOUND
+def EXTENSION_DEGREE_LE_SPANNING : thm := BFiniteExtension.EXTENSION_DEGREE_LE_SPANNING
 def RING_INDEPENDENT_CARD_LE_EXTENSION_DEGREE : thm := BFiniteExtension.RING_INDEPENDENT_CARD_LE_EXTENSION_DEGREE
 def EXTENSION_DEGREE_EQ_0 : thm := BFiniteExtension.EXTENSION_DEGREE_EQ_0
 def EXTENSION_DEGREE_TOWER_LAW : thm := BFiniteExtension.EXTENSION_DEGREE_TOWER_LAW
@@ -1576,6 +1642,7 @@ def EXTENSION_DEGREE_REFL : thm := BFiniteExtension.EXTENSION_DEGREE_REFL
 def EXTENSION_DEGREE_EQ_1 : thm := BFiniteExtension.EXTENSION_DEGREE_EQ_1
 def EXTENSION_DEGREE_EQ_IMAGE : thm := BFiniteExtension.EXTENSION_DEGREE_EQ_IMAGE
 def PRIME_SUBFIELD_TOWER_LAW : thm := BFiniteExtension.PRIME_SUBFIELD_TOWER_LAW
+def EXTENSION_DEGREE_SUBFIELD_TOWER : thm := BFiniteExtension.EXTENSION_DEGREE_SUBFIELD_TOWER
 def EXTENSION_DEGREE_EQ_TOWER : thm := BFiniteExtension.EXTENSION_DEGREE_EQ_TOWER
 def EXTENSION_DEGREE_SUBFIELD_GENERATED_DIVIDES : thm := BFiniteExtension.EXTENSION_DEGREE_SUBFIELD_GENERATED_DIVIDES
 def FINITE_EXTENSION_HOMOMORPHIC_IMAGE : thm := BFiniteExtension.FINITE_EXTENSION_HOMOMORPHIC_IMAGE
@@ -1814,6 +1881,7 @@ def ALGEBRAICALLY_CLOSED_FIELD_SPLITS : thm := BAcfSplit.ALGEBRAICALLY_CLOSED_FI
 -- ClosedFieldSplits
 def ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS : thm := BClosedFieldSplits.ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS
 def ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT : thm := BClosedFieldSplits.ALGEBRAICALLY_CLOSED_FIELD_EQ_SPLITS_ALT
+def RING_IDEAL_POLY_COMMON_ROOT : thm := BClosedFieldSplits.RING_IDEAL_POLY_COMMON_ROOT
 
 -- SimpleExtendHom
 def SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM_ROOT : thm := BSimpleExtendHom.SIMPLE_ALGEBRAIC_EXTEND_HOMOMORPHISM_ROOT
@@ -2038,6 +2106,8 @@ def ALGEBRA_TRACE_MINIMAL_POLYNOMIAL : thm := BFieldCharpoly.ALGEBRA_TRACE_MINIM
 -- EmbeddingsPrelims
 def ALGEBRAICALLY_CLOSED_FIELD_SINGLE_ROOT : thm := BEmbeddingsPrelims.ALGEBRAICALLY_CLOSED_FIELD_SINGLE_ROOT
 def SUBFIELD_GENERATED_SIMPLE_ALGEBRAIC : thm := BEmbeddingsPrelims.SUBFIELD_GENERATED_SIMPLE_ALGEBRAIC
+def SUBFIELD_GENERATED_SING_ALGEBRAIC : thm := BEmbeddingsPrelims.SUBFIELD_GENERATED_SING_ALGEBRAIC
+def FINITE_EXTENSION_SIMPLE_EQ : thm := BEmbeddingsPrelims.FINITE_EXTENSION_SIMPLE_EQ
 def RING_HOMOMORPHISM_EXTENSIONS_SIMPLE_EQ : thm := BEmbeddingsPrelims.RING_HOMOMORPHISM_EXTENSIONS_SIMPLE_EQ
 def RING_HOMOMORPHISM_EXTENSIONS_TOWER_PRODUCT : thm := BEmbeddingsPrelims.RING_HOMOMORPHISM_EXTENSIONS_TOWER_PRODUCT
 def RING_HOMOMORPHISM_EXTENSIONS_TOWER_SUM : thm := BEmbeddingsPrelims.RING_HOMOMORPHISM_EXTENSIONS_TOWER_SUM

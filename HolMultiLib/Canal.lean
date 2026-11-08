@@ -92,18 +92,21 @@ structure QFloorThms where
 
 structure CanalDeps where
   ms : HolMultiLib.Measure.MeasureDeps
-  cx : HolMultiLib.Complexes.ComplexesDeps
-  cxa : HolMultiLib.Complexes.CXA
-  cxb : HolMultiLib.Complexes.CXB
-  cxc : HolMultiLib.Complexes.CXC
-  cxd : HolMultiLib.Complexes.CXD
-  cxe : HolMultiLib.Complexes.CXE
-  cxf : HolMultiLib.Complexes.CXF
-  cxg : HolMultiLib.Complexes.CXG
-  cxh : HolMultiLib.Complexes.CXH
-  cxi : HolMultiLib.Complexes.CXI
-  cxj : HolMultiLib.Complexes.CXJ
-  cxk : HolMultiLib.Complexes.CXK
+  cx : HolMultiLib.ComplexAlgebra.ComplexAlgebraDeps
+  cxa : HolMultiLib.ComplexAlgebra.CXA
+  cxb : HolMultiLib.ComplexAlgebra.CXB
+  cxc : HolMultiLib.ComplexAlgebra.CXC
+  cxd : HolMultiLib.ComplexAlgebra.CXD
+  cxe : HolMultiLib.ComplexAlgebra.CXE
+  cxf : HolMultiLib.ComplexAlgebra.CXF
+  cxg : HolMultiLib.ComplexAlgebra.CXG
+  cxh : HolMultiLib.ComplexAlgebra.CXH
+  cxi : HolMultiLib.ComplexAlgebra.CXI
+  cxj : HolMultiLib.ComplexAlgebra.CXJ
+  cxk : HolMultiLib.ComplexAlgebra.CXK
+  cxl : HolMultiLib.Complexes.CXL
+  cxm : HolMultiLib.Complexes.CXM
+  cxn : HolMultiLib.Complexes.CXN
   -- theorems
   qconvex : QConvexThms
   qpaths : QPathsThms
@@ -165,7 +168,8 @@ def setupKNA [HolBase] (D : CanalDeps) : ExceptT String IO KNA := do
   let { ii, IM, IM_DEF, prioritize_complex, RE, RE_DEF, .. } := D.cxa
   let { COMPLEX_NORM_CX, COMPLEX_VEC_0, IM_CX, IM_SUB, RE_CX, RE_SUB, .. } := D.cxc
   let { COMPLEX_NORM_GE_RE_IM, .. } := D.cxg
-  let { CONVEX_REAL, real, REAL_EXISTS, .. } := D.cxi
+  let { real, REAL_EXISTS, .. } := D.cxi
+  let { CONVEX_REAL, .. } := D.cxm
   let { CONVEX_HALFSPACE_COMPONENT_SGN, CONVEX_HALFSPACE_GT, CONVEX_HALFSPACE_LT,
         .. } := D.qconvex
   let { CONVEX_IMP_PATH_CONNECTED, .. } := D.qpaths
@@ -4385,7 +4389,8 @@ def setupKNP [HolBase] (D : CanalDeps) (BKNF : KNF) (BKNM : KNM) : ExceptT Strin
   let { COMPLEX_INV_INV, .. } := D.cxe
   let { COMPLEX_INV_EQ_0, COMPLEX_NORM_INV, COMPLEX_NORM_NZ, .. } := D.cxf
   let { COMPLEX_NORM_GE_RE_IM, .. } := D.cxg
-  let { IN_SEGMENT_CX, IN_SEGMENT_CX_GEN, REAL, REAL_CX, REAL_SEGMENT, .. } := D.cxi
+  let { REAL, REAL_CX, .. } := D.cxi
+  let { IN_SEGMENT_CX, IN_SEGMENT_CX_GEN, REAL_SEGMENT, .. } := D.cxm
   let { LIM_AT_INFINITY, LIM_AT_INFINITY_POS, LIM_AT_LE, .. } := D.qtopology
   let { SUM_DIFFS, .. } := D.qsession
   let { ARITH_RULE, ASM_ARITH_TAC, ASM_MESON_TAC, ASM_REAL_ARITH_TAC, REAL_ARITH,

@@ -8,7 +8,7 @@ open HolCore.Kernel Session HolLight.Syntax HolExamples
 open SessionLibrary.Floor
 open SessionMultiLib.Misc SessionMultiLib.Vectors SessionMultiLib.Determinants
 open SessionMultiLib.Metric SessionMultiLib.Topology SessionMultiLib.Convex
-open SessionMultiLib.Paths SessionMultiLib.Complexes SessionMultiLib.Canal
+open SessionMultiLib.Paths SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes SessionMultiLib.Canal
 open SessionMultiLib.Transcendentals SessionMultiLib.RealAnalysis SessionMultiLib.MoreTop
 namespace HolExamples.Borsuk
 

@@ -9,7 +9,7 @@ open SessionLibrary.Card SessionLibrary.Floor SessionLibrary.Iter
 open SessionMultiLib.Misc SessionMultiLib.Vectors SessionMultiLib.Determinants
 open SessionMultiLib.Metric SessionMultiLib.Topology SessionMultiLib.Convex
 open SessionMultiLib.Paths SessionMultiLib.Integration
-open SessionMultiLib.Complexes SessionMultiLib.Canal SessionMultiLib.Transcendentals
+open SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes SessionMultiLib.Canal SessionMultiLib.Transcendentals
 open SessionMultiLib.RealAnalysis SessionMultiLib.MoreTop SessionMultiLib.Cauchy
 namespace HolExamples.Misiurewicz
 

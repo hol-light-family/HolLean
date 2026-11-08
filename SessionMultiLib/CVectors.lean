@@ -35,9 +35,9 @@ def thms : HolMultiLib.CVectors.CvecThms :=
     CONTINUOUS_AT_SEQUENTIALLY, INFSUM_LINEAR, LIM_PASTECART_EQ, SUMMABLE_LINEAR, summable,
     sums }
 
-open SessionMultiLib.Complexes in
+open SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes in
 def deps : HolMultiLib.CVectors.CvectorsDeps where
-  cx := SessionMultiLib.Complexes.deps
+  cx := SessionMultiLib.ComplexAlgebra.deps
   cxa := BCXA
   cxb := BCXB
   cxc := BCXC
@@ -49,6 +49,9 @@ def deps : HolMultiLib.CVectors.CvectorsDeps where
   cxi := BCXI
   cxj := BCXJ
   cxk := BCXK
+  cxl := SessionMultiLib.Complexes.BCXL
+  cxm := SessionMultiLib.Complexes.BCXM
+  cxn := SessionMultiLib.Complexes.BCXN
   crt := SessionMultiLib.Cross.thms
   crs := SessionMultiLib.Cross.BCRS
   prioritize_vector := SessionMultiLib.Vectors.prioritize_vector

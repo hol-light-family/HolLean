@@ -11,7 +11,7 @@ open SessionLibrary.Pocklington
 open SessionMultiLib.Misc SessionMultiLib.Vectors SessionMultiLib.Determinants
 open SessionMultiLib.Metric SessionMultiLib.Topology SessionMultiLib.Convex
 open SessionMultiLib.Paths SessionMultiLib.Integration
-open SessionMultiLib.Complexes SessionMultiLib.Canal SessionMultiLib.Transcendentals
+open SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes SessionMultiLib.Canal SessionMultiLib.Transcendentals
 namespace HolExamples.Mangoldt
 
 /- Helpers: the session's `prove` lifted into `ExceptT String IO`, so tactic

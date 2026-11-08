@@ -1663,6 +1663,7 @@ structure Index where
   INDEX_1 : thm
   INDEX_MUL : thm
   INDEX_EXP : thm
+  INDEX_NPRODUCT : thm
   INDEX_FACT : thm
   INDEX_FACT_ALT : thm
   INDEX_FACT_UNBOUNDED : thm
@@ -1704,7 +1705,7 @@ structure Index where
 def setupIndex [HolBase] (D : PrimeDeps) (PDivides : Divides) (PGcd : Gcd) (PCoprime : Coprime) (PPrimes : Primes) : ExceptT String IO Index := do
   let { new_definition, ARITH_RULE, ARITH_TAC, ASM_ARITH_TAC, ASM_MESON_TAC, 
         INDUCT_TAC, MESON, MESON_TAC, NUMBER_RULE, NUMBER_TAC, SET_RULE, SET_TAC, 
-        EXPAND_CASES_CONV, .. } := D
+        EXPAND_CASES_CONV, NUM_REDUCE_CONV, .. } := D
   let { ADD1, ADD_CLAUSES, ADD_EQ_0, ADD_SYM, ARITH, ARITH_EQ, CARD_CLAUSES, 
         CARD_IMAGE_INJ, CARD_NUMSEG_1, COND_ID, COND_RAND, COND_RATOR, 
         CONJ_ASSOC, CONTRAPOS_THM, DE_MORGAN_THM, DISJ_SYM, DIVIDES_ANTISYM, 
@@ -1712,7 +1713,8 @@ def setupIndex [HolBase] (D : PrimeDeps) (PDivides : Divides) (PGcd : Gcd) (PCop
         DIV_ZERO, EMPTY_GSPEC, EQ_ADD_RCANCEL, EQ_ADD_RCANCEL_0, EQ_IMP, 
         EQ_MULT_LCANCEL, EQ_SYM_EQ, EQ_TRANS, ETA_AX, EXP, EXP_1, EXP_ADD, 
         EXP_EQ_0, EXP_EQ_1, EXP_EXP, EXP_MONO_LE_IMP, EXP_ONE, EXP_ZERO, 
-        EXTENSION, FACT, FACT_NZ, FINITE_INDUCT_STRONG, FINITE_NUMSEG, 
+        EXTENSION, FACT, FACT_NZ, FINITE_INDUCT_STRONG, FINITE_NUMSEG, FORALL_IN_INSERT,
+        
         FINITE_RESTRICT, FINITE_SUBSET, FUN_EQ_THM, IMP_CONJ, IMP_CONJ_ALT, 
         IN_ELIM_THM, IN_IMAGE, IN_NUMSEG, IN_UNIV, ITERATE_DELTA, ITERATE_EQ, 
         ITERATE_EQ_NEUTRAL, ITERATE_OP_GEN, ITERATE_SUPERSET, LE, 
@@ -1720,7 +1722,8 @@ def setupIndex [HolBase] (D : PrimeDeps) (PDivides : Divides) (PGcd : Gcd) (PCop
         LE_RDIV_EQ, LE_REFL, LE_TRANS, LT, LTE_TRANS, LT_EXISTS, LT_IMP_LE, 
         LT_POW2_REFL, LT_REFL, .. } := D.core1
   let { MONOIDAL_MUL, MONO_EXISTS, MULT_ASSOC, MULT_CLAUSES, MULT_EQ_0, MULT_SYM, 
-        NEUTRAL_MUL, NOT_IMP, NOT_LE, NOT_LT, NOT_SUC, NSUM_ADD_NUMSEG, 
+        NEUTRAL_MUL, NOT_IMP, NOT_LE, NOT_LT, NOT_SUC, NPRODUCT_CLAUSES, NSUM_ADD_NUMSEG,
+        NSUM_CLAUSES, 
         NSUM_CLAUSES_NUMSEG, NSUM_CLOSED_NONEMPTY, NSUM_CONST, NSUM_EQ, 
         NSUM_EQ_NUMSEG, NSUM_IMAGE, NSUM_RESTRICT_SET, NSUM_SUPERSET, NSUM_SWAP, 
         RIGHT_AND_EXISTS_THM, RIGHT_FORALL_IMP_THM, SUBSET, SUBSET_REFL, SUB_ADD, 
@@ -1830,6 +1833,26 @@ def setupIndex [HolBase] (D : PrimeDeps) (PDivides : Divides) (PGcd : Gcd) (PCop
     INDUCT_TAC THEN
     ASM_SIMP_TAC [INDEX_MUL, EXP_EQ_0, EXP, INDEX_1, MULT_CLAUSES] THEN
     ARITH_TAC)
+
+  let INDEX_NPRODUCT ← prove
+   r"!p s (f:K->num).
+        prime p /\ FINITE s /\ (!i. i IN s ==> ~(f i = 0))
+        ==> index p (nproduct s f) = nsum s (\i. index p (f i))"
+   (REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"~(nproduct s (f:K->num) = 0) /\
+      index p (nproduct s f) = nsum s (\i. index p (f i))")
+     (fun th => tactic_of do pure (REWRITE_TAC [← CONJUNCT2 th])) THEN
+    UNDISCH_TAC (← q r"!i:K. i IN s ==> ~(f i = 0)") THEN
+    UNDISCH_TAC (← q r"FINITE(s:K->bool)") THEN
+    SPEC_TAC (← q r"s:K->bool", ← q r"s:K->bool") THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+    SIMP_TAC [NPRODUCT_CLAUSES, NSUM_CLAUSES, INDEX_1, FORALL_IN_INSERT] THEN
+    CONV_TAC NUM_REDUCE_CONV THEN REPEAT GEN_TAC THEN
+    DISCH_THEN (CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
+    DISCH_THEN (fun th =>
+      DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o MATCH_MP th))) THEN
+    STRIP_TAC THEN ASM_SIMP_TAC [MULT_EQ_0, INDEX_MUL])
 
   let INDEX_FACT ← prove
    r"!p n. prime p ==> index p (FACT n) = nsum(1..n) (\m. index p m)"
@@ -2297,7 +2320,7 @@ def setupIndex [HolBase] (D : PrimeDeps) (PDivides : Divides) (PGcd : Gcd) (PCop
     SET_TAC [])
   return { FINITE_EXP_LE, FINITE_INDICES, index_def, INDEX_0, 
            PRIMEPOW_DIVIDES_INDEX, LE_INDEX, EXP_INDEX_DIVIDES, INDEX_LT, 
-           INDEX_1, INDEX_MUL, INDEX_EXP, INDEX_FACT, INDEX_FACT_ALT, 
+           INDEX_1, INDEX_MUL, INDEX_EXP, INDEX_NPRODUCT, INDEX_FACT, INDEX_FACT_ALT, 
            INDEX_FACT_UNBOUNDED, PRIMEPOW_DIVIDES_FACT, INDEX_REFL, INDEX_EQ_0, 
            INDEX_ZERO, INDEX_POW, INDEX_PRIME, INDEX_TRIVIAL_BOUND, 
            INDEX_DECOMPOSITION, INDEX_DECOMPOSITION_PRIME, 

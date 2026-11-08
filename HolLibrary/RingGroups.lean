@@ -41,17 +41,24 @@ namespace HolLibrary.RingGroups
 
 /-- Theorems used from the core library and the parent Library files. -/
 structure CoreThms1 where
-  (ABELIAN_GROUP_SUM_CLAUSES AND_FORALL_THM CARRIER_SUBGROUP_GENERATED_SUBGROUP
-   EQ_TRANS EXISTS_PAIR_THM EXTENSION FIELD_REAL_RING FIELD_UNIT
-   FINITE_INDUCT_STRONG FINITE_INSERT FINITE_RESTRICT FORALL_IN_IMAGE
+  (ABELIAN_GROUP_MUL_ZPOW ABELIAN_GROUP_SUM_CLAUSES
+   AND_FORALL_THM CARD_CROSS CARD_IMAGE_INJ CARRIER_SUBGROUP_GENERATED_SUBGROUP
+   EQ_TRANS EXISTS_PAIR_THM EXTENSION
+   FIELD_REAL_RING FIELD_UNIT FINITELY_GENERATED_ABELIAN_GROUP_POW
+   FINITE_INDUCT_STRONG FINITE_INSERT
+   FINITE_RESTRICT FINITE_SUBSET FORALL_INT_CASES FORALL_IN_IMAGE
    FORALL_IN_INSERT FORALL_PAIR_THM GROUPS_EQ GROUP_HOMOMORPHISM
    GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ GROUP_HOMOMORPHISM_MUL
-   GROUP_HOMOMORPHISM_OF_ID GROUP_ID GROUP_ISOMORPHISM GROUP_MUL
-   GROUP_SUM_CLAUSES_EXISTS IMAGE_I IMAGE_ID IMP_CONJ INSERT_SUBSET
+   GROUP_HOMOMORPHISM_OF_ID GROUP_ID GROUP_INV
+   GROUP_ISOMORPHISM GROUP_MUL GROUP_MUL_LID GROUP_MUL_RINV GROUP_POW GROUP_SUM
+   GROUP_SUM_CLAUSES_EXISTS GROUP_ZPOW GROUP_ZPOW_POW
+   IMAGE_I IMAGE_ID IMP_CONJ INSERT_SUBSET
    INTEGRAL_DOMAIN_MUL_EQ_0 IN_CROSS IN_DIFF IN_ELIM_THM IN_IMAGE IN_INSERT
-   IN_SING IN_UNIV I_DEF I_THM NOT_IN_EMPTY PAIR_EQ PRODUCT_GROUP PRODUCT_RING
+   IN_SING IN_SUBGROUP_POW IN_SUBGROUP_SUM IN_UNIV I_DEF
+   I_THM MONO_EXISTS NOT_IN_EMPTY
+   PAIR_EQ PRODUCT_CLAUSES PRODUCT_GROUP PRODUCT_RING
    PROD_GROUP PROD_RING REAL_LT_01 REAL_LT_IMP_NZ REAL_LT_INV REAL_LT_MUL
-   REAL_RING_CLAUSES REAL_RING_INV RESTRICTED_PRODUCT_GROUP
+   REAL_RING_CLAUSES REAL_RING_INV REAL_ZPOW_POW RESTRICTED_PRODUCT_GROUP
    RESTRICTED_PRODUCT_RING RIGHT_FORALL_IMP_THM RING_0 RING_1 RING_ADD
    RING_ADD_ASSOC RING_ADD_LNEG RING_ADD_LZERO RING_ADD_RNEG : thm)
   deriving Inhabited
@@ -59,17 +66,29 @@ structure CoreThms1 where
 /-- Theorems used from the core library and the parent Library files. -/
 structure CoreThms2 where
   (RING_ADD_RZERO RING_ADD_SYM RING_HOMOMORPHISM_1 RING_HOMOMORPHISM_INCLUSION
-   RING_HOMOMORPHISM_INV RING_HOMOMORPHISM_MUL RING_INV
-   RING_MONOMORPHISM_IMP_HOMOMORPHISM RING_MUL RING_MUL_ASSOC RING_MUL_LID
-   RING_MUL_LINV RING_MUL_LZERO RING_MUL_RID RING_MUL_RINV RING_MUL_RZERO
-   RING_MUL_SYM RING_NEG RING_PRODUCT_CLAUSES RING_SUB RING_SUB_EQ_0
+   RING_HOMOMORPHISM_INV RING_HOMOMORPHISM_MUL
+   RING_INV RING_INV_1 RING_ISOMORPHISM_IMP_MONOMORPHISM
+   RING_MONOMORPHISM_IMP_HOMOMORPHISM RING_MONOMORPHISM_INJECTIVE_EQ
+   RING_MUL RING_MUL_ASSOC RING_MUL_LID
+   RING_MUL_LINV RING_MUL_LNEG RING_MUL_LZERO
+   RING_MUL_RID RING_MUL_RINV RING_MUL_RNEG RING_MUL_RZERO
+   RING_MUL_SYM RING_NEG RING_NEG_NEG
+   RING_POW_NEG RING_POW_ONE RING_PRODUCT_CLAUSES
+   RING_RINV_UNIQUE RING_SUB RING_SUB_EQ_0
    RING_SUB_REFL RING_SUM RING_SUM_0 RING_SUM_CLAUSES RING_SUM_EQ RING_SUM_EQ_0
    RING_SUM_LMUL RING_SUM_SUB RING_UNIT_1 RING_UNIT_HOMOMORPHIC_IMAGE
-   RING_UNIT_INV RING_UNIT_IN_CARRIER RING_UNIT_MUL RING_UNIT_PRODUCT_RING
-   RING_UNIT_RESTRICTED_PRODUCT_RING RING_UNIT_SUBRING_GENERATED
-   SUBGROUP_GROUP_IMAGE SUBRING_RING_IMAGE SUBSET SUBSET_REFL SWAP_FORALL_THM
-   abelian_group group_carrier group_homomorphism group_id group_image group_inv
-   group_mul group_pow group_tybij ring_homomorphism ring_ideal ring_image
+   RING_UNIT_INV RING_UNIT_IN_CARRIER
+   RING_UNIT_MUL RING_UNIT_NEG RING_UNIT_POW RING_UNIT_PRODUCT_RING
+   RING_UNIT_RESTRICTED_PRODUCT_RING
+   RING_UNIT_SUBRING_GENERATED
+   SUBGROUP_GENERATED_INC_GEN SUBGROUP_GENERATED_SUPERSET
+   SUBGROUP_GROUP_IMAGE SUBGROUP_SUBGROUP_GENERATED SUBRING_RING_IMAGE
+   SUBSET SUBSET_REFL SWAP_FORALL_THM
+   abelian_group finitely_generated_group group_carrier
+   group_homomorphism group_id group_image group_inv
+   group_mul group_pow group_tybij
+   isomorphic_ring real_pow ring_homomorphism
+   ring_ideal ring_image ring_isomorphism ring_isomorphisms
    ring_monomorphism ring_pow ring_unit subgroup_of subring_of : thm)
   deriving Inhabited
 
@@ -84,6 +103,8 @@ structure RingGroupsDeps where
   SET_TAC : List thm → tactic
   INDUCT_TAC : tactic
   RING_RULE : term → ExceptT String IO thm  -- ringtheory.ml's RING_RULE
+  REAL_FIELD : term → ExceptT String IO thm
+  TAUT : term → ExceptT String IO thm
   core1 : CoreThms1
   core2 : CoreThms2
 
@@ -210,25 +231,37 @@ structure UnitGroup where
   ABELIAN_UNIT_GROUP : thm
   UNIT_GROUP_POW : thm
   UNIT_GROUP_SUM : thm
+  UNIT_GROUP_ZPOW_RING_NEG : thm
+  FINITELY_GENERATED_UNIT_GROUP : thm
   FIELD_UNIT_GROUP : thm
   SUBGROUP_POSITIVE_REALS : thm
+  GROUP_REAL_MULTIPLICATIVE_ID_INV_POW : thm
+  GROUP_REAL_MULTIPLICATIVE_ZPOW : thm
+  GROUP_REAL_MULTIPLICATIVE_SUM : thm
   deriving Inhabited
 
 @[nospecialize]
 def setupUnitGroup [HolBase] (D : RingGroupsDeps) :
     ExceptT String IO UnitGroup := do
   -- @@SCOPE BEGIN
-  let { INDUCT_TAC, MESON_TAC, new_definition, .. } := D
-  let { ABELIAN_GROUP_SUM_CLAUSES, AND_FORALL_THM, EXTENSION, FIELD_REAL_RING,
-        FIELD_UNIT, FINITE_INDUCT_STRONG, FINITE_RESTRICT, FORALL_IN_INSERT,
-        GROUP_SUM_CLAUSES_EXISTS, IMP_CONJ, IN_DIFF, IN_ELIM_THM, IN_SING, IN_UNIV,
-        REAL_LT_01, REAL_LT_IMP_NZ, REAL_LT_INV, REAL_LT_MUL, REAL_RING_CLAUSES,
-        REAL_RING_INV, .. } := D.core1
-  let { RING_MUL_ASSOC, RING_MUL_LID, RING_MUL_LINV, RING_MUL_RID, RING_MUL_RINV,
-        RING_MUL_SYM, RING_PRODUCT_CLAUSES, RING_UNIT_1, RING_UNIT_INV,
-        RING_UNIT_IN_CARRIER, RING_UNIT_MUL, SUBSET, SWAP_FORALL_THM, abelian_group,
-        group_carrier, group_id, group_inv, group_mul, group_pow, group_tybij,
-        ring_pow, subgroup_of, .. } := D.core2
+  let { ASM_MESON_TAC, INDUCT_TAC, MESON_TAC, REAL_FIELD, TAUT, new_definition, .. } := D
+  let { ABELIAN_GROUP_MUL_ZPOW, ABELIAN_GROUP_SUM_CLAUSES, AND_FORALL_THM, EXTENSION,
+        FIELD_REAL_RING, FIELD_UNIT, FINITELY_GENERATED_ABELIAN_GROUP_POW,
+        FINITE_INDUCT_STRONG, FINITE_RESTRICT, FORALL_INT_CASES, FORALL_IN_INSERT,
+        GROUP_ID, GROUP_INV, GROUP_MUL_LID, GROUP_MUL_RINV, GROUP_POW, GROUP_SUM,
+        GROUP_SUM_CLAUSES_EXISTS, GROUP_ZPOW, GROUP_ZPOW_POW, IMP_CONJ, IN_DIFF,
+        IN_ELIM_THM, IN_SING, IN_SUBGROUP_POW, IN_SUBGROUP_SUM, IN_UNIV, MONO_EXISTS,
+        PRODUCT_CLAUSES, REAL_LT_01, REAL_LT_IMP_NZ, REAL_LT_INV, REAL_LT_MUL,
+        REAL_RING_CLAUSES, REAL_RING_INV, REAL_ZPOW_POW, RING_1, .. } := D.core1
+  let { RING_INV_1, RING_MUL_ASSOC, RING_MUL_LID, RING_MUL_LINV, RING_MUL_LNEG,
+        RING_MUL_RID, RING_MUL_RINV, RING_MUL_RNEG, RING_MUL_SYM, RING_NEG,
+        RING_NEG_NEG, RING_POW_NEG, RING_POW_ONE, RING_PRODUCT_CLAUSES,
+        RING_RINV_UNIQUE, RING_UNIT_1, RING_UNIT_INV, RING_UNIT_IN_CARRIER,
+        RING_UNIT_MUL, RING_UNIT_NEG, RING_UNIT_POW, SUBGROUP_GENERATED_INC_GEN,
+        SUBGROUP_GENERATED_SUPERSET, SUBGROUP_SUBGROUP_GENERATED, SUBSET,
+        SWAP_FORALL_THM, abelian_group, finitely_generated_group, group_carrier,
+        group_id, group_inv, group_mul, group_pow, group_tybij, real_pow, ring_pow,
+        subgroup_of, .. } := D.core2
   -- @@SCOPE END
 
   let unit_group ← new_definition
@@ -273,6 +306,73 @@ def setupUnitGroup [HolBase] (D : RingGroupsDeps) :
               RING_PRODUCT_CLAUSES, UNIT_GROUP, IN_ELIM_THM,
               RING_UNIT_IN_CARRIER])
 
+  let UNIT_GROUP_ZPOW_RING_NEG ← prove
+   r"!r (x:A) n.
+        ring_unit r x
+        ==> group_zpow (unit_group r) (ring_neg r x) n =
+            group_zpow (unit_group r) x n \/
+            group_zpow (unit_group r) (ring_neg r x) n =
+            ring_neg r (group_zpow (unit_group r) x n)"
+   (REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"group_zpow (unit_group r) (ring_neg r (ring_1 r)) n = ring_1 r \/
+    group_zpow (unit_group r) (ring_neg r (ring_1 r)) n =
+    ring_neg r (ring_1 (r:A ring))")
+    MP_TAC THENL
+     [SPEC_TAC (← q r"n:int", ← q r"n:int") THEN
+      REWRITE_TAC [FORALL_INT_CASES, GROUP_ZPOW_POW, UNIT_GROUP_POW] THEN
+      SIMP_TAC [RING_POW_NEG, RING_1, RING_POW_ONE, UNIT_GROUP] THEN
+      CONJ_TAC THEN GEN_TAC THEN COND_CASES_TAC THEN
+      REWRITE_TAC [RING_INV_1] THEN DISJ2_TAC THEN
+      MATCH_MP_TAC RING_RINV_UNIQUE THEN
+      SIMP_TAC [RING_MUL_LNEG, RING_MUL_RNEG, RING_NEG_NEG, RING_MUL_LID,
+                RING_1, RING_NEG],
+      ALL_TAC] THEN
+    SUBGOAL_THEN (← q r"ring_neg r x = ring_mul r (ring_neg r (ring_1 r)) (x:A)")
+    SUBST1_TAC THENL
+     [ASM_SIMP_TAC [RING_MUL_LNEG, RING_MUL_LID, RING_UNIT_IN_CARRIER, RING_1],
+      ALL_TAC] THEN
+    MP_TAC (← ISPECL [← q r"unit_group r:A group", ← q r"ring_neg r (ring_1 r):A", ← q r"x:A",
+                      ← q r"n:int"] ABELIAN_GROUP_MUL_ZPOW) THEN
+    REWRITE_TAC [ABELIAN_UNIT_GROUP, UNIT_GROUP, IN_ELIM_THM] THEN
+    ASM_SIMP_TAC [RING_UNIT_NEG, RING_UNIT_1] THEN DISCH_THEN SUBST1_TAC THEN
+    SUBGOAL_THEN (← q r"group_zpow (unit_group r) (x:A) n IN ring_carrier r")
+    ASSUME_TAC THENL
+     [MATCH_MP_TAC RING_UNIT_IN_CARRIER THEN
+      MP_TAC (← ISPECL [← q r"unit_group r:A group", ← q r"x:A", ← q r"n:int"] GROUP_ZPOW) THEN
+      ASM_REWRITE_TAC [UNIT_GROUP, IN_ELIM_THM],
+      ALL_TAC] THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
+    ASM_SIMP_TAC [RING_MUL_LID, RING_MUL_LNEG, RING_1])
+
+  let FINITELY_GENERATED_UNIT_GROUP ← prove
+   r"!r:A ring.
+        finitely_generated_group(unit_group r) <=>
+        ?t. FINITE t /\ (!u. u IN t ==> ring_unit r u) /\
+            !u. ring_unit r u
+                ==> ?n. u = ring_product r t (\v. ring_pow r v (n v))"
+   (GEN_TAC THEN EQ_TAC THENL
+     [DISCH_TAC THEN MP_TAC (← ISPEC (← q r"unit_group(r:A ring)")
+        FINITELY_GENERATED_ABELIAN_GROUP_POW) THEN
+      ASM_REWRITE_TAC [ABELIAN_UNIT_GROUP, UNIT_GROUP, SUBSET, IN_ELIM_THM] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"t:A->bool") THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q r"u:A") THEN
+      DISCH_THEN (fun th => FIRST_X_ASSUM (MP_TAC o C MATCH_MP th)) THEN
+      ASM_SIMP_TAC [UNIT_GROUP_POW, UNIT_GROUP_SUM, RING_UNIT_POW],
+      REWRITE_TAC [finitely_generated_group, SUBGROUP_GENERATED_SUPERSET] THEN
+      MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"t:A->bool") THEN STRIP_TAC THEN
+      ASM_REWRITE_TAC [SUBSET, UNIT_GROUP, IN_ELIM_THM] THEN
+      X_GEN_TAC (← q r"u:A") THEN DISCH_TAC THEN
+      FIRST_X_ASSUM (X_CHOOSE_THEN (← q r"n:A->num") SUBST1_TAC o C MATCH_MP
+       (← ASSUME (← q r"ring_unit r (u:A)"))) THEN
+      wPart lhand (fun t => do rand (← rand t)) UNIT_GROUP_SUM THEN
+      ASM_SIMP_TAC [RING_UNIT_POW] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN
+      MATCH_MP_TAC IN_SUBGROUP_SUM THEN
+      REWRITE_TAC [SUBGROUP_SUBGROUP_GENERATED, ← GSYM UNIT_GROUP_POW] THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC IN_SUBGROUP_POW THEN
+      ASM_SIMP_TAC [SUBGROUP_SUBGROUP_GENERATED, SUBGROUP_GENERATED_INC_GEN,
+                    UNIT_GROUP, IN_ELIM_THM]])
+
   let FIELD_UNIT_GROUP ← prove
    r"!k:A ring.
         field k
@@ -286,9 +386,64 @@ def setupUnitGroup [HolBase] (D : RingGroupsDeps) :
     SIMP_TAC [FIELD_UNIT, FIELD_REAL_RING, REAL_RING_CLAUSES, IN_UNIV] THEN
     SIMP_TAC [REAL_LT_IMP_NZ, REAL_LT_01, REAL_LT_INV, REAL_LT_MUL])
 
+  let GROUP_REAL_MULTIPLICATIVE_ID_INV_POW ← prove
+   r"!G (g:A->real).
+        (!x. x IN group_carrier G ==> &0 < g x) /\
+        (!x y. x IN group_carrier G /\ y IN group_carrier G
+               ==> g(group_mul G x y) = g x * g y)
+        ==> g(group_id G) = &1 /\
+            (!x. x IN group_carrier G ==> g(group_inv G x) = inv(g x)) /\
+            (!x n. x IN group_carrier G ==> g(group_pow G x n) = g x pow n)"
+   (← do
+    let f2 ← REAL_FIELD (← q r"x * y = &1 ==> y = inv x")
+    let f1 ← REAL_FIELD (← q r"&0:real < x /\ x * x = x ==> x = &1")
+    let t1 ← TAUT (← q r"p /\ (p ==> q /\ r) ==> p /\ q /\ r")
+    pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
+    MATCH_MP_TAC t1 THEN CONJ_TAC THENL
+     [MATCH_MP_TAC f1 THEN
+      ASM_MESON_TAC [GROUP_ID, GROUP_MUL_LID],
+      DISCH_TAC THEN CONJ_TAC THEN REPEAT GEN_TAC THEN DISCH_TAC THENL
+       [MATCH_MP_TAC f2 THEN
+        ASM_MESON_TAC [GROUP_INV, GROUP_MUL_RINV],
+        SPEC_TAC (← q r"n:num", ← q r"n:num") THEN INDUCT_TAC THEN
+        ASM_SIMP_TAC [group_pow, real_pow, GROUP_POW]]]))
+
+  let GROUP_REAL_MULTIPLICATIVE_ZPOW ← prove
+   r"!G (g:A->real) x n.
+        (!x. x IN group_carrier G ==> &0 < g x) /\
+        (!x y. x IN group_carrier G /\ y IN group_carrier G
+               ==> g(group_mul G x y) = g x * g y) /\
+        x IN group_carrier G
+        ==> g(group_zpow G x n) = g x zpow n"
+   (REPEAT GEN_TAC THEN STRIP_TAC THEN
+    MP_TAC (← ISPECL [← q r"G:A group", ← q r"g:A->real"]
+      GROUP_REAL_MULTIPLICATIVE_ID_INV_POW) THEN
+    ASM_REWRITE_TAC [] THEN STRIP_TAC THEN SPEC_TAC (← q r"n:int", ← q r"n:int") THEN
+    REWRITE_TAC [FORALL_INT_CASES, GROUP_ZPOW_POW, REAL_ZPOW_POW] THEN
+    ASM_SIMP_TAC [GROUP_POW])
+
+  let GROUP_REAL_MULTIPLICATIVE_SUM ← prove
+   r"!G (g:A->real) (x:K->A) t.
+        abelian_group G /\
+        (!x y. x IN group_carrier G /\ y IN group_carrier G
+               ==> g(group_mul G x y) = g x * g y) /\
+        g(group_id G) = &1 /\
+        FINITE t /\ (!i. i IN t ==> x i IN group_carrier G)
+        ==> g(group_sum G t x) = product t (\i. g(x i))"
+   (REPEAT GEN_TAC THEN
+    DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC
+     (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC))) THEN
+    REWRITE_TAC [IMP_CONJ] THEN SPEC_TAC (← q r"t:K->bool", ← q r"t:K->bool") THEN
+    MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
+    ASM_SIMP_TAC [← CONJUNCT1 (← SPEC_ALL GROUP_SUM_CLAUSES_EXISTS), PRODUCT_CLAUSES,
+                  ABELIAN_GROUP_SUM_CLAUSES, FINITE_RESTRICT, FORALL_IN_INSERT,
+                  GROUP_SUM])
+
   -- @@RETURN BEGIN
   return { unit_group, UNIT_GROUP, ABELIAN_UNIT_GROUP, UNIT_GROUP_POW, UNIT_GROUP_SUM,
-           FIELD_UNIT_GROUP, SUBGROUP_POSITIVE_REALS }
+           UNIT_GROUP_ZPOW_RING_NEG, FINITELY_GENERATED_UNIT_GROUP, FIELD_UNIT_GROUP,
+           SUBGROUP_POSITIVE_REALS, GROUP_REAL_MULTIPLICATIVE_ID_INV_POW,
+           GROUP_REAL_MULTIPLICATIVE_ZPOW, GROUP_REAL_MULTIPLICATIVE_SUM }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/
@@ -300,8 +455,11 @@ structure UnitHomomorphisms where
   GROUP_HOMOMORPHISM_UNIT_GROUP : thm
   UNIT_GROUP_SUBRING_GENERATED : thm
   RING_MONOMORPHISM_UNITS_IMAGE : thm
+  RING_ISOMORPHISM_IMAGE_UNITS : thm
+  ISOMORPHIC_RING_CARD_UNITS : thm
   RING_UNIT_PROD_RING : thm
   UNIT_GROUP_PROD_RING : thm
+  CARD_UNITS_PROD_RING : thm
   UNIT_GROUP_PRODUCT_RING : thm
   UNIT_GROUP_RESTRICTED_PRODUCT_RING : thm
   deriving Inhabited
@@ -311,18 +469,20 @@ def setupUnitHomomorphisms [HolBase] (D : RingGroupsDeps) (BUnitGroup : UnitGrou
     ExceptT String IO UnitHomomorphisms := do
   -- @@SCOPE BEGIN
   let { ASM_MESON_TAC, MESON_TAC, SET_RULE, .. } := D
-  let { CARRIER_SUBGROUP_GENERATED_SUBGROUP, EXISTS_PAIR_THM, EXTENSION,
-        FORALL_IN_IMAGE, FORALL_PAIR_THM, GROUP_HOMOMORPHISM,
-        GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ, GROUP_ISOMORPHISM, IMAGE_I, IMAGE_ID,
-        IN_CROSS, IN_ELIM_THM, IN_IMAGE, I_DEF, I_THM, PAIR_EQ, PRODUCT_GROUP,
-        PRODUCT_RING, PROD_GROUP, PROD_RING, RESTRICTED_PRODUCT_GROUP,
+  let { CARD_CROSS, CARD_IMAGE_INJ, CARRIER_SUBGROUP_GENERATED_SUBGROUP,
+        EXISTS_PAIR_THM, EXTENSION, FINITE_SUBSET, FORALL_IN_IMAGE, FORALL_PAIR_THM,
+        GROUP_HOMOMORPHISM, GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ, GROUP_ISOMORPHISM,
+        IMAGE_I, IMAGE_ID, IN_CROSS, IN_ELIM_THM, IN_IMAGE, I_DEF, I_THM, PAIR_EQ,
+        PRODUCT_GROUP, PRODUCT_RING, PROD_GROUP, PROD_RING, RESTRICTED_PRODUCT_GROUP,
         RESTRICTED_PRODUCT_RING, RING_1, .. } := D.core1
   let { RING_HOMOMORPHISM_1, RING_HOMOMORPHISM_INCLUSION, RING_HOMOMORPHISM_INV,
-        RING_HOMOMORPHISM_MUL, RING_INV, RING_MONOMORPHISM_IMP_HOMOMORPHISM, RING_MUL,
+        RING_HOMOMORPHISM_MUL, RING_INV, RING_ISOMORPHISM_IMP_MONOMORPHISM,
+        RING_MONOMORPHISM_IMP_HOMOMORPHISM, RING_MONOMORPHISM_INJECTIVE_EQ, RING_MUL,
         RING_MUL_RINV, RING_UNIT_HOMOMORPHIC_IMAGE, RING_UNIT_IN_CARRIER,
         RING_UNIT_PRODUCT_RING, RING_UNIT_RESTRICTED_PRODUCT_RING,
         RING_UNIT_SUBRING_GENERATED, SUBGROUP_GROUP_IMAGE, SUBRING_RING_IMAGE, SUBSET,
-        SUBSET_REFL, group_image, ring_image, ring_monomorphism, ring_unit, .. } := D.core2
+        SUBSET_REFL, group_image, isomorphic_ring, ring_image, ring_isomorphism,
+        ring_isomorphisms, ring_monomorphism, ring_unit, .. } := D.core2
   let { UNIT_GROUP, .. } := BUnitGroup
   -- @@SCOPE END
 
@@ -392,6 +552,32 @@ def setupUnitHomomorphisms [HolBase] (D : RingGroupsDeps) (BUnitGroup : UnitGrou
         FIRST_ASSUM (fun th => tactic_of do
           pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_INV th]))]])
 
+  let RING_ISOMORPHISM_IMAGE_UNITS ← prove
+   r"!r r' (f:A->B).
+        ring_isomorphism(r,r') f
+        ==> IMAGE f {x | ring_unit r x} = {y | ring_unit r' y}"
+   (REPEAT GEN_TAC THEN REWRITE_TAC [ring_isomorphism, ring_isomorphisms] THEN
+    DISCH_THEN (X_CHOOSE_THEN (← q r"g:B->A") STRIP_ASSUME_TAC) THEN
+    GEN_REWRITE_TAC I [EXTENSION] THEN REWRITE_TAC [IN_IMAGE, IN_ELIM_THM] THEN
+    X_GEN_TAC (← q r"y:B") THEN EQ_TAC THENL
+     [ASM_MESON_TAC [RING_UNIT_HOMOMORPHIC_IMAGE],
+      DISCH_TAC THEN EXISTS_TAC (← q r"(g:B->A) y") THEN
+      ASM_MESON_TAC [RING_UNIT_HOMOMORPHIC_IMAGE, RING_UNIT_IN_CARRIER]])
+
+  let ISOMORPHIC_RING_CARD_UNITS ← prove
+   r"!r r'.
+        (r:A ring) isomorphic_ring (r':B ring) /\ FINITE(ring_carrier r)
+        ==> CARD {y | ring_unit r' y} = CARD {x | ring_unit r x}"
+   (REPEAT GEN_TAC THEN REWRITE_TAC [isomorphic_ring] THEN
+    DISCH_THEN (CONJUNCTS_THEN2 (X_CHOOSE_TAC (← q r"f:A->B")) ASSUME_TAC) THEN
+    FIRST_ASSUM (SUBST1_TAC o SYM o MATCH_MP RING_ISOMORPHISM_IMAGE_UNITS) THEN
+    MATCH_MP_TAC CARD_IMAGE_INJ THEN CONJ_TAC THENL
+     [REWRITE_TAC [IN_ELIM_THM] THEN
+      ASM_MESON_TAC [RING_ISOMORPHISM_IMP_MONOMORPHISM,
+                     RING_MONOMORPHISM_INJECTIVE_EQ, RING_UNIT_IN_CARRIER],
+      MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"ring_carrier r:A->bool") THEN
+      ASM_REWRITE_TAC [SUBSET, IN_ELIM_THM, RING_UNIT_IN_CARRIER]])
+
   let RING_UNIT_PROD_RING ← prove
    r"!(r:A ring) (r':B ring) x y.
         ring_unit (prod_ring r r') (x,y) <=> ring_unit r x /\ ring_unit r' y"
@@ -409,6 +595,24 @@ def setupUnitHomomorphisms [HolBase] (D : RingGroupsDeps) (BUnitGroup : UnitGrou
     REWRITE_TAC [EXTENSION, SUBSET, FORALL_PAIR_THM, IN_ELIM_THM, IN_CROSS,
                  RING_UNIT_PROD_RING] THEN
     MESON_TAC [])
+
+  let CARD_UNITS_PROD_RING ← prove
+   r"!(r:A ring) (r':B ring).
+        FINITE(ring_carrier r) /\ FINITE(ring_carrier r')
+        ==> CARD {z | ring_unit (prod_ring r r') z} =
+            CARD {x | ring_unit r x} * CARD {y | ring_unit r' y}"
+   (REPEAT STRIP_TAC THEN
+    SUBGOAL_THEN
+     (← q r"{z | ring_unit (prod_ring r r') z} =
+    {x:A | ring_unit r x} CROSS {y:B | ring_unit r' y}")
+    SUBST1_TAC THENL
+     [REWRITE_TAC [EXTENSION, FORALL_PAIR_THM, IN_CROSS, IN_ELIM_THM,
+                   RING_UNIT_PROD_RING],
+      MATCH_MP_TAC CARD_CROSS THEN CONJ_TAC THEN
+      MATCH_MP_TAC FINITE_SUBSET THENL
+       [EXISTS_TAC (← q r"ring_carrier r:A->bool"),
+        EXISTS_TAC (← q r"ring_carrier r':B->bool")] THEN
+      ASM_REWRITE_TAC [SUBSET, IN_ELIM_THM, RING_UNIT_IN_CARRIER]])
 
   let UNIT_GROUP_PRODUCT_RING ← prove
    r"!k (r:K->A ring).
@@ -449,8 +653,10 @@ def setupUnitHomomorphisms [HolBase] (D : RingGroupsDeps) (BUnitGroup : UnitGrou
 
   -- @@RETURN BEGIN
   return { GROUP_HOMOMORPHISM_UNIT_GROUP, UNIT_GROUP_SUBRING_GENERATED,
-           RING_MONOMORPHISM_UNITS_IMAGE, RING_UNIT_PROD_RING, UNIT_GROUP_PROD_RING,
-           UNIT_GROUP_PRODUCT_RING, UNIT_GROUP_RESTRICTED_PRODUCT_RING }
+           RING_MONOMORPHISM_UNITS_IMAGE, RING_ISOMORPHISM_IMAGE_UNITS,
+           ISOMORPHIC_RING_CARD_UNITS, RING_UNIT_PROD_RING, UNIT_GROUP_PROD_RING,
+           CARD_UNITS_PROD_RING, UNIT_GROUP_PRODUCT_RING,
+           UNIT_GROUP_RESTRICTED_PRODUCT_RING }
   -- @@RETURN END
 
 /- ------------------------------------------------------------------------- -/

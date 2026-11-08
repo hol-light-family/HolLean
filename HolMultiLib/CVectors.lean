@@ -33,7 +33,7 @@ open HolLight HolLight.Syntax
 
 namespace HolMultiLib.CVectors
 
-open HolMultiLib.Complexes (CXA CXB CXC CXD CXE CXF CXG CXH CXI CXJ CXK)
+open HolMultiLib.ComplexAlgebra (CXA CXB CXC CXD CXE CXF CXG CXH CXI CXJ CXK)
 
 /-- The theorems cvectors.ml uses that the complexes.ml and cross.ml deps do
     not carry: from the core library, vectors.ml and topology.ml. -/
@@ -48,7 +48,7 @@ structure CvecThms where
   deriving Inhabited
 
 structure CvectorsDeps where
-  cx : HolMultiLib.Complexes.ComplexesDeps
+  cx : HolMultiLib.ComplexAlgebra.ComplexAlgebraDeps
   cxa : CXA
   cxb : CXB
   cxc : CXC
@@ -60,6 +60,9 @@ structure CvectorsDeps where
   cxi : CXI
   cxj : CXJ
   cxk : CXK
+  cxl : HolMultiLib.Complexes.CXL
+  cxm : HolMultiLib.Complexes.CXM
+  cxn : HolMultiLib.Complexes.CXN
   crt : HolMultiLib.Cross.CrossThms
   crs : HolMultiLib.Cross.CRS
   prioritize_vector : IO Unit

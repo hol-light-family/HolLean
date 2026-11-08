@@ -21,7 +21,7 @@ proof that failed would stop the load, which the `make verify` gates catch. -/
 import HolTest.CommonTest
 import SessionMultiLib.Complexes
 
-open HolCore.Kernel SessionMultiLib.Complexes
+open HolCore.Kernel SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes
 open HolTest.CommonTest HolLight.Syntax
 
 #eval ensureComplexes

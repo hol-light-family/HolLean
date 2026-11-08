@@ -6,7 +6,7 @@ import Hol100.Common
 import SessionMultiLib.Measure
 import SessionMultiLib.RealAnalysis
 open HolCore.Kernel Session HolLight.Syntax HolExamples Hol100
-open SessionLibrary.Permutations SessionLibrary.Binomial SessionLibrary.Wo SessionLibrary.Products SessionLibrary.Floor SessionLibrary.Iter SessionLibrary.Frag SessionLibrary.Prime SessionLibrary.Card SessionLibrary.Matroids SessionMultiLib.Misc SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionMultiLib.Metric SessionMultiLib.Determinants SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.Complexes SessionMultiLib.Paths SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals SessionMultiLib.RealAnalysis
+open SessionLibrary.Permutations SessionLibrary.Binomial SessionLibrary.Wo SessionLibrary.Products SessionLibrary.Floor SessionLibrary.Iter SessionLibrary.Frag SessionLibrary.Prime SessionLibrary.Card SessionLibrary.Matroids SessionMultiLib.Misc SessionLibrary.GroupTheory SessionMultiLib.Vectors SessionMultiLib.Metric SessionMultiLib.Determinants SessionMultiLib.Homology SessionMultiLib.Topology SessionMultiLib.Convex SessionMultiLib.ComplexAlgebra SessionMultiLib.Complexes SessionMultiLib.Paths SessionMultiLib.Polytope SessionMultiLib.Degree SessionMultiLib.Derivatives SessionMultiLib.Integration SessionMultiLib.Measure SessionMultiLib.Canal SessionMultiLib.Transcendentals SessionMultiLib.RealAnalysis
 namespace Hol100.Circle
 
 /- The session's `prove` lifted into `ExceptT String IO`, so tactic scripts
