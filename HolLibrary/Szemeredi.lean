@@ -8,7 +8,7 @@
 
   Lean4 translation by Chris Walton 2026
 
-  A translation of HOL Light's `Library/szemeredi.ml` (e7fbefd), by hand, in
+  A translation of HOL Light's `Library/szemeredi.ml` (078839e), by hand, in
   file order, in the style of HolLibrary/Galois.lean (see there and
   HolMath/Base.lean for the conventions).  szemeredi.ml begins with `needs`
   of prime.ml, products.ml and 100/bertrand.ml (HolLibrary.Bertrand), then
@@ -6912,7 +6912,7 @@ def setupCor13 [HolBase] (D : SzemerediDeps) (BWords : Words) (BDensities : Dens
 
 /- ------------------------------------------------------------------------- -/
 /- The density increment (DKT Proposition 6) and the density Hales-Jewett    -/
-/- theorem.  (szemeredi.ml 5622-5879)                                        -/
+/- theorem.  (szemeredi.ml 5622-5880)                                        -/
 /- ------------------------------------------------------------------------- -/
 
 structure DensityHJThm where
@@ -6965,12 +6965,12 @@ def setupDensityHJThm [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : L
     let r1 ← REAL_ARITH (← q r"!x. &0 < x / &2 <=> &0 < x")
     pure (REPEAT STRIP_TAC THEN
     MP_TAC (← SPECL [← q r"k:num", ← q r"delta:real"] DKT_COR11) THEN ASM_REWRITE_TAC [] THEN
-    DISCH_THEN (X_CHOOSE_THEN (← q r"gamma:real") (X_CHOOSE_THEN (← q r"M0:num")
+    DISCH_THEN (X_CHOOSE_THEN (← q r"gamma0:real") (X_CHOOSE_THEN (← q r"M0:num")
      (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "cor11")))) THEN
-    EXISTS_TAC (← q r"gamma / &2") THEN
+    EXISTS_TAC (← q r"gamma0 / &2") THEN
     ASM_REWRITE_TAC [r1] THEN
     X_GEN_TAC (← q r"d:num") THEN DISCH_TAC THEN
-    MP_TAC (← SPECL [← q r"k:num", ← q r"gamma pow 2 / (&4 * &k)", ← q r"k:num", ← q r"d:num"]
+    MP_TAC (← SPECL [← q r"k:num", ← q r"gamma0 pow 2 / (&4 * &k)", ← q r"k:num", ← q r"d:num"]
       HJ_TILING_STRUCTURED) THEN
     ANTS_TAC THENL
      [ASM_REWRITE_TAC [LE_REFL] THEN MATCH_MP_TAC REAL_LT_DIV THEN
@@ -7018,7 +7018,7 @@ def setupDensityHJThm [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : L
      [MATCH_MP_TAC HJ_DENSITY_SUBADD THEN REWRITE_TAC [IN_ELIM_THM] THEN
       MESON_TAC [],
       ALL_TAC] THEN
-    SUBGOAL_THEN (← q r"&2 * &k * gamma pow 2 / (&4 * &k) = gamma pow 2 / &2")
+    SUBGOAL_THEN (← q r"&2 * &k * gamma0 pow 2 / (&4 * &k) = gamma0 pow 2 / &2")
     ASSUME_TAC THENL
      [UNDISCH_TAC (← q r"1 <= k") THEN REWRITE_TAC [← GSYM REAL_OF_NUM_LE] THEN
       CONV_TAC REAL_FIELD,
@@ -7039,9 +7039,9 @@ def setupDensityHJThm [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : L
     SUBGOAL_THEN (← q r"&0 <= rho") ASSUME_TAC THENL
      [ASM_REAL_ARITH_TAC, ALL_TAC] THEN
     SUBGOAL_THEN
-     (← q r"(rho + gamma / &2) * dT <= (rho + gamma / &2) * dD /\
-      (rho + gamma) * gamma <= (rho + gamma) * dD /\
-      gamma * gamma <= gamma * dD /\ &0 < gamma * gamma /\ &0 <= rho * gamma")
+     (← q r"(rho + gamma0 / &2) * dT <= (rho + gamma0 / &2) * dD /\
+      (rho + gamma0) * gamma0 <= (rho + gamma0) * dD /\
+      gamma0 * gamma0 <= gamma0 * dD /\ &0 < gamma0 * gamma0 /\ &0 <= rho * gamma0")
     STRIP_ASSUME_TAC THENL
      [REPEAT CONJ_TAC THENL
        [MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REAL_ARITH_TAC,
@@ -7050,15 +7050,15 @@ def setupDensityHJThm [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : L
         MATCH_MP_TAC REAL_LT_MUL THEN ASM_REWRITE_TAC [],
         MATCH_MP_TAC REAL_LE_MUL THEN ASM_REAL_ARITH_TAC],
       ALL_TAC] THEN
-    SUBGOAL_THEN (← q r"(rho + gamma / &2) * dT <= dTA /\ &0 < dTA")
+    SUBGOAL_THEN (← q r"(rho + gamma0 / &2) * dT <= dTA /\ &0 < dTA")
     STRIP_ASSUME_TAC THENL
-     [UNDISCH_TAC (← q r"&2 * &k * gamma pow 2 / (&4 * &k) = gamma pow 2 / &2") THEN
+     [UNDISCH_TAC (← q r"&2 * &k * gamma0 pow 2 / (&4 * &k) = gamma0 pow 2 / &2") THEN
       REWRITE_TAC [REAL_POW_2] THEN DISCH_TAC THEN ASM_REAL_ARITH_TAC,
       ALL_TAC] THEN
     MP_TAC (← ISPECL [← q r"k + 1", ← q r"d:num", ← q r"m:num", ← q r"Fs:(num->num)->bool",
                       ← q r"{x:num->num | !j. j < k ==>
                         x IN (D:num->(num->num)->bool) j}",
-                      ← q r"{x | hj_subst (k + 1) W x IN A}", ← q r"rho + gamma / &2"]
+                      ← q r"{x | hj_subst (k + 1) W x IN A}", ← q r"rho + gamma0 / &2"]
       HJ_TILING_AVERAGE) THEN
     ASM_REWRITE_TAC [a3] THEN ANTS_TAC THENL
      [DISCH_THEN SUBST_ALL_TAC THEN
@@ -7072,7 +7072,7 @@ def setupDensityHJThm [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : L
     EXISTS_TAC (← q r"hj_subst (k + 1) W z") THEN CONJ_TAC THENL
      [MATCH_MP_TAC HJ_SUBSPACE_SUBST THEN EXISTS_TAC (← q r"m:num") THEN
       ASM_REWRITE_TAC [a4] THEN ASM_MESON_TAC [hj_tiling],
-      UNDISCH_TAC (← q r"rho + gamma / &2 <=
+      UNDISCH_TAC (← q r"rho + gamma0 / &2 <=
                    hj_density (k + 1) d {a | hj_subst (k + 1) z a IN
                                        {x | hj_subst (k + 1) W x IN A}}") THEN
       REWRITE_TAC [IN_ELIM_THM, HJ_SUBST_SUBST]]))
@@ -7206,7 +7206,7 @@ def setupDensityHJThm [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : L
 
 /- ------------------------------------------------------------------------- -/
 /- The weighted Szemeredi property; affine changes of variables in means     -/
-/- over Z_N; lines of [k]^n along progressions.  (szemeredi.ml 5880-6072)    -/
+/- over Z_N; lines of [k]^n along progressions.  (szemeredi.ml 5881-6073)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure WeightedDefs where
@@ -7414,7 +7414,7 @@ def setupWeightedDefs [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans)
 
 /- ------------------------------------------------------------------------- -/
 /- Densities along affine maps; progressions in a dense subset of Z_N from   -/
-/- density Hales-Jewett.  (szemeredi.ml 6073-6332)                           -/
+/- density Hales-Jewett.  (szemeredi.ml 6074-6333)                           -/
 /- ------------------------------------------------------------------------- -/
 
 structure APBound where
@@ -7717,7 +7717,7 @@ def setupAPBound [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) (BWo
 
 
 /- ------------------------------------------------------------------------- -/
-/- The weighted Szemeredi theorem.  (szemeredi.ml 6333-6414)                 -/
+/- The weighted Szemeredi theorem.  (szemeredi.ml 6334-6415)                 -/
 /- ------------------------------------------------------------------------- -/
 
 structure WeightedThm where
@@ -7837,7 +7837,7 @@ def setupWeightedThm [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) 
 
 
 /- ------------------------------------------------------------------------- -/
-/- Progressions mod N and genuine progressions.  (szemeredi.ml 6415-6646)    -/
+/- Progressions mod N and genuine progressions.  (szemeredi.ml 6416-6647)    -/
 /- ------------------------------------------------------------------------- -/
 
 structure ModAP where
@@ -8090,7 +8090,7 @@ def setupModAP [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) :
 
 /- ------------------------------------------------------------------------- -/
 /- Increasing and decreasing progressions from progressions mod N.           -/
-/- (szemeredi.ml 6647-6740)                                                  -/
+/- (szemeredi.ml 6648-6741)                                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure UpDown where
@@ -8235,7 +8235,7 @@ def setupUpDown [HolBase] (D : SzemerediDeps) (BModAP : ModAP) :
 
 
 /- ------------------------------------------------------------------------- -/
-/- Genuine progressions from pairs mod N.  (szemeredi.ml 6741-6882)          -/
+/- Genuine progressions from pairs mod N.  (szemeredi.ml 6742-6883)          -/
 /- ------------------------------------------------------------------------- -/
 
 structure Pairs where
@@ -8418,7 +8418,7 @@ def setupPairs [HolBase] (D : SzemerediDeps) (BModAP : ModAP) (BUpDown : UpDown)
 
 /- ------------------------------------------------------------------------- -/
 /- Szemeredi's theorem: counting, finite and density forms; Roth.            -/
-/- (szemeredi.ml 6883-7091)                                                  -/
+/- (szemeredi.ml 6884-7092)                                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure SzemerediThm where
@@ -8670,7 +8670,7 @@ def setupSzemerediThm [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans)
 
 
 /- ------------------------------------------------------------------------- -/
-/- Van der Waerden's theorem; shifts of cubes.  (szemeredi.ml 7092-7204)     -/
+/- Van der Waerden's theorem; shifts of cubes.  (szemeredi.ml 7093-7205)     -/
 /- ------------------------------------------------------------------------- -/
 
 structure VdW where
@@ -8817,7 +8817,7 @@ def setupVdW [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) (BWords 
 
 /- ------------------------------------------------------------------------- -/
 /- Multidimensional Szemeredi, Gallai-Witt and corners.                      -/
-/- (szemeredi.ml 7205-7465)                                                  -/
+/- (szemeredi.ml 7206-7466)                                                  -/
 /- ------------------------------------------------------------------------- -/
 
 structure Multidim where

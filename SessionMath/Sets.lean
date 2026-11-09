@@ -211,16 +211,17 @@ initialize setsFunspaceLayer : HolMath.Sets.SetsFunspace ←
     o_DEF MESON_TAC ASM_MESON_TAC new_definition).run
 def SFun : HolMath.Sets.SetsFunspace := setsFunspaceLayer
 
-/-- `SetsFunspace2` (sets.ml 3342-3565): cardinality of bounded-support function
-    spaces, of type `bool`, and hence of the powerset.  Pure `prove`s. -/
+/-- `SetsFunspace2` (sets.ml 3342-3582): cardinality of bounded-support function
+    spaces, of type `bool`, and hence of the powerset; finite cartesian products.
+    Pure `prove`s. -/
 initialize setsFunspace2Layer : HolMath.Sets.SetsFunspace2 ←
   ioOk' "setupSetsFunspace2" (HolMath.Sets.setupSetsFunspace2 SC SP SIn SOp SID SIm SMi
-    SFin SCard SCard2 SCross Pr MESON_TAC ASM_MESON_TAC
+    SFin SCard SCard2 SCross SFun Pr MESON_TAC ASM_MESON_TAC
     GEN_BETA_CONV INDUCT_TAC
     EXP LE_TRANS LE_MULT_RCANCEL LE_1 ARITH).run
 def SFun2 : HolMath.Sets.SetsFunspace2 := setsFunspace2Layer
 
-/-- `SetsInfinite` (sets.ml 3571-3714): the infinitude of the numbers, of
+/-- `SetsInfinite` (sets.ml 3585-3728): the infinitude of the numbers, of
     strings, and of non-trivial real intervals.  `string_INFINITE` mentions
     `(:string)`, so before the proofs the char/string layer is forced
     (`char_INDUCT`, already forced by the Int import chain) and the lists.ml
@@ -242,7 +243,7 @@ initialize setsInfiniteLayer : HolMath.Sets.SetsInfinite ← do
     Rl.REAL_LE_ANTISYM Rl.REAL_LE_REFL).run
 def SInf : HolMath.Sets.SetsInfinite := setsInfiniteLayer
 
-/-- `SetsList` (sets.ml 3714-4155): finite-set indexing and enumeration of
+/-- `SetsList` (sets.ml 3728-4169): finite-set indexing and enumeration of
     subsets of N, the mapping between finite sets and lists (`set_of_list`/
     `list_of_set` INTRODUCED HERE), and `pairwise`. -/
 initialize setsListLayer : HolMath.Sets.SetsList ←
@@ -263,10 +264,10 @@ initialize setsListLayer : HolMath.Sets.SetsList ←
 def SL : HolMath.Sets.SetsList := setsListLayer
 
 /-- The SIXTEENTH/SEVENTEENTH `parse_as_infix`: `UNION_OF`/`INTERSECTION_OF 20
-    right` (sets.ml 4159-4160), forced just before `SUO`. -/
+    right` (sets.ml 4173-4174), forced just before `SUO`. -/
 initialize setsUnionOfInfixLayer : Unit ← HolMath.Sets.setupSetsUnionOfInfix
 
-/-- `SetsUnionOf` (sets.ml 4156-4522): the `UNION_OF`/`INTERSECTION_OF`
+/-- `SetsUnionOf` (sets.ml 4170-4536): the `UNION_OF`/`INTERSECTION_OF`
     combinators and their ARBITRARY and FINITE cases.  The two operators' infix
     fixity is set above. -/
 initialize setsUnionOfLayer : HolMath.Sets.SetsUnionOf ← do
@@ -276,7 +277,7 @@ initialize setsUnionOfLayer : HolMath.Sets.SetsUnionOf ← do
     new_definition).run
 def SUO : HolMath.Sets.SetsUnionOf := setsUnionOfLayer
 
-/-- `SetsCardComp` (sets.ml 4523-4875): the finish of the set_of_list
+/-- `SetsCardComp` (sets.ml 4537-4889): the finish of the set_of_list
     cardinality section, the classic finite injectivity/surjectivity/bijection
     theorems, `WF_FINITE`/`WF_PSUBSET`, and the cardinal-comparison definitions
     `le_c`/`lt_c`/`eq_c`/`ge_c`/`gt_c` with `LE_C`/`GE_C`/`COUNTABLE`.
@@ -292,7 +293,7 @@ initialize setsCardCompLayer : HolMath.Sets.SetsCardComp ←
     listDefs.LENGTH new_definition).run
 def SCC : HolMath.Sets.SetsCardComp := setsCardCompLayer
 
-/-- `SetsSup` (sets.ml 4878-5207): the `sup`/`inf` definitions and their 49
+/-- `SetsSup` (sets.ml 4892-5221): the `sup`/`inf` definitions and their 49
     surrounding `prove`s.  Registers NO new infix. -/
 initialize setsSupLayer : HolMath.Sets.SetsSup ←
   ioOk' "setupSetsSup" (HolMath.Sets.setupSetsSup SC SP
@@ -316,10 +317,10 @@ initialize setsSupLayer : HolMath.Sets.SetsSup ←
 def SSup : HolMath.Sets.SetsSup := setsSupLayer
 
 /-- The EIGHTEENTH/NINETEENTH (and LAST) `parse_as_infix`: `has_inf`/`has_sup
-    12 right` (sets.ml 5210-5211), forced just before `SISup`. -/
+    12 right` (sets.ml 5224-5225), forced just before `SISup`. -/
 initialize setsHasInfSupInfixLayer : Unit ← HolMath.Sets.setupSetsHasInfSupInfix
 
-/-- `SetsHasInfSup` (sets.ml 5208-5362): the relational `has_inf`/`has_sup`
+/-- `SetsHasInfSup` (sets.ml 5222-5376): the relational `has_inf`/`has_sup`
     definitions and their 12 surrounding `prove`s.  `HYP_TAC`'s `rule` argument
     is a pure `thm -> Except String thm`; `REWRITE_RULE`/`MATCH_MP` are `IO`, so
     they are bridged through the safe `runExceptThm` opaque (Session used
@@ -357,24 +358,24 @@ def SET_TAC (ths : List thm) : tactic :=
 def SET_RULE (tm : term) : IO (Except String thm) :=
   (HolMath.Sets.SET_RULE SC SP MESON_TAC tm).run
 
-/-- new_inductive_set's `(/\)` (sets.ml 5389), parsed once at its file
+/-- new_inductive_set's `(/\)` (sets.ml 5403), parsed once at its file
     position. -/
 initialize newIndSetAndTm : term ← pt "(/\\)"
 
-/-- `new_inductive_set tm` (sets.ml 5363-5397): reduce an inductive SET
+/-- `new_inductive_set tm` (sets.ml 5377-5411): reduce an inductive SET
     definition to an inductive RELATION and return `(rules, induct, cases)`. -/
 def new_inductive_set (tm : term) :
     IO (Except String (thm × thm × thm)) := do
   HolMath.Sets.new_inductive_set SC.IN newIndSetAndTm new_inductive_definition tm
 
-/-- `dest_setenum` (sets.ml 4030). -/
+/-- `dest_setenum` (sets.ml 4044). -/
 def dest_setenum : term → Except String (List term) := HolMath.Sets.dest_setenum
-/-- `is_setenum` (sets.ml 4036). -/
+/-- `is_setenum` (sets.ml 4050). -/
 def is_setenum : term → Bool := HolMath.Sets.is_setenum
-/-- `mk_setenum` (sets.ml 4038). -/
+/-- `mk_setenum` (sets.ml 4052). -/
 def mk_setenum : List term × hol_type → IO (Except String term) :=
   HolMath.Sets.mk_setenum SL.insert_atm SL.nil_atm
-/-- `mk_fset` (sets.ml 4044). -/
+/-- `mk_fset` (sets.ml 4058). -/
 def mk_fset : List term → IO (Except String term) :=
   HolMath.Sets.mk_fset SL.insert_atm SL.nil_atm
 
@@ -865,7 +866,7 @@ def INTER_DISJOINT_UNION               : thm := SFun.INTER_DISJOINT_UNION
 def UNION_DISJOINT_UNION               : thm := SFun.UNION_DISJOINT_UNION
 def DISJOINT_UNION_EQ_EMPTY            : thm := SFun.DISJOINT_UNION_EQ_EMPTY
 def DISJOINT_DISJOINT_UNION            : thm := SFun.DISJOINT_DISJOINT_UNION
--- SetsFunspace2 (sets.ml 3342-3565)
+-- SetsFunspace2 (sets.ml 3342-3582)
 def HAS_SIZE_FUNSPACE          : thm := SFun2.HAS_SIZE_FUNSPACE
 def CARD_FUNSPACE              : thm := SFun2.CARD_FUNSPACE
 def FINITE_FUNSPACE            : thm := SFun2.FINITE_FUNSPACE
@@ -886,6 +887,7 @@ def POWERSET_CLAUSES           : thm := SFun2.POWERSET_CLAUSES
 def FINITE_IMAGE_INFINITE      : thm := SFun2.FINITE_IMAGE_INFINITE
 def FINITE_RESTRICTED_POWERSET : thm := SFun2.FINITE_RESTRICTED_POWERSET
 def FINITE_RESTRICTED_FUNSPACE : thm := SFun2.FINITE_RESTRICTED_FUNSPACE
+def FINITE_CARTESIAN_PRODUCT_FINITE : thm := SFun2.FINITE_CARTESIAN_PRODUCT_FINITE
 def NUMSEG_CLAUSES_LT          : thm := SInf.NUMSEG_CLAUSES_LT
 def HAS_SIZE_NUMSEG_LT         : thm := SInf.HAS_SIZE_NUMSEG_LT
 def CARD_NUMSEG_LT             : thm := SInf.CARD_NUMSEG_LT
@@ -901,7 +903,7 @@ def num_INFINITE               : thm := SInf.num_INFINITE
 def string_INFINITE            : thm := SInf.string_INFINITE
 def FINITE_REAL_INTERVAL       : thm := SInf.FINITE_REAL_INTERVAL
 def real_INFINITE              : thm := SInf.real_INFINITE
--- SetsList (sets.ml 3714-4155)
+-- SetsList (sets.ml 3728-4169)
 def HAS_SIZE_INDEX             : thm := SL.HAS_SIZE_INDEX
 def INFINITE_ENUMERATE         : thm := SL.INFINITE_ENUMERATE
 def INFINITE_ENUMERATE_EQ      : thm := SL.INFINITE_ENUMERATE_EQ
@@ -937,7 +939,7 @@ def PAIRWISE_CHAIN_UNIONS      : thm := SL.PAIRWISE_CHAIN_UNIONS
 def DIFF_UNIONS_PAIRWISE_DISJOINT : thm := SL.DIFF_UNIONS_PAIRWISE_DISJOINT
 def INTER_UNIONS_PAIRWISE_DISJOINT : thm := SL.INTER_UNIONS_PAIRWISE_DISJOINT
 def PSUBSET_UNIONS_PAIRWISE_DISJOINT : thm := SL.PSUBSET_UNIONS_PAIRWISE_DISJOINT
--- SetsUnionOf (sets.ml 4156-4522)
+-- SetsUnionOf (sets.ml 4170-4536)
 def UNION_OF                        : thm := SUO.UNION_OF
 def INTERSECTION_OF                 : thm := SUO.INTERSECTION_OF
 def UNION_OF_INC                    : thm := SUO.UNION_OF_INC
@@ -982,7 +984,7 @@ def FINITE_UNION_OF_INTER_EQ        : thm := SUO.FINITE_UNION_OF_INTER_EQ
 def FINITE_UNION_OF_INTER           : thm := SUO.FINITE_UNION_OF_INTER
 def FINITE_INTERSECTION_OF_UNION_EQ : thm := SUO.FINITE_INTERSECTION_OF_UNION_EQ
 def FINITE_INTERSECTION_OF_UNION    : thm := SUO.FINITE_INTERSECTION_OF_UNION
--- SetsCardComp (sets.ml 4523-4875)
+-- SetsCardComp (sets.ml 4537-4889)
 def CARD_SET_OF_LIST_LE          : thm := SCC.CARD_SET_OF_LIST_LE
 def HAS_SIZE_SET_OF_LIST         : thm := SCC.HAS_SIZE_SET_OF_LIST
 def SURJECTIVE_IFF_INJECTIVE_GEN : thm := SCC.SURJECTIVE_IFF_INJECTIVE_GEN
@@ -1018,7 +1020,7 @@ def gt_c                         : thm := SCC.gt_c
 def LE_C                         : thm := SCC.LE_C
 def GE_C                         : thm := SCC.GE_C
 def COUNTABLE                    : thm := SCC.COUNTABLE
--- SetsSup (sets.ml 4878-5207)
+-- SetsSup (sets.ml 4892-5221)
 def sup                          : thm := SSup.sup
 def SUP_EQ                       : thm := SSup.SUP_EQ
 def SUP                          : thm := SSup.SUP
@@ -1072,7 +1074,7 @@ def INF_UNION                    : thm := SSup.INF_UNION
 def INF_LE_ELEMENT               : thm := SSup.INF_LE_ELEMENT
 def INF_APPROACH                 : thm := SSup.INF_APPROACH
 def REAL_MIN_INF                 : thm := SSup.REAL_MIN_INF
--- SetsHasInfSup (sets.ml 5208-5362)
+-- SetsHasInfSup (sets.ml 5222-5376)
 def has_inf                      : thm := SISup.has_inf
 def has_sup                      : thm := SISup.has_sup
 def HAS_INF_LBOUND               : thm := SISup.HAS_INF_LBOUND

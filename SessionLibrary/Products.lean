@@ -32,6 +32,7 @@ def core1 : HolLibrary.Products.CoreThms1 where
   CONJ_ASSOC := Session.CONJ_ASSOC
   DISJOINT_NUMSEG := Session.DISJOINT_NUMSEG
   EQ_ADD_RCANCEL := Session.EQ_ADD_RCANCEL
+  EQ_IMP_LE := Session.EQ_IMP_LE
   ETA_AX := Session.ETA_AX
   EXISTS_PAIR_THM := Session.EXISTS_PAIR_THM
   EXP := Session.EXP
@@ -104,6 +105,7 @@ def core2 : HolLibrary.Products.CoreThms2 where
   LE_0 := Session.LE_0
   LE_MULT2 := Session.LE_MULT2
   LE_REFL := Session.LE_REFL
+  LE_TRANS := Session.LE_TRANS
   LT_MULT := Session.LT_MULT
   LT_REFL := Session.LT_REFL
   MONOIDAL_INT_MUL := Session.MONOIDAL_INT_MUL
@@ -183,6 +185,7 @@ def deps : HolLibrary.Products.ProductsDeps where
   NUMBER_RULE t := ExceptT.mk (Session.NUMBER_RULE t)
   REAL_ARITH t := ExceptT.mk (Session.REAL_ARITH t)
   ASM_REAL_ARITH_TAC := Session.ASM_REAL_ARITH_TAC
+  SET_TAC := Session.SET_TAC
   core1 := core1
   core2 := core2
   core3 := core3
@@ -240,6 +243,7 @@ def CONG_NPRODUCT : thm := BNProduct.CONG_NPRODUCT
 def NPRODUCT_CLAUSES_LEFT : thm := BNProduct.NPRODUCT_CLAUSES_LEFT
 def NPRODUCT_CLAUSES_RIGHT : thm := BNProduct.NPRODUCT_CLAUSES_RIGHT
 def NPRODUCT_SUPERSET : thm := BNProduct.NPRODUCT_SUPERSET
+def NPRODUCT_SUBSET_LE : thm := BNProduct.NPRODUCT_SUBSET_LE
 def NPRODUCT_UNIV : thm := BNProduct.NPRODUCT_UNIV
 def NPRODUCT_PAIR : thm := BNProduct.NPRODUCT_PAIR
 def NPRODUCT_REFLECT : thm := BNProduct.NPRODUCT_REFLECT

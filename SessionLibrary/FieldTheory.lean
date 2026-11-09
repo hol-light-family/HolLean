@@ -439,6 +439,7 @@ def core2 : HolLibrary.FieldTheory.CoreThms2 where
   FIELD_POLY_RING := SessionLibrary.RingTheory.«FIELD_POLY_RING»
   FIELD_PRIME_SUBRING := SessionLibrary.RingTheory.«FIELD_PRIME_SUBRING»
   FIELD_QUOTIENT_RING := SessionLibrary.RingTheory.«FIELD_QUOTIENT_RING»
+  FIELD_REAL_RING := SessionLibrary.RingTheory.«FIELD_REAL_RING»
   FIELD_REGULAR := SessionLibrary.RingTheory.«FIELD_REGULAR»
   FIELD_RING_HOMOMORPHISM_MONOMORPHISM := SessionLibrary.RingTheory.«FIELD_RING_HOMOMORPHISM_MONOMORPHISM»
   FIELD_UNIT := SessionLibrary.RingTheory.«FIELD_UNIT»
@@ -559,6 +560,7 @@ def core3 : HolLibrary.FieldTheory.CoreThms3 where
   IN_UNIONS := Session.IN_UNIONS
   IN_UNIV := Session.IN_UNIV
   ISOMORPHIC_RING_CARD_EQ := SessionLibrary.RingTheory.«ISOMORPHIC_RING_CARD_EQ»
+  ISOMORPHIC_RING_CHAR := SessionLibrary.RingTheory.«ISOMORPHIC_RING_CHAR»
   ISOMORPHIC_RING_FIELDNESS := SessionLibrary.RingTheory.«ISOMORPHIC_RING_FIELDNESS»
   ISOMORPHIC_SUBCOPY_OF_RING := SessionLibrary.RingTheory.«ISOMORPHIC_SUBCOPY_OF_RING»
   ISOMORPHIC_TRANSPORT_OF_RING := SessionLibrary.RingTheory.«ISOMORPHIC_TRANSPORT_OF_RING»
@@ -706,6 +708,8 @@ def core5 : HolLibrary.FieldTheory.CoreThms5 where
   QOSET_RESTRICT := SessionLibrary.Wo.«QOSET_RESTRICT»
   QUOTIENT_RING := SessionLibrary.RingTheory.«QUOTIENT_RING»
   QUOTIENT_RING_0 := SessionLibrary.RingTheory.«QUOTIENT_RING_0»
+  REAL_RING_CHAR := SessionLibrary.RingTheory.«REAL_RING_CHAR»
+  REAL_RING_CLAUSES := SessionLibrary.RingTheory.«REAL_RING_CLAUSES»
   RESTRICTION := Session.RESTRICTION
   RIGHT_AND_EXISTS_THM := Session.RIGHT_AND_EXISTS_THM
   RIGHT_AND_FORALL_THM := Session.RIGHT_AND_FORALL_THM
@@ -1487,6 +1491,8 @@ def PRIME_SUBFIELD_SUBFIELD_GENERATED : thm := BSubfieldQuotients.PRIME_SUBFIELD
 def PRIME_SUBFIELD_SUBFIELD : thm := BSubfieldQuotients.PRIME_SUBFIELD_SUBFIELD
 def PRIME_SUBFIELD_MONOMORPHIC_IMAGE : thm := BSubfieldQuotients.PRIME_SUBFIELD_MONOMORPHIC_IMAGE
 def PRIME_SUBFIELD_HOMOMORPHISM_EXISTS : thm := BSubfieldQuotients.PRIME_SUBFIELD_HOMOMORPHISM_EXISTS
+def ISOMORPHIC_PRIME_SUBFIELDS : thm := BSubfieldQuotients.ISOMORPHIC_PRIME_SUBFIELDS
+def ISOMORPHIC_PRIME_SUBFIELD_RATIONAL_FIELD : thm := BSubfieldQuotients.ISOMORPHIC_PRIME_SUBFIELD_RATIONAL_FIELD
 
 -- FieldExtension
 def field_extension : thm := BFieldExtension.field_extension
