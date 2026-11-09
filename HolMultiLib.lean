@@ -50,3 +50,5 @@ import HolMultiLib.MoreTop
 import HolMultiLib.Cauchy
 import HolMultiLib.Gamma
 import HolMultiLib.Flyspeck
+import HolMultiLib.ProfiniteGroups
+import HolMultiLib.InfiniteGalois

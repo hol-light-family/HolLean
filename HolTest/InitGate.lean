@@ -1,5 +1,8 @@
-/- File: checks/InitGate.lean
+/- File: HolTest/InitGate.lean
 The `make check` gate against function-typed `initialize` constants.
+Not a test module: it is kept with the test suite, which builds it with
+the tests (that only compiles it; nothing runs at build time), and
+`make verify` runs it.
 
 Lean 4.35 compiles an `initialize` constant whose type is (or unfolds to) a
 function type as a function of one or more arguments, and then never runs
@@ -8,7 +11,7 @@ its initialiser in compiled code; every call from another module reaches
 holtranslation.md, "Function-typed initialize".  Box the function in a
 structure instead.
 
-Usage: `lake env lean --run checks/InitGate.lean MOD...`
+Usage: `lake env lean --run HolTest/InitGate.lean MOD...`
 Loads the listed modules (and their imports) and checks every constant with
 an `[init]` attribute that was declared in a HolLean module.  Prints each
 offending constant and exits 1 if there are any.

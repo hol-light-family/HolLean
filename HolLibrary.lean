@@ -5,7 +5,8 @@ Part of the Lean4 translation of HOL Light by Chris Walton 2026.
 Each module translates one Library/*.ml file (prime.ml is HolLibrary.Prime,
 ring_det.ml is HolLibrary.RingDet, ...): every file except
 tactician_light.ml, which runs tactics given as OCaml source and so has no
-Lean counterpart.  Like HolMath these are pure libraries, with no `unsafe`
+Lean counterpart; and also 100/bertrand.ml (HolLibrary.Bertrand), which
+Library/szemeredi.ml `needs`.  Like HolMath these are pure libraries, with no `unsafe`
 code: each file's theorems are built by setup functions that take what the
 file needs from the session as parameters.  SessionLibrary/<Name>.lean runs
 them with Session's values, and importing it is the file's `needs`.
@@ -60,3 +61,6 @@ import HolLibrary.SymmetricGroup
 import HolLibrary.Galois
 import HolLibrary.FiniteFields
 import HolLibrary.Cyclotomic
+import HolLibrary.Bertrand
+import HolLibrary.NormalBasis
+import HolLibrary.Szemeredi

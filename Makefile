@@ -218,10 +218,11 @@ PURE_SRC ?= HolCore HolMath HolLibrary HolMultiLib
 # their imports).  Lean compiles a function-typed `initialize` as a function
 # and never runs its initialiser in compiled code (holtranslation.md).
 # SessionLibrary, HolTest and the translation libraries have no aggregate
-# module, so every module in them is listed.
+# module, so every module in them is listed (except the gate itself,
+# HolTest/InitGate.lean, whose `main` would clash with HolTrace's).
 INITGATE_MODULES ?= Session HolToplevel \
-  $(subst /,.,$(patsubst %.lean,%,$(wildcard SessionLibrary/*.lean SessionMultiLib/*.lean HolTest/*.lean \
-    HolTutorial/*.lean HolExamples/*.lean HolLogicArith/*.lean Hol100/*.lean)))
+  $(subst /,.,$(patsubst %.lean,%,$(filter-out HolTest/InitGate.lean,$(wildcard SessionLibrary/*.lean SessionMultiLib/*.lean HolTest/*.lean \
+    HolTutorial/*.lean HolExamples/*.lean HolLogicArith/*.lean Hol100/*.lean))))
 
 .PHONY: all build core math session proofs prove rebuild clean distclean check verify test test-module module help build-O3 test-O3 check-O3 tutorial examples logic hundred
 
@@ -321,7 +322,7 @@ verify:
 	ok=$$(grep -c -- '-> OK' $(BUILD_LOG) || true); \
 	pure_unsafe=$$(grep -rhE '$(UNSAFE_DECL_RE)' $(PURE_SRC) 2>/dev/null | grep -c . || true); \
 	pure_sorry=$$(grep -rhwE 'sorry' $(PURE_SRC) 2>/dev/null | sed -E 's/"([^"\\]|\\.)*"//g' | grep -cw sorry || true); \
-	initgate_out=$$($(LEAN_ENV) $(LAKE) env lean --run checks/InitGate.lean $(INITGATE_MODULES) 2>&1); \
+	initgate_out=$$($(LEAN_ENV) $(LAKE) env lean --run HolTest/InitGate.lean $(INITGATE_MODULES) 2>&1); \
 	fn_init=$$(echo "$$initgate_out" | grep -c 'FUNCTION-TYPED initialize' || true); \
 	echo "$$initgate_out" | grep 'FUNCTION-TYPED initialize' || true; \
 	echo "$$initgate_out" | grep -q '^initgate:' || { echo "    initgate did not run: $$initgate_out" | head -3; fn_init=1; }; \
