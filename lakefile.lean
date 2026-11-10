@@ -178,6 +178,20 @@ lean_lib HolEC where
 lean_lib SessionEC where
   globs := #[.submodules `SessionEC]
 
+/- HOL Light's Divstep/ files (the divstep iteration and its termination
+   bounds), in the same two layers: `HolDivStep` is pure (native, -O0), and
+   `SessionDivStep` is its wiring to Session and SessionLibrary; importing
+   one of its modules is that file's `needs`. -/
+lean_lib HolDivStep where
+  roots := #[`HolDivStep]
+  precompileModules := true
+  -- hull_light.ml's generated proofs are long sequences of build-time rule
+  -- calls; their C nests more than clang's default 2048 brackets deep.
+  moreLeancArgs := (if optLevel?.isNone then #["-O0"] else #[]) ++ #["-fbracket-depth=16384"]
+
+lean_lib SessionDivStep where
+  globs := #[.submodules `SessionDivStep]
+
 /- Translations of HOL Light's Tutorial/ files, each built on its own (each
    imports the library files its HOL Light session `needs`).  Each is a
    toplevel session in Prove.lean style; building it runs it.  Built by
