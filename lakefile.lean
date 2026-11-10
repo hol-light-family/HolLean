@@ -166,6 +166,18 @@ lean_lib HolMultiLib where
 lean_lib SessionMultiLib where
   globs := #[.submodules `SessionMultiLib]
 
+/- HOL Light's EC/ files (elliptic curves over arbitrary fields), in the same
+   two layers: `HolEC` is pure (native, -O0), and `SessionEC` is its wiring
+   to Session and SessionLibrary; importing one of its modules is that
+   file's `needs`. -/
+lean_lib HolEC where
+  roots := #[`HolEC]
+  precompileModules := true
+  moreLeancArgs := if optLevel?.isNone then #["-O0"] else #[]
+
+lean_lib SessionEC where
+  globs := #[.submodules `SessionEC]
+
 /- Translations of HOL Light's Tutorial/ files, each built on its own (each
    imports the library files its HOL Light session `needs`).  Each is a
    toplevel session in Prove.lean style; building it runs it.  Built by
