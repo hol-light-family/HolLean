@@ -63,6 +63,8 @@ See the HolTest directory for further examples of HOL Lean code.
 | `SessionDivStep/` | connects `HolDivStep` to Session and exports its theorems and `hull_light.ml`'s helper tactics by name; importing a module loads its Divstep file and the files it needs |
 | `HolRQE/` | all 38 files of HOL Light's `Rqe/` (Sean McLaughlin's real quantifier elimination, `REAL_QELIM_CONV`): the libraries (`rqe_lib.ml` to `num_calc_simp.ml`), the polynomial and sign-matrix theory (`asym.ml` to `work_thms.ml`), the procedure (`testform.ml` to `rqe_main.ml`) and `examples.ml` (pure, like HolLibrary) |
 | `SessionRQE/` | connects `HolRQE` to Session and SessionLibrary and exports its theorems, rules and conversions by name; importing a module loads its Rqe file and the files `Rqe/make.ml` loads before it |
+| `HolANT/` | all 91 files of HOL Light's `ANT/` (algebraic number theory: Dedekind domains, number fields and rings of integers, class groups, discriminants and differents, Hilbert theory, units and the Dirichlet unit theorem, Minkowski theory, quadratic and cyclotomic fields, absolute values and places, the Dedekind zeta function and the Frobenius density theorem), and `HolANT/Prelude.lean`, the translation's helpers (pure, like HolLibrary) |
+| `SessionANT/` | connects `HolANT` to Session, SessionLibrary and SessionMultiLib and exports its theorems by name; importing a module loads its ANT file and the files it needs |
 | `Help.lean`, `Database.lean`, `Help/` | help.ml, database.ml and HOL Light's help files |
 | `HolTest/` | the test suite (about 3,850 checks), including the examples from HOL Light's help files and its UnitTests; built only by `make test` and `make check` |
 | `Hol.lean` | the `hollean` executable (`hol.ml`); it does not import the tests |
@@ -76,7 +78,7 @@ See the HolTest directory for further examples of HOL Lean code.
 | `Prove.lean` | your scratchpad |
 | `VERYQUICK_REFERENCE.txt`, `QUICK_REFERENCE.txt` | HOL Light's two quick-reference sheets, converted to HolLean's syntax and names, with notes where HolLean differs |
 
-HolCore, HolMath, HolLibrary, HolMultiLib, HolEC, HolDivStep and HolRQE contain no `unsafe` code and no `sorry`; the build checks this.  Session's layers are built by `initialize` when it is imported, and everything built on it (SessionLibrary, SessionMultiLib, SessionEC, SessionDivStep, SessionRQE, the translations, your own files) is ordinary safe code.  The only `unsafe` code is a few functions that turn an `IO` action into a value, each behind a safe `implemented_by` declaration: in `SessionCore/Base.lean` (quotations and printing), `SessionMath/Sets.lean` (one rule) and `HolToplevel.lean`; and some helpers in the test suite.
+HolCore, HolMath, HolLibrary, HolMultiLib, HolEC, HolDivStep, HolRQE and HolANT contain no `unsafe` code and no `sorry`; the build checks this.  Session's layers are built by `initialize` when it is imported, and everything built on it (SessionLibrary, SessionMultiLib, SessionEC, SessionDivStep, SessionRQE, SessionANT, the translations, your own files) is ordinary safe code.  The only `unsafe` code is a few functions that turn an `IO` action into a value, each behind a safe `implemented_by` declaration: in `SessionCore/Base.lean` (quotations and printing), `SessionMath/Sets.lean` (one rule) and `HolToplevel.lean`; and some helpers in the test suite.
 
 To use a `Library/` file, import its `SessionLibrary` module; importing it is the equivalent of HOL Light `needs`, and loads the files it needs too:
 
@@ -109,6 +111,8 @@ The `Divstep/` files are `SessionDivStep.Divstep`, `IDivstep`, `HullLight` and `
 
 The `Rqe/` files are `SessionRQE.<Module>`, named after the files (`rqe_main.ml` is `SessionRQE.RqeMain`, `work_thms.ml` `WorkThms`, and so on).  Import `SessionRQE.RqeMain` for `REAL_QELIM_CONV`; importing it replays the 500 or so theorems of the files before it, which takes about 17 minutes on the author's machine.  `SessionRQE.Examples` is `examples.ml`: importing it runs its 101 timed `REAL_QELIM_CONV` examples (`Rqe/make.ml` does not load it), some of which take minutes.
 
+The `ANT/` files are `SessionANT.<Module>`, named after the files (`numfield.ml` is `SessionANT.Numfield`, `dedekind_zeta.ml` `DedekindZeta`, and so on).  As in HOL Light, each file can be loaded on its own with the files it needs; importing all of them (with Multivariate/cauchy.ml and the other prerequisites) re-proves their theorems in about 15 minutes on the author's machine.
+
 Each library name is exported under its HOL Light name.  Where a library rebinds a name that Session (or a library it needs) already has, qualify it: `transc.ml` rebinds `DIVISION_0`, `REAL_DIV_SQRT`, `SQRT_EVEN_POW2` and `SUM_DIFFS` from the core and `SYM_CANON_CONV` and `EXT_CONV` from `analysis.ml`, so write `SessionLibrary.Transc.SUM_DIFFS` for transc's version.  `isum.ml` rebinds `INT_OF_REAL_THM` (a stronger version of int.ml's rule); use `SessionLibrary.Isum.INT_OF_REAL_THM` for isum.ml's.  `pocklington.ml` rebinds lib.ml's `num_0`, `num_1` and `num_2` (same values; `HolCore.Lib.num_0` is the core one).
 
 HolMath and `HolLibrary/Prime.lean` are translated by hand and read much like the OCaml: `HolMath/Base.lean` provides HOL Light's tactics, rules and conversions under their own names, with infix `THEN`, `THENL`, `ORELSE`, `THENC`, `ORELSEC` and `o`.
@@ -117,7 +121,7 @@ HolMath and `HolLibrary/Prime.lean` are translated by hand and read much like th
 
 You need Lean 4 (installed with `elan`; the version is fixed in `lean-toolchain`).  The main make targets:
 
-* `make build` builds everything except the tests: the `hollean` executable and HOL Light's Library/, Multivariate/, EC/, Divstep/ and Rqe/ files.  A build from scratch takes a while, mostly compiling to C.
+* `make build` builds everything except the tests: the `hollean` executable and HOL Light's Library/, Multivariate/, EC/, Divstep/, Rqe/ and ANT/ files.  A build from scratch takes a while, mostly compiling to C.
 * `make test` builds and runs the tests (the HolTest library; nothing else imports them) and prints assertion counts per module.  There is no output until the build finishes.
 * `make verify` checks the build log for errors, warnings, failed tests, panics, and `unsafe` or `sorry` in the pure libraries, and runs `HolTest/InitGate.lean`, which rejects any `initialize` of function type (Lean never runs such an initialiser in compiled code).
 * `make check` does a clean build of everything, including the tests and the translations, followed by `make verify`.  From scratch it takes about five hours on the author's machine (about two and a half without the Hol100 translations).  It first builds the wiring libraries (SessionLibrary, SessionMultiLib) with `HOLLEAN_REPLAY=0`, so that compiling them does not re-prove the library files they import; the proofs run when the tests and translations are compiled.

@@ -21,6 +21,8 @@
 #     SessionDivStep  their session wiring, as SessionLibrary
 #     HolRQE          HOL Light's Rqe/ files (needs HolLibrary)
 #     SessionRQE      their session wiring, as SessionLibrary
+#     HolANT          HOL Light's ANT/ files (needs HolLibrary, HolMultiLib)
+#     SessionANT      their session wiring, as SessionLibrary
 #                                             (depends on SessionLibrary)
 #     Help, Database  help.ml and database.ml
 #     HolToplevel     helpers for the translated toplevel sessions
@@ -84,12 +86,12 @@ LAKE ?= lake
 # What `make`/`make build` builds: the executable (Hol.lean, which does NOT
 # import the tests) and HOL Light's Library/ files.  The test suite is the
 # HolTest library, built only by `make test` and `make check`.
-BUILD_TARGETS ?= hollean @/HolLibrary @/SessionLibrary @/HolMultiLib @/SessionMultiLib @/HolEC @/SessionEC @/HolDivStep @/SessionDivStep @/HolRQE @/SessionRQE
+BUILD_TARGETS ?= hollean @/HolLibrary @/SessionLibrary @/HolMultiLib @/SessionMultiLib @/HolEC @/SessionEC @/HolDivStep @/SessionDivStep @/HolRQE @/SessionRQE @/HolANT @/SessionANT
 # The wiring libraries.  `make check` builds them first with HOLLEAN_REPLAY=0,
 # so that compiling a wiring module does not re-prove the library files it
 # imports (SessionCore/Base.lean, `bundlesWanted`); the proofs run when the
 # test and translation modules that import them are compiled.
-WIRING_TARGETS ?= @/SessionLibrary @/SessionMultiLib @/SessionEC @/SessionDivStep @/SessionRQE
+WIRING_TARGETS ?= @/SessionLibrary @/SessionMultiLib @/SessionEC @/SessionDivStep @/SessionRQE @/SessionANT
 TEST_TARGETS ?= @/HolTest
 # The tutorial translations (every module under HolTutorial/): built by
 # `make tutorial` and `make check`.
@@ -219,7 +221,7 @@ UNSAFE_DECL_RE ?= ^[[:space:]]*(private[[:space:]]+|@\[[^]]*\][[:space:]]*)*unsa
 # `implemented_by` implementations in SessionCore/Base.lean, SessionMath/Sets.lean
 # and HolToplevel.lean, and the test helpers in HolTest.
 # Measured: HolCore 0, HolMath 0, HolLibrary 0.
-PURE_SRC ?= HolCore HolMath HolLibrary HolMultiLib HolEC HolDivStep HolRQE
+PURE_SRC ?= HolCore HolMath HolLibrary HolMultiLib HolEC HolDivStep HolRQE HolANT
 # Modules whose `initialize` constants the function-type gate checks (with
 # their imports).  Lean compiles a function-typed `initialize` as a function
 # and never runs its initialiser in compiled code (holtranslation.md).
@@ -227,7 +229,7 @@ PURE_SRC ?= HolCore HolMath HolLibrary HolMultiLib HolEC HolDivStep HolRQE
 # module, so every module in them is listed (except the gate itself,
 # HolTest/InitGate.lean, whose `main` would clash with HolTrace's).
 INITGATE_MODULES ?= Session HolToplevel \
-  $(subst /,.,$(patsubst %.lean,%,$(filter-out HolTest/InitGate.lean,$(wildcard SessionLibrary/*.lean SessionMultiLib/*.lean SessionEC/*.lean SessionDivStep/*.lean SessionRQE/*.lean HolTest/*.lean \
+  $(subst /,.,$(patsubst %.lean,%,$(filter-out HolTest/InitGate.lean,$(wildcard SessionLibrary/*.lean SessionMultiLib/*.lean SessionEC/*.lean SessionDivStep/*.lean SessionRQE/*.lean SessionANT/*.lean HolTest/*.lean \
     HolTutorial/*.lean HolExamples/*.lean HolLogicArith/*.lean Hol100/*.lean))))
 
 .PHONY: all build core math session proofs prove rebuild clean distclean check verify test test-module module help build-O3 test-O3 check-O3 tutorial examples logic hundred

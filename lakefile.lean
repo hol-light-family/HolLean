@@ -204,6 +204,18 @@ lean_lib HolRQE where
 lean_lib SessionRQE where
   globs := #[.submodules `SessionRQE]
 
+/- HOL Light's ANT/ files (algebraic number theory), in the same two layers:
+   `HolANT` is pure (native, -O0), and `SessionANT` is its wiring to
+   Session, SessionLibrary and SessionMultiLib; importing one of its modules
+   is `needs "ANT/<file>.ml"`. -/
+lean_lib HolANT where
+  roots := #[`HolANT]
+  precompileModules := true
+  moreLeancArgs := if optLevel?.isNone then #["-O0"] else #[]
+
+lean_lib SessionANT where
+  globs := #[.submodules `SessionANT]
+
 /- Translations of HOL Light's Tutorial/ files, each built on its own (each
    imports the library files its HOL Light session `needs`).  Each is a
    toplevel session in Prove.lean style; building it runs it.  Built by
