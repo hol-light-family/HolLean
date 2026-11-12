@@ -1175,15 +1175,17 @@ partial def bitpat_matches (p : term) (i : Nat) : Except String (Option Nat) :=
       | .Comb (.Const "word1" _) (.Const "T" _) => .ok (if a' == 1 then none else some 0)
       | .Comb (.Const "word1" _) (.Const "F" _) => .ok (if a' == 0 then none else some 0)
       | .Comb (.Const "word1" _) (.Var _ _) => .ok none
-      | .Comb (.Const "word" _) n =>
-        do
+      | .Comb (.Const "word" _) n => do
+        -- the value of `r` (no `return`: in Lean that would leave
+        -- bitpat_matches itself, skipping the higher fields below)
         let n' := ratNat (← dest_numeral n)
-        if a' == n' then return none
-        let rec f (i r : Nat) (fuel : Nat) : Nat :=
-          match fuel with
-          | 0 => r
-          | fuel + 1 => if i &&& 1 != 0 then r else f (i >>> 1) (r + 1) fuel
-        return some (f (a' ^^^ n') 0 (a' ^^^ n'))
+        if a' == n' then pure none
+        else
+          let rec f (i r : Nat) (fuel : Nat) : Nat :=
+            match fuel with
+            | 0 => r
+            | fuel + 1 => if i &&& 1 != 0 then r else f (i >>> 1) (r + 1) fuel
+          pure (some (f (a' ^^^ n') 0 (a' ^^^ n')))
       | .Var _ _ => .ok none
       | _ => failwith "bitpat_matches"
     match r with

@@ -105,6 +105,14 @@ open Session SessionLibrary.BitMatch HolLight.Syntax
 #eval check "BITMATCH_SEQ_CONV"
   (onTerm BITMATCH_SEQ_CONV "bitmatch (word 2:(2)word) with | [T; x] -> x | [y; F] -> y | _ -> T")
   "|- (bitmatch word 2 with [true; x] -> x | [y; false] -> y | _ -> true) <=> false"
+-- bitpat_matches: a matching low constant field (0:6) must not hide a
+-- differing higher one (208:8) (expected values from HOL Light, 078839e)
+#eval check "BITMATCH_SEQ_CONV high field"
+  (onTerm BITMATCH_SEQ_CONV "bitmatch (word 0:(32)word) with | [208:8; x:18; 0:6] -> val x | _ -> 7")
+  "|- (bitmatch word 0 with [208:8; x:18; 0:6] -> val x | _ -> 7) = 7"
+#eval check "BITMATCH_SEQ_CONV next case"
+  (onTerm BITMATCH_SEQ_CONV "bitmatch (word 64:(32)word) with | [208:8; x:18; 0:6] -> val x | [y:26; 0:6] -> val y + 1 | _ -> 7")
+  "|- (bitmatch word 64 with [208:8; x:18; 0:6] -> val x | [y:26; 0:6] -> val y + 1 | _ -> 7) = val (word 1) + 1"
 #eval check "BM_IF_CONV"
   (onTerm BM_IF_CONV "bitmatch (e:(3)word) with | [x; T; y] -> x /\\ y | [F; F; F] -> F | _ -> T")
   "|- (bitmatch e with [x; true; y] -> x /\\ y | [false; false; false] -> false | _ -> true) <=> (if bit 1 e then (bitmatch e with [x; true; y] -> x /\\ y | _ -> true) else (bitmatch e with [false; false; false] -> false | _ -> true))"
