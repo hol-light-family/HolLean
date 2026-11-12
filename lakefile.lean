@@ -192,6 +192,18 @@ lean_lib HolDivStep where
 lean_lib SessionDivStep where
   globs := #[.submodules `SessionDivStep]
 
+/- HOL Light's Rqe/ files (real quantifier elimination), in the same two
+   layers: `HolRQE` is pure (native, -O0), and `SessionRQE` is its wiring to
+   Session and SessionLibrary; importing one of its modules is loading that
+   file after the ones Rqe/make.ml loads before it. -/
+lean_lib HolRQE where
+  roots := #[`HolRQE]
+  precompileModules := true
+  moreLeancArgs := if optLevel?.isNone then #["-O0"] else #[]
+
+lean_lib SessionRQE where
+  globs := #[.submodules `SessionRQE]
+
 /- Translations of HOL Light's Tutorial/ files, each built on its own (each
    imports the library files its HOL Light session `needs`).  Each is a
    toplevel session in Prove.lean style; building it runs it.  Built by
