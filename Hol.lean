@@ -108,7 +108,7 @@ namespace HolCore
 
 /-- `hol_version` (mirrors `hol.ml`'s `let hol_version = ...`).
     Tracks the HOL Light release this translation follows. -/
-def hol_version : String := "3.1.0"
+def hol_version : String := "3.2.0+"
 
 /- `check_axioms` (hol_lib.ml 105-114) is in Session (SessionMath/Define.lean),
    not here, with the rest of HOL Light's top-level names, so the tests can
