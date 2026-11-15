@@ -8810,8 +8810,7 @@ def setupFiniteFieldSubfields [HolBase] (D : FieldTheoryDeps) (BSubfields : Subf
    (REPEAT GEN_TAC THEN STRIP_TAC THEN CONJ_TAC THENL
      [ALL_TAC,
       X_GEN_TAC (← q r"a:A") THEN DISCH_TAC THEN
-      FIRST_ASSUM (fun th => tactic_of do
-        pure (ASM_SIMP_TAC [← GSYM (← MATCH_MP RING_HOMOMORPHISM_POW th)])) THEN
+      ASM_SIMP_TAC [← GSYM RING_HOMOMORPHISM_POW] THEN
       AP_TERM_TAC THEN SPEC_TAC (← q r"i:num", ← q r"i:num") THEN
       INDUCT_TAC THEN ASM_SIMP_TAC [EXP, RING_POW_1] THEN
       ONCE_REWRITE_TAC [MULT_SYM] THEN
@@ -10771,10 +10770,8 @@ def setupTotallyTranscendental [HolBase] (D : FieldTheoryDeps) (BSubfields : Sub
               RING_HOMOMORPHISM_POLY_EXTEND) THEN
           ASM_REWRITE_TAC [← REWRITE_RULE [← GSYM I_DEF] RING_HOMOMORPHISM_INCLUSION] THEN
           DISCH_TAC THEN
-          FIRST_ASSUM (fun th => tactic_of do
-            pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_SUB th, RING_MUL])) THEN
-          FIRST_ASSUM (fun th => tactic_of do
-            pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL th])) THEN
+          ASM_SIMP_TAC [RING_HOMOMORPHISM_SUB, RING_MUL] THEN
+          ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL] THEN
           REWRITE_TAC [POLY_EXTEND_FROM_SUBRING_GENERATED] THEN
           REWRITE_TAC [← GSYM poly_evaluate, ← GSYM poly_eval] THEN
           REWRITE_TAC [POLY_SUBRING_GENERATED_CLAUSES] THEN
@@ -11859,8 +11856,7 @@ def setupAcfSplit [HolBase] (D : FieldTheoryDeps) (BAcfBasic : AcfBasic) :
     MATCH_MP_TAC CARD_SUBSET_LE THEN ASM_REWRITE_TAC [] THEN
     EXPAND_TAC "u" THEN REWRITE_TAC [SUBSET, FORALL_IN_IMAGE, IN_ELIM_THM] THEN
     X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN
-    ASM_SIMP_TAC [← GSYM (← MATCH_MP RING_HOMOMORPHISM_POW
-     (← ASSUME (← q r"ring_homomorphism(k:A ring,l:B ring) f")))] THEN
+    ASM_SIMP_TAC [← GSYM RING_HOMOMORPHISM_POW] THEN
     ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER, RING_HOMOMORPHISM_1])
 
   let ALGEBRAICALLY_CLOSED_FIELD_EQ_POLY_SPLITS ← prove
@@ -15664,8 +15660,7 @@ def setupPerfectField [HolBase] (D : FieldTheoryDeps) (BFieldExtension : FieldEx
                       ← q r"ring_pow k (y:A) (ring_char k)", ← q r"a:A"]
       RING_MONOMORPHISM_INJECTIVE_EQ) THEN
     ASM_SIMP_TAC [RING_POW] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_POW th])) THEN
+    ASM_SIMP_TAC [RING_HOMOMORPHISM_POW] THEN
     FIRST_X_ASSUM MATCH_MP_TAC THEN
     CONJ_TAC THENL [ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER], ALL_TAC] THEN
     MP_TAC (← ISPECL [← q r"k:A ring", ← q r"l:(A#num)ring", ← q r"y:A", ← q r"h:A->A#num",
@@ -18721,38 +18716,38 @@ def setupPurelyInseparableDegree [HolBase] (D : FieldTheoryDeps) (BSubfieldGener
     MP_TAC (← ISPECL [← q r"I:B->B", ← q r"K:B ring", ← q r"l:B ring", ← q r"x:B"]
       FIELD_SIMPLE_ALGEBRAIC_EXTENSION) THEN
     ASM_REWRITE_TAC [IMAGE_I] THEN
-    ABBREV_TAC (← q r"K1 = subring_generated l ((x:B) INSERT ring_carrier K)") THEN
+    ABBREV_TAC (← q r"K1' = subring_generated l ((x:B) INSERT ring_carrier K)") THEN
     REPEAT DISCH_TAC THEN
-    SUBGOAL_THEN (← q r"field_extension(K1,l) (I:B->B)") ASSUME_TAC THENL
-     [EXPAND_TAC "K1" THEN
+    SUBGOAL_THEN (← q r"field_extension(K1',l) (I:B->B)") ASSUME_TAC THENL
+     [EXPAND_TAC "K1'" THEN
       MATCH_MP_TAC FIELD_EXTENSION_FROM_SUBRING_GENERATED THEN
       ASM_REWRITE_TAC [FIELD_EXTENSION_REFL] THEN ASM_MESON_TAC [],
       ALL_TAC] THEN
     MP_TAC (← REWRITE_RULE [I_O_ID] (← ISPECL
-     [← q r"I:B->B", ← q r"I:B->B", ← q r"K:B ring", ← q r"K1:B ring", ← q r"l:B ring"]
+     [← q r"I:B->B", ← q r"I:B->B", ← q r"K:B ring", ← q r"K1':B ring", ← q r"l:B ring"]
      EXTENSION_DEGREE_TOWER_LAW)) THEN
     MP_TAC (← REWRITE_RULE [I_O_ID] (← ISPECL
-     [← q r"I:B->B", ← q r"I:B->B", ← q r"K:B ring", ← q r"K1:B ring", ← q r"l:B ring"]
+     [← q r"I:B->B", ← q r"I:B->B", ← q r"K:B ring", ← q r"K1':B ring", ← q r"l:B ring"]
      FINITE_EXTENSION_TRANS_EQ)) THEN
     ASM_SIMP_TAC [FINITE_IMP_FIELD_EXTENSION] THEN DISCH_TAC THEN
     DISCH_TAC THEN
-    REMOVE_THEN "ih" (MP_TAC o SPEC (← q r"extension_degree(K1,l) (I:B->B)")) THEN
+    REMOVE_THEN "ih" (MP_TAC o SPEC (← q r"extension_degree(K1',l) (I:B->B)")) THEN
     ANTS_TAC THENL
      [FIRST_X_ASSUM (fun th => tactic_of do
         let c ← q r"d:num"
         if !((← liftExcept (lhand (concl th))) == c) then throw "check"
         pure (SUBST1_TAC th)) THEN
-      SUBGOAL_THEN (← q r"~(extension_degree(K1,l) (I:B->B) = 0)") MP_TAC THENL
+      SUBGOAL_THEN (← q r"~(extension_degree(K1',l) (I:B->B) = 0)") MP_TAC THENL
        [ASM_MESON_TAC [EXTENSION_DEGREE_EQ_0], ALL_TAC] THEN
       FIRST_ASSUM (MP_TAC o MATCH_MP PRIME_GE_2) THEN
-      SPEC_TAC (← q r"extension_degree(K1,l) (I:B->B)", ← q r"e:num") THEN
+      SPEC_TAC (← q r"extension_degree(K1',l) (I:B->B)", ← q r"e:num") THEN
       GEN_TAC THEN
       SUBST1_TAC a2 THEN
       REWRITE_TAC [LT_MULT_RCANCEL] THEN ARITH_TAC,
-      DISCH_THEN (MP_TAC o SPEC (← q r"K1:B ring"))] THEN
+      DISCH_THEN (MP_TAC o SPEC (← q r"K1':B ring"))] THEN
     ANTS_TAC THENL
      [ASM_REWRITE_TAC [] THEN CONJ_TAC THENL
-       [EXPAND_TAC "K1" THEN REWRITE_TAC [RING_CHAR_SUBRING_GENERATED] THEN
+       [EXPAND_TAC "K1'" THEN REWRITE_TAC [RING_CHAR_SUBRING_GENERATED] THEN
         ASM_MESON_TAC [RING_CHAR_MONOMORPHIC_IMAGE, field_extension],
         X_GEN_TAC (← q r"y:B") THEN DISCH_TAC THEN
         FIRST_X_ASSUM (fun th => tactic_of do
@@ -21034,8 +21029,7 @@ def setupTraceNormEmbeddings [HolBase] (D : FieldTheoryDeps) (BFieldExtension : 
                  (coeff 0 (p:(1->num)->A)) IN ring_carrier k")
       ASSUME_TAC THENL [ASM_SIMP_TAC [RING_MUL, RING_POW, RING_NEG, RING_1],
                         ALL_TAC] THEN
-      ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_POW
-       (← ASSUME (← q r"ring_homomorphism(k,m) (g:A->C)"))] THEN
+      ASM_SIMP_TAC [RING_HOMOMORPHISM_POW] THEN
       ASM_SIMP_TAC [RING_POW_POW, RING_PRODUCT] THEN AP_TERM_TAC THEN ARITH_TAC,
       SUBGOAL_THEN
        (← q r"ring_sum m E

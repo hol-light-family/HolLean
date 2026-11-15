@@ -368,6 +368,12 @@ def new_inductive_set (tm : term) :
     IO (Except String (thm × thm × thm)) := do
   HolMath.Sets.new_inductive_set SC.IN newIndSetAndTm new_inductive_definition tm
 
+/-- `new_coinductive_set tm` (sets.ml 5414): the same with
+    `new_coinductive_definition`. -/
+def new_coinductive_set (tm : term) :
+    IO (Except String (thm × thm × thm)) := do
+  HolMath.Sets.new_inductive_set SC.IN newIndSetAndTm new_coinductive_definition tm
+
 /-- `dest_setenum` (sets.ml 4044). -/
 def dest_setenum : term → Except String (List term) := HolMath.Sets.dest_setenum
 /-- `is_setenum` (sets.ml 4050). -/

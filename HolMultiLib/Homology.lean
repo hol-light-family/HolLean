@@ -3494,8 +3494,8 @@ def setupCHS [HolBase] (D : HomologyDeps) (BSSX : SSX) (BSCH : SCH) (BBDB : BDB)
       UNDISCH_THEN (← q r"SUC p = q") (SUBST_ALL_TAC o SYM) THEN
       ASM_REWRITE_TAC [SUC_SUB1, FRAG_EXTEND_OF],
       REWRITE_TAC [← FRAG_MODULE (← q r"frag_add x y = z <=> x = frag_sub z y")] THEN
-      REPEAT STRIP_TAC THEN ASM_SIMP_TAC [SIMPLICIAL_CHAIN_SUB] THENL
-       [ASM_MESON_TAC [], CONV_TAC (fun t => FRAG_MODULE t)]] THEN
+      REPEAT STRIP_TAC THEN ASM_SIMP_TAC [SIMPLICIAL_CHAIN_SUB] THEN
+      CONV_TAC (fun t => FRAG_MODULE t)] THEN
     SUBGOAL_THEN
      (← q r"(\i. sum (0..SUC p) (\j. simplicial_vertex j f i) / (&(SUC p) + &1))
       IN standard_simplex s")

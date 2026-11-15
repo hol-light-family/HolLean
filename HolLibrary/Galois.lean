@@ -991,9 +991,7 @@ def setupGaloisExtensions [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup
                         ← q r"(h:A->B) o minimal_polynomial(k,l) h x"]
         POLY_EVAL_HOMOMORPHIC_IMAGE) THEN
       ASM_REWRITE_TAC [] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN
-      CONJ_TAC THENL
-       [ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER],
-        MATCH_MP_TAC RING_HOMOMORPHISM_0 THEN ASM_REWRITE_TAC []],
+      MATCH_MP_TAC RING_HOMOMORPHISM_0 THEN ASM_REWRITE_TAC [],
       DISCH_THEN (X_CHOOSE_THEN (← q r"e:B->B#num") STRIP_ASSUME_TAC)] THEN
     MP_TAC (← ISPECL [← q r"h:A->B", ← q r"j:B->B#num", ← q r"k:A ring", ← q r"l:B ring",
                       ← q r"m:(B#num) ring"]
@@ -2781,8 +2779,7 @@ def setupGaloisRestriction [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGrou
     ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN
     DISCH_THEN (MP_TAC o SPEC (← q r"y:B") o CONJUNCT2) THEN
     ASM_REWRITE_TAC [group_conjugation, ← CONJUNCT2 (← CONJUNCT2 GALOIS_GROUP)] THEN
-    ASM_SIMP_TAC [o_THM, ← MATCH_MP PERMUTES_INVERSE_INVERSE
-     (← ASSUME (← q r"(f:B->B) permutes ring_carrier l"))] THEN
+    ASM_SIMP_TAC [o_THM, PERMUTES_INVERSE_INVERSE] THEN
     DISCH_THEN (MP_TAC o AP_TERM (← q r"f:B->B")) THEN
     ASM_MESON_TAC [PERMUTES_INVERSES])
 
@@ -5877,9 +5874,7 @@ def setupHilbert90 [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (BGal
     ASSUME_TAC THENL
      [ASM_MESON_TAC [GALOIS_GROUP_IN_CARRIER], ALL_TAC] THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP GALOIS_GROUP_RING_MONOMORPHISM) THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (ASM_SIMP_TAC [← MATCH_MP RING_MONOMORPHISM_PRODUCT th,
-                          ← MATCH_MP RING_MONOMORPHISM_SUM th])) THEN
+    ASM_SIMP_TAC [RING_MONOMORPHISM_PRODUCT, RING_MONOMORPHISM_SUM] THEN
     MP_TAC (← ISPECL [← q r"galois_group(k,l) (h:A->B)", ← q r"l:B ring", ← q r"\f:B->B. f x",
                    ← q r"g:B->B"] RING_PRODUCT_GROUP_TRANSLATION) THEN
     MP_TAC (← ISPECL [← q r"galois_group(k,l) (h:A->B)", ← q r"l:B ring", ← q r"\f:B->B. f x",
@@ -6303,8 +6298,7 @@ def setupHilbert90 [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (BGal
           ASM_SIMP_TAC [RING_MUL] THEN DISCH_THEN SUBST1_TAC THEN
           MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"f:B->B") THEN DISCH_TAC THEN
           REWRITE_TAC [o_THM] THEN
-          FIRST_ASSUM (fun th => tactic_of do
-            pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL th])),
+          ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL],
           ALL_TAC] THEN
         TRANS_TAC EQ_TRANS
          (← q r"ring_sum l G
@@ -6383,8 +6377,7 @@ def setupHilbert90 [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (BGal
         ASM_SIMP_TAC [RING_MUL] THEN DISCH_THEN SUBST1_TAC THEN
         MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"f:B->B") THEN DISCH_TAC THEN
         REWRITE_TAC [o_THM] THEN
-        FIRST_ASSUM (fun th => tactic_of do
-          pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL th])),
+        ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL],
         ALL_TAC] THEN
       SUBGOAL_THEN
        (← q r"c(g:B->B) = ring_sum l G (\f. ring_mul l (c g) (g((f:B->B) t)))")
@@ -6414,8 +6407,7 @@ def setupHilbert90 [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (BGal
     X_GEN_TAC (← q r"f:B->B") THEN DISCH_TAC THEN
     SUBGOAL_THEN (← q r"ring_homomorphism(l,l) (f:B->B)") ASSUME_TAC THENL
      [ASM_SIMP_TAC [], ALL_TAC] THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_NEG th])) THEN
+    ASM_SIMP_TAC [RING_HOMOMORPHISM_NEG] THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q r"f:B->B")) THEN ASM_REWRITE_TAC [] THEN
     MATCH_MP_TAC r1 THEN
     ASM_SIMP_TAC []))
@@ -6690,8 +6682,7 @@ def setupHilbert90Cyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup)
     SUBGOAL_THEN (← q r"ring_homomorphism(l,l) (g:B->B)") ASSUME_TAC THENL
      [MATCH_MP_TAC RING_MONOMORPHISM_IMP_HOMOMORPHISM THEN ASM_SIMP_TAC [],
       ALL_TAC] THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_NEG th])) THEN
+    ASM_SIMP_TAC [RING_HOMOMORPHISM_NEG] THEN
     MATCH_MP_TAC r1 THEN
     ASM_SIMP_TAC []))
 
@@ -7995,10 +7986,7 @@ def setupCyclotomicKummer [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup
       RING_ENDOMORPHISM_ROOT_OF_UNITY) THEN
     ASM_SIMP_TAC [FIELD_IMP_INTEGRAL_DOMAIN, ring_endomorphism] THEN
     DISCH_THEN (X_CHOOSE_TAC (← q r"j:num")) THEN DISCH_THEN (X_CHOOSE_TAC (← q r"i:num")) THEN
-    ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_POW
-                  (← ASSUME (← q r"ring_homomorphism(l,l) (f:B->B)")),
-                 ← MATCH_MP RING_HOMOMORPHISM_POW
-                  (← ASSUME (← q r"ring_homomorphism(l,l) (g:B->B)"))] THEN
+    ASM_SIMP_TAC [RING_HOMOMORPHISM_POW] THEN
     ASM_SIMP_TAC [RING_POW_POW] THEN AP_TERM_TAC THEN ARITH_TAC))
 
   let ABELIAN_GALOIS_GROUP_RADICAL ← prove
@@ -8038,10 +8026,7 @@ def setupCyclotomicKummer [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup
      (← q r"ring_homomorphism(l,l) (f:B->B) /\ ring_homomorphism(l,l) (g:B->B)")
     STRIP_ASSUME_TAC THENL
      [ASM_MESON_TAC [GALOIS_GROUP_RING_HOMOMORPHISM], ALL_TAC] THEN
-    ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL
-                  (← ASSUME (← q r"ring_homomorphism(l,l) (f:B->B)")),
-                 ← MATCH_MP RING_HOMOMORPHISM_MUL
-                  (← ASSUME (← q r"ring_homomorphism(l,l) (g:B->B)"))] THEN
+    ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL] THEN
     MATCH_MP_TAC lastAC THEN
     ASM_SIMP_TAC []))
 
@@ -8189,8 +8174,7 @@ def setupCyclotomicKummer [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup
         ASM_SIMP_TAC [RING_MUL, POLY_EVAL_VAR_POW_SUB_CONST] THEN
         ASM_SIMP_TAC [RING_MUL_POW] THEN
         SUBGOAL_THEN (← q r"ring_pow l ((h:A->B) x) n = ring_1 l") SUBST1_TAC THENL
-         [ASM_SIMP_TAC [← GSYM (← MATCH_MP RING_HOMOMORPHISM_POW
-            (← ASSUME (← q r"ring_homomorphism(k,l) (h:A->B)")))],
+         [ASM_SIMP_TAC [← GSYM RING_HOMOMORPHISM_POW],
           ALL_TAC] THEN
         ASM_SIMP_TAC [RING_MUL_LID, RING_SUB_REFL],
         EXISTS_TAC (← q r"ring_1 k:A") THEN EXPAND_TAC "u" THEN
@@ -8405,8 +8389,7 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
      [EXISTS_TAC (← q r"ring_mul l ((f:B->B) a) (ring_inv l a)") THEN
       ASM_SIMP_TAC [RING_MUL, RING_INV, RING_MUL_POW, RING_POW_INV] THEN
       CONJ_TAC THENL
-       [ASM_SIMP_TAC [← GSYM (← MATCH_MP RING_HOMOMORPHISM_POW
-          (← ASSUME (← q r"ring_homomorphism(l,l) (f:B->B)")))] THEN
+       [ASM_SIMP_TAC [← GSYM RING_HOMOMORPHISM_POW] THEN
         MATCH_MP_TAC FIELD_MUL_RINV THEN
         ASM_SIMP_TAC [RING_POW, INTEGRAL_DOMAIN_POW_EQ_0,
                      FIELD_IMP_INTEGRAL_DOMAIN],
@@ -8429,8 +8412,7 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
       ASSUME_TAC THENL
        [EXPAND_TAC "u" THEN REWRITE_TAC [SUBSET, FORALL_IN_IMAGE, IN_ELIM_THM] THEN
         X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN
-        ASM_SIMP_TAC [← GSYM (← MATCH_MP RING_HOMOMORPHISM_POW
-          (← ASSUME (← q r"ring_homomorphism(k,l) (h:A->B)")))] THEN
+        ASM_SIMP_TAC [← GSYM RING_HOMOMORPHISM_POW] THEN
         ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER],
         ALL_TAC] THEN
       MATCH_MP_TAC CARD_SUBSET_EQ THEN ASM_REWRITE_TAC [] THEN
@@ -8464,10 +8446,8 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
                     ← CONJUNCT2 (← CONJUNCT2 (← CONJUNCT2 GALOIS_GROUP)), o_THM,
                     I_THM] THENL
      [ASM_SIMP_TAC [ring_pow, RING_MUL_LID], ALL_TAC] THEN
-    ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL
-                  (← ASSUME (← q r"ring_homomorphism(l,l) (f:B->B)")), RING_POW] THEN
-    ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_POW
-                  (← ASSUME (← q r"ring_homomorphism(l,l) (f:B->B)"))] THEN
+    ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL, RING_POW] THEN
+    ASM_SIMP_TAC [RING_HOMOMORPHISM_POW] THEN
     ASM_SIMP_TAC [ring_pow, RING_POW, RING_MUL_ASSOC] THEN
     AP_THM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC RING_MUL_SYM THEN
     ASM_SIMP_TAC [RING_POW])
@@ -8486,13 +8466,8 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
                     ← CONJUNCT2 (← CONJUNCT2 (← CONJUNCT2 GALOIS_GROUP)), o_THM,
                     I_THM] THENL
      [ASM_SIMP_TAC [RING_OF_NUM_0, RING_MUL_LZERO, RING_ADD_RZERO], ALL_TAC] THEN
-    ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_ADD
-                  (← ASSUME (← q r"ring_homomorphism(l,l) (f:B->B)")),
-                 ← MATCH_MP RING_HOMOMORPHISM_MUL
-                  (← ASSUME (← q r"ring_homomorphism(l,l) (f:B->B)")),
-                 ← MATCH_MP RING_HOMOMORPHISM_RING_OF_NUM
-                  (← ASSUME (← q r"ring_homomorphism(l,l) (f:B->B)")),
-                 RING_OF_NUM, RING_MUL] THEN
+    ASM_SIMP_TAC [RING_HOMOMORPHISM_ADD, RING_HOMOMORPHISM_MUL,
+                  RING_HOMOMORPHISM_RING_OF_NUM, RING_OF_NUM, RING_MUL] THEN
     REWRITE_TAC [ADD1, RING_OF_NUM_ADD, RING_OF_NUM_1] THEN
     ASM_SIMP_TAC [RING_ADD_RDISTRIB, RING_OF_NUM, RING_1, RING_MUL_LID] THEN
     ASM_SIMP_TAC [RING_ADD_AC, RING_MUL, RING_OF_NUM])
@@ -8564,8 +8539,7 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
        (X_CHOOSE_THEN (← q r"c:A") (CONJUNCTS_THEN2 ASSUME_TAC
          (CONJUNCTS_THEN2 ASSUME_TAC SUBST1_TAC)))
        (K ALL_TAC : thm → tactic)) THEN
-      ASM_SIMP_TAC [← GSYM (← MATCH_MP RING_HOMOMORPHISM_POW
-        (← ASSUME (← q r"ring_homomorphism(k,l) (h:A->B)")))] THEN
+      ASM_SIMP_TAC [← GSYM RING_HOMOMORPHISM_POW] THEN
       REWRITE_TAC [← MATCH_MP RING_HOMOMORPHISM_1
         (← ASSUME (← q r"ring_homomorphism(k,l) (h:A->B)"))] THEN
       X_GEN_TAC (← q r"f:B->B") THEN DISCH_TAC THEN
@@ -8592,8 +8566,7 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
       CONJ_TAC THENL
        [EXISTS_TAC (← q r"ring_mul k c d:A") THEN
         ASM_SIMP_TAC [RING_MUL, RING_MUL_POW, RING_MUL_LID, RING_1] THEN
-        ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL
-          (← ASSUME (← q r"ring_homomorphism(k,l) (h:A->B)"))],
+        ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL],
         EXISTS_TAC (← q r"(f:B->B) o (g:B->B)") THEN
         ASM_SIMP_TAC [GALOIS_GROUP_COMPOSE] THEN ASM_REWRITE_TAC [o_THM] THEN
         ASSUME_TAC (← MATCH_MP GALOIS_GROUP_RING_HOMOMORPHISM
@@ -8601,8 +8574,7 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
         MP_TAC (← ISPECL [← q r"h:A->B", ← q r"f:B->B", ← q r"k:A ring", ← q r"l:B ring", ← q r"d:A"]
           GALOIS_GROUP_FIXES) THEN
         ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
-        ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL
-          (← ASSUME (← q r"ring_homomorphism(l,l) (f:B->B)"))] THEN
+        ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL] THEN
         ASM_SIMP_TAC [RING_MUL_ASSOC] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
         MATCH_MP_TAC RING_MUL_SYM THEN ASM_SIMP_TAC []],
       ALL_TAC] THEN
@@ -8870,8 +8842,7 @@ def setupKummerTheory [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
           GALOIS_GROUP_FIXES) THEN
         MP_TAC (← ISPECL [← q r"l:B ring", ← q r"l:B ring", ← q r"f:B->B"]
           FIELD_HOMOMORPHISM_INV) THEN
-        ASM_SIMP_TAC [← MATCH_MP GALOIS_GROUP_RING_HOMOMORPHISM
-         (← ASSUME (← q r"(f:B->B) IN group_carrier(galois_group(k,l) (h:A->B))"))],
+        ASM_SIMP_TAC [GALOIS_GROUP_RING_HOMOMORPHISM],
         ASM_SIMP_TAC [RING_PRODUCT_CONST, RING_INV, RING_POW_INV, RING_INV_1]],
       REWRITE_TAC [ring_div] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"y:B") STRIP_ASSUME_TAC)] THEN
@@ -8894,8 +8865,7 @@ def setupKummerTheory [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
         FIXED_FIELD_GALOIS_GROUP_GENERATORS) THEN
       ASM_REWRITE_TAC [SING_SUBSET] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN
       REWRITE_TAC [IN_FIXED_FIELD, IN_SING, FORALL_UNWIND_THM2] THEN
-      ASM_SIMP_TAC [RING_POW, ← MATCH_MP RING_HOMOMORPHISM_POW
-        (← ASSUME (← q r"ring_homomorphism(l,l) (g:B->B)"))] THEN
+      ASM_SIMP_TAC [RING_POW, RING_HOMOMORPHISM_POW] THEN
       ASM_SIMP_TAC [RING_MUL_POW, RING_POW, RING_MUL_LID],
       ALL_TAC] THEN
     MP_TAC (← ISPECL [← q r"h:A->B", ← q r"g:B->B", ← q r"k:A ring", ← q r"l:B ring", ← q r"y:B"]
@@ -9141,8 +9111,7 @@ def setupArtinSchreier [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (
      (← q r"ring_sub l (ring_pow l ((f:B->B) a) p) (f a) =
       ring_sub l (ring_pow l a p) a")
     ASSUME_TAC THENL
-     [ASM_SIMP_TAC [RING_POW, ← GSYM (← MATCH_MP RING_HOMOMORPHISM_POW
-        (← ASSUME (← q r"ring_homomorphism(l,l) (f:B->B)")))] THEN
+     [ASM_SIMP_TAC [RING_POW, ← GSYM RING_HOMOMORPHISM_POW] THEN
       ASM_SIMP_TAC [RING_POW, ← GSYM (← MATCH_MP RING_HOMOMORPHISM_SUB
         (← ASSUME (← q r"ring_homomorphism(l,l) (f:B->B)")))] THEN
       UNDISCH_TAC
@@ -9465,10 +9434,8 @@ def setupArtinSchreier2 [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) 
       ASM_REWRITE_TAC [SING_SUBSET] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN
       REWRITE_TAC [IN_FIXED_FIELD, IN_SING, FORALL_UNWIND_THM2] THEN
       ASM_SIMP_TAC [RING_POW, RING_SUB] THEN
-      ASM_SIMP_TAC [RING_POW, ← MATCH_MP RING_HOMOMORPHISM_SUB
-        (← ASSUME (← q r"ring_homomorphism(l,l) (g:B->B)"))] THEN
-      ASM_SIMP_TAC [RING_POW, ← MATCH_MP RING_HOMOMORPHISM_POW
-        (← ASSUME (← q r"ring_homomorphism(l,l) (g:B->B)"))] THEN
+      ASM_SIMP_TAC [RING_POW, RING_HOMOMORPHISM_SUB] THEN
+      ASM_SIMP_TAC [RING_POW, RING_HOMOMORPHISM_POW] THEN
       MP_TAC (← ISPEC (← q r"l:B ring") RING_ENDOMORPHISM_FROBENIUS) THEN
       ASM_REWRITE_TAC [ring_endomorphism] THEN
       DISCH_THEN (MP_TAC o SPECL [← q r"y:B", ← q r"ring_1 l:B"] o

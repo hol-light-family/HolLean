@@ -8666,11 +8666,13 @@ def setupSetsHasInfSup [HolBase] (SSup : SetsSup)
     HAS_SUP, HAS_INF_LE, HAS_SUP_LE }
 
 /- ---------------------------------------------------------------------- -/
-/- Inductive definition of sets, by reducing them to inductive relations. -/
-/- (sets.ml 5377-5411)                                                    -/
+/- Inductive and coinductive definition of sets, by reducing them to      -/
+/- inductive or coinductive relations.  (sets.ml 5376-5414)               -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `new_inductive_set` (sets.ml 5380). -/
+/-- sets.ml's `new_set_definition new_relation_definition` (5405): with
+    `new_inductive_definition` it is `new_inductive_set`, with
+    `new_coinductive_definition` `new_coinductive_set` (5413-5414). -/
 def new_inductive_set [HolBase] (IN : thm) (and_tm : term)
     (new_inductive_definition : term → IO (Except String (thm × thm × thm)))
     (tm : term) : IO (Except String (thm × thm × thm)) := ExceptT.run do

@@ -13207,8 +13207,7 @@ def setupSubgroupCorrespondence [HolBase] (D : GroupTheoryDeps) (BBasics : Basic
         MATCH_MP_TAC IN_SUBGROUP_MUL THEN ASM_REWRITE_TAC [] THEN
         FIRST_X_ASSUM MATCH_MP_TAC THEN
         ASM_SIMP_TAC [group_kernel, IN_ELIM_THM, GROUP_DIV] THEN
-        FIRST_ASSUM (fun th => tactic_of do
-          pure (ASM_SIMP_TAC [← MATCH_MP GROUP_HOMOMORPHISM_DIV th])) THEN
+        ASM_SIMP_TAC [GROUP_HOMOMORPHISM_DIV] THEN
         wPart pure (fun t => do lhand (← rand t)) GROUP_DIV_EQ_ID THEN
         ASM_REWRITE_TAC [] THEN DISCH_THEN MATCH_MP_TAC THEN
         RULE_ASSUM_TAC (REWRITE_RULE [group_homomorphism]) THEN ASM SET_TAC []],
@@ -13321,8 +13320,7 @@ def setupSubgroupCorrespondence [HolBase] (D : GroupTheoryDeps) (BBasics : Basic
         ASM_SIMP_TAC [IN_RIGHT_COSET] THEN
         REWRITE_TAC [IN_ELIM_THM, ← GSYM group_div] THEN
         ASM_SIMP_TAC [GROUP_DIV] THEN
-        FIRST_ASSUM (fun th => tactic_of do
-          pure (ASM_SIMP_TAC [← MATCH_MP GROUP_HOMOMORPHISM_DIV th])),
+        ASM_SIMP_TAC [GROUP_HOMOMORPHISM_DIV],
         ASM_MESON_TAC [RIGHT_COSET, SUBSET]],
       ALL_TAC] THEN
     SUBGOAL_THEN
@@ -15277,8 +15275,7 @@ def setupCyclicGroups1 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDeri
     DISCH_THEN (X_CHOOSE_THEN (← q "x:A") STRIP_ASSUME_TAC) THEN
     EXISTS_TAC (← q r"(f:A->B) x") THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP s1) THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (ASM_SIMP_TAC [← GSYM (← MATCH_MP GROUP_HOMOMORPHISM_ZPOW th)])) THEN
+    ASM_SIMP_TAC [← GSYM GROUP_HOMOMORPHISM_ZPOW] THEN
     SET_TAC []))
 
   let ISOMORPHIC_GROUP_CYCLICITY ← prove

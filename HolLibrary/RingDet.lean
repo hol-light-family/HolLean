@@ -3531,8 +3531,9 @@ def setupBlocks [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors : Cofactors
                                   ← q "idt:L->L->A"] th) THEN
           MP_TAC (← ISPECL [← q "ids:K->K->A", ← q "zst:K->L->A", ← q "nq:L->K->A",
                             ← q "idt:L->L->A"] th))) THEN
-        MAP_EVERY EXPAND_TAC ["zts", "zst"] THEN ASM_SIMP_TAC [] THEN
-        SIMP_TAC [RING_0] THEN REPEAT (DISCH_THEN SUBST1_TAC) THEN
+        MAP_EVERY EXPAND_TAC ["zts", "zst"] THEN
+        REPEAT (ANTS_TAC THENL
+         [ASM_SIMP_TAC [RING_0], DISCH_THEN SUBST1_TAC]) THEN
         ASM_SIMP_TAC [RING_MUL_LID, RING_MUL_RID, RING_DET, RING_1],
         ALL_TAC] THEN
       MATCH_MP_TAC RING_DET_EQ THEN MAP_EVERY X_GEN_TAC [← q "x:K+L", ← q "y:K+L"] THEN
@@ -3576,8 +3577,9 @@ def setupBlocks [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors : Cofactors
                                 ← q "qp:L->L->A"] th) THEN
         MP_TAC (← ISPECL [← q "ids:K->K->A", ← q "zst:K->L->A", ← q "nq:L->K->A",
                           ← q "idt:L->L->A"] th))) THEN
-      MAP_EVERY EXPAND_TAC ["zts", "zst"] THEN ASM_SIMP_TAC [] THEN
-      SIMP_TAC [RING_0] THEN REPEAT (DISCH_THEN SUBST1_TAC) THEN
+      MAP_EVERY EXPAND_TAC ["zts", "zst"] THEN
+      REPEAT (ANTS_TAC THENL
+       [ASM_SIMP_TAC [RING_0], DISCH_THEN SUBST1_TAC]) THEN
       ASM_SIMP_TAC [RING_MUL_LID, RING_DET, RING_1]] THEN
     MATCH_MP_TAC RING_DET_EQ THEN MAP_EVERY X_GEN_TAC [← q "x:K+L", ← q "y:K+L"] THEN
     STRIP_TAC THEN USE_THEN "mul" (fun th => tactic_of do
@@ -4352,8 +4354,7 @@ def setupCharpolySimilar [HolBase] (D : RingDetDeps) (BDet : Det) (BFieldDet : F
         ← q "s:A->bool"] o MATCH_MP RING_HOMOMORPHISM_SUM) THEN
       ASM_SIMP_TAC [RING_MUL, o_DEF] THEN DISCH_THEN SUBST1_TAC THEN
       MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q "u:A") THEN DISCH_TAC THEN
-      FIRST_ASSUM (fun th => tactic_of do
-        pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL th])))
+      ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL])
     let r1 ← RING_RULE
      (← q r"ring_mul r (ring_sub r (ring_mul r a x) b) (c:A) =
         ring_sub r (ring_mul r x (ring_mul r a c)) (ring_mul r b c)")
@@ -4402,8 +4403,7 @@ def setupCharpolySimilar [HolBase] (D : RingDetDeps) (BDet : Det) (BFieldDet : F
           ← q "s:A->bool"] o MATCH_MP RING_HOMOMORPHISM_SUM) THEN
         ASM_SIMP_TAC [RING_MUL, o_DEF] THEN DISCH_THEN SUBST1_TAC THEN
         MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q "u:A") THEN DISCH_TAC THEN
-        FIRST_ASSUM (fun th => tactic_of do
-          pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL th])),
+        ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL],
         ASM_SIMP_TAC [] THEN COND_CASES_TAC THEN
         FIRST_ASSUM (fun th => tactic_of do
           pure (REWRITE_TAC [← MATCH_MP RING_HOMOMORPHISM_0 th,
@@ -5421,8 +5421,7 @@ def setupFreeBases [HolBase] (D : RingDetDeps) :
            DISCH_THEN (SUBST1_TAC o SYM)] THEN
          MATCH_MP_TAC RING_SUM_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN
          X_GEN_TAC (← q "i:num") THEN DISCH_TAC THEN REWRITE_TAC [] THEN
-         ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL
-          (← ASSUME (← q r"ring_homomorphism(r,s) (h:A->B)"))] THEN
+         ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL] THEN
          MATCH_MP_TAC RING_MUL_ASSOC THEN ASM_SIMP_TAC [],
          ALL_TAC])) THEN
       MP_TAC (← ISPECL [← q "h:A->B", ← q "r:A ring", ← q "s:B ring", ← q "n:num", ← q "w:num->B",
@@ -5447,8 +5446,7 @@ def setupFreeBases [HolBase] (D : RingDetDeps) :
       X_GEN_TAC (← q "i:num") THEN DISCH_TAC THEN REWRITE_TAC [] THEN
       FIRST_X_ASSUM (MP_TAC o SPEC (← q "i:num")) THEN ASM_REWRITE_TAC [] THEN
       STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
-      ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL
-       (← ASSUME (← q r"ring_homomorphism(r,s) (h:A->B)"))] THEN
+      ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL] THEN
       CONV_TAC SYM_CONV THEN MATCH_MP_TAC RING_MUL_ASSOC THEN ASM_SIMP_TAC []])
 
   let FREE_BASIS_QUOTIENT_RING_PRINCIPAL ← prove
@@ -5494,8 +5492,7 @@ def setupFreeBases [HolBase] (D : RingDetDeps) :
        [ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET], ALL_TAC] THEN
       UNDISCH_TAC (← q "(x:A) IN ib") THEN ASM_SIMP_TAC [] THEN
       REWRITE_TAC [ring_divides] THEN STRIP_TAC THEN
-      ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL
-       (← ASSUME (← q r"ring_homomorphism(r,s) (h:A->B)")), RING_MUL] THEN
+      ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL, RING_MUL] THEN
       ASM_MESON_TAC [],
       ALL_TAC] THEN
     MATCH_MP_TAC MONO_EXISTS THEN
@@ -5949,8 +5946,7 @@ def setupMulMatrix [HolBase] (D : RingDetDeps) (BFreeBases : FreeBases) :
       wPart lhand (fun t => do lhand (← rand t)) RING_SUM_SWAP THEN
       ANTS_TAC THENL [ASM_SIMP_TAC [RING_MUL], DISCH_THEN SUBST1_TAC] THEN
       MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q "i:L") THEN DISCH_TAC THEN
-      FIRST_ASSUM (fun th => tactic_of do
-        pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_SUM th])) THEN
+      ASM_SIMP_TAC [RING_HOMOMORPHISM_SUM] THEN
       ASM_SIMP_TAC [← GSYM RING_SUM_RMUL, RING_MUL, o_DEF]])
 
   let EXTENSION_LINCOMB_ADD ← prove
@@ -6532,9 +6528,7 @@ def setupProjectiveBases [HolBase] (D : RingDetDeps) (BFreeBases : FreeBases) :
         ==> !i x y. i < n /\ x IN ring_carrier l /\ y IN ring_carrier l
                     ==> f i (ring_sub l x y) = ring_sub k (f i x) (f i y)"
    (REPEAT STRIP_TAC THEN REWRITE_TAC [ring_sub] THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (ASM_SIMP_TAC [RING_NEG, ← MATCH_MP PROJECTIVE_BASIS_ADD th,
-                          ← MATCH_MP PROJECTIVE_BASIS_NEG th])))
+    ASM_SIMP_TAC [RING_NEG, PROJECTIVE_BASIS_ADD, PROJECTIVE_BASIS_NEG])
 
   let PROJECTIVE_BASIS_SUM ← prove
    r"!(h:A->B) k l n e f.
@@ -6550,14 +6544,13 @@ def setupProjectiveBases [HolBase] (D : RingDetDeps) (BFreeBases : FreeBases) :
     ASSUME_TAC THENL [ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER], ALL_TAC] THEN
     FIRST_ASSUM (STRIP_ASSUME_TAC o MATCH_MP PROJECTIVE_BASIS_IN_CARRIER) THEN
     MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-    FIRST_ASSUM (fun th => tactic_of do pure (ASM_SIMP_TAC [RING_SUM_CLAUSES,
-      ← MATCH_MP PROJECTIVE_BASIS_0 th])) THEN
+    ASM_SIMP_TAC [RING_SUM_CLAUSES, PROJECTIVE_BASIS_0] THEN
     MAP_EVERY X_GEN_TAC [← q "a:K", ← q "s:K->bool"] THEN
     DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC STRIP_ASSUME_TAC) THEN
     MAP_EVERY X_GEN_TAC [← q "c:K->A", ← q "w:K->B"] THEN
     REWRITE_TAC [FORALL_IN_INSERT] THEN STRIP_TAC THEN
-    FIRST_ASSUM (fun th => tactic_of do pure (ASM_SIMP_TAC [RING_MUL, RING_SUM,
-      ← MATCH_MP PROJECTIVE_BASIS_ADD th, ← MATCH_MP PROJECTIVE_BASIS_LMUL th])))
+    ASM_SIMP_TAC [RING_MUL, RING_SUM, PROJECTIVE_BASIS_ADD,
+                  PROJECTIVE_BASIS_LMUL])
 
   let PROJECTIVE_BASIS_RING_SUM ← prove
    r"!(h:A->B) k l n e f.
@@ -6569,13 +6562,11 @@ def setupProjectiveBases [HolBase] (D : RingDetDeps) (BFreeBases : FreeBases) :
     REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
     FIRST_ASSUM (STRIP_ASSUME_TAC o MATCH_MP PROJECTIVE_BASIS_IN_CARRIER) THEN
     MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-    FIRST_ASSUM (fun th => tactic_of do pure (ASM_SIMP_TAC [RING_SUM_CLAUSES,
-      ← MATCH_MP PROJECTIVE_BASIS_0 th])) THEN
+    ASM_SIMP_TAC [RING_SUM_CLAUSES, PROJECTIVE_BASIS_0] THEN
     MAP_EVERY X_GEN_TAC [← q "a:K", ← q "s:K->bool"] THEN
     DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC STRIP_ASSUME_TAC) THEN
     X_GEN_TAC (← q "y:K->B") THEN REWRITE_TAC [FORALL_IN_INSERT] THEN STRIP_TAC THEN
-    FIRST_ASSUM (fun th => tactic_of do pure (ASM_SIMP_TAC [RING_SUM,
-      ← MATCH_MP PROJECTIVE_BASIS_ADD th])))
+    ASM_SIMP_TAC [RING_SUM, PROJECTIVE_BASIS_ADD])
 
   /- An additive map u from l to k, linear over k via h, is determined by its
      values on the basis. -/
@@ -6837,9 +6828,8 @@ def setupTraceNormBasis [HolBase] (D : RingDetDeps) (BDet : Det) (BBlocks : Bloc
        (REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_DET_EQ THEN
         REWRITE_TAC [IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN
         FIRST_ASSUM (STRIP_ASSUME_TAC o MATCH_MP PROJECTIVE_BASIS_IN_CARRIER) THEN
-        FIRST_ASSUM (fun th => tactic_of do
-          pure (ASM_SIMP_TAC [RING_SUB_RDISTRIB, RING_MUL_LID, RING_1, RING_MUL,
-                              ← MATCH_MP PROJECTIVE_BASIS_SUB th])) THEN
+        ASM_SIMP_TAC [RING_SUB_RDISTRIB, RING_MUL_LID, RING_1, RING_MUL,
+                      PROJECTIVE_BASIS_SUB] THEN
         MATCH_MP_TAC r1 THEN
         ASM_SIMP_TAC [RING_MUL] THEN COND_CASES_TAC THEN REWRITE_TAC [RING_0, RING_1]))
     pure (REPEAT STRIP_TAC THEN
@@ -6941,9 +6931,8 @@ def setupTraceNormBasis [HolBase] (D : RingDetDeps) (BDet : Det) (BBlocks : Bloc
     MATCH_MP_TAC RING_DET_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN
     REPEAT STRIP_TAC THEN
     FIRST_ASSUM (STRIP_ASSUME_TAC o MATCH_MP PROJECTIVE_BASIS_IN_CARRIER) THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (ASM_SIMP_TAC [RING_SUB_RDISTRIB, RING_MUL_LID, RING_1, RING_MUL,
-                          ← MATCH_MP PROJECTIVE_BASIS_SUB th])) THEN
+    ASM_SIMP_TAC [RING_SUB_RDISTRIB, RING_MUL_LID, RING_1, RING_MUL,
+                  PROJECTIVE_BASIS_SUB] THEN
     MATCH_MP_TAC r1 THEN
     ASM_SIMP_TAC [RING_MUL] THEN COND_CASES_TAC THEN REWRITE_TAC [RING_0, RING_1]))
 
@@ -7125,9 +7114,7 @@ def setupTraceNormAlgebra [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors :
     CONJ_TAC THENL
      [MATCH_MP_TAC RING_SUM_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN
       REPEAT STRIP_TAC THEN
-      FIRST_ASSUM (fun th => tactic_of do
-        pure (ASM_SIMP_TAC [RING_ADD_RDISTRIB, RING_MUL,
-                            ← MATCH_MP PROJECTIVE_BASIS_ADD th])),
+      ASM_SIMP_TAC [RING_ADD_RDISTRIB, RING_MUL, PROJECTIVE_BASIS_ADD],
       MATCH_MP_TAC RING_SUM_ADD THEN
       ASM_SIMP_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM, RING_MUL]])
 
@@ -7153,9 +7140,7 @@ def setupTraceNormAlgebra [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors :
     CONJ_TAC THENL
      [MATCH_MP_TAC RING_SUM_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN
       REPEAT STRIP_TAC THEN
-      FIRST_ASSUM (fun th => tactic_of do
-        pure (ASM_SIMP_TAC [← GSYM RING_MUL_ASSOC, RING_MUL,
-                            ← MATCH_MP PROJECTIVE_BASIS_LMUL th])),
+      ASM_SIMP_TAC [← GSYM RING_MUL_ASSOC, RING_MUL, PROJECTIVE_BASIS_LMUL],
       MATCH_MP_TAC RING_SUM_LMUL THEN
       ASM_SIMP_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM, RING_MUL]])
 
@@ -7277,9 +7262,8 @@ def setupTraceNormAlgebra [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors :
     AP_TERM_TAC THEN
     SUBGOAL_THEN (← q r"ring_mul l u (ring_mul l v ((e:num->B) j)) IN ring_carrier l")
     ASSUME_TAC THENL [ASM_SIMP_TAC [RING_MUL], ALL_TAC] THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (ASM_SIMP_TAC [RING_ADD_RDISTRIB, RING_MUL, RING_ADD, ← GSYM RING_MUL_ASSOC,
-                          ← MATCH_MP PROJECTIVE_BASIS_ADD th]))))
+    ASM_SIMP_TAC [RING_ADD_RDISTRIB, RING_MUL, RING_ADD, ← GSYM RING_MUL_ASSOC,
+                  PROJECTIVE_BASIS_ADD]))
 
   let ALGEBRA_TRACE_NORM_BASE_FREE_BASIS ← prove
    r"!(h:A->B) k l n g a.
@@ -7353,9 +7337,7 @@ def setupTraceNormAlgebra [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors :
     SUBGOAL_THEN
      (← q r"ring_neg l x = ring_mul l ((h:A->B)(ring_neg k (ring_1 k))) x")
     SUBST1_TAC THENL
-     [FIRST_ASSUM (fun th => tactic_of do
-        pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_NEG th,
-                            ← MATCH_MP RING_HOMOMORPHISM_1 th, RING_1])) THEN
+     [ASM_SIMP_TAC [RING_HOMOMORPHISM_NEG, RING_HOMOMORPHISM_1, RING_1] THEN
       ASM_SIMP_TAC [RING_MUL_LNEG, RING_MUL_LID, RING_1],
       ASM_SIMP_TAC [ALGEBRA_TRACE_SCALAR, RING_NEG, RING_1] THEN
       ASM_SIMP_TAC [RING_MUL_LNEG, RING_MUL_LID, RING_1,
@@ -7583,9 +7565,7 @@ def setupTraceNormMisc [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetR
       REPEAT CONJ_TAC THENL
        [ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER],
         ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER, RING_NEG, RING_1],
-        FIRST_ASSUM (fun th => tactic_of do
-          pure (ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_NEG th,
-                              ← MATCH_MP RING_HOMOMORPHISM_1 th, RING_1])) THEN
+        ASM_SIMP_TAC [RING_HOMOMORPHISM_NEG, RING_HOMOMORPHISM_1, RING_1] THEN
         DISCH_TAC THEN MATCH_MP_TAC r2 THEN
         ASM_REWRITE_TAC []],
       ALL_TAC] THEN
@@ -7728,12 +7708,8 @@ def setupTraceNormMisc [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetR
         if !(concl th == c) then throw "check"
         pure (MATCH_MP_TAC th)) THEN
       ASM_SIMP_TAC [RING_ADD] THEN
-      ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_ADD
-                    (← ASSUME (← q r"ring_homomorphism(k2,l) (h2:C->B)"))] THEN
-      ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_ADD
-                    (← ASSUME (← q r"ring_homomorphism(k1,l) (h1:A->B)")),
-                    ← MATCH_MP PROJECTIVE_BASIS_ADD
-                    (← ASSUME (← q r"projective_basis (k1,l) (h1:A->B) n e f"))],
+      ASM_SIMP_TAC [RING_HOMOMORPHISM_ADD] THEN
+      ASM_SIMP_TAC [RING_HOMOMORPHISM_ADD, PROJECTIVE_BASIS_ADD],
       MAP_EVERY X_GEN_TAC [← q "i:num", ← q "a:C", ← q "x:B"] THEN STRIP_TAC THEN
       SUBGOAL_THEN (← q r"?a'. a' IN ring_carrier k1 /\ (h1:A->B) a' = (h2:C->B) a")
       STRIP_ASSUME_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
@@ -7745,16 +7721,12 @@ def setupTraceNormMisc [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetR
         if !(concl th == c) then throw "check"
         pure (MATCH_MP_TAC th)) THEN
       ASM_SIMP_TAC [RING_MUL] THEN
-      ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL
-                    (← ASSUME (← q r"ring_homomorphism(k2,l) (h2:C->B)"))] THEN
+      ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL] THEN
       FIRST_X_ASSUM (fun th => tactic_of do
         let c ← q r"(h1:A->B) a' = (h2:C->B) a"
         if !(concl th == c) then throw "check"
         pure (SUBST1_TAC (← SYM th))) THEN
-      ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL
-                    (← ASSUME (← q r"ring_homomorphism(k1,l) (h1:A->B)")),
-                    ← MATCH_MP PROJECTIVE_BASIS_LMUL
-                    (← ASSUME (← q r"projective_basis (k1,l) (h1:A->B) n e f"))],
+      ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL, PROJECTIVE_BASIS_LMUL],
       REPEAT STRIP_TAC THEN
       MP_TAC (← ISPECL [← q "h1:A->B", ← q "k1:A ring", ← q "l:B ring", ← q "n:num", ← q "e:num->B",
                         ← q "f:num->B->A", ← q "x:B"] PROJECTIVE_BASIS_EXPAND) THEN
@@ -8046,8 +8018,7 @@ def setupUnits [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows) (BC
         MATCH_MP_TAC RING_SUM_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN
         REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_MUL_SYM THEN ASM_SIMP_TAC [],
         ALL_TAC] THEN
-      FIRST_ASSUM (fun th => tactic_of do
-        pure (ASM_SIMP_TAC [RING_MUL, RING_1, ← MATCH_MP PROJECTIVE_BASIS_SUB th])) THEN
+      ASM_SIMP_TAC [RING_MUL, RING_1, PROJECTIVE_BASIS_SUB] THEN
       MATCH_MP_TAC r3 THEN
       ASM_SIMP_TAC [RING_MUL],
       ALL_TAC] THEN
@@ -8150,8 +8121,7 @@ def setupUnits [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows) (BC
                 ring_sub k (if i = j then ring_1 k else ring_0 k) (f i (e j))")
     ASSUME_TAC THENL
      [REPEAT GEN_TAC THEN STRIP_TAC THEN ASM_SIMP_TAC [RING_MUL_LZERO] THEN
-      FIRST_ASSUM (fun th => tactic_of do
-        pure (ASM_SIMP_TAC [← MATCH_MP PROJECTIVE_BASIS_0 th])) THEN
+      ASM_SIMP_TAC [PROJECTIVE_BASIS_0] THEN
       MATCH_MP_TAC RING_ADD_LZERO THEN
       MATCH_MP_TAC RING_SUB THEN ASM_SIMP_TAC [] THEN
       COND_CASES_TAC THEN REWRITE_TAC [RING_0, RING_1],
@@ -8188,11 +8158,8 @@ def setupUnits [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows) (BC
      [REPEAT GEN_TAC THEN STRIP_TAC THEN
       CONJ_TAC THENL [ALL_TAC, ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER]] THEN
       COND_CASES_TAC THEN
-      ASM_SIMP_TAC [RING_0, RING_1,
-        ← MATCH_MP RING_HOMOMORPHISM_SUB
-         (← ASSUME (← q r"ring_homomorphism(k,l) (h:A->B)")),
-        ← MATCH_MP RING_HOMOMORPHISM_0 (← ASSUME (← q r"ring_homomorphism(k,l) (h:A->B)")),
-        ← MATCH_MP RING_HOMOMORPHISM_1 (← ASSUME (← q r"ring_homomorphism(k,l) (h:A->B)"))],
+      ASM_SIMP_TAC [RING_0, RING_1, RING_HOMOMORPHISM_SUB, RING_HOMOMORPHISM_0,
+                    RING_HOMOMORPHISM_1],
       ALL_TAC] THEN
     SUBGOAL_THEN (← q r"!m. m < n ==> ring_mul l ((e:num->B) m) d = ring_0 l")
     ASSUME_TAC THENL
@@ -8485,11 +8452,8 @@ def setupBaseChange [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetRows
      [MATCH_MP_TAC RING_SUM_EQ THEN ASM_SIMP_TAC [IN_ELIM_THM],
       MATCH_MP_TAC RING_DET_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN
       REPEAT STRIP_TAC THEN
-      ASM_SIMP_TAC [RING_ADD, RING_SUB,
-        ← MATCH_MP RING_HOMOMORPHISM_ADD
-         (← ASSUME (← q r"ring_homomorphism(k,k') (u:A->C)")),
-        ← MATCH_MP RING_HOMOMORPHISM_SUB
-         (← ASSUME (← q r"ring_homomorphism(k,k') (u:A->C)"))] THEN
+      ASM_SIMP_TAC [RING_ADD, RING_SUB, RING_HOMOMORPHISM_ADD,
+                    RING_HOMOMORPHISM_SUB] THEN
       COND_CASES_TAC THEN ASM_MESON_TAC [RING_HOMOMORPHISM_0,
                                          RING_HOMOMORPHISM_1]])
 
@@ -9397,8 +9361,7 @@ def setupProjectiveTowers [HolBase] (D : RingDetDeps) (BFreeBases : FreeBases) (
       DISCH_THEN (SUBST1_TAC o SYM)] THEN
     MATCH_MP_TAC RING_SUM_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN
     X_GEN_TAC (← q "i:num") THEN DISCH_TAC THEN
-    ASM_SIMP_TAC [← MATCH_MP RING_HOMOMORPHISM_MUL
-                  (← ASSUME (← q r"ring_homomorphism(l,m) (g:B->C)")), RING_MUL] THEN
+    ASM_SIMP_TAC [RING_HOMOMORPHISM_MUL, RING_MUL] THEN
     MATCH_MP_TAC RING_MUL_ASSOC THEN ASM_SIMP_TAC [])
 
   let ALGEBRA_TRACE_TOWER_PROJECTIVE ← prove

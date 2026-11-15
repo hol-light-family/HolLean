@@ -30,6 +30,9 @@ initialize indAux : thm × thm × term ← do
 
 initialize theInductiveDefinitions : IO.Ref (List (thm × thm × thm)) ← IO.mkRef []
 
+/-- `the_coinductive_definitions` (ind_defs.ml 385). -/
+initialize theCoinductiveDefinitions : IO.Ref (List (thm × thm × thm)) ← IO.mkRef []
+
 def get_monotonicity_theorems : IO (List thm) := theMonotonicityTheorems.get
 
 def prove_inductive_relations_exist (tm : term) : IO (Except String thm) := do
@@ -69,5 +72,30 @@ def new_inductive_definition (tm : term) : IO (Except String (thm × thm × thm)
     match newEntry with
     | some entry => do theInductiveDefinitions.set (entry :: existing); return .ok trip
     | none => return .ok trip
+
+/-- `derive_nonschematic_coinductive_relations tm`. -/
+def derive_nonschematic_coinductive_relations (tm : term) : IO (Except String thm) :=
+  IndDefs.derive_nonschematic_coinductive_relations B T.REFL_CLAUSE T.CONJ_ACI indAux.2.2 tm
+
+def prove_coinductive_relations_exist (tm : term) : IO (Except String thm) := do
+  IndDefs.prove_inductive_relations_exist B indAux.1 T.REFL_CLAUSE T.CONJ_ACI indAux.2.2
+    (← get_monotonicity_theorems) indAux.2.1 tm (coind := true)
+
+/-- ind_defs.ml's `new_coinductive_definition`: the greatest relations
+    consistent with the rules; returns the rules, coinduction and cases
+    theorems. -/
+def new_coinductive_definition (tm : term) : IO (Except String (thm × thm × thm)) := do
+  let existing ← theCoinductiveDefinitions.get
+  match ← IndDefs.new_inductive_definition_core B indAux.1 T.REFL_CLAUSE T.CONJ_ACI indAux.2.2
+            (← get_monotonicity_theorems) indAux.2.1 existing tm (coind := true) with
+  | .error e => return .error e
+  | .ok (trip, newEntry) =>
+    match newEntry with
+    | some entry => do theCoinductiveDefinitions.set (entry :: existing); return .ok trip
+    | none => return .ok trip
+
+/-- Derive strong coinduction from a cases/coinduction pair. -/
+def derive_strong_coinduction (cth coth : thm) : IO (Except String thm) := do
+  IndDefs.derive_strong_coinduction B (← get_monotonicity_theorems) indAux.2.1 cth coth
 
 end Session

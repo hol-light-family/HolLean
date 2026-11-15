@@ -5,7 +5,7 @@ assertion by assertion, in file order.  Each OCaml `assert` becomes one
 (`define`, `prove`, `top_thm`, ...) becomes an assertion that it succeeds.
 Every assertion passes in real HOL Light (run against /tmp/hol4).
 
-Not translated: the "pa_j preprocessor" block (basic_tests.ml 199-208), which
+Not translated: the "pa_j preprocessor" block (basic_tests.ml 288-298), which
 tests OCaml's camlp5 lexer (`unset_jrh_lexer`, an OCaml `function` over
 `Unix.sockaddr`), not HOL Light.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026. -/
@@ -126,10 +126,21 @@ private def succeeds (act : IO (Except String α)) : IO Bool := do
     (do succeeds (new_inductive_definition (← pt i)))
   : IO Unit)
 
+-- Benign redefinition of a coinductive definition (113-118).
+#eval (do
+  ensureHolPrefixThroughInt
+  let c := "forall s s'. step s s' /\\ diverges (step:S->S->bool) s' " ++
+           "==> diverges step s"
+  run "new_coinductive_definition diverges"
+    (do succeeds (new_coinductive_definition (← pt c)))
+  run "new_coinductive_definition diverges again (benign)"
+    (do succeeds (new_coinductive_definition (← pt c)))
+  : IO Unit)
+
 /-- A goalstack command that must succeed. -/
 private def step (act : IO α) : IO Bool := do let _ ← act; pure true
 
--- The `er` command of the subgoal package (115-176): each case's proof in
+-- The `er` command of the subgoal package (126-179): each case's proof in
 -- THEN form, then in g-e(er) form ending in top_thm.
 #eval (do
   ensureHolPrefixThroughInt
@@ -181,7 +192,7 @@ private def step (act : IO α) : IO Bool := do let _ ← act; pure true
     step top_thm)
   : IO Unit)
 
--- Functions in lib (183-186).
+-- Functions in lib (186-189).
 #eval (do
   ok "find_index ((=) 10) [0;10;20] = Some 1"
     (HolCore.Lib.find_index (· == 10) [0, 10, 20] == some 1)
@@ -193,7 +204,7 @@ private def step (act : IO α) : IO Bool := do let _ ← act; pure true
     (match HolCore.Lib.index 99 [0, 10, 20] with | .ok _ => false | .error _ => true)
   : IO Unit)
 
--- bignum (194-207): `num n` is the Rat `n`, `//` is division.
+-- bignum (198-212): `num n` is the Rat `n`, `//` is division.
 #eval (do
   ok "power_num (num 0) (num 0) = num 1" (HolCore.Lib.power_num 0 0 == 1)
   ok "pow (num 0) 0 = num 1" (HolCore.Lib.pow 0 0 == 1)
@@ -211,7 +222,7 @@ private def step (act : IO α) : IO Bool := do let _ ← act; pure true
   ok "pow (1/2) 0 = num 1" (HolCore.Lib.pow (1/2) 0 == 1)
   : IO Unit)
 
--- UNIFY_REFL_TAC (213-217).
+-- UNIFY_REFL_TAC (218-222).
 #eval (do
   ensureHolPrefixThroughInt
   run "UNIFY_REFL_TAC_TEST" (succeeds
@@ -222,7 +233,90 @@ private def step (act : IO α) : IO Bool := do let _ ← act; pure true
     (HolLight.prove r"?f. y + 1 = f y 0" (META_EXISTS_TAC THEN UNIFY_REFL_TAC)).run)
   : IO Unit)
 
--- check_axioms (229-233): after `new_axiom`, check_axioms must fail.  Last,
+/-- `simp_test conv thl tm` (230-233): the conversion's theorem has `tm` on
+the left and only hypotheses of `thl`; its right side. -/
+private def simpTest (conv : List thm → term → IO (Except String thm))
+    (thl : List thm) (tm : term) : IO term := do
+  let th ← IO.ofExcept (← conv thl tm)
+  let l ← IO.ofExcept (lhs (concl th))
+  unless l == tm && HolCore.Lib.subset (hyp th)
+      (HolCore.Lib.itlist (fun t acc => HolCore.Lib.union (hyp t) acc) thl []) do
+    throw (IO.userError "simp_test: assertion failed")
+  IO.ofExcept (rhs (concl th))
+
+private def asm (s : String) : IO thm := do IO.ofExcept (ASSUME (← pt s))
+
+-- Instantiation of variables in the conditions of conditional rewrites that
+-- are not determined by the LHS (find_witnesses and satisfy_prover) (235-285).
+#eval (do
+  ensureHolPrefixThroughInt
+  let rule ← asm "!s:B x:A. P s x ==> f x = x"
+  let rrule ← asm "!s:B x:A. P s x ==> (f:A->A) x = g s x"
+  let fact ← asm "(P:B->A->bool) c q"
+  let tm ← pt "(f:A->A) q"
+  let q ← pt "q:A"
+  run "SIMP_CONV [rule; fact]" (do pure ((← simpTest SIMP_CONV [rule, fact] tm) == q))
+  run "PURE_SIMP_CONV [rule; fact]"
+    (do pure ((← simpTest PURE_SIMP_CONV [rule, fact] tm) == q))
+  run "ONCE_SIMP_CONV [rule; fact]"
+    (do pure ((← simpTest ONCE_SIMP_CONV [rule, fact] tm) == q))
+  run "SIMP_CONV [rrule; fact]"
+    (do pure ((← simpTest SIMP_CONV [rrule, fact] tm) == (← pt "(g:B->A->A) c q")))
+  run "SIMP_CONV [rule] no change" (do pure ((← simpTest SIMP_CONV [rule] tm) == tm))
+  run "SIMP_CONV [rule; P c z] no change"
+    (do pure ((← simpTest SIMP_CONV [rule, ← asm "(P:B->A->bool) c z"] tm) == tm))
+  run "SIMP_CONV [rule; P c T] no change"
+    (do pure ((← simpTest SIMP_CONV [rule, ← asm "(P:B->bool->bool) c T"] tm) == tm))
+  run "REWRITE_CONV [rule; fact] no change"
+    (do pure ((← IO.ofExcept (rhs (concl (← IO.ofExcept (← REWRITE_CONV [rule, fact] tm)))))
+              == tm))
+  : IO Unit)
+
+#eval (do
+  ensureHolPrefixThroughInt
+  let rule ← asm "!s:B x:A. P s x /\\ Q s x ==> f x = x"
+  let tm ← pt "(f:A->A) q"
+  run "SIMP_CONV backtracks over facts" (do
+    pure ((← simpTest SIMP_CONV
+      [rule, ← asm "(P:B->A->bool) c q", ← asm "(P:B->A->bool) d q",
+       ← asm "(Q:B->A->bool) d q"] tm) == (← pt "q:A")))
+  run "SIMP_CONV conjuncts disagree: no change" (do
+    pure ((← simpTest SIMP_CONV
+      [rule, ← asm "(P:B->A->bool) c q", ← asm "(Q:B->A->bool) d q"] tm) == tm))
+  let rule' ← asm "!s:B t:C x:A. P s x /\\ R t x ==> (f:A->A) x = g s x"
+  run "SIMP_CONV existential and RHS variables" (do
+    pure ((← simpTest SIMP_CONV
+      [rule', ← asm "(P:B->A->bool) c q", ← asm "(R:C->A->bool) d q"] tm)
+      == (← pt "(g:B->A->A) c q")))
+  : IO Unit)
+
+#eval (do
+  ensureHolPrefixThroughInt
+  let rule ← asm "!s:B x:A. P s x ==> f x = x"
+  run "SIMP_CONV fact from antecedent" (do
+    pure ((← simpTest SIMP_CONV [rule] (← pt "(P:B->A->bool) c q ==> (f:A->A) q = q"))
+          == (← pt "T")))
+  run "ASM_SIMP_TAC fact from assumptions" (succeeds
+    (HolLight.prove r"(!s:B x:A. P s x ==> f x = x) /\ P c q ==> f q = q"
+      (STRIP_TAC THEN ASM_SIMP_TAC [])).run)
+  : IO Unit)
+
+#eval (do
+  ensureHolPrefixThroughInt
+  let rule ← asm "!s:A x:A. P s x ==> (f:A->A) x = g s x"
+  let fq ← pt "(f:A->A) q"
+  run "SIMP_CONV LHS inside RHS: not used" (do
+    pure ((← simpTest SIMP_CONV [rule, ← asm "(P:A->A->bool) (f q) q"] fq) == fq))
+  let rule ← asm "!x:A y:A. R x y ==> (f:A->A) x = f y"
+  let facts := [← asm "(R:A->A->bool) a b", ← asm "(R:A->A->bool) b a"]
+  for s in ["(f:A->A) a", "(f:A->A) b"] do
+    run s!"SIMP_CONV permutative decreases: {s}" (do
+      let tm ← pt s
+      let tm' ← simpTest SIMP_CONV (rule :: facts) tm
+      pure (tm' == tm || HolCore.Simp.term_order tm tm'))
+  : IO Unit)
+
+-- check_axioms (304-308): after `new_axiom`, check_axioms must fail.  Last,
 -- because the new axiom stays in `the_axioms` for the rest of the process.
 #eval (do
   ensureHolPrefixThroughInt

@@ -4889,11 +4889,6 @@ def setupDVJ [HolBase] (D : DerivativesDeps) (BDVA : DVA) (BDVB : DVB) (BDVI : D
         ALL_TAC] THEN
       REWRITE_TAC [VECTOR_MUL_EQ_0, REAL_DIV_EQ_0, REAL_ENTIRE] THEN
       ASM_SIMP_TAC [NORM_EQ_0, REAL_LT_IMP_NZ, REAL_SUB_0, VECTOR_SUB_EQ] THEN
-      FIRST_X_ASSUM (fun th =>
-       W (MP_TAC o PART_MATCH (lhand o rand) th o rand o snd)) THEN
-      ANTS_TAC THENL
-       [CONJ_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC [],
-        DISCH_THEN SUBST1_TAC] THEN
       REWRITE_TAC [← VECTOR_ARITH (← q r"x + y:real^N = x <=> y = vec 0")] THEN
       ASM_REWRITE_TAC [VECTOR_MUL_EQ_0, REAL_INV_EQ_0, NORM_EQ_0,
                        REAL_ENTIRE] THEN

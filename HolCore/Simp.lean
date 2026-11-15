@@ -374,6 +374,130 @@ def apply_prover : prover → ioconv
   | .Prover conv _, tm => conv tm
 
 /- ---------------------------------------------------------------------- -/
+/- A prover for existential goals ?x1 ... xn. p1 /\ ... /\ pk that picks  -/
+/- the witnesses so that each pi is a fact from the context, in the style -/
+/- of Don Syme's SATISFY in hol98. It works constructively: the theorem   -/
+/- it returns is the instance |- p1' /\ ... /\ pk' with the witnesses     -/
+/- plugged in, not the existential itself, so the witnesses can be read   -/
+/- off by matching. This is used to instantiate extra variables in        -/
+/- conditions. The facts are only extracted from the context theorems     -/
+/- when first needed.                                                     -/
+/- ---------------------------------------------------------------------- -/
+
+/-- satisfy_prover's `facts_of` (simp.ml 219-224). -/
+partial def satisfy_facts_of (B : BoolThms) (th : thm) (acc : List thm) :
+    Except String (List thm) := do
+  let tm := concl th
+  if is_forall tm then satisfy_facts_of B (← B.SPEC_ALL th) acc
+  else if is_conj tm then
+    -- `facts_of (CONJUNCT1 th) (facts_of (CONJUNCT2 th) acc)`, right to left
+    let acc' ← satisfy_facts_of B (← B.CONJUNCT2 th) acc
+    satisfy_facts_of B (← B.CONJUNCT1 th) acc'
+  else if is_imp tm || tm == .Const "T" bool_ty then pure acc
+  else pure (th :: acc)
+
+/-- satisfy_prover's `satisfy` (simp.ml 225-233): instantiate the variables
+    `vs` so that each conjunct is a fact, backtracking over the facts. -/
+partial def satisfy_go (facts : List thm) (vs : List term) (i : instantiation) :
+    List term → IO (Except String instantiation)
+  | [] => pure (.ok i)
+  | c :: ocjs => do
+    match instantiate i c with
+    | .error e => pure (.error e)
+    | .ok c' =>
+      let lconsts := subtract (frees c') vs
+      let (bcs, insts, _) := i
+      -- `tryfind (fun th -> ...) facts`
+      let rec tf : List thm → IO (Except String instantiation)
+        | [] => pure (.error "tryfind")
+        | th :: rest => do
+          match ← term_match lconsts c' (concl th) with
+          | .error _ => tf rest
+          | .ok (bcs', insts', tyin) =>
+            if tyin.any (fun (ty, v) => ty != v) then tf rest
+            else
+              match ← satisfy_go facts vs (bcs' ++ bcs, insts' ++ insts, []) ocjs with
+              | .ok r => pure (.ok r)
+              | .error _ => tf rest
+      tf facts
+
+/-- satisfy_prover's `prove` (simp.ml 234-236). -/
+partial def satisfy_prove (B : BoolThms) (facts : List thm) (tm : term) : Except String thm :=
+  if is_conj tm then do
+    -- `CONJ (prove facts (lhand tm)) (prove facts (rand tm))`, right to left
+    let r ← satisfy_prove B facts (← rand tm)
+    let l ← satisfy_prove B facts (← lhand tm)
+    B.CONJ l r
+  else match facts.find? (fun th => aconv (concl th) tm) with
+    | some th => .ok th
+    | none => .error "find"
+
+/-- satisfy_prover's `apply` (simp.ml 237-244). -/
+def satisfy_apply (B : BoolThms) (lfacts : Thunk (Except String (List thm))) : ioconv :=
+  fun tm => do
+    let (vs, bod) := strip_exists tm
+    if vs.isEmpty then return .error "satisfy_prover"
+    match lfacts.get with
+    | .error e => return .error e
+    | .ok facts =>
+      -- `map (genvar o type_of) vs` (lib.ml's map: left to right)
+      let gvs ← vs.mapM (fun v => genvar (type_of v))
+      match (do return (← vsubst (List.zip gvs vs)) bod : Except String term) with
+      | .error e => return .error e
+      | .ok gbod =>
+        match ← satisfy_go facts gvs ([], [], []) (conjuncts gbod) with
+        | .error e => return .error e
+        | .ok i => return (do satisfy_prove B facts (← instantiate i gbod))
+
+/-- `itlist facts_of thl acc`. -/
+def satisfy_facts_list (B : BoolThms) : List thm → List thm → Except String (List thm)
+  | [], acc => .ok acc
+  | t :: ts, acc => do satisfy_facts_of B t (← satisfy_facts_list B ts acc)
+
+/-- simp.ml's `satisfy_prover` (207-247).  OCaml's `lazy` state is a Lean
+    `Thunk` (evaluated once, when first forced). -/
+def satisfy_prover (B : BoolThms) : prover :=
+  mk_prover (satisfy_apply B)
+    (fun lfacts thl => Thunk.mk (fun _ => do
+      satisfy_facts_list B thl (← lfacts.get)))
+    (Thunk.pure (.ok []))
+
+/- ---------------------------------------------------------------------- -/
+/- Find an instantiation of the variables vs in a term tm by getting one  -/
+/- of the provers to prove "?vs. <the conjuncts of tm involving vs>" in   -/
+/- that constructive way. Any existential quantifiers round tm are        -/
+/- treated in the same way, so they can be "seen through" when choosing   -/
+/- the instantiation. Proving the instance of tm is left to the caller.   -/
+/- ---------------------------------------------------------------------- -/
+
+/-- simp.ml's `find_witnesses` (257-268). -/
+def find_witnesses (provers : List prover) (vs : List term) (tm : term) :
+    IO (Except String instantiation) := do
+  let (evs, bod) := strip_exists tm
+  let avs := vs ++ evs
+  match list_mk_conj ((conjuncts bod).filter (fun c => avs.any (fun v => vfree_in v c))) with
+  | .error e => return .error e
+  | .ok p =>
+    match list_mk_exists avs p with
+    | .error e => return .error e
+    | .ok q =>
+      let lconsts := subtract (frees p) avs
+      -- `tryfind (fun pr -> ...) provers`
+      let rec tf : List prover → IO (Except String instantiation)
+        | [] => return .error "tryfind"
+        | pr :: rest => do
+          match ← apply_prover pr q with
+          | .error _ => tf rest
+          | .ok th =>
+            match ← term_match lconsts p (concl th) with
+            | .error _ => tf rest
+            | .ok (bcs, insts, tyin) =>
+              if tyin.any (fun (ty, v) => ty != v) then tf rest
+              else return .ok (bcs.filter (fun (_, v) => mem v vs),
+                               insts.filter (fun (_, v) => mem v vs), [])
+      tf provers
+
+/- ---------------------------------------------------------------------- -/
 /- Type of simpsets. We have a convnet containing rewrites (implicational -/
 /- and otherwise), other term-indexed context-free conversions like       -/
 /- BETA_CONV, and congruence rules. Then there is a list of provers that   -/
@@ -401,14 +525,52 @@ inductive simpset where
 abbrev strategy := simpset → Int → term → IO (Except String thm)
 
 /- ---------------------------------------------------------------------- -/
-/- Very simple prover: recursively simplify then try provers.             -/
+/- Very simple prover: recursively simplify then try provers. For a goal  -/
+/- ?x1 ... xn. p we first try to find witnesses using the provers and     -/
+/- then prove the instance of p recursively. Since provers may return     -/
+/- instances for existential goals, EXISTS_INSTANCE turns these into the  -/
+/- existential.                                                           -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The basic condition-prover: simplify with `strat`, then either read off the
-    proof (`EQT_ELIM`) or discharge via a subprover. -/
-def basic_prover (B : BoolThms) (strat : strategy) (ss : simpset)
+/-- basic_prover's `EXISTS_INSTANCE` (simp.ml 296-305). -/
+def EXISTS_INSTANCE (B : BoolThms) (tm : term) (th : thm) : IO (Except String thm) := do
+  if aconv (concl th) tm then return .ok th
+  let (vs, bod) := strip_exists tm
+  match ← term_match (subtract (frees bod) vs) bod (concl th) with
+  | .error e => return .error e
+  | .ok i =>
+    let rec build (tm : term) : List term → Except String thm
+      | [] => if aconv (concl th) tm then .ok th else .error ""
+      | w :: ows => do
+        let (v, b) ← dest_exists tm
+        let b' := (← vsubst [(w, v)]) b
+        B.EXISTS (tm, w) (← build b' ows)
+    return (do build tm (← vs.mapM (instantiate i)))
+
+/-- The basic condition-prover (simp.ml 306-320): for an existential goal,
+    find witnesses with the provers and prove the instance; otherwise
+    simplify with `strat`, then either read off the proof (`EQT_ELIM`) or
+    discharge via a subprover. -/
+partial def basic_prover (B : BoolThms) (strat : strategy) (ss : simpset)
     (lev : Int) (tm : term) : IO (Except String thm) := do
   let (.Simpset _ provers _) := ss
+  -- `try let vs,bod = strip_exists tm in ... with Failure _ -> ...`: the
+  -- recursive call's failure falls through too
+  let viaWitnesses : IO (Except String thm) := do
+    let (vs, bod) := strip_exists tm
+    if vs.isEmpty then return .error ""
+    match ← find_witnesses provers vs bod with
+    | .error e => return .error e
+    | .ok i =>
+      match instantiate i bod with
+      | .error e => return .error e
+      | .ok ibod =>
+        match ← basic_prover B strat ss lev ibod with
+        | .error e => return .error e
+        | .ok th => EXISTS_INSTANCE B tm th
+  match ← viaWitnesses with
+  | .ok r => return .ok r
+  | .error _ =>
   -- sth = try strat ss lev tm with _ -> REFL tm
   let sth ← (do
     match ← (strat ss lev tm : IO (Except String thm)) with
@@ -420,12 +582,15 @@ def basic_prover (B : BoolThms) (strat : strategy) (ss : simpset)
     match rand (concl sth) with
     | .error e => return .error e
     | .ok rhs =>
-      -- tth = tryfind (fun pr => apply_prover pr rhs) provers
+      -- tth = tryfind (fun pr -> EXISTS_INSTANCE tm' (apply_prover pr tm')) provers
       let rec tryProvers : List prover → IO (Except String thm)
         | [] => return .error "basic_prover"
         | pr :: rest => do
             match ← (apply_prover pr rhs : IO (Except String thm)) with
-            | .ok tth => return (do EQ_MP (← SYM sth) tth)
+            | .ok tth0 =>
+              match ← EXISTS_INSTANCE B rhs tth0 with
+              | .ok tth => return (do EQ_MP (← SYM sth) tth)
+              | .error _ => tryProvers rest
             | .error _ => tryProvers rest
       tryProvers provers
 
@@ -528,6 +693,22 @@ def AUGMENT_SIMPSET (B : BoolThms) (cth : thm) (ss : simpset) :
     the simpset's condition-prover. -/
 def IMP_REWRITES_CONV (B : BoolThms) (strat : strategy) (ss : simpset)
     (lev : Int) (pconvs : List gconv) (tm : term) : IO (Except String thm) := do
+  let (.Simpset _ provers _) := ss
+  -- `nonlooping th` (simp.ml 370-374): checked much as net_of_thm checks
+  -- rewrites, the LHS must not occur in the RHS, and a permutative instance
+  -- must decrease in the term ordering (`&&`/`||` short-circuit, as OCaml)
+  let nonlooping (th : thm) : IO (Except String Bool) := do
+    match (do dest_eq (← rand (concl th)) : Except String (term × term)) with
+    | .error e => return .error e
+    | .ok (l, r) =>
+      let matchable (a b : term) : IO Bool := do
+        match ← term_match (freesl (hyp th)) a b with
+        | .ok _ => return true
+        | .error _ => return false
+      if free_in l r then return .ok false
+      if ← matchable l r then
+        if ← matchable r l then return .ok (term_order l r)
+      return .ok true
   -- `tryfind (fun (n,cnv) -> ...) pconvs` (simp.ml 280-287).  EVERY step of
   -- the branch - including the final `MP th cth` - is inside the `tryfind`, so
   -- any Failure moves on to the next conversion, and exhaustion raises
@@ -547,12 +728,43 @@ def IMP_REWRITES_CONV (B : BoolThms) (strat : strategy) (ss : simpset)
             else
               match lhand etm with
               | .error _ => go rest
-              | .ok l =>
+              | .ok cnd =>
+                -- the condition's variables not fixed by matching the LHS
+                -- (nor free in the term or the hypotheses) are instantiated
+                -- with find_witnesses first, if that gives a non-looping
+                -- rewrite (simp.ml 383-391)
+                let mvs := subtract (frees cnd) (union (frees tm) (freesl (hyp th)))
+                let th'? : Except String thm ← if mvs.isEmpty then pure (.ok th) else do
+                  -- `try INSTANTIATE (find_witnesses provers mvs cnd) th with
+                  -- Failure _ -> th`; `th1 != th` (physically) holds just
+                  -- when INSTANTIATE substituted (insts non-empty)
+                  let (th1, changed) ← do
+                    match ← find_witnesses provers mvs cnd with
+                    | .error _ => pure (th, false)
+                    | .ok i =>
+                      match INSTANTIATE i th with
+                      | .ok r => pure (r, !i.2.1.isEmpty)
+                      | .error _ => pure (th, false)
+                  match ← nonlooping th1 with
+                  | .error e => pure (.error e)
+                  | .ok true => pure (.ok th1)
+                  | .ok false =>
+                    if !changed then pure (.error "IMP_REWRITES_CONV: looping instance") else do
+                    match ← nonlooping th with
+                    | .error e => pure (.error e)
+                    | .ok true => pure (.ok th)
+                    | .ok false => pure (.error "IMP_REWRITES_CONV: looping instance")
+                match th'? with
+                | .error _ => go rest
+                | .ok th' =>
+                match lhand (concl th') with
+                | .error _ => go rest
+                | .ok l =>
                 -- default condition-prover (see `simpset` note)
                 match ← (basic_prover B strat ss (lev - 1) l : IO (Except String thm)) with
                 | .error _ => go rest
                 | .ok cth =>
-                  match B.MP th cth with
+                  match B.MP th' cth with
                   | .ok r => return .ok r
                   | .error _ => go rest
   go pconvs
@@ -1243,7 +1455,7 @@ def SIMPLIFY_CONV (B : BoolThms) (ss : simpset) (thl : List thm) :
 
 /-- The empty simpset (basic prover, no rewrites/congruences). -/
 def empty_ss (B : BoolThms) : simpset :=
-  .Simpset empty_net [] (fun th sofar => mk_rewrites B true th sofar)
+  .Simpset empty_net [satisfy_prover B] (fun th sofar => mk_rewrites B true th sofar)
 
 /-- The default simpset seeded with the basic net/congruences plus `thl`. -/
 def basic_ss (B : BoolThms) (thl : List thm) : IO (Except String simpset) := do
@@ -1280,7 +1492,7 @@ def basic_ss (B : BoolThms) (thl : List thm) : IO (Except String simpset) := do
             | .ok n' => (net_of_cong B t n' : IO (Except String (net gconv)))
       match ← (addCongs congs net' : IO (Except String (net gconv))) with
       | .error e => return .error e
-      | .ok net'' => return .ok (.Simpset net'' [] rewmaker)
+      | .ok net'' => return .ok (.Simpset net'' [satisfy_prover B] rewmaker)
 
 /-- Simplify with the basic simpset and extra rewrites `thl`. -/
 def SIMP_CONV (B : BoolThms) (thl : List thm) : IO (Except String ioconv) := do

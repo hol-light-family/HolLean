@@ -402,6 +402,129 @@ def derive_nonschematic_inductive_relations (B : BoolThms) (REFL_CLAUSE CONJ_ACI
                   : IO (Except String thm))
   liftExcept (do B.CONJ rulethm' (← B.CONJ indthm' casethm))
 
+/-- `derive_canon_coinductive_relations clauses` (ind_defs.ml 233-308): the
+    dual of `derive_canon_inductive_relations`, the greatest relations: from
+    canonical clauses derive the rule / coinduction / cases triple
+    (conjoined). -/
+def derive_canon_coinductive_relations (B : BoolThms) (clausesIn : List term) :
+    ExceptT String IO thm := do
+  let closed ← liftExcept (list_mk_conj clausesIn)
+  let clauses := conjuncts closed
+  let (vargs, bodies) := unzip (clauses.map strip_forall)
+  let antconc ← liftExcept (bodies.mapM Basics.dest_imp)
+  let (ants, concs) := unzip antconc
+  let rels := concs.map (repeat' rator)
+  let avoids ← liftExcept (variables closed)
+  let rels' ← liftExcept (variants avoids rels)
+  let crels ← liftExcept (zip rels' rels)
+  let primeFn ← (subst crels : IO (Except String (term → IO (Except String term))))
+  let prime (t : term) : ExceptT String IO term := (primeFn t : IO (Except String term))
+  -- closed' = list_mk_conj (map2 (fun a (t,c) -> list_mk_forall(a,
+  --   mk_imp(prime_fn c,prime_fn t))) vargs (zip ants concs)); the pair
+  -- right to left
+  let closedcls ← (← liftExcept (do zip vargs (← zip ants concs))).mapM (fun (a, (t, c)) => do
+    let pt ← prime t
+    let pc ← prime c
+    liftExcept (do list_mk_forall a (← mk_imp pc pt)))
+  let closed' ← liftExcept (list_mk_conj closedcls)
+  let mkEq ← (mk_eq : IO (Except String ((term × term) → Except String term)))
+  -- mk_def arg con
+  let mk_def (arg : List term) (con : term) : ExceptT String IO term := do
+    let pcon ← prime con
+    let body ← liftExcept (do list_mk_abs arg (← list_mk_exists rels' (← mk_conj closed' pcon)))
+    liftExcept (mkEq (repeat' rator con, body))
+  let deftms ← (← liftExcept (zip vargs concs)).mapM (fun (a, c) => mk_def a c)
+  let defthms ← liftExcept (do
+    let asms ← deftms.mapM ASSUME
+    let pairs ← zip vargs asms
+    pairs.mapM (fun (a, d) => HALF_BETA_EXPAND B a d))
+  let closthm ← liftExcept (ASSUME closed')
+  -- mk_coind args (con,dth)
+  let mk_coind (args : List term) (con : term) (dth : thm) : ExceptT String IO thm := do
+    let pcon ← prime con
+    liftExcept (do
+      -- itlist SIMPLE_EXISTS rels' (CONJ closthm (ASSUME pcon))
+      let th1 ← rels'.foldrM (fun r acc => B.SIMPLE_EXISTS r acc) (← B.CONJ closthm (← ASSUME pcon))
+      B.GENL args (← B.DISCH pcon (← EQ_MP (← SYM (← B.SPECL args dth)) th1)))
+  let coindthms ← (← liftExcept (do zip vargs (← zip concs defthms))).mapM
+    (fun (a, (c, d)) => mk_coind a c d)
+  let coindthmr ← liftExcept (end_itlistM B.CONJ coindthms)
+  let coindthm ← liftExcept (do B.GENL rels' (← B.DISCH closed' coindthmr))
+  -- `let mconcs = .. and sconcs = ..`
+  let mconcs ← (← liftExcept (zip vargs ants)).mapM (fun (a, t) => do
+    let pt ← prime t
+    liftExcept (do list_mk_forall a (← mk_imp t pt)))
+  let sconcs ← (← liftExcept (zip vargs concs)).mapM (fun (a, c) => do
+    let pc ← prime c
+    liftExcept (do list_mk_forall a (← mk_imp c pc)))
+  let monotm ← liftExcept (do mk_imp (← list_mk_conj sconcs) (← list_mk_conj mconcs))
+  let monothm ← liftExcept (do ASSUME (← list_mk_forall rels (← list_mk_forall rels' monotm)))
+  let monothm' ← liftExcept (do B.SPECL rels (← B.SPECL rels' monothm))
+  let rec choose_all : List term → thm → thm → Except String thm
+    | [], exth, th => PROVE_HYP exth th
+    | _ :: ovs, exth, th => do
+      let (v', bod) ← dest_exists (concl exth)
+      B.CHOOSE (v', exth) (← choose_all ovs (← ASSUME bod) th)
+  -- prove_unfold n args dth
+  let prove_unfold (n : Nat) (args : List term) (dth : thm) : Except String thm := do
+    let rtm ← lhs (concl (← B.SPECL args dth))
+    let th0 ← B.UNDISCH (← B.EQ_IMP_RULE (← B.SPECL args dth)).1
+    let bod := (strip_exists (concl th0)).2
+    let (cth, rth) ← B.CONJ_PAIR (← ASSUME bod)
+    let th1 ← B.MP (← B.SPECL args (← el n (B.CONJUNCTS cth))) rth
+    let th2 ← B.MP monothm' (← B.MP (← B.SPECL rels' coindthm) cth)
+    let th3 ← B.MP (← B.SPECL args (← el n (B.CONJUNCTS th2))) th1
+    B.GENL args (← B.DISCH rtm (← choose_all rels' th0 th3))
+  let unfoldthms ← liftExcept (do
+    let pairs ← zip (← zip (List.range clauses.length) vargs) defthms
+    pairs.mapM (fun ((n, a), d) => prove_unfold n a d))
+  let dtms ← liftExcept (do (← zip vargs ants).mapM (fun (a, t) => list_mk_abs a t))
+  let dtmrels ← liftExcept (zip dtms rels)
+  let doubleFn ← (subst dtmrels : IO (Except String (term → IO (Except String term))))
+  let dbl (t : term) : ExceptT String IO term := (doubleFn t : IO (Except String term))
+  let imp_tm ← pt "(==>)"
+  -- mk_unbetas args ant con dtm: the triple right to left
+  let mk_unbetas (args : List term) (ant con dtm : term) : ExceptT String IO (thm × thm × thm) := do
+    let bth ← liftExcept (RIGHT_BETAS args (REFL dtm))
+    let quantify (t : thm) : ExceptT String IO thm := (mkForallsList args t : IO (Except String thm))
+    let z ← quantify (← liftExcept (do AP_THM (← AP_TERM imp_tm bth) con))
+    let dant ← dbl ant
+    let y ← quantify (← liftExcept (do AP_THM (← AP_TERM imp_tm bth) dant))
+    let x ← quantify (← liftExcept (do AP_TERM (← mk_comb imp_tm con) bth))
+    pure (x, y, z)
+  let unths ← (← liftExcept (do zip (← zip vargs ants) (← zip concs dtms))).mapM
+    (fun ((a, t), (c, d)) => mk_unbetas a t c d)
+  let unconj (f : thm × thm × thm → thm) : Except String thm := end_itlistM MK_CONJ (unths.map f)
+  let th1 ← liftExcept (do EQ_MP (← SYM (← unconj (fun u => u.1))) (← end_itlistM B.CONJ unfoldthms))
+  let th2 ← liftExcept (do B.MP (← B.SPECL dtms (← B.SPECL rels monothm)) th1)
+  let th3 ← liftExcept (do EQ_MP (← SYM (← unconj (fun u => u.2.1))) th2)
+  let th4 ← liftExcept (do B.MP (← B.SPECL dtms coindthm) th3)
+  let rulethm ← liftExcept (do EQ_MP (← unconj (fun u => u.2.2)) th4)
+  let mk_case (th1 th2 : thm) : Except String thm := do
+    let (avs, _) := strip_forall (concl th1)
+    B.GENL avs (← B.IMP_ANTISYM_RULE (← B.SPEC_ALL th1) (← B.SPEC_ALL th2))
+  let casethm ← liftExcept (do
+    let pairs ← zip unfoldthms (B.CONJUNCTS rulethm)
+    end_itlistM B.CONJ (← pairs.mapM (fun (a, b) => mk_case a b)))
+  liftExcept (do B.CONJ rulethm (← B.CONJ coindthm casethm))
+
+/-- `derive_nonschematic_coinductive_relations tm` (ind_defs.ml 309-321,
+    `derive_nonschematic_relations derive_canon_coinductive_relations (K I)`):
+    as the inductive one, but the coinduction theorem is not rewritten. -/
+def derive_nonschematic_coinductive_relations (B : BoolThms) (REFL_CLAUSE CONJ_ACI : thm)
+    (t_tm : term) (tm : term) : ExceptT String IO thm := do
+  let clauses := conjuncts tm
+  let canonthm ← (canonicalize_clauses B REFL_CLAUSE CONJ_ACI t_tm clauses
+                    : IO (Except String thm))
+  let canonthm' ← liftExcept (SYM canonthm)
+  let pclosed ← liftExcept (rand (concl canonthm))
+  let pclauses := conjuncts pclosed
+  let rawthm ← derive_canon_coinductive_relations B pclauses
+  let (rulethm, otherthms) ← liftExcept (B.CONJ_PAIR rawthm)
+  let (indthm, casethm) ← liftExcept (B.CONJ_PAIR otherthms)
+  let rulethm' ← liftExcept (EQ_MP canonthm' rulethm)
+  liftExcept (do B.CONJ rulethm' (← B.CONJ indthm casethm))
+
 /- ======================================================================= -/
 /- Part 2: Tactic-integrated tools for proving monotonicity automatically.  -/
 /- ======================================================================= -/
@@ -662,8 +785,9 @@ def unschematize_clauses (clausesIn : List term) : IO (Except String (List term 
 /-- `prove_inductive_properties tm`: unschematize, derive the nonschematic
     relations, and prove the monotonicity hypotheses. Returns `(fvs, th)`. -/
 def prove_inductive_properties (B : BoolThms) (REFL_CLAUSE CONJ_ACI : thm) (t_tm : term)
-    (mthms : List thm) (IMP_REFL : thm) (tm : term) :
+    (mthms : List thm) (IMP_REFL : thm) (tm : term) (coind : Bool := false) :
     IO (Except String (List term × thm)) := do
+  -- ind_defs.ml's `prove_properties derive tm`: `coind` picks `derive`
   let clauses := conjuncts tm
   match ← (unschematize_clauses clauses : IO (Except String (List term × List term))) with
   | .error e => return .error e
@@ -671,7 +795,8 @@ def prove_inductive_properties (B : BoolThms) (REFL_CLAUSE CONJ_ACI : thm) (t_tm
     match list_mk_conj clauses' with
     | .error e => return .error e
     | .ok closed =>
-      match ← (derive_nonschematic_inductive_relations B REFL_CLAUSE CONJ_ACI t_tm closed
+      match ← ((if coind then derive_nonschematic_coinductive_relations B REFL_CLAUSE CONJ_ACI t_tm closed
+                else derive_nonschematic_inductive_relations B REFL_CLAUSE CONJ_ACI t_tm closed)
                 : IO (Except String thm)) with
       | .error e => return .error e
       | .ok th =>
@@ -682,8 +807,8 @@ def prove_inductive_properties (B : BoolThms) (REFL_CLAUSE CONJ_ACI : thm) (t_tm
 /-- `prove_inductive_relations_exist tm`: prove the existence of relations
     satisfying the inductive clauses (schematic version). -/
 def prove_inductive_relations_exist (B : BoolThms) (pth REFL_CLAUSE CONJ_ACI : thm) (t_tm : term)
-    (mthms : List thm) (IMP_REFL : thm) (tm : term) : IO (Except String thm) := do
-  match ← (prove_inductive_properties B REFL_CLAUSE CONJ_ACI t_tm mthms IMP_REFL tm
+    (mthms : List thm) (IMP_REFL : thm) (tm : term) (coind : Bool := false) : IO (Except String thm) := do
+  match ← (prove_inductive_properties B REFL_CLAUSE CONJ_ACI t_tm mthms IMP_REFL tm coind
             : IO (Except String (List term × thm))) with
   | .error e => return .error e
   | .ok (fvs, th1) =>
@@ -707,8 +832,11 @@ def find_redefinition (B : BoolThms) (tm : term) (trip : thm × thm × thm) :
     was defined, the entry to prepend to the registry (`none` on benign
     redefinition). The `the_inductive_definitions` ref itself lives in Session. -/
 def new_inductive_definition_core (B : BoolThms) (_pth REFL_CLAUSE CONJ_ACI : thm) (t_tm : term)
-    (mthms : List thm) (IMP_REFL : thm) (existing : List (thm × thm × thm)) (tm : term) :
+    (mthms : List thm) (IMP_REFL : thm) (existing : List (thm × thm × thm)) (tm : term)
+    (coind : Bool := false) :
     IO (Except String ((thm × thm × thm) × Option (thm × thm × thm))) := do
+  -- ind_defs.ml's `new_definition_of derive store kind tm`: `coind` picks
+  -- `derive` and `kind`; the caller passes the matching store
   let tm' := (strip_forall tm).2
   -- tryfind (find_redefinition tm') (!the_inductive_definitions)
   let rec tryRedef : List (thm × thm × thm) → IO (Option (thm × thm × thm))
@@ -717,13 +845,13 @@ def new_inductive_definition_core (B : BoolThms) (_pth REFL_CLAUSE CONJ_ACI : th
         match ← (find_redefinition B tm' trip : IO (Except String ((thm × thm × thm) × thm))) with
         | .ok (foundTrip, _) => do
             -- ind_defs.ml 367, inside the same `try`.
-            warn true "Benign redefinition of inductive predicate"
+            warn true ("Benign redefinition of " ++ (if coind then "coinductive" else "inductive") ++ " predicate")
             return (some foundTrip)
         | .error _ => tryRedef rest
   match ← (tryRedef existing : IO (Option (thm × thm × thm))) with
   | some trip => return .ok (trip, none)
   | none =>
-    match ← (prove_inductive_properties B REFL_CLAUSE CONJ_ACI t_tm mthms IMP_REFL tm
+    match ← (prove_inductive_properties B REFL_CLAUSE CONJ_ACI t_tm mthms IMP_REFL tm coind
               : IO (Except String (List term × thm))) with
     | .error e => return .error e
     | .ok (fvs, th1) =>
@@ -893,5 +1021,97 @@ def derive_strong_induction (B : BoolThms) (MONO_AND : thm) (mthms : List thm) (
               match ← (prove_monotonicity_hyps B mthms IMP_REFL th4 : IO (Except String thm)) with
               | .error e => return .error e
               | .ok pmh => return (B.GENL svs pmh)
+
+end HolCore.IndDefs
+
+/- ---------------------------------------------------------------------- -/
+/- Derivation of "strong coinduction", from the cases and coinduction     -/
+/- theorems, where the relations themselves may be used in proving that   -/
+/- the hypothesis is a post-fixpoint, i.e. ant[\a. R' a \/ R a] in place  -/
+/- of ant[R'].                                                            -/
+/- ---------------------------------------------------------------------- -/
+
+namespace HolCore.IndDefs
+
+/-- derive_strong_coinduction's `MULTI_BETA_CONV` (ind_defs.ml 538-540). -/
+partial def MULTI_BETA_CONV (tm : term) : Except String thm := do
+  if is_abs (← rator tm) then BETA_CONV tm
+  else (THENC (RATOR_CONV MULTI_BETA_CONV) BETA_CONV) tm
+
+/-- `derive_strong_coinduction (cth, coth)` (ind_defs.ml 537-590), from the
+    cases and coinduction theorems.  `mthms`/`IMP_REFL` are MONO_TAC's (the
+    current monotonicity theorems). -/
+def derive_strong_coinduction (B : BoolThms) (mthms : List thm) (IMP_REFL : thm)
+    (cth coth : thm) : IO (Except String thm) := ExceptT.run do
+  let (ovs, cbod) := strip_forall (concl coth)
+  let (chyp, ccon) ← liftExcept (Basics.dest_imp cbod)
+  let cconcs := conjuncts ccon
+  let (svs, rvs) ← liftExcept (chop_list (ovs.length - cconcs.length) ovs)
+  let trips ← liftExcept (cconcs.mapM (fun c => do
+    let (avs, bod) := strip_forall c
+    let (l, r) ← Basics.dest_imp bod
+    let n := avs.length
+    -- the triple right to left
+    let fr ← funpowM n rator r
+    let fl ← funpowM n rator l
+    pure (avs, fl, fr)))
+  let lams ← liftExcept (trips.mapM (fun (avs, p, r) => do
+    list_mk_abs avs (← mk_disj (← list_mk_comb p avs) (← list_mk_comb r avs))))
+  let LAMS_CONV : conv := fun tm =>
+    if mem (repeat' rator tm) lams then MULTI_BETA_CONV tm else .error "LAMS_CONV"
+  let BCONV : conv := TOP_DEPTH_CONV LAMS_CONV
+  let lamrvs ← liftExcept (zip lams rvs)
+  let substFn ← (subst lamrvs : IO (Except String (term → IO (Except String term))))
+  let strengthen (cl : term) : ExceptT String IO term := do
+    let (avs, bod) := strip_forall cl
+    let (l, r) ← liftExcept (Basics.dest_imp bod)
+    let sr ← (substFn r : IO (Except String term))
+    let r' ← liftExcept (do rand (concl (← BCONV sr)))
+    liftExcept (do list_mk_forall avs (← mk_imp l r'))
+  let shyp ← liftExcept (list_mk_conj (← (conjuncts chyp).mapM strengthen))
+  let sths := B.CONJUNCTS (← liftExcept (ASSUME shyp))
+  let leafths ← liftExcept (trips.mapM (fun (avs, p, r) => do
+    -- `let ptm = .. and rtm = ..`
+    let ptm ← list_mk_comb p avs
+    let rtm ← list_mk_comb r avs
+    B.GENL avs (← B.DISCH rtm (← B.DISJ2 ptm (← ASSUME rtm)))))
+  let cths := B.CONJUNCTS (← liftExcept (B.SPECL svs cth))
+  -- mk_step (avs,p,r) sth cth
+  let mk_step (t : List term × term × term) (sth cth : thm) : ExceptT String IO thm := do
+    let (avs, p, r) := t
+    let sth' ← liftExcept (B.SPECL avs sth)
+    let ant' ← liftExcept (rand (concl sth'))
+    let cth' := (← liftExcept (do B.EQ_IMP_RULE (← B.SPECL avs cth))).1
+    let ant ← liftExcept (rand (concl cth'))
+    let goal ← liftExcept (mk_imp ant ant')
+    let mres : Except String thm ← (Tactics.prove B goal
+        (Tactics.THEN B (Tactics.MAP_EVERY B (Tactics.ASSUME_TAC B) leafths)
+          (MONO_TAC B mthms IMP_REFL)) : IO (Except String thm))
+    let mth ← match mres with
+      | Except.ok m => pure m
+      | Except.error _ => throw "derive_strong_coinduction: can't prove monotonicity"
+    liftExcept (do
+      let rth ← B.IMP_TRANS cth' mth
+      let ptm ← list_mk_comb p avs
+      let rtm ← list_mk_comb r avs
+      let dtm ← mk_disj ptm rtm
+      -- DISJ_CASES's arguments right to left
+      let c3 ← B.MP rth (← ASSUME rtm)
+      let c2 ← B.MP sth' (← ASSUME ptm)
+      B.GENL avs (← B.DISCH dtm (← B.DISJ_CASES (← ASSUME dtm) c2 c3)))
+  let sc ← liftExcept (zip sths cths)
+  let tsc ← liftExcept (zip trips sc)
+  let steps ← tsc.mapM (fun (t, (s, c)) => mk_step t s c)
+  let th1 ← liftExcept (do CONV_RULE BCONV (← B.SPECL (svs ++ lams) coth))
+  let th2 ← liftExcept (do B.MP th1 (← end_itlistM B.CONJ steps))
+  let mk_fin (t : List term × term × term) (th : thm) : Except String thm := do
+    let (avs, p, r) := t
+    let ptm ← list_mk_comb p avs
+    let rtm ← list_mk_comb r avs
+    B.GENL avs (← B.DISCH ptm (← B.MP (← B.SPECL avs th) (← B.DISJ1 (← ASSUME ptm) rtm)))
+  let th3 ← liftExcept (do
+    let pairs ← zip trips (B.CONJUNCTS th2)
+    end_itlistM B.CONJ (← pairs.mapM (fun (t, th) => mk_fin t th)))
+  liftExcept (do B.GENL ovs (← B.DISCH shyp th3))
 
 end HolCore.IndDefs

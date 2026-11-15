@@ -1495,8 +1495,7 @@ def setupDGB [HolBase] (D : DegreeDeps) (BDGA : DGA) : ExceptT String IO DGB := 
       EXISTS_TAC (← q r"\x. fstcart((r:real^(M,N)finite_sum->real^(M,N)finite_sum)
                               (pastecart x b))") THEN
       ASM_SIMP_TAC [FSTCART_PASTECART] THEN REPEAT CONJ_TAC THENL
-       [ASM_MESON_TAC [],
-        GEN_REWRITE_TAC LAND_CONV [← GSYM o_DEF] THEN
+       [GEN_REWRITE_TAC LAND_CONV [← GSYM o_DEF] THEN
         MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
         SIMP_TAC [LINEAR_FSTCART, LINEAR_CONTINUOUS_ON] THEN
         GEN_REWRITE_TAC LAND_CONV [← GSYM o_DEF] THEN
@@ -1513,8 +1512,7 @@ def setupDGB [HolBase] (D : DegreeDeps) (BDGA : DGA) : ExceptT String IO DGB := 
       EXISTS_TAC (← q r"\x. sndcart((r:real^(M,N)finite_sum->real^(M,N)finite_sum)
                               (pastecart a x))") THEN
       ASM_SIMP_TAC [SNDCART_PASTECART] THEN REPEAT CONJ_TAC THENL
-       [ASM_MESON_TAC [],
-        GEN_REWRITE_TAC LAND_CONV [← GSYM o_DEF] THEN
+       [GEN_REWRITE_TAC LAND_CONV [← GSYM o_DEF] THEN
         MATCH_MP_TAC CONTINUOUS_ON_COMPOSE THEN
         SIMP_TAC [LINEAR_SNDCART, LINEAR_CONTINUOUS_ON] THEN
         GEN_REWRITE_TAC LAND_CONV [← GSYM o_DEF] THEN

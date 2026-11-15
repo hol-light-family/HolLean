@@ -2104,8 +2104,7 @@ def setupHalesJewett [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : Li
       SIMP_TAC [← GSYM NOT_LT],
       REWRITE_TAC [a2, ADD_CLAUSES] THEN
       X_GEN_TAC (← q r"j:num") THEN DISCH_THEN SUBST1_TAC THEN
-      EXISTS_TAC (← q r"i:num") THEN ASM_REWRITE_TAC [ADD_CLAUSES],
-      ASM_REWRITE_TAC []]))
+      EXISTS_TAC (← q r"i:num") THEN ASM_REWRITE_TAC [ADD_CLAUSES]]))
 
   let HALES_JEWETT_FINITE ← prove
    r"!k (S:A->bool).
