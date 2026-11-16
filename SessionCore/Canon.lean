@@ -24,9 +24,9 @@ initialize canonLayer : Canon.CanonThms ← do
 def Cn : Canon.CanonThms := canonLayer
 
 /- canon.ml conversions (Session 1166-1192). -/
-def PRESIMP_CONV : term → IO (Except String thm) := Canon.PRESIMP_CONV B T C
-def SKOLEM_CONV : term → IO (Except String thm) := Canon.SKOLEM_CONV B T C
-def PRENEX_CONV : term → IO (Except String thm) := Canon.PRENEX_CONV B T C
+def PRESIMP_CONV : term → IO (Except String thm) := Cn.presimp
+def SKOLEM_CONV : term → IO (Except String thm) := Cn.skolem
+def PRENEX_CONV : term → IO (Except String thm) := Cn.prenex
 def CONJ_CANON_CONV : term → IO (Except String thm) := Canon.CONJ_CANON_CONV B
 def DISJ_CANON_CONV : term → IO (Except String thm) := Canon.disjCanonConv B Cn
 def NNF_CONV : term → IO (Except String thm) := Canon.NNF_CONV B Cn.nnf

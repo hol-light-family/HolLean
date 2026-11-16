@@ -34,9 +34,13 @@ def genRewrite (B : BoolThms) (cnvl : ioconv → ioconv) (thl : List thm) : ioco
 /- Pre-simplification.                                                    -/
 /- ---------------------------------------------------------------------- -/
 
-/-- Pre-simplification conversion. -/
-def PRESIMP_CONV (B : BoolThms) (T : TheoremThms) (C : ClassThms) : ioconv :=
-  genRewrite B Simp.topDepthConvIO
+/-- Pre-simplification conversion (canon.ml 16-20).  As in canon.ml, a
+    `GEN_REWRITE_CONV` application: this builds the rewrite net and returns
+    the conversion, so build it once (`setupCanon` keeps it as
+    `CanonThms.presimp`) rather than once per term. -/
+def PRESIMP_CONV (B : BoolThms) (T : TheoremThms) (C : ClassThms) :
+    IO (Except String ioconv) :=
+  Simp.GEN_REWRITE_CONV B Simp.topDepthConvIO
     [C.NOT_CLAUSES, T.AND_CLAUSES, T.OR_CLAUSES, T.IMP_CLAUSES, T.EQ_CLAUSES,
      T.FORALL_SIMP, T.EXISTS_SIMP, T.EXISTS_OR_THM, T.FORALL_AND_THM,
      T.LEFT_EXISTS_AND_THM, T.RIGHT_EXISTS_AND_THM,
@@ -603,24 +607,34 @@ def NNFC_CONV (B : BoolThms) (P : NNFPths) : ioconv := GEN_NNF_CONV B P true nnf
 /- Skolemize a term already in NNF (doesn't matter if it's not prenex).   -/
 /- ---------------------------------------------------------------------- -/
 
-/-- Skolemize a term already in NNF. -/
-def SKOLEM_CONV (B : BoolThms) (T : TheoremThms) (C : ClassThms) : ioconv :=
-  Simp.thencIO
-    (genRewrite B Simp.topDepthConvIO
+/-- Skolemize a term already in NNF (canon.ml 358-369).  Builds both
+    rewrite nets and returns the conversion; build it once (see
+    `PRESIMP_CONV`; kept as `CanonThms.skolem`). -/
+def SKOLEM_CONV (B : BoolThms) (T : TheoremThms) (C : ClassThms) :
+    IO (Except String ioconv) := do
+  match ← (Simp.GEN_REWRITE_CONV B Simp.topDepthConvIO
       [T.EXISTS_OR_THM, T.LEFT_EXISTS_AND_THM, T.RIGHT_EXISTS_AND_THM,
        T.FORALL_AND_THM, C.LEFT_FORALL_OR_THM, C.RIGHT_FORALL_OR_THM,
-       T.FORALL_SIMP, T.EXISTS_SIMP])
-    (genRewrite B Simp.redepthConvIO
-      [T.RIGHT_AND_EXISTS_THM, T.LEFT_AND_EXISTS_THM, T.OR_EXISTS_THM,
-       T.RIGHT_OR_EXISTS_THM, T.LEFT_OR_EXISTS_THM, C.SKOLEM_THM])
+       T.FORALL_SIMP, T.EXISTS_SIMP] : IO (Except String ioconv)) with
+  | .error e => return .error e
+  | .ok c1 =>
+    match ← (Simp.GEN_REWRITE_CONV B Simp.redepthConvIO
+        [T.RIGHT_AND_EXISTS_THM, T.LEFT_AND_EXISTS_THM, T.OR_EXISTS_THM,
+         T.RIGHT_OR_EXISTS_THM, T.LEFT_OR_EXISTS_THM, C.SKOLEM_THM]
+        : IO (Except String ioconv)) with
+    | .error e => return .error e
+    | .ok c2 => return .ok (Simp.thencIO c1 c2)
 
 /- ---------------------------------------------------------------------- -/
 /- Put a term already in NNF into prenex form.                            -/
 /- ---------------------------------------------------------------------- -/
 
-/-- Put a term already in NNF into prenex form. -/
-def PRENEX_CONV (B : BoolThms) (T : TheoremThms) (C : ClassThms) : ioconv :=
-  genRewrite B Simp.redepthConvIO
+/-- Put a term already in NNF into prenex form (canon.ml 375-380).  Builds
+    the rewrite net and returns the conversion; build it once (see
+    `PRESIMP_CONV`; kept as `CanonThms.prenex`). -/
+def PRENEX_CONV (B : BoolThms) (T : TheoremThms) (C : ClassThms) :
+    IO (Except String ioconv) :=
+  Simp.GEN_REWRITE_CONV B Simp.redepthConvIO
     [T.AND_FORALL_THM, T.LEFT_AND_FORALL_THM, T.RIGHT_AND_FORALL_THM,
      C.LEFT_OR_FORALL_THM, C.RIGHT_OR_FORALL_THM,
      T.OR_EXISTS_THM, T.LEFT_OR_EXISTS_THM, T.RIGHT_OR_EXISTS_THM,
@@ -1302,6 +1316,10 @@ structure CanonThms where
   cTm : term
   orTm : term
   andTm : term
+  -- PRESIMP_CONV, SKOLEM_CONV and PRENEX_CONV with their nets built
+  presimp : ioconv
+  skolem  : ioconv
+  prenex  : ioconv
   deriving Inhabited
 
 /-- Build the entire Canon auxiliary bundle. `propsimps` = basic conv net. -/
@@ -1338,9 +1356,16 @@ def setupCanon (B : BoolThms) (T : TheoremThms) (C : ClassThms)
   let _ ← parse_term "b:bool"
   let _ ← parse_term "c:bool"
   let andTm ← parse_term "(/\\)"
+  -- canon.ml binds these at load, so each rewrite net is built once.  They
+  -- start from `empty_net`, not the basic rewrites, so nothing set later in
+  -- the session changes them.
+  let presimp ← (PRESIMP_CONV B T C : IO (Except String ioconv))
+  let skolem ← (SKOLEM_CONV B T C : IO (Except String ioconv))
+  let prenex ← (PRENEX_CONV B T C : IO (Except String ioconv))
   return { nnf, selLam, conds, fol,
            disjPthLeft, disjPthRight, disjPth, disjPthNeg,
-           dnfPth1, dnfPth2, cnfPth1, cnfPth2, aTm, bTm, cTm, orTm, andTm }
+           dnfPth1, dnfPth2, cnfPth1, cnfPth2, aTm, bTm, cTm, orTm, andTm,
+           presimp, skolem, prenex }
 
 /- Convenience wrappers taking the full bundle. -/
 def disjCanonConv (B : BoolThms) (K : CanonThms) : ioconv :=

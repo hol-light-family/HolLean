@@ -927,6 +927,11 @@ structure MesonPths where
   imfTaut    : thm       -- ~p <=> p ==> F
   finishTaut1 : thm      -- (~p ==> p) <=> p
   finishTaut2 : thm      -- (p ==> ~p) <=> ~p
+  -- meson.ml 519-523 and 550-552 bind these at load, so each rewrite net is
+  -- built once, here, rather than on every call.
+  pushConv   : ioconv    -- GEN_REWRITE_CONV TOP_SWEEP_CONV [pushTaut1; pushTaut2]
+  pullConv   : ioconv    -- GEN_REWRITE_CONV DEPTH_CONV [pullTaut]
+  finishConv : ioconv    -- GEN_REWRITE_CONV I [finishTaut1; finishTaut2]
   deriving Inhabited
 
 /-- Prove the `make_hol_contrapos`/`finish_RULE` auxiliary theorems. -/
@@ -941,8 +946,15 @@ def setupMesonPths (B : BoolThms) (T : TheoremThms) (C : ClassThms) :
   let imfTaut ← TAUT "~p <=> p ==> F"
   let finishTaut1 ← TAUT "(~p ==> p) <=> p"
   let finishTaut2 ← TAUT "(p ==> ~p) <=> ~p"
+  let pushConv ← (Simp.GEN_REWRITE_CONV B Simp.topSweepConvIO [pushTaut1, pushTaut2]
+                  : IO (Except String ioconv))
+  let pullConv ← (Simp.GEN_REWRITE_CONV B Simp.depthConvIO [pullTaut]
+                  : IO (Except String ioconv))
+  let finishConv ← (Simp.GEN_REWRITE_CONV B (fun c => c) [finishTaut1, finishTaut2]
+                    : IO (Except String ioconv))
   return { reflClause := T.REFL_CLAUSE, disjAci := T.DISJ_ACI,
-           impTaut, pushTaut1, pushTaut2, pullTaut, imfTaut, finishTaut1, finishTaut2 }
+           impTaut, pushTaut1, pushTaut2, pullTaut, imfTaut, finishTaut1, finishTaut2,
+           pushConv, pullConv, finishConv }
 
 /-- The contrapositive cache: `(rulenum, concl) → thm`. -/
 abbrev ContraposCache := IO.Ref (List ((Int × term) × thm))
@@ -966,8 +978,7 @@ def make_hol_contrapos (B : BoolThms) (P : MesonPths) (mem : ContraposCache)
     let imf_CONV : ioconv := fun t => Simp.REWR_CONV B P.imfTaut t
     let result ← (do
       if n < 0 then
-        let pullThenImf : ioconv := Simp.thencIO
-          (Canon.genRewrite B Simp.depthConvIO [P.pullTaut]) imf_CONV
+        let pullThenImf : ioconv := Simp.thencIO P.pullConv imf_CONV
         (Simp.convRuleIO pullThenImf th : IO (Except String thm))
       else
         let djs := disjuncts tm
@@ -996,8 +1007,7 @@ def make_hol_contrapos (B : BoolThms) (P : MesonPths) (mem : ContraposCache)
         | .ok acth =>
           if djs.length == 1 then return (.ok acth)
           else
-            let push_CONV : ioconv := Canon.genRewrite B Simp.topSweepConvIO [P.pushTaut1, P.pushTaut2]
-            let impThenPush : ioconv := Simp.thencIO imp_CONV push_CONV
+            let impThenPush : ioconv := Simp.thencIO imp_CONV P.pushConv
             (Simp.convRuleIO impThenPush acth : IO (Except String thm))
       : IO (Except String thm))
     match result with
@@ -1009,8 +1019,8 @@ def make_hol_contrapos (B : BoolThms) (P : MesonPths) (mem : ContraposCache)
 /- ---------------------------------------------------------------------- -/
 
 /-- `finish_RULE`: tidy up `(~p ==> p) <=> p` / `(p ==> ~p) <=> ~p`. -/
-def finish_RULE (B : BoolThms) (P : MesonPths) (th : thm) : IO (Except String thm) :=
-  Simp.GEN_REWRITE_RULE B (fun c => c) [P.finishTaut1, P.finishTaut2] th
+def finish_RULE (_B : BoolThms) (P : MesonPths) (th : thm) : IO (Except String thm) :=
+  Simp.convRuleIO P.finishConv th
 
 /- ---------------------------------------------------------------------- -/
 /- Translate back the saved proof into HOL.                               -/

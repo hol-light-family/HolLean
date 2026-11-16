@@ -34,10 +34,10 @@ def MesonS : Meson.FolStores :=
 def Mn : Meson.MesonThms := mesonLayer
 
 def MesonD : Meson.MesonTacDeps :=
-  { presimp    := Canon.PRESIMP_CONV B T C
+  { presimp    := Cn.presimp
     nnf        := Canon.NNF_CONV B Cn.nnf
-    skolem     := Canon.SKOLEM_CONV B T C
-    prenex     := Canon.PRENEX_CONV B T C
+    skolem     := Cn.skolem
+    prenex     := Cn.prenex
     condsCelim := Canon.CONDS_CELIM_CONV B Cn.conds
     weakCnf    := Canon.weakCnfConv B Cn
     quantBool  := Meson.QUANT_BOOL_CONV B T C
