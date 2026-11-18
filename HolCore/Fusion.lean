@@ -33,7 +33,7 @@ inductive hol_type where
 mutual
 /-- Decidable equality on types, with the same-object shortcut at each node. -/
 def hol_type.decEq (a b : hol_type) : Decidable (a = b) :=
-  withPtrEqDecEq a b fun _ =>
+  withPtrEqDecEq withPtrEq (fun _ _ _ _ => rfl) a b fun _ =>
     match a, b with
     | .Tyvar x, .Tyvar y =>
       if h : x = y then isTrue (h ▸ rfl) else isFalse (fun e => by cases e; exact h rfl)
@@ -73,7 +73,7 @@ inductive term where
 /-- Decidable equality on terms, with the same-object shortcut at each node
     (see `hol_type.decEq`). -/
 def term.decEq (a b : term) : Decidable (a = b) :=
-  withPtrEqDecEq a b fun _ =>
+  withPtrEqDecEq withPtrEq (fun _ _ _ _ => rfl) a b fun _ =>
     match a, b with
     | .Var x t, .Var y u =>
       if h : x = y then

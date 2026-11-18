@@ -66,15 +66,15 @@ def historyDecEq : (a b : history) → Decidable (a = b)
       if h : m = n then isTrue (h ▸ rfl) else isFalse (fun e => by cases e; exact h rfl)
   | .Mmul m p, .Mmul n q =>
       if hm : m = n then
-        match withPtrEqDecEq p q (fun _ => historyDecEq p q) with
+        match withPtrEqDecEq withPtrEq (fun _ _ _ _ => rfl) p q (fun _ => historyDecEq p q) with
         | isTrue hp => isTrue (hm ▸ hp ▸ rfl)
         | isFalse hp => isFalse (fun e => by cases e; exact hp rfl)
       else isFalse (fun e => by cases e; exact hm rfl)
   | .Add p1 p2, .Add q1 q2 =>
-      match withPtrEqDecEq p1 q1 (fun _ => historyDecEq p1 q1) with
+      match withPtrEqDecEq withPtrEq (fun _ _ _ _ => rfl) p1 q1 (fun _ => historyDecEq p1 q1) with
       | isFalse h1 => isFalse (fun e => by cases e; exact h1 rfl)
       | isTrue h1 =>
-        match withPtrEqDecEq p2 q2 (fun _ => historyDecEq p2 q2) with
+        match withPtrEqDecEq withPtrEq (fun _ _ _ _ => rfl) p2 q2 (fun _ => historyDecEq p2 q2) with
         | isTrue h2 => isTrue (h1 ▸ h2 ▸ rfl)
         | isFalse h2 => isFalse (fun e => by cases e; exact h2 rfl)
   | .Start _, .Mmul _ _ => isFalse (fun e => by cases e)
@@ -84,7 +84,7 @@ def historyDecEq : (a b : history) → Decidable (a = b)
   | .Add _ _, .Start _ => isFalse (fun e => by cases e)
   | .Add _ _, .Mmul _ _ => isFalse (fun e => by cases e)
 
-instance : DecidableEq history := fun a b => withPtrEqDecEq a b (fun _ => historyDecEq a b)
+instance : DecidableEq history := fun a b => withPtrEqDecEq withPtrEq (fun _ _ _ _ => rfl) a b (fun _ => historyDecEq a b)
 
 /-- A monomial: a coefficient paired with an exponent vector.  The OCaml uses
     the bare pair type `num * int list`. -/
