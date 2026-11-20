@@ -158,19 +158,24 @@ partial def variables (tm : term) : Except String (List term) :=
 /-- General substitution (for any free expression). -/
 partial def subst (ilist : List (term × term)) :
     IO (Except String (term → IO (Except String term))) := do
-  let rec ssubst (ilist : List (term × term)) (tm : term) : Except String term :=
-    if ilist == [] then .ok tm
+  -- The result, and whether it changed: basics.ml's `f' == f && x' == x` and
+  -- `tm' == tm` are physical tests of whether `ssubst` returned its argument;
+  -- the flag says so in O(1).  (OCaml rebuilds every abstraction; reusing an
+  -- unchanged one gives the same term.)
+  let rec ssubst (ilist : List (term × term)) (tm : term) : Except String (term × Bool) :=
+    if ilist == [] then .ok (tm, false)
     else match find (fun (_, b) => aconv tm b) ilist with
-      | .ok (a, _) => .ok a
+      | .ok (a, _) => .ok (a, true)
       | .error _   => match tm with
         | .Comb f x => do
-            let f' ← ssubst ilist f
-            let x' ← ssubst ilist x
-            if f' == f && x' == x then .ok tm else mk_comb f' x'
+            let (f', cf) ← ssubst ilist f
+            let (x', cx) ← ssubst ilist x
+            if !cf && !cx then .ok (tm, false) else .ok (← mk_comb f' x', true)
         | .Abs v bod => do
             let ilist' := filter (fun (_, b) => !(vfree_in v b)) ilist
-            mk_abs v (← ssubst ilist' bod)
-        | _ => .ok tm
+            let (bod', cb) ← ssubst ilist' bod
+            if !cb then .ok (tm, false) else .ok (← mk_abs v bod', true)
+        | _ => .ok (tm, false)
   let theta := filter (fun (s, t) => compare s t != .eq) ilist
   if theta == [] then
     return .ok (fun tm => return .ok tm)
@@ -181,8 +186,8 @@ partial def subst (ilist : List (term × term)) :
       let vtm  ← variables tm
       let gs   ← variants vtm freshVars
       let gsxs ← zip gs xs
-      let tm'  ← ssubst gsxs tm
-      if tm' == tm then .ok tm
+      let (tm', changed) ← ssubst gsxs tm
+      if !changed then .ok tm
       else
         let tsgs ← zip ts gs
         let f ← vsubst tsgs

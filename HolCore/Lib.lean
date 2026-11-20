@@ -798,13 +798,19 @@ def rev_assocd [BEq β] (a : β) : List (α × β) → α → α
 /- Version of map that avoids rebuilding unchanged subterms.              -/
 /- ---------------------------------------------------------------------- -/
 
-/-- Version of `map` that avoids rebuilding unchanged subterms. -/
-def qmap [BEq α] (f : α → α) : List α → List α
-  | h :: t =>
+/-- `qmap f l`, and whether it changed.  lib.ml 499 tests `t' == t`
+    (physical), which holds exactly when the recursive call returned its
+    argument; the flag says that in O(1) (a structural test of the tails is
+    O(n) at each element).  The head test is `==`. -/
+def qmapC [BEq α] (f : α → α) : List α → List α × Bool
+  | l@(h :: t) =>
       let h' := f h
-      let t' := qmap f t
-      if h' == h && t' == t then h :: t else h' :: t'
-  | l => l
+      let (t', ct) := qmapC f t
+      if !ct && h' == h then (l, false) else (h' :: t', true)
+  | l => (l, false)
+
+/-- Version of `map` that avoids rebuilding unchanged subterms. -/
+def qmap [BEq α] (f : α → α) (l : List α) : List α := (qmapC f l).1
 
 /- ---------------------------------------------------------------------- -/
 /- Merging and bottom-up mergesort.                                       -/

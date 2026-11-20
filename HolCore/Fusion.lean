@@ -195,12 +195,31 @@ def tyvars : hol_type → List hol_type
   | .Tyapp _ args => args.foldr (fun a acc => union (tyvars a) acc) []
   | .Tyvar v => [.Tyvar v]
 
-/-- Substitute types for type variables.
-    NB: non-variables in subst list are just ignored (a check would be
-    repeated many times), as are repetitions (first possibility is taken). -/
-def type_subst (i : List (hol_type × hol_type)) : hol_type → hol_type
-  | .Tyapp tycon args => .Tyapp tycon (args.map (type_subst i))
-  | ty => rev_assocd ty i ty
+/- Substitute types for type variables.
+   NB: non-variables in subst list are just ignored (a check would be
+   repeated many times), as are repetitions (first possibility is taken). -/
+mutual
+/-- `type_subst i ty`, and whether it changed.  fusion.ml 189-193 returns `ty`
+    itself when `qmap` returned the argument list itself (`args' == args`,
+    physical); the flag says that in O(1), so unchanged types keep their
+    sharing, which the same-object shortcuts in `decEq` and `orda` use. -/
+def type_subst' (i : List (hol_type × hol_type)) : hol_type → hol_type × Bool
+  | ty@(.Tyapp tycon args) =>
+      let (args', changed) := type_subst_list' i args
+      if changed then (.Tyapp tycon args', true) else (ty, false)
+  | ty =>
+      let ty' := rev_assocd ty i ty
+      (ty', !(ty' == ty))
+/-- `qmap (type_subst i)` on argument lists, with the changed flag. -/
+def type_subst_list' (i : List (hol_type × hol_type)) : List hol_type → List hol_type × Bool
+  | l@(h :: t) =>
+      let (h', ch) := type_subst' i h
+      let (t', ct) := type_subst_list' i t
+      if ch || ct then (h' :: t', true) else (l, false)
+  | [] => ([], false)
+end
+/-- Type substitution (fusion.ml 189). -/
+def type_subst (i : List (hol_type × hol_type)) (ty : hol_type) : hol_type := (type_subst' i ty).1
 
 /-- The boolean type. -/
 def bool_ty := hol_type.Tyapp "bool" []
@@ -373,30 +392,32 @@ partial def variant (avoid : List term) (v : term) : Except String term :=
 
 /-- Substitution primitive (substitution for variables only!). -/
 partial def vsubst (theta : List (term × term)) : Except String (term → term) :=
-  let rec vsubst' (ilist : List (term × term)) (tm : term) : term :=
+  -- The result, and whether it changed: OCaml's `s' == s` (physical) tests
+  -- whether the recursive call returned its argument; the flag says so in O(1).
+  let rec vsubst' (ilist : List (term × term)) (tm : term) : term × Bool :=
     match tm with
-    | .Var _ _ => rev_assocd tm ilist tm
-    | .Const _ _ => tm
+    | .Var _ _ => let tm' := rev_assocd tm ilist tm; (tm', !(tm' == tm))
+    | .Const _ _ => (tm, false)
     | .Comb s t =>
-        let s' := vsubst' ilist s
-        let t' := vsubst' ilist t
-        if s' == s && t' == t then tm else .Comb s' t'
+        let (s', cs) := vsubst' ilist s
+        let (t', ct) := vsubst' ilist t
+        if !cs && !ct then (tm, false) else (.Comb s' t', true)
     | .Abs v s =>
         let ilist' := filter (fun (_, x) => x != v) ilist
-        if ilist' == [] then tm
+        if ilist' == [] then (tm, false)
         else
-          let s' := vsubst' ilist' s
+          let (s', cs) := vsubst' ilist' s
           let captures := exists' (fun (t, x) => vfree_in v t && vfree_in x s) ilist'
-          if s' == s then tm
-          else if !captures then .Abs v s'
+          if !cs then (tm, false)
+          else if !captures then (.Abs v s', true)
           else match variant [s'] v with
-                | .ok v' => .Abs v' (vsubst' ((v', v) :: ilist') s)
-                | .error _ => .Abs v s' -- unreachable
+                | .ok v' => (.Abs v' (vsubst' ((v', v) :: ilist') s).1, true)
+                | .error _ => (.Abs v s', true) -- unreachable
   let wellTyped : term × term → Bool
     | (t, .Var _ y) => type_of t == y
     | _             => false
   if theta == [] then .ok id
-  else if forall' wellTyped theta then .ok (vsubst' theta)
+  else if forall' wellTyped theta then .ok (fun tm => (vsubst' theta tm).1)
   else failwith "vsubst: Bad substitution list"
 
 /-- Result of type instantiation: either a value, a hard failure, or a variable
@@ -408,30 +429,32 @@ abbrev InstResult (α : Type) := Except InstErr α
 
 /-- Type instantiation primitive. -/
 partial def inst (tyin : List (hol_type × hol_type)) (tm : term) : term :=
-  let rec inst' (env : List (term × term)) (tm : term) : InstResult term :=
+  -- The result, and whether it changed (OCaml's physical `==` tests, as in
+  -- `vsubst` above).
+  let rec inst' (env : List (term × term)) (tm : term) : InstResult (term × Bool) :=
     match tm with
     | .Var n ty =>
-        let ty' := type_subst tyin ty
-        let tm' := if ty' == ty then tm else .Var n ty'
-        if rev_assocd tm' env tm == tm then .ok tm'
+        let (ty', cty) := type_subst' tyin ty
+        let tm' := if !cty then tm else .Var n ty'
+        if rev_assocd tm' env tm == tm then .ok (tm', cty)
         else .error (.clash tm')
     | .Const c ty =>
-        let ty' := type_subst tyin ty
-        .ok (if ty' == ty then tm else .Const c ty')
+        let (ty', cty) := type_subst' tyin ty
+        .ok (if !cty then (tm, false) else (.Const c ty', true))
     | .Comb f x => do
-        let f' ← inst' env f
-        let x' ← inst' env x
-        if f' == f && x' == x then .ok tm else .ok (.Comb f' x')
+        let (f', cf) ← inst' env f
+        let (x', cx) ← inst' env x
+        if !cf && !cx then .ok (tm, false) else .ok (.Comb f' x', true)
     | .Abs y t => do
-        let y' ← inst' [] y
+        let (y', cy) ← inst' [] y
         let env' := (y, y') :: env
         match inst' env' t with
-        | .ok t' => .ok (if y' == y && t' == t then tm else .Abs y' t')
+        | .ok (t', ct) => .ok (if !cy && !ct then (tm, false) else (.Abs y' t', true))
         | .error (.fail msg) => .error (.fail msg)
         | .error (.clash w') =>
             if w' != y' then .error (.clash w')
             else
-              match (frees t).mapM (inst' []) with
+              match (frees t).mapM (fun v => do pure (← inst' [] v).1) with
               | .error e => .error e
               | .ok ifrees =>
                 match variant ifrees y' with
@@ -441,13 +464,14 @@ partial def inst (tyin : List (hol_type × hol_type)) (tm : term) : term :=
                   | .ok (nm, _), .ok (_, ty0) =>
                       let z := term.Var nm ty0
                       match vsubst [(z, y)] with
-                      | .ok sub => inst' env (.Abs z (sub t))
+                      -- a new term: never the original (OCaml's `==` is false)
+                      | .ok sub => do pure ((← inst' env (.Abs z (sub t))).1, true)
                       | .error _ => .error (.fail "inst: vsubst failed")
                   | _, _ => .error (.fail "inst: dest_var failed")
   if tyin == [] then tm
   else
     match inst' [] tm with
-    | .ok t              => t
+    | .ok (t, _)         => t
     | .error (.fail msg) => panic! s!"inst: {msg}"
     | .error (.clash _)  => panic! "inst: unexpected clash"
 
@@ -496,26 +520,98 @@ def ordav (env : List (term × term)) (x1 x2 : term) : Ordering :=
         if x2 == t2 then .eq else .lt
       else if x2 == t2 then .gt
       else ordav oenv x1 x2
+/-- `ordav env x x = .eq` when `env` pairs each variable with itself. -/
+theorem ordav_refl : ∀ (env : List (term × term)), (∀ p ∈ env, p.1 = p.2) →
+    ∀ x, ordav env x x = .eq
+  | [], _, x => by simp [ordav]
+  | (t1, t2) :: oenv, h, x => by
+    have h12 : t1 = t2 := h (t1, t2) (by simp)
+    have ho : ∀ p ∈ oenv, p.1 = p.2 := fun p hp => h p (by simp [hp])
+    subst h12
+    by_cases hx : x = t1
+    · subst hx; simp [ordav]
+    · simp [ordav, hx, ordav_refl oenv ho x]
+
+/-- `orda env tm1 tm2` (fusion.ml 441), with OCaml's shortcut: when `tm1` and
+    `tm2` are the same object and `env` pairs each variable with itself, the
+    answer is 0 at once.  OCaml tests `tm1 == tm2` (physical, O(1)); a
+    structural test here would walk both terms at every node, which costs about
+    size times depth on terms that differ deep down.  `withPtrEq` (Lean core,
+    safe) answers "same object" in O(1) and otherwise runs the full comparison;
+    it needs a proof that the full comparison gives `.eq` on equal terms, so
+    the result carries that fact (`ordaP`'s subtype, erased at run time).
+    `hid` is true only if `env` pairs each variable with itself (`hinv`); it is
+    tracked as the recursion goes under binders.  The answer is the same as
+    without the shortcut. -/
+def ordaP (env : List (term × term)) (hid : Bool)
+    (hinv : hid = true → ∀ p ∈ env, p.1 = p.2) (tm1 tm2 : term) :
+    {c : Ordering // hid = true → tm1 = tm2 → c = .eq} :=
+  let r : Thunk {c : Ordering // hid = true → tm1 = tm2 → c = .eq} := Thunk.mk fun _ =>
+    match (generalizing := false) h1 : tm1, h2 : tm2 with
+    | .Var _ _, .Var _ _ =>
+        ⟨ordav env tm1 tm2, fun h he => by rw [h1, h2, he]; exact ordav_refl env (hinv h) _⟩
+    | .Const _ _, .Const _ _ =>
+        ⟨if tm1 == tm2 then .eq else compare tm1 tm2, fun _ he => by rw [h1, h2, he]; simp⟩
+    | .Comb s1 t1, .Comb s2 t2 =>
+        let c := ordaP env hid hinv s1 s2
+        if hc : c.val != .eq then ⟨c.val, fun h he => by
+          have := c.property h (term.Comb.inj he).1; simp [this] at hc⟩
+        else
+          let d := ordaP env hid hinv t1 t2
+          ⟨d.val, fun h he => d.property h (term.Comb.inj he).2⟩
+    | .Abs x1 t1, .Abs x2 t2 =>
+        match (generalizing := false) hx1 : x1, hx2 : x2 with
+        | .Var _ ty1, .Var _ ty2 =>
+            let c := if ty1 == ty2 then Ordering.eq else compare ty1 ty2
+            if hc : c != .eq then ⟨c, fun _ he => by
+              have := (term.Var.inj (term.Abs.inj he).1).2; simp [c, this] at hc⟩
+            else
+              let hid' := hid && x1 == x2
+              let d := ordaP ((x1, x2) :: env) hid'
+                (fun h p hp => by
+                  simp only [hid', Bool.and_eq_true, beq_iff_eq] at h
+                  simp only [List.mem_cons] at hp
+                  rcases hp with hp | hp
+                  · subst hp; exact h.2
+                  · exact hinv h.1 p hp) t1 t2
+              ⟨d.val, fun h he => d.property
+                (by have hx := (term.Abs.inj he).1; rw [← hx1, ← hx2] at hx; simp [hid', h, hx])
+                (term.Abs.inj he).2⟩
+        | _, _ =>
+            @panic _ ⟨⟨.eq, fun _ _ => rfl⟩⟩ "orda: Abs with non-variable bound variable"
+    | .Const _ _, .Var _ _ => ⟨.lt, fun _ he => by cases he⟩
+    | .Const _ _, .Comb _ _ => ⟨.lt, fun _ he => by cases he⟩
+    | .Const _ _, .Abs _ _ => ⟨.lt, fun _ he => by cases he⟩
+    | .Var _ _, .Const _ _ => ⟨.gt, fun _ he => by cases he⟩
+    | .Comb _ _, .Const _ _ => ⟨.gt, fun _ he => by cases he⟩
+    | .Abs _ _, .Const _ _ => ⟨.gt, fun _ he => by cases he⟩
+    | .Var _ _, .Comb _ _ => ⟨.lt, fun _ he => by cases he⟩
+    | .Var _ _, .Abs _ _ => ⟨.lt, fun _ he => by cases he⟩
+    | .Comb _ _, .Var _ _ => ⟨.gt, fun _ he => by cases he⟩
+    | .Abs _ _, .Var _ _ => ⟨.gt, fun _ he => by cases he⟩
+    | .Comb _ _, .Abs _ _ => ⟨.lt, fun _ he => by cases he⟩
+    | .Abs _ _, .Comb _ _ => ⟨.gt, fun _ he => by cases he⟩
+  if h : hid = true then
+    if withPtrEq tm1 tm2 (fun _ => r.get.val == .eq)
+        (fun he => by simp [r.get.property h he]) then
+      ⟨.eq, fun _ _ => rfl⟩
+    else r.get
+  else r.get
+
+/-- `forall (fun (x,y) -> x = y) env` implies that each pair is equal. -/
+theorem forall_pair_eq : ∀ (env : List (term × term)),
+    forall' (fun p => p.1 == p.2) env = true → ∀ p ∈ env, p.1 = p.2
+  | [], _, _, hp => by simp at hp
+  | q :: env, h, p, hp => by
+    simp only [forall', Bool.and_eq_true, beq_iff_eq] at h
+    simp only [List.mem_cons] at hp
+    rcases hp with hp | hp
+    · subst hp; exact h.1
+    · exact forall_pair_eq env h.2 p hp
+
 /-- Alpha-respecting order on terms, relative to a bound-variable environment. -/
 def orda (env : List (term × term)) (tm1 tm2 : term) : Ordering :=
-  if tm1 == tm2 && forall' (fun p => p.1 == p.2) env then .eq
-  else
-    match tm1, tm2 with
-    | .Var _ _, .Var _ _ => ordav env tm1 tm2
-    | .Const _ _, .Const _ _ => if tm1 == tm2 then .eq else compare tm1 tm2
-    | .Comb s1 t1, .Comb s2 t2 =>
-        let c := orda env s1 s2
-        if c != .eq then c else orda env t1 t2
-    | .Abs (x1@(.Var _ ty1)) t1, .Abs (x2@(.Var _ ty2)) t2 =>
-        let c := if ty1 == ty2 then .eq else compare ty1 ty2
-        if c != .eq then c else orda ((x1, x2) :: env) t1 t2
-    | .Abs _ _, .Abs _ _ => panic! "orda: Abs with non-variable bound variable"
-    | .Const _ _, _ => .lt
-    | _, .Const _ _ => .gt
-    | .Var _ _, _ => .lt
-    | _, .Var _ _ => .gt
-    | .Comb _ _, _ => .lt
-    | _, .Comb _ _ => .gt
+  (ordaP env (forall' (fun p => p.1 == p.2) env) (forall_pair_eq env) tm1 tm2).val
 /-- Alpha-respecting order on closed terms. -/
 def alphaorder : term → term → Ordering := orda []
 /-- Union of two (alpha-sorted) term lists, modulo alpha-conversion. -/
@@ -528,23 +624,34 @@ def term_union : List term → List term → List term
       | .lt => h1 :: term_union t1 (h2 :: t2)
       | .gt => h2 :: term_union (h1 :: t1) t2
   termination_by l1 l2 => l1.length + l2.length
-/-- Remove a term from a list, modulo alpha-conversion. -/
-def term_remove (t : term) : List term → List term
-  | s :: ss =>
+/-- `term_remove t l`, and whether anything was removed.  OCaml's
+    `if ss' == ss then l else s::ss'` tests by physical equality whether the
+    recursive call returned its argument, which happens exactly when nothing
+    was removed; the flag says that in O(1) and the unchanged list is returned
+    itself, as in OCaml. -/
+def term_remove' (t : term) : List term → List term × Bool
+  | l@(s :: ss) =>
       match alphaorder t s with
       | .gt =>
-          let ss' := term_remove t ss
-          if ss' == ss then s :: ss else s :: ss'
-      | .eq => ss
-      | .lt => s :: ss
-  | [] => []
-/-- Apply a function to each term of a list, unioning results (modulo alpha). -/
-def term_image (f : term → term) : List term → List term
-  | h :: t =>
+          let (ss', removed) := term_remove' t ss
+          if removed then (s :: ss', true) else (l, false)
+      | .eq => (ss, true)
+      | .lt => (l, false)
+  | [] => ([], false)
+/-- Remove a term from a list, modulo alpha-conversion. -/
+def term_remove (t : term) (l : List term) : List term := (term_remove' t l).1
+/-- `term_image f l`, and whether it changed.  OCaml's
+    `if h' == h && t' == t then l else term_union [h'] t'`: the tail test is
+    the recursive call's flag (O(1)); the head test is `==`, which answers at
+    once when `f` returned `h` itself.  Either branch gives the same list. -/
+def term_image' (f : term → term) : List term → List term × Bool
+  | l@(h :: t) =>
       let h' := f h
-      let t' := term_image f t
-      if h' == h && t' == t then h :: t else term_union [h'] t'
-  | [] => []
+      let (t', changed) := term_image' f t
+      if !changed && h' == h then (l, false) else (term_union [h'] t', true)
+  | [] => ([], false)
+/-- Apply a function to each term of a list, unioning results (modulo alpha). -/
+def term_image (f : term → term) (l : List term) : List term := (term_image' f l).1
 
 /- ---------------------------------------------------------------------- -/
 /- Basic theorem destructors.                                             -/

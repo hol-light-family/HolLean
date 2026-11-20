@@ -168,13 +168,14 @@ partial def fol_subst (theta : List (fol_term × Int)) (tm : fol_term) : fol_ter
   match tm with
   | .Fvar v => rev_assocd v theta tm
   | .Fnapp f args =>
-      let args' := qmap (fol_subst theta) args
-      if args' == args then tm else .Fnapp f args'
+      -- meson.ml 203 `if args' == args` (physical): qmapC's flag, in O(1)
+      let (args', changed) := qmapC (fol_subst theta) args
+      if !changed then tm else .Fnapp f args'
 
 /-- Apply a shadow substitution to an atom. -/
 def fol_inst (theta : List (fol_term × Int)) (atm : fol_atom) : fol_atom :=
-  let args' := qmap (fol_subst theta) atm.2
-  if args' == atm.2 then atm else (atm.1, args')
+  let (args', changed) := qmapC (fol_subst theta) atm.2
+  if !changed then atm else (atm.1, args')
 
 /-- Substitution with variable bumping by `offset`. -/
 partial def fol_subst_bump (offset : Int) (theta : List (fol_term × Int)) (tm : fol_term) :
@@ -186,13 +187,13 @@ partial def fol_subst_bump (offset : Int) (theta : List (fol_term × Int)) (tm :
         rev_assocd v' theta (.Fvar v')
       else rev_assocd v theta tm
   | .Fnapp f args =>
-      let args' := qmap (fol_subst_bump offset theta) args
-      if args' == args then tm else .Fnapp f args'
+      let (args', changed) := qmapC (fol_subst_bump offset theta) args
+      if !changed then tm else .Fnapp f args'
 
 /-- Instantiate an atom with variable bumping. -/
 def fol_inst_bump (offset : Int) (theta : List (fol_term × Int)) (atm : fol_atom) : fol_atom :=
-  let args' := qmap (fol_subst_bump offset theta) atm.2
-  if args' == atm.2 then atm else (atm.1, args')
+  let (args', changed) := qmapC (fol_subst_bump offset theta) atm.2
+  if !changed then atm else (atm.1, args')
 
 /- ---------------------------------------------------------------------- -/
 /- Main unification function, maintaining a "graph" instantiation.        -/

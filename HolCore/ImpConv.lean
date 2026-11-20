@@ -1091,35 +1091,62 @@ def IMPCONV_TAC (B : BoolThms) (c : imp_conv) : tactic := fun g => do
 /-- `[term list]` = terms to add to the context.
     `'a with_context = With_context of 'a * (Tset.t -> 'a with_context) *
     (term -> 'a with_context)`.  A value paired with augment/diminish
-    continuations (recursive, pure — `IO` cannot appear under the inductive for
-    positivity, so `IMPREWR_CTXCONV` defers its net-building `IO` into `apply`). -/
+    continuations.  OCaml's continuations run with effects: `IMPREWR_CTXCONV`'s
+    `augment` builds its net there (`MP_CLOSURE`, `impconv_net_of_thm`), once per
+    call, and can raise.  So here they are `IO (Except String _)`.  `IO` itself
+    cannot appear in the constructor (the kernel does not unfold it in the
+    positivity check), so the raw constructor `raw` takes its unfolding
+    `Void IO.RealWorld → EST.Out IO.Error IO.RealWorld _`, which is the same type
+    by definition; `WithContext.mk` below takes `IO` functions. -/
 inductive WithContext (α : Type) where
-  | mk : α → (Tset.t → WithContext α) → (term → WithContext α) → WithContext α
+  | raw : α
+      → (Tset.t → Void IO.RealWorld → EST.Out IO.Error IO.RealWorld (Except String (WithContext α)))
+      → (term → Void IO.RealWorld → EST.Out IO.Error IO.RealWorld (Except String (WithContext α)))
+      → WithContext α
   | bot : WithContext α   -- base case so the type is trivially `Inhabited`
   deriving Inhabited
 
+/-- `With_context(c, a, d)`. -/
+@[inline] def WithContext.mk {α : Type} (c : α)
+    (a : Tset.t → IO (Except String (WithContext α)))
+    (d : term → IO (Except String (WithContext α))) : WithContext α :=
+  .raw c a d
+
 /-- `apply (With_context(c,_,_)) = c`. -/
 def WithContext.apply {α : Type} [Inhabited α] : WithContext α → α
-  | .mk c _ _ => c
+  | .raw c _ _ => c
   | .bot => default
 
 /-- `augment (With_context(_,a,_)) = a`.  (Maybe avoid the augment if the input
     list is empty?) -/
-def WithContext.augment {α : Type} : WithContext α → (Tset.t → WithContext α)
-  | .mk _ a _ => a
-  | .bot => fun _ => .bot
+def WithContext.augment {α : Type} : WithContext α → Tset.t → IO (Except String (WithContext α))
+  | .raw _ a _ => a
+  | .bot => fun _ => pure (.ok .bot)
 
 /-- `diminish (With_context(_,_,d)) = d`. -/
-def WithContext.diminish {α : Type} : WithContext α → (term → WithContext α)
-  | .mk _ _ d => d
-  | .bot => fun _ => .bot
+def WithContext.diminish {α : Type} : WithContext α → term → IO (Except String (WithContext α))
+  | .raw _ _ d => d
+  | .bot => fun _ => pure (.ok .bot)
+
+/-- `f o augment c` and `f o diminish c`: run the continuation, then wrap. -/
+@[inline] def ctxMap {α β : Type} (f : α → β) (m : IO (Except String α)) :
+    IO (Except String β) := do
+  return (← m).map f
+
+/-- `apply (augment c x) v t`: an `augment` failure is the application's failure
+    (in OCaml both raise inside the same `try`). -/
+@[inline] def augApply {α β : Type} (c : WithContext (α → term → IO (Except String β)))
+    (x : Tset.t) (v : α) (t : term) : IO (Except String β) := do
+  match ← c.augment x with
+  | .error e => return .error e
+  | .ok c' => c'.apply v t
 
 /-- `apply_with_context c ctx v t =
     DISCH_CONJ ctx (apply (augment c (Tset.strip_conj ctx)) v t)`. -/
 def apply_with_context (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
     (c : WithContext imp_conv) (ctx : term) (v : Variance.t) (t : term) :
     IO (Except String thm) := do
-  match ← (c.augment (Tset.strip_conj V.T_ ctx)).apply v t with
+  match ← augApply c (Tset.strip_conj V.T_ ctx) v t with
   | .error e => return .error e
   | .ok th => DISCH_CONJ B D ctx th
 
@@ -1188,14 +1215,14 @@ partial def CONJ_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
           -- note: we remove t1 in case it appears in t2, since otherwise,
           -- t1 removes t2 and t2 removes t1
           let t2s := Tset.remove (Tset.strip_conj V.T_ t2) t1
-          match ← (c.augment t2s).apply .Contra t1 with
+          match ← augApply c t2s .Contra t1 with
           | .ok th1 =>
             match imp_conv_outcome th1 .Contra with
             | .ok t1' =>
               let t1s := Tset.strip_conj V.T_ t1
               let t1s' := Tset.strip_conj V.T_ t1'
               let t1s'' := Tset.union t1s t1s'
-              match ← (c.augment t1s'').apply .Contra t2 with
+              match ← augApply c t1s'' .Contra t2 with
               | .ok th2 =>
                 match ← (ExceptT.run do
                   let th2a ← ExceptT.mk (DISCH_CONJ B D t1' th2)
@@ -1219,8 +1246,8 @@ partial def CONJ_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
             match ← apply_with_context B D V c t1 .Contra t2 with
             | .ok awc => return (MKIMPR_CONJ_CONTRA_CTXT B V D awc)
             | .error e => return .error e)
-    (fun x => CONJ_CTXIMPCONV B D V (c.augment x))
-    (fun x => CONJ_CTXIMPCONV B D V (c.diminish x))
+    (fun x => ctxMap (CONJ_CTXIMPCONV B D V) (c.augment x))
+    (fun x => ctxMap (CONJ_CTXIMPCONV B D V) (c.diminish x))
 
 /- Consider two implicational conversions ic1, ic2.  Suppose `[ic1 Co A]`
    returns `[B ==> A]`, and `[ic2 Co C]` returns `[D ==> C]`, then
@@ -1246,8 +1273,8 @@ partial def DISJ_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
           match ← c.apply v t2 with
           | .ok th2 => MKIMPR_DISJ B V D t1 th2
           | .error e => return .error e)
-    (fun x => DISJ_CTXIMPCONV B D V (c.augment x))
-    (fun x => DISJ_CTXIMPCONV B D V (c.diminish x))
+    (fun x => ctxMap (DISJ_CTXIMPCONV B D V) (c.augment x))
+    (fun x => ctxMap (DISJ_CTXIMPCONV B D V) (c.diminish x))
 
 /- Consider two implicational conversions ic1, ic2.  Suppose `[ic1 Contra A]`
    returns `[A ==> B]`, and `[ic2 Co C]` returns `[D ==> C]`, then
@@ -1276,7 +1303,13 @@ partial def IMP_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
             | .error e => return .error e
           | .ok t1' =>
             let t1s := Tset.union (Tset.strip_conj V.T_ t1) (Tset.strip_conj V.T_ t1')
-            let c' := c.augment t1s
+            -- `let c' = augment c t1s` is inside the outer `try` (impconv.ml 907)
+            match ← c.augment t1s with
+            | .error _ =>
+              match ← apply_with_context B D V c t1 v t2 with
+              | .ok awc => return (MKIMPR_IMP_CTXT B V D awc)
+              | .error e => return .error e
+            | .ok c' =>
             let mk := match v with | .Co => MKIMP_IMP_CO_CTXT | .Contra => MKIMP_IMP_CONTRA_CTXT
             -- try mk th1 (DISCH_CONJ t1 (DISCH_CONJ t1' (apply c' v t2))) with _ -> MKIMPL_IMP th1 t2
             match ← c'.apply v t2 with
@@ -1292,8 +1325,8 @@ partial def IMP_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
           match ← apply_with_context B D V c t1 v t2 with
           | .ok awc => return (MKIMPR_IMP_CTXT B V D awc)
           | .error e => return .error e)
-    (fun x => IMP_CTXIMPCONV B D V (c.augment x))
-    (fun x => IMP_CTXIMPCONV B D V (c.diminish x))
+    (fun x => ctxMap (IMP_CTXIMPCONV B D V) (c.augment x))
+    (fun x => ctxMap (IMP_CTXIMPCONV B D V) (c.diminish x))
 
 partial def IFF_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
     (c : WithContext imp_conv) : WithContext imp_conv :=
@@ -1324,8 +1357,8 @@ partial def IFF_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
             | .ok i21 => match ← c.apply v i21 with
                          | .ok th2 => return (r th2)
                          | .error e => return .error e)
-    (fun x => IFF_CTXIMPCONV B D V (c.augment x))
-    (fun x => IFF_CTXIMPCONV B D V (c.diminish x))
+    (fun x => ctxMap (IFF_CTXIMPCONV B D V) (c.augment x))
+    (fun x => ctxMap (IFF_CTXIMPCONV B D V) (c.diminish x))
 
 /- Consider an implicational conversion ic.  Suppose `[ic Contra A]` returns
    `[A ==> B]` then `[NOT_IMPCONV ic Co ~A]` returns `[~B ==> ~A]`.  Suppose
@@ -1340,8 +1373,8 @@ partial def NOT_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
       | .ok nt => match ← c.apply (Variance.neg v) nt with
                   | .ok th => return (MKIMP_NOT B V D th)
                   | .error e => return .error e)
-    (fun x => NOT_CTXIMPCONV B D V (c.augment x))
-    (fun x => NOT_CTXIMPCONV B D V (c.diminish x))
+    (fun x => ctxMap (NOT_CTXIMPCONV B D V) (c.augment x))
+    (fun x => ctxMap (NOT_CTXIMPCONV B D V) (c.diminish x))
 
 partial def QUANT_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
     (mkimp : term → thm → IO (Except String thm))
@@ -1352,12 +1385,14 @@ partial def QUANT_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
       match sel t with
       | .error e => return .error e
       | .ok (x, b) =>
-        let c' := c.diminish x
+        match ← c.diminish x with
+        | .error e => return .error e
+        | .ok c' =>
         match ← c'.apply v b with
         | .ok ab => mkimp x ab
         | .error e => return .error e)
-    (fun y => QUANT_CTXIMPCONV B D V mkimp sel (c.augment y))
-    (fun y => QUANT_CTXIMPCONV B D V mkimp sel (c.diminish y))
+    (fun y => ctxMap (QUANT_CTXIMPCONV B D V mkimp sel) (c.augment y))
+    (fun y => ctxMap (QUANT_CTXIMPCONV B D V mkimp sel) (c.diminish y))
 
 /- Consider an implicational conversion ic.  Suppose `[ic Co A]` returns
    `[B ==> A]` then `[FORALL_IMPCONV ic Co (!x.A)]` returns
@@ -1396,8 +1431,8 @@ partial def SUB_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
         match builder with
         | some wc => wc.apply v t
         | none => return (failwith "SUB_CTXIMPCONV"))
-    (fun x => SUB_CTXIMPCONV B D V (c.augment x))
-    (fun x => SUB_CTXIMPCONV B D V (c.diminish x))
+    (fun x => ctxMap (SUB_CTXIMPCONV B D V) (c.augment x))
+    (fun x => ctxMap (SUB_CTXIMPCONV B D V) (c.diminish x))
 
 end
 
@@ -1421,8 +1456,8 @@ def bind_ctximpconv (B : BoolThms) (c : WithContext imp_conv) (v : Variance.t) (
 partial def BIND_CTXIMPCONV (B : BoolThms)
     (c : WithContext imp_conv) : WithContext (Variance.t → thm → IO (Except String thm)) :=
   .mk (fun v th => bind_ctximpconv B c v th)
-    (fun x => BIND_CTXIMPCONV B (c.augment x))
-    (fun x => BIND_CTXIMPCONV B (c.diminish x))
+    (fun x => ctxMap (BIND_CTXIMPCONV B) (c.augment x))
+    (fun x => ctxMap (BIND_CTXIMPCONV B) (c.diminish x))
 
 /-- Sequential combinator. -/
 partial def THEN_CTXIMPCONV (B : BoolThms) (c1 c2 : WithContext imp_conv) :
@@ -1431,8 +1466,14 @@ partial def THEN_CTXIMPCONV (B : BoolThms) (c1 c2 : WithContext imp_conv) :
         match ← c1.apply v t with
         | .ok th => bind_ctximpconv B c2 v th
         | .error e => return .error e)
-    (fun x => THEN_CTXIMPCONV B (c1.augment x) (c2.augment x))
-    (fun x => THEN_CTXIMPCONV B (c1.diminish x) (c2.diminish x))
+    (fun x => do  -- OCaml evaluates the arguments right to left
+      match ← c2.augment x with
+      | .error e => return .error e
+      | .ok c2' => ctxMap (fun c1' => THEN_CTXIMPCONV B c1' c2') (c1.augment x))
+    (fun x => do  -- OCaml evaluates the arguments right to left
+      match ← c2.diminish x with
+      | .error e => return .error e
+      | .ok c2' => ctxMap (fun c1' => THEN_CTXIMPCONV B c1' c2') (c1.diminish x))
 
 /-- Try combinator.  (On `Failure`/`Unchanged`, falls back to `ALL_IMPCONV`.) -/
 partial def TRY_CTXIMPCONV (D : ImpConvDeps) (V : ImpConvVars) (c : WithContext imp_conv) :
@@ -1441,8 +1482,8 @@ partial def TRY_CTXIMPCONV (D : ImpConvDeps) (V : ImpConvVars) (c : WithContext 
         match ← c.apply v t with
         | .ok th => return .ok th
         | .error _ => ALL_IMPCONV D V v t)
-    (fun x => TRY_CTXIMPCONV D V (c.augment x))
-    (fun x => TRY_CTXIMPCONV D V (c.diminish x))
+    (fun x => ctxMap (TRY_CTXIMPCONV D V) (c.augment x))
+    (fun x => ctxMap (TRY_CTXIMPCONV D V) (c.diminish x))
 
 /-- Applies the first of two implicational conversions that succeeds. -/
 partial def ORELSE_CTXIMPCONV (c1 c2 : WithContext imp_conv) : WithContext imp_conv :=
@@ -1450,8 +1491,14 @@ partial def ORELSE_CTXIMPCONV (c1 c2 : WithContext imp_conv) : WithContext imp_c
         match ← c1.apply v t with
         | .ok th => return .ok th
         | .error e => failureOnly e (c2.apply v t))
-    (fun x => ORELSE_CTXIMPCONV (c1.augment x) (c2.augment x))
-    (fun x => ORELSE_CTXIMPCONV (c1.diminish x) (c2.diminish x))
+    (fun x => do  -- OCaml evaluates the arguments right to left
+      match ← c2.augment x with
+      | .error e => return .error e
+      | .ok c2' => ctxMap (fun c1' => ORELSE_CTXIMPCONV c1' c2') (c1.augment x))
+    (fun x => do  -- OCaml evaluates the arguments right to left
+      match ← c2.diminish x with
+      | .error e => return .error e
+      | .ok c2' => ctxMap (fun c1' => ORELSE_CTXIMPCONV c1' c2') (c1.diminish x))
 
 /-- Makes an implicational conversion fail if applying it leaves a term
     unchanged. -/
@@ -1463,8 +1510,8 @@ partial def CHANGED_CTXIMPCONV (c : WithContext imp_conv) : WithContext imp_conv
                     | .error e => return .error e
                     | .ok (l, r) => if aconv l r then return (failwith "CHANGED_CTXIMPCONV")
                                     else return .ok th)
-    (fun x => CHANGED_CTXIMPCONV (c.augment x))
-    (fun x => CHANGED_CTXIMPCONV (c.diminish x))
+    (fun x => ctxMap (CHANGED_CTXIMPCONV) (c.augment x))
+    (fun x => ctxMap (CHANGED_CTXIMPCONV) (c.diminish x))
 
 /-- `UNCHANGED_OF_FAIL_CTXIMPCONV c`: turn a failure into `Unchanged`. -/
 partial def UNCHANGED_OF_FAIL_CTXIMPCONV (c : WithContext imp_conv) : WithContext imp_conv :=
@@ -1472,8 +1519,18 @@ partial def UNCHANGED_OF_FAIL_CTXIMPCONV (c : WithContext imp_conv) : WithContex
         match ← c.apply v t with
         | .ok th => return .ok th
         | .error _ => return (.error unchanged))
-    (fun x => UNCHANGED_OF_FAIL_CTXIMPCONV (c.augment x))
-    (fun x => UNCHANGED_OF_FAIL_CTXIMPCONV (c.diminish x))
+    (fun x => ctxMap (UNCHANGED_OF_FAIL_CTXIMPCONV) (c.augment x))
+    (fun x => ctxMap (UNCHANGED_OF_FAIL_CTXIMPCONV) (c.diminish x))
+
+/-- `map_all f cs x` (impconv.ml 1055): `f y x :: map_all f ys x`, whose
+    arguments OCaml evaluates right to left, so the last element first. -/
+def mapAllCtx {α : Type} (f : WithContext α → IO (Except String (WithContext α))) :
+    List (WithContext α) → IO (Except String (List (WithContext α)))
+  | [] => return .ok []
+  | y :: ys => do
+    match ← mapAllCtx f ys with
+    | .error e => return .error e
+    | .ok ys' => ctxMap (· :: ys') (f y)
 
 /-- `REPEAT_UNCHANGED_CTXIMPCONV cs`: cycle through `cs`, binding each until a
     full pass makes no change (signalled by `Unchanged`). -/
@@ -1492,8 +1549,8 @@ partial def REPEAT_UNCHANGED_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : Im
         match IMP_REFL D V t with
         | .ok r0 => loop false r0 cs
         | .error e => return .error e)
-    (fun x => REPEAT_UNCHANGED_CTXIMPCONV B D V (cs.map (·.augment x)))
-    (fun x => REPEAT_UNCHANGED_CTXIMPCONV B D V (cs.map (·.diminish x)))
+    (fun x => ctxMap (REPEAT_UNCHANGED_CTXIMPCONV B D V) (mapAllCtx (·.augment x) cs))
+    (fun x => ctxMap (REPEAT_UNCHANGED_CTXIMPCONV B D V) (mapAllCtx (·.diminish x) cs))
 
 /-- Whether the current subterm is atomic (for `DEPTH`/`ONCE_DEPTH`). -/
 inductive atomic where | Atomic | Non_atomic
@@ -1524,8 +1581,8 @@ partial def depthSelf (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
           | .ok th1 => match ← bind_ctximpconv B (depthSelf B D V c) v th1 with
                        | .ok r => return .ok r | .error e => failureOnly e (return .ok th1)
         else c.apply .Non_atomic v t)
-    (fun x => depthSelf B D V (c.augment x))
-    (fun x => depthSelf B D V (c.diminish x))
+    (fun x => ctxMap (depthSelf B D V) (c.augment x))
+    (fun x => ctxMap (depthSelf B D V) (c.diminish x))
 
 /-- `DEPTH_CTXIMPCONV = UNCHANGED_OF_FAIL_CTXIMPCONV o self` (impconv.ml 1079). -/
 def DEPTH_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) :
@@ -1541,8 +1598,8 @@ partial def topDepthSelf (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
       | .ok th => match ← bind_ctximpconv B (topDepthSelf B D V c) v th with
                   | .ok r => return .ok r | .error e => failureOnly e (return .ok th)
       | .error e => failureOnly e ((SUB_CTXIMPCONV B D V (topDepthSelf B D V c)).apply v t))
-    (fun x => topDepthSelf B D V (c.augment x))
-    (fun x => topDepthSelf B D V (c.diminish x))
+    (fun x => ctxMap (topDepthSelf B D V) (c.augment x))
+    (fun x => ctxMap (topDepthSelf B D V) (c.diminish x))
 
 /-- `TOP_DEPTH_CTXIMPCONV = UNCHANGED_OF_FAIL_CTXIMPCONV o self` (impconv.ml 1102). -/
 def TOP_DEPTH_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) :
@@ -1560,8 +1617,8 @@ partial def onceDepthSelf (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
         if e == unchanged then return .error e
         else if e == "SUB_CTXIMPCONV" then c.apply .Atomic v t
         else c.apply .Non_atomic v t)
-    (fun x => onceDepthSelf B D V (c.augment x))
-    (fun x => onceDepthSelf B D V (c.diminish x))
+    (fun x => ctxMap (onceDepthSelf B D V) (c.augment x))
+    (fun x => ctxMap (onceDepthSelf B D V) (c.diminish x))
 
 /-- `ONCE_DEPTH_CTXIMPCONV = UNCHANGED_OF_FAIL_CTXIMPCONV o self` (impconv.ml 1115). -/
 def ONCE_DEPTH_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) :
@@ -1579,8 +1636,7 @@ def CTXIMPCONV_RULE (B : BoolThms) (c : WithContext imp_conv) (th : thm) :
 def CTXIMPCONV_TAC (B : BoolThms) (_V : ImpConvVars) (cnv : WithContext imp_conv) : tactic :=
   fun g => do
     let (asms, cgoal) := g
-    let cnv' := cnv.augment (asms.map (fun p => concl p.2))
-    match ← cnv'.apply .Co cgoal with
+    match ← augApply cnv (asms.map (fun p => concl p.2)) .Co cgoal with
     | .error e => return .error e
     | .ok cth =>
       Tactics.THEN B (Tactics.MATCH_MP_TAC B cth)
@@ -1859,55 +1915,18 @@ partial def acTopDepth (T_ : term) (c : acnv) : acnv := fun avs t =>
 
 end
 
-/-- A recorded context operation for `IMPREWR_CTXCONV` (its OCaml
-    `augment`/`diminish` do net-rebuilding `IO`, which cannot live in the pure
-    `WithContext` continuations; we record the operations and replay them inside
-    `apply`, which is already `IO`, reproducing the OCaml `self net ths`). -/
-inductive ImprewrOp where
-  | augment : List term → ImprewrOp
-  | diminish : term → ImprewrOp
-  deriving Inhabited
+/-- The net of `IMPREWR_CTXCONV`'s `self net ths`. -/
+abbrev ImprewrNet := Fo_nets.t ((Tset.t → annot_conv) × Tset.t × thm)
 
-/-- Replay `baseThs` + `ops` to the current `(net, ths)` of `IMPREWR_CTXCONV`. -/
-partial def imprewrBuild (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
-    (baseThs : List thm) (ops : List ImprewrOp) :
-    IO (Except String (Fo_nets.t ((Tset.t → annot_conv) × Tset.t × thm) × List thm)) := do
-  let mut net : Fo_nets.t ((Tset.t → annot_conv) × Tset.t × thm) := Fo_nets.empty_net
-  -- OCaml `itlist impconv_net_of_thm ths net` enters the LAST element first; since
-  -- net_update prepends tips, ths[0] ends up head-of-tips (tried first). Iterate reversed.
-  for th in baseThs.reverse do net ← impconv_net_of_thm B V th net
-  let mut ths := baseThs
-  for op in ops do
-    match op with
-    | .augment ts =>
-      let mut ths' := []
-      for t in ts do match ASSUME t with
-        -- OCaml `map ASSUME ts` propagates (impconv.ml 1316)
-        | .ok th => ths' := ths' ++ [th] | .error e => return .error e
-      let mpc1 ← MP_CLOSURE B D ths' ths'
-      let mpc2 ← MP_CLOSURE B D ths ths'
-      let ths'' := mpc1 ++ ths' ++ mpc2
-      for th in ths''.reverse do net ← impconv_net_of_thm B V th net
-      ths := ths'' ++ ths
-    | .diminish v =>
-      let survivors := ((Fo_nets.allTips net).filterMap (fun (_, vs, th) =>
-        if Tset.mem v vs then none else some th)).reverse   -- OCaml `th :: !ths` reverses traversal order
-      net := Fo_nets.filter (fun (_, vs, _) => !(Tset.mem v vs)) net
-      ths := survivors
-  pure (.ok (net, ths))
-
-/-- The context-aware annotated rewrite conversion `IMPREWR_CTXCONV`, holding a
-    net of the theorems' conversions and applying it top-down (`impconv.ml`
-    1267–1332).  Lean note: the OCaml `augment`/`diminish` rebuild the net in
-    `IO`, which cannot live in the pure `WithContext` continuations, so we record
-    the ops and replay them (`imprewrBuild`) inside `apply`. -/
-partial def imprewrCtx (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
-    (baseThs : List thm) (ops : List ImprewrOp) : WithContext (atomic → annot_conv) :=
+/-- The context-aware annotated rewrite conversion `IMPREWR_CTXCONV`'s
+    `self net ths` (`impconv.ml` 1309-1330): `net` is built, and `augment` and
+    `diminish` build the next node's net when they are called, as in OCaml, so
+    every application of the node reuses it. -/
+partial def imprewrSelf (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
+    (net : ImprewrNet) (ths : List thm) : WithContext (atomic → annot_conv) :=
+  let avs := Tset.flat_revmap (fun th => Tset.freesl V.T_ (hyp th)) ths
   .mk
     (fun a => fun t => do
-      match ← imprewrBuild B D V baseThs ops with
-      | .error e => return .error e
-      | .ok (net, ths) =>
       -- basic_cnv t = (REWRITES_CONV (bigger_net()) t, None, [])
       let basic_cnv (u : term) : IO (Except String (thm × Option term × List term)) := do
         let mut bn ← basic_net
@@ -1920,7 +1939,6 @@ partial def imprewrCtx (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
         match ← REWRITES_CONV bn u with
         | .ok th => return .ok (th, none, [])
         | .error e => return .error e
-      let avs := Tset.flat_revmap (fun th => Tset.freesl V.T_ (hyp th)) ths
       let cnv : acnv := fun avs' u => do
         match ← REWRITES_IMPCONV net avs' u with
         | .ok r => return .ok r
@@ -1929,13 +1947,35 @@ partial def imprewrCtx (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
         | .Atomic => acTopDepth V.T_ cnv
         | .Non_atomic => cnv
       f (Tset.union (Tset.frees V.T_ t) avs) t)
-    (fun ts => imprewrCtx B D V baseThs (ops ++ [.augment ts]))
-    (fun v => imprewrCtx B D V baseThs (ops ++ [.diminish v]))
+    (fun ts => do
+      let mut ths' := []
+      for t in ts do match ASSUME t with
+        -- OCaml `map ASSUME ts` raises (impconv.ml 1316)
+        | .ok th => ths' := ths' ++ [th] | .error e => return .error e
+      -- `MP_CLOSURE ths' ths' @ ths' @ MP_CLOSURE ths ths'`: OCaml evaluates
+      -- the operands of `@` right to left, so the second closure first
+      let mpc2 ← MP_CLOSURE B D ths ths'
+      let mpc1 ← MP_CLOSURE B D ths' ths'
+      let ths'' := mpc1 ++ ths' ++ mpc2
+      -- `itlist impconv_net_of_thm ths'' net` enters the last element first
+      let mut net' := net
+      for th in ths''.reverse do net' ← impconv_net_of_thm B V th net'
+      return .ok (imprewrSelf B D V net' (ths'' ++ ths)))
+    (fun v => do
+      let survivors := ((Fo_nets.allTips net).filterMap (fun (_, vs, th) =>
+        if Tset.mem v vs then none else some th)).reverse   -- OCaml `th :: !ths` reverses traversal order
+      return .ok (imprewrSelf B D V
+        (Fo_nets.filter (fun (_, vs, _) => !(Tset.mem v vs)) net) survivors))
 
-/-- `IMPREWR_CTXCONV ths = self (net-of ths) ths` with no pending ops. -/
+/-- `IMPREWR_CTXCONV ths = self (itlist impconv_net_of_thm ths empty_net) ths`:
+    builds the net now (`IO`), as OCaml does when it is applied to `ths`. -/
 def IMPREWR_CTXCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (ths : List thm) :
-    WithContext (atomic → annot_conv) :=
-  imprewrCtx B D V ths []
+    IO (WithContext (atomic → annot_conv)) := do
+  let mut net : ImprewrNet := Fo_nets.empty_net
+  -- OCaml `itlist impconv_net_of_thm ths net` enters the LAST element first; since
+  -- net_update prepends tips, ths[0] ends up head-of-tips (tried first). Iterate reversed.
+  for th in ths.reverse do net ← impconv_net_of_thm B V th net
+  return imprewrSelf B D V net ths
 
 /- ---------------------------------------------------------------------- -/
 /- SOME USEFUL IMPLICATIONAL CONVERSIONS (`impconv.ml` 1345-1437).         -/
@@ -1990,13 +2030,13 @@ partial def REWR_IMPCONV_OF_CONV (B : BoolThms) (D : ImpConvDeps)
             if t1 == t2 then throw unchanged else pure res) with
           | .ok r => return .ok r
           | .error e => return .error e)
-    (fun x => REWR_IMPCONV_OF_CONV B D (c.augment x))
-    (fun x => REWR_IMPCONV_OF_CONV B D (c.diminish x))
+    (fun x => ctxMap (REWR_IMPCONV_OF_CONV B D) (c.augment x))
+    (fun x => ctxMap (REWR_IMPCONV_OF_CONV B D) (c.diminish x))
 
 /-- Applies the implicational rewrite, with context simplifications. -/
 def REWRITE_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (ths : List thm) :
-    WithContext imp_conv :=
-  DEPTH_CTXIMPCONV B D V (REWR_IMPCONV_OF_CONV B D (IMPREWR_CTXCONV B D V ths))
+    IO (WithContext imp_conv) := do
+  return DEPTH_CTXIMPCONV B D V (REWR_IMPCONV_OF_CONV B D (← IMPREWR_CTXCONV B D V ths))
 
 /- ---------------------------------------------------------------------- -/
 /- INTERFACE                                                              -/
@@ -2017,7 +2057,7 @@ def IMP_REWRITE_TAC (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (ths : Li
     match ← preprocess B D th with
     -- OCaml `flat (map preprocess ths)` propagates (impconv.ml 1444)
     | .ok l => pps := pps ++ l | .error e => return .error e
-  match ← CTXIMPCONV_TAC B V (REWRITE_CTXIMPCONV B D V pps) g with
+  match ← CTXIMPCONV_TAC B V (← REWRITE_CTXIMPCONV B D V pps) g with
   | .ok r => return .ok r
   | .error e => if e == unchanged then return (failwith "Unchanged") else return .error e
 
@@ -2025,17 +2065,17 @@ def IMP_REWRITE_TAC (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (ths : Li
 def SEQ_IMP_REWRITE_TAC (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (ths : List thm) :
     tactic := fun g => do
   let cnvE : IO (Except String (WithContext imp_conv)) := (match ths with
-    | [] => return .ok (REWRITE_CTXIMPCONV B D V [B.TRUTH])
+    | [] => return .ok (← REWRITE_CTXIMPCONV B D V [B.TRUTH])
     | [th] => do match ← preprocess B D th with
                  -- OCaml `REWRITE_CTXIMPCONV (preprocess th)` propagates (impconv.ml 1396)
-                 | .ok l => return .ok (REWRITE_CTXIMPCONV B D V l)
+                 | .ok l => return .ok (← REWRITE_CTXIMPCONV B D V l)
                  | .error e => return .error e
     | _ :: _ => do
         let mut cnvs : List (WithContext imp_conv) := []
         for th in ths do
           match ← preprocess B D th with
           -- OCaml `map (REWRITE_CTXIMPCONV o preprocess) ths` propagates (impconv.ml 1396)
-          | .ok l => cnvs := cnvs ++ [REWRITE_CTXIMPCONV B D V l]
+          | .ok l => cnvs := cnvs ++ [← REWRITE_CTXIMPCONV B D V l]
           | .error e => return .error e
         return .ok (REPEAT_UNCHANGED_CTXIMPCONV B D V cnvs))
   match ← cnvE with
@@ -2078,15 +2118,15 @@ partial def CASE_REWR_IMPCONV_OF_CONV (B : BoolThms) (D : ImpConvDeps)
                           | .ok (ith1, ith2) => match v with
                                                 | .Co => return .ok ith2
                                                 | .Contra => return .ok ith1)
-    (fun x => CASE_REWR_IMPCONV_OF_CONV B D (c.augment x))
-    (fun x => CASE_REWR_IMPCONV_OF_CONV B D (c.diminish x))
+    (fun x => ctxMap (CASE_REWR_IMPCONV_OF_CONV B D) (c.augment x))
+    (fun x => ctxMap (CASE_REWR_IMPCONV_OF_CONV B D) (c.diminish x))
 
 /-- `CASE_REWRITE_CTXIMPCONV = ONCE_DEPTH_CTXIMPCONV o CASE_REWR_IMPCONV_OF_CONV
     o IMPREWR_CTXCONV` (impconv.ml 1432).  Right-to-left: `IMPREWR_CTXCONV`
     runs FIRST, then `CASE_REWR_IMPCONV_OF_CONV`, then `ONCE_DEPTH_CTXIMPCONV`. -/
-def CASE_REWRITE_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) :
-    List thm → WithContext imp_conv :=
-  ONCE_DEPTH_CTXIMPCONV B D V o CASE_REWR_IMPCONV_OF_CONV B D o IMPREWR_CTXCONV B D V
+def CASE_REWRITE_CTXIMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
+    (ths : List thm) : IO (WithContext imp_conv) := do
+  return ONCE_DEPTH_CTXIMPCONV B D V (CASE_REWR_IMPCONV_OF_CONV B D (← IMPREWR_CTXCONV B D V ths))
 
 /-- Tactic version of it. -/
 def CASE_REWRITE_TAC (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (th : thm) :
@@ -2094,7 +2134,7 @@ def CASE_REWRITE_TAC (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (th : th
   match ← preprocess B D th with
   | .error e => return .error e
   | .ok pps =>
-    match ← CTXIMPCONV_TAC B V (CASE_REWRITE_CTXIMPCONV B D V pps) g with
+    match ← CTXIMPCONV_TAC B V (← CASE_REWRITE_CTXIMPCONV B D V pps) g with
     | .ok r => return .ok r
     | .error e => if e == unchanged then return (failwith "Unchanged") else return .error e
 
@@ -2114,7 +2154,7 @@ abbrev annot_mconv := term → IO (Except String (List (thm × Option term × Li
 def mapply_with_context (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
     (c : WithContext imp_mconv) (ctx : term) (v : Variance.t) (t : term) :
     IO (Except String (List thm)) := do
-  match ← (c.augment (Tset.strip_conj V.T_ ctx)).apply v t with
+  match ← augApply c (Tset.strip_conj V.T_ ctx) v t with
   | .error e => return .error e
   | .ok ths =>
     let mut out := []
@@ -2163,8 +2203,8 @@ partial def CONJ_CTXIMPMCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
             | .ok l2 => match mapEx right l2 with
               | .error e => return .error e
               | .ok th2s => return .ok (th1s ++ th2s))
-    (fun x => CONJ_CTXIMPMCONV B D V (c.augment x))
-    (fun x => CONJ_CTXIMPMCONV B D V (c.diminish x))
+    (fun x => ctxMap (CONJ_CTXIMPMCONV B D V) (c.augment x))
+    (fun x => ctxMap (CONJ_CTXIMPMCONV B D V) (c.diminish x))
 
 /- Consider two multiple implicational conversions ic1, ic2.
    Suppose `[ic1 Co A]` returns a list `[B1 ==> A; ...; Bk ==> A]`, and
@@ -2188,8 +2228,8 @@ partial def DISJ_CTXIMPMCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
             | .ok l2 => match ← mapIOEx (fun th => MKIMPR_DISJ B V D t1 th) l2 with
               | .error e => return .error e
               | .ok th2s => return .ok (th1s ++ th2s))
-    (fun x => DISJ_CTXIMPMCONV B D V (c.augment x))
-    (fun x => DISJ_CTXIMPMCONV B D V (c.diminish x))
+    (fun x => ctxMap (DISJ_CTXIMPMCONV B D V) (c.augment x))
+    (fun x => ctxMap (DISJ_CTXIMPMCONV B D V) (c.diminish x))
 
 /- Consider two multiple implicational conversions ic1, ic2.
    Suppose `[ic1 Contra A]` returns a list `[A ==> B1; ...; A ==> Bk]`, and
@@ -2214,8 +2254,8 @@ partial def IMP_CTXIMPMCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
             | .ok l2 => match mapEx (MKIMPR_IMP_CTXT B V D) l2 with
               | .error e => return .error e
               | .ok th2s => return .ok (th1s ++ th2s))
-    (fun x => CONJ_CTXIMPMCONV B D V (c.augment x))   -- faithful to OCaml (uses CONJ here)
-    (fun x => CONJ_CTXIMPMCONV B D V (c.diminish x))
+    (fun x => ctxMap (CONJ_CTXIMPMCONV B D V) (c.augment x))   -- faithful to OCaml (uses CONJ here)
+    (fun x => ctxMap (CONJ_CTXIMPMCONV B D V) (c.diminish x))
 
 partial def IFF_CTXIMPMCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
     (c : WithContext imp_mconv) : WithContext imp_mconv :=
@@ -2241,8 +2281,8 @@ partial def IFF_CTXIMPMCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
                 | .ok l2 => match mapEx right l2 with
                   | .error e => return .error e
                   | .ok th2s => return .ok (th1s ++ th2s))
-    (fun x => IFF_CTXIMPMCONV B D V (c.augment x))
-    (fun x => IFF_CTXIMPMCONV B D V (c.diminish x))
+    (fun x => ctxMap (IFF_CTXIMPMCONV B D V) (c.augment x))
+    (fun x => ctxMap (IFF_CTXIMPMCONV B D V) (c.diminish x))
 
 /- Consider one multiple implicational conversion ic.
    Suppose `[ic Contra A]` returns a list `[A ==> B1; ...; A ==> Bk]`, then
@@ -2259,8 +2299,8 @@ partial def NOT_CTXIMPMCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
         match ← c.apply (Variance.neg v) nt with
         | .error _ => return .ok []          -- try_list: failure → []
         | .ok l => return (mapEx (MKIMP_NOT B V D) l))
-    (fun x => NOT_CTXIMPMCONV B D V (c.augment x))
-    (fun x => NOT_CTXIMPMCONV B D V (c.diminish x))
+    (fun x => ctxMap (NOT_CTXIMPMCONV B D V) (c.augment x))
+    (fun x => ctxMap (NOT_CTXIMPMCONV B D V) (c.diminish x))
 
 partial def QUANT_CTXIMPMCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
     (mkimp : term → thm → IO (Except String thm)) (sel : term → Except String (term × term))
@@ -2270,12 +2310,14 @@ partial def QUANT_CTXIMPMCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
       match sel t with
       | .error e => return .error e
       | .ok (x, b) =>
-        let c' := c.diminish x
+        match ← c.diminish x with
+        | .error e => return .error e
+        | .ok c' =>
         match ← c'.apply v b with
         | .error _ => return .ok []          -- try_list: failure → []
         | .ok l => mapIOEx (fun th => mkimp x th) l)
-    (fun y => QUANT_CTXIMPMCONV B D V mkimp sel (c.augment y))
-    (fun y => QUANT_CTXIMPMCONV B D V mkimp sel (c.diminish y))
+    (fun y => ctxMap (QUANT_CTXIMPMCONV B D V mkimp sel) (c.augment y))
+    (fun y => ctxMap (QUANT_CTXIMPMCONV B D V mkimp sel) (c.diminish y))
 
 /- Consider one multiple implicational conversion ic.
    Suppose `[ic Co A]` returns a list `[B1 ==> A; ...; Bk ==> A]`, then
@@ -2317,8 +2359,8 @@ partial def SUB_CTXIMPMCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
         match builder with
         | some wc => wc.apply v t
         | none => return (failwith "SUB_CTXIMPMCONV"))
-    (fun x => SUB_CTXIMPMCONV B D V (c.augment x))
-    (fun x => SUB_CTXIMPMCONV B D V (c.diminish x))
+    (fun x => ctxMap (SUB_CTXIMPMCONV B D V) (c.augment x))
+    (fun x => ctxMap (SUB_CTXIMPMCONV B D V) (c.diminish x))
 
 end
 
@@ -2337,8 +2379,8 @@ partial def DEPTH_CTXIMPMCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
                    | .ok na => return .ok (na ++ ths)
                    | .error e => if e == "SUB_CTXIMPMCONV" then c.apply .Atomic v t else return .error e
       | .error e => if e == "SUB_CTXIMPMCONV" then c.apply .Atomic v t else return .error e)
-    (fun x => DEPTH_CTXIMPMCONV B D V (c.augment x))
-    (fun x => DEPTH_CTXIMPMCONV B D V (c.diminish x))
+    (fun x => ctxMap (DEPTH_CTXIMPMCONV B D V) (c.augment x))
+    (fun x => ctxMap (DEPTH_CTXIMPMCONV B D V) (c.diminish x))
 /- ---------------------------------------------------------------------- -/
 /- REWRITE IMPLICATIONAL CONVERSIONS                                      -/
 /- ---------------------------------------------------------------------- -/
@@ -2487,11 +2529,11 @@ partial def deepSelf (V : ImpConvVars)
       match a with
       | .Atomic => dmTopDepth cnv t
       | .Non_atomic => cnv t)
-    (fun _ => deepSelf V net ths)      -- augment ignores its argument (faithful)
+    (fun _ => return .ok (deepSelf V net ths))      -- augment ignores its argument (faithful)
     (fun v =>
       let survivors := ((Fo_nets.allTips net).filterMap (fun (_, vs, th) =>
         if Tset.mem v vs then none else some th)).reverse   -- OCaml `th :: !ths` reverses traversal order
-      deepSelf V (Fo_nets.filter (fun (_, vs, _) => !(Tset.mem v vs)) net) survivors)
+      return .ok (deepSelf V (Fo_nets.filter (fun (_, vs, _) => !(Tset.mem v vs)) net) survivors))
 
 /-- Multiple conversion which returns all the possible rewrites (on one subterm
     only) by one theorem.  Builds the net once (`IO`), then wraps. -/
@@ -2555,8 +2597,8 @@ partial def REWR_IMPMCONV_OF_MCONV (B : BoolThms) (D : ImpConvDeps)
         let mut out := []
         for r in rs do match ← f r with | .ok x => out := out ++ [x] | .error e => return .error e
         return .ok out)
-    (fun x => REWR_IMPMCONV_OF_MCONV B D (c.augment x))
-    (fun x => REWR_IMPMCONV_OF_MCONV B D (c.diminish x))
+    (fun x => ctxMap (REWR_IMPMCONV_OF_MCONV B D) (c.augment x))
+    (fun x => ctxMap (REWR_IMPMCONV_OF_MCONV B D) (c.diminish x))
 
 /- ---------------------------------------------------------------------- -/
 /- Target rewriting (`impconv.ml` 1751-1863).                             -/
@@ -2662,8 +2704,8 @@ partial def existsSelf (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars) (ts : 
           | .ok r => return .ok r
           | .error e => return .error e
       | _, _ => return (failwith "EXISTS_CTXIMPCONV"))
-    (fun ts' => existsSelf B D V (Tset.union ts' ts))
-    (fun _ => existsSelf B D V ts)
+    (fun ts' => return .ok (existsSelf B D V (Tset.union ts' ts)))
+    (fun _ => return .ok (existsSelf B D V ts))
 
 /-- `EXISTS_CTXIMPCONV` (target-rewriting version, `impconv.ml` 1751): the
     existential-hinting conversion.  (Named `existsHintCtx` to avoid clashing
@@ -2707,7 +2749,7 @@ partial def TARGET_REWRITE_IMPCONV (B : BoolThms) (D : ImpConvDeps) (V : ImpConv
     (sths : List thm) (ts : List term) : imp_conv := fun v t => do
   let POST := TRY_CTXIMPCONV D V (TOP_DEPTH_CTXIMPCONV B D V (existsHintCtx B D V))
   -- PRE = apply (TRY_CTXIMPCONV (REWRITE_CTXIMPCONV []))
-  let PRE : imp_conv := (TRY_CTXIMPCONV D V (REWRITE_CTXIMPCONV B D V [])).apply
+  let PRE : imp_conv := (TRY_CTXIMPCONV D V (← REWRITE_CTXIMPCONV B D V [])).apply
   -- pre v th = try bind_impconv PRE v th with Unchanged -> th
   let pre (v : Variance.t) (th : thm) : IO (Except String thm) := do
     match ← bind_impconv B PRE v th with
@@ -2807,7 +2849,7 @@ def TARGET_REWRITE_TAC (B : BoolThms) (D : ImpConvDeps) (V : ImpConvVars)
       | .ok p => pats := pats ++ [p] | .error e => return .error e
     -- (TARGET_REWRITE_IMPCONV sths' pats) + imp_conv_of_ctx_imp_conv (REWRITE_CTXIMPCONV ths)
     let c1 : imp_conv := TARGET_REWRITE_IMPCONV B D V sths' pats
-    let c2 : imp_conv := imp_conv_of_ctx_imp_conv (REWRITE_CTXIMPCONV B D V ths)
+    let c2 : imp_conv := imp_conv_of_ctx_imp_conv (← REWRITE_CTXIMPCONV B D V ths)
     let cnv : imp_conv := THEN_IMPCONV B c1 c2
     match ← IMPCONV_TAC B cnv g with
     | .ok r => return .ok r
