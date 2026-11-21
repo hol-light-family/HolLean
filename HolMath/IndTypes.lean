@@ -508,21 +508,26 @@ structure DefTypeRaw where
   t_tm : term
   n_tm : term
   beps_tm : term
-  s_tm : term
-  zty : hol_type
   numty : hol_type
-  CCONV : ioconv
+  /-- `mk_small_numeral`'s constants (nums.ml). -/
+  numK : HolMath.Nums.NumeralConsts
+  NUM_LT_CONV : ioconv
+  /-- `GEN_REWRITE_CONV I [COND_CLAUSES]` (ind_types.ml 735). -/
+  COND_CONV : ioconv
+  /-- `(<):num->num->bool` (ind_types.ml 734). -/
+  lt_tm : term
 
 instance : Inhabited DefTypeRaw :=
   ⟨⟨default, default, default, default, default, default,
     fun _ => pure (.error ""), fun _ => pure (.error ""), fun _ => pure (.error ""),
     fun _ => pure (.error ""), fun _ _ _ _ => pure (.error ""),
-    default, default, default, default, default, default, default, default,
-    fun _ => pure (.error "")⟩⟩
+    default, default, default, default, default, default, default,
+    fun _ => pure (.error ""), fun _ => pure (.error ""), default⟩⟩
 
-/-- Build the `DefTypeRaw` (ind_types.ml 308-310, 330, 632-634, 675). -/
+/-- Build the `DefTypeRaw` (ind_types.ml 308-310, 330, 687, 734-735). -/
 @[nospecialize]
-def setupDefTypeRaw [HolBase] (FST SND FCONS BETA_THM CONSTR_REC eepth : thm)
+def setupDefTypeRaw [HolBase] (FST SND FCONS BETA_THM CONSTR_REC eepth COND_CLAUSES : thm)
+    (numK : HolMath.Nums.NumeralConsts) (NUM_LT_CONV : ioconv)
     (mk_pair : term × term → IO (Except String term))
     (derive_nonschematic_inductive_relations : term → IO (Except String thm))
     (prove_monotonicity_hyps : thm → IO (Except String thm))
@@ -535,14 +540,13 @@ def setupDefTypeRaw [HolBase] (FST SND FCONS BETA_THM CONSTR_REC eepth : thm)
   let t_tm ← q r"T"
   let n_tm ← q r"n:num"
   let beps_tm ← q r"@x:bool. T"
-  let s_tm ← q r"s:num->Z"
-  let zty ← qty r"Z"
   let numty ← qty r"num"
-  let CCONV := funpow 3 RATOR_CONV (REPEATC (← GEN_REWRITE_CONV_NET id [FCONS]))
+  let lt_tm ← q r"(<):num->num->bool"
+  let COND_CONV ← GEN_REWRITE_CONV_NET id [COND_CLAUSES]
   return { FST, SND, FCONS, BETA_THM, CONSTR_REC, eepth, mk_pair,
            derive_nonschematic_inductive_relations, prove_monotonicity_hyps,
            new_definition, new_basic_type_definition,
-           zero_tm, suc_tm, t_tm, n_tm, beps_tm, s_tm, zty, numty, CCONV }
+           zero_tm, suc_tm, t_tm, n_tm, beps_tm, numty, numK, NUM_LT_CONV, COND_CONV, lt_tm }
 
 /- ---------------------------------------------------------------------- -/
 /- The initial mutual type definition function, with a type-restricted    -/
@@ -561,20 +565,18 @@ def sucivate (D : DefTypeRaw) (n : Nat) : Except String term :=
   go n D.zero_tm
 
 /- ---------------------------------------------------------------------- -/
-/- Eliminate local "definitions" in hyps.                                 -/
+/- Eliminate local "definitions" v1 = t1, ..., vn = tn in hyps, with no vi -/
+/- free in any tj, by a single instantiation, and check that the hyps left -/
+/- are "hs". This applies to the definitions of the representing          -/
+/- predicates and then to the definitions of the pseudo-constructors.     -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `SCRUB_EQUATION eq (th,insts)` (ind_types.ml 317-320). -/
-def SCRUB_EQUATION [HolBase] (eq : term) (thi : thm × List (term × term)) :
-    ExceptT String IO (thm × List (term × term)) := do
-  let (th, insts) := thi
-  let eq' ← insts.foldrM (fun t acc => substM [t] acc) eq
-  let (l, r) ← liftExcept (dest_eq eq')
-  return (← MP (← INST [(r, l)] (← DISCH eq' th)) (REFL r), (r, l) :: insts)
-
-/-- `itlist SCRUB_EQUATION eqs (th,[])`, keeping the theorem. -/
-def scrubAll [HolBase] (eqs : List term) (th : thm) : ExceptT String IO thm := do
-  return (← eqs.foldrM SCRUB_EQUATION (th, [])).1
+/-- `SCRUB_EQUATIONS eqs hs th` (ind_types.ml 319-323). -/
+def SCRUB_EQUATIONS [HolBase] (eqs hs : List term) (th : thm) : ExceptT String IO thm := do
+  let theta ← liftExcept (eqs.mapM (fun eq => do let (l, r) ← dest_eq eq; pure (r, l)))
+  let th1 ← INST theta (← eqs.foldrM DISCH th)
+  let th2 ← theta.foldlM (fun th (r, _) => MP th (REFL r)) th1
+  if set_eq (hyp th2) hs then return th2 else throw "SCRUB_EQUATIONS"
 
 /-- The `munion` of `justify_inductive_type_model` (ind_types.ml 331-337). -/
 partial def munion [BEq α] (s1 s2 : List α) : List α :=
@@ -627,7 +629,8 @@ def justify_inductive_type_model [HolBase] (D : DefTypeRaw)
       (pure D.beps_tm)
     let rarg ← liftExcept (rargs.foldrM (fun r acc => do (← mk_binop fcons r) acc) bottail)
     let conty ← (args.map type_of).foldrM mkFunTy recty
-    let condef ← liftExcept (do list_mk_comb constr [← sucivate D n, iarg, rarg])
+    let condef ← liftExcept (do
+      list_mk_comb constr [← HolMath.Nums.mk_small_numeral D.numK (Int.ofNat n), iarg, rarg])
     liftExcept (do mkEq (mk_var cname conty) (← list_mk_abs args condef))
   let rec mk_constructors (n : Nat) : List (String × List hol_type) → ExceptT String IO (List term)
     | [] => pure []
@@ -663,11 +666,21 @@ def justify_inductive_type_model [HolBase] (D : DefTypeRaw)
 /- ---------------------------------------------------------------------- -/
 /- Shows that the predicates defined by the rules are all nonempty.       -/
 /- (This could be done much more efficiently/cleverly, but it's OK.)      -/
+/- The rules have the predicate definitions as hypotheses, which mention  -/
+/- all the pseudo-constructors, so we avoid finding their free variables  -/
+/- for every rule (as SPEC_ALL and MATCH_MP would do).                    -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `prove_model_inhabitation rth` (ind_types.ml 401-423). -/
+/-- `SPEC_ALL_RULE` of `prove_model_inhabitation` (ind_types.ml 407-410). -/
+partial def specAllRule [HolBase] (hvs : List term) (th : thm) : ExceptT String IO thm := do
+  if !(is_forall (concl th)) then return th
+  let v ← liftExcept (do bndvar (← rand (concl th)))
+  specAllRule hvs (← SPEC (← liftExcept (variant (hvs ++ frees (concl th)) v)) th)
+
+/-- `prove_model_inhabitation rth` (ind_types.ml 407-437). -/
 partial def prove_model_inhabitation [HolBase] (rth : thm) : ExceptT String IO (List thm) := do
-  let srules ← (CONJUNCTS rth).mapM SPEC_ALL
+  let hvs := freesl (hyp rth)
+  let srules ← (CONJUNCTS rth).mapM (specAllRule hvs)
   let (imps, bases) := partition (fun th => is_imp (concl th)) srules
   let concs := bases.map concl ++ (← liftExcept (imps.mapM (fun th => rand (concl th))))
   let preds := setify (concs.map (repeat' rator))
@@ -682,7 +695,8 @@ partial def prove_model_inhabitation [HolBase] (rth : thm) : ExceptT String IO (
       let preds := (conjuncts (← liftExcept (lhand (concl thm0)))).map (fun c => (strip_comb c).1)
       let asms ← liftExcept (preds.mapM (fun p =>
         Lib.find (fun th => (strip_comb (concl th)).1 == p) sofar))
-      MATCH_MP thm0 (← end_itlist CONJ asms)
+      let ath ← end_itlist CONJ asms
+      MP (← INSTANTIATE (← term_match [] (← liftExcept (lhand (concl thm0))) (concl ath)) thm0) ath
     let newth ← tryfindM' follow_horn useful
     exhaust_inhabitations ths (newth :: sofar)
   let ithms ← exhaust_inhabitations imps bases
@@ -707,7 +721,10 @@ def define_inductive_type [HolBase] (D : DefTypeRaw) (cdefs : List thm) (exth : 
   let th1 ← ASSUME (← liftExcept (findE (hyp exth)))
   let th2 ← TRANS th1 (← ExceptT.mk (SUBS_CONV cdefs (← liftExcept (rand (concl th1)))))
   let th3 ← EQ_MP (← AP_THM th2 (← liftExcept (rand extm))) exth
-  let th4 ← scrubAll (hyp th3) th3
+  let ceqs := cdefs.map concl
+  let th4 ← (do
+    let peqs := subtract (hyp th3) ceqs
+    SCRUB_EQUATIONS ceqs [] (← SCRUB_EQUATIONS peqs ceqs th3))
   let mkname := "_mk_" ++ ename
   let destname := "_dest_" ++ ename
   let (bij1, bij2) ← ExceptT.mk (D.new_basic_type_definition ename mkname destname th4)
@@ -785,20 +802,52 @@ def instantiate_induction_theorem [HolBase] (consindex : List (term × (term × 
 /- to the kind wanted for the new type (new_ver); |- new_ver ==> old_ver  -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `pullback_induction_clause tybijpairs conthms` (ind_types.ml 495-533):
+/-- `RULE_INSTANCE rthm pat` (ind_types.ml 512-517): instantiate a rule
+    `!x1 .. xn. [A ==>] P (c x1 .. xn)` to the pattern `c t1 .. tn`.  This is
+    done once per clause on theorems with all the predicate definitions as
+    hypotheses, so it uses SPECL rather than matching. -/
+def RULE_INSTANCE [HolBase] (rthm : thm) (pat : term) : ExceptT String IO thm := do
+  let (avs, bod) := strip_forall (concl rthm)
+  let cpat ← liftExcept (rand (← if is_imp bod then rand bod else pure bod))
+  if (strip_comb cpat).2 == avs && repeat' rator cpat == repeat' rator pat then
+    SPECL (strip_comb pat).2 rthm
+  else throw "RULE_INSTANCE"
+
+/-- `quantified_tybijs tybijpairs` (ind_types.ml 526-531): the quantified
+    forms `!r. P r <=> dest(mk r) = r` and `!a. P(dest a)` of the type
+    bijections, keyed by the type predicate (a variable), so that instances
+    are obtained by SPEC instead of rewriting. -/
+def quantified_tybijs [HolBase] (tybijpairs : List (thm × thm)) :
+    ExceptT String IO (List (term × (thm × thm))) :=
+  tybijpairs.mapM (fun (th1, th2) => do
+    let l ← liftExcept (lhand (concl th2))
+    let rl ← liftExcept (rand l)
+    let th3 ← INST [((← liftExcept (do rand (← lhand (concl th1)))), rl)] th2
+    let th4 ← AP_TERM (← liftExcept (do rator (← lhand (← rand (concl th2))))) th1
+    let q2 ← GEN (← liftExcept (rand (concl th1))) (← EQ_MP (← SYM th3) th4)
+    let q1 ← GEN rl th2
+    return (← liftExcept (rator l), (q1, q2)))
+
+/-- `TYBIJ_RULE qbijs th` (ind_types.ml 533-535). -/
+def TYBIJ_RULE [HolBase] (qbijs : List (term × (thm × thm))) (th : thm) :
+    ExceptT String IO thm := do
+  let (p, x) ← liftExcept (dest_comb (concl th))
+  EQ_MP (← SPEC x (← liftExcept (Lib.assoc p qbijs)).1) th
+
+/-- `pullback_induction_clause tybijpairs conthms` (ind_types.ml 543-586):
     builds `PRERULE` and `IPRULE` once and returns `fun rthm tm -> ...`. -/
 def pullback_induction_clause [HolBase] (tybijpairs : List (thm × thm)) (conthms : List thm) :
     ExceptT String IO (thm → term → ExceptT String IO thm) := do
   let PRERULE := CONV_RULE (← GEN_REWRITE_CONV_NET (funpow 3 RAND_CONV) (← conthms.mapM SYM))
-  let ipconv ← GEN_REWRITE_CONV_NET id (tybijpairs.map Prod.snd)
-  let IPRULE (th : thm) : ExceptT String IO thm := do SYM (← CONV_RULE ipconv th)
+  let qbijs ← quantified_tybijs tybijpairs
+  let IPRULE (th : thm) : ExceptT String IO thm := do SYM (← TYBIJ_RULE qbijs th)
   return fun rthm tm => do
     let (avs, bimp) := strip_forall tm
     if is_imp bimp then
       let (ant, con) ← liftExcept (dest_imp bimp)
       let ths ← (CONJUNCTS (← ASSUME ant)).mapM (CONV_RULE BETA_CONV)
       let (tths, pths) := unzip (← ths.mapM CONJ_PAIR)
-      let tth ← MATCH_MP (← SPEC_ALL rthm) (← end_itlist CONJ tths)
+      let tth ← MP (← SPECL avs rthm) (← end_itlist CONJ tths)
       let mths ← (tth :: tths).mapM IPRULE
       let conth1 ← liftExcept (Equal.BETA_CONV con)
       let contm1 ← liftExcept (rand (concl conth1))
@@ -820,7 +869,10 @@ def pullback_induction_clause [HolBase] (tybijpairs : List (thm × thm)) (conthm
     else
       let con := bimp
       let conth2 ← liftExcept (Equal.BETA_CONV con)
-      let tth ← PART_MATCH (fun t => .ok t) rthm (← liftExcept (do lhand (← rand (concl conth2))))
+      let tth ← (do
+        let th ← SPECL avs rthm
+        if concl th == (← liftExcept (do lhand (← rand (concl conth2)))) then pure th
+        else throw "pullback_induction_clause")
       let conth3 ← PRERULE conth2
       let asmgen ← liftExcept (do rand (← rand (concl conth3)))
       let asmquant ← liftExcept (do list_mk_forall (strip_comb (← rand asmgen)).2 asmgen)
@@ -877,10 +929,17 @@ def derive_induction_theorem [HolBase] (consindex : List (term × (term × term)
   let cfsts := consindex.map Prod.fst
   let pasms := (hyp th4).filter (fun t =>
     match lhand t with | .ok l => mem l cfsts | .error _ => false)
-  let th5 ← pasms.foldrM DISCH th4
-  let th6 ← scrubAll (hyp th5) th5
-  let th7 ← UNDISCH_ALL th6
-  scrubAll (hyp th7) th7
+  let ceqs := subtract (hyp th4) pasms
+  SCRUB_EQUATIONS ceqs [] (← SCRUB_EQUATIONS pasms ceqs th4)
+
+/-- `range_tyvar consindex` (ind_types.ml 632-636): `Z`, with primes added if
+    this is the name of a type variable of the new types. -/
+partial def range_tyvar (consindex : List (term × (term × term))) : hol_type :=
+  let tvs := itlist (fun (ci : term × (term × term)) acc =>
+    union (tyvars (type_of ci.2.1)) acc) consindex []
+  let rec fresh (s : String) : hol_type :=
+    if mem (mk_vartype s) tvs then fresh (s ++ "'") else mk_vartype s
+  fresh "Z"
 
 /- ---------------------------------------------------------------------- -/
 /- Create the recursive functions and eliminate pseudo-constructors.      -/
@@ -895,7 +954,7 @@ def create_recursive_functions [HolBase] (tybijpairs : List (thm × thm))
   let domtys ← liftExcept (consindex.mapM (fun (ci : term × (term × term)) => do
       hd (← dest_type (type_of ci.2.2)).2))
   let recty ← liftExcept (do hd (← dest_type (type_of (← hd consindex).2.1)).2)
-  let ranty := mk_vartype "Z"
+  let ranty := range_tyvar consindex
   let fn := mk_var "fn" (← mkFunTy recty ranty)
   let fns ← liftExcept (make_args "fn" [] (← domtys.mapM (fun ty => mkFunTy ty ranty)))
   let args ← liftExcept (make_args "a" [] domtys)
@@ -906,23 +965,20 @@ def create_recursive_functions [HolBase] (tybijpairs : List (thm × thm))
   let fxths1 ← conthms.mapM (fun th1 => tryfindM' (fun th2 => MK_COMB (th2, th1)) fdefs)
   let fxths2 ← fxths1.mapM (fun th => do
     TRANS th (← liftExcept (do Equal.BETA_CONV (← rand (concl th)))))
-  let mk_tybijcons (p : thm × thm) : ExceptT String IO thm := do
-    let (th1, th2) := p
-    let th3 ← INST [(← liftExcept (do rand (← lhand (concl th1))),
-                     ← liftExcept (do rand (← lhand (concl th2))))] th2
-    let th4 ← AP_TERM (← liftExcept (do rator (← lhand (← rand (concl th2))))) th1
-    EQ_MP (← SYM th3) th4
-  let SCONV ← GEN_REWRITE_CONV_NET id (← tybijpairs.mapM mk_tybijcons)
-  let ERULE := CONV_RULE (← GEN_REWRITE_CONV_NET id (tybijpairs.map Prod.snd))
+  let qbijs ← quantified_tybijs tybijpairs
+  let ERULE := TYBIJ_RULE qbijs
+  let SRULE (t : term) : ExceptT String IO thm := do
+    let (p, x) ← liftExcept (dest_comb t)
+    SPEC (← liftExcept (rand x)) (← liftExcept (Lib.assoc p qbijs)).2
   let simplify_fxthm (rthm fxth : thm) : ExceptT String IO thm := do
     let pat ← liftExcept (funpowM 4 rand (concl fxth))
     if is_imp (repeat' (fun t => (dest_forall t).map Prod.snd) (concl rthm)) then
-      let th1 ← PART_MATCH (fun t => do rand (← rand t)) rthm pat
+      let th1 ← RULE_INSTANCE rthm pat
       let tms1 := conjuncts (← liftExcept (lhand (concl th1)))
-      let ths2 ← tms1.mapM (fun t => do EQ_MP (← SYM (← ExceptT.mk (SCONV t))) HolBase.B.TRUTH)
+      let ths2 ← tms1.mapM SRULE
       ERULE (← MP th1 (← end_itlist CONJ ths2))
     else
-      ERULE (← PART_MATCH rand rthm pat)
+      ERULE (← RULE_INSTANCE rthm pat)
   let fxths3 ← map2M simplify_fxthm (CONJUNCTS rth) fxths2
   let fxths4 ← map2M (fun th1 th2 => do TRANS th1 (← AP_TERM fn th2)) fxths2 fxths3
   let cleanup_fxthm (cth fxth : thm) : ExceptT String IO thm := do
@@ -933,10 +989,8 @@ def create_recursive_functions [HolBase] (tybijpairs : List (thm × thm))
   let cfsts := consindex.map Prod.fst
   let pasms := (hyp fxth5).filter (fun t =>
     match lhand t with | .ok l => mem l cfsts | .error _ => false)
-  let fxth6 ← pasms.foldrM DISCH fxth5
-  let fxth7 ← scrubAll (itlist (fun c acc => union (hyp c) acc) conthms []) fxth6
-  let fxth8 ← UNDISCH_ALL fxth7
-  scrubAll (subtract (hyp fxth8) eqs) fxth8
+  let rest := subtract (hyp fxth5) pasms
+  SCRUB_EQUATIONS (subtract rest eqs) eqs (← SCRUB_EQUATIONS pasms rest fxth5)
 
 /-- The `extract_arg` of `create_recursion_iso_constructor` (ind_types.ml
     635-643). -/
@@ -959,6 +1013,8 @@ partial def extract_arg [HolBase] (D : DefTypeRaw) (tup v : term) : ExceptT Stri
 def create_recursion_iso_constructor [HolBase] (D : DefTypeRaw)
     (consindex : List (term × (term × term))) :
     ExceptT String IO (thm → ExceptT String IO term) := do
+  let zty := range_tyvar consindex
+  let s := mk_var "s" (← mkFunTy D.numty zty)
   let recty ← liftExcept (do hd (← dest_type (type_of (← hd consindex).1)).2)
   let domty ← liftExcept (do hd (← dest_type recty).2)
   let i := mk_var "i" domty
@@ -979,49 +1035,85 @@ def create_recursion_iso_constructor [HolBase] (D : DefTypeRaw)
     let rindexed ← liftExcept (indices.mapM (mk_comb r))
     let rargs' ← map2M (fun a rx => liftExcept (do mk_comb (← Lib.assoc a mkindex) rx))
       artys rindexed
-    let sargs' ← liftExcept (indices.mapM (mk_comb D.s_tm))
+    let sargs' ← liftExcept (indices.mapM (mk_comb s))
     let allargs := cargs' ++ rargs' ++ sargs'
-    let funty ← allargs.foldrM (fun a acc => mkFunTy (type_of a) acc) D.zty
+    let funty ← allargs.foldrM (fun a acc => mkFunTy (type_of a) acc) zty
     let funname := (← liftExcept (do dest_const (repeat' rator (← lhand (concl cth))))).1 ++ "'"
     let funarg := mk_var funname funty
-    liftExcept (do list_mk_abs [i, r, D.s_tm] (← list_mk_comb funarg allargs))
+    liftExcept (do list_mk_abs [i, r, s] (← list_mk_comb funarg allargs))
 
 /- ---------------------------------------------------------------------- -/
-/- Derive the recursion theorem.                                          -/
+/- Derive the recursion theorem. The function used in CONSTR_REC, mapping -/
+/- the k'th constructor number to the k'th function, is a balanced tree   -/
+/- of conditionals "if c < m then .. else ..", so evaluating it at numeral -/
+/- k takes logarithmically many steps. It is only substituted for a       -/
+/- variable at the end, so that the clauses never contain the whole tree. -/
 /- ---------------------------------------------------------------------- -/
+
+/-- `TREE_CONV` of `derive_recursion_theorem` (ind_types.ml 736-742). -/
+partial def TREE_CONV [HolBase] (D : DefTypeRaw) (tm : term) : ExceptT String IO thm := do
+  let th1 ← liftExcept (Equal.BETA_CONV tm)
+  let r ← liftExcept (rand (concl th1))
+  if !(HolCore.Classic.is_cond r) then return th1
+  let th2 ← TRANS th1 (← ExceptT.mk (RATOR_CONV (RATOR_CONV (RAND_CONV D.NUM_LT_CONV)) r))
+  let th3 ← TRANS th2 (← ExceptT.mk (D.COND_CONV (← liftExcept (rand (concl th2)))))
+  TRANS th3 (← TREE_CONV D (← liftExcept (rand (concl th3))))
+
+/-- The `tree k fs` of `mk_tree` (ind_types.ml 745-751). -/
+partial def mkTreeAux (D : DefTypeRaw) (c : term) (k : Nat) (fs : List term) :
+    ExceptT String IO term := do
+  let n := fs.length
+  if n == 1 then return ← liftExcept (do mk_abs c (← hd fs))
+  let (fs1, fs2) ← liftExcept (chop_list (n / 2) fs)
+  let m := k + n / 2
+  -- OCaml evaluates mk_cond's arguments right to left
+  let e2 ← mkTreeAux D c m fs2
+  let e1 ← mkTreeAux D c k fs1
+  let cond ← ExceptT.mk (HolCore.Classic.mk_cond
+    (← liftExcept (list_mk_comb D.lt_tm [c, ← HolMath.Nums.mk_small_numeral D.numK (Int.ofNat m)]))
+    (← liftExcept (mk_comb e1 c)) (← liftExcept (mk_comb e2 c)))
+  liftExcept (mk_abs c cond)
+
+/-- `mk_tree fs` (ind_types.ml 743-752). -/
+def mk_tree (D : DefTypeRaw) (fs : List term) : ExceptT String IO term := do
+  let c ← (genvar D.numty : IO term)
+  mkTreeAux D c 0 fs
 
 /-- `derive_recursion_theorem tybijpairs consindex conthms rath`
-    (ind_types.ml 674-710). -/
+    (ind_types.ml 733-792). -/
 def derive_recursion_theorem [HolBase] (D : DefTypeRaw) (tybijpairs : List (thm × thm))
     (consindex : List (term × (term × term))) (conthms : List thm) (rath : thm) :
     ExceptT String IO thm := do
   let isocons ← conthms.mapM (← create_recursion_iso_constructor D consindex)
-  let ty := type_of (← liftExcept (hd isocons))
-  let fcons ← mkConst "FCONS" [(ty, aty)]
-  let fnil ← mkConst "FNIL" [(ty, aty)]
-  let bigfun ← liftExcept (isocons.foldrM (fun c acc => do (← mk_binop fcons c) acc) fnil)
-  let eth ← ISPEC bigfun D.CONSTR_REC
+  let nums ← liftExcept ((List.range isocons.length).mapM (fun k =>
+    HolMath.Nums.mk_small_numeral D.numK (Int.ofNat k)))
+  let gv ← (genvar (← mkFunTy D.numty (type_of (← liftExcept (hd isocons)))) : IO term)
+  let gths ← map2M (fun k f => do ASSUME (← liftExcept (do mkEq (← mk_comb gv k) f))) nums isocons
+  let eth ← ISPEC gv D.CONSTR_REC
   let fn ← liftExcept (do rator (← rand (← hd (conjuncts (concl rath)))))
   let betm ← liftExcept (do
     let (v, bod) ← dest_abs (← rand (concl eth))
     return (← vsubst [(fn, v)]) bod)
-  let LCONV := REWR_CONV (← ASSUME betm)
+  let bth ← ASSUME betm
   let fnths ← (hyp rath).mapM (fun t => do
     RIGHT_BETAS [← liftExcept (do bndvar (← rand t))] (← ASSUME t))
   let SIMPER := CONV_RULE (← PURE_REWRITE_CONV_NET
     ((← fnths.mapM SYM) ++ tybijpairs.map Prod.fst ++ [D.FST, D.SND, D.FCONS, D.BETA_THM]))
-  let hackdown_rath (th : thm) : ExceptT String IO thm := do
+  let hackdown_rath (th gth : thm) : ExceptT String IO thm := do
     let (ltm, rtm) ← liftExcept (dest_eq (concl th))
     let wargs := (strip_comb (← liftExcept (rand ltm))).2
-    let th1 ← TRANS th (← ExceptT.mk (LCONV rtm))
-    let th2 ← TRANS th1 (← ExceptT.mk (D.CCONV (← liftExcept (rand (concl th1)))))
+    let th1 ← TRANS th (← SPECL (strip_comb (← liftExcept (rand rtm))).2 bth)
+    let gl ← liftExcept (lhs (concl gth))
+    let GCONV : ioconv := fun tm =>
+      pure (if aconv tm gl then .ok gth else failwith "derive_recursion_theorem")
+    let th2 ← TRANS th1 (← ExceptT.mk (funpow 3 RATOR_CONV GCONV (← liftExcept (rand (concl th1)))))
     let th3 ← TRANS th2 (← ExceptT.mk
       (funpow 2 RATOR_CONV BETA_CONV (← liftExcept (rand (concl th2)))))
     let th4 ← TRANS th3 (← ExceptT.mk (RATOR_CONV BETA_CONV (← liftExcept (rand (concl th3)))))
     let th5 ← TRANS th4 (← liftExcept (do Equal.BETA_CONV (← rand (concl th4))))
     GENL wargs (← SIMPER th5)
-  let rthm ← end_itlist CONJ (← (CONJUNCTS rath).mapM hackdown_rath)
-  let unseqs := (hyp rthm).filter is_eq
+  let rthm ← end_itlist CONJ (← map2M hackdown_rath (CONJUNCTS rath) gths)
+  let unseqs := (hyp rthm).filter (fun t => is_eq t && !(free_in gv t))
   let tys ← liftExcept (consindex.mapM (fun (ci : term × (term × term)) => do
       hd (← dest_type (type_of ci.2.2)).2))
   let seqs ← liftExcept (tys.mapM (fun ty => Lib.find (fun t =>
@@ -1030,9 +1122,13 @@ def derive_recursion_theorem [HolBase] (D : DefTypeRaw) (tybijpairs : List (thm 
       | .error _ => false) unseqs))
   let rethm ← liftExcept (seqs.foldrM (fun eq th => IndDefs.EXISTS_EQUATION HolBase.B D.eepth eq th) rthm)
   let fethm ← CHOOSE (fn, eth) rethm
+  let bigfun ← mk_tree D isocons
+  let fethm' ← nums.foldrM (fun k th => do
+      PROVE_HYP (← TREE_CONV D (← liftExcept (mk_comb bigfun k))) th)
+    (← INST [(bigfun, gv)] fethm)
   let pcons ← liftExcept ((conjuncts (concl rthm)).mapM (fun c => do
       return repeat' rator (← rand (repeat' (fun t => (dest_forall t).map Prod.snd) c))))
-  GENL pcons fethm
+  GENL pcons fethm'
 
 /- ---------------------------------------------------------------------- -/
 /- Basic function: returns induction and recursion separately. No parser. -/
@@ -1229,6 +1325,10 @@ def mk_newfun [HolBase] (fn outl : term) : ExceptT String IO thm := do
 /- the type constructor ":sum", used internally, must have been defined.  -/
 /- ---------------------------------------------------------------------- -/
 
+/-- A type variable named `s`, with primes added while it is among `tvs`. -/
+partial def freshTyvar (tvs : List hol_type) (s : String) : hol_type :=
+  if mem (mk_vartype s) tvs then freshTyvar tvs (s ++ "'") else mk_vartype s
+
 /-- `generalize_recursion_theorem th` (ind_types.ml 822-874). -/
 def generalize_recursion_theorem [HolBase] (D2 : DefTypeRaw2) (th : thm) :
     ExceptT String IO thm := do
@@ -1236,7 +1336,10 @@ def generalize_recursion_theorem [HolBase] (D2 : DefTypeRaw2) (th : thm) :
   let (evs, bod) := strip_exists ebod
   let n := evs.length
   if n == 1 then return th
-  let tys := (List.range n).map (fun i => mk_vartype ("Z" ++ toString i))
+  -- ind_types.ml 910-913: the names Z0, Z1, ... are chosen apart from the
+  -- type variables of the recursion theorem's functions
+  let tvs := itlist (fun e acc => union (tyvars (type_of e)) acc) evs []
+  let tys := (List.range n).map (fun i => freshTyvar tvs ("Z" ++ toString i))
   let sty ← mk_sum tys
   let inls ← mk_inls sty
   let outls ← mk_outls sty
@@ -1318,75 +1421,395 @@ def prove_EXISTS_OPTION_THM [HolBase] (FORALL_OPTION_THM : thm)
 
 /- ---------------------------------------------------------------------- -/
 /- Tools for proving injectivity and distinctness of constructors.        -/
+/- (ind_types.ml 982-1290.)  The fast methods instantiate the recursion   -/
+/- theorem once, with the tuple of arguments injected into a sum type     -/
+/- for injectivity, and with a numeral per constructor for distinctness.  -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `prove_constructors_injective` (ind_types.ml 902-926): builds `DEPAIR`
-    once and returns `fun ax -> ...`. -/
-def prove_constructors_injective [HolBase] (BETA_THM PAIR_EQ : thm)
-    (mk_pair : term × term → IO (Except String term)) :
-    ExceptT String IO (thm → ExceptT String IO thm) := do
-  let DEPAIR := CONV_RULE (← GEN_REWRITE_CONV_NET TOP_SWEEP_CONV [PAIR_EQ])
-  let prove_distinctness (ax : thm) (pat : term) : ExceptT String IO thm := do
-    let (f, args) := strip_comb pat
-    let rt ← end_itlist (fun a b => ExceptT.mk (mk_pair (a, b))) args
-    let ty ← mkFunTy (type_of pat) (type_of rt)
-    let fn ← liftM (genvar ty : IO term)
-    let dtm ← liftExcept (do mkEq (← mk_comb fn pat) rt)
-    let eth ← HolMath.Recursion.prove_recursive_functions_exist BETA_THM ax
-      (← liftExcept (list_mk_forall args dtm))
-    let args' ← liftExcept (variants args args)
-    let atm ← liftExcept (do mkEq pat (← list_mk_comb f args'))
-    let ath ← ASSUME atm
-    let bth ← AP_TERM fn ath
-    let cth1 ← SPECL args (← ASSUME (← liftExcept (dest_exists (concl eth))).2)
-    let cth2 ← INST (← liftExcept (zip args' args)) cth1
-    let pth ← TRANS (← TRANS (← SYM cth1) bth) cth2
-    let qth ← DEPAIR pth
-    let qtm := concl qth
-    let rth ← (CONJUNCTS (← ASSUME qtm)).foldlM (fun acc th => MK_COMB (acc, th)) (REFL f)
-    let tth ← IMP_ANTISYM_RULE (← DISCH atm qth) (← DISCH qtm rth)
-    let uth ← GENL args (← GENL args' tth)
-    PROVE_HYP eth (← SIMPLE_CHOOSE fn uth)
-  return fun ax => do
-    let cls := conjuncts (strip_exists (strip_forall (concl ax)).2).2
-    let pats ← liftExcept (cls.mapM (fun c => do rand (← lhand (strip_forall c).2)))
-    end_itlist CONJ (← mapfilterM (prove_distinctness ax) pats)
+/-- The `BETAS_CONV n` of `instantiate_recursion` (ind_types.ml 1010-1012):
+    `n` beta-reductions of an `n`-fold application. -/
+def betasConvN : Nat → Equal.conv
+  | 0 => fun tm => .ok (REFL tm)
+  | n + 1 => Equal.THENC (Equal.RATOR_CONV (betasConvN n)) Equal.BETA_CONV
 
-/-- `prove_constructors_distinct` (ind_types.ml 928-959): parses `num_ty`
-    and proves `NEGATE`'s tautology once, and returns `fun ax -> ...`. -/
-def prove_constructors_distinct [HolBase] (BETA_THM : thm) (numK : HolMath.Nums.NumeralConsts)
-    (NUM_EQ_CONV : ioconv) : ExceptT String IO (thm → ExceptT String IO thm) := do
-  let num_ty ← qty r"num"
+/-- The `dest_clause` of `instantiate_recursion` (ind_types.ml 1013-1017). -/
+def instDestClause (cl : term) : Except String (List term × term × term × List term) := do
+  let (xs, eq) := strip_forall cl
+  let (l, r) ← dest_eq eq
+  let (f, ts) := strip_comb r
+  return (xs, ← rator l, f, ts)
+
+/-- The `CLAUSES_CONV k` of `instantiate_recursion` (ind_types.ml 1051-1057),
+    with the `nargs`/`nvars` arrays as they are after `mk_inst`. -/
+partial def instClausesConv (n : Nat) (nargs : Array Int) (nvars : Array Nat) (k : Nat) :
+    Equal.conv := fun tm =>
+  let conv : Equal.conv := fun tm =>
+    if nargs[k]! < 0 then .ok (REFL tm)
+    else funpow nvars[k]! Equal.BINDER_CONV (Equal.RAND_CONV (betasConvN nargs[k]!.toNat)) tm
+  if k + 1 < n then Equal.COMB2_CONV (Equal.RAND_CONV conv) (instClausesConv n nargs nvars (k + 1)) tm
+  else conv tm
+
+/-- `instantiate_recursion ax vals` (ind_types.ml 1009-1058): instantiates
+    the function variables of clause `k` of the recursion theorem `ax` to
+    `\ys. v` for each `(k,v)` of `vals`, and the range types to match. -/
+def instantiate_recursion [HolBase] (ax : thm) (vals : List (Nat × term)) : ExceptT String IO thm := do
+  let (evs, bod) := strip_exists (strip_forall (concl ax)).2
+  let cls := (← liftExcept ((conjuncts bod).mapM instDestClause)).toArray
+  let n := cls.size
+  let tyins ← liftExcept (vals.foldrM (fun (kv : Nat × term) acc => do
+    let (k, v) := kv
+    let (_, fn, _, _) := cls[k]!
+    let rty := (← dest_fun_ty (type_of fn)).2
+    let ty := type_of v
+    match rev_assoc rty acc with
+    | .ok ty' => if ty' == ty then return acc else throw "instantiate_recursion"
+    | .error _ =>
+      if ty == rty then return acc
+      else if is_vartype rty then return (ty, rty) :: acc
+      else throw "instantiate_recursion") [])
+  let rtys := tyins.map Prod.snd
+  let bad (c : List term × term × term × List term) : Except String Bool := do
+    let (xs, fn, _, _) := c
+    rtys.anyM (fun ty => do
+      if xs.any (fun x => occurs_in ty (type_of x)) then return true
+      return occurs_in ty (← dest_fun_ty (type_of fn)).1)
+  if ← liftExcept (cls.toList.anyM bad) then throw "instantiate_recursion"
+  let ax' ← INST_TYPE tyins ax
+  let th1 ← SPECL (← liftExcept (variants (thm_frees ax') (strip_forall (concl ax')).1)) ax'
+  let cls' := (← liftExcept ((conjuncts (strip_exists (concl th1)).2).mapM instDestClause)).toArray
+  let mut nargs : Array Int := Array.replicate n (-1)
+  let mut nvars : Array Nat := Array.replicate n 0
+  let mut insts : Array (term × term) := #[]
+  for (k, v) in vals do
+    let (xs, _, f, ts) := cls'[k]!
+    if nargs[k]! >= 0 then throw "instantiate_recursion"
+    let ys ← ts.mapM (fun t => liftM (genvar (type_of t) : IO term))
+    let tys ← liftExcept (zip ts ys)
+    let theta ← liftExcept ((intersect (frees v) xs).mapM (fun x => do return (← assoc x tys, x)))
+    nargs := nargs.set! k (Int.ofNat ts.length)
+    nvars := nvars.set! k xs.length
+    insts := insts.push ((← liftExcept (do list_mk_abs ys ((← vsubst theta) v))), f)
+  let th2 ← INST insts.toList th1
+  let cconv := funpow evs.length Equal.BINDER_CONV (instClausesConv n nargs nvars 0)
+  CONV_RULE (fun tm => pure (cconv tm)) th2
+
+/-- `constructor_head` (ind_types.ml 1061-1062): a numeral constructor is
+    its own head. -/
+def constructor_head (pat : term) : term :=
+  if HolMath.Nums.is_numeral pat then pat else repeat' rator pat
+
+/-- `constructor_args` (ind_types.ml 1063-1064). -/
+def constructor_args (pat : term) : List term :=
+  if HolMath.Nums.is_numeral pat then [] else (strip_comb pat).2
+
+/-- `first_occurrences pats` (ind_types.ml 1065-1072): whether each pattern's
+    constructor is a constant not seen in an earlier pattern. -/
+def first_occurrences (pats : List term) : List Bool :=
+  let rec firsts (seen : List String) : List term → List Bool
+    | [] => []
+    | p :: t =>
+      let c := match dest_const (repeat' rator p) with
+        | .ok (s, _) => s
+        | .error _ => ""
+      (c != "" && !(mem c seen)) :: firsts (c :: seen) t
+  firsts [] pats
+
+/-- `finish_injectivity atm qth` (ind_types.ml 1074-1078). -/
+def finish_injectivity [HolBase] (atm : term) (qth : thm) : ExceptT String IO thm := do
+  let qtm := concl qth
+  let f := repeat' rator (← liftExcept (lhand atm))
+  let rth ← (CONJUNCTS (← ASSUME qtm)).foldlM (fun acc th => MK_COMB (acc, th)) (REFL f)
+  IMP_ANTISYM_RULE (← DISCH atm qth) (← DISCH qtm rth)
+
+/-- `prove_injectivity_slow ax pat` (ind_types.ml 1079-1095). -/
+def prove_injectivity_slow [HolBase] (BETA_THM : thm) (DEPAIR : thm → ExceptT String IO thm)
+    (mk_pair : term × term → IO (Except String term)) (ax : thm) (pat : term) :
+    ExceptT String IO thm := do
+  let (f, args) := strip_comb pat
+  let rt ← end_itlist (fun a b => ExceptT.mk (mk_pair (a, b))) args
+  let ty ← mkFunTy (type_of pat) (type_of rt)
+  let fn ← liftM (genvar ty : IO term)
+  let dtm ← liftExcept (do mkEq (← mk_comb fn pat) rt)
+  let eth ← HolMath.Recursion.prove_recursive_functions_exist BETA_THM ax
+    (← liftExcept (list_mk_forall args dtm))
+  let args' ← liftExcept (variants args args)
+  let atm ← liftExcept (do mkEq pat (← list_mk_comb f args'))
+  let ath ← ASSUME atm
+  let bth ← AP_TERM fn ath
+  let cth1 ← SPECL args (← ASSUME (← liftExcept (dest_exists (concl eth))).2)
+  let cth2 ← INST (← liftExcept (zip args' args)) cth1
+  let pth ← TRANS (← TRANS (← SYM cth1) bth) cth2
+  let tth ← finish_injectivity atm (← DEPAIR pth)
+  let uth ← GENL args (← GENL args' tth)
+  PROVE_HYP eth (← SIMPLE_CHOOSE fn uth)
+
+/-- `mk_injections tys` (ind_types.ml 1101-1109): the injections of the
+    types `tys` into their balanced sum `mk_sum tys`. -/
+partial def mk_injections (tys : List hol_type) :
+    ExceptT String IO (List (term → Except String term)) := do
+  let k := tys.length
+  if k == 1 then return [fun t => .ok t]
+  let (tys1, tys2) ← liftExcept (chop_list (k / 2) tys)
+  let ty1 ← mk_sum tys1
+  let ty2 ← mk_sum tys2
+  let inl ← mkConst "INL" [(ty1, aty), (ty2, bty)]
+  let inr ← mkConst "INR" [(ty1, aty), (ty2, bty)]
+  let injs1 ← mk_injections tys1
+  let injs2 ← mk_injections tys2
+  return injs1.map (fun f t => do mk_comb inl (← f t)) ++
+         injs2.map (fun f t => do mk_comb inr (← f t))
+
+/-- `UNSUM_RULE th` (ind_types.ml 1111-1121): strips `INL`/`INR` from both
+    sides of `|- INL s = INL t` etc. with `OUTL`/`OUTR`. -/
+partial def unsumRule [HolBase] (OUT_CONV : ioconv) (th : thm) : ExceptT String IO thm :=
+  tryWith (do
+    let c ← liftExcept (do rator (← lhs (concl th)))
+    let (cn, cty) ← liftExcept (dest_const c)
+    let dn ← if cn == "INL" then pure "OUTL" else if cn == "INR" then pure "OUTR"
+             else throw "UNSUM_RULE"
+    let [ty1, ty2] := (← liftExcept (do dest_type (← dest_fun_ty cty).2)).2
+      | throw "UNSUM_RULE"
+    let d ← mkConst dn [(ty1, aty), (ty2, bty)]
+    let th1 ← AP_TERM d th
+    let (l, r) ← liftExcept (dest_eq (concl th1))
+    let rth ← ExceptT.mk (OUT_CONV r)
+    let lth ← ExceptT.mk (OUT_CONV l)
+    unsumRule OUT_CONV (← TRANS (← TRANS (← SYM lth) th1) rth))
+    (pure th)
+
+/-- The clauses' left-hand sides `fn pat` of a recursion theorem, as pairs. -/
+def recursionLefts (ax : thm) : Except String (List (term × term)) := do
+  let cls := conjuncts (strip_exists (strip_forall (concl ax)).2).2
+  cls.mapM (fun c => do dest_comb (← lhand (strip_forall c).2))
+
+/-- `prove_injectivity_fast ax` (ind_types.ml 1122-1156). -/
+def prove_injectivity_fast [HolBase] (DEPAIR : thm → ExceptT String IO thm) (OUT_CONV : ioconv)
+    (mk_pair : term × term → IO (Except String term)) (ax : thm) : ExceptT String IO thm := do
+  let lefts ← liftExcept (recursionLefts ax)
+  let klefts := (((first_occurrences (lefts.map Prod.snd)).zip
+      ((List.range lefts.length).zip lefts)).filter (fun (x : Bool × Nat × term × term) =>
+        let args := constructor_args x.2.2.2
+        x.1 && !args.isEmpty && args.all is_var)).map Prod.snd
+  let tup (p : term) : ExceptT String IO term :=
+    end_itlist (fun a b => ExceptT.mk (mk_pair (a, b))) (constructor_args p)
+  let mk_vals (fn : term) : ExceptT String IO (List (Nat × term)) := do
+    let kps := (klefts.filter (fun (x : Nat × term × term) => x.2.1 == fn)).map
+      (fun x => (x.1, x.2.2))
+    let tys := setify (← kps.mapM (fun kp => do return type_of (← tup kp.2)))
+    let injs ← liftExcept (zip tys (← mk_injections tys))
+    kps.mapM (fun (k, p) => do
+      let tp ← tup p
+      let inj ← liftExcept (assoc (type_of tp) injs)
+      return (k, ← liftExcept (inj tp)))
+  let vals0 ← (setify (klefts.map (fun x => x.2.1))).foldrM
+    (fun fn acc => do return (← mk_vals fn) ++ acc) []
+  let vals := sort (fun (a b : Nat × term) => a.1 < b.1) vals0
+  let eth ← instantiate_recursion ax vals
+  let (evs, bod) := strip_exists (concl eth)
+  let cths := (CONJUNCTS (← ASSUME bod)).toArray
+  let prove_injective (x : Nat × term × term) : ExceptT String IO (thm × List term × List term) := do
+    let (k, _, pat) := x
+    let args := constructor_args pat
+    let args' ← liftExcept (variants args args)
+    let atm ← liftExcept (do mkEq pat (← list_mk_comb (repeat' rator pat) args'))
+    let cth1 ← SPECL args cths[k]!
+    let cth2 ← SPECL args' cths[k]!
+    let fn' ← liftExcept (do rator (← lhs (concl cth1)))
+    let pth ← TRANS (← TRANS (← SYM cth1) (← AP_TERM fn' (← ASSUME atm))) cth2
+    return (← finish_injectivity atm (← DEPAIR (← unsumRule OUT_CONV pth)), args, args')
+  let tths ← klefts.mapM prove_injective
+  let th ← PROVE_HYP eth (← evs.foldrM SIMPLE_CHOOSE (← end_itlist CONJ (tths.map (·.1))))
+  end_itlist CONJ (← map2M (fun th (x : thm × List term × List term) => do
+    GENL x.2.1 (← GENL x.2.2 th)) (CONJUNCTS th) tths)
+
+/-- `prove_constructors_numbering ax` (ind_types.ml 1164-1183): the groups
+    of (first-occurring, variable-argument) constructors of each type with at
+    least two, with the recursion theorem instantiated to number them. -/
+def prove_constructors_numbering [HolBase] (numK : HolMath.Nums.NumeralConsts) (ax : thm) :
+    ExceptT String IO (thm × List term × List (List (term × thm))) := do
+  let lefts ← liftExcept (recursionLefts ax)
+  let fns := itlist (fun (p : term × term) acc => insert p.1 acc) lefts []
+  let klefts := (first_occurrences (lefts.map Prod.snd)).zip
+    ((List.range lefts.length).zip lefts)
+  let ok (x : Bool × Nat × term × term) : Bool :=
+    let p := x.2.2.2
+    x.1 && (HolMath.Nums.is_numeral p || (strip_comb p).2.all is_var)
+  let groups := fns.filterMap (fun f =>
+    let g := klefts.filter (fun x => x.2.2.1 == f)
+    if g.length < 2 || !(g.all ok) then none
+    else some (g.map (fun x => (x.2.1, x.2.2.2))))
+  if groups.isEmpty then throw "prove_constructors_numbering"
+  let vals0 ← liftExcept (groups.foldrM (fun g acc => do
+    let ns ← (g.zip (List.range g.length)).mapM (fun (x : (Nat × term) × Nat) => do
+      return (x.1.1, ← HolMath.Nums.mk_small_numeral numK (Int.ofNat x.2)))
+    return ns ++ acc) [])
+  let vals := sort (fun (a b : Nat × term) => a.1 < b.1) vals0
+  let eth ← instantiate_recursion ax vals
+  let (evs, bod) := strip_exists (concl eth)
+  let cths := (CONJUNCTS (← ASSUME bod)).toArray
+  return (eth, evs, groups.map (fun g => g.map (fun (k, p) => (p, cths[k]!))))
+
+/-- `DISTINCT_RULE thi thj tm` (ind_types.ml 1184-1187): from
+    `|- f (C ..) = i` and `|- f (D ..) = j`, `|- ~(C .. = D ..)`. -/
+def DISTINCT_RULE [HolBase] (NUM_EQ_CONV : ioconv) (thi thj : thm) (tm : term) :
+    ExceptT String IO thm := do
+  let fn ← liftExcept (do rator (← lhs (concl thi)))
+  let th1 ← TRANS (← TRANS (← SYM thi) (← AP_TERM fn (← ASSUME tm))) thj
+  NOT_INTRO (← DISCH tm (← EQ_MP (← ExceptT.mk (NUM_EQ_CONV (concl th1))) th1))
+
+/-- `prove_distinctness_slow ax pat` (ind_types.ml 1188-1210), given
+    `num_ty` and `NEGATE`'s tautology. -/
+def prove_distinctness_slow [HolBase] (BETA_THM : thm) (numK : HolMath.Nums.NumeralConsts)
+    (NUM_EQ_CONV : ioconv) (num_ty : hol_type) (negth : thm) (ax : thm) (pat : List term) :
+    ExceptT String IO (List thm) := do
   let rec allopairs {α β : Type} (f : α → α → β) : List α → List α → List β
     | [], _ => []
     | _, [] => []
     | h :: t, _ :: m => m.map (f h) ++ allopairs f t m
-  let negth ← TAUT (← q r"a ==> F <=> ~a")
   let NEGATE (th : thm) : ExceptT String IO thm := do GEN_ALL (← CONV_RULE (REWR_CONV negth) th)
-  let prove_distinct (ax : thm) (pat : List term) : ExceptT String IO (List thm) := do
-    let nums ← liftExcept ((List.range pat.length).mapM (fun k =>
-      HolMath.Nums.mk_small_numeral numK (Int.ofNat k)))
-    let fn ← liftM (genvar (← mkType "fun" [type_of (← liftExcept (hd pat)), num_ty]) : IO term)
-    let ls ← liftExcept (pat.mapM (mk_comb fn))
-    let defs ← map2M (fun l r => liftExcept (do
-      list_mk_forall (frees (← rand l)) (← mkEq l r))) ls nums
-    let eth ← HolMath.Recursion.prove_recursive_functions_exist BETA_THM ax
-      (← liftExcept (list_mk_conj defs))
-    let (ev, bod) ← liftExcept (dest_exists (concl eth))
-    let REWRITE := CONV_RULE (← GEN_REWRITE_CONV_NET ONCE_DEPTH_CONV (CONJUNCTS (← ASSUME bod)))
-    let pat' ← liftExcept (pat.mapM (fun t => do
-      let (f, args) := if HolMath.Nums.is_numeral t then (t, []) else strip_comb t
-      list_mk_comb f (← variants args args)))
-    let pairs ← liftExcept ((allopairs (fun a b => (a, b)) pat pat').mapM (fun p => mkEq p.1 p.2))
-    let nths ← pairs.mapM (fun p => do REWRITE (← AP_TERM fn (← ASSUME p)))
-    let fths ← map2M (fun t th => do NEGATE (← DISCH t (← CONV_RULE NUM_EQ_CONV th))) pairs nths
-    return CONJUNCTS (← PROVE_HYP eth (← SIMPLE_CHOOSE ev (← end_itlist CONJ fths)))
-  return fun ax => do
+  let nums ← liftExcept ((List.range pat.length).mapM (fun k =>
+    HolMath.Nums.mk_small_numeral numK (Int.ofNat k)))
+  let fn ← liftM (genvar (← mkType "fun" [type_of (← liftExcept (hd pat)), num_ty]) : IO term)
+  let ls ← liftExcept (pat.mapM (mk_comb fn))
+  let defs ← map2M (fun l r => liftExcept (do
+    list_mk_forall (frees (← rand l)) (← mkEq l r))) ls nums
+  let eth ← HolMath.Recursion.prove_recursive_functions_exist BETA_THM ax
+    (← liftExcept (list_mk_conj defs))
+  let (ev, bod) ← liftExcept (dest_exists (concl eth))
+  let REWRITE := CONV_RULE (← GEN_REWRITE_CONV_NET ONCE_DEPTH_CONV (CONJUNCTS (← ASSUME bod)))
+  let pat' ← liftExcept (pat.mapM (fun t => do
+    let (f, args) := if HolMath.Nums.is_numeral t then (t, []) else strip_comb t
+    list_mk_comb f (← variants args args)))
+  let pairs ← liftExcept ((allopairs (fun a b => (a, b)) pat pat').mapM (fun p => mkEq p.1 p.2))
+  let nths ← pairs.mapM (fun p => do REWRITE (← AP_TERM fn (← ASSUME p)))
+  let fths ← map2M (fun t th => do NEGATE (← DISCH t (← CONV_RULE NUM_EQ_CONV th))) pairs nths
+  return CONJUNCTS (← PROVE_HYP eth (← SIMPLE_CHOOSE ev (← end_itlist CONJ fths)))
+
+/-- `prove_distinctness_fast ax` (ind_types.ml 1211-1228). -/
+def prove_distinctness_fast [HolBase] (numK : HolMath.Nums.NumeralConsts) (NUM_EQ_CONV : ioconv)
+    (ax : thm) : ExceptT String IO thm := do
+  let (eth, evs, groups) ← prove_constructors_numbering numK ax
+  let prove_group (g : List (term × thm)) : ExceptT String IO (List thm) := do
+    let g' ← g.mapM (fun (p, th) => do
+      let args := constructor_args p
+      let args' ← liftExcept (variants args args)
+      return (← SPECL args th, ← SPECL args' th, p,
+              ← liftExcept (list_mk_comb (constructor_head p) args')))
+    -- `map ... t @ pairs t`: OCaml evaluates `pairs t` first.
+    let rec pairs : List (thm × thm × term × term) → ExceptT String IO (List thm)
+      | [] => pure []
+      | (thi, _, p, _) :: t => do
+        let rest ← pairs t
+        let here ← t.mapM (fun (_, thj, _, q) => do
+          DISTINCT_RULE NUM_EQ_CONV thi thj (← liftExcept (mkEq p q)))
+        return here ++ rest
+    pairs g'
+  let ths ← groups.foldrM (fun g acc => do return (← prove_group g) ++ acc) []
+  let th ← PROVE_HYP eth (← evs.foldrM SIMPLE_CHOOSE (← end_itlist CONJ ths))
+  end_itlist CONJ (← (CONJUNCTS th).mapM GEN_ALL)
+
+/-- A constructor's argument variables `vs` renamed apart from `avoid`
+    (the `fresh` of `constructors_distinct_convs`, ind_types.ml 1261-1267):
+    names are compared regardless of type. -/
+partial def freshArgVars (avoid : List term) : List term → Except String (List term)
+  | [] => .ok []
+  | v :: t => do
+    let ty := type_of v
+    let v' ← variant (← avoid.mapM (fun u => do return mk_var (← dest_var u).1 ty)) v
+    return v' :: (← freshArgVars (v' :: avoid) t)
+
+/-- `constructors_distinct_convs ax` (ind_types.ml 1239-1287): for each
+    numbered constructor `C` a pattern `C x1 .. xn = y` and a conversion
+    proving `(C .. = D ..) <=> F` for the other constructors `D` of its type.
+    The theorems for a row `C` are proved together on first use. -/
+def constructors_distinct_convs [HolBase] (numK : HolMath.Nums.NumeralConsts)
+    (NUM_EQ_CONV : ioconv) (ax : thm) : ExceptT String IO (List (term × ioconv)) := do
+  let (eth, evs, groups) ← prove_constructors_numbering numK ax
+  let mk_convs (g : List (term × thm)) : ExceptT String IO (List (term × ioconv)) := do
+    let n := g.length
+    let pats := (g.map Prod.fst).toArray
+    let cths := (g.map Prod.snd).toArray
+    let ty := type_of pats[0]!
+    let heads := pats.toList.map constructor_head
+    let (nums, cons) := (heads.zip (List.range n)).partition (fun p => HolMath.Nums.is_numeral p.1)
+    let ctab ← liftExcept (cons.mapM (fun (c, i) => do return ((← dest_const c).1, i)))
+    let index (tm : term) : Except String Nat :=
+      if HolMath.Nums.is_numeral tm then assoc tm nums
+      else do assoc (← dest_const (repeat' rator tm)).1 ctab
+    let rows ← (IO.mkRef (Array.replicate n (none : Option (Array thm))) : IO _)
+    let row (i : Nat) : ExceptT String IO (Array thm) := do
+      if let some r := (← (rows.get : IO _))[i]! then return r
+      let p := pats[i]!
+      let args := constructor_args p
+      let thi ← SPECL args cths[i]!
+      let js := (List.range n).filter (· != i)
+      let ths ← js.mapM (fun j => do
+        let q := pats[j]!
+        let args' ← liftExcept (freshArgVars args (constructor_args q))
+        DISTINCT_RULE NUM_EQ_CONV thi (← SPECL args' cths[j]!)
+          (← liftExcept (do mkEq p (← list_mk_comb (constructor_head q) args'))))
+      let th ← PROVE_HYP eth (← evs.foldrM SIMPLE_CHOOSE (← end_itlist CONJ ths))
+      let mut r : Array thm := Array.replicate n HolBase.B.TRUTH
+      for (j, th) in ← liftExcept (zip js (CONJUNCTS th)) do
+        r := r.set! j (← EQF_INTRO th)
+      (rows.modify (·.set! i (some r)) : IO _)
+      return r
+    let conv : ioconv := fun tm => ExceptT.run do
+      let (i, j) ← match (do
+          let (l, r) ← dest_eq tm
+          let i ← index l
+          let j ← index r
+          if i == j || (type_match ty (type_of l) []).toBool == false then throw ""
+          return (i, j) : Except String (Nat × Nat)) with
+        | .ok ij => pure ij
+        | .error _ => throw "constructors_distinct_convs"
+      ExceptT.mk (REWR_CONV ((← row i)[j]!) tm)
+    pats.toList.mapM (fun p => do
+      -- `mk_eq(..., genvar ty)`: OCaml evaluates the right component first.
+      let gv ← liftM (genvar ty : IO term)
+      let gargs ← (constructor_args p).mapM (fun a => liftM (genvar (type_of a) : IO term))
+      return (← liftExcept (do mkEq (← list_mk_comb (constructor_head p) gargs) gv), conv))
+  groups.foldrM (fun g acc => do return (← mk_convs g) ++ acc) []
+
+/-- What `let prove_constructors_injective,prove_constructors_distinct,
+    constructors_distinct_convs = ...` (ind_types.ml 1007-1290) binds. -/
+structure ConstructorProvers where
+  injective : thm → ExceptT String IO thm
+  distinct : thm → ExceptT String IO thm
+  distinctConvs : thm → ExceptT String IO (List (term × ioconv))
+
+instance : Inhabited ConstructorProvers :=
+  ⟨⟨fun _ => throw "", fun _ => throw "", fun _ => throw ""⟩⟩
+
+/-- Build the three provers (ind_types.ml 1007-1290): `DEPAIR`'s and
+    `OUT_CONV`'s nets, `num_ty` and `NEGATE`'s tautology are made once, in
+    that order. -/
+def setupConstructorProvers [HolBase] (BETA_THM PAIR_EQ OUTL OUTR : thm)
+    (mk_pair : term × term → IO (Except String term)) (numK : HolMath.Nums.NumeralConsts)
+    (NUM_EQ_CONV : ioconv) : ExceptT String IO ConstructorProvers := do
+  let DEPAIR := CONV_RULE (← GEN_REWRITE_CONV_NET TOP_SWEEP_CONV [PAIR_EQ])
+  let OUT_CONV ← GEN_REWRITE_CONV_NET (fun c => c) [OUTL, OUTR]
+  let num_ty ← qty r"num"
+  let negth ← TAUT (← q r"a ==> F <=> ~a")
+  let injective (ax : thm) : ExceptT String IO thm := do
     let cls := conjuncts (strip_exists (strip_forall (concl ax)).2).2
-    let lefts ← liftExcept (cls.mapM (fun c => do dest_comb (← lhand (strip_forall c).2)))
+    let pats ← liftExcept (cls.mapM (fun c => do rand (← lhand (strip_forall c).2)))
+    if pats.all (fun p => (constructor_args p).isEmpty) then
+      throw "prove_constructors_injective"
+    tryWith (prove_injectivity_fast DEPAIR OUT_CONV mk_pair ax)
+      (do end_itlist CONJ
+            (← mapfilterM (prove_injectivity_slow BETA_THM DEPAIR mk_pair ax) pats))
+  let distinct (ax : thm) : ExceptT String IO thm := do
+    let lefts ← liftExcept (recursionLefts ax)
     let fns := itlist (fun (p : term × term) acc => insert p.1 acc) lefts []
     let pats := fns.map (fun f => (lefts.filter (fun p => p.1 == f)).map Prod.snd)
-    end_itlist CONJ (← end_itlist (fun a b => pure (a ++ b)) (← mapfilterM (prove_distinct ax) pats))
+    if pats.all (fun l => l.length < 2) then throw "prove_constructors_distinct"
+    tryWith (prove_distinctness_fast numK NUM_EQ_CONV ax)
+      (do end_itlist CONJ (← end_itlist (fun a b => pure (a ++ b))
+            (← mapfilterM (prove_distinctness_slow BETA_THM numK NUM_EQ_CONV num_ty negth ax)
+                pats)))
+  return { injective, distinct,
+           distinctConvs := constructors_distinct_convs numK NUM_EQ_CONV }
 
 /- ---------------------------------------------------------------------- -/
 /- Automatically prove the case analysis theorems.                        -/
@@ -1398,6 +1821,13 @@ partial def prove_cases_thm [HolBase] (eepth : thm) (th : thm) : ExceptT String 
   let mk_exclauses (x : term) (rpats : List term) : Except String term := do
     let xts ← rpats.mapM (fun t => do list_mk_exists (frees t) (← mkEq x t))
     mk_abs x (← list_mk_disj xts)
+  let mk_exclauses_apart (avoid : List term) (x : term) (rpats : List term) :
+      Except String term := do
+    let mk_xt (t : term) : Except String term := do
+      let fvs := frees t
+      let fvs' ← variants avoid fvs
+      list_mk_exists fvs' (← mkEq x ((← vsubst (← zip fvs' fvs)) t))
+    mk_abs x (← list_mk_disj (← rpats.mapM mk_xt))
   let prove_triv (tm : term) : ExceptT String IO thm := do
     let (_evs, bod) := strip_exists tm
     let (l, r) ← liftExcept (dest_eq bod)
@@ -1430,57 +1860,101 @@ partial def prove_cases_thm [HolBase] (eepth : thm) (th : thm) : ExceptT String 
   let xs ← liftExcept (do make_args "x" (freesl pats) (← rpatlist.mapM (fun l => do
     return type_of (← hd l))))
   let xpreds ← map2M (fun x rp => liftExcept (mk_exclauses x rp)) xs rpatlist
-  let ith ← BETA_RULE (← INST (← liftExcept (zip xpreds preds)) (← SPEC_ALL th))
+  let sth ← SPEC_ALL th
+  -- The beta-reductions in the antecedent would substitute C a0 .. an under
+  -- the binders a0 .. an of the instance, which is exponential in n, so they
+  -- are done with the existential variables named apart and the result
+  -- converted back to the original consequent (ind_types.ml 1342-1353).
+  let avoid := xs ++ (← liftExcept (Basics.variables (concl sth)))
+  let xpreds' ← map2M (fun x rp => liftExcept (mk_exclauses_apart avoid x rp)) xs rpatlist
+  let ith ← BETA_RULE (← INST (← liftExcept (zip xpreds' preds)) sth)
   let eclauses := conjuncts (← liftExcept (dest_imp (concl ith))).1
-  MP ith (← end_itlist CONJ (← eclauses.mapM prove_eclause))
+  let th1 ← MP ith (← end_itlist CONJ (← eclauses.mapM prove_eclause))
+  let ctm ← liftExcept (do return (← vsubst (← zip xpreds preds)) (← rand (concl sth)))
+  let tm ← liftExcept (rand (concl (← ExceptT.mk (REDEPTH_CONV BETA_CONV ctm))))
+  EQ_MP (← liftExcept (Equal.ALPHA (concl th1) tm)) th1
 
 /- ---------------------------------------------------------------------- -/
 /- Now deal with nested recursion. Need a store of previous theorems.     -/
 /- ---------------------------------------------------------------------- -/
 
 /- ---------------------------------------------------------------------- -/
-/- Also add a cached rewrite of distinctness and injectivity theorems.    -/
-/- Since                                                                  -/
-/- there can be quadratically many distinctness clauses, it would really  -/
-/- be                                                                     -/
-/- preferable to have a conversion, but this seems OK up 100              -/
-/- constructors.                                                          -/
+/- Also add cached rewrites for injectivity and conversions for           -/
+/- distinctness of constructors to a net (ind_types.ml 1363-1404). Since  -/
+/- there can be quadratically many distinctness clauses, there is instead -/
+/- one entry "C x1 .. xn = y" for each constructor C, with a conversion   -/
+/- that proves (C .. = D ..) <=> F for the other constructors D of its    -/
+/- type (see constructors_distinct_convs). They are also put in their own -/
+/- net, for CONSTRUCTORS_DISTINCT_CONV. The full distinctness theorem is  -/
+/- only proved when it is first asked for.                                -/
 /- ---------------------------------------------------------------------- -/
 
-/-- The element type of `distinctness_store` and `injectivity_store`
-    (ind_types.ml 1023-1024).  The refs live in Session. -/
+/-- The element type of `injectivity_store` (ind_types.ml 1382).  The refs
+    live in Session. -/
 abbrev RectypeStore := List (String × thm)
 
-/-- `extend_rectype_net (tyname,(_,_,rth))` (ind_types.ml 1026-1033), given
-    `prove_constructors_distinct` and `prove_constructors_injective`.  Takes
-    the current contents of the three stores and returns the new ones. -/
-def extend_rectype_net [HolBase]
-    (prove_constructors_distinct prove_constructors_injective : thm → ExceptT String IO thm)
-    (entry : String × (Int × thm × thm)) (curNet : HolCore.Nets.net Simp.gconv)
-    (curDist curInj : RectypeStore) :
-    ExceptT String IO (HolCore.Nets.net Simp.gconv × RectypeStore × RectypeStore) := do
+/-- The element type of `distinctness_store` (ind_types.ml 1380-1381): a
+    function that proves the theorem on its first call and then returns the
+    saved result. -/
+abbrev DistinctnessStore := List (String × IO (Except String thm))
+
+/-- The contents of `basic_rectype_net`, `constructors_distinct_net`,
+    `distinctness_store` and `injectivity_store`. -/
+structure RectypeStores where
+  basicNet : HolCore.Nets.net Simp.gconv
+  distinctNet : HolCore.Nets.net Simp.gconv
+  dist : DistinctnessStore
+  inj : RectypeStore
+
+/-- `extend_rectype_net (tyname,(_,_,rth))` (ind_types.ml 1384-1402).  Takes
+    the current contents of the four stores and returns the new ones. -/
+def extend_rectype_net [HolBase] (P : ConstructorProvers)
+    (entry : String × (Int × thm × thm)) (cur : RectypeStores) :
+    ExceptT String IO RectypeStores := do
   let (tyname, (_, _, rth)) := entry
-  let ths1 ← tryWith (do return [← prove_constructors_distinct rth]) (pure [])
-  let ths2 ← tryWith (do return [← prove_constructors_injective rth]) (pure [])
-  let canon_thl ← (ths1 ++ ths2).foldrM
+  let ths ← tryWith (do return [← P.injective rth]) (pure [])
+  let cnvs ← tryWith (P.distinctConvs rth) (pure [])
+  let dths ← if !cnvs.isEmpty then pure [] else
+             tryWith (do return [← P.distinct rth]) (pure [])
+  let saved ← (IO.mkRef (dths.head?) : IO _)
+  let dth : IO (Except String thm) := do
+    match ← saved.get with
+    | some th => return .ok th
+    | none =>
+      match ← (P.distinct rth).run with
+      | .ok th => do saved.set (some th); return .ok th
+      | .error e => return .error e
+  let canon_thl ← (dths ++ ths).foldrM
     (fun th acc => ExceptT.mk (Simp.mk_rewrites HolBase.B false th acc)) []
-  let dist' := ths1.map (fun th => (tyname, th)) ++ curDist
-  let inj' := ths2.map (fun th => (tyname, th)) ++ curInj
+  let add_convs (net : HolCore.Nets.net Simp.gconv) : ExceptT String IO (HolCore.Nets.net Simp.gconv) :=
+    cnvs.foldrM (fun (c : term × ioconv) acc => ExceptT.mk (Simp.net_of_conv c.1 c.2 acc)) net
+  let dist' := if !cnvs.isEmpty || !dths.isEmpty then (tyname, dth) :: cur.dist else cur.dist
+  let inj' := ths.map (fun th => (tyname, th)) ++ cur.inj
+  let dnet' ← add_convs cur.distinctNet
   let net' ← canon_thl.foldrM
-    (fun th acc => ExceptT.mk (Simp.net_of_thm HolBase.B true th acc)) curNet
-  return (net', dist', inj')
+    (fun th acc => ExceptT.mk (Simp.net_of_thm HolBase.B true th acc)) (← add_convs cur.basicNet)
+  return { basicNet := net', distinctNet := dnet', dist := dist', inj := inj' }
 
 /- ---------------------------------------------------------------------- -/
 /- Return distinctness and injectivity for a type by simple lookup.       -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `distinctness ty = assoc ty (!distinctness_store)` (ind_types.ml 1041). -/
-def distinctness (store : RectypeStore) (ty : String) : Except String thm :=
-  Lib.assoc ty store
+/-- `distinctness ty = assoc ty (!distinctness_store) ()` (ind_types.ml 1410). -/
+def distinctness (store : DistinctnessStore) (ty : String) : IO (Except String thm) :=
+  match Lib.assoc ty store with
+  | .ok f => f
+  | .error e => return .error e
 
-/-- `injectivity ty = assoc ty (!injectivity_store)` (ind_types.ml 1043). -/
+/-- `injectivity ty = assoc ty (!injectivity_store)` (ind_types.ml 1412). -/
 def injectivity (store : RectypeStore) (ty : String) : Except String thm :=
   Lib.assoc ty store
+
+/-- `CONSTRUCTORS_DISTINCT_CONV` (ind_types.ml 1418-1420), given
+    `!constructors_distinct_net`. -/
+def CONSTRUCTORS_DISTINCT_CONV (net : HolCore.Nets.net Simp.gconv) : ioconv := fun tm => do
+  match ← Simp.REWRITES_CONV net tm with
+  | .ok th => return .ok th
+  | .error _ => return .error "CONSTRUCTORS_DISTINCT_CONV"
 
 /-- `cases ty` (ind_types.ml 1045-1047). -/
 def cases [HolBase] (eepth num_CASES : thm) (store : List (String × (Int × thm × thm)))
@@ -1578,7 +2052,8 @@ open HolCore.Parser (lexcode)
     from `basic_net()` as it is when this is built).  `getStore` reads
     `!inductive_type_store`; `addEntries` does
     `inductive_type_store := newentries @ (!inductive_type_store);
-     do_list extend_rectype_net newentries`. -/
+     extend_rectype_net (hd newentries); share distinctness_store;
+     share injectivity_store`. -/
 structure DefTypeRaw3 where
   D2 : DefTypeRaw2
   ISO : thm
@@ -1690,7 +2165,10 @@ def prove_inductive_types_isomorphic [HolBase] (R : DefTypeRaw3) (n k : Nat)
   let (ith0, rth0) := ir0
   let (ith1, rth1) := ir1
   let sth0 ← SPEC_ALL rth0
-  let sth1 ← SPEC_ALL rth1
+  -- For the big recursion theorem rth1, which is closed and has distinct
+  -- bound variables, SPECL of them is what SPEC_ALL would do.
+  let fvs1 := (strip_forall (concl rth1)).1
+  let sth1 ← SPECL fvs1 rth1
   let t_tm := concl HolBase.B.TRUTH
   let (pevs0, pbod0) := strip_exists (concl sth0)
   let (pevs1, pbod1) := strip_exists (concl sth1)
@@ -1743,6 +2221,16 @@ def prove_inductive_types_isomorphic [HolBase] (R : DefTypeRaw3) (n k : Nat)
       list_mk_abs gargs1 (← list_mk_comb (strip_comb (← rand l0)).1 xargs1)), vc1)
     return (inst0, inst1)
   let (insts0, insts1) := unzip (← map2M proc_clause (lcjs0 ++ rcjs0) (lcjs1 ++ rcjs1))
+  -- The function variables of rth1 for other clauses are instantiated to
+  -- arbitrary closed terms, so that the definitions of the isomorphisms
+  -- below (hypotheses until scrubbed) do not have them free.
+  let insts1 ← do
+    let fvs := fvs1.map (inst tyins1)
+    let mkSel ← ExceptT.mk mk_select
+    let extra ← (subtract fvs (insts1.map Prod.snd)).mapM (fun v => do
+      let gv ← liftM (genvar (type_of v) : IO term)
+      return (← liftExcept (mkSel (gv, t_tm)), v))
+    pure (insts1 ++ extra)
   let uth0 ← BETA_RULE (← INST insts0 tth0)
   let uth1 ← BETA_RULE (← INST insts1 tth1)
   let (efvs0, sth0) ← DE_EXISTENTIALIZE_RULE R.dePth uth0
@@ -1752,6 +2240,12 @@ def prove_inductive_types_isomorphic [HolBase] (R : DefTypeRaw3) (n k : Nat)
     Lib.find (fun t2 => match (do hd (← dest_type (type_of t2)).2) with
       | .ok h => h == key
       | .error _ => false) efvs1))
+  -- Only the clauses for the isomorphisms are used for rewriting.
+  let sth1 ← do
+    let isofn (th : thm) : Except String term := do
+      return repeat' rator (← lhand (strip_forall (concl th)).2)
+    end_itlist CONJ (← liftExcept ((CONJUNCTS sth1).filterM (fun th => do
+      return mem (← isofn th) efvs2)))
   let isotms ← map2M (fun ff gg => ExceptT.mk (list_mk_icomb "ISO" [ff, gg])) efvs0 efvs2
   let ctm ← liftExcept (list_mk_conj isotms)
   let cth1 ← ExceptT.mk (R.ISO_EXPAND_CONV ctm)
@@ -1761,8 +2255,10 @@ def prove_inductive_types_isomorphic [HolBase] (R : DefTypeRaw3) (n k : Nat)
   let (cjs1, cjs2) := partition Prod.fst (← liftExcept (zip eee cjs))
   let ctm2 ← liftExcept (do
     mk_conj (← list_mk_conj (cjs1.map Prod.snd)) (← list_mk_conj (cjs2.map Prod.snd)))
-  let detrivConv ← REWRITE_CONV_NET [sth0, sth1]
-  let DETRIV_RULE (th : thm) : ExceptT String IO thm := do TRIV_ANTE_RULE (← CONV_RULE detrivConv th)
+  -- Rewrite with assumed clauses, to keep the hypotheses small.
+  let detrivConv ← REWRITE_CONV_NET [← ASSUME (concl sth0), ← ASSUME (concl sth1)]
+  let DETRIV_RULE (th : thm) : ExceptT String IO thm := do
+    TRIV_ANTE_RULE (← PROVE_HYP sth0 (← PROVE_HYP sth1 (← CONV_RULE detrivConv th)))
   let jth (ith : thm) (tms : List term) : ExceptT String IO thm := do
     let itha ← SPEC_ALL ith
     let icjs := conjuncts (← liftExcept (rand (concl itha)))
@@ -1843,8 +2339,8 @@ def recover_clause (id : String) (tm : term) : Except String (String × List hol
   let (con, args) := strip_comb tm
   return ((← dest_const con).1 ++ id, args.map type_of)
 
-/-- `create_auxiliary_clauses nty` (ind_types.ml 1297-1312). -/
-def create_auxiliary_clauses (R : DefTypeRaw3) (nty : hol_type) :
+/-- `create_auxiliary_clauses avoid nty` (ind_types.ml 1692-1717). -/
+def create_auxiliary_clauses (R : DefTypeRaw3) (avoid : List hol_type) (nty : hol_type) :
     ExceptT String IO (Int × List (hol_type × hol_type)
       × List (hol_type × List (String × List hol_type)) × thm × thm) := do
   let id := (← liftExcept (dest_var (← liftM (genvar bool_ty : IO term)))).1
@@ -1855,7 +2351,14 @@ def create_auxiliary_clauses (R : DefTypeRaw3) (nty : hol_type) :
   let (evs, bod) := strip_exists (strip_forall (concl rth)).2
   let cjs ← liftExcept ((conjuncts bod).mapM (fun c => lhand (strip_forall c).2))
   let rtys ← liftExcept (evs.mapM (fun e => do hd (← dest_type (type_of e)).2))
-  let tyins ← liftExcept (tryfind (fun vty => type_match vty nty []) rtys)
+  let tyins0 ← liftExcept (tryfind (fun vty => type_match vty nty []) rtys)
+  -- Rename the other type variables of the recursion theorem, i.e. its
+  -- range types, if they are among those of the definition (avoid).
+  let rtvs := itlist (fun e acc => union (tyvars (type_of e)) acc) evs []
+  let clash (v : hol_type) : Bool := mem v avoid && !(tyins0.any (fun p => p.2 == v))
+  let tyins ← liftExcept ((rtvs.filter clash).foldrM (fun v acc => do
+    return (freshTyvar (acc.map Prod.fst ++ union avoid rtvs) (← dest_vartype v), v) :: acc)
+    tyins0)
   let cjs' ← liftExcept (do (← chop_list k.toNat cjs).1.mapM (fun c => do return inst tyins (← rand c)))
   let mtys := itlist (fun c acc => insert (type_of c) acc) cjs' []
   let pcons := mtys.map (fun ty => cjs'.filter (fun t => type_of t == ty))
@@ -1879,7 +2382,8 @@ partial def define_type_nested [HolBase] (R : DefTypeRaw3)
     let (th1, th2) ← define_type_basecase R def_
     return (n, th1, th2)
   let nty ← liftExcept (hd (sort (fun t1 t2 => occurs_in t2 t1) rectys))
-  let (k, tyal, ncls, ith, rth) ← create_auxiliary_clauses R nty
+  let (k, tyal, ncls, ith, rth) ←
+    create_auxiliary_clauses R (itlist (fun ty acc => union (tyvars ty) acc) utys newtys) nty
   let cls := (← liftM (def_.mapM (modify_clause tyal) : IO _)) ++ ncls
   let (_, ith1, rth1) ← define_type_nested R cls
   let xnewtys ← liftExcept ((strip_exists (strip_forall (concl rth1)).2).1.mapM (fun e => do
@@ -1906,8 +2410,30 @@ partial def define_type_nested [HolBase] (R : DefTypeRaw3)
   let visoths ← uisoths.mapM (fun th => ASSUME (concl th))
   let funEqConv ← ExceptT.mk (Simp.GENERAL_REWRITE_CONV HolBase.B true Simp.topDepthConvIO
     R.funEqNet visoths)
-  let irth4 ← uisoths.foldrM PROVE_HYP (← CONV_RULE funEqConv irth3)
-  let irth5 ← REWRITE_RULE (rclauses :: (← isoths'.mapM (CONV_RULE (REWR_CONV R.ISO)))) irth4
+  let REWRITE_ISOS (th : thm) : ExceptT String IO thm := do
+    let th1 ← uisoths.foldrM PROVE_HYP (← CONV_RULE funEqConv th)
+    PROVE_HYP rclauses (← REWRITE_RULE
+      ((← ASSUME (concl rclauses)) :: (← isoths'.mapM (CONV_RULE (REWR_CONV R.ISO)))) th1)
+  -- The outer quantifiers !f. P f of the recursion theorem, one for each
+  -- constructor, would just become !f'. P(g f') for those whose type is
+  -- that of an isomorphism; doing that by instantiation spares rewriting
+  -- through the long quantifier prefix, which is quadratic or worse.
+  let irth5 ← do
+    let gmap ← liftExcept (cisoths.mapM (fun th => do
+      let f ← lhand (concl th)
+      return ((← dest_fun_ty (type_of f)).1, ← rand (concl th))))
+    let avs := (strip_forall (concl rth1)).1
+    let reps := avs.map (fun v =>
+      match (do
+        let g ← Lib.assoc (type_of v) gmap
+        let v' := mk_var (← dest_var v).1 (← dest_fun_ty (type_of g)).1
+        return (← mk_comb g v', v') : Except String (term × term)) with
+      | .ok p => p
+      | .error _ => (v, v))
+    -- `CONJ a b`: OCaml evaluates b first.
+    let b ← GENL (reps.map Prod.snd) (← REWRITE_ISOS (← SPECL (reps.map Prod.fst) rth1))
+    let a ← REWRITE_ISOS ith1
+    CONJ a b
   let irth6 ← repeatRule SCRUB_ASSUMPTION irth5
   let ncjs ← liftExcept ((conjuncts (strip_exists (strip_forall (← rand (concl irth6))).2).2).filterM
     (fun t => do
@@ -1923,6 +2449,38 @@ partial def define_type_nested [HolBase] (R : DefTypeRaw3)
   let dths ← ncjs.mapM mk_newcon
   let (ith6, rth6) ← CONJ_PAIR (← PURE_REWRITE_RULE dths irth6)
   return (n, ith6, rth6)
+
+/-- The `conv` of `SUBS_CONSTANTS` (ind_types.ml 1795-1804): rewrites the
+    constants `c` of the table's `|- c = d` in one traversal; fails if
+    there are none. -/
+partial def subsConstantsConv (tbl : List (String × thm)) : Equal.conv := fun tm =>
+  match tm with
+  | .Const s _ => do
+    let th ← Lib.assoc s tbl
+    if (← lhs (concl th)) == tm then return th else failwith "SUBS_CONSTANTS"
+  | .Comb l r =>
+    let attempt : Except String thm := do
+      let lth ← subsConstantsConv tbl l
+      match (do HolCore.Kernel.MK_COMB lth (← subsConstantsConv tbl r)) with
+      | .ok th => .ok th
+      | .error _ => Equal.AP_THM lth r
+    match attempt with
+    | .ok th => .ok th
+    | .error _ => do Equal.AP_TERM l (← subsConstantsConv tbl r)
+  | .Abs v b => do HolCore.Kernel.ABS v (← subsConstantsConv tbl b)
+  | _ => failwith "SUBS_CONSTANTS"
+
+/-- `SUBS_CONSTANTS ths` (ind_types.ml 1790-1805): SUBS for theorems
+    `|- c = d` with constants `c`, in a single traversal of the theorem
+    (SUBS_CONV does one beta-reduction of all of it for each). -/
+def SUBS_CONSTANTS [HolBase] (ths : List thm) : thm → ExceptT String IO thm :=
+  let tbl : Except String (List (String × thm)) :=
+    ths.mapM (fun th => do return ((← dest_const (← lhs (concl th))).1, th))
+  fun th => do
+    let tbl ← liftExcept tbl
+    CONV_RULE (fun tm => pure (match subsConstantsConv tbl tm with
+      | .ok r => .ok r
+      | .error _ => .ok (REFL tm))) th
 
 /-- `define_type_raw def`, the third and final of ind_types.ml's three
     (1382-1387).  Adds the new types to the store and extends the rectype
@@ -1941,8 +2499,9 @@ def define_type_raw3 [HolBase] (R : DefTypeRaw3)
     SYM (← ExceptT.mk (R.D2.D.new_definition (← liftExcept (mkEq (mk_var s (type_of r)) r)))))
     truecons gencons
   let tavs ← liftExcept (make_args "f" [] (avs.map type_of))
-  let ith1 ← SUBS cdefs ith0
-  let rth1 ← GENL tavs (← SUBS cdefs (← SPECL tavs rth0))
+  let SUBS_CDEFS := SUBS_CONSTANTS cdefs
+  let ith1 ← SUBS_CDEFS ith0
+  let rth1 ← GENL tavs (← SUBS_CDEFS (← INST (← liftExcept (zip tavs avs)) (← SPECL avs rth0)))
   let retval := (p, ith1, rth1)
   let newentries ← liftExcept (newtys.mapM (fun s => do return (← dest_vartype s, retval)))
   ExceptT.mk (R.addEntries newentries)

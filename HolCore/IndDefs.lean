@@ -184,6 +184,17 @@ def canonicalize_clause (B : BoolThms) (t_tm : term) (cls : term) (args : List t
   let plis ← liftExcept (zip args xargs)
   let (yes, no) := calculate_simp_sequence avs plis
   let nvs := avs.filter (fun a => !(mem a (yes.map Prod.snd)))
+  -- ind_defs.ml 113-122: the actual arguments contain the variables nvs free,
+  -- so rename the bound nvs of |- !args nvs. ... apart before SPECL:
+  -- substituting under binders capturing them takes time exponential in the
+  -- number of nvs.
+  let SPEC_CLAUSE (th5 : thm) : Except String thm := do
+    let c5 := concl th5
+    let nvs' ← variants (← variables c5) nvs
+    let bod ← funpowM (args.length + nvs.length) (body oM rand) c5
+    let c5' ← list_mk_forall args
+      (← list_mk_forall nvs' ((← vsubst (← zip nvs' nvs)) bod))
+    B.SPECL nvs (← B.SPECL (plis.map Prod.snd) (← EQ_MP (← HolCore.Equal.ALPHA c5 c5') (← ASSUME c5)))
   -- helper: rev_itlist (C (curry MK_COMB)) thl (REFL rel)
   let mkCombChain (thl : List thm) : Except String thm :=
     rev_itlistM (fun th acc => MK_COMB acc th) thl (REFL rel)
@@ -203,7 +214,7 @@ def canonicalize_clause (B : BoolThms) (t_tm : term) (cls : term) (args : List t
       let tm4 ← funpowM (yes.length) rand (← lhand (concl th3))
       let th4 ← itlistM (fun p acc => do B.CONJ (REFL p.1) acc) yes (← ASSUME tm4)
       let th5 ← B.GENL args (← B.GENL nvs (← B.DISCH tm4 (← B.MP th3 th4)))
-      let th6 ← B.SPECL nvs (← B.SPECL (plis.map Prod.snd) (← ASSUME (concl th5)))
+      let th6 ← SPEC_CLAUSE th5
       let th7 ← itlistM (fun p acc => do B.CONJ (REFL p.2) acc) no (← ASSUME ant)
       let th8 ← B.GENL avs (← B.DISCH ant (← B.MP th6 th7))
       B.IMP_ANTISYM_RULE (← DISCH_ALL B.DISCH th5) (← DISCH_ALL B.DISCH th8))
@@ -218,7 +229,7 @@ def canonicalize_clause (B : BoolThms) (t_tm : term) (cls : term) (args : List t
       let tm4 ← funpowM (yes.length) rand (← lhand (concl th3))
       let th4 ← itlistM (fun p acc => do B.CONJ (REFL p.1) acc) yes (← ASSUME tm4)
       let th5 ← B.GENL args (← B.GENL nvs (← B.DISCH tm4 (← B.MP th3 th4)))
-      let th6 ← B.SPECL nvs (← B.SPECL (plis.map Prod.snd) (← ASSUME (concl th5)))
+      let th6 ← SPEC_CLAUSE th5
       let th7 ← end_itlistM B.CONJ (← no.mapM (fun p => pure (REFL p.2)))
       let th8 ← B.GENL avs (← B.MP th6 th7)
       B.IMP_ANTISYM_RULE (← DISCH_ALL B.DISCH th5) (← DISCH_ALL B.DISCH th8))

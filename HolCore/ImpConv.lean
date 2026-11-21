@@ -243,11 +243,26 @@ partial def DISCH_CONJ (B : BoolThms) (D : ImpConvDeps) (t : term) (th : thm) :
   | .error _ => liftExcept (B.DISCH t th)
 
 /-- Specializes all the universally quantified variables of a theorem, and
-    returns both the theorem and the list of variables. -/
-partial def SPEC_VARS (B : BoolThms) (th : thm) : List term × thm :=
-  match B.SPEC_VAR th with
-  | .ok (v, th') => let (vs, th'') := SPEC_VARS B th'; (v :: vs, th'')
+    returns both the theorem and the list of variables.  As in `SPEC_ALL`,
+    the free variables are computed once and then kept up to date, which
+    gives the same variables as `SPEC_VAR` at each quantifier
+    (impconv.ml 117-127). -/
+partial def specVarsAux (B : BoolThms) (fvs : List term) (th : thm) : List term × thm :=
+  let tm := concl th
+  if !(is_forall tm) then ([], th) else
+  match dest_forall tm with
   | .error _ => ([], th)
+  | .ok (v, bod) =>
+    match variant fvs v with
+    | .error _ => ([], th)
+    | .ok v' =>
+      match B.SPEC v' th with
+      | .error _ => ([], th)
+      | .ok th1 =>
+        let (vs, th') := specVarsAux B (if vfree_in v bod then v' :: fvs else fvs) th1
+        (v' :: vs, th')
+def SPEC_VARS (B : BoolThms) (th : thm) : List term × thm :=
+  if is_forall (concl th) then specVarsAux B (thm_frees th) th else ([], th)
 
 /-- Comblies the function [f] to the body of a universally quantified theorem. -/
 def MAP_FORALL_BODY (B : BoolThms) (f : thm → Except String thm) (th : thm) :

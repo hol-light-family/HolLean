@@ -152,7 +152,14 @@ def new_recursive_definition_core [HolBase] (BETA_THM : thm)
       match ← (find_redefinition tm th).run with
       | .ok r => return some r
       | .error _ => tryRedef ts
-  match ← (tryRedef existing : IO (Option thm)) with
+  -- recursion.ml 101-102: the search is skipped (a failure, caught below) when
+  -- the function being defined is not already a constant
+  let isConst : Bool := match (do
+      let cl := (strip_forall (← (conjuncts tm).head?.elim (failwith "hd") pure)).2
+      pure (is_const (repeat' rator (← lhand cl))) : Except String Bool) with
+    | .ok b => b
+    | .error _ => false
+  match ← (if isConst then tryRedef existing else pure none : IO (Option thm)) with
   | some th =>
       (warn true "Benign redefinition of recursive function" : IO Unit)
       return (th, none)

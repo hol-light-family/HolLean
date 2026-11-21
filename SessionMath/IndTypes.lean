@@ -21,86 +21,72 @@ private def ioOk' {α : Type} (what : String) (x : IO (Except String α)) : IO �
   | .error e => throw (IO.userError s!"{what}: {e}")
 
 
-/- ---------------------------------------------------------------------- -/
-/- ind_types.ml 1022-1024: the three stateful stores.  These are genuine   -/
+/- ind_types.ml 1377-1382: the four stateful stores.  These are genuine   -/
 /- session state (`define_type` mutates them), so they stay as refs.       -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `basic_rectype_net = ref empty_net` (ind_types.ml 1022). -/
+/-- `basic_rectype_net = ref empty_net` (ind_types.ml 1377). -/
 initialize theBasicRectypeNet :
     IO.Ref (HolCore.Nets.net Simp.gconv) ← IO.mkRef HolCore.Nets.empty_net
 
-/-- `distinctness_store = ref ["bool", TAUT `(T <=> F) <=> F`]` (ind_types.ml
-    1023).  The seed `TAUT` is an IO computation, run here when the module
-    is loaded. -/
-initialize theDistinctnessStore : IO.Ref HolMath.IndTypes.RectypeStore ← do
+/-- `constructors_distinct_net = ref empty_net` (ind_types.ml 1378). -/
+initialize theConstructorsDistinctNet :
+    IO.Ref (HolCore.Nets.net Simp.gconv) ← IO.mkRef HolCore.Nets.empty_net
+
+/-- `distinctness_store = let th = TAUT `(T <=> F) <=> F` in
+    ref ["bool",(fun () -> th)]` (ind_types.ml 1379-1380).  The seed `TAUT`
+    is an IO computation, run here when the module is loaded. -/
+initialize theDistinctnessStore : IO.Ref HolMath.IndTypes.DistinctnessStore ← do
   let boolThm ← ioOk' "distinctness seed TAUT"
     (TAUT (← ioOk' "distinctness seed parse" (Parser.parse_term "(T <=> F) <=> F")))
-  IO.mkRef [("bool", boolThm)]
+  IO.mkRef [("bool", pure (.ok boolThm))]
 
-/-- `injectivity_store = ref []` (ind_types.ml 1024). -/
+/-- `injectivity_store = ref []` (ind_types.ml 1381). -/
 initialize theInjectivityStore : IO.Ref HolMath.IndTypes.RectypeStore ← IO.mkRef []
 
-/-- `!distinctness_store` — the current distinctness store contents. -/
-def distinctness_store : IO HolMath.IndTypes.RectypeStore := theDistinctnessStore.get
+/-- `!distinctness_store`: the current distinctness store contents. -/
+def distinctness_store : IO HolMath.IndTypes.DistinctnessStore := theDistinctnessStore.get
 
-/-- `!injectivity_store` — the current injectivity store contents. -/
+/-- `!injectivity_store`: the current injectivity store contents. -/
 def injectivity_store : IO HolMath.IndTypes.RectypeStore := theInjectivityStore.get
 
-/-- `!basic_rectype_net` — the current basic rectype net. -/
+/-- `!basic_rectype_net`: the current basic rectype net. -/
 def basic_rectype_net : IO (HolCore.Nets.net Simp.gconv) := theBasicRectypeNet.get
 
+/-- `!constructors_distinct_net`: the current net of distinctness conversions. -/
+def constructors_distinct_net : IO (HolCore.Nets.net Simp.gconv) :=
+  theConstructorsDistinctNet.get
+
 /- ---------------------------------------------------------------------- -/
-/- ind_types.ml 902-959: the two per-axiom provers whose proformas are     -/
-/- built once.  They are CLOSURES (`thm → ...`), which do not survive       -/
-/- separate compilation / `dlopen` as function-typed `initialize`           -/
-/- constants, so — exactly as Arith's procs / CalcNum's conversion caches — -/
-/- they live in plain `Option` refs, seeded by the forcing block            -/
-/- `ensurePcProvers` below (which runs before the ind_types bootstrap that  -/
-/- consumes them, via declaration order).                                   -/
+/- ind_types.ml 1007-1290: the three per-axiom provers, whose nets and     -/
+/- proformas are built once.  They are CLOSURES, which do not survive      -/
+/- separate compilation / `dlopen` as function-typed `initialize`          -/
+/- constants, so (as Arith's procs and CalcNum's conversion caches) they   -/
+/- live in a plain `Option` ref, set by the bootstrap after OUTL/OUTR and  -/
+/- the option and list types are defined, as in ind_types.ml.              -/
 /- ---------------------------------------------------------------------- -/
 
-initialize thePcInjective : IO.Ref (Option (thm → ExceptT String IO thm)) ← IO.mkRef none
-initialize thePcDistinct : IO.Ref (Option (thm → ExceptT String IO thm)) ← IO.mkRef none
+initialize thePcProvers : IO.Ref (Option HolMath.IndTypes.ConstructorProvers) ← IO.mkRef none
 
-/-- Build the two per-axiom provers' proformas once, in ind_types.ml order
-    (902, 928).  Seeds the closure-holding refs before the bootstrap. -/
-initialize ensurePcProvers : Unit ← do
-  -- `prove_constructors_injective`'s `DEPAIR` net (ind_types.ml 902-926).
-  thePcInjective.set (some (← ioOk' "prove_constructors_injective"
-    (HolMath.IndTypes.prove_constructors_injective T.BETA_THM Pr.PAIR_EQ
-      HolMath.Pair.mk_pair).run))
-  -- `prove_constructors_distinct`'s `num_ty`/`NEGATE` tautology (ind_types.ml 928-959).
-  thePcDistinct.set (some (← ioOk' "prove_constructors_distinct"
-    (HolMath.IndTypes.prove_constructors_distinct T.BETA_THM Nm.numK NUM_EQ_CONV).run))
-
-private def pcInjective (ax : thm) : ExceptT String IO thm := do
-  match ← (thePcInjective.get : IO _) with
-  | some f => f ax
+private def pcProvers : ExceptT String IO HolMath.IndTypes.ConstructorProvers := do
+  match ← (thePcProvers.get : IO _) with
+  | some P => return P
   | none => throw "prove_constructors_injective not initialized"
 
-private def pcDistinct (ax : thm) : ExceptT String IO thm := do
-  match ← (thePcDistinct.get : IO _) with
-  | some f => f ax
-  | none => throw "prove_constructors_distinct not initialized"
-
-
-/-- `extend_rectype_net (tyname,(_,_,rth))` (ind_types.ml 1026-1033): reads the
-    current three store contents from their refs, calls the pure library
+/-- `extend_rectype_net (tyname,(_,_,rth))` (ind_types.ml 1384-1402): reads the
+    current four store contents from their refs, calls the library
     `extend_rectype_net`, and writes the updated contents back. -/
 def extend_rectype_net (entry : String × (Int × thm × thm)) :
-    IO (Except String Unit) := do
-  let curNet ← theBasicRectypeNet.get
-  let curDist ← theDistinctnessStore.get
-  let curInj ← theInjectivityStore.get
-  match ← (HolMath.IndTypes.extend_rectype_net pcDistinct pcInjective
-            entry curNet curDist curInj).run with
-  | .error e => return .error e
-  | .ok (net', dist', inj') => do
-      theBasicRectypeNet.set net'
-      theDistinctnessStore.set dist'
-      theInjectivityStore.set inj'
-      return .ok ()
+    IO (Except String Unit) := ExceptT.run do
+  let P ← pcProvers
+  let cur : HolMath.IndTypes.RectypeStores :=
+    { basicNet := ← theBasicRectypeNet.get, distinctNet := ← theConstructorsDistinctNet.get,
+      dist := ← theDistinctnessStore.get, inj := ← theInjectivityStore.get }
+  let r ← HolMath.IndTypes.extend_rectype_net P entry cur
+  theDistinctnessStore.set r.dist
+  theInjectivityStore.set r.inj
+  theConstructorsDistinctNet.set r.distinctNet
+  theBasicRectypeNet.set r.basicNet
 
 /-- `ISO`, `ISO_REFL`, `ISO_FUN`, `ISO_USAGE` (ind_types.ml 1061-1080). -/
 def setupISO : IO (Except String (thm × thm × thm × thm)) :=
@@ -169,7 +155,7 @@ private def buildIndTypesBootstrap : IO (Except String IndTypesBootstrap) :=
              prove_inductive_relations_exist : IO (Except String _))
   -- ind_types.ml 302-738: the first define_type_raw.
   let D ← HolMath.IndTypes.setupDefTypeRaw Pr.FST Pr.SND K.FCONS T.BETA_THM K.CONSTR_REC indAux.1
-            HolMath.Pair.mk_pair dnir pmh new_definition nbtd
+            C.COND_CLAUSES Nm.numK NUM_LT_CONV HolMath.Pair.mk_pair dnir pmh new_definition nbtd
   -- ind_types.ml 768-774: the sum type, then OUTL/OUTR.
   let (sumI, sumR) ← HolMath.IndTypes.sum_INDUCT_RECURSION D
   let outl ← HolMath.IndTypes.defineOUTL new_recursive_definition sumR
@@ -181,18 +167,23 @@ private def buildIndTypesBootstrap : IO (Except String IndTypesBootstrap) :=
   -- ind_types.ml 889-896: FORALL_OPTION_THM and EXISTS_OPTION_THM.
   let fa ← HolMath.IndTypes.prove_FORALL_OPTION_THM optI
   let ex ← HolMath.IndTypes.prove_EXISTS_OPTION_THM fa MESON MESON_TAC
+  -- ind_types.ml 1007-1290: prove_constructors_injective,
+  -- prove_constructors_distinct and constructors_distinct_convs.
+  let P ← HolMath.IndTypes.setupConstructorProvers T.BETA_THM Pr.PAIR_EQ outl outr
+    HolMath.Pair.mk_pair Nm.numK NUM_EQ_CONV
+  thePcProvers.set (some P)
   -- ind_types.ml 1009-1013: add list/option/sum to `inductive_type_store`, in
   -- OCaml order, ahead of whatever is already there (`num`, `prod`, `1`, `bool`).
   let existing ← (theInductiveTypeStore.get : IO _)
   let seeded := [("list", (2, lstI, lstR)), ("option", (2, optI, optR)),
                  ("sum", (2, sumI, sumR))] ++ existing
   theInductiveTypeStore.set seeded
-  -- ind_types.ml 1035: `do_list extend_rectype_net (!inductive_type_store)`.
+  -- ind_types.ml 1404: `do_list extend_rectype_net (!inductive_type_store)`.
   for entry in seeded do
     let _ ← ExceptT.mk (extend_rectype_net entry)
   -- ind_types.ml 1049-1055: option_DISTINCT and option_INJ.
   let optDist ← ExceptT.mk (do
-    match HolMath.IndTypes.distinctness (← theDistinctnessStore.get) "option" with
+    match ← HolMath.IndTypes.distinctness (← theDistinctnessStore.get) "option" with
     | .error e => return .error e
     | .ok th => (HolMath.IndTypes.prove_option_DISTINCT th).run)
   let optInj ← ExceptT.mk (do
@@ -201,21 +192,29 @@ private def buildIndTypesBootstrap : IO (Except String IndTypesBootstrap) :=
     | .ok th => (HolMath.IndTypes.prove_option_INJ th).run)
   -- ind_types.ml 1061: ISO is defined after sum, option and list (1009-1035).
   let (iso, isoRefl, isoFun, isoUsage) ← (setupISO : IO (Except String _))
-  -- ind_types.ml 1084-1281: the third define_type_raw.  `getStore` and
+  -- ind_types.ml 1459-1832: the third define_type_raw.  `getStore` and
   -- `addEntries` act on the live `theInductiveTypeStore` ref; `addEntries` does
-  -- both of ind_types.ml 1385-1386's side effects, in order.
+  -- ind_types.ml 1830-1831's side effects, in order.
   let R ← HolMath.IndTypes.setupDefTypeRaw3 D2 iso isoRefl isoFun isoUsage
     ETA_AX SELECT_AX C.FUN_EQ_THM
     (theInductiveTypeStore.get)
     (fun es => do
       let cur ← theInductiveTypeStore.get
       theInductiveTypeStore.set (es ++ cur)
-      -- `do_list extend_rectype_net newentries` (ind_types.ml 1386) is part of
+      -- `extend_rectype_net (hd newentries)` (ind_types.ml 1831) is part of
       -- a `;`-sequence, so its failure propagates.
-      for e in es do
-        match ← extend_rectype_net e with
-        | .error err => return .error err
-        | .ok _ => pure ()
+      let e :: rest := es | return .error "hd"
+      match ← extend_rectype_net e with
+      | .error err => return .error err
+      | .ok _ => pure ()
+      -- `share distinctness_store; share injectivity_store` (ind_types.ml
+      -- 1826-1829, 1832): the other new types get the first one's entry.
+      let share {α : Type} (store : IO.Ref (List (String × α))) : IO Unit := do
+        match HolCore.Lib.assoc e.1 (← store.get) with
+        | .ok x => store.set (rest.reverse.map (fun (s, _) => (s, x)) ++ (← store.get))
+        | .error _ => pure ()
+      share theDistinctnessStore
+      share theInjectivityStore
       return .ok ())
   -- ind_types.ml 1390-1394: seed the spec-string keyed store, in OCaml order.
   theTheInductiveTypes.set [
@@ -235,7 +234,7 @@ initialize indTypesBoot : IndTypesBootstrap ←
 /-- The nested-type capability bundle, built once per process. -/
 def raw3Ctx : HolMath.IndTypes.DefTypeRaw3 := indTypesBoot.R
 
-/-- `do_list extend_rectype_net (!inductive_type_store)` (ind_types.ml 1035):
+/-- `do_list extend_rectype_net (!inductive_type_store)` (ind_types.ml 1404):
     run `extend_rectype_net` over every type currently in the inductive type
     store. -/
 def do_extend_rectype_net : IO (Except String Unit) := do
@@ -286,16 +285,19 @@ def triviaThms : HolCore.Trivia.TriviaThms := triviaLayer
 /- The three derived-theorem provers (ind_types.ml 902-1006).             -/
 /- ---------------------------------------------------------------------- -/
 
-/-- `prove_constructors_injective ax` (ind_types.ml 902-926). -/
+/-- `prove_constructors_injective ax` (ind_types.ml 1157-1163). -/
 def prove_constructors_injective (ax : thm) : IO (Except String thm) :=
-  (pcInjective ax).run
+  (do (← pcProvers).injective ax).run
 
-/-- `prove_constructors_distinct ax` (ind_types.ml 929-959).  The OCaml returns
-    `end_itlist CONJ` of the pairwise inequalities; the library conjoins them. -/
+/-- `prove_constructors_distinct ax` (ind_types.ml 1229-1238). -/
 def prove_constructors_distinct (ax : thm) : IO (Except String thm) :=
-  (pcDistinct ax).run
+  (do (← pcProvers).distinct ax).run
 
-/-- `prove_cases_thm th` (ind_types.ml 964-1006). -/
+/-- `constructors_distinct_convs ax` (ind_types.ml 1239-1287). -/
+def constructors_distinct_convs (ax : thm) : IO (Except String (List (term × ioconv))) :=
+  (do (← pcProvers).distinctConvs ax).run
+
+/-- `prove_cases_thm th` (ind_types.ml 1297-1355). -/
 def prove_cases_thm (th : thm) : IO (Except String thm) :=
   (HolMath.IndTypes.prove_cases_thm indAux.1 th).run
 
@@ -304,15 +306,20 @@ def prove_cases_thm (th : thm) : IO (Except String thm) :=
 /- ind_types.ml runs at load in HOL Light, so these read the refs directly.-/
 /- ---------------------------------------------------------------------- -/
 
-/-- `distinctness ty = assoc ty (!distinctness_store)` (ind_types.ml 1041). -/
+/-- `distinctness ty = assoc ty (!distinctness_store) ()` (ind_types.ml 1410). -/
 def distinctness (ty : String) : IO (Except String thm) := do
-  return HolMath.IndTypes.distinctness (← theDistinctnessStore.get) ty
+  HolMath.IndTypes.distinctness (← theDistinctnessStore.get) ty
 
 /-- `injectivity ty = assoc ty (!injectivity_store)` (ind_types.ml 1043). -/
 def injectivity (ty : String) : IO (Except String thm) := do
   return HolMath.IndTypes.injectivity (← theInjectivityStore.get) ty
 
-/-- `cases ty` (ind_types.ml 1045-1047). -/
+/-- `CONSTRUCTORS_DISTINCT_CONV` (ind_types.ml 1418-1420): reads the live
+    `constructors_distinct_net` on every application. -/
+def CONSTRUCTORS_DISTINCT_CONV : ioconv := fun tm => do
+  HolMath.IndTypes.CONSTRUCTORS_DISTINCT_CONV (← theConstructorsDistinctNet.get) tm
+
+/-- `cases ty` (ind_types.ml 1422-1424). -/
 def cases (ty : String) : IO (Except String thm) := do
   let store ← theInductiveTypeStore.get
   (HolMath.IndTypes.cases indAux.1 Nm.num_CASES store ty).run

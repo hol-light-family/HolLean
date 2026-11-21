@@ -899,11 +899,17 @@ def GEN_TAC (B : BoolThms) : tactic := fun g => ExceptT.run do
   let (asl, w) := g
   match dest_forall w with
   | .error _ => throw "GEN_TAC"
-  | .ok (x, _) =>
+  | .ok (x, bod) =>
       let avoids := itlist (fun (p : String × thm) acc => union (thm_frees p.2) acc)
                            asl (frees w)
       let x' ← (mk_primed_var avoids x : IO (Except String term))
-      (X_GEN_TAC B x' g : IO (Except String goalstate))
+      -- tactics.ml 518-525: what X_GEN_TAC does for the chosen variable,
+      -- without its check (which cannot fail for this choice)
+      let sub ← liftExcept ((vsubst [(x', x)]).mapError (fun _ => "GEN_TAC"))
+      return (null_meta, [(asl, sub bod)], fun _ ths =>
+        return (match ths with
+          | [th] => do CONV_RULE (GEN_ALPHA_CONV x) (← B.GEN x' th)
+          | _ => failwith "GEN_TAC"))
 
 /-- Introduce the witness of an existential theorem (fresh primed variable). -/
 def CHOOSE_TAC (B : BoolThms) (xth : thm) : tactic := fun g => ExceptT.run do

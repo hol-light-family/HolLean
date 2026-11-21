@@ -395,6 +395,11 @@ structure GenBetaDeps where
   store : IO (List (String × (Int × thm × thm)))
   GEQ_DEF : thm
   gabsRulePth : thm
+  /-- `mk_const("UNCURRY",[])` and `UNCURRY_DEF`, once defined (pair.ml
+      270, 191).  In HOL Light they exist before GEN_BETA_CONV; the session
+      defines them after installing it, so until then the general path is
+      used. -/
+  uncurry : IO (Option (term × thm))
 
 /-- `create_projections conname` (pair.ml 59-90), memoised in `G.cache`. -/
 def createProjections [HolBase] (G : GenBetaDeps) (conname : String) :
@@ -454,6 +459,28 @@ partial def createIteratedProjections [HolBase] (G : GenBetaDeps) (tm : term) :
     sths.mapM (CONV_RULE (RAND_CONV (SUBS_CONV [arth]))))
   return unions' equals_thm ths
 
+/-- `tuple_vars tm` (pair.ml 271-273): the variables of a tuple of variables. -/
+partial def tupleVars (t : term) : Except String (List term) :=
+  if is_var t then .ok [t] else do
+    let (l, r) ← dest_pair t
+    pure ((← tupleVars l) ++ (← tupleVars r))
+
+/-- `mk_uncurried p b` (pair.ml 274-277). -/
+partial def mkUncurried (unc_tm : term) (p b : term) : Except String term :=
+  if is_var p then mk_abs p b else do
+    let (s, t) ← dest_pair p
+    mk_icomb unc_tm (← mkUncurried unc_tm s (← mkUncurried unc_tm t b))
+
+/-- `UNCURRIED_CONV p w` (pair.ml 278-284): `|- w (x1,...,xn) = bod`. -/
+partial def uncurriedConv [HolBase] (UNCURRY_DEF : thm) (p w : term) : ExceptT String IO thm :=
+  if is_var p then do ExceptT.mk (BETA_CONV (← liftExcept (mk_comb w p))) else do
+    let (s, t) ← liftExcept (dest_pair p)
+    let f ← liftExcept (rand w)
+    let th1 ← ISPECL [f, s, t] UNCURRY_DEF
+    let th2 ← uncurriedConv UNCURRY_DEF s f
+    TRANS th1 (← TRANS (← AP_THM th2 t)
+      (← uncurriedConv UNCURRY_DEF t (← liftExcept (rand (concl th2)))))
+
 /-- `GEN_BETA_CONV` (pair.ml 57-125).  `GEQ_CONV`, `DEGEQ_RULE` and
     `GABS_RULE` are built from `G` as in OCaml. -/
 def GEN_BETA_CONV [HolBase] (G : GenBetaDeps) : ioconv := fun tm => ExceptT.run do
@@ -466,13 +493,26 @@ def GEN_BETA_CONV [HolBase] (G : GenBetaDeps) : ioconv := fun tm => ExceptT.run 
   let (l, r) ← liftExcept (dest_comb tm)
   let (vstr, bod) ← liftExcept (dest_gabs l)
   let instn ← term_match [] vstr r
-  let prjs ← createIteratedProjections G vstr
-  let th1 ← ExceptT.mk (SUBS_CONV prjs bod)
-  let bod' ← liftExcept (rand (concl th1))
-  let gv ← (genvar (type_of vstr) : IO term)
-  let subst1 ← ExceptT.mk (subst [(gv, vstr)])
-  let pat ← liftExcept (mk_abs gv (← ExceptT.mk (subst1 bod')))
-  let th2 ← TRANS (← ExceptT.mk (BETA_CONV (← liftExcept (mk_comb pat vstr)))) (← SYM th1)
+  -- pair.ml 263-284, 292-299: when the pattern is a tuple of distinct
+  -- variables, the witness is UNCURRY (\x1. UNCURRY (\x2. ... (\xn-1 xn. bod)))
+  -- with |- pat (x1,...,xn) = bod proved in linearly many steps
+  let vs := (tupleVars vstr).toOption.getD []
+  let general : ExceptT String IO (term × thm) := do
+    let prjs ← createIteratedProjections G vstr
+    let th1 ← ExceptT.mk (SUBS_CONV prjs bod)
+    let bod' ← liftExcept (rand (concl th1))
+    let gv ← (genvar (type_of vstr) : IO term)
+    let subst1 ← ExceptT.mk (subst [(gv, vstr)])
+    let pat ← liftExcept (mk_abs gv (← ExceptT.mk (subst1 bod')))
+    pure (pat, ← TRANS (← ExceptT.mk (BETA_CONV (← liftExcept (mk_comb pat vstr)))) (← SYM th1))
+  let (pat, th2) ← (do
+    match ← (G.uncurry : IO (Option (term × thm))) with
+    | some (unc_tm, UNCURRY_DEF) =>
+      if vs != [] && (setify vs).length == vs.length then
+        let pat ← liftExcept (mkUncurried unc_tm vstr bod)
+        pure (pat, ← uncurriedConv UNCURRY_DEF vstr pat)
+      else general
+    | none => general : ExceptT String IO (term × thm))
   let avs := (strip_forall (← liftExcept (body (← liftExcept (rand l))))).1
   let th3 ← GENL avs th2
   let efn ← (genvar (type_of pat) : IO term)

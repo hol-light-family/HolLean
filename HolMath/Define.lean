@@ -1393,7 +1393,15 @@ def setupDefineSuite [HolBase]
         avs.foldrM GEN (← PART_MATCH pure th tbod))
       let th5 ← SIMPLE_EXISTS f (← end_itlist CONJ ths4)
       let th6 ← PROVE_HYP th2 (← SIMPLE_CHOOSE f th5)
-      let bconv := BINDER_CONV (BINDER_CONV rewr_forall_th THENC rewr_forall_th)
+      -- define.ml 790-798: the inner quantifier of "!x y. ..." is split into
+      -- variables named apart from parms, as the kernel would rename them when
+      -- x is split; with the names of parms every one of them is renamed, and
+      -- the kernel substitutes twice at each renamed binder (exponential).
+      let rewr_forall_apart : ioconv := fun tm => ExceptT.run do
+        let parms' ← liftExcept (variants (parms ++ frees tm) parms)
+        let parm' ← end_itlist mkPair parms'
+        ExceptT.mk (BINDER_CONV (REWR_CONV (← FORALL_PAIR_CONV parm' parms')) tm)
+      let bconv := BINDER_CONV (rewr_forall_apart THENC rewr_forall_th)
       let th7 ← ExceptT.mk (
         (RAND_CONV (COMB2_CONV
             (RAND_CONV (LAND_CONV (Pair.GABS_CONV bconv)))
@@ -1608,7 +1616,7 @@ def define [HolBase]
     let cjs := conjuncts t
     let fs ← liftExcept (cjs.mapM headOf)
     let f ← liftExcept (hd fs)  -- Arbitrarily choose one of the left hands
-    if !(is_const f) then return t  -- t cannot be a benign redefinition. Just return the input.
+    if !(is_const f) then throw "not a constant"  -- t cannot be a benign redefinition.
     -- Instantiate type variables of all other occurrences of the 'f'
     -- constant
     let fname := Printer.name_of f

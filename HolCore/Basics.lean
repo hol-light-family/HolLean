@@ -133,23 +133,19 @@ partial def variants (av : List term) (vs : List term) : Except String (List ter
 /- Gets all variables (free and/or bound) in a term.                      -/
 /- ---------------------------------------------------------------------- -/
 
-/-- Gets all variables (free and/or bound) in a term. -/
+/-- Gets all variables (free and/or bound) in a term, most recently found
+    first.  Those found so far are also kept in a finite function, so that the
+    membership test is not linear (basics.ml 92-106). -/
 partial def variables (tm : term) : Except String (List term) :=
-  let rec vars (acc : List term) (tm : term) : Except String (List term) :=
-    if is_var tm then .ok (insert tm acc)
-    else if is_const tm then .ok acc
-    else if is_abs tm then
-      match dest_abs tm with
-      | .error e => .error e
-      | .ok (v, bod) => vars (insert v acc) bod
-    else
-      match dest_comb tm with
-      | .error e => .error e
-      | .ok (l, r) =>
-        match vars acc l with
-        | .error e => .error e
-        | .ok acc' => vars acc' r
-  vars [] tm
+  let rec vars (a : List term × Func term Bool) (tm : term) : List term × Func term Bool :=
+    let (acc, seen) := a
+    match tm with
+    | .Var _ _ => if tryapplyd seen tm false then a else (tm :: acc, update tm true seen)
+    | .Const _ _ => a
+    | .Abs v bod =>
+      vars (if tryapplyd seen v false then a else (v :: acc, update v true seen)) bod
+    | .Comb l r => vars (vars a l) r
+  .ok (vars ([], undefined) tm).1
 
 /- ---------------------------------------------------------------------- -/
 /- General substitution (for any free expression).                        -/
@@ -530,26 +526,32 @@ def dest_gabs (tm : term) : Except String (term × term) :=
 
 def is_gabs : term → Bool := can dest_gabs
 
+/-- `mk_gabs`'s constants `!`, `GEQ` and `GABS`, looked up in the constant
+    table the first time and then instantiated (basics.ml 355-361). -/
+initialize gabsConsts : IO.Ref (Option (term × term × term)) ← IO.mkRef none
+
 /-- Construct a generalized abstraction `\tm1. tm2`. -/
 def mk_gabs (tm1 tm2 : term) : IO (Except String term) := ExceptT.run do
-  let mk_forall (v t : term) : ExceptT String IO term := do
-    let cop ← mk_const "!" [(type_of v, aty)]
-    liftExcept (do mk_comb cop (← mk_abs v t))
-  let rec list_mk_forall : List term → term → ExceptT String IO term
-    | [],      bod => return bod
-    | v :: vs, bod => do mk_forall v (← list_mk_forall vs bod)
-  let mk_geq (a b : term) : ExceptT String IO term := do
-    let p ← mk_const "GEQ" [(type_of a, aty)]
-    liftExcept (do mk_comb (← mk_comb p a) b)
   if is_var tm1 then
     liftExcept (mk_abs tm1 tm2)
   else
+    let (fa, geq, gabs) ← (do
+      match ← gabsConsts.get with
+      | some c => pure c
+      | none =>
+        let c := (← mk_const "!" [], ← mk_const "GEQ" [], ← mk_const "GABS" [])
+        gabsConsts.set (some c)
+        pure c : ExceptT String IO (term × term × term))
+    let mk_forall (v t : term) : Except String term := do
+      mk_comb (inst [(type_of v, aty)] fa) (← mk_abs v t)
+    let mk_geq (a b : term) : Except String term := do
+      mk_comb (← mk_comb (inst [(type_of a, aty)] geq) a) b
+    let fvs := frees tm1
     let fty ← mk_fun_ty (type_of tm1) (type_of tm2)
     let f ← liftExcept (variant (frees tm1 ++ frees tm2) (mk_var "f" fty))
-    let geq ← mk_geq (← liftExcept (mk_comb f tm1)) tm2
-    let bod ← liftExcept (mk_abs f (← list_mk_forall (frees tm1) geq))
-    let gabs ← mk_const "GABS" [(fty, aty)]
-    liftExcept (mk_comb gabs bod)
+    let bod ← liftExcept (do
+      mk_abs f (← itlistM (fun v acc => mk_forall v acc) fvs (← mk_geq (← mk_comb f tm1) tm2)))
+    liftExcept (mk_comb (inst [(fty, aty)] gabs) bod)
 
 /-- Iteratively construct a generalized abstraction. -/
 def list_mk_gabs (vs : List term) (bod : term) : IO (Except String term) :=

@@ -412,6 +412,10 @@ def SUBS_CONV (ths : List thm) (tm : term) : IO (Except String thm) := do
       -- lefts = map (lhand o concl) ths   (equal.ml 308).  `concl` is total and
       -- `lhand` is `Except`-valued, so plain `o`; `concl` runs FIRST.
       let lefts ← liftExcept (ths.mapM (lhand o concl))
+      -- equal.ml 311: if the theorems are equations and no left-hand side
+      -- occurs free in the term, the result is REFL without substituting
+      if ths.all (fun th => is_eq (concl th)) && !(lefts.any (fun l => free_in l tm)) then
+        return REFL tm
       -- gvs = map (genvar o type_of) lefts   (equal.ml 309).  `type_of` is total
       -- and `genvar` is IO, so plain `o` still types (effect at the outer end).
       let gvs ← (lefts.mapM (genvar o type_of) : IO (List term))

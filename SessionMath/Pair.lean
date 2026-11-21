@@ -55,6 +55,9 @@ initialize pairAux : HolMath.Pair.PairDefs ← do
          mk_pair_def, PAIR_EXISTS_THM, prod_tybij, COMMA_DEF, FST_DEF, SND_DEF }
 
 initialize theProjectionCache : IO.Ref (List (String × List thm)) ← IO.mkRef []
+/-- `mk_const("UNCURRY",[])` and `UNCURRY_DEF` for GEN_BETA_CONV, set when
+    UNCURRY_DEF is made (below). -/
+initialize theUncurry : IO.Ref (Option (term × thm)) ← IO.mkRef none
 /-- The `GABS_RULE` lemma, proved while pair.ml's setup installs GEN_BETA_CONV. -/
 initialize theGabsRulePth : IO.Ref (Option thm) ← IO.mkRef none
 
@@ -62,7 +65,8 @@ private def genBetaDepsWith (gabs : thm) : HolMath.Pair.GenBetaDeps :=
   { cache := theProjectionCache
     store := theInductiveTypeStore.get
     GEQ_DEF := pairAux.GEQ_DEF
-    gabsRulePth := gabs }
+    gabsRulePth := gabs
+    uncurry := theUncurry.get }
 
 private def installGenBeta (fstT sndT pairT indT recT : thm) : IO (Except String Unit) :=
   ExceptT.run do
@@ -189,6 +193,11 @@ partial def new_definition (tm : term) : IO (Except String thm) := ExceptT.run d
   let idFn : term → Except String term := fun t => .ok t
   let defs ← theDefinitions.get
   let tryBenign : IO (Option thm) := do
+    -- pair.ml 165: no search unless the constant being defined already exists
+    let isConst := match Equal.lhs def0 with
+      | .ok l => is_const (Basics.strip_comb l).1
+      | .error _ => false
+    if !isConst then return none
     let rec first : List thm → IO (Option (thm × thm))
       | [] => pure none
       | th :: rest => do
@@ -242,6 +251,9 @@ partial def new_definition (tm : term) : IO (Except String thm) := ExceptT.run d
 initialize curryDefs : thm × thm × thm ← (do
   let curryD ← ioOk' "CURRY_DEF" (do new_definition (← pt "CURRY(f:A#B->C) x y = f(x,y)"))
   let uncurryD ← ioOk' "UNCURRY_DEF" (do new_definition (← pt "!f x y. UNCURRY(f:A->B->C)(x,y) = f x y"))
+  match ← mk_const "UNCURRY" [] with
+  | .ok unc => theUncurry.set (some (unc, uncurryD))
+  | .error e => throw (IO.userError e)
   let passocD ← ioOk' "PASSOC_DEF" (do new_definition (← pt "!f x y z. PASSOC (f:(A#B)#C->D) (x,y,z) = f ((x,y),z)"))
   pure (curryD, uncurryD, passocD))
 

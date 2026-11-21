@@ -197,15 +197,20 @@ partial def UNDISCH_ALL (UNDISCH : thm → Except String thm) (th : thm) :
     | .error _ => .ok th
   else .ok th
 
-/- SPEC_ALL, parameterized by SPEC_VAR (recursive; specializes all leading ∀s). -/
-/-- Specialize away all leading universal quantifiers, given `SPEC_VAR`. -/
-partial def SPEC_ALL (SPEC_VAR : thm → Except String (term × thm)) (th : thm) :
-    Except String thm :=
-  if is_forall (concl th) then
-    match SPEC_VAR th with
-    | .ok (_, th') => SPEC_ALL SPEC_VAR th'
-    | .error e => .error e
-  else .ok th
+/- SPEC_ALL (bool.ml 271-284): the same variables as iterating SPEC_VAR, but
+   the free variables of the theorem are computed only once: `SPEC v'` on
+   `|- !v. bod` adds `v'` to them just when `v` is free in `bod`. -/
+/-- `spec_all fvs th`, given `SPEC`. -/
+partial def specAllAux (SPEC : term → thm → Except String thm) (fvs : List term) (th : thm) :
+    Except String thm := do
+  let tm := concl th
+  if !(is_forall tm) then return th
+  let (v, bod) ← dest_forall tm
+  let v' ← variant fvs v
+  specAllAux SPEC (if vfree_in v bod then v' :: fvs else fvs) (← SPEC v' th)
+/-- Specialize away all leading universal quantifiers, given `SPEC`. -/
+def SPEC_ALL (SPEC : term → thm → Except String thm) (th : thm) : Except String thm :=
+  if is_forall (concl th) then specAllAux SPEC (thm_frees th) th else .ok th
 
 /- Run all of bool.ml's definitions and derived rules once, in order,
 returning the resulting theorems and rules. -/
@@ -438,7 +443,7 @@ def setupBool : ExceptT String IO BoolThms := do
     let bv ← variant (thm_frees th) (← bndvar (← rand (concl th)))
     return (bv, ← SPEC bv th)
 
-  let SPEC_ALL := SPEC_ALL SPEC_VAR
+  let SPEC_ALL := SPEC_ALL SPEC
 
   -- GEN
   let GEN_pth ← liftExcept (SYM (← CONV_RULE (RAND_CONV BETA_CONV)
@@ -628,8 +633,7 @@ def setupBool : ExceptT String IO BoolThms := do
   -- EQF_ELIM
   let EQF_ELIM_pth ← liftExcept (do
     let th1 ← EQ_MP (← ASSUME (safe_mk_eq cP cF)) (← ASSUME cP)
-    let th2 ← DISCH cP (← SPEC cF (← EQ_MP F_DEF th1))
-    DISCH_ALL (← NOT_INTRO th2))
+    DISCH_ALL (← NOT_INTRO (← DISCH cP th1)))
   let EQF_ELIM : thm → Except String thm := fun th =>
     (do MP (← INST [(← rand (← rator (concl th)), cP)] EQF_ELIM_pth) th
     ).mapError (fun _ => "EQF_ELIM")
