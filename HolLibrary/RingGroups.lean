@@ -22,10 +22,11 @@
   name.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, SET_RULE, RING_RULE, TAUT) they are bound first, in
-  OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.RingTheory

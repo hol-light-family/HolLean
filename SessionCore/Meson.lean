@@ -17,6 +17,10 @@ private def ioOk {α : Type} (what : String) (x : IO (Except String α)) : IO α
   | .ok v => pure v
   | .error e => throw (IO.userError s!"{what}: {e}")
 
+/-- `false_tm = `F`` (meson.ml 122), the first quotation meson.ml parses;
+    shared by Mapping (firstorder.ml uses Meson's reset_consts). -/
+initialize mesonFalseTm : term ← ioOk "parse F" (HolCore.Parser.parse_term "F")
+
 initialize mesonLayer : Meson.MesonThms ← ioOk "setupMeson" (Meson.setupMeson B T C).run
 
 initialize mesonInferences : IO.Ref Int ← IO.mkRef 0
@@ -29,7 +33,7 @@ initialize mesonCcounter : IO.Ref Int ← IO.mkRef 2
 
 def MesonS : Meson.FolStores :=
   { vstore := mesonVstore, gstore := mesonGstore, vcounter := mesonVcounter,
-    cstore := mesonCstore, ccounter := mesonCcounter }
+    cstore := mesonCstore, ccounter := mesonCcounter, false_tm := mesonFalseTm }
 
 def Mn : Meson.MesonThms := mesonLayer
 

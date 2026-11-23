@@ -311,12 +311,25 @@ def FORALL_MOD_THM    : thm := arith8.FORALL_MOD_THM
 def EXISTS_LT_MOD_THM : thm := arith8.EXISTS_LT_MOD_THM
 def EXISTS_MOD_THM    : thm := arith8.EXISTS_MOD_THM
 
-initialize arith9 : HolMath.Arith.ArithThms9 ← do
-  -- `parse_as_binder "minimal"` must run before `minimal` is parsed.
+
+initialize theModDownConv : IO.Ref (Option ioconv) ← IO.mkRef none
+initialize theNumCancelConv : IO.Ref (Option ioconv) ← IO.mkRef none
+initialize theLeImp : IO.Ref (Option (thm → ExceptT String IO thm)) ← IO.mkRef none
+initialize theBitsElimConv : IO.Ref (Option conv) ← IO.mkRef none
+
+/-- arith.ml 1713-1770, run by setupArith9 after DIVMOD_ELIM_THM' (1703):
+    MOD_DOWN_CONV, NUM_CANCEL_CONV, LE_IMP, then `parse_as_binder "minimal"`. -/
+private def arithProcs1 : IO (Except String Unit) := ExceptT.run do
+  theModDownConv.set (some (← HolMath.Arith.MOD_DOWN_CONV METIS ADD1 MOD_ADD_MOD MOD_MOD_REFL
+      MOD_MULT_MOD2 MOD_EXP_MOD))
+  theNumCancelConv.set (some (← HolMath.Arith.NUM_CANCEL_CONV EQ_ADD_LCANCEL EQ_ADD_LCANCEL_0 ADD_AC))
+  theLeImp.set (some (← HolMath.Arith.LE_IMP T.IMP_CONJ LE_TRANS))
   HolMath.Arith.setupMinimalBinder
+
+initialize arith9 : HolMath.Arith.ArithThms9 ← do
   ioOk' "setupArith9" (HolMath.Arith.setupArith9 Nm arith1 arith2 arith3 arith4 arith5 arith7
     MESON_TAC ASM_MESON_TAC MESON SELECT_CONV
-    new_definition prove_recursive_functions_exist).run
+    new_definition prove_recursive_functions_exist arithProcs1).run
 
 def PRE_ELIM_THM             : thm := arith9.PRE_ELIM_THM
 def PRE_ELIM_THM'            : thm := arith9.PRE_ELIM_THM'
@@ -353,20 +366,8 @@ def DEPENDENT_CHOICE         : thm := arith9.DEPENDENT_CHOICE
    are seeded at that point and read back by the exports.  (They are refs, not
    function-typed `initialize` constants, because a bare closure value does
    not survive separate compilation / `dlopen`.) -/
-initialize theModDownConv : IO.Ref (Option ioconv) ← IO.mkRef none
-initialize theNumCancelConv : IO.Ref (Option ioconv) ← IO.mkRef none
-initialize theLeImp : IO.Ref (Option (thm → ExceptT String IO thm)) ← IO.mkRef none
-initialize theBitsElimConv : IO.Ref (Option conv) ← IO.mkRef none
-
-/-- Build arith.ml's procedures in file order (arith.ml 1713, 1732, 1762,
-    1877), as OCaml does when arith.ml loads. -/
+/-- BITS_ELIM_CONV (arith.ml 1877), after the arith9 theorems. -/
 initialize ensureArithProcs : Unit ← do
-  theModDownConv.set (some (← ioOk' "MOD_DOWN_CONV"
-    (HolMath.Arith.MOD_DOWN_CONV METIS ADD1 MOD_ADD_MOD MOD_MOD_REFL
-      MOD_MULT_MOD2 MOD_EXP_MOD).run))
-  theNumCancelConv.set (some (← ioOk' "NUM_CANCEL_CONV"
-    (HolMath.Arith.NUM_CANCEL_CONV EQ_ADD_LCANCEL EQ_ADD_LCANCEL_0 ADD_AC).run))
-  theLeImp.set (some (← ioOk' "LE_IMP" (HolMath.Arith.LE_IMP T.IMP_CONJ LE_TRANS).run))
   theBitsElimConv.set (some (← ioOk' "BITS_ELIM_CONV"
     (HolMath.Arith.BITS_ELIM_CONV Nm.NUMERAL BIT0 BIT1 ADD1 EQ_ADD_RCANCEL
       MULT_2 EQ_MULT_LCANCEL TWO Nm.NOT_SUC).run))

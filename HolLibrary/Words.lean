@@ -47,10 +47,11 @@
   "Library/bdd.ml"` (words.ml 39) is done by the wiring first.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print
-  (MESON, SET_RULE, NUMBER_RULE, INTEGER_RULE) they are bound first, in
-  OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 
   STATE.  words.ml's refs (`word_sizes`, `word_pow2sizes`, `word_SIZE_CONV`,
   `word_POW2SIZE_CONV`, words.ml 65-69) live in SessionLibrary and come in
@@ -4845,11 +4846,10 @@ def setupWordArith [HolBase] (D : WordsDeps) (BVal : Val) (BIval : Ival) (BLimit
      (REWRITE_TAC [DIMINDEX_GE_1, ← ARITH_RULE (← q r"n - 1 < n <=> 1 <= n")])
     let wordy (tm : term) : Bool :=
       match tm with | .Var _ (.Tyapp "word" [_]) => true | _ => false
-    let wr ← WORD_RULE (← q r"word_shl (x:N word) 1 = word_add x x")
     pure (REPEAT (CONJ_TAC ORELSE GEN_TAC) THEN REWRITE_TAC [WORD_USHR_MSB_EQ] THEN
       REWRITE_TAC [BIT_WORD_OR, BIT_WORD_AND, BIT_WORD_NOT, BIT_WORD_XOR,
                    BIT_WORD_INT_MIN, BIT_WORD_1, BIT_WORD_0, msb_pth] THEN
-      REWRITE_TAC [MSB_INT_VAL, WORD_NOT_AS_SUB, wr] THEN
+      REWRITE_TAC [MSB_INT_VAL, WORD_NOT_AS_SUB, (← WORD_RULE (← q r"word_shl (x:N word) 1 = word_add x x"))] THEN
       REWRITE_TAC [WORD_ULT, WORD_ULE, WORD_UGT, WORD_UGE,
                    WORD_ILT, WORD_ILE, WORD_IGT, WORD_IGE] THEN
       REWRITE_TAC [irelational2, relational2, ← GSYM VAL_EQ, INT_IVAL, WORD_VAL,
@@ -8395,14 +8395,13 @@ def setupAlign [HolBase] (D : WordsDeps) (BVal : Val) (BIval : Ival) (BWordOps1 
         aligned n x <=>
         n divides 2 EXP dimindex(:N) /\ &n divides ival(x)"
    (← do
-    let ir ← INTEGER_RULE
-     (← q r"(y:int == x) (mod m)
-    ==> n divides m
-        ==> (n divides x <=> n divides y)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [aligned] THEN
       MATCH_MP_TAC (← TAUT (← q r"(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)")) THEN
       REWRITE_TAC [num_divides, ← GSYM INT_OF_NUM_CLAUSES] THEN
-      MATCH_MP_TAC ir THEN
+      MATCH_MP_TAC (← INTEGER_RULE
+     (← q r"(y:int == x) (mod m)
+    ==> n divides m
+        ==> (n divides x <=> n divides y)")) THEN
       REWRITE_TAC [IVAL_VAL_CONG]))
 
   let ALIGNED_WORD ← prove
@@ -8418,14 +8417,13 @@ def setupAlign [HolBase] (D : WordsDeps) (BVal : Val) (BIval : Ival) (BWordOps1 
    r"!n k. aligned n (iword k:N word) <=>
          n divides 2 EXP dimindex(:N) /\ &n divides k"
    (← do
-    let ir ← INTEGER_RULE
-     (← q r"(x:int == y) (mod m)
-    ==> n divides m
-        ==> (n divides x <=> n divides y)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [ALIGNED] THEN
       MATCH_MP_TAC (← TAUT (← q r"(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)")) THEN
       REWRITE_TAC [num_divides, ← GSYM INT_OF_NUM_CLAUSES] THEN
-      MATCH_MP_TAC ir THEN
+      MATCH_MP_TAC (← INTEGER_RULE
+     (← q r"(x:int == y) (mod m)
+    ==> n divides m
+        ==> (n divides x <=> n divides y)")) THEN
       REWRITE_TAC [IVAL_IWORD_CONG]))
 
   let ALIGNED_WORD_0 ← prove

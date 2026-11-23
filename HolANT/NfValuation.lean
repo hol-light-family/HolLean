@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.NfValuation fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -403,37 +406,7 @@ def setupNfValuation [HolBase] (D : NfValuationDeps) :
 
   let NUMBER_FIELD_VALUATION_PRINCIPAL_OUTSIDE ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let v1 ← GSYM INT_OF_NUM_ADD
-    let v2 ← GSYM INT_OF_NUM_EQ
-    let q3 ← q r"j0:A->bool"
-    let q4 ← q r"P:A->bool"
-    let q5 ← q r"ring_of_integers k:A ring"
-    let v6 ← ISPECL [q5, q4, q3] IDEAL_VALUATION_EQ_0
-    let q7 ← q r"ideal_valuation (ring_of_integers k) (P:A->bool)"
-    let q8 ← q r"a:A"
-    let q9 ← q r"b:A"
-    let q10 ← q r"ring_mul k (ring_inv k a) b:A"
-    let q11 ← q r"P:A->bool"
-    let q12 ← q r"k:A ring"
-    let v13 ← ISPECL [q12, q11, q10, q9, q8] NUMBER_FIELD_VALUATION
-    let q14 ← q r"j0:A->bool"
-    let q15 ← q r"P:A->bool"
-    let q16 ← q r"ring_mul k (ring_inv k a) b:A"
-    let q17 ← q r"(a:A) IN ring_carrier k /\ (b:A) IN ring_carrier k"
-    let q18 ← q r"j0:A->bool"
-    let q19 ← q r"j:A->bool"
-    let q20 ← q r"j:A->bool"
-    let q21 ← q r"j:A->bool"
-    let q22 ← q r"ring_of_integers k:A ring"
-    let v23 ← ISPECL [q22, q21] DEDEKIND_IDEAL_FACTORIZATION
-    let q24 ← q r"j:A->bool"
-    let q25 ← q r"UNIONS (IMAGE (\j. {P | prime_ideal (ring_of_integers k) P /\
-                              ~(P = {ring_0 k}) /\ j SUBSET P})
-                    {j | ring_ideal (ring_of_integers k) j /\
-                         ~(j = {ring_0 k}) /\
-                         ideal_norm (ring_of_integers k:A ring) j <= c})"
-    let q26 ← q r"c:num"
-    let p27 ← prove r"!k:A ring.
+    let class_lemma := (← prove r"!k:A ring.
         number_field k
         ==> ?t. FINITE t /\
                 (!P. P IN t ==> prime_ideal (ring_of_integers k) P /\
@@ -445,30 +418,11 @@ def setupNfValuation [HolBase] (D : NfValuationDeps) :
                                 ==> dedekind_valuation
                                       (ring_of_integers k,k) I P y =
                                     &(ideal_valuation (ring_of_integers k)
-                                        P j)" (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP DEDEKIND_RING_OF_INTEGERS)) THEN FIRST_ASSUM ((X_CHOOSE_TAC q26) o (MATCH_MP NUMBER_FIELD_IDEAL_CLASS_BOUND)) THEN EXISTS_TAC q25 THEN REWRITE_TAC [IN_UNIONS, EXISTS_IN_IMAGE, IN_ELIM_THM] THEN REPEAT CONJ_TAC THENL [ASM_SIMP_TAC [FINITE_FINITE_UNIONS, FINITE_IMAGE, FORALL_IN_IMAGE, NUMBER_FIELD_FINITE_IDEALS_BOUNDED_NORM] THEN REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC q24 THEN STRIP_TAC THEN MP_TAC v23 THEN ASM_SIMP_TAC [RING_OF_INTEGERS], MESON_TAC [], X_GEN_TAC q20 THEN STRIP_TAC] THEN FIRST_X_ASSUM (MP_TAC o (SPEC q19)) THEN ASM_REWRITE_TAC [IN_IDEAL_CLASS, RING_OF_INTEGERS] THEN DISCH_THEN (X_CHOOSE_THEN q18 STRIP_ASSUME_TAC) THEN SUBGOAL_THEN q17 STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], ALL_TAC] THEN EXISTS_TAC q16 THEN ASM_SIMP_TAC [RING_MUL, RING_INV, INTEGRAL_DOMAIN_MUL_EQ_0, FIELD_IMP_INTEGRAL_DOMAIN, FIELD_INV_EQ_0] THEN X_GEN_TAC q15 THEN STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o ((SPEC q14) o (REWRITE_RULE [NOT_EXISTS_THM]))) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN MP_TAC v13 THEN ASM_SIMP_TAC [RING_MUL, RING_INV, RING_MUL_ASSOC, FIELD_MUL_RINV, RING_MUL_LID] THEN DISCH_THEN SUBST1_TAC THEN FIRST_X_ASSUM (MP_TAC o (AP_TERM q7)) THEN MP_TAC v6 THEN ASM_SIMP_TAC [IDEAL_VALUATION_IDEAL_PROD, RING_IDEAL_IDEAL_GENERATED, IDEAL_GENERATED_EQ_0, RING_OF_INTEGERS] THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN REWRITE_TAC [v2, v1] THEN INT_ARITH_TAC)
-    let class_lemma := p27
-    let q28 ← q r"&0 <= max (x:int) (&0)"
-    let r29 ← INT_ARITH q28
-    let v30 ← GSYM ring_div
-    let q31 ← q r"ring_div k y1 y2:A"
-    let q32 ← q r"y2:A"
-    let q33 ← q r"y1:A"
-    let q34 ← q r"j2:A->bool"
-    let q35 ← q r"j1:A->bool"
-    let q36 ← q r"&0 <= max (x:int) (&0)"
-    let r37 ← INT_ARITH q36
-    let v38 ← GSYM INT_OF_NUM_EQ
-    let v39 ← REWRITE_RULE [IMP_CONJ] FINITE_SUBSET
-    let q40 ← q r"(p /\ q) /\ (r ==> s ==> t) ==> (p ==> r) ==> (q ==> s) ==> t"
-    let r41 ← TAUT q40
-    let q42 ← q r"\P:A->bool. num_of_int(max (e P) (&0))"
-    let q43 ← q r"ring_of_integers k:A ring"
-    let v44 ← ISPECL [q43, q42] DEDEKIND_IDEAL_PRESCRIBED_VALUATIONS
-    let q45 ← q r"\P:A->bool. num_of_int(max (--(e P)) (&0))"
-    let q46 ← q r"ring_of_integers k:A ring"
-    let v47 ← ISPECL [q46, q45] DEDEKIND_IDEAL_PRESCRIBED_VALUATIONS
-    let q48 ← q r"e:(A->bool)->int"
-    let q49 ← q r"t:(A->bool)->bool"
+                                        P j)" (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP DEDEKIND_RING_OF_INTEGERS)) THEN FIRST_ASSUM ((X_CHOOSE_TAC (← q r"c:num")) o (MATCH_MP NUMBER_FIELD_IDEAL_CLASS_BOUND)) THEN EXISTS_TAC (← q r"UNIONS (IMAGE (\j. {P | prime_ideal (ring_of_integers k) P /\
+                              ~(P = {ring_0 k}) /\ j SUBSET P})
+                    {j | ring_ideal (ring_of_integers k) j /\
+                         ~(j = {ring_0 k}) /\
+                         ideal_norm (ring_of_integers k:A ring) j <= c})") THEN REWRITE_TAC [IN_UNIONS, EXISTS_IN_IMAGE, IN_ELIM_THM] THEN REPEAT CONJ_TAC THENL [ASM_SIMP_TAC [FINITE_FINITE_UNIONS, FINITE_IMAGE, FORALL_IN_IMAGE, NUMBER_FIELD_FINITE_IDEALS_BOUNDED_NORM] THEN REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC (← q r"j:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"j:A->bool")] DEDEKIND_IDEAL_FACTORIZATION) THEN ASM_SIMP_TAC [RING_OF_INTEGERS], MESON_TAC [], X_GEN_TAC (← q r"j:A->bool") THEN STRIP_TAC] THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"j:A->bool"))) THEN ASM_REWRITE_TAC [IN_IDEAL_CLASS, RING_OF_INTEGERS] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"j0:A->bool") STRIP_ASSUME_TAC) THEN SUBGOAL_THEN (← q r"(a:A) IN ring_carrier k /\ (b:A) IN ring_carrier k") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], ALL_TAC] THEN EXISTS_TAC (← q r"ring_mul k (ring_inv k a) b:A") THEN ASM_SIMP_TAC [RING_MUL, RING_INV, INTEGRAL_DOMAIN_MUL_EQ_0, FIELD_IMP_INTEGRAL_DOMAIN, FIELD_INV_EQ_0] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"j0:A->bool")) o (REWRITE_RULE [NOT_EXISTS_THM]))) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"ring_mul k (ring_inv k a) b:A"), (← q r"b:A"), (← q r"a:A")] NUMBER_FIELD_VALUATION) THEN ASM_SIMP_TAC [RING_MUL, RING_INV, RING_MUL_ASSOC, FIELD_MUL_RINV, RING_MUL_LID] THEN DISCH_THEN SUBST1_TAC THEN FIRST_X_ASSUM (MP_TAC o (AP_TERM (← q r"ideal_valuation (ring_of_integers k) (P:A->bool)"))) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"j0:A->bool")] IDEAL_VALUATION_EQ_0) THEN ASM_SIMP_TAC [IDEAL_VALUATION_IDEAL_PROD, RING_IDEAL_IDEAL_GENERATED, IDEAL_GENERATED_EQ_0, RING_OF_INTEGERS] THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN REWRITE_TAC [(← GSYM INT_OF_NUM_EQ), (← GSYM INT_OF_NUM_ADD)] THEN INT_ARITH_TAC))
     prove
       r"!k:A ring.
           number_field k
@@ -483,7 +437,7 @@ def setupNfValuation [HolBase] (D : NfValuationDeps) :
                                   ~(P = {ring_0 k}) /\ ~(P IN t)
                                   ==> dedekind_valuation
                                         (ring_of_integers k,k) I P y = e P"
-      (GEN_TAC THEN DISCH_TAC THEN FIRST_ASSUM (MP_TAC o (MATCH_MP class_lemma)) THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC q49 THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "class"))) THEN ASM_REWRITE_TAC [] THEN X_GEN_TAC q48 THEN DISCH_TAC THEN MP_TAC v47 THEN MP_TAC v44 THEN ASM_SIMP_TAC [DEDEKIND_RING_OF_INTEGERS, RING_OF_INTEGERS] THEN MATCH_MP_TAC r41 THEN CONJ_TAC THENL [CONJ_TAC THEN FIRST_ASSUM (MATCH_MP_TAC o (MATCH_MP v39)) THEN REWRITE_TAC [SUBSET, IN_ELIM_THM, v38] THEN SIMP_TAC [INT_OF_NUM_OF_INT, r37] THEN INT_ARITH_TAC, DISCH_THEN (X_CHOOSE_THEN q35 STRIP_ASSUME_TAC) THEN DISCH_THEN (X_CHOOSE_THEN q34 STRIP_ASSUME_TAC)] THEN REMOVE_THEN "class" (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"j2:A->bool") th) THEN MP_TAC (← SPEC (← q r"j1:A->bool") th))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN q33 STRIP_ASSUME_TAC) THEN DISCH_THEN (X_CHOOSE_THEN q32 STRIP_ASSUME_TAC) THEN EXISTS_TAC q31 THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN ASM_SIMP_TAC [RING_DIV, ring_div, INTEGRAL_DOMAIN_MUL_EQ_0, RING_INV, FIELD_IMP_INTEGRAL_DOMAIN, FIELD_INV_EQ_0] THEN ASM_SIMP_TAC [v30, NUMBER_FIELD_VALUATION_DIV] THEN SIMP_TAC [INT_OF_NUM_OF_INT, r29] THEN INT_ARITH_TAC)
+      (GEN_TAC THEN DISCH_TAC THEN FIRST_ASSUM (MP_TAC o (MATCH_MP class_lemma)) THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"t:(A->bool)->bool") THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "class"))) THEN ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q r"e:(A->bool)->int") THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"\P:A->bool. num_of_int(max (--(e P)) (&0))")] DEDEKIND_IDEAL_PRESCRIBED_VALUATIONS) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"\P:A->bool. num_of_int(max (e P) (&0))")] DEDEKIND_IDEAL_PRESCRIBED_VALUATIONS) THEN ASM_SIMP_TAC [DEDEKIND_RING_OF_INTEGERS, RING_OF_INTEGERS] THEN MATCH_MP_TAC (← TAUT (← q r"(p /\ q) /\ (r ==> s ==> t) ==> (p ==> r) ==> (q ==> s) ==> t")) THEN CONJ_TAC THENL [CONJ_TAC THEN FIRST_ASSUM (MATCH_MP_TAC o (MATCH_MP (← REWRITE_RULE [IMP_CONJ] FINITE_SUBSET))) THEN REWRITE_TAC [SUBSET, IN_ELIM_THM, (← GSYM INT_OF_NUM_EQ)] THEN SIMP_TAC [INT_OF_NUM_OF_INT, (← INT_ARITH (← q r"&0 <= max (x:int) (&0)"))] THEN INT_ARITH_TAC, DISCH_THEN (X_CHOOSE_THEN (← q r"j1:A->bool") STRIP_ASSUME_TAC) THEN DISCH_THEN (X_CHOOSE_THEN (← q r"j2:A->bool") STRIP_ASSUME_TAC)] THEN REMOVE_THEN "class" (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"j2:A->bool") th) THEN MP_TAC (← SPEC (← q r"j1:A->bool") th))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"y1:A") STRIP_ASSUME_TAC) THEN DISCH_THEN (X_CHOOSE_THEN (← q r"y2:A") STRIP_ASSUME_TAC) THEN EXISTS_TAC (← q r"ring_div k y1 y2:A") THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN ASM_SIMP_TAC [RING_DIV, ring_div, INTEGRAL_DOMAIN_MUL_EQ_0, RING_INV, FIELD_IMP_INTEGRAL_DOMAIN, FIELD_INV_EQ_0] THEN ASM_SIMP_TAC [(← GSYM ring_div), NUMBER_FIELD_VALUATION_DIV] THEN SIMP_TAC [INT_OF_NUM_OF_INT, (← INT_ARITH (← q r"&0 <= max (x:int) (&0)"))] THEN INT_ARITH_TAC)
 
   let NUMBER_FIELD_DENOMINATOR_IDEAL ← prove
     r"!k:A ring x.
@@ -508,9 +462,6 @@ def setupNfValuation [HolBase] (D : NfValuationDeps) :
 
   let NUMBER_FIELD_ROOT_DENOMINATOR ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"1 <= n ==> n = 0 ==> m = 0")
-    let r2 ← TAUT (← q r"p /\ (p ==> q /\ r) ==> p /\ q /\ r")
-    let r3 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
     prove
       r"!k:A ring x a p.
           number_field k /\ x IN ring_carrier k /\
@@ -523,8 +474,8 @@ def setupNfValuation [HolBase] (D : NfValuationDeps) :
                   IN ring_carrier(ring_of_integers k)"
       (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP DEDEKIND_RING_OF_INTEGERS)) THEN SUBGOAL_THEN (← q r"~(ideal_generated (ring_of_integers k) {a} = {ring_0 k:A}) /\
       FINITE(ring_carrier(quotient_ring (ring_of_integers k)
-              (ideal_generated (ring_of_integers k) {a})))") STRIP_ASSUME_TAC THENL [MATCH_MP_TAC r3 THEN CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"a:A")] IDEAL_GENERATED_EQ_0) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS], DISCH_TAC THEN MATCH_MP_TAC RING_OF_INTEGERS_FINITE_QUOTIENT THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED]], ALL_TAC] THEN ASM_CASES_TAC (← q r"x:A = ring_0 k") THENL [EXISTS_TAC (← q r"1") THEN ASM_SIMP_TAC [EXP_ONE, IDEAL_NORM_POS, LE_REFL, RING_OF_NUM_1, RING_MUL_RZERO, RING_1] THEN MP_TAC (← ISPEC (← q r"ring_of_integers k:A ring") RING_0) THEN REWRITE_TAC [RING_OF_INTEGERS], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A")] NUMBER_FIELD_DENOMINATOR_IDEAL) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"J:A->bool") (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "val")))) THEN SUBGOAL_THEN (← q r"FINITE(ring_carrier(quotient_ring (ring_of_integers k) (J:A->bool)))") ASSUME_TAC THENL [MATCH_MP_TAC RING_OF_INTEGERS_FINITE_QUOTIENT THEN ASM_REWRITE_TAC [], ALL_TAC] THEN EXISTS_TAC (← q r"ideal_norm (ring_of_integers k) (J:A->bool)") THEN CONJ_TAC THENL [MATCH_MP_TAC IDEAL_NORM_POS THEN FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN CONJ_TAC THENL [SUBGOAL_THEN (← q r"a IN ring_carrier k /\ ~(ring_pow k x p = ring_0 k) /\
-        ~(ring_mul k a (ring_pow k x p) = ring_0 k:A)") STRIP_ASSUME_TAC THENL [MATCH_MP_TAC r2 THEN CONJ_TAC THENL [ASM_MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], DISCH_TAC] THEN ASM_SIMP_TAC [INTEGRAL_DOMAIN_MUL_EQ_0, INTEGRAL_DOMAIN_POW_EQ_0, RING_POW, FIELD_IMP_INTEGRAL_DOMAIN], ALL_TAC] THEN SUBGOAL_THEN (← q r"~(ideal_pow (ring_of_integers k) J p = {ring_0 k:A})") ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"J:A->bool"), (← q r"p:num")] IDEAL_POW_EQ_ZERO) THEN ASM_SIMP_TAC [RING_OF_INTEGERS, INTEGRAL_DOMAIN_RING_OF_INTEGERS], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"J:A->bool"), (← q r"p:num")] IDEAL_NORM_IDEAL_POW) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (SUBST1_TAC o SYM)) THEN MATCH_MP_TAC DIVIDES_LE_IMP THEN CONJ_TAC THENL [MATCH_MP_TAC IDEAL_NORM_SUBSET_DIVIDES, MATCH_MP_TAC r1 THEN MATCH_MP_TAC IDEAL_NORM_POS THEN ASM_REWRITE_TAC []] THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_POW, RING_IDEAL_IDEAL_GENERATED] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"ideal_generated (ring_of_integers k) {a:A}"), (← q r"ideal_pow (ring_of_integers k) J p:A->bool")] DEDEKIND_IDEAL_SUBSET_VALUATION) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS, RING_IDEAL_IDEAL_POW, RING_IDEAL_IDEAL_GENERATED] THEN DISCH_THEN SUBST1_TAC THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"J:A->bool"), (← q r"p:num")] IDEAL_VALUATION_IDEAL_POW) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS] THEN DISCH_THEN SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"a:A")] NUMBER_FIELD_VALUATION_RING_OF_INTEGERS) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ring_mul k a (ring_pow k x p):A")] NUMBER_FIELD_VALUATION_INTEGRAL) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"a:A"), (← q r"ring_pow k x p:A")] NUMBER_FIELD_VALUATION_MUL) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"x:A"), (← q r"p:num")] NUMBER_FIELD_VALUATION_POW) THEN ASM_SIMP_TAC [RING_POW, RING_MUL] THEN DISCH_TAC THEN DISCH_TAC THEN DISCH_THEN (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN ASM_REWRITE_TAC [(← GSYM INT_OF_NUM_LE), (← GSYM INT_OF_NUM_MUL)] THEN USE_THEN "val" (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [INT_MAX] THEN COND_CASES_TAC THEN REWRITE_TAC [INT_MUL_RZERO, INT_MUL_RNEG, INT_POS] THEN ASM_INT_ARITH_TAC, ALL_TAC] THEN MATCH_MP_TAC NUMBER_FIELD_IDEAL_MUL_INTEGRAL THEN EXISTS_TAC (← q r"J:A->bool") THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN USE_THEN "val" (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], INT_ARITH_TAC], MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"J:A->bool")] IDEAL_NORM_IN_IDEAL) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS]])
+              (ideal_generated (ring_of_integers k) {a})))") STRIP_ASSUME_TAC THENL [MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"a:A")] IDEAL_GENERATED_EQ_0) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS], DISCH_TAC THEN MATCH_MP_TAC RING_OF_INTEGERS_FINITE_QUOTIENT THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED]], ALL_TAC] THEN ASM_CASES_TAC (← q r"x:A = ring_0 k") THENL [EXISTS_TAC (← q r"1") THEN ASM_SIMP_TAC [EXP_ONE, IDEAL_NORM_POS, LE_REFL, RING_OF_NUM_1, RING_MUL_RZERO, RING_1] THEN MP_TAC (← ISPEC (← q r"ring_of_integers k:A ring") RING_0) THEN REWRITE_TAC [RING_OF_INTEGERS], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A")] NUMBER_FIELD_DENOMINATOR_IDEAL) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"J:A->bool") (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "val")))) THEN SUBGOAL_THEN (← q r"FINITE(ring_carrier(quotient_ring (ring_of_integers k) (J:A->bool)))") ASSUME_TAC THENL [MATCH_MP_TAC RING_OF_INTEGERS_FINITE_QUOTIENT THEN ASM_REWRITE_TAC [], ALL_TAC] THEN EXISTS_TAC (← q r"ideal_norm (ring_of_integers k) (J:A->bool)") THEN CONJ_TAC THENL [MATCH_MP_TAC IDEAL_NORM_POS THEN FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN CONJ_TAC THENL [SUBGOAL_THEN (← q r"a IN ring_carrier k /\ ~(ring_pow k x p = ring_0 k) /\
+        ~(ring_mul k a (ring_pow k x p) = ring_0 k:A)") STRIP_ASSUME_TAC THENL [MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q /\ r) ==> p /\ q /\ r")) THEN CONJ_TAC THENL [ASM_MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], DISCH_TAC] THEN ASM_SIMP_TAC [INTEGRAL_DOMAIN_MUL_EQ_0, INTEGRAL_DOMAIN_POW_EQ_0, RING_POW, FIELD_IMP_INTEGRAL_DOMAIN], ALL_TAC] THEN SUBGOAL_THEN (← q r"~(ideal_pow (ring_of_integers k) J p = {ring_0 k:A})") ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"J:A->bool"), (← q r"p:num")] IDEAL_POW_EQ_ZERO) THEN ASM_SIMP_TAC [RING_OF_INTEGERS, INTEGRAL_DOMAIN_RING_OF_INTEGERS], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"J:A->bool"), (← q r"p:num")] IDEAL_NORM_IDEAL_POW) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (SUBST1_TAC o SYM)) THEN MATCH_MP_TAC DIVIDES_LE_IMP THEN CONJ_TAC THENL [MATCH_MP_TAC IDEAL_NORM_SUBSET_DIVIDES, MATCH_MP_TAC (← ARITH_RULE (← q r"1 <= n ==> n = 0 ==> m = 0")) THEN MATCH_MP_TAC IDEAL_NORM_POS THEN ASM_REWRITE_TAC []] THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_POW, RING_IDEAL_IDEAL_GENERATED] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"ideal_generated (ring_of_integers k) {a:A}"), (← q r"ideal_pow (ring_of_integers k) J p:A->bool")] DEDEKIND_IDEAL_SUBSET_VALUATION) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS, RING_IDEAL_IDEAL_POW, RING_IDEAL_IDEAL_GENERATED] THEN DISCH_THEN SUBST1_TAC THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"J:A->bool"), (← q r"p:num")] IDEAL_VALUATION_IDEAL_POW) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS] THEN DISCH_THEN SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"a:A")] NUMBER_FIELD_VALUATION_RING_OF_INTEGERS) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ring_mul k a (ring_pow k x p):A")] NUMBER_FIELD_VALUATION_INTEGRAL) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"a:A"), (← q r"ring_pow k x p:A")] NUMBER_FIELD_VALUATION_MUL) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"x:A"), (← q r"p:num")] NUMBER_FIELD_VALUATION_POW) THEN ASM_SIMP_TAC [RING_POW, RING_MUL] THEN DISCH_TAC THEN DISCH_TAC THEN DISCH_THEN (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN ASM_REWRITE_TAC [(← GSYM INT_OF_NUM_LE), (← GSYM INT_OF_NUM_MUL)] THEN USE_THEN "val" (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [INT_MAX] THEN COND_CASES_TAC THEN REWRITE_TAC [INT_MUL_RZERO, INT_MUL_RNEG, INT_POS] THEN ASM_INT_ARITH_TAC, ALL_TAC] THEN MATCH_MP_TAC NUMBER_FIELD_IDEAL_MUL_INTEGRAL THEN EXISTS_TAC (← q r"J:A->bool") THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN USE_THEN "val" (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], INT_ARITH_TAC], MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"J:A->bool")] IDEAL_NORM_IN_IDEAL) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS]])
 
   -- @@RETURN BEGIN
   return { RING_OF_INTEGERS_FRACTION_FIELD, NUMBER_FIELD_VALUATION,

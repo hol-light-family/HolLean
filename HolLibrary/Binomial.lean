@@ -19,9 +19,11 @@
   binomRule` with a context structure (as BitMatch moves its closures).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof uses two or more printing/counter-using
-  rules they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolMath
@@ -216,9 +218,8 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
   let BINOM_LT ← prove
    r"!n k. n < k ==> binom(n,k) = 0"
    (← do
-    let a ← ARITH_RULE (← q r"n < k ==> n < SUC(k)")
     pure (INDUCT_TAC THEN INDUCT_TAC THEN REWRITE_TAC [binom, ARITH, LT_SUC, LT] THEN
-      ASM_SIMP_TAC [a, ARITH]))
+      ASM_SIMP_TAC [(← ARITH_RULE (← q r"n < k ==> n < SUC(k)")), ARITH]))
 
   let BINOM_REFL ← prove
    r"!n. binom(n,n) = 1"
@@ -227,8 +228,7 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
   let BINOM_1 ← prove
    r"!n. binom(n,1) = n"
    (← do
-    let n ← num_CONV (← q "1")
-    pure (REWRITE_TAC [n] THEN
+    pure (REWRITE_TAC [(← num_CONV (← q "1"))] THEN
       INDUCT_TAC THEN ASM_REWRITE_TAC [binom] THEN ARITH_TAC))
 
   let BINOM_FACT ← prove
@@ -256,13 +256,12 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
   let BINOM_GE_TOP ← prove
    r"!m n. 1 <= m /\ m < n ==> n <= binom(n,m)"
    (← do
-    let a ← ARITH_RULE (← q r"~(c = 0) ==> n <= b ==> n + 1 <= c + b")
     pure (INDUCT_TAC THEN INDUCT_TAC THEN REWRITE_TAC [binom] THEN
       CONV_TAC NUM_REDUCE_CONV THEN STRIP_TAC THEN ASM_CASES_TAC (← q "m = 0") THEN
       ASM_SIMP_TAC [BINOM_1, ARITH_SUC, binom] THEN REWRITE_TAC [ADD1, LE_REFL] THEN
       FIRST_X_ASSUM (MP_TAC o SPEC (← q "n:num")) THEN
       ANTS_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
-      MATCH_MP_TAC a THEN
+      MATCH_MP_TAC (← ARITH_RULE (← q r"~(c = 0) ==> n <= b ==> n + 1 <= c + b")) THEN
       REWRITE_TAC [BINOM_EQ_0] THEN ASM_ARITH_TAC))
 
   let BINOM_TOP_STEP ← prove
@@ -312,15 +311,14 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
           ==> !m n. P m n"
      (GEN_TAC THEN STRIP_TAC THEN REPEAT INDUCT_TAC THEN ASM_MESON_TAC [])
     let setstep_lemma ← do
-      let s1 ← SET_RULE (← q r"{y | y IN t UNION IMAGE f s /\ P y} =
-        {y | y IN t /\ P y} UNION IMAGE f {x | x IN s /\ P(f x)}")
       prove
        r"~(a IN t)
          ==> {u | u SUBSET (a:A INSERT t) /\ u HAS_SIZE (SUC m)} =
              {u | u SUBSET t /\ u HAS_SIZE (SUC m)} UNION
              IMAGE (\u. a INSERT u) {u | u SUBSET t /\ u HAS_SIZE m}"
        (REWRITE_TAC [← REWRITE_RULE [EXTENSION, IN_ELIM_THM] POWERSET_CLAUSES] THEN
-        REPEAT STRIP_TAC THEN REWRITE_TAC [IN_ELIM_THM, s1] THEN
+        REPEAT STRIP_TAC THEN REWRITE_TAC [IN_ELIM_THM, (← SET_RULE (← q r"{y | y IN t UNION IMAGE f s /\ P y} =
+        {y | y IN t /\ P y} UNION IMAGE f {x | x IN s /\ P(f x)}"))] THEN
         AP_TERM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC [HAS_SIZE, FINITE_INSERT] THEN
         ONCE_REWRITE_TAC [← TAUT (← q r"p /\ q /\ r <=> ~(p /\ q ==> ~r)")] THEN
         SIMP_TAC [CARD_CLAUSES] THEN MP_TAC SUC_INJ THEN ASM SET_TAC [])
@@ -354,45 +352,37 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
    r"!n x y.
       (x + y) EXP n = nsum(0..n) (\k. binom(n,k) * x EXP k * y EXP (n - k))"
    (← do
-    let a2 ← ARITH_RULE (← q r"k <= n ==> SUC n - k = SUC(n - k)")
-    let r1 ← REWRITE_CONV [NSUM_OFFSET] (← q r"nsum(m+1..n+1) (\i. f i)")
-    let a1 ← ARITH_RULE (← q r"a:num = e /\ b = c + d ==> a + b = c + d + e")
-    let a0 ← ARITH_RULE (← q "0 <= n + 1")
     pure (INDUCT_TAC THEN REPEAT GEN_TAC THEN ASM_REWRITE_TAC [EXP] THEN
       REWRITE_TAC [NSUM_SING_NUMSEG, binom, SUB_REFL, EXP, MULT_CLAUSES] THEN
-      SIMP_TAC [NSUM_CLAUSES_LEFT, ADD1, a0, NSUM_OFFSET] THEN
+      SIMP_TAC [NSUM_CLAUSES_LEFT, ADD1, (← ARITH_RULE (← q "0 <= n + 1")), NSUM_OFFSET] THEN
       ASM_REWRITE_TAC [EXP, binom, ← GSYM ADD1, ← GSYM NSUM_LMUL] THEN
       REWRITE_TAC [RIGHT_ADD_DISTRIB, NSUM_ADD_NUMSEG, MULT_CLAUSES, SUB_0] THEN
-      MATCH_MP_TAC a1 THEN
+      MATCH_MP_TAC (← ARITH_RULE (← q r"a:num = e /\ b = c + d ==> a + b = c + d + e")) THEN
       CONJ_TAC THENL [REWRITE_TAC [MULT_AC, SUB_SUC], REWRITE_TAC [← GSYM EXP]] THEN
-      SIMP_TAC [ADD1, ← SYM r1] THEN
+      SIMP_TAC [ADD1, ← SYM (← REWRITE_CONV [NSUM_OFFSET] (← q r"nsum(m+1..n+1) (\i. f i)"))] THEN
       REWRITE_TAC [NSUM_CLAUSES_NUMSEG, ← GSYM ADD1, LE_SUC, LE_0] THEN
       SIMP_TAC [NSUM_CLAUSES_LEFT, LE_0] THEN
       SIMP_TAC [BINOM_LT, LT, MULT_CLAUSES, ADD_CLAUSES, SUB_0, EXP, binom] THEN
-      SIMP_TAC [ARITH, a2, EXP] THEN
+      SIMP_TAC [ARITH, (← ARITH_RULE (← q r"k <= n ==> SUC n - k = SUC(n - k)")), EXP] THEN
       REWRITE_TAC [MULT_AC]))
 
   let REAL_BINOMIAL_THEOREM ← prove
    r"!n x y.
      (x + y) pow n = sum(0..n) (\k. &(binom(n,k)) * x pow k * y pow (n - k))"
    (← do
-    let ra ← REAL_ARITH (← q r"a:real = e /\ b = c + d ==> a + b = c + d + e")
-    let a2 ← ARITH_RULE (← q r"k <= n ==> SUC n - k = SUC(n - k)")
-    let r1 ← REWRITE_CONV [SUM_OFFSET] (← q r"sum(m+1..n+1) (\i. f i)")
-    let a0 ← ARITH_RULE (← q "0 <= n + 1")
     pure (INDUCT_TAC THEN REPEAT GEN_TAC THEN ASM_REWRITE_TAC [real_pow] THEN
       REWRITE_TAC [SUM_SING_NUMSEG, binom, SUB_REFL, real_pow, REAL_MUL_LID] THEN
-      SIMP_TAC [SUM_CLAUSES_LEFT, ADD1, a0, SUM_OFFSET] THEN
+      SIMP_TAC [SUM_CLAUSES_LEFT, ADD1, (← ARITH_RULE (← q "0 <= n + 1")), SUM_OFFSET] THEN
       ASM_REWRITE_TAC [real_pow, binom, ← GSYM ADD1, ← GSYM SUM_LMUL] THEN
       REWRITE_TAC [← GSYM REAL_OF_NUM_ADD] THEN
       REWRITE_TAC [REAL_ADD_RDISTRIB, SUM_ADD_NUMSEG, REAL_MUL_LID, SUB_0] THEN
-      MATCH_MP_TAC ra THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"a:real = e /\ b = c + d ==> a + b = c + d + e")) THEN
       CONJ_TAC THENL [SIMP_TAC [REAL_MUL_AC, SUB_SUC], SIMP_TAC [← GSYM real_pow]] THEN
-      SIMP_TAC [ADD1, ← SYM r1] THEN
+      SIMP_TAC [ADD1, ← SYM (← REWRITE_CONV [SUM_OFFSET] (← q r"sum(m+1..n+1) (\i. f i)"))] THEN
       REWRITE_TAC [SUM_CLAUSES_NUMSEG, ← GSYM ADD1, LE_SUC, LE_0] THEN
       SIMP_TAC [SUM_CLAUSES_LEFT, LE_0, BINOM_LT, LT, REAL_MUL_LID, SUB_0, real_pow,
                 binom, REAL_MUL_LZERO, REAL_ADD_RID] THEN
-      SIMP_TAC [ARITH, a2, real_pow] THEN
+      SIMP_TAC [ARITH, (← ARITH_RULE (← q r"k <= n ==> SUC n - k = SUC(n - k)")), real_pow] THEN
       REWRITE_TAC [REAL_MUL_AC]))
 
   let BINOM_TOP_STEP_REAL ← prove
@@ -400,9 +390,8 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
            if k = n + 1 then &1
            else (&n + &1) / (&n + &1 - &k) * &(binom(n,k))"
    (← do
-    let a ← ARITH_RULE (← q r"~(k = n + 1) ==> n < k /\ n + 1 < k \/ k <= n /\ k <= n + 1")
     pure (REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [BINOM_REFL] THEN
-      FIRST_X_ASSUM (STRIP_ASSUME_TAC o MATCH_MP a) THEN
+      FIRST_X_ASSUM (STRIP_ASSUME_TAC o MATCH_MP (← ARITH_RULE (← q r"~(k = n + 1) ==> n < k /\ n + 1 < k \/ k <= n /\ k <= n + 1"))) THEN
       ASM_SIMP_TAC [BINOM_LT, REAL_MUL_RZERO] THEN
       MP_TAC (← SPECL [← q "n:num", ← q "k:num"] BINOM_TOP_STEP) THEN
       ASM_SIMP_TAC [← GSYM REAL_OF_NUM_EQ, ← GSYM REAL_OF_NUM_MUL, ← GSYM REAL_OF_NUM_ADD,
@@ -413,9 +402,8 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
   let BINOM_BOTTOM_STEP_REAL ← prove
    r"!n k. &(binom(n,k+1)):real = (&n - &k) / (&k + &1) * &(binom(n,k))"
    (← do
-    let a ← ARITH_RULE (← q r"n < k ==> n < k + 1")
     pure (REPEAT GEN_TAC THEN DISJ_CASES_TAC (← ARITH_RULE (← q r"n:num < k \/ k <= n")) THENL
-     [ASM_SIMP_TAC [BINOM_LT, a, REAL_MUL_RZERO],
+     [ASM_SIMP_TAC [BINOM_LT, (← ARITH_RULE (← q r"n < k ==> n < k + 1")), REAL_MUL_RZERO],
       MP_TAC (← SPECL [← q "n:num", ← q "k:num"] BINOM_BOTTOM_STEP) THEN
       ASM_SIMP_TAC [← GSYM REAL_OF_NUM_EQ, ← GSYM REAL_OF_NUM_MUL,
                     ← GSYM REAL_OF_NUM_ADD, ← GSYM REAL_OF_NUM_SUB] THEN
@@ -476,8 +464,7 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
   let DIVIDES_COPRIME_BINOM ← prove
    r"!n k. coprime(n,k) ==> n divides binom (n,k)"
    (← do
-    let nr ← NUMBER_RULE (← q "coprime(n,k) <=> gcd(n,k) = 1")
-    pure (MESON_TAC [DIVIDES_GCD_BINOM, MULT_CLAUSES, nr]))
+    pure (MESON_TAC [DIVIDES_GCD_BINOM, MULT_CLAUSES, (← NUMBER_RULE (← q "coprime(n,k) <=> gcd(n,k) = 1"))]))
 
   let DIVIDES_PRIME_BINOM ← prove
    r"!n p. prime p /\ 0 < n /\ n < p ==> p divides binom(p,n)"
@@ -489,21 +476,17 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
   let BINOM_SYM ← prove
    r"!n k. binom(n,n-k) = if k <= n then binom(n,k) else 1"
    (← do
-    let a2 ← ARITH_RULE (← q r"k:num <= n ==> n - (n - k) = k")
-    let a1 ← ARITH_RULE (← q r"~(k <= n) ==> n - k = 0")
     pure (REPEAT GEN_TAC THEN COND_CASES_TAC THEN
-      ASM_SIMP_TAC [binom, a1] THEN
+      ASM_SIMP_TAC [binom, (← ARITH_RULE (← q r"~(k <= n) ==> n - k = 0"))] THEN
       REWRITE_TAC [← GSYM REAL_OF_NUM_EQ, REAL_OF_NUM_BINOM] THEN
       ASM_REWRITE_TAC [← ARITH_RULE (← q r"n - k:num <= n")] THEN
-      ASM_SIMP_TAC [a2] THEN
+      ASM_SIMP_TAC [(← ARITH_RULE (← q r"k:num <= n ==> n - (n - k) = k"))] THEN
       REWRITE_TAC [REAL_OF_NUM_MUL, MULT_SYM]))
 
   let BINOM_MUL_SHIFT ← prove
    r"!m n k. k <= m
            ==> binom(n,m) * binom(m,k) = binom(n,k) * binom(n - k,m - k)"
    (← do
-    let a ← ARITH_RULE
-     (← q r"k:num <= m /\ m <= n ==> n - k - (m - k) = n - m")
     pure (REPEAT STRIP_TAC THEN
       SIMP_TAC [← GSYM REAL_OF_NUM_EQ, ← GSYM REAL_OF_NUM_MUL, REAL_OF_NUM_BINOM] THEN
       ASM_CASES_TAC (← q "n:num < m") THENL
@@ -513,7 +496,8 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
         REPEAT (COND_CASES_TAC THENL
          [ALL_TAC, MATCH_MP_TAC (← TAUT (← q r"F ==> p")) THEN ASM_ARITH_TAC]) THEN
         RULE_ASSUM_TAC (REWRITE_RULE [NOT_LT]) THEN
-        ASM_SIMP_TAC [a] THEN
+        ASM_SIMP_TAC [(← ARITH_RULE
+     (← q r"k:num <= m /\ m <= n ==> n - k - (m - k) = n - m"))] THEN
         MAP_EVERY (MP_TAC o C SPEC FACT_NZ)
          [← q "n:num", ← q "m:num", ← q "n - m:num", ← q "n - k:num", ← q "m - k:num"] THEN
         REWRITE_TAC [← GSYM REAL_OF_NUM_EQ] THEN CONV_TAC REAL_FIELD]))
@@ -526,10 +510,6 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
                      y pow (n - k)) =
            sum (0..n) (\k. &(binom(n,k)) * c k * (x + y) pow (n - k))"
    (← do
-    let rr ← REAL_RING
-     (← q r"c * d:real = a * b ==> a * z * b * x * y = c * (d * z * x) * y")
-    let a ← ARITH_RULE
-     (← q r"j:num <= k /\ k <= n ==> (n - j) - (k - j) = n - k")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [REAL_BINOMIAL_THEOREM] THEN
       REWRITE_TAC [← GSYM SUM_LMUL, ← GSYM SUM_RMUL] THEN
       SIMP_TAC [SUM_SUM_PRODUCT, FINITE_NUMSEG] THEN
@@ -540,8 +520,10 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
       REWRITE_TAC [PAIR_EQ, IN_NUMSEG] THEN
       CONJ_TAC THENL [ARITH_TAC, REPEAT GEN_TAC THEN STRIP_TAC] THEN
       REPEAT (CONJ_TAC THENL [ASM_ARITH_TAC, ALL_TAC]) THEN
-      ASM_SIMP_TAC [a] THEN
-      MATCH_MP_TAC rr THEN
+      ASM_SIMP_TAC [(← ARITH_RULE
+     (← q r"j:num <= k /\ k <= n ==> (n - j) - (k - j) = n - k"))] THEN
+      MATCH_MP_TAC (← REAL_RING
+     (← q r"c * d:real = a * b ==> a * z * b * x * y = c * (d * z * x) * y")) THEN
       ASM_SIMP_TAC [REAL_OF_NUM_MUL, REAL_OF_NUM_EQ, BINOM_MUL_SHIFT]))
 
   -- Numerical computation of binom.  (binomial.ml 341-375)

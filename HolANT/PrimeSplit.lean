@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.PrimeSplit fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -328,7 +331,6 @@ def setupPrimeSplit [HolBase] (D : PrimeSplitDeps) :
 
   let RING_OF_INTEGERS_IDEAL_GENERATED_PRIME ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"p /\ q /\ (q ==> r) ==> p /\ q /\ r")
     prove
       r"!k:A ring p.
           number_field k /\ prime p
@@ -341,7 +343,7 @@ def setupPrimeSplit [HolBase] (D : PrimeSplitDeps) :
               FINITE {P | prime_ideal (ring_of_integers k) P /\
                           ring_of_num k p IN P}"
       (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"ring_of_num k p IN ring_carrier(ring_of_integers k) /\
-                  ~(ring_of_num k p = ring_0 k:A)") STRIP_ASSUME_TAC THENL [FIRST_ASSUM (STRIP_ASSUME_TAC o (GEN_REWRITE_RULE id [number_field])) THEN ASM_SIMP_TAC [RING_OF_NUM_EQ_0, DIVIDES_ZERO, PRIME_IMP_NZ] THEN MESON_TAC [RING_OF_NUM, RING_OF_INTEGERS], ALL_TAC] THEN SUBGOAL_THEN (← q r"~(ideal_generated (ring_of_integers k) {ring_of_num k p} = {ring_0 k:A})") ASSUME_TAC THENL [ASM_MESON_TAC [IN_IDEAL_GENERATED_SELF, IN_SING], ALL_TAC] THEN MATCH_MP_TAC r1 THEN REPEAT CONJ_TAC THENL [FIRST_ASSUM ACCEPT_TAC, REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN X_GEN_TAC (← q r"P:A->bool") THEN ASM_CASES_TAC (← q r"prime_ideal (ring_of_integers k) (P:A->bool)") THEN ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL_EQ, PRIME_IMP_RING_IDEAL] THEN ASM SET_TAC [], DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"ideal_generated (ring_of_integers k) {ring_of_num k p:A}")] DEDEKIND_IDEAL_FACTORIZATION) THEN ASM_SIMP_TAC [DEDEKIND_RING_OF_INTEGERS, RING_IDEAL_IDEAL_GENERATED, RING_OF_INTEGERS]])
+                  ~(ring_of_num k p = ring_0 k:A)") STRIP_ASSUME_TAC THENL [FIRST_ASSUM (STRIP_ASSUME_TAC o (GEN_REWRITE_RULE id [number_field])) THEN ASM_SIMP_TAC [RING_OF_NUM_EQ_0, DIVIDES_ZERO, PRIME_IMP_NZ] THEN MESON_TAC [RING_OF_NUM, RING_OF_INTEGERS], ALL_TAC] THEN SUBGOAL_THEN (← q r"~(ideal_generated (ring_of_integers k) {ring_of_num k p} = {ring_0 k:A})") ASSUME_TAC THENL [ASM_MESON_TAC [IN_IDEAL_GENERATED_SELF, IN_SING], ALL_TAC] THEN MATCH_MP_TAC (← TAUT (← q r"p /\ q /\ (q ==> r) ==> p /\ q /\ r")) THEN REPEAT CONJ_TAC THENL [FIRST_ASSUM ACCEPT_TAC, REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN X_GEN_TAC (← q r"P:A->bool") THEN ASM_CASES_TAC (← q r"prime_ideal (ring_of_integers k) (P:A->bool)") THEN ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL_EQ, PRIME_IMP_RING_IDEAL] THEN ASM SET_TAC [], DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"ideal_generated (ring_of_integers k) {ring_of_num k p:A}")] DEDEKIND_IDEAL_FACTORIZATION) THEN ASM_SIMP_TAC [DEDEKIND_RING_OF_INTEGERS, RING_IDEAL_IDEAL_GENERATED, RING_OF_INTEGERS]])
 
   let NUMBER_FIELD_PRIME_FACTORIZATION_Q ← prove
     r"!k:A ring p.
@@ -357,7 +359,6 @@ def setupPrimeSplit [HolBase] (D : PrimeSplitDeps) :
 
   let NUMBER_FIELD_PRIME_FACTORIZATION_UNIQUE_Q ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← SET_RULE (← q r"(x:A) IN j ==> j SUBSET P ==> x IN P")
     prove
       r"!k:A ring p s e.
           number_field k /\ prime p /\ FINITE s /\
@@ -370,11 +371,10 @@ def setupPrimeSplit [HolBase] (D : PrimeSplitDeps) :
               !P. P IN s ==> ramification_index (integer_ring,ring_of_integers k)
                                (ring_of_int k) P = e P"
       (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"s:(A->bool)->bool"), (← q r"e:(A->bool)->num")] DEDEKIND_IDEAL_PRODUCT_PRIME_POW_UNIQUE) THEN FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun z2 => (do let z3 ← (do let z4 ← (pure z2); pure (concl z4)); pure (is_eq z3)))))) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:num")] RING_OF_INTEGERS_IDEAL_GENERATED_PRIME) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (SUBST1_TAC o (SYM o CONJUNCT1))) THEN ANTS_TAC THENL [ASM_SIMP_TAC [DEDEKIND_RING_OF_INTEGERS, RING_OF_INTEGERS], REWRITE_TAC [RING_OF_INTEGERS] THEN STRIP_TAC] THEN CONJ_TAC THENL [ASM_REWRITE_TAC [EXTENSION, IN_ELIM_THM], ALL_TAC] THEN X_GEN_TAC (← q r"P:A->bool") THEN DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"p:num")] RAMIFICATION_INDEX_PRIME) THEN REWRITE_TAC [RING_OF_INTEGERS] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN UNDISCH_TAC (← q r"ideal_generated (ring_of_integers k) {ring_of_num k p}
-                 SUBSET (P:A->bool)") THEN MATCH_MP_TAC r1 THEN REWRITE_TAC [IN_IDEAL_GENERATED_SELF] THEN MESON_TAC [RING_OF_NUM, RING_OF_INTEGERS])
+                 SUBSET (P:A->bool)") THEN MATCH_MP_TAC (← SET_RULE (← q r"(x:A) IN j ==> j SUBSET P ==> x IN P")) THEN REWRITE_TAC [IN_IDEAL_GENERATED_SELF] THEN MESON_TAC [RING_OF_NUM, RING_OF_INTEGERS])
 
   let NUMBER_FIELD_FUNDAMENTAL_IDENTITY_Q ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"2 <= p ==> ~(p = 1)")
     prove
       r"!k:A ring p.
           number_field k /\ prime p
@@ -393,11 +393,10 @@ def setupPrimeSplit [HolBase] (D : PrimeSplitDeps) :
               p EXP (ramification_index (integer_ring,ring_of_integers k)
                        (ring_of_int k) P *
                      residue_degree (integer_ring,ring_of_integers k)
-                       (ring_of_int k) P)") (MP_TAC o (MATCH_MP NPRODUCT_EQ)) THENL [REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"p:num")] RAMIFICATION_INDEX_PRIME) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"p:num")] RING_OF_INTEGERS_IDEAL_NORM_PRIME_Q) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS] THEN REPEAT (DISCH_THEN SUBST1_TAC) THEN REWRITE_TAC [EXP_EXP, MULT_SYM], ASM_SIMP_TAC [(← GSYM EXP_NSUM)] THEN DISCH_THEN SUBST1_TAC THEN ASM_SIMP_TAC [EQ_EXP, PRIME_IMP_NZ, PRIME_GE_2, r1] THEN MESON_TAC []])
+                       (ring_of_int k) P)") (MP_TAC o (MATCH_MP NPRODUCT_EQ)) THENL [REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"p:num")] RAMIFICATION_INDEX_PRIME) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"p:num")] RING_OF_INTEGERS_IDEAL_NORM_PRIME_Q) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS] THEN REPEAT (DISCH_THEN SUBST1_TAC) THEN REWRITE_TAC [EXP_EXP, MULT_SYM], ASM_SIMP_TAC [(← GSYM EXP_NSUM)] THEN DISCH_THEN SUBST1_TAC THEN ASM_SIMP_TAC [EQ_EXP, PRIME_IMP_NZ, PRIME_GE_2, (← ARITH_RULE (← q r"2 <= p ==> ~(p = 1)"))] THEN MESON_TAC []])
 
   let NUMBER_FIELD_RAMIFICATION_RESIDUE_BOUNDS_Q ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"~(1 <= f) <=> f = 0")
     prove
       r"!k:A ring P p.
           number_field k /\ prime_ideal (ring_of_integers k) P /\ prime p /\
@@ -410,7 +409,7 @@ def setupPrimeSplit [HolBase] (D : PrimeSplitDeps) :
                 (ring_of_int k) P *
               residue_degree (integer_ring,ring_of_integers k) (ring_of_int k) P
               <= extension_degree (subfield_generated k {ring_0 k},k) I"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:num")] RING_OF_INTEGERS_IDEAL_GENERATED_PRIME) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC)) THEN DISCH_THEN (MP_TAC o ((SPEC (← q r"P:A->bool")) o (GEN_REWRITE_RULE id [EXTENSION]))) THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN STRIP_TAC THEN REPEAT CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"p:num")] RAMIFICATION_INDEX_PRIME) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"ideal_generated (ring_of_integers k) {ring_of_num k p:A}")] IDEAL_VALUATION_EQ_0) THEN ASM_SIMP_TAC [DEDEKIND_RING_OF_INTEGERS, RING_IDEAL_IDEAL_GENERATED, RING_OF_INTEGERS] THEN ARITH_TAC, MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool")] IDEAL_NORM_GT_1) THEN ASM_SIMP_TAC [RING_OF_INTEGERS_IDEAL_NORM_PRIME_Q, RING_OF_INTEGERS_FINITE_QUOTIENT, PRIME_IMP_RING_IDEAL] THEN ANTS_TAC THENL [FIRST_ASSUM (MP_TAC o (MATCH_MP PRIME_IDEAL_IMP_PSUBSET)) THEN SET_TAC [], ALL_TAC] THEN ONCE_REWRITE_TAC [(← GSYM CONTRAPOS_THM)] THEN REWRITE_TAC [r1] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [EXP, LT_REFL], MP_TAC (← ISPECL [(← q r"\P. ramification_index (integer_ring,ring_of_integers k)
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:num")] RING_OF_INTEGERS_IDEAL_GENERATED_PRIME) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC)) THEN DISCH_THEN (MP_TAC o ((SPEC (← q r"P:A->bool")) o (GEN_REWRITE_RULE id [EXTENSION]))) THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN STRIP_TAC THEN REPEAT CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"p:num")] RAMIFICATION_INDEX_PRIME) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"ideal_generated (ring_of_integers k) {ring_of_num k p:A}")] IDEAL_VALUATION_EQ_0) THEN ASM_SIMP_TAC [DEDEKIND_RING_OF_INTEGERS, RING_IDEAL_IDEAL_GENERATED, RING_OF_INTEGERS] THEN ARITH_TAC, MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool")] IDEAL_NORM_GT_1) THEN ASM_SIMP_TAC [RING_OF_INTEGERS_IDEAL_NORM_PRIME_Q, RING_OF_INTEGERS_FINITE_QUOTIENT, PRIME_IMP_RING_IDEAL] THEN ANTS_TAC THENL [FIRST_ASSUM (MP_TAC o (MATCH_MP PRIME_IDEAL_IMP_PSUBSET)) THEN SET_TAC [], ALL_TAC] THEN ONCE_REWRITE_TAC [(← GSYM CONTRAPOS_THM)] THEN REWRITE_TAC [(← ARITH_RULE (← q r"~(1 <= f) <=> f = 0"))] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [EXP, LT_REFL], MP_TAC (← ISPECL [(← q r"\P. ramification_index (integer_ring,ring_of_integers k)
                (ring_of_int k) P *
              residue_degree (integer_ring,ring_of_integers (k:A ring))
                (ring_of_int (k:A ring)) P"), (← q r"extension_degree (subfield_generated k {ring_0 k},k) (I:A->A)"), (← q r"{P | prime_ideal (ring_of_integers k) P /\
@@ -418,7 +417,6 @@ def setupPrimeSplit [HolBase] (D : PrimeSplitDeps) :
 
   let NUMBER_FIELD_PRIME_IDEALS_ABOVE_Q ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"1 <= n <=> ~(n = 0)")
     prove
       r"!k:A ring p.
           number_field k /\ prime p
@@ -429,7 +427,7 @@ def setupPrimeSplit [HolBase] (D : PrimeSplitDeps) :
               CARD {P | prime_ideal (ring_of_integers k) P /\
                         ring_of_num k p IN P}
               <= extension_degree (subfield_generated k {ring_0 k},k) I"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:num")] RING_OF_INTEGERS_IDEAL_GENERATED_PRIME) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (ASSUME_TAC o (CONJUNCT2 o CONJUNCT2)) THEN ASM_REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:num")] NUMBER_FIELD_FUNDAMENTAL_IDENTITY_Q) THEN MP_TAC (← ISPEC (← q r"k:A ring") NUMBER_FIELD_DEGREE_POS) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN DISCH_THEN (SUBST_ALL_TAC o SYM) THEN CONJ_TAC THENL [DISCH_THEN SUBST_ALL_TAC THEN RULE_ASSUM_TAC (REWRITE_RULE [NSUM_CLAUSES]) THEN ASM_ARITH_TAC, ASM_SIMP_TAC [CARD_EQ_NSUM] THEN MATCH_MP_TAC NSUM_LE THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"p:num")] NUMBER_FIELD_RAMIFICATION_RESIDUE_BOUNDS_Q) THEN ASM_REWRITE_TAC [r1, MULT_EQ_0] THEN ARITH_TAC])
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:num")] RING_OF_INTEGERS_IDEAL_GENERATED_PRIME) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (ASSUME_TAC o (CONJUNCT2 o CONJUNCT2)) THEN ASM_REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:num")] NUMBER_FIELD_FUNDAMENTAL_IDENTITY_Q) THEN MP_TAC (← ISPEC (← q r"k:A ring") NUMBER_FIELD_DEGREE_POS) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN DISCH_THEN (SUBST_ALL_TAC o SYM) THEN CONJ_TAC THENL [DISCH_THEN SUBST_ALL_TAC THEN RULE_ASSUM_TAC (REWRITE_RULE [NSUM_CLAUSES]) THEN ASM_ARITH_TAC, ASM_SIMP_TAC [CARD_EQ_NSUM] THEN MATCH_MP_TAC NSUM_LE THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"p:num")] NUMBER_FIELD_RAMIFICATION_RESIDUE_BOUNDS_Q) THEN ASM_REWRITE_TAC [(← ARITH_RULE (← q r"1 <= n <=> ~(n = 0)")), MULT_EQ_0] THEN ARITH_TAC])
 
   let NUMBER_FIELD_PRIME_FACTORIZATION_UNIQUE_IMAGE ← prove
     r"!k:A ring p s (P:K->A->bool) e.
@@ -472,7 +470,6 @@ def setupPrimeSplit [HolBase] (D : PrimeSplitDeps) :
 
   let NUMBER_FIELD_PRIME_FACTORIZATION_SUBSET_EQ ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r3 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
     prove
       r"!k:A ring p s (P:K->A->bool) e.
           number_field k /\ prime p /\ FINITE s /\
@@ -493,11 +490,10 @@ def setupPrimeSplit [HolBase] (D : PrimeSplitDeps) :
               IMAGE P s /\
               !i. i IN s ==> ramification_index (integer_ring,ring_of_integers k)
                                (ring_of_int k) (P i) = e i"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:num"), (← q r"s:K->bool"), (← q r"P:K->A->bool"), (← q r"e:K->num")] NUMBER_FIELD_IDEAL_NORM_PRIME_PRODUCT) THEN ASM_SIMP_TAC [] THEN STRIP_TAC THEN MATCH_MP_TAC r3 THEN CONJ_TAC THENL [W (fun (_, w) => tactic_of do pure (MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← (do let z2 ← (pure w); liftExcept (rand z2))), (← (do let z1 ← (pure w); liftExcept (lhs z1)))] IDEAL_NORM_SUBSET_EQ))) THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED, RING_IDEAL_IDEAL_PRODUCT] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"&p:int")] RING_OF_INTEGERS_IDEAL_NORM_INTEGER) THEN ASM_REWRITE_TAC [RING_OF_INT_OF_NUM, INT_ABS_NUM, NUM_OF_INT_OF_NUM, INT_OF_NUM_EQ] THEN ASM_MESON_TAC [PRIME_IMP_NZ], DISCH_TAC THEN MATCH_MP_TAC NUMBER_FIELD_PRIME_FACTORIZATION_UNIQUE_IMAGE THEN ASM_REWRITE_TAC [] THEN ASM_SIMP_TAC []])
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:num"), (← q r"s:K->bool"), (← q r"P:K->A->bool"), (← q r"e:K->num")] NUMBER_FIELD_IDEAL_NORM_PRIME_PRODUCT) THEN ASM_SIMP_TAC [] THEN STRIP_TAC THEN MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL [W (fun (_, w) => tactic_of do pure (MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← (do let z2 ← (pure w); liftExcept (rand z2))), (← (do let z1 ← (pure w); liftExcept (lhs z1)))] IDEAL_NORM_SUBSET_EQ))) THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED, RING_IDEAL_IDEAL_PRODUCT] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"&p:int")] RING_OF_INTEGERS_IDEAL_NORM_INTEGER) THEN ASM_REWRITE_TAC [RING_OF_INT_OF_NUM, INT_ABS_NUM, NUM_OF_INT_OF_NUM, INT_OF_NUM_EQ] THEN ASM_MESON_TAC [PRIME_IMP_NZ], DISCH_TAC THEN MATCH_MP_TAC NUMBER_FIELD_PRIME_FACTORIZATION_UNIQUE_IMAGE THEN ASM_REWRITE_TAC [] THEN ASM_SIMP_TAC []])
 
   let NUMBER_FIELD_PRIME_IDEAL_PROD_EQ ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← SET_RULE (← q r"!j k:A->bool. j SUBSET k /\ ~(j PSUBSET k) ==> j = k")
     prove
       r"!k:A ring p P Q.
           number_field k /\ prime p /\
@@ -509,7 +505,7 @@ def setupPrimeSplit [HolBase] (D : PrimeSplitDeps) :
           ideal_prod (ring_of_integers k) P Q
           ==> P = Q"
       (REPEAT STRIP_TAC THEN ABBREV_TAC (← q r"j = ideal_generated (ring_of_integers k) {ring_of_num k p:A}") THEN SUBGOAL_THEN (← q r"maximal_ideal (ring_of_integers k) (j:A->bool)") MP_TAC THENL [MATCH_MP_TAC DEDEKIND_NONZERO_PRIME_IMP_MAXIMAL THEN ASM_SIMP_TAC [DEDEKIND_RING_OF_INTEGERS, RING_OF_INTEGERS] THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"ring_of_num k p IN (j:A->bool)") MP_TAC THENL [EXPAND_TAC "j" THEN MATCH_MP_TAC IDEAL_GENERATED_INC_GEN THEN REWRITE_TAC [IN_SING, RING_OF_INTEGERS] THEN REWRITE_TAC [(← GSYM RING_OF_INT_OF_NUM), RING_OF_INT_IN_RING_OF_INTEGERS], ASM_REWRITE_TAC [IN_SING] THEN RULE_ASSUM_TAC (REWRITE_RULE [number_field]) THEN ASM_REWRITE_TAC [RING_OF_NUM_EQ_0, DIVIDES_ZERO] THEN ASM_MESON_TAC [PRIME_IMP_NZ]], ALL_TAC] THEN REWRITE_TAC [maximal_ideal, NOT_EXISTS_THM] THEN DISCH_THEN (ASSUME_TAC o CONJUNCT2) THEN SUBGOAL_THEN (← q r"proper_ideal (ring_of_integers k) (P:A->bool) /\
-      proper_ideal (ring_of_integers k) (Q:A->bool)") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [prime_ideal], ALL_TAC] THEN SUBGOAL_THEN (← q r"(j:A->bool) SUBSET P /\ j SUBSET Q") STRIP_ASSUME_TAC THENL [RULE_ASSUM_TAC (REWRITE_RULE [proper_ideal]) THEN ASM_SIMP_TAC [IDEAL_PROD_SUBSET_LEFT, IDEAL_PROD_SUBSET_RIGHT, RING_IDEAL_IMP_SUBSET], ALL_TAC] THEN SUBGOAL_THEN (← q r"j:A->bool = P /\ j = Q") (fun th => MESON_TAC [th]) THEN CONJ_TAC THEN MATCH_MP_TAC r1 THEN ASM_MESON_TAC [])
+      proper_ideal (ring_of_integers k) (Q:A->bool)") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [prime_ideal], ALL_TAC] THEN SUBGOAL_THEN (← q r"(j:A->bool) SUBSET P /\ j SUBSET Q") STRIP_ASSUME_TAC THENL [RULE_ASSUM_TAC (REWRITE_RULE [proper_ideal]) THEN ASM_SIMP_TAC [IDEAL_PROD_SUBSET_LEFT, IDEAL_PROD_SUBSET_RIGHT, RING_IDEAL_IMP_SUBSET], ALL_TAC] THEN SUBGOAL_THEN (← q r"j:A->bool = P /\ j = Q") (fun th => MESON_TAC [th]) THEN CONJ_TAC THEN MATCH_MP_TAC (← SET_RULE (← q r"!j k:A->bool. j SUBSET k /\ ~(j PSUBSET k) ==> j = k")) THEN ASM_MESON_TAC [])
 
   -- @@RETURN BEGIN
   return { ramification_index, residue_degree, RAMIFICATION_INDEX_INTEGER_RING,

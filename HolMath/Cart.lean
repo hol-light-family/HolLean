@@ -1151,7 +1151,7 @@ def setupCartFinite [HolBase]
                                  ==> P i (v$i)) /\
                             (!i. 1 <= i /\ i <= dimindex(:N) /\ n < i
                                  ==> v$i = @x. F)}")
-     (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"dimindex(:N)") th))) THEN
+     ((fun (ocq2 : _) => fun th => tactic_of do pure (MP_TAC (← SPEC ocq2 th))) (← q r"dimindex(:N)")) THEN
     REWRITE_TAC [LE_REFL, LET_ANTISYM] THEN
     INDUCT_TAC THENL
      [REWRITE_TAC [← ARITH_RULE (← q r"1 <= i /\ i <= n /\ i <= 0 <=> F")] THEN
@@ -1192,9 +1192,9 @@ def setupCartFinite [HolBase]
      (← q r"(:(N)finite_image->A) HAS_SIZE m EXP (dimindex(:N))")
     MP_TAC THENL
      [ASM_SIMP_TAC [HAS_SIZE_FUNSPACE_UNIV, HAS_SIZE_FINITE_IMAGE],
-      DISCH_THEN (fun th => tactic_of do
-        pure (MP_TAC (← ISPEC (← q r"mk_cart:((N)finite_image->A)->A^N")
-          (← MATCH_MP (← REWRITE_RULE [IMP_CONJ_ALT] HAS_SIZE_IMAGE_INJ) th)))) THEN
+      DISCH_THEN ((fun (ocq1 : _) => fun th => tactic_of do
+        pure (MP_TAC (← ISPEC ocq1
+          (← MATCH_MP (← REWRITE_RULE [IMP_CONJ_ALT] HAS_SIZE_IMAGE_INJ) th)))) (← q r"mk_cart:((N)finite_image->A)->A^N")) THEN
       REWRITE_TAC [IN_UNIV] THEN
       ANTS_TAC THENL [MESON_TAC [cart_tybij], MATCH_MP_TAC EQ_IMP] THEN
       AP_THM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC SURJECTIVE_IMAGE_EQ THEN

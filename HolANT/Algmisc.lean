@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.Algmisc fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -154,11 +157,9 @@ def setupAlgmisc [HolBase] (D : AlgmiscDeps) :
 
   let NUM_ROOT_FLOOR ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"t:num <= u ==> u <= N ==> t <= N")
-    let r2 ← TAUT (← q r"p /\ (q ==> r) ==> (p <=> q) ==> r")
     prove
       r"!n N. ~(n = 0) ==> ?t. t EXP n <= N /\ N < (t + 1) EXP n"
-      (REPEAT STRIP_TAC THEN MP_TAC (← ISPEC (← q r"\t. t EXP n <= N") num_MAX) THEN REWRITE_TAC [] THEN MATCH_MP_TAC r2 THEN CONJ_TAC THENL [CONJ_TAC THENL [EXISTS_TAC (← q r"0") THEN ASM_REWRITE_TAC [EXP_ZERO, LE_0], EXISTS_TAC (← q r"N:num") THEN X_GEN_TAC (← q r"t:num") THEN MATCH_MP_TAC r1 THEN MP_TAC (← SPECL [(← q r"t:num"), (← q r"1"), (← q r"n:num")] LE_EXP) THEN REWRITE_TAC [EXP_1] THEN DISCH_THEN SUBST1_TAC THEN COND_CASES_TAC THEN ASM_ARITH_TAC], MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"t:num") THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o (SPEC (← q r"t + 1")))) THEN ASM_REWRITE_TAC [] THEN ARITH_TAC])
+      (REPEAT STRIP_TAC THEN MP_TAC (← ISPEC (← q r"\t. t EXP n <= N") num_MAX) THEN REWRITE_TAC [] THEN MATCH_MP_TAC (← TAUT (← q r"p /\ (q ==> r) ==> (p <=> q) ==> r")) THEN CONJ_TAC THENL [CONJ_TAC THENL [EXISTS_TAC (← q r"0") THEN ASM_REWRITE_TAC [EXP_ZERO, LE_0], EXISTS_TAC (← q r"N:num") THEN X_GEN_TAC (← q r"t:num") THEN MATCH_MP_TAC (← ARITH_RULE (← q r"t:num <= u ==> u <= N ==> t <= N")) THEN MP_TAC (← SPECL [(← q r"t:num"), (← q r"1"), (← q r"n:num")] LE_EXP) THEN REWRITE_TAC [EXP_1] THEN DISCH_THEN SUBST1_TAC THEN COND_CASES_TAC THEN ASM_ARITH_TAC], MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"t:num") THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o (SPEC (← q r"t + 1")))) THEN ASM_REWRITE_TAC [] THEN ARITH_TAC])
 
   let INT_DIVIDES_NUM_OF_INT_ABS ← prove
     r"!d n:int. d divides n <=> num_of_int(abs d) divides num_of_int(abs n)"
@@ -170,11 +171,9 @@ def setupAlgmisc [HolBase] (D : AlgmiscDeps) :
 
   let FORALL_LT_2 ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"0 < 2 /\ 1 < 2")
-    let r2 ← ARITH_RULE (← q r"i < 2 <=> i = 0 \/ i = 1")
     prove
       r"!P. (!i. i < 2 ==> P i) <=> P 0 /\ P 1"
-      (MESON_TAC [r2, r1])
+      (MESON_TAC [(← ARITH_RULE (← q r"i < 2 <=> i = 0 \/ i = 1")), (← ARITH_RULE (← q r"0 < 2 /\ 1 < 2"))])
 
   -- @@RETURN BEGIN
   return { UPPER_BOUND_FINITE_SET_INT, HAS_SIZE_INT_SEG_LT, NUM_ROOT_FLOOR,

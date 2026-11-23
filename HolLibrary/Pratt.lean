@@ -28,10 +28,11 @@
   message "factor: Call to GP/PARI failed".
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, NUMBER_RULE, TAUT) they are bound first,
-  in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Prime
@@ -415,8 +416,7 @@ def setupPhi [HolBase] (D : PrattDeps) (BCompat : Compat) :
   let PHI_LOWERBOUND_1 ← prove
    r"!n. 2 <= n ==> 1 <= phi(n)"
    (← do
-    let r1 ← ARITH_RULE (← q r"1 <= 2")
-    pure (MESON_TAC [PHI_LOWERBOUND_1_STRONG, LE_TRANS, r1]))
+    pure (MESON_TAC [PHI_LOWERBOUND_1_STRONG, LE_TRANS, (← ARITH_RULE (← q r"1 <= 2"))]))
 
   let PHI_LOWERBOUND_2 ← prove
    r"!n. 3 <= n ==> 2 <= phi(n)"

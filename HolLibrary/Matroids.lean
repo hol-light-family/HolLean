@@ -18,10 +18,11 @@
   `new_type_definition`, as HOL Light does.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, SET_RULE, TAUT) they are bound first, in
-  OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Card
@@ -1352,8 +1353,7 @@ def setupSubmatroids [HolBase] (D : MatroidsDeps) (BMatroidType : MatroidType) (
         s SUBSET matroid_set m
         ==> submatroid m (matroid_span m s) = submatroid m s"
    (← do
-    let s1 ← SET_RULE (← q r"t SUBSET s ==> s INTER t = t")
-    pure (SIMP_TAC [submatroid, MATROID_SPAN_SPAN, MATROID_SPAN_SUBSET, s1]))
+    pure (SIMP_TAC [submatroid, MATROID_SPAN_SPAN, MATROID_SPAN_SUBSET, (← SET_RULE (← q r"t SUBSET s ==> s INTER t = t"))]))
 
   let SUBMATROID_SUBSET ← prove
    r"(!m s:A->bool.

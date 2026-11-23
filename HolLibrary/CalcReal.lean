@@ -22,10 +22,11 @@
   `IO.Ref` created once at setup.  `num` arithmetic is exact (`Rat`).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, REAL_ARITH, TAUT) they are bound first, in
-  OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Transc
@@ -242,8 +243,8 @@ def setupLemmas [HolBase] (D : CalcRealDeps) :
       (← SPECL [← q "a:num", ← q "2 EXP n"] LT_CASES) THEN
     ASM_REWRITE_TAC [] THEN
     CONV_TAC CONTRAPOS_CONV THEN DISCH_THEN (K ALL_TAC) THEN
-    POP_ASSUM (fun th => tactic_of do
-      pure (X_CHOOSE_THEN (← q "d:num") SUBST1_TAC (← REWRITE_RULE [LT_EXISTS] th))) THEN
+    POP_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
+      pure (X_CHOOSE_THEN ocq1 SUBST1_TAC (← REWRITE_RULE [LT_EXISTS] th))) (← q "d:num")) THEN
     REWRITE_TAC [← GSYM REAL_OF_NUM_ADD] THEN
     REWRITE_TAC [a1] THEN
     REWRITE_TAC [REAL_ABS_NEG, REAL_NOT_LE, REAL_ABS_NUM] THEN
@@ -3022,8 +3023,7 @@ def setupOverall [HolBase] (D : CalcRealDeps) (BStepsDown : StepsDown) (BStepsIn
        ==> abs(u - &2 pow n * ln(&1 + x)) < &1"
    (← do
     let a ← REAL_ARITH (← q r"abs(--a - --b) = abs(a - b)")
-    let i ← INST [(← q r"--s", ← q r"s:real")] APPROX_LN
-    pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC i THEN
+    pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC (← INST [(← q r"--s", ← q r"s:real")] APPROX_LN) THEN
       ASM_REWRITE_TAC [REAL_NEG_NEG] THEN
       REWRITE_TAC [REAL_MUL_RNEG] THEN
       REWRITE_TAC [a] THEN

@@ -2868,8 +2868,8 @@ def setupPCG [HolBase] (D : ParacompactDeps) (BE : PCE) (BF : PCF) :
                  (!x. x IN topspace top /\ ~(x IN b) ==> g b x = &0) /\
                  (!x. x IN b ==> &0 < g b x)") THEN
            DISCH_THEN (MP_TAC o SPEC (← q r"b:A->bool")) THEN ASM_REWRITE_TAC [] THEN
-           DISCH_THEN (fun th => tactic_of do
-             pure (MP_TAC (← SPEC (← q r"y0:A") (← liftExcept (el 2 (CONJUNCTS th)))))) THEN
+           DISCH_THEN ((fun (ocq2 : _) => fun th => tactic_of do
+             pure (MP_TAC (← SPEC ocq2 (← liftExcept (el 2 (CONJUNCTS th)))))) (← q r"y0:A")) THEN
            ASM_REWRITE_TAC [],
            ALL_TAC] THEN
           /- g b z = 0 -/
@@ -2991,8 +2991,8 @@ def setupPCG [HolBase] (D : ParacompactDeps) (BE : PCE) (BF : PCF) :
                    (!x. x IN topspace top /\ ~(x IN b) ==> g b x = &0) /\
                    (!x. x IN b ==> &0 < g b x)") THEN
              DISCH_THEN (MP_TAC o SPEC (← q r"b0:A->bool")) THEN ASM_REWRITE_TAC [] THEN
-             DISCH_THEN (fun th => tactic_of do
-               pure (MP_TAC (← SPEC (← q r"y0:A") (← liftExcept (el 2 (CONJUNCTS th)))))) THEN
+             DISCH_THEN ((fun (ocq1 : _) => fun th => tactic_of do
+               pure (MP_TAC (← SPEC ocq1 (← liftExcept (el 2 (CONJUNCTS th)))))) (← q r"y0:A")) THEN
              ASM_REWRITE_TAC [], ALL_TAC] THEN
             SUBGOAL_THEN (← q r"(g:(A->bool)->A->real) b0 z = &0") ASSUME_TAC THENL
             [UNDISCH_TAC (← q r"!b:A->bool. b IN B

@@ -10,6 +10,7 @@ built by `lake build @/HolCore`.  Kept in `hol_lib.ml` order to match Hol.lean. 
 
 import HolCore.System        -- system.ml : parsing setup / bignums
 import HolCore.Lib           -- lib.ml    : general library functions
+import HolCore.OcamlOrder    -- OCaml evaluation order for nested actions (HolLight.Syntax)
 import HolCore.Fusion        -- fusion.ml : the logical core
 import HolCore.OcamlHash     -- OCaml Hashtbl.hash, switchable (HOLLEAN_OCAML_HASH) for comparison
 import HolCore.Basics        -- basics.ml : syntax operations and utilities

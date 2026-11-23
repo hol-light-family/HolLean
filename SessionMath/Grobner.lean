@@ -23,6 +23,12 @@ private def pt (s : String) : IO term := ioOk' s!"parse {s}" (HolCore.Parser.par
 /- grobner.ml : the Grobner-basis ring/ideal decision procedure.          -/
 /- ---------------------------------------------------------------------- -/
 
+/-- The parameter-independent part of `RING_AND_IDEAL_CONV` (grobner.ml
+    336-354): `pth_step`, `FINAL_RULE`, `false_tm`.  Built first:
+    RING_AND_IDEAL_CONV (grobner.ml 28) comes before NUM_SIMPLIFY_CONV. -/
+initialize GrG : HolMath.Grobner.GrobnerGlobals ←
+  ioOk' "setupGrobnerGlobals" (HolMath.Grobner.setupGrobnerGlobals DE_MORGAN_THM CONTRAPOS_THM).run
+
 /-- The `NUM_SIMPLIFY_CONV`-local constants (grobner.ml 628-650):
     `pre_tm`/`div_tm`/`mod_tm`/`sub_tm` recovered from the elimination
     theorems, the three primed'' theorems (`CONV_RULE(RAND_CONV NNF_CONV)`) and
@@ -87,11 +93,6 @@ initialize NRP : HolMath.Grobner.RingParms ← do
 
 /-- The natural-number `RingParms` bundle (grobner.ml 727-732). -/
 def numRingParms : HolMath.Grobner.RingParms := NRP
-
-/-- The parameter-independent part of `RING_AND_IDEAL_CONV` (grobner.ml
-    336-354): `pth_step`, `FINAL_RULE`, `false_tm`. -/
-initialize GrG : HolMath.Grobner.GrobnerGlobals ←
-  ioOk' "setupGrobnerGlobals" (HolMath.Grobner.setupGrobnerGlobals DE_MORGAN_THM CONTRAPOS_THM).run
 
 /-- What `RING_AND_IDEAL_CONV` builds from the natural-number parameters
     (grobner.ml 364-465). -/

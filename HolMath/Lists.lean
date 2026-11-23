@@ -1411,12 +1411,16 @@ def setupCharStringMachinery [HolBase] (injectivity_char CONS_11 NOT_CONS_NIL : 
     liftExcept (lis.foldrM (fun x y => mk_comb y x) ascii_tm)
   let codes := (← (List.range 256).mapM mk_code).toArray
   let char_ty ← qty r"char"
-  let avars ← [r"a0:bool", r"a1:bool", r"a2:bool", r"a3:bool", r"a4:bool", r"a5:bool",
-               r"a6:bool"].mapM q
-  let bvars ← [r"b1:bool", r"b2:bool", r"b3:bool", r"b4:bool", r"b5:bool", r"b6:bool",
-               r"b7:bool"].mapM q
-  let cvars ← [r"c1:bool", r"c2:bool", r"c3:bool", r"c4:bool", r"c5:bool", r"c6:bool",
-               r"c7:bool"].mapM q
+  -- `let avars,bvars,cvars = [..],[..],[..]`: OCaml builds the tuple and
+  -- each list literal right to left, so `c7` is parsed first and `a0` last.
+  let qRev (l : List String) : ExceptT String IO (List term) := do
+    return (← l.reverse.mapM q).reverse
+  let cvars ← qRev [r"c1:bool", r"c2:bool", r"c3:bool", r"c4:bool", r"c5:bool", r"c6:bool",
+               r"c7:bool"]
+  let bvars ← qRev [r"b1:bool", r"b2:bool", r"b3:bool", r"b4:bool", r"b5:bool", r"b6:bool",
+               r"b7:bool"]
+  let avars ← qRev [r"a0:bool", r"a1:bool", r"a2:bool", r"a3:bool", r"a4:bool", r"a5:bool",
+               r"a6:bool"]
   let asciiNeqsFT ← (CONJUNCTS (← prove
      r"~(ASCII F b1 b2 b3 b4 b5 b6 b7 = ASCII T c1 c2 c3 c4 c5 c6 c7) /\
        ~(ASCII a0 F b2 b3 b4 b5 b6 b7 = ASCII a0 T c2 c3 c4 c5 c6 c7) /\
@@ -1430,10 +1434,12 @@ def setupCharStringMachinery [HolBase] (injectivity_char CONS_11 NOT_CONS_NIL : 
   let ilist := List.zip bvars cvars ++ List.zip cvars bvars
   let asciiNeqsTF ← asciiNeqsFT.mapM (fun th => do
     EQF_INTRO (← INST ilist (← GSYM (← EQF_ELIM th))))
-  let xtm ← q r"x:char"
+  -- `let xtm,xstm = \`x:char\`,\`xs:string\` and ytm,ystm = .. and niltm = ..`:
+  -- the `and`s left to right, each pair right to left.
   let xstm ← q r"xs:string"
-  let ytm ← q r"y:char"
+  let xtm ← q r"x:char"
   let ystm ← q r"ys:string"
+  let ytm ← q r"y:char"
   let niltm ← q r"[]:string"
   let nilEqThm ← EQT_INTRO (REFL niltm)
   let (consEqThm, consNeqThm) ← CONJ_PAIR (← prove

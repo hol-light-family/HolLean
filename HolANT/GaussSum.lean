@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.GaussSum fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -266,14 +269,6 @@ def setupGaussSum [HolBase] (D : GaussSumDeps) :
 
   let QUADRATIC_GAUSS_SUM ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"~(p = 0) ==> p - 1 < p")
-    let r2 ← ARITH_RULE (← q r"~(p = 0) ==> 1 + (p - 1) = p")
-    let r3 ← RING_RULE (← q r"!r u v x y:A.
-        u IN ring_carrier r /\ v IN ring_carrier r /\
-        x IN ring_carrier r /\ y IN ring_carrier r /\
-        ring_mul r u u = ring_1 r
-        ==> ring_mul r (ring_mul r u x) (ring_mul r (ring_mul r u v) y) =
-            ring_mul r v (ring_mul r x y)")
     prove
       r"!(r:A ring) z p.
           integral_domain r /\ prime p /\ ~(p = 2) /\
@@ -295,7 +290,12 @@ def setupGaussSum [HolBase] (D : GaussSumDeps) :
                                  (ring_of_int r (jacobi(t,p))))
                      (ring_pow r (z:A) (a * t)))") SUBST1_TAC THENL [EXPAND_TAC "g" THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"p:num"), (← q r"a:num"), (← q r"\b. ring_mul r (ring_of_int r (jacobi(b,p))) (ring_pow r (z:A) b)")] RING_SUM_MOD_MULT_REINDEX) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"t:num") THEN DISCH_TAC THEN REWRITE_TAC [JACOBI_MOD, JACOBI_LMUL, RING_OF_INT_MUL] THEN AP_TERM_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"z:A"), (← q r"a * t:num")] RING_POW_MOD_ORDER) THEN ASM_REWRITE_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_mul r (ring_of_int r (jacobi(a,p))) (ring_of_int r (jacobi(a,p))) =
         ring_1 (r:A ring)") ASSUME_TAC THENL [REWRITE_TAC [(← GSYM RING_OF_INT_MUL), (← GSYM JACOBI_LMUL)] THEN REWRITE_TAC [(← GSYM EXP_2), JACOBI_SQUARED] THEN ASM_REWRITE_TAC [RING_OF_INT_1], ALL_TAC] THEN SIMP_TAC [(← GSYM RING_SUM_LMUL), FINITE_NUMSEG_LT, RING_MUL, RING_OF_INT, RING_POW, (← ASSUME (← q r"(z:A) IN ring_carrier r"))] THEN MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"t:num") THEN DISCH_TAC THEN REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"ring_pow r (z:A) ((1 + t) * a) =
-        ring_mul r (ring_pow r z a) (ring_pow r z (a * t))") SUBST1_TAC THENL [ASM_SIMP_TAC [(← GSYM RING_POW_ADD)] THEN AP_TERM_TAC THEN ARITH_TAC, ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_of_int r (jacobi(a,p)):A"), (← q r"ring_of_int r (jacobi(t,p)):A"), (← q r"ring_pow r (z:A) a"), (← q r"ring_pow r (z:A) (a * t)")] r3) THEN ASM_SIMP_TAC [RING_OF_INT, RING_POW], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_pow r g 2 =
+        ring_mul r (ring_pow r z a) (ring_pow r z (a * t))") SUBST1_TAC THENL [ASM_SIMP_TAC [(← GSYM RING_POW_ADD)] THEN AP_TERM_TAC THEN ARITH_TAC, ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_of_int r (jacobi(a,p)):A"), (← q r"ring_of_int r (jacobi(t,p)):A"), (← q r"ring_pow r (z:A) a"), (← q r"ring_pow r (z:A) (a * t)")] (← RING_RULE (← q r"!r u v x y:A.
+        u IN ring_carrier r /\ v IN ring_carrier r /\
+        x IN ring_carrier r /\ y IN ring_carrier r /\
+        ring_mul r u u = ring_1 r
+        ==> ring_mul r (ring_mul r u x) (ring_mul r (ring_mul r u v) y) =
+            ring_mul r v (ring_mul r x y)"))) THEN ASM_SIMP_TAC [RING_OF_INT, RING_POW], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_pow r g 2 =
       ring_sum r {t | t < p}
         (\t. ring_mul r (ring_of_int r (jacobi(t,p)))
                (ring_sum r {a | a < p} (\a. ring_pow r (z:A) ((1 + t) * a))))") SUBST1_TAC THENL [ASM_SIMP_TAC [RING_POW_2] THEN FIRST_ASSUM (fun th => tactic_of do pure (GEN_REWRITE_TAC (LAND_CONV o LAND_CONV) [(← SYM th)])) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"\a. ring_mul r (ring_of_int r (jacobi(a,p))) (ring_pow r (z:A) a)"), (← q r"g:A"), (← q r"{a:num | a < p}")] RING_SUM_RMUL) THEN ASM_SIMP_TAC [FINITE_NUMSEG_LT, RING_MUL, RING_OF_INT, RING_POW] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN TRANS_TAC EQ_TRANS (← q r"ring_sum r {a | a < p}
@@ -304,7 +304,7 @@ def setupGaussSum [HolBase] (D : GaussSumDeps) :
                                  (ring_pow r (z:A) ((1 + t) * a))))") THEN CONJ_TAC THENL [MATCH_MP_TAC RING_SUM_EQ THEN ASM_SIMP_TAC [IN_ELIM_THM], ALL_TAC] THEN wPart lhand (lhand o rand) RING_SUM_SWAP THEN ASM_SIMP_TAC [FINITE_NUMSEG_LT, RING_MUL, RING_OF_INT, RING_POW] THEN DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"t:num") THEN DISCH_TAC THEN REWRITE_TAC [] THEN MATCH_MP_TAC RING_SUM_LMUL THEN ASM_SIMP_TAC [FINITE_NUMSEG_LT, RING_OF_INT, RING_POW], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"z:A"), (← q r"p:num")] RING_SUM_ROOT_OF_UNITY_POWERS) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (fun th => REWRITE_TAC [th]) THEN TRANS_TAC EQ_TRANS (← q r"ring_sum r {t | t < p}
         (\t. if t = p - 1
              then ring_mul r (ring_of_int r (jacobi(p - 1,p))) (ring_of_num r p)
-             else ring_0 (r:A ring))") THEN CONJ_TAC THENL [MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"t:num") THEN REWRITE_TAC [IN_ELIM_THM] THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"(p:num) divides (1 + t) <=> t = p - 1") SUBST1_TAC THENL [EQ_TAC THENL [DISCH_THEN (MP_TAC o (MATCH_MP DIVIDES_LE)) THEN ASM_ARITH_TAC, DISCH_THEN SUBST1_TAC THEN ASM_SIMP_TAC [r2, DIVIDES_REFL]], COND_CASES_TAC THEN ASM_SIMP_TAC [RING_MUL_RZERO, RING_OF_INT]], ALL_TAC] THEN REWRITE_TAC [RING_SUM_DELTA, IN_ELIM_THM] THEN ASM_SIMP_TAC [r1, RING_MUL, RING_OF_INT, RING_OF_NUM] THEN MP_TAC (← SPEC (← q r"p:num") JACOBI_MINUS1) THEN ANTS_TAC THENL [ASM_MESON_TAC [PRIME_ODD], DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [RING_OF_INT_MUL, RING_OF_INT_OF_NUM])
+             else ring_0 (r:A ring))") THEN CONJ_TAC THENL [MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"t:num") THEN REWRITE_TAC [IN_ELIM_THM] THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"(p:num) divides (1 + t) <=> t = p - 1") SUBST1_TAC THENL [EQ_TAC THENL [DISCH_THEN (MP_TAC o (MATCH_MP DIVIDES_LE)) THEN ASM_ARITH_TAC, DISCH_THEN SUBST1_TAC THEN ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(p = 0) ==> 1 + (p - 1) = p")), DIVIDES_REFL]], COND_CASES_TAC THEN ASM_SIMP_TAC [RING_MUL_RZERO, RING_OF_INT]], ALL_TAC] THEN REWRITE_TAC [RING_SUM_DELTA, IN_ELIM_THM] THEN ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(p = 0) ==> p - 1 < p")), RING_MUL, RING_OF_INT, RING_OF_NUM] THEN MP_TAC (← SPEC (← q r"p:num") JACOBI_MINUS1) THEN ANTS_TAC THENL [ASM_MESON_TAC [PRIME_ODD], DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [RING_OF_INT_MUL, RING_OF_INT_OF_NUM])
 
   let QUADRATIC_GAUSS_SUM_HOMOMORPHISM ← prove
     r"!(r:A ring) s z p c.
@@ -340,7 +340,6 @@ def setupGaussSum [HolBase] (D : GaussSumDeps) :
 
   let NUMBER_FIELD_SQRT_DEGREE ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"d <= 2 ==> ~(d = 0) ==> ~(d = 1) ==> d = 2")
     prove
       r"!k:A ring x.
           number_field k /\ x IN ring_carrier k /\
@@ -353,12 +352,10 @@ def setupGaussSum [HolBase] (D : GaussSumDeps) :
            (ring_add (poly_ring q (:1))
              (ring_mul (poly_ring q (:1)) (poly_const q (ring_0 q))
                (poly_var q one))
-             (poly_const q (ring_pow k x 2:A)))")] MINIMAL_POLYNOMIAL_DEG_LE) THEN MP_TAC (← ISPECL [(← q r"q:A ring"), (← q r"ring_0 q:A"), (← q r"ring_pow k x 2:A")] QUADRATIC_POLY_DEG) THEN MP_TAC (← ISPECL [(← q r"q:A ring"), (← q r"ring_0 q:A"), (← q r"ring_pow k x 2:A")] QUADRATIC_POLY_IN_CARRIER) THEN MP_TAC (← ISPECL [(← q r"q:A ring"), (← q r"k:A ring"), (← q r"I:A->A"), (← q r"x:A"), (← q r"ring_0 q:A"), (← q r"ring_pow k x 2:A")] QUADRATIC_POLY_EXTEND) THEN ASM_SIMP_TAC [RING_0, FIELD_IMP_NONTRIVIAL_RING, FIELD_EXTENSION_IMP_HOMOMORPHISM] THEN REPEAT DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"q:A ring"), (← q r"k:A ring"), (← q r"x:A")] MINIMAL_POLYNOMIAL_DEG_EQ_1) THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"q:A ring"), (← q r"k:A ring"), (← q r"x:A")] MINIMAL_POLYNOMIAL_IRREDUCIBLE) THEN ASM_SIMP_TAC [IMAGE_I] THEN STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o ((MATCH_MP IRREDUCIBLE_IMP_POLY_DEG_NZ) o (CONJ (← ASSUME (← q r"field(q:A ring)"))))) THEN MATCH_MP_TAC r1 THEN FIRST_X_ASSUM MATCH_MP_TAC THEN CONJ_TAC THENL [DISCH_THEN (MP_TAC o (AP_TERM (← q r"poly_deg (q:A ring):((1->num)->A)->num"))) THEN ASM_REWRITE_TAC [POLY_DEG_0] THEN ARITH_TAC, EXPAND_TAC "q" THEN REWRITE_TAC [I_THM, (← CONJUNCT2 SUBFIELD_GENERATED)] THEN ASM_SIMP_TAC [RING_MUL_LZERO, RING_ADD_LZERO, RING_POW, RING_SUB_REFL]], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"q:A ring"), (← q r"k:A ring"), (← q r"x:A")] EXTENSION_DEGREE_SIMPLE) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A")] SUBFIELD_GENERATED_SING_ALGEBRAIC) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC [IMAGE_I])
+             (poly_const q (ring_pow k x 2:A)))")] MINIMAL_POLYNOMIAL_DEG_LE) THEN MP_TAC (← ISPECL [(← q r"q:A ring"), (← q r"ring_0 q:A"), (← q r"ring_pow k x 2:A")] QUADRATIC_POLY_DEG) THEN MP_TAC (← ISPECL [(← q r"q:A ring"), (← q r"ring_0 q:A"), (← q r"ring_pow k x 2:A")] QUADRATIC_POLY_IN_CARRIER) THEN MP_TAC (← ISPECL [(← q r"q:A ring"), (← q r"k:A ring"), (← q r"I:A->A"), (← q r"x:A"), (← q r"ring_0 q:A"), (← q r"ring_pow k x 2:A")] QUADRATIC_POLY_EXTEND) THEN ASM_SIMP_TAC [RING_0, FIELD_IMP_NONTRIVIAL_RING, FIELD_EXTENSION_IMP_HOMOMORPHISM] THEN REPEAT DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"q:A ring"), (← q r"k:A ring"), (← q r"x:A")] MINIMAL_POLYNOMIAL_DEG_EQ_1) THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"q:A ring"), (← q r"k:A ring"), (← q r"x:A")] MINIMAL_POLYNOMIAL_IRREDUCIBLE) THEN ASM_SIMP_TAC [IMAGE_I] THEN STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o ((MATCH_MP IRREDUCIBLE_IMP_POLY_DEG_NZ) o (CONJ (← ASSUME (← q r"field(q:A ring)"))))) THEN MATCH_MP_TAC (← ARITH_RULE (← q r"d <= 2 ==> ~(d = 0) ==> ~(d = 1) ==> d = 2")) THEN FIRST_X_ASSUM MATCH_MP_TAC THEN CONJ_TAC THENL [DISCH_THEN (MP_TAC o (AP_TERM (← q r"poly_deg (q:A ring):((1->num)->A)->num"))) THEN ASM_REWRITE_TAC [POLY_DEG_0] THEN ARITH_TAC, EXPAND_TAC "q" THEN REWRITE_TAC [I_THM, (← CONJUNCT2 SUBFIELD_GENERATED)] THEN ASM_SIMP_TAC [RING_MUL_LZERO, RING_ADD_LZERO, RING_POW, RING_SUB_REFL]], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"q:A ring"), (← q r"k:A ring"), (← q r"x:A")] EXTENSION_DEGREE_SIMPLE) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A")] SUBFIELD_GENERATED_SING_ALGEBRAIC) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC [IMAGE_I])
 
   let CYCLOTOMIC_FIELD_QUADRATIC_SUBFIELD ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
-    let r2 ← TAUT (← q r"p ==> (p ==> q) ==> q")
     prove
       r"!(k:A ring) z p y.
           number_field k /\ z IN ring_carrier k /\ ring_order k z = p /\
@@ -371,7 +368,7 @@ def setupGaussSum [HolBase] (D : GaussSumDeps) :
                   extension_degree (subfield_generated k {ring_0 k},
                                     subfield_generated k s) I = 2
                   ==> s = ring_carrier(subfield_generated k {y})"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_IMP_NZ)) THEN SUBGOAL_THEN (← q r"~((y:A) IN ring_carrier(subfield_generated k {ring_0 k}))") ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"y:A"), (← q r"--(&1) pow ((p - 1) DIV 2) * &p:int")] SQRT_SQUAREFREE_NOT_IN_PRIME_SUBFIELD) THEN MATCH_MP_TAC r2 THEN ASM_REWRITE_TAC [INT_ABS_MUL, INT_ABS_POW, INT_ABS_NEG, INT_ABS_NUM, INT_POW_ONE, INT_MUL_LID, NUM_OF_INT_OF_NUM] THEN ASM_SIMP_TAC [PRIME_IMP_SQUAREFREE] THEN CONJ_TAC THENL [ASM_MESON_TAC [number_field], ALL_TAC] THEN DISCH_THEN (MP_TAC o (AP_TERM (← q r"abs:int->int"))) THEN REWRITE_TAC [INT_ABS_MUL, INT_ABS_POW, INT_ABS_NEG, INT_ABS_NUM, INT_POW_ONE, INT_MUL_LID, INT_OF_NUM_EQ] THEN ASM_MESON_TAC [PRIME_1], ALL_TAC] THEN MATCH_MP_TAC r1 THEN CONJ_TAC THENL [MATCH_MP_TAC NUMBER_FIELD_SQRT_DEGREE THEN ASM_REWRITE_TAC [RING_OF_INT_IN_SUBFIELD_GENERATED], DISCH_TAC] THEN X_GEN_TAC (← q r"s:A->bool") THEN STRIP_TAC THEN MATCH_MP_TAC CYCLOTOMIC_FIELD_SUBFIELD_UNIQUE THEN MAP_EVERY EXISTS_TAC [(← q r"k:A ring"), (← q r"z:A"), (← q r"p:num")] THEN ASM_REWRITE_TAC [SUBFIELD_GENERATED_BY_SUBFIELD_GENERATED] THEN ASM_SIMP_TAC [SUBFIELD_SUBFIELD_GENERATED_EQ, FIELD_SUBFIELD_GENERATED] THEN REWRITE_TAC [CYCLIC_MODMUL_GROUP] THEN REPEAT DISJ2_TAC THEN MAP_EVERY EXISTS_TAC [(← q r"p:num"), (← q r"1")] THEN ASM_REWRITE_TAC [EXP_1] THEN MP_TAC (← SPEC (← q r"p:num") PRIME_GE_2) THEN ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC)
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_IMP_NZ)) THEN SUBGOAL_THEN (← q r"~((y:A) IN ring_carrier(subfield_generated k {ring_0 k}))") ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"y:A"), (← q r"--(&1) pow ((p - 1) DIV 2) * &p:int")] SQRT_SQUAREFREE_NOT_IN_PRIME_SUBFIELD) THEN MATCH_MP_TAC (← TAUT (← q r"p ==> (p ==> q) ==> q")) THEN ASM_REWRITE_TAC [INT_ABS_MUL, INT_ABS_POW, INT_ABS_NEG, INT_ABS_NUM, INT_POW_ONE, INT_MUL_LID, NUM_OF_INT_OF_NUM] THEN ASM_SIMP_TAC [PRIME_IMP_SQUAREFREE] THEN CONJ_TAC THENL [ASM_MESON_TAC [number_field], ALL_TAC] THEN DISCH_THEN (MP_TAC o (AP_TERM (← q r"abs:int->int"))) THEN REWRITE_TAC [INT_ABS_MUL, INT_ABS_POW, INT_ABS_NEG, INT_ABS_NUM, INT_POW_ONE, INT_MUL_LID, INT_OF_NUM_EQ] THEN ASM_MESON_TAC [PRIME_1], ALL_TAC] THEN MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL [MATCH_MP_TAC NUMBER_FIELD_SQRT_DEGREE THEN ASM_REWRITE_TAC [RING_OF_INT_IN_SUBFIELD_GENERATED], DISCH_TAC] THEN X_GEN_TAC (← q r"s:A->bool") THEN STRIP_TAC THEN MATCH_MP_TAC CYCLOTOMIC_FIELD_SUBFIELD_UNIQUE THEN MAP_EVERY EXISTS_TAC [(← q r"k:A ring"), (← q r"z:A"), (← q r"p:num")] THEN ASM_REWRITE_TAC [SUBFIELD_GENERATED_BY_SUBFIELD_GENERATED] THEN ASM_SIMP_TAC [SUBFIELD_SUBFIELD_GENERATED_EQ, FIELD_SUBFIELD_GENERATED] THEN REWRITE_TAC [CYCLIC_MODMUL_GROUP] THEN REPEAT DISJ2_TAC THEN MAP_EVERY EXISTS_TAC [(← q r"p:num"), (← q r"1")] THEN ASM_REWRITE_TAC [EXP_1] THEN MP_TAC (← SPEC (← q r"p:num") PRIME_GE_2) THEN ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC)
 
   let CYCLOTOMIC_FIELD_QUADRATIC_SUBFIELD_GAUSS_SUM ← prove
     r"!(k:A ring) z p s.

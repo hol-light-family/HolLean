@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.CyclotomicGalois fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -244,12 +247,11 @@ def setupCyclotomicGalois [HolBase] (D : CyclotomicGaloisDeps) :
 
   let GROUP_ISOMORPHISM_MODMUL_UNIT_GROUP ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"a < 1 <=> a = 0")
     prove
       r"!n. ~(n = 0)
          ==> group_isomorphism(modmul_group n,unit_group(integer_mod_ring n))
                               (\a. &a rem &n)"
-      (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [GROUP_ISOMORPHISM, GROUP_HOMOMORPHISM, UNIT_GROUP_INTEGER_MOD_RING, UNIT_GROUP, INTEGER_MOD_RING_CLAUSES, INT_OF_NUM_REM, INT_OF_NUM_MUL, MOD_MULT_MOD2, INT_OF_NUM_EQ, MODMUL_GROUP] THEN COND_CASES_TAC THENL [SUBGOAL_THEN (← q r"n = 1") SUBST1_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN REWRITE_TAC [MOD_1, IN_SING, r1, COPRIME_1] THEN SET_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"IMAGE (\a. &(a MOD n)) {m | m < n /\ coprime(m,n)} =
+      (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [GROUP_ISOMORPHISM, GROUP_HOMOMORPHISM, UNIT_GROUP_INTEGER_MOD_RING, UNIT_GROUP, INTEGER_MOD_RING_CLAUSES, INT_OF_NUM_REM, INT_OF_NUM_MUL, MOD_MULT_MOD2, INT_OF_NUM_EQ, MODMUL_GROUP] THEN COND_CASES_TAC THENL [SUBGOAL_THEN (← q r"n = 1") SUBST1_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN REWRITE_TAC [MOD_1, IN_SING, (← ARITH_RULE (← q r"a < 1 <=> a = 0")), COPRIME_1] THEN SET_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"IMAGE (\a. &(a MOD n)) {m | m < n /\ coprime(m,n)} =
       IMAGE ((&):num->int) {a | a < n /\ coprime(a,n)}") SUBST1_TAC THENL [REWRITE_TAC [EXTENSION, IN_IMAGE, IN_ELIM_THM] THEN MESON_TAC [MOD_LT], SIMP_TAC [SUBSET_REFL, IN_ELIM_THM, MOD_MOD_REFL] THEN MESON_TAC [MOD_LT]])
 
   let SUBFIELD_GENERATED_INSERT_PRIME_SUBFIELD ← prove
@@ -321,7 +323,6 @@ def setupCyclotomicGalois [HolBase] (D : CyclotomicGaloisDeps) :
 
   let CYCLOTOMIC_FIELD_GALOIS_GROUP_EQ ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← SET_RULE (← q r"(s:A->bool) UNION {a} = a INSERT s")
     prove
       r"!(k:A ring) z sigma tau.
           field k /\ z IN ring_carrier k /\ subfield_generated k {z} = k /\
@@ -331,7 +332,7 @@ def setupCyclotomicGalois [HolBase] (D : CyclotomicGaloisDeps) :
           group_carrier(galois_group (subfield_generated k {ring_0 k},k) I) /\
           sigma z = tau z
           ==> sigma = tau"
-      (REPEAT STRIP_TAC THEN MATCH_MP_TAC GALOIS_GROUP_EQ_ON_GENERATORS THEN MAP_EVERY EXISTS_TAC [(← q r"I:A->A"), (← q r"subfield_generated (k:A ring) {ring_0 k}"), (← q r"k:A ring"), (← q r"{z:A}")] THEN ASM_REWRITE_TAC [IN_SING, FORALL_UNWIND_THM2, r1, SUBFIELD_GENERATED_INSERT_PRIME_SUBFIELD])
+      (REPEAT STRIP_TAC THEN MATCH_MP_TAC GALOIS_GROUP_EQ_ON_GENERATORS THEN MAP_EVERY EXISTS_TAC [(← q r"I:A->A"), (← q r"subfield_generated (k:A ring) {ring_0 k}"), (← q r"k:A ring"), (← q r"{z:A}")] THEN ASM_REWRITE_TAC [IN_SING, FORALL_UNWIND_THM2, (← SET_RULE (← q r"(s:A->bool) UNION {a} = a INSERT s")), SUBFIELD_GENERATED_INSERT_PRIME_SUBFIELD])
 
   let CYCLOTOMIC_FIELD_GALOIS_GROUP_ISOMORPHIC ← prove
     r"!(k:A ring) z n.

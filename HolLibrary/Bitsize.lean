@@ -18,9 +18,11 @@
   `term → ExceptT String IO thm`.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolMath
@@ -140,9 +142,8 @@ def setupBitsize [HolBase] (D : BitsizeDeps) :
   let BITSIZE_LE ← prove
    r"!n k. bitsize n <= k <=> n < 2 EXP k"
    (← do
-    let m ← MESON [LT_POW2_REFL] (← q r"?i. n < 2 EXP i")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [bitsize] THEN
-     SIMP_TAC [MINIMAL_LE, m] THEN
+     SIMP_TAC [MINIMAL_LE, (← MESON [LT_POW2_REFL] (← q r"?i. n < 2 EXP i"))] THEN
      EQ_TAC THENL [ALL_TAC, MESON_TAC [LE_REFL]] THEN
      DISCH_THEN (X_CHOOSE_THEN (← q "i:num") (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] LTE_TRANS) THEN
@@ -175,20 +176,14 @@ def setupBitsize [HolBase] (D : BitsizeDeps) :
    r"!m n. bitsize(MAX m n) = MAX (bitsize m) (bitsize n)"
    (← do
     -- the rules right to left, as OCaml evaluates the proof
-    let a2 ← ARITH_RULE (← q "n <= m ==> MAX m n = m")
-    let a1 ← ARITH_RULE (← q "m <= n ==> MAX m n = n")
-    let a0 ← ARITH_RULE (← q r"m:num <= n \/ n <= m")
-    pure (REPEAT GEN_TAC THEN DISJ_CASES_TAC a0 THEN
-     ASM_SIMP_TAC [a1, BITSIZE_MONO, a2]))
+    pure (REPEAT GEN_TAC THEN DISJ_CASES_TAC (← ARITH_RULE (← q r"m:num <= n \/ n <= m")) THEN
+     ASM_SIMP_TAC [(← ARITH_RULE (← q "m <= n ==> MAX m n = n")), BITSIZE_MONO, (← ARITH_RULE (← q "n <= m ==> MAX m n = m"))]))
 
   let BITSIZE_MIN ← prove
    r"!m n. bitsize(MIN m n) = MIN (bitsize m) (bitsize n)"
    (← do
-    let a2 ← ARITH_RULE (← q "n <= m ==> MIN m n = n")
-    let a1 ← ARITH_RULE (← q "m <= n ==> MIN m n = m")
-    let a0 ← ARITH_RULE (← q r"m:num <= n \/ n <= m")
-    pure (REPEAT GEN_TAC THEN DISJ_CASES_TAC a0 THEN
-     ASM_SIMP_TAC [a1, BITSIZE_MONO, a2]))
+    pure (REPEAT GEN_TAC THEN DISJ_CASES_TAC (← ARITH_RULE (← q r"m:num <= n \/ n <= m")) THEN
+     ASM_SIMP_TAC [(← ARITH_RULE (← q "m <= n ==> MIN m n = m")), BITSIZE_MONO, (← ARITH_RULE (← q "n <= m ==> MIN m n = n"))]))
 
   let BITSIZE_MULT_LE ← prove
    r"!m n. bitsize(m * n) <= bitsize m + bitsize n"
@@ -198,9 +193,8 @@ def setupBitsize [HolBase] (D : BitsizeDeps) :
   let BITSIZE_REV_EQ ← prove
    r"!n. 2 EXP (bitsize n - 1) <= n <=> ~(n = 0)"
    (← do
-    let a0 ← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")
     pure (REWRITE_TAC [← GSYM NOT_LT, ← GSYM BITSIZE_LE] THEN
-     REWRITE_TAC [a0, BITSIZE_EQ_0]))
+     REWRITE_TAC [(← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")), BITSIZE_EQ_0]))
 
   let BITSIZE_REV ← prove
    r"!n. ~(n = 0) ==> 2 EXP (bitsize n - 1) <= n"
@@ -209,14 +203,13 @@ def setupBitsize [HolBase] (D : BitsizeDeps) :
   let BITSIZE_REV_EQ_ALT ← prove
    r"!n. 2 EXP (bitsize n) <= 2 * n <=> ~(n = 0)"
    (← do
-    let a1 ← ARITH_RULE (← q r"n = SUC(n - 1) <=> ~(n = 0)")
     pure (GEN_TAC THEN ASM_CASES_TAC (← q "n = 0") THEN
      ASM_REWRITE_TAC [BITSIZE_0, ARITH] THEN
      TRANS_TAC LE_TRANS (← q "2 * 2 EXP (bitsize n - 1)") THEN
      ASM_REWRITE_TAC [LE_MULT_LCANCEL, BITSIZE_REV_EQ] THEN
      REWRITE_TAC [← GSYM (← CONJUNCT2 EXP)] THEN
      MATCH_MP_TAC EQ_IMP_LE THEN AP_TERM_TAC THEN
-     ASM_REWRITE_TAC [a1, BITSIZE_EQ_0]))
+     ASM_REWRITE_TAC [(← ARITH_RULE (← q r"n = SUC(n - 1) <=> ~(n = 0)")), BITSIZE_EQ_0]))
 
   let BITSIZE_REV_ALT ← prove
    r"!n. ~(n = 0) ==> 2 EXP bitsize n <= 2 * n"
@@ -231,31 +224,27 @@ def setupBitsize [HolBase] (D : BitsizeDeps) :
   let LE_BITSIZE_ALT ← prove
    r"!n k. k <= bitsize n <=> ~(k = 0) ==> 2 EXP k <= 2 * n"
    (← do
-    let a0 ← ARITH_RULE (← q "2 * a = b ==> (a <= n <=> b <= 2 * n)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [LE_BITSIZE] THEN
      ASM_CASES_TAC (← q "k = 0") THEN ASM_REWRITE_TAC [] THEN
-     MATCH_MP_TAC a0 THEN
+     MATCH_MP_TAC (← ARITH_RULE (← q "2 * a = b ==> (a <= n <=> b <= 2 * n)")) THEN
      REWRITE_TAC [← GSYM (← CONJUNCT2 EXP)] THEN AP_TERM_TAC THEN ASM_ARITH_TAC))
 
   let BITSIZE_UNIQUE_EQ ← prove
    r"!n k. bitsize n = k <=>
           n < 2 EXP k /\ (~(k = 0) ==> 2 EXP k <= 2 * n)"
    (← do
-    let a0 ← ARITH_RULE (← q r"n = k <=> k <= n /\ ~(k + 1 <= n)")
-    pure (REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [a0] THEN
+    pure (REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [(← ARITH_RULE (← q r"n = k <=> k <= n /\ ~(k + 1 <= n)"))] THEN
      REWRITE_TAC [LE_BITSIZE_ALT, EXP_ADD] THEN ARITH_TAC))
 
   let BITSIZE_MULT ← prove
    r"(!k n. bitsize (2 EXP k * n) = if n = 0 then 0 else k + bitsize n) /\
     (!k n. bitsize (n * 2 EXP k) = if n = 0 then 0 else bitsize n + k)"
    (← do
-    let a0 ← ARITH_RULE (← q "2 * a * b = a * 2 * b")
-    let t ← TAUT (← q r"(p ==> q) /\ p ==> p /\ q")
-    pure (MATCH_MP_TAC t THEN CONJ_TAC THENL
+    pure (MATCH_MP_TAC (← TAUT (← q r"(p ==> q) /\ p ==> p /\ q")) THEN CONJ_TAC THENL
      [REWRITE_TAC [MULT_SYM, ADD_SYM], REPEAT GEN_TAC] THEN
      COND_CASES_TAC THEN ASM_REWRITE_TAC [MULT_CLAUSES, BITSIZE_0] THEN
      REWRITE_TAC [← GSYM LE_ANTISYM, LE_BITSIZE_ALT, BITSIZE_LE] THEN
-     ONCE_REWRITE_TAC [a0] THEN
+     ONCE_REWRITE_TAC [(← ARITH_RULE (← q "2 * a * b = a * 2 * b"))] THEN
      REWRITE_TAC [EXP_ADD, LT_MULT_LCANCEL, LE_MULT_LCANCEL] THEN
      ASM_REWRITE_TAC [BITSIZE, EXP_EQ_0, ARITH_EQ, BITSIZE_REV_EQ_ALT]))
 
@@ -269,14 +258,12 @@ def setupBitsize [HolBase] (D : BitsizeDeps) :
     (!k m n. ~(m = 0) /\ n < 2 EXP k
              ==> bitsize (n + m * 2 EXP k) = k + bitsize m)"
    (← do
-    let a1 ← ARITH_RULE (← q "m + 1 <= r <=> m < r")
-    let t ← TAUT (← q r"(p ==> q) /\ p ==> p /\ q")
-    pure (MATCH_MP_TAC t THEN CONJ_TAC THENL
+    pure (MATCH_MP_TAC (← TAUT (← q r"(p ==> q) /\ p ==> p /\ q")) THEN CONJ_TAC THENL
      [REWRITE_TAC [MULT_SYM, ADD_SYM, DISJ_SYM], REPEAT STRIP_TAC] THEN
      REWRITE_TAC [← GSYM LE_ANTISYM] THEN CONJ_TAC THENL
       [REWRITE_TAC [BITSIZE_LE] THEN TRANS_TAC LTE_TRANS (← q "2 EXP k * (m + 1)") THEN
        REWRITE_TAC [EXP_ADD, LE_MULT_LCANCEL, EXP_EQ_0, ARITH_EQ] THEN
-       REWRITE_TAC [a1, BITSIZE] THEN
+       REWRITE_TAC [(← ARITH_RULE (← q "m + 1 <= r <=> m < r")), BITSIZE] THEN
        ASM_ARITH_TAC,
        TRANS_TAC LE_TRANS (← q "bitsize(2 EXP k * m)") THEN CONJ_TAC THENL
         [ASM_REWRITE_TAC [BITSIZE_MULT, LE_REFL],
@@ -285,20 +272,16 @@ def setupBitsize [HolBase] (D : BitsizeDeps) :
   let BITSIZE_DIV ← prove
    r"!n k. bitsize(n DIV 2 EXP k) = bitsize n - k"
    (← do
-    let a3 ← ARITH_RULE (← q r"~(n:num <= k) ==> (j < n - k <=> k + j < n)")
-    let a2 ← ARITH_RULE (← q r"~(n:num <= k) ==> k + n - k = n")
-    let a1 ← ARITH_RULE (← q "a < b <=> a + 1 <= b")
-    let a0 ← ARITH_RULE (← q "n <= k ==> n - k = 0")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [BITSIZE_UNIQUE] THEN
      SIMP_TAC [RDIV_LT_EQ, LE_RDIV_EQ, EXP_EQ_0, ARITH_EQ] THEN
      ASM_CASES_TAC (← q "bitsize n <= k") THENL
-      [ASM_SIMP_TAC [a0] THEN
+      [ASM_SIMP_TAC [(← ARITH_RULE (← q "n <= k ==> n - k = 0"))] THEN
        REWRITE_TAC [(← CONJUNCT1 LT), MULT_CLAUSES, EXP] THEN
        TRANS_TAC LTE_TRANS (← q "2 EXP bitsize n") THEN
        ASM_REWRITE_TAC [BITSIZE, LE_EXP] THEN ASM_ARITH_TAC,
-       ASM_SIMP_TAC [← GSYM EXP_ADD, BITSIZE, a2] THEN
-       ASM_SIMP_TAC [a3] THEN
-       REWRITE_TAC [a1, LE_BITSIZE] THEN
+       ASM_SIMP_TAC [← GSYM EXP_ADD, BITSIZE, (← ARITH_RULE (← q r"~(n:num <= k) ==> k + n - k = n"))] THEN
+       ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(n:num <= k) ==> (j < n - k <=> k + j < n)"))] THEN
+       REWRITE_TAC [(← ARITH_RULE (← q "a < b <=> a + 1 <= b")), LE_BITSIZE] THEN
        REWRITE_TAC [ADD_SUB, ADD_EQ_0, ARITH_EQ]]))
 
   -- bitsize.ml 150-174: BITSIZE_CONV.  `bitfun` is a local recursive helper

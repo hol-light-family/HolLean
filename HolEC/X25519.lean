@@ -12,10 +12,11 @@
   (SessionEC.X25519 fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, INT_ARITH, TAUT, SET_RULE, ...) they are
-  bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Iter
@@ -510,8 +511,8 @@ def setupX25519Quadratic [HolBase] (D : X25519Deps) :
        [← q r"ring_div r x d:A", ← q r"ring_div r (ring_neg r y) d:A"] THEN
       FIRST_X_ASSUM (SUBST_ALL_TAC o SYM) THEN
       REPEAT CONJ_TAC THEN TRY RING_CARRIER_TAC THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
-        let _ ← SPEC (← q r"x:A") th; pure ALL_TAC) THEN FIELD_TAC]))
+      FIRST_X_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
+        let _ ← SPEC ocq1 th; pure ALL_TAC) (← q r"x:A")) THEN FIELD_TAC]))
 
   let sqintmod_field ← new_definition
    r"sqintmod_field = quadratic_extension (integer_mod_ring p_25519) 2"

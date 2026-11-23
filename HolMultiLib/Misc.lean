@@ -1185,8 +1185,8 @@ def setupLimits [HolBase] (D : MiscDeps) (BLemmas : Lemmas) :
   let REAL_ARCH_RDIV_EQ_0 ← prove
    r"!x c. &0 <= x /\ &0 <= c /\ (!m. 0 < m ==> &m * x <= c) ==> x = &0"
    (SIMP_TAC [← GSYM REAL_LE_ANTISYM, ← GSYM REAL_NOT_LT] THEN REPEAT STRIP_TAC THEN
-    POP_ASSUM (fun th => tactic_of do
-      pure (STRIP_ASSUME_TAC (← SPEC (← q r"c:real") (← MATCH_MP REAL_ARCH th)))) THEN
+    POP_ASSUM ((fun (ocq9 : _) => fun th => tactic_of do
+      pure (STRIP_ASSUME_TAC (← SPEC ocq9 (← MATCH_MP REAL_ARCH th)))) (← q r"c:real")) THEN
     ASM_CASES_TAC (← q r"n=0") THENL
      [POP_ASSUM SUBST_ALL_TAC THEN
       RULE_ASSUM_TAC (REWRITE_RULE [REAL_MUL_LZERO]) THEN
@@ -1435,7 +1435,7 @@ def setupSubseq [HolBase] (D : MiscDeps) : ExceptT String IO Subseq := do
      [ASM_MESON_TAC [← REAL_ARITH (← q r"abs(x) <= b ==> x <= b")], ALL_TAC] THEN
     MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"l:real") THEN STRIP_TAC THEN
     X_GEN_TAC (← q r"e:real") THEN STRIP_TAC THEN
-    FIRST_X_ASSUM (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"l - e") th))) THEN
+    FIRST_X_ASSUM ((fun (ocq8 : _) => fun th => tactic_of do pure (MP_TAC (← SPEC ocq8 th))) (← q r"l - e")) THEN
     ASM_MESON_TAC [← REAL_ARITH (← q r"&0 < e ==> ~(l <= l - e)"),
         ← REAL_ARITH (← q r"x <= y /\ y <= l /\ ~(x <= l - e) ==> abs(y - l) < e")])
 
@@ -1590,8 +1590,8 @@ def setupDiagonal [HolBase] (D : MiscDeps) (BSubseq : Subseq) :
         FIRST_ASSUM (fun th => tactic_of do
           pure (MATCH_MP_TAC (← MATCH_MP le_trans_conj th))) THEN
         REWRITE_TAC [o_THM] THEN
-        FIRST_ASSUM (fun th => tactic_of do
-          pure (MATCH_MP_TAC (← MATCH_MP mono_le (← SPEC (← q r"i + d:num") th)))) THEN
+        FIRST_ASSUM ((fun (ocq7 : _) => fun th => tactic_of do
+          pure (MATCH_MP_TAC (← MATCH_MP mono_le (← SPEC ocq7 th)))) (← q r"i + d:num")) THEN
         SPEC_TAC (← q r"n:num", ← q r"n:num") THEN MATCH_MP_TAC MONOTONE_BIGGER THEN
         ASM_SIMP_TAC [],
         ALL_TAC] THEN
@@ -2391,9 +2391,9 @@ def setupReduction [HolBase] (D : MiscDeps) : ExceptT String IO Reduction := do
                              s' SUBSET s /\ t' SUBSET t /\ DISJOINT s' t' /\
                              s' UNION t' = s UNION t"
    (GEN_TAC THEN DISCH_TAC THEN REPEAT STRIP_TAC THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (MP_TAC (← ISPEC (← q r"\n. if n = 0 then s:A->bool else if n = 1 then t else {}")
-        (← MATCH_MP GENERAL_REDUCTION_THEOREM th)))) THEN
+    FIRST_ASSUM ((fun (ocq6 : _) => fun th => tactic_of do
+      pure (MP_TAC (← ISPEC ocq6
+        (← MATCH_MP GENERAL_REDUCTION_THEOREM th)))) (← q r"\n. if n = 0 then s:A->bool else if n = 1 then t else {}")) THEN
     REWRITE_TAC [] THEN ANTS_TAC THENL
      [GEN_TAC THEN REPEAT (COND_CASES_TAC THEN ASM_REWRITE_TAC []) THEN
       ASM_SIMP_TAC [COUNTABLE_UNION_OF_INC],
@@ -2408,8 +2408,8 @@ def setupReduction [HolBase] (D : MiscDeps) : ExceptT String IO Reduction := do
     ONCE_REWRITE_TAC [← SET_RULE (← q
      r"(:num) = 0 INSERT 1 INSERT ((:num) DIFF {0,1})")] THEN
     SIMP_TAC [SIMPLE_IMAGE, IMAGE_CLAUSES, UNIONS_INSERT, PAIRWISE_INSERT] THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← SPEC (← q r"1") (← CONJUNCT1 th)))) THEN
+    DISCH_THEN ((fun (ocq5 : _) => fun th => tactic_of do
+      pure (MP_TAC (← SPEC ocq5 (← CONJUNCT1 th)))) (← q r"1")) THEN
     CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC [IN_INSERT] THEN STRIP_TAC THEN
     DISCH_THEN (MP_TAC o MATCH_MP (← SET_RULE (← q
      r"s UNION t UNION u = s' UNION t' UNION u'
@@ -2482,16 +2482,16 @@ def setupBackAndForth [HolBase] (D : MiscDeps) : ExceptT String IO BackAndForth 
       ASM_CASES_TAC (← q r"(x:num->A) n IN s") THEN ASM_REWRITE_TAC [] THENL
        [FIRST_ASSUM (MP_TAC o SPEC (← q r"R:A#B->bool")) THEN
         ANTS_TAC THENL [ASM_REWRITE_TAC [], ALL_TAC] THEN
-        DISCH_THEN (fun th => tactic_of do
-          pure (MP_TAC (← SPEC (← q r"(x:num->A) n") (← CONJUNCT1 th)))) THEN
+        DISCH_THEN ((fun (ocq4 : _) => fun th => tactic_of do
+          pure (MP_TAC (← SPEC ocq4 (← CONJUNCT1 th)))) (← q r"(x:num->A) n")) THEN
         ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
         X_GEN_TAC (← q r"z:B") THEN STRIP_TAC THEN
         ASM_CASES_TAC (← q r"(y:num->B) n IN t") THEN ASM_REWRITE_TAC [] THENL
          [FIRST_X_ASSUM (MP_TAC o SPEC (← q r"((x:num->A) n,z:B) INSERT R")) THEN
           ASM_REWRITE_TAC [FINITE_INSERT, INSERT_SUBSET] THEN
           ASM_REWRITE_TAC [IN_CROSS] THEN
-          DISCH_THEN (fun th => tactic_of do
-            pure (MP_TAC (← SPEC (← q r"(y:num->B) n") (← CONJUNCT2 th)))) THEN
+          DISCH_THEN ((fun (ocq3 : _) => fun th => tactic_of do
+            pure (MP_TAC (← SPEC ocq3 (← CONJUNCT2 th)))) (← q r"(y:num->B) n")) THEN
           ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
           X_GEN_TAC (← q r"w:A") THEN STRIP_TAC THEN
           EXISTS_TAC (← q r"(w,y(n:num)) INSERT (x n,z) INSERT (R:A#B->bool)") THEN
@@ -2504,8 +2504,8 @@ def setupBackAndForth [HolBase] (D : MiscDeps) : ExceptT String IO BackAndForth 
          [ALL_TAC, ASM_MESON_TAC [SUBSET_REFL]] THEN
         FIRST_ASSUM (MP_TAC o SPEC (← q r"R:A#B->bool")) THEN
         ANTS_TAC THENL [ASM_REWRITE_TAC [], ALL_TAC] THEN
-        DISCH_THEN (fun th => tactic_of do
-          pure (MP_TAC (← SPEC (← q r"(y:num->B) n") (← CONJUNCT2 th)))) THEN
+        DISCH_THEN ((fun (ocq2 : _) => fun th => tactic_of do
+          pure (MP_TAC (← SPEC ocq2 (← CONJUNCT2 th)))) (← q r"(y:num->B) n")) THEN
         ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
         X_GEN_TAC (← q r"w:A") THEN STRIP_TAC THEN
         EXISTS_TAC (← q r"(w,y(n:num)) INSERT (R:A#B->bool)") THEN
@@ -2645,9 +2645,9 @@ def setupBackAndForth [HolBase] (D : MiscDeps) : ExceptT String IO BackAndForth 
     STRIP_TAC THEN CONJ_TAC THENL
      [X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
       ASM_REWRITE_TAC [],
-      FIRST_X_ASSUM (fun th => tactic_of do
-        let _ ← SPEC (← q r"f:A->B") th
-        pure ALL_TAC)] THEN
+      FIRST_X_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
+        let _ ← SPEC ocq1 th
+        pure ALL_TAC) (← q r"f:A->B"))] THEN
     FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE id [← GSYM INJECTIVE_ON_ALT]) THEN
     GEN_REWRITE_TAC LAND_CONV [INJECTIVE_ON_LEFT_INVERSE] THEN
     DISCH_THEN (X_CHOOSE_TAC (← q r"g:B->A")) THEN

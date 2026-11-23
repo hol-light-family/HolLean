@@ -12,10 +12,11 @@
   (SessionEC.Misc fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, INT_ARITH, TAUT, SET_RULE, ...) they are
-  bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Iter
@@ -218,16 +219,14 @@ def setupMiscThms [HolBase] (D : MiscDeps) :
         field f /\ ~(ring_char f = 3) /\ P <=>
         field f /\ ~(ring_char f divides 3) /\ P"
    (← do
-    let p1 ← PRIME_CONV (← q r"prime 3")
-    pure (MESON_TAC [RING_CHAR_DIVIDES_PRIME, p1]))
+    pure (MESON_TAC [RING_CHAR_DIVIDES_PRIME, (← PRIME_CONV (← q r"prime 3"))]))
 
   let FIELD_CHAR_NOT23 ← prove
    r"!(f:A ring) P.
         field f /\ ~(ring_char f = 2) /\ ~(ring_char f = 3) /\ P <=>
         field f /\ ~(ring_char f divides 2) /\ ~(ring_char f divides 3) /\ P"
    (← do
-    let p1 ← PRIME_CONV (← q r"prime 3")
-    pure (MESON_TAC [RING_CHAR_DIVIDES_PRIME, PRIME_2, p1]))
+    pure (MESON_TAC [RING_CHAR_DIVIDES_PRIME, PRIME_2, (← PRIME_CONV (← q r"prime 3"))]))
 
   /- An ad-hoc way of confirming the size of a group to be n when there is a
      crude bound of < 3 * n and we also know there are no points of order 2. -/

@@ -487,16 +487,11 @@ def setupWf [HolBase]
            (!f x y. P f x /\ y << G f x ==> y << x)
            ==> ?f:A->B. !x. f x = if P f x then f(G f x) else H f x"
    (← do
-    let t1 ← TAUT (← q r"a ==> b ==> c <=> b ==> a ==> c")
-    let m1 ← MESON []
-       (← q r"(a = b) /\ (a /\ b ==> (x = y) /\ (f x = g x))
-        ==> ((if a then f x else d) = (if b then g y else d))")
-    let pire ← prove_inductive_relations_exist
-       (← q r"(!x:A. ~(P f x) ==> terminates f x) /\
-        (!x. P (f:A->B) x /\ terminates f (G f x) ==> terminates f x)")
     pure
       (REPEAT STRIP_TAC THEN
-        CHOOSE_THEN MP_TAC pire THEN
+        CHOOSE_THEN MP_TAC (← prove_inductive_relations_exist
+       (← q r"(!x:A. ~(P f x) ==> terminates f x) /\
+        (!x. P (f:A->B) x /\ terminates f (G f x) ==> terminates f x)")) THEN
         REWRITE_TAC [FORALL_AND_THM] THEN
         DISCH_THEN (STRIP_ASSUME_TAC o GSYM) THEN
         SUBGOAL_THEN
@@ -507,7 +502,9 @@ def setupWf [HolBase]
          (← q r"?f:A->B. !x. f x = if terminates f x then H f (while f x :A) else anything")
         MP_TAC THENL
          [FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP WF_REC) THEN
-          REPEAT STRIP_TAC THEN MATCH_MP_TAC m1 THEN
+          REPEAT STRIP_TAC THEN MATCH_MP_TAC (← MESON []
+       (← q r"(a = b) /\ (a /\ b ==> (x = y) /\ (f x = g x))
+        ==> ((if a then f x else d) = (if b then g y else d))")) THEN
           REPEAT STRIP_TAC THENL
            [SUBGOAL_THEN
              (← q r"!f g x.
@@ -518,7 +515,7 @@ def setupWf [HolBase]
              (fun th => EQ_TAC THEN MATCH_MP_TAC th THEN ASM_MESON_TAC []) THEN
             GEN_TAC THEN GEN_TAC THEN
             REWRITE_TAC [RIGHT_FORALL_IMP_THM, IMP_CONJ] THEN DISCH_TAC THEN
-            ONCE_REWRITE_TAC [t1] THEN
+            ONCE_REWRITE_TAC [(← TAUT (← q r"a ==> b ==> c <=> b ==> a ==> c"))] THEN
             FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC [],
             SUBGOAL_THEN
              (← q r"!x:A. terminates (f:A->B) x /\

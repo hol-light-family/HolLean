@@ -74,6 +74,8 @@ structure PairDefs where
   PAIR_EXISTS_THM : thm
   /-- The `prod` type bijection, from `new_type_definition`. -/
   prod_tybij : thm
+  /-- `REP_ABS_PAIR` (pair.ml 58), proved before `,` is made infix. -/
+  REP_ABS_PAIR : thm
   /-- `|- x,y = ABS_prod(mk_pair x y)`. -/
   COMMA_DEF : thm
   /-- `|- FST p = @x. ?y. p = x,y`. -/
@@ -127,7 +129,7 @@ structure PairThms where
 @[nospecialize]
 def setupPair [HolBase] (D : DSLThms)
     (ETA_AX : thm)
-    (PAIR_EXISTS_THM prod_tybij mk_pair_def COMMA_DEF FST_DEF SND_DEF : thm)
+    (PAIR_EXISTS_THM prod_tybij REP_ABS_PAIR mk_pair_def COMMA_DEF FST_DEF SND_DEF : thm)
     (o_DEF : thm)
     (MESON_TAC ASM_MESON_TAC : List thm → tactic)
     (MESON' : List thm → term → IO (Except String thm))
@@ -141,9 +143,8 @@ def setupPair [HolBase] (D : DSLThms)
 
   /- Pair type. -/
 
-  let REP_ABS_PAIR ← prove
-   r"!(x:A) (y:B). REP_prod (ABS_prod (mk_pair x y)) = mk_pair x y"
-   (MESON_TAC [prod_tybij])
+  -- REP_ABS_PAIR (pair.ml 58) is proved by Session, between prod_tybij
+  -- and the definitions of `,`, FST and SND, as in pair.ml.
 
   let PAIR_EQ ← prove
    r"!(x:A) (y:B) a b. (x,y = a,b) <=> (x = a) /\ (y = b)"

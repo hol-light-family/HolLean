@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.DedekindExtension fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -217,9 +220,6 @@ def setupDedekindExtension [HolBase] (D : DedekindExtensionDeps) :
 
   let INTEGRAL_ELEMENT_DENOMINATOR ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← RING_RULE (← q r"ring_mul l (ring_mul l p (ring_mul l e c))
-                 (ring_mul l q y) =
-      ring_mul l (ring_mul l p (ring_mul l e q)) (ring_mul l c (y:C))")
     prove
       r"!r k l (h:A->B) (g:B->C) x.
           field_of_fractions (r,k) h /\ ring_homomorphism(k,l) g /\
@@ -236,12 +236,12 @@ def setupDedekindExtension [HolBase] (D : DedekindExtensionDeps) :
         ring_mul k ((h:A->B) d) ((a:num->B) i) = h(b i) /\
         a i IN ring_carrier k") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [], ALL_TAC] THEN REWRITE_TAC [o_THM] THEN SUBGOAL_THEN (← q r"(h:A->B)(ring_mul r (ring_pow r d (n - 1 - i)) ((b:num->A) i)) =
         ring_mul k (ring_pow k (h d) (n - 1 - i))
-                   (ring_mul k (h d) ((a:num->B) i))") SUBST1_TAC THENL [ASM_SIMP_TAC [RING_POW] THEN FIRST_ASSUM ((fun th => tactic_of do pure (ASM_SIMP_TAC [(← MATCH_MP RING_HOMOMORPHISM_POW th)])) o (checkM (fun th => (do let z7 ← (q r"ring_homomorphism(r:A ring,k:B ring) h"); let z6 ← (do let z5 ← (pure th); pure (concl z5)); pure (z6 == z7))))), ALL_TAC] THEN ASM_SIMP_TAC [RING_POW, RING_MUL] THEN FIRST_ASSUM ((fun th => tactic_of do pure (ASM_SIMP_TAC [(← MATCH_MP RING_HOMOMORPHISM_POW th)])) o (checkM (fun th => (do let z4 ← (q r"ring_homomorphism(k:B ring,l:C ring) g"); let z3 ← (do let z2 ← (pure th); pure (concl z2)); pure (z3 == z4))))) THEN SUBGOAL_THEN (← q r"n = (n - 1 - i) + (1 + i)") (fun th => GEN_REWRITE_TAC (RAND_CONV o (LAND_CONV o RAND_CONV)) [th]) THENL [ASM_ARITH_TAC, ALL_TAC] THEN ASM_SIMP_TAC [RING_POW_ADD, RING_POW_1, RING_MUL_POW] THEN MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] r1) THEN ASM_SIMP_TAC [RING_POW], ALL_TAC] THEN ASM_SIMP_TAC [RING_SUM_LMUL, FINITE_NUMSEG_LT, IN_ELIM_THM, RING_MUL, RING_POW, RING_MUL_POW] THEN ASM_SIMP_TAC [(← GSYM RING_ADD_LDISTRIB), RING_POW, RING_SUM, RING_MUL_RZERO])
+                   (ring_mul k (h d) ((a:num->B) i))") SUBST1_TAC THENL [ASM_SIMP_TAC [RING_POW] THEN FIRST_ASSUM ((fun th => tactic_of do pure (ASM_SIMP_TAC [(← MATCH_MP RING_HOMOMORPHISM_POW th)])) o (checkM (fun th => (do let z7 ← (q r"ring_homomorphism(r:A ring,k:B ring) h"); let z6 ← (do let z5 ← (pure th); pure (concl z5)); pure (z6 == z7))))), ALL_TAC] THEN ASM_SIMP_TAC [RING_POW, RING_MUL] THEN FIRST_ASSUM ((fun th => tactic_of do pure (ASM_SIMP_TAC [(← MATCH_MP RING_HOMOMORPHISM_POW th)])) o (checkM (fun th => (do let z4 ← (q r"ring_homomorphism(k:B ring,l:C ring) g"); let z3 ← (do let z2 ← (pure th); pure (concl z2)); pure (z3 == z4))))) THEN SUBGOAL_THEN (← q r"n = (n - 1 - i) + (1 + i)") (fun th => GEN_REWRITE_TAC (RAND_CONV o (LAND_CONV o RAND_CONV)) [th]) THENL [ASM_ARITH_TAC, ALL_TAC] THEN ASM_SIMP_TAC [RING_POW_ADD, RING_POW_1, RING_MUL_POW] THEN MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] (← RING_RULE (← q r"ring_mul l (ring_mul l p (ring_mul l e c))
+                 (ring_mul l q y) =
+      ring_mul l (ring_mul l p (ring_mul l e q)) (ring_mul l c (y:C))"))) THEN ASM_SIMP_TAC [RING_POW], ALL_TAC] THEN ASM_SIMP_TAC [RING_SUM_LMUL, FINITE_NUMSEG_LT, IN_ELIM_THM, RING_MUL, RING_POW, RING_MUL_POW] THEN ASM_SIMP_TAC [(← GSYM RING_ADD_LDISTRIB), RING_POW, RING_SUM, RING_MUL_RZERO])
 
   let INTEGRAL_CLOSURE_SUBSET_SPAN ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← RING_RULE (← q r"ring_mul l (ring_mul l u (ring_mul l p q)) w =
-      ring_mul l (ring_mul l p q) (ring_mul l u (w:C))")
     prove
       r"!r k l (h:A->B) (g:B->C).
           integrally_closed r /\ field_of_fractions (r,k) h /\
@@ -258,7 +258,8 @@ def setupDedekindExtension [HolBase] (D : DedekindExtensionDeps) :
       ring_mul l (((g:B->C) o (h:A->B)) ((a:num->A) i))
                  (ring_mul l (g(ring_inv k D)) (b i))") SUBST1_TAC THENL [REWRITE_TAC [o_THM] THEN FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun th => (do if ← (do let z5 ← (do let z6 ← (pure th); pure (concl z6)); pure (is_eq z5)) then (do let z10 ← (q r"ring_mul k D (c:B)"); let z9 ← (do let z7 ← (do let z8 ← (pure th); pure (concl z8)); liftExcept (lhand z7)); pure (z9 == z10)) else pure false))))) THEN SUBGOAL_THEN (← q r"c = ring_mul k (ring_inv k D) (ring_mul k D (c:B))") (fun th => GEN_REWRITE_TAC (LAND_CONV o (LAND_CONV o RAND_CONV)) [th]) THENL [ASM_SIMP_TAC [RING_MUL_ASSOC, RING_INV, FIELD_MUL_LINV, RING_MUL_LID], ALL_TAC] THEN FIRST_ASSUM ((fun th => tactic_of do pure (ASM_SIMP_TAC [(← MATCH_MP RING_HOMOMORPHISM_MUL th), RING_MUL, RING_INV])) o (checkM (fun th => (do let z4 ← (q r"ring_homomorphism(k:B ring,l:C ring) g"); let z3 ← (do let z2 ← (pure th); pure (concl z2)); pure (z3 == z4))))) THEN SUBGOAL_THEN (← q r"(g:B->C)(ring_inv k D) IN ring_carrier l /\
         (g:B->C) D IN ring_carrier l /\ (g:B->C) c IN ring_carrier l /\
-        (b:num->C) i IN ring_carrier l") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER, RING_INV], ALL_TAC] THEN MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] r1) THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MATCH_MP_TAC RING_SPAN_MUL THEN ASM_SIMP_TAC [RING_HOMOMORPHISM_IN_CARRIER] THEN MATCH_MP_TAC RING_SPAN_INC THEN REWRITE_TAC [IN_IMAGE, IN_ELIM_THM] THEN CONJ_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN ASM_MESON_TAC [RING_MUL, RING_INV, RING_HOMOMORPHISM_IN_CARRIER])
+        (b:num->C) i IN ring_carrier l") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER, RING_INV], ALL_TAC] THEN MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] (← RING_RULE (← q r"ring_mul l (ring_mul l u (ring_mul l p q)) w =
+      ring_mul l (ring_mul l p q) (ring_mul l u (w:C))"))) THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MATCH_MP_TAC RING_SPAN_MUL THEN ASM_SIMP_TAC [RING_HOMOMORPHISM_IN_CARRIER] THEN MATCH_MP_TAC RING_SPAN_INC THEN REWRITE_TAC [IN_IMAGE, IN_ELIM_THM] THEN CONJ_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN ASM_MESON_TAC [RING_MUL, RING_INV, RING_HOMOMORPHISM_IN_CARRIER])
 
   let FIELD_OF_FRACTIONS_INTEGRAL_CLOSURE ← prove
     r"!r k l (h:A->B) (g:B->C).

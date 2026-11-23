@@ -20,9 +20,11 @@
   and REAL_DIV_SQRT and SQRT_EVEN_POW2 (core).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules (REAL_ARITH,
-  ARITH_RULE, TAUT) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 
   STATE.  transc.ml changes the parser (prioritize_num, prioritize_real) and
   the basic rewrites (without BETA_THM at 871, with it again at 3327), and
@@ -335,8 +337,6 @@ def setupPowSer [HolBase] (D : TranscDeps) (ACompat : HolLibrary.Analysis.Compat
       (\n. &n * c(n) * (x pow (n - 1))) sums
          (suminf(\n. (diffs c)(n) * (x pow n)))"
    (← do
-    let sm ← MATCH_MP SUMMABLE_SUM
-      (← ASSUME (← q r"summable(\n. (diffs c)(n) * (x pow n))"))
     pure (REPEAT GEN_TAC THEN DISCH_TAC THEN
       FIRST_ASSUM (MP_TAC o REWRITE_RULE [diffs] o MATCH_MP SER_ZERO) THEN
       BETA_TAC THEN REWRITE_TAC [← GSYM REAL_MUL_ASSOC] THEN DISCH_TAC THEN
@@ -344,7 +344,8 @@ def setupPowSer [HolBase] (D : TranscDeps) (ACompat : HolLibrary.Analysis.Compat
       MP_TAC THENL
        [ONCE_REWRITE_TAC [SEQ_SUC] THEN BETA_TAC THEN
         ASM_REWRITE_TAC [SUC_SUB1], ALL_TAC] THEN
-      DISCH_THEN (MP_TAC o CONJ sm) THEN
+      DISCH_THEN (MP_TAC o CONJ (← MATCH_MP SUMMABLE_SUM
+      (← ASSUME (← q r"summable(\n. (diffs c)(n) * (x pow n))")))) THEN
       REWRITE_TAC [sums] THEN DISCH_THEN (MP_TAC o MATCH_MP SEQ_SUB) THEN
       BETA_TAC THEN REWRITE_TAC [← GSYM DIFFS_LEMMA2] THEN
       REWRITE_TAC [REAL_SUB_RZERO]))
@@ -533,9 +534,7 @@ def setupTermDiff [HolBase] (D : TranscDeps) (BPowSer : PowSer) (ACompat : HolLi
         ==> (f tends_real_real &0)(&0)"
    (← do
     let ak ← ASSUME (← q r"&0 < k")
-    let ak2 ← ASSUME (← q r"&0 < k / &2")
     let aK ← ASSUME (← q r"&0 < K")
-    let aKnz ← ASSUME (← q r"~(K = &0)")
     let fx ← SPEC (← q r"(f:real->real) x") ABS_POS
     pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
       REWRITE_TAC [LIM, REAL_SUB_RZERO] THEN
@@ -547,7 +546,7 @@ def setupTermDiff [HolBase] (D : TranscDeps) (BPowSer : PowSer) (ACompat : HolLi
         DISCH_THEN (fun th => REWRITE_TAC [th, real_abs]) THEN
         REWRITE_TAC [← GSYM real_abs] THEN
         ASM_REWRITE_TAC [REAL_LT_HALF1, REAL_LT_HALF2] THEN DISCH_TAC THEN
-        MP_TAC (← GEN_ALL (← MATCH_MP REAL_LE_RMUL_EQ ak2)) THEN
+        MP_TAC (← GEN_ALL (← MATCH_MP REAL_LE_RMUL_EQ (← ASSUME (← q r"&0 < k / &2")))) THEN
         DISCH_THEN (fun th => tactic_of do pure (GEN_REWRITE_TAC id [← GSYM th])) THEN
         MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC (← q r"abs(f(k / &2))") THEN
         ASM_REWRITE_TAC [REAL_MUL_LZERO, ABS_POS], ALL_TAC] THEN
@@ -580,7 +579,7 @@ def setupTermDiff [HolBase] (D : TranscDeps) (BPowSer : PowSer) (ACompat : HolLi
         ONCE_REWRITE_TAC [← AC REAL_MUL_AC
           (← q r"(a * b) * c = (c * a) * b")] THEN
         ASSUME_TAC (← GSYM (← MATCH_MP REAL_LT_IMP_NE aK)) THEN
-        REWRITE_TAC [← MATCH_MP REAL_MUL_LINV aKnz] THEN
+        REWRITE_TAC [← MATCH_MP REAL_MUL_LINV (← ASSUME (← q r"~(K = &0)"))] THEN
         REWRITE_TAC [REAL_MUL_LID] THEN
         MATCH_MP_TAC REAL_LT_TRANS THEN EXISTS_TAC (← q r"(e / K) / &2") THEN
         ASM_REWRITE_TAC [← GSYM real_div] THEN REWRITE_TAC [REAL_LT_HALF2] THEN
@@ -593,12 +592,11 @@ def setupTermDiff [HolBase] (D : TranscDeps) (BPowSer : PowSer) (ACompat : HolLi
              ==> ((\h. suminf(g h)) tends_real_real &0)(&0)"
    (← do
     let hR ← q "h:real"
-    let cm ← GEN hR (← SPEC (← q "abs(h)")
-      (← MATCH_MP SER_CMUL (← ASSUME (← q "f sums (suminf f)"))))
     pure (REPEAT GEN_TAC THEN
       DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
       DISCH_THEN (CONJUNCTS_THEN2 (ASSUME_TAC o MATCH_MP SUMMABLE_SUM) MP_TAC) THEN
-      ASSUME_TAC cm THEN
+      ASSUME_TAC (← GEN hR (← SPEC (← q "abs(h)")
+      (← MATCH_MP SER_CMUL (← ASSUME (← q "f sums (suminf f)"))))) THEN
       RULE_ASSUM_TAC (ONCE_REWRITE_RULE [REAL_MUL_SYM]) THEN
       FIRST_ASSUM (ASSUME_TAC o GEN hR o MATCH_MP SUM_UNIQ o SPEC hR) THEN DISCH_TAC THEN
       SUBGOAL_THEN (← q r"!h. &0 < abs(h) /\ abs(h) < k ==>
@@ -986,13 +984,11 @@ def setupPowSerEq [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : Ter
            ==> (f tends_real_real a(0))(&0)"
    (← do
     -- The later rule in the THEN chain is evaluated first.
-    let ra2 ← REAL_ARITH (← q r"(a = b) /\ &0 < e ==> abs(a - b) < e")
-    let ra1 ← REAL_ARITH (← q r"&0 < x ==> &0 < abs(x)")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← SPECL [← q r"a:num->real", ← q r"s / &2", ← q r"&0"] TERMDIFF_STRONG) THEN
       subgoalLhand2 (fun th => REWRITE_TAC [th]) THENL
        [ASM_SIMP_TAC [REAL_ABS_NUM, REAL_ABS_DIV, REAL_LT_DIV, REAL_OF_NUM_LT,
-                     ARITH, ra1] THEN
+                     ARITH, (← REAL_ARITH (← q r"&0 < x ==> &0 < abs(x)"))] THEN
         MATCH_MP_TAC SUM_SUMMABLE THEN
         EXISTS_TAC (← q r"(f:real->real) (s / &2)") THEN
         FIRST_ASSUM MATCH_MP_TAC THEN
@@ -1009,7 +1005,7 @@ def setupPowSerEq [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : Ter
       REPEAT STRIP_TAC THEN EXISTS_TAC (← q "s:real") THEN
       ASM_REWRITE_TAC [REAL_SUB_RZERO] THEN
       REPEAT STRIP_TAC THEN
-      MATCH_MP_TAC ra2 THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"(a = b) /\ &0 < e ==> abs(a - b) < e")) THEN
       ASM_REWRITE_TAC [] THEN MATCH_MP_TAC SUM_UNIQ THEN ASM_SIMP_TAC []))
 
   let POWSER_LIMIT_0_STRONG ← prove
@@ -1044,10 +1040,6 @@ def setupPowSerEq [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : Ter
         ==> (a(0) = b(0))"
    (← do
     -- The later rule in the THEN chain is evaluated first.
-    let ra2 ← REAL_ARITH
-     (← q r"!f g h. abs(g - a) < e2 /\ abs(h - b) < e2 /\ (g = f) /\ (h = f)
-              ==> abs(a - b) < e2 + e2")
-    let ra1 ← REAL_ARITH (← q r"~(&0 < abs(x - y)) ==> (x = y)")
     let sumUniq ← GSYM SUM_UNIQ
     pure (REPEAT STRIP_TAC THEN
       SUBGOAL_THEN
@@ -1069,7 +1061,7 @@ def setupPowSerEq [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : Ter
       REWRITE_TAC [SKOLEM_THM] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"g:real->real") MP_TAC) THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"h:real->real") MP_TAC) THEN DISCH_TAC THEN
-      MATCH_MP_TAC ra1 THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"~(&0 < abs(x - y)) ==> (x = y)")) THEN
       ABBREV_TAC (← q "e = abs(a 0 - b 0)") THEN DISCH_TAC THEN
       MP_TAC (← SPECL [← q r"g:real->real", ← q r"a:num->real", ← q "s:real"]
         POWSER_LIMIT_0_STRONG) THEN
@@ -1097,7 +1089,9 @@ def setupPowSerEq [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : Ter
        [ALL_TAC,
         SIMP_TAC [← GSYM REAL_MUL_2, REAL_DIV_LMUL, REAL_OF_NUM_EQ, ARITH_EQ] THEN
         REWRITE_TAC [REAL_LE_REFL]] THEN
-      MATCH_MP_TAC ra2 THEN
+      MATCH_MP_TAC (← REAL_ARITH
+     (← q r"!f g h. abs(g - a) < e2 /\ abs(h - b) < e2 /\ (g = f) /\ (h = f)
+              ==> abs(a - b) < e2 + e2")) THEN
       MAP_EVERY EXISTS_TAC
        [← q r"(f:real->real) x", ← q r"(g:real->real) x", ← q r"(h:real->real) x"] THEN
       CONJ_TAC THENL [ASM_MESON_TAC [REAL_LT_TRANS], ALL_TAC] THEN
@@ -1126,15 +1120,12 @@ def setupPowSerEq [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : Ter
         ==> (a = b)"
    (← do
     -- The later rules in the THEN chain are evaluated first.
-    let ra ← REAL_ARITH (← q r"(x = &0) <=> ~(&0 < abs x)")
-    let t2 ← TAUT (← q r"~(~a /\ b) <=> b ==> a")
-    let t1 ← TAUT (← q r"p <=> ~ ~ p")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [FUN_EQ_THM] THEN
-      GEN_REWRITE_TAC id [t1] THEN
+      GEN_REWRITE_TAC id [(← TAUT (← q r"p <=> ~ ~ p"))] THEN
       GEN_REWRITE_TAC RAND_CONV [NOT_FORALL_THM] THEN
       ONCE_REWRITE_TAC [num_WOP] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "n:num") MP_TAC) THEN REWRITE_TAC [] THEN
-      REWRITE_TAC [t2] THEN DISCH_TAC THEN
+      REWRITE_TAC [(← TAUT (← q r"~(~a /\ b) <=> b ==> a"))] THEN DISCH_TAC THEN
       SUBGOAL_THEN (← q r"(\m. a(m + n):real) 0 = (\m. b(m + n)) 0") MP_TAC THENL
        [ALL_TAC, REWRITE_TAC [ADD_CLAUSES]] THEN
       MATCH_MP_TAC POWSER_EQUAL_0 THEN
@@ -1147,7 +1138,7 @@ def setupPowSerEq [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : Ter
       THENL
        [REPEAT GEN_TAC THEN REWRITE_TAC [REAL_POW_ADD] THEN
         ONCE_REWRITE_TAC [← AC REAL_MUL_AC (← q r"x' * a * b * x = (x * x') * a * b")] THEN
-        ASM_SIMP_TAC [REAL_MUL_RINV, REAL_POW_EQ_0, ra] THEN
+        ASM_SIMP_TAC [REAL_MUL_RINV, REAL_POW_EQ_0, (← REAL_ARITH (← q r"(x = &0) <=> ~(&0 < abs x)"))] THEN
         REWRITE_TAC [REAL_MUL_LID], ALL_TAC] THEN
       CONJ_TAC THEN MATCH_MP_TAC SER_CMUL THENL
        [SUBGOAL_THEN (← q r"sum(0,n) (\n. b n * x pow n) = sum(0,n) (\n. a n * x pow n)")
@@ -1822,10 +1813,9 @@ def setupExp [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) (A
    r"!x y. exp(x + y) = exp(x) * exp(y)"
    (← do
     let ex ← q "exp(x)"
-    let mul ← q "(*)"
     pure (REPEAT GEN_TAC THEN
       MP_TAC (← SPECL [← q "x:real", ← q "y:real"] REAL_EXP_ADD_MUL) THEN
-      DISCH_THEN (MP_TAC o (fun th => AP_THM th ex) o AP_TERM mul) THEN
+      DISCH_THEN (MP_TAC o (fun th => AP_THM th ex) o AP_TERM (← q "(*)")) THEN
       REWRITE_TAC [← GSYM REAL_MUL_ASSOC] THEN
       REWRITE_TAC [← ONCE_REWRITE_RULE [REAL_MUL_SYM] REAL_EXP_NEG_MUL, REAL_MUL_RID] THEN
       DISCH_THEN SUBST1_TAC THEN MATCH_ACCEPT_TAC REAL_MUL_SYM))
@@ -1923,11 +1913,6 @@ def setupExp [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) (A
    (← do
     -- The REAL_ARITHs in OCaml's order: the THENL lists are built right to
     -- left and the later rule in a THEN chain first.
-    let ra4 ← REAL_ARITH (← q r"&1 <= (&1 + &2 * x) - (x + x * &2 * x) <=>
-                                    x * (&2 * x) <= x * &1")
-    let ra3 ← REAL_ARITH (← q r"a - x < b - x <=> a < b")
-    let ra2 ← REAL_ARITH (← q r"&0 <= x - y <=> y <= x")
-    let ra1 ← REAL_ARITH (← q r"(&1 - x = &0) <=> (x = &1)")
     pure (GEN_TAC THEN DISCH_TAC THEN
       MATCH_MP_TAC REAL_LE_TRANS THEN
       EXISTS_TAC (← q r"suminf (\n. x pow n)") THEN CONJ_TAC THENL
@@ -1955,18 +1940,19 @@ def setupExp [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) (A
           EXISTS_TAC (← q r"&1 - x") THEN
           SUBGOAL_THEN (← q r"(&1 - x) * inv (&1 - x) = &1") SUBST1_TAC THENL
            [MATCH_MP_TAC REAL_MUL_RINV THEN
-            REWRITE_TAC [ra1] THEN
+            REWRITE_TAC [(← REAL_ARITH (← q r"(&1 - x = &0) <=> (x = &1)"))] THEN
             DISCH_THEN SUBST_ALL_TAC THEN
             POP_ASSUM MP_TAC THEN CONV_TAC REAL_RAT_REDUCE_CONV,
             CONJ_TAC THENL
              [MATCH_MP_TAC REAL_LET_TRANS THEN
               EXISTS_TAC (← q r"inv(&2) - x") THEN
-              ASM_REWRITE_TAC [ra2] THEN
-              ASM_REWRITE_TAC [ra3] THEN
+              ASM_REWRITE_TAC [(← REAL_ARITH (← q r"&0 <= x - y <=> y <= x"))] THEN
+              ASM_REWRITE_TAC [(← REAL_ARITH (← q r"a - x < b - x <=> a < b"))] THEN
               CONV_TAC REAL_RAT_REDUCE_CONV,
               REWRITE_TAC [REAL_ADD_LDISTRIB, REAL_SUB_RDISTRIB] THEN
               REWRITE_TAC [REAL_MUL_RID, REAL_MUL_LID] THEN
-              REWRITE_TAC [ra4] THEN
+              REWRITE_TAC [(← REAL_ARITH (← q r"&1 <= (&1 + &2 * x) - (x + x * &2 * x) <=>
+                                    x * (&2 * x) <= x * &1"))] THEN
               MATCH_MP_TAC REAL_LE_LMUL_IMP THEN ASM_REWRITE_TAC [] THEN
               MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN EXISTS_TAC (← q r"inv(&2)") THEN
               REWRITE_TAC [REAL_MUL_ASSOC] THEN
@@ -2119,13 +2105,12 @@ def setupLnRoot [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv)
   let LN_DIV ← prove
    r"!x. &0 < x /\ &0 < y ==> (ln(x / y) = ln(x) - ln(y))"
    (← do
-    let lninv ← MATCH_MP LN_INV (← ASSUME (← q r"&0 < y"))
     pure (GEN_TAC THEN STRIP_TAC THEN
       SUBGOAL_THEN (← q r"&0 < x /\ &0 < inv(y)") MP_TAC THENL
        [CONJ_TAC THEN TRY (MATCH_MP_TAC REAL_INV_POS) THEN ASM_REWRITE_TAC [],
         REWRITE_TAC [real_div] THEN
         DISCH_THEN (fun th => tactic_of do pure (REWRITE_TAC [← MATCH_MP LN_MUL th])) THEN
-        REWRITE_TAC [lninv] THEN
+        REWRITE_TAC [(← MATCH_MP LN_INV (← ASSUME (← q r"&0 < y")))] THEN
         REWRITE_TAC [real_sub]]))
 
   let LN_MONO_LT ← prove
@@ -2171,16 +2156,14 @@ def setupLnRoot [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv)
   let LN_POS ← prove
    r"!x. &1 <= x ==> &0 <= ln(x)"
    (← do
-    let ar ← ARITH_RULE (← q r"&1 <= x ==> &0 < x")
     pure (REWRITE_TAC [← GSYM LN_1] THEN
-      SIMP_TAC [LN_MONO_LE, ar, REAL_LT_01]))
+      SIMP_TAC [LN_MONO_LE, (← ARITH_RULE (← q r"&1 <= x ==> &0 < x")), REAL_LT_01]))
 
   let LN_POS_LT ← prove
    r"!x. &1 < x ==> &0 < ln(x)"
    (← do
-    let ar ← ARITH_RULE (← q r"&1 < x ==> &0 < x")
     pure (REWRITE_TAC [← GSYM LN_1] THEN
-      SIMP_TAC [LN_MONO_LT, ar, REAL_LT_01]))
+      SIMP_TAC [LN_MONO_LT, (← ARITH_RULE (← q r"&1 < x ==> &0 < x")), REAL_LT_01]))
 
   let DIFF_LN ← prove
    r"!x. &0 < x ==> (ln diffl (inv x))(x)"
@@ -2368,7 +2351,6 @@ def setupLnRoot [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv)
   let DIFF_SQRT ← prove
    r"!x. &0 < x ==> (sqrt diffl inv(&2 * sqrt(x))) x"
    (← do
-    let ra ← REAL_ARITH (← q r"abs(x - y) < y ==> &0 <= x")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← SPECL [← q r"\x. x pow 2", ← q "sqrt", ← q r"&2 * sqrt(x)",
                        ← q "sqrt(x)", ← q "sqrt(x)"]
@@ -2377,7 +2359,7 @@ def setupLnRoot [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv)
       DISCH_THEN MATCH_MP_TAC THEN
       ASM_SIMP_TAC [SQRT_POS_LT, REAL_LT_IMP_NZ, REAL_ENTIRE] THEN
       REWRITE_TAC [REAL_OF_NUM_EQ, ARITH_EQ] THEN REPEAT CONJ_TAC THENL
-       [ASM_MESON_TAC [POW_2_SQRT, ra],
+       [ASM_MESON_TAC [POW_2_SQRT, (← REAL_ARITH (← q r"abs(x - y) < y ==> &0 <= x"))],
         REPEAT STRIP_TAC THEN CONV_TAC CONTINUOUS_CONV,
         DIFF_TAC THEN REWRITE_TAC [ARITH, REAL_POW_1, REAL_MUL_RID]]))
 
@@ -2671,14 +2653,13 @@ def setupTrig1 [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) 
   let SIN_POS ← prove
    r"!x. &0 < x /\ x < &2 ==> &0 < sin(x)"
    (← do
-    let sinsum ← SYM (← MATCH_MP SUM_UNIQ (← SPEC (← q "x:real") SIN_PAIRED))
     let z ← q r"&0"
     let s00 ← q "sum(0,0)"
     let amp ← q "&"
     pure (GEN_TAC THEN STRIP_TAC THEN MP_TAC (← SPEC (← q "x:real") SIN_PAIRED) THEN
       DISCH_THEN (MP_TAC o MATCH_MP SUM_SUMMABLE) THEN
       DISCH_THEN (MP_TAC o MATCH_MP SER_PAIR) THEN
-      REWRITE_TAC [sinsum] THEN
+      REWRITE_TAC [(← SYM (← MATCH_MP SUM_UNIQ (← SPEC (← q "x:real") SIN_PAIRED)))] THEN
       REWRITE_TAC [SUM_2] THEN BETA_TAC THEN REWRITE_TAC [← GSYM ADD1] THEN
       REWRITE_TAC [pow, ← GSYM REAL_NEG_MINUS1, POW_MINUS1] THEN
       REWRITE_TAC [real_div, ← GSYM REAL_NEG_LMUL, ← GSYM real_sub] THEN
@@ -2832,7 +2813,6 @@ def setupTrig1 [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) 
   let COS_ISZERO ← prove
    r"?!x. &0 <= x /\ x <= &2 /\ (cos x = &0)"
    (← do
-    let dc ← SPEC (← q "x:real") DIFF_COS
     let _cosT ← q "cos"
     pure (REWRITE_TAC [HolBase.B.EXISTS_UNIQUE_DEF] THEN BETA_TAC THEN
       (fun gl => ExceptT.run do
@@ -2863,7 +2843,7 @@ def setupTrig1 [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) 
         ASM_REWRITE_TAC [] THEN
         DISCH_THEN (X_CHOOSE_THEN (← q "x:real") MP_TAC) THEN REWRITE_TAC [CONJ_ASSOC] THEN
         DISCH_THEN (CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
-        DISCH_THEN (MP_TAC o CONJ dc) THEN
+        DISCH_THEN (MP_TAC o CONJ (← SPEC (← q "x:real") DIFF_COS)) THEN
         DISCH_THEN (MP_TAC o MATCH_MP DIFF_UNIQ) THEN
         REWRITE_TAC [REAL_NEG_EQ0] THEN MATCH_MP_TAC REAL_LT_IMP_NZ THEN
         MATCH_MP_TAC SIN_POS THENL
@@ -3141,12 +3121,10 @@ def setupTrig2 [HolBase] (D : TranscDeps) (BDefs : Defs) (BTrig1 : Trig1) (AComp
   let COS_TOTAL ← prove
    r"!y. --(&1) <= y /\ y <= &1 ==> ?!x. &0 <= x /\ x <= pi /\ (cos(x) = y)"
    (← do
-    let ltPi ← MATCH_MP REAL_LT_IMP_LE PI_POS
-    let dc ← SPEC (← q "x:real") DIFF_COS
     pure (GEN_TAC THEN STRIP_TAC THEN
       CONV_TAC EXISTS_UNIQUE_CONV THEN CONJ_TAC THENL
        [MATCH_MP_TAC IVT2 THEN ASM_REWRITE_TAC [COS_0, COS_PI] THEN
-        REWRITE_TAC [ltPi] THEN
+        REWRITE_TAC [(← MATCH_MP REAL_LT_IMP_LE PI_POS)] THEN
         GEN_TAC THEN DISCH_THEN (fun _ => ALL_TAC) THEN
         MATCH_MP_TAC DIFF_CONT THEN EXISTS_TAC (← q "--(sin x)") THEN
         REWRITE_TAC [DIFF_COS],
@@ -3163,7 +3141,7 @@ def setupTrig2 [HolBase] (D : TranscDeps) (BDefs : Defs) (BTrig1 : Trig1) (AComp
          EXISTS_TAC (← q "--(sin x)") THEN REWRITE_TAC [DIFF_COS], ALL_TAC]) THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "x:real") STRIP_ASSUME_TAC) THEN
       UNDISCH_TAC (← q r"(cos diffl &0)(x)") THEN
-      DISCH_THEN (MP_TAC o CONJ dc) THEN
+      DISCH_THEN (MP_TAC o CONJ (← SPEC (← q "x:real") DIFF_COS)) THEN
       DISCH_THEN (MP_TAC o MATCH_MP DIFF_UNIQ) THEN
       REWRITE_TAC [REAL_NEG_EQ0] THEN DISCH_TAC THEN
       MP_TAC (← SPEC (← q "x:real") SIN_POS_PI) THEN
@@ -3525,7 +3503,6 @@ def setupTan [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) (B
   let TAN_TOTAL_LEMMA ← prove
    r"!y. &0 < y ==> ?x. &0 < x /\ x < pi / &2 /\ y < tan(x)"
    (← do
-    let aPos ← ASSUME (← q r"&0 < cos((pi / &2) - e) / sin((pi / &2) - e)")
     pure (GEN_TAC THEN DISCH_TAC THEN
       SUBGOAL_THEN (← q r"((\x. cos(x) / sin(x)) tends_real_real &0)(pi / &2)")
       MP_TAC THENL
@@ -3570,7 +3547,7 @@ def setupTan [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) (B
       MATCH_MP_TAC EQ_IMP THEN BINOP_TAC THENL
        [MATCH_MP_TAC REAL_INVINV THEN MATCH_MP_TAC REAL_LT_IMP_NZ THEN
         FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN
-      MP_TAC aPos THEN
+      MP_TAC (← ASSUME (← q r"&0 < cos((pi / &2) - e) / sin((pi / &2) - e)")) THEN
       DISCH_THEN (MP_TAC o MATCH_MP REAL_LT_IMP_LE) THEN
       REWRITE_TAC [← GSYM ABS_REFL] THEN DISCH_THEN SUBST1_TAC THEN
       REWRITE_TAC [real_div] THEN IMP_SUBST_TAC REAL_INV_MUL_WEAK THENL
@@ -3667,7 +3644,6 @@ def setupTan [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) (B
   let TAN_PI4 ← prove
    r"tan(pi / &4) = &1"
    (← do
-    let ra ← REAL_ARITH (← q r"&0 <= x ==> ~(&1 = --x)")
     pure (REWRITE_TAC [tan, COS_SIN, real_div, ← GSYM REAL_SUB_LDISTRIB] THEN
       CONV_TAC REAL_RAT_REDUCE_CONV THEN MATCH_MP_TAC REAL_MUL_RINV THEN
       REWRITE_TAC [SIN_ZERO] THEN
@@ -3678,7 +3654,7 @@ def setupTan [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) (B
       CONV_TAC REAL_RAT_REDUCE_CONV THEN
       SIMP_TAC [REAL_EQ_LDIV_EQ, REAL_OF_NUM_LT, ARITH] THEN
       REWRITE_TAC [REAL_MUL_LNEG, REAL_OF_NUM_MUL, REAL_OF_NUM_EQ] THEN
-      SIMP_TAC [ra, REAL_POS] THEN
+      SIMP_TAC [(← REAL_ARITH (← q r"&0 <= x ==> ~(&1 = --x)")), REAL_POS] THEN
       STRIP_TAC THEN FIRST_ASSUM (MP_TAC o AP_TERM (← q "EVEN")) THEN
       REWRITE_TAC [EVEN_MULT, ARITH_EVEN]))
 
@@ -3690,17 +3666,12 @@ def setupTan [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) (B
    r"!x. abs(x) < pi / &4 ==> abs(tan x) < &1"
    (← do
     -- The REAL_ARITHs in OCaml's order: right to left.
-    let r5 ← REAL_ARITH (← q r"~(x = &0) /\ ~(&0 < x) ==> &0 < --x")
-    let r4 ← REAL_ARITH (← q r"&0 < x /\ x < &1 ==> abs(x) < &1")
-    let r3 ← REAL_ARITH (← q r"&0 < x /\ x < &1 ==> abs(x) < &1")
-    let r2 ← REAL_ARITH (← q r"x < &1 <=> &0 < &1 - x")
-    let r1 ← REAL_ARITH (← q r"&0 < x /\ x < a ==> x < &2 * a")
     pure (REPEAT GEN_TAC THEN
       SUBGOAL_THEN
        (← q r"!x. &0 < x /\ x < pi / &4 ==> &0 < tan(x) /\ tan(x) < &1")
       ASSUME_TAC THENL
        [REPEAT STRIP_TAC THENL
-         [ASM_SIMP_TAC [tan, REAL_LT_DIV, SIN_POS_PI2, COS_POS_PI2, PI2_PI4, r1],
+         [ASM_SIMP_TAC [tan, REAL_LT_DIV, SIN_POS_PI2, COS_POS_PI2, PI2_PI4, (← REAL_ARITH (← q r"&0 < x /\ x < a ==> x < &2 * a"))],
           ALL_TAC] THEN
         MP_TAC (← SPECL [← q "tan", ← q r"\x. inv(cos(x) pow 2)",
                          ← q "x:real", ← q r"pi / &4"] MVT_ALT) THEN
@@ -3711,7 +3682,7 @@ def setupTan [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) (B
           MAP_EVERY UNDISCH_TAC [← q "x <= z", ← q r"z <= pi / &4", ← q r"&0 < x"] THEN
           REAL_ARITH_TAC,
           ALL_TAC] THEN
-        SIMP_TAC [TAN_PI4, r2,
+        SIMP_TAC [TAN_PI4, (← REAL_ARITH (← q r"x < &1 <=> &0 < &1 - x")),
                  LEFT_IMP_EXISTS_THM] THEN
         X_GEN_TAC (← q "z:real") THEN REPEAT STRIP_TAC THEN
         MATCH_MP_TAC REAL_LT_MUL THEN ASM_REWRITE_TAC [REAL_SUB_LT] THEN
@@ -3725,9 +3696,9 @@ def setupTan [HolBase] (D : TranscDeps) (BDefs : Defs) (BDiffConv : DiffConv) (B
       ASM_CASES_TAC (← q r"x = &0") THEN
       ASM_REWRITE_TAC [TAN_0, REAL_ABS_NUM, REAL_LT_01] THEN
       COND_CASES_TAC THEN
-      ASM_SIMP_TAC [r3] THEN
+      ASM_SIMP_TAC [(← REAL_ARITH (← q r"&0 < x /\ x < &1 ==> abs(x) < &1"))] THEN
       ONCE_REWRITE_TAC [← GSYM REAL_ABS_NEG] THEN REWRITE_TAC [← GSYM TAN_NEG] THEN
-      ASM_SIMP_TAC [r4, r5]))
+      ASM_SIMP_TAC [(← REAL_ARITH (← q r"&0 < x /\ x < &1 ==> abs(x) < &1")), (← REAL_ARITH (← q r"~(x = &0) /\ ~(&0 < x) ==> &0 < --x"))]))
 
   let TAN_ABS_GE_X ← prove
    r"!x. abs(x) < pi / &2 ==> abs(x) <= abs(tan x)"
@@ -4037,19 +4008,16 @@ def setupInvTrig [HolBase] (D : TranscDeps) (BDefs : Defs) (BTrig1 : Trig1) (BTr
    r"!x y. x < y ==> atn(x) < atn(y)"
    (← do
     -- The REAL_ARITHs in OCaml's order: right to left.
-    let r3 ← REAL_ARITH (← q r"&0 <= x ==> &0 < &1 + x")
-    let r2 ← REAL_ARITH (← q r"a < b + a <=> &0 < b")
-    let r1 ← REAL_ARITH (← q r"(l - r = d) ==> l < d + e ==> r < e")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← SPECL [← q "atn", ← q r"\x. inv(&1 + x pow 2)", ← q "x:real", ← q "y:real"]
                    MVT_ALT) THEN
       BETA_TAC THEN ASM_REWRITE_TAC [DIFF_ATN] THEN STRIP_TAC THEN
-      FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP r1) THEN
-      REWRITE_TAC [r2] THEN
+      FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP (← REAL_ARITH (← q r"(l - r = d) ==> l < d + e ==> r < e"))) THEN
+      REWRITE_TAC [(← REAL_ARITH (← q r"a < b + a <=> &0 < b"))] THEN
       MATCH_MP_TAC REAL_LT_MUL THEN
       ASM_REWRITE_TAC [REAL_LT_SUB_LADD, REAL_ADD_LID] THEN
       REWRITE_TAC [REAL_LT_INV_EQ] THEN
-      MATCH_MP_TAC r3 THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"&0 <= x ==> &0 < &1 + x")) THEN
       REWRITE_TAC [REAL_POW_2, REAL_LE_SQUARE]))
 
   let ATN_MONO_LT_EQ ← prove
@@ -4097,10 +4065,9 @@ def setupInvTrig [HolBase] (D : TranscDeps) (BDefs : Defs) (BTrig1 : Trig1) (BTr
   let ATN_LE_PI4 ← prove
    r"!x. abs(x) <= &1 ==> abs(atn x) <= pi / &4"
    (← do
-    let ra ← REAL_ARITH (← q r"(abs(x) = a) ==> (x = a) \/ (x = --a)")
     pure (REWRITE_TAC [REAL_LE_LT] THEN REPEAT STRIP_TAC THEN
       ASM_SIMP_TAC [ATN_LT_PI4] THEN DISJ2_TAC THEN
-      FIRST_ASSUM (DISJ_CASES_THEN SUBST1_TAC o MATCH_MP ra) THEN
+      FIRST_ASSUM (DISJ_CASES_THEN SUBST1_TAC o MATCH_MP (← REAL_ARITH (← q r"(abs(x) = a) ==> (x = a) \/ (x = --a)"))) THEN
       ASM_REWRITE_TAC [ATN_1, ATN_NEG] THEN
       REWRITE_TAC [REAL_ABS_DIV, REAL_ABS_NUM, REAL_ABS_NEG] THEN
       SIMP_TAC [real_abs, REAL_LT_IMP_LE, PI_POS]))
@@ -4355,23 +4322,18 @@ def setupArcSinCos [HolBase] (D : TranscDeps) (BDefs : Defs) (BTrig1 : Trig1) (B
    (← do
     -- The REAL_ARITHs in OCaml's order: the THEN chain and THENL lists are
     -- built right to left.
-    let rb ← REAL_ARITH (← q r"~(&0 <= y) /\ (abs(y) = x) ==> (y = --x)")
-    let ra ← REAL_ARITH (← q r"&0 <= y /\ (abs(y) = x) ==> (y = x)")
-    let rs ← REAL_ARITH (← q r"abs(x) <= &1 ==> --(&1) <= x /\ x <= &1")
-    let r1 ← REAL_ARITH
-     (← q r"(&1 < x ==> &1 < x pow 2) /\ (&1 < y ==> &1 < y pow 2) /\
-        &0 <= x pow 2 /\ &0 <= y pow 2 /\ x pow 2 + y pow 2 <= &1
-        ==> x <= &1 /\ y <= &1")
-    let one ← SYM (← ExceptT.mk (REAL_RAT_REDUCE_CONV (← q r"&1 * &1")))
     pure (REPEAT STRIP_TAC THEN
       SUBGOAL_THEN (← q r"abs(x) <= &1 /\ abs(y) <= &1") STRIP_ASSUME_TAC THENL
-       [MATCH_MP_TAC r1 THEN
+       [MATCH_MP_TAC (← REAL_ARITH
+     (← q r"(&1 < x ==> &1 < x pow 2) /\ (&1 < y ==> &1 < y pow 2) /\
+        &0 <= x pow 2 /\ &0 <= y pow 2 /\ x pow 2 + y pow 2 <= &1
+        ==> x <= &1 /\ y <= &1")) THEN
         ASM_REWRITE_TAC [REAL_POW2_ABS, REAL_LE_REFL] THEN
         REWRITE_TAC [REAL_POW_2, REAL_LE_SQUARE] THEN
         REWRITE_TAC [← GSYM REAL_POW_2] THEN
         ONCE_REWRITE_TAC [← GSYM REAL_POW2_ABS] THEN REWRITE_TAC [REAL_POW_2] THEN
         CONJ_TAC THEN DISCH_TAC THEN
-        SUBST1_TAC one THEN
+        SUBST1_TAC (← SYM (← ExceptT.mk (REAL_RAT_REDUCE_CONV (← q r"&1 * &1")))) THEN
         MATCH_MP_TAC REAL_LT_MUL2 THEN ASM_REWRITE_TAC [REAL_POS],
         ALL_TAC] THEN
       SUBGOAL_THEN (← q r"&0 <= sin(acs x)") MP_TAC THENL
@@ -4387,10 +4349,10 @@ def setupArcSinCos [HolBase] (D : TranscDeps) (BDefs : Defs) (BTrig1 : Trig1) (B
         ALL_TAC] THEN
       ASM_CASES_TAC (← q r"&0 <= y") THENL
        [EXISTS_TAC (← q "acs x"), EXISTS_TAC (← q "--(acs x)")] THEN
-      ASM_SIMP_TAC [COS_NEG, SIN_NEG, ACS_COS, rs]
+      ASM_SIMP_TAC [COS_NEG, SIN_NEG, ACS_COS, (← REAL_ARITH (← q r"abs(x) <= &1 ==> --(&1) <= x /\ x <= &1"))]
       THENL
-       [MATCH_MP_TAC ra,
-        MATCH_MP_TAC rb] THEN
+       [MATCH_MP_TAC (← REAL_ARITH (← q r"&0 <= y /\ (abs(y) = x) ==> (y = x)")),
+        MATCH_MP_TAC (← REAL_ARITH (← q r"~(&0 <= y) /\ (abs(y) = x) ==> (y = --x)"))] THEN
       ASM_REWRITE_TAC []))
 
   -- More lemmas.
@@ -4399,8 +4361,6 @@ def setupArcSinCos [HolBase] (D : TranscDeps) (BDefs : Defs) (BTrig1 : Trig1) (B
    r"!x y. --(&1) < x /\ x < y /\ y < &1 ==> acs(y) < acs(x)"
    (← do
     -- The later rule in the THEN chain is evaluated first.
-    let r2 ← REAL_ARITH (← q r"&0 < &1 - z * z <=> z * z < &1 * &1")
-    let r1 ← REAL_ARITH (← q r"a * --c + x < x <=> &0 < a * c")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← SPECL [← q "acs", ← q r"\x. --inv(sqrt(&1 - x pow 2))", ← q "x:real", ← q "y:real"]
                    MVT_ALT) THEN
@@ -4410,11 +4370,11 @@ def setupArcSinCos [HolBase] (D : TranscDeps) (BDefs : Defs) (BTrig1 : Trig1) (B
         ASM_MESON_TAC [REAL_LET_TRANS, REAL_LTE_TRANS],
         REWRITE_TAC [REAL_EQ_SUB_RADD]] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "z:real") STRIP_ASSUME_TAC) THEN
-      ASM_REWRITE_TAC [r1] THEN
+      ASM_REWRITE_TAC [(← REAL_ARITH (← q r"a * --c + x < x <=> &0 < a * c"))] THEN
       MATCH_MP_TAC REAL_LT_MUL THEN ASM_REWRITE_TAC [REAL_SUB_LT] THEN
       MATCH_MP_TAC REAL_LT_INV THEN MATCH_MP_TAC SQRT_POS_LT THEN
       ONCE_REWRITE_TAC [← GSYM REAL_POW2_ABS] THEN REWRITE_TAC [REAL_POW_2] THEN
-      REWRITE_TAC [r2] THEN
+      REWRITE_TAC [(← REAL_ARITH (← q r"&0 < &1 - z * z <=> z * z < &1 * &1"))] THEN
       MATCH_MP_TAC REAL_LT_MUL2 THEN REWRITE_TAC [REAL_ABS_POS] THEN
       POP_ASSUM_LIST (fun ths => tactic_of do pure (MP_TAC (← endItlistM CONJ ths))) THEN
       REAL_ARITH_TAC))
@@ -4599,7 +4559,6 @@ def setupDivision [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (ANames : 
         (!n. n < (dsize D) ==> D(n) < D(SUC n)) /\
         (!n. n >= (dsize D) ==> (D(n) = b))"
    (← do
-    let aN ← ASSUME (← q r"!n:num. n >= N ==> (D n :real = b)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [division] THEN
       EQ_TAC THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THENL
        [ALL_TAC, EXISTS_TAC (← q "dsize D") THEN ASM_REWRITE_TAC []] THEN
@@ -4608,7 +4567,7 @@ def setupDivision [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (ANames : 
       REWRITE_TAC [dsize] THEN MATCH_MP_TAC SELECT_UNIQUE THEN
       X_GEN_TAC (← q "M:num") THEN BETA_TAC THEN EQ_TAC THENL
        [ALL_TAC, DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC [] THEN
-        MP_TAC (← SPEC (← q "N:num") aN) THEN
+        MP_TAC (← SPEC (← q "N:num") (← ASSUME (← q r"!n:num. n >= N ==> (D n :real = b)"))) THEN
         DISCH_THEN (MP_TAC o REWRITE_RULE [GE, LE_REFL]) THEN
         DISCH_THEN SUBST1_TAC THEN FIRST_ASSUM MATCH_ACCEPT_TAC] THEN
       REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC
@@ -4631,8 +4590,8 @@ def setupDivision [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (ANames : 
   let DIVISION_RHS ← prove
    r"!D a b. division(a,b) D ==> (D(dsize D) = b)"
    (REPEAT GEN_TAC THEN REWRITE_TAC [DIVISION_THM] THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← SPEC (← q "dsize D") (← lastThm (CONJUNCTS th))))) THEN
+    DISCH_THEN ((fun (ocq2 : _) => fun th => tactic_of do
+      pure (MP_TAC (← SPEC ocq2 (← lastThm (CONJUNCTS th))))) (← q "dsize D")) THEN
     REWRITE_TAC [GE, LE_REFL])
 
   let DIVISION_LT_GEN ← prove
@@ -4904,7 +4863,6 @@ def setupDivAppend [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivisio
                    (dsize(\n. if (n < (dsize D1)) then  D1(n) else
        D2(n - (dsize D1))) = dsize(D1) + dsize(D2))"
    (← do
-    let aD2 ← ASSUME (← q "division(b,c) D2")
     pure (REPEAT STRIP_TAC THEN GEN_REWRITE_TAC LAND_CONV [dsize] THEN
       MATCH_MP_TAC SELECT_UNIQUE THEN
       X_GEN_TAC (← q "N:num") THEN BETA_TAC THEN EQ_TAC THENL
@@ -4923,9 +4881,9 @@ def setupDivAppend [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivisio
           ASM_REWRITE_TAC [] THEN REWRITE_TAC [SUB_OLD, ← GSYM NOT_LE] THEN
           REWRITE_TAC [LE_ADD] THEN ONCE_REWRITE_TAC [ADD_SYM] THEN
           REWRITE_TAC [ADD_SUB] THEN
-          MP_TAC aD2 THEN REWRITE_TAC [DIVISION_THM] THEN
-          DISCH_THEN (fun th => tactic_of do
-            pure (MP_TAC (← SPEC (← q "SUC(dsize D2)") (← elThm 2 (CONJUNCTS th))))) THEN
+          MP_TAC (← ASSUME (← q "division(b,c) D2")) THEN REWRITE_TAC [DIVISION_THM] THEN
+          DISCH_THEN ((fun (ocq1 : _) => fun th => tactic_of do
+            pure (MP_TAC (← SPEC ocq1 (← elThm 2 (CONJUNCTS th))))) (← q "SUC(dsize D2)")) THEN
           REWRITE_TAC [GE, LESS_EQ_SUC_REFL] THEN
           DISCH_THEN SUBST1_TAC THEN
           FIRST_ASSUM (CHANGED_TAC o SUBST1_TAC o MATCH_MP DIVISION_RHS) THEN
@@ -5019,11 +4977,6 @@ def setupDivAppend [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivisio
    (← do
     -- The ARITH_RULEs in OCaml's order: the later one in the THEN chain
     -- first, and the SIMP_TAC list right to left.
-    let ar4 ← ARITH_RULE (← q r"k < n ==> (SUC k < n <=> ~(n = SUC k))")
-    let ar3 ← ARITH_RULE (← q r"SUC(r + d) - d = SUC r")
-    let ar2 ← ARITH_RULE (← q r"~(SUC(r + d) < d)")
-    let ar1 ← ARITH_RULE (← q r"~(r + d < d:num)")
-    let aSuc ← ASSUME (← q "SUC n = dsize D1")
     let abcdd ← [← q "a:real", ← q "b:real", ← q "c:real",
                  ← q r"D1:num->real", ← q r"D2:num->real"].mapM pure
     pure (MAP_EVERY X_GEN_TAC
@@ -5036,9 +4989,9 @@ def setupDivAppend [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivisio
         ANTS_TAC THENL [ASM_MESON_TAC [tdiv], ALL_TAC] THEN
         DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [← GSYM SUM_SPLIT] THEN
         REWRITE_TAC [SUM_REINDEX] THEN BINOP_TAC THEN MATCH_MP_TAC SUM_EQ THEN
-        SIMP_TAC [ADD_CLAUSES, ar1, ar2, ADD_SUB, ar3] THEN
+        SIMP_TAC [ADD_CLAUSES, (← ARITH_RULE (← q r"~(r + d < d:num)")), (← ARITH_RULE (← q r"~(SUC(r + d) < d)")), ADD_SUB, (← ARITH_RULE (← q r"SUC(r + d) - d = SUC r"))] THEN
         X_GEN_TAC (← q "k:num") THEN STRIP_TAC THEN AP_TERM_TAC THEN
-        ASM_SIMP_TAC [ar4] THEN
+        ASM_SIMP_TAC [(← ARITH_RULE (← q r"k < n ==> (SUC k < n <=> ~(n = SUC k))"))] THEN
         ASM_CASES_TAC (← q "dsize D1 = SUC k") THEN ASM_REWRITE_TAC [SUB_REFL] THEN
         AP_THM_TAC THEN AP_TERM_TAC THEN
         ASM_MESON_TAC [tdiv, DIVISION_LHS, DIVISION_RHS]] THEN
@@ -5073,7 +5026,7 @@ def setupDivAppend [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivisio
               CONJUNCT1) THEN
             FIRST_ASSUM (CHANGED_TAC o SUBST1_TAC o SYM o
               MATCH_MP DIVISION_RHS o CONJUNCT1) THEN
-            SUBST1_TAC (← SYM aSuc) THEN
+            SUBST1_TAC (← SYM (← ASSUME (← q "SUC n = dsize D1"))) THEN
             FIRST_ASSUM (MATCH_MP_TAC o REWRITE_RULE [fine]) THEN
             ASM_REWRITE_TAC []],
           ASM_REWRITE_TAC [SUB_OLD] THEN UNDISCH_TAC (← q "~(n < (dsize D1))") THEN
@@ -5143,7 +5096,6 @@ def setupDivAppend [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivisio
    r"!a b g. a <= b /\ gauge(\x. a <= x /\ x <= b) g ==>
         ?D p. tdiv(a,b) (D,p) /\ fine(g) (D,p)"
    (← do
-    let awy ← ASSUME (← q "w <= y")
     pure (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
       MP_TAC (← SPEC
         (← q r"\(u,v). a <= u /\ v <= b ==> ?D p. tdiv(u,v) (D,p) /\ fine(g) (D,p)")
@@ -5189,7 +5141,7 @@ def setupDivAppend [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivisio
           COND_CASES_TAC THEN ASM_REWRITE_TAC [REAL_LE_REFL]],
         REWRITE_TAC [fine] THEN BETA_TAC THEN REWRITE_TAC [NOT_SUC] THEN
         X_GEN_TAC (← q "n:num") THEN
-        DISJ_CASES_THEN MP_TAC (← REWRITE_RULE [REAL_LE_LT] awy) THENL
+        DISJ_CASES_THEN MP_TAC (← REWRITE_RULE [REAL_LE_LT] (← ASSUME (← q "w <= y"))) THENL
          [DISCH_THEN (ASSUME_TAC o MATCH_MP DIVISION_1) THEN
           ASM_REWRITE_TAC [← numc "1", ← CONJUNCT2 LT, NOT_LESS_0] THEN
           DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC [],
@@ -5271,7 +5223,6 @@ def setupGauge [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
   let DINT_UNIQ ← prove
    r"!a b f k1 k2. a <= b /\ defint(a,b) f k1 /\ defint(a,b) f k2 ==> (k1 = k2)"
    (← do
-    let acth ← AC REAL_ADD_AC (← q r"(a + b) + (c + d) = (d + a) + (c + b)")
     pure (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
       GEN_REWRITE_TAC RAND_CONV [← GSYM REAL_SUB_0] THEN
       CONV_TAC CONTRAPOS_CONV THEN ONCE_REWRITE_TAC [ABS_NZ] THEN DISCH_TAC THEN
@@ -5303,7 +5254,7 @@ def setupGauge [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
           GEN_REWRITE_TAC RAND_CONV [← GSYM REAL_HALF_DOUBLE] THEN
           MATCH_MP_TAC REAL_LT_ADD2 THEN ASM_REWRITE_TAC []],
         REWRITE_TAC [real_sub, REAL_NEG_ADD, REAL_NEG_SUB] THEN
-        ONCE_REWRITE_TAC [acth] THEN
+        ONCE_REWRITE_TAC [(← AC REAL_ADD_AC (← q r"(a + b) + (c + d) = (d + a) + (c + b)"))] THEN
         REWRITE_TAC [REAL_ADD_LINV, REAL_ADD_LID, REAL_LT_REFL]]))
 
   -- Integral over a null interval is 0
@@ -5327,14 +5278,6 @@ def setupGauge [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
                 ==> abs((f(v) - f(u)) - (f'(x) * (v - u))) <= e * (v - u)"
    (← do
     -- Built at tactic-construction time, in OCaml's right-to-left order.
-    let ae2 ← ASSUME (← q r"&0 < e")
-    let lmul2 ← MATCH_MP REAL_LE_LMUL_LOCAL ae2
-    let acm2 ← AC REAL_MUL_AC (← q r"(a * b) * c = (a * c) * b")
-    let ae1 ← ASSUME (← q r"&0 < e")
-    let lmul1 ← MATCH_MP REAL_LE_LMUL_LOCAL ae1
-    let acm1 ← AC REAL_MUL_AC (← q r"(a * b) * c = (a * c) * b")
-    let aca ← AC REAL_ADD_AC (← q r"(a + b) + (c + d) = (b + c) + (a + d)")
-    let azx ← ASSUME (← q r"&0 < abs(z - x)")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [gauge] THEN BETA_TAC THEN
       SUBGOAL_THEN
        (← q r"!x. a <= x /\ x <= b ==>
@@ -5376,7 +5319,7 @@ def setupGauge [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
           REWRITE_TAC [← GSYM ABS_NZ, REAL_SUB_0] THEN
           DISCH_THEN SUBST1_TAC THEN
           REWRITE_TAC [REAL_SUB_REFL, REAL_MUL_RZERO, ABS_0, REAL_LE_REFL]] THEN
-        DISCH_THEN (MP_TAC o CONJ azx) THEN
+        DISCH_THEN (MP_TAC o CONJ (← ASSUME (← q r"&0 < abs(z - x)"))) THEN
         DISCH_THEN (fun th => MATCH_MP_TAC REAL_LT_IMP_LE THEN MP_TAC th) THEN
         DISCH_THEN (fun th => FIRST_ASSUM (MP_TAC o (fun a => MATCH_MP a th))) THEN
         FIRST_ASSUM (fun th => tactic_of do pure (GEN_REWRITE_TAC LAND_CONV
@@ -5407,7 +5350,7 @@ def setupGauge [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
         SUBGOAL_THEN (← q r"!a b c. (a - b) + (b - c) = (a - c)")
           (fun th => REWRITE_TAC [th]) THEN
         REPEAT GEN_TAC THEN REWRITE_TAC [real_sub] THEN
-        ONCE_REWRITE_TAC [aca] THEN
+        ONCE_REWRITE_TAC [(← AC REAL_ADD_AC (← q r"(a + b) + (c + d) = (b + c) + (a + d)"))] THEN
         REWRITE_TAC [REAL_ADD_LINV, REAL_ADD_LID], ALL_TAC] THEN
       GEN_REWRITE_TAC RAND_CONV [← GSYM REAL_HALF_DOUBLE] THEN
       MATCH_MP_TAC REAL_LE_ADD2 THEN CONJ_TAC THENL
@@ -5419,8 +5362,8 @@ def setupGauge [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
           ASM_REWRITE_TAC [] THEN REWRITE_TAC [real_sub, REAL_LE_LADD] THEN
           ASM_REWRITE_TAC [REAL_LE_NEG2],
           ASM_REWRITE_TAC [real_abs, REAL_SUB_LE] THEN REWRITE_TAC [real_div] THEN
-          GEN_REWRITE_TAC LAND_CONV [acm1] THEN
-          REWRITE_TAC [← GSYM REAL_MUL_ASSOC, lmul1] THEN
+          GEN_REWRITE_TAC LAND_CONV [(← AC REAL_MUL_AC (← q r"(a * b) * c = (a * c) * b"))] THEN
+          REWRITE_TAC [← GSYM REAL_MUL_ASSOC, (← MATCH_MP REAL_LE_LMUL_LOCAL (← ASSUME (← q r"&0 < e")))] THEN
           SUBGOAL_THEN (← q r"!x y. (x * inv(&2)) <= (y * inv(&2)) <=> x <= y")
           (fun th => ASM_REWRITE_TAC [th, real_sub, REAL_LE_LADD, REAL_LE_NEG2]) THEN
           REPEAT GEN_TAC THEN MATCH_MP_TAC REAL_LE_RMUL_EQ THEN
@@ -5438,8 +5381,8 @@ def setupGauge [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
           MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC (← q "v - u") THEN
           ASM_REWRITE_TAC [] THEN ASM_REWRITE_TAC [real_sub, REAL_LE_RADD],
           ASM_REWRITE_TAC [real_abs, REAL_SUB_LE] THEN REWRITE_TAC [real_div] THEN
-          GEN_REWRITE_TAC LAND_CONV [acm2] THEN
-          REWRITE_TAC [← GSYM REAL_MUL_ASSOC, lmul2] THEN
+          GEN_REWRITE_TAC LAND_CONV [(← AC REAL_MUL_AC (← q r"(a * b) * c = (a * c) * b"))] THEN
+          REWRITE_TAC [← GSYM REAL_MUL_ASSOC, (← MATCH_MP REAL_LE_LMUL_LOCAL (← ASSUME (← q r"&0 < e")))] THEN
           SUBGOAL_THEN (← q r"!x y. (x * inv(&2)) <= (y * inv(&2)) <=> x <= y")
           (fun th => ASM_REWRITE_TAC [th, real_sub, REAL_LE_RADD, REAL_LE_NEG2]) THEN
           REPEAT GEN_TAC THEN MATCH_MP_TAC REAL_LE_RMUL_EQ THEN
@@ -5450,7 +5393,6 @@ def setupGauge [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
    r"!f f' a b. a <= b /\ (!x. a <= x /\ x <= b ==> (f diffl f'(x))(x))
         ==> defint(a,b) f' (f(b) - f(a))"
    (← do
-    let bconv ← ExceptT.mk (BETA_CONV (← q r"(\n. (D(SUC n) - D(n))) n"))
     pure (REPEAT STRIP_TAC THEN
       UNDISCH_TAC (← q "a <= b") THEN REWRITE_TAC [REAL_LE_LT] THEN
       DISCH_THEN DISJ_CASES_TAC THENL
@@ -5495,7 +5437,7 @@ def setupGauge [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
       LE_MATCH_TAC ABS_SUM THEN BETA_TAC THEN
       SUBGOAL_THEN (← q r"e = sum(0,dsize D)(\n. (e / (b - a)) * (D(SUC n) - D(n)))")
       SUBST1_TAC THENL
-       [ONCE_REWRITE_TAC [← SYM bconv] THEN
+       [ONCE_REWRITE_TAC [← SYM (← ExceptT.mk (BETA_CONV (← q r"(\n. (D(SUC n) - D(n))) n")))] THEN
         ASM_REWRITE_TAC [SUM_CMUL, SUM_CANCEL, ADD_CLAUSES] THEN
         MAP_EVERY (IMP_RES_THEN SUBST1_TAC) [DIVISION_LHS, DIVISION_RHS] THEN
         CONV_TAC SYM_CONV THEN MATCH_MP_TAC REAL_DIV_RMUL THEN
@@ -5607,10 +5549,9 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
   let DEFINT_WRONG ← prove
    r"!a b f i. b < a ==> defint(a,b) f i"
    (← do
-    let ra ← REAL_ARITH (← q r"b < a ==> (a <= x /\ x <= b <=> F)")
     pure (REWRITE_TAC [defint, gauge] THEN REPEAT STRIP_TAC THEN
       EXISTS_TAC (← q r"\x:real. &0") THEN
-      ASM_SIMP_TAC [ra] THEN
+      ASM_SIMP_TAC [(← REAL_ARITH (← q r"b < a ==> (a <= x /\ x <= b <=> F)"))] THEN
       ASM_MESON_TAC [REAL_NOT_LE, TDIV_LE]))
 
   let DEFINT_INTEGRAL ← prove
@@ -5623,14 +5564,12 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
   let DEFINT_CONST ← prove
    r"!a b c. defint(a,b) (\x. c) (c * (b - a))"
    (← do
-    let dc ← ExceptT.mk (DIFF_CONV (← q r"\x. c * x"))
-    let ra ← REAL_ARITH (← q r"b < a \/ a <= b")
     pure (REPEAT GEN_TAC THEN
       MP_TAC (← SPECL [← q r"\x. c * x", ← q r"\x:real. c:real", ← q "a:real", ← q "b:real"] FTC1) THEN
-      DISJ_CASES_TAC ra THEN
+      DISJ_CASES_TAC (← REAL_ARITH (← q r"b < a \/ a <= b")) THEN
       ASM_SIMP_TAC [DEFINT_WRONG, REAL_SUB_LDISTRIB] THEN
       DISCH_THEN MATCH_MP_TAC THEN REPEAT STRIP_TAC THEN
-      MP_TAC (← SPEC (← q "x:real") dc) THEN
+      MP_TAC (← SPEC (← q "x:real") (← ExceptT.mk (DIFF_CONV (← q r"\x. c * x")))) THEN
       REWRITE_TAC [REAL_MUL_LID, REAL_MUL_LZERO, REAL_ADD_LID]))
 
   let DEFINT_0 ← prove
@@ -5641,10 +5580,9 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
   let DEFINT_NEG ← prove
    r"!f a b i. defint(a,b) f i ==> defint(a,b) (\x. --f x) (--i)"
    (← do
-    let ra ← REAL_ARITH (← q r"abs(--x - --y) = abs(x - y)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [defint] THEN
       REWRITE_TAC [rsum, REAL_MUL_LNEG, SUM_NEG] THEN
-      REWRITE_TAC [ra]))
+      REWRITE_TAC [(← REAL_ARITH (← q r"abs(--x - --y) = abs(x - y)"))]))
 
   let DEFINT_CMUL ← prove
    r"!f a b c i. defint(a,b) f i ==> defint(a,b) (\x. c * f x) (c * i)"
@@ -5665,9 +5603,6 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
         defint(a,b) f i /\ defint(a,b) g j
         ==> defint(a,b) (\x. f x + g x) (i + j)"
    (← do
-    let ra ← REAL_ARITH
-     (← q r"abs(x - i) < e / &2 /\ abs(y - j) < e / &2
-      ==> abs((x + y) - (i + j)) < e")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [defint] THEN
       STRIP_TAC THEN X_GEN_TAC (← q "e:real") THEN DISCH_TAC THEN
       REPEAT (FIRST_X_ASSUM (MP_TAC o SPEC (← q r"e / &2"))) THEN
@@ -5677,7 +5612,9 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
       EXISTS_TAC (← q r"\x:real. if g1(x) < g2(x) then g1(x) else g2(x)") THEN
       ASM_SIMP_TAC [GAUGE_MIN, rsum] THEN REPEAT STRIP_TAC THEN
       REWRITE_TAC [REAL_ADD_RDISTRIB, SUM_ADD] THEN REWRITE_TAC [← GSYM rsum] THEN
-      MATCH_MP_TAC ra THEN
+      MATCH_MP_TAC (← REAL_ARITH
+     (← q r"abs(x - i) < e / &2 /\ abs(y - j) < e / &2
+      ==> abs((x + y) - (i + j)) < e")) THEN
       ASM_MESON_TAC [FINE_MIN]))
 
   let DEFINT_SUB ← prove
@@ -5694,18 +5631,13 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
         (!x. a <= x /\ x <= b ==> f(x) <= g(x))
         ==> integral(a,b) f <= integral(a,b) g"
    (← do
-    let ra3 ← REAL_ARITH
-     (← q r"ih - ig = e /\ &0 < e /\ sh <= sg
-      ==> abs(sg - ig) < e / &2 ==> ~(abs(sh - ih) < e / &2)")
-    let ra2 ← REAL_ARITH (← q r"&0 < e / &2 <=> &0 < e")
-    let ra1 ← REAL_ARITH (← q r"~(&0 < x - y) ==> x <= y")
     pure (REPEAT STRIP_TAC THEN
       REPEAT (FIRST_X_ASSUM (ASSUME_TAC o MATCH_MP INTEGRABLE_DEFINT)) THEN
-      MATCH_MP_TAC ra1 THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"~(&0 < x - y) ==> x <= y")) THEN
       ABBREV_TAC (← q "e = integral(a,b) f - integral(a,b) g") THEN DISCH_TAC THEN
       REPEAT (FIRST_X_ASSUM (MP_TAC o
         SPEC (← q r"e / &2") o GEN_REWRITE_RULE id [defint])) THEN
-      ASM_REWRITE_TAC [ra2] THEN
+      ASM_REWRITE_TAC [(← REAL_ARITH (← q r"&0 < e / &2 <=> &0 < e"))] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"g1:real->real") STRIP_ASSUME_TAC) THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"g2:real->real") STRIP_ASSUME_TAC) THEN
       MP_TAC (← SPECL [← q "a:real", ← q "b:real",
@@ -5716,7 +5648,9 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
       REPEAT (FIRST_X_ASSUM (MP_TAC o SPECL [← q r"D:num->real", ← q r"p:num->real"])) THEN
       REPEAT (FIRST_X_ASSUM (MP_TAC o SPECL [← q r"D:num->real", ← q r"p:num->real"])) THEN
       FIRST_ASSUM (fun th => tactic_of do pure (ASM_REWRITE_TAC [← MATCH_MP FINE_MIN th])) THEN
-      MATCH_MP_TAC ra3 THEN
+      MATCH_MP_TAC (← REAL_ARITH
+     (← q r"ih - ig = e /\ &0 < e /\ sh <= sg
+      ==> abs(sg - ig) < e / &2 ==> ~(abs(sh - ih) < e / &2)")) THEN
       ASM_REWRITE_TAC [] THEN REWRITE_TAC [rsum] THEN MATCH_MP_TAC SUM_LE THEN
       X_GEN_TAC (← q "r:num") THEN REWRITE_TAC [ADD_CLAUSES] THEN STRIP_TAC THEN
       MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC [REAL_SUB_LE] THEN
@@ -5733,8 +5667,7 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
    r"!f a b i j. a <= b /\ defint(a,b) f i /\ defint(a,b) (\x. abs(f x)) j
                ==> abs(i) <= j"
    (← do
-    let ra ← REAL_ARITH (← q r"--a <= b /\ b <= a ==> abs(b) <= a")
-    pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC ra THEN
+    pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC (← REAL_ARITH (← q r"--a <= b /\ b <= a ==> abs(b) <= a")) THEN
       CONJ_TAC THEN MATCH_MP_TAC DEFINT_LE THENL
        [MAP_EVERY EXISTS_TAC [← q r"\x:real. --abs(f x)", ← q r"f:real->real"],
         MAP_EVERY EXISTS_TAC [← q r"f:real->real", ← q r"\x:real. abs(f x)"]] THEN
@@ -5752,7 +5685,6 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
                (!x. a <= x /\ x <= b ==> f(x) = g(x))
                ==> defint(a,b) g i"
    (← do
-    let ra ← REAL_ARITH (← q r"x = y ==> abs(x - i) < e ==> abs(y - i) < e")
     pure (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q "a <= b") THENL
        [ALL_TAC, ASM_MESON_TAC [REAL_NOT_LE, DEFINT_WRONG]] THEN
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [defint]) THEN
@@ -5763,7 +5695,7 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
       MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC (← q r"D:num->real") THEN
       MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC (← q r"p:num->real") THEN
       DISCH_THEN (fun th => STRIP_TAC THEN MP_TAC th) THEN ASM_REWRITE_TAC [] THEN
-      MATCH_MP_TAC ra THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"x = y ==> abs(x - i) < e ==> abs(y - i) < e")) THEN
       REWRITE_TAC [rsum] THEN MATCH_MP_TAC SUM_EQ THEN
       REPEAT STRIP_TAC THEN REWRITE_TAC [] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
       FIRST_X_ASSUM MATCH_MP_TAC THEN
@@ -5780,9 +5712,8 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
         ==> defint(a,b) (\x. f'(x) * g(x) + f(x) * g'(x))
                         (f(b) * g(b) - f(a) * g(a))"
    (← do
-    let ra ← REAL_ARITH (← q r"a + b * c = a + c * b")
     pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC FTC1 THEN ASM_REWRITE_TAC [] THEN
-      ONCE_REWRITE_TAC [ra] THEN
+      ONCE_REWRITE_TAC [(← REAL_ARITH (← q r"a + b * c = a + c * b"))] THEN
       ASM_SIMP_TAC [DIFF_MUL]))
 
   -- Various simple lemmas about divisions.
@@ -5809,7 +5740,6 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
    r"!d a b c. division(a,b) d /\ a <= c /\ c <= b
              ==> ?n. n <= dsize d /\ d(n) <= c /\ c <= d(SUC n)"
    (← do
-    let ar ← ARITH_RULE (← q r"~(SUC n <= n)")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← SPEC (← q r"\n. n <= dsize d /\ (d:num->real)(n) <= c") num_MAX) THEN
       DISCH_THEN (fun th => tactic_of do
@@ -5818,7 +5748,7 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
        [ASM_MESON_TAC [LE_0, DIVISION_THM], ALL_TAC] THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q "n:num") THEN SIMP_TAC [] THEN
       STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC (← q "SUC n")) THEN
-      REWRITE_TAC [ar] THEN
+      REWRITE_TAC [(← ARITH_RULE (← q r"~(SUC n <= n)"))] THEN
       ONCE_REWRITE_TAC [← GSYM CONTRAPOS_THM] THEN REWRITE_TAC [REAL_NOT_LE] THEN
       DISCH_TAC THEN ASM_SIMP_TAC [REAL_LT_IMP_LE, LE_SUC_LT, LT_LE] THEN
       DISCH_THEN SUBST_ALL_TAC THEN
@@ -5847,9 +5777,8 @@ def setupIntegral [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BArcSinCos 
              (!i. i < n ==> d(i) < d(SUC i))
              ==> dsize d = n"
    (← do
-    let ar ← ARITH_RULE (← q r"d <= 0 ==> d = 0")
     pure (REPLICATE_TAC 3 GEN_TAC THEN INDUCT_TAC THENL
-       [MESON_TAC [ar, DIVISION_DSIZE_LE], ALL_TAC] THEN
+       [MESON_TAC [(← ARITH_RULE (← q r"d <= 0 ==> d = 0")), DIVISION_DSIZE_LE], ALL_TAC] THEN
       REPEAT STRIP_TAC THEN REWRITE_TAC [← GSYM LE_ANTISYM] THEN
       ASM_MESON_TAC [DIVISION_DSIZE_LE, DIVISION_DSIZE_GE, LT]))
 
@@ -5899,63 +5828,15 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
                  ==> defint(a,c) f (i + j)"
    (← do
     -- The rules are evaluated when OCaml builds the tactic, last first.
-    let r39 ← ARITH_RULE (← q r"m + 0 + 1 = 0 + m + 1")
-    let r38 ← ARITH_RULE (← q r"1 = 0 + 1")
-    let r37 ← REAL_ARITH (← q r"a = b ==> x + a = b + x")
-    let r36 ← REAL_ARITH (← q r"x = y ==> abs(x - i) < e ==> abs(y - i) < e")
-    let r35 ← REAL_ARITH (← q r"b <= a ==> x < b ==> x < a")
-    let r34 ← ARITH_RULE (← q r"k + m < m + n <=> k:num < n")
-    let r33 ← ARITH_RULE (← q r"k + m:num < m + n <=> k < n")
-    let r32 ← ARITH_RULE (← q r"k + m:num < m + n <=> k < n")
-    let r31 ← TAUT (← q r"a /\ (a ==> b /\ (b /\ c ==> d))
-                     ==> (a /\ b ==> c) ==> d")
-    let r30 ← REAL_ARITH (← q r"x = y ==> abs(x - i) < e ==> abs(y - i) < e")
-    let r29 ← ARITH_RULE (← q r"m + 1 = 0 + SUC m")
-    let r28 ← REAL_ARITH (← q r"b <= a ==> x < b ==> x < a")
-    let r27 ← ARITH_RULE (← q r"SUC(PRE n + m) >= m + n /\
-                                  SUC(SUC(PRE n + m)) >= m + n")
-    let r26 ← ARITH_RULE (← q r"~(n = 0) /\ k >= PRE n ==> SUC(k + m) >= m + n")
-    let r25 ← ARITH_RULE (← q r"~(n = 0) /\ k < PRE n ==> SUC(k + m) < m + n")
-    let r24 ← TAUT (← q r"a /\ (a ==> b /\ (b /\ c ==> d))
-                       ==> (a /\ b ==> c) ==> d")
-    let r23 ← ARITH_RULE (← q r"~(SUC(SUC m) <= m)")
-    let r22 ← ARITH_RULE (← q r"~(SUC m <= m)")
-    let r21 ← ARITH_RULE (← q r"~(SUC m <= m)")
-    let r20 ← ARITH_RULE (← q r"i < m:num ==> i < m + n")
-    let r19 ← ARITH_RULE (← q r"~(SUC m <= m)")
-    let r18 ← REAL_ARITH (← q r"x = y ==> abs(x - i) < e ==> abs(y - i) < e")
-    let r17 ← ARITH_RULE (← q r"d:num <= SUC m /\ ~(n = 0) ==> k < d ==> k < m + n")
-    let r16 ← ARITH_RULE (← q r"k <= m /\ ~(k = m) ==> SUC k <= m")
-    let r15 ← ARITH_RULE (← q r"k <= m /\ ~(n = 0) ==> k < m + n")
-    let r14 ← ARITH_RULE (← q r"m < m + n <=> ~(n = 0)")
-    let r13 ← ARITH_RULE (← q r"SUC n <= m <=> n <= m /\ ~(m = n)")
-    let r12 ← ARITH_RULE (← q r"k < SUC m /\ ~(n = 0) ==> k < m + n")
-    let r11 ← ARITH_RULE (← q r"n < SUC m ==> (SUC n <= m <=> ~(m = n))")
-    let r10 ← ARITH_RULE (← q r"n < SUC m ==> n <= m")
-    let r9 ← ARITH_RULE (← q r"n >= SUC m ==> ~(n <= m)")
-    let r8 ← ARITH_RULE (← q r"i:num < m ==> i < m + n")
-    let r7 ← ARITH_RULE (← q r"n >= m ==> (n <= m <=> m = n:num)")
-    let r6 ← ARITH_RULE (← q r"n < m ==> n <= m /\ SUC n <= m")
-    let r5 ← ARITH_RULE (← q r"SUC n <= m <=> n <= m /\ ~(m = n)")
-    let r4 ← TAUT (← q r"a /\ (a ==> b) /\ (a /\ c ==> d)
-                       ==> (a /\ b ==> c) ==> d")
-    let r3 ← REAL_ARITH
-     (← q r"!b. abs((s1 + x * (b - a)) - i) < e / &2 /\
-        abs((s2 + x * (c - b)) - j) < e / &2
-        ==> abs((s1 + x * (c - a) + s2) - (i + j)) < e")
-    let r2 ← ARITH_RULE (← q r"m < m + n <=> ~(n = 0)")
-    let r1 ← ARITH_RULE (← q r"~(n = 0) ==> n = 1 + PRE n")
-    let aab ← ASSUME (← q "a <= b")
-    let abc ← ASSUME (← q "b <= c")
     let tE ← q "e:real"
     let tK ← q "k:num"
     pure (REPEAT GEN_TAC THEN
       REPLICATE_TAC 2 (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-      MP_TAC aab THEN REWRITE_TAC [REAL_LE_LT] THEN
+      MP_TAC (← ASSUME (← q "a <= b")) THEN REWRITE_TAC [REAL_LE_LT] THEN
       ASM_CASES_TAC (← q "a:real = b") THEN ASM_REWRITE_TAC [] THENL
        [ASM_MESON_TAC [INTEGRAL_NULL, DINT_UNIQ, REAL_LE_TRANS, REAL_ADD_LID],
         DISCH_TAC] THEN
-      MP_TAC abc THEN REWRITE_TAC [REAL_LE_LT] THEN
+      MP_TAC (← ASSUME (← q "b <= c")) THEN REWRITE_TAC [REAL_LE_LT] THEN
       ASM_CASES_TAC (← q "b:real = c") THEN ASM_REWRITE_TAC [] THENL
        [ASM_MESON_TAC [INTEGRAL_NULL, DINT_UNIQ, REAL_LE_TRANS, REAL_ADD_RID],
         DISCH_TAC] THEN
@@ -5991,70 +5872,74 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
         ASM_MESON_TAC [DIVISION_THM, GE, LE_REFL, REAL_NOT_LT],
         ALL_TAC] THEN
       REWRITE_TAC [← GSYM SUM_SPLIT, ADD_CLAUSES] THEN
-      FIRST_ASSUM (SUBST1_TAC o MATCH_MP r1) THEN
+      FIRST_ASSUM (SUBST1_TAC o MATCH_MP (← ARITH_RULE (← q r"~(n = 0) ==> n = 1 + PRE n"))) THEN
       REWRITE_TAC [← GSYM SUM_SPLIT, SUM_1] THEN
       SUBGOAL_THEN (← q r"(p:num->real) m = b") ASSUME_TAC THENL
        [FIRST_X_ASSUM (MP_TAC o SPEC (← q "m:num") o GEN_REWRITE_RULE id [fine]) THEN
-        ASM_REWRITE_TAC [r2] THEN
+        ASM_REWRITE_TAC [(← ARITH_RULE (← q r"m < m + n <=> ~(n = 0)"))] THEN
         FIRST_X_ASSUM (MP_TAC o SPEC (← q "m:num")) THEN
         MAP_EVERY UNDISCH_TAC [← q r"(d:num->real) m <= b", ← q r"b:real <= d(SUC m)"] THEN
         REAL_ARITH_TAC,
         ALL_TAC] THEN
-      MATCH_MP_TAC r3 THEN
+      MATCH_MP_TAC (← REAL_ARITH
+     (← q r"!b. abs((s1 + x * (b - a)) - i) < e / &2 /\
+        abs((s2 + x * (c - b)) - j) < e / &2
+        ==> abs((s1 + x * (c - a) + s2) - (i + j)) < e")) THEN
       EXISTS_TAC (← q "b:real") THEN CONJ_TAC THENL
        [UNDISCH_TAC
          (← q r"!D p. tdiv(a,b) (D,p) /\ fine g1 (D,p)
                 ==> abs(rsum(D,p) f - i) < e / &2") THEN
         DISCH_THEN (MP_TAC o SPEC (← q r"\i. if i <= m then (d:num->real)(i) else b")) THEN
         DISCH_THEN (MP_TAC o SPEC (← q r"\i. if i <= m then (p:num->real)(i) else b")) THEN
-        MATCH_MP_TAC r4 THEN
+        MATCH_MP_TAC (← TAUT (← q r"a /\ (a ==> b) /\ (a /\ c ==> d)
+                       ==> (a /\ b ==> c) ==> d")) THEN
         CONJ_TAC THENL
          [REWRITE_TAC [tdiv, division] THEN REPEAT CONJ_TAC THENL
            [ASM_MESON_TAC [division, LE_0],
             ALL_TAC,
             X_GEN_TAC (← q "k:num") THEN
-            REWRITE_TAC [r5] THEN
+            REWRITE_TAC [(← ARITH_RULE (← q r"SUC n <= m <=> n <= m /\ ~(m = n)"))] THEN
             ASM_CASES_TAC (← q "k:num = m") THEN
             ASM_REWRITE_TAC [LE_REFL, REAL_LE_REFL] THEN
             COND_CASES_TAC THEN ASM_REWRITE_TAC [REAL_LE_REFL]] THEN
           ASM_CASES_TAC (← q r"(d:num->real) m = b") THENL
            [EXISTS_TAC (← q "m:num") THEN
-            SIMP_TAC [r6] THEN
-            SIMP_TAC [r7] THEN
+            SIMP_TAC [(← ARITH_RULE (← q r"n < m ==> n <= m /\ SUC n <= m"))] THEN
+            SIMP_TAC [(← ARITH_RULE (← q r"n >= m ==> (n <= m <=> m = n:num)"))] THEN
             CONJ_TAC THENL [ALL_TAC, ASM_MESON_TAC []] THEN
             FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [DIVISION_THM]) THEN
             ASM_REWRITE_TAC [] THEN
-            MESON_TAC [r8],
+            MESON_TAC [(← ARITH_RULE (← q r"i:num < m ==> i < m + n"))],
             ALL_TAC] THEN
           EXISTS_TAC (← q "SUC m") THEN
-          SIMP_TAC [r9] THEN
-          SIMP_TAC [r10] THEN
-          SIMP_TAC [r11] THEN
+          SIMP_TAC [(← ARITH_RULE (← q r"n >= SUC m ==> ~(n <= m)"))] THEN
+          SIMP_TAC [(← ARITH_RULE (← q r"n < SUC m ==> n <= m"))] THEN
+          SIMP_TAC [(← ARITH_RULE (← q r"n < SUC m ==> (SUC n <= m <=> ~(m = n))"))] THEN
           FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [DIVISION_THM]) THEN
           ASM_REWRITE_TAC [] THEN
-          ASM_MESON_TAC [r12, REAL_LT_LE],
+          ASM_MESON_TAC [(← ARITH_RULE (← q r"k < SUC m /\ ~(n = 0) ==> k < m + n")), REAL_LT_LE],
           ALL_TAC] THEN
         CONJ_TAC THENL
          [REWRITE_TAC [tdiv, fine] THEN STRIP_TAC THEN X_GEN_TAC (← q "k:num") THEN
-          REWRITE_TAC [r13] THEN
+          REWRITE_TAC [(← ARITH_RULE (← q r"SUC n <= m <=> n <= m /\ ~(m = n)"))] THEN
           FIRST_X_ASSUM (MP_TAC o SPEC (← q "k:num") o GEN_REWRITE_RULE id [fine]) THEN
           MATCH_MP_TAC MONO_IMP THEN ASM_CASES_TAC (← q "k:num = m") THENL
            [ASM_REWRITE_TAC [LE_REFL, REAL_LT_REFL] THEN
-            ASM_REWRITE_TAC [r14] THEN
+            ASM_REWRITE_TAC [(← ARITH_RULE (← q r"m < m + n <=> ~(n = 0)"))] THEN
             MAP_EVERY UNDISCH_TAC [← q r"d(m:num) <= b", ← q r"b <= d(SUC m)"] THEN
             REAL_ARITH_TAC,
             ALL_TAC] THEN
           ASM_CASES_TAC (← q "k:num <= m") THEN ASM_REWRITE_TAC [] THENL
-           [ASM_SIMP_TAC [r15] THEN
+           [ASM_SIMP_TAC [(← ARITH_RULE (← q r"k <= m /\ ~(n = 0) ==> k < m + n"))] THEN
             SUBGOAL_THEN (← q r"(p:num->real) k <= b") MP_TAC THENL
              [ALL_TAC, REAL_ARITH_TAC] THEN
             MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC (← q r"(d:num->real) m") THEN
             ASM_REWRITE_TAC [] THEN MATCH_MP_TAC REAL_LE_TRANS THEN
             EXISTS_TAC (← q r"(d:num->real) (SUC k)") THEN ASM_REWRITE_TAC [] THEN
-            ASM_MESON_TAC [DIVISION_MONO_LE, r16],
+            ASM_MESON_TAC [DIVISION_MONO_LE, (← ARITH_RULE (← q r"k <= m /\ ~(k = m) ==> SUC k <= m"))],
             ALL_TAC] THEN
           CONJ_TAC THENL
-           [MATCH_MP_TAC r17 THEN
+           [MATCH_MP_TAC (← ARITH_RULE (← q r"d:num <= SUC m /\ ~(n = 0) ==> k < d ==> k < m + n")) THEN
             ASM_REWRITE_TAC [] THEN MATCH_MP_TAC DIVISION_DSIZE_LE THEN
             MAP_EVERY EXISTS_TAC [← q "a:real", ← q "b:real"] THEN ASM_REWRITE_TAC [] THEN
             ARITH_TAC,
@@ -6065,7 +5950,7 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
           ASM_MESON_TAC [REAL_LE_REFL],
           ALL_TAC] THEN
         DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-        MATCH_MP_TAC r18 THEN
+        MATCH_MP_TAC (← REAL_ARITH (← q r"x = y ==> abs(x - i) < e ==> abs(y - i) < e")) THEN
         REWRITE_TAC [rsum] THEN ASM_CASES_TAC (← q r"(d:num->real) m = b") THENL
          [SUBGOAL_THEN (← q r"dsize (\i. if i <= m then d i else b) = m") ASSUME_TAC THENL
            [ALL_TAC,
@@ -6075,22 +5960,22 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
           MATCH_MP_TAC DIVISION_DSIZE_EQ_ALT THEN
           MAP_EVERY EXISTS_TAC [← q "a:real", ← q "b:real"] THEN
           CONJ_TAC THENL [ASM_MESON_TAC [tdiv], ALL_TAC] THEN
-          ASM_REWRITE_TAC [LE_REFL, r19] THEN
+          ASM_REWRITE_TAC [LE_REFL, (← ARITH_RULE (← q r"~(SUC m <= m)"))] THEN
           SIMP_TAC [LT_IMP_LE, LE_SUC_LT] THEN
           FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [DIVISION_THM]) THEN
-          ASM_REWRITE_TAC [] THEN MESON_TAC [r20],
+          ASM_REWRITE_TAC [] THEN MESON_TAC [(← ARITH_RULE (← q r"i < m:num ==> i < m + n"))],
           ALL_TAC] THEN
         SUBGOAL_THEN (← q r"dsize (\i. if i <= m then d i else b) = SUC m")
         ASSUME_TAC THENL
          [ALL_TAC,
-          ASM_REWRITE_TAC [sum, ADD_CLAUSES, LE_REFL, r21] THEN
+          ASM_REWRITE_TAC [sum, ADD_CLAUSES, LE_REFL, (← ARITH_RULE (← q r"~(SUC m <= m)"))] THEN
           AP_THM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC SUM_EQ THEN
           SIMP_TAC [ADD_CLAUSES, LT_IMP_LE, LE_SUC_LT]] THEN
         MATCH_MP_TAC DIVISION_DSIZE_EQ THEN
         MAP_EVERY EXISTS_TAC [← q "a:real", ← q "b:real"] THEN
         CONJ_TAC THENL [ASM_MESON_TAC [tdiv], ALL_TAC] THEN
-        ASM_REWRITE_TAC [LE_REFL, r22] THEN
-        REWRITE_TAC [r23] THEN
+        ASM_REWRITE_TAC [LE_REFL, (← ARITH_RULE (← q r"~(SUC m <= m)"))] THEN
+        REWRITE_TAC [(← ARITH_RULE (← q r"~(SUC(SUC m) <= m)"))] THEN
         ASM_REWRITE_TAC [REAL_LT_LE],
         ALL_TAC] THEN
       ASM_CASES_TAC (← q r"d(SUC m):real = b") THEN ASM_REWRITE_TAC [] THENL
@@ -6100,11 +5985,12 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
                 ==> abs(rsum(D,p) f - j) < e / &2") THEN
         DISCH_THEN (MP_TAC o SPEC (← q r"\i. (d:num->real) (i + SUC m)")) THEN
         DISCH_THEN (MP_TAC o SPEC (← q r"\i. (p:num->real) (i + SUC m)")) THEN
-        MATCH_MP_TAC r24 THEN
+        MATCH_MP_TAC (← TAUT (← q r"a /\ (a ==> b /\ (b /\ c ==> d))
+                       ==> (a /\ b ==> c) ==> d")) THEN
         CONJ_TAC THENL
          [ASM_REWRITE_TAC [tdiv, division, ADD_CLAUSES] THEN EXISTS_TAC (← q "PRE n") THEN
           FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE id [DIVISION_THM]) THEN
-          ASM_MESON_TAC [r25, r26],
+          ASM_MESON_TAC [(← ARITH_RULE (← q r"~(n = 0) /\ k < PRE n ==> SUC(k + m) < m + n")), (← ARITH_RULE (← q r"~(n = 0) /\ k >= PRE n ==> SUC(k + m) >= m + n"))],
           DISCH_TAC] THEN
         SUBGOAL_THEN (← q r"dsize(\i. d (i + SUC m)) = PRE n") ASSUME_TAC THENL
          [MATCH_MP_TAC DIVISION_DSIZE_EQ_ALT THEN
@@ -6115,7 +6001,8 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
           GEN_REWRITE_TAC RAND_CONV [CONJ_SYM] THEN
           MATCH_MP_TAC MONO_AND THEN CONJ_TAC THENL
            [ALL_TAC,
-            ASM_MESON_TAC [r27]] THEN
+            ASM_MESON_TAC [(← ARITH_RULE (← q r"SUC(PRE n + m) >= m + n /\
+                                  SUC(SUC(PRE n + m)) >= m + n"))]] THEN
           DISCH_THEN (fun th => X_GEN_TAC tK THEN DISCH_TAC THEN
                                MATCH_MP_TAC th) THEN
           UNDISCH_TAC (← q "k < PRE n") THEN ARITH_TAC,
@@ -6126,7 +6013,7 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
           DISCH_THEN (MP_TAC o SPEC (← q "k + SUC m")) THEN
           ASM_REWRITE_TAC [ADD_CLAUSES] THEN ANTS_TAC THENL
            [UNDISCH_TAC (← q "k < PRE n") THEN ARITH_TAC, ALL_TAC] THEN
-          MATCH_MP_TAC r28 THEN
+          MATCH_MP_TAC (← REAL_ARITH (← q r"b <= a ==> x < b ==> x < a")) THEN
           SUBGOAL_THEN (← q r"~(p(SUC (k + m)) < b)")
             (fun th => REWRITE_TAC [th] THEN REAL_ARITH_TAC) THEN
           REWRITE_TAC [REAL_NOT_LT] THEN
@@ -6139,9 +6026,9 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
           ALL_TAC] THEN
          ASM_REWRITE_TAC [rsum] THEN
          DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-         SUBST1_TAC r29 THEN
+         SUBST1_TAC (← ARITH_RULE (← q r"m + 1 = 0 + SUC m")) THEN
          REWRITE_TAC [SUM_REINDEX] THEN
-         MATCH_MP_TAC r30 THEN
+         MATCH_MP_TAC (← REAL_ARITH (← q r"x = y ==> abs(x - i) < e ==> abs(y - i) < e")) THEN
          MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC [ADD_CLAUSES],
          ALL_TAC] THEN
       UNDISCH_TAC
@@ -6149,7 +6036,8 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
               ==> abs(rsum(D,p) f - j) < e / &2") THEN
       DISCH_THEN (MP_TAC o SPEC (← q r"\i. if i = 0 then b:real else d(i + m)")) THEN
       DISCH_THEN (MP_TAC o SPEC (← q r"\i. if i = 0 then b:real else p(i + m)")) THEN
-      MATCH_MP_TAC r31 THEN
+      MATCH_MP_TAC (← TAUT (← q r"a /\ (a ==> b /\ (b /\ c ==> d))
+                     ==> (a /\ b ==> c) ==> d")) THEN
       CONJ_TAC THENL
        [ASM_REWRITE_TAC [tdiv, division, ADD_CLAUSES] THEN CONJ_TAC THENL
          [ALL_TAC,
@@ -6164,7 +6052,7 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
           X_GEN_TAC tK THEN tactic_of do pure (MP_TAC (← SPEC (← q "k + m:num") th)))
         THENL [ALL_TAC, UNDISCH_TAC (← q "~(n = 0)") THEN ARITH_TAC] THEN
         ASM_CASES_TAC (← q "k:num < n") THEN
-        ASM_REWRITE_TAC [r32] THEN
+        ASM_REWRITE_TAC [(← ARITH_RULE (← q r"k + m:num < m + n <=> k < n"))] THEN
         COND_CASES_TAC THEN ASM_REWRITE_TAC [ADD_CLAUSES] THEN
         ASM_REWRITE_TAC [REAL_LT_LE],
         DISCH_TAC] THEN
@@ -6181,7 +6069,7 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
         DISCH_THEN (fun th =>
           X_GEN_TAC tK THEN tactic_of do pure (MP_TAC (← SPEC (← q "k + m:num") th))) THEN
         ASM_CASES_TAC (← q "k:num < n") THEN
-        ASM_REWRITE_TAC [r33] THEN
+        ASM_REWRITE_TAC [(← ARITH_RULE (← q r"k + m:num < m + n <=> k < n"))] THEN
         COND_CASES_TAC THEN ASM_REWRITE_TAC [ADD_CLAUSES] THEN
         ASM_REWRITE_TAC [REAL_LT_LE],
         ALL_TAC] THEN
@@ -6189,13 +6077,13 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
        [ASM_REWRITE_TAC [fine] THEN X_GEN_TAC (← q "k:num") THEN DISCH_TAC THEN
         FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [fine]) THEN
         DISCH_THEN (MP_TAC o SPEC (← q "k + m:num")) THEN
-        ASM_REWRITE_TAC [ADD_CLAUSES, NOT_SUC, r34] THEN
+        ASM_REWRITE_TAC [ADD_CLAUSES, NOT_SUC, (← ARITH_RULE (← q r"k + m < m + n <=> k:num < n"))] THEN
         ASM_CASES_TAC (← q "k = 0") THEN ASM_REWRITE_TAC [] THENL
          [ASM_REWRITE_TAC [ADD_CLAUSES, REAL_LT_REFL] THEN
           MAP_EVERY UNDISCH_TAC [← q r"(d:num->real) m <= b", ← q r"b <= d (SUC m)"] THEN
           REAL_ARITH_TAC,
           ALL_TAC] THEN
-        MATCH_MP_TAC r35 THEN
+        MATCH_MP_TAC (← REAL_ARITH (← q r"b <= a ==> x < b ==> x < a")) THEN
         SUBGOAL_THEN (← q r"~((p:num->real) (k + m) < b)")
          (fun th => REWRITE_TAC [th] THEN REAL_ARITH_TAC) THEN
         REWRITE_TAC [REAL_NOT_LT] THEN
@@ -6208,14 +6096,14 @@ def setupCombine [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision 
         ALL_TAC] THEN
       ASM_REWRITE_TAC [rsum] THEN
       DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-      MATCH_MP_TAC r36 THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"x = y ==> abs(x - i) < e ==> abs(y - i) < e")) THEN
       SUBGOAL_THEN (← q "n = 1 + PRE n")
        (fun th => GEN_REWRITE_TAC (LAND_CONV o LAND_CONV o RAND_CONV) [th])
       THENL [UNDISCH_TAC (← q "~(n = 0)") THEN ARITH_TAC, ALL_TAC] THEN
       REWRITE_TAC [← GSYM SUM_SPLIT, SUM_1, NOT_SUC, ADD_CLAUSES] THEN
-      MATCH_MP_TAC r37 THEN
-      SUBST1_TAC r38 THEN
-      SUBST1_TAC r39 THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"a = b ==> x + a = b + x")) THEN
+      SUBST1_TAC (← ARITH_RULE (← q r"1 = 0 + 1")) THEN
+      SUBST1_TAC (← ARITH_RULE (← q r"m + 0 + 1 = 0 + m + 1")) THEN
       ONCE_REWRITE_TAC [SUM_REINDEX] THEN MATCH_MP_TAC SUM_EQ THEN
       REWRITE_TAC [ADD_CLAUSES, ADD_EQ_0, ARITH] THEN REWRITE_TAC [ADD_AC]))
 
@@ -6272,19 +6160,16 @@ def setupSpike [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
   let DEFINT_DELTA_LEFT ← prove
    r"!a b. defint(a,b) (\x. if x = a then &1 else &0) (&0)"
    (← do
-    let r3 ← REAL_ARITH (← q r"(&0 <= x /\ x < e) /\ y = &0 ==> abs(x + y) < e")
-    let r2 ← ARITH_RULE (← q r"~(n = 0) ==> n = 1 + PRE n")
-    let r1 ← REAL_ARITH (← q r"b < a \/ a <= b")
-    pure (REPEAT GEN_TAC THEN DISJ_CASES_TAC r1 THEN
+    pure (REPEAT GEN_TAC THEN DISJ_CASES_TAC (← REAL_ARITH (← q r"b < a \/ a <= b")) THEN
       ASM_SIMP_TAC [DEFINT_WRONG] THEN REWRITE_TAC [defint] THEN
       X_GEN_TAC (← q "e:real") THEN DISCH_TAC THEN EXISTS_TAC (← q r"(\x. e):real->real") THEN
       ASM_SIMP_TAC [REAL_LT_DIV, REAL_OF_NUM_LT, ARITH,
                    gauge, fine, rsum, tdiv, REAL_SUB_RZERO] THEN
       MAP_EVERY X_GEN_TAC [← q r"d:num->real", ← q r"p:num->real"] THEN STRIP_TAC THEN
       ASM_CASES_TAC (← q "dsize d = 0") THEN ASM_REWRITE_TAC [sum, REAL_ABS_NUM] THEN
-      FIRST_ASSUM (SUBST1_TAC o MATCH_MP r2) THEN
+      FIRST_ASSUM (SUBST1_TAC o MATCH_MP (← ARITH_RULE (← q r"~(n = 0) ==> n = 1 + PRE n"))) THEN
       REWRITE_TAC [← GSYM SUM_SPLIT, SUM_1, ADD_CLAUSES] THEN
-      MATCH_MP_TAC r3 THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"(&0 <= x /\ x < e) /\ y = &0 ==> abs(x + y) < e")) THEN
       CONJ_TAC THENL
        [COND_CASES_TAC THEN ASM_REWRITE_TAC [REAL_MUL_LZERO, REAL_LE_REFL] THEN
         REWRITE_TAC [REAL_MUL_LID, REAL_SUB_LE] THEN
@@ -6304,26 +6189,21 @@ def setupSpike [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
   let DEFINT_DELTA_RIGHT ← prove
    r"!a b. defint(a,b) (\x. if x = b then &1 else &0) (&0)"
    (← do
-    let r5 ← ARITH_RULE (← q r"x < x + 1")
-    let r4 ← ARITH_RULE (← q r"m < m + 1")
-    let r3 ← REAL_ARITH (← q r"(&0 <= x /\ x < e) /\ y = &0 ==> abs(y + x) < e")
-    let r2 ← ARITH_RULE (← q r"~(n = 0) ==> n = PRE n + 1")
-    let r1 ← REAL_ARITH (← q r"b < a \/ a <= b")
-    pure (REPEAT GEN_TAC THEN DISJ_CASES_TAC r1 THEN
+    pure (REPEAT GEN_TAC THEN DISJ_CASES_TAC (← REAL_ARITH (← q r"b < a \/ a <= b")) THEN
       ASM_SIMP_TAC [DEFINT_WRONG] THEN REWRITE_TAC [defint] THEN
       X_GEN_TAC (← q "e:real") THEN DISCH_TAC THEN EXISTS_TAC (← q r"(\x. e):real->real") THEN
       ASM_SIMP_TAC [REAL_LT_DIV, REAL_OF_NUM_LT, ARITH,
                    gauge, fine, rsum, tdiv, REAL_SUB_RZERO] THEN
       MAP_EVERY X_GEN_TAC [← q r"d:num->real", ← q r"p:num->real"] THEN STRIP_TAC THEN
       ASM_CASES_TAC (← q "dsize d = 0") THEN ASM_REWRITE_TAC [sum, REAL_ABS_NUM] THEN
-      FIRST_ASSUM (ASSUME_TAC o MATCH_MP r2) THEN
+      FIRST_ASSUM (ASSUME_TAC o MATCH_MP (← ARITH_RULE (← q r"~(n = 0) ==> n = PRE n + 1"))) THEN
       ABBREV_TAC (← q "m = PRE(dsize d)") THEN
       ASM_REWRITE_TAC [← GSYM SUM_SPLIT, SUM_1, ADD_CLAUSES] THEN
-      MATCH_MP_TAC r3 THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"(&0 <= x /\ x < e) /\ y = &0 ==> abs(y + x) < e")) THEN
       CONJ_TAC THENL
        [COND_CASES_TAC THEN ASM_REWRITE_TAC [REAL_MUL_LZERO, REAL_LE_REFL] THEN
         REWRITE_TAC [REAL_MUL_LID, REAL_SUB_LE] THEN
-        ASM_MESON_TAC [DIVISION_THM, r4, REAL_LT_IMP_LE],
+        ASM_MESON_TAC [DIVISION_THM, (← ARITH_RULE (← q r"m < m + 1")), REAL_LT_IMP_LE],
         ALL_TAC] THEN
       MATCH_MP_TAC SUM_EQ_0 THEN X_GEN_TAC (← q "r:num") THEN
       REWRITE_TAC [ADD_CLAUSES] THEN STRIP_TAC THEN
@@ -6335,7 +6215,7 @@ def setupSpike [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
       FIRST_X_ASSUM (MP_TAC o CONJUNCT2 o GEN_REWRITE_RULE id [DIVISION_THM]) THEN
       DISCH_THEN (CONJUNCTS_THEN2
        (MP_TAC o SPEC (← q "m:num")) (MP_TAC o SPEC (← q "m + 1"))) THEN
-      ASM_REWRITE_TAC [GE, LE_REFL, r5] THEN
+      ASM_REWRITE_TAC [GE, LE_REFL, (← ARITH_RULE (← q r"x < x + 1"))] THEN
       REWRITE_TAC [ADD1] THEN REAL_ARITH_TAC))
 
   let DEFINT_DELTA ← prove
@@ -6355,13 +6235,12 @@ def setupSpike [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
         (!x. a <= x /\ x <= b /\ ~(x = c) ==> (f x = g x)) /\ defint(a,b) f i
         ==> defint(a,b) g i"
    (← do
-    let ra ← REAL_ARITH (← q r"i = i + ((g:real->real) c - f c) * &0")
     pure (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q "a <= b") THENL
        [ALL_TAC, ASM_MESON_TAC [REAL_NOT_LE, DEFINT_WRONG]] THEN
       MATCH_MP_TAC INTEGRAL_EQ THEN
       EXISTS_TAC (← q r"\x:real. f(x) + (g c - f c) * (if x = c then &1 else &0)") THEN
       ASM_REWRITE_TAC [] THEN CONJ_TAC THENL
-       [SUBST1_TAC ra THEN
+       [SUBST1_TAC (← REAL_ARITH (← q r"i = i + ((g:real->real) c - f c) * &0")) THEN
         MATCH_MP_TAC DEFINT_ADD THEN ASM_REWRITE_TAC [] THEN
         MATCH_MP_TAC DEFINT_CMUL THEN REWRITE_TAC [DEFINT_DELTA],
         REPEAT GEN_TAC THEN COND_CASES_TAC THEN
@@ -6397,10 +6276,9 @@ def setupSpike [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
             ==> ?g. gauge s g /\
                     !d p. fine g (d,p) ==> !m. m <= n ==> fine (gs m) (d,p)"
    (← do
-    let t ← TAUT (← q r"a \/ b ==> c <=> (a ==> c) /\ (b ==> c)")
     pure (GEN_TAC THEN GEN_TAC THEN INDUCT_TAC THEN REWRITE_TAC [LE] THENL
        [MESON_TAC [], ALL_TAC] THEN
-      REWRITE_TAC [t] THEN
+      REWRITE_TAC [(← TAUT (← q r"a \/ b ==> c <=> (a ==> c) /\ (b ==> c)"))] THEN
       SIMP_TAC [FORALL_AND_THM, LEFT_FORALL_IMP_THM, EXISTS_REFL] THEN
       STRIP_TAC THEN FIRST_X_ASSUM (fun th => tactic_of do
         if is_imp (concl th) then pure (MP_TAC th) else throw "check") THEN
@@ -6419,12 +6297,6 @@ def setupSpike [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
                             tdiv (a,b) (d2,p2) /\ fine g (d2,p2)
                             ==> abs (rsum(d1,p1) f - rsum(d2,p2) f) < e"
    (← do
-    let r3 ← REAL_ARITH
-     (← q r"abs(s1 - i) < e / &2
-      ==> d < e / &2
-          ==> abs(s2 - s1) < d ==> abs(s2 - i) < e")
-    let r2 ← REAL_ARITH (← q r"d < e ==> x < d ==> x < e")
-    let r1 ← REAL_ARITH (← q r"b < a \/ a <= b")
     let d1 ← q r"d1:num->real"
     let p1 ← q r"p1:num->real"
     let d2 ← q r"d2:num->real"
@@ -6443,7 +6315,7 @@ def setupSpike [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
           pure (MP_TAC b1 THEN MP_TAC b2)) THEN
         ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC,
         ALL_TAC] THEN
-      DISCH_TAC THEN DISJ_CASES_TAC r1 THENL
+      DISCH_TAC THEN DISJ_CASES_TAC (← REAL_ARITH (← q r"b < a \/ a <= b")) THENL
        [ASM_MESON_TAC [DEFINT_WRONG], ALL_TAC] THEN
       FIRST_X_ASSUM (MP_TAC o GEN (← q "n:num") o SPEC (← q r"&1 / &2 pow n")) THEN
       SIMP_TAC [REAL_LT_DIV, REAL_POW_LT, REAL_OF_NUM_LT, ARITH] THEN
@@ -6467,7 +6339,7 @@ def setupSpike [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
          [← q "N:num", ← q r"(d:num->num->real) m", ← q r"(p:num->num->real) m",
           ← q r"(d:num->num->real) n", ← q r"(p:num->num->real) n"]) THEN
         ANTS_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN
-        MATCH_MP_TAC r2 THEN
+        MATCH_MP_TAC (← REAL_ARITH (← q r"d < e ==> x < d ==> x < e")) THEN
         ASM_SIMP_TAC [REAL_LT_LDIV_EQ, REAL_POW_LT, REAL_OF_NUM_LT, ARITH] THEN
         ASM_MESON_TAC [REAL_MUL_SYM],
         ALL_TAC] THEN
@@ -6486,7 +6358,10 @@ def setupSpike [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
        [← q "N1 + N2:num", ← q r"dx:num->real", ← q r"px:num->real",
         ← q r"(d:num->num->real)(N1 + N2)", ← q r"(p:num->num->real)(N1 + N2)"]) THEN
       ANTS_TAC THENL [ASM_MESON_TAC [LE_REFL], ALL_TAC] THEN
-      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP r3) THEN
+      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← REAL_ARITH
+     (← q r"abs(s1 - i) < e / &2
+      ==> d < e / &2
+          ==> abs(s2 - s1) < d ==> abs(s2 - i) < e"))) THEN
       REWRITE_TAC [real_div, REAL_MUL_LID] THEN REWRITE_TAC [← GSYM real_div] THEN
       GEN_REWRITE_TAC RAND_CONV [← GSYM REAL_INV_DIV] THEN
       MATCH_MP_TAC REAL_LT_INV2 THEN
@@ -6561,7 +6436,6 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
         (!x. a <= x /\ x <= b ==> abs(f x) <= e)
         ==> abs(rsum(d,p) f) <= e * (b - a)"
    (← do
-    let ra ← REAL_ARITH (← q r"a <= d0 /\ d1 <= b ==> d1 - d0 <= b - a")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [rsum] THEN
       MATCH_MP_TAC REAL_LE_TRANS THEN
       EXISTS_TAC (← q r"sum(0,dsize d) (\i. abs(f(p i :real) * (d(SUC i) - d i)))") THEN
@@ -6582,7 +6456,7 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
       FIRST_X_ASSUM (CONJUNCTS_THEN ASSUME_TAC o REWRITE_RULE [tdiv]) THEN
       FIRST_ASSUM (ASSUME_TAC o MATCH_MP DIVISION_MONO_LE_SUC) THEN
       ASM_REWRITE_TAC [real_abs, REAL_SUB_LE, PSUM_DIFFS, ADD_CLAUSES] THEN
-      MATCH_MP_TAC ra THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"a <= d0 /\ d1 <= b ==> d1 - d0 <= b - a")) THEN
       ASM_MESON_TAC [DIVISION_LBOUND, DIVISION_UBOUND]))
 
   let RSUM_DIFF_BOUND ← prove
@@ -6599,16 +6473,7 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
                         integrable(a,b) g)
            ==> integrable(a,b) f"
    (← do
-    let r6 ← ARITH_RULE (← q r"N2 <= N1 + N2:num")
-    let r5 ← REAL_ARITH (← q r"&1 / n * x <= e / &3 <=> (&3 * x) / n <= e")
-    let r4 ← REAL_ARITH
-     (← q r"abs(sf - sg) <= e / &3
-      ==> abs(i - s) < e / &3 ==> abs(sg - i) < e / &3 ==> abs(sf - s) < e")
     let r3 ← ARITH_RULE (← q r"N1:num <= N1 + N2")
-    let r2 ← REAL_ARITH (← q r"&2 / n * x <= e / &2 <=> (&4 * x) / n <= e")
-    let r1 ← REAL_ARITH
-     (← q r"!f. abs(f - gm) <= inv(k) /\ abs(f - gn) <= inv(k)
-            ==> abs(gm - gn) <= &2 / k")
     let tm ← q "m:num"
     let tn ← q "n:num"
     pure (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q "a <= b") THENL
@@ -6648,7 +6513,9 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
         MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC (← q r"&2 / &2 pow N * (b - a)") THEN
         CONJ_TAC THENL
          [MATCH_MP_TAC RSUM_DIFF_BOUND THEN ASM_REWRITE_TAC [] THEN
-          REPEAT STRIP_TAC THEN MATCH_MP_TAC r1 THEN
+          REPEAT STRIP_TAC THEN MATCH_MP_TAC (← REAL_ARITH
+     (← q r"!f. abs(f - gm) <= inv(k) /\ abs(f - gn) <= inv(k)
+            ==> abs(gm - gn) <= &2 / k")) THEN
           EXISTS_TAC (← q r"(f:real->real) x") THEN CONJ_TAC THEN
           MATCH_MP_TAC REAL_LE_TRANS THENL
            [EXISTS_TAC (← q r"&1 / &2 pow m"), EXISTS_TAC (← q r"&1 / &2 pow n")] THEN
@@ -6657,7 +6524,7 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
           ASM_SIMP_TAC [REAL_POW_LT, REAL_POW_MONO, REAL_OF_NUM_LE,
                        REAL_OF_NUM_LT, ARITH],
           ALL_TAC] THEN
-        REWRITE_TAC [r2] THEN
+        REWRITE_TAC [(← REAL_ARITH (← q r"&2 / n * x <= e / &2 <=> (&4 * x) / n <= e"))] THEN
         SIMP_TAC [REAL_LE_LDIV_EQ, REAL_POW_LT, REAL_OF_NUM_LT, ARITH] THEN
         GEN_REWRITE_TAC RAND_CONV [REAL_MUL_SYM] THEN
         ASM_SIMP_TAC [← GSYM REAL_LE_LDIV_EQ, REAL_LT_IMP_LE],
@@ -6679,17 +6546,19 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
       FIRST_X_ASSUM (MP_TAC o SPECL [← q r"d:num->real", ← q r"p:num->real"]) THEN
       ASM_REWRITE_TAC [] THEN
       FIRST_X_ASSUM (MP_TAC o (fun a => MATCH_MP a r3)) THEN
-      MATCH_MP_TAC r4 THEN
+      MATCH_MP_TAC (← REAL_ARITH
+     (← q r"abs(sf - sg) <= e / &3
+      ==> abs(i - s) < e / &3 ==> abs(sg - i) < e / &3 ==> abs(sf - s) < e")) THEN
       MATCH_MP_TAC REAL_LE_TRANS THEN
       EXISTS_TAC (← q r"&1 / &2 pow (N1 + N2) * (b - a)") THEN CONJ_TAC THENL
        [MATCH_MP_TAC RSUM_DIFF_BOUND THEN ASM_REWRITE_TAC [], ALL_TAC] THEN
-      REWRITE_TAC [r5] THEN
+      REWRITE_TAC [(← REAL_ARITH (← q r"&1 / n * x <= e / &3 <=> (&3 * x) / n <= e"))] THEN
       SIMP_TAC [REAL_LE_LDIV_EQ, REAL_POW_LT, REAL_OF_NUM_LT, ARITH] THEN
       GEN_REWRITE_TAC RAND_CONV [REAL_MUL_SYM] THEN
       ASM_SIMP_TAC [← GSYM REAL_LE_LDIV_EQ, REAL_LT_IMP_LE] THEN
       MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC (← q r"&2 pow N2") THEN
       ASM_SIMP_TAC [REAL_LT_IMP_LE, REAL_POW_MONO, REAL_OF_NUM_LE, ARITH,
-                   r6]))
+                   (← ARITH_RULE (← q r"N2 <= N1 + N2:num"))]))
 
   -- Hence continuous functions are integrable.
 
@@ -6711,11 +6580,7 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
   let INTEGRABLE_CONTINUOUS ← prove
    r"!f a b. (!x. a <= x /\ x <= b ==> f contl x) ==> integrable(a,b) f"
    (← do
-    let r3 ← REAL_ARITH (← q r"b <= x /\ x <= c /\ ~(x = b) ==> ~(x <= b)")
-    let r2 ← TAUT
-     (← q r"(a /\ b) /\ (c /\ d ==> e) ==> (a ==> c) /\ (b ==> d) ==> e")
-    let r1 ← REAL_ARITH (← q r"b < a \/ a <= b")
-    pure (REPEAT STRIP_TAC THEN DISJ_CASES_TAC r1 THENL
+    pure (REPEAT STRIP_TAC THEN DISJ_CASES_TAC (← REAL_ARITH (← q r"b < a \/ a <= b")) THENL
        [ASM_MESON_TAC [integrable, DEFINT_WRONG], ALL_TAC] THEN
       MATCH_MP_TAC INTEGRABLE_LIMIT THEN X_GEN_TAC (← q "e:real") THEN DISCH_TAC THEN
       MP_TAC (← SPECL [← q r"f:real->real", ← q "a:real", ← q "b:real"] CONT_UNIFORM) THEN
@@ -6728,7 +6593,8 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
        [MAP_EVERY X_GEN_TAC [← q "u:real", ← q "v:real", ← q "w:real"] THEN
         REPLICATE_TAC 2 (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
         DISCH_THEN (fun th => DISCH_TAC THEN MP_TAC th) THEN
-        MATCH_MP_TAC r2 THEN
+        MATCH_MP_TAC (← TAUT
+     (← q r"(a /\ b) /\ (c /\ d ==> e) ==> (a ==> c) /\ (b ==> d) ==> e")) THEN
         CONJ_TAC THENL [ASM_MESON_TAC [REAL_LE_TRANS], ALL_TAC] THEN
         DISCH_THEN (CONJUNCTS_THEN2 (X_CHOOSE_TAC (← q r"g:real->real"))
                                    (X_CHOOSE_TAC (← q r"h:real->real"))) THEN
@@ -6740,7 +6606,7 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
         MATCH_MP_TAC INTEGRABLE_POINT_SPIKE THENL
          [EXISTS_TAC (← q r"g:real->real"), EXISTS_TAC (← q r"h:real->real")] THEN
         EXISTS_TAC (← q "v:real") THEN ASM_REWRITE_TAC [] THEN SIMP_TAC [] THEN
-        ASM_MESON_TAC [r3],
+        ASM_MESON_TAC [(← REAL_ARITH (← q r"b <= x /\ x <= c /\ ~(x = b) ==> ~(x <= b)"))],
         ALL_TAC] THEN
       X_GEN_TAC (← q "x:real") THEN EXISTS_TAC (← q "d:real") THEN ASM_REWRITE_TAC [] THEN
       MAP_EVERY X_GEN_TAC [← q "u:real", ← q "v:real"] THEN REPEAT STRIP_TAC THEN
@@ -6774,7 +6640,6 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
   let INTEGRABLE_SUBINTERVAL_LEFT ← prove
    r"!f a b c. a <= c /\ c <= b /\ integrable(a,b) f ==> integrable(a,c) f"
    (← do
-    let ae ← ASSUME (← q r"&0 < e")
     let d1 ← q r"d1:num->real"
     let p1 ← q r"p1:num->real"
     let d2 ← q r"d2:num->real"
@@ -6783,7 +6648,7 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
       FIRST_ASSUM (X_CHOOSE_TAC (← q "i:real") o MATCH_MP INTEGRABLE_SPLIT_SIDES) THEN
       REWRITE_TAC [INTEGRABLE_CAUCHY] THEN X_GEN_TAC (← q "e:real") THEN DISCH_TAC THEN
       FIRST_X_ASSUM (MP_TAC o SPEC (← q r"e / &2")) THEN
-      SIMP_TAC [ae, REAL_LT_DIV, REAL_OF_NUM_LT, ARITH] THEN
+      SIMP_TAC [(← ASSUME (← q r"&0 < e")), REAL_LT_DIV, REAL_OF_NUM_LT, ARITH] THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"g:real->real") THEN
       STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
       CONJ_TAC THENL
@@ -6810,7 +6675,6 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
   let INTEGRABLE_SUBINTERVAL_RIGHT ← prove
    r"!f a b c. a <= c /\ c <= b /\ integrable(a,b) f ==> integrable(c,b) f"
    (← do
-    let ae ← ASSUME (← q r"&0 < e")
     let d1 ← q r"d1:num->real"
     let p1 ← q r"p1:num->real"
     let d2 ← q r"d2:num->real"
@@ -6819,7 +6683,7 @@ def setupLimit [HolBase] (D : TranscDeps) (BArcSinCos : ArcSinCos) (BDivision : 
       FIRST_ASSUM (X_CHOOSE_TAC (← q "i:real") o MATCH_MP INTEGRABLE_SPLIT_SIDES) THEN
       REWRITE_TAC [INTEGRABLE_CAUCHY] THEN X_GEN_TAC (← q "e:real") THEN DISCH_TAC THEN
       FIRST_X_ASSUM (MP_TAC o SPEC (← q r"e / &2")) THEN
-      SIMP_TAC [ae, REAL_LT_DIV, REAL_OF_NUM_LT, ARITH] THEN
+      SIMP_TAC [(← ASSUME (← q r"&0 < e")), REAL_LT_DIV, REAL_OF_NUM_LT, ARITH] THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"g:real->real") THEN
       STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
       CONJ_TAC THENL
@@ -6939,11 +6803,10 @@ def setupIntRule [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BIntegral : 
          ==> integral(a,b) (\x. f x * g' x) =
              (f b * g b - f a * g a) - integral(a,b) (\x. f' x * g x)"
    (← do
-    let aab ← ASSUME (← q "a <= b")
     pure (MP_TAC INTEGRATION_BY_PARTS THEN
       REPEAT (MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
       DISCH_THEN (fun th => STRIP_TAC THEN MP_TAC th) THEN
-      ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o CONJ aab) THEN
+      ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o CONJ (← ASSUME (← q "a <= b"))) THEN
       DISCH_THEN (SUBST1_TAC o SYM o MATCH_MP DEFINT_INTEGRAL) THEN
       ASM_SIMP_TAC [INTEGRAL_ADD] THEN REAL_ARITH_TAC))
 
@@ -7034,13 +6897,6 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
                 ((diff(n)(t) / &(FACT n)) * (h pow n))))"
    (← do
     -- Built when OCaml builds the tactic (none of these print).
-    let ac6 ← AC REAL_MUL_AC (← q r"(a * b) * c = a * (c * b)")
-    let ac5 ← AC REAL_MUL_AC (← q r"a * b * c * d = c * (a * d) * b")
-    let ac4 ← AC REAL_MUL_AC
-       (← q r"a * b * c * d * e * f * g = (b * a) * (d * f) * (c * g) * e")
-    let ac3 ← AC REAL_MUL_AC (← q r"a * b * c * d = b * (a * (d * c))")
-    let ac1 ← AC REAL_MUL_AC (← q r"a * b * c * d = (d * a) * (b * c)")
-    let aDifg0 ← ASSUME (← q r"difg(0):real->real = g")
     let tj ← q r"j:num->real"
     let tt ← q "t:real"
     pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
@@ -7057,7 +6913,7 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
         REWRITE_TAC [← GSYM REAL_MUL_ASSOC] THEN
         GEN_REWRITE_TAC (RATOR_CONV o RAND_CONV) [← GSYM REAL_MUL_RID] THEN
         AP_TERM_TAC THEN CONV_TAC SYM_CONV THEN
-        ONCE_REWRITE_TAC [ac1] THEN
+        ONCE_REWRITE_TAC [(← AC REAL_MUL_AC (← q r"a * b * c * d = (d * a) * (b * c)"))] THEN
         GEN_REWRITE_TAC RAND_CONV [← GSYM REAL_MUL_LID] THEN BINOP_TAC THEN
         MATCH_MP_TAC REAL_MUL_LINV THENL
          [MATCH_MP_TAC REAL_LT_IMP_NZ THEN REWRITE_TAC [REAL_LT, FACT_LT],
@@ -7105,7 +6961,7 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
           AP_TERM_TAC THEN GEN_REWRITE_TAC RAND_CONV [REAL_MUL_SYM] THEN
           AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC [real_div] THEN
           REWRITE_TAC [← GSYM REAL_MUL_ASSOC, POW_2] THEN
-          ONCE_REWRITE_TAC [ac3] THEN
+          ONCE_REWRITE_TAC [(← AC REAL_MUL_AC (← q r"a * b * c * d = b * (a * (d * c))"))] THEN
           FIRST_ASSUM (X_CHOOSE_THEN (← q "d:num") SUBST1_TAC o
             MATCH_MP LESS_ADD_1 o CONJUNCT1) THEN
           ONCE_REWRITE_TAC [ADD_SYM] THEN REWRITE_TAC [ADD_SUB] THEN
@@ -7117,7 +6973,8 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
           REPEAT (IMP_SUBST_TAC REAL_INV_MUL_WEAK THEN
                  REWRITE_TAC [REAL_FACT_NZ, REAL_INJ, NOT_SUC]) THEN
           REWRITE_TAC [← GSYM REAL_MUL_ASSOC] THEN
-          ONCE_REWRITE_TAC [ac4] THEN
+          ONCE_REWRITE_TAC [(← AC REAL_MUL_AC
+       (← q r"a * b * c * d * e * f * g = (b * a) * (d * f) * (c * g) * e"))] THEN
           REPEAT (IMP_SUBST_TAC REAL_MUL_LINV THEN REWRITE_TAC [REAL_FACT_NZ] THEN
                  REWRITE_TAC [REAL_INJ, NOT_SUC]) THEN
           REWRITE_TAC [REAL_MUL_LID]] THEN
@@ -7147,7 +7004,7 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
         REWRITE_TAC [REAL_MUL_LZERO, REAL_ADD_LID, REAL_MUL_RID] THEN
         REWRITE_TAC [← GSYM ADD1, ADD_CLAUSES, real_div, ← GSYM REAL_MUL_ASSOC] THEN
         REWRITE_TAC [SUC_SUB1] THEN
-        ONCE_REWRITE_TAC [ac5] THEN
+        ONCE_REWRITE_TAC [(← AC REAL_MUL_AC (← q r"a * b * c * d = c * (a * d) * b"))] THEN
         AP_TERM_TAC THEN REWRITE_TAC [REAL_MUL_ASSOC] THEN AP_THM_TAC THEN
         AP_TERM_TAC THEN
         SUBGOAL_THEN (← q r"&(SUC k) = inv(inv(&(SUC k)))") SUBST1_TAC THENL
@@ -7171,7 +7028,7 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
         ASM_REWRITE_TAC [SUB_REFL, sum, pow, FACT] THEN
         REWRITE_TAC [REAL_SUB_0, REAL_ADD_LID, real_div] THEN
         REWRITE_TAC [REAL_INV1, REAL_MUL_RID] THEN DISCH_THEN SUBST1_TAC THEN
-        GEN_REWRITE_TAC (funpow 2 RAND_CONV) [ac6] THEN
+        GEN_REWRITE_TAC (funpow 2 RAND_CONV) [(← AC REAL_MUL_AC (← q r"(a * b) * c = a * (c * b)"))] THEN
         ASM_REWRITE_TAC [← GSYM real_div]] THEN
       SUBGOAL_THEN (← q r"!m:num. m < n ==> (difg(m)(&0) = &0)") ASSUME_TAC THENL
        [X_GEN_TAC (← q "m:num") THEN EXPAND_TAC "difg" THEN
@@ -7204,7 +7061,7 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
         SUBGOAL_THEN (← q r"!t. &0 <= t /\ t <= h ==> g differentiable t") MP_TAC THENL
          [GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC [differentiable] THEN
           EXISTS_TAC (← q r"difg(SUC 0)(t:real):real") THEN
-          SUBST1_TAC (← SYM aDifg0) THEN
+          SUBST1_TAC (← SYM (← ASSUME (← q r"difg(0):real->real = g"))) THEN
           FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC [], ALL_TAC] THEN
         DISCH_TAC THEN CONJ_TAC THENL
          [GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC DIFF_CONT THEN
@@ -7261,9 +7118,7 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
                 ((diff(n)(t) / &(FACT n)) * (h pow n))))"
    (← do
     -- In OCaml's order: the later parts of the THEN chain first.
-    let acm2 ← AC REAL_MUL_AC (← q r"a * b * c * d = (b * c) * (a * d)")
     let dct ← SPEC (← q "t:real") (← ExceptT.mk (DIFF_CONV (← q r"\x. --x")))
-    let acc ← AC CONJ_ACI (← q r"a /\ b /\ c <=> a /\ c /\ b")
     pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
       MP_TAC (← SPECL [← q r"\x. (f(--x):real)",
                     ← q r"\n x. ((--(&1)) pow n) * (diff:num->real->real)(n)(--x)",
@@ -7271,7 +7126,7 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
       BETA_TAC THEN ASM_REWRITE_TAC [REAL_NEG_GT0, pow, REAL_MUL_LID] THEN
       ONCE_REWRITE_TAC [← GSYM REAL_LE_NEG2] THEN
       REWRITE_TAC [REAL_NEG_NEG, REAL_NEG_0] THEN
-      ONCE_REWRITE_TAC [acc] THEN
+      ONCE_REWRITE_TAC [(← AC CONJ_ACI (← q r"a /\ b /\ c <=> a /\ c /\ b"))] THEN
       subgoalAnte2 (fun t => REWRITE_TAC [t]) THENL
        [REPEAT GEN_TAC THEN
         DISCH_THEN (fun th => FIRST_ASSUM (MP_TAC o (fun a => MATCH_MP a th))) THEN
@@ -7292,7 +7147,7 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
         X_GEN_TAC (← q "m:num") THEN REWRITE_TAC [ADD_CLAUSES] THEN
         DISCH_THEN (ASSUME_TAC o CONJUNCT2) THEN BETA_TAC, ALL_TAC] THEN
       REWRITE_TAC [real_div, ← GSYM REAL_MUL_ASSOC] THEN
-      ONCE_REWRITE_TAC [acm2] THEN
+      ONCE_REWRITE_TAC [(← AC REAL_MUL_AC (← q r"a * b * c * d = (b * c) * (a * d)"))] THEN
       REWRITE_TAC [← GSYM POW_MUL, ← GSYM REAL_NEG_MINUS1, REAL_NEG_NEG] THEN
       REWRITE_TAC [REAL_MUL_ASSOC]))
 
@@ -7306,11 +7161,6 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
                 (f x = sum (0,n) (\m. diff m (&0) / &(FACT m) * x pow m) +
                        diff n t / &(FACT n) * x pow n)"
    (← do
-    let r5 ← REAL_ARITH (← q r"x < t /\ t < &0 ==> abs(t) <= abs(x)")
-    let r4 ← REAL_ARITH (← q r"x <= t /\ t <= &0 ==> abs(t) <= abs(x)")
-    let r3 ← REAL_ARITH (← q r"&0 < t /\ t < x ==> abs(t) <= abs(x)")
-    let r2 ← REAL_ARITH (← q r"&0 <= t /\ t <= x ==> abs(t) <= abs(x)")
-    let r1 ← REAL_ARITH (← q r"~(x = &0) ==> &0 < x \/ x < &0")
     pure (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q "n = 0") THENL
        [ASM_REWRITE_TAC [sum, real_pow, FACT, REAL_DIV_1, REAL_MUL_RID,
                         REAL_ADD_LID] THEN
@@ -7325,18 +7175,18 @@ def setupMclaurin [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (ACompat : H
         REWRITE_TAC [REAL_ADD_RID, REAL_ADD_LID] THEN
         CONV_TAC (ONCE_DEPTH_CONV REAL_SUM_CONV) THEN
         ASM_REWRITE_TAC [real_pow, FACT, REAL_MUL_RID, REAL_DIV_1], ALL_TAC] THEN
-      FIRST_ASSUM (DISJ_CASES_TAC o MATCH_MP r1)
+      FIRST_ASSUM (DISJ_CASES_TAC o MATCH_MP (← REAL_ARITH (← q r"~(x = &0) ==> &0 < x \/ x < &0")))
       THENL
        [MP_TAC (← SPECL [← q r"f:real->real", ← q r"diff:num->real->real", ← q "x:real", ← q "n:num"]
                      MCLAURIN) THEN
-        ASM_SIMP_TAC [r2] THEN
+        ASM_SIMP_TAC [(← REAL_ARITH (← q r"&0 <= t /\ t <= x ==> abs(t) <= abs(x)"))] THEN
         ASM_REWRITE_TAC [LT_NZ] THEN MATCH_MP_TAC MONO_EXISTS THEN
-        SIMP_TAC [r3],
+        SIMP_TAC [(← REAL_ARITH (← q r"&0 < t /\ t < x ==> abs(t) <= abs(x)"))],
         MP_TAC (← SPECL [← q r"f:real->real", ← q r"diff:num->real->real", ← q "x:real", ← q "n:num"]
                      MCLAURIN_NEG) THEN
-        ASM_SIMP_TAC [r4] THEN
+        ASM_SIMP_TAC [(← REAL_ARITH (← q r"x <= t /\ t <= &0 ==> abs(t) <= abs(x)"))] THEN
         ASM_REWRITE_TAC [LT_NZ] THEN MATCH_MP_TAC MONO_EXISTS THEN
-        SIMP_TAC [r5]]))
+        SIMP_TAC [(← REAL_ARITH (← q r"x < t /\ t < &0 ==> abs(t) <= abs(x)"))]]))
 
   -- @@RETURN BEGIN
   return { MCLAURIN, MCLAURIN_NEG, MCLAURIN_BI_LE }
@@ -7718,12 +7568,6 @@ def setupSinCosMcl [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BTrig1 : T
                             x pow m))
          <= inv(&(FACT n)) * abs(x) pow n"
    (← do
-    let a4 ← ARITH_RULE (← q r"x * 4 = 2 * 2 * x")
-    let a3 ← ARITH_RULE (← q r"x * 4 + 2 = 2 * (2 * x + 1)")
-    let a2 ← ARITH_RULE (← q r"(x + 3) - 1 = x + 2")
-    let a1 ← ARITH_RULE (← q r"(x + 1) - 1 = x")
-    let r1 ← REAL_ARITH (← q r"(x = y) /\ abs(u) <= v ==> abs((x + u) - y) <= v")
-    let etaT ← EQT_INTRO (← SPEC_ALL ETA_AX)
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← SPECL [← q "sin", ← q r"\n x. if n MOD 4 = 0 then sin(x)
                                 else if n MOD 4 = 1 then cos(x)
@@ -7731,7 +7575,7 @@ def setupSinCosMcl [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BTrig1 : T
                                 else --cos(x)"] MCLAURIN_ALL_LE) THEN
       subgoalLhand2 (fun th => REWRITE_TAC [th]) THENL
        [CONJ_TAC THENL
-         [SIMP_TAC [MOD_0, ARITH_EQ, etaT], ALL_TAC] THEN
+         [SIMP_TAC [MOD_0, ARITH_EQ, (← EQT_INTRO (← SPEC_ALL ETA_AX))], ALL_TAC] THEN
         X_GEN_TAC (← q "m:num") THEN X_GEN_TAC (← q "y:real") THEN REWRITE_TAC [] THEN
         MP_TAC (← SPECL [← q "m:num", ← q "4"] DIVISION) THEN
         REWRITE_TAC [ARITH_EQ] THEN ABBREV_TAC (← q "d = m MOD 4") THEN
@@ -7745,7 +7589,7 @@ def setupSinCosMcl [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BTrig1 : T
       DISCH_THEN (MP_TAC o SPECL [← q "x:real", ← q "n:num"]) THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "t:real")
         (CONJUNCTS_THEN2 ASSUME_TAC SUBST1_TAC)) THEN
-      MATCH_MP_TAC r1 THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"(x = y) /\ abs(u) <= v ==> abs((x + u) - y) <= v")) THEN
       CONJ_TAC THENL
        [MATCH_MP_TAC SUM_EQ THEN X_GEN_TAC (← q "r:num") THEN STRIP_TAC THEN
         REWRITE_TAC [SIN_0, COS_0, REAL_NEG_0] THEN
@@ -7760,7 +7604,7 @@ def setupSinCosMcl [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BTrig1 : T
         SPEC_TAC (← q "r MOD 4", ← q "d:num") THEN CONV_TAC EXPAND_CASES_CONV THEN
         CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC [] THEN
         REWRITE_TAC [real_div, REAL_MUL_LZERO] THEN
-        SIMP_TAC [a1, a2, a3, a4] THEN
+        SIMP_TAC [(← ARITH_RULE (← q r"(x + 1) - 1 = x")), (← ARITH_RULE (← q r"(x + 3) - 1 = x + 2")), (← ARITH_RULE (← q r"x * 4 + 2 = 2 * (2 * x + 1)")), (← ARITH_RULE (← q r"x * 4 = 2 * 2 * x"))] THEN
         SIMP_TAC [DIV_MULT, ARITH_EQ] THEN
         REWRITE_TAC [REAL_POW_NEG, EVEN_ADD, EVEN_MULT, ARITH_EVEN, REAL_POW_ONE],
         ALL_TAC] THEN
@@ -7782,10 +7626,6 @@ def setupSinCosMcl [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BTrig1 : T
                                   else &0) * x pow m))
                <= inv(&(FACT n)) * abs(x) pow n"
    (← do
-    let a2 ← ARITH_RULE (← q r"x * 4 + 0 = 2 * 2 * x")
-    let a1 ← ARITH_RULE (← q r"x * 4 + 2 = 2 * (2 * x + 1)")
-    let r1 ← REAL_ARITH (← q r"(x = y) /\ abs(u) <= v ==> abs((x + u) - y) <= v")
-    let etaT ← EQT_INTRO (← SPEC_ALL ETA_AX)
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← SPECL [← q "cos", ← q r"\n x. if n MOD 4 = 0 then cos(x)
                                 else if n MOD 4 = 1 then --sin(x)
@@ -7793,7 +7633,7 @@ def setupSinCosMcl [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BTrig1 : T
                                 else sin(x)"] MCLAURIN_ALL_LE) THEN
       subgoalLhand2 (fun th => REWRITE_TAC [th]) THENL
        [CONJ_TAC THENL
-         [SIMP_TAC [MOD_0, ARITH_EQ, etaT], ALL_TAC] THEN
+         [SIMP_TAC [MOD_0, ARITH_EQ, (← EQT_INTRO (← SPEC_ALL ETA_AX))], ALL_TAC] THEN
         X_GEN_TAC (← q "m:num") THEN X_GEN_TAC (← q "y:real") THEN REWRITE_TAC [] THEN
         MP_TAC (← SPECL [← q "m:num", ← q "4"] DIVISION) THEN
         REWRITE_TAC [ARITH_EQ] THEN ABBREV_TAC (← q "d = m MOD 4") THEN
@@ -7807,7 +7647,7 @@ def setupSinCosMcl [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BTrig1 : T
       DISCH_THEN (MP_TAC o SPECL [← q "x:real", ← q "n:num"]) THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "t:real")
         (CONJUNCTS_THEN2 ASSUME_TAC SUBST1_TAC)) THEN
-      MATCH_MP_TAC r1 THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"(x = y) /\ abs(u) <= v ==> abs((x + u) - y) <= v")) THEN
       CONJ_TAC THENL
        [MATCH_MP_TAC SUM_EQ THEN X_GEN_TAC (← q "r:num") THEN STRIP_TAC THEN
         REWRITE_TAC [SIN_0, COS_0, REAL_NEG_0] THEN
@@ -7822,7 +7662,7 @@ def setupSinCosMcl [HolBase] (D : TranscDeps) (BDiffConv : DiffConv) (BTrig1 : T
         SPEC_TAC (← q "r MOD 4", ← q "d:num") THEN CONV_TAC EXPAND_CASES_CONV THEN
         CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC [] THEN
         REWRITE_TAC [real_div, REAL_MUL_LZERO] THEN
-        REWRITE_TAC [a1, a2] THEN
+        REWRITE_TAC [(← ARITH_RULE (← q r"x * 4 + 2 = 2 * (2 * x + 1)")), (← ARITH_RULE (← q r"x * 4 + 0 = 2 * 2 * x"))] THEN
         SIMP_TAC [DIV_MULT, ARITH_EQ] THEN
         REWRITE_TAC [REAL_POW_NEG, EVEN_ADD, EVEN_MULT, ARITH_EVEN, REAL_POW_ONE],
         ALL_TAC] THEN
@@ -7891,7 +7731,6 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
        ==> summable (\n. (if EVEN n then &0
                           else --(&1) pow ((n - 1) DIV 2) / &n) * x pow n)"
    (← do
-    let a1 ← ARITH_RULE (← q r"1 <= n <=> ~(n = 0)")
     pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC SER_COMPAR THEN
       EXISTS_TAC (← q r"\n. abs(x) pow n") THEN CONJ_TAC THENL
        [EXISTS_TAC (← q "0") THEN REPEAT STRIP_TAC THEN REWRITE_TAC [] THEN
@@ -7906,7 +7745,7 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
         GEN_REWRITE_TAC LAND_CONV [← GSYM REAL_MUL_RID] THEN
         MATCH_MP_TAC REAL_LE_LMUL THEN
         SIMP_TAC [REAL_POW_LE, REAL_ABS_POS] THEN
-        ASM_MESON_TAC [REAL_OF_NUM_LE, EVEN, a1],
+        ASM_MESON_TAC [REAL_OF_NUM_LE, EVEN, (← ARITH_RULE (← q r"1 <= n <=> ~(n = 0)"))],
         ALL_TAC] THEN
       REWRITE_TAC [summable] THEN EXISTS_TAC (← q r"inv(&1 - abs x)") THEN
       MATCH_MP_TAC GP THEN ASM_REWRITE_TAC [REAL_ABS_ABS]))
@@ -7936,8 +7775,6 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
                             else --(&1) pow ((n - 1) DIV 2) / &n)) n * x pow n)
            sums (inv(&1 + x pow 2))"
    (← do
-    let r1 ← REAL_ARITH (← q r"&1 + x = &1 - (--x)")
-    let a1 ← ARITH_RULE (← q r"SUC n - 1 = n")
     pure (REPEAT STRIP_TAC THEN
       FIRST_ASSUM (MP_TAC o MATCH_MP REAL_ATN_POWSER_DIFFS_SUMMABLE) THEN
       DISCH_THEN (fun th => tactic_of do
@@ -7955,13 +7792,13 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
         REWRITE_TAC [sum, diffs, ADD_CLAUSES, EVEN_MULT, ARITH_EVEN, EVEN] THEN
         REWRITE_TAC [REAL_ADD_LID, REAL_ADD_RID, REAL_MUL_LZERO,
                     REAL_MUL_RZERO] THEN
-        SIMP_TAC [a1, DIV_MULT, ARITH_EQ] THEN
+        SIMP_TAC [(← ARITH_RULE (← q r"SUC n - 1 = n")), DIV_MULT, ARITH_EQ] THEN
         SIMP_TAC [REAL_MUL_ASSOC, REAL_DIV_LMUL, REAL_OF_NUM_EQ, NOT_SUC] THEN
         ONCE_REWRITE_TAC [← GSYM REAL_POW_POW] THEN
         REWRITE_TAC [← GSYM REAL_POW_MUL] THEN
         REWRITE_TAC [REAL_MUL_LNEG, REAL_MUL_LID], ALL_TAC] THEN
       SUBGOAL_THEN (← q r"(\n. --(x pow 2) pow n) sums inv (&1 + x pow 2)") MP_TAC THENL
-       [ONCE_REWRITE_TAC [r1] THEN
+       [ONCE_REWRITE_TAC [(← REAL_ARITH (← q r"&1 + x = &1 - (--x)"))] THEN
         MATCH_MP_TAC GP THEN
         REWRITE_TAC [REAL_ABS_NEG, REAL_ABS_POW] THEN
         GEN_REWRITE_TAC RAND_CONV [← GSYM REAL_MUL_LID] THEN
@@ -7975,9 +7812,6 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
                  (\n. (if EVEN n then &0
                        else --(&1) pow ((n - 1) DIV 2) / &n))) n * x pow n)"
    (← do
-    let r3 ← REAL_ARITH (← q r"a <= b ==> a <= b + &1")
-    let r2 ← REAL_ARITH (← q r"&1 <= x ==> x <= y ==> &1 <= y")
-    let r1 ← REAL_ARITH (← q r"x + &1 <= y <=> &1 <= y - x * &1")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [diffs] THEN
       MATCH_MP_TAC SER_COMPAR THEN
       EXISTS_TAC (← q r"\n. &(SUC n) * abs(x) pow n") THEN CONJ_TAC THENL
@@ -8014,14 +7848,14 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
       REWRITE_TAC [real_div, ← GSYM REAL_MUL_ASSOC] THEN
       REWRITE_TAC [← GSYM real_div] THEN
       REWRITE_TAC [ADD1, ← GSYM REAL_OF_NUM_ADD] THEN
-      ONCE_REWRITE_TAC [r1] THEN
+      ONCE_REWRITE_TAC [(← REAL_ARITH (← q r"x + &1 <= y <=> &1 <= y - x * &1"))] THEN
       REWRITE_TAC [← GSYM REAL_SUB_LDISTRIB] THEN
       SUBGOAL_THEN (← q r"?N. &1 <= &N * (c / abs x - &1)") STRIP_ASSUME_TAC THENL
        [ALL_TAC,
         EXISTS_TAC (← q "N:num") THEN REWRITE_TAC [GE] THEN REPEAT STRIP_TAC THEN
-        FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP r2) THEN
+        FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP (← REAL_ARITH (← q r"&1 <= x ==> x <= y ==> &1 <= y"))) THEN
         MATCH_MP_TAC REAL_LE_RMUL THEN
-        ASM_SIMP_TAC [r3, REAL_OF_NUM_LE, REAL_LE_RADD] THEN
+        ASM_SIMP_TAC [(← REAL_ARITH (← q r"a <= b ==> a <= b + &1")), REAL_OF_NUM_LE, REAL_LE_RADD] THEN
         REWRITE_TAC [REAL_LE_SUB_LADD, REAL_ADD_LID] THEN
         ASM_SIMP_TAC [REAL_LE_RDIV_EQ, ← GSYM REAL_ABS_NZ, REAL_MUL_LID,
                      REAL_LT_IMP_LE]] THEN
@@ -8054,10 +7888,6 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
            sums (atn x)"
    (← do
     let dAtn ← SPEC (← q "u:real") DIFF_ATN
-    let r4 ← REAL_ARITH (← q r"~(x = &0) ==> &0 < x \/ x < &0")
-    let r3 ← REAL_ARITH (← q r"&0 < x ==> --x < &0")
-    let r2 ← REAL_ARITH (← q r"(a = &0) /\ (b = &0) ==> (a - b = &0)")
-    let r1 ← REAL_ARITH (← q r"(a = b) <=> (a - b = &0)")
     pure (REPEAT STRIP_TAC THEN
       FIRST_ASSUM (MP_TAC o MATCH_MP REAL_ATN_POWSER_SUMMABLE) THEN
       DISCH_THEN (MP_TAC o MATCH_MP SUMMABLE_SUM) THEN
@@ -8065,13 +7895,13 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
        (← q r"suminf (\n. (if EVEN n then &0
                      else --(&1) pow ((n - 1) DIV 2) / &n) * x pow n) = atn(x)")
        (fun th => REWRITE_TAC [th]) THEN
-      ONCE_REWRITE_TAC [r1] THEN
+      ONCE_REWRITE_TAC [(← REAL_ARITH (← q r"(a = b) <=> (a - b = &0)"))] THEN
       SUBGOAL_THEN
        (← q r"suminf (\n. (if EVEN n then &0
                      else --(&1) pow ((n - 1) DIV 2) / &n) * &0 pow n) -
         atn(&0) = &0")
       MP_TAC THENL
-       [MATCH_MP_TAC r2 THEN
+       [MATCH_MP_TAC (← REAL_ARITH (← q r"(a = &0) /\ (b = &0) ==> (a - b = &0)")) THEN
         CONJ_TAC THENL
          [CONV_TAC SYM_CONV THEN MATCH_MP_TAC SUM_UNIQ THEN
           MP_TAC (← SPEC (← q r"&0") GP) THEN
@@ -8085,7 +7915,7 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
           REWRITE_TAC [REAL_ENTIRE, REAL_POW_EQ_0] THEN ASM_MESON_TAC [EVEN],
           GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [← GSYM TAN_0] THEN
           MATCH_MP_TAC TAN_ATN THEN
-          SIMP_TAC [PI2_BOUNDS, r3]],
+          SIMP_TAC [PI2_BOUNDS, (← REAL_ARITH (← q r"&0 < x ==> --x < &0"))]],
         ALL_TAC] THEN
       ASM_CASES_TAC (← q r"x = &0") THEN ASM_REWRITE_TAC [] THEN
       DISCH_THEN (fun th => tactic_of do pure (GEN_REWRITE_TAC RAND_CONV [← SYM th])) THEN
@@ -8093,7 +7923,7 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
 
                            else --(&1) pow ((n - 1) DIV 2) / &n) * x pow n) -
               atn x") DIFF_ISCONST_END_SIMPLE) THEN
-      FIRST_ASSUM (DISJ_CASES_TAC o MATCH_MP r4)
+      FIRST_ASSUM (DISJ_CASES_TAC o MATCH_MP (← REAL_ARITH (← q r"~(x = &0) ==> &0 < x \/ x < &0")))
       THENL
        [DISCH_THEN (MP_TAC o SPECL [← q r"&0", ← q "x:real"]),
         CONV_TAC (RAND_CONV SYM_CONV) THEN
@@ -8117,9 +7947,6 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
                                   x pow m))
                <= abs(x) pow n / (&1 - abs x)"
    (← do
-    let a1 ← ARITH_RULE (← q r"1 <= n <=> ~(n = 0)")
-    let r2 ← REAL_ARITH (← q r"abs(x) < &1 ==> abs(abs x) < &1")
-    let r1 ← REAL_ARITH (← q r"abs(r) <= e ==> (f - s = r) ==> abs(f - s) <= e")
     pure (REPEAT STRIP_TAC THEN
       FIRST_ASSUM (MP_TAC o MATCH_MP REAL_ATN_POWSER) THEN
       DISCH_THEN (fun th => tactic_of do
@@ -8129,11 +7956,11 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
       DISCH_THEN (MP_TAC o MATCH_MP SER_OFFSET) THEN
       DISCH_THEN (MP_TAC o SPEC (← q "n:num")) THEN ASM_REWRITE_TAC [] THEN
       DISCH_THEN (MP_TAC o MATCH_MP SUM_UNIQ) THEN
-      MATCH_MP_TAC r1 THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"abs(r) <= e ==> (f - s = r) ==> abs(f - s) <= e")) THEN
       SUBGOAL_THEN
        (← q r"(\m. abs(x) pow (m + n)) sums (abs(x) pow n) * inv(&1 - abs(x))")
       ASSUME_TAC THENL
-       [FIRST_ASSUM (MP_TAC o MATCH_MP GP o MATCH_MP r2) THEN
+       [FIRST_ASSUM (MP_TAC o MATCH_MP GP o MATCH_MP (← REAL_ARITH (← q r"abs(x) < &1 ==> abs(abs x) < &1"))) THEN
         DISCH_THEN (MP_TAC o SPEC (← q "abs(x) pow n") o MATCH_MP SER_CMUL) THEN
         ONCE_REWRITE_TAC [ADD_SYM] THEN REWRITE_TAC [← GSYM REAL_POW_ADD],
         ALL_TAC] THEN
@@ -8153,7 +7980,7 @@ def setupAtnSer [HolBase] (D : TranscDeps) (BPowSer : PowSer) (BTermDiff : TermD
         REWRITE_TAC [real_div, REAL_MUL_LID] THEN
         GEN_REWRITE_TAC RAND_CONV [← GSYM REAL_INV_1] THEN
         MATCH_MP_TAC REAL_LE_INV2 THEN CONV_TAC REAL_RAT_REDUCE_CONV THEN
-        REWRITE_TAC [REAL_OF_NUM_LE, a1] THEN
+        REWRITE_TAC [REAL_OF_NUM_LE, (← ARITH_RULE (← q r"1 <= n <=> ~(n = 0)"))] THEN
         ASM_MESON_TAC [EVEN], ALL_TAC] THEN
       MATCH_MP_TAC REAL_LE_TRANS THEN
       EXISTS_TAC

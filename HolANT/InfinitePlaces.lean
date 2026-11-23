@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.InfinitePlaces fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -365,31 +368,20 @@ def setupInfinitePlaces01 [HolBase] (D : InfinitePlacesDeps) :
 
   let COMPLEX_EMBEDDINGS_NORM_EQ ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"\t:real. t pow 2"
-    let p2 ← prove r"!a b. norm a = norm b /\ norm(a + Cx(&1)) = norm(b + Cx(&1))
-           ==> a = b \/ a = cnj b" (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN (MP_TAC o (AP_TERM q1))) THEN REWRITE_TAC [COMPLEX_SQNORM, RE_ADD, IM_ADD, RE_CX, IM_CX, COMPLEX_EQ, RE_CNJ, IM_CNJ] THEN CONV_TAC REAL_RING)
-    let lemma1 := p2
-    let p3 ← prove r"!a b c d:complex.
+    let lemma1 := (← prove r"!a b. norm a = norm b /\ norm(a + Cx(&1)) = norm(b + Cx(&1))
+           ==> a = b \/ a = cnj b" (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN (MP_TAC o (AP_TERM (← q r"\t:real. t pow 2")))) THEN REWRITE_TAC [COMPLEX_SQNORM, RE_ADD, IM_ADD, RE_CX, IM_CX, COMPLEX_EQ, RE_CNJ, IM_CNJ] THEN CONV_TAC REAL_RING))
+    let lemma2 := (← prove r"!a b c d:complex.
         ~(a = c) /\ (a = c \/ a = cnj c) /\ (b = d \/ b = cnj d) /\
         (a + b = c + d \/ a + b = cnj c + cnj d)
-        ==> b = cnj d" (CONV_TAC COMPLEX_RING)
-    let lemma2 := p3
-    let q4 ← q r"(g:A->complex) x"
-    let q5 ← q r"(h:A->complex) x"
-    let q6 ← q r"y:A"
-    let q7 ← q r"x:A"
-    let q8 ← q r"p \/ q <=> ~p ==> q"
-    let r9 ← TAUT q8
-    let q10 ← q r"!x. x IN ring_carrier k ==> (h:A->complex) x = g x \/ h x = cnj(g x)"
-    let q11 ← q r"((h:A->complex) = g <=> !x. x IN ring_carrier k ==> h x = g x) /\
-    (h = RESTRICTION (ring_carrier k) (cnj o g) <=>
-     !x. x IN ring_carrier k ==> h x = cnj(g x))"
+        ==> b = cnj d" (CONV_TAC COMPLEX_RING))
     prove
       r"!k (g:A->complex) h.
           g IN complex_embeddings k /\ h IN complex_embeddings k
           ==> ((!x. x IN ring_carrier k ==> norm(h x) = norm(g x)) <=>
                h = g \/ h = RESTRICTION (ring_carrier k) (cnj o g))"
-      (REPEAT GEN_TAC THEN REWRITE_TAC [complex_embeddings, IN_ELIM_THM] THEN REWRITE_TAC [ring_homomorphism, COMPLEX_RING_CLAUSES, SUBSET_UNIV] THEN STRIP_TAC THEN SUBGOAL_THEN q11 (CONJUNCTS_THEN SUBST1_TAC) THENL [REWRITE_TAC [RESTRICTION_UNIQUE_ALT, o_THM] THEN ASM_MESON_TAC [EXTENSIONAL_EQ, IN], ALL_TAC] THEN EQ_TAC THENL [DISCH_TAC, STRIP_TAC THEN ASM_SIMP_TAC [COMPLEX_NORM_CNJ]] THEN SUBGOAL_THEN q10 MP_TAC THENL [REPEAT STRIP_TAC THEN MATCH_MP_TAC lemma1 THEN FIRST_X_ASSUM (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"ring_add k x (ring_1 k):A") th) THEN MP_TAC (← SPEC (← q r"x:A") th))) THEN ASM_SIMP_TAC [RING_ADD, RING_1], DISCH_TAC] THEN REWRITE_TAC [r9, NOT_FORALL_THM, NOT_IMP] THEN DISCH_THEN (X_CHOOSE_THEN q7 STRIP_ASSUME_TAC) THEN X_GEN_TAC q6 THEN DISCH_TAC THEN MATCH_MP_TAC lemma2 THEN MAP_EVERY EXISTS_TAC [q5, q4] THEN FIRST_X_ASSUM (fun th => tactic_of do pure (MAP_EVERY (MP_TAC o (← do let c := th; pure (fun th => SPEC th c))) [(← q r"x:A"), (← q r"y:A"), (← q r"ring_add k x y:A")])) THEN ASM_SIMP_TAC [RING_ADD, CNJ_ADD])
+      (REPEAT GEN_TAC THEN REWRITE_TAC [complex_embeddings, IN_ELIM_THM] THEN REWRITE_TAC [ring_homomorphism, COMPLEX_RING_CLAUSES, SUBSET_UNIV] THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"((h:A->complex) = g <=> !x. x IN ring_carrier k ==> h x = g x) /\
+    (h = RESTRICTION (ring_carrier k) (cnj o g) <=>
+     !x. x IN ring_carrier k ==> h x = cnj(g x))") (CONJUNCTS_THEN SUBST1_TAC) THENL [REWRITE_TAC [RESTRICTION_UNIQUE_ALT, o_THM] THEN ASM_MESON_TAC [EXTENSIONAL_EQ, IN], ALL_TAC] THEN EQ_TAC THENL [DISCH_TAC, STRIP_TAC THEN ASM_SIMP_TAC [COMPLEX_NORM_CNJ]] THEN SUBGOAL_THEN (← q r"!x. x IN ring_carrier k ==> (h:A->complex) x = g x \/ h x = cnj(g x)") MP_TAC THENL [REPEAT STRIP_TAC THEN MATCH_MP_TAC lemma1 THEN FIRST_X_ASSUM (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"ring_add k x (ring_1 k):A") th) THEN MP_TAC (← SPEC (← q r"x:A") th))) THEN ASM_SIMP_TAC [RING_ADD, RING_1], DISCH_TAC] THEN REWRITE_TAC [(← TAUT (← q r"p \/ q <=> ~p ==> q")), NOT_FORALL_THM, NOT_IMP] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"x:A") STRIP_ASSUME_TAC) THEN X_GEN_TAC (← q r"y:A") THEN DISCH_TAC THEN MATCH_MP_TAC lemma2 THEN MAP_EVERY EXISTS_TAC [(← q r"(h:A->complex) x"), (← q r"(g:A->complex) x")] THEN FIRST_X_ASSUM (fun th => tactic_of do pure (MAP_EVERY (MP_TAC o (← do let c := th; pure (fun th => SPEC th c))) [(← q r"x:A"), (← q r"y:A"), (← q r"ring_add k x y:A")])) THEN ASM_SIMP_TAC [RING_ADD, CNJ_ADD])
 
   let FINITE_INFINITE_PLACES ← prove
     r"!k:A ring. number_field k ==> FINITE(infinite_places k)"
@@ -528,16 +520,13 @@ def setupInfinitePlaces01 [HolBase] (D : InfinitePlacesDeps) :
 
   let RING_OF_INTEGERS_UNIT_NORM_PRODUCT ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"1 < n ==> ~(n = 1)")
-    let r2 ← REAL_ARITH (← q r"x:real = &0 ==> ~(x = &1)")
-    let r3 ← TAUT (← q r"~p /\ ~q ==> (p <=> q)")
     prove
       r"!k x:A.
           number_field k
           ==> (ring_unit (ring_of_integers k) x <=>
                x IN ring_carrier(ring_of_integers k) /\
                product (complex_embeddings k) (\g. norm(g x)) = &1)"
-      (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"(x:A) IN ring_carrier(ring_of_integers k)") THENL [ASM_REWRITE_TAC [], ASM_MESON_TAC [RING_UNIT_IN_CARRIER]] THEN ASM_CASES_TAC (← q r"x:A = ring_0 k") THENL [ASM_REWRITE_TAC [] THEN MATCH_MP_TAC r3 THEN CONJ_TAC THENL [ASM_MESON_TAC [RING_UNIT_0, RING_OF_INTEGERS, NUMBER_FIELD_IMP_FIELD, INTEGRAL_DOMAIN_RING_OF_INTEGERS, INTEGRAL_DOMAIN_IMP_NONTRIVIAL_RING], MATCH_MP_TAC r2 THEN ASM_SIMP_TAC [PRODUCT_EQ_0, FINITE_COMPLEX_EMBEDDINGS] THEN FIRST_ASSUM (MP_TAC o ((REWRITE_RULE [(← GSYM MEMBER_NOT_EMPTY)]) o (MATCH_MP COMPLEX_EMBEDDINGS_NONEMPTY))) THEN MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC [complex_embeddings, IN_ELIM_THM, COMPLEX_NORM_ZERO] THEN MESON_TAC [RING_HOMOMORPHISM_0, COMPLEX_RING_CLAUSES]], ALL_TAC] THEN ASM_SIMP_TAC [(← GSYM NUMBER_FIELD_IDEAL_NORM_PRINCIPAL_EMBEDDINGS), REAL_OF_NUM_EQ, (← GSYM IDEAL_GENERATED_SING_EQ_CARRIER)] THEN EQ_TAC THEN SIMP_TAC [IDEAL_NORM_CARRIER] THEN ONCE_REWRITE_TAC [(← GSYM CONTRAPOS_THM)] THEN DISCH_TAC THEN MATCH_MP_TAC r1 THEN MATCH_MP_TAC IDEAL_NORM_GT_1 THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_GENERATED] THEN MATCH_MP_TAC RING_OF_INTEGERS_FINITE_QUOTIENT THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN DISCH_THEN (MP_TAC o (AP_TERM (← q r"\s:A->bool. (x:A) IN s"))) THEN ASM_SIMP_TAC [IDEAL_GENERATED_INC_GEN, IN_SING])
+      (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"(x:A) IN ring_carrier(ring_of_integers k)") THENL [ASM_REWRITE_TAC [], ASM_MESON_TAC [RING_UNIT_IN_CARRIER]] THEN ASM_CASES_TAC (← q r"x:A = ring_0 k") THENL [ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← TAUT (← q r"~p /\ ~q ==> (p <=> q)")) THEN CONJ_TAC THENL [ASM_MESON_TAC [RING_UNIT_0, RING_OF_INTEGERS, NUMBER_FIELD_IMP_FIELD, INTEGRAL_DOMAIN_RING_OF_INTEGERS, INTEGRAL_DOMAIN_IMP_NONTRIVIAL_RING], MATCH_MP_TAC (← REAL_ARITH (← q r"x:real = &0 ==> ~(x = &1)")) THEN ASM_SIMP_TAC [PRODUCT_EQ_0, FINITE_COMPLEX_EMBEDDINGS] THEN FIRST_ASSUM (MP_TAC o ((REWRITE_RULE [(← GSYM MEMBER_NOT_EMPTY)]) o (MATCH_MP COMPLEX_EMBEDDINGS_NONEMPTY))) THEN MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC [complex_embeddings, IN_ELIM_THM, COMPLEX_NORM_ZERO] THEN MESON_TAC [RING_HOMOMORPHISM_0, COMPLEX_RING_CLAUSES]], ALL_TAC] THEN ASM_SIMP_TAC [(← GSYM NUMBER_FIELD_IDEAL_NORM_PRINCIPAL_EMBEDDINGS), REAL_OF_NUM_EQ, (← GSYM IDEAL_GENERATED_SING_EQ_CARRIER)] THEN EQ_TAC THEN SIMP_TAC [IDEAL_NORM_CARRIER] THEN ONCE_REWRITE_TAC [(← GSYM CONTRAPOS_THM)] THEN DISCH_TAC THEN MATCH_MP_TAC (← ARITH_RULE (← q r"1 < n ==> ~(n = 1)")) THEN MATCH_MP_TAC IDEAL_NORM_GT_1 THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_GENERATED] THEN MATCH_MP_TAC RING_OF_INTEGERS_FINITE_QUOTIENT THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN DISCH_THEN (MP_TAC o (AP_TERM (← q r"\s:A->bool. (x:A) IN s"))) THEN ASM_SIMP_TAC [IDEAL_GENERATED_INC_GEN, IN_SING])
 
   let NUMBER_FIELD_DISCRIMINANT_EMBEDDINGS ← prove
     r"!k n w (e:num->A->complex).
@@ -551,69 +540,17 @@ def setupInfinitePlaces01 [HolBase] (D : InfinitePlacesDeps) :
 
   let COMPLEX_EMBEDDINGS_VSUM_CNJ_REAL ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"q /\ (q ==> p) ==> p /\ q")
     prove
       r"!k (a:A) (b:A).
           number_field k /\ a IN ring_carrier k /\ b IN ring_carrier k
           ==> real(vsum (complex_embeddings k) (\g. cnj(g a) * g b))"
       (REPEAT STRIP_TAC THEN SUBGOAL_THEN (← q r"FINITE(complex_embeddings (k:A ring))") ASSUME_TAC THENL [ASM_MESON_TAC [COMPLEX_EMBEDDINGS_HAS_SIZE, HAS_SIZE], ALL_TAC] THEN REWRITE_TAC [REAL_CNJ] THEN ASM_SIMP_TAC [CNJ_VSUM] THEN REWRITE_TAC [CNJ_MUL, CNJ_CNJ] THEN ABBREV_TAC (← q r"cj = \g:A->complex. RESTRICTION (ring_carrier k) (cnj o g)") THEN SUBGOAL_THEN (← q r"IMAGE (cj:(A->complex)->(A->complex)) (complex_embeddings k) =
       complex_embeddings k /\
-      (!g. g IN complex_embeddings k ==> cj(cj g) = g)") STRIP_ASSUME_TAC THENL [EXPAND_TAC "cj" THEN REWRITE_TAC [] THEN MATCH_MP_TAC r1 THEN CONJ_TAC THENL [REWRITE_TAC [COMPLEX_EMBEDDINGS_CNJ_CNJ], DISCH_TAC] THEN MATCH_MP_TAC SUBSET_ANTISYM THEN REWRITE_TAC [SUBSET, FORALL_IN_IMAGE, COMPLEX_EMBEDDINGS_CNJ] THEN X_GEN_TAC (← q r"g:A->complex") THEN DISCH_TAC THEN REWRITE_TAC [IN_IMAGE] THEN EXISTS_TAC (← q r"RESTRICTION (ring_carrier k) (cnj o (g:A->complex))") THEN ASM_SIMP_TAC [COMPLEX_EMBEDDINGS_CNJ], ALL_TAC] THEN FIRST_ASSUM (fun th => tactic_of do pure (GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [(← SYM th)])) THEN wPart rand (lhand o rand) VSUM_IMAGE THEN ANTS_TAC THENL [ASM_MESON_TAC [], DISCH_THEN SUBST1_TAC] THEN MATCH_MP_TAC VSUM_EQ THEN X_GEN_TAC (← q r"g:A->complex") THEN DISCH_TAC THEN EXPAND_TAC "cj" THEN ASM_REWRITE_TAC [o_THM, RESTRICTION, CNJ_CNJ] THEN REWRITE_TAC [COMPLEX_MUL_SYM])
+      (!g. g IN complex_embeddings k ==> cj(cj g) = g)") STRIP_ASSUME_TAC THENL [EXPAND_TAC "cj" THEN REWRITE_TAC [] THEN MATCH_MP_TAC (← TAUT (← q r"q /\ (q ==> p) ==> p /\ q")) THEN CONJ_TAC THENL [REWRITE_TAC [COMPLEX_EMBEDDINGS_CNJ_CNJ], DISCH_TAC] THEN MATCH_MP_TAC SUBSET_ANTISYM THEN REWRITE_TAC [SUBSET, FORALL_IN_IMAGE, COMPLEX_EMBEDDINGS_CNJ] THEN X_GEN_TAC (← q r"g:A->complex") THEN DISCH_TAC THEN REWRITE_TAC [IN_IMAGE] THEN EXISTS_TAC (← q r"RESTRICTION (ring_carrier k) (cnj o (g:A->complex))") THEN ASM_SIMP_TAC [COMPLEX_EMBEDDINGS_CNJ], ALL_TAC] THEN FIRST_ASSUM (fun th => tactic_of do pure (GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [(← SYM th)])) THEN wPart rand (lhand o rand) VSUM_IMAGE THEN ANTS_TAC THENL [ASM_MESON_TAC [], DISCH_THEN SUBST1_TAC] THEN MATCH_MP_TAC VSUM_EQ THEN X_GEN_TAC (← q r"g:A->complex") THEN DISCH_TAC THEN EXPAND_TAC "cj" THEN ASM_REWRITE_TAC [o_THM, RESTRICTION, CNJ_CNJ] THEN REWRITE_TAC [COMPLEX_MUL_SYM])
 
   let NUMBER_FIELD_EMBEDDING_GRAM_DET ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let p1 ← prove r"ring_homomorphism(real_ring,complex_ring) Cx" (REWRITE_TAC [ring_homomorphism, COMPLEX_RING_CLAUSES, REAL_RING_CLAUSES, SUBSET_UNIV, IN_UNIV, CX_ADD, CX_MUL, CX_NEG])
-    let cx_hom := p1
-    let q2 ← q r"norm:complex->real"
-    let q3 ← q r"e:num->A->complex"
-    let q4 ← q r"w:num->A"
-    let q5 ← q r"n:num"
-    let q6 ← q r"k:A ring"
-    let v7 ← ISPECL [q6, q5, q4, q3] NUMBER_FIELD_DISCRIMINANT_EMBEDDINGS
-    let v16 ← GSYM CX_POW
-    let q17 ← q r"\l j. (e:num->A->complex) l ((w:num->A) j)"
-    let q18 ← q r"{i:num | i < n}"
-    let q19 ← q r"complex_ring"
-    let v20 ← ISPECL [q19, q18, q17] RING_DET_TRANSP
-    let q21 ← q r"\i l. (e:num->A->complex) l ((w:num->A) i)"
-    let q22 ← q r"{i:num | i < n}"
-    let q23 ← q r"cnj"
-    let q24 ← q r"complex_ring"
-    let q25 ← q r"complex_ring"
-    let v26 ← ISPECL [q25, q24, q23, q22, q21] RING_DET_HOMOMORPHISM
-    let q27 ← q r"\l j. (e:num->A->complex) l ((w:num->A) j)"
-    let q28 ← q r"\i l. cnj((e:num->A->complex) l ((w:num->A) i))"
-    let q29 ← q r"{i:num | i < n}"
-    let q30 ← q r"complex_ring"
-    let v31 ← ISPECL [q30, q29, q28, q27] RING_DET_MUL
-    let q32 ← q r"ring_det complex_ring {i | i < n}
-        (\i j. vsum {l | l < n}
-                 (\l. cnj((e:num->A->complex) l (w i)) * e l
-                  ((w:num->A) j)))"
-    let q33 ← q r"\i j. Re(vsum {l | l < n}
-                 (\l. cnj((e:num->A->complex) l (w i)) * e l ((w:num->A) j)))"
-    let q34 ← q r"{i:num | i < n}"
-    let q35 ← q r"Cx"
-    let q36 ← q r"complex_ring"
-    let q37 ← q r"real_ring"
-    let v38 ← ISPECL [q37, q36, q35, q34, q33] RING_DET_HOMOMORPHISM
-    let q39 ← q r"Cx(ring_det real_ring {i | i < n}
-        (\i j. Re(vsum {l | l < n}
-                 (\l. cnj((e:num->A->complex) l (w i)) * e l (w j))))) =
-    cnj(ring_det complex_ring {i | i < n} (\l j. e l ((w:num->A) j))) *
-    ring_det complex_ring {i | i < n} (\l j. e l (w j))"
-    let q40 ← q r"vsum {l | l < n} (\l. cnj((e:num->A->complex) l (w i)) * e l (w j)) =
-      vsum (complex_embeddings k) (\g. cnj(g((w:num->A) i)) * g(w j))"
-    let v41 ← GSYM REAL
-    let q42 ← q r"!i j. i < n /\ j < n
-          ==> Cx(Re(vsum {l | l < n}
-                     (\l. cnj((e:num->A->complex) l (w i)) * e l (w j)))) =
-              vsum {l | l < n} (\l. cnj(e l (w i)) * e l (w j))"
-    let q46 ← q r"!i. i < n ==> (w:num->A) i IN ring_carrier k"
-    let q47 ← q r"k:A ring"
-    let v48 ← ISPEC q47 COMPLEX_EMBEDDINGS_HAS_SIZE
-    let q49 ← q r"IMAGE (e:num->A->complex) {i | i < n} = complex_embeddings k"
-    let q50 ← q r"n = extension_degree (subfield_generated k {ring_0 k},k:A ring) I"
+    let cx_hom := (← prove r"ring_homomorphism(real_ring,complex_ring) Cx" (REWRITE_TAC [ring_homomorphism, COMPLEX_RING_CLAUSES, REAL_RING_CLAUSES, SUBSET_UNIV, IN_UNIV, CX_ADD, CX_MUL, CX_NEG]))
     prove
       r"!k n (w:num->A) (e:num->A->complex).
           number_field k /\
@@ -625,7 +562,19 @@ def setupInfinitePlaces01 [HolBase] (D : InfinitePlacesDeps) :
                 (\i j. Re(vsum {l | l < n} (\l. cnj(e l (w i)) * e l (w j))))
               pow 2 =
               real_of_int(number_field_discriminant k) pow 2"
-      (REPEAT STRIP_TAC THEN UNDISCH_TAC q50 THEN DISCH_THEN (ASSUME_TAC o SYM) THEN SUBGOAL_THEN q49 ASSUME_TAC THENL [MP_TAC v48 THEN ASM_REWRITE_TAC [HAS_SIZE] THEN STRIP_TAC THEN MATCH_MP_TAC CARD_SUBSET_EQ THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [REWRITE_TAC [SUBSET, FORALL_IN_IMAGE, IN_ELIM_THM] THEN ASM_MESON_TAC [], wPart lhand (lhand o rand) CARD_IMAGE_INJ THEN ASM_REWRITE_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM, CARD_NUMSEG_LT] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC []], ALL_TAC] THEN SUBGOAL_THEN q46 ASSUME_TAC THENL [FIRST_X_ASSUM (MP_TAC o ((MATCH_MP FREE_BASIS_IN_CARRIER) o (checkM (fun th => (do let z44 ← (do let z45 ← (pure th); pure (concl z45)); let z43 ← (q r"w:num->A"); pure (free_in z43 z44)))))) THEN MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], ALL_TAC] THEN SUBGOAL_THEN q42 ASSUME_TAC THENL [REPEAT STRIP_TAC THEN REWRITE_TAC [v41] THEN SUBGOAL_THEN q40 SUBST1_TAC THENL [FIRST_ASSUM (fun th => tactic_of do pure (REWRITE_TAC [(← SYM th)])) THEN wPart rand (lhand o rand) VSUM_IMAGE THEN ANTS_TAC THENL [REWRITE_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM] THEN ASM_REWRITE_TAC [], DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [o_DEF]], MATCH_MP_TAC COMPLEX_EMBEDDINGS_VSUM_CNJ_REAL THEN ASM_SIMP_TAC []], ALL_TAC] THEN SUBGOAL_THEN q39 ASSUME_TAC THENL [MP_TAC v38 THEN REWRITE_TAC [cx_hom, FINITE_NUMSEG_LT, REAL_RING_CLAUSES, IN_UNIV] THEN DISCH_THEN SUBST1_TAC THEN TRANS_TAC EQ_TRANS q32 THEN CONJ_TAC THENL [MATCH_MP_TAC RING_DET_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN ASM_SIMP_TAC [], ALL_TAC] THEN MP_TAC v31 THEN REWRITE_TAC [COMPLEX_RING_CLAUSES, IN_UNIV, FINITE_NUMSEG_LT] THEN ASM_SIMP_TAC [COMPLEX_RING_SUM, FINITE_NUMSEG_LT] THEN DISCH_THEN SUBST1_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN MP_TAC v26 THEN REWRITE_TAC [RING_HOMOMORPHISM_CNJ, FINITE_NUMSEG_LT, COMPLEX_RING_CLAUSES, IN_UNIV] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN AP_TERM_TAC THEN MP_TAC v20 THEN REWRITE_TAC [FINITE_NUMSEG_LT], ALL_TAC] THEN FIRST_X_ASSUM (MP_TAC o ((REWRITE_RULE [COMPLEX_MUL_CNJ, v16, CX_INJ]) o (checkM (fun th => (do if ← (do if ← (do let z9 ← (do let z10 ← (pure th); pure (concl z10)); let z8 ← (q r"cnj"); pure (free_in z8 z9)) then (do let z11 ← (do let z12 ← (pure th); pure (concl z12)); pure (is_eq z11)) else pure false) then (do let z13 ← (do let z14 ← (do let z15 ← (pure th); pure (concl z15)); liftExcept (lhs z14)); pure (is_comb z13)) else pure false))))) THEN DISCH_THEN SUBST1_TAC THEN MP_TAC v7 THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o (AP_TERM q2)) THEN REWRITE_TAC [COMPLEX_NORM_POW, COMPLEX_NORM_CX] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [REAL_POW2_ABS])
+      (REPEAT STRIP_TAC THEN UNDISCH_TAC (← q r"n = extension_degree (subfield_generated k {ring_0 k},k:A ring) I") THEN DISCH_THEN (ASSUME_TAC o SYM) THEN SUBGOAL_THEN (← q r"IMAGE (e:num->A->complex) {i | i < n} = complex_embeddings k") ASSUME_TAC THENL [MP_TAC (← ISPEC (← q r"k:A ring") COMPLEX_EMBEDDINGS_HAS_SIZE) THEN ASM_REWRITE_TAC [HAS_SIZE] THEN STRIP_TAC THEN MATCH_MP_TAC CARD_SUBSET_EQ THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [REWRITE_TAC [SUBSET, FORALL_IN_IMAGE, IN_ELIM_THM] THEN ASM_MESON_TAC [], wPart lhand (lhand o rand) CARD_IMAGE_INJ THEN ASM_REWRITE_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM, CARD_NUMSEG_LT] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"!i. i < n ==> (w:num->A) i IN ring_carrier k") ASSUME_TAC THENL [FIRST_X_ASSUM (MP_TAC o ((MATCH_MP FREE_BASIS_IN_CARRIER) o (checkM (fun th => (do let z44 ← (do let z45 ← (pure th); pure (concl z45)); let z43 ← (q r"w:num->A"); pure (free_in z43 z44)))))) THEN MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], ALL_TAC] THEN SUBGOAL_THEN (← q r"!i j. i < n /\ j < n
+          ==> Cx(Re(vsum {l | l < n}
+                     (\l. cnj((e:num->A->complex) l (w i)) * e l (w j)))) =
+              vsum {l | l < n} (\l. cnj(e l (w i)) * e l (w j))") ASSUME_TAC THENL [REPEAT STRIP_TAC THEN REWRITE_TAC [(← GSYM REAL)] THEN SUBGOAL_THEN (← q r"vsum {l | l < n} (\l. cnj((e:num->A->complex) l (w i)) * e l (w j)) =
+      vsum (complex_embeddings k) (\g. cnj(g((w:num->A) i)) * g(w j))") SUBST1_TAC THENL [FIRST_ASSUM (fun th => tactic_of do pure (REWRITE_TAC [(← SYM th)])) THEN wPart rand (lhand o rand) VSUM_IMAGE THEN ANTS_TAC THENL [REWRITE_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM] THEN ASM_REWRITE_TAC [], DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [o_DEF]], MATCH_MP_TAC COMPLEX_EMBEDDINGS_VSUM_CNJ_REAL THEN ASM_SIMP_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"Cx(ring_det real_ring {i | i < n}
+        (\i j. Re(vsum {l | l < n}
+                 (\l. cnj((e:num->A->complex) l (w i)) * e l (w j))))) =
+    cnj(ring_det complex_ring {i | i < n} (\l j. e l ((w:num->A) j))) *
+    ring_det complex_ring {i | i < n} (\l j. e l (w j))") ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"real_ring"), (← q r"complex_ring"), (← q r"Cx"), (← q r"{i:num | i < n}"), (← q r"\i j. Re(vsum {l | l < n}
+                 (\l. cnj((e:num->A->complex) l (w i)) * e l ((w:num->A) j)))")] RING_DET_HOMOMORPHISM) THEN REWRITE_TAC [cx_hom, FINITE_NUMSEG_LT, REAL_RING_CLAUSES, IN_UNIV] THEN DISCH_THEN SUBST1_TAC THEN TRANS_TAC EQ_TRANS (← q r"ring_det complex_ring {i | i < n}
+        (\i j. vsum {l | l < n}
+                 (\l. cnj((e:num->A->complex) l (w i)) * e l
+                  ((w:num->A) j)))") THEN CONJ_TAC THENL [MATCH_MP_TAC RING_DET_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN ASM_SIMP_TAC [], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"complex_ring"), (← q r"{i:num | i < n}"), (← q r"\i l. cnj((e:num->A->complex) l ((w:num->A) i))"), (← q r"\l j. (e:num->A->complex) l ((w:num->A) j)")] RING_DET_MUL) THEN REWRITE_TAC [COMPLEX_RING_CLAUSES, IN_UNIV, FINITE_NUMSEG_LT] THEN ASM_SIMP_TAC [COMPLEX_RING_SUM, FINITE_NUMSEG_LT] THEN DISCH_THEN SUBST1_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN MP_TAC (← ISPECL [(← q r"complex_ring"), (← q r"complex_ring"), (← q r"cnj"), (← q r"{i:num | i < n}"), (← q r"\i l. (e:num->A->complex) l ((w:num->A) i)")] RING_DET_HOMOMORPHISM) THEN REWRITE_TAC [RING_HOMOMORPHISM_CNJ, FINITE_NUMSEG_LT, COMPLEX_RING_CLAUSES, IN_UNIV] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN AP_TERM_TAC THEN MP_TAC (← ISPECL [(← q r"complex_ring"), (← q r"{i:num | i < n}"), (← q r"\l j. (e:num->A->complex) l ((w:num->A) j)")] RING_DET_TRANSP) THEN REWRITE_TAC [FINITE_NUMSEG_LT], ALL_TAC] THEN FIRST_X_ASSUM (MP_TAC o ((REWRITE_RULE [COMPLEX_MUL_CNJ, (← GSYM CX_POW), CX_INJ]) o (checkM (fun th => (do if ← (do if ← (do let z9 ← (do let z10 ← (pure th); pure (concl z10)); let z8 ← (q r"cnj"); pure (free_in z8 z9)) then (do let z11 ← (do let z12 ← (pure th); pure (concl z12)); pure (is_eq z11)) else pure false) then (do let z13 ← (do let z14 ← (do let z15 ← (pure th); pure (concl z15)); liftExcept (lhs z14)); pure (is_comb z13)) else pure false))))) THEN DISCH_THEN SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"n:num"), (← q r"w:num->A"), (← q r"e:num->A->complex")] NUMBER_FIELD_DISCRIMINANT_EMBEDDINGS) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o (AP_TERM (← q r"norm:complex->real"))) THEN REWRITE_TAC [COMPLEX_NORM_POW, COMPLEX_NORM_CX] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [REAL_POW2_ABS])
 
   -- @@RETURN BEGIN
   return { real_embeddings, infinite_places, COMPLEX_EMBEDDINGS_CNJ,
@@ -679,113 +628,37 @@ def setupInfinitePlaces02 [HolBase] (D : InfinitePlacesDeps) (BInfinitePlaces01 
 
   let NUMBER_FIELD_DISCRIMINANT_SIGN ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"Re z = &0"
-    let q2 ← q r"Im z = &0"
-    let q3 ← q r"Im z"
-    let v4 ← SPEC q3 REAL_LE_SQUARE
-    let q5 ← q r"Re z"
-    let v6 ← SPEC q5 REAL_LE_SQUARE
-    let q7 ← q r"x:real = --x <=> x = &0"
-    let r8 ← REAL_ARITH q7
-    let q9 ← q r"--x:real = x <=> x = &0"
-    let r10 ← REAL_ARITH q9
-    let p11 ← prove r"!z r. z pow 2 = Cx r /\ ~(r = &0) /\ (cnj z = z \/ cnj z = --z)
-           ==> (&0 < r <=> cnj z = z)" (REPEAT GEN_TAC THEN REWRITE_TAC [COMPLEX_EQ, COMPLEX_POW_2, RE_CNJ, IM_CNJ, RE_NEG, IM_NEG, complex_mul, RE, IM, RE_CX, IM_CX, r10, r8] THEN MP_TAC v6 THEN MP_TAC v4 THEN MAP_EVERY ASM_CASES_TAC [q2, q1] THEN ASM_REWRITE_TAC [REAL_MUL_LZERO, REAL_MUL_RZERO] THEN REAL_ARITH_TAC)
-    let lemma1 := p11
-    let p12 ← prove r"!(p:B->B) s.
+    let lemma1 := (← prove r"!z r. z pow 2 = Cx r /\ ~(r = &0) /\ (cnj z = z \/ cnj z = --z)
+           ==> (&0 < r <=> cnj z = z)" (REPEAT GEN_TAC THEN REWRITE_TAC [COMPLEX_EQ, COMPLEX_POW_2, RE_CNJ, IM_CNJ, RE_NEG, IM_NEG, complex_mul, RE, IM, RE_CX, IM_CX, (← REAL_ARITH (← q r"--x:real = x <=> x = &0")), (← REAL_ARITH (← q r"x:real = --x <=> x = &0"))] THEN MP_TAC (← SPEC (← q r"Re z") REAL_LE_SQUARE) THEN MP_TAC (← SPEC (← q r"Im z") REAL_LE_SQUARE) THEN MAP_EVERY ASM_CASES_TAC [(← q r"Im z = &0"), (← q r"Re z = &0")] THEN ASM_REWRITE_TAC [REAL_MUL_LZERO, REAL_MUL_RZERO] THEN REAL_ARITH_TAC))
+    let lemma2 := (← prove r"!(p:B->B) s.
         FINITE s /\ (!x. p(p x) = x) /\ (!x. ~(x IN s) ==> p x = x)
-        ==> (evenperm p <=> EVEN(CARD {x | ~(p x = x)} DIV 2))" (REPEAT GEN_TAC THEN DISCH_THEN (MP_TAC o (MATCH_MP SIGN_INVOLUTION)) THEN REWRITE_TAC [sign, REAL_POW_NEG, REAL_POW_ONE] THEN REPEAT COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC)
-    let lemma2 := p12
-    let q13 ← q r"e:num->A->complex"
-    let q14 ← q r"w:num->A"
-    let q15 ← q r"n:num"
-    let q16 ← q r"k:A ring"
-    let v17 ← ISPECL [q16, q15, q14, q13] NUMBER_FIELD_DISCRIMINANT_EMBEDDINGS
-    let q18 ← q r"w:num->A"
-    let q19 ← q r"n:num"
-    let q20 ← q r"ring_of_integers k:A ring"
-    let q21 ← q r"integer_ring"
-    let q22 ← q r"ring_of_int k:int->A"
-    let v23 ← ISPECL [q22, q21, q20, q19, q18] FREE_BASIS_IN_CARRIER
-    let q24 ← q r"!i j. i IN {i | i < n} /\ j IN {i | i < n} /\
-            (e:num->A->complex) i = e j ==> i = j"
-    let q25 ← q r"\(h:A->complex) (h':A->complex).
-         h(((w:num->A) o (f:(A->complex)->num)) h')"
-    let q26 ← q r"{i:num | i < n}"
-    let q27 ← q r"e:num->A->complex"
-    let q28 ← q r"complex_ring"
-    let v29 ← ISPECL [q28, q27, q26, q25] RING_DET_REINDEX
-    let q30 ← q r"(w:num->A) o (f:(A->complex)->num)"
-    let q31 ← q r"f:(A->complex)->num"
-    let q32 ← q r"{i:num | i < n}"
-    let q33 ← q r"e:num->A->complex"
-    let v34 ← ISPECL [q33, q32] INJECTIVE_ON_LEFT_INVERSE
-    let q35 ← q r"!x. x IN complex_embeddings k
-            ==> (?m. m < n /\ (e:num->A->complex) m = x) /\
-                (!m m'. (m < n /\ e m = x) /\ m' < n /\ e m' = x ==> m = m')"
-    let q36 ← q r"(!i j. i IN {i | i < n} /\ j IN {i | i < n} /\
-             (e:num->A->complex) i = e j ==> i = j) /\
-      complex_embeddings k = IMAGE e {i | i < n}"
-    let q37 ← q r"e:num->A->complex"
-    let q38 ← q r"n = extension_degree (subfield_generated k {ring_0 k},k) (I:A->A)"
-    let q39 ← q r"w:num->A"
-    let p40 ← prove r"!k:A ring.
+        ==> (evenperm p <=> EVEN(CARD {x | ~(p x = x)} DIV 2))" (REPEAT GEN_TAC THEN DISCH_THEN (MP_TAC o (MATCH_MP SIGN_INVOLUTION)) THEN REWRITE_TAC [sign, REAL_POW_NEG, REAL_POW_ONE] THEN REPEAT COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC))
+    let lemma3 := (← prove r"!k:A ring.
         number_field k
         ==> ?v. (!h. h IN complex_embeddings k ==> v h IN ring_carrier k) /\
                 ring_det complex_ring (complex_embeddings k)
                   (\(h:A->complex) (h':A->complex). h(v h')) pow 2 =
-                Cx(real_of_int(number_field_discriminant k))" (REPEAT STRIP_TAC THEN FIRST_ASSUM ((X_CHOOSE_TAC q39) o (MATCH_MP RING_OF_INTEGERS_FREE)) THEN FIRST_ASSUM (MP_TAC o ((MATCH_MP HAS_SIZE_INDEX) o (MATCH_MP COMPLEX_EMBEDDINGS_HAS_SIZE))) THEN ABBREV_TAC q38 THEN REWRITE_TAC [EXISTS_UNIQUE_THM] THEN DISCH_THEN (X_CHOOSE_THEN q37 STRIP_ASSUME_TAC) THEN SUBGOAL_THEN q36 MP_TAC THENL [REWRITE_TAC [EXTENSION, IN_IMAGE, IN_ELIM_THM] THEN ASM_MESON_TAC [], UNDISCH_THEN q35 (fun (_ : thm) => ALL_TAC) THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC SUBST1_TAC)] THEN MP_TAC v34 THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN DISCH_THEN (X_CHOOSE_TAC q31) THEN EXISTS_TAC q30 THEN MP_TAC v29 THEN ASM_REWRITE_TAC [FINITE_NUMSEG_LT] THEN DISCH_THEN SUBST1_TAC THEN UNDISCH_THEN q24 (fun (_ : thm) => ALL_TAC) THEN REWRITE_TAC [FORALL_IN_IMAGE, IN_ELIM_THM, o_THM] THEN CONJ_TAC THENL [MP_TAC v23 THEN ASM_SIMP_TAC [] THEN MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], MP_TAC v17 THEN ASM_REWRITE_TAC [] THEN ANTS_TAC THENL [ASM_MESON_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN AP_THM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC RING_DET_EQ THEN ASM_SIMP_TAC [IN_ELIM_THM]])
-    let lemma3 := p40
-    let v41 ← GSYM CX_INJ
-    let q42 ← q r"z pow 2 = Cx(real_of_int(number_field_discriminant(k:A ring)))"
-    let q43 ← q r"~(real_of_int(number_field_discriminant(k:A ring)) = &0)"
-    let q44 ← q r"evenperm(c:(A->complex)->(A->complex))"
-    let q45 ← q r"real_of_int(number_field_discriminant(k:A ring))"
-    let q46 ← q r"z:complex"
-    let v47 ← ISPECL [q46, q45] lemma1
-    let q48 ← q r"k:A ring"
-    let v49 ← ISPEC q48 NUMBER_FIELD_DISCRIMINANT_NONZERO
-    let q50 ← q r"CARD(complex_embeddings k) + CARD(real_embeddings(k:A ring)) =
-        2 * CARD(infinite_places k)"
-    let q51 ← q r"CARD(complex_embeddings k) - CARD(real_embeddings(k:A ring)) =
-      2 * (CARD(infinite_places k) - CARD(real_embeddings k))"
-    let q52 ← q r"(CARD(complex_embeddings k) - CARD(real_embeddings(k:A ring))) DIV 2 =
-    CARD(infinite_places k) - CARD(real_embeddings k)"
-    let q53 ← q r"real_embeddings k SUBSET complex_embeddings(k:A ring)"
-    let q54 ← q r"{h | ~((c:(A->complex)->(A->complex)) h = h)} =
-    complex_embeddings k DIFF real_embeddings k"
-    let q55 ← q r"complex_embeddings(k:A ring)"
-    let q56 ← q r"c:(A->complex)->(A->complex)"
-    let v57 ← ISPECL [q56, q55] lemma2
-    let q58 ← q r"c:(A->complex)->(A->complex)"
-    let q59 ← q r"\(h:A->complex) (h':A->complex). h((v:(A->complex)->A) h')"
-    let q60 ← q r"complex_embeddings(k:A ring)"
-    let q61 ← q r"complex_ring"
-    let v62 ← ISPECL [q61, q60, q59, q58] RING_DET_PERMUTE_ROWS
-    let q63 ← q r"\(h:A->complex) (h':A->complex). h((v:(A->complex)->A) h')"
-    let q64 ← q r"complex_embeddings(k:A ring)"
-    let q65 ← q r"cnj"
-    let q66 ← q r"complex_ring"
-    let q67 ← q r"complex_ring"
-    let v68 ← ISPECL [q67, q66, q65, q64, q63] RING_DET_HOMOMORPHISM
-    let q69 ← q r"ring_det complex_ring (complex_embeddings k)
-        (\(h:A->complex) (h':A->complex). h((v:(A->complex)->A) h')) = z"
-    let q70 ← q r"cnj z = ring_sign complex_ring (c:(A->complex)->(A->complex)) * z"
-    let q71 ← q r"(h:A->complex) IN complex_embeddings k"
-    let q72 ← q r"h:A->complex"
-    let q73 ← q r"(!h. (c:(A->complex)->(A->complex))(c h) = h) /\
-    (!h. ~(h IN complex_embeddings k) ==> c h = h)"
-    let q74 ← q r"c = \h:A->complex. if h IN complex_embeddings k
-                       then RESTRICTION (ring_carrier k) (cnj o h) else h"
-    let q75 ← q r"z = ring_det complex_ring (complex_embeddings k)
-          (\(h:A->complex) (h':A->complex). h((v:(A->complex)->A) h'))"
-    let q76 ← q r"v:(A->complex)->A"
+                Cx(real_of_int(number_field_discriminant k))" (REPEAT STRIP_TAC THEN FIRST_ASSUM ((X_CHOOSE_TAC (← q r"w:num->A")) o (MATCH_MP RING_OF_INTEGERS_FREE)) THEN FIRST_ASSUM (MP_TAC o ((MATCH_MP HAS_SIZE_INDEX) o (MATCH_MP COMPLEX_EMBEDDINGS_HAS_SIZE))) THEN ABBREV_TAC (← q r"n = extension_degree (subfield_generated k {ring_0 k},k) (I:A->A)") THEN REWRITE_TAC [EXISTS_UNIQUE_THM] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"e:num->A->complex") STRIP_ASSUME_TAC) THEN SUBGOAL_THEN (← q r"(!i j. i IN {i | i < n} /\ j IN {i | i < n} /\
+             (e:num->A->complex) i = e j ==> i = j) /\
+      complex_embeddings k = IMAGE e {i | i < n}") MP_TAC THENL [REWRITE_TAC [EXTENSION, IN_IMAGE, IN_ELIM_THM] THEN ASM_MESON_TAC [], UNDISCH_THEN (← q r"!x. x IN complex_embeddings k
+            ==> (?m. m < n /\ (e:num->A->complex) m = x) /\
+                (!m m'. (m < n /\ e m = x) /\ m' < n /\ e m' = x ==> m = m')") (fun (_ : thm) => ALL_TAC) THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC SUBST1_TAC)] THEN MP_TAC (← ISPECL [(← q r"e:num->A->complex"), (← q r"{i:num | i < n}")] INJECTIVE_ON_LEFT_INVERSE) THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN DISCH_THEN (X_CHOOSE_TAC (← q r"f:(A->complex)->num")) THEN EXISTS_TAC (← q r"(w:num->A) o (f:(A->complex)->num)") THEN MP_TAC (← ISPECL [(← q r"complex_ring"), (← q r"e:num->A->complex"), (← q r"{i:num | i < n}"), (← q r"\(h:A->complex) (h':A->complex).
+         h(((w:num->A) o (f:(A->complex)->num)) h')")] RING_DET_REINDEX) THEN ASM_REWRITE_TAC [FINITE_NUMSEG_LT] THEN DISCH_THEN SUBST1_TAC THEN UNDISCH_THEN (← q r"!i j. i IN {i | i < n} /\ j IN {i | i < n} /\
+            (e:num->A->complex) i = e j ==> i = j") (fun (_ : thm) => ALL_TAC) THEN REWRITE_TAC [FORALL_IN_IMAGE, IN_ELIM_THM, o_THM] THEN CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"ring_of_int k:int->A"), (← q r"integer_ring"), (← q r"ring_of_integers k:A ring"), (← q r"n:num"), (← q r"w:num->A")] FREE_BASIS_IN_CARRIER) THEN ASM_SIMP_TAC [] THEN MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"n:num"), (← q r"w:num->A"), (← q r"e:num->A->complex")] NUMBER_FIELD_DISCRIMINANT_EMBEDDINGS) THEN ASM_REWRITE_TAC [] THEN ANTS_TAC THENL [ASM_MESON_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN AP_THM_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC RING_DET_EQ THEN ASM_SIMP_TAC [IN_ELIM_THM]]))
     prove
       r"!k:A ring.
           number_field k
           ==> (&0 < number_field_discriminant k <=>
                EVEN(CARD(infinite_places k) - CARD(real_embeddings k)))"
-      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP FINITE_COMPLEX_EMBEDDINGS)) THEN FIRST_ASSUM (MP_TAC o (MATCH_MP CARD_INFINITE_PLACES)) THEN FIRST_ASSUM ((X_CHOOSE_THEN q76 STRIP_ASSUME_TAC) o (MATCH_MP lemma3)) THEN ABBREV_TAC q75 THEN DISCH_TAC THEN ABBREV_TAC q74 THEN SUBGOAL_THEN q73 STRIP_ASSUME_TAC THENL [EXPAND_TAC "c" THEN SIMP_TAC [] THEN X_GEN_TAC q72 THEN ASM_CASES_TAC q71 THEN ASM_SIMP_TAC [COMPLEX_EMBEDDINGS_CNJ, COMPLEX_EMBEDDINGS_CNJ_CNJ], ALL_TAC] THEN SUBGOAL_THEN q70 MP_TAC THENL [UNDISCH_THEN q69 (SUBST1_TAC o SYM) THEN MP_TAC v68 THEN ASM_REWRITE_TAC [RING_HOMOMORPHISM_CNJ, COMPLEX_RING_CLAUSES, IN_UNIV] THEN DISCH_THEN SUBST1_TAC THEN MP_TAC v62 THEN ASM_SIMP_TAC [PERMUTES_INVOLUTION, COMPLEX_RING_CLAUSES] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MATCH_MP_TAC RING_DET_EQ THEN EXPAND_TAC "c" THEN ASM_SIMP_TAC [RESTRICTION, o_THM], REWRITE_TAC [ring_sign, COMPLEX_RING_CLAUSES] THEN DISCH_TAC] THEN MP_TAC v57 THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN q54 SUBST1_TAC THENL [EXPAND_TAC "c" THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM, IN_DIFF, REAL_EMBEDDINGS_CNJ] THEN GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [], ALL_TAC] THEN SUBGOAL_THEN q53 ASSUME_TAC THENL [REWRITE_TAC [real_embeddings, SUBSET_RESTRICT], ALL_TAC] THEN ASM_SIMP_TAC [CARD_DIFF] THEN SUBGOAL_THEN q52 SUBST1_TAC THENL [SUBGOAL_THEN q51 SUBST1_TAC THENL [UNDISCH_TAC q50 THEN ARITH_TAC, SIMP_TAC [DIV_MULT, ARITH_EQ]], DISCH_THEN (SUBST1_TAC o SYM)] THEN REWRITE_TAC [int_lt, int_of_num_th] THEN MP_TAC v49 THEN ASM_REWRITE_TAC [int_eq, int_of_num_th] THEN DISCH_TAC THEN MP_TAC v47 THEN ASM_REWRITE_TAC [] THEN ASM_CASES_TAC q44 THEN ASM_REWRITE_TAC [COMPLEX_MUL_LID, COMPLEX_MUL_LNEG] THEN DISCH_THEN SUBST1_TAC THEN UNDISCH_TAC q43 THEN UNDISCH_TAC q42 THEN REWRITE_TAC [v41] THEN CONV_TAC COMPLEX_RING)
+      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP FINITE_COMPLEX_EMBEDDINGS)) THEN FIRST_ASSUM (MP_TAC o (MATCH_MP CARD_INFINITE_PLACES)) THEN FIRST_ASSUM ((X_CHOOSE_THEN (← q r"v:(A->complex)->A") STRIP_ASSUME_TAC) o (MATCH_MP lemma3)) THEN ABBREV_TAC (← q r"z = ring_det complex_ring (complex_embeddings k)
+          (\(h:A->complex) (h':A->complex). h((v:(A->complex)->A) h'))") THEN DISCH_TAC THEN ABBREV_TAC (← q r"c = \h:A->complex. if h IN complex_embeddings k
+                       then RESTRICTION (ring_carrier k) (cnj o h) else h") THEN SUBGOAL_THEN (← q r"(!h. (c:(A->complex)->(A->complex))(c h) = h) /\
+    (!h. ~(h IN complex_embeddings k) ==> c h = h)") STRIP_ASSUME_TAC THENL [EXPAND_TAC "c" THEN SIMP_TAC [] THEN X_GEN_TAC (← q r"h:A->complex") THEN ASM_CASES_TAC (← q r"(h:A->complex) IN complex_embeddings k") THEN ASM_SIMP_TAC [COMPLEX_EMBEDDINGS_CNJ, COMPLEX_EMBEDDINGS_CNJ_CNJ], ALL_TAC] THEN SUBGOAL_THEN (← q r"cnj z = ring_sign complex_ring (c:(A->complex)->(A->complex)) * z") MP_TAC THENL [UNDISCH_THEN (← q r"ring_det complex_ring (complex_embeddings k)
+        (\(h:A->complex) (h':A->complex). h((v:(A->complex)->A) h')) = z") (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"complex_ring"), (← q r"complex_ring"), (← q r"cnj"), (← q r"complex_embeddings(k:A ring)"), (← q r"\(h:A->complex) (h':A->complex). h((v:(A->complex)->A) h')")] RING_DET_HOMOMORPHISM) THEN ASM_REWRITE_TAC [RING_HOMOMORPHISM_CNJ, COMPLEX_RING_CLAUSES, IN_UNIV] THEN DISCH_THEN SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"complex_ring"), (← q r"complex_embeddings(k:A ring)"), (← q r"\(h:A->complex) (h':A->complex). h((v:(A->complex)->A) h')"), (← q r"c:(A->complex)->(A->complex)")] RING_DET_PERMUTE_ROWS) THEN ASM_SIMP_TAC [PERMUTES_INVOLUTION, COMPLEX_RING_CLAUSES] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MATCH_MP_TAC RING_DET_EQ THEN EXPAND_TAC "c" THEN ASM_SIMP_TAC [RESTRICTION, o_THM], REWRITE_TAC [ring_sign, COMPLEX_RING_CLAUSES] THEN DISCH_TAC] THEN MP_TAC (← ISPECL [(← q r"c:(A->complex)->(A->complex)"), (← q r"complex_embeddings(k:A ring)")] lemma2) THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"{h | ~((c:(A->complex)->(A->complex)) h = h)} =
+    complex_embeddings k DIFF real_embeddings k") SUBST1_TAC THENL [EXPAND_TAC "c" THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM, IN_DIFF, REAL_EMBEDDINGS_CNJ] THEN GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"real_embeddings k SUBSET complex_embeddings(k:A ring)") ASSUME_TAC THENL [REWRITE_TAC [real_embeddings, SUBSET_RESTRICT], ALL_TAC] THEN ASM_SIMP_TAC [CARD_DIFF] THEN SUBGOAL_THEN (← q r"(CARD(complex_embeddings k) - CARD(real_embeddings(k:A ring))) DIV 2 =
+    CARD(infinite_places k) - CARD(real_embeddings k)") SUBST1_TAC THENL [SUBGOAL_THEN (← q r"CARD(complex_embeddings k) - CARD(real_embeddings(k:A ring)) =
+      2 * (CARD(infinite_places k) - CARD(real_embeddings k))") SUBST1_TAC THENL [UNDISCH_TAC (← q r"CARD(complex_embeddings k) + CARD(real_embeddings(k:A ring)) =
+        2 * CARD(infinite_places k)") THEN ARITH_TAC, SIMP_TAC [DIV_MULT, ARITH_EQ]], DISCH_THEN (SUBST1_TAC o SYM)] THEN REWRITE_TAC [int_lt, int_of_num_th] THEN MP_TAC (← ISPEC (← q r"k:A ring") NUMBER_FIELD_DISCRIMINANT_NONZERO) THEN ASM_REWRITE_TAC [int_eq, int_of_num_th] THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"z:complex"), (← q r"real_of_int(number_field_discriminant(k:A ring))")] lemma1) THEN ASM_REWRITE_TAC [] THEN ASM_CASES_TAC (← q r"evenperm(c:(A->complex)->(A->complex))") THEN ASM_REWRITE_TAC [COMPLEX_MUL_LID, COMPLEX_MUL_LNEG] THEN DISCH_THEN SUBST1_TAC THEN UNDISCH_TAC (← q r"~(real_of_int(number_field_discriminant(k:A ring)) = &0)") THEN UNDISCH_TAC (← q r"z pow 2 = Cx(real_of_int(number_field_discriminant(k:A ring)))") THEN REWRITE_TAC [(← GSYM CX_INJ)] THEN CONV_TAC COMPLEX_RING)
 
   -- @@RETURN BEGIN
   return { NUMBER_FIELD_DISCRIMINANT_SIGN }

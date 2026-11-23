@@ -62,8 +62,6 @@ def setupRealAxOverloads
     ExceptT String IO Unit := do
   let make_overloadable (s : String) (ty : String) : ExceptT String IO Unit := do
     make_overloadable' s (← qty ty)
-  let overload_interface (p : String × String) : ExceptT String IO Unit := do
-    overload_interface' p.1 (← q p.2)
 
   parse_as_infix ("++", (16, "right"))
   parse_as_infix ("**", (20, "right"))
@@ -91,11 +89,15 @@ def setupRealAxOverloads
   make_overloadable "min" r"A->A->A"
   make_overloadable "&" r"num->A"
 
-  for p in [("+", r"(+):num->num->num"), ("-", r"(-):num->num->num"),
+  -- `do_list overload_interface [..]`: the list's quotations are parsed, last
+  -- first, before `do_list` runs.
+  let ps := [("+", r"(+):num->num->num"), ("-", r"(-):num->num->num"),
             ("*", r"(*):num->num->num"), ("<", r"(<):num->num->bool"),
             ("<=", r"(<=):num->num->bool"), (">", r"(>):num->num->bool"),
-            (">=", r"(>=):num->num->bool")] do
-    overload_interface p
+            (">=", r"(>=):num->num->bool")]
+  let tms := (← ps.reverse.mapM (fun p => q p.2)).reverse
+  for (p, tm) in ps.zip tms do
+    ExceptT.mk (overload_interface' p.1 tm)
 
 end
 
@@ -307,7 +309,7 @@ def setupDist [HolBase] (N : HolMath.Nums.NumsThms)
       DISCH_THEN (fun th => tactic_of do
         pure ((CHOOSE_THEN SUBST1_TAC) (← REWRITE_RULE [LT_EXISTS] th))) THEN
       REWRITE_TAC [RIGHT_ADD_DISTRIB, LE_ADD_LCANCEL] THEN
-      DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"SUC C") th))) THEN
+      DISCH_THEN ((fun (ocq22 : _) => fun th => tactic_of do pure (MP_TAC (← SPEC ocq22 th))) (← q r"SUC C")) THEN
       REWRITE_TAC [NOT_LE, MULT_CLAUSES, ADD_CLAUSES, LT_SUC_LE] THEN
       REWRITE_TAC [ADD_ASSOC, LE_ADDR],
       DISCH_THEN (fun th => tactic_of do
@@ -467,8 +469,8 @@ def setupNadd [HolBase] (N : HolMath.Nums.NumsThms)
    r"!x. ?A B. !n. fn x n <= A * n + B"
    (GEN_TAC THEN X_CHOOSE_TAC (← q r"B:num") (← SPEC (← q r"x:nadd") NADD_CAUCHY) THEN
     MAP_EVERY EXISTS_TAC [← q r"B + fn x 1", ← q r"B:num"] THEN GEN_TAC THEN
-    POP_ASSUM (fun th => tactic_of do
-      pure (MP_TAC (← SPECL [← q r"n:num", ← q r"1"] th))) THEN
+    POP_ASSUM ((fun (ocq20 : _) (ocq21 : _) => fun th => tactic_of do
+      pure (MP_TAC (← SPECL [ocq20, ocq21] th))) (← q r"n:num") (← q r"1")) THEN
     REWRITE_TAC [DIST_LE_CASES, MULT_CLAUSES] THEN
     DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← CONJUNCT2 th))) THEN
     REWRITE_TAC [LEFT_ADD_DISTRIB, RIGHT_ADD_DISTRIB, MULT_CLAUSES] THEN
@@ -724,8 +726,8 @@ def setupNaddOrder [HolBase]
    r"!x y. ~(x <<= y) ==> !B. ?n. ~(n = 0) /\ fn y n + B < fn x n"
    (REPEAT GEN_TAC THEN REWRITE_TAC [nadd_le, NOT_FORALL_THM, NOT_EXISTS_THM] THEN
     REWRITE_TAC [NOT_LE] THEN DISCH_TAC THEN GEN_TAC THEN
-    POP_ASSUM (fun th => tactic_of do
-      pure ((X_CHOOSE_TAC (← q r"n:num")) (← SPEC (← q r"B + fn x 0") th))) THEN
+    POP_ASSUM ((fun (ocq18 : _) (ocq19 : _) => fun th => tactic_of do
+      pure ((X_CHOOSE_TAC ocq18) (← SPEC ocq19 th))) (← q r"n:num") (← q r"B + fn x 0")) THEN
     EXISTS_TAC (← q r"n:num") THEN POP_ASSUM MP_TAC THEN
     ASM_CASES_TAC (← q r"n = 0") THEN ASM_REWRITE_TAC [NOT_LT, ADD_ASSOC, LE_ADDR] THEN
     CONV_TAC CONTRAPOS_CONV THEN REWRITE_TAC [NOT_LT] THEN
@@ -742,7 +744,7 @@ def setupNaddOrder [HolBase]
       pure (MP_TAC (← end_itlist CONJ
         (← (CONJUNCTS th).mapM (MATCH_MP NADD_LE_TOTAL_LEMMA))))) THEN
     REWRITE_TAC [AND_FORALL_THM] THEN
-    DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"B1 + B2") th))) THEN
+    DISCH_THEN ((fun (ocq17 : _) => fun th => tactic_of do pure (MP_TAC (← SPEC ocq17 th))) (← q r"B1 + B2")) THEN
     REWRITE_TAC [RIGHT_AND_EXISTS_THM] THEN REWRITE_TAC [LEFT_AND_EXISTS_THM] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"m:num") (X_CHOOSE_THEN (← q r"n:num") MP_TAC)) THEN
     (← do
@@ -1089,8 +1091,8 @@ def setupNaddComplete [HolBase]
   let NADD_LE_LMUL ← prove
    r"!x y z. y <<= z ==> (x ** y) <<= (x ** z)"
    (REPEAT GEN_TAC THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure ((X_CHOOSE_TAC (← q r"d:nadd")) (← MATCH_MP NADD_LE_EXISTS th))) THEN
+    DISCH_THEN ((fun (ocq16 : _) => fun th => tactic_of do
+      pure ((X_CHOOSE_TAC ocq16) (← MATCH_MP NADD_LE_EXISTS th))) (← q r"d:nadd")) THEN
     MATCH_MP_TAC NADD_LE_TRANS THEN
     EXISTS_TAC (← q r"x ** y ++ x ** d") THEN REWRITE_TAC [NADD_LE_ADD] THEN
     MATCH_MP_TAC NADD_EQ_IMP_LE THEN
@@ -1129,7 +1131,7 @@ def setupNaddComplete [HolBase]
    r"!x k. ~(x === &0) ==> ?N. &k <<= &N ** x"
    (REPEAT GEN_TAC THEN REWRITE_TAC [nadd_eq, nadd_le, NOT_EXISTS_THM] THEN
     X_CHOOSE_TAC (← q r"B:num") (← SPEC (← q r"x:nadd") NADD_CAUCHY) THEN
-    DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"B + k") th))) THEN
+    DISCH_THEN ((fun (ocq15 : _) => fun th => tactic_of do pure (MP_TAC (← SPEC ocq15 th))) (← q r"B + k")) THEN
     REWRITE_TAC [NOT_FORALL_THM, NADD_OF_NUM] THEN
     REWRITE_TAC [MULT_CLAUSES, DIST_RZERO, NOT_LE] THEN
     DISCH_THEN (X_CHOOSE_TAC (← q r"N:num")) THEN
@@ -1152,8 +1154,8 @@ def setupNaddComplete [HolBase]
     REWRITE_TAC [NOT_FORALL_THM] THEN
     X_CHOOSE_TAC (← q r"p:num") (← SPEC (← q r"k:nadd") NADD_ARCH) THEN
     FIRST_ASSUM (fun th => tactic_of do pure (MP_TAC (← MATCH_MP NADD_ARCH_MULT th))) THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure ((X_CHOOSE_TAC (← q r"N:num")) (← SPEC (← q r"p:num") th))) THEN
+    DISCH_THEN ((fun (ocq13 : _) (ocq14 : _) => fun th => tactic_of do
+      pure ((X_CHOOSE_TAC ocq13) (← SPEC ocq14 th))) (← q r"N:num") (← q r"p:num")) THEN
     EXISTS_TAC (← q r"N + 1") THEN DISCH_TAC THEN UNDISCH_TAC (← q r"~(x === &0)") THEN
     REWRITE_TAC [← GSYM NADD_LE_ANTISYM, NADD_LE_0] THEN
     MATCH_MP_TAC (← GEN_ALL (← EQ_IMP_RULE (← SPEC_ALL NADD_LE_RADD)).1) THEN
@@ -1224,16 +1226,20 @@ def setupNaddComplete [HolBase]
           let n ← q r"n:num"
           pure (MAP_EVERY (fun t => tactic_of do
             pure (MP_TAC (← GEN n t))) [th1, th2]))) THEN
-      DISCH_THEN (fun th => tactic_of do
-        pure (MP_TAC (← GEN (← q r"n:num")
-          (← SPECL [← q r"n:num", ← q r"SUC(r(n:num))"] th)))) THEN
+      -- `MP_TAC o GEN \`n:num\` o SPECL [\`n:num\`; \`SUC(r(n:num))\`]` is
+      -- built with the tactic, right to left.
+      DISCH_THEN ((fun (ocqa : _) (ocqb : _) (ocq12 : _) => fun th => tactic_of do
+        pure (MP_TAC (← GEN ocqa
+          (← SPECL [ocqb, ocq12] th)))) (← q r"n:num") (← q r"n:num") (← q r"SUC(r(n:num))")) THEN
       REWRITE_TAC [LE_SUC_LT, LT_REFL, NOT_EXISTS_THM] THEN
       (← do
-        let it ← ITAUT (← q r"(a \/ b) /\ ~(c /\ b) ==> c ==> a")
+        -- `.. o GENL [..] o MATCH_MP (ITAUT ..) o CONJ (SPECL [..] NADD_LE_TOTAL)
+        -- o SPEC_ALL`: the composition is built right to left.
         let tot ← SPECL [← q r"&n ** x", ← q r"&(SUC(r(n:num)))"] NADD_LE_TOTAL
-        pure (DISCH_THEN (fun th => tactic_of do
-          pure (ASSUME_TAC (← GENL [← q r"n:num", ← q r"x:nadd"]
-            (← MATCH_MP it (← CONJ tot (← SPEC_ALL th)))))))) THEN
+        let it ← ITAUT (← q r"(a \/ b) /\ ~(c /\ b) ==> c ==> a")
+        pure (DISCH_THEN ((fun (ocqc : _) (ocq11 : _) => fun th => tactic_of do
+          pure (ASSUME_TAC (← GENL [ocqc, ocq11]
+            (← MATCH_MP it (← CONJ tot (← SPEC_ALL th)))))) (← q r"n:num") (← q r"x:nadd")))) THEN
       DISCH_TAC] THEN
     SUBGOAL_THEN (← q r"!n i. i * r(n) <= n * r(i) + n") ASSUME_TAC THENL
      [REPEAT GEN_TAC THEN
@@ -1396,7 +1402,7 @@ def setupNaddInvAux [HolBase] (N : HolMath.Nums.NumsThms)
    r"!x. ~(x === &0) ==> ?N. !n. N <= n ==> ~(fn x n = 0)"
    (GEN_TAC THEN
     DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← MATCH_MP NADD_ARCH_MULT th))) THEN
-    DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"1") th))) THEN
+    DISCH_THEN ((fun (ocq10 : _) => fun th => tactic_of do pure (MP_TAC (← SPEC ocq10 th))) (← q r"1")) THEN
     REWRITE_TAC [nadd_le, NADD_MUL, NADD_OF_NUM, MULT_CLAUSES] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"A1:num") (X_CHOOSE_TAC (← q r"A2:num"))) THEN
     EXISTS_TAC (← q r"A2 + 1") THEN X_GEN_TAC (← q r"n:num") THEN REPEAT DISCH_TAC THEN
@@ -1411,7 +1417,7 @@ def setupNaddInvAux [HolBase] (N : HolMath.Nums.NumsThms)
     (let N := (← q r"N:num"); FIRST_ASSUM (fun th => tactic_of do
       pure ((X_CHOOSE_TAC N) (← MATCH_MP NADD_NONZERO th)))) THEN
     FIRST_ASSUM (fun th => tactic_of do pure (MP_TAC (← MATCH_MP NADD_ARCH_MULT th))) THEN
-    DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"1") th))) THEN
+    DISCH_THEN ((fun (ocq9 : _) => fun th => tactic_of do pure (MP_TAC (← SPEC ocq9 th))) (← q r"1")) THEN
     REWRITE_TAC [nadd_le, NADD_MUL, NADD_OF_NUM, MULT_CLAUSES] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"A1:num") (X_CHOOSE_TAC (← q r"A2:num"))) THEN
     EXISTS_TAC (← q r"A1 + A2") THEN EXISTS_TAC (← q r"N:num") THEN GEN_TAC THEN
@@ -1456,8 +1462,8 @@ def setupNaddInvAux [HolBase] (N : HolMath.Nums.NumsThms)
    r"!x n. ~(fn x n = 0) ==> dist(fn x n * nadd_rinv(x) n, n * n) <= fn x n"
    (REPEAT GEN_TAC THEN
     DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← MATCH_MP DIVISION th))) THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure ((CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC) (← SPEC (← q r"n * n") th))) THEN
+    DISCH_THEN ((fun (ocq8 : _) => fun th => tactic_of do
+      pure ((CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC) (← SPEC ocq8 th))) (← q r"n * n")) THEN
     REWRITE_TAC [nadd_rinv] THEN
     GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o LAND_CONV) [MULT_SYM] THEN
     REWRITE_TAC [DIST_RADD_0] THEN MATCH_MP_TAC LT_IMP_LE THEN
@@ -1758,8 +1764,6 @@ def setupHreal [HolBase]
     lift_theorem' tybij eqvs trths th
   let override_interface (p : String × String) : ExceptT String IO Unit := do
     override_interface' p.1 (← q p.2)
-  let overload_interface (p : String × String) : ExceptT String IO Unit := do
-    overload_interface' p.1 (← q p.2)
   let { ADD_AC, .. } := A1
   let { MULT_CLAUSES, MULT_SYM, RIGHT_ADD_DISTRIB, .. } := A2
   let { LE_TRANS, .. } := A3
@@ -1855,14 +1859,22 @@ def setupHreal [HolBase]
     define_quotient_type "hreal" ("mk_hreal", "dest_hreal") r"(===)"
   let hreal_tybij := (hreal_tybij1, hreal_tybij2)
 
-  for p in [("+", r"hreal_add:hreal->hreal->hreal"),
+  -- `do_list overload_interface [..]`: the list's quotations are parsed, last
+  -- first, before `do_list` runs.
+  let ps := [("+", r"hreal_add:hreal->hreal->hreal"),
             ("*", r"hreal_mul:hreal->hreal->hreal"),
-            ("<=", r"hreal_le:hreal->hreal->bool")] do
-    overload_interface p
+            ("<=", r"hreal_le:hreal->hreal->bool")]
+  let tms := (← ps.reverse.mapM (fun p => q p.2)).reverse
+  for (p, tm) in ps.zip tms do
+    ExceptT.mk (overload_interface' p.1 tm)
 
-  for p in [("&", r"hreal_of_num:num->hreal"),
-            ("inv", r"hreal_inv:hreal->hreal")] do
-    override_interface p
+  -- `do_list override_interface [..]`: the list's quotations are parsed, last
+  -- first, before `do_list` runs.
+  let ps := [("&", r"hreal_of_num:num->hreal"),
+            ("inv", r"hreal_inv:hreal->hreal")]
+  let tms := (← ps.reverse.mapM (fun p => q p.2)).reverse
+  for (p, tm) in ps.zip tms do
+    ExceptT.mk (override_interface' p.1 tm)
 
   let (hreal_of_num, hreal_of_num_th) ←
     lift_function hreal_tybij.2 (NADD_EQ_REFL, NADD_EQ_TRANS)
@@ -2125,8 +2137,8 @@ def setupTreal [HolBase] (Pr : HolMath.Pair.PairThms)
   let TREAL_EQ_TRANS ← prove
    r"!x y z. x treal_eq y /\ y treal_eq z ==> x treal_eq z"
    (REWRITE_TAC [FORALL_PAIR_THM, treal_eq] THEN REPEAT GEN_TAC THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← MK_COMB (← F_F (AP_TERM (← q r"(+)")) pure (← CONJ_PAIR th))))) THEN
+    DISCH_THEN ((fun (ocq7 : _) => fun th => tactic_of do
+      pure (MP_TAC (← MK_COMB (← F_F (AP_TERM ocq7) pure (← CONJ_PAIR th))))) (← q r"(+)")) THEN
     GEN_REWRITE_TAC (LAND_CONV o LAND_CONV) [HREAL_ADD_SYM] THEN
     REWRITE_TAC [← GSYM HREAL_ADD_ASSOC, HREAL_EQ_ADD_LCANCEL] THEN
     REWRITE_TAC [HREAL_ADD_ASSOC, HREAL_EQ_ADD_RCANCEL] THEN
@@ -2523,10 +2535,6 @@ def setupReal [HolBase] (Pr : HolMath.Pair.PairThms) (H : HrealThms)
   let lift_theorem (tybij : thm × thm) (eqvs : thm × thm × thm) (trths : List thm)
       (th : thm) : ExceptT String IO thm :=
     lift_theorem' tybij eqvs trths th
-  let overload_interface (p : String × String) : ExceptT String IO Unit := do
-    overload_interface' p.1 (← q p.2)
-  let reduce_interface (p : String × String) : ExceptT String IO Unit := do
-    reduce_interface' p.1 (← q p.2)
   let { PAIR, .. } := Pr
   let { HREAL_COMPLETE, HREAL_LE_ANTISYM, HREAL_LE_ADD, HREAL_LE_EXISTS,
         HREAL_ADD_SYM, HREAL_ADD_ASSOC, HREAL_ADD_LID, HREAL_EQ_ADD_LCANCEL,
@@ -2604,15 +2612,19 @@ def setupReal [HolBase] (Pr : HolMath.Pair.PairThms) (H : HrealThms)
   parse_as_infix ("/", (22, "left"))
   parse_as_infix ("pow", (24, "left"))
 
-  for p in [("+", r"real_add:real->real->real"), ("-", r"real_sub:real->real->real"),
+  -- `do_list overload_interface [..]`: the list's quotations are parsed, last
+  -- first, before `do_list` runs.
+  let ps := [("+", r"real_add:real->real->real"), ("-", r"real_sub:real->real->real"),
             ("*", r"real_mul:real->real->real"), ("/", r"real_div:real->real->real"),
             ("<", r"real_lt:real->real->bool"), ("<=", r"real_le:real->real->bool"),
             (">", r"real_gt:real->real->bool"), (">=", r"real_ge:real->real->bool"),
             ("--", r"real_neg:real->real"), ("pow", r"real_pow:real->num->real"),
             ("inv", r"real_inv:real->real"), ("abs", r"real_abs:real->real"),
             ("max", r"real_max:real->real->real"), ("min", r"real_min:real->real->real"),
-            ("&", r"real_of_num:num->real")] do
-    overload_interface p
+            ("&", r"real_of_num:num->real")]
+  let tms := (← ps.reverse.mapM (fun p => q p.2)).reverse
+  for (p, tm) in ps.zip tms do
+    ExceptT.mk (overload_interface' p.1 tm)
 
   let prioritize_real (_ : Unit) : IO Unit := prioritize_overload (hol_type.Tyapp "real" [])
   prioritize_real ()
@@ -2660,14 +2672,14 @@ def setupReal [HolBase] (Pr : HolMath.Pair.PairThms) (H : HrealThms)
      [MP_TAC (← INST [(← q r"dest_real x", ← q r"r:hreal#hreal->bool")] real_tybij.2) THEN
       REWRITE_TAC [real_tybij.1] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"p:hreal#hreal") MP_TAC) THEN
-      DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← AP_TERM (← q r"mk_real") th))) THEN
+      DISCH_THEN ((fun (ocq6 : _) => fun th => tactic_of do pure (MP_TAC (← AP_TERM ocq6 th))) (← q r"mk_real")) THEN
       REWRITE_TAC [real_tybij.1] THEN DISCH_THEN SUBST1_TAC THEN
       REWRITE_TAC [← GSYM real_of_num_th, ← GSYM real_le_th] THEN
       SUBST1_TAC (← GSYM (← ISPEC (← q r"p:hreal#hreal") PAIR)) THEN
       PURE_REWRITE_TAC [treal_of_num, treal_le] THEN
       PURE_REWRITE_TAC [HREAL_ADD_LID, HREAL_ADD_RID] THEN
-      DISCH_THEN (fun th => tactic_of do
-        pure ((X_CHOOSE_THEN (← q r"d:hreal") SUBST1_TAC) (← MATCH_MP HREAL_LE_EXISTS th))) THEN
+      DISCH_THEN ((fun (ocq5 : _) => fun th => tactic_of do
+        pure ((X_CHOOSE_THEN ocq5 SUBST1_TAC) (← MATCH_MP HREAL_LE_EXISTS th))) (← q r"d:hreal")) THEN
       EXISTS_TAC (← q r"d:hreal") THEN AP_TERM_TAC THEN
       ONCE_REWRITE_TAC [FUN_EQ_THM] THEN X_GEN_TAC (← q r"q:hreal#hreal") THEN
       SUBST1_TAC (← GSYM (← ISPEC (← q r"q:hreal#hreal") PAIR)) THEN
@@ -2763,7 +2775,7 @@ def setupReal [HolBase] (Pr : HolMath.Pair.PairThms) (H : HrealThms)
          [EXISTS_TAC (← q r"x:real"), EXISTS_TAC (← q r"M:real")] THEN
         ASM_REWRITE_TAC [],
         FIRST_ASSUM (fun th => tactic_of do pure (MP_TAC (← MATCH_MP REAL_LE_LADD_IMP th))) THEN
-        DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"--x") th))) THEN
+        DISCH_THEN ((fun (ocq4 : _) => fun th => tactic_of do pure (MP_TAC (← SPEC ocq4 th))) (← q r"--x")) THEN
         REWRITE_TAC [REAL_ADD_LINV] THEN
         ONCE_REWRITE_TAC [REAL_ADD_SYM] THEN REWRITE_TAC [REAL_ADD_LID] THEN
         DISCH_TAC THEN
@@ -2776,8 +2788,8 @@ def setupReal [HolBase] (Pr : HolMath.Pair.PairThms) (H : HrealThms)
            [EXISTS_TAC (← q r"&0") THEN ASM_REWRITE_TAC [REAL_LE_REFL, REAL_ADD_LID],
             EXISTS_TAC (← q r"M + --x") THEN GEN_TAC THEN
             DISCH_THEN (ANTE_RES_THEN MP_TAC) THEN
-            DISCH_THEN (fun th => tactic_of do
-              pure (MP_TAC (← SPEC (← q r"--x") (← MATCH_MP REAL_LE_LADD_IMP th)))) THEN
+            DISCH_THEN ((fun (ocq3 : _) => fun th => tactic_of do
+              pure (MP_TAC (← SPEC ocq3 (← MATCH_MP REAL_LE_LADD_IMP th)))) (← q r"--x")) THEN
             DISCH_THEN (fun th => tactic_of do
               pure (MP_TAC (← ONCE_REWRITE_RULE [REAL_ADD_SYM] th))) THEN
             REWRITE_TAC [← GSYM REAL_ADD_ASSOC] THEN
@@ -2800,26 +2812,30 @@ def setupReal [HolBase] (Pr : HolMath.Pair.PairThms) (H : HrealThms)
            [FIRST_ASSUM MATCH_MP_TAC THEN X_GEN_TAC (← q r"z:real") THEN DISCH_TAC THEN
             SUBGOAL_THEN (← q r"z + x <= M'") MP_TAC THENL
              [FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC [],
-              DISCH_THEN (fun th => tactic_of do
-                pure (MP_TAC (← SPEC (← q r"--x") (← MATCH_MP REAL_LE_LADD_IMP th)))) THEN
+              DISCH_THEN ((fun (ocq2 : _) => fun th => tactic_of do
+                pure (MP_TAC (← SPEC ocq2 (← MATCH_MP REAL_LE_LADD_IMP th)))) (← q r"--x")) THEN
               ONCE_REWRITE_TAC [REAL_ADD_SYM] THEN
               REWRITE_TAC [real_sub] THEN MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN
               AP_TERM_TAC THEN REWRITE_TAC [← GSYM REAL_ADD_ASSOC] THEN
               REWRITE_TAC [← ONCE_REWRITE_RULE [REAL_ADD_SYM] REAL_ADD_LINV] THEN
               REWRITE_TAC [← ONCE_REWRITE_RULE [REAL_ADD_SYM] REAL_ADD_LID]],
-           DISCH_THEN (fun th => tactic_of do
-             pure (MP_TAC (← SPEC (← q r"x:real") (← MATCH_MP REAL_LE_LADD_IMP th)))) THEN
+           DISCH_THEN ((fun (ocq1 : _) => fun th => tactic_of do
+             pure (MP_TAC (← SPEC ocq1 (← MATCH_MP REAL_LE_LADD_IMP th)))) (← q r"x:real")) THEN
            MATCH_MP_TAC EQ_IMP THEN BINOP_TAC THENL
             [MATCH_ACCEPT_TAC REAL_ADD_SYM,
              ONCE_REWRITE_TAC [REAL_ADD_SYM] THEN REWRITE_TAC [real_sub] THEN
              REWRITE_TAC [← GSYM REAL_ADD_ASSOC, REAL_ADD_LINV] THEN
              REWRITE_TAC [← ONCE_REWRITE_RULE [REAL_ADD_SYM] REAL_ADD_LID]]]]])
 
-  for p in [("+", r"hreal_add:hreal->hreal->hreal"),
+  -- `do_list reduce_interface [..]`: the list's quotations are parsed, last
+  -- first, before `do_list` runs.
+  let ps := [("+", r"hreal_add:hreal->hreal->hreal"),
             ("*", r"hreal_mul:hreal->hreal->hreal"),
             ("<=", r"hreal_le:hreal->hreal->bool"),
-            ("inv", r"hreal_inv:hreal->hreal")] do
-    reduce_interface p
+            ("inv", r"hreal_inv:hreal->hreal")]
+  let tms := (← ps.reverse.mapM (fun p => q p.2)).reverse
+  for (p, tm) in ps.zip tms do
+    ExceptT.mk (reduce_interface' p.1 tm)
 
   for s in ["**", "++", "<<=", "===", "fn", "afn"] do
     remove_interface s

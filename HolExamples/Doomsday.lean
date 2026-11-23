@@ -843,8 +843,9 @@ def DOOMSDAY_DAY_CORRECT : thm := keep "DOOMSDAY_DAY_CORRECT" fun _ => (do
 /- Usage: DOOMSDAY_DAY_CONV `doomsday_day 1966 12 14`                        -/
 /-   |- doomsday_day 1966 12 14 = Wednesday                                  -/
 /- ------------------------------------------------------------------------- -/
-def DOOMSDAY_DAY_CONV : term → IO (Except String thm) :=
-  let csE : IO (Except String HolMath.Compute.compset) := do
+/-- The compset of `DOOMSDAY_DAY_CONV`, made once, when the `let` is run. -/
+def doomsdayCs : Except String HolMath.Compute.compset := keep "doomsdayCs" fun _ =>
+  let mk : IO (Except String HolMath.Compute.compset) := do
     match ← Session.bool_compset with
     | .error e => return .error e
     | .ok cs =>
@@ -854,11 +855,7 @@ def DOOMSDAY_DAY_CONV : term → IO (Except String thm) :=
       match ← Session.set_skip cs ([[COND:bool->day->day->day]]) (some 1) with
       | .error e => return .error e
       | .ok _ =>
-      match ← HolMath.CalcNum.num_red_conv_list
-          NUM_SUC_CONV NUM_PRE_CONV NUM_FACT_CONV NUM_LT_CONV NUM_LE_CONV
-          NUM_GT_CONV NUM_GE_CONV NUM_EQ_CONV NUM_EVEN_CONV NUM_ODD_CONV
-          NUM_ADD_CONV NUM_SUB_CONV NUM_MULT_CONV NUM_EXP_CONV NUM_DIV_CONV
-          NUM_MOD_CONV NUM_MAX_CONV NUM_MIN_CONV with
+      match ← Session.numRedConvList with
       | .error e => return .error e
       | .ok redList =>
       match ← HolMath.CalcNum.num_compute_add_convs redList Session.add_conv cs with
@@ -868,11 +865,15 @@ def DOOMSDAY_DAY_CONV : term → IO (Except String thm) :=
                     doomsday_date, LEAP_YEAR_MOD, dayname] cs with
       | .error e => return .error e
       | .ok _ => return .ok cs
-  fun tm => do
-    match ← csE with
-    | .error e => return .error e
-    | .ok cs => Session.WEAK_CBV_CONV cs tm
-#eval IO.println "<fun>"
+  match runIO mk with
+  | .ok r => r
+  | .error e => .error (toString e)
+
+def DOOMSDAY_DAY_CONV : term → IO (Except String thm) := fun tm => do
+  match doomsdayCs with
+  | .error e => return .error e
+  | .ok cs => Session.WEAK_CBV_CONV cs tm
+#eval do replay doomsdayCs; IO.println "<fun>"
 
 #eval phrase 66
 /- ------------------------------------------------------------------------- -/

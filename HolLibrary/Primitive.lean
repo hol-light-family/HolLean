@@ -17,10 +17,11 @@
   bundles in order and exports every name under its HOL Light name.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, NUMBER_RULE, INTEGER_RULE, INT_ARITH,
-  SET_RULE, TAUT) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Integer
@@ -1233,30 +1234,25 @@ def setupNegative [HolBase] (D : PrimitiveDeps) :
   let NO_PRIMITIVE_ROOT_MODULO_POW2 ← prove
    r"!k. 3 <= k ==> ~(?x. order (2 EXP k) x = phi(2 EXP k))"
    (← do
-    let a5 ← ARITH_RULE (← q r"x + x * 2 < x * 4 <=> ~(x = 0)")
-    let a4 ← ARITH_RULE (← q r"a + b:num < c ==> a < c - b")
-    let a3 ← ARITH_RULE (← q r"0 < x <=> ~(x = 0)")
-    let a2 ← ARITH_RULE (← q r"3 <= k ==> ~(k = 0)")
-    let a1 ← ARITH_RULE
-      (← q r"a = b ==> 1 <= b /\ a = 0 ==> F")
     pure (REPEAT STRIP_TAC THEN DISJ_CASES_TAC (← SPEC (← q "x:num") EVEN_OR_ODD) THENL
-     [FIRST_X_ASSUM (MP_TAC o MATCH_MP a1) THEN
+     [FIRST_X_ASSUM (MP_TAC o MATCH_MP (← ARITH_RULE
+      (← q r"a = b ==> 1 <= b /\ a = 0 ==> F"))) THEN
       ASM_SIMP_TAC [ORDER_EQ_0, PHI_LOWERBOUND_1_STRONG, LE_1, EXP_EQ_0, ARITH,
                    COPRIME_LEXP, COPRIME_2, DE_MORGAN_THM, NOT_ODD] THEN
       ASM_ARITH_TAC,
       MP_TAC (← CONJUNCT2 (← ISPECL [← q r"2 EXP k", ← q "x:num"] ORDER_WORKS)) THEN
       ASM_REWRITE_TAC [] THEN
       DISCH_THEN (MP_TAC o SPEC (← q r"2 EXP (k - 2)")) THEN
-      ASM_SIMP_TAC [PHI_PRIMEPOW, PRIME_2, a2] THEN
+      ASM_SIMP_TAC [PHI_PRIMEPOW, PRIME_2, (← ARITH_RULE (← q r"3 <= k ==> ~(k = 0)"))] THEN
       ABBREV_TAC (← q r"j = k - 2") THEN
       SUBGOAL_THEN (← q r"k - 1 = j + 1") SUBST1_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
       SUBGOAL_THEN (← q r"k = j + 2") SUBST1_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
       SUBGOAL_THEN (← q r"1 <= j") ASSUME_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
-      ASM_SIMP_TAC [CONG_TO_1_POW2, a3] THEN
+      ASM_SIMP_TAC [CONG_TO_1_POW2, (← ARITH_RULE (← q r"0 < x <=> ~(x = 0)"))] THEN
       REWRITE_TAC [EXP_EQ_0, ARITH] THEN
-      MATCH_MP_TAC a4 THEN
+      MATCH_MP_TAC (← ARITH_RULE (← q r"a + b:num < c ==> a < c - b")) THEN
       REWRITE_TAC [EXP_ADD] THEN CONV_TAC NUM_REDUCE_CONV THEN
-      REWRITE_TAC [a5] THEN
+      REWRITE_TAC [(← ARITH_RULE (← q r"x + x * 2 < x * 4 <=> ~(x = 0)"))] THEN
       REWRITE_TAC [EXP_EQ_0, ARITH]]))
 
   let NO_PRIMITIVE_ROOT_MODULO_COMPOSITE ← prove
@@ -2120,15 +2116,13 @@ def setupEulerCriterion [HolBase] (D : PrimitiveDeps) (BEquivalences : Equivalen
              if p divides a then ~(k = 0)
              else (a EXP ((p - 1) DIV gcd(k,p-1)) == 1) (mod p))"
    (← do
-    let n2 ← NUMBER_RULE
-     (← q r"p divides a ==> ((x:num == a) (mod p) <=> p divides x)")
-    let n1 ← NUMBER_RULE
-     (← q r"(1 == a) (mod p) ==> p divides a ==> p = 1")
     pure (REPEAT STRIP_TAC THEN COND_CASES_TAC THENL
      [ASM_CASES_TAC (← q "k = 0") THEN ASM_REWRITE_TAC [EXP] THENL
-       [DISCH_THEN (MP_TAC o MATCH_MP n1) THEN
+       [DISCH_THEN (MP_TAC o MATCH_MP (← NUMBER_RULE
+     (← q r"(1 == a) (mod p) ==> p divides a ==> p = 1"))) THEN
         ASM_MESON_TAC [PRIME_1],
-        EXISTS_TAC (← q "0") THEN ASM_SIMP_TAC [n2] THEN
+        EXISTS_TAC (← q "0") THEN ASM_SIMP_TAC [(← NUMBER_RULE
+     (← q r"p divides a ==> ((x:num == a) (mod p) <=> p divides x)"))] THEN
         ASM_SIMP_TAC [PRIME_DIVEXP_EQ, DIVIDES_0]],
       MP_TAC (← SPECL [← q "p:num", ← q "a:num", ← q "k:num"] GENERALIZED_EULER_CRITERION) THEN
       ASM_SIMP_TAC [PHI_PRIME] THEN DISCH_THEN MATCH_MP_TAC THEN

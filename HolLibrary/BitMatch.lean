@@ -18,8 +18,11 @@
   OCaml's read the live parser and printer tables.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies two or more rules that
-  print or use counters they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolMath
@@ -710,7 +713,6 @@ def setupAnalyze [HolBase] (D : BitMatchDeps) (BDefs : Defs) :
      r"dimindex(:N) = n ==> numbit i m = b ==> (i < n <=> T) ==>
      pat_extract (CONSPAT p (word m:N word)) i b"
      (← do
-      let ar ← ARITH_RULE (← q r"m <= n ==> (m + (n - m) = n:num)")
       pure (REWRITE_TAC [] THEN REPEAT (DISCH_THEN (SUBST1_TAC o SYM)) THEN
         REWRITE_TAC [pat_extract, CONSPAT_pat_set, numbit] THEN
         REPEAT STRIP_TAC THEN FIRST_X_ASSUM SUBST1_TAC THEN
@@ -720,7 +722,7 @@ def setupAnalyze [HolBase] (D : BitMatchDeps) (BDefs : Defs) :
         REWRITE_TAC [← GSYM (← CONJUNCT2 EXP)] THEN
         ONCE_REWRITE_TAC [← GSYM MOD_ADD_MOD] THEN
         FIRST_X_ASSUM (SUBST1_TAC o GSYM o
-          MATCH_MP ar o
+          MATCH_MP (← ARITH_RULE (← q r"m <= n ==> (m + (n - m) = n:num)")) o
           REWRITE_RULE [← GSYM LE_SUC_LT]) THEN
         REWRITE_TAC [EXP_ADD, MOD_MOD] THEN ONCE_REWRITE_TAC [MULT_AC] THEN
         REWRITE_TAC [MOD_MULT, ADD_0, MOD_MOD_REFL])))

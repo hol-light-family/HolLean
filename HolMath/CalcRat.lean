@@ -696,13 +696,14 @@ def setupRealRing [HolBase] (S : HolMath.CalcInt.RatSyntax) (Rl : RealRatRelConv
                ← ExceptT.mk (REAL_ARITH (← q r"~(&1 = &0)"))])
   let init ← GEN_REWRITE_CONV_NET ONCE_DEPTH_CONV [DECIMAL]
   let real_ty ← qty r"real"
-  let neg_tm ← q r"(--):real->real"
-  let add_tm ← q r"(+):real->real->real"
-  let sub_tm ← q r"(-):real->real->real"
-  let inv_tm ← q r"(inv):real->real"
-  let mul_tm ← q r"(*):real->real->real"
-  let div_tm ← q r"(/):real->real->real"
+  -- RING_AND_IDEAL_CONV's argument tuple is built right to left.
   let pow_tm ← q r"(pow):real->num->real"
+  let div_tm ← q r"(/):real->real->real"
+  let mul_tm ← q r"(*):real->real->real"
+  let inv_tm ← q r"(inv):real->real"
+  let sub_tm ← q r"(-):real->real->real"
+  let add_tm ← q r"(+):real->real->real"
+  let neg_tm ← q r"(--):real->real"
   let K : HolMath.Grobner.RingParms :=
     { ring_dest_const     := HolMath.CalcInt.rat_of_term
       ring_mk_const       := HolMath.CalcInt.term_of_rat S
@@ -835,14 +836,14 @@ def setupRealFieldTrans [HolBase]
   let REAL_LE_TRANS_LTE ← prove
    r"!x y:real. x <= y <=> (!z. y < z ==> x <= z)"
    (REPEAT GEN_TAC THEN EQ_TAC THENL [REAL_ARITH_TAC, ALL_TAC] THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← SPEC (← q r"y + (x - y) / &2") th))) THEN REAL_ARITH_TAC)
+    DISCH_THEN ((fun (ocq2 : _) => fun th => tactic_of do
+      pure (MP_TAC (← SPEC ocq2 th))) (← q r"y + (x - y) / &2")) THEN REAL_ARITH_TAC)
 
   let REAL_LE_TRANS_LT ← prove
    r"!x y:real. x <= y <=> (!z. y < z ==> x < z)"
    (REPEAT GEN_TAC THEN EQ_TAC THENL [REAL_ARITH_TAC, ALL_TAC] THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← SPEC (← q r"y + (x - y) / &2") th))) THEN REAL_ARITH_TAC)
+    DISCH_THEN ((fun (ocq1 : _) => fun th => tactic_of do
+      pure (MP_TAC (← SPEC ocq1 th))) (← q r"y + (x - y) / &2")) THEN REAL_ARITH_TAC)
 
   return {
     REAL_LE_TRANS_LE, REAL_LE_TRANS_LTE, REAL_LE_TRANS_LT }
@@ -1015,26 +1016,19 @@ def setupRealShrink [HolBase]
   let REAL_SHRINK_LT ← prove
    r"!x y. x / (&1 + abs x) < y / (&1 + abs y) <=> x < y"
    (← do
-    let r6 ← REAL_ARITH (← q r"&0 < &1 + abs x")
-    let r5 ← REAL_ARITH (← q r"a / b * c:real = (a * c) / b")
-    let r4 ← REAL_ARITH (← q r"&0 < &1 + abs x")
-    let r3 ← REAL_ARITH (← q r"abs(&1 + abs x) = &1 + abs x")
-    let m1 ← MESON [] (← q r"(!x y. P x y /\ P y x) <=> (!x y. P x y)")
-    let r2 ← REAL_ARITH (← q r"&0 < &1 + abs x")
-    let r1 ← REAL_ARITH
+    pure
+     (REPEAT GEN_TAC THEN MATCH_MP_TAC (← REAL_ARITH
      (← q r"(&0 < x' <=> &0 < x) /\ (&0 < y' <=> &0 < y) /\
       (abs x' < abs y' <=> abs x < abs y) /\ (abs y' < abs x' <=> abs y < abs x)
-      ==> (x' < y' <=> x < y)")
-    pure
-     (REPEAT GEN_TAC THEN MATCH_MP_TAC r1 THEN
-      SIMP_TAC [REAL_LT_RDIV_EQ, r2, REAL_MUL_LZERO] THEN
+      ==> (x' < y' <=> x < y)")) THEN
+      SIMP_TAC [REAL_LT_RDIV_EQ, (← REAL_ARITH (← q r"&0 < &1 + abs x")), REAL_MUL_LZERO] THEN
       MAP_EVERY (fun t => SPEC_TAC (t, t)) [← q r"y:real", ← q r"x:real"] THEN
-      REWRITE_TAC [m1] THEN
+      REWRITE_TAC [(← MESON [] (← q r"(!x y. P x y /\ P y x) <=> (!x y. P x y)"))] THEN
       REPEAT GEN_TAC THEN
-      REWRITE_TAC [REAL_ABS_DIV, r3] THEN
-      SIMP_TAC [REAL_LT_RDIV_EQ, r4] THEN
-      ONCE_REWRITE_TAC [r5] THEN
-      SIMP_TAC [REAL_LT_LDIV_EQ, r6] THEN
+      REWRITE_TAC [REAL_ABS_DIV, (← REAL_ARITH (← q r"abs(&1 + abs x) = &1 + abs x"))] THEN
+      SIMP_TAC [REAL_LT_RDIV_EQ, (← REAL_ARITH (← q r"&0 < &1 + abs x"))] THEN
+      ONCE_REWRITE_TAC [(← REAL_ARITH (← q r"a / b * c:real = (a * c) / b"))] THEN
+      SIMP_TAC [REAL_LT_LDIV_EQ, (← REAL_ARITH (← q r"&0 < &1 + abs x"))] THEN
       REAL_ARITH_TAC))
 
   let REAL_SHRINK_LE ← prove
@@ -1048,18 +1042,14 @@ def setupRealShrink [HolBase]
   let REAL_SHRINK_GALOIS ← prove
    r"!x y. x / (&1 + abs x) = y <=> abs y < &1 /\ y / (&1 - abs y) = x"
    (← do
-    let f1 ← REAL_FIELD (← q r"x * y = &1 ==> inv x * inv y = &1")
-    let r3 ← REAL_ARITH (← q r"x * inv y * inv z = x * &1 ==> x / y / z = x")
-    let r2 ← REAL_ARITH (← q r"abs y < &1 ==> abs(&1 - abs y) = &1 - abs y")
-    let r1 ← REAL_ARITH (← q r"abs(&1 + abs x) = &1 + abs x")
     pure
      (REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THEN
       FIRST_X_ASSUM (fun th => tactic_of do pure (SUBST1_TAC (← SYM th))) THEN
       ASM_REWRITE_TAC [REAL_SHRINK_RANGE] THEN
-      ASM_SIMP_TAC [REAL_ABS_DIV, r1, r2] THEN
-      MATCH_MP_TAC r3 THEN
+      ASM_SIMP_TAC [REAL_ABS_DIV, (← REAL_ARITH (← q r"abs(&1 + abs x) = &1 + abs x")), (← REAL_ARITH (← q r"abs y < &1 ==> abs(&1 - abs y) = &1 - abs y"))] THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"x * inv y * inv z = x * &1 ==> x / y / z = x")) THEN
       AP_TERM_TAC THEN
-      MATCH_MP_TAC f1 THEN
+      MATCH_MP_TAC (← REAL_FIELD (← q r"x * y = &1 ==> inv x * inv y = &1")) THEN
       REPEAT (POP_ASSUM MP_TAC) THEN CONV_TAC REAL_FIELD'))
 
   let REAL_GROW_SHRINK ← prove

@@ -473,15 +473,13 @@ def setupDefineAdmissibleThms [HolBase]
                                        (q f x)
                                        (GEQ (t f x) (y f x)))"
    (← do
-     let m ← MESON [] (← q r"x = x' /\ y = y' ==> (x = y <=> x' = y')")
-     let t ← TAUT (← q r"(a <=> a') /\ (a /\ a' ==> (b <=> b'))
-                              ==> (a /\ b <=> a' /\ b')")
      pure (REPEAT GEN_TAC THEN
        REWRITE_TAC [admissible, FORALL_PAIR_THM, _GUARDED_PATTERN] THEN
        REWRITE_TAC [GEQ_DEF] THEN REPEAT STRIP_TAC THEN
-       REPEAT (MATCH_MP_TAC t THEN
+       REPEAT (MATCH_MP_TAC (← TAUT (← q r"(a <=> a') /\ (a /\ a' ==> (b <=> b'))
+                              ==> (a /\ b <=> a' /\ b')")) THEN
               REPEAT STRIP_TAC) THEN
-       TRY (MATCH_MP_TAC m) THEN
+       TRY (MATCH_MP_TAC (← MESON [] (← q r"x = x' /\ y = y' ==> (x = y <=> x' = y')"))) THEN
        ASM_MESON_TAC []))
 
   let ADMISSIBLE_NSUM ← prove

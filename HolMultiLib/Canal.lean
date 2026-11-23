@@ -5103,8 +5103,8 @@ def setupKNR [HolBase] (D : CanalDeps) (BKNC : KNC) (BKNM : KNM) (BKNO : KNO) : 
       EXISTS_TAC (← q r"\n. (a:num->complex) n * (y - z) pow n") THEN
       EXISTS_TAC (← q r"k:num->bool") THEN REWRITE_TAC [] THEN CONJ_TAC THENL
        [FIRST_X_ASSUM MATCH_MP_TAC THEN
-        FIRST_X_ASSUM (fun th => tactic_of do
-          let _ ← SPEC (← q r"&0") th; pure ALL_TAC) THEN
+        FIRST_X_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
+          let _ ← SPEC ocq1 th; pure ALL_TAC) (← q r"&0")) THEN
         REPEAT (POP_ASSUM MP_TAC) THEN CONV_TAC (fun t => NORM_ARITH t),
         REWRITE_TAC [sums, LIM_SEQUENTIALLY, dist] THEN
         RULE_ASSUM_TAC (REWRITE_RULE [IN_CBALL]) THEN ASM_MESON_TAC []]])

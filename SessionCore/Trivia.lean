@@ -43,17 +43,22 @@ initialize triviaDefLayer : thm × thm ← bootTriviaDefs
 def o_DEF : thm := triviaDefLayer.1
 def I_DEF : thm := triviaDefLayer.2
 
-private def bootTrivia : IO (TriviaThms × thm × thm) := do
-  let goal ← ioOk "goal" (HolCore.Parser.parse_term "?b:bool. b")
-  let tW ← ioOk "T" (HolCore.Parser.parse_term "T")
-  let existsOneRep ← ioOk "EXISTS_ONE_REP" (Tactics.prove B goal
+/-- trivia.ml 37-45: the type `1`.  `EXISTS_TAC \`T\`` is built with the
+    tactic, before `prove` parses the goal. -/
+private def mkOne : ExceptT String IO (thm × thm × thm) := do
+  let tW ← ExceptT.mk (HolCore.Parser.parse_term "T")
+  let goal ← ExceptT.mk (HolCore.Parser.parse_term "?b:bool. b")
+  let existsOneRep ← ExceptT.mk (Tactics.prove B goal
     (Tactics.THEN B (Tactics.EXISTS_TAC B tW)
       (Tactics.THEN B (Tactics.BETA_TAC B) (Tactics.ACCEPT_TAC B B.TRUTH))))
-  let oneTydef ← ioOk "one_tydef" (new_type_definition "1" "one_ABS" "one_REP" existsOneRep)
-  let oneDef ← ioOk "one_DEF" (do Drule.new_definition B (← ioOk "one parse" (HolCore.Parser.parse_term "one = @x:1. T")))
-  let tv ← ioOk "setupTrivia" (setupTrivia B T C o_DEF I_DEF existsOneRep oneTydef oneDef).run
+  let oneTydef ← ExceptT.mk (new_type_definition "1" "one_ABS" "one_REP" existsOneRep)
+  let oneDef ← ExceptT.mk (do Drule.new_definition B (← ioOk "one parse" (HolCore.Parser.parse_term "one = @x:1. T")))
+  pure (existsOneRep, oneTydef, oneDef)
+
+private def bootTrivia : IO (TriviaThms × thm × thm) := do
+  let tv ← ioOk "setupTrivia" (setupTrivia B T C o_DEF I_DEF mkOne).run
   theInductiveTypeStore.modify (("1", (1, tv.one_INDUCT, tv.one_RECURSION)) :: ·)
-  pure (tv, oneTydef, oneDef)
+  pure (tv, tv.one_tydef, tv.one_DEF)
 
 initialize triviaBoot : TriviaThms × thm × thm ← bootTrivia
 

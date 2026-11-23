@@ -1599,12 +1599,12 @@ def setupPGG [HolBase] (D : ProfiniteGroupsDeps) (BPGA : PGA) (BPGB : PGB) (BPGE
         -- `check (fun th -> is_forall(concl th) && can (find_term ((=)
         -- `a:A->A->bool`)) (concl th))`: the quotation is parsed only when
         -- `is_forall` holds, as `&&`.
-        FIRST_X_ASSUM (fun th => tactic_of do
+        FIRST_X_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
           let ok ← if HolCore.Basics.is_forall (concl th) then do
               let a ← q r"a:A->A->bool"
               pure (HolCore.Lib.can (HolCore.Basics.find_term (fun t => t == a)) (concl th))
             else pure false
-          pure (MP_TAC (← SPEC (← q r"x:A") (← liftExcept (check (fun _ => ok) th))))) THEN
+          pure (MP_TAC (← SPEC ocq1 (← liftExcept (check (fun _ => ok) th))))) (← q r"x:A")) THEN
         ANTS_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
         DISCH_THEN (MATCH_MP_TAC o lastc) THEN
         ASM_SIMP_TAC []],

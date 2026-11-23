@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.CyclotomicSubfieldSplit fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -302,56 +305,6 @@ def setupCyclotomicSubfieldSplit [HolBase] (D : CyclotomicSubfieldSplitDeps) :
 
   let CYCLOTOMIC_SUBFIELD_PRIME_DECOMPOSITION ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"nsum {P | prime_ideal (ring_of_integers K) P /\ ring_of_num k p IN P}
-         (\P:A->bool. f)"
-    let q2 ← q r"p:num"
-    let q3 ← q r"K:A ring"
-    let v4 ← ISPECL [q3, q2] NUMBER_FIELD_PRIME_DECOMPOSITION_Q
-    let q5 ← q r"p:num"
-    let q6 ← q r"K:A ring"
-    let v7 ← ISPECL [q6, q5] NUMBER_FIELD_FUNDAMENTAL_IDENTITY_Q
-    let q8 ← q r"number_field(k:A ring)"
-    let v9 ← ASSUME q8
-    let q10 ← q r"number_field(K:A ring) /\ ring_of_num K = ring_of_num(k:A ring) /\
-    subfield_generated K {ring_0 K} = subfield_generated k {ring_0 k}"
-    let q11 ← q r"!a b:num. (!d. a divides d <=> b divides d) ==> a = b"
-    let r12 ← MESON [DIVIDES_ANTISYM, DIVIDES_REFL] q11
-    let q13 ← q r"Q:A->bool"
-    let q14 ← q r"p:num"
-    let q15 ← q r"s:A->bool"
-    let q16 ← q r"n:num"
-    let q17 ← q r"z:A"
-    let q18 ← q r"k:A ring"
-    let v19 ← ISPECL [q18, q17, q16, q15, q14, q13] CYCLOTOMIC_SUBFIELD_RESIDUE_DEGREE
-    let q20 ← q r"Q:A->bool"
-    let q21 ← q r"(IN) (P:A->bool)"
-    let q22 ← q r"p:num"
-    let q23 ← q r"s:A->bool"
-    let q24 ← q r"k:A ring"
-    let v25 ← ISPECL [q24, q23, q22] NUMBER_FIELD_SUBFIELD_PRIME_IDEALS_ABOVE
-    let q26 ← q r"P:A->bool"
-    let q27 ← q r"!P. prime_ideal (ring_of_integers K) P /\ ring_of_num k p IN P
-        ==> ramification_index (integer_ring,ring_of_integers K)
-              (ring_of_int K) P = 1 /\
-            residue_degree (integer_ring,ring_of_integers K)
-              (ring_of_int (K:A ring)) P = f"
-    let q28 ← q r"f = residue_degree (integer_ring,ring_of_integers K) (ring_of_int K)
-          (Q1 INTER ring_carrier(K:A ring))"
-    let q29 ← q r"residue_degree (integer_ring,ring_of_integers K) (ring_of_int K)
-      (Q1 INTER ring_carrier(K:A ring))"
-    let q30 ← q r"K = subfield_generated k (s:A->bool)"
-    let q31 ← q r"Q1:A->bool"
-    let q32 ← q r"p:num"
-    let q33 ← q r"s:A->bool"
-    let q34 ← q r"n:num"
-    let q35 ← q r"z:A"
-    let q36 ← q r"k:A ring"
-    let v37 ← ISPECL [q36, q35, q34, q33, q32, q31] CYCLOTOMIC_SUBFIELD_RESIDUE_DEGREE
-    let q38 ← q r"Q1:A->bool"
-    let v39 ← GSYM MEMBER_NOT_EMPTY
-    let q40 ← q r"p:num"
-    let q41 ← q r"k:A ring"
-    let v42 ← ISPECL [q41, q40] NUMBER_FIELD_PRIME_DECOMPOSITION_Q
     prove
       r"!(k:A ring) z n s p.
           number_field k /\ z IN ring_carrier k /\ ring_order k z = n /\
@@ -376,7 +329,15 @@ def setupCyclotomicSubfieldSplit [HolBase] (D : CyclotomicSubfieldSplitDeps) :
                             ring_of_num (subfield_generated k s) p IN P} * f =
                   extension_degree(subfield_generated k {ring_0 k},
                                    subfield_generated k s) I"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC [RING_OF_NUM_SUBFIELD_GENERATED] THEN MP_TAC v42 THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o (CONJUNCT1 o CONJUNCT2)) THEN REWRITE_TAC [v39, IN_ELIM_THM] THEN DISCH_THEN (X_CHOOSE_THEN q38 STRIP_ASSUME_TAC) THEN MP_TAC v37 THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN ABBREV_TAC q30 THEN EXISTS_TAC q29 THEN ABBREV_TAC q28 THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN q27 ASSUME_TAC THENL [X_GEN_TAC q26 THEN STRIP_TAC THEN MP_TAC v25 THEN ASM_REWRITE_TAC [RING_OF_NUM_SUBFIELD_GENERATED] THEN DISCH_THEN (MP_TAC o (AP_TERM q21)) THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN DISCH_THEN (X_CHOOSE_THEN q20 (CONJUNCTS_THEN2 STRIP_ASSUME_TAC SUBST_ALL_TAC)) THEN MP_TAC v19 THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC r12 THEN ASM_REWRITE_TAC [], ASM_REWRITE_TAC []] THEN SUBGOAL_THEN q10 STRIP_ASSUME_TAC THENL [EXPAND_TAC "K" THEN SIMP_TAC [PRIME_SUBFIELD_SUBFIELD_GENERATED, RING_OF_NUM_SUBFIELD_GENERATED, NUMBER_FIELD_SUBFIELD_GENERATED, v9], ALL_TAC] THEN MP_TAC v7 THEN MP_TAC v4 THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (ASSUME_TAC o CONJUNCT1) THEN DISCH_THEN (SUBST1_TAC o SYM) THEN TRANS_TAC EQ_TRANS q1 THEN CONJ_TAC THENL [ASM_SIMP_TAC [NSUM_CONST], MATCH_MP_TAC NSUM_EQ THEN ASM_SIMP_TAC [IN_ELIM_THM, MULT_CLAUSES]])
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC [RING_OF_NUM_SUBFIELD_GENERATED] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:num")] NUMBER_FIELD_PRIME_DECOMPOSITION_Q) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o (CONJUNCT1 o CONJUNCT2)) THEN REWRITE_TAC [(← GSYM MEMBER_NOT_EMPTY), IN_ELIM_THM] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"Q1:A->bool") STRIP_ASSUME_TAC) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"z:A"), (← q r"n:num"), (← q r"s:A->bool"), (← q r"p:num"), (← q r"Q1:A->bool")] CYCLOTOMIC_SUBFIELD_RESIDUE_DEGREE) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN ABBREV_TAC (← q r"K = subfield_generated k (s:A->bool)") THEN EXISTS_TAC (← q r"residue_degree (integer_ring,ring_of_integers K) (ring_of_int K)
+      (Q1 INTER ring_carrier(K:A ring))") THEN ABBREV_TAC (← q r"f = residue_degree (integer_ring,ring_of_integers K) (ring_of_int K)
+          (Q1 INTER ring_carrier(K:A ring))") THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"!P. prime_ideal (ring_of_integers K) P /\ ring_of_num k p IN P
+        ==> ramification_index (integer_ring,ring_of_integers K)
+              (ring_of_int K) P = 1 /\
+            residue_degree (integer_ring,ring_of_integers K)
+              (ring_of_int (K:A ring)) P = f") ASSUME_TAC THENL [X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"s:A->bool"), (← q r"p:num")] NUMBER_FIELD_SUBFIELD_PRIME_IDEALS_ABOVE) THEN ASM_REWRITE_TAC [RING_OF_NUM_SUBFIELD_GENERATED] THEN DISCH_THEN (MP_TAC o (AP_TERM (← q r"(IN) (P:A->bool)"))) THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"Q:A->bool") (CONJUNCTS_THEN2 STRIP_ASSUME_TAC SUBST_ALL_TAC)) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"z:A"), (← q r"n:num"), (← q r"s:A->bool"), (← q r"p:num"), (← q r"Q:A->bool")] CYCLOTOMIC_SUBFIELD_RESIDUE_DEGREE) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← MESON [DIVIDES_ANTISYM, DIVIDES_REFL] (← q r"!a b:num. (!d. a divides d <=> b divides d) ==> a = b")) THEN ASM_REWRITE_TAC [], ASM_REWRITE_TAC []] THEN SUBGOAL_THEN (← q r"number_field(K:A ring) /\ ring_of_num K = ring_of_num(k:A ring) /\
+    subfield_generated K {ring_0 K} = subfield_generated k {ring_0 k}") STRIP_ASSUME_TAC THENL [EXPAND_TAC "K" THEN SIMP_TAC [PRIME_SUBFIELD_SUBFIELD_GENERATED, RING_OF_NUM_SUBFIELD_GENERATED, NUMBER_FIELD_SUBFIELD_GENERATED, (← ASSUME (← q r"number_field(k:A ring)"))], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"K:A ring"), (← q r"p:num")] NUMBER_FIELD_FUNDAMENTAL_IDENTITY_Q) THEN MP_TAC (← ISPECL [(← q r"K:A ring"), (← q r"p:num")] NUMBER_FIELD_PRIME_DECOMPOSITION_Q) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (ASSUME_TAC o CONJUNCT1) THEN DISCH_THEN (SUBST1_TAC o SYM) THEN TRANS_TAC EQ_TRANS (← q r"nsum {P | prime_ideal (ring_of_integers K) P /\ ring_of_num k p IN P}
+         (\P:A->bool. f)") THEN CONJ_TAC THENL [ASM_SIMP_TAC [NSUM_CONST], MATCH_MP_TAC NSUM_EQ THEN ASM_SIMP_TAC [IN_ELIM_THM, MULT_CLAUSES]])
 
   let CYCLOTOMIC_SUBFIELD_SPLITTING_TYPES ← prove
     r"!(k:A ring) z n s p.

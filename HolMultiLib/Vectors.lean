@@ -613,9 +613,9 @@ def setupDotProps [HolBase] (D : VectorsDeps) (BBasics : Basics)
   let EUCLIDEAN_SPACE_INFINITE ← prove
    r"INFINITE(:real^N)"
    (REWRITE_TAC [INFINITE] THEN DISCH_TAC THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (MP_TAC (← ISPEC (← q r"vec:num->real^N")
-        (← MATCH_MP (← REWRITE_RULE [IMP_CONJ_ALT] FINITE_IMAGE_INJ) th)))) THEN
+    FIRST_ASSUM ((fun (ocq17 : _) => fun th => tactic_of do
+      pure (MP_TAC (← ISPEC ocq17
+        (← MATCH_MP (← REWRITE_RULE [IMP_CONJ_ALT] FINITE_IMAGE_INJ) th)))) (← q r"vec:num->real^N")) THEN
     REWRITE_TAC [VEC_EQ, ← SET_RULE (← q r"{x | f x IN UNIV} = UNIV")] THEN
     REWRITE_TAC [← GSYM INFINITE, num_INFINITE])
 
@@ -3347,9 +3347,9 @@ def setupBilinear [HolBase] (D : VectorsDeps) (BVectorArith : VectorArith)
         ==> bop(vsum s f) y = vsum s (\i. bop (f i) y)"
    (REWRITE_TAC [bilinear] THEN REPEAT STRIP_TAC THEN
     FIRST_ASSUM (MP_TAC o SPEC (← q r"y:real^N")) THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← ISPECL [← q r"f:A->real^M", ← q r"s:A->bool"]
-        (← MATCH_MP (← REWRITE_RULE [IMP_CONJ] LINEAR_VSUM) th)))) THEN
+    DISCH_THEN ((fun (ocq15 : _) (ocq16 : _) => fun th => tactic_of do
+      pure (MP_TAC (← ISPECL [ocq15, ocq16]
+        (← MATCH_MP (← REWRITE_RULE [IMP_CONJ] LINEAR_VSUM) th)))) (← q r"f:A->real^M") (← q r"s:A->bool")) THEN
     ASM_REWRITE_TAC [o_DEF])
 
   let BILINEAR_RSUM ← prove
@@ -3358,9 +3358,9 @@ def setupBilinear [HolBase] (D : VectorsDeps) (BVectorArith : VectorArith)
         ==> bop x (vsum s f) = vsum s (\i. bop x (f i))"
    (REWRITE_TAC [bilinear] THEN REPEAT STRIP_TAC THEN
     FIRST_ASSUM (MP_TAC o SPEC (← q r"x:real^M")) THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← ISPECL [← q r"f:A->real^N", ← q r"s:A->bool"]
-        (← MATCH_MP (← REWRITE_RULE [IMP_CONJ] LINEAR_VSUM) th)))) THEN
+    DISCH_THEN ((fun (ocq13 : _) (ocq14 : _) => fun th => tactic_of do
+      pure (MP_TAC (← ISPECL [ocq13, ocq14]
+        (← MATCH_MP (← REWRITE_RULE [IMP_CONJ] LINEAR_VSUM) th)))) (← q r"f:A->real^N") (← q r"s:A->bool")) THEN
     ASM_REWRITE_TAC [o_DEF])
 
   let BILINEAR_VSUM ← prove
@@ -3436,9 +3436,9 @@ def setupBilinear [HolBase] (D : VectorsDeps) (BVectorArith : VectorArith)
                                vsum (m..n) (\k. h (f(k + 1) - f(k)) (g(k)))
                 else vec 0"
    (REPEAT STRIP_TAC THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (MP_TAC (← ISPECL [← q r"f:num->real^M", ← q r"\k. (g:num->real^N)(k - 1)",
-                   ← q r"m:num", ← q r"n:num"] (← MATCH_MP BILINEAR_VSUM_PARTIAL_SUC th)))) THEN
+    FIRST_ASSUM ((fun (ocq10 : _) (ocq11 : _) (ocq12 : _) => fun th => tactic_of do
+      pure (MP_TAC (← ISPECL [ocq10, ocq11,
+                   ← q r"m:num", ocq12] (← MATCH_MP BILINEAR_VSUM_PARTIAL_SUC th)))) (← q r"f:num->real^M") (← q r"\k. (g:num->real^N)(k - 1)") (← q r"n:num")) THEN
     REWRITE_TAC [ADD_SUB] THEN DISCH_THEN SUBST1_TAC THEN
     COND_CASES_TAC THEN REWRITE_TAC [])
 
@@ -3586,9 +3586,9 @@ def setupAdjoint [HolBase] (D : VectorsDeps) (BBasics : Basics) (BVectorArith : 
    r"!f:real^N->real^N v w a b.
         linear f /\ adjoint f = f /\ f v = a % v /\ f w = b % w /\ ~(a = b)
         ==> orthogonal v w"
-   (REPEAT STRIP_TAC THEN FIRST_ASSUM (fun th => tactic_of do
-      pure (MP_TAC (← SPECL [← q r"v:real^N", ← q r"w:real^N"]
-        (← MATCH_MP ADJOINT_WORKS th)))) THEN
+   (REPEAT STRIP_TAC THEN FIRST_ASSUM ((fun (ocq8 : _) (ocq9 : _) => fun th => tactic_of do
+      pure (MP_TAC (← SPECL [ocq8, ocq9]
+        (← MATCH_MP ADJOINT_WORKS th)))) (← q r"v:real^N") (← q r"w:real^N")) THEN
     ASM_REWRITE_TAC [DOT_LMUL, DOT_RMUL, orthogonal, REAL_EQ_MUL_RCANCEL])
 
   let ORTHOGONAL_PROJECTION_ALT ← prove
@@ -4311,8 +4311,8 @@ def setupMatProps [HolBase] (D : VectorsDeps) (BBasics : Basics) (BVectorArith :
   let MATRIX_EQ ← prove
    r"!A:real^N^M B. (A = B) = !x:real^N. A ** x = B ** x"
    (REPEAT GEN_TAC THEN EQ_TAC THENL [MESON_TAC [], ALL_TAC] THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← GEN (← q r"i:num") (← SPEC (← q r"(basis i):real^N") th)))) THEN
+    DISCH_THEN ((fun (ocq6 : _) (ocq7 : _) => fun th => tactic_of do
+      pure (MP_TAC (← GEN ocq6 (← SPEC ocq7 th)))) (← q r"i:num") (← q r"(basis i):real^N")) THEN
     SIMP_TAC [CART_EQ, matrix_vector_mul, LAMBDA_BETA, basis] THEN
     SIMP_TAC [SUM_DELTA, COND_RAND, REAL_MUL_RZERO] THEN
     REWRITE_TAC [← TAUT (← q r"(if p then b else T) <=> p ==> b")] THEN
@@ -5351,8 +5351,8 @@ def setupLiftDrop1 [HolBase] (D : VectorsDeps) (BBasics : Basics)
   let SUBSET_LIFT_IMAGE ← prove
    r"!s t. IMAGE lift s SUBSET IMAGE lift t <=> s SUBSET t"
    (REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC [IMAGE_SUBSET] THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← ISPEC (← q r"drop") (← MATCH_MP IMAGE_SUBSET th)))) THEN
+    DISCH_THEN ((fun (ocq5 : _) => fun th => tactic_of do
+      pure (MP_TAC (← ISPEC ocq5 (← MATCH_MP IMAGE_SUBSET th)))) (← q r"drop")) THEN
     REWRITE_TAC [← GSYM IMAGE_o, IMAGE_LIFT_DROP])
 
   let FORALL_DROP_IMAGE ← prove
@@ -5366,8 +5366,8 @@ def setupLiftDrop1 [HolBase] (D : VectorsDeps) (BBasics : Basics)
   let SUBSET_DROP_IMAGE ← prove
    r"!s t. IMAGE drop s SUBSET IMAGE drop t <=> s SUBSET t"
    (REPEAT GEN_TAC THEN EQ_TAC THEN REWRITE_TAC [IMAGE_SUBSET] THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← ISPEC (← q r"lift") (← MATCH_MP IMAGE_SUBSET th)))) THEN
+    DISCH_THEN ((fun (ocq4 : _) => fun th => tactic_of do
+      pure (MP_TAC (← ISPEC ocq4 (← MATCH_MP IMAGE_SUBSET th)))) (← q r"lift")) THEN
     REWRITE_TAC [← GSYM IMAGE_o, IMAGE_LIFT_DROP])
 
   let DROP_IN_IMAGE_DROP ← prove
@@ -6786,8 +6786,8 @@ def setupSpan1 [HolBase] (D : VectorsDeps) (BVectorArith : VectorArith)
   let SPAN_BREAKDOWN_EQ ← prove
    r"!a:real^N s. (x IN span(a INSERT s) <=> (?k. (x - k % a) IN span s))"
    (REPEAT STRIP_TAC THEN EQ_TAC THENL
-     [DISCH_THEN (fun th => tactic_of do
-        pure (MP_TAC (← CONJ (← SET_RULE (← q r"(a:real^N) IN (a INSERT s)")) th))) THEN
+     [DISCH_THEN ((fun (ocq3 : _) => fun th => tactic_of do
+        pure (MP_TAC (← CONJ (← SET_RULE ocq3) th))) (← q r"(a:real^N) IN (a INSERT s)")) THEN
       DISCH_THEN (MP_TAC o MATCH_MP SPAN_BREAKDOWN) THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"k:real") THEN
       SPEC_TAC (← q r"x - k % a:real^N", ← q r"y:real^N") THEN
@@ -6888,8 +6888,8 @@ def setupSpan2 [HolBase] (D : VectorsDeps) (BVectorArith : VectorArith) (BVSum1 
     ASM_CASES_TAC (← q r"k = &0") THEN
     ASM_REWRITE_TAC [← va r"a - &0 % b = a", DELETE_INSERT] THENL
      [ASM_MESON_TAC [SPAN_MONO, SUBSET, DELETE_SUBSET], ALL_TAC] THEN
-    DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← SPEC (← q r"inv(k)") (← MATCH_MP SPAN_MUL th)))) THEN
+    DISCH_THEN ((fun (ocq2 : _) => fun th => tactic_of do
+      pure (MP_TAC (← SPEC ocq2 (← MATCH_MP SPAN_MUL th)))) (← q r"inv(k)")) THEN
     ASM_SIMP_TAC [VECTOR_SUB_LDISTRIB, VECTOR_MUL_ASSOC, REAL_MUL_LINV] THEN
     DISCH_TAC THEN SUBST1_TAC (← va
      r"b:real^N = inv(k) % a - (inv(k) % a - &1 % b)") THEN
@@ -12009,9 +12009,9 @@ def setupMatPinv [HolBase] (D : VectorsDeps) (BVectorArith : VectorArith)
         symmetric_matrix(A ** X) /\ symmetric_matrix(X ** A)
         ==> matrix_inv A = X"
    (REWRITE_TAC [symmetric_matrix] THEN REPEAT STRIP_TAC THEN
-    MAP_EVERY (fun th => tactic_of do
+    MAP_EVERY ((fun (ocq1 : _) => fun th => tactic_of do
         pure (ASSUME_TAC (← REWRITE_RULE [symmetric_matrix]
-          (← ISPEC (← q r"A:real^M^N") th))))
+          (← ISPEC ocq1 th)))) (← q r"A:real^M^N"))
      [MATRIX_INV_MUL_OUTER, SYMMETRIC_MATRIX_INV_RMUL, MATRIX_INV_MUL_INNER,
       SYMMETRIC_MATRIX_INV_LMUL] THEN
     ABBREV_TAC (← q r"Y = matrix_inv(A:real^M^N)") THEN

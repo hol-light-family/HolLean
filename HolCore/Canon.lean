@@ -188,14 +188,17 @@ def setupNNFPths (B : BoolThms) (T : TheoremThms) (C : ClassThms) (ETA_AX : thm)
     ExceptT String IO NNFPths := do
   let TAUT (s : String) : ExceptT String IO thm := do
     (Classic.TAUT B C.BOOL_CASES_AX (← parse_term s) : IO (Except String thm))
-  let prove := Tactics.prove B
+  -- `prove(`goal`,tac)`: OCaml evaluates the tactic (and its quotations)
+  -- before parsing the goal, so the goal is parsed here, after them.
+  let proveS (g : String) (tac : HolCore.Tactics.tactic) : IO (Except String thm) := do
+    match ← HolCore.Parser.parse_term g with
+    | .error e => return .error e
+    | .ok gt => Tactics.prove B gt tac
   let GEN_REWRITE_TAC := Simp.GEN_REWRITE_TAC B
   let REWRITE_TAC := Simp.REWRITE_TAC B
   let and_tm ← parse_term "(/\\)"
   let or_tm ← parse_term "(\\/)"
   let not_tm ← parse_term "(~)"
-  let p_tm ← parse_term "p:bool"
-  let q_tm ← parse_term "q:bool"
   let pth_not_not ← TAUT "~ ~ p = p"
   let pth_not_and ← TAUT "~(p /\\ q) <=> ~p \\/ ~q"
   let pth_not_or  ← TAUT "~(p \\/ q) <=> ~p /\\ ~q"
@@ -207,8 +210,7 @@ def setupNNFPths (B : BoolThms) (T : TheoremThms) (C : ClassThms) (ETA_AX : thm)
   let pth_not_eq' ← TAUT "~(p <=> q) <=> (p \\/ q) /\\ (~p \\/ ~q)"
   -- [pth_not_forall; pth_not_exists; pth_not_exu] = CONJUNCTS (prove ...)
   let landFunpow2Rand : ioconv → ioconv := fun c => Simp.landConvIO (Simp.randConvIO (Simp.randConvIO c))
-  let notQuantThm ← (prove (← parse_term
-      "(~((!) P) <=> ?x:A. ~(P x)) /\\ (~((?) P) <=> !x:A. ~(P x)) /\\ (~((?!) P) <=> (!x:A. ~(P x)) \\/ ?x y. P x /\\ P y /\\ ~(y = x))")
+  let notQuantThm ← (proveS "(~((!) P) <=> ?x:A. ~(P x)) /\\ (~((?) P) <=> !x:A. ~(P x)) /\\ (~((?!) P) <=> (!x:A. ~(P x)) \\/ ?x y. P x /\\ P y /\\ ~(y = x))"
       (THEN B (REPEAT B (Tactics.CONJ_TAC B))
         (THEN B (GEN_REWRITE_TAC landFunpow2Rand [(← liftExcept (GSYM ETA_AX))])
           (THEN B (REWRITE_TAC [C.NOT_EXISTS_THM, C.NOT_FORALL_THM, B.EXISTS_UNIQUE_DEF,
@@ -220,11 +222,13 @@ def setupNNFPths (B : BoolThms) (T : TheoremThms) (C : ClassThms) (ETA_AX : thm)
   let pth_not_exu ← liftExcept (match notQuants with | _ :: _ :: a :: _ => .ok a | _ => .error "pth_not_exu")
   let aOrLemma ← TAUT "a /\\ b ==> c <=> ~a \\/ ~b \\/ c"
   let landRand : ioconv → ioconv := fun c => Simp.landConvIO (Simp.randConvIO c)
-  let pth_exu ← (prove (← parse_term
-      "((?!) P) <=> (?x:A. P x) /\\ !x y. ~(P x) \\/ ~(P y) \\/ (y = x)")
+  let pth_exu ← (proveS "((?!) P) <=> (?x:A. P x) /\\ !x y. ~(P x) \\/ ~(P y) \\/ (y = x)"
       (THEN B (GEN_REWRITE_TAC landRand [(← liftExcept (GSYM ETA_AX))])
         (THEN B (REWRITE_TAC [B.EXISTS_UNIQUE_DEF, aOrLemma])
           (REWRITE_TAC [T.EQ_SYM_EQ]))) : IO (Except String thm))
+  -- canon.ml 132: `and p_tm = \`p:bool\` and q_tm = \`q:bool\``, last.
+  let p_tm ← parse_term "p:bool"
+  let q_tm ← parse_term "q:bool"
   return { and_tm, or_tm, not_tm, p_tm, q_tm,
            pth_not_not, pth_not_and, pth_not_or, pth_imp, pth_not_imp,
            pth_eq, pth_not_eq, pth_eq', pth_not_eq',
@@ -852,17 +856,24 @@ structure SelLamPths where
 /-- Prove the `SELECT_ELIM`/`LAMBDA_ELIM` auxiliary theorems. -/
 def setupSelLam (B : BoolThms) (T : TheoremThms) (C : ClassThms) (SELECT_AX : thm) :
     ExceptT String IO SelLamPths := do
-  let prove := Tactics.prove B
+  -- `prove(`goal`,tac)`: OCaml evaluates the tactic (and its quotations)
+  -- before parsing the goal, so the goal is parsed here, after them.
+  let proveS (g : String) (tac : HolCore.Tactics.tactic) : IO (Except String thm) := do
+    match ← HolCore.Parser.parse_term g with
+    | .error e => return .error e
+    | .ok gt => Tactics.prove B gt tac
   let REWRITE_TAC := Simp.REWRITE_TAC B
-  let selElimThm ← (prove (← parse_term "(P:A->bool)((@) P) <=> (?) P")
+  let selElimThm ← (proveS "(P:A->bool)((@) P) <=> (?) P"
       (THEN B (REWRITE_TAC [C.EXISTS_THM]) (THEN B (Tactics.BETA_TAC B) (Tactics.REFL_TAC B)))
       : IO (Except String thm))
+  -- SELECT_ELIM_THM's `ptm`, then SELECT_AX_THM's
+  -- `pth = ISPEC `P:A->bool` SELECT_AX and ptm = `P:A->bool`` (canon.ml 508-519).
   let ptm ← parse_term "P:A->bool"
-  let selAxThm ← liftExcept (B.ISPEC ptm SELECT_AX)
-  let halfMkAbs ← (prove (← parse_term "(s = \\x. t x) <=> (!x. s x = t x)")
+  let selAxThm ← liftExcept (B.ISPEC (← parse_term "P:A->bool") SELECT_AX)
+  let _ ← parse_term "P:A->bool"
+  let halfMkAbs ← (proveS "(s = \\x. t x) <=> (!x. s x = t x)"
       (REWRITE_TAC [C.FUN_EQ_THM]) : IO (Except String thm))
-  let applyPth ← (prove (← parse_term
-      "(!a. (a = c) ==> (P = Q a)) ==> (P <=> !a. (a = c) ==> Q a)")
+  let applyPth ← (proveS "(!a. (a = c) ==> (P = Q a)) ==> (P <=> !a. (a = c) ==> Q a)"
       (Simp.SIMP_TAC B [T.LEFT_FORALL_IMP_THM, T.EXISTS_REFL]) : IO (Except String thm))
   return { selElimThm, selAxThm, halfMkAbs, applyPth, ptm }
 
@@ -1066,16 +1077,19 @@ structure CondsPths where
 /-- Prove the two conditional-elimination lemmas. -/
 def setupConds (B : BoolThms) (C : ClassThms) (propsimps : Nets.net Simp.gconv) :
     ExceptT String IO CondsPths := do
-  let prove := Tactics.prove B
+  -- `prove(`goal`,tac)`: OCaml evaluates the tactic (and its quotations)
+  -- before parsing the goal, so the goal is parsed here, after them.
+  let proveS (g : String) (tac : HolCore.Tactics.tactic) : IO (Except String thm) := do
+    match ← HolCore.Parser.parse_term g with
+    | .error e => return .error e
+    | .ok gt => Tactics.prove B gt tac
   let ASM_REWRITE_TAC := Simp.ASM_REWRITE_TAC B
   let BOOL_CASES_TAC := Classic.BOOL_CASES_TAC B C.BOOL_CASES_AX
   -- canon.ml 606-616: each `prove` parses its own `b:bool`, then
   -- `false_tm = `F`` and `true_tm = `T``.
-  let thCond ← (prove (← parse_term
-      "((b <=> F) ==> x = x0) /\\ ((b <=> T) ==> x = x1) ==> x = (b /\\ x1 \\/ ~b /\\ x0)")
+  let thCond ← (proveS "((b <=> F) ==> x = x0) /\\ ((b <=> T) ==> x = x1) ==> x = (b /\\ x1 \\/ ~b /\\ x0)"
       (THEN B (BOOL_CASES_TAC (← parse_term "b:bool")) (ASM_REWRITE_TAC [])) : IO (Except String thm))
-  let thCond' ← (prove (← parse_term
-      "((b <=> F) ==> x = x0) /\\ ((b <=> T) ==> x = x1) ==> x = ((~b \\/ x1) /\\ (b \\/ x0))")
+  let thCond' ← (proveS "((b <=> F) ==> x = x0) /\\ ((b <=> T) ==> x = x1) ==> x = ((~b \\/ x1) /\\ (b \\/ x0))"
       (THEN B (BOOL_CASES_TAC (← parse_term "b:bool")) (ASM_REWRITE_TAC [])) : IO (Except String thm))
   let falseTm ← parse_term "F"
   let trueTm ← parse_term "T"
@@ -1199,8 +1213,13 @@ structure FolPths where
   deriving Inhabited
 
 def setupFol (B : BoolThms) (I_THM : thm) : ExceptT String IO FolPths := do
-  let prove := Tactics.prove B
-  let appThm ← (prove (← parse_term "!(f:A->B) x. f x = I f x")
+  -- `prove(`goal`,tac)`: OCaml evaluates the tactic (and its quotations)
+  -- before parsing the goal, so the goal is parsed here, after them.
+  let proveS (g : String) (tac : HolCore.Tactics.tactic) : IO (Except String thm) := do
+    match ← HolCore.Parser.parse_term g with
+    | .error e => return .error e
+    | .ok gt => Tactics.prove B gt tac
+  let appThm ← (proveS "!(f:A->B) x. f x = I f x"
       (Simp.REWRITE_TAC B [I_THM]) : IO (Except String thm))
   return { appThm }
 
@@ -1328,10 +1347,14 @@ def setupCanon (B : BoolThms) (T : TheoremThms) (C : ClassThms)
     ExceptT String IO CanonThms := do
   let TAUT (s : String) : ExceptT String IO thm := do
     (Classic.TAUT B C.BOOL_CASES_AX (← parse_term s) : IO (Except String thm))
-  let nnf ← setupNNFPths B T C ETA_AX
-  let selLam ← setupSelLam B T C SELECT_AX
-  let conds ← setupConds B C propsimps
-  let fol ← setupFol B I_THM
+  -- In canon.ml's order: PRESIMP_CONV (16), DISJ_ACI_RULE (46-51), the NNF
+  -- proformas (107-132), SKOLEM_CONV (358), PRENEX_CONV (375), DNF
+  -- (393-406), CNF (435-448), the select/lambda block, the conditionals and
+  -- ASM_FOL_TAC's lemma (686).
+  -- canon.ml binds the conversions at load, so each rewrite net is built
+  -- once.  They start from `empty_net`, not the basic rewrites, so nothing
+  -- set later in the session changes them.
+  let presimp ← (PRESIMP_CONV B T C : IO (Except String ioconv))
   -- Each canon.ml block parses its own `a_tm`, `b_tm`, `c_tm` and operator
   -- quotations; the terms are equal, so the bundle keeps one copy.
   -- DISJ_ACI_RULE (canon.ml 46-51), the UNDISCH'd forms.
@@ -1342,6 +1365,9 @@ def setupCanon (B : BoolThms) (T : TheoremThms) (C : ClassThms)
   let disjPthNeg ← liftExcept (B.UNDISCH (← TAUT "(~a <=> ~b) ==> (a <=> b)"))
   let aTm ← parse_term "a:bool"
   let bTm ← parse_term "b:bool"
+  let nnf ← setupNNFPths B T C ETA_AX
+  let skolem ← (SKOLEM_CONV B T C : IO (Except String ioconv))
+  let prenex ← (PRENEX_CONV B T C : IO (Except String ioconv))
   -- WEAK_DNF_CONV/DNF_CONV (canon.ml 393-406).
   let dnfPth1 ← TAUT "a /\\ (b \\/ c) <=> a /\\ b \\/ a /\\ c"
   let dnfPth2 ← TAUT "(a \\/ b) /\\ c <=> a /\\ c \\/ b /\\ c"
@@ -1356,12 +1382,9 @@ def setupCanon (B : BoolThms) (T : TheoremThms) (C : ClassThms)
   let _ ← parse_term "b:bool"
   let _ ← parse_term "c:bool"
   let andTm ← parse_term "(/\\)"
-  -- canon.ml binds these at load, so each rewrite net is built once.  They
-  -- start from `empty_net`, not the basic rewrites, so nothing set later in
-  -- the session changes them.
-  let presimp ← (PRESIMP_CONV B T C : IO (Except String ioconv))
-  let skolem ← (SKOLEM_CONV B T C : IO (Except String ioconv))
-  let prenex ← (PRENEX_CONV B T C : IO (Except String ioconv))
+  let selLam ← setupSelLam B T C SELECT_AX
+  let conds ← setupConds B C propsimps
+  let fol ← setupFol B I_THM
   return { nnf, selLam, conds, fol,
            disjPthLeft, disjPthRight, disjPth, disjPthNeg,
            dnfPth1, dnfPth2, cnfPth1, cnfPth2, aTm, bTm, cTm, orTm, andTm,

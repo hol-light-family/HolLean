@@ -19,9 +19,11 @@
   names ambiguous (qualify them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print
-  (MESON, REAL_ARITH, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 
   PARSER STATE.  analysis.ml changes the parser as it goes (prioritize_num,
   prioritize_real, infixes, `sum` overloading, `-->` interfaces).  Each
@@ -2379,10 +2381,8 @@ def setupPow [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BNames : Names) (B
    (← do
     -- `map EXISTS_TAC [`z + &1`; `z:real`]`: the list literal is built
     -- right to left.
-    let t2 ← q "z:real"
-    let t1 ← q r"z + &1"
     pure (GEN_TAC THEN AP_TERM_TAC THEN EQ_TAC THEN DISCH_THEN (X_CHOOSE_TAC (← q "z:real"))
-      THENL ([t1, t2].map EXISTS_TAC) THEN GEN_TAC THEN
+      THENL ([(← q r"z + &1"), (← q "z:real")].map EXISTS_TAC) THEN GEN_TAC THEN
       DISCH_THEN (fun th => FIRST_ASSUM (MP_TAC o (fun a => MATCH_MP a th))) THEN
       REWRITE_TAC [REAL_LT_ADD1, REAL_LT_IMP_LE]))
 
@@ -2400,9 +2400,8 @@ def setupPow [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BNames : Names) (B
    r"!x. ?n. x <= &n"
    (← do
     let lemma ← prove r"(!x. (?n. x = &n) ==> P x) <=> !n. P(&n)" (MESON_TAC [])
-    let ra ← REAL_ARITH (← q r"~(M <= M - &1)")
     pure (MP_TAC (← SPEC (← q r"\y. ?n. y = &n") REAL_COMPLETE) THEN REWRITE_TAC [lemma] THEN
-      MESON_TAC [REAL_LE_SUB_LADD, REAL_OF_NUM_ADD, REAL_LE_TOTAL, ra]))
+      MESON_TAC [REAL_LE_SUB_LADD, REAL_OF_NUM_ADD, REAL_LE_TOTAL, (← REAL_ARITH (← q r"~(M <= M - &1)"))]))
 
   let REAL_ARCH ← prove
    r"!x. &0 < x ==> !y. ?n. y < &n * x"
@@ -2456,29 +2455,25 @@ def setupPow [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BNames : Names) (B
    r"!x n. &0 <= x ==> &1 + &n * x <= (&1 + x) pow n"
    (← do
     -- Two REAL_ARITHs in one THEN chain: the later one is evaluated first.
-    let ra2 ← REAL_ARITH
-      (← q r"&1 + (n + &1) * x <= (&1 + x) * (&1 + n * x) <=> &0 <= n * x * x")
-    let ra1 ← REAL_ARITH (← q r"&0 <= x ==> &0 <= &1 + x")
     pure (GEN_TAC THEN REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN DISCH_TAC THEN
       INDUCT_TAC THEN
       REWRITE_TAC [real_pow, REAL_MUL_LZERO, REAL_ADD_RID, REAL_LE_REFL] THEN
       REWRITE_TAC [← GSYM REAL_OF_NUM_SUC] THEN
       MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC (← q r"(&1 + x) * (&1 + &n * x)") THEN
-      ASM_SIMP_TAC [REAL_LE_LMUL, ra1] THEN
-      ASM_SIMP_TAC [REAL_LE_MUL, REAL_POS, ra2]))
+      ASM_SIMP_TAC [REAL_LE_LMUL, (← REAL_ARITH (← q r"&0 <= x ==> &0 <= &1 + x"))] THEN
+      ASM_SIMP_TAC [REAL_LE_MUL, REAL_POS, (← REAL_ARITH
+      (← q r"&1 + (n + &1) * x <= (&1 + x) * (&1 + n * x) <=> &0 <= n * x * x"))]))
 
   let REAL_ARCH_POW ← prove
    r"!x y. &1 < x ==> ?n. y < x pow n"
    (← do
-    let ra2 ← REAL_ARITH (← q r"&1 < x ==> &0 <= x - &1")
-    let ra1 ← REAL_ARITH (← q r"x < y ==> x < &1 + y")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← SPEC (← q r"x - &1") REAL_ARCH) THEN ASM_REWRITE_TAC [REAL_SUB_LT] THEN
       DISCH_THEN (MP_TAC o SPEC (← q "y:real")) THEN MATCH_MP_TAC MONO_EXISTS THEN
       X_GEN_TAC (← q "n:num") THEN DISCH_TAC THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
       EXISTS_TAC (← q r"&1 + &n * (x - &1)") THEN
-      ASM_SIMP_TAC [ra1] THEN
-      ASM_MESON_TAC [REAL_POW_LBOUND, REAL_SUB_ADD2, ra2]))
+      ASM_SIMP_TAC [(← REAL_ARITH (← q r"x < y ==> x < &1 + y"))] THEN
+      ASM_MESON_TAC [REAL_POW_LBOUND, REAL_SUB_ADD2, (← REAL_ARITH (← q r"&1 < x ==> &0 <= x - &1"))]))
 
   let REAL_ARCH_POW2 ← prove
    r"!x. ?n. x < &2 pow n"
@@ -2575,10 +2570,9 @@ def setupSums [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Reals2)
    (← do
     let pt ← q r"(!f n. sm n 0 f = &0) /\
      (!f m n. sm  n (SUC m) f = sm n m f + f(n + m))"
-    let ex ← q r"\(n,m) f. (sm:num->num->(num->real)->real) n m f"
     pure ((fun g => tactic_of (do
         pure (CHOOSE_TAC (← prove_recursive_functions_exist num_RECURSION pt))) g) THEN
-      EXISTS_TAC ex THEN
+      EXISTS_TAC (← q r"\(n,m) f. (sm:num->num->(num->real)->real) n m f") THEN
       CONV_TAC (DEPTH_CONV GEN_BETA_CONV) THEN ASM_REWRITE_TAC []))
 
   let sum_DEF ← new_specification ["psum"] sum_EXISTS
@@ -2797,9 +2791,8 @@ def setupSums [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Reals2)
    r"!f n x. sum(0,SUC n)(\i. f(i) * x pow i) =
            f(0) + x * sum(0,n)(\i. f(SUC i) * x pow i)"
    (← do
-    let ra ← REAL_ARITH (← q r"a * b * c = b * (a * c)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [← GSYM SUM_CMUL] THEN
-      ONCE_REWRITE_TAC [ra] THEN
+      ONCE_REWRITE_TAC [(← REAL_ARITH (← q r"a * b * c = b * (a * c)"))] THEN
       REWRITE_TAC [← GSYM real_pow] THEN
       MP_TAC (← GEN (← q r"f:num->real")
        (← SPECL [← q r"f:num->real", ← q "n:num", ← q "1"] SUM_OFFSET)) THEN
@@ -3134,8 +3127,6 @@ def setupTopology [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BTactics : Ta
    r"!top S. closed(top) S <=> (!x:A. limpt(top) x S ==> S x)"
    (← do
     -- The THEN chain is built right to left: the later TAUTs first.
-    let t2 ← TAUT (← q r"(a <=> b \/ a) <=> b ==> a")
-    let t1 ← TAUT (← q r"a \/ b \/ ~c <=> c ==> a \/ b")
     pure (REPEAT GEN_TAC THEN CONV_TAC (ONCE_DEPTH_CONV CONTRAPOS_CONV) THEN
       REWRITE_TAC [closed, limpt] THEN
       CONV_TAC (ONCE_DEPTH_CONV NOT_FORALL_CONV) THEN
@@ -3149,9 +3140,9 @@ def setupTopology [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BTactics : Ta
       REWRITE_TAC [OPEN_NEIGH, re_subset] THEN
       AP_TERM_TAC THEN ABS_TAC THEN
       ASM_CASES_TAC (← q r"(S:A->bool) x") THEN ASM_REWRITE_TAC [] THEN
-      REWRITE_TAC [t1] THEN
+      REWRITE_TAC [(← TAUT (← q r"a \/ b \/ ~c <=> c ==> a \/ b"))] THEN
       EQUAL_TAC THEN
-      REWRITE_TAC [t2] THEN
+      REWRITE_TAC [(← TAUT (← q r"(a <=> b \/ a) <=> b ==> a"))] THEN
       DISCH_THEN (SUBST1_TAC o SYM) THEN
       POP_ASSUM ACCEPT_TAC))
 
@@ -4350,11 +4341,10 @@ def setupSeqs [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BNames : Names) (
    r"!f. mono f <=> (!n. f(SUC n) >= f(n)) \/ (!n. f(SUC n) <= f(n))"
    (← do
     let nN ← q "n:num"
-    let sN ← q "SUC n"
     pure (GEN_TAC THEN REWRITE_TAC [mono, real_ge] THEN
       MATCH_MP_TAC (← TAUT (← q r"(a <=> c) /\ (b <=> d) ==> (a \/ b <=> c \/ d)")) THEN
       CONJ_TAC THEN (EQ_TAC THENL
-        [DISCH_THEN (MP_TAC o GEN nN o SPECL [nN, sN]) THEN
+        [DISCH_THEN (MP_TAC o GEN nN o SPECL [nN, (← q "SUC n")]) THEN
          REWRITE_TAC [LESS_EQ_SUC_REFL],
          DISCH_TAC THEN REPEAT GEN_TAC THEN
          DISCH_THEN (X_CHOOSE_THEN (← q "p:num") SUBST1_TAC o MATCH_MP LESS_EQUAL_ADD) THEN
@@ -4431,9 +4421,7 @@ def setupSeqs [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BNames : Names) (
    r"!f. bounded(mr1, (>=)) f /\ (!m n. m >= n ==> f(m) >= f(n))
            ==> convergent f"
    (← do
-    let supE ← q r"sup(\x. ?n:num. x = f(n)) - e"
     let nN ← q "n:num"
-    let fn ← q r"(f:num->real) n"
     pure (GEN_TAC THEN DISCH_TAC THEN
       MP_TAC (← SPEC (← q r"\x:real. ?n:num. x = f(n)") REAL_SUP) THEN BETA_TAC THEN
       (fun gl => ExceptT.run do
@@ -4452,7 +4440,7 @@ def setupSeqs [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BNames : Names) (
       REWRITE_TAC [SEQ] THEN X_GEN_TAC (← q "e:real") THEN DISCH_TAC THEN
       FIRST_ASSUM (fun th => tactic_of do
         pure (MP_TAC (← liftExcept (check (fun t => is_forall (concl t)) th)))) THEN
-      DISCH_THEN (MP_TAC o SPEC supE) THEN
+      DISCH_THEN (MP_TAC o SPEC (← q r"sup(\x. ?n:num. x = f(n)) - e")) THEN
       REWRITE_TAC [REAL_LT_SUB_RADD, REAL_LT_ADDR] THEN
       ASM_REWRITE_TAC [] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "x:real") MP_TAC) THEN
@@ -4467,7 +4455,7 @@ def setupSeqs [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BNames : Names) (
         REWRITE_TAC [← TAUT (← q r"~(a /\ b) <=> a ==> ~b")] THEN
         REWRITE_TAC [REAL_NOT_LT] THEN
         CONV_TAC (ONCE_DEPTH_CONV LEFT_IMP_EXISTS_CONV) THEN
-        DISCH_THEN (MP_TAC o GEN nN o SPECL [fn, nN]) THEN
+        DISCH_THEN (MP_TAC o GEN nN o SPECL [(← q r"(f:num->real) n"), nN]) THEN
         REWRITE_TAC [], ALL_TAC] THEN
       EXISTS_TAC (← q "n:num") THEN X_GEN_TAC (← q "m:num") THEN
       FIRST_ASSUM (undischCheck (fun c => pure (is_conj c))) THEN
@@ -4948,8 +4936,6 @@ def setupSeqLim [HolBase] (D : AnalysisDeps) (BNames : Names) (BTactics : Tactic
                                 ((!n. m <= g(n)) /\ g --> m)"
    (← do
     -- THENL branches are evaluated right to left; both TAUTs are the same.
-    let tnn2 ← TAUT (← q r"a <=> ~ ~a")
-    let tnn1 ← TAUT (← q r"a <=> ~ ~a")
     pure (REPEAT STRIP_TAC THEN MP_TAC (← SPEC (← q r"f:num->real") MONO_SUC) THEN
       ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
       MP_TAC (← SPEC (← q r"g:num->real") MONO_SUC) THEN ASM_REWRITE_TAC [] THEN
@@ -4983,7 +4969,7 @@ def setupSeqLim [HolBase] (D : AnalysisDeps) (BNames : Names) (BTactics : Tactic
       REPEAT CONJ_TAC THENL
        [MATCH_MP_TAC SEQ_LE THEN
         MAP_EVERY EXISTS_TAC [← q r"f:num->real", ← q r"g:num->real"] THEN ASM_REWRITE_TAC [],
-        X_GEN_TAC (← q "m:num") THEN GEN_REWRITE_TAC id [tnn1] THEN
+        X_GEN_TAC (← q "m:num") THEN GEN_REWRITE_TAC id [(← TAUT (← q r"a <=> ~ ~a"))] THEN
         PURE_REWRITE_TAC [REAL_NOT_LE] THEN DISCH_TAC THEN
         UNDISCH_TAC (← q "f --> lim f") THEN REWRITE_TAC [SEQ] THEN
         DISCH_THEN (MP_TAC o SPEC (← q "f(m) - lim f")) THEN
@@ -5002,7 +4988,7 @@ def setupSeqLim [HolBase] (D : AnalysisDeps) (BNames : Names) (BTactics : Tactic
           REWRITE_TAC [REAL_LE_REFL, ADD_CLAUSES] THEN
           MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC (← q r"f(p + m:num):real") THEN
           RULE_ASSUM_TAC (REWRITE_RULE [real_ge]) THEN ASM_REWRITE_TAC []],
-        X_GEN_TAC (← q "m:num") THEN GEN_REWRITE_TAC id [tnn2] THEN
+        X_GEN_TAC (← q "m:num") THEN GEN_REWRITE_TAC id [(← TAUT (← q r"a <=> ~ ~a"))] THEN
         PURE_REWRITE_TAC [REAL_NOT_LE] THEN DISCH_TAC THEN
         UNDISCH_TAC (← q "g --> lim g") THEN REWRITE_TAC [SEQ] THEN
         DISCH_THEN (MP_TAC o SPEC (← q "lim g - g(m)")) THEN
@@ -5030,7 +5016,6 @@ def setupSeqLim [HolBase] (D : AnalysisDeps) (BNames : Names) (BTactics : Tactic
                 ?l. ((!n. f(n) <= l) /\ f --> l) /\
                     ((!n. l <= g(n)) /\ g --> l)"
    (← do
-    let a ← ASSUME (← q r"(\n. f(n) - g(n)) --> &0")
     pure (REPEAT GEN_TAC THEN
       DISCH_THEN (fun th => STRIP_ASSUME_TAC th THEN MP_TAC th) THEN
       REWRITE_TAC [CONJ_ASSOC] THEN DISCH_THEN (MP_TAC o CONJUNCT1) THEN
@@ -5042,7 +5027,7 @@ def setupSeqLim [HolBase] (D : AnalysisDeps) (BNames : Names) (BTactics : Tactic
       SUBGOAL_THEN (← q "l:real = m") (fun th => ASM_REWRITE_TAC [th]) THEN
       MP_TAC (← SPECL [← q r"f:num->real", ← q "l:real", ← q r"g:num->real", ← q "m:real"] SEQ_SUB) THEN
       ASM_REWRITE_TAC [] THEN
-      DISCH_THEN (MP_TAC o CONJ a) THEN
+      DISCH_THEN (MP_TAC o CONJ (← ASSUME (← q r"(\n. f(n) - g(n)) --> &0"))) THEN
       DISCH_THEN (MP_TAC o MATCH_MP SEQ_UNIQ) THEN
       CONV_TAC (LAND_CONV SYM_CONV) THEN
       REWRITE_TAC [REAL_SUB_0]))
@@ -5112,22 +5097,12 @@ def setupSeries1 [HolBase] (D : AnalysisDeps) (BNames : Names) (BReals1 : Reals1
        (!x. ?d. &0 < d /\ !a b. a <= x /\ x <= b /\ (b - a) < d ==> P(a,b))
       ==> !a b. a <= b ==> P(a,b)"
    (← do
-    let two ← q r"&2"
     -- `(... o C ISPECL num_Axiom) [t1; t2]`: the list is built right to left.
-    let ax2 ← q r"\fn (n:num). if P(FST fn,(FST fn + SND fn)/ &2) then
-                          ((FST fn + SND fn)/ &2,SND fn) else
-                          (FST fn,(FST fn + SND fn)/ &2)"
-    let ax1 ← q r"(a:real,(b:real))"
-    let fax ← EXISTENCE (← BETA_RULE (← ISPECL [ax1, ax2] num_Axiom))
-    let ac ← AC REAL_ADD_AC (← q r"a + b + c + d = (d + a) + (c + b)")
-    let sm4 ← q r"&0"
-    let sm3 ← q r"\n. (inv (&2 pow n))"
-    let sm2 ← q r"b - a"
-    let sm1 ← q r"\n:num. b - a"
-    let seqMul ← SPECL [sm1, sm2, sm3, sm4] SEQ_MUL
     pure (REPEAT STRIP_TAC THEN
       GEN_REWRITE_TAC id [← TAUT (← q r"a <=> ~ ~a")] THEN DISCH_TAC THEN
-      X_CHOOSE_THEN (← q r"f:num->real#real") STRIP_ASSUME_TAC fax THEN
+      X_CHOOSE_THEN (← q r"f:num->real#real") STRIP_ASSUME_TAC (← EXISTENCE (← BETA_RULE (← ISPECL [(← q r"(a:real,(b:real))"), (← q r"\fn (n:num). if P(FST fn,(FST fn + SND fn)/ &2) then
+                          ((FST fn + SND fn)/ &2,SND fn) else
+                          (FST fn,(FST fn + SND fn)/ &2)")] num_Axiom))) THEN
       MP_TAC (← SPECL
         [← q r"\n:num. FST(f(n) :real#real)", ← q r"\n:num. SND(f(n) :real#real)"]
         NEST_LEMMA_UNIQ) THEN BETA_TAC THEN
@@ -5164,7 +5139,7 @@ def setupSeries1 [HolBase] (D : AnalysisDeps) (BNames : Names) (BReals1 : Reals1
        [INDUCT_TAC THENL
          [ASM_REWRITE_TAC [pow, real_div, REAL_INV1, REAL_MUL_RID], ALL_TAC] THEN
         ASM_REWRITE_TAC [] THEN COND_CASES_TAC THEN REWRITE_TAC [] THEN
-        MATCH_MP_TAC REAL_EQ_LMUL_IMP THEN EXISTS_TAC two THEN
+        MATCH_MP_TAC REAL_EQ_LMUL_IMP THEN EXISTS_TAC (← q r"&2") THEN
         REWRITE_TAC [REAL_SUB_LDISTRIB] THEN
         (SUBGOAL_THEN (← q r"~(&2 = &0)") (fun th => tactic_of do
            pure (REWRITE_TAC [th] THEN REWRITE_TAC [← MATCH_MP REAL_DIV_LMUL th])) THENL
@@ -5202,7 +5177,7 @@ def setupSeries1 [HolBase] (D : AnalysisDeps) (BNames : Names) (BReals1 : Reals1
         ASM_REWRITE_TAC [REAL_NEG_SUB, REAL_NEG_0] THEN
         REWRITE_TAC [real_div] THEN SUBGOAL_THEN (← q r"~(&2 = &0)") ASSUME_TAC THENL
          [REWRITE_TAC [REAL_INJ, ← numc "2", NOT_SUC], ALL_TAC] THEN
-        MP_TAC seqMul THEN
+        MP_TAC (← SPECL [(← q r"\n:num. b - a"), (← q r"b - a"), (← q r"\n. (inv (&2 pow n))"), (← q r"&0")] SEQ_MUL) THEN
         REWRITE_TAC [SEQ_CONST, REAL_MUL_RZERO] THEN BETA_TAC THEN
         DISCH_THEN MATCH_MP_TAC THEN
         FIRST_ASSUM (fun th => tactic_of do pure (REWRITE_TAC [← MATCH_MP POW_INV th])) THEN
@@ -5239,7 +5214,7 @@ def setupSeries1 [HolBase] (D : AnalysisDeps) (BNames : Names) (BReals1 : Reals1
          [GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [ABS_SUB] THEN
           ASM_REWRITE_TAC [real_abs, REAL_SUB_LE] THEN
           REWRITE_TAC [real_sub, ← GSYM REAL_ADD_ASSOC] THEN
-          REWRITE_TAC [ac] THEN
+          REWRITE_TAC [(← AC REAL_ADD_AC (← q r"a + b + c + d = (d + a) + (c + b)"))] THEN
           REWRITE_TAC [REAL_ADD_LINV, REAL_ADD_LID, REAL_LE_REFL],
           MATCH_MP_TAC REAL_LT_ADD2 THEN
           CONJ_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
@@ -5385,8 +5360,6 @@ def setupSeries1 [HolBase] (D : AnalysisDeps) (BNames : Names) (BReals1 : Reals1
          f sums (sum(0,k) f) + suminf (\n. f(n + k))"
    (← do
     -- The later rule in the THEN chain is evaluated first.
-    let ra ← REAL_ARITH (← q r"a - (b + c) = a - b - c")
-    let ar ← ARITH_RULE (← q r"(N + k) + d = k + N + d:num")
     pure (REPEAT GEN_TAC THEN DISCH_THEN (MP_TAC o MATCH_MP SUMMABLE_SUM) THEN
       REWRITE_TAC [sums, SEQ] THEN REWRITE_TAC [SUM_OFFSET] THEN
       MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN
@@ -5396,8 +5369,8 @@ def setupSeries1 [HolBase] (D : AnalysisDeps) (BNames : Names) (BReals1 : Reals1
       EXISTS_TAC (← q "N + k:num") THEN
       X_GEN_TAC (← q "n:num") THEN REWRITE_TAC [GE, LE_EXISTS] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "d:num") SUBST1_TAC) THEN
-      ONCE_REWRITE_TAC [ar] THEN
-      REWRITE_TAC [ra] THEN
+      ONCE_REWRITE_TAC [(← ARITH_RULE (← q r"(N + k) + d = k + N + d:num"))] THEN
+      REWRITE_TAC [(← REAL_ARITH (← q r"a - (b + c) = a - b - c"))] THEN
       REWRITE_TAC [← GSYM SUM_DIFF] THEN
       FIRST_ASSUM MATCH_MP_TAC THEN ARITH_TAC))
 
@@ -5743,7 +5716,6 @@ def setupSeries2 [HolBase] (D : AnalysisDeps) (BNames : Names) (BTactics : Tacti
            (!n. n >= N ==> abs(f(SUC n)) <= c * abs(f(n))) ==>
        summable f"
    (← do
-    let lec ← MATCH_MP REAL_LT_IMP_LE (← ASSUME (← q r"&0 < c"))
     pure (REPEAT GEN_TAC THEN DISCH_THEN STRIP_ASSUME_TAC THEN
       DISJ_CASES_TAC (← SPECL [← q "c:real", ← q r"&0"] REAL_LET_TOTAL) THENL
        [REWRITE_TAC [SER_CAUCHY] THEN X_GEN_TAC (← q "e:real") THEN DISCH_TAC THEN
@@ -5787,7 +5759,7 @@ def setupSeries2 [HolBase] (D : AnalysisDeps) (BNames : Names) (BTactics : Tacti
           REWRITE_TAC [summable] THEN
           EXISTS_TAC (← q r"(abs(f(N:num)) / (c pow N)) * inv(&1 - c)") THEN
           MATCH_MP_TAC SER_CMUL THEN MATCH_MP_TAC GP THEN
-          ASSUME_TAC lec THEN
+          ASSUME_TAC (← MATCH_MP REAL_LT_IMP_LE (← ASSUME (← q r"&0 < c"))) THEN
           ASM_REWRITE_TAC [real_abs]]]))
 
   let SEQ_TRUNCATION ← prove
@@ -6340,9 +6312,8 @@ def setupDiffs [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BNames : Names) 
   let DIFF_CMUL ← prove
    r"!f c l x. (f diffl l)(x) ==> ((\x. c * f(x)) diffl (c * l))(x)"
    (← do
-    let dc ← SPECL [← q "c:real", ← q "x:real"] DIFF_CONST
     pure (REPEAT GEN_TAC THEN
-      DISCH_THEN (MP_TAC o CONJ dc) THEN
+      DISCH_THEN (MP_TAC o CONJ (← SPECL [← q "c:real", ← q "x:real"] DIFF_CONST)) THEN
       DISCH_THEN (MP_TAC o MATCH_MP DIFF_MUL) THEN BETA_TAC THEN
       REWRITE_TAC [REAL_MUL_LZERO, REAL_ADD_LID] THEN
       MATCH_MP_TAC (← TAUT (← q r"(a <=> b) ==> a ==> b")) THEN AP_THM_TAC THEN
@@ -6436,10 +6407,9 @@ def setupDiffs [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BNames : Names) 
    r"!n x. ((\x. x pow n) diffl (&n * (x pow (n - 1))))(x)"
    (← do
     let xR ← q "x:real"
-    let dx ← SPEC xR DIFF_X
     pure (INDUCT_TAC THEN REWRITE_TAC [pow, DIFF_CONST, REAL_MUL_LZERO] THEN
       X_GEN_TAC xR THEN
-      POP_ASSUM (MP_TAC o CONJ dx o SPEC xR) THEN
+      POP_ASSUM (MP_TAC o CONJ (← SPEC xR DIFF_X) o SPEC xR) THEN
       DISCH_THEN (MP_TAC o MATCH_MP DIFF_MUL) THEN BETA_TAC THEN
       MATCH_MP_TAC EQ_IMP THEN
       AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC [REAL_MUL_LID] THEN
@@ -6459,10 +6429,6 @@ def setupDiffs [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BNames : Names) 
     let z ← q r"&0"
     let xh ← q r"x * (x + h)"
     let h ← q "h:real"
-    let linvs ← [← q r"~(x = &0)", ← q r"~(x + h = &0)"].mapM (fun t => do
-      MATCH_MP REAL_MUL_LINV (← ASSUME t))
-    let negAddSub ← REWRITE_RULE [REAL_NEG_SUB]
-      (← AP_TERM (← q "(--)") (← SPEC_ALL REAL_ADD_SUB))
     pure (GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC [diffl] THEN BETA_TAC THEN
       MATCH_MP_TAC LIM_TRANSFORM THEN
       EXISTS_TAC (← q r"\h. --(inv(x + h) * inv(x))") THEN
@@ -6491,12 +6457,14 @@ def setupDiffs [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BNames : Names) 
         REWRITE_TAC [real_div, REAL_SUB_LDISTRIB, REAL_SUB_RDISTRIB] THEN
         ONCE_REWRITE_TAC [← AC REAL_MUL_AC
           (← q r"(a * b) * (c * d) = (c * b) * (d * a)")] THEN
-        REWRITE_TAC linvs THEN REWRITE_TAC [REAL_MUL_LID] THEN
+        REWRITE_TAC (← [← q r"~(x = &0)", ← q r"~(x + h = &0)"].mapM (fun t => do
+      MATCH_MP REAL_MUL_LINV (← ASSUME t))) THEN REWRITE_TAC [REAL_MUL_LID] THEN
         ONCE_REWRITE_TAC [← AC REAL_MUL_AC
           (← q r"(a * b) * (c * d) = (a * d) * (c * b)")] THEN
         REWRITE_TAC [← MATCH_MP REAL_MUL_LINV (← ASSUME (← q r"~(x = &0)"))] THEN
         REWRITE_TAC [REAL_MUL_LID, ← GSYM REAL_SUB_LDISTRIB] THEN
-        REWRITE_TAC [negAddSub] THEN
+        REWRITE_TAC [(← REWRITE_RULE [REAL_NEG_SUB]
+      (← AP_TERM (← q "(--)") (← SPEC_ALL REAL_ADD_SUB)))] THEN
         REWRITE_TAC [← GSYM REAL_NEG_RMUL] THEN AP_TERM_TAC THEN
         MATCH_MP_TAC REAL_MUL_LINV THEN ASM_REWRITE_TAC [ABS_NZ],
 
@@ -6700,20 +6668,18 @@ def setupCont [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BTactics : Tactic
            ==> ?M. !x. a <= x /\ x <= b ==> abs(f(x)) <= M"
    (← do
     -- The later rule in the THEN chain is evaluated first.
-    let ra2 ← REAL_ARITH
-     (← q r"x <= m1 /\ --x <= m2 ==> abs(x) <= abs(m2) + abs(m1)")
-    let ra1 ← REAL_ARITH (← q r"~(a <= b) ==> ~(a <= x /\ x <= b)")
     pure (REPEAT STRIP_TAC THEN
       ASM_CASES_TAC (← q "a <= b") THENL
        [ALL_TAC,
-        ASM_SIMP_TAC [ra1]] THEN
+        ASM_SIMP_TAC [(← REAL_ARITH (← q r"~(a <= b) ==> ~(a <= x /\ x <= b)"))]] THEN
       MP_TAC (← SPECL [← q r"f:real->real", ← q "a:real", ← q "b:real"] CONT_BOUNDED) THEN
       MP_TAC (← SPECL [← q r"\x:real. --(f x)", ← q "a:real", ← q "b:real"] CONT_BOUNDED) THEN
       ASM_SIMP_TAC [CONT_NEG] THEN
       DISCH_THEN (X_CHOOSE_TAC (← q "M1:real")) THEN
       DISCH_THEN (X_CHOOSE_TAC (← q "M2:real")) THEN
       EXISTS_TAC (← q "abs(M1) + abs(M2)") THEN
-      ASM_SIMP_TAC [ra2]))
+      ASM_SIMP_TAC [(← REAL_ARITH
+     (← q r"x <= m1 /\ --x <= m2 ==> abs(x) <= abs(m2) + abs(m1)"))]))
 
   let CONT_HASSUP ← prove
    r"!f a b. (a <= b /\ !x. a <= x /\ x <= b ==> f contl x)
@@ -6721,8 +6687,7 @@ def setupCont [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BTactics : Tactic
                 (!N. N < M ==> ?x. a <= x /\ x <= b /\ N < f(x))"
    (← do
     let tm ← q r"\y:real. ?x. a <= x /\ x <= b /\ (y = f(x))"
-    let supTm ← q "sup"
-    let st ← liftExcept (mk_comb supTm tm)
+    let st ← liftExcept (mk_comb (← q "sup") tm)
     pure (REPEAT GEN_TAC THEN DISCH_TAC THEN MP_TAC (← SPEC tm REAL_SUP_LE) THEN
       BETA_TAC THEN
       subgoalAnte2 (fun t => REWRITE_TAC [t])
@@ -6760,14 +6725,12 @@ def setupCont [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BTactics : Tactic
                 (?x. a <= x /\ x <= b /\ (f(x) = M))"
    (← do
     -- The later TAUT in the THEN chain is evaluated first.
-    let t2 ← TAUT (← q r"~(a /\ b /\ c) <=> a /\ b ==> ~c")
-    let t1 ← TAUT (← q r"a <=> ~ ~a")
     pure (REPEAT GEN_TAC THEN DISCH_TAC THEN
       FIRST_ASSUM (X_CHOOSE_THEN (← q "M:real") STRIP_ASSUME_TAC o MATCH_MP CONT_HASSUP)
       THEN EXISTS_TAC (← q "M:real") THEN ASM_REWRITE_TAC [] THEN
-      GEN_REWRITE_TAC id [t1] THEN
+      GEN_REWRITE_TAC id [(← TAUT (← q r"a <=> ~ ~a"))] THEN
       CONV_TAC (RAND_CONV NOT_EXISTS_CONV) THEN
-      REWRITE_TAC [t2] THEN
+      REWRITE_TAC [(← TAUT (← q r"~(a /\ b /\ c) <=> a /\ b ==> ~c"))] THEN
       DISCH_TAC THEN
       SUBGOAL_THEN (← q r"!x. a <= x /\ x <= b ==> f(x) < M") MP_TAC THENL
        [GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC [REAL_LT_LE] THEN
@@ -7063,9 +7026,6 @@ def setupMvt [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BTactics : Tactics
    r"!a b x. a < x /\ x < b ==>
         ?d. &0 < d /\ !y. abs(x - y) < d ==> a < y /\ y < b"
    (← do
-    let ltRadd ← do
-      let (a, _) ← EQ_IMP_RULE (← SPEC_ALL REAL_LT_RADD)
-      GEN_ALL a
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [← GSYM ABS_BETWEEN] THEN
       DISJ_CASES_TAC (← SPECL [← q "x - a", ← q "b - x"] REAL_LE_TOTAL) THENL
        [EXISTS_TAC (← q "x - a"), EXISTS_TAC (← q "b - x")] THEN
@@ -7075,7 +7035,9 @@ def setupMvt [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BTactics : Tactics
       REWRITE_TAC [← GSYM real_sub, REAL_LT_SUB_LADD, REAL_LT_SUB_RADD] THEN
       FREEZE_THEN (fun th => ONCE_REWRITE_TAC [th]) (← SPEC (← q "x:real") REAL_ADD_SYM) THEN
       REWRITE_TAC [REAL_LT_RADD] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
-      MATCH_MP_TAC ltRadd THENL
+      MATCH_MP_TAC (← do
+      let (a, _) ← EQ_IMP_RULE (← SPEC_ALL REAL_LT_RADD)
+      GEN_ALL a) THENL
        [EXISTS_TAC (← q "a:real") THEN MATCH_MP_TAC REAL_LTE_TRANS THEN
         EXISTS_TAC (← q "x + x") THEN ASM_REWRITE_TAC [] THEN
         UNDISCH_TAC (← q "(x - a) <= (b - x)"),
@@ -7105,8 +7067,6 @@ def setupMvt [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BTactics : Tactics
    (← do
     let fR ← q r"f:real->real"
     -- The THENL list and the THEN chain are evaluated right to left.
-    let axab ← ASSUME (← q r"a < x /\ x < b")
-    let mean ← MATCH_MP REAL_MEAN (← ASSUME (← q "a < b"))
     pure (REPEAT GEN_TAC THEN DISCH_THEN STRIP_ASSUME_TAC THEN
       FIRST_ASSUM (ASSUME_TAC o MATCH_MP REAL_LT_IMP_LE) THEN
       MP_TAC (← SPECL [fR, ← q "a:real", ← q "b:real"] CONT_ATTAINS) THEN
@@ -7162,9 +7122,9 @@ def setupMvt [HolBase] (D : AnalysisDeps) (BCompat : Compat) (BTactics : Tactics
            SUBGOAL_THEN (← q r"(f:real->real) b = m") SUBST1_TAC THENL
             [FIRST_ASSUM (ACCEPT_TAC o (fun th => el 2 (CONJUNCTS th))),
              FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC []]]),
-        X_CHOOSE_TAC (← q "x:real") mean THEN
+        X_CHOOSE_TAC (← q "x:real") (← MATCH_MP REAL_MEAN (← ASSUME (← q "a < b"))) THEN
         DISCH_TAC THEN EXISTS_TAC (← q "x:real") THEN
-        REWRITE_TAC [axab] THEN
+        REWRITE_TAC [(← ASSUME (← q r"a < x /\ x < b"))] THEN
         FIRST_ASSUM (MP_TAC o MATCH_MP INTERVAL_LEMMA) THEN
         DISCH_THEN (X_CHOOSE_THEN (← q "d:real") STRIP_ASSUME_TAC) THEN
         SUBGOAL_THEN (← q r"?l. (f diffl l)(x) /\
@@ -7552,7 +7512,6 @@ def setupInverse [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
         ==> (g diffl (inv l))(f x)"
    (← do
     let fR ← q r"f:real->real"
-    let afgy ← ASSUME (← q r"f((g:real->real)(y)) = y")
     pure (REPEAT STRIP_TAC THEN UNDISCH_TAC (← q "(f diffl l)(x)") THEN
       DISCH_THEN (fun th => tactic_of do
         pure (ASSUME_TAC (← MATCH_MP DIFF_CONT th) THEN MP_TAC th)) THEN
@@ -7599,7 +7558,7 @@ def setupInverse [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
         BETA_TAC THEN ASM_REWRITE_TAC [REAL_SUB_RZERO] THEN
         SUBGOAL_THEN (← q r"y - f(x) = h(g(y)) * (g(y) - x)") SUBST1_TAC THENL
          [FIRST_ASSUM (fun th => tactic_of do pure (GEN_REWRITE_TAC RAND_CONV [← GSYM th])) THEN
-          REWRITE_TAC [afgy],
+          REWRITE_TAC [(← ASSUME (← q r"f((g:real->real)(y)) = y"))],
           UNDISCH_TAC (← q r"&0 < k") THEN
           MATCH_MP_TAC EQ_IMP THEN
           AP_THM_TAC THEN AP_TERM_TAC THEN
@@ -7823,12 +7782,6 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
             ==> f contl x0"
    (← do
     -- The later rule in the THEN chain is evaluated first.
-    let ar ← ARITH_RULE (← q "M + N >= N:num")
-    let ra ← REAL_ARITH
-     (← q r"!fx sx fx0 sx0 e3.
-          abs(sx - fx) < e3 /\ abs(sx0 - fx0) < e3 /\ abs(sx - sx0) < e3 /\
-          (&3 * e3 = e)
-          ==> abs(fx - fx0) < e")
     pure (REPEAT GEN_TAC THEN
       DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_TAC (← q "M:num"))) THEN
       REWRITE_TAC [CONTL_LIM, LIM] THEN X_GEN_TAC (← q "e:real") THEN DISCH_TAC THEN
@@ -7842,13 +7795,17 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
       MP_TAC (← SPECL [← q "d1:real", ← q "d2:real"] REAL_DOWN2) THEN ASM_REWRITE_TAC [] THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q "d:real") THEN STRIP_TAC THEN
       ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q "x:real") THEN STRIP_TAC THEN
-      MATCH_MP_TAC ra THEN
+      MATCH_MP_TAC (← REAL_ARITH
+     (← q r"!fx sx fx0 sx0 e3.
+          abs(sx - fx) < e3 /\ abs(sx0 - fx0) < e3 /\ abs(sx - sx0) < e3 /\
+          (&3 * e3 = e)
+          ==> abs(fx - fx0) < e")) THEN
       MAP_EVERY EXISTS_TAC
        [← q r"(s:num->real->real) (M + N) x",
         ← q r"(s:num->real->real) (M + N) x0",
         ← q r"e / &3"] THEN
       ASM_SIMP_TAC [REAL_DIV_LMUL, REAL_OF_NUM_EQ, ARITH] THEN
-      ASM_MESON_TAC [REAL_SUB_REFL, REAL_ABS_NUM, REAL_LT_TRANS, ar]))
+      ASM_MESON_TAC [REAL_SUB_REFL, REAL_ABS_NUM, REAL_LT_TRANS, (← ARITH_RULE (← q "M + N >= N:num"))]))
 
   let SER_COMPARA_UNIFORM ← prove
    r"!s x0 g.
@@ -7861,11 +7818,6 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
                                     ==> abs(sum(0,n) (s x) - f(x)) < e"
    (← do
     -- The later rules in the THEN chain are evaluated first.
-    let ra2 ← REAL_ARITH (← q r"abs(x) < a ==> x < a")
-    let ra1 ← REAL_ARITH
-     (← q r"abs(snm) < e2 /\ (&2 * e2 = e)
-      ==> abs((sn + snm) - fx) < e2 ==> abs(sn - fx) < e")
-    let ar ← ARITH_RULE (← q r"n >= M + N ==> n >= M /\ n >= N:num")
     pure (REPEAT STRIP_TAC THEN
       SUBGOAL_THEN (← q r"!x. abs(x - x0) < d ==> ?y. (s x) sums y") MP_TAC THENL
        [ASM_MESON_TAC [summable, SER_COMPAR], ALL_TAC] THEN
@@ -7880,14 +7832,16 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
       DISCH_THEN (X_CHOOSE_TAC (← q "M:num")) THEN
       EXISTS_TAC (← q "M + N:num") THEN ASM_REWRITE_TAC [] THEN
       MAP_EVERY X_GEN_TAC [← q "x:real", ← q "n:num"] THEN STRIP_TAC THEN
-      FIRST_ASSUM (STRIP_ASSUME_TAC o MATCH_MP ar) THEN
+      FIRST_ASSUM (STRIP_ASSUME_TAC o MATCH_MP (← ARITH_RULE (← q r"n >= M + N ==> n >= M /\ n >= N:num"))) THEN
       FIRST_X_ASSUM (MP_TAC o SPEC (← q "x:real")) THEN ASM_REWRITE_TAC [sums, SEQ] THEN
       DISCH_THEN (MP_TAC o SPEC (← q r"e / &2")) THEN
       ASM_SIMP_TAC [REAL_LT_DIV, REAL_OF_NUM_LT, ARITH] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "m:num") (MP_TAC o SPEC (← q "m + n:num"))) THEN
       REWRITE_TAC [GE, LE_ADD] THEN ONCE_REWRITE_TAC [ADD_SYM] THEN
       ONCE_REWRITE_TAC [← GSYM SUM_TWO] THEN
-      MATCH_MP_TAC ra1 THEN
+      MATCH_MP_TAC (← REAL_ARITH
+     (← q r"abs(snm) < e2 /\ (&2 * e2 = e)
+      ==> abs((sn + snm) - fx) < e2 ==> abs(sn - fx) < e")) THEN
       SIMP_TAC [REAL_DIV_LMUL, REAL_OF_NUM_EQ, ARITH] THEN
       MATCH_MP_TAC REAL_LET_TRANS THEN
       EXISTS_TAC (← q r"sum(n,m) (\n. abs(s (x:real) n))") THEN
@@ -7896,7 +7850,7 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
        [MATCH_MP_TAC SUM_LE THEN X_GEN_TAC (← q "r:num") THEN STRIP_TAC THEN
         REWRITE_TAC [] THEN FIRST_ASSUM MATCH_MP_TAC THEN
         ASM_MESON_TAC [GE, LE_TRANS], ALL_TAC] THEN
-      MATCH_MP_TAC ra2 THEN ASM_SIMP_TAC []))
+      MATCH_MP_TAC (← REAL_ARITH (← q r"abs(x) < a ==> x < a")) THEN ASM_SIMP_TAC []))
 
   let SER_COMPARA_UNIFORM_WEAK ← prove
    r"!s x0 g.
@@ -7916,16 +7870,13 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
                             ==> abs(f(x') - f(x)) < e"
    (← do
     -- The later rules in the THEN chain are evaluated first.
-    let ra2 ← REAL_ARITH (← q r"abs(x - x) = &0")
-    let t ← TAUT (← q r"(a ==> (b <=> c)) ==> ((a ==> b) <=> (a ==> c))")
-    let ra1 ← REAL_ARITH (← q r"&0 < abs(x - y) <=> ~(x = y)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [CONTL_LIM, LIM] THEN
-      REWRITE_TAC [ra1] THEN
+      REWRITE_TAC [(← REAL_ARITH (← q r"&0 < abs(x - y) <=> ~(x = y)"))] THEN
       AP_TERM_TAC THEN ABS_TAC THEN
-      MATCH_MP_TAC t THEN
+      MATCH_MP_TAC (← TAUT (← q r"(a ==> (b <=> c)) ==> ((a ==> b) <=> (a ==> c))")) THEN
       DISCH_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN
       AP_TERM_TAC THEN AP_TERM_TAC THEN ABS_TAC THEN
-      ASM_MESON_TAC [ra2]))
+      ASM_MESON_TAC [(← REAL_ARITH (← q r"abs(x - x) = &0"))]))
 
   let CONTL_SEQ ← prove
    r"!f x l. f contl l /\ x tends_num_real l
@@ -7939,11 +7890,10 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
         ==> ?s. a <= s /\ s <= b /\
                 !y. y < s <=> (?x. a <= x /\ x <= b /\ P x /\ y < x)"
    (← do
-    let ar ← ARITH_RULE (← q r"x <= b ==> x < b + &1")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← SPEC (← q r"\x. a <= x /\ x <= b /\ P x") REAL_SUP) THEN ANTS_TAC THENL
        [ASM_REWRITE_TAC [] THEN
-        ASM_MESON_TAC [ar],
+        ASM_MESON_TAC [(← ARITH_RULE (← q r"x <= b ==> x < b + &1"))],
         ALL_TAC] THEN
       ABBREV_TAC (← q r"s = sup (\x. a <= x /\ x <= b /\ P x)") THEN
       REWRITE_TAC [] THEN DISCH_TAC THEN EXISTS_TAC (← q "s:real") THEN
@@ -7960,24 +7910,6 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
    (← do
     -- The THEN chain and THENL lists are evaluated right to left, so the
     -- rules nearest the end of the proof come first.
-    let ra9 ← REAL_ARITH (← q r"&0 < d ==> d <= d * &2")
-    let ra8 ← REAL_ARITH
-     (← q r"!r t d d12.
-         ~(x <= r /\ y <= r) /\
-        abs(x - y) < d /\
-        s - d12 < r /\ t <= s + d /\
-        x <= t /\ y <= t /\ &2 * d12 <= e /\
-        &2 * d < e ==> abs(x - s) < e /\ abs(y - s) < e")
-    let as7 ← ASSUME
-     (← q r"!x y. abs(x - s) < d1 /\ abs(y - s) < d1 ==> abs(f x - f y) < e")
-    let ra6 ← REAL_ARITH (← q r"s < s + d <=> &0 < d")
-    let ra5 ← REAL_ARITH (← q r"x - y < x <=> &0 < y")
-    let ra4 ← REAL_ARITH (← q r"&0 < abs(x - s) <=> ~(x = s)")
-    let ra3 ← REAL_ARITH
-     (← q r"!a. abs(x - a) < e / &2 /\ abs(y - a) < e / &2 /\ (&2 * e / &2 = e)
-            ==> abs(x - y) < e")
-    let ra2 ← REAL_ARITH (← q r"d < d * &2 <=> &0 < d")
-    let ra1 ← REAL_ARITH (← q r"abs(x - x) = &0")
     let sR ← q "s:real"
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← SPEC (← q r"\c. ?d. &0 < d /\
@@ -7990,7 +7922,7 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
        [EXISTS_TAC (← q "a:real") THEN ASM_REWRITE_TAC [REAL_LE_REFL] THEN
         REPEAT STRIP_TAC THEN EXISTS_TAC (← q r"&1") THEN
         REWRITE_TAC [REAL_OF_NUM_LT, ARITH] THEN
-        ASM_MESON_TAC [REAL_LE_ANTISYM, ra1],
+        ASM_MESON_TAC [REAL_LE_ANTISYM, (← REAL_ARITH (← q r"abs(x - x) = &0"))],
         ALL_TAC] THEN
       REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN sR STRIP_ASSUME_TAC) THEN
       SUBGOAL_THEN (← q r"?t. s < t /\ ?d. &0 < d /\
@@ -8005,13 +7937,15 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
         DISCH_THEN (X_CHOOSE_THEN (← q "d1:real") STRIP_ASSUME_TAC) THEN
         SUBGOAL_THEN (← q r"&0 < d1 / &2 /\ d1 / &2 < d1") STRIP_ASSUME_TAC THENL
          [ASM_SIMP_TAC [REAL_LT_DIV, REAL_OF_NUM_LT, ARITH, REAL_LT_LDIV_EQ,
-                        ra2],
+                        (← REAL_ARITH (← q r"d < d * &2 <=> &0 < d"))],
           ALL_TAC] THEN
         SUBGOAL_THEN (← q r"!x y. abs(x - s) < d1 /\ abs(y - s) < d1
                             ==> abs(f(x) - f(y)) < e")
         ASSUME_TAC THENL
          [REPEAT STRIP_TAC THEN
-          MATCH_MP_TAC ra3 THEN
+          MATCH_MP_TAC (← REAL_ARITH
+     (← q r"!a. abs(x - a) < e / &2 /\ abs(y - a) < e / &2 /\ (&2 * e / &2 = e)
+            ==> abs(x - y) < e")) THEN
           EXISTS_TAC (← q r"(f:real->real) s") THEN
           SIMP_TAC [REAL_DIV_LMUL, REAL_OF_NUM_EQ, ARITH] THEN
           SUBGOAL_THEN (← q r"!x. abs(x - s) < d1 ==> abs(f x - f s) < e / &2")
@@ -8021,10 +7955,10 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
            [ASM_SIMP_TAC [REAL_SUB_REFL, REAL_ABS_NUM, REAL_LT_DIV,
                           REAL_OF_NUM_LT, ARITH],
             ALL_TAC] THEN
-          ASM_MESON_TAC [ra4],
+          ASM_MESON_TAC [(← REAL_ARITH (← q r"&0 < abs(x - s) <=> ~(x = s)"))],
           ALL_TAC] THEN
         SUBGOAL_THEN (← q r"s - d1 / &2 < s") MP_TAC THENL
-         [ASM_REWRITE_TAC [ra5],
+         [ASM_REWRITE_TAC [(← REAL_ARITH (← q r"x - y < x <=> &0 < y"))],
           ALL_TAC] THEN
         DISCH_THEN (fun th => FIRST_ASSUM (fun th' => tactic_of do
           pure (MP_TAC (← GEN_REWRITE_RULE id [th'] th)))) THEN
@@ -8037,19 +7971,26 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
         ASM_REWRITE_TAC [] THEN
         DISCH_THEN (X_CHOOSE_THEN (← q "d:real") STRIP_ASSUME_TAC) THEN
         EXISTS_TAC (← q r"s + d / &2") THEN
-        ASM_SIMP_TAC [REAL_LT_DIV, REAL_OF_NUM_LT, ARITH, ra6] THEN
+        ASM_SIMP_TAC [REAL_LT_DIV, REAL_OF_NUM_LT, ARITH, (← REAL_ARITH (← q r"s < s + d <=> &0 < d"))] THEN
         EXISTS_TAC (← q "d:real") THEN ASM_REWRITE_TAC [] THEN
         MAP_EVERY X_GEN_TAC [← q "x:real", ← q "y:real"] THEN STRIP_TAC THEN
         ASM_CASES_TAC (← q r"x <= r /\ y <= r") THENL
          [ASM_MESON_TAC [REAL_LT_TRANS], ALL_TAC] THEN
-        MATCH_MP_TAC as7 THEN
-        MATCH_MP_TAC ra8 THEN
+        MATCH_MP_TAC (← ASSUME
+     (← q r"!x y. abs(x - s) < d1 /\ abs(y - s) < d1 ==> abs(f x - f y) < e")) THEN
+        MATCH_MP_TAC (← REAL_ARITH
+     (← q r"!r t d d12.
+         ~(x <= r /\ y <= r) /\
+        abs(x - y) < d /\
+        s - d12 < r /\ t <= s + d /\
+        x <= t /\ y <= t /\ &2 * d12 <= e /\
+        &2 * d < e ==> abs(x - s) < e /\ abs(y - s) < e")) THEN
         MAP_EVERY EXISTS_TAC [← q "r:real", ← q r"s + d / &2", ← q "d:real", ← q r"d1 / &2"] THEN
         ASM_REWRITE_TAC [REAL_LE_LADD] THEN
         SIMP_TAC [REAL_DIV_LMUL, REAL_OF_NUM_EQ, ARITH] THEN
         ONCE_REWRITE_TAC [REAL_MUL_SYM] THEN
         SIMP_TAC [REAL_LE_LDIV_EQ, ← GSYM REAL_LT_RDIV_EQ, REAL_OF_NUM_LT, ARITH] THEN
-        ASM_SIMP_TAC [ra9, REAL_LE_REFL],
+        ASM_SIMP_TAC [(← REAL_ARITH (← q r"&0 < d ==> d <= d * &2")), REAL_LE_REFL],
         ALL_TAC] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "t:real") (CONJUNCTS_THEN ASSUME_TAC)) THEN
       SUBGOAL_THEN (← q "b <= t") (fun th => ASM_MESON_TAC [REAL_LE_TRANS, th]) THEN
@@ -8072,18 +8013,6 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
                                  ==> abs(f(x) - f(y)) < e"
    (← do
     -- The THENL list is evaluated right to left.
-    let ra5 ← REAL_ARITH
-     (← q r"~(a <= x) /\ a <= y /\ abs(x - y) < d /\ d < d1
-        ==> abs(x - a) < d1 /\ abs(y - a) < d1")
-    let ra4 ← REAL_ARITH
-     (← q r"!a. abs(x - a) < e / &2 /\ abs(y - a) < e / &2 /\ (&2 * e / &2 = e)
-            ==> abs(x - y) < e")
-    let ra3 ← REAL_ARITH
-     (← q r"x <= b /\ ~(y <= b) /\ abs(x - y) < d /\ d < d1
-        ==> abs(x - b) < d1 /\ abs(y - b) < d1")
-    let ra2 ← REAL_ARITH
-     (← q r"!a. abs(x - a) < e / &2 /\ abs(y - a) < e / &2 /\ (&2 * e / &2 = e)
-            ==> abs(x - y) < e")
     let aR ← q "a:real"
     let bR ← q "b:real"
     pure (REPEAT STRIP_TAC THEN
@@ -8117,16 +8046,24 @@ def setupUniform [HolBase] (D : AnalysisDeps) (BReals1 : Reals1) (BReals2 : Real
       REPEAT STRIP_TAC THENL
        [ASM_CASES_TAC (← q "y <= b") THENL
          [ASM_MESON_TAC [REAL_LT_TRANS, REAL_LE_TRANS], ALL_TAC] THEN
-        MATCH_MP_TAC ra2 THEN
+        MATCH_MP_TAC (← REAL_ARITH
+     (← q r"!a. abs(x - a) < e / &2 /\ abs(y - a) < e / &2 /\ (&2 * e / &2 = e)
+            ==> abs(x - y) < e")) THEN
         EXISTS_TAC (← q r"(f:real->real) b") THEN
         SIMP_TAC [REAL_DIV_LMUL, REAL_OF_NUM_EQ, ARITH_EQ] THEN
-        ASM_MESON_TAC [REAL_LT_TRANS, ra3],
+        ASM_MESON_TAC [REAL_LT_TRANS, (← REAL_ARITH
+     (← q r"x <= b /\ ~(y <= b) /\ abs(x - y) < d /\ d < d1
+        ==> abs(x - b) < d1 /\ abs(y - b) < d1"))],
         ASM_CASES_TAC (← q "a <= x") THENL
          [ASM_MESON_TAC [REAL_LT_TRANS, REAL_LE_TRANS], ALL_TAC] THEN
-        MATCH_MP_TAC ra4 THEN
+        MATCH_MP_TAC (← REAL_ARITH
+     (← q r"!a. abs(x - a) < e / &2 /\ abs(y - a) < e / &2 /\ (&2 * e / &2 = e)
+            ==> abs(x - y) < e")) THEN
         EXISTS_TAC (← q r"(f:real->real) a") THEN
         SIMP_TAC [REAL_DIV_LMUL, REAL_OF_NUM_EQ, ARITH_EQ] THEN
-        ASM_MESON_TAC [REAL_LT_TRANS, ra5]]))
+        ASM_MESON_TAC [REAL_LT_TRANS, (← REAL_ARITH
+     (← q r"~(a <= x) /\ a <= y /\ abs(x - y) < d /\ d < d1
+        ==> abs(x - a) < d1 /\ abs(y - a) < d1"))]]))
 
   -- Get rid of special syntax status of '-->'.
   remove_interface "-->"

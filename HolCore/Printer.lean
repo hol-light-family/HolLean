@@ -839,9 +839,8 @@ where
 
   print_generic_app (prec : Int) (tm : term) : IO (Fmt Unit) := do
     -- Print `l r` by recursing on the function `l` (so an infix/binder head is
-    -- re-sugared, e.g. `((o) f g) x` → `(f o g) x`) and the argument `r`.
-    -- A literal space (not a breakable one) keeps an application spine on one
-    -- line, avoiding the cascading-indent staircase.
+    -- re-sugared, e.g. `((o) f g) x` → `(f o g) x`) and the argument `r`,
+    -- with a breakable space between them (`pp_print_space`, printer.ml 605).
     match dest_comb tm with
     | .error _ => return (pure ())
     | .ok (l, r) =>
@@ -852,7 +851,7 @@ where
       return (do
         Fmt.openHvBox 0
         (if prec == 1000 then Fmt.printString "(" else pure ())
-        lP; (if skipSpace then pure () else Fmt.printString " "); rP
+        lP; (if skipSpace then pure () else Fmt.printSpace); rP
         (if prec == 1000 then Fmt.printString ")" else pure ())
         Fmt.closeBox)
 

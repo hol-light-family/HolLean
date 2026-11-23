@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.SunitRank fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -368,10 +371,6 @@ def setupSunitRank01 [HolBase] (D : SunitRankDeps) :
 
   let NUMBER_FIELD_VALUATION_DENOMINATOR ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← INT_ARITH (← q r"&0:int <= a /\ &0 <= b ==> &0 <= a + b")
-    let r2 ← INT_ARITH (← q r"!n:int. n <= a /\ --n <= b ==> &0 <= a + b")
-    let r3 ← INT_ARITH (← q r"&0:int < x <=> &1 <= x")
-    let r4 ← ARITH_RULE (← q r"2 <= n ==> 0 < n")
     prove
       r"!k (S:(A->bool)->bool) n.
           number_field k /\ FINITE S
@@ -389,17 +388,17 @@ def setupSunitRank01 [HolBase] (D : SunitRankDeps) :
                           IN ring_carrier(ring_of_integers k)"
       (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN ABBREV_TAC (← q r"S' = {P | P IN S /\ prime_ideal (ring_of_integers k) P /\
                           ~(P = {ring_0 k:A})}") THEN SUBGOAL_THEN (← q r"FINITE(S':(A->bool)->bool)") ASSUME_TAC THENL [EXPAND_TAC "S'" THEN MATCH_MP_TAC FINITE_RESTRICT THEN ASM_REWRITE_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"!P. P IN S' <=>
-          P IN S /\ prime_ideal (ring_of_integers k) P /\ ~(P = {ring_0 k:A})") ASSUME_TAC THENL [EXPAND_TAC "S'" THEN SET_TAC [], ALL_TAC] THEN ABBREV_TAC (← q r"m = nproduct S' (\P. ideal_norm (ring_of_integers k) (P:A->bool))") THEN SUBGOAL_THEN (← q r"~(m = 0)") ASSUME_TAC THENL [EXPAND_TAC "m" THEN REWRITE_TAC [(← GSYM LT_NZ)] THEN MATCH_MP_TAC NPRODUCT_POS_LT THEN ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [NUMBER_FIELD_PRIME_IDEAL_NORM_GE_2, r4], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_of_num k m IN ring_carrier(ring_of_integers k) /\
+          P IN S /\ prime_ideal (ring_of_integers k) P /\ ~(P = {ring_0 k:A})") ASSUME_TAC THENL [EXPAND_TAC "S'" THEN SET_TAC [], ALL_TAC] THEN ABBREV_TAC (← q r"m = nproduct S' (\P. ideal_norm (ring_of_integers k) (P:A->bool))") THEN SUBGOAL_THEN (← q r"~(m = 0)") ASSUME_TAC THENL [EXPAND_TAC "m" THEN REWRITE_TAC [(← GSYM LT_NZ)] THEN MATCH_MP_TAC NPRODUCT_POS_LT THEN ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [NUMBER_FIELD_PRIME_IDEAL_NORM_GE_2, (← ARITH_RULE (← q r"2 <= n ==> 0 < n"))], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_of_num k m IN ring_carrier(ring_of_integers k) /\
       ~(ring_of_num k m = ring_0 (k:A ring))") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [NUMBER_FIELD_RING_OF_NUM_EQ_0] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"m:num")] RING_OF_NUM) THEN REWRITE_TAC [RING_OF_INTEGERS], ALL_TAC] THEN SUBGOAL_THEN (← q r"!P. P IN S'
           ==> &1 <= dedekind_valuation (ring_of_integers k,k) I P
                       (ring_of_num k m:A)") ASSUME_TAC THENL [X_GEN_TAC (← q r"P:A->bool") THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"prime_ideal (ring_of_integers k) (P:A->bool) /\ ~(P = {ring_0 k}) /\
-        FINITE(ring_carrier(quotient_ring (ring_of_integers k) P))") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [NUMBER_FIELD_PRIME_IDEAL_NORM_GE_2], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"ring_of_num k m:A")] NUMBER_FIELD_VALUATION_PRIME_IDEAL) THEN ASM_REWRITE_TAC [r3] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"\P. ideal_norm (ring_of_integers k) (P:A->bool)"), (← q r"S':(A->bool)->bool"), (← q r"P:A->bool")] NPRODUCT_DELETE) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"ring_of_num k (ideal_norm (ring_of_integers k) P):A"), (← q r"ring_of_num k (nproduct (S' DELETE P)
+        FINITE(ring_carrier(quotient_ring (ring_of_integers k) P))") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [NUMBER_FIELD_PRIME_IDEAL_NORM_GE_2], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool"), (← q r"ring_of_num k m:A")] NUMBER_FIELD_VALUATION_PRIME_IDEAL) THEN ASM_REWRITE_TAC [(← INT_ARITH (← q r"&0:int < x <=> &1 <= x"))] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"\P. ideal_norm (ring_of_integers k) (P:A->bool)"), (← q r"S':(A->bool)->bool"), (← q r"P:A->bool")] NPRODUCT_DELETE) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool"), (← q r"ring_of_num k (ideal_norm (ring_of_integers k) P):A"), (← q r"ring_of_num k (nproduct (S' DELETE P)
                          (\P. ideal_norm (ring_of_integers k) P)):A")] IN_RING_IDEAL_RMUL) THEN ASM_REWRITE_TAC [RING_OF_INTEGERS, (← GSYM RING_OF_NUM_MUL)] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL] THEN CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"P:A->bool")] IDEAL_NORM_IN_IDEAL) THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL, RING_OF_INTEGERS], MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"nproduct ((S':(A->bool)->bool) DELETE P)
                     (\P. ideal_norm (ring_of_integers (k:A ring)) P)")] RING_OF_NUM) THEN REWRITE_TAC [RING_OF_INTEGERS]], ALL_TAC] THEN SUBGOAL_THEN (← q r"!P. P IN S'
           ==> &n <= dedekind_valuation (ring_of_integers k,k) I P
                       (ring_of_num k (m EXP n):A)") ASSUME_TAC THENL [X_GEN_TAC (← q r"P:A->bool") THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"prime_ideal (ring_of_integers k) (P:A->bool) /\ ~(P = {ring_0 k})") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN ASM_SIMP_TAC [RING_OF_NUM_EXP, NUMBER_FIELD_VALUATION_POW, RING_OF_NUM] THEN GEN_REWRITE_TAC LAND_CONV [(← GSYM INT_MUL_RID)] THEN MATCH_MP_TAC INT_LE_LMUL THEN ASM_SIMP_TAC [INT_POS], ALL_TAC] THEN EXISTS_TAC (← q r"m EXP n") THEN ASM_REWRITE_TAC [EXP_EQ_0] THEN X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN ASM_CASES_TAC (← q r"x = ring_0(k:A ring)") THENL [ASM_SIMP_TAC [RING_MUL_RZERO, RING_OF_NUM] THEN MP_TAC (← ISPEC (← q r"ring_of_integers k:A ring") RING_0) THEN REWRITE_TAC [RING_OF_INTEGERS], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_of_num k (m EXP n) IN ring_carrier(ring_of_integers k) /\
       ring_of_num k (m EXP n) IN ring_carrier k /\
-      ~(ring_of_num k (m EXP n) = ring_0 (k:A ring))") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [NUMBER_FIELD_RING_OF_NUM_EQ_0, RING_OF_NUM, EXP_EQ_0] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"m EXP n")] RING_OF_NUM) THEN REWRITE_TAC [RING_OF_INTEGERS], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ring_mul k (ring_of_num k (m EXP n)) (x:A)")] NUMBER_FIELD_VALUATION_INTEGRAL) THEN ANTS_TAC THENL [ASM_SIMP_TAC [RING_MUL, FIELD_IMP_INTEGRAL_DOMAIN, INTEGRAL_DOMAIN_MUL_EQ_0], DISCH_THEN SUBST1_TAC] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN ASM_SIMP_TAC [NUMBER_FIELD_VALUATION_MUL] THEN ASM_CASES_TAC (← q r"(P:A->bool) IN S") THENL [MATCH_MP_TAC r2 THEN EXISTS_TAC (← q r"&n:int") THEN ASM_SIMP_TAC [], MATCH_MP_TAC r1 THEN ASM_SIMP_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ring_of_num k (m EXP n):A")] NUMBER_FIELD_VALUATION_INTEGRAL) THEN ASM_SIMP_TAC []])
+      ~(ring_of_num k (m EXP n) = ring_0 (k:A ring))") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [NUMBER_FIELD_RING_OF_NUM_EQ_0, RING_OF_NUM, EXP_EQ_0] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"m EXP n")] RING_OF_NUM) THEN REWRITE_TAC [RING_OF_INTEGERS], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ring_mul k (ring_of_num k (m EXP n)) (x:A)")] NUMBER_FIELD_VALUATION_INTEGRAL) THEN ANTS_TAC THENL [ASM_SIMP_TAC [RING_MUL, FIELD_IMP_INTEGRAL_DOMAIN, INTEGRAL_DOMAIN_MUL_EQ_0], DISCH_THEN SUBST1_TAC] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN ASM_SIMP_TAC [NUMBER_FIELD_VALUATION_MUL] THEN ASM_CASES_TAC (← q r"(P:A->bool) IN S") THENL [MATCH_MP_TAC (← INT_ARITH (← q r"!n:int. n <= a /\ --n <= b ==> &0 <= a + b")) THEN EXISTS_TAC (← q r"&n:int") THEN ASM_SIMP_TAC [], MATCH_MP_TAC (← INT_ARITH (← q r"&0:int <= a /\ &0 <= b ==> &0 <= a + b")) THEN ASM_SIMP_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ring_of_num k (m EXP n):A")] NUMBER_FIELD_VALUATION_INTEGRAL) THEN ASM_SIMP_TAC []])
 
   let S_UNIT_GROUP_PRODUCT_FORMULA ← prove
     r"!k (S:(A->bool)->bool) x.
@@ -416,9 +415,6 @@ def setupSunitRank01 [HolBase] (D : SunitRankDeps) :
 
   let S_UNIT_GROUP_BOUNDED_EMBEDDINGS ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← REAL_ARITH (← q r"(y:real) <= z ==> x <= y ==> x <= z")
-    let r2 ← REAL_ARITH (← q r"&1 <= (b:real) ==> ~(b = &0)")
-    let r17 ← ARITH_RULE (← q r"~(n = 0) ==> 1 <= s + n")
     prove
       r"!k (S:(A->bool)->bool) v0 b x.
           number_field k /\ FINITE S /\ v0 IN infinite_places k /\ &1 <= b /\
@@ -434,71 +430,13 @@ def setupSunitRank01 [HolBase] (D : SunitRankDeps) :
       (REPEAT GEN_TAC THEN STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP FINITE_COMPLEX_EMBEDDINGS)) THEN SUBGOAL_THEN (← q r"product (complex_embeddings k) (\g. norm((g:A->complex) x)) <=
       b pow CARD(S:(A->bool)->bool)") ASSUME_TAC THENL [ASM_SIMP_TAC [S_UNIT_GROUP_PRODUCT_FORMULA] THEN TRANS_TAC REAL_LE_TRANS (← q r"product {P | P IN S /\ prime_ideal (ring_of_integers k) P /\
                      ~(P = {ring_0 k:A})} (\P. b)") THEN CONJ_TAC THENL [MATCH_MP_TAC PRODUCT_LE THEN ASM_SIMP_TAC [FINITE_RESTRICT, IN_ELIM_THM] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MATCH_MP_TAC REAL_LT_IMP_LE THEN MATCH_MP_TAC REAL_ZPOW_LT THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"P:A->bool")] NUMBER_FIELD_PRIME_IDEAL_NORM_GE_2) THEN ASM_REWRITE_TAC [REAL_OF_NUM_LT] THEN DISCH_THEN (MP_TAC o CONJUNCT2) THEN ARITH_TAC, ASM_SIMP_TAC [PRODUCT_CONST, FINITE_RESTRICT] THEN MATCH_MP_TAC REAL_POW_MONO THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC CARD_SUBSET THEN ASM_REWRITE_TAC [] THEN SET_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"(b:real) <= b pow (CARD(S:(A->bool)->bool) +
-                         CARD(complex_embeddings(k:A ring)))") ASSUME_TAC THENL [GEN_REWRITE_TAC LAND_CONV [(← GSYM REAL_POW_1)] THEN MATCH_MP_TAC REAL_POW_MONO THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC r17 THEN ASM_SIMP_TAC [CARD_EQ_0, COMPLEX_EMBEDDINGS_NONEMPTY], ALL_TAC] THEN SUBGOAL_THEN (← q r"!h:A->complex. h IN complex_embeddings k
-                     ==> (\y. norm(h y)) IN infinite_places k") ASSUME_TAC THENL [REWRITE_TAC [infinite_places, IN_IMAGE] THEN MESON_TAC [], ALL_TAC] THEN X_GEN_TAC (← q r"g:A->complex") THEN DISCH_TAC THEN ASM_CASES_TAC (← q r"(\y. norm((g:A->complex) y)) = v0") THENL [ALL_TAC, TRANS_TAC REAL_LE_TRANS (← q r"b:real") THEN ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"\y:A. norm((g:A->complex) y)")) o (checkM (fun th => (do let z10 ← (do let z11 ← (pure th); pure (concl z11)); canM (fun z12 => (do let z13 ← (pure z12); find_termM (fun z14 => (do let z16 ← (pure z14); let z15 ← (q r"inv(b:real)"); pure (z15 == z16))) z13)) z10))))) THEN ASM_SIMP_TAC []] THEN ASM_CASES_TAC (← q r"norm((g:A->complex) x) <= &1") THENL [TRANS_TAC REAL_LE_TRANS (← q r"b:real") THEN ASM_REWRITE_TAC [] THEN ASM_REAL_ARITH_TAC, RULE_ASSUM_TAC (REWRITE_RULE [REAL_NOT_LE])] THEN MP_TAC (← ISPECL [(← q r"\h:A->complex. norm(h(x:A))"), (← q r"complex_embeddings(k:A ring)"), (← q r"g:A->complex"), (← q r"b:real"), (← q r"(b:real) pow CARD(S:(A->bool)->bool)")] PRODUCT_FACTOR_BOUND) THEN ASM_REWRITE_TAC [NORM_POS_LE] THEN ANTS_TAC THENL [X_GEN_TAC (← q r"h:A->complex") THEN STRIP_TAC THEN ASM_CASES_TAC (← q r"(\y. norm((h:A->complex) y)) = v0") THENL [SUBGOAL_THEN (← q r"norm((h:A->complex) x) = norm((g:A->complex) x)") SUBST1_TAC THENL [UNDISCH_TAC (← q r"(\y. norm((h:A->complex) y)) = v0") THEN UNDISCH_TAC (← q r"(\y. norm((g:A->complex) y)) = v0") THEN REWRITE_TAC [FUN_EQ_THM] THEN MESON_TAC [], ALL_TAC] THEN TRANS_TAC REAL_LE_TRANS (← q r"(&1:real) * &1") THEN CONJ_TAC THENL [REAL_ARITH_TAC, MATCH_MP_TAC REAL_LE_MUL2] THEN ASM_REAL_ARITH_TAC, FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"\y:A. norm((h:A->complex) y)")) o (checkM (fun th => (do let z3 ← (do let z4 ← (pure th); pure (concl z4)); canM (fun z5 => (do let z6 ← (pure z5); find_termM (fun z7 => (do let z9 ← (pure z7); let z8 ← (q r"inv(b:real)"); pure (z8 == z9))) z6)) z3))))) THEN ASM_SIMP_TAC [] THEN STRIP_TAC THEN TRANS_TAC REAL_LE_TRANS (← q r"(b:real) * inv b") THEN CONJ_TAC THENL [ASM_SIMP_TAC [REAL_MUL_RINV, r2, REAL_LE_REFL], MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REAL_ARITH_TAC]], ALL_TAC] THEN REWRITE_TAC [(← GSYM REAL_POW_ADD)] THEN MATCH_MP_TAC r1 THEN MATCH_MP_TAC REAL_POW_MONO THEN ASM_REWRITE_TAC [] THEN ARITH_TAC)
+                         CARD(complex_embeddings(k:A ring)))") ASSUME_TAC THENL [GEN_REWRITE_TAC LAND_CONV [(← GSYM REAL_POW_1)] THEN MATCH_MP_TAC REAL_POW_MONO THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← ARITH_RULE (← q r"~(n = 0) ==> 1 <= s + n")) THEN ASM_SIMP_TAC [CARD_EQ_0, COMPLEX_EMBEDDINGS_NONEMPTY], ALL_TAC] THEN SUBGOAL_THEN (← q r"!h:A->complex. h IN complex_embeddings k
+                     ==> (\y. norm(h y)) IN infinite_places k") ASSUME_TAC THENL [REWRITE_TAC [infinite_places, IN_IMAGE] THEN MESON_TAC [], ALL_TAC] THEN X_GEN_TAC (← q r"g:A->complex") THEN DISCH_TAC THEN ASM_CASES_TAC (← q r"(\y. norm((g:A->complex) y)) = v0") THENL [ALL_TAC, TRANS_TAC REAL_LE_TRANS (← q r"b:real") THEN ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"\y:A. norm((g:A->complex) y)")) o (checkM (fun th => (do let z10 ← (do let z11 ← (pure th); pure (concl z11)); canM (fun z12 => (do let z13 ← (pure z12); find_termM (fun z14 => (do let z16 ← (pure z14); let z15 ← (q r"inv(b:real)"); pure (z15 == z16))) z13)) z10))))) THEN ASM_SIMP_TAC []] THEN ASM_CASES_TAC (← q r"norm((g:A->complex) x) <= &1") THENL [TRANS_TAC REAL_LE_TRANS (← q r"b:real") THEN ASM_REWRITE_TAC [] THEN ASM_REAL_ARITH_TAC, RULE_ASSUM_TAC (REWRITE_RULE [REAL_NOT_LE])] THEN MP_TAC (← ISPECL [(← q r"\h:A->complex. norm(h(x:A))"), (← q r"complex_embeddings(k:A ring)"), (← q r"g:A->complex"), (← q r"b:real"), (← q r"(b:real) pow CARD(S:(A->bool)->bool)")] PRODUCT_FACTOR_BOUND) THEN ASM_REWRITE_TAC [NORM_POS_LE] THEN ANTS_TAC THENL [X_GEN_TAC (← q r"h:A->complex") THEN STRIP_TAC THEN ASM_CASES_TAC (← q r"(\y. norm((h:A->complex) y)) = v0") THENL [SUBGOAL_THEN (← q r"norm((h:A->complex) x) = norm((g:A->complex) x)") SUBST1_TAC THENL [UNDISCH_TAC (← q r"(\y. norm((h:A->complex) y)) = v0") THEN UNDISCH_TAC (← q r"(\y. norm((g:A->complex) y)) = v0") THEN REWRITE_TAC [FUN_EQ_THM] THEN MESON_TAC [], ALL_TAC] THEN TRANS_TAC REAL_LE_TRANS (← q r"(&1:real) * &1") THEN CONJ_TAC THENL [REAL_ARITH_TAC, MATCH_MP_TAC REAL_LE_MUL2] THEN ASM_REAL_ARITH_TAC, FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"\y:A. norm((h:A->complex) y)")) o (checkM (fun th => (do let z3 ← (do let z4 ← (pure th); pure (concl z4)); canM (fun z5 => (do let z6 ← (pure z5); find_termM (fun z7 => (do let z9 ← (pure z7); let z8 ← (q r"inv(b:real)"); pure (z8 == z9))) z6)) z3))))) THEN ASM_SIMP_TAC [] THEN STRIP_TAC THEN TRANS_TAC REAL_LE_TRANS (← q r"(b:real) * inv b") THEN CONJ_TAC THENL [ASM_SIMP_TAC [REAL_MUL_RINV, (← REAL_ARITH (← q r"&1 <= (b:real) ==> ~(b = &0)")), REAL_LE_REFL], MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REAL_ARITH_TAC]], ALL_TAC] THEN REWRITE_TAC [(← GSYM REAL_POW_ADD)] THEN MATCH_MP_TAC (← REAL_ARITH (← q r"(y:real) <= z ==> x <= y ==> x <= z")) THEN MATCH_MP_TAC REAL_POW_MONO THEN ASM_REWRITE_TAC [] THEN ARITH_TAC)
 
   let S_UNIT_GROUP_BOUNDED_FINITE ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"(a:real) pow m"
-    let q2 ← q r"b:real"
-    let v3 ← ISPECL [q2, q1] REAL_LT_INV2
-    let v4 ← GSYM REAL_NOT_LT
-    let q5 ← q r"inv((a:real) pow m)"
-    let q6 ← q r"&0 < (a:real) pow m /\ &0 < (b:real)"
-    let q7 ← q r"v:int"
-    let v8 ← SPEC q7 INT_IMAGE
-    let q9 ← q r"m:num"
-    let q10 ← q r"(&2:real) pow m"
-    let q11 ← q r"&2 pow N <= (a:real) pow m"
-    let v12 ← GSYM NOT_LE
-    let q13 ← q r"m:num"
-    let q14 ← q r"!m. (a:real) pow m <= b ==> m < N"
-    let p15 ← prove r"!a b v N. &2 <= a /\ inv b <= a zpow v /\ a zpow v <= b /\ b < &2 pow N
-               ==> abs v < &N" (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN q14 ASSUME_TAC THENL [X_GEN_TAC q13 THEN DISCH_TAC THEN REWRITE_TAC [v12] THEN DISCH_TAC THEN SUBGOAL_THEN q11 MP_TAC THENL [TRANS_TAC REAL_LE_TRANS q10 THEN CONJ_TAC THENL [MATCH_MP_TAC REAL_POW_MONO THEN ASM_REWRITE_TAC [] THEN CONV_TAC REAL_RAT_REDUCE_CONV, MATCH_MP_TAC REAL_POW_LE2 THEN ASM_REAL_ARITH_TAC], ASM_REAL_ARITH_TAC], ALL_TAC] THEN DISJ_CASES_THEN (X_CHOOSE_THEN q9 SUBST_ALL_TAC) v8 THEN REWRITE_TAC [INT_ABS_NEG, INT_ABS_NUM, INT_OF_NUM_LT] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN RULE_ASSUM_TAC (REWRITE_RULE [REAL_ZPOW_NUM, REAL_ZPOW_NEG]) THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN q6 STRIP_ASSUME_TAC THENL [CONJ_TAC THENL [MATCH_MP_TAC REAL_POW_LT THEN ASM_REAL_ARITH_TAC, MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC q5 THEN ASM_REWRITE_TAC [REAL_LT_INV_EQ] THEN MATCH_MP_TAC REAL_POW_LT THEN ASM_REAL_ARITH_TAC], ALL_TAC] THEN REWRITE_TAC [v4] THEN DISCH_TAC THEN MP_TAC v3 THEN ASM_REAL_ARITH_TAC)
-    let valbound := p15
-    let q16 ← q r"x:A"
-    let q17 ← q r"b:real"
-    let q18 ← q r"v0:A->real"
-    let q19 ← q r"S:(A->bool)->bool"
-    let q20 ← q r"k:A ring"
-    let v21 ← ISPECL [q20, q19, q18, q17, q16] S_UNIT_GROUP_BOUNDED_EMBEDDINGS
-    let q22 ← q r"(g:A->complex) IN complex_embeddings k"
-    let q23 ← q r"norm((g:A->complex) D) = &d"
-    let q24 ← q r"x:A"
-    let q25 ← q r"D:A"
-    let q26 ← q r"g:A->complex"
-    let q27 ← q r"k:A ring"
-    let v28 ← ISPECL [q27, q26, q25, q24] COMPLEX_EMBEDDINGS_NORM_MUL
-    let q29 ← q r"g:A->complex"
-    let q30 ← q r"P:A->bool"
-    let q31 ← q r"b:real"
-    let q32 ← q r"&(ideal_norm (ring_of_integers k) (P:A->bool)):real"
-    let q33 ← q r"abs(v:int) < &N ==> --(&N) <= v"
-    let r34 ← INT_ARITH q33
-    let q35 ← q r"P:A->bool"
-    let q36 ← q r"ring_mul k D (x:A)"
-    let q37 ← q r"(x:A) IN group_carrier(s_unit_group k S)"
-    let q38 ← q r"(x:A) IN ring_carrier k /\ ~(x = ring_0 k) /\
-      !P. prime_ideal (ring_of_integers k) P /\ ~(P = {ring_0 k}) /\
-          ~(P IN S)
-          ==> dedekind_valuation (ring_of_integers k,k) I P x = &0"
-    let q39 ← q r"x:A"
-    let q40 ← q r"IMAGE (\y. ring_mul k (ring_inv k D) y)
-       {y | y IN ring_carrier(ring_of_integers k) /\
-            !g. g IN complex_embeddings k
-                ==> norm((g:A->complex) y) <=
-                    &d * b pow (CARD(S:(A->bool)->bool) +
-                                CARD(complex_embeddings k))}"
-    let q41 ← q r"(D:A) IN ring_carrier k /\ ~(D = ring_0 k)"
-    let q42 ← q r"D = ring_of_num k d:A"
-    let q43 ← q r"d:num"
-    let q44 ← q r"N:num"
-    let q45 ← q r"S:(A->bool)->bool"
-    let q46 ← q r"k:A ring"
-    let v47 ← ISPECL [q46, q45, q44] NUMBER_FIELD_VALUATION_DENOMINATOR
-    let q48 ← q r"b:real"
-    let v49 ← SPEC q48 REAL_ARCH_POW2
-    let q50 ← q r"N:num"
+    let valbound := (← prove r"!a b v N. &2 <= a /\ inv b <= a zpow v /\ a zpow v <= b /\ b < &2 pow N
+               ==> abs v < &N" (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"!m. (a:real) pow m <= b ==> m < N") ASSUME_TAC THENL [X_GEN_TAC (← q r"m:num") THEN DISCH_TAC THEN REWRITE_TAC [(← GSYM NOT_LE)] THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"&2 pow N <= (a:real) pow m") MP_TAC THENL [TRANS_TAC REAL_LE_TRANS (← q r"(&2:real) pow m") THEN CONJ_TAC THENL [MATCH_MP_TAC REAL_POW_MONO THEN ASM_REWRITE_TAC [] THEN CONV_TAC REAL_RAT_REDUCE_CONV, MATCH_MP_TAC REAL_POW_LE2 THEN ASM_REAL_ARITH_TAC], ASM_REAL_ARITH_TAC], ALL_TAC] THEN DISJ_CASES_THEN (X_CHOOSE_THEN (← q r"m:num") SUBST_ALL_TAC) (← SPEC (← q r"v:int") INT_IMAGE) THEN REWRITE_TAC [INT_ABS_NEG, INT_ABS_NUM, INT_OF_NUM_LT] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN RULE_ASSUM_TAC (REWRITE_RULE [REAL_ZPOW_NUM, REAL_ZPOW_NEG]) THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"&0 < (a:real) pow m /\ &0 < (b:real)") STRIP_ASSUME_TAC THENL [CONJ_TAC THENL [MATCH_MP_TAC REAL_POW_LT THEN ASM_REAL_ARITH_TAC, MATCH_MP_TAC REAL_LTE_TRANS THEN EXISTS_TAC (← q r"inv((a:real) pow m)") THEN ASM_REWRITE_TAC [REAL_LT_INV_EQ] THEN MATCH_MP_TAC REAL_POW_LT THEN ASM_REAL_ARITH_TAC], ALL_TAC] THEN REWRITE_TAC [(← GSYM REAL_NOT_LT)] THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"b:real"), (← q r"(a:real) pow m")] REAL_LT_INV2) THEN ASM_REAL_ARITH_TAC))
     prove
       r"!k (S:(A->bool)->bool) v0 b.
             number_field k /\ FINITE S /\ v0 IN infinite_places k /\ &1 <= b
@@ -514,92 +452,20 @@ def setupSunitRank01 [HolBase] (D : SunitRankDeps) :
                                &(ideal_norm (ring_of_integers k) P) zpow
                                dedekind_valuation (ring_of_integers k,k) I P x
                                <= b)}"
-      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN X_CHOOSE_TAC q50 v49 THEN MP_TAC v47 THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN q43 (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "den"))) THEN ABBREV_TAC q42 THEN SUBGOAL_THEN q41 STRIP_ASSUME_TAC THENL [EXPAND_TAC "D" THEN ASM_SIMP_TAC [RING_OF_NUM, NUMBER_FIELD_RING_OF_NUM_EQ_0], ALL_TAC] THEN MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC q40 THEN CONJ_TAC THENL [MATCH_MP_TAC FINITE_IMAGE THEN ASM_SIMP_TAC [RING_OF_INTEGERS_BOUNDED_CONJUGATES_FINITE], ALL_TAC] THEN REWRITE_TAC [SUBSET, IN_ELIM_THM, IN_IMAGE] THEN X_GEN_TAC q39 THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 (LABEL_TAC "pl") (LABEL_TAC "pr"))) THEN SUBGOAL_THEN q38 STRIP_ASSUME_TAC THENL [UNDISCH_TAC q37 THEN ASM_SIMP_TAC [S_UNIT_GROUP, IN_ELIM_THM], ALL_TAC] THEN EXISTS_TAC q36 THEN REPEAT CONJ_TAC THENL [ASM_SIMP_TAC [RING_MUL_ASSOC, RING_INV, FIELD_MUL_LINV, RING_MUL_LID], USE_THEN "den" MATCH_MP_TAC THEN ASM_SIMP_TAC [INT_LE_REFL] THEN X_GEN_TAC q35 THEN STRIP_TAC THEN MATCH_MP_TAC r34 THEN MATCH_MP_TAC valbound THEN EXISTS_TAC q32 THEN EXISTS_TAC q31 THEN USE_THEN "pr" (MP_TAC o (SPEC q30)) THEN ASM_SIMP_TAC [REAL_OF_NUM_LE, NUMBER_FIELD_PRIME_IDEAL_NORM_GE_2], X_GEN_TAC q29 THEN DISCH_TAC THEN MP_TAC v28 THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN SUBGOAL_THEN q23 SUBST1_TAC THENL [EXPAND_TAC "D" THEN UNDISCH_TAC q22 THEN REWRITE_TAC [complex_embeddings, IN_ELIM_THM] THEN STRIP_TAC THEN FIRST_ASSUM (fun th => tactic_of do pure (REWRITE_TAC [(← MATCH_MP RING_HOMOMORPHISM_RING_OF_NUM th)])) THEN REWRITE_TAC [COMPLEX_RING_OF_NUM, COMPLEX_NORM_CX, REAL_ABS_NUM], ALL_TAC] THEN MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC [REAL_POS] THEN MP_TAC v21 THEN ASM_SIMP_TAC []])
+      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN X_CHOOSE_TAC (← q r"N:num") (← SPEC (← q r"b:real") REAL_ARCH_POW2) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"N:num")] NUMBER_FIELD_VALUATION_DENOMINATOR) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"d:num") (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "den"))) THEN ABBREV_TAC (← q r"D = ring_of_num k d:A") THEN SUBGOAL_THEN (← q r"(D:A) IN ring_carrier k /\ ~(D = ring_0 k)") STRIP_ASSUME_TAC THENL [EXPAND_TAC "D" THEN ASM_SIMP_TAC [RING_OF_NUM, NUMBER_FIELD_RING_OF_NUM_EQ_0], ALL_TAC] THEN MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"IMAGE (\y. ring_mul k (ring_inv k D) y)
+       {y | y IN ring_carrier(ring_of_integers k) /\
+            !g. g IN complex_embeddings k
+                ==> norm((g:A->complex) y) <=
+                    &d * b pow (CARD(S:(A->bool)->bool) +
+                                CARD(complex_embeddings k))}") THEN CONJ_TAC THENL [MATCH_MP_TAC FINITE_IMAGE THEN ASM_SIMP_TAC [RING_OF_INTEGERS_BOUNDED_CONJUGATES_FINITE], ALL_TAC] THEN REWRITE_TAC [SUBSET, IN_ELIM_THM, IN_IMAGE] THEN X_GEN_TAC (← q r"x:A") THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 (LABEL_TAC "pl") (LABEL_TAC "pr"))) THEN SUBGOAL_THEN (← q r"(x:A) IN ring_carrier k /\ ~(x = ring_0 k) /\
+      !P. prime_ideal (ring_of_integers k) P /\ ~(P = {ring_0 k}) /\
+          ~(P IN S)
+          ==> dedekind_valuation (ring_of_integers k,k) I P x = &0") STRIP_ASSUME_TAC THENL [UNDISCH_TAC (← q r"(x:A) IN group_carrier(s_unit_group k S)") THEN ASM_SIMP_TAC [S_UNIT_GROUP, IN_ELIM_THM], ALL_TAC] THEN EXISTS_TAC (← q r"ring_mul k D (x:A)") THEN REPEAT CONJ_TAC THENL [ASM_SIMP_TAC [RING_MUL_ASSOC, RING_INV, FIELD_MUL_LINV, RING_MUL_LID], USE_THEN "den" MATCH_MP_TAC THEN ASM_SIMP_TAC [INT_LE_REFL] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MATCH_MP_TAC (← INT_ARITH (← q r"abs(v:int) < &N ==> --(&N) <= v")) THEN MATCH_MP_TAC valbound THEN EXISTS_TAC (← q r"&(ideal_norm (ring_of_integers k) (P:A->bool)):real") THEN EXISTS_TAC (← q r"b:real") THEN USE_THEN "pr" (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN ASM_SIMP_TAC [REAL_OF_NUM_LE, NUMBER_FIELD_PRIME_IDEAL_NORM_GE_2], X_GEN_TAC (← q r"g:A->complex") THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"g:A->complex"), (← q r"D:A"), (← q r"x:A")] COMPLEX_EMBEDDINGS_NORM_MUL) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN SUBGOAL_THEN (← q r"norm((g:A->complex) D) = &d") SUBST1_TAC THENL [EXPAND_TAC "D" THEN UNDISCH_TAC (← q r"(g:A->complex) IN complex_embeddings k") THEN REWRITE_TAC [complex_embeddings, IN_ELIM_THM] THEN STRIP_TAC THEN FIRST_ASSUM (fun th => tactic_of do pure (REWRITE_TAC [(← MATCH_MP RING_HOMOMORPHISM_RING_OF_NUM th)])) THEN REWRITE_TAC [COMPLEX_RING_OF_NUM, COMPLEX_NORM_CX, REAL_ABS_NUM], ALL_TAC] THEN MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC [REAL_POS] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"v0:A->real"), (← q r"b:real"), (← q r"x:A")] S_UNIT_GROUP_BOUNDED_EMBEDDINGS) THEN ASM_SIMP_TAC []])
 
   let S_UNIT_GROUP_DEPENDENT ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"max (&1) (b:real) = b"
-    let q2 ← q r"(&1:real)"
-    let q3 ← q r"b:real"
-    let v4 ← ISPECL [q3, q2] REAL_LT_INV2
-    let v5 ← GSYM REAL_NOT_LT
-    let q6 ← q r"&0 < (b:real)"
-    let q7 ← q r"&1 <= (b:real)"
-    let p8 ← prove r"!y b. &0 < y /\ inv b <= y /\ y <= b
-           ==> inv(max (&1) b) <= y /\ y <= max (&1) b" (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN q7 ASSUME_TAC THENL [SUBGOAL_THEN q6 ASSUME_TAC THENL [ASM_REAL_ARITH_TAC, ALL_TAC] THEN REWRITE_TAC [v5] THEN DISCH_TAC THEN MP_TAC v4 THEN ASM_REWRITE_TAC [REAL_INV_1] THEN ASM_REAL_ARITH_TAC, SUBGOAL_THEN q1 SUBST1_TAC THENL [ASM_REAL_ARITH_TAC, ASM_REWRITE_TAC []]])
-    let lemma := p8
-    let q9 ← q r"S':(A->bool)->bool"
-    let q10 ← q r"\P (x:A). &(ideal_norm (ring_of_integers k) P) zpow
-                   dedekind_valuation (ring_of_integers k,k) I P x"
-    let v11 ← ISPECL [q10, q9] CARD_IMAGE_LE
-    let q12 ← q r"CARD(infinite_places(k:A ring) DELETE v0) +
-        CARD(IMAGE (\P (x:A). &(ideal_norm (ring_of_integers k) P) zpow
-                              dedekind_valuation (ring_of_integers k,k) I P x)
-                   (S':(A->bool)->bool))"
-    let q13 ← q r"P:A->bool"
-    let q14 ← q r"\x:A. &(ideal_norm (ring_of_integers k) P) zpow
-                  dedekind_valuation (ring_of_integers k,k) I P x"
-    let q15 ← q r"P:A->bool"
-    let q16 ← q r"S:(A->bool)->bool"
-    let q17 ← q r"k:A ring"
-    let v18 ← ISPECL [q17, q16, q15] S_UNIT_GROUP_PRIME_SIZE
-    let q19 ← q r"P:A->bool"
-    let q20 ← q r"v:A->real"
-    let q21 ← q r"S:(A->bool)->bool"
-    let q22 ← q r"k:A ring"
-    let v23 ← ISPECL [q22, q21, q20] S_UNIT_GROUP_INFINITE_PLACES
-    let q24 ← q r"v:A->real"
-    let q25 ← q r"x:A"
-    let q26 ← q r"{x | x IN group_carrier(s_unit_group k S) /\
-             (!v. v IN infinite_places k /\ ~(v = v0)
-                  ==> inv(max (&1) b) <= v x /\ v x <= max (&1) b) /\
-             (!P. P IN S /\ prime_ideal (ring_of_integers k) P /\
-                  ~(P = {ring_0 k})
-                  ==> inv(max (&1) b) <=
-                      &(ideal_norm (ring_of_integers k) P) zpow
-                      dedekind_valuation (ring_of_integers k,k) I P (x:A) /\
-                      &(ideal_norm (ring_of_integers k) P) zpow
-                      dedekind_valuation (ring_of_integers k,k) I P x
-                      <= max (&1) b)}"
-    let q27 ← q r"b:real"
-    let q28 ← q r"(P:A->bool) IN S'"
-    let q29 ← q r"P:A->bool"
-    let q30 ← q r"S:(A->bool)->bool"
-    let q31 ← q r"k:A ring"
-    let v32 ← ISPECL [q31, q30, q29] S_UNIT_GROUP_PRIME_SIZE
-    let q33 ← q r"P:A->bool"
-    let q34 ← q r"i:A->real"
-    let q35 ← q r"S:(A->bool)->bool"
-    let q36 ← q r"k:A ring"
-    let v37 ← ISPECL [q36, q35, q34] S_UNIT_GROUP_INFINITE_PLACES
-    let q38 ← q r"y:A"
-    let q39 ← q r"x:A"
-    let q40 ← q r"i:A->real"
-    let q41 ← q r"(P:A->bool) IN S'"
-    let q42 ← q r"P:A->bool"
-    let q43 ← q r"S:(A->bool)->bool"
-    let q44 ← q r"k:A ring"
-    let v45 ← ISPECL [q44, q43, q42] S_UNIT_GROUP_PRIME_SIZE
-    let q46 ← q r"P:A->bool"
-    let q47 ← q r"i:A->real"
-    let q48 ← q r"S:(A->bool)->bool"
-    let q49 ← q r"k:A ring"
-    let v50 ← ISPECL [q49, q48, q47] S_UNIT_GROUP_INFINITE_PLACES
-    let q51 ← q r"x:A"
-    let q52 ← q r"i:A->real"
-    let q53 ← q r"t:A->bool"
-    let q54 ← q r"\(i:A->real) (x:A). i x"
-    let q55 ← q r"(infinite_places k DELETE v0) UNION
-       IMAGE (\P (x:A). &(ideal_norm (ring_of_integers k) P) zpow
-                        dedekind_valuation (ring_of_integers k,k) I P x)
-             (S':(A->bool)->bool)"
-    let q56 ← q r"s_unit_group k (S:(A->bool)->bool)"
-    let v57 ← ISPECL [q56, q55, q54, q53] ABELIAN_GROUP_DISCRETE_DEPENDENT
-    let q58 ← q r"group_id(s_unit_group k (S:(A->bool)->bool)) = ring_1 k"
-    let q59 ← q r"FINITE(S':(A->bool)->bool) /\ CARD S' <= CARD(S:(A->bool)->bool)"
-    let q60 ← q r"S' = {P | P IN S /\ prime_ideal (ring_of_integers k) P /\
-                          ~(P = {ring_0 k:A})}"
-    let q61 ← q r"?v0:A->real. v0 IN infinite_places k"
+    let lemma := (← prove r"!y b. &0 < y /\ inv b <= y /\ y <= b
+           ==> inv(max (&1) b) <= y /\ y <= max (&1) b" (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"&1 <= (b:real)") ASSUME_TAC THENL [SUBGOAL_THEN (← q r"&0 < (b:real)") ASSUME_TAC THENL [ASM_REAL_ARITH_TAC, ALL_TAC] THEN REWRITE_TAC [(← GSYM REAL_NOT_LT)] THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"b:real"), (← q r"(&1:real)")] REAL_LT_INV2) THEN ASM_REWRITE_TAC [REAL_INV_1] THEN ASM_REAL_ARITH_TAC, SUBGOAL_THEN (← q r"max (&1) (b:real) = b") SUBST1_TAC THENL [ASM_REAL_ARITH_TAC, ASM_REWRITE_TAC []]]))
     prove
       r"!k (S:(A->bool)->bool) t.
           number_field k /\ FINITE S /\ FINITE t /\
@@ -609,7 +475,26 @@ def setupSunitRank01 [HolBase] (D : SunitRankDeps) :
                   group_sum (s_unit_group k S) t
                     (\x. group_zpow (s_unit_group k S) x (n x)) =
                   ring_1 k"
-      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP FINITE_INFINITE_PLACES)) THEN SUBGOAL_THEN q61 STRIP_ASSUME_TAC THENL [REWRITE_TAC [MEMBER_NOT_EMPTY, infinite_places, IMAGE_EQ_EMPTY] THEN ASM_SIMP_TAC [COMPLEX_EMBEDDINGS_NONEMPTY], ALL_TAC] THEN ABBREV_TAC q60 THEN SUBGOAL_THEN q59 STRIP_ASSUME_TAC THENL [EXPAND_TAC "S'" THEN CONJ_TAC THENL [MATCH_MP_TAC FINITE_RESTRICT THEN ASM_REWRITE_TAC [], MATCH_MP_TAC CARD_SUBSET THEN ASM_SIMP_TAC [SUBSET, IN_ELIM_THM]], ALL_TAC] THEN SUBGOAL_THEN q58 (SUBST1_TAC o SYM) THENL [ASM_SIMP_TAC [S_UNIT_GROUP], ALL_TAC] THEN MP_TAC v57 THEN REWRITE_TAC [ABELIAN_S_UNIT_GROUP] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_SIMP_TAC [FINITE_UNION, FINITE_DELETE, FINITE_IMAGE] THEN REWRITE_TAC [IN_UNION, IN_DELETE] THEN REPEAT CONJ_TAC THENL [MAP_EVERY X_GEN_TAC [q52, q51] THEN DISCH_THEN (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN DISCH_THEN (DISJ_CASES_THEN MP_TAC) THENL [STRIP_TAC THEN MP_TAC v50 THEN ASM_SIMP_TAC [], REWRITE_TAC [IN_IMAGE] THEN DISCH_THEN (X_CHOOSE_THEN q46 (CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC)) THEN REWRITE_TAC [] THEN MP_TAC v45 THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN UNDISCH_TAC q41 THEN EXPAND_TAC "S'" THEN SIMP_TAC [IN_ELIM_THM], ASM_SIMP_TAC []]], MAP_EVERY X_GEN_TAC [q40, q39, q38] THEN DISCH_THEN (CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN DISCH_THEN (DISJ_CASES_THEN MP_TAC) THENL [STRIP_TAC THEN MP_TAC v37 THEN ASM_SIMP_TAC [], REWRITE_TAC [IN_IMAGE] THEN DISCH_THEN (X_CHOOSE_THEN q33 (CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC)) THEN REWRITE_TAC [] THEN MP_TAC v32 THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN UNDISCH_TAC q28 THEN EXPAND_TAC "S'" THEN SIMP_TAC [IN_ELIM_THM], ASM_SIMP_TAC []]], X_GEN_TAC q27 THEN MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC q26 THEN CONJ_TAC THENL [MATCH_MP_TAC S_UNIT_GROUP_BOUNDED_FINITE THEN ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC, ALL_TAC] THEN REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN X_GEN_TAC q25 THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "bd")) THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [X_GEN_TAC q24 THEN STRIP_TAC THEN MATCH_MP_TAC lemma THEN CONJ_TAC THENL [MP_TAC v23 THEN ASM_SIMP_TAC [], USE_THEN "bd" MATCH_MP_TAC THEN ASM_REWRITE_TAC []], X_GEN_TAC q19 THEN STRIP_TAC THEN MATCH_MP_TAC lemma THEN CONJ_TAC THENL [MP_TAC v18 THEN ASM_SIMP_TAC [], USE_THEN "bd" (MP_TAC o (SPEC q14)) THEN REWRITE_TAC [] THEN DISCH_THEN MATCH_MP_TAC THEN DISJ2_TAC THEN REWRITE_TAC [IN_IMAGE] THEN EXISTS_TAC q13 THEN REWRITE_TAC [] THEN EXPAND_TAC "S'" THEN ASM_REWRITE_TAC [IN_ELIM_THM]]], TRANS_TAC LET_TRANS q12 THEN CONJ_TAC THENL [MATCH_MP_TAC CARD_UNION_LE THEN ASM_SIMP_TAC [FINITE_DELETE, FINITE_IMAGE], ALL_TAC] THEN ASM_SIMP_TAC [CARD_DELETE] THEN MP_TAC v11 THEN ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC])
+      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP FINITE_INFINITE_PLACES)) THEN SUBGOAL_THEN (← q r"?v0:A->real. v0 IN infinite_places k") STRIP_ASSUME_TAC THENL [REWRITE_TAC [MEMBER_NOT_EMPTY, infinite_places, IMAGE_EQ_EMPTY] THEN ASM_SIMP_TAC [COMPLEX_EMBEDDINGS_NONEMPTY], ALL_TAC] THEN ABBREV_TAC (← q r"S' = {P | P IN S /\ prime_ideal (ring_of_integers k) P /\
+                          ~(P = {ring_0 k:A})}") THEN SUBGOAL_THEN (← q r"FINITE(S':(A->bool)->bool) /\ CARD S' <= CARD(S:(A->bool)->bool)") STRIP_ASSUME_TAC THENL [EXPAND_TAC "S'" THEN CONJ_TAC THENL [MATCH_MP_TAC FINITE_RESTRICT THEN ASM_REWRITE_TAC [], MATCH_MP_TAC CARD_SUBSET THEN ASM_SIMP_TAC [SUBSET, IN_ELIM_THM]], ALL_TAC] THEN SUBGOAL_THEN (← q r"group_id(s_unit_group k (S:(A->bool)->bool)) = ring_1 k") (SUBST1_TAC o SYM) THENL [ASM_SIMP_TAC [S_UNIT_GROUP], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"s_unit_group k (S:(A->bool)->bool)"), (← q r"(infinite_places k DELETE v0) UNION
+       IMAGE (\P (x:A). &(ideal_norm (ring_of_integers k) P) zpow
+                        dedekind_valuation (ring_of_integers k,k) I P x)
+             (S':(A->bool)->bool)"), (← q r"\(i:A->real) (x:A). i x"), (← q r"t:A->bool")] ABELIAN_GROUP_DISCRETE_DEPENDENT) THEN REWRITE_TAC [ABELIAN_S_UNIT_GROUP] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_SIMP_TAC [FINITE_UNION, FINITE_DELETE, FINITE_IMAGE] THEN REWRITE_TAC [IN_UNION, IN_DELETE] THEN REPEAT CONJ_TAC THENL [MAP_EVERY X_GEN_TAC [(← q r"i:A->real"), (← q r"x:A")] THEN DISCH_THEN (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN DISCH_THEN (DISJ_CASES_THEN MP_TAC) THENL [STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"i:A->real")] S_UNIT_GROUP_INFINITE_PLACES) THEN ASM_SIMP_TAC [], REWRITE_TAC [IN_IMAGE] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"P:A->bool") (CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC)) THEN REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"P:A->bool")] S_UNIT_GROUP_PRIME_SIZE) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN UNDISCH_TAC (← q r"(P:A->bool) IN S'") THEN EXPAND_TAC "S'" THEN SIMP_TAC [IN_ELIM_THM], ASM_SIMP_TAC []]], MAP_EVERY X_GEN_TAC [(← q r"i:A->real"), (← q r"x:A"), (← q r"y:A")] THEN DISCH_THEN (CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN DISCH_THEN (DISJ_CASES_THEN MP_TAC) THENL [STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"i:A->real")] S_UNIT_GROUP_INFINITE_PLACES) THEN ASM_SIMP_TAC [], REWRITE_TAC [IN_IMAGE] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"P:A->bool") (CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC)) THEN REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"P:A->bool")] S_UNIT_GROUP_PRIME_SIZE) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN UNDISCH_TAC (← q r"(P:A->bool) IN S'") THEN EXPAND_TAC "S'" THEN SIMP_TAC [IN_ELIM_THM], ASM_SIMP_TAC []]], X_GEN_TAC (← q r"b:real") THEN MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"{x | x IN group_carrier(s_unit_group k S) /\
+             (!v. v IN infinite_places k /\ ~(v = v0)
+                  ==> inv(max (&1) b) <= v x /\ v x <= max (&1) b) /\
+             (!P. P IN S /\ prime_ideal (ring_of_integers k) P /\
+                  ~(P = {ring_0 k})
+                  ==> inv(max (&1) b) <=
+                      &(ideal_norm (ring_of_integers k) P) zpow
+                      dedekind_valuation (ring_of_integers k,k) I P (x:A) /\
+                      &(ideal_norm (ring_of_integers k) P) zpow
+                      dedekind_valuation (ring_of_integers k,k) I P x
+                      <= max (&1) b)}") THEN CONJ_TAC THENL [MATCH_MP_TAC S_UNIT_GROUP_BOUNDED_FINITE THEN ASM_REWRITE_TAC [] THEN REAL_ARITH_TAC, ALL_TAC] THEN REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN X_GEN_TAC (← q r"x:A") THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "bd")) THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [X_GEN_TAC (← q r"v:A->real") THEN STRIP_TAC THEN MATCH_MP_TAC lemma THEN CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"v:A->real")] S_UNIT_GROUP_INFINITE_PLACES) THEN ASM_SIMP_TAC [], USE_THEN "bd" MATCH_MP_TAC THEN ASM_REWRITE_TAC []], X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MATCH_MP_TAC lemma THEN CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"P:A->bool")] S_UNIT_GROUP_PRIME_SIZE) THEN ASM_SIMP_TAC [], USE_THEN "bd" (MP_TAC o (SPEC (← q r"\x:A. &(ideal_norm (ring_of_integers k) P) zpow
+                  dedekind_valuation (ring_of_integers k,k) I P x"))) THEN REWRITE_TAC [] THEN DISCH_THEN MATCH_MP_TAC THEN DISJ2_TAC THEN REWRITE_TAC [IN_IMAGE] THEN EXISTS_TAC (← q r"P:A->bool") THEN REWRITE_TAC [] THEN EXPAND_TAC "S'" THEN ASM_REWRITE_TAC [IN_ELIM_THM]]], TRANS_TAC LET_TRANS (← q r"CARD(infinite_places(k:A ring) DELETE v0) +
+        CARD(IMAGE (\P (x:A). &(ideal_norm (ring_of_integers k) P) zpow
+                              dedekind_valuation (ring_of_integers k,k) I P x)
+                   (S':(A->bool)->bool))") THEN CONJ_TAC THENL [MATCH_MP_TAC CARD_UNION_LE THEN ASM_SIMP_TAC [FINITE_DELETE, FINITE_IMAGE], ALL_TAC] THEN ASM_SIMP_TAC [CARD_DELETE] THEN MP_TAC (← ISPECL [(← q r"\P (x:A). &(ideal_norm (ring_of_integers k) P) zpow
+                   dedekind_valuation (ring_of_integers k,k) I P x"), (← q r"S':(A->bool)->bool")] CARD_IMAGE_LE) THEN ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC])
 
   let NUMBER_FIELD_PRIME_POW_GENERATOR ← prove
     r"!k P:A->bool.
@@ -674,7 +559,6 @@ def setupSunitRank02 [HolBase] (D : SunitRankDeps) (BSunitRank01 : SunitRank01) 
 
   let S_UNIT_GROUP_INDEPENDENT ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"2 <= n <=> 1 < n")
     prove
       r"!k (S:(A->bool)->bool).
           number_field k /\ FINITE S /\
@@ -705,7 +589,7 @@ def setupSunitRank02 [HolBase] (D : SunitRankDeps) (BSunitRank01 : SunitRank01) 
             ==> dedekind_valuation (ring_of_integers k,k) I Q y =
                 &(if y = (x:(A->bool)->A) Q then h else 0)") ASSUME_TAC THENL [MAP_EVERY X_GEN_TAC [(← q r"Q:A->bool"), (← q r"y:A")] THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"prime_ideal (ring_of_integers k) (Q:A->bool) /\
                     ~(Q = {ring_0 k})") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN UNDISCH_TAC (← q r"(y:A) IN t") THEN EXPAND_TAC "t" THEN REWRITE_TAC [IN_UNION, IN_IMAGE] THEN STRIP_TAC THENL [SUBGOAL_THEN (← q r"~(y = (x:(A->bool)->A) Q)") (fun th => REWRITE_TAC [th]) THENL [UNDISCH_TAC (← q r"DISJOINT (t0:A->bool) (IMAGE (x:(A->bool)->A) S)") THEN REWRITE_TAC [DISJOINT, EXTENSION, IN_INTER, IN_IMAGE, NOT_IN_EMPTY] THEN ASM_MESON_TAC [], ASM_MESON_TAC []], FIRST_X_ASSUM SUBST_ALL_TAC THEN FIRST_X_ASSUM (MP_TAC o ((SPECL [(← q r"x':A->bool"), (← q r"Q:A->bool")]) o (checkM (fun th => (do if ← (do if ← (do let z2 ← (do let z3 ← (pure th); pure (concl z3)); pure (is_forall z2)) then (do let z4 ← (do let z5 ← (pure th); pure (concl z5)); canM (fun z6 => (do let z7 ← (pure z6); find_termM (fun z8 => (do let z10 ← (pure z8); let z9 ← (q r"h:num"); pure (z9 == z10))) z7)) z4) else pure false) then (do let z11 ← (do let z12 ← (pure th); pure (concl z12)); canM (fun z13 => (do let z14 ← (pure z13); find_termM (fun z15 => (do let z17 ← (pure z15); let z16 ← (q r"ring_0:A ring->A"); pure (z16 == z17))) z14)) z11) else pure false))))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN SUBST1_TAC] THEN AP_TERM_TAC THEN ASM_CASES_TAC (← q r"Q:A->bool = x'") THEN ASM_REWRITE_TAC [] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN ASM_MESON_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"!Q. Q IN S ==> (n:A->int)((x:(A->bool)->A) Q) = &0") ASSUME_TAC THENL [X_GEN_TAC (← q r"Q:A->bool") THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"prime_ideal (ring_of_integers k) (Q:A->bool) /\
-                    ~(Q = {ring_0 k})") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"2 <= ideal_norm (ring_of_integers k) (Q:A->bool)") ASSUME_TAC THENL [REWRITE_TAC [r1] THEN MATCH_MP_TAC IDEAL_NORM_GT_1 THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL, RING_OF_INTEGERS_FINITE_QUOTIENT] THEN FIRST_ASSUM (MP_TAC o (MATCH_MP PRIME_IMP_PROPER_IDEAL)) THEN SIMP_TAC [proper_ideal, PSUBSET], ALL_TAC] THEN SUBGOAL_THEN (← q r"(&0:real) < &(ideal_norm (ring_of_integers k) (Q:A->bool))") ASSUME_TAC THENL [REWRITE_TAC [REAL_OF_NUM_LT] THEN ASM_ARITH_TAC, ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"Q:A->bool")] S_UNIT_GROUP_PRIME_SIZE) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], STRIP_TAC] THEN MP_TAC (← ISPECL [(← q r"s_unit_group k (S:(A->bool)->bool)"), (← q r"\y:A. &(ideal_norm (ring_of_integers k) (Q:A->bool)) zpow
+                    ~(Q = {ring_0 k})") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"2 <= ideal_norm (ring_of_integers k) (Q:A->bool)") ASSUME_TAC THENL [REWRITE_TAC [(← ARITH_RULE (← q r"2 <= n <=> 1 < n"))] THEN MATCH_MP_TAC IDEAL_NORM_GT_1 THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL, RING_OF_INTEGERS_FINITE_QUOTIENT] THEN FIRST_ASSUM (MP_TAC o (MATCH_MP PRIME_IMP_PROPER_IDEAL)) THEN SIMP_TAC [proper_ideal, PSUBSET], ALL_TAC] THEN SUBGOAL_THEN (← q r"(&0:real) < &(ideal_norm (ring_of_integers k) (Q:A->bool))") ASSUME_TAC THENL [REWRITE_TAC [REAL_OF_NUM_LT] THEN ASM_ARITH_TAC, ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"Q:A->bool")] S_UNIT_GROUP_PRIME_SIZE) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], STRIP_TAC] THEN MP_TAC (← ISPECL [(← q r"s_unit_group k (S:(A->bool)->bool)"), (← q r"\y:A. &(ideal_norm (ring_of_integers k) (Q:A->bool)) zpow
                dedekind_valuation (ring_of_integers k,k) I Q y"), (← q r"\y:A. y"), (← q r"n:A->int"), (← q r"t:A->bool")] GROUP_REAL_MULTIPLICATIVE_LOG_SUM_ZPOW) THEN ANTS_TAC THENL [REWRITE_TAC [ABELIAN_S_UNIT_GROUP] THEN ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [SUBSET], ALL_TAC] THEN REWRITE_TAC [] THEN USE_THEN "rel" SUBST1_TAC THEN SIMP_TAC [NUMBER_FIELD_VALUATION_1, (← ASSUME (← q r"field(k:A ring)")), REAL_ZPOW_0, LOG_1] THEN SUBGOAL_THEN (← q r"!i:A. i IN t
               ==> real_of_int(n i) *
                   log(&(ideal_norm (ring_of_integers k) (Q:A->bool)) zpow
@@ -719,7 +603,6 @@ def setupSunitRank02 [HolBase] (D : SunitRankDeps) (BSunitRank01 : SunitRank01) 
 
   let S_UNIT_GROUP_FUNDAMENTAL ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r4 ← ARITH_RULE (← q r"~(n = 0) ==> 1 <= n")
     prove
       r"!k (S:(A->bool)->bool).
           number_field k /\ FINITE S /\
@@ -738,7 +621,7 @@ def setupSunitRank02 [HolBase] (D : SunitRankDeps) (BSunitRank01 : SunitRank01) 
                                      (group_sum (s_unit_group k S) t
                                        (\u. group_zpow (s_unit_group k S) u
                                                        (n u)))"
-      (REPEAT STRIP_TAC THEN MP_TAC (← ISPEC (← q r"s_unit_group k (S:(A->bool)->bool)") FINITELY_GENERATED_ABELIAN_GROUP_INDEPENDENT_BASIS) THEN ASM_SIMP_TAC [ABELIAN_S_UNIT_GROUP, FINITELY_GENERATED_S_UNIT_GROUP] THEN SUBGOAL_THEN (← q r"group_id(s_unit_group k (S:(A->bool)->bool)) = ring_1 k") (fun th => REWRITE_TAC [th]) THENL [ASM_SIMP_TAC [S_UNIT_GROUP], ALL_TAC] THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"t:A->bool") THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 (LABEL_TAC "ind") (CONJUNCTS_THEN2 (LABEL_TAC "rep") (LABEL_TAC "rank"))))) THEN ASM_REWRITE_TAC [HAS_SIZE] THEN REPEAT CONJ_TAC THENL [REWRITE_TAC [(← GSYM LE_ANTISYM)] THEN CONJ_TAC THENL [REWRITE_TAC [(← GSYM NOT_LT)] THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"t:A->bool")] S_UNIT_GROUP_DEPENDENT) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], ALL_TAC] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"n:A->int") (CONJUNCTS_THEN2 (X_CHOOSE_THEN (← q r"u:A") STRIP_ASSUME_TAC) ASSUME_TAC)) THEN UNDISCH_TAC (← q r"~((n:A->int) u = &0)") THEN REWRITE_TAC [] THEN USE_THEN "ind" (MP_TAC o (SPEC (← q r"n:A->int"))) THEN ANTS_TAC THENL [FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN DISCH_THEN MATCH_MP_TAC THEN FIRST_ASSUM ACCEPT_TAC, MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool")] S_UNIT_GROUP_INDEPENDENT) THEN ASM_REWRITE_TAC [HAS_SIZE] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"s:A->bool") (CONJUNCTS_THEN2 (CONJUNCTS_THEN2 ASSUME_TAC (SUBST1_TAC o SYM)) STRIP_ASSUME_TAC)) THEN USE_THEN "rank" MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN SIMP_TAC [S_UNIT_GROUP, (← ASSUME (← q r"number_field(k:A ring)"))] THEN FIRST_ASSUM ACCEPT_TAC], X_GEN_TAC (← q r"x:A") THEN DISCH_TAC THEN USE_THEN "rep" (MP_TAC o (SPEC (← q r"x:A"))) THEN ANTS_TAC THENL [FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"z:A") THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"n:A->int") THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"(z:A) IN ring_carrier k") ASSUME_TAC THENL [UNDISCH_TAC (← q r"(z:A) IN group_carrier(s_unit_group k S)") THEN SIMP_TAC [S_UNIT_GROUP, IN_ELIM_THM, (← ASSUME (← q r"number_field(k:A ring)"))], ALL_TAC] THEN CONJ_TAC THENL [FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN CONJ_TAC THENL [EXISTS_TAC (← q r"group_element_order (s_unit_group k (S:(A->bool)->bool)) (z:A)") THEN CONJ_TAC THENL [MATCH_MP_TAC r4 THEN FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"s_unit_group k (S:(A->bool)->bool)"), (← q r"z:A"), (← q r"group_element_order (s_unit_group k (S:(A->bool)->bool)) (z:A)")] GROUP_POW_EQ_ID) THEN ANTS_TAC THENL [FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN SIMP_TAC [S_UNIT_GROUP_POW, S_UNIT_GROUP, DIVIDES_REFL, (← ASSUME (← q r"number_field(k:A ring)"))], FIRST_X_ASSUM (SUBST1_TAC o (checkM (fun z1 => (do let z2 ← (do let z3 ← (pure z1); pure (concl z3)); pure (is_eq z2))))) THEN SIMP_TAC [S_UNIT_GROUP, (← ASSUME (← q r"number_field(k:A ring)"))]]])
+      (REPEAT STRIP_TAC THEN MP_TAC (← ISPEC (← q r"s_unit_group k (S:(A->bool)->bool)") FINITELY_GENERATED_ABELIAN_GROUP_INDEPENDENT_BASIS) THEN ASM_SIMP_TAC [ABELIAN_S_UNIT_GROUP, FINITELY_GENERATED_S_UNIT_GROUP] THEN SUBGOAL_THEN (← q r"group_id(s_unit_group k (S:(A->bool)->bool)) = ring_1 k") (fun th => REWRITE_TAC [th]) THENL [ASM_SIMP_TAC [S_UNIT_GROUP], ALL_TAC] THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"t:A->bool") THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 (LABEL_TAC "ind") (CONJUNCTS_THEN2 (LABEL_TAC "rep") (LABEL_TAC "rank"))))) THEN ASM_REWRITE_TAC [HAS_SIZE] THEN REPEAT CONJ_TAC THENL [REWRITE_TAC [(← GSYM LE_ANTISYM)] THEN CONJ_TAC THENL [REWRITE_TAC [(← GSYM NOT_LT)] THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"t:A->bool")] S_UNIT_GROUP_DEPENDENT) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], ALL_TAC] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"n:A->int") (CONJUNCTS_THEN2 (X_CHOOSE_THEN (← q r"u:A") STRIP_ASSUME_TAC) ASSUME_TAC)) THEN UNDISCH_TAC (← q r"~((n:A->int) u = &0)") THEN REWRITE_TAC [] THEN USE_THEN "ind" (MP_TAC o (SPEC (← q r"n:A->int"))) THEN ANTS_TAC THENL [FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN DISCH_THEN MATCH_MP_TAC THEN FIRST_ASSUM ACCEPT_TAC, MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool")] S_UNIT_GROUP_INDEPENDENT) THEN ASM_REWRITE_TAC [HAS_SIZE] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"s:A->bool") (CONJUNCTS_THEN2 (CONJUNCTS_THEN2 ASSUME_TAC (SUBST1_TAC o SYM)) STRIP_ASSUME_TAC)) THEN USE_THEN "rank" MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN SIMP_TAC [S_UNIT_GROUP, (← ASSUME (← q r"number_field(k:A ring)"))] THEN FIRST_ASSUM ACCEPT_TAC], X_GEN_TAC (← q r"x:A") THEN DISCH_TAC THEN USE_THEN "rep" (MP_TAC o (SPEC (← q r"x:A"))) THEN ANTS_TAC THENL [FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"z:A") THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"n:A->int") THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"(z:A) IN ring_carrier k") ASSUME_TAC THENL [UNDISCH_TAC (← q r"(z:A) IN group_carrier(s_unit_group k S)") THEN SIMP_TAC [S_UNIT_GROUP, IN_ELIM_THM, (← ASSUME (← q r"number_field(k:A ring)"))], ALL_TAC] THEN CONJ_TAC THENL [FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN CONJ_TAC THENL [EXISTS_TAC (← q r"group_element_order (s_unit_group k (S:(A->bool)->bool)) (z:A)") THEN CONJ_TAC THENL [MATCH_MP_TAC (← ARITH_RULE (← q r"~(n = 0) ==> 1 <= n")) THEN FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"s_unit_group k (S:(A->bool)->bool)"), (← q r"z:A"), (← q r"group_element_order (s_unit_group k (S:(A->bool)->bool)) (z:A)")] GROUP_POW_EQ_ID) THEN ANTS_TAC THENL [FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN SIMP_TAC [S_UNIT_GROUP_POW, S_UNIT_GROUP, DIVIDES_REFL, (← ASSUME (← q r"number_field(k:A ring)"))], FIRST_X_ASSUM (SUBST1_TAC o (checkM (fun z1 => (do let z2 ← (do let z3 ← (pure z1); pure (concl z3)); pure (is_eq z2))))) THEN SIMP_TAC [S_UNIT_GROUP, (← ASSUME (← q r"number_field(k:A ring)"))]]])
 
   -- @@RETURN BEGIN
   return { S_UNIT_GROUP_INDEPENDENT, S_UNIT_GROUP_FUNDAMENTAL }

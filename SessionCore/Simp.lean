@@ -77,4 +77,11 @@ export Simp (gconv term_order REWRITES_CONV net_of_conv ss_of_thms ss_of_conv
   ss_of_congs ss_of_prover ss_of_provers ss_of_maker mk_prover augment apply_prover
   ONCE_DEPTH_SQCONV DEPTH_SQCONV REDEPTH_SQCONV TOP_DEPTH_SQCONV TOP_SWEEP_SQCONV)
 
+/-- simp.ml 147-153: `mk_rewrites`' two `ITAUT` lemmas are proved where
+    simp.ml defines `mk_rewrites`, not at its first use. -/
+initialize simpMkRewritesLayer : Unit ← do
+  match ← Simp.mkRewritesLemmas B with
+  | .ok _ => pure ()
+  | .error e => throw (IO.userError s!"mk_rewrites lemmas: {e}")
+
 end Session

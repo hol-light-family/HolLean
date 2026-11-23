@@ -13,7 +13,7 @@ open HolCore.Trivia HolCore.Printer
 namespace Session
 
 
-initialize metisRandGen  : IO.Ref StdGen ← IO.mkRef (mkStdGen 0)
+def metisRandGen : IO.Ref HolCore.Metis.Prover.Rand.LXM := HolCore.Metis.Prover.metisRng
 initialize metisClauseId : IO.Ref Int    ← IO.mkRef 0
 initialize metisGen      : IO.Ref Int    ← IO.mkRef 0
 

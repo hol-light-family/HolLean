@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.TraceForm fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -197,23 +200,6 @@ def setupTraceForm [HolBase] (D : TraceFormDeps) :
 
   let EXTENSION_LINCOMB_PROD_RING ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"i < n2 ==> n1 + i < n1 + n2:num"
-    let r2 ← ARITH_RULE q1
-    let q3 ← q r"i < n1 ==> i < n1 + n2:num"
-    let r4 ← ARITH_RULE q3
-    let q5 ← q r"ring_sum r t (f:num->C) = ring_0 r /\
-      ring_sum r (s:num->bool) g = ring_sum r s h
-      ==> ring_add r (ring_sum r t f) (ring_sum r s g) = ring_sum r s h"
-    let r6 ← MESON [RING_ADD_LZERO, RING_SUM] q5
-    let q7 ← q r"ring_sum r t (f:num->B) = ring_0 r /\
-      ring_sum r (s:num->bool) g = ring_sum r s h
-      ==> ring_add r (ring_sum r s g) (ring_sum r t f) = ring_sum r s h"
-    let r8 ← MESON [RING_ADD_RZERO, RING_SUM] q7
-    let q9 ← q r"~(n1 + i < n1:num)"
-    let r10 ← ARITH_RULE q9
-    let q11 ← q r"!i. i < n1 + n2
-        ==> (h1:A->B)((c:num->A) i) IN ring_carrier l1 /\
-            (h2:A->C)(c i) IN ring_carrier l2"
     prove
       r"!k:A ring l1:B ring l2:C ring h1 h2 n1 n2 g1 g2 c.
           ring_homomorphism(k,l1) h1 /\ ring_homomorphism(k,l2) h2 /\
@@ -226,15 +212,16 @@ def setupTraceForm [HolBase] (D : TraceFormDeps) :
                         else (ring_0 l1,g2(i - n1)))) =
               ring_sum l1 {i | i < n1} (\i. ring_mul l1 (h1(c i)) (g1 i)),
               ring_sum l2 {i | i < n2} (\i. ring_mul l2 (h2(c(n1 + i))) (g2 i))"
-      (REPEAT STRIP_TAC THEN SUBGOAL_THEN q11 ASSUME_TAC THENL [ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER], ALL_TAC] THEN wPart lhand (lhand o rand) RING_SUM_PROD_RING THEN ANTS_TAC THENL [REWRITE_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_MUL THEN ASM_SIMP_TAC [PROD_RING, IN_CROSS] THEN COND_CASES_TAC THEN ASM_SIMP_TAC [IN_CROSS, RING_0] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC, DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [PAIR_EQ, o_DEF, RING_SUM_NUMSEG_LT_ADD] THEN REWRITE_TAC [r10, ADD_SUB2] THEN REWRITE_TAC [PROD_RING, COND_RAND] THEN CONJ_TAC THENL [MATCH_MP_TAC r8, MATCH_MP_TAC r6] THEN CONJ_TAC THEN (MATCH_MP_TAC RING_SUM_EQ_0 ORELSE MATCH_MP_TAC RING_SUM_EQ) THEN REWRITE_TAC [IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC [RING_MUL_RZERO, r4, r2])
+      (REPEAT STRIP_TAC THEN SUBGOAL_THEN (← q r"!i. i < n1 + n2
+        ==> (h1:A->B)((c:num->A) i) IN ring_carrier l1 /\
+            (h2:A->C)(c i) IN ring_carrier l2") ASSUME_TAC THENL [ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER], ALL_TAC] THEN wPart lhand (lhand o rand) RING_SUM_PROD_RING THEN ANTS_TAC THENL [REWRITE_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_MUL THEN ASM_SIMP_TAC [PROD_RING, IN_CROSS] THEN COND_CASES_TAC THEN ASM_SIMP_TAC [IN_CROSS, RING_0] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC, DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [PAIR_EQ, o_DEF, RING_SUM_NUMSEG_LT_ADD] THEN REWRITE_TAC [(← ARITH_RULE (← q r"~(n1 + i < n1:num)")), ADD_SUB2] THEN REWRITE_TAC [PROD_RING, COND_RAND] THEN CONJ_TAC THENL [MATCH_MP_TAC (← MESON [RING_ADD_RZERO, RING_SUM] (← q r"ring_sum r t (f:num->B) = ring_0 r /\
+      ring_sum r (s:num->bool) g = ring_sum r s h
+      ==> ring_add r (ring_sum r s g) (ring_sum r t f) = ring_sum r s h")), MATCH_MP_TAC (← MESON [RING_ADD_LZERO, RING_SUM] (← q r"ring_sum r t (f:num->C) = ring_0 r /\
+      ring_sum r (s:num->bool) g = ring_sum r s h
+      ==> ring_add r (ring_sum r t f) (ring_sum r s g) = ring_sum r s h"))] THEN CONJ_TAC THEN (MATCH_MP_TAC RING_SUM_EQ_0 ORELSE MATCH_MP_TAC RING_SUM_EQ) THEN REWRITE_TAC [IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC [RING_MUL_RZERO, (← ARITH_RULE (← q r"i < n1 ==> i < n1 + n2:num")), (← ARITH_RULE (← q r"i < n2 ==> n1 + i < n1 + n2:num"))])
 
   let FREE_BASIS_PROD_RING ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"~(i:num < n1) ==> n1 + i - n1 = i")
-    let r2 ← ARITH_RULE (← q r"~(i:num < n1) /\ i < n1 + n2 ==> i - n1 < n2")
-    let r3 ← ARITH_RULE (← q r"i < n2 ==> n1 + i < n1 + n2:num")
-    let r4 ← ARITH_RULE (← q r"i < n1 ==> i < n1 + n2:num")
-    let r5 ← ARITH_RULE (← q r"~(n1 + i < n1:num)")
     prove
       r"!k:A ring l1:B ring l2:C ring h1 h2 n1 n2 g1 g2.
           ring_homomorphism(k,l1) h1 /\ ring_homomorphism(k,l2) h2 /\
@@ -247,16 +234,12 @@ def setupTraceForm [HolBase] (D : TraceFormDeps) :
             ==> (if i < n1 then basis_coordinates (k,l1) (h1:A->B) n1 g1 y1 i
                  else basis_coordinates (k,l2) (h2:A->C) n2 g2 y2 (i - n1)) IN
                 ring_carrier k") ASSUME_TAC THENL [REPEAT STRIP_TAC THEN COND_CASES_TAC THEN MATCH_MP_TAC BASIS_COORDINATES_IN_CARRIER THEN ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC, ASM_REWRITE_TAC []] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l1:B ring"), (← q r"l2:C ring"), (← q r"h1:A->B"), (← q r"h2:A->C"), (← q r"n1:num"), (← q r"n2:num"), (← q r"g1:num->B"), (← q r"g2:num->C"), (← q r"\i. if i < n1 then basis_coordinates (k,l1) (h1:A->B) n1 g1 y1 i
-             else basis_coordinates (k,l2) (h2:A->C) n2 g2 y2 (i - n1)")] EXTENSION_LINCOMB_PROD_RING) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [r5, ADD_SUB2, PAIR_EQ] THEN CONJ_TAC THEN CONV_TAC SYM_CONV THENL [TRANS_TAC EQ_TRANS (← q r"ring_sum l1 {i | i < n1}
+             else basis_coordinates (k,l2) (h2:A->C) n2 g2 y2 (i - n1)")] EXTENSION_LINCOMB_PROD_RING) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [(← ARITH_RULE (← q r"~(n1 + i < n1:num)")), ADD_SUB2, PAIR_EQ] THEN CONJ_TAC THEN CONV_TAC SYM_CONV THENL [TRANS_TAC EQ_TRANS (← q r"ring_sum l1 {i | i < n1}
             (\i. ring_mul l1 ((h1:A->B)(basis_coordinates (k,l1) h1 n1 g1 y1 i))
-                             ((g1:num->B) i))") THEN CONJ_TAC THENL [MATCH_MP_TAC RING_SUM_EQ THEN SIMP_TAC [IN_ELIM_THM], ALL_TAC], ALL_TAC] THEN MATCH_MP_TAC BASIS_COORDINATES_EXPAND THEN ASM_REWRITE_TAC [], X_GEN_TAC (← q r"c:num->A") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l1:B ring"), (← q r"l2:C ring"), (← q r"h1:A->B"), (← q r"h2:A->C"), (← q r"n1:num"), (← q r"n2:num"), (← q r"g1:num->B"), (← q r"g2:num->C"), (← q r"c:num->A")] EXTENSION_LINCOMB_PROD_RING) THEN ASM_REWRITE_TAC [PROD_RING, PAIR_EQ] THEN DISCH_THEN (CONJUNCTS_THEN (ASSUME_TAC o SYM)) THEN MP_TAC (← ISPECL [(← q r"h1:A->B"), (← q r"k:A ring"), (← q r"l1:B ring"), (← q r"n1:num"), (← q r"g1:num->B"), (← q r"c:num->A")] FREE_BASIS_INDEPENDENT) THEN MP_TAC (← ISPECL [(← q r"h2:A->C"), (← q r"k:A ring"), (← q r"l2:C ring"), (← q r"n2:num"), (← q r"g2:num->C"), (← q r"\i. (c:num->A)(n1 + i)")] FREE_BASIS_INDEPENDENT) THEN ASM_SIMP_TAC [r4, r3] THEN DISCH_THEN (LABEL_TAC "2") THEN DISCH_TAC THEN X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN ASM_CASES_TAC (← q r"i:num < n1") THEN ASM_SIMP_TAC [] THEN REMOVE_THEN "2" (MP_TAC o (SPEC (← q r"i - n1:num"))) THEN ASM_SIMP_TAC [r2, r1]])
+                             ((g1:num->B) i))") THEN CONJ_TAC THENL [MATCH_MP_TAC RING_SUM_EQ THEN SIMP_TAC [IN_ELIM_THM], ALL_TAC], ALL_TAC] THEN MATCH_MP_TAC BASIS_COORDINATES_EXPAND THEN ASM_REWRITE_TAC [], X_GEN_TAC (← q r"c:num->A") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l1:B ring"), (← q r"l2:C ring"), (← q r"h1:A->B"), (← q r"h2:A->C"), (← q r"n1:num"), (← q r"n2:num"), (← q r"g1:num->B"), (← q r"g2:num->C"), (← q r"c:num->A")] EXTENSION_LINCOMB_PROD_RING) THEN ASM_REWRITE_TAC [PROD_RING, PAIR_EQ] THEN DISCH_THEN (CONJUNCTS_THEN (ASSUME_TAC o SYM)) THEN MP_TAC (← ISPECL [(← q r"h1:A->B"), (← q r"k:A ring"), (← q r"l1:B ring"), (← q r"n1:num"), (← q r"g1:num->B"), (← q r"c:num->A")] FREE_BASIS_INDEPENDENT) THEN MP_TAC (← ISPECL [(← q r"h2:A->C"), (← q r"k:A ring"), (← q r"l2:C ring"), (← q r"n2:num"), (← q r"g2:num->C"), (← q r"\i. (c:num->A)(n1 + i)")] FREE_BASIS_INDEPENDENT) THEN ASM_SIMP_TAC [(← ARITH_RULE (← q r"i < n1 ==> i < n1 + n2:num")), (← ARITH_RULE (← q r"i < n2 ==> n1 + i < n1 + n2:num"))] THEN DISCH_THEN (LABEL_TAC "2") THEN DISCH_TAC THEN X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN ASM_CASES_TAC (← q r"i:num < n1") THEN ASM_SIMP_TAC [] THEN REMOVE_THEN "2" (MP_TAC o (SPEC (← q r"i - n1:num"))) THEN ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(i:num < n1) /\ i < n1 + n2 ==> i - n1 < n2")), (← ARITH_RULE (← q r"~(i:num < n1) ==> n1 + i - n1 = i"))]])
 
   let BASIS_COORDINATES_PROD_RING ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"~(i:num < n1) ==> n1 + i - n1 = i")
-    let r2 ← ARITH_RULE (← q r"~(i:num < n1) /\ i < n1 + n2 ==> i - n1 < n2")
-    let r3 ← ARITH_RULE (← q r"i < n2 ==> n1 + i < n1 + n2:num")
-    let r4 ← ARITH_RULE (← q r"i < n1 ==> i < n1 + n2:num")
     prove
       r"!k:A ring l1:B ring l2:C ring h1 h2 n1 n2 g1 g2 y1 y2 i.
           ring_homomorphism(k,l1) h1 /\ ring_homomorphism(k,l2) h2 /\
@@ -271,14 +254,10 @@ def setupTraceForm [HolBase] (D : TraceFormDeps) :
       (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"h1:A->B"), (← q r"k:A ring"), (← q r"l1:B ring"), (← q r"n1:num"), (← q r"g1:num->B")] FREE_BASIS_IN_CARRIER) THEN MP_TAC (← ISPECL [(← q r"h2:A->C"), (← q r"k:A ring"), (← q r"l2:C ring"), (← q r"n2:num"), (← q r"g2:num->C")] FREE_BASIS_IN_CARRIER) THEN ASM_REWRITE_TAC [] THEN REPEAT DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"\a. (h1:A->B) a,(h2:A->C) a"), (← q r"k:A ring"), (← q r"prod_ring (l1:B ring) (l2:C ring)"), (← q r"n1 + n2:num"), (← q r"\i. if i < n1 then ((g1:num->B) i,ring_0 l2)
            else (ring_0 l1,(g2:num->C)(i - n1))"), (← q r"(y1:B,y2:C)")] BASIS_COORDINATES) THEN ASM_SIMP_TAC [FREE_BASIS_PROD_RING, (← CONJUNCT1 PROD_RING), IN_CROSS] THEN ABBREV_TAC (← q r"c = basis_coordinates (k,prod_ring l1 l2) (\a. (h1:A->B) a,(h2:A->C) a)
             (n1 + n2) (\i. if i < n1 then ((g1:num->B) i,ring_0 l2)
-                           else (ring_0 l1,(g2:num->C)(i - n1))) (y1,y2)") THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l1:B ring"), (← q r"l2:C ring"), (← q r"h1:A->B"), (← q r"h2:A->C"), (← q r"n1:num"), (← q r"n2:num"), (← q r"g1:num->B"), (← q r"g2:num->C"), (← q r"c:num->A")] EXTENSION_LINCOMB_PROD_RING) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [PAIR_EQ] THEN STRIP_TAC THEN COND_CASES_TAC THENL [MP_TAC (← ISPECL [(← q r"h1:A->B"), (← q r"k:A ring"), (← q r"l1:B ring"), (← q r"n1:num"), (← q r"g1:num->B"), (← q r"y1:B"), (← q r"c:num->A")] BASIS_COORDINATES_UNIQUE) THEN ASM_SIMP_TAC [r4], MP_TAC (← ISPECL [(← q r"h2:A->C"), (← q r"k:A ring"), (← q r"l2:C ring"), (← q r"n2:num"), (← q r"g2:num->C"), (← q r"y2:C"), (← q r"\i. (c:num->A)(n1 + i)")] BASIS_COORDINATES_UNIQUE) THEN ASM_SIMP_TAC [r3] THEN DISCH_THEN (MP_TAC o (SPEC (← q r"i - n1:num"))) THEN ASM_SIMP_TAC [r2, r1]])
+                           else (ring_0 l1,(g2:num->C)(i - n1))) (y1,y2)") THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l1:B ring"), (← q r"l2:C ring"), (← q r"h1:A->B"), (← q r"h2:A->C"), (← q r"n1:num"), (← q r"n2:num"), (← q r"g1:num->B"), (← q r"g2:num->C"), (← q r"c:num->A")] EXTENSION_LINCOMB_PROD_RING) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [PAIR_EQ] THEN STRIP_TAC THEN COND_CASES_TAC THENL [MP_TAC (← ISPECL [(← q r"h1:A->B"), (← q r"k:A ring"), (← q r"l1:B ring"), (← q r"n1:num"), (← q r"g1:num->B"), (← q r"y1:B"), (← q r"c:num->A")] BASIS_COORDINATES_UNIQUE) THEN ASM_SIMP_TAC [(← ARITH_RULE (← q r"i < n1 ==> i < n1 + n2:num"))], MP_TAC (← ISPECL [(← q r"h2:A->C"), (← q r"k:A ring"), (← q r"l2:C ring"), (← q r"n2:num"), (← q r"g2:num->C"), (← q r"y2:C"), (← q r"\i. (c:num->A)(n1 + i)")] BASIS_COORDINATES_UNIQUE) THEN ASM_SIMP_TAC [(← ARITH_RULE (← q r"i < n2 ==> n1 + i < n1 + n2:num"))] THEN DISCH_THEN (MP_TAC o (SPEC (← q r"i - n1:num"))) THEN ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(i:num < n1) /\ i < n1 + n2 ==> i - n1 < n2")), (← ARITH_RULE (← q r"~(i:num < n1) ==> n1 + i - n1 = i"))]])
 
   let ALGEBRA_TRACE_PROD_RING ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"~(n1 + i < n1:num)")
-    let r2 ← ARITH_RULE (← q r"i < n2 ==> n1 + i < n1 + n2:num")
-    let r3 ← ARITH_RULE (← q r"i < n1 ==> i < n1 + n2:num")
-    let r4 ← ARITH_RULE (← q r"~(n1 + i < n1:num)")
     prove
       r"!k:A ring l1:B ring l2:C ring h1 h2 n1 n2 g1 g2 x1 x2.
           ring_homomorphism(k,l1) h1 /\ ring_homomorphism(k,l2) h2 /\
@@ -288,7 +267,7 @@ def setupTraceForm [HolBase] (D : TraceFormDeps) :
               ring_add k (algebra_trace (k,l1) h1 x1)
                          (algebra_trace (k,l2) h2 x2)"
       (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"h1:A->B"), (← q r"k:A ring"), (← q r"l1:B ring"), (← q r"n1:num"), (← q r"g1:num->B")] FREE_BASIS_IN_CARRIER) THEN MP_TAC (← ISPECL [(← q r"h2:A->C"), (← q r"k:A ring"), (← q r"l2:C ring"), (← q r"n2:num"), (← q r"g2:num->C")] FREE_BASIS_IN_CARRIER) THEN ASM_REWRITE_TAC [] THEN REPEAT DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l1:B ring"), (← q r"l2:C ring"), (← q r"h1:A->B"), (← q r"h2:A->C"), (← q r"n1:num"), (← q r"n2:num"), (← q r"g1:num->B"), (← q r"g2:num->C")] FREE_BASIS_PROD_RING) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"\a. (h1:A->B) a,(h2:A->C) a"), (← q r"k:A ring"), (← q r"prod_ring (l1:B ring) (l2:C ring)"), (← q r"n1 + n2:num"), (← q r"\i. if i < n1 then ((g1:num->B) i,ring_0 l2)
-           else (ring_0 l1,(g2:num->C)(i - n1))"), (← q r"(x1:B,x2:C)")] ALGEBRA_TRACE_FREE_BASIS) THEN MP_TAC (← ISPECL [(← q r"h1:A->B"), (← q r"k:A ring"), (← q r"l1:B ring"), (← q r"n1:num"), (← q r"g1:num->B"), (← q r"x1:B")] ALGEBRA_TRACE_FREE_BASIS) THEN MP_TAC (← ISPECL [(← q r"h2:A->C"), (← q r"k:A ring"), (← q r"l2:C ring"), (← q r"n2:num"), (← q r"g2:num->C"), (← q r"x2:C")] ALGEBRA_TRACE_FREE_BASIS) THEN ASM_REWRITE_TAC [RING_HOMOMORPHISM_PAIRED, (← CONJUNCT1 PROD_RING), IN_CROSS] THEN REPEAT (DISCH_THEN SUBST1_TAC) THEN REWRITE_TAC [mul_matrix, RING_SUM_NUMSEG_LT_ADD, r4, ADD_SUB2] THEN BINOP_TAC THEN MATCH_MP_TAC RING_SUM_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN ASM_SIMP_TAC [PROD_RING, RING_MUL_RZERO] THEN wPart lhand (lhand o rand) BASIS_COORDINATES_PROD_RING THEN ASM_SIMP_TAC [RING_MUL, RING_0, r3, r2, r1, ADD_SUB2])
+           else (ring_0 l1,(g2:num->C)(i - n1))"), (← q r"(x1:B,x2:C)")] ALGEBRA_TRACE_FREE_BASIS) THEN MP_TAC (← ISPECL [(← q r"h1:A->B"), (← q r"k:A ring"), (← q r"l1:B ring"), (← q r"n1:num"), (← q r"g1:num->B"), (← q r"x1:B")] ALGEBRA_TRACE_FREE_BASIS) THEN MP_TAC (← ISPECL [(← q r"h2:A->C"), (← q r"k:A ring"), (← q r"l2:C ring"), (← q r"n2:num"), (← q r"g2:num->C"), (← q r"x2:C")] ALGEBRA_TRACE_FREE_BASIS) THEN ASM_REWRITE_TAC [RING_HOMOMORPHISM_PAIRED, (← CONJUNCT1 PROD_RING), IN_CROSS] THEN REPEAT (DISCH_THEN SUBST1_TAC) THEN REWRITE_TAC [mul_matrix, RING_SUM_NUMSEG_LT_ADD, (← ARITH_RULE (← q r"~(n1 + i < n1:num)")), ADD_SUB2] THEN BINOP_TAC THEN MATCH_MP_TAC RING_SUM_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN ASM_SIMP_TAC [PROD_RING, RING_MUL_RZERO] THEN wPart lhand (lhand o rand) BASIS_COORDINATES_PROD_RING THEN ASM_SIMP_TAC [RING_MUL, RING_0, (← ARITH_RULE (← q r"i < n1 ==> i < n1 + n2:num")), (← ARITH_RULE (← q r"i < n2 ==> n1 + i < n1 + n2:num")), (← ARITH_RULE (← q r"~(n1 + i < n1:num)")), ADD_SUB2])
 
   let FREE_BASIS_ISOMORPHIC_IMAGE ← prove
     r"!k:A ring l:B ring l':C ring h f n g.

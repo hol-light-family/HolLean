@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.NormIndex fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -234,7 +237,6 @@ def setupNormIndex [HolBase] (D : NormIndexDeps) :
 
   let FREE_BASIS_IDEAL_NORM_PRINCIPAL ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"q /\ (p ==> r) ==> (p <=> q) ==> r")
     prove
       r"!r:A ring n w a.
           free_basis (integer_ring,r) (ring_of_int r) n w /\
@@ -262,7 +264,7 @@ def setupNormIndex [HolBase] (D : NormIndexDeps) :
             (\i. ring_mul r
                    (ring_of_int r
                      (basis_coordinates (integer_ring,r) (ring_of_int r) n w x i))
-                   ((w:num->A) i))") THEN CONJ_TAC THENL [MATCH_MP_TAC RING_SUM_EQ THEN ASM_SIMP_TAC [IN_ELIM_THM], MATCH_MP_TAC BASIS_COORDINATES_EXPAND THEN ASM_REWRITE_TAC []]], ALL_TAC] THEN MATCH_MP_TAC r1 THEN CONJ_TAC THENL [REMOVE_THEN "im" SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"{i:num | i < n}"), (← q r"mul_matrix (integer_ring,r) (ring_of_int r) n w (a:A)")] INT_COSETS_MATRIX_IMAGE) THEN REWRITE_TAC [FINITE_NUMSEG_LT] THEN DISCH_THEN MATCH_MP_TAC THEN FIRST_ASSUM ACCEPT_TAC, REWRITE_TAC [HAS_SIZE, ideal_norm] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC INT_OF_NUM_OF_INT THEN REWRITE_TAC [INT_ABS_POS]])
+                   ((w:num->A) i))") THEN CONJ_TAC THENL [MATCH_MP_TAC RING_SUM_EQ THEN ASM_SIMP_TAC [IN_ELIM_THM], MATCH_MP_TAC BASIS_COORDINATES_EXPAND THEN ASM_REWRITE_TAC []]], ALL_TAC] THEN MATCH_MP_TAC (← TAUT (← q r"q /\ (p ==> r) ==> (p <=> q) ==> r")) THEN CONJ_TAC THENL [REMOVE_THEN "im" SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"{i:num | i < n}"), (← q r"mul_matrix (integer_ring,r) (ring_of_int r) n w (a:A)")] INT_COSETS_MATRIX_IMAGE) THEN REWRITE_TAC [FINITE_NUMSEG_LT] THEN DISCH_THEN MATCH_MP_TAC THEN FIRST_ASSUM ACCEPT_TAC, REWRITE_TAC [HAS_SIZE, ideal_norm] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC INT_OF_NUM_OF_INT THEN REWRITE_TAC [INT_ABS_POS]])
 
   let MUL_MATRIX_RING_OF_INTEGERS ← prove
     r"!k:A ring n w a i j.
@@ -302,7 +304,6 @@ def setupNormIndex [HolBase] (D : NormIndexDeps) :
 
   let NUMBER_FIELD_IDEAL_NORM_PRINCIPAL_Q ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
     prove
       r"!k:A ring a.
           number_field k /\ a IN ring_carrier(ring_of_integers k) /\
@@ -312,7 +313,7 @@ def setupNormIndex [HolBase] (D : NormIndexDeps) :
                   &(ideal_norm (ring_of_integers k)
                       (ideal_generated (ring_of_integers k) {a})) = abs m"
       (REPEAT STRIP_TAC THEN FIRST_ASSUM ((X_CHOOSE_TAC (← q r"w:num->A")) o (MATCH_MP RING_OF_INTEGERS_FREE)) THEN ABBREV_TAC (← q r"n = extension_degree (subfield_generated k {ring_0 k},k:A ring) I") THEN EXISTS_TAC (← q r"algebra_norm (integer_ring,ring_of_integers k)
-                  (ring_of_int k) (a:A)") THEN MATCH_MP_TAC r1 THEN CONJ_TAC THENL [MATCH_MP_TAC NUMBER_FIELD_NORM_INTEGRAL_BASIS THEN MAP_EVERY EXISTS_TAC [(← q r"n:num"), (← q r"w:num->A")] THEN ASM_REWRITE_TAC [], DISCH_TAC] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"n:num"), (← q r"w:num->A"), (← q r"a:A")] FREE_BASIS_IDEAL_NORM_PRINCIPAL) THEN REWRITE_TAC [RING_OF_INTEGERS] THEN ASM_REWRITE_TAC [] THEN ANTS_TAC THENL [ALL_TAC, SIMP_TAC []] THEN DISCH_TAC THEN UNDISCH_TAC (← q r"~(a:A = ring_0 k)") THEN REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A")] NUMBER_FIELD_NORM_EQ_0) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN FIRST_ASSUM (ACCEPT_TAC o (MATCH_MP (← REWRITE_RULE [SUBSET] (← SPEC (← q r"k:A ring") RING_OF_INTEGERS_SUBSET)))), DISCH_THEN (SUBST1_TAC o SYM) THEN ASM_REWRITE_TAC [RING_OF_INT_0]])
+                  (ring_of_int k) (a:A)") THEN MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL [MATCH_MP_TAC NUMBER_FIELD_NORM_INTEGRAL_BASIS THEN MAP_EVERY EXISTS_TAC [(← q r"n:num"), (← q r"w:num->A")] THEN ASM_REWRITE_TAC [], DISCH_TAC] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"n:num"), (← q r"w:num->A"), (← q r"a:A")] FREE_BASIS_IDEAL_NORM_PRINCIPAL) THEN REWRITE_TAC [RING_OF_INTEGERS] THEN ASM_REWRITE_TAC [] THEN ANTS_TAC THENL [ALL_TAC, SIMP_TAC []] THEN DISCH_TAC THEN UNDISCH_TAC (← q r"~(a:A = ring_0 k)") THEN REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A")] NUMBER_FIELD_NORM_EQ_0) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN FIRST_ASSUM (ACCEPT_TAC o (MATCH_MP (← REWRITE_RULE [SUBSET] (← SPEC (← q r"k:A ring") RING_OF_INTEGERS_SUBSET)))), DISCH_THEN (SUBST1_TAC o SYM) THEN ASM_REWRITE_TAC [RING_OF_INT_0]])
 
   let NUMBER_FIELD_IDEAL_NORM_MUL_Q ← prove
     r"!k:A ring j j'.

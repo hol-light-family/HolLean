@@ -30,8 +30,12 @@
 
   The file ends with `extend_basic_congs` adding three `isum` congruences.
 
-  EVALUATION ORDER.  OCaml evaluates function arguments right to left; none
-  of the proofs here binds two printing/counter rules, so each stays inline.
+  EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolMath

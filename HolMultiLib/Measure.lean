@@ -30142,10 +30142,10 @@ def setupMSCO [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
                         REAL_LT_IMP_LE] THEN
           FIRST_X_ASSUM MATCH_MP_TAC THEN
           MP_TAC (← ASSUME (← q r"D division_of interval[a:real^1,b]")) THEN
-          REWRITE_TAC [division_of] THEN DISCH_THEN (fun th => tactic_of do
-           pure (MP_TAC (← SPECL [← q r"interval[l:real^1,r]",
+          REWRITE_TAC [division_of] THEN DISCH_THEN ((fun (ocq4 : _) => fun th => tactic_of do
+           pure (MP_TAC (← SPECL [ocq4,
                                   ← q r"interval[(c:real^1->real^1) x,d x]"]
-             (← liftExcept (el 2 (CONJUNCTS th)))))) THEN
+             (← liftExcept (el 2 (CONJUNCTS th)))))) (← q r"interval[l:real^1,r]")) THEN
           ASM_REWRITE_TAC [EQ_INTERVAL] THEN
           GEN_REWRITE_TAC LAND_CONV [← GSYM CONTRAPOS_THM] THEN
           ANTS_TAC THENL [ALL_TAC, ASM_MESON_TAC []] THEN MATCH_MP_TAC
@@ -30202,10 +30202,10 @@ def setupMSCO [HolBase] (D : MeasureDeps) (BMSA : MSA) (BMSB : MSB) (BMSC : MSC)
           MATCH_MP_TAC (← REAL_ARITH (← q r"k * a <= x ==> a * k <= abs x + x")) THEN
           FIRST_X_ASSUM MATCH_MP_TAC THEN
           MP_TAC (← ASSUME (← q r"D division_of interval[a:real^1,b]")) THEN
-          REWRITE_TAC [division_of] THEN DISCH_THEN (fun th => tactic_of do
-           pure (MP_TAC (← SPECL [← q r"interval[l:real^1,r]",
+          REWRITE_TAC [division_of] THEN DISCH_THEN ((fun (ocq3 : _) => fun th => tactic_of do
+           pure (MP_TAC (← SPECL [ocq3,
                                   ← q r"interval[(c:real^1->real^1) x,d x]"]
-             (← liftExcept (el 2 (CONJUNCTS th)))))) THEN
+             (← liftExcept (el 2 (CONJUNCTS th)))))) (← q r"interval[l:real^1,r]")) THEN
           ASM_REWRITE_TAC [EQ_INTERVAL, ← GSYM REAL_NOT_LE] THEN
           GEN_REWRITE_TAC LAND_CONV [← GSYM CONTRAPOS_THM] THEN
           ANTS_TAC THENL [ALL_TAC, ASM_MESON_TAC []] THEN MATCH_MP_TAC
@@ -33352,9 +33352,9 @@ def setupMSCW [HolBase] (D : MeasureDeps) (BMSBV : MSBV) (BMSCR : MSCR) (BMSCS :
       MATCH_MP_TAC NEGLIGIBLE_COUNTABLE THEN
       REWRITE_TAC [COUNTABLE_NON_LIMIT_POINTS],
       ALL_TAC] THEN
-    REPEAT (FIRST_X_ASSUM (fun th => tactic_of do
-      let _ ← ExceptT.mk (HolCore.Drule.term_match [] (← q r"negligible s") (concl th))
-      pure (MP_TAC th))) THEN
+    REPEAT (FIRST_X_ASSUM ((fun (ocq2 : _) => fun th => tactic_of do
+      let _ ← ExceptT.mk (HolCore.Drule.term_match [] ocq2 (concl th))
+      pure (MP_TAC th)) (← q r"negligible s"))) THEN
     REWRITE_TAC [← GSYM NEGLIGIBLE_UNION_EQ, IMP_IMP] THEN
     MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] NEGLIGIBLE_SUBSET) THEN
     REWRITE_TAC [SUBSET, IN_ELIM_THM, IN_UNION] THEN
@@ -33424,9 +33424,9 @@ def setupMSCW [HolBase] (D : MeasureDeps) (BMSBV : MSBV) (BMSCR : MSCR) (BMSCS :
       REWRITE_TAC [COUNTABLE_NON_LIMIT_POINTS],
       ALL_TAC] THEN
     UNDISCH_THEN (← q r"negligible (v:real^1->bool)") (K ALL_TAC : thm → tactic) THEN
-    REPEAT (FIRST_X_ASSUM (fun th => tactic_of do
-      let _ ← ExceptT.mk (HolCore.Drule.term_match [] (← q r"negligible s") (concl th))
-      pure (MP_TAC th))) THEN
+    REPEAT (FIRST_X_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
+      let _ ← ExceptT.mk (HolCore.Drule.term_match [] ocq1 (concl th))
+      pure (MP_TAC th)) (← q r"negligible s"))) THEN
     REWRITE_TAC [← GSYM NEGLIGIBLE_UNION_EQ, IMP_IMP] THEN
     MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] NEGLIGIBLE_SUBSET) THEN
     REWRITE_TAC [SUBSET, IN_ELIM_THM, IN_UNION] THEN

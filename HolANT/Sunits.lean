@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.Sunits fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -344,14 +347,13 @@ def setupSunits [HolBase] (D : SunitsDeps) :
 
   let FINITELY_GENERATED_S_UNIT_GROUP ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"p /\ (p ==> q /\ r) ==> p /\ q /\ r")
     prove
       r"!k:A ring S.
           number_field k /\ FINITE S
           ==> finitely_generated_group(s_unit_group k S)"
       (REPEAT STRIP_TAC THEN ABBREV_TAC (← q r"S' = {P | P IN S /\ prime_ideal (ring_of_integers k) P /\
                           ~(P = {ring_0 k:A})}") THEN MP_TAC (← ISPECL [(← q r"s_unit_group (k:A ring) S"), (← q r"product_group S' (\P:A->bool. integer_group)"), (← q r"\x:A. RESTRICTION S'
-                           (\P. dedekind_valuation (ring_of_integers k,k) I P x)")] FINITELY_GENERATED_GROUP_EXTENSION) THEN DISCH_THEN MATCH_MP_TAC THEN MATCH_MP_TAC r1 THEN CONJ_TAC THENL [REWRITE_TAC [GROUP_HOMOMORPHISM, SUBSET, FORALL_IN_IMAGE, PRODUCT_GROUP, RESTRICTION_IN_CARTESIAN_PRODUCT, INTEGER_GROUP, IN_UNIV, RESTRICTION_EXTENSION] THEN ASM_SIMP_TAC [S_UNIT_GROUP, IN_ELIM_THM, RESTRICTION] THEN EXPAND_TAC "S'" THEN SIMP_TAC [IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC NUMBER_FIELD_VALUATION_MUL THEN ASM_REWRITE_TAC [], DISCH_TAC THEN CONJ_TAC] THENL [REWRITE_TAC [s_unit_group] THEN SIMP_TAC [SUBGROUP_GENERATED_IDEMPOT_GEN, GROUP_KERNEL_SUBSET_CARRIER] THEN REWRITE_TAC [(← GSYM s_unit_group)] THEN SUBGOAL_THEN (← q r"group_kernel (s_unit_group k S,product_group S' (\P. integer_group))
+                           (\P. dedekind_valuation (ring_of_integers k,k) I P x)")] FINITELY_GENERATED_GROUP_EXTENSION) THEN DISCH_THEN MATCH_MP_TAC THEN MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q /\ r) ==> p /\ q /\ r")) THEN CONJ_TAC THENL [REWRITE_TAC [GROUP_HOMOMORPHISM, SUBSET, FORALL_IN_IMAGE, PRODUCT_GROUP, RESTRICTION_IN_CARTESIAN_PRODUCT, INTEGER_GROUP, IN_UNIV, RESTRICTION_EXTENSION] THEN ASM_SIMP_TAC [S_UNIT_GROUP, IN_ELIM_THM, RESTRICTION] THEN EXPAND_TAC "S'" THEN SIMP_TAC [IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC NUMBER_FIELD_VALUATION_MUL THEN ASM_REWRITE_TAC [], DISCH_TAC THEN CONJ_TAC] THENL [REWRITE_TAC [s_unit_group] THEN SIMP_TAC [SUBGROUP_GENERATED_IDEMPOT_GEN, GROUP_KERNEL_SUBSET_CARRIER] THEN REWRITE_TAC [(← GSYM s_unit_group)] THEN SUBGOAL_THEN (← q r"group_kernel (s_unit_group k S,product_group S' (\P. integer_group))
          (\x:A. RESTRICTION S'
                  (\P. dedekind_valuation (ring_of_integers k,k) I P x)) =
         group_carrier(s_unit_group k {})") SUBST1_TAC THENL [REWRITE_TAC [group_kernel, PRODUCT_GROUP, INTEGER_GROUP, RESTRICTION_EXTENSION] THEN ASM_SIMP_TAC [S_UNIT_GROUP, NOT_IN_EMPTY] THEN GEN_REWRITE_TAC id [EXTENSION] THEN EXPAND_TAC "S'" THEN REWRITE_TAC [IN_ELIM_THM] THEN MESON_TAC [], MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ring_carrier(ring_of_integers k:A ring)")] UNIT_GROUP_SUBRING_GENERATED) THEN ASM_SIMP_TAC [RING_OF_INTEGERS_SUBRING, S_UNIT_GROUP_EMPTY] THEN DISCH_THEN (MP_TAC o ((MATCH_MP ISOMORPHIC_GROUP_FINITE_GENERATION) o ((MATCH_MP GROUP_ISOMORPHISM_IMP_ISOMORPHIC) o CONJUNCT2))) THEN ASM_SIMP_TAC [NUMBER_FIELD_UNIT_GROUP_FINITELY_GENERATED]], MATCH_MP_TAC FINITELY_GENERATED_ABELIAN_SUBGROUP THEN ASM_SIMP_TAC [SUBGROUP_GROUP_IMAGE, FINITELY_GENERATED_PRODUCT_GROUP, ABELIAN_PRODUCT_GROUP, ABELIAN_INTEGER_GROUP, CYCLIC_IMP_FINITELY_GENERATED_GROUP, CYCLIC_INTEGER_GROUP] THEN MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"S:(A->bool)->bool") THEN ASM SET_TAC []])
@@ -423,7 +425,6 @@ def setupSunits [HolBase] (D : SunitsDeps) :
 
   let NUMBER_FIELD_KSM_QUOTIENT_FINITE ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"(p <=> q) ==> p ==> q")
     prove
       r"!k:A ring S m.
           number_field k /\ FINITE S /\ ~(m = 0)
@@ -436,12 +437,11 @@ def setupSunits [HolBase] (D : SunitsDeps) :
                               ==> &m divides dedekind_valuation
                                               (ring_of_integers k,k) I P x}"
       (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"S:(A->bool)->bool"), (← q r"m:num")] NUMBER_FIELD_KSM_FINITE) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"t:A->bool") STRIP_ASSUME_TAC) THEN ABBREV_TAC (← q r"H = {ring_pow k y m | y | y IN ring_carrier k /\
-                                         ~(y = ring_0 k:A)}") THEN SUBGOAL_THEN (← q r"(H:A->bool) subgroup_of unit_group k") ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"unit_group k:A group"), (← q r"m:num")] ABELIAN_GROUP_HOMOMORPHISM_POWERING) THEN REWRITE_TAC [ABELIAN_UNIT_GROUP] THEN DISCH_THEN (MP_TAC o (MATCH_MP SUBGROUP_GROUP_IMAGE)) THEN MATCH_MP_TAC r1 THEN AP_THM_TAC THEN AP_TERM_TAC THEN EXPAND_TAC "H" THEN SIMP_TAC [group_image, FIELD_UNIT_GROUP, UNIT_GROUP_POW, (← ASSUME (← q r"field(k:A ring)"))] THEN REWRITE_TAC [EXTENSION, IN_IMAGE, IN_ELIM_THM, IN_DIFF, IN_SING] THEN MESON_TAC [], ALL_TAC] THEN MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"IMAGE (right_coset (unit_group k) (H:A->bool)) t") THEN ASM_SIMP_TAC [FINITE_IMAGE] THEN REWRITE_TAC [SUBSET, FORALL_IN_GSPEC, IN_IMAGE] THEN X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"x:A"))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"c:A") (X_CHOOSE_THEN (← q r"y:A") STRIP_ASSUME_TAC)) THEN EXISTS_TAC (← q r"c:A") THEN ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"c:A"))) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"unit_group k:A group"), (← q r"H:A->bool"), (← q r"ring_mul k c (ring_pow k y m):A"), (← q r"c:A")] RIGHT_COSET_EQ) THEN ASM_SIMP_TAC [FIELD_UNIT_GROUP, IN_DIFF, IN_SING, RING_MUL, RING_POW, FIELD_IMP_INTEGRAL_DOMAIN, INTEGRAL_DOMAIN_MUL_EQ_0, INTEGRAL_DOMAIN_POW_EQ_0] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [group_div, UNIT_GROUP] THEN EXPAND_TAC "H" THEN REWRITE_TAC [IN_ELIM_THM] THEN EXISTS_TAC (← q r"y:A") THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"ring_inv k (c:A) IN ring_carrier k /\
+                                         ~(y = ring_0 k:A)}") THEN SUBGOAL_THEN (← q r"(H:A->bool) subgroup_of unit_group k") ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"unit_group k:A group"), (← q r"m:num")] ABELIAN_GROUP_HOMOMORPHISM_POWERING) THEN REWRITE_TAC [ABELIAN_UNIT_GROUP] THEN DISCH_THEN (MP_TAC o (MATCH_MP SUBGROUP_GROUP_IMAGE)) THEN MATCH_MP_TAC (← TAUT (← q r"(p <=> q) ==> p ==> q")) THEN AP_THM_TAC THEN AP_TERM_TAC THEN EXPAND_TAC "H" THEN SIMP_TAC [group_image, FIELD_UNIT_GROUP, UNIT_GROUP_POW, (← ASSUME (← q r"field(k:A ring)"))] THEN REWRITE_TAC [EXTENSION, IN_IMAGE, IN_ELIM_THM, IN_DIFF, IN_SING] THEN MESON_TAC [], ALL_TAC] THEN MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"IMAGE (right_coset (unit_group k) (H:A->bool)) t") THEN ASM_SIMP_TAC [FINITE_IMAGE] THEN REWRITE_TAC [SUBSET, FORALL_IN_GSPEC, IN_IMAGE] THEN X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"x:A"))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"c:A") (X_CHOOSE_THEN (← q r"y:A") STRIP_ASSUME_TAC)) THEN EXISTS_TAC (← q r"c:A") THEN ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"c:A"))) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"unit_group k:A group"), (← q r"H:A->bool"), (← q r"ring_mul k c (ring_pow k y m):A"), (← q r"c:A")] RIGHT_COSET_EQ) THEN ASM_SIMP_TAC [FIELD_UNIT_GROUP, IN_DIFF, IN_SING, RING_MUL, RING_POW, FIELD_IMP_INTEGRAL_DOMAIN, INTEGRAL_DOMAIN_MUL_EQ_0, INTEGRAL_DOMAIN_POW_EQ_0] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [group_div, UNIT_GROUP] THEN EXPAND_TAC "H" THEN REWRITE_TAC [IN_ELIM_THM] THEN EXISTS_TAC (← q r"y:A") THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"ring_inv k (c:A) IN ring_carrier k /\
                   ring_mul k (ring_inv k c) c = ring_1 k") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [RING_INV, FIELD_MUL_LINV], ALL_TAC] THEN RING_TAC)
 
   let S_UNIT_GROUP_RING_OF_S_INTEGERS ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
     prove
       r"!k:A ring S.
           number_field k
@@ -452,7 +452,7 @@ def setupSunits [HolBase] (D : SunitsDeps) :
               group_isomorphism
                (unit_group(ring_of_s_integers (ring_of_integers k,k) I S),
                 s_unit_group k S) I"
-      (REPEAT GEN_TAC THEN DISCH_TAC THEN MP_TAC (← ISPEC (← q r"k:A ring") RING_OF_INTEGERS_FRACTION_FIELD) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN MATCH_MP_TAC r1 THEN CONJ_TAC THENL [REWRITE_TAC [s_unit_group] THEN AP_TERM_TAC THEN GEN_REWRITE_TAC id [EXTENSION] THEN X_GEN_TAC (← q r"x:A") THEN ASM_SIMP_TAC [IN_ELIM_THM, RING_UNIT_RING_OF_S_INTEGERS, RING_OF_INTEGERS, I_THM], DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [ring_of_s_integers] THEN REWRITE_TAC [UNIT_GROUP_SUBRING_GENERATED]])
+      (REPEAT GEN_TAC THEN DISCH_TAC THEN MP_TAC (← ISPEC (← q r"k:A ring") RING_OF_INTEGERS_FRACTION_FIELD) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL [REWRITE_TAC [s_unit_group] THEN AP_TERM_TAC THEN GEN_REWRITE_TAC id [EXTENSION] THEN X_GEN_TAC (← q r"x:A") THEN ASM_SIMP_TAC [IN_ELIM_THM, RING_UNIT_RING_OF_S_INTEGERS, RING_OF_INTEGERS, I_THM], DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [ring_of_s_integers] THEN REWRITE_TAC [UNIT_GROUP_SUBRING_GENERATED]])
 
   let FINITELY_GENERATED_UNIT_GROUP_RING_OF_S_INTEGERS ← prove
     r"!k:A ring S.

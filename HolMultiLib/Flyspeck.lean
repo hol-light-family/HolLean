@@ -8931,7 +8931,8 @@ def setupFYX [HolBase] (D : FlyspeckDeps) : ExceptT String IO FYX := do
   add_linear_invariants [VERTICES_LINEAR_IMAGE, EDGES_LINEAR_IMAGE]
 
   -- Fix the congruence rules as expected in Flyspeck (load-time effect).
-  let bcs ← [
+  -- the list literal is built (its quotations parsed) last first
+   let bcs ← ([
     r"(p <=> p') ==> (p' ==> (q <=> q')) ==> (p ==> q <=> p' ==> q')",
     r"(g <=> g')
     ==> (g' ==> t = t')
@@ -8957,7 +8958,7 @@ def setupFYX [HolBase] (D : FlyspeckDeps) : ExceptT String IO FYX := do
     r"(!x. ~(x = a) ==> f x = g x)
     ==> (((\x. f x) --> l) (at a) <=> (g --> l) (at a))",
     r"(!x. ~(x = a) ==> f x = g x)
-    ==> (((\x. f x) --> l) (at a within s) <=> (g --> l) (at a within s))"].mapM q
+    ==> (((\x. f x) --> l) (at a within s) <=> (g --> l) (at a within s))"].reverse.mapM q) <&> List.reverse
   let can_match (t1 t2 : term) : ExceptT String IO Bool :=
     tryWith (do let _ ← term_match [] t1 t2; pure true) (pure false)
   let equiv (t1 t2 : term) : ExceptT String IO Bool := do

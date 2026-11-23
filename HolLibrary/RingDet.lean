@@ -46,10 +46,11 @@
   name.  RingTheory's `wPart` is the `W(MP_TAC o PART_MATCH ...)` idiom.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, SET_RULE, TAUT, RING_RULE) they are bound
-  first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.RingTheory
@@ -6376,8 +6377,7 @@ def setupChangeOfBasis [HolBase] (D : RingDetDeps) (BDet : Det) (BDetRows : DetR
         X_GEN_TAC (← q "p:num") THEN DISCH_TAC THEN MAP_EVERY EXPAND_TAC ["P", "Q"] THEN
         COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
         SIMP_TAC [RING_MUL_LZERO, RING_0]])
-    let a1 ← ARITH_RULE (← q r"m:num = n <=> ~(m < n) /\ ~(n < m)")
-    pure (MESON_TAC [lemma, a1]))
+    pure (MESON_TAC [lemma, (← ARITH_RULE (← q r"m:num = n <=> ~(m < n) /\ ~(n < m)"))]))
 
   let MUL_MATRIX_CHARPOLY_BASIS ← prove
    r"!(h:A->B) k l m n g g' x.
@@ -11189,11 +11189,11 @@ def setupSylvester [HolBase] (D : RingDetDeps) (BDet : Det) (BCofactors : Cofact
     MP_TAC (← ISPECL [← q "r:A ring", ← q "c:A", ← q "q:(1->num)->A"]
       POLY_DIVIDES_X_MINUS_A) THEN
     ASM_REWRITE_TAC [ring_divides] THEN
-    DISCH_THEN (fun th => tactic_of do
+    DISCH_THEN ((fun (ocq1 : _) => fun th => tactic_of do
       match (CONJUNCTS th).getLast? with
-      | some c => pure (X_CHOOSE_THEN (← q "q':(1->num)->A")
+      | some c => pure (X_CHOOSE_THEN ocq1
           (CONJUNCTS_THEN2 ASSUME_TAC (ASSUME_TAC o REWRITE_RULE [POLY_RING_CLAUSES])) c)
-      | none => throw "last") THEN
+      | none => throw "last") (← q "q':(1->num)->A")) THEN
     SUBGOAL_THEN (← q r"poly_deg r (q':(1->num)->A) < N \/ q' = poly_0 r")
     ASSUME_TAC THENL
      [ASM_CASES_TAC (← q r"q':(1->num)->A = poly_0 r") THEN ASM_REWRITE_TAC [] THEN

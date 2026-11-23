@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.ValuationRankOne fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -274,7 +277,6 @@ def setupValuationRankOne [HolBase] (D : ValuationRankOneDeps) :
 
   let VALUATION_SUBRING_NUMBER_SUBFIELD_RAMIFICATION ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← INTEGER_RULE (← q r"(x:int) divides x")
     prove
       r"!(k:A ring) v m p l.
           valuation_subring k v /\ maximal_ideal (subring_generated k v) m /\
@@ -296,15 +298,13 @@ def setupValuationRankOne [HolBase] (D : ValuationRankOneDeps) :
                  (ring_of_int(ring_of_integers(subfield_generated k l)))
                  (m INTER
                   ring_carrier(ring_of_integers(subfield_generated k l))) = 0)"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"v:A->bool"), (← q r"m:A->bool"), (← q r"l:A->bool")] VALUATION_SUBRING_NUMBER_SUBFIELD) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o ((SPEC (← q r"&p:int")) o CONJUNCT1))) THEN REWRITE_TAC [r1] THEN REWRITE_TAC [RING_OF_INT_SUBFIELD_GENERATED, RING_OF_INT_OF_NUM, RING_OF_NUM_SUBFIELD_GENERATED] THEN ABBREV_TAC (← q r"O = ring_of_integers(subfield_generated k (l:A->bool))") THEN ABBREV_TAC (← q r"Q = m INTER ring_carrier(O:A ring)") THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"ring_of_num (O:A ring) p = ring_of_num k p") ASSUME_TAC THENL [EXPAND_TAC "O" THEN REWRITE_TAC [RING_OF_INTEGERS, RING_OF_NUM_SUBFIELD_GENERATED], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_of_num k p IN ring_carrier(O:A ring) /\
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"v:A->bool"), (← q r"m:A->bool"), (← q r"l:A->bool")] VALUATION_SUBRING_NUMBER_SUBFIELD) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (MP_TAC o ((SPEC (← q r"&p:int")) o CONJUNCT1))) THEN REWRITE_TAC [(← INTEGER_RULE (← q r"(x:int) divides x"))] THEN REWRITE_TAC [RING_OF_INT_SUBFIELD_GENERATED, RING_OF_INT_OF_NUM, RING_OF_NUM_SUBFIELD_GENERATED] THEN ABBREV_TAC (← q r"O = ring_of_integers(subfield_generated k (l:A->bool))") THEN ABBREV_TAC (← q r"Q = m INTER ring_carrier(O:A ring)") THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"ring_of_num (O:A ring) p = ring_of_num k p") ASSUME_TAC THENL [EXPAND_TAC "O" THEN REWRITE_TAC [RING_OF_INTEGERS, RING_OF_NUM_SUBFIELD_GENERATED], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_of_num k p IN ring_carrier(O:A ring) /\
                   ~(ring_of_num k p = ring_0(O:A ring))") STRIP_ASSUME_TAC THENL [UNDISCH_THEN (← q r"ring_of_num (O:A ring) p = ring_of_num k p") (SUBST1_TAC o SYM) THEN REWRITE_TAC [RING_OF_NUM] THEN EXPAND_TAC "O" THEN REWRITE_TAC [RING_OF_INTEGERS, RING_OF_NUM_SUBFIELD_GENERATED, (← CONJUNCT2 SUBFIELD_GENERATED), RING_OF_NUM_EQ_0] THEN REWRITE_TAC [ring_of_integers, RING_CHAR_SUBRING_GENERATED] THEN UNDISCH_TAC (← q r"number_field(subfield_generated k (l:A->bool))") THEN SIMP_TAC [number_field] THEN DISCH_TAC THEN REWRITE_TAC [DIVIDES_ZERO] THEN ASM_MESON_TAC [PRIME_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"~(Q = {ring_0 k:A})") (fun th => REWRITE_TAC [th]) THENL [UNDISCH_TAC (← q r"~(ring_of_num k p = ring_0(O:A ring))") THEN EXPAND_TAC "O" THEN REWRITE_TAC [RING_OF_INTEGERS, (← CONJUNCT2 SUBFIELD_GENERATED)] THEN ASM SET_TAC [], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"O:A ring"), (← q r"Q:A->bool"), (← q r"p:num")] RAMIFICATION_INDEX_PRIME) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"O:A ring"), (← q r"subfield_generated k (l:A->bool)"), (← q r"I:A->A"), (← q r"Q:A->bool"), (← q r"ring_of_num k p:A")] DEDEKIND_VALUATION_PRIME_IDEAL) THEN MP_TAC (← ISPECL [(← q r"O:A ring"), (← q r"subfield_generated k (l:A->bool)"), (← q r"I:A->A"), (← q r"Q:A->bool"), (← q r"ring_of_num k p:A")] DEDEKIND_VALUATION_IMAGE) THEN ASM_REWRITE_TAC [I_THM] THEN SUBGOAL_THEN (← q r"dedekind_domain(O:A ring) /\
       ring_monomorphism(O,subfield_generated k (l:A->bool)) I /\
       ~(Q = {ring_0(O:A ring)})") (fun th => REWRITE_TAC [th]) THENL [REPEAT CONJ_TAC THENL [EXPAND_TAC "O" THEN ASM_SIMP_TAC [DEDEKIND_RING_OF_INTEGERS], EXPAND_TAC "O" THEN REWRITE_TAC [RING_OF_INTEGERS_FRACTION_FIELD], ASM SET_TAC []], DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [INT_OF_NUM_LT, INT_OF_NUM_EQ] THEN ARITH_TAC])
 
   let VALUATION_SUBRING_NUMBER_SUBFIELD_TOWER ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← INTEGER_RULE (← q r"!x:int. &0 divides x <=> x = &0")
-    let r2 ← INTEGER_RULE (← q r"(x:int) divides x")
     prove
       r"!(k:A ring) v m p l l' x.
           valuation_subring k v /\ maximal_ideal (subring_generated k v) m /\
@@ -333,46 +333,11 @@ def setupValuationRankOne [HolBase] (D : ValuationRankOneDeps) :
       m INTER ring_carrier(ring_of_integers(subfield_generated k (l:A->bool)))") ASSUME_TAC THENL [REWRITE_TAC [RING_OF_INTEGERS_SUBFIELD_GENERATED] THEN ASM_SIMP_TAC [CARRIER_SUBFIELD_GENERATED_SUBFIELD] THEN ASM SET_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"~(m INTER ring_carrier(ring_of_integers(subfield_generated k l)) =
         {ring_0(ring_of_integers(subfield_generated k (l:A->bool)))})") ASSUME_TAC THENL [DISCH_TAC THEN UNDISCH_TAC (← q r"!n. ring_of_int (subfield_generated k (l:A->bool)) n IN
             m INTER ring_carrier (ring_of_integers (subfield_generated k l)) <=>
-            &p divides n") THEN DISCH_THEN (MP_TAC o (SPEC (← q r"&p:int"))) THEN ASM_REWRITE_TAC [r2, IN_SING, RING_OF_INTEGERS, RING_OF_INT_SUBFIELD_GENERATED, SUBFIELD_GENERATED, RING_OF_INT_EQ_0] THEN REWRITE_TAC [r1, INT_OF_NUM_EQ] THEN ASM_MESON_TAC [PRIME_0], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers(subfield_generated k (l:A->bool))"), (← q r"ring_of_integers(subfield_generated k (l':A->bool))"), (← q r"subfield_generated k (l:A->bool)"), (← q r"subfield_generated k (l':A->bool)"), (← q r"I:A->A"), (← q r"I:A->A"), (← q r"I:A->A"), (← q r"I:A->A"), (← q r"m INTER
+            &p divides n") THEN DISCH_THEN (MP_TAC o (SPEC (← q r"&p:int"))) THEN ASM_REWRITE_TAC [(← INTEGER_RULE (← q r"(x:int) divides x")), IN_SING, RING_OF_INTEGERS, RING_OF_INT_SUBFIELD_GENERATED, SUBFIELD_GENERATED, RING_OF_INT_EQ_0] THEN REWRITE_TAC [(← INTEGER_RULE (← q r"!x:int. &0 divides x <=> x = &0")), INT_OF_NUM_EQ] THEN ASM_MESON_TAC [PRIME_0], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers(subfield_generated k (l:A->bool))"), (← q r"ring_of_integers(subfield_generated k (l':A->bool))"), (← q r"subfield_generated k (l:A->bool)"), (← q r"subfield_generated k (l':A->bool)"), (← q r"I:A->A"), (← q r"I:A->A"), (← q r"I:A->A"), (← q r"I:A->A"), (← q r"m INTER
        ring_carrier(ring_of_integers(subfield_generated k (l':A->bool)))"), (← q r"x:A")] DEDEKIND_VALUATION_RAMIFICATION_INDEX) THEN ASM_SIMP_TAC [DEDEKIND_RING_OF_INTEGERS, NUMBER_FIELD_IMP_FIELD, RING_OF_INTEGERS_FRACTION_FIELD, RING_MONOMORPHISM_RING_OF_INTEGERS, RING_MONOMORPHISM_IMP_HOMOMORPHISM, I_THM, CARRIER_SUBFIELD_GENERATED_SUBFIELD] THEN MP_TAC (← ISPEC (← q r"subfield_generated k (l:A->bool)") RING_OF_INTEGERS_FRACTION_FIELD) THEN ASM_SIMP_TAC [CARRIER_SUBFIELD_GENERATED_SUBFIELD, RING_OF_INTEGERS, (← CONJUNCT2 SUBFIELD_GENERATED)])
 
   let VALUATION_SUBRING_NUMBER_SUBFIELD_RATIO ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"!n a b:real. ~(n = &0) ==> (n * a) / (n * b) = a / b"
-    let r2 ← REAL_FIELD q1
-    let q3 ← q r"n = 0"
-    let p4 ← prove r"!a b c d (n:num) (n':num).
-        c = &n * a /\ d = &n * b /\ d = &n' /\ ~(n' = 0)
-        ==> real_of_int c / real_of_int d = real_of_int a / real_of_int b" (REPEAT GEN_TAC THEN ASM_CASES_TAC q3 THENL [ASM_REWRITE_TAC [INT_MUL_LZERO] THEN MESON_TAC [INT_OF_NUM_EQ], DISCH_THEN (CONJUNCTS_THEN2 SUBST1_TAC (CONJUNCTS_THEN2 SUBST1_TAC (fun (_ : thm) => ALL_TAC))) THEN REWRITE_TAC [int_mul_th, int_of_num_th] THEN MATCH_MP_TAC r2 THEN ASM_REWRITE_TAC [REAL_OF_NUM_EQ]])
-    let q5 ← q r"(p /\ q /\ r ==> s) ==> p ==> q ==> t /\ r ==> s"
-    let r6 ← TAUT q5
-    let q7 ← q r"x:A"
-    let q8 ← q r"l':A->bool"
-    let q9 ← q r"l:A->bool"
-    let q10 ← q r"p:num"
-    let q11 ← q r"m:A->bool"
-    let q12 ← q r"v:A->bool"
-    let q13 ← q r"k:A ring"
-    let v14 ← ISPECL [q13, q12, q11, q10, q9, q8, q7] VALUATION_SUBRING_NUMBER_SUBFIELD_TOWER
-    let q15 ← q r"ring_of_num k p:A"
-    let q16 ← q r"l':A->bool"
-    let q17 ← q r"l:A->bool"
-    let q18 ← q r"p:num"
-    let q19 ← q r"m:A->bool"
-    let q20 ← q r"v:A->bool"
-    let q21 ← q r"k:A ring"
-    let v22 ← ISPECL [q21, q20, q19, q18, q17, q16, q15] VALUATION_SUBRING_NUMBER_SUBFIELD_TOWER
-    let q23 ← q r"l':A->bool"
-    let q24 ← q r"p:num"
-    let q25 ← q r"m:A->bool"
-    let q26 ← q r"v:A->bool"
-    let q27 ← q r"k:A ring"
-    let v28 ← ISPECL [q27, q26, q25, q24, q23] VALUATION_SUBRING_NUMBER_SUBFIELD_RAMIFICATION
-    let q29 ← q r"number_field(subfield_generated k (l:A->bool))"
-    let q30 ← q r"p:num"
-    let q31 ← q r"subfield_generated k (l:A->bool)"
-    let v32 ← ISPECL [q31, q30] RING_OF_NUM
-    let q33 ← q r"ring_of_num k p IN (l:A->bool) /\ ~(ring_of_num k p = ring_0 k)"
     prove
       r"!(k:A ring) v m p l l' x.
           valuation_subring k v /\ maximal_ideal (subring_generated k v) m /\
@@ -406,12 +371,12 @@ def setupValuationRankOne [HolBase] (D : ValuationRankOneDeps) :
                  (m INTER
                   ring_carrier(ring_of_integers(subfield_generated k l)))
                  (ring_of_num k p))"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN q33 STRIP_ASSUME_TAC THENL [CONJ_TAC THENL [MP_TAC v32 THEN ASM_SIMP_TAC [RING_OF_NUM_SUBFIELD_GENERATED, CARRIER_SUBFIELD_GENERATED_SUBFIELD], REWRITE_TAC [RING_OF_NUM_EQ_0] THEN UNDISCH_TAC q29 THEN SIMP_TAC [number_field, RING_CHAR_SUBFIELD_GENERATED] THEN REWRITE_TAC [DIVIDES_ZERO] THEN ASM_MESON_TAC [PRIME_0]], ALL_TAC] THEN MP_TAC v28 THEN MP_TAC v22 THEN MP_TAC v14 THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC r6 THEN MATCH_ACCEPT_TAC p4)
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"ring_of_num k p IN (l:A->bool) /\ ~(ring_of_num k p = ring_0 k)") STRIP_ASSUME_TAC THENL [CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"subfield_generated k (l:A->bool)"), (← q r"p:num")] RING_OF_NUM) THEN ASM_SIMP_TAC [RING_OF_NUM_SUBFIELD_GENERATED, CARRIER_SUBFIELD_GENERATED_SUBFIELD], REWRITE_TAC [RING_OF_NUM_EQ_0] THEN UNDISCH_TAC (← q r"number_field(subfield_generated k (l:A->bool))") THEN SIMP_TAC [number_field, RING_CHAR_SUBFIELD_GENERATED] THEN REWRITE_TAC [DIVIDES_ZERO] THEN ASM_MESON_TAC [PRIME_0]], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"v:A->bool"), (← q r"m:A->bool"), (← q r"p:num"), (← q r"l':A->bool")] VALUATION_SUBRING_NUMBER_SUBFIELD_RAMIFICATION) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"v:A->bool"), (← q r"m:A->bool"), (← q r"p:num"), (← q r"l:A->bool"), (← q r"l':A->bool"), (← q r"ring_of_num k p:A")] VALUATION_SUBRING_NUMBER_SUBFIELD_TOWER) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"v:A->bool"), (← q r"m:A->bool"), (← q r"p:num"), (← q r"l:A->bool"), (← q r"l':A->bool"), (← q r"x:A")] VALUATION_SUBRING_NUMBER_SUBFIELD_TOWER) THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← TAUT (← q r"(p /\ q /\ r ==> s) ==> p ==> q ==> t /\ r ==> s")) THEN MATCH_ACCEPT_TAC (← prove r"!a b c d (n:num) (n':num).
+        c = &n * a /\ d = &n * b /\ d = &n' /\ ~(n' = 0)
+        ==> real_of_int c / real_of_int d = real_of_int a / real_of_int b" (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"n = 0") THENL [ASM_REWRITE_TAC [INT_MUL_LZERO] THEN MESON_TAC [INT_OF_NUM_EQ], DISCH_THEN (CONJUNCTS_THEN2 SUBST1_TAC (CONJUNCTS_THEN2 SUBST1_TAC (fun (_ : thm) => ALL_TAC))) THEN REWRITE_TAC [int_mul_th, int_of_num_th] THEN MATCH_MP_TAC (← REAL_FIELD (← q r"!n a b:real. ~(n = &0) ==> (n * a) / (n * b) = a / b")) THEN ASM_REWRITE_TAC [REAL_OF_NUM_EQ]])))
 
   let ALGEBRAIC_VALUATION_SUBRING_RANK_ONE ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"p /\ q /\ (p /\ q ==> r) ==> p /\ q /\ r")
-    let r2 ← TAUT (← q r"p /\ q /\ (p /\ q ==> r) /\ s ==> p /\ q /\ r /\ s")
     prove
       r"!(k:A ring) v m p.
           ring_char k = 0 /\
@@ -486,9 +451,9 @@ def setupValuationRankOne [HolBase] (D : ValuationRankOneDeps) :
             (ring_carrier(subfield_generated k {x})) x") THEN REWRITE_TAC [] THEN REPEAT CONJ_TAC THENL [MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN USE_THEN "nf" (MP_TAC o (SPEC (← q r"{x:A,y}"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [FINITE_INSERT, FINITE_EMPTY, INSERT_SUBSET, EMPTY_SUBSET], STRIP_TAC] THEN SUBGOAL_THEN (← q r"(x:A) IN ring_carrier(subfield_generated k {x,y}) /\
         (y:A) IN ring_carrier(subfield_generated k {x,y}) /\
         ring_mul k x y IN ring_carrier(subfield_generated k {x,y}) /\
-        ~(ring_mul k x y = ring_0 k)") STRIP_ASSUME_TAC THENL [MATCH_MP_TAC r2 THEN REPEAT CONJ_TAC THENL [MATCH_MP_TAC SUBFIELD_GENERATED_INC_GEN THEN ASM_REWRITE_TAC [IN_INSERT], MATCH_MP_TAC SUBFIELD_GENERATED_INC_GEN THEN ASM_REWRITE_TAC [IN_INSERT], ASM_MESON_TAC [IN_SUBFIELD_MUL], ASM_SIMP_TAC [INTEGRAL_DOMAIN_MUL_EQ_0, FIELD_IMP_INTEGRAL_DOMAIN]], ALL_TAC] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"ring_mul k x y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"x:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "hom" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"x:A"), (← q r"y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], SIMP_TAC []], MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN USE_THEN "nf" (MP_TAC o (SPEC (← q r"{x:A,y}"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [FINITE_INSERT, FINITE_EMPTY, INSERT_SUBSET, EMPTY_SUBSET], STRIP_TAC] THEN SUBGOAL_THEN (← q r"(x:A) IN ring_carrier(subfield_generated k {x,y}) /\
+        ~(ring_mul k x y = ring_0 k)") STRIP_ASSUME_TAC THENL [MATCH_MP_TAC (← TAUT (← q r"p /\ q /\ (p /\ q ==> r) /\ s ==> p /\ q /\ r /\ s")) THEN REPEAT CONJ_TAC THENL [MATCH_MP_TAC SUBFIELD_GENERATED_INC_GEN THEN ASM_REWRITE_TAC [IN_INSERT], MATCH_MP_TAC SUBFIELD_GENERATED_INC_GEN THEN ASM_REWRITE_TAC [IN_INSERT], ASM_MESON_TAC [IN_SUBFIELD_MUL], ASM_SIMP_TAC [INTEGRAL_DOMAIN_MUL_EQ_0, FIELD_IMP_INTEGRAL_DOMAIN]], ALL_TAC] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"ring_mul k x y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"x:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "hom" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"x:A"), (← q r"y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], SIMP_TAC []], MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN USE_THEN "nf" (MP_TAC o (SPEC (← q r"{x:A,y}"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [FINITE_INSERT, FINITE_EMPTY, INSERT_SUBSET, EMPTY_SUBSET], STRIP_TAC] THEN SUBGOAL_THEN (← q r"(x:A) IN ring_carrier(subfield_generated k {x,y}) /\
         (y:A) IN ring_carrier(subfield_generated k {x,y}) /\
-        ring_add k x y IN ring_carrier(subfield_generated k {x,y})") STRIP_ASSUME_TAC THENL [MATCH_MP_TAC r1 THEN REPEAT CONJ_TAC THENL [MATCH_MP_TAC SUBFIELD_GENERATED_INC_GEN THEN ASM_REWRITE_TAC [IN_INSERT], MATCH_MP_TAC SUBFIELD_GENERATED_INC_GEN THEN ASM_REWRITE_TAC [IN_INSERT], ASM_MESON_TAC [IN_SUBFIELD_ADD]], ALL_TAC] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"ring_add k x y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"x:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "hom" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"x:A"), (← q r"y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], ASM_SIMP_TAC []], X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN USE_THEN "nf" (MP_TAC o (SPEC (← q r"{x:A}"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [FINITE_SING, SING_SUBSET], STRIP_TAC] THEN SUBGOAL_THEN (← q r"(x:A) IN ring_carrier(subfield_generated k {x})") ASSUME_TAC THENL [MATCH_MP_TAC SUBFIELD_GENERATED_INC_GEN THEN ASM_REWRITE_TAC [IN_SING], ALL_TAC] THEN USE_THEN "pos" (MP_TAC o (SPEC (← q r"ring_carrier(subfield_generated k {x:A})"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], STRIP_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"v:A->bool"), (← q r"m:A->bool"), (← q r"ring_carrier(subfield_generated k {x:A})"), (← q r"x:A")] VALUATION_SUBRING_NUMBER_SUBFIELD_VALUATION) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN SUBST1_TAC] THEN EXPAND_TAC "R" THEN ASM_SIMP_TAC [REAL_LE_RDIV_EQ, REAL_MUL_LZERO] THEN REWRITE_TAC [int_le, int_of_num_th], SUBGOAL_THEN (← q r"ring_of_num k p IN ring_carrier(k:A ring)") ASSUME_TAC THENL [REWRITE_TAC [RING_OF_NUM], ALL_TAC] THEN USE_THEN "nf" (MP_TAC o (SPEC (← q r"{ring_of_num k p:A}"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [FINITE_SING, SING_SUBSET], STRIP_TAC] THEN USE_THEN "pos" (MP_TAC o (SPEC (← q r"ring_carrier(subfield_generated k {ring_of_num k p:A})"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], STRIP_TAC] THEN EXPAND_TAC "R" THEN MATCH_MP_TAC REAL_DIV_REFL THEN ASM_REAL_ARITH_TAC, MAP_EVERY X_GEN_TAC [(← q r"l:A->bool"), (← q r"x:A")] THEN STRIP_TAC THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"l:A->bool"), (← q r"x:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN EXPAND_TAC "R" THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"v:A->bool"), (← q r"m:A->bool"), (← q r"p:num"), (← q r"l:A->bool")] VALUATION_SUBRING_NUMBER_SUBFIELD_RAMIFICATION) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], STRIP_TAC] THEN ASM_REWRITE_TAC [int_of_num_th]])
+        ring_add k x y IN ring_carrier(subfield_generated k {x,y})") STRIP_ASSUME_TAC THENL [MATCH_MP_TAC (← TAUT (← q r"p /\ q /\ (p /\ q ==> r) ==> p /\ q /\ r")) THEN REPEAT CONJ_TAC THENL [MATCH_MP_TAC SUBFIELD_GENERATED_INC_GEN THEN ASM_REWRITE_TAC [IN_INSERT], MATCH_MP_TAC SUBFIELD_GENERATED_INC_GEN THEN ASM_REWRITE_TAC [IN_INSERT], ASM_MESON_TAC [IN_SUBFIELD_ADD]], ALL_TAC] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"ring_add k x y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"x:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN USE_THEN "hom" (MP_TAC o (SPECL [(← q r"ring_carrier(subfield_generated k {x:A,y})"), (← q r"x:A"), (← q r"y:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], ASM_SIMP_TAC []], X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN USE_THEN "nf" (MP_TAC o (SPEC (← q r"{x:A}"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [FINITE_SING, SING_SUBSET], STRIP_TAC] THEN SUBGOAL_THEN (← q r"(x:A) IN ring_carrier(subfield_generated k {x})") ASSUME_TAC THENL [MATCH_MP_TAC SUBFIELD_GENERATED_INC_GEN THEN ASM_REWRITE_TAC [IN_SING], ALL_TAC] THEN USE_THEN "pos" (MP_TAC o (SPEC (← q r"ring_carrier(subfield_generated k {x:A})"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], STRIP_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"v:A->bool"), (← q r"m:A->bool"), (← q r"ring_carrier(subfield_generated k {x:A})"), (← q r"x:A")] VALUATION_SUBRING_NUMBER_SUBFIELD_VALUATION) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN SUBST1_TAC] THEN EXPAND_TAC "R" THEN ASM_SIMP_TAC [REAL_LE_RDIV_EQ, REAL_MUL_LZERO] THEN REWRITE_TAC [int_le, int_of_num_th], SUBGOAL_THEN (← q r"ring_of_num k p IN ring_carrier(k:A ring)") ASSUME_TAC THENL [REWRITE_TAC [RING_OF_NUM], ALL_TAC] THEN USE_THEN "nf" (MP_TAC o (SPEC (← q r"{ring_of_num k p:A}"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [FINITE_SING, SING_SUBSET], STRIP_TAC] THEN USE_THEN "pos" (MP_TAC o (SPEC (← q r"ring_carrier(subfield_generated k {ring_of_num k p:A})"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], STRIP_TAC] THEN EXPAND_TAC "R" THEN MATCH_MP_TAC REAL_DIV_REFL THEN ASM_REAL_ARITH_TAC, MAP_EVERY X_GEN_TAC [(← q r"l:A->bool"), (← q r"x:A")] THEN STRIP_TAC THEN USE_THEN "K" (MP_TAC o (SPECL [(← q r"l:A->bool"), (← q r"x:A")])) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN EXPAND_TAC "R" THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"v:A->bool"), (← q r"m:A->bool"), (← q r"p:num"), (← q r"l:A->bool")] VALUATION_SUBRING_NUMBER_SUBFIELD_RAMIFICATION) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], STRIP_TAC] THEN ASM_REWRITE_TAC [int_of_num_th]])
 
   let ALGEBRAIC_VALUATION_SUBRING_ABSOLUTE_VALUE ← prove
     r"!(k:A ring) v m p.

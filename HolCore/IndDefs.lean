@@ -54,13 +54,15 @@ def EXISTS_EQUATION_pth (B : BoolThms) : ExceptT String IO thm := do
   let MATCH_MP_TAC := Tactics.MATCH_MP_TAC B
   let EXISTS_TAC := Tactics.EXISTS_TAC B
   let REFL_TAC := Tactics.REFL_TAC B
+  -- OCaml builds the tactic (and its `t:A`) before parsing the goal.
+  let t_A ← pt "t:A"
   let goal ← pt "!P t. (!x:A. (x = t) ==> P x) ==> (?) P"
   (prove goal
     (THEN B (REWRITE_TAC [B.EXISTS_DEF])
       (THEN B BETA_TAC
         (THEN B (REPEAT B STRIP_TAC)
           (THEN B (FIRST_ASSUM MATCH_MP_TAC)
-            (THEN B (EXISTS_TAC (← pt "t:A"))
+            (THEN B (EXISTS_TAC t_A)
               (THEN B (FIRST_ASSUM MATCH_MP_TAC) REFL_TAC)))))) : IO (Except String thm))
 
 /-- `EXISTS_EQUATION pth tm th`: from `th = A, x = t |- P[x]` derive

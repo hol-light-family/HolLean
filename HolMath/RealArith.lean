@@ -289,9 +289,7 @@ def setupRealArithLemmas [HolBase]
   let REAL_POW_2 ← prove
    r"!x. x pow 2 = x * x"
    (← do
-     let n1 ← ExceptT.mk (num_CONV (← q r"1"))
-     let n2 ← ExceptT.mk (num_CONV (← q r"2"))
-     pure (REWRITE_TAC [n2, n1] THEN
+     pure (REWRITE_TAC [(← ExceptT.mk (num_CONV (← q r"2"))), (← ExceptT.mk (num_CONV (← q r"1")))] THEN
            REWRITE_TAC [real_pow, REAL_MUL_RID]))
 
   let REAL_POLY_CLAUSES ← prove

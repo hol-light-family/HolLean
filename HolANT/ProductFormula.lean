@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.ProductFormula fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -247,9 +250,6 @@ def setupProductFormula [HolBase] (D : ProductFormulaDeps) :
 
   let NUMBER_FIELD_PRODUCT_FORMULA ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← REAL_FIELD (← q r"!B X:real. &0 < B /\ &0 < X ==> B / (B * X) * X = &1")
-    let r2 ← TAUT (← q r"~(p /\ q /\ ~r) <=> p ==> q ==> r")
-    let r3 ← ARITH_RULE (← q r"1 < n ==> 0 < n")
     prove
       r"!(k:A ring) x.
           number_field k /\ x IN ring_carrier k /\ ~(x = ring_0 k)
@@ -274,7 +274,7 @@ def setupProductFormula [HolBase] (D : ProductFormulaDeps) :
           ==> dedekind_valuation (O,k) I P x =
               dedekind_valuation (O,k) I P a -
               dedekind_valuation (O,k) I P (b:A)") (LABEL_TAC "sub") THENL [X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"O:A ring"), (← q r"k:A ring"), (← q r"I:A->A"), (← q r"P:A->bool"), (← q r"b:A"), (← q r"x:A")] DEDEKIND_VALUATION_MUL) THEN ASM_REWRITE_TAC [I_THM] THEN INT_ARITH_TAC, ALL_TAC] THEN USE_THEN "int" (MP_TAC o (SPEC (← q r"a:A"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], STRIP_TAC] THEN USE_THEN "int" (MP_TAC o (SPEC (← q r"b:A"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], STRIP_TAC] THEN SUBGOAL_THEN (← q r"!P. prime_ideal O P /\ ~(P = {ring_0 k})
-          ==> &0 < (&(ideal_norm O (P:A->bool)):real)") (LABEL_TAC "npos") THENL [REPEAT STRIP_TAC THEN REWRITE_TAC [REAL_OF_NUM_LT] THEN MATCH_MP_TAC r3 THEN MATCH_MP_TAC IDEAL_NORM_GT_1 THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL] THEN CONJ_TAC THENL [FIRST_ASSUM (MP_TAC o (MATCH_MP PRIME_IMP_PROPER_IDEAL)) THEN SIMP_TAC [PROPER_IDEAL_ALT], ALL_TAC] THEN UNDISCH_TAC (← q r"ring_of_integers k = (O:A ring)") THEN DISCH_THEN (SUBST_ALL_TAC o SYM) THEN MATCH_MP_TAC RING_OF_INTEGERS_FINITE_QUOTIENT THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL], ALL_TAC] THEN ABBREV_TAC (← q r"Sa = {P | prime_ideal O P /\ ~(P = {ring_0 k}) /\
+          ==> &0 < (&(ideal_norm O (P:A->bool)):real)") (LABEL_TAC "npos") THENL [REPEAT STRIP_TAC THEN REWRITE_TAC [REAL_OF_NUM_LT] THEN MATCH_MP_TAC (← ARITH_RULE (← q r"1 < n ==> 0 < n")) THEN MATCH_MP_TAC IDEAL_NORM_GT_1 THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL] THEN CONJ_TAC THENL [FIRST_ASSUM (MP_TAC o (MATCH_MP PRIME_IMP_PROPER_IDEAL)) THEN SIMP_TAC [PROPER_IDEAL_ALT], ALL_TAC] THEN UNDISCH_TAC (← q r"ring_of_integers k = (O:A ring)") THEN DISCH_THEN (SUBST_ALL_TAC o SYM) THEN MATCH_MP_TAC RING_OF_INTEGERS_FINITE_QUOTIENT THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL], ALL_TAC] THEN ABBREV_TAC (← q r"Sa = {P | prime_ideal O P /\ ~(P = {ring_0 k}) /\
                 ~(dedekind_valuation (O,k) I P (a:A) = &0)}") THEN ABBREV_TAC (← q r"Sb = {P | prime_ideal O P /\ ~(P = {ring_0 k}) /\
                 ~(dedekind_valuation (O,k) I P (b:A) = &0)}") THEN ABBREV_TAC (← q r"Sx = {P | prime_ideal O P /\ ~(P = {ring_0 k}) /\
                 ~(dedekind_valuation (O,k) I P (x:A) = &0)}") THEN SUBGOAL_THEN (← q r"(Sx:(A->bool)->bool) SUBSET Sa UNION Sb") ASSUME_TAC THENL [MAP_EVERY EXPAND_TAC ["Sx", "Sa", "Sb"] THEN REWRITE_TAC [SUBSET, IN_ELIM_THM, IN_UNION] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN UNDISCH_TAC (← q r"~(dedekind_valuation (O,k) I P (x:A) = &0)") THEN USE_THEN "sub" (fun th => ASM_SIMP_TAC [th]) THEN INT_ARITH_TAC, ALL_TAC] THEN CONJ_TAC THENL [ASM_MESON_TAC [FINITE_SUBSET, FINITE_UNION], ALL_TAC] THEN SUBGOAL_THEN (← q r"FINITE(Sa:(A->bool)->bool) /\ FINITE(Sb:(A->bool)->bool)") STRIP_ASSUME_TAC THENL [ASM_REWRITE_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"!P. P IN Sa UNION Sb
@@ -292,9 +292,9 @@ def setupProductFormula [HolBase] (D : ProductFormulaDeps) :
       product Sa
        (\P. &(ideal_norm O P) zpow dedekind_valuation (O,k) I P (a:A))") (CONJUNCTS_THEN SUBST1_TAC) THENL [CONJ_TAC THEN MATCH_MP_TAC PRODUCT_SUPERSET THEN REWRITE_TAC [SUBSET_UNION] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN USE_THEN "inS" (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN (ANTS_TAC THENL [ASM_REWRITE_TAC [], STRIP_TAC]) THEN MAP_EVERY EXPAND_TAC ["Sa", "Sb"] THEN RULE_ASSUM_TAC (REWRITE_RULE [(← SYM (← ASSUME (← q r"{P | prime_ideal O P /\ ~(P = {ring_0 k}) /\
                         ~(dedekind_valuation (O,k) I P (a:A) = &0)} = Sa"))), (← SYM (← ASSUME (← q r"{P | prime_ideal O P /\ ~(P = {ring_0 k}) /\
-                        ~(dedekind_valuation (O,k) I P (b:A) = &0)} = Sb")))]) THEN RULE_ASSUM_TAC (REWRITE_RULE [IN_ELIM_THM, r2]) THEN ASM_SIMP_TAC [REAL_ZPOW_0], ALL_TAC] THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"product (complex_embeddings k) (\g. norm((g:A->complex) a)) =
+                        ~(dedekind_valuation (O,k) I P (b:A) = &0)} = Sb")))]) THEN RULE_ASSUM_TAC (REWRITE_RULE [IN_ELIM_THM, (← TAUT (← q r"~(p /\ q /\ ~r) <=> p ==> q ==> r"))]) THEN ASM_SIMP_TAC [REAL_ZPOW_0], ALL_TAC] THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"product (complex_embeddings k) (\g. norm((g:A->complex) a)) =
       product (complex_embeddings k) (\g. norm(g b)) *
-      product (complex_embeddings k) (\g. norm(g x))") SUBST1_TAC THENL [ASM_SIMP_TAC [(← GSYM PRODUCT_MUL), FINITE_COMPLEX_EMBEDDINGS] THEN MATCH_MP_TAC PRODUCT_EQ THEN X_GEN_TAC (← q r"g:A->complex") THEN DISCH_TAC THEN UNDISCH_TAC (← q r"ring_mul k b x = (a:A)") THEN DISCH_THEN (SUBST1_TAC o SYM) THEN REWRITE_TAC [] THEN MATCH_MP_TAC COMPLEX_EMBEDDINGS_NORM_MUL THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MATCH_MP_TAC r1 THEN CONJ_TAC THEN MATCH_MP_TAC PRODUCT_POS_LT THEN ASM_SIMP_TAC [FINITE_COMPLEX_EMBEDDINGS, COMPLEX_EMBEDDINGS_NORM_POS])
+      product (complex_embeddings k) (\g. norm(g x))") SUBST1_TAC THENL [ASM_SIMP_TAC [(← GSYM PRODUCT_MUL), FINITE_COMPLEX_EMBEDDINGS] THEN MATCH_MP_TAC PRODUCT_EQ THEN X_GEN_TAC (← q r"g:A->complex") THEN DISCH_TAC THEN UNDISCH_TAC (← q r"ring_mul k b x = (a:A)") THEN DISCH_THEN (SUBST1_TAC o SYM) THEN REWRITE_TAC [] THEN MATCH_MP_TAC COMPLEX_EMBEDDINGS_NORM_MUL THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MATCH_MP_TAC (← REAL_FIELD (← q r"!B X:real. &0 < B /\ &0 < X ==> B / (B * X) * X = &1")) THEN CONJ_TAC THEN MATCH_MP_TAC PRODUCT_POS_LT THEN ASM_SIMP_TAC [FINITE_COMPLEX_EMBEDDINGS, COMPLEX_EMBEDDINGS_NORM_POS])
 
   let NUMBER_FIELD_PRODUCT_FORMULA_NORM ← prove
     r"!(k:A ring) (g:A->complex) x.
@@ -318,8 +318,6 @@ def setupProductFormula [HolBase] (D : ProductFormulaDeps) :
 
   let NUMBER_FIELD_PRODUCT_FORMULA_ABSOLUTE_VALUES ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← INT_ARITH (← q r"&0 < --v:int \/ --v < &0:int \/ v = &0")
-    let r2 ← TAUT (← q r"(a /\ b ==> (c <=> d)) ==> (a /\ b /\ c <=> a /\ b /\ d)")
     prove
       r"!(k:A ring) f.
           number_field k /\
@@ -343,7 +341,7 @@ def setupProductFormula [HolBase] (D : ProductFormulaDeps) :
               nonarchimedean_absolute_value k ((f:(A->bool)->A->real) P)") (LABEL_TAC "nP") THENL [X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"k:A ring"), (← q r"I:A->A"), (← q r"P:A->bool"), (← q r"(f:(A->bool)->A->real) P")] DEDEKIND_VALUATION_NORMALIZED_ABSOLUTE_VALUE) THEN ASM_REWRITE_TAC [field_of_fractions, RING_OF_INTEGERS, I_THM] THEN ANTS_TAC THENL [MATCH_MP_TAC RING_OF_INTEGERS_FINITE_QUOTIENT THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL], SIMP_TAC []], ALL_TAC] THEN REPEAT CONJ_TAC THENL [ASM_SIMP_TAC [], ASM_SIMP_TAC [COMPLEX_EMBEDDINGS_ABSOLUTE_VALUE], ALL_TAC] THEN X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"{P | prime_ideal (ring_of_integers k) P /\ ~(P = {ring_0 k}) /\
            ~((f:(A->bool)->A->real) P x = &1)} =
       {P | prime_ideal (ring_of_integers k) P /\ ~(P = {ring_0 k}) /\
-           ~(dedekind_valuation (ring_of_integers k,k) I P x = &0)}") SUBST1_TAC THENL [GEN_REWRITE_TAC id [EXTENSION] THEN X_GEN_TAC (← q r"P:A->bool") THEN REWRITE_TAC [IN_ELIM_THM] THEN MATCH_MP_TAC r2 THEN STRIP_TAC THEN USE_THEN "nP" (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (ASSUME_TAC o CONJUNCT1)] THEN ASM_REWRITE_TAC [] THEN SPEC_TAC ((← q r"dedekind_valuation (ring_of_integers k,k) I (P:A->bool) x"), (← q r"v:int")) THEN UNDISCH_TAC (← q r"1 < ideal_norm (ring_of_integers k) (P:A->bool)") THEN SPEC_TAC ((← q r"ideal_norm (ring_of_integers k) (P:A->bool)"), (← q r"N:num")) THEN REPEAT STRIP_TAC THEN AP_TERM_TAC THEN EQ_TAC THENL [DISCH_TAC THEN SUBGOAL_THEN (← q r"&1 < (&N:real)") ASSUME_TAC THENL [ASM_REWRITE_TAC [REAL_OF_NUM_LT], ALL_TAC] THEN DISJ_CASES_TAC r1 THENL [MP_TAC (← ISPECL [(← q r"&N:real"), (← q r"&0:int"), (← q r"--v:int")] REAL_ZPOW_MONO_LT) THEN ASM_REWRITE_TAC [REAL_ZPOW_0] THEN ASM_REAL_ARITH_TAC, FIRST_X_ASSUM DISJ_CASES_TAC THENL [MP_TAC (← ISPECL [(← q r"&N:real"), (← q r"--v:int"), (← q r"&0:int")] REAL_ZPOW_MONO_LT) THEN ASM_REWRITE_TAC [REAL_ZPOW_0] THEN ASM_REAL_ARITH_TAC, ASM_REWRITE_TAC []]], SIMP_TAC [INT_NEG_0, REAL_ZPOW_0]], ALL_TAC] THEN SUBGOAL_THEN (← q r"product {P | prime_ideal (ring_of_integers k) P /\ ~(P = {ring_0 k}) /\
+           ~(dedekind_valuation (ring_of_integers k,k) I P x = &0)}") SUBST1_TAC THENL [GEN_REWRITE_TAC id [EXTENSION] THEN X_GEN_TAC (← q r"P:A->bool") THEN REWRITE_TAC [IN_ELIM_THM] THEN MATCH_MP_TAC (← TAUT (← q r"(a /\ b ==> (c <=> d)) ==> (a /\ b /\ c <=> a /\ b /\ d)")) THEN STRIP_TAC THEN USE_THEN "nP" (MP_TAC o (SPEC (← q r"P:A->bool"))) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_THEN (ASSUME_TAC o CONJUNCT1)] THEN ASM_REWRITE_TAC [] THEN SPEC_TAC ((← q r"dedekind_valuation (ring_of_integers k,k) I (P:A->bool) x"), (← q r"v:int")) THEN UNDISCH_TAC (← q r"1 < ideal_norm (ring_of_integers k) (P:A->bool)") THEN SPEC_TAC ((← q r"ideal_norm (ring_of_integers k) (P:A->bool)"), (← q r"N:num")) THEN REPEAT STRIP_TAC THEN AP_TERM_TAC THEN EQ_TAC THENL [DISCH_TAC THEN SUBGOAL_THEN (← q r"&1 < (&N:real)") ASSUME_TAC THENL [ASM_REWRITE_TAC [REAL_OF_NUM_LT], ALL_TAC] THEN DISJ_CASES_TAC (← INT_ARITH (← q r"&0 < --v:int \/ --v < &0:int \/ v = &0")) THENL [MP_TAC (← ISPECL [(← q r"&N:real"), (← q r"&0:int"), (← q r"--v:int")] REAL_ZPOW_MONO_LT) THEN ASM_REWRITE_TAC [REAL_ZPOW_0] THEN ASM_REAL_ARITH_TAC, FIRST_X_ASSUM DISJ_CASES_TAC THENL [MP_TAC (← ISPECL [(← q r"&N:real"), (← q r"--v:int"), (← q r"&0:int")] REAL_ZPOW_MONO_LT) THEN ASM_REWRITE_TAC [REAL_ZPOW_0] THEN ASM_REAL_ARITH_TAC, ASM_REWRITE_TAC []]], SIMP_TAC [INT_NEG_0, REAL_ZPOW_0]], ALL_TAC] THEN SUBGOAL_THEN (← q r"product {P | prime_ideal (ring_of_integers k) P /\ ~(P = {ring_0 k}) /\
                    ~(dedekind_valuation (ring_of_integers k,k) I P x = &0)}
               (\P. (f:(A->bool)->A->real) P x) =
       product {P | prime_ideal (ring_of_integers k) P /\ ~(P = {ring_0 k}) /\

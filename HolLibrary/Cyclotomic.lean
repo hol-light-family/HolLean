@@ -18,10 +18,11 @@
   name under its HOL Light name.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, SET_RULE, RING_RULE, ARITH_RULE, TAUT) they are bound
-  first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Galois
@@ -194,9 +195,9 @@ def setupCyclotomicGalois [HolBase] (D : CyclotomicDeps) :
     ASSUME_TAC THENL [ASM_SIMP_TAC [GALOIS_GROUP_COMPOSE], ALL_TAC] THEN
     REWRITE_TAC [← CONJUNCT2 (← CONJUNCT2 (← CONJUNCT2 GALOIS_GROUP))] THEN
     REWRITE_TAC [MODMUL_GROUP] THEN COND_CASES_TAC THEN BETA_TAC THENL
-     [USE_THEN "e" (fun th => tactic_of do
+     [USE_THEN "e" ((fun (ocq3 : _) => fun th => tactic_of do
         pure (MP_TAC (← CONJUNCT1 (← MATCH_MP th
-          (← ASSUME (← q r"(f:B->B) o g IN group_carrier(galois_group(k,l) (h:A->B))")))))) THEN
+          (← ASSUME ocq3))))) (← q r"(f:B->B) o g IN group_carrier(galois_group(k,l) (h:A->B))")) THEN
       ASM_REWRITE_TAC [MODMUL_GROUP, IN_SING],
       ALL_TAC] THEN
     SUBGOAL_THEN
@@ -204,16 +205,16 @@ def setupCyclotomicGalois [HolBase] (D : CyclotomicDeps) :
           ==> (e:(B->B)->num) f < n")
     ASSUME_TAC THENL
      [X_GEN_TAC (← q r"f':B->B") THEN DISCH_TAC THEN
-      USE_THEN "e" (fun th => tactic_of do
+      USE_THEN "e" ((fun (ocq2 : _) => fun th => tactic_of do
         pure (MP_TAC (← CONJUNCT1 (← MATCH_MP th
-          (← ASSUME (← q r"(f':B->B) IN group_carrier(galois_group(k,l) (h:A->B))")))))) THEN
+          (← ASSUME ocq2))))) (← q r"(f':B->B) IN group_carrier(galois_group(k,l) (h:A->B))")) THEN
       ASM_REWRITE_TAC [MODMUL_GROUP, IN_ELIM_THM] THEN SIMP_TAC [],
       ALL_TAC] THEN
     MATCH_MP_TAC (← ISPECL [← q r"l:B ring", ← q r"z:B"] RING_POW_EQ_LT) THEN
     ASM_SIMP_TAC [MOD_LT_EQ] THEN
-    USE_THEN "e" (fun th => tactic_of do
+    USE_THEN "e" ((fun (ocq1 : _) => fun th => tactic_of do
       pure (MP_TAC (← CONJUNCT2 (← MATCH_MP th
-        (← ASSUME (← q r"(f:B->B) o g IN group_carrier(galois_group(k,l) (h:A->B))")))))) THEN
+        (← ASSUME ocq1))))) (← q r"(f:B->B) o g IN group_carrier(galois_group(k,l) (h:A->B))")) THEN
     DISCH_THEN (SUBST1_TAC o SYM) THEN
     UNDISCH_TAC (← q r"ring_order l (z:B) = n") THEN
     DISCH_THEN (SUBST1_TAC o SYM) THEN ASM_SIMP_TAC [RING_POW_MOD_ORDER] THEN

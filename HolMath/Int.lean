@@ -140,15 +140,18 @@ def setupIntTybij [HolBase]
 def setupIntInterface
     (overload_interface : String → term → IO (Except String Unit)) :
     ExceptT String IO Unit := do
-  for (s, c) in
-      [("+", "int_add:int->int->int"), ("-", "int_sub:int->int->int"),
+  let l := [("+", "int_add:int->int->int"), ("-", "int_sub:int->int->int"),
        ("*", "int_mul:int->int->int"), ("<", "int_lt:int->int->bool"),
        ("<=", "int_le:int->int->bool"), (">", "int_gt:int->int->bool"),
        (">=", "int_ge:int->int->bool"), ("--", "int_neg:int->int"),
        ("pow", "int_pow:int->num->int"), ("abs", "int_abs:int->int"),
        ("max", "int_max:int->int->int"), ("min", "int_min:int->int->int"),
-       ("&", "int_of_num:num->int")] do
-    ExceptT.mk (overload_interface s (← q c))
+       ("&", "int_of_num:num->int")]
+  -- The list literal is built (its quotations parsed, last first) before
+  -- `do_list` runs.
+  let tms := (← l.reverse.mapM (fun (_, c) => q c)).reverse
+  for ((s, _), tm) in l.zip tms do
+    ExceptT.mk (overload_interface s tm)
 
 /- ---------------------------------------------------------------------- -/
 /- Definitions and closure derivations of all operations but "inv" and "/".-/
@@ -2262,12 +2265,10 @@ def setupIntDivisibility [HolBase]
   let INT_DIVIDES_LE ← prove
    r"!x y:int. x divides y ==> abs(x) <= abs(y) \/ y = &0"
    (← do
-    let i1 ← INT_ARITH (← q r"x:int <= x * y <=> &0 <= x * (y - &1)")
-    let t1 ← TAUT (← q r"p \/ q \/ r <=> ~q /\ ~r ==> p")
     pure
      (SIMP_TAC [int_divides, LEFT_IMP_EXISTS_THM, INT_ABS_MUL, INT_ENTIRE] THEN
-      REWRITE_TAC [t1] THEN
-      REWRITE_TAC [i1] THEN
+      REWRITE_TAC [(← TAUT (← q r"p \/ q \/ r <=> ~q /\ ~r ==> p"))] THEN
+      REWRITE_TAC [(← INT_ARITH (← q r"x:int <= x * y <=> &0 <= x * (y - &1)"))] THEN
       REPEAT STRIP_TAC THEN MATCH_MP_TAC INT_LE_MUL THEN ASM_INT_ARITH_TAC))
 
   /- ---------------------------------------------------------------------- -/
@@ -2572,11 +2573,6 @@ def setupIntDivRem1 [HolBase]
    r"!m n q r. m = q * n + r /\ &0 <= r /\ r < abs n
              ==> m div n = q /\ m rem n = r"
    (← do
-    let i1 ← INT_ARITH
-     (← q r"&1 * abs n <= abs(q - m div n) * abs n /\
-      abs(m rem n - r) = abs((q - m div n) * n)
-      ==> ~(abs(m rem n - r) < abs n)")
-    let t1 ← TAUT (← q r"~p ==> p ==> q")
     pure
      (REPEAT GEN_TAC THEN STRIP_TAC THEN
       SUBGOAL_THEN (← q r"~(n = &0)") MP_TAC THENL [ASM_INT_ARITH_TAC, ALL_TAC] THEN
@@ -2584,8 +2580,11 @@ def setupIntDivRem1 [HolBase]
       ASM_CASES_TAC (← q r"m div n = q") THENL
        [REPEAT (POP_ASSUM MP_TAC) THEN CONV_TAC INT_RING, ALL_TAC] THEN
       SUBGOAL_THEN (← q r"abs(m rem n - r) < abs n") MP_TAC THENL
-       [ASM_INT_ARITH_TAC, MATCH_MP_TAC t1] THEN
-      MATCH_MP_TAC i1 THEN
+       [ASM_INT_ARITH_TAC, MATCH_MP_TAC (← TAUT (← q r"~p ==> p ==> q"))] THEN
+      MATCH_MP_TAC (← INT_ARITH
+     (← q r"&1 * abs n <= abs(q - m div n) * abs n /\
+      abs(m rem n - r) = abs((q - m div n) * n)
+      ==> ~(abs(m rem n - r) < abs n)")) THEN
       CONJ_TAC THENL
        [MATCH_MP_TAC INT_LE_RMUL THEN ASM_INT_ARITH_TAC,
         AP_TERM_TAC THEN REPEAT (POP_ASSUM MP_TAC) THEN CONV_TAC INT_RING]))
@@ -2788,22 +2787,15 @@ def setupIntDivRem1 [HolBase]
   let INT_DIV_LT_EQ ← prove
    r"!a b c. &0 < a ==> (b div a < c <=> b < a * c)"
    (← do
-    let i5 ← INT_ARITH
-     (← q r"(~(m:int < n * --c) <=> --m < n * c) <=> ~(m = n * --c)")
-    let i4 ← INT_ARITH (← q r"--a:int <= b <=> ~(a < --b)")
-    let i3 ← INT_ARITH (← q r"--(q * &n + &0:int) = &n * --q")
-    let i2 ← INT_ARITH (← q r"~(&m:int < -- &n)")
-    let t1 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
-    let i1 ← INT_ARITH (← q r"~(&0:int < -- &n)")
     pure
      (GEN_REWRITE_TAC I [FORALL_INT_CASES] THEN
-      REWRITE_TAC [i1] THEN X_GEN_TAC (← q r"n:num") THEN
+      REWRITE_TAC [(← INT_ARITH (← q r"~(&0:int < -- &n)"))] THEN X_GEN_TAC (← q r"n:num") THEN
       REWRITE_TAC [RIGHT_FORALL_IMP_THM, INT_OF_NUM_LT] THEN DISCH_TAC THEN
       GEN_REWRITE_TAC I [FORALL_INT_CASES] THEN
-      MATCH_MP_TAC t1 THEN CONJ_TAC THENL
+      MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL
        [REWRITE_TAC [INT_OF_NUM_DIV, FORALL_INT_CASES] THEN
         REWRITE_TAC [INT_MUL_RNEG, INT_OF_NUM_MUL] THEN
-        REWRITE_TAC [INT_OF_NUM_LT, i2] THEN
+        REWRITE_TAC [INT_OF_NUM_LT, (← INT_ARITH (← q r"~(&m:int < -- &n)"))] THEN
         ASM_SIMP_TAC [RDIV_LT_EQ, LE_1],
         DISCH_TAC] THEN
       X_GEN_TAC (← q r"m:num") THEN
@@ -2811,13 +2803,14 @@ def setupIntDivRem1 [HolBase]
        [MP_TAC (← SPECL [← q r"&m:int", ← q r"&n:int"] INT_DIVISION) THEN
         MAP_EVERY ABBREV_TAC [← q r"q = &m div &n", ← q r"r = &m rem &n"] THEN
         ASM_SIMP_TAC [INT_OF_NUM_EQ, LE_1] THEN DISCH_TAC THEN
-        REWRITE_TAC [i3] THEN
+        REWRITE_TAC [(← INT_ARITH (← q r"--(q * &n + &0:int) = &n * --q"))] THEN
         ASM_SIMP_TAC [INT_LT_LMUL_EQ, INT_OF_NUM_LT],
         ALL_TAC] THEN
       ASM_SIMP_TAC [INT_SGN, INT_OF_NUM_LT, LE_1] THEN
       REWRITE_TAC [INT_LT_SUB_RADD, ← GSYM INT_LE_DISCRETE] THEN
-      ASM_REWRITE_TAC [i4] THEN
-      REWRITE_TAC [i5] THEN
+      ASM_REWRITE_TAC [(← INT_ARITH (← q r"--a:int <= b <=> ~(a < --b)"))] THEN
+      REWRITE_TAC [(← INT_ARITH
+     (← q r"(~(m:int < n * --c) <=> --m < n * c) <=> ~(m = n * --c)"))] THEN
       ASM_MESON_TAC [INT_REM_MUL]))
 
   let INT_LE_DIV_EQ ← prove
@@ -2961,11 +2954,9 @@ def setupIntDivRem1 [HolBase]
    r"!a b m n.
       (a == b) (mod (m * n)) ==> (a div m == b div m) (mod n)"
    (← do
-    let ir2 ← INTEGER_RULE (← q r"(a:int == b) (mod(--n)) <=> (a == b) (mod n)")
-    let ir1 ← INTEGER_RULE (← q r"(--a:int == --b) (mod n) <=> (a == b) (mod n)")
     pure
      (GEN_REWRITE_TAC (funpow 2 BINDER_CONV) [FORALL_INT_CASES] THEN
-      REWRITE_TAC [INT_DIV_RNEG, INT_MUL_LNEG, ir1, ir2] THEN
+      REWRITE_TAC [INT_DIV_RNEG, INT_MUL_LNEG, (← INTEGER_RULE (← q r"(--a:int == --b) (mod n) <=> (a == b) (mod n)")), (← INTEGER_RULE (← q r"(a:int == b) (mod(--n)) <=> (a == b) (mod n)"))] THEN
       SIMP_TAC [← GSYM INT_REM_EQ, INT_DIV_REM, INT_POS]))
 
   let INT_REM_2_CASES ← prove
@@ -3384,28 +3375,24 @@ def setupIntGcdLcm [HolBase]
      (← q r"(a = &0 \/ b = &0) \/
       abs(a - b) + abs b < abs a + abs b \/ abs(a + b) + abs b < abs a + abs b \/
       abs a + abs(b - a) < abs a + abs b \/ abs a + abs(b + a) < abs a + abs b")
-    let d_divides_d ← INTEGER_RULE (← q r"d divides d")
-    let d_divides_0 ← INTEGER_RULE (← q r"d divides &0")
     pure
      (MATCH_MP_TAC WF_INT_MEASURE_2 THEN EXISTS_TAC (← q r"\x y. abs(x) + abs(y)") THEN
       REWRITE_TAC [] THEN REPEAT STRIP_TAC THENL [INT_ARITH_TAC, ALL_TAC] THEN
       DISJ_CASES_THEN MP_TAC INT_GCD_EXISTS_CASES THENL
-       [STRIP_TAC THEN ASM_REWRITE_TAC [d_divides_0] THEN
+       [STRIP_TAC THEN ASM_REWRITE_TAC [(← INTEGER_RULE (← q r"d divides &0"))] THEN
         REWRITE_TAC [INT_MUL_LZERO, INT_ADD_LID, INT_ADD_RID] THEN
-        MESON_TAC [d_divides_d, INT_MUL_RID],
+        MESON_TAC [(← INTEGER_RULE (← q r"d divides d")), INT_MUL_RID],
         DISCH_THEN (REPEAT_TCL DISJ_CASES_THEN (ANTE_RES_THEN MP_TAC)) THEN
         MATCH_MP_TAC MONO_EXISTS THEN INTEGER_TAC]))
 
   let INT_GCD_EXISTS_POS ← prove
    r"!a b. ?d. &0 <= d /\ d divides a /\ d divides b /\ ?x y. d = a * x + b * y"
    (← do
-    let i1 ← INT_ARITH (← q r"a * --x + b * --y = --(a * x + b * y)")
-    let n1 ← INTEGER_RULE (← q r"(--d) divides x <=> d divides x")
     pure
      (REPEAT GEN_TAC THEN
       X_CHOOSE_TAC (← q r"d:int") (← SPECL [← q r"a:int", ← q r"b:int"] INT_GCD_EXISTS) THEN
       DISJ_CASES_TAC (← SPEC (← q r"d:int") INT_LE_NEGTOTAL) THEN
-      ASM_MESON_TAC [n1, i1]))
+      ASM_MESON_TAC [(← INTEGER_RULE (← q r"(--d) divides x <=> d divides x")), (← INT_ARITH (← q r"a * --x + b * --y = --(a * x + b * y)"))]))
 
   /- ---------------------------------------------------------------------- -/
   /- Hence define (positive) integer gcd and lcm operations, with a few     -/
@@ -4244,9 +4231,7 @@ def setupIntNumber [HolBase]
   let COPRIME_LMOD ← prove
    r"!a n. coprime(a MOD n,n) <=> coprime(a,n)"
    (← do
-    let r2 ← NUMBER_RULE (← q r"(a:num == b) (mod n) /\ coprime(a,n) ==> coprime(b,n)")
-    let r1 ← NUMBER_RULE (← q r"(x:num == x) (mod n)")
-    pure (MESON_TAC [CONG_LMOD, r1, r2]))
+    pure (MESON_TAC [CONG_LMOD, (← NUMBER_RULE (← q r"(x:num == x) (mod n)")), (← NUMBER_RULE (← q r"(a:num == b) (mod n) /\ coprime(a,n) ==> coprime(b,n)"))]))
 
   let COPRIME_RMOD ← prove
    r"!a n. coprime(n,a MOD n) <=> coprime(n,a)"
@@ -4258,8 +4243,6 @@ def setupIntNumber [HolBase]
         (y = &0 ==> &0 <= x)
         ==> ?n. (&n == x) (mod y)"
    (← do
-    let n1 ← INTEGER_RULE (← q r"(x + a:int == x) (mod n) <=> n divides a")
-    let i1 ← INT_ARITH (← q r"abs(x) * &1:int <= y ==> &0 <= x + y")
     pure
      (REPEAT STRIP_TAC THEN
       EXISTS_TAC (← q r"num_of_int(x + abs(x * y))") THEN
@@ -4268,11 +4251,11 @@ def setupIntNumber [HolBase]
       ANTS_TAC THENL
        [POP_ASSUM MP_TAC THEN ASM_CASES_TAC (← q r"y:int = &0") THEN
         ASM_REWRITE_TAC [] THENL [ASM_ARITH_TAC, ALL_TAC] THEN
-        MATCH_MP_TAC i1 THEN
+        MATCH_MP_TAC (← INT_ARITH (← q r"abs(x) * &1:int <= y ==> &0 <= x + y")) THEN
         REWRITE_TAC [INT_ABS_MUL] THEN MATCH_MP_TAC INT_LE_LMUL THEN
         ASM_INT_ARITH_TAC,
         DISCH_THEN SUBST1_TAC THEN
-        REWRITE_TAC [n1] THEN
+        REWRITE_TAC [(← INTEGER_RULE (← q r"(x + a:int == x) (mod n) <=> n divides a"))] THEN
         REWRITE_TAC [INT_ABS] THEN COND_CASES_TAC THEN CONV_TAC INTEGER_RULE]))
 
   let GCD ← prove
@@ -4345,17 +4328,14 @@ def setupIntPrime [HolBase]
   let PRIME_COPRIME_EQ_NONDIVISIBLE ← prove
    r"!p. prime p <=> !n. coprime(p,n) <=> ~(p divides n)"
    (← do
-    let t3 ← TAUT (← q r"~(p /\ q) ==> q \/ p ==> (p <=> ~q)")
-    let t2 ← TAUT (← q r"p \/ ~p")
-    let t1 ← TAUT (← q r"p /\ q ==> (p <=> ~q) ==> F")
     pure
      (X_GEN_TAC (← q r"p:num") THEN ASM_CASES_TAC (← q r"p = 1") THEN ASM_REWRITE_TAC [] THENL
        [ASM_REWRITE_TAC [prime] THEN DISCH_THEN (MP_TAC o SPEC (← q r"1")) THEN
-        MATCH_MP_TAC t1 THEN CONV_TAC NUMBER_RULE,
+        MATCH_MP_TAC (← TAUT (← q r"p /\ q ==> (p <=> ~q) ==> F")) THEN CONV_TAC NUMBER_RULE,
         MP_TAC (← SPEC (← q r"p:num") ONE_OR_PRIME_DIVIDES_OR_COPRIME) THEN
         ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN
-        EQ_TAC THEN MATCH_MP_TAC MONO_FORALL THEN SIMP_TAC [t2] THEN
-        GEN_TAC THEN MATCH_MP_TAC t3 THEN
+        EQ_TAC THEN MATCH_MP_TAC MONO_FORALL THEN SIMP_TAC [(← TAUT (← q r"p \/ ~p"))] THEN
+        GEN_TAC THEN MATCH_MP_TAC (← TAUT (← q r"~(p /\ q) ==> q \/ p ==> (p <=> ~q)")) THEN
         POP_ASSUM MP_TAC THEN REWRITE_TAC [CONTRAPOS_THM] THEN
         CONV_TAC NUMBER_RULE]))
 
@@ -4365,39 +4345,31 @@ def setupIntPrime [HolBase]
         p = 0 \/ p = 1 \/ prime p
         ==> (p divides (a * b) <=> p divides a \/ p divides b)"
    (← do
-    let cancel ← NUMBER_RULE
-      (← q r"!d a b:num. d divides (a * b) /\ coprime(d,a) ==> d divides b")
-    let zero_divides ← NUMBER_RULE (← q r"0 divides n <=> n = 0")
-    let one_divides ← NUMBER_RULE (← q r"1 divides n")
     pure
-     (REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [one_divides] THEN
-      ASM_REWRITE_TAC [zero_divides, MULT_EQ_0] THEN
+     (REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [(← NUMBER_RULE (← q r"1 divides n"))] THEN
+      ASM_REWRITE_TAC [(← NUMBER_RULE (← q r"0 divides n <=> n = 0")), MULT_EQ_0] THEN
       EQ_TAC THENL [ALL_TAC, CONV_TAC NUMBER_RULE] THEN
-      ASM_MESON_TAC [prime, coprime, cancel]))
+      ASM_MESON_TAC [prime, coprime, (← NUMBER_RULE
+      (← q r"!d a b:num. d divides (a * b) /\ coprime(d,a) ==> d divides b"))]))
 
   let ZERO_ONE_OR_PRIME ← prove
    r"!p. p = 0 \/ p = 1 \/ prime p <=>
        !a b. p divides (a * b) ==> p divides a \/ p divides b"
    (← do
-    let a3 ← ARITH_RULE (← q r"n <= 1 <=> n = 0 \/ n = 1")
-    let a2 ← ARITH_RULE (← q r"a * b <= b <=> a * b <= 1 * b")
-    let a1 ← ARITH_RULE (← q r"a * b <= a <=> a * b <= a * 1")
-    let n1 ← NUMBER_RULE (← q r"(n:num) divides n")
-    let t1 ← TAUT (← q r"p \/ q <=> ~p ==> q")
     pure
      (GEN_TAC THEN EQ_TAC THEN SIMP_TAC [ZERO_ONE_OR_PRIME_DIVPROD] THEN
-      DISCH_TAC THEN REWRITE_TAC [t1] THEN
+      DISCH_TAC THEN REWRITE_TAC [(← TAUT (← q r"p \/ q <=> ~p ==> q"))] THEN
       REPEAT STRIP_TAC THEN
       ASM_REWRITE_TAC [prime, divides, LEFT_IMP_EXISTS_THM] THEN
       MAP_EVERY X_GEN_TAC [← q r"a:num", ← q r"b:num"] THEN DISCH_THEN (ASSUME_TAC o SYM) THEN
       FIRST_X_ASSUM (MP_TAC o SPECL [← q r"a:num", ← q r"b:num"]) THEN
       FIRST_X_ASSUM (SUBST_ALL_TAC o SYM) THEN
       RULE_ASSUM_TAC (REWRITE_RULE [MULT_EQ_0, MULT_EQ_1, DE_MORGAN_THM]) THEN
-      REWRITE_TAC [n1] THEN
+      REWRITE_TAC [(← NUMBER_RULE (← q r"(n:num) divides n"))] THEN
       STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o MATCH_MP DIVIDES_LE_STRONG) THEN
-      ONCE_REWRITE_TAC [a1, a2] THEN
+      ONCE_REWRITE_TAC [(← ARITH_RULE (← q r"a * b <= a <=> a * b <= a * 1")), (← ARITH_RULE (← q r"a * b <= b <=> a * b <= 1 * b"))] THEN
       REWRITE_TAC [LE_MULT_LCANCEL, LE_MULT_RCANCEL] THEN
-      ASM_SIMP_TAC [MULT_CLAUSES, a3]))
+      ASM_SIMP_TAC [MULT_CLAUSES, (← ARITH_RULE (← q r"n <= 1 <=> n = 0 \/ n = 1"))]))
 
   return { prime, ONE_OR_PRIME, ONE_OR_PRIME_DIVIDES_OR_COPRIME,
            PRIME_COPRIME_EQ_NONDIVISIBLE, ZERO_ONE_OR_PRIME_DIVPROD,
@@ -4556,8 +4528,6 @@ def setupRealZpow [HolBase]
    r"!(x:real) m n.
         ~(x = &0) ==> x zpow (m + n) = x zpow m * x zpow n"
    (← do
-    let a1 ← ARITH_RULE (← q r"--n + (n + m):int = m")
-    let i1 ← INT_ARITH (← q r"--(--x + y):int = --y + x")
     pure
       (REWRITE_TAC [FORALL_INT_CASES, ← GSYM INT_NEG_ADD, INT_OF_NUM_ADD] THEN
        REWRITE_TAC [REAL_ZPOW_POW, REAL_POW_ADD, REAL_INV_MUL] THEN
@@ -4569,11 +4539,11 @@ def setupRealZpow [HolBase]
         [REPEAT GEN_TAC THEN
          GEN_REWRITE_TAC LAND_CONV [← GSYM REAL_EQ_INV2] THEN
          REWRITE_TAC [REAL_INV_MUL, REAL_INV_INV, ← GSYM REAL_ZPOW_NEG] THEN
-         REWRITE_TAC [i1] THEN
+         REWRITE_TAC [(← INT_ARITH (← q r"--(--x + y):int = --y + x"))] THEN
          REWRITE_TAC [REAL_MUL_AC],
          MAP_EVERY X_GEN_TAC [← q r"n:num", ← q r"p:num"] THEN
          REWRITE_TAC [LE_EXISTS, LEFT_IMP_EXISTS_THM] THEN
-         SIMP_TAC [← GSYM INT_OF_NUM_ADD, a1] THEN
+         SIMP_TAC [← GSYM INT_OF_NUM_ADD, (← ARITH_RULE (← q r"--n + (n + m):int = m"))] THEN
          REWRITE_TAC [REAL_POW_ADD, REAL_ZPOW_NUM, REAL_MUL_ASSOC] THEN
          ASM_SIMP_TAC [REAL_MUL_LINV, REAL_POW_EQ_0, REAL_MUL_LID]]))
 
@@ -4590,16 +4560,14 @@ def setupRealZpow [HolBase]
    r"!x m n. &1 <= x /\ m <= n ==> x zpow m <= x zpow n"
    (← do
     -- OCaml evaluates the later REAL_ARITH first.
-    let r2 ← REAL_ARITH (← q r"&1 <= x:real ==> &0 <= x")
-    let r1 ← REAL_ARITH (← q r"&1 <= x:real ==> ~(x = &0)")
     pure
       (REPEAT STRIP_TAC THEN
        SUBGOAL_THEN (← q r"n:int = m + (n - m)") SUBST1_TAC THENL
         [INT_ARITH_TAC, ALL_TAC] THEN
-       ASM_SIMP_TAC [REAL_ZPOW_ADD, r1] THEN
+       ASM_SIMP_TAC [REAL_ZPOW_ADD, (← REAL_ARITH (← q r"&1 <= x:real ==> ~(x = &0)"))] THEN
        GEN_REWRITE_TAC LAND_CONV [← GSYM REAL_MUL_RID] THEN
        MATCH_MP_TAC REAL_LE_LMUL THEN
-       ASM_SIMP_TAC [REAL_ZPOW_LE, r2] THEN
+       ASM_SIMP_TAC [REAL_ZPOW_LE, (← REAL_ARITH (← q r"&1 <= x:real ==> &0 <= x"))] THEN
        SUBGOAL_THEN (← q r"n - m:int = &(num_of_int(n - m))") SUBST1_TAC THENL
         [CONV_TAC SYM_CONV THEN MATCH_MP_TAC INT_OF_NUM_OF_INT THEN
          ASM_REWRITE_TAC [INT_SUB_LE],
@@ -4613,16 +4581,14 @@ def setupRealZpow [HolBase]
    r"!x m n. &1 < x /\ m < n ==> x zpow m < x zpow n"
    (← do
     -- OCaml evaluates the later REAL_ARITH first.
-    let r2 ← REAL_ARITH (← q r"&1 < x:real ==> &0 < x")
-    let r1 ← REAL_ARITH (← q r"&1 < x:real ==> ~(x = &0)")
     pure
       (REPEAT STRIP_TAC THEN
        SUBGOAL_THEN (← q r"n:int = m + (n - m)") SUBST1_TAC THENL
         [INT_ARITH_TAC, ALL_TAC] THEN
-       ASM_SIMP_TAC [REAL_ZPOW_ADD, r1] THEN
+       ASM_SIMP_TAC [REAL_ZPOW_ADD, (← REAL_ARITH (← q r"&1 < x:real ==> ~(x = &0)"))] THEN
        GEN_REWRITE_TAC LAND_CONV [← GSYM REAL_MUL_RID] THEN
        MATCH_MP_TAC REAL_LT_LMUL THEN
-       ASM_SIMP_TAC [REAL_ZPOW_LT, r2] THEN
+       ASM_SIMP_TAC [REAL_ZPOW_LT, (← REAL_ARITH (← q r"&1 < x:real ==> &0 < x"))] THEN
        SUBGOAL_THEN (← q r"n - m:int = &(num_of_int(n - m))") SUBST1_TAC THENL
         [CONV_TAC SYM_CONV THEN MATCH_MP_TAC INT_OF_NUM_OF_INT THEN
          ASM_SIMP_TAC [INT_SUB_LE, INT_LT_IMP_LE],

@@ -28,12 +28,13 @@
   THEN, THENL, ORELSE, THENC, ORELSEC and `o` are infix, as in OCaml; raw
   strings keep the quotations' text verbatim.  Lists use `,` for `;`.
 
-  EVALUATION ORDER.  OCaml evaluates a function's arguments right to left,
-  Lean's `(← ...)` left to right.  That only shows when two rules in one
-  proof print (MESON, NUMBER_RULE); in the two proofs where it does
-  (DIVIDES_INDEX, PRIMEPOW_DIVIDES_LCM) those rules are bound first, in
-  OCaml's order.  tools/primediff checks the 7,068 messages printed while
-  loading against HOL Light's.
+  EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.  tools/primediff checks the 7,068 messages printed while loading
+  against HOL Light's.
 
   Each section takes the core theorems it uses from `D.core1` (A-L) and
   `D.core2` (M-Z, lower case).  They were split because Lean 4.33.1 crashed
@@ -2141,16 +2142,14 @@ def setupIndex [HolBase] (D : PrimeDeps) (PDivides : Divides) (PGcd : Gcd) (PCop
    (← do
     -- OCaml evaluates the operands of a THEN chain right to left, so the
     -- second MESON runs first; its progress messages come first.
-    let prime_ne_1 ← MESON [PRIME_1] (← q r"prime p ==> ~(p = 1)")
-    let le_all ← MESON [LE_REFL, LE_ANTISYM, LE_TRANS]
-     (← q r"m <= n <=> !k:num. k <= m ==> k <= n")
     pure
      (REPEAT GEN_TAC THEN
       ASM_CASES_TAC (← q r"n = 0") THEN ASM_REWRITE_TAC [DIVIDES_0] THEN
       ASM_CASES_TAC (← q r"m = 0") THEN ASM_REWRITE_TAC [DIVIDES_ZERO] THEN
-      ONCE_REWRITE_TAC [le_all] THEN
+      ONCE_REWRITE_TAC [(← MESON [LE_REFL, LE_ANTISYM, LE_TRANS]
+     (← q r"m <= n <=> !k:num. k <= m ==> k <= n"))] THEN
       REWRITE_TAC [LE_INDEX] THEN
-      ASM_SIMP_TAC [prime_ne_1] THEN
+      ASM_SIMP_TAC [(← MESON [PRIME_1] (← q r"prime p ==> ~(p = 1)"))] THEN
       GEN_REWRITE_TAC LAND_CONV [PRIMEPOW_DIVISORS_DIVIDES] THEN MESON_TAC []))
 
   let EQ_INDEX ← prove

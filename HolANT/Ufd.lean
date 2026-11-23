@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.Ufd fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -151,16 +154,7 @@ def setupUfd [HolBase] (D : UfdDeps) :
 
   let UFD_COPRIME_MUL_POW ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"ring_pow r p k:A"
-    let q2 ← q r"r:A ring"
-    let q3 ← q r"ring_coprime r (ring_mul r (ring_pow r p k) v1,w:A)"
-    let q4 ← q r"v1:A"
-    let q5 ← q r"v1:A"
-    let q6 ← q r"w:A"
-    let q7 ← q r"ring_divides r (ring_pow r p k) (v:A)"
-    let q8 ← q r"ring_coprime r (w:A,ring_pow r p k)"
-    let q9 ← q r"(p:A) IN ring_carrier r /\ ~(p = ring_0 r) /\ ~ring_unit r p"
-    let p10 ← prove r"!r p d v w:A k.
+    let lemma := (← prove r"!r p d v w:A k.
         UFD r /\ ring_prime r p /\ d IN ring_carrier r /\ ~(k = 0) /\
         v IN ring_carrier r /\ w IN ring_carrier r /\
         ring_coprime r (v,w) /\ ring_divides r p v /\
@@ -168,68 +162,7 @@ def setupUfd [HolBase] (D : UfdDeps) :
         ==> ?v1. v1 IN ring_carrier r /\
                  v = ring_mul r (ring_pow r p k) v1 /\
                  ring_mul r v1 w = ring_pow r d k /\
-                 ring_coprime r (v1,w)" (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP UFD_IMP_INTEGRAL_DOMAIN)) THEN SUBGOAL_THEN q9 STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [ring_prime], ALL_TAC] THEN SUBGOAL_THEN q8 ASSUME_TAC THENL [MATCH_MP_TAC RING_COPRIME_RPOW THEN ONCE_REWRITE_TAC [RING_COPRIME_SYM] THEN ASM_SIMP_TAC [INTEGRAL_DOMAIN_PRIME_COPRIME_EQ] THEN ASM_MESON_TAC [ring_coprime], ALL_TAC] THEN SUBGOAL_THEN q7 MP_TAC THENL [MATCH_MP_TAC RING_COPRIME_DIVPROD_RIGHT THEN EXISTS_TAC q6 THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC RING_DIVIDES_RMUL THEN ASM_SIMP_TAC [RING_DIVIDES_REFL, RING_POW], REWRITE_TAC [ring_divides] THEN DISCH_THEN ((X_CHOOSE_THEN q5 (CONJUNCTS_THEN2 ASSUME_TAC SUBST_ALL_TAC)) o (CONJUNCT2 o CONJUNCT2))] THEN EXISTS_TAC q4 THEN UNDISCH_TAC q3 THEN ASM_SIMP_TAC [RING_COPRIME_LMUL, RING_POW] THEN DISCH_TAC THEN MATCH_MP_TAC INTEGRAL_DOMAIN_MUL_LCANCEL THEN MAP_EVERY EXISTS_TAC [q2, q1] THEN ASM_SIMP_TAC [RING_POW, RING_MUL, INTEGRAL_DOMAIN_POW_EQ_0, RING_MUL_ASSOC])
-    let lemma := p10
-    let q11 ← q r"y1:A"
-    let q12 ← q r"y1:A"
-    let q13 ← q r"k:num"
-    let q14 ← q r"x:A"
-    let q15 ← q r"y:A"
-    let q16 ← q r"d:A"
-    let q17 ← q r"p:A"
-    let q18 ← q r"r:A ring"
-    let v19 ← ISPECL [q18, q17, q16, q15, q14, q13] lemma
-    let q20 ← q r"ring_mul r y x = ring_mul r x (y:A)"
-    let q21 ← q r"ring_mul r z (ring_mul r u t) = ring_mul r u (ring_mul r z (t:A))"
-    let r22 ← RING_RULE q21
-    let q23 ← q r"ring_mul r p e:A"
-    let q24 ← q r"e:A"
-    let q25 ← q r"u:A"
-    let q26 ← q r"y:A"
-    let q27 ← q r"x1:A"
-    let q28 ← q r"x1:A"
-    let q29 ← q r"k:num"
-    let q30 ← q r"y:A"
-    let q31 ← q r"x:A"
-    let q32 ← q r"d:A"
-    let q33 ← q r"p:A"
-    let q34 ← q r"r:A ring"
-    let v35 ← ISPECL [q34, q33, q32, q31, q30, q29] lemma
-    let q36 ← q r"k:num"
-    let q37 ← q r"k:num"
-    let q38 ← q r"~(k = 0)"
-    let v39 ← GSYM RING_PRIME_DIVIDES_MUL
-    let q40 ← q r"ring_divides r p (x:A) \/ ring_divides r p y"
-    let q41 ← q r"y:A"
-    let q42 ← q r"x:A"
-    let q43 ← q r"(p:A) IN ring_carrier r /\ ~(p = ring_0 r) /\ ~ring_unit r p"
-    let q44 ← q r"d:A"
-    let q45 ← q r"p:A"
-    let q46 ← q r"y:A"
-    let q47 ← q r"x:A"
-    let q48 ← q r"r:A ring"
-    let v49 ← ISPECL [q48, q47, q46] RING_UNIT_MUL_EQ
-    let q50 ← q r"y:A"
-    let q51 ← q r"x:A"
-    let q52 ← q r"w:A"
-    let q53 ← q r"ring_0 r:A"
-    let q54 ← q r"ring_1 r:A"
-    let q55 ← q r"x:A = ring_0 r \/ y = ring_0 r"
-    let q56 ← q r"y:A"
-    let q57 ← q r"x:A"
-    let q58 ← q r"!d:A. d IN ring_carrier r
-            ==> !x y. x IN ring_carrier r /\ y IN ring_carrier r /\
-                      ring_coprime r (x,y) /\ ring_mul r x y = ring_pow r d k
-                      ==> ?u e. ring_unit r u /\ e IN ring_carrier r /\
-                                x = ring_mul r u (ring_pow r e k)"
-    let q59 ← q r"ring_1 r:A"
-    let q60 ← q r"x:A"
-    let q61 ← q r"!x:A. ring_unit r x
-            ==> ?u e. ring_unit r u /\ e IN ring_carrier r /\
-                      x = ring_mul r u (ring_pow r e k)"
-    let q62 ← q r"ring_1 r:A"
-    let q63 ← q r"a:A"
-    let q64 ← q r"k = 0"
+                 ring_coprime r (v1,w)" (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP UFD_IMP_INTEGRAL_DOMAIN)) THEN SUBGOAL_THEN (← q r"(p:A) IN ring_carrier r /\ ~(p = ring_0 r) /\ ~ring_unit r p") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [ring_prime], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_coprime r (w:A,ring_pow r p k)") ASSUME_TAC THENL [MATCH_MP_TAC RING_COPRIME_RPOW THEN ONCE_REWRITE_TAC [RING_COPRIME_SYM] THEN ASM_SIMP_TAC [INTEGRAL_DOMAIN_PRIME_COPRIME_EQ] THEN ASM_MESON_TAC [ring_coprime], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_divides r (ring_pow r p k) (v:A)") MP_TAC THENL [MATCH_MP_TAC RING_COPRIME_DIVPROD_RIGHT THEN EXISTS_TAC (← q r"w:A") THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC RING_DIVIDES_RMUL THEN ASM_SIMP_TAC [RING_DIVIDES_REFL, RING_POW], REWRITE_TAC [ring_divides] THEN DISCH_THEN ((X_CHOOSE_THEN (← q r"v1:A") (CONJUNCTS_THEN2 ASSUME_TAC SUBST_ALL_TAC)) o (CONJUNCT2 o CONJUNCT2))] THEN EXISTS_TAC (← q r"v1:A") THEN UNDISCH_TAC (← q r"ring_coprime r (ring_mul r (ring_pow r p k) v1,w:A)") THEN ASM_SIMP_TAC [RING_COPRIME_LMUL, RING_POW] THEN DISCH_TAC THEN MATCH_MP_TAC INTEGRAL_DOMAIN_MUL_LCANCEL THEN MAP_EVERY EXISTS_TAC [(← q r"r:A ring"), (← q r"ring_pow r p k:A")] THEN ASM_SIMP_TAC [RING_POW, RING_MUL, INTEGRAL_DOMAIN_POW_EQ_0, RING_MUL_ASSOC]))
     prove
       r"!r a b c:A k.
             UFD r /\ a IN ring_carrier r /\ b IN ring_carrier r /\
@@ -237,7 +170,13 @@ def setupUfd [HolBase] (D : UfdDeps) :
             ring_mul r a b = ring_pow r c k
             ==> ?u e. ring_unit r u /\ e IN ring_carrier r /\
                       a = ring_mul r u (ring_pow r e k)"
-      (REPEAT GEN_TAC THEN ASM_CASES_TAC q64 THENL [ASM_REWRITE_TAC [ring_pow] THEN STRIP_TAC THEN MAP_EVERY EXISTS_TAC [q63, q62] THEN ASM_SIMP_TAC [RING_1, RING_MUL_RID] THEN REWRITE_TAC [ring_unit] THEN ASM_MESON_TAC [], STRIP_TAC] THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP UFD_IMP_INTEGRAL_DOMAIN)) THEN SUBGOAL_THEN q61 (LABEL_TAC "unit") THENL [REPEAT STRIP_TAC THEN MAP_EVERY EXISTS_TAC [q60, q59] THEN ASM_SIMP_TAC [RING_POW_ONE, RING_1, RING_MUL_RID, RING_UNIT_IN_CARRIER], ALL_TAC] THEN SUBGOAL_THEN q58 (fun th => ASM_MESON_TAC [th]) THEN MATCH_MP_TAC UFD_PRIME_FACTOR_INDUCT THEN ASM_REWRITE_TAC [] THEN REPEAT CONJ_TAC THENL [ASM_REWRITE_TAC [RING_POW_ZERO] THEN MAP_EVERY X_GEN_TAC [q57, q56] THEN STRIP_TAC THEN SUBGOAL_THEN q55 STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [INTEGRAL_DOMAIN_MUL_EQ_0], MAP_EVERY EXISTS_TAC [q54, q53] THEN ASM_SIMP_TAC [RING_UNIT_1, RING_0, RING_POW_ZERO, RING_MUL_LID], REMOVE_THEN "unit" MATCH_MP_TAC THEN ASM_MESON_TAC [RING_COPRIME_0]], X_GEN_TAC q52 THEN DISCH_TAC THEN MAP_EVERY X_GEN_TAC [q51, q50] THEN STRIP_TAC THEN REMOVE_THEN "unit" MATCH_MP_TAC THEN MP_TAC v49 THEN ASM_SIMP_TAC [RING_UNIT_POW], ALL_TAC] THEN MAP_EVERY X_GEN_TAC [q45, q44] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "ih"))) THEN SUBGOAL_THEN q43 STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [ring_prime], ALL_TAC] THEN ASM_SIMP_TAC [RING_MUL_POW] THEN MAP_EVERY X_GEN_TAC [q42, q41] THEN STRIP_TAC THEN SUBGOAL_THEN q40 STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [v39] THEN MATCH_MP_TAC RING_DIVIDES_RMUL THEN ASM_SIMP_TAC [RING_POW] THEN UNDISCH_TAC q38 THEN SPEC_TAC (q37, q36) THEN INDUCT_TAC THEN REWRITE_TAC [ring_pow] THEN ASM_SIMP_TAC [RING_DIVIDES_RMUL, RING_DIVIDES_REFL, RING_POW], MP_TAC v35 THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], ALL_TAC] THEN DISCH_THEN (X_CHOOSE_THEN q28 STRIP_ASSUME_TAC) THEN REMOVE_THEN "ih" (MP_TAC o (SPECL [q27, q26])) THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC q25 THEN DISCH_THEN (X_CHOOSE_THEN q24 STRIP_ASSUME_TAC) THEN EXISTS_TAC q23 THEN ASM_SIMP_TAC [RING_MUL, RING_MUL_POW] THEN MATCH_MP_TAC r22 THEN ASM_SIMP_TAC [RING_POW, RING_UNIT_IN_CARRIER], SUBGOAL_THEN q20 ASSUME_TAC THENL [ASM_MESON_TAC [RING_MUL_SYM], ALL_TAC] THEN MP_TAC v19 THEN ANTS_TAC THENL [ONCE_REWRITE_TAC [RING_COPRIME_SYM] THEN ASM_REWRITE_TAC [], ALL_TAC] THEN DISCH_THEN (X_CHOOSE_THEN q12 STRIP_ASSUME_TAC) THEN REMOVE_THEN "ih" MATCH_MP_TAC THEN EXISTS_TAC q11 THEN ONCE_REWRITE_TAC [RING_COPRIME_SYM] THEN ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [RING_MUL_SYM]])
+      (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"k = 0") THENL [ASM_REWRITE_TAC [ring_pow] THEN STRIP_TAC THEN MAP_EVERY EXISTS_TAC [(← q r"a:A"), (← q r"ring_1 r:A")] THEN ASM_SIMP_TAC [RING_1, RING_MUL_RID] THEN REWRITE_TAC [ring_unit] THEN ASM_MESON_TAC [], STRIP_TAC] THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP UFD_IMP_INTEGRAL_DOMAIN)) THEN SUBGOAL_THEN (← q r"!x:A. ring_unit r x
+            ==> ?u e. ring_unit r u /\ e IN ring_carrier r /\
+                      x = ring_mul r u (ring_pow r e k)") (LABEL_TAC "unit") THENL [REPEAT STRIP_TAC THEN MAP_EVERY EXISTS_TAC [(← q r"x:A"), (← q r"ring_1 r:A")] THEN ASM_SIMP_TAC [RING_POW_ONE, RING_1, RING_MUL_RID, RING_UNIT_IN_CARRIER], ALL_TAC] THEN SUBGOAL_THEN (← q r"!d:A. d IN ring_carrier r
+            ==> !x y. x IN ring_carrier r /\ y IN ring_carrier r /\
+                      ring_coprime r (x,y) /\ ring_mul r x y = ring_pow r d k
+                      ==> ?u e. ring_unit r u /\ e IN ring_carrier r /\
+                                x = ring_mul r u (ring_pow r e k)") (fun th => ASM_MESON_TAC [th]) THEN MATCH_MP_TAC UFD_PRIME_FACTOR_INDUCT THEN ASM_REWRITE_TAC [] THEN REPEAT CONJ_TAC THENL [ASM_REWRITE_TAC [RING_POW_ZERO] THEN MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"x:A = ring_0 r \/ y = ring_0 r") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [INTEGRAL_DOMAIN_MUL_EQ_0], MAP_EVERY EXISTS_TAC [(← q r"ring_1 r:A"), (← q r"ring_0 r:A")] THEN ASM_SIMP_TAC [RING_UNIT_1, RING_0, RING_POW_ZERO, RING_MUL_LID], REMOVE_THEN "unit" MATCH_MP_TAC THEN ASM_MESON_TAC [RING_COPRIME_0]], X_GEN_TAC (← q r"w:A") THEN DISCH_TAC THEN MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN REMOVE_THEN "unit" MATCH_MP_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"x:A"), (← q r"y:A")] RING_UNIT_MUL_EQ) THEN ASM_SIMP_TAC [RING_UNIT_POW], ALL_TAC] THEN MAP_EVERY X_GEN_TAC [(← q r"p:A"), (← q r"d:A")] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "ih"))) THEN SUBGOAL_THEN (← q r"(p:A) IN ring_carrier r /\ ~(p = ring_0 r) /\ ~ring_unit r p") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [ring_prime], ALL_TAC] THEN ASM_SIMP_TAC [RING_MUL_POW] THEN MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"ring_divides r p (x:A) \/ ring_divides r p y") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [(← GSYM RING_PRIME_DIVIDES_MUL)] THEN MATCH_MP_TAC RING_DIVIDES_RMUL THEN ASM_SIMP_TAC [RING_POW] THEN UNDISCH_TAC (← q r"~(k = 0)") THEN SPEC_TAC ((← q r"k:num"), (← q r"k:num")) THEN INDUCT_TAC THEN REWRITE_TAC [ring_pow] THEN ASM_SIMP_TAC [RING_DIVIDES_RMUL, RING_DIVIDES_REFL, RING_POW], MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"p:A"), (← q r"d:A"), (← q r"x:A"), (← q r"y:A"), (← q r"k:num")] lemma) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [], ALL_TAC] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"x1:A") STRIP_ASSUME_TAC) THEN REMOVE_THEN "ih" (MP_TAC o (SPECL [(← q r"x1:A"), (← q r"y:A")])) THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"u:A") THEN DISCH_THEN (X_CHOOSE_THEN (← q r"e:A") STRIP_ASSUME_TAC) THEN EXISTS_TAC (← q r"ring_mul r p e:A") THEN ASM_SIMP_TAC [RING_MUL, RING_MUL_POW] THEN MATCH_MP_TAC (← RING_RULE (← q r"ring_mul r z (ring_mul r u t) = ring_mul r u (ring_mul r z (t:A))")) THEN ASM_SIMP_TAC [RING_POW, RING_UNIT_IN_CARRIER], SUBGOAL_THEN (← q r"ring_mul r y x = ring_mul r x (y:A)") ASSUME_TAC THENL [ASM_MESON_TAC [RING_MUL_SYM], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"p:A"), (← q r"d:A"), (← q r"y:A"), (← q r"x:A"), (← q r"k:num")] lemma) THEN ANTS_TAC THENL [ONCE_REWRITE_TAC [RING_COPRIME_SYM] THEN ASM_REWRITE_TAC [], ALL_TAC] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"y1:A") STRIP_ASSUME_TAC) THEN REMOVE_THEN "ih" MATCH_MP_TAC THEN EXISTS_TAC (← q r"y1:A") THEN ONCE_REWRITE_TAC [RING_COPRIME_SYM] THEN ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [RING_MUL_SYM]])
 
   let UFD_COPRIME_MUL_POW_ASSOCIATES ← prove
     r"!r a b c:A k.

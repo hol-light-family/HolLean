@@ -350,23 +350,31 @@ partial def mk_rewrites (B : BoolThms) (cf : Bool) (th : thm) (sofar : List thm)
 /- ---------------------------------------------------------------------- -/
 
 /-- A prover bundles an (IO) conversion with a way to augment its state with
-    new theorems, yielding a new prover. -/
+    new theorems, yielding a new prover.
+    The augmentor is an IO function because OCaml's can make a `lazy` value
+    (satisfy_prover), which here is a memo cell (`LazyFacts`).  `IO` cannot
+    appear in the constructor (the kernel does not unfold it in the
+    positivity check), so `Prover` takes its unfolding
+    `Void IO.RealWorld → EST.Out IO.Error IO.RealWorld _`, which is the same
+    type by definition (as `WithContext.raw` in ImpConv). -/
 inductive prover where
   | NoProver : prover
-  | Prover : ioconv → (List thm → prover) → prover
+  | Prover : ioconv → (List thm → Void IO.RealWorld → EST.Out IO.Error IO.RealWorld prover) → prover
 
 instance : Inhabited prover := ⟨.NoProver⟩
 
 /-- Build a prover from an applicator and an augmentor over a state. -/
 partial def mk_prover {σ : Type} (applicator : σ → ioconv)
-    (augmentor : σ → List thm → σ) : σ → prover :=
+    (augmentor : σ → List thm → IO σ) : σ → prover :=
   fun state =>
-    .Prover (applicator state) (fun thms => mk_prover applicator augmentor (augmentor state thms))
+    .Prover (applicator state)
+      ((fun thms => do return mk_prover applicator augmentor (← augmentor state thms)) :
+        List thm → IO prover)
 
 /-- Augment a prover with additional theorems. -/
-def augment : prover → List thm → prover
-  | .NoProver, _ => .NoProver
-  | .Prover _ aug, thms => aug thms
+def augment : prover → List thm → IO prover
+  | .NoProver, _ => pure .NoProver
+  | .Prover _ aug, thms => (aug thms : IO prover)
 
 /-- Apply a prover's conversion to a term. -/
 def apply_prover : prover → ioconv
@@ -384,17 +392,42 @@ def apply_prover : prover → ioconv
 /- when first needed.                                                     -/
 /- ---------------------------------------------------------------------- -/
 
-/-- satisfy_prover's `facts_of` (simp.ml 219-224). -/
+/-- satisfy_prover's `facts_of` (simp.ml 219-224).
+    The quotation `T` is parsed at each test, as in OCaml (it uses a
+    type-variable number). -/
 partial def satisfy_facts_of (B : BoolThms) (th : thm) (acc : List thm) :
-    Except String (List thm) := do
+    ExceptT String IO (List thm) := do
   let tm := concl th
-  if is_forall tm then satisfy_facts_of B (← B.SPEC_ALL th) acc
+  if is_forall tm then satisfy_facts_of B (← liftExcept (B.SPEC_ALL th)) acc
   else if is_conj tm then
     -- `facts_of (CONJUNCT1 th) (facts_of (CONJUNCT2 th) acc)`, right to left
-    let acc' ← satisfy_facts_of B (← B.CONJUNCT2 th) acc
-    satisfy_facts_of B (← B.CONJUNCT1 th) acc'
-  else if is_imp tm || tm == .Const "T" bool_ty then pure acc
+    let acc' ← satisfy_facts_of B (← liftExcept (B.CONJUNCT2 th)) acc
+    satisfy_facts_of B (← liftExcept (B.CONJUNCT1 th)) acc'
+  else if is_imp tm then pure acc
+  else if tm == (← ExceptT.mk (Parser.parse_term "T")) then pure acc
   else pure (th :: acc)
+where liftExcept {α : Type} (x : Except String α) : ExceptT String IO α := ExceptT.mk (pure x)
+
+/-- OCaml's `Lazy.t` for satisfy_prover's facts: a cell holding the result
+    once forced (a failure is kept too, as OCaml re-raises it). -/
+structure LazyFacts where
+  cell : IO.Ref (Option (Except String (List thm)))
+  compute : IO (Except String (List thm))
+
+/-- `Lazy.force`; `none` is satisfy_prover's initial `lazy []`. -/
+def LazyFacts.force : Option LazyFacts → IO (Except String (List thm))
+  | none => pure (.ok [])
+  | some l => do
+  match ← l.cell.get with
+  | some v => pure v
+  | none => do
+    let v ← l.compute
+    l.cell.set (some v)
+    pure v
+
+/-- `lazy e`: a new unforced cell. -/
+def LazyFacts.mk' (compute : IO (Except String (List thm))) : IO LazyFacts := do
+  return { cell := ← IO.mkRef none, compute }
 
 /-- satisfy_prover's `satisfy` (simp.ml 225-233): instantiate the variables
     `vs` so that each conjunct is a fact, backtracking over the facts. -/
@@ -433,11 +466,11 @@ partial def satisfy_prove (B : BoolThms) (facts : List thm) (tm : term) : Except
     | none => .error "find"
 
 /-- satisfy_prover's `apply` (simp.ml 237-244). -/
-def satisfy_apply (B : BoolThms) (lfacts : Thunk (Except String (List thm))) : ioconv :=
+def satisfy_apply (B : BoolThms) (lfacts : Option LazyFacts) : ioconv :=
   fun tm => do
     let (vs, bod) := strip_exists tm
     if vs.isEmpty then return .error "satisfy_prover"
-    match lfacts.get with
+    match ← LazyFacts.force lfacts with
     | .error e => return .error e
     | .ok facts =>
       -- `map (genvar o type_of) vs` (lib.ml's map: left to right)
@@ -450,17 +483,20 @@ def satisfy_apply (B : BoolThms) (lfacts : Thunk (Except String (List thm))) : i
         | .ok i => return (do satisfy_prove B facts (← instantiate i gbod))
 
 /-- `itlist facts_of thl acc`. -/
-def satisfy_facts_list (B : BoolThms) : List thm → List thm → Except String (List thm)
-  | [], acc => .ok acc
+def satisfy_facts_list (B : BoolThms) : List thm → List thm → ExceptT String IO (List thm)
+  | [], acc => pure acc
   | t :: ts, acc => do satisfy_facts_of B t (← satisfy_facts_list B ts acc)
 
-/-- simp.ml's `satisfy_prover` (207-247).  OCaml's `lazy` state is a Lean
-    `Thunk` (evaluated once, when first forced). -/
+/-- simp.ml's `satisfy_prover` (207-247).  OCaml's `lazy` state is a
+    `LazyFacts` cell, forced once by `satisfy_apply`; the initial `lazy []`
+    is `none`. -/
 def satisfy_prover (B : BoolThms) : prover :=
   mk_prover (satisfy_apply B)
-    (fun lfacts thl => Thunk.mk (fun _ => do
-      satisfy_facts_list B thl (← lfacts.get)))
-    (Thunk.pure (.ok []))
+    (fun lfacts thl => do return some (← LazyFacts.mk' (do
+      match ← LazyFacts.force lfacts with
+      | .error e => pure (.error e)
+      | .ok fs => (satisfy_facts_list B thl fs).run)))
+    none
 
 /- ---------------------------------------------------------------------- -/
 /- Find an instantiation of the variables vs in a term tm by getting one  -/
@@ -670,7 +706,7 @@ def ss_of_maker (newmaker : thm → List thm → IO (Except String (List thm)))
 def AUGMENT_SIMPSET (B : BoolThms) (cth : thm) (ss : simpset) :
     IO (Except String simpset) := do
   let (.Simpset nt provers rewmaker) := ss
-  let provers' := provers.map (fun pr => augment pr [cth])
+  let provers' ← provers.mapM (fun pr => augment pr [cth])
   match ← (rewmaker cth [] : IO (Except String (List thm))) with
   | .error e => return .error e
   | .ok cthms =>

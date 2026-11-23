@@ -35,11 +35,9 @@ initialize theConstructorsDistinctNet :
 
 /-- `distinctness_store = let th = TAUT `(T <=> F) <=> F` in
     ref ["bool",(fun () -> th)]` (ind_types.ml 1379-1380).  The seed `TAUT`
-    is an IO computation, run here when the module is loaded. -/
-initialize theDistinctnessStore : IO.Ref HolMath.IndTypes.DistinctnessStore ← do
-  let boolThm ← ioOk' "distinctness seed TAUT"
-    (TAUT (← ioOk' "distinctness seed parse" (Parser.parse_term "(T <=> F) <=> F")))
-  IO.mkRef [("bool", pure (.ok boolThm))]
+    is run by the bootstrap below, at ind_types.ml's point (after the
+    constructor provers). -/
+initialize theDistinctnessStore : IO.Ref HolMath.IndTypes.DistinctnessStore ← IO.mkRef []
 
 /-- `injectivity_store = ref []` (ind_types.ml 1381). -/
 initialize theInjectivityStore : IO.Ref HolMath.IndTypes.RectypeStore ← IO.mkRef []
@@ -172,6 +170,9 @@ private def buildIndTypesBootstrap : IO (Except String IndTypesBootstrap) :=
   let P ← HolMath.IndTypes.setupConstructorProvers T.BETA_THM Pr.PAIR_EQ outl outr
     HolMath.Pair.mk_pair Nm.numK NUM_EQ_CONV
   thePcProvers.set (some P)
+  -- ind_types.ml 1379-1380: `distinctness_store`, seeded with `bool`.
+  let boolThm ← ExceptT.mk (TAUT (← HolLight.q "(T <=> F) <=> F"))
+  theDistinctnessStore.set [("bool", pure (.ok boolThm))]
   -- ind_types.ml 1009-1013: add list/option/sum to `inductive_type_store`, in
   -- OCaml order, ahead of whatever is already there (`num`, `prod`, `1`, `bool`).
   let existing ← (theInductiveTypeStore.get : IO _)

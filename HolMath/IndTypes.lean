@@ -335,7 +335,6 @@ def setupIndTypes [HolBase]
        (!c i r. (!n. P(r n)) ==> P(CONSTR c i r))
        ==> !x:(A)recspace. P(x)"
    (← do
-    let it ← ITAUT (← q r"(a ==> a /\ b) <=> (a ==> b)")
     pure
      (REPEAT STRIP_TAC THEN
       MP_TAC (← SPEC (← q r"\z:num->A->bool. ZRECSPACE(z) /\ P(_mk_rec z)")
@@ -352,7 +351,7 @@ def setupIndTypes [HolBase]
         ASM_REWRITE_TAC [] THEN
         DISCH_THEN (MP_TAC o SPEC (← q r"_dest_rec (x:(A)recspace)")) THEN
         REWRITE_TAC [recspace_tydef.1] THEN
-        REWRITE_TAC [it] THEN
+        REWRITE_TAC [(← ITAUT (← q r"(a ==> a /\ b) <=> (a ==> b)"))] THEN
         DISCH_THEN MATCH_MP_TAC THEN
         REWRITE_TAC [recspace_tydef.1, recspace_tydef.2]]))
 

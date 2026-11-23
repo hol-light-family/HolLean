@@ -35,6 +35,13 @@ initialize Qs : QuotSupport ← do
           (Simp.GEN_REWRITE_TAC B (fun c => Simp.landConvIO (Simp.binderConvIO c)) [T.EQ_SYM_EQ])
           (Tactics.MATCH_ACCEPT_TAC B C.SELECT_REFL))) : IO (Except String thm))
     -- pth: STRIP_TAC THEN SUBGOAL_THEN ... ASSUME_TAC THENL [ASM_MESON_TAC[]; ALL_TAC] THEN ...
+    -- The tactic's quotations, right to left, then the goal.
+    let subgoal2 ← parse_term
+      "dest(mk((R:Repty->Repty->bool) x):Absty) = R x"
+    let xRepty ← parse_term "x:Repty"
+    let mmpTaut ← TAUT "(a /\\ b /\\ c) /\\ (b ==> a ==> d) ==> a /\\ b /\\ c /\\ d"
+    let subgoal1 ← parse_term
+      "!x y. (mk((R:Repty->Repty->bool) x):Absty = mk(R y)) <=> (R x = R y)"
     let pthGoal ← parse_term
       ("(!x:Repty. R x x) /\\ (!x y. R x y <=> R y x) /\\ " ++
        "(!x y z. R x y /\\ R y z ==> R x z) /\\ (!a. mk(dest a) = a) /\\ " ++
@@ -43,12 +50,6 @@ initialize Qs : QuotSupport ← do
        "(!P. (!x. P(mk(R x))) <=> (!x. P x)) /\\ " ++
        "(!P. (?x. P(mk(R x))) <=> (?x. P x)) /\\ " ++
        "(!x:Absty. mk(R((@)(dest x))) = x)")
-    let subgoal1 ← parse_term
-      "!x y. (mk((R:Repty->Repty->bool) x):Absty = mk(R y)) <=> (R x = R y)"
-    let subgoal2 ← parse_term
-      "dest(mk((R:Repty->Repty->bool) x):Absty) = R x"
-    let mmpTaut ← TAUT "(a /\\ b /\\ c) /\\ (b ==> a ==> d) ==> a /\\ b /\\ c /\\ d"
-    let xRepty ← parse_term "x:Repty"
     let etaAxSym ← liftExcept (GSYM ETA_AX)
     let pth ← (Tactics.prove B pthGoal
       (Tactics.EVERY B [

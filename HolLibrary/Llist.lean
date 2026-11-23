@@ -18,8 +18,11 @@
   (SessionLibrary.Llist fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Iter
@@ -414,25 +417,15 @@ def setupLlist01 [HolBase] (D : LlistDeps) :
 
   let LLIST_EQ ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"n:num"
-    let q2 ← q r"n:num"
-    let v3 ← GSYM option_DISTINCT
-    let q4 ← q r"LENGTH(l1:A list) = LENGTH(l2:A list)"
-    let p5 ← prove r"!l1 l2:A list.
+    let lemma := (← prove r"!l1 l2:A list.
         (!n. LNTH n (llist_of_list l1) = LNTH n (llist_of_list l2)) <=>
-        l1 = l2" (REPEAT GEN_TAC THEN EQ_TAC THEN SIMP_TAC [] THEN REWRITE_TAC [LNTH_DEF] THEN DISCH_TAC THEN REWRITE_TAC [LIST_EQ] THEN SUBGOAL_THEN q4 ASSUME_TAC THENL [FIRST_X_ASSUM (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"LENGTH(l1:A list)") th) THEN MP_TAC (← SPEC (← q r"LENGTH(l2:A list)") th))) THEN REWRITE_TAC [LT_REFL] THEN REPEAT (COND_CASES_TAC THEN REWRITE_TAC [option_DISTINCT, v3]) THEN ASM_ARITH_TAC, ASM_REWRITE_TAC [] THEN X_GEN_TAC q2 THEN DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o (SPEC q1)) THEN ASM_REWRITE_TAC [option_INJ]])
-    let lemma := p5
-    let v6 ← GSYM option_DISTINCT
-    let q7 ← q r"LENGTH(xs:A list)"
-    let p8 ← prove r"!(xs:A list) f.
+        l1 = l2" (REPEAT GEN_TAC THEN EQ_TAC THEN SIMP_TAC [] THEN REWRITE_TAC [LNTH_DEF] THEN DISCH_TAC THEN REWRITE_TAC [LIST_EQ] THEN SUBGOAL_THEN (← q r"LENGTH(l1:A list) = LENGTH(l2:A list)") ASSUME_TAC THENL [FIRST_X_ASSUM (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"LENGTH(l1:A list)") th) THEN MP_TAC (← SPEC (← q r"LENGTH(l2:A list)") th))) THEN REWRITE_TAC [LT_REFL] THEN REPEAT (COND_CASES_TAC THEN REWRITE_TAC [option_DISTINCT, (← GSYM option_DISTINCT)]) THEN ASM_ARITH_TAC, ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q r"n:num") THEN DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"n:num"))) THEN ASM_REWRITE_TAC [option_INJ]]))
+    let lemma' := (← prove r"!(xs:A list) f.
         ~(!n. LNTH n (llist_of_list xs) = LNTH n (llist_of_seq f)) /\
-        ~(!n. LNTH n (llist_of_seq f) = LNTH n (llist_of_list xs))" (REPEAT GEN_TAC THEN REWRITE_TAC [NOT_FORALL_THM] THEN CONJ_TAC THEN EXISTS_TAC q7 THEN REWRITE_TAC [LNTH_DEF, LT_REFL, option_DISTINCT, v6])
-    let lemma' := p8
-    let q9 ← q r"l2:A llist"
-    let q10 ← q r"l1:A llist"
+        ~(!n. LNTH n (llist_of_seq f) = LNTH n (llist_of_list xs))" (REPEAT GEN_TAC THEN REWRITE_TAC [NOT_FORALL_THM] THEN CONJ_TAC THEN EXISTS_TAC (← q r"LENGTH(xs:A list)") THEN REWRITE_TAC [LNTH_DEF, LT_REFL, option_DISTINCT, (← GSYM option_DISTINCT)]))
     prove
       r"!l1 l2:A llist. l1 = l2 <=> !n. LNTH n l1 = LNTH n l2"
-      (REPEAT GEN_TAC THEN LLIST_REP_CASES_TAC q10 THEN LLIST_REP_CASES_TAC q9 THEN REWRITE_TAC [lemma, LLIST_REP_EQ, lemma'] THEN REWRITE_TAC [LNTH_DEF, option_INJ, FUN_EQ_THM])
+      (REPEAT GEN_TAC THEN LLIST_REP_CASES_TAC (← q r"l1:A llist") THEN LLIST_REP_CASES_TAC (← q r"l2:A llist") THEN REWRITE_TAC [lemma, LLIST_REP_EQ, lemma'] THEN REWRITE_TAC [LNTH_DEF, option_INJ, FUN_EQ_THM])
 
   let LLIST_OF_SEQ ← prove
     r"!f:num->A. llist_of_seq f = LCONS (f 0) (llist_of_seq (\n. f (SUC n)))"
@@ -498,38 +491,12 @@ def setupLlist01 [HolBase] (D : LlistDeps) :
 
   let LCOREC ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let v1 ← GSYM NOT_LT
-    let v2 ← GSYM LE_ANTISYM
-    let q3 ← q r"m:num"
-    let v4 ← SPEC q3 num_CASES
-    let q5 ← q r"k:num"
-    let q6 ← q r"(minimal) (\n. (P:num->bool)(SUC n))"
-    let q7 ← q r"m:num"
-    let q8 ← q r"(minimal) P"
-    let q9 ← q r"\n. (P:num->bool)(SUC n)"
-    let v10 ← SPEC q9 MINIMAL
-    let q11 ← q r"P:num->bool"
-    let v12 ← SPEC q11 MINIMAL
-    let q13 ← q r"?n. P(SUC n)"
-    let p14 ← prove r"!P. ~P 0 /\ (?n. P n) ==> (minimal) P = SUC((minimal) (\n. P(SUC n)))" (GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN q13 ASSUME_TAC THENL [ASM_MESON_TAC [num_CASES], ALL_TAC] THEN MP_TAC v12 THEN MP_TAC v10 THEN ASM_REWRITE_TAC [] THEN SPEC_TAC (q8, q7) THEN SPEC_TAC (q6, q5) THEN REPEAT GEN_TAC THEN REPEAT STRIP_TAC THEN MP_TAC v4 THEN STRIP_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN FIRST_X_ASSUM SUBST_ALL_TAC THEN REWRITE_TAC [SUC_INJ] THEN REWRITE_TAC [v2, v1] THEN ASM_MESON_TAC [LT_SUC])
-    let MINIMAL_SUC := p14
-    let q15 ← q r"\n. (p:B->bool) (ITER n t x)"
-    let v16 ← ISPEC q15 MINIMAL_SUC
-    let q17 ← q r"n:num"
-    let v18 ← SPEC q17 num_CASES
-    let q19 ← q r"n:num"
-    let q20 ← q r"(?n. (p:B->bool) (ITER n t x)) <=> (?n. p (ITER n t (t x)))"
-    let q21 ← q r"!P. P 0 ==> (minimal) P = 0"
-    let r22 ← MESON [MINIMAL, LT_NZ] q21
-    let q23 ← q r"(minimal) (\n. (p:B->bool) (ITER n t x)) = 0"
-    let q24 ← q r"0"
-    let q25 ← q r"?n. (p:B->bool) (ITER n t x)"
-    let q26 ← q r"(p:B->bool) x"
+    let MINIMAL_SUC := (← prove r"!P. ~P 0 /\ (?n. P n) ==> (minimal) P = SUC((minimal) (\n. P(SUC n)))" (GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"?n. P(SUC n)") ASSUME_TAC THENL [ASM_MESON_TAC [num_CASES], ALL_TAC] THEN MP_TAC (← SPEC (← q r"P:num->bool") MINIMAL) THEN MP_TAC (← SPEC (← q r"\n. (P:num->bool)(SUC n)") MINIMAL) THEN ASM_REWRITE_TAC [] THEN SPEC_TAC ((← q r"(minimal) P"), (← q r"m:num")) THEN SPEC_TAC ((← q r"(minimal) (\n. (P:num->bool)(SUC n))"), (← q r"k:num")) THEN REPEAT GEN_TAC THEN REPEAT STRIP_TAC THEN MP_TAC (← SPEC (← q r"m:num") num_CASES) THEN STRIP_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN FIRST_X_ASSUM SUBST_ALL_TAC THEN REWRITE_TAC [SUC_INJ] THEN REWRITE_TAC [(← GSYM LE_ANTISYM), (← GSYM NOT_LT)] THEN ASM_MESON_TAC [LT_SUC]))
     prove
       r"!p e h t (x:B).
           LCOREC p e h t x:A llist =
           if p x then e x else LCONS (h x) (LCOREC p e h t (t x))"
-      (REPEAT GEN_TAC THEN REWRITE_TAC [LCOREC_DEF] THEN ASM_CASES_TAC q26 THEN ASM_REWRITE_TAC [] THENL [SUBGOAL_THEN q25 (fun th => REWRITE_TAC [th]) THENL [EXISTS_TAC q24 THEN ASM_REWRITE_TAC [ITER], ALL_TAC] THEN SUBGOAL_THEN q23 SUBST1_TAC THENL [MATCH_MP_TAC r22 THEN ASM_REWRITE_TAC [ITER], ALL_TAC] THEN REWRITE_TAC [list_of_seq, ITER, LLIST_OF_LIST, LAPPEND], ALL_TAC] THEN SUBGOAL_THEN q20 SUBST1_TAC THENL [EQ_TAC THENL [DISCH_THEN (X_CHOOSE_THEN q19 MP_TAC) THEN STRUCT_CASES_TAC v18 THEN ASM_REWRITE_TAC [ITER_ALT] THEN MESON_TAC [], MESON_TAC [ITER_ALT]], ALL_TAC] THEN COND_CASES_TAC THENL [ALL_TAC, GEN_REWRITE_TAC LAND_CONV [LLIST_OF_SEQ] THEN REWRITE_TAC [ITER_ALT]] THEN MP_TAC v16 THEN REWRITE_TAC [ITER_ALT] THEN ANTS_TAC THENL [ASM_MESON_TAC [ITER_ALT], DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [LIST_OF_SEQ, o_DEF, ITER_ALT, LLIST_OF_LIST, LAPPEND])
+      (REPEAT GEN_TAC THEN REWRITE_TAC [LCOREC_DEF] THEN ASM_CASES_TAC (← q r"(p:B->bool) x") THEN ASM_REWRITE_TAC [] THENL [SUBGOAL_THEN (← q r"?n. (p:B->bool) (ITER n t x)") (fun th => REWRITE_TAC [th]) THENL [EXISTS_TAC (← q r"0") THEN ASM_REWRITE_TAC [ITER], ALL_TAC] THEN SUBGOAL_THEN (← q r"(minimal) (\n. (p:B->bool) (ITER n t x)) = 0") SUBST1_TAC THENL [MATCH_MP_TAC (← MESON [MINIMAL, LT_NZ] (← q r"!P. P 0 ==> (minimal) P = 0")) THEN ASM_REWRITE_TAC [ITER], ALL_TAC] THEN REWRITE_TAC [list_of_seq, ITER, LLIST_OF_LIST, LAPPEND], ALL_TAC] THEN SUBGOAL_THEN (← q r"(?n. (p:B->bool) (ITER n t x)) <=> (?n. p (ITER n t (t x)))") SUBST1_TAC THENL [EQ_TAC THENL [DISCH_THEN (X_CHOOSE_THEN (← q r"n:num") MP_TAC) THEN STRUCT_CASES_TAC (← SPEC (← q r"n:num") num_CASES) THEN ASM_REWRITE_TAC [ITER_ALT] THEN MESON_TAC [], MESON_TAC [ITER_ALT]], ALL_TAC] THEN COND_CASES_TAC THENL [ALL_TAC, GEN_REWRITE_TAC LAND_CONV [LLIST_OF_SEQ] THEN REWRITE_TAC [ITER_ALT]] THEN MP_TAC (← ISPEC (← q r"\n. (p:B->bool) (ITER n t x)") MINIMAL_SUC) THEN REWRITE_TAC [ITER_ALT] THEN ANTS_TAC THENL [ASM_MESON_TAC [ITER_ALT], DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [LIST_OF_SEQ, o_DEF, ITER_ALT, LLIST_OF_LIST, LAPPEND])
 
   let LCOREC_UNIQUE ← prove
     r"!p e h t (g:B->A llist).
@@ -1167,67 +1134,42 @@ def setupLlist02 [HolBase] (D : LlistDeps) (BLlist01 : Llist01) :
 
   let LALL2 ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"(!n. P n) <=> P 0 /\ !n. P(SUC n)"
-    let r2 ← MESON [num_CASES] q1
-    let q3 ← q r"t2:B llist"
-    let q4 ← q r"t1:A llist"
-    let q5 ← q r"t2:B llist"
-    let q6 ← q r"t1:A llist"
     prove
       r"(!R:A->B->bool. LALL2 R LNIL LNIL) /\
      (!R:A->B->bool h1 t1. ~LALL2 R (LCONS h1 t1) LNIL) /\
      (!R:A->B->bool h2 t2. ~LALL2 R LNIL (LCONS h2 t2)) /\
      (!R:A->B->bool h1 t1 h2 t2.
           LALL2 R (LCONS h1 t1) (LCONS h2 t2) <=> R h1 h2 /\ LALL2 R t1 t2)"
-      (REPEAT CONJ_TAC THEN REPEAT GEN_TAC THENL [REWRITE_TAC [LNIL_DEF, LALL2_DEF, ALL2], LLIST_REP_CASES_TAC q6 THEN REWRITE_TAC [LNIL_DEF, LCONS_DEF, LALL2_DEF, ALL2], LLIST_REP_CASES_TAC q5 THEN REWRITE_TAC [LNIL_DEF, LCONS_DEF, LALL2_DEF, ALL2], LLIST_REP_CASES_TAC q4 THEN LLIST_REP_CASES_TAC q3 THEN REWRITE_TAC [LCONS_DEF, LALL2_DEF, ALL2] THEN GEN_REWRITE_TAC LAND_CONV [r2] THEN REWRITE_TAC [NOT_SUC, SUC_SUB1]])
+      (REPEAT CONJ_TAC THEN REPEAT GEN_TAC THENL [REWRITE_TAC [LNIL_DEF, LALL2_DEF, ALL2], LLIST_REP_CASES_TAC (← q r"t1:A llist") THEN REWRITE_TAC [LNIL_DEF, LCONS_DEF, LALL2_DEF, ALL2], LLIST_REP_CASES_TAC (← q r"t2:B llist") THEN REWRITE_TAC [LNIL_DEF, LCONS_DEF, LALL2_DEF, ALL2], LLIST_REP_CASES_TAC (← q r"t1:A llist") THEN LLIST_REP_CASES_TAC (← q r"t2:B llist") THEN REWRITE_TAC [LCONS_DEF, LALL2_DEF, ALL2] THEN GEN_REWRITE_TAC LAND_CONV [(← MESON [num_CASES] (← q r"(!n. P n) <=> P 0 /\ !n. P(SUC n)"))] THEN REWRITE_TAC [NOT_SUC, SUC_SUB1]])
 
   let LALL2_EQ ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let v1 ← GSYM NOT_CONS_NIL
-    let p2 ← prove r"!l1 l2:A list. ALL2 (=) l1 l2 <=> l1 = l2" (LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [ALL2, CONS_11, NOT_CONS_NIL, v1])
-    let lemma := p2
-    let q3 ← q r"l2:A llist"
-    let q4 ← q r"l1:A llist"
+    let lemma := (← prove r"!l1 l2:A list. ALL2 (=) l1 l2 <=> l1 = l2" (LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [ALL2, CONS_11, NOT_CONS_NIL, (← GSYM NOT_CONS_NIL)]))
     prove
       r"!l1 l2:A llist. LALL2 (=) l1 l2 <=> l1 = l2"
-      (REPEAT GEN_TAC THEN LLIST_REP_CASES_TAC q4 THEN LLIST_REP_CASES_TAC q3 THEN REWRITE_TAC [LALL2_DEF, LLIST_REP_EQ, lemma, FUN_EQ_THM])
+      (REPEAT GEN_TAC THEN LLIST_REP_CASES_TAC (← q r"l1:A llist") THEN LLIST_REP_CASES_TAC (← q r"l2:A llist") THEN REWRITE_TAC [LALL2_DEF, LLIST_REP_EQ, lemma, FUN_EQ_THM])
 
   let LALL2_LNTH ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"(!n. P n) <=> P 0 /\ !n. P(SUC n)"
-    let r2 ← MESON [num_CASES] q1
-    let v3 ← CONJUNCT1 LT
-    let v4 ← GSYM NOT_SUC
-    let p5 ← prove r"!R (l1:A list) (l2:B list).
+    let lemma := (← prove r"!R (l1:A list) (l2:B list).
         ALL2 R l1 l2 <=>
         LENGTH l1 = LENGTH l2 /\
-        !n. n < LENGTH l1 ==> R (EL n l1) (EL n l2)" (GEN_TAC THEN LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [ALL2, LENGTH, NOT_SUC, v4, SUC_INJ, v3, LT_0] THEN GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [r2] THEN REWRITE_TAC [LT_0, LT_SUC, EL, HD, TL] THEN CONV_TAC TAUT)
-    let lemma := p5
-    let v6 ← GSYM option_DISTINCT
-    let p7 ← prove r"!b (a:A) c. (if b then SOME a else NONE) = SOME c <=> b /\ a = c" (REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [option_INJ, v6])
-    let lemma' := p7
-    let v8 ← GSYM option_DISTINCT
-    let q9 ← q r"l2:B llist"
-    let q10 ← q r"l1:A llist"
+        !n. n < LENGTH l1 ==> R (EL n l1) (EL n l2)" (GEN_TAC THEN LIST_INDUCT_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC [ALL2, LENGTH, NOT_SUC, (← GSYM NOT_SUC), SUC_INJ, (← CONJUNCT1 LT), LT_0] THEN GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [(← MESON [num_CASES] (← q r"(!n. P n) <=> P 0 /\ !n. P(SUC n)"))] THEN REWRITE_TAC [LT_0, LT_SUC, EL, HD, TL] THEN CONV_TAC TAUT))
+    let lemma' := (← prove r"!b (a:A) c. (if b then SOME a else NONE) = SOME c <=> b /\ a = c" (REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [option_INJ, (← GSYM option_DISTINCT)]))
     prove
       r"!R (l1:A llist) (l2:B llist).
           LALL2 R l1 l2 <=>
           LLENGTH l1 = LLENGTH l2 /\
           !n x y. LNTH n l1 = SOME x /\ LNTH n l2 = SOME y ==> R x y"
-      (REPEAT GEN_TAC THEN LLIST_REP_CASES_TAC q10 THEN LLIST_REP_CASES_TAC q9 THEN REWRITE_TAC [LALL2_DEF, LLENGTH_DEF, LNTH_DEF, lemma', option_INJ, option_DISTINCT, v8, lemma] THEN MESON_TAC [])
+      (REPEAT GEN_TAC THEN LLIST_REP_CASES_TAC (← q r"l1:A llist") THEN LLIST_REP_CASES_TAC (← q r"l2:B llist") THEN REWRITE_TAC [LALL2_DEF, LLENGTH_DEF, LNTH_DEF, lemma', option_INJ, option_DISTINCT, (← GSYM option_DISTINCT), lemma] THEN MESON_TAC [])
 
   let LLENGTH_EQ ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let v1 ← GSYM NOT_LT
-    let p2 ← prove r"!(l:A list) n. LNTH n (llist_of_list l) = NONE <=> LENGTH l <= n" (REWRITE_TAC [LNTH_DEF, v1] THEN REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [option_DISTINCT])
-    let lemma := p2
-    let v3 ← GSYM option_DISTINCT
-    let q4 ← q r"l2:B llist"
-    let q5 ← q r"l1:A llist"
+    let lemma := (← prove r"!(l:A list) n. LNTH n (llist_of_list l) = NONE <=> LENGTH l <= n" (REWRITE_TAC [LNTH_DEF, (← GSYM NOT_LT)] THEN REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [option_DISTINCT]))
     prove
       r"!(l1:A llist) (l2:B llist).
           LLENGTH l1 = LLENGTH l2 <=> !n. LNTH n l1 = NONE <=> LNTH n l2 = NONE"
-      (REPEAT GEN_TAC THEN LLIST_REP_CASES_TAC q5 THEN LLIST_REP_CASES_TAC q4 THEN REWRITE_TAC [LLENGTH_DEF, lemma, LNTH_DEF, option_INJ, option_DISTINCT, v3] THEN MESON_TAC [LE_REFL, LE_ANTISYM])
+      (REPEAT GEN_TAC THEN LLIST_REP_CASES_TAC (← q r"l1:A llist") THEN LLIST_REP_CASES_TAC (← q r"l2:B llist") THEN REWRITE_TAC [LLENGTH_DEF, lemma, LNTH_DEF, option_INJ, option_DISTINCT, (← GSYM option_DISTINCT)] THEN MESON_TAC [LE_REFL, LE_ANTISYM])
 
   let LALL2_COINDUCT ← prove
     r"!R (R':A llist->B llist->bool).
@@ -1275,18 +1217,11 @@ def setupLlist02 [HolBase] (D : LlistDeps) (BLlist01 : Llist01) :
 
   let LPREFIX_LNTH ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let v1 ← GSYM option_DISTINCT
-    let p2 ← prove r"!b (a:A) c. (if b then SOME a else NONE) = SOME c <=> b /\ a = c" (REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [option_INJ, v1])
-    let lemma := p2
-    let q3 ← q r"EL n (xs:A list)"
-    let q4 ← q r"n:num"
-    let q5 ← q r"n:num"
-    let q6 ← q r"LDROP (LENGTH (xs:A list)) (l2:A llist)"
-    let q7 ← q r"l1:A llist"
+    let lemma := (← prove r"!b (a:A) c. (if b then SOME a else NONE) = SOME c <=> b /\ a = c" (REPEAT GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [option_INJ, (← GSYM option_DISTINCT)]))
     prove
       r"!l1 l2:A llist.
           LPREFIX l1 l2 <=> !n x. LNTH n l1 = SOME x ==> LNTH n l2 = SOME x"
-      (REPEAT GEN_TAC THEN LLIST_REP_CASES_TAC q7 THEN REWRITE_TAC [LPREFIX_DEF, LAPPEND_DEF] THENL [EQ_TAC THENL [STRIP_TAC THEN ASM_REWRITE_TAC [LNTH_LAPPEND] THEN REWRITE_TAC [LNTH_DEF, lemma] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [], DISCH_TAC THEN EXISTS_TAC q6 THEN REWRITE_TAC [LLIST_EQ, LNTH_LAPPEND, LNTH_LDROP] THEN X_GEN_TAC q5 THEN COND_CASES_TAC THENL [FIRST_X_ASSUM (MP_TAC o (SPECL [q4, q3])) THEN ASM_REWRITE_TAC [LNTH_DEF], AP_THM_TAC THEN AP_TERM_TAC THEN ASM_ARITH_TAC]], EQ_TAC THENL [DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [LNTH_DEF, option_INJ], REWRITE_TAC [LNTH_DEF, option_INJ] THEN DISCH_TAC THEN ASM_REWRITE_TAC [LLIST_EQ, LNTH_DEF] THEN ASM_MESON_TAC []]])
+      (REPEAT GEN_TAC THEN LLIST_REP_CASES_TAC (← q r"l1:A llist") THEN REWRITE_TAC [LPREFIX_DEF, LAPPEND_DEF] THENL [EQ_TAC THENL [STRIP_TAC THEN ASM_REWRITE_TAC [LNTH_LAPPEND] THEN REWRITE_TAC [LNTH_DEF, lemma] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [], DISCH_TAC THEN EXISTS_TAC (← q r"LDROP (LENGTH (xs:A list)) (l2:A llist)") THEN REWRITE_TAC [LLIST_EQ, LNTH_LAPPEND, LNTH_LDROP] THEN X_GEN_TAC (← q r"n:num") THEN COND_CASES_TAC THENL [FIRST_X_ASSUM (MP_TAC o (SPECL [(← q r"n:num"), (← q r"EL n (xs:A list)")])) THEN ASM_REWRITE_TAC [LNTH_DEF], AP_THM_TAC THEN AP_TERM_TAC THEN ASM_ARITH_TAC]], EQ_TAC THENL [DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [LNTH_DEF, option_INJ], REWRITE_TAC [LNTH_DEF, option_INJ] THEN DISCH_TAC THEN ASM_REWRITE_TAC [LLIST_EQ, LNTH_DEF] THEN ASM_MESON_TAC []]])
 
   let LPREFIX_ANTISYM ← prove
     r"!l1 l2:A llist. LPREFIX l1 l2 /\ LPREFIX l2 l1 ==> l1 = l2"

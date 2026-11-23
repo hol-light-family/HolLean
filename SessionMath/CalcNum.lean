@@ -2,8 +2,9 @@
 calc_num.ml: calculation with natural numbers.  The rewrite collection,
 numeral constants, proformas and nets are built by `initialize` when this
 module is imported.  NUM_REL_CONV, NUM_RED_CONV and NUM_COMPUTE_CONV are
-closures, kept in `IO.Ref`s; they are built by `ensureCalcNumProcs` at the
-end of SessionMath/Grobner.lean, as the old Session forced them.
+closures, kept in `IO.Ref`s.  Their patterns and compset are made while the
+proformas are built (`calcNumProcs`, at calc_num.ml's point); the conversions
+are put together at the end of this file.
 -/
 import SessionMath.Wf
 import HolMath.CalcNum
@@ -53,6 +54,21 @@ initialize CnK : HolMath.CalcNum.CalcNumConsts ←
   ioOk' "setupCalcNumConsts" (HolMath.CalcNum.setupCalcNumConsts Nm.ZERO_DEF TWO ADD_0 EXP_2
     DIVISION SUB_0 LE_0 (HolMath.Nums.mk_small_numeral Nm.numK)).run
 
+/-- calc_num.ml 1443-1491 parse NUM_REL_CONV's and num_red_conv_list's
+    patterns and make NUM_COMPUTE_CONV's compset before their `fun tm ->`.
+    `calcNumProcs` does that while `CnP` is built, at calc_num.ml's point;
+    the conversions are put together from these at the end of this file. -/
+initialize theNumRelPats : IO.Ref (List term) ← IO.mkRef []
+initialize theNumRedPats : IO.Ref (List term) ← IO.mkRef []
+initialize theNumComputeCs : IO.Ref (Option HolMath.Compute.compset) ← IO.mkRef none
+
+private def calcNumProcs : ExceptT String IO Unit := do
+  theNumRelPats.set (← HolMath.CalcNum.num_rel_patterns)    -- calc_num.ml 1443
+  theNumRedPats.set (← HolMath.CalcNum.num_red_patterns)    -- calc_num.ml 1455
+  let cs ← ExceptT.mk (HolMath.CalcNum.num_compute_compset  -- calc_num.ml 1489
+    bool_compset set_skip (HolLight.q "COND: bool -> A -> A -> A"))
+  theNumComputeCs.set (some cs)
+
 /-- The `calc_num.ml` delicate-conversion proformas. -/
 initialize CnP : HolMath.CalcNum.CalcNumProformas ←
   -- `setupCalcNumProformas` PARSES terms mentioning `DIV` and `MOD`, so those
@@ -67,7 +83,8 @@ initialize CnP : HolMath.CalcNum.CalcNumProformas ←
     EXP EXP_ADD LT_EXISTS LE_ADD NOT_LT NOT_LE
     LE_ANTISYM LT_REFL LE_REFL
     PRE SUB_EQ_0 ADD_SUB DIVMOD_UNIQ DIV_ZERO MOD_ZERO FACT LT
-    MESON_TAC MOD_DOWN_CONV NUM_CANCEL_CONV (HolMath.Nums.mk_small_numeral Nm.numK)).run
+    MESON_TAC MOD_DOWN_CONV NUM_CANCEL_CONV (HolMath.Nums.mk_small_numeral Nm.numK)
+    calcNumProcs).run
 
 /-- What calc_num.ml's later conversions build before their `fun tm ->`.
     Forced at calc_num.ml's position, because `REWRITE_CONV[GSYM CONJ_ASSOC]`
@@ -210,23 +227,27 @@ initialize theNumRedConv : IO.Ref (Option ioconv) ← IO.mkRef none
 initialize theNumRelConv : IO.Ref (Option ioconv) ← IO.mkRef none
 initialize theNumComputeConv : IO.Ref (Option ioconv) ← IO.mkRef none
 
-private def numRedConvListIO : IO (Except String (List (term × ioconv))) := do
+/-- `num_red_conv_list` (calc_num.ml 1455-1474), from the patterns parsed by
+    `calcNumProcs`. -/
+def numRedConvList : IO (Except String (List (term × ioconv))) := do
   match ← theNumRedConvList.get with
   | some l => return .ok l
   | none =>
-    match ← HolMath.CalcNum.num_red_conv_list
+    let pats ← theNumRedPats.get
+    if pats.isEmpty then return .error "num_red_conv_list: patterns not parsed yet"
+    let l := HolMath.CalcNum.num_red_conv_list pats
         NUM_SUC_CONV NUM_PRE_CONV NUM_FACT_CONV NUM_LT_CONV NUM_LE_CONV
         NUM_GT_CONV NUM_GE_CONV NUM_EQ_CONV numEvenConvIO numOddConvIO
         NUM_ADD_CONV NUM_SUB_CONV NUM_MULT_CONV NUM_EXP_CONV NUM_DIV_CONV
-        NUM_MOD_CONV NUM_MAX_CONV NUM_MIN_CONV with
-    | .error e => return .error e
-    | .ok l => do theNumRedConvList.set (some l); return .ok l
+        NUM_MOD_CONV NUM_MAX_CONV NUM_MIN_CONV
+    theNumRedConvList.set (some l)
+    return .ok l
 
 private def numRedConvIO : IO (Except String ioconv) := do
   match ← theNumRedConv.get with
   | some c => return .ok c
   | none =>
-    match ← numRedConvListIO with
+    match ← numRedConvList with
     | .error e => return .error e
     | .ok l =>
       match ← HolMath.CalcNum.NUM_RED_CONV l with
@@ -237,7 +258,9 @@ private def numRelConvIO : IO (Except String ioconv) := do
   match ← theNumRelConv.get with
   | some c => return .ok c
   | none =>
-    match ← HolMath.CalcNum.NUM_REL_CONV NUM_LT_CONV NUM_LE_CONV NUM_GT_CONV
+    let pats ← theNumRelPats.get
+    if pats.isEmpty then return .error "NUM_REL_CONV: patterns not parsed yet"
+    match ← HolMath.CalcNum.NUM_REL_CONV pats NUM_LT_CONV NUM_LE_CONV NUM_GT_CONV
         NUM_GE_CONV NUM_EQ_CONV with
     | .error e => return .error e
     | .ok c => do theNumRelConv.set (some c); return .ok c
@@ -268,11 +291,13 @@ private def numComputeConvIO : IO (Except String ioconv) := do
   match ← theNumComputeConv.get with
   | some c => return .ok c
   | none =>
-    match ← numRedConvListIO with
+    match ← numRedConvList with
     | .error e => return .error e
     | .ok l =>
-      match ← HolMath.CalcNum.NUM_COMPUTE_CONV l bool_compset
-          set_skip add_conv WEAK_CBV_CONV [[ COND: bool -> A -> A -> A ]] with
+      match ← theNumComputeCs.get with
+      | none => return .error "NUM_COMPUTE_CONV: compset not made yet"
+      | some cs =>
+      match ← HolMath.CalcNum.NUM_COMPUTE_CONV l cs add_conv WEAK_CBV_CONV with
       | .error e => return .error e
       | .ok c => do theNumComputeConv.set (some c); return .ok c
 

@@ -17,10 +17,11 @@
   structures (SessionLibrary.Szemeredi fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, REAL_ARITH, TAUT, SET_RULE, ...) they are
-  bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Bertrand
@@ -617,13 +618,10 @@ def setupLines [HolBase] (D : SzemerediDeps) (BWords : Words) :
    r"!k a. a < k ==> (\i. if i = 0 then a else 0) IN hj_cube k 1"
    (← do
     -- right to left: the third ARITH_RULE, then the second, then the first
-    let a3 ← ARITH_RULE (← q r"1 <= i ==> ~(i = 0)")
-    let a2 ← ARITH_RULE (← q r"i < 1 <=> i = 0")
-    let a1 ← ARITH_RULE (← q r"i < 1 <=> i = 0")
     pure (REWRITE_TAC [IN_HJ_CUBE] THEN REPEAT STRIP_TAC THENL
-     [ASM_REWRITE_TAC [a1] THEN
-      ASM_MESON_TAC [a2],
-      ASM_SIMP_TAC [a3]]))
+     [ASM_REWRITE_TAC [(← ARITH_RULE (← q r"i < 1 <=> i = 0"))] THEN
+      ASM_MESON_TAC [(← ARITH_RULE (← q r"i < 1 <=> i = 0"))],
+      ASM_SIMP_TAC [(← ARITH_RULE (← q r"1 <= i ==> ~(i = 0)"))]]))
 
   let HJ_LINE_CUBE ← prove
    r"!k n l. hj_line k n l ==> l IN hj_cube (k + 1) n"
@@ -1481,11 +1479,11 @@ def setupTemplates [HolBase] (D : SzemerediDeps) :
           STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC [],
           -- `check (fun th -> concl th = `..`)`, the quotation parsed at
           -- each call of the test, as in OCaml.
-          FIRST_X_ASSUM (fun th => tactic_of do
+          FIRST_X_ASSUM ((fun (ocq23 : _) => fun th => tactic_of do
             let t ← q r"!i. i < M ==>
               hjt_subst t M l0 0 i <= t"
-            pure (MP_TAC (← SPEC (← q r"i - Ns:num")
-              (← liftExcept (check (fun th => concl th == t) th))))) THEN
+            pure (MP_TAC (← SPEC ocq23
+              (← liftExcept (check (fun th => concl th == t) th))))) (← q r"i - Ns:num")) THEN
           ANTS_TAC THENL [ASM_ARITH_TAC, ARITH_TAC]],
         UNDISCH_TAC (← q r"hjt_line (t + 1) Ns sig") THEN REWRITE_TAC [hjt_line] THEN
         DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC
@@ -1724,10 +1722,10 @@ def setupHJTKey [HolBase] (D : SzemerediDeps) (BTemplates : Templates) :
        [SUBGOAL_THEN (← q r"k < Ns:num") (fun th => REWRITE_TAC [th]) THENL
          [ASM_REWRITE_TAC [], ALL_TAC] THEN
         COND_CASES_TAC THENL [ARITH_TAC, ALL_TAC] THEN
-        FIRST_X_ASSUM (fun th => tactic_of do
+        FIRST_X_ASSUM ((fun (ocq22 : _) => fun th => tactic_of do
           let z ← q r"!i:num. i < Ns ==> Lf 0 i <= t + 1"
-          pure (MP_TAC (← SPEC (← q r"k:num")
-            (← liftExcept (check (fun th => concl th == z) th))))) THEN
+          pure (MP_TAC (← SPEC ocq22
+            (← liftExcept (check (fun th => concl th == z) th))))) (← q r"k:num")) THEN
         ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC,
         SUBGOAL_THEN (← q r"~(k < Ns:num)") (fun th => REWRITE_TAC [th]) THEN
           ASM_ARITH_TAC],
@@ -1739,14 +1737,14 @@ def setupHJTKey [HolBase] (D : SzemerediDeps) (BTemplates : Templates) :
      (← q r"?i:num. i < s /\
               cf i = (chi:(num->num)->num)(hjt_prod Ns focus (hjt_subst t M
        l0 0))")) THENL
-  [ ((FIRST_X_ASSUM (fun th => tactic_of do
+  [ ((FIRST_X_ASSUM ((fun (ocq21 : _) => fun th => tactic_of do
      let ok ← if is_exists (concl th) then
          match dest_exists (concl th) with
          | .ok (v, _) => do let z ← q r"i:num"; pure (v == z)
          | .error _ => pure false
        else pure false
-     pure (X_CHOOSE_THEN (← q r"i0:num") STRIP_ASSUME_TAC
-       (← liftExcept (check (fun _ => ok) th))))) THEN
+     pure (X_CHOOSE_THEN ocq21 STRIP_ASSUME_TAC
+       (← liftExcept (check (fun _ => ok) th)))) (← q r"i0:num"))) THEN
   (SUBGOAL_THEN (← q r"hjt_subst (t+1) Ns (Lf(i0:num)) t = focus") ASSUME_TAC THENL
      [FIRST_X_ASSUM (fun th => tactic_of do
         let z ← q r"!i:num. i < s ==> hjt_subst (t + 1) Ns (Lf i) t = focus"
@@ -1816,11 +1814,11 @@ def setupHJTKey [HolBase] (D : SzemerediDeps) (BTemplates : Templates) :
         REWRITE_TAC [hjt_almost_mono, hjt_line] THEN STRIP_TAC THEN
         ASM_SIMP_TAC [],
         X_GEN_TAC (← q r"k:num") THEN DISCH_TAC THEN
-        FIRST_X_ASSUM (fun th => tactic_of do
+        FIRST_X_ASSUM ((fun (ocq20 : _) => fun th => tactic_of do
           let z ← q r"!i:num. i < Ns ==>
             (focus:num->num) i <= t"
-          pure (MP_TAC (← SPEC (← q r"k:num")
-            (← liftExcept (check (fun th => concl th == z) th))))) THEN
+          pure (MP_TAC (← SPEC ocq20
+            (← liftExcept (check (fun th => concl th == z) th))))) (← q r"k:num")) THEN
         ASM_REWRITE_TAC [] THEN ARITH_TAC],
       ALL_TAC]) THEN
   (SUBGOAL_THEN
@@ -3453,11 +3451,11 @@ def setupDensityHJ [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : Line
       EXISTS_TAC (← q r"1") THEN ASM_REWRITE_TAC [← GSYM ADD1],
       ALL_TAC] THEN
     EXPAND_TAC "C" THEN REWRITE_TAC [IN_ELIM_THM] THEN STRIP_TAC THEN
-    FIRST_X_ASSUM (fun th => tactic_of do
+    FIRST_X_ASSUM ((fun (ocq19 : _) => fun th => tactic_of do
       let z ← q r"lx:(num->num)->(num->num)"
-      pure (MP_TAC (← SPEC (← q r"hj_subst k w (hj_take m a)") (← liftExcept
+      pure (MP_TAC (← SPEC ocq19 (← liftExcept
         (check (fun th => can (find_term (fun u => u == z)) (concl th) &&
-                          is_forall (concl th)) th))))) THEN
+                          is_forall (concl th)) th))))) (← q r"hj_subst k w (hj_take m a)")) THEN
     ASM_REWRITE_TAC [] THEN DISCH_THEN MATCH_MP_TAC THEN
     UNDISCH_TAC (← q r"(a:num->num) IN hj_cube k (SUC m)") THEN
     REWRITE_TAC [IN_HJ_CUBE] THEN MESON_TAC [LT]))
@@ -4050,10 +4048,10 @@ def setupGoodLines [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) (B
         EXISTS_TAC (← q r"hj_density (k + 1) n' B") THEN ASM_REWRITE_TAC []],
       MATCH_MP_TAC HJ_DENSITY_MONO THEN REWRITE_TAC [IN_ELIM_THM] THEN
       X_GEN_TAC (← q r"y:num->num") THEN STRIP_TAC THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
+      FIRST_X_ASSUM ((fun (ocq18 : _) => fun th => tactic_of do
         let v ← q r"ly:(num->num)->(num->num)"
-        pure (MP_TAC (← SPEC (← q r"y:num->num")
-          (← liftExcept (check (mentionsAll v) th))))) THEN
+        pure (MP_TAC (← SPEC ocq18
+          (← liftExcept (check (mentionsAll v) th))))) (← q r"y:num->num")) THEN
       ASM_REWRITE_TAC [] THEN SIMP_TAC []]))
 
   let HJ_SUBSPACE_MONO_LENGTH ← prove
@@ -4187,11 +4185,11 @@ def setupGoodLines [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) (B
        [MATCH_MP_TAC HJ_LINE_SUBST THEN EXISTS_TAC (← q r"N0 + 1") THEN
         ASM_REWRITE_TAC [],
         ALL_TAC] THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
+      FIRST_X_ASSUM ((fun (ocq17 : _) => fun th => tactic_of do
         let v ← q r"Y:num->num"
-        pure (MP_TAC (← SPECL [← q r"u:num->num",
+        pure (MP_TAC (← SPECL [ocq17,
                                ← q r"hj_subst k (hj_identity k (N0 + 1)) u0"]
-          (← liftExcept (check (mentionsAll v) th))))) THEN
+          (← liftExcept (check (mentionsAll v) th))))) (← q r"u:num->num")) THEN
       ASM_REWRITE_TAC [HJ_LINE_POINT_SUBST, HJ_SUBST_SUBST] THEN
       COND_CASES_TAC THEN ASM_REWRITE_TAC [ARITH_EQ],
       ALL_TAC] THEN
@@ -4495,10 +4493,10 @@ def setupLemma8 [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) (BWor
        (f:(num->num)->real) y < rho + eta pow 2 / &2")
     ASSUME_TAC THENL
      [X_GEN_TAC (← q r"y:num->num") THEN DISCH_TAC THEN EXPAND_TAC "f" THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
+      FIRST_X_ASSUM ((fun (ocq16 : _) => fun th => tactic_of do
         let v ← q r"eta:real"
-        pure (MP_TAC (← SPEC (← q r"hj_join (k + 1) l m U y")
-          (← liftExcept (check (mentionsAll v) th))))) THEN
+        pure (MP_TAC (← SPEC ocq16
+          (← liftExcept (check (mentionsAll v) th))))) (← q r"hj_join (k + 1) l m U y")) THEN
       ASM_SIMP_TAC [],
       ALL_TAC] THEN
     SUBGOAL_THEN
@@ -4519,7 +4517,7 @@ def setupLemma8 [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) (BWor
         ALL_TAC] THEN
       MATCH_MP_TAC FMEAN_LE THEN REWRITE_TAC [FINITE_HJ_CUBE] THEN
       X_GEN_TAC (← q r"a:num->num") THEN DISCH_TAC THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
+      FIRST_X_ASSUM ((fun (ocq15 : _) => fun th => tactic_of do
         let v ← q r"U:num->num"
         let ok ← if mentionsAll v th then do
             let lp ← q r"hj_line_point"
@@ -4528,8 +4526,8 @@ def setupLemma8 [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) (BWor
               pure (!(mentions hj th))
             else pure false
           else pure false
-        pure (MP_TAC (← SPEC (← q r"a:num->num")
-          (← liftExcept (check (fun _ => ok) th))))) THEN
+        pure (MP_TAC (← SPEC ocq15
+          (← liftExcept (check (fun _ => ok) th))))) (← q r"a:num->num")) THEN
       ASM_REWRITE_TAC [hj_density, IN_ELIM_THM],
       ALL_TAC] THEN
     SUBGOAL_THEN
@@ -4630,14 +4628,14 @@ def setupLemma8 [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) (BWor
           ASM_SIMP_TAC [REAL_LE_INV_EQ, REAL_LT_IMP_LE] THEN
           MATCH_MP_TAC SUM_LE THEN REWRITE_TAC [FINITE_HJ_LINES, IN_ELIM_THM] THEN
           X_GEN_TAC (← q r"u:num->num") THEN DISCH_TAC THEN
-          FIRST_X_ASSUM (fun th => tactic_of do
+          FIRST_X_ASSUM ((fun (ocq14 : _) => fun th => tactic_of do
             let lp ← q r"hj_line_point"
             let ok ← if mentionsAll lp th then do
                 let t ← q r"theta:real"
                 pure (mentions t th)
               else pure false
-            pure (MP_TAC (← SPEC (← q r"u:num->num")
-              (← liftExcept (check (fun _ => ok) th))))) THEN
+            pure (MP_TAC (← SPEC ocq14
+              (← liftExcept (check (fun _ => ok) th))))) (← q r"u:num->num")) THEN
           ASM_REWRITE_TAC [hj_density, IN_ELIM_THM]],
         DISCH_TAC THEN MATCH_MP_TAC r10 THEN
         FIRST_ASSUM ACCEPT_TAC],
@@ -4653,10 +4651,10 @@ def setupLemma8 [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) (BWor
     REWRITE_TAC [IN_ELIM_THM] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"y0:num->num") STRIP_ASSUME_TAC) THEN
     EXISTS_TAC (← q r"hj_join (k + 1) l m U y0") THEN
-    FIRST_X_ASSUM (fun th => tactic_of do
+    FIRST_X_ASSUM ((fun (ocq13 : _) => fun th => tactic_of do
       let v ← q r"hj_join"
-      pure (MP_TAC (← SPEC (← q r"y0:num->num")
-        (← liftExcept (check (mentionsAll v) th))))) THEN
+      pure (MP_TAC (← SPEC ocq13
+        (← liftExcept (check (mentionsAll v) th))))) (← q r"y0:num->num")) THEN
     ASM_REWRITE_TAC [] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
     CONJ_TAC THENL
      [UNDISCH_TAC (← q r"rho - &2 * eta <= (f:(num->num)->real) y0") THEN
@@ -5038,13 +5036,13 @@ def setupLemma10 [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) (BWo
         ALL_TAC] THEN
       MP_TAC (← SPEC (← q r"i:num") (← ASSUME (← q r"!i. (a:num->real) i <= p i"))) THEN
       ASM_CASES_TAC (← q r"&3 * eta / &k * d <= (p:num->real) i") THENL
-       [FIRST_X_ASSUM (fun th => tactic_of do
+       [FIRST_X_ASSUM ((fun (ocq12 : _) => fun th => tactic_of do
           let v ← q r"rho:real"
           let ok ← if is_forall (concl th) then
               pure (can (find_term (fun u => u == v)) (concl th))
             else pure false
-          pure (MP_TAC (← SPEC (← q r"i:num")
-            (← liftExcept (check (fun _ => ok) th))))) THEN
+          pure (MP_TAC (← SPEC ocq12
+            (← liftExcept (check (fun _ => ok) th))))) (← q r"i:num")) THEN
         ASM_REWRITE_TAC [] THEN ASM_REAL_ARITH_TAC,
         ASM_REAL_ARITH_TAC],
       ALL_TAC] THEN
@@ -5287,13 +5285,13 @@ def setupCor11 [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) (BWord
       REWRITE_TAC [REAL_OF_NUM_MUL, REAL_OF_NUM_LT] THEN ASM_ARITH_TAC,
       ALL_TAC] THEN
     X_GEN_TAC (← q r"m:num") THEN DISCH_TAC THEN
-    FIRST_X_ASSUM (fun th => tactic_of do
+    FIRST_X_ASSUM ((fun (ocq10 : _) (ocq11 : _) => fun th => tactic_of do
       let v ← q r"theta:real"
       let ok ← if is_forall (concl th) then
           pure (can (find_term (fun u => u == v)) (concl th))
         else pure false
-      pure (MP_TAC (← SPECL [← q r"m:num", ← q r"eta:real"]
-        (← liftExcept (check (fun _ => ok) th))))) THEN
+      pure (MP_TAC (← SPECL [ocq10, ocq11]
+        (← liftExcept (check (fun _ => ok) th))))) (← q r"m:num") (← q r"eta:real")) THEN
     ANTS_TAC THENL
      [REPEAT CONJ_TAC THENL
        [ASM_ARITH_TAC, ASM_REWRITE_TAC [], ASM_REAL_ARITH_TAC,
@@ -6253,13 +6251,13 @@ def setupTileStep [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : Lines
         MATCH_MP_TAC HJ_DENSITY_MONO THEN EXPAND_TAC "S0" THEN
         REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC (← q r"w:num->num") THEN STRIP_TAC THEN
         ASM_REWRITE_TAC [] THEN
-        FIRST_X_ASSUM (fun th => tactic_of do
+        FIRST_X_ASSUM ((fun (ocq9 : _) => fun th => tactic_of do
           let ok ← if is_forall (concl th) then do
               let v ← q r"Vw:(num->num)->(num->num)"
               pure (can (find_term (fun u => u == v)) (concl th))
             else pure false
-          pure (MP_TAC (← SPEC (← q r"w:num->num")
-            (← liftExcept (check (fun _ => ok) th))))) THEN
+          pure (MP_TAC (← SPEC ocq9
+            (← liftExcept (check (fun _ => ok) th))))) (← q r"w:num->num")) THEN
         ASM_REWRITE_TAC [] THEN SIMP_TAC []],
       ALL_TAC] THEN
     ABBREV_TAC
@@ -7813,13 +7811,13 @@ def setupWeightedThm [HolBase] (D : SzemerediDeps) (BFiniteMeans : FiniteMeans) 
       ALL_TAC] THEN
     MATCH_MP_TAC PRODUCT_LE THEN REWRITE_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM] THEN
     X_GEN_TAC (← q r"j:num") THEN DISCH_TAC THEN
-    FIRST_X_ASSUM (fun th => tactic_of do
+    FIRST_X_ASSUM ((fun (ocq8 : _) => fun th => tactic_of do
       let ok ← if is_forall (concl th) then do
           let v ← q r"f:num->real"
           pure (can (find_term (fun u => u == v)) (concl th))
         else pure false
-      pure (MP_TAC (← SPEC (← q r"(a + j * e) MOD N")
-        (← liftExcept (check (fun _ => ok) th))))) THEN
+      pure (MP_TAC (← SPEC ocq8
+        (← liftExcept (check (fun _ => ok) th))))) (← q r"(a + j * e) MOD N")) THEN
     ASM_REWRITE_TAC [MOD_LT_EQ] THEN EXPAND_TAC "A" THEN
     REWRITE_TAC [IN_ELIM_THM] THEN
     COND_CASES_TAC THEN ASM_REAL_ARITH_TAC))
@@ -8141,18 +8139,18 @@ def setupUpDown [HolBase] (D : SzemerediDeps) (BModAP : ModAP) :
       FIRST_X_ASSUM (MP_TAC o SPEC (← q r"k - 1")) THEN
       ANTS_TAC THENL [ASM_ARITH_TAC,
         DISCH_THEN (fun th => tactic_of do pure (SUBST1_TAC (← SYM th)))] THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
+      FIRST_X_ASSUM ((fun (ocq7 : _) => fun th => tactic_of do
         let ok ← okQ th
-        pure (MP_TAC (← SPEC (← q r"(a + (k - 1) * d) MOD N")
-          (← liftExcept (check (fun _ => ok) th))))) THEN
+        pure (MP_TAC (← SPEC ocq7
+          (← liftExcept (check (fun _ => ok) th))))) (← q r"(a + (k - 1) * d) MOD N")) THEN
       ANTS_TAC THENL [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC, SIMP_TAC []],
       X_GEN_TAC (← q r"j:num") THEN DISCH_TAC THEN
       FIRST_X_ASSUM (MP_TAC o SPEC (← q r"j:num")) THEN ASM_REWRITE_TAC [] THEN
       DISCH_THEN (fun th => tactic_of do pure (SUBST1_TAC (← SYM th))) THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
+      FIRST_X_ASSUM ((fun (ocq6 : _) => fun th => tactic_of do
         let ok ← okQ th
-        pure (MP_TAC (← SPEC (← q r"(a + j * d) MOD N")
-          (← liftExcept (check (fun _ => ok) th))))) THEN
+        pure (MP_TAC (← SPEC ocq6
+          (← liftExcept (check (fun _ => ok) th))))) (← q r"(a + j * d) MOD N")) THEN
       ANTS_TAC THENL [FIRST_X_ASSUM MATCH_MP_TAC THEN
         ASM_ARITH_TAC, SIMP_TAC []]]))
 
@@ -8186,13 +8184,13 @@ def setupUpDown [HolBase] (D : SzemerediDeps) (BModAP : ModAP) :
     SUBGOAL_THEN (← q r"!y. ok y ==> W * y + b <= X /\ (Q:num->bool)(W * y + b)")
     ASSUME_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN
     SUBGOAL_THEN (← q r"(ok:num->bool) a") ASSUME_TAC THENL
-     [FIRST_X_ASSUM (fun th => tactic_of do
+     [FIRST_X_ASSUM ((fun (ocq5 : _) => fun th => tactic_of do
         let ajd ← q r"(a + j * d) MOD N"
         let ok ← if can (find_term (fun u => u == ajd)) (concl th) then do
             let okv ← q r"ok:num->bool"
             pure (can (find_term (fun u => u == okv)) (concl th))
           else pure false
-        pure (MP_TAC (← SPEC (← q r"0") (← liftExcept (check (fun _ => ok) th))))) THEN
+        pure (MP_TAC (← SPEC ocq5 (← liftExcept (check (fun _ => ok) th))))) (← q r"0")) THEN
       ASM_SIMP_TAC [MULT_CLAUSES, ADD_CLAUSES, MOD_LT] THEN
       DISCH_THEN MATCH_MP_TAC THEN ASM_ARITH_TAC,
       ALL_TAC] THEN
@@ -8201,14 +8199,14 @@ def setupUpDown [HolBase] (D : SzemerediDeps) (BModAP : ModAP) :
       ASM_MESON_TAC [],
       X_GEN_TAC (← q r"j:num") THEN DISCH_TAC THEN
       SUBGOAL_THEN (← q r"u + j * e = (a + (k - 1 - j) * d) MOD N") SUBST1_TAC THENL
-       [FIRST_X_ASSUM (fun th => tactic_of do
+       [FIRST_X_ASSUM ((fun (ocq4 : _) => fun th => tactic_of do
           let ajd ← q r"(a + j * d) MOD N"
           let ok ← if can (find_term (fun u => u == ajd)) (concl th) then do
               let ev ← q r"e:num"
               pure (can (find_term (fun u => u == ev)) (concl th))
             else pure false
-          pure (MP_TAC (← SPEC (← q r"k - 1 - j")
-            (← liftExcept (check (fun _ => ok) th))))) THEN
+          pure (MP_TAC (← SPEC ocq4
+            (← liftExcept (check (fun _ => ok) th))))) (← q r"k - 1 - j")) THEN
         ANTS_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
         SUBGOAL_THEN (← q r"(k - 1) * e = (k - 1 - j) * e + j * e") MP_TAC THENL
          [REWRITE_TAC [← GSYM RIGHT_ADD_DISTRIB] THEN AP_THM_TAC THEN
@@ -8986,7 +8984,7 @@ def setupMultidim [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : Lines
     REWRITE_TAC [FUN_EQ_THM] THEN X_GEN_TAC (← q r"i:num") THEN
     ASM_CASES_TAC (← q r"i < d:num") THEN ASM_REWRITE_TAC [] THENL
      [ALL_TAC,
-      FIRST_X_ASSUM (fun th => tactic_of do
+      FIRST_X_ASSUM ((fun (ocq2 : _) (ocq3 : _) => fun th => tactic_of do
         let vv ← q r"v:num->num->num"
         let ok ← if can (find_term (fun u => u == vv)) (concl th) then do
             let dv ← q r"d:num"
@@ -8995,8 +8993,8 @@ def setupMultidim [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : Lines
               pure (!(can (find_term (fun u => u == bigV)) (concl th)))
             else pure false
           else pure false
-        pure (MP_TAC (← SPECL [← q r"j:num", ← q r"i:num"]
-          (← liftExcept (check (fun _ => ok) th))))) THEN
+        pure (MP_TAC (← SPECL [ocq2, ocq3]
+          (← liftExcept (check (fun _ => ok) th))))) (← q r"j:num") (← q r"i:num")) THEN
       ASM_REWRITE_TAC [← GSYM NOT_LT] THEN SIMP_TAC [MULT_CLAUSES, ADD_CLAUSES]] THEN
     SUBGOAL_THEN (← q r"w * (v:num->num->num) j i < M") ASSUME_TAC THENL
      [MATCH_MP_TAC LET_TRANS THEN EXISTS_TAC (← q r"n * V:num") THEN
@@ -9009,14 +9007,14 @@ def setupMultidim [HolBase] (D : SzemerediDeps) (BWords : Words) (BLines : Lines
     CONJ_TAC THENL
      [CONV_TAC (BINOP_CONV MOD_DOWN_CONV) THEN REWRITE_TAC [ADD_ASSOC],
       MATCH_MP_TAC MOD_LT THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
+      FIRST_X_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
         let s0v ← q r"s0:num->num"
         let ok ← if can (find_term (fun u => u == s0v)) (concl th) && is_forall (concl th)
           then do
             let mv ← q r"M:num"
             pure (can (find_term (fun u => u == mv)) (concl th))
           else pure false
-        pure (MP_TAC (← SPEC (← q r"i:num") (← liftExcept (check (fun _ => ok) th))))) THEN
+        pure (MP_TAC (← SPEC ocq1 (← liftExcept (check (fun _ => ok) th))))) (← q r"i:num")) THEN
       ASM_REWRITE_TAC [] THEN EXPAND_TAC "Q" THEN ASM_ARITH_TAC]))
 
   let GALLAI_WITT ← prove

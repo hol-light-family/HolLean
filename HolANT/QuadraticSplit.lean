@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.QuadraticSplit fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -298,21 +301,6 @@ def setupQuadraticSplit01 [HolBase] (D : QuadraticSplitDeps) :
 
   let QUADRATIC_POLY_DEG ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"d = 0"
-    let q2 ← q r"d = 1"
-    let q3 ← q r"d = 2"
-    let q4 ← q r"!d. coeff d (poly_sub r (poly_pow r (poly_var r one) 2)
-                  (poly_add r (poly_mul r (poly_const r b) (poly_var r one))
-                              (poly_const r c))) =
-        if d = 2 then ring_1 r else if d = 1 then ring_neg r b
-        else if d = 0 then ring_neg r c else ring_0 r:A"
-    let q5 ← q r"c:A"
-    let q6 ← q r"b:A"
-    let q7 ← q r"r:A ring"
-    let v8 ← ISPECL [q7, q6, q5] QUADRATIC_POLY_IN_CARRIER
-    let q9 ← q r"poly_deg (r:A ring) p = 2 /\ coeff 2 p = ring_1 r
-    ==> poly_deg r p = 2 /\ monic r p"
-    let r10 ← MESON [monic] q9
     prove
       r"!r:A ring b c.
           ~trivial_ring r /\ b IN ring_carrier r /\ c IN ring_carrier r
@@ -330,7 +318,12 @@ def setupQuadraticSplit01 [HolBase] (D : QuadraticSplitDeps) :
                    (ring_mul (poly_ring r (:1)) (poly_const r b)
                      (poly_var r one))
                    (poly_const r c)))"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC r10 THEN MP_TAC v8 THEN ASM_REWRITE_TAC [] THEN REWRITE_TAC [POLY_RING_CLAUSES, IN_ELIM_THM] THEN STRIP_TAC THEN SUBGOAL_THEN q4 ASSUME_TAC THENL [GEN_TAC THEN ASM_SIMP_TAC [COEFF_POLY_SUB, COEFF_POLY_ADD, COEFF_POLY_LMUL, COEFF_POLY_VAR, COEFF_POLY_VARPOW, COEFF_POLY_CONST, RING_POWERSERIES_VAR] THEN MAP_EVERY ASM_CASES_TAC [q3, q2, q1] THEN ASM_REWRITE_TAC [ARITH_EQ] THEN ASM_SIMP_TAC [RING_MUL_RZERO, RING_MUL_RID, RING_ADD_LZERO, RING_ADD_RZERO, RING_SUB_RZERO, RING_SUB_LZERO, RING_1, RING_0, RING_NEG, RING_NEG_0, ring_sub], ASM_REWRITE_TAC [ARITH_EQ] THEN MATCH_MP_TAC POLY_DEG_EQ_COEFF THEN ASM_SIMP_TAC [RING_POLYNOMIAL_IMP_POWERSERIES] THEN CONJ_TAC THENL [GEN_TAC THEN REPEAT COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN ARITH_TAC, ASM_MESON_TAC [TRIVIAL_RING_10]]])
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC (← MESON [monic] (← q r"poly_deg (r:A ring) p = 2 /\ coeff 2 p = ring_1 r
+    ==> poly_deg r p = 2 /\ monic r p")) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"b:A"), (← q r"c:A")] QUADRATIC_POLY_IN_CARRIER) THEN ASM_REWRITE_TAC [] THEN REWRITE_TAC [POLY_RING_CLAUSES, IN_ELIM_THM] THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"!d. coeff d (poly_sub r (poly_pow r (poly_var r one) 2)
+                  (poly_add r (poly_mul r (poly_const r b) (poly_var r one))
+                              (poly_const r c))) =
+        if d = 2 then ring_1 r else if d = 1 then ring_neg r b
+        else if d = 0 then ring_neg r c else ring_0 r:A") ASSUME_TAC THENL [GEN_TAC THEN ASM_SIMP_TAC [COEFF_POLY_SUB, COEFF_POLY_ADD, COEFF_POLY_LMUL, COEFF_POLY_VAR, COEFF_POLY_VARPOW, COEFF_POLY_CONST, RING_POWERSERIES_VAR] THEN MAP_EVERY ASM_CASES_TAC [(← q r"d = 2"), (← q r"d = 1"), (← q r"d = 0")] THEN ASM_REWRITE_TAC [ARITH_EQ] THEN ASM_SIMP_TAC [RING_MUL_RZERO, RING_MUL_RID, RING_ADD_LZERO, RING_ADD_RZERO, RING_SUB_RZERO, RING_SUB_LZERO, RING_1, RING_0, RING_NEG, RING_NEG_0, ring_sub], ASM_REWRITE_TAC [ARITH_EQ] THEN MATCH_MP_TAC POLY_DEG_EQ_COEFF THEN ASM_SIMP_TAC [RING_POLYNOMIAL_IMP_POWERSERIES] THEN CONJ_TAC THENL [GEN_TAC THEN REPEAT COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN ARITH_TAC, ASM_MESON_TAC [TRIVIAL_RING_10]]])
 
   let QUADRATIC_POLY_EXTEND ← prove
     r"!r:A ring t:B ring h z b c.
@@ -366,11 +359,6 @@ def setupQuadraticSplit01 [HolBase] (D : QuadraticSplitDeps) :
 
   let QUADRATIC_POLY_FACTOR ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← RING_RULE (← q r"!R:B ring x a b.
-        ring_sub R (ring_pow R x 2)
-          (ring_add R (ring_mul R (ring_add R a b) x)
-                      (ring_neg R (ring_mul R a b))) =
-        ring_mul R (ring_sub R x a) (ring_sub R x b)")
     prove
       r"!r:A ring r1 r2.
           r1 IN ring_carrier r /\ r2 IN ring_carrier r
@@ -383,7 +371,11 @@ def setupQuadraticSplit01 [HolBase] (D : QuadraticSplitDeps) :
               ring_mul (poly_ring r (:1))
                 (poly_sub r (poly_var r one) (poly_const r r1))
                 (poly_sub r (poly_var r one) (poly_const r r2))"
-      (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"(:1)")] RING_HOMOMORPHISM_POLY_CONST) THEN DISCH_THEN (fun th => tactic_of do pure (ASM_SIMP_TAC [(← MATCH_MP RING_HOMOMORPHISM_ADD th), (← MATCH_MP RING_HOMOMORPHISM_NEG th), (← MATCH_MP RING_HOMOMORPHISM_MUL th), RING_MUL])) THEN REWRITE_TAC [(← GSYM (← ISPECL [(← q r"r:A ring"), (← q r"(:1)")] (← (do let z2 ← (pure (CONJUNCTS POLY_RING_CLAUSES)); let z3 ← (pure 5); liftExcept (el z3 z2)))))] THEN MP_TAC (← ISPECL [(← q r"poly_ring (r:A ring) (:1)"), (← q r"poly_var r one:(1->num)->A"), (← q r"poly_const r r1:(1->num)->A"), (← q r"poly_const r r2:(1->num)->A")] r1) THEN ASM_SIMP_TAC [POLY_VAR_UNIV, POLY_CONST])
+      (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"(:1)")] RING_HOMOMORPHISM_POLY_CONST) THEN DISCH_THEN (fun th => tactic_of do pure (ASM_SIMP_TAC [(← MATCH_MP RING_HOMOMORPHISM_ADD th), (← MATCH_MP RING_HOMOMORPHISM_NEG th), (← MATCH_MP RING_HOMOMORPHISM_MUL th), RING_MUL])) THEN REWRITE_TAC [(← GSYM (← ISPECL [(← q r"r:A ring"), (← q r"(:1)")] (← (do let z2 ← (pure (CONJUNCTS POLY_RING_CLAUSES)); let z3 ← (pure 5); liftExcept (el z3 z2)))))] THEN MP_TAC (← ISPECL [(← q r"poly_ring (r:A ring) (:1)"), (← q r"poly_var r one:(1->num)->A"), (← q r"poly_const r r1:(1->num)->A"), (← q r"poly_const r r2:(1->num)->A")] (← RING_RULE (← q r"!R:B ring x a b.
+        ring_sub R (ring_pow R x 2)
+          (ring_add R (ring_mul R (ring_add R a b) x)
+                      (ring_neg R (ring_mul R a b))) =
+        ring_mul R (ring_sub R x a) (ring_sub R x b)"))) THEN ASM_SIMP_TAC [POLY_VAR_UNIV, POLY_CONST])
 
   let QUADRATIC_POLY_INTEGER_ROOT ← prove
     r"!k:A ring a b c p.
@@ -414,11 +406,6 @@ def setupQuadraticSplit01 [HolBase] (D : QuadraticSplitDeps) :
 
   let QUADRATIC_DEDEKIND_KUMMER_SPLIT_PRIMES ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r19 ← RING_RULE (← q r"!r a b c:A. a IN ring_carrier r /\ b IN ring_carrier r /\
-                  c IN ring_carrier r
-                  ==> ring_add r (ring_add r (ring_mul r b a) c)
-                        (ring_add r (ring_mul r (ring_neg r b) a)
-                                    (ring_neg r c)) = ring_0 r")
     prove
       r"!k:A ring a p b c y1 y2 P1 P2.
           number_field k /\
@@ -443,7 +430,11 @@ def setupQuadraticSplit01 [HolBase] (D : QuadraticSplitDeps) :
                 (ring_of_int k) P1 = 1 /\
               residue_degree (integer_ring,ring_of_integers k)
                 (ring_of_int k) P2 = 1"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"(a:A) IN ring_carrier(ring_of_integers k)") ASSUME_TAC THENL [REWRITE_TAC [RING_OF_INTEGERS_CARRIER, IN_ELIM_THM] THEN MATCH_MP_TAC INTEGRAL_ELEMENT_QUADRATIC THEN MAP_EVERY EXISTS_TAC [(← q r"--b:int"), (← q r"--c:int")] THEN ASM_REWRITE_TAC [RING_OF_INT_NEG] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A"), (← q r"ring_of_int k b:A"), (← q r"ring_of_int k c:A")] r19) THEN ASM_REWRITE_TAC [RING_OF_INT], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A"), (← q r"b:int"), (← q r"c:int"), (← q r"p:num")] QUADRATIC_POLY_INTEGER_ROOT) THEN ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q r"m:(1->num)->int") THEN STRIP_TAC THEN ABBREV_TAC (← q r"r1 = ring_of_int (integer_mod_ring p) y1") THEN ABBREV_TAC (← q r"r2 = ring_of_int (integer_mod_ring p) y2") THEN SUBGOAL_THEN (← q r"r1 IN ring_carrier(integer_mod_ring p) /\
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"(a:A) IN ring_carrier(ring_of_integers k)") ASSUME_TAC THENL [REWRITE_TAC [RING_OF_INTEGERS_CARRIER, IN_ELIM_THM] THEN MATCH_MP_TAC INTEGRAL_ELEMENT_QUADRATIC THEN MAP_EVERY EXISTS_TAC [(← q r"--b:int"), (← q r"--c:int")] THEN ASM_REWRITE_TAC [RING_OF_INT_NEG] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A"), (← q r"ring_of_int k b:A"), (← q r"ring_of_int k c:A")] (← RING_RULE (← q r"!r a b c:A. a IN ring_carrier r /\ b IN ring_carrier r /\
+                  c IN ring_carrier r
+                  ==> ring_add r (ring_add r (ring_mul r b a) c)
+                        (ring_add r (ring_mul r (ring_neg r b) a)
+                                    (ring_neg r c)) = ring_0 r"))) THEN ASM_REWRITE_TAC [RING_OF_INT], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A"), (← q r"b:int"), (← q r"c:int"), (← q r"p:num")] QUADRATIC_POLY_INTEGER_ROOT) THEN ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q r"m:(1->num)->int") THEN STRIP_TAC THEN ABBREV_TAC (← q r"r1 = ring_of_int (integer_mod_ring p) y1") THEN ABBREV_TAC (← q r"r2 = ring_of_int (integer_mod_ring p) y2") THEN SUBGOAL_THEN (← q r"r1 IN ring_carrier(integer_mod_ring p) /\
       r2 IN ring_carrier(integer_mod_ring p) /\ ~(r1 = r2) /\
       ring_add (integer_mod_ring p) r1 r2 =
       ring_of_int (integer_mod_ring p) b /\
@@ -478,11 +469,6 @@ def setupQuadraticSplit01 [HolBase] (D : QuadraticSplitDeps) :
 
   let QUADRATIC_DEDEKIND_KUMMER_RAMIFIED_PRIME ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r19 ← RING_RULE (← q r"!r a b c:A. a IN ring_carrier r /\ b IN ring_carrier r /\
-                  c IN ring_carrier r
-                  ==> ring_add r (ring_add r (ring_mul r b a) c)
-                        (ring_add r (ring_mul r (ring_neg r b) a)
-                                    (ring_neg r c)) = ring_0 r")
     prove
       r"!k:A ring a p b c y P.
           number_field k /\
@@ -501,7 +487,11 @@ def setupQuadraticSplit01 [HolBase] (D : QuadraticSplitDeps) :
               ideal_pow (ring_of_integers k) P 2 /\
               residue_degree (integer_ring,ring_of_integers k)
                 (ring_of_int k) P = 1"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"(a:A) IN ring_carrier(ring_of_integers k)") ASSUME_TAC THENL [REWRITE_TAC [RING_OF_INTEGERS_CARRIER, IN_ELIM_THM] THEN MATCH_MP_TAC INTEGRAL_ELEMENT_QUADRATIC THEN MAP_EVERY EXISTS_TAC [(← q r"--b:int"), (← q r"--c:int")] THEN ASM_REWRITE_TAC [RING_OF_INT_NEG] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A"), (← q r"ring_of_int k b:A"), (← q r"ring_of_int k c:A")] r19) THEN ASM_REWRITE_TAC [RING_OF_INT], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A"), (← q r"b:int"), (← q r"c:int"), (← q r"p:num")] QUADRATIC_POLY_INTEGER_ROOT) THEN ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q r"m:(1->num)->int") THEN STRIP_TAC THEN ABBREV_TAC (← q r"r = ring_of_int (integer_mod_ring p) y") THEN SUBGOAL_THEN (← q r"r IN ring_carrier(integer_mod_ring p) /\
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"(a:A) IN ring_carrier(ring_of_integers k)") ASSUME_TAC THENL [REWRITE_TAC [RING_OF_INTEGERS_CARRIER, IN_ELIM_THM] THEN MATCH_MP_TAC INTEGRAL_ELEMENT_QUADRATIC THEN MAP_EVERY EXISTS_TAC [(← q r"--b:int"), (← q r"--c:int")] THEN ASM_REWRITE_TAC [RING_OF_INT_NEG] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A"), (← q r"ring_of_int k b:A"), (← q r"ring_of_int k c:A")] (← RING_RULE (← q r"!r a b c:A. a IN ring_carrier r /\ b IN ring_carrier r /\
+                  c IN ring_carrier r
+                  ==> ring_add r (ring_add r (ring_mul r b a) c)
+                        (ring_add r (ring_mul r (ring_neg r b) a)
+                                    (ring_neg r c)) = ring_0 r"))) THEN ASM_REWRITE_TAC [RING_OF_INT], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A"), (← q r"b:int"), (← q r"c:int"), (← q r"p:num")] QUADRATIC_POLY_INTEGER_ROOT) THEN ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q r"m:(1->num)->int") THEN STRIP_TAC THEN ABBREV_TAC (← q r"r = ring_of_int (integer_mod_ring p) y") THEN SUBGOAL_THEN (← q r"r IN ring_carrier(integer_mod_ring p) /\
       ring_add (integer_mod_ring p) r r =
       ring_of_int (integer_mod_ring p) b /\
       ring_neg (integer_mod_ring p) (ring_mul (integer_mod_ring p) r r) =
@@ -545,7 +535,6 @@ def setupQuadraticSplit01 [HolBase] (D : QuadraticSplitDeps) :
 
   let QUADRATIC_DEDEKIND_KUMMER_INERT ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r7 ← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)")
     prove
       r"!k:A ring a p b c.
           number_field k /\
@@ -563,19 +552,13 @@ def setupQuadraticSplit01 [HolBase] (D : QuadraticSplitDeps) :
       ring_carrier(poly_ring (integer_mod_ring p) (:1)) /\
       monic (integer_mod_ring p) (ring_of_int (integer_mod_ring p) o m) /\
       ring_irreducible (poly_ring (integer_mod_ring p) (:1))
-        (ring_of_int (integer_mod_ring p) o m)") STRIP_ASSUME_TAC THENL [ASM_REWRITE_TAC [] THEN ASM_SIMP_TAC [QUADRATIC_POLY_IN_CARRIER, QUADRATIC_POLY_DEG, RING_OF_INT, FIELD_IMP_NONTRIVIAL_RING] THEN MATCH_MP_TAC POLY_DEG_2_IRREDUCIBLE THEN ASM_SIMP_TAC [QUADRATIC_POLY_IN_CARRIER, QUADRATIC_POLY_DEG, RING_OF_INT, FIELD_IMP_NONTRIVIAL_RING] THEN X_GEN_TAC (← q r"y:int") THEN DISCH_TAC THEN REWRITE_TAC [poly_eval] THEN REWRITE_TAC [(← GSYM (← REWRITE_RULE [RING_HOMOMORPHISM_I, I_O_ID] (← ISPECL [(← q r"integer_mod_ring p"), (← q r"integer_mod_ring p"), (← q r"I:int->int")] POLY_EXTEND_EVALUATE)))] THEN ASM_SIMP_TAC [QUADRATIC_POLY_EXTEND, RING_HOMOMORPHISM_I, RING_OF_INT, I_THM] THEN SUBGOAL_THEN (← q r"y = ring_of_int (integer_mod_ring p) y") SUBST1_TAC THENL [REWRITE_TAC [INTEGER_MOD_RING_OF_INT] THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC INT_REM_LT THEN UNDISCH_TAC (← q r"y IN ring_carrier (integer_mod_ring p)") THEN ASM_SIMP_TAC [IN_INTEGER_MOD_RING_CARRIER, INT_OF_NUM_EQ, PRIME_IMP_NZ], ALL_TAC] THEN REWRITE_TAC [(← GSYM RING_OF_INT_POW), (← GSYM RING_OF_INT_MUL), (← GSYM RING_OF_INT_ADD), (← GSYM RING_OF_INT_SUB)] THEN REWRITE_TAC [RING_OF_INT_EQ_0, INTEGER_MOD_RING_CHAR] THEN FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"y:int")) o (checkM (fun z8 => (do let z9 ← (do let z10 ← (pure z8); pure (concl z10)); pure (is_forall z9)))))) THEN REWRITE_TAC [r7], ALL_TAC] THEN FIRST_X_ASSUM ((fun (_ : thm) => ALL_TAC) o (checkM (fun th => (do if ← (do let z1 ← (do let z2 ← (pure th); pure (concl z2)); pure (is_eq z1)) then (do let z6 ← (q r"ring_of_int (integer_mod_ring p) o (m:(1->num)->int)"); let z5 ← (do let z3 ← (do let z4 ← (pure th); pure (concl z4)); liftExcept (lhand z3)); pure (z5 == z6)) else pure false)))) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A"), (← q r"p:num"), (← q r"m:(1->num)->int"), (← q r"{0}"), (← q r"\i:num. ring_of_int (integer_mod_ring p) o (m:(1->num)->int)"), (← q r"\i:num. 1"), (← q r"\i:num. ideal_generated (ring_of_integers k)
+        (ring_of_int (integer_mod_ring p) o m)") STRIP_ASSUME_TAC THENL [ASM_REWRITE_TAC [] THEN ASM_SIMP_TAC [QUADRATIC_POLY_IN_CARRIER, QUADRATIC_POLY_DEG, RING_OF_INT, FIELD_IMP_NONTRIVIAL_RING] THEN MATCH_MP_TAC POLY_DEG_2_IRREDUCIBLE THEN ASM_SIMP_TAC [QUADRATIC_POLY_IN_CARRIER, QUADRATIC_POLY_DEG, RING_OF_INT, FIELD_IMP_NONTRIVIAL_RING] THEN X_GEN_TAC (← q r"y:int") THEN DISCH_TAC THEN REWRITE_TAC [poly_eval] THEN REWRITE_TAC [(← GSYM (← REWRITE_RULE [RING_HOMOMORPHISM_I, I_O_ID] (← ISPECL [(← q r"integer_mod_ring p"), (← q r"integer_mod_ring p"), (← q r"I:int->int")] POLY_EXTEND_EVALUATE)))] THEN ASM_SIMP_TAC [QUADRATIC_POLY_EXTEND, RING_HOMOMORPHISM_I, RING_OF_INT, I_THM] THEN SUBGOAL_THEN (← q r"y = ring_of_int (integer_mod_ring p) y") SUBST1_TAC THENL [REWRITE_TAC [INTEGER_MOD_RING_OF_INT] THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC INT_REM_LT THEN UNDISCH_TAC (← q r"y IN ring_carrier (integer_mod_ring p)") THEN ASM_SIMP_TAC [IN_INTEGER_MOD_RING_CARRIER, INT_OF_NUM_EQ, PRIME_IMP_NZ], ALL_TAC] THEN REWRITE_TAC [(← GSYM RING_OF_INT_POW), (← GSYM RING_OF_INT_MUL), (← GSYM RING_OF_INT_ADD), (← GSYM RING_OF_INT_SUB)] THEN REWRITE_TAC [RING_OF_INT_EQ_0, INTEGER_MOD_RING_CHAR] THEN FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"y:int")) o (checkM (fun z8 => (do let z9 ← (do let z10 ← (pure z8); pure (concl z10)); pure (is_forall z9)))))) THEN REWRITE_TAC [(← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)"))], ALL_TAC] THEN FIRST_X_ASSUM ((fun (_ : thm) => ALL_TAC) o (checkM (fun th => (do if ← (do let z1 ← (do let z2 ← (pure th); pure (concl z2)); pure (is_eq z1)) then (do let z6 ← (q r"ring_of_int (integer_mod_ring p) o (m:(1->num)->int)"); let z5 ← (do let z3 ← (do let z4 ← (pure th); pure (concl z4)); liftExcept (lhand z3)); pure (z5 == z6)) else pure false)))) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A"), (← q r"p:num"), (← q r"m:(1->num)->int"), (← q r"{0}"), (← q r"\i:num. ring_of_int (integer_mod_ring p) o (m:(1->num)->int)"), (← q r"\i:num. 1"), (← q r"\i:num. ideal_generated (ring_of_integers k)
                  {ring_of_num k p,
                   poly_extend (integer_ring,k) (ring_of_int k) (\v. a)
                     (ring_of_int (integer_mod_ring p) o (m:(1->num)->int)):A}")] DEDEKIND_KUMMER_Q) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [FINITE_SING, IN_SING, ARITH_EQ, RING_PRODUCT_SING] THEN ASM_SIMP_TAC [RING_POW_1], DISCH_THEN (CONJUNCTS_THEN2 SUBST1_TAC (MP_TAC o (CONJUNCT2 o CONJUNCT2))) THEN REWRITE_TAC [IN_SING, FORALL_UNWIND_THM2] THEN SIMP_TAC [IDEAL_PRODUCT_SING, RING_IDEAL_IDEAL_POW, IDEAL_POW_1, RING_IDEAL_IDEAL_GENERATED]])
 
   let QUADRATIC_FIELD_RING_OF_INTEGERS ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"(p \/ q ==> r) <=> (p ==> r) /\ (q ==> r)")
-    let r2 ← ARITH_RULE (← q r"i < 2 <=> i = 0 \/ i = 1")
-    let r3 ← RING_RULE (← q r"!k:A ring y h.
-           ring_mul k (ring_of_num k 2) h = ring_1 k
-           ==> ring_mul k (ring_of_num k 2) (ring_mul k y h) = y")
-    let r4 ← TAUT (← q r"r /\ p /\ q ==> p /\ q /\ r")
     prove
       r"!k:A ring x d w.
           number_field k /\
@@ -591,7 +574,9 @@ def setupQuadraticSplit01 [HolBase] (D : QuadraticSplitDeps) :
               (if (d == &1) (mod &4)
                then ring_mul k (ring_of_num k 2) w = ring_add k (ring_1 k) x
                else w = x)"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC r4 THEN CONJ_TAC THENL [FIRST_X_ASSUM SUBST1_TAC THEN COND_CASES_TAC THEN REWRITE_TAC [ring_div] THEN FIRST_ASSUM (fun th => tactic_of do pure (ASSUME_TAC (← MATCH_MP NUMBER_FIELD_IMP_FIELD th) THEN STRIP_ASSUME_TAC (← REWRITE_RULE [number_field] th))) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ring_of_num k 2:A")] FIELD_MUL_RINV) THEN ASM_SIMP_TAC [RING_OF_NUM, RING_OF_NUM_EQ_0, DIVIDES_ZERO, ARITH_EQ] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ring_add k (ring_1 k) x:A"), (← q r"ring_inv k (ring_of_num k 2):A")] r3) THEN ASM_SIMP_TAC [RING_ADD, RING_1, RING_INV, RING_OF_NUM], ALL_TAC] THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"d:int")] QUADRATIC_FIELD_INTEGRAL_BASIS) THEN ASM_REWRITE_TAC [free_basis, RING_OF_INTEGERS, INTEGER_RING, IN_UNIV] THEN SUBGOAL_THEN (← q r"{i:num | i < 2} = {0,1}") SUBST1_TAC THENL [REWRITE_TAC [EXTENSION, IN_ELIM_THM, IN_INSERT, NOT_IN_EMPTY] THEN ARITH_TAC, ALL_TAC] THEN REWRITE_TAC [r2, FORALL_AND_THM, r1, FORALL_UNWIND_THM2, ARITH_EQ] THEN FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q r"z:A") THEN DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"z:A"))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"c:num->int") SUBST1_TAC) THEN MAP_EVERY EXISTS_TAC [(← q r"(c:num->int) 0"), (← q r"(c:num->int) 1")] THEN MP_TAC (← ISPEC (← q r"k:A ring") (← CONJUNCT1 RING_OF_INTEGERS_SUBRING)) THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"ring_mul (k:A ring) (ring_of_int k (c 0)) (ring_1 k) IN
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC (← TAUT (← q r"r /\ p /\ q ==> p /\ q /\ r")) THEN CONJ_TAC THENL [FIRST_X_ASSUM SUBST1_TAC THEN COND_CASES_TAC THEN REWRITE_TAC [ring_div] THEN FIRST_ASSUM (fun th => tactic_of do pure (ASSUME_TAC (← MATCH_MP NUMBER_FIELD_IMP_FIELD th) THEN STRIP_ASSUME_TAC (← REWRITE_RULE [number_field] th))) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ring_of_num k 2:A")] FIELD_MUL_RINV) THEN ASM_SIMP_TAC [RING_OF_NUM, RING_OF_NUM_EQ_0, DIVIDES_ZERO, ARITH_EQ] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ring_add k (ring_1 k) x:A"), (← q r"ring_inv k (ring_of_num k 2):A")] (← RING_RULE (← q r"!k:A ring y h.
+           ring_mul k (ring_of_num k 2) h = ring_1 k
+           ==> ring_mul k (ring_of_num k 2) (ring_mul k y h) = y"))) THEN ASM_SIMP_TAC [RING_ADD, RING_1, RING_INV, RING_OF_NUM], ALL_TAC] THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"d:int")] QUADRATIC_FIELD_INTEGRAL_BASIS) THEN ASM_REWRITE_TAC [free_basis, RING_OF_INTEGERS, INTEGER_RING, IN_UNIV] THEN SUBGOAL_THEN (← q r"{i:num | i < 2} = {0,1}") SUBST1_TAC THENL [REWRITE_TAC [EXTENSION, IN_ELIM_THM, IN_INSERT, NOT_IN_EMPTY] THEN ARITH_TAC, ALL_TAC] THEN REWRITE_TAC [(← ARITH_RULE (← q r"i < 2 <=> i = 0 \/ i = 1")), FORALL_AND_THM, (← TAUT (← q r"(p \/ q ==> r) <=> (p ==> r) /\ (q ==> r)")), FORALL_UNWIND_THM2, ARITH_EQ] THEN FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q r"z:A") THEN DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"z:A"))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"c:num->int") SUBST1_TAC) THEN MAP_EVERY EXISTS_TAC [(← q r"(c:num->int) 0"), (← q r"(c:num->int) 1")] THEN MP_TAC (← ISPEC (← q r"k:A ring") (← CONJUNCT1 RING_OF_INTEGERS_SUBRING)) THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"ring_mul (k:A ring) (ring_of_int k (c 0)) (ring_1 k) IN
       ring_carrier(ring_of_integers k) /\
       ring_mul k (ring_of_int k (c 1)) w IN ring_carrier(ring_of_integers k)") STRIP_ASSUME_TAC THENL [CONJ_TAC THEN MATCH_MP_TAC IN_SUBRING_MUL THEN ASM_REWRITE_TAC [RING_OF_INT_IN_RING_OF_INTEGERS], ALL_TAC] THEN ASM_REWRITE_TAC [] THEN SIMP_TAC [RING_SUM_CLAUSES, FINITE_SING, IN_SING, ARITH_EQ, RING_SUM_SING] THEN ASM_REWRITE_TAC [RING_OF_INTEGERS] THEN SIMP_TAC [RING_MUL_RID, RING_OF_INT])
 
@@ -688,16 +673,6 @@ def setupQuadraticSplit02 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
 
   let QUADRATIC_FIELD_SETADD_ODD ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← RING_RULE (← q r"!k:A ring w a b h.
-       ring_add k a (ring_mul k b w) =
-       ring_add k (ring_add k (ring_add k a (ring_mul k b h))
-          (ring_mul k (ring_mul k b h)
-             (ring_sub k (ring_mul k (ring_of_num k 2) w) (ring_1 k))))
-          (ring_mul k (ring_sub k (ring_mul k (ring_of_num k 2) h) (ring_1 k))
-             (ring_mul k (ring_neg k b) w))")
-    let r2 ← RING_RULE (← q r"ring_sub (r:A ring) (ring_add r a b) b = a")
-    let r3 ← RING_RULE (← q r"ring_sub (r:A ring) (ring_add r (ring_1 r) x) (ring_1 r) = x")
-    let r4 ← RING_RULE (← q r"ring_sub (r:A ring) (ring_add r (ring_1 r) x) (ring_1 r) = x")
     prove
       r"!k:A ring x d p.
           number_field k /\
@@ -713,7 +688,7 @@ def setupQuadraticSplit02 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
                    else x:A")] QUADRATIC_FIELD_RING_OF_INTEGERS) THEN ASM_REWRITE_TAC [] THEN ABBREV_TAC (← q r"w = if ((d:int) == &1) (mod &4)
                     then ring_div k (ring_add k (ring_1 k) x) (ring_of_num k 2)
                     else x:A") THEN STRIP_TAC THEN MP_TAC (← ISPEC (← q r"k:A ring") (← CONJUNCT1 RING_OF_INTEGERS_SUBRING)) THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"ring_carrier(subring_generated k {x:A}) subring_of k /\
-      x IN ring_carrier(subring_generated k {x})") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [SUBRING_SUBRING_GENERATED, SUBRING_GENERATED_INC_GEN, IN_SING], ALL_TAC] THEN FIRST_X_ASSUM (MP_TAC o (checkM (fun z5 => (do let z6 ← (do let z7 ← (pure z5); pure (concl z7)); pure (HolCore.Classic.is_cond z6))))) THEN ASM_CASES_TAC (← q r"((d:int) == &1) (mod &4)") THEN ASM_REWRITE_TAC [] THENL [DISCH_TAC, DISCH_THEN SUBST_ALL_TAC THEN MATCH_MP_TAC RING_OF_INTEGERS_SETADD_SUBRING_GENERATED_LINEAR THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED]] THEN MATCH_MP_TAC RING_OF_INTEGERS_SETADD_SUBRING_GENERATED THEN REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN SUBGOAL_THEN (← q r"(x:A) IN ring_carrier(ring_of_integers k)") ASSUME_TAC THENL [SUBGOAL_THEN (← q r"x = ring_sub k (ring_mul k (ring_of_num k 2) w) (ring_1 k):A") SUBST1_TAC THENL [ASM_SIMP_TAC [RING_1, r4], ASM_SIMP_TAC [IN_SUBRING_SUB, IN_SUBRING_MUL, IN_SUBRING_NUM, IN_SUBRING_1]], ALL_TAC] THEN SUBGOAL_THEN (← q r"(w:A) IN ring_carrier k") ASSUME_TAC THENL [MATCH_MP_TAC (← REWRITE_RULE [SUBSET] (← ISPEC (← q r"k:A ring") RING_OF_INTEGERS_SUBSET)) THEN FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN ASM_REWRITE_TAC [] THEN UNDISCH_TAC (← q r"ODD p") THEN REWRITE_TAC [ODD_EXISTS] THEN DISCH_THEN (X_CHOOSE_TAC (← q r"m:num")) THEN X_GEN_TAC (← q r"z:A") THEN DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o (← do let c := (← ASSUME (← q r"(z:A) IN ring_carrier(ring_of_integers k)")); pure (fun th => MATCH_MP th c))) THEN DISCH_THEN (X_CHOOSE_THEN (← q r"a:int") (X_CHOOSE_THEN (← q r"b:int") SUBST1_TAC)) THEN MAP_EVERY EXISTS_TAC [(← q r"ring_add k
+      x IN ring_carrier(subring_generated k {x})") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [SUBRING_SUBRING_GENERATED, SUBRING_GENERATED_INC_GEN, IN_SING], ALL_TAC] THEN FIRST_X_ASSUM (MP_TAC o (checkM (fun z5 => (do let z6 ← (do let z7 ← (pure z5); pure (concl z7)); pure (HolCore.Classic.is_cond z6))))) THEN ASM_CASES_TAC (← q r"((d:int) == &1) (mod &4)") THEN ASM_REWRITE_TAC [] THENL [DISCH_TAC, DISCH_THEN SUBST_ALL_TAC THEN MATCH_MP_TAC RING_OF_INTEGERS_SETADD_SUBRING_GENERATED_LINEAR THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED]] THEN MATCH_MP_TAC RING_OF_INTEGERS_SETADD_SUBRING_GENERATED THEN REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN SUBGOAL_THEN (← q r"(x:A) IN ring_carrier(ring_of_integers k)") ASSUME_TAC THENL [SUBGOAL_THEN (← q r"x = ring_sub k (ring_mul k (ring_of_num k 2) w) (ring_1 k):A") SUBST1_TAC THENL [ASM_SIMP_TAC [RING_1, (← RING_RULE (← q r"ring_sub (r:A ring) (ring_add r (ring_1 r) x) (ring_1 r) = x"))], ASM_SIMP_TAC [IN_SUBRING_SUB, IN_SUBRING_MUL, IN_SUBRING_NUM, IN_SUBRING_1]], ALL_TAC] THEN SUBGOAL_THEN (← q r"(w:A) IN ring_carrier k") ASSUME_TAC THENL [MATCH_MP_TAC (← REWRITE_RULE [SUBSET] (← ISPEC (← q r"k:A ring") RING_OF_INTEGERS_SUBSET)) THEN FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN ASM_REWRITE_TAC [] THEN UNDISCH_TAC (← q r"ODD p") THEN REWRITE_TAC [ODD_EXISTS] THEN DISCH_THEN (X_CHOOSE_TAC (← q r"m:num")) THEN X_GEN_TAC (← q r"z:A") THEN DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o (← do let c := (← ASSUME (← q r"(z:A) IN ring_carrier(ring_of_integers k)")); pure (fun th => MATCH_MP th c))) THEN DISCH_THEN (X_CHOOSE_THEN (← q r"a:int") (X_CHOOSE_THEN (← q r"b:int") SUBST1_TAC)) THEN MAP_EVERY EXISTS_TAC [(← q r"ring_add k
         (ring_add k (ring_of_int k a)
                     (ring_mul k (ring_of_int k b) (ring_of_num k (m + 1))))
         (ring_mul k (ring_mul k (ring_of_int k b) (ring_of_num k (m + 1))) x):A"), (← q r"ring_mul k (ring_of_num k p)
@@ -721,62 +696,17 @@ def setupQuadraticSplit02 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
         ring_carrier(ring_of_integers (k:A ring))") ASSUME_TAC THENL [ASM_SIMP_TAC [IN_SUBRING_MUL, IN_SUBRING_NEG, RING_OF_INT_IN_RING_OF_INTEGERS], ALL_TAC] THEN CONJ_TAC THENL [ASM_SIMP_TAC [IN_SUBRING_MUL, RING_OF_INT_IN_RING_OF_INTEGERS], EXISTS_TAC (← q r"ring_mul k (ring_neg k (ring_of_int k b)) w:A") THEN ASM_REWRITE_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"x = ring_sub k (ring_mul k (ring_of_num k 2) w) (ring_1 k) /\
       ring_of_num k p =
       ring_sub k (ring_mul k (ring_of_num k 2) (ring_of_num k (m + 1)))
-                 (ring_1 k):A") (CONJUNCTS_THEN SUBST1_TAC) THENL [ASM_SIMP_TAC [RING_1, r3] THEN REWRITE_TAC [(← GSYM RING_OF_NUM_MUL), (← GSYM RING_OF_NUM_1)] THEN SUBGOAL_THEN (← q r"2 * (m + 1) = p + 1") SUBST1_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN SIMP_TAC [RING_OF_NUM_ADD, RING_OF_NUM, r2] THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MATCH_MP_TAC r1 THEN ASM_SIMP_TAC [RING_OF_INT, RING_OF_NUM])
+                 (ring_1 k):A") (CONJUNCTS_THEN SUBST1_TAC) THENL [ASM_SIMP_TAC [RING_1, (← RING_RULE (← q r"ring_sub (r:A ring) (ring_add r (ring_1 r) x) (ring_1 r) = x"))] THEN REWRITE_TAC [(← GSYM RING_OF_NUM_MUL), (← GSYM RING_OF_NUM_1)] THEN SUBGOAL_THEN (← q r"2 * (m + 1) = p + 1") SUBST1_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN SIMP_TAC [RING_OF_NUM_ADD, RING_OF_NUM, (← RING_RULE (← q r"ring_sub (r:A ring) (ring_add r a b) b = a"))] THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MATCH_MP_TAC (← RING_RULE (← q r"!k:A ring w a b h.
+       ring_add k a (ring_mul k b w) =
+       ring_add k (ring_add k (ring_add k a (ring_mul k b h))
+          (ring_mul k (ring_mul k b h)
+             (ring_sub k (ring_mul k (ring_of_num k 2) w) (ring_1 k))))
+          (ring_mul k (ring_sub k (ring_mul k (ring_of_num k 2) h) (ring_1 k))
+             (ring_mul k (ring_neg k b) w))")) THEN ASM_SIMP_TAC [RING_OF_INT, RING_OF_NUM])
 
   let QUADRATIC_FIELD_RAMIFIED_PRIME ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"f:num"
-    let q2 ← q r"2"
-    let q3 ← q r"e:num"
-    let q4 ← q r"2"
-    let v5 ← SPECL [q4, q3, q2, q1] LE_MULT2
-    let q6 ← q r"f = 1"
-    let p7 ← prove r"!e f. 1 < e /\ 1 <= f /\ e * f <= 2 ==> e = 2 /\ f = 1" (REPEAT GEN_TAC THEN ASM_CASES_TAC q6 THEN ASM_REWRITE_TAC [MULT_CLAUSES] THENL [ARITH_TAC, STRIP_TAC] THEN MP_TAC v5 THEN ASM_ARITH_TAC)
-    let lemma := p7
-    let q11 ← q r"Q:A->bool"
-    let q15 ← q r"Q:A->bool"
-    let q16 ← q r"Q:A->bool"
-    let q17 ← q r"2 * 1 + n = 2 <=> n = 0"
-    let r18 ← ARITH_RULE q17
-    let q19 ← q r"P:A->bool"
-    let q20 ← q r"S:(A->bool)->bool"
-    let q21 ← q r"\Q. ramification_index (integer_ring,ring_of_integers k)
-             (ring_of_int k) Q *
-           residue_degree (integer_ring,ring_of_integers k)
-             (ring_of_int k) (Q:A->bool)"
-    let v22 ← ISPECL [q21, q20, q19] NSUM_DELETE
-    let q23 ← q r"(a:A->bool) IN s /\ s DELETE a = {} ==> s = {a}"
-    let r24 ← SET_RULE q23
-    let q25 ← q r"S = {P:A->bool}"
-    let q26 ← q r"ramification_index (integer_ring,ring_of_integers k)
-      (ring_of_int k) (P:A->bool) = 2 /\
-    residue_degree (integer_ring,ring_of_integers k) (ring_of_int k) P = 1"
-    let q27 ← q r"(P:A->bool) IN S"
-    let q28 ← q r"p:num"
-    let q29 ← q r"Q:A->bool"
-    let q30 ← q r"k:A ring"
-    let v31 ← SPECL [q30, q29, q28] NUMBER_FIELD_RAMIFICATION_RESIDUE_BOUNDS_Q
-    let q32 ← q r"Q:A->bool"
-    let q33 ← q r"!Q. Q IN S
-        ==> 1 <= ramification_index (integer_ring,ring_of_integers k)
-                   (ring_of_int k) Q /\
-            1 <= residue_degree (integer_ring,ring_of_integers k)
-                   (ring_of_int k) Q /\
-            ramification_index (integer_ring,ring_of_integers k)
-              (ring_of_int k) Q *
-            residue_degree (integer_ring,ring_of_integers k)
-              (ring_of_int k) (Q:A->bool) <= 2"
-    let q34 ← q r"S = {P | prime_ideal (ring_of_integers k) P /\
-                       ring_of_num k p IN (P:A->bool)}"
-    let q35 ← q r"p:num"
-    let q36 ← q r"k:A ring"
-    let v37 ← SPECL [q36, q35] NUMBER_FIELD_PRIME_IDEALS_ABOVE_Q
-    let q38 ← q r"p:num"
-    let q39 ← q r"k:A ring"
-    let v40 ← SPECL [q39, q38] NUMBER_FIELD_FUNDAMENTAL_IDENTITY_Q
-    let q41 ← q r"p:num"
-    let q42 ← q r"k:A ring"
-    let v43 ← SPECL [q42, q41] NUMBER_FIELD_PRIME_FACTORIZATION_Q
+    let lemma := (← prove r"!e f. 1 < e /\ 1 <= f /\ e * f <= 2 ==> e = 2 /\ f = 1" (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"f = 1") THEN ASM_REWRITE_TAC [MULT_CLAUSES] THENL [ARITH_TAC, STRIP_TAC] THEN MP_TAC (← SPECL [(← q r"2"), (← q r"e:num"), (← q r"2"), (← q r"f:num")] LE_MULT2) THEN ASM_ARITH_TAC))
     prove
       r"!k:A ring p P.
           number_field k /\
@@ -786,7 +716,21 @@ def setupQuadraticSplit02 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
                 (ring_of_int k) P
           ==> ideal_generated (ring_of_integers k) {ring_of_num k p} =
               ideal_pow (ring_of_integers k) P 2"
-      (REPEAT STRIP_TAC THEN MP_TAC v43 THEN MP_TAC v40 THEN MP_TAC v37 THEN ASM_REWRITE_TAC [] THEN ABBREV_TAC q34 THEN REPEAT STRIP_TAC THEN SUBGOAL_THEN q33 ASSUME_TAC THENL [EXPAND_TAC "S" THEN REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC q32 THEN STRIP_TAC THEN MP_TAC v31 THEN ASM_REWRITE_TAC [], ALL_TAC] THEN SUBGOAL_THEN q27 ASSUME_TAC THENL [EXPAND_TAC "S" THEN ASM_REWRITE_TAC [IN_ELIM_THM], ALL_TAC] THEN SUBGOAL_THEN q26 STRIP_ASSUME_TAC THENL [MATCH_MP_TAC lemma THEN ASM_SIMP_TAC [], ALL_TAC] THEN SUBGOAL_THEN q25 SUBST_ALL_TAC THENL [MATCH_MP_TAC r24 THEN ASM_REWRITE_TAC [] THEN MP_TAC v22 THEN ASM_SIMP_TAC [r18, NSUM_EQ_0_IFF, FINITE_DELETE] THEN REWRITE_TAC [EXTENSION, IN_DELETE, NOT_IN_EMPTY, MULT_EQ_0] THEN DISCH_TAC THEN X_GEN_TAC q16 THEN STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o ((SPEC q15) o (checkM (fun z12 => (do let z13 ← (do let z14 ← (pure z12); pure (concl z14)); pure (is_forall z13)))))) THEN FIRST_X_ASSUM (MP_TAC o ((SPEC q11) o (checkM (fun z8 => (do let z9 ← (do let z10 ← (pure z8); pure (concl z10)); pure (is_forall z9)))))) THEN ASM_REWRITE_TAC [] THEN ARITH_TAC, ALL_TAC] THEN ASM_REWRITE_TAC [] THEN SIMP_TAC [IDEAL_PRODUCT_SING, RING_IDEAL_IDEAL_POW] THEN ASM_REWRITE_TAC [])
+      (REPEAT STRIP_TAC THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"p:num")] NUMBER_FIELD_PRIME_FACTORIZATION_Q) THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"p:num")] NUMBER_FIELD_FUNDAMENTAL_IDENTITY_Q) THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"p:num")] NUMBER_FIELD_PRIME_IDEALS_ABOVE_Q) THEN ASM_REWRITE_TAC [] THEN ABBREV_TAC (← q r"S = {P | prime_ideal (ring_of_integers k) P /\
+                       ring_of_num k p IN (P:A->bool)}") THEN REPEAT STRIP_TAC THEN SUBGOAL_THEN (← q r"!Q. Q IN S
+        ==> 1 <= ramification_index (integer_ring,ring_of_integers k)
+                   (ring_of_int k) Q /\
+            1 <= residue_degree (integer_ring,ring_of_integers k)
+                   (ring_of_int k) Q /\
+            ramification_index (integer_ring,ring_of_integers k)
+              (ring_of_int k) Q *
+            residue_degree (integer_ring,ring_of_integers k)
+              (ring_of_int k) (Q:A->bool) <= 2") ASSUME_TAC THENL [EXPAND_TAC "S" THEN REWRITE_TAC [IN_ELIM_THM] THEN X_GEN_TAC (← q r"Q:A->bool") THEN STRIP_TAC THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"Q:A->bool"), (← q r"p:num")] NUMBER_FIELD_RAMIFICATION_RESIDUE_BOUNDS_Q) THEN ASM_REWRITE_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"(P:A->bool) IN S") ASSUME_TAC THENL [EXPAND_TAC "S" THEN ASM_REWRITE_TAC [IN_ELIM_THM], ALL_TAC] THEN SUBGOAL_THEN (← q r"ramification_index (integer_ring,ring_of_integers k)
+      (ring_of_int k) (P:A->bool) = 2 /\
+    residue_degree (integer_ring,ring_of_integers k) (ring_of_int k) P = 1") STRIP_ASSUME_TAC THENL [MATCH_MP_TAC lemma THEN ASM_SIMP_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"S = {P:A->bool}") SUBST_ALL_TAC THENL [MATCH_MP_TAC (← SET_RULE (← q r"(a:A->bool) IN s /\ s DELETE a = {} ==> s = {a}")) THEN ASM_REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"\Q. ramification_index (integer_ring,ring_of_integers k)
+             (ring_of_int k) Q *
+           residue_degree (integer_ring,ring_of_integers k)
+             (ring_of_int k) (Q:A->bool)"), (← q r"S:(A->bool)->bool"), (← q r"P:A->bool")] NSUM_DELETE) THEN ASM_SIMP_TAC [(← ARITH_RULE (← q r"2 * 1 + n = 2 <=> n = 0")), NSUM_EQ_0_IFF, FINITE_DELETE] THEN REWRITE_TAC [EXTENSION, IN_DELETE, NOT_IN_EMPTY, MULT_EQ_0] THEN DISCH_TAC THEN X_GEN_TAC (← q r"Q:A->bool") THEN STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"Q:A->bool")) o (checkM (fun z12 => (do let z13 ← (do let z14 ← (pure z12); pure (concl z14)); pure (is_forall z13)))))) THEN FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"Q:A->bool")) o (checkM (fun z8 => (do let z9 ← (do let z10 ← (pure z8); pure (concl z10)); pure (is_forall z9)))))) THEN ASM_REWRITE_TAC [] THEN ARITH_TAC, ALL_TAC] THEN ASM_REWRITE_TAC [] THEN SIMP_TAC [IDEAL_PRODUCT_SING, RING_IDEAL_IDEAL_POW] THEN ASM_REWRITE_TAC [])
 
   let QUADRATIC_FIELD_RAMIFIED ← prove
     r"!k:A ring x d p.
@@ -805,16 +749,10 @@ def setupQuadraticSplit02 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
 
   let QUADRATIC_FIELD_ODD_PRIME ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← INTEGER_RULE (← q r"!p y a:int. coprime(p,a) /\ p divides (a * y) ==> p divides y")
-    let i3a := r1
-    let r2 ← INTEGER_RULE (← q r"!p y d:int. p divides y /\ (y * y == d) (mod p) ==> p divides d")
-    let i3b := r2
-    let r3 ← INTEGER_RULE (← q r"!p y d:int. (y pow 2 == d) (mod p) ==> (y * --y == --d) (mod p)")
-    let i6 := r3
-    let r4 ← INTEGER_RULE (← q r"!p y:int. (y + --y == &0) (mod p)")
-    let i7 := r4
-    let r5 ← INT_ARITH (← q r"y - --y:int = &2 * y")
-    let r6 ← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)")
+    let i3a := (← INTEGER_RULE (← q r"!p y a:int. coprime(p,a) /\ p divides (a * y) ==> p divides y"))
+    let i3b := (← INTEGER_RULE (← q r"!p y d:int. p divides y /\ (y * y == d) (mod p) ==> p divides d"))
+    let i6 := (← INTEGER_RULE (← q r"!p y d:int. (y pow 2 == d) (mod p) ==> (y * --y == --d) (mod p)"))
+    let i7 := (← INTEGER_RULE (← q r"!p y:int. (y + --y == &0) (mod p)"))
     prove
       r"!k:A ring x d p.
           number_field k /\
@@ -842,130 +780,19 @@ def setupQuadraticSplit02 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
              ideal_prod (ring_of_integers k) P (Q:A->bool)) /\
       (~(?y. ((y:int) pow 2 == d) (mod &p)) ==>
        prime_ideal (ring_of_integers k)
-         (ideal_generated (ring_of_integers k) {ring_of_num k p:A}))") MP_TAC THENL [CONJ_TAC THEN DISCH_TAC THENL [FIRST_X_ASSUM (X_CHOOSE_TAC (← q r"y:int")) THEN MATCH_MP_TAC QUADRATIC_DEDEKIND_KUMMER_SPLIT THEN MAP_EVERY EXISTS_TAC [(← q r"x:A"), (← q r"&0:int"), (← q r"d:int"), (← q r"y:int"), (← q r"--y:int")] THEN ASM_SIMP_TAC [RING_OF_INT_0, RING_MUL_LZERO, RING_ADD_LZERO, RING_OF_INT, i6, i7] THEN DISCH_TAC THEN UNDISCH_TAC (← q r"~(&p divides (d:int))") THEN REWRITE_TAC [] THEN MATCH_MP_TAC i3b THEN EXISTS_TAC (← q r"y:int") THEN ASM_REWRITE_TAC [(← GSYM INT_POW_2)] THEN MATCH_MP_TAC i3a THEN EXISTS_TAC (← q r"&2:int") THEN CONJ_TAC THENL [REWRITE_TAC [(← GSYM num_coprime)] THEN MP_TAC (← SPECL [(← q r"p:num"), (← q r"2")] COPRIME_PRIME_PRIME) THEN ASM_REWRITE_TAC [PRIME_2], UNDISCH_TAC (← q r"((y:int) == --y) (mod &p)") THEN REWRITE_TAC [r6] THEN REWRITE_TAC [r5]], MATCH_MP_TAC QUADRATIC_DEDEKIND_KUMMER_INERT THEN MAP_EVERY EXISTS_TAC [(← q r"x:A"), (← q r"&0:int"), (← q r"d:int")] THEN ASM_SIMP_TAC [RING_OF_INT_0, RING_MUL_LZERO, RING_ADD_LZERO, RING_OF_INT, INT_MUL_LZERO, INT_ADD_LID] THEN ASM_REWRITE_TAC [(← GSYM NOT_EXISTS_THM)]], POP_ASSUM MP_TAC THEN CONV_TAC TAUT])
+         (ideal_generated (ring_of_integers k) {ring_of_num k p:A}))") MP_TAC THENL [CONJ_TAC THEN DISCH_TAC THENL [FIRST_X_ASSUM (X_CHOOSE_TAC (← q r"y:int")) THEN MATCH_MP_TAC QUADRATIC_DEDEKIND_KUMMER_SPLIT THEN MAP_EVERY EXISTS_TAC [(← q r"x:A"), (← q r"&0:int"), (← q r"d:int"), (← q r"y:int"), (← q r"--y:int")] THEN ASM_SIMP_TAC [RING_OF_INT_0, RING_MUL_LZERO, RING_ADD_LZERO, RING_OF_INT, i6, i7] THEN DISCH_TAC THEN UNDISCH_TAC (← q r"~(&p divides (d:int))") THEN REWRITE_TAC [] THEN MATCH_MP_TAC i3b THEN EXISTS_TAC (← q r"y:int") THEN ASM_REWRITE_TAC [(← GSYM INT_POW_2)] THEN MATCH_MP_TAC i3a THEN EXISTS_TAC (← q r"&2:int") THEN CONJ_TAC THENL [REWRITE_TAC [(← GSYM num_coprime)] THEN MP_TAC (← SPECL [(← q r"p:num"), (← q r"2")] COPRIME_PRIME_PRIME) THEN ASM_REWRITE_TAC [PRIME_2], UNDISCH_TAC (← q r"((y:int) == --y) (mod &p)") THEN REWRITE_TAC [(← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)"))] THEN REWRITE_TAC [(← INT_ARITH (← q r"y - --y:int = &2 * y"))]], MATCH_MP_TAC QUADRATIC_DEDEKIND_KUMMER_INERT THEN MAP_EVERY EXISTS_TAC [(← q r"x:A"), (← q r"&0:int"), (← q r"d:int")] THEN ASM_SIMP_TAC [RING_OF_INT_0, RING_MUL_LZERO, RING_ADD_LZERO, RING_OF_INT, INT_MUL_LZERO, INT_ADD_LID] THEN ASM_REWRITE_TAC [(← GSYM NOT_EXISTS_THM)]], POP_ASSUM MP_TAC THEN CONV_TAC TAUT])
 
   let QUADRATIC_FIELD_PRIME_TWO ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"!a m n t:int. ~(m = &0)
-        ==> ((a + m * t == a) (mod (m * n)) <=> n divides t)"
-    let r2 ← INTEGER_RULE q1
-    let q3 ← q r"t:int"
-    let q4 ← q r"&2:int"
-    let q5 ← q r"&4:int"
-    let q6 ← q r"&1:int"
-    let v7 ← SPECL [q6, q5, q4, q3] r2
-    let p8 ← prove r"!t:int. (&1 + &4 * t == &1) (mod &8) <=> &2 divides t" (GEN_TAC THEN MP_TAC v7 THEN CONV_TAC INT_REDUCE_CONV THEN REWRITE_TAC [])
-    let i1 := p8
-    let q9 ← q r"!a m n t:int. ~(m = &0)
-        ==> ((a + m * t == a + m) (mod (m * n)) <=> (t == &1) (mod n))"
-    let r10 ← INTEGER_RULE q9
-    let q11 ← q r"t:int"
-    let q12 ← q r"&2:int"
-    let q13 ← q r"&4:int"
-    let q14 ← q r"&1:int"
-    let v15 ← SPECL [q14, q13, q12, q11] r10
-    let p16 ← prove r"!t:int. (&1 + &4 * t == &5) (mod &8) <=> (t == &1) (mod &2)" (GEN_TAC THEN MP_TAC v15 THEN CONV_TAC INT_REDUCE_CONV THEN REWRITE_TAC [])
-    let i2 := p16
-    let q17 ← q r"!n y2 y t:int. n divides (y2 - y) /\ (t == &1) (mod n) /\
-                   (y2 == &1 * y + t) (mod n) ==> n divides &1"
-    let r18 ← INTEGER_RULE q17
-    let i4 := r18
-    let q19 ← q r"!n t:int. n divides t ==> (&0 * &1 == --t) (mod n)"
-    let r20 ← INTEGER_RULE q19
-    let i5 := r20
-    let q21 ← q r"&2 * q pow 2 + q:int"
-    let q22 ← q r"&2 * q pow 2 - q:int"
-    let q23 ← q r"r:int = &0 \/ r = &1"
-    let q24 ← q r"q:int"
-    let q25 ← q r"y div &2"
-    let q26 ← q r"r:int"
-    let q27 ← q r"y rem &2"
-    let q28 ← q r"&2:int"
-    let q29 ← q r"y:int"
-    let v30 ← SPECL [q29, q28] INT_DIVISION
-    let p31 ← prove r"!y:int. &2 divides (y pow 2 - y)" (GEN_TAC THEN MP_TAC v30 THEN REWRITE_TAC [INT_OF_NUM_EQ, ARITH_EQ, INT_ABS_NUM] THEN SPEC_TAC (q27, q26) THEN SPEC_TAC (q25, q24) THEN REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC) THEN SUBGOAL_THEN q23 (DISJ_CASES_THEN SUBST1_TAC) THENL [ASM_INT_ARITH_TAC, REWRITE_TAC [int_divides] THEN EXISTS_TAC q22 THEN INT_ARITH_TAC, REWRITE_TAC [int_divides] THEN EXISTS_TAC q21 THEN INT_ARITH_TAC])
-    let par := p31
-    let q32 ← q r"&2:int"
-    let q33 ← q r"t:int"
-    let v34 ← SPECL [q33, q32] INT_DIVISION
-    let v35 ← GSYM INT_REM_EQ
-    let v36 ← GSYM INT_REM_EQ_0
-    let p37 ← prove r"!t:int. &2 divides t <=> ~((t == &1) (mod &2))" (GEN_TAC THEN REWRITE_TAC [v36, v35] THEN MP_TAC v34 THEN REWRITE_TAC [INT_OF_NUM_EQ, ARITH_EQ, INT_ABS_NUM] THEN CONV_TAC INT_REDUCE_CONV THEN INT_ARITH_TAC)
-    let evodd := p37
-    let q38 ← q r"t:int"
-    let v39 ← SPEC q38 evodd
-    let v40 ← GSYM INT_REM_EQ_0
-    let q41 ← q r"t:int"
-    let q42 ← q r"y:int"
-    let q43 ← q r"(y:int) pow 2"
-    let q44 ← q r"&2:int"
-    let v45 ← SPECL [q44, q43, q42, q41] i4
-    let q46 ← q r"y:int"
-    let q47 ← q r"t:int"
-    let q48 ← q r"&1:int"
-    let q49 ← q r"w:A"
-    let v50 ← GSYM INT_REM_EQ
-    let q51 ← q r"&1:int"
-    let q52 ← q r"&0:int"
-    let q53 ← q r"t:int"
-    let q54 ← q r"&1:int"
-    let q55 ← q r"w:A"
-    let q56 ← q r"(&2 divides (t:int)
-     ==> ?P Q. prime_ideal (ring_of_integers k) P /\
-               prime_ideal (ring_of_integers k) Q /\ ~(P = Q) /\
-               ideal_generated (ring_of_integers k) {ring_of_num k 2} =
-               ideal_prod (ring_of_integers k) P (Q:A->bool)) /\
-    (((t:int) == &1) (mod &2)
-     ==> prime_ideal (ring_of_integers k)
-           (ideal_generated (ring_of_integers k) {ring_of_num k 2:A}))"
-    let q57 ← q r"Q:A->bool"
-    let q58 ← q r"P:A->bool"
-    let q59 ← q r"2"
-    let q60 ← q r"k:A ring"
-    let v61 ← SPECL [q60, q59, q58, q57] NUMBER_FIELD_PRIME_IDEAL_PROD_EQ
-    let q62 ← q r"~((?P Q. prime_ideal (ring_of_integers k) P /\
-             prime_ideal (ring_of_integers k) Q /\ ~(P = Q) /\
-             ideal_generated (ring_of_integers k) {ring_of_num k 2} =
-             ideal_prod (ring_of_integers k) P (Q:A->bool)) /\
-      prime_ideal (ring_of_integers k)
-        (ideal_generated (ring_of_integers k) {ring_of_num k 2:A}))"
-    let q63 ← q r"ring_setadd (ring_of_integers k) (ring_carrier(subring_generated k {w}))
-      (ideal_generated (ring_of_integers k) {ring_of_num k 2}) =
-    ring_carrier(ring_of_integers k:A ring)"
-    let q64 ← q r"!k:A ring w x T.
-           ring_mul k (ring_of_num k 2) w = ring_add k (ring_1 k) x
-           ==> ring_pow k x 2 =
-               ring_add k (ring_of_num k 1) (ring_mul k (ring_of_num k 4) T)
-           ==> ring_mul k (ring_of_num k 4) (ring_pow k w 2) =
-               ring_mul k (ring_of_num k 4)
-                 (ring_add k (ring_mul k (ring_of_num k 1) w) T)"
-    let r65 ← RING_RULE q64
-    let q66 ← q r"ring_of_int k t:A"
-    let q67 ← q r"x:A"
-    let q68 ← q r"w:A"
-    let q69 ← q r"k:A ring"
-    let v70 ← ISPECL [q69, q68, q67, q66] r65
-    let q71 ← q r"ring_pow k x 2 = ring_of_int k (&1 + &4 * t):A"
-    let q72 ← q r"ring_of_num k 4:A"
-    let q73 ← q r"k:A ring"
-    let q74 ← q r"ring_pow k w 2 =
-    ring_add k (ring_mul k (ring_of_int k (&1)) w) (ring_of_int k t):A"
-    let q75 ← q r"(d:int) - &1 = &4 * t ==> d = &1 + &4 * t"
-    let r76 ← INT_ARITH q75
-    let q77 ← q r"t:int"
-    let q78 ← q r"((d:int) == &1) (mod &4)"
-    let v79 ← ASSUME q78
-    let v80 ← REWRITE_RULE [int_congruent] v79
-    let q81 ← q r"k:A ring"
-    let v82 ← ISPEC q81 RING_OF_INTEGERS_SUBSET
-    let v83 ← REWRITE_RULE [SUBSET] v82
-    let q84 ← q r"(w:A) IN ring_carrier k"
-    let q85 ← q r"w:A"
-    let q86 ← q r"d:int"
-    let q87 ← q r"x:A"
-    let q88 ← q r"k:A ring"
-    let v89 ← SPECL [q88, q87, q86, q85] QUADRATIC_FIELD_RING_OF_INTEGERS
-    let q90 ← q r"w = ring_div k (ring_add k (ring_1 k) x) (ring_of_num k 2):A"
+    let i1 := (← prove r"!t:int. (&1 + &4 * t == &1) (mod &8) <=> &2 divides t" (GEN_TAC THEN MP_TAC (← SPECL [(← q r"&1:int"), (← q r"&4:int"), (← q r"&2:int"), (← q r"t:int")] (← INTEGER_RULE (← q r"!a m n t:int. ~(m = &0)
+        ==> ((a + m * t == a) (mod (m * n)) <=> n divides t)"))) THEN CONV_TAC INT_REDUCE_CONV THEN REWRITE_TAC []))
+    let i2 := (← prove r"!t:int. (&1 + &4 * t == &5) (mod &8) <=> (t == &1) (mod &2)" (GEN_TAC THEN MP_TAC (← SPECL [(← q r"&1:int"), (← q r"&4:int"), (← q r"&2:int"), (← q r"t:int")] (← INTEGER_RULE (← q r"!a m n t:int. ~(m = &0)
+        ==> ((a + m * t == a + m) (mod (m * n)) <=> (t == &1) (mod n))"))) THEN CONV_TAC INT_REDUCE_CONV THEN REWRITE_TAC []))
+    let i4 := (← INTEGER_RULE (← q r"!n y2 y t:int. n divides (y2 - y) /\ (t == &1) (mod n) /\
+                   (y2 == &1 * y + t) (mod n) ==> n divides &1"))
+    let i5 := (← INTEGER_RULE (← q r"!n t:int. n divides t ==> (&0 * &1 == --t) (mod n)"))
+    let par := (← prove r"!y:int. &2 divides (y pow 2 - y)" (GEN_TAC THEN MP_TAC (← SPECL [(← q r"y:int"), (← q r"&2:int")] INT_DIVISION) THEN REWRITE_TAC [INT_OF_NUM_EQ, ARITH_EQ, INT_ABS_NUM] THEN SPEC_TAC ((← q r"y rem &2"), (← q r"r:int")) THEN SPEC_TAC ((← q r"y div &2"), (← q r"q:int")) THEN REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC) THEN SUBGOAL_THEN (← q r"r:int = &0 \/ r = &1") (DISJ_CASES_THEN SUBST1_TAC) THENL [ASM_INT_ARITH_TAC, REWRITE_TAC [int_divides] THEN EXISTS_TAC (← q r"&2 * q pow 2 - q:int") THEN INT_ARITH_TAC, REWRITE_TAC [int_divides] THEN EXISTS_TAC (← q r"&2 * q pow 2 + q:int") THEN INT_ARITH_TAC]))
+    let evodd := (← prove r"!t:int. &2 divides t <=> ~((t == &1) (mod &2))" (GEN_TAC THEN REWRITE_TAC [(← GSYM INT_REM_EQ_0), (← GSYM INT_REM_EQ)] THEN MP_TAC (← SPECL [(← q r"t:int"), (← q r"&2:int")] INT_DIVISION) THEN REWRITE_TAC [INT_OF_NUM_EQ, ARITH_EQ, INT_ABS_NUM] THEN CONV_TAC INT_REDUCE_CONV THEN INT_ARITH_TAC))
     prove
       r"!k:A ring x d.
           number_field k /\
@@ -980,22 +807,35 @@ def setupQuadraticSplit02 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
               (prime_ideal (ring_of_integers k)
                  (ideal_generated (ring_of_integers k) {ring_of_num k 2}) <=>
                (d == &5) (mod &8))"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN ABBREV_TAC q90 THEN MP_TAC v89 THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN FIRST_ASSUM (fun th => tactic_of do pure (ASSUME_TAC (← MATCH_MP NUMBER_FIELD_IMP_FIELD th) THEN STRIP_ASSUME_TAC (← REWRITE_RULE [number_field] th))) THEN SUBGOAL_THEN q84 ASSUME_TAC THENL [MATCH_MP_TAC v83 THEN FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN MP_TAC v80 THEN DISCH_THEN (X_CHOOSE_THEN q77 (SUBST_ALL_TAC o (MATCH_MP r76))) THEN REWRITE_TAC [i1, i2] THEN SUBGOAL_THEN q74 ASSUME_TAC THENL [MATCH_MP_TAC INTEGRAL_DOMAIN_MUL_LCANCEL THEN MAP_EVERY EXISTS_TAC [q73, q72] THEN ASM_SIMP_TAC [FIELD_IMP_INTEGRAL_DOMAIN, RING_OF_NUM, RING_OF_NUM_EQ_0, DIVIDES_ZERO, ARITH_EQ, RING_ADD, RING_POW, RING_MUL, RING_OF_INT] THEN UNDISCH_TAC q71 THEN REWRITE_TAC [RING_OF_INT_ADD, RING_OF_INT_MUL, RING_OF_INT_OF_NUM] THEN MP_TAC v70 THEN ASM_SIMP_TAC [RING_OF_INT], ALL_TAC] THEN SUBGOAL_THEN q63 ASSUME_TAC THENL [MATCH_MP_TAC RING_OF_INTEGERS_SETADD_SUBRING_GENERATED_LINEAR THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED], ALL_TAC] THEN SUBGOAL_THEN q62 ASSUME_TAC THENL [STRIP_TAC THEN MP_TAC v61 THEN ASM_REWRITE_TAC [PRIME_2], ALL_TAC] THEN SUBGOAL_THEN q56 MP_TAC THENL [CONJ_TAC THEN DISCH_TAC THENL [MATCH_MP_TAC QUADRATIC_DEDEKIND_KUMMER_SPLIT THEN MAP_EVERY EXISTS_TAC [q55, q54, q53, q52, q51] THEN ASM_SIMP_TAC [PRIME_2, i5] THEN REWRITE_TAC [v50] THEN CONV_TAC INT_REDUCE_CONV, MATCH_MP_TAC QUADRATIC_DEDEKIND_KUMMER_INERT THEN MAP_EVERY EXISTS_TAC [q49, q48, q47] THEN ASM_REWRITE_TAC [PRIME_2] THEN X_GEN_TAC q46 THEN DISCH_TAC THEN MP_TAC v45 THEN ASM_REWRITE_TAC [par, v40] THEN CONV_TAC INT_REDUCE_CONV], MP_TAC v39 THEN POP_ASSUM MP_TAC THEN CONV_TAC TAUT])
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN ABBREV_TAC (← q r"w = ring_div k (ring_add k (ring_1 k) x) (ring_of_num k 2):A") THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"d:int"), (← q r"w:A")] QUADRATIC_FIELD_RING_OF_INTEGERS) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN FIRST_ASSUM (fun th => tactic_of do pure (ASSUME_TAC (← MATCH_MP NUMBER_FIELD_IMP_FIELD th) THEN STRIP_ASSUME_TAC (← REWRITE_RULE [number_field] th))) THEN SUBGOAL_THEN (← q r"(w:A) IN ring_carrier k") ASSUME_TAC THENL [MATCH_MP_TAC (← REWRITE_RULE [SUBSET] (← ISPEC (← q r"k:A ring") RING_OF_INTEGERS_SUBSET)) THEN FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN MP_TAC (← REWRITE_RULE [int_congruent] (← ASSUME (← q r"((d:int) == &1) (mod &4)"))) THEN DISCH_THEN (X_CHOOSE_THEN (← q r"t:int") (SUBST_ALL_TAC o (MATCH_MP (← INT_ARITH (← q r"(d:int) - &1 = &4 * t ==> d = &1 + &4 * t"))))) THEN REWRITE_TAC [i1, i2] THEN SUBGOAL_THEN (← q r"ring_pow k w 2 =
+    ring_add k (ring_mul k (ring_of_int k (&1)) w) (ring_of_int k t):A") ASSUME_TAC THENL [MATCH_MP_TAC INTEGRAL_DOMAIN_MUL_LCANCEL THEN MAP_EVERY EXISTS_TAC [(← q r"k:A ring"), (← q r"ring_of_num k 4:A")] THEN ASM_SIMP_TAC [FIELD_IMP_INTEGRAL_DOMAIN, RING_OF_NUM, RING_OF_NUM_EQ_0, DIVIDES_ZERO, ARITH_EQ, RING_ADD, RING_POW, RING_MUL, RING_OF_INT] THEN UNDISCH_TAC (← q r"ring_pow k x 2 = ring_of_int k (&1 + &4 * t):A") THEN REWRITE_TAC [RING_OF_INT_ADD, RING_OF_INT_MUL, RING_OF_INT_OF_NUM] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"w:A"), (← q r"x:A"), (← q r"ring_of_int k t:A")] (← RING_RULE (← q r"!k:A ring w x T.
+           ring_mul k (ring_of_num k 2) w = ring_add k (ring_1 k) x
+           ==> ring_pow k x 2 =
+               ring_add k (ring_of_num k 1) (ring_mul k (ring_of_num k 4) T)
+           ==> ring_mul k (ring_of_num k 4) (ring_pow k w 2) =
+               ring_mul k (ring_of_num k 4)
+                 (ring_add k (ring_mul k (ring_of_num k 1) w) T)"))) THEN ASM_SIMP_TAC [RING_OF_INT], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_setadd (ring_of_integers k) (ring_carrier(subring_generated k {w}))
+      (ideal_generated (ring_of_integers k) {ring_of_num k 2}) =
+    ring_carrier(ring_of_integers k:A ring)") ASSUME_TAC THENL [MATCH_MP_TAC RING_OF_INTEGERS_SETADD_SUBRING_GENERATED_LINEAR THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED], ALL_TAC] THEN SUBGOAL_THEN (← q r"~((?P Q. prime_ideal (ring_of_integers k) P /\
+             prime_ideal (ring_of_integers k) Q /\ ~(P = Q) /\
+             ideal_generated (ring_of_integers k) {ring_of_num k 2} =
+             ideal_prod (ring_of_integers k) P (Q:A->bool)) /\
+      prime_ideal (ring_of_integers k)
+        (ideal_generated (ring_of_integers k) {ring_of_num k 2:A}))") ASSUME_TAC THENL [STRIP_TAC THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"2"), (← q r"P:A->bool"), (← q r"Q:A->bool")] NUMBER_FIELD_PRIME_IDEAL_PROD_EQ) THEN ASM_REWRITE_TAC [PRIME_2], ALL_TAC] THEN SUBGOAL_THEN (← q r"(&2 divides (t:int)
+     ==> ?P Q. prime_ideal (ring_of_integers k) P /\
+               prime_ideal (ring_of_integers k) Q /\ ~(P = Q) /\
+               ideal_generated (ring_of_integers k) {ring_of_num k 2} =
+               ideal_prod (ring_of_integers k) P (Q:A->bool)) /\
+    (((t:int) == &1) (mod &2)
+     ==> prime_ideal (ring_of_integers k)
+           (ideal_generated (ring_of_integers k) {ring_of_num k 2:A}))") MP_TAC THENL [CONJ_TAC THEN DISCH_TAC THENL [MATCH_MP_TAC QUADRATIC_DEDEKIND_KUMMER_SPLIT THEN MAP_EVERY EXISTS_TAC [(← q r"w:A"), (← q r"&1:int"), (← q r"t:int"), (← q r"&0:int"), (← q r"&1:int")] THEN ASM_SIMP_TAC [PRIME_2, i5] THEN REWRITE_TAC [(← GSYM INT_REM_EQ)] THEN CONV_TAC INT_REDUCE_CONV, MATCH_MP_TAC QUADRATIC_DEDEKIND_KUMMER_INERT THEN MAP_EVERY EXISTS_TAC [(← q r"w:A"), (← q r"&1:int"), (← q r"t:int")] THEN ASM_REWRITE_TAC [PRIME_2] THEN X_GEN_TAC (← q r"y:int") THEN DISCH_TAC THEN MP_TAC (← SPECL [(← q r"&2:int"), (← q r"(y:int) pow 2"), (← q r"y:int"), (← q r"t:int")] i4) THEN ASM_REWRITE_TAC [par, (← GSYM INT_REM_EQ_0)] THEN CONV_TAC INT_REDUCE_CONV], MP_TAC (← SPEC (← q r"t:int") evodd) THEN POP_ASSUM MP_TAC THEN CONV_TAC TAUT])
 
   let QUADRATIC_FIELD_SPLIT_ODD_PRIME ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← INTEGER_RULE (← q r"!p y a:int. coprime(p,a) /\ p divides (a * y) ==> p divides y")
-    let i3a := r1
-    let r2 ← INTEGER_RULE (← q r"!p y d:int. p divides y /\ (y * y == d) (mod p) ==> p divides d")
-    let i3b := r2
-    let r3 ← INTEGER_RULE (← q r"!p y d:int. (y pow 2 == d) (mod p) ==> (y * --y == --d) (mod p)")
-    let i6 := r3
-    let r4 ← INTEGER_RULE (← q r"!p y:int. (y + --y == &0) (mod p)")
-    let i7 := r4
-    let r5 ← INT_ARITH (← q r"y - --y:int = &2 * y")
-    let r6 ← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)")
-    let r7 ← RING_RULE (← q r"!r x y:A. x IN ring_carrier r /\ y IN ring_carrier r
-                ==> ring_sub r x (ring_neg r y) = ring_add r x y")
+    let i3a := (← INTEGER_RULE (← q r"!p y a:int. coprime(p,a) /\ p divides (a * y) ==> p divides y"))
+    let i3b := (← INTEGER_RULE (← q r"!p y d:int. p divides y /\ (y * y == d) (mod p) ==> p divides d"))
+    let i6 := (← INTEGER_RULE (← q r"!p y d:int. (y pow 2 == d) (mod p) ==> (y * --y == --d) (mod p)"))
+    let i7 := (← INTEGER_RULE (← q r"!p y:int. (y + --y == &0) (mod p)"))
     prove
       r"!k:A ring x d p y.
           number_field k /\
@@ -1025,9 +865,10 @@ def setupQuadraticSplit02 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
               ideal_norm (ring_of_integers k)
                 (ideal_generated (ring_of_integers k)
                    {ring_of_num k p, ring_add k x (ring_of_int k y)}) = p"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"d:int"), (← q r"p:num")] QUADRATIC_FIELD_SETADD_ODD) THEN MP_TAC (← SPEC (← q r"p:num") PRIME_ODD) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"ring_sub k x (ring_of_int k (--y)) = ring_add k x (ring_of_int k y):A") (fun th => tactic_of do pure (SUBST1_TAC (← SYM th))) THENL [REWRITE_TAC [RING_OF_INT_NEG] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"ring_of_int k y:A")] r7) THEN ASM_REWRITE_TAC [RING_OF_INT], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"p:num"), (← q r"&0:int"), (← q r"d:int"), (← q r"y:int"), (← q r"--y:int"), (← q r"ideal_generated (ring_of_integers k)
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"d:int"), (← q r"p:num")] QUADRATIC_FIELD_SETADD_ODD) THEN MP_TAC (← SPEC (← q r"p:num") PRIME_ODD) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"ring_sub k x (ring_of_int k (--y)) = ring_add k x (ring_of_int k y):A") (fun th => tactic_of do pure (SUBST1_TAC (← SYM th))) THENL [REWRITE_TAC [RING_OF_INT_NEG] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"ring_of_int k y:A")] (← RING_RULE (← q r"!r x y:A. x IN ring_carrier r /\ y IN ring_carrier r
+                ==> ring_sub r x (ring_neg r y) = ring_add r x y"))) THEN ASM_REWRITE_TAC [RING_OF_INT], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"p:num"), (← q r"&0:int"), (← q r"d:int"), (← q r"y:int"), (← q r"--y:int"), (← q r"ideal_generated (ring_of_integers k)
                       {ring_of_num k p, ring_sub k x (ring_of_int k y):A}"), (← q r"ideal_generated (ring_of_integers k)
-                      {ring_of_num k p, ring_sub k x (ring_of_int k (--y)):A}")] QUADRATIC_DEDEKIND_KUMMER_SPLIT_PRIMES) THEN ANTS_TAC THENL [ASM_SIMP_TAC [RING_OF_INT_0, RING_MUL_LZERO, RING_ADD_LZERO, RING_OF_INT, i6, i7] THEN DISCH_TAC THEN UNDISCH_TAC (← q r"~(&p divides (d:int))") THEN REWRITE_TAC [] THEN MATCH_MP_TAC i3b THEN EXISTS_TAC (← q r"y:int") THEN ASM_REWRITE_TAC [(← GSYM INT_POW_2)] THEN MATCH_MP_TAC i3a THEN EXISTS_TAC (← q r"&2:int") THEN CONJ_TAC THENL [REWRITE_TAC [(← GSYM num_coprime)] THEN MP_TAC (← SPECL [(← q r"p:num"), (← q r"2")] COPRIME_PRIME_PRIME) THEN ASM_REWRITE_TAC [PRIME_2], UNDISCH_TAC (← q r"((y:int) == --y) (mod &p)") THEN REWRITE_TAC [r6] THEN REWRITE_TAC [r5]], ALL_TAC] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"!z. ring_of_num k p IN
+                      {ring_of_num k p, ring_sub k x (ring_of_int k (--y)):A}")] QUADRATIC_DEDEKIND_KUMMER_SPLIT_PRIMES) THEN ANTS_TAC THENL [ASM_SIMP_TAC [RING_OF_INT_0, RING_MUL_LZERO, RING_ADD_LZERO, RING_OF_INT, i6, i7] THEN DISCH_TAC THEN UNDISCH_TAC (← q r"~(&p divides (d:int))") THEN REWRITE_TAC [] THEN MATCH_MP_TAC i3b THEN EXISTS_TAC (← q r"y:int") THEN ASM_REWRITE_TAC [(← GSYM INT_POW_2)] THEN MATCH_MP_TAC i3a THEN EXISTS_TAC (← q r"&2:int") THEN CONJ_TAC THENL [REWRITE_TAC [(← GSYM num_coprime)] THEN MP_TAC (← SPECL [(← q r"p:num"), (← q r"2")] COPRIME_PRIME_PRIME) THEN ASM_REWRITE_TAC [PRIME_2], UNDISCH_TAC (← q r"((y:int) == --y) (mod &p)") THEN REWRITE_TAC [(← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)"))] THEN REWRITE_TAC [(← INT_ARITH (← q r"y - --y:int = &2 * y"))]], ALL_TAC] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"!z. ring_of_num k p IN
           ideal_generated (ring_of_integers k) {ring_of_num k p, z:A}") ASSUME_TAC THENL [GEN_TAC THEN MATCH_MP_TAC IDEAL_GENERATED_INC_GEN THEN REWRITE_TAC [IN_INSERT] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"p:num")] RING_OF_NUM) THEN REWRITE_TAC [RING_OF_INTEGERS], ALL_TAC] THEN CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ideal_generated (ring_of_integers k)
                         {ring_of_num k p, ring_sub k x (ring_of_int k y):A}"), (← q r"p:num")] RING_OF_INTEGERS_IDEAL_NORM_PRIME_Q), MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ideal_generated (ring_of_integers k)
                         {ring_of_num k p,
@@ -1053,12 +894,6 @@ def setupQuadraticSplit02 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
 
   let QUADRATIC_FIELD_RAMIFIED_TWO ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)")
-    let r2 ← INTEGER_RULE (← q r"!d n:int. n divides d
-                  ==> (&0 + &0 == &0) (mod n) /\ (&0 * &0 == --d) (mod n)")
-    let r3 ← RING_RULE (← q r"!r x:A. x IN ring_carrier r
-              ==> ring_add r (ring_1 r) x =
-                  ring_sub r x (ring_neg r (ring_1 r))")
     prove
       r"!k:A ring x d.
           number_field k /\
@@ -1079,8 +914,11 @@ def setupQuadraticSplit02 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
                    {ring_of_num k 2,
                     if &2 divides d then x else ring_add k (ring_1 k) x}) = 2"
       (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"d:int"), (← q r"x:A")] QUADRATIC_FIELD_RING_OF_INTEGERS) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"ideal_generated (ring_of_integers k) {ring_of_num k 2:A}")] RING_OF_INTEGERS_SETADD_SUBRING_GENERATED_LINEAR) THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN DISCH_TAC THEN ABBREV_TAC (← q r"u:int = if &2 divides d then &0 else --(&1)") THEN SUBGOAL_THEN (← q r"(if &2 divides d then x else ring_add k (ring_1 k) x) =
-      ring_sub k x (ring_of_int k u:A)") SUBST1_TAC THENL [EXPAND_TAC "u" THEN COND_CASES_TAC THEN ASM_SIMP_TAC [RING_OF_INT_0, RING_SUB_RZERO, RING_OF_INT_NEG, RING_OF_INT_1] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A")] r3) THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"2"), (← q r"&0:int"), (← q r"d:int"), (← q r"u:int"), (← q r"ideal_generated (ring_of_integers k)
-                      {ring_of_num k 2, ring_sub k x (ring_of_int k u):A}")] QUADRATIC_DEDEKIND_KUMMER_RAMIFIED_PRIME) THEN ANTS_TAC THENL [ASM_SIMP_TAC [RING_OF_INT_0, RING_MUL_LZERO, RING_ADD_LZERO, RING_OF_INT, PRIME_2] THEN EXPAND_TAC "u" THEN COND_CASES_TAC THENL [MATCH_MP_TAC r2 THEN ASM_REWRITE_TAC [], ALL_TAC] THEN REWRITE_TAC [r1, int_divides] THEN MP_TAC (← SPECL [(← q r"d:int"), (← q r"&2:int")] INT_DIVISION) THEN UNDISCH_TAC (← q r"~(&2 divides (d:int))") THEN REWRITE_TAC [(← GSYM INT_REM_EQ_0)] THEN CONV_TAC INT_REDUCE_CONV THEN REPEAT STRIP_TAC THENL [EXISTS_TAC (← q r"--(&1):int") THEN INT_ARITH_TAC, EXISTS_TAC (← q r"d div &2 + &1:int") THEN ASM_INT_ARITH_TAC], ALL_TAC] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ideal_generated (ring_of_integers k)
+      ring_sub k x (ring_of_int k u:A)") SUBST1_TAC THENL [EXPAND_TAC "u" THEN COND_CASES_TAC THEN ASM_SIMP_TAC [RING_OF_INT_0, RING_SUB_RZERO, RING_OF_INT_NEG, RING_OF_INT_1] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A")] (← RING_RULE (← q r"!r x:A. x IN ring_carrier r
+              ==> ring_add r (ring_1 r) x =
+                  ring_sub r x (ring_neg r (ring_1 r))"))) THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"2"), (← q r"&0:int"), (← q r"d:int"), (← q r"u:int"), (← q r"ideal_generated (ring_of_integers k)
+                      {ring_of_num k 2, ring_sub k x (ring_of_int k u):A}")] QUADRATIC_DEDEKIND_KUMMER_RAMIFIED_PRIME) THEN ANTS_TAC THENL [ASM_SIMP_TAC [RING_OF_INT_0, RING_MUL_LZERO, RING_ADD_LZERO, RING_OF_INT, PRIME_2] THEN EXPAND_TAC "u" THEN COND_CASES_TAC THENL [MATCH_MP_TAC (← INTEGER_RULE (← q r"!d n:int. n divides d
+                  ==> (&0 + &0 == &0) (mod n) /\ (&0 * &0 == --d) (mod n)")) THEN ASM_REWRITE_TAC [], ALL_TAC] THEN REWRITE_TAC [(← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)")), int_divides] THEN MP_TAC (← SPECL [(← q r"d:int"), (← q r"&2:int")] INT_DIVISION) THEN UNDISCH_TAC (← q r"~(&2 divides (d:int))") THEN REWRITE_TAC [(← GSYM INT_REM_EQ_0)] THEN CONV_TAC INT_REDUCE_CONV THEN REPEAT STRIP_TAC THENL [EXISTS_TAC (← q r"--(&1):int") THEN INT_ARITH_TAC, EXISTS_TAC (← q r"d div &2 + &1:int") THEN ASM_INT_ARITH_TAC], ALL_TAC] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ideal_generated (ring_of_integers k)
                       {ring_of_num k 2, ring_sub k x (ring_of_int k u):A}"), (← q r"2")] RING_OF_INTEGERS_IDEAL_NORM_PRIME_Q) THEN ASM_REWRITE_TAC [EXP_1, PRIME_2] THEN DISCH_THEN MATCH_MP_TAC THEN MATCH_MP_TAC IDEAL_GENERATED_INC_GEN THEN REWRITE_TAC [IN_INSERT] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"2")] RING_OF_NUM) THEN REWRITE_TAC [RING_OF_INTEGERS])
 
   -- @@RETURN BEGIN
@@ -1124,24 +962,6 @@ def setupQuadraticSplit03 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
 
   let QUADRATIC_FIELD_SPLIT_TWO ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← RING_RULE (← q r"!r w:A. w IN ring_carrier r
-              ==> ring_sub r (ring_1 r) w =
-                  ring_neg r (ring_sub r w (ring_1 r)) /\
-                  ring_sub r w (ring_1 r) =
-                  ring_neg r (ring_sub r (ring_1 r) w)")
-    let r2 ← INTEGER_RULE (← q r"!c n:int. n divides c ==> (&0 * &1 == --c) (mod n)")
-    let r3 ← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (y - x)")
-    let r4 ← RING_RULE (← q r"!r x w u e:A. x IN ring_carrier r /\ w IN ring_carrier r /\
-                    u IN ring_carrier r /\ e IN ring_carrier r /\
-                    ring_mul r (ring_of_num r 2) w = ring_add r (ring_1 r) x /\
-                    ring_pow r x 2 = e /\
-                    ring_mul r (ring_of_num r 4) u = ring_sub r e (ring_1 r)
-                    ==> ring_mul r (ring_of_num r 4) (ring_pow r w 2) =
-                        ring_mul r (ring_of_num r 4)
-                          (ring_add r (ring_mul r (ring_1 r) w) u)")
-    let r5 ← INT_ARITH (← q r"&8 * q:int = (&2 * q) * &4")
-    let r10 ← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)")
-    let r11 ← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)")
     prove
       r"!k:A ring x d w.
           number_field k /\
@@ -1167,15 +987,26 @@ def setupQuadraticSplit03 [HolBase] (D : QuadraticSplitDeps) (BQuadraticSplit01 
               ideal_norm (ring_of_integers k)
                 (ideal_generated (ring_of_integers k)
                    {ring_of_num k 2, ring_sub k (ring_1 k) w}) = 2"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN FIRST_X_ASSUM (ASSUME_TAC o (SYM o (checkM (fun th => (do if ← (do let z12 ← (do let z13 ← (pure th); pure (concl z13)); pure (is_eq z12)) then (do let z17 ← (q r"w:A"); let z16 ← (do let z14 ← (do let z15 ← (pure th); pure (concl z15)); liftExcept (lhand z14)); pure (z16 == z17)) else pure false))))) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP FIELD_IMP_INTEGRAL_DOMAIN)) THEN SUBGOAL_THEN (← q r"((d:int) == &1) (mod &4)") ASSUME_TAC THENL [UNDISCH_TAC (← q r"(d:int == &1) (mod &8)") THEN REWRITE_TAC [r11, int_divides] THEN STRIP_TAC THEN EXISTS_TAC (← q r"&2 * x':int") THEN ASM_INT_ARITH_TAC, ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"d:int"), (← q r"w:A")] QUADRATIC_FIELD_RING_OF_INTEGERS) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"w:A"), (← q r"ideal_generated (ring_of_integers k) {ring_of_num k 2:A}")] RING_OF_INTEGERS_SETADD_SUBRING_GENERATED_LINEAR) THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"(w:A) IN ring_carrier k") ASSUME_TAC THENL [ASM_MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], ALL_TAC] THEN ABBREV_TAC (← q r"c = (d - &1) div &4:int") THEN SUBGOAL_THEN (← q r"&4 * c:int = d - &1 /\ &2 divides c") STRIP_ASSUME_TAC THENL [UNDISCH_TAC (← q r"(d:int == &1) (mod &8)") THEN REWRITE_TAC [r10, int_divides] THEN DISCH_THEN (X_CHOOSE_TAC (← q r"q:int")) THEN SUBGOAL_THEN (← q r"c:int = &2 * q") (fun th => REWRITE_TAC [th]) THENL [EXPAND_TAC "c" THEN FIRST_X_ASSUM (SUBST1_TAC o (checkM (fun th => (do let z9 ← (q r"d - &1:int"); let z8 ← (do let z6 ← (do let z7 ← (pure th); pure (concl z7)); liftExcept (lhand z6)); pure (z8 == z9))))) THEN REWRITE_TAC [r5] THEN MATCH_MP_TAC (← CONJUNCT1 INT_DIV_MUL) THEN CONV_TAC INT_REDUCE_CONV, CONJ_TAC THENL [ASM_INT_ARITH_TAC, EXISTS_TAC (← q r"q:int") THEN REFL_TAC]], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_pow k w 2 =
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN FIRST_X_ASSUM (ASSUME_TAC o (SYM o (checkM (fun th => (do if ← (do let z12 ← (do let z13 ← (pure th); pure (concl z13)); pure (is_eq z12)) then (do let z17 ← (q r"w:A"); let z16 ← (do let z14 ← (do let z15 ← (pure th); pure (concl z15)); liftExcept (lhand z14)); pure (z16 == z17)) else pure false))))) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP FIELD_IMP_INTEGRAL_DOMAIN)) THEN SUBGOAL_THEN (← q r"((d:int) == &1) (mod &4)") ASSUME_TAC THENL [UNDISCH_TAC (← q r"(d:int == &1) (mod &8)") THEN REWRITE_TAC [(← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)")), int_divides] THEN STRIP_TAC THEN EXISTS_TAC (← q r"&2 * x':int") THEN ASM_INT_ARITH_TAC, ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"d:int"), (← q r"w:A")] QUADRATIC_FIELD_RING_OF_INTEGERS) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"w:A"), (← q r"ideal_generated (ring_of_integers k) {ring_of_num k 2:A}")] RING_OF_INTEGERS_SETADD_SUBRING_GENERATED_LINEAR) THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"(w:A) IN ring_carrier k") ASSUME_TAC THENL [ASM_MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], ALL_TAC] THEN ABBREV_TAC (← q r"c = (d - &1) div &4:int") THEN SUBGOAL_THEN (← q r"&4 * c:int = d - &1 /\ &2 divides c") STRIP_ASSUME_TAC THENL [UNDISCH_TAC (← q r"(d:int == &1) (mod &8)") THEN REWRITE_TAC [(← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (x - y)")), int_divides] THEN DISCH_THEN (X_CHOOSE_TAC (← q r"q:int")) THEN SUBGOAL_THEN (← q r"c:int = &2 * q") (fun th => REWRITE_TAC [th]) THENL [EXPAND_TAC "c" THEN FIRST_X_ASSUM (SUBST1_TAC o (checkM (fun th => (do let z9 ← (q r"d - &1:int"); let z8 ← (do let z6 ← (do let z7 ← (pure th); pure (concl z7)); liftExcept (lhand z6)); pure (z8 == z9))))) THEN REWRITE_TAC [(← INT_ARITH (← q r"&8 * q:int = (&2 * q) * &4"))] THEN MATCH_MP_TAC (← CONJUNCT1 INT_DIV_MUL) THEN CONV_TAC INT_REDUCE_CONV, CONJ_TAC THENL [ASM_INT_ARITH_TAC, EXISTS_TAC (← q r"q:int") THEN REFL_TAC]], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_pow k w 2 =
       ring_add k (ring_mul k (ring_of_int k (&1)) w) (ring_of_int k c):A") ASSUME_TAC THENL [MATCH_MP_TAC INTEGRAL_DOMAIN_MUL_LCANCEL THEN MAP_EVERY EXISTS_TAC [(← q r"k:A ring"), (← q r"ring_of_num k 4:A")] THEN ASM_SIMP_TAC [RING_OF_NUM, RING_ADD, RING_MUL, RING_POW, RING_OF_INT, NUMBER_FIELD_RING_OF_NUM_EQ_0, ARITH_EQ] THEN SUBGOAL_THEN (← q r"ring_mul k (ring_of_num k 4) (ring_of_int k c) =
-                    ring_sub k (ring_of_int k d) (ring_1 k):A") MP_TAC THENL [REWRITE_TAC [(← GSYM RING_OF_INT_OF_NUM), (← GSYM RING_OF_INT_MUL), (← GSYM RING_OF_INT_1), (← GSYM RING_OF_INT_SUB)] THEN ASM_REWRITE_TAC [], ALL_TAC] THEN DISCH_TAC THEN REWRITE_TAC [RING_OF_INT_1] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"w:A"), (← q r"ring_of_int k c:A"), (← q r"ring_of_int k d:A")] r4) THEN ASM_REWRITE_TAC [RING_OF_INT], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"w:A"), (← q r"2"), (← q r"&1:int"), (← q r"c:int"), (← q r"&0:int"), (← q r"&1:int"), (← q r"ideal_generated (ring_of_integers k)
+                    ring_sub k (ring_of_int k d) (ring_1 k):A") MP_TAC THENL [REWRITE_TAC [(← GSYM RING_OF_INT_OF_NUM), (← GSYM RING_OF_INT_MUL), (← GSYM RING_OF_INT_1), (← GSYM RING_OF_INT_SUB)] THEN ASM_REWRITE_TAC [], ALL_TAC] THEN DISCH_TAC THEN REWRITE_TAC [RING_OF_INT_1] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"w:A"), (← q r"ring_of_int k c:A"), (← q r"ring_of_int k d:A")] (← RING_RULE (← q r"!r x w u e:A. x IN ring_carrier r /\ w IN ring_carrier r /\
+                    u IN ring_carrier r /\ e IN ring_carrier r /\
+                    ring_mul r (ring_of_num r 2) w = ring_add r (ring_1 r) x /\
+                    ring_pow r x 2 = e /\
+                    ring_mul r (ring_of_num r 4) u = ring_sub r e (ring_1 r)
+                    ==> ring_mul r (ring_of_num r 4) (ring_pow r w 2) =
+                        ring_mul r (ring_of_num r 4)
+                          (ring_add r (ring_mul r (ring_1 r) w) u)"))) THEN ASM_REWRITE_TAC [RING_OF_INT], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"w:A"), (← q r"2"), (← q r"&1:int"), (← q r"c:int"), (← q r"&0:int"), (← q r"&1:int"), (← q r"ideal_generated (ring_of_integers k)
                       {ring_of_num k 2, ring_sub k w (ring_of_int k (&0)):A}"), (← q r"ideal_generated (ring_of_integers k)
-                      {ring_of_num k 2, ring_sub k w (ring_of_int k (&1)):A}")] QUADRATIC_DEDEKIND_KUMMER_SPLIT_PRIMES) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [PRIME_2] THEN REPEAT CONJ_TAC THENL [REWRITE_TAC [r3] THEN CONV_TAC INT_REDUCE_CONV THEN REWRITE_TAC [INT_DIVIDES_ONE] THEN CONV_TAC INT_REDUCE_CONV, CONV_TAC INT_REDUCE_CONV THEN REWRITE_TAC [INT_CONG_REFL], MATCH_MP_TAC r2 THEN ASM_REWRITE_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_sub k w (ring_of_int k (&0)) = w /\
+                      {ring_of_num k 2, ring_sub k w (ring_of_int k (&1)):A}")] QUADRATIC_DEDEKIND_KUMMER_SPLIT_PRIMES) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [PRIME_2] THEN REPEAT CONJ_TAC THENL [REWRITE_TAC [(← INTEGER_RULE (← q r"!x y n:int. (x == y) (mod n) <=> n divides (y - x)"))] THEN CONV_TAC INT_REDUCE_CONV THEN REWRITE_TAC [INT_DIVIDES_ONE] THEN CONV_TAC INT_REDUCE_CONV, CONV_TAC INT_REDUCE_CONV THEN REWRITE_TAC [INT_CONG_REFL], MATCH_MP_TAC (← INTEGER_RULE (← q r"!c n:int. n divides c ==> (&0 * &1 == --c) (mod n)")) THEN ASM_REWRITE_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_sub k w (ring_of_int k (&0)) = w /\
       ideal_generated (ring_of_integers k)
         {ring_of_num k 2, ring_sub k w (ring_of_int k (&1))} =
       ideal_generated (ring_of_integers k)
-        {ring_of_num k 2, ring_sub k (ring_1 k) w:A}") (fun th => REWRITE_TAC [th]) THENL [ASM_SIMP_TAC [RING_OF_INT_0, RING_SUB_RZERO, RING_OF_INT_1] THEN MATCH_MP_TAC IDEAL_GENERATED_PAIR_EQ THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"2")] RING_OF_NUM) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"w:A"), (← q r"ring_1 k:A")] RING_SUB) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"ring_1 k:A"), (← q r"w:A")] RING_SUB) THEN MP_TAC (← ISPEC (← q r"ring_of_integers k:A ring") RING_1) THEN REWRITE_TAC [RING_OF_INTEGERS] THEN ASM_SIMP_TAC [] THEN REPEAT DISCH_TAC THEN X_GEN_TAC (← q r"j:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"w:A")] r1) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN MP_TAC (← REWRITE_RULE [RING_OF_INTEGERS] (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"j:A->bool")] IN_RING_IDEAL_NEG)) THEN ASM_MESON_TAC [], ALL_TAC] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"!z. ring_of_num k 2 IN
+        {ring_of_num k 2, ring_sub k (ring_1 k) w:A}") (fun th => REWRITE_TAC [th]) THENL [ASM_SIMP_TAC [RING_OF_INT_0, RING_SUB_RZERO, RING_OF_INT_1] THEN MATCH_MP_TAC IDEAL_GENERATED_PAIR_EQ THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"2")] RING_OF_NUM) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"w:A"), (← q r"ring_1 k:A")] RING_SUB) THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"ring_1 k:A"), (← q r"w:A")] RING_SUB) THEN MP_TAC (← ISPEC (← q r"ring_of_integers k:A ring") RING_1) THEN REWRITE_TAC [RING_OF_INTEGERS] THEN ASM_SIMP_TAC [] THEN REPEAT DISCH_TAC THEN X_GEN_TAC (← q r"j:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"w:A")] (← RING_RULE (← q r"!r w:A. w IN ring_carrier r
+              ==> ring_sub r (ring_1 r) w =
+                  ring_neg r (ring_sub r w (ring_1 r)) /\
+                  ring_sub r w (ring_1 r) =
+                  ring_neg r (ring_sub r (ring_1 r) w)"))) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN MP_TAC (← REWRITE_RULE [RING_OF_INTEGERS] (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"j:A->bool")] IN_RING_IDEAL_NEG)) THEN ASM_MESON_TAC [], ALL_TAC] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"!z. ring_of_num k 2 IN
           ideal_generated (ring_of_integers k) {ring_of_num k 2, z:A}") ASSUME_TAC THENL [GEN_TAC THEN MATCH_MP_TAC IDEAL_GENERATED_INC_GEN THEN REWRITE_TAC [IN_INSERT] THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"2")] RING_OF_NUM) THEN REWRITE_TAC [RING_OF_INTEGERS], ALL_TAC] THEN CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ideal_generated (ring_of_integers k)
                         {ring_of_num k 2, w:A}"), (← q r"2")] RING_OF_INTEGERS_IDEAL_NORM_PRIME_Q), MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"ideal_generated (ring_of_integers k)
                         {ring_of_num k 2, ring_sub k (ring_1 k) w:A}"), (← q r"2")] RING_OF_INTEGERS_IDEAL_NORM_PRIME_Q)] THEN ASM_REWRITE_TAC [EXP_1, PRIME_2])

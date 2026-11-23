@@ -16,10 +16,11 @@
   name.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, NUMBER_RULE, INTEGER_RULE, INT_ARITH,
-  INT_RING, TAUT) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Primitive
@@ -279,12 +280,11 @@ def setupJacobiDef [HolBase] (D : JacobiDeps) :
         s SUBSET {p | prime p}
         ==> jacobi(a,n) = iproduct s (\p. jacobi(a,p) pow index p n)"
    (← do
-    let t1 ← TAUT (← q r"~p ==> p ==> q")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q "n = 0") THENL
      [REWRITE_TAC [CONJ_ASSOC] THEN
       DISCH_THEN (MP_TAC o CONJUNCT1) THEN
       DISCH_THEN (MP_TAC o MATCH_MP FINITE_SUBSET) THEN
-      MATCH_MP_TAC t1 THEN
+      MATCH_MP_TAC (← TAUT (← q r"~p ==> p ==> q")) THEN
       ASM_REWRITE_TAC [← GSYM INFINITE, PRIMES_INFINITE, DIVIDES_0],
       STRIP_TAC THEN GEN_REWRITE_TAC LAND_CONV [JACOBI] THEN
       ASM_REWRITE_TAC [] THEN CONV_TAC SYM_CONV THEN

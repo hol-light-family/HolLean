@@ -2768,8 +2768,8 @@ def setupGMG [HolBase] (D : GammaDeps) (BGMF : GMF) : ExceptT String IO GMG := d
       ASM_REWRITE_TAC [IN_ELIM_THM] THEN ANTS_TAC THENL
        [REWRITE_TAC [is_realinterval, IN_ELIM_THM] THEN REAL_ARITH_TAC,
         DISCH_TAC] THEN
-      MAP_EVERY (fun (th : thm) => tactic_of do
-          pure (MP_TAC (← SPECL [← q r"log o f:real->real", ← q r"{x | &0 < x}"] th)))
+      MAP_EVERY ((fun (ocq1 : _) (ocq2 : _) => fun (th : thm) => tactic_of do
+          pure (MP_TAC (← SPECL [ocq1, ocq2] th))) (← q r"log o f:real->real") (← q r"{x | &0 < x}"))
        [REAL_CONVEX_ON_LEFT_SECANT, REAL_CONVEX_ON_RIGHT_SECANT] THEN
       ASM_REWRITE_TAC [] THEN
       DISCH_THEN (LABEL_TAC "L") THEN DISCH_THEN (LABEL_TAC "R") THEN

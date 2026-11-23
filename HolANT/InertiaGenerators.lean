@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.InertiaGenerators fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -265,8 +268,6 @@ def setupInertiaGenerators [HolBase] (D : InertiaGeneratorsDeps) :
 
   let NUMBER_FIELD_RATIONAL_RAMIFICATION_INDEX ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← ARITH_RULE (← q r"e:num = e * 1")
-    let r2 ← ARITH_RULE (← q r"1 <= e /\ e <= 1 ==> e = 1")
     prove
       r"!k:A ring p.
           number_field k /\
@@ -274,16 +275,15 @@ def setupInertiaGenerators [HolBase] (D : InertiaGeneratorsDeps) :
           prime_ideal (ring_of_integers k) p /\ ~(p = {ring_0 k})
           ==> ramification_index (integer_ring,ring_of_integers k)
                 (ring_of_int k) p = 1"
-      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:A->bool")] RAMIFICATION_INDEX_PRIME_SUBFIELD) THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0(k:A ring)}"), (← q r"k:A ring"), (← q r"I:A->A"), (← q r"p:A->bool")] RING_OF_INTEGERS_PRIME_IDEAL_BELOW) THEN ASM_SIMP_TAC [FIELD_SUBFIELD_GENERATED, RING_HOMOMORPHISM_SUBFIELD_INCLUSION, EXISTS_UNIQUE_THM] THEN DISCH_THEN ((X_CHOOSE_THEN (← q r"q:A->bool") STRIP_ASSUME_TAC) o CONJUNCT1) THEN MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0(k:A ring)}"), (← q r"k:A ring"), (← q r"I:A->A"), (← q r"q:A->bool"), (← q r"p:A->bool")] NUMBER_FIELD_RAMIFICATION_RESIDUE_BOUNDS) THEN ASM_SIMP_TAC [FIELD_SUBFIELD_GENERATED, RING_HOMOMORPHISM_SUBFIELD_INCLUSION] THEN STRIP_TAC THEN MATCH_MP_TAC r2 THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC LE_TRANS THEN EXISTS_TAC (← q r"ramification_index
+      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:A->bool")] RAMIFICATION_INDEX_PRIME_SUBFIELD) THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0(k:A ring)}"), (← q r"k:A ring"), (← q r"I:A->A"), (← q r"p:A->bool")] RING_OF_INTEGERS_PRIME_IDEAL_BELOW) THEN ASM_SIMP_TAC [FIELD_SUBFIELD_GENERATED, RING_HOMOMORPHISM_SUBFIELD_INCLUSION, EXISTS_UNIQUE_THM] THEN DISCH_THEN ((X_CHOOSE_THEN (← q r"q:A->bool") STRIP_ASSUME_TAC) o CONJUNCT1) THEN MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0(k:A ring)}"), (← q r"k:A ring"), (← q r"I:A->A"), (← q r"q:A->bool"), (← q r"p:A->bool")] NUMBER_FIELD_RAMIFICATION_RESIDUE_BOUNDS) THEN ASM_SIMP_TAC [FIELD_SUBFIELD_GENERATED, RING_HOMOMORPHISM_SUBFIELD_INCLUSION] THEN STRIP_TAC THEN MATCH_MP_TAC (← ARITH_RULE (← q r"1 <= e /\ e <= 1 ==> e = 1")) THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC LE_TRANS THEN EXISTS_TAC (← q r"ramification_index
        (ring_of_integers(subfield_generated k {ring_0 k}),ring_of_integers k)
        (I:A->A) p *
       residue_degree
        (ring_of_integers(subfield_generated k {ring_0 k}),ring_of_integers k)
-       I p") THEN ASM_REWRITE_TAC [] THEN GEN_REWRITE_TAC LAND_CONV [r1] THEN MATCH_MP_TAC LE_MULT2 THEN ASM_REWRITE_TAC [LE_REFL])
+       I p") THEN ASM_REWRITE_TAC [] THEN GEN_REWRITE_TAC LAND_CONV [(← ARITH_RULE (← q r"e:num = e * 1"))] THEN MATCH_MP_TAC LE_MULT2 THEN ASM_REWRITE_TAC [LE_REFL])
 
   let NUMBER_FIELD_UNRAMIFIED_RATIONAL ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"(~p ==> F) ==> p")
     prove
       r"!(h:A->B) k l.
           field k /\ number_field l /\ ring_homomorphism(k,l) h /\
@@ -291,7 +291,7 @@ def setupInertiaGenerators [HolBase] (D : InertiaGeneratorsDeps) :
           (!p. prime_ideal (ring_of_integers k) p /\ ~(p = {ring_0 k})
                ==> unramified (ring_of_integers k,ring_of_integers l) h p)
           ==> extension_degree(k,l) h = 1"
-      (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l:B ring"), (← q r"h:A->B")] NUMBER_FIELD_TOWER_LAW) THEN ASM_REWRITE_TAC [MULT_CLAUSES] THEN DISCH_THEN (SUBST1_TAC o (SYM o CONJUNCT2)) THEN MATCH_MP_TAC r1 THEN DISCH_TAC THEN MP_TAC (← ISPEC (← q r"l:B ring") NUMBER_FIELD_RAMIFIED_PRIME_EXISTS) THEN ASM_REWRITE_TAC [NOT_EXISTS_THM] THEN MAP_EVERY X_GEN_TAC [(← q r"q:num"), (← q r"P:B->bool")] THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"~(P = {ring_0(l:B ring)})") ASSUME_TAC THENL [DISCH_THEN SUBST_ALL_TAC THEN UNDISCH_TAC (← q r"ring_of_num l q IN {ring_0(l:B ring)}") THEN REWRITE_TAC [IN_SING, RING_OF_NUM_EQ_0] THEN FIRST_ASSUM (MP_TAC o (CONJUNCT1 o (GEN_REWRITE_RULE id [number_field]))) THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [DIVIDES_ZERO] THEN ASM_MESON_TAC [PRIME_0], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l:B ring"), (← q r"h:A->B"), (← q r"P:B->bool")] RING_OF_INTEGERS_PRIME_IDEAL_BELOW) THEN ASM_REWRITE_TAC [EXISTS_UNIQUE_THM] THEN DISCH_THEN ((X_CHOOSE_THEN (← q r"p:A->bool") STRIP_ASSUME_TAC) o CONJUNCT1) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l:B ring"), (← q r"h:A->B"), (← q r"p:A->bool"), (← q r"P:B->bool")] NUMBER_FIELD_RAMIFICATION_INDEX_TOWER_Q) THEN ASM_REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:A->bool")] NUMBER_FIELD_RATIONAL_RAMIFICATION_INDEX) THEN ANTS_TAC THENL [ASM_MESON_TAC [NUMBER_FIELD_HOMOMORPHIC_PREIMAGE], DISCH_THEN SUBST1_TAC] THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"p:A->bool"))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o (MATCH_MP UNRAMIFIED_IMP_WEAKLY_UNRAMIFIED)) THEN REWRITE_TAC [weakly_unramified] THEN DISCH_THEN (MP_TAC o (SPEC (← q r"P:B->bool"))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN ASM_ARITH_TAC)
+      (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l:B ring"), (← q r"h:A->B")] NUMBER_FIELD_TOWER_LAW) THEN ASM_REWRITE_TAC [MULT_CLAUSES] THEN DISCH_THEN (SUBST1_TAC o (SYM o CONJUNCT2)) THEN MATCH_MP_TAC (← TAUT (← q r"(~p ==> F) ==> p")) THEN DISCH_TAC THEN MP_TAC (← ISPEC (← q r"l:B ring") NUMBER_FIELD_RAMIFIED_PRIME_EXISTS) THEN ASM_REWRITE_TAC [NOT_EXISTS_THM] THEN MAP_EVERY X_GEN_TAC [(← q r"q:num"), (← q r"P:B->bool")] THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"~(P = {ring_0(l:B ring)})") ASSUME_TAC THENL [DISCH_THEN SUBST_ALL_TAC THEN UNDISCH_TAC (← q r"ring_of_num l q IN {ring_0(l:B ring)}") THEN REWRITE_TAC [IN_SING, RING_OF_NUM_EQ_0] THEN FIRST_ASSUM (MP_TAC o (CONJUNCT1 o (GEN_REWRITE_RULE id [number_field]))) THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [DIVIDES_ZERO] THEN ASM_MESON_TAC [PRIME_0], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l:B ring"), (← q r"h:A->B"), (← q r"P:B->bool")] RING_OF_INTEGERS_PRIME_IDEAL_BELOW) THEN ASM_REWRITE_TAC [EXISTS_UNIQUE_THM] THEN DISCH_THEN ((X_CHOOSE_THEN (← q r"p:A->bool") STRIP_ASSUME_TAC) o CONJUNCT1) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l:B ring"), (← q r"h:A->B"), (← q r"p:A->bool"), (← q r"P:B->bool")] NUMBER_FIELD_RAMIFICATION_INDEX_TOWER_Q) THEN ASM_REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:A->bool")] NUMBER_FIELD_RATIONAL_RAMIFICATION_INDEX) THEN ANTS_TAC THENL [ASM_MESON_TAC [NUMBER_FIELD_HOMOMORPHIC_PREIMAGE], DISCH_THEN SUBST1_TAC] THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"p:A->bool"))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o (MATCH_MP UNRAMIFIED_IMP_WEAKLY_UNRAMIFIED)) THEN REWRITE_TAC [weakly_unramified] THEN DISCH_THEN (MP_TAC o (SPEC (← q r"P:B->bool"))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN ASM_ARITH_TAC)
 
   let NUMBER_FIELD_INERTIA_GROUPS_GENERATE ← prove
     r"!(h:A->B) k l.

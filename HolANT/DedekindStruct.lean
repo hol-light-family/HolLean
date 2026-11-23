@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.DedekindStruct fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -262,13 +265,12 @@ def setupDedekindStruct [HolBase] (D : DedekindStructDeps) :
 
   let DVR_IFF_LOCAL_DEDEKIND ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← SET_RULE (← q r"(t:A) IN s ==> (s INTER {t} SUBSET u <=> t IN u)")
     prove
       r"!r:A ring. DVR r <=> dedekind_domain r /\ local_ring r /\ ~(field r)"
       (GEN_TAC THEN EQ_TAC THENL [SIMP_TAC [DVR, PID_IMP_DEDEKIND], STRIP_TAC] THEN ASM_SIMP_TAC [DVR, PID, DEDEKIND_IMP_INTEGRAL_DOMAIN] THEN FIRST_ASSUM (MP_TAC o (GEN_REWRITE_RULE id [local_ring])) THEN REWRITE_TAC [EXISTS_UNIQUE_DEF] THEN DISCH_THEN ((X_CHOOSE_TAC (← q r"m:A->bool")) o CONJUNCT1) THEN SUBGOAL_THEN (← q r"ring_ideal r (m:A->bool) /\ ~(m = {ring_0 r}) /\
                   ~(m = ring_carrier r)") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [MAXIMAL_IDEAL_0, MAXIMAL_IMP_PROPER_IDEAL, PROPER_IDEAL_ALT], ALL_TAC] THEN SUBGOAL_THEN (← q r"?t:A. t IN m /\ ~(t IN ideal_pow r m 2)") STRIP_ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"m:A->bool"), (← q r"1"), (← q r"2")] DEDEKIND_IDEAL_POW_SUBSET) THEN ASM_SIMP_TAC [IDEAL_POW_1] THEN CONV_TAC NUM_REDUCE_CONV THEN SET_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"(t:A) IN ring_carrier r") ASSUME_TAC THENL [ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET], ALL_TAC] THEN SUBGOAL_THEN (← q r"ideal_generated r {t:A} = m") ASSUME_TAC THENL [SUBGOAL_THEN (← q r"ideal_generated r {t:A} SUBSET m /\
         ~(ideal_generated r {t} SUBSET ideal_pow r m 2) /\
-        ~(ideal_generated r {t} = {ring_0 r})") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL_EQ, RING_IDEAL_IDEAL_POW, IDEAL_GENERATED_EQ_0, r1] THEN DISCH_THEN SUBST_ALL_TAC THEN UNDISCH_TAC (← q r"~(ring_0 r IN ideal_pow r (m:A->bool) 2)") THEN ASM_SIMP_TAC [IN_RING_IDEAL_0, RING_IDEAL_IDEAL_POW], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"m:A->bool"), (← q r"ideal_generated r {t:A}")] DEDEKIND_LOCAL_IDEAL_MAXIMAL_POW) THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"v:num") SUBST_ALL_TAC) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"m:A->bool"), (← q r"v:num"), (← q r"1")] DEDEKIND_IDEAL_POW_SUBSET) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"m:A->bool"), (← q r"v:num"), (← q r"2")] DEDEKIND_IDEAL_POW_SUBSET) THEN ASM_SIMP_TAC [IDEAL_POW_1] THEN REPEAT DISCH_TAC THEN SUBGOAL_THEN (← q r"v = 1") (fun th => ASM_SIMP_TAC [th, IDEAL_POW_1]) THEN ASM_ARITH_TAC, ALL_TAC] THEN X_GEN_TAC (← q r"j:A->bool") THEN DISCH_TAC THEN ASM_CASES_TAC (← q r"j = {ring_0 r:A}") THEN ASM_REWRITE_TAC [PRINCIPAL_IDEAL_0] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"m:A->bool"), (← q r"j:A->bool")] DEDEKIND_LOCAL_IDEAL_MAXIMAL_POW) THEN ASM_REWRITE_TAC [principal_ideal] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"n:num") SUBST1_TAC) THEN EXISTS_TAC (← q r"ring_pow r (t:A) n") THEN FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN ASM_SIMP_TAC [RING_POW, IDEAL_POW_PRINCIPAL])
+        ~(ideal_generated r {t} = {ring_0 r})") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL_EQ, RING_IDEAL_IDEAL_POW, IDEAL_GENERATED_EQ_0, (← SET_RULE (← q r"(t:A) IN s ==> (s INTER {t} SUBSET u <=> t IN u)"))] THEN DISCH_THEN SUBST_ALL_TAC THEN UNDISCH_TAC (← q r"~(ring_0 r IN ideal_pow r (m:A->bool) 2)") THEN ASM_SIMP_TAC [IN_RING_IDEAL_0, RING_IDEAL_IDEAL_POW], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"m:A->bool"), (← q r"ideal_generated r {t:A}")] DEDEKIND_LOCAL_IDEAL_MAXIMAL_POW) THEN ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"v:num") SUBST_ALL_TAC) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"m:A->bool"), (← q r"v:num"), (← q r"1")] DEDEKIND_IDEAL_POW_SUBSET) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"m:A->bool"), (← q r"v:num"), (← q r"2")] DEDEKIND_IDEAL_POW_SUBSET) THEN ASM_SIMP_TAC [IDEAL_POW_1] THEN REPEAT DISCH_TAC THEN SUBGOAL_THEN (← q r"v = 1") (fun th => ASM_SIMP_TAC [th, IDEAL_POW_1]) THEN ASM_ARITH_TAC, ALL_TAC] THEN X_GEN_TAC (← q r"j:A->bool") THEN DISCH_TAC THEN ASM_CASES_TAC (← q r"j = {ring_0 r:A}") THEN ASM_REWRITE_TAC [PRINCIPAL_IDEAL_0] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"m:A->bool"), (← q r"j:A->bool")] DEDEKIND_LOCAL_IDEAL_MAXIMAL_POW) THEN ASM_REWRITE_TAC [principal_ideal] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"n:num") SUBST1_TAC) THEN EXISTS_TAC (← q r"ring_pow r (t:A) n") THEN FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN ASM_SIMP_TAC [RING_POW, IDEAL_POW_PRINCIPAL])
 
   let DVR_IDEAL_MAXIMAL_POW ← prove
     r"!r m j:A->bool.
@@ -284,58 +286,10 @@ def setupDedekindStruct [HolBase] (D : DedekindStructDeps) :
 
   let DEDEKIND_WEAK_APPROXIMATION ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"ring_sub r y (ring_sub r y u) = (u:A)"
-    let r2 ← RING_RULE q1
-    let q3 ← q r"u = ring_sub r y (ring_sub r y u:A)"
-    let q4 ← q r"~((u:A) IN k)"
-    let q5 ← q r"ring_add r (ring_sub r y u) u = (y:A)"
-    let r6 ← RING_RULE q5
-    let q7 ← q r"y = ring_add r (ring_sub r y u) (u:A)"
-    let q8 ← q r"(u:A) IN ring_carrier r"
-    let p9 ← prove r"!r i k u y:A.
+    let lemma := (← prove r"!r i k u y:A.
         ring_ideal r i /\ ring_ideal r k /\ k SUBSET i /\
         u IN i /\ ~(u IN k) /\ y IN ring_carrier r /\ ring_sub r y u IN k
-        ==> y IN i /\ ~(y IN k)" (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN q8 ASSUME_TAC THENL [ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET], CONJ_TAC] THENL [SUBGOAL_THEN q7 SUBST1_TAC THENL [ASM_SIMP_TAC [r6], ASM_MESON_TAC [IN_RING_IDEAL_ADD, SUBSET]], DISCH_TAC THEN UNDISCH_TAC q4 THEN REWRITE_TAC [] THEN SUBGOAL_THEN q3 SUBST1_TAC THENL [ASM_SIMP_TAC [r2], ASM_SIMP_TAC [IN_RING_IDEAL_SUB]]])
-    let lemma := p9
-    let q10 ← q r"(y:A) IN s ==> (s INTER {y} SUBSET u <=> y IN u)"
-    let r11 ← SET_RULE q10
-    let q12 ← q r"p:A->bool"
-    let v13 ← GSYM MEMBER_NOT_EMPTY
-    let q14 ← q r"y:A"
-    let q15 ← q r"n <= SUC n"
-    let r16 ← ARITH_RULE q15
-    let q17 ← q r"(x:(A->bool)->A) p"
-    let q18 ← q r"r:A ring"
-    let v19 ← ISPEC q18 lemma
-    let q20 ← q r"p:A->bool"
-    let q21 ← q r"!p:A->bool. p IN s
-                ==> y IN ideal_pow r p (n p) /\
-                    ~(y IN ideal_pow r p (SUC(n p)))"
-    let q22 ← q r"y:A"
-    let q23 ← q r"q:A->bool"
-    let q24 ← q r"p:A->bool"
-    let q25 ← q r"x:(A->bool)->A"
-    let q26 ← q r"\p:A->bool. ideal_pow r p (SUC(n p))"
-    let q27 ← q r"s:(A->bool)->bool"
-    let q28 ← q r"r:A ring"
-    let v29 ← ISPECL [q28, q27, q26, q25] CHINESE_REMAINDER_IDEALS
-    let q30 ← q r"x:(A->bool)->A"
-    let q31 ← q r"~(SUC n <= n)"
-    let r32 ← ARITH_RULE q31
-    let q33 ← q r"SUC((n:(A->bool)->num) p)"
-    let q34 ← q r"(n:(A->bool)->num) p"
-    let q35 ← q r"p:A->bool"
-    let q36 ← q r"r:A ring"
-    let v37 ← ISPECL [q36, q35, q34, q33] DEDEKIND_IDEAL_POW_SUBSET
-    let q38 ← q r"p:A->bool"
-    let q39 ← q r"!p. ?x:A. p IN s
-              ==> x IN ideal_pow r p (n p) /\
-                  ~(x IN ideal_pow r p (SUC(n p)))"
-    let q40 ← q r"!p:A->bool. p IN s
-                ==> ring_ideal r p /\ ~(p = ring_carrier r) /\
-                    maximal_ideal r p"
-    let q41 ← q r"ring_1 r:A"
-    let q42 ← q r"s:(A->bool)->bool = {}"
+        ==> y IN i /\ ~(y IN k)" (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"(u:A) IN ring_carrier r") ASSUME_TAC THENL [ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET], CONJ_TAC] THENL [SUBGOAL_THEN (← q r"y = ring_add r (ring_sub r y u) (u:A)") SUBST1_TAC THENL [ASM_SIMP_TAC [(← RING_RULE (← q r"ring_add r (ring_sub r y u) u = (y:A)"))], ASM_MESON_TAC [IN_RING_IDEAL_ADD, SUBSET]], DISCH_TAC THEN UNDISCH_TAC (← q r"~((u:A) IN k)") THEN REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"u = ring_sub r y (ring_sub r y u:A)") SUBST1_TAC THENL [ASM_SIMP_TAC [(← RING_RULE (← q r"ring_sub r y (ring_sub r y u) = (u:A)"))], ASM_SIMP_TAC [IN_RING_IDEAL_SUB]]]))
     prove
       r"!r s (n:(A->bool)->num).
           dedekind_domain r /\ FINITE s /\
@@ -343,7 +297,13 @@ def setupDedekindStruct [HolBase] (D : DedekindStructDeps) :
           ==> ?a. a IN ring_carrier r /\ ~(a = ring_0 r) /\
                   !p. p IN s
                       ==> ideal_valuation r p (ideal_generated r {a}) = n p"
-      (REPEAT STRIP_TAC THEN ASM_CASES_TAC q42 THENL [EXISTS_TAC q41 THEN ASM_MESON_TAC [NOT_IN_EMPTY, RING_1, DEDEKIND_IMP_INTEGRAL_DOMAIN, integral_domain], ALL_TAC] THEN SUBGOAL_THEN q40 ASSUME_TAC THENL [ASM_MESON_TAC [PRIME_IMP_PROPER_IDEAL, PROPER_IDEAL_ALT, DEDEKIND_NONZERO_PRIME_IMP_MAXIMAL], ALL_TAC] THEN SUBGOAL_THEN q39 MP_TAC THENL [X_GEN_TAC q38 THEN REWRITE_TAC [RIGHT_EXISTS_IMP_THM] THEN DISCH_TAC THEN MP_TAC v37 THEN ASM_SIMP_TAC [r32] THEN SET_TAC [], REWRITE_TAC [SKOLEM_THM, LEFT_IMP_EXISTS_THM]] THEN X_GEN_TAC q30 THEN DISCH_TAC THEN MP_TAC v29 THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_POW] THEN ANTS_TAC THENL [CONJ_TAC THENL [ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, RING_IDEAL_IDEAL_POW, SUBSET], REWRITE_TAC [pairwise]] THEN MAP_EVERY X_GEN_TAC [q24, q23] THEN STRIP_TAC THEN MATCH_MP_TAC COMAXIMAL_IDEAL_POW THEN ASM_SIMP_TAC [MAXIMAL_IDEAL_COMAXIMAL] THEN ASM_MESON_TAC [DEDEKIND_KRULL_DIMENSION_ONE], DISCH_THEN (X_CHOOSE_THEN q22 STRIP_ASSUME_TAC)] THEN SUBGOAL_THEN q21 ASSUME_TAC THENL [X_GEN_TAC q20 THEN DISCH_TAC THEN MATCH_MP_TAC v19 THEN EXISTS_TAC q17 THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_POW, IDEAL_POW_ANTIMONO, RING_IDEAL_IMP_SUBSET, r16], ALL_TAC] THEN EXISTS_TAC q14 THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [DISCH_THEN SUBST_ALL_TAC THEN FIRST_X_ASSUM (MP_TAC o (GEN_REWRITE_RULE id [v13])) THEN ASM_MESON_TAC [IN_RING_IDEAL_0, RING_IDEAL_IDEAL_POW], X_GEN_TAC q12 THEN DISCH_TAC THEN MATCH_MP_TAC IDEAL_VALUATION_UNIQUE THEN ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL_EQ, RING_IDEAL_IDEAL_POW, r11]])
+      (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"s:(A->bool)->bool = {}") THENL [EXISTS_TAC (← q r"ring_1 r:A") THEN ASM_MESON_TAC [NOT_IN_EMPTY, RING_1, DEDEKIND_IMP_INTEGRAL_DOMAIN, integral_domain], ALL_TAC] THEN SUBGOAL_THEN (← q r"!p:A->bool. p IN s
+                ==> ring_ideal r p /\ ~(p = ring_carrier r) /\
+                    maximal_ideal r p") ASSUME_TAC THENL [ASM_MESON_TAC [PRIME_IMP_PROPER_IDEAL, PROPER_IDEAL_ALT, DEDEKIND_NONZERO_PRIME_IMP_MAXIMAL], ALL_TAC] THEN SUBGOAL_THEN (← q r"!p. ?x:A. p IN s
+              ==> x IN ideal_pow r p (n p) /\
+                  ~(x IN ideal_pow r p (SUC(n p)))") MP_TAC THENL [X_GEN_TAC (← q r"p:A->bool") THEN REWRITE_TAC [RIGHT_EXISTS_IMP_THM] THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"p:A->bool"), (← q r"(n:(A->bool)->num) p"), (← q r"SUC((n:(A->bool)->num) p)")] DEDEKIND_IDEAL_POW_SUBSET) THEN ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(SUC n <= n)"))] THEN SET_TAC [], REWRITE_TAC [SKOLEM_THM, LEFT_IMP_EXISTS_THM]] THEN X_GEN_TAC (← q r"x:(A->bool)->A") THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"s:(A->bool)->bool"), (← q r"\p:A->bool. ideal_pow r p (SUC(n p))"), (← q r"x:(A->bool)->A")] CHINESE_REMAINDER_IDEALS) THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_POW] THEN ANTS_TAC THENL [CONJ_TAC THENL [ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, RING_IDEAL_IDEAL_POW, SUBSET], REWRITE_TAC [pairwise]] THEN MAP_EVERY X_GEN_TAC [(← q r"p:A->bool"), (← q r"q:A->bool")] THEN STRIP_TAC THEN MATCH_MP_TAC COMAXIMAL_IDEAL_POW THEN ASM_SIMP_TAC [MAXIMAL_IDEAL_COMAXIMAL] THEN ASM_MESON_TAC [DEDEKIND_KRULL_DIMENSION_ONE], DISCH_THEN (X_CHOOSE_THEN (← q r"y:A") STRIP_ASSUME_TAC)] THEN SUBGOAL_THEN (← q r"!p:A->bool. p IN s
+                ==> y IN ideal_pow r p (n p) /\
+                    ~(y IN ideal_pow r p (SUC(n p)))") ASSUME_TAC THENL [X_GEN_TAC (← q r"p:A->bool") THEN DISCH_TAC THEN MATCH_MP_TAC (← ISPEC (← q r"r:A ring") lemma) THEN EXISTS_TAC (← q r"(x:(A->bool)->A) p") THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_POW, IDEAL_POW_ANTIMONO, RING_IDEAL_IMP_SUBSET, (← ARITH_RULE (← q r"n <= SUC n"))], ALL_TAC] THEN EXISTS_TAC (← q r"y:A") THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [DISCH_THEN SUBST_ALL_TAC THEN FIRST_X_ASSUM (MP_TAC o (GEN_REWRITE_RULE id [(← GSYM MEMBER_NOT_EMPTY)])) THEN ASM_MESON_TAC [IN_RING_IDEAL_0, RING_IDEAL_IDEAL_POW], X_GEN_TAC (← q r"p:A->bool") THEN DISCH_TAC THEN MATCH_MP_TAC IDEAL_VALUATION_UNIQUE THEN ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL_EQ, RING_IDEAL_IDEAL_POW, (← SET_RULE (← q r"(y:A) IN s ==> (s INTER {y} SUBSET u <=> y IN u)"))]])
 
   let DEDEKIND_IDEAL_WEAK_APPROXIMATION ← prove
     r"!r s (J:A->bool).
@@ -359,8 +319,6 @@ def setupDedekindStruct [HolBase] (D : DedekindStructDeps) :
 
   let DEDEKIND_TWO_GENERATORS_STRONG ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← SET_RULE (← q r"{a:A,b} = {a} UNION {b}")
-    let r2 ← ARITH_RULE (← q r"y <= x /\ x = 0 ==> x = 0 /\ y = 0")
     prove
       r"!r j (a:A).
           dedekind_domain r /\ ring_ideal r j /\ a IN j /\ ~(a = ring_0 r)
@@ -370,29 +328,27 @@ def setupDedekindStruct [HolBase] (D : DedekindStructDeps) :
                 ~(ideal_generated r {x} = {ring_0 r})") ASSUME_TAC THENL [SIMP_TAC [RING_IDEAL_IDEAL_GENERATED, IDEAL_GENERATED_EQ_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"!p. prime_ideal r p /\ ~(p = {ring_0 r}) /\
           ~(ideal_generated r {a:A} SUBSET p)
           ==> ideal_valuation r p (ideal_generated r {a}) = 0 /\
-              ideal_valuation r p j = 0") ASSUME_TAC THENL [REPEAT GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC r2 THEN ASM_SIMP_TAC [IDEAL_VALUATION_EQ_0] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ideal_generated r {a:A}"), (← q r"j:A->bool")] DEDEKIND_IDEAL_SUBSET_VALUATION) THEN ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL, SING_SUBSET] THEN DISCH_THEN (MP_TAC o (SPEC (← q r"p:A->bool"))) THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ideal_generated r {a:A}")] DEDEKIND_IDEAL_FACTORIZATION) THEN ASM_SIMP_TAC [] THEN DISCH_THEN (MP_TAC o CONJUNCT1) THEN ABBREV_TAC (← q r"s = {p | prime_ideal r p /\ ~(p = {ring_0 r}) /\
+              ideal_valuation r p j = 0") ASSUME_TAC THENL [REPEAT GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC (← ARITH_RULE (← q r"y <= x /\ x = 0 ==> x = 0 /\ y = 0")) THEN ASM_SIMP_TAC [IDEAL_VALUATION_EQ_0] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ideal_generated r {a:A}"), (← q r"j:A->bool")] DEDEKIND_IDEAL_SUBSET_VALUATION) THEN ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL, SING_SUBSET] THEN DISCH_THEN (MP_TAC o (SPEC (← q r"p:A->bool"))) THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ideal_generated r {a:A}")] DEDEKIND_IDEAL_FACTORIZATION) THEN ASM_SIMP_TAC [] THEN DISCH_THEN (MP_TAC o CONJUNCT1) THEN ABBREV_TAC (← q r"s = {p | prime_ideal r p /\ ~(p = {ring_0 r}) /\
                          ideal_generated r {a:A} SUBSET p}") THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"!p. prime_ideal r p /\ ~(p = {ring_0 r}) /\ ~(p IN s)
-          ==> ~(ideal_generated r {a:A} SUBSET p)") ASSUME_TAC THENL [EXPAND_TAC "s" THEN REWRITE_TAC [IN_ELIM_THM] THEN MESON_TAC [], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"s:(A->bool)->bool"), (← q r"\p:A->bool. ideal_valuation r p j")] DEDEKIND_WEAK_APPROXIMATION) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN EXPAND_TAC "s" THEN SIMP_TAC [IN_ELIM_THM], DISCH_THEN ((X_CHOOSE_THEN (← q r"b:A") STRIP_ASSUME_TAC) o BETA_RULE)] THEN SUBGOAL_THEN (← q r"ideal_generated r {b:A} SUBSET j") ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ideal_generated r {b:A}"), (← q r"j:A->bool")] DEDEKIND_IDEAL_SUBSET_VALUATION) THEN ANTS_TAC THENL [ASM_SIMP_TAC [], DISCH_THEN SUBST1_TAC] THEN X_GEN_TAC (← q r"p:A->bool") THEN STRIP_TAC THEN ASM_CASES_TAC (← q r"(p:A->bool) IN s") THEN ASM_SIMP_TAC [LE_REFL, LE_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"(b:A) IN j") ASSUME_TAC THENL [ASM_MESON_TAC [IN_IDEAL_GENERATED_SELF, SUBSET], ALL_TAC] THEN EXISTS_TAC (← q r"b:A") THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC SUBSET_ANTISYM THEN ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL, INSERT_SUBSET, EMPTY_SUBSET] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"j:A->bool"), (← q r"ideal_generated r {a:A,b}")] DEDEKIND_IDEAL_SUBSET_VALUATION) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN ASM_MESON_TAC [IDEAL_GENERATED_INC_GEN, IN_INSERT, IN_SING], DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [r1, IDEAL_GENERATED_UNION] THEN X_GEN_TAC (← q r"p:A->bool") THEN STRIP_TAC THEN ASM_SIMP_TAC [IDEAL_VALUATION_SETADD] THEN ASM_CASES_TAC (← q r"(p:A->bool) IN s") THEN ASM_SIMP_TAC [] THEN ARITH_TAC)
+          ==> ~(ideal_generated r {a:A} SUBSET p)") ASSUME_TAC THENL [EXPAND_TAC "s" THEN REWRITE_TAC [IN_ELIM_THM] THEN MESON_TAC [], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"s:(A->bool)->bool"), (← q r"\p:A->bool. ideal_valuation r p j")] DEDEKIND_WEAK_APPROXIMATION) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN EXPAND_TAC "s" THEN SIMP_TAC [IN_ELIM_THM], DISCH_THEN ((X_CHOOSE_THEN (← q r"b:A") STRIP_ASSUME_TAC) o BETA_RULE)] THEN SUBGOAL_THEN (← q r"ideal_generated r {b:A} SUBSET j") ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ideal_generated r {b:A}"), (← q r"j:A->bool")] DEDEKIND_IDEAL_SUBSET_VALUATION) THEN ANTS_TAC THENL [ASM_SIMP_TAC [], DISCH_THEN SUBST1_TAC] THEN X_GEN_TAC (← q r"p:A->bool") THEN STRIP_TAC THEN ASM_CASES_TAC (← q r"(p:A->bool) IN s") THEN ASM_SIMP_TAC [LE_REFL, LE_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"(b:A) IN j") ASSUME_TAC THENL [ASM_MESON_TAC [IN_IDEAL_GENERATED_SELF, SUBSET], ALL_TAC] THEN EXISTS_TAC (← q r"b:A") THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC SUBSET_ANTISYM THEN ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL, INSERT_SUBSET, EMPTY_SUBSET] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"j:A->bool"), (← q r"ideal_generated r {a:A,b}")] DEDEKIND_IDEAL_SUBSET_VALUATION) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN ASM_MESON_TAC [IDEAL_GENERATED_INC_GEN, IN_INSERT, IN_SING], DISCH_THEN SUBST1_TAC] THEN REWRITE_TAC [(← SET_RULE (← q r"{a:A,b} = {a} UNION {b}")), IDEAL_GENERATED_UNION] THEN X_GEN_TAC (← q r"p:A->bool") THEN STRIP_TAC THEN ASM_SIMP_TAC [IDEAL_VALUATION_SETADD] THEN ASM_CASES_TAC (← q r"(p:A->bool) IN s") THEN ASM_SIMP_TAC [] THEN ARITH_TAC)
 
   let DEDEKIND_TWO_GENERATORS ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← SET_RULE (← q r"(z:A) IN s /\ ~(s = {z}) ==> ?a. a IN s /\ ~(a = z)")
     prove
       r"!r (j:A->bool).
       dedekind_domain r /\ ring_ideal r j
       ==> ?a b. a IN ring_carrier r /\ b IN ring_carrier r /\
                 ideal_generated r {a, b} = j"
-      (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"j = {ring_0 r:A}") THENL [MAP_EVERY EXISTS_TAC [(← q r"ring_0 r:A"), (← q r"ring_0 r:A")] THEN ASM_REWRITE_TAC [RING_0, INSERT_INSERT, IDEAL_GENERATED_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"?a:A. a IN j /\ ~(a = ring_0 r)") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [IN_RING_IDEAL_0, r1], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"j:A->bool"), (← q r"a:A")] DEDEKIND_TWO_GENERATORS_STRONG) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"b:A") STRIP_ASSUME_TAC) THEN MAP_EVERY EXISTS_TAC [(← q r"a:A"), (← q r"b:A")] THEN ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET])
+      (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"j = {ring_0 r:A}") THENL [MAP_EVERY EXISTS_TAC [(← q r"ring_0 r:A"), (← q r"ring_0 r:A")] THEN ASM_REWRITE_TAC [RING_0, INSERT_INSERT, IDEAL_GENERATED_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"?a:A. a IN j /\ ~(a = ring_0 r)") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [IN_RING_IDEAL_0, (← SET_RULE (← q r"(z:A) IN s /\ ~(s = {z}) ==> ?a. a IN s /\ ~(a = z)"))], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"j:A->bool"), (← q r"a:A")] DEDEKIND_TWO_GENERATORS_STRONG) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"b:A") STRIP_ASSUME_TAC) THEN MAP_EVERY EXISTS_TAC [(← q r"a:A"), (← q r"b:A")] THEN ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET])
 
   let DEDEKIND_QUOTIENT_PRINCIPAL ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← SET_RULE (← q r"(z:A) IN s /\ ~(s = {z}) ==> ?a. a IN s /\ ~(a = z)")
     prove
       r"!r (j:A->bool).
       dedekind_domain r /\ ring_ideal r j /\ ~(j = {ring_0 r})
       ==> !k. ring_ideal (quotient_ring r j) k
               ==> principal_ideal (quotient_ring r j) k"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN ASM_SIMP_TAC [QUOTIENT_RING_IDEAL_CORRESPONDENCE, LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q r"k:(A->bool)->bool") THEN X_GEN_TAC (← q r"i:A->bool") THEN STRIP_TAC THEN FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN SUBGOAL_THEN (← q r"?a:A. a IN j /\ ~(a = ring_0 r)") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [IN_RING_IDEAL_0, r1], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"i:A->bool"), (← q r"a:A")] DEDEKIND_TWO_GENERATORS_STRONG) THEN ANTS_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"b:A") (CONJUNCTS_THEN2 ASSUME_TAC (SUBST1_TAC o SYM))) THEN SUBGOAL_THEN (← q r"(a:A) IN ring_carrier r /\ b IN ring_carrier r") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"quotient_ring r (j:A->bool)"), (← q r"ring_coset r (j:A->bool)"), (← q r"{a:A,b}")] IDEAL_GENERATED_BY_EPIMORPHIC_IMAGE) THEN ASM_SIMP_TAC [RING_EPIMORPHISM_RING_COSET, INSERT_SUBSET, EMPTY_SUBSET] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN REWRITE_TAC [IMAGE_CLAUSES] THEN SUBGOAL_THEN (← q r"ring_coset r j (a:A) = ring_0(quotient_ring r j)") SUBST1_TAC THENL [ASM_SIMP_TAC [QUOTIENT_RING_0, RING_COSET_EQ_IDEAL], ALL_TAC] THEN REWRITE_TAC [IDEAL_GENERATED_INSERT_ZERO, PRINCIPAL_IDEAL_IDEAL_GENERATED_SING])
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN ASM_SIMP_TAC [QUOTIENT_RING_IDEAL_CORRESPONDENCE, LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q r"k:(A->bool)->bool") THEN X_GEN_TAC (← q r"i:A->bool") THEN STRIP_TAC THEN FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN SUBGOAL_THEN (← q r"?a:A. a IN j /\ ~(a = ring_0 r)") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [IN_RING_IDEAL_0, (← SET_RULE (← q r"(z:A) IN s /\ ~(s = {z}) ==> ?a. a IN s /\ ~(a = z)"))], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"i:A->bool"), (← q r"a:A")] DEDEKIND_TWO_GENERATORS_STRONG) THEN ANTS_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"b:A") (CONJUNCTS_THEN2 ASSUME_TAC (SUBST1_TAC o SYM))) THEN SUBGOAL_THEN (← q r"(a:A) IN ring_carrier r /\ b IN ring_carrier r") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"quotient_ring r (j:A->bool)"), (← q r"ring_coset r (j:A->bool)"), (← q r"{a:A,b}")] IDEAL_GENERATED_BY_EPIMORPHIC_IMAGE) THEN ASM_SIMP_TAC [RING_EPIMORPHISM_RING_COSET, INSERT_SUBSET, EMPTY_SUBSET] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN REWRITE_TAC [IMAGE_CLAUSES] THEN SUBGOAL_THEN (← q r"ring_coset r j (a:A) = ring_0(quotient_ring r j)") SUBST1_TAC THENL [ASM_SIMP_TAC [QUOTIENT_RING_0, RING_COSET_EQ_IDEAL], ALL_TAC] THEN REWRITE_TAC [IDEAL_GENERATED_INSERT_ZERO, PRINCIPAL_IDEAL_IDEAL_GENERATED_SING])
 
   let DEDEKIND_LOCAL_QUOTIENT_PRIME_POW ← prove
     r"!r p:A->bool n.
@@ -432,12 +388,11 @@ def setupDedekindStruct [HolBase] (D : DedekindStructDeps) :
 
   let IDEAL_CLASS_REFL ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← SET_RULE (← q r"(z:A) IN s /\ ~(s = {z}) ==> ?a. a IN s /\ ~(a = z)")
     prove
       r"!r:A ring j.
           ring_ideal r j /\ ~(j = {ring_0 r})
           ==> j IN ideal_class r j"
-      (REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [IN_IDEAL_CLASS] THEN SUBGOAL_THEN (← q r"?a:A. a IN j /\ ~(a = ring_0 r)") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [IN_RING_IDEAL_0, r1], MAP_EVERY EXISTS_TAC [(← q r"a:A"), (← q r"a:A")] THEN ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET]])
+      (REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [IN_IDEAL_CLASS] THEN SUBGOAL_THEN (← q r"?a:A. a IN j /\ ~(a = ring_0 r)") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [IN_RING_IDEAL_0, (← SET_RULE (← q r"(z:A) IN s /\ ~(s = {z}) ==> ?a. a IN s /\ ~(a = z)"))], MAP_EVERY EXISTS_TAC [(← q r"a:A"), (← q r"a:A")] THEN ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET]])
 
   let IDEAL_CLASS_SYM ← prove
     r"!r:A ring j k.
@@ -502,8 +457,6 @@ def setupDedekindStruct [HolBase] (D : DedekindStructDeps) :
 
   let DEDEKIND_IDEAL_CLASS_COPRIME ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r8 ← TAUT (← q r"(~p ==> F) ==> p")
-    let r21 ← ARITH_RULE (← q r"n = 0 ==> n <= m")
     prove
       r"!r i j:A->bool.
           dedekind_domain r /\ ring_ideal r i /\ ~(i = {ring_0 r}) /\
@@ -513,7 +466,7 @@ def setupDedekindStruct [HolBase] (D : DedekindStructDeps) :
                (j SUBSET P \/ (i':A->bool) SUBSET P)}") THEN SUBGOAL_THEN (← q r"FINITE(s:(A->bool)->bool)") ASSUME_TAC THENL [EXPAND_TAC "s" THEN SUBGOAL_THEN (← q r"{P | prime_ideal r P /\ ~(P = {ring_0 r}) /\
              (j SUBSET P \/ (i':A->bool) SUBSET P)} =
         {P | prime_ideal r P /\ ~(P = {ring_0 r}) /\ j SUBSET P} UNION
-        {P | prime_ideal r P /\ ~(P = {ring_0 r}) /\ i' SUBSET P}") SUBST1_TAC THENL [REWRITE_TAC [EXTENSION, IN_UNION, IN_ELIM_THM] THEN MESON_TAC [], ASM_SIMP_TAC [FINITE_UNION, DEDEKIND_IDEAL_FACTORIZATION]], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"s:(A->bool)->bool"), (← q r"\P. ideal_valuation r P (i':A->bool)")] DEDEKIND_WEAK_APPROXIMATION) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN EXPAND_TAC "s" THEN SIMP_TAC [IN_ELIM_THM], REWRITE_TAC [LEFT_IMP_EXISTS_THM]] THEN X_GEN_TAC (← q r"a:A") THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"~(ideal_generated r {a:A} = {ring_0 r})") ASSUME_TAC THENL [ASM_REWRITE_TAC [IDEAL_GENERATED_EQ_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"ideal_generated r {a:A} SUBSET i'") MP_TAC THENL [ASM_SIMP_TAC [DEDEKIND_IDEAL_SUBSET_VALUATION, RING_IDEAL_IDEAL_GENERATED] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN ASM_CASES_TAC (← q r"(P:A->bool) IN s") THEN ASM_SIMP_TAC [LE_REFL] THEN MATCH_MP_TAC r21 THEN ASM_SIMP_TAC [IDEAL_VALUATION_EQ_0] THEN UNDISCH_TAC (← q r"~((P:A->bool) IN s)") THEN EXPAND_TAC "s" THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN MESON_TAC [], ASM_SIMP_TAC [DEDEKIND_IDEAL_SUBSET_IFF_DIVIDES, RING_IDEAL_IDEAL_GENERATED, LEFT_IMP_EXISTS_THM]] THEN X_GEN_TAC (← q r"k:A->bool") THEN STRIP_TAC THEN EXISTS_TAC (← q r"k:A->bool") THEN SUBGOAL_THEN (← q r"~(k = {ring_0 r:A})") ASSUME_TAC THENL [DISCH_THEN SUBST_ALL_TAC THEN UNDISCH_TAC (← q r"~(ideal_generated r {a:A} = {ring_0 r})") THEN FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun th => (do let z20 ← (q r"ideal_generated r {a:A}"); let z19 ← (do let z17 ← (do let z18 ← (pure th); pure (concl z18)); liftExcept (rand z17)); pure (z19 == z20)))))) THEN ASM_SIMP_TAC [IDEAL_PROD_RZERO, RING_IDEAL_IMP_SUBSET], ALL_TAC] THEN CONJ_TAC THENL [ASM_REWRITE_TAC [IN_IDEAL_CLASS] THEN MAP_EVERY EXISTS_TAC [(← q r"a:A"), (← q r"b:A")] THEN ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun th => (do let z16 ← (q r"ideal_generated r {a:A}"); let z15 ← (do let z13 ← (do let z14 ← (pure th); pure (concl z14)); liftExcept (rand z13)); pure (z15 == z16)))))) THEN FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun th => (do let z12 ← (q r"ideal_generated r {b:A}"); let z11 ← (do let z9 ← (do let z10 ← (pure th); pure (concl z10)); liftExcept (rand z9)); pure (z11 == z12)))))) THEN ASM_SIMP_TAC [IDEAL_PROD_AC, RING_IDEAL_IMP_SUBSET, RING_IDEAL_IDEAL_PROD, RING_IDEAL_IDEAL_GENERATED], ALL_TAC] THEN MATCH_MP_TAC r8 THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_setadd r k (j:A->bool)")] MAXIMAL_SUPERIDEAL_EXISTS) THEN ANTS_TAC THENL [ASM_SIMP_TAC [proper_ideal, RING_IDEAL_SETADD, PSUBSET] THEN ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, RING_IDEAL_SETADD], DISCH_THEN (X_CHOOSE_THEN (← q r"P:A->bool") STRIP_ASSUME_TAC)] THEN SUBGOAL_THEN (← q r"prime_ideal r (P:A->bool) /\ ~(P = {ring_0 r})") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [MAXIMAL_IMP_PRIME_IDEAL] THEN DISCH_THEN SUBST_ALL_TAC THEN UNDISCH_TAC (← q r"~(j = {ring_0 r:A})") THEN REWRITE_TAC [] THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL [ASM_MESON_TAC [RING_SETADD_SUPERSET_RIGHT, SUBSET_TRANS, RING_IDEAL_IMP_SUBSET, IN_RING_IDEAL_0], ASM_MESON_TAC [IN_RING_IDEAL_0, SING_SUBSET]], ALL_TAC] THEN SUBGOAL_THEN (← q r"(P:A->bool) IN s") ASSUME_TAC THENL [EXPAND_TAC "s" THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN DISJ1_TAC THEN ASM_MESON_TAC [RING_SETADD_SUPERSET_RIGHT, SUBSET_TRANS, RING_IDEAL_IMP_SUBSET, IN_RING_IDEAL_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"ideal_valuation r P (k:A->bool) = 0") MP_TAC THENL [FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"P:A->bool")) o (checkM (fun z5 => (do let z6 ← (do let z7 ← (pure z5); pure (concl z7)); pure (is_forall z6)))))) THEN ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun th => (do let z4 ← (q r"ideal_generated r {a:A}"); let z3 ← (do let z1 ← (do let z2 ← (pure th); pure (concl z2)); liftExcept (rand z1)); pure (z3 == z4)))))) THEN ASM_SIMP_TAC [IDEAL_VALUATION_IDEAL_PROD] THEN ARITH_TAC, ASM_SIMP_TAC [IDEAL_VALUATION_EQ_0] THEN ASM_MESON_TAC [RING_SETADD_SUPERSET_LEFT, SUBSET_TRANS, RING_IDEAL_IMP_SUBSET, IN_RING_IDEAL_0]])
+        {P | prime_ideal r P /\ ~(P = {ring_0 r}) /\ i' SUBSET P}") SUBST1_TAC THENL [REWRITE_TAC [EXTENSION, IN_UNION, IN_ELIM_THM] THEN MESON_TAC [], ASM_SIMP_TAC [FINITE_UNION, DEDEKIND_IDEAL_FACTORIZATION]], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"s:(A->bool)->bool"), (← q r"\P. ideal_valuation r P (i':A->bool)")] DEDEKIND_WEAK_APPROXIMATION) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN EXPAND_TAC "s" THEN SIMP_TAC [IN_ELIM_THM], REWRITE_TAC [LEFT_IMP_EXISTS_THM]] THEN X_GEN_TAC (← q r"a:A") THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"~(ideal_generated r {a:A} = {ring_0 r})") ASSUME_TAC THENL [ASM_REWRITE_TAC [IDEAL_GENERATED_EQ_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"ideal_generated r {a:A} SUBSET i'") MP_TAC THENL [ASM_SIMP_TAC [DEDEKIND_IDEAL_SUBSET_VALUATION, RING_IDEAL_IDEAL_GENERATED] THEN X_GEN_TAC (← q r"P:A->bool") THEN STRIP_TAC THEN ASM_CASES_TAC (← q r"(P:A->bool) IN s") THEN ASM_SIMP_TAC [LE_REFL] THEN MATCH_MP_TAC (← ARITH_RULE (← q r"n = 0 ==> n <= m")) THEN ASM_SIMP_TAC [IDEAL_VALUATION_EQ_0] THEN UNDISCH_TAC (← q r"~((P:A->bool) IN s)") THEN EXPAND_TAC "s" THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN MESON_TAC [], ASM_SIMP_TAC [DEDEKIND_IDEAL_SUBSET_IFF_DIVIDES, RING_IDEAL_IDEAL_GENERATED, LEFT_IMP_EXISTS_THM]] THEN X_GEN_TAC (← q r"k:A->bool") THEN STRIP_TAC THEN EXISTS_TAC (← q r"k:A->bool") THEN SUBGOAL_THEN (← q r"~(k = {ring_0 r:A})") ASSUME_TAC THENL [DISCH_THEN SUBST_ALL_TAC THEN UNDISCH_TAC (← q r"~(ideal_generated r {a:A} = {ring_0 r})") THEN FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun th => (do let z20 ← (q r"ideal_generated r {a:A}"); let z19 ← (do let z17 ← (do let z18 ← (pure th); pure (concl z18)); liftExcept (rand z17)); pure (z19 == z20)))))) THEN ASM_SIMP_TAC [IDEAL_PROD_RZERO, RING_IDEAL_IMP_SUBSET], ALL_TAC] THEN CONJ_TAC THENL [ASM_REWRITE_TAC [IN_IDEAL_CLASS] THEN MAP_EVERY EXISTS_TAC [(← q r"a:A"), (← q r"b:A")] THEN ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun th => (do let z16 ← (q r"ideal_generated r {a:A}"); let z15 ← (do let z13 ← (do let z14 ← (pure th); pure (concl z14)); liftExcept (rand z13)); pure (z15 == z16)))))) THEN FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun th => (do let z12 ← (q r"ideal_generated r {b:A}"); let z11 ← (do let z9 ← (do let z10 ← (pure th); pure (concl z10)); liftExcept (rand z9)); pure (z11 == z12)))))) THEN ASM_SIMP_TAC [IDEAL_PROD_AC, RING_IDEAL_IMP_SUBSET, RING_IDEAL_IDEAL_PROD, RING_IDEAL_IDEAL_GENERATED], ALL_TAC] THEN MATCH_MP_TAC (← TAUT (← q r"(~p ==> F) ==> p")) THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_setadd r k (j:A->bool)")] MAXIMAL_SUPERIDEAL_EXISTS) THEN ANTS_TAC THENL [ASM_SIMP_TAC [proper_ideal, RING_IDEAL_SETADD, PSUBSET] THEN ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, RING_IDEAL_SETADD], DISCH_THEN (X_CHOOSE_THEN (← q r"P:A->bool") STRIP_ASSUME_TAC)] THEN SUBGOAL_THEN (← q r"prime_ideal r (P:A->bool) /\ ~(P = {ring_0 r})") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [MAXIMAL_IMP_PRIME_IDEAL] THEN DISCH_THEN SUBST_ALL_TAC THEN UNDISCH_TAC (← q r"~(j = {ring_0 r:A})") THEN REWRITE_TAC [] THEN MATCH_MP_TAC SUBSET_ANTISYM THEN CONJ_TAC THENL [ASM_MESON_TAC [RING_SETADD_SUPERSET_RIGHT, SUBSET_TRANS, RING_IDEAL_IMP_SUBSET, IN_RING_IDEAL_0], ASM_MESON_TAC [IN_RING_IDEAL_0, SING_SUBSET]], ALL_TAC] THEN SUBGOAL_THEN (← q r"(P:A->bool) IN s") ASSUME_TAC THENL [EXPAND_TAC "s" THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN DISJ1_TAC THEN ASM_MESON_TAC [RING_SETADD_SUPERSET_RIGHT, SUBSET_TRANS, RING_IDEAL_IMP_SUBSET, IN_RING_IDEAL_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"ideal_valuation r P (k:A->bool) = 0") MP_TAC THENL [FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"P:A->bool")) o (checkM (fun z5 => (do let z6 ← (do let z7 ← (pure z5); pure (concl z7)); pure (is_forall z6)))))) THEN ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun th => (do let z4 ← (q r"ideal_generated r {a:A}"); let z3 ← (do let z1 ← (do let z2 ← (pure th); pure (concl z2)); liftExcept (rand z1)); pure (z3 == z4)))))) THEN ASM_SIMP_TAC [IDEAL_VALUATION_IDEAL_PROD] THEN ARITH_TAC, ASM_SIMP_TAC [IDEAL_VALUATION_EQ_0] THEN ASM_MESON_TAC [RING_SETADD_SUPERSET_LEFT, SUBSET_TRANS, RING_IDEAL_IMP_SUBSET, IN_RING_IDEAL_0]])
 
   -- @@RETURN BEGIN
   return { DVR, DVR_IMP_DEDEKIND, DEDEKIND_LOCAL_IDEAL_MAXIMAL_POW,

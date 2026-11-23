@@ -40,6 +40,20 @@ deriving instance Inhabited for HolMath.RealArith.RealArith1Ctx
 deriving instance Inhabited for HolMath.RealArith.RealArith2Ctx
 deriving instance Inhabited for HolMath.RealArith.GenRealArith2Ctx
 
+/-- The twenty-nine driving lemmas (realarith.ml 16-160). -/
+initialize realArithLemmasLayer : HolMath.RealArith.RealArithLemmas ←
+  ioOk' "setupRealArithLemmas" (HolMath.RealArith.setupRealArithLemmas arith2 arith3 CiT Rl
+    MESON_TAC num_CONV).run
+
+def RaL : HolMath.RealArith.RealArithLemmas := realArithLemmasLayer
+
+/-- `GenRealArith1Ctx` (realarith.ml 185-256): the six proformas and the term
+    constants of the bootstrapping framework. -/
+initialize genRealArith1Layer : HolMath.RealArith.GenRealArith1Ctx ←
+  ioOk' "setupGenRealArith1Ctx" (HolMath.RealArith.setupGenRealArith1Ctx CiT Rl RaL MESON_TAC).run
+
+def GrA1 : HolMath.RealArith.GenRealArith1Ctx := genRealArith1Layer
+
 /-- REAL_LINEAR_PROVER's constants: linear_ineqs' `&1` (realarith.ml 388),
     then lin_of_hol's `&1`, `&0`, `(+):real->real->real`,
     `(*):real->real->real` (realarith.ml 446-449).  Parsed once, at
@@ -54,20 +68,6 @@ initialize realArithConstsLayer : term × term × term × term × term ← do
   pure (lpOne, one, zero, add, mul)
 
 def RaC : term × term × term × term × term := realArithConstsLayer
-
-/-- The twenty-nine driving lemmas (realarith.ml 16-160). -/
-initialize realArithLemmasLayer : HolMath.RealArith.RealArithLemmas ←
-  ioOk' "setupRealArithLemmas" (HolMath.RealArith.setupRealArithLemmas arith2 arith3 CiT Rl
-    MESON_TAC num_CONV).run
-
-def RaL : HolMath.RealArith.RealArithLemmas := realArithLemmasLayer
-
-/-- `GenRealArith1Ctx` (realarith.ml 185-256): the six proformas and the term
-    constants of the bootstrapping framework. -/
-initialize genRealArith1Layer : HolMath.RealArith.GenRealArith1Ctx ←
-  ioOk' "setupGenRealArith1Ctx" (HolMath.RealArith.setupGenRealArith1Ctx CiT Rl RaL MESON_TAC).run
-
-def GrA1 : HolMath.RealArith.GenRealArith1Ctx := genRealArith1Layer
 
 /-- `LinearProverAliens` (realarith.ml 477-479): the two alien lemmas. -/
 initialize linearProverAliensLayer : HolMath.RealArith.LinearProverAliens ←
@@ -117,8 +117,8 @@ private def realArith1Closure : ioconv := fun tm => do
     THIS LAYER IS EXPENSIVE — about 8.8 seconds — because its 42-clause
     ABSMAXMIN proforma is proved by the full linear decision procedure
     (`realArith1Closure`).  HOL Light itself wraps that proof in `time` for the
-    same reason.  Forced by `ensureRealAxProcs` (it is NOT forced by any
-    cheaper accessor). -/
+    same reason.  Forced by `genRealArith2Early`, before the second
+    normalizer instance, at realarith.ml's position. -/
 initialize theGenRealArith2Ctx : IO.Ref (Option HolMath.RealArith.GenRealArith2Ctx) ←
   IO.mkRef none
 
@@ -129,6 +129,13 @@ private def genRealArith2IO : IO (Except String HolMath.RealArith.GenRealArith2C
     match ← (HolMath.RealArith.setupGenRealArith2Ctx Rl realArith1Closure).run with
     | .ok d => do theGenRealArith2Ctx.set (some d); return .ok d
     | .error e => return .error e
+
+/-- realarith.ml 518-641 come before the second instance (652-657): the
+    ABSMAXMIN proforma is proved here, in file order. -/
+initialize genRealArith2Early : Unit ← do
+  match ← genRealArith2IO with
+  | .ok _ => pure ()
+  | .error e => throw (IO.userError s!"GenRealArith2Ctx setup: {e}")
 
 /-- Cache for `RealArith2Ctx` (realarith.ml 652-657): the six polynomial
     conversions of the second instance (identical semiring recipe to `RA1c`,
@@ -280,8 +287,8 @@ def REAL_POS_LT           : thm := RaL.REAL_POS_LT
    SessionMath/CalcInt.lean.) -/
 /- ---------------------------------------------------------------------- -/
 initialize ensureRealAxProcs : Unit ← do
-  -- realarith.ml 494-657: the ~8.8s ABSMAXMIN proof forces realArith1Closure,
-  -- then builds REAL_ARITH2.
+  -- realarith.ml 494-657: GenRealArith2Ctx (the ~8.8s ABSMAXMIN proof) was
+  -- built by `genRealArith2Early`; this builds REAL_ARITH2.
   match ← genRealArith2IO with
   | .ok _ => pure ()
   | .error e => throw (IO.userError s!"GenRealArith2Ctx setup: {e}")
@@ -291,8 +298,8 @@ initialize ensureRealAxProcs : Unit ← do
 
 /-- The `realarith.ml` second-framework context (518-641): the two hardwired
     abs/max/min elimination conversions and the three `pth`s.  Built by
-    `ensureRealAxProcs` just above (the ~8.8s ABSMAXMIN proof), in file order;
-    this reads the result. -/
+    `genRealArith2Early` (the ~8.8s ABSMAXMIN proof), in file order; this
+    reads the result. -/
 initialize genRealArith2Layer : HolMath.RealArith.GenRealArith2Ctx ← do
   match ← genRealArith2IO with
   | .ok d => pure d

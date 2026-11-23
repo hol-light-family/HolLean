@@ -22,10 +22,11 @@
   binding is the one exported, as in OCaml.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, INT_ARITH, INTEGER_RULE, TAUT) they are
-  bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolMath
@@ -1208,14 +1209,12 @@ def setupCong [HolBase] (D : IntegerDeps) (BDivides : Divides) (BGcd : Gcd) (BCo
   let INT_LINEAR_CONG_POS ← prove
    r"!n a x:int. ~(n = &0) ==> ?y. &0 <= y /\ (a * x == a * y) (mod n)"
    (← do
-    let i2 ← INTEGER_RULE (← q
-      r"n divides y ==> (a * x:int == a * (x + y)) (mod n)")
-    let i1 ← INT_ARITH (← q r"abs(x:int) * &1 <= y ==> &0 <= x + y")
     pure (REPEAT STRIP_TAC THEN EXISTS_TAC (← q r"x + abs(x * n):int") THEN CONJ_TAC THENL
-     [MATCH_MP_TAC i1 THEN
+     [MATCH_MP_TAC (← INT_ARITH (← q r"abs(x:int) * &1 <= y ==> &0 <= x + y")) THEN
       REWRITE_TAC [INT_ABS_MUL] THEN MATCH_MP_TAC INT_LE_LMUL THEN
       ASM_INT_ARITH_TAC,
-      MATCH_MP_TAC i2 THEN
+      MATCH_MP_TAC (← INTEGER_RULE (← q
+      r"n divides y ==> (a * x:int == a * (x + y)) (mod n)")) THEN
       REWRITE_TAC [INT_DIVIDES_RABS] THEN INTEGER_TAC]))
 
   let INT_CONG_SOLVE_POS ← prove
@@ -1339,14 +1338,12 @@ def setupCrt [HolBase] (D : IntegerDeps) :
   let INT_DIVIDES_POW_LE ← prove
    r"!p m n. &2 <= abs p ==> ((p pow m) divides (p pow n) <=> m <= n)"
    (← do
-    let a2 ← ARITH_RULE (← q r"&2 <= x ==> &1 < x")
-    let a1 ← INT_ARITH (← q r"&2 <= abs p ==> ~(p = &0)")
     pure (REPEAT STRIP_TAC THEN EQ_TAC THENL
      [DISCH_THEN (MP_TAC o MATCH_MP INT_DIVIDES_LE) THEN
-      ASM_SIMP_TAC [INT_POW_EQ_0, a1] THEN
+      ASM_SIMP_TAC [INT_POW_EQ_0, (← INT_ARITH (← q r"&2 <= abs p ==> ~(p = &0)"))] THEN
       ONCE_REWRITE_TAC [← GSYM CONTRAPOS_THM] THEN
       REWRITE_TAC [INT_NOT_LE, NOT_LE, INT_ABS_POW] THEN
-      ASM_MESON_TAC [INT_POW_MONO_LT, a2],
+      ASM_MESON_TAC [INT_POW_MONO_LT, (← ARITH_RULE (← q r"&2 <= x ==> &1 < x"))],
       SIMP_TAC [LE_EXISTS, LEFT_IMP_EXISTS_THM, INT_POW_ADD] THEN INTEGER_TAC]))
 
   -- @@RETURN BEGIN
@@ -1844,19 +1841,14 @@ def setupIntPrime2 [HolBase] (D : IntegerDeps) (BDivides : Divides) (BGcd : Gcd)
   let INT_DIVIDES_FACT_PRIME ← prove
    r"!p. int_prime p ==> !n. p divides &(FACT n) <=> abs p <= &n"
    (← do
-    let a6 ← INT_ARITH (← q r"abs(&n + &1) = &n + &1")
-    let a5 ← INT_ARITH (← q r"~(&n + &1 = &0)")
-    let a4 ← INT_ARITH (← q r"p <= n + &1 ==> p <= n \/ p = n + &1")
-    let a3 ← INT_ARITH (← q r"x <= n ==> x <= n + &1")
-    let a2 ← INT_ARITH (← q r"abs x <= &0 <=> x = &0")
     pure (GEN_TAC THEN DISCH_TAC THEN INDUCT_TAC THEN REWRITE_TAC [FACT] THENL
-     [REWRITE_TAC [a2] THEN
+     [REWRITE_TAC [(← INT_ARITH (← q r"abs x <= &0 <=> x = &0"))] THEN
       ASM_MESON_TAC [INT_DIVIDES_ONE, INT_PRIME_NEG, INT_PRIME_0, INT_PRIME_1],
       ASM_SIMP_TAC [INT_PRIME_DIVPROD_EQ, ← GSYM INT_OF_NUM_MUL] THEN
       REWRITE_TAC [← GSYM INT_OF_NUM_SUC] THEN
-      ASM_MESON_TAC [INT_DIVIDES_LE, a3,
+      ASM_MESON_TAC [INT_DIVIDES_LE, (← INT_ARITH (← q r"x <= n ==> x <= n + &1")),
                     INT_DIVIDES_REFL, INT_DIVIDES_LABS,
-                    a4, a5, a6]]))
+                    (← INT_ARITH (← q r"p <= n + &1 ==> p <= n \/ p = n + &1")), (← INT_ARITH (← q r"~(&n + &1 = &0)")), (← INT_ARITH (← q r"abs(&n + &1) = &n + &1"))]]))
 
   -- @@RETURN BEGIN
   return { INT_DIVIDES_FACT, INT_EUCLID_BOUND, INT_EUCLID, INT_PRIMES_INFINITE,

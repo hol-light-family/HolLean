@@ -6888,7 +6888,6 @@ def setupSumTop [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology 
     let lemma ← prove
      r"{x | i,x IN UNIONS v} = UNIONS {{x | i,x IN k} | k IN v}"
      (REWRITE_TAC [UNIONS_GSPEC] THEN SET_TAC [])
-    let tybij2 ← CONJUNCT2 topology_tybij
     prove
      r"!k (top:K->A topology) u.
         open_in (sum_topology k top) u <=>
@@ -6896,7 +6895,7 @@ def setupSumTop [HolBase] (D : MetricDeps) (BTopology : Topology) (BSubtopology 
         !i. i IN k ==> open_in (top i) {x | (i,x) IN u}"
      (REPEAT GEN_TAC THEN REWRITE_TAC [sum_topology] THEN
       W (MP_TAC o (fun th => do pure (← EQ_IMP_RULE th).1) o
-          PART_MATCH (lhand o rand) tybij2 o
+          PART_MATCH (lhand o rand) (← CONJUNCT2 topology_tybij) o
             rator o lhand o snd) THEN
       ANTS_TAC THENL [ALL_TAC, SIMP_TAC [IN_ELIM_THM]] THEN
       REWRITE_TAC [istopology] THEN REWRITE_TAC [IN_ELIM_THM] THEN
@@ -24917,10 +24916,10 @@ def setupLimits2 [HolBase] (D : MetricDeps) (BTactics : Tactics) (BTopology : To
         ~(f x = l1 \/ f x IN IMAGE f UNIV /\ ~(f x = l2)) <=>
         f x IN u /\ ~(f x = l1) /\ f x = l2"] THEN
       REWRITE_TAC [EVENTUALLY_AND] THEN
-      DISCH_THEN (fun th => tactic_of do
+      DISCH_THEN ((fun (ocq5 : _) (ocq6 : _) => fun th => tactic_of do
         let c ← liftExcept (last (CONJUNCTS th))
         let r ← MATCH_MP (← REWRITE_RULE [IMP_CONJ] LIMIT_TRANSFORM_EVENTUALLY) c
-        pure (MP_TAC (← ISPECL [← q r"top:A topology", ← q r"l1:A"] r))) THEN
+        pure (MP_TAC (← ISPECL [ocq5, ocq6] r))) (← q r"top:A topology") (← q r"l1:A")) THEN
       ASM_SIMP_TAC [LIMIT_CONST_EQ, TRIVIAL_LIMIT_SEQUENTIALLY,
                     KC_IMP_T1_SPACE]])
 
@@ -49418,8 +49417,8 @@ def setupMSPT [HolBase] (D : MetricDeps) (BTopology : Topology) (BDiscrete : Dis
         ANTS_TAC THENL
          [MATCH_MP_TAC MDIST_POS_LT THEN REPEAT
            (CONJ_TAC THENL [ASM_MESON_TAC [TOPSPACE_MTOPOLOGY], ALL_TAC]) THEN
-          DISCH_THEN (MP_TAC o (fun (th : thm) =>
-            (do AP_THM th (← q r"i:K") : ExceptT String IO thm))) THEN
+          DISCH_THEN (MP_TAC o ((fun (ocq4 : _) => fun (th : thm) =>
+            (do AP_THM th ocq4 : ExceptT String IO thm)) (← q r"i:K"))) THEN
           MAP_EVERY EXPAND_TAC ["q", "p"] THEN REWRITE_TAC [] THEN
           ASM_SIMP_TAC [],
           DISCH_THEN (MP_TAC o MATCH_MP EVENTUALLY_HAPPENS_SEQUENTIALLY) THEN
@@ -50381,9 +50380,9 @@ def setupCGP [HolBase] (D : MetricDeps)
       MAP_EVERY X_GEN_TAC [← q r"u:A->bool", ← q r"k:A->bool"] THEN STRIP_TAC THEN
       SUBGOAL_THEN (← q r"~(u:A->bool = {})") ASSUME_TAC THENL
        [ASM SET_TAC [],
-        REPEAT (FIRST_X_ASSUM (fun th => tactic_of do
-          let _ ← liftExcept (check (HolCore.Basics.free_in (← q r"z:A")) (concl th))
-          pure ALL_TAC))] THEN
+        REPEAT (FIRST_X_ASSUM ((fun (ocq3 : _) => fun th => tactic_of do
+          let _ ← liftExcept (check (HolCore.Basics.free_in ocq3) (concl th))
+          pure ALL_TAC) (← q r"z:A")))] THEN
       SUBGOAL_THEN
        (← q r"!c. closed_in top c /\ c SUBSET k /\ ~(top interior_of c = {})
             ==> ?d e. closed_in top d /\ d SUBSET k /\
@@ -58280,8 +58279,8 @@ def setupCAN1 [HolBase] (D : MetricDeps) (BDiscrete : Discrete) (BDerived : Deri
       MESON_TAC [← ARITH_RULE (← q r"~(SUC N <= N)")], ALL_TAC] THEN
     EXISTS_TAC (← q r"\n:num. if n = SUC N then ~(x n) else (x:num->bool) n") THEN
     CONJ_TAC THENL
-     [DISCH_THEN (MP_TAC o (fun (th : thm) =>
-        (do AP_THM th (← q r"SUC N") : ExceptT String IO thm))) THEN
+     [DISCH_THEN (MP_TAC o ((fun (ocq2 : _) => fun (th : thm) =>
+        (do AP_THM th ocq2 : ExceptT String IO thm)) (← q r"SUC N"))) THEN
       REWRITE_TAC [] THEN MESON_TAC [],
       FIRST_X_ASSUM (MATCH_MP_TAC o REWRITE_RULE [SUBSET]) THEN
       UNDISCH_TAC (← q r"x IN cartesian_product (:num) (u:num->bool->bool)") THEN
@@ -59730,8 +59729,8 @@ def setupAH [HolBase] (D : MetricDeps)
         SUBGOAL_THEN
           (← q r"INTERS {(g:num->(num->bool)->(A->bool)) n z | n | n IN (:num)} =
            {(f:(num->bool)->A) z}")
-          ASSUME_TAC THENL [FIRST_ASSUM (fun th => tactic_of do
-            pure (ACCEPT_TAC (← CONJUNCT2 (← SPEC (← q r"z:num->bool") th)))), ALL_TAC] THEN
+          ASSUME_TAC THENL [FIRST_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
+            pure (ACCEPT_TAC (← CONJUNCT2 (← SPEC ocq1 th)))) (← q r"z:num->bool")), ALL_TAC] THEN
         SUBGOAL_THEN (← q r"(a:A) IN {(f:(num->bool)->A) z}") MP_TAC THENL
          [FIRST_ASSUM (fun th => tactic_of do pure (REWRITE_TAC [← GSYM th])) THEN
           REWRITE_TAC [IN_INTERS, IN_ELIM_THM, IN_UNIV] THEN

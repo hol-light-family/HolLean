@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.CyclotomicSplit fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -316,47 +319,10 @@ def setupCyclotomicSplit [HolBase] (D : CyclotomicSplitDeps) :
 
   let CYCLOTOMIC_FIELD_RAMIFIED ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"1 * 2 <= x * y ==> 1 < x * y"
-    let r2 ← ARITH_RULE q1
-    let q3 ← q r"1 < (x * 2) * 1 <=> ~(x = 0)"
-    let r4 ← ARITH_RULE q3
-    let q5 ← q r"(b + 2) - 1 = b + 1"
-    let r6 ← ARITH_RULE q5
-    let q7 ← q r"a - 2"
-    let q8 ← q r"?b. a = b + 2"
-    let q9 ← q r"x:num"
-    let q10 ← q r"~(2 divides m)"
-    let q11 ← q r"a = 1"
-    let q12 ← q r"p = 2"
-    let q13 ← q r"a = 0"
-    let p14 ← prove r"!p a m.
+    let lemma := (← prove r"!p a m.
         prime p /\ ~(p divides m)
         ==> (1 < phi(p EXP a) <=>
-             p divides p EXP a * m /\ ~(p = 2 /\ ~(4 divides p EXP a * m)))" (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [PHI_PRIMEPOW_ALT] THEN ASM_CASES_TAC q13 THEN ASM_REWRITE_TAC [EXP, MULT_CLAUSES, LT_REFL] THEN ASM_SIMP_TAC [DIVIDES_RMUL, DIVIDES_REXP, DIVIDES_REFL] THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_GE_2)) THEN ASM_CASES_TAC q12 THEN ASM_REWRITE_TAC [] THENL [FIRST_X_ASSUM SUBST_ALL_TAC THEN ASM_CASES_TAC q11 THEN ASM_REWRITE_TAC [] THENL [CONV_TAC NUM_REDUCE_CONV THEN UNDISCH_TAC q10 THEN REWRITE_TAC [CONTRAPOS_THM, divides] THEN STRIP_TAC THEN EXISTS_TAC q9 THEN ASM_ARITH_TAC, SUBGOAL_THEN q8 (CHOOSE_THEN SUBST1_TAC) THENL [EXISTS_TAC q7 THEN ASM_ARITH_TAC, ALL_TAC] THEN REWRITE_TAC [r6, EXP_ADD] THEN CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC [r4, EXP_EQ_0] THEN CONV_TAC NUMBER_RULE], MATCH_MP_TAC r2 THEN MATCH_MP_TAC LE_MULT2 THEN ASM_SIMP_TAC [LE_1, EXP_EQ_0, PRIME_IMP_NZ] THEN ASM_ARITH_TAC])
-    let lemma := p14
-    let q15 ← q r"P:A->bool"
-    let v16 ← GSYM MEMBER_NOT_EMPTY
-    let q17 ← q r"p:num"
-    let q18 ← q r"k:A ring"
-    let v19 ← ISPECL [q18, q17] NUMBER_FIELD_PRIME_DECOMPOSITION_Q
-    let q20 ← q r"m:num"
-    let q21 ← q r"index p n"
-    let q22 ← q r"p:num"
-    let q23 ← q r"n:num"
-    let q24 ← q r"z:A"
-    let q25 ← q r"k:A ring"
-    let v26 ← ISPECL [q25, q24, q23, q22, q21, q20] CYCLOTOMIC_FIELD_PRIME_DECOMPOSITION
-    let v27 ← GSYM NUMBER_FIELD_RAMIFIED_DISCRIMINANT
-    let q28 ← q r"m:num"
-    let q29 ← q r"index p n"
-    let q30 ← q r"p:num"
-    let v31 ← SPECL [q30, q29, q28] lemma
-    let q32 ← q r"m:num"
-    let q33 ← q r"2 <= p ==> ~(p = 1)"
-    let r34 ← ARITH_RULE q33
-    let q35 ← q r"p:num"
-    let q36 ← q r"n:num"
-    let v37 ← SPECL [q36, q35] INDEX_DECOMPOSITION
+             p divides p EXP a * m /\ ~(p = 2 /\ ~(4 divides p EXP a * m)))" (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [PHI_PRIMEPOW_ALT] THEN ASM_CASES_TAC (← q r"a = 0") THEN ASM_REWRITE_TAC [EXP, MULT_CLAUSES, LT_REFL] THEN ASM_SIMP_TAC [DIVIDES_RMUL, DIVIDES_REXP, DIVIDES_REFL] THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_GE_2)) THEN ASM_CASES_TAC (← q r"p = 2") THEN ASM_REWRITE_TAC [] THENL [FIRST_X_ASSUM SUBST_ALL_TAC THEN ASM_CASES_TAC (← q r"a = 1") THEN ASM_REWRITE_TAC [] THENL [CONV_TAC NUM_REDUCE_CONV THEN UNDISCH_TAC (← q r"~(2 divides m)") THEN REWRITE_TAC [CONTRAPOS_THM, divides] THEN STRIP_TAC THEN EXISTS_TAC (← q r"x:num") THEN ASM_ARITH_TAC, SUBGOAL_THEN (← q r"?b. a = b + 2") (CHOOSE_THEN SUBST1_TAC) THENL [EXISTS_TAC (← q r"a - 2") THEN ASM_ARITH_TAC, ALL_TAC] THEN REWRITE_TAC [(← ARITH_RULE (← q r"(b + 2) - 1 = b + 1")), EXP_ADD] THEN CONV_TAC NUM_REDUCE_CONV THEN REWRITE_TAC [(← ARITH_RULE (← q r"1 < (x * 2) * 1 <=> ~(x = 0)")), EXP_EQ_0] THEN CONV_TAC NUMBER_RULE], MATCH_MP_TAC (← ARITH_RULE (← q r"1 * 2 <= x * y ==> 1 < x * y")) THEN MATCH_MP_TAC LE_MULT2 THEN ASM_SIMP_TAC [LE_1, EXP_EQ_0, PRIME_IMP_NZ] THEN ASM_ARITH_TAC]))
     prove
       r"!(k:A ring) z n p.
           number_field k /\ z IN ring_carrier k /\
@@ -364,26 +330,10 @@ def setupCyclotomicSplit [HolBase] (D : CyclotomicSplitDeps) :
           prime p
           ==> (&p divides number_field_discriminant k <=>
                p divides n /\ ~(p = 2 /\ ~(4 divides n)))"
-      (REPEAT STRIP_TAC THEN MP_TAC v37 THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_GE_2)) THEN ASM_SIMP_TAC [r34] THEN DISCH_THEN (X_CHOOSE_THEN q32 STRIP_ASSUME_TAC) THEN MP_TAC v31 THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN ASM_SIMP_TAC [v27] THEN MP_TAC v26 THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (ASSUME_TAC o CONJUNCT1) THEN MP_TAC v19 THEN ASM_REWRITE_TAC [v16, IN_ELIM_THM] THEN DISCH_THEN ((X_CHOOSE_TAC q15) o (CONJUNCT1 o CONJUNCT2)) THEN ASM_MESON_TAC [])
+      (REPEAT STRIP_TAC THEN MP_TAC (← SPECL [(← q r"n:num"), (← q r"p:num")] INDEX_DECOMPOSITION) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_GE_2)) THEN ASM_SIMP_TAC [(← ARITH_RULE (← q r"2 <= p ==> ~(p = 1)"))] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"m:num") STRIP_ASSUME_TAC) THEN MP_TAC (← SPECL [(← q r"p:num"), (← q r"index p n"), (← q r"m:num")] lemma) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN ASM_SIMP_TAC [(← GSYM NUMBER_FIELD_RAMIFIED_DISCRIMINANT)] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"z:A"), (← q r"n:num"), (← q r"p:num"), (← q r"index p n"), (← q r"m:num")] CYCLOTOMIC_FIELD_PRIME_DECOMPOSITION) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (ASSUME_TAC o CONJUNCT1) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"p:num")] NUMBER_FIELD_PRIME_DECOMPOSITION_Q) THEN ASM_REWRITE_TAC [(← GSYM MEMBER_NOT_EMPTY), IN_ELIM_THM] THEN DISCH_THEN ((X_CHOOSE_TAC (← q r"P:A->bool")) o (CONJUNCT1 o CONJUNCT2)) THEN ASM_MESON_TAC [])
 
   let CYCLOTOMIC_FIELD_TOTALLY_SPLIT ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"!c t f:num. ~(f = 0) ==> c * t = f ==> (c = f <=> t = 1)"
-    let r2 ← MESON [MULT_CLAUSES, EQ_MULT_LCANCEL] q1
-    let q3 ← q r"n:num"
-    let v4 ← SPEC q3 PHI_EQ_0
-    let q5 ← q r"n:num"
-    let q6 ← q r"0"
-    let q7 ← q r"p:num"
-    let q8 ← q r"n:num"
-    let q9 ← q r"z:A"
-    let q10 ← q r"k:A ring"
-    let v11 ← ISPECL [q10, q9, q8, q7, q6, q5] CYCLOTOMIC_FIELD_PRIME_DECOMPOSITION
-    let q12 ← q r"n:num"
-    let q13 ← q r"z:A"
-    let q14 ← q r"k:A ring"
-    let v15 ← ISPECL [q14, q13, q12] CYCLOTOMIC_FIELD_DEGREE
-    let v16 ← GSYM ORDER_EQ_1
     prove
       r"!(k:A ring) z n p.
           number_field k /\ z IN ring_carrier k /\
@@ -392,64 +342,15 @@ def setupCyclotomicSplit [HolBase] (D : CyclotomicSplitDeps) :
           ==> (totally_split (integer_ring,ring_of_integers k)
                  (ring_of_int k) (ideal_generated integer_ring {&p}) <=>
                (p == 1) (mod n))"
-      (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [NUMBER_FIELD_TOTALLY_SPLIT_CARD, v16] THEN MP_TAC v15 THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN MP_TAC v11 THEN ASM_REWRITE_TAC [EXP, MULT_CLAUSES] THEN DISCH_THEN (MP_TAC o CONJUNCT2) THEN MP_TAC v4 THEN ASM_REWRITE_TAC [] THEN MATCH_ACCEPT_TAC r2)
+      (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [NUMBER_FIELD_TOTALLY_SPLIT_CARD, (← GSYM ORDER_EQ_1)] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"z:A"), (← q r"n:num")] CYCLOTOMIC_FIELD_DEGREE) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"z:A"), (← q r"n:num"), (← q r"p:num"), (← q r"0"), (← q r"n:num")] CYCLOTOMIC_FIELD_PRIME_DECOMPOSITION) THEN ASM_REWRITE_TAC [EXP, MULT_CLAUSES] THEN DISCH_THEN (MP_TAC o CONJUNCT2) THEN MP_TAC (← SPEC (← q r"n:num") PHI_EQ_0) THEN ASM_REWRITE_TAC [] THEN MATCH_ACCEPT_TAC (← MESON [MULT_CLAUSES, EQ_MULT_LCANCEL] (← q r"!c t f:num. ~(f = 0) ==> c * t = f ==> (c = f <=> t = 1)")))
 
   let CYCLOTOMIC_FIELD_PRIME_POWER_RAMIFIED ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"n:num"
-    let q2 ← q r"phi(p EXP (b + 1))"
-    let q3 ← q r"p EXP (b + 1)"
-    let v4 ← SPEC q3 PHI_LOWERBOUND_1_STRONG
-    let v5 ← REWRITE_RULE [IMP_CONJ] RING_DIVIDES_TRANS
-    let q6 ← q r"b + 1"
-    let q7 ← q r"p:num"
-    let q8 ← q r"z:A"
-    let q9 ← q r"r:A ring"
-    let v10 ← ISPECL [q9, q8, q7, q6] RING_ASSOCIATES_PRIME_POWER_ORDER
-    let p11 ← prove r"!(r:A ring) z p b.
+    let lemma1 := (← prove r"!(r:A ring) z p b.
         integral_domain r /\ z IN ring_carrier r /\ prime p /\
         ring_order r z = p EXP (b + 1)
-        ==> ring_divides r (ring_sub r (ring_1 r) z) (ring_of_num r p)" (REPEAT STRIP_TAC THEN MP_TAC v10 THEN ASM_REWRITE_TAC [ADD_EQ_0, ARITH_EQ, ring_associates] THEN DISCH_THEN (MP_TAC o CONJUNCT1) THEN MATCH_MP_TAC v5 THEN MP_TAC v4 THEN ASM_SIMP_TAC [LE_1, EXP_EQ_0, PRIME_IMP_NZ] THEN SPEC_TAC (q2, q1) THEN INDUCT_TAC THEN REWRITE_TAC [ARITH, ring_pow] THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN MATCH_MP_TAC RING_DIVIDES_RMUL THEN ASM_SIMP_TAC [RING_DIVIDES_REFL, RING_SUB, RING_1, RING_POW])
-    let lemma1 := p11
-    let q12 ← q r"!r x a:A. ring_sub r (ring_sub r x (ring_sub r a (ring_1 r))) x =
-                ring_sub r (ring_1 r) a /\
-                ring_sub r (ring_sub r x (ring_sub r a (ring_1 r)))
-                  (ring_sub r (ring_1 r) a) = x"
-    let r13 ← RING_RULE q12
-    let q14 ← q r"a:A"
-    let q15 ← q r"x:A"
-    let q16 ← q r"k:A ring"
-    let v17 ← ISPECL [q16, q15, q14] r13
-    let q18 ← q r"j:A->bool"
-    let q19 ← q r"ring_of_integers k:A ring"
-    let v20 ← ISPECL [q19, q18] IN_RING_IDEAL_SUB
-    let v21 ← REWRITE_RULE [RING_OF_INTEGERS] v20
-    let q22 ← q r"k:A ring"
-    let v23 ← ISPEC q22 RING_HOMOMORPHISM_INTEGER_RING_OF_INT
-    let v24 ← MATCH_MP CYCLOTOMIC_POLY_HOMOMORPHIC_IMAGE v23
-    let v25 ← GSYM poly_eval
-    let q26 ← q r"integer_mod_ring p"
-    let v27 ← ISPEC q26 RING_HOMOMORPHISM_INTEGER_RING_OF_INT
-    let v28 ← MATCH_MP CYCLOTOMIC_POLY_HOMOMORPHIC_IMAGE v27
-    let q29 ← q r"cyclotomic_poly integer_ring 1"
-    let q30 ← q r"j:A->bool"
-    let q31 ← q r"p:num"
-    let q32 ← q r"a:A"
-    let q33 ← q r"k:A ring"
-    let v34 ← ISPECL [q33, q32, q31, q30] DEDEKIND_KUMMER_EPIMORPHISM_Q
-    let q35 ← q r"j:A->bool"
-    let q36 ← q r"ring_of_integers k:A ring"
-    let v37 ← ISPEC q36 RING_1
-    let q38 ← q r"ring_of_integers k:A ring"
-    let v39 ← ISPEC q38 RING_SUB
-    let q40 ← q r"x = poly_extend (integer_ring,k:A ring) (ring_of_int k)
-                      (\v. a) (cyclotomic_poly (integer_mod_ring p) 1)"
-    let q41 ← q r"cyclotomic_poly (integer_mod_ring p) 1"
-    let q42 ← q r"\v:1. (a:A)"
-    let q43 ← q r"k:A ring"
-    let v44 ← ISPECL [q43, q42, q41] POLY_EXTEND_RING_OF_INTEGERS
-    let q45 ← q r"(a:A) IN ring_carrier k"
-    let p46 ← prove r"!(k:A ring) a p.
+        ==> ring_divides r (ring_sub r (ring_1 r) z) (ring_of_num r p)" (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"z:A"), (← q r"p:num"), (← q r"b + 1")] RING_ASSOCIATES_PRIME_POWER_ORDER) THEN ASM_REWRITE_TAC [ADD_EQ_0, ARITH_EQ, ring_associates] THEN DISCH_THEN (MP_TAC o CONJUNCT1) THEN MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] RING_DIVIDES_TRANS) THEN MP_TAC (← SPEC (← q r"p EXP (b + 1)") PHI_LOWERBOUND_1_STRONG) THEN ASM_SIMP_TAC [LE_1, EXP_EQ_0, PRIME_IMP_NZ] THEN SPEC_TAC ((← q r"phi(p EXP (b + 1))"), (← q r"n:num")) THEN INDUCT_TAC THEN REWRITE_TAC [ARITH, ring_pow] THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN MATCH_MP_TAC RING_DIVIDES_RMUL THEN ASM_SIMP_TAC [RING_DIVIDES_REFL, RING_SUB, RING_1, RING_POW]))
+    let lemma2 := (← prove r"!(k:A ring) a p.
         number_field k /\ prime p /\ a IN ring_carrier(ring_of_integers k) /\
         ring_setadd (ring_of_integers k) (ring_carrier(subring_generated k {a}))
           (ideal_generated (ring_of_integers k) {ring_of_num k p}) =
@@ -460,74 +361,26 @@ def setupCyclotomicSplit [HolBase] (D : CyclotomicSplitDeps) :
             !j. ring_ideal (ring_of_integers k) j /\ ring_of_num k p IN j
                 ==> (poly_extend (integer_ring,k) (ring_of_int k) (\v. a)
                        (cyclotomic_poly (integer_mod_ring p) 1) IN j <=>
-                     ring_sub k (ring_1 k) a IN j)" (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN q45 ASSUME_TAC THENL [ASM_MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], ALL_TAC] THEN MP_TAC v44 THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [POLY_RING_INTEGER_MOD_RING_SUBSET, SUBSET, CYCLOTOMIC_POLY_IN_CARRIER], DISCH_THEN (ASSUME_TAC o CONJUNCT2) THEN ASM_REWRITE_TAC []] THEN ABBREV_TAC q40 THEN MP_TAC v39 THEN MP_TAC v37 THEN REWRITE_TAC [RING_OF_INTEGERS] THEN REPEAT DISCH_TAC THEN X_GEN_TAC q35 THEN STRIP_TAC THEN MP_TAC v34 THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o ((SPEC q29) o CONJUNCT2)) THEN REWRITE_TAC [CYCLOTOMIC_POLY_IN_CARRIER, v28] THEN ASM_REWRITE_TAC [] THEN SIMP_TAC [POLY_EXTEND_EVALUATE, RING_HOMOMORPHISM_INTEGER_RING_OF_INT] THEN REWRITE_TAC [v25, v24] THEN ASM_SIMP_TAC [CYCLOTOMIC_POLY_1, POLY_EVAL_SUB, POLY_EVAL_VAR, POLY_EVAL_1, RING_POLYNOMIAL_VAR, RING_POLYNOMIAL_1, RING_COSET_EQ] THEN REWRITE_TAC [RING_OF_INTEGERS] THEN DISCH_TAC THEN MP_TAC v21 THEN MP_TAC v17 THEN ANTS_TAC THENL [ASM_MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], ASM_MESON_TAC []])
-    let lemma2 := p46
-    let q47 ← q r"ideal_generated (ring_of_integers k)
-        {ring_of_num k p,
-         poly_extend (integer_ring,k) (ring_of_int k) (\v. z)
-           (cyclotomic_poly (integer_mod_ring p) 1):A}"
-    let q48 ← q r"w:A"
-    let v49 ← GSYM SUBSET_ANTISYM_EQ
-    let q50 ← q r"p:num"
-    let q51 ← q r"z:A"
-    let q52 ← q r"k:A ring"
-    let v53 ← SPECL [q52, q51, q50] lemma2
-    let q54 ← q r"ring_of_integers k:A ring"
-    let v55 ← ISPEC q54 RING_OF_NUM
-    let q56 ← q r"ring_of_integers k:A ring"
-    let v57 ← ISPEC q56 RING_1
-    let q58 ← q r"ring_of_integers k:A ring"
-    let v59 ← ISPEC q58 RING_SUB
-    let q60 ← q r"d:num"
-    let q61 ← q r"z:A"
-    let q62 ← q r"k:A ring"
-    let v63 ← ISPECL [q62, q61, q60] RING_ORDER_DIVIDES
-    let q64 ← q r"d:num"
-    let q65 ← q r"b:num"
-    let q66 ← q r"p:num"
-    let q67 ← q r"z:A"
-    let q68 ← q r"ring_of_integers k:A ring"
-    let v69 ← ISPECL [q68, q67, q66, q65] lemma1
-    let q70 ← q r"ring_of_num k p IN
-      ideal_generated (ring_of_integers k) {ring_sub k (ring_1 k) (z:A)}"
-    let q71 ← q r"p EXP (b + 1)"
-    let q72 ← q r"z:A"
-    let q73 ← q r"k:A ring"
-    let v74 ← ISPECL [q73, q72, q71] CYCLOTOMIC_FIELD_RING_OF_INTEGERS
-    let q75 ← q r"(z:A) IN ring_carrier(ring_of_integers k) /\
-      ring_setadd (ring_of_integers k) (ring_carrier(subring_generated k {z}))
-        (ideal_generated (ring_of_integers k) {ring_of_num k p}) =
-      ring_carrier(ring_of_integers k)"
-    let p76 ← prove r"!(k:A ring) z p b.
+                     ring_sub k (ring_1 k) a IN j)" (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"(a:A) IN ring_carrier k") ASSUME_TAC THENL [ASM_MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"\v:1. (a:A)"), (← q r"cyclotomic_poly (integer_mod_ring p) 1")] POLY_EXTEND_RING_OF_INTEGERS) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [POLY_RING_INTEGER_MOD_RING_SUBSET, SUBSET, CYCLOTOMIC_POLY_IN_CARRIER], DISCH_THEN (ASSUME_TAC o CONJUNCT2) THEN ASM_REWRITE_TAC []] THEN ABBREV_TAC (← q r"x = poly_extend (integer_ring,k:A ring) (ring_of_int k)
+                      (\v. a) (cyclotomic_poly (integer_mod_ring p) 1)") THEN MP_TAC (← ISPEC (← q r"ring_of_integers k:A ring") RING_SUB) THEN MP_TAC (← ISPEC (← q r"ring_of_integers k:A ring") RING_1) THEN REWRITE_TAC [RING_OF_INTEGERS] THEN REPEAT DISCH_TAC THEN X_GEN_TAC (← q r"j:A->bool") THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"a:A"), (← q r"p:num"), (← q r"j:A->bool")] DEDEKIND_KUMMER_EPIMORPHISM_Q) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o ((SPEC (← q r"cyclotomic_poly integer_ring 1")) o CONJUNCT2)) THEN REWRITE_TAC [CYCLOTOMIC_POLY_IN_CARRIER, (← MATCH_MP CYCLOTOMIC_POLY_HOMOMORPHIC_IMAGE (← ISPEC (← q r"integer_mod_ring p") RING_HOMOMORPHISM_INTEGER_RING_OF_INT))] THEN ASM_REWRITE_TAC [] THEN SIMP_TAC [POLY_EXTEND_EVALUATE, RING_HOMOMORPHISM_INTEGER_RING_OF_INT] THEN REWRITE_TAC [(← GSYM poly_eval), (← MATCH_MP CYCLOTOMIC_POLY_HOMOMORPHIC_IMAGE (← ISPEC (← q r"k:A ring") RING_HOMOMORPHISM_INTEGER_RING_OF_INT))] THEN ASM_SIMP_TAC [CYCLOTOMIC_POLY_1, POLY_EVAL_SUB, POLY_EVAL_VAR, POLY_EVAL_1, RING_POLYNOMIAL_VAR, RING_POLYNOMIAL_1, RING_COSET_EQ] THEN REWRITE_TAC [RING_OF_INTEGERS] THEN DISCH_TAC THEN MP_TAC (← REWRITE_RULE [RING_OF_INTEGERS] (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"j:A->bool")] IN_RING_IDEAL_SUB)) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"x:A"), (← q r"a:A")] (← RING_RULE (← q r"!r x a:A. ring_sub r (ring_sub r x (ring_sub r a (ring_1 r))) x =
+                ring_sub r (ring_1 r) a /\
+                ring_sub r (ring_sub r x (ring_sub r a (ring_1 r)))
+                  (ring_sub r (ring_1 r) a) = x"))) THEN ANTS_TAC THENL [ASM_MESON_TAC [RING_OF_INTEGERS_SUBSET, SUBSET], ASM_MESON_TAC []]))
+    let lemma3 := (← prove r"!(k:A ring) z p b.
         number_field k /\ z IN ring_carrier k /\ prime p /\
         ring_order k z = p EXP (b + 1) /\ subfield_generated k {z} = k
         ==> ideal_generated (ring_of_integers k)
               {ring_of_num k p,
                poly_extend (integer_ring,k) (ring_of_int k) (\v. z)
                  (cyclotomic_poly (integer_mod_ring p) 1)} =
-            ideal_generated (ring_of_integers k) {ring_sub k (ring_1 k) z}" (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN q75 STRIP_ASSUME_TAC THENL [MP_TAC v74 THEN ASM_SIMP_TAC [EXP_EQ_0, PRIME_IMP_NZ] THEN DISCH_THEN SUBST1_TAC THEN ASM_SIMP_TAC [SUBRING_GENERATED_INC_GEN, IN_SING] THEN MATCH_MP_TAC RING_SETADD_RSUBSET THEN REWRITE_TAC [CARRIER_SUBRING_OF, IDEAL_GENERATED_SUBSET, IDEAL_GENERATED_NONEMPTY], ALL_TAC] THEN SUBGOAL_THEN q70 ASSUME_TAC THENL [MATCH_MP_TAC IN_IDEAL_GENERATED_SING THEN MP_TAC v69 THEN ASM_SIMP_TAC [INTEGRAL_DOMAIN_RING_OF_INTEGERS, NUMBER_FIELD_IMP_FIELD, RING_OF_INTEGERS] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_SIMP_TAC [RING_ORDER_UNIQUE, RING_OF_INTEGERS] THEN X_GEN_TAC q64 THEN MP_TAC v63 THEN ASM_REWRITE_TAC [] THEN MESON_TAC [], ALL_TAC] THEN MP_TAC v59 THEN MP_TAC v57 THEN MP_TAC v55 THEN REWRITE_TAC [RING_OF_INTEGERS] THEN REPEAT DISCH_TAC THEN MP_TAC v53 THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN REWRITE_TAC [v49, IDEALS_GENERATED_SUBSET] THEN REWRITE_TAC [SUBSET, IN_INTER, IN_INSERT, NOT_IN_EMPTY] THEN CONJ_TAC THEN X_GEN_TAC q48 THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (REPEAT_TCL DISJ_CASES_THEN SUBST1_TAC)) THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_GENERATED, IN_IDEAL_GENERATED_SELF] THEN FIRST_X_ASSUM (MP_TAC o (SPEC q47)) THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_GENERATED, IDEAL_GENERATED_INC_GEN, IN_INSERT])
-    let lemma3 := p76
-    let q77 ← q r"2 <= p ==> ~(p = 1)"
-    let r78 ← ARITH_RULE q77
-    let v79 ← GSYM TRIVIAL_RING_10
-    let q80 ← q r"2 <= p ==> ~(p = 1)"
-    let r81 ← ARITH_RULE q80
-    let q82 ← q r"\g. ideal_generated (ring_of_integers k)
-                          {ring_of_num (k:A ring) p,
-                           poly_extend (integer_ring,k) (ring_of_int k) (\v. z)
-                             (g:(1->num)->int)}"
-    let q83 ← q r"{cyclotomic_poly (integer_mod_ring p) 1}"
-    let q84 ← q r"1"
-    let q85 ← q r"v + 1"
-    let q86 ← q r"p:num"
-    let q87 ← q r"z:A"
-    let q88 ← q r"k:A ring"
-    let v89 ← ISPECL [q88, q87, q86, q85, q84, q83, q82] CYCLOTOMIC_FIELD_DEDEKIND_KUMMER
-    let q90 ← q r"v:num"
-    let q91 ← q r"p:num"
-    let q92 ← q r"z:A"
-    let q93 ← q r"k:A ring"
-    let v94 ← SPECL [q93, q92, q91, q90] lemma3
+            ideal_generated (ring_of_integers k) {ring_sub k (ring_1 k) z}" (REPEAT GEN_TAC THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"(z:A) IN ring_carrier(ring_of_integers k) /\
+      ring_setadd (ring_of_integers k) (ring_carrier(subring_generated k {z}))
+        (ideal_generated (ring_of_integers k) {ring_of_num k p}) =
+      ring_carrier(ring_of_integers k)") STRIP_ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"z:A"), (← q r"p EXP (b + 1)")] CYCLOTOMIC_FIELD_RING_OF_INTEGERS) THEN ASM_SIMP_TAC [EXP_EQ_0, PRIME_IMP_NZ] THEN DISCH_THEN SUBST1_TAC THEN ASM_SIMP_TAC [SUBRING_GENERATED_INC_GEN, IN_SING] THEN MATCH_MP_TAC RING_SETADD_RSUBSET THEN REWRITE_TAC [CARRIER_SUBRING_OF, IDEAL_GENERATED_SUBSET, IDEAL_GENERATED_NONEMPTY], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_of_num k p IN
+      ideal_generated (ring_of_integers k) {ring_sub k (ring_1 k) (z:A)}") ASSUME_TAC THENL [MATCH_MP_TAC IN_IDEAL_GENERATED_SING THEN MP_TAC (← ISPECL [(← q r"ring_of_integers k:A ring"), (← q r"z:A"), (← q r"p:num"), (← q r"b:num")] lemma1) THEN ASM_SIMP_TAC [INTEGRAL_DOMAIN_RING_OF_INTEGERS, NUMBER_FIELD_IMP_FIELD, RING_OF_INTEGERS] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_SIMP_TAC [RING_ORDER_UNIQUE, RING_OF_INTEGERS] THEN X_GEN_TAC (← q r"d:num") THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"z:A"), (← q r"d:num")] RING_ORDER_DIVIDES) THEN ASM_REWRITE_TAC [] THEN MESON_TAC [], ALL_TAC] THEN MP_TAC (← ISPEC (← q r"ring_of_integers k:A ring") RING_SUB) THEN MP_TAC (← ISPEC (← q r"ring_of_integers k:A ring") RING_1) THEN MP_TAC (← ISPEC (← q r"ring_of_integers k:A ring") RING_OF_NUM) THEN REWRITE_TAC [RING_OF_INTEGERS] THEN REPEAT DISCH_TAC THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"z:A"), (← q r"p:num")] lemma2) THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN REWRITE_TAC [(← GSYM SUBSET_ANTISYM_EQ), IDEALS_GENERATED_SUBSET] THEN REWRITE_TAC [SUBSET, IN_INTER, IN_INSERT, NOT_IN_EMPTY] THEN CONJ_TAC THEN X_GEN_TAC (← q r"w:A") THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (REPEAT_TCL DISJ_CASES_THEN SUBST1_TAC)) THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_GENERATED, IN_IDEAL_GENERATED_SELF] THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"ideal_generated (ring_of_integers k)
+        {ring_of_num k p,
+         poly_extend (integer_ring,k) (ring_of_int k) (\v. z)
+           (cyclotomic_poly (integer_mod_ring p) 1):A}"))) THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_GENERATED, IDEAL_GENERATED_INC_GEN, IN_INSERT]))
     prove
       r"!(k:A ring) z p v.
           number_field k /\ z IN ring_carrier k /\ prime p /\
@@ -542,7 +395,10 @@ def setupCyclotomicSplit [HolBase] (D : CyclotomicSplitDeps) :
               ideal_pow (ring_of_integers k)
                 (ideal_generated (ring_of_integers k) {ring_sub k (ring_1 k) z})
                 (phi(p EXP (v + 1)))"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC v94 THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_GE_2)) THEN MP_TAC v89 THEN ANTS_TAC THENL [ASM_SIMP_TAC [MULT_CLAUSES, DIVIDES_ONE, FINITE_SING, IN_SING, FORALL_UNWIND_THM2, CYCLOTOMIC_POLY_IN_CARRIER, CYCLOTOMIC_POLY_MONIC, RING_PRODUCT_SING, r81] THEN MATCH_MP_TAC POLY_DEG_1_IMP_IRREDUCIBLE, ALL_TAC] THEN ASM_SIMP_TAC [IN_SING, FORALL_UNWIND_THM2, IDEAL_PRODUCT_SING, RING_IDEAL_IDEAL_POW, CYCLOTOMIC_POLY_DEG, CYCLOTOMIC_POLY_IN_CARRIER, FIELD_INTEGER_MOD_RING, v79, TRIVIAL_INTEGER_MOD_RING, PHI_1, r78])
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← SPECL [(← q r"k:A ring"), (← q r"z:A"), (← q r"p:num"), (← q r"v:num")] lemma3) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_GE_2)) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"z:A"), (← q r"p:num"), (← q r"v + 1"), (← q r"1"), (← q r"{cyclotomic_poly (integer_mod_ring p) 1}"), (← q r"\g. ideal_generated (ring_of_integers k)
+                          {ring_of_num (k:A ring) p,
+                           poly_extend (integer_ring,k) (ring_of_int k) (\v. z)
+                             (g:(1->num)->int)}")] CYCLOTOMIC_FIELD_DEDEKIND_KUMMER) THEN ANTS_TAC THENL [ASM_SIMP_TAC [MULT_CLAUSES, DIVIDES_ONE, FINITE_SING, IN_SING, FORALL_UNWIND_THM2, CYCLOTOMIC_POLY_IN_CARRIER, CYCLOTOMIC_POLY_MONIC, RING_PRODUCT_SING, (← ARITH_RULE (← q r"2 <= p ==> ~(p = 1)"))] THEN MATCH_MP_TAC POLY_DEG_1_IMP_IRREDUCIBLE, ALL_TAC] THEN ASM_SIMP_TAC [IN_SING, FORALL_UNWIND_THM2, IDEAL_PRODUCT_SING, RING_IDEAL_IDEAL_POW, CYCLOTOMIC_POLY_DEG, CYCLOTOMIC_POLY_IN_CARRIER, FIELD_INTEGER_MOD_RING, (← GSYM TRIVIAL_RING_10), TRIVIAL_INTEGER_MOD_RING, PHI_1, (← ARITH_RULE (← q r"2 <= p ==> ~(p = 1)"))])
 
   -- @@RETURN BEGIN
   return { CYCLOTOMIC_FIELD_DEDEKIND_KUMMER, CYCLOTOMIC_FIELD_PRIME_DECOMPOSITION,

@@ -12,9 +12,11 @@
   in order and exports every name under its HOL Light name.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more such rules
-  (ARITH_RULE in RELPOW_SEQUENCE) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolMath
@@ -978,23 +980,20 @@ def setupRelpow [HolBase] (D : RSTCDeps) (BClosures : Closures) (BCommute : Comm
    (← do
     -- The ARITH_RULEs in OCaml's order: the THENL list is built right to
     -- left and the later rule in a THEN chain first.
-    let ar3 ← ARITH_RULE (← q r"~(SUC n <= n)")
-    let ar2 ← ARITH_RULE (← q r"~(SUC n <= n)")
-    let ar1 ← ARITH_RULE (← q r"(n = 0) \/ 0 < n")
     pure (GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC [LT, RELPOW] THENL
      [REPEAT GEN_TAC THEN EQ_TAC THENL
        [DISCH_THEN SUBST1_TAC THEN EXISTS_TAC (← q r"\n:num. y:A") THEN REWRITE_TAC [],
         MESON_TAC []],
       REPEAT GEN_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THENL
-       [DISJ_CASES_TAC ar1 THENL
+       [DISJ_CASES_TAC (← ARITH_RULE (← q r"(n = 0) \/ 0 < n")) THENL
          [EXISTS_TAC (← q r"\i. if i = 0 then x else y:A") THEN
           ASM_REWRITE_TAC [ARITH, LT] THEN
           REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [NOT_SUC] THEN
           ASM_MESON_TAC [],
           EXISTS_TAC (← q r"\i. if i <= n then f(i) else (y:A)") THEN
-          ASM_REWRITE_TAC [LE_0, ar2] THEN
+          ASM_REWRITE_TAC [LE_0, (← ARITH_RULE (← q r"~(SUC n <= n)"))] THEN
           REPEAT STRIP_TAC THEN
-          ASM_REWRITE_TAC [LE_REFL, ar3] THEN
+          ASM_REWRITE_TAC [LE_REFL, (← ARITH_RULE (← q r"~(SUC n <= n)"))] THEN
           ASM_REWRITE_TAC [LE_SUC_LT] THEN
           ASM_REWRITE_TAC [LE_LT] THEN
           FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC []],

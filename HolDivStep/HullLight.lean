@@ -12,10 +12,11 @@
   (SessionDivStep.HullLight fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, INT_ARITH, TAUT, SET_RULE, ...) they are
-  bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolMath
@@ -221,35 +222,26 @@ def setupHullLight02 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       !i:int. i < &0 ==> ?m. i = -- &(m + 1)
       "
    (← do
-    let v1 ← ARITH_RULE (← q r"SUC m = m + 1")
-    let v2 ← choosevar (← q r"m:num") (← q r"n = SUC m") [num_CASES]
-    let v3 ← INT_ARITH (← q r"~(-- &0 < &0:int)")
-    let v4 ← choosevar (← q r"n:num") (← q r"i:int = -- &n") []
-    let v5 ← INT_ARITH (← q r"~(&n < &0:int)")
-    let v6 ← SPEC (← q r"i:int") INT_IMAGE
     pure (REPEAT STRIP_TAC THEN
-      (DISJ_CASES_TAC v6) THENL
-      [ASM_MESON_TAC [v5],
-       v4 THEN
-        (note (← q r"~(n = 0)") [v3]) THEN
-        v2 THEN
-        (ASM_MESON_TAC [v1])]))
+      (DISJ_CASES_TAC (← SPEC (← q r"i:int") INT_IMAGE)) THENL
+      [ASM_MESON_TAC [(← INT_ARITH (← q r"~(&n < &0:int)"))],
+       (← choosevar (← q r"n:num") (← q r"i:int = -- &n") []) THEN
+        (note (← q r"~(n = 0)") [(← INT_ARITH (← q r"~(-- &0 < &0:int)"))]) THEN
+        (← choosevar (← q r"m:num") (← q r"n = SUC m") [num_CASES]) THEN
+        (ASM_MESON_TAC [(← ARITH_RULE (← q r"SUC m = m + 1"))])]))
 
   let real_lt_ldiv ← prove
    r"
       !x y z. &0:real < x /\ y < z * x ==> y / x < z
       "
    (← do
-    let v1 ← REAL_ARITH (← q r"z * &1:real = z")
-    let v2 ← real_linear (← q r"&0:real < x ==> ~(x = &0)")
-    let v3 ← real_linear (← q r"y * inv x < (z * x) * inv x ==> y / x < z * (x * inv x)")
     pure (REPEAT STRIP_TAC THEN
       (note (← q r"&0 < inv x") [REAL_LT_INV]) THEN
       (note (← q r"y * inv x < (z * x) * inv x") [REAL_LT_RMUL]) THEN
-      v3 THEN
-      v2 THEN
+      (← real_linear (← q r"y * inv x < (z * x) * inv x ==> y / x < z * (x * inv x)")) THEN
+      (← real_linear (← q r"&0:real < x ==> ~(x = &0)")) THEN
       (note (← q r"x * inv x = &1") [REAL_MUL_RINV]) THEN
-      (ASM_MESON_TAC [v1])))
+      (ASM_MESON_TAC [(← REAL_ARITH (← q r"z * &1:real = z"))])))
 
   let real_lt_rdiv_one_extra ← prove
    r"
@@ -257,25 +249,19 @@ def setupHullLight02 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       &0 < a /\ &1 <= b /\ c * (a * b) < a ==> c < &1
       "
    (← do
-    let v1 ← real_linear (← q r"~(&1 <= c:real) ==> c < &1")
-    let v2 ← real_linear (← q r"&1 * &1 <= c*b:real ==> ~(c * b < &1)")
-    let v3 ← real_linear (← q r"&0 <= &1:real")
-    let v4 ← real_linear (← q r"c * b * &1 = c * b:real")
-    let v5 ← real_linear (← q r"&0 < a ==> ~(a = &0:real)")
-    let v6 ← real_linear (← q r"(c * (a * b)) * inv a < a * inv a ==> c * b * (a * inv a) < a * inv a")
     pure (REPEAT STRIP_TAC THEN
       (note (← q r"&0 < inv a") [REAL_LT_INV]) THEN
       (note (← q r"(c * (a * b)) * inv a < a * inv a") [REAL_LT_RMUL]) THEN
-      v6 THEN
-      v5 THEN
+      (← real_linear (← q r"(c * (a * b)) * inv a < a * inv a ==> c * b * (a * inv a) < a * inv a")) THEN
+      (← real_linear (← q r"&0 < a ==> ~(a = &0:real)")) THEN
       (note (← q r"a * inv a = &1") [REAL_MUL_RINV]) THEN
-      v4 THEN
+      (← real_linear (← q r"c * b * &1 = c * b:real")) THEN
       (note (← q r"c * b < &1:real") []) THEN
       (ASM_CASES_TAC (← q r"&1 <= c:real")) THENL
-      [v3 THEN
+      [(← real_linear (← q r"&0 <= &1:real")) THEN
         (note (← q r"&1 * &1 <= c*b:real") [REAL_LE_MUL2]) THEN
-        v2,
-       v1] THEN
+        (← real_linear (← q r"&1 * &1 <= c*b:real ==> ~(c * b < &1)")),
+       (← real_linear (← q r"~(&1 <= c:real) ==> c < &1"))] THEN
       (ASM_MESON_TAC [])))
 
   let real_lt_extra2 ← prove
@@ -284,24 +270,19 @@ def setupHullLight02 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       a < b * c * d /\ &0 < a /\ &0 < d /\ d < &1 ==> a < b * c
       "
    (← do
-    let v1 ← real_linear (← q r"&1 * (a / d) = a / d")
-    let v2 ← real_cancel (← q r"&0 < d ==> d * (a / d) = a")
-    let v3 ← real_linear (← q r"b * c * &1:real = b * c")
-    let v4 ← real_linear (← q r"a * inv d < (b * c * d) * inv d ==> a / d < b * c * (d * inv d)")
-    let v5 ← real_linear (← q r"&0 < d ==> ~(d = &0:real)")
     pure (REPEAT STRIP_TAC THEN
-      v5 THEN
+      (← real_linear (← q r"&0 < d ==> ~(d = &0:real)")) THEN
       (note (← q r"d * inv d = &1") [REAL_MUL_RINV]) THEN
       (note (← q r"&0 < inv d") [REAL_LT_INV]) THEN
       (note (← q r"a * inv d < (b * c * d) * inv d") [REAL_LT_RMUL]) THEN
-      v4 THEN
+      (← real_linear (← q r"a * inv d < (b * c * d) * inv d ==> a / d < b * c * (d * inv d)")) THEN
       (note (← q r"a / d < b * c * &1") []) THEN
-      v3 THEN
+      (← real_linear (← q r"b * c * &1:real = b * c")) THEN
       (note (← q r"a / d < b * c") []) THEN
       (note (← q r"&0 < a / d") [REAL_LT_DIV]) THEN
       (note (← q r"d * (a / d) < &1 * (a / d)") [REAL_LT_RMUL]) THEN
-      v2 THEN
-      v1 THEN
+      (← real_cancel (← q r"&0 < d ==> d * (a / d) = a")) THEN
+      (← real_linear (← q r"&1 * (a / d) = a / d")) THEN
       (note (← q r"a < a / d") []) THEN
       (ASM_MESON_TAC [REAL_LT_TRANS])))
 
@@ -319,22 +300,17 @@ def setupHullLight02 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       d*(M00*x+M01*y)/D+e*(M10*x+M11*y)/D <= f
       "
    (← do
-    let v1 ← real_cancel (← q r"&0:real < D ==> ((Q*(d*M00+e*M10))/D)*x+((Q*(d*M01+e*M11))/D)*y = Q*(d*(M00*x+M01*y)/D+e*(M10*x+M11*y)/D)")
-    let v2 ← real_linear (← q r"M*(a*x+b*y) = (M*a)*x+(M*b)*y:real")
-    let v3 ← real_linear (← q r"&0 < P ==> M*c <= M*c+P")
-    let v4 ← real_cancel (← q r"&0:real < D ==> (M*b*D)/D = M*b")
-    let v5 ← real_cancel (← q r"&0:real < D ==> (M*a*D)/D = M*a")
     pure (REPEAT STRIP_TAC THEN
-      v5 THEN
-      v4 THEN
+      (← real_cancel (← q r"&0:real < D ==> (M*a*D)/D = M*a")) THEN
+      (← real_cancel (← q r"&0:real < D ==> (M*b*D)/D = M*b")) THEN
       (note (← q r"M*a:real = (Q*(d*M00+e*M10))/D") []) THEN
       (note (← q r"M*b:real = (Q*(d*M01+e*M11))/D") []) THEN
       (note (← q r"M*(a*x+b*y) <= M*c:real") [REAL_LE_LMUL]) THEN
-      v3 THEN
+      (← real_linear (← q r"&0 < P ==> M*c <= M*c+P")) THEN
       (note (← q r"M*(a*x+b*y) <= M*c+P:real") [REAL_LE_TRANS]) THEN
-      v2 THEN
+      (← real_linear (← q r"M*(a*x+b*y) = (M*a)*x+(M*b)*y:real")) THEN
       (note (← q r"((Q*(d*M00+e*M10))/D)*x+((Q*(d*M01+e*M11))/D)*y <= Q*f:real") []) THEN
-      v1 THEN
+      (← real_cancel (← q r"&0:real < D ==> ((Q*(d*M00+e*M10))/D)*x+((Q*(d*M01+e*M11))/D)*y = Q*(d*(M00*x+M01*y)/D+e*(M10*x+M11*y)/D)")) THEN
       (note (← q r"Q*(d*(M00*x+M01*y)/D+e*(M10*x+M11*y)/D) <= Q*f:real") []) THEN
       (ASM_MESON_TAC [REAL_LE_LMUL_EQ])))
 
@@ -351,19 +327,15 @@ def setupHullLight02 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       d*(M00*x+M01*y)/D+e*(M10*x+M11*y)/D <= f
       "
    (← do
-    let v1 ← real_cancel (← q r"&0:real < D ==> ((Q*(d*M00+e*M10))/D)*x+((Q*(d*M01+e*M11))/D)*y = Q*(d*(M00*x+M01*y)/D+e*(M10*x+M11*y)/D)")
-    let v2 ← real_linear (← q r"M*(a*x+b*y) = (M*a)*x+(M*b)*y:real")
-    let v3 ← real_cancel (← q r"&0:real < D ==> (M*b*D)/D = M*b")
-    let v4 ← real_cancel (← q r"&0:real < D ==> (M*a*D)/D = M*a")
     pure (REPEAT STRIP_TAC THEN
-      v4 THEN
-      v3 THEN
+      (← real_cancel (← q r"&0:real < D ==> (M*a*D)/D = M*a")) THEN
+      (← real_cancel (← q r"&0:real < D ==> (M*b*D)/D = M*b")) THEN
       (note (← q r"M*a:real = (Q*(d*M00+e*M10))/D") []) THEN
       (note (← q r"M*b:real = (Q*(d*M01+e*M11))/D") []) THEN
       (note (← q r"M*(a*x+b*y) <= M*c:real") [REAL_LE_LMUL]) THEN
-      v2 THEN
+      (← real_linear (← q r"M*(a*x+b*y) = (M*a)*x+(M*b)*y:real")) THEN
       (note (← q r"((Q*(d*M00+e*M10))/D)*x+((Q*(d*M01+e*M11))/D)*y <= Q*f:real") []) THEN
-      v1 THEN
+      (← real_cancel (← q r"&0:real < D ==> ((Q*(d*M00+e*M10))/D)*x+((Q*(d*M01+e*M11))/D)*y = Q*(d*(M00*x+M01*y)/D+e*(M10*x+M11*y)/D)")) THEN
       (note (← q r"Q*(d*(M00*x+M01*y)/D+e*(M10*x+M11*y)/D) <= Q*f:real") []) THEN
       (ASM_MESON_TAC [REAL_LE_LMUL_EQ])))
 
@@ -383,25 +355,20 @@ def setupHullLight02 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       g*(M00*x+M01*y)/D+h*(M10*x+M11*y)/D <= i
       "
    (← do
-    let v1 ← real_cancel (← q r"&0:real < D ==> ((Q*(g*M00+h*M10))/D)*x+((Q*(g*M01+h*M11))/D)*y = Q*(g*(M00*x+M01*y)/D+h*(M10*x+M11*y)/D)")
-    let v2 ← real_linear (← q r"M*(a*x+b*y)+N*(d*x+e*y) = (M*a+N*d)*x+(M*b+N*e)*y:real")
-    let v3 ← real_linear (← q r"&0 <= P ==> M*c+N*f <= M*c+N*f+P")
-    let v4 ← real_cancel (← q r"&0:real < D ==> ((M*b+N*e)*D)/D = M*b+N*e")
-    let v5 ← real_cancel (← q r"&0:real < D ==> ((M*a+N*d)*D)/D = M*a+N*d")
     pure (REPEAT STRIP_TAC THEN
-      v5 THEN
-      v4 THEN
+      (← real_cancel (← q r"&0:real < D ==> ((M*a+N*d)*D)/D = M*a+N*d")) THEN
+      (← real_cancel (← q r"&0:real < D ==> ((M*b+N*e)*D)/D = M*b+N*e")) THEN
       (note (← q r"M*a+N*d:real = (Q*(g*M00+h*M10))/D") []) THEN
       (note (← q r"M*b+N*e:real = (Q*(g*M01+h*M11))/D") []) THEN
       (note (← q r"M*(a*x+b*y) <= M*c:real") [REAL_LE_LMUL]) THEN
       (note (← q r"N*(d*x+e*y) <= N*f:real") [REAL_LE_LMUL]) THEN
       (note (← q r"M*(a*x+b*y)+N*(d*x+e*y) <= M*c+N*f:real") [REAL_LE_ADD2]) THEN
-      v3 THEN
+      (← real_linear (← q r"&0 <= P ==> M*c+N*f <= M*c+N*f+P")) THEN
       (note (← q r"M*(a*x+b*y)+N*(d*x+e*y) <= M*c+N*f+P:real") [REAL_LE_TRANS]) THEN
-      v2 THEN
+      (← real_linear (← q r"M*(a*x+b*y)+N*(d*x+e*y) = (M*a+N*d)*x+(M*b+N*e)*y:real")) THEN
       (note (← q r"(M*a+N*d)*x+(M*b+N*e)*y <= M*c+N*f+P:real") []) THEN
       (note (← q r"((Q*(g*M00+h*M10))/D)*x+((Q*(g*M01+h*M11))/D)*y <= Q*i:real") []) THEN
-      v1 THEN
+      (← real_cancel (← q r"&0:real < D ==> ((Q*(g*M00+h*M10))/D)*x+((Q*(g*M01+h*M11))/D)*y = Q*(g*(M00*x+M01*y)/D+h*(M10*x+M11*y)/D)")) THEN
       (note (← q r"Q*(g*(M00*x+M01*y)/D+h*(M10*x+M11*y)/D) <= Q*i:real") []) THEN
       (ASM_MESON_TAC [REAL_LE_LMUL_EQ])))
 
@@ -2936,171 +2903,91 @@ def setupHullLight05 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H1 (((&2753 / &4096) * x + (&0) * y) / divsteps_s pow 0) (((&0) * x + (&2753 / &4096) * y) / divsteps_s pow 0)
       "
       (← do
-        let v481 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79
-        let v482 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78
-        let v483 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77
-        let v484 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76
-        let v485 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75
-        let v486 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74
-        let v487 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73
-        let v488 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72
-        let v489 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71
-        let v490 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70
-        let v491 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69
-        let v492 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68
-        let v493 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67
-        let v494 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66
-        let v495 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65
-        let v496 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64
-        let v497 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63
-        let v498 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62
-        let v499 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61
-        let v500 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60
-        let v501 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59
-        let v502 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58
-        let v503 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57
-        let v504 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56
-        let v505 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55
-        let v506 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54
-        let v507 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53
-        let v508 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52
-        let v509 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51
-        let v510 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50
-        let v511 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49
-        let v512 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48
-        let v513 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47
-        let v514 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46
-        let v515 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45
-        let v516 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44
-        let v517 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43
-        let v518 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42
-        let v519 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41
-        let v520 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40
-        let v521 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39
-        let v522 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38
-        let v523 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37
-        let v524 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36
-        let v525 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35
-        let v526 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34
-        let v527 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33
-        let v528 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32
-        let v529 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31
-        let v530 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30
-        let v531 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29
-        let v532 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28
-        let v533 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27
-        let v534 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26
-        let v535 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25
-        let v536 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24
-        let v537 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23
-        let v538 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22
-        let v539 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21
-        let v540 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20
-        let v541 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19
-        let v542 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18
-        let v543 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17
-        let v544 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16
-        let v545 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15
-        let v546 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14
-        let v547 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13
-        let v548 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12
-        let v549 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11
-        let v550 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10
-        let v551 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9
-        let v552 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8
-        let v553 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7
-        let v554 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6
-        let v555 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5
-        let v556 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4
-        let v557 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3
-        let v558 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2
-        let v559 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1
-        let v560 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0
         pure (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s] THEN
           (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
           (REWRITE_TAC [divsteps_hinit_0_1]) THEN
           (REPEAT STRIP_TAC) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
-          v560 THEN
-          v559 THEN
-          v558 THEN
-          v557 THEN
-          v556 THEN
-          v555 THEN
-          v554 THEN
-          v553 THEN
-          v552 THEN
-          v551 THEN
-          v550 THEN
-          v549 THEN
-          v548 THEN
-          v547 THEN
-          v546 THEN
-          v545 THEN
-          v544 THEN
-          v543 THEN
-          v542 THEN
-          v541 THEN
-          v540 THEN
-          v539 THEN
-          v538 THEN
-          v537 THEN
-          v536 THEN
-          v535 THEN
-          v534 THEN
-          v533 THEN
-          v532 THEN
-          v531 THEN
-          v530 THEN
-          v529 THEN
-          v528 THEN
-          v527 THEN
-          v526 THEN
-          v525 THEN
-          v524 THEN
-          v523 THEN
-          v522 THEN
-          v521 THEN
-          v520 THEN
-          v519 THEN
-          v518 THEN
-          v517 THEN
-          v516 THEN
-          v515 THEN
-          v514 THEN
-          v513 THEN
-          v512 THEN
-          v511 THEN
-          v510 THEN
-          v509 THEN
-          v508 THEN
-          v507 THEN
-          v506 THEN
-          v505 THEN
-          v504 THEN
-          v503 THEN
-          v502 THEN
-          v501 THEN
-          v500 THEN
-          v499 THEN
-          v498 THEN
-          v497 THEN
-          v496 THEN
-          v495 THEN
-          v494 THEN
-          v493 THEN
-          v492 THEN
-          v491 THEN
-          v490 THEN
-          v489 THEN
-          v488 THEN
-          v487 THEN
-          v486 THEN
-          v485 THEN
-          v484 THEN
-          v483 THEN
-          v482 THEN
-          v481 THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79) THEN
           (ASM_SIMP_TAC [])))
 
   -- @@RETURN BEGIN
@@ -3140,12 +3027,10 @@ def setupHullLight06 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H1 ((&2753 / &4096)*x) ((&2753 / &4096)*y)
       "
    (← do
-    let v1 ← real_linear (← q r"(((&0) * x + (&2753 / &4096) * y) / divsteps_s pow 0) = (&2753 / &4096) * y")
-    let v2 ← real_linear (← q r"(((&2753 / &4096) * x + (&0) * y) / divsteps_s pow 0) = (&2753 / &4096) * x")
     pure (REPEAT STRIP_TAC THEN
       (note (← q r"divsteps_H1 (((&2753 / &4096) * x + (&0) * y) / divsteps_s pow 0) (((&0) * x + (&2753 / &4096) * y) / divsteps_s pow 0)") [init2stable]) THEN
-      v2 THEN
-      v1 THEN
+      (← real_linear (← q r"(((&2753 / &4096) * x + (&0) * y) / divsteps_s pow 0) = (&2753 / &4096) * x")) THEN
+      (← real_linear (← q r"(((&0) * x + (&2753 / &4096) * y) / divsteps_s pow 0) = (&2753 / &4096) * y")) THEN
       (ASM_MESON_TAC [])))
 
   let h1_contains0 ← prove
@@ -3153,331 +3038,169 @@ def setupHullLight06 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H1 (&0) (&0)
       "
    (← do
-    let v1 ← REAL_ARITH (← q r"!s:real. &0:real < &38657149")
-    let v2 ← specialize [(← q r"divsteps_s")] v1
-    let v3 ← REAL_ARITH (← q r"!s:real. &0:real < &3642043")
-    let v4 ← specialize [(← q r"divsteps_s")] v3
-    let v5 ← REAL_ARITH (← q r"!s:real. &0:real < &949861697")
-    let v6 ← specialize [(← q r"divsteps_s")] v5
-    let v7 ← REAL_ARITH (← q r"!s:real. &0:real < &12157023")
-    let v8 ← specialize [(← q r"divsteps_s")] v7
-    let v9 ← REAL_ARITH (← q r"!s:real. &0:real < &61112343")
-    let v10 ← specialize [(← q r"divsteps_s")] v9
-    let v11 ← REAL_ARITH (← q r"!s:real. &0:real < &95584823")
-    let v12 ← specialize [(← q r"divsteps_s")] v11
-    let v13 ← REAL_ARITH (← q r"!s:real. &0:real < &131957561")
-    let v14 ← specialize [(← q r"divsteps_s")] v13
-    let v15 ← REAL_ARITH (← q r"!s:real. &0:real < &86789633")
-    let v16 ← specialize [(← q r"divsteps_s")] v15
-    let v17 ← REAL_ARITH (← q r"!s:real. &0:real < &49963991")
-    let v18 ← specialize [(← q r"divsteps_s")] v17
-    let v19 ← REAL_ARITH (← q r"!s:real. &0:real < &6407825")
-    let v20 ← specialize [(← q r"divsteps_s")] v19
-    let v21 ← REAL_ARITH (← q r"!s:real. &0:real < &426281637")
-    let v22 ← specialize [(← q r"divsteps_s")] v21
-    let v23 ← REAL_ARITH (← q r"!s:real. &0:real < &6951751")
-    let v24 ← specialize [(← q r"divsteps_s")] v23
-    let v25 ← REAL_ARITH (← q r"!s:real. &0:real < &21015329")
-    let v26 ← specialize [(← q r"divsteps_s")] v25
-    let v27 ← REAL_ARITH (← q r"!s:real. &0:real < &26430931")
-    let v28 ← specialize [(← q r"divsteps_s")] v27
-    let v29 ← REAL_ARITH (← q r"!s:real. &0:real < &20669487")
-    let v30 ← specialize [(← q r"divsteps_s")] v29
-    let v31 ← REAL_ARITH (← q r"!s:real. &0:real < &457690221")
-    let v32 ← specialize [(← q r"divsteps_s")] v31
-    let v33 ← REAL_ARITH (← q r"!s:real. &0:real < &104374325")
-    let v34 ← specialize [(← q r"divsteps_s")] v33
-    let v35 ← REAL_ARITH (← q r"!s:real. &0:real < &6651805")
-    let v36 ← specialize [(← q r"divsteps_s")] v35
-    let v37 ← REAL_ARITH (← q r"!s:real. &0:real < &288985723")
-    let v38 ← specialize [(← q r"divsteps_s")] v37
-    let v39 ← REAL_ARITH (← q r"!s:real. &0:real < &22163375")
-    let v40 ← specialize [(← q r"divsteps_s")] v39
-    let v41 ← REAL_ARITH (← q r"!s:real. &0:real < &111549985")
-    let v42 ← specialize [(← q r"divsteps_s")] v41
-    let v43 ← REAL_ARITH (← q r"!s:real. &0:real < &87245513")
-    let v44 ← specialize [(← q r"divsteps_s")] v43
-    let v45 ← REAL_ARITH (← q r"!s:real. &0:real < &441063407")
-    let v46 ← specialize [(← q r"divsteps_s")] v45
-    let v47 ← REAL_ARITH (← q r"!s:real. &0:real < &77682557")
-    let v48 ← specialize [(← q r"divsteps_s")] v47
-    let v49 ← REAL_ARITH (← q r"!s:real. &0:real < &110400449")
-    let v50 ← specialize [(← q r"divsteps_s")] v49
-    let v51 ← REAL_ARITH (← q r"!s:real. &0:real < &42311631")
-    let v52 ← specialize [(← q r"divsteps_s")] v51
-    let v53 ← REAL_ARITH (← q r"!s:real. &0:real < &31944087")
-    let v54 ← specialize [(← q r"divsteps_s")] v53
-    let v55 ← REAL_ARITH (← q r"!s:real. &0:real < &8039969")
-    let v56 ← specialize [(← q r"divsteps_s")] v55
-    let v57 ← REAL_ARITH (← q r"!s:real. &0:real < &3928715")
-    let v58 ← specialize [(← q r"divsteps_s")] v57
-    let v59 ← REAL_ARITH (← q r"!s:real. &0:real < &1977153")
-    let v60 ← specialize [(← q r"divsteps_s")] v59
-    let v61 ← REAL_ARITH (← q r"!s:real. &0:real < &13225515")
-    let v62 ← specialize [(← q r"divsteps_s")] v61
-    let v63 ← REAL_ARITH (← q r"!s:real. &0:real < &20256657")
-    let v64 ← specialize [(← q r"divsteps_s")] v63
-    let v65 ← REAL_ARITH (← q r"!s:real. &0:real < &659132513")
-    let v66 ← specialize [(← q r"divsteps_s")] v65
-    let v67 ← REAL_ARITH (← q r"!s:real. &0:real < &1407123")
-    let v68 ← specialize [(← q r"divsteps_s")] v67
-    let v69 ← REAL_ARITH (← q r"!s:real. &0:real < &10605687")
-    let v70 ← specialize [(← q r"divsteps_s")] v69
-    let v71 ← REAL_ARITH (← q r"!s:real. &0:real < &2368161")
-    let v72 ← specialize [(← q r"divsteps_s")] v71
-    let v73 ← REAL_ARITH (← q r"!s:real. &0:real < &41914863")
-    let v74 ← specialize [(← q r"divsteps_s")] v73
-    let v75 ← REAL_ARITH (← q r"!s:real. &0:real < &57079641")
-    let v76 ← specialize [(← q r"divsteps_s")] v75
-    let v77 ← REAL_ARITH (← q r"!s:real. &0:real < &480443643")
-    let v78 ← specialize [(← q r"divsteps_s")] v77
-    let v79 ← REAL_ARITH (← q r"!s:real. &0:real < &6035371")
-    let v80 ← specialize [(← q r"divsteps_s")] v79
-    let v81 ← REAL_ARITH (← q r"!s:real. &0:real < &38657149")
-    let v82 ← specialize [(← q r"divsteps_s")] v81
-    let v83 ← REAL_ARITH (← q r"!s:real. &0:real < &3642043")
-    let v84 ← specialize [(← q r"divsteps_s")] v83
-    let v85 ← REAL_ARITH (← q r"!s:real. &0:real < &949861697")
-    let v86 ← specialize [(← q r"divsteps_s")] v85
-    let v87 ← REAL_ARITH (← q r"!s:real. &0:real < &12157023")
-    let v88 ← specialize [(← q r"divsteps_s")] v87
-    let v89 ← REAL_ARITH (← q r"!s:real. &0:real < &61112343")
-    let v90 ← specialize [(← q r"divsteps_s")] v89
-    let v91 ← REAL_ARITH (← q r"!s:real. &0:real < &95584823")
-    let v92 ← specialize [(← q r"divsteps_s")] v91
-    let v93 ← REAL_ARITH (← q r"!s:real. &0:real < &131957561")
-    let v94 ← specialize [(← q r"divsteps_s")] v93
-    let v95 ← REAL_ARITH (← q r"!s:real. &0:real < &86789633")
-    let v96 ← specialize [(← q r"divsteps_s")] v95
-    let v97 ← REAL_ARITH (← q r"!s:real. &0:real < &49963991")
-    let v98 ← specialize [(← q r"divsteps_s")] v97
-    let v99 ← REAL_ARITH (← q r"!s:real. &0:real < &6407825")
-    let v100 ← specialize [(← q r"divsteps_s")] v99
-    let v101 ← REAL_ARITH (← q r"!s:real. &0:real < &426281637")
-    let v102 ← specialize [(← q r"divsteps_s")] v101
-    let v103 ← REAL_ARITH (← q r"!s:real. &0:real < &6951751")
-    let v104 ← specialize [(← q r"divsteps_s")] v103
-    let v105 ← REAL_ARITH (← q r"!s:real. &0:real < &21015329")
-    let v106 ← specialize [(← q r"divsteps_s")] v105
-    let v107 ← REAL_ARITH (← q r"!s:real. &0:real < &26430931")
-    let v108 ← specialize [(← q r"divsteps_s")] v107
-    let v109 ← REAL_ARITH (← q r"!s:real. &0:real < &20669487")
-    let v110 ← specialize [(← q r"divsteps_s")] v109
-    let v111 ← REAL_ARITH (← q r"!s:real. &0:real < &457690221")
-    let v112 ← specialize [(← q r"divsteps_s")] v111
-    let v113 ← REAL_ARITH (← q r"!s:real. &0:real < &104374325")
-    let v114 ← specialize [(← q r"divsteps_s")] v113
-    let v115 ← REAL_ARITH (← q r"!s:real. &0:real < &6651805")
-    let v116 ← specialize [(← q r"divsteps_s")] v115
-    let v117 ← REAL_ARITH (← q r"!s:real. &0:real < &288985723")
-    let v118 ← specialize [(← q r"divsteps_s")] v117
-    let v119 ← REAL_ARITH (← q r"!s:real. &0:real < &22163375")
-    let v120 ← specialize [(← q r"divsteps_s")] v119
-    let v121 ← REAL_ARITH (← q r"!s:real. &0:real < &111549985")
-    let v122 ← specialize [(← q r"divsteps_s")] v121
-    let v123 ← REAL_ARITH (← q r"!s:real. &0:real < &87245513")
-    let v124 ← specialize [(← q r"divsteps_s")] v123
-    let v125 ← REAL_ARITH (← q r"!s:real. &0:real < &441063407")
-    let v126 ← specialize [(← q r"divsteps_s")] v125
-    let v127 ← REAL_ARITH (← q r"!s:real. &0:real < &77682557")
-    let v128 ← specialize [(← q r"divsteps_s")] v127
-    let v129 ← REAL_ARITH (← q r"!s:real. &0:real < &110400449")
-    let v130 ← specialize [(← q r"divsteps_s")] v129
-    let v131 ← REAL_ARITH (← q r"!s:real. &0:real < &42311631")
-    let v132 ← specialize [(← q r"divsteps_s")] v131
-    let v133 ← REAL_ARITH (← q r"!s:real. &0:real < &31944087")
-    let v134 ← specialize [(← q r"divsteps_s")] v133
-    let v135 ← REAL_ARITH (← q r"!s:real. &0:real < &8039969")
-    let v136 ← specialize [(← q r"divsteps_s")] v135
-    let v137 ← REAL_ARITH (← q r"!s:real. &0:real < &3928715")
-    let v138 ← specialize [(← q r"divsteps_s")] v137
-    let v139 ← REAL_ARITH (← q r"!s:real. &0:real < &1977153")
-    let v140 ← specialize [(← q r"divsteps_s")] v139
-    let v141 ← REAL_ARITH (← q r"!s:real. &0:real < &13225515")
-    let v142 ← specialize [(← q r"divsteps_s")] v141
-    let v143 ← REAL_ARITH (← q r"!s:real. &0:real < &20256657")
-    let v144 ← specialize [(← q r"divsteps_s")] v143
-    let v145 ← REAL_ARITH (← q r"!s:real. &0:real < &659132513")
-    let v146 ← specialize [(← q r"divsteps_s")] v145
-    let v147 ← REAL_ARITH (← q r"!s:real. &0:real < &1407123")
-    let v148 ← specialize [(← q r"divsteps_s")] v147
-    let v149 ← REAL_ARITH (← q r"!s:real. &0:real < &10605687")
-    let v150 ← specialize [(← q r"divsteps_s")] v149
-    let v151 ← REAL_ARITH (← q r"!s:real. &0:real < &2368161")
-    let v152 ← specialize [(← q r"divsteps_s")] v151
-    let v153 ← REAL_ARITH (← q r"!s:real. &0:real < &41914863")
-    let v154 ← specialize [(← q r"divsteps_s")] v153
-    let v155 ← REAL_ARITH (← q r"!s:real. &0:real < &57079641")
-    let v156 ← specialize [(← q r"divsteps_s")] v155
-    let v157 ← REAL_ARITH (← q r"!s:real. &0:real < &480443643")
-    let v158 ← specialize [(← q r"divsteps_s")] v157
-    let v159 ← REAL_ARITH (← q r"!s:real. &0:real < &6035371")
-    let v160 ← specialize [(← q r"divsteps_s")] v159
-    let v161 ← REAL_ARITH (← q r"&0 + &0 = &0:real")
-    let v162 ← REAL_ARITH (← q r"c * &0 = &0:real")
     pure (REWRITE_TAC [divsteps_H1] THEN
-      (REWRITE_TAC [v162]) THEN
-      (REWRITE_TAC [v161]) THEN
+      (REWRITE_TAC [(← REAL_ARITH (← q r"c * &0 = &0:real"))]) THEN
+      (REWRITE_TAC [(← REAL_ARITH (← q r"&0 + &0 = &0:real"))]) THEN
       (REPEAT STRIP_TAC) THENL
-      [v160 THEN
+      [(← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &6035371"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v158 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &480443643"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v156 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &57079641"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v154 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &41914863"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v152 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &2368161"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v150 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &10605687"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v148 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &1407123"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v146 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &659132513"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v144 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &20256657"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v142 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &13225515"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v140 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &1977153"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v138 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &3928715"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v136 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &8039969"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v134 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &31944087"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v132 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &42311631"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v130 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &110400449"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v128 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &77682557"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v126 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &441063407"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v124 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &87245513"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v122 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &111549985"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v120 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &22163375"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v118 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &288985723"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v116 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &6651805"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v114 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &104374325"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v112 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &457690221"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v110 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &20669487"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v108 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &26430931"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v106 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &21015329"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v104 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &6951751"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v102 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &426281637"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v100 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &6407825"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v98 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &49963991"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v96 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &86789633"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v94 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &131957561"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v92 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &95584823"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v90 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &61112343"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v88 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &12157023"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v86 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &949861697"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v84 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &3642043"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v82 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &38657149"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v80 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &6035371"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v78 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &480443643"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v76 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &57079641"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v74 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &41914863"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v72 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &2368161"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v70 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &10605687"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v68 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &1407123"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v66 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &659132513"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v64 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &20256657"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v62 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &13225515"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v60 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &1977153"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v58 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &3928715"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v56 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &8039969"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v54 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &31944087"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v52 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &42311631"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v50 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &110400449"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v48 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &77682557"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v46 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &441063407"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v44 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &87245513"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v42 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &111549985"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v40 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &22163375"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v38 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &288985723"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v36 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &6651805"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v34 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &104374325"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v32 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &457690221"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v30 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &20669487"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v28 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &26430931"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v26 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &21015329"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v24 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &6951751"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v22 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &426281637"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v20 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &6407825"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v18 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &49963991"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v16 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &86789633"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v14 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &131957561"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v12 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &95584823"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v10 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &61112343"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v8 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &12157023"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v6 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &949861697"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v4 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &3642043"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE]),
-       v2 THEN
+       (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &38657149"))) THEN
         (ASM_MESON_TAC [REAL_LT_IMP_LE])]))
 
   -- @@RETURN BEGIN
@@ -4173,11 +3896,10 @@ def setupHullLight07 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
         (&58130432) * ((&1) * x + (&0) * y) / s pow 1 + (-- &162430976) * ((&0) * x + (&1 / &2) * y) / s pow 1 <= &104374325
         "
         (← do
-          let v143 ← real_linear (← q r"&0:real <= &0")
           pure (REPEAT STRIP_TAC THEN
             (note (← q r"&0:real < &3401049905044") [mpos]) THEN
             (note (← q r"&0:real < &904052828393") [npos]) THEN
-            v143 THEN
+            (← real_linear (← q r"&0:real <= &0")) THEN
             (note (← q r"&0:real < &2780341333469") [qpos]) THEN
             (note (← q r"&0:real < s pow 1") [REAL_POW_LT]) THEN
             (note (← q r"((&3401049905044)*(&44220416)+(&904052828393)*(&75169792))*s pow 1 = (&2780341333469)*((&58130432) * &1 + (-- &162430976) * &0) /\ ((&3401049905044)*(-- &66781184)+(&904052828393)*(-- &86212608))*s pow 1 = (&2780341333469)*((&58130432) * &0 + (-- &162430976) * &1 / &2) /\ (&3401049905044)*(&62719715)+(&904052828393)*(&85043005)+(&0) = (&2780341333469)*(&104374325)") [mqrel]) THEN
@@ -5293,11 +5015,10 @@ def setupHullLight07 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
         (-- &58130432) * ((&1) * x + (&0) * y) / s pow 1 + (&162430976) * ((&0) * x + (&1 / &2) * y) / s pow 1 <= &104374325
         "
         (← do
-          let v383 ← real_linear (← q r"&0:real <= &0")
           pure (REPEAT STRIP_TAC THEN
             (note (← q r"&0:real < &3401049905044") [mpos]) THEN
             (note (← q r"&0:real < &904052828393") [npos]) THEN
-            v383 THEN
+            (← real_linear (← q r"&0:real <= &0")) THEN
             (note (← q r"&0:real < &2780341333469") [qpos]) THEN
             (note (← q r"&0:real < s pow 1") [REAL_POW_LT]) THEN
             (note (← q r"((&3401049905044)*(-- &44220416)+(&904052828393)*(-- &75169792))*s pow 1 = (&2780341333469)*((-- &58130432) * &1 + (&162430976) * &0) /\ ((&3401049905044)*(&66781184)+(&904052828393)*(&86212608))*s pow 1 = (&2780341333469)*((-- &58130432) * &0 + (&162430976) * &1 / &2) /\ (&3401049905044)*(&62719715)+(&904052828393)*(&85043005)+(&0) = (&2780341333469)*(&104374325)") [mqrel]) THEN
@@ -5757,171 +5478,91 @@ def setupHullLight07 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H1 (((&1) * x + (&0) * y) / divsteps_s pow 1) (((&0) * x + (&1 / &2) * y) / divsteps_s pow 1)
       "
       (← do
-        let v481 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79
-        let v482 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78
-        let v483 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77
-        let v484 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76
-        let v485 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75
-        let v486 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74
-        let v487 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73
-        let v488 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72
-        let v489 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71
-        let v490 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70
-        let v491 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69
-        let v492 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68
-        let v493 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67
-        let v494 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66
-        let v495 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65
-        let v496 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64
-        let v497 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63
-        let v498 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62
-        let v499 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61
-        let v500 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60
-        let v501 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59
-        let v502 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58
-        let v503 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57
-        let v504 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56
-        let v505 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55
-        let v506 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54
-        let v507 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53
-        let v508 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52
-        let v509 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51
-        let v510 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50
-        let v511 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49
-        let v512 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48
-        let v513 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47
-        let v514 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46
-        let v515 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45
-        let v516 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44
-        let v517 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43
-        let v518 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42
-        let v519 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41
-        let v520 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40
-        let v521 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39
-        let v522 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38
-        let v523 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37
-        let v524 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36
-        let v525 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35
-        let v526 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34
-        let v527 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33
-        let v528 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32
-        let v529 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31
-        let v530 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30
-        let v531 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29
-        let v532 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28
-        let v533 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27
-        let v534 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26
-        let v535 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25
-        let v536 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24
-        let v537 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23
-        let v538 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22
-        let v539 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21
-        let v540 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20
-        let v541 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19
-        let v542 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18
-        let v543 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17
-        let v544 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16
-        let v545 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15
-        let v546 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14
-        let v547 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13
-        let v548 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12
-        let v549 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11
-        let v550 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10
-        let v551 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9
-        let v552 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8
-        let v553 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7
-        let v554 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6
-        let v555 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5
-        let v556 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4
-        let v557 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3
-        let v558 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2
-        let v559 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1
-        let v560 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0
         pure (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s] THEN
           (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
           (REWRITE_TAC [divsteps_H0]) THEN
           (REPEAT STRIP_TAC) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
-          v560 THEN
-          v559 THEN
-          v558 THEN
-          v557 THEN
-          v556 THEN
-          v555 THEN
-          v554 THEN
-          v553 THEN
-          v552 THEN
-          v551 THEN
-          v550 THEN
-          v549 THEN
-          v548 THEN
-          v547 THEN
-          v546 THEN
-          v545 THEN
-          v544 THEN
-          v543 THEN
-          v542 THEN
-          v541 THEN
-          v540 THEN
-          v539 THEN
-          v538 THEN
-          v537 THEN
-          v536 THEN
-          v535 THEN
-          v534 THEN
-          v533 THEN
-          v532 THEN
-          v531 THEN
-          v530 THEN
-          v529 THEN
-          v528 THEN
-          v527 THEN
-          v526 THEN
-          v525 THEN
-          v524 THEN
-          v523 THEN
-          v522 THEN
-          v521 THEN
-          v520 THEN
-          v519 THEN
-          v518 THEN
-          v517 THEN
-          v516 THEN
-          v515 THEN
-          v514 THEN
-          v513 THEN
-          v512 THEN
-          v511 THEN
-          v510 THEN
-          v509 THEN
-          v508 THEN
-          v507 THEN
-          v506 THEN
-          v505 THEN
-          v504 THEN
-          v503 THEN
-          v502 THEN
-          v501 THEN
-          v500 THEN
-          v499 THEN
-          v498 THEN
-          v497 THEN
-          v496 THEN
-          v495 THEN
-          v494 THEN
-          v493 THEN
-          v492 THEN
-          v491 THEN
-          v490 THEN
-          v489 THEN
-          v488 THEN
-          v487 THEN
-          v486 THEN
-          v485 THEN
-          v484 THEN
-          v483 THEN
-          v482 THEN
-          v481 THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79) THEN
           (ASM_SIMP_TAC [])))
 
   -- @@RETURN BEGIN
@@ -8201,171 +7842,91 @@ def setupHullLight08 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H1 (((&1) * x + (&0) * y) / divsteps_s pow 1) (((&1 / &2) * x + (&1 / &2) * y) / divsteps_s pow 1)
       "
       (← do
-        let v481 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79
-        let v482 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78
-        let v483 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77
-        let v484 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76
-        let v485 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75
-        let v486 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74
-        let v487 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73
-        let v488 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72
-        let v489 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71
-        let v490 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70
-        let v491 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69
-        let v492 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68
-        let v493 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67
-        let v494 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66
-        let v495 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65
-        let v496 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64
-        let v497 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63
-        let v498 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62
-        let v499 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61
-        let v500 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60
-        let v501 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59
-        let v502 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58
-        let v503 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57
-        let v504 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56
-        let v505 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55
-        let v506 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54
-        let v507 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53
-        let v508 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52
-        let v509 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51
-        let v510 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50
-        let v511 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49
-        let v512 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48
-        let v513 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47
-        let v514 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46
-        let v515 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45
-        let v516 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44
-        let v517 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43
-        let v518 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42
-        let v519 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41
-        let v520 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40
-        let v521 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39
-        let v522 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38
-        let v523 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37
-        let v524 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36
-        let v525 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35
-        let v526 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34
-        let v527 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33
-        let v528 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32
-        let v529 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31
-        let v530 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30
-        let v531 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29
-        let v532 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28
-        let v533 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27
-        let v534 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26
-        let v535 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25
-        let v536 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24
-        let v537 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23
-        let v538 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22
-        let v539 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21
-        let v540 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20
-        let v541 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19
-        let v542 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18
-        let v543 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17
-        let v544 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16
-        let v545 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15
-        let v546 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14
-        let v547 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13
-        let v548 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12
-        let v549 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11
-        let v550 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10
-        let v551 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9
-        let v552 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8
-        let v553 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7
-        let v554 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6
-        let v555 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5
-        let v556 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4
-        let v557 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3
-        let v558 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2
-        let v559 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1
-        let v560 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0
         pure (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s] THEN
           (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
           (REWRITE_TAC [divsteps_H0]) THEN
           (REPEAT STRIP_TAC) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
-          v560 THEN
-          v559 THEN
-          v558 THEN
-          v557 THEN
-          v556 THEN
-          v555 THEN
-          v554 THEN
-          v553 THEN
-          v552 THEN
-          v551 THEN
-          v550 THEN
-          v549 THEN
-          v548 THEN
-          v547 THEN
-          v546 THEN
-          v545 THEN
-          v544 THEN
-          v543 THEN
-          v542 THEN
-          v541 THEN
-          v540 THEN
-          v539 THEN
-          v538 THEN
-          v537 THEN
-          v536 THEN
-          v535 THEN
-          v534 THEN
-          v533 THEN
-          v532 THEN
-          v531 THEN
-          v530 THEN
-          v529 THEN
-          v528 THEN
-          v527 THEN
-          v526 THEN
-          v525 THEN
-          v524 THEN
-          v523 THEN
-          v522 THEN
-          v521 THEN
-          v520 THEN
-          v519 THEN
-          v518 THEN
-          v517 THEN
-          v516 THEN
-          v515 THEN
-          v514 THEN
-          v513 THEN
-          v512 THEN
-          v511 THEN
-          v510 THEN
-          v509 THEN
-          v508 THEN
-          v507 THEN
-          v506 THEN
-          v505 THEN
-          v504 THEN
-          v503 THEN
-          v502 THEN
-          v501 THEN
-          v500 THEN
-          v499 THEN
-          v498 THEN
-          v497 THEN
-          v496 THEN
-          v495 THEN
-          v494 THEN
-          v493 THEN
-          v492 THEN
-          v491 THEN
-          v490 THEN
-          v489 THEN
-          v488 THEN
-          v487 THEN
-          v486 THEN
-          v485 THEN
-          v484 THEN
-          v483 THEN
-          v482 THEN
-          v481 THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79) THEN
           (ASM_SIMP_TAC [])))
 
   -- @@RETURN BEGIN
@@ -10645,171 +10206,91 @@ def setupHullLight09 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H1 (((&0) * x + (&1) * y) / divsteps_s pow 1) (((-- &1 / &2) * x + (&1 / &2) * y) / divsteps_s pow 1)
       "
       (← do
-        let v481 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79
-        let v482 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78
-        let v483 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77
-        let v484 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76
-        let v485 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75
-        let v486 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74
-        let v487 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73
-        let v488 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72
-        let v489 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71
-        let v490 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70
-        let v491 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69
-        let v492 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68
-        let v493 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67
-        let v494 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66
-        let v495 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65
-        let v496 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64
-        let v497 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63
-        let v498 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62
-        let v499 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61
-        let v500 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60
-        let v501 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59
-        let v502 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58
-        let v503 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57
-        let v504 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56
-        let v505 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55
-        let v506 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54
-        let v507 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53
-        let v508 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52
-        let v509 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51
-        let v510 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50
-        let v511 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49
-        let v512 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48
-        let v513 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47
-        let v514 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46
-        let v515 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45
-        let v516 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44
-        let v517 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43
-        let v518 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42
-        let v519 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41
-        let v520 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40
-        let v521 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39
-        let v522 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38
-        let v523 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37
-        let v524 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36
-        let v525 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35
-        let v526 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34
-        let v527 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33
-        let v528 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32
-        let v529 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31
-        let v530 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30
-        let v531 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29
-        let v532 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28
-        let v533 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27
-        let v534 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26
-        let v535 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25
-        let v536 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24
-        let v537 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23
-        let v538 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22
-        let v539 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21
-        let v540 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20
-        let v541 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19
-        let v542 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18
-        let v543 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17
-        let v544 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16
-        let v545 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15
-        let v546 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14
-        let v547 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13
-        let v548 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12
-        let v549 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11
-        let v550 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10
-        let v551 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9
-        let v552 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8
-        let v553 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7
-        let v554 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6
-        let v555 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5
-        let v556 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4
-        let v557 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3
-        let v558 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2
-        let v559 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1
-        let v560 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0
         pure (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s] THEN
           (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
           (REPEAT STRIP_TAC) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
-          v560 THEN
-          v559 THEN
-          v558 THEN
-          v557 THEN
-          v556 THEN
-          v555 THEN
-          v554 THEN
-          v553 THEN
-          v552 THEN
-          v551 THEN
-          v550 THEN
-          v549 THEN
-          v548 THEN
-          v547 THEN
-          v546 THEN
-          v545 THEN
-          v544 THEN
-          v543 THEN
-          v542 THEN
-          v541 THEN
-          v540 THEN
-          v539 THEN
-          v538 THEN
-          v537 THEN
-          v536 THEN
-          v535 THEN
-          v534 THEN
-          v533 THEN
-          v532 THEN
-          v531 THEN
-          v530 THEN
-          v529 THEN
-          v528 THEN
-          v527 THEN
-          v526 THEN
-          v525 THEN
-          v524 THEN
-          v523 THEN
-          v522 THEN
-          v521 THEN
-          v520 THEN
-          v519 THEN
-          v518 THEN
-          v517 THEN
-          v516 THEN
-          v515 THEN
-          v514 THEN
-          v513 THEN
-          v512 THEN
-          v511 THEN
-          v510 THEN
-          v509 THEN
-          v508 THEN
-          v507 THEN
-          v506 THEN
-          v505 THEN
-          v504 THEN
-          v503 THEN
-          v502 THEN
-          v501 THEN
-          v500 THEN
-          v499 THEN
-          v498 THEN
-          v497 THEN
-          v496 THEN
-          v495 THEN
-          v494 THEN
-          v493 THEN
-          v492 THEN
-          v491 THEN
-          v490 THEN
-          v489 THEN
-          v488 THEN
-          v487 THEN
-          v486 THEN
-          v485 THEN
-          v484 THEN
-          v483 THEN
-          v482 THEN
-          v481 THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79) THEN
           (ASM_SIMP_TAC [])))
 
   -- @@RETURN BEGIN
@@ -13089,171 +12570,91 @@ def setupHullLight10 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H0 (((&0) * x + (&1 / &2) * y) / divsteps_s pow 2) (((-- &1 / &2) * x + (&1 / &4) * y) / divsteps_s pow 2)
       "
       (← do
-        let v481 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79
-        let v482 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78
-        let v483 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77
-        let v484 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76
-        let v485 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75
-        let v486 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74
-        let v487 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73
-        let v488 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72
-        let v489 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71
-        let v490 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70
-        let v491 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69
-        let v492 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68
-        let v493 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67
-        let v494 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66
-        let v495 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65
-        let v496 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64
-        let v497 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63
-        let v498 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62
-        let v499 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61
-        let v500 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60
-        let v501 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59
-        let v502 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58
-        let v503 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57
-        let v504 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56
-        let v505 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55
-        let v506 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54
-        let v507 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53
-        let v508 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52
-        let v509 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51
-        let v510 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50
-        let v511 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49
-        let v512 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48
-        let v513 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47
-        let v514 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46
-        let v515 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45
-        let v516 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44
-        let v517 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43
-        let v518 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42
-        let v519 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41
-        let v520 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40
-        let v521 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39
-        let v522 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38
-        let v523 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37
-        let v524 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36
-        let v525 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35
-        let v526 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34
-        let v527 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33
-        let v528 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32
-        let v529 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31
-        let v530 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30
-        let v531 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29
-        let v532 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28
-        let v533 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27
-        let v534 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26
-        let v535 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25
-        let v536 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24
-        let v537 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23
-        let v538 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22
-        let v539 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21
-        let v540 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20
-        let v541 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19
-        let v542 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18
-        let v543 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17
-        let v544 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16
-        let v545 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15
-        let v546 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14
-        let v547 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13
-        let v548 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12
-        let v549 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11
-        let v550 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10
-        let v551 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9
-        let v552 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8
-        let v553 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7
-        let v554 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6
-        let v555 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5
-        let v556 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4
-        let v557 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3
-        let v558 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2
-        let v559 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1
-        let v560 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0
         pure (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s] THEN
           (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
           (REPEAT STRIP_TAC) THEN
           (REWRITE_TAC [divsteps_H0]) THEN
-          v560 THEN
-          v559 THEN
-          v558 THEN
-          v557 THEN
-          v556 THEN
-          v555 THEN
-          v554 THEN
-          v553 THEN
-          v552 THEN
-          v551 THEN
-          v550 THEN
-          v549 THEN
-          v548 THEN
-          v547 THEN
-          v546 THEN
-          v545 THEN
-          v544 THEN
-          v543 THEN
-          v542 THEN
-          v541 THEN
-          v540 THEN
-          v539 THEN
-          v538 THEN
-          v537 THEN
-          v536 THEN
-          v535 THEN
-          v534 THEN
-          v533 THEN
-          v532 THEN
-          v531 THEN
-          v530 THEN
-          v529 THEN
-          v528 THEN
-          v527 THEN
-          v526 THEN
-          v525 THEN
-          v524 THEN
-          v523 THEN
-          v522 THEN
-          v521 THEN
-          v520 THEN
-          v519 THEN
-          v518 THEN
-          v517 THEN
-          v516 THEN
-          v515 THEN
-          v514 THEN
-          v513 THEN
-          v512 THEN
-          v511 THEN
-          v510 THEN
-          v509 THEN
-          v508 THEN
-          v507 THEN
-          v506 THEN
-          v505 THEN
-          v504 THEN
-          v503 THEN
-          v502 THEN
-          v501 THEN
-          v500 THEN
-          v499 THEN
-          v498 THEN
-          v497 THEN
-          v496 THEN
-          v495 THEN
-          v494 THEN
-          v493 THEN
-          v492 THEN
-          v491 THEN
-          v490 THEN
-          v489 THEN
-          v488 THEN
-          v487 THEN
-          v486 THEN
-          v485 THEN
-          v484 THEN
-          v483 THEN
-          v482 THEN
-          v481 THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79) THEN
           (ASM_SIMP_TAC [])))
 
   -- @@RETURN BEGIN
@@ -15533,171 +14934,91 @@ def setupHullLight11 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H0 (((&0) * x + (&1 / &4) * y) / divsteps_s pow 4) (((-- &1 / &4) * x + (&1 / &16) * y) / divsteps_s pow 4)
       "
       (← do
-        let v481 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79
-        let v482 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78
-        let v483 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77
-        let v484 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76
-        let v485 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75
-        let v486 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74
-        let v487 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73
-        let v488 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72
-        let v489 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71
-        let v490 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70
-        let v491 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69
-        let v492 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68
-        let v493 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67
-        let v494 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66
-        let v495 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65
-        let v496 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64
-        let v497 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63
-        let v498 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62
-        let v499 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61
-        let v500 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60
-        let v501 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59
-        let v502 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58
-        let v503 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57
-        let v504 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56
-        let v505 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55
-        let v506 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54
-        let v507 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53
-        let v508 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52
-        let v509 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51
-        let v510 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50
-        let v511 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49
-        let v512 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48
-        let v513 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47
-        let v514 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46
-        let v515 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45
-        let v516 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44
-        let v517 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43
-        let v518 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42
-        let v519 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41
-        let v520 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40
-        let v521 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39
-        let v522 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38
-        let v523 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37
-        let v524 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36
-        let v525 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35
-        let v526 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34
-        let v527 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33
-        let v528 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32
-        let v529 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31
-        let v530 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30
-        let v531 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29
-        let v532 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28
-        let v533 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27
-        let v534 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26
-        let v535 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25
-        let v536 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24
-        let v537 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23
-        let v538 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22
-        let v539 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21
-        let v540 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20
-        let v541 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19
-        let v542 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18
-        let v543 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17
-        let v544 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16
-        let v545 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15
-        let v546 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14
-        let v547 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13
-        let v548 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12
-        let v549 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11
-        let v550 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10
-        let v551 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9
-        let v552 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8
-        let v553 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7
-        let v554 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6
-        let v555 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5
-        let v556 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4
-        let v557 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3
-        let v558 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2
-        let v559 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1
-        let v560 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0
         pure (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s] THEN
           (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
           (REPEAT STRIP_TAC) THEN
           (REWRITE_TAC [divsteps_H0]) THEN
-          v560 THEN
-          v559 THEN
-          v558 THEN
-          v557 THEN
-          v556 THEN
-          v555 THEN
-          v554 THEN
-          v553 THEN
-          v552 THEN
-          v551 THEN
-          v550 THEN
-          v549 THEN
-          v548 THEN
-          v547 THEN
-          v546 THEN
-          v545 THEN
-          v544 THEN
-          v543 THEN
-          v542 THEN
-          v541 THEN
-          v540 THEN
-          v539 THEN
-          v538 THEN
-          v537 THEN
-          v536 THEN
-          v535 THEN
-          v534 THEN
-          v533 THEN
-          v532 THEN
-          v531 THEN
-          v530 THEN
-          v529 THEN
-          v528 THEN
-          v527 THEN
-          v526 THEN
-          v525 THEN
-          v524 THEN
-          v523 THEN
-          v522 THEN
-          v521 THEN
-          v520 THEN
-          v519 THEN
-          v518 THEN
-          v517 THEN
-          v516 THEN
-          v515 THEN
-          v514 THEN
-          v513 THEN
-          v512 THEN
-          v511 THEN
-          v510 THEN
-          v509 THEN
-          v508 THEN
-          v507 THEN
-          v506 THEN
-          v505 THEN
-          v504 THEN
-          v503 THEN
-          v502 THEN
-          v501 THEN
-          v500 THEN
-          v499 THEN
-          v498 THEN
-          v497 THEN
-          v496 THEN
-          v495 THEN
-          v494 THEN
-          v493 THEN
-          v492 THEN
-          v491 THEN
-          v490 THEN
-          v489 THEN
-          v488 THEN
-          v487 THEN
-          v486 THEN
-          v485 THEN
-          v484 THEN
-          v483 THEN
-          v482 THEN
-          v481 THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79) THEN
           (ASM_SIMP_TAC [])))
 
   -- @@RETURN BEGIN
@@ -17977,171 +17298,91 @@ def setupHullLight12 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H0 (((&0) * x + (&1 / &4) * y) / divsteps_s pow 4) (((-- &1 / &4) * x + (&3 / &16) * y) / divsteps_s pow 4)
       "
       (← do
-        let v481 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79
-        let v482 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78
-        let v483 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77
-        let v484 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76
-        let v485 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75
-        let v486 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74
-        let v487 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73
-        let v488 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72
-        let v489 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71
-        let v490 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70
-        let v491 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69
-        let v492 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68
-        let v493 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67
-        let v494 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66
-        let v495 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65
-        let v496 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64
-        let v497 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63
-        let v498 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62
-        let v499 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61
-        let v500 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60
-        let v501 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59
-        let v502 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58
-        let v503 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57
-        let v504 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56
-        let v505 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55
-        let v506 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54
-        let v507 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53
-        let v508 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52
-        let v509 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51
-        let v510 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50
-        let v511 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49
-        let v512 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48
-        let v513 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47
-        let v514 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46
-        let v515 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45
-        let v516 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44
-        let v517 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43
-        let v518 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42
-        let v519 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41
-        let v520 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40
-        let v521 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39
-        let v522 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38
-        let v523 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37
-        let v524 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36
-        let v525 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35
-        let v526 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34
-        let v527 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33
-        let v528 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32
-        let v529 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31
-        let v530 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30
-        let v531 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29
-        let v532 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28
-        let v533 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27
-        let v534 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26
-        let v535 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25
-        let v536 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24
-        let v537 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23
-        let v538 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22
-        let v539 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21
-        let v540 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20
-        let v541 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19
-        let v542 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18
-        let v543 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17
-        let v544 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16
-        let v545 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15
-        let v546 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14
-        let v547 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13
-        let v548 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12
-        let v549 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11
-        let v550 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10
-        let v551 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9
-        let v552 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8
-        let v553 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7
-        let v554 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6
-        let v555 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5
-        let v556 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4
-        let v557 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3
-        let v558 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2
-        let v559 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1
-        let v560 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0
         pure (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s] THEN
           (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
           (REPEAT STRIP_TAC) THEN
           (REWRITE_TAC [divsteps_H0]) THEN
-          v560 THEN
-          v559 THEN
-          v558 THEN
-          v557 THEN
-          v556 THEN
-          v555 THEN
-          v554 THEN
-          v553 THEN
-          v552 THEN
-          v551 THEN
-          v550 THEN
-          v549 THEN
-          v548 THEN
-          v547 THEN
-          v546 THEN
-          v545 THEN
-          v544 THEN
-          v543 THEN
-          v542 THEN
-          v541 THEN
-          v540 THEN
-          v539 THEN
-          v538 THEN
-          v537 THEN
-          v536 THEN
-          v535 THEN
-          v534 THEN
-          v533 THEN
-          v532 THEN
-          v531 THEN
-          v530 THEN
-          v529 THEN
-          v528 THEN
-          v527 THEN
-          v526 THEN
-          v525 THEN
-          v524 THEN
-          v523 THEN
-          v522 THEN
-          v521 THEN
-          v520 THEN
-          v519 THEN
-          v518 THEN
-          v517 THEN
-          v516 THEN
-          v515 THEN
-          v514 THEN
-          v513 THEN
-          v512 THEN
-          v511 THEN
-          v510 THEN
-          v509 THEN
-          v508 THEN
-          v507 THEN
-          v506 THEN
-          v505 THEN
-          v504 THEN
-          v503 THEN
-          v502 THEN
-          v501 THEN
-          v500 THEN
-          v499 THEN
-          v498 THEN
-          v497 THEN
-          v496 THEN
-          v495 THEN
-          v494 THEN
-          v493 THEN
-          v492 THEN
-          v491 THEN
-          v490 THEN
-          v489 THEN
-          v488 THEN
-          v487 THEN
-          v486 THEN
-          v485 THEN
-          v484 THEN
-          v483 THEN
-          v482 THEN
-          v481 THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79) THEN
           (ASM_SIMP_TAC [])))
 
   -- @@RETURN BEGIN
@@ -20421,171 +19662,91 @@ def setupHullLight13 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H1 (((&33 / &64) * x + (&33 / &512) * y) / divsteps_s pow 2) (((&0) * x + (&33 / &64) * y) / divsteps_s pow 2)
       "
       (← do
-        let v481 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79
-        let v482 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78
-        let v483 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77
-        let v484 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76
-        let v485 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75
-        let v486 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74
-        let v487 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73
-        let v488 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72
-        let v489 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71
-        let v490 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70
-        let v491 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69
-        let v492 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68
-        let v493 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67
-        let v494 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66
-        let v495 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65
-        let v496 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64
-        let v497 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63
-        let v498 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62
-        let v499 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61
-        let v500 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60
-        let v501 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59
-        let v502 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58
-        let v503 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57
-        let v504 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56
-        let v505 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55
-        let v506 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54
-        let v507 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53
-        let v508 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52
-        let v509 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51
-        let v510 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50
-        let v511 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49
-        let v512 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48
-        let v513 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47
-        let v514 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46
-        let v515 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45
-        let v516 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44
-        let v517 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43
-        let v518 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42
-        let v519 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41
-        let v520 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40
-        let v521 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39
-        let v522 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38
-        let v523 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37
-        let v524 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36
-        let v525 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35
-        let v526 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34
-        let v527 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33
-        let v528 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32
-        let v529 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31
-        let v530 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30
-        let v531 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29
-        let v532 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28
-        let v533 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27
-        let v534 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26
-        let v535 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25
-        let v536 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24
-        let v537 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23
-        let v538 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22
-        let v539 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21
-        let v540 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20
-        let v541 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19
-        let v542 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18
-        let v543 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17
-        let v544 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16
-        let v545 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15
-        let v546 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14
-        let v547 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13
-        let v548 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12
-        let v549 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11
-        let v550 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10
-        let v551 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9
-        let v552 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8
-        let v553 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7
-        let v554 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6
-        let v555 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5
-        let v556 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4
-        let v557 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3
-        let v558 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2
-        let v559 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1
-        let v560 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0
         pure (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s] THEN
           (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
           (REPEAT STRIP_TAC) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
-          v560 THEN
-          v559 THEN
-          v558 THEN
-          v557 THEN
-          v556 THEN
-          v555 THEN
-          v554 THEN
-          v553 THEN
-          v552 THEN
-          v551 THEN
-          v550 THEN
-          v549 THEN
-          v548 THEN
-          v547 THEN
-          v546 THEN
-          v545 THEN
-          v544 THEN
-          v543 THEN
-          v542 THEN
-          v541 THEN
-          v540 THEN
-          v539 THEN
-          v538 THEN
-          v537 THEN
-          v536 THEN
-          v535 THEN
-          v534 THEN
-          v533 THEN
-          v532 THEN
-          v531 THEN
-          v530 THEN
-          v529 THEN
-          v528 THEN
-          v527 THEN
-          v526 THEN
-          v525 THEN
-          v524 THEN
-          v523 THEN
-          v522 THEN
-          v521 THEN
-          v520 THEN
-          v519 THEN
-          v518 THEN
-          v517 THEN
-          v516 THEN
-          v515 THEN
-          v514 THEN
-          v513 THEN
-          v512 THEN
-          v511 THEN
-          v510 THEN
-          v509 THEN
-          v508 THEN
-          v507 THEN
-          v506 THEN
-          v505 THEN
-          v504 THEN
-          v503 THEN
-          v502 THEN
-          v501 THEN
-          v500 THEN
-          v499 THEN
-          v498 THEN
-          v497 THEN
-          v496 THEN
-          v495 THEN
-          v494 THEN
-          v493 THEN
-          v492 THEN
-          v491 THEN
-          v490 THEN
-          v489 THEN
-          v488 THEN
-          v487 THEN
-          v486 THEN
-          v485 THEN
-          v484 THEN
-          v483 THEN
-          v482 THEN
-          v481 THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79) THEN
           (ASM_SIMP_TAC [])))
 
   -- @@RETURN BEGIN
@@ -22865,171 +22026,91 @@ def setupHullLight14 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H1 (((&33 / &64) * x + (-- &33 / &512) * y) / divsteps_s pow 2) (((&0) * x + (&33 / &64) * y) / divsteps_s pow 2)
       "
       (← do
-        let v481 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79
-        let v482 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78
-        let v483 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77
-        let v484 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76
-        let v485 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75
-        let v486 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74
-        let v487 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73
-        let v488 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72
-        let v489 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71
-        let v490 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70
-        let v491 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69
-        let v492 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68
-        let v493 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67
-        let v494 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66
-        let v495 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65
-        let v496 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64
-        let v497 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63
-        let v498 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62
-        let v499 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61
-        let v500 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60
-        let v501 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59
-        let v502 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58
-        let v503 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57
-        let v504 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56
-        let v505 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55
-        let v506 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54
-        let v507 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53
-        let v508 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52
-        let v509 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51
-        let v510 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50
-        let v511 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49
-        let v512 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48
-        let v513 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47
-        let v514 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46
-        let v515 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45
-        let v516 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44
-        let v517 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43
-        let v518 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42
-        let v519 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41
-        let v520 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40
-        let v521 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39
-        let v522 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38
-        let v523 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37
-        let v524 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36
-        let v525 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35
-        let v526 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34
-        let v527 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33
-        let v528 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32
-        let v529 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31
-        let v530 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30
-        let v531 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29
-        let v532 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28
-        let v533 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27
-        let v534 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26
-        let v535 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25
-        let v536 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24
-        let v537 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23
-        let v538 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22
-        let v539 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21
-        let v540 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20
-        let v541 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19
-        let v542 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18
-        let v543 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17
-        let v544 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16
-        let v545 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15
-        let v546 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14
-        let v547 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13
-        let v548 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12
-        let v549 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11
-        let v550 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10
-        let v551 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9
-        let v552 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8
-        let v553 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7
-        let v554 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6
-        let v555 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5
-        let v556 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4
-        let v557 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3
-        let v558 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2
-        let v559 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1
-        let v560 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0
         pure (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s] THEN
           (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
           (REPEAT STRIP_TAC) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
-          v560 THEN
-          v559 THEN
-          v558 THEN
-          v557 THEN
-          v556 THEN
-          v555 THEN
-          v554 THEN
-          v553 THEN
-          v552 THEN
-          v551 THEN
-          v550 THEN
-          v549 THEN
-          v548 THEN
-          v547 THEN
-          v546 THEN
-          v545 THEN
-          v544 THEN
-          v543 THEN
-          v542 THEN
-          v541 THEN
-          v540 THEN
-          v539 THEN
-          v538 THEN
-          v537 THEN
-          v536 THEN
-          v535 THEN
-          v534 THEN
-          v533 THEN
-          v532 THEN
-          v531 THEN
-          v530 THEN
-          v529 THEN
-          v528 THEN
-          v527 THEN
-          v526 THEN
-          v525 THEN
-          v524 THEN
-          v523 THEN
-          v522 THEN
-          v521 THEN
-          v520 THEN
-          v519 THEN
-          v518 THEN
-          v517 THEN
-          v516 THEN
-          v515 THEN
-          v514 THEN
-          v513 THEN
-          v512 THEN
-          v511 THEN
-          v510 THEN
-          v509 THEN
-          v508 THEN
-          v507 THEN
-          v506 THEN
-          v505 THEN
-          v504 THEN
-          v503 THEN
-          v502 THEN
-          v501 THEN
-          v500 THEN
-          v499 THEN
-          v498 THEN
-          v497 THEN
-          v496 THEN
-          v495 THEN
-          v494 THEN
-          v493 THEN
-          v492 THEN
-          v491 THEN
-          v490 THEN
-          v489 THEN
-          v488 THEN
-          v487 THEN
-          v486 THEN
-          v485 THEN
-          v484 THEN
-          v483 THEN
-          v482 THEN
-          v481 THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L4) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L5) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L6) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L7) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L8) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L9) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L10) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L11) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L12) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L13) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L14) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L15) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L16) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L17) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L18) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L19) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L20) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L21) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L22) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L23) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L24) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L25) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L26) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L27) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L28) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L29) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L30) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L31) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L32) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L33) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L34) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L35) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L36) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L37) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L38) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L39) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L40) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L41) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L42) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L43) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L44) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L45) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L46) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L47) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L48) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L49) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L50) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L51) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L52) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L53) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L54) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L55) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L56) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L57) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L58) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L59) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L60) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L61) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L62) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L63) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L64) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L65) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L66) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L67) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L68) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L69) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L70) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L71) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L72) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L73) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L74) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L75) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L76) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L77) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L78) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L79) THEN
           (ASM_SIMP_TAC [])))
 
   -- @@RETURN BEGIN
@@ -23104,9 +22185,8 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       a*((&1-t)*x0+t*x1)+b*((&1-t)*y0+t*y1) <= c
       "
    (← do
-    let v1 ← real_linear (← q r"t <= &1 ==> &0 <= &1-t:real")
     pure (REPEAT STRIP_TAC THEN
-      v1 THEN
+      (← real_linear (← q r"t <= &1 ==> &0 <= &1-t:real")) THEN
       (note (← q r"(&1-t)*(a*x0+b*y0) <= (&1-t)*c:real") [REAL_LE_LMUL]) THEN
       (note (← q r"t*(a*x1+b*y1) <= t*c:real") [REAL_LE_LMUL]) THEN
       (note (← q r"(&1-t)*(a*x0+b*y0)+t*(a*x1+b*y1) <= (&1-t)*c+t*c:real") [REAL_LE_ADD2]) THEN
@@ -23135,8 +22215,7 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H1 ((&1-t)*x0+t*x1) y
       "
    (← do
-    let v1 ← REAL_ARITH (← q r"y:real = (&1-t)*y+t*y")
-    pure (MESON_TAC [h1_convex, v1]))
+    pure (MESON_TAC [h1_convex, (← REAL_ARITH (← q r"y:real = (&1-t)*y+t*y"))]))
 
   let h1_shrink ← prove
    r"
@@ -23147,8 +22226,7 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H1 (t*x) (t*y)
       "
    (← do
-    let v1 ← REAL_ARITH (← q r"(&1-t)* &0 + c = c")
-    pure (MESON_TAC [h1_contains0, h1_convex, v1]))
+    pure (MESON_TAC [h1_contains0, h1_convex, (← REAL_ARITH (← q r"(&1-t)* &0 + c = c"))]))
 
   let h1_shrink32 ← prove
    r"
@@ -23157,9 +22235,7 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_H1 ((&32 / &33)*x) ((&32 / &33)*y)
       "
    (← do
-    let v1 ← REAL_ARITH (← q r"&32 / &33 <= &1:real")
-    let v2 ← REAL_ARITH (← q r"&0:real <= &32 / &33")
-    pure (MESON_TAC [v2, v1, h1_shrink]))
+    pure (MESON_TAC [(← REAL_ARITH (← q r"&0:real <= &32 / &33")), (← REAL_ARITH (← q r"&32 / &33 <= &1:real")), h1_shrink]))
 
   let unscale_4 ← prove
    r"
@@ -23173,12 +22249,9 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       )
       "
    (← do
-    let v1 ← REAL_ARITH (← q r"(((&0) * ((&32 / &33) * x) + (&33 / &64) * ((&32 / &33) * y)) / divsteps_s pow 2) = (((&0) * x + (&1 / &2) * y) / divsteps_s pow 2):real")
-    let v2 ← REAL_ARITH (← q r"((&33 / &64) * ((&32 / &33) * x) + (&33 / &512) * ((&32 / &33) * y)) = ((&1 / &2) * x + (&1 / &16) * y):real")
-    let v3 ← specialize [(← q r"x:real"), (← q r"y:real")] h1_shrink32
     pure (REPEAT STRIP_TAC THEN
-      v3 THEN
-      (ASM_MESON_TAC [v2, v1])))
+      (← specialize [(← q r"x:real"), (← q r"y:real")] h1_shrink32) THEN
+      (ASM_MESON_TAC [(← REAL_ARITH (← q r"((&33 / &64) * ((&32 / &33) * x) + (&33 / &512) * ((&32 / &33) * y)) = ((&1 / &2) * x + (&1 / &16) * y):real")), (← REAL_ARITH (← q r"(((&0) * ((&32 / &33) * x) + (&33 / &64) * ((&32 / &33) * y)) / divsteps_s pow 2) = (((&0) * x + (&1 / &2) * y) / divsteps_s pow 2):real"))])))
 
   let unscale_3 ← prove
    r"
@@ -23192,12 +22265,9 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       )
       "
    (← do
-    let v1 ← REAL_ARITH (← q r"(((&0) * ((&32 / &33) * x) + (&33 / &64) * ((&32 / &33) * y)) / divsteps_s pow 2) = (((&0) * x + (&1 / &2) * y) / divsteps_s pow 2):real")
-    let v2 ← REAL_ARITH (← q r"((&33 / &64) * ((&32 / &33) * x) + (-- &33 / &512) * ((&32 / &33) * y)) = ((&1 / &2) * x + (-- &1 / &16) * y):real")
-    let v3 ← specialize [(← q r"x:real"), (← q r"y:real")] h1_shrink32
     pure (REPEAT STRIP_TAC THEN
-      v3 THEN
-      (ASM_MESON_TAC [v2, v1])))
+      (← specialize [(← q r"x:real"), (← q r"y:real")] h1_shrink32) THEN
+      (ASM_MESON_TAC [(← REAL_ARITH (← q r"((&33 / &64) * ((&32 / &33) * x) + (-- &33 / &512) * ((&32 / &33) * y)) = ((&1 / &2) * x + (-- &1 / &16) * y):real")), (← REAL_ARITH (← q r"(((&0) * ((&32 / &33) * x) + (&33 / &64) * ((&32 / &33) * y)) / divsteps_s pow 2) = (((&0) * x + (&1 / &2) * y) / divsteps_s pow 2):real"))])))
 
   let h1_16_lemma1 ← prove
    r"
@@ -23209,21 +22279,16 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       /\ &1 / &2 - &2 / &2 pow m <= &1
       "
    (← do
-    let v1 ← real_linear (← q r"&0:real < &2")
-    let v2 ← real_linear (← q r"&0:real < &2 pow 2")
-    let v3 ← REAL_ARITH (← q r"&1 <= &2:real")
-    let v4 ← real_cancel (← q r"(&4 / &2 pow m) * (&1 / &16) = &1 / (&2 pow m * &2 pow 2)")
-    let v5 ← real_linear (← q r"(&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (&1 / &16) * y) + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (-- &1 / &16) * y) = (&1 / &2) * x + ((&4 / &2 pow m) * (&1 / &16)) * y")
     pure (REPEAT STRIP_TAC THENL
-      [v5 THEN
-        v4 THEN
+      [(← real_linear (← q r"(&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (&1 / &16) * y) + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (-- &1 / &16) * y) = (&1 / &2) * x + ((&4 / &2 pow m) * (&1 / &16)) * y")) THEN
+        (← real_cancel (← q r"(&4 / &2 pow m) * (&1 / &16) = &1 / (&2 pow m * &2 pow 2)")) THEN
         (REWRITE_TAC [REAL_POW_ADD]) THEN
         (ASM_MESON_TAC []),
-       note (← q r"&2 pow 2 <= &2 pow m") [REAL_POW_MONO, v3] THEN
-        v2 THEN
+       note (← q r"&2 pow 2 <= &2 pow m") [REAL_POW_MONO, (← REAL_ARITH (← q r"&1 <= &2:real"))] THEN
+        (← real_linear (← q r"&0:real < &2 pow 2")) THEN
         (note (← q r"inv(&2 pow m) <= inv(&2 pow 2):real") [REAL_LE_INV2]) THEN
         ASM_REAL_ARITH_TAC,
-       v1 THEN
+       (← real_linear (← q r"&0:real < &2")) THEN
         (note (← q r"&0:real < &2 pow m") [REAL_POW_LT]) THEN
         (note (← q r"&0 < &2 / &2 pow m") [REAL_LT_DIV]) THEN
         ASM_REAL_ARITH_TAC]))
@@ -23238,21 +22303,16 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       /\ &1 / &2 - &2 / &2 pow m <= &1
       "
    (← do
-    let v1 ← real_linear (← q r"&0:real < &2")
-    let v2 ← real_linear (← q r"&0:real < &2 pow 2")
-    let v3 ← REAL_ARITH (← q r"&1 <= &2:real")
-    let v4 ← real_cancel (← q r"(&4 / &2 pow m) * (&1 / &16) = &1 / (&2 pow m * &2 pow 2)")
-    let v5 ← real_linear (← q r"(&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (-- &1 / &16) * y) + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (&1 / &16) * y) = (&1 / &2) * x - ((&4 / &2 pow m) * (&1 / &16)) * y")
     pure (REPEAT STRIP_TAC THENL
-      [v5 THEN
-        v4 THEN
+      [(← real_linear (← q r"(&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (-- &1 / &16) * y) + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (&1 / &16) * y) = (&1 / &2) * x - ((&4 / &2 pow m) * (&1 / &16)) * y")) THEN
+        (← real_cancel (← q r"(&4 / &2 pow m) * (&1 / &16) = &1 / (&2 pow m * &2 pow 2)")) THEN
         (REWRITE_TAC [REAL_POW_ADD]) THEN
         (ASM_MESON_TAC []),
-       note (← q r"&2 pow 2 <= &2 pow m") [REAL_POW_MONO, v3] THEN
-        v2 THEN
+       note (← q r"&2 pow 2 <= &2 pow m") [REAL_POW_MONO, (← REAL_ARITH (← q r"&1 <= &2:real"))] THEN
+        (← real_linear (← q r"&0:real < &2 pow 2")) THEN
         (note (← q r"inv(&2 pow m) <= inv(&2 pow 2):real") [REAL_LE_INV2]) THEN
         ASM_REAL_ARITH_TAC,
-       v1 THEN
+       (← real_linear (← q r"&0:real < &2")) THEN
         (note (← q r"&0:real < &2 pow m") [REAL_POW_LT]) THEN
         (note (← q r"&0 < &2 / &2 pow m") [REAL_LT_DIV]) THEN
         ASM_REAL_ARITH_TAC]))
@@ -23267,11 +22327,10 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       /\ &1 / &2 - &2 / &2 pow m <= &1
       "
    (← do
-    let v1 ← real_cancel (← q r"&0 < divsteps_s pow 2 ==> (&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (&1 / &16) * y) / divsteps_s pow 2 + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (-- &1 / &16) * y) / divsteps_s pow 2 = ((&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (&1 / &16) * y) + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (-- &1 / &16) * y)) / divsteps_s pow 2")
     pure (REPEAT STRIP_TAC THEN
       (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
       (note (← q r"&0 < divsteps_s pow 2") [REAL_LT_MUL, REAL_POW_2]) THEN
-      v1 THEN
+      (← real_cancel (← q r"&0 < divsteps_s pow 2 ==> (&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (&1 / &16) * y) / divsteps_s pow 2 + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (-- &1 / &16) * y) / divsteps_s pow 2 = ((&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (&1 / &16) * y) + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (-- &1 / &16) * y)) / divsteps_s pow 2")) THEN
       (ASM_SIMP_TAC [h1_16_lemma1])))
 
   let h1_16_lemma2neg ← prove
@@ -23284,11 +22343,10 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       /\ &1 / &2 - &2 / &2 pow m <= &1
       "
    (← do
-    let v1 ← real_cancel (← q r"&0 < divsteps_s pow 2 ==> (&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (-- &1 / &16) * y) / divsteps_s pow 2 + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (&1 / &16) * y) / divsteps_s pow 2 = ((&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (-- &1 / &16) * y) + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (&1 / &16) * y)) / divsteps_s pow 2")
     pure (REPEAT STRIP_TAC THEN
       (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
       (note (← q r"&0 < divsteps_s pow 2") [REAL_LT_MUL, REAL_POW_2]) THEN
-      v1 THEN
+      (← real_cancel (← q r"&0 < divsteps_s pow 2 ==> (&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (-- &1 / &16) * y) / divsteps_s pow 2 + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (&1 / &16) * y) / divsteps_s pow 2 = ((&1 - (&1 / &2 - &2 / &2 pow m)) * ((&1 / &2) * x + (-- &1 / &16) * y) + (&1 / &2 - &2 / &2 pow m) * ((&1 / &2) * x + (&1 / &16) * y)) / divsteps_s pow 2")) THEN
       (ASM_SIMP_TAC [h1_16_lemma1neg])))
 
   let h1_16_lemma3 ← prove
@@ -23354,121 +22412,57 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       !i x y. divsteps_W i x y ==> divsteps_W (&1 + i) (x / divsteps_s) (y / (&2 * divsteps_s))
     "
    (← do
-    let v1 ← INT_ARITH (← q r"~(i:int > &2) /\ ~(i = &2) ==> ~(&1 + i > &2)")
-    let v2 ← INT_ARITH (← q r"i:int > &2 ==> &1 + i > &2")
-    let v3 ← real_cancel (← q r"~(&2 * divsteps_s = &0) ==> (y / (&2 * divsteps_s) * (&2 * divsteps_s) pow 1 * (&2 * divsteps_s) pow m) = (y * (&2 * divsteps_s) pow m)")
-    let v4 ← real_cancel (← q r"~(divsteps_s = &0) ==> (x / divsteps_s * divsteps_s pow 1 * divsteps_s pow m) = (x * divsteps_s pow m)")
-    let v5 ← INT_ARITH (← q r"&1 - (&1 + i:int) = -- i")
-    let v6 ← INT_ARITH (← q r"&0 <= i:int ==> ~(&1 + i < -- &2)")
-    let v7 ← INT_ARITH (← q r"&0 <= i:int ==> ~(&1 + i = -- &2)")
-    let v8 ← INT_ARITH (← q r"&0 <= i:int ==> ~(&1 + i = -- &1)")
-    let v9 ← INT_ARITH (← q r"&0 <= i:int ==> ~(i < -- &2)")
-    let v10 ← INT_ARITH (← q r"&0 <= i:int ==> ~(i = -- &2)")
-    let v11 ← INT_ARITH (← q r"&0 <= i:int ==> ~(i = -- &1)")
-    let v12 ← choosevar (← q r"m:num") (← q r"i:int = &m") [INT_OF_NUM_EXISTS]
-    let v13 ← real_linear (← q r"&0 < divsteps_s ==> ~(&2 * divsteps_s = &0)")
-    let v14 ← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")
-    let v15 ← int_linear (← q r"~(i < -- &2) /\ ~(i = -- &2) /\ ~(i = -- &1) ==> &0 <= i:int")
-    let v16 ← real_cancel (← q r"&0 < divsteps_s ==> ((&0 * ((&32 / &33) * (x - &2 * y) * divsteps_s pow m * divsteps_s pow 2) + &1 / &2 * ((&32 / &33) * x * (divsteps_s pow m * divsteps_s pow 2) /
-        inv (&2 pow m * &2 pow 1))) / divsteps_s pow 2) = ((&32 / &33) * x / divsteps_s * (divsteps_s pow m * divsteps_s pow 1) / (&2 pow 1 * inv (&2 pow m * &2 pow 1)))")
-    let v17 ← real_cancel (← q r"&0 < divsteps_s ==> ((&1 / &2 * ((&32 / &33) * (x - &2 * y) * divsteps_s pow m * divsteps_s pow 2) + &1 / &2 pow (m + 2) * ((&32 / &33) * x * (divsteps_s pow m * divsteps_s pow 2) / inv (&2 pow m * &2 pow 1))) / divsteps_s pow 2) = (&32 / &33) * ((x / divsteps_s - &2 * y / (&2 * divsteps_s)) * divsteps_s pow m * divsteps_s pow 1)")
-    let v18 ← ARITH_RULE (← q r"m + 1 = 1 \/ m + 1 = 2\/ 2 <= m")
-    let v19 ← INT_ARITH (← q r"&1 - --(&m + &1) = &m + &2:int")
-    let v20 ← GSYM INT_OF_NUM_ADD
-    let v21 ← real_linear (← q r"~(&2 = &0:real)")
-    let v22 ← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")
-    let v23 ← choosevar (← q r"m:num") (← q r"i:int = -- &(m + 1)") [int_neg_as_minusnum1]
-    let v24 ← int_linear (← q r"i:int < -- &2 ==> i < &0")
-    let v25 ← INT_ARITH (← q r"&1 - (&1 + i:int) = -- i")
-    let v26 ← INT_ARITH (← q r"i:int < -- &2 /\ ~(i = -- &3) ==> &1 + i < -- &2")
-    let v27 ← INT_ARITH (← q r"~(i:int = -- &3) ==> ~(&1 + i = -- &2)")
-    let v28 ← INT_ARITH (← q r"i:int < -- &2 ==> ~(&1 + i = -- &1)")
-    let v29 ← INT_ARITH (← q r"i:int < -- &2 ==> ~(i = -- &2)")
-    let v30 ← INT_ARITH (← q r"i:int < -- &2 ==> ~(i = -- &1)")
-    let v31 ← INT_ARITH (← q r"&3 > &2:int")
-    let v32 ← INT_ARITH (← q r"~(&3 < -- &2:int)")
-    let v33 ← INT_ARITH (← q r"~(&3 = -- &2:int)")
-    let v34 ← INT_ARITH (← q r"~(&3 = -- &1:int)")
-    let v35 ← INT_ARITH (← q r"&1 + &2 = &3:int")
-    let v36 ← INT_ARITH (← q r"~(&2 > &2:int)")
-    let v37 ← INT_ARITH (← q r"~(&2 < -- &2:int)")
-    let v38 ← INT_ARITH (← q r"~(&2 = -- &2:int)")
-    let v39 ← INT_ARITH (← q r"~(&2 = -- &1:int)")
-    let v40 ← real_cancel (← q r"&0 < divsteps_s ==> &32 / &33 * (y * (&2 * divsteps_s) pow 2) = (&32 / &33 * y / (&2 * divsteps_s) * (&2 * divsteps_s) pow 3)")
-    let v41 ← real_cancel (← q r"&0 < divsteps_s ==> &32 / &33 * (x * divsteps_s pow 2) = (&32 / &33 * x / divsteps_s * divsteps_s pow 3)")
-    let v42 ← INT_ARITH (← q r"&1 - -- &3 = &4:int")
-    let v43 ← INT_ARITH (← q r"&1 - -- &2 = &3:int")
-    let v44 ← INT_ARITH (← q r"~(-- &2 = -- &1:int)")
-    let v45 ← INT_ARITH (← q r"&1 + -- &3 = -- &2:int")
-    let v46 ← INT_ARITH (← q r"-- &3 < -- &2:int")
-    let v47 ← INT_ARITH (← q r"~(-- &3 = -- &2:int)")
-    let v48 ← INT_ARITH (← q r"~(-- &3 = -- &1:int)")
-    let v49 ← real_cancel (← q r"&0 < divsteps_s ==> (x / divsteps_s * divsteps_s pow 3 / inv (&2 pow 2)) = (((&0) * (&32 / &33 * (x - &2 * y) * divsteps_s pow 4) + (&33 / &64) * (&32 / &33 * x * divsteps_s pow 4 / inv (&2 pow 3))) / divsteps_s pow 2)")
-    let v50 ← real_cancel (← q r"&0 < divsteps_s ==> ((x / divsteps_s - &2 * y / (&2 * divsteps_s)) * divsteps_s pow 3) = (((&33 / &64) * (&32 / &33 * (x - &2 * y) * divsteps_s pow 4) + (&33 / &512) * (&32 / &33 * x * divsteps_s pow 4 / inv (&2 pow 3))) / divsteps_s pow 2)")
-    let v51 ← INT_ARITH (← q r"&1 - -- &2 = &3:int")
-    let v52 ← INT_ARITH (← q r"-- &2 < &0:int")
-    let v53 ← INT_ARITH (← q r"&1 + -- &2 = -- &1:int")
-    let v54 ← INT_ARITH (← q r"~(-- &2 = -- &1:int)")
-    let v55 ← real_cancel (← q r"&0 < divsteps_s ==> y / (&2 * divsteps_s) = (-- &1 / &4 * ((x - &2 * y) * divsteps_s pow 3) + &1 / &16 * (x * divsteps_s pow 3 / inv (&2 pow 2))) / divsteps_s pow 4")
-    let v56 ← real_cancel (← q r"&0 < divsteps_s ==> x / divsteps_s = (&0 * ((x - &2 * y) * divsteps_s pow 3) + &1 / &4 * (x * divsteps_s pow 3 / inv (&2 pow 2))) / divsteps_s pow 4")
-    let v57 ← INT_ARITH (← q r"~(&0 > &2:int)")
-    let v58 ← INT_ARITH (← q r"~(&0 < &0:int)")
-    let v59 ← INT_ARITH (← q r"~(&0 < -- &2:int)")
-    let v60 ← INT_ARITH (← q r"~(&0 = -- &2:int)")
-    let v61 ← INT_ARITH (← q r"~(&0 = -- &1:int)")
-    let v62 ← INT_ARITH (← q r"&1 + -- &1 = &0:int")
-    let v63 ← real_cancel (← q r"((&0 * x + &1 / &2 * y) / divsteps_s pow 1) = y / (&2 * divsteps_s) * &1")
-    let v64 ← real_linear (← q r"((&1 * x + &0 * y) / divsteps_s pow 1) = (x / divsteps_s * &1)")
     pure (REPEAT DISCH_TAC THEN
       (REPEAT GEN_TAC) THEN
       (REWRITE_TAC [divsteps_W]) THEN
       (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
       (ASM_CASES_TAC (← q r"i:int = -- &1")) THENL
-      [v64 THEN
-        v63 THEN
-        (ASM_SIMP_TAC [v62, v61, v60, v59, v58, v57, REAL_ZPOW_0]) THEN
+      [(← real_linear (← q r"((&1 * x + &0 * y) / divsteps_s pow 1) = (x / divsteps_s * &1)")) THEN
+        (← real_cancel (← q r"((&0 * x + &1 / &2 * y) / divsteps_s pow 1) = y / (&2 * divsteps_s) * &1")) THEN
+        (ASM_SIMP_TAC [(← INT_ARITH (← q r"&1 + -- &1 = &0:int")), (← INT_ARITH (← q r"~(&0 = -- &1:int)")), (← INT_ARITH (← q r"~(&0 = -- &2:int)")), (← INT_ARITH (← q r"~(&0 < -- &2:int)")), (← INT_ARITH (← q r"~(&0 < &0:int)")), (← INT_ARITH (← q r"~(&0 > &2:int)")), REAL_ZPOW_0]) THEN
         (ASM_MESON_TAC []),
        ALL_TAC] THEN
       (ASM_CASES_TAC (← q r"i:int = -- &2")) THENL
-      [v56 THEN
-        v55 THEN
-        (ASM_SIMP_TAC [v54, v53, v52, v51, REAL_ZPOW_NEG, REAL_ZPOW_NUM]),
+      [(← real_cancel (← q r"&0 < divsteps_s ==> x / divsteps_s = (&0 * ((x - &2 * y) * divsteps_s pow 3) + &1 / &4 * (x * divsteps_s pow 3 / inv (&2 pow 2))) / divsteps_s pow 4")) THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> y / (&2 * divsteps_s) = (-- &1 / &4 * ((x - &2 * y) * divsteps_s pow 3) + &1 / &16 * (x * divsteps_s pow 3 / inv (&2 pow 2))) / divsteps_s pow 4")) THEN
+        (ASM_SIMP_TAC [(← INT_ARITH (← q r"~(-- &2 = -- &1:int)")), (← INT_ARITH (← q r"&1 + -- &2 = -- &1:int")), (← INT_ARITH (← q r"-- &2 < &0:int")), (← INT_ARITH (← q r"&1 - -- &2 = &3:int")), REAL_ZPOW_NEG, REAL_ZPOW_NUM]),
        ALL_TAC] THEN
       (ASM_CASES_TAC (← q r"i:int = -- &3")) THENL
-      [v50 THEN
-        v49 THEN
-        (ASM_SIMP_TAC [v48, v47, v46, v45, v44, v43, v42, REAL_ZPOW_NEG, REAL_ZPOW_NUM]),
+      [(← real_cancel (← q r"&0 < divsteps_s ==> ((x / divsteps_s - &2 * y / (&2 * divsteps_s)) * divsteps_s pow 3) = (((&33 / &64) * (&32 / &33 * (x - &2 * y) * divsteps_s pow 4) + (&33 / &512) * (&32 / &33 * x * divsteps_s pow 4 / inv (&2 pow 3))) / divsteps_s pow 2)")) THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> (x / divsteps_s * divsteps_s pow 3 / inv (&2 pow 2)) = (((&0) * (&32 / &33 * (x - &2 * y) * divsteps_s pow 4) + (&33 / &64) * (&32 / &33 * x * divsteps_s pow 4 / inv (&2 pow 3))) / divsteps_s pow 2)")) THEN
+        (ASM_SIMP_TAC [(← INT_ARITH (← q r"~(-- &3 = -- &1:int)")), (← INT_ARITH (← q r"~(-- &3 = -- &2:int)")), (← INT_ARITH (← q r"-- &3 < -- &2:int")), (← INT_ARITH (← q r"&1 + -- &3 = -- &2:int")), (← INT_ARITH (← q r"~(-- &2 = -- &1:int)")), (← INT_ARITH (← q r"&1 - -- &2 = &3:int")), (← INT_ARITH (← q r"&1 - -- &3 = &4:int")), REAL_ZPOW_NEG, REAL_ZPOW_NUM]),
        ALL_TAC] THEN
       (ASM_CASES_TAC (← q r"i:int = &2")) THENL
-      [v41 THEN
-        v40 THEN
-        (ASM_SIMP_TAC [v39, v38, v37, v36, v35, v34, v33, v32, v31, REAL_ZPOW_POW]) THEN
+      [(← real_cancel (← q r"&0 < divsteps_s ==> &32 / &33 * (x * divsteps_s pow 2) = (&32 / &33 * x / divsteps_s * divsteps_s pow 3)")) THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> &32 / &33 * (y * (&2 * divsteps_s) pow 2) = (&32 / &33 * y / (&2 * divsteps_s) * (&2 * divsteps_s) pow 3)")) THEN
+        (ASM_SIMP_TAC [(← INT_ARITH (← q r"~(&2 = -- &1:int)")), (← INT_ARITH (← q r"~(&2 = -- &2:int)")), (← INT_ARITH (← q r"~(&2 < -- &2:int)")), (← INT_ARITH (← q r"~(&2 > &2:int)")), (← INT_ARITH (← q r"&1 + &2 = &3:int")), (← INT_ARITH (← q r"~(&3 = -- &1:int)")), (← INT_ARITH (← q r"~(&3 = -- &2:int)")), (← INT_ARITH (← q r"~(&3 < -- &2:int)")), (← INT_ARITH (← q r"&3 > &2:int")), REAL_ZPOW_POW]) THEN
         (ASM_MESON_TAC [h1_shrink32]),
        ALL_TAC] THEN
       (ASM_CASES_TAC (← q r"i:int < -- &2")) THENL
-      [ASM_SIMP_TAC [v30, v29, v28, v27, v26, v25] THEN
-        v24 THEN
-        v23 THEN
-        v22 THEN
-        v21 THEN
-        (ASM_SIMP_TAC [v20, INT_NEG_NEG, v19, REAL_ZPOW_NEG, REAL_ZPOW_ADD, REAL_ZPOW_POW, REAL_INV_INV]) THEN
+      [ASM_SIMP_TAC [(← INT_ARITH (← q r"i:int < -- &2 ==> ~(i = -- &1)")), (← INT_ARITH (← q r"i:int < -- &2 ==> ~(i = -- &2)")), (← INT_ARITH (← q r"i:int < -- &2 ==> ~(&1 + i = -- &1)")), (← INT_ARITH (← q r"~(i:int = -- &3) ==> ~(&1 + i = -- &2)")), (← INT_ARITH (← q r"i:int < -- &2 /\ ~(i = -- &3) ==> &1 + i < -- &2")), (← INT_ARITH (← q r"&1 - (&1 + i:int) = -- i"))] THEN
+        (← int_linear (← q r"i:int < -- &2 ==> i < &0")) THEN
+        (← choosevar (← q r"m:num") (← q r"i:int = -- &(m + 1)") [int_neg_as_minusnum1]) THEN
+        (← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")) THEN
+        (← real_linear (← q r"~(&2 = &0:real)")) THEN
+        (ASM_SIMP_TAC [(← GSYM INT_OF_NUM_ADD), INT_NEG_NEG, (← INT_ARITH (← q r"&1 - --(&m + &1) = &m + &2:int")), REAL_ZPOW_NEG, REAL_ZPOW_ADD, REAL_ZPOW_POW, REAL_INV_INV]) THEN
         (note (← q r"~(m + 1 = 1)") []) THEN
         (note (← q r"~(m + 1 = 2)") []) THEN
-        (note (← q r"2 <= m") [v18]) THEN
-        v17 THEN
-        v16 THEN
+        (note (← q r"2 <= m") [(← ARITH_RULE (← q r"m + 1 = 1 \/ m + 1 = 2\/ 2 <= m"))]) THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> ((&1 / &2 * ((&32 / &33) * (x - &2 * y) * divsteps_s pow m * divsteps_s pow 2) + &1 / &2 pow (m + 2) * ((&32 / &33) * x * (divsteps_s pow m * divsteps_s pow 2) / inv (&2 pow m * &2 pow 1))) / divsteps_s pow 2) = (&32 / &33) * ((x / divsteps_s - &2 * y / (&2 * divsteps_s)) * divsteps_s pow m * divsteps_s pow 1)")) THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> ((&0 * ((&32 / &33) * (x - &2 * y) * divsteps_s pow m * divsteps_s pow 2) + &1 / &2 * ((&32 / &33) * x * (divsteps_s pow m * divsteps_s pow 2) /
+        inv (&2 pow m * &2 pow 1))) / divsteps_s pow 2) = ((&32 / &33) * x / divsteps_s * (divsteps_s pow m * divsteps_s pow 1) / (&2 pow 1 * inv (&2 pow m * &2 pow 1)))")) THEN
         (ASM_MESON_TAC [h1_16_lemma3, unscale_4, unscale_3]),
        ALL_TAC] THEN
-      v15 THEN
-      v14 THEN
-      v13 THEN
-      v12 THEN
-      (ASM_SIMP_TAC [v11, v10, v9, v8, v7, v6, v5, REAL_ZPOW_ADD, REAL_ZPOW_POW]) THEN
-      v4 THEN
-      v3 THEN
+      (← int_linear (← q r"~(i < -- &2) /\ ~(i = -- &2) /\ ~(i = -- &1) ==> &0 <= i:int")) THEN
+      (← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")) THEN
+      (← real_linear (← q r"&0 < divsteps_s ==> ~(&2 * divsteps_s = &0)")) THEN
+      (← choosevar (← q r"m:num") (← q r"i:int = &m") [INT_OF_NUM_EXISTS]) THEN
+      (ASM_SIMP_TAC [(← INT_ARITH (← q r"&0 <= i:int ==> ~(i = -- &1)")), (← INT_ARITH (← q r"&0 <= i:int ==> ~(i = -- &2)")), (← INT_ARITH (← q r"&0 <= i:int ==> ~(i < -- &2)")), (← INT_ARITH (← q r"&0 <= i:int ==> ~(&1 + i = -- &1)")), (← INT_ARITH (← q r"&0 <= i:int ==> ~(&1 + i = -- &2)")), (← INT_ARITH (← q r"&0 <= i:int ==> ~(&1 + i < -- &2)")), (← INT_ARITH (← q r"&1 - (&1 + i:int) = -- i")), REAL_ZPOW_ADD, REAL_ZPOW_POW]) THEN
+      (← real_cancel (← q r"~(divsteps_s = &0) ==> (x / divsteps_s * divsteps_s pow 1 * divsteps_s pow m) = (x * divsteps_s pow m)")) THEN
+      (← real_cancel (← q r"~(&2 * divsteps_s = &0) ==> (y / (&2 * divsteps_s) * (&2 * divsteps_s) pow 1 * (&2 * divsteps_s) pow m) = (y * (&2 * divsteps_s) pow m)")) THEN
       (ASM_CASES_TAC (← q r"&m:int > &2")) THENL
-      [ASM_MESON_TAC [v2],
-       ASM_MESON_TAC [v1]]))
+      [ASM_MESON_TAC [(← INT_ARITH (← q r"i:int > &2 ==> &1 + i > &2"))],
+       ASM_MESON_TAC [(← INT_ARITH (← q r"~(i:int > &2) /\ ~(i = &2) ==> ~(&1 + i > &2)"))]]))
 
   let w_transition1 ← prove
    r"
@@ -23487,152 +22481,71 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
           divsteps_W (--i) (y / divsteps_s) ((y - x) / (&2 * divsteps_s))
       "
    (← do
-    let v1 ← real_cancel (← q r"&0 < divsteps_s ==> (y * &2 pow m * divsteps_s pow m) = (y / divsteps_s * (divsteps_s pow 1 * divsteps_s pow m) / inv (&2 pow m))")
-    let v2 ← real_cancel (← q r"&0 < divsteps_s ==> (x * divsteps_s pow m) = ((y / divsteps_s - &2 * (y - x) / (&2 * divsteps_s)) * divsteps_s pow 1 * divsteps_s pow m)")
-    let v3 ← INT_ARITH (← q r"&1 - -- &m:int = &1 + &m")
-    let v4 ← choosevar (← q r"m:num") (← q r"i:int = &m") [INT_OF_NUM_EXISTS]
-    let v5 ← real_linear (← q r"&0 < divsteps_s ==> ~(&2 * divsteps_s = &0)")
-    let v6 ← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")
-    let v7 ← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0) /\ ~(i = &1) /\ ~(i = &2) ==> --i < -- &2")
-    let v8 ← INT_ARITH (← q r"~(i:int = &2) ==> ~(--i = -- &2)")
-    let v9 ← INT_ARITH (← q r"~(i:int = &1) ==> ~(--i = -- &1)")
-    let v10 ← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0) /\ ~(i = &1) /\ ~(i = &2) ==> i > &2")
-    let v11 ← INT_ARITH (← q r"&0 <= i:int ==> ~(i < -- &2)")
-    let v12 ← INT_ARITH (← q r"&0 <= i:int ==> ~(i = -- &2)")
-    let v13 ← INT_ARITH (← q r"&0 <= i:int ==> ~(i = -- &1)")
-    let v14 ← INT_ARITH (← q r"&0 <= i:int ==> ~(i < &0)")
-    let v15 ← int_linear (← q r"~(i < -- &2) /\ ~(i = -- &2) /\ ~(i = -- &1) ==> &0 <= i:int")
-    let v16 ← real_cancel (← q r"&0 < divsteps_s ==> ((&0 * ((&32 / &33) * (x - &2 * y) * divsteps_s pow m * divsteps_s pow 2) + &1 / &2 * ((&32 / &33) * x * (divsteps_s pow m * divsteps_s pow 2) / inv (&2 pow m * &2 pow 1))) / divsteps_s pow 2) = (&32 / &33) * (x / divsteps_s * (divsteps_s pow m * divsteps_s pow 1) / (&2 pow 1 * inv (&2 pow m * &2 pow 1)))")
-    let v17 ← real_cancel (← q r"&0 < divsteps_s ==> ((&1 / &2 * ((&32 / &33) * (x - &2 * y) * divsteps_s pow m * divsteps_s pow 2) - &1 / &2 pow (m + 2) * ((&32 / &33) * x * (divsteps_s pow m * divsteps_s pow 2) / inv (&2 pow m * &2 pow 1))) / divsteps_s pow 2) = (&32 / &33) * ((x / divsteps_s - &2 * (y + x) / (&2 * divsteps_s)) * divsteps_s pow m * divsteps_s pow 1)")
-    let v18 ← ARITH_RULE (← q r"m + 1 = 1 \/ m + 1 = 2\/ 2 <= m")
-    let v19 ← INT_ARITH (← q r"&1 - --(&m + &1) = &m + &2:int")
-    let v20 ← GSYM INT_OF_NUM_ADD
-    let v21 ← real_linear (← q r"~(&2 = &0:real)")
-    let v22 ← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")
-    let v23 ← choosevar (← q r"m:num") (← q r"i:int = -- &(m + 1)") [int_neg_as_minusnum1]
-    let v24 ← INT_ARITH (← q r"&1 - (&1 + i:int) = -- i")
-    let v25 ← INT_ARITH (← q r"i:int < -- &2 /\ ~(i = -- &3) ==> &1 + i < -- &2")
-    let v26 ← INT_ARITH (← q r"~(i:int = -- &3) ==> ~(&1 + i = -- &2)")
-    let v27 ← INT_ARITH (← q r"i:int < -- &2 ==> ~(&1 + i = -- &1)")
-    let v28 ← INT_ARITH (← q r"i:int < -- &2 ==> ~(i = -- &2)")
-    let v29 ← INT_ARITH (← q r"i:int < -- &2 ==> ~(i = -- &1)")
-    let v30 ← int_linear (← q r"i:int < -- &2 ==> i < &0")
-    let v31 ← real_cancel (← q r"&0 < divsteps_s ==> (y * (&2 * divsteps_s) pow 2) = (y / divsteps_s * divsteps_s pow 3 / inv (&2 pow 2))")
-    let v32 ← real_cancel (← q r"&0 < divsteps_s ==> (x * divsteps_s pow 2) = ((y / divsteps_s - &2 * (y - x) / (&2 * divsteps_s)) * divsteps_s pow 3)")
-    let v33 ← INT_ARITH (← q r"&1 - -- &2:int = &3")
-    let v34 ← INT_ARITH (← q r"~(-- &2 = -- &1:int)")
-    let v35 ← INT_ARITH (← q r"~(&2 > &2:int)")
-    let v36 ← INT_ARITH (← q r"~(&2 < -- &2:int)")
-    let v37 ← INT_ARITH (← q r"~(&2 = -- &2:int)")
-    let v38 ← INT_ARITH (← q r"~(&2 = -- &1:int)")
-    let v39 ← INT_ARITH (← q r"~(&2 < &0:int)")
-    let v40 ← real_cancel (← q r"&0 < divsteps_s ==> ((-- &1 / &2 * (x * divsteps_s) + &1 / &4 * (y * &2 * divsteps_s)) / divsteps_s pow 2) = ((y - x) / (&2 * divsteps_s))")
-    let v41 ← real_cancel (← q r"&0 < divsteps_s ==> ((&0 * (x * divsteps_s) + &1 / &2 * (y * &2 * divsteps_s)) / divsteps_s pow 2) = (y / divsteps_s)")
-    let v42 ← INT_ARITH (← q r"~(&1:int < &0)")
-    let v43 ← INT_ARITH (← q r"~(&1:int > &2)")
-    let v44 ← INT_ARITH (← q r"~(&1:int < -- &2)")
-    let v45 ← INT_ARITH (← q r"~(&1:int = -- &2)")
-    let v46 ← INT_ARITH (← q r"~(&1:int = -- &1)")
-    let v47 ← real_cancel (← q r"(-- &1 / &2 * x + &1 / &2 * y) / divsteps_s pow 1 = (y - x) / (&2 * divsteps_s)")
-    let v48 ← real_linear (← q r"(&0 * x + &1 * y) / divsteps_s pow 1 = y / divsteps_s")
-    let v49 ← REAL_ARITH (← q r"x * &1 = x")
-    let v50 ← INT_ARITH (← q r"-- &0 = &0:int")
-    let v51 ← INT_ARITH (← q r"~(&0 > &2:int)")
-    let v52 ← INT_ARITH (← q r"~(&0 < -- &2:int)")
-    let v53 ← INT_ARITH (← q r"~(&0 = -- &2:int)")
-    let v54 ← INT_ARITH (← q r"~(&0 < &0:int)")
-    let v55 ← INT_ARITH (← q r"~(&0 = -- &1:int)")
-    let v56 ← INT_ARITH (← q r"&1 - -- &3 = &4:int")
-    let v57 ← INT_ARITH (← q r"&1 - -- &2 = &3:int")
-    let v58 ← INT_ARITH (← q r"~(-- &2 = -- &1:int)")
-    let v59 ← INT_ARITH (← q r"&1 + -- &3 = -- &2:int")
-    let v60 ← INT_ARITH (← q r"-- &3 < -- &2:int")
-    let v61 ← INT_ARITH (← q r"~(-- &3 = -- &2:int)")
-    let v62 ← INT_ARITH (← q r"~(-- &3 = -- &1:int)")
-    let v63 ← INT_ARITH (← q r"-- &3 < &0:int")
-    let v64 ← real_cancel (← q r"&0 < divsteps_s ==> (x / divsteps_s * divsteps_s pow 3 / inv (&2 pow 2)) = (((&0) * (&32 / &33 * (x - &2 * y) * divsteps_s pow 4) + (&33 / &64) * (&32 / &33 * x * divsteps_s pow 4 / inv (&2 pow 3))) / divsteps_s pow 2)")
-    let v65 ← real_cancel (← q r"&0 < divsteps_s ==> ((x / divsteps_s - &2 * (y + x) / (&2 * divsteps_s)) * divsteps_s pow 3) = (((&33 / &64) * (&32 / &33 * (x - &2 * y) * divsteps_s pow 4) + (-- &33 / &512) * (&32 / &33 * x * divsteps_s pow 4 / inv (&2 pow 3))) / divsteps_s pow 2)")
-    let v66 ← INT_ARITH (← q r"&1 - -- &2 = &3:int")
-    let v67 ← INT_ARITH (← q r"-- &2 < &0:int")
-    let v68 ← INT_ARITH (← q r"&1 + -- &2 = -- &1:int")
-    let v69 ← INT_ARITH (← q r"~(-- &2 = -- &1:int)")
-    let v70 ← real_cancel (← q r"&0 < divsteps_s ==> ((&0 * ((x - &2 * y) * divsteps_s pow 3) + &1 / &4 * (x * divsteps_s pow 3 / inv (&2 pow 2))) / divsteps_s pow 4) = (x / divsteps_s)")
-    let v71 ← real_cancel (← q r"((-- &1 / &4 * ((x - &2 * y)) + &3 / &16 * (x / inv (&2 pow 2))) / divsteps_s) = ((y + x) / (&2 * divsteps_s))")
-    let v72 ← real_cancel (← q r"&0 < divsteps_s ==> ((-- &1 / &4 * ((x - &2 * y) * divsteps_s pow 3) + &3 / &16 * (x * divsteps_s pow 3 / inv (&2 pow 2))) / divsteps_s pow 4) = ((-- &1 / &4 * ((x - &2 * y)) + &3 / &16 * (x / inv (&2 pow 2))) / divsteps_s)")
-    let v73 ← INT_ARITH (← q r"~(&0 > &2:int)")
-    let v74 ← INT_ARITH (← q r"~(&0 < &0:int)")
-    let v75 ← INT_ARITH (← q r"~(&0 < -- &2:int)")
-    let v76 ← INT_ARITH (← q r"~(&0 = -- &2:int)")
-    let v77 ← INT_ARITH (← q r"~(&0 = -- &1:int)")
-    let v78 ← INT_ARITH (← q r"&1 + -- &1 = &0:int")
-    let v79 ← INT_ARITH (← q r"-- &1 < &0:int")
-    let v80 ← real_cancel (← q r"((&1 / &2 * x + &1 / &2 * y) / divsteps_s pow 1) = ((y + x) / (&2 * divsteps_s) * &1)")
-    let v81 ← real_linear (← q r"((&1 * x + &0 * y) / divsteps_s pow 1) = (x / divsteps_s * &1)")
     pure (REPEAT DISCH_TAC THEN
       (REPEAT GEN_TAC) THEN
       (REWRITE_TAC [divsteps_W]) THEN
       (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
       (ASM_CASES_TAC (← q r"i:int = -- &1")) THENL
-      [v81 THEN
-        v80 THEN
-        (ASM_SIMP_TAC [v79, v78, v77, v76, v75, v74, v73, REAL_ZPOW_0]) THEN
+      [(← real_linear (← q r"((&1 * x + &0 * y) / divsteps_s pow 1) = (x / divsteps_s * &1)")) THEN
+        (← real_cancel (← q r"((&1 / &2 * x + &1 / &2 * y) / divsteps_s pow 1) = ((y + x) / (&2 * divsteps_s) * &1)")) THEN
+        (ASM_SIMP_TAC [(← INT_ARITH (← q r"-- &1 < &0:int")), (← INT_ARITH (← q r"&1 + -- &1 = &0:int")), (← INT_ARITH (← q r"~(&0 = -- &1:int)")), (← INT_ARITH (← q r"~(&0 = -- &2:int)")), (← INT_ARITH (← q r"~(&0 < -- &2:int)")), (← INT_ARITH (← q r"~(&0 < &0:int)")), (← INT_ARITH (← q r"~(&0 > &2:int)")), REAL_ZPOW_0]) THEN
         (ASM_MESON_TAC []),
        ALL_TAC] THEN
       (ASM_CASES_TAC (← q r"i:int = -- &2")) THENL
-      [v72 THEN
-        v71 THEN
-        v70 THEN
-        (ASM_SIMP_TAC [v69, v68, v67, v66, REAL_ZPOW_NEG, REAL_ZPOW_NUM]) THEN
+      [(← real_cancel (← q r"&0 < divsteps_s ==> ((-- &1 / &4 * ((x - &2 * y) * divsteps_s pow 3) + &3 / &16 * (x * divsteps_s pow 3 / inv (&2 pow 2))) / divsteps_s pow 4) = ((-- &1 / &4 * ((x - &2 * y)) + &3 / &16 * (x / inv (&2 pow 2))) / divsteps_s)")) THEN
+        (← real_cancel (← q r"((-- &1 / &4 * ((x - &2 * y)) + &3 / &16 * (x / inv (&2 pow 2))) / divsteps_s) = ((y + x) / (&2 * divsteps_s))")) THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> ((&0 * ((x - &2 * y) * divsteps_s pow 3) + &1 / &4 * (x * divsteps_s pow 3 / inv (&2 pow 2))) / divsteps_s pow 4) = (x / divsteps_s)")) THEN
+        (ASM_SIMP_TAC [(← INT_ARITH (← q r"~(-- &2 = -- &1:int)")), (← INT_ARITH (← q r"&1 + -- &2 = -- &1:int")), (← INT_ARITH (← q r"-- &2 < &0:int")), (← INT_ARITH (← q r"&1 - -- &2 = &3:int")), REAL_ZPOW_NEG, REAL_ZPOW_NUM]) THEN
         (ASM_MESON_TAC []),
        ALL_TAC] THEN
       (ASM_CASES_TAC (← q r"i:int = -- &3")) THENL
-      [v65 THEN
-        v64 THEN
-        (ASM_SIMP_TAC [v63, v62, v61, v60, v59, v58, v57, v56, REAL_ZPOW_NEG, REAL_ZPOW_NUM]) THEN
+      [(← real_cancel (← q r"&0 < divsteps_s ==> ((x / divsteps_s - &2 * (y + x) / (&2 * divsteps_s)) * divsteps_s pow 3) = (((&33 / &64) * (&32 / &33 * (x - &2 * y) * divsteps_s pow 4) + (-- &33 / &512) * (&32 / &33 * x * divsteps_s pow 4 / inv (&2 pow 3))) / divsteps_s pow 2)")) THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> (x / divsteps_s * divsteps_s pow 3 / inv (&2 pow 2)) = (((&0) * (&32 / &33 * (x - &2 * y) * divsteps_s pow 4) + (&33 / &64) * (&32 / &33 * x * divsteps_s pow 4 / inv (&2 pow 3))) / divsteps_s pow 2)")) THEN
+        (ASM_SIMP_TAC [(← INT_ARITH (← q r"-- &3 < &0:int")), (← INT_ARITH (← q r"~(-- &3 = -- &1:int)")), (← INT_ARITH (← q r"~(-- &3 = -- &2:int)")), (← INT_ARITH (← q r"-- &3 < -- &2:int")), (← INT_ARITH (← q r"&1 + -- &3 = -- &2:int")), (← INT_ARITH (← q r"~(-- &2 = -- &1:int)")), (← INT_ARITH (← q r"&1 - -- &2 = &3:int")), (← INT_ARITH (← q r"&1 - -- &3 = &4:int")), REAL_ZPOW_NEG, REAL_ZPOW_NUM]) THEN
         (ASM_MESON_TAC []),
        ALL_TAC] THEN
       (ASM_CASES_TAC (← q r"i:int = &0")) THENL
-      [ASM_SIMP_TAC [v55, v54, v53, v52, v51, v50, REAL_ZPOW_0] THEN
-        (REWRITE_TAC [v49]) THEN
-        v48 THEN
-        v47 THEN
+      [ASM_SIMP_TAC [(← INT_ARITH (← q r"~(&0 = -- &1:int)")), (← INT_ARITH (← q r"~(&0 < &0:int)")), (← INT_ARITH (← q r"~(&0 = -- &2:int)")), (← INT_ARITH (← q r"~(&0 < -- &2:int)")), (← INT_ARITH (← q r"~(&0 > &2:int)")), (← INT_ARITH (← q r"-- &0 = &0:int")), REAL_ZPOW_0] THEN
+        (REWRITE_TAC [(← REAL_ARITH (← q r"x * &1 = x"))]) THEN
+        (← real_linear (← q r"(&0 * x + &1 * y) / divsteps_s pow 1 = y / divsteps_s")) THEN
+        (← real_cancel (← q r"(-- &1 / &2 * x + &1 / &2 * y) / divsteps_s pow 1 = (y - x) / (&2 * divsteps_s)")) THEN
         (ASM_MESON_TAC []),
        ALL_TAC] THEN
       (ASM_CASES_TAC (← q r"i:int = &1")) THENL
-      [ASM_SIMP_TAC [v46, v45, v44, v43, v42, REAL_ZPOW_1] THEN
-        v41 THEN
-        v40 THEN
+      [ASM_SIMP_TAC [(← INT_ARITH (← q r"~(&1:int = -- &1)")), (← INT_ARITH (← q r"~(&1:int = -- &2)")), (← INT_ARITH (← q r"~(&1:int < -- &2)")), (← INT_ARITH (← q r"~(&1:int > &2)")), (← INT_ARITH (← q r"~(&1:int < &0)")), REAL_ZPOW_1] THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> ((&0 * (x * divsteps_s) + &1 / &2 * (y * &2 * divsteps_s)) / divsteps_s pow 2) = (y / divsteps_s)")) THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> ((-- &1 / &2 * (x * divsteps_s) + &1 / &4 * (y * &2 * divsteps_s)) / divsteps_s pow 2) = ((y - x) / (&2 * divsteps_s))")) THEN
         (ASM_MESON_TAC []),
        ALL_TAC] THEN
       (ASM_CASES_TAC (← q r"i:int = &2")) THENL
-      [ASM_SIMP_TAC [v39, v38, v37, v36, v35, v34, v33, REAL_ZPOW_POW] THEN
-        v32 THEN
-        v31 THEN
+      [ASM_SIMP_TAC [(← INT_ARITH (← q r"~(&2 < &0:int)")), (← INT_ARITH (← q r"~(&2 = -- &1:int)")), (← INT_ARITH (← q r"~(&2 = -- &2:int)")), (← INT_ARITH (← q r"~(&2 < -- &2:int)")), (← INT_ARITH (← q r"~(&2 > &2:int)")), (← INT_ARITH (← q r"~(-- &2 = -- &1:int)")), (← INT_ARITH (← q r"&1 - -- &2:int = &3")), REAL_ZPOW_POW] THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> (x * divsteps_s pow 2) = ((y / divsteps_s - &2 * (y - x) / (&2 * divsteps_s)) * divsteps_s pow 3)")) THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> (y * (&2 * divsteps_s) pow 2) = (y / divsteps_s * divsteps_s pow 3 / inv (&2 pow 2))")) THEN
         (ASM_MESON_TAC []),
        ALL_TAC] THEN
       (ASM_CASES_TAC (← q r"i:int < -- &2")) THENL
-      [v30 THEN
-        (ASM_SIMP_TAC [v29, v28, v27, v26, v25, v24]) THEN
-        v23 THEN
-        v22 THEN
-        v21 THEN
-        (ASM_SIMP_TAC [v20, INT_NEG_NEG, v19, REAL_ZPOW_NEG, REAL_ZPOW_ADD, REAL_ZPOW_POW, REAL_INV_INV]) THEN
+      [(← int_linear (← q r"i:int < -- &2 ==> i < &0")) THEN
+        (ASM_SIMP_TAC [(← INT_ARITH (← q r"i:int < -- &2 ==> ~(i = -- &1)")), (← INT_ARITH (← q r"i:int < -- &2 ==> ~(i = -- &2)")), (← INT_ARITH (← q r"i:int < -- &2 ==> ~(&1 + i = -- &1)")), (← INT_ARITH (← q r"~(i:int = -- &3) ==> ~(&1 + i = -- &2)")), (← INT_ARITH (← q r"i:int < -- &2 /\ ~(i = -- &3) ==> &1 + i < -- &2")), (← INT_ARITH (← q r"&1 - (&1 + i:int) = -- i"))]) THEN
+        (← choosevar (← q r"m:num") (← q r"i:int = -- &(m + 1)") [int_neg_as_minusnum1]) THEN
+        (← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")) THEN
+        (← real_linear (← q r"~(&2 = &0:real)")) THEN
+        (ASM_SIMP_TAC [(← GSYM INT_OF_NUM_ADD), INT_NEG_NEG, (← INT_ARITH (← q r"&1 - --(&m + &1) = &m + &2:int")), REAL_ZPOW_NEG, REAL_ZPOW_ADD, REAL_ZPOW_POW, REAL_INV_INV]) THEN
         (note (← q r"~(m + 1 = 1)") []) THEN
         (note (← q r"~(m + 1 = 2)") []) THEN
-        (note (← q r"2 <= m") [v18]) THEN
-        v17 THEN
-        v16 THEN
+        (note (← q r"2 <= m") [(← ARITH_RULE (← q r"m + 1 = 1 \/ m + 1 = 2\/ 2 <= m"))]) THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> ((&1 / &2 * ((&32 / &33) * (x - &2 * y) * divsteps_s pow m * divsteps_s pow 2) - &1 / &2 pow (m + 2) * ((&32 / &33) * x * (divsteps_s pow m * divsteps_s pow 2) / inv (&2 pow m * &2 pow 1))) / divsteps_s pow 2) = (&32 / &33) * ((x / divsteps_s - &2 * (y + x) / (&2 * divsteps_s)) * divsteps_s pow m * divsteps_s pow 1)")) THEN
+        (← real_cancel (← q r"&0 < divsteps_s ==> ((&0 * ((&32 / &33) * (x - &2 * y) * divsteps_s pow m * divsteps_s pow 2) + &1 / &2 * ((&32 / &33) * x * (divsteps_s pow m * divsteps_s pow 2) / inv (&2 pow m * &2 pow 1))) / divsteps_s pow 2) = (&32 / &33) * (x / divsteps_s * (divsteps_s pow m * divsteps_s pow 1) / (&2 pow 1 * inv (&2 pow m * &2 pow 1)))")) THEN
         (ASM_MESON_TAC [h1_16_lemma3neg, unscale_4, unscale_3]),
        ALL_TAC] THEN
-      v15 THEN
-      (ASM_SIMP_TAC [v14, v13, v12, v11, v10, v9, v8, v7]) THEN
-      v6 THEN
-      v5 THEN
-      v4 THEN
-      (ASM_SIMP_TAC [v3, REAL_ZPOW_ADD, REAL_ZPOW_POW]) THEN
-      v2 THEN
+      (← int_linear (← q r"~(i < -- &2) /\ ~(i = -- &2) /\ ~(i = -- &1) ==> &0 <= i:int")) THEN
+      (ASM_SIMP_TAC [(← INT_ARITH (← q r"&0 <= i:int ==> ~(i < &0)")), (← INT_ARITH (← q r"&0 <= i:int ==> ~(i = -- &1)")), (← INT_ARITH (← q r"&0 <= i:int ==> ~(i = -- &2)")), (← INT_ARITH (← q r"&0 <= i:int ==> ~(i < -- &2)")), (← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0) /\ ~(i = &1) /\ ~(i = &2) ==> i > &2")), (← INT_ARITH (← q r"~(i:int = &1) ==> ~(--i = -- &1)")), (← INT_ARITH (← q r"~(i:int = &2) ==> ~(--i = -- &2)")), (← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0) /\ ~(i = &1) /\ ~(i = &2) ==> --i < -- &2"))]) THEN
+      (← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")) THEN
+      (← real_linear (← q r"&0 < divsteps_s ==> ~(&2 * divsteps_s = &0)")) THEN
+      (← choosevar (← q r"m:num") (← q r"i:int = &m") [INT_OF_NUM_EXISTS]) THEN
+      (ASM_SIMP_TAC [(← INT_ARITH (← q r"&1 - -- &m:int = &1 + &m")), REAL_ZPOW_ADD, REAL_ZPOW_POW]) THEN
+      (← real_cancel (← q r"&0 < divsteps_s ==> (x * divsteps_s pow m) = ((y / divsteps_s - &2 * (y - x) / (&2 * divsteps_s)) * divsteps_s pow 1 * divsteps_s pow m)")) THEN
       (note (← q r"(&2 * divsteps_s) pow m = &2 pow m * divsteps_s pow m") [REAL_POW_MUL]) THEN
-      v1 THEN
+      (← real_cancel (← q r"&0 < divsteps_s ==> (y * &2 pow m * divsteps_s pow m) = (y / divsteps_s * (divsteps_s pow 1 * divsteps_s pow m) / inv (&2 pow m))")) THEN
       (ASM_MESON_TAC [])))
 
   let divsteps_Houter ← new_definition
@@ -23764,19 +22677,15 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_Houter (((&1) * x + (&0) * y) / divsteps_s pow 0) (((&0) * x + (&1) * y) / divsteps_s pow 0)
       "
       (← do
-        let v25 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3
-        let v26 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2
-        let v27 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1
-        let v28 ← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0
         pure (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s] THEN
           (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
           (REWRITE_TAC [divsteps_H1]) THEN
           (REPEAT STRIP_TAC) THEN
           (REWRITE_TAC [divsteps_Houter]) THEN
-          v28 THEN
-          v27 THEN
-          v26 THEN
-          v25 THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L0) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L1) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L2) THEN
+          (← specialize [(← q r"divsteps_s"), (← q r"x:real"), (← q r"y:real")] L3) THEN
           (ASM_SIMP_TAC [])))
 
   let theoremouter_simple ← prove
@@ -23786,12 +22695,10 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       divsteps_Houter x y
       "
    (← do
-    let v1 ← real_linear (← q r"(((&0) * x + (&1) * y) / divsteps_s pow 0) = y")
-    let v2 ← real_linear (← q r"(((&1) * x + (&0) * y) / divsteps_s pow 0) = x")
     pure (REPEAT STRIP_TAC THEN
       (note (← q r"divsteps_Houter (((&1) * x + (&0) * y) / divsteps_s pow 0) (((&0) * x + (&1) * y) / divsteps_s pow 0)") [theoremouter]) THEN
-      v2 THEN
-      v1 THEN
+      (← real_linear (← q r"(((&1) * x + (&0) * y) / divsteps_s pow 0) = x")) THEN
+      (← real_linear (← q r"(((&0) * x + (&1) * y) / divsteps_s pow 0) = y")) THEN
       (ASM_MESON_TAC [])))
 
   let latticetheorem ← do
@@ -23848,70 +22755,48 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
         (y:real = -- &1 \/ y:real = &0 \/ y:real = &1)
         "
         (← do
-          let v7 ← num_linear (← q r"n < 2 ==> n = 0 \/ n = 1")
-          let v8 ← choosevar (← q r"n:num") (← q r"abs(y) = &n:real") [integer]
-          let v9 ← real_linear (← q r"-- (&512) * y * (&2048 / &3047) <= &379 ==> -- y * (&2048 / &3047) <= (&379 / &512):real")
-          let v10 ← REAL_ARITH (← q r"&0 * u + t = t:real")
-          let v11 ← real_linear (← q r"(&512) * y * (&2048 / &3047) <= &379 ==> y * (&2048 / &3047) <= (&379 / &512):real")
-          let v12 ← REAL_ARITH (← q r"&0 * u + t = t:real")
-          let v13 ← real_linear (← q r"&0:real < &942339 / &1560064 ==> &379 / &512 < (&2)*(&2048 / &3047)")
-          let v14 ← REAL_ARITH (← q r"!s:real. &0:real < &942339 / &1560064")
-          let v15 ← specialize [(← q r"divsteps_s")] v14
-          let v16 ← REAL_ARITH (← q r"!s:real. &0:real < &2048 / &3047")
-          let v17 ← specialize [(← q r"divsteps_s")] v16
-          let v18 ← num_linear (← q r"m < 2 ==> m = 0 \/ m = 1")
-          let v19 ← choosevar (← q r"m:num") (← q r"abs(x) = &m:real") [integer]
-          let v20 ← real_linear (← q r"-- (&8192) * x * (&2048 / &3047) <= &8193 ==> -- x * (&2048 / &3047) <= (&8193 / &8192):real")
-          let v21 ← REAL_ARITH (← q r"t + &0 * u = t:real")
-          let v22 ← real_linear (← q r"(&8192) * x * (&2048 / &3047) <= &8193 ==> x * (&2048 / &3047) <= (&8193 / &8192):real")
-          let v23 ← REAL_ARITH (← q r"t + &0 * u = t:real")
-          let v24 ← real_linear (← q r"&0:real < &8590361 / &24961024 ==> &8193 / &8192 < (&2)*(&2048 / &3047)")
-          let v25 ← REAL_ARITH (← q r"!s:real. &0:real < &8590361 / &24961024")
-          let v26 ← specialize [(← q r"divsteps_s")] v25
-          let v27 ← REAL_ARITH (← q r"!s:real. &0:real < &2048 / &3047")
-          let v28 ← specialize [(← q r"divsteps_s")] v27
           pure (REWRITE_TAC [divsteps_Houter] THEN
             (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s]) THEN
             (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
             (REPEAT STRIP_TAC) THENL
-            [v28 THEN
-              v26 THEN
-              v24 THEN
+            [(← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &2048 / &3047"))) THEN
+              (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &8590361 / &24961024"))) THEN
+              (← real_linear (← q r"&0:real < &8590361 / &24961024 ==> &8193 / &8192 < (&2)*(&2048 / &3047)")) THEN
               (note (← q r"(&8193 / &8192) / (&2048 / &3047) < &2:real") [real_lt_ldiv]) THEN
-              (note (← q r"(&8192) * x * (&2048 / &3047) <= &8193") [v23]) THEN
-              v22 THEN
+              (note (← q r"(&8192) * x * (&2048 / &3047) <= &8193") [(← REAL_ARITH (← q r"t + &0 * u = t:real"))]) THEN
+              (← real_linear (← q r"(&8192) * x * (&2048 / &3047) <= &8193 ==> x * (&2048 / &3047) <= (&8193 / &8192):real")) THEN
               (note (← q r"x:real <= (&8193 / &8192) / (&2048 / &3047)") [REAL_LE_RDIV]) THEN
               (note (← q r"x:real < &2") [REAL_LET_TRANS]) THEN
-              (note (← q r"-- (&8192) * x * (&2048 / &3047) <= &8193") [v21]) THEN
-              v20 THEN
+              (note (← q r"-- (&8192) * x * (&2048 / &3047) <= &8193") [(← REAL_ARITH (← q r"t + &0 * u = t:real"))]) THEN
+              (← real_linear (← q r"-- (&8192) * x * (&2048 / &3047) <= &8193 ==> -- x * (&2048 / &3047) <= (&8193 / &8192):real")) THEN
               (note (← q r"-- x:real <= (&8193 / &8192) / (&2048 / &3047)") [REAL_LE_RDIV]) THEN
               (note (← q r"-- x:real < &2") [REAL_LET_TRANS]) THEN
               (note (← q r"-- &2 < x:real") [REAL_LT_NEG2, REAL_NEG_NEG]) THEN
               (note (← q r"abs(x):real < &2") [REAL_BOUNDS_LT]) THEN
-              v19 THEN
+              (← choosevar (← q r"m:num") (← q r"abs(x) = &m:real") [integer]) THEN
               (note (← q r"m < 2") [REAL_OF_NUM_LT]) THEN
-              v18 THEN
+              (← num_linear (← q r"m < 2 ==> m = 0 \/ m = 1")) THEN
               (note (← q r"abs(x):real = &0 \/ abs(x):real = &1") []) THEN
               (note (← q r"x:real = &0 \/ --x = &0 \/ x:real = &1 \/ --x = &1") [real_abs]) THEN
               (note (← q r"x:real = &0 \/ x = -- &0 \/ x:real = &1 \/ x = -- &1") [REAL_NEG_NEG]) THEN
               (ASM_MESON_TAC [REAL_NEG_0]),
-             v17 THEN
-              v15 THEN
-              v13 THEN
+             (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &2048 / &3047"))) THEN
+              (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &942339 / &1560064"))) THEN
+              (← real_linear (← q r"&0:real < &942339 / &1560064 ==> &379 / &512 < (&2)*(&2048 / &3047)")) THEN
               (note (← q r"(&379 / &512) / (&2048 / &3047) < &2:real") [real_lt_ldiv]) THEN
-              (note (← q r"(&512) * y * (&2048 / &3047) <= &379") [v12]) THEN
-              v11 THEN
+              (note (← q r"(&512) * y * (&2048 / &3047) <= &379") [(← REAL_ARITH (← q r"&0 * u + t = t:real"))]) THEN
+              (← real_linear (← q r"(&512) * y * (&2048 / &3047) <= &379 ==> y * (&2048 / &3047) <= (&379 / &512):real")) THEN
               (note (← q r"y:real <= (&379 / &512) / (&2048 / &3047)") [REAL_LE_RDIV]) THEN
               (note (← q r"y:real < &2") [REAL_LET_TRANS]) THEN
-              (note (← q r"-- (&512) * y * (&2048 / &3047) <= &379") [v10]) THEN
-              v9 THEN
+              (note (← q r"-- (&512) * y * (&2048 / &3047) <= &379") [(← REAL_ARITH (← q r"&0 * u + t = t:real"))]) THEN
+              (← real_linear (← q r"-- (&512) * y * (&2048 / &3047) <= &379 ==> -- y * (&2048 / &3047) <= (&379 / &512):real")) THEN
               (note (← q r"-- y:real <= (&379 / &512) / (&2048 / &3047)") [REAL_LE_RDIV]) THEN
               (note (← q r"-- y:real < &2") [REAL_LET_TRANS]) THEN
               (note (← q r"-- &2 < y:real") [REAL_LT_NEG2, REAL_NEG_NEG]) THEN
               (note (← q r"abs(y):real < &2") [REAL_BOUNDS_LT]) THEN
-              v8 THEN
+              (← choosevar (← q r"n:num") (← q r"abs(y) = &n:real") [integer]) THEN
               (note (← q r"n < 2") [REAL_OF_NUM_LT]) THEN
-              v7 THEN
+              (← num_linear (← q r"n < 2 ==> n = 0 \/ n = 1")) THEN
               (note (← q r"abs(y):real = &0 \/ abs(y):real = &1") []) THEN
               (note (← q r"y:real = &0 \/ --y = &0 \/ y:real = &1 \/ --y = &1") [real_abs]) THEN
               (note (← q r"y:real = &0 \/ y = -- &0 \/ y:real = &1 \/ y = -- &1") [REAL_NEG_NEG]) THEN
@@ -23924,19 +22809,7 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
         ~(divsteps_H1 (x * (&2048 / &3047)) (y * (&2048 / &3047)))
         "
         (← do
-          let v30 ← REAL_ARITH (← q r"&2048 / &3047 = (&1) * (&2048 / &3047):real")
-          let v31 ← REAL_ARITH (← q r"&2048 / &3047 = (&1) * (&2048 / &3047):real")
-          let v32 ← REAL_ARITH (← q r"&2048 / &3047 = (&1) * (&2048 / &3047):real")
-          let v33 ← REAL_ARITH (← q r"&0 = (&0) * (&2048 / &3047):real")
-          let v34 ← REAL_ARITH (← q r"&2048 / &3047 = (&1) * (&2048 / &3047):real")
-          let v35 ← REAL_ARITH (← q r"-- &2048 / &3047 = (-- &1) * (&2048 / &3047):real")
-          let v36 ← REAL_ARITH (← q r"-- &2048 / &3047 = (-- &1) * (&2048 / &3047):real")
-          let v37 ← REAL_ARITH (← q r"&2048 / &3047 = (&1) * (&2048 / &3047):real")
-          let v38 ← REAL_ARITH (← q r"-- &2048 / &3047 = (-- &1) * (&2048 / &3047):real")
-          let v39 ← REAL_ARITH (← q r"&0 = (&0) * (&2048 / &3047):real")
-          let v40 ← REAL_ARITH (← q r"-- &2048 / &3047 = (-- &1) * (&2048 / &3047):real")
-          let v41 ← REAL_ARITH (← q r"-- &2048 / &3047 = (-- &1) * (&2048 / &3047):real")
-          pure (MESON_TAC [lemma_0_0_0, v41, v40, lemma_0_1_0, v39, v38, lemma_0_2_0, v37, v36, lemma_0_0_2, v35, v34, lemma_0_1_2, v33, v32, lemma_0_2_2, v31, v30]))
+          pure (MESON_TAC [lemma_0_0_0, (← REAL_ARITH (← q r"-- &2048 / &3047 = (-- &1) * (&2048 / &3047):real")), (← REAL_ARITH (← q r"-- &2048 / &3047 = (-- &1) * (&2048 / &3047):real")), lemma_0_1_0, (← REAL_ARITH (← q r"&0 = (&0) * (&2048 / &3047):real")), (← REAL_ARITH (← q r"-- &2048 / &3047 = (-- &1) * (&2048 / &3047):real")), lemma_0_2_0, (← REAL_ARITH (← q r"&2048 / &3047 = (&1) * (&2048 / &3047):real")), (← REAL_ARITH (← q r"-- &2048 / &3047 = (-- &1) * (&2048 / &3047):real")), lemma_0_0_2, (← REAL_ARITH (← q r"-- &2048 / &3047 = (-- &1) * (&2048 / &3047):real")), (← REAL_ARITH (← q r"&2048 / &3047 = (&1) * (&2048 / &3047):real")), lemma_0_1_2, (← REAL_ARITH (← q r"&0 = (&0) * (&2048 / &3047):real")), (← REAL_ARITH (← q r"&2048 / &3047 = (&1) * (&2048 / &3047):real")), lemma_0_2_2, (← REAL_ARITH (← q r"&2048 / &3047 = (&1) * (&2048 / &3047):real")), (← REAL_ARITH (← q r"&2048 / &3047 = (&1) * (&2048 / &3047):real"))]))
       let lattice_0_yzero ← prove
         r"
         !x y.
@@ -23965,19 +22838,14 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
         &3047 / &2048 < u
         "
         (← do
-          let v44 ← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (y * (&1) * ((&2 * (&30902639 / &41749730) pow 2) pow 0) / u) = y * &2048 / &3047")
-          let v45 ← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (x * (&1) * (((&30902639 / &41749730) pow 2) pow 0) / u) = x * &2048 / &3047")
-          let v46 ← specialize [(← q r"x * (&1) * ((divsteps_s pow 2) pow 0) / u"), (← q r"y * (&1) * ((&2 * divsteps_s pow 2) pow 0) / u"), (← q r"u:real / (&3047 / &2048)")] h1_shrink
-          let v47 ← real_linear (← q r"&0 < u:real ==> &0 <= u / (&3047 / &2048)")
-          let v48 ← real_linear (← q r"u:real <= &3047 / &2048 ==> u / (&3047 / &2048) <= &1")
           pure (REPEAT STRIP_TAC THEN
             (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s]) THEN
             (ASM_CASES_TAC (← q r"u:real <= &3047 / &2048")) THENL
-            [v48 THEN
-              v47 THEN
-              v46 THEN
-              v45 THEN
-              v44 THEN
+            [(← real_linear (← q r"u:real <= &3047 / &2048 ==> u / (&3047 / &2048) <= &1")) THEN
+              (← real_linear (← q r"&0 < u:real ==> &0 <= u / (&3047 / &2048)")) THEN
+              (← specialize [(← q r"x * (&1) * ((divsteps_s pow 2) pow 0) / u"), (← q r"y * (&1) * ((&2 * divsteps_s pow 2) pow 0) / u"), (← q r"u:real / (&3047 / &2048)")] h1_shrink) THEN
+              (← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (x * (&1) * (((&30902639 / &41749730) pow 2) pow 0) / u) = x * &2048 / &3047")) THEN
+              (← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (y * (&1) * ((&2 * (&30902639 / &41749730) pow 2) pow 0) / u) = y * &2048 / &3047")) THEN
               (note (← q r"divsteps_H1 (x * &2048 / &3047) (y * &2048 / &3047)") []) THEN
               (note (← q r"divsteps_Houter (x * &2048 / &3047) (y * &2048 / &3047)") []) THEN
               (ASM_MESON_TAC [lattice_0_yzero]),
@@ -24063,70 +22931,48 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
         (y:real = -- &1 \/ y:real = &0 \/ y:real = &1)
         "
         (← do
-          let v60 ← num_linear (← q r"n < 2 ==> n = 0 \/ n = 1")
-          let v61 ← choosevar (← q r"n:num") (← q r"abs(y) = &n:real") [integer]
-          let v62 ← real_linear (← q r"-- (&512) * y * (&977892451496264704 / &1327760685776781575) <= &379 ==> -- y * (&977892451496264704 / &1327760685776781575) <= (&379 / &512):real")
-          let v63 ← REAL_ARITH (← q r"&0 * u + t = t:real")
-          let v64 ← real_linear (← q r"(&512) * y * (&977892451496264704 / &1327760685776781575) <= &379 ==> y * (&977892451496264704 / &1327760685776781575) <= (&379 / &512):real")
-          let v65 ← REAL_ARITH (← q r"&0 * u + t = t:real")
-          let v66 ← real_linear (← q r"&0:real < &498140570422774839971 / &679813471117712166400 ==> &379 / &512 < (&2)*(&977892451496264704 / &1327760685776781575)")
-          let v67 ← REAL_ARITH (← q r"!s:real. &0:real < &498140570422774839971 / &679813471117712166400")
-          let v68 ← specialize [(← q r"divsteps_s")] v67
-          let v69 ← REAL_ARITH (← q r"!s:real. &0:real < &977892451496264704 / &1327760685776781575")
-          let v70 ← specialize [(← q r"divsteps_s")] v69
-          let v71 ← num_linear (← q r"m < 3 ==> m = 0 \/ m = 1 \/ m = 2")
-          let v72 ← choosevar (← q r"m:num") (← q r"abs(x) = &m:real") [integer]
-          let v73 ← real_linear (← q r"-- (&8192) * x * (&488946225748132352 / &1327760685776781575) <= &8193 ==> -- x * (&488946225748132352 / &1327760685776781575) <= (&8193 / &8192):real")
-          let v74 ← REAL_ARITH (← q r"t + &0 * u = t:real")
-          let v75 ← real_linear (← q r"(&8192) * x * (&488946225748132352 / &1327760685776781575) <= &8193 ==> x * (&488946225748132352 / &1327760685776781575) <= (&8193 / &8192):real")
-          let v76 ← REAL_ARITH (← q r"t + &0 * u = t:real")
-          let v77 ← real_linear (← q r"&0:real < &1137999145416929238777 / &10877015537883394662400 ==> &8193 / &8192 < (&3)*(&488946225748132352 / &1327760685776781575)")
-          let v78 ← REAL_ARITH (← q r"!s:real. &0:real < &1137999145416929238777 / &10877015537883394662400")
-          let v79 ← specialize [(← q r"divsteps_s")] v78
-          let v80 ← REAL_ARITH (← q r"!s:real. &0:real < &488946225748132352 / &1327760685776781575")
-          let v81 ← specialize [(← q r"divsteps_s")] v80
           pure (REWRITE_TAC [divsteps_Houter] THEN
             (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s]) THEN
             (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
             (REPEAT STRIP_TAC) THENL
-            [v81 THEN
-              v79 THEN
-              v77 THEN
+            [(← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &488946225748132352 / &1327760685776781575"))) THEN
+              (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &1137999145416929238777 / &10877015537883394662400"))) THEN
+              (← real_linear (← q r"&0:real < &1137999145416929238777 / &10877015537883394662400 ==> &8193 / &8192 < (&3)*(&488946225748132352 / &1327760685776781575)")) THEN
               (note (← q r"(&8193 / &8192) / (&488946225748132352 / &1327760685776781575) < &3:real") [real_lt_ldiv]) THEN
-              (note (← q r"(&8192) * x * (&488946225748132352 / &1327760685776781575) <= &8193") [v76]) THEN
-              v75 THEN
+              (note (← q r"(&8192) * x * (&488946225748132352 / &1327760685776781575) <= &8193") [(← REAL_ARITH (← q r"t + &0 * u = t:real"))]) THEN
+              (← real_linear (← q r"(&8192) * x * (&488946225748132352 / &1327760685776781575) <= &8193 ==> x * (&488946225748132352 / &1327760685776781575) <= (&8193 / &8192):real")) THEN
               (note (← q r"x:real <= (&8193 / &8192) / (&488946225748132352 / &1327760685776781575)") [REAL_LE_RDIV]) THEN
               (note (← q r"x:real < &3") [REAL_LET_TRANS]) THEN
-              (note (← q r"-- (&8192) * x * (&488946225748132352 / &1327760685776781575) <= &8193") [v74]) THEN
-              v73 THEN
+              (note (← q r"-- (&8192) * x * (&488946225748132352 / &1327760685776781575) <= &8193") [(← REAL_ARITH (← q r"t + &0 * u = t:real"))]) THEN
+              (← real_linear (← q r"-- (&8192) * x * (&488946225748132352 / &1327760685776781575) <= &8193 ==> -- x * (&488946225748132352 / &1327760685776781575) <= (&8193 / &8192):real")) THEN
               (note (← q r"-- x:real <= (&8193 / &8192) / (&488946225748132352 / &1327760685776781575)") [REAL_LE_RDIV]) THEN
               (note (← q r"-- x:real < &3") [REAL_LET_TRANS]) THEN
               (note (← q r"-- &3 < x:real") [REAL_LT_NEG2, REAL_NEG_NEG]) THEN
               (note (← q r"abs(x):real < &3") [REAL_BOUNDS_LT]) THEN
-              v72 THEN
+              (← choosevar (← q r"m:num") (← q r"abs(x) = &m:real") [integer]) THEN
               (note (← q r"m < 3") [REAL_OF_NUM_LT]) THEN
-              v71 THEN
+              (← num_linear (← q r"m < 3 ==> m = 0 \/ m = 1 \/ m = 2")) THEN
               (note (← q r"abs(x):real = &0 \/ abs(x):real = &1 \/ abs(x):real = &2") []) THEN
               (note (← q r"x:real = &0 \/ --x = &0 \/ x:real = &1 \/ --x = &1 \/ x:real = &2 \/ --x = &2") [real_abs]) THEN
               (note (← q r"x:real = &0 \/ x = -- &0 \/ x:real = &1 \/ x = -- &1 \/ x:real = &2 \/ x = -- &2") [REAL_NEG_NEG]) THEN
               (ASM_MESON_TAC [REAL_NEG_0]),
-             v70 THEN
-              v68 THEN
-              v66 THEN
+             (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &977892451496264704 / &1327760685776781575"))) THEN
+              (← specialize [(← q r"divsteps_s")] (← REAL_ARITH (← q r"!s:real. &0:real < &498140570422774839971 / &679813471117712166400"))) THEN
+              (← real_linear (← q r"&0:real < &498140570422774839971 / &679813471117712166400 ==> &379 / &512 < (&2)*(&977892451496264704 / &1327760685776781575)")) THEN
               (note (← q r"(&379 / &512) / (&977892451496264704 / &1327760685776781575) < &2:real") [real_lt_ldiv]) THEN
-              (note (← q r"(&512) * y * (&977892451496264704 / &1327760685776781575) <= &379") [v65]) THEN
-              v64 THEN
+              (note (← q r"(&512) * y * (&977892451496264704 / &1327760685776781575) <= &379") [(← REAL_ARITH (← q r"&0 * u + t = t:real"))]) THEN
+              (← real_linear (← q r"(&512) * y * (&977892451496264704 / &1327760685776781575) <= &379 ==> y * (&977892451496264704 / &1327760685776781575) <= (&379 / &512):real")) THEN
               (note (← q r"y:real <= (&379 / &512) / (&977892451496264704 / &1327760685776781575)") [REAL_LE_RDIV]) THEN
               (note (← q r"y:real < &2") [REAL_LET_TRANS]) THEN
-              (note (← q r"-- (&512) * y * (&977892451496264704 / &1327760685776781575) <= &379") [v63]) THEN
-              v62 THEN
+              (note (← q r"-- (&512) * y * (&977892451496264704 / &1327760685776781575) <= &379") [(← REAL_ARITH (← q r"&0 * u + t = t:real"))]) THEN
+              (← real_linear (← q r"-- (&512) * y * (&977892451496264704 / &1327760685776781575) <= &379 ==> -- y * (&977892451496264704 / &1327760685776781575) <= (&379 / &512):real")) THEN
               (note (← q r"-- y:real <= (&379 / &512) / (&977892451496264704 / &1327760685776781575)") [REAL_LE_RDIV]) THEN
               (note (← q r"-- y:real < &2") [REAL_LET_TRANS]) THEN
               (note (← q r"-- &2 < y:real") [REAL_LT_NEG2, REAL_NEG_NEG]) THEN
               (note (← q r"abs(y):real < &2") [REAL_BOUNDS_LT]) THEN
-              v61 THEN
+              (← choosevar (← q r"n:num") (← q r"abs(y) = &n:real") [integer]) THEN
               (note (← q r"n < 2") [REAL_OF_NUM_LT]) THEN
-              v60 THEN
+              (← num_linear (← q r"n < 2 ==> n = 0 \/ n = 1")) THEN
               (note (← q r"abs(y):real = &0 \/ abs(y):real = &1") []) THEN
               (note (← q r"y:real = &0 \/ --y = &0 \/ y:real = &1 \/ --y = &1") [real_abs]) THEN
               (note (← q r"y:real = &0 \/ y = -- &0 \/ y:real = &1 \/ y = -- &1") [REAL_NEG_NEG]) THEN
@@ -24139,27 +22985,7 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
         ~(divsteps_H1 (x * (&488946225748132352 / &1327760685776781575)) (y * (&977892451496264704 / &1327760685776781575)))
         "
         (← do
-          let v83 ← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&1) * (&977892451496264704 / &1327760685776781575):real")
-          let v84 ← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&2) * (&488946225748132352 / &1327760685776781575):real")
-          let v85 ← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&1) * (&977892451496264704 / &1327760685776781575):real")
-          let v86 ← REAL_ARITH (← q r"&488946225748132352 / &1327760685776781575 = (&1) * (&488946225748132352 / &1327760685776781575):real")
-          let v87 ← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&1) * (&977892451496264704 / &1327760685776781575):real")
-          let v88 ← REAL_ARITH (← q r"&0 = (&0) * (&488946225748132352 / &1327760685776781575):real")
-          let v89 ← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&1) * (&977892451496264704 / &1327760685776781575):real")
-          let v90 ← REAL_ARITH (← q r"-- &488946225748132352 / &1327760685776781575 = (-- &1) * (&488946225748132352 / &1327760685776781575):real")
-          let v91 ← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&1) * (&977892451496264704 / &1327760685776781575):real")
-          let v92 ← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &2) * (&488946225748132352 / &1327760685776781575):real")
-          let v93 ← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &1) * (&977892451496264704 / &1327760685776781575):real")
-          let v94 ← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&2) * (&488946225748132352 / &1327760685776781575):real")
-          let v95 ← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &1) * (&977892451496264704 / &1327760685776781575):real")
-          let v96 ← REAL_ARITH (← q r"&488946225748132352 / &1327760685776781575 = (&1) * (&488946225748132352 / &1327760685776781575):real")
-          let v97 ← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &1) * (&977892451496264704 / &1327760685776781575):real")
-          let v98 ← REAL_ARITH (← q r"&0 = (&0) * (&488946225748132352 / &1327760685776781575):real")
-          let v99 ← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &1) * (&977892451496264704 / &1327760685776781575):real")
-          let v100 ← REAL_ARITH (← q r"-- &488946225748132352 / &1327760685776781575 = (-- &1) * (&488946225748132352 / &1327760685776781575):real")
-          let v101 ← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &1) * (&977892451496264704 / &1327760685776781575):real")
-          let v102 ← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &2) * (&488946225748132352 / &1327760685776781575):real")
-          pure (MESON_TAC [lemma_1_0_0, v102, v101, lemma_1_1_0, v100, v99, lemma_1_2_0, v98, v97, lemma_1_3_0, v96, v95, lemma_1_4_0, v94, v93, lemma_1_0_2, v92, v91, lemma_1_1_2, v90, v89, lemma_1_2_2, v88, v87, lemma_1_3_2, v86, v85, lemma_1_4_2, v84, v83]))
+          pure (MESON_TAC [lemma_1_0_0, (← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &2) * (&488946225748132352 / &1327760685776781575):real")), (← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &1) * (&977892451496264704 / &1327760685776781575):real")), lemma_1_1_0, (← REAL_ARITH (← q r"-- &488946225748132352 / &1327760685776781575 = (-- &1) * (&488946225748132352 / &1327760685776781575):real")), (← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &1) * (&977892451496264704 / &1327760685776781575):real")), lemma_1_2_0, (← REAL_ARITH (← q r"&0 = (&0) * (&488946225748132352 / &1327760685776781575):real")), (← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &1) * (&977892451496264704 / &1327760685776781575):real")), lemma_1_3_0, (← REAL_ARITH (← q r"&488946225748132352 / &1327760685776781575 = (&1) * (&488946225748132352 / &1327760685776781575):real")), (← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &1) * (&977892451496264704 / &1327760685776781575):real")), lemma_1_4_0, (← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&2) * (&488946225748132352 / &1327760685776781575):real")), (← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &1) * (&977892451496264704 / &1327760685776781575):real")), lemma_1_0_2, (← REAL_ARITH (← q r"-- &977892451496264704 / &1327760685776781575 = (-- &2) * (&488946225748132352 / &1327760685776781575):real")), (← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&1) * (&977892451496264704 / &1327760685776781575):real")), lemma_1_1_2, (← REAL_ARITH (← q r"-- &488946225748132352 / &1327760685776781575 = (-- &1) * (&488946225748132352 / &1327760685776781575):real")), (← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&1) * (&977892451496264704 / &1327760685776781575):real")), lemma_1_2_2, (← REAL_ARITH (← q r"&0 = (&0) * (&488946225748132352 / &1327760685776781575):real")), (← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&1) * (&977892451496264704 / &1327760685776781575):real")), lemma_1_3_2, (← REAL_ARITH (← q r"&488946225748132352 / &1327760685776781575 = (&1) * (&488946225748132352 / &1327760685776781575):real")), (← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&1) * (&977892451496264704 / &1327760685776781575):real")), lemma_1_4_2, (← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&2) * (&488946225748132352 / &1327760685776781575):real")), (← REAL_ARITH (← q r"&977892451496264704 / &1327760685776781575 = (&1) * (&977892451496264704 / &1327760685776781575):real"))]))
       let lattice_1_yzero ← prove
         r"
         !x y.
@@ -24188,19 +23014,14 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
         &3047 / &2048 < u
         "
         (← do
-          let v105 ← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (y * (&1) * ((&2 * (&30902639 / &41749730) pow 2) pow 1) / u) = y * &977892451496264704 / &1327760685776781575")
-          let v106 ← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (x * (&1) * (((&30902639 / &41749730) pow 2) pow 1) / u) = x * &488946225748132352 / &1327760685776781575")
-          let v107 ← specialize [(← q r"x * (&1) * ((divsteps_s pow 2) pow 1) / u"), (← q r"y * (&1) * ((&2 * divsteps_s pow 2) pow 1) / u"), (← q r"u:real / (&3047 / &2048)")] h1_shrink
-          let v108 ← real_linear (← q r"&0 < u:real ==> &0 <= u / (&3047 / &2048)")
-          let v109 ← real_linear (← q r"u:real <= &3047 / &2048 ==> u / (&3047 / &2048) <= &1")
           pure (REPEAT STRIP_TAC THEN
             (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s]) THEN
             (ASM_CASES_TAC (← q r"u:real <= &3047 / &2048")) THENL
-            [v109 THEN
-              v108 THEN
-              v107 THEN
-              v106 THEN
-              v105 THEN
+            [(← real_linear (← q r"u:real <= &3047 / &2048 ==> u / (&3047 / &2048) <= &1")) THEN
+              (← real_linear (← q r"&0 < u:real ==> &0 <= u / (&3047 / &2048)")) THEN
+              (← specialize [(← q r"x * (&1) * ((divsteps_s pow 2) pow 1) / u"), (← q r"y * (&1) * ((&2 * divsteps_s pow 2) pow 1) / u"), (← q r"u:real / (&3047 / &2048)")] h1_shrink) THEN
+              (← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (x * (&1) * (((&30902639 / &41749730) pow 2) pow 1) / u) = x * &488946225748132352 / &1327760685776781575")) THEN
+              (← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (y * (&1) * ((&2 * (&30902639 / &41749730) pow 2) pow 1) / u) = y * &977892451496264704 / &1327760685776781575")) THEN
               (note (← q r"divsteps_H1 (x * &488946225748132352 / &1327760685776781575) (y * &977892451496264704 / &1327760685776781575)") []) THEN
               (note (← q r"divsteps_Houter (x * &488946225748132352 / &1327760685776781575) (y * &977892451496264704 / &1327760685776781575)") []) THEN
               (ASM_MESON_TAC [lattice_1_yzero]),
@@ -24220,88 +23041,64 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       &3047 / &2048 < u
       "
       (← do
-        let v111 ← real_linear (← q r"abs(y) = &0:real ==> y = &0")
-        let v112 ← num_linear (← q r"n < 1 ==> n = 0")
-        let v113 ← choosevar (← q r"n:num") (← q r"abs(y) = &n:real") [integer]
-        let v114 ← real_linear (← q r"((--y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) / (&3047 / &2048)) < (&262144 / &100551 * divsteps_s pow 4):real ==> (--y) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) < (&2 * divsteps_s pow 2) pow 2")
-        let v115 ← real_linear (← q r"-- (&512) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= &379 ==> ((-- y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= (&379 / &512):real")
-        let v116 ← REAL_ARITH (← q r"&0 * u + t = t:real")
-        let v117 ← real_linear (← q r"((y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) / (&3047 / &2048)) < (&262144 / &100551 * divsteps_s pow 4):real ==> (y) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) < (&2 * divsteps_s pow 2) pow 2")
-        let v118 ← real_linear (← q r"(&512) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= &379 ==> ((y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= (&379 / &512):real")
-        let v119 ← REAL_ARITH (← q r"&0 * u + t = t:real")
-        let v120 ← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / u) = y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)")
-        let v121 ← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (x * (&32 / &33) * ((divsteps_s pow 2) pow m) / u) = x * (&32 / &33) * ((divsteps_s pow 2) pow m) / (&3047 / &2048)")
-        let v122 ← specialize [(← q r"x * (&32 / &33) * ((divsteps_s pow 2) pow m) / u"), (← q r"y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / u"), (← q r"u:real / (&3047 / &2048)")] h1_shrink
-        let v123 ← real_linear (← q r"&0 < u:real ==> &0 <= u / (&3047 / &2048)")
-        let v124 ← real_linear (← q r"u:real <= &3047 / &2048 ==> u / (&3047 / &2048) <= &1")
-        let v125 ← real_linear (← q r"&1 <= (&2 * divsteps_s pow 2) pow 2 ==> &0 < (&2 * divsteps_s pow 2) pow 2")
-        let v126 ← real_linear (← q r"&0:real < -- &1 + &2 * divsteps_s pow 2 ==> &1 <= &2 * divsteps_s pow 2")
-        let v127 ← prove
-          r"!s:real. s = &30902639 / &41749730 ==> &0:real < -- &1 + &2 * s pow 2"
-          (← do
-            pure (REPEAT STRIP_TAC THEN
-              (ASM_REWRITE_TAC []) THEN
-              REAL_ARITH_TAC))
-        let v128 ← specialize [(← q r"divsteps_s")] v127
-        let v129 ← real_linear (← q r"&0:real < -- &379 / &512 + &262144 / &100551 * divsteps_s pow 4 ==> &379 / &512 < &262144 / &100551 * divsteps_s pow 4")
-        let v130 ← prove
-          r"!s:real. s = &30902639 / &41749730 ==> &0:real < -- &379 / &512 + &262144 / &100551 * s pow 4"
-          (← do
-            pure (REPEAT STRIP_TAC THEN
-              (ASM_REWRITE_TAC []) THEN
-              REAL_ARITH_TAC))
-        let v131 ← specialize [(← q r"divsteps_s")] v130
-        let v132 ← prove
-          r"!s:real. s = &30902639 / &41749730 ==> &0:real < &262144 / &100551 * s pow 4"
-          (← do
-            pure (REPEAT STRIP_TAC THEN
-              (ASM_REWRITE_TAC []) THEN
-              REAL_ARITH_TAC))
-        let v133 ← specialize [(← q r"divsteps_s")] v132
-        let v134 ← num_linear (← q r"2 <= m ==> m = 2 + (m - 2)")
         pure (REPEAT STRIP_TAC THEN
           (REWRITE_TAC [divsteps_Houter]) THEN
           (ASM_CASES_TAC (← q r"u:real <= &3047 / &2048")) THENL
           [note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s] THEN
             (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
-            v134 THEN
-            v133 THEN
-            v131 THEN
-            v129 THEN
-            v128 THEN
-            v126 THEN
+            (← num_linear (← q r"2 <= m ==> m = 2 + (m - 2)")) THEN
+            (← specialize [(← q r"divsteps_s")] (← prove
+          r"!s:real. s = &30902639 / &41749730 ==> &0:real < &262144 / &100551 * s pow 4"
+          (← do
+            pure (REPEAT STRIP_TAC THEN
+              (ASM_REWRITE_TAC []) THEN
+              REAL_ARITH_TAC)))) THEN
+            (← specialize [(← q r"divsteps_s")] (← prove
+          r"!s:real. s = &30902639 / &41749730 ==> &0:real < -- &379 / &512 + &262144 / &100551 * s pow 4"
+          (← do
+            pure (REPEAT STRIP_TAC THEN
+              (ASM_REWRITE_TAC []) THEN
+              REAL_ARITH_TAC)))) THEN
+            (← real_linear (← q r"&0:real < -- &379 / &512 + &262144 / &100551 * divsteps_s pow 4 ==> &379 / &512 < &262144 / &100551 * divsteps_s pow 4")) THEN
+            (← specialize [(← q r"divsteps_s")] (← prove
+          r"!s:real. s = &30902639 / &41749730 ==> &0:real < -- &1 + &2 * s pow 2"
+          (← do
+            pure (REPEAT STRIP_TAC THEN
+              (ASM_REWRITE_TAC []) THEN
+              REAL_ARITH_TAC)))) THEN
+            (← real_linear (← q r"&0:real < -- &1 + &2 * divsteps_s pow 2 ==> &1 <= &2 * divsteps_s pow 2")) THEN
             (note (← q r"&1 <= (&2 * divsteps_s pow 2) pow (m - 2)") [REAL_POW_LE_1]) THEN
             (note (← q r"&1 <= (&2 * divsteps_s pow 2) pow 2") [REAL_POW_LE_1]) THEN
-            v125 THEN
+            (← real_linear (← q r"&1 <= (&2 * divsteps_s pow 2) pow 2 ==> &0 < (&2 * divsteps_s pow 2) pow 2")) THEN
             (note (← q r"(&2 * divsteps_s pow 2) pow m = (&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)") [REAL_POW_ADD]) THEN
-            v124 THEN
-            v123 THEN
-            v122 THEN
-            v121 THEN
-            v120 THEN
+            (← real_linear (← q r"u:real <= &3047 / &2048 ==> u / (&3047 / &2048) <= &1")) THEN
+            (← real_linear (← q r"&0 < u:real ==> &0 <= u / (&3047 / &2048)")) THEN
+            (← specialize [(← q r"x * (&32 / &33) * ((divsteps_s pow 2) pow m) / u"), (← q r"y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / u"), (← q r"u:real / (&3047 / &2048)")] h1_shrink) THEN
+            (← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (x * (&32 / &33) * ((divsteps_s pow 2) pow m) / u) = x * (&32 / &33) * ((divsteps_s pow 2) pow m) / (&3047 / &2048)")) THEN
+            (← real_cancel (← q r"&0 < u ==> u / (&3047 / &2048) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / u) = y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)")) THEN
             (note (← q r"divsteps_H1 (x * (&32 / &33) * ((divsteps_s pow 2) pow m) / (&3047 / &2048)) (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048))") []) THEN
             (note (← q r"divsteps_Houter (x * (&32 / &33) * ((divsteps_s pow 2) pow m) / (&3047 / &2048)) (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048))") []) THEN
             (note (← q r"&0 * (x * (&32 / &33) * ((divsteps_s pow 2) pow m) / (&3047 / &2048)) + (&512) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= &379") [divsteps_Houter]) THEN
-            (note (← q r"(&512) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= &379") [v119]) THEN
-            v118 THEN
+            (note (← q r"(&512) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= &379") [(← REAL_ARITH (← q r"&0 * u + t = t:real"))]) THEN
+            (← real_linear (← q r"(&512) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= &379 ==> ((y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= (&379 / &512):real")) THEN
             (note (← q r"((y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) / (&3047 / &2048)) <= (&379 / &512):real") []) THEN
             (note (← q r"((y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) / (&3047 / &2048)) < (&262144 / &100551 * divsteps_s pow 4):real") [REAL_LET_TRANS]) THEN
-            v117 THEN
+            (← real_linear (← q r"((y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) / (&3047 / &2048)) < (&262144 / &100551 * divsteps_s pow 4):real ==> (y) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) < (&2 * divsteps_s pow 2) pow 2")) THEN
             (note (← q r"y < &1:real") [real_lt_rdiv_one_extra]) THEN
             (note (← q r"&0 * (x * (&32 / &33) * ((divsteps_s pow 2) pow m) / (&3047 / &2048)) + -- (&512) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= &379") [divsteps_Houter]) THEN
-            (note (← q r"-- (&512) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= &379") [v116]) THEN
-            v115 THEN
+            (note (← q r"-- (&512) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= &379") [(← REAL_ARITH (← q r"&0 * u + t = t:real"))]) THEN
+            (← real_linear (← q r"-- (&512) * (y * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= &379 ==> ((-- y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow m) / (&3047 / &2048)) <= (&379 / &512):real")) THEN
             (note (← q r"((--y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) / (&3047 / &2048)) <= (&379 / &512):real") []) THEN
             (note (← q r"((--y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) / (&3047 / &2048)) < (&262144 / &100551 * divsteps_s pow 4):real") [REAL_LET_TRANS]) THEN
-            v114 THEN
+            (← real_linear (← q r"((--y) * (&32 / &33) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) / (&3047 / &2048)) < (&262144 / &100551 * divsteps_s pow 4):real ==> (--y) * ((&2 * divsteps_s pow 2) pow 2 * (&2 * divsteps_s pow 2) pow (m - 2)) < (&2 * divsteps_s pow 2) pow 2")) THEN
             (note (← q r"--y < &1:real") [real_lt_rdiv_one_extra]) THEN
             (note (← q r"-- &1:real < y") [REAL_LT_NEG2, REAL_NEG_NEG]) THEN
             (note (← q r"abs(y):real < &1") [REAL_BOUNDS_LT]) THEN
-            v113 THEN
+            (← choosevar (← q r"n:num") (← q r"abs(y) = &n:real") [integer]) THEN
             (note (← q r"n < 1") [REAL_OF_NUM_LT]) THEN
-            v112 THEN
+            (← num_linear (← q r"n < 1 ==> n = 0")) THEN
             (note (← q r"abs(y) = &0:real") []) THEN
-            v111 THEN
+            (← real_linear (← q r"abs(y) = &0:real ==> y = &0")) THEN
             (ASM_MESON_TAC []),
            ASM_REAL_ARITH_TAC]))
     prove
@@ -24320,87 +23117,49 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       &3047 / &2048 < t * divsteps_s zpow i
       "
       (← do
-        let v136 ← real_linear (← q r"(&2 * divsteps_s) * divsteps_s = &2 * divsteps_s pow 2")
-        let v137 ← specialize [(← q r"&2 * divsteps_s"), (← q r"divsteps_s"), (← q r"m:num")] REAL_POW_MUL
-        let v138 ← real_cancel (← q r"&0 < divsteps_s pow m ==> (&32 / &33) * y / t * (&2 * divsteps_s) pow m = y * &32 / &33 * ((&2 * divsteps_s) pow m * divsteps_s pow m) / (t * divsteps_s pow m)")
-        let v139 ← real_cancel (← q r"(&32 / &33) * x / t * divsteps_s pow m = x * &32 / &33 * divsteps_s pow m pow 2 / (t * divsteps_s pow m)")
-        let v140 ← choosevar (← q r"m:num") (← q r"i:int = &m") [INT_OF_NUM_EXISTS]
-        let v141 ← real_linear (← q r"((&32 / &33) * (y / t * (&2 * divsteps_s) zpow i)) = ((&32 / &33) * y / t * (&2 * divsteps_s) zpow i)")
-        let v142 ← real_linear (← q r"((&32 / &33) * (x / t * divsteps_s zpow i)) = ((&32 / &33) * x / t * divsteps_s zpow i)")
-        let v143 ← real_linear (← q r"&32 / &33 <= &1:real")
-        let v144 ← real_linear (← q r"&0:real <= &32 / &33")
-        let v145 ← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0:int) /\ ~(i = &1:int) /\ ~(&3 <= i:int) ==> ~(i > &2)")
-        let v146 ← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0:int) /\ ~(i = &1:int) /\ ~(&3 <= i:int) ==> ~(i < -- &2)")
-        let v147 ← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0:int) /\ ~(i = &1:int) /\ ~(&3 <= i:int) ==> ~(i = -- &2)")
-        let v148 ← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0:int) /\ ~(i = &1:int) /\ ~(&3 <= i:int) ==> ~(i = -- &1)")
-        let v149 ← int_linear (← q r"&0 <= i:int /\ ~(i = &0:int) /\ ~(i = &1:int) /\ ~(&3 <= i:int) ==> &2 <= i:int")
-        let v150 ← real_linear (← q r"(&2 * divsteps_s) * divsteps_s = &2 * divsteps_s pow 2")
-        let v151 ← specialize [(← q r"&2 * divsteps_s"), (← q r"divsteps_s"), (← q r"m:num")] REAL_POW_MUL
-        let v152 ← real_cancel (← q r"&0 < divsteps_s pow m ==> (&32 / &33) * y / t * (&2 * divsteps_s) pow m = y * &32 / &33 * ((&2 * divsteps_s) pow m * divsteps_s pow m) / (t * divsteps_s pow m)")
-        let v153 ← real_cancel (← q r"(&32 / &33) * x / t * divsteps_s pow m = x * &32 / &33 * divsteps_s pow m pow 2 / (t * divsteps_s pow m)")
-        let v154 ← choosevar (← q r"m:num") (← q r"i:int = &m") [INT_OF_NUM_EXISTS]
-        let v155 ← int_linear (← q r"&3 <= i:int ==> &2 <= i:int")
-        let v156 ← INT_ARITH (← q r"&3 <= i:int ==> i > &2")
-        let v157 ← INT_ARITH (← q r"&3 <= i:int ==> ~(i < -- &2)")
-        let v158 ← INT_ARITH (← q r"&3 <= i:int ==> ~(i = -- &2)")
-        let v159 ← INT_ARITH (← q r"&3 <= i:int ==> ~(i = -- &1)")
-        let v160 ← real_linear (← q r"&3047 / &2048 < t * divsteps_s ==> &3047 / &2048 < t * divsteps_s pow 1")
-        let v161 ← real_cancel (← q r"y / t * (&2 * divsteps_s) pow 1 = y * &1 * (&2 * divsteps_s pow 2) pow 1 / (t * divsteps_s)")
-        let v162 ← real_cancel (← q r"x / t * divsteps_s pow 1 = x * &1 * divsteps_s pow 2 pow 1 / (t * divsteps_s)")
-        let v163 ← INT_ARITH (← q r"~(&1 > &2:int)")
-        let v164 ← INT_ARITH (← q r"~(&1 < -- &2:int)")
-        let v165 ← INT_ARITH (← q r"~(&1 = -- &2:int)")
-        let v166 ← INT_ARITH (← q r"~(&1 = -- &1:int)")
-        let v167 ← real_linear (← q r"&3047 / &2048 < t:real ==> &3047 / &2048 < t * divsteps_s pow 0")
-        let v168 ← real_linear (← q r"y / t * (&2 * divsteps_s) pow 0 = y * &1 * (&2 * divsteps_s pow 2) pow 0 / t")
-        let v169 ← real_linear (← q r"x / t * divsteps_s pow 0 = x * &1 * divsteps_s pow 2 pow 0 / t")
-        let v170 ← INT_ARITH (← q r"~(&0 > &2:int)")
-        let v171 ← INT_ARITH (← q r"~(&0 < -- &2:int)")
-        let v172 ← INT_ARITH (← q r"~(&0 = -- &2:int)")
-        let v173 ← INT_ARITH (← q r"~(&0 = -- &1:int)")
         pure (REWRITE_TAC [divsteps_W] THEN
           (REPEAT STRIP_TAC) THEN
           (ASM_CASES_TAC (← q r"i = &0:int")) THENL
-          [note (← q r"divsteps_H1 (x / t * divsteps_s zpow i) (y / t * (&2 * divsteps_s) zpow i)") [v173, v172, v171, v170] THEN
+          [note (← q r"divsteps_H1 (x / t * divsteps_s zpow i) (y / t * (&2 * divsteps_s) zpow i)") [(← INT_ARITH (← q r"~(&0 = -- &1:int)")), (← INT_ARITH (← q r"~(&0 = -- &2:int)")), (← INT_ARITH (← q r"~(&0 < -- &2:int)")), (← INT_ARITH (← q r"~(&0 > &2:int)"))] THEN
             (note (← q r"divsteps_s zpow i = divsteps_s pow 0") [REAL_ZPOW_POW]) THEN
             (note (← q r"(&2 * divsteps_s) zpow i = (&2 * divsteps_s) pow 0") [REAL_ZPOW_POW]) THEN
             (note (← q r"divsteps_H1 (x / t * divsteps_s pow 0) (y / t * (&2 * divsteps_s) pow 0)") []) THEN
-            v169 THEN
-            v168 THEN
+            (← real_linear (← q r"x / t * divsteps_s pow 0 = x * &1 * divsteps_s pow 2 pow 0 / t")) THEN
+            (← real_linear (← q r"y / t * (&2 * divsteps_s) pow 0 = y * &1 * (&2 * divsteps_s pow 2) pow 0 / t")) THEN
             (note (← q r"divsteps_H1 (x * &1 * divsteps_s pow 2 pow 0 / t) (y * &1 * (&2 * divsteps_s pow 2) pow 0 / t)") []) THEN
             (note (← q r"&3047 / &2048 < t:real") [lattice_0]) THEN
-            v167 THEN
+            (← real_linear (← q r"&3047 / &2048 < t:real ==> &3047 / &2048 < t * divsteps_s pow 0")) THEN
             (ASM_MESON_TAC []),
            ALL_TAC] THEN
           (ASM_CASES_TAC (← q r"i = &1:int")) THENL
-          [note (← q r"divsteps_H1 (x / t * divsteps_s zpow i) (y / t * (&2 * divsteps_s) zpow i)") [v166, v165, v164, v163] THEN
+          [note (← q r"divsteps_H1 (x / t * divsteps_s zpow i) (y / t * (&2 * divsteps_s) zpow i)") [(← INT_ARITH (← q r"~(&1 = -- &1:int)")), (← INT_ARITH (← q r"~(&1 = -- &2:int)")), (← INT_ARITH (← q r"~(&1 < -- &2:int)")), (← INT_ARITH (← q r"~(&1 > &2:int)"))] THEN
             (note (← q r"divsteps_s zpow i = divsteps_s pow 1") [REAL_ZPOW_POW]) THEN
             (note (← q r"(&2 * divsteps_s) zpow i = (&2 * divsteps_s) pow 1") [REAL_ZPOW_POW]) THEN
             (note (← q r"divsteps_H1 (x / t * divsteps_s pow 1) (y / t * (&2 * divsteps_s) pow 1)") []) THEN
-            v162 THEN
-            v161 THEN
+            (← real_cancel (← q r"x / t * divsteps_s pow 1 = x * &1 * divsteps_s pow 2 pow 1 / (t * divsteps_s)")) THEN
+            (← real_cancel (← q r"y / t * (&2 * divsteps_s) pow 1 = y * &1 * (&2 * divsteps_s pow 2) pow 1 / (t * divsteps_s)")) THEN
             (note (← q r"divsteps_H1 (x * &1 * divsteps_s pow 2 pow 1 / (t * divsteps_s)) (y * &1 * (&2 * divsteps_s pow 2) pow 1 / (t * divsteps_s))") []) THEN
             (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
             (note (← q r"&0 < t * divsteps_s") [REAL_LT_MUL]) THEN
             (note (← q r"&3047 / &2048 < t * divsteps_s") [lattice_1]) THEN
-            v160 THEN
+            (← real_linear (← q r"&3047 / &2048 < t * divsteps_s ==> &3047 / &2048 < t * divsteps_s pow 1")) THEN
             (ASM_MESON_TAC []),
            ALL_TAC] THEN
           (ASM_CASES_TAC (← q r"&3 <= i:int")) THENL
-          [note (← q r"divsteps_H1 ((&32 / &33) * x / t * divsteps_s zpow i) ((&32 / &33) * y / t * (&2 * divsteps_s) zpow i)") [v159, v158, v157, v156] THEN
-            v155 THEN
-            v154 THEN
+          [note (← q r"divsteps_H1 ((&32 / &33) * x / t * divsteps_s zpow i) ((&32 / &33) * y / t * (&2 * divsteps_s) zpow i)") [(← INT_ARITH (← q r"&3 <= i:int ==> ~(i = -- &1)")), (← INT_ARITH (← q r"&3 <= i:int ==> ~(i = -- &2)")), (← INT_ARITH (← q r"&3 <= i:int ==> ~(i < -- &2)")), (← INT_ARITH (← q r"&3 <= i:int ==> i > &2"))] THEN
+            (← int_linear (← q r"&3 <= i:int ==> &2 <= i:int")) THEN
+            (← choosevar (← q r"m:num") (← q r"i:int = &m") [INT_OF_NUM_EXISTS]) THEN
             (note (← q r"divsteps_H1 ((&32 / &33) * x / t * divsteps_s zpow (&m)) ((&32 / &33) * y / t * (&2 * divsteps_s) zpow (&m))") []) THEN
             (note (← q r"divsteps_H1 ((&32 / &33) * x / t * divsteps_s pow m) ((&32 / &33) * y / t * (&2 * divsteps_s) pow m)") [REAL_ZPOW_POW]) THEN
-            v153 THEN
+            (← real_cancel (← q r"(&32 / &33) * x / t * divsteps_s pow m = x * &32 / &33 * divsteps_s pow m pow 2 / (t * divsteps_s pow m)")) THEN
             (note (← q r"(&32 / &33) * x / t * divsteps_s pow m = x * &32 / &33 * divsteps_s pow (m * 2) / (t * divsteps_s pow m)") [REAL_POW_POW]) THEN
             (note (← q r"(&32 / &33) * x / t * divsteps_s pow m = x * &32 / &33 * divsteps_s pow (2 * m) / (t * divsteps_s pow m)") [MULT_SYM]) THEN
             (note (← q r"(&32 / &33) * x / t * divsteps_s pow m = x * &32 / &33 * divsteps_s pow 2 pow m / (t * divsteps_s pow m)") [REAL_POW_POW]) THEN
             (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
             (note (← q r"&0 < divsteps_s pow m") [REAL_POW_LT]) THEN
-            v152 THEN
-            v151 THEN
-            v150 THEN
+            (← real_cancel (← q r"&0 < divsteps_s pow m ==> (&32 / &33) * y / t * (&2 * divsteps_s) pow m = y * &32 / &33 * ((&2 * divsteps_s) pow m * divsteps_s pow m) / (t * divsteps_s pow m)")) THEN
+            (← specialize [(← q r"&2 * divsteps_s"), (← q r"divsteps_s"), (← q r"m:num")] REAL_POW_MUL) THEN
+            (← real_linear (← q r"(&2 * divsteps_s) * divsteps_s = &2 * divsteps_s pow 2")) THEN
             (note (← q r"(&32 / &33) * y / t * (&2 * divsteps_s) pow m = y * &32 / &33 * (&2 * divsteps_s pow 2) pow m / (t * divsteps_s pow m)") []) THEN
             (note (← q r"divsteps_H1 (x * &32 / &33 * divsteps_s pow 2 pow m / (t * divsteps_s pow m)) (y * &32 / &33 * (&2 * divsteps_s pow 2) pow m / (t * divsteps_s pow m))") []) THEN
             (note (← q r"2 <= m") [INT_OF_NUM_LE]) THEN
@@ -24410,26 +23169,26 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
             (note (← q r"&3047 / &2048 < t * divsteps_s pow m") [lattice_bigdelta]) THEN
             (ASM_MESON_TAC [REAL_ZPOW_POW]),
            ALL_TAC] THEN
-          v149 THEN
-          (note (← q r"divsteps_H1 (x / t * divsteps_s zpow i) (y / t * (&2 * divsteps_s) zpow i)") [v148, v147, v146, v145]) THEN
-          v144 THEN
-          v143 THEN
+          (← int_linear (← q r"&0 <= i:int /\ ~(i = &0:int) /\ ~(i = &1:int) /\ ~(&3 <= i:int) ==> &2 <= i:int")) THEN
+          (note (← q r"divsteps_H1 (x / t * divsteps_s zpow i) (y / t * (&2 * divsteps_s) zpow i)") [(← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0:int) /\ ~(i = &1:int) /\ ~(&3 <= i:int) ==> ~(i = -- &1)")), (← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0:int) /\ ~(i = &1:int) /\ ~(&3 <= i:int) ==> ~(i = -- &2)")), (← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0:int) /\ ~(i = &1:int) /\ ~(&3 <= i:int) ==> ~(i < -- &2)")), (← INT_ARITH (← q r"&0 <= i:int /\ ~(i = &0:int) /\ ~(i = &1:int) /\ ~(&3 <= i:int) ==> ~(i > &2)"))]) THEN
+          (← real_linear (← q r"&0:real <= &32 / &33")) THEN
+          (← real_linear (← q r"&32 / &33 <= &1:real")) THEN
           (note (← q r"divsteps_H1 ((&32 / &33) * (x / t * divsteps_s zpow i)) ((&32 / &33) * (y / t * (&2 * divsteps_s) zpow i))") [h1_shrink]) THEN
-          v142 THEN
-          v141 THEN
+          (← real_linear (← q r"((&32 / &33) * (x / t * divsteps_s zpow i)) = ((&32 / &33) * x / t * divsteps_s zpow i)")) THEN
+          (← real_linear (← q r"((&32 / &33) * (y / t * (&2 * divsteps_s) zpow i)) = ((&32 / &33) * y / t * (&2 * divsteps_s) zpow i)")) THEN
           (note (← q r"divsteps_H1 ((&32 / &33) * x / t * divsteps_s zpow i) ((&32 / &33) * y / t * (&2 * divsteps_s) zpow i)") []) THEN
-          v140 THEN
+          (← choosevar (← q r"m:num") (← q r"i:int = &m") [INT_OF_NUM_EXISTS]) THEN
           (note (← q r"divsteps_H1 ((&32 / &33) * x / t * divsteps_s zpow (&m)) ((&32 / &33) * y / t * (&2 * divsteps_s) zpow (&m))") []) THEN
           (note (← q r"divsteps_H1 ((&32 / &33) * x / t * divsteps_s pow m) ((&32 / &33) * y / t * (&2 * divsteps_s) pow m)") [REAL_ZPOW_POW]) THEN
-          v139 THEN
+          (← real_cancel (← q r"(&32 / &33) * x / t * divsteps_s pow m = x * &32 / &33 * divsteps_s pow m pow 2 / (t * divsteps_s pow m)")) THEN
           (note (← q r"(&32 / &33) * x / t * divsteps_s pow m = x * &32 / &33 * divsteps_s pow (m * 2) / (t * divsteps_s pow m)") [REAL_POW_POW]) THEN
           (note (← q r"(&32 / &33) * x / t * divsteps_s pow m = x * &32 / &33 * divsteps_s pow (2 * m) / (t * divsteps_s pow m)") [MULT_SYM]) THEN
           (note (← q r"(&32 / &33) * x / t * divsteps_s pow m = x * &32 / &33 * divsteps_s pow 2 pow m / (t * divsteps_s pow m)") [REAL_POW_POW]) THEN
           (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
           (note (← q r"&0 < divsteps_s pow m") [REAL_POW_LT]) THEN
-          v138 THEN
-          v137 THEN
-          v136 THEN
+          (← real_cancel (← q r"&0 < divsteps_s pow m ==> (&32 / &33) * y / t * (&2 * divsteps_s) pow m = y * &32 / &33 * ((&2 * divsteps_s) pow m * divsteps_s pow m) / (t * divsteps_s pow m)")) THEN
+          (← specialize [(← q r"&2 * divsteps_s"), (← q r"divsteps_s"), (← q r"m:num")] REAL_POW_MUL) THEN
+          (← real_linear (← q r"(&2 * divsteps_s) * divsteps_s = &2 * divsteps_s pow 2")) THEN
           (note (← q r"(&32 / &33) * y / t * (&2 * divsteps_s) pow m = y * &32 / &33 * (&2 * divsteps_s pow 2) pow m / (t * divsteps_s pow m)") []) THEN
           (note (← q r"divsteps_H1 (x * &32 / &33 * divsteps_s pow 2 pow m / (t * divsteps_s pow m)) (y * &32 / &33 * (&2 * divsteps_s pow 2) pow m / (t * divsteps_s pow m))") []) THEN
           (note (← q r"2 <= m") [INT_OF_NUM_LE]) THEN
@@ -24461,25 +23220,6 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       !m. divsteps_W (i(m)) (f(m)/(u * divsteps_s pow m)) (g(m)/(u * divsteps_s pow m))
       "
    (← do
-    let v1 ← real_cancel (← q r"(((g(m) - f(m)) / &2) / (u * divsteps_s pow (m + 1))) = ((g(m) / (u * divsteps_s pow m) - f m / (u * divsteps_s pow m)) / (&2 * divsteps_s))")
-    let v2 ← real_cancel (← q r"(g(m) / (u * divsteps_s pow (m + 1))) = (g(m) / (u * divsteps_s pow m) / divsteps_s)")
-    let v3 ← real_cancel (← q r"((g m / (u * divsteps_s pow m)) / (&2 * divsteps_s)) = g(m) / &2 / (u * divsteps_s pow (m+1))")
-    let v4 ← real_cancel (← q r"((f m / (u * divsteps_s pow m)) / divsteps_s) = f(m) / (u * divsteps_s pow (m+1))")
-    let v5 ← twocases (← q r"(i(m+1) = &1 + i(m):int /\ f(m+1) = f(m) /\ g(m+1) = g(m) / &2) \/ (i(m+1) = -- i(m) /\ f(m+1) = g(m) /\ g(m+1) = (g(m)-f(m)) / &2)") []
-    let v6 ← real_cancel (← q r"((g m / (u * divsteps_s pow m) + f m / (u * divsteps_s pow m)) / (&2 * divsteps_s)) = (((g(m) + f(m)) / &2) / (u * divsteps_s pow (m + 1)))")
-    let v7 ← real_cancel (← q r"(f(m) / (u * divsteps_s pow m) / divsteps_s) = (f(m) / (u * divsteps_s pow (m + 1)))")
-    let v8 ← real_cancel (← q r"((g m / (u * divsteps_s pow m)) / (&2 * divsteps_s)) = g(m) / &2 / (u * divsteps_s pow (m+1))")
-    let v9 ← real_cancel (← q r"((f m / (u * divsteps_s pow m)) / divsteps_s) = f(m) / (u * divsteps_s pow (m+1))")
-    let v10 ← twocases (← q r"(i(m+1) = &1 + i(m):int /\ f(m+1) = f(m) /\ g(m+1) = g(m) / &2) \/ (i(m+1) = &1 + i(m) /\ f(m+1) = f(m) /\ g(m+1) = (g(m)+f(m)) / &2)") []
-    let v11 ← twocases (← q r"i(m:num) < &0:int \/ ~(i(m) < &0)") []
-    let v12 ← ARITH_RULE (← q r"SUC m = m + 1")
-    let v13 ← real_linear (← q r"u * divsteps_s pow 0 = u")
-    let v14 ← INT_ARITH (← q r"~(&0:int > &2)")
-    let v15 ← INT_ARITH (← q r"~(&0:int < -- &2)")
-    let v16 ← INT_ARITH (← q r"~(&0:int = -- &2)")
-    let v17 ← INT_ARITH (← q r"~(&0:int = -- &1)")
-    let v18 ← real_cancel (← q r"(&2 * divsteps_s) zpow &0 = &1 ==> g(0) / u = (g(0) / u) * (&2 * divsteps_s) zpow &0")
-    let v19 ← real_cancel (← q r"divsteps_s zpow &0 = &1 ==> f(0) / u = (f(0) / u) * divsteps_s zpow &0")
     pure (REPEAT DISCH_TAC THEN
       (REPEAT GEN_TAC) THEN
       (REPEAT DISCH_TAC) THEN
@@ -24487,27 +23227,27 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       [REPEAT STRIP_TAC THEN
         (note (← q r"divsteps_s zpow &0 = &1") [REAL_ZPOW_0]) THEN
         (note (← q r"(&2 * divsteps_s) zpow &0 = &1") [REAL_ZPOW_0]) THEN
-        v19 THEN
-        v18 THEN
+        (← real_cancel (← q r"divsteps_s zpow &0 = &1 ==> f(0) / u = (f(0) / u) * divsteps_s zpow &0")) THEN
+        (← real_cancel (← q r"(&2 * divsteps_s) zpow &0 = &1 ==> g(0) / u = (g(0) / u) * (&2 * divsteps_s) zpow &0")) THEN
         (note (← q r"divsteps_H1 ((f(0) / u) * divsteps_s zpow &0) ((g(0) / u) * (&2 * divsteps_s) zpow &0)") []) THEN
-        (note (← q r"divsteps_W (&0) (f(0)/u) (g(0)/u)") [divsteps_W, v17, v16, v15, v14]) THEN
-        v13 THEN
+        (note (← q r"divsteps_W (&0) (f(0)/u) (g(0)/u)") [divsteps_W, (← INT_ARITH (← q r"~(&0:int = -- &1)")), (← INT_ARITH (← q r"~(&0:int = -- &2)")), (← INT_ARITH (← q r"~(&0:int < -- &2)")), (← INT_ARITH (← q r"~(&0:int > &2)"))]) THEN
+        (← real_linear (← q r"u * divsteps_s pow 0 = u")) THEN
         (ASM_MESON_TAC []),
-       REWRITE_TAC [v12] THEN
-        v11 THENL
-        [v10 THENL
+       REWRITE_TAC [(← ARITH_RULE (← q r"SUC m = m + 1"))] THEN
+        (← twocases (← q r"i(m:num) < &0:int \/ ~(i(m) < &0)") []) THENL
+        [(← twocases (← q r"(i(m+1) = &1 + i(m):int /\ f(m+1) = f(m) /\ g(m+1) = g(m) / &2) \/ (i(m+1) = &1 + i(m) /\ f(m+1) = f(m) /\ g(m+1) = (g(m)+f(m)) / &2)") []) THENL
           [note (← q r"divsteps_W (&1 + i(m)) ((f m / (u * divsteps_s pow m)) / divsteps_s) ((g m / (u * divsteps_s pow m)) / (&2 * divsteps_s))") [w_transition0] THEN
-            v9 THEN
-            v8 THEN
+            (← real_cancel (← q r"((f m / (u * divsteps_s pow m)) / divsteps_s) = f(m) / (u * divsteps_s pow (m+1))")) THEN
+            (← real_cancel (← q r"((g m / (u * divsteps_s pow m)) / (&2 * divsteps_s)) = g(m) / &2 / (u * divsteps_s pow (m+1))")) THEN
             (ASM_MESON_TAC []),
            note (← q r"divsteps_W (&1 + i(m)) ((f m / (u * divsteps_s pow m)) / divsteps_s) ((g m / (u * divsteps_s pow m) + f m / (u * divsteps_s pow m)) / (&2 * divsteps_s))") [w_transition1] THEN
-            v7 THEN
-            v6 THEN
+            (← real_cancel (← q r"(f(m) / (u * divsteps_s pow m) / divsteps_s) = (f(m) / (u * divsteps_s pow (m + 1)))")) THEN
+            (← real_cancel (← q r"((g m / (u * divsteps_s pow m) + f m / (u * divsteps_s pow m)) / (&2 * divsteps_s)) = (((g(m) + f(m)) / &2) / (u * divsteps_s pow (m + 1)))")) THEN
             (ASM_MESON_TAC [])],
-         v5 THENL
+         (← twocases (← q r"(i(m+1) = &1 + i(m):int /\ f(m+1) = f(m) /\ g(m+1) = g(m) / &2) \/ (i(m+1) = -- i(m) /\ f(m+1) = g(m) /\ g(m+1) = (g(m)-f(m)) / &2)") []) THENL
           [note (← q r"divsteps_W (&1 + i(m)) ((f m / (u * divsteps_s pow m)) / divsteps_s) ((g m / (u * divsteps_s pow m)) / (&2 * divsteps_s))") [w_transition0] THEN
-            v4 THEN
-            v3 THEN
+            (← real_cancel (← q r"((f m / (u * divsteps_s pow m)) / divsteps_s) = f(m) / (u * divsteps_s pow (m+1))")) THEN
+            (← real_cancel (← q r"((g m / (u * divsteps_s pow m)) / (&2 * divsteps_s)) = g(m) / &2 / (u * divsteps_s pow (m+1))")) THEN
             (note (← q r"divsteps_W (i(m+1)) (f m / (u * divsteps_s pow m) / divsteps_s) (g m / (u * divsteps_s pow m) / (&2 * divsteps_s))") []) THEN
             (note (← q r"divsteps_W (i(m+1)) (f(m) / (u * divsteps_s pow (m+1))) (g m / (u * divsteps_s pow m) / (&2 * divsteps_s))") []) THEN
             (note (← q r"divsteps_W (i(m+1)) (f(m) / (u * divsteps_s pow (m+1))) (g(m) / &2 / (u * divsteps_s pow (m+1)))") []) THEN
@@ -24515,8 +23255,8 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
             (note (← q r"divsteps_W (i(m+1)) (f(m+1) / (u * divsteps_s pow (m+1))) (g(m+1) / (u * divsteps_s pow (m+1)))") []) THEN
             (ASM_MESON_TAC []),
            note (← q r"divsteps_W (-- i(m)) ((g m / (u * divsteps_s pow m)) / divsteps_s) ((g m / (u * divsteps_s pow m) - f m / (u * divsteps_s pow m)) / (&2 * divsteps_s))") [w_transition1] THEN
-            v2 THEN
-            v1 THEN
+            (← real_cancel (← q r"(g(m) / (u * divsteps_s pow (m + 1))) = (g(m) / (u * divsteps_s pow m) / divsteps_s)")) THEN
+            (← real_cancel (← q r"(((g(m) - f(m)) / &2) / (u * divsteps_s pow (m + 1))) = ((g(m) / (u * divsteps_s pow m) - f m / (u * divsteps_s pow m)) / (&2 * divsteps_s))")) THEN
             (note (← q r"divsteps_W (-- i(m)) (g(m) / (u * divsteps_s pow (m + 1))) ((g m / (u * divsteps_s pow m) - f m / (u * divsteps_s pow m)) / (&2 * divsteps_s))") []) THEN
             (note (← q r"divsteps_W (-- i(m)) (g(m) / (u * divsteps_s pow (m + 1))) (((g(m) - f(m)) / &2) / (u * divsteps_s pow (m + 1)))") []) THEN
             (note (← q r"divsteps_W (i(m+1)) (g(m) / (u * divsteps_s pow (m + 1))) (((g(m) - f(m)) / &2) / (u * divsteps_s pow (m + 1)))") []) THEN
@@ -24550,94 +23290,58 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
         &3047 / &2048 < u * divsteps_s zpow (&m + if i(m) < &0 then --i(m) - &1 else i(m))
       "
    (← do
-    let v1 ← int_linear (← q r"&m + i(m):int = (&m + &1) + --(--i(m)) - &1")
-    let v2 ← num_linear (← q r"&(m+1) = &m + &1:int")
-    let v3 ← int_linear (← q r"i(m+1):int = -- i(m) /\ i(m+1) < &0 ==> ~(i(m) < &0)")
-    let v4 ← int_linear (← q r"&m + --i(m) - &1 = (&m + &1) + --(&1 + i(m)) - &1:int")
-    let v5 ← num_linear (← q r"&(m+1) = &m + &1:int")
-    let v6 ← int_linear (← q r"i(m+1):int = &1 + i(m) /\ i(m+1) < &0 ==> i(m) < &0")
-    let v7 ← twocases (← q r"i(m+1):int = &1 + i(m) \/ (~(i(m) < &0) /\ i(m+1) = --i(m))") []
-    let v8 ← ARITH_RULE (← q r"n <= m ==> n <= m+1")
-    let v9 ← real_linear (← q r"(u * divsteps_s zpow (&(m+1))) * divsteps_s zpow (i(m+1)) = u * divsteps_s zpow (&(m+1)) * divsteps_s zpow (i(m+1))")
-    let v10 ← UNDISCH_ALL latticetheorem
-    let v11 ← specialize [(← q r"i(m+1):int"), (← q r"f(m+1):real"), (← q r"g(m+1):real"), (← q r"u * divsteps_s pow (m+1)")] v10
-    let v12 ← UNDISCH_ALL iteration_stability
-    let v13 ← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"u:real")] v12
-    let v14 ← UNDISCH_ALL v13
-    let v15 ← SPEC (← q r"m+1") v14
-    let v16 ← ARITH_RULE (← q r"m+1 <= m+1")
-    let v17 ← num_linear (← q r"&0 <= &(m+1):int")
-    let v18 ← int_linear (← q r"~(i(m+1):int < &0) ==> &0 <= i(m+1)")
-    let v19 ← twocases (← q r"~(i(m+1):int < &0) \/ i(m+1) < &0") []
-    let v20 ← UNDISCH_ALL iteration_stability
-    let v21 ← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"u:real")] v20
-    let v22 ← UNDISCH_ALL v21
-    let v23 ← SPEC (← q r"m+1") v22
-    let v24 ← ARITH_RULE (← q r"SUC m = m + 1")
-    let v25 ← int_linear (← q r"&0 + &0 = &0:int")
-    let v26 ← int_linear (← q r"~(&0 < &0:int)")
-    let v27 ← UNDISCH_ALL latticetheorem
-    let v28 ← specialize [(← q r"&0:int"), (← q r"f(0):real"), (← q r"g(0):real"), (← q r"u * divsteps_s pow 0")] v27
-    let v29 ← real_linear (← q r"u * divsteps_s pow 0 = u")
-    let v30 ← int_linear (← q r"&0 <= &0:int")
-    let v31 ← num_linear (← q r"0 <= 0")
-    let v32 ← UNDISCH_ALL iteration_stability
-    let v33 ← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"u:real")] v32
-    let v34 ← UNDISCH_ALL v33
-    let v35 ← SPEC (← q r"0") v34
-    let v36 ← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")
     pure (REPEAT DISCH_TAC THEN
       (REPEAT GEN_TAC) THEN
       (REPEAT DISCH_TAC) THEN
       (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
-      v36 THEN
+      (← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")) THEN
       INDUCT_TAC THENL
-      [ASSUME_TAC v35 THEN
+      [ASSUME_TAC (← SPEC (← q r"0") (← UNDISCH_ALL (← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"u:real")] (← UNDISCH_ALL iteration_stability)))) THEN
         STRIP_TAC THEN
-        v31 THEN
+        (← num_linear (← q r"0 <= 0")) THEN
         (note (← q r"~(g(0) = &0:real)") []) THEN
-        v30 THEN
+        (← int_linear (← q r"&0 <= &0:int")) THEN
         (note (← q r"integer(f(0))") []) THEN
         (note (← q r"integer(g(0))") []) THEN
-        v29 THEN
+        (← real_linear (← q r"u * divsteps_s pow 0 = u")) THEN
         (note (← q r"&0 < u * divsteps_s pow 0") []) THEN
         (note (← q r"divsteps_W (&0) (f(0)/(u*divsteps_s pow 0)) (g(0)/(u*divsteps_s pow 0))") []) THEN
-        v28 THEN
+        (← specialize [(← q r"&0:int"), (← q r"f(0):real"), (← q r"g(0):real"), (← q r"u * divsteps_s pow 0")] (← UNDISCH_ALL latticetheorem)) THEN
         (note (← q r"&3047 / &2048 < u * divsteps_s zpow &0") []) THEN
-        v26 THEN
-        v25 THEN
+        (← int_linear (← q r"~(&0 < &0:int)")) THEN
+        (← int_linear (← q r"&0 + &0 = &0:int")) THEN
         (ASM_SIMP_TAC []),
-       REWRITE_TAC [v24] THEN
-        (ASSUME_TAC v23) THEN
+       REWRITE_TAC [(← ARITH_RULE (← q r"SUC m = m + 1"))] THEN
+        (ASSUME_TAC (← SPEC (← q r"m+1") (← UNDISCH_ALL (← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"u:real")] (← UNDISCH_ALL iteration_stability))))) THEN
         STRIP_TAC THEN
-        v19 THENL
-        [v18 THEN
-          v17 THEN
+        (← twocases (← q r"~(i(m+1):int < &0) \/ i(m+1) < &0") []) THENL
+        [(← int_linear (← q r"~(i(m+1):int < &0) ==> &0 <= i(m+1)")) THEN
+          (← num_linear (← q r"&0 <= &(m+1):int")) THEN
           (note (← q r"integer(f(m+1))") []) THEN
           (note (← q r"integer(g(m+1))") []) THEN
-          (note (← q r"~(g(m+1) = &0:real)") [v16]) THEN
+          (note (← q r"~(g(m+1) = &0:real)") [(← ARITH_RULE (← q r"m+1 <= m+1"))]) THEN
           (note (← q r"&0 < u * divsteps_s pow (m+1)") [REAL_POW_LT, REAL_LT_MUL]) THEN
-          (ASSUME_TAC v15) THEN
-          v11 THEN
+          (ASSUME_TAC (← SPEC (← q r"m+1") (← UNDISCH_ALL (← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"u:real")] (← UNDISCH_ALL iteration_stability))))) THEN
+          (← specialize [(← q r"i(m+1):int"), (← q r"f(m+1):real"), (← q r"g(m+1):real"), (← q r"u * divsteps_s pow (m+1)")] (← UNDISCH_ALL latticetheorem)) THEN
           (note (← q r"&3047 / &2048 < (u * divsteps_s zpow (&(m+1))) * divsteps_s zpow (i(m+1))") [REAL_ZPOW_POW]) THEN
-          v9 THEN
+          (← real_linear (← q r"(u * divsteps_s zpow (&(m+1))) * divsteps_s zpow (i(m+1)) = u * divsteps_s zpow (&(m+1)) * divsteps_s zpow (i(m+1))")) THEN
           (note (← q r"&3047 / &2048 < u * divsteps_s zpow (&(m+1)) * divsteps_s zpow (i(m+1))") []) THEN
           (note (← q r"divsteps_s zpow (&(m+1)) * divsteps_s zpow (i(m+1)) = divsteps_s zpow (&(m+1) + i(m+1))") [REAL_ZPOW_ADD]) THEN
           (note (← q r"&3047 / &2048 < u * divsteps_s zpow (&(m+1) + i(m+1))") []) THEN
           (ASM_MESON_TAC []),
-         note (← q r"!n. n <= m:num ==> ~(g(n) = &0:real)") [v8] THEN
+         note (← q r"!n. n <= m:num ==> ~(g(n) = &0:real)") [(← ARITH_RULE (← q r"n <= m ==> n <= m+1"))] THEN
           (note (← q r"&3047 / &2048 < u * divsteps_s zpow (&m + (if i m < &0 then --i m - &1 else i m))") []) THEN
-          v7 THENL
-          [v6 THEN
+          (← twocases (← q r"i(m+1):int = &1 + i(m) \/ (~(i(m) < &0) /\ i(m+1) = --i(m))") []) THENL
+          [(← int_linear (← q r"i(m+1):int = &1 + i(m) /\ i(m+1) < &0 ==> i(m) < &0")) THEN
             (note (← q r"&3047 / &2048 < u * divsteps_s zpow (&m + --i m - &1)") []) THEN
-            v5 THEN
-            v4 THEN
+            (← num_linear (← q r"&(m+1) = &m + &1:int")) THEN
+            (← int_linear (← q r"&m + --i(m) - &1 = (&m + &1) + --(&1 + i(m)) - &1:int")) THEN
             (ASM_MESON_TAC []),
            note (← q r"i(m+1):int = --i(m)") [] THEN
-            v3 THEN
+            (← int_linear (← q r"i(m+1):int = -- i(m) /\ i(m+1) < &0 ==> ~(i(m) < &0)")) THEN
             (note (← q r"&3047 / &2048 < u * divsteps_s zpow (&m + i m)") []) THEN
-            v2 THEN
-            v1 THEN
+            (← num_linear (← q r"&(m+1) = &m + &1:int")) THEN
+            (← int_linear (← q r"&m + i(m):int = (&m + &1) + --(--i(m)) - &1")) THEN
             (note (← q r"&3047 / &2048 < u * divsteps_s zpow ((&m + &1) + --(--i(m)) - &1)") []) THEN
             (note (← q r"&3047 / &2048 < u * divsteps_s zpow (&(m+1) + --(i(m+1)) - &1)") []) THEN
             (ASM_MESON_TAC [])]]]))
@@ -24669,46 +23373,32 @@ def setupHullLight15 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
         &3047 / &2048 < u * divsteps_s pow m
       "
    (← do
-    let v1 ← real_linear (← q r"&0 < &3047 / &2048")
-    let v2 ← real_linear (← q r"u * (divsteps_s pow m) * divsteps_s pow 0 = u * divsteps_s pow m")
-    let v3 ← real_linear (← q r"&0:real < &1 - &1 * divsteps_s ==> divsteps_s < &1")
-    let v4 ← prove
+    pure (REPEAT STRIP_TAC THEN
+      (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s]) THEN
+      (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
+      (← real_linear (← q r"&0 < divsteps_s ==> &0 <= divsteps_s")) THEN
+      (← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")) THEN
+      (ASSUME_TAC (← UNDISCH_ALL (← SPEC (← q r"m:num") (← UNDISCH_ALL (← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"u:real")] (← UNDISCH_ALL iteration_sizebound)))))) THEN
+      (note (← q r"&3047 / &2048 < u * (divsteps_s zpow &m) * divsteps_s zpow (if i(m) < &0 then --i(m) - &1 else i(m))") [REAL_ZPOW_ADD]) THEN
+      (note (← q r"&3047 / &2048 < u * (divsteps_s pow m) * divsteps_s zpow (if i(m) < &0 then --i(m) - &1 else i(m))") [REAL_ZPOW_POW]) THEN
+      (← int_linear (← q r"&0 <= (if i(m:num) < &0:int then --i(m) - &1 else i(m))")) THEN
+      (← choosevar (← q r"a:num") (← q r"(if i(m:num) < &0:int then --i(m) - &1 else i(m)) = &a") [INT_OF_NUM_EXISTS]) THEN
+      (note (← q r"&3047 / &2048 < u * (divsteps_s pow m) * divsteps_s zpow &a") []) THEN
+      (note (← q r"&3047 / &2048 < u * (divsteps_s pow m) * divsteps_s pow a") [REAL_ZPOW_POW]) THEN
+      (← specialize [(← q r"divsteps_s")] (← prove
       r"!s:real. s = &30902639 / &41749730 ==> &0:real < &1 - &1 * s"
       (← do
         pure (REPEAT STRIP_TAC THEN
           (ASM_REWRITE_TAC []) THEN
-          REAL_ARITH_TAC))
-    let v5 ← specialize [(← q r"divsteps_s")] v4
-    let v6 ← choosevar (← q r"a:num") (← q r"(if i(m:num) < &0:int then --i(m) - &1 else i(m)) = &a") [INT_OF_NUM_EXISTS]
-    let v7 ← int_linear (← q r"&0 <= (if i(m:num) < &0:int then --i(m) - &1 else i(m))")
-    let v8 ← UNDISCH_ALL iteration_sizebound
-    let v9 ← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"u:real")] v8
-    let v10 ← UNDISCH_ALL v9
-    let v11 ← SPEC (← q r"m:num") v10
-    let v12 ← UNDISCH_ALL v11
-    let v13 ← real_linear (← q r"&0 < divsteps_s ==> ~(divsteps_s = &0)")
-    let v14 ← real_linear (← q r"&0 < divsteps_s ==> &0 <= divsteps_s")
-    pure (REPEAT STRIP_TAC THEN
-      (note (← q r"divsteps_s = &30902639 / &41749730") [divsteps_s]) THEN
-      (note (← q r"&0 < divsteps_s") [divsteps_s]) THEN
-      v14 THEN
-      v13 THEN
-      (ASSUME_TAC v12) THEN
-      (note (← q r"&3047 / &2048 < u * (divsteps_s zpow &m) * divsteps_s zpow (if i(m) < &0 then --i(m) - &1 else i(m))") [REAL_ZPOW_ADD]) THEN
-      (note (← q r"&3047 / &2048 < u * (divsteps_s pow m) * divsteps_s zpow (if i(m) < &0 then --i(m) - &1 else i(m))") [REAL_ZPOW_POW]) THEN
-      v7 THEN
-      v6 THEN
-      (note (← q r"&3047 / &2048 < u * (divsteps_s pow m) * divsteps_s zpow &a") []) THEN
-      (note (← q r"&3047 / &2048 < u * (divsteps_s pow m) * divsteps_s pow a") [REAL_ZPOW_POW]) THEN
-      v5 THEN
-      v3 THEN
+          REAL_ARITH_TAC)))) THEN
+      (← real_linear (← q r"&0:real < &1 - &1 * divsteps_s ==> divsteps_s < &1")) THEN
       (ASM_CASES_TAC (← q r"a = 0")) THENL
-      [v2 THEN
+      [(← real_linear (← q r"u * (divsteps_s pow m) * divsteps_s pow 0 = u * divsteps_s pow m")) THEN
         (ASM_MESON_TAC []),
        note (← q r"divsteps_s pow a < &1 pow a") [REAL_POW_LT2] THEN
         (note (← q r"divsteps_s pow a < &1") [REAL_POW_ONE]) THEN
         (note (← q r"&0 < divsteps_s pow a") [REAL_POW_LT]) THEN
-        v1 THEN
+        (← real_linear (← q r"&0 < &3047 / &2048")) THEN
         (ASM_MESON_TAC [real_lt_extra2])]))
 
   -- @@RETURN BEGIN
@@ -24773,239 +23463,158 @@ def setupHullLight16 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       &2 pow b * (&30902639 / &41749730) pow m <= (&8388391 / &8388608):real
       "
    (← do
-    let v1 ← real_linear (← q r"&0:real <= &8388391 / &8388608")
-    let v2 ← num_linear (← q r"~(4096 = 0)")
-    let v3 ← num_linear (← q r"9437 * b + 1 <= 4096 * m ==> 4096 * m = (9437 * b + 1) + (4096 * m - 9437 * b - 1)")
-    let v4 ← real_linear (← q r"((&2 pow (4096 * b)) * (u pow (9437 * b + 1))) * (u pow (4096 * m - 9437 * b - 1)) <= (fuzziness pow 4096) * (&1:real) ==> (&2 pow (4096 * b)) * ((u pow (9437 * b + 1)) * (u pow (4096 * m - 9437 * b - 1))) <= fuzziness pow 4096")
-    let v5 ← real_linear (← q r"&30902639 / &41749730 <= &1:real")
-    let v6 ← real_linear (← q r"((&2 pow (4096 * b)) * (u pow (9437 * b))) * u <= &1 * fuzziness pow 4096 ==> (&2 pow (4096 * b)) * (u pow (9437 * b)) * (u pow 1) <= fuzziness pow 4096")
-    let v7 ← real_linear (← q r"&0:real < (((((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2)-(u:real) ==> u <= fuzziness pow 4096")
-    let v8 ← real_linear (← q r"&0:real < &342037545 / &2 pow 31")
-    let v9 ← real_linear (← q r"&3863157299 / &2 pow 32 <= ((((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 /\ u:real <= &3179082209 / &2 pow 32 ==> &342037545 / &2 pow 31 <= (((((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2)-(u:real)")
-    let v10 ← real_linear (← q r"&30902639 / &41749730:real <= &3179082209 / &2 pow 32")
-    let v11 ← real_linear (← q r"&3863157299 / &2 pow 32 <= (&2036672179 / &2 pow 31) pow 2")
-    let v12 ← real_linear (← q r"&0:real < &2036672179 / &2 pow 31")
-    let v13 ← real_linear (← q r"&2036672179 / &2 pow 31 <= (&4182688227 / &2 pow 32) pow 2")
-    let v14 ← real_linear (← q r"&0:real < &4182688227 / &2 pow 32")
-    let v15 ← real_linear (← q r"&4182688227 / &2 pow 32 <= (&2119227993 / &2 pow 31) pow 2")
-    let v16 ← real_linear (← q r"&0:real < &2119227993 / &2 pow 31")
-    let v17 ← real_linear (← q r"&2119227993 / &2 pow 31 <= (&4266618081 / &2 pow 32) pow 2")
-    let v18 ← real_linear (← q r"&0:real < &4266618081 / &2 pow 32")
-    let v19 ← real_linear (← q r"&4266618081 / &2 pow 32 <= (&4280769221 / &2 pow 32) pow 2")
-    let v20 ← real_linear (← q r"&0:real < &4280769221 / &2 pow 32")
-    let v21 ← real_linear (← q r"&4280769221 / &2 pow 32 <= (&2143931191 / &2 pow 31) pow 2")
-    let v22 ← real_linear (← q r"&0:real < &2143931191 / &2 pow 31")
-    let v23 ← real_linear (← q r"&2143931191 / &2 pow 31 <= (&4291413369 / &2 pow 32) pow 2")
-    let v24 ← real_linear (← q r"&0:real < &4291413369 / &2 pow 32")
-    let v25 ← real_linear (← q r"&4291413369 / &2 pow 32 <= (&4293189965 / &2 pow 32) pow 2")
-    let v26 ← real_linear (← q r"&0:real < &4293189965 / &2 pow 32")
-    let v27 ← real_linear (← q r"&4293189965 / &2 pow 32 <= (&4294078539 / &2 pow 32) pow 2")
-    let v28 ← real_linear (← q r"&0:real < &4294078539 / &2 pow 32")
-    let v29 ← real_linear (← q r"&4294078539 / &2 pow 32 <= (&4294522895 / &2 pow 32) pow 2")
-    let v30 ← real_linear (← q r"&0:real < &4294522895 / &2 pow 32")
-    let v31 ← real_linear (← q r"&4294522895 / &2 pow 32 <= (&2147372545 / &2 pow 31) pow 2")
-    let v32 ← real_linear (← q r"&0:real < &2147372545 / &2 pow 31")
-    let v33 ← real_linear (← q r"&2147372545 / &2 pow 31 <= (&8388391 / &2 pow 23) pow 2")
-    let v34 ← real_linear (← q r"&0:real < &8388391 / &2 pow 23")
-    let v35 ← real_linear (← q r"&8388391 / &2 pow 23 <= &8388391 / &8388608:real")
-    let v36 ← real_linear (← q r"&0:real <= &2")
-    let v37 ← real_linear (← q r"&0:real < (&1:real)-((((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real))*(((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2)) ==> &2 pow 4096 * u pow 9437 <= &1")
-    let v38 ← real_linear (← q r"&0:real < &8149341 / &2 pow 31")
-    let v39 ← real_linear (← q r"&1 <= &1:real /\ (((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real))*(((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) <= &2139334307 / &2 pow 31 ==> &8149341 / &2 pow 31 <= (&1:real)-((((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real))*(((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2))")
-    let v40 ← real_linear (← q r"(&2139334307 / &2 pow 4127)*(&1 * &2 pow 4096) <= &2139334307 / &2 pow 31")
-    let v41 ← real_linear (← q r"(&1 * &2 pow 2048) pow 2 <= &1 * &2 pow 4096")
-    let v42 ← real_linear (← q r"(&1 * &2 pow 1024) pow 2 <= &1 * &2 pow 2048")
-    let v43 ← real_linear (← q r"(&1 * &2 pow 512) pow 2 <= &1 * &2 pow 1024")
-    let v44 ← real_linear (← q r"(&1 * &2 pow 256) pow 2 <= &1 * &2 pow 512")
-    let v45 ← real_linear (← q r"(&1 * &2 pow 128) pow 2 <= &1 * &2 pow 256")
-    let v46 ← real_linear (← q r"(&1 * &2 pow 64) pow 2 <= &1 * &2 pow 128")
-    let v47 ← real_linear (← q r"(&1 * &2 pow 32) pow 2 <= &1 * &2 pow 64")
-    let v48 ← real_linear (← q r"(&1 * &2 pow 16) pow 2 <= &1 * &2 pow 32")
-    let v49 ← real_linear (← q r"(&1 * &2 pow 8) pow 2 <= &1 * &2 pow 16")
-    let v50 ← real_linear (← q r"(&1 * &2 pow 4) pow 2 <= &1 * &2 pow 8")
-    let v51 ← real_linear (← q r"(&1 * &2 pow 2) pow 2 <= &1 * &2 pow 4")
-    let v52 ← real_linear (← q r"(&1 * &2 pow 1) pow 2 <= &1 * &2 pow 2")
-    let v53 ← real_linear (← q r"&0:real < &1 * &2 pow 1")
-    let v54 ← real_linear (← q r"&1 * &2 pow 1 <= &2:real")
-    let v55 ← real_linear (← q r"&2:real <= &1 * &2 pow 1")
-    let v56 ← real_linear (← q r"(&1445129487 / &2 pow 4126)*(&3179082209 / &2 pow 32) <= &2139334307 / &2 pow 4127")
-    let v57 ← real_linear (← q r"(&311417723 / &2 pow 2076) pow 2 <= &1445129487 / &2 pow 4126")
-    let v58 ← real_linear (← q r"(&2313031721 / &2 pow 1055) pow 2 <= &311417723 / &2 pow 2076")
-    let v59 ← real_linear (← q r"(&3124925667 / &2 pow 1055)*(&3179082209 / &2 pow 32) <= &2313031721 / &2 pow 1055")
-    let v60 ← real_linear (← q r"(&2590507049 / &2 pow 543) pow 2 <= &3124925667 / &2 pow 1055")
-    let v61 ← real_linear (← q r"(&874949303 / &2 pow 541)*(&3179082209 / &2 pow 32) <= &2590507049 / &2 pow 543")
-    let v62 ← real_linear (← q r"(&2741488151 / &2 pow 287) pow 2 <= &874949303 / &2 pow 541")
-    let v63 ← real_linear (← q r"(&1851886987 / &2 pow 286)*(&3179082209 / &2 pow 32) <= &2741488151 / &2 pow 287")
-    let v64 ← real_linear (← q r"(&352530895 / &2 pow 156) pow 2 <= &1851886987 / &2 pow 286")
-    let v65 ← real_linear (← q r"(&1230491229 / &2 pow 94) pow 2 <= &352530895 / &2 pow 156")
-    let v66 ← real_linear (← q r"(&831202095 / &2 pow 93)*(&3179082209 / &2 pow 32) <= &1230491229 / &2 pow 94")
-    let v67 ← real_linear (← q r"(&1336036267 / &2 pow 62) pow 2 <= &831202095 / &2 pow 93")
-    let v68 ← real_linear (← q r"(&3609992881 / &2 pow 63)*(&3179082209 / &2 pow 32) <= &1336036267 / &2 pow 62")
-    let v69 ← real_linear (← q r"(&2784313323 / &2 pow 47) pow 2 <= &3609992881 / &2 pow 63")
-    let v70 ← real_linear (← q r"(&1222627021 / &2 pow 38) pow 2 <= &2784313323 / &2 pow 47")
-    let v71 ← real_linear (← q r"(&286442159 / &2 pow 32) pow 2 <= &1222627021 / &2 pow 38")
-    let v72 ← real_linear (← q r"(&3095886483 / &2 pow 35)*(&3179082209 / &2 pow 32) <= &286442159 / &2 pow 32")
-    let v73 ← real_linear (← q r"(&2578442475 / &2 pow 33) pow 2 <= &3095886483 / &2 pow 35")
-    let v74 ← real_linear (← q r"(&1176558865 / &2 pow 31) pow 2 <= &2578442475 / &2 pow 33")
-    let v75 ← real_linear (← q r"(&3179082209 / &2 pow 32) pow 2 <= &1176558865 / &2 pow 31")
-    let v76 ← real_linear (← q r"&0:real < &99346319 / &2 pow 27")
-    let v77 ← real_linear (← q r"&99346319 / &2 pow 27 <= &30902639 / &41749730:real")
-    let v78 ← real_linear (← q r"&30902639 / &41749730:real <= &3179082209 / &2 pow 32")
-    let v79 ← real_linear (← q r"&1 <= &1:real")
-    let v80 ← def' (← q r"fuzziness:real") (← q r"&8388391 / &8388608")
-    let v81 ← def' (← q r"u:real") (← q r"&30902639 / &41749730")
     pure (REPEAT STRIP_TAC THEN
-      v81 THEN
-      v80 THEN
-      v79 THEN
-      v78 THEN
+      (← def' (← q r"u:real") (← q r"&30902639 / &41749730")) THEN
+      (← def' (← q r"fuzziness:real") (← q r"&8388391 / &8388608")) THEN
+      (← real_linear (← q r"&1 <= &1:real")) THEN
+      (← real_linear (← q r"&30902639 / &41749730:real <= &3179082209 / &2 pow 32")) THEN
       (note (← q r"u:real <= &3179082209 / &2 pow 32") []) THEN
-      v77 THEN
+      (← real_linear (← q r"&99346319 / &2 pow 27 <= &30902639 / &41749730:real")) THEN
       (note (← q r"&99346319 / &2 pow 27 <= u:real") []) THEN
-      v76 THEN
+      (← real_linear (← q r"&0:real < &99346319 / &2 pow 27")) THEN
       (note (← q r"&0:real < u:real") [REAL_LTE_TRANS]) THEN
       (note (← q r"&0:real <= u:real") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(u:real) pow 2 <= (&3179082209 / &2 pow 32) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v75 THEN
+      (← real_linear (← q r"(&3179082209 / &2 pow 32) pow 2 <= &1176558865 / &2 pow 31")) THEN
       (note (← q r"(u:real) pow 2 <= &1176558865 / &2 pow 31") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (u:real) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((u:real) pow 2) pow 2 <= (&1176558865 / &2 pow 31) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v74 THEN
+      (← real_linear (← q r"(&1176558865 / &2 pow 31) pow 2 <= &2578442475 / &2 pow 33")) THEN
       (note (← q r"((u:real) pow 2) pow 2 <= &2578442475 / &2 pow 33") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((u:real) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((u:real) pow 2) pow 2) pow 2 <= (&2578442475 / &2 pow 33) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v73 THEN
+      (← real_linear (← q r"(&2578442475 / &2 pow 33) pow 2 <= &3095886483 / &2 pow 35")) THEN
       (note (← q r"(((u:real) pow 2) pow 2) pow 2 <= &3095886483 / &2 pow 35") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((u:real) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((((u:real) pow 2) pow 2) pow 2)*(u:real) <= (&3095886483 / &2 pow 35)*(&3179082209 / &2 pow 32)") [REAL_LE_MUL2]) THEN
-      v72 THEN
+      (← real_linear (← q r"(&3095886483 / &2 pow 35)*(&3179082209 / &2 pow 32) <= &286442159 / &2 pow 32")) THEN
       (note (← q r"((((u:real) pow 2) pow 2) pow 2)*(u:real) <= &286442159 / &2 pow 32") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((u:real) pow 2) pow 2) pow 2)*(u:real)") [REAL_LE_MUL]) THEN
       (note (← q r"(((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2 <= (&286442159 / &2 pow 32) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v71 THEN
+      (← real_linear (← q r"(&286442159 / &2 pow 32) pow 2 <= &1222627021 / &2 pow 38")) THEN
       (note (← q r"(((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2 <= &1222627021 / &2 pow 38") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2 <= (&1222627021 / &2 pow 38) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v70 THEN
+      (← real_linear (← q r"(&1222627021 / &2 pow 38) pow 2 <= &2784313323 / &2 pow 47")) THEN
       (note (← q r"((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2 <= &2784313323 / &2 pow 47") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2 <= (&2784313323 / &2 pow 47) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v69 THEN
+      (← real_linear (← q r"(&2784313323 / &2 pow 47) pow 2 <= &3609992881 / &2 pow 63")) THEN
       (note (← q r"(((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2 <= &3609992881 / &2 pow 63") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real) <= (&3609992881 / &2 pow 63)*(&3179082209 / &2 pow 32)") [REAL_LE_MUL2]) THEN
-      v68 THEN
+      (← real_linear (← q r"(&3609992881 / &2 pow 63)*(&3179082209 / &2 pow 32) <= &1336036267 / &2 pow 62")) THEN
       (note (← q r"((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real) <= &1336036267 / &2 pow 62") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)") [REAL_LE_MUL]) THEN
       (note (← q r"(((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2 <= (&1336036267 / &2 pow 62) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v67 THEN
+      (← real_linear (← q r"(&1336036267 / &2 pow 62) pow 2 <= &831202095 / &2 pow 93")) THEN
       (note (← q r"(((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2 <= &831202095 / &2 pow 93") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real) <= (&831202095 / &2 pow 93)*(&3179082209 / &2 pow 32)") [REAL_LE_MUL2]) THEN
-      v66 THEN
+      (← real_linear (← q r"(&831202095 / &2 pow 93)*(&3179082209 / &2 pow 32) <= &1230491229 / &2 pow 94")) THEN
       (note (← q r"((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real) <= &1230491229 / &2 pow 94") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)") [REAL_LE_MUL]) THEN
       (note (← q r"(((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2 <= (&1230491229 / &2 pow 94) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v65 THEN
+      (← real_linear (← q r"(&1230491229 / &2 pow 94) pow 2 <= &352530895 / &2 pow 156")) THEN
       (note (← q r"(((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2 <= &352530895 / &2 pow 156") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2 <= (&352530895 / &2 pow 156) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v64 THEN
+      (← real_linear (← q r"(&352530895 / &2 pow 156) pow 2 <= &1851886987 / &2 pow 286")) THEN
       (note (← q r"((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2 <= &1851886987 / &2 pow 286") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real) <= (&1851886987 / &2 pow 286)*(&3179082209 / &2 pow 32)") [REAL_LE_MUL2]) THEN
-      v63 THEN
+      (← real_linear (← q r"(&1851886987 / &2 pow 286)*(&3179082209 / &2 pow 32) <= &2741488151 / &2 pow 287")) THEN
       (note (← q r"(((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real) <= &2741488151 / &2 pow 287") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)") [REAL_LE_MUL]) THEN
       (note (← q r"((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2 <= (&2741488151 / &2 pow 287) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v62 THEN
+      (← real_linear (← q r"(&2741488151 / &2 pow 287) pow 2 <= &874949303 / &2 pow 541")) THEN
       (note (← q r"((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2 <= &874949303 / &2 pow 541") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real) <= (&874949303 / &2 pow 541)*(&3179082209 / &2 pow 32)") [REAL_LE_MUL2]) THEN
-      v61 THEN
+      (← real_linear (← q r"(&874949303 / &2 pow 541)*(&3179082209 / &2 pow 32) <= &2590507049 / &2 pow 543")) THEN
       (note (← q r"(((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real) <= &2590507049 / &2 pow 543") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)") [REAL_LE_MUL]) THEN
       (note (← q r"((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2 <= (&2590507049 / &2 pow 543) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v60 THEN
+      (← real_linear (← q r"(&2590507049 / &2 pow 543) pow 2 <= &3124925667 / &2 pow 1055")) THEN
       (note (← q r"((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2 <= &3124925667 / &2 pow 1055") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real) <= (&3124925667 / &2 pow 1055)*(&3179082209 / &2 pow 32)") [REAL_LE_MUL2]) THEN
-      v59 THEN
+      (← real_linear (← q r"(&3124925667 / &2 pow 1055)*(&3179082209 / &2 pow 32) <= &2313031721 / &2 pow 1055")) THEN
       (note (← q r"(((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real) <= &2313031721 / &2 pow 1055") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)") [REAL_LE_MUL]) THEN
       (note (← q r"((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2 <= (&2313031721 / &2 pow 1055) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v58 THEN
+      (← real_linear (← q r"(&2313031721 / &2 pow 1055) pow 2 <= &311417723 / &2 pow 2076")) THEN
       (note (← q r"((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2 <= &311417723 / &2 pow 2076") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2 <= (&311417723 / &2 pow 2076) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v57 THEN
+      (← real_linear (← q r"(&311417723 / &2 pow 2076) pow 2 <= &1445129487 / &2 pow 4126")) THEN
       (note (← q r"(((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2 <= &1445129487 / &2 pow 4126") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real) <= (&1445129487 / &2 pow 4126)*(&3179082209 / &2 pow 32)") [REAL_LE_MUL2]) THEN
-      v56 THEN
+      (← real_linear (← q r"(&1445129487 / &2 pow 4126)*(&3179082209 / &2 pow 32) <= &2139334307 / &2 pow 4127")) THEN
       (note (← q r"((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real) <= &2139334307 / &2 pow 4127") [REAL_LE_TRANS]) THEN
-      v55 THEN
-      v54 THEN
-      v53 THEN
+      (← real_linear (← q r"&2:real <= &1 * &2 pow 1")) THEN
+      (← real_linear (← q r"&1 * &2 pow 1 <= &2:real")) THEN
+      (← real_linear (← q r"&0:real < &1 * &2 pow 1")) THEN
       (note (← q r"&0:real < &2:real") [REAL_LTE_TRANS]) THEN
       (note (← q r"&0:real <= &2:real") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&2:real) pow 2 <= (&1 * &2 pow 1) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v52 THEN
+      (← real_linear (← q r"(&1 * &2 pow 1) pow 2 <= &1 * &2 pow 2")) THEN
       (note (← q r"(&2:real) pow 2 <= &1 * &2 pow 2") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (&2:real) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((&2:real) pow 2) pow 2 <= (&1 * &2 pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v51 THEN
+      (← real_linear (← q r"(&1 * &2 pow 2) pow 2 <= &1 * &2 pow 4")) THEN
       (note (← q r"((&2:real) pow 2) pow 2 <= &1 * &2 pow 4") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((&2:real) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((&2:real) pow 2) pow 2) pow 2 <= (&1 * &2 pow 4) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v50 THEN
+      (← real_linear (← q r"(&1 * &2 pow 4) pow 2 <= &1 * &2 pow 8")) THEN
       (note (← q r"(((&2:real) pow 2) pow 2) pow 2 <= &1 * &2 pow 8") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((&2:real) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((((&2:real) pow 2) pow 2) pow 2) pow 2 <= (&1 * &2 pow 8) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v49 THEN
+      (← real_linear (← q r"(&1 * &2 pow 8) pow 2 <= &1 * &2 pow 16")) THEN
       (note (← q r"((((&2:real) pow 2) pow 2) pow 2) pow 2 <= &1 * &2 pow 16") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((&2:real) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2 <= (&1 * &2 pow 16) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v48 THEN
+      (← real_linear (← q r"(&1 * &2 pow 16) pow 2 <= &1 * &2 pow 32")) THEN
       (note (← q r"(((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2 <= &1 * &2 pow 32") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= (&1 * &2 pow 32) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v47 THEN
+      (← real_linear (← q r"(&1 * &2 pow 32) pow 2 <= &1 * &2 pow 64")) THEN
       (note (← q r"((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= &1 * &2 pow 64") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= (&1 * &2 pow 64) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v46 THEN
+      (← real_linear (← q r"(&1 * &2 pow 64) pow 2 <= &1 * &2 pow 128")) THEN
       (note (← q r"(((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= &1 * &2 pow 128") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= (&1 * &2 pow 128) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v45 THEN
+      (← real_linear (← q r"(&1 * &2 pow 128) pow 2 <= &1 * &2 pow 256")) THEN
       (note (← q r"((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= &1 * &2 pow 256") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= (&1 * &2 pow 256) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v44 THEN
+      (← real_linear (← q r"(&1 * &2 pow 256) pow 2 <= &1 * &2 pow 512")) THEN
       (note (← q r"(((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= &1 * &2 pow 512") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= (&1 * &2 pow 512) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v43 THEN
+      (← real_linear (← q r"(&1 * &2 pow 512) pow 2 <= &1 * &2 pow 1024")) THEN
       (note (← q r"((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= &1 * &2 pow 1024") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= (&1 * &2 pow 1024) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v42 THEN
+      (← real_linear (← q r"(&1 * &2 pow 1024) pow 2 <= &1 * &2 pow 2048")) THEN
       (note (← q r"(((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= &1 * &2 pow 2048") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= (((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= (&1 * &2 pow 2048) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v41 THEN
+      (← real_linear (← q r"(&1 * &2 pow 2048) pow 2 <= &1 * &2 pow 4096")) THEN
       (note (← q r"((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 <= &1 * &2 pow 4096") [REAL_LE_TRANS]) THEN
       (note (← q r"&0:real <= ((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)") [REAL_LE_MUL]) THEN
       (note (← q r"&0:real <= ((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL, REAL_POW_2]) THEN
       (note (← q r"(((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real))*(((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) <= (&2139334307 / &2 pow 4127)*(&1 * &2 pow 4096)") [REAL_LE_MUL2]) THEN
-      v40 THEN
+      (← real_linear (← q r"(&2139334307 / &2 pow 4127)*(&1 * &2 pow 4096) <= &2139334307 / &2 pow 31")) THEN
       (note (← q r"(((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real))*(((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) <= &2139334307 / &2 pow 31") [REAL_LE_TRANS]) THEN
-      v39 THEN
-      v38 THEN
+      (← real_linear (← q r"&1 <= &1:real /\ (((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real))*(((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) <= &2139334307 / &2 pow 31 ==> &8149341 / &2 pow 31 <= (&1:real)-((((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real))*(((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2))")) THEN
+      (← real_linear (← q r"&0:real < &8149341 / &2 pow 31")) THEN
       (note (← q r"&0:real < (&1:real)-((((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real))*(((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2))") [REAL_LTE_TRANS]) THEN
-      v37 THEN
-      v36 THEN
+      (← real_linear (← q r"&0:real < (&1:real)-((((((((((((((((((((((u:real) pow 2) pow 2) pow 2)*(u:real)) pow 2) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real)) pow 2)*(u:real)) pow 2)*(u:real)) pow 2) pow 2)*(u:real))*(((((((((((((&2:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2)) ==> &2 pow 4096 * u pow 9437 <= &1")) THEN
+      (← real_linear (← q r"&0:real <= &2")) THEN
       (note (← q r"&0:real <= &2 pow 4096") [REAL_POW_LE]) THEN
       (note (← q r"&0:real <= u") []) THEN
       (note (← q r"&0:real <= u pow 9437") [REAL_POW_LE]) THEN
@@ -25014,81 +23623,81 @@ def setupHullLight16 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       (note (← q r"(&2 pow 4096 * u pow 9437) pow b <= &1") [REAL_POW_ONE]) THEN
       (note (← q r"(&2 pow 4096 pow b) * (u pow 9437 pow b) <= &1") [REAL_POW_MUL]) THEN
       (note (← q r"(&2 pow (4096 * b)) * (u pow (9437 * b)) <= &1") [REAL_POW_POW]) THEN
-      v35 THEN
+      (← real_linear (← q r"&8388391 / &2 pow 23 <= &8388391 / &8388608:real")) THEN
       (note (← q r"&8388391 / &2 pow 23 <= fuzziness:real") []) THEN
-      v34 THEN
+      (← real_linear (← q r"&0:real < &8388391 / &2 pow 23")) THEN
       (note (← q r"&0:real <= &8388391 / &2 pow 23") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&8388391 / &2 pow 23) pow 2 <= (fuzziness:real) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v33 THEN
+      (← real_linear (← q r"&2147372545 / &2 pow 31 <= (&8388391 / &2 pow 23) pow 2")) THEN
       (note (← q r"&2147372545 / &2 pow 31 <= (fuzziness:real) pow 2") [REAL_LE_TRANS]) THEN
-      v32 THEN
+      (← real_linear (← q r"&0:real < &2147372545 / &2 pow 31")) THEN
       (note (← q r"&0:real <= &2147372545 / &2 pow 31") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&2147372545 / &2 pow 31) pow 2 <= ((fuzziness:real) pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v31 THEN
+      (← real_linear (← q r"&4294522895 / &2 pow 32 <= (&2147372545 / &2 pow 31) pow 2")) THEN
       (note (← q r"&4294522895 / &2 pow 32 <= ((fuzziness:real) pow 2) pow 2") [REAL_LE_TRANS]) THEN
-      v30 THEN
+      (← real_linear (← q r"&0:real < &4294522895 / &2 pow 32")) THEN
       (note (← q r"&0:real <= &4294522895 / &2 pow 32") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&4294522895 / &2 pow 32) pow 2 <= (((fuzziness:real) pow 2) pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v29 THEN
+      (← real_linear (← q r"&4294078539 / &2 pow 32 <= (&4294522895 / &2 pow 32) pow 2")) THEN
       (note (← q r"&4294078539 / &2 pow 32 <= (((fuzziness:real) pow 2) pow 2) pow 2") [REAL_LE_TRANS]) THEN
-      v28 THEN
+      (← real_linear (← q r"&0:real < &4294078539 / &2 pow 32")) THEN
       (note (← q r"&0:real <= &4294078539 / &2 pow 32") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&4294078539 / &2 pow 32) pow 2 <= ((((fuzziness:real) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v27 THEN
+      (← real_linear (← q r"&4293189965 / &2 pow 32 <= (&4294078539 / &2 pow 32) pow 2")) THEN
       (note (← q r"&4293189965 / &2 pow 32 <= ((((fuzziness:real) pow 2) pow 2) pow 2) pow 2") [REAL_LE_TRANS]) THEN
-      v26 THEN
+      (← real_linear (← q r"&0:real < &4293189965 / &2 pow 32")) THEN
       (note (← q r"&0:real <= &4293189965 / &2 pow 32") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&4293189965 / &2 pow 32) pow 2 <= (((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v25 THEN
+      (← real_linear (← q r"&4291413369 / &2 pow 32 <= (&4293189965 / &2 pow 32) pow 2")) THEN
       (note (← q r"&4291413369 / &2 pow 32 <= (((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_TRANS]) THEN
-      v24 THEN
+      (← real_linear (← q r"&0:real < &4291413369 / &2 pow 32")) THEN
       (note (← q r"&0:real <= &4291413369 / &2 pow 32") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&4291413369 / &2 pow 32) pow 2 <= ((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v23 THEN
+      (← real_linear (← q r"&2143931191 / &2 pow 31 <= (&4291413369 / &2 pow 32) pow 2")) THEN
       (note (← q r"&2143931191 / &2 pow 31 <= ((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_TRANS]) THEN
-      v22 THEN
+      (← real_linear (← q r"&0:real < &2143931191 / &2 pow 31")) THEN
       (note (← q r"&0:real <= &2143931191 / &2 pow 31") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&2143931191 / &2 pow 31) pow 2 <= (((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v21 THEN
+      (← real_linear (← q r"&4280769221 / &2 pow 32 <= (&2143931191 / &2 pow 31) pow 2")) THEN
       (note (← q r"&4280769221 / &2 pow 32 <= (((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_TRANS]) THEN
-      v20 THEN
+      (← real_linear (← q r"&0:real < &4280769221 / &2 pow 32")) THEN
       (note (← q r"&0:real <= &4280769221 / &2 pow 32") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&4280769221 / &2 pow 32) pow 2 <= ((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v19 THEN
+      (← real_linear (← q r"&4266618081 / &2 pow 32 <= (&4280769221 / &2 pow 32) pow 2")) THEN
       (note (← q r"&4266618081 / &2 pow 32 <= ((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_TRANS]) THEN
-      v18 THEN
+      (← real_linear (← q r"&0:real < &4266618081 / &2 pow 32")) THEN
       (note (← q r"&0:real <= &4266618081 / &2 pow 32") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&4266618081 / &2 pow 32) pow 2 <= (((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v17 THEN
+      (← real_linear (← q r"&2119227993 / &2 pow 31 <= (&4266618081 / &2 pow 32) pow 2")) THEN
       (note (← q r"&2119227993 / &2 pow 31 <= (((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_TRANS]) THEN
-      v16 THEN
+      (← real_linear (← q r"&0:real < &2119227993 / &2 pow 31")) THEN
       (note (← q r"&0:real <= &2119227993 / &2 pow 31") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&2119227993 / &2 pow 31) pow 2 <= ((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v15 THEN
+      (← real_linear (← q r"&4182688227 / &2 pow 32 <= (&2119227993 / &2 pow 31) pow 2")) THEN
       (note (← q r"&4182688227 / &2 pow 32 <= ((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_TRANS]) THEN
-      v14 THEN
+      (← real_linear (← q r"&0:real < &4182688227 / &2 pow 32")) THEN
       (note (← q r"&0:real <= &4182688227 / &2 pow 32") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&4182688227 / &2 pow 32) pow 2 <= (((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v13 THEN
+      (← real_linear (← q r"&2036672179 / &2 pow 31 <= (&4182688227 / &2 pow 32) pow 2")) THEN
       (note (← q r"&2036672179 / &2 pow 31 <= (((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_TRANS]) THEN
-      v12 THEN
+      (← real_linear (← q r"&0:real < &2036672179 / &2 pow 31")) THEN
       (note (← q r"&0:real <= &2036672179 / &2 pow 31") [REAL_LT_IMP_LE]) THEN
       (note (← q r"(&2036672179 / &2 pow 31) pow 2 <= ((((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_MUL2, REAL_POW_2]) THEN
-      v11 THEN
+      (← real_linear (← q r"&3863157299 / &2 pow 32 <= (&2036672179 / &2 pow 31) pow 2")) THEN
       (note (← q r"&3863157299 / &2 pow 32 <= ((((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2") [REAL_LE_TRANS]) THEN
-      v10 THEN
+      (← real_linear (← q r"&30902639 / &41749730:real <= &3179082209 / &2 pow 32")) THEN
       (note (← q r"u:real <= &3179082209 / &2 pow 32") []) THEN
-      v9 THEN
-      v8 THEN
+      (← real_linear (← q r"&3863157299 / &2 pow 32 <= ((((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2 /\ u:real <= &3179082209 / &2 pow 32 ==> &342037545 / &2 pow 31 <= (((((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2)-(u:real)")) THEN
+      (← real_linear (← q r"&0:real < &342037545 / &2 pow 31")) THEN
       (note (← q r"&0:real < (((((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2)-(u:real)") [REAL_LTE_TRANS]) THEN
-      v7 THEN
+      (← real_linear (← q r"&0:real < (((((((((((((fuzziness:real) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2) pow 2)-(u:real) ==> u <= fuzziness pow 4096")) THEN
       (note (← q r"&0:real <= &2 pow (4096 * b)") [REAL_POW_LE]) THEN
       (note (← q r"&0:real <= u pow (9437 * b)") [REAL_POW_LE]) THEN
       (note (← q r"&0:real <= (&2 pow (4096 * b)) * (u pow (9437 * b))") [REAL_LE_MUL]) THEN
       (note (← q r"((&2 pow (4096 * b)) * (u pow (9437 * b))) * u <= &1 * fuzziness pow 4096") [REAL_LE_MUL2]) THEN
-      v6 THEN
+      (← real_linear (← q r"((&2 pow (4096 * b)) * (u pow (9437 * b))) * u <= &1 * fuzziness pow 4096 ==> (&2 pow (4096 * b)) * (u pow (9437 * b)) * (u pow 1) <= fuzziness pow 4096")) THEN
       (note (← q r"(&2 pow (4096 * b)) * (u pow (9437 * b + 1)) <= fuzziness pow 4096") [REAL_POW_ADD]) THEN
-      v5 THEN
+      (← real_linear (← q r"&30902639 / &41749730 <= &1:real")) THEN
       (note (← q r"u <= &1:real") []) THEN
       (note (← q r"u pow (4096 * m - 9437 * b - 1) <= (&1:real) pow (4096 * m- 9437 * b - 1)") [REAL_POW_LE2]) THEN
       (note (← q r"u pow (4096 * m - 9437 * b - 1) <= &1:real") [REAL_POW_ONE]) THEN
@@ -25096,15 +23705,15 @@ def setupHullLight16 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       (note (← q r"&0:real <= u pow (9437 * b + 1)") [REAL_POW_LE]) THEN
       (note (← q r"&0:real <= (&2 pow (4096 * b)) * (u pow (9437 * b + 1))") [REAL_LE_MUL]) THEN
       (note (← q r"((&2 pow (4096 * b)) * (u pow (9437 * b + 1))) * (u pow (4096 * m - 9437 * b - 1)) <= (fuzziness pow 4096) * (&1:real)") [REAL_LE_MUL2]) THEN
-      v4 THEN
+      (← real_linear (← q r"((&2 pow (4096 * b)) * (u pow (9437 * b + 1))) * (u pow (4096 * m - 9437 * b - 1)) <= (fuzziness pow 4096) * (&1:real) ==> (&2 pow (4096 * b)) * ((u pow (9437 * b + 1)) * (u pow (4096 * m - 9437 * b - 1))) <= fuzziness pow 4096")) THEN
       (note (← q r"(&2 pow (4096 * b)) * (u pow ((9437 * b + 1) + (4096 * m - 9437 * b - 1))) <= fuzziness pow 4096") [REAL_POW_ADD]) THEN
-      v3 THEN
+      (← num_linear (← q r"9437 * b + 1 <= 4096 * m ==> 4096 * m = (9437 * b + 1) + (4096 * m - 9437 * b - 1)")) THEN
       (note (← q r"(&2:real pow (4096 * b)) * (u pow (4096 * m)) <= fuzziness pow 4096") []) THEN
       (note (← q r"(&2:real pow (b * 4096)) * (u pow (m * 4096)) <= fuzziness pow 4096") [MULT_SYM]) THEN
       (note (← q r"(&2:real pow b pow 4096) * (u pow m pow 4096) <= fuzziness pow 4096") [REAL_POW_POW]) THEN
       (note (← q r"((&2:real pow b) * (u pow m)) pow 4096 <= fuzziness pow 4096") [REAL_POW_MUL]) THEN
-      v2 THEN
-      v1 THEN
+      (← num_linear (← q r"~(4096 = 0)")) THEN
+      (← real_linear (← q r"&0:real <= &8388391 / &8388608")) THEN
       (note (← q r"&0:real <= fuzziness:real") []) THEN
       (note (← q r"&2 pow b * u pow m <= fuzziness:real") [REAL_POW_LE2_REV]) THEN
       (note (← q r"&2 pow b * u pow m <= (&8388391 / &8388608):real") []) THEN
@@ -25149,39 +23758,25 @@ def setupHullLight16 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       ?n. n <= m /\ g(n) = &0
       "
    (← do
-    let v1 ← real_linear (← q r"&3047 / &2048 < (M * &4096 / &2753) * divsteps_s pow m ==> ~(M * divsteps_s pow m <= (&8388391 / &8388608))")
-    let v2 ← UNDISCH_ALL iteration_sizebound_simple
-    let v3 ← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"M * &4096 / &2753")] v2
-    let v4 ← UNDISCH_ALL v3
-    let v5 ← SPEC (← q r"m:num") v4
-    let v6 ← UNDISCH_ALL v5
-    let v7 ← real_linear (← q r"&0 < M ==> &0 < M * &4096 / &2753")
-    let v8 ← real_cancel (← q r"(&2753 / &4096)*(g(0)/M) = g(0) / (M * &4096 / &2753)")
-    let v9 ← real_cancel (← q r"(&2753 / &4096)*(f(0)/M) = f(0) / (M * &4096 / &2753)")
-    let v10 ← real_linear (← q r"g(0) / M <= f(0) / M ==> (-- &1)*(f(0)/M) + (&1)*(g(0)/M) <= &0")
-    let v11 ← real_linear (← q r"f(0) / M <= &1 ==> (&1)*(f(0)/M) + (&0)*(g(0)/M) <= &1")
-    let v12 ← real_linear (← q r"&0 <= g(0) / M ==> (&0)*(f(0)/M)+(-- &1)*(g(0)/M) <= &0")
-    let v13 ← real_cancel (← q r"&0 < M ==> M / M = &1")
-    let v14 ← REAL_ARITH (← q r"&0 / M = &0")
     pure (REPEAT STRIP_TAC THEN
       (note (← q r"&0 / M <= g(0) / M") [REAL_LE_DIV2_EQ]) THEN
-      (note (← q r"&0 <= g(0) / M") [v14]) THEN
+      (note (← q r"&0 <= g(0) / M") [(← REAL_ARITH (← q r"&0 / M = &0"))]) THEN
       (note (← q r"g(0) / M <= f(0) / M") [REAL_LE_DIV2_EQ]) THEN
       (note (← q r"f(0) / M <= M / M") [REAL_LE_DIV2_EQ]) THEN
-      v13 THEN
+      (← real_cancel (← q r"&0 < M ==> M / M = &1")) THEN
       (note (← q r"f(0) / M <= &1") []) THEN
-      v12 THEN
-      v11 THEN
-      v10 THEN
+      (← real_linear (← q r"&0 <= g(0) / M ==> (&0)*(f(0)/M)+(-- &1)*(g(0)/M) <= &0")) THEN
+      (← real_linear (← q r"f(0) / M <= &1 ==> (&1)*(f(0)/M) + (&0)*(g(0)/M) <= &1")) THEN
+      (← real_linear (← q r"g(0) / M <= f(0) / M ==> (-- &1)*(f(0)/M) + (&1)*(g(0)/M) <= &0")) THEN
       (note (← q r"divsteps_hinit_0_1 (f(0)/M) (g(0)/M)") [divsteps_hinit_0_1]) THEN
       (note (← q r"divsteps_H1 ((&2753 / &4096)*(f(0)/M)) ((&2753 / &4096)*(g(0)/M))") []) THEN
-      v9 THEN
-      v8 THEN
+      (← real_cancel (← q r"(&2753 / &4096)*(f(0)/M) = f(0) / (M * &4096 / &2753)")) THEN
+      (← real_cancel (← q r"(&2753 / &4096)*(g(0)/M) = g(0) / (M * &4096 / &2753)")) THEN
       (note (← q r"divsteps_H1 (f(0)/(M * &4096 / &2753)) (g(0)/(M * &4096 / &2753))") []) THEN
       (ASM_CASES_TAC (← q r"!n:num. n <= m ==> ~(g(n):real = &0)")) THENL
-      [v7 THEN
-        (ASSUME_TAC v6) THEN
-        v1 THEN
+      [(← real_linear (← q r"&0 < M ==> &0 < M * &4096 / &2753")) THEN
+        (ASSUME_TAC (← UNDISCH_ALL (← SPEC (← q r"m:num") (← UNDISCH_ALL (← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"M * &4096 / &2753")] (← UNDISCH_ALL iteration_sizebound_simple)))))) THEN
+        (← real_linear (← q r"&3047 / &2048 < (M * &4096 / &2753) * divsteps_s pow m ==> ~(M * divsteps_s pow m <= (&8388391 / &8388608))")) THEN
         (ASM_MESON_TAC []),
        ASM_MESON_TAC []]))
 
@@ -25204,9 +23799,6 @@ def setupHullLight16 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       ?n. n <= m /\ g(n) = &0
       "
    (← do
-    let v1 ← UNDISCH_ALL endtoend
-    let v2 ← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"M:real"), (← q r"m:num")] v1
-    let v3 ← UNDISCH_ALL v2
     pure (REPEAT STRIP_TAC THEN
       (note (← q r"!x y. divsteps_hinit_0_1 x y ==> divsteps_H1 ((&2753 / &4096)*x) ((&2753 / &4096)*y)") [init2stable_simple]) THEN
       (note (← q r"!x y. divsteps_H1 x y ==> divsteps_Houter x y") [theoremouter_simple]) THEN
@@ -25218,7 +23810,7 @@ def setupHullLight16 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       (note (← q r"!x y. divsteps_H1 x y ==> divsteps_H0 (((&0) * x + (&1 / &4) * y) / divsteps_s pow 4) (((-- &1 / &4) * x + (&3 / &16) * y) / divsteps_s pow 4)") [theorem_1]) THEN
       (note (← q r"!x y. divsteps_H1 x y ==> divsteps_H1 (((&33 / &64) * x + (&33 / &512) * y) / divsteps_s pow 2) (((&0) * x + (&33 / &64) * y) / divsteps_s pow 2)") [theorem_4scale]) THEN
       (note (← q r"!x y. divsteps_H1 x y ==> divsteps_H1 (((&33 / &64) * x + (-- &33 / &512) * y) / divsteps_s pow 2) (((&0) * x + (&33 / &64) * y) / divsteps_s pow 2)") [theorem_3scale]) THEN
-      (ASSUME_TAC v3) THEN
+      (ASSUME_TAC (← UNDISCH_ALL (← SPECL [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"M:real"), (← q r"m:num")] (← UNDISCH_ALL endtoend)))) THEN
       (ASM_MESON_TAC [])))
 
   let endtoend_bits_simple ← prove
@@ -25239,13 +23831,11 @@ def setupHullLight16 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       ?n. n <= m /\ g(n) = &0
       "
    (← do
-    let v1 ← specialize [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"&2:real pow b"), (← q r"m:num")] endtoend_simple
-    let v2 ← real_linear (← q r"&0:real < &2")
     pure (REPEAT STRIP_TAC THEN
-      v2 THEN
+      (← real_linear (← q r"&0:real < &2")) THEN
       (note (← q r"&0:real < &2 pow b") [REAL_POW_LT]) THEN
       (note (← q r"&2 pow b * divsteps_s pow m <= (&8388391 / &8388608):real") [spow_bound]) THEN
-      v1 THEN
+      (← specialize [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"&2:real pow b"), (← q r"m:num")] endtoend_simple) THEN
       (ASM_SIMP_TAC [])))
 
   let endtoend_255_simple ← prove
@@ -25265,11 +23855,9 @@ def setupHullLight16 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       ?n. n <= 588 /\ g(n) = &0
       "
    (← do
-    let v1 ← specialize [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"255"), (← q r"588")] endtoend_bits_simple
-    let v2 ← num_linear (← q r"9437 * 255 + 1 <= 4096 * 588")
     pure (REPEAT STRIP_TAC THEN
-      v2 THEN
-      v1 THEN
+      (← num_linear (← q r"9437 * 255 + 1 <= 4096 * 588")) THEN
+      (← specialize [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"255"), (← q r"588")] endtoend_bits_simple) THEN
       (ASM_MESON_TAC [])))
 
   let endtoend_256_simple ← prove
@@ -25289,11 +23877,9 @@ def setupHullLight16 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       ?n. n <= 590 /\ g(n) = &0
       "
    (← do
-    let v1 ← specialize [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"256"), (← q r"590")] endtoend_bits_simple
-    let v2 ← num_linear (← q r"9437 * 256 + 1 <= 4096 * 590")
     pure (REPEAT STRIP_TAC THEN
-      v2 THEN
-      v1 THEN
+      (← num_linear (← q r"9437 * 256 + 1 <= 4096 * 590")) THEN
+      (← specialize [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"256"), (← q r"590")] endtoend_bits_simple) THEN
       (ASM_MESON_TAC [])))
 
   let endtoend_512_simple ← prove
@@ -25313,11 +23899,9 @@ def setupHullLight16 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       ?n. n <= 1180 /\ g(n) = &0
       "
    (← do
-    let v1 ← specialize [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"512"), (← q r"1180")] endtoend_bits_simple
-    let v2 ← num_linear (← q r"9437 * 512 + 1 <= 4096 * 1180")
     pure (REPEAT STRIP_TAC THEN
-      v2 THEN
-      v1 THEN
+      (← num_linear (← q r"9437 * 512 + 1 <= 4096 * 1180")) THEN
+      (← specialize [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"512"), (← q r"1180")] endtoend_bits_simple) THEN
       (ASM_MESON_TAC [])))
 
   let endtoend_16384_simple ← prove
@@ -25337,11 +23921,9 @@ def setupHullLight16 [HolBase] (D : HullLightDeps) (BHullLightTactics : HullLigh
       ?n. n <= 37749 /\ g(n) = &0
       "
    (← do
-    let v1 ← specialize [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"16384"), (← q r"37749")] endtoend_bits_simple
-    let v2 ← num_linear (← q r"9437 * 16384 + 1 <= 4096 * 37749")
     pure (REPEAT STRIP_TAC THEN
-      v2 THEN
-      v1 THEN
+      (← num_linear (← q r"9437 * 16384 + 1 <= 4096 * 37749")) THEN
+      (← specialize [(← q r"i:num->int"), (← q r"f:num->real"), (← q r"g:num->real"), (← q r"16384"), (← q r"37749")] endtoend_bits_simple) THEN
       (ASM_MESON_TAC [])))
 
   -- @@RETURN BEGIN

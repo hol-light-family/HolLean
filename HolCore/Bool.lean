@@ -10,6 +10,7 @@ import HolCore.Basics
 import HolCore.Fusion
 import HolCore.Printer
 import HolCore.Preterm
+import HolCore.Parser
 
 open HolCore.Kernel HolCore.Basics HolCore.Lib HolCore.Equal HolCore.Printer HolCore.Preterm
 
@@ -214,8 +215,12 @@ def SPEC_ALL (SPEC : term → thm → Except String thm) (th : thm) : Except Str
 
 /- Run all of bool.ml's definitions and derived rules once, in order,
 returning the resulting theorems and rules. -/
-/-- Run all of `bool.ml`'s definitions and derived rules once, in order. -/
+/-- Run all of `bool.ml`'s definitions and derived rules once, in order.
+    Each quotation of bool.ml is parsed where OCaml parses it, in OCaml's
+    order (arguments right to left), since parsing uses type-variable
+    numbers. -/
 def setupBool : ExceptT String IO BoolThms := do
+  let pt (s : String) : ExceptT String IO term := ExceptT.mk (HolCore.Parser.parse_term s)
   -- Set up parse status of basic and derived logical constants.
   parse_as_prefix "~"
   parse_as_binder "\\"
@@ -229,9 +234,10 @@ def setupBool : ExceptT String IO BoolThms := do
   parse_as_infix ("<=>", (2, "right"))
   -- `override_interface("<=>",...)` (bool.ml:32): top-level stmt, raises on
   -- failure; propagate via ExceptT.mk.
-  let _ ← ExceptT.mk (override_interface "<=>"
-            (.Const "=" (.Tyapp "fun" [bool_ty, .Tyapp "fun" [bool_ty, bool_ty]])))
+  let _ ← ExceptT.mk (override_interface "<=>" (← pt "(=):bool->bool->bool"))
   parse_as_infix ("=", (12, "right"))
+  -- mk_iff's `eq_tm = `(<=>)`` (bool.ml 50); `mk_iff` builds the term directly.
+  let _ ← pt "(<=>)"
 
   -- Useful derived deductive rule.
   let PROVE_HYP : thm → thm → Except String thm := fun ath bth =>
@@ -244,10 +250,10 @@ def setupBool : ExceptT String IO BoolThms := do
 /- ---------------------------------------------------------------------- -/
   -- Rules for T
   -- T_DEF = new_basic_definition `T = ((\p:bool. p) = (\p:bool. p))`
-  let idfn : term := .Abs (.Var "p" bool_ty) (.Var "p" bool_ty)
-  let T_DEF ← new_basic_definition (safe_mk_eq (.Var "T" bool_ty) (safe_mk_eq idfn idfn))
+  let T_DEF ← new_basic_definition (← pt "T = ((\\p:bool. p) = (\\p:bool. p))")
 
   -- TRUTH = EQ_MP (SYM T_DEF) (REFL `\p:bool. p`)
+  let idfn ← pt "\\p:bool. p"
   let TRUTH ← liftExcept (do EQ_MP (← SYM T_DEF) (REFL idfn))
 
   -- EQT_ELIM th = try EQ_MP (SYM th) TRUTH with _ -> failwith "EQT_ELIM"
@@ -255,7 +261,7 @@ def setupBool : ExceptT String IO BoolThms := do
     (do EQ_MP (← SYM th) TRUTH).mapError (fun _ => "EQT_ELIM")
 
   -- EQT_INTRO: proforma over `t:bool`, then fun th -> EQ_MP (INST[concl th,t] pth) th
-  let t : term := .Var "t" bool_ty
+  let t ← pt "t:bool"
   let EQT_INTRO_pth ← liftExcept (do
     let th1 := DEDUCT_ANTISYM_RULE (← ASSUME t) TRUTH
     let th2 ← EQT_ELIM (← ASSUME (concl th1))
@@ -267,20 +273,15 @@ def setupBool : ExceptT String IO BoolThms := do
 /- Rules for /\                                                           -/
 /- ---------------------------------------------------------------------- -/
   -- Rules for /\
-  let bbb : hol_type := .Tyapp "fun" [bool_ty, .Tyapp "fun" [bool_ty, bool_ty]]
-  let p : term := .Var "p" bool_ty
-  let q : term := .Var "q" bool_ty
-  let f : term := .Var "f" bbb
-  let cT : term := .Const "T" bool_ty
   -- AND_DEF = `(/\) = \p q. (\f:bool->bool->bool. f p q) = (\f. f T T)`
-  let fpq ← liftExcept (do mk_abs f (← mk_comb (← mk_comb f p) q))   -- \f. f p q
-  let fTT ← liftExcept (do mk_abs f (← mk_comb (← mk_comb f cT) cT)) -- \f. f T T
-  let andBody ← liftExcept (do mk_abs p (← mk_abs q (safe_mk_eq fpq fTT)))
-  let AND_DEF ← new_basic_definition (safe_mk_eq (.Var "/\\" bbb) andBody)
+  let AND_DEF ← new_basic_definition
+    (← pt "(/\\) = \\p q. (\\f:bool->bool->bool. f p q) = (\\f. f T T)")
 
-  -- selector lambdas  \(p:bool)(q:bool). p   and   \(p:bool)(q:bool). q
-  let selP : term := .Abs p (.Abs q p)
-  let selQ : term := .Abs p (.Abs q q)
+  -- CONJ's `f`, `p`, `q`, and pth1's `\(p:bool) (q:bool). q`.
+  let f ← pt "f:bool->bool->bool"
+  let p ← pt "p:bool"
+  let q ← pt "q:bool"
+  let selQ ← pt "\\(p:bool) (q:bool). q"
 
   -- CONJ
   let CONJ_pth1 ← liftExcept (do
@@ -300,19 +301,23 @@ def setupBool : ExceptT String IO BoolThms := do
     let th ← INST [(concl th1, p), (concl th2, q)] CONJ_pth
     EQ_MP (← EQ_MP (DEDUCT_ANTISYM_RULE th1 th) th1) th2
 
-  -- CONJUNCT1 / CONJUNCT2  (proformas over P, Q)
-  let cP : term := .Var "P" bool_ty
-  let cQ : term := .Var "Q" bool_ty
+  -- CONJUNCT1 / CONJUNCT2  (proformas over P, Q; each binds its own)
+  let cP ← pt "P:bool"
+  let cQ ← pt "Q:bool"
+  let selP ← pt "\\(p:bool) (q:bool). p"
   let conj1_pth ← liftExcept (do
     let th1 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM AND_DEF cP)
     let th2 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM th1 cQ)
     let th3 ← EQ_MP th2 (← ASSUME (← mk_conj cP cQ))
     EQT_ELIM (← BETA_RULE (← AP_THM th3 selP)))
+  let _ ← pt "P:bool"
+  let _ ← pt "Q:bool"
+  let selQ2 ← pt "\\(p:bool) (q:bool). q"
   let conj2_pth ← liftExcept (do
     let th1 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM AND_DEF cP)
     let th2 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM th1 cQ)
     let th3 ← EQ_MP th2 (← ASSUME (← mk_conj cP cQ))
-    EQT_ELIM (← BETA_RULE (← AP_THM th3 selQ)))
+    EQT_ELIM (← BETA_RULE (← AP_THM th3 selQ2)))
   let CONJUNCT1 : thm → Except String thm := fun th =>
     (do let (l, r) ← dest_conj (concl th)
         EQ_MP (DEDUCT_ANTISYM_RULE th (← INST [(l, cP), (r, cQ)] conj1_pth)) th
@@ -330,10 +335,10 @@ def setupBool : ExceptT String IO BoolThms := do
 /- ---------------------------------------------------------------------- -/
   -- Rules for ==>
   -- IMP_DEF = `(==>) = \p q. p /\ q <=> p`
-  let impBody ← liftExcept (do
-    let conj ← mk_conj p q
-    mk_abs p (← mk_abs q (safe_mk_eq conj p)))
-  let IMP_DEF ← new_basic_definition (safe_mk_eq (.Var "==>" bbb) impBody)
+  let IMP_DEF ← new_basic_definition (← pt "(==>) = \\p q. p /\\ q <=> p")
+  -- MP's `p`, `q`.
+  let _ ← pt "p:bool"
+  let _ ← pt "q:bool"
 
   -- MP
   let MP_pth ← liftExcept (do
@@ -352,7 +357,9 @@ def setupBool : ExceptT String IO BoolThms := do
       EQ_MP (← EQ_MP (DEDUCT_ANTISYM_RULE th (← INST [(ant, p), (con, q)] MP_rth)) th) ith
     else failwith "MP: theorems do not agree"
 
-  -- DISCH
+  -- DISCH (its `p`, `q`)
+  let _ ← pt "p:bool"
+  let _ ← pt "q:bool"
   let DISCH_pth ← liftExcept (SYM (← BETA_RULE (← AP_THM (← AP_THM IMP_DEF p) q)))
   let DISCH : term → thm → Except String thm := fun a th => do
     let th1 ← CONJ (← ASSUME a) th
@@ -367,7 +374,9 @@ def setupBool : ExceptT String IO BoolThms := do
   let UNDISCH_ALL := UNDISCH_ALL UNDISCH
 
   -- IMP_ANTISYM_RULE
-  let imp_tm : term := .Const "==>" bbb
+  let _ ← pt "p:bool"
+  let _ ← pt "q:bool"
+  let imp_tm ← pt "(==>)"
   let IAR_pth ← liftExcept (do
     let pq ← mk_imp p q
     let qp ← mk_imp q p
@@ -388,7 +397,7 @@ def setupBool : ExceptT String IO BoolThms := do
     MP (← DISCH tm th) (← ASSUME tm)
 
   -- EQ_IMP_RULE
-  let peq : term := safe_mk_eq p q
+  let peq ← pt "p <=> q"
   let EQ_IMP_pth1 ← liftExcept (DISCH peq (← DISCH p (← EQ_MP (← ASSUME peq) (← ASSUME p))))
   let EQ_IMP_pth2 ← liftExcept (DISCH peq (← DISCH q (← EQ_MP (← SYM (← ASSUME peq)) (← ASSUME q))))
   let EQ_IMP_RULE : thm → Except String (thm × thm) := fun th => do
@@ -397,10 +406,10 @@ def setupBool : ExceptT String IO BoolThms := do
             ← MP (← INST [(l, p), (r, q)] EQ_IMP_pth2) th)
 
   -- IMP_TRANS
-  let rr : term := .Var "r" bool_ty
+  let pq ← pt "p ==> q"
+  let qr ← pt "q ==> r"
+  let rr ← liftExcept (rand qr)
   let IMP_TRANS_pth ← liftExcept (do
-    let pq ← mk_imp p q
-    let qr ← mk_imp q rr
     itlistM DISCH [pq, qr, p]
       (← MP (← ASSUME qr) (← MP (← ASSUME pq) (← ASSUME p))))
   let IMP_TRANS : thm → thm → Except String thm := fun th1 th2 => do
@@ -413,20 +422,18 @@ def setupBool : ExceptT String IO BoolThms := do
 /- Rules for !                                                            -/
 /- ---------------------------------------------------------------------- -/
   -- Rules for !
-  let Abool : hol_type := .Tyapp "fun" [aty, bool_ty]        -- A → bool
-  let allTy : hol_type := .Tyapp "fun" [Abool, bool_ty]      -- (A→bool) → bool
-  let PAb : term := .Var "P" Abool
-  let xA : term := .Var "x" aty
   -- FORALL_DEF = `(!) = \P:A->bool. P = \x. T`
-  let allTrue ← liftExcept (mk_abs xA cT)                    -- \x. T
-  let forallBody ← liftExcept (mk_abs PAb (safe_mk_eq PAb allTrue))
-  let FORALL_DEF ← new_basic_definition (safe_mk_eq (.Var "!" allTy) forallBody)
+  let FORALL_DEF ← new_basic_definition (← pt "(!) = \\P:A->bool. P = \\x. T")
 
-  -- SPEC
+  -- SPEC: `P`, `x`, then th1's arguments right to left, then th2's `x:A`.
+  let PAb ← pt "P:A->bool"
+  let xA ← pt "x:A"
+  let allP ← pt "(!)(P:A->bool)"
+  let PAb1 ← pt "P:A->bool"
+  let xA1 ← pt "x:A"
   let SPEC_pth ← liftExcept (do
-    let th1 ← EQ_MP (← AP_THM FORALL_DEF PAb)
-                    (← ASSUME (← mk_comb (.Const "!" allTy) PAb))
-    let th2 ← AP_THM (← CONV_RULE BETA_CONV th1) xA
+    let th1 ← EQ_MP (← AP_THM FORALL_DEF PAb1) (← ASSUME allP)
+    let th2 ← AP_THM (← CONV_RULE BETA_CONV th1) xA1
     let th3 ← CONV_RULE (RAND_CONV BETA_CONV) th2
     DISCH_ALL (← EQT_ELIM th3))
   let SPEC : term → thm → Except String thm := fun tm th =>
@@ -446,8 +453,9 @@ def setupBool : ExceptT String IO BoolThms := do
   let SPEC_ALL := SPEC_ALL SPEC
 
   -- GEN
+  let PAbG ← pt "P:A->bool"
   let GEN_pth ← liftExcept (SYM (← CONV_RULE (RAND_CONV BETA_CONV)
-                                             (← AP_THM FORALL_DEF PAb)))
+                                             (← AP_THM FORALL_DEF PAbG)))
   let GEN : term → thm → Except String thm := fun x th => do
     let (_, xty) ← dest_var x
     let qth ← INST_TYPE [(xty, aty)] GEN_pth
@@ -485,27 +493,23 @@ def setupBool : ExceptT String IO BoolThms := do
 /- Rules for ?                                                            -/
 /- ---------------------------------------------------------------------- -/
   -- Rules for ?
-  let qB : term := .Var "q" bool_ty
-  let QB : term := .Var "Q" bool_ty
-  let boolAllTy : hol_type := .Tyapp "fun" [.Tyapp "fun" [bool_ty, bool_ty], bool_ty]
   -- EXISTS_DEF = `(?) = \P:A->bool. !q. (!x. P x ==> q) ==> q`
-  let existsBody ← liftExcept (do
-    let px ← mk_comb PAb xA                                   -- P x
-    let pxq ← mk_imp px qB                                    -- P x ==> q
-    let allx ← mk_comb (.Const "!" allTy) (← mk_abs xA pxq)   -- !x. P x ==> q
-    let inner ← mk_imp allx qB                                -- (!x. P x ==> q) ==> q
-    let allq ← mk_comb (.Const "!" boolAllTy) (← mk_abs qB inner)  -- !q. ...
-    mk_abs PAb allq)
-  let EXISTS_DEF ← new_basic_definition (safe_mk_eq (.Var "?" allTy) existsBody)
+  let EXISTS_DEF ← new_basic_definition
+    (← pt "(?) = \\P:A->bool. !q. (!x. P x ==> q) ==> q")
 
-  -- EXISTS
-  let EXISTS_pth ← liftExcept (do
-    let th1 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM EXISTS_DEF PAb)
-    let allxPxQ ← mk_comb (.Const "!" allTy)
-                    (← mk_abs xA (← mk_imp (← mk_comb PAb xA) QB))
-    let th2 ← SPEC xA (← ASSUME allxPxQ)
-    let th3 ← DISCH allxPxQ (← MP th2 (← ASSUME (← mk_comb PAb xA)))
-    EQ_MP (← SYM th1) (← GEN QB th3))
+  -- EXISTS: `P`, `x`, then the quotations of pth in OCaml's order.
+  let PAb ← pt "P:A->bool"
+  let xA ← pt "x:A"
+  let EXISTS_pth ← do
+    let th1 ← liftExcept (do CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM EXISTS_DEF PAb))
+    let allxPxQ ← pt "!x:A. P x ==> Q"
+    let x2 ← pt "x:A"
+    let th2 ← liftExcept (do SPEC x2 (← ASSUME allxPxQ))
+    let pxA ← pt "(P:A->bool) x"
+    let allxPxQ' ← pt "!x:A. P x ==> Q"
+    let th3 ← liftExcept (do DISCH allxPxQ' (← MP th2 (← ASSUME pxA)))
+    let QB ← pt "Q:bool"
+    liftExcept (do EQ_MP (← SYM th1) (← GEN QB th3))
   let EXISTS : term × term → thm → Except String thm := fun (etm, stm) th =>
     (do let (_, abs) ← dest_comb etm
         let bth ← BETA_CONV (← mk_comb abs stm)
@@ -516,11 +520,15 @@ def setupBool : ExceptT String IO BoolThms := do
   let SIMPLE_EXISTS : term → thm → Except String thm := fun v th => do
     EXISTS (← mk_exists v (concl th), v) th
 
-  -- CHOOSE
-  let CHOOSE_pth ← liftExcept (do
-    let th1 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM EXISTS_DEF PAb)
-    let th2 ← SPEC QB (← UNDISCH (← Prod.fst <$> EQ_IMP_RULE th1))
-    DISCH_ALL (← DISCH (← mk_comb (.Const "?" allTy) PAb) (← UNDISCH th2)))
+  -- CHOOSE: `P`, `Q`, then pth's `Q:bool` and `(?) (P:A->bool)`.
+  let PAbC ← pt "P:A->bool"
+  let QB ← pt "Q:bool"
+  let CHOOSE_pth ← do
+    let th1 ← liftExcept (do CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM EXISTS_DEF PAbC))
+    let Q2 ← pt "Q:bool"
+    let th2 ← liftExcept (do SPEC Q2 (← UNDISCH (← Prod.fst <$> EQ_IMP_RULE th1)))
+    let exP ← pt "(?) (P:A->bool)"
+    liftExcept (do DISCH_ALL (← DISCH exP (← UNDISCH th2)))
   let CHOOSE : term × thm → thm → Except String thm := fun (v, th1) th2 =>
     (do let abs ← rand (concl th1)
         let (bv, bod) ← dest_abs abs
@@ -540,46 +548,63 @@ def setupBool : ExceptT String IO BoolThms := do
 /- Rules for \/                                                           -/
 /- ---------------------------------------------------------------------- -/
   -- Rules for \/
-  let rB : term := .Var "r" bool_ty
-  let tB : term := .Var "t" bool_ty
-  let cR : term := .Var "R" bool_ty
   -- OR_DEF = `(\/) = \p q. !r. (p ==> r) ==> (q ==> r) ==> r`
-  let orBody ← liftExcept (do
-    let pr ← mk_imp p rB
-    let qr ← mk_imp q rB
-    let inner ← mk_imp pr (← mk_imp qr rB)
-    let allr ← mk_comb (.Const "!" boolAllTy) (← mk_abs rB inner)
-    mk_abs p (← mk_abs q allr))
-  let OR_DEF ← new_basic_definition (safe_mk_eq (.Var "\\/" bbb) orBody)
+  let OR_DEF ← new_basic_definition
+    (← pt "(\\/) = \\p q. !r. (p ==> r) ==> (q ==> r) ==> r")
 
-  -- DISJ1
-  let DISJ1_pth ← liftExcept (do
-    let th1 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM OR_DEF cP)
-    let th2 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM th1 cQ)
-    let th3 ← MP (← ASSUME (← mk_imp cP tB)) (← ASSUME cP)
-    let th4 ← GEN tB (← DISCH (← mk_imp cP tB) (← DISCH (← mk_imp cQ tB) th3))
-    EQ_MP (← SYM th2) th4)
+  -- DISJ1 (its `P`, `Q`, then pth's quotations in OCaml's order)
+  let _ ← pt "P:bool"
+  let _ ← pt "Q:bool"
+  let DISJ1_pth ← do
+    let P1 ← pt "P:bool"
+    let th1 ← liftExcept (do CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM OR_DEF P1))
+    let Q1 ← pt "Q:bool"
+    let th2 ← liftExcept (do CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM th1 Q1))
+    let a1 ← pt "P:bool"
+    let a2 ← pt "P ==> t"
+    let th3 ← liftExcept (do MP (← ASSUME a2) (← ASSUME a1))
+    let d2 ← pt "Q ==> t"
+    let d1 ← pt "P ==> t"
+    let tB ← pt "t:bool"
+    let th4 ← liftExcept (do GEN tB (← DISCH d1 (← DISCH d2 th3)))
+    liftExcept (EQ_MP (← SYM th2) th4)
   let DISJ1 : thm → term → Except String thm := fun th tm =>
     (do EQ_MP (DEDUCT_ANTISYM_RULE th (← INST [(concl th, cP), (tm, cQ)] DISJ1_pth)) th
     ).mapError (fun _ => "DISJ1")
 
   -- DISJ2
-  let DISJ2_pth ← liftExcept (do
-    let th1 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM OR_DEF cP)
-    let th2 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM th1 cQ)
-    let th3 ← MP (← ASSUME (← mk_imp cQ tB)) (← ASSUME cQ)
-    let th4 ← GEN tB (← DISCH (← mk_imp cP tB) (← DISCH (← mk_imp cQ tB) th3))
-    EQ_MP (← SYM th2) th4)
+  let _ ← pt "P:bool"
+  let _ ← pt "Q:bool"
+  let DISJ2_pth ← do
+    let P1 ← pt "P:bool"
+    let th1 ← liftExcept (do CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM OR_DEF P1))
+    let Q1 ← pt "Q:bool"
+    let th2 ← liftExcept (do CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM th1 Q1))
+    let a1 ← pt "Q:bool"
+    let a2 ← pt "Q ==> t"
+    let th3 ← liftExcept (do MP (← ASSUME a2) (← ASSUME a1))
+    let d2 ← pt "Q ==> t"
+    let d1 ← pt "P ==> t"
+    let tB ← pt "t:bool"
+    let th4 ← liftExcept (do GEN tB (← DISCH d1 (← DISCH d2 th3)))
+    liftExcept (EQ_MP (← SYM th2) th4)
   let DISJ2 : term → thm → Except String thm := fun tm th =>
     (do EQ_MP (DEDUCT_ANTISYM_RULE th (← INST [(tm, cP), (concl th, cQ)] DISJ2_pth)) th
     ).mapError (fun _ => "DISJ2")
 
   -- DISJ_CASES
-  let DISJ_CASES_pth ← liftExcept (do
-    let th1 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM OR_DEF cP)
-    let th2 ← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM th1 cQ)
-    let th3 ← SPEC cR (← EQ_MP th2 (← ASSUME (← mk_disj cP cQ)))
-    UNDISCH (← UNDISCH th3))
+  let _ ← pt "P:bool"
+  let _ ← pt "Q:bool"
+  let cR ← pt "R:bool"
+  let DISJ_CASES_pth ← do
+    let P1 ← pt "P:bool"
+    let th1 ← liftExcept (do CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM OR_DEF P1))
+    let Q1 ← pt "Q:bool"
+    let th2 ← liftExcept (do CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM th1 Q1))
+    let pq ← pt "P \\/ Q"
+    let r ← pt "R:bool"
+    let th3 ← liftExcept (do SPEC r (← EQ_MP th2 (← ASSUME pq)))
+    liftExcept (do UNDISCH (← UNDISCH th3))
   let DISJ_CASES : thm → thm → thm → Except String thm := fun th0 th1 th2 =>
     (do let c1 := concl th1
         let c2 := concl th2
@@ -599,22 +624,22 @@ def setupBool : ExceptT String IO BoolThms := do
 /- Rules for negation and falsity                                         -/
 /- ---------------------------------------------------------------------- -/
   -- Rules for negation and falsity.
-  let notTy : hol_type := .Tyapp "fun" [bool_ty, bool_ty]
-  let cF : term := .Const "F" bool_ty
   -- F_DEF = `F = !p:bool. p`
-  let fBody ← liftExcept (mk_comb (.Const "!" boolAllTy) idfn)
-  let F_DEF ← new_basic_definition (safe_mk_eq (.Var "F" bool_ty) fBody)
+  let F_DEF ← new_basic_definition (← pt "F = !p:bool. p")
   -- NOT_DEF = `(~) = \p. p ==> F`
-  let notBody ← liftExcept (mk_abs p (← mk_imp p cF))
-  let NOT_DEF ← new_basic_definition (safe_mk_eq (.Var "~" notTy) notBody)
+  let NOT_DEF ← new_basic_definition (← pt "(~) = \\p. p ==> F")
+  -- mk_neg's `neg_tm = `(~)`` (bool.ml 431); `mk_neg` builds the term directly.
+  let _ ← pt "(~)"
 
   -- NOT_ELIM
+  let _ ← pt "P:bool"
   let NOT_ELIM_pth ← liftExcept (CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM NOT_DEF cP))
   let NOT_ELIM : thm → Except String thm := fun th =>
     (do EQ_MP (← INST [(← rand (concl th), cP)] NOT_ELIM_pth) th
     ).mapError (fun _ => "NOT_ELIM")
 
   -- NOT_INTRO
+  let _ ← pt "P:bool"
   let NOT_INTRO_pth ← liftExcept
     (SYM (← CONV_RULE (RAND_CONV BETA_CONV) (← AP_THM NOT_DEF cP)))
   let NOT_INTRO : thm → Except String thm := fun th =>
@@ -622,24 +647,35 @@ def setupBool : ExceptT String IO BoolThms := do
     ).mapError (fun _ => "NOT_INTRO")
 
   -- EQF_INTRO
-  let EQF_INTRO_pth ← liftExcept (do
-    let th1 ← NOT_ELIM (← ASSUME (← mk_neg cP))
-    let th2 ← DISCH cF (← SPEC cP (← EQ_MP F_DEF (← ASSUME cF)))
-    DISCH_ALL (← IMP_ANTISYM_RULE th1 th2))
+  let _ ← pt "P:bool"
+  let EQF_INTRO_pth ← do
+    let nP ← pt "~ P"
+    let th1 ← liftExcept (do NOT_ELIM (← ASSUME nP))
+    let f1 ← pt "F"
+    let f2 ← pt "F"
+    let th2 ← liftExcept (do DISCH f2 (← SPEC cP (← EQ_MP F_DEF (← ASSUME f1))))
+    liftExcept (do DISCH_ALL (← IMP_ANTISYM_RULE th1 th2))
   let EQF_INTRO : thm → Except String thm := fun th =>
     (do MP (← INST [(← rand (concl th), cP)] EQF_INTRO_pth) th
     ).mapError (fun _ => "EQF_INTRO")
 
   -- EQF_ELIM
-  let EQF_ELIM_pth ← liftExcept (do
-    let th1 ← EQ_MP (← ASSUME (safe_mk_eq cP cF)) (← ASSUME cP)
-    DISCH_ALL (← NOT_INTRO (← DISCH cP th1)))
+  let _ ← pt "P:bool"
+  let EQF_ELIM_pth ← do
+    let a1 ← pt "P:bool"
+    let a2 ← pt "P = F"
+    let th1 ← liftExcept (do EQ_MP (← ASSUME a2) (← ASSUME a1))
+    liftExcept (do DISCH_ALL (← NOT_INTRO (← DISCH cP th1)))
   let EQF_ELIM : thm → Except String thm := fun th =>
     (do MP (← INST [(← rand (← rator (concl th)), cP)] EQF_ELIM_pth) th
     ).mapError (fun _ => "EQF_ELIM")
 
   -- CONTR
-  let CONTR_pth ← liftExcept (SPEC cP (← EQ_MP F_DEF (← ASSUME cF)))
+  let _ ← pt "P:bool"
+  let cF ← pt "F"
+  let CONTR_pth ← do
+    let f1 ← pt "F"
+    liftExcept (do SPEC cP (← EQ_MP F_DEF (← ASSUME f1)))
   let CONTR : term → thm → Except String thm := fun tm th =>
     if concl th != cF then failwith "CONTR"
     else (do EQ_MP (DEDUCT_ANTISYM_RULE th (← INST [(tm, cP)] CONTR_pth)) th
@@ -649,18 +685,12 @@ def setupBool : ExceptT String IO BoolThms := do
 /- Rules for unique existence                                             -/
 /- ---------------------------------------------------------------------- -/
   -- Rules for unique existence.
-  let yA : term := .Var "y" aty
   -- EXISTS_UNIQUE_DEF =
   --   `(?!) = \P:A->bool. ((?) P) /\ (!x y. P x /\ P y ==> x = y)`
-  let uexBody ← liftExcept (do
-    let exP ← mk_comb (.Const "?" allTy) PAb
-    let px ← mk_comb PAb xA
-    let py ← mk_comb PAb yA
-    let imp ← mk_imp (← mk_conj px py) (safe_mk_eq xA yA)
-    let ally ← mk_comb (.Const "!" allTy) (← mk_abs yA imp)
-    let allx ← mk_comb (.Const "!" allTy) (← mk_abs xA ally)
-    mk_abs PAb (← mk_conj exP allx))
-  let EXISTS_UNIQUE_DEF ← new_basic_definition (safe_mk_eq (.Var "?!" allTy) uexBody)
+  let EXISTS_UNIQUE_DEF ← new_basic_definition
+    (← pt "(?!) = \\P:A->bool. ((?) P) /\\ (!x y. P x /\\ P y ==> x = y)")
+  -- EXISTENCE's `P`.
+  let _ ← pt "P:A->bool"
 
   -- EXISTENCE
   let EXISTENCE_pth ← liftExcept (do
@@ -694,14 +724,16 @@ logical constants T (true) and F (false). Enabled by default. Run after
 /-- Select the more verbose quantifier and constant syntax. -/
 def set_verbose_symbols : IO (Except String Unit) := do
   do_list parse_as_binder ["forall", "exists", "existsunique"]
-  let allTy : hol_type := .Tyapp "fun" [.Tyapp "fun" [aty, bool_ty], bool_ty]
-  -- bool.ml 493-497, in order; any failure propagates, as OCaml's would.
-  for (sym, tm) in [("true", (.Const "T" bool_ty : term)), ("false", .Const "F" bool_ty),
-                    ("forall", .Const "!" allTy), ("exists", .Const "?" allTy),
-                    ("existsunique", .Const "?!" allTy)] do
-    match ← override_interface sym tm with
-    | .ok () => pure ()
+  -- bool.ml 493-497, in order: each quotation is parsed just before its
+  -- override_interface; any failure propagates, as OCaml's would.
+  for (sym, q) in [("true", "T"), ("false", "F"), ("forall", "(!):(A->bool)->bool"),
+                   ("exists", "(?):(A->bool)->bool"), ("existsunique", "(?!):(A->bool)->bool")] do
+    match ← HolCore.Parser.parse_term q with
     | .error e => return .error e
+    | .ok tm =>
+      match ← override_interface sym tm with
+      | .ok () => pure ()
+      | .error e => return .error e
   return .ok ()
 
 /-- Undo `set_verbose_symbols`, restoring the terse syntax. -/

@@ -894,6 +894,9 @@ def setupNumNormalizeCtx' [HolBase]
     (num_CONV : term → IO (Except String thm))
     (NUM_ADD_CONV NUM_MULT_CONV NUM_EXP_CONV : ioconv) :
     ExceptT String IO (SemiringCtx × thm) := do
+  -- SEMIRING_PTHS is proved when normalizer.ml defines
+  -- SEMIRING_NORMALIZERS_CONV, before NUM_NORMALIZE_CONV proves `sth`.
+  let SEMIRING_PTHS ← SEMIRING_PTHS ADD_CLAUSES MULT_CLAUSES ASM_MESON_TAC INDUCT_TAC num_CONV
   let sth ← prove
    r"(!x y z. x + (y + z) = (x + y) + z) /\
      (!x y. x + y = y + x) /\
@@ -908,7 +911,6 @@ def setupNumNormalizeCtx' [HolBase]
    (REWRITE_TAC [EXP, MULT_CLAUSES, ADD_CLAUSES, LEFT_ADD_DISTRIB] THEN
     REWRITE_TAC [ADD_AC, MULT_AC])
   let rth := TRUTH
-  let SEMIRING_PTHS ← SEMIRING_PTHS ADD_CLAUSES MULT_CLAUSES ASM_MESON_TAC INDUCT_TAC num_CONV
   let ctx ← setupSemiringCtxFrom SEMIRING_PTHS TRUTH sth rth HolMath.Nums.is_numeral
     NUM_ADD_CONV NUM_MULT_CONV NUM_EXP_CONV variable_order
   return (ctx, SEMIRING_PTHS)

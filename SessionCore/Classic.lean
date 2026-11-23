@@ -1,8 +1,8 @@
 /- File: SessionCore/Classic.lean
 class.ml: classical reasoning, built by `initialize` when this module is
-imported, in class.ml's order: its axioms ETA_AX and SELECT_AX and the `@`
-binder (`classAxiomLayer`), then the rest of the file, including COND_DEF at
-its line, built quietly (`classLayer`, the bundle `C`), and its names as
+imported, in class.ml's order: its axiom ETA_AX (`classAxiomLayer`), then
+the rest of the file, including the `@` binder, SELECT_AX and COND_DEF at
+their lines, built quietly (`classLayer`, the bundle `C`), and its names as
 top-level names.
 -/
 import SessionCore.IndDefs
@@ -19,21 +19,22 @@ private def ioOk {α : Type} (what : String) (x : IO (Except String α)) : IO α
   | .ok v => pure v
   | .error e => throw (IO.userError s!"{what}: {e}")
 
-/-- class.ml's axioms, in class.ml's order: ETA_AX (16), the `@` constant and
-    binder (45-47) and SELECT_AX (53).  `setupClass` takes them as
-    parameters; COND (315) is defined inside `setupClass`, at its line. -/
-private def bootClassAxioms : IO (thm × thm) := do
-  let eta ← ioOk "ETA_AX" (do Kernel.new_axiom (← ioOk "ETA_AX parse" (HolCore.Parser.parse_term "!t:A->B. (\\x. t x) = t")))
-  let selTy ← ioOk "@ type" (HolCore.Parser.parse_type "(A->bool)->A")
-  ioOk "new_constant @" (Kernel.new_constant "@" selTy)
+/-- class.ml's first axiom, ETA_AX (16).  The `@` constant and binder
+    (45-47) and SELECT_AX (53) are made by `mkSelectAx`, which `setupClass`
+    runs at that point (after FUN_EQ_THM); COND (315) is defined inside
+    `setupClass`, at its line. -/
+private def bootClassAxioms : IO thm := do
+  ioOk "ETA_AX" (do Kernel.new_axiom (← ioOk "ETA_AX parse" (HolCore.Parser.parse_term "!t:A->B. (\\x. t x) = t")))
+
+initialize classAxiomLayer : thm ← bootClassAxioms
+
+def ETA_AX : thm := classAxiomLayer
+
+private def mkSelectAx : ExceptT String IO thm := do
+  let selTy ← ExceptT.mk (HolCore.Parser.parse_type "(A->bool)->A")
+  ExceptT.mk (Kernel.new_constant "@" selTy)
   HolCore.Printer.parse_as_binder "@"
-  let sel ← ioOk "SELECT_AX" (do Kernel.new_axiom (← ioOk "SELECT_AX parse" (HolCore.Parser.parse_term "!P (x:A). P x ==> P ((@) P)")))
-  pure (eta, sel)
-
-initialize classAxiomLayer : thm × thm ← bootClassAxioms
-
-def ETA_AX : thm := classAxiomLayer.1
-def SELECT_AX : thm := classAxiomLayer.2
+  ExceptT.mk (do Kernel.new_axiom (← ioOk "SELECT_AX parse" (HolCore.Parser.parse_term "!P (x:A). P x ==> P ((@) P)")))
 
 /-- The rest of class.ml, run quietly (as the old Session did). -/
 private def bootClass : IO ClassThms := do
@@ -41,7 +42,7 @@ private def bootClass : IO ClassThms := do
   let tiw ← HolCore.Preterm.type_invention_warning.get
   HolCore.Lib.verbose.set false
   HolCore.Preterm.type_invention_warning.set false
-  let c ← ioOk "setupClass" (setupClass B T ETA_AX SELECT_AX).run
+  let c ← ioOk "setupClass" (setupClass B T ETA_AX mkSelectAx).run
   theMonotonicityTheorems.set
     (c.MONO_COND :: [T.MONO_AND, T.MONO_OR, T.MONO_IMP, T.MONO_NOT, T.MONO_EXISTS, T.MONO_FORALL])
   theInductiveTypeStore.set [("bool", (2, c.bool_INDUCT, c.bool_RECURSION))]
@@ -52,6 +53,9 @@ private def bootClass : IO ClassThms := do
 initialize classLayer : ClassThms ← bootClass
 
 def C : ClassThms := classLayer
+
+/-- `SELECT_AX` (class.ml 53), made by `setupClass`. -/
+def SELECT_AX : thm := C.SELECT_AX
 
 /-- `COND_DEF` (class.ml 315), defined by `setupClass` at its line. -/
 def COND_DEF : thm := C.COND_DEF

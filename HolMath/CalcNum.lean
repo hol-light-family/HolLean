@@ -703,9 +703,9 @@ open HolLight HolLight.Syntax
 /-- The delicate-conversion proformas of calc_num.ml, in file order:
     NUM_ADD_RULE (348-425), NUM_SHIFT_CONV (426-603), NUM_UNSHIFT_CONV
     (605-693), NUM_SQUARE_RULE (695-830), NUM_MUL_RULE (921-970) and the
-    exported conversions (1124-1560).  Where one tactic contains several
-    rules that print (MESON), they are bound last one first, as OCaml
-    evaluates the tactic expression right to left. -/
+    exported conversions (1124-1560).  OCaml evaluates a tactic expression
+    right to left; the OcamlOrder `do` macro runs the rules that print
+    (MESON) in that order. -/
 @[nospecialize]
 def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
     (NUMERAL BIT0 BIT1 ADD_CLAUSES MULT_CLAUSES SUC_INJ EQ_MULT_LCANCEL MULT_2
@@ -717,7 +717,8 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
     (MESON_TAC : List thm → tactic)
     (MOD_DOWN_CONV : ioconv)
     (NUM_CANCEL_CONV : ioconv)
-    (mk_small_numeral : Int → Except String term) :
+    (mk_small_numeral : Int → Except String term)
+    (procs : ExceptT String IO Unit) :
     ExceptT String IO CalcNumProformas := do
   let { IMP_CONJ, .. } := HolBase.T
   let { DE_MORGAN_THM, .. } := HolBase.C
@@ -1026,15 +1027,13 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
     GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [ADD_SYM] THEN
     REWRITE_TAC [EQ_ADD_RCANCEL]))
   let sq_pth_qstep ← do
-    let cancel ← MESON [EQ_ADD_LCANCEL] r"!m:num. m + n = m + p ==> n = p"
-    let zero ← MESON [NUMERAL] r"_0 = 0"
     UNDISCH (← STANDARDIZE (← prove
      r"n + BIT1 _0 = m /\
        m EXP 2 = p /\
        m + a = BIT0(BIT0 p)
        ==> (BIT1(BIT1(BIT1 n))) EXP 2 = BIT1(BIT0(BIT0(BIT0 a)))"
      (ABBREV_TAC (← q r"two = 2") THEN
-      SUBST1_TAC zero THEN
+      SUBST1_TAC (← MESON [NUMERAL] r"_0 = 0") THEN
       REWRITE_TAC [BIT1, BIT0] THEN EXPAND_TAC "two" THEN
       REWRITE_TAC [← GSYM MULT_2] THEN
       REWRITE_TAC [ADD1, LEFT_ADD_DISTRIB, ← GSYM ADD_ASSOC] THEN
@@ -1042,7 +1041,7 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
       REWRITE_TAC [IMP_CONJ] THEN
       DISCH_THEN (SUBST1_TAC o SYM) THEN
       DISCH_THEN (SUBST1_TAC o SYM) THEN DISCH_TAC THEN
-      MATCH_MP_TAC cancel THEN
+      MATCH_MP_TAC (← MESON [EQ_ADD_LCANCEL] r"!m:num. m + n = m + p ==> n = p") THEN
       EXISTS_TAC (← q r"16 * (n + 1)") THEN
       ASM_REWRITE_TAC [ADD_ASSOC, ← GSYM LEFT_ADD_DISTRIB] THEN
       EXPAND_TAC "two" THEN REWRITE_TAC [EXP_2] THEN
@@ -1079,13 +1078,6 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
       (upto 1 n).mapM (fun k => do
         SYM (← ExceptT.mk (REWRITE_CONV [A.ARITH_SUC]
           (← liftExcept (mk_comb K.suc_tm (← liftExcept (mk_small_numeral (k - 1))))))))
-    let lem2 ← MESON []
-     r"b = b' /\ c = c' /\ d = d'
-        ==> b + d':num = b' + d /\ 4 * b + d' = 4 * b' + d"
-    let lem1 ← MESON []
-     r"b = b' /\ c = c' /\ d = d'
-        ==> 5 * b + c' + d' = 5 * b' + c + d"
-    let zero ← MESON [NUMERAL] r"_0 = 0"
     STANDARDIZE (← prove
      r"h EXP 2 = e /\
        l EXP 2 = a /\
@@ -1100,7 +1092,7 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
        ==> (l + p * (m + p * h)) EXP 2 =
            a + p * (b + p * (c + p * (d + p * e)))"
      (ABBREV_TAC (← q r"two = 2") THEN
-      SUBST1_TAC zero THEN
+      SUBST1_TAC (← MESON [NUMERAL] r"_0 = 0") THEN
       REWRITE_TAC [BIT1, BIT0] THEN
       EXPAND_TAC "two" THEN REWRITE_TAC [← GSYM MULT_2] THEN
       REWRITE_TAC [A.ARITH] THEN
@@ -1130,12 +1122,16 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
       REWRITE_TAC [MULT_CLAUSES, EQ_ADD_LCANCEL] THEN
       REWRITE_TAC [ADD_ASSOC, EQ_ADD_RCANCEL] THEN
       REWRITE_TAC [← GSYM ADD_ASSOC] THEN DISCH_TAC THEN
-      FIRST_ASSUM (MP_TAC o MATCH_MP lem1) THEN
+      FIRST_ASSUM (MP_TAC o MATCH_MP (← MESON []
+     r"b = b' /\ c = c' /\ d = d'
+        ==> 5 * b + c' + d' = 5 * b' + c + d")) THEN
       REWRITE_TAC [LEFT_ADD_DISTRIB, MULT_ASSOC] THEN
       REWRITE_TAC (← sucSyms 5) THEN
       REWRITE_TAC [MULT_CLAUSES, ADD_CLAUSES] THEN
       CONV_TAC (LAND_CONV NUM_CANCEL_CONV) THEN DISCH_THEN SUBST_ALL_TAC THEN
-      FIRST_ASSUM (MP_TAC o MATCH_MP lem2) THEN
+      FIRST_ASSUM (MP_TAC o MATCH_MP (← MESON []
+     r"b = b' /\ c = c' /\ d = d'
+        ==> b + d':num = b' + d /\ 4 * b + d' = 4 * b' + d")) THEN
       REWRITE_TAC [LEFT_ADD_DISTRIB, MULT_ASSOC] THEN
       REWRITE_TAC (← sucSyms 4) THEN
       REWRITE_TAC [MULT_CLAUSES, ADD_CLAUSES] THEN
@@ -1293,7 +1289,7 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
   -- of `CalcNumConsts`.
   let quotes (l : List String) : ExceptT String IO Unit := do
     for s in l do let _ ← q s
-  quotes [r"m:num", r"n:num", r"SUC"]
+  quotes [r"m:num", r"n:num", r"SUC", r"PRE"]
 
   /- NUM_SUB_CONV (calc_num.ml 1343-1370). -/
 
@@ -1327,6 +1323,10 @@ def setupCalcNumProformas [HolBase] (K : CalcNumConsts) (A : ArithRewrites)
    (REPEAT (DISCH_THEN (SUBST1_TAC o SYM)) THEN
     REWRITE_TAC [FACT])
   quotes [r"w:num", r"x:num", r"y:num", r"z:num"]
+
+  -- calc_num.ml 1443-1491: NUM_REL_CONV, num_red_conv_list, NUM_RED_CONV and
+  -- NUM_COMPUTE_CONV parse their patterns here; Session does it in `procs`.
+  procs
 
   -- num_CONV's `SUC_tm = `SUC`` (calc_num.ml 1500).
   quotes [r"SUC"]
@@ -1813,62 +1813,64 @@ def netOfConvs (l : List (term × ioconv)) (sofar : HolCore.Nets.net gconv) :
     | .ok n => acc := n
   return .ok acc
 
+/-- The patterns of `NUM_REL_CONV` (calc_num.ml 1444-1453), parsed as OCaml
+    builds the list literal, last element first.  Returned in list order. -/
+def num_rel_patterns : ExceptT String IO (List term) := do
+  let eqP ← HolLight.q "NUMERAL m = NUMERAL n"
+  let geP ← HolLight.q "NUMERAL m >= NUMERAL n"
+  let gtP ← HolLight.q "NUMERAL m > NUMERAL n"
+  let leP ← HolLight.q "NUMERAL m <= NUMERAL n"
+  let ltP ← HolLight.q "NUMERAL m < NUMERAL n"
+  pure [ltP, leP, gtP, geP, eqP]
+
 /-- `NUM_REL_CONV` (calc_num.ml 1444-1453): the relational reductions
-    (`<`, `<=`, `>`, `>=`, `=`) as a net conversion over `basic_net ()`. -/
-def NUM_REL_CONV (numLtConv numLeConv numGtConv numGeConv numEqConv : ioconv) :
+    (`<`, `<=`, `>`, `>=`, `=`) as a net conversion over `basic_net ()`.
+    `pats` are those of `num_rel_patterns`, parsed where calc_num.ml parses
+    them. -/
+def NUM_REL_CONV (pats : List term)
+    (numLtConv numLeConv numGtConv numGeConv numEqConv : ioconv) :
     IO (Except String ioconv) := do
-  match ← (do
-      let ltP ← HolLight.q "NUMERAL m < NUMERAL n"
-      let leP ← HolLight.q "NUMERAL m <= NUMERAL n"
-      let gtP ← HolLight.q "NUMERAL m > NUMERAL n"
-      let geP ← HolLight.q "NUMERAL m >= NUMERAL n"
-      let eqP ← HolLight.q "NUMERAL m = NUMERAL n"
-      pure (ltP, leP, gtP, geP, eqP)
-      : ExceptT String IO (term × term × term × term × term)).run with
+  let bnet ← (Simp.basic_net : IO (HolCore.Nets.net gconv))
+  match ← netOfConvs (pats.zip [numLtConv, numLeConv, numGtConv, numGeConv, numEqConv])
+      bnet with
   | .error e => return .error e
-  | .ok (ltP, leP, gtP, geP, eqP) =>
-    let bnet ← (Simp.basic_net : IO (HolCore.Nets.net gconv))
-    match ← netOfConvs
-        [(ltP, numLtConv), (leP, numLeConv), (gtP, numGtConv),
-         (geP, numGeConv), (eqP, numEqConv)] bnet with
-    | .error e => return .error e
-    | .ok gconv_net => return .ok (Simp.REWRITES_CONV gconv_net)
+  | .ok gconv_net => return .ok (Simp.REWRITES_CONV gconv_net)
+
+/-- The patterns of `num_red_conv_list` (calc_num.ml 1455-1474), parsed as
+    OCaml builds the list literal, last element first.  In list order. -/
+def num_red_patterns : ExceptT String IO (List term) := do
+  let minP ← HolLight.q "MIN (NUMERAL m) (NUMERAL n)"
+  let maxP ← HolLight.q "MAX (NUMERAL m) (NUMERAL n)"
+  let modP ← HolLight.q "(NUMERAL m) MOD (NUMERAL n)"
+  let divP ← HolLight.q "(NUMERAL m) DIV (NUMERAL n)"
+  let expP ← HolLight.q "(NUMERAL m) EXP (NUMERAL n)"
+  let mulP ← HolLight.q "NUMERAL m * NUMERAL n"
+  let subP ← HolLight.q "NUMERAL m - NUMERAL n"
+  let addP ← HolLight.q "NUMERAL m + NUMERAL n"
+  let oddP ← HolLight.q "ODD(NUMERAL n)"
+  let evenP ← HolLight.q "EVEN(NUMERAL n)"
+  let eqP ← HolLight.q "NUMERAL m = NUMERAL n"
+  let geP ← HolLight.q "NUMERAL m >= NUMERAL n"
+  let gtP ← HolLight.q "NUMERAL m > NUMERAL n"
+  let leP ← HolLight.q "NUMERAL m <= NUMERAL n"
+  let ltP ← HolLight.q "NUMERAL m < NUMERAL n"
+  let factP ← HolLight.q "FACT(NUMERAL n)"
+  let preP ← HolLight.q "PRE(NUMERAL n)"
+  let sucP ← HolLight.q "SUC(NUMERAL n)"
+  pure [sucP, preP, factP, ltP, leP, gtP, geP, eqP, evenP, oddP, addP, subP,
+        mulP, expP, divP, modP, maxP, minP]
 
 /-- `num_red_conv_list` (calc_num.ml 1455-1474): the 18-entry pattern/conversion
-    dispatch table.  All conversions are passed pre-built. -/
-def num_red_conv_list
+    dispatch table.  `pats` are those of `num_red_patterns`; all conversions
+    are passed pre-built. -/
+def num_red_conv_list (pats : List term)
     (numSucConv numPreConv numFactConv numLtConv numLeConv numGtConv numGeConv
      numEqConv numEvenConv numOddConv numAddConv numSubConv numMultConv
      numExpConv numDivConv numModConv numMaxConv numMinConv : ioconv) :
-    IO (Except String (List (term × ioconv))) := do
-  match ← (do
-      let sucP ← HolLight.q "SUC(NUMERAL n)"
-      let preP ← HolLight.q "PRE(NUMERAL n)"
-      let factP ← HolLight.q "FACT(NUMERAL n)"
-      let ltP ← HolLight.q "NUMERAL m < NUMERAL n"
-      let leP ← HolLight.q "NUMERAL m <= NUMERAL n"
-      let gtP ← HolLight.q "NUMERAL m > NUMERAL n"
-      let geP ← HolLight.q "NUMERAL m >= NUMERAL n"
-      let eqP ← HolLight.q "NUMERAL m = NUMERAL n"
-      let evenP ← HolLight.q "EVEN(NUMERAL n)"
-      let oddP ← HolLight.q "ODD(NUMERAL n)"
-      let addP ← HolLight.q "NUMERAL m + NUMERAL n"
-      let subP ← HolLight.q "NUMERAL m - NUMERAL n"
-      let mulP ← HolLight.q "NUMERAL m * NUMERAL n"
-      let expP ← HolLight.q "(NUMERAL m) EXP (NUMERAL n)"
-      let divP ← HolLight.q "(NUMERAL m) DIV (NUMERAL n)"
-      let modP ← HolLight.q "(NUMERAL m) MOD (NUMERAL n)"
-      let maxP ← HolLight.q "MAX (NUMERAL m) (NUMERAL n)"
-      let minP ← HolLight.q "MIN (NUMERAL m) (NUMERAL n)"
-      pure [(sucP, numSucConv), (preP, numPreConv), (factP, numFactConv),
-            (ltP, numLtConv), (leP, numLeConv), (gtP, numGtConv),
-            (geP, numGeConv), (eqP, numEqConv), (evenP, numEvenConv),
-            (oddP, numOddConv), (addP, numAddConv), (subP, numSubConv),
-            (mulP, numMultConv), (expP, numExpConv), (divP, numDivConv),
-            (modP, numModConv), (maxP, numMaxConv), (minP, numMinConv)]
-      : ExceptT String IO (List (term × ioconv))).run with
-  | .error e => return .error e
-  | .ok l => return .ok l
+    List (term × ioconv) :=
+  pats.zip [numSucConv, numPreConv, numFactConv, numLtConv, numLeConv, numGtConv,
+            numGeConv, numEqConv, numEvenConv, numOddConv, numAddConv, numSubConv,
+            numMultConv, numExpConv, numDivConv, numModConv, numMaxConv, numMinConv]
 
 /-- `NUM_RED_CONV` (calc_num.ml 1476-1479): the full single-step numeral
     reduction as a net conversion over `basic_net ()`. -/
@@ -1894,25 +1896,33 @@ def num_compute_add_convs (redList : List (term × ioconv))
     | .ok _ => pure ()
   return .ok ()
 
-/-- `NUM_COMPUTE_CONV` (calc_num.ml 1489-1493): call-by-value evaluation of a
-    numeral term via a `bool_compset ()` extended with the reduction
-    conversions.  `bool_compset`, `set_skip`, `add_conv` and `WEAK_CBV_CONV`
-    are injected because the pure library cannot reach the session state. -/
-def NUM_COMPUTE_CONV (redList : List (term × ioconv))
+/-- The start of `NUM_COMPUTE_CONV` (calc_num.ml 1489-1490): `let cs =
+    Compute.bool_compset () in Compute.set_skip cs \`COND: ..\` (Some 1)`.
+    `condTm` parses the quotation; it runs after `bool_compset`, as in OCaml. -/
+def num_compute_compset
     (bool_compset : IO (Except String HolMath.Compute.compset))
     (set_skip : HolMath.Compute.compset → term → Option Int → IO (Except String Unit))
-    (add_conv : term → Int → ioconv → HolMath.Compute.compset → IO (Except String Unit))
-    (WEAK_CBV_CONV : HolMath.Compute.compset → ioconv)
-    (condTm : term) : IO (Except String ioconv) := do
+    (condTm : ExceptT String IO term) : IO (Except String HolMath.Compute.compset) := do
   match ← bool_compset with
   | .error e => return .error e
   | .ok cs =>
-    match ← set_skip cs condTm (some 1) with
+    match ← condTm.run with
     | .error e => return .error e
-    | .ok _ =>
-      match ← num_compute_add_convs redList add_conv cs with
+    | .ok cond =>
+      match ← set_skip cs cond (some 1) with
       | .error e => return .error e
-      | .ok _ => return .ok (WEAK_CBV_CONV cs)
+      | .ok _ => return .ok cs
+
+/-- `NUM_COMPUTE_CONV` (calc_num.ml 1489-1493): call-by-value evaluation of a
+    numeral term via `cs` (from `num_compute_compset`) extended with the
+    reduction conversions.  `add_conv` and `WEAK_CBV_CONV` are injected
+    because the pure library cannot reach the session state. -/
+def NUM_COMPUTE_CONV (redList : List (term × ioconv)) (cs : HolMath.Compute.compset)
+    (add_conv : term → Int → ioconv → HolMath.Compute.compset → IO (Except String Unit))
+    (WEAK_CBV_CONV : HolMath.Compute.compset → ioconv) : IO (Except String ioconv) := do
+  match ← num_compute_add_convs redList add_conv cs with
+  | .error e => return .error e
+  | .ok _ => return .ok (WEAK_CBV_CONV cs)
 
 /- ---------------------------------------------------------------------- -/
 /- I do like this after all...                                            -/
@@ -2291,7 +2301,9 @@ def setupCalcNumNets [HolBase] (A : ArithRewrites) (K : CalcNumConsts) (P : Calc
   let exp_tconv ← GEN_REWRITE_CONV_NET id [P.exp_tth]
   let gt_conv ← GEN_REWRITE_CONV_NET id [GT]
   let ge_conv ← GEN_REWRITE_CONV_NET id [GE]
-  let pre_tm ← q r"PRE"
+  -- NUM_PRE_CONV's `pre = \`PRE\`` was parsed with its proformas (see
+  -- setupCalcNumProformas); this is the same constant, from `PRE 0 = 0`.
+  let pre_tm ← liftExcept (rator (← liftExcept (lhs (concl P.pre_tth))))
   let q_tm := mk_var "q" K.num_ty
   let r_tm := mk_var "r" K.num_ty
   let w_tm := mk_var "w" K.num_ty

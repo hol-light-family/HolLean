@@ -14,10 +14,11 @@
   the bundles in order and exports every name under its HOL Light name.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, REAL_ARITH, TAUT, SET_RULE) they are bound
-  first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Wo
@@ -259,11 +260,10 @@ def setupBasics [HolBase] (D : CardDeps) :
        (!y. y IN t ==> (f(g(y)) = y)) /\
        (!x. x IN s ==> (g(f(x)) = x))"
    (← do
-    let t ← TAUT (← q r"(a ==> (b <=> c)) ==> (a /\ b <=> a /\ c)")
     pure (REWRITE_TAC [BIJECTIVE_INJECTIVE_SURJECTIVE,
                   INJECTIVE_ON_LEFT_INVERSE,
                   SURJECTIVE_ON_RIGHT_INVERSE] THEN
-      MATCH_MP_TAC t THEN
+      MATCH_MP_TAC (← TAUT (← q r"(a ==> (b <=> c)) ==> (a /\ b <=> a /\ c)")) THEN
       DISCH_TAC THEN REWRITE_TAC [RIGHT_AND_EXISTS_THM] THEN
       AP_TERM_TAC THEN ABS_TAC THEN EQ_TAC THEN ASM_MESON_TAC []))
 
@@ -332,20 +332,18 @@ def setupBasics [HolBase] (D : CardDeps) :
    r"!s:A->bool t:B->bool u:C->bool.
        s <=_c t /\ t <_c u ==> s <_c u"
    (← do
-    let t ← TAUT (← q r"(a /\ b ==> c) /\ (c' /\ a ==> b')
-                     ==> a /\ b /\ ~b' ==> c /\ ~c'")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [lt_c] THEN
-      MATCH_MP_TAC t THEN
+      MATCH_MP_TAC (← TAUT (← q r"(a /\ b ==> c) /\ (c' /\ a ==> b')
+                     ==> a /\ b /\ ~b' ==> c /\ ~c'")) THEN
       REWRITE_TAC [CARD_LE_TRANS]))
 
   let CARD_LTE_TRANS ← prove
    r"!s:A->bool t:B->bool u:C->bool.
        s <_c t /\ t <=_c u ==> s <_c u"
    (← do
-    let t ← TAUT (← q r"(a /\ b ==> c) /\ (b /\ c' ==> a')
-                     ==> (a /\ ~a') /\ b ==> c /\ ~c'")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [lt_c] THEN
-      MATCH_MP_TAC t THEN
+      MATCH_MP_TAC (← TAUT (← q r"(a /\ b ==> c) /\ (b /\ c' ==> a')
+                     ==> (a /\ ~a') /\ b ==> c /\ ~c'")) THEN
       REWRITE_TAC [CARD_LE_TRANS]))
 
   let CARD_LT_TRANS ← prove
@@ -583,11 +581,10 @@ def setupOrder [HolBase] (D : CardDeps) (BBasics : Basics) (ADefs : HolLibrary.W
    r"!s:A->bool s':B->bool t:C->bool t':D->bool.
       s =_c s' /\ t =_c t' ==> (s <=_c t <=> s' <=_c t')"
    (← do
-    let t ← TAUT
-     (← q r"!x y. (b /\ e ==> x) /\ (x /\ c ==> f) /\ (a /\ f ==> y) /\ (y /\ d ==> e)
-            ==> (a /\ b) /\ (c /\ d) ==> (e <=> f)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [← GSYM CARD_LE_ANTISYM] THEN
-      MATCH_MP_TAC t THEN
+      MATCH_MP_TAC (← TAUT
+     (← q r"!x y. (b /\ e ==> x) /\ (x /\ c ==> f) /\ (a /\ f ==> y) /\ (y /\ d ==> e)
+            ==> (a /\ b) /\ (c /\ d) ==> (e <=> f)")) THEN
       MAP_EVERY EXISTS_TAC
        [← q r"(s':B->bool) <=_c (t:C->bool)",
         ← q r"(s:A->bool) <=_c (t':D->bool)"] THEN
@@ -623,8 +620,7 @@ def setupOrder [HolBase] (D : CardDeps) (BBasics : Basics) (ADefs : HolLibrary.W
   let FINITE_CARD_LT ← prove
    r"!s:A->bool. FINITE s <=> s <_c (UNIV:num->bool)"
    (← do
-    let t ← TAUT (← q r"(a <=> b) <=> (~a <=> ~b)")
-    pure (ONCE_REWRITE_TAC [t] THEN
+    pure (ONCE_REWRITE_TAC [(← TAUT (← q r"(a <=> b) <=> (~a <=> ~b)"))] THEN
       REWRITE_TAC [← GSYM INFINITE, CARD_NOT_LT, INFINITE_CARD_LE]))
 
   let CARD_LE_SUBSET ← prove
@@ -638,12 +634,11 @@ def setupOrder [HolBase] (D : CardDeps) (BBasics : Basics) (ADefs : HolLibrary.W
   let CARD_LE_EQ_SUBSET ← prove
    r"!s:A->bool t:B->bool. s <=_c t <=> ?u. u SUBSET t /\ (s =_c u)"
    (← do
-    let t ← TAUT (← q r"(a <=> b) ==> b ==> a")
     pure (REPEAT GEN_TAC THEN EQ_TAC THENL
        [ALL_TAC,
         REPEAT STRIP_TAC THEN
         FIRST_ASSUM (MP_TAC o MATCH_MP CARD_LE_SUBSET) THEN
-        MATCH_MP_TAC t THEN
+        MATCH_MP_TAC (← TAUT (← q r"(a <=> b) ==> b ==> a")) THEN
         MATCH_MP_TAC CARD_LE_CONG THEN
         ASM_REWRITE_TAC [CARD_LE_CONG, CARD_EQ_REFL]] THEN
       REWRITE_TAC [le_c, eq_c] THEN
@@ -665,8 +660,7 @@ def setupOrder [HolBase] (D : CardDeps) (BBasics : Basics) (ADefs : HolLibrary.W
   let CARD_FINITE_CONG ← prove
    r"!s:A->bool t:B->bool. s =_c t ==> (FINITE s <=> FINITE t)"
    (← do
-    let t ← TAUT (← q r"(a <=> b) <=> (~a <=> ~b)")
-    pure (ONCE_REWRITE_TAC [t] THEN
+    pure (ONCE_REWRITE_TAC [(← TAUT (← q r"(a <=> b) <=> (~a <=> ~b)"))] THEN
       REWRITE_TAC [← GSYM INFINITE, CARD_INFINITE_CONG]))
 
   let CARD_LE_FINITE ← prove
@@ -700,7 +694,6 @@ def setupOrder [HolBase] (D : CardDeps) (BBasics : Basics) (ADefs : HolLibrary.W
   let CARD_LE_CARD_IMP ← prove
    r"!s:A->bool t:B->bool. FINITE t /\ s <=_c t ==> CARD s <= CARD t"
    (← do
-    let ar ← ARITH_RULE (← q r"(m = n:num) ==> n <= m")
     pure (REPEAT STRIP_TAC THEN
       SUBGOAL_THEN (← q r"FINITE(s:A->bool)") ASSUME_TAC THENL
        [ASM_MESON_TAC [CARD_LE_FINITE], ALL_TAC] THEN
@@ -708,7 +701,7 @@ def setupOrder [HolBase] (D : CardDeps) (BBasics : Basics) (ADefs : HolLibrary.W
       DISCH_THEN (X_CHOOSE_THEN (← q r"f:A->B") STRIP_ASSUME_TAC) THEN
       MATCH_MP_TAC LE_TRANS THEN EXISTS_TAC (← q r"CARD(IMAGE (f:A->B) s)") THEN
       CONJ_TAC THENL
-       [MATCH_MP_TAC ar THEN
+       [MATCH_MP_TAC (← ARITH_RULE (← q r"(m = n:num) ==> n <= m")) THEN
         MATCH_MP_TAC CARD_IMAGE_INJ THEN ASM_REWRITE_TAC [],
         MATCH_MP_TAC CARD_SUBSET THEN ASM_REWRITE_TAC [] THEN
         ASM_MESON_TAC [SUBSET, IN_IMAGE]]))
@@ -721,14 +714,12 @@ def setupOrder [HolBase] (D : CardDeps) (BBasics : Basics) (ADefs : HolLibrary.W
    r"!s:A->bool t:B->bool.
         FINITE s /\ FINITE t ==> (s <=_c t <=> CARD s <= CARD t)"
    (← do
-    let t2 ← TAUT (← q r"(c ==> a ==> b) ==> a /\ ~b ==> ~c")
-    let t1 ← TAUT (← q r"(a ==> b) /\ (~a ==> ~b) ==> (a <=> b)")
     pure (REPEAT STRIP_TAC THEN
-      MATCH_MP_TAC t1 THEN
+      MATCH_MP_TAC (← TAUT (← q r"(a ==> b) /\ (~a ==> ~b) ==> (a <=> b)")) THEN
       ASM_SIMP_TAC [CARD_LE_CARD_IMP] THEN
       REWRITE_TAC [CARD_NOT_LE, NOT_LE] THEN REWRITE_TAC [lt_c, LT_LE] THEN
       ASM_SIMP_TAC [CARD_LE_CARD_IMP] THEN
-      MATCH_MP_TAC t2 THEN
+      MATCH_MP_TAC (← TAUT (← q r"(c ==> a ==> b) ==> a /\ ~b ==> ~c")) THEN
       DISCH_TAC THEN GEN_REWRITE_TAC LAND_CONV [CARD_LE_EQ_SUBSET] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"u:A->bool") STRIP_ASSUME_TAC) THEN
       MATCH_MP_TAC CARD_EQ_IMP_LE THEN
@@ -854,48 +845,41 @@ def setupOrder [HolBase] (D : CardDeps) (BBasics : Basics) (ADefs : HolLibrary.W
   let CARD_EQ_ORDINAL_EXISTS ← prove
    r"!s:A->bool. ?l:A->A->bool. ordinal l /\ fld l =_c s"
    (← do
-    let s2 ← SET_RULE (← q r"(\x. x IN s) = s")
-    let s1 ← SET_RULE (← q r"s = UNIV <=> !x. s x")
-    let io ← REWRITE_RULE [IMP_CONJ_ALT] INSEG_ORDINAL
     pure (REPEAT STRIP_TAC THEN
       SUBGOAL_THEN (← q r"?l:A->A->bool. ordinal l /\ !x. fld l x") STRIP_ASSUME_TAC THENL
        [REWRITE_TAC [WO_ORDINAL],
         MP_TAC (← ISPECL [← q r"l:A->A->bool", ← q r"s:A->bool"] SUBWOSET_ISO_INSEG)] THEN
       FIRST_ASSUM (ASSUME_TAC o CONJUNCT1 o REWRITE_RULE [ordinal]) THEN
-      ASM_REWRITE_TAC [s1] THEN
+      ASM_REWRITE_TAC [(← SET_RULE (← q r"s = UNIV <=> !x. s x"))] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"f:A->A") STRIP_ASSUME_TAC) THEN
       EXISTS_TAC (← q r"\x y. x IN IMAGE (f:A->A) s /\ y IN IMAGE f s /\ l x y") THEN
       CONJ_TAC THENL
-       [FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP io) THEN ASM_SIMP_TAC [inseg, FLD_RESTRICT],
+       [FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP (← REWRITE_RULE [IMP_CONJ_ALT] INSEG_ORDINAL)) THEN ASM_SIMP_TAC [inseg, FLD_RESTRICT],
         GEN_REWRITE_TAC LAND_CONV [← GSYM ETA_AX] THEN
-        ASM_SIMP_TAC [FLD_RESTRICT, s2] THEN
+        ASM_SIMP_TAC [FLD_RESTRICT, (← SET_RULE (← q r"(\x. x IN s) = s"))] THEN
         MATCH_MP_TAC CARD_EQ_IMAGE] THEN
       REPEAT (POP_ASSUM MP_TAC) THEN REWRITE_TAC [properly, woset] THEN SET_TAC []))
 
   let WF_CARD_LT ← prove
    r"WF((<_c):(A->bool)->(A->bool)->bool)"
    (← do
-    let s1 ← SET_RULE (← q r"(!x. s x ==> t x) <=> s SUBSET t")
-    let t1 ← TAUT (← q r"~p /\ (~p /\ q ==> r) ==> p \/ q ==> r")
-    let wfs ← REWRITE_RULE [IMP_CONJ] WF_SUBSET
-    let wm ← MATCH_MP WF_MEASURE_GEN
-      (← HolLight.INST_TYPE [(← qty "B", ← qty "A")] WF_INSEG_WOSET)
     pure (SUBGOAL_THEN
        (← q r"?w:(A->bool)->A->A->bool. (!s. ordinal(w s)) /\ (!s. fld(w s) =_c s)")
       STRIP_ASSUME_TAC THENL
        [REWRITE_TAC [AND_FORALL_THM, ← GSYM SKOLEM_THM, CARD_EQ_ORDINAL_EXISTS],
         ALL_TAC] THEN
-      MP_TAC (← ISPEC (← q r"w:(A->bool)->A->A->bool") wm) THEN
-      MATCH_MP_TAC wfs THEN
+      MP_TAC (← ISPEC (← q r"w:(A->bool)->A->A->bool") (← MATCH_MP WF_MEASURE_GEN
+      (← HolLight.INST_TYPE [(← qty "B", ← qty "A")] WF_INSEG_WOSET))) THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] WF_SUBSET) THEN
       REWRITE_TAC [] THEN
       MAP_EVERY X_GEN_TAC [← q r"s:A->bool", ← q r"t:A->bool"] THEN DISCH_TAC THEN
       ASM_SIMP_TAC [ORDINAL_IMP_WOSET] THEN
       MP_TAC (← ISPECL [← q r"(w:(A->bool)->A->A->bool) s", ← q r"(w:(A->bool)->A->A->bool) t"]
             ORDINAL_CHAINED) THEN
-      ASM_REWRITE_TAC [] THEN MATCH_MP_TAC t1 THEN
+      ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← TAUT (← q r"~p /\ (~p /\ q ==> r) ==> p \/ q ==> r")) THEN
       CONJ_TAC THENL [ALL_TAC, MESON_TAC [INSEG_REFL]] THEN
       DISCH_THEN (MP_TAC o MATCH_MP INSEG_SUBSET_FLD) THEN
-      REWRITE_TAC [s1, ETA_AX] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"(!x. s x ==> t x) <=> s SUBSET t")), ETA_AX] THEN
       DISCH_THEN (MP_TAC o MATCH_MP CARD_LE_SUBSET) THEN
       REWRITE_TAC [CARD_NOT_LE] THEN
       TRANS_TAC CARD_LET_TRANS (← q r"s:A->bool") THEN
@@ -1000,13 +984,12 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
    r"!s:A->bool s':B->bool t:C->bool t':D->bool.
       s <=_c s' /\ t <=_c t' ==> s +_c t <=_c s' +_c t'"
    (← do
-    let pr ← prove_recursive_functions_exist sum_RECURSION
-     (← q r"(!x. h(INL x) = INL((f:A->B) x)) /\ (!y. h(INR y) = INR((g:C->D) y))")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [le_c, add_c] THEN
       DISCH_THEN (CONJUNCTS_THEN2
        (X_CHOOSE_THEN (← q r"f:A->B") STRIP_ASSUME_TAC)
        (X_CHOOSE_THEN (← q r"g:C->D") STRIP_ASSUME_TAC)) THEN
-      MP_TAC pr THEN
+      MP_TAC (← prove_recursive_functions_exist sum_RECURSION
+     (← q r"(!x. h(INL x) = INL((f:A->B) x)) /\ (!y. h(INR y) = INR((g:C->D) y))")) THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"h:(A+C)->(B+D)") THEN STRIP_TAC THEN
       REWRITE_TAC [IN_UNION, IN_ELIM_THM] THEN
       CONJ_TAC THEN REPEAT GEN_TAC THEN
@@ -1099,12 +1082,11 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
   let CARD_ADD_C ← prove
    r"!s t. FINITE s /\ FINITE t ==> CARD(s +_c t) = CARD s + CARD t"
    (← do
-    let s1 ← SET_RULE (← q r"IMAGE f s INTER IMAGE g t = {} <=>
-                          !x y. x IN s /\ y IN t ==> ~(f x = g y)")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [add_c] THEN
       mpPartLhand (fun c => do lhs (← rand c)) CARD_UNION THEN
       ASM_SIMP_TAC [SIMPLE_IMAGE, FINITE_IMAGE] THEN
-      REWRITE_TAC [s1] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"IMAGE f s INTER IMAGE g t = {} <=>
+                          !x y. x IN s /\ y IN t ==> ~(f x = g y)"))] THEN
       REWRITE_TAC [sum_DISTINCT] THEN DISCH_THEN SUBST1_TAC THEN
       BINOP_TAC THEN MATCH_MP_TAC CARD_IMAGE_INJ THEN
       ASM_SIMP_TAC [sum_INJECTIVE]))
@@ -1118,10 +1100,9 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
   let CARD_ADD_SYM ← prove
    r"!s:A->bool t:B->bool. s +_c t =_c t +_c s"
    (← do
-    let pr ← prove_recursive_functions_exist sum_RECURSION
-      (← q r"(!x. (h:A+B->B+A) (INL x) = INR x) /\ (!y. h(INR y) = INL y)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [eq_c] THEN
-      MP_TAC pr THEN
+      MP_TAC (← prove_recursive_functions_exist sum_RECURSION
+      (← q r"(!x. (h:A+B->B+A) (INL x) = INR x) /\ (!y. h(INR y) = INL y)")) THEN
       MATCH_MP_TAC MONO_EXISTS THEN
       SIMP_TAC [FORALL_SUM_THM, EXISTS_SUM_THM, EXISTS_UNIQUE_THM] THEN
       REWRITE_TAC [sum_DISTINCT, sum_INJECTIVE, IN_CARD_ADD] THEN MESON_TAC []))
@@ -1129,15 +1110,13 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
   let CARD_ADD_ASSOC ← prove
    r"!s:A->bool t:B->bool u:C->bool. s +_c (t +_c u) =_c (s +_c t) +_c u"
    (← do
-    let pr2 ← prove_recursive_functions_exist sum_RECURSION
-      (← q r"(!x. (h:A+B+C->(A+B)+C) (INL x) = INL(INL x)) /\
-       (!z. h(INR z) = i(z))")
-    let pr1 ← prove_recursive_functions_exist sum_RECURSION
-      (← q r"(!u. (i:B+C->(A+B)+C) (INL u) = INL(INR u)) /\
-       (!v. i(INR v) = INR v)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [eq_c] THEN
-      CHOOSE_TAC pr1 THEN
-      MP_TAC pr2 THEN
+      CHOOSE_TAC (← prove_recursive_functions_exist sum_RECURSION
+      (← q r"(!u. (i:B+C->(A+B)+C) (INL u) = INL(INR u)) /\
+       (!v. i(INR v) = INR v)")) THEN
+      MP_TAC (← prove_recursive_functions_exist sum_RECURSION
+      (← q r"(!x. (h:A+B+C->(A+B)+C) (INL x) = INL(INL x)) /\
+       (!z. h(INR z) = i(z))")) THEN
       MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC THEN
       ASM_REWRITE_TAC [FORALL_SUM_THM, EXISTS_SUM_THM, EXISTS_UNIQUE_THM,
                       sum_DISTINCT, sum_INJECTIVE, IN_CARD_ADD] THEN
@@ -1146,10 +1125,9 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
   let CARD_MUL_SYM ← prove
    r"!s:A->bool t:B->bool. s *_c t =_c t *_c s"
    (← do
-    let pr ← prove_recursive_functions_exist pair_RECURSION
-      (← q r"(!x:A y:B. h(x,y) = (y,x))")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [eq_c] THEN
-      MP_TAC pr THEN
+      MP_TAC (← prove_recursive_functions_exist pair_RECURSION
+      (← q r"(!x:A y:B. h(x,y) = (y,x))")) THEN
       MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC THEN
       REWRITE_TAC [EXISTS_UNIQUE_THM, FORALL_PAIR_THM, EXISTS_PAIR_THM] THEN
       ASM_REWRITE_TAC [FORALL_PAIR_THM, IN_CARD_MUL, PAIR_EQ] THEN
@@ -1158,13 +1136,11 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
   let CARD_MUL_ASSOC ← prove
    r"!s:A->bool t:B->bool u:C->bool. s *_c (t *_c u) =_c (s *_c t) *_c u"
    (← do
-    let pr2 ← prove_recursive_functions_exist pair_RECURSION
-      (← q r"(!x p. (h:A#B#C->(A#B)#C) (x,p) = i x p)")
-    let pr1 ← prove_recursive_functions_exist pair_RECURSION
-      (← q r"(!x y z. (i:A->B#C->(A#B)#C) x (y,z) = (x,y),z)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [eq_c] THEN
-      CHOOSE_TAC pr1 THEN
-      MP_TAC pr2 THEN
+      CHOOSE_TAC (← prove_recursive_functions_exist pair_RECURSION
+      (← q r"(!x y z. (i:A->B#C->(A#B)#C) x (y,z) = (x,y),z)")) THEN
+      MP_TAC (← prove_recursive_functions_exist pair_RECURSION
+      (← q r"(!x p. (h:A#B#C->(A#B)#C) (x,p) = i x p)")) THEN
       MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC THEN
       REWRITE_TAC [EXISTS_UNIQUE_THM, FORALL_PAIR_THM, EXISTS_PAIR_THM] THEN
       ASM_REWRITE_TAC [FORALL_PAIR_THM, IN_CARD_MUL, PAIR_EQ] THEN
@@ -1174,14 +1150,12 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
    r"!s:A->bool t:B->bool u:C->bool.
         s *_c (t +_c u) =_c (s *_c t) +_c (s *_c u)"
    (← do
-    let pr2 ← prove_recursive_functions_exist pair_RECURSION
-      (← q r"(!x s. (h:A#(B+C)->(A#B)+(A#C)) (x,s) = i x s)")
-    let pr1 ← prove_recursive_functions_exist sum_RECURSION
-      (← q r"(!x y. (i:A->(B+C)->A#B+A#C) x (INL y) = INL(x,y)) /\
-       (!x z. (i:A->(B+C)->A#B+A#C) x (INR z) = INR(x,z))")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [eq_c] THEN
-      CHOOSE_TAC pr1 THEN
-      MP_TAC pr2 THEN
+      CHOOSE_TAC (← prove_recursive_functions_exist sum_RECURSION
+      (← q r"(!x y. (i:A->(B+C)->A#B+A#C) x (INL y) = INL(x,y)) /\
+       (!x z. (i:A->(B+C)->A#B+A#C) x (INR z) = INR(x,z))")) THEN
+      MP_TAC (← prove_recursive_functions_exist pair_RECURSION
+      (← q r"(!x s. (h:A#(B+C)->(A#B)+(A#C)) (x,s) = i x s)")) THEN
       MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC THEN
       ASM_REWRITE_TAC [EXISTS_UNIQUE_THM, FORALL_PAIR_THM, EXISTS_PAIR_THM,
                       FORALL_SUM_THM, EXISTS_SUM_THM, PAIR_EQ, IN_CARD_MUL,
@@ -1229,38 +1203,34 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
   let CARD_ADD_LE_MUL_INFINITE ← prove
    r"!s:A->bool. INFINITE s ==> s +_c s <=_c s *_c s"
    (← do
-    let nr ← ExceptT.mk (NUM_REDUCE_CONV (← q "1 = 0"))
-    let pr ← prove_recursive_functions_exist sum_RECURSION
-      (← q r"(!x. h(INL x) = (f(0),x):A#A) /\ (!x. h(INR x) = (f(1),x))")
     pure (GEN_TAC THEN REWRITE_TAC [INFINITE_CARD_LE, le_c, IN_UNIV] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"f:num->A") STRIP_ASSUME_TAC) THEN
-      MP_TAC pr THEN
+      MP_TAC (← prove_recursive_functions_exist sum_RECURSION
+      (← q r"(!x. h(INL x) = (f(0),x):A#A) /\ (!x. h(INR x) = (f(1),x))")) THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"h:A+A->A#A") THEN
       STRIP_TAC THEN
       REPEAT ((MATCH_MP_TAC sum_INDUCT THEN
               ASM_REWRITE_TAC [IN_CARD_ADD, IN_CARD_MUL, PAIR_EQ])
              ORELSE STRIP_TAC) THEN
-      ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [nr]))
+      ASM_REWRITE_TAC [] THEN ASM_MESON_TAC [(← ExceptT.mk (NUM_REDUCE_CONV (← q "1 = 0")))]))
 
   -- Relate cardinal addition to the simple union operation.
 
   let CARD_DISJOINT_UNION ← prove
    r"!s:A->bool t. (s INTER t = {}) ==> (s UNION t =_c s +_c t)"
    (← do
-    let t ← TAUT (← q r"(if b then x else y) <=> b /\ x \/ ~b /\ y")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [EXTENSION, IN_INTER, NOT_IN_EMPTY] THEN
       STRIP_TAC THEN REWRITE_TAC [eq_c, IN_UNION] THEN
       EXISTS_TAC (← q r"\x:A. if x IN s then INL x else INR x") THEN
       REWRITE_TAC [FORALL_SUM_THM, IN_CARD_ADD] THEN
       REWRITE_TAC [COND_RAND, COND_RATOR] THEN
-      REWRITE_TAC [t] THEN
+      REWRITE_TAC [(← TAUT (← q r"(if b then x else y) <=> b /\ x \/ ~b /\ y"))] THEN
       REWRITE_TAC [sum_DISTINCT, sum_INJECTIVE, IN_CARD_ADD] THEN
       ASM_MESON_TAC []))
 
   let CARD_LE_EXISTS ← prove
    r"!s:A->bool t:B->bool. s <=_c t <=> ?u:B->bool. t =_c s +_c u"
    (← do
-    let ct ← REWRITE_RULE [IMP_CONJ_ALT] CARD_EQ_TRANS
     pure (REPEAT GEN_TAC THEN EQ_TAC THEN STRIP_TAC THENL
        [FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [le_c]) THEN
         REWRITE_TAC [INJECTIVE_ON_ALT, LEFT_IMP_EXISTS_THM] THEN
@@ -1271,7 +1241,7 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
          [MATCH_MP_TAC CARD_EQ_REFL_IMP THEN ASM SET_TAC [],
           mpPartLhand (fun c => do lhand (← rand c)) CARD_DISJOINT_UNION THEN
           ANTS_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
-          MATCH_MP_TAC ct THEN
+          MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_EQ_TRANS) THEN
           MATCH_MP_TAC CARD_ADD_CONG THEN REWRITE_TAC [CARD_EQ_REFL] THEN
           MATCH_MP_TAC CARD_EQ_IMAGE THEN ASM SET_TAC []],
         TRANS_TAC CARD_LE_TRANS (← q r"(s:A->bool) +_c (u:B->bool)") THEN
@@ -1282,8 +1252,6 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
   let CARD_LT_IMP_SUC_LE ← prove
    r"!s:A->bool t:B->bool a:C. s <_c t ==> s +_c {a} <=_c t"
    (← do
-    let lt ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS
-    let s1 ← SET_RULE (← q r"~(b IN IMAGE f s) <=> !x. x IN s ==> ~(f x = b)")
     pure (REWRITE_TAC [CARD_LT_LE] THEN REPEAT STRIP_TAC THEN
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [le_c]) THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"f:A->B") STRIP_ASSUME_TAC) THEN
@@ -1292,7 +1260,7 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
         REWRITE_TAC [NOT_EXISTS_THM, LEFT_IMP_FORALL_THM] THEN
         EXISTS_TAC (← q r"f:A->B") THEN ASM SET_TAC [],
         REWRITE_TAC [IN_DIFF, LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q "b:B") THEN
-        SIMP_TAC [s1] THEN
+        SIMP_TAC [(← SET_RULE (← q r"~(b IN IMAGE f s) <=> !x. x IN s ==> ~(f x = b)"))] THEN
         STRIP_TAC THEN TRANS_TAC CARD_LE_TRANS (← q r"IMAGE (f:A->B) s +_c {b:B}") THEN
         CONJ_TAC THENL
          [MATCH_MP_TAC CARD_LE_ADD THEN
@@ -1302,7 +1270,7 @@ def setupArith [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) :
           mpPartLhand (fun c => do rand (← rand c)) CARD_DISJOINT_UNION THEN
           ANTS_TAC THENL [ASM SET_TAC [], ONCE_REWRITE_TAC [CARD_EQ_SYM]] THEN
           DISCH_THEN (MP_TAC o MATCH_MP CARD_EQ_IMP_LE) THEN
-          MATCH_MP_TAC lt THEN
+          MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS) THEN
           MATCH_MP_TAC CARD_LE_SUBSET THEN ASM SET_TAC []]]))
 
   -- @@RETURN BEGIN
@@ -1377,13 +1345,6 @@ def setupSquare [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
      (REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN MESON_TAC [])
     -- Built when OCaml builds the tactic, last first.
     let aad ← ASSUME (← q r"a:A IN d")
-    let fs ← ONCE_REWRITE_RULE [← TAUT (← q r"a /\ b ==> c <=> b ==> a ==> c")]
-                      FINITE_SUBSET
-    let t3 ← TAUT
-     (← q r"(c /\ d ==> f) /\ (a /\ b ==> e)
-      ==> (a /\ (b /\ c) /\ d ==> e /\ f)")
-    let t2 ← TAUT (← q r"a ==> b /\ c <=> (a ==> b) /\ (a ==> c)")
-    let t1 ← MATCH_MP (← TAUT (← q r"(a ==> b) ==> (a <=> b /\ a)")) lemma
     pure (REPEAT STRIP_TAC THEN
       ABBREV_TAC
         (← q r"P = \R. ?s. INFINITE(s:A->bool) /\ s SUBSET k /\
@@ -1421,7 +1382,7 @@ def setupSquare [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
                                    ==> (x1 = x2) /\ (y1 = y2))")
         SUBST1_TAC THENL
          [FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN REWRITE_TAC [] THEN
-          ONCE_REWRITE_TAC [t1] THEN
+          ONCE_REWRITE_TAC [(← MATCH_MP (← TAUT (← q r"(a ==> b) ==> (a <=> b /\ a)")) lemma)] THEN
           REWRITE_TAC [UNWIND_THM2] THEN REWRITE_TAC [FUN_EQ_THM] THEN
           REWRITE_TAC [IN_CARD_MUL, EXISTS_PAIR_THM, SUBSET, FUN_EQ_THM,
                       IN_ELIM_THM, FORALL_PAIR_THM, EXISTS_UNIQUE_THM,
@@ -1429,9 +1390,11 @@ def setupSquare [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
           GEN_TAC THEN AP_TERM_TAC THEN MESON_TAC [],
           ALL_TAC] THEN
         FIRST_X_ASSUM ((fun (_ : thm) => ALL_TAC) o SYM) THEN REWRITE_TAC [] THEN GEN_TAC THEN
-        GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [t2] THEN
+        GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [(← TAUT (← q r"a ==> b /\ c <=> (a ==> b) /\ (a ==> c)"))] THEN
         GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [FORALL_AND_THM] THEN
-        MATCH_MP_TAC t3 THEN
+        MATCH_MP_TAC (← TAUT
+     (← q r"(c /\ d ==> f) /\ (a /\ b ==> e)
+      ==> (a /\ (b /\ c) /\ d ==> e /\ f)")) THEN
         CONJ_TAC THENL
          [REWRITE_TAC [UNIONS, IN_ELIM_THM] THEN
           REWRITE_TAC [SUBSET, IN] THEN MESON_TAC [],
@@ -1439,7 +1402,8 @@ def setupSquare [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
         DISCH_THEN (CONJUNCTS_THEN2 (X_CHOOSE_TAC (← q r"s:(A#A)#A->bool")) MP_TAC) THEN
         DISCH_THEN (MP_TAC o SPEC (← q r"s:(A#A)#A->bool")) THEN
         ASM_REWRITE_TAC [INFINITE, CONTRAPOS_THM] THEN
-        MATCH_MP_TAC fs THEN
+        MATCH_MP_TAC (← ONCE_REWRITE_RULE [← TAUT (← q r"a /\ b ==> c <=> b ==> a ==> c")]
+                      FINITE_SUBSET) THEN
         REWRITE_TAC [SUBSET, IN_ELIM_THM, UNIONS] THEN ASM_MESON_TAC [IN],
         ALL_TAC] THEN
       FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN REWRITE_TAC [] THEN
@@ -1672,10 +1636,9 @@ def setupSquare [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
   let CARD_DIFF_ABSORB ← prove
    r"!s t:A->bool. INFINITE s /\ t <_c s ==> s DIFF t =_c s"
    (← do
-    let s1 ← SET_RULE (← q r"s SUBSET (s DIFF t) UNION t:A->bool")
     pure (SIMP_TAC [← GSYM CARD_LE_ANTISYM, CARD_LE_SUBSET, SUBSET_DIFF] THEN
       REWRITE_TAC [← GSYM CARD_NOT_LT] THEN REPEAT STRIP_TAC THEN
-      MP_TAC s1 THEN
+      MP_TAC (← SET_RULE (← q r"s SUBSET (s DIFF t) UNION t:A->bool")) THEN
       DISCH_THEN (MP_TAC o MATCH_MP CARD_LE_SUBSET) THEN
       REWRITE_TAC [CARD_NOT_LE] THEN
       TRANS_TAC CARD_LET_TRANS (← q r"(s DIFF t:A->bool) +_c t") THEN
@@ -1754,14 +1717,13 @@ def setupCancel [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
    r"!s:A->bool s':B->bool t:C->bool t':D->bool.
         s <_c s' /\ t <_c t' ==> s +_c t <_c s' +_c t'"
    (← do
-    let lf ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_FINITE
     pure (REPEAT STRIP_TAC THEN
       ASM_CASES_TAC (← q r"FINITE((s':B->bool) +_c (t':D->bool))") THENL
        [FIRST_X_ASSUM (STRIP_ASSUME_TAC o GEN_REWRITE_RULE id
           [CARD_ADD_FINITE_EQ]) THEN
         SUBGOAL_THEN (← q r"FINITE(s:A->bool) /\ FINITE(t:C->bool)")
         STRIP_ASSUME_TAC THENL
-         [CONJ_TAC THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP lf o
+         [CONJ_TAC THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_FINITE) o
             MATCH_MP CARD_LT_IMP_LE) THEN
           ASM_REWRITE_TAC [],
           MAP_EVERY UNDISCH_TAC
@@ -1899,8 +1861,7 @@ def setupCancel [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
         pairwise DISJOINT s /\ (!u. u IN s ==> t <=_c u)
         ==> s *_c t <=_c UNIONS s"
    (← do
-    let s1 ← SET_RULE (← q r"DISJOINT s t <=> !x. ~(x IN s /\ x IN t)")
-    pure (REPEAT GEN_TAC THEN REWRITE_TAC [pairwise, s1] THEN
+    pure (REPEAT GEN_TAC THEN REWRITE_TAC [pairwise, (← SET_RULE (← q r"DISJOINT s t <=> !x. ~(x IN s /\ x IN t)"))] THEN
       DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN REWRITE_TAC [le_c] THEN
       GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
       REWRITE_TAC [SKOLEM_THM, LEFT_IMP_EXISTS_THM] THEN
@@ -2013,10 +1974,9 @@ def setupCancel [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
                    (!y. y IN t ==> g y IN s /\ f (g y) = y) /\
                    IMAGE f s' = t' /\ IMAGE g t' = s')"
    (← do
-    let s1 ← SET_RULE (← q r"DISJOINT t (s DIFF t)")
     pure (REPEAT STRIP_TAC THEN
       mpPartLhand (fun c => do lhand (← rand c)) EQ_C_BIJECTIONS_DISJOINT THEN
-      REWRITE_TAC [s1] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"DISJOINT t (s DIFF t)"))] THEN
       DISCH_THEN SUBST1_TAC THEN REPEAT (AP_TERM_TAC THEN ABS_TAC) THEN
       ASM SET_TAC []))
 
@@ -2283,11 +2243,9 @@ def setupCountable [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) 
   let COUNTABLE_INTER ← prove
    r"!s t. COUNTABLE s \/ COUNTABLE t ==> COUNTABLE (s INTER t)"
    (← do
-    let cs ← REWRITE_RULE [IMP_CONJ_ALT] COUNTABLE_SUBSET
-    let t ← TAUT (← q r"(a \/ b ==> c) <=> (a ==> c) /\ (b ==> c)")
-    pure (REWRITE_TAC [t] THEN
+    pure (REWRITE_TAC [(← TAUT (← q r"(a \/ b ==> c) <=> (a ==> c) /\ (b ==> c)"))] THEN
       REPEAT GEN_TAC THEN CONJ_TAC THEN
-      MATCH_MP_TAC cs THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] COUNTABLE_SUBSET) THEN
       SET_TAC []))
 
   let COUNTABLE_UNION_IMP ← prove
@@ -2372,10 +2330,9 @@ def setupCountable [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) 
        ?(f:num->A) k. s = IMAGE f k /\
                       (!m n. m IN k /\ n IN k /\ f m = f n ==> m = n))"
    (← do
-    let t ← TAUT
-     (← q r"(r ==> q) /\ (q ==> p) /\ (p ==> r) ==> (p <=> q) /\ (p <=> r)")
     pure (REWRITE_TAC [AND_FORALL_THM] THEN X_GEN_TAC (← q r"s:A->bool") THEN
-      MATCH_MP_TAC t THEN
+      MATCH_MP_TAC (← TAUT
+     (← q r"(r ==> q) /\ (q ==> p) /\ (p ==> r) ==> (p <=> q) /\ (p <=> r)")) THEN
       REPEAT CONJ_TAC THENL
        [MESON_TAC [],
         SIMP_TAC [LEFT_IMP_EXISTS_THM, COUNTABLE_IMAGE, COUNTABLE_SUBSET_NUM],
@@ -2439,12 +2396,10 @@ def setupCountable [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) 
    r"!s:A->bool t:B->bool.
         COUNTABLE(s *_c t) <=> s = {} \/ t = {} \/ COUNTABLE s /\ COUNTABLE t"
    (← do
-    let cm ← REWRITE_RULE [mul_c] COUNTABLE_CARD_MUL
-    let s1 ← SET_RULE (← q r"{x,y | F} = {}")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [mul_c] THEN
       MAP_EVERY ASM_CASES_TAC [← q r"s:A->bool = {}", ← q r"t:B->bool = {}"] THEN
-      ASM_REWRITE_TAC [COUNTABLE_EMPTY, EMPTY_GSPEC, NOT_IN_EMPTY, s1] THEN
-      EQ_TAC THEN SIMP_TAC [cm] THEN
+      ASM_REWRITE_TAC [COUNTABLE_EMPTY, EMPTY_GSPEC, NOT_IN_EMPTY, (← SET_RULE (← q r"{x,y | F} = {}"))] THEN
+      EQ_TAC THEN SIMP_TAC [(← REWRITE_RULE [mul_c] COUNTABLE_CARD_MUL)] THEN
       REPEAT STRIP_TAC THEN MATCH_MP_TAC COUNTABLE_SUBSET THENL
        [EXISTS_TAC (← q r"IMAGE FST ((s:A->bool) *_c (t:B->bool))"),
         EXISTS_TAC (← q r"IMAGE SND ((s:A->bool) *_c (t:B->bool))")] THEN
@@ -2576,14 +2531,6 @@ def setupUnionOf [HolBase] (D : CardDeps) (BCountable : Countable) (ADefs : HolL
    r"!P. (!i. 1 <= i /\ i <= dimindex(:N) ==> COUNTABLE {x | P i x})
        ==> COUNTABLE {v:A^N | !i. 1 <= i /\ i <= dimindex(:N) ==> P i (v$i)}"
    (← do
-    let a8 ← ARITH_RULE (← q r"n < i /\ ~(i = SUC n) ==> SUC n < i")
-    let a7 ← ARITH_RULE (← q r"1 <= SUC n")
-    let a6 ← ARITH_RULE (← q r"i <= n ==> ~(i = SUC n)")
-    let a5 ← ARITH_RULE (← q r"SUC n <= m ==> n <= m")
-    let a4 ← ARITH_RULE (← q r"1 <= SUC n")
-    let cc ← REWRITE_RULE [CROSS] COUNTABLE_CROSS
-    let a2 ← ARITH_RULE (← q r"1 <= i /\ i <= n /\ 0 < i <=> 1 <= i /\ i <= n")
-    let a1 ← ARITH_RULE (← q r"1 <= i /\ i <= n /\ i <= 0 <=> F")
     pure (GEN_TAC THEN DISCH_TAC THEN
       SUBGOAL_THEN
        (← q r"!n. n <= dimindex(:N)
@@ -2593,8 +2540,8 @@ def setupUnionOf [HolBase] (D : CardDeps) (BCountable : Countable) (ADefs : HolL
                                      ==> v$i = @x. F)}")
        (MP_TAC o SPEC (← q r"dimindex(:N)")) THEN REWRITE_TAC [LE_REFL, LET_ANTISYM] THEN
       INDUCT_TAC THENL
-       [REWRITE_TAC [a1] THEN
-        SIMP_TAC [a2] THEN
+       [REWRITE_TAC [(← ARITH_RULE (← q r"1 <= i /\ i <= n /\ i <= 0 <=> F"))] THEN
+        SIMP_TAC [(← ARITH_RULE (← q r"1 <= i /\ i <= n /\ 0 < i <=> 1 <= i /\ i <= n"))] THEN
         SUBGOAL_THEN
          (← q r"{v | !i. 1 <= i /\ i <= dimindex (:N) ==> v$i = (@x. F)} =
           {(lambda i. @x. F):A^N}")
@@ -2611,14 +2558,14 @@ def setupUnionOf [HolBase] (D : CardDeps) (BCountable : Countable) (ADefs : HolL
                                     ==> v$i = (@x. F))}}") THEN
       CONJ_TAC THENL
        [MATCH_MP_TAC COUNTABLE_IMAGE THEN
-        ASM_SIMP_TAC [cc, a4, a5],
+        ASM_SIMP_TAC [(← REWRITE_RULE [CROSS] COUNTABLE_CROSS), (← ARITH_RULE (← q r"1 <= SUC n")), (← ARITH_RULE (← q r"SUC n <= m ==> n <= m"))],
         ALL_TAC] THEN
       REWRITE_TAC [SUBSET, IN_IMAGE, IN_ELIM_PAIR_THM, EXISTS_PAIR_THM] THEN
       X_GEN_TAC (← q r"v:A^N") THEN REWRITE_TAC [IN_ELIM_THM] THEN
       STRIP_TAC THEN EXISTS_TAC (← q r"(v:A^N)$(SUC n)") THEN
       EXISTS_TAC (← q r"(lambda i. if i = SUC n then @x. F else (v:A^N)$i):A^N") THEN
-      SIMP_TAC [CART_EQ, LAMBDA_BETA, a6] THEN
-      ASM_MESON_TAC [LE, a7, a8]))
+      SIMP_TAC [CART_EQ, LAMBDA_BETA, (← ARITH_RULE (← q r"i <= n ==> ~(i = SUC n)"))] THEN
+      ASM_MESON_TAC [LE, (← ARITH_RULE (← q r"1 <= SUC n")), (← ARITH_RULE (← q r"n < i /\ ~(i = SUC n) ==> SUC n < i"))]))
 
   let EXISTS_COUNTABLE_SUBSET_IMAGE_INJ ← prove
    r"!P f s.
@@ -2627,8 +2574,7 @@ def setupUnionOf [HolBase] (D : CardDeps) (BCountable : Countable) (ADefs : HolL
          (!x y. x IN t /\ y IN t ==> (f x = f y <=> x = y)) /\
          P (IMAGE f t))"
    (← do
-    let t ← TAUT (← q r"p /\ q /\ r <=> q /\ p /\ r")
-    pure (ONCE_REWRITE_TAC [t] THEN
+    pure (ONCE_REWRITE_TAC [(← TAUT (← q r"p /\ q /\ r <=> q /\ p /\ r"))] THEN
       REPEAT GEN_TAC THEN REWRITE_TAC [EXISTS_SUBSET_IMAGE_INJ] THEN
       AP_TERM_TAC THEN ABS_TAC THEN MESON_TAC [COUNTABLE_IMAGE_INJ_EQ]))
 
@@ -2763,8 +2709,6 @@ def setupUnionOf [HolBase] (D : CardDeps) (BCountable : Countable) (ADefs : HolL
                  (!n. t n SUBSET t(SUC n)) /\
                  UNIONS {t n | n IN (:num)} = s)"
    (← do
-    let s2 ← SET_RULE (← q r"{f x | x = a} = {f a}")
-    let s1 ← SET_RULE (← q r"{f x | P x \/ Q x} = {f x | P x} UNION {f x | Q x}")
     pure (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [COUNTABLE_UNION_OF_EXPLICIT] THEN
       EQ_TAC THENL [ALL_TAC, MESON_TAC []] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"t:num->A->bool") STRIP_ASSUME_TAC) THEN
@@ -2772,7 +2716,7 @@ def setupUnionOf [HolBase] (D : CardDeps) (BCountable : Countable) (ADefs : HolL
       RULE_ASSUM_TAC (REWRITE_RULE [FORALL_IN_IMAGE, IN_UNIV]) THEN
       REWRITE_TAC [] THEN REPEAT CONJ_TAC THENL
        [INDUCT_TAC THEN REWRITE_TAC [LE] THEN
-        REWRITE_TAC [s1, s2, UNIONS_UNION] THEN
+        REWRITE_TAC [(← SET_RULE (← q r"{f x | P x \/ Q x} = {f x | P x} UNION {f x | Q x}")), (← SET_RULE (← q r"{f x | x = a} = {f a}")), UNIONS_UNION] THEN
         ASM_SIMP_TAC [UNIONS_1],
         REWRITE_TAC [UNIONS_GSPEC, LE] THEN SET_TAC [],
         FIRST_X_ASSUM (SUBST1_TAC o SYM o (fun (th : thm) => lastThm (CONJUNCTS th))) THEN
@@ -2872,18 +2816,14 @@ def setupUnionOf [HolBase] (D : CardDeps) (BCountable : Countable) (ADefs : HolL
                ==> (COUNTABLE INTERSECTION_OF P) (s UNION t)) <=>
         (!s t. P s /\ P t ==> (COUNTABLE INTERSECTION_OF P) (s UNION t))"
    (← do
-    let m4 ← MESON [COMPL_COMPL] (← q r"(!s. P(UNIV DIFF s)) <=> (!s. P s)")
-    let s3 ← SET_RULE
-     (← q r"s INTER t = UNIV DIFF ((UNIV DIFF s) UNION (UNIV DIFF t))")
-    let m2 ← MESON [COMPL_COMPL] (← q r"(!s. P(UNIV DIFF s)) <=> (!s. P s)")
-    let s1 ← SET_RULE
-      (← q r"UNIV DIFF (s UNION t) = (UNIV DIFF s) INTER (UNIV DIFF t)")
     pure (ONCE_REWRITE_TAC [COUNTABLE_INTERSECTION_OF_COMPLEMENT] THEN
-      REWRITE_TAC [s1] THEN
-      REWRITE_TAC [m2] THEN
+      REWRITE_TAC [(← SET_RULE
+      (← q r"UNIV DIFF (s UNION t) = (UNIV DIFF s) INTER (UNIV DIFF t)"))] THEN
+      REWRITE_TAC [(← MESON [COMPL_COMPL] (← q r"(!s. P(UNIV DIFF s)) <=> (!s. P s)"))] THEN
       REWRITE_TAC [COUNTABLE_UNION_OF_INTER_EQ] THEN
-      REWRITE_TAC [s3] THEN
-      REWRITE_TAC [m4] THEN
+      REWRITE_TAC [(← SET_RULE
+     (← q r"s INTER t = UNIV DIFF ((UNIV DIFF s) UNION (UNIV DIFF t))"))] THEN
+      REWRITE_TAC [(← MESON [COMPL_COMPL] (← q r"(!s. P(UNIV DIFF s)) <=> (!s. P s)"))] THEN
       REWRITE_TAC [COMPL_COMPL]))
 
   let COUNTABLE_INTERSECTION_OF_UNION ← prove
@@ -3047,12 +2987,10 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
          (COUNTABLE INTER pairwise DISJOINT) UNION_OF P) =
         (COUNTABLE INTER pairwise DISJOINT) UNION_OF P"
    (← do
-    let ui ← REWRITE_RULE [IMP_CONJ] UNION_OF_INC
-    let s1 ← SET_RULE (← q r"s INTER t = \x. s x /\ t x")
     pure (GEN_TAC THEN REWRITE_TAC [FUN_EQ_THM] THEN X_GEN_TAC (← q r"s:A->bool") THEN
       EQ_TAC THENL
-       [REWRITE_TAC [s1],
-        MATCH_MP_TAC ui THEN
+       [REWRITE_TAC [(← SET_RULE (← q r"s INTER t = \x. s x /\ t x"))],
+        MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] UNION_OF_INC) THEN
         REWRITE_TAC [INTER, IN_ELIM_THM] THEN REWRITE_TAC [IN] THEN
         REWRITE_TAC [COUNTABLE_SING, PAIRWISE_SING]] THEN
       REWRITE_TAC [UNION_OF, LEFT_IMP_EXISTS_THM] THEN
@@ -3084,10 +3022,6 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
         ==> ?u. (!n. u(n) IN f) /\ (!n. u(n) SUBSET u(SUC n)) /\
                 UNIONS {u n | n IN (:num)} = UNIONS f"
    (← do
-    let s3 ← SET_RULE (← q r"a UNION b = b <=> a SUBSET b")
-    let s2 ← SET_RULE (← q r"a UNION b = a <=> b SUBSET a")
-    let m1 ← MESON [] (← q r"a IN f /\ b IN f /\ (a UNION b = a \/ a UNION b = b)
-        ==> (a UNION b) IN f")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← ISPEC (← q r"f:(A->bool)->bool") COUNTABLE_AS_IMAGE) THEN
       ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
@@ -3098,8 +3032,9 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
         ASM_REWRITE_TAC [NUMSEG_CLAUSES, LE_0, IMAGE_CLAUSES] THEN
         REWRITE_TAC [UNIONS_0, UNIONS_INSERT, UNION_EMPTY] THENL
          [ASM SET_TAC [], ALL_TAC] THEN
-        MATCH_MP_TAC m1 THEN
-        ASM_REWRITE_TAC [s2, s3] THEN
+        MATCH_MP_TAC (← MESON [] (← q r"a IN f /\ b IN f /\ (a UNION b = a \/ a UNION b = b)
+        ==> (a UNION b) IN f")) THEN
+        ASM_REWRITE_TAC [(← SET_RULE (← q r"a UNION b = a <=> b SUBSET a")), (← SET_RULE (← q r"a UNION b = b <=> a SUBSET b"))] THEN
         ASM SET_TAC [],
         GEN_TAC THEN REWRITE_TAC [NUMSEG_CLAUSES, LE_0] THEN SET_TAC [],
         EXPAND_TAC "f" THEN REWRITE_TAC [UNIONS_GSPEC, UNIONS_IMAGE] THEN
@@ -3114,10 +3049,6 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
         ==> ?u. (!n. u(n) IN f) /\ (!n. u(SUC n) SUBSET u(n)) /\
                 INTERS {u n | n IN (:num)} = INTERS f"
    (← do
-    let s3 ← SET_RULE (← q r"a INTER b = b <=> b SUBSET a")
-    let s2 ← SET_RULE (← q r"a INTER b = a <=> a SUBSET b")
-    let m1 ← MESON [] (← q r"a IN f /\ b IN f /\ (a INTER b = a \/ a INTER b = b)
-        ==> (a INTER b) IN f")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← ISPEC (← q r"f:(A->bool)->bool") COUNTABLE_AS_IMAGE) THEN
       ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
@@ -3128,8 +3059,9 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
         ASM_REWRITE_TAC [NUMSEG_CLAUSES, LE_0, IMAGE_CLAUSES] THEN
         REWRITE_TAC [INTERS_0, INTERS_INSERT, INTER_UNIV] THENL
          [ASM SET_TAC [], ALL_TAC] THEN
-        MATCH_MP_TAC m1 THEN
-        ASM_REWRITE_TAC [s2, s3] THEN
+        MATCH_MP_TAC (← MESON [] (← q r"a IN f /\ b IN f /\ (a INTER b = a \/ a INTER b = b)
+        ==> (a INTER b) IN f")) THEN
+        ASM_REWRITE_TAC [(← SET_RULE (← q r"a INTER b = a <=> a SUBSET b")), (← SET_RULE (← q r"a INTER b = b <=> b SUBSET a"))] THEN
         ASM SET_TAC [],
         GEN_TAC THEN REWRITE_TAC [NUMSEG_CLAUSES, LE_0] THEN SET_TAC [],
         EXPAND_TAC "f" THEN REWRITE_TAC [INTERS_GSPEC, INTERS_IMAGE] THEN
@@ -3180,7 +3112,6 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
   let CARD_EQ_CART ← prove
    r"INFINITE(:A) ==> (:A^N) =_c (:A)"
    (← do
-    let ar ← ARITH_RULE (← q r"i < n + 1 <=> i <= n")
     pure (DISCH_TAC THEN REWRITE_TAC [← GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
        [ALL_TAC,
         REWRITE_TAC [le_c, IN_UNIV] THEN
@@ -3198,7 +3129,7 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
         DISCH_TAC THEN EXISTS_TAC (← q r"CONS ((f:num->A) 0) l") THEN
         INDUCT_TAC THEN ASM_SIMP_TAC [EL, HD, TL, LT_SUC],
         DISCH_THEN (MP_TAC o SPECL [← q r"dimindex(:N)+1", ← q r"\i. (x:A^N)$i"]) THEN
-        REWRITE_TAC [LEFT_IMP_EXISTS_THM, ar] THEN
+        REWRITE_TAC [LEFT_IMP_EXISTS_THM, (← ARITH_RULE (← q r"i < n + 1 <=> i <= n"))] THEN
         MESON_TAC []]))
 
   -- Cardinality of the reals. This is done in a rather laborious way to avoid
@@ -3210,8 +3141,6 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
     let lemma ← prove
      r"!s m n. sum (s INTER (m..n)) (\i. inv(&3 pow i)) < &3 / &2 / &3 pow m"
      (← do
-      let l2 ← REAL_ARITH (← q r"inv x < &3 / &2 / x <=> &0 < inv x")
-      let l1 ← REAL_ARITH (← q r"a + j:real <= k ==> x < j ==> a + x < k")
       pure (REPEAT GEN_TAC THEN MATCH_MP_TAC REAL_LET_TRANS THEN
         EXISTS_TAC (← q r"sum (m..n) (\i. inv(&3 pow i))") THEN CONJ_TAC THENL
          [MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
@@ -3222,32 +3151,15 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
            [ASM_SIMP_TAC [SUM_CLAUSES_LEFT] THEN ASM_CASES_TAC (← q r"m + 1 <= n") THENL
              [FIRST_X_ASSUM (MP_TAC o SPECL [← q "n:num", ← q "SUC m"]) THEN
               ANTS_TAC THENL [ASM_ARITH_TAC, REWRITE_TAC [ADD1, REAL_POW_ADD]] THEN
-              MATCH_MP_TAC l1 THEN
+              MATCH_MP_TAC (← REAL_ARITH (← q r"a + j:real <= k ==> x < j ==> a + x < k")) THEN
               REWRITE_TAC [real_div, REAL_INV_MUL, REAL_POW_1] THEN REAL_ARITH_TAC,
               ALL_TAC],
             ALL_TAC] THEN
           RULE_ASSUM_TAC (REWRITE_RULE [NOT_LE, ← GSYM NUMSEG_EMPTY]) THEN
           ASM_REWRITE_TAC [SUM_CLAUSES, REAL_ADD_RID] THEN
-          REWRITE_TAC [l2] THEN
+          REWRITE_TAC [(← REAL_ARITH (← q r"inv x < &3 / &2 / x <=> &0 < inv x"))] THEN
           SIMP_TAC [REAL_LT_INV_EQ, REAL_LT_DIV, REAL_POW_LT, REAL_OF_NUM_LT,
                    ARITH]]))
-    -- Built when OCaml builds the tactic, last first.
-    let m11 ← REAL_ARITH (← q r"&1 / &2 * x < x <=> &0 < x")
-    let m10 ← ARITH_RULE (← q r"~(n = 0) /\ m <= n - 1 ==> m < n")
-    let m9 ← REAL_ARITH (← q r"s:real = t /\ d < e ==> s + d < t + e")
-    let m8 ← SET_RULE (← q r"s SUBSET t ==> u INTER s SUBSET u INTER t")
-    let m7 ← REAL_ARITH (← q r"y:real <= x /\ &0 <= d ==> y <= x + d")
-    let m6 ← REAL_ARITH (← q r"!d. s:real = t + d /\ d <= e ==> s <= t + e")
-    let m5 ← REAL_ARITH (← q r"!z:real. y < z /\ z <= x ==> ~(x = y)")
-    let m4 ← MESON [IN]
-     (← q r"((!P Q n. R P Q n <=> R Q P n) /\ (!P Q. S P Q <=> S Q P)) /\
-      (!P Q. (?n. n IN P /\ ~(n IN Q) /\ R P Q n) ==> S P Q)
-      ==> !P Q. (?n:num. ~(n IN P <=> n IN Q) /\ R P Q n) ==> S P Q")
-    let m3 ← REAL_ARITH (← q r"x:real < &0 <=> ~(&0 <= x)")
-    let m2 ← TAUT (← q r"~p ==> p ==> q")
-    let m1 ← MESON [] (← q r"P 0 \/ P 1 ==> ?n. P n")
-    let tp ← q "p:num"
-    let tq ← q "q:num"
     pure (REWRITE_TAC [← GSYM CARD_LE_ANTISYM] THEN CONJ_TAC THENL
        [TRANS_TAC CARD_LE_TRANS (← q r"(:num) *_c (:num->bool)") THEN CONJ_TAC THENL
          [ALL_TAC,
@@ -3256,7 +3168,7 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
         TRANS_TAC CARD_LE_TRANS (← q r"(:num) *_c {x:real | &0 <= x}") THEN CONJ_TAC THENL
          [REWRITE_TAC [LE_C, mul_c, EXISTS_PAIR_THM, IN_ELIM_PAIR_THM, IN_UNIV] THEN
           EXISTS_TAC (← q r"\(n,x:real). --(&1) pow n * x") THEN X_GEN_TAC (← q "x:real") THEN
-          MATCH_MP_TAC m1 THEN
+          MATCH_MP_TAC (← MESON [] (← q r"P 0 \/ P 1 ==> ?n. P n")) THEN
           REWRITE_TAC [OR_EXISTS_THM] THEN EXISTS_TAC (← q r"abs(x:real)") THEN
           REWRITE_TAC [IN_ELIM_THM] THEN REAL_ARITH_TAC,
           ALL_TAC] THEN
@@ -3272,9 +3184,9 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
         MATCH_MP_TAC REAL_WLOG_LT THEN REWRITE_TAC [IN_ELIM_THM, FUN_EQ_THM] THEN
         CONJ_TAC THENL [REWRITE_TAC [EQ_SYM_EQ, CONJ_ACI], ALL_TAC] THEN
         MAP_EVERY X_GEN_TAC [← q "x:real", ← q "y:real"] THEN REPEAT STRIP_TAC THEN
-        FIRST_X_ASSUM (MP_TAC o GENL [tp, tq] o
+        FIRST_X_ASSUM (MP_TAC o GENL [(← q "p:num"), (← q "q:num")] o
           SPEC (← q r"(pair:num#num->num) (p,q)")) THEN
-        ASM_REWRITE_TAC [] THEN MATCH_MP_TAC m2 THEN
+        ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← TAUT (← q r"~p ==> p ==> q")) THEN
         MP_TAC (← SPEC (← q r"y - x:real") REAL_ARCH) THEN
         ASM_REWRITE_TAC [REAL_SUB_LT, NOT_FORALL_THM] THEN
         DISCH_THEN (MP_TAC o SPEC (← q r"&2:real")) THEN MATCH_MP_TAC MONO_EXISTS THEN
@@ -3282,7 +3194,7 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
         MP_TAC (← ISPEC (← q r"&p * x:real") REAL_ARCH_LT) THEN
         GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN MATCH_MP_TAC MONO_EXISTS THEN
         MATCH_MP_TAC num_INDUCTION THEN
-        ASM_SIMP_TAC [REAL_LE_MUL, REAL_POS, m3] THEN
+        ASM_SIMP_TAC [REAL_LE_MUL, REAL_POS, (← REAL_ARITH (← q r"x:real < &0 <=> ~(&0 <= x)"))] THEN
         X_GEN_TAC (← q "q:num") THEN REWRITE_TAC [← GSYM REAL_OF_NUM_SUC] THEN
         DISCH_THEN (fun _ => ALL_TAC) THEN STRIP_TAC THEN
         FIRST_X_ASSUM (MP_TAC o SPEC (← q "q:num")) THEN
@@ -3295,11 +3207,14 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
         REWRITE_TAC [EXTENSION, NOT_FORALL_THM] THEN
         GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN
         MAP_EVERY (fun w => SPEC_TAC (w, w)) [← q r"y:num->bool", ← q r"x:num->bool"] THEN
-        MATCH_MP_TAC m4 THEN
+        MATCH_MP_TAC (← MESON [IN]
+     (← q r"((!P Q n. R P Q n <=> R Q P n) /\ (!P Q. S P Q <=> S Q P)) /\
+      (!P Q. (?n. n IN P /\ ~(n IN Q) /\ R P Q n) ==> S P Q)
+      ==> !P Q. (?n:num. ~(n IN P <=> n IN Q) /\ R P Q n) ==> S P Q")) THEN
         CONJ_TAC THENL [REWRITE_TAC [EQ_SYM_EQ], REWRITE_TAC []] THEN
         MAP_EVERY X_GEN_TAC [← q r"x:num->bool", ← q r"y:num->bool"] THEN
         DISCH_THEN (X_CHOOSE_THEN (← q "n:num") STRIP_ASSUME_TAC) THEN
-        MATCH_MP_TAC m5 THEN
+        MATCH_MP_TAC (← REAL_ARITH (← q r"!z:real. y < z /\ z <= x ==> ~(x = y)")) THEN
         EXISTS_TAC (← q r"sum (x INTER (0..n)) (\i. inv(&3 pow i))") THEN CONJ_TAC THENL
          [MATCH_MP_TAC REAL_LET_TRANS THEN EXISTS_TAC
            (← q r"sum (y INTER (0..n)) (\i. inv(&3 pow i)) +
@@ -3308,32 +3223,32 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
            [MATCH_MP_TAC REAL_SUP_LE THEN
             CONJ_TAC THENL [SET_TAC [], REWRITE_TAC [FORALL_IN_GSPEC, IN_UNIV]] THEN
             X_GEN_TAC (← q "p:num") THEN ASM_CASES_TAC (← q "n:num <= p") THENL
-             [MATCH_MP_TAC m6 THEN
+             [MATCH_MP_TAC (← REAL_ARITH (← q r"!d. s:real = t + d /\ d <= e ==> s <= t + e")) THEN
               EXISTS_TAC (← q r"sum(y INTER (n+1..p)) (\i. inv (&3 pow i))") THEN
               CONJ_TAC THENL
                [ONCE_REWRITE_TAC [INTER_COMM] THEN
                 REWRITE_TAC [INTER, SUM_RESTRICT_SET] THEN
                 ASM_SIMP_TAC [SUM_COMBINE_R, LE_0],
                 SIMP_TAC [ADD1, lemma, REAL_LT_IMP_LE]],
-              MATCH_MP_TAC m7 THEN
+              MATCH_MP_TAC (← REAL_ARITH (← q r"y:real <= x /\ &0 <= d ==> y <= x + d")) THEN
               SIMP_TAC [REAL_LE_DIV, REAL_POS, REAL_POW_LE] THEN
               MATCH_MP_TAC SUM_SUBSET_SIMPLE THEN
               SIMP_TAC [REAL_LE_INV_EQ, REAL_POW_LE, REAL_POS] THEN
               SIMP_TAC [FINITE_INTER, FINITE_NUMSEG] THEN MATCH_MP_TAC
-               m8 THEN
+               (← SET_RULE (← q r"s SUBSET t ==> u INTER s SUBSET u INTER t")) THEN
               REWRITE_TAC [SUBSET_NUMSEG] THEN ASM_ARITH_TAC],
             ONCE_REWRITE_TAC [INTER_COMM] THEN
             REWRITE_TAC [INTER, SUM_RESTRICT_SET] THEN ASM_CASES_TAC (← q "n = 0") THENL
              [FIRST_X_ASSUM SUBST_ALL_TAC THEN
               ASM_REWRITE_TAC [SUM_SING, NUMSEG_SING, real_pow] THEN REAL_ARITH_TAC,
               ASM_SIMP_TAC [SUM_CLAUSES_RIGHT, LE_1, LE_0, REAL_ADD_RID] THEN
-              MATCH_MP_TAC m9 THEN
+              MATCH_MP_TAC (← REAL_ARITH (← q r"s:real = t /\ d < e ==> s + d < t + e")) THEN
               CONJ_TAC THENL
                [MATCH_MP_TAC SUM_EQ_NUMSEG THEN
-                ASM_SIMP_TAC [m10],
+                ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(n = 0) /\ m <= n - 1 ==> m < n"))],
                 REWRITE_TAC [real_pow, real_div, REAL_INV_MUL, REAL_MUL_ASSOC] THEN
                 CONV_TAC REAL_RAT_REDUCE_CONV THEN
-                REWRITE_TAC [m11] THEN
+                REWRITE_TAC [(← REAL_ARITH (← q r"&1 / &2 * x < x <=> &0 < x"))] THEN
                 SIMP_TAC [REAL_LT_INV_EQ, REAL_POW_LT, REAL_OF_NUM_LT, ARITH]]]],
           MP_TAC (← ISPEC (← q r"{ sum (x INTER (0..n)) (\i. inv(&3 pow i)) | n IN (:num) }")
               SUP) THEN REWRITE_TAC [FORALL_IN_GSPEC, IN_UNIV] THEN
@@ -3352,9 +3267,8 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
   let CARD_EQ_REAL_IMP_UNCOUNTABLE ← prove
    r"!s. s =_c (:real) ==> ~COUNTABLE s"
    (← do
-    let cc ← REWRITE_RULE [IMP_CONJ] CARD_EQ_COUNTABLE
     pure (GEN_TAC THEN STRIP_TAC THEN
-      DISCH_THEN (MP_TAC o ISPEC (← q r"(:real)") o MATCH_MP cc) THEN
+      DISCH_THEN (MP_TAC o ISPEC (← q r"(:real)") o MATCH_MP (← REWRITE_RULE [IMP_CONJ] CARD_EQ_COUNTABLE)) THEN
       REWRITE_TAC [UNCOUNTABLE_REAL] THEN ASM_MESON_TAC [CARD_EQ_SYM]))
 
   let COUNTABLE_IMP_CARD_LT_REAL ← prove
@@ -3370,11 +3284,6 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
    r"!s a b:real.
         a < b /\ (!x. a < x /\ x < b ==> x IN s) ==> s =_c (:real)"
    (← do
-    let ra ← REAL_ARITH
-     (← q r"(a < (a + b) / &2 + (b - a) / &2 * x <=>
-       (b - a) * -- &1 < (b - a) * x) /\
-      ((a + b) / &2 + (b - a) / &2 * x < b <=>
-       (b - a) * x < (b - a) * &1)")
     pure (REPEAT STRIP_TAC THEN
       REWRITE_TAC [← GSYM CARD_LE_ANTISYM, CARD_LE_UNIV] THEN
       REWRITE_TAC [le_c, IN_UNIV] THEN
@@ -3383,7 +3292,11 @@ def setupReals [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BAr
       REWRITE_TAC [REAL_SHRINK_EQ] THEN
       CONJ_TAC THENL [ALL_TAC, ASM_REAL_ARITH_TAC] THEN
       X_GEN_TAC (← q "x:real") THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-      REWRITE_TAC [ra] THEN
+      REWRITE_TAC [(← REAL_ARITH
+     (← q r"(a < (a + b) / &2 + (b - a) / &2 * x <=>
+       (b - a) * -- &1 < (b - a) * x) /\
+      ((a + b) / &2 + (b - a) / &2 * x < b <=>
+       (b - a) * x < (b - a) * &1)"))] THEN
 
       ASM_SIMP_TAC [REAL_LT_LMUL_EQ, REAL_SUB_LT, REAL_BOUNDS_LT] THEN
       REWRITE_TAC [REAL_SHRINK_RANGE]))
@@ -3501,21 +3414,18 @@ def setupExp [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BArit
   let CARD_EXP_ZERO ← prove
    r"!s:B->bool c:C. ({}:A->bool) ^_c s =_c if s = {} then {c} else {}"
    (← do
-    let s2 ← SET_RULE (← q r"{x | x = a} = {a}")
-    let s1 ← SET_RULE (← q r"~(s = {}) ==> ~(!x. ~(x IN s))")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [exp_c] THEN
       COND_CASES_TAC THEN ASM_REWRITE_TAC [NOT_IN_EMPTY] THEN
-      ASM_SIMP_TAC [s1] THEN
+      ASM_SIMP_TAC [(← SET_RULE (← q r"~(s = {}) ==> ~(!x. ~(x IN s))"))] THEN
       REWRITE_TAC [CARD_EQ_EMPTY, EMPTY_GSPEC] THEN
       ONCE_REWRITE_TAC [← GSYM FUN_EQ_THM] THEN
-      REWRITE_TAC [s2] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"{x | x = a} = {a}"))] THEN
       SIMP_TAC [CARD_EQ_CARD, FINITE_SING, CARD_SING]))
 
   let CARD_EXP_ADD ← prove
    r"!s:A->bool t:B->bool u:C->bool.
         s ^_c (t +_c u) =_c (s ^_c t) *_c (s ^_c u)"
    (← do
-    let us ← ONCE_REWRITE_RULE [CONJ_SYM] UNWIND_THM1
     pure (REPEAT GEN_TAC THEN
       REWRITE_TAC [add_c, mul_c, exp_c, EQ_C_BIJECTIONS] THEN
       REWRITE_TAC [FORALL_IN_UNION, FORALL_IN_GSPEC] THEN
@@ -3529,7 +3439,7 @@ def setupExp [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BArit
                              else @y. F"] THEN
       REWRITE_TAC [IN_ELIM_THM, IN_UNION] THEN
       REWRITE_TAC [← injectivity "sum", ← distinctness "sum", PAIR_EQ] THEN
-      REWRITE_TAC [us, CONJ_ASSOC] THEN
+      REWRITE_TAC [(← ONCE_REWRITE_RULE [CONJ_SYM] UNWIND_THM1), CONJ_ASSOC] THEN
       REWRITE_TAC [FUN_EQ_THM] THEN CONJ_TAC THENL [SIMP_TAC [], MESON_TAC []] THEN
       GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC sum_INDUCT THEN
       REWRITE_TAC [← injectivity "sum", ← distinctness "sum", PAIR_EQ] THEN
@@ -3604,7 +3514,6 @@ def setupExp [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BArit
    r"!s:A->bool s':B->bool t:C->bool t':D->bool.
       s =_c s' /\ t =_c t' ==> s ^_c t =_c s' ^_c t'"
    (← do
-    let ce ← REWRITE_RULE [IMP_CONJ] CARD_EQ_TRANS
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"t':D->bool = {}") THEN
       ASM_SIMP_TAC [CARD_EQ_EMPTY] THENL
        [REPEAT STRIP_TAC THEN TRANS_TAC CARD_EQ_TRANS (← q "{0}") THEN
@@ -3615,7 +3524,7 @@ def setupExp [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BArit
       ASM_CASES_TAC (← q r"s:A->bool = {}") THEN ASM_SIMP_TAC [CARD_EQ_EMPTY] THENL
        [STRIP_TAC THEN MP_TAC (← ISPECL [← q r"t:C->bool", ← q "0"] CARD_EXP_ZERO) THEN
         ASM_REWRITE_TAC [] THEN GEN_REWRITE_TAC LAND_CONV [CARD_EQ_SYM] THEN
-        MATCH_MP_TAC ce THEN
+        MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] CARD_EQ_TRANS) THEN
         MP_TAC (← HolLight.INST_TYPE [(← qty "B", ← qty "A")]
            (← ISPECL [← q r"t':D->bool", ← q "0"] CARD_EXP_ZERO)) THEN
         ASM_REWRITE_TAC [],
@@ -3627,14 +3536,12 @@ def setupExp [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BArit
   let CARD_EXP_FINITE ← prove
    r"!s:A->bool t:B->bool. FINITE s /\ FINITE t ==> FINITE(s ^_c t)"
    (← do
-    let lt ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS
-    let lf ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_FINITE
     pure (REPEAT GEN_TAC THEN ONCE_REWRITE_TAC [CONJ_SYM] THEN
       DISCH_THEN (MP_TAC o MATCH_MP FINITE_POWERSET o MATCH_MP FINITE_CROSS) THEN
-      MATCH_MP_TAC lf THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_FINITE) THEN
       MP_TAC (← ISPECL [← q r"s:A->bool", ← q r"t:B->bool"] CARD_EXP_GRAPH_PAIRED) THEN
       DISCH_THEN (MP_TAC o MATCH_MP CARD_EQ_IMP_LE) THEN
-      MATCH_MP_TAC lt THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS) THEN
       MATCH_MP_TAC CARD_LE_SUBSET THEN
       REWRITE_TAC [SUBSET, FORALL_PAIR_THM, IN_CROSS] THEN SET_TAC []))
 
@@ -3699,12 +3606,11 @@ def setupExp [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BArit
    r"!s:A->bool t:B->bool.
         s <=_c (:real) /\ COUNTABLE t ==> s ^_c t <=_c (:real)"
    (← do
-    let lt ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS
     pure (REWRITE_TAC [COUNTABLE, ge_c] THEN REPEAT STRIP_TAC THEN
       ASM_CASES_TAC (← q r"s:A->bool = {}") THEN ASM_REWRITE_TAC [] THENL
        [mpPartLhand lhand CARD_EXP_ZERO THEN
         DISCH_THEN (MP_TAC o MATCH_MP CARD_EQ_IMP_LE) THEN
-        MATCH_MP_TAC lt THEN
+        MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS) THEN
         COND_CASES_TAC THEN
         REWRITE_TAC [CARD_EMPTY_LE, CARD_SING_LE, UNIV_NOT_EMPTY],
         ALL_TAC] THEN
@@ -3826,16 +3732,6 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
        [TRANS_TAC CARD_LE_TRANS (← q r"t:B->bool"),
         TRANS_TAC CARD_LE_TRANS (← q r"s:A->bool")] THEN
       ASM_SIMP_TAC [])
-    -- Built when OCaml builds the tactic, last first.
-    let r10 ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS
-    let s9 ← SET_RULE (← q r"{a} = {b} <=> a = b")
-    let r8 ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_INFINITE
-    let t7 ← TAUT (← q r"(p ==> q) /\ p ==> p /\ q")
-    let r6 ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS
-    let r5 ← ONCE_REWRITE_RULE [CARD_EQ_SYM] CARD_EQ_IMP_LE
-    let s4 ← SET_RULE (← q r"k SUBSET s /\ k = {} <=> k = {}")
-    let s3 ← SET_RULE (← q r"{x | P x /\ Q x} = {x | P x} <=> !x. P x ==> Q x")
-    let r2 ← ONCE_REWRITE_RULE [CARD_EQ_SYM] CARD_EXP_POWERSET
     pure (REWRITE_TAC [AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
       ASM_CASES_TAC (← q r"INFINITE(s:A->bool)") THEN ASM_REWRITE_TAC [] THEN
       COND_CASES_TAC THEN ASM_REWRITE_TAC [] THENL
@@ -3850,9 +3746,9 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
           ASM_SIMP_TAC [CARD_LE_SUBSET] THEN MATCH_MP_TAC CARD_EQ_IMP_LE THEN
           ONCE_REWRITE_TAC [CARD_EQ_SYM] THEN FIRST_ASSUM ACCEPT_TAC,
           TRANS_TAC CARD_EQ_TRANS (← q r"{k:A->bool | k SUBSET s}") THEN
-          REWRITE_TAC [r2] THEN
+          REWRITE_TAC [(← ONCE_REWRITE_RULE [CARD_EQ_SYM] CARD_EXP_POWERSET)] THEN
           MATCH_MP_TAC CARD_EQ_REFL_IMP THEN
-          REWRITE_TAC [s3] THEN
+          REWRITE_TAC [(← SET_RULE (← q r"{x | P x /\ Q x} = {x | P x} <=> !x. P x ==> Q x"))] THEN
           X_GEN_TAC (← q r"k:A->bool") THEN DISCH_TAC THEN
           TRANS_TAC CARD_LE_TRANS (← q r"s:A->bool") THEN
           ASM_SIMP_TAC [CARD_LE_SUBSET] THEN
@@ -3861,8 +3757,8 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
        [MATCH_MP_TAC CARD_LE_SUBSET THEN
         SIMP_TAC [SUBSET, IN_ELIM_THM, CARD_EQ_IMP_LE],
         ASM_CASES_TAC (← q r"t:B->bool = {}") THENL
-         [ASM_REWRITE_TAC [CARD_LE_EMPTY, SING_GSPEC, s4] THEN
-          MATCH_MP_TAC r5 THEN
+         [ASM_REWRITE_TAC [CARD_LE_EMPTY, SING_GSPEC, (← SET_RULE (← q r"k SUBSET s /\ k = {} <=> k = {}"))] THEN
+          MATCH_MP_TAC (← ONCE_REWRITE_RULE [CARD_EQ_SYM] CARD_EQ_IMP_LE) THEN
           REWRITE_TAC [CARD_EXP_0],
           ALL_TAC] THEN
         TRANS_TAC CARD_LE_TRANS
@@ -3886,23 +3782,23 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
           ASM_REWRITE_TAC [CARD_EMPTY_LE],
           ALL_TAC] THEN
         mpPartLhand lhand UNION_LE_ADD_C THEN
-        MATCH_MP_TAC r6 THEN
+        MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS) THEN
         MATCH_MP_TAC CARD_EQ_IMP_LE THEN MATCH_MP_TAC CARD_ADD_ABSORB_LEFT THEN
-        MATCH_MP_TAC t7 THEN CONJ_TAC THENL
+        MATCH_MP_TAC (← TAUT (← q r"(p ==> q) /\ p ==> p /\ q")) THEN CONJ_TAC THENL
          [DISCH_TAC THEN MATCH_MP_TAC CARD_LE_FINITE_INFINITE THEN
           ASM_REWRITE_TAC [FINITE_SING],
           ALL_TAC] THEN
         UNDISCH_TAC (← q r"INFINITE(s:A->bool)") THEN
-        MATCH_MP_TAC r8 THEN
+        MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_INFINITE) THEN
         ONCE_REWRITE_TAC [le_c] THEN EXISTS_TAC (← q r"\x:A. {x}") THEN
-        SIMP_TAC [s9, IN_ELIM_THM] THEN
+        SIMP_TAC [(← SET_RULE (← q r"{a} = {b} <=> a = b")), IN_ELIM_THM] THEN
         ASM_SIMP_TAC [SING_SUBSET, NOT_INSERT_EMPTY, CARD_SING_LE],
         TRANS_TAC CARD_LE_TRANS
          (← q r"{k | k SUBSET ((t:B->bool) *_c (s:A->bool)) /\ k =_c t}") THEN
         CONJ_TAC THENL
          [MP_TAC (← ISPECL [← q r"s:A->bool", ← q r"t:B->bool"] CARD_EXP_GRAPH_PAIRED) THEN
           DISCH_THEN (MP_TAC o MATCH_MP CARD_EQ_IMP_LE) THEN
-          MATCH_MP_TAC r10 THEN
+          MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS) THEN
           MATCH_MP_TAC CARD_LE_SUBSET THEN
           REWRITE_TAC [SUBSET, mul_c, IN_ELIM_THM] THEN
           X_GEN_TAC (← q r"R:B#A->bool") THEN REWRITE_TAC [FORALL_PAIR_THM] THEN
@@ -3924,12 +3820,11 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
    r"!s:A->bool.
         INFINITE s ==> {t | t SUBSET s /\ t =_c s} =_c {t | t SUBSET s}"
    (← do
-    let ce ← REWRITE_RULE [IMP_CONJ_ALT] CARD_EQ_TRANS
     pure (REPEAT STRIP_TAC THEN
       FIRST_ASSUM (MP_TAC o ISPEC (← q r"s:A->bool") o MATCH_MP
         CARD_EQ_RESTRICTED_POWERSET) THEN
       REWRITE_TAC [CARD_LE_REFL] THEN
-      MATCH_MP_TAC ce THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_EQ_TRANS) THEN
       TRANS_TAC CARD_EQ_TRANS (← q r"(:bool) ^_c (s:A->bool)") THEN
       ASM_REWRITE_TAC [CARD_EXP_POWERSET] THEN
       MATCH_MP_TAC CARD_EXP_ABSORB THEN
@@ -3941,8 +3836,6 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
    r"!(s:A->bool) (t:B->bool).
        INFINITE s /\ FINITE t /\ ~(t = {}) ==> s ^_c t =_c s"
    (← do
-    let ce ← REWRITE_RULE [IMP_CONJ_ALT] CARD_EQ_TRANS
-    let s1 ← SET_RULE (← q r"a INSERT s = {a} UNION s")
     pure (REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
       GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
       REWRITE_TAC [NOT_INSERT_EMPTY] THEN
@@ -3950,12 +3843,12 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
       ASM_CASES_TAC (← q r"t:B->bool = {}") THEN ASM_REWRITE_TAC [CARD_EXP_SING] THEN
       STRIP_TAC THEN TRANS_TAC CARD_EQ_TRANS (← q r"(s:A->bool) *_c s") THEN
       ASM_SIMP_TAC [CARD_SQUARE_INFINITE] THEN
-      ONCE_REWRITE_TAC [s1] THEN
+      ONCE_REWRITE_TAC [(← SET_RULE (← q r"a INSERT s = {a} UNION s"))] THEN
       TRANS_TAC CARD_EQ_TRANS (← q r"(s:A->bool) ^_c ({b:B} +_c (t:B->bool))") THEN
       ASM_SIMP_TAC [CARD_EXP_CONG, CARD_EQ_REFL, CARD_DISJOINT_UNION,
                    ← GSYM DISJOINT, DISJOINT_SING] THEN
       mpPartLhand lhand CARD_EXP_ADD THEN
-      MATCH_MP_TAC ce THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_EQ_TRANS) THEN
       ASM_SIMP_TAC [CARD_MUL_CONG, CARD_EQ_REFL, CARD_EXP_SING]))
 
   -- More about cardinality of lists and restricted powersets etc.
@@ -3981,11 +3874,10 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
         s <=_c t
         ==> {l | !x. MEM x l ==> x IN s} <=_c {l | !x. MEM x l ==> x IN t}"
    (← do
-    let t ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
     pure (GEN_TAC THEN GEN_TAC THEN REWRITE_TAC [le_c, IN_ELIM_THM] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"f:A->B") STRIP_ASSUME_TAC) THEN
       EXISTS_TAC (← q r"MAP (f:A->B)") THEN
-      MATCH_MP_TAC t THEN CONJ_TAC THENL
+      MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL
        [REWRITE_TAC [MEM_MAP] THEN ASM_MESON_TAC [], DISCH_TAC] THEN
       ONCE_REWRITE_TAC [SWAP_FORALL_THM] THEN
       LIST_INDUCT_TAC THEN SIMP_TAC [MAP_EQ_NIL, MAP] THEN
@@ -4030,59 +3922,50 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
   let COUNTABLE_LIST_GEN ← prove
    r"!s:A->bool. COUNTABLE s ==> COUNTABLE {l | !x. MEM x l ==> x IN s}"
    (← do
-    let s1 ← SET_RULE (← q r"{x | T} = UNIV")
-    let lt ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS
     pure (GEN_TAC THEN REWRITE_TAC [COUNTABLE, ge_c] THEN
       DISCH_THEN (MP_TAC o MATCH_MP CARD_LE_LIST) THEN
-      MATCH_MP_TAC lt THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS) THEN
       MATCH_MP_TAC CARD_EQ_IMP_LE THEN
-      REWRITE_TAC [IN_UNIV, s1] THEN
+      REWRITE_TAC [IN_UNIV, (← SET_RULE (← q r"{x | T} = UNIV"))] THEN
       SIMP_TAC [CARD_EQ_LIST, num_INFINITE]))
 
   let COUNTABLE_LIST ← prove
    r"COUNTABLE(:A) ==> COUNTABLE(:A list)"
    (← do
-    let s1 ← SET_RULE (← q r"{x | T} = UNIV")
     pure (MP_TAC (← ISPEC (← q "(:A)") COUNTABLE_LIST_GEN) THEN
-      REWRITE_TAC [IN_UNIV, s1]))
+      REWRITE_TAC [IN_UNIV, (← SET_RULE (← q r"{x | T} = UNIV"))]))
 
   let COUNTABLE_FINITE_SUBSETS ← prove
    r"!s:A->bool. COUNTABLE(s) ==> COUNTABLE {t | t SUBSET s /\ FINITE t}"
    (← do
-    let s1 ← SET_RULE (← q r"{x | T} = UNIV")
-    let lt ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS
     pure (GEN_TAC THEN REWRITE_TAC [COUNTABLE, ge_c] THEN
       DISCH_THEN (MP_TAC o MATCH_MP CARD_LE_FINITE_SUBSETS) THEN
-      MATCH_MP_TAC lt THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS) THEN
       MATCH_MP_TAC CARD_EQ_IMP_LE THEN
-      REWRITE_TAC [IN_UNIV, s1] THEN
+      REWRITE_TAC [IN_UNIV, (← SET_RULE (← q r"{x | T} = UNIV"))] THEN
       SIMP_TAC [CARD_EQ_FINITE_SUBSETS, num_INFINITE]))
 
   let CARD_EQ_REAL_SEQUENCES ← prove
    r"(:num->real) =_c (:real)"
    (← do
-    let sq ← REWRITE_RULE [MUL_C_UNIV] CARD_SQUARE_NUM
-    let er ← ONCE_REWRITE_RULE [CARD_EQ_SYM] CARD_EQ_REAL
     pure (TRANS_TAC CARD_EQ_TRANS (← q r"(:num->num->bool)") THEN
       ASM_SIMP_TAC [CARD_FUNSPACE_CONG, CARD_EQ_REFL, CARD_EQ_REAL] THEN
       TRANS_TAC CARD_EQ_TRANS (← q r"(:num#num->bool)") THEN
       ASM_SIMP_TAC [CARD_FUNSPACE_CURRY] THEN
       TRANS_TAC CARD_EQ_TRANS (← q r"(:num->bool)") THEN
-      ASM_SIMP_TAC [CARD_FUNSPACE_CONG, CARD_EQ_REFL, er, sq]))
+      ASM_SIMP_TAC [CARD_FUNSPACE_CONG, CARD_EQ_REFL, (← ONCE_REWRITE_RULE [CARD_EQ_SYM] CARD_EQ_REAL), (← REWRITE_RULE [MUL_C_UNIV] CARD_SQUARE_NUM)]))
 
   let CARD_EQ_COUNTABLE_SUBSETS_SUBREAL ← prove
    r"!s:A->bool. INFINITE s /\ s <=_c (:real)
                ==> {t | t SUBSET s /\ COUNTABLE t} =_c (:real)"
    (← do
-    let er ← ONCE_REWRITE_RULE [CARD_EQ_SYM] CARD_EQ_REAL
-    let ce ← REWRITE_RULE [IMP_CONJ_ALT] CARD_EQ_TRANS
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [COUNTABLE, ge_c] THEN
       FIRST_ASSUM (MP_TAC o ISPEC (← q "(:num)") o MATCH_MP
         CARD_EQ_LIMITED_POWERSET) THEN
       ASM_REWRITE_TAC [← GSYM INFINITE_CARD_LE] THEN
-      MATCH_MP_TAC ce THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_EQ_TRANS) THEN
       TRANS_TAC CARD_EQ_TRANS (← q r"(:num->bool)") THEN
-      REWRITE_TAC [er] THEN
+      REWRITE_TAC [(← ONCE_REWRITE_RULE [CARD_EQ_SYM] CARD_EQ_REAL)] THEN
       REWRITE_TAC [← GSYM CARD_EXP_UNIV] THEN MATCH_MP_TAC CARD_EXP_ABSORB THEN
       REWRITE_TAC [num_INFINITE] THEN CONJ_TAC THENL
        [MATCH_MP_TAC CARD_LE_FINITE_INFINITE THEN
@@ -4107,9 +3990,8 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
     let lemma ← prove
      r"!(f:A->B) s t. t SUBSET IMAGE f s ==> t <=_c s"
      (← do
-      let lt ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS
       pure (REPEAT GEN_TAC THEN DISCH_THEN (MP_TAC o MATCH_MP CARD_LE_SUBSET) THEN
-        MATCH_MP_TAC lt THEN
+        MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS) THEN
         REWRITE_TAC [CARD_LE_IMAGE]))
     pure (REPEAT GEN_TAC THEN MATCH_MP_TAC lemma THEN EXISTS_TAC
        (← q r"\u:(A#B)->bool x. if ?y. (x,y) IN u then @y. (x,y) IN u else k x") THEN
@@ -4133,10 +4015,9 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
                            {x | ~(f x = k x)} SUBSET s /\
                            FINITE {x | ~(f x = k x)}}"
    (← do
-    let lc ← REWRITE_RULE [IMP_CONJ] CARD_LE_COUNTABLE
     pure (REPEAT STRIP_TAC THEN
       mpPartRand lhand CARD_LE_RESTRICTED_FUNSPACE THEN
-      MATCH_MP_TAC lc THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] CARD_LE_COUNTABLE) THEN
       ASM_SIMP_TAC [COUNTABLE_FINITE_SUBSETS, COUNTABLE_CROSS, COUNTABLE_IMAGE]))
 
   let CARD_LE_RESTRICTED_FUNSPACE_INFINITE ← prove
@@ -4147,10 +4028,9 @@ def setupPowerset [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (
                  FINITE {x | ~(f x = k x)}} <=_c
             s *_c t"
    (← do
-    let lt ← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS
     pure (REPEAT STRIP_TAC THEN
       mpPartLhand lhand CARD_LE_RESTRICTED_FUNSPACE THEN
-      MATCH_MP_TAC lt THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_LE_TRANS) THEN
       MATCH_MP_TAC CARD_EQ_IMP_LE THEN REWRITE_TAC [mul_c, ← GSYM CROSS] THEN
       MATCH_MP_TAC CARD_EQ_FINITE_SUBSETS THEN
       ASM_REWRITE_TAC [INFINITE_CROSS_EQ]))
@@ -4306,8 +4186,6 @@ def setupCartesian [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) 
         FINITE {i | i IN k /\ ~(?a. s i SUBSET {a})} /\
         (!i. i IN k ==> FINITE(s i))"
    (← do
-    let lt ← REWRITE_RULE [IMP_CONJ] CARD_LE_TRANS
-    let tT ← q "T"
     pure (REPEAT GEN_TAC THEN
       ASM_CASES_TAC (← q r"cartesian_product k (s:K->A->bool) = {}") THEN
       ASM_REWRITE_TAC [FINITE_EMPTY] THEN EQ_TAC THENL
@@ -4334,8 +4212,8 @@ def setupCartesian [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) 
             EXPAND_TAC "l" THEN REWRITE_TAC [IN_ELIM_THM] THEN
             REWRITE_TAC [← GSYM CARD_LE_SING, CARD_NOT_LE] THEN
             GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC
-             (MP_TAC o ISPEC tT o MATCH_MP CARD_LT_IMP_SUC_LE)) THEN
-            MATCH_MP_TAC lt THEN
+             (MP_TAC o ISPEC (← q "T") o MATCH_MP CARD_LT_IMP_SUC_LE)) THEN
+            MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] CARD_LE_TRANS) THEN
             SIMP_TAC [CARD_LE_CARD, FINITE_BOOL, CARD_ADD_FINITE_EQ, FINITE_SING,
                      CARD_ADD_C, CARD_SING, CARD_BOOL] THEN
             CONV_TAC NUM_REDUCE_CONV],
@@ -4379,10 +4257,6 @@ def setupCartesian [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) 
         FINITE {i | i IN k /\ ~(?a. s i SUBSET {a})} /\
         (!i. i IN k ==> COUNTABLE(s i))"
    (← do
-    let m ← MESON [FINITE_SUBSET]
-     (← q r"FINITE t ==> (s SUBSET t /\ FINITE s <=> s SUBSET t)")
-    let lt ← REWRITE_RULE [IMP_CONJ] CARD_LE_TRANS
-    let tT ← q "T"
     pure (REPEAT GEN_TAC THEN
       ASM_CASES_TAC (← q r"cartesian_product k (s:K->A->bool) = {}") THEN
       ASM_REWRITE_TAC [COUNTABLE_EMPTY] THEN EQ_TAC THENL
@@ -4409,8 +4283,8 @@ def setupCartesian [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) 
             EXPAND_TAC "l" THEN REWRITE_TAC [IN_ELIM_THM] THEN
             REWRITE_TAC [← GSYM CARD_LE_SING, CARD_NOT_LE] THEN
             GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC
-             (MP_TAC o ISPEC tT o MATCH_MP CARD_LT_IMP_SUC_LE)) THEN
-            MATCH_MP_TAC lt THEN
+             (MP_TAC o ISPEC (← q "T") o MATCH_MP CARD_LT_IMP_SUC_LE)) THEN
+            MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] CARD_LE_TRANS) THEN
             SIMP_TAC [CARD_LE_CARD, FINITE_BOOL, CARD_ADD_FINITE_EQ, FINITE_SING,
                      CARD_ADD_C, CARD_SING, CARD_BOOL] THEN
             CONV_TAC NUM_REDUCE_CONV],
@@ -4449,7 +4323,8 @@ def setupCartesian [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) 
             ASM SET_TAC [],
             GEN_REWRITE_TAC id [SUBSET] THEN X_GEN_TAC (← q r"f:K->A") THEN
             REWRITE_TAC [cartesian_product, IN_ELIM_THM, EXTENSIONAL] THEN
-            ASM_SIMP_TAC [m] THEN
+            ASM_SIMP_TAC [(← MESON [FINITE_SUBSET]
+     (← q r"FINITE t ==> (s SUBSET t /\ FINITE s <=> s SUBSET t)"))] THEN
             ASM SET_TAC []]]]))
 
   let CARD_EXP_FINITE_EQ ← prove
@@ -4457,8 +4332,6 @@ def setupCartesian [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) 
         FINITE(s ^_c t) <=>
         (?a. s SUBSET {a}) \/ t = {} \/ FINITE s /\ FINITE t"
    (← do
-    let s2 ← SET_RULE (← q r"~(t = {}) ==> ((!a. a IN t ==> P) <=> P)")
-    let m1 ← MESON [] (← q r"(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)")
     pure (REPEAT GEN_TAC THEN
       REWRITE_TAC [← GSYM CARTESIAN_PRODUCT_CONST, FINITE_CARTESIAN_PRODUCT] THEN
       REWRITE_TAC [CARTESIAN_PRODUCT_EQ_EMPTY] THEN
@@ -4466,8 +4339,8 @@ def setupCartesian [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) 
       ASM_REWRITE_TAC [NOT_IN_EMPTY, EMPTY_GSPEC, FINITE_EMPTY] THEN
       ASM_CASES_TAC (← q r"?a:A. s SUBSET {a}") THEN
       ASM_REWRITE_TAC [EMPTY_GSPEC, FINITE_EMPTY, IN_GSPEC] THEN
-      REWRITE_TAC [m1] THEN
-      ASM_SIMP_TAC [s2] THEN
+      REWRITE_TAC [(← MESON [] (← q r"(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)"))] THEN
+      ASM_SIMP_TAC [(← SET_RULE (← q r"~(t = {}) ==> ((!a. a IN t ==> P) <=> P)"))] THEN
       ASM_MESON_TAC [FINITE_SUBSET, FINITE_SING, EMPTY_SUBSET]))
 
   let CARD_EQ_CARTESIAN_PRODUCT_DISJOINT_UNION ← prove

@@ -3,8 +3,8 @@ calc_rat.ml: calculation with rational-valued reals, and the final
 REAL_ARITH (`REAL_ARITH3`), REAL_RING and REAL_FIELD, built by `initialize`
 when this module is imported.  The conversions and decision procedures are
 closures, kept in `IO.Ref`s that `initialize` blocks fill at their calc_rat.ml
-positions (REAL_FIELD at 581; REAL_RAT_RED_CONV and REAL_RAT_COMPUTE_CONV
-last, by `ensureRealProcs`).
+positions (REAL_RAT_RED_CONV and REAL_RAT_COMPUTE_CONV at 389-421,
+REAL_POLY_CONV at 443, REAL_FIELD at 581).
 -/
 import SessionMath.Real
 import HolMath.CalcRat
@@ -212,6 +212,18 @@ def REAL_RAT_COMPUTE_CONV : ioconv := fun tm => do
   | .ok c => c tm
   | .error e => return .error e
 
+/-- calc_rat.ml 389-421: `real_rat_red_conv_list`, REAL_RAT_RED_CONV and
+    REAL_RAT_COMPUTE_CONV are built here, after the pow/max/min conversions
+    and before the first normalizer, as in calc_rat.ml.  This parses their
+    patterns and takes REAL_RAT_RED_CONV's `basic_net()` snapshot here. -/
+initialize realRatRedLayer : Unit ← do
+  match ← realRatRedIO with
+  | .ok _ => pure ()
+  | .error e => throw (IO.userError s!"REAL_RAT_RED_CONV setup: {e}")
+  match ← realRatComputeIO with
+  | .ok _ => pure ()
+  | .error e => throw (IO.userError s!"REAL_RAT_COMPUTE_CONV setup: {e}")
+
 /-- `RealPolyConvs1` (calc_rat.ml 428-438): the six rational normalizer
     conversions.  Instantiated with `is_ratconst`, so rational constants
     become foldable coefficients (this is why the final `REAL_ARITH` beats
@@ -242,6 +254,12 @@ def REAL_POLY_CONV : ioconv := fun tm => do
   match ← realPolyConv2IO with
   | .ok c => c tm
   | .error e => return .error e
+
+/-- calc_rat.ml 443: REAL_POLY_CONV is built where it is defined. -/
+initialize realPolyConv2Layer : Unit ← do
+  match ← realPolyConv2IO with
+  | .ok _ => pure ()
+  | .error e => throw (IO.userError s!"REAL_POLY_CONV setup: {e}")
 
 /- The six first-normalizer polynomial conversions (calc_rat.ml 431). -/
 
@@ -288,8 +306,8 @@ def REAL_IDEAL_CONV : List term → term → IO (Except String thm) :=
 /-- `FinalRealArith` (calc_rat.ml 534-559): `GEN_REAL_ARITH3`, `REAL_ARITH3`,
     `REAL_ARITH_TAC2`, `ASM_REAL_ARITH_TAC`.  These are the FINAL versions and
     SUPERSEDE realarith.ml's `REAL_ARITH2` / real.ml's `REAL_ARITH_TAC`.  Needs
-    `GrA2` (`genRealArith2Ctx`, built at load by RealAx's
-    `ensureRealAxProcs`); built while `:real` is the schematic default. -/
+    `GrA2` (`genRealArith2Ctx`, built at load by SessionMath/RealArith's
+    `genRealArith2Early`); built while `:real` is the schematic default. -/
 initialize finalRealArithLayer : HolMath.CalcRat.FinalRealArith ←
   ioOk' "setupFinalRealArith" (do
     let GrA2 := genRealArith2Ctx
@@ -416,10 +434,8 @@ def REAL_INTEGRAL : thm := RRing.REAL_INTEGRAL
 def REAL_RABINOWITSCH : thm := RRing.REAL_RABINOWITSCH
 
 /- ---------------------------------------------------------------------- -/
-/- calc_rat.ml 407/414: REAL_RAT_RED_CONV and REAL_RAT_COMPUTE_CONV, built
-   last, after the `real` overloads of this region are current, so their
-   `basic_net()` snapshot is taken here.  (REAL_FIELD was built above, by
-   `realFieldLayer`; the check below only confirms it.) -/
+/- REAL_FIELD, REAL_RAT_RED_CONV and REAL_RAT_COMPUTE_CONV were built above,
+   at their calc_rat.ml positions; this only confirms them. -/
 /- ---------------------------------------------------------------------- -/
 initialize ensureRealProcs : Unit ← do
   match ← realFieldIO with

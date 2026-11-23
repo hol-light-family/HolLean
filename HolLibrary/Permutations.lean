@@ -15,10 +15,11 @@
   PERMSET_CONV's recursion is a top-level `partial def`.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, SET_RULE, TAUT, REAL_RING) they are bound
-  first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolMath
@@ -1898,7 +1899,7 @@ def setupSignTransfer [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (B
     MATCH_MP_TAC SUM_IMAGE THEN
     SIMP_TAC [FINITE_PERMUTATIONS, FINITE_NUMSEG, IN_ELIM_THM] THEN
     REPEAT STRIP_TAC THEN
-    FIRST_X_ASSUM (fun th => tactic_of do pure (MP_TAC (← AP_TERM (← q r"\p:num->num. inverse(q:num->num) o p") th))) THEN
+    FIRST_X_ASSUM ((fun (ocq3 : _) => fun th => tactic_of do pure (MP_TAC (← AP_TERM ocq3 th))) (← q r"\p:num->num. inverse(q:num->num) o p")) THEN
     REWRITE_TAC [o_ASSOC] THEN
     EVERY_ASSUM (fun th => tactic_of do pure (CONJUNCTS_THEN SUBST1_TAC (← MATCH_MP PERMUTES_INVERSES_o th))) THEN
     REWRITE_TAC [I_O_ID]))
@@ -1918,7 +1919,7 @@ def setupSignTransfer [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (B
     MATCH_MP_TAC SUM_IMAGE THEN
     SIMP_TAC [FINITE_PERMUTATIONS, FINITE_NUMSEG, IN_ELIM_THM] THEN
     REPEAT STRIP_TAC THEN
-    FIRST_X_ASSUM (fun th => tactic_of do pure (MP_TAC (← AP_TERM (← q r"\p:num->num. p o inverse(q:num->num)") th))) THEN
+    FIRST_X_ASSUM ((fun (ocq2 : _) => fun th => tactic_of do pure (MP_TAC (← AP_TERM ocq2 th))) (← q r"\p:num->num. p o inverse(q:num->num)")) THEN
     REWRITE_TAC [← GSYM o_ASSOC] THEN
     EVERY_ASSUM (fun th => tactic_of do pure (CONJUNCTS_THEN SUBST1_TAC (← MATCH_MP PERMUTES_INVERSES_o th))) THEN
     REWRITE_TAC [I_O_ID]))
@@ -2280,7 +2281,7 @@ def setupSumOver [HolBase] (D : PermutationsDeps) (BPermutes : Permutes) (BNumPe
      [FIRST_X_ASSUM (MP_TAC o C AP_THM (← q r"a:A")) THEN
       REWRITE_TAC [o_THM, swap] THEN ASM_MESON_TAC [permutes],
       DISCH_THEN SUBST_ALL_TAC THEN
-      FIRST_X_ASSUM (fun th => tactic_of do pure (MP_TAC (← AP_TERM (← q r"(\p:A->A. swap(a:A,c) o p)") th))) THEN
+      FIRST_X_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do pure (MP_TAC (← AP_TERM ocq1 th))) (← q r"(\p:A->A. swap(a:A,c) o p)")) THEN
       REWRITE_TAC [o_ASSOC, SWAP_IDEMPOTENT, I_O_ID]]))
 
   let SUM_OVER_PERMUTATIONS_NUMSEG ← prove

@@ -61,23 +61,6 @@ initialize listThms2Layer : HolMath.Lists.ListThms2 ←
 
 def listThms2 : HolMath.Lists.ListThms2 := listThms2Layer
 
-/-- The `LENGTH_CONV`/`EL_CONV`/`REVERSE_CONV`/`LIST_OF_SEQ_CONV` proformas
-    (lists.ml 761-886). -/
-initialize listEvalConvsLayer : HolMath.Lists.ListEvalConvs ←
-  ioOk' "setupListEvalConvs" (HolMath.Lists.setupListEvalConvs listDefs listThms1 arith1
-    NUM_SUC_CONV num_CONV).run
-
-private def listEvalConvs : HolMath.Lists.ListEvalConvs := listEvalConvsLayer
-
-/-- `LENGTH_CONV` (lists.ml 761-788). -/
-def LENGTH_CONV : ioconv := fun tm => listEvalConvs.LENGTH_CONV tm
-/-- `EL_CONV` (lists.ml 790-817). -/
-def EL_CONV : ioconv := fun tm => listEvalConvs.EL_CONV tm
-/-- `REVERSE_CONV` (lists.ml 819-844). -/
-def REVERSE_CONV : ioconv := fun tm => listEvalConvs.REVERSE_CONV tm
-/-- `LIST_OF_SEQ_CONV` (lists.ml 846-886). -/
-def LIST_OF_SEQ_CONV : ioconv := fun tm => listEvalConvs.LIST_OF_SEQ_CONV tm
-
 /-- `LIST_CONV conv` (lists.ml 750-756): apply `conv` down a list. -/
 def LIST_CONV : conv → conv := HolMath.Lists.LIST_CONV
 
@@ -113,6 +96,23 @@ def listsMono : HolMath.Lists.MonoAllThms := listsMonoLayer
 def MONO_ALL : thm := listsMono.MONO_ALL
 /-- `MONO_ALL2` (lists.ml 737-741). -/
 def MONO_ALL2 : thm := listsMono.MONO_ALL2
+
+/-- The `LENGTH_CONV`/`EL_CONV`/`REVERSE_CONV`/`LIST_OF_SEQ_CONV` proformas
+    (lists.ml 761-886), after MONO_ALL and MONO_ALL2 as in lists.ml. -/
+initialize listEvalConvsLayer : HolMath.Lists.ListEvalConvs ←
+  ioOk' "setupListEvalConvs" (HolMath.Lists.setupListEvalConvs listDefs listThms1 arith1
+    NUM_SUC_CONV num_CONV).run
+
+private def listEvalConvs : HolMath.Lists.ListEvalConvs := listEvalConvsLayer
+
+/-- `LENGTH_CONV` (lists.ml 761-788). -/
+def LENGTH_CONV : ioconv := fun tm => listEvalConvs.LENGTH_CONV tm
+/-- `EL_CONV` (lists.ml 790-817). -/
+def EL_CONV : ioconv := fun tm => listEvalConvs.EL_CONV tm
+/-- `REVERSE_CONV` (lists.ml 819-844). -/
+def REVERSE_CONV : ioconv := fun tm => listEvalConvs.REVERSE_CONV tm
+/-- `LIST_OF_SEQ_CONV` (lists.ml 846-886). -/
+def LIST_OF_SEQ_CONV : ioconv := fun tm => listEvalConvs.LIST_OF_SEQ_CONV tm
 
 /- ---------------------------------------------------------------------- -/
 /- lists.ml: the `char` type, `string` abbreviation, and the char/string  -/

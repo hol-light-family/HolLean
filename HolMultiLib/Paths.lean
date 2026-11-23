@@ -21529,8 +21529,8 @@ def setupPVH [HolBase] (D : PathsDeps) (BVE : PVE) (BVF : PVF) (BVG : PVG) :
       MAP_EVERY X_GEN_TAC [← q r"t:real", ← q r"x:real^N"] THEN STRIP_TAC THEN
       FIRST_X_ASSUM (MP_TAC o SPEC (← q r"t:real")) THEN
       ASM_REWRITE_TAC [POSITIVE_DEFINITE_EIGENVALUES] THEN
-      DISCH_THEN (fun th => tactic_of do pure (
-        MP_TAC (← SPECL [← q r"&0", ← q r"x:real^N"] (← liftExcept (last (CONJUNCTS th)))))) THEN
+      DISCH_THEN ((fun (ocq5 : _) (ocq6 : _) => fun th => tactic_of do pure (
+        MP_TAC (← SPECL [ocq5, ocq6] (← liftExcept (last (CONJUNCTS th)))))) (← q r"&0") (← q r"x:real^N")) THEN
       ASM_REWRITE_TAC [VECTOR_MUL_LZERO, REAL_LT_REFL, CONTRAPOS_THM] THEN
       DISCH_THEN (SUBST1_TAC o SYM) THEN
       MATCH_MP_TAC (← REWRITE_RULE [RIGHT_IMP_FORALL_THM] MATRIX_WORKS) THEN
@@ -29838,9 +29838,9 @@ def setupPWP [HolBase] (D : PathsDeps) (BWH : PWH) (BWI : PWI) (BWJ : PWJ) (BWL 
       MATCH_MP_TAC CLOSED_IN_SUBTOPOLOGY_INTER_SUBSET THEN
       EXISTS_TAC (← q r"s:real^N->bool") THEN
       ASM_SIMP_TAC [CLOSED_IN_INTER, CLOSED_IN_DIFF, CLOSED_IN_REFL],
-      FIRST_X_ASSUM (fun th => tactic_of do
-        let _ ← SPEC (← q r"vec 0:real^N") th
-        pure ALL_TAC)] THEN
+      FIRST_X_ASSUM ((fun (ocq4 : _) => fun th => tactic_of do
+        let _ ← SPEC ocq4 th
+        pure ALL_TAC) (← q r"vec 0:real^N"))] THEN
     GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV) [RIGHT_IMP_EXISTS_THM] THEN
     REWRITE_TAC [SKOLEM_THM, LEFT_IMP_EXISTS_THM] THEN
     X_GEN_TAC (← q r"u:real^N->real^N->bool") THEN DISCH_TAC THEN
@@ -31912,9 +31912,9 @@ def setupPWW [HolBase] (D : PathsDeps) (BA : PTA) (BB : PTB) (BC : PTC) (BD : PT
     ONCE_REWRITE_TAC [OPEN_IN_SUBOPEN] THEN X_GEN_TAC (← q r"y:real^P") THEN
     REWRITE_TAC [IN_ELIM_THM] THEN STRIP_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o CONJUNCT1 o GEN_REWRITE_RULE id [open_in]) THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (MP_TAC (← SPEC (← q r"(f:real^P->real^N) y") (← liftExcept (last (CONJUNCTS
-        (← GEN_REWRITE_RULE id [covering_space] th))))))) THEN
+    FIRST_ASSUM ((fun (ocq3 : _) => fun th => tactic_of do
+      pure (MP_TAC (← SPEC ocq3 (← liftExcept (last (CONJUNCTS
+        (← GEN_REWRITE_RULE id [covering_space] th))))))) (← q r"(f:real^P->real^N) y")) THEN
     ANTS_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"w:real^N->bool") MP_TAC) THEN
     REPEAT (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
@@ -32393,9 +32393,9 @@ def setupPWY [HolBase] (D : PathsDeps) (BWR : PWR) : ExceptT String IO PWY := do
     REWRITE_TAC [closed_in, TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN CONJ_TAC THENL
      [ASM SET_TAC [], ONCE_REWRITE_TAC [OPEN_IN_SUBOPEN]] THEN
     X_GEN_TAC (← q r"y:real^N") THEN REWRITE_TAC [IN_DIFF] THEN STRIP_TAC THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (MP_TAC (← SPEC (← q r"y:real^N") (← liftExcept (last (CONJUNCTS
-        (← GEN_REWRITE_RULE id [covering_space] th))))))) THEN
+    FIRST_ASSUM ((fun (ocq2 : _) => fun th => tactic_of do
+      pure (MP_TAC (← SPEC ocq2 (← liftExcept (last (CONJUNCTS
+        (← GEN_REWRITE_RULE id [covering_space] th))))))) (← q r"y:real^N")) THEN
     ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q r"v:real^N->bool") THEN
     REPEAT (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q r"y:real^N")) THEN ASM_REWRITE_TAC [] THEN
@@ -32517,9 +32517,9 @@ def setupPWZ [HolBase] (D : PathsDeps) (BWR : PWR) (BWY : PWY) : ExceptT String 
       EXISTS_TAC (← q r"c:real^M->bool") THEN ASM_REWRITE_TAC [],
       ALL_TAC] THEN
     REWRITE_TAC [← MESON [INFINITE] (← q r"FINITE s <=> ~INFINITE s")] THEN DISCH_TAC THEN
-    FIRST_ASSUM (fun th => tactic_of do
-      pure (MP_TAC (← SPEC (← q r"b:real^N") (← liftExcept (last (CONJUNCTS
-        (← GEN_REWRITE_RULE id [covering_space] th))))))) THEN
+    FIRST_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
+      pure (MP_TAC (← SPEC ocq1 (← liftExcept (last (CONJUNCTS
+        (← GEN_REWRITE_RULE id [covering_space] th))))))) (← q r"b:real^N")) THEN
     ASM_REWRITE_TAC [NOT_EXISTS_THM] THEN X_GEN_TAC (← q r"t:real^N->bool") THEN
     REPEAT (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"vv:(real^M->bool)->bool") STRIP_ASSUME_TAC) THEN

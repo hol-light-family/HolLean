@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.DedekindAbsolute fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -284,8 +287,6 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
 
   let NONARCHIMEDEAN_ABSOLUTE_VALUE ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← REAL_ARITH (← q r"&0 <= (a:real) /\ &0 <= (b:real) /\ (c:real) <= max a b
-    ==> c <= a + b")
     prove
       r"!k (f:A->real).
           nonarchimedean_absolute_value k f <=>
@@ -295,7 +296,8 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
                  ==> f(ring_mul k x y) = f x * f y) /\
           (!x y. x IN ring_carrier k /\ y IN ring_carrier k
                  ==> f(ring_add k x y) <= max (f x) (f y))"
-      (REPEAT GEN_TAC THEN REWRITE_TAC [nonarchimedean_absolute_value, absolute_value] THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN MATCH_MP_TAC r1 THEN ASM_SIMP_TAC [])
+      (REPEAT GEN_TAC THEN REWRITE_TAC [nonarchimedean_absolute_value, absolute_value] THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN MATCH_MP_TAC (← REAL_ARITH (← q r"&0 <= (a:real) /\ &0 <= (b:real) /\ (c:real) <= max a b
+    ==> c <= a + b")) THEN ASM_SIMP_TAC [])
 
   let ABSOLUTE_VALUE_POS ← prove
     r"!k (f:A->real) x.
@@ -332,21 +334,18 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
 
   let ABSOLUTE_VALUE_1 ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← REAL_ARITH (← q r"(a:real) = a * a <=> a * (a - &1) = &0")
     prove
       r"!k (f:A->real).
           absolute_value k f /\ ~(ring_1 k = ring_0 k) ==> f(ring_1 k) = &1"
-      (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_1 k:A"), (← q r"ring_1 k:A")] ABSOLUTE_VALUE_MUL) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_1 k:A")] ABSOLUTE_VALUE_POS_LT) THEN ASM_SIMP_TAC [RING_1, RING_MUL_LID] THEN REWRITE_TAC [r1, REAL_ENTIRE] THEN REAL_ARITH_TAC)
+      (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_1 k:A"), (← q r"ring_1 k:A")] ABSOLUTE_VALUE_MUL) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_1 k:A")] ABSOLUTE_VALUE_POS_LT) THEN ASM_SIMP_TAC [RING_1, RING_MUL_LID] THEN REWRITE_TAC [(← REAL_ARITH (← q r"(a:real) = a * a <=> a * (a - &1) = &0")), REAL_ENTIRE] THEN REAL_ARITH_TAC)
 
   let ABSOLUTE_VALUE_NEG ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← REAL_ARITH (← q r"(a:real) * a = &1 <=> (a - &1) * (a + &1) = &0")
-    let r2 ← REAL_RING (← q r"(a:real) = &1 ==> a * x = x")
     prove
       r"!k (f:A->real) x.
           absolute_value k f /\ x IN ring_carrier k
           ==> f(ring_neg k x) = f x"
-      (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"ring_1 k:A = ring_0 k") THENL [SUBGOAL_THEN (← q r"!y:A. y IN ring_carrier k ==> y = ring_0 k") (fun th => ASM_SIMP_TAC [th, RING_NEG]) THEN ASM_MESON_TAC [RING_MUL_LID, RING_MUL_LZERO], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_neg k x:A = ring_mul k (ring_neg k (ring_1 k)) x") SUBST1_TAC THENL [ASM_SIMP_TAC [RING_MUL_LNEG, RING_1, RING_MUL_LID], ALL_TAC] THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_MUL, RING_NEG, RING_1] THEN MATCH_MP_TAC r2 THEN SUBGOAL_THEN (← q r"f(ring_neg k (ring_1 k):A) * f(ring_neg k (ring_1 k)) = (&1:real)") MP_TAC THENL [MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_neg k (ring_1 k):A"), (← q r"ring_neg k (ring_1 k):A")] ABSOLUTE_VALUE_MUL) THEN ASM_SIMP_TAC [RING_NEG, RING_1, RING_MUL_LNEG, RING_MUL_RNEG, RING_NEG_NEG, RING_MUL_LID, ABSOLUTE_VALUE_1], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_neg k (ring_1 k):A")] ABSOLUTE_VALUE_POS) THEN ASM_SIMP_TAC [RING_NEG, RING_1] THEN SPEC_TAC ((← q r"f(ring_neg k (ring_1 k):A):real"), (← q r"a:real")) THEN REWRITE_TAC [r1, REAL_ENTIRE] THEN REAL_ARITH_TAC)
+      (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"ring_1 k:A = ring_0 k") THENL [SUBGOAL_THEN (← q r"!y:A. y IN ring_carrier k ==> y = ring_0 k") (fun th => ASM_SIMP_TAC [th, RING_NEG]) THEN ASM_MESON_TAC [RING_MUL_LID, RING_MUL_LZERO], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_neg k x:A = ring_mul k (ring_neg k (ring_1 k)) x") SUBST1_TAC THENL [ASM_SIMP_TAC [RING_MUL_LNEG, RING_1, RING_MUL_LID], ALL_TAC] THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_MUL, RING_NEG, RING_1] THEN MATCH_MP_TAC (← REAL_RING (← q r"(a:real) = &1 ==> a * x = x")) THEN SUBGOAL_THEN (← q r"f(ring_neg k (ring_1 k):A) * f(ring_neg k (ring_1 k)) = (&1:real)") MP_TAC THENL [MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_neg k (ring_1 k):A"), (← q r"ring_neg k (ring_1 k):A")] ABSOLUTE_VALUE_MUL) THEN ASM_SIMP_TAC [RING_NEG, RING_1, RING_MUL_LNEG, RING_MUL_RNEG, RING_NEG_NEG, RING_MUL_LID, ABSOLUTE_VALUE_1], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_neg k (ring_1 k):A")] ABSOLUTE_VALUE_POS) THEN ASM_SIMP_TAC [RING_NEG, RING_1] THEN SPEC_TAC ((← q r"f(ring_neg k (ring_1 k):A):real"), (← q r"a:real")) THEN REWRITE_TAC [(← REAL_ARITH (← q r"(a:real) * a = &1 <=> (a - &1) * (a + &1) = &0")), REAL_ENTIRE] THEN REAL_ARITH_TAC)
 
   let ABSOLUTE_VALUE_SUB ← prove
     r"!k (f:A->real) x y.
@@ -362,13 +361,12 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
 
   let ABSOLUTE_VALUE_ABS_SUB_LE ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← RING_RULE (← q r"ring_add k (ring_sub k x y) y = (x:A) /\
-    ring_add k (ring_sub k y x) x = (y:A)")
     prove
       r"!k (f:A->real) x y.
           absolute_value k f /\ x IN ring_carrier k /\ y IN ring_carrier k
           ==> abs(f x - f y) <= f(ring_sub k x y)"
-      (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_sub k x y:A"), (← q r"y:A")] ABSOLUTE_VALUE_TRIANGLE) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_sub k y x:A"), (← q r"x:A")] ABSOLUTE_VALUE_TRIANGLE) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"x:A"), (← q r"y:A")] ABSOLUTE_VALUE_SUB) THEN ASM_SIMP_TAC [RING_SUB] THEN ASM_SIMP_TAC [r1] THEN REAL_ARITH_TAC)
+      (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_sub k x y:A"), (← q r"y:A")] ABSOLUTE_VALUE_TRIANGLE) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"ring_sub k y x:A"), (← q r"x:A")] ABSOLUTE_VALUE_TRIANGLE) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"x:A"), (← q r"y:A")] ABSOLUTE_VALUE_SUB) THEN ASM_SIMP_TAC [RING_SUB] THEN ASM_SIMP_TAC [(← RING_RULE (← q r"ring_add k (ring_sub k x y) y = (x:A) /\
+    ring_add k (ring_sub k y x) x = (y:A)"))] THEN REAL_ARITH_TAC)
 
   let ABSOLUTE_VALUE_POW ← prove
     r"!k (f:A->real) x n.
@@ -378,12 +376,11 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
 
   let ABSOLUTE_VALUE_INV ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← REAL_FIELD (← q r"x * y = &1 ==> y = inv x")
     prove
       r"!k (f:A->real) x.
           field k /\ absolute_value k f /\ x IN ring_carrier k
           ==> f(ring_inv k x) = inv(f x)"
-      (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"x:A = ring_0 k") THEN ASM_SIMP_TAC [RING_INV_0, ABSOLUTE_VALUE_0, REAL_INV_0] THEN MATCH_MP_TAC r1 THEN ASM_SIMP_TAC [(← GSYM ABSOLUTE_VALUE_MUL), RING_INV, FIELD_MUL_RINV] THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_1, FIELD_NONTRIVIAL])
+      (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"x:A = ring_0 k") THEN ASM_SIMP_TAC [RING_INV_0, ABSOLUTE_VALUE_0, REAL_INV_0] THEN MATCH_MP_TAC (← REAL_FIELD (← q r"x * y = &1 ==> y = inv x")) THEN ASM_SIMP_TAC [(← GSYM ABSOLUTE_VALUE_MUL), RING_INV, FIELD_MUL_RINV] THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_1, FIELD_NONTRIVIAL])
 
   let ABSOLUTE_VALUE_DIV ← prove
     r"!k (f:A->real) x y.
@@ -414,9 +411,6 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
 
   let ABSOLUTE_VALUE_NONTRIVIAL ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← REAL_ARITH (← q r"f(x:A) < (&1:real) \/ &1 < f x \/ f x = &1")
-    let r2 ← TAUT (← q r"(p ==> q /\ r) /\ (q ==> p) /\ (r ==> p)
-                     ==> (p <=> q) /\ (p <=> r)")
     prove
       r"!k (f:A->real).
           field k /\ absolute_value k f
@@ -424,7 +418,8 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
                (?x. x IN ring_carrier k /\ &1 < f x)) /\
               ((?x. x IN ring_carrier k /\ ~(x = ring_0 k) /\ ~(f x = &1)) <=>
                (?x. x IN ring_carrier k /\ ~(x = ring_0 k) /\ f x < &1))"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC r2 THEN REPEAT CONJ_TAC THENL [DISCH_THEN (X_CHOOSE_THEN (← q r"x:A") STRIP_ASSUME_TAC) THEN SUBGOAL_THEN (← q r"(&0:real) < f(x:A)") ASSUME_TAC THENL [ASM_MESON_TAC [ABSOLUTE_VALUE_POS_LT], ALL_TAC] THEN SUBGOAL_THEN (← q r"~(ring_inv k x:A = ring_0 k) /\ ring_inv k x IN ring_carrier k") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [RING_INV, FIELD_MUL_RINV, RING_MUL_RZERO, FIELD_NONTRIVIAL], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"x:A")] ABSOLUTE_VALUE_INV) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN DISJ_CASES_TAC r1 THENL [CONJ_TAC THENL [EXISTS_TAC (← q r"ring_inv k x:A"), EXISTS_TAC (← q r"x:A")] THEN ASM_SIMP_TAC [REAL_INV_LT_1] THEN ASM_SIMP_TAC [REAL_INV_1_LT], FIRST_X_ASSUM DISJ_CASES_TAC THENL [ALL_TAC, ASM_MESON_TAC []] THEN CONJ_TAC THENL [EXISTS_TAC (← q r"x:A"), EXISTS_TAC (← q r"ring_inv k x:A")] THEN ASM_SIMP_TAC [REAL_INV_LT_1]], MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [DISCH_TAC THEN UNDISCH_TAC (← q r"(&1:real) < f(x:A)") THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_0] THEN REAL_ARITH_TAC, ASM_REAL_ARITH_TAC], MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC [] THEN REAL_ARITH_TAC])
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC (← TAUT (← q r"(p ==> q /\ r) /\ (q ==> p) /\ (r ==> p)
+                     ==> (p <=> q) /\ (p <=> r)")) THEN REPEAT CONJ_TAC THENL [DISCH_THEN (X_CHOOSE_THEN (← q r"x:A") STRIP_ASSUME_TAC) THEN SUBGOAL_THEN (← q r"(&0:real) < f(x:A)") ASSUME_TAC THENL [ASM_MESON_TAC [ABSOLUTE_VALUE_POS_LT], ALL_TAC] THEN SUBGOAL_THEN (← q r"~(ring_inv k x:A = ring_0 k) /\ ring_inv k x IN ring_carrier k") STRIP_ASSUME_TAC THENL [ASM_MESON_TAC [RING_INV, FIELD_MUL_RINV, RING_MUL_RZERO, FIELD_NONTRIVIAL], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"x:A")] ABSOLUTE_VALUE_INV) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN DISJ_CASES_TAC (← REAL_ARITH (← q r"f(x:A) < (&1:real) \/ &1 < f x \/ f x = &1")) THENL [CONJ_TAC THENL [EXISTS_TAC (← q r"ring_inv k x:A"), EXISTS_TAC (← q r"x:A")] THEN ASM_SIMP_TAC [REAL_INV_LT_1] THEN ASM_SIMP_TAC [REAL_INV_1_LT], FIRST_X_ASSUM DISJ_CASES_TAC THENL [ALL_TAC, ASM_MESON_TAC []] THEN CONJ_TAC THENL [EXISTS_TAC (← q r"x:A"), EXISTS_TAC (← q r"ring_inv k x:A")] THEN ASM_SIMP_TAC [REAL_INV_LT_1]], MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [DISCH_TAC THEN UNDISCH_TAC (← q r"(&1:real) < f(x:A)") THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_0] THEN REAL_ARITH_TAC, ASM_REAL_ARITH_TAC], MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC [] THEN REAL_ARITH_TAC])
 
   let NONARCHIMEDEAN_ABSOLUTE_VALUE_RING_OF_NUM ← prove
     r"!k (f:A->real) n.
@@ -438,19 +433,12 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
 
   let REAL_POW_EVENTUALLY_GT_LINEAR ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← REAL_ARITH (← q r"(a:real) <= abs a /\ (b:real) <= abs b")
-    let r2 ← REAL_ARITH (← q r"(x:real) <= y ==> z < x ==> z < y")
-    let r3 ← REAL_ARITH (← q r"&0 <= (x:real) ==> &0 <= &1 + x")
-    let r4 ← REAL_ARITH (← q r"&1 < (t:real) ==> &0 <= t")
-    let r5 ← ARITH_RULE (← q r"1 <= n <=> ~(n = 0)")
     prove
       r"!(t:real) a b. &1 < t ==> ?N. !n. N <= n ==> a * &n + b < t pow n"
-      (REPEAT STRIP_TAC THEN ABBREV_TAC (← q r"e = sqrt t - &1") THEN SUBGOAL_THEN (← q r"&0 < (e:real)") ASSUME_TAC THENL [EXPAND_TAC "e" THEN REWRITE_TAC [REAL_SUB_LT] THEN GEN_REWRITE_TAC LAND_CONV [(← GSYM SQRT_1)] THEN MATCH_MP_TAC SQRT_MONO_LT THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MP_TAC (← SPEC (← q r"(e:real) pow 2") REAL_ARCH) THEN ASM_SIMP_TAC [REAL_POW_LT] THEN DISCH_THEN ((X_CHOOSE_TAC (← q r"N:num")) o (SPEC (← q r"abs (a:real) + abs b + &1"))) THEN EXISTS_TAC (← q r"N:num") THEN X_GEN_TAC (← q r"n:num") THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"abs (a:real) + abs b + &1 < &n * e pow 2") ASSUME_TAC THENL [TRANS_TAC REAL_LTE_TRANS (← q r"&N * (e:real) pow 2") THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC REAL_LE_RMUL THEN ASM_SIMP_TAC [REAL_OF_NUM_LE, REAL_POW_LE, REAL_LT_IMP_LE], ALL_TAC] THEN SUBGOAL_THEN (← q r"(&1:real) <= &n") ASSUME_TAC THENL [REWRITE_TAC [REAL_OF_NUM_LE] THEN REWRITE_TAC [r5] THEN DISCH_TAC THEN UNDISCH_TAC (← q r"abs (a:real) + abs b + &1 < &n * e pow 2") THEN ASM_REWRITE_TAC [REAL_MUL_LZERO] THEN REAL_ARITH_TAC, ALL_TAC] THEN SUBGOAL_THEN (← q r"(&1 + &n * (e:real)) pow 2 <= t pow n") ASSUME_TAC THENL [SUBGOAL_THEN (← q r"t pow n = (sqrt t pow n) pow 2") SUBST1_TAC THENL [REWRITE_TAC [REAL_POW_POW] THEN ONCE_REWRITE_TAC [MULT_SYM] THEN REWRITE_TAC [(← GSYM REAL_POW_POW)] THEN ASM_SIMP_TAC [SQRT_POW_2, r4], ALL_TAC] THEN MATCH_MP_TAC REAL_POW_LE2 THEN CONJ_TAC THENL [MATCH_MP_TAC r3 THEN ASM_SIMP_TAC [REAL_LE_MUL, REAL_POS, REAL_LT_IMP_LE], SUBGOAL_THEN (← q r"sqrt t = &1 + e") SUBST1_TAC THENL [EXPAND_TAC "e" THEN REAL_ARITH_TAC, ALL_TAC] THEN MATCH_MP_TAC REAL_POW_LBOUND THEN ASM_SIMP_TAC [REAL_LT_IMP_LE]], ALL_TAC] THEN FIRST_X_ASSUM (MATCH_MP_TAC o (MATCH_MP r2)) THEN SUBGOAL_THEN (← q r"&n * (abs (a:real) + abs b + &1) < &n * (&n * e pow 2)") MP_TAC THENL [MATCH_MP_TAC REAL_LT_LMUL THEN ASM_REAL_ARITH_TAC, ALL_TAC] THEN SUBGOAL_THEN (← q r"&0 <= &n * (e:real)") MP_TAC THENL [ASM_SIMP_TAC [REAL_LE_MUL, REAL_POS, REAL_LT_IMP_LE], ALL_TAC] THEN SUBGOAL_THEN (← q r"abs (b:real) <= &n * abs b") MP_TAC THENL [GEN_REWRITE_TAC LAND_CONV [(← GSYM REAL_MUL_LID)] THEN MATCH_MP_TAC REAL_LE_RMUL THEN ASM_REWRITE_TAC [REAL_ABS_POS], ALL_TAC] THEN REWRITE_TAC [REAL_POW_2] THEN MAP_EVERY (fun t => tactic_of do pure (MP_TAC (← SPEC t REAL_ABS_POS))) [(← q r"a:real"), (← q r"b:real")] THEN MP_TAC r1 THEN SUBGOAL_THEN (← q r"(a:real) * &n <= abs a * &n") MP_TAC THENL [MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC [REAL_POS] THEN REAL_ARITH_TAC, ALL_TAC] THEN REAL_ARITH_TAC)
+      (REPEAT STRIP_TAC THEN ABBREV_TAC (← q r"e = sqrt t - &1") THEN SUBGOAL_THEN (← q r"&0 < (e:real)") ASSUME_TAC THENL [EXPAND_TAC "e" THEN REWRITE_TAC [REAL_SUB_LT] THEN GEN_REWRITE_TAC LAND_CONV [(← GSYM SQRT_1)] THEN MATCH_MP_TAC SQRT_MONO_LT THEN ASM_REWRITE_TAC [], ALL_TAC] THEN MP_TAC (← SPEC (← q r"(e:real) pow 2") REAL_ARCH) THEN ASM_SIMP_TAC [REAL_POW_LT] THEN DISCH_THEN ((X_CHOOSE_TAC (← q r"N:num")) o (SPEC (← q r"abs (a:real) + abs b + &1"))) THEN EXISTS_TAC (← q r"N:num") THEN X_GEN_TAC (← q r"n:num") THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"abs (a:real) + abs b + &1 < &n * e pow 2") ASSUME_TAC THENL [TRANS_TAC REAL_LTE_TRANS (← q r"&N * (e:real) pow 2") THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC REAL_LE_RMUL THEN ASM_SIMP_TAC [REAL_OF_NUM_LE, REAL_POW_LE, REAL_LT_IMP_LE], ALL_TAC] THEN SUBGOAL_THEN (← q r"(&1:real) <= &n") ASSUME_TAC THENL [REWRITE_TAC [REAL_OF_NUM_LE] THEN REWRITE_TAC [(← ARITH_RULE (← q r"1 <= n <=> ~(n = 0)"))] THEN DISCH_TAC THEN UNDISCH_TAC (← q r"abs (a:real) + abs b + &1 < &n * e pow 2") THEN ASM_REWRITE_TAC [REAL_MUL_LZERO] THEN REAL_ARITH_TAC, ALL_TAC] THEN SUBGOAL_THEN (← q r"(&1 + &n * (e:real)) pow 2 <= t pow n") ASSUME_TAC THENL [SUBGOAL_THEN (← q r"t pow n = (sqrt t pow n) pow 2") SUBST1_TAC THENL [REWRITE_TAC [REAL_POW_POW] THEN ONCE_REWRITE_TAC [MULT_SYM] THEN REWRITE_TAC [(← GSYM REAL_POW_POW)] THEN ASM_SIMP_TAC [SQRT_POW_2, (← REAL_ARITH (← q r"&1 < (t:real) ==> &0 <= t"))], ALL_TAC] THEN MATCH_MP_TAC REAL_POW_LE2 THEN CONJ_TAC THENL [MATCH_MP_TAC (← REAL_ARITH (← q r"&0 <= (x:real) ==> &0 <= &1 + x")) THEN ASM_SIMP_TAC [REAL_LE_MUL, REAL_POS, REAL_LT_IMP_LE], SUBGOAL_THEN (← q r"sqrt t = &1 + e") SUBST1_TAC THENL [EXPAND_TAC "e" THEN REAL_ARITH_TAC, ALL_TAC] THEN MATCH_MP_TAC REAL_POW_LBOUND THEN ASM_SIMP_TAC [REAL_LT_IMP_LE]], ALL_TAC] THEN FIRST_X_ASSUM (MATCH_MP_TAC o (MATCH_MP (← REAL_ARITH (← q r"(x:real) <= y ==> z < x ==> z < y")))) THEN SUBGOAL_THEN (← q r"&n * (abs (a:real) + abs b + &1) < &n * (&n * e pow 2)") MP_TAC THENL [MATCH_MP_TAC REAL_LT_LMUL THEN ASM_REAL_ARITH_TAC, ALL_TAC] THEN SUBGOAL_THEN (← q r"&0 <= &n * (e:real)") MP_TAC THENL [ASM_SIMP_TAC [REAL_LE_MUL, REAL_POS, REAL_LT_IMP_LE], ALL_TAC] THEN SUBGOAL_THEN (← q r"abs (b:real) <= &n * abs b") MP_TAC THENL [GEN_REWRITE_TAC LAND_CONV [(← GSYM REAL_MUL_LID)] THEN MATCH_MP_TAC REAL_LE_RMUL THEN ASM_REWRITE_TAC [REAL_ABS_POS], ALL_TAC] THEN REWRITE_TAC [REAL_POW_2] THEN MAP_EVERY (fun t => tactic_of do pure (MP_TAC (← SPEC t REAL_ABS_POS))) [(← q r"a:real"), (← q r"b:real")] THEN MP_TAC (← REAL_ARITH (← q r"(a:real) <= abs a /\ (b:real) <= abs b")) THEN SUBGOAL_THEN (← q r"(a:real) * &n <= abs a * &n") MP_TAC THENL [MATCH_MP_TAC REAL_LE_RMUL THEN REWRITE_TAC [REAL_POS] THEN REAL_ARITH_TAC, ALL_TAC] THEN REAL_ARITH_TAC)
 
   let NONARCHIMEDEAN_ABSOLUTE_VALUE_BOUNDED ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"(p ==> q) /\ (q ==> r) /\ (r ==> p)
-                     ==> (p <=> q) /\ (p <=> r)")
     prove
       r"!k (f:A->real).
           absolute_value k f
@@ -458,7 +446,8 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
                !n. f(ring_of_int k n) <= &1) /\
               (nonarchimedean_absolute_value k f <=>
                ?c. !n. f(ring_of_int k n) <= c)"
-      (REPEAT GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC r1 THEN REPEAT CONJ_TAC THENL [MESON_TAC [NONARCHIMEDEAN_ABSOLUTE_VALUE_RING_OF_INT], MESON_TAC [], DISCH_THEN (X_CHOOSE_THEN (← q r"c:real") (LABEL_TAC "c"))] THEN ASM_REWRITE_TAC [nonarchimedean_absolute_value] THEN MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN ASM_CASES_TAC (← q r"ring_1 k:A = ring_0 k") THENL [SUBGOAL_THEN (← q r"!z:A. z IN ring_carrier k ==> z = ring_0 k") ASSUME_TAC THENL [ASM_MESON_TAC [RING_MUL_LID, RING_MUL_LZERO], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_add k x y:A = ring_0 k /\ x = ring_0 k") (CONJUNCTS_THEN SUBST1_TAC) THENL [ASM_SIMP_TAC [RING_ADD], ALL_TAC] THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_0, REAL_LE_MAX, REAL_LE_REFL], ALL_TAC] THEN SUBGOAL_THEN (← q r"!j. (f:A->real)(ring_of_num k j) <= c") ASSUME_TAC THENL [GEN_TAC THEN REWRITE_TAC [(← GSYM RING_OF_INT_OF_NUM)] THEN USE_THEN "c" MATCH_ACCEPT_TAC, ALL_TAC] THEN SUBGOAL_THEN (← q r"&0 <= (c:real)") ASSUME_TAC THENL [TRANS_TAC REAL_LE_TRANS (← q r"(f:A->real)(ring_of_num k 0)") THEN ASM_REWRITE_TAC [ring_of_num] THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_0, REAL_LE_REFL], ALL_TAC] THEN ABBREV_TAC (← q r"M = max ((f:A->real) x) (f y)") THEN SUBGOAL_THEN (← q r"&0 <= (f:A->real) x /\ &0 <= f y /\ f x <= M /\ f y <= M") STRIP_ASSUME_TAC THENL [EXPAND_TAC "M" THEN REWRITE_TAC [REAL_LE_MAX, REAL_LE_REFL] THEN ASM_MESON_TAC [ABSOLUTE_VALUE_POS], ALL_TAC] THEN SUBGOAL_THEN (← q r"!m. (f:A->real)(ring_add k x y) pow m <= (c * &m + c) * M pow m") ASSUME_TAC THENL [X_GEN_TAC (← q r"m:num") THEN SUBGOAL_THEN (← q r"(f:A->real)(ring_add k x y) pow m = f(ring_pow k (ring_add k x y) m)") SUBST1_TAC THENL [ASM_SIMP_TAC [ABSOLUTE_VALUE_POW, RING_ADD], ALL_TAC] THEN ASM_SIMP_TAC [RING_BINOMIAL_THEOREM] THEN TRANS_TAC REAL_LE_TRANS (← q r"sum(0..m) (\i. (f:A->real)
+      (REPEAT GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC (← TAUT (← q r"(p ==> q) /\ (q ==> r) /\ (r ==> p)
+                     ==> (p <=> q) /\ (p <=> r)")) THEN REPEAT CONJ_TAC THENL [MESON_TAC [NONARCHIMEDEAN_ABSOLUTE_VALUE_RING_OF_INT], MESON_TAC [], DISCH_THEN (X_CHOOSE_THEN (← q r"c:real") (LABEL_TAC "c"))] THEN ASM_REWRITE_TAC [nonarchimedean_absolute_value] THEN MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN ASM_CASES_TAC (← q r"ring_1 k:A = ring_0 k") THENL [SUBGOAL_THEN (← q r"!z:A. z IN ring_carrier k ==> z = ring_0 k") ASSUME_TAC THENL [ASM_MESON_TAC [RING_MUL_LID, RING_MUL_LZERO], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_add k x y:A = ring_0 k /\ x = ring_0 k") (CONJUNCTS_THEN SUBST1_TAC) THENL [ASM_SIMP_TAC [RING_ADD], ALL_TAC] THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_0, REAL_LE_MAX, REAL_LE_REFL], ALL_TAC] THEN SUBGOAL_THEN (← q r"!j. (f:A->real)(ring_of_num k j) <= c") ASSUME_TAC THENL [GEN_TAC THEN REWRITE_TAC [(← GSYM RING_OF_INT_OF_NUM)] THEN USE_THEN "c" MATCH_ACCEPT_TAC, ALL_TAC] THEN SUBGOAL_THEN (← q r"&0 <= (c:real)") ASSUME_TAC THENL [TRANS_TAC REAL_LE_TRANS (← q r"(f:A->real)(ring_of_num k 0)") THEN ASM_REWRITE_TAC [ring_of_num] THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_0, REAL_LE_REFL], ALL_TAC] THEN ABBREV_TAC (← q r"M = max ((f:A->real) x) (f y)") THEN SUBGOAL_THEN (← q r"&0 <= (f:A->real) x /\ &0 <= f y /\ f x <= M /\ f y <= M") STRIP_ASSUME_TAC THENL [EXPAND_TAC "M" THEN REWRITE_TAC [REAL_LE_MAX, REAL_LE_REFL] THEN ASM_MESON_TAC [ABSOLUTE_VALUE_POS], ALL_TAC] THEN SUBGOAL_THEN (← q r"!m. (f:A->real)(ring_add k x y) pow m <= (c * &m + c) * M pow m") ASSUME_TAC THENL [X_GEN_TAC (← q r"m:num") THEN SUBGOAL_THEN (← q r"(f:A->real)(ring_add k x y) pow m = f(ring_pow k (ring_add k x y) m)") SUBST1_TAC THENL [ASM_SIMP_TAC [ABSOLUTE_VALUE_POW, RING_ADD], ALL_TAC] THEN ASM_SIMP_TAC [RING_BINOMIAL_THEOREM] THEN TRANS_TAC REAL_LE_TRANS (← q r"sum(0..m) (\i. (f:A->real)
           (ring_mul k (ring_of_num k (binom(m,i)))
             (ring_mul k (ring_pow k x i) (ring_pow k y (m - i)))))") THEN CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"f:A->real"), (← q r"\i. ring_mul k (ring_of_num k (binom(m,i)))
                   (ring_mul k (ring_pow k x i) (ring_pow k (y:A) (m - i)))"), (← q r"0..m")] ABSOLUTE_VALUE_RING_SUM) THEN ASM_SIMP_TAC [FINITE_NUMSEG, RING_MUL, RING_POW, RING_OF_NUM] THEN MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC [FUN_EQ_THM], ALL_TAC] THEN TRANS_TAC REAL_LE_TRANS (← q r"sum(0..m) (\i. c * M pow m)") THEN CONJ_TAC THENL [MATCH_MP_TAC SUM_LE_NUMSEG THEN X_GEN_TAC (← q r"i:num") THEN STRIP_TAC THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_MUL, ABSOLUTE_VALUE_POW, RING_MUL, RING_POW, RING_OF_NUM] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC [] THEN ASM_SIMP_TAC [REAL_LE_MUL, REAL_POW_LE] THEN SUBGOAL_THEN (← q r"(M:real) pow m = M pow i * M pow (m - i)") SUBST1_TAC THENL [REWRITE_TAC [(← GSYM REAL_POW_ADD)] THEN AP_TERM_TAC THEN ASM_ARITH_TAC, ALL_TAC] THEN CONJ_TAC THENL [ASM_MESON_TAC [ABSOLUTE_VALUE_POS, RING_OF_NUM], ALL_TAC] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_SIMP_TAC [REAL_POW_LE, REAL_POW_LE2], REWRITE_TAC [SUM_CONST_NUMSEG, SUB_0, (← GSYM REAL_OF_NUM_ADD)] THEN REAL_ARITH_TAC], ALL_TAC] THEN ASM_CASES_TAC (← q r"(M:real) = &0") THENL [SUBGOAL_THEN (← q r"x:A = ring_0 k /\ y = ring_0 k") (CONJUNCTS_THEN SUBST1_TAC) THENL [ASM_MESON_TAC [ABSOLUTE_VALUE_EQ_0, REAL_LE_ANTISYM], ALL_TAC] THEN ASM_SIMP_TAC [RING_ADD_LZERO, RING_0, ABSOLUTE_VALUE_0, REAL_LE_REFL], ALL_TAC] THEN SUBGOAL_THEN (← q r"&0 < (M:real)") ASSUME_TAC THENL [ASM_REAL_ARITH_TAC, ALL_TAC] THEN REWRITE_TAC [(← GSYM REAL_NOT_LT)] THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"(f:A->real)(ring_add k x y) / M"), (← q r"c:real"), (← q r"c:real")] REAL_POW_EVENTUALLY_GT_LINEAR) THEN ASM_SIMP_TAC [REAL_LT_RDIV_EQ, REAL_MUL_LID] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"N:num") (MP_TAC o (SPEC (← q r"N:num")))) THEN REWRITE_TAC [LE_REFL, REAL_NOT_LT, REAL_POW_DIV] THEN ASM_SIMP_TAC [REAL_LE_LDIV_EQ, REAL_POW_LT])
@@ -478,8 +467,6 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
 
   let NONARCHIMEDEAN_ABSOLUTE_VALUE_VALUATION_SUBRING ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← REAL_ARITH (← q r"(f:A->real) x <= &1 \/ &1 < f x")
-    let r2 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
     prove
       r"!k (f:A->real).
           field k /\ nonarchimedean_absolute_value k f
@@ -487,7 +474,7 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
               maximal_ideal
                (subring_generated k {x | x IN ring_carrier k /\ f x <= &1})
                {x | x IN ring_carrier k /\ f x < &1}"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NONARCHIMEDEAN_IMP_ABSOLUTE_VALUE)) THEN MATCH_MP_TAC r2 THEN CONJ_TAC THENL [ASM_REWRITE_TAC [valuation_subring, subring_of] THEN REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN ASM_SIMP_TAC [RING_0, RING_1, RING_NEG, RING_ADD, RING_MUL, RING_INV, ABSOLUTE_VALUE_0, ABSOLUTE_VALUE_1, FIELD_NONTRIVIAL, ABSOLUTE_VALUE_NEG, ABSOLUTE_VALUE_MUL, ABSOLUTE_VALUE_INV, REAL_POS, REAL_LE_REFL] THEN REPEAT CONJ_TAC THENL [MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN TRANS_TAC REAL_LE_TRANS (← q r"max ((f:A->real) x) (f y)") THEN ASM_REWRITE_TAC [REAL_MAX_LE] THEN FIRST_X_ASSUM (MATCH_MP_TAC o (CONJUNCT2 o (GEN_REWRITE_RULE id [nonarchimedean_absolute_value]))) THEN ASM_REWRITE_TAC [], MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [(← GSYM REAL_MUL_LID)] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_MESON_TAC [ABSOLUTE_VALUE_POS], X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN DISJ_CASES_TAC r1 THEN ASM_SIMP_TAC [REAL_INV_LT_1, REAL_LT_IMP_LE]], DISCH_TAC] THEN FIRST_ASSUM (fun th => tactic_of do pure (REWRITE_TAC [(← MATCH_MP VALUATION_SUBRING_MAXIMAL_IDEAL th)])) THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN X_GEN_TAC (← q r"x:A") THEN ASM_CASES_TAC (← q r"(x:A) IN ring_carrier k") THEN ASM_REWRITE_TAC [] THEN ASM_CASES_TAC (← q r"x:A = ring_0 k") THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_0, REAL_LT_01, REAL_POS] THEN ASM_SIMP_TAC [RING_INV, ABSOLUTE_VALUE_INV] THEN SUBGOAL_THEN (← q r"&0 < (f:A->real) x") MP_TAC THENL [ASM_MESON_TAC [ABSOLUTE_VALUE_POS_LT], ALL_TAC] THEN SPEC_TAC ((← q r"(f:A->real) x"), (← q r"t:real")) THEN GEN_TAC THEN DISCH_TAC THEN EQ_TAC THENL [ASM_SIMP_TAC [REAL_LT_IMP_LE, REAL_NOT_LE, REAL_INV_1_LT], ALL_TAC] THEN REWRITE_TAC [REAL_NOT_LE] THEN STRIP_TAC THEN ASM_REWRITE_TAC [REAL_LT_LE] THEN DISCH_TAC THEN UNDISCH_TAC (← q r"&1 < inv t") THEN ASM_REWRITE_TAC [REAL_INV_1] THEN REAL_ARITH_TAC)
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NONARCHIMEDEAN_IMP_ABSOLUTE_VALUE)) THEN MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL [ASM_REWRITE_TAC [valuation_subring, subring_of] THEN REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN ASM_SIMP_TAC [RING_0, RING_1, RING_NEG, RING_ADD, RING_MUL, RING_INV, ABSOLUTE_VALUE_0, ABSOLUTE_VALUE_1, FIELD_NONTRIVIAL, ABSOLUTE_VALUE_NEG, ABSOLUTE_VALUE_MUL, ABSOLUTE_VALUE_INV, REAL_POS, REAL_LE_REFL] THEN REPEAT CONJ_TAC THENL [MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN TRANS_TAC REAL_LE_TRANS (← q r"max ((f:A->real) x) (f y)") THEN ASM_REWRITE_TAC [REAL_MAX_LE] THEN FIRST_X_ASSUM (MATCH_MP_TAC o (CONJUNCT2 o (GEN_REWRITE_RULE id [nonarchimedean_absolute_value]))) THEN ASM_REWRITE_TAC [], MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN GEN_REWRITE_TAC RAND_CONV [(← GSYM REAL_MUL_LID)] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_MESON_TAC [ABSOLUTE_VALUE_POS], X_GEN_TAC (← q r"x:A") THEN STRIP_TAC THEN DISJ_CASES_TAC (← REAL_ARITH (← q r"(f:A->real) x <= &1 \/ &1 < f x")) THEN ASM_SIMP_TAC [REAL_INV_LT_1, REAL_LT_IMP_LE]], DISCH_TAC] THEN FIRST_ASSUM (fun th => tactic_of do pure (REWRITE_TAC [(← MATCH_MP VALUATION_SUBRING_MAXIMAL_IDEAL th)])) THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN X_GEN_TAC (← q r"x:A") THEN ASM_CASES_TAC (← q r"(x:A) IN ring_carrier k") THEN ASM_REWRITE_TAC [] THEN ASM_CASES_TAC (← q r"x:A = ring_0 k") THEN ASM_SIMP_TAC [ABSOLUTE_VALUE_0, REAL_LT_01, REAL_POS] THEN ASM_SIMP_TAC [RING_INV, ABSOLUTE_VALUE_INV] THEN SUBGOAL_THEN (← q r"&0 < (f:A->real) x") MP_TAC THENL [ASM_MESON_TAC [ABSOLUTE_VALUE_POS_LT], ALL_TAC] THEN SPEC_TAC ((← q r"(f:A->real) x"), (← q r"t:real")) THEN GEN_TAC THEN DISCH_TAC THEN EQ_TAC THENL [ASM_SIMP_TAC [REAL_LT_IMP_LE, REAL_NOT_LE, REAL_INV_1_LT], ALL_TAC] THEN REWRITE_TAC [REAL_NOT_LE] THEN STRIP_TAC THEN ASM_REWRITE_TAC [REAL_LT_LE] THEN DISCH_TAC THEN UNDISCH_TAC (← q r"&1 < inv t") THEN ASM_REWRITE_TAC [REAL_INV_1] THEN REAL_ARITH_TAC)
 
   let NONARCHIMEDEAN_ABSOLUTE_VALUE_INTEGRAL ← prove
     r"!r k (h:B->A) (f:A->real) x.
@@ -529,7 +516,6 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
 
   let DEDEKIND_VALUATION_NORMALIZED_ABSOLUTE_VALUE ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"(p /\ q /\ r /\ s) /\ t ==> p /\ q /\ r /\ s /\ t")
     prove
       r"!r k (h:A->B) P (f:B->real).
           dedekind_domain r /\ field_of_fractions (r,k) h /\
@@ -549,7 +535,7 @@ def setupDedekindAbsolute [HolBase] (D : DedekindAbsoluteDeps) :
                           (ideal_pow r P
                             (ideal_valuation r P (ideal_generated r {a})))) =
                        &1)"
-      (REWRITE_TAC [NONARCHIMEDEAN_ABSOLUTE_VALUE, (← GSYM CONJ_ASSOC)] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN FIRST_ASSUM (STRIP_ASSUME_TAC o (GEN_REWRITE_RULE id [field_of_fractions])) THEN SUBGOAL_THEN (← q r"1 < ideal_norm r (P:A->bool)") ASSUME_TAC THENL [MATCH_MP_TAC IDEAL_NORM_GT_1 THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL] THEN FIRST_ASSUM (MP_TAC o (MATCH_MP PRIME_IMP_PROPER_IDEAL)) THEN SIMP_TAC [PROPER_IDEAL_ALT], ASM_REWRITE_TAC []] THEN MATCH_MP_TAC r1 THEN CONJ_TAC THENL [MATCH_MP_TAC (← REWRITE_RULE [NONARCHIMEDEAN_ABSOLUTE_VALUE, (← GSYM CONJ_ASSOC)] DEDEKIND_VALUATION_ABSOLUTE_VALUE) THEN EXISTS_TAC (← q r"&(ideal_norm r (P:A->bool)):real") THEN ASM_REWRITE_TAC [REAL_OF_NUM_LT], X_GEN_TAC (← q r"a:A") THEN STRIP_TAC] THEN SUBGOAL_THEN (← q r"~((h:A->B) a = ring_0 k)") ASSUME_TAC THENL [ASM_MESON_TAC [RING_MONOMORPHISM_EQ_0], ASM_REWRITE_TAC []] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"k:B ring"), (← q r"h:A->B"), (← q r"P:A->bool"), (← q r"a:A")] DEDEKIND_VALUATION_IMAGE) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"P:A->bool"), (← q r"ideal_valuation r P (ideal_generated r {a:A})")] IDEAL_NORM_IDEAL_POW) THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL] THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN REWRITE_TAC [REAL_ZPOW_POW, (← GSYM REAL_OF_NUM_POW)] THEN MATCH_MP_TAC REAL_MUL_LINV THEN REWRITE_TAC [REAL_POW_EQ_0, REAL_OF_NUM_EQ] THEN ASM_ARITH_TAC)
+      (REWRITE_TAC [NONARCHIMEDEAN_ABSOLUTE_VALUE, (← GSYM CONJ_ASSOC)] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN FIRST_ASSUM (STRIP_ASSUME_TAC o (GEN_REWRITE_RULE id [field_of_fractions])) THEN SUBGOAL_THEN (← q r"1 < ideal_norm r (P:A->bool)") ASSUME_TAC THENL [MATCH_MP_TAC IDEAL_NORM_GT_1 THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL] THEN FIRST_ASSUM (MP_TAC o (MATCH_MP PRIME_IMP_PROPER_IDEAL)) THEN SIMP_TAC [PROPER_IDEAL_ALT], ASM_REWRITE_TAC []] THEN MATCH_MP_TAC (← TAUT (← q r"(p /\ q /\ r /\ s) /\ t ==> p /\ q /\ r /\ s /\ t")) THEN CONJ_TAC THENL [MATCH_MP_TAC (← REWRITE_RULE [NONARCHIMEDEAN_ABSOLUTE_VALUE, (← GSYM CONJ_ASSOC)] DEDEKIND_VALUATION_ABSOLUTE_VALUE) THEN EXISTS_TAC (← q r"&(ideal_norm r (P:A->bool)):real") THEN ASM_REWRITE_TAC [REAL_OF_NUM_LT], X_GEN_TAC (← q r"a:A") THEN STRIP_TAC] THEN SUBGOAL_THEN (← q r"~((h:A->B) a = ring_0 k)") ASSUME_TAC THENL [ASM_MESON_TAC [RING_MONOMORPHISM_EQ_0], ASM_REWRITE_TAC []] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"k:B ring"), (← q r"h:A->B"), (← q r"P:A->bool"), (← q r"a:A")] DEDEKIND_VALUATION_IMAGE) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"P:A->bool"), (← q r"ideal_valuation r P (ideal_generated r {a:A})")] IDEAL_NORM_IDEAL_POW) THEN ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL] THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN REWRITE_TAC [REAL_ZPOW_POW, (← GSYM REAL_OF_NUM_POW)] THEN MATCH_MP_TAC REAL_MUL_LINV THEN REWRITE_TAC [REAL_POW_EQ_0, REAL_OF_NUM_EQ] THEN ASM_ARITH_TAC)
 
   -- @@RETURN BEGIN
   return { absolute_value, nonarchimedean_absolute_value,

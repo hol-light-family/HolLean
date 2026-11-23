@@ -14,10 +14,11 @@
   name under its HOL Light name.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, NUMBER_RULE) they are bound first, in
-  OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolMath
@@ -531,9 +532,8 @@ def setupNProduct [HolBase] (D : ProductsDeps) :
        ==> CARD {v:A^N | !i. 1 <= i /\ i <= dimindex(:N) ==> P i (v$i)} =
            nproduct (1..dimindex(:N)) (\i. CARD {x | P i x})"
    (← do
-    let m ← MESON [HAS_SIZE] (← q "s HAS_SIZE n ==> CARD s = n")
     pure (REPEAT STRIP_TAC THEN
-      MATCH_MP_TAC m THEN
+      MATCH_MP_TAC (← MESON [HAS_SIZE] (← q "s HAS_SIZE n ==> CARD s = n")) THEN
       MATCH_MP_TAC HAS_SIZE_CART THEN
       ASM_REWRITE_TAC [← GSYM FINITE_HAS_SIZE]))
 

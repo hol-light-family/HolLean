@@ -5882,9 +5882,9 @@ def setupPOK [HolBase] (D : PolytopeDeps) (BPOA : POA) (BPOB : POB) (BPOG : POG)
       ASM_REWRITE_TAC [NOT_IN_EMPTY] THEN
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE I [← GSYM MEMBER_NOT_EMPTY]) THEN
       DISCH_THEN (X_CHOOSE_TAC (← q r"h:real^N->bool")) THEN DISCH_THEN
-       (fun th => tactic_of do
-         pure (MP_TAC (← SPEC (← q r"f DELETE (h:real^N->bool)")
-           (← liftExcept (last (CONJUNCTS th)))))) THEN
+       ((fun (ocq1 : _) => fun th => tactic_of do
+         pure (MP_TAC (← SPEC ocq1
+           (← liftExcept (last (CONJUNCTS th)))))) (← q r"f DELETE (h:real^N->bool)")) THEN
       ASM SET_TAC [],
       STRIP_TAC] THEN
     SUBGOAL_THEN (← q r"polyhedron(s:real^N->bool)") ASSUME_TAC THENL

@@ -476,23 +476,19 @@ def setupIterateSortSeg [HolBase]
                             (!j k. j IN 1..n /\ k IN 1..n /\ j < k
                                    ==> ~(f k << f j))"
    (← do
-    let a2 ← ARITH_RULE (← q r"1 <= x ==> 1 < x + 1 /\ ~(x + 1 = 1)")
-    let a1 ← ARITH_RULE (← q r"1 <= k ==> ~(SUC k = 1)")
-    let s1 ← SET_RULE (← q r"a IN s ==> (s DELETE a = {} <=> s = {a})")
-    let t1 ← TAUT (← q r"~(a /\ ~a)")
     pure
       (GEN_TAC THEN DISCH_TAC THEN
        SUBGOAL_THEN (← q r"!n s. s HAS_SIZE n /\ ~(s = {})
                          ==> ?a:A. a IN s /\ !b. b IN (s DELETE a) ==> ~(b << a)")
        ASSUME_TAC THENL
         [INDUCT_TAC THEN
-         REWRITE_TAC [HAS_SIZE_0, HAS_SIZE_SUC, t1] THEN
+         REWRITE_TAC [HAS_SIZE_0, HAS_SIZE_SUC, (← TAUT (← q r"~(a /\ ~a)"))] THEN
          X_GEN_TAC (← q r"s:A->bool") THEN STRIP_TAC THEN
          FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE I [← GSYM MEMBER_NOT_EMPTY]) THEN
          DISCH_THEN (X_CHOOSE_TAC (← q r"a:A")) THEN
          FIRST_X_ASSUM (MP_TAC o SPEC (← q r"a:A")) THEN ASM_REWRITE_TAC [] THEN
          DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC (← q r"s DELETE (a:A)")) THEN
-         ASM_SIMP_TAC [s1] THEN
+         ASM_SIMP_TAC [(← SET_RULE (← q r"a IN s ==> (s DELETE a = {} <=> s = {a})"))] THEN
          ASM_CASES_TAC (← q r"s = {a:A}") THEN ASM_REWRITE_TAC [] THENL
           [EXISTS_TAC (← q r"a:A") THEN SET_TAC [], ALL_TAC] THEN
          DISCH_THEN (X_CHOOSE_THEN (← q r"b:A") STRIP_ASSUME_TAC) THEN
@@ -509,7 +505,7 @@ def setupIterateSortSeg [HolBase]
        FIRST_X_ASSUM (MP_TAC o SPEC (← q r"s DELETE (a:A)")) THEN ASM_SIMP_TAC [] THEN
        DISCH_THEN (X_CHOOSE_THEN (← q r"f:num->A") STRIP_ASSUME_TAC) THEN
        EXISTS_TAC (← q r"\k. if k = 1 then a:A else f(k - 1)") THEN
-       SIMP_TAC [a1, SUC_SUB1] THEN
+       SIMP_TAC [(← ARITH_RULE (← q r"1 <= k ==> ~(SUC k = 1)")), SUC_SUB1] THEN
        SUBGOAL_THEN (← q r"!i. i IN 1..SUC n <=> i = 1 \/ 1 < i /\ (i - 1) IN 1..n")
         (fun th => REWRITE_TAC [EXTENSION, IN_IMAGE, th])
        THENL [REWRITE_TAC [IN_NUMSEG] THEN ARITH_TAC, ALL_TAC] THEN CONJ_TAC THENL
@@ -521,7 +517,7 @@ def setupIterateSortSeg [HolBase]
          ASM_REWRITE_TAC [IN_IMAGE, IN_NUMSEG] THEN
          EQ_TAC THENL [ALL_TAC, MESON_TAC []] THEN
          DISCH_THEN (X_CHOOSE_TAC (← q r"i:num")) THEN EXISTS_TAC (← q r"i + 1") THEN
-         ASM_SIMP_TAC [a2, ADD_SUB],
+         ASM_SIMP_TAC [(← ARITH_RULE (← q r"1 <= x ==> 1 < x + 1 /\ ~(x + 1 = 1)")), ADD_SUB],
          MAP_EVERY X_GEN_TAC [← q r"j:num", ← q r"k:num"] THEN
          MAP_EVERY ASM_CASES_TAC [← q r"j = 1", ← q r"k = 1"] THEN
          ASM_REWRITE_TAC [LT_REFL] THENL
@@ -540,16 +536,14 @@ def setupIterateSortSeg [HolBase]
    (!l r. FINITE {x:int | l < x /\ x <= r}) /\
    (!l r. FINITE {x:int | l < x /\ x < r})"
    (← do
-    let i1 ← INT_ARITH (← q r"~(&0 <= r - l:int) ==> ~(l <= x /\ x <= r)")
-    let t1 ← TAUT (← q r"(a ==> b) /\ a ==> a /\ b")
     pure
-      (MATCH_MP_TAC t1 THEN CONJ_TAC THENL
+      (MATCH_MP_TAC (← TAUT (← q r"(a ==> b) /\ a ==> a /\ b")) THEN CONJ_TAC THENL
         [DISCH_TAC THEN REPEAT CONJ_TAC THEN POP_ASSUM MP_TAC THEN
          REPEAT (MATCH_MP_TAC MONO_FORALL THEN GEN_TAC) THEN
          MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] FINITE_SUBSET) THEN
          REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN INT_ARITH_TAC,
          REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"&0:int <= r - l") THEN
-         ASM_SIMP_TAC [i1] THEN
+         ASM_SIMP_TAC [(← INT_ARITH (← q r"~(&0 <= r - l:int) ==> ~(l <= x /\ x <= r)"))] THEN
          ASM_SIMP_TAC [EMPTY_GSPEC, FINITE_EMPTY] THEN
          MATCH_MP_TAC FINITE_SUBSET THEN
          EXISTS_TAC (← q r"IMAGE (\n. l + &n) (0..num_of_int(r - l))") THEN
@@ -919,20 +913,13 @@ def setupIterateKey1 [HolBase]
                     op (iterate op (s UNION t) f)
                        (iterate op (s INTER t) f)"
    (← do
-    let d4 ← SET_RULE (← q r"DISJOINT (s DIFF s') (s INTER s')")
-    let d3 ← SET_RULE (← q r"DISJOINT (s DIFF s') (s' INTER s)")
-    let d2 ← SET_RULE (← q r"DISJOINT (s DIFF s') (s' DIFF s)")
-    let d1 ← SET_RULE (← q r"DISJOINT (s DIFF s' UNION s' DIFF s) (s INTER s')")
-    let r3 ← SET_RULE (← q r"t:A->bool = t DIFF s UNION s INTER t")
-    let r2 ← SET_RULE (← q r"s:A->bool = s DIFF t UNION s INTER t")
-    let r1 ← SET_RULE (← q r"a UNION b = ((a DIFF b) UNION (b DIFF a)) UNION (a INTER b)")
     pure
      (REPEAT STRIP_TAC THEN
-      ONCE_REWRITE_TAC [r1] THEN
-      GEN_REWRITE_TAC (LAND_CONV o LAND_CONV o ONCE_DEPTH_CONV) [r2] THEN
-      GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o ONCE_DEPTH_CONV) [r3] THEN
+      ONCE_REWRITE_TAC [(← SET_RULE (← q r"a UNION b = ((a DIFF b) UNION (b DIFF a)) UNION (a INTER b)"))] THEN
+      GEN_REWRITE_TAC (LAND_CONV o LAND_CONV o ONCE_DEPTH_CONV) [(← SET_RULE (← q r"s:A->bool = s DIFF t UNION s INTER t"))] THEN
+      GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o ONCE_DEPTH_CONV) [(← SET_RULE (← q r"t:A->bool = t DIFF s UNION s INTER t"))] THEN
       ASM_SIMP_TAC [ITERATE_UNION, FINITE_UNION, FINITE_DIFF, FINITE_INTER,
-        d1, d2, d3, d4] THEN
+        (← SET_RULE (← q r"DISJOINT (s DIFF s' UNION s' DIFF s) (s INTER s')")), (← SET_RULE (← q r"DISJOINT (s DIFF s') (s' DIFF s)")), (← SET_RULE (← q r"DISJOINT (s DIFF s') (s' INTER s)")), (← SET_RULE (← q r"DISJOINT (s DIFF s') (s INTER s')"))] THEN
       FIRST_X_ASSUM (fun th => tactic_of do pure (
         REWRITE_TAC [← MATCH_MP MONOIDAL_AC th]))))
 
@@ -1158,15 +1145,13 @@ def setupIterateKey2 [HolBase]
                 ==> iterate op s (\i. iterate op (t i) (x i)) =
                     iterate op {i,j | i IN s /\ j IN t i} (\(i,j). x i j)"
    (← do
-    let r2 ← SET_RULE (← q r"{i,j | i IN a INSERT s /\ j IN t i} =
-            IMAGE (\j. a,j) (t a) UNION {i,j | i IN s /\ j IN t i}")
-    let r1 ← SET_RULE (← q r"{a,b | F} = {}")
     pure
      (GEN_TAC THEN DISCH_TAC THEN
       REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
       MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
-      ASM_SIMP_TAC [NOT_IN_EMPTY, r1, ITERATE_CLAUSES] THEN
-      REWRITE_TAC [r2] THEN
+      ASM_SIMP_TAC [NOT_IN_EMPTY, (← SET_RULE (← q r"{a,b | F} = {}")), ITERATE_CLAUSES] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"{i,j | i IN a INSERT s /\ j IN t i} =
+            IMAGE (\j. a,j) (t a) UNION {i,j | i IN s /\ j IN t i}"))] THEN
       ASM_SIMP_TAC [FINITE_INSERT, ITERATE_CLAUSES, IN_INSERT] THEN
       REPEAT STRIP_TAC THEN
       FIRST_ASSUM (fun th => tactic_of do pure (
@@ -1658,9 +1643,8 @@ structure IterateOrdered where
   ITERATO_CLAUSES_NUMSEG_LEFT : thm
   deriving Inhabited
 
-/-- OCaml builds each tactic right to left, so where one proof's tactic
-    contains several rules that print (SET_RULE, MESON), they are bound
-    first, last one first. -/
+/-- OCaml builds each tactic right to left; the OcamlOrder `do` macro
+    runs the rules that print (SET_RULE, MESON) in that order. -/
 @[nospecialize]
 def setupIterateOrdered [HolBase]
     (new_specification' : List String → thm → IO (Except String thm))
@@ -1709,8 +1693,6 @@ def setupIterateOrdered [HolBase]
                           {j | j IN k DELETE i /\ f j IN dom DIFF {neut}} f)
          else neut"
    (← do
-    let r2 ← SET_RULE (← q r"p /\ q /\ ~(p /\ ~r /\ q) <=> r /\ p /\ q")
-    let r1 ← SET_RULE (← q r"{i | i IN k DIFF {a} /\ P i} = {i | i IN k /\ P i} DELETE a")
     pure
      (REPLICATE_TAC 4 (ONCE_REWRITE_TAC [← GSYM SKOLEM_THM]) THEN REPEAT GEN_TAC THEN
       GEN_REWRITE_TAC I [EXISTS_SWAP_FUN_THM] THEN REWRITE_TAC [] THEN
@@ -1722,11 +1704,11 @@ def setupIterateOrdered [HolBase]
       COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
       LET_TAC THEN CONV_TAC (ONCE_DEPTH_CONV let_CONV) THEN
       AP_TERM_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-      REWRITE_TAC [r1] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"{i | i IN k DIFF {a} /\ P i} = {i | i IN k /\ P i} DELETE a"))] THEN
       MATCH_MP_TAC CARD_PSUBSET THEN ASM_REWRITE_TAC [] THEN
       REWRITE_TAC [PSUBSET_ALT] THEN CONJ_TAC THENL [SET_TAC [], ALL_TAC] THEN
       REWRITE_TAC [IN_ELIM_THM, IN_DELETE, ← GSYM CONJ_ASSOC] THEN
-      REWRITE_TAC [r2] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"p /\ q /\ ~(p /\ ~r /\ q) <=> r /\ p /\ q"))] THEN
       REWRITE_TAC [UNWIND_THM2] THEN
       FIRST_X_ASSUM (MP_TAC o REWRITE_RULE [← GSYM MEMBER_NOT_EMPTY] o CONJUNCT2) THEN
       REWRITE_TAC [IN_ELIM_THM, IN_DELETE] THEN ASM_MESON_TAC [])))
@@ -1764,25 +1746,21 @@ def setupIterateOrdered [HolBase]
                    then iterato dom neut op (<<=) k f
                    else op (f i) (iterato dom neut op (<<=) k f))"
    (← do
-    let r4 ← SET_RULE (← q r"~(i IN k) ==> (i INSERT k) DELETE i = k")
-    let m3 ← MESON [] (← q r"q /\ p /\ x = z ==> (if p /\ q then x else y) = z")
-    let r2 ← SET_RULE (← q r"x IN dom ==> x = a <=> ~(x IN dom DIFF {a})")
-    let r1 ← SET_RULE (← q r"i IN k ==> i INSERT k = k")
     pure
      (REPEAT GEN_TAC THEN CONJ_TAC THENL
        [GEN_REWRITE_TAC LAND_CONV [iterato] THEN
         ASM_REWRITE_TAC [NOT_IN_EMPTY, EMPTY_GSPEC],
         REPEAT GEN_TAC THEN STRIP_TAC] THEN
       ASM_CASES_TAC (← q r"(i:K) IN k") THEN
-      ASM_SIMP_TAC [COND_SWAP, r1] THEN
-      REWRITE_TAC [r2] THEN
+      ASM_SIMP_TAC [COND_SWAP, (← SET_RULE (← q r"i IN k ==> i INSERT k = k"))] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"x IN dom ==> x = a <=> ~(x IN dom DIFF {a})"))] THEN
       REWRITE_TAC [COND_SWAP] THEN COND_CASES_TAC THENL
        [GEN_REWRITE_TAC LAND_CONV [iterato] THEN
         FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE I [IN_DIFF]) THEN
         REWRITE_TAC [IN_SING] THEN STRIP_TAC,
         ONCE_REWRITE_TAC [← GSYM ITERATO_SUPPORT] THEN
         AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC []] THEN
-      MATCH_MP_TAC m3 THEN
+      MATCH_MP_TAC (← MESON [] (← q r"q /\ p /\ x = z ==> (if p /\ q then x else y) = z")) THEN
       REPEAT CONJ_TAC THENL
        [ASM SET_TAC [],
         MATCH_MP_TAC FINITE_SUBSET THEN
@@ -1801,7 +1779,7 @@ def setupIterateOrdered [HolBase]
       SUBST1_TAC THENL
        [ALL_TAC,
         CONV_TAC (ONCE_DEPTH_CONV let_CONV) THEN
-        ASM_SIMP_TAC [r4] THEN
+        ASM_SIMP_TAC [(← SET_RULE (← q r"~(i IN k) ==> (i INSERT k) DELETE i = k"))] THEN
         REWRITE_TAC [ITERATO_SUPPORT]] THEN
       MATCH_MP_TAC SELECT_UNIQUE THEN X_GEN_TAC (← q r"j:K") THEN
       REWRITE_TAC [] THEN EQ_TAC THEN SIMP_TAC [] THENL [ALL_TAC, ASM SET_TAC []] THEN
@@ -1847,9 +1825,6 @@ def setupIterateOrdered [HolBase]
         (!i. i IN k ==> f i = g i)
         ==> iterato dom neut op (<<=) k f = iterato dom neut op (<<=) k g"
    (← do
-    let r2 ← SET_RULE (← q r"{j | j IN s DELETE i /\ P j} = {j | j IN s /\ P j} DELETE i")
-    let m1 ← MESON []
-      (← q r"(!n k. FINITE k /\ CARD k = n ==> P k) ==> (!k. FINITE k ==> P k)")
     pure
      (REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC [ITERATO_EXPAND_CASES] THEN
       ASM_SIMP_TAC [← TAUT (← q r"p /\ q <=> ~(p ==> ~q)")] THEN
@@ -1859,7 +1834,8 @@ def setupIterateOrdered [HolBase]
       MP_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
       UNDISCH_TAC (← q r"FINITE {i | i IN k /\ (g:K->A) i IN dom DIFF {neut}}") THEN
       SPEC_TAC ((← q r"{i | i IN k /\ (g:K->A) i IN dom DIFF {neut}}"), (← q r"k:K->bool")) THEN
-      POP_ASSUM_LIST (K ALL_TAC) THEN MATCH_MP_TAC m1 THEN
+      POP_ASSUM_LIST (K ALL_TAC) THEN MATCH_MP_TAC (← MESON []
+      (← q r"(!n k. FINITE k /\ CARD k = n ==> P k) ==> (!k. FINITE k ==> P k)")) THEN
       REWRITE_TAC [IMP_IMP] THEN MATCH_MP_TAC num_WF THEN
       X_GEN_TAC (← q r"n:num") THEN DISCH_TAC THEN X_GEN_TAC (← q r"k:K->bool") THEN
       STRIP_TAC THEN RULE_ASSUM_TAC (REWRITE_RULE
@@ -1877,7 +1853,7 @@ def setupIterateOrdered [HolBase]
         FIRST_X_ASSUM (MP_TAC o CONJUNCT2) THEN MESON_TAC [],
         ALL_TAC] THEN
       BINOP_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN
-      ASM_REWRITE_TAC [r2] THEN
+      ASM_REWRITE_TAC [(← SET_RULE (← q r"{j | j IN s DELETE i /\ P j} = {j | j IN s /\ P j} DELETE i"))] THEN
       FIRST_X_ASSUM MATCH_MP_TAC THEN
       ASM_SIMP_TAC [FINITE_DELETE, FINITE_RESTRICT, IN_DELETE, IN_ELIM_THM] THEN
       REWRITE_TAC [← ONCE_REWRITE_RULE [CONJ_SYM] UNWIND_THM1] THEN
@@ -1891,23 +1867,17 @@ def setupIterateOrdered [HolBase]
         (!i x. i IN k /\ f i IN dom /\ ~(f i = neut) /\ P x ==> P (op (f i) x))
         ==> P(iterato dom neut op (<<=) k f)"
    (← do
-    let a1 ← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")
-    let t2 ← TAUT
-       (← q r"(p ==> r) /\ (q ==> r) ==> (~p ==> q) ==> r")
-    let m2 ← MESON []
-      (← q r"(!n k. FINITE k /\ CARD k = n ==> P k) ==> (!k. FINITE k ==> P k)")
-    let t1 ← TAUT
-       (← q r"(a /\ p ==> if q then r else T) <=> a ==> q ==> p ==> r")
-    let r1 ← SET_RULE (← q r"i IN k /\ f i IN s /\ ~(f i = z) /\ Q <=>
-      i IN {j | j IN k /\ f j IN s DIFF {z}} /\ Q")
     pure
-     (REPEAT GEN_TAC THEN REWRITE_TAC [r1] THEN
+     (REPEAT GEN_TAC THEN REWRITE_TAC [(← SET_RULE (← q r"i IN k /\ f i IN s /\ ~(f i = z) /\ Q <=>
+      i IN {j | j IN k /\ f j IN s DIFF {z}} /\ Q"))] THEN
       ONCE_REWRITE_TAC [ITERATO_EXPAND_CASES] THEN
       ONCE_REWRITE_TAC [COND_RAND] THEN SIMP_TAC [] THEN
-      REWRITE_TAC [t1] THEN
+      REWRITE_TAC [(← TAUT
+       (← q r"(a /\ p ==> if q then r else T) <=> a ==> q ==> p ==> r"))] THEN
       STRIP_TAC THEN
       SPEC_TAC ((← q r"{i | i IN k /\ (f:K->A) i IN dom DIFF {neut}}"), (← q r"k:K->bool")) THEN
-      MATCH_MP_TAC m2 THEN
+      MATCH_MP_TAC (← MESON []
+      (← q r"(!n k. FINITE k /\ CARD k = n ==> P k) ==> (!k. FINITE k ==> P k)")) THEN
       REWRITE_TAC [IMP_IMP] THEN MATCH_MP_TAC num_WF THEN
       X_GEN_TAC (← q r"n:num") THEN DISCH_TAC THEN
       X_GEN_TAC (← q r"k:K->bool") THEN STRIP_TAC THEN
@@ -1920,7 +1890,8 @@ def setupIterateOrdered [HolBase]
         ← q r"f:K->A"]
        ITERATO_CLAUSES_EXISTS) THEN
       DISCH_THEN (MP_TAC o SPEC (← q r"k:K->bool") o CONJUNCT2) THEN
-      ASM_SIMP_TAC [FINITE_RESTRICT] THEN MATCH_MP_TAC t2 THEN
+      ASM_SIMP_TAC [FINITE_RESTRICT] THEN MATCH_MP_TAC (← TAUT
+       (← q r"(p ==> r) /\ (q ==> r) ==> (~p ==> q) ==> r")) THEN
       CONJ_TAC THENL
        [ONCE_REWRITE_TAC [← GSYM ITERATO_SUPPORT] THEN SIMP_TAC [] THEN
         ASM_REWRITE_TAC [ITERATO_CLAUSES_EXISTS],
@@ -1930,7 +1901,7 @@ def setupIterateOrdered [HolBase]
       ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
       EXISTS_TAC (← q r"n - 1") THEN
       ASM_SIMP_TAC [CARD_DELETE, FINITE_DELETE, IN_DELETE] THEN
-      REWRITE_TAC [a1] THEN
+      REWRITE_TAC [(← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)"))] THEN
       ASM_MESON_TAC [CARD_EQ_0]))
 
   let ITERATO_CLOSED ← prove
@@ -1945,21 +1916,15 @@ def setupIterateOrdered [HolBase]
    r"!(op:A->A->A) ((<<=):K->K->bool).
         monoidal op ==> iterato (:A) (neutral op) op (<<=) = iterate op"
    (← do
-    let r3 ← SET_RULE (← q r"i IN k ==> i INSERT (k DELETE i) = k")
-    let a1 ← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")
-    let t1 ← TAUT
-       (← q r"(p ==> r) /\ (q ==> r) ==> (~p ==> q) ==> r")
-    let m2 ← MESON []
-      (← q r"(!n k. FINITE k /\ CARD k = n ==> P k) ==> (!k. FINITE k ==> P k)")
-    let m1 ← MESON []
-      (← q r"(p ==> x = y) ==> (if p then x else z) = (if p then y else z)")
     pure
      (REPEAT STRIP_TAC THEN REWRITE_TAC [FUN_EQ_THM] THEN
       MAP_EVERY X_GEN_TAC [← q r"k:K->bool", ← q r"f:K->A"] THEN
       ONCE_REWRITE_TAC [ITERATE_EXPAND_CASES, ITERATO_EXPAND_CASES] THEN
-      REWRITE_TAC [support, IN_UNIV, IN_DIFF, IN_SING] THEN MATCH_MP_TAC m1 THEN
+      REWRITE_TAC [support, IN_UNIV, IN_DIFF, IN_SING] THEN MATCH_MP_TAC (← MESON []
+      (← q r"(p ==> x = y) ==> (if p then x else z) = (if p then y else z)")) THEN
       SPEC_TAC ((← q r"{i | i IN k /\ ~((f:K->A) i = neutral op)}"), (← q r"k:K->bool")) THEN
-      MATCH_MP_TAC m2 THEN
+      MATCH_MP_TAC (← MESON []
+      (← q r"(!n k. FINITE k /\ CARD k = n ==> P k) ==> (!k. FINITE k ==> P k)")) THEN
       REWRITE_TAC [IMP_IMP] THEN MATCH_MP_TAC num_WF THEN
       X_GEN_TAC (← q r"n:num") THEN DISCH_TAC THEN
       X_GEN_TAC (← q r"k:K->bool") THEN STRIP_TAC THEN
@@ -1972,7 +1937,8 @@ def setupIterateOrdered [HolBase]
         ← q r"f:K->A"]
        ITERATO_CLAUSES_EXISTS) THEN
       DISCH_THEN (MP_TAC o SPEC (← q r"k:K->bool") o CONJUNCT2) THEN
-      ASM_SIMP_TAC [FINITE_RESTRICT] THEN MATCH_MP_TAC t1 THEN
+      ASM_SIMP_TAC [FINITE_RESTRICT] THEN MATCH_MP_TAC (← TAUT
+       (← q r"(p ==> r) /\ (q ==> r) ==> (~p ==> q) ==> r")) THEN
       CONJ_TAC THENL
        [ONCE_REWRITE_TAC [← GSYM ITERATO_SUPPORT, ← GSYM ITERATE_SUPPORT] THEN
         REWRITE_TAC [support, IN_UNIV, IN_DIFF, IN_SING] THEN
@@ -1981,13 +1947,13 @@ def setupIterateOrdered [HolBase]
       REWRITE_TAC [IN_DIFF, IN_SING] THEN STRIP_TAC THEN
       FIRST_X_ASSUM SUBST1_TAC THEN
       FIRST_X_ASSUM (MP_TAC o SPECL [← q r"n - 1", ← q r"k DELETE (i:K)"]) THEN
-      REWRITE_TAC [a1] THEN
+      REWRITE_TAC [(← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)"))] THEN
       ASM_SIMP_TAC [FINITE_DELETE, CARD_DELETE] THEN
       ANTS_TAC THENL [ASM_MESON_TAC [CARD_EQ_0], DISCH_THEN SUBST1_TAC] THEN
       FIRST_X_ASSUM (MP_TAC o ISPECL [← q r"f:K->A", ← q r"i:K", ← q r"k DELETE (i:K)"] o
         CONJUNCT2 o MATCH_MP ITERATE_CLAUSES) THEN
       ASM_REWRITE_TAC [FINITE_DELETE, IN_DELETE] THEN
-      ASM_SIMP_TAC [r3]))
+      ASM_SIMP_TAC [(← SET_RULE (← q r"i IN k ==> i INSERT (k DELETE i) = k"))]))
 
   let ITERATO_CLAUSES_NUMSEG_LEFT ← prove
    r"!dom neut op (f:num->A) m n.
@@ -2749,15 +2715,13 @@ def setupIterateNsum2 [HolBase]
    r"!u v f. FINITE u /\ FINITE v /\ (!x:A. x IN (u DIFF v) ==> f(x) = 0)
            ==> nsum u f <= nsum v f"
    (← do
-    let r2 ← SET_RULE (← q r"(u INTER v) UNION (v DIFF u) = v")
-    let r1 ← SET_RULE (← q r"(u INTER v) UNION (u DIFF v) = u")
     pure
      (REPEAT STRIP_TAC THEN
       MP_TAC (← ISPECL [← q r"f:A->num", ← q r"u INTER v :A->bool"] NSUM_UNION) THEN
       DISCH_THEN (fun th => tactic_of do pure (
         MP_TAC (← SPEC (← q r"v DIFF u :A->bool") th) THEN
         MP_TAC (← SPEC (← q r"u DIFF v :A->bool") th))) THEN
-      REWRITE_TAC [r1, r2] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"(u INTER v) UNION (u DIFF v) = u")), (← SET_RULE (← q r"(u INTER v) UNION (v DIFF u) = v"))] THEN
       ASM_SIMP_TAC [FINITE_DIFF, FINITE_INTER] THEN
       REPEAT (ANTS_TAC THENL [SET_TAC [], DISCH_THEN SUBST1_TAC]) THEN
       ASM_SIMP_TAC [NSUM_EQ_0] THEN ARITH_TAC))
@@ -3660,14 +3624,12 @@ def setupIterateSum1 [HolBase]
          ==> (!i. i IN s ==> u i = &0) \/
              (?j k. j IN s /\ u j < &0 /\ k IN s /\ u k > &0)"
    (← do
-    let r2 ← REAL_ARITH (← q r"x = &0 <=> --x = &0")
-    let m1 ← MESON [← REAL_ARITH (← q r"(&0 <= --u <=> ~(u > &0)) /\ (&0 <= u <=> ~(u < &0))")]
-       (← q r"(?j k:A. j IN s /\ u j < &0 /\ k IN s /\ u k > &0) \/
-        (!i. i IN s ==> &0 <= u i) \/ (!i. i IN s ==> &0 <= --(u i))")
     pure
-     (REPEAT STRIP_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC m1 THEN
+     (REPEAT STRIP_TAC THEN REPEAT_TCL DISJ_CASES_THEN ASSUME_TAC (← MESON [← REAL_ARITH (← q r"(&0 <= --u <=> ~(u > &0)) /\ (&0 <= u <=> ~(u < &0))")]
+       (← q r"(?j k:A. j IN s /\ u j < &0 /\ k IN s /\ u k > &0) \/
+        (!i. i IN s ==> &0 <= u i) \/ (!i. i IN s ==> &0 <= --(u i))")) THEN
       ASM_REWRITE_TAC [] THEN DISJ1_TAC THENL
-       [ALL_TAC, ONCE_REWRITE_TAC [r2]] THEN
+       [ALL_TAC, ONCE_REWRITE_TAC [(← REAL_ARITH (← q r"x = &0 <=> --x = &0"))]] THEN
       MATCH_MP_TAC SUM_POS_EQ_0 THEN ASM_REWRITE_TAC [SUM_NEG, REAL_NEG_0]))
 
   let SUM_DELETE ← prove
@@ -4013,19 +3975,16 @@ def setupIterateSum2 [HolBase]
            (!x:A. x IN (v DIFF u) ==> &0 <= f(x))
            ==> sum u f <= sum v f"
    (← do
-    let ra ← REAL_ARITH (← q r"&0 <= --x /\ &0 <= y ==> a + x <= a + y")
-    let r2 ← SET_RULE (← q r"(u INTER v) UNION (v DIFF u) = v")
-    let r1 ← SET_RULE (← q r"(u INTER v) UNION (u DIFF v) = u")
     pure
      (REPEAT STRIP_TAC THEN
       MP_TAC (← ISPECL [← q r"f:A->real", ← q r"u INTER v :A->bool"] SUM_UNION) THEN
       DISCH_THEN (fun th => tactic_of do pure (
         MP_TAC (← SPEC (← q r"v DIFF u :A->bool") th) THEN
         MP_TAC (← SPEC (← q r"u DIFF v :A->bool") th))) THEN
-      REWRITE_TAC [r1, r2] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"(u INTER v) UNION (u DIFF v) = u")), (← SET_RULE (← q r"(u INTER v) UNION (v DIFF u) = v"))] THEN
       ASM_SIMP_TAC [FINITE_DIFF, FINITE_INTER] THEN
       REPEAT (ANTS_TAC THENL [SET_TAC [], DISCH_THEN SUBST1_TAC]) THEN
-      MATCH_MP_TAC ra THEN
+      MATCH_MP_TAC (← REAL_ARITH (← q r"&0 <= --x /\ &0 <= y ==> a + x <= a + y")) THEN
       ASM_SIMP_TAC [← GSYM SUM_NEG, FINITE_DIFF] THEN CONJ_TAC THEN
       MATCH_MP_TAC SUM_POS_LE THEN
       ASM_SIMP_TAC [FINITE_DIFF, REAL_LE_RNEG, REAL_ADD_LID]))
@@ -4623,15 +4582,13 @@ def setupIterateSum4 [HolBase]
         1 <= n ==> x pow n - y pow n =
                    (x - y) * sum(0..n-1) (\i. x pow i * y pow (n - 1 - i))"
    (← do
-    let a1 ← ARITH_RULE
-      (← q r"1 <= n /\ x <= n - 1
-       ==> n - 1 - x = n - (x + 1) /\ SUC(n - 1 - x) = n - x")
-    let r1 ← REAL_ARITH
-     (← q r"(x - y) * (a * b):real = (x * a) * b - a * (y * b)")
     pure
      (REWRITE_TAC [← GSYM SUM_LMUL] THEN
-      REWRITE_TAC [r1] THEN
-      SIMP_TAC [← GSYM real_pow, ADD1, a1] THEN
+      REWRITE_TAC [(← REAL_ARITH
+     (← q r"(x - y) * (a * b):real = (x * a) * b - a * (y * b)"))] THEN
+      SIMP_TAC [← GSYM real_pow, ADD1, (← ARITH_RULE
+      (← q r"1 <= n /\ x <= n - 1
+       ==> n - 1 - x = n - (x + 1) /\ SUC(n - 1 - x) = n - x"))] THEN
       REWRITE_TAC [SUM_DIFFS_ALT, LE_0] THEN
       SIMP_TAC [SUB_0, SUB_ADD, SUB_REFL, real_pow, REAL_MUL_LID, REAL_MUL_RID]))
 
@@ -4754,21 +4711,19 @@ def setupIterateSum5 [HolBase]
         (x - y) *
         sum(0..n-1) (\j. sum(j+1..n) (\i. a i * y pow (i - j - 1)) * x pow j)"
    (← do
-    let a1 ← ARITH_RULE (← q r"a - b - c:num = a - (b + c)")
-    let r1 ← REAL_ARITH (← q r"a * x * s:real = x * a * s")
     pure
       (REPEAT STRIP_TAC THEN
        REWRITE_TAC [← GSYM SUM_SUB_NUMSEG, ← GSYM REAL_SUB_LDISTRIB] THEN
        GEN_REWRITE_TAC LAND_CONV [← MATCH_MP SUM_CLAUSES_LEFT (← SPEC_ALL LE_0)] THEN
        REWRITE_TAC [REAL_SUB_REFL, real_pow, REAL_MUL_RZERO, REAL_ADD_LID] THEN
        SIMP_TAC [REAL_SUB_POW, ADD_CLAUSES] THEN
-       ONCE_REWRITE_TAC [r1] THEN
+       ONCE_REWRITE_TAC [(← REAL_ARITH (← q r"a * x * s:real = x * a * s"))] THEN
        REWRITE_TAC [SUM_LMUL] THEN AP_TERM_TAC THEN
        SIMP_TAC [← GSYM SUM_LMUL, ← GSYM SUM_RMUL, SUM_SUM_PRODUCT, FINITE_NUMSEG] THEN
        MATCH_MP_TAC SUM_EQ_GENERAL_INVERSES THEN
        REPEAT (EXISTS_TAC (← q r"\(x:num,y:num). (y,x)")) THEN
        REWRITE_TAC [FORALL_IN_GSPEC, IN_ELIM_PAIR_THM, IN_NUMSEG] THEN
-       REWRITE_TAC [a1, ADD_SYM] THEN
+       REWRITE_TAC [(← ARITH_RULE (← q r"a - b - c:num = a - (b + c)")), ADD_SYM] THEN
        REWRITE_TAC [REAL_MUL_AC] THEN ARITH_TAC))
 
   let REAL_SUB_POLYFUN_ALT ← prove
@@ -4792,13 +4747,6 @@ def setupIterateSum5 [HolBase]
          ==> FINITE {x | sum(0..n) (\i. c i * x pow i) = &0} /\
              CARD {x | sum(0..n) (\i. c i * x pow i) = &0} <= n"
    (← do
-    let a3 ← ARITH_RULE (← q r"(n + 1) - n - 1 = 0")
-    let m2 ← MESON [FINITE_INSERT, CARD_CLAUSES,
-                    ← ARITH_RULE (← q r"x <= n ==> SUC x <= SUC n /\ x <= SUC n")]
-      (← q r"FINITE s /\ CARD s <= n
-       ==> FINITE(r INSERT s) /\ CARD(r INSERT s) <= SUC n")
-    let r1 ← SET_RULE (← q r"{x | x = c \/ P x} = c INSERT {x | P x}")
-    let a1 ← ARITH_RULE (← q r"1 <= SUC n")
     pure
      (REWRITE_TAC [NOT_FORALL_THM, NOT_IMP] THEN INDUCT_TAC THENL
        [REWRITE_TAC [NUMSEG_SING, IN_SING, UNWIND_THM2, SUM_CLAUSES_NUMSEG] THEN
@@ -4816,61 +4764,58 @@ def setupIterateSum5 [HolBase]
           X_GEN_TAC (← q r"r:real") THEN DISCH_TAC THEN
           MP_TAC (← GEN (← q r"x:real") (← ISPECL [← q r"c:num->real", ← q r"x:real",
             ← q r"r:real", ← q r"SUC n"] REAL_SUB_POLYFUN)) THEN
-          ASM_REWRITE_TAC [a1, REAL_SUB_RZERO] THEN
+          ASM_REWRITE_TAC [(← ARITH_RULE (← q r"1 <= SUC n")), REAL_SUB_RZERO] THEN
           DISCH_THEN (fun th => REWRITE_TAC [th, REAL_ENTIRE, REAL_SUB_0]) THEN
-          REWRITE_TAC [r1] THEN
-          MATCH_MP_TAC m2 THEN
+          REWRITE_TAC [(← SET_RULE (← q r"{x | x = c \/ P x} = c INSERT {x | P x}"))] THEN
+          MATCH_MP_TAC (← MESON [FINITE_INSERT, CARD_CLAUSES,
+                    ← ARITH_RULE (← q r"x <= n ==> SUC x <= SUC n /\ x <= SUC n")]
+      (← q r"FINITE s /\ CARD s <= n
+       ==> FINITE(r INSERT s) /\ CARD(r INSERT s) <= SUC n")) THEN
           REWRITE_TAC [SUC_SUB1] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
           EXISTS_TAC (← q r"n:num") THEN REWRITE_TAC [IN_NUMSEG, ADD1, LE_REFL, LE_0] THEN
-          REWRITE_TAC [SUM_SING_NUMSEG, a3] THEN
+          REWRITE_TAC [SUM_SING_NUMSEG, (← ARITH_RULE (← q r"(n + 1) - n - 1 = 0"))] THEN
           ASM_REWRITE_TAC [← GSYM ADD1, real_pow, REAL_MUL_RID]]]))
 
   let REAL_POLYFUN_FINITE_ROOTS ← prove
    r"!n c. FINITE {x | sum(0..n) (\i. c i * x pow i) = &0} <=>
          ?i. i IN 0..n /\ ~(c i = &0)"
    (← do
-    let s1 ← SET_RULE (← q r"{x | T} = (:real)")
-    let t1 ← TAUT (← q r"a /\ ~b <=> ~(a ==> b)")
     pure
-     (REPEAT GEN_TAC THEN REWRITE_TAC [t1] THEN
+     (REPEAT GEN_TAC THEN REWRITE_TAC [(← TAUT (← q r"a /\ ~b <=> ~(a ==> b)"))] THEN
       REWRITE_TAC [← GSYM NOT_FORALL_THM] THEN EQ_TAC THEN
       SIMP_TAC [REAL_POLYFUN_ROOTBOUND] THEN
       ONCE_REWRITE_TAC [← GSYM CONTRAPOS_THM] THEN
       SIMP_TAC [REAL_MUL_LZERO, SUM_0] THEN
-      REWRITE_TAC [s1, real_INFINITE, ← GSYM INFINITE]))
+      REWRITE_TAC [(← SET_RULE (← q r"{x | T} = (:real)")), real_INFINITE, ← GSYM INFINITE]))
 
   let REAL_POLYFUN_EQ_0 ← prove
    r"!n c. (!x. sum(0..n) (\i. c i * x pow i) = &0) <=>
          (!i. i IN 0..n ==> c i = &0)"
    (← do
-    let s1 ← SET_RULE (← q r"{x | T} = (:real)")
-    let t1 ← TAUT (← q r"p <=> ~ ~p")
     pure
      (REPEAT GEN_TAC THEN EQ_TAC THEN DISCH_TAC THENL
-       [GEN_REWRITE_TAC I [t1] THEN DISCH_THEN (MP_TAC o MATCH_MP
+       [GEN_REWRITE_TAC I [(← TAUT (← q r"p <=> ~ ~p"))] THEN DISCH_THEN (MP_TAC o MATCH_MP
          REAL_POLYFUN_ROOTBOUND) THEN
-        ASM_REWRITE_TAC [real_INFINITE, ← GSYM INFINITE, DE_MORGAN_THM, s1],
+        ASM_REWRITE_TAC [real_INFINITE, ← GSYM INFINITE, DE_MORGAN_THM, (← SET_RULE (← q r"{x | T} = (:real)"))],
         ASM_SIMP_TAC [IN_NUMSEG, LE_0, REAL_MUL_LZERO, SUM_0]]))
 
   let REAL_POLYFUN_EQ_CONST ← prove
    r"!n c k. (!x. sum(0..n) (\i. c i * x pow i) = k) <=>
            c 0 = k /\ (!i. i IN 1..n ==> c i = &0)"
    (← do
-    let m1 ← MESON []
-       (← q r"(!n. P n) <=> P 0 /\ (!n. ~(n = 0) ==> P n)")
-    let r1 ← REAL_ARITH (← q r"(c - k) + s = &0 <=> c + s = k")
     pure
       (REPEAT GEN_TAC THEN MATCH_MP_TAC EQ_TRANS THEN EXISTS_TAC
         (← q r"!x. sum(0..n) (\i. (if i = 0 then c 0 - k else c i) * x pow i) = &0") THEN
        CONJ_TAC THENL
         [SIMP_TAC [SUM_CLAUSES_LEFT, LE_0, real_pow, REAL_MUL_RID] THEN
-         REWRITE_TAC [r1] THEN
+         REWRITE_TAC [(← REAL_ARITH (← q r"(c - k) + s = &0 <=> c + s = k"))] THEN
          AP_TERM_TAC THEN ABS_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
          AP_TERM_TAC THEN MATCH_MP_TAC SUM_EQ THEN GEN_TAC THEN
          REWRITE_TAC [IN_NUMSEG] THEN
          COND_CASES_TAC THEN ASM_REWRITE_TAC [ARITH],
          REWRITE_TAC [REAL_POLYFUN_EQ_0, IN_NUMSEG, LE_0] THEN
-         GEN_REWRITE_TAC LAND_CONV [m1] THEN
+         GEN_REWRITE_TAC LAND_CONV [(← MESON []
+       (← q r"(!n. P n) <=> P 0 /\ (!n. ~(n = 0) ==> P n)"))] THEN
          SIMP_TAC [LE_0, REAL_SUB_0] THEN MESON_TAC [LE_1]]))
 
   /- ---------------------------------------------------------------------- -/

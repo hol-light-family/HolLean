@@ -45,6 +45,9 @@ initialize pairAux : HolMath.Pair.PairDefs ← do
   let mk_pair_def ← pairDef "mk_pair_def" "mk_pair (x:A) (y:B) = \\a b. (a = x) /\\ (b = y)"
   let PAIR_EXISTS_THM ← ioOk' "PAIR_EXISTS_THM" (MESON [] (← pt "?x. ?(a:A) (b:B). x = mk_pair a b"))
   let prod_tybij ← ioOk' "prod_tybij" (new_type_definition "prod" "ABS_prod" "REP_prod" PAIR_EXISTS_THM)
+  let REP_ABS_PAIR ← ioOk' "REP_ABS_PAIR" (do
+    let tac := MESON_TAC [prod_tybij]
+    Tactics.prove B (← pt "!(x:A) (y:B). REP_prod (ABS_prod (mk_pair x y)) = mk_pair x y") tac)
   HolCore.Printer.parse_as_infix (",", (14, "right"))
   let COMMA_DEF ← pairDef "COMMA_DEF" "(x:A),(y:B) = ABS_prod(mk_pair x y)"
   let FST_DEF ← pairDef "FST_DEF" "FST (p:A#B) = @x. ?y. p = x,y"
@@ -52,7 +55,7 @@ initialize pairAux : HolMath.Pair.PairDefs ← do
   pure { LET_DEF, LET_END_DEF, GABS_DEF, GEQ_DEF
          SEQPATTERN := _SEQPATTERN, UNGUARDED_PATTERN := _UNGUARDED_PATTERN
          GUARDED_PATTERN := _GUARDED_PATTERN, MATCH := _MATCH, FUNCTION := _FUNCTION
-         mk_pair_def, PAIR_EXISTS_THM, prod_tybij, COMMA_DEF, FST_DEF, SND_DEF }
+         mk_pair_def, PAIR_EXISTS_THM, prod_tybij, REP_ABS_PAIR, COMMA_DEF, FST_DEF, SND_DEF }
 
 initialize theProjectionCache : IO.Ref (List (String × List thm)) ← IO.mkRef []
 /-- `mk_const("UNCURRY",[])` and `UNCURRY_DEF` for GEN_BETA_CONV, set when
@@ -68,21 +71,125 @@ private def genBetaDepsWith (gabs : thm) : HolMath.Pair.GenBetaDeps :=
     gabsRulePth := gabs
     uncurry := theUncurry.get }
 
+/- pair.ml's `new_definition` over paired varstructs, with `the_definitions`. -/
+initialize theDefinitions : IO.Ref (List thm) ←
+  IO.mkRef [pairAux.SND_DEF, pairAux.FST_DEF, pairAux.COMMA_DEF, pairAux.mk_pair_def,
+    pairAux.GEQ_DEF, pairAux.GABS_DEF, pairAux.LET_END_DEF, pairAux.LET_DEF,
+    one_DEF, I_DEF, o_DEF, COND_DEF, FALSITY_DEF,
+    B.EXISTS_UNIQUE_DEF, B.NOT_DEF, B.F_DEF, B.OR_DEF, B.EXISTS_DEF,
+    B.FORALL_DEF, B.IMP_DEF, B.AND_DEF, B.T_DEF]
+
+/-- `!the_definitions` (pair.ml 148). -/
+def get_the_definitions : IO (List thm) := theDefinitions.get
+/-- `the_definitions := l`. -/
+def set_the_definitions (l : List thm) : IO Unit := theDefinitions.set l
+
+/-- `new_definition` redefined to allow paired varstructs (pair.ml).  Depairs
+    paired arguments on the LHS via `FST`/`SND`, defines the depaired equation
+    with the primitive `new_definition`, then reconstitutes the paired form. -/
+partial def new_definitionWith (FST SND : thm) (tm : term) : IO (Except String thm) := ExceptT.run do
+  let rec depairAcc (gv arg : term) : IO (Except String (List (term × term))) := ExceptT.run do
+    match HolMath.Pair.dest_pair arg with
+    | .ok (l, r) =>
+        let fstGv ← ExceptT.mk (Basics.list_mk_icomb "FST" [gv])
+        let sndGv ← ExceptT.mk (Basics.list_mk_icomb "SND" [gv])
+        let ls ← ExceptT.mk (depairAcc fstGv l)
+        let rs ← ExceptT.mk (depairAcc sndGv r)
+        pure (ls ++ rs)
+    | .error _ => pure [(gv, arg)]
+  let depair (arg : term) : IO (Except String (term × List (term × term))) := ExceptT.run do
+    let gv ← (Basics.genvar (type_of arg) : IO term)
+    let reps ← ExceptT.mk (depairAcc gv arg)
+    pure (gv, reps)
+  let (avs, def0) := Basics.strip_forall tm
+  let idFn : term → Except String term := fun t => .ok t
+  let defs ← theDefinitions.get
+  let tryBenign : IO (Option thm) := do
+    -- pair.ml 165: no search unless the constant being defined already exists
+    let isConst := match Equal.lhs def0 with
+      | .ok l => is_const (Basics.strip_comb l).1
+      | .error _ => false
+    if !isConst then return none
+    let rec first : List thm → IO (Option (thm × thm))
+      | [] => pure none
+      | th :: rest => do
+        match ← (Drule.PART_MATCH B idFn th def0 : IO (Except String thm)) with
+        | .ok th' => pure (some (th, th'))
+        | .error _ => first rest
+    match ← first defs with
+    | none => pure none
+    | some (th, th') =>
+      match ← (Drule.PART_MATCH B idFn th' (Basics.strip_forall (concl th)).2 : IO (Except String thm)) with
+      | .error _ => pure none
+      | .ok _ =>
+        HolCore.Lib.warn true "Benign redefinition"
+        match (do B.GEN_ALL (← B.GENL avs th') : Except String thm) with
+        | .ok r => pure (some r)
+        | .error _ => pure none
+  match ← tryBenign with
+  | some r => pure r
+  | none =>
+    let (l, r) ← liftExcept (dest_eq def0)
+    let (fn, args) := Basics.strip_comb l
+    let mut pairs : List (term × List (term × term)) := []
+    for a in args do
+      let p ← (depair a : IO (Except String (term × List (term × term))))
+      pairs := pairs ++ [p]
+    let gargs := pairs.map Prod.fst
+    let reps := Lib.unions (pairs.map Prod.snd)
+    let l' ← liftExcept (Basics.list_mk_comb fn gargs)
+    let substFn ← (Basics.subst reps : IO (Except String (term → IO (Except String term))))
+    let r' ← (substFn r : IO (Except String term))
+    let eqtm := safe_mk_eq l' r'
+    let th1 ← ExceptT.mk (Drule.new_definition B eqtm)
+    let slist ← liftExcept (Lib.zip args gargs)
+    let th2 ← liftExcept (do Drule.INSTANTIATE ([], slist, []) (← B.SPEC_ALL th1))
+    let substSl ← (Basics.subst slist : IO (Except String (term → IO (Except String term))))
+    let mut xreps : List term := []
+    for rep in reps do
+      let x ← (substSl rep.1 : IO (Except String term))
+      xreps := xreps ++ [x]
+    let mut threps : List thm := []
+    for x in xreps do
+      let c ← (Simp.PURE_REWRITE_CONV' B [FST, SND] x : IO (Except String thm))
+      threps := threps ++ [(← liftExcept (Equal.SYM c))]
+    let subsc ← ExceptT.mk (Equal.SUBS_CONV threps r)
+    let th3 ← liftExcept (do TRANS th2 (← Equal.SYM subsc))
+    let th4 ← liftExcept (do B.GEN_ALL (← B.GENL avs th3))
+    theDefinitions.modify (th4 :: ·)
+    pure th4
+
+/-- FST and SND are proved by `setupPair`; `installGenBeta` makes
+    CURRY_DEF, UNCURRY_DEF and PASSOC_DEF with them, at pair.ml's point. -/
+initialize theCurryDefs : IO.Ref (Option (thm × thm × thm)) ← IO.mkRef none
+
 private def installGenBeta (fstT sndT pairT indT recT : thm) : IO (Except String Unit) :=
   ExceptT.run do
+    -- pair.ml 141-316, in order: extend_basic_rewrites, the paired
+    -- new_definition, CURRY_DEF/UNCURRY_DEF/PASSOC_DEF, GEN_BETA_CONV (its
+    -- GABS_RULE lemma), extend_basic_convs, the prod entry of
+    -- inductive_type_store.
     let _ ← ExceptT.mk (Simp.extend_basic_rewrites B [fstT, sndT, pairT])
-    theInductiveTypeStore.modify (("prod", (1, indT, recT)) :: ·)
-    let gabs ← ExceptT.mk (Tactics.prove B (← ExceptT.mk (HolCore.Parser.parse_term "(?) P ==> P (GABS P)"))
-      (Simp.SIMP_TAC B [pairAux.GABS_DEF, SELECT_AX, ETA_AX]))
+    let ndef (s : String) : ExceptT String IO thm := do
+      new_definitionWith fstT sndT (← ExceptT.mk (HolCore.Parser.parse_term s))
+    let curryD ← ndef "CURRY(f:A#B->C) x y = f(x,y)"
+    let uncurryD ← ndef "!f x y. UNCURRY(f:A->B->C)(x,y) = f x y"
+    let passocD ← ndef "!f x y z. PASSOC (f:(A#B)#C->D) (x,y,z) = f ((x,y),z)"
+    theCurryDefs.set (some (curryD, uncurryD, passocD))
+    let tac := Simp.SIMP_TAC B [pairAux.GABS_DEF, SELECT_AX, ETA_AX]
+    let gabs ← ExceptT.mk (Tactics.prove B (← ExceptT.mk (HolCore.Parser.parse_term "(?) P ==> P (GABS P)")) tac)
     theGabsRulePth.set (some gabs)
+    -- `unc_tm = mk_const("UNCURRY",[])`, made when GEN_BETA_CONV is.
+    theUncurry.set (some (← ExceptT.mk (mk_const "UNCURRY" []), uncurryD))
     let pat ← ExceptT.mk (HolCore.Parser.parse_term "GABS (\\a. b) c")
     ExceptT.mk (Simp.extend_basic_convs B "GEN_BETA_CONV"
       (pat, HolMath.Pair.GEN_BETA_CONV (genBetaDepsWith gabs)))
+    theInductiveTypeStore.modify (("prod", (1, indT, recT)) :: ·)
 
 initialize pairLayer : HolMath.Pair.PairThms ← do
   let P := pairAux
   ioOk' "setupPair" (HolMath.Pair.setupPair DSL ETA_AX
-    P.PAIR_EXISTS_THM P.prod_tybij P.mk_pair_def P.COMMA_DEF P.FST_DEF P.SND_DEF
+    P.PAIR_EXISTS_THM P.prod_tybij P.REP_ABS_PAIR P.mk_pair_def P.COMMA_DEF P.FST_DEF P.SND_DEF
     o_DEF MESON_TAC ASM_MESON_TAC MESON SELECT_ELIM_TAC installGenBeta).run
 
 initialize gabsRulePth : thm ← do
@@ -159,103 +266,14 @@ def GABS_CONV (conv : ioconv) : ioconv := HolMath.Pair.GABS_CONV conv
 /-- `mk_pair (l,r)`: build the pair `l,r` (`HolMath.Pair`). -/
 def mk_pair : term × term → IO (Except String term) := HolMath.Pair.mk_pair
 
-/- pair.ml's `new_definition` over paired varstructs, with `the_definitions`. -/
-initialize theDefinitions : IO.Ref (List thm) ←
-  IO.mkRef [pairAux.SND_DEF, pairAux.FST_DEF, pairAux.COMMA_DEF, pairAux.mk_pair_def,
-    pairAux.GEQ_DEF, pairAux.GABS_DEF, pairAux.LET_END_DEF, pairAux.LET_DEF,
-    one_DEF, I_DEF, o_DEF, COND_DEF, FALSITY_DEF,
-    B.EXISTS_UNIQUE_DEF, B.NOT_DEF, B.F_DEF, B.OR_DEF, B.EXISTS_DEF,
-    B.FORALL_DEF, B.IMP_DEF, B.AND_DEF, B.T_DEF]
-
-/-- `!the_definitions` (pair.ml 148). -/
-def get_the_definitions : IO (List thm) := theDefinitions.get
-/-- `the_definitions := l`. -/
-def set_the_definitions (l : List thm) : IO Unit := theDefinitions.set l
-
-/-- `new_definition` redefined to allow paired varstructs (pair.ml).  Depairs
-    paired arguments on the LHS via `FST`/`SND`, defines the depaired equation
-    with the primitive `new_definition`, then reconstitutes the paired form. -/
-partial def new_definition (tm : term) : IO (Except String thm) := ExceptT.run do
-  let rec depairAcc (gv arg : term) : IO (Except String (List (term × term))) := ExceptT.run do
-    match HolMath.Pair.dest_pair arg with
-    | .ok (l, r) =>
-        let fstGv ← ExceptT.mk (Basics.list_mk_icomb "FST" [gv])
-        let sndGv ← ExceptT.mk (Basics.list_mk_icomb "SND" [gv])
-        let ls ← ExceptT.mk (depairAcc fstGv l)
-        let rs ← ExceptT.mk (depairAcc sndGv r)
-        pure (ls ++ rs)
-    | .error _ => pure [(gv, arg)]
-  let depair (arg : term) : IO (Except String (term × List (term × term))) := ExceptT.run do
-    let gv ← (Basics.genvar (type_of arg) : IO term)
-    let reps ← ExceptT.mk (depairAcc gv arg)
-    pure (gv, reps)
-  let (avs, def0) := Basics.strip_forall tm
-  let idFn : term → Except String term := fun t => .ok t
-  let defs ← theDefinitions.get
-  let tryBenign : IO (Option thm) := do
-    -- pair.ml 165: no search unless the constant being defined already exists
-    let isConst := match Equal.lhs def0 with
-      | .ok l => is_const (Basics.strip_comb l).1
-      | .error _ => false
-    if !isConst then return none
-    let rec first : List thm → IO (Option (thm × thm))
-      | [] => pure none
-      | th :: rest => do
-        match ← (Drule.PART_MATCH B idFn th def0 : IO (Except String thm)) with
-        | .ok th' => pure (some (th, th'))
-        | .error _ => first rest
-    match ← first defs with
-    | none => pure none
-    | some (th, th') =>
-      match ← (Drule.PART_MATCH B idFn th' (Basics.strip_forall (concl th)).2 : IO (Except String thm)) with
-      | .error _ => pure none
-      | .ok _ =>
-        HolCore.Lib.warn true "Benign redefinition"
-        match (do B.GEN_ALL (← B.GENL avs th') : Except String thm) with
-        | .ok r => pure (some r)
-        | .error _ => pure none
-  match ← tryBenign with
-  | some r => pure r
-  | none =>
-    let (l, r) ← liftExcept (dest_eq def0)
-    let (fn, args) := Basics.strip_comb l
-    let mut pairs : List (term × List (term × term)) := []
-    for a in args do
-      let p ← (depair a : IO (Except String (term × List (term × term))))
-      pairs := pairs ++ [p]
-    let gargs := pairs.map Prod.fst
-    let reps := Lib.unions (pairs.map Prod.snd)
-    let l' ← liftExcept (Basics.list_mk_comb fn gargs)
-    let substFn ← (Basics.subst reps : IO (Except String (term → IO (Except String term))))
-    let r' ← (substFn r : IO (Except String term))
-    let eqtm := safe_mk_eq l' r'
-    let th1 ← ExceptT.mk (Drule.new_definition B eqtm)
-    let slist ← liftExcept (Lib.zip args gargs)
-    let th2 ← liftExcept (do Drule.INSTANTIATE ([], slist, []) (← B.SPEC_ALL th1))
-    let substSl ← (Basics.subst slist : IO (Except String (term → IO (Except String term))))
-    let mut xreps : List term := []
-    for rep in reps do
-      let x ← (substSl rep.1 : IO (Except String term))
-      xreps := xreps ++ [x]
-    let mut threps : List thm := []
-    for x in xreps do
-      let c ← (Simp.PURE_REWRITE_CONV' B [Pr.FST, Pr.SND] x : IO (Except String thm))
-      threps := threps ++ [(← liftExcept (Equal.SYM c))]
-    let subsc ← ExceptT.mk (Equal.SUBS_CONV threps r)
-    let th3 ← liftExcept (do TRANS th2 (← Equal.SYM subsc))
-    let th4 ← liftExcept (do B.GEN_ALL (← B.GENL avs th3))
-    theDefinitions.modify (th4 :: ·)
-    pure th4
-
 /- pair.ml 184-192: CURRY, UNCURRY, PASSOC; pair.ml 450: LET_TAC's lemmas. -/
-initialize curryDefs : thm × thm × thm ← (do
-  let curryD ← ioOk' "CURRY_DEF" (do new_definition (← pt "CURRY(f:A#B->C) x y = f(x,y)"))
-  let uncurryD ← ioOk' "UNCURRY_DEF" (do new_definition (← pt "!f x y. UNCURRY(f:A->B->C)(x,y) = f x y"))
-  match ← mk_const "UNCURRY" [] with
-  | .ok unc => theUncurry.set (some (unc, uncurryD))
-  | .error e => throw (IO.userError e)
-  let passocD ← ioOk' "PASSOC_DEF" (do new_definition (← pt "!f x y z. PASSOC (f:(A#B)#C->D) (x,y,z) = f ((x,y),z)"))
-  pure (curryD, uncurryD, passocD))
+/-- pair.ml's `new_definition` over paired varstructs. -/
+def new_definition (tm : term) : IO (Except String thm) := new_definitionWith Pr.FST Pr.SND tm
+
+initialize curryDefs : thm × thm × thm ← do
+  match ← theCurryDefs.get with
+  | some c => pure c
+  | none => throw (IO.userError "CURRY_DEF not made by setupPair")
 
 initialize letTacPths : thm × thm × thm ← do
   let pth ← ioOk' "LET_TAC pth" (MESON [Pr.PAIR, Pr.PAIR_EQ] (← pt "((x,y) = a) <=> (x = FST a) /\\ (y = SND a)"))

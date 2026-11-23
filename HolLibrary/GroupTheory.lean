@@ -24,11 +24,11 @@
   RingTheory.lean).  `wPart` is the `W(MP_TAC o PART_MATCH ...)` idiom.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first (`let ... in` lemmas first, in text order).  Where one
-  proof applies two or more rules that print or use counters (MESON,
-  ARITH_RULE, NUMBER_RULE, SET_RULE, TAUT, GROUP_RULE) they are bound first,
-  in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Frag
@@ -495,9 +495,8 @@ def setupBasics [HolBase] (D : GroupTheoryDeps) :
   let TRIVIAL_GROUP_ALT ← prove
    r"!G:A group. trivial_group G <=> ?a. group_carrier G SUBSET {a}"
    (← do
-    let s1 ← SET_RULE
-     (← q r"(?a. s = {a}) <=> (?a. s SUBSET {a}) /\ ~(s = {})")
-    pure (REWRITE_TAC [TRIVIAL_GROUP, GROUP_CARRIER_NONEMPTY, s1]))
+    pure (REWRITE_TAC [TRIVIAL_GROUP, GROUP_CARRIER_NONEMPTY, (← SET_RULE
+     (← q r"(?a. s = {a}) <=> (?a. s SUBSET {a}) /\ ~(s = {})"))]))
 
   let TRIVIAL_GROUP_HAS_SIZE_1 ← prove
    r"!G:A group. trivial_group G <=> group_carrier(G) HAS_SIZE 1"
@@ -832,15 +831,12 @@ def setupDerived [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) :
   let GROUP_POW_1 ← prove
    r"!G x:A. x IN group_carrier G ==> group_pow G x 1 = x"
    (← do
-    let c1 ← ExceptT.mk (num_CONV (← q "1"))
-    pure (SIMP_TAC [c1, group_pow, GROUP_MUL_RID]))
+    pure (SIMP_TAC [(← ExceptT.mk (num_CONV (← q "1"))), group_pow, GROUP_MUL_RID]))
 
   let GROUP_POW_2 ← prove
    r"!G x:A. x IN group_carrier G ==> group_pow G x 2 = group_mul G x x"
    (← do
-    let c1 ← ExceptT.mk (num_CONV (← q "1"))
-    let c2 ← ExceptT.mk (num_CONV (← q "2"))
-    pure (SIMP_TAC [c2, c1, group_pow, GROUP_MUL_RID]))
+    pure (SIMP_TAC [(← ExceptT.mk (num_CONV (← q "2"))), (← ExceptT.mk (num_CONV (← q "1"))), group_pow, GROUP_MUL_RID]))
 
   let GROUP_POW_ID ← prove
    r"!n. group_pow G (group_id G) n = group_id G"
@@ -1530,8 +1526,7 @@ def setupTotalized [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived 
   let GROUP_NMUL_1 ← prove
    r"!G x:A. group_nmul G 1 x = x"
    (← do
-    let c1 ← ExceptT.mk (num_CONV (← q "1"))
-    pure (REWRITE_TAC [c1, group_nmul, GROUP_ADD_RID]))
+    pure (REWRITE_TAC [(← ExceptT.mk (num_CONV (← q "1"))), group_nmul, GROUP_ADD_RID]))
 
   let GROUP_NEG_NMUL ← prove
    r"!G (x:A) n.
@@ -2320,8 +2315,8 @@ def setupGroupProductClauses [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) 
     ASM_CASES_TAC (← q r"s:K->bool = {}") THEN
     ASM_REWRITE_TAC [UNION_EMPTY, GROUP_PRODUCT_CLAUSES_EXISTS] THEN
     SIMP_TAC [GROUP_MUL_LID, GROUP_PRODUCT] THEN REPEAT STRIP_TAC THEN
-    FIRST_ASSUM (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"s:K->bool")
-      (← liftExcept (last (CONJUNCTS (← GEN_REWRITE_RULE I [woset] th))))))) THEN
+    FIRST_ASSUM ((fun (ocq6 : _) => fun th => tactic_of do pure (MP_TAC (← SPEC ocq6
+      (← liftExcept (last (CONJUNCTS (← GEN_REWRITE_RULE I [woset] th))))))) (← q r"s:K->bool")) THEN
     ASM_REWRITE_TAC [SUBSET_UNIV, LEFT_IMP_EXISTS_THM] THEN
     X_GEN_TAC (← q "i:K") THEN STRIP_TAC THEN
     MP_TAC (← ISPECL [← q "G:A group", ← q r"(<<=):K->K->bool", ← q r"f:K->A"]
@@ -3654,9 +3649,8 @@ def setupSubgroupGen1 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgr
         ==> (group_carrier (subgroup_generated G s) SUBSET h <=>
              group_carrier G INTER s SUBSET h)"
    (← do
-    let rr ← REWRITE_RULE [IMP_CONJ] SUBSET_TRANS
     pure (REPEAT STRIP_TAC THEN EQ_TAC THENL
-     [MATCH_MP_TAC rr THEN
+     [MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] SUBSET_TRANS) THEN
       REWRITE_TAC [SUBGROUP_GENERATED_SUBSET_CARRIER],
       ONCE_REWRITE_TAC [SUBGROUP_GENERATED_RESTRICT] THEN
       ASM_SIMP_TAC [SUBGROUP_GENERATED_MINIMAL]]))
@@ -3698,8 +3692,7 @@ def setupSubgroupGen1 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgr
         s SUBSET group_carrier G
         ==> s SUBSET group_carrier(subgroup_generated G s)"
    (← do
-    let s1 ← SET_RULE (← q r"s SUBSET t <=> t INTER s = s")
-    pure (MESON_TAC [SUBGROUP_GENERATED_SUBSET_CARRIER, s1]))
+    pure (MESON_TAC [SUBGROUP_GENERATED_SUBSET_CARRIER, (← SET_RULE (← q r"s SUBSET t <=> t INTER s = s"))]))
 
   let SUBGROUP_GENERATED_REFL ← prove
    r"!G s:A->bool. group_carrier G SUBSET s ==> subgroup_generated G s = G"
@@ -4522,12 +4515,11 @@ def setupSumGroup [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived :
    r"!k (G:K->A group).
         trivial_group(sum_group k G) <=> !i. i IN k ==> trivial_group(G i)"
    (← do
-    let a1 ← SET_RULE (← q r"~(s SUBSET {a}) <=> ?x. x IN s /\ ~(x = a)")
     pure (REPEAT GEN_TAC THEN EQ_TAC THENL
      [GEN_REWRITE_TAC I [← GSYM CONTRAPOS_THM] THEN
       REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, LEFT_IMP_EXISTS_THM] THEN
       REWRITE_TAC [TRIVIAL_GROUP_SUBSET] THEN X_GEN_TAC (← q "i:K") THEN
-      REWRITE_TAC [a1] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"~(s SUBSET {a}) <=> ?x. x IN s /\ ~(x = a)"))] THEN
       DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC
        (X_CHOOSE_THEN (← q "a:A") STRIP_ASSUME_TAC)) THEN
       EXISTS_TAC
@@ -4734,9 +4726,9 @@ def setupSumGroup [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived :
    (REPEAT STRIP_TAC THEN REWRITE_TAC [restricted_product_group] THEN
     AP_TERM_TAC THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN
     X_GEN_TAC (← q r"x:K->A") THEN AP_TERM_TAC THEN EQ_TAC THEN
-    DISCH_THEN (fun th => tactic_of do
+    DISCH_THEN ((fun (ocq5 : _) => fun th => tactic_of do
       pure (MP_TAC (← CONJ (← ASSUME
-        (← q r"FINITE {i | i IN k /\ ~((h:K->A->bool) i = h' i)}")) th))) THEN
+        ocq5) th))) (← q r"FINITE {i | i IN k /\ ~((h:K->A->bool) i = h' i)}")) THEN
     REWRITE_TAC [← GSYM FINITE_UNION] THEN
     MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] FINITE_SUBSET) THEN
     REWRITE_TAC [SUBSET, IN_UNION, IN_ELIM_THM] THEN MESON_TAC [])
@@ -6131,11 +6123,9 @@ def setupHomomorphisms3 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDer
           group_isomorphisms (prod_group G H,prod_group H G)
                              ((\(x,y). y,x),(\(y,x). x,y))"
    (← do
-    let a2 ← REWRITE_RULE [o_DEF] GROUP_HOMOMORPHISM_OF_SND
-    let a1 ← REWRITE_RULE [o_DEF] GROUP_HOMOMORPHISM_OF_FST
     pure (REWRITE_TAC [group_isomorphisms, FORALL_PAIR_THM] THEN
      REWRITE_TAC [GROUP_HOMOMORPHISM_PAIRWISE, o_DEF, LAMBDA_PAIR] THEN
-     REWRITE_TAC [a1, a2] THEN
+     REWRITE_TAC [(← REWRITE_RULE [o_DEF] GROUP_HOMOMORPHISM_OF_FST), (← REWRITE_RULE [o_DEF] GROUP_HOMOMORPHISM_OF_SND)] THEN
      REWRITE_TAC [GROUP_HOMOMORPHISM_ID]))
 
   -- @@RETURN BEGIN
@@ -6471,19 +6461,17 @@ def setupHomomorphisms4 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDer
                   ==> FINITE {i | i IN k /\ ~(f x i IN h i)}))"
    (← do
     -- OCaml evaluates the SET_RULE before the TAUT.
-    let s1 ← SET_RULE (← q r"(g:K->B) IN EXTENSIONAL s <=> EXTENSIONAL s g")
-    let t1 ← TAUT
-     (← q r"(p /\ q ==> (r <=> s)) ==> (p /\ q /\ r <=> p /\ q /\ s)")
     pure
       (REPEAT STRIP_TAC THEN REWRITE_TAC [restricted_product_group] THEN
        ASM_SIMP_TAC [GROUP_HOMOMORPHISM_INTO_SUBGROUP_EQ,
                      SUBGROUP_RESTRICTED_PRODUCT_GROUP] THEN
        REWRITE_TAC [GROUP_HOMOMORPHISM_COMPONENTWISE, ← GSYM CONJ_ASSOC] THEN
        REWRITE_TAC [SUBSET, FORALL_IN_IMAGE, IN_ELIM_THM] THEN
-       MATCH_MP_TAC t1 THEN
+       MATCH_MP_TAC (← TAUT
+     (← q r"(p /\ q ==> (r <=> s)) ==> (p /\ q /\ r <=> p /\ q /\ s)")) THEN
        REWRITE_TAC [group_homomorphism, SUBSET, FORALL_IN_IMAGE,
                     IN_CARTESIAN_PRODUCT] THEN
-       REWRITE_TAC [s1] THEN
+       REWRITE_TAC [(← SET_RULE (← q r"(g:K->B) IN EXTENSIONAL s <=> EXTENSIONAL s g"))] THEN
        STRIP_TAC THEN ASM_SIMP_TAC []))
 
   let ABELIAN_RESTRICTED_PRODUCT_GROUP ← prove
@@ -6850,17 +6838,14 @@ def setupIso1 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BProductGroup 
         (!i. i IN (k DIFF l) UNION (l DIFF k) ==> trivial_group(G i))
         ==> product_group k G isomorphic_group product_group l G"
    (← do
-    let a1 ← MESON [ISOMORPHIC_GROUP_REFL]
-     (← q r"G = H ==> G isomorphic_group H")
-    let a2 ← REWRITE_RULE [IMP_CONJ] ISOMORPHIC_GROUP_TRANS
-    let a3 ← REWRITE_RULE [IMP_CONJ_ALT] ISOMORPHIC_GROUP_TRANS
     pure (REPEAT STRIP_TAC THEN
       wPart lhand rand ISOMORPHIC_PRODUCT_GROUP_SUPPORT THEN
       GEN_REWRITE_TAC LAND_CONV [ISOMORPHIC_GROUP_SYM] THEN
-      MATCH_MP_TAC a3 THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] ISOMORPHIC_GROUP_TRANS) THEN
       wPart rand rand ISOMORPHIC_PRODUCT_GROUP_SUPPORT THEN
-      MATCH_MP_TAC a2 THEN
-      MATCH_MP_TAC a1 THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] ISOMORPHIC_GROUP_TRANS) THEN
+      MATCH_MP_TAC (← MESON [ISOMORPHIC_GROUP_REFL]
+     (← q r"G = H ==> G isomorphic_group H")) THEN
       AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC []))
 
   let ISOMORPHIC_SUM_GROUP_SUPPORT ← prove
@@ -6896,17 +6881,14 @@ def setupIso1 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BProductGroup 
         (!i. i IN (k DIFF l) UNION (l DIFF k) ==> trivial_group(G i))
         ==> sum_group k G isomorphic_group sum_group l G"
    (← do
-    let a1 ← MESON [ISOMORPHIC_GROUP_REFL]
-     (← q r"G = H ==> G isomorphic_group H")
-    let a2 ← REWRITE_RULE [IMP_CONJ] ISOMORPHIC_GROUP_TRANS
-    let a3 ← REWRITE_RULE [IMP_CONJ_ALT] ISOMORPHIC_GROUP_TRANS
     pure (REPEAT STRIP_TAC THEN
       wPart lhand rand ISOMORPHIC_SUM_GROUP_SUPPORT THEN
       GEN_REWRITE_TAC LAND_CONV [ISOMORPHIC_GROUP_SYM] THEN
-      MATCH_MP_TAC a3 THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] ISOMORPHIC_GROUP_TRANS) THEN
       wPart rand rand ISOMORPHIC_SUM_GROUP_SUPPORT THEN
-      MATCH_MP_TAC a2 THEN
-      MATCH_MP_TAC a1 THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] ISOMORPHIC_GROUP_TRANS) THEN
+      MATCH_MP_TAC (← MESON [ISOMORPHIC_GROUP_REFL]
+     (← q r"G = H ==> G isomorphic_group H")) THEN
       AP_THM_TAC THEN AP_TERM_TAC THEN ASM SET_TAC []))
 
   -- @@RETURN BEGIN
@@ -7002,9 +6984,6 @@ def setupIso2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgroupGener
         (!i. i IN s ==> (G i) isomorphic_group H(f i))
         ==> sum_group s G isomorphic_group sum_group t H)"
    (← do
-    let a2 ← MESON [FINITE_IMAGE, FINITE_SUBSET]
-     (← q r"!f. t SUBSET IMAGE f s ==> FINITE s ==> FINITE t")
-    let a1 ← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)")
     pure (CONJ_TAC THEN REPEAT GEN_TAC THEN
       REPLICATE_TAC 2 (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
       REWRITE_TAC [isomorphic_group, group_isomorphism] THEN
@@ -7012,7 +6991,7 @@ def setupIso2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgroupGener
       REWRITE_TAC [SKOLEM_THM, LEFT_IMP_EXISTS_THM] THEN
       MAP_EVERY X_GEN_TAC [← q r"h:K->A->B", ← q r"k:K->B->A"] THEN
       GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV)
-       [group_isomorphisms, FORALL_AND_THM, a1] THEN
+       [group_isomorphisms, FORALL_AND_THM, (← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)"))] THEN
       STRIP_TAC THEN
       MAP_EVERY EXISTS_TAC
        [← q r"\(x:K->A). RESTRICTION t (\j:L. (h:K->A->B) (g j) (x (g j)))",
@@ -7028,7 +7007,8 @@ def setupIso2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgroupGener
           REWRITE_TAC [IN_CARTESIAN_PRODUCT, IN_ELIM_THM] THEN
           CONJ_TAC THENL [X_GEN_TAC (← q r"x:K->A"), X_GEN_TAC (← q r"y:L->B")] THEN
           DISCH_THEN (CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
-          MATCH_MP_TAC a2
+          MATCH_MP_TAC (← MESON [FINITE_IMAGE, FINITE_SUBSET]
+     (← q r"!f. t SUBSET IMAGE f s ==> FINITE s ==> FINITE t"))
           THENL [EXISTS_TAC (← q r"f:K->L"), EXISTS_TAC (← q r"g:L->K")] THEN
           RULE_ASSUM_TAC (REWRITE_RULE [group_homomorphism]) THEN
           ASM SET_TAC []]] THEN
@@ -7089,10 +7069,9 @@ def setupIso2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgroupGener
                 ((\f. RESTRICTION k f,RESTRICTION l f),
                  (\(f,g) x. if x IN k then f x else g x))"
    (← do
-    let a1 ← SET_RULE (← q r"{x | x IN s /\ P x} = s INTER {x | P x}")
     pure (REPEAT STRIP_TAC THEN
       SIMP_TAC [sum_group, SUBGROUP_SUM_GROUP, PROD_GROUP_SUBGROUP_GENERATED] THEN
-      REWRITE_TAC [a1] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"{x | x IN s /\ P x} = s INTER {x | P x}"))] THEN
       REWRITE_TAC [← GSYM INTER_CROSS] THEN
       REWRITE_TAC [← GSYM (← CONJUNCT1 PRODUCT_GROUP)] THEN
       REWRITE_TAC [← GSYM (← CONJUNCT1 PROD_GROUP)] THEN
@@ -7159,11 +7138,10 @@ def setupIso2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgroupGener
         ==> product_group (i INSERT k) f isomorphic_group
             prod_group (f i) (product_group k f)"
    (← do
-    let a1 ← SET_RULE (← q r"(i:K) INSERT k = {i} UNION k")
     pure (REPEAT STRIP_TAC THEN
       TRANS_TAC ISOMORPHIC_GROUP_TRANS
        (← q r"prod_group (product_group {i} f) (product_group k (f:K->A group))") THEN
-      SUBST1_TAC a1 THEN
+      SUBST1_TAC (← SET_RULE (← q r"(i:K) INSERT k = {i} UNION k")) THEN
       ASM_SIMP_TAC [ISOMORPHIC_PRODUCT_GROUP_DISJOINT_UNION, DISJOINT_SING] THEN
       MATCH_MP_TAC ISOMORPHIC_GROUP_PROD_GROUPS THEN
       REWRITE_TAC [ISOMORPHIC_GROUP_REFL, ISOMORPHIC_PRODUCT_GROUP_SING]))
@@ -7174,11 +7152,10 @@ def setupIso2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgroupGener
         ==> sum_group (i INSERT k) f isomorphic_group
             prod_group (f i) (sum_group k f)"
    (← do
-    let a1 ← SET_RULE (← q r"(i:K) INSERT k = {i} UNION k")
     pure (REPEAT STRIP_TAC THEN
       TRANS_TAC ISOMORPHIC_GROUP_TRANS
        (← q r"prod_group (sum_group {i} f) (sum_group k (f:K->A group))") THEN
-      SUBST1_TAC a1 THEN
+      SUBST1_TAC (← SET_RULE (← q r"(i:K) INSERT k = {i} UNION k")) THEN
       ASM_SIMP_TAC [ISOMORPHIC_SUM_GROUP_DISJOINT_UNION, DISJOINT_SING] THEN
       MATCH_MP_TAC ISOMORPHIC_GROUP_PROD_GROUPS THEN
       REWRITE_TAC [ISOMORPHIC_GROUP_REFL, ISOMORPHIC_SUM_GROUP_SING]))
@@ -7202,8 +7179,7 @@ def setupIso2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgroupGener
         G isomorphic_group H
         ==> (INFINITE(group_carrier G) <=> INFINITE(group_carrier H))"
    (← do
-    let a1 ← TAUT (← q r"(~p <=> ~q) <=> (p <=> q)")
-    pure (REWRITE_TAC [INFINITE, a1] THEN
+    pure (REWRITE_TAC [INFINITE, (← TAUT (← q r"(~p <=> ~q) <=> (p <=> q)"))] THEN
       REWRITE_TAC [ISOMORPHIC_GROUP_FINITENESS]))
 
   let ISOMORPHIC_GROUP_HAS_ORDER ← prove
@@ -7244,10 +7220,8 @@ def setupIso2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgroupGener
             group_inv (group(s,z,i,m)) = i /\
             group_mul (group(s,z,i,m)) = m"
    (← do
-    let a1 ← TAUT (← q r"(q ==> p) /\ q ==> p /\ q")
-    let ss1 ← ExceptT.mk (basic_ss [])
     pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
-      MATCH_MP_TAC a1 THEN CONJ_TAC THENL
+      MATCH_MP_TAC (← TAUT (← q r"(q ==> p) /\ q ==> p /\ q")) THEN CONJ_TAC THENL
        [STRIP_TAC THEN ONCE_REWRITE_TAC [GROUP_ISOMORPHISMS_SYM] THEN
         ASM_REWRITE_TAC [GROUP_ISOMORPHISMS, GROUP_HOMOMORPHISM] THEN
         ASM_SIMP_TAC [SUBSET, FORALL_IN_IMAGE, GROUP_MUL],
@@ -7257,7 +7231,7 @@ def setupIso2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BSubgroupGener
         REWRITE_TAC [← GSYM (← CONJUNCT2 group_tybij)] THEN
         REWRITE_TAC (← [group_carrier, group_id, group_inv, group_mul].mapM
          (fun th => do GSYM (← REWRITE_RULE [FUN_EQ_THM] th))) THEN
-        ASM (simpTac ss1 4)
+        ASM (simpTac (← ExceptT.mk (basic_ss [])) 4)
           [GROUP_ID, GROUP_MUL, GROUP_INV, GROUP_MUL_ASSOC,
            GROUP_MUL_LID, GROUP_MUL_RID, GROUP_MUL_LINV, GROUP_MUL_RINV] THEN
         ASM_MESON_TAC [GROUP_ID]]))
@@ -7940,7 +7914,6 @@ def setupSetwise2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived :
         ==> ((group_setmul G g h) subgroup_of G <=>
              group_setmul G g h = group_setmul G h g)"
    (← do
-    let s1 ← SET_RULE (← q r"s = t ==> !x. x IN s ==> x IN t")
     pure (REPEAT STRIP_TAC THEN EQ_TAC THENL
      [DISCH_TAC THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
       REWRITE_TAC [SUBSET, group_setmul, FORALL_IN_GSPEC] THEN
@@ -7972,7 +7945,7 @@ def setupSetwise2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived :
         ASM_SIMP_TAC [GROUP_INV_MUL, IN_ELIM_THM] THEN
         CONJ_TAC THENL [ASM_MESON_TAC [GROUP_MUL_LID], ALL_TAC] THEN
         X_GEN_TAC (← q "y:A") THEN DISCH_TAC THEN X_GEN_TAC (← q "x:A") THEN DISCH_TAC THEN
-        FIRST_X_ASSUM (MP_TAC o MATCH_MP s1) THEN
+        FIRST_X_ASSUM (MP_TAC o MATCH_MP (← SET_RULE (← q r"s = t ==> !x. x IN s ==> x IN t"))) THEN
         REWRITE_TAC [group_setmul, FORALL_IN_GSPEC] THEN
         DISCH_THEN (MP_TAC o SPECL [← q r"group_inv G x:A", ← q r"group_inv G y:A"]) THEN
         ASM SET_TAC [],
@@ -8565,13 +8538,11 @@ def setupGroupOrbits [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BGroupA
           ==> (group_orbit G s a x SUBSET t <=>
                x IN s ==> ~DISJOINT (group_orbit G s a x) t)"
    (← do
-     let a2 ← SET_RULE (← q r"~DISJOINT s t <=> ?z. z IN t /\ s z")
-     let a1 ← SET_RULE (← q r"~(s = {}) /\ (~DISJOINT s t ==> s SUBSET t)
-      ==> (s SUBSET t <=> ~DISJOINT s t)")
      pure (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"(x:X) IN s") THEN
       ASM_SIMP_TAC [GROUP_ORBIT_EMPTY, EMPTY_SUBSET] THEN
-      MATCH_MP_TAC a1 THEN
-      ASM_SIMP_TAC [GROUP_ORBIT_EQ_EMPTY, LEFT_IMP_EXISTS_THM, a2] THEN
+      MATCH_MP_TAC (← SET_RULE (← q r"~(s = {}) /\ (~DISJOINT s t ==> s SUBSET t)
+      ==> (s SUBSET t <=> ~DISJOINT s t)")) THEN
+      ASM_SIMP_TAC [GROUP_ORBIT_EQ_EMPTY, LEFT_IMP_EXISTS_THM, (← SET_RULE (← q r"~DISJOINT s t <=> ?z. z IN t /\ s z"))] THEN
       X_GEN_TAC (← q "z:X") THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
       wPart lhand (rand o rand) GROUP_ORBIT_EQ THEN
       ANTS_TAC THENL [ASM SET_TAC [], DISCH_THEN (SUBST1_TAC o SYM)] THEN
@@ -8796,15 +8767,13 @@ def setupOrbitStabilizer [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDe
           ==> group_stabilizer (subgroup_generated G h) (group_mul G) a =
               {group_id G}"
    (← do
-      let a2 ← GROUP_RULE (← q
-         r"group_mul G g a = a <=> g = group_id G")
-      let a1 ← D.SET_RULE (← q
-         r"a IN s /\ (!x. x IN s ==> (P x <=> x = a))
-          ==> {x | x IN s /\ P x} = {a}")
       pure (REPEAT STRIP_TAC THEN
        ASM_SIMP_TAC [group_stabilizer, CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
-       MATCH_MP_TAC a1 THEN
-       ASM_MESON_TAC [subgroup_of, SUBSET, a2]))
+       MATCH_MP_TAC (← D.SET_RULE (← q
+         r"a IN s /\ (!x. x IN s ==> (P x <=> x = a))
+          ==> {x | x IN s /\ P x} = {a}")) THEN
+       ASM_MESON_TAC [subgroup_of, SUBSET, (← GROUP_RULE (← q
+         r"group_mul G g a = a <=> g = group_id G"))]))
 
   let GROUP_ACTION_GROUP_TRANSLATION ← prove
    r"!G. group_action G (group_carrier G) (group_mul G)"
@@ -8839,9 +8808,6 @@ def setupOrbitStabilizer [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDe
           g subgroup_of G /\ h subgroup_of G
           ==> (group_setmul G g h) *_c (g INTER h) =_c g *_c h"
    (← do
-      let a2 ← D.SET_RULE (← q
-         r"{z | z IN {x,y | P x y} /\ Q z} = {x,y | P x y /\ Q(x,y)}")
-      let a1 ← D.TAUT (← q r"p /\ (p ==> q ==> r) ==> (p ==> q) ==> r")
       pure (REPEAT STRIP_TAC THEN
        MP_TAC (← ISPECL
         [← q r"prod_group (subgroup_generated G g) (subgroup_generated G h:A group)",
@@ -8849,7 +8815,7 @@ def setupOrbitStabilizer [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDe
          ← q r"\(x,y) (z:A). group_mul G x (group_mul G z (group_inv G y))",
          ← q "group_id G:A"]
         ORBIT_STABILIZER_MUL_GEN) THEN
-       MATCH_MP_TAC a1 THEN
+       MATCH_MP_TAC (← D.TAUT (← q r"p /\ (p ==> q ==> r) ==> (p ==> q) ==> r")) THEN
        CONJ_TAC THENL
         [ASM_SIMP_TAC [group_action, PROD_GROUP, FORALL_PAIR_THM, IN_CROSS,
            ← CONJUNCT2 SUBGROUP_GENERATED, CARRIER_SUBGROUP_GENERATED_SUBGROUP] THEN
@@ -8885,7 +8851,8 @@ def setupOrbitStabilizer [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDe
          MATCH_MP_TAC CARD_EQ_REFL_IMP THEN
          ASM_SIMP_TAC [IN_ELIM_THM, PROD_GROUP, CARRIER_SUBGROUP_GENERATED_SUBGROUP,
                       group_stabilizer] THEN
-         REWRITE_TAC [CROSS, a2] THEN
+         REWRITE_TAC [CROSS, (← D.SET_RULE (← q
+         r"{z | z IN {x,y | P x y} /\ Q z} = {x,y | P x y /\ Q(x,y)}"))] THEN
          GEN_REWRITE_TAC I [EXTENSION] THEN
          REWRITE_TAC [FORALL_PAIR_THM, IN_IMAGE, PAIR_EQ, IN_ELIM_PAIR_THM] THEN
          REWRITE_TAC [← GSYM CONJ_ASSOC, UNWIND_THM1, IN_INTER] THEN
@@ -8912,10 +8879,9 @@ def setupOrbitStabilizer [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDe
           FINITE g /\ FINITE h /\ g subgroup_of G /\ h subgroup_of G
           ==> CARD(group_setmul G g h) = (CARD g * CARD h) DIV CARD(g INTER h)"
    (← do
-      let a1 ← D.ARITH_RULE (← q r"~(n = 0) ==> 0 < n")
       pure (REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC DIV_UNIQ THEN
        EXISTS_TAC (← q "0") THEN ASM_SIMP_TAC [ADD_CLAUSES, CARD_GROUP_SETMUL_MUL] THEN
-       MATCH_MP_TAC a1 THEN
+       MATCH_MP_TAC (← D.ARITH_RULE (← q r"~(n = 0) ==> 0 < n")) THEN
        ASM_SIMP_TAC [CARD_EQ_0, FINITE_INTER] THEN
        MATCH_MP_TAC SUBGROUP_OF_IMP_NONEMPTY THEN
        ASM_MESON_TAC [SUBGROUP_OF_INTER]))
@@ -9077,14 +9043,12 @@ def setupCosets [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : D
           ==> (x IN right_coset G h a <=>
                group_mul G x (group_inv G a) IN h)"
    (← do
-      let a2 ← D.MESON [] (← q r"P a ==> a IN h ==> ?y. y IN h /\ P y")
-      let a1 ← D.TAUT (← q r"(p /\ q) /\ r <=> q /\ p /\ r")
       pure (REWRITE_TAC [SUBSET] THEN REPEAT STRIP_TAC THEN
        REWRITE_TAC [right_coset, group_setmul, IN_ELIM_THM, IN_SING] THEN
-       REWRITE_TAC [a1, UNWIND_THM2] THEN
+       REWRITE_TAC [(← D.TAUT (← q r"(p /\ q) /\ r <=> q /\ p /\ r")), UNWIND_THM2] THEN
        EQ_TAC THENL
         [ALL_TAC,
-         MATCH_MP_TAC a2] THEN
+         MATCH_MP_TAC (← D.MESON [] (← q r"P a ==> a IN h ==> ?y. y IN h /\ P y"))] THEN
        ASM_SIMP_TAC [LEFT_IMP_EXISTS_THM, ← GSYM GROUP_MUL_ASSOC, GROUP_MUL_LINV,
                     GROUP_MUL_RINV, GROUP_MUL_RID, GROUP_INV]))
 
@@ -9095,13 +9059,12 @@ def setupCosets [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : D
           ==> (x IN left_coset G a h <=>
                group_mul G (group_inv G a) x IN h)"
    (← do
-      let a1 ← D.MESON [] (← q r"P a ==> a IN h ==> ?y. y IN h /\ P y")
       pure (REWRITE_TAC [SUBSET] THEN REPEAT STRIP_TAC THEN
        REWRITE_TAC [left_coset, group_setmul, IN_ELIM_THM, IN_SING] THEN
        REWRITE_TAC [← GSYM CONJ_ASSOC, UNWIND_THM2, RIGHT_EXISTS_AND_THM] THEN
        EQ_TAC THENL
         [ALL_TAC,
-         MATCH_MP_TAC a1] THEN
+         MATCH_MP_TAC (← D.MESON [] (← q r"P a ==> a IN h ==> ?y. y IN h /\ P y"))] THEN
        ASM_SIMP_TAC [LEFT_IMP_EXISTS_THM, GROUP_MUL_ASSOC, GROUP_MUL_LINV,
                     GROUP_MUL_RINV, GROUP_MUL_LID, GROUP_INV]))
 
@@ -9132,19 +9095,17 @@ def setupCosets [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : D
           ==> group_setinv G (right_coset G h a) =
               left_coset G (group_inv G a) h)"
    (← do
-      let a2 ← D.SET_RULE (← q
-         r"!u. s SUBSET u /\ t SUBSET u /\ (!x. x IN u ==> f(f x) = x) /\
-              (!x. x IN u ==> (f x IN t <=> x IN s)) /\
-              (!x. x IN u ==> (f x IN s <=> x IN t))
-              ==> IMAGE f s = t /\ IMAGE f t = s")
-      let a1 ← D.TAUT (← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r")
       pure (REWRITE_TAC [GROUP_SETINV_AS_IMAGE, IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
        GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV)
         [← GSYM FORALL_IN_GROUP_CARRIER_INV] THEN
        REWRITE_TAC [RIGHT_IMP_FORALL_THM, AND_FORALL_THM, IMP_IMP] THEN
        REPEAT GEN_TAC THEN SIMP_TAC [GROUP_INV_INV] THEN
-       REWRITE_TAC [a1] THEN
-       DISCH_TAC THEN MATCH_MP_TAC a2 THEN
+       REWRITE_TAC [(← D.TAUT (← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r"))] THEN
+       DISCH_TAC THEN MATCH_MP_TAC (← D.SET_RULE (← q
+         r"!u. s SUBSET u /\ t SUBSET u /\ (!x. x IN u ==> f(f x) = x) /\
+              (!x. x IN u ==> (f x IN t <=> x IN s)) /\
+              (!x. x IN u ==> (f x IN s <=> x IN t))
+              ==> IMAGE f s = t /\ IMAGE f t = s")) THEN
        EXISTS_TAC (← q r"group_carrier G:A->bool") THEN
        ASM_SIMP_TAC [IN_LEFT_COSET, IN_RIGHT_COSET, SUBGROUP_OF_IMP_SUBSET,
                     GROUP_INV_INV, GROUP_INV, LEFT_COSET, RIGHT_COSET] THEN
@@ -9204,12 +9165,10 @@ def setupCosets [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : D
    r"!G h:A->bool.
           h SUBSET group_carrier G ==> right_coset G h (group_id G) = h"
    (← do
-      let a2 ← D.SET_RULE (← q
-         r"(!x. x IN s ==> f x = x) ==> {f x | x IN s} = s")
-      let a1 ← D.SET_RULE (← q
-         r"{f x y | P x /\ y IN {a}} = {f x a | P x}")
-      pure (SIMP_TAC [right_coset, group_setmul, a1] THEN
-       REWRITE_TAC [SUBSET] THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC a2 THEN
+      pure (SIMP_TAC [right_coset, group_setmul, (← D.SET_RULE (← q
+         r"{f x y | P x /\ y IN {a}} = {f x a | P x}"))] THEN
+       REWRITE_TAC [SUBSET] THEN REPEAT STRIP_TAC THEN MATCH_MP_TAC (← D.SET_RULE (← q
+         r"(!x. x IN s ==> f x = x) ==> {f x | x IN s} = s")) THEN
        ASM_SIMP_TAC [GROUP_MUL_RID]))
 
   let LEFT_COSET_ID ← prove
@@ -9344,9 +9303,6 @@ def setupCosets [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : D
         ==> !m n. m <= n
                   ==> N n SUBSET N m /\ group_div G (u n) (u m) IN N m"
    (← do
-    let g1 ← GROUP_RULE
-     (← q r"group_mul G (group_div G x y) (group_div G y z) =
-        group_div (G:A group) x z")
     pure
       (REPEAT GEN_TAC THEN STRIP_TAC THEN MATCH_MP_TAC TRANSITIVE_STEPWISE_LE THEN
        ASM_SIMP_TAC [SUBSET_REFL, GROUP_DIV_REFL, IN_SUBGROUP_ID] THEN
@@ -9356,7 +9312,9 @@ def setupCosets [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived : D
         (← q r"group_div G ((u:num->A) c) (u a) =
          group_mul G (group_div G (u c) (u b)) (group_div G (u b) (u a))")
        SUBST1_TAC THENL
-        [ASM_SIMP_TAC [g1],
+        [ASM_SIMP_TAC [(← GROUP_RULE
+     (← q r"group_mul G (group_div G x y) (group_div G y z) =
+        group_div (G:A group) x z"))],
          MATCH_MP_TAC IN_SUBGROUP_MUL THEN ASM_REWRITE_TAC [] THEN
          UNDISCH_TAC (← q r"(N:num->A->bool) b SUBSET N a") THEN
          REWRITE_TAC [SUBSET] THEN DISCH_THEN MATCH_MP_TAC THEN
@@ -11483,13 +11441,10 @@ def setupCentralizerNormalizer2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basic
           group_centralizer G h normal_subgroup_of
           subgroup_generated G (group_normalizer G h)"
    (← do
-    let a2 ← MESON []
-     (← q r"f(h y) = y /\ g(h y) = h y ==> f(g(h y)) = y")
-    let a1 ← SET_RULE
-     (← q r"group_carrier G INTER (h:A->bool) SUBSET group_carrier G")
     pure (REPEAT GEN_TAC THEN
      ONCE_REWRITE_TAC [GROUP_CENTRALIZER_RESTRICT, GROUP_NORMALIZER_RESTRICT] THEN
-     MP_TAC a1 THEN
+     MP_TAC (← SET_RULE
+     (← q r"group_carrier G INTER (h:A->bool) SUBSET group_carrier G")) THEN
      SPEC_TAC (← q r"group_carrier G INTER (h:A->bool)", ← q r"h:A->bool") THEN
      REPEAT STRIP_TAC THEN
      REWRITE_TAC [NORMAL_SUBGROUP_CONJUGATION] THEN
@@ -11505,7 +11460,8 @@ def setupCentralizerNormalizer2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basic
      X_GEN_TAC (← q "y:A") THEN STRIP_TAC THEN
      GEN_REWRITE_TAC (LAND_CONV o LAND_CONV) [group_conjugation] THEN
      ASM_SIMP_TAC [← GSYM GROUP_CONJUGATION_CONJUGATION, GROUP_MUL, GROUP_INV] THEN
-     MATCH_MP_TAC a2 THEN
+     MATCH_MP_TAC (← MESON []
+     (← q r"f(h y) = y /\ g(h y) = h y ==> f(g(h y)) = y")) THEN
      ASM_SIMP_TAC [GROUP_CONJUGATION_RINV] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
      ASM_SIMP_TAC [GROUP_CONJUGATION, GROUP_INV] THEN UNDISCH_TAC (← q r"(y:A) IN h") THEN
      RULE_ASSUM_TAC (REWRITE_RULE [SUBSET]) THEN FIRST_X_ASSUM (fun th => tactic_of do pure (
@@ -11523,15 +11479,13 @@ def setupCentralizerNormalizer2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basic
   let GROUP_NORMALIZER_SING ← prove
    r"!G a:A. group_normalizer G {a} = group_centralizer G {a}"
    (← do
-    let a2 ← SET_RULE (← q r"~(a IN s) ==> s INTER {a} = {}")
-    let a1 ← SET_RULE (← q r"a IN s ==> s INTER {a} = {a}")
     pure (REPEAT GEN_TAC THEN
      ONCE_REWRITE_TAC [GROUP_NORMALIZER_RESTRICT, GROUP_CENTRALIZER_RESTRICT] THEN
      REWRITE_TAC [group_normalizer, group_centralizer] THEN
      ASM_CASES_TAC (← q r"(a:A) IN group_carrier G") THENL
-      [ASM_SIMP_TAC [GROUP_SETMUL_SING, a1] THEN
+      [ASM_SIMP_TAC [GROUP_SETMUL_SING, (← SET_RULE (← q r"a IN s ==> s INTER {a} = {a}"))] THEN
        ASM SET_TAC [],
-       ASM_SIMP_TAC [a2, NOT_IN_EMPTY,
+       ASM_SIMP_TAC [(← SET_RULE (← q r"~(a IN s) ==> s INTER {a} = {}")), NOT_IN_EMPTY,
                     INTER_EMPTY, GROUP_SETMUL_EMPTY]]))
 
   let GROUP_CENTRALIZER_GALOIS_EQ ← prove
@@ -11577,12 +11531,11 @@ def setupCentralizerNormalizer2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basic
           ==> group_orbit G s (group_conjugation G) x =
               if x IN s then {y | y IN s /\ group_conjugate G {x} {y}} else {}"
    (← do
-    let a1 ← SET_RULE (← q r"{a} = {b} <=> a = b")
     pure (REPEAT STRIP_TAC THEN GEN_REWRITE_TAC I [EXTENSION] THEN
      COND_CASES_TAC THEN ASM_REWRITE_TAC [IN_ELIM_THM, NOT_IN_EMPTY] THEN
      ASM_REWRITE_TAC [IN_GROUP_ORBIT, group_conjugate] THEN
      ASM_REWRITE_TAC [SING_SUBSET, IMAGE_CLAUSES] THEN
-     REWRITE_TAC [a1] THEN ASM SET_TAC []))
+     REWRITE_TAC [(← SET_RULE (← q r"{a} = {b} <=> a = b"))] THEN ASM SET_TAC []))
 
   let GROUP_ORBIT_CONJUGATION ← prove
    r"!G x:A.
@@ -11643,8 +11596,7 @@ def setupCentralizerNormalizer2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basic
           ==> {t | group_conjugate G s t} *_c group_normalizer G s =_c
               group_carrier G"
    (← do
-    let a1 ← SET_RULE (← q r"{t | P t} = P")
-    pure (REPEAT STRIP_TAC THEN REWRITE_TAC [a1] THEN
+    pure (REPEAT STRIP_TAC THEN REWRITE_TAC [(← SET_RULE (← q r"{t | P t} = P"))] THEN
      ASM_SIMP_TAC [← GSYM GROUP_STABILIZER_IMAGE_CONJUGATION, ETA_AX] THEN
      ASM_SIMP_TAC [← GSYM GROUP_ORBIT_IMAGE_CONJUGATION] THEN
      MATCH_MP_TAC ORBIT_STABILIZER_MUL_GEN THEN
@@ -11808,9 +11760,8 @@ def setupQuotientGroups [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDer
           n normal_subgroup_of G
           ==> group_mul(quotient_group G n) = group_setmul G)"
    (← do
-    let a1 ← TAUT
-     (← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r")
-    pure (REWRITE_TAC [AND_FORALL_THM, a1] THEN
+    pure (REWRITE_TAC [AND_FORALL_THM, (← TAUT
+     (← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r"))] THEN
      REPEAT GEN_TAC THEN DISCH_TAC THEN
      MP_TAC (← EQ_IMP_RULE
       (← ISPEC (← liftExcept (do rand (← rand (strip_forall (concl quotient_group)).2)))
@@ -12122,11 +12073,10 @@ def setupQuotientGroups [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDer
                                 quotient_group (prod_group G1 G2) (n1 CROSS n2))
                                (\(s,t). s CROSS t)"
    (← do
-    let a1 ← SET_RULE
-     (← q r"(IMAGE f s SUBSET t /\ P) /\ IMAGE f s = t /\ Q <=>
-      IMAGE f s SUBSET t /\ t SUBSET IMAGE f s /\ P /\ Q")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [GROUP_ISOMORPHISM] THEN
-     REWRITE_TAC [GROUP_HOMOMORPHISM, a1] THEN
+     REWRITE_TAC [GROUP_HOMOMORPHISM, (← SET_RULE
+     (← q r"(IMAGE f s SUBSET t /\ P) /\ IMAGE f s = t /\ Q <=>
+      IMAGE f s SUBSET t /\ t SUBSET IMAGE f s /\ P /\ Q"))] THEN
      REWRITE_TAC [SUBSET, FORALL_IN_IMAGE] THEN
      REWRITE_TAC [PROD_GROUP, FORALL_PAIR_THM, IN_CROSS] THEN
      REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
@@ -12158,12 +12108,11 @@ def setupQuotientGroups [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDer
           (cartesian_product k h) normal_subgroup_of (product_group k G) <=>
           !i. i IN k ==> (h i) normal_subgroup_of (G i)"
    (← do
-    let a1 ← MESON [] (← q r"(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [normal_subgroup_of] THEN
      REWRITE_TAC [CARTESIAN_PRODUCT_SUBGROUP_OF_PRODUCT_GROUP] THEN
      REWRITE_TAC [RIGHT_COSET_PRODUCT_GROUP, LEFT_COSET_PRODUCT_GROUP] THEN
      REWRITE_TAC [CARTESIAN_PRODUCT_EQ, CARTESIAN_PRODUCT_EQ_EMPTY] THEN
-     REWRITE_TAC [a1] THEN
+     REWRITE_TAC [(← MESON [] (← q r"(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)"))] THEN
      ASM_CASES_TAC (← q r"!i. i IN k ==> (h:K->A->bool) i subgroup_of G i") THENL
       [ASM_SIMP_TAC [RIGHT_COSET_NONEMPTY], ASM_MESON_TAC []] THEN
      REWRITE_TAC [RIGHT_IMP_FORALL_THM, PRODUCT_GROUP, IMP_IMP] THEN
@@ -12178,11 +12127,10 @@ def setupQuotientGroups [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDer
                  quotient_group (product_group k G) (cartesian_product k n))
                 (cartesian_product k)"
    (← do
-    let a1 ← SET_RULE
-     (← q r"(IMAGE f s SUBSET t /\ P) /\ IMAGE f s = t /\ Q <=>
-      IMAGE f s SUBSET t /\ t SUBSET IMAGE f s /\ P /\ Q")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [GROUP_ISOMORPHISM] THEN
-     REWRITE_TAC [GROUP_HOMOMORPHISM, a1] THEN
+     REWRITE_TAC [GROUP_HOMOMORPHISM, (← SET_RULE
+     (← q r"(IMAGE f s SUBSET t /\ P) /\ IMAGE f s = t /\ Q <=>
+      IMAGE f s SUBSET t /\ t SUBSET IMAGE f s /\ P /\ Q"))] THEN
      REWRITE_TAC [SUBSET, FORALL_IN_IMAGE] THEN
      ASM_SIMP_TAC [PRODUCT_GROUP, QUOTIENT_GROUP, RIGHT_COSET_PRODUCT_GROUP,
                   CARTESIAN_PRODUCT_NORMAL_SUBGROUP_OF_PRODUCT_GROUP,
@@ -12236,25 +12184,21 @@ def setupQuotientGroups [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDer
                    n SUBSET k /\
                    { right_coset G n x | x IN k} = h))"
    (← do
-    let a4 ← SET_RULE
-     (← q r"n SUBSET {x | x IN s /\ f x = z}
-          ==> z IN h ==> n SUBSET {x | x IN s /\ f x IN h}")
-    let a3 ← TAUT
-     (← q r"q /\ p /\ r ==> p /\ q /\ r")
-    let a2 ← TAUT
+    pure (REWRITE_TAC [AND_FORALL_THM, (← TAUT
+     (← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r"))] THEN
+     REPEAT GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC (← TAUT
      (← q r"(r ==> q) /\ (p ==> r) /\ (q ==> p)
-      ==> (p <=> q) /\ (p <=> r)")
-    let a1 ← TAUT
-     (← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r")
-    pure (REWRITE_TAC [AND_FORALL_THM, a1] THEN
-     REPEAT GEN_TAC THEN DISCH_TAC THEN MATCH_MP_TAC a2 THEN
+      ==> (p <=> q) /\ (p <=> r)")) THEN
      REPEAT CONJ_TAC THENL
       [MESON_TAC [],
        DISCH_TAC THEN
        EXISTS_TAC (← q r"{x:A | x IN group_carrier G /\ right_coset G n x IN h}") THEN
-       MATCH_MP_TAC a3 THEN CONJ_TAC THENL
+       MATCH_MP_TAC (← TAUT
+     (← q r"q /\ p /\ r ==> p /\ q /\ r")) THEN CONJ_TAC THENL
         [FIRST_ASSUM (MP_TAC o MATCH_MP IN_SUBGROUP_ID) THEN
-         MATCH_MP_TAC a4 THEN
+         MATCH_MP_TAC (← SET_RULE
+     (← q r"n SUBSET {x | x IN s /\ f x = z}
+          ==> z IN h ==> n SUBSET {x | x IN s /\ f x IN h}")) THEN
          ASM_SIMP_TAC [QUOTIENT_GROUP, SUBSET, IN_ELIM_THM] THEN
          ASM_MESON_TAC [RIGHT_COSET_EQ_SUBGROUP, normal_subgroup_of,
                        subgroup_of, SUBSET],
@@ -13961,30 +13905,26 @@ def setupGroupElementOrder [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (B
         ==> (group_pow G x n = group_id G <=>
              (group_element_order G x) divides n)"
    (← do
-     let a4 ← NUMBER_RULE (← q r"n divides 0")
-     let a3 ← NUMBER_RULE (← q r"(d:num) divides (a * d + b) <=> d divides b")
-     let a2 ← TAUT (← q
-       r"p ==> q ==> r <=> ~r /\ p ==> ~q")
-     let a1 ← NUMBER_RULE (← q r"0 divides n <=> n = 0")
      pure (
       REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN REPEAT GEN_TAC THEN DISCH_TAC THEN
       REWRITE_TAC [group_element_order] THEN CONV_TAC SELECT_CONV THEN
       ASM_CASES_TAC (← q r"!n. group_pow G (x:A) n = group_id G ==> n = 0") THENL
-       [EXISTS_TAC (← q r"0") THEN REWRITE_TAC [a1] THEN
+       [EXISTS_TAC (← q r"0") THEN REWRITE_TAC [(← NUMBER_RULE (← q r"0 divides n <=> n = 0"))] THEN
         ASM_MESON_TAC [← CONJUNCT1 group_pow],
         FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE I [NOT_FORALL_THM])] THEN
       GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN MATCH_MP_TAC MONO_EXISTS THEN
-      X_GEN_TAC (← q r"d:num") THEN REWRITE_TAC [NOT_IMP, ← GSYM LT_NZ, a2] THEN
+      X_GEN_TAC (← q r"d:num") THEN REWRITE_TAC [NOT_IMP, ← GSYM LT_NZ, (← TAUT (← q
+       r"p ==> q ==> r <=> ~r /\ p ==> ~q"))] THEN
       STRIP_TAC THEN X_GEN_TAC (← q r"n:num") THEN
       MP_TAC (← SPECL [(← q r"n:num"), (← q r"d:num")] DIVISION) THEN
       ASM_REWRITE_TAC [← GSYM LT_NZ] THEN
       DISCH_THEN (CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC) THEN
-      REWRITE_TAC [a3] THEN
+      REWRITE_TAC [(← NUMBER_RULE (← q r"(d:num) divides (a * d + b) <=> d divides b"))] THEN
       ONCE_REWRITE_TAC [MULT_SYM] THEN
       ASM_SIMP_TAC [GROUP_POW_ADD, GROUP_POW_MUL, GROUP_POW_ID] THEN
       ASM_SIMP_TAC [GROUP_MUL_LID, GROUP_POW] THEN
       ASM_CASES_TAC (← q r"n MOD d = 0") THEN
-      ASM_REWRITE_TAC [← CONJUNCT1 group_pow, a4] THEN
+      ASM_REWRITE_TAC [← CONJUNCT1 group_pow, (← NUMBER_RULE (← q r"n divides 0"))] THEN
       ASM_SIMP_TAC [LT_NZ] THEN DISCH_THEN (MP_TAC o MATCH_MP DIVIDES_LE) THEN
       ASM_REWRITE_TAC [NOT_LE]))
 
@@ -14000,9 +13940,8 @@ def setupGroupElementOrder [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (B
    r"!G x:A. x IN group_carrier G
            ==> group_pow G x (group_element_order G x) = group_id G"
    (← do
-     let a1 ← NUMBER_RULE (← q r"(d:num) divides d")
      pure (
-      SIMP_TAC [GROUP_POW_EQ_ID, a1]))
+      SIMP_TAC [GROUP_POW_EQ_ID, (← NUMBER_RULE (← q r"(d:num) divides d"))]))
 
   let GROUP_ZPOW_EQ_ID ← prove
    r"!G (x:A) n.
@@ -14010,13 +13949,12 @@ def setupGroupElementOrder [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (B
         ==> (group_zpow G x n = group_id G <=>
              &(group_element_order G x) divides n)"
    (← do
-     let a1 ← INTEGER_RULE (← q r"m divides (--n:int) <=> m divides n")
      pure (
       REPEAT STRIP_TAC THEN DISJ_CASES_THEN
        (X_CHOOSE_THEN (← q r"m:num") SUBST1_TAC) (← SPEC (← q r"n:int") INT_IMAGE) THEN
       ASM_SIMP_TAC [GROUP_NPOW, GROUP_ZPOW_NEG, GROUP_INV_EQ_ID,
                    GROUP_POW, GROUP_POW_EQ_ID] THEN
-      REWRITE_TAC [a1] THEN
+      REWRITE_TAC [(← INTEGER_RULE (← q r"m divides (--n:int) <=> m divides n"))] THEN
       REWRITE_TAC [num_divides]))
 
   let GROUP_ZPOW_EQ_ID_DIVISOR ← prove
@@ -14094,10 +14032,8 @@ def setupGroupElementOrder [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (B
         ==> (group_element_order G x = 0 <=>
               !n. ~(n = 0) ==> ~(group_pow G x n = group_id G))"
    (← do
-     let a2 ← NUMBER_RULE (← q r"!n:num. n divides n")
-     let a1 ← NUMBER_RULE (← q r"0 divides n <=> n = 0")
      pure (
-      SIMP_TAC [GROUP_POW_EQ_ID] THEN MESON_TAC [a1, a2]))
+      SIMP_TAC [GROUP_POW_EQ_ID] THEN MESON_TAC [(← NUMBER_RULE (← q r"0 divides n <=> n = 0")), (← NUMBER_RULE (← q r"!n:num. n divides n"))]))
 
   let GROUP_ELEMENT_ORDER_UNIQUE ← prove
    r"!G (x:A) d.
@@ -14105,21 +14041,19 @@ def setupGroupElementOrder [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (B
         ==> (group_element_order G x = d <=>
              !n. group_pow G x n = group_id G <=> d divides n)"
    (← do
-     let a1 ← NUMBER_RULE (← q r"(n:num) divides n")
      pure (
       REPEAT STRIP_TAC THEN
       FIRST_ASSUM (ASSUME_TAC o MATCH_MP GROUP_POW_EQ_ID) THEN
       EQ_TAC THENL [ASM_MESON_TAC [], ASM_REWRITE_TAC []] THEN
-      MESON_TAC [DIVIDES_ANTISYM, a1]))
+      MESON_TAC [DIVIDES_ANTISYM, (← NUMBER_RULE (← q r"(n:num) divides n"))]))
 
   let GROUP_ELEMENT_ORDER_EQ_1 ← prove
    r"!G (x:A).
         x IN group_carrier G
         ==> (group_element_order G x = 1 <=> x = group_id G)"
    (← do
-     let a1 ← NUMBER_RULE (← q r"1 divides n")
      pure (
-      SIMP_TAC [GROUP_ELEMENT_ORDER_UNIQUE, a1] THEN
+      SIMP_TAC [GROUP_ELEMENT_ORDER_UNIQUE, (← NUMBER_RULE (← q r"1 divides n"))] THEN
       MESON_TAC [GROUP_POW_ID, GROUP_POW_1]))
 
   let GROUP_ELEMENT_ORDER_UNIQUE_PRIME ← prove
@@ -14128,11 +14062,10 @@ def setupGroupElementOrder [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (B
         ==> (group_element_order G x = p <=>
              ~(x = group_id G) /\ group_pow G x p = group_id G)"
    (← do
-     let a1 ← NUMBER_RULE (← q r"1 divides n /\ n divides n")
      pure (
       SIMP_TAC [GROUP_POW_EQ_ID, ← GSYM GROUP_ELEMENT_ORDER_EQ_1] THEN
       REWRITE_TAC [prime] THEN
-      MESON_TAC [a1]))
+      MESON_TAC [(← NUMBER_RULE (← q r"1 divides n /\ n divides n"))]))
 
   let GROUP_ELEMENT_ORDER_ID ← prove
    r"!G:A group. group_element_order G (group_id G) = 1"
@@ -14256,8 +14189,6 @@ def setupGroupElementOrder2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (
             if k = 0 then 1
             else group_element_order G x DIV gcd(group_element_order G x,k)"
    (← do
-     let a2 ← NUMBER_RULE (← q r"gcd(d,k) = 0 <=> d = 0 /\ k = 0")
-     let a1 ← NUMBER_RULE (← q r"gcd(d:num,k) divides d")
      pure (
       REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
       ASM_REWRITE_TAC [← CONJUNCT1 group_pow, GROUP_ELEMENT_ORDER_ID] THEN
@@ -14265,13 +14196,13 @@ def setupGroupElementOrder2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (
       ASM_SIMP_TAC [← GSYM GROUP_POW_MUL] THEN
       ASM_SIMP_TAC [GROUP_POW_EQ_ID] THEN X_GEN_TAC (← q r"n:num") THEN
       SPEC_TAC ((← q r"group_element_order G (x:A)"), (← q r"d:num")) THEN GEN_TAC THEN
-      MP_TAC a1 THEN
+      MP_TAC (← NUMBER_RULE (← q r"gcd(d:num,k) divides d")) THEN
       GEN_REWRITE_TAC LAND_CONV [divides] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"m:num") MP_TAC) THEN
       DISCH_THEN (fun th => tactic_of do
         pure (GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o LAND_CONV) [th] THEN
           MP_TAC (← SYM th))) THEN
-      ASM_SIMP_TAC [DIV_MULT, a2] THEN
+      ASM_SIMP_TAC [DIV_MULT, (← NUMBER_RULE (← q r"gcd(d,k) = 0 <=> d = 0 /\ k = 0"))] THEN
       UNDISCH_TAC (← q r"~(k = 0)") THEN NUMBER_TAC))
 
   let GROUP_ELEMENT_ORDER_MUL_DIVIDES_GEN ← prove
@@ -14385,14 +14316,6 @@ def setupGroupElementOrder2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (
         ==> (group_pow G (group_mul G x y) n = group_id G <=>
              group_pow G (group_mul G y x) n = group_id G)"
    (← do
-     let a2 ← GROUP_RULE (← q
-       r"group_mul G (group_inv G x)
-                    (group_mul G (group_mul G (group_mul G x y) z) x) =
-        group_mul G (group_mul G y x)
-                    (group_mul G (group_inv G x) (group_mul G z x))")
-     let a1 ← GROUP_RULE (← q
-       r"group_mul G (group_inv G x) (group_mul G z x) = group_id G <=>
-          z = group_id G")
      pure (
       REPEAT STRIP_TAC THEN
       TRANS_TAC EQ_TRANS
@@ -14400,11 +14323,17 @@ def setupGroupElementOrder2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (
                    (group_mul G (group_pow G (group_mul G x y) n) x):A =
         group_id G") THEN
       CONJ_TAC THENL
-       [ASM_SIMP_TAC [GROUP_MUL, GROUP_POW, a1],
+       [ASM_SIMP_TAC [GROUP_MUL, GROUP_POW, (← GROUP_RULE (← q
+       r"group_mul G (group_inv G x) (group_mul G z x) = group_id G <=>
+          z = group_id G"))],
         AP_THM_TAC THEN AP_TERM_TAC] THEN
       SPEC_TAC ((← q r"n:num"), (← q r"n:num")) THEN INDUCT_TAC THEN
       ASM_SIMP_TAC [group_pow, GROUP_MUL_LID, GROUP_MUL_LINV] THEN
-      ASM_SIMP_TAC [GROUP_POW, GROUP_MUL, a2]))
+      ASM_SIMP_TAC [GROUP_POW, GROUP_MUL, (← GROUP_RULE (← q
+       r"group_mul G (group_inv G x)
+                    (group_mul G (group_mul G (group_mul G x y) z) x) =
+        group_mul G (group_mul G y x)
+                    (group_mul G (group_inv G x) (group_mul G z x))"))]))
 
   let GROUP_ELEMENT_ORDER_MUL_SYM ← prove
    r"!G x y:A.
@@ -14421,9 +14350,6 @@ def setupGroupElementOrder2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (
              group_pow G x n = group_id G /\
              !m. 0 < m /\ m < n ==> ~(group_pow G x m = group_id G))"
    (← do
-     let a2 ← NUMBER_RULE (← q r"n divides 0")
-     let a1 ← NUMBER_RULE (← q
-       r"(n:num) divides (q * n + r) <=> n divides r")
      pure (
       REPEAT STRIP_TAC THEN EQ_TAC THENL
        [DISCH_THEN (SUBST1_TAC o SYM) THEN
@@ -14436,12 +14362,13 @@ def setupGroupElementOrder2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (
          [UNDISCH_TAC (← q r"group_pow G (x:A) m = group_id G") THEN
           FIRST_ASSUM (MP_TAC o SPEC (← q r"m:num") o MATCH_MP DIVISION) THEN
           DISCH_THEN (CONJUNCTS_THEN2 SUBST1_TAC ASSUME_TAC) THEN
-          ASM_SIMP_TAC [GROUP_POW_ADD, a1] THEN
+          ASM_SIMP_TAC [GROUP_POW_ADD, (← NUMBER_RULE (← q
+       r"(n:num) divides (q * n + r) <=> n divides r"))] THEN
           ONCE_REWRITE_TAC [MULT_SYM] THEN
           ASM_SIMP_TAC [GROUP_POW_MUL, GROUP_POW_ID, GROUP_MUL_LID, GROUP_POW] THEN
           GEN_REWRITE_TAC I [← GSYM CONTRAPOS_THM] THEN
           DISCH_TAC THEN FIRST_ASSUM MATCH_MP_TAC THEN
-          ASM_MESON_TAC [LE_1, a2],
+          ASM_MESON_TAC [LE_1, (← NUMBER_RULE (← q r"n divides 0"))],
           FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE I [divides]) THEN
           ASM_SIMP_TAC [LEFT_IMP_EXISTS_THM, GROUP_POW_MUL, GROUP_POW_ID]]]))
 
@@ -14451,11 +14378,10 @@ def setupGroupElementOrder2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (
         ==> (group_element_order G x = 2 <=>
              ~(x = group_id G) /\ group_pow G x 2 = group_id G)"
    (← do
-     let a1 ← ARITH_RULE (← q r"0 < m /\ m < 2 <=> m = 1")
      pure (
       REPEAT STRIP_TAC THEN
       ASM_SIMP_TAC [GROUP_ELEMENT_ORDER_UNIQUE_ALT, ARITH] THEN
-      REWRITE_TAC [a1] THEN
+      REWRITE_TAC [(← ARITH_RULE (← q r"0 < m /\ m < 2 <=> m = 1"))] THEN
       ASM_SIMP_TAC [GROUP_POW_1] THEN MESON_TAC []))
 
   let GROUP_ELEMENT_ORDER_EQ_2_ALT ← prove
@@ -14482,21 +14408,19 @@ def setupGroupElementOrder2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (
         ==> group_element_order G (group_mul G x y) =
             group_element_order G x * group_element_order G y"
    (← do
-     let a2 ← MESON []
+     pure (
+      REPEAT STRIP_TAC THEN REWRITE_TAC [← GSYM DIVIDES_ANTISYM] THEN
+      ASM_SIMP_TAC [GROUP_ELEMENT_ORDER_MUL_DIVIDES] THEN
+      MATCH_MP_TAC (← NUMBER_RULE
+       (← q r"(a:num) divides (b * c) /\ b divides (a * c) /\ coprime(a,b)
+    ==> (a * b) divides c")) THEN
+      ASM_SIMP_TAC [← GSYM GROUP_POW_EQ_ID] THEN
+      MATCH_MP_TAC (← MESON []
        (← q r"(group_mul G (group_pow G x m) (group_pow G y m) = group_pow G x m /\
      group_mul G (group_pow G x n) (group_pow G y n) = group_pow G y n) /\
     (group_mul G (group_pow G x m) (group_pow G y m) = group_id G /\
      group_mul G (group_pow G x n) (group_pow G y n) = group_id G)
-    ==> group_pow G x m = group_id G /\ group_pow G y n = group_id G")
-     let a1 ← NUMBER_RULE
-       (← q r"(a:num) divides (b * c) /\ b divides (a * c) /\ coprime(a,b)
-    ==> (a * b) divides c")
-     pure (
-      REPEAT STRIP_TAC THEN REWRITE_TAC [← GSYM DIVIDES_ANTISYM] THEN
-      ASM_SIMP_TAC [GROUP_ELEMENT_ORDER_MUL_DIVIDES] THEN
-      MATCH_MP_TAC a1 THEN
-      ASM_SIMP_TAC [← GSYM GROUP_POW_EQ_ID] THEN
-      MATCH_MP_TAC a2 THEN
+    ==> group_pow G x m = group_id G /\ group_pow G y n = group_id G")) THEN
       CONJ_TAC THENL
        [ASM_SIMP_TAC [GROUP_POW_MUL, GROUP_POW_ELEMENT_ORDER, GROUP_POW_ID] THEN
         ASM_SIMP_TAC [GROUP_MUL_LID, GROUP_MUL_RID, GROUP_POW],
@@ -14512,16 +14436,14 @@ def setupGroupElementOrder2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (
              k divides group_element_order G x /\
              group_element_order G (group_pow G x k) = n)"
    (← do
-     let a2 ← NUM_RING
-       (← q r"~(k = 0) /\ x' * k = x ==> (x = k * n <=> x' = n)")
-     let a1 ← TAUT
-       (← q r"(p ==> q) /\ (q ==> (p <=> r)) ==> (p <=> q /\ r)")
      pure (
       REPEAT STRIP_TAC THEN ASM_SIMP_TAC [GROUP_ELEMENT_ORDER_POW_GEN] THEN
-      MATCH_MP_TAC a1 THEN
+      MATCH_MP_TAC (← TAUT
+       (← q r"(p ==> q) /\ (q ==> (p <=> r)) ==> (p <=> q /\ r)")) THEN
       CONJ_TAC THENL [CONV_TAC NUMBER_RULE, SIMP_TAC [DIVIDES_GCD_RIGHT]] THEN
       REWRITE_TAC [← GSYM DIVIDES_GCD_RIGHT] THEN DISCH_TAC THEN
-      MATCH_MP_TAC a2 THEN
+      MATCH_MP_TAC (← NUM_RING
+       (← q r"~(k = 0) /\ x' * k = x ==> (x = k * n <=> x' = n)")) THEN
       ASM_SIMP_TAC [← GSYM DIVIDES_DIV_MULT]))
 
   let GROUP_ELEMENT_ORDER_EQ_MUL ← prove
@@ -14773,16 +14695,6 @@ def setupOrderDecomp [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerive
                        group_element_order G y = n"
    (← do
       -- counting rules in reverse text order: t4,t3,t2,t1
-      let t4 ← D.MESON [GROUP_MUL_LID, GROUP_ID] (← q
-         r"x = group_id G /\ y = group_id G ==> group_mul G x y = group_id G")
-      let t3 ← GROUP_RULE (← q
-         r"group_mul G (group_inv G x') x = group_mul G y' (group_inv G y) <=>
-          group_mul G x y = group_mul G x' y'")
-      let t2 ← D.MESON [GROUP_POW_COPRIME_EQ_ID] (← q
-         r"coprime(m,n) /\ x IN group_carrier G /\ y IN group_carrier G /\ x = y /\
-          group_pow G x m = group_id G /\ group_pow G y n = group_id G
-          ==> x = group_id G /\ y = group_id G")
-      let t1 ← D.TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
       pure (REPEAT GEN_TAC THEN DISCH_TAC THEN FIRST_ASSUM
         (MP_TAC o MATCH_MP GROUP_ELEMENT_ORDER_COPRIME_DECOMP_EXPLICIT) THEN
        REWRITE_TAC [LEFT_IMP_EXISTS_THM, EXISTS_UNIQUE, LAMBDA_PAIR] THEN
@@ -14790,24 +14702,30 @@ def setupOrderDecomp [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerive
        REWRITE_TAC [EXISTS_PAIR_THM, FORALL_PAIR_THM] THEN
        MAP_EVERY EXISTS_TAC [← q r"group_zpow G (z:A) r", ← q r"group_zpow G (z:A) s"] THEN
        ASM_SIMP_TAC [GROUP_ZPOW, PAIR_EQ] THEN
-       MATCH_MP_TAC t1 THEN CONJ_TAC THENL
+       MATCH_MP_TAC (← D.TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL
         [ASM_MESON_TAC [GROUP_ZPOW_ADD, INT_ADD_SYM], DISCH_TAC] THEN
        MAP_EVERY X_GEN_TAC [← q r"x:A", ← q r"y:A"] THEN STRIP_TAC THEN
        SUBGOAL_THEN
         (← q r"group_mul G (group_inv G x:A) (group_zpow G z r) = group_id G /\
          group_mul G y (group_inv G (group_zpow G z s)) = group_id G")
        MP_TAC THENL
-        [MATCH_MP_TAC t2,
+        [MATCH_MP_TAC (← D.MESON [GROUP_POW_COPRIME_EQ_ID] (← q
+         r"coprime(m,n) /\ x IN group_carrier G /\ y IN group_carrier G /\ x = y /\
+          group_pow G x m = group_id G /\ group_pow G y n = group_id G
+          ==> x = group_id G /\ y = group_id G")),
          MATCH_MP_TAC MONO_AND THEN CONJ_TAC THEN
          GROUP_TAC THEN ASM_SIMP_TAC [GROUP_ZPOW]] THEN
-       ASM_SIMP_TAC [GROUP_MUL, GROUP_INV, GROUP_ZPOW, t3] THEN
+       ASM_SIMP_TAC [GROUP_MUL, GROUP_INV, GROUP_ZPOW, (← GROUP_RULE (← q
+         r"group_mul G (group_inv G x') x = group_mul G y' (group_inv G y) <=>
+          group_mul G x y = group_mul G x' y'"))] THEN
        CONJ_TAC THEN
        (wPart lhand (fun t => do lhand (← rand t)) GROUP_MUL_POW THEN
         ANTS_TAC THENL
          [ASM_MESON_TAC [GROUP_COMMUTES_ZPOW, GROUP_COMMUTES_INV, GROUP_INV,
                         GROUP_ZPOW, GROUP_MUL_ASSOC],
           DISCH_THEN SUBST1_TAC THEN
-          MATCH_MP_TAC t4 THEN
+          MATCH_MP_TAC (← D.MESON [GROUP_MUL_LID, GROUP_ID] (← q
+         r"x = group_id G /\ y = group_id G ==> group_mul G x y = group_id G")) THEN
           ASM_SIMP_TAC [GROUP_POW_EQ_ID, GROUP_ZPOW, GROUP_INV,
                        GROUP_ELEMENT_ORDER_INV, DIVIDES_REFL]])))
 
@@ -14837,17 +14755,15 @@ def setupOrderDecomp [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerive
                     group_element_order G x divides m /\
                     group_element_order G y divides n"
    (← do
-      let a2 ← D.NUMBER_RULE (← q
-         r"coprime(m:num,n) /\ d divides m * n ==> gcd(d,m) * gcd(d,n) = d")
-      let a1 ← D.NUMBER_RULE (← q
-         r"coprime(m:num,n) ==> coprime(gcd(d,m),gcd(d,n))")
       pure (REPEAT STRIP_TAC THEN
        MP_TAC (← ISPECL [← q r"G:A group", ← q r"z:A",
          ← q r"gcd(group_element_order G (z:A),m)",
          ← q r"gcd(group_element_order G (z:A),n)"]
         GROUP_ELEMENT_ORDER_COPRIME_DECOMP) THEN
-       ASM_SIMP_TAC [a1] THEN
-       ASM_SIMP_TAC [a2] THEN
+       ASM_SIMP_TAC [(← D.NUMBER_RULE (← q
+         r"coprime(m:num,n) ==> coprime(gcd(d,m),gcd(d,n))"))] THEN
+       ASM_SIMP_TAC [(← D.NUMBER_RULE (← q
+         r"coprime(m:num,n) /\ d divides m * n ==> gcd(d,m) * gcd(d,n) = d"))] THEN
        REPEAT (MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC) THEN
        STRIP_TAC THEN ASM_REWRITE_TAC [GCD]))
 
@@ -14874,12 +14790,11 @@ def setupOrderDecomp [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerive
                     (?k. group_element_order G x = p EXP k) /\
                     coprime(p,group_element_order G y)"
    (← do
-      let a1 ← D.MESON [PRIME_1] (← q r"prime p ==> ~(p = 1)")
       pure (REPEAT STRIP_TAC THEN
        MP_TAC (← SPECL [← q r"group_element_order G (z:A)", ← q r"p:num"]
          INDEX_DECOMPOSITION) THEN
        ABBREV_TAC (← q r"k = index p (group_element_order G (z:A))") THEN
-       ASM_SIMP_TAC [a1] THEN
+       ASM_SIMP_TAC [(← D.MESON [PRIME_1] (← q r"prime p ==> ~(p = 1)"))] THEN
        DISCH_THEN (X_CHOOSE_THEN (← q r"n:num") STRIP_ASSUME_TAC) THEN
        MP_TAC (← ISPECL [← q r"G:A group", ← q r"z:A", ← q r"p EXP k", ← q r"n:num"]
              GROUP_ELEMENT_ORDER_COPRIME_DECOMP) THEN
@@ -15023,9 +14938,8 @@ def setupTorsionSubgroups [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BD
                    ~(p divides group_element_order G x)}
               subgroup_of G"
    (← do
-      let a1 ← D.MESON [PRIME_1] (← q r"prime p ==> ~(p = 1)")
       pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC SUBGROUP_OF_TORSION_GEN THEN
-       ASM_SIMP_TAC [DIVIDES_ONE, a1] THEN
+       ASM_SIMP_TAC [DIVIDES_ONE, (← D.MESON [PRIME_1] (← q r"prime p ==> ~(p = 1)"))] THEN
        ASM_MESON_TAC [PRIME_DIVPROD_EQ, DIVIDES_TRANS]))
 
   let SUBGROUP_OF_COPRIME_ORDER ← prove
@@ -15043,8 +14957,7 @@ def setupTorsionSubgroups [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BD
           (!x. x IN group_carrier G /\ ~(x = group_id G)
                ==> group_element_order G x = 0)"
    (← do
-      let a1 ← D.ARITH_RULE (← q r"n <= 1 <=> n = 0 \/ n = 1")
-      pure (REWRITE_TAC [a1] THEN
+      pure (REWRITE_TAC [(← D.ARITH_RULE (← q r"n <= 1 <=> n = 0 \/ n = 1"))] THEN
        SIMP_TAC [GROUP_ELEMENT_ORDER_EQ_1] THEN MESON_TAC []))
 
   let TORSION_FREE_GROUP_ALT ← prove
@@ -15085,11 +14998,10 @@ def setupTorsionSubgroups [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BD
                     {x | x IN group_carrier G /\ P(group_element_order G x)} =
               {x | x IN group_carrier G /\ P(group_element_order G x)}"
    (← do
-      let a1 ← D.SET_RULE (← q
+      pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC (← D.SET_RULE (← q
          r"!g. (!x. x IN s ==> f x IN s /\ g(f x) = x) /\
           (!x. x IN s ==> g x IN s /\ f(g x) = x)
-          ==> IMAGE f s = s")
-      pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC a1 THEN
+          ==> IMAGE f s = s")) THEN
        EXISTS_TAC (← q r"group_conjugation G (group_inv G a:A)") THEN
        ASM_SIMP_TAC [IN_ELIM_THM, GROUP_ELEMENT_ORDER_CONJUGATION, GROUP_CONJUGATION,
                     GROUP_CONJUGATION_LINV, GROUP_CONJUGATION_RINV, GROUP_INV]))
@@ -15868,10 +15780,9 @@ def setupCyclicGroups3 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDeri
           ==> group_zpow G x (n rem &(CARD(group_carrier G))) =
               group_zpow G x n"
    (← do
-    let r1 ← INTEGER_RULE
-      (← q r"!d:int. (x == y) (mod d) /\ e divides d ==> (x == y) (mod e)")
     pure (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [GROUP_ZPOW_EQ] THEN
-     MATCH_MP_TAC r1 THEN
+     MATCH_MP_TAC (← INTEGER_RULE
+      (← q r"!d:int. (x == y) (mod d) /\ e divides d ==> (x == y) (mod e)")) THEN
      EXISTS_TAC (← q r"&(CARD(group_carrier G:A->bool)):int") THEN
      ASM_SIMP_TAC [GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER, INT_CONG_LREM,
                   ← GSYM num_divides] THEN
@@ -15917,23 +15828,10 @@ def setupCyclicGroups3 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDeri
           ==> (CARD {h | h subgroup_of G /\ CARD h = d} =
                if d divides CARD(group_carrier G) then 1 else 0)"
    (← do
-    let r8 ← NUM_RING
-      (← q r"g DIV k2 = g DIV k1
-        ==> g DIV k1 * k1 = g /\ g DIV k2 * k2 = g /\ ~(g = 0)
-            ==> k1 = k2")
-    let r7 ← NUMBER_RULE (← q r"k divides g ==> gcd(g:num,k) = k")
-    let r6 ← TAUT (← q r"(p /\ q) /\ r <=> q /\ p /\ r")
-    let r5 ← NUMBER_RULE (← q r"k divides g ==> gcd(g:num,k) = k")
-    let r4 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
-    let r3 ← TAUT (← q r"(p /\ q) /\ r <=> q /\ p /\ r")
-    let r2 ← SET_RULE
-      (← q r"(?x. P x) /\ (!x. P x ==> !x'. P x' ==> x = x')
-      ==> ?a. {x | P x} = {a}")
-    let r1 ← MESON [HAS_SIZE] (← q r"s HAS_SIZE 1 ==> CARD s = 1")
     pure (REPEAT STRIP_TAC THEN FIRST_X_ASSUM
       (X_CHOOSE_THEN (← q r"a:A") STRIP_ASSUME_TAC o REWRITE_RULE [cyclic_group]) THEN
      COND_CASES_TAC THENL
-      [MATCH_MP_TAC r1,
+      [MATCH_MP_TAC (← MESON [HAS_SIZE] (← q r"s HAS_SIZE 1 ==> CARD s = 1")),
        ASM_SIMP_TAC [CARD_EQ_0, FINITE_RESTRICTED_SUBGROUPS] THEN
        REWRITE_TAC [EXTENSION, IN_ELIM_THM, NOT_IN_EMPTY] THEN
        ASM_MESON_TAC [LAGRANGE_THEOREM]] THEN
@@ -15945,23 +15843,25 @@ def setupCyclicGroups3 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDeri
        REWRITE_TAC [DE_MORGAN_THM, MULT_EQ_0] THEN STRIP_TAC] THEN
      MP_TAC (← ISPECL [(← q r"G:A group"), (← q r"a:A")] CARD_CYCLIC_SUBGROUP_ORDER) THEN
      ASM_REWRITE_TAC [] THEN DISCH_THEN (ASSUME_TAC o SYM) THEN
-     MATCH_MP_TAC r2 THEN
+     MATCH_MP_TAC (← SET_RULE
+      (← q r"(?x. P x) /\ (!x. P x ==> !x'. P x' ==> x = x')
+      ==> ?a. {x | P x} = {a}")) THEN
      MP_TAC (← GEN (← q r"h:A->bool") (← ISPECL [(← q r"G:A group"), (← q r"h:A->bool"), (← q r"a:A")]
            SUBGROUP_OF_FINITE_CYCLIC_GROUP)) THEN
      ASM_SIMP_TAC [] THEN DISCH_THEN (K ALL_TAC) THEN CONJ_TAC THENL
       [REWRITE_TAC [LEFT_AND_EXISTS_THM] THEN
        GEN_REWRITE_TAC I [SWAP_EXISTS_THM] THEN
-       REWRITE_TAC [r3] THEN
+       REWRITE_TAC [(← TAUT (← q r"(p /\ q) /\ r <=> q /\ p /\ r"))] THEN
        EXISTS_TAC (← q r"k:num") THEN REWRITE_TAC [UNWIND_THM2] THEN
        ASM_SIMP_TAC [CARD_CYCLIC_SUBGROUP_ORDER, FINITE_SUBGROUP_GENERATED,
                     GROUP_POW] THEN
-       MATCH_MP_TAC r4 THEN
+       MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN
        CONJ_TAC THENL [ASM_MESON_TAC [divides, MULT_SYM], ALL_TAC] THEN
        ASM_SIMP_TAC [GROUP_ELEMENT_ORDER_POW_GEN] THEN
-       SIMP_TAC [r5] THEN
+       SIMP_TAC [(← NUMBER_RULE (← q r"k divides g ==> gcd(g:num,k) = k"))] THEN
        ASM_MESON_TAC [MULT_SYM, DIV_MULT],
        REWRITE_TAC [LEFT_AND_EXISTS_THM, LEFT_IMP_EXISTS_THM] THEN
-       REWRITE_TAC [r6] THEN
+       REWRITE_TAC [(← TAUT (← q r"(p /\ q) /\ r <=> q /\ p /\ r"))] THEN
        GEN_REWRITE_TAC I [SWAP_FORALL_THM] THEN X_GEN_TAC (← q r"k1:num") THEN
        GEN_REWRITE_TAC BINDER_CONV [IMP_CONJ] THEN
        REWRITE_TAC [FORALL_UNWIND_THM2] THEN STRIP_TAC THEN
@@ -15975,8 +15875,11 @@ def setupCyclicGroups3 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDeri
                     FINITE_SUBGROUP_GENERATED, GROUP_ELEMENT_ORDER_POW_GEN] THEN
        COND_CASES_TAC THENL [ASM_MESON_TAC [DIVIDES_ZERO, MULT_EQ_0], ALL_TAC] THEN
        COND_CASES_TAC THENL [ASM_MESON_TAC [DIVIDES_ZERO, MULT_EQ_0], ALL_TAC] THEN
-       ASM_SIMP_TAC [r7] THEN
-       DISCH_THEN (MP_TAC o MATCH_MP r8) THEN
+       ASM_SIMP_TAC [(← NUMBER_RULE (← q r"k divides g ==> gcd(g:num,k) = k"))] THEN
+       DISCH_THEN (MP_TAC o MATCH_MP (← NUM_RING
+      (← q r"g DIV k2 = g DIV k1
+        ==> g DIV k1 * k1 = g /\ g DIV k2 * k2 = g /\ ~(g = 0)
+            ==> k1 = k2"))) THEN
        ASM_REWRITE_TAC [← GSYM DIVIDES_DIV_MULT] THEN
        ASM_SIMP_TAC [CARD_EQ_0, GROUP_CARRIER_NONEMPTY]]))
 
@@ -15986,20 +15889,17 @@ def setupCyclicGroups3 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDeri
         ==> CARD {h | h subgroup_of G} =
             CARD {d | d divides CARD(group_carrier G)}"
    (← do
-    let r3 ← HAS_SIZE_CONV (← q r"s HAS_SIZE 1")
-    let r2 ← SET_RULE
-      (← q r"(!y. y IN t ==> ?a. {x | x IN s /\ f x = y} = {a}) /\
-      (!y. ~(y IN t) ==> {x | x IN s /\ f x = y} = {})
-      ==> t = IMAGE f s /\ (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)")
-    let r1 ← MESON [CARD_IMAGE_INJ]
+    pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC (← MESON [CARD_IMAGE_INJ]
       (← q r"!f. FINITE s /\
           t = IMAGE f s /\
           (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)
-          ==> CARD s = CARD t")
-    pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC r1 THEN
+          ==> CARD s = CARD t")) THEN
      EXISTS_TAC (← q r"CARD:(A->bool)->num") THEN ASM_SIMP_TAC [FINITE_SUBGROUPS] THEN
-     MATCH_MP_TAC r2 THEN
-     REWRITE_TAC [← GSYM r3, ← GSYM HAS_SIZE_0] THEN
+     MATCH_MP_TAC (← SET_RULE
+      (← q r"(!y. y IN t ==> ?a. {x | x IN s /\ f x = y} = {a}) /\
+      (!y. ~(y IN t) ==> {x | x IN s /\ f x = y} = {})
+      ==> t = IMAGE f s /\ (!x y. x IN s /\ y IN s /\ f x = f y ==> x = y)")) THEN
+     REWRITE_TAC [← GSYM (← HAS_SIZE_CONV (← q r"s HAS_SIZE 1")), ← GSYM HAS_SIZE_0] THEN
      ASM_SIMP_TAC [IN_ELIM_THM, HAS_SIZE, FINITE_RESTRICTED_SUBGROUPS] THEN
      ASM_SIMP_TAC [COUNT_FINITE_CYCLIC_GROUP_SUBGROUPS]))
 
@@ -16040,23 +15940,20 @@ def setupCyclicGroups3 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDeri
           group_zpow G x n = group_zpow G y n
           ==> x = y"
    (← do
-    let r3 ← INTEGER_RULE
-      (← q r"(a:int == b) (mod d) ==> e divides d ==> (a == b) (mod e)")
-    let r2 ← INTEGER_RULE
-      (← q r"coprime(n:int,g) ==> ?m. (n * m == &1) (mod g)")
-    let r1 ← SET_RULE
-      (← q r"(?g. (!x. x IN s ==> g(f x) = x))
-      ==> !x y. x IN s /\ y IN s /\ f x = f y ==> x = y")
     pure (GEN_TAC THEN GEN_TAC THEN
      REWRITE_TAC [RIGHT_FORALL_IMP_THM, IMP_CONJ] THEN REPEAT DISCH_TAC THEN
      REWRITE_TAC [RIGHT_IMP_FORALL_THM, IMP_IMP, ← GSYM CONJ_ASSOC] THEN
-     MATCH_MP_TAC r1 THEN
-     FIRST_ASSUM (X_CHOOSE_TAC (← q r"m:int") o MATCH_MP r2) THEN
+     MATCH_MP_TAC (← SET_RULE
+      (← q r"(?g. (!x. x IN s ==> g(f x) = x))
+      ==> !x y. x IN s /\ y IN s /\ f x = f y ==> x = y")) THEN
+     FIRST_ASSUM (X_CHOOSE_TAC (← q r"m:int") o MATCH_MP (← INTEGER_RULE
+      (← q r"coprime(n:int,g) ==> ?m. (n * m == &1) (mod g)"))) THEN
      EXISTS_TAC (← q r"\x:A. group_zpow G x m") THEN SIMP_TAC [← GSYM GROUP_ZPOW_MUL] THEN
      X_GEN_TAC (← q r"x:A") THEN DISCH_TAC THEN
      TRANS_TAC EQ_TRANS (← q r"group_zpow G (x:A) (&1)") THEN
      ASM_SIMP_TAC [GROUP_ZPOW_EQ] THEN ASM_SIMP_TAC [GROUP_ZPOW_1] THEN
-     FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP r3) THEN
+     FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← INTEGER_RULE
+      (← q r"(a:int == b) (mod d) ==> e divides d ==> (a == b) (mod e)"))) THEN
      ASM_SIMP_TAC [← GSYM num_divides, GROUP_ELEMENT_ORDER_DIVIDES_GROUP_ORDER]))
 
   let GROUP_POW_CANCEL ← prove
@@ -16622,11 +16519,6 @@ def setupFinitelyGenerated [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (B
           finitely_generated_group(prod_group G H) <=>
           finitely_generated_group G /\ finitely_generated_group H"
    (← do
-    let r1 ← SET_RULE
-      (← q r"group_carrier(subgroup_generated G s) SUBSET
-      group_carrier(subgroup_generated G (s UNION t)) /\
-      x IN group_carrier(subgroup_generated G s)
-      ==> x IN group_carrier(subgroup_generated G (s UNION t))")
     pure (REPEAT GEN_TAC THEN EQ_TAC THENL
      [DISCH_THEN (fun th => CONJ_TAC THEN MP_TAC th) THEN
       MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ]
@@ -16651,7 +16543,11 @@ def setupFinitelyGenerated [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (B
        MATCH_MP_TAC IN_SUBGROUP_MUL THEN
        REWRITE_TAC [SUBGROUP_SUBGROUP_GENERATED]] THEN
      GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [UNION_COMM] THEN
-     CONJ_TAC THEN MATCH_MP_TAC r1 THEN
+     CONJ_TAC THEN MATCH_MP_TAC (← SET_RULE
+      (← q r"group_carrier(subgroup_generated G s) SUBSET
+      group_carrier(subgroup_generated G (s UNION t)) /\
+      x IN group_carrier(subgroup_generated G s)
+      ==> x IN group_carrier(subgroup_generated G (s UNION t))")) THEN
      SIMP_TAC [SUBGROUP_GENERATED_MONO, SUBSET_UNION] THENL
       [MP_TAC (← ISPECL
         [(← q r"G:A group"), (← q r"prod_group (G:A group) (H:B group)"),
@@ -16671,37 +16567,31 @@ def setupFinitelyGenerated [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (B
           FINITE {i | i IN k /\ ~trivial_group(G i)} /\
           !i. i IN k ==> finitely_generated_group(G i)"
    (← do
-    let r6 ← SET_RULE
-      (← q r"i IN s /\ ~P i ==> Q i <=> i IN {i | i IN s /\ ~P i} ==> Q i")
-    let r5 ← MESON [TRIVIAL_IMP_FINITELY_GENERATED_GROUP]
-      (← q r"(!i. P i ==> finitely_generated_group(G i)) <=>
-        (!i. P i /\ ~trivial_group(G i) ==> finitely_generated_group(G i))")
-    let r4 ← TAUT (← q r"~p ==> (p' <=> p) ==> ~(p' /\ q)")
-    let r3 ← TAUT (← q r"(~p ==> F) ==> p")
-    let r2 ← SET_RULE
-      (← q r"!i. i IN {i | i IN k /\ ~trivial_group (G i)}
-            ==> ~trivial_group((G:K->A group) i)")
-    let r1 ← TAUT
-      (← q r"(p ==> q) /\ (q ==> (p <=> r)) ==> (p <=> q /\ r)")
     pure (REPEAT GEN_TAC THEN
      wPart (fun t => do rand (← lhand t)) rand ISOMORPHIC_PRODUCT_GROUP_SUPPORT THEN
      DISCH_THEN (SUBST1_TAC o SYM o
        MATCH_MP ISOMORPHIC_GROUP_FINITE_GENERATION) THEN
-     MATCH_MP_TAC r1 THEN
+     MATCH_MP_TAC (← TAUT
+      (← q r"(p ==> q) /\ (q ==> (p <=> r)) ==> (p <=> q /\ r)")) THEN
      CONJ_TAC THENL
-      [MP_TAC r2 THEN
+      [MP_TAC (← SET_RULE
+      (← q r"!i. i IN {i | i IN k /\ ~trivial_group (G i)}
+            ==> ~trivial_group((G:K->A group) i)")) THEN
        SPEC_TAC ((← q r"{i | i IN k /\ ~trivial_group ((G:K->A group) i)}"),
                 (← q r"k:K->bool")) THEN
        REPEAT STRIP_TAC THEN
-       MATCH_MP_TAC r3 THEN DISCH_TAC THEN
+       MATCH_MP_TAC (← TAUT (← q r"(~p ==> F) ==> p")) THEN DISCH_TAC THEN
        FIRST_ASSUM (MP_TAC o MATCH_MP FINITELY_GENERATED_IMP_COUNTABLE_GROUP) THEN
        REWRITE_TAC [PRODUCT_GROUP, COUNTABLE_CARTESIAN_PRODUCT] THEN
        REWRITE_TAC [CARTESIAN_PRODUCT_EQ_EMPTY, GROUP_CARRIER_NONEMPTY] THEN
-       FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP r4) THEN
+       FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← TAUT (← q r"~p ==> (p' <=> p) ==> ~(p' /\ q)"))) THEN
        AP_TERM_TAC THEN REWRITE_TAC [← GSYM TRIVIAL_GROUP_ALT] THEN ASM SET_TAC [],
        DISCH_TAC THEN
-       ONCE_REWRITE_TAC [r5] THEN
-       ONCE_REWRITE_TAC [r6] THEN
+       ONCE_REWRITE_TAC [(← MESON [TRIVIAL_IMP_FINITELY_GENERATED_GROUP]
+      (← q r"(!i. P i ==> finitely_generated_group(G i)) <=>
+        (!i. P i /\ ~trivial_group(G i) ==> finitely_generated_group(G i))"))] THEN
+       ONCE_REWRITE_TAC [(← SET_RULE
+      (← q r"i IN s /\ ~P i ==> Q i <=> i IN {i | i IN s /\ ~P i} ==> Q i"))] THEN
        POP_ASSUM MP_TAC THEN
        SPEC_TAC ((← q r"{i | i IN k /\ ~trivial_group ((G:K->A group) i)}"),
                 (← q r"k:K->bool")) THEN
@@ -16719,14 +16609,8 @@ def setupFinitelyGenerated [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (B
           FINITE {i | i IN k /\ ~trivial_group(G i)} /\
           !i. i IN k ==> finitely_generated_group(G i)"
    (← do
-    let r3 ← SET_RULE
-      (← q r"i IN s /\ ~P i ==> Q i <=> i IN {i | i IN s /\ ~P i} ==> Q i")
-    let r2 ← MESON [TRIVIAL_IMP_FINITELY_GENERATED_GROUP]
-      (← q r"(!i. P i ==> finitely_generated_group(G i)) <=>
-        (!i. P i /\ ~trivial_group(G i) ==> finitely_generated_group(G i))")
-    let r1 ← TAUT
-      (← q r"(p ==> q) /\ (q ==> (p <=> r)) ==> (p <=> q /\ r)")
-    pure (REPEAT GEN_TAC THEN MATCH_MP_TAC r1 THEN
+    pure (REPEAT GEN_TAC THEN MATCH_MP_TAC (← TAUT
+      (← q r"(p ==> q) /\ (q ==> (p <=> r)) ==> (p <=> q /\ r)")) THEN
      CONJ_TAC THENL
       [REWRITE_TAC [FINITELY_GENERATED_GROUP] THEN
        REWRITE_TAC [SUM_GROUP_CLAUSES, IN_ELIM_THM, IN_CARTESIAN_PRODUCT,
@@ -16760,8 +16644,11 @@ def setupFinitelyGenerated [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (B
      wPart (fun t => do rand (← lhand t)) rand ISOMORPHIC_SUM_GROUP_SUPPORT THEN
      DISCH_THEN (SUBST1_TAC o SYM o
        MATCH_MP ISOMORPHIC_GROUP_FINITE_GENERATION) THEN
-     ONCE_REWRITE_TAC [r2] THEN
-     ONCE_REWRITE_TAC [r3] THEN
+     ONCE_REWRITE_TAC [(← MESON [TRIVIAL_IMP_FINITELY_GENERATED_GROUP]
+      (← q r"(!i. P i ==> finitely_generated_group(G i)) <=>
+        (!i. P i /\ ~trivial_group(G i) ==> finitely_generated_group(G i))"))] THEN
+     ONCE_REWRITE_TAC [(← SET_RULE
+      (← q r"i IN s /\ ~P i ==> Q i <=> i IN {i | i IN s /\ ~P i} ==> Q i"))] THEN
      POP_ASSUM MP_TAC THEN
      SPEC_TAC ((← q r"{i | i IN k /\ ~trivial_group ((G:K->A group) i)}"),
               (← q r"k:K->bool")) THEN
@@ -17999,12 +17886,11 @@ def setupIntegerModGroup [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDe
   let TRIVIAL_INTEGER_MOD_GROUP ← prove
    r"!n. trivial_group(integer_mod_group n) <=> n = 1"
    (← do
-    let a1 ← SET_RULE (← q
-     r"!a b. (a IN s /\ b IN s /\ ~(a = b)) ==> ~(?c. s SUBSET {c})")
     pure (GEN_TAC THEN ASM_CASES_TAC (← q r"n = 1") THEN ASM_REWRITE_TAC [] THENL
      [SIMP_TAC [TRIVIAL_GROUP_SUBSET, INTEGER_MOD_GROUP, ARITH] THEN
       REWRITE_TAC [SUBSET, IN_ELIM_THM, IN_SING] THEN INT_ARITH_TAC,
-      REWRITE_TAC [TRIVIAL_GROUP_ALT] THEN MATCH_MP_TAC a1 THEN
+      REWRITE_TAC [TRIVIAL_GROUP_ALT] THEN MATCH_MP_TAC (← SET_RULE (← q
+     r"!a b. (a IN s /\ b IN s /\ ~(a = b)) ==> ~(?c. s SUBSET {c})")) THEN
       MAP_EVERY EXISTS_TAC [(← q r"&0:int"), (← q r"&1:int")] THEN
       ASM_REWRITE_TAC [INTEGER_MOD_GROUP_0, INTEGER_MOD_GROUP_1] THEN
       CONV_TAC INT_REDUCE_CONV]))
@@ -18735,10 +18621,9 @@ def setupPgroup [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BProdGroup :
   let PGROUP_EMPTY ← prove
    r"!G:A group. pgroup {} G <=> trivial_group G"
    (← do
-    let a1 ← D.MESON [PRIME_FACTOR, DIVIDES_ONE, PRIME_1] (← q
+    pure (REWRITE_TAC [pgroup, NOT_IN_EMPTY, (← D.MESON [PRIME_FACTOR, DIVIDES_ONE, PRIME_1] (← q
      r"(!p x. ~(prime p /\ P x /\ p divides f x)) <=>
-      (!x. P x ==> f x = 1)")
-    pure (REWRITE_TAC [pgroup, NOT_IN_EMPTY, a1] THEN
+      (!x. P x ==> f x = 1)"))] THEN
      SIMP_TAC [GROUP_ELEMENT_ORDER_EQ_1, TRIVIAL_GROUP_SUBSET] THEN SET_TAC []))
 
   let PGROUP_MONO ← prove
@@ -19826,14 +19711,6 @@ def setupSylow2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BGroupRule :
         ==> ?h. h normal_subgroup_of G /\ (CARD h = 3 \/ CARD h = 4)"
    (← do
     -- OCaml evaluates the rules nearer the end first.
-    let a8 ← ARITH_RULE (← q r"n <= 3 <=> n = 0 \/ n = 1 \/ n = 2 \/ n = 3")
-    let s7 ← SET_RULE
-     (← q r"!a:A. a IN h /\ a IN k /\ h DELETE a = k DELETE a ==> h = k")
-    let s5 ← SET_RULE (← q r"h INTER k:A->bool = h /\ h INTER k = k ==> h = k")
-    let t4 ← TAUT (← q r"p ==> ~p ==> q")
-    let a3 ← ARITH_RULE (← q r"n <= 3 <=> n = 0 \/ n = 1 \/ n = 2 \/ n = 3")
-    let t2 ← TAUT (← q r"p /\ (q ==> r) ==> (p ==> q) ==> r")
-    let a1 ← ARITH_RULE (← q r"n <= 4 <=> n = 0 \/ n = 1 \/ n = 2 \/ n = 3 \/ n = 4")
     pure
       (REPEAT STRIP_TAC THEN
        ASSUME_TAC PRIME_3 THEN
@@ -19855,7 +19732,7 @@ def setupSylow2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BGroupRule :
          CONV_TAC (ONCE_DEPTH_CONV DIVIDES_CONV) THEN CONV_TAC NUM_REDUCE_CONV THEN
          SPEC_TAC ((← q r"CARD {h:A->bool | h subgroup_of G /\ CARD h = 3}"), (← q r"n:num")) THEN
          GEN_TAC THEN DISCH_THEN (MP_TAC o MATCH_MP DIVIDES_LE) THEN
-         REWRITE_TAC [ARITH_EQ, a1] THEN
+         REWRITE_TAC [ARITH_EQ, (← ARITH_RULE (← q r"n <= 4 <=> n = 0 \/ n = 1 \/ n = 2 \/ n = 3 \/ n = 4"))] THEN
          STRIP_TAC THEN ASM_REWRITE_TAC [CONG] THEN CONV_TAC NUM_REDUCE_CONV,
          ALL_TAC] THEN
        DISCH_THEN DISJ_CASES_TAC THENL
@@ -19864,7 +19741,7 @@ def setupSylow2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BGroupRule :
          ALL_TAC] THEN
        MP_TAC (← ISPECL [← q r"G:A group", ← q r"2", ← q r"2"] SYLOW_SUBGROUP_COUNT_1_NORMAL) THEN
        ASM_REWRITE_TAC [PRIME_2] THEN CONV_TAC NUM_REDUCE_CONV THEN
-       MATCH_MP_TAC t2 THEN
+       MATCH_MP_TAC (← TAUT (← q r"p /\ (q ==> r) ==> (p ==> q) ==> r")) THEN
        CONJ_TAC THENL [ALL_TAC, MESON_TAC []] THEN
        ABBREV_TAC (← q r"t = {h:A->bool | h subgroup_of G /\ CARD h = 3}") THEN
        ABBREV_TAC (← q r"u = UNIONS (IMAGE (\h:A->bool. h DELETE group_id G) t)") THEN
@@ -19898,14 +19775,14 @@ def setupSylow2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BGroupRule :
            SPEC_TAC ((← q r"CARD(h INTER k:A->bool)"), (← q r"n:num")) THEN GEN_TAC THEN
            DISCH_THEN (fun th => tactic_of do
              pure (MP_TAC th THEN MP_TAC (← MATCH_MP DIVIDES_LE th))) THEN
-           REWRITE_TAC [ARITH_EQ, a3] THEN
+           REWRITE_TAC [ARITH_EQ, (← ARITH_RULE (← q r"n <= 3 <=> n = 0 \/ n = 1 \/ n = 2 \/ n = 3"))] THEN
            STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
            CONV_TAC (ONCE_DEPTH_CONV DIVIDES_CONV) THEN REWRITE_TAC [ARITH_EQ],
            ALL_TAC] THEN
          DISCH_THEN (DISJ_CASES_THEN ASSUME_TAC) THEN ASM_REWRITE_TAC [] THEN
          UNDISCH_TAC (← q r"~(h:A->bool = k)") THEN
-         MATCH_MP_TAC t4 THEN
-         MATCH_MP_TAC s5 THEN
+         MATCH_MP_TAC (← TAUT (← q r"p ==> ~p ==> q")) THEN
+         MATCH_MP_TAC (← SET_RULE (← q r"h INTER k:A->bool = h /\ h INTER k = k ==> h = k")) THEN
          CONJ_TAC THEN MATCH_MP_TAC CARD_SUBSET_EQ THEN
          ASM_SIMP_TAC [INTER_SUBSET],
          ALL_TAC] THEN
@@ -19939,7 +19816,8 @@ def setupSylow2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BGroupRule :
           [MAP_EVERY X_GEN_TAC [← q r"h:A->bool", ← q r"k:A->bool"] THEN
            EXPAND_TAC "t" THEN REWRITE_TAC [IN_ELIM_THM] THEN STRIP_TAC THEN
            RULE_ASSUM_TAC BETA_RULE THEN
-           MATCH_MP_TAC s7 THEN
+           MATCH_MP_TAC (← SET_RULE
+     (← q r"!a:A. a IN h /\ a IN k /\ h DELETE a = k DELETE a ==> h = k")) THEN
            EXISTS_TAC (← q r"group_id G:A") THEN ASM_SIMP_TAC [IN_SUBGROUP_ID],
            DISCH_THEN SUBST1_TAC] THEN
          TRANS_TAC EQ_TRANS (← q r"nsum (t:(A->bool)->bool) (\h. 2)") THEN CONJ_TAC THENL
@@ -19964,7 +19842,7 @@ def setupSylow2 [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BGroupRule :
            DISCH_THEN (fun th => tactic_of do
              pure (MP_TAC th THEN
                    MP_TAC (← MATCH_MP DIVIDES_LE (← CONJUNCT1 th)))) THEN
-           REWRITE_TAC [ARITH_EQ, a8] THEN
+           REWRITE_TAC [ARITH_EQ, (← ARITH_RULE (← q r"n <= 3 <=> n = 0 \/ n = 1 \/ n = 2 \/ n = 3"))] THEN
            STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
            CONV_TAC (ONCE_DEPTH_CONV DIVIDES_CONV) THEN REWRITE_TAC [],
            ALL_TAC] THEN
@@ -20617,8 +20495,8 @@ def setupGroupMulMorphism [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BA
               ==> group_mul G x y = group_mul G y x"
    (REPEAT GEN_TAC THEN EQ_TAC THENL
      [DISCH_TAC THEN MAP_EVERY X_GEN_TAC [(← q r"x:A"), (← q r"y:A")] THEN STRIP_TAC THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
-        pure (MP_TAC (← SPEC (← q r"(x:A,y:A)") (← MATCH_MP GROUP_HOMOMORPHISM_INV th)))) THEN
+      FIRST_X_ASSUM ((fun (ocq4 : _) => fun th => tactic_of do
+        pure (MP_TAC (← SPEC ocq4 (← MATCH_MP GROUP_HOMOMORPHISM_INV th)))) (← q r"(x:A,y:A)")) THEN
       ASM_SIMP_TAC [PROD_GROUP, IN_CROSS, ← CONJUNCT2 SUBGROUP_GENERATED] THEN
       ASM_SIMP_TAC [SUBGROUP_GENERATED_INC_GEN] THEN GROUP_TAC,
       ALL_TAC] THEN
@@ -23106,8 +22984,6 @@ def setupFinGenAbelianStructure [HolBase] (D : GroupTheoryDeps) (BSumGroup : Sum
       (!x. x IN group_carrier G ==> group_element_order G x <= 1) <=>
       ?n. G isomorphic_group sum_group (1..n) (\i. integer_group)"
    (← do
-    let a2 ← TAUT (← q r"p /\ q <=> ~(p ==> ~q)")
-    let a1 ← TAUT (← q r"(~p ==> F) ==> p")
     pure (GEN_TAC THEN EQ_TAC THENL
      [REWRITE_TAC [CONJ_ASSOC,
        FINITELY_GENERATED_ABELIAN_GROUP_AS_SUM_OF_INTEGER_MOD_GROUPS] THEN
@@ -23136,7 +23012,7 @@ def setupFinGenAbelianStructure [HolBase] (D : GroupTheoryDeps) (BSumGroup : Sum
       REWRITE_TAC [← GSYM INTEGER_MOD_GROUP_TRIVIAL] THEN
       REWRITE_TAC [ISOMORPHIC_INTEGER_MOD_GROUPS] THEN
       X_GEN_TAC (← q r"i:num") THEN STRIP_TAC THEN
-      MATCH_MP_TAC a1 THEN DISCH_TAC THEN
+      MATCH_MP_TAC (← TAUT (← q r"(~p ==> F) ==> p")) THEN DISCH_TAC THEN
       FIRST_X_ASSUM (MP_TAC o SPEC
        (← q r"RESTRICTION (1..n)
           (\j. if j = i then &1 else group_id (integer_mod_group(d j)))") o
@@ -23145,7 +23021,7 @@ def setupFinGenAbelianStructure [HolBase] (D : GroupTheoryDeps) (BSumGroup : Sum
       REWRITE_TAC [GROUP_SUM_INJECTION] THEN
       ASM_REWRITE_TAC [INTEGER_MOD_GROUP_1, SUM_GROUP_CLAUSES] THEN
       REWRITE_TAC [RESTRICTION_EXTENSION, INTEGER_MOD_GROUP] THEN
-      ONCE_REWRITE_TAC [a2] THEN
+      ONCE_REWRITE_TAC [(← TAUT (← q r"p /\ q <=> ~(p ==> ~q)"))] THEN
       SIMP_TAC [RESTRICTION] THEN ONCE_REWRITE_TAC [COND_RAND] THEN
       ONCE_REWRITE_TAC [COND_RATOR] THEN
       REWRITE_TAC [GROUP_ELEMENT_ORDER_INTEGER_MOD_GROUP] THEN
@@ -24902,8 +24778,6 @@ def setupSolvableQuotient [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BD
         ==> (!i. i <= n ==> c i subgroup_of G) /\
             (!i j. i <= j /\ j <= n ==> c j SUBSET c i)"
    (← do
-    let a2 ← ARITH_RULE (← q r"SUC j <= n ==> j < n /\ j <= n")
-    let a1 ← ARITH_RULE (← q r"SUC i <= n ==> i < n /\ i <= n")
     pure
       (REPEAT GEN_TAC THEN STRIP_TAC THEN
        SUBGOAL_THEN
@@ -24917,13 +24791,13 @@ def setupSolvableQuotient [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BD
        SUBGOAL_THEN (← q r"!i. i <= n ==> (c:num->A->bool) i subgroup_of G")
        ASSUME_TAC THENL
         [INDUCT_TAC THEN ASM_REWRITE_TAC [] THEN
-         ASM_MESON_TAC [a1],
+         ASM_MESON_TAC [(← ARITH_RULE (← q r"SUC i <= n ==> i < n /\ i <= n"))],
          ASM_REWRITE_TAC []] THEN
        GEN_TAC THEN INDUCT_TAC THEN REWRITE_TAC [LE] THENL
         [MESON_TAC [SUBSET_REFL], ALL_TAC] THEN
        STRIP_TAC THEN ASM_REWRITE_TAC [SUBSET_REFL] THEN
        MATCH_MP_TAC SUBSET_TRANS THEN EXISTS_TAC (← q r"(c:num->A->bool) j") THEN
-       ASM_MESON_TAC [a2]))
+       ASM_MESON_TAC [(← ARITH_RULE (← q r"SUC j <= n ==> j < n /\ j <= n"))]))
 
   /- A nontrivial solvable group has a nontrivial abelian quotient, since   -/
   /- the first proper term of a chain is normal in the whole group. Hence a -/
@@ -24936,9 +24810,6 @@ def setupSolvableQuotient [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BD
         ==> ?n. n normal_subgroup_of G /\ ~(n = group_carrier G) /\
                 abelian_group(quotient_group G n)"
    (← do
-    let a3 ← ARITH_RULE (← q r"SUC j < k ==> j < k")
-    let a2 ← ARITH_RULE (← q r"j < SUC j")
-    let a1 ← ARITH_RULE (← q r"~(k = 0) ==> k - 1 < k /\ SUC(k - 1) = k")
     pure
       (GEN_TAC THEN REWRITE_TAC [solvable_group, trivial_group] THEN
        DISCH_THEN (CONJUNCTS_THEN2
@@ -24950,7 +24821,7 @@ def setupSolvableQuotient [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BD
        MP_TAC THENL
         [ASM_CASES_TAC (← q r"k = 0") THENL [ASM_MESON_TAC [], ALL_TAC] THEN
          EXISTS_TAC (← q r"k - 1") THEN
-         ASM_SIMP_TAC [a1],
+         ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(k = 0) ==> k - 1 < k /\ SUC(k - 1) = k"))],
          GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN
          DISCH_THEN (X_CHOOSE_THEN (← q r"i:num")
           (CONJUNCTS_THEN2 STRIP_ASSUME_TAC (LABEL_TAC "min")))] THEN
@@ -24959,7 +24830,7 @@ def setupSolvableQuotient [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BD
          DISCH_THEN (DISJ_CASES_THEN2 SUBST_ALL_TAC
           (X_CHOOSE_THEN (← q r"j:num") SUBST_ALL_TAC)) THEN
          ASM_REWRITE_TAC [] THEN REMOVE_THEN "min" (MP_TAC o SPEC (← q r"j:num")) THEN
-         ASM_SIMP_TAC [a2, a3],
+         ASM_SIMP_TAC [(← ARITH_RULE (← q r"j < SUC j")), (← ARITH_RULE (← q r"SUC j < k ==> j < k"))],
          EXISTS_TAC (← q r"(c:num->A->bool)(SUC i)") THEN
          REMOVE_THEN "c" (MP_TAC o SPEC (← q r"i:num")) THEN
          ASM_REWRITE_TAC [SUBGROUP_GENERATED_GROUP_CARRIER] THEN SIMP_TAC []]))
@@ -25269,10 +25140,10 @@ def setupSolvableQuotient [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BD
           ALL_TAC] THEN
         X_GEN_TAC (← q r"g:A") THEN DISCH_TAC THEN REWRITE_TAC [IN_IMAGE] THEN
         -- the check's quotation is parsed on each call, as in OCaml
-        FIRST_X_ASSUM (fun th => tactic_of do
+        FIRST_X_ASSUM ((fun (ocq3 : _) => fun th => tactic_of do
           let c ← q r"group_carrier G SUBSET group_setmul G n (k:A->bool)"
           if !((concl th) == c) then throw "check"
-          pure (MP_TAC (← SPEC (← q r"g:A") (← REWRITE_RULE [SUBSET] th)))) THEN
+          pure (MP_TAC (← SPEC ocq3 (← REWRITE_RULE [SUBSET] th)))) (← q r"g:A")) THEN
         ASM_REWRITE_TAC [IN_GROUP_SETMUL] THEN
         DISCH_THEN (X_CHOOSE_THEN (← q r"u:A") (X_CHOOSE_THEN (← q r"w:A")
           STRIP_ASSUME_TAC)) THEN
@@ -25713,8 +25584,8 @@ def setupExactSeq [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BDerived :
     MP_TAC (← ASSUME (← q r"group_isomorphism (A,C) (h:A->C)")) THEN
     REWRITE_TAC [group_isomorphism, LEFT_IMP_EXISTS_THM] THEN
     X_GEN_TAC (← q r"h':C->A") THEN REWRITE_TAC [group_isomorphisms] THEN STRIP_TAC THEN
-    REWRITE_TAC [EXTENSION] THEN DISCH_THEN (fun th => tactic_of do
-      pure (MP_TAC (← EQ_IMP_RULE (← SPEC (← q r"group_div X x ((i:A->X)((h':C->A)(f x)))") th)).2)) THEN
+    REWRITE_TAC [EXTENSION] THEN DISCH_THEN ((fun (ocq2 : _) => fun th => tactic_of do
+      pure (MP_TAC (← EQ_IMP_RULE (← SPEC ocq2 th)).2)) (← q r"group_div X x ((i:A->X)((h':C->A)(f x)))")) THEN
     REWRITE_TAC [group_kernel, group_image, IN_ELIM_THM] THEN
     RULE_ASSUM_TAC (REWRITE_RULE
      [group_homomorphism, GROUP_ISOMORPHISM, SUBSET, FORALL_IN_IMAGE]) THEN
@@ -26466,7 +26337,6 @@ def setupShortFiveLemma [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BPow
             (!n. group_sum G t0 (\x. group_zpow G x (n x)) = group_id G
                  ==> !x:A. x IN t0 ==> group_zpow G x (n x) = group_id G)"
    (← do
-    let i1 ← INTEGER_RULE (← q r"!x y:int. (x == y) (mod &0) <=> x = y")
     pure
       (REPEAT STRIP_TAC THEN
        FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE I [FINITELY_GENERATED_GROUP]) THEN
@@ -26517,13 +26387,13 @@ def setupShortFiveLemma [HolBase] (D : GroupTheoryDeps) (BBasics : Basics) (BPow
          MP_TAC (← ISPECL [← q r"G:A group", ← q r"x:A",
                         ← q r"(E:A->A->int) x (group_mul G y1 y2)",
                         ← q r"(E:A->A->int) x y1 + E x y2"] GROUP_ZPOW_EQ) THEN
-         ASM_REWRITE_TAC [i1] THEN
+         ASM_REWRITE_TAC [(← INTEGER_RULE (← q r"!x y:int. (x == y) (mod &0) <=> x = y"))] THEN
          DISCH_THEN (SUBST1_TAC o SYM) THEN
          ASM_SIMP_TAC [GROUP_ZPOW_ADD] THEN
          USE_THEN "mul" (MP_TAC o SPECL [← q r"y1:A", ← q r"y2:A"]) THEN
          ANTS_TAC THENL [ASM_REWRITE_TAC [], ALL_TAC] THEN
-         DISCH_THEN (fun th => tactic_of do
-           pure (MP_TAC (← AP_THM th (← q r"x:A")))) THEN
+         DISCH_THEN ((fun (ocq1 : _) => fun th => tactic_of do
+           pure (MP_TAC (← AP_THM th ocq1))) (← q r"x:A")) THEN
          REWRITE_TAC [RESTRICTION, ← ASSUME (← q r"(x:A) IN t0")] THEN
          USE_THEN "E" (fun th => tactic_of do
            pure (SIMP_TAC [th, GROUP_MUL, ← ASSUME (← q r"(x:A) IN t0"),

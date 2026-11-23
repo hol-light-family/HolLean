@@ -13,10 +13,11 @@
   exports every name under its HOL Light name.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, TAUT, SET_RULE) they are bound first, in
-  OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolMath
@@ -499,10 +500,9 @@ def setupOrders [HolBase] (D : WoDeps) (BDefs : Defs) :
        (!x y. l x y /\ l y x ==> x = y) /\
        !s. s SUBSET fld l /\ ~(s = {}) ==> ?x. x IN s /\ !y. y IN s ==> l x y"
    (← do
-    let t ← TAUT (← q r"(r ==> p) /\ r /\ q ==> p /\ q /\ r")
     pure (GEN_TAC THEN REWRITE_TAC [woset] THEN
       EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
-      MATCH_MP_TAC t THEN
+      MATCH_MP_TAC (← TAUT (← q r"(r ==> p) /\ r /\ q ==> p /\ q /\ r")) THEN
       REPEAT CONJ_TAC THENL
        [MESON_TAC [],
         MAP_EVERY X_GEN_TAC [← q "x:A", ← q "y:A"] THEN STRIP_TAC THEN
@@ -517,12 +517,10 @@ def setupOrders [HolBase] (D : WoDeps) (BDefs : Defs) :
         (!x y. x IN fld l /\ y IN fld l ==> l x y \/ l y x) /\
         WF(properly l)"
    (← do
-    let t2 ← TAUT (← q r"(p ==> q) /\ (q ==> (p <=> r)) ==> (q /\ r <=> p)")
-    let t1 ← TAUT (← q r"(p ==> q) /\ (q ==> (p <=> r)) ==> (p <=> q /\ r)")
     pure (GEN_TAC THEN
-      MATCH_MP_TAC t1 THEN
+      MATCH_MP_TAC (← TAUT (← q r"(p ==> q) /\ (q ==> (p <=> r)) ==> (p <=> q /\ r)")) THEN
       CONJ_TAC THENL [SIMP_TAC [woset], DISCH_TAC THEN REWRITE_TAC [WOSET]] THEN
-      MATCH_MP_TAC t2 THEN
+      MATCH_MP_TAC (← TAUT (← q r"(p ==> q) /\ (q ==> (p <=> r)) ==> (q /\ r <=> p)")) THEN
       REWRITE_TAC [properly] THEN CONJ_TAC THENL
        [DISCH_THEN (MP_TAC o MATCH_MP WF_ANTISYM) THEN MESON_TAC [], DISCH_TAC] THEN
       REWRITE_TAC [WF] THEN EQ_TAC THEN DISCH_TAC THENL
@@ -573,22 +571,12 @@ def setupOrders [HolBase] (D : WoDeps) (BDefs : Defs) :
         WF(strictly l) /\
         !s. antichain l s ==> FINITE s)"
    (← do
-    -- Built when OCaml builds the tactic, last first.
-    let rG ← TAUT (← q r"~(p /\ q) <=> p ==> ~q")
-    let rF ← MESON [] (← q r"(?x. P x /\ Q x /\ R x) <=> ~(!x. P x /\ Q x ==> ~R x)")
-    let rE ← ARITH_RULE (← q r"n < SUC n")
-    let rD ← TAUT (← q r"(p ==> q) /\ (p ==> (r <=> s)) ==> p /\ r ==> q /\ s")
-    let rC ← MESON [] (← q r"!p. (!m. P m ==> Q(m - (p + 1))) ==> (?m. P m) ==> (?m. Q m)")
-    let rB ← ARITH_RULE (← q r"~(n + p + 1 <= p)")
-    let rA ← TAUT (← q r"(p ==> q) /\ (q ==> r) /\ (r ==> s) /\ (s ==> p)
-      ==> (p <=> q) /\ (p <=> r) /\ (p <=> s)")
-    let wfRec ← MATCH_MP WF_REC_EXISTS WF_num
-    let infEnum ← REWRITE_RULE [INFINITE] INFINITE_ENUMERATE_SUBSET
     pure (REWRITE_TAC [AND_FORALL_THM] THEN X_GEN_TAC (← q r"l:A->A->bool") THEN
       REWRITE_TAC [wqoset, qoset, antichain, FORALL_AND_THM] THEN
       ASM_CASES_TAC (← q r"!x:A. x IN fld l ==> l x x") THEN ASM_REWRITE_TAC [] THEN
       ASM_CASES_TAC (← q r"!x y z:A. l x y /\ l y z ==> l x z") THEN
-      ASM_REWRITE_TAC [] THEN MATCH_MP_TAC rA THEN
+      ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← TAUT (← q r"(p ==> q) /\ (q ==> r) /\ (r ==> s) /\ (s ==> p)
+      ==> (p <=> q) /\ (p <=> r) /\ (p <=> s)")) THEN
       REPEAT CONJ_TAC THENL
        [DISCH_TAC THEN X_GEN_TAC (← q r"x:num->A") THEN DISCH_TAC THEN
         FIRST_X_ASSUM (MP_TAC o SPEC (← q r"IMAGE (x:num->A) (:num)")) THEN ANTS_TAC THENL
@@ -613,9 +601,9 @@ def setupOrders [HolBase] (D : WoDeps) (BDefs : Defs) :
         [MATCH_MP_TAC DEPENDENT_CHOICE THEN REWRITE_TAC [] THEN
          X_GEN_TAC (← q "n:num") THEN FIRST_X_ASSUM (MP_TAC o
            GEN_REWRITE_RULE id [← GSYM CONTRAPOS_THM] o SPEC (← q "n + p + 1")) THEN
-         REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, rB] THEN
-         MATCH_MP_TAC rC THEN
-         EXISTS_TAC (← q "p:num") THEN X_GEN_TAC (← q "q:num") THEN MATCH_MP_TAC rD THEN
+         REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, (← ARITH_RULE (← q r"~(n + p + 1 <= p)"))] THEN
+         MATCH_MP_TAC (← MESON [] (← q r"!p. (!m. P m ==> Q(m - (p + 1))) ==> (?m. P m) ==> (?m. Q m)")) THEN
+         EXISTS_TAC (← q "p:num") THEN X_GEN_TAC (← q "q:num") THEN MATCH_MP_TAC (← TAUT (← q r"(p ==> q) /\ (p ==> (r <=> s)) ==> p /\ r ==> q /\ s")) THEN
          REPEAT STRIP_TAC THENL [ALL_TAC, AP_TERM_TAC THEN AP_TERM_TAC] THEN
          ASM_ARITH_TAC,
          REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q r"t:num->num") THEN
@@ -634,9 +622,9 @@ def setupOrders [HolBase] (D : WoDeps) (BDefs : Defs) :
             [MATCH_MP_TAC TRANSITIVE_STEPWISE_LT THEN ASM_MESON_TAC [],
              FIRST_X_ASSUM (MP_TAC o SPEC (← q r"x:num->A")) THEN
              REWRITE_TAC [fld, IN_ELIM_THM, NOT_IMP] THEN
-             ASM_MESON_TAC [rE, LT_IMP_LE]],
+             ASM_MESON_TAC [(← ARITH_RULE (← q r"n < SUC n")), LT_IMP_LE]],
            X_GEN_TAC (← q r"s:A->bool") THEN GEN_REWRITE_TAC id [← GSYM CONTRAPOS_THM] THEN
-           REWRITE_TAC [infEnum] THEN
+           REWRITE_TAC [(← REWRITE_RULE [INFINITE] INFINITE_ENUMERATE_SUBSET)] THEN
            REWRITE_TAC [INJECTIVE_ALT, LEFT_IMP_EXISTS_THM] THEN
            X_GEN_TAC (← q r"x:num->A") THEN REPEAT STRIP_TAC THEN
            FIRST_X_ASSUM (MP_TAC o SPEC (← q r"x:num->A")) THEN
@@ -649,7 +637,7 @@ def setupOrders [HolBase] (D : WoDeps) (BDefs : Defs) :
             [← q r"(x:num->A)(r(n:num))", ← q r"(x:num->A)(r(SUC n))"]) THEN
            ASM_SIMP_TAC [LT_IMP_NE]],
         STRIP_TAC THEN X_GEN_TAC (← q r"s:A->bool") THEN DISCH_TAC THEN
-        ONCE_REWRITE_TAC [rF] THEN
+        ONCE_REWRITE_TAC [(← MESON [] (← q r"(?x. P x /\ Q x /\ R x) <=> ~(!x. P x /\ Q x ==> ~R x)"))] THEN
         GEN_REWRITE_TAC (RAND_CONV o TOP_DEPTH_CONV)
          [NOT_FORALL_THM, NOT_IMP, NOT_EXISTS_THM] THEN
         DISCH_TAC THEN
@@ -659,13 +647,13 @@ def setupOrders [HolBase] (D : WoDeps) (BDefs : Defs) :
                 !z. z IN s DIFF UNIONS {{y | l (x m) y} | m < n}
                     ==> ~(l z (x n) /\ ~(l (x n) z))")
         MP_TAC THENL
-         [MATCH_MP_TAC wfRec THEN
+         [MATCH_MP_TAC (← MATCH_MP WF_REC_EXISTS WF_num) THEN
           REWRITE_TAC [UNIONS_GSPEC] THEN CONJ_TAC THENL [SET_TAC [], ALL_TAC] THEN
           MAP_EVERY X_GEN_TAC [← q r"x:num->A", ← q "n:num"] THEN
           REWRITE_TAC [IN_DIFF, IN_ELIM_THM] THEN DISCH_THEN (LABEL_TAC "*") THEN
           FIRST_X_ASSUM (MP_TAC o SPEC (← q r"IMAGE (x:num->A) {m | m < n}")) THEN
           SIMP_TAC [FINITE_IMAGE, FINITE_NUMSEG_LT] THEN
-          REWRITE_TAC [SUBSET, rG] THEN
+          REWRITE_TAC [SUBSET, (← TAUT (← q r"~(p /\ q) <=> p ==> ~q"))] THEN
           ASM_SIMP_TAC [FORALL_IN_IMAGE, IN_ELIM_THM] THEN DISCH_TAC THEN
           FIRST_X_ASSUM (MP_TAC o SPEC
            (← q r"\y. y IN s /\ !m:num. m < n ==> ~((l:A->A->bool) (x m) y)") o
@@ -700,19 +688,14 @@ def setupOrders [HolBase] (D : WoDeps) (BDefs : Defs) :
         !m. qoset m /\ fld m = fld l /\ (!x y. l x y ==> m x y)
             ==> WF(strictly m)"
    (← do
-    let r5 ← ARITH_RULE (← q r"~(n < l) /\ ~(k < SUC n) ==> ~(k < l)")
-    let r4 ← ARITH_RULE (← q r"n < SUC n")
-    let r3 ← ARITH_RULE (← q r"n < SUC n")
-    let r2 ← TAUT (← q r"r /\ (r ==> p /\ q /\ s) ==> p /\ q /\ r /\ s")
-    let r1 ← MESON [] (← q r"~(!i j. P i j ==> ~Q i j) ==> ?i j. P i j /\ Q i j")
     pure (GEN_TAC THEN EQ_TAC THENL
        [MESON_TAC [WQOSET_WF_SUPERSET, WQOSET_IMP_QOSET, SUBSET_REFL],
         STRIP_TAC THEN ASM_REWRITE_TAC [WQOSET_NOBAD]] THEN
-      X_GEN_TAC (← q r"a:num->A") THEN DISCH_TAC THEN MATCH_MP_TAC r1 THEN
+      X_GEN_TAC (← q r"a:num->A") THEN DISCH_TAC THEN MATCH_MP_TAC (← MESON [] (← q r"~(!i j. P i j ==> ~Q i j) ==> ?i j. P i j /\ Q i j")) THEN
       DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC
        (← q r"\x y:A. l x y \/ ?i j:num. i < j /\ l x (a j) /\ l (a i) y")) THEN
       REWRITE_TAC [qoset, NOT_IMP, ← GSYM CONJ_ASSOC] THEN SIMP_TAC [] THEN
-      MATCH_MP_TAC r2 THEN
+      MATCH_MP_TAC (← TAUT (← q r"r /\ (r ==> p /\ q /\ s) ==> p /\ q /\ r /\ s")) THEN
       CONJ_TAC THENL
        [REWRITE_TAC [fld] THEN RULE_ASSUM_TAC (REWRITE_RULE [fld]) THEN ASM SET_TAC [],
         DISCH_THEN SUBST1_TAC] THEN
@@ -721,10 +704,10 @@ def setupOrders [HolBase] (D : WoDeps) (BDefs : Defs) :
        [ASM_MESON_TAC [LT_TRANS, LT_CASES], ALL_TAC] THEN
       REWRITE_TAC [WF_DCHAIN, strictly] THEN EXISTS_TAC (← q r"a:num->A") THEN
       X_GEN_TAC (← q "n:num") THEN CONJ_TAC THENL
-       [ASM_MESON_TAC [r3], ALL_TAC] THEN
-      ASM_SIMP_TAC [r4, NOT_EXISTS_THM] THEN
+       [ASM_MESON_TAC [(← ARITH_RULE (← q r"n < SUC n"))], ALL_TAC] THEN
+      ASM_SIMP_TAC [(← ARITH_RULE (← q r"n < SUC n")), NOT_EXISTS_THM] THEN
       MAP_EVERY X_GEN_TAC [← q "k:num", ← q "l:num"] THEN STRIP_TAC THEN
-      ASM_MESON_TAC [r5]))
+      ASM_MESON_TAC [(← ARITH_RULE (← q r"~(n < l) /\ ~(k < SUC n) ==> ~(k < l)"))]))
 
   let WOSET_WQOSET ← prove
    r"!l:A->A->bool. woset l <=> toset l /\ wqoset l"
@@ -793,7 +776,6 @@ def setupOrders [HolBase] (D : WoDeps) (BDefs : Defs) :
         qoset l /\ FINITE s /\ ~(s = {}) /\ s SUBSET fld l
         ==> ?a. a IN s /\ !x. x IN s ==> ~(strictly l a x))"
    (← do
-    let t ← TAUT (← q r"~(p /\ ~p)")
     pure (REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
       CONJ_TAC THEN GEN_TAC THEN DISCH_TAC THEN
       MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
@@ -802,7 +784,7 @@ def setupOrders [HolBase] (D : WoDeps) (BDefs : Defs) :
       MAP_EVERY X_GEN_TAC [← q "a:A", ← q r"s:A->bool"] THEN
       DISCH_THEN (CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
       ASM_CASES_TAC (← q r"s:A->bool = {}") THEN
-      ASM_REWRITE_TAC [NOT_IN_EMPTY, strictly, t] THEN
+      ASM_REWRITE_TAC [NOT_IN_EMPTY, strictly, (← TAUT (← q r"~(p /\ ~p)"))] THEN
       RULE_ASSUM_TAC (REWRITE_RULE [qoset, SUBSET, fld, IN_ELIM_THM]) THEN
       ASM METIS_TAC [])))
 
@@ -966,13 +948,12 @@ def setupSegs [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) :
    r"!l s. qoset(\x y:K->A. !i. i IN s ==> l (x i) (y i)) <=>
          s = {} \/ qoset l"
    (← do
-    let m ← MESON [] (← q r"(!a. P (\i. a) ==> Q a) ==> (!a. P a) ==> !b. Q b")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"s:K->bool = {}") THENL
        [ASM_REWRITE_TAC [NOT_IN_EMPTY, qoset], ASM_REWRITE_TAC []] THEN
       ASM_REWRITE_TAC [qoset, fld, IN_ELIM_THM] THEN
       EQ_TAC THENL [ALL_TAC, SET_TAC []] THEN
       MATCH_MP_TAC MONO_AND THEN CONJ_TAC THEN
-      REPEAT (MATCH_MP_TAC m THEN GEN_TAC)
+      REPEAT (MATCH_MP_TAC (← MESON [] (← q r"(!a. P (\i. a) ==> Q a) ==> (!a. P a) ==> !b. Q b")) THEN GEN_TAC)
       THENL [ALL_TAC, ASM SET_TAC []] THEN MATCH_MP_TAC MONO_IMP THEN
       REWRITE_TAC [] THEN CONJ_TAC THENL [ALL_TAC, ASM SET_TAC []] THEN
       DISCH_THEN (X_CHOOSE_TAC (← q "y:A")) THEN EXISTS_TAC (← q r"(\i. y):K->A") THEN
@@ -1192,13 +1173,12 @@ def setupInseg [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
   let WOSET_FINITE_TOSET ← prove
    r"!l:A->A->bool. toset l /\ FINITE {(x,y) | l x y} ==> woset l"
    (← do
-    let fs ← ONCE_REWRITE_RULE [IMP_CONJ] FINITE_SUBSET
     pure (ONCE_REWRITE_TAC [← GSYM FINITE_FLD] THEN
       SIMP_TAC [TOSET_POSET, WOSET_WF, properly, poset, IN] THEN
       REPEAT STRIP_TAC THEN
       MATCH_MP_TAC WF_FINITE THEN REWRITE_TAC [] THEN
       CONJ_TAC THENL [ASM_MESON_TAC [], X_GEN_TAC (← q "a:A")] THEN
-      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP fs) THEN
+      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← ONCE_REWRITE_RULE [IMP_CONJ] FINITE_SUBSET)) THEN
       REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN
       REWRITE_TAC [← REWRITE_RULE [IN] IN_FLD, IN] THEN
       ASM_MESON_TAC []))
@@ -1351,8 +1331,6 @@ def setupInseg [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
   let ORDINAL_CHAINED ← prove
    r"!(l:A->A->bool) m. ordinal(l) /\ ordinal(m) ==> m inseg l \/ l inseg m"
    (← do
-    let t ← TAUT (← q r"(a /\ b ==> a) /\ (a /\ b ==> b)")
-    let aU ← ASSUME (← q r"(\x y. ?k. (k inseg l /\ k inseg m) /\ k x y) = linseg l (a:A)")
     let tl ← q r"l:A->A->bool"
     let tm ← q r"m:A->A->bool"
     pure (REPEAT GEN_TAC THEN
@@ -1365,13 +1343,13 @@ def setupInseg [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
         let c2 ← SPEC tm th
         let c1 ← SPEC tl th
         pure (MP_TAC (← CONJ c1 c2))) THEN
-      REWRITE_TAC [t] THEN
+      REWRITE_TAC [(← TAUT (← q r"(a /\ b ==> a) /\ (a /\ b ==> b)"))] THEN
       DISCH_THEN (fun th => STRIP_ASSUME_TAC th THEN
                            FIRST_ASSUM (REPEAT_TCL DISJ_CASES_THEN MP_TAC o
                            (fun a => MATCH_MP a th))) THENL
        [ASM_MESON_TAC [], ASM_MESON_TAC [], ALL_TAC] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "a:A") STRIP_ASSUME_TAC) THEN
-      MP_TAC aU THEN
+      MP_TAC (← ASSUME (← q r"(\x y. ?k. (k inseg l /\ k inseg m) /\ k x y) = linseg l (a:A)")) THEN
       CONV_TAC CONTRAPOS_CONV THEN DISCH_THEN (fun _ => ALL_TAC) THEN
       REWRITE_TAC [FUN_EQ_THM] THEN DISCH_THEN (MP_TAC o SPECL [← q "a:A", ← q "a:A"]) THEN
       REWRITE_TAC [linseg] THEN PBETA_TAC THEN REWRITE_TAC [properly] THEN
@@ -1397,12 +1375,11 @@ def setupInseg [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
    r"!l m:A->A->bool.
         ordinal l /\ ordinal m /\ fld l SUBSET fld m ==> l inseg m"
    (← do
-    let m1 ← MESON [INSEG_REFL] (← q r"x = y ==> x inseg y")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← ISPECL [← q r"l:A->A->bool", ← q r"m:A->A->bool"]
             ORDINAL_CHAINED) THEN
       ASM_REWRITE_TAC [] THEN STRIP_TAC THEN
-      MATCH_MP_TAC m1 THEN
+      MATCH_MP_TAC (← MESON [INSEG_REFL] (← q r"x = y ==> x inseg y")) THEN
       MATCH_MP_TAC ORDINAL_FLD_UNIQUE THEN
       FIRST_ASSUM (MP_TAC o MATCH_MP INSEG_SUBSET_FLD) THEN ASM SET_TAC []))
 
@@ -1426,8 +1403,6 @@ def setupInseg [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
                  ordinal(\x y. l x y \/ (y = @y. ~fld(l) y) /\
                                            (fld(l) x \/ (x = @y. ~fld(l) y)))"
    (← do
-    let t ← TAUT (← q r"a /\ b ==> b")
-    let aSel ← ASSUME (← q r"(@y:A. ~fld(l) y) = a")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [ordinal] THEN
       DISCH_THEN (REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
       ABBREV_TAC (← q r"a:A = @y. ~fld(l) y") THEN
@@ -1446,7 +1421,7 @@ def setupInseg [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
           X_GEN_TAC (← q r"P:A->bool") THEN REWRITE_TAC [FLD_SUC] THEN
           DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_TAC (← q "w:A"))) THEN
           IMP_RES_THEN (MP_TAC o SPEC (← q r"\x:A. P x /\ fld(l) x")) WOSET_WELL THEN
-          BETA_TAC THEN REWRITE_TAC [t] THEN
+          BETA_TAC THEN REWRITE_TAC [(← TAUT (← q r"a /\ b ==> b"))] THEN
           ASM_CASES_TAC (← q r"?x:A. P x /\ fld(l) x") THEN ASM_REWRITE_TAC [] THENL
            [ASM_MESON_TAC [],
             FIRST_ASSUM (MP_TAC o SPEC (← q "w:A") o
@@ -1465,7 +1440,7 @@ def setupInseg [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
           EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
           UNDISCH_TAC (← q r"fld(l:A->A->bool) z") THEN ASM_REWRITE_TAC [],
           UNDISCH_TAC (← q "z:A = a") THEN DISCH_THEN SUBST_ALL_TAC THEN
-          GEN_REWRITE_TAC LAND_CONV [← SYM aSel] THEN
+          GEN_REWRITE_TAC LAND_CONV [← SYM (← ASSUME (← q r"(@y:A. ~fld(l) y) = a"))] THEN
           AP_TERM_TAC THEN GEN_REWRITE_TAC id [FUN_EQ_THM] THEN
           X_GEN_TAC (← q "y:A") THEN
           BETA_TAC THEN AP_TERM_TAC THEN REWRITE_TAC [] THEN
@@ -1535,7 +1510,6 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
    r"!P. (!l:A->A->bool. P l ==> ordinal(l))
        ==> ordinal(\x y. ?l. P l /\ l x y)"
    (← do
-    let t ← TAUT (← q r"a /\ b ==> a")
     pure (GEN_TAC THEN DISCH_TAC THEN
       REWRITE_TAC [ordinal, WOSET, SUBSET, ← GSYM MEMBER_NOT_EMPTY, IN] THEN
       REPEAT CONJ_TAC THENL
@@ -1562,7 +1536,7 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
         ASSUME_TAC (← CONJUNCT1
           (← REWRITE_RULE [ordinal] (← ASSUME (← q r"ordinal(l:A->A->bool)")))) THEN
         IMP_RES_THEN (MP_TAC o SPEC (← q r"\x:A. fld(l) x /\ Q x")) WOSET_WELL THEN
-        BETA_TAC THEN REWRITE_TAC [t] THEN
+        BETA_TAC THEN REWRITE_TAC [(← TAUT (← q r"a /\ b ==> a"))] THEN
         SUBGOAL_THEN (← q r"?x:A. fld(l) x /\ Q x") (fun th => REWRITE_TAC [th]) THENL
          [EXISTS_TAC (← q "a:A") THEN ASM_REWRITE_TAC [], ALL_TAC] THEN
         DISCH_THEN (X_CHOOSE_THEN (← q "b:A") STRIP_ASSUME_TAC) THEN
@@ -1622,9 +1596,8 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
    r"!l:A->A->bool. ordinal(l) ==> (!x. fld(l) x) \/
                           (?m x. ordinal(m) /\ fld(m) x /\ ~fld(l) x)"
    (← do
-    let t ← TAUT (← q r"a \/ b <=> ~a ==> b")
     pure (GEN_TAC THEN DISCH_TAC THEN
-      REWRITE_TAC [t] THEN
+      REWRITE_TAC [(← TAUT (← q r"a \/ b <=> ~a ==> b"))] THEN
       GEN_REWRITE_TAC LAND_CONV [NOT_FORALL_THM] THEN DISCH_TAC THEN
       MP_TAC (← SPEC (← q r"l:A->A->bool") ORDINAL_SUC) THEN ASM_REWRITE_TAC [] THEN
       DISCH_TAC THEN MAP_EVERY EXISTS_TAC
@@ -1636,9 +1609,8 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
   let WO_ORDINAL ← prove
    r"?l:A->A->bool. ordinal(l) /\ !x. fld(l) x"
    (← do
-    let t ← TAUT (← q r"a /\ (a ==> b) ==> a /\ b")
     pure (EXISTS_TAC (← q r"\a b:A. ?l. ordinal l /\ l a b") THEN
-      MATCH_MP_TAC t THEN CONJ_TAC THENL
+      MATCH_MP_TAC (← TAUT (← q r"a /\ (a ==> b) ==> a /\ b")) THEN CONJ_TAC THENL
        [MATCH_MP_TAC ORDINAL_UNION THEN REWRITE_TAC [],
         DISCH_THEN (DISJ_CASES_TAC o MATCH_MP ORDINAL_UP) THEN
         ASM_REWRITE_TAC [] THEN POP_ASSUM (X_CHOOSE_THEN (← q r"m:A->A->bool")
@@ -1684,15 +1656,12 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
   let WF_INSEG_WOSET ← prove
    r"WF(\(x:A->A->bool) y. woset x /\ woset y /\ x inseg y /\ ~(x = y))"
    (← do
-    let t3 ← TAUT (← q r"P /\ x = y <=> x = y /\ P")
-    let t2 ← TAUT (← q r"~(p /\ q) <=> p ==> ~q")
-    let m1 ← MESON [] (← q r"(?x. P x) <=> ~(!x. ~P x)")
     let lw ← q r"(l:(A->A->bool)->(A->A->bool)) w"
     let tw ← q r"w:A->A->bool"
     pure (REWRITE_TAC [WF] THEN X_GEN_TAC (← q r"P:(A->A->bool)->bool") THEN
       DISCH_TAC THEN
-      ONCE_REWRITE_TAC [m1] THEN
-      REWRITE_TAC [t2] THEN
+      ONCE_REWRITE_TAC [(← MESON [] (← q r"(?x. P x) <=> ~(!x. ~P x)"))] THEN
+      REWRITE_TAC [(← TAUT (← q r"~(p /\ q) <=> p ==> ~q"))] THEN
       GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [NOT_FORALL_THM] THEN
       REWRITE_TAC [NOT_IMP] THEN DISCH_TAC THEN
       SUBGOAL_THEN (← q r"!x:A->A->bool. P x ==> woset x") ASSUME_TAC THENL
@@ -1714,7 +1683,7 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
       REPEAT (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
       DISCH_THEN (MP_TAC o SPEC (← q r"{(a:(A->A->bool)->A) x | P x /\ x inseg z}")) THEN
       REWRITE_TAC [IN_ELIM_THM] THEN
-      REWRITE_TAC [t3] THEN
+      REWRITE_TAC [(← TAUT (← q r"P /\ x = y <=> x = y /\ P"))] THEN
       REWRITE_TAC [LEFT_IMP_EXISTS_THM, LEFT_AND_EXISTS_THM] THEN
       REWRITE_TAC [← GSYM CONJ_ASSOC] THEN
       ONCE_REWRITE_TAC [SWAP_EXISTS_THM, SWAP_FORALL_THM] THEN
@@ -1756,8 +1725,6 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
          ==> ?f. (!x y. x IN s /\ y IN s ==> (l(f x) (f y) <=> l x y)) /\
                  (!x y. y IN IMAGE f s /\ l x y ==> x IN IMAGE f s)"
    (← do
-    let m1 ← MESON [] (← q r"(!x y. P x y /\ P y x ==> Q x y)
-        ==> (!x y. P x y) ==> (!x y. Q x y)")
     let tdiff ← q r"(:A) DIFF IMAGE (f:A->A) {u | u IN s /\ properly l u x}"
     pure (REPEAT STRIP_TAC THEN
       FIRST_ASSUM (MP_TAC o (fun (th : thm) => lastThm (CONJUNCTS th)) o GEN_REWRITE_RULE id [woset]) THEN
@@ -1812,7 +1779,8 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
           REPEAT (FIRST_X_ASSUM (MP_TAC o SPECL [← q "x:A", ← q r"(f:A->A) y"])) THEN
           REPEAT (POP_ASSUM MP_TAC) THEN
           REWRITE_TAC [properly, woset] THEN SET_TAC [],
-          MATCH_MP_TAC m1 THEN
+          MATCH_MP_TAC (← MESON [] (← q r"(!x y. P x y /\ P y x ==> Q x y)
+        ==> (!x y. P x y) ==> (!x y. Q x y)")) THEN
           REPEAT (POP_ASSUM MP_TAC) THEN REWRITE_TAC [properly, woset] THEN
           SET_TAC []],
         REPEAT (POP_ASSUM MP_TAC) THEN REWRITE_TAC [properly, woset] THEN
@@ -2125,28 +2093,24 @@ def setupZorn [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs : 
        ==> ?a:A->bool. P a /\ (!x. P x /\ x SUBSET a ==> a = x)"
    (← do
     -- OCaml evaluates the SET_RULE calls last-first.
-    let s4 ← SET_RULE (← q r"(:A) DIFF ((:A) DIFF s) = s")
-    let s3 ← SET_RULE (← q r"s SUBSET t ==> (:A) DIFF t SUBSET (:A) DIFF s")
-    let s2 ← SET_RULE (← q r"(:A) DIFF ((:A) DIFF s) = s")
-    let s1 ← SET_RULE (← q r"(:A) DIFF ((:A) DIFF s) = s")
     pure
       (REPEAT STRIP_TAC THEN
        MP_TAC (← ISPEC (← q r"\x:A->bool. P((:A) DIFF x):bool")
          ZL_SUBSETS_UNIONS_NONEMPTY) THEN
-       REWRITE_TAC [s1] THEN ANTS_TAC THENL
+       REWRITE_TAC [(← SET_RULE (← q r"(:A) DIFF ((:A) DIFF s) = s"))] THEN ANTS_TAC THENL
         [CONJ_TAC THENL
-          [EXISTS_TAC (← q r"(:A) DIFF x") THEN ASM_REWRITE_TAC [s2],
+          [EXISTS_TAC (← q r"(:A) DIFF x") THEN ASM_REWRITE_TAC [(← SET_RULE (← q r"(:A) DIFF ((:A) DIFF s) = s"))],
            X_GEN_TAC (← q r"c:(A->bool)->bool") THEN STRIP_TAC THEN
            SUBGOAL_THEN (← q r"(:A) DIFF UNIONS c = INTERS (IMAGE (\x. (:A) DIFF x) c)")
            SUBST1_TAC THENL [SET_TAC [], ALL_TAC] THEN
            FIRST_X_ASSUM MATCH_MP_TAC THEN
            REWRITE_TAC [FORALL_IN_IMAGE, FORALL_IN_IMAGE_2, IN_IMAGE] THEN
-           ASM_MESON_TAC [s3]],
+           ASM_MESON_TAC [(← SET_RULE (← q r"s SUBSET t ==> (:A) DIFF t SUBSET (:A) DIFF s"))]],
          DISCH_THEN (X_CHOOSE_THEN (← q r"a:A->bool") STRIP_ASSUME_TAC) THEN
          EXISTS_TAC (← q r"(:A) DIFF a") THEN ASM_REWRITE_TAC [] THEN
          X_GEN_TAC (← q r"y:A->bool") THEN STRIP_TAC THEN
          FIRST_X_ASSUM (MP_TAC o SPEC (← q r"(:A) DIFF y")) THEN
-         ASM_REWRITE_TAC [s4] THEN
+         ASM_REWRITE_TAC [(← SET_RULE (← q r"(:A) DIFF ((:A) DIFF s) = s"))] THEN
          ANTS_TAC THENL [ASM SET_TAC [], SET_TAC []]]))
 
   -- @@RETURN BEGIN
@@ -2213,7 +2177,6 @@ def setupTukey [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
    r"!p:A->A->bool.
      poset p ==> ?t. toset t /\ fld(t) = fld(p) /\ !x y. p x y ==> t x y"
    (← do
-    let t ← TAUT (← q r"q /\ (q ==> p) ==> p /\ q")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← ISPEC (← q r"fld(p:A->A->bool)") WO) THEN ASM_REWRITE_TAC [] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"w:A->A->bool") STRIP_ASSUME_TAC) THEN
@@ -2252,7 +2215,7 @@ def setupTukey [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
         FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE id [poset]) THEN ASM SET_TAC [],
         ALL_TAC] THEN
       ASM_REWRITE_TAC [SUBSET, FORALL_PAIR_THM, IN] THEN
-      MATCH_MP_TAC t THEN CONJ_TAC THENL
+      MATCH_MP_TAC (← TAUT (← q r"q /\ (q ==> p) ==> p /\ q")) THEN CONJ_TAC THENL
        [MATCH_MP_TAC SUBSET_ANTISYM THEN
         ASM_REWRITE_TAC [SUBSET, FORALL_PAIR_THM, IN] THEN
         EXPAND_TAC "t" THEN REWRITE_TAC [← REWRITE_RULE [IN] IN_FLD] THEN
@@ -2304,21 +2267,6 @@ def setupTukey [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
        ==> ?w. (!x y. w x y ==> l x y) /\ woset w /\
                !x:A. x IN fld l ==> ?y. y IN fld w /\ l x y"
    (← do
-    -- Built when OCaml builds the tactic, last first.
-    let s9 ← SET_RULE
-     (← q r"(!z. P z ==> z IN IMAGE f s)
-      ==> (!x. x IN s /\ P(f x) ==> Q(f x))
-          ==> !y. P y ==> Q y")
-    let s8 ← SET_RULE (← q r"fld l x <=> x IN fld l")
-    let m7 ← MESON [] (← q r"~(f x = f y) ==> ~(x = y)")
-    let m6 ← MESON [] (← q r"(l a b \/ l b a) /\ (~(b = a) ==> ~l b a) ==> l a b")
-    let m5 ← MESON [] (← q r"(y = @x. P x) ==> (?x. P x) ==> P y")
-    let m4 ← MESON [] (← q r"(!x y. P x y ==> P y x) /\ (!x y. R x y ==> P x y)
-        ==> (!x y. R x y \/ R y x) ==> (!x y. P x y)")
-    let t3 ← TAUT (← q r"~(p /\ q /\ r) <=> (p /\ q ==> ~r)")
-    let m2 ← MESON [] (← q r"(?w. P w) <=> ~(!w. ~P w)")
-    let m1 ← MESON [] (← q r"(p <=> p') /\ x' = x
-          ==> (if p then x else a) = (if p' then x' else a)")
     pure (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"fld l:A->bool = {}") THENL
        [EXISTS_TAC (← q r"(\x y. F):A->A->bool") THEN
         ASM_REWRITE_TAC [woset, FLD_TRIVIAL, NOT_IN_EMPTY] THEN SET_TAC [],
@@ -2337,7 +2285,8 @@ def setupTukey [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
         REWRITE_TAC [WOSET_WF, properly] THEN
         DISCH_THEN (MATCH_MP_TAC o MATCH_MP WF_REC o CONJUNCT2) THEN
         REWRITE_TAC [] THEN REPEAT STRIP_TAC THEN
-        MATCH_MP_TAC m1 THEN
+        MATCH_MP_TAC (← MESON [] (← q r"(p <=> p') /\ x' = x
+          ==> (if p then x else a) = (if p' then x' else a)")) THEN
         CONJ_TAC THENL [ALL_TAC, AP_TERM_TAC THEN ABS_TAC] THEN
         ASM_MESON_TAC [],
         ALL_TAC] THEN
@@ -2357,21 +2306,22 @@ def setupTukey [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
             REWRITE_RULE [← REWRITE_RULE [SUBSET, ← GSYM MEMBER_NOT_EMPTY, IN] woset] o
             MATCH_MP ORDINAL_IMP_WOSET) THEN
         CONJ_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
-        ONCE_REWRITE_TAC [m2] THEN
+        ONCE_REWRITE_TAC [(← MESON [] (← q r"(?w. P w) <=> ~(!w. ~P w)"))] THEN
         GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [NOT_FORALL_THM] THEN
-        REWRITE_TAC [NOT_IMP, NOT_EXISTS_THM, t3] THEN
+        REWRITE_TAC [NOT_IMP, NOT_EXISTS_THM, (← TAUT (← q r"~(p /\ q /\ r) <=> (p /\ q ==> ~r)"))] THEN
         DISCH_TAC THEN
         SUBGOAL_THEN (← q r"!v w:A->bool. f v:A = f w ==> v = w") MP_TAC THENL
          [FIRST_ASSUM (MP_TAC o (fun (th : thm) => elThm 3 (CONJUNCTS th)) o
             REWRITE_RULE [← REWRITE_RULE [SUBSET, ← GSYM MEMBER_NOT_EMPTY, IN] woset] o
             MATCH_MP ORDINAL_IMP_WOSET) THEN
           FIRST_X_ASSUM SUBST1_TAC THEN REWRITE_TAC [UNIV] THEN
-          MATCH_MP_TAC m4 THEN
+          MATCH_MP_TAC (← MESON [] (← q r"(!x y. P x y ==> P y x) /\ (!x y. R x y ==> P x y)
+        ==> (!x y. R x y \/ R y x) ==> (!x y. P x y)")) THEN
           CONJ_TAC THENL [MESON_TAC [], ALL_TAC] THEN
           REPEAT GEN_TAC THEN DISCH_TAC THEN
           GEN_REWRITE_TAC id [← GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN
           FIRST_X_ASSUM (fun t => GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [t]) THEN
-          ASM_SIMP_TAC [] THEN DISCH_THEN (MP_TAC o MATCH_MP m5) THEN
+          ASM_SIMP_TAC [] THEN DISCH_THEN (MP_TAC o MATCH_MP (← MESON [] (← q r"(y = @x. P x) ==> (?x. P x) ==> P y"))) THEN
           ASM_SIMP_TAC [] THEN RULE_ASSUM_TAC (REWRITE_RULE [TOSET_POSET]) THEN
           ASM_MESON_TAC [],
           REWRITE_TAC [INJECTIVE_LEFT_INVERSE, NOT_EXISTS_THM] THEN
@@ -2383,10 +2333,10 @@ def setupTukey [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
        (← q r"!x y. r x y /\ r y w /\ ~(y = w) ==> l((f:(A->bool)->A) x) (f y)")
       ASSUME_TAC THENL
        [REPEAT STRIP_TAC THEN
-        MATCH_MP_TAC m6 THEN
+        MATCH_MP_TAC (← MESON [] (← q r"(l a b \/ l b a) /\ (~(b = a) ==> ~l b a) ==> l a b")) THEN
         CONJ_TAC THENL
          [RULE_ASSUM_TAC (REWRITE_RULE [TOSET_POSET]) THEN ASM SET_TAC [],
-          DISCH_THEN (ASSUME_TAC o MATCH_MP m7)] THEN
+          DISCH_THEN (ASSUME_TAC o MATCH_MP (← MESON [] (← q r"~(f x = f y) ==> ~(x = y)")))] THEN
         FIRST_X_ASSUM (fun th =>
          GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [th]) THEN
         COND_CASES_TAC THENL
@@ -2413,7 +2363,7 @@ def setupTukey [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
         ALL_TAC] THEN
       REPEAT CONJ_TAC THENL
        [SIMP_TAC [SUBSET, FORALL_PAIR_THM, IN],
-        ASM_REWRITE_TAC [← REWRITE_RULE [s8]
+        ASM_REWRITE_TAC [← REWRITE_RULE [(← SET_RULE (← q r"fld l x <=> x IN fld l"))]
           (← REWRITE_RULE [SUBSET, ← GSYM MEMBER_NOT_EMPTY, IN] woset)],
         ASM_REWRITE_TAC [] THEN REWRITE_TAC [EXISTS_IN_IMAGE] THEN
         ASM SET_TAC []] THEN
@@ -2430,7 +2380,10 @@ def setupTukey [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
       DISCH_THEN (X_CHOOSE_THEN (← q r"z:A->bool") STRIP_ASSUME_TAC) THEN
       EXISTS_TAC (← q r"(f:(A->bool)->A) z") THEN
       CONJ_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN
-      FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP s9) THEN
+      FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"(!z. P z ==> z IN IMAGE f s)
+      ==> (!x. x IN s /\ P(f x) ==> Q(f x))
+          ==> !y. P y ==> Q y"))) THEN
       X_GEN_TAC (← q r"y:A->bool") THEN REWRITE_TAC [IN_ELIM_THM] THEN STRIP_TAC THEN
       CONJ_TAC THENL
        [FIRST_X_ASSUM MATCH_MP_TAC THEN FIRST_ASSUM ACCEPT_TAC,

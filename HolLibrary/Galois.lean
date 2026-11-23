@@ -26,10 +26,11 @@
   name.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, SET_RULE, RING_RULE, ARITH_RULE, TAUT) they are bound
-  first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.FieldTheory
@@ -925,9 +926,9 @@ def setupGaloisExtensions [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup
         ASM_SIMP_TAC [o_THM, RING_MONOMORPHISM_IMP_HOMOMORPHISM],
         ASM_SIMP_TAC []],
       ALL_TAC] THEN
-    FIRST_X_ASSUM (fun th => tactic_of do
+    FIRST_X_ASSUM ((fun (ocq26 : _) => fun th => tactic_of do
       pure (MP_TAC (← MATCH_MP th (← ASSUME
-        (← q r"RESTRICTION (ring_carrier l) (g:B->B#num) IN S"))))) THEN
+        ocq26)))) (← q r"RESTRICTION (ring_carrier l) (g:B->B#num) IN S")) THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"f:B->B") (CONJUNCTS_THEN2 ASSUME_TAC
       (MP_TAC o AP_TERM (← q r"\u:B->B#num. IMAGE u (ring_carrier l)")))) THEN
     SIMP_TAC [IMAGE_RESTRICTION, SUBSET_REFL, IMAGE_o] THEN
@@ -1503,9 +1504,9 @@ def setupArtin [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (BGaloisE
      [UNDISCH_TAC (← q r"P IN ring_carrier(poly_ring (l:B ring) (:1))") THEN
       SIMP_TAC [IN_POLY_RING_CARRIER, ring_polynomial, ring_powerseries],
       X_GEN_TAC (← q r"f:B->B") THEN DISCH_TAC THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
-        pure (MP_TAC (← AP_THM (← MATCH_MP th (← ASSUME (← q r"(f:B->B) IN G")))
-                               (← q r"m:1->num")))) THEN
+      FIRST_X_ASSUM ((fun (ocq24 : _) (ocq25 : _) => fun th => tactic_of do
+        pure (MP_TAC (← AP_THM (← MATCH_MP th (← ASSUME ocq24))
+                               ocq25))) (← q r"(f:B->B) IN G") (← q r"m:1->num")) THEN
       REWRITE_TAC [o_THM]])
 
   let MINIMAL_POLYNOMIAL_FINITE_ORBIT ← prove
@@ -1608,13 +1609,13 @@ def setupArtin [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (BGaloisE
           let c ← q r"(h:A->B) o (q:(1->num)->A) = P"
           if !(concl th == c) then throw "check"
           pure ((SUBST1_TAC o SYM) th)) THEN
-        FIRST_X_ASSUM (fun th => tactic_of do
+        FIRST_X_ASSUM ((fun (ocq22 : _) (ocq23 : _) => fun th => tactic_of do
           let c ← q r"ring_divides (poly_ring k (:1))
                (minimal_polynomial (k,l) (h:A->B) a) q"
           if !(concl th == c) then throw "check"
-          let c1 ← ISPEC (← q r"(:1)") (← MATCH_MP RING_HOMOMORPHISM_POLY_RINGS
-            (← ASSUME (← q r"ring_homomorphism(k:A ring,l:B ring) h")))
-          pure ((MP_TAC o MATCH_MP RING_DIVIDES_HOMOMORPHIC_IMAGE) (← CONJ c1 th))) THEN
+          let c1 ← ISPEC ocq22 ocq23
+          pure ((MP_TAC o MATCH_MP RING_DIVIDES_HOMOMORPHIC_IMAGE) (← CONJ c1 th))) (← q r"(:1)") (← MATCH_MP RING_HOMOMORPHISM_POLY_RINGS
+            (← ASSUME (← q r"ring_homomorphism(k:A ring,l:B ring) h")))) THEN
         REWRITE_TAC []],
       TRANS_TAC LE_TRANS (← q r"poly_deg k (q:(1->num)->A)") THEN CONJ_TAC THENL
        [MATCH_MP_TAC MINIMAL_POLYNOMIAL_DEG_LE THEN ASM_REWRITE_TAC [],
@@ -2029,11 +2030,11 @@ def setupGaloisIsomorphic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup
         EXISTS_TAC (← q r"(f:B->C) o (s:B->B) o (f':C->B)") THEN
         ASM_SIMP_TAC [o_THM],
         X_GEN_TAC (← q r"x:A") THEN DISCH_TAC THEN
-        FIRST_X_ASSUM (fun th => tactic_of do
+        FIRST_X_ASSUM ((fun (ocq21 : _) => fun th => tactic_of do
           let c ← q r"h':A->C"
           if !(free_in c (concl th)) then throw "check"
           if !(is_forall (concl th)) then throw "check"
-          pure ((MP_TAC o SPEC (← q r"x:A")) th)) THEN
+          pure ((MP_TAC o SPEC ocq21) th)) (← q r"x:A")) THEN
         ASM_REWRITE_TAC [] THEN STRIP_TAC THEN
         FIRST_X_ASSUM (SUBST_ALL_TAC o SYM) THEN
         ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER]])
@@ -3814,11 +3815,11 @@ def setupNaturalIrrationalities [HolBase] (D : GaloisDeps) (BGaloisGroup : Galoi
        [SUBGOAL_THEN (← q r"t UNION s:B->bool = s UNION t") SUBST1_TAC THENL
          [SET_TAC [], ASM_SIMP_TAC [SUBFIELD_GENERATED_IDEMPOT_GEN, UNION_SUBSET]],
         X_GEN_TAC (← q r"x:B") THEN DISCH_TAC THEN
-        FIRST_X_ASSUM (fun th => tactic_of do
+        FIRST_X_ASSUM ((fun (ocq20 : _) => fun th => tactic_of do
           let ok := is_eq (concl th) &&
             (match lhs (concl th) with | .ok t => is_abs t | .error _ => false)
           if !ok then throw "check"
-          pure (MP_TAC (← AP_THM th (← q r"x:B")))) THEN
+          pure (MP_TAC (← AP_THM th ocq20))) (← q r"x:B")) THEN
         ASM_REWRITE_TAC []]]))
 
   let GALOIS_COMPOSITUM ← prove
@@ -4126,14 +4127,14 @@ def setupGaloisComposita [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup)
          [ASM SET_TAC [],
           ASM_SIMP_TAC [SUBFIELD_GENERATED_IDEMPOT_GEN, UNION_SUBSET]],
         X_GEN_TAC (← q r"x:B") THEN REWRITE_TAC [IN_UNION] THEN STRIP_TAC THENL
-         [FIRST_X_ASSUM (fun th => tactic_of do
+         [FIRST_X_ASSUM ((fun (ocq19 : _) => fun th => tactic_of do
             let c ← q r"s:B->bool"
             if !(is_eq (concl th) && free_in c (concl th)) then throw "check"
-            pure (MP_TAC (← AP_THM th (← q r"x:B")))),
-          FIRST_X_ASSUM (fun th => tactic_of do
+            pure (MP_TAC (← AP_THM th ocq19))) (← q r"x:B")),
+          FIRST_X_ASSUM ((fun (ocq18 : _) => fun th => tactic_of do
             let c ← q r"t:B->bool"
             if !(is_eq (concl th) && free_in c (concl th)) then throw "check"
-            pure (MP_TAC (← AP_THM th (← q r"x:B"))))] THEN
+            pure (MP_TAC (← AP_THM th ocq18))) (← q r"x:B"))] THEN
         ASM_REWRITE_TAC []]])
 
   let GALOIS_COMPOSITUM_PROD_GROUP ← prove
@@ -4518,10 +4519,10 @@ def setupFiniteGaloisSubfields [HolBase] (D : GaloisDeps) (BGaloisGroup : Galois
     FIRST_ASSUM (MP_TAC o MATCH_MP FINITE_IMP_FINITELY_GENERATED_EXTENSION) THEN
     REWRITE_TAC [finitely_generated_extension] THEN
     ASM_SIMP_TAC [CARRIER_SUBFIELD_GENERATED_SUBFIELD] THEN
-    DISCH_THEN (fun th => tactic_of do
+    DISCH_THEN ((fun (ocq17 : _) => fun th => tactic_of do
       match (CONJUNCTS th).getLast? with
-      | some c => pure (X_CHOOSE_THEN (← q r"b:B->bool") STRIP_ASSUME_TAC c)
-      | none => throw "last")
+      | some c => pure (X_CHOOSE_THEN ocq17 STRIP_ASSUME_TAC c)
+      | none => throw "last") (← q r"b:B->bool"))
     THEN EXISTS_TAC (← q r"b:B->bool") THEN ASM_REWRITE_TAC [] THEN
     MP_TAC (← ISPECL [← q r"h:A->B", ← q r"k:A ring", ← q r"l:B ring", ← q r"e:B->bool"]
                   GALOIS_GROUP_RESTRICTION_HOMOMORPHISM) THEN
@@ -5216,9 +5217,9 @@ def setupGaloisCubic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (BG
       ASM_REWRITE_TAC [IN_FIXED_FIELD] THEN
       MATCH_MP_TAC m1 THEN
       X_GEN_TAC (← q r"f:B->B") THEN DISCH_TAC THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
+      FIRST_X_ASSUM ((fun (ocq16 : _) => fun th => tactic_of do
         pure (SUBST1_TAC (← MATCH_MP th (← ASSUME
-          (← q r"(f:B->B) IN group_carrier(galois_group(k,l) (h:A->B))"))))) THEN
+          ocq16)))) (← q r"(f:B->B) IN group_carrier(galois_group(k,l) (h:A->B))")) THEN
       REWRITE_TAC [ring_sign] THEN COND_CASES_TAC THEN
       ASM_SIMP_TAC [RING_MUL_LID, RING_MUL_LNEG, RING_1] THEN DISCH_TAC THEN
       SUBGOAL_THEN (← q r"ring_mul l (ring_of_num l 2) (d:B) = ring_0 l") MP_TAC THENL
@@ -6984,11 +6985,11 @@ def setupRadicalExtensions [HolBase] (D : GaloisDeps) :
           (← MATCH_MP LT_IMP_LE (← ASSUME (← q r"i < n:num")))])) THEN
       REMOVE_THEN "a" (MP_TAC o SPEC (← q r"i:num")) THEN ASM_REWRITE_TAC [],
       ALL_TAC] THEN
-    FIRST_X_ASSUM (fun th => tactic_of do
+    FIRST_X_ASSUM ((fun (ocq15 : _) => fun th => tactic_of do
       let c ← q r"~(i < n:num)"
       if !(concl th == c) then throw "check"
-      pure (X_CHOOSE_THEN (← q r"d:num") SUBST_ALL_TAC
-        (← REWRITE_RULE [NOT_LT, LE_EXISTS] th))) THEN
+      pure (X_CHOOSE_THEN ocq15 SUBST_ALL_TAC
+        (← REWRITE_RULE [NOT_LT, LE_EXISTS] th))) (← q r"d:num")) THEN
     ASM_REWRITE_TAC [ADD_SUB2] THEN
     REMOVE_THEN "b" (MP_TAC o SPEC (← q r"d:num")) THEN
     ANTS_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
@@ -7162,11 +7163,11 @@ def setupRadicalExtensions2 [HolBase] (D : GaloisDeps) (BRadicalExtensions : Rad
       ALL_TAC] THEN
     CONJ_TAC THENL
      [X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
+      FIRST_X_ASSUM ((fun (ocq14 : _) => fun th => tactic_of do
         let c ← q r"ma:num->num"
         if !(free_in c (concl th)) then throw "check"
         if !(is_forall (concl th)) then throw "check"
-        pure (MP_TAC (← SPEC (← q r"i:num") th))) THEN
+        pure (MP_TAC (← SPEC ocq14 th))) (← q r"i:num")) THEN
       ASM_REWRITE_TAC [] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
       FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP s2) THEN
       MATCH_MP_TAC SUBFIELD_GENERATED_MONO THEN ASM_REWRITE_TAC [],
@@ -7316,8 +7317,8 @@ def setupRadicalExtensions2 [HolBase] (D : GaloisDeps) (BRadicalExtensions : Rad
         ASM_REWRITE_TAC [] THEN
         MATCH_MP_TAC s1 THEN
         EXISTS_TAC (← q r"s:B->bool") THEN ASM_SIMP_TAC [SUBFIELD_OF_IMP_SUBSET],
-        USE_THEN "sgn" (fun th => tactic_of do
-          pure (MP_TAC (← MATCH_MP th (← SPEC (← q r"n:num") LE_REFL)))) THEN
+        USE_THEN "sgn" ((fun (ocq13 : _) => fun th => tactic_of do
+          pure (MP_TAC (← MATCH_MP th (← SPEC ocq13 LE_REFL)))) (← q r"n:num")) THEN
         DISCH_THEN (fun th => RULE_ASSUM_TAC (REWRITE_RULE [th])) THEN
         REMOVE_THEN "eq" (fun th => RULE_ASSUM_TAC (REWRITE_RULE [th])) THEN
         ASM_REWRITE_TAC []],
@@ -7340,8 +7341,8 @@ def setupRadicalExtensions2 [HolBase] (D : GaloisDeps) (BRadicalExtensions : Rad
           pure (MP_TAC (← MATCH_MP th
             (← MATCH_MP LT_IMP_LE (← ASSUME (← q r"i < n:num")))))) THEN
         DISCH_THEN (fun th => REWRITE_TAC [th]) THEN ASM_SIMP_TAC [],
-        USE_THEN "sgn" (fun th => tactic_of do
-          pure (MP_TAC (← MATCH_MP th (← SPEC (← q r"n:num") LE_REFL)))) THEN
+        USE_THEN "sgn" ((fun (ocq12 : _) => fun th => tactic_of do
+          pure (MP_TAC (← MATCH_MP th (← SPEC ocq12 LE_REFL)))) (← q r"n:num")) THEN
         DISCH_THEN (fun th => REWRITE_TAC [th]) THEN
         USE_THEN "eq" (fun th => REWRITE_TAC [th]) THEN
         FIRST_ASSUM ACCEPT_TAC]]))
@@ -7831,8 +7832,8 @@ def setupRadicalNormalClosure [HolBase] (D : GaloisDeps) (BRadicalExtensions : R
     EXISTS_TAC (← q r"s:C->bool") THEN
     ASM_SIMP_TAC [FINITE_IMP_FIELD_EXTENSION] THEN CONJ_TAC THENL
      [X_GEN_TAC (← q r"x:C") THEN DISCH_TAC THEN
-      USE_THEN "s" (fun th => tactic_of do
-        pure (MP_TAC (← MATCH_MP th (← ASSUME (← q r"(x:C) IN s"))))) THEN
+      USE_THEN "s" ((fun (ocq11 : _) => fun th => tactic_of do
+        pure (MP_TAC (← MATCH_MP th (← ASSUME ocq11)))) (← q r"(x:C) IN s")) THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"e:B->C") STRIP_ASSUME_TAC) THEN
       USE_THEN "e" (MP_TAC o SPEC (← q r"e:B->C")) THEN
       ANTS_TAC THENL [ASM_REWRITE_TAC [], DISCH_TAC] THEN
@@ -8607,8 +8608,8 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
      [GEN_TAC THEN CONJ_TAC THENL
        [MATCH_MP_TAC GROUP_POW THEN ASM_REWRITE_TAC [], ALL_TAC] THEN
       MATCH_MP_TAC GALOIS_GROUP_POW_MUL_FIXED THEN ASM_REWRITE_TAC [] THEN
-      USE_THEN "Sprop" (fun th => tactic_of do
-        pure (MP_TAC (← MATCH_MP th (← ASSUME (← q r"(w:B) IN S"))))) THEN
+      USE_THEN "Sprop" ((fun (ocq10 : _) => fun th => tactic_of do
+        pure (MP_TAC (← MATCH_MP th (← ASSUME ocq10)))) (← q r"(w:B) IN S")) THEN
       STRIP_TAC THEN ASM_SIMP_TAC [],
       ALL_TAC] THEN
     SUBGOAL_THEN
@@ -8626,9 +8627,9 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
           ==> ?m. f = group_pow (galois_group(k,l) h) f0 m")
     (LABEL_TAC "every") THENL
      [X_GEN_TAC (← q r"f:B->B") THEN DISCH_TAC THEN
-      USE_THEN "roots" (fun th => tactic_of do
+      USE_THEN "roots" ((fun (ocq9 : _) => fun th => tactic_of do
         pure (MP_TAC (← MATCH_MP th
-         (← ASSUME (← q r"(f:B->B) IN group_carrier(galois_group(k,l) (h:A->B))"))))) THEN
+         (← ASSUME ocq9)))) (← q r"(f:B->B) IN group_carrier(galois_group(k,l) (h:A->B))")) THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"c:A") STRIP_ASSUME_TAC) THEN
       SUBGOAL_THEN (← q r"(h:A->B) c IN S") ASSUME_TAC THENL
        [EXPAND_TAC "S" THEN REWRITE_TAC [IN_ELIM_THM] THEN
@@ -8636,8 +8637,8 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
          [EXISTS_TAC (← q r"c:A") THEN ASM_REWRITE_TAC [],
           EXISTS_TAC (← q r"f:B->B") THEN ASM_REWRITE_TAC []],
         ALL_TAC] THEN
-      USE_THEN "gen" (fun th => tactic_of do
-        pure (MP_TAC (← MATCH_MP th (← ASSUME (← q r"(h:A->B) c IN S"))))) THEN
+      USE_THEN "gen" ((fun (ocq8 : _) => fun th => tactic_of do
+        pure (MP_TAC (← MATCH_MP th (← ASSUME ocq8)))) (← q r"(h:A->B) c IN S")) THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"m:num") THEN DISCH_TAC THEN
       USE_THEN "inj" MATCH_MP_TAC THEN ASM_REWRITE_TAC [],
       ALL_TAC] THEN
@@ -8648,9 +8649,9 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
      [REWRITE_TAC [SUBGROUP_GENERATED_EQ] THEN MATCH_MP_TAC SUBSET_ANTISYM THEN
       REWRITE_TAC [GROUP_CARRIER_SUBGROUP_GENERATED_SUBSET] THEN
       REWRITE_TAC [SUBSET] THEN X_GEN_TAC (← q r"f:B->B") THEN DISCH_TAC THEN
-      USE_THEN "every" (fun th => tactic_of do
-        pure (X_CHOOSE_THEN (← q r"m:num") SUBST1_TAC (← MATCH_MP th
-          (← ASSUME (← q r"(f:B->B) IN group_carrier(galois_group(k,l) (h:A->B))"))))) THEN
+      USE_THEN "every" ((fun (ocq6 : _) (ocq7 : _) => fun th => tactic_of do
+        pure (X_CHOOSE_THEN ocq6 SUBST1_TAC (← MATCH_MP th
+          (← ASSUME ocq7)))) (← q r"m:num") (← q r"(f:B->B) IN group_carrier(galois_group(k,l) (h:A->B))")) THEN
       MATCH_MP_TAC IN_SUBGROUP_POW THEN
       REWRITE_TAC [SUBGROUP_SUBGROUP_GENERATED] THEN
       MATCH_MP_TAC SUBGROUP_GENERATED_INC_GEN THEN
@@ -8662,8 +8663,8 @@ def setupKummerCyclic [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) (B
     ASSUME_TAC THENL
      [REWRITE_TAC [← CONJUNCT1 (← CONJUNCT2 GALOIS_GROUP)] THEN
       USE_THEN "inj" MATCH_MP_TAC THEN ASM_REWRITE_TAC [I_THM] THEN
-      USE_THEN "Sprop" (fun th => tactic_of do
-        pure (MP_TAC (← MATCH_MP th (← ASSUME (← q r"(w:B) IN S"))))) THEN
+      USE_THEN "Sprop" ((fun (ocq5 : _) => fun th => tactic_of do
+        pure (MP_TAC (← MATCH_MP th (← ASSUME ocq5)))) (← q r"(w:B) IN S")) THEN
       SIMP_TAC [RING_MUL_LID, ← ASSUME (← q r"(a:B) IN ring_carrier l")],
       ALL_TAC] THEN
     CONJ_TAC THENL
@@ -9296,9 +9297,9 @@ def setupArtinSchreier2 [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) 
       DISJ2_TAC] THEN
     FIRST_X_ASSUM (X_CHOOSE_THEN (← q r"f0:B->B") STRIP_ASSUME_TAC o
       REWRITE_RULE [NOT_FORALL_THM, NOT_IMP]) THEN
-    USE_THEN "trans" (fun th => tactic_of do
-      pure (X_CHOOSE_TAC (← q r"n0:int") (← MATCH_MP th
-       (← ASSUME (← q r"(f0:B->B) IN group_carrier(galois_group(k,l) (h:A->B))"))))) THEN
+    USE_THEN "trans" ((fun (ocq3 : _) (ocq4 : _) => fun th => tactic_of do
+      pure (X_CHOOSE_TAC ocq3 (← MATCH_MP th
+       (← ASSUME ocq4)))) (← q r"n0:int") (← q r"(f0:B->B) IN group_carrier(galois_group(k,l) (h:A->B))")) THEN
     MP_TAC (← ISPECL [← q r"h:A->B", ← q r"f0:B->B", ← q r"k:A ring", ← q r"l:B ring", ← q r"a:B",
                    ← q r"ring_of_int l n0:B", ← q r"p:num"] GALOIS_GROUP_POW_ADD_FIXED) THEN
     ANTS_TAC THENL
@@ -9765,8 +9766,8 @@ def setupSolvableTowers [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) 
       ALL_TAC] THEN
     X_GEN_TAC (← q r"i:num") THEN DISCH_THEN (K ALL_TAC : thm → tactic) THEN DISCH_TAC THEN
     USE_THEN "t" (fun th => REWRITE_TAC [th]) THEN
-    USE_THEN "a" (fun th => tactic_of do
-      pure (STRIP_ASSUME_TAC (← MATCH_MP th (← ASSUME (← q r"i < n:num"))))) THEN
+    USE_THEN "a" ((fun (ocq2 : _) => fun th => tactic_of do
+      pure (STRIP_ASSUME_TAC (← MATCH_MP th (← ASSUME ocq2)))) (← q r"i < n:num")) THEN
     MP_TAC (← ISPECL [← q r"l:B ring", ← q r"(t:num->B->bool) i", ← q r"(a:num->B) i",
                    ← q r"(m:num->num) i"]
       KUMMER_EXTENSION_ABELIAN_INTERMEDIATE) THEN
@@ -9804,9 +9805,9 @@ def setupSolvableTowers [HolBase] (D : GaloisDeps) (BGaloisGroup : GaloisGroup) 
     SUBGOAL_THEN (← q r"IMAGE (g:A->C) (ring_carrier k) SUBSET t") ASSUME_TAC THENL
      [EXPAND_TAC "t" THEN REWRITE_TAC [SUBSET, FORALL_IN_IMAGE] THEN
       X_GEN_TAC (← q r"x:A") THEN DISCH_TAC THEN
-      FIRST_ASSUM (fun th => tactic_of do
+      FIRST_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
         pure ((SUBST1_TAC o SYM) (← MATCH_MP th
-         (← ASSUME (← q r"(x:A) IN ring_carrier k"))))) THEN
+         (← ASSUME ocq1)))) (← q r"(x:A) IN ring_carrier k")) THEN
       MATCH_MP_TAC FUN_IN_IMAGE THEN
       ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER, ring_monomorphism],
       ALL_TAC] THEN

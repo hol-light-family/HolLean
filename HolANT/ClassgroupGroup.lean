@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.ClassgroupGroup fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -235,63 +238,14 @@ def setupClassgroupGroup [HolBase] (D : ClassgroupGroupDeps) :
 
   let CLASS_GROUP ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"ideal_prod r j k:A->bool"
-    let q2 ← q r"j:A->bool"
-    let q3 ← q r"l:A->bool"
-    let q4 ← q r"ring_carrier r:A->bool"
-    let q5 ← q r"l:A->bool"
-    let q6 ← q r"ideal_prod r j k:A->bool"
-    let q7 ← q r"r:A ring"
-    let v8 ← ISPECL [q7, q6, q5, q4, q3] IDEAL_CLASS_MUL
-    let q9 ← q r"ideal_prod r j l:A->bool"
-    let q10 ← q r"k:A->bool"
-    let q11 ← q r"ring_carrier r:A->bool"
-    let q12 ← q r"k:A->bool"
-    let q13 ← q r"r:A ring"
-    let v14 ← ISPECL [q13, q12, q11, q10, q9] IDEAL_CLASS_MUL
-    let q15 ← q r"ideal_prod r m l:A->bool"
-    let q16 ← q r"(ideal_prod r j l:A->bool) IN ideal_class r (ring_carrier r)"
-    let q17 ← q r"ideal_prod r (ideal_prod r j k) l:A->bool"
-    let q18 ← q r"~(ideal_prod r m l = {ring_0 r:A})"
-    let q19 ← q r"(m:A->bool) IN ideal_class r j"
-    let q20 ← q r"(ring_carrier r:A->bool) IN ideal_class r (ideal_prod r m l)"
-    let q21 ← q r"ring_ideal r m /\ ~(l = {ring_0 r:A})"
-    let q22 ← q r"m:A->bool"
-    let q23 ← q r"l:A->bool"
-    let q24 ← q r"k:A->bool"
-    let q25 ← q r"j:A->bool"
-    let q26 ← q r"r:A ring"
-    let v27 ← ISPECL [q26, q25] DEDEKIND_IDEAL_CLASS_INVERSE
-    let p28 ← prove r"!r j:A->bool.
+    let lemma := (← prove r"!r j:A->bool.
           dedekind_domain r /\ ring_ideal r j /\ ~(j = {ring_0 r})
           ==> ?k. ring_ideal r k /\ ~(k = {ring_0 r}) /\
                   ring_carrier r IN ideal_class r (ideal_prod r j k) /\
                   {l | ring_ideal r l /\
                        ?m. m IN ideal_class r j /\
                            ring_carrier r IN ideal_class r (ideal_prod r m l)} =
-                  ideal_class r k" (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP DEDEKIND_IMP_INTEGRAL_DOMAIN)) THEN MP_TAC v27 THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC q24 THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN X_GEN_TAC q23 THEN EQ_TAC THENL [DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN q22 STRIP_ASSUME_TAC)) THEN SUBGOAL_THEN q21 STRIP_ASSUME_TAC THENL [UNDISCH_TAC q20 THEN UNDISCH_TAC q19 THEN REWRITE_TAC [IN_IDEAL_CLASS] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN UNDISCH_TAC q18 THEN ASM_SIMP_TAC [IDEAL_PROD_RZERO, RING_IDEAL_IMP_SUBSET], ALL_TAC] THEN MATCH_MP_TAC IDEAL_CLASS_TRANS THEN EXISTS_TAC q17 THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [SUBGOAL_THEN q16 ASSUME_TAC THENL [MATCH_MP_TAC IDEAL_CLASS_SYM THEN MATCH_MP_TAC IDEAL_CLASS_TRANS THEN EXISTS_TAC q15 THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC IDEAL_CLASS_MUL THEN ASM_SIMP_TAC [IDEAL_CLASS_REFL], ALL_TAC] THEN MP_TAC v14 THEN ASM_SIMP_TAC [IDEAL_CLASS_REFL, IDEAL_PROD_CARRIER] THEN ASM_SIMP_TAC [IDEAL_PROD_AC, RING_IDEAL_IMP_SUBSET], MP_TAC v8 THEN ASM_SIMP_TAC [IDEAL_CLASS_REFL, IDEAL_PROD_CARRIER_LEFT]], DISCH_TAC THEN CONJ_TAC THENL [FIRST_ASSUM (MP_TAC o (GEN_REWRITE_RULE id [IN_IDEAL_CLASS])) THEN SIMP_TAC [], ALL_TAC] THEN EXISTS_TAC q2 THEN ASM_SIMP_TAC [IDEAL_CLASS_REFL] THEN MATCH_MP_TAC IDEAL_CLASS_TRANS THEN EXISTS_TAC q1 THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC IDEAL_CLASS_MUL THEN ASM_SIMP_TAC [IDEAL_CLASS_REFL, IDEAL_CLASS_SYM]])
-    let lemma := p28
-    let q29 ← q r"j:A->bool"
-    let q30 ← q r"iv(j:A->bool):A->bool"
-    let q31 ← q r"r:A ring"
-    let v32 ← ISPECL [q31, q30, q29] IDEAL_PROD_COMM
-    let q33 ← q r"!j. ring_ideal r j /\ ~(j = {ring_0 r})
-          ==> ideal_class r j IN
-              {ideal_class r j | j | ring_ideal r j /\ ~(j = {ring_0 r:A})}"
-    let q34 ← q r"iv:(A->bool)->A->bool"
-    let q35 ← q r"r:A ring"
-    let v36 ← ISPEC q35 lemma
-    let q37 ← q r"k:A->bool"
-    let q38 ← q r"j:A->bool"
-    let q39 ← q r"l:A->bool"
-    let q40 ← q r"!j k. ring_ideal r j /\ ring_ideal r k
-            ==> {l | ?j' k'. j' IN ideal_class r j /\ k' IN ideal_class r k /\
-                             l IN ideal_class r (ideal_prod r j' k')} =
-                ideal_class r (ideal_prod r j k:A->bool)"
-    let v41 ← GSYM class_group
-    let q46 ← q r"r:A ring"
-    let q47 ← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r"
-    let r48 ← TAUT q47
+                  ideal_class r k" (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP DEDEKIND_IMP_INTEGRAL_DOMAIN)) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"j:A->bool")] DEDEKIND_IDEAL_CLASS_INVERSE) THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"k:A->bool") THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN X_GEN_TAC (← q r"l:A->bool") THEN EQ_TAC THENL [DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN (← q r"m:A->bool") STRIP_ASSUME_TAC)) THEN SUBGOAL_THEN (← q r"ring_ideal r m /\ ~(l = {ring_0 r:A})") STRIP_ASSUME_TAC THENL [UNDISCH_TAC (← q r"(ring_carrier r:A->bool) IN ideal_class r (ideal_prod r m l)") THEN UNDISCH_TAC (← q r"(m:A->bool) IN ideal_class r j") THEN REWRITE_TAC [IN_IDEAL_CLASS] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN UNDISCH_TAC (← q r"~(ideal_prod r m l = {ring_0 r:A})") THEN ASM_SIMP_TAC [IDEAL_PROD_RZERO, RING_IDEAL_IMP_SUBSET], ALL_TAC] THEN MATCH_MP_TAC IDEAL_CLASS_TRANS THEN EXISTS_TAC (← q r"ideal_prod r (ideal_prod r j k) l:A->bool") THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [SUBGOAL_THEN (← q r"(ideal_prod r j l:A->bool) IN ideal_class r (ring_carrier r)") ASSUME_TAC THENL [MATCH_MP_TAC IDEAL_CLASS_SYM THEN MATCH_MP_TAC IDEAL_CLASS_TRANS THEN EXISTS_TAC (← q r"ideal_prod r m l:A->bool") THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC IDEAL_CLASS_MUL THEN ASM_SIMP_TAC [IDEAL_CLASS_REFL], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"k:A->bool"), (← q r"ring_carrier r:A->bool"), (← q r"k:A->bool"), (← q r"ideal_prod r j l:A->bool")] IDEAL_CLASS_MUL) THEN ASM_SIMP_TAC [IDEAL_CLASS_REFL, IDEAL_PROD_CARRIER] THEN ASM_SIMP_TAC [IDEAL_PROD_AC, RING_IDEAL_IMP_SUBSET], MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ideal_prod r j k:A->bool"), (← q r"l:A->bool"), (← q r"ring_carrier r:A->bool"), (← q r"l:A->bool")] IDEAL_CLASS_MUL) THEN ASM_SIMP_TAC [IDEAL_CLASS_REFL, IDEAL_PROD_CARRIER_LEFT]], DISCH_TAC THEN CONJ_TAC THENL [FIRST_ASSUM (MP_TAC o (GEN_REWRITE_RULE id [IN_IDEAL_CLASS])) THEN SIMP_TAC [], ALL_TAC] THEN EXISTS_TAC (← q r"j:A->bool") THEN ASM_SIMP_TAC [IDEAL_CLASS_REFL] THEN MATCH_MP_TAC IDEAL_CLASS_TRANS THEN EXISTS_TAC (← q r"ideal_prod r j k:A->bool") THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC IDEAL_CLASS_MUL THEN ASM_SIMP_TAC [IDEAL_CLASS_REFL, IDEAL_CLASS_SYM]]))
     prove
       r"(!r:A ring.
             dedekind_domain r
@@ -311,7 +265,12 @@ def setupClassgroupGroup [HolBase] (D : ClassgroupGroupDeps) :
             ==> group_mul(class_group r) =
                 \c d. {l | ?j k. j IN c /\ k IN d /\
                                  l IN ideal_class r (ideal_prod r j k)})"
-      (REWRITE_TAC [AND_FORALL_THM, r48] THEN X_GEN_TAC q46 THEN DISCH_TAC THEN MP_TAC (← (do pure (Prod.fst (← (do pure (← EQ_IMP_RULE (← ISPEC (← (do let z42 ← (do let z43 ← (do pure (Prod.snd (← (do let z44 ← (do let z45 ← (pure class_group); pure (concl z45)); pure (strip_forall z44))))); liftExcept (rand z43)); liftExcept (rand z42))) (← CONJUNCT2 group_tybij)))))))) THEN REWRITE_TAC [v41] THEN ANTS_TAC THENL [ALL_TAC, SIMP_TAC [group_carrier, group_id, group_inv, group_mul]] THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP DEDEKIND_IMP_INTEGRAL_DOMAIN)) THEN FIRST_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP INTEGRAL_DOMAIN_UNIT_IDEAL)) THEN SUBGOAL_THEN q40 ASSUME_TAC THENL [REPEAT STRIP_TAC THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN X_GEN_TAC q39 THEN EQ_TAC THENL [ASM_MESON_TAC [IDEAL_CLASS_MUL, IDEAL_CLASS_TRANS], DISCH_TAC THEN MAP_EVERY EXISTS_TAC [q38, q37] THEN FIRST_ASSUM (MP_TAC o (CONJUNCT1 o (CONJUNCT2 o (CONJUNCT2 o (GEN_REWRITE_RULE id [IN_IDEAL_CLASS]))))) THEN ASM_SIMP_TAC [IDEAL_PROD_EQ_ZERO, DE_MORGAN_THM, IDEAL_CLASS_REFL]], ALL_TAC] THEN MP_TAC v36 THEN ASM_REWRITE_TAC [] THEN REWRITE_TAC [RIGHT_IMP_EXISTS_THM, SKOLEM_THM] THEN DISCH_THEN (X_CHOOSE_TAC q34) THEN REWRITE_TAC [ideal_classes, RIGHT_FORALL_IMP_THM, IMP_CONJ, FORALL_IN_GSPEC] THEN SUBGOAL_THEN q33 ASSUME_TAC THENL [REWRITE_TAC [IN_ELIM_THM] THEN MESON_TAC [], ALL_TAC] THEN REPEAT CONJ_TAC THEN REPEAT GEN_TAC THEN REPEAT DISCH_TAC THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_PROD, IDEAL_PROD_EQ_ZERO, IDEAL_PROD_CARRIER, IDEAL_PROD_CARRIER_LEFT] THENL [REPEAT STRIP_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC IDEAL_PROD_ASSOC THEN ASM_SIMP_TAC [RING_IDEAL_IMP_SUBSET], MP_TAC v32 THEN ASM_SIMP_TAC [RING_IDEAL_IMP_SUBSET, IDEAL_CLASS_EQ]])
+      (REWRITE_TAC [AND_FORALL_THM, (← TAUT (← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r"))] THEN X_GEN_TAC (← q r"r:A ring") THEN DISCH_TAC THEN MP_TAC (← (do pure (Prod.fst (← (do pure (← EQ_IMP_RULE (← ISPEC (← (do let z42 ← (do let z43 ← (do pure (Prod.snd (← (do let z44 ← (do let z45 ← (pure class_group); pure (concl z45)); pure (strip_forall z44))))); liftExcept (rand z43)); liftExcept (rand z42))) (← CONJUNCT2 group_tybij)))))))) THEN REWRITE_TAC [(← GSYM class_group)] THEN ANTS_TAC THENL [ALL_TAC, SIMP_TAC [group_carrier, group_id, group_inv, group_mul]] THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP DEDEKIND_IMP_INTEGRAL_DOMAIN)) THEN FIRST_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP INTEGRAL_DOMAIN_UNIT_IDEAL)) THEN SUBGOAL_THEN (← q r"!j k. ring_ideal r j /\ ring_ideal r k
+            ==> {l | ?j' k'. j' IN ideal_class r j /\ k' IN ideal_class r k /\
+                             l IN ideal_class r (ideal_prod r j' k')} =
+                ideal_class r (ideal_prod r j k:A->bool)") ASSUME_TAC THENL [REPEAT STRIP_TAC THEN REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN X_GEN_TAC (← q r"l:A->bool") THEN EQ_TAC THENL [ASM_MESON_TAC [IDEAL_CLASS_MUL, IDEAL_CLASS_TRANS], DISCH_TAC THEN MAP_EVERY EXISTS_TAC [(← q r"j:A->bool"), (← q r"k:A->bool")] THEN FIRST_ASSUM (MP_TAC o (CONJUNCT1 o (CONJUNCT2 o (CONJUNCT2 o (GEN_REWRITE_RULE id [IN_IDEAL_CLASS]))))) THEN ASM_SIMP_TAC [IDEAL_PROD_EQ_ZERO, DE_MORGAN_THM, IDEAL_CLASS_REFL]], ALL_TAC] THEN MP_TAC (← ISPEC (← q r"r:A ring") lemma) THEN ASM_REWRITE_TAC [] THEN REWRITE_TAC [RIGHT_IMP_EXISTS_THM, SKOLEM_THM] THEN DISCH_THEN (X_CHOOSE_TAC (← q r"iv:(A->bool)->A->bool")) THEN REWRITE_TAC [ideal_classes, RIGHT_FORALL_IMP_THM, IMP_CONJ, FORALL_IN_GSPEC] THEN SUBGOAL_THEN (← q r"!j. ring_ideal r j /\ ~(j = {ring_0 r})
+          ==> ideal_class r j IN
+              {ideal_class r j | j | ring_ideal r j /\ ~(j = {ring_0 r:A})}") ASSUME_TAC THENL [REWRITE_TAC [IN_ELIM_THM] THEN MESON_TAC [], ALL_TAC] THEN REPEAT CONJ_TAC THEN REPEAT GEN_TAC THEN REPEAT DISCH_TAC THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_PROD, IDEAL_PROD_EQ_ZERO, IDEAL_PROD_CARRIER, IDEAL_PROD_CARRIER_LEFT] THENL [REPEAT STRIP_TAC THEN AP_TERM_TAC THEN MATCH_MP_TAC IDEAL_PROD_ASSOC THEN ASM_SIMP_TAC [RING_IDEAL_IMP_SUBSET], MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"iv(j:A->bool):A->bool"), (← q r"j:A->bool")] IDEAL_PROD_COMM) THEN ASM_SIMP_TAC [RING_IDEAL_IMP_SUBSET, IDEAL_CLASS_EQ]])
 
   let IDEAL_CLASS_IN_CLASS_GROUP ← prove
     r"!r j:A->bool.
@@ -440,25 +399,7 @@ def setupClassgroupGroup [HolBase] (D : ClassgroupGroupDeps) :
 
   let CLASS_GROUP_HOMOMORPHISM_IDEAL_MAP ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"ideal_prod s ((g:(A->bool)->(B->bool)) (ideal_generated r {a})) (g j) =
-      g(ideal_prod r (ideal_generated r {a}) j) /\
-      ideal_prod s (g (ideal_generated r {b})) (g j') =
-      g(ideal_prod r (ideal_generated r {b}) j')"
-    let q2 ← q r"ideal_generated s {d:B}"
-    let q3 ← q r"ideal_generated s {c:B}"
-    let q8 ← q r"d:B"
-    let q9 ← q r"c:B"
-    let q10 ← q r"d:B"
-    let q11 ← q r"?d. d IN ring_carrier s /\ ~(d = ring_0 s) /\
-          (g:(A->bool)->(B->bool))(ideal_generated r {b:A}) =
-          ideal_generated s {d:B}"
-    let q12 ← q r"c:B"
-    let q13 ← q r"?c. c IN ring_carrier s /\ ~(c = ring_0 s) /\
-          (g:(A->bool)->(B->bool))(ideal_generated r {a:A}) =
-          ideal_generated s {c:B}"
-    let q14 ← q r"b:A"
-    let q15 ← q r"a:A"
-    let p16 ← prove r"!r:A ring s:B ring g j j'.
+    let lemma := (← prove r"!r:A ring s:B ring g j j'.
           integral_domain r /\ integral_domain s /\
           (!j. ring_ideal r j /\ ~(j = {ring_0 r})
                ==> ring_ideal s (g j) /\ ~(g j = {ring_0 s})) /\
@@ -469,46 +410,14 @@ def setupClassgroupGroup [HolBase] (D : ClassgroupGroupDeps) :
                ==> ?c. c IN ring_carrier s /\ ~(c = ring_0 s) /\
                        g(ideal_generated r {a}) = ideal_generated s {c}) /\
           j' IN ideal_class r j
-          ==> g j' IN ideal_class s (g j)" (REPEAT GEN_TAC THEN DISCH_THEN (REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN FIRST_ASSUM (MP_TAC o (GEN_REWRITE_RULE id [IN_IDEAL_CLASS])) THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN q15 (X_CHOOSE_THEN q14 STRIP_ASSUME_TAC)))))) THEN REWRITE_TAC [IN_IDEAL_CLASS] THEN ASM_SIMP_TAC [] THEN SUBGOAL_THEN q13 (X_CHOOSE_THEN q12 STRIP_ASSUME_TAC) THENL [ASM_SIMP_TAC [], ALL_TAC] THEN SUBGOAL_THEN q11 (X_CHOOSE_THEN q10 STRIP_ASSUME_TAC) THENL [ASM_SIMP_TAC [], ALL_TAC] THEN MAP_EVERY EXISTS_TAC [q9, q8] THEN ASM_REWRITE_TAC [] THEN MAP_EVERY (fun t => tactic_of do pure (FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun th => (do let z7 ← (pure t); let z6 ← (do let z4 ← (do let z5 ← (pure th); pure (concl z5)); liftExcept (rand z4)); pure (z6 == z7)))))))) [q3, q2] THEN SUBGOAL_THEN q1 (CONJUNCTS_THEN SUBST1_TAC) THENL [CONJ_TAC THEN CONV_TAC SYM_CONV THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_GENERATED, IDEAL_GENERATED_EQ_0], ASM_REWRITE_TAC []])
-    let lemma := p16
-    let q17 ← q r"k:A->bool"
-    let q18 ← q r"j:A->bool"
-    let q19 ← q r"(g:(A->bool)->(B->bool)) j"
-    let q20 ← q r"j:A->bool"
-    let v21 ← CONJUNCT1 CLASS_GROUP
-    let q22 ← q r"f:((A->bool)->bool)->((B->bool)->bool)"
-    let q23 ← q r"(g:(A->bool)->(B->bool)) j'"
-    let q24 ← q r"(g:(A->bool)->(B->bool)) j"
-    let q25 ← q r"s:B ring"
-    let v26 ← ISPECL [q25, q24, q23] IDEAL_CLASS_EQ
-    let q27 ← q r"ring_ideal s ((g:(A->bool)->(B->bool)) j') /\ ~(g j' = {ring_0 s})"
-    let v28 ← GSYM IDEAL_CLASS_EQ
-    let q29 ← q r"(j':A->bool) IN ideal_class r j"
-    let q30 ← q r"j:A->bool"
-    let q31 ← q r"ring_ideal r j' /\ ~(j' = {ring_0 r}) /\
-        ideal_class r j = ideal_class r (j':A->bool)"
-    let q32 ← q r"j' = @j'. ring_ideal r j' /\ ~(j' = {ring_0 r}) /\
-                            ideal_class r j = ideal_class r (j':A->bool)"
-    let q33 ← q r"j:A->bool"
-    let q34 ← q r"\c. ideal_class s ((g:(A->bool)->(B->bool))
-                             (@j. ring_ideal r j /\ ~(j = {ring_0 r}) /\
-                                  c = ideal_class r (j:A->bool)))"
-    let q35 ← q r"?f. !j. ring_ideal r j /\ ~(j = {ring_0 r})
-              ==> f(ideal_class r j) =
-                  ideal_class s ((g:(A->bool)->(B->bool)) j)"
-    let q36 ← q r"r:A ring"
-    let q37 ← q r"!j j'. j' IN ideal_class r j
-             ==> (g:(A->bool)->(B->bool)) j' IN ideal_class s (g j)"
-    let q38 ← q r"c:B"
-    let q39 ← q r"c:B"
-    let q40 ← q r"ring_ideal s ((g:(A->bool)->(B->bool))(ideal_generated r {a:A})) /\
-        ~(g(ideal_generated r {a}) = {ring_0 s}) /\
-        principal_ideal s (g(ideal_generated r {a}))"
-    let q41 ← q r"a:A"
-    let q42 ← q r"!a. a IN ring_carrier r /\ ~(a = ring_0 r)
-          ==> ?c. c IN ring_carrier s /\ ~(c = ring_0 s) /\
-                  (g:(A->bool)->(B->bool))(ideal_generated r {a:A}) =
-                  ideal_generated s {c:B}"
+          ==> g j' IN ideal_class s (g j)" (REPEAT GEN_TAC THEN DISCH_THEN (REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN FIRST_ASSUM (MP_TAC o (GEN_REWRITE_RULE id [IN_IDEAL_CLASS])) THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN (← q r"a:A") (X_CHOOSE_THEN (← q r"b:A") STRIP_ASSUME_TAC)))))) THEN REWRITE_TAC [IN_IDEAL_CLASS] THEN ASM_SIMP_TAC [] THEN SUBGOAL_THEN (← q r"?c. c IN ring_carrier s /\ ~(c = ring_0 s) /\
+          (g:(A->bool)->(B->bool))(ideal_generated r {a:A}) =
+          ideal_generated s {c:B}") (X_CHOOSE_THEN (← q r"c:B") STRIP_ASSUME_TAC) THENL [ASM_SIMP_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"?d. d IN ring_carrier s /\ ~(d = ring_0 s) /\
+          (g:(A->bool)->(B->bool))(ideal_generated r {b:A}) =
+          ideal_generated s {d:B}") (X_CHOOSE_THEN (← q r"d:B") STRIP_ASSUME_TAC) THENL [ASM_SIMP_TAC [], ALL_TAC] THEN MAP_EVERY EXISTS_TAC [(← q r"c:B"), (← q r"d:B")] THEN ASM_REWRITE_TAC [] THEN MAP_EVERY (fun t => tactic_of do pure (FIRST_X_ASSUM (SUBST1_TAC o (SYM o (checkM (fun th => (do let z7 ← (pure t); let z6 ← (do let z4 ← (do let z5 ← (pure th); pure (concl z5)); liftExcept (rand z4)); pure (z6 == z7)))))))) [(← q r"ideal_generated s {c:B}"), (← q r"ideal_generated s {d:B}")] THEN SUBGOAL_THEN (← q r"ideal_prod s ((g:(A->bool)->(B->bool)) (ideal_generated r {a})) (g j) =
+      g(ideal_prod r (ideal_generated r {a}) j) /\
+      ideal_prod s (g (ideal_generated r {b})) (g j') =
+      g(ideal_prod r (ideal_generated r {b}) j')") (CONJUNCTS_THEN SUBST1_TAC) THENL [CONJ_TAC THEN CONV_TAC SYM_CONV THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_GENERATED, IDEAL_GENERATED_EQ_0], ASM_REWRITE_TAC []]))
     prove
       r"!r:A ring s:B ring g.
             dedekind_domain r /\ dedekind_domain s /\
@@ -522,7 +431,19 @@ def setupClassgroupGroup [HolBase] (D : ClassgroupGroupDeps) :
             ==> ?f. group_homomorphism(class_group r,class_group s) f /\
                     !j. ring_ideal r j /\ ~(j = {ring_0 r})
                         ==> f(ideal_class r j) = ideal_class s (g j)"
-      (REPEAT GEN_TAC THEN DISCH_THEN (REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN FIRST_ASSUM (ASSUME_TAC o ((MATCH_MP DEDEKIND_IMP_INTEGRAL_DOMAIN) o (checkM (fun th => (do let z48 ← (q r"dedekind_domain(r:A ring)"); let z47 ← (do let z46 ← (pure th); pure (concl z46)); pure (z47 == z48)))))) THEN FIRST_ASSUM (ASSUME_TAC o ((MATCH_MP DEDEKIND_IMP_INTEGRAL_DOMAIN) o (checkM (fun th => (do let z45 ← (q r"dedekind_domain(s:B ring)"); let z44 ← (do let z43 ← (pure th); pure (concl z43)); pure (z44 == z45)))))) THEN SUBGOAL_THEN q42 ASSUME_TAC THENL [X_GEN_TAC q41 THEN STRIP_TAC THEN SUBGOAL_THEN q40 MP_TAC THENL [ASM_SIMP_TAC [RING_IDEAL_IDEAL_GENERATED, IDEAL_GENERATED_EQ_0], ALL_TAC] THEN REWRITE_TAC [principal_ideal] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN q39 STRIP_ASSUME_TAC))) THEN EXISTS_TAC q38 THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST_ALL_TAC THEN ASM_MESON_TAC [IDEAL_GENERATED_0], ALL_TAC] THEN SUBGOAL_THEN q37 ASSUME_TAC THENL [REPEAT STRIP_TAC THEN MATCH_MP_TAC lemma THEN EXISTS_TAC q36 THEN ASM_REWRITE_TAC [], ALL_TAC] THEN SUBGOAL_THEN q35 MP_TAC THENL [EXISTS_TAC q34 THEN X_GEN_TAC q33 THEN STRIP_TAC THEN REWRITE_TAC [] THEN ABBREV_TAC q32 THEN SUBGOAL_THEN q31 STRIP_ASSUME_TAC THENL [EXPAND_TAC "j'" THEN CONV_TAC SELECT_CONV THEN EXISTS_TAC q30 THEN ASM_REWRITE_TAC [], ALL_TAC] THEN SUBGOAL_THEN q29 ASSUME_TAC THENL [ASM_SIMP_TAC [v28], ALL_TAC] THEN SUBGOAL_THEN q27 STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [], ALL_TAC] THEN MP_TAC v26 THEN ASM_SIMP_TAC [], MATCH_MP_TAC MONO_EXISTS] THEN X_GEN_TAC q22 THEN DISCH_TAC THEN ASM_REWRITE_TAC [GROUP_HOMOMORPHISM] THEN ASM_SIMP_TAC [v21, ideal_classes, SUBSET, FORALL_IN_IMAGE, IMP_CONJ, RIGHT_FORALL_IMP_THM, FORALL_IN_GSPEC] THEN CONJ_TAC THENL [X_GEN_TAC q20 THEN REPEAT DISCH_TAC THEN ASM_SIMP_TAC [IN_ELIM_THM] THEN EXISTS_TAC q19 THEN ASM_SIMP_TAC [], ALL_TAC] THEN X_GEN_TAC q18 THEN REPEAT DISCH_TAC THEN X_GEN_TAC q17 THEN REPEAT DISCH_TAC THEN ASM_SIMP_TAC [CLASS_GROUP_MUL] THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_PROD, IDEAL_PROD_EQ_ZERO])
+      (REPEAT GEN_TAC THEN DISCH_THEN (REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN FIRST_ASSUM (ASSUME_TAC o ((MATCH_MP DEDEKIND_IMP_INTEGRAL_DOMAIN) o (checkM (fun th => (do let z48 ← (q r"dedekind_domain(r:A ring)"); let z47 ← (do let z46 ← (pure th); pure (concl z46)); pure (z47 == z48)))))) THEN FIRST_ASSUM (ASSUME_TAC o ((MATCH_MP DEDEKIND_IMP_INTEGRAL_DOMAIN) o (checkM (fun th => (do let z45 ← (q r"dedekind_domain(s:B ring)"); let z44 ← (do let z43 ← (pure th); pure (concl z43)); pure (z44 == z45)))))) THEN SUBGOAL_THEN (← q r"!a. a IN ring_carrier r /\ ~(a = ring_0 r)
+          ==> ?c. c IN ring_carrier s /\ ~(c = ring_0 s) /\
+                  (g:(A->bool)->(B->bool))(ideal_generated r {a:A}) =
+                  ideal_generated s {c:B}") ASSUME_TAC THENL [X_GEN_TAC (← q r"a:A") THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"ring_ideal s ((g:(A->bool)->(B->bool))(ideal_generated r {a:A})) /\
+        ~(g(ideal_generated r {a}) = {ring_0 s}) /\
+        principal_ideal s (g(ideal_generated r {a}))") MP_TAC THENL [ASM_SIMP_TAC [RING_IDEAL_IDEAL_GENERATED, IDEAL_GENERATED_EQ_0], ALL_TAC] THEN REWRITE_TAC [principal_ideal] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN (← q r"c:B") STRIP_ASSUME_TAC))) THEN EXISTS_TAC (← q r"c:B") THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST_ALL_TAC THEN ASM_MESON_TAC [IDEAL_GENERATED_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"!j j'. j' IN ideal_class r j
+             ==> (g:(A->bool)->(B->bool)) j' IN ideal_class s (g j)") ASSUME_TAC THENL [REPEAT STRIP_TAC THEN MATCH_MP_TAC lemma THEN EXISTS_TAC (← q r"r:A ring") THEN ASM_REWRITE_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"?f. !j. ring_ideal r j /\ ~(j = {ring_0 r})
+              ==> f(ideal_class r j) =
+                  ideal_class s ((g:(A->bool)->(B->bool)) j)") MP_TAC THENL [EXISTS_TAC (← q r"\c. ideal_class s ((g:(A->bool)->(B->bool))
+                             (@j. ring_ideal r j /\ ~(j = {ring_0 r}) /\
+                                  c = ideal_class r (j:A->bool)))") THEN X_GEN_TAC (← q r"j:A->bool") THEN STRIP_TAC THEN REWRITE_TAC [] THEN ABBREV_TAC (← q r"j' = @j'. ring_ideal r j' /\ ~(j' = {ring_0 r}) /\
+                            ideal_class r j = ideal_class r (j':A->bool)") THEN SUBGOAL_THEN (← q r"ring_ideal r j' /\ ~(j' = {ring_0 r}) /\
+        ideal_class r j = ideal_class r (j':A->bool)") STRIP_ASSUME_TAC THENL [EXPAND_TAC "j'" THEN CONV_TAC SELECT_CONV THEN EXISTS_TAC (← q r"j:A->bool") THEN ASM_REWRITE_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"(j':A->bool) IN ideal_class r j") ASSUME_TAC THENL [ASM_SIMP_TAC [(← GSYM IDEAL_CLASS_EQ)], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_ideal s ((g:(A->bool)->(B->bool)) j') /\ ~(g j' = {ring_0 s})") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"s:B ring"), (← q r"(g:(A->bool)->(B->bool)) j"), (← q r"(g:(A->bool)->(B->bool)) j'")] IDEAL_CLASS_EQ) THEN ASM_SIMP_TAC [], MATCH_MP_TAC MONO_EXISTS] THEN X_GEN_TAC (← q r"f:((A->bool)->bool)->((B->bool)->bool)") THEN DISCH_TAC THEN ASM_REWRITE_TAC [GROUP_HOMOMORPHISM] THEN ASM_SIMP_TAC [(← CONJUNCT1 CLASS_GROUP), ideal_classes, SUBSET, FORALL_IN_IMAGE, IMP_CONJ, RIGHT_FORALL_IMP_THM, FORALL_IN_GSPEC] THEN CONJ_TAC THENL [X_GEN_TAC (← q r"j:A->bool") THEN REPEAT DISCH_TAC THEN ASM_SIMP_TAC [IN_ELIM_THM] THEN EXISTS_TAC (← q r"(g:(A->bool)->(B->bool)) j") THEN ASM_SIMP_TAC [], ALL_TAC] THEN X_GEN_TAC (← q r"j:A->bool") THEN REPEAT DISCH_TAC THEN X_GEN_TAC (← q r"k:A->bool") THEN REPEAT DISCH_TAC THEN ASM_SIMP_TAC [CLASS_GROUP_MUL] THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_PROD, IDEAL_PROD_EQ_ZERO])
 
   let DEDEKIND_CLASS_GROUP_EXTENSION ← prove
     r"!r:A ring s:B ring h.

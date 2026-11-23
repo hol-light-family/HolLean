@@ -23,9 +23,13 @@ private def ioOk {α : Type} (what : String) (x : IO (Except String α)) : IO α
     `T`. -/
 initialize indAux : thm × thm × term ← do
   let pth ← ioOk "EXISTS_EQUATION_pth" (HolCore.IndDefs.EXISTS_EQUATION_pth B).run
+  -- ind_defs.ml order: `t_tm = `T`` (82), then MONO_TAC's
+  -- `imp = `(==>)` and IMP_REFL = ITAUT `!p. p ==> p`` (345).  MONO_TAC uses
+  -- an equal `(==>)` made with mk_const.
+  let tTm ← ioOk "parse T" (HolCore.Parser.parse_term "T")
+  let _ ← ioOk "parse (==>)" (HolCore.Parser.parse_term "(==>)")
   let p ← ioOk "parse !p. p ==> p" (HolCore.Parser.parse_term "!p. p ==> p")
   let impRefl ← ioOk "IMP_REFL" (HolCore.Itab.ITAUT B p)
-  let tTm ← ioOk "parse T" (HolCore.Parser.parse_term "T")
   pure (pth, impRefl, tTm)
 
 initialize theInductiveDefinitions : IO.Ref (List (thm × thm × thm)) ← IO.mkRef []

@@ -7102,10 +7102,10 @@ def setupHAD [HolBase] (D : HomologyDeps) (BSCH : SCH) (BMSR : MSR) (BRBD : RBD)
           GROUP_ISOMORPHISM_CYCLE_GROUP_SUM) THEN
       ASM_REWRITE_TAC [← GSYM GROUP_MONOMORPHISM_EPIMORPHISM] THEN
       REWRITE_TAC [group_epimorphism] THEN
-      DISCH_THEN (fun th => tactic_of do
+      DISCH_THEN ((fun (ocq2 : _) => fun th => tactic_of do
         pure (MP_TAC (← MATCH_MP (← SET_RULE
-          (← q r"IMAGE f s = t ==> !y. y IN t ==> ?x. x IN s /\ f x = y"))
-          (← liftExcept (last (CONJUNCTS th)))))) THEN
+          ocq2)
+          (← liftExcept (last (CONJUNCTS th)))))) (← q r"IMAGE f s = t ==> !y. y IN t ==> ?x. x IN s /\ f x = y")) THEN
       REWRITE_TAC [RELCYCLE_GROUP] THEN MESON_TAC [IN]] THEN
     REWRITE_TAC [SUM_GROUP_CLAUSES, RESTRICTION_EXTENSION, IN_ELIM_THM] THEN
     REWRITE_TAC [homology_group, RELATIVE_HOMOLOGY_GROUP] THEN
@@ -12488,9 +12488,9 @@ def setupHEC [HolBase] (D : HomologyDeps) (BHXA : HXA) (BHDR : HDR) (BHCT : HCT)
          [DISCH_TAC THEN FIRST_ASSUM (MP_TAC o SPECL [← q r"(:num->real)", ← q r"&0"]) THEN
           EXPAND_TAC "squashable" THEN REWRITE_TAC [IN_UNIV] THEN
           REWRITE_TAC [continuous_map, retraction_maps, SUBTOPOLOGY_UNIV] THEN
-          DISCH_THEN (fun th => tactic_of do
-            pure (MP_TAC (← SPEC (← q r"x:num->real")
-              (← liftExcept (hd (CONJUNCTS th)))))) THEN
+          DISCH_THEN ((fun (ocq1 : _) => fun th => tactic_of do
+            pure (MP_TAC (← SPEC ocq1
+              (← liftExcept (hd (CONJUNCTS th)))))) (← q r"x:num->real")) THEN
           ASM_REWRITE_TAC [] THEN REWRITE_TAC [euclidean_space] THEN
           REWRITE_TAC [TOPSPACE_SUBTOPOLOGY, IN_INTER, IN_ELIM_THM] THEN
           REWRITE_TAC [IN_NUMSEG, ← ARITH_RULE

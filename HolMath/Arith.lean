@@ -906,17 +906,13 @@ def setupArith4 [HolBase] (N : HolMath.Nums.NumsThms)
         (!n. n < m /\ P(n + 1) ==> P n)
         ==> !n. P n"
    (← do
-    let t3 ← TAUT (← q r"~(~p /\ q) <=> q ==> p")
-    let t2 ← TAUT (← q r"~p ==> q <=> ~q ==> p")
-    let t1 ← TAUT (← q r"q /\ ~r ==> (p /\ q <=> r) ==> ~p")
-    let m1 ← MESON [] (← q r"(!x. P x) <=> ~(?x. ~P x)")
     pure
      (REWRITE_TAC [← GSYM ADD1] THEN REPEAT GEN_TAC THEN STRIP_TAC THEN
-      ONCE_REWRITE_TAC [m1] THEN
+      ONCE_REWRITE_TAC [(← MESON [] (← q r"(!x. P x) <=> ~(?x. ~P x)"))] THEN
       W (MP_TAC o PART_MATCH (lhand o lhand) num_MAX o rand o snd) THEN
-      MATCH_MP_TAC t1 THEN
-      ONCE_REWRITE_TAC [t2] THEN
-      REWRITE_TAC [NOT_EXISTS_THM, t3, NOT_LE] THEN
+      MATCH_MP_TAC (← TAUT (← q r"q /\ ~r ==> (p /\ q <=> r) ==> ~p")) THEN
+      ONCE_REWRITE_TAC [(← TAUT (← q r"~p ==> q <=> ~q ==> p"))] THEN
+      REWRITE_TAC [NOT_EXISTS_THM, (← TAUT (← q r"~(~p /\ q) <=> q ==> p")), NOT_LE] THEN
       ASM_MESON_TAC [LTE_CASES, LT, LT_IMP_LE]))
 
   return {
@@ -1643,8 +1639,6 @@ def setupArith7 [HolBase] (N : HolMath.Nums.NumsThms)
   let MOD_LE_TWICE ← prove
    r"!m n. 0 < m /\ m <= n ==> 2 * n MOD m <= n"
    (← do
-    let m1 ← MESON [LT_ADD_RCANCEL]
-     (← q r"n - m:num < m <=> (n - m) + m < m + m")
     pure
      (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"2 * m <= n") THENL
        [TRANS_TAC LE_TRANS (← q r"2 * m") THEN
@@ -1657,7 +1651,8 @@ def setupArith7 [HolBase] (N : HolMath.Nums.NumsThms)
        (fun th => ASM_SIMP_TAC [LE_REFL, SUB_ADD, th]) THEN
       MATCH_MP_TAC MOD_UNIQ THEN EXISTS_TAC (← q r"1") THEN
       ONCE_REWRITE_TAC [ADD_SYM] THEN ASM_SIMP_TAC [MULT_CLAUSES, SUB_ADD] THEN
-      ONCE_REWRITE_TAC [m1] THEN
+      ONCE_REWRITE_TAC [(← MESON [LT_ADD_RCANCEL]
+     (← q r"n - m:num < m <=> (n - m) + m < m + m"))] THEN
       ASM_SIMP_TAC [← GSYM MULT_2, SUB_ADD]))
 
   let (DIV_1, MOD_1) ← CONJ_PAIR (← prove
@@ -2208,7 +2203,8 @@ def setupArith9 [HolBase] (N : HolMath.Nums.NumsThms)
     (MESON' : List thm → term → IO (Except String thm))
     (SELECT_CONV' : term → Except String thm)
     (new_definition' : term → IO (Except String thm))
-    (prove_recursive_functions_exist' : thm → term → IO (Except String thm)) :
+    (prove_recursive_functions_exist' : thm → term → IO (Except String thm))
+    (procs : IO (Except String Unit)) :
     ExceptT String IO ArithThms9 := do
   let MESON (ths : List thm) (t : term) : ExceptT String IO thm := MESON' ths t
   let SELECT_CONV : ioconv := fun t => pure (SELECT_CONV' t)
@@ -2266,6 +2262,10 @@ def setupArith9 [HolBase] (N : HolMath.Nums.NumsThms)
    (MP_TAC (← INST [(← q r"\x:num y:num. ~P x y", ← q r"P:num->num->bool")]
       DIVMOD_ELIM_THM) THEN
     MESON_TAC [])
+
+  -- arith.ml 1713-1770: MOD_DOWN_CONV, NUM_CANCEL_CONV, LE_IMP and
+  -- `parse_as_binder "minimal"`, made by Session at this point.
+  ExceptT.mk procs
 
   /- Binder for "the minimal n such that". -/
 
@@ -2351,13 +2351,12 @@ def setupArith9 [HolBase] (N : HolMath.Nums.NumsThms)
         P 0 a /\ (!n x. P n x ==> ?y. P (SUC n) y /\ R n x y)
         ==> ?f. f 0 = a /\ (!n. P n (f n)) /\ (!n. R n (f n) (f(SUC n)))"
    (← do
-    let m1 ← MESON [num_CASES] (← q r"(!n. P n) <=> P 0 /\ !n. P(SUC n)")
     pure
      (REPEAT STRIP_TAC THEN
       MP_TAC (← prove_recursive_functions_exist num_RECURSION
         (← q r"f 0 = (a:A) /\ (!n. f(SUC n) = @y. P (SUC n) y /\ R n (f n) y)")) THEN
       MATCH_MP_TAC MONO_EXISTS THEN GEN_TAC THEN STRIP_TAC THEN
-      ASM_REWRITE_TAC [] THEN GEN_REWRITE_TAC LAND_CONV [m1] THEN
+      ASM_REWRITE_TAC [] THEN GEN_REWRITE_TAC LAND_CONV [(← MESON [num_CASES] (← q r"(!n. P n) <=> P 0 /\ !n. P(SUC n)"))] THEN
       ASM_REWRITE_TAC [AND_FORALL_THM] THEN INDUCT_TAC THEN ASM_MESON_TAC []))
 
   let DEPENDENT_CHOICE ← prove
@@ -2517,8 +2516,9 @@ def BITS_ELIM_CONV [HolBase]
     REWRITE_TAC [ADD1, EQ_ADD_RCANCEL, ← GSYM MULT_2] THEN
     REWRITE_TAC [EQ_MULT_LCANCEL] THEN
     REWRITE_TAC [TWO, NOT_SUC]))
-  let mvar ← q r"m:num"
+  -- `mvar,nvar = \`m:num\`,\`n:num\``: the tuple is built right to left.
   let nvar ← q r"n:num"
+  let mvar ← q r"m:num"
   return bitsElimCore ZERO_pth NUMERAL_pth BIT0_pth BIT1_pth mvar nvar
 
 end

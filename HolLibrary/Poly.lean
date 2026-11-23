@@ -21,10 +21,11 @@
   sub-conversions they use, with the rewrite nets built once, as in OCaml.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, ARITH_RULE, REAL_ARITH, TAUT) they are bound first, in
-  OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Analysis
@@ -1930,10 +1931,9 @@ def setupNonNil [HolBase] (D : PolyDeps) (BDefs : Defs) :
   let POLY_CMUL_LID ← prove
    r"!p. &1 ## p = p"
    (← do
-    let r1 ← REAL_ARITH (← q r"&1 * h = h")
     pure (LIST_INDUCT_TAC THENL
      [SIMP_TAC [poly_cmul],
-      ASM_SIMP_TAC [poly_cmul] THEN SIMP_TAC [r1]]))
+      ASM_SIMP_TAC [poly_cmul] THEN SIMP_TAC [(← REAL_ARITH (← q r"&1 * h = h"))]]))
 
   let POLY_MUL_LID ← prove
    r"!p. [&1] ** p = p"
@@ -1944,13 +1944,11 @@ def setupNonNil [HolBase] (D : PolyDeps) (BDefs : Defs) :
   let POLY_MUL_RID ← prove
    r"!p. p ** [&1] = p"
    (← do
-    let r2 ← REAL_ARITH (← q r"h * (real_of_num 1) = h")
-    let r1 ← REAL_ARITH (← q r"h + (real_of_num 0) = h")
     pure (LIST_INDUCT_TAC THENL
      [SIMP_TAC [poly_mul],
       ASM_CASES_TAC (← q r"t:(real)list = []") THEN
       ASM_SIMP_TAC [poly_mul, poly_cmul, poly_add, NOT_CONS_NIL, HD, TL,
-       r1, r2]]))
+       (← REAL_ARITH (← q r"h + (real_of_num 0) = h")), (← REAL_ARITH (← q r"h * (real_of_num 1) = h"))]]))
 
   let POLY_ADD_SYM ← prove
    r"!x y . x ++ y = y ++ x"
@@ -2016,7 +2014,6 @@ def setupHeadsTails [HolBase] (D : PolyDeps) (BDefs : Defs) (BNonNil : NonNil) :
   let TL_POLY_MUL_X ← prove
    r"!p. TL ([&0;&1] ** p) = p"
    (← do
-    let r1 ← REAL_ARITH (← q r"(&0) * h + h' = h'")
     pure (LIST_INDUCT_TAC THENL
      [ONCE_REWRITE_TAC [poly_mul] THEN
       SIMP_TAC [NOT_CONS_NIL, poly_cmul, poly_add, TL, poly_mul],
@@ -2027,7 +2024,7 @@ def setupHeadsTails [HolBase] (D : PolyDeps) (BDefs : Defs) (BNonNil : NonNil) :
       SPEC_TAC (← q r"t:(real)list", ← q r"t:(real)list") THEN
       LIST_INDUCT_TAC THENL
        [SIMP_TAC [poly_cmul, poly_add],
-        ASM_SIMP_TAC [poly_cmul, poly_add, NOT_CONS_NIL, HD, TL, r1]]]))
+        ASM_SIMP_TAC [poly_cmul, poly_add, NOT_CONS_NIL, HD, TL, (← REAL_ARITH (← q r"(&0) * h + h' = h'"))]]]))
 
   let HD_POLY_MUL_X ← prove
    r"!p. HD ([&0;&1] ** p) = &0"
@@ -2043,10 +2040,9 @@ def setupHeadsTails [HolBase] (D : PolyDeps) (BDefs : Defs) (BNonNil : NonNil) :
   let HD_POLY_EXP_X_SUC ← prove
    r"!n . HD (poly_exp [&0;&1] (SUC n)) = &0"
    (← do
-    let r1 ← REAL_ARITH (← q r"&0 * &1 + &0 = &0")
     pure (INDUCT_TAC THENL
      [SIMP_TAC [poly_exp, poly_add, HD, TL, poly_cmul, poly_mul, NOT_CONS_NIL,
-               r1],
+               (← REAL_ARITH (← q r"&0 * &1 + &0 = &0"))],
       SIMP_TAC [poly_exp, HD_POLY_MUL_X]]))
 
   let HD_POLY_ADD ← prove
@@ -2249,9 +2245,6 @@ def setupLengths [HolBase] (D : PolyDeps) (BDefs : Defs) (BConsequences : Conseq
   let POLY_ADD_LENGTH ← prove
    r"!p q. LENGTH (p ++ q) =  MAX (LENGTH p) (LENGTH q)"
    (← do
-    let r3 ← ARITH_RULE (← q r"~(x > y) ==> ~((SUC x) > (SUC y))")
-    let r2 ← ARITH_RULE (← q r"x > y ==> (SUC x) > (SUC y)")
-    let r1 ← ARITH_RULE (← q r"MAX x y = if (x > y) then x else y")
     pure (LIST_INDUCT_TAC THENL
      [SIMP_TAC [poly_add, LENGTH] THEN ARITH_TAC,
       LIST_INDUCT_TAC THENL
@@ -2259,10 +2252,10 @@ def setupLengths [HolBase] (D : PolyDeps) (BDefs : Defs) (BConsequences : Conseq
         SIMP_TAC [poly_add, LENGTH] THEN
         ONCE_REWRITE_TAC [NOT_CONS_NIL] THEN SIMP_TAC [HD, TL, LENGTH] THEN
         ASM_SIMP_TAC [] THEN
-        ONCE_REWRITE_TAC [r1] THEN
+        ONCE_REWRITE_TAC [(← ARITH_RULE (← q r"MAX x y = if (x > y) then x else y"))] THEN
         ASM_CASES_TAC (← q r"LENGTH (t:(real)list) > LENGTH (t':(real)list)") THENL
-         [ASM_SIMP_TAC [r2],
-          ASM_SIMP_TAC [r3]]]]))
+         [ASM_SIMP_TAC [(← ARITH_RULE (← q r"x > y ==> (SUC x) > (SUC y)"))],
+          ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(x > y) ==> ~((SUC x) > (SUC y))"))]]]]))
 
   let POLY_MUL_LENGTH ← prove
    r"!p h t. LENGTH (p ** (CONS h t)) >= LENGTH p"
@@ -2276,12 +2269,11 @@ def setupLengths [HolBase] (D : PolyDeps) (BDefs : Defs) (BConsequences : Conseq
                          ← q r"LENGTH (h ## (CONS h' t'))",
                          ← q r"SUC (LENGTH (t:(real)list))"] (← GEN_ALL lemma05)
     let lemma07 ← MATCH_MP (lemma06) (lemma03)
-    let r1 ← ARITH_RULE (← q r"!x y. (MAX x y) = x + (y - x)")
     pure (LIST_INDUCT_TAC THENL
      [SIMP_TAC [POLY_MUL_CLAUSES] THEN ARITH_TAC,
       SIMP_TAC [poly_mul] THEN ASM_CASES_TAC (← q r"(t:(real)list) = []") THENL
        [ASM_SIMP_TAC [POLY_CMUL_LENGTH, LENGTH] THEN ARITH_TAC,
-        ASM_SIMP_TAC [POLY_ADD_LENGTH, LENGTH, lemma07, r1]]]))
+        ASM_SIMP_TAC [POLY_ADD_LENGTH, LENGTH, lemma07, (← ARITH_RULE (← q r"!x y. (MAX x y) = x + (y - x)"))]]]))
 
   let POLY_EXP_X_REC ← prove
    r"!n. poly_exp [&0;&1] (SUC n) = CONS (&0) (poly_exp [&0;&1] n)"
@@ -2325,8 +2317,6 @@ def setupLengths [HolBase] (D : PolyDeps) (BDefs : Defs) (BConsequences : Conseq
     let lem017 ← ARITH_RULE (← q r"1 <= (LENGTH (t:(real)list))
                        ==> ((LENGTH t) - 1 = PRE (LENGTH t))")
     let lem018 ← MP lem017 lem006
-    let r1 ← ARITH_RULE (← q r"0 + 1 = 1")
-    let r2 ← REAL_ARITH (← q r"(A:real) * B * C = B * (A * C)")
     pure (LIST_INDUCT_TAC THENL
       [SIMP_TAC [NOT_CONS_NIL]
             ,
@@ -2343,7 +2333,7 @@ def setupLengths [HolBase] (D : PolyDeps) (BDefs : Defs) (BConsequences : Conseq
             ASM_SIMP_TAC [POLY_CONST, LENGTH, PRE]
        THEN ONCE_REWRITE_TAC [poly]
        THEN ONCE_REWRITE_TAC [← GSYM lem002]
-       THEN ONCE_REWRITE_TAC [r1]
+       THEN ONCE_REWRITE_TAC [(← ARITH_RULE (← q r"0 + 1 = 1"))]
        THEN ONCE_REWRITE_TAC [← ExceptT.mk (NUMSEG_CONV (← q r"0..0"))]
        THEN ONCE_REWRITE_TAC [SUM_SING]
        THEN BETA_TAC
@@ -2354,7 +2344,7 @@ def setupLengths [HolBase] (D : PolyDeps) (BDefs : Defs) (BConsequences : Conseq
        THEN SIMP_TAC [EL, TL]
        THEN ONCE_REWRITE_TAC [real_pow]
        THEN ONCE_REWRITE_TAC [REAL_MUL_RID]
-       THEN ONCE_REWRITE_TAC [r2]
+       THEN ONCE_REWRITE_TAC [(← REAL_ARITH (← q r"(A:real) * B * C = B * (A * C)"))]
        THEN ONCE_REWRITE_TAC [NSUM_LMUL]
        THEN ONCE_REWRITE_TAC [SUM_LMUL]
        THEN ASM_SIMP_TAC []
@@ -2374,11 +2364,14 @@ def setupLengths [HolBase] (D : PolyDeps) (BDefs : Defs) (BConsequences : Conseq
   /- Now we're finished with polynomials...                                -/
   /- --------------------------------------------------------------------- -/
 
-  -- `do_list reduce_interface [...]`; faithful `for` loop as in HolMath/RealAx.
-  for p in [("divides", r"poly_divides:real list->real list->bool"),
+  -- `do_list reduce_interface [...]`: the list's quotations are parsed, last
+  -- first, before `do_list` runs.
+  let ps := [("divides", r"poly_divides:real list->real list->bool"),
             ("exp", r"poly_exp:real list -> num -> real list"),
-            ("diff", r"poly_diff:real list->real list")] do
-    reduce_interface p.1 (← q p.2)
+            ("diff", r"poly_diff:real list->real list")]
+  let tms := (← ps.reverse.mapM (fun p => q p.2)).reverse
+  for (p, tm) in ps.zip tms do
+    reduce_interface p.1 tm
 
   unparse_as_infix "exp"
 

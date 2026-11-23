@@ -18,8 +18,11 @@
   a `term -> ExceptT String IO thm` closing over the fixed tactic.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  INT_ARITH, INT_RING and INT_REDUCE_CONV come from Session.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolMath
@@ -194,11 +197,10 @@ def setupFrag [HolBase] (D : FragDeps) :
   let DEST_FRAG_OF ← prove
    r"!c:A. dest_frag(frag_of c) = \a. if a = c then &1 else &0"
    (← do
-    let m ← MESON [] (← q r"~(if p then F else T) <=> p")
     pure (REWRITE_TAC [frag_of, ← GSYM (← CONJUNCT2 frag_tybij)] THEN
       ONCE_REWRITE_TAC [COND_RAND] THEN ONCE_REWRITE_TAC [COND_RATOR] THEN
       CONV_TAC INT_REDUCE_CONV THEN
-      REWRITE_TAC [m] THEN
+      REWRITE_TAC [(← MESON [] (← q r"~(if p then F else T) <=> p"))] THEN
       REWRITE_TAC [SING_GSPEC, FINITE_SING]))
 
   let DEST_FRAG_NEG ← prove
@@ -235,8 +237,7 @@ def setupFrag [HolBase] (D : FragDeps) :
   let FRAG_OF_NONZERO ← prove
    r"!a:A. ~(frag_of a = frag_0)"
    (← do
-    let m ← MESON [] (← q r"c = d ==> !a:A. dest_frag c a = dest_frag d a")
-    pure (GEN_TAC THEN DISCH_THEN (MP_TAC o SPEC (← q "a:A") o MATCH_MP m) THEN
+    pure (GEN_TAC THEN DISCH_THEN (MP_TAC o SPEC (← q "a:A") o MATCH_MP (← MESON [] (← q r"c = d ==> !a:A. dest_frag c a = dest_frag d a"))) THEN
       REWRITE_TAC [DEST_FRAG_OF, DEST_FRAG_0] THEN
       CONV_TAC INT_REDUCE_CONV))
 
@@ -270,11 +271,10 @@ def setupFrag [HolBase] (D : FragDeps) :
   let FRAG_SUPPORT_OF ← prove
    r"!a:A. frag_support(frag_of a) = {a}"
    (← do
-    let m ← MESON [] (← q r"~(if p then F else T) <=> p")
     pure (REWRITE_TAC [frag_support, DEST_FRAG_OF] THEN
       ONCE_REWRITE_TAC [COND_RAND] THEN ONCE_REWRITE_TAC [COND_RATOR] THEN
       CONV_TAC INT_REDUCE_CONV THEN
-      REWRITE_TAC [m] THEN
+      REWRITE_TAC [(← MESON [] (← q r"~(if p then F else T) <=> p"))] THEN
       REWRITE_TAC [SING_GSPEC]))
 
   let FRAG_SUPPORT_NEG ← prove
@@ -304,16 +304,14 @@ def setupFrag [HolBase] (D : FragDeps) :
   let FRAG_SUPPORT_EQ_EMPTY ← prove
    r"!c:A frag. frag_support c = {} <=> c = frag_0"
    (← do
-    let m ← MESON [frag_tybij] (← q r"c = d <=> dest_frag c = dest_frag d")
     pure (REWRITE_TAC [EXTENSION, NOT_IN_EMPTY] THEN
-      REWRITE_TAC [m] THEN
+      REWRITE_TAC [(← MESON [frag_tybij] (← q r"c = d <=> dest_frag c = dest_frag d"))] THEN
       REWRITE_TAC [DEST_FRAG_0, FUN_EQ_THM, frag_support, IN_ELIM_THM]))
 
   let FRAG_OF_EQ ← prove
    r"!x y:A. frag_of x = frag_of y <=> x = y"
    (← do
-    let s ← SET_RULE (← q r"{x} = {y} <=> x = y")
-    pure (MESON_TAC [FRAG_SUPPORT_OF, s]))
+    pure (MESON_TAC [FRAG_SUPPORT_OF, (← SET_RULE (← q r"{x} = {y} <=> x = y"))]))
 
   let FRAG_ADD_EQ_0 ← prove
    r"!c1 c2:A frag.
@@ -321,21 +319,19 @@ def setupFrag [HolBase] (D : FragDeps) :
         frag_add c1 c2 = frag_0
         ==> c1 = frag_0 /\ c2 = frag_0"
    (← do
-    let a ← INT_ARITH
-     (← q r"~(~(x:int = &0) /\ ~(y = &0)) ==> x + y = &0 ==> x = &0 /\ y = &0")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [frag_support, FRAG_EQ] THEN
       DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
       REWRITE_TAC [DEST_FRAG_ADD, DEST_FRAG_0, FUN_EQ_THM, AND_FORALL_THM] THEN
-      MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN MATCH_MP_TAC a THEN
+      MATCH_MP_TAC MONO_FORALL THEN GEN_TAC THEN MATCH_MP_TAC (← INT_ARITH
+     (← q r"~(~(x:int = &0) /\ ~(y = &0)) ==> x + y = &0 ==> x = &0 /\ y = &0")) THEN
       ASM SET_TAC []))
 
   let NEUTRAL_FRAG_ADD ← prove
    r"neutral frag_add :A frag = frag_0"
    (← do
-    let f ← FRAG_MODULE
+    pure (REWRITE_TAC [neutral, (← FRAG_MODULE
      (← q r"(frag_add x y = y <=> x = frag_0) /\
-            (frag_add y x = y <=> x = frag_0)")
-    pure (REWRITE_TAC [neutral, f]))
+            (frag_add y x = y <=> x = frag_0)"))]))
 
   let MONOIDAL_FRAG_ADD ← prove
    r"monoidal frag_add"
@@ -346,29 +342,23 @@ def setupFrag [HolBase] (D : FragDeps) :
         frag_cmul a (iterate frag_add k f) =
         iterate frag_add k (\b. frag_cmul a (f b))"
    (← do
-    let f3 ← FRAG_MODULE
-     (← q r"frag_cmul a (frag_add x y) =
-            frag_add (frag_cmul a x) (frag_cmul a y)")
     -- frag.ml calls `FRAG_MODULE \`frag_cmul a frag_0 = frag_0\`` twice
     -- (lines 193 and 188); both calls are made, the later one first.
-    let f2b ← FRAG_MODULE (← q r"frag_cmul a frag_0 = frag_0")
-    let f2 ← FRAG_MODULE (← q r"frag_cmul a frag_0 = frag_0")
-    let f1 ← FRAG_MODULE (← q r"frag_cmul a c = frag_0 <=> a = &0 \/ c = frag_0")
-    let r0 ← REWRITE_RULE [NEUTRAL_FRAG_ADD]
-      (← MATCH_MP ITERATE_EQ_NEUTRAL MONOIDAL_FRAG_ADD)
-    let f0 ← FRAG_MODULE (← q r"frag_cmul (&0) x = frag_0")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q "a:int = &0") THEN
-      ASM_SIMP_TAC [INT_MUL_LZERO, f0, r0] THEN
+      ASM_SIMP_TAC [INT_MUL_LZERO, (← FRAG_MODULE (← q r"frag_cmul (&0) x = frag_0")), (← REWRITE_RULE [NEUTRAL_FRAG_ADD]
+      (← MATCH_MP ITERATE_EQ_NEUTRAL MONOIDAL_FRAG_ADD))] THEN
       ONCE_REWRITE_TAC [ITERATE_EXPAND_CASES] THEN
-      ASM_REWRITE_TAC [support, NEUTRAL_FRAG_ADD, f1] THEN
+      ASM_REWRITE_TAC [support, NEUTRAL_FRAG_ADD, (← FRAG_MODULE (← q r"frag_cmul a c = frag_0 <=> a = &0 \/ c = frag_0"))] THEN
       COND_CASES_TAC THEN
-      ASM_REWRITE_TAC [f2] THEN
+      ASM_REWRITE_TAC [(← FRAG_MODULE (← q r"frag_cmul a frag_0 = frag_0"))] THEN
       UNDISCH_TAC (← q r"FINITE {x | x IN k /\ ~((f:B->A frag) x = frag_0)}") THEN
       SPEC_TAC (← q r"{x | x IN k /\ ~((f:B->A frag) x = frag_0)}", ← q r"k:B->bool") THEN
       MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
       SIMP_TAC [← MATCH_MP ITERATE_CLAUSES MONOIDAL_FRAG_ADD] THEN
-      REWRITE_TAC [NEUTRAL_FRAG_ADD, f2b] THEN
-      SIMP_TAC [f3]))
+      REWRITE_TAC [NEUTRAL_FRAG_ADD, (← FRAG_MODULE (← q r"frag_cmul a frag_0 = frag_0"))] THEN
+      SIMP_TAC [(← FRAG_MODULE
+     (← q r"frag_cmul a (frag_add x y) =
+            frag_add (frag_cmul a x) (frag_cmul a y)"))]))
 
   let FRAG_SUPPORT_SUM ← prove
    r"!f:B->A frag k.
@@ -424,20 +414,17 @@ def setupFrag [HolBase] (D : FragDeps) :
    r"!f:A->B frag c x.
         frag_extend f (frag_cmul c x) = frag_cmul c (frag_extend f x)"
    (← do
-    let f1 ← FRAG_MODULE
-      (← q r"frag_cmul (a * b) c = frag_cmul a (frag_cmul b c)")
-    let f0 ← FRAG_MODULE (← q r"frag_cmul (&0) x = frag_0")
     pure (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q "c:int = &0") THEN
-      ASM_REWRITE_TAC [f0, FRAG_EXTEND_0] THEN
+      ASM_REWRITE_TAC [(← FRAG_MODULE (← q r"frag_cmul (&0) x = frag_0")), FRAG_EXTEND_0] THEN
       REWRITE_TAC [frag_extend, frag_support, DEST_FRAG_CMUL] THEN
-      ASM_REWRITE_TAC [INT_ENTIRE, FRAG_CMUL_SUM, f1]))
+      ASM_REWRITE_TAC [INT_ENTIRE, FRAG_CMUL_SUM, (← FRAG_MODULE
+      (← q r"frag_cmul (a * b) c = frag_cmul a (frag_cmul b c)"))]))
 
   let FRAG_EXTEND_NEG ← prove
    r"!f:A->B frag x.
         frag_extend f (frag_neg x) = frag_neg(frag_extend f x)"
    (← do
-    let f ← FRAG_MODULE (← q r"frag_neg x = frag_cmul (-- &1) x")
-    pure (REWRITE_TAC [f] THEN
+    pure (REWRITE_TAC [(← FRAG_MODULE (← q r"frag_neg x = frag_cmul (-- &1) x"))] THEN
       REWRITE_TAC [FRAG_EXTEND_CMUL]))
 
   let FRAG_EXTEND_ADD ← prove
@@ -464,9 +451,8 @@ def setupFrag [HolBase] (D : FragDeps) :
         frag_extend f (frag_sub x y) =
         frag_sub (frag_extend f x) (frag_extend f y)"
    (← do
-    let f ← FRAG_MODULE
-     (← q r"frag_sub x y = frag_add x (frag_cmul (-- &1) y)")
-    pure (REWRITE_TAC [f] THEN
+    pure (REWRITE_TAC [(← FRAG_MODULE
+     (← q r"frag_sub x y = frag_add x (frag_cmul (-- &1) y)"))] THEN
       REWRITE_TAC [FRAG_EXTEND_CMUL, FRAG_EXTEND_ADD]))
 
   let FRAG_EXTEND_SUM ← prove
@@ -510,9 +496,8 @@ def setupFrag [HolBase] (D : FragDeps) :
   let FRAG_EXPANSION ← prove
    r"!x:A frag. x = frag_extend frag_of x"
    (← do
-    let m ← MESON [frag_tybij]
-     (← q r"dest_frag x = dest_frag y ==> x = y")
-    pure (GEN_TAC THEN REWRITE_TAC [frag_extend] THEN MATCH_MP_TAC m THEN
+    pure (GEN_TAC THEN REWRITE_TAC [frag_extend] THEN MATCH_MP_TAC (← MESON [frag_tybij]
+     (← q r"dest_frag x = dest_frag y ==> x = y")) THEN
       REWRITE_TAC [o_THM, FUN_EQ_THM, I_THM] THEN X_GEN_TAC (← q "b:A") THEN
       SUBGOAL_THEN
        (← q r"!k. FINITE k
@@ -537,24 +522,19 @@ def setupFrag [HolBase] (D : FragDeps) :
    (← do
     -- right to left: the second THENL branch (fsub, then f2), the
     -- INT_ARITH, then the first branch (f0, then f1)
-    let fsub ← FRAG_MODULE (← q r"frag_sub x y = frag_sub x z <=> y = z")
-    let f2 ← FRAG_MODULE
-     (← q r"frag_cmul a x = frag_sub frag_0 (frag_cmul (--a) x)")
-    let a1 ← INT_ARITH (← q r"&0:int <= a \/ &0 <= --a")
-    let f0 ← FRAG_MODULE (← q r"frag_cmul (&0) x = frag_0")
-    let f1 ← FRAG_MODULE
-     (← q r"frag_cmul (a + &1) x = frag_sub (frag_cmul a x) (frag_sub frag_0 x)")
     pure (GEN_TAC THEN STRIP_TAC THEN ONCE_REWRITE_TAC [SWAP_FORALL_THM] THEN
       REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN GEN_TAC THEN DISCH_TAC THEN
       SUBGOAL_THEN (← q r"!n. (P:(A frag)->bool) (frag_cmul (&n) c)") ASSUME_TAC THENL
-       [INDUCT_TAC THEN REWRITE_TAC [← GSYM INT_OF_NUM_SUC, f1] THEN
-        ASM_SIMP_TAC [DEST_FRAG_0, f0],
+       [INDUCT_TAC THEN REWRITE_TAC [← GSYM INT_OF_NUM_SUC, (← FRAG_MODULE
+     (← q r"frag_cmul (a + &1) x = frag_sub (frag_cmul a x) (frag_sub frag_0 x)"))] THEN
+        ASM_SIMP_TAC [DEST_FRAG_0, (← FRAG_MODULE (← q r"frag_cmul (&0) x = frag_0"))],
         ALL_TAC] THEN
       X_GEN_TAC (← q "a:int") THEN
-      DISJ_CASES_TAC a1 THENL
+      DISJ_CASES_TAC (← INT_ARITH (← q r"&0:int <= a \/ &0 <= --a")) THENL
        [UNDISCH_TAC (← q "&0:int <= a") THEN SPEC_TAC (← q "a:int", ← q "a:int"),
-        ONCE_REWRITE_TAC [f2] THEN
-        ASM_SIMP_TAC [DEST_FRAG_CMUL, DEST_FRAG_0, fsub] THEN
+        ONCE_REWRITE_TAC [(← FRAG_MODULE
+     (← q r"frag_cmul a x = frag_sub frag_0 (frag_cmul (--a) x)"))] THEN
+        ASM_SIMP_TAC [DEST_FRAG_CMUL, DEST_FRAG_0, (← FRAG_MODULE (← q r"frag_sub x y = frag_sub x z <=> y = z"))] THEN
         UNDISCH_TAC (← q "&0:int <= --a") THEN SPEC_TAC (← q "--a:int", ← q "a:int")] THEN
       ASM_SIMP_TAC [← GSYM INT_FORALL_POS]))
 
@@ -565,8 +545,6 @@ def setupFrag [HolBase] (D : FragDeps) :
         (!c1 c2. P c1 /\ P c2 ==> P(frag_sub c1 c2))
         ==> !c. frag_support c SUBSET s ==> P c"
    (← do
-    let f ← FRAG_MODULE
-     (← q r"frag_add x y = frag_sub x (frag_sub frag_0 y)")
     pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
       MP_TAC (← ISPEC (← q r"P:A frag->bool") FRAG_CLOSURE_SUB_CMUL) THEN
       ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
@@ -577,7 +555,8 @@ def setupFrag [HolBase] (D : FragDeps) :
       MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
       SIMP_TAC [← MATCH_MP ITERATE_CLAUSES MONOIDAL_FRAG_ADD] THEN
       ASM_REWRITE_TAC [NEUTRAL_FRAG_ADD, INSERT_SUBSET] THEN
-      REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC [f] THEN
+      REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC [(← FRAG_MODULE
+     (← q r"frag_add x y = frag_sub x (frag_sub frag_0 y)"))] THEN
       REPEAT (FIRST_ASSUM MATCH_MP_TAC THEN CONJ_TAC) THEN
       ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
       ASM SET_TAC []))
@@ -586,9 +565,8 @@ def setupFrag [HolBase] (D : FragDeps) :
    r"!(f:B->C frag) (g:A->B) c.
         frag_extend f (frag_extend (frag_of o g) c) = frag_extend (f o g) c"
    (← do
-    let m ← MESON [SUBSET_UNIV]
-     (← q r"(!c. frag_support c SUBSET UNIV ==> P c) ==> (!c. P c)")
-    pure (GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC m THEN
+    pure (GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC (← MESON [SUBSET_UNIV]
+     (← q r"(!c. frag_support c SUBSET UNIV ==> P c) ==> (!c. P c)")) THEN
       MATCH_MP_TAC FRAG_INDUCTION THEN
       SIMP_TAC [FRAG_EXTEND_0, FRAG_EXTEND_SUB, FRAG_EXTEND_OF, o_THM]))
 

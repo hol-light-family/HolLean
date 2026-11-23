@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.DedekindLocal fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -204,17 +207,15 @@ def setupDedekindLocal [HolBase] (D : DedekindLocalDeps) :
 
   let MAXIMAL_IDEAL_LOCALIZATION ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← SET_RULE (← q r"(m:A->bool) SUBSET p /\ ~(m PSUBSET p) ==> p = m")
     prove
       r"!r s m:A->bool.
           ring_multsys r s /\ maximal_ideal r m /\ m INTER s = {}
           ==> maximal_ideal (ring_localization r s)
                 {ring_localequiv r s (a,b) | a,b | a IN m /\ b IN s}"
-      (REPEAT STRIP_TAC THEN REWRITE_TAC [MAXIMAL_AMONG_PRIME_IDEALS] THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP MAXIMAL_IMP_PRIME_IDEAL)) THEN ASM_SIMP_TAC [PRIME_IDEAL_LOCALIZATION] THEN ASM_SIMP_TAC [RING_LOCALIZATION_PRIME_IDEAL_CORRESPONDENCE] THEN REWRITE_TAC [NOT_EXISTS_THM, LEFT_AND_EXISTS_THM] THEN MAP_EVERY X_GEN_TAC [(← q r"q:(A#A->bool)->bool"), (← q r"p:A->bool")] THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"p:A->bool = m") SUBST_ALL_TAC THENL [ALL_TAC, ASM SET_TAC []] THEN MATCH_MP_TAC r1 THEN CONJ_TAC THENL [UNDISCH_THEN (← q r"{x | x IN ring_carrier r /\ ring_fractionate r s x IN q} = (p:A->bool)") (SUBST1_TAC o SYM) THEN REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN X_GEN_TAC (← q r"x:A") THEN DISCH_TAC THEN CONJ_TAC THENL [ASM_MESON_TAC [PRIME_IDEAL_IMP_SUBSET, SUBSET], ALL_TAC] THEN FIRST_X_ASSUM (MATCH_MP_TAC o ((REWRITE_RULE [SUBSET]) o (CONJUNCT1 o (REWRITE_RULE [PSUBSET])))) THEN REWRITE_TAC [ring_fractionate, IN_ELIM_THM] THEN ASM_MESON_TAC [RING_1_IN_MULTSYS], FIRST_X_ASSUM (MP_TAC o (CONJUNCT2 o (GEN_REWRITE_RULE id [maximal_ideal]))) THEN ASM_MESON_TAC [PRIME_IMP_PROPER_IDEAL]])
+      (REPEAT STRIP_TAC THEN REWRITE_TAC [MAXIMAL_AMONG_PRIME_IDEALS] THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP MAXIMAL_IMP_PRIME_IDEAL)) THEN ASM_SIMP_TAC [PRIME_IDEAL_LOCALIZATION] THEN ASM_SIMP_TAC [RING_LOCALIZATION_PRIME_IDEAL_CORRESPONDENCE] THEN REWRITE_TAC [NOT_EXISTS_THM, LEFT_AND_EXISTS_THM] THEN MAP_EVERY X_GEN_TAC [(← q r"q:(A#A->bool)->bool"), (← q r"p:A->bool")] THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"p:A->bool = m") SUBST_ALL_TAC THENL [ALL_TAC, ASM SET_TAC []] THEN MATCH_MP_TAC (← SET_RULE (← q r"(m:A->bool) SUBSET p /\ ~(m PSUBSET p) ==> p = m")) THEN CONJ_TAC THENL [UNDISCH_THEN (← q r"{x | x IN ring_carrier r /\ ring_fractionate r s x IN q} = (p:A->bool)") (SUBST1_TAC o SYM) THEN REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN X_GEN_TAC (← q r"x:A") THEN DISCH_TAC THEN CONJ_TAC THENL [ASM_MESON_TAC [PRIME_IDEAL_IMP_SUBSET, SUBSET], ALL_TAC] THEN FIRST_X_ASSUM (MATCH_MP_TAC o ((REWRITE_RULE [SUBSET]) o (CONJUNCT1 o (REWRITE_RULE [PSUBSET])))) THEN REWRITE_TAC [ring_fractionate, IN_ELIM_THM] THEN ASM_MESON_TAC [RING_1_IN_MULTSYS], FIRST_X_ASSUM (MP_TAC o (CONJUNCT2 o (GEN_REWRITE_RULE id [maximal_ideal]))) THEN ASM_MESON_TAC [PRIME_IMP_PROPER_IDEAL]])
 
   let IDEAL_LOCALIZATION_EQ_ZERO ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r5 ← SET_RULE (← q r"(!a:A. a IN j ==> a = z) /\ z IN j ==> j = {z}")
     prove
       r"!r s j:A->bool.
           ring_multsys r s /\ s SUBSET {a | ring_regular r a} /\
@@ -224,7 +225,7 @@ def setupDedekindLocal [HolBase] (D : DedekindLocalDeps) :
                j = {ring_0 r})"
       (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP RING_1_IN_MULTSYS)) THEN SUBGOAL_THEN (← q r"!a b:A. a IN j /\ b IN s
               ==> (ring_localequiv r s (a,b) = ring_0 (ring_localization r s) <=>
-                   a = ring_0 r)") ASSUME_TAC THENL [REPEAT STRIP_TAC THEN SUBGOAL_THEN (← q r"(a:A) IN ring_carrier r") ASSUME_TAC THENL [ASM SET_TAC [], ASM_SIMP_TAC [RING_LOCALEQUIV_EQ_0_GEN]] THEN EQ_TAC THENL [DISCH_THEN (X_CHOOSE_THEN (← q r"c:A") STRIP_ASSUME_TAC) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"c:A"), (← q r"a:A")] RING_REGULAR_MUL_EQ_0) THEN ANTS_TAC THENL [ASM SET_TAC [], ASM_MESON_TAC []], DISCH_THEN SUBST1_TAC THEN EXISTS_TAC (← q r"ring_1 r:A") THEN ASM_SIMP_TAC [RING_MUL_RZERO, RING_1]], ALL_TAC] THEN EQ_TAC THEN DISCH_TAC THENL [MATCH_MP_TAC r5 THEN FIRST_X_ASSUM (MP_TAC o (GEN_REWRITE_RULE id [EXTENSION])) THEN REWRITE_TAC [IN_SING, IN_ELIM_THM] THEN DISCH_TAC THEN CONJ_TAC THENL [X_GEN_TAC (← q r"a:A") THEN DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"ring_localequiv r s (a:A,ring_1 r)"))) THEN ASM_MESON_TAC [], FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"ring_0(ring_localization r (s:A->bool))"))) THEN ASM_MESON_TAC []], FIRST_X_ASSUM (SUBST_ALL_TAC o (checkM (fun z1 => (do let z2 ← (do let z3 ← (do let z4 ← (pure z1); pure (concl z4)); liftExcept (lhand z3)); pure (is_var z2))))) THEN GEN_REWRITE_TAC id [EXTENSION] THEN REWRITE_TAC [IN_ELIM_THM, IN_SING] THEN X_GEN_TAC (← q r"z:A#A->bool") THEN EQ_TAC THENL [STRIP_TAC THEN ASM_MESON_TAC [IN_SING], DISCH_THEN SUBST1_TAC THEN MAP_EVERY EXISTS_TAC [(← q r"ring_0 r:A"), (← q r"ring_1 r:A")] THEN ASM_SIMP_TAC [RING_LOCALIZATION_0]]])
+                   a = ring_0 r)") ASSUME_TAC THENL [REPEAT STRIP_TAC THEN SUBGOAL_THEN (← q r"(a:A) IN ring_carrier r") ASSUME_TAC THENL [ASM SET_TAC [], ASM_SIMP_TAC [RING_LOCALEQUIV_EQ_0_GEN]] THEN EQ_TAC THENL [DISCH_THEN (X_CHOOSE_THEN (← q r"c:A") STRIP_ASSUME_TAC) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"c:A"), (← q r"a:A")] RING_REGULAR_MUL_EQ_0) THEN ANTS_TAC THENL [ASM SET_TAC [], ASM_MESON_TAC []], DISCH_THEN SUBST1_TAC THEN EXISTS_TAC (← q r"ring_1 r:A") THEN ASM_SIMP_TAC [RING_MUL_RZERO, RING_1]], ALL_TAC] THEN EQ_TAC THEN DISCH_TAC THENL [MATCH_MP_TAC (← SET_RULE (← q r"(!a:A. a IN j ==> a = z) /\ z IN j ==> j = {z}")) THEN FIRST_X_ASSUM (MP_TAC o (GEN_REWRITE_RULE id [EXTENSION])) THEN REWRITE_TAC [IN_SING, IN_ELIM_THM] THEN DISCH_TAC THEN CONJ_TAC THENL [X_GEN_TAC (← q r"a:A") THEN DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"ring_localequiv r s (a:A,ring_1 r)"))) THEN ASM_MESON_TAC [], FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"ring_0(ring_localization r (s:A->bool))"))) THEN ASM_MESON_TAC []], FIRST_X_ASSUM (SUBST_ALL_TAC o (checkM (fun z1 => (do let z2 ← (do let z3 ← (do let z4 ← (pure z1); pure (concl z4)); liftExcept (lhand z3)); pure (is_var z2))))) THEN GEN_REWRITE_TAC id [EXTENSION] THEN REWRITE_TAC [IN_ELIM_THM, IN_SING] THEN X_GEN_TAC (← q r"z:A#A->bool") THEN EQ_TAC THENL [STRIP_TAC THEN ASM_MESON_TAC [IN_SING], DISCH_THEN SUBST1_TAC THEN MAP_EVERY EXISTS_TAC [(← q r"ring_0 r:A"), (← q r"ring_1 r:A")] THEN ASM_SIMP_TAC [RING_LOCALIZATION_0]]])
 
   let IDEAL_PROD_LOCALIZATION ← prove
     r"!r s j k:A->bool.
@@ -253,66 +254,19 @@ def setupDedekindLocal [HolBase] (D : DedekindLocalDeps) :
 
   let DVR_LOCALIZATION ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← SET_RULE (← q r"(p:A->bool) INTER (c DIFF p) = {}")
     prove
       r"!r p:A->bool.
           dedekind_domain r /\ prime_ideal r p /\ ~(p = {ring_0 r})
           ==> DVR (ring_localization r (ring_carrier r DIFF p))"
       (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP RING_MULTSYS_NONPRIME)) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_IMP_RING_IDEAL)) THEN SUBGOAL_THEN (← q r"~(ring_0 r IN ring_carrier r DIFF (p:A->bool)) /\
                   ring_carrier r DIFF p SUBSET {a | ring_regular r a}") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [SUBSET, IN_DIFF, IN_ELIM_THM, INTEGRAL_DOMAIN_REGULAR, DEDEKIND_IMP_INTEGRAL_DOMAIN, IN_RING_IDEAL_0] THEN ASM_MESON_TAC [IN_RING_IDEAL_0], ALL_TAC] THEN ASM_SIMP_TAC [DVR_IFF_LOCAL_DEDEKIND, DEDEKIND_LOCALIZATION, LOCAL_RING_LOCALIZATION, FIELD_EQ_TRIVIAL_IDEALS] THEN REWRITE_TAC [DE_MORGAN_THM, NOT_FORALL_THM, NOT_IMP] THEN DISJ2_TAC THEN EXISTS_TAC (← q r"{ring_localequiv r (ring_carrier r DIFF p) (a,b) | a,b |
-                 a IN p /\ b IN ring_carrier r DIFF (p:A->bool)}") THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"p:A->bool")] PROPER_IDEAL_LOCALIZATION) THEN ASM_SIMP_TAC [r1, proper_ideal, IDEAL_LOCALIZATION_EQ_ZERO, RING_IDEAL_IMP_SUBSET] THEN SET_TAC [])
+                 a IN p /\ b IN ring_carrier r DIFF (p:A->bool)}") THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"p:A->bool")] PROPER_IDEAL_LOCALIZATION) THEN ASM_SIMP_TAC [(← SET_RULE (← q r"(p:A->bool) INTER (c DIFF p) = {}")), proper_ideal, IDEAL_LOCALIZATION_EQ_ZERO, RING_IDEAL_IMP_SUBSET] THEN SET_TAC [])
 
   let IDEAL_VALUATION_LOCALIZATION ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let p1 ← prove r"!r j:A->bool.
+    let lemma := (← prove r"!r j:A->bool.
         ring_ideal r j /\ ~(j = {ring_0 r})
-        ==> ideal_valuation r {ring_0 r} j = 0" (REPEAT STRIP_TAC THEN MATCH_MP_TAC IDEAL_VALUATION_UNIQUE THEN REWRITE_TAC [RING_IDEAL_0, IDEAL_POW_SUC, IDEAL_POW_0] THEN ASM_SIMP_TAC [IDEAL_PROD_LZERO, SUBSET_REFL, RING_IDEAL_IMP_SUBSET] THEN ASM_MESON_TAC [IN_RING_IDEAL_0, SUBSET_ANTISYM, SING_SUBSET])
-    let lemma := p1
-    let q2 ← q r"(x:A) IN ring_carrier r"
-    let q3 ← q r"ring_fractionate r s (x:A)"
-    let q4 ← q r"x:A"
-    let q5 ← q r"~(l SUBSET (p:A->bool))"
-    let q6 ← q r"ideal_valuation (ring_localization r s)
-      {ring_localequiv r s (a,b) | a,b | a IN p /\ b IN s}
-      {ring_localequiv r s (a,b) | a,b | a IN l /\ b IN (s:A->bool)} = 0"
-    let q7 ← q r"dedekind_domain (ring_localization r (s:A->bool)) /\
-    prime_ideal (ring_localization r s)
-      {ring_localequiv r s (a,b) | a,b | a IN p /\ b IN s} /\
-    ring_ideal (ring_localization r s)
-      {ring_localequiv r s (a,b) | a,b | a IN l /\ b IN s} /\
-    ~({ring_localequiv r s (a,b) | a,b | a IN p /\ b IN s} =
-      {ring_0 (ring_localization r s)}) /\
-    ~({ring_localequiv r s (a,b) | a,b | a IN l /\ b IN s} =
-      {ring_0 (ring_localization r s)})"
-    let q8 ← q r"l:A->bool"
-    let q9 ← q r"ideal_pow r p v:A->bool"
-    let q10 ← q r"s:A->bool"
-    let q11 ← q r"r:A ring"
-    let v12 ← ISPECL [q11, q10, q9, q8] IDEAL_PROD_LOCALIZATION
-    let v13 ← GSYM IDEAL_VALUATION_EQ_0
-    let q14 ← q r"l:A->bool"
-    let q15 ← q r"ideal_pow r p v:A->bool"
-    let q16 ← q r"p:A->bool"
-    let q17 ← q r"r:A ring"
-    let v18 ← ISPECL [q17, q16, q15, q14] IDEAL_VALUATION_IDEAL_PROD
-    let q19 ← q r"~(l SUBSET (p:A->bool))"
-    let q20 ← q r"~(j = {ring_0 r:A})"
-    let q21 ← q r"~(l = {ring_0 r:A})"
-    let q22 ← q r"l:A->bool"
-    let q23 ← q r"ideal_pow r p v:A->bool"
-    let q24 ← q r"j:A->bool"
-    let q25 ← q r"r:A ring"
-    let v26 ← ISPECL [q25, q24, q23] DEDEKIND_IDEAL_SUBSET_IFF_DIVIDES
-    let q27 ← q r"v = ideal_valuation r p (j:A->bool)"
-    let q28 ← q r"x = 0 /\ y = 0 ==> x = y"
-    let r29 ← MESON [] q28
-    let q30 ← q r"{ring_0 r:A}"
-    let q31 ← q r"s:A->bool"
-    let q32 ← q r"r:A ring"
-    let v33 ← ISPECL [q32, q31, q30] IDEAL_LOCALIZATION_EQ_ZERO
-    let q34 ← q r"p = {ring_0 r:A}"
-    let q35 ← q r"(s:A->bool) SUBSET {a | ring_regular r a}"
-    let q36 ← q r"~(ring_0 r IN (s:A->bool))"
+        ==> ideal_valuation r {ring_0 r} j = 0" (REPEAT STRIP_TAC THEN MATCH_MP_TAC IDEAL_VALUATION_UNIQUE THEN REWRITE_TAC [RING_IDEAL_0, IDEAL_POW_SUC, IDEAL_POW_0] THEN ASM_SIMP_TAC [IDEAL_PROD_LZERO, SUBSET_REFL, RING_IDEAL_IMP_SUBSET] THEN ASM_MESON_TAC [IN_RING_IDEAL_0, SUBSET_ANTISYM, SING_SUBSET]))
     prove
       r"!r s p j:A->bool.
           dedekind_domain r /\ ring_multsys r s /\
@@ -322,11 +276,20 @@ def setupDedekindLocal [HolBase] (D : DedekindLocalDeps) :
                 {ring_localequiv r s (a,b) | a,b | a IN p /\ b IN s}
                 {ring_localequiv r s (a,b) | a,b | a IN j /\ b IN s} =
               ideal_valuation r p j"
-      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP DEDEKIND_IMP_INTEGRAL_DOMAIN)) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_IMP_RING_IDEAL)) THEN SUBGOAL_THEN q36 ASSUME_TAC THENL [ASM_MESON_TAC [IN_RING_IDEAL_0, IN_INTER, NOT_IN_EMPTY], ALL_TAC] THEN SUBGOAL_THEN q35 ASSUME_TAC THENL [ASM_SIMP_TAC [SUBSET, IN_ELIM_THM, INTEGRAL_DOMAIN_REGULAR] THEN ASM_MESON_TAC [RING_MULTSYS], ALL_TAC] THEN ASM_CASES_TAC q34 THENL [FIRST_X_ASSUM SUBST_ALL_TAC THEN MP_TAC v33 THEN ASM_SIMP_TAC [SING_SUBSET, RING_0] THEN DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC r29 THEN CONJ_TAC THEN MATCH_MP_TAC lemma THEN ASM_SIMP_TAC [RING_IDEAL_LOCALIZATION, IDEAL_LOCALIZATION_EQ_ZERO, RING_IDEAL_IMP_SUBSET], ALL_TAC] THEN ABBREV_TAC q27 THEN MP_TAC v26 THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_POW, DEDEKIND_IDEAL_SUBSET_POW_VALUATION, LE_REFL, LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC q22 THEN STRIP_TAC THEN SUBGOAL_THEN q21 ASSUME_TAC THENL [DISCH_THEN SUBST_ALL_TAC THEN UNDISCH_TAC q20 THEN EXPAND_TAC "j" THEN SIMP_TAC [IDEAL_PROD_RZERO, RING_IDEAL_IMP_SUBSET, RING_IDEAL_IDEAL_POW], ALL_TAC] THEN SUBGOAL_THEN q19 ASSUME_TAC THENL [MP_TAC v18 THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_POW, IDEAL_POW_EQ_ZERO, IDEAL_VALUATION_IDEAL_POW, IDEAL_VALUATION_PRIME, v13] THEN ARITH_TAC, ALL_TAC] THEN MP_TAC v12 THEN ASM_SIMP_TAC [IDEAL_POW_LOCALIZATION, RING_IDEAL_IMP_SUBSET, RING_IDEAL_IDEAL_POW] THEN DISCH_THEN SUBST1_TAC THEN SUBGOAL_THEN q7 STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [DEDEKIND_LOCALIZATION, PRIME_IDEAL_LOCALIZATION, RING_IDEAL_LOCALIZATION, IDEAL_LOCALIZATION_EQ_ZERO, RING_IDEAL_IMP_SUBSET], ALL_TAC] THEN SUBGOAL_THEN q6 ASSUME_TAC THENL [ASM_SIMP_TAC [IDEAL_VALUATION_EQ_0] THEN UNDISCH_TAC q5 THEN REWRITE_TAC [SUBSET, NOT_FORALL_THM, NOT_IMP] THEN DISCH_THEN (X_CHOOSE_THEN q4 STRIP_ASSUME_TAC) THEN EXISTS_TAC q3 THEN SUBGOAL_THEN q2 ASSUME_TAC THENL [ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET], ALL_TAC] THEN ASM_SIMP_TAC [PRIME_IDEAL_LOCALIZATION_CONTRACTION] THEN REWRITE_TAC [ring_fractionate, IN_ELIM_THM] THEN ASM_MESON_TAC [RING_1_IN_MULTSYS], ALL_TAC] THEN ASM_SIMP_TAC [IDEAL_VALUATION_IDEAL_PROD, IDEAL_VALUATION_IDEAL_POW, IDEAL_VALUATION_PRIME, RING_IDEAL_IDEAL_POW, IDEAL_POW_EQ_ZERO, DEDEKIND_IMP_INTEGRAL_DOMAIN, PRIME_IMP_RING_IDEAL] THEN ARITH_TAC)
+      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP DEDEKIND_IMP_INTEGRAL_DOMAIN)) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_IMP_RING_IDEAL)) THEN SUBGOAL_THEN (← q r"~(ring_0 r IN (s:A->bool))") ASSUME_TAC THENL [ASM_MESON_TAC [IN_RING_IDEAL_0, IN_INTER, NOT_IN_EMPTY], ALL_TAC] THEN SUBGOAL_THEN (← q r"(s:A->bool) SUBSET {a | ring_regular r a}") ASSUME_TAC THENL [ASM_SIMP_TAC [SUBSET, IN_ELIM_THM, INTEGRAL_DOMAIN_REGULAR] THEN ASM_MESON_TAC [RING_MULTSYS], ALL_TAC] THEN ASM_CASES_TAC (← q r"p = {ring_0 r:A}") THENL [FIRST_X_ASSUM SUBST_ALL_TAC THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"s:A->bool"), (← q r"{ring_0 r:A}")] IDEAL_LOCALIZATION_EQ_ZERO) THEN ASM_SIMP_TAC [SING_SUBSET, RING_0] THEN DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC (← MESON [] (← q r"x = 0 /\ y = 0 ==> x = y")) THEN CONJ_TAC THEN MATCH_MP_TAC lemma THEN ASM_SIMP_TAC [RING_IDEAL_LOCALIZATION, IDEAL_LOCALIZATION_EQ_ZERO, RING_IDEAL_IMP_SUBSET], ALL_TAC] THEN ABBREV_TAC (← q r"v = ideal_valuation r p (j:A->bool)") THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"j:A->bool"), (← q r"ideal_pow r p v:A->bool")] DEDEKIND_IDEAL_SUBSET_IFF_DIVIDES) THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_POW, DEDEKIND_IDEAL_SUBSET_POW_VALUATION, LE_REFL, LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q r"l:A->bool") THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"~(l = {ring_0 r:A})") ASSUME_TAC THENL [DISCH_THEN SUBST_ALL_TAC THEN UNDISCH_TAC (← q r"~(j = {ring_0 r:A})") THEN EXPAND_TAC "j" THEN SIMP_TAC [IDEAL_PROD_RZERO, RING_IDEAL_IMP_SUBSET, RING_IDEAL_IDEAL_POW], ALL_TAC] THEN SUBGOAL_THEN (← q r"~(l SUBSET (p:A->bool))") ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"p:A->bool"), (← q r"ideal_pow r p v:A->bool"), (← q r"l:A->bool")] IDEAL_VALUATION_IDEAL_PROD) THEN ASM_SIMP_TAC [RING_IDEAL_IDEAL_POW, IDEAL_POW_EQ_ZERO, IDEAL_VALUATION_IDEAL_POW, IDEAL_VALUATION_PRIME, (← GSYM IDEAL_VALUATION_EQ_0)] THEN ARITH_TAC, ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"s:A->bool"), (← q r"ideal_pow r p v:A->bool"), (← q r"l:A->bool")] IDEAL_PROD_LOCALIZATION) THEN ASM_SIMP_TAC [IDEAL_POW_LOCALIZATION, RING_IDEAL_IMP_SUBSET, RING_IDEAL_IDEAL_POW] THEN DISCH_THEN SUBST1_TAC THEN SUBGOAL_THEN (← q r"dedekind_domain (ring_localization r (s:A->bool)) /\
+    prime_ideal (ring_localization r s)
+      {ring_localequiv r s (a,b) | a,b | a IN p /\ b IN s} /\
+    ring_ideal (ring_localization r s)
+      {ring_localequiv r s (a,b) | a,b | a IN l /\ b IN s} /\
+    ~({ring_localequiv r s (a,b) | a,b | a IN p /\ b IN s} =
+      {ring_0 (ring_localization r s)}) /\
+    ~({ring_localequiv r s (a,b) | a,b | a IN l /\ b IN s} =
+      {ring_0 (ring_localization r s)})") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [DEDEKIND_LOCALIZATION, PRIME_IDEAL_LOCALIZATION, RING_IDEAL_LOCALIZATION, IDEAL_LOCALIZATION_EQ_ZERO, RING_IDEAL_IMP_SUBSET], ALL_TAC] THEN SUBGOAL_THEN (← q r"ideal_valuation (ring_localization r s)
+      {ring_localequiv r s (a,b) | a,b | a IN p /\ b IN s}
+      {ring_localequiv r s (a,b) | a,b | a IN l /\ b IN (s:A->bool)} = 0") ASSUME_TAC THENL [ASM_SIMP_TAC [IDEAL_VALUATION_EQ_0] THEN UNDISCH_TAC (← q r"~(l SUBSET (p:A->bool))") THEN REWRITE_TAC [SUBSET, NOT_FORALL_THM, NOT_IMP] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"x:A") STRIP_ASSUME_TAC) THEN EXISTS_TAC (← q r"ring_fractionate r s (x:A)") THEN SUBGOAL_THEN (← q r"(x:A) IN ring_carrier r") ASSUME_TAC THENL [ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET], ALL_TAC] THEN ASM_SIMP_TAC [PRIME_IDEAL_LOCALIZATION_CONTRACTION] THEN REWRITE_TAC [ring_fractionate, IN_ELIM_THM] THEN ASM_MESON_TAC [RING_1_IN_MULTSYS], ALL_TAC] THEN ASM_SIMP_TAC [IDEAL_VALUATION_IDEAL_PROD, IDEAL_VALUATION_IDEAL_POW, IDEAL_VALUATION_PRIME, RING_IDEAL_IDEAL_POW, IDEAL_POW_EQ_ZERO, DEDEKIND_IMP_INTEGRAL_DOMAIN, PRIME_IMP_RING_IDEAL] THEN ARITH_TAC)
 
   let DEDEKIND_LOCALIZATION_IDEAL_POW ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← SET_RULE (← q r"(p:A->bool) INTER (c DIFF p) = {}")
     prove
       r"!r p j:A->bool.
           dedekind_domain r /\ prime_ideal r p /\ ~(p = {ring_0 r}) /\
@@ -337,7 +300,7 @@ def setupDedekindLocal [HolBase] (D : DedekindLocalDeps) :
                 {ring_localequiv r (ring_carrier r DIFF p) (a,b) | a,b |
                  a IN p /\ b IN ring_carrier r DIFF p}
                 (ideal_valuation r p j)"
-      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_IMP_RING_IDEAL)) THEN SUBGOAL_THEN (← q r"ring_carrier r DIFF p SUBSET {a:A | ring_regular r a}") ASSUME_TAC THENL [ASM_SIMP_TAC [SUBSET, IN_DIFF, IN_ELIM_THM, INTEGRAL_DOMAIN_REGULAR, DEDEKIND_IMP_INTEGRAL_DOMAIN] THEN ASM_MESON_TAC [IN_RING_IDEAL_0], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"p:A->bool")] DVR_LOCALIZATION) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"p:A->bool"), (← q r"j:A->bool")] IDEAL_VALUATION_LOCALIZATION) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"p:A->bool")] MAXIMAL_IDEAL_LOCALIZATION) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"p:A->bool")] IDEAL_LOCALIZATION_EQ_ZERO) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"j:A->bool")] IDEAL_LOCALIZATION_EQ_ZERO) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"j:A->bool")] RING_IDEAL_LOCALIZATION) THEN ASM_SIMP_TAC [RING_MULTSYS_NONPRIME, r1, DEDEKIND_NONZERO_PRIME_IMP_MAXIMAL, RING_IDEAL_IMP_SUBSET] THEN ABBREV_TAC (← q r"l = ring_localization r (ring_carrier r DIFF p:A->bool)") THEN ABBREV_TAC (← q r"q = {ring_localequiv r (ring_carrier r DIFF p) (a,b) | a,b |
+      (REPEAT STRIP_TAC THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP PRIME_IMP_RING_IDEAL)) THEN SUBGOAL_THEN (← q r"ring_carrier r DIFF p SUBSET {a:A | ring_regular r a}") ASSUME_TAC THENL [ASM_SIMP_TAC [SUBSET, IN_DIFF, IN_ELIM_THM, INTEGRAL_DOMAIN_REGULAR, DEDEKIND_IMP_INTEGRAL_DOMAIN] THEN ASM_MESON_TAC [IN_RING_IDEAL_0], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"p:A->bool")] DVR_LOCALIZATION) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"p:A->bool"), (← q r"j:A->bool")] IDEAL_VALUATION_LOCALIZATION) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"p:A->bool")] MAXIMAL_IDEAL_LOCALIZATION) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"p:A->bool")] IDEAL_LOCALIZATION_EQ_ZERO) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"j:A->bool")] IDEAL_LOCALIZATION_EQ_ZERO) THEN MP_TAC (← ISPECL [(← q r"r:A ring"), (← q r"ring_carrier r DIFF p:A->bool"), (← q r"j:A->bool")] RING_IDEAL_LOCALIZATION) THEN ASM_SIMP_TAC [RING_MULTSYS_NONPRIME, (← SET_RULE (← q r"(p:A->bool) INTER (c DIFF p) = {}")), DEDEKIND_NONZERO_PRIME_IMP_MAXIMAL, RING_IDEAL_IMP_SUBSET] THEN ABBREV_TAC (← q r"l = ring_localization r (ring_carrier r DIFF p:A->bool)") THEN ABBREV_TAC (← q r"q = {ring_localequiv r (ring_carrier r DIFF p) (a,b) | a,b |
                      a IN p /\ b IN ring_carrier r DIFF (p:A->bool)}") THEN ABBREV_TAC (← q r"k = {ring_localequiv r (ring_carrier r DIFF p) (a,b) | a,b |
                      a IN j /\ b IN ring_carrier r DIFF (p:A->bool)}") THEN REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"l:(A#A->bool)ring"), (← q r"q:(A#A->bool)->bool"), (← q r"k:(A#A->bool)->bool")] DVR_IDEAL_MAXIMAL_POW) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"n:num") SUBST_ALL_TAC) THEN FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN AP_TERM_TAC THEN ASM_SIMP_TAC [IDEAL_VALUATION_IDEAL_POW, IDEAL_VALUATION_PRIME, DVR_IMP_DEDEKIND, MAXIMAL_IMP_PRIME_IDEAL, MAXIMAL_IMP_RING_IDEAL] THEN ARITH_TAC)
 

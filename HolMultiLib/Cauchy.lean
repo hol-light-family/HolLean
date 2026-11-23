@@ -19684,8 +19684,8 @@ def setupKYBL [HolBase] (D : CauchyDeps) (BKYAI : KYAI) (BKYAU : KYAU) (BKYBI : 
     REPEAT (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"vv:(complex->bool)->bool") STRIP_ASSUME_TAC) THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [EXTENSION]) THEN
-    DISCH_THEN (fun th => tactic_of do pure (
-      MP_TAC (← EQ_IMP_RULE (← SPEC (← q r"(g:complex->complex) z") th)).2)) THEN
+    DISCH_THEN ((fun (ocq1 : _) => fun th => tactic_of do pure (
+      MP_TAC (← EQ_IMP_RULE (← SPEC ocq1 th)).2)) (← q r"(g:complex->complex) z")) THEN
     ANTS_TAC THENL [ASM SET_TAC [], REWRITE_TAC [IN_UNIONS]] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"v:complex->bool") STRIP_ASSUME_TAC) THEN
     MP_TAC (← ISPECL [← q r"p:complex->complex", ← q r"v:complex->bool"]

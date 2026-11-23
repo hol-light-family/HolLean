@@ -69,6 +69,7 @@ def dest_cond (tm : term) : Except String (term × (term × term)) := do
 
 /-- Theorems established by `class.ml`. (Grown stage by stage.) -/
 structure ClassThms where
+  SELECT_AX     : thm  -- class.ml 53, made by `setupClass`'s `mkSelectAx`
   etaPth        : thm  -- `|- (\x. t x) = t` (for ETA_CONV)
   etaT : term             -- ETA_CONV's `t:A->B` (class.ml 20)
   EQ_EXT        : thm
@@ -296,8 +297,13 @@ def COND_CASES_TAC (B : BoolThms) (COND_ELIM_THM : thm) (denegPth : thm) : tacti
 
 /-- Establish the `class.ml` theorem layer. -/
 def setupClass (B : BoolThms) (T : TheoremThms)
-    (ETA_AX SELECT_AX : thm) : ExceptT String IO ClassThms := do
-  let prove := Tactics.prove B
+    (ETA_AX : thm) (mkSelectAx : ExceptT String IO thm) : ExceptT String IO ClassThms := do
+  -- `prove(`goal`,tac)`: OCaml evaluates the tactic (and its quotations)
+  -- before parsing the goal, so the goal is parsed here, after them.
+  let proveS (g : String) (tac : HolCore.Tactics.tactic) : IO (Except String thm) := do
+    match ← HolCore.Parser.parse_term g with
+    | .error e => return .error e
+    | .ok gt => Tactics.prove B gt tac
   let REWRITE_TAC := Simp.REWRITE_TAC B
   let GEN_TAC := Tactics.GEN_TAC B
   let EQ_TAC := Tactics.EQ_TAC B
@@ -325,12 +331,12 @@ def setupClass (B : BoolThms) (T : TheoremThms)
 
   -- Eta-axiom, corresponding conversion, and extensionality.
   let etaT ← pt "t:A->B"
-  let etaPth ← (prove (← pt "(\\x. (t:A->B) x) = t") (MATCH_ACCEPT_TAC ETA_AX)
+  let etaPth ← (proveS "(\\x. (t:A->B) x) = t" (MATCH_ACCEPT_TAC ETA_AX)
                 : IO (Except String thm))
   -- EQ_EXT : !(f:A->B) g. (!x. f x = g x) ==> f = g
   let xA ← pt "x:A"
   let xA' ← pt "x:A"
-  let EQ_EXT ← (prove (← pt "!(f:A->B) g. (!x. f x = g x) ==> f = g")
+  let EQ_EXT ← (proveS "!(f:A->B) g. (!x. f x = g x) ==> f = g"
       (THEN B (REPEAT B GEN_TAC)
         -- MP_TAC o ABS `x:A` o SPEC `x:A` : SPEC runs FIRST, then ABS, then
         -- MP_TAC.  The two rules are both `Except`-valued so they join with
@@ -339,16 +345,22 @@ def setupClass (B : BoolThms) (T : TheoremThms)
         (THEN B (DISCH_THEN (MP_TAC oT ABS xA' oM SPEC xA))
           (REWRITE_TAC [ETA_AX]))) : IO (Except String thm))
   -- FUN_EQ_THM : !(f:A->B) g. f = g <=> (!x. f x = g x)
-  let FUN_EQ_THM ← (prove (← pt "!(f:A->B) g. f = g <=> (!x. f x = g x)")
+  let FUN_EQ_THM ← (proveS "!(f:A->B) g. f = g <=> (!x. f x = g x)"
       (THEN B (REPEAT B GEN_TAC) (THENL B EQ_TAC
         [THEN B (DISCH_THEN SUBST1_TAC) (THEN B GEN_TAC REFL_TAC),
          MATCH_ACCEPT_TAC EQ_EXT])) : IO (Except String thm))
 
+  -- class.ml 45-54: the `@` constant and binder and SELECT_AX, made by the
+  -- caller at this point.
+  let SELECT_AX ← mkSelectAx
+
   -- Useful for compatibility. (The old EXISTS_DEF.)
   -- EXISTS_THM : (?) = \P:A->bool. P ((@) P)
-  let PAb ← pt "P:A->bool"
+  -- `X_GEN_TAC \`P:A->bool\`` is in the first tactic of the THEN chain and
+  -- `EXISTS_TAC \`((@) P):A\`` in the last, which OCaml evaluates first.
   let atP ← pt "((@) P):A"
-  let EXISTS_THM ← (prove (← pt "(?) = \\P:A->bool. P ((@) P)")
+  let PAb ← pt "P:A->bool"
+  let EXISTS_THM ← (proveS "(?) = \\P:A->bool. P ((@) P)"
       (THEN B (MATCH_MP_TAC EQ_EXT) (THEN B BETA_TAC (THEN B (X_GEN_TAC PAb)
         (THEN B (GEN_REWRITE_TAC (fun c => landRand c) [(← liftExcept (GSYM ETA_AX))])
           (THENL B EQ_TAC
@@ -356,20 +368,25 @@ def setupClass (B : BoolThms) (T : TheoremThms)
              THEN B DISCH_TAC (THEN B (EXISTS_TAC atP) (POP_ASSUM ACCEPT_TAC))]))))) : IO (Except String thm))
   -- Rules and so on for the select operator.
   -- SELECT_RULE pth : (?) (P:A->bool) ==> P ((@) P)
-  let selectRulePth ← (prove (← pt "(?) (P:A->bool) ==> P ((@) P)")
+  -- SELECT_RULE's `P = `P:A->bool`` (class.ml 73); the rule itself uses an
+  -- equal term from SessionCore.
+  let _ ← pt "P:A->bool"
+  let selectRulePth ← (proveS "(?) (P:A->bool) ==> P ((@) P)"
       (SIMP_TAC [SELECT_AX, ETA_AX]) : IO (Except String thm))
   -- SELECT_CONV pth : (P:A->bool) ((@) P) = (?) P
-  let selectConvPth ← (prove (← pt "(P:A->bool) ((@) P) = (?) P")
+  -- SELECT_CONV's `P` (class.ml 84).
+  let _ ← pt "P:A->bool"
+  let selectConvPth ← (proveS "(P:A->bool) ((@) P) = (?) P"
       (THEN B (REWRITE_TAC [EXISTS_THM]) (THEN B BETA_TAC REFL_TAC)) : IO (Except String thm))
   -- SELECT_CONV as an IO conv (for CONV_TAC): lift the pure conv.
   let SELECT_CONV_io : ioconv := fun t => pure (SELECT_CONV selectConvPth PAb t)
   -- Some basic theorems.
   -- SELECT_REFL : !x:A. (@y. y = x) = x
-  let SELECT_REFL ← (prove (← pt "!x:A. (@y. y = x) = x")
+  let SELECT_REFL ← (proveS "!x:A. (@y. y = x) = x"
       (THEN B GEN_TAC (THEN B (CONV_TAC SELECT_CONV_io)
         (THEN B (EXISTS_TAC (← pt "x:A")) REFL_TAC))) : IO (Except String thm))
   -- SELECT_UNIQUE : !P x. (!y:A. P y = (y = x)) ==> ((@) P = x)
-  let SELECT_UNIQUE ← (prove (← pt "!P x. (!y:A. P y = (y = x)) ==> ((@) P = x)")
+  let SELECT_UNIQUE ← (proveS "!P x. (!y:A. P y = (y = x)) ==> ((@) P = x)"
       (THEN B (REPEAT B STRIP_TAC)
         (THEN B (GEN_REWRITE_TAC (fun c => landRand c) [(← liftExcept (GSYM ETA_AX))])
           (ASM_REWRITE_TAC [SELECT_REFL]))) : IO (Except String thm))
@@ -389,13 +406,14 @@ def setupClass (B : BoolThms) (T : TheoremThms)
   -- STRIP_ASSUME_TAC o GSYM   (GSYM runs FIRST; its failure is sequenced inside
   -- the produced tactic, which is what `oT` does).
   let STRIP_ASSUME_GSYM : thm_tactic := STRIP_ASSUME_TAC oT GSYM
-  let notTF ← ITAUT "~(T <=> F)"
+  -- The tactic's quotations, in OCaml's order (right to left).
   let pOrT ← ITAUT "p \\/ T <=> T"
-  let fTm ← pt "F"
+  let notTF ← ITAUT "~(T <=> F)"
   let tTm ← pt "T"
+  let fTm ← pt "F"
   -- Derive excluded middle. The proof is an optimization due to Mark Adams of
   -- the original Diaconescu proof as presented in Beeson's book.
-  let EXCLUDED_MIDDLE ← (prove (← pt "!t. t \\/ ~t")
+  let EXCLUDED_MIDDLE ← (proveS "!t. t \\/ ~t"
       (THEN B GEN_TAC
         (THENL B (SUBGOAL_THEN
             (← pt "(((@x. (x <=> F) \\/ t) <=> F) \\/ t) /\\ (((@x. (x <=> T) \\/ t) <=> T) \\/ t)")
@@ -410,7 +428,7 @@ def setupClass (B : BoolThms) (T : TheoremThms)
                 (THEN B DISJ2_TAC (THEN B DISCH_TAC (THEN B (MP_TAC notTF)
                   (THEN B (PURE_ONCE_ASM_REWRITE_TAC [])
                     (ASM_REWRITE_TAC [pOrT]))))) ) ])) : IO (Except String thm))
-  let BOOL_CASES_AX ← (prove (← pt "!t. (t <=> T) \\/ (t <=> F)")
+  let BOOL_CASES_AX ← (proveS "!t. (t <=> T) \\/ (t <=> F)"
       (THEN B GEN_TAC (THEN B (DISJ_CASES_TAC (← liftExcept (B.SPEC (← pt "t:bool") EXCLUDED_MIDDLE)))
         (ASM_REWRITE_TAC []))) : IO (Except String thm))
 
@@ -426,6 +444,8 @@ def setupClass (B : BoolThms) (T : TheoremThms)
   let CONTRAPOS_THM ← TAUT "!t1 t2. (~t1 ==> ~t2) <=> (t2 ==> t1)"
   let _ ← (Simp.extend_basic_rewrites B [(← liftExcept (B.CONJUNCT1 NOT_CLAUSES))] : IO (Except String Unit))
   -- rule pths
+  -- CCONTR's `P = `P:bool`` (class.ml 202).
+  let _ ← pt "P:bool"
   let ccontrPth ← TAUT "(~P ==> F) ==> P"
   let contraposA ← pt "a:bool"
   let contraposB ← pt "b:bool"
@@ -433,73 +453,75 @@ def setupClass (B : BoolThms) (T : TheoremThms)
   let refuteF ← pt "F"
   let refuteThenPth ← TAUT "p <=> ~p ==> F"
   -- Infinite de Morgan laws
+  -- NOT_EXISTS_THM's tactic quotations, right to left, then its goal.
+  let xA3 ← pt "x:A"
   let notExP ← pt "~(?x:A. P x)"
-  let iffNegLemma ← TAUT "(a <=> ~b) <=> (~a <=> b)"
-  let NOT_EXISTS_THM ← (prove (← pt "!P. ~(?x:A. P x) <=> (!x. ~(P x))")
+  let NOT_EXISTS_THM ← (proveS "!P. ~(?x:A. P x) <=> (!x. ~(P x))"
       (THEN B GEN_TAC (THENL B (THEN B EQ_TAC DISCH_TAC)
         [THEN B GEN_TAC (THEN B DISCH_TAC (THEN B (UNDISCH_TAC notExP)
-          (THEN B (REWRITE_TAC []) (THEN B (EXISTS_TAC (← pt "x:A")) (POP_ASSUM ACCEPT_TAC))))),
+          (THEN B (REWRITE_TAC []) (THEN B (EXISTS_TAC xA3) (POP_ASSUM ACCEPT_TAC))))),
          THEN B (DISCH_THEN (CHOOSE_THEN MP_TAC)) (ASM_REWRITE_TAC [])])) : IO (Except String thm))
-  let EXISTS_NOT_THM ← (prove (← pt "!P. (?x:A. ~(P x)) <=> ~(!x. P x)")
+  let iffNegLemma ← TAUT "(a <=> ~b) <=> (~a <=> b)"
+  let EXISTS_NOT_THM ← (proveS "!P. (?x:A. ~(P x)) <=> ~(!x. P x)"
       (THEN B (ONCE_REWRITE_TAC [iffNegLemma]) (REWRITE_TAC [NOT_EXISTS_THM])) : IO (Except String thm))
-  let NOT_FORALL_THM ← (prove (← pt "!P. ~(!x. P x) <=> (?x:A. ~(P x))")
+  let NOT_FORALL_THM ← (proveS "!P. ~(!x. P x) <=> (?x:A. ~(P x))"
       (MATCH_ACCEPT_TAC (← liftExcept (GSYM EXISTS_NOT_THM))) : IO (Except String thm))
-  let FORALL_NOT_THM ← (prove (← pt "!P. (!x. ~(P x)) <=> ~(?x:A. P x)")
+  let FORALL_NOT_THM ← (proveS "!P. (!x. ~(P x)) <=> ~(?x:A. P x)"
       (MATCH_ACCEPT_TAC (← liftExcept (GSYM NOT_EXISTS_THM))) : IO (Except String thm))
   -- Expand quantification over Booleans.
-  let FORALL_BOOL_THM ← (prove (← pt "(!b. P b) <=> P T /\\ P F")
+  let FORALL_BOOL_THM ← (proveS "(!b. P b) <=> P T /\\ P F"
       (THEN B EQ_TAC (THEN B DISCH_TAC (THEN B (ASM_REWRITE_TAC [])
         (THEN B GEN_TAC (THEN B (BOOL_CASES_TAC B BOOL_CASES_AX (← pt "b:bool")) (ASM_REWRITE_TAC [])))))) : IO (Except String thm))
   let boolIffLemma ← TAUT "(~p <=> ~q) ==> (p <=> q)"
-  let EXISTS_BOOL_THM ← (prove (← pt "(?b. P b) <=> P T \\/ P F")
+  let EXISTS_BOOL_THM ← (proveS "(?b. P b) <=> P T \\/ P F"
       (THEN B (MATCH_MP_TAC boolIffLemma)
         (REWRITE_TAC [DE_MORGAN_THM, NOT_EXISTS_THM, FORALL_BOOL_THM])) : IO (Except String thm))
   -- Universal quantifier and disjunction
-  let LEFT_FORALL_OR_THM ← (prove (← pt "!P Q. (!x:A. P x \\/ Q) <=> (!x. P x) \\/ Q")
+  let LEFT_FORALL_OR_THM ← (proveS "!P Q. (!x:A. P x \\/ Q) <=> (!x. P x) \\/ Q"
       (THEN B (REPEAT B GEN_TAC) (THEN B (ONCE_REWRITE_TAC [← TAUT "(a <=> b) <=> (~a <=> ~b)"])
         (REWRITE_TAC [NOT_FORALL_THM, DE_MORGAN_THM, T.LEFT_EXISTS_AND_THM]))) : IO (Except String thm))
-  let RIGHT_FORALL_OR_THM ← (prove (← pt "!P Q. (!x:A. P \\/ Q x) <=> P \\/ (!x. Q x)")
+  let RIGHT_FORALL_OR_THM ← (proveS "!P Q. (!x:A. P \\/ Q x) <=> P \\/ (!x. Q x)"
       (THEN B (REPEAT B GEN_TAC) (THEN B (ONCE_REWRITE_TAC [← TAUT "(a <=> b) <=> (~a <=> ~b)"])
         (REWRITE_TAC [NOT_FORALL_THM, DE_MORGAN_THM, T.RIGHT_EXISTS_AND_THM]))) : IO (Except String thm))
-  let LEFT_OR_FORALL_THM ← (prove (← pt "!P Q. (!x:A. P x) \\/ Q <=> (!x. P x \\/ Q)")
+  let LEFT_OR_FORALL_THM ← (proveS "!P Q. (!x:A. P x) \\/ Q <=> (!x. P x \\/ Q)"
       (MATCH_ACCEPT_TAC (← liftExcept (GSYM LEFT_FORALL_OR_THM))) : IO (Except String thm))
-  let RIGHT_OR_FORALL_THM ← (prove (← pt "!P Q. P \\/ (!x:A. Q x) <=> (!x. P \\/ Q x)")
+  let RIGHT_OR_FORALL_THM ← (proveS "!P Q. P \\/ (!x:A. Q x) <=> (!x. P \\/ Q x)"
       (MATCH_ACCEPT_TAC (← liftExcept (GSYM RIGHT_FORALL_OR_THM))) : IO (Except String thm))
   -- Implication and quantifiers.
-  let LEFT_IMP_FORALL_THM ← (prove (← pt "!P Q. ((!x:A. P x) ==> Q) <=> (?x. P x ==> Q)")
+  let LEFT_IMP_FORALL_THM ← (proveS "!P Q. ((!x:A. P x) ==> Q) <=> (?x. P x ==> Q)"
       (THEN B (REPEAT B GEN_TAC) (THEN B (ONCE_REWRITE_TAC [← TAUT "(a <=> b) <=> (~a <=> ~b)"])
         (REWRITE_TAC [NOT_EXISTS_THM, NOT_IMP, T.LEFT_AND_FORALL_THM]))) : IO (Except String thm))
-  let LEFT_EXISTS_IMP_THM ← (prove (← pt "!P Q. (?x. P x ==> Q) <=> ((!x:A. P x) ==> Q)")
+  let LEFT_EXISTS_IMP_THM ← (proveS "!P Q. (?x. P x ==> Q) <=> ((!x:A. P x) ==> Q)"
       (MATCH_ACCEPT_TAC (← liftExcept (GSYM LEFT_IMP_FORALL_THM))) : IO (Except String thm))
-  let RIGHT_IMP_EXISTS_THM ← (prove (← pt "!P Q. (P ==> ?x:A. Q x) <=> (?x:A. P ==> Q x)")
+  let RIGHT_IMP_EXISTS_THM ← (proveS "!P Q. (P ==> ?x:A. Q x) <=> (?x:A. P ==> Q x)"
       (THEN B (REPEAT B GEN_TAC) (THEN B (ONCE_REWRITE_TAC [← TAUT "(a <=> b) <=> (~a <=> ~b)"])
         (REWRITE_TAC [NOT_EXISTS_THM, NOT_IMP, T.RIGHT_AND_FORALL_THM]))) : IO (Except String thm))
-  let RIGHT_EXISTS_IMP_THM ← (prove (← pt "!P Q. (?x:A. P ==> Q x) <=> (P ==> ?x:A. Q x)")
+  let RIGHT_EXISTS_IMP_THM ← (proveS "!P Q. (?x:A. P ==> Q x) <=> (P ==> ?x:A. Q x)"
       (MATCH_ACCEPT_TAC (← liftExcept (GSYM RIGHT_IMP_EXISTS_THM))) : IO (Except String thm))
   -- The conditional (class.ml 315-317).
   let COND_DEF ← (Drule.new_definition B (← pt
       "COND = \\t t1 t2. @x:A. ((t <=> T) ==> (x = t1)) /\\ ((t <=> F) ==> (x = t2))")
       : IO (Except String thm))
-  let COND_CLAUSES ← (prove (← pt "!(t1:A) t2. ((if T then t1 else t2) = t1) /\\ ((if F then t1 else t2) = t2)")
+  let COND_CLAUSES ← (proveS "!(t1:A) t2. ((if T then t1 else t2) = t1) /\\ ((if F then t1 else t2) = t2)"
       (REWRITE_TAC [COND_DEF]) : IO (Except String thm))
   let _ ← (Simp.extend_basic_rewrites B [COND_CLAUSES] : IO (Except String Unit))
-  let cBool ← pt "c:bool"
-  let COND_EXPAND ← (prove (← pt "!b t1 t2. (if b then t1 else t2) <=> (~b \\/ t1) /\\ (b \\/ t2)")
+  let COND_EXPAND ← (proveS "!b t1 t2. (if b then t1 else t2) <=> (~b \\/ t1) /\\ (b \\/ t2)"
       (THEN B (REPEAT B GEN_TAC) (THEN B (BOOL_CASES_TAC B BOOL_CASES_AX (← pt "b:bool")) (REWRITE_TAC []))) : IO (Except String thm))
-  let COND_ID ← (prove (← pt "!b (t:A). (if b then t else t) = t")
+  let COND_ID ← (proveS "!b (t:A). (if b then t else t) = t"
       (THEN B (REPEAT B GEN_TAC) (THEN B (BOOL_CASES_TAC B BOOL_CASES_AX (← pt "b:bool")) (REWRITE_TAC []))) : IO (Except String thm))
-  let COND_RAND ← (prove (← pt "!b (f:A->B) x y. f (if b then x else y) = (if b then f x else f y)")
+  let COND_RAND ← (proveS "!b (f:A->B) x y. f (if b then x else y) = (if b then f x else f y)"
       (THEN B (REPEAT B GEN_TAC) (THEN B (BOOL_CASES_TAC B BOOL_CASES_AX (← pt "b:bool")) (REWRITE_TAC []))) : IO (Except String thm))
-  let COND_RATOR ← (prove (← pt "!b (f:A->B) g x. (if b then f else g) x = (if b then f x else g x)")
+  let COND_RATOR ← (proveS "!b (f:A->B) g x. (if b then f else g)(x) = (if b then f x else g x)"
       (THEN B (REPEAT B GEN_TAC) (THEN B (BOOL_CASES_TAC B BOOL_CASES_AX (← pt "b:bool")) (REWRITE_TAC []))) : IO (Except String thm))
-  let COND_ABS ← (prove (← pt "!b (f:A->B) g. (\\x. if b then f x else g x) = (if b then f else g)")
+  let COND_ABS ← (proveS "!b (f:A->B) g. (\\x. if b then f x else g x) = (if b then f else g)"
       (THEN B (REPEAT B GEN_TAC) (THEN B (BOOL_CASES_TAC B BOOL_CASES_AX (← pt "b:bool")) (REWRITE_TAC [ETA_AX]))) : IO (Except String thm))
-  let COND_SWAP ← (prove (← pt "!p x y:A. (if ~p then x else y) = (if p then y else x)")
+  let COND_SWAP ← (proveS "!p x y:A. (if ~p then x else y) = (if p then y else x)"
       (THEN B (REPEAT B GEN_TAC) (THEN B (BOOL_CASES_TAC B BOOL_CASES_AX (← pt "p:bool")) (REWRITE_TAC []))) : IO (Except String thm))
   -- Throw monotonicity in.
-  let MONO_COND ← (prove (← pt "(A ==> B) /\\ (C ==> D) ==> (if b then A else C) ==> (if b then B else D)")
+  let MONO_COND ← (proveS "(A ==> B) /\\ (C ==> D) ==> (if b then A else C) ==> (if b then B else D)"
       (THEN B STRIP_TAC (THEN B (BOOL_CASES_TAC B BOOL_CASES_AX (← pt "b:bool")) (ASM_REWRITE_TAC []))) : IO (Except String thm))
-  let COND_ELIM_THM ← (prove (← pt "(P:A->bool) (if c then x else y) <=> (c ==> P x) /\\ (~c ==> P y)")
+  let cBool ← pt "c:bool"
+  let COND_ELIM_THM ← (proveS "(P:A->bool) (if c then x else y) <=> (c ==> P x) /\\ (~c ==> P y)"
       (THEN B (BOOL_CASES_TAC B BOOL_CASES_AX cBool) (REWRITE_TAC [])) : IO (Except String thm))
   let denegPth ← TAUT "~ ~ p <=> p"
   -- Skolemization
@@ -508,17 +530,18 @@ def setupClass (B : BoolThms) (T : TheoremThms)
   let ASSUME_TAC := Tactics.ASSUME_TAC B
   let X_CHOOSE_TAC := Tactics.X_CHOOSE_TAC B
   let COND_CASES_TAC := Classic.COND_CASES_TAC B COND_ELIM_THM denegPth
-  let skolemWit ← pt "\\x:A. @y:B. P x y"
+  -- The THENL list is built right to left.
   let yx ← pt "(y:A->B) x"
-  let SKOLEM_THM ← (prove (← pt "!P. (!x:A. ?y:B. P x y) <=> (?y. !x. P x (y x))")
+  let skolemWit ← pt "\\x:A. @y:B. P x y"
+  let SKOLEM_THM ← (proveS "!P. (!x:A. ?y:B. P x y) <=> (?y. !x. P x (y x))"
       (THEN B (THENL B (REPEAT B (ORELSE STRIP_TAC EQ_TAC))
           [THEN B (EXISTS_TAC skolemWit) (THEN B GEN_TAC (THEN B BETA_TAC (CONV_TAC SELECT_CONV_io))),
            EXISTS_TAC yx])
         (POP_ASSUM MATCH_ACCEPT_TAC)) : IO (Except String thm))
-  let SKOLEM_THM_GEN ← (prove (← pt "!P R. (!x:A. P x ==> ?y:B. R x y) <=> (?f. !x. P x ==> R x (f x))")
+  let SKOLEM_THM_GEN ← (proveS "!P R. (!x:A. P x ==> ?y:B. R x y) <=> (?f. !x. P x ==> R x (f x))"
       (REWRITE_TAC [RIGHT_IMP_EXISTS_THM, SKOLEM_THM]) : IO (Except String thm))
   -- NB: this one is true intutionistically and intensionally.
-  let UNIQUE_SKOLEM_ALT ← (prove (← pt "!P:A->B->bool. (!x. ?!y. P x y) <=> ?f. !x y. P x y <=> (f x = y)")
+  let UNIQUE_SKOLEM_ALT ← (proveS "!P:A->B->bool. (!x. ?!y. P x y) <=> ?f. !x y. P x y <=> (f x = y)"
       (THEN B GEN_TAC (REWRITE_TAC [T.EXISTS_UNIQUE_ALT, SKOLEM_THM])) : IO (Except String thm))
   -- UNIQUE_SKOLEM_THM (the big one)
   -- and this one intuitionistically and extensionally.
@@ -536,7 +559,7 @@ def setupClass (B : BoolThms) (T : TheoremThms)
   -- MP_TAC o C AP_THM `x:A`   (`C AP_THM uX` is `fun th => AP_THM th uX`, and it
   -- runs FIRST).
   let mpApThmX : thm_tactic := MP_TAC oT Lib.C AP_THM uX457
-  let UNIQUE_SKOLEM_THM ← (prove (← pt "!P. (!x:A. ?!y:B. P x y) <=> (?!f. !x. P x (f x))")
+  let UNIQUE_SKOLEM_THM ← (proveS "!P. (!x:A. ?!y:B. P x y) <=> (?!f. !x. P x (f x))"
       (THEN B GEN_TAC (THEN B (REWRITE_TAC [T.EXISTS_UNIQUE_THM, SKOLEM_THM, T.FORALL_AND_THM])
         (THENL B (THEN B EQ_TAC (THEN B (DISCH_THEN (CONJUNCTS_THEN ASSUME_TAC)) (ASM_REWRITE_TAC [])))
             [THEN B (REPEAT B STRIP_TAC) (THEN B (ONCE_REWRITE_TAC [FUN_EQ_THM])
@@ -551,17 +574,17 @@ def setupClass (B : BoolThms) (T : TheoremThms)
   -- Extend default congruences for contextual rewriting.
   let COND_CONG ← TAUT "(g = g') ==> (g' ==> (t = t')) ==> (~g' ==> (e = e')) ==> ((if g then t else e) = (if g' then t' else e'))"
   Simp.extend_basic_congs [COND_CONG]
-  let COND_EQ_CLAUSE ← (prove (← pt "(if x = x then y else z) = y") (REWRITE_TAC []) : IO (Except String thm))
+  let COND_EQ_CLAUSE ← (proveS "(if x = x then y else z) = y" (REWRITE_TAC []) : IO (Except String thm))
   let _ ← (Simp.extend_basic_rewrites B [COND_EQ_CLAUSE] : IO (Except String Unit))
   let xBool ← pt "x:bool"
-  let boolRecWit ← pt "\\x. if x then b:A else a"
   -- We can now treat "bool" as an enumerated type for some purposes.
-  let bool_INDUCT ← (prove (← pt "!P. P F /\\ P T ==> !x. P x")
+  let bool_INDUCT ← (proveS "!P. P F /\\ P T ==> !x. P x"
       (THEN B (REPEAT B STRIP_TAC) (THEN B (DISJ_CASES_TAC (← liftExcept (B.SPEC xBool BOOL_CASES_AX)))
         (ASM_REWRITE_TAC []))) : IO (Except String thm))
-  let bool_RECURSION ← (prove (← pt "!a b:A. ?f. f F = a /\\ f T = b")
+  let boolRecWit ← pt "\\x. if x then b:A else a"
+  let bool_RECURSION ← (proveS "!a b:A. ?f. f F = a /\\ f T = b"
       (THEN B (REPEAT B GEN_TAC) (THEN B (EXISTS_TAC boolRecWit) (REWRITE_TAC []))) : IO (Except String thm))
-  return { etaPth, etaT, EQ_EXT, FUN_EQ_THM,
+  return { SELECT_AX, etaPth, etaT, EQ_EXT, FUN_EQ_THM,
            EXISTS_THM, selectRulePth, selectConvPth, SELECT_REFL, SELECT_UNIQUE,
            EXCLUDED_MIDDLE, BOOL_CASES_AX,
            DE_MORGAN_THM, NOT_CLAUSES, NOT_IMP, CONTRAPOS_THM,

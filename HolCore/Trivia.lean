@@ -40,15 +40,24 @@ structure TriviaThms where
   FORALL_ONE_THM : thm
   EXISTS_ONE_THM : thm
   ETA_ONE : thm
+  one_tydef : thm  -- trivia.ml 41, made by `setupTrivia`'s `mkOne`
+  one_DEF : thm    -- trivia.ml 45, made by `mkOne`
   deriving Inhabited
 
 /-- Establish the `trivia.ml` theorem layer.
     `C` provides `FUN_EQ_THM` (and later `NOT_EXISTS_THM`/`TAUT`);
-    `o_DEF`/`I_DEF` are the combinator definitions declared in Session. -/
+    `o_DEF`/`I_DEF` are the combinator definitions declared in Session.
+    `mkOne` makes the type `1` (trivia.ml 37-45: `EXISTS_ONE_REP`,
+    `one_tydef`, `one_DEF`); it is run after `I_O_ID`, as in trivia.ml. -/
 def setupTrivia (B : BoolThms) (T : TheoremThms) (C : ClassThms)
-    (o_DEF I_DEF : thm) (existsOneRep one_tydef _one_DEF : thm) :
+    (o_DEF I_DEF : thm) (mkOne : ExceptT String IO (thm × thm × thm)) :
     ExceptT String IO TriviaThms := do
-  let prove := Tactics.prove B
+  -- `prove(`goal`,tac)`: OCaml evaluates the tactic (and its quotations)
+  -- before parsing the goal, so the goal is parsed here, after them.
+  let proveS (g : String) (tac : HolCore.Tactics.tactic) : IO (Except String thm) := do
+    match ← HolCore.Parser.parse_term g with
+    | .error e => return .error e
+    | .ok gt => Tactics.prove B gt tac
   let REWRITE_TAC := Simp.REWRITE_TAC B
   let PURE_REWRITE_TAC := Simp.PURE_REWRITE_TAC B
   let CONV_TAC := Tactics.CONV_TAC B
@@ -60,20 +69,21 @@ def setupTrivia (B : BoolThms) (T : TheoremThms) (C : ClassThms)
   let redepthBeta : ioconv := fun t => pure (REDEPTH_CONV BETA_CONV t)
 
   -- Combinators. We don't bother with S and K, which seem of little use.
-  let o_THM ← (prove (← pt "!f:B->C. !g:A->B. !x:A. (f o g) x = f(g(x))")
+  let o_THM ← (proveS "!f:B->C. !g:A->B. !x:A. (f o g) x = f(g(x))"
       (THEN B (PURE_REWRITE_TAC [o_DEF])
         (THEN B (CONV_TAC depthBeta) (THEN B (REPEAT B GEN_TAC) REFL_TAC)))
       : IO (Except String thm))
-  let o_ASSOC ← (prove (← pt "!f:C->D. !g:B->C. !h:A->B. f o (g o h) = (f o g) o h")
+  let o_ASSOC ← (proveS "!f:C->D. !g:B->C. !h:A->B. f o (g o h) = (f o g) o h"
       (THEN B (REPEAT B GEN_TAC) (THEN B (REWRITE_TAC [o_DEF])
         (THEN B (CONV_TAC redepthBeta) REFL_TAC)))
       : IO (Except String thm))
-  let I_THM ← (prove (← pt "!x:A. I x = x") (REWRITE_TAC [I_DEF]) : IO (Except String thm))
-  let I_O_ID ← (prove (← pt "!f:A->B. (I o f = f) /\\ (f o I = f)")
+  let I_THM ← (proveS "!x:A. I x = x" (REWRITE_TAC [I_DEF]) : IO (Except String thm))
+  let I_O_ID ← (proveS "!f:A->B. (I o f = f) /\\ (f o I = f)"
       (THEN B (REPEAT B STRIP_TAC) (REWRITE_TAC [C.FUN_EQ_THM, o_DEF, I_THM]))
       : IO (Except String thm))
 
   -- The theory "1" (a 1-element type).
+  let (existsOneRep, one_tydef, one_DEF) ← mkOne
   let MP_TAC := Tactics.MP_TAC B
   let DISCH_TAC := Tactics.DISCH_TAC B
   let ONCE_REWRITE_TAC := Simp.ONCE_REWRITE_TAC B
@@ -91,37 +101,37 @@ def setupTrivia (B : BoolThms) (T : TheoremThms) (C : ClassThms)
   -- the bundle; not recomputed here).
   let EXISTS_ONE_REP := existsOneRep
   -- one : !v:1. v = one
-  let one ← (prove (← pt "!v:1. v = one")
+  let one ← (proveS "!v:1. v = one"
       (THEN B (MP_TAC (← liftExcept (do B.GEN_ALL (← B.SPEC oneRepA cLetC2))))
         (THEN B (REWRITE_TAC [cLetC1]) (THEN B DISCH_TAC
           (THEN B (ONCE_REWRITE_TAC [(← liftExcept (GSYM cLetC1))]) (ASM_REWRITE_TAC [])))))
       : IO (Except String thm))
-  let one_axiom ← (prove (← pt "!f g. f = (g:A->1)")
+  let one_axiom ← (proveS "!f g. f = (g:A->1)"
       (THEN B (REPEAT B GEN_TAC) (THEN B (ONCE_REWRITE_TAC [C.FUN_EQ_THM])
         (THEN B GEN_TAC (THEN B (ONCE_REWRITE_TAC [one]) REFL_TAC)))) : IO (Except String thm))
-  let one_INDUCT ← (prove (← pt "!P. P one ==> !x. P x")
+  let one_INDUCT ← (proveS "!P. P one ==> !x. P x"
       (THEN B (ONCE_REWRITE_TAC [one]) (REWRITE_TAC [])) : IO (Except String thm))
-  let one_RECURSION ← (prove (← pt "!e:A. ?fn. fn one = e")
+  let one_RECURSION ← (proveS "!e:A. ?fn. fn one = e"
       (THEN B GEN_TAC (THEN B (EXISTS_TAC (← pt "\\x:1. e:A")) (THEN B BETA_TAC REFL_TAC)))
       : IO (Except String thm))
-  let one_Axiom ← (prove (← pt "!e:A. ?!fn. fn one = e")
+  let one_Axiom ← (proveS "!e:A. ?!fn. fn one = e"
       (THEN B GEN_TAC (THEN B (REWRITE_TAC [T.EXISTS_UNIQUE_THM, one_RECURSION])
         (THEN B (REPEAT B STRIP_TAC) (THEN B (ONCE_REWRITE_TAC [C.FUN_EQ_THM])
           (THEN B (ONCE_REWRITE_TAC [one]) (ASM_REWRITE_TAC [])))))) : IO (Except String thm))
-  let FORALL_ONE_THM ← (prove (← pt "(!x. P x) <=> P one")
+  let FORALL_ONE_THM ← (proveS "(!x. P x) <=> P one"
       (THEN B EQ_TAC (THEN B (REWRITE_TAC [one_INDUCT]) (DISCH_THEN MATCH_ACCEPT_TAC)))
       : IO (Except String thm))
   let iffNegLemma ← (Classic.TAUT B C.BOOL_CASES_AX (← pt "(p <=> q) <=> (~p <=> ~q)")
                       : IO (Except String thm))
-  let EXISTS_ONE_THM ← (prove (← pt "(?x. P x) <=> P one")
+  let EXISTS_ONE_THM ← (proveS "(?x. P x) <=> P one"
       (THEN B (GEN_REWRITE_TAC id [iffNegLemma])
         (REWRITE_TAC [C.NOT_EXISTS_THM, FORALL_ONE_THM])) : IO (Except String thm))
-  let ETA_ONE ← (prove (← pt "!f:1->A. (\\x. f one) = f")
+  let ETA_ONE ← (proveS "!f:1->A. (\\x. f one) = f"
       (THEN B (REWRITE_TAC [C.FUN_EQ_THM]) (THEN B (REPEAT B GEN_TAC)
         (THEN B (ONCE_REWRITE_TAC [one]) REFL_TAC))) : IO (Except String thm))
 
   return { o_THM, o_ASSOC, I_THM, I_O_ID,
            EXISTS_ONE_REP, one, one_axiom, one_INDUCT, one_RECURSION, one_Axiom,
-           FORALL_ONE_THM, EXISTS_ONE_THM, ETA_ONE }
+           FORALL_ONE_THM, EXISTS_ONE_THM, ETA_ONE, one_tydef, one_DEF }
 
 end HolCore.Trivia

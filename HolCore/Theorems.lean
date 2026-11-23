@@ -96,7 +96,12 @@ structure TheoremThms where
     A pure `ExceptT String IO` computation (no `unsafe`, no cache/state of its
     own; it only reads its `BoolThms` argument and calls the safe Simp API). -/
 def setupTheorems (B : BoolThms) : ExceptT String IO TheoremThms := do
-  let prove := Tactics.prove B
+  -- `prove(`goal`,tac)`: OCaml evaluates the tactic (and its quotations)
+  -- before parsing the goal, so the goal is parsed here, after them.
+  let proveS (g : String) (tac : HolCore.Tactics.tactic) : IO (Except String thm) := do
+    match ← HolCore.Parser.parse_term g with
+    | .error e => return .error e
+    | .ok gt => Tactics.prove B gt tac
   let THEN := Tactics.THEN B
   let GEN_TAC := Tactics.GEN_TAC B
   let REPEAT := Tactics.REPEAT B
@@ -130,52 +135,52 @@ def setupTheorems (B : BoolThms) : ExceptT String IO TheoremThms := do
   let ITAUT (s : String) : ExceptT String IO thm := do (Itab.ITAUT B (← pt s) : IO (Except String thm))
 
   -- More stuff about equality.
-  let EQ_REFL ← (prove (← pt "!x:A. x = x") (THEN GEN_TAC REFL_TAC) : IO (Except String thm))
-  let REFL_CLAUSE ← (prove (← pt "!x:A. (x = x) <=> T")
+  let EQ_REFL ← (proveS "!x:A. x = x" (THEN GEN_TAC REFL_TAC) : IO (Except String thm))
+  let REFL_CLAUSE ← (proveS "!x:A. (x = x) <=> T"
       (THEN GEN_TAC (MATCH_ACCEPT_TAC (← B.EQT_INTRO (← B.SPEC_ALL EQ_REFL)))) : IO (Except String thm))
-  let EQ_SYM ← (prove (← pt "!(x:A) y. (x = y) ==> (y = x)")
+  let EQ_SYM ← (proveS "!(x:A) y. (x = y) ==> (y = x)"
       (THEN (REPEAT GEN_TAC)
             (DISCH_THEN (fun th => fun g => do
                match SYM th with
                | .ok s => (ACCEPT_TAC s g : IO (Except String goalstate))
                | .error e => return .error e))) : IO (Except String thm))
-  let EQ_SYM_EQ ← (prove (← pt "!(x:A) y. (x = y) <=> (y = x)")
+  let EQ_SYM_EQ ← (proveS "!(x:A) y. (x = y) <=> (y = x)"
       (THEN (REPEAT GEN_TAC) (THEN EQ_TAC (MATCH_ACCEPT_TAC EQ_SYM))) : IO (Except String thm))
-  let EQ_TRANS ← (prove (← pt "!(x:A) y z. (x = y) /\\ (y = z) ==> (x = z)")
+  let EQ_TRANS ← (proveS "!(x:A) y z. (x = y) /\\ (y = z) ==> (x = z)"
       (THEN (REPEAT STRIP_TAC) (THEN (PURE_ASM_REWRITE_TAC []) REFL_TAC)) : IO (Except String thm))
 
   -- A couple of theorems about beta reduction.
-  let BETA_THM ← (prove (← pt "!(f:A->B) y. (\\x. (f:A->B) x) y = f y")
+  let BETA_THM ← (proveS "!(f:A->B) y. (\\x. (f:A->B) x) y = f y"
       (THEN (REPEAT GEN_TAC) (THEN BETA_TAC REFL_TAC)) : IO (Except String thm))
-  let ABS_SIMP ← (prove (← pt "!(t1:A) (t2:B). (\\x. t1) t2 = t1")
+  let ABS_SIMP ← (proveS "!(t1:A) (t2:B). (\\x. t1) t2 = t1"
       (THEN (REPEAT GEN_TAC) (REWRITE_TAC [BETA_THM, REFL_CLAUSE])) : IO (Except String thm))
 
   -- A few "big name" intuitionistic tautologies.
-  let CONJ_ASSOC ← (prove (← pt "!t1 t2 t3. t1 /\\ t2 /\\ t3 <=> (t1 /\\ t2) /\\ t3") ITAUT_TAC : IO (Except String thm))
-  let CONJ_SYM ← (prove (← pt "!t1 t2. t1 /\\ t2 <=> t2 /\\ t1") ITAUT_TAC : IO (Except String thm))
-  let CONJ_ACI ← (prove (← pt "(p /\\ q <=> q /\\ p) /\\ ((p /\\ q) /\\ r <=> p /\\ (q /\\ r)) /\\ (p /\\ (q /\\ r) <=> q /\\ (p /\\ r)) /\\ (p /\\ p <=> p) /\\ (p /\\ (p /\\ q) <=> p /\\ q)") ITAUT_TAC : IO (Except String thm))
-  let DISJ_ASSOC ← (prove (← pt "!t1 t2 t3. t1 \\/ t2 \\/ t3 <=> (t1 \\/ t2) \\/ t3") ITAUT_TAC : IO (Except String thm))
-  let DISJ_SYM ← (prove (← pt "!t1 t2. t1 \\/ t2 <=> t2 \\/ t1") ITAUT_TAC : IO (Except String thm))
-  let DISJ_ACI ← (prove (← pt "(p \\/ q <=> q \\/ p) /\\ ((p \\/ q) \\/ r <=> p \\/ (q \\/ r)) /\\ (p \\/ (q \\/ r) <=> q \\/ (p \\/ r)) /\\ (p \\/ p <=> p) /\\ (p \\/ (p \\/ q) <=> p \\/ q)") ITAUT_TAC : IO (Except String thm))
-  let IMP_CONJ ← (prove (← pt "p /\\ q ==> r <=> p ==> q ==> r") ITAUT_TAC : IO (Except String thm))
+  let CONJ_ASSOC ← (proveS "!t1 t2 t3. t1 /\\ t2 /\\ t3 <=> (t1 /\\ t2) /\\ t3" ITAUT_TAC : IO (Except String thm))
+  let CONJ_SYM ← (proveS "!t1 t2. t1 /\\ t2 <=> t2 /\\ t1" ITAUT_TAC : IO (Except String thm))
+  let CONJ_ACI ← (proveS "(p /\\ q <=> q /\\ p) /\\ ((p /\\ q) /\\ r <=> p /\\ (q /\\ r)) /\\ (p /\\ (q /\\ r) <=> q /\\ (p /\\ r)) /\\ (p /\\ p <=> p) /\\ (p /\\ (p /\\ q) <=> p /\\ q)" ITAUT_TAC : IO (Except String thm))
+  let DISJ_ASSOC ← (proveS "!t1 t2 t3. t1 \\/ t2 \\/ t3 <=> (t1 \\/ t2) \\/ t3" ITAUT_TAC : IO (Except String thm))
+  let DISJ_SYM ← (proveS "!t1 t2. t1 \\/ t2 <=> t2 \\/ t1" ITAUT_TAC : IO (Except String thm))
+  let DISJ_ACI ← (proveS "(p \\/ q <=> q \\/ p) /\\ ((p \\/ q) \\/ r <=> p \\/ (q \\/ r)) /\\ (p \\/ (q \\/ r) <=> q \\/ (p \\/ r)) /\\ (p \\/ p <=> p) /\\ (p \\/ (p \\/ q) <=> p \\/ q)" ITAUT_TAC : IO (Except String thm))
+  let IMP_CONJ ← (proveS "p /\\ q ==> r <=> p ==> q ==> r" ITAUT_TAC : IO (Except String thm))
   let IMP_IMP ← liftExcept (GSYM IMP_CONJ)
-  let IMP_CONJ_ALT ← (prove (← pt "p /\\ q ==> r <=> q ==> p ==> r") ITAUT_TAC : IO (Except String thm))
+  let IMP_CONJ_ALT ← (proveS "p /\\ q ==> r <=> q ==> p ==> r" ITAUT_TAC : IO (Except String thm))
   -- A couple of "distribution" tautologies are useful.
-  let LEFT_OR_DISTRIB ← (prove (← pt "!p q r. p /\\ (q \\/ r) <=> p /\\ q \\/ p /\\ r") ITAUT_TAC : IO (Except String thm))
-  let RIGHT_OR_DISTRIB ← (prove (← pt "!p q r. (p \\/ q) /\\ r <=> p /\\ r \\/ q /\\ r") ITAUT_TAC : IO (Except String thm))
+  let LEFT_OR_DISTRIB ← (proveS "!p q r. p /\\ (q \\/ r) <=> p /\\ q \\/ p /\\ r" ITAUT_TAC : IO (Except String thm))
+  let RIGHT_OR_DISTRIB ← (proveS "!p q r. (p \\/ q) /\\ r <=> p /\\ r \\/ q /\\ r" ITAUT_TAC : IO (Except String thm))
   -- Degenerate cases of quantifiers.
-  let FORALL_SIMP ← (prove (← pt "!t. (!x:A. t) = t") ITAUT_TAC : IO (Except String thm))
-  let EXISTS_SIMP ← (prove (← pt "!t. (?x:A. t) = t") ITAUT_TAC : IO (Except String thm))
+  let FORALL_SIMP ← (proveS "!t. (!x:A. t) = t" ITAUT_TAC : IO (Except String thm))
+  let EXISTS_SIMP ← (proveS "!t. (?x:A. t) = t" ITAUT_TAC : IO (Except String thm))
   -- I also use this a lot (as a prelude to congruence reasoning).
   let EQ_IMP ← ITAUT "(a <=> b) ==> a ==> b"
 
   -- Start building up the basic rewrites; we add a few more later.
-  let EQ_CLAUSES ← (prove (← pt "!t. ((T <=> t) <=> t) /\\ ((t <=> T) <=> t) /\\ ((F <=> t) <=> ~t) /\\ ((t <=> F) <=> ~t)") ITAUT_TAC : IO (Except String thm))
-  let NOT_CLAUSES_WEAK ← (prove (← pt "(~T <=> F) /\\ (~F <=> T)") ITAUT_TAC : IO (Except String thm))
-  let AND_CLAUSES ← (prove (← pt "!t. (T /\\ t <=> t) /\\ (t /\\ T <=> t) /\\ (F /\\ t <=> F) /\\ (t /\\ F <=> F) /\\ (t /\\ t <=> t)") ITAUT_TAC : IO (Except String thm))
-  let OR_CLAUSES ← (prove (← pt "!t. (T \\/ t <=> T) /\\ (t \\/ T <=> T) /\\ (F \\/ t <=> t) /\\ (t \\/ F <=> t) /\\ (t \\/ t <=> t)") ITAUT_TAC : IO (Except String thm))
-  let IMP_CLAUSES ← (prove (← pt "!t. (T ==> t <=> t) /\\ (t ==> T <=> T) /\\ (F ==> t <=> T) /\\ (t ==> t <=> T) /\\ (t ==> F <=> ~t)") ITAUT_TAC : IO (Except String thm))
-  let IMP_EQ_CLAUSE ← (prove (← pt "((x = x) ==> p) <=> p")
+  let EQ_CLAUSES ← (proveS "!t. ((T <=> t) <=> t) /\\ ((t <=> T) <=> t) /\\ ((F <=> t) <=> ~t) /\\ ((t <=> F) <=> ~t)" ITAUT_TAC : IO (Except String thm))
+  let NOT_CLAUSES_WEAK ← (proveS "(~T <=> F) /\\ (~F <=> T)" ITAUT_TAC : IO (Except String thm))
+  let AND_CLAUSES ← (proveS "!t. (T /\\ t <=> t) /\\ (t /\\ T <=> t) /\\ (F /\\ t <=> F) /\\ (t /\\ F <=> F) /\\ (t /\\ t <=> t)" ITAUT_TAC : IO (Except String thm))
+  let OR_CLAUSES ← (proveS "!t. (T \\/ t <=> T) /\\ (t \\/ T <=> T) /\\ (F \\/ t <=> t) /\\ (t \\/ F <=> t) /\\ (t \\/ t <=> t)" ITAUT_TAC : IO (Except String thm))
+  let IMP_CLAUSES ← (proveS "!t. (T ==> t <=> t) /\\ (t ==> T <=> T) /\\ (F ==> t <=> T) /\\ (t ==> t <=> T) /\\ (t ==> F <=> ~t)" ITAUT_TAC : IO (Except String thm))
+  let IMP_EQ_CLAUSE ← (proveS "((x = x) ==> p) <=> p"
       (REWRITE_TAC [(← B.EQT_INTRO (← B.SPEC_ALL EQ_REFL)), IMP_CLAUSES]) : IO (Except String thm))
   let _ ← (Simp.extend_basic_rewrites B
       [REFL_CLAUSE, EQ_CLAUSES, NOT_CLAUSES_WEAK, AND_CLAUSES, OR_CLAUSES,
@@ -184,82 +189,84 @@ def setupTheorems (B : BoolThms) : ExceptT String IO TheoremThms := do
   Simp.extend_basic_congs [congThm]
 
   -- Rewrite rule for unique existence.
-  let EXISTS_UNIQUE_THM ← (prove (← pt "!P. (?!x:A. P x) <=> (?x. P x) /\\ (!x x'. P x /\\ P x' ==> (x = x'))")
+  let EXISTS_UNIQUE_THM ← (proveS "!P. (?!x:A. P x) <=> (?x. P x) /\\ (!x x'. P x /\\ P x' ==> (x = x'))"
       (THEN GEN_TAC (REWRITE_TAC [B.EXISTS_UNIQUE_DEF])) : IO (Except String thm))
 
   -- Trivial instances of existence.
-  let EXISTS_REFL ← (prove (← pt "!a:A. ?x. x = a")
+  let EXISTS_REFL ← (proveS "!a:A. ?x. x = a"
       (THEN GEN_TAC (THEN (EXISTS_TAC (← pt "a:A")) REFL_TAC)) : IO (Except String thm))
-  let EXISTS_UNIQUE_REFL ← (prove (← pt "!a:A. ?!x. x = a")
+  let EXISTS_UNIQUE_REFL ← (proveS "!a:A. ?!x. x = a"
       (THEN GEN_TAC (THEN (REWRITE_TAC [EXISTS_UNIQUE_THM])
         (THEN (THENL (REPEAT (ORELSE EQ_TAC STRIP_TAC))
                      [EXISTS_TAC (← pt "a:A"), ASM_REWRITE_TAC []])
               REFL_TAC)))
       : IO (Except String thm))
   -- Unwinding.
-  let UNWIND_THM1 ← (prove (← pt "!P (a:A). (?x. a = x /\\ P x) <=> P a")
+  let UNWIND_THM1 ← (proveS "!P (a:A). (?x. a = x /\\ P x) <=> P a"
       (THEN (REPEAT GEN_TAC) (THENL EQ_TAC
         [DISCH_THEN (CHOOSE_THEN (CONJUNCTS_THEN2 SUBST1_TAC ACCEPT_TAC)),
          THEN DISCH_TAC (THEN (EXISTS_TAC (← pt "a:A"))
            (THEN CONJ_TAC (THEN (TRY (FIRST_ASSUM MATCH_ACCEPT_TAC)) REFL_TAC)))]))
       : IO (Except String thm))
-  let UNWIND_THM2 ← (prove (← pt "!P (a:A). (?x. x = a /\\ P x) <=> P a")
+  let UNWIND_THM2 ← (proveS "!P (a:A). (?x. x = a /\\ P x) <=> P a"
       (THEN (REPEAT GEN_TAC)
         (THEN (CONV_TAC (fun t => return (LAND_CONV (ONCE_DEPTH_CONV SYM_CONV) t)))
               (MATCH_ACCEPT_TAC UNWIND_THM1))) : IO (Except String thm))
-  let FORALL_UNWIND_THM2 ← (prove (← pt "!P (a:A). (!x. x = a ==> P x) <=> P a")
+  -- `SPEC \`a:A\`` is built with the tactic, before `prove` parses the goal.
+  let a_A ← pt "a:A"
+  let FORALL_UNWIND_THM2 ← (proveS "!P (a:A). (!x. x = a ==> P x) <=> P a"
       (THEN (REPEAT GEN_TAC) (THENL EQ_TAC
         [THEN (DISCH_THEN (fun th => fun g => do
-                 match B.SPEC (← liftM (parse_term "a:A")).toOption.get! th with
+                 match B.SPEC a_A th with
                  | .ok s => (MP_TAC s g : IO (Except String goalstate))
                  | .error e => return .error e)) (REWRITE_TAC []),
          THEN DISCH_TAC (THEN GEN_TAC (THEN (DISCH_THEN SUBST1_TAC) (ASM_REWRITE_TAC [])))]))
       : IO (Except String thm))
-  let FORALL_UNWIND_THM1 ← (prove (← pt "!P (a:A). (!x. a = x ==> P x) <=> P a")
+  let FORALL_UNWIND_THM1 ← (proveS "!P (a:A). (!x. a = x ==> P x) <=> P a"
       (THEN (REPEAT GEN_TAC)
         (THEN (CONV_TAC (fun t => return (LAND_CONV (ONCE_DEPTH_CONV SYM_CONV) t)))
               (MATCH_ACCEPT_TAC FORALL_UNWIND_THM2))) : IO (Except String thm))
 
   -- Permuting quantifiers
-  let SWAP_FORALL_THM ← (prove (← pt "!P:A->B->bool. (!x y. P x y) <=> (!y x. P x y)") ITAUT_TAC : IO (Except String thm))
-  let SWAP_EXISTS_THM ← (prove (← pt "!P:A->B->bool. (?x y. P x y) <=> (?y x. P x y)") ITAUT_TAC : IO (Except String thm))
+  let SWAP_FORALL_THM ← (proveS "!P:A->B->bool. (!x y. P x y) <=> (!y x. P x y)" ITAUT_TAC : IO (Except String thm))
+  let SWAP_EXISTS_THM ← (proveS "!P:A->B->bool. (?x y. P x y) <=> (?y x. P x y)" ITAUT_TAC : IO (Except String thm))
 
   -- Universal quantifier and conjunction.
-  let FORALL_AND_THM ← (prove (← pt "!P Q. (!x:A. P x /\\ Q x) <=> (!x. P x) /\\ (!x. Q x)") ITAUT_TAC : IO (Except String thm))
-  let AND_FORALL_THM ← (prove (← pt "!P Q. (!x. P x) /\\ (!x. Q x) <=> (!x:A. P x /\\ Q x)") ITAUT_TAC : IO (Except String thm))
-  let LEFT_AND_FORALL_THM ← (prove (← pt "!P Q. (!x:A. P x) /\\ Q <=> (!x:A. P x /\\ Q)") ITAUT_TAC : IO (Except String thm))
-  let RIGHT_AND_FORALL_THM ← (prove (← pt "!P Q. P /\\ (!x:A. Q x) <=> (!x. P /\\ Q x)") ITAUT_TAC : IO (Except String thm))
+  let FORALL_AND_THM ← (proveS "!P Q. (!x:A. P x /\\ Q x) <=> (!x. P x) /\\ (!x. Q x)" ITAUT_TAC : IO (Except String thm))
+  let AND_FORALL_THM ← (proveS "!P Q. (!x. P x) /\\ (!x. Q x) <=> (!x:A. P x /\\ Q x)" ITAUT_TAC : IO (Except String thm))
+  let LEFT_AND_FORALL_THM ← (proveS "!P Q. (!x:A. P x) /\\ Q <=> (!x:A. P x /\\ Q)" ITAUT_TAC : IO (Except String thm))
+  let RIGHT_AND_FORALL_THM ← (proveS "!P Q. P /\\ (!x:A. Q x) <=> (!x. P /\\ Q x)" ITAUT_TAC : IO (Except String thm))
   -- Existential quantifier and disjunction.
-  let EXISTS_OR_THM ← (prove (← pt "!P Q. (?x:A. P x \\/ Q x) <=> (?x. P x) \\/ (?x. Q x)") ITAUT_TAC : IO (Except String thm))
-  let OR_EXISTS_THM ← (prove (← pt "!P Q. (?x. P x) \\/ (?x. Q x) <=> (?x:A. P x \\/ Q x)") ITAUT_TAC : IO (Except String thm))
-  let LEFT_OR_EXISTS_THM ← (prove (← pt "!P Q. (?x. P x) \\/ Q <=> (?x:A. P x \\/ Q)") ITAUT_TAC : IO (Except String thm))
-  let RIGHT_OR_EXISTS_THM ← (prove (← pt "!P Q. P \\/ (?x. Q x) <=> (?x:A. P \\/ Q x)") ITAUT_TAC : IO (Except String thm))
+  let EXISTS_OR_THM ← (proveS "!P Q. (?x:A. P x \\/ Q x) <=> (?x. P x) \\/ (?x. Q x)" ITAUT_TAC : IO (Except String thm))
+  let OR_EXISTS_THM ← (proveS "!P Q. (?x. P x) \\/ (?x. Q x) <=> (?x:A. P x \\/ Q x)" ITAUT_TAC : IO (Except String thm))
+  let LEFT_OR_EXISTS_THM ← (proveS "!P Q. (?x. P x) \\/ Q <=> (?x:A. P x \\/ Q)" ITAUT_TAC : IO (Except String thm))
+  let RIGHT_OR_EXISTS_THM ← (proveS "!P Q. P \\/ (?x. Q x) <=> (?x:A. P \\/ Q x)" ITAUT_TAC : IO (Except String thm))
   -- Existential quantifier and conjunction.
-  let LEFT_EXISTS_AND_THM ← (prove (← pt "!P Q. (?x:A. P x /\\ Q) <=> (?x:A. P x) /\\ Q") ITAUT_TAC : IO (Except String thm))
-  let RIGHT_EXISTS_AND_THM ← (prove (← pt "!P Q. (?x:A. P /\\ Q x) <=> P /\\ (?x:A. Q x)") ITAUT_TAC : IO (Except String thm))
-  let TRIV_EXISTS_AND_THM ← (prove (← pt "!P Q. (?x:A. P /\\ Q) <=> (?x:A. P) /\\ (?x:A. Q)") ITAUT_TAC : IO (Except String thm))
-  let LEFT_AND_EXISTS_THM ← (prove (← pt "!P Q. (?x:A. P x) /\\ Q <=> (?x:A. P x /\\ Q)") ITAUT_TAC : IO (Except String thm))
-  let RIGHT_AND_EXISTS_THM ← (prove (← pt "!P Q. P /\\ (?x:A. Q x) <=> (?x:A. P /\\ Q x)") ITAUT_TAC : IO (Except String thm))
-  let TRIV_AND_EXISTS_THM ← (prove (← pt "!P Q. (?x:A. P) /\\ (?x:A. Q) <=> (?x:A. P /\\ Q)") ITAUT_TAC : IO (Except String thm))
+  let LEFT_EXISTS_AND_THM ← (proveS "!P Q. (?x:A. P x /\\ Q) <=> (?x:A. P x) /\\ Q" ITAUT_TAC : IO (Except String thm))
+  let RIGHT_EXISTS_AND_THM ← (proveS "!P Q. (?x:A. P /\\ Q x) <=> P /\\ (?x:A. Q x)" ITAUT_TAC : IO (Except String thm))
+  let TRIV_EXISTS_AND_THM ← (proveS "!P Q. (?x:A. P /\\ Q) <=> (?x:A. P) /\\ (?x:A. Q)" ITAUT_TAC : IO (Except String thm))
+  let LEFT_AND_EXISTS_THM ← (proveS "!P Q. (?x:A. P x) /\\ Q <=> (?x:A. P x /\\ Q)" ITAUT_TAC : IO (Except String thm))
+  let RIGHT_AND_EXISTS_THM ← (proveS "!P Q. P /\\ (?x:A. Q x) <=> (?x:A. P /\\ Q x)" ITAUT_TAC : IO (Except String thm))
+  let TRIV_AND_EXISTS_THM ← (proveS "!P Q. (?x:A. P) /\\ (?x:A. Q) <=> (?x:A. P /\\ Q)" ITAUT_TAC : IO (Except String thm))
   -- Only trivial instances of universal quantifier and disjunction.
-  let TRIV_FORALL_OR_THM ← (prove (← pt "!P Q. (!x:A. P \\/ Q) <=> (!x:A. P) \\/ (!x:A. Q)") ITAUT_TAC : IO (Except String thm))
-  let TRIV_OR_FORALL_THM ← (prove (← pt "!P Q. (!x:A. P) \\/ (!x:A. Q) <=> (!x:A. P \\/ Q)") ITAUT_TAC : IO (Except String thm))
+  let TRIV_FORALL_OR_THM ← (proveS "!P Q. (!x:A. P \\/ Q) <=> (!x:A. P) \\/ (!x:A. Q)" ITAUT_TAC : IO (Except String thm))
+  let TRIV_OR_FORALL_THM ← (proveS "!P Q. (!x:A. P) \\/ (!x:A. Q) <=> (!x:A. P \\/ Q)" ITAUT_TAC : IO (Except String thm))
   -- Implication and quantifiers.
-  let RIGHT_IMP_FORALL_THM ← (prove (← pt "!P Q. (P ==> !x:A. Q x) <=> (!x. P ==> Q x)") ITAUT_TAC : IO (Except String thm))
-  let RIGHT_FORALL_IMP_THM ← (prove (← pt "!P Q. (!x. P ==> Q x) <=> (P ==> !x:A. Q x)") ITAUT_TAC : IO (Except String thm))
-  let LEFT_IMP_EXISTS_THM ← (prove (← pt "!P Q. ((?x:A. P x) ==> Q) <=> (!x. P x ==> Q)") ITAUT_TAC : IO (Except String thm))
-  let LEFT_FORALL_IMP_THM ← (prove (← pt "!P Q. (!x. P x ==> Q) <=> ((?x:A. P x) ==> Q)") ITAUT_TAC : IO (Except String thm))
-  let TRIV_FORALL_IMP_THM ← (prove (← pt "!P Q. (!x:A. P ==> Q) <=> ((?x:A. P) ==> (!x:A. Q))") ITAUT_TAC : IO (Except String thm))
-  let TRIV_EXISTS_IMP_THM ← (prove (← pt "!P Q. (?x:A. P ==> Q) <=> ((!x:A. P) ==> (?x:A. Q))") ITAUT_TAC : IO (Except String thm))
+  let RIGHT_IMP_FORALL_THM ← (proveS "!P Q. (P ==> !x:A. Q x) <=> (!x. P ==> Q x)" ITAUT_TAC : IO (Except String thm))
+  let RIGHT_FORALL_IMP_THM ← (proveS "!P Q. (!x. P ==> Q x) <=> (P ==> !x:A. Q x)" ITAUT_TAC : IO (Except String thm))
+  let LEFT_IMP_EXISTS_THM ← (proveS "!P Q. ((?x:A. P x) ==> Q) <=> (!x. P x ==> Q)" ITAUT_TAC : IO (Except String thm))
+  let LEFT_FORALL_IMP_THM ← (proveS "!P Q. (!x. P x ==> Q) <=> ((?x:A. P x) ==> Q)" ITAUT_TAC : IO (Except String thm))
+  let TRIV_FORALL_IMP_THM ← (proveS "!P Q. (!x:A. P ==> Q) <=> ((?x:A. P) ==> (!x:A. Q))" ITAUT_TAC : IO (Except String thm))
+  let TRIV_EXISTS_IMP_THM ← (proveS "!P Q. (?x:A. P ==> Q) <=> ((!x:A. P) ==> (?x:A. Q))" ITAUT_TAC : IO (Except String thm))
 
   -- Monotonicity theorems for logical operations w.r.t. implication.
   let MONO_AND ← ITAUT "(A ==> B) /\\ (C ==> D) ==> (A /\\ C ==> B /\\ D)"
   let MONO_OR ← ITAUT "(A ==> B) /\\ (C ==> D) ==> (A \\/ C ==> B \\/ D)"
   let MONO_IMP ← ITAUT "(B ==> A) /\\ (C ==> D) ==> ((A ==> C) ==> (B ==> D))"
   let MONO_NOT ← ITAUT "(B ==> A) ==> (~A ==> ~B)"
-  let MONO_FORALL ← (prove (← pt "(!x:A. P x ==> Q x) ==> ((!x. P x) ==> (!x. Q x))")
+  let MONO_FORALL ← (proveS "(!x:A. P x ==> Q x) ==> ((!x. P x) ==> (!x. Q x))"
       (THEN (REPEAT STRIP_TAC) (THEN (FIRST_ASSUM MATCH_MP_TAC) (ASM_REWRITE_TAC []))) : IO (Except String thm))
-  let MONO_EXISTS ← (prove (← pt "(!x:A. P x ==> Q x) ==> ((?x. P x) ==> (?x. Q x))")
+  let MONO_EXISTS ← (proveS "(!x:A. P x ==> Q x) ==> ((?x. P x) ==> (?x. Q x))"
       (THEN DISCH_TAC (THEN (DISCH_THEN (X_CHOOSE_TAC (← pt "x:A")))
         (THEN (EXISTS_TAC (← pt "x:A")) (THEN (FIRST_ASSUM MATCH_MP_TAC) (ASM_REWRITE_TAC [])))))
       : IO (Except String thm))
@@ -274,14 +281,13 @@ def setupTheorems (B : BoolThms) : ExceptT String IO TheoremThms := do
   -- SUBST1_TAC o SYM : rewrite using the symmetric equation (SYM runs FIRST).
   let SUBST1_SYM : thm_tactic := SUBST1_TAC oT SYM
   -- A generic "without loss of generality" lemma for symmetry.
-  let WLOG_RELATION ← (prove (← pt
-      "!R P. (!x y. P x y ==> P y x) /\\ (!x y. R x y \\/ R y x) /\\ (!x y. R x y ==> P x y) ==> !x y:A. P x y")
+  let WLOG_RELATION ← (proveS "!R P. (!x y. P x y ==> P y x) /\\ (!x y. R x y \\/ R y x) /\\ (!x y. R x y ==> P x y) ==> !x y:A. P x y"
       (THEN (REPEAT GEN_TAC)
         (THEN (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC)))
           (THEN (REPEAT (THEN (MATCH_MP_TAC MONO_FORALL) GEN_TAC))
             (THEN STRIP_TAC (ASM_SIMP_TAC []))))) : IO (Except String thm))
   -- Alternative versions of unique existence.
-  let EXISTS_UNIQUE_ALT ← (prove (← pt "!P:A->bool. (?!x. P x) <=> (?x. !y. P y <=> (x = y))")
+  let EXISTS_UNIQUE_ALT ← (proveS "!P:A->bool. (?!x. P x) <=> (?x. !y. P y <=> (x = y))"
       (THEN GEN_TAC (THEN (REWRITE_TAC [EXISTS_UNIQUE_THM]) (THENL EQ_TAC
         [THEN (DISCH_THEN (CONJUNCTS_THEN2 (X_CHOOSE_TAC (← pt "x:A")) ASSUME_TAC))
           (THEN (EXISTS_TAC (← pt "x:A")) (THEN GEN_TAC (THENL EQ_TAC
@@ -293,7 +299,7 @@ def setupTheorems (B : BoolThms) : ExceptT String IO TheoremThms := do
               (THEN (DISCH_THEN (CONJUNCTS_THEN SUBST1_SYM)) REFL_TAC)))])))
       : IO (Except String thm))
   let iffSplit ← ITAUT "(a <=> b) <=> (a ==> b) /\\ (b ==> a)"
-  let EXISTS_UNIQUE ← (prove (← pt "!P:A->bool. (?!x. P x) <=> (?x. P x /\\ !y. P y ==> (y = x))")
+  let EXISTS_UNIQUE ← (proveS "!P:A->bool. (?!x. P x) <=> (?x. P x /\\ !y. P y ==> (y = x))"
       (THEN GEN_TAC
         (THEN (REWRITE_TAC [EXISTS_UNIQUE_ALT])
           (THEN AP_TERM_TAC

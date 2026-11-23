@@ -189,7 +189,7 @@ def setupCalcInt [HolBase]
   let REAL_EQ_ADD_LCANCEL ← prove
    r"!x y z. (x + y = x + z) <=> (y = z)"
    (REPEAT GEN_TAC THEN EQ_TAC THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
-    POP_ASSUM (fun th => tactic_of do pure (MP_TAC (← AP_TERM (← q r"(+) (--x)") th))) THEN
+    POP_ASSUM ((fun (ocq3 : _) => fun th => tactic_of do pure (MP_TAC (← AP_TERM ocq3 th))) (← q r"(+) (--x)")) THEN
     REWRITE_TAC [REAL_ADD_ASSOC, REAL_ADD_LINV, REAL_ADD_LID])
 
   let REAL_EQ_ADD_RCANCEL ← prove
@@ -238,9 +238,9 @@ def setupCalcInt [HolBase]
    r"!x y. --x <= y <=> &0 <= x + y"
    (REPEAT GEN_TAC THEN EQ_TAC THEN
     DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← MATCH_MP REAL_LE_LADD_IMP th))) THENL
-     [DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"x:real") th))) THEN
+     [DISCH_THEN ((fun (ocq2 : _) => fun th => tactic_of do pure (MP_TAC (← SPEC ocq2 th))) (← q r"x:real")) THEN
       REWRITE_TAC [← ONCE_REWRITE_RULE [REAL_ADD_SYM] REAL_ADD_LINV],
-      DISCH_THEN (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"--x") th))) THEN
+      DISCH_THEN ((fun (ocq1 : _) => fun th => tactic_of do pure (MP_TAC (← SPEC ocq1 th))) (← q r"--x")) THEN
       REWRITE_TAC [REAL_ADD_LINV, REAL_ADD_ASSOC, REAL_ADD_LID,
           ← ONCE_REWRITE_RULE [REAL_ADD_SYM] REAL_ADD_LID]])
 

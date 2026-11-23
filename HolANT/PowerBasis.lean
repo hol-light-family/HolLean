@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.PowerBasis fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -479,13 +482,12 @@ def setupPowerBasis01 [HolBase] (D : PowerBasisDeps) :
 
   let NUMBER_FIELD_HOMOMORPHISMS_HAS_SIZE ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"(a <=> b) ==> a ==> b")
     prove
       r"!(k:A ring) (l:B ring).
           number_field k /\ algebraically_closed_field l /\ ring_char l = 0
           ==> {h | ring_homomorphism(k,l) h /\ h IN EXTENSIONAL(ring_carrier k)}
               HAS_SIZE extension_degree (subfield_generated k {ring_0 k},k) I"
-      (REPEAT STRIP_TAC THEN FIRST_ASSUM (STRIP_ASSUME_TAC o (GEN_REWRITE_RULE id [number_field])) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN FIRST_ASSUM (ASSUME_TAC o (CONJUNCT1 o (GEN_REWRITE_RULE id [algebraically_closed_field]))) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l:B ring")] PRIME_SUBFIELD_HOMOMORPHISM_EXISTS) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_TAC (← q r"g:A->B")) THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"g:A->B"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"k:A ring"), (← q r"l:B ring")] HAS_SIZE_RING_HOMOMORPHISM_EXTENSIONS) THEN ASM_SIMP_TAC [SEPARABLE_EXTENSION_CHAR0, FINITE_IMP_ALGEBRAIC_EXTENSION, RING_CHAR_SUBFIELD_GENERATED] THEN MATCH_MP_TAC r1 THEN AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC [ring_homomorphism_extensions, I_THM, EXTENSION, IN_ELIM_THM] THEN X_GEN_TAC (← q r"h:A->B") THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"h:A->B"), (← q r"g:A->B"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"l:B ring"), (← q r"{ring_0(subfield_generated k {ring_0 k:A})}")] RING_HOMOMORPHISMS_EQ_FROM_SUBFIELD_GENERATED) THEN REWRITE_TAC [PRIME_SUBFIELD_SUBFIELD_GENERATED, IN_SING] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_SIMP_TAC [FIELD_SUBFIELD_GENERATED] THEN CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"h:A->B"), (← q r"k:A ring"), (← q r"l:B ring"), (← q r"ring_carrier(subfield_generated k {ring_0 k:A})")] RING_HOMOMORPHISM_FROM_SUBRING_GENERATED) THEN ASM_REWRITE_TAC [SUBRING_GENERATED_BY_SUBFIELD_GENERATED], REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0 k:A}"), (← q r"l:B ring"), (← q r"g:A->B")] RING_HOMOMORPHISM_0) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l:B ring"), (← q r"h:A->B")] RING_HOMOMORPHISM_0) THEN ASM_REWRITE_TAC [(← CONJUNCT1 (← CONJUNCT2 SUBFIELD_GENERATED))] THEN MESON_TAC []])
+      (REPEAT STRIP_TAC THEN FIRST_ASSUM (STRIP_ASSUME_TAC o (GEN_REWRITE_RULE id [number_field])) THEN FIRST_ASSUM (ASSUME_TAC o (MATCH_MP NUMBER_FIELD_IMP_FIELD)) THEN FIRST_ASSUM (ASSUME_TAC o (CONJUNCT1 o (GEN_REWRITE_RULE id [algebraically_closed_field]))) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l:B ring")] PRIME_SUBFIELD_HOMOMORPHISM_EXISTS) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_TAC (← q r"g:A->B")) THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"g:A->B"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"k:A ring"), (← q r"l:B ring")] HAS_SIZE_RING_HOMOMORPHISM_EXTENSIONS) THEN ASM_SIMP_TAC [SEPARABLE_EXTENSION_CHAR0, FINITE_IMP_ALGEBRAIC_EXTENSION, RING_CHAR_SUBFIELD_GENERATED] THEN MATCH_MP_TAC (← TAUT (← q r"(a <=> b) ==> a ==> b")) THEN AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC [ring_homomorphism_extensions, I_THM, EXTENSION, IN_ELIM_THM] THEN X_GEN_TAC (← q r"h:A->B") THEN EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MP_TAC (← ISPECL [(← q r"h:A->B"), (← q r"g:A->B"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"l:B ring"), (← q r"{ring_0(subfield_generated k {ring_0 k:A})}")] RING_HOMOMORPHISMS_EQ_FROM_SUBFIELD_GENERATED) THEN REWRITE_TAC [PRIME_SUBFIELD_SUBFIELD_GENERATED, IN_SING] THEN DISCH_THEN MATCH_MP_TAC THEN ASM_SIMP_TAC [FIELD_SUBFIELD_GENERATED] THEN CONJ_TAC THENL [MP_TAC (← ISPECL [(← q r"h:A->B"), (← q r"k:A ring"), (← q r"l:B ring"), (← q r"ring_carrier(subfield_generated k {ring_0 k:A})")] RING_HOMOMORPHISM_FROM_SUBRING_GENERATED) THEN ASM_REWRITE_TAC [SUBRING_GENERATED_BY_SUBFIELD_GENERATED], REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0 k:A}"), (← q r"l:B ring"), (← q r"g:A->B")] RING_HOMOMORPHISM_0) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"l:B ring"), (← q r"h:A->B")] RING_HOMOMORPHISM_0) THEN ASM_REWRITE_TAC [(← CONJUNCT1 (← CONJUNCT2 SUBFIELD_GENERATED))] THEN MESON_TAC []])
 
   let NUMBER_FIELD_FREE_BASIS_POWERS ← prove
     r"!k:A ring a.
@@ -502,7 +504,6 @@ def setupPowerBasis01 [HolBase] (D : PowerBasisDeps) :
 
   let NUMBER_FIELD_DISCRIMINANT_POWER_BASIS ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← TAUT (← q r"p /\ q /\ (p /\ q ==> r) ==> p /\ q /\ r")
     prove
       r"!(k:A ring) a f m.
             number_field k /\ a IN ring_carrier k /\
@@ -524,7 +525,7 @@ def setupPowerBasis01 [HolBase] (D : PowerBasisDeps) :
               ==> ((e:num->A->A#num) u a = e v a <=> u = v)") ASSUME_TAC THENL [REPEAT STRIP_TAC THEN EQ_TAC THEN SIMP_TAC [] THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"(e:num->A->A#num) u = e v") MP_TAC THENL [ALL_TAC, ASM_SIMP_TAC []] THEN MATCH_MP_TAC EXTENSIONAL_EQ THEN EXISTS_TAC (← q r"ring_carrier k:A->bool") THEN ASM_SIMP_TAC [] THEN SUBGOAL_THEN (← q r"ring_span (subfield_generated k {ring_0 k},k) I
            (IMAGE (\i. ring_pow k (a:A) i) {i | i < m}) = ring_carrier k") ASSUME_TAC THENL [ASM_MESON_TAC [FREE_BASIS_FIELD, FIELD_SUBFIELD_GENERATED, RING_HOMOMORPHISM_SUBFIELD_INCLUSION, ring_basis, ring_spanning], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"(e:num->A->A#num) u"), (← q r"(e:num->A->A#num) v"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"k:A ring"), (← q r"l:(A#num)ring"), (← q r"IMAGE (\i. ring_pow k (a:A) i) {i | i < m}")] RING_HOMOMORPHISMS_EQ_FROM_RING_SPAN) THEN ANTS_TAC THENL [ASM_SIMP_TAC [I_THM, IMP_CONJ_ALT, FORALL_IN_IMAGE, IN_ELIM_THM, (← ISPECL [(← q r"k:A ring"), (← q r"l:(A#num)ring")] RING_HOMOMORPHISM_POW)], ASM_REWRITE_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"!i. i < m ==> (e:num->A->A#num) i o (f:(1->num)->A) = g o f") ASSUME_TAC THENL [X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN REWRITE_TAC [FUN_EQ_THM, o_THM] THEN X_GEN_TAC (← q r"u:1->num") THEN FIRST_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN UNDISCH_TAC (← q r"ring_polynomial (subfield_generated k {ring_0 k}) (f:(1->num)->A)") THEN SIMP_TAC [ring_polynomial, ring_powerseries], ALL_TAC] THEN UNDISCH_THEN (← q r"!i y. i < m /\ y IN ring_carrier(subfield_generated k {ring_0 k})
               ==> (e:num->A->A#num) i y = g y") (fun (_ : thm) => ALL_TAC) THEN SUBGOAL_THEN (← q r"!i. i < m ==> (e:num->A->A#num) i a IN ring_carrier l") ASSUME_TAC THENL [REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_HOMOMORPHISM_IN_CARRIER THEN EXISTS_TAC (← q r"k:A ring") THEN ASM_SIMP_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"ring_monomorphism(subfield_generated k {ring_0 k},l) (g:A->A#num)") ASSUME_TAC THENL [MATCH_MP_TAC FIELD_RING_HOMOMORPHISM_MONOMORPHISM THEN ASM_SIMP_TAC [FIELD_SUBFIELD_GENERATED, FIELD_IMP_NONTRIVIAL_RING] THEN MP_TAC (← ISPECL [(← q r"g:A->A#num"), (← q r"k:A ring"), (← q r"l:(A#num)ring"), (← q r"ring_carrier(subfield_generated k {ring_0 k:A})")] RING_HOMOMORPHISM_FROM_SUBRING_GENERATED) THEN ASM_REWRITE_TAC [SUBRING_GENERATED_BY_SUBFIELD_GENERATED], FIRST_ASSUM (ASSUME_TAC o (MATCH_MP RING_MONOMORPHISM_IMP_HOMOMORPHISM))] THEN SUBGOAL_THEN (← q r"ring_polynomial l ((g:A->A#num) o f) /\ poly_deg l (g o f) = m /\
-        monic l (g o f)") STRIP_ASSUME_TAC THENL [MATCH_MP_TAC r1 THEN REPEAT CONJ_TAC THENL [MATCH_MP_TAC RING_POLYNOMIAL_COMPOSE THEN EXISTS_TAC (← q r"subfield_generated k {ring_0 k:A}") THEN ASM_REWRITE_TAC [], MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0 k:A}"), (← q r"l:(A#num)ring"), (← q r"g:A->A#num"), (← q r"f:(1->num)->A")] POLY_DEG_MONOMORPHIC_IMAGE) THEN ASM_REWRITE_TAC [], STRIP_TAC THEN UNDISCH_TAC (← q r"monic (subfield_generated k {ring_0 k}) (f:(1->num)->A)") THEN ASM_REWRITE_TAC [monic, COEFF_COMPOSE] THEN DISCH_THEN SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0 k:A}"), (← q r"l:(A#num)ring"), (← q r"g:A->A#num")] RING_HOMOMORPHISM_1) THEN ASM_REWRITE_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"(g:A->A#num) o (f:(1->num)->A) =
+        monic l (g o f)") STRIP_ASSUME_TAC THENL [MATCH_MP_TAC (← TAUT (← q r"p /\ q /\ (p /\ q ==> r) ==> p /\ q /\ r")) THEN REPEAT CONJ_TAC THENL [MATCH_MP_TAC RING_POLYNOMIAL_COMPOSE THEN EXISTS_TAC (← q r"subfield_generated k {ring_0 k:A}") THEN ASM_REWRITE_TAC [], MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0 k:A}"), (← q r"l:(A#num)ring"), (← q r"g:A->A#num"), (← q r"f:(1->num)->A")] POLY_DEG_MONOMORPHIC_IMAGE) THEN ASM_REWRITE_TAC [], STRIP_TAC THEN UNDISCH_TAC (← q r"monic (subfield_generated k {ring_0 k}) (f:(1->num)->A)") THEN ASM_REWRITE_TAC [monic, COEFF_COMPOSE] THEN DISCH_THEN SUBST1_TAC THEN MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0 k:A}"), (← q r"l:(A#num)ring"), (← q r"g:A->A#num")] RING_HOMOMORPHISM_1) THEN ASM_REWRITE_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"(g:A->A#num) o (f:(1->num)->A) =
         ring_product (poly_ring l (:1)) {i | i < m}
           (\i. poly_sub l (poly_var l one)
                           (poly_const l ((e:num->A->A#num) i a)))") ASSUME_TAC THENL [MATCH_MP_TAC MONIC_POLY_EQ_ROOTS_PRODUCT THEN ASM_SIMP_TAC [FIELD_IMP_INTEGRAL_DOMAIN, (← GSYM RING_POLYNOMIAL), FINITE_NUMSEG_LT, CARD_NUMSEG_LT, IN_ELIM_THM] THEN CONJ_TAC THENL [ALL_TAC, ASM_MESON_TAC []] THEN X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"(e:num->A->A#num) i"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"k:A ring"), (← q r"l:(A#num)ring"), (← q r"a:A")] MINIMAL_POLYNOMIAL_VANISHES_HOMOMORPHIC_IMAGE) THEN ASM_SIMP_TAC [I_O_ID], ALL_TAC] THEN SUBGOAL_THEN (← q r"!i. i < m
@@ -654,162 +655,13 @@ def setupPowerBasis02 [HolBase] (D : PowerBasisDeps) :
 
   let ALGEBRA_TRACE_PRODUCT_BASIS ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let v1 ← CONJUNCT2 SUBFIELD_GENERATED
-    let q2 ← q r"s:A->bool"
-    let q3 ← q r"k:A ring"
-    let v4 ← ISPECL [q3, q2] RING_HOMOMORPHISM_SUBFIELD_INCLUSION
-    let v5 ← MATCH_MP RING_HOMOMORPHISM_SUM v4
-    let q6 ← q r"t:num->bool"
-    let q7 ← q r"\i. ring_mul (subfield_generated k s) ((g:num->A) i) (h i)"
-    let v8 ← ISPECL [q7, q6] v5
-    let p9 ← prove r"!(k:A ring) s t (g:num->A) h.
+    let sum_lemma := (← prove r"!(k:A ring) s t (g:num->A) h.
         FINITE t /\
         (!i. i IN t ==> g i IN ring_carrier(subfield_generated k s) /\
                         h i IN ring_carrier(subfield_generated k s))
         ==> ring_sum (subfield_generated k s) t
               (\i. ring_mul (subfield_generated k s) (g i) (h i)) =
-            ring_sum k t (\i. ring_mul k (g i) (h i))" (REPEAT STRIP_TAC THEN MP_TAC v8 THEN ASM_SIMP_TAC [RING_MUL, I_THM, I_O_ID] THEN REWRITE_TAC [v1])
-    let sum_lemma := p9
-    let v10 ← CONJUNCT2 SUBFIELD_GENERATED
-    let q11 ← q r"\i. (b:num->num->A) i i"
-    let q12 ← q r"\i. (a:num->num->A) i i"
-    let q13 ← q r"R:num"
-    let q14 ← q r"P:num"
-    let q15 ← q r"subfield_generated k {ring_0 k:A}"
-    let v16 ← ISPECL [q15, q14, q13, q12, q11] RING_SUM_MUL_MOD_DIV
-    let v17 ← CONJUNCT2 SUBFIELD_GENERATED
-    let q18 ← q r"ring_sum (subfield_generated k {ring_0 k}) {t | t < P * R}
-      (\t. ring_mul (subfield_generated k {ring_0 k})
-             ((a:num->num->A) (t MOD P) (t MOD P))
-             ((b:num->num->A) (t DIV P) (t DIV P)))"
-    let q19 ← q r"y:A"
-    let q20 ← q r"f:num->A"
-    let q21 ← q r"R:num"
-    let q22 ← q r"subfield_generated k s2:A ring"
-    let q23 ← q r"subfield_generated k {ring_0 k:A}"
-    let q24 ← q r"I:A->A"
-    let v25 ← ISPECL [q24, q23, q22, q21, q20, q19] ALGEBRA_TRACE_FREE_BASIS
-    let q26 ← q r"x:A"
-    let q27 ← q r"e:num->A"
-    let q28 ← q r"P:num"
-    let q29 ← q r"subfield_generated k s1:A ring"
-    let q30 ← q r"subfield_generated k {ring_0 k:A}"
-    let q31 ← q r"I:A->A"
-    let v32 ← ISPECL [q31, q30, q29, q28, q27, q26] ALGEBRA_TRACE_FREE_BASIS
-    let q33 ← q r"ring_mul k x y:A"
-    let q34 ← q r"\t. ring_mul k ((e:num->A) (t MOD P)) ((f:num->A) (t DIV P))"
-    let q35 ← q r"P:num * R"
-    let q36 ← q r"k:A ring"
-    let q37 ← q r"subfield_generated k {ring_0 k:A}"
-    let q38 ← q r"I:A->A"
-    let v39 ← ISPECL [q38, q37, q36, q35, q34, q33] ALGEBRA_TRACE_FREE_BASIS
-    let q40 ← q r"ring_mul r (ring_mul r a e) (ring_mul r b f) =
-      ring_mul r (ring_mul r a b) (ring_mul r e (f:A))"
-    let r41 ← RING_RULE q40
-    let q42 ← q r"v MOD P < P /\ v DIV P < R"
-    let q43 ← q r"v:num"
-    let q44 ← q r"ring_mul r (ring_mul r x y) (ring_mul r e f) =
-        ring_mul r (ring_mul r x e) (ring_mul r y (f:A))"
-    let r45 ← RING_RULE q44
-    let q46 ← q r"ring_mul k (ring_mul k x ((e:num->A) (t MOD P)))
-                 (ring_mul k y ((f:num->A) (t DIV P)))"
-    let v47 ← CONJUNCT2 SUBFIELD_GENERATED
-    let q48 ← q r"(b:num->num->A) (v DIV P) (t DIV P)"
-    let q49 ← q r"(a:num->num->A) (v MOD P) (t MOD P)"
-    let q50 ← q r"subfield_generated k {ring_0 k:A}"
-    let v51 ← ISPECL [q50, q49, q48] RING_MUL
-    let q52 ← q r"~(P = 0) ==> v MOD P < P /\ v DIV P < R"
-    let q53 ← q r"v:num"
-    let q54 ← q r"u:num"
-    let q55 ← q r"\u. ring_mul k ((a:num->num->A) (u MOD P) (t MOD P))
-                      ((b:num->num->A) (u DIV P) (t DIV P))"
-    let q56 ← q r"ring_mul k (ring_mul k x y)
-         (ring_mul k ((e:num->A) (t MOD P)) ((f:num->A) (t DIV P)))"
-    let q57 ← q r"\t. ring_mul k ((e:num->A) (t MOD P)) ((f:num->A) (t DIV P))"
-    let q58 ← q r"P:num * R"
-    let q59 ← q r"k:A ring"
-    let q60 ← q r"subfield_generated k {ring_0 k:A}"
-    let q61 ← q r"I:A->A"
-    let v62 ← ISPECL [q61, q60, q59, q58, q57, q56, q55] BASIS_COORDINATES_UNIQUE
-    let q63 ← q r"P = 0"
-    let q64 ← q r"~(P = 0) /\ t MOD P < P /\ t DIV P < R"
-    let q65 ← q r"!u t. u < P * R /\ t < P * R
-          ==> mul_matrix (subfield_generated k {ring_0 k},k) I
-                (P * R) (\t. ring_mul k (e (t MOD P)) (f (t DIV P)))
-                (ring_mul k x y) u t =
-              ring_mul k ((a:num->num->A) (u MOD P) (t MOD P))
-                         ((b:num->num->A) (u DIV P) (t DIV P))"
-    let q66 ← q r"(y:A) IN ring_carrier(subfield_generated k s2)"
-    let q67 ← q r"(x:A) IN ring_carrier(subfield_generated k s1)"
-    let q68 ← q r"!i j. i < R /\ j < R
-             ==> (b:num->num->A) i j IN
-                 ring_carrier(subfield_generated k {ring_0 k})"
-    let q69 ← q r"!i j. i < P /\ j < P
-             ==> (a:num->num->A) i j IN
-                 ring_carrier(subfield_generated k {ring_0 k})"
-    let q70 ← q r"free_basis (subfield_generated k {ring_0 k},subfield_generated k s2)
-                 I R (f:num->A)"
-    let v71 ← ASSUME q70
-    let v72 ← MATCH_MP FREE_BASIS_IN_CARRIER v71
-    let q73 ← q r"free_basis (subfield_generated k {ring_0 k},subfield_generated k s1)
-                 I P (e:num->A)"
-    let v74 ← ASSUME q73
-    let v75 ← MATCH_MP FREE_BASIS_IN_CARRIER v74
-    let q76 ← q r"{ring_0 k:A}"
-    let q77 ← q r"k:A ring"
-    let v78 ← ISPECL [q77, q76] RING_CARRIER_SUBFIELD_GENERATED_SUBSET
-    let q79 ← q r"s2:A->bool"
-    let q80 ← q r"k:A ring"
-    let v81 ← ISPECL [q80, q79] RING_CARRIER_SUBFIELD_GENERATED_SUBSET
-    let q82 ← q r"s1:A->bool"
-    let q83 ← q r"k:A ring"
-    let v84 ← ISPECL [q83, q82] RING_CARRIER_SUBFIELD_GENERATED_SUBSET
-    let q85 ← q r"x IN ring_carrier k /\ y IN ring_carrier k /\
-    (!i. i < P ==> (e:num->A) i IN ring_carrier k) /\
-    (!i. i < R ==> (f:num->A) i IN ring_carrier k) /\
-    (!i j. i < P /\ j < P ==> (a:num->num->A) i j IN ring_carrier k) /\
-    (!i j. i < R /\ j < R ==> (b:num->num->A) i j IN ring_carrier k)"
-    let v86 ← CONJUNCT2 SUBFIELD_GENERATED
-    let q87 ← q r"i:num"
-    let q88 ← q r"y:A"
-    let q89 ← q r"f:num->A"
-    let q90 ← q r"R:num"
-    let q91 ← q r"subfield_generated k s2:A ring"
-    let q92 ← q r"subfield_generated k {ring_0 k:A}"
-    let q93 ← q r"I:A->A"
-    let v94 ← ISPECL [q93, q92, q91, q90, q89, q88, q87] MUL_MATRIX_EXPAND
-    let q95 ← q r"i:num"
-    let q96 ← q r"x:A"
-    let q97 ← q r"e:num->A"
-    let q98 ← q r"P:num"
-    let q99 ← q r"subfield_generated k s1:A ring"
-    let q100 ← q r"subfield_generated k {ring_0 k:A}"
-    let q101 ← q r"I:A->A"
-    let v102 ← ISPECL [q101, q100, q99, q98, q97, q96, q95] MUL_MATRIX_EXPAND
-    let q103 ← q r"i:num"
-    let q104 ← q r"(!i. i < P
-         ==> ring_mul k x (e i) =
-             ring_sum k {j | j < P}
-               (\j. ring_mul k ((a:num->num->A) j i) (e j))) /\
-    (!i. i < R
-         ==> ring_mul k y (f i) =
-             ring_sum k {j | j < R}
-               (\j. ring_mul k ((b:num->num->A) j i) (f j)))"
-    let q105 ← q r"(!i j. i < P /\ j < P
-           ==> (a:num->num->A) i j IN
-               ring_carrier(subfield_generated k {ring_0 k})) /\
-    (!i j. i < R /\ j < R
-           ==> (b:num->num->A) i j IN
-               ring_carrier(subfield_generated k {ring_0 k}))"
-    let q106 ← q r"b = mul_matrix (subfield_generated k {ring_0 k},
-                              subfield_generated k s2) I R f (y:A)"
-    let q107 ← q r"a = mul_matrix (subfield_generated k {ring_0 k},
-                              subfield_generated k s1) I P e (x:A)"
-    let v108 ← CONJUNCT2 SUBFIELD_GENERATED
-    let q109 ← q r"!s. ring_homomorphism(subfield_generated k {ring_0 k},
-                          subfield_generated (k:A ring) s) I"
-    let q110 ← q r"!s. ring_carrier(subfield_generated k {ring_0 k}) SUBSET
-        ring_carrier(subfield_generated (k:A ring) s)"
+            ring_sum k t (\i. ring_mul k (g i) (h i))" (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"\i. ring_mul (subfield_generated k s) ((g:num->A) i) (h i)"), (← q r"t:num->bool")] (← MATCH_MP RING_HOMOMORPHISM_SUM (← ISPECL [(← q r"k:A ring"), (← q r"s:A->bool")] RING_HOMOMORPHISM_SUBFIELD_INCLUSION))) THEN ASM_SIMP_TAC [RING_MUL, I_THM, I_O_ID] THEN REWRITE_TAC [(← CONJUNCT2 SUBFIELD_GENERATED)]))
     prove
       r"!(k:A ring) s1 s2 P R e f x y.
           field k /\
@@ -828,7 +680,46 @@ def setupPowerBasis02 [HolBase] (D : PowerBasisDeps) :
                                 subfield_generated k s1) I x)
                 (algebra_trace (subfield_generated k {ring_0 k},
                                 subfield_generated k s2) I y)"
-      (REPEAT STRIP_TAC THEN SUBGOAL_THEN q110 ASSUME_TAC THENL [GEN_TAC THEN MATCH_MP_TAC SUBFIELD_GENERATED_MINIMAL THEN ASM_SIMP_TAC [SUBFIELD_SUBFIELD_GENERATED, SING_SUBSET, IN_SUBFIELD_0], ALL_TAC] THEN SUBGOAL_THEN q109 ASSUME_TAC THENL [GEN_TAC THEN ASM_REWRITE_TAC [ring_homomorphism, v108, I_THM, IMAGE_I], ALL_TAC] THEN ABBREV_TAC q107 THEN ABBREV_TAC q106 THEN SUBGOAL_THEN q105 STRIP_ASSUME_TAC THENL [MAP_EVERY EXPAND_TAC ["a", "b"] THEN ASM_MESON_TAC [MUL_MATRIX_IN_CARRIER], ALL_TAC] THEN SUBGOAL_THEN q104 STRIP_ASSUME_TAC THENL [CONJ_TAC THEN X_GEN_TAC q103 THEN DISCH_TAC THENL [MP_TAC v102, MP_TAC v94] THEN ASM_REWRITE_TAC [I_THM] THEN wPart (lhand o lhand) (lhand o rand) sum_lemma THEN ASM_SIMP_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM] THEN (ANTS_TAC THENL [ASM_MESON_TAC [SUBSET, FREE_BASIS_IN_CARRIER], ALL_TAC]) THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [v86] THEN MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN q85 STRIP_ASSUME_TAC THENL [MP_TAC v84 THEN MP_TAC v81 THEN MP_TAC v78 THEN MP_TAC v75 THEN MP_TAC v72 THEN MAP_EVERY UNDISCH_TAC [q69, q68, q67, q66] THEN REWRITE_TAC [SUBSET] THEN MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN q65 ASSUME_TAC THENL [REPEAT STRIP_TAC THEN REWRITE_TAC [mul_matrix] THEN SUBGOAL_THEN q64 STRIP_ASSUME_TAC THENL [ASM_CASES_TAC q63 THENL [ASM_MESON_TAC [MULT_CLAUSES, LT], ALL_TAC] THEN ASM_SIMP_TAC [MOD_LT_EQ, RDIV_LT_EQ], ALL_TAC] THEN MP_TAC v62 THEN REWRITE_TAC [RING_HOMOMORPHISM_SUBFIELD_INCLUSION, I_THM] THEN ASM_REWRITE_TAC [] THEN ANTS_TAC THENL [ALL_TAC, DISCH_THEN (MP_TAC o (SPEC q54)) THEN ASM_REWRITE_TAC []] THEN CONJ_TAC THENL [X_GEN_TAC q53 THEN DISCH_TAC THEN SUBGOAL_THEN q52 MP_TAC THENL [ASM_SIMP_TAC [MOD_LT_EQ, RDIV_LT_EQ], ASM_REWRITE_TAC [] THEN STRIP_TAC] THEN MP_TAC v51 THEN ASM_SIMP_TAC [v47], ALL_TAC] THEN CONV_TAC SYM_CONV THEN TRANS_TAC EQ_TRANS q46 THEN CONJ_TAC THENL [MATCH_MP_TAC r45 THEN ASM_SIMP_TAC [], ASM_SIMP_TAC []] THEN wPart lhand (lhand o rand) RING_SUM_MUL_MOD_DIV THEN ASM_SIMP_TAC [RING_MUL] THEN DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC q43 THEN REWRITE_TAC [IN_ELIM_THM] THEN DISCH_TAC THEN SUBGOAL_THEN q42 STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [MOD_LT_EQ, RDIV_LT_EQ], ALL_TAC] THEN MATCH_MP_TAC r41 THEN ASM_SIMP_TAC [], ALL_TAC] THEN MP_TAC v39 THEN MP_TAC v32 THEN MP_TAC v25 THEN ASM_SIMP_TAC [RING_HOMOMORPHISM_SUBFIELD_INCLUSION, RING_MUL] THEN REPEAT (DISCH_THEN SUBST1_TAC) THEN ASM_REWRITE_TAC [] THEN TRANS_TAC EQ_TRANS q18 THEN CONJ_TAC THENL [MATCH_MP_TAC RING_SUM_EQ THEN ASM_SIMP_TAC [IN_ELIM_THM, v17], ALL_TAC] THEN MP_TAC v16 THEN ASM_SIMP_TAC [] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN REWRITE_TAC [v10])
+      (REPEAT STRIP_TAC THEN SUBGOAL_THEN (← q r"!s. ring_carrier(subfield_generated k {ring_0 k}) SUBSET
+        ring_carrier(subfield_generated (k:A ring) s)") ASSUME_TAC THENL [GEN_TAC THEN MATCH_MP_TAC SUBFIELD_GENERATED_MINIMAL THEN ASM_SIMP_TAC [SUBFIELD_SUBFIELD_GENERATED, SING_SUBSET, IN_SUBFIELD_0], ALL_TAC] THEN SUBGOAL_THEN (← q r"!s. ring_homomorphism(subfield_generated k {ring_0 k},
+                          subfield_generated (k:A ring) s) I") ASSUME_TAC THENL [GEN_TAC THEN ASM_REWRITE_TAC [ring_homomorphism, (← CONJUNCT2 SUBFIELD_GENERATED), I_THM, IMAGE_I], ALL_TAC] THEN ABBREV_TAC (← q r"a = mul_matrix (subfield_generated k {ring_0 k},
+                              subfield_generated k s1) I P e (x:A)") THEN ABBREV_TAC (← q r"b = mul_matrix (subfield_generated k {ring_0 k},
+                              subfield_generated k s2) I R f (y:A)") THEN SUBGOAL_THEN (← q r"(!i j. i < P /\ j < P
+           ==> (a:num->num->A) i j IN
+               ring_carrier(subfield_generated k {ring_0 k})) /\
+    (!i j. i < R /\ j < R
+           ==> (b:num->num->A) i j IN
+               ring_carrier(subfield_generated k {ring_0 k}))") STRIP_ASSUME_TAC THENL [MAP_EVERY EXPAND_TAC ["a", "b"] THEN ASM_MESON_TAC [MUL_MATRIX_IN_CARRIER], ALL_TAC] THEN SUBGOAL_THEN (← q r"(!i. i < P
+         ==> ring_mul k x (e i) =
+             ring_sum k {j | j < P}
+               (\j. ring_mul k ((a:num->num->A) j i) (e j))) /\
+    (!i. i < R
+         ==> ring_mul k y (f i) =
+             ring_sum k {j | j < R}
+               (\j. ring_mul k ((b:num->num->A) j i) (f j)))") STRIP_ASSUME_TAC THENL [CONJ_TAC THEN X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THENL [MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"subfield_generated k s1:A ring"), (← q r"P:num"), (← q r"e:num->A"), (← q r"x:A"), (← q r"i:num")] MUL_MATRIX_EXPAND), MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"subfield_generated k s2:A ring"), (← q r"R:num"), (← q r"f:num->A"), (← q r"y:A"), (← q r"i:num")] MUL_MATRIX_EXPAND)] THEN ASM_REWRITE_TAC [I_THM] THEN wPart (lhand o lhand) (lhand o rand) sum_lemma THEN ASM_SIMP_TAC [FINITE_NUMSEG_LT, IN_ELIM_THM] THEN (ANTS_TAC THENL [ASM_MESON_TAC [SUBSET, FREE_BASIS_IN_CARRIER], ALL_TAC]) THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [(← CONJUNCT2 SUBFIELD_GENERATED)] THEN MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"x IN ring_carrier k /\ y IN ring_carrier k /\
+    (!i. i < P ==> (e:num->A) i IN ring_carrier k) /\
+    (!i. i < R ==> (f:num->A) i IN ring_carrier k) /\
+    (!i j. i < P /\ j < P ==> (a:num->num->A) i j IN ring_carrier k) /\
+    (!i j. i < R /\ j < R ==> (b:num->num->A) i j IN ring_carrier k)") STRIP_ASSUME_TAC THENL [MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"s1:A->bool")] RING_CARRIER_SUBFIELD_GENERATED_SUBSET) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"s2:A->bool")] RING_CARRIER_SUBFIELD_GENERATED_SUBSET) THEN MP_TAC (← ISPECL [(← q r"k:A ring"), (← q r"{ring_0 k:A}")] RING_CARRIER_SUBFIELD_GENERATED_SUBSET) THEN MP_TAC (← MATCH_MP FREE_BASIS_IN_CARRIER (← ASSUME (← q r"free_basis (subfield_generated k {ring_0 k},subfield_generated k s1)
+                 I P (e:num->A)"))) THEN MP_TAC (← MATCH_MP FREE_BASIS_IN_CARRIER (← ASSUME (← q r"free_basis (subfield_generated k {ring_0 k},subfield_generated k s2)
+                 I R (f:num->A)"))) THEN MAP_EVERY UNDISCH_TAC [(← q r"!i j. i < P /\ j < P
+             ==> (a:num->num->A) i j IN
+                 ring_carrier(subfield_generated k {ring_0 k})"), (← q r"!i j. i < R /\ j < R
+             ==> (b:num->num->A) i j IN
+                 ring_carrier(subfield_generated k {ring_0 k})"), (← q r"(x:A) IN ring_carrier(subfield_generated k s1)"), (← q r"(y:A) IN ring_carrier(subfield_generated k s2)")] THEN REWRITE_TAC [SUBSET] THEN MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"!u t. u < P * R /\ t < P * R
+          ==> mul_matrix (subfield_generated k {ring_0 k},k) I
+                (P * R) (\t. ring_mul k (e (t MOD P)) (f (t DIV P)))
+                (ring_mul k x y) u t =
+              ring_mul k ((a:num->num->A) (u MOD P) (t MOD P))
+                         ((b:num->num->A) (u DIV P) (t DIV P))") ASSUME_TAC THENL [REPEAT STRIP_TAC THEN REWRITE_TAC [mul_matrix] THEN SUBGOAL_THEN (← q r"~(P = 0) /\ t MOD P < P /\ t DIV P < R") STRIP_ASSUME_TAC THENL [ASM_CASES_TAC (← q r"P = 0") THENL [ASM_MESON_TAC [MULT_CLAUSES, LT], ALL_TAC] THEN ASM_SIMP_TAC [MOD_LT_EQ, RDIV_LT_EQ], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"k:A ring"), (← q r"P:num * R"), (← q r"\t. ring_mul k ((e:num->A) (t MOD P)) ((f:num->A) (t DIV P))"), (← q r"ring_mul k (ring_mul k x y)
+         (ring_mul k ((e:num->A) (t MOD P)) ((f:num->A) (t DIV P)))"), (← q r"\u. ring_mul k ((a:num->num->A) (u MOD P) (t MOD P))
+                      ((b:num->num->A) (u DIV P) (t DIV P))")] BASIS_COORDINATES_UNIQUE) THEN REWRITE_TAC [RING_HOMOMORPHISM_SUBFIELD_INCLUSION, I_THM] THEN ASM_REWRITE_TAC [] THEN ANTS_TAC THENL [ALL_TAC, DISCH_THEN (MP_TAC o (SPEC (← q r"u:num"))) THEN ASM_REWRITE_TAC []] THEN CONJ_TAC THENL [X_GEN_TAC (← q r"v:num") THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"~(P = 0) ==> v MOD P < P /\ v DIV P < R") MP_TAC THENL [ASM_SIMP_TAC [MOD_LT_EQ, RDIV_LT_EQ], ASM_REWRITE_TAC [] THEN STRIP_TAC] THEN MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0 k:A}"), (← q r"(a:num->num->A) (v MOD P) (t MOD P)"), (← q r"(b:num->num->A) (v DIV P) (t DIV P)")] RING_MUL) THEN ASM_SIMP_TAC [(← CONJUNCT2 SUBFIELD_GENERATED)], ALL_TAC] THEN CONV_TAC SYM_CONV THEN TRANS_TAC EQ_TRANS (← q r"ring_mul k (ring_mul k x ((e:num->A) (t MOD P)))
+                 (ring_mul k y ((f:num->A) (t DIV P)))") THEN CONJ_TAC THENL [MATCH_MP_TAC (← RING_RULE (← q r"ring_mul r (ring_mul r x y) (ring_mul r e f) =
+        ring_mul r (ring_mul r x e) (ring_mul r y (f:A))")) THEN ASM_SIMP_TAC [], ASM_SIMP_TAC []] THEN wPart lhand (lhand o rand) RING_SUM_MUL_MOD_DIV THEN ASM_SIMP_TAC [RING_MUL] THEN DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"v:num") THEN REWRITE_TAC [IN_ELIM_THM] THEN DISCH_TAC THEN SUBGOAL_THEN (← q r"v MOD P < P /\ v DIV P < R") STRIP_ASSUME_TAC THENL [ASM_SIMP_TAC [MOD_LT_EQ, RDIV_LT_EQ], ALL_TAC] THEN MATCH_MP_TAC (← RING_RULE (← q r"ring_mul r (ring_mul r a e) (ring_mul r b f) =
+      ring_mul r (ring_mul r a b) (ring_mul r e (f:A))")) THEN ASM_SIMP_TAC [], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"k:A ring"), (← q r"P:num * R"), (← q r"\t. ring_mul k ((e:num->A) (t MOD P)) ((f:num->A) (t DIV P))"), (← q r"ring_mul k x y:A")] ALGEBRA_TRACE_FREE_BASIS) THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"subfield_generated k s1:A ring"), (← q r"P:num"), (← q r"e:num->A"), (← q r"x:A")] ALGEBRA_TRACE_FREE_BASIS) THEN MP_TAC (← ISPECL [(← q r"I:A->A"), (← q r"subfield_generated k {ring_0 k:A}"), (← q r"subfield_generated k s2:A ring"), (← q r"R:num"), (← q r"f:num->A"), (← q r"y:A")] ALGEBRA_TRACE_FREE_BASIS) THEN ASM_SIMP_TAC [RING_HOMOMORPHISM_SUBFIELD_INCLUSION, RING_MUL] THEN REPEAT (DISCH_THEN SUBST1_TAC) THEN ASM_REWRITE_TAC [] THEN TRANS_TAC EQ_TRANS (← q r"ring_sum (subfield_generated k {ring_0 k}) {t | t < P * R}
+      (\t. ring_mul (subfield_generated k {ring_0 k})
+             ((a:num->num->A) (t MOD P) (t MOD P))
+             ((b:num->num->A) (t DIV P) (t DIV P)))") THEN CONJ_TAC THENL [MATCH_MP_TAC RING_SUM_EQ THEN ASM_SIMP_TAC [IN_ELIM_THM, (← CONJUNCT2 SUBFIELD_GENERATED)], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"subfield_generated k {ring_0 k:A}"), (← q r"P:num"), (← q r"R:num"), (← q r"\i. (a:num->num->A) i i"), (← q r"\i. (b:num->num->A) i i")] RING_SUM_MUL_MOD_DIV) THEN ASM_SIMP_TAC [] THEN DISCH_THEN (SUBST1_TAC o SYM) THEN REWRITE_TAC [(← CONJUNCT2 SUBFIELD_GENERATED)])
 
   -- @@RETURN BEGIN
   return { NUMBER_FIELD_TRACE_TOWER, NUMBER_FIELD_NORM_TOWER,

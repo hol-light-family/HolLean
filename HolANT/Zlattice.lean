@@ -15,8 +15,11 @@
   the CoreThms structures (SessionANT.Zlattice fills them).
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left; where a proof applies rules that print or use
-  counters (MESON, ARITH_RULE, ...) they are bound first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolANT.Prelude
@@ -314,13 +317,12 @@ def setupZlattice01 [HolBase] (D : ZlatticeDeps) :
 
   let INT_DET_INSERT_ROW ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← INT_ARITH (← q r"(y:int) = &0 ==> x * &1 * z + y = x * z")
     prove
       r"!a t (N:K->K->int).
           FINITE t /\ ~(a IN t) /\ (!j. j IN t ==> N a j = &0)
           ==> ring_det integer_ring (a INSERT t) N =
               N a a * ring_det integer_ring t N"
-      (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"integer_ring"), (← q r"t:K->bool"), (← q r"N:K->K->int"), (← q r"a:K")] RING_DET_LAPLACE_INSERT) THEN ASM_REWRITE_TAC [INTEGER_RING, IN_UNIV, INTEGER_RING_SUM] THEN DISCH_THEN SUBST1_TAC THEN ASM_SIMP_TAC [ISUM_CLAUSES, SWAP_REFL, RING_SIGN_I, I_THM, INTEGER_RING, ETA_AX] THEN MATCH_MP_TAC r1 THEN TRANS_TAC EQ_TRANS (← q r"isum t (\b:K. &0)") THEN CONJ_TAC THENL [MATCH_MP_TAC ISUM_EQ THEN ASM_SIMP_TAC [INT_MUL_LZERO], REWRITE_TAC [ISUM_0]])
+      (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"integer_ring"), (← q r"t:K->bool"), (← q r"N:K->K->int"), (← q r"a:K")] RING_DET_LAPLACE_INSERT) THEN ASM_REWRITE_TAC [INTEGER_RING, IN_UNIV, INTEGER_RING_SUM] THEN DISCH_THEN SUBST1_TAC THEN ASM_SIMP_TAC [ISUM_CLAUSES, SWAP_REFL, RING_SIGN_I, I_THM, INTEGER_RING, ETA_AX] THEN MATCH_MP_TAC (← INT_ARITH (← q r"(y:int) = &0 ==> x * &1 * z + y = x * z")) THEN TRANS_TAC EQ_TRANS (← q r"isum t (\b:K. &0)") THEN CONJ_TAC THENL [MATCH_MP_TAC ISUM_EQ THEN ASM_SIMP_TAC [INT_MUL_LZERO], REWRITE_TAC [ISUM_0]])
 
   let INT_MATRIX_MUL_ASSOC ← prove
     r"!s (A:K->K->int) (B:K->K->int) (C:K->K->int) i j.
@@ -357,11 +359,6 @@ def setupZlattice01 [HolBase] (D : ZlatticeDeps) :
 
   let INT_PRIMITIVE_UNIMODULAR_COLUMN ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r9 ← INTEGER_RULE (← q r"(&0:int) divides x <=> x = &0")
-    let r28 ← INT_ARITH (← q r"&0 < abs x <=> ~(x:int = &0)")
-    let r29 ← INT_ARITH (← q r"&0 < b ==> a - b < a:int")
-    let r30 ← INT_ARITH (← q r"abs((v:K->int) p) <= abs(v q) \/
-                                abs(v q) <= abs(v p)")
     prove
       r"!s (v:K->int) a.
           FINITE s /\ a IN s /\
@@ -370,8 +367,9 @@ def setupZlattice01 [HolBase] (D : ZlatticeDeps) :
                   abs(ring_det integer_ring s U) = &1"
       (REPEAT GEN_TAC THEN WF_INDUCT_TAC (← q r"num_of_int(isum s (\i. abs((v:K->int) i)))") THEN STRIP_TAC THEN ASM_CASES_TAC (← q r"?i j. i IN s /\ j IN s /\ ~(i = j) /\ ~((v:K->int) i = &0) /\
             ~(v j = &0)") THENL [SUBGOAL_THEN (← q r"?i j. i IN s /\ j IN s /\ ~(i = j) /\ ~((v:K->int) i = &0) /\
-              ~(v j = &0) /\ abs(v i) <= abs(v j)") STRIP_ASSUME_TAC THENL [FIRST_X_ASSUM (X_CHOOSE_THEN (← q r"p:K") (X_CHOOSE_THEN (← q r"q:K") STRIP_ASSUME_TAC)) THEN DISJ_CASES_TAC r30 THENL [MAP_EVERY EXISTS_TAC [(← q r"p:K"), (← q r"q:K")], MAP_EVERY EXISTS_TAC [(← q r"q:K"), (← q r"p:K")]] THEN ASM_MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"?c:int. abs((v:K->int) j - c * v i) = abs(v j) - abs(v i)") STRIP_ASSUME_TAC THENL [ASM_CASES_TAC (← q r"&0 <= (v:K->int) i") THEN ASM_CASES_TAC (← q r"&0 <= (v:K->int) j") THENL [EXISTS_TAC (← q r"&1:int"), EXISTS_TAC (← q r"-- &1:int"), EXISTS_TAC (← q r"-- &1:int"), EXISTS_TAC (← q r"&1:int")] THEN ASM_INT_ARITH_TAC, ALL_TAC] THEN FIRST_X_ASSUM (MP_TAC o (SPECL [(← q r"s:K->bool"), (← q r"\k. if k = j then (v:K->int) j - c * v i else v k")])) THEN ASM_REWRITE_TAC [] THEN ANTS_TAC THENL [REWRITE_TAC [(← GSYM INT_OF_NUM_LT)] THEN wPart lhand (lhand o rand) INT_OF_NUM_OF_INT THEN ANTS_TAC THENL [MATCH_MP_TAC ISUM_POS_LE THEN REWRITE_TAC [INT_ABS_POS], DISCH_THEN SUBST1_TAC] THEN wPart rand (lhand o rand) INT_OF_NUM_OF_INT THEN ANTS_TAC THENL [MATCH_MP_TAC ISUM_POS_LE THEN REWRITE_TAC [INT_ABS_POS], DISCH_THEN SUBST1_TAC] THEN TRANS_TAC INT_LET_TRANS (← q r"isum s (\k. abs((v:K->int) k) - (if k = j then abs(v i) else &0))") THEN CONJ_TAC THENL [MATCH_MP_TAC INT_EQ_IMP_LE THEN MATCH_MP_TAC ISUM_EQ THEN X_GEN_TAC (← q r"k:K") THEN DISCH_TAC THEN REWRITE_TAC [] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [INT_SUB_RZERO], ASM_SIMP_TAC [ISUM_SUB, ISUM_DELTA] THEN MATCH_MP_TAC r29 THEN ASM_REWRITE_TAC [r28]], ALL_TAC] THEN ANTS_TAC THENL [X_GEN_TAC (← q r"d:int") THEN DISCH_TAC THEN FIRST_X_ASSUM (MATCH_MP_TAC o (checkM (fun th => (do if ← (do if ← (do let z22 ← (pure false); let z21 ← (do let z19 ← (do let z20 ← (pure th); pure (concl z20)); let z18 ← (q r"d:int"); pure (free_in z18 z19)); pure (z21 == z22)) then (do let z23 ← (do let z24 ← (pure th); pure (concl z24)); pure (is_forall z23)) else pure false) then (do let z26 ← (do let z27 ← (pure th); pure (concl z27)); let z25 ← (q r"(&1:int)"); pure (free_in z25 z26)) else pure false)))) THEN X_GEN_TAC (← q r"k:K") THEN DISCH_TAC THEN ASM_CASES_TAC (← q r"k:K = j") THENL [FIRST_X_ASSUM (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"i:K") th) THEN MP_TAC (← SPEC (← q r"j:K") th))) THEN ASM_REWRITE_TAC [] THEN CONV_TAC INTEGER_RULE, FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"k:K"))) THEN ASM_REWRITE_TAC []], ALL_TAC] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"U:K->K->int") STRIP_ASSUME_TAC) THEN EXISTS_TAC (← q r"\k l. if k = j then (U:K->K->int) j l + c * U i l
-                        else U k l") THEN CONJ_TAC THENL [X_GEN_TAC (← q r"k:K") THEN DISCH_TAC THEN REWRITE_TAC [] THEN COND_CASES_TAC THEN ASM_SIMP_TAC [] THEN FIRST_X_ASSUM SUBST_ALL_TAC THEN INT_ARITH_TAC, MP_TAC (← ISPECL [(← q r"integer_ring"), (← q r"s:K->bool"), (← q r"U:K->K->int"), (← q r"j:K"), (← q r"i:K"), (← q r"c:int")] RING_DET_ROW_OPERATION) THEN ASM_REWRITE_TAC [INTEGER_RING, IN_UNIV] THEN DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"?i0:K. i0 IN s /\ ~((v:K->int) i0 = &0)") STRIP_ASSUME_TAC THENL [FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"&0:int")) o (checkM (fun th => (do if ← (do if ← (do let z10 ← (do let z11 ← (pure th); pure (concl z11)); pure (is_forall z10)) then (do let z13 ← (do let z14 ← (pure th); pure (concl z14)); let z12 ← (q r"(&1:int)"); pure (free_in z12 z13)) else pure false) then (do pure !(← (do let z16 ← (do let z17 ← (pure th); pure (concl z17)); let z15 ← (q r"U:K->K->int"); pure (free_in z15 z16)))) else pure false))))) THEN REWRITE_TAC [r9] THEN CONV_TAC INT_REDUCE_CONV THEN MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"!k. k IN s /\ ~(k = i0) ==> (v:K->int) k = &0") ASSUME_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"abs((v:K->int) i0) = &1") ASSUME_TAC THENL [FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"(v:K->int) i0")) o (checkM (fun th => (do if ← (do if ← (do let z1 ← (do let z2 ← (pure th); pure (concl z2)); pure (is_forall z1)) then (do let z4 ← (do let z5 ← (pure th); pure (concl z5)); let z3 ← (q r"(&1:int)"); pure (free_in z3 z4)) else pure false) then (do pure !(← (do let z7 ← (do let z8 ← (pure th); pure (concl z8)); let z6 ← (q r"U:K->K->int"); pure (free_in z6 z7)))) else pure false))))) THEN ANTS_TAC THENL [X_GEN_TAC (← q r"k:K") THEN DISCH_TAC THEN ASM_CASES_TAC (← q r"k:K = i0") THEN ASM_SIMP_TAC [] THEN CONV_TAC INTEGER_RULE, DISCH_THEN (MP_TAC o (MATCH_MP INT_DIVIDES_LE)) THEN ASM_INT_ARITH_TAC], ALL_TAC] THEN EXISTS_TAC (← q r"\k l. if swap(a,i0) k = l then (if l = a then (v:K->int) i0 else &1)
+              ~(v j = &0) /\ abs(v i) <= abs(v j)") STRIP_ASSUME_TAC THENL [FIRST_X_ASSUM (X_CHOOSE_THEN (← q r"p:K") (X_CHOOSE_THEN (← q r"q:K") STRIP_ASSUME_TAC)) THEN DISJ_CASES_TAC (← INT_ARITH (← q r"abs((v:K->int) p) <= abs(v q) \/
+                                abs(v q) <= abs(v p)")) THENL [MAP_EVERY EXISTS_TAC [(← q r"p:K"), (← q r"q:K")], MAP_EVERY EXISTS_TAC [(← q r"q:K"), (← q r"p:K")]] THEN ASM_MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"?c:int. abs((v:K->int) j - c * v i) = abs(v j) - abs(v i)") STRIP_ASSUME_TAC THENL [ASM_CASES_TAC (← q r"&0 <= (v:K->int) i") THEN ASM_CASES_TAC (← q r"&0 <= (v:K->int) j") THENL [EXISTS_TAC (← q r"&1:int"), EXISTS_TAC (← q r"-- &1:int"), EXISTS_TAC (← q r"-- &1:int"), EXISTS_TAC (← q r"&1:int")] THEN ASM_INT_ARITH_TAC, ALL_TAC] THEN FIRST_X_ASSUM (MP_TAC o (SPECL [(← q r"s:K->bool"), (← q r"\k. if k = j then (v:K->int) j - c * v i else v k")])) THEN ASM_REWRITE_TAC [] THEN ANTS_TAC THENL [REWRITE_TAC [(← GSYM INT_OF_NUM_LT)] THEN wPart lhand (lhand o rand) INT_OF_NUM_OF_INT THEN ANTS_TAC THENL [MATCH_MP_TAC ISUM_POS_LE THEN REWRITE_TAC [INT_ABS_POS], DISCH_THEN SUBST1_TAC] THEN wPart rand (lhand o rand) INT_OF_NUM_OF_INT THEN ANTS_TAC THENL [MATCH_MP_TAC ISUM_POS_LE THEN REWRITE_TAC [INT_ABS_POS], DISCH_THEN SUBST1_TAC] THEN TRANS_TAC INT_LET_TRANS (← q r"isum s (\k. abs((v:K->int) k) - (if k = j then abs(v i) else &0))") THEN CONJ_TAC THENL [MATCH_MP_TAC INT_EQ_IMP_LE THEN MATCH_MP_TAC ISUM_EQ THEN X_GEN_TAC (← q r"k:K") THEN DISCH_TAC THEN REWRITE_TAC [] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [INT_SUB_RZERO], ASM_SIMP_TAC [ISUM_SUB, ISUM_DELTA] THEN MATCH_MP_TAC (← INT_ARITH (← q r"&0 < b ==> a - b < a:int")) THEN ASM_REWRITE_TAC [(← INT_ARITH (← q r"&0 < abs x <=> ~(x:int = &0)"))]], ALL_TAC] THEN ANTS_TAC THENL [X_GEN_TAC (← q r"d:int") THEN DISCH_TAC THEN FIRST_X_ASSUM (MATCH_MP_TAC o (checkM (fun th => (do if ← (do if ← (do let z22 ← (pure false); let z21 ← (do let z19 ← (do let z20 ← (pure th); pure (concl z20)); let z18 ← (q r"d:int"); pure (free_in z18 z19)); pure (z21 == z22)) then (do let z23 ← (do let z24 ← (pure th); pure (concl z24)); pure (is_forall z23)) else pure false) then (do let z26 ← (do let z27 ← (pure th); pure (concl z27)); let z25 ← (q r"(&1:int)"); pure (free_in z25 z26)) else pure false)))) THEN X_GEN_TAC (← q r"k:K") THEN DISCH_TAC THEN ASM_CASES_TAC (← q r"k:K = j") THENL [FIRST_X_ASSUM (fun th => tactic_of do pure (MP_TAC (← SPEC (← q r"i:K") th) THEN MP_TAC (← SPEC (← q r"j:K") th))) THEN ASM_REWRITE_TAC [] THEN CONV_TAC INTEGER_RULE, FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"k:K"))) THEN ASM_REWRITE_TAC []], ALL_TAC] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"U:K->K->int") STRIP_ASSUME_TAC) THEN EXISTS_TAC (← q r"\k l. if k = j then (U:K->K->int) j l + c * U i l
+                        else U k l") THEN CONJ_TAC THENL [X_GEN_TAC (← q r"k:K") THEN DISCH_TAC THEN REWRITE_TAC [] THEN COND_CASES_TAC THEN ASM_SIMP_TAC [] THEN FIRST_X_ASSUM SUBST_ALL_TAC THEN INT_ARITH_TAC, MP_TAC (← ISPECL [(← q r"integer_ring"), (← q r"s:K->bool"), (← q r"U:K->K->int"), (← q r"j:K"), (← q r"i:K"), (← q r"c:int")] RING_DET_ROW_OPERATION) THEN ASM_REWRITE_TAC [INTEGER_RING, IN_UNIV] THEN DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC []], ALL_TAC] THEN SUBGOAL_THEN (← q r"?i0:K. i0 IN s /\ ~((v:K->int) i0 = &0)") STRIP_ASSUME_TAC THENL [FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"&0:int")) o (checkM (fun th => (do if ← (do if ← (do let z10 ← (do let z11 ← (pure th); pure (concl z11)); pure (is_forall z10)) then (do let z13 ← (do let z14 ← (pure th); pure (concl z14)); let z12 ← (q r"(&1:int)"); pure (free_in z12 z13)) else pure false) then (do pure !(← (do let z16 ← (do let z17 ← (pure th); pure (concl z17)); let z15 ← (q r"U:K->K->int"); pure (free_in z15 z16)))) else pure false))))) THEN REWRITE_TAC [(← INTEGER_RULE (← q r"(&0:int) divides x <=> x = &0"))] THEN CONV_TAC INT_REDUCE_CONV THEN MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"!k. k IN s /\ ~(k = i0) ==> (v:K->int) k = &0") ASSUME_TAC THENL [ASM_MESON_TAC [], ALL_TAC] THEN SUBGOAL_THEN (← q r"abs((v:K->int) i0) = &1") ASSUME_TAC THENL [FIRST_X_ASSUM (MP_TAC o ((SPEC (← q r"(v:K->int) i0")) o (checkM (fun th => (do if ← (do if ← (do let z1 ← (do let z2 ← (pure th); pure (concl z2)); pure (is_forall z1)) then (do let z4 ← (do let z5 ← (pure th); pure (concl z5)); let z3 ← (q r"(&1:int)"); pure (free_in z3 z4)) else pure false) then (do pure !(← (do let z7 ← (do let z8 ← (pure th); pure (concl z8)); let z6 ← (q r"U:K->K->int"); pure (free_in z6 z7)))) else pure false))))) THEN ANTS_TAC THENL [X_GEN_TAC (← q r"k:K") THEN DISCH_TAC THEN ASM_CASES_TAC (← q r"k:K = i0") THEN ASM_SIMP_TAC [] THEN CONV_TAC INTEGER_RULE, DISCH_THEN (MP_TAC o (MATCH_MP INT_DIVIDES_LE)) THEN ASM_INT_ARITH_TAC], ALL_TAC] THEN EXISTS_TAC (← q r"\k l. if swap(a,i0) k = l then (if l = a then (v:K->int) i0 else &1)
             else &0") THEN CONJ_TAC THENL [X_GEN_TAC (← q r"k:K") THEN DISCH_TAC THEN REWRITE_TAC [] THEN SUBGOAL_THEN (← q r"swap(a,i0) (k:K) = a <=> k = i0") SUBST1_TAC THENL [REWRITE_TAC [swap] THEN MESON_TAC [], REWRITE_TAC []] THEN ASM_CASES_TAC (← q r"k:K = i0") THEN ASM_SIMP_TAC [], ALL_TAC] THEN MP_TAC (← ISPECL [(← q r"integer_ring"), (← q r"s:K->bool"), (← q r"\k l:K. if k = l then (if l = a then (v:K->int) i0 else &1) else &0")] RING_DET_DIAGONAL) THEN ANTS_TAC THENL [ASM_SIMP_TAC [INTEGER_RING], ALL_TAC] THEN REWRITE_TAC [INTEGER_RING_PRODUCT] THEN ASM_SIMP_TAC [IPRODUCT_DELTA] THEN DISCH_TAC THEN ASM_CASES_TAC (← q r"a:K = i0") THENL [FIRST_X_ASSUM (SUBST_ALL_TAC o SYM) THEN ASM_REWRITE_TAC [SWAP_REFL, I_THM], MP_TAC (← ISPECL [(← q r"integer_ring"), (← q r"s:K->bool"), (← q r"\k l:K. if k = l then (if l = a then (v:K->int) i0 else &1) else &0"), (← q r"a:K"), (← q r"i0:K")] RING_DET_SWAP_ROWS) THEN ASM_REWRITE_TAC [INTEGER_RING] THEN DISCH_THEN SUBST1_TAC THEN ASM_REWRITE_TAC [INT_ABS_NEG]])
 
   let INT_DET_BOUND ← prove
@@ -423,42 +421,22 @@ def setupZlattice01 [HolBase] (D : ZlatticeDeps) :
 
   let INT_COSETS_FINITE ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"num_of_int(abs d)"
-    let v2 ← SPEC q1 HAS_SIZE_INT_SEG_LT
-    let q3 ← q r"(s:A->bool) HAS_SIZE n
-    ==> FINITE(IMAGE (f:A->B) s) /\ CARD(IMAGE f s) <= n"
-    let r4 ← MESON [FINITE_IMAGE, CARD_IMAGE_LE, HAS_SIZE, LE_TRANS] q3
-    let q5 ← q r"d:int"
-    let q6 ← q r"(x:K->int) i"
-    let v7 ← SPECL [q6, q5] INT_DIVISION
-    let q8 ← q r"i:K"
-    let q9 ← q r"\i. if i IN s then (x:K->int) i div d else &0"
-    let q10 ← q r"d:int"
-    let q11 ← q r"(x:K->int) i"
-    let v12 ← SPECL [q11, q10] INT_DIVISION
-    let q13 ← q r"i:K"
-    let q14 ← q r"\i. if i IN s then (x:K->int) i rem d else &0"
-    let q15 ← q r"x:K->int"
-    let q16 ← q r"{x:K->int | (!i. i IN s ==> x i IN {k | &0 <= k /\ k < abs d}) /\
-                 (!i. ~(i IN s) ==> x i = &0)}"
-    let q17 ← q r"L:(K->int)->bool"
-    let q18 ← q r"s:K->bool"
-    let v19 ← ISPECL [q18, q17, q16] INT_COSETS_COVER
     prove
       r"!s (L:(K->int)->bool) d.
           FINITE s /\ int_lattice s L /\ ~(d = &0) /\
           (!x. (!i. ~(i IN s) ==> x i = &0) ==> (\i. d * x i) IN L)
           ==> FINITE(int_cosets s L) /\
               CARD(int_cosets s L) <= num_of_int(abs d) EXP CARD s"
-      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC v19 THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN MESON_TAC [], X_GEN_TAC q15 THEN DISCH_TAC THEN EXISTS_TAC q14 THEN REWRITE_TAC [IN_ELIM_THM] THEN REPEAT CONJ_TAC THENL [X_GEN_TAC q13 THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN MP_TAC v12 THEN ASM_REWRITE_TAC [] THEN INT_ARITH_TAC, SIMP_TAC [], FIRST_X_ASSUM (MP_TAC o (SPEC q9)) THEN ANTS_TAC THENL [SIMP_TAC [], ALL_TAC] THEN MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC [FUN_EQ_THM] THEN X_GEN_TAC q8 THEN COND_CASES_TAC THEN ASM_SIMP_TAC [INT_MUL_RZERO, INT_SUB_RZERO] THEN MP_TAC v7 THEN ASM_REWRITE_TAC [] THEN INT_ARITH_TAC]], DISCH_THEN SUBST1_TAC] THEN MATCH_MP_TAC r4 THEN MATCH_MP_TAC HAS_SIZE_FUNSPACE THEN ASM_REWRITE_TAC [HAS_SIZE] THEN MP_TAC v2 THEN SIMP_TAC [INT_OF_NUM_OF_INT, INT_ABS_POS, HAS_SIZE])
+      (REPEAT GEN_TAC THEN STRIP_TAC THEN MP_TAC (← ISPECL [(← q r"s:K->bool"), (← q r"L:(K->int)->bool"), (← q r"{x:K->int | (!i. i IN s ==> x i IN {k | &0 <= k /\ k < abs d}) /\
+                 (!i. ~(i IN s) ==> x i = &0)}")] INT_COSETS_COVER) THEN ANTS_TAC THENL [ASM_REWRITE_TAC [] THEN CONJ_TAC THENL [REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN MESON_TAC [], X_GEN_TAC (← q r"x:K->int") THEN DISCH_TAC THEN EXISTS_TAC (← q r"\i. if i IN s then (x:K->int) i rem d else &0") THEN REWRITE_TAC [IN_ELIM_THM] THEN REPEAT CONJ_TAC THENL [X_GEN_TAC (← q r"i:K") THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN MP_TAC (← SPECL [(← q r"(x:K->int) i"), (← q r"d:int")] INT_DIVISION) THEN ASM_REWRITE_TAC [] THEN INT_ARITH_TAC, SIMP_TAC [], FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"\i. if i IN s then (x:K->int) i div d else &0"))) THEN ANTS_TAC THENL [SIMP_TAC [], ALL_TAC] THEN MATCH_MP_TAC EQ_IMP THEN AP_THM_TAC THEN AP_TERM_TAC THEN REWRITE_TAC [FUN_EQ_THM] THEN X_GEN_TAC (← q r"i:K") THEN COND_CASES_TAC THEN ASM_SIMP_TAC [INT_MUL_RZERO, INT_SUB_RZERO] THEN MP_TAC (← SPECL [(← q r"(x:K->int) i"), (← q r"d:int")] INT_DIVISION) THEN ASM_REWRITE_TAC [] THEN INT_ARITH_TAC]], DISCH_THEN SUBST1_TAC] THEN MATCH_MP_TAC (← MESON [FINITE_IMAGE, CARD_IMAGE_LE, HAS_SIZE, LE_TRANS] (← q r"(s:A->bool) HAS_SIZE n
+    ==> FINITE(IMAGE (f:A->B) s) /\ CARD(IMAGE f s) <= n")) THEN MATCH_MP_TAC HAS_SIZE_FUNSPACE THEN ASM_REWRITE_TAC [HAS_SIZE] THEN MP_TAC (← SPEC (← q r"num_of_int(abs d)") HAS_SIZE_INT_SEG_LT) THEN SIMP_TAC [INT_OF_NUM_OF_INT, INT_ABS_POS, HAS_SIZE])
 
   let INT_LATTICE_COORDINATE_GENERATOR ← do
     -- the rules of the tactics, in OCaml's order (right to left)
-    let r1 ← INTEGER_RULE (← q r"!d:int. d divides d")
     prove
       r"!s (L:(K->int)->bool) a.
           int_lattice s L ==> ?w. w IN L /\ !x. x IN L ==> (w a) divides (x a)"
-      (REPEAT STRIP_TAC THEN FIRST_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP INT_LATTICE_CLOSED)) THEN ASM_CASES_TAC (← q r"!x:K->int. x IN L ==> x a = &0") THENL [EXISTS_TAC (← q r"(\i. &0):K->int") THEN ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q r"x:K->int") THEN DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"x:K->int"))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [r1], ALL_TAC] THEN FIRST_X_ASSUM ((X_CHOOSE_THEN (← q r"x0:K->int") STRIP_ASSUME_TAC) o (REWRITE_RULE [NOT_FORALL_THM, NOT_IMP])) THEN SUBGOAL_THEN (← q r"?n. 0 < n /\ ?x:K->int. x IN L /\ x a = &n") MP_TAC THENL [ASM_CASES_TAC (← q r"&0 < (x0:K->int) a") THENL [EXISTS_TAC (← q r"num_of_int((x0:K->int) a)") THEN ASM_SIMP_TAC [(← GSYM INT_OF_NUM_LT), INT_OF_NUM_OF_INT, INT_LT_IMP_LE] THEN EXISTS_TAC (← q r"x0:K->int") THEN ASM_SIMP_TAC [INT_OF_NUM_OF_INT, INT_LT_IMP_LE], SUBGOAL_THEN (← q r"&0 < --((x0:K->int) a)") ASSUME_TAC THENL [ASM_INT_ARITH_TAC, ALL_TAC] THEN EXISTS_TAC (← q r"num_of_int(--((x0:K->int) a))") THEN ASM_SIMP_TAC [(← GSYM INT_OF_NUM_LT), INT_OF_NUM_OF_INT, INT_LT_IMP_LE] THEN EXISTS_TAC (← q r"\i. --((x0:K->int) i)") THEN ASM_SIMP_TAC [INT_OF_NUM_OF_INT, INT_LT_IMP_LE, ETA_AX]], ALL_TAC] THEN GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"n:num") (CONJUNCTS_THEN2 (CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN (← q r"w:K->int") STRIP_ASSUME_TAC)) (LABEL_TAC "min"))) THEN EXISTS_TAC (← q r"w:K->int") THEN ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q r"x:K->int") THEN DISCH_TAC THEN REWRITE_TAC [(← GSYM INT_REM_EQ_0)] THEN SUBGOAL_THEN (← q r"~(&n:int = &0)") ASSUME_TAC THENL [REWRITE_TAC [INT_OF_NUM_EQ] THEN ASM_ARITH_TAC, ALL_TAC] THEN MP_TAC (← SPECL [(← q r"(x:K->int) a"), (← q r"&n:int")] INT_DIVISION) THEN ASM_REWRITE_TAC [INT_ABS_NUM] THEN ABBREV_TAC (← q r"q = (x:K->int) a div &n") THEN ABBREV_TAC (← q r"r = (x:K->int) a rem &n") THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"?y:K->int. y IN L /\ y a = r") ASSUME_TAC THENL [EXISTS_TAC (← q r"\i. (x:K->int) i - q * w i") THEN CONJ_TAC THENL [ASM_SIMP_TAC [ETA_AX], ASM_REWRITE_TAC [] THEN ASM_INT_ARITH_TAC], ALL_TAC] THEN REMOVE_THEN "min" (MP_TAC o (SPEC (← q r"num_of_int r"))) THEN ASM_SIMP_TAC [(← GSYM INT_OF_NUM_LT), INT_OF_NUM_OF_INT] THEN ASM_INT_ARITH_TAC)
+      (REPEAT STRIP_TAC THEN FIRST_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP INT_LATTICE_CLOSED)) THEN ASM_CASES_TAC (← q r"!x:K->int. x IN L ==> x a = &0") THENL [EXISTS_TAC (← q r"(\i. &0):K->int") THEN ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q r"x:K->int") THEN DISCH_TAC THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"x:K->int"))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [(← INTEGER_RULE (← q r"!d:int. d divides d"))], ALL_TAC] THEN FIRST_X_ASSUM ((X_CHOOSE_THEN (← q r"x0:K->int") STRIP_ASSUME_TAC) o (REWRITE_RULE [NOT_FORALL_THM, NOT_IMP])) THEN SUBGOAL_THEN (← q r"?n. 0 < n /\ ?x:K->int. x IN L /\ x a = &n") MP_TAC THENL [ASM_CASES_TAC (← q r"&0 < (x0:K->int) a") THENL [EXISTS_TAC (← q r"num_of_int((x0:K->int) a)") THEN ASM_SIMP_TAC [(← GSYM INT_OF_NUM_LT), INT_OF_NUM_OF_INT, INT_LT_IMP_LE] THEN EXISTS_TAC (← q r"x0:K->int") THEN ASM_SIMP_TAC [INT_OF_NUM_OF_INT, INT_LT_IMP_LE], SUBGOAL_THEN (← q r"&0 < --((x0:K->int) a)") ASSUME_TAC THENL [ASM_INT_ARITH_TAC, ALL_TAC] THEN EXISTS_TAC (← q r"num_of_int(--((x0:K->int) a))") THEN ASM_SIMP_TAC [(← GSYM INT_OF_NUM_LT), INT_OF_NUM_OF_INT, INT_LT_IMP_LE] THEN EXISTS_TAC (← q r"\i. --((x0:K->int) i)") THEN ASM_SIMP_TAC [INT_OF_NUM_OF_INT, INT_LT_IMP_LE, ETA_AX]], ALL_TAC] THEN GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN DISCH_THEN (X_CHOOSE_THEN (← q r"n:num") (CONJUNCTS_THEN2 (CONJUNCTS_THEN2 ASSUME_TAC (X_CHOOSE_THEN (← q r"w:K->int") STRIP_ASSUME_TAC)) (LABEL_TAC "min"))) THEN EXISTS_TAC (← q r"w:K->int") THEN ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q r"x:K->int") THEN DISCH_TAC THEN REWRITE_TAC [(← GSYM INT_REM_EQ_0)] THEN SUBGOAL_THEN (← q r"~(&n:int = &0)") ASSUME_TAC THENL [REWRITE_TAC [INT_OF_NUM_EQ] THEN ASM_ARITH_TAC, ALL_TAC] THEN MP_TAC (← SPECL [(← q r"(x:K->int) a"), (← q r"&n:int")] INT_DIVISION) THEN ASM_REWRITE_TAC [INT_ABS_NUM] THEN ABBREV_TAC (← q r"q = (x:K->int) a div &n") THEN ABBREV_TAC (← q r"r = (x:K->int) a rem &n") THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"?y:K->int. y IN L /\ y a = r") ASSUME_TAC THENL [EXISTS_TAC (← q r"\i. (x:K->int) i - q * w i") THEN CONJ_TAC THENL [ASM_SIMP_TAC [ETA_AX], ASM_REWRITE_TAC [] THEN ASM_INT_ARITH_TAC], ALL_TAC] THEN REMOVE_THEN "min" (MP_TAC o (SPEC (← q r"num_of_int r"))) THEN ASM_SIMP_TAC [(← GSYM INT_OF_NUM_LT), INT_OF_NUM_OF_INT] THEN ASM_INT_ARITH_TAC)
 
   let INT_LATTICE_SPLIT ← prove
     r"!a t (L:(K->int)->bool).
@@ -550,68 +528,6 @@ def setupZlattice02 [HolBase] (D : ZlatticeDeps) (BZlattice01 : Zlattice01) :
 
   let INT_LATTICE_TRANSVERSAL_INSERT ← do
     -- every quotation and rule built with the tactics, in OCaml's order
-    let q1 ← q r"{(m:num,r:K->int) | m < N /\ r IN R0} =
-        {(m,r) | m IN {m | m < N} /\ r IN R0}"
-    let r2 ← SET_RULE q1
-    let q3 ← q r"i:K = a"
-    let q4 ← q r"i:K"
-    let q5 ← q r"i:K"
-    let q6 ← q r"a:K"
-    let q7 ← q r"~((a:K) IN t)"
-    let q8 ← q r"(r2:K->int) IN R0"
-    let q9 ← q r"(r1:K->int) IN R0"
-    let q10 ← q r"(r1:K->int) a = &0 /\ (r2:K->int) a = &0"
-    let q11 ← q r"r2:K->int"
-    let q12 ← q r"m2:num"
-    let q13 ← q r"r1:K->int"
-    let q14 ← q r"m1:num"
-    let q15 ← q r"i:K"
-    let q16 ← q r"(x:K->int) IN L ==> y = x ==> y IN L"
-    let r17 ← MESON [] q16
-    let q18 ← q r"r1:K->int = r2"
-    let v19 ← GSYM INT_OF_NUM_EQ
-    let v20 ← GSYM INT_OF_NUM_LT
-    let q21 ← q r"m2:num < N"
-    let q22 ← q r"m1:num < N"
-    let q23 ← q r"\i. (if i = a then &m1 else (r1:K->int) i) -
-            (if i = a then &m2 else r2 i)"
-    let q24 ← q r"m1:num = m2"
-    let q25 ← q r"~((a:K) IN t)"
-    let q26 ← q r"(r2:K->int) IN R0"
-    let q27 ← q r"(r1:K->int) IN R0"
-    let q28 ← q r"(r1:K->int) a = &0 /\ (r2:K->int) a = &0"
-    let q29 ← q r"r2:K->int"
-    let q30 ← q r"m2:num"
-    let q31 ← q r"r1:K->int"
-    let q32 ← q r"m1:num"
-    let q33 ← q r"i:K"
-    let q34 ← q r"(\i. (x:K->int) i - (if i = a then rho else r0 i)) =
-      (\i. q * w i + ((if i = a then &0 else x i - q * w i) - r0 i))"
-    let v35 ← GSYM INT_OF_NUM_LT
-    let q36 ← q r"r0:K->int"
-    let q37 ← q r"num_of_int rho"
-    let q38 ← q r"r0:K->int"
-    let q39 ← q r"i:K"
-    let q40 ← q r"w:K->int"
-    let q41 ← q r"L:(K->int)->bool"
-    let q42 ← q r"a INSERT t:K->bool"
-    let v43 ← ISPECL [q42, q41, q40, q39] INT_LATTICE_SUPPORT
-    let q44 ← q r"i:K"
-    let q45 ← q r"\i. if i = a then &0 else (x:K->int) i - q * w i"
-    let q46 ← q r"rho = (x:K->int) a rem w a"
-    let q47 ← q r"q = (x:K->int) a div w a"
-    let q48 ← q r"(w:K->int) a"
-    let q49 ← q r"(x:K->int) a"
-    let v50 ← SPECL [q49, q48] INT_DIVISION
-    let q51 ← q r"x:K->int"
-    let q52 ← q r"~((i:K) IN t)"
-    let q53 ← q r"(r:K->int) IN R0"
-    let q54 ← q r"r:K->int"
-    let q55 ← q r"m:num"
-    let q56 ← q r"IMAGE (\p. (\i. if i = a then &(FST p) else SND p i):K->int)
-                    {(m:num,r:K->int) | m < N /\ r IN R0}"
-    let q57 ← q r"&N:int = abs((w:K->int) a)"
-    let q58 ← q r"N = num_of_int(abs((w:K->int) a))"
     prove
       r"!a t (L:(K->int)->bool) w R0 n.
           FINITE t /\ ~(a IN t) /\ int_lattice (a INSERT t) L /\
@@ -628,7 +544,11 @@ def setupZlattice02 [HolBase] (D : ZlatticeDeps) (BZlattice01 : Zlattice01) :
                   (!r r'. r IN R /\ r' IN R /\ (\i. r i - r' i) IN L
                           ==> r = r') /\
                   R HAS_SIZE (num_of_int(abs(w a)) * n)"
-      (REPEAT GEN_TAC THEN REWRITE_TAC [IN_ELIM_THM] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 (LABEL_TAC "supp") (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 (LABEL_TAC "div") (CONJUNCTS_THEN2 (LABEL_TAC "cover") (LABEL_TAC "unique")))))))))) THEN FIRST_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP INT_LATTICE_CLOSED)) THEN ABBREV_TAC q58 THEN SUBGOAL_THEN q57 ASSUME_TAC THENL [EXPAND_TAC "N" THEN SIMP_TAC [INT_OF_NUM_OF_INT, INT_ABS_POS], ALL_TAC] THEN EXISTS_TAC q56 THEN REWRITE_TAC [SUBSET, IN_ELIM_THM, IMP_CONJ, RIGHT_FORALL_IMP_THM, FORALL_IN_IMAGE, EXISTS_IN_IMAGE, FORALL_PAIR_THM, EXISTS_PAIR_THM, IN_ELIM_PAIR_THM, IN_INSERT, DE_MORGAN_THM] THEN REPEAT CONJ_TAC THENL [REMOVE_THEN "unique" (fun (_ : thm) => ALL_TAC) THEN X_GEN_TAC q55 THEN DISCH_TAC THEN X_GEN_TAC q54 THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MAP_EVERY UNDISCH_TAC [q53, q52] THEN USE_THEN "supp" (fun th => tactic_of do pure (MESON_TAC [(← REWRITE_RULE [SUBSET, IN_ELIM_THM] th)])), REMOVE_THEN "unique" (fun (_ : thm) => ALL_TAC) THEN REMOVE_THEN "supp" (fun (_ : thm) => ALL_TAC) THEN X_GEN_TAC q51 THEN DISCH_TAC THEN MP_TAC v50 THEN ASM_REWRITE_TAC [] THEN MAP_EVERY ABBREV_TAC [q47, q46] THEN STRIP_TAC THEN REMOVE_THEN "cover" (MP_TAC o (SPEC q45)) THEN ANTS_TAC THENL [X_GEN_TAC q44 THEN DISCH_TAC THEN BETA_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC [] THEN MP_TAC v43 THEN ASM_SIMP_TAC [IN_INSERT] THEN INT_ARITH_TAC, DISCH_THEN ((X_CHOOSE_THEN q38 STRIP_ASSUME_TAC) o BETA_RULE)] THEN MAP_EVERY EXISTS_TAC [q37, q36] THEN ASM_SIMP_TAC [v35, INT_OF_NUM_OF_INT] THEN SUBGOAL_THEN q34 SUBST1_TAC THENL [REWRITE_TAC [FUN_EQ_THM] THEN X_GEN_TAC q33 THEN COND_CASES_TAC THEN ASM_SIMP_TAC [] THEN ASM_INT_ARITH_TAC, ASM_SIMP_TAC [ETA_AX]], X_GEN_TAC q32 THEN DISCH_TAC THEN X_GEN_TAC q31 THEN DISCH_TAC THEN X_GEN_TAC q30 THEN DISCH_TAC THEN X_GEN_TAC q29 THEN REPEAT DISCH_TAC THEN SUBGOAL_THEN q28 STRIP_ASSUME_TAC THENL [MAP_EVERY UNDISCH_TAC [q27, q26, q25] THEN USE_THEN "supp" (fun th => tactic_of do pure (MESON_TAC [(← REWRITE_RULE [SUBSET, IN_ELIM_THM] th)])), ALL_TAC] THEN SUBGOAL_THEN q24 SUBST_ALL_TAC THENL [REMOVE_THEN "div" (MP_TAC o (SPEC q23)) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o (MATCH_MP INT_DIVIDES_LE)) THEN UNDISCH_TAC q22 THEN UNDISCH_TAC q21 THEN ASM_REWRITE_TAC [v20, v19] THEN INT_ARITH_TAC, ALL_TAC] THEN SUBGOAL_THEN q18 (fun th => REWRITE_TAC [th]) THEN REMOVE_THEN "unique" MATCH_MP_TAC THEN ASM_SIMP_TAC [INT_SUB_REFL] THEN FIRST_X_ASSUM (MATCH_MP_TAC o (MATCH_MP r17)) THEN REWRITE_TAC [FUN_EQ_THM] THEN X_GEN_TAC q15 THEN COND_CASES_TAC THEN ASM_SIMP_TAC [INT_SUB_REFL], REMOVE_THEN "unique" (fun (_ : thm) => ALL_TAC) THEN MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN CONJ_TAC THENL [REWRITE_TAC [FORALL_PAIR_THM, IN_ELIM_PAIR_THM, PAIR_EQ, FUN_EQ_THM] THEN MAP_EVERY X_GEN_TAC [q14, q13, q12, q11] THEN STRIP_TAC THEN SUBGOAL_THEN q10 STRIP_ASSUME_TAC THENL [MAP_EVERY UNDISCH_TAC [q9, q8, q7] THEN USE_THEN "supp" (fun th => tactic_of do pure (MESON_TAC [(← REWRITE_RULE [SUBSET, IN_ELIM_THM] th)])), ALL_TAC] THEN CONJ_TAC THENL [FIRST_X_ASSUM (MP_TAC o (SPEC q6)) THEN REWRITE_TAC [INT_OF_NUM_EQ], X_GEN_TAC q5 THEN FIRST_X_ASSUM (MP_TAC o (SPEC q4)) THEN ASM_CASES_TAC q3 THEN ASM_SIMP_TAC []], REWRITE_TAC [r2] THEN MATCH_MP_TAC HAS_SIZE_PRODUCT THEN ASM_REWRITE_TAC [HAS_SIZE_NUMSEG_LT]]])
+      (REPEAT GEN_TAC THEN REWRITE_TAC [IN_ELIM_THM] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 (LABEL_TAC "supp") (CONJUNCTS_THEN2 ASSUME_TAC (CONJUNCTS_THEN2 (LABEL_TAC "div") (CONJUNCTS_THEN2 (LABEL_TAC "cover") (LABEL_TAC "unique")))))))))) THEN FIRST_ASSUM (STRIP_ASSUME_TAC o (MATCH_MP INT_LATTICE_CLOSED)) THEN ABBREV_TAC (← q r"N = num_of_int(abs((w:K->int) a))") THEN SUBGOAL_THEN (← q r"&N:int = abs((w:K->int) a)") ASSUME_TAC THENL [EXPAND_TAC "N" THEN SIMP_TAC [INT_OF_NUM_OF_INT, INT_ABS_POS], ALL_TAC] THEN EXISTS_TAC (← q r"IMAGE (\p. (\i. if i = a then &(FST p) else SND p i):K->int)
+                    {(m:num,r:K->int) | m < N /\ r IN R0}") THEN REWRITE_TAC [SUBSET, IN_ELIM_THM, IMP_CONJ, RIGHT_FORALL_IMP_THM, FORALL_IN_IMAGE, EXISTS_IN_IMAGE, FORALL_PAIR_THM, EXISTS_PAIR_THM, IN_ELIM_PAIR_THM, IN_INSERT, DE_MORGAN_THM] THEN REPEAT CONJ_TAC THENL [REMOVE_THEN "unique" (fun (_ : thm) => ALL_TAC) THEN X_GEN_TAC (← q r"m:num") THEN DISCH_TAC THEN X_GEN_TAC (← q r"r:K->int") THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MAP_EVERY UNDISCH_TAC [(← q r"(r:K->int) IN R0"), (← q r"~((i:K) IN t)")] THEN USE_THEN "supp" (fun th => tactic_of do pure (MESON_TAC [(← REWRITE_RULE [SUBSET, IN_ELIM_THM] th)])), REMOVE_THEN "unique" (fun (_ : thm) => ALL_TAC) THEN REMOVE_THEN "supp" (fun (_ : thm) => ALL_TAC) THEN X_GEN_TAC (← q r"x:K->int") THEN DISCH_TAC THEN MP_TAC (← SPECL [(← q r"(x:K->int) a"), (← q r"(w:K->int) a")] INT_DIVISION) THEN ASM_REWRITE_TAC [] THEN MAP_EVERY ABBREV_TAC [(← q r"q = (x:K->int) a div w a"), (← q r"rho = (x:K->int) a rem w a")] THEN STRIP_TAC THEN REMOVE_THEN "cover" (MP_TAC o (SPEC (← q r"\i. if i = a then &0 else (x:K->int) i - q * w i"))) THEN ANTS_TAC THENL [X_GEN_TAC (← q r"i:K") THEN DISCH_TAC THEN BETA_TAC THEN COND_CASES_TAC THEN ASM_SIMP_TAC [] THEN MP_TAC (← ISPECL [(← q r"a INSERT t:K->bool"), (← q r"L:(K->int)->bool"), (← q r"w:K->int"), (← q r"i:K")] INT_LATTICE_SUPPORT) THEN ASM_SIMP_TAC [IN_INSERT] THEN INT_ARITH_TAC, DISCH_THEN ((X_CHOOSE_THEN (← q r"r0:K->int") STRIP_ASSUME_TAC) o BETA_RULE)] THEN MAP_EVERY EXISTS_TAC [(← q r"num_of_int rho"), (← q r"r0:K->int")] THEN ASM_SIMP_TAC [(← GSYM INT_OF_NUM_LT), INT_OF_NUM_OF_INT] THEN SUBGOAL_THEN (← q r"(\i. (x:K->int) i - (if i = a then rho else r0 i)) =
+      (\i. q * w i + ((if i = a then &0 else x i - q * w i) - r0 i))") SUBST1_TAC THENL [REWRITE_TAC [FUN_EQ_THM] THEN X_GEN_TAC (← q r"i:K") THEN COND_CASES_TAC THEN ASM_SIMP_TAC [] THEN ASM_INT_ARITH_TAC, ASM_SIMP_TAC [ETA_AX]], X_GEN_TAC (← q r"m1:num") THEN DISCH_TAC THEN X_GEN_TAC (← q r"r1:K->int") THEN DISCH_TAC THEN X_GEN_TAC (← q r"m2:num") THEN DISCH_TAC THEN X_GEN_TAC (← q r"r2:K->int") THEN REPEAT DISCH_TAC THEN SUBGOAL_THEN (← q r"(r1:K->int) a = &0 /\ (r2:K->int) a = &0") STRIP_ASSUME_TAC THENL [MAP_EVERY UNDISCH_TAC [(← q r"(r1:K->int) IN R0"), (← q r"(r2:K->int) IN R0"), (← q r"~((a:K) IN t)")] THEN USE_THEN "supp" (fun th => tactic_of do pure (MESON_TAC [(← REWRITE_RULE [SUBSET, IN_ELIM_THM] th)])), ALL_TAC] THEN SUBGOAL_THEN (← q r"m1:num = m2") SUBST_ALL_TAC THENL [REMOVE_THEN "div" (MP_TAC o (SPEC (← q r"\i. (if i = a then &m1 else (r1:K->int) i) -
+            (if i = a then &m2 else r2 i)"))) THEN ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o (MATCH_MP INT_DIVIDES_LE)) THEN UNDISCH_TAC (← q r"m1:num < N") THEN UNDISCH_TAC (← q r"m2:num < N") THEN ASM_REWRITE_TAC [(← GSYM INT_OF_NUM_LT), (← GSYM INT_OF_NUM_EQ)] THEN INT_ARITH_TAC, ALL_TAC] THEN SUBGOAL_THEN (← q r"r1:K->int = r2") (fun th => REWRITE_TAC [th]) THEN REMOVE_THEN "unique" MATCH_MP_TAC THEN ASM_SIMP_TAC [INT_SUB_REFL] THEN FIRST_X_ASSUM (MATCH_MP_TAC o (MATCH_MP (← MESON [] (← q r"(x:K->int) IN L ==> y = x ==> y IN L")))) THEN REWRITE_TAC [FUN_EQ_THM] THEN X_GEN_TAC (← q r"i:K") THEN COND_CASES_TAC THEN ASM_SIMP_TAC [INT_SUB_REFL], REMOVE_THEN "unique" (fun (_ : thm) => ALL_TAC) THEN MATCH_MP_TAC HAS_SIZE_IMAGE_INJ THEN CONJ_TAC THENL [REWRITE_TAC [FORALL_PAIR_THM, IN_ELIM_PAIR_THM, PAIR_EQ, FUN_EQ_THM] THEN MAP_EVERY X_GEN_TAC [(← q r"m1:num"), (← q r"r1:K->int"), (← q r"m2:num"), (← q r"r2:K->int")] THEN STRIP_TAC THEN SUBGOAL_THEN (← q r"(r1:K->int) a = &0 /\ (r2:K->int) a = &0") STRIP_ASSUME_TAC THENL [MAP_EVERY UNDISCH_TAC [(← q r"(r1:K->int) IN R0"), (← q r"(r2:K->int) IN R0"), (← q r"~((a:K) IN t)")] THEN USE_THEN "supp" (fun th => tactic_of do pure (MESON_TAC [(← REWRITE_RULE [SUBSET, IN_ELIM_THM] th)])), ALL_TAC] THEN CONJ_TAC THENL [FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"a:K"))) THEN REWRITE_TAC [INT_OF_NUM_EQ], X_GEN_TAC (← q r"i:K") THEN FIRST_X_ASSUM (MP_TAC o (SPEC (← q r"i:K"))) THEN ASM_CASES_TAC (← q r"i:K = a") THEN ASM_SIMP_TAC []], REWRITE_TAC [(← SET_RULE (← q r"{(m:num,r:K->int) | m < N /\ r IN R0} =
+        {(m,r) | m IN {m | m < N} /\ r IN R0}"))] THEN MATCH_MP_TAC HAS_SIZE_PRODUCT THEN ASM_REWRITE_TAC [HAS_SIZE_NUMSEG_LT]]])
 
   let INT_MATRIX_IMAGE_TRANSVERSAL ← prove
     r"!s (M:K->K->int).

@@ -33,8 +33,9 @@ initialize Icd : ImpConv.ImpConvDeps ← do
     let TAUT (s : String) : ExceptT String IO thm := do
       (Classic.TAUT B C.BOOL_CASES_AX (← parse_term s) : IO (Except String thm))
     let imp_refl ← TAUT "A ==> A"
-    let imp_swap ← TAUT "(p ==> q ==> r) <=> (q ==> p ==> r)"
+    -- IMPLY_AND (impconv.ml 147) comes before GMATCH_MP (174).
     let IMPLY_AND_RDISTRIB ← TAUT "(x ==> y /\\ z) <=> (x==>y) /\\ (x==>z)"
+    let imp_swap ← TAUT "(p ==> q ==> r) <=> (q ==> p ==> r)"
     let mkimp_iff ← TAUT
       "((A ==> B) ==> (C ==> D)) /\\ ((B ==> A) ==> (D ==> C)) ==> (A <=> B) ==> (C <=> D)"
     let mkimp_contra_iff ← TAUT

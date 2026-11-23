@@ -303,6 +303,8 @@ structure FolStores where
   vcounter : IO.Ref Int
   cstore   : IO.Ref (List (term × Int))   -- constant → code
   ccounter : IO.Ref Int
+  /-- `false_tm = `F`` (meson.ml 122), parsed once when meson.ml loads. -/
+  false_tm : term
 
 /-- Reset the variable stores. -/
 def reset_vars (S : FolStores) : IO Unit := do
@@ -353,9 +355,7 @@ def hol_of_var (S : FolStores) (v : Int) : IO (Except String term) := do
 
 /-- Reset the constant store to `[(F, 1)]`, counter 2. -/
 def reset_consts (S : FolStores) : IO (Except String Unit) := do
-  match ← (mk_const "F" [] : IO (Except String term)) with
-  | .error e => return .error e
-  | .ok false_tm => do S.cstore.set [(false_tm, 1)]; S.ccounter.set 2; return .ok ()
+  S.cstore.set [(S.false_tm, 1)]; S.ccounter.set 2; return .ok ()
 
 /-- `fol_of_const c`: code for HOL constant/term `c` (allocating fresh). -/
 def fol_of_const (S : FolStores) (c : term) : IO (Except String Int) := do
@@ -940,13 +940,14 @@ def setupMesonPths (B : BoolThms) (T : TheoremThms) (C : ClassThms) :
     ExceptT String IO MesonPths := do
   let TAUT (s : String) : ExceptT String IO thm := do
     (Classic.TAUT B C.BOOL_CASES_AX (← parse_term s) : IO (Except String thm))
+  -- In OCaml's order: list elements are evaluated right to left.
   let impTaut ← TAUT "a \\/ b <=> ~b ==> a"
-  let pushTaut1 ← TAUT "~(a \\/ b) <=> ~a /\\ ~b"
   let pushTaut2 ← TAUT "~(~a) <=> a"
+  let pushTaut1 ← TAUT "~(a \\/ b) <=> ~a /\\ ~b"
   let pullTaut ← TAUT "~a \\/ ~b <=> ~(a /\\ b)"
   let imfTaut ← TAUT "~p <=> p ==> F"
-  let finishTaut1 ← TAUT "(~p ==> p) <=> p"
   let finishTaut2 ← TAUT "(p ==> ~p) <=> ~p"
+  let finishTaut1 ← TAUT "(~p ==> p) <=> p"
   let pushConv ← (Simp.GEN_REWRITE_CONV B Simp.topSweepConvIO [pushTaut1, pushTaut2]
                   : IO (Except String ioconv))
   let pullConv ← (Simp.GEN_REWRITE_CONV B Simp.depthConvIO [pullTaut]
@@ -1101,7 +1102,12 @@ structure EqAxPths where
 
 /-- Prove the equality-axiom auxiliary theorems. -/
 def setupEqAx (B : BoolThms) (C : ClassThms) : ExceptT String IO EqAxPths := do
-  let prove := Tactics.prove B
+  -- `prove(`goal`,tac)`: OCaml evaluates the tactic (and its quotations)
+  -- before parsing the goal, so the goal is parsed here, after them.
+  let proveS (g : String) (tac : HolCore.Tactics.tactic) : IO (Except String thm) := do
+    match ← HolCore.Parser.parse_term g with
+    | .error e => return .error e
+    | .ok gt => Tactics.prove B gt tac
   let TAUT (s : String) : ExceptT String IO thm := do
     (Classic.TAUT B C.BOOL_CASES_AX (← parse_term s) : IO (Except String thm))
   let REWRITE_TAC := Simp.REWRITE_TAC B
@@ -1109,7 +1115,7 @@ def setupEqAx (B : BoolThms) (C : ClassThms) : ExceptT String IO EqAxPths := do
   let ASM_CASES_TAC := Classic.ASM_CASES_TAC B C.EXCLUDED_MIDDLE
   let tautConv : ioconv := fun w => (Classic.TAUT B C.BOOL_CASES_AX w : IO (Except String thm))
   let xeqy ← parse_term "x:A = y"
-  let eqConj ← (prove (← parse_term "(x:A = x) /\\ (~(x:A = y) \\/ ~(x = z) \\/ (y = z))")
+  let eqConj ← (proveS "(x:A = x) /\\ (~(x:A = y) \\/ ~(x = z) \\/ (y = z))"
       (THEN B (REWRITE_TAC [])
         (THEN B (ASM_CASES_TAC xeqy)
           (THEN B (ASM_REWRITE_TAC []) (Tactics.CONV_TAC B tautConv)))) : IO (Except String thm))

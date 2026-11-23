@@ -161,7 +161,10 @@ lean_lib SessionLibrary where
 lean_lib HolMultiLib where
   roots := #[`HolMultiLib]
   precompileModules := true
-  moreLeancArgs := if optLevel?.isNone then #["-O0"] else #[]
+  -- Linux: the library's shared object is over 2 GB, beyond the small code
+  -- model's 32-bit relocations, so it is compiled for the large model there.
+  moreLeancArgs := (if optLevel?.isNone then #["-O0"] else #[]) ++
+    (if System.Platform.isOSX then #[] else #["-mcmodel=large"])
 
 lean_lib SessionMultiLib where
   globs := #[.submodules `SessionMultiLib]

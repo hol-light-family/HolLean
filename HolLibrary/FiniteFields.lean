@@ -29,10 +29,11 @@
   exports every name under its HOL Light name.
 
   EVALUATION ORDER.  OCaml evaluates function arguments, tuples and list
-  literals right to left, so in a proof the rules nearer the end are
-  evaluated first.  Where one proof applies two or more rules that print or
-  use counters (MESON, SET_RULE, RING_RULE, ARITH_RULE, TAUT) they are bound
-  first, in OCaml's order.
+  literals right to left.  The `do` macro of HolCore/OcamlOrder.lean
+  (HolLight.Syntax) binds each statement's `(← ...)` actions in that order,
+  so quotations and rules (MESON, ARITH_RULE, ...) run as in HOL Light;
+  where a rule is bound by a `let` before the proof, it is bound in OCaml's
+  order.
 -/
 
 import HolLibrary.Galois
@@ -1899,9 +1900,9 @@ def setupLayers [HolBase] (D : FiniteFieldsDeps) (BBasicFacts : BasicFacts) (BIr
       EXISTS_TAC (← q r"j:num") THEN CONJ_TAC THENL
        [REWRITE_TAC [← GSYM INT_OF_NUM_LT] THEN ASM_MESON_TAC [], ALL_TAC] THEN
       X_GEN_TAC (← q r"x:B") THEN DISCH_TAC THEN
-      FIRST_X_ASSUM (fun th => tactic_of do
+      FIRST_X_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
         if !(is_eq (concl th)) then throw "check"
-        pure (MP_TAC (← AP_THM th (← q r"x:B")))) THEN
+        pure (MP_TAC (← AP_THM th ocq1))) (← q r"x:B")) THEN
       ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN
       MP_TAC (← ISPECL [← q r"galois_group(k,subfield_generated l e) (h:A->B)",
                      ← q r"frob:B->B", ← q r"m:int"] GROUP_ZPOW_REM_ELEMENT_ORDER) THEN

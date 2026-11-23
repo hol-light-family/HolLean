@@ -23042,8 +23042,8 @@ def setupOPC [HolBase] (D : TopologyDeps) (BEUC : EUC) (BBAL : BAL) (BLOC : LOC)
         FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← REWRITE_RULE [IMP_CONJ]
           CONTINUOUS_ON_SUBSET)) THEN ASM SET_TAC [],
         REWRITE_TAC [closed_in, open_in, TOPSPACE_EUCLIDEAN_SUBTOPOLOGY] THEN
-        DISCH_THEN (fun th => tactic_of do
-          pure (MP_TAC (← SPEC (← q r"a:real^M") (← liftExcept (last (CONJUNCTS th)))))) THEN
+        DISCH_THEN ((fun (ocq2 : _) => fun th => tactic_of do
+          pure (MP_TAC (← SPEC ocq2 (← liftExcept (last (CONJUNCTS th)))))) (← q r"a:real^M")) THEN
         ASM_REWRITE_TAC [IN_ELIM_THM, IN_DIFF, IN_DELETE] THEN
         SIMP_TAC [IMP_CONJ, DE_MORGAN_THM] THEN
         MATCH_MP_TAC MONO_EXISTS THEN REPEAT STRIP_TAC THEN
@@ -40870,9 +40870,9 @@ def setupECC1 [HolBase] (D : TopologyDeps) (BEUC : EUC) (BSEC : SEC) (BLND : LND
           ==> s = t")) THEN
         ASM_MESON_TAC [SUBSET]] THEN
       X_GEN_TAC (← q r"c:real^N->bool") THEN DISCH_TAC THEN
-      FIRST_ASSUM (fun th => tactic_of do
-        pure (MP_TAC (← SPEC (← q r"\c':real^N->bool. c' IN f' /\ c PSUBSET c'")
-          (← liftExcept (last (CONJUNCTS (← GEN_REWRITE_RULE id [woset] th))))))) THEN
+      FIRST_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
+        pure (MP_TAC (← SPEC ocq1
+          (← liftExcept (last (CONJUNCTS (← GEN_REWRITE_RULE id [woset] th))))))) (← q r"\c':real^N->bool. c' IN f' /\ c PSUBSET c'")) THEN
       ASM_REWRITE_TAC [] THEN ANTS_TAC THENL
        [CONJ_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
         SUBGOAL_THEN (← q r"?c':real^N->bool. c' IN f /\ ~(c' SUBSET c)")

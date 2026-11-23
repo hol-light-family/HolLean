@@ -377,103 +377,303 @@ end OrdMap
 
 /- -- Ordered sets (`Mset.Make`) -------------------------------------------
    `Name.Set`, `Intset`, `Name_arity.Set`, `Atom.Set`, `Literal.Set` are all
-   `Mset.Make` instances: ordered sets over an element comparison, backed here
-   by a sorted list.  A set carries its comparator. -/
+   `Mset.Make` instances: ordered sets over an element comparison, here a
+   translation of OCaml's stdlib AVL tree (below), so that traversals visit
+   elements in OCaml's order.  A set carries its comparator. -/
 namespace OrdSet
+
+/-- OCaml's `Set.Make` tree (stdlib set.ml): an AVL tree whose node heights
+    are kept as OCaml computes them.  Metis's `Mset` wraps `Set.Make`; the
+    shape matters because `Se.exists`/`Se.for_all` visit the root first,
+    and Metis's model checking (`interpretClause`) draws random numbers in
+    the predicate. -/
+inductive Tree (α : Type) where
+  | empty : Tree α
+  | node (l : Tree α) (v : α) (r : Tree α) (h : Nat) : Tree α
+  deriving Inhabited
 
 structure Set (α : Type) where
   cmp : α → α → Int
-  elems : List α
+  tree : Tree α
 
-instance : Inhabited (Set α) := ⟨⟨fun _ _ => 0, []⟩⟩
+instance : Inhabited (Set α) := ⟨⟨fun _ _ => 0, .empty⟩⟩
 
-variable {α β : Type}
+variable {α β σ : Type}
 
-def empty (cmp : α → α → Int) : Set α := ⟨cmp, []⟩
+namespace Tree
 
-def null (s : Set α) : Bool := s.elems.isEmpty
+def height : Tree α → Nat
+  | .empty => 0
+  | .node _ _ _ h => h
 
-def size (s : Set α) : Nat := s.elems.length
+def create (l : Tree α) (v : α) (r : Tree α) : Tree α :=
+  let hl := height l
+  let hr := height r
+  .node l v r (if hl >= hr then hl + 1 else hr + 1)
 
-def toList (s : Set α) : List α := s.elems
+/-- `bal` (set.ml): one rebalancing step.  OCaml raises `Invalid_argument`
+    on the impossible cases; here they fall back to `create`. -/
+def bal (l : Tree α) (v : α) (r : Tree α) : Tree α :=
+  let hl := height l
+  let hr := height r
+  if hl > hr + 2 then
+    match l with
+    | .empty => create l v r
+    | .node ll lv lr _ =>
+      if height ll >= height lr then create ll lv (create lr v r)
+      else match lr with
+        | .empty => create l v r
+        | .node lrl lrv lrr _ => create (create ll lv lrl) lrv (create lrr v r)
+  else if hr > hl + 2 then
+    match r with
+    | .empty => create l v r
+    | .node rl rv rr _ =>
+      if height rr >= height rl then create (create l v rl) rv rr
+      else match rl with
+        | .empty => create l v r
+        | .node rll rlv rlr _ => create (create l v rll) rlv (create rlr rv rr)
+  else .node l v r (if hl >= hr then hl + 1 else hr + 1)
 
-def member (x : α) (s : Set α) : Bool := s.elems.any (fun y => s.cmp x y = 0)
+/-- `add x t`, and whether it changed (OCaml's `l == ll` tests). -/
+def addC (cmp : α → α → Int) (x : α) : Tree α → Tree α × Bool
+  | .empty => (.node .empty x .empty 1, true)
+  | t@(.node l v r _) =>
+    let c := cmp x v
+    if c = 0 then (t, false)
+    else if c < 0 then
+      let (ll, ch) := addC cmp x l
+      if ch then (bal ll v r, true) else (t, false)
+    else
+      let (rr, ch) := addC cmp x r
+      if ch then (bal l v rr, true) else (t, false)
 
-def add (s : Set α) (x : α) : Set α :=
-  let rec go : List α → List α
-    | [] => [x]
-    | y :: rest =>
-      let c := s.cmp x y
-      if c < 0 then x :: y :: rest
-      else if c = 0 then y :: rest
-      else y :: go rest
-  ⟨s.cmp, go s.elems⟩
+def add (cmp : α → α → Int) (x : α) (t : Tree α) : Tree α := (addC cmp x t).1
 
-def singleton (cmp : α → α → Int) (x : α) : Set α := add (empty cmp) x
+def singleton (x : α) : Tree α := .node .empty x .empty 1
 
-def delete (s : Set α) (x : α) : Set α :=
-  ⟨s.cmp, s.elems.filter (fun y => s.cmp x y ≠ 0)⟩
+def addMin (x : α) : Tree α → Tree α
+  | .empty => singleton x
+  | .node l v r _ => bal (addMin x l) v r
 
-/- Pmapping and folding. -/
+def addMax (x : α) : Tree α → Tree α
+  | .empty => singleton x
+  | .node l v r _ => bal l v (addMax x r)
 
-/-- `foldr f a s = Se.fold (fun x acc -> f (x,acc)) s a` (metis.ml 1893).
-    OCaml's `Set.fold f s a` computes `f xN (... (f x2 (f x1 a)))` with
-    `x1 < ... < xN`: it applies `f` to the SMALLEST element FIRST.  That is a
-    LEFT fold over the ascending element list, so `List.foldl`, not
-    `List.foldr` (which would apply `f` to the LARGEST element first and reverse
-    every non-commutative accumulation).  Metis defines `foldl = foldr` for
-    sets, so both use this. -/
+/-- `join l v r` (no assumption on the heights). -/
+partial def join (l : Tree α) (v : α) (r : Tree α) : Tree α :=
+  match l, r with
+  | .empty, _ => addMin v r
+  | _, .empty => addMax v l
+  | .node ll lv lr lh, .node rl rv rr rh =>
+    if lh > rh + 2 then bal ll lv (join lr v r)
+    else if rh > lh + 2 then bal (join l v rl) rv rr
+    else create l v r
+
+def minElt : Tree α → Option α
+  | .empty => none
+  | .node .empty v _ _ => some v
+  | .node l _ _ _ => minElt l
+
+def removeMin : Tree α → Tree α
+  | .empty => .empty
+  | .node .empty _ r _ => r
+  | .node l v r _ => bal (removeMin l) v r
+
+def merge (t1 t2 : Tree α) : Tree α :=
+  match t1, t2 with
+  | .empty, t => t
+  | t, .empty => t
+  | _, _ => match minElt t2 with
+    | some m => bal t1 m (removeMin t2)
+    | none => t1
+
+def concat (t1 t2 : Tree α) : Tree α :=
+  match t1, t2 with
+  | .empty, t => t
+  | t, .empty => t
+  | _, _ => match minElt t2 with
+    | some m => join t1 m (removeMin t2)
+    | none => t1
+
+partial def split (cmp : α → α → Int) (x : α) : Tree α → Tree α × Bool × Tree α
+  | .empty => (.empty, false, .empty)
+  | .node l v r _ =>
+    let c := cmp x v
+    if c = 0 then (l, true, r)
+    else if c < 0 then
+      let (ll, pres, rl) := split cmp x l
+      (ll, pres, join rl v r)
+    else
+      let (lr, pres, rr) := split cmp x r
+      (join l v lr, pres, rr)
+
+def mem (cmp : α → α → Int) (x : α) : Tree α → Bool
+  | .empty => false
+  | .node l v r _ =>
+    let c := cmp x v
+    if c = 0 then true else if c < 0 then mem cmp x l else mem cmp x r
+
+def removeC (cmp : α → α → Int) (x : α) : Tree α → Tree α × Bool
+  | .empty => (.empty, false)
+  | t@(.node l v r _) =>
+    let c := cmp x v
+    if c = 0 then (merge l r, true)
+    else if c < 0 then
+      let (ll, ch) := removeC cmp x l
+      if ch then (bal ll v r, true) else (t, false)
+    else
+      let (rr, ch) := removeC cmp x r
+      if ch then (bal l v rr, true) else (t, false)
+
+partial def union (cmp : α → α → Int) (s1 s2 : Tree α) : Tree α :=
+  match s1, s2 with
+  | .empty, t2 => t2
+  | t1, .empty => t1
+  | .node l1 v1 r1 h1, .node l2 v2 r2 h2 =>
+    if h1 >= h2 then
+      if h2 = 1 then add cmp v2 s1
+      else
+        let (l2, _, r2) := split cmp v1 s2
+        join (union cmp l1 l2) v1 (union cmp r1 r2)
+    else
+      if h1 = 1 then add cmp v1 s2
+      else
+        let (l1, _, r1) := split cmp v2 s1
+        join (union cmp l1 l2) v2 (union cmp r1 r2)
+
+partial def inter (cmp : α → α → Int) (s1 s2 : Tree α) : Tree α :=
+  match s1, s2 with
+  | .empty, _ => .empty
+  | _, .empty => .empty
+  | .node l1 v1 r1 _, t2 =>
+    match split cmp v1 t2 with
+    | (l2, false, r2) => concat (inter cmp l1 l2) (inter cmp r1 r2)
+    | (l2, true, r2) => join (inter cmp l1 l2) v1 (inter cmp r1 r2)
+
+partial def diff (cmp : α → α → Int) (s1 s2 : Tree α) : Tree α :=
+  match s1, s2 with
+  | .empty, _ => .empty
+  | t1, .empty => t1
+  | .node l1 v1 r1 _, t2 =>
+    match split cmp v1 t2 with
+    | (l2, false, r2) => join (diff cmp l1 l2) v1 (diff cmp r1 r2)
+    | (l2, true, r2) => concat (diff cmp l1 l2) (diff cmp r1 r2)
+
+def cardinal : Tree α → Nat
+  | .empty => 0
+  | .node l _ r _ => cardinal l + 1 + cardinal r
+
+/-- `elements`: ascending. -/
+def elements (t : Tree α) : List α :=
+  let rec aux (acc : List α) : Tree α → List α
+    | .empty => acc
+    | .node l v r _ => aux (v :: aux acc r) l
+  aux [] t
+
+/-- `fold f s accu`: ascending. -/
+def fold (f : α → σ → σ) : Tree α → σ → σ
+  | .empty, acc => acc
+  | .node l v r _, acc => fold f r (f v (fold f l acc))
+
+/-- `exists p`: root, then left, then right, stopping at the first true. -/
+def existsb (p : α → Bool) : Tree α → Bool
+  | .empty => false
+  | .node l v r _ => p v || existsb p l || existsb p r
+
+/-- `for_all p`: root, then left, then right. -/
+def forAll (p : α → Bool) : Tree α → Bool
+  | .empty => true
+  | .node l v r _ => p v && forAll p l && forAll p r
+
+/-- `exists p` for an IO predicate, in OCaml's order. -/
+def existsM (p : α → IO Bool) : Tree α → IO Bool
+  | .empty => return false
+  | .node l v r _ => do
+    if ← p v then return true
+    if ← existsM p l then return true
+    existsM p r
+
+end Tree
+
+def empty (cmp : α → α → Int) : Set α := ⟨cmp, .empty⟩
+
+def null (s : Set α) : Bool := match s.tree with | .empty => true | _ => false
+
+def size (s : Set α) : Nat := s.tree.cardinal
+
+def toList (s : Set α) : List α := s.tree.elements
+
+def member (x : α) (s : Set α) : Bool := s.tree.mem s.cmp x
+
+def add (s : Set α) (x : α) : Set α := ⟨s.cmp, s.tree.add s.cmp x⟩
+
+def singleton (cmp : α → α → Int) (x : α) : Set α := ⟨cmp, Tree.singleton x⟩
+
+def delete (s : Set α) (x : α) : Set α := ⟨s.cmp, (s.tree.removeC s.cmp x).1⟩
+
+/- Mapping and folding. -/
+
+/-- `foldr f a s = Se.fold (fun x acc -> f (x,acc)) s a` (metis.ml 1893):
+    ascending, the smallest element first.  Metis defines `foldl = foldr`
+    for sets. -/
 def foldr (f : α × σ → σ) (a : σ) (s : Set α) : σ :=
-  s.elems.foldl (fun acc x => f (x, acc)) a
+  s.tree.fold (fun x acc => f (x, acc)) a
 
 def foldl (f : α × σ → σ) (a : σ) (s : Set α) : σ := foldr f a s
 
-def union (s1 s2 : Set α) : Set α := s1.elems.foldl (fun acc x => add acc x) s2
+def union (s1 s2 : Set α) : Set α := ⟨s1.cmp, Tree.union s1.cmp s1.tree s2.tree⟩
 
-def difference (s1 s2 : Set α) : Set α :=
-  ⟨s1.cmp, s1.elems.filter (fun x => !member x s2)⟩
+def difference (s1 s2 : Set α) : Set α := ⟨s1.cmp, Tree.diff s1.cmp s1.tree s2.tree⟩
 
-def intersect (s1 s2 : Set α) : Set α :=
-  ⟨s1.cmp, s1.elems.filter (fun x => member x s2)⟩
+def intersect (s1 s2 : Set α) : Set α := ⟨s1.cmp, Tree.inter s1.cmp s1.tree s2.tree⟩
 
 def intersectList : List (Set α) → Set α
-  | [] => ⟨fun _ _ => 0, []⟩   -- OCaml returns Se.empty; comparator irrelevant when unused
+  | [] => ⟨fun _ _ => 0, .empty⟩   -- OCaml returns Se.empty; comparator irrelevant when unused
   | s :: ss => ss.foldr (fun t acc => intersect t acc) s
 
+/-- `fromList l = List.fold_right Se.add l Se.empty`: the last element is
+    added first. -/
 def fromList (cmp : α → α → Int) (l : List α) : Set α :=
   l.foldr (fun x acc => add acc x) (empty cmp)
 
-def existsb (p : α → Bool) (s : Set α) : Bool := s.elems.any p
+def existsb (p : α → Bool) (s : Set α) : Bool := s.tree.existsb p
 
-def all (p : α → Bool) (s : Set α) : Bool := s.elems.all p
+/-- `Se.exists` with an IO predicate, visiting elements in OCaml's order. -/
+def existsM (p : α → IO Bool) (s : Set α) : IO Bool := s.tree.existsM p
 
-def count (p : α → Bool) (s : Set α) : Nat := (s.elems.filter p).length
+def all (p : α → Bool) (s : Set α) : Bool := s.tree.forAll p
 
-def subset (s1 s2 : Set α) : Bool := s1.elems.all (fun x => member x s2)
+def count (p : α → Bool) (s : Set α) : Nat :=
+  s.tree.fold (fun x c => if p x then c + 1 else c) 0
 
-def equal (s1 s2 : Set α) : Bool := subset s1 s2 && subset s2 s1
+def subset (s1 s2 : Set α) : Bool := s1.tree.forAll (fun x => member x s2)
 
-def compareSet (s1 s2 : Set α) : Int := Useful.lexCompare s1.cmp s1.elems s2.elems
+def equal (s1 s2 : Set α) : Bool := Useful.lexCompare s1.cmp (toList s1) (toList s2) == 0
 
+def compareSet (s1 s2 : Set α) : Int := Useful.lexCompare s1.cmp (toList s1) (toList s2)
+
+/-- `pick = Se.choose = min_elt`. -/
 def pick (s : Set α) : Except String α :=
-  match s.elems with | x :: _ => .ok x | [] => .error "Mset.pick: empty"
+  match s.tree.minElt with | some x => .ok x | none => .error "Mset.pick: empty"
 
 /-- `findl p s = Se.fold go s None`, keeping the first (ascending) match. -/
 def findl (p : α → Bool) (s : Set α) : Option α :=
-  let go (acc : Option α) (x : α) : Option α :=
+  let go (x : α) (acc : Option α) : Option α :=
     match acc with | some _ => acc | none => if p x then some x else none
-  s.elems.foldl go none
+  s.tree.fold go none
 
 /-- `firstl f s`: first `Some`-valued `f x` in ascending order. -/
 def firstl (f : α → Option β) (s : Set α) : Option β :=
-  let go (acc : Option β) (x : α) : Option β :=
+  let go (x : α) (acc : Option β) : Option β :=
     match acc with | some _ => acc | none => f x
-  s.elems.foldl go none
+  s.tree.fold go none
 
 /- Converting to and from lists. -/
 
+/-- `transform f s = Se.fold (fun x acc -> f x :: acc) s []`: `f` is
+    applied in ascending order and the list comes out descending. -/
 def transform (f : α → β) (s : Set α) : List β :=
-  s.elems.foldr (fun x acc => f x :: acc) []
+  s.tree.fold (fun x acc => f x :: acc) []
 
 end OrdSet
 
@@ -695,7 +895,9 @@ end Name_arity
    `empty`, `add`, `firstl`, and `intersect` over a fixed comparator, so we
    back it with a sorted list (identical semantics for those operations).  This
    avoids translating the ~700-line `Pmap` randomly-balanced-tree module, which
-   is otherwise dead code (`Name.Map`/`Name.Set` are `Mmap`/`Mset`, not Pmap). -/
+   is otherwise dead code (`Name.Map`/`Name.Set` are `Mmap`/`Mset`, not Pmap).
+   `Pset.add`'s one effect, the `Random.bits` draw for a new node's priority,
+   is made by Subsume's `idSetAddIO`. -/
 /- ---------------------------------------------------------------------- -/
 /- More map and set modules to support Metis.                             -/
 /- ---------------------------------------------------------------------- -/
@@ -3417,6 +3619,73 @@ end Literal_net
 /- ---------------------------------------------------------------------- -/
 
 /- -- Subsume: subsumption checking for FOL clauses (`module Subsume`) -------/
+/- -- Random source: OCaml 5's `Random` (stdlib random.ml) ----------------
+   Metis calls `Random.init 0` at each refutation and then draws with
+   `Random.int` (Model) and `Random.bits` (Pmap's node priorities, consumed
+   by Subsume's `Pset.add`).  OCaml 5's default generator is LXM (L64X128,
+   runtime/prng.c); this is the same generator, so the same stream. -/
+namespace Rand
+
+/-- The LXM state `(a, s, x0, x1)` of OCaml's `Random.State.t`. -/
+structure LXM where
+  a : UInt64
+  s : UInt64
+  x0 : UInt64
+  x1 : UInt64
+  deriving Inhabited
+
+/-- The state after `Random.init 0` (random.ml `reinit`: MD5 of the
+    serialised seed `[|0|]`; the four words read from OCaml 5.3's
+    `Random.State.to_binary_string`). -/
+def init0 : LXM :=
+  { a := 0xac8b11db36f177ef, s := 0x337de6ffa4c970ab,
+    x0 := 0xbb9d825f66040a9d, x1 := 0x54e92521f48180d2 }
+
+private def rotl (x : UInt64) (k : UInt64) : UInt64 := (x <<< k) ||| (x >>> (64 - k))
+
+/-- `caml_lxm_next` (runtime/prng.c). -/
+def next (r : IO.Ref LXM) : IO UInt64 := do
+  let st ← r.get
+  let z0 := st.s + st.x0
+  let z1 := (z0 ^^^ (z0 >>> 32)) * 0xdaba0b6eb09322e3
+  let z2 := (z1 ^^^ (z1 >>> 32)) * 0xdaba0b6eb09322e3
+  let z := z2 ^^^ (z2 >>> 32)
+  let s' := st.s * 0xd1342543de82ef95 + st.a
+  let q1 := st.x1 ^^^ st.x0
+  let q0 := rotl st.x0 24
+  let q0 := q0 ^^^ q1 ^^^ (q1 <<< 16)
+  let q1 := rotl q1 37
+  r.set { a := st.a, s := s', x0 := q0, x1 := q1 }
+  return z
+
+/-- `Int64.to_int` of a draw, as a non-negative 63-bit value. -/
+private def toInt63 (z : UInt64) : Nat := (z &&& 0x7FFFFFFFFFFFFFFF).toNat
+
+private def maxInt31 : Nat := 0x3FFFFFFF
+
+/-- `Random.bits ()`: 30 random bits. -/
+def bits (r : IO.Ref LXM) : IO Int := do
+  let v := Int.ofNat (toInt63 (← next r) &&& maxInt31)
+  return v
+
+/-- `Random.int n` (`int_aux s n max_int31`, with its rejection test).
+    OCaml raises `Invalid_argument` for `n <= 0`; Metis never passes that,
+    and this returns 0. -/
+partial def randInt (r : IO.Ref LXM) (n : Int) : IO Int := do
+  if n ≤ 0 then return 0
+  let n := n.toNat
+  let rec go : IO Int := do
+    let rr := toInt63 (← next r) &&& maxInt31
+    let v := rr % n
+    if rr - v > maxInt31 - n + 1 then go else return Int.ofNat v
+  let v ← go
+  return v
+
+end Rand
+
+/-- OCaml's default `Random` state, shared by everything in Metis. -/
+initialize metisRng : IO.Ref Rand.LXM ← IO.mkRef Rand.init0
+
 namespace Subsume
 
 /- Helper functions. -/
@@ -3573,16 +3842,27 @@ def unitSubsumes (pred : Thm.clause × Substitute.substT × α → Bool)
     Mlist.first subUnit (Literal_net.matchNet unitn lit)
   Mlist.first subLit
 
+/-- `idSetAdd`/`idSetAddMax n` with the effect of OCaml's `Pset.add`: a new
+    element makes a Pmap node, whose priority is `Random.bits ()`. -/
+def idSetAddIO (max : Option Int) (set : idSet) (idl : clauseId × clauseLength) : IO idSet := do
+  match max with
+  | some n => if idl.2 ≤ n then go else return set
+  | none => go
+where go : IO idSet := do
+  if OrdSet.member idl set then return set
+  let _ ← Rand.bits metisRng
+  return Pset.add set idl
+
 def nonunitSubsumes (pred : Thm.clause × Substitute.substT × α → Bool)
     (nonunit : nonunit_t α) (max : Option Int) (cl : List Literal.literal) :
-    Except String (Option (Thm.clause × Substitute.substT × α)) := do
-  let addId : (clauseId × clauseLength) × idSet → idSet :=
-    match max with | none => idSetAdd | some n => idSetAddMax n
+    IO (Except String (Option (Thm.clause × Substitute.substT × α))) := do
+  -- `Mlist.foldl addId acc (matchNet lits lit)` and `Mlist.foldl (subLit _)
+  -- idSetEmpty cl`, both left to right.
   let subLit (lits : Literal_net.literalNet (clauseId × clauseLength))
-      (arg : Literal.literal × idSet) : idSet :=
-    Mlist.foldl addId arg.2 (Literal_net.matchNet lits arg.1)
-  let fstCands := Mlist.foldl (subLit nonunit.fstLits) idSetEmpty cl
-  let sndCands := Mlist.foldl (subLit nonunit.sndLits) idSetEmpty cl
+      (acc : idSet) (lit : Literal.literal) : IO idSet :=
+    (Literal_net.matchNet lits lit).foldlM (idSetAddIO max) acc
+  let fstCands ← cl.foldlM (subLit nonunit.fstLits) idSetEmpty
+  let sndCands ← cl.foldlM (subLit nonunit.sndLits) idSetEmpty
   let cands := idSetIntersect fstCands sndCands
   -- Pset.firstl subCl' cands, where subCl' looks up the clause and runs genClauseSubsumes
   let subCl' (idl : clauseId × clauseLength) :
@@ -3593,36 +3873,37 @@ def nonunitSubsumes (pred : Thm.clause × Substitute.substT × α → Bool)
       match genClauseSubsumes pred cl' lits' cl a with
       | .ok r => r
       | .error _ => none
-  return Pset.firstl subCl' cands
+  return .ok (Pset.firstl subCl' cands)
 
 def genSubsumes (pred : Thm.clause × Substitute.substT × α → Bool)
     (s : subsume α) (max : Option Int) (cl : Thm.clause) :
-    Except String (Option (Thm.clause × Substitute.substT × α)) := do
+    IO (Except String (Option (Thm.clause × Substitute.substT × α))) := do
   match emptySubsumes pred s.«empty» with
-  | some x => return some x
+  | some x => return .ok (some x)
   | none =>
-    if max = some 0 then return none
+    if max = some 0 then return .ok none
     else
       let cl := clauseSym (Literal.Set.toList cl)
       match unitSubsumes pred s.unitn cl with
-      | some x => return some x
+      | some x => return .ok (some x)
       | none =>
-        if max = some 1 then return none
+        if max = some 1 then return .ok none
         else nonunitSubsumes pred s.nonunit max cl
 
 def subsumes (pred : Thm.clause × Substitute.substT × α → Bool) (s : subsume α) (cl : Thm.clause) :
-    Except String (Option (Thm.clause × Substitute.substT × α)) := genSubsumes pred s none cl
+    IO (Except String (Option (Thm.clause × Substitute.substT × α))) := genSubsumes pred s none cl
 
 def strictlySubsumes (pred : Thm.clause × Substitute.substT × α → Bool)
     (s : subsume α) (cl : Thm.clause) :
-    Except String (Option (Thm.clause × Substitute.substT × α)) :=
+    IO (Except String (Option (Thm.clause × Substitute.substT × α))) :=
   genSubsumes pred s (some (Int.ofNat (Literal.Set.size cl))) cl
 
-def isSubsumed (subs : subsume α) (cl : Thm.clause) : Bool :=
-  match subsumes (fun _ => true) subs cl with | .ok (some _) => true | _ => false
+def isSubsumed (subs : subsume α) (cl : Thm.clause) : IO Bool := do
+  match ← subsumes (fun _ => true) subs cl with | .ok (some _) => return true | _ => return false
 
-def isStrictlySubsumed (subs : subsume α) (cl : Thm.clause) : Bool :=
-  match strictlySubsumes (fun _ => true) subs cl with | .ok (some _) => true | _ => false
+def isStrictlySubsumed (subs : subsume α) (cl : Thm.clause) : IO Bool := do
+  match ← strictlySubsumes (fun _ => true) subs cl with
+  | .ok (some _) => return true | _ => return false
 
 /- Single clause versions. -/
 
@@ -4013,10 +4294,12 @@ partial def rewr_neq_lits (order : reductionOrder) (known : Intmap.map (equation
     (neq : neqConvs) (lits : Literal.Set.set) (th : Thm.thm) :
     Except String (neqConvs × Literal.Set.set × Thm.thm) := do
   let mut acc := (false, neq, lits, th)
+  -- `neqConvsFoldl f b (Neq_convs m) = Literal.Map.foldl (fun (l,_,z) -> f (l,z)) b m`:
+  -- `f` is applied to the keys in ascending order.
   let litKeys := match neq with
     | .Neq_convs m =>
-      Literal.Map.foldl (fun (p : Literal.literal × Rule.conv × List Literal.literal) => p.1 :: p.2.2)
-        ([] : List Literal.literal) m
+      (Literal.Map.foldl (fun (p : Literal.literal × Rule.conv × List Literal.literal) => p.1 :: p.2.2)
+        ([] : List Literal.literal) m).reverse
   for lit in litKeys do
     acc ← rewr_neq_lit order known redexes id lit acc
   let (changed, neq', lits', th') := acc
@@ -4320,21 +4603,6 @@ def reduce (u : units) (th : Thm.thm) : Except String Thm.thm := do
 
 end Units
 
-/- -- Random source (models OCaml `Random`) --------------------------------
-   Metis uses `Random.init 0` for determinism then `Random.int`.  We model the
-   RNG as an `IO.Ref StdGen`, seeded in `Session.lean` with `mkStdGen 0`. -/
-namespace Rand
-
-/-- `randInt r n`: uniform in `[0, n)` (OCaml `Random.int n`), advancing `r`. -/
-def randInt (r : IO.Ref StdGen) (n : Int) : IO Int := do
-  if n ≤ 0 then return 0
-  else
-    let g ← r.get
-    let (v, g') := randNat g 0 (n.toNat - 1)
-    r.set g'
-    return Int.ofNat v
-
-end Rand
 
 /- -- Clause: id + theorem (`module Clause`) --------------------------------
    `Clause.newId` uses a global counter ref in OCaml; we thread an `IO.Ref Int`
@@ -4469,7 +4737,7 @@ def allSubterms (cl : clause) : List (Literal.literal × Term.path × Term.term)
 
 /- Subsumption. -/
 
-def subsumes (subs : Subsume.subsume clause) (cl : clause) : Bool :=
+def subsumes (subs : Subsume.subsume clause) (cl : clause) : IO Bool :=
   Subsume.isStrictlySubsumed subs (literals cl)
 
 /- Simplifying rules: these preserve the clause id. -/
@@ -4911,7 +5179,7 @@ def getValuation (v' : valuation) (v : Name.name) : Except String element :=
   | some i => .ok i
   | none => .error "Model.getValuation: incomplete valuation"
 
-def randomValuation (r : IO.Ref StdGen) (n : Int) (vs : Name.Set.set) : IO valuation := do
+def randomValuation (r : IO.Ref Rand.LXM) (n : Int) (vs : Name.Set.set) : IO valuation := do
   let mut acc := emptyValuation
   for v in Name.Set.toList vs do
     acc := insertValuation acc (v, ← Rand.randInt r n)
@@ -4949,9 +5217,9 @@ def newTable (n arity : Int) : IO table := do
   | none => return .Forgetful_table
   | some space => return .Array_table (← IO.mkRef (Array.replicate space.toNat cUNKNOWN))
 
-def randomResult (r : IO.Ref StdGen) (vR : Int) : IO Int := Rand.randInt r vR
+def randomResult (r : IO.Ref Rand.LXM) (vR : Int) : IO Int := Rand.randInt r vR
 
-def lookupTable (r : IO.Ref StdGen) (n vR : Int) (t : table) (elts : List element) : IO Int := do
+def lookupTable (r : IO.Ref Rand.LXM) (n vR : Int) (t : table) (elts : List element) : IO Int := do
   match t with
   | .Forgetful_table => randomResult r vR
   | .Array_table a => do
@@ -4990,7 +5258,7 @@ def getTables (tbls : tables) (n_a : Name_arity.nameArity) : IO table := do
     tbls.tableMap.set (Name_arity.Map.insert m (n_a, t))
     return t
 
-def lookupTables (r : IO.Ref StdGen) (tbls : tables) (n_elts : Name.name × List element) : IO Int := do
+def lookupTables (r : IO.Ref Rand.LXM) (tbls : tables) (n_elts : Name.name × List element) : IO Int := do
   let a := Int.ofNat n_elts.2.length
   let t ← getTables tbls (n_elts.1, a)
   lookupTable r tbls.domainSize tbls.rangeSize t n_elts.2
@@ -5054,19 +5322,19 @@ def destTerm (tm : Term.term) : Term.term :=
 
 /- Interpreting terms and formulas in the model. -/
 
-def interpretFunction (r : IO.Ref StdGen) (vM : model) (n_elts : Name.name × List element) :
+def interpretFunction (r : IO.Ref Rand.LXM) (vM : model) (n_elts : Name.name × List element) :
     IO element := do
   match peekFixedFunction vM n_elts with
   | some res => return res
   | none => lookupTables r vM.randomFunctions n_elts
 
-def interpretRelation (r : IO.Ref StdGen) (vM : model) (n_elts : Name.name × List element) :
+def interpretRelation (r : IO.Ref Rand.LXM) (vM : model) (n_elts : Name.name × List element) :
     IO Bool := do
   match peekFixedRelation vM n_elts with
   | some res => return res
   | none => return intToBool (← lookupTables r vM.randomRelations n_elts)
 
-partial def interpretTerm (r : IO.Ref StdGen) (vM : model) (vV : valuation) (tm : Term.term) :
+partial def interpretTerm (r : IO.Ref Rand.LXM) (vM : model) (vV : valuation) (tm : Term.term) :
     IO element := do
   match destTerm tm with
   | .Var v => return (getValuation vV v).toOption.getD 0
@@ -5076,54 +5344,57 @@ partial def interpretTerm (r : IO.Ref StdGen) (vM : model) (vV : valuation) (tm 
       args := args ++ [← interpretTerm r vM vV t]
     interpretFunction r vM (f, args)
 
-def interpretAtom (r : IO.Ref StdGen) (vM : model) (vV : valuation) (atm : Atom.atom) : IO Bool := do
+def interpretAtom (r : IO.Ref Rand.LXM) (vM : model) (vV : valuation) (atm : Atom.atom) : IO Bool := do
   let mut args := []
   for t in atm.2 do
     args := args ++ [← interpretTerm r vM vV t]
   interpretRelation r vM (atm.1, args)
 
 mutual
-partial def interpretFormulaAux (r : IO.Ref StdGen) (vM : model) (vN : Int)
+partial def interpretFormulaAux (r : IO.Ref Rand.LXM) (vM : model) (vN : Int)
     (vV : valuation) (fm : Formula.formula) : IO Bool := do
   match fm with
   | .True_ => return true
   | .False_ => return false
   | .Atom atm => interpretAtom r vM vV atm
   | .Not p => return !(← interpretFormulaAux r vM vN vV p)
-  | .Or p q => return (← interpretFormulaAux r vM vN vV p) || (← interpretFormulaAux r vM vN vV q)
-  | .And p q => return (← interpretFormulaAux r vM vN vV p) && (← interpretFormulaAux r vM vN vV q)
+  -- OCaml's `||` and `&&` do not evaluate the right side when the left
+  -- decides (the interpretation can draw random numbers).
+  | .Or p q => do if ← interpretFormulaAux r vM vN vV p then return true else interpretFormulaAux r vM vN vV q
+  | .And p q => do if ← interpretFormulaAux r vM vN vV p then interpretFormulaAux r vM vN vV q else return false
   | .Imp p q => interpretFormulaAux r vM vN vV (.Or (.Not p) q)
   | .Iff p q => return (← interpretFormulaAux r vM vN vV p) == (← interpretFormulaAux r vM vN vV q)
   | .Forall v p => interpretForall r vM vN vV p v vN
   | .Exists v p => interpretFormulaAux r vM vN vV (.Not (.Forall v (.Not p)))
-partial def interpretForall (r : IO.Ref StdGen) (vM : model) (vN : Int)
+partial def interpretForall (r : IO.Ref Rand.LXM) (vM : model) (vN : Int)
     (vV : valuation) (fm : Formula.formula) (v : Term.var) (i : Int) : IO Bool := do
   if i = 0 then return true
   else
     let i := i - 1
     let vV' := insertValuation vV (v, i)
-    return (← interpretFormulaAux r vM vN vV' fm) && (← interpretForall r vM vN vV fm v i)
+    if ← interpretFormulaAux r vM vN vV' fm then interpretForall r vM vN vV fm v i else return false
 end
 
-def interpretFormula (r : IO.Ref StdGen) (vM : model) (vV : valuation) (fm : Formula.formula) :
+def interpretFormula (r : IO.Ref Rand.LXM) (vM : model) (vV : valuation) (fm : Formula.formula) :
     IO Bool := interpretFormulaAux r vM (msize vM) vV fm
 
-def interpretLiteral (r : IO.Ref StdGen) (vM : model) (vV : valuation) (lit : Literal.literal) :
+def interpretLiteral (r : IO.Ref Rand.LXM) (vM : model) (vV : valuation) (lit : Literal.literal) :
     IO Bool := do
   let b ← interpretAtom r vM vV lit.2
   return (if lit.1 then b else !b)
 
-def interpretClause (r : IO.Ref StdGen) (vM : model) (vV : valuation) (cl : Literal.Set.set) :
-    IO Bool := do
-  for lit in Literal.Set.toList cl do
-    if ← interpretLiteral r vM vV lit then return true
-  return false
+/-- `interpretClause vM vV cl = Literal.Set.exists (interpretLiteral vM vV) cl`:
+    `Se.exists` visits the tree's root first (interpretLiteral can draw
+    random numbers). -/
+def interpretClause (r : IO.Ref Rand.LXM) (vM : model) (vV : valuation) (cl : Literal.Set.set) :
+    IO Bool :=
+  OrdSet.existsM (interpretLiteral r vM vV) cl
 
 /- Check whether random groundings of a formula are true in the model.
    Note: if it's cheaper, a systematic check will be performed instead. -/
 
-def check (r : IO.Ref StdGen)
-    (interpret : IO.Ref StdGen → model → valuation → α → IO Bool)
+def check (r : IO.Ref Rand.LXM)
+    (interpret : IO.Ref Rand.LXM → model → valuation → α → IO Bool)
     (maxChecks : Option Int) (vM : model) (fv : Name.Set.set) (x : α) : IO (Int × Int) := do
   let vN := msize vM
   let score (vV : valuation) (acc : Int × Int) : IO (Int × Int) := do
@@ -5157,13 +5428,13 @@ def check (r : IO.Ref StdGen)
     let _ := vs
     return acc
 
-def checkAtom (r : IO.Ref StdGen) (maxChecks : Option Int) (vM : model) (atm : Atom.atom) :
+def checkAtom (r : IO.Ref Rand.LXM) (maxChecks : Option Int) (vM : model) (atm : Atom.atom) :
     IO (Int × Int) := check r (fun r m v a => interpretAtom r m v a) maxChecks vM (Atom.freeVars atm) atm
-def checkFormula (r : IO.Ref StdGen) (maxChecks : Option Int) (vM : model) (fm : Formula.formula) :
+def checkFormula (r : IO.Ref Rand.LXM) (maxChecks : Option Int) (vM : model) (fm : Formula.formula) :
     IO (Int × Int) := check r interpretFormula maxChecks vM (Formula.freeVars fm) fm
-def checkLiteral (r : IO.Ref StdGen) (maxChecks : Option Int) (vM : model) (lit : Literal.literal) :
+def checkLiteral (r : IO.Ref Rand.LXM) (maxChecks : Option Int) (vM : model) (lit : Literal.literal) :
     IO (Int × Int) := check r interpretLiteral maxChecks vM (Literal.freeVars lit) lit
-def checkClause (r : IO.Ref StdGen) (maxChecks : Option Int) (vM : model) (cl : Literal.Set.set) :
+def checkClause (r : IO.Ref Rand.LXM) (maxChecks : Option Int) (vM : model) (cl : Literal.Set.set) :
     IO (Int × Int) := check r interpretClause maxChecks vM (Literal.Set.freeVars cl) cl
 
 /- Updating the model.  (Used to bias random models.) -/
@@ -5180,7 +5451,7 @@ inductive modelTerm where
   | Model_fn (f : Term.functionName) (args : List modelTerm) (xs : List Int)
   deriving Inhabited
 
-partial def modelTmAux (r : IO.Ref StdGen) (vM : model) (vV : valuation) (tm : Term.term) :
+partial def modelTmAux (r : IO.Ref Rand.LXM) (vM : model) (vV : valuation) (tm : Term.term) :
     IO (modelTerm × element) := do
   match destTerm tm with
   | .Var v => return (.Model_var, (getValuation vV v).toOption.getD 0)
@@ -5191,7 +5462,7 @@ partial def modelTmAux (r : IO.Ref StdGen) (vM : model) (vV : valuation) (tm : T
       let (mt, x) ← modelTmAux r vM vV t
       tmsAcc := tmsAcc ++ [mt]; xsAcc := xsAcc ++ [x]
     return (.Model_fn f tmsAcc xsAcc, ← interpretFunction r vM (f, xsAcc))
-def modelTm (r : IO.Ref StdGen) (vM : model) (vV : valuation) (tm : Term.term) :
+def modelTm (r : IO.Ref Rand.LXM) (vM : model) (vV : valuation) (tm : Term.term) :
     IO (modelTerm × element) := modelTmAux r vM vV tm
 
 /- Perturbations. -/
@@ -5210,7 +5481,7 @@ def perturb (vM : model) : perturbation → IO Unit
   | .Relation_perturbation re b => updateRelation vM (re, b)
 
 mutual
-partial def pertTerm (r : IO.Ref StdGen) (vM : model) (target : List element)
+partial def pertTerm (r : IO.Ref Rand.LXM) (vM : model) (target : List element)
     (tm : modelTerm) (acc : List perturbation) : IO (List perturbation) := do
   match target with
   | [] => return acc
@@ -5225,11 +5496,11 @@ partial def pertTerm (r : IO.Ref StdGen) (vM : model) (target : List element)
         if isFixedFunction vM func_xs then pure acc
         else pure (Mlist.foldl (fun (y, acc) => perturbation.Function_perturbation func_xs y :: acc) acc target)
       pertTerms r vM onTarget tms xs acc
-partial def pertTerms (r : IO.Ref StdGen) (vM : model) (onTarget : List element → IO Bool)
+partial def pertTerms (r : IO.Ref Rand.LXM) (vM : model) (onTarget : List element → IO Bool)
     (tms : List modelTerm) (xs : List element) (acc : List perturbation) :
     IO (List perturbation) :=
   pertTermsGo r vM onTarget [] tms xs acc
-partial def pertTermsGo (r : IO.Ref StdGen) (vM : model) (onTarget : List element → IO Bool)
+partial def pertTermsGo (r : IO.Ref Rand.LXM) (vM : model) (onTarget : List element → IO Bool)
     (ys : List element) (tms : List modelTerm) (xs : List element) (acc : List perturbation) :
     IO (List perturbation) := do
   let vN := msize vM
@@ -5248,7 +5519,7 @@ partial def pertTermsGo (r : IO.Ref StdGen) (vM : model) (onTarget : List elemen
   | _, _ => return acc
 end
 
-def pertAtom (r : IO.Ref StdGen) (vM : model) (vV : valuation) (target : Bool)
+def pertAtom (r : IO.Ref Rand.LXM) (vM : model) (vV : valuation) (target : Bool)
     (atm : Atom.atom) (acc : List perturbation) : IO (List perturbation) := do
   let (rel, tms) := atm
   let onTarget (ys : List element) : IO Bool := do
@@ -5264,24 +5535,24 @@ def pertAtom (r : IO.Ref StdGen) (vM : model) (vV : valuation) (target : Bool)
     else pure (perturbation.Relation_perturbation rel_xs target :: acc)
   pertTerms r vM onTarget tmsAcc xsAcc acc
 
-def pertLiteral (r : IO.Ref StdGen) (vM : model) (vV : valuation)
+def pertLiteral (r : IO.Ref Rand.LXM) (vM : model) (vV : valuation)
     (arg : Literal.literal × List perturbation) : IO (List perturbation) :=
   pertAtom r vM vV arg.1.1 arg.1.2 arg.2
 
-def pertClause (r : IO.Ref StdGen) (vM : model) (vV : valuation) (cl : Literal.Set.set)
+def pertClause (r : IO.Ref Rand.LXM) (vM : model) (vV : valuation) (cl : Literal.Set.set)
     (acc : List perturbation) : IO (List perturbation) := do
   let mut cur := acc
   for lit in Literal.Set.toList cl do
     cur ← pertLiteral r vM vV (lit, cur)
   return cur
 
-def pickPerturb (r : IO.Ref StdGen) (vM : model) (perts : List perturbation) : IO Unit := do
+def pickPerturb (r : IO.Ref Rand.LXM) (vM : model) (perts : List perturbation) : IO Unit := do
   if Mlist.null perts then return ()
   else
     let i ← Rand.randInt r (Int.ofNat perts.length)
     perturb vM (perts[i.toNat]!)
 
-def perturbClause (r : IO.Ref StdGen) (vM : model) (vV : valuation) (cl : Literal.Set.set) :
+def perturbClause (r : IO.Ref Rand.LXM) (vM : model) (vV : valuation) (cl : Literal.Set.set) :
     IO Unit := do
   pickPerturb r vM (← pertClause r vM vV cl [])
 
@@ -5339,17 +5610,17 @@ def clauses : active → List Clause.clause
   | .Active a => Intmap.foldr (fun (_, cl, acc) => cl :: acc) [] a.clauses
 def toString (act : active) : String := "Active{" ++ ToString.toString (size act) ++ "}"
 
-def saturation (act : active) : List Clause.clause :=
-  let remove (arg : Clause.clause × (List Clause.clause × Subsume.subsume Unit)) :
-      List Clause.clause × Subsume.subsume Unit :=
-    let (cl, (cls, subs)) := arg
+def saturation (act : active) : IO (List Clause.clause) := do
+  let remove (acc : List Clause.clause × Subsume.subsume Unit) (cl : Clause.clause) :
+      IO (List Clause.clause × Subsume.subsume Unit) := do
+    let (cls, subs) := acc
     let lits := Clause.literals cl
-    if Subsume.isStrictlySubsumed subs lits then (cls, subs)
-    else (cl :: cls, Subsume.insert subs (lits, ()))
+    if ← Subsume.isStrictlySubsumed subs lits then return (cls, subs)
+    else return (cl :: cls, Subsume.insert subs (lits, ()))
   let cls := clauses act
-  let (cls, _) := Mlist.foldl remove ([], (Subsume.newSubsume : Subsume.subsume Unit)) cls
-  let (cls, _) := Mlist.foldl remove ([], (Subsume.newSubsume : Subsume.subsume Unit)) cls
-  cls
+  let (cls, _) ← cls.foldlM remove ([], (Subsume.newSubsume : Subsume.subsume Unit))
+  let (cls, _) ← cls.foldlM remove ([], (Subsume.newSubsume : Subsume.subsume Unit))
+  return cls
 
 /- Simplify clauses.
 
@@ -5378,17 +5649,21 @@ partial def simplifyRewrite (rewr : Rewrite.rewrite) (cl : Clause.clause) :
 
 def simplify (simp : simplifyT) (units : Units.units) (rewr : Rewrite.rewrite)
     (subs : Subsume.subsume Clause.clause) (cl : Clause.clause) :
-    Except String (Option Clause.clause) := do
-  match ← Clause.simplify cl with
+    IO (Except String (Option Clause.clause)) := ExceptT.run do
+  match ← liftE (Clause.simplify cl) with
   | none => return none
   | some cl =>
-    match ← (if simp.rewrites then simplifyRewrite rewr cl else .ok (some cl)) with
+    match ← liftE (if simp.rewrites then simplifyRewrite rewr cl else .ok (some cl)) with
     | none => return none
     | some cl =>
-      let cl ← (if simp.reduce then Clause.reduce units cl else .ok cl)
-      if simp.subsumes && Clause.subsumes subs cl then return none else return some cl
+      let cl ← liftE (if simp.reduce then Clause.reduce units cl else .ok cl)
+      -- `simp.subsumes && Clause.subsumes subs cl` (short-circuit)
+      if simp.subsumes then
+        if ← (Clause.subsumes subs cl : IO Bool) then return none else return some cl
+      else return some cl
+where liftE {β : Type} (x : Except String β) : ExceptT String IO β := ExceptT.mk (pure x)
 
-def simplifyActive (simp : simplifyT) : active → Clause.clause → Except String (Option Clause.clause)
+def simplifyActive (simp : simplifyT) : active → Clause.clause → IO (Except String (Option Clause.clause))
   | .Active a => simplify simp a.units a.rewrite a.subsume
 
 /- Add a clause into the active set. -/
@@ -5603,10 +5878,10 @@ def extract_rewritables : active → Except String (active × List Clause.clause
 /- Factor clauses. -/
 
 def prefactor_simplify : active → Subsume.subsume Clause.clause → Clause.clause →
-    Except String (Option Clause.clause)
+    IO (Except String (Option Clause.clause))
   | .Active a, subsume => simplify a.parameters.prefactor a.units a.rewrite subsume
 def postfactor_simplify : active → Subsume.subsume Clause.clause → Clause.clause →
-    Except String (Option Clause.clause)
+    IO (Except String (Option Clause.clause))
   | .Active a, subsume => simplify a.parameters.postfactor a.units a.rewrite subsume
 
 def sort_utilitywise (l : List Clause.clause) : List Clause.clause :=
@@ -5622,7 +5897,7 @@ partial def post_factor (r : IO.Ref Clause.clauseId) (cl : Clause.clause)
     (asa : active × Subsume.subsume Clause.clause × List Clause.clause) :
     IO (active × Subsume.subsume Clause.clause × List Clause.clause) := do
   let (act, subsume, acc) := asa
-  match postfactor_simplify act subsume cl with
+  match ← postfactor_simplify act subsume cl with
   | .error _ => return asa
   | .ok none => return asa
   | .ok (some cl') =>
@@ -5650,7 +5925,7 @@ def pre_factor (r : IO.Ref Clause.clauseId) (cl : Clause.clause)
     (asa : active × Subsume.subsume Clause.clause × List Clause.clause) :
     IO (active × Subsume.subsume Clause.clause × List Clause.clause) := do
   let (act, subsume, _) := asa
-  match prefactor_simplify act subsume cl with
+  match ← prefactor_simplify act subsume cl with
   | .error _ => return asa
   | .ok none => return asa
   | .ok (some cl) => factor1 r cl asa
@@ -5691,7 +5966,7 @@ def newActive (r : IO.Ref Clause.clauseId) (parameters : parameters) (ths : ax_c
 
 def add (r : IO.Ref Clause.clauseId) (gen : IO.Ref Int) (act : active) (cl : Clause.clause) :
     IO (active × List Clause.clause) := do
-  match simplifyActive maxSimplify act cl with
+  match ← simplifyActive maxSimplify act cl with
   | .error _ => return (act, [])
   | .ok none => return (act, [])
   | .ok (some cl') =>
@@ -5754,7 +6029,7 @@ def mkModelClause (cl : Clause.clause) : modelClause :=
   (Literal.Set.freeVars lits, lits)
 def mkModelClauses (l : List Clause.clause) : List modelClause := l.map mkModelClause
 
-def perturbModel (r : IO.Ref StdGen) (vM : Model.model) (cls : List modelClause) (n : Int) :
+def perturbModel (r : IO.Ref Rand.LXM) (vM : Model.model) (cls : List modelClause) (n : Int) :
     IO Unit := do
   if Mlist.null cls then return ()
   else
@@ -5765,14 +6040,14 @@ def perturbModel (r : IO.Ref StdGen) (vM : Model.model) (cls : List modelClause)
         if ← Model.interpretClause r vM vV cl then pure ()
         else Model.perturbClause r vM vV cl
 
-def initialModel (r : IO.Ref StdGen) (axioms conjecture : List modelClause)
+def initialModel (r : IO.Ref Rand.LXM) (axioms conjecture : List modelClause)
     (parm : modelParameters) : IO Model.model := do
   let m ← Model.newModel parm.model
   perturbModel r m conjecture parm.initialPerturbations
   perturbModel r m axioms parm.initialPerturbations
   return m
 
-def checkModels (r : IO.Ref StdGen) (parms : List modelParameters) (models : List Model.model)
+def checkModels (r : IO.Ref Rand.LXM) (parms : List modelParameters) (models : List Model.model)
     (fvcl : modelClause) : IO Float := do
   let (fv, cl) := fvcl
   let mut z : Float := 1.0
@@ -5783,7 +6058,7 @@ def checkModels (r : IO.Ref StdGen) (parms : List modelParameters) (models : Lis
     z := (1.0 + Float.ofInt vT / (Float.ofInt (vT + vF)) ^ parm.weight) * z
   return z
 
-def perturbModels (r : IO.Ref StdGen) (parms : List modelParameters) (models : List Model.model)
+def perturbModels (r : IO.Ref Rand.LXM) (parms : List modelParameters) (models : List Model.model)
     (cls : List modelClause) : IO Unit := do
   for (parm, model) in parms.zip models do
     perturbModel r model cls parm.perturbations
@@ -5796,7 +6071,7 @@ def clauseVariables (cl : Literal.Set.set) : Float :=
 def clauseLiterals (cl : Literal.Set.set) : Float := Float.ofInt (Int.ofNat (Literal.Set.size cl))
 def clausePriority (cl : Clause.clause) : Float := 1e-12 * Float.ofInt (Clause.id cl)
 
-def clauseWeight (r : IO.Ref StdGen) (parm : parameters) (mods : List Model.model)
+def clauseWeight (r : IO.Ref Rand.LXM) (parm : parameters) (mods : List Model.model)
     (dist : distance) (mcl : modelClause) (cl : Clause.clause) : IO weight := do
   let lits := Clause.literals cl
   let symbolsW := clauseSymbols lits ^ parm.symbolsWeight
@@ -5809,7 +6084,7 @@ def clauseWeight (r : IO.Ref StdGen) (parm : parameters) (mods : List Model.mode
 
 /- Adding new clauses. -/
 
-def add' (r : IO.Ref StdGen) : waiting → distance → List modelClause → List Clause.clause →
+def add' (r : IO.Ref Rand.LXM) : waiting → distance → List modelClause → List Clause.clause →
     IO waiting
   | .Waiting w, dist, mcls, cls => do
     let modelParameters := w.parameters.modelsP
@@ -5821,20 +6096,20 @@ def add' (r : IO.Ref StdGen) : waiting → distance → List modelClause → Lis
     perturbModels r modelParameters w.models mcls
     return .Waiting { w with clauses := clauses }
 
-def add (r : IO.Ref StdGen) (w : waiting) (dist_cls : distance × List Clause.clause) : IO waiting := do
+def add (r : IO.Ref Rand.LXM) (w : waiting) (dist_cls : distance × List Clause.clause) : IO waiting := do
   if Mlist.null dist_cls.2 then return w
   else add' r w dist_cls.1 (mkModelClauses dist_cls.2) dist_cls.2
 
 def cmp (a b : weight × (distance × Clause.clause)) : Int :=
   if a.1 < b.1 then -1 else if a.1 = b.1 then 0 else 1
 
-def empty (r : IO.Ref StdGen) (parameters : parameters) (axioms conjecture : List modelClause) :
+def empty (r : IO.Ref Rand.LXM) (parameters : parameters) (axioms conjecture : List modelClause) :
     IO waiting := do
   let clauses := Heap.newHeap cmp
   let models ← parameters.modelsP.mapM (initialModel r axioms conjecture)
   return .Waiting { parameters := parameters, clauses := clauses, models := models }
 
-def newWaiting (r : IO.Ref StdGen) (parameters : parameters) (cls : ax_cj_cl) : IO waiting := do
+def newWaiting (r : IO.Ref Rand.LXM) (parameters : parameters) (cls : ax_cj_cl) : IO waiting := do
   let mAxioms := mkModelClauses cls.axioms_cl
   let mConjecture := mkModelClauses cls.conjecture_cl
   let w ← empty r parameters mAxioms mConjecture
@@ -5872,7 +6147,7 @@ inductive resolution where | Resolution (r : resolution_t)
 /- Basic operations. -/
 def default : parameters := { activeP := Active.default, waitingP := Waiting.default }
 
-def newResolution (r : IO.Ref StdGen) (idr : IO.Ref Clause.clauseId)
+def newResolution (r : IO.Ref Rand.LXM) (idr : IO.Ref Clause.clauseId)
     (parameters : parameters) (ths : ax_cj_thm) : IO resolution := do
   let (active, cls) ← Active.newActive idr parameters.activeP ths  -- cls = factored ths
   let waiting ← Waiting.newWaiting r parameters.waitingP cls
@@ -5891,12 +6166,12 @@ inductive state where
 
 /- The main proof loop. -/
 
-def iterate (r : IO.Ref StdGen) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int) :
+def iterate (r : IO.Ref Rand.LXM) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int) :
     resolution → IO state
   | .Resolution res => do
     match Waiting.remove res.waiting with
     | none =>
-      let sat := decision.Satisfiable ((Active.saturation res.active).map Clause.thm)
+      let sat := decision.Satisfiable ((← Active.saturation res.active).map Clause.thm)
       return .Decided sat
     | some ((d, cl), waiting) =>
       if Clause.isContradiction cl then
@@ -5906,7 +6181,7 @@ def iterate (r : IO.Ref StdGen) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int
         let waiting ← Waiting.add r waiting (d, cls)
         return .Undecided (.Resolution { res with active := active, waiting := waiting })
 
-partial def loop (r : IO.Ref StdGen) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int)
+partial def loop (r : IO.Ref Rand.LXM) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int)
     (res : resolution) : IO decision := do
   match ← iterate r idr gen res with
   | .Decided dec => return dec
@@ -5919,14 +6194,14 @@ namespace Loop
 
 open Ax_cj
 
-partial def loop (r : IO.Ref StdGen) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int)
+partial def loop (r : IO.Ref Rand.LXM) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int)
     (res : Resolution.resolution) : IO (Option Resolution.decision) := do
   match ← Resolution.iterate r idr gen res with
   | .Decided dec => return some dec
   | .Undecided res => loop r idr gen res
 
 /-- `run rules`: run Metis on the given axioms, returning the contradiction thm. -/
-def run (r : IO.Ref StdGen) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int)
+def run (r : IO.Ref Rand.LXM) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int)
     (rules : List Thm.thm) : IO (Except String Thm.thm) := do
   let ths : ax_cj_thm := { axioms_thm := rules, conjecture_thm := [] }
   let res ← Resolution.newResolution r idr Resolution.default ths
@@ -6772,7 +7047,7 @@ partial def print_proof : Thm.thm → Fmt Unit
 
 /-- `SIMPLE_METIS_REFUTE ths`: convert to FOL, run the Metis loop, reconstruct. -/
 def SIMPLE_METIS_REFUTE (B : BoolThms) (S : FolStores) (mem : Meson.ContraposCache)
-    (rng : IO.Ref StdGen) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int)
+    (rng : IO.Ref Rand.LXM) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int)
     (recon : Metis_reconstruct2.MetisReconDeps)
     (DISJ_CANON_CONV : term → IO (Except String thm)) (ths : List thm) :
     IO (Except String thm) := do
@@ -6780,7 +7055,7 @@ def SIMPLE_METIS_REFUTE (B : BoolThms) (S : FolStores) (mem : Meson.ContraposCac
   -- TODO: Metis currently uses randomness to search for proof --
   -- we should make that deterministic for proof reconstruction!
   -- deterministic search: reseed the RNG (OCaml `Random.init 0`)
-  rng.set (mkStdGen 0)
+  rng.set Rand.init0
   match ← Metis_generate.metis_of_clauses S ths with
   | .error e => return .error e
   | .ok rules =>
@@ -6837,7 +7112,7 @@ def SIMPLE_METIS_REFUTE (B : BoolThms) (S : FolStores) (mem : Meson.ContraposCac
 
 /-- `PURE_METIS_TAC` = FIRST_ASSUM CONTR_TAC ORELSE accept the metis refutation. -/
 def PURE_METIS_TAC (B : BoolThms) (S : FolStores) (mem : Meson.ContraposCache)
-    (rng : IO.Ref StdGen) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int)
+    (rng : IO.Ref Rand.LXM) (idr : IO.Ref Clause.clauseId) (gen : IO.Ref Int)
     (recon : Metis_reconstruct2.MetisReconDeps)
     (DISJ_CANON_CONV : term → IO (Except String thm)) : tactic := fun g => do
   Meson.reset_vars S
@@ -6854,7 +7129,7 @@ def PURE_METIS_TAC (B : BoolThms) (S : FolStores) (mem : Meson.ContraposCache)
 
 /-- `GEN_METIS_TAC ths = FOL_PREPARE_TAC ths THEN PURE_METIS_TAC`. -/
 def GEN_METIS_TAC (B : BoolThms) (D : Meson.MesonTacDeps) (S : FolStores)
-    (mem : Meson.ContraposCache) (rng : IO.Ref StdGen) (idr : IO.Ref Clause.clauseId)
+    (mem : Meson.ContraposCache) (rng : IO.Ref Rand.LXM) (idr : IO.Ref Clause.clauseId)
     (gen : IO.Ref Int) (recon : Metis_reconstruct2.MetisReconDeps)
     (DISJ_CANON_CONV : term → IO (Except String thm)) (splitLimit : Int) (ths : List thm) :
     tactic :=
@@ -6869,14 +7144,14 @@ end Metis
 
 /-- `ASM_METIS_TAC = GEN_METIS_TAC`. -/
 def ASM_METIS_TAC (B : BoolThms) (D : Meson.MesonTacDeps) (S : FolStores)
-    (mem : Meson.ContraposCache) (rng : IO.Ref StdGen) (idr : IO.Ref Prover.Clause.clauseId)
+    (mem : Meson.ContraposCache) (rng : IO.Ref Rand.LXM) (idr : IO.Ref Prover.Clause.clauseId)
     (gen : IO.Ref Int) (recon : Metis_reconstruct2.MetisReconDeps)
     (DISJ_CANON_CONV : term → IO (Except String thm)) (splitLimit : Int) (ths : List thm) :
     tactic := Metis.GEN_METIS_TAC B D S mem rng idr gen recon DISJ_CANON_CONV splitLimit ths
 
 /-- `METIS_TAC ths = POP_ASSUM_LIST (K ALL_TAC) THEN ASM_METIS_TAC ths`. -/
 def METIS_TAC (B : BoolThms) (D : Meson.MesonTacDeps) (S : FolStores)
-    (mem : Meson.ContraposCache) (rng : IO.Ref StdGen) (idr : IO.Ref Prover.Clause.clauseId)
+    (mem : Meson.ContraposCache) (rng : IO.Ref Rand.LXM) (idr : IO.Ref Prover.Clause.clauseId)
     (gen : IO.Ref Int) (recon : Metis_reconstruct2.MetisReconDeps)
     (DISJ_CANON_CONV : term → IO (Except String thm)) (splitLimit : Int) (ths : List thm) :
     tactic :=
@@ -6885,7 +7160,7 @@ def METIS_TAC (B : BoolThms) (D : Meson.MesonTacDeps) (S : FolStores)
 
 /-- `METIS ths tm`: prove `tm` outright by Metis. -/
 def METIS (B : BoolThms) (D : Meson.MesonTacDeps) (S : FolStores)
-    (mem : Meson.ContraposCache) (rng : IO.Ref StdGen) (idr : IO.Ref Prover.Clause.clauseId)
+    (mem : Meson.ContraposCache) (rng : IO.Ref Rand.LXM) (idr : IO.Ref Prover.Clause.clauseId)
     (gen : IO.Ref Int) (recon : Metis_reconstruct2.MetisReconDeps)
     (DISJ_CANON_CONV : term → IO (Except String thm)) (splitLimit : Int)
     (ths : List thm) (tm : term) : IO (Except String thm) :=
