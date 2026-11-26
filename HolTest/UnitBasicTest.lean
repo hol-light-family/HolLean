@@ -5,7 +5,7 @@ assertion by assertion, in file order.  Each OCaml `assert` becomes one
 (`define`, `prove`, `top_thm`, ...) becomes an assertion that it succeeds.
 Every assertion passes in real HOL Light (run against /tmp/hol4).
 
-Not translated: the "pa_j preprocessor" block (basic_tests.ml 288-298), which
+Not translated: the "pa_j preprocessor" block (basic_tests.ml 357-367), which
 tests OCaml's camlp5 lexer (`unset_jrh_lexer`, an OCaml `function` over
 `Unix.sockaddr`), not HOL Light.
 Part of the Lean4 translation of HOL Light by Chris Walton 2026. -/
@@ -316,7 +316,90 @@ private def asm (s : String) : IO thm := do IO.ofExcept (ASSUME (← pt s))
       pure (tm' == tm || HolCore.Simp.term_order tm tm'))
   : IO Unit)
 
--- check_axioms (304-308): after `new_axiom`, check_axioms must fail.  Last,
+-- MESON on unapplied and partially applied equalities with a variable in
+-- head position (287-294).
+#eval (do
+  ensureHolPrefixThroughInt
+  run "MESON ALL2 (=)" (succeeds
+    (MESON [] (← pt "ALL2 (=) (l:num list) m /\\ (!f:num->bool. f 1) ==> ALL2 (=) l m")))
+  run "MESON P (=)" (succeeds
+    (MESON [] (← pt "(!g:num->num->bool. P g ==> Q (g 1)) /\\ P (=) ==> Q ((=) 1)")))
+  : IO Unit)
+
+-- X_CHOOSE_TAC rejects a variable free in the hypotheses of an assumption
+-- (296-306).
+#eval (do
+  ensureHolPrefixThroughInt
+  let th := ADD_ASSUM (← pt "x = 0") TRUTH
+  let gl : HolCore.Tactics.goal := ([("", th)], ← pt "T")
+  let xth ← asm "?x. x = 1"
+  run "X_CHOOSE_TAC `x` fails" (do
+    match ← X_CHOOSE_TAC (← pt "x:num") xth gl with
+    | .ok _ => pure false
+    | .error _ => pure true)
+  run "X_CHOOSE_TAC `y` then ACCEPT_TAC" (succeeds
+    (TAC_PROOF gl (X_CHOOSE_TAC (← pt "y:num") xth THEN ACCEPT_TAC th)))
+  : IO Unit)
+
+-- The simplifier keeps simplifying where a congruence rule may apply
+-- (308-319).
+#eval (do
+  ensureHolPrefixThroughInt
+  let simp (thl : List thm) (tm : String) : IO term := do
+    IO.ofExcept (rhs (concl (← IO.ofExcept (← SIMP_CONV thl (← pt tm)))))
+  run "SIMP_CONV nsum range after body" (do
+    pure ((← simp [ADD_CLAUSES] "nsum(0..n+0) (\\i. i + 0)") == (← pt "nsum(0..n) (\\i. i)")))
+  run "SIMP_CONV nsum range then congruence" (do
+    pure ((← simp [ADD_CLAUSES] "nsum(0..n+0) (\\i. if i <= n then 1 else 0)")
+          == (← pt "nsum(0..n) (\\i. 1)")))
+  run "SIMP_CONV becomes an implication" (do
+    pure ((← simp [] "(if T then (==>) else (\\/)) p (p /\\ r)") == (← pt "p ==> r")))
+  : IO Unit)
+
+-- Facts about free variables kept off bound variables of the same names,
+-- under many binders and under a congruence rule (321-338).
+#eval (do
+  ensureHolPrefixThroughInt
+  let mkEq ← IO.ofExcept (← mk_eq)
+  let num ← IO.ofExcept (← HolCore.Parser.parse_type "num")
+  let vs := (List.range 10).map (fun i => mk_var s!"x{i+1}" num)
+  let mut fty := num
+  for _ in vs do fty ← IO.ofExcept (← mk_fun_ty num fty)
+  let f := mk_var "f" fty
+  let g := mk_var "g" fty
+  let facts ← vs.mapM (fun v => do IO.ofExcept (ASSUME (← IO.ofExcept (mkEq (v, ← pt "0")))))
+  let eqn (l r : term) : IO term := do IO.ofExcept (HolCore.Bool.list_mk_forall vs (← IO.ofExcept (mkEq (l, r))))
+  let fvs ← IO.ofExcept (HolCore.Basics.list_mk_comb f vs)
+  let gvs ← IO.ofExcept (HolCore.Basics.list_mk_comb g vs)
+  let tm ← eqn (← IO.ofExcept (HolCore.Basics.list_mk_comb (← pt "(+):num->num->num") [fvs, ← pt "0"])) gvs
+  run "SIMP_CONV facts off 10 bound variables" (do
+    let th ← IO.ofExcept (← SIMP_CONV (ADD_CLAUSES :: facts) tm)
+    pure ((← IO.ofExcept (rhs (concl th))) == (← eqn fvs gvs)))
+  run "SIMP_CONV fact off congruence bound variable" (do
+    let th ← IO.ofExcept (← SIMP_CONV [ADD_CLAUSES, ← asm "i = 5"] (← pt "nsum(0..n) (\\i. i + 0)"))
+    pure (aconv (← IO.ofExcept (rhs (concl th))) (← pt "nsum(0..n) (\\i. i)")))
+  : IO Unit)
+
+-- ASM_ARITH_TAC and ASM_REAL_ARITH_TAC with many irrelevant assumptions, and
+-- with assumptions that only the fallback to all of them can use (340-354).
+#eval (do
+  ensureHolPrefixThroughInt
+  let asms (tms : List String) : IO (List (String × thm)) :=
+    tms.mapM (fun t => do pure ("", ← asm t))
+  let ys := (List.range 40).map (fun i => s!"y{i+1}:num = {i+1}")
+  run "ASM_ARITH_TAC 40 irrelevant" (succeeds
+    (TAC_PROOF (← asms ("x < 2" :: ys), ← pt "x + 1 <= 2") ASM_ARITH_TAC))
+  run "ASM_ARITH_TAC non-arith conjunct" (succeeds
+    (TAC_PROOF (← asms ["x < 2 /\\ P(x:num)"], ← pt "x < 3") ASM_ARITH_TAC))
+  run "ASM_ARITH_TAC F assumption" (succeeds
+    (TAC_PROOF (← asms ["F", "y = 1"], ← pt "x < 3") ASM_ARITH_TAC))
+  run "ASM_REAL_ARITH_TAC x / &2" (succeeds
+    (TAC_PROOF (← asms ["&0 < x", "y = &1"], ← pt "&0 <= x / &2") ASM_REAL_ARITH_TAC))
+  run "ASM_REAL_ARITH_TAC x + y" (succeeds
+    (TAC_PROOF (← asms ["&0 < x", "y = &1"], ← pt "&0 <= x + y") ASM_REAL_ARITH_TAC))
+  : IO Unit)
+
+-- check_axioms (373-377): after `new_axiom`, check_axioms must fail.  Last,
 -- because the new axiom stays in `the_axioms` for the rest of the process.
 #eval (do
   ensureHolPrefixThroughInt

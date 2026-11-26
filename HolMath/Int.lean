@@ -1511,8 +1511,11 @@ def setupIntArith1 [HolBase] (P : HolCore.Canon.NNFPths)
   let INT_ARITH_TAC1 := CONV_TAC (EQT_INTRO o INT_ARITH1)
 
   let ASM_INT_ARITH_TAC1 :=
-    REPEAT (FIRST_X_ASSUM (MP_TAC o check (not o is_forall o concl))) THEN
-    INT_ARITH_TAC1
+    HolMath.CalcRat.GEN_ASM_ARITH_TAC (← qty "int")
+     ["=", "int_lt", "int_le", "int_gt", "int_ge"]
+     ["int_add", "int_sub", "int_mul", "int_neg", "int_abs", "int_max",
+      "int_min", "int_pow", "int_of_num"]
+     INT_ARITH_TAC1
 
   return { INT_FORALL_POS, INT_EXISTS_POS, INT_FORALL_ABS, INT_EXISTS_ABS,
            INT_POW, INT_ABS, INT_GE, INT_GT, INT_LT,
@@ -3711,8 +3714,8 @@ def setupIntArithRule [HolBase]
   let ARITH_TAC := CONV_TAC (EQT_INTRO o ARITH_RULE)
 
   let ASM_ARITH_TAC :=
-    REPEAT (FIRST_X_ASSUM (MP_TAC o check (not o is_forall o concl))) THEN
-    ARITH_TAC
+    HolMath.CalcRat.GEN_ASM_ARITH_TAC (← qty "num") ["=", "<", "<=", ">", ">="]
+     ["+", "-", "*", "SUC", "PRE"] ARITH_TAC
 
   return { ARITH_RULE := fun t => ARITH_RULE t, ARITH_TAC, ASM_ARITH_TAC }
 
@@ -3917,8 +3920,11 @@ def setupIntArith2 [HolBase] (P : HolCore.Canon.NNFPths)
   let INT_ARITH_TAC2 := CONV_TAC (EQT_INTRO o INT_ARITH2)
 
   let ASM_INT_ARITH_TAC2 :=
-    REPEAT (FIRST_X_ASSUM (MP_TAC o check (not o is_forall o concl))) THEN
-    INT_ARITH_TAC2
+    HolMath.CalcRat.GEN_ASM_ARITH_TAC (← qty "int")
+     ["=", "int_lt", "int_le", "int_gt", "int_ge"]
+     ["int_add", "int_sub", "int_mul", "int_neg", "int_abs", "int_max",
+      "int_min", "int_pow", "int_of_num"]
+     INT_ARITH_TAC2
 
   return { INT_ARITH2 := fun t => INT_ARITH2 t, INT_ARITH_TAC2, ASM_INT_ARITH_TAC2 }
 

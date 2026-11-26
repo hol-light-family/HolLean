@@ -872,7 +872,8 @@ def X_CHOOSE_TAC (B : BoolThms) (x' : term) (xth : thm) : tactic := fun g => Exc
       let sub ← liftExcept (vsubst [(x', x)])
       let pat := sub bod
       let xth' ← liftExcept (ASSUME pat)
-      let avoids := itlist (fun (p : String × thm) acc => union (frees (concl p.2)) acc)
+      -- tactics.ml 499: the assumptions' hypotheses count too (thm_frees).
+      let avoids := itlist (fun (p : String × thm) acc => union (thm_frees p.2) acc)
                            asl (union (frees w) (thm_frees xth))
       if mem x' avoids then throw "X_CHOOSE_TAC: invalid variable"
       else

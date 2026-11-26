@@ -84,4 +84,10 @@ initialize simpMkRewritesLayer : Unit ← do
   | .ok _ => pure ()
   | .error e => throw (IO.userError s!"mk_rewrites lemmas: {e}")
 
+/-- simp.ml 218: satisfy_prover's `t_tm = \`T\``, parsed once, here. -/
+initialize simpSatisfyTLayer : Unit ← do
+  match ← HolCore.Parser.parse_term "T" with
+  | .ok t => Simp.theSatisfyTTm.set (some t)
+  | .error e => throw (IO.userError s!"satisfy_prover T: {e}")
+
 end Session

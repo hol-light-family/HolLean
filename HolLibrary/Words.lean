@@ -5360,7 +5360,7 @@ structure JoinSubword where
   WORD_SUBWORD_NOT : thm
   WORD_SUBWORD_ADD : thm
   WORD_SUBWORD_AS_IWORD : thm
-  /-- The second binding of `WORD_SUBWORD_IWORD` (words.ml 4249). -/
+  /-- `WORD_SUBWORD_IWORD` (words.ml 4232), the type-general form. -/
   WORD_SUBWORD_IWORD : thm
   WORD_SUBWORD_AS_USHR_SHL : thm
   WORD_SXFROM_SUBWORD_AS_ISHR_SHL : thm
@@ -5741,20 +5741,10 @@ def setupJoinSubword [HolBase] (D : WordsDeps) (BDigitsum : Digitsum) (BBinary :
     REWRITE_TAC [word_subword, INT_OF_NUM_DIV, INT_OF_NUM_CLAUSES] THEN
     REWRITE_TAC [WORD_IWORD, EXP_ADD, ← GSYM DIV_MOD])
 
-  -- words.ml binds WORD_SUBWORD_IWORD twice (4240, 4249); the second wins.
-  let _ ← prove
-   r"!x pos len.
-        pos + len <= dimindex(:N)
-        ==> word_subword (iword x:N word) (pos,len):M word =
-            iword((x div &2 pow pos) rem &2 pow len)"
-   (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [WORD_SUBWORD_AS_IWORD] THEN
-    SIMP_TAC [INT_DIV_REM, INT_POW_LE, INT_POS, ← GSYM INT_POW_ADD] THEN
-    ASM_SIMP_TAC [INT_REM_IVAL_IWORD])
-
   let WORD_SUBWORD_IWORD ← prove
    r"!x pos len.
         pos + len <= dimindex(:N)
-        ==> word_subword (iword x:N word) (pos,len):N word =
+        ==> word_subword (iword x:N word) (pos,len):M word =
             iword((x div &2 pow pos) rem &2 pow len)"
    (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [WORD_SUBWORD_AS_IWORD] THEN
     SIMP_TAC [INT_DIV_REM, INT_POW_LE, INT_POS, ← GSYM INT_POW_ADD] THEN

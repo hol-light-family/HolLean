@@ -743,6 +743,87 @@ def setupRealRing [HolBase] (S : HolMath.CalcInt.RatSyntax) (Rl : RealRatRelConv
     TRANS th (← SYM th')
   return { REAL_INTEGRAL, REAL_RABINOWITSCH, REAL_RING, real_ideal_cofactors, REAL_IDEAL_CONV }
 
+/-- Total `lhand` and `rand` for the GEN_ASM_ARITH_TAC helpers, which only
+    apply them to terms already known to have that shape. -/
+private def gaaLhand (tm : term) : term :=
+  match tm with
+  | .Comb (.Comb _ l) _ => l
+  | _ => tm
+
+private def gaaRand (tm : term) : term :=
+  match tm with
+  | .Comb _ r => r
+  | _ => tm
+
+private def gaaIsBin (tm : term) : Bool :=
+  HolCore.Basics.is_conj tm || HolCore.Basics.is_disj tm ||
+  HolCore.Basics.is_imp tm || HolCore.Bool.is_iff tm
+
+/-- `is_arith` of GEN_ASM_ARITH_TAC (calc_rat.ml 555-602). -/
+private partial def gaaIsArith (is_rel : term → Bool) (tm : term) : Bool :=
+  if HolCore.Basics.is_neg tm then gaaIsArith is_rel (gaaRand tm)
+  else if gaaIsBin tm then gaaIsArith is_rel (gaaLhand tm) && gaaIsArith is_rel (gaaRand tm)
+  else is_rel tm
+
+/-- `term_atoms` of GEN_ASM_ARITH_TAC (calc_rat.ml 555-602). -/
+private partial def gaaTermAtoms (ops : List String) (tm : term) (acc : List term) : List term :=
+  if HolMath.Nums.is_numeral tm then acc
+  else
+    match strip_comb tm with
+    | (.Const s _, args) =>
+      if mem s ops then itlist (gaaTermAtoms ops) args acc else insert tm acc
+    | _ => insert tm acc
+
+/-- `atoms` of GEN_ASM_ARITH_TAC (calc_rat.ml 555-602). -/
+private partial def gaaAtoms (ops : List String) (is_rel : term → Bool) (tm : term)
+    (acc : List term) : List term :=
+  if HolCore.Basics.is_neg tm then gaaAtoms ops is_rel (gaaRand tm) acc
+  else if gaaIsBin tm then gaaAtoms ops is_rel (gaaLhand tm) (gaaAtoms ops is_rel (gaaRand tm) acc)
+  else if is_rel tm then gaaTermAtoms ops (gaaLhand tm) (gaaTermAtoms ops (gaaRand tm) acc)
+  else acc
+
+/-- `GEN_ASM_ARITH_TAC ty rels ops tac` (calc_rat.ml 555-602), as used for
+    ASM_REAL_ARITH_TAC, ASM_INT_ARITH_TAC and ASM_ARITH_TAC: first `tac` with
+    only the arithmetic assumptions (boolean combinations of the relations
+    `rels` over `ty`) that share an atom with the goal, directly or through
+    other such assumptions (atoms: the maximal subterms not built by `ops`
+    and not numerals); only if that fails, with all the assumptions that are
+    not universally quantified. -/
+def GEN_ASM_ARITH_TAC [HolBase] (ty : hol_type) (rels ops : List String)
+    (tac : tactic) : tactic :=
+  let f_tm : term := .Const "F" (.Tyapp "bool" [])
+  let is_rel (tm : term) : Bool :=
+    match tm with
+    | .Comb (.Comb (.Const s _) l) _ => mem s rels && type_of l == ty
+    | _ => false
+  let is_arith := gaaIsArith is_rel
+  let atoms := gaaAtoms ops is_rel
+  -- Each round removes at least one assumption, so `fuel` (the number of
+  -- assumptions plus one) never runs out first.
+  let rec relevant (fuel : Nat) (ats : List term) (tths : List (thm × List term)) :
+      List thm :=
+    match fuel with
+    | 0 => []
+    | fuel + 1 =>
+      let (tths1, tths2) := partition (fun (_, a) => exists' (fun x => mem x ats) a) tths
+      if tths1.isEmpty then []
+      else tths1.map Prod.fst ++
+        relevant fuel (itlist (fun p acc => union p.2 acc) tths1 ats) tths2
+  let full : tactic :=
+    REPEAT (FIRST_X_ASSUM (fun th =>
+      if !(is_forall (concl th)) then MP_TAC th else fun _ => pure (.error "check"))) THEN
+    tac
+  fun g => do
+    let (asl, w) := g
+    let ths := filter (fun th => !(is_forall (concl th))) (asl.map Prod.snd)
+    let tths := (filter (fun th => is_arith (concl th)) ths).map (fun th => (th, atoms (concl th) []))
+    let rel := relevant (tths.length + 1) (atoms w []) tths
+    if rel.length == ths.length || exists' (fun th => concl th == f_tm) ths then full g
+    else
+      match ← (MAP_EVERY MP_TAC rel THEN tac) g with
+      | .ok r => return .ok r
+      | .error _ => full g
+
 /-- `GEN_REAL_ARITH`, `REAL_ARITH`, `REAL_ARITH_TAC` and `ASM_REAL_ARITH_TAC`,
     the final versions (calc_rat.ml 537-559). -/
 structure FinalRealArith where
@@ -781,9 +862,10 @@ def setupFinalRealArith [HolBase] (P : HolCore.Canon.NNFPths)
       return .error ("REAL_ARITH `" ++ (← HolCore.Printer.string_of_term tm) ++ "`: " ++ m)
   let REAL_ARITH_TAC2 := CONV_TAC REAL_ARITH3
   let ASM_REAL_ARITH_TAC :=
-    REPEAT (FIRST_X_ASSUM (fun th =>
-      if !(is_forall (concl th)) then MP_TAC th else fun _ => pure (.error "check"))) THEN
-    REAL_ARITH_TAC2
+    GEN_ASM_ARITH_TAC (← qty "real") ["=", "real_lt", "real_le", "real_gt", "real_ge"]
+     ["real_add", "real_sub", "real_mul", "real_neg", "real_abs", "real_max",
+      "real_min", "real_pow", "real_div", "real_inv", "real_of_num"]
+     REAL_ARITH_TAC2
   return { GEN_REAL_ARITH3, REAL_ARITH3, REAL_ARITH_TAC2, ASM_REAL_ARITH_TAC }
 
 end

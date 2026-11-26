@@ -35,7 +35,7 @@ def charClassifiers :
   let spaces     := " \t\n\r"
   let separators := ",;"
   let brackets   := "()[]{}"
-  let symbs      := "\\!@#$%^&*-+|\\<=>/?~.:"
+  let symbs      := "\\!@#$%^&*-+|<=>/?~.:"
   let alphas     := "'abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   let nums       := "0123456789"
   let allchars   := spaces ++ separators ++ brackets ++ symbs ++ alphas ++ nums

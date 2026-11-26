@@ -392,9 +392,11 @@ def apply_prover : prover → ioconv
 /- when first needed.                                                     -/
 /- ---------------------------------------------------------------------- -/
 
-/-- satisfy_prover's `facts_of` (simp.ml 219-224).
-    The quotation `T` is parsed at each test, as in OCaml (it uses a
-    type-variable number). -/
+/-- satisfy_prover's `t_tm = \`T\`` (simp.ml 218), parsed once when simp.ml
+    defines satisfy_prover; SessionCore/Simp.lean sets it at that point. -/
+initialize theSatisfyTTm : IO.Ref (Option term) ← IO.mkRef none
+
+/-- satisfy_prover's `facts_of` (simp.ml 219-225). -/
 partial def satisfy_facts_of (B : BoolThms) (th : thm) (acc : List thm) :
     ExceptT String IO (List thm) := do
   let tm := concl th
@@ -404,7 +406,7 @@ partial def satisfy_facts_of (B : BoolThms) (th : thm) (acc : List thm) :
     let acc' ← satisfy_facts_of B (← liftExcept (B.CONJUNCT2 th)) acc
     satisfy_facts_of B (← liftExcept (B.CONJUNCT1 th)) acc'
   else if is_imp tm then pure acc
-  else if tm == (← ExceptT.mk (Parser.parse_term "T")) then pure acc
+  else if tm == ((← (theSatisfyTTm.get : IO _)).getD (.Const "T" bool_ty)) then pure acc
   else pure (th :: acc)
 where liftExcept {α : Type} (x : Except String α) : ExceptT String IO α := ExceptT.mk (pure x)
 
@@ -725,12 +727,82 @@ def AUGMENT_SIMPSET (B : BoolThms) (cth : thm) (ss : simpset) :
 /- Depth conversions (squash conversions).                                -/
 /- ---------------------------------------------------------------------- -/
 
+/- simp.ml 367-385: abandoning a pass that is going to be redone.  The body
+   of an abstraction `\v. b` is simplified with `v` as it is and, if the
+   result has a hypothesis in which `v` is free (so that ABS fails), again
+   with a genvar for `v`; under n such binders that took up to 2^n passes.
+   The first pass is abandoned as soon as a step that is sure to be part of
+   its result has such a hypothesis.  The passes under way are a stack of
+   frames `(vs, cxts, stop)`; `commit th` raises `Simp_abandon f` for the
+   nearest frame `f` whose variables are free in a hypothesis of `th` not
+   discharged on the way (a context `cxts` of the frames in between),
+   scanning outwards until a frame with `stop`.  OCaml's exception passes
+   every `with Failure _` handler; here it is an IO exception (the `.error`
+   results of the conversions are those handlers), caught only by the frame
+   it names (OCaml's `f' == f`; frames carry a unique id). -/
+
+/-- A pass in progress: the variables it is about, the context assumptions
+    it discharges, whether a scan stops at it, and its identity. -/
+structure SimpFrame where
+  vs : List term
+  cxts : List term
+  stop : Bool
+  id : Nat
+
+/-- The stack of passes in progress (simp.ml's `frames`). -/
+initialize theSimpFrames : IO.Ref (List SimpFrame) ← IO.mkRef []
+/-- The source of frame identities. -/
+initialize theSimpFrameId : IO.Ref Nat ← IO.mkRef 0
+
+/-- A new frame (a new OCaml tuple: physically distinct from every other). -/
+def mkSimpFrame (vs cxts : List term) (stop : Bool) : IO SimpFrame := do
+  let n ← theSimpFrameId.modifyGet (fun n => (n + 1, n + 1))
+  return { vs, cxts, stop, id := n }
+
+/-- The message of the IO exception that stands for `Simp_abandon f`. -/
+def simpAbandonMsg (f : SimpFrame) : String := s!"Simp_abandon {f.id}"
+
+/-- Is `e` the `Simp_abandon` exception for frame `f`? -/
+def isSimpAbandon (f : SimpFrame) (e : IO.Error) : Bool :=
+  toString e == simpAbandonMsg f
+
+/-- `within f g x`: run `g x` with `f` pushed, restoring the stack after,
+    also when `g` raises. -/
+def simpWithin {α : Type} (f : SimpFrame) (g : IO α) : IO α := do
+  let old ← theSimpFrames.get
+  theSimpFrames.set (f :: old)
+  try
+    let y ← g
+    theSimpFrames.set old
+    return y
+  catch e =>
+    theSimpFrames.set old
+    throw e
+
+/-- `within barrier`: a frame that stops every scan (simp.ml's `barrier`). -/
+def simpBarrier {α : Type} (g : IO α) : IO α := do
+  simpWithin (← mkSimpFrame [] [] true) g
+
+/-- `commit th` (simp.ml 395-406). -/
+def simpCommit (th : thm) : IO Unit := do
+  let hs := hyp th
+  if hs.isEmpty then return
+  let rec scan (inner : List term) : List SimpFrame → IO Unit
+    | [] => pure ()
+    | f :: ofs => do
+      let inner' := f.cxts ++ inner
+      if hs.any (fun h => f.vs.any (fun v => vfree_in v h) && !(inner'.any (aconv h))) then
+        throw (IO.userError (simpAbandonMsg f))
+      else if f.stop then pure ()
+      else scan inner' ofs
+  scan [] (← theSimpFrames.get)
+
 /-- Apply implicational rewrites from the net, discharging side-conditions via
     the simpset's condition-prover. -/
 def IMP_REWRITES_CONV (B : BoolThms) (strat : strategy) (ss : simpset)
     (lev : Int) (pconvs : List gconv) (tm : term) : IO (Except String thm) := do
   let (.Simpset _ provers _) := ss
-  -- `nonlooping th` (simp.ml 370-374): checked much as net_of_thm checks
+  -- `nonlooping th` (simp.ml 407-411): checked much as net_of_thm checks
   -- rewrites, the LHS must not occur in the RHS, and a permutative instance
   -- must decrease in the term ordering (`&&`/`||` short-circuit, as OCaml)
   let nonlooping (th : thm) : IO (Except String Bool) := do
@@ -745,11 +817,12 @@ def IMP_REWRITES_CONV (B : BoolThms) (strat : strategy) (ss : simpset)
       if ← matchable l r then
         if ← matchable r l then return .ok (term_order l r)
       return .ok true
-  -- `tryfind (fun (n,cnv) -> ...) pconvs` (simp.ml 280-287).  EVERY step of
+  -- `tryfind (fun (n,cnv) -> ...) pconvs` (simp.ml 415-435).  EVERY step of
   -- the branch - including the final `MP th cth` - is inside the `tryfind`, so
   -- any Failure moves on to the next conversion, and exhaustion raises
   -- `tryfind`'s own message.  (A branch's specific message, such as
   -- "IMP_REWRITES_CONV: Too deep", is caught by `tryfind` and never escapes.)
+  -- `commit`'s Simp_abandon is not a Failure: it leaves the `tryfind`.
   let rec go : List gconv → IO (Except String thm)
     | [] => return .error "tryfind"
     | (n, cnv) :: rest => do
@@ -759,7 +832,7 @@ def IMP_REWRITES_CONV (B : BoolThms) (strat : strategy) (ss : simpset)
           | .error _ => go rest
           | .ok th =>
             let etm := concl th
-            if is_eq etm then return .ok th
+            if is_eq etm then do simpCommit th; return .ok th
             else if lev <= 0 then go rest
             else
               match lhand etm with
@@ -768,14 +841,15 @@ def IMP_REWRITES_CONV (B : BoolThms) (strat : strategy) (ss : simpset)
                 -- the condition's variables not fixed by matching the LHS
                 -- (nor free in the term or the hypotheses) are instantiated
                 -- with find_witnesses first, if that gives a non-looping
-                -- rewrite (simp.ml 383-391)
+                -- rewrite (simp.ml 420-430)
                 let mvs := subtract (frees cnd) (union (frees tm) (freesl (hyp th)))
                 let th'? : Except String thm ← if mvs.isEmpty then pure (.ok th) else do
-                  -- `try INSTANTIATE (find_witnesses provers mvs cnd) th with
-                  -- Failure _ -> th`; `th1 != th` (physically) holds just
-                  -- when INSTANTIATE substituted (insts non-empty)
+                  -- `try INSTANTIATE (within barrier (find_witnesses provers
+                  -- mvs) cnd) th with Failure _ -> th`; `th1 != th`
+                  -- (physically) holds just when INSTANTIATE substituted
+                  -- (insts non-empty)
                   let (th1, changed) ← do
-                    match ← find_witnesses provers mvs cnd with
+                    match ← simpBarrier (find_witnesses provers mvs cnd) with
                     | .error _ => pure (th, false)
                     | .ok i =>
                       match INSTANTIATE i th with
@@ -796,47 +870,77 @@ def IMP_REWRITES_CONV (B : BoolThms) (strat : strategy) (ss : simpset)
                 match lhand (concl th') with
                 | .error _ => go rest
                 | .ok l =>
-                -- default condition-prover (see `simpset` note)
-                match ← (basic_prover B strat ss (lev - 1) l : IO (Except String thm)) with
+                -- default condition-prover (see `simpset` note), within a barrier
+                match ← simpBarrier (basic_prover B strat ss (lev - 1) l : IO (Except String thm)) with
                 | .error _ => go rest
                 | .ok cth =>
                   match B.MP th' cth with
-                  | .ok r => return .ok r
+                  | .ok r => do simpCommit r; return .ok r
                   | .error _ => go rest
   go pconvs
 
-/-- Traverse into an implicational congruence, simplifying its premises. -/
+/-- `dest_antecedent` (simp.ml 436-439): an antecedent `!avs. t = t'` or
+    `!avs. cxt ==> t = t'`. -/
+def dest_antecedent (ant : term) : Except String (List term × Option term × (term × term)) :=
+  let (avs, bod) := strip_forall ant
+  match dest_eq bod with
+  | .ok p => .ok (avs, none, p)
+  | .error _ => do
+    let (cxt, deq) ← Basics.dest_imp bod
+    return (avs, some cxt, ← dest_eq deq)
+
+/-- `safe_antecedents th` (simp.ml 440-445), as `can`: every antecedent has
+    no bound variables and a variable right-hand side, all different.  Then
+    no congruence step can fail after a successful simplification. -/
+def safe_antecedents (th : thm) : Bool :=
+  let ants := (splitlist Basics.dest_imp (concl th)).1
+  match ants.mapM (fun a => do
+      let (avs, _, (_, t')) ← dest_antecedent a
+      if avs.isEmpty && is_var t' then pure t' else (Except.error "fail" : Except String term)) with
+  | .error _ => false
+  | .ok rhss => (setify rhss).length == rhss.length
+
+/-- Traverse into an implicational congruence, simplifying its premises
+    (simp.ml 446-465). -/
 partial def RUN_SUB_CONV (B : BoolThms) (strat : strategy) (ss : simpset)
-    (lev : Int) (triv : Bool) (th : thm) : IO (Except String thm) := ExceptT.run do
+    (lev : Int) (safe triv : Bool) (th : thm) : IO (Except String thm) := ExceptT.run do
   let tm := concl th
   if is_imp tm then do
-    let subtm ← liftExcept (lhand tm)
-    let (avs, bod) := strip_forall subtm
-    let dat : (term × term × simpset × (thm → Except String thm)) ←
-      match dest_eq bod with
-      | .ok (t, t') => pure (t, t', ss, (fun x => (Except.ok x : Except String thm)))
-      | .error _ => do
-          let (cxt, deq) ← liftExcept (Basics.dest_imp bod)
-          let (t, t') ← liftExcept (dest_eq deq)
+    let (avs, cxto, (t, t')) ← liftExcept (dest_antecedent (← liftExcept (lhand tm)))
+    let dat : (simpset × (thm → Except String thm) × List term) ←
+      match cxto with
+      | none => pure (ss, (fun x => (Except.ok x : Except String thm)), [])
+      | some cxt => do
           let ass ← liftExcept (ASSUME cxt)
           let ss' ← (AUGMENT_SIMPSET B ass ss : IO (Except String simpset))
-          pure (t, t', ss', (fun x => B.DISCH cxt x))
-    let (t, t', ss', mk_fun) := dat
-    let ethTriv : (thm × Bool) ←
-      match ← liftM (strat ss' lev t : IO (Except String thm)) with
-      | .ok e => pure (e, false)
-      | .error _ => pure (REFL t, triv)
-    let (eth, triv') := ethTriv
+          pure (ss', (fun x => B.DISCH cxt x), [cxt])
+    let (ss', mk_fun, cxts) := dat
+    let f ← liftM (mkSimpFrame avs cxts (!safe))
+    -- `try within f (fun t -> try strat ss' lev t,false with Failure _ ->
+    -- REFL t,triv) t with Simp_abandon f' when f' == f -> failwith ...`
+    let r : Except String (thm × Bool) ← liftM (do
+      try
+        let e ← simpWithin f (do
+          match ← (strat ss' lev t : IO (Except String thm)) with
+          | .ok e => pure (e, false)
+          | .error _ => pure (REFL t, triv))
+        pure (.ok e)
+      catch err =>
+        if isSimpAbandon f err then
+          pure (.error "RUN_SUB_CONV: bound variable free in a hypothesis")
+        else throw err : IO (Except String (thm × Bool)))
+    let (eth, triv') ← liftExcept r
     let eth' ← liftExcept (do B.GENL avs (← mk_fun eth))
     let th' ←
       if is_var t' then liftExcept (do INST [((← rand (concl eth)), t')] th)
       else (GEN_PART_MATCH B lhand th (concl eth') : IO (Except String thm))
     let th'' ← liftExcept (B.MP th' eth')
-    (RUN_SUB_CONV B strat ss lev triv' th'' : IO (Except String thm))
+    (RUN_SUB_CONV B strat ss lev safe triv' th'' : IO (Except String thm))
   else if triv then throw "RUN_SUB_CONV"
   else return th
 
-/-- Congruence-based descent: try congruence rules, else structural descent. -/
+/-- Congruence-based descent: try congruence rules, else structural descent
+    (simp.ml 466-497). -/
 def GEN_SUB_CONV (B : BoolThms) (strat : strategy) (ss : simpset)
     (lev : Int) (pconvs : List gconv) (tm : term) : IO (Except String thm) := do
   let rec tryCong : List gconv → IO (Except String thm)
@@ -847,8 +951,9 @@ def GEN_SUB_CONV (B : BoolThms) (strat : strategy) (ss : simpset)
           match ← (cnv tm : IO (Except String thm)) with
           | .error _ => tryCong rest
           | .ok th =>
-            match ← (RUN_SUB_CONV B strat ss lev true th : IO (Except String thm)) with
-            | .ok r => return .ok r
+            let safe := safe_antecedents th
+            match ← (RUN_SUB_CONV B strat ss lev safe true th : IO (Except String thm)) with
+            | .ok r => do simpCommit r; return .ok r
             | .error _ => tryCong rest
   match ← (tryCong pconvs : IO (Except String thm)) with
   | .ok r => return .ok r
@@ -870,113 +975,165 @@ def GEN_SUB_CONV (B : BoolThms) (strat : strategy) (ss : simpset)
       match dest_abs tm with
       | .error e => return .error e
       | .ok (v, bod) => do
-        match ← (strat ss lev bod : IO (Except String thm)) with
-        | .error e => return .error e
-        | .ok th =>
-          match ABS v th with
-          | .ok r => return .ok r
-          | .error _ => do
-            let gv ← genvar (type_of v)
-            match (vsubst [(gv, v)]) with
+        let via_genvar : IO (Except String thm) := do
+          let gv ← genvar (type_of v)
+          match (vsubst [(gv, v)]) with
+          | .error e => return .error e
+          | .ok gsub =>
+            match ← (strat ss lev (gsub bod) : IO (Except String thm)) with
             | .error e => return .error e
-            | .ok gsub =>
-              match ← (strat ss lev (gsub bod) : IO (Except String thm)) with
-              | .error e => return .error e
-              | .ok gthBody =>
-                return (do
-                  let gth ← ABS gv gthBody
-                  let gtm := concl gth
-                  let (l, r) ← dest_eq gtm
-                  let v' ← variant (frees gtm) v
-                  let l' ← alpha v' l
-                  let r' ← alpha v' r
-                  EQ_MP (← ALPHA gtm (safe_mk_eq l' r')) gth)
+            | .ok gthBody =>
+              return (do
+                let gth ← ABS gv gthBody
+                let gtm := concl gth
+                let (l, r) ← dest_eq gtm
+                let v' ← variant (frees gtm) v
+                let l' ← alpha v' l
+                let r' ← alpha v' r
+                EQ_MP (← ALPHA gtm (safe_mk_eq l' r')) gth)
+        let f ← mkSimpFrame [v] [] true
+        -- `match (try Some(within f (strat ss lev) bod) with Simp_abandon f'
+        -- when f' == f -> None)`; a Failure of `strat` fails GEN_SUB_CONV
+        let first : Option (Except String thm) ← do
+          try
+            let r ← simpWithin f (strat ss lev bod : IO (Except String thm))
+            pure (some r)
+          catch err =>
+            if isSimpAbandon f err then pure none else throw err
+        let res : Except String thm ← match first with
+          | some (.error e) => pure (.error e)
+          | some (.ok th) =>
+            match ABS v th with
+            | .ok r => pure (.ok r)
+            | .error _ => via_genvar
+          | none => via_genvar
+        match res with
+        | .ok th => do simpCommit th; return .ok th
+        | .error e => return .error e
     else return .error "GEN_SUB_CONV"
 
-/- The five traversal strategies. Each passes itself as the sub-strategy. -/
+/- The five traversal strategies (simp.ml 498-557).  Each passes itself as
+   the sub-strategy; the exported ones (below) run it within a barrier
+   (simp.ml's `shield`). -/
 
 /-- Rewrite once at the outermost applicable position. -/
-partial def ONCE_DEPTH_SQCONV (B : BoolThms) : strategy := fun ss lev tm => do
+partial def onceDepthSq (B : BoolThms) : strategy := fun ss lev tm => do
   let (.Simpset nt _ _) := ss
   let pconvs := lookup tm nt
-  match ← (IMP_REWRITES_CONV B (ONCE_DEPTH_SQCONV B) ss lev pconvs tm : IO (Except String thm)) with
+  match ← (IMP_REWRITES_CONV B (onceDepthSq B) ss lev pconvs tm : IO (Except String thm)) with
   | .ok r => return .ok r
-  | .error _ => (GEN_SUB_CONV B (ONCE_DEPTH_SQCONV B) ss lev pconvs tm : IO (Except String thm))
+  | .error _ => (GEN_SUB_CONV B (onceDepthSq B) ss lev pconvs tm : IO (Except String thm))
 
 /-- Rewrite bottom-up, once at each position. -/
-partial def DEPTH_SQCONV (B : BoolThms) : strategy := fun ss lev tm => do
+partial def depthSq (B : BoolThms) : strategy := fun ss lev tm => do
   let (.Simpset nt _ _) := ss
   let pconvs := lookup tm nt
-  match ← (GEN_SUB_CONV B (DEPTH_SQCONV B) ss lev pconvs tm : IO (Except String thm)) with
+  match ← (GEN_SUB_CONV B (depthSq B) ss lev pconvs tm : IO (Except String thm)) with
   | .ok th1 =>
     match rand (concl th1) with
     | .error _ => return .ok th1
     | .ok tm1 =>
       let pconvs1 := lookup tm1 nt
-      match ← (IMP_REWRITES_CONV B (DEPTH_SQCONV B) ss lev pconvs1 tm1 : IO (Except String thm)) with
+      match ← (IMP_REWRITES_CONV B (depthSq B) ss lev pconvs1 tm1 : IO (Except String thm)) with
       | .ok th2 => return (TRANS th1 th2)
       | .error _ => return .ok th1
   | .error _ =>
-    (IMP_REWRITES_CONV B (DEPTH_SQCONV B) ss lev pconvs tm : IO (Except String thm))
+    (IMP_REWRITES_CONV B (depthSq B) ss lev pconvs tm : IO (Except String thm))
 
 /-- Rewrite bottom-up, repeatedly, until no change. -/
-partial def REDEPTH_SQCONV (B : BoolThms) : strategy := fun ss lev tm => do
+partial def redepthSq (B : BoolThms) : strategy := fun ss lev tm => do
   let (.Simpset nt _ _) := ss
   let pconvs := lookup tm nt
   let thR ← (do
-    match ← (GEN_SUB_CONV B (REDEPTH_SQCONV B) ss lev pconvs tm : IO (Except String thm)) with
+    match ← (GEN_SUB_CONV B (redepthSq B) ss lev pconvs tm : IO (Except String thm)) with
     | .ok th1 =>
       match rand (concl th1) with
       | .error _ => return (Except.ok th1 : Except String thm)
       | .ok tm1 =>
         let pconvs1 := lookup tm1 nt
-        match ← (IMP_REWRITES_CONV B (REDEPTH_SQCONV B) ss lev pconvs1 tm1 : IO (Except String thm)) with
+        match ← (IMP_REWRITES_CONV B (redepthSq B) ss lev pconvs1 tm1 : IO (Except String thm)) with
         | .ok th2 => return (TRANS th1 th2)
         | .error _ => return (Except.ok th1)
     | .error _ =>
-      (IMP_REWRITES_CONV B (REDEPTH_SQCONV B) ss lev pconvs tm : IO (Except String thm)))
+      (IMP_REWRITES_CONV B (redepthSq B) ss lev pconvs tm : IO (Except String thm)))
   match thR with
   | .error e => return .error e
   | .ok th =>
     match rand (concl th) with
     | .error _ => return .ok th
     | .ok r =>
-      match ← (REDEPTH_SQCONV B ss lev r : IO (Except String thm)) with
+      match ← (redepthSq B ss lev r : IO (Except String thm)) with
       | .ok th' => return (TRANS th th')
       | .error _ => return .ok th
 
-/-- Rewrite top-down, repeatedly. -/
-partial def TOP_DEPTH_SQCONV (B : BoolThms) : strategy := fun ss lev tm => do
+/-- Rewrite top-down, repeatedly (simp.ml 526-547).  After simplifying the
+    operator and operand of a combination with no congruence rule stored
+    for it or for the result, only the rewrites at the top of the result
+    are tried; otherwise the result is simplified again from the top (a
+    congruence rule may leave a subterm alone or give it a new context). -/
+partial def topDepthSq (B : BoolThms) : strategy := fun ss lev tm => do
   let (.Simpset nt _ _) := ss
   let pconvs := lookup tm nt
-  let th1R ← (do
-    match ← (IMP_REWRITES_CONV B (TOP_DEPTH_SQCONV B) ss lev pconvs tm : IO (Except String thm)) with
-    | .ok r => return (Except.ok r : Except String thm)
-    | .error _ => (GEN_SUB_CONV B (TOP_DEPTH_SQCONV B) ss lev pconvs tm : IO (Except String thm)))
-  match th1R with
-  | .error e => return .error e
+  match ← (IMP_REWRITES_CONV B (topDepthSq B) ss lev pconvs tm : IO (Except String thm)) with
   | .ok th1 =>
     match rand (concl th1) with
     | .error _ => return .ok th1
     | .ok r =>
-      match ← (TOP_DEPTH_SQCONV B ss lev r : IO (Except String thm)) with
-      | .ok th2 => return (TRANS th1 th2)
-      | .error _ => return .ok th1
-
-/-- Rewrite top-down in a single sweep, recursing on rewritten results. -/
-partial def TOP_SWEEP_SQCONV (B : BoolThms) : strategy := fun ss lev tm => do
-  let (.Simpset nt _ _) := ss
-  let pconvs := lookup tm nt
-  match ← (IMP_REWRITES_CONV B (TOP_SWEEP_SQCONV B) ss lev pconvs tm : IO (Except String thm)) with
-  | .ok th1 =>
-    match rand (concl th1) with
-    | .error _ => return .ok th1
-    | .ok r =>
-      match ← (TOP_SWEEP_SQCONV B ss lev r : IO (Except String thm)) with
+      match ← (topDepthSq B ss lev r : IO (Except String thm)) with
       | .ok th2 => return (TRANS th1 th2)
       | .error _ => return .ok th1
   | .error _ =>
-    (GEN_SUB_CONV B (TOP_SWEEP_SQCONV B) ss lev pconvs tm : IO (Except String thm))
+    match ← (GEN_SUB_CONV B (topDepthSq B) ss lev pconvs tm : IO (Except String thm)) with
+    | .error e => return .error e
+    | .ok th1 =>
+      match rand (concl th1) with
+      | .error e => return .error e
+      | .ok tm1 =>
+        let pconvs1 := lookup tm1 nt
+        if is_comb tm && (pconvs ++ pconvs1).all (fun (n, _) => n < 4) then
+          match ← (IMP_REWRITES_CONV B (topDepthSq B) ss lev pconvs1 tm1 : IO (Except String thm)) with
+          | .error _ => return .ok th1
+          | .ok th2 =>
+            match rand (concl th2) with
+            | .error _ => return (TRANS th1 th2)
+            | .ok tm2 =>
+              match ← (topDepthSq B ss lev tm2 : IO (Except String thm)) with
+              | .ok th3 => return (do TRANS th1 (← TRANS th2 th3))
+              | .error _ => return (TRANS th1 th2)
+        else
+          match ← (topDepthSq B ss lev tm1 : IO (Except String thm)) with
+          | .ok th2 => return (TRANS th1 th2)
+          | .error _ => return .ok th1
+
+/-- Rewrite top-down in a single sweep, recursing on rewritten results. -/
+partial def topSweepSq (B : BoolThms) : strategy := fun ss lev tm => do
+  let (.Simpset nt _ _) := ss
+  let pconvs := lookup tm nt
+  match ← (IMP_REWRITES_CONV B (topSweepSq B) ss lev pconvs tm : IO (Except String thm)) with
+  | .ok th1 =>
+    match rand (concl th1) with
+    | .error _ => return .ok th1
+    | .ok r =>
+      match ← (topSweepSq B ss lev r : IO (Except String thm)) with
+      | .ok th2 => return (TRANS th1 th2)
+      | .error _ => return .ok th1
+  | .error _ =>
+    (GEN_SUB_CONV B (topSweepSq B) ss lev pconvs tm : IO (Except String thm))
+
+/-- `shield strat` (simp.ml 555): run a strategy within a barrier. -/
+def simpShield (strat : strategy) : strategy := fun ss lev tm =>
+  simpBarrier (strat ss lev tm)
+
+/-- `ONCE_DEPTH_SQCONV` (simp.ml): rewrite once at the outermost position. -/
+def ONCE_DEPTH_SQCONV (B : BoolThms) : strategy := simpShield (onceDepthSq B)
+/-- `DEPTH_SQCONV` (simp.ml): bottom-up, once at each position. -/
+def DEPTH_SQCONV (B : BoolThms) : strategy := simpShield (depthSq B)
+/-- `REDEPTH_SQCONV` (simp.ml): bottom-up, repeatedly. -/
+def REDEPTH_SQCONV (B : BoolThms) : strategy := simpShield (redepthSq B)
+/-- `TOP_DEPTH_SQCONV` (simp.ml): top-down, repeatedly. -/
+def TOP_DEPTH_SQCONV (B : BoolThms) : strategy := simpShield (topDepthSq B)
+/-- `TOP_SWEEP_SQCONV` (simp.ml): top-down in one sweep. -/
+def TOP_SWEEP_SQCONV (B : BoolThms) : strategy := simpShield (topSweepSq B)
 
 /- ---------------------------------------------------------------------- -/
 /- Maintenence of basic rewrites and conv nets for rewriting.             -/

@@ -1250,8 +1250,12 @@ private partial def folConv (B : BoolThms) (appThm : thm) (hddata : List (term Ã
     match rand (concl th) with
     | .error e => return .error e
     | .ok tm' =>
+      -- canon.ml 699-703: with variable heads "=" has arity 2 and all other
+      -- heads arity 0; an "=" with fewer than two arguments is then treated
+      -- like the others.
+      let m := args.length
       let n := match assoc op hddata with
-               | .ok k => if args.length â‰¥ k then args.length - k else 0
+               | .ok k => if m < k then m else m - k
                | .error _ => 0
       if n == 0 then return .ok th
       else
