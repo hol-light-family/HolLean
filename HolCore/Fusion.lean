@@ -532,6 +532,7 @@ theorem ordav_refl : ∀ (env : List (term × term)), (∀ p ∈ env, p.1 = p.2)
     · subst hx; simp [ordav]
     · simp [ordav, hx, ordav_refl oenv ho x]
 
+mutual
 /-- `orda env tm1 tm2` (fusion.ml 441), with OCaml's shortcut: when `tm1` and
     `tm2` are the same object and `env` pairs each variable with itself, the
     answer is 0 at once.  OCaml tests `tm1 == tm2` (physical, O(1)); a
@@ -546,57 +547,71 @@ theorem ordav_refl : ∀ (env : List (term × term)), (∀ p ∈ env, p.1 = p.2)
 def ordaP (env : List (term × term)) (hid : Bool)
     (hinv : hid = true → ∀ p ∈ env, p.1 = p.2) (tm1 tm2 : term) :
     {c : Ordering // hid = true → tm1 = tm2 → c = .eq} :=
-  let r : Thunk {c : Ordering // hid = true → tm1 = tm2 → c = .eq} := Thunk.mk fun _ =>
-    match (generalizing := false) h1 : tm1, h2 : tm2 with
-    | .Var _ _, .Var _ _ =>
-        ⟨ordav env tm1 tm2, fun h he => by rw [h1, h2, he]; exact ordav_refl env (hinv h) _⟩
-    | .Const _ _, .Const _ _ =>
-        ⟨if tm1 == tm2 then .eq else compare tm1 tm2, fun _ he => by rw [h1, h2, he]; simp⟩
-    | .Comb s1 t1, .Comb s2 t2 =>
-        let c := ordaP env hid hinv s1 s2
-        if hc : c.val != .eq then ⟨c.val, fun h he => by
-          have := c.property h (term.Comb.inj he).1; simp [this] at hc⟩
-        else
-          let d := ordaP env hid hinv t1 t2
-          ⟨d.val, fun h he => d.property h (term.Comb.inj he).2⟩
-    | .Abs x1 t1, .Abs x2 t2 =>
-        match (generalizing := false) hx1 : x1, hx2 : x2 with
-        | .Var _ ty1, .Var _ ty2 =>
-            let c := if ty1 == ty2 then Ordering.eq else compare ty1 ty2
-            if hc : c != .eq then ⟨c, fun _ he => by
-              have := (term.Var.inj (term.Abs.inj he).1).2; simp [c, this] at hc⟩
-            else
-              let hid' := hid && x1 == x2
-              let d := ordaP ((x1, x2) :: env) hid'
-                (fun h p hp => by
-                  simp only [hid', Bool.and_eq_true, beq_iff_eq] at h
-                  simp only [List.mem_cons] at hp
-                  rcases hp with hp | hp
-                  · subst hp; exact h.2
-                  · exact hinv h.1 p hp) t1 t2
-              ⟨d.val, fun h he => d.property
-                (by have hx := (term.Abs.inj he).1; rw [← hx1, ← hx2] at hx; simp [hid', h, hx])
-                (term.Abs.inj he).2⟩
-        | _, _ =>
-            @panic _ ⟨⟨.eq, fun _ _ => rfl⟩⟩ "orda: Abs with non-variable bound variable"
-    | .Const _ _, .Var _ _ => ⟨.lt, fun _ he => by cases he⟩
-    | .Const _ _, .Comb _ _ => ⟨.lt, fun _ he => by cases he⟩
-    | .Const _ _, .Abs _ _ => ⟨.lt, fun _ he => by cases he⟩
-    | .Var _ _, .Const _ _ => ⟨.gt, fun _ he => by cases he⟩
-    | .Comb _ _, .Const _ _ => ⟨.gt, fun _ he => by cases he⟩
-    | .Abs _ _, .Const _ _ => ⟨.gt, fun _ he => by cases he⟩
-    | .Var _ _, .Comb _ _ => ⟨.lt, fun _ he => by cases he⟩
-    | .Var _ _, .Abs _ _ => ⟨.lt, fun _ he => by cases he⟩
-    | .Comb _ _, .Var _ _ => ⟨.gt, fun _ he => by cases he⟩
-    | .Abs _ _, .Var _ _ => ⟨.gt, fun _ he => by cases he⟩
-    | .Comb _ _, .Abs _ _ => ⟨.lt, fun _ he => by cases he⟩
-    | .Abs _ _, .Comb _ _ => ⟨.gt, fun _ he => by cases he⟩
   if h : hid = true then
-    if withPtrEq tm1 tm2 (fun _ => r.get.val == .eq)
-        (fun he => by simp [r.get.property h he]) then
+    -- `f ()` is both the test's fallback and the answer.  Lean's compiler
+    -- inlines `withPtrEq` and evaluates `f ()` once, only when the two terms
+    -- are different objects (no closure or thunk is made; a `Thunk` here
+    -- cost several times the comparison itself).
+    let f := fun (_ : Unit) => ordaS env hid hinv tm1 tm2
+    if withPtrEq tm1 tm2 (fun _ => (f ()).val == .eq)
+        (fun he => by simp [(f ()).property h he]) then
       ⟨.eq, fun _ _ => rfl⟩
-    else r.get
-  else r.get
+    else f ()
+  else ordaS env hid hinv tm1 tm2
+termination_by (sizeOf tm1, 1)
+
+/-- `ordaP`'s comparison of the two terms' outermost constructors, recursing
+    through `ordaP` for the subterms. -/
+def ordaS (env : List (term × term)) (hid : Bool)
+    (hinv : hid = true → ∀ p ∈ env, p.1 = p.2) (tm1 tm2 : term) :
+    {c : Ordering // hid = true → tm1 = tm2 → c = .eq} :=
+  match (generalizing := false) h1 : tm1, h2 : tm2 with
+  | .Var _ _, .Var _ _ =>
+      ⟨ordav env tm1 tm2, fun h he => by rw [h1, h2, he]; exact ordav_refl env (hinv h) _⟩
+  | .Const _ _, .Const _ _ =>
+      ⟨if tm1 == tm2 then .eq else compare tm1 tm2, fun _ he => by rw [h1, h2, he]; simp⟩
+  | .Comb s1 t1, .Comb s2 t2 =>
+      let c := ordaP env hid hinv s1 s2
+      if hc : c.val != .eq then ⟨c.val, fun h he => by
+        have := c.property h (term.Comb.inj he).1; simp [this] at hc⟩
+      else
+        let d := ordaP env hid hinv t1 t2
+        ⟨d.val, fun h he => d.property h (term.Comb.inj he).2⟩
+  | .Abs x1 t1, .Abs x2 t2 =>
+      match (generalizing := false) hx1 : x1, hx2 : x2 with
+      | .Var _ ty1, .Var _ ty2 =>
+          let c := if ty1 == ty2 then Ordering.eq else compare ty1 ty2
+          if hc : c != .eq then ⟨c, fun _ he => by
+            have := (term.Var.inj (term.Abs.inj he).1).2; simp [c, this] at hc⟩
+          else
+            let hid' := hid && x1 == x2
+            let d := ordaP ((x1, x2) :: env) hid'
+              (fun h p hp => by
+                simp only [hid', Bool.and_eq_true, beq_iff_eq] at h
+                simp only [List.mem_cons] at hp
+                rcases hp with hp | hp
+                · subst hp; exact h.2
+                · exact hinv h.1 p hp) t1 t2
+            ⟨d.val, fun h he => d.property
+              (by have hx := (term.Abs.inj he).1; rw [← hx1, ← hx2] at hx; simp [hid', h, hx])
+              (term.Abs.inj he).2⟩
+      | _, _ =>
+          @panic _ ⟨⟨.eq, fun _ _ => rfl⟩⟩ "orda: Abs with non-variable bound variable"
+  | .Const _ _, .Var _ _ => ⟨.lt, fun _ he => by cases he⟩
+  | .Const _ _, .Comb _ _ => ⟨.lt, fun _ he => by cases he⟩
+  | .Const _ _, .Abs _ _ => ⟨.lt, fun _ he => by cases he⟩
+  | .Var _ _, .Const _ _ => ⟨.gt, fun _ he => by cases he⟩
+  | .Comb _ _, .Const _ _ => ⟨.gt, fun _ he => by cases he⟩
+  | .Abs _ _, .Const _ _ => ⟨.gt, fun _ he => by cases he⟩
+  | .Var _ _, .Comb _ _ => ⟨.lt, fun _ he => by cases he⟩
+  | .Var _ _, .Abs _ _ => ⟨.lt, fun _ he => by cases he⟩
+  | .Comb _ _, .Var _ _ => ⟨.gt, fun _ he => by cases he⟩
+  | .Abs _ _, .Var _ _ => ⟨.gt, fun _ he => by cases he⟩
+  | .Comb _ _, .Abs _ _ => ⟨.lt, fun _ he => by cases he⟩
+  | .Abs _ _, .Comb _ _ => ⟨.gt, fun _ he => by cases he⟩
+termination_by (sizeOf tm1, 0)
+decreasing_by all_goals (subst_vars; first | (apply Prod.Lex.left; simp; omega) | (apply Prod.Lex.left; simp_wf; omega) | skip)
+end
 
 /-- `forall (fun (x,y) -> x = y) env` implies that each pair is equal. -/
 theorem forall_pair_eq : ∀ (env : List (term × term)),

@@ -420,11 +420,12 @@ def STANDARDIZE (K : CalcNumConsts) (th : thm) : Except String thm := do
 
 /-- `dest_raw_numeral` (calc_num.ml lines 259-263): the value of a raw
     `BIT0`/`BIT1`/`_0` numeral, as a rational (matching OCaml's `num`). -/
-partial def dest_raw_numeral : term → Except String Rat
-  | .Comb (.Const "BIT1" _) t => do return 2 * (← dest_raw_numeral t) + 1
-  | .Comb (.Const "BIT0" _) t => do return 2 * (← dest_raw_numeral t)
-  | .Const "_0" _ => .ok 0
-  | _ => failwith "dest_raw_numeral"
+def dest_raw_numeral (tm : term) : Except String Rat :=
+  -- Accumulated in machine words (HolCore.Basics.destNumBits), not as a
+  -- `Rat` per bit; the same terms are accepted.
+  match HolCore.Basics.destNumBits tm 0 0 0 0 with
+  | some n => .ok (n : Rat)
+  | none => failwith "dest_raw_numeral"
 
 /-- `bitcounts` (calc_num.ml lines 264-271): the number of `BIT1`s (`w`) and
     `BIT0`s (`z`) in a raw numeral. -/

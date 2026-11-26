@@ -1132,33 +1132,41 @@ def subtract' (eq : α → α → Bool) (l1 l2 : List α) : List α :=
 /- and analogous 0b... for binary.                                        -/
 /- ---------------------------------------------------------------------- -/
 
-/- Digit → value (0–15), via the `values` assoc list. -/
-private def digitValue (s : String) : Except String Nat :=
-  assoc s [("0",0),("1",1),("2",2),("3",3),("4",4),("5",5),("6",6),("7",7),
-            ("8",8),("9",9),("a",10),("A",10),("b",11),("B",11),("c",12),("C",12),
-            ("d",13),("D",13),("e",14),("E",14),("f",15),("F",15)]
+/- Digit → value (0–15), as lib.ml's `values` assoc list. -/
+private def digitValue (c : Char) : Option Nat :=
+  if '0' ≤ c && c ≤ '9' then some (c.toNat - '0'.toNat)
+  else if 'a' ≤ c && c ≤ 'f' then some (c.toNat - 'a'.toNat + 10)
+  else if 'A' ≤ c && c ≤ 'F' then some (c.toNat - 'A'.toNat + 10)
+  else none
 
-/- Value of digit `s` in base `b`, failing if invalid or ≥ base. -/
-private def valof (b : Rat) (s : String) : Except String Rat := do
-  let v : Rat := Rat.ofInt (Int.ofNat (← digitValue s))
-  if v < b then pure v
-  else failwith "num_of_string: invalid digit for base"
+/- lib.ml's `num_of_stringlist b (rev digits)`: `valof b h +/ b */
+   num_of_stringlist b t`.  OCaml evaluates the right operand first, so the
+   most significant digit is checked first: scanning the digits left to
+   right meets the same first failure (`find` for a character that is not a
+   digit, from `assoc`; "invalid digit for base" for a digit >= the base).
+   The value is accumulated as a `Nat` (one `Rat` operation per digit
+   normalises and allocates). -/
+private def num_of_digits (b : Nat) (ds : List Char) : Except String Rat :=
+  match ds with
+  | [] => failwith "num_of_string: no digits after base indicator"
+  | _ => do
+    let mut acc : Nat := 0
+    for c in ds do
+      match digitValue c with
+      | none => failwith "find"
+      | some v =>
+        if v < b then acc := acc * b + v
+        else failwith "num_of_string: invalid digit for base"
+    return (acc : Rat)
 
-/- Fold digit-strings (least-significant first) in base `b`. -/
-private def num_of_stringlist (b : Rat) : List String → Except String Rat
-  | []     => failwith "num_of_string: no digits after base indicator"
-  | [h]    => valof b h
-  | h :: t => do return (← valof b h) + b * (← num_of_stringlist b t)
-
-/- Parse a decimal, `0x…` hex, or `0b…` binary numeral to a `Rat`. -/
 /-- Parse a decimal, `0x…` hex, or `0b…` binary numeral into a `Rat`,
     using C notation for the base prefixes. -/
 def num_of_string (s : String) : Except String Rat :=
-  match explode s with
+  match s.toList with
   | []                      => failwith "num_of_string: no digits"
-  | "0" :: "x" :: hexdigits => num_of_stringlist num_16 (rev hexdigits)
-  | "0" :: "b" :: bindigits => num_of_stringlist num_2  (rev bindigits)
-  | decdigits               => num_of_stringlist num_10 (rev decdigits)
+  | '0' :: 'x' :: hexdigits => num_of_digits 16 hexdigits
+  | '0' :: 'b' :: bindigits => num_of_digits 2 bindigits
+  | decdigits               => num_of_digits 10 decdigits
 
 /- ---------------------------------------------------------------------- -/
 /- Convenient conversion between files and (lists of) strings.            -/

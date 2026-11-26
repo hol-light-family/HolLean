@@ -477,26 +477,36 @@ def is_list : term → Bool := can dest_list
 /- Syntax for numerals.                                                   -/
 /- ---------------------------------------------------------------------- -/
 
-/-- Extract the `Rat` value denoted by a `NUMERAL`/`BIT0`/`BIT1`/`_0` term. -/
-partial def dest_numeral (tm : term) : Except String Rat :=
-  let constName (t : term) : Except String String := do
-    let (c, _) ← dest_const t
-    return c
-  let rec dest_num (t : term) : Except String Rat := do
-    match constName t with
-    | .ok "_0" => return num_0
-    | _ =>
-      let (l, r) ← dest_comb t
-      let nr ← dest_num r
-      let n := num_2 * nr
-      match ← constName l with
-      | "BIT0" => return n
-      | "BIT1" => return n + num_1
-      | _      => fail
-  (do
-    let (l, r) ← dest_comb tm
-    if (← constName l) == "NUMERAL" then dest_num r else fail
-  ).mapError (fun _ => "dest_numeral")
+/-- `dest_numeral`'s walk down a `BIT0`/`BIT1` chain to `_0`.  The outermost
+    `BIT` is the least significant bit.  Bits are collected 64 at a time in a
+    `UInt64` and added to the `Nat` once per word, so a k-bit numeral costs
+    about k/64 bignum operations (accumulating `2 * n + b` at every bit, as
+    on `Rat` before, allocates a new number per bit).  `none` if the term is
+    not such a chain. -/
+partial def destNumBits (t : term) (word : UInt64) (k : UInt64) (shift : Nat)
+    (acc : Nat) : Option Nat :=
+  match t with
+  | .Const "_0" _ => some (acc ||| (word.toNat <<< shift))
+  | .Comb (.Const c _) r =>
+    let b : UInt64 := if c == "BIT1" then 1 else if c == "BIT0" then 0 else 2
+    if b == 2 then none
+    else
+      let word := word ||| (b <<< k)
+      if k == 63 then destNumBits r 0 0 (shift + 64) (acc ||| (word.toNat <<< shift))
+      else destNumBits r word (k + 1) shift acc
+  | _ => none
+
+/-- Extract the `Rat` value denoted by a `NUMERAL`/`BIT0`/`BIT1`/`_0` term.
+    The same terms succeed and fail as with OCaml's dest_num: `_0`, or a
+    `BIT0`/`BIT1` constant applied to a numeral body; anything else fails
+    with "dest_numeral". -/
+def dest_numeral (tm : term) : Except String Rat :=
+  match tm with
+  | .Comb (.Const "NUMERAL" _) r =>
+    match destNumBits r 0 0 0 0 with
+    | some n => .ok (n : Rat)
+    | none => .error "dest_numeral"
+  | _ => .error "dest_numeral"
 
 /- ---------------------------------------------------------------------- -/
 /- Syntax for generalized abstractions.                                   -/
