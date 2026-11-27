@@ -67,6 +67,12 @@ def tactic_of (m : ExceptT String IO tactic) : tactic := fun g => do
   | .error e => return .error e
   | .ok t => t g
 
+/-- lib.ml's `check p x` for a predicate that runs in IO, for example one
+    that parses a quotation on each call, as OCaml's `check (fun th -> ..
+    `t` ..)` does. -/
+def checkIO {α : Type} (p : α → ExceptT String IO Bool) (x : α) : ExceptT String IO α := do
+  if ← p x then pure x else throw "check"
+
 private def ex {α : Type} (x : Except String α) : ExceptT String IO α := liftExcept x
 /-- OCaml's `try a with Failure _ -> b`, for nesting where `try`/`catch`
     syntax would attach a `catch` to the wrong `try`. -/

@@ -26,11 +26,14 @@ initialize foGstore : IO.Ref (List (term × Int)) ← IO.mkRef []
 initialize foVcounter : IO.Ref Int ← IO.mkRef 0
 initialize foCstore : IO.Ref (List (term × Int)) ← IO.mkRef []
 initialize foCcounter : IO.Ref Int ← IO.mkRef 2
+initialize foVtable : IO.Ref (Std.HashMap term Int) ← IO.mkRef {}
+initialize foCtable : IO.Ref (Std.HashMap term Int) ← IO.mkRef {}
 
 /-- FirstOrder's own term↔code stores (separate from MESON's). -/
 def FoS : Meson.FolStores :=
   { vstore := foVstore, gstore := foGstore, vcounter := foVcounter,
-    cstore := foCstore, ccounter := foCcounter, false_tm := mesonFalseTm }
+    cstore := foCstore, ccounter := foCcounter, false_tm := mesonFalseTm,
+    vtable := foVtable, ctable := foCtable }
 
 def fo_reset_vars : IO Unit := FirstOrder.Mapping.reset_vars FoS
 def fo_reset_consts : IO (Except String Unit) := FirstOrder.Mapping.reset_consts FoS

@@ -5,6 +5,7 @@ Original (c) Copyright, University of Cambridge 1998
 Original (c) Copyright, John Harrison 1998-2007
 Lean4 translation by Chris Walton 2026 -/
 
+import Std.Data.HashMap
 import HolCore.Bool
 import HolCore.Equal
 import HolCore.Drule
@@ -80,7 +81,96 @@ def offinc : Int := 10000
 inductive fol_term where
   | Fvar (n : Int)
   | Fnapp (f : Int) (args : List fol_term)
-  deriving BEq, Inhabited, Repr
+  deriving Inhabited, Repr, Hashable
+
+/- Equality of FOL terms with a same-object shortcut at each node, as
+   meson.ml's `fol_term_eq` (`tm1 == tm2 || ...`, 096417c+1cd9471); the same
+   relation as structural equality (see `hol_type.decEq`). -/
+mutual
+/-- Decidable equality on FOL terms, with the same-object shortcut. -/
+def fol_term.decEq (a b : fol_term) : Decidable (a = b) :=
+  withPtrEqDecEq withPtrEq (fun _ _ _ _ => rfl) a b fun _ =>
+    match a, b with
+    | .Fvar x, .Fvar y =>
+      if h : x = y then isTrue (h ▸ rfl) else isFalse (fun e => by cases e; exact h rfl)
+    | .Fnapp f l1, .Fnapp g l2 =>
+      if h : f = g then
+        match fol_term.decEqList l1 l2 with
+        | isTrue h2 => isTrue (by subst h; subst h2; rfl)
+        | isFalse h2 => isFalse (fun e => by cases e; exact h2 rfl)
+      else isFalse (fun e => by cases e; exact h rfl)
+    | .Fvar _, .Fnapp _ _ => isFalse (fun e => by cases e)
+    | .Fnapp _ _, .Fvar _ => isFalse (fun e => by cases e)
+/-- `fol_term.decEq` on argument lists (`fol_terms_eq`), also with the
+    same-object shortcut. -/
+def fol_term.decEqList (l1 l2 : List fol_term) : Decidable (l1 = l2) :=
+  withPtrEqDecEq withPtrEq (fun _ _ _ _ => rfl) l1 l2 fun _ =>
+    match l1, l2 with
+    | [], [] => isTrue rfl
+    | a :: as, b :: bs =>
+      match fol_term.decEq a b with
+      | isTrue h1 =>
+        match fol_term.decEqList as bs with
+        | isTrue h2 => isTrue (by subst h1; subst h2; rfl)
+        | isFalse h2 => isFalse (fun e => by cases e; exact h2 rfl)
+      | isFalse h1 => isFalse (fun e => by cases e; exact h1 rfl)
+    | [], _ :: _ => isFalse (fun e => by cases e)
+    | _ :: _, [] => isFalse (fun e => by cases e)
+end
+
+instance : DecidableEq fol_term := fol_term.decEq
+
+/-- `insts_eq` (meson.ml, 1cd9471): equality of instantiations, which are
+    extended at the front and so share long tails; the same-object test on
+    each tail makes the common case cheap.  The same relation as `=`. -/
+def instsDecEq (l1 l2 : List (fol_term × Int)) : Decidable (l1 = l2) :=
+  withPtrEqDecEq withPtrEq (fun _ _ _ _ => rfl) l1 l2 fun _ =>
+    match l1, l2 with
+    | [], [] => isTrue rfl
+    | (t1, x1) :: r1, (t2, x2) :: r2 =>
+      if hx : x1 = x2 then
+        match fol_term.decEq t1 t2 with
+        | isTrue ht =>
+          match instsDecEq r1 r2 with
+          | isTrue hr => isTrue (by subst hx; subst ht; subst hr; rfl)
+          | isFalse hr => isFalse (fun e => by cases e; exact hr rfl)
+        | isFalse ht => isFalse (fun e => by cases e; exact ht rfl)
+      else isFalse (fun e => by cases e; exact hx rfl)
+    | [], _ :: _ => isFalse (fun e => by cases e)
+    | _ :: _, [] => isFalse (fun e => by cases e)
+
+/-- `insts_eq l1 l2`. -/
+@[inline] def insts_eq (l1 l2 : List (fol_term × Int)) : Bool :=
+  @decide (l1 = l2) (instsDecEq l1 l2)
+
+/- Monomorphic list operations on integer keys (meson.ml 1cd9471:
+   `assoc_int`, `assocd_int`, `rev_assoc_int`, `lookup_inst`). -/
+
+/-- `assoc_int a l`. -/
+def assoc_int {β : Type} (a : Int) : List (Int × β) → Option β
+  | (x, y) :: t => if x == a then some y else assoc_int a t
+  | [] => none
+
+/-- `assocd_int a l d`. -/
+def assocd_int {β : Type} (a : Int) : List (Int × β) → β → β
+  | (x, y) :: t, d => if x == a then y else assocd_int a t d
+  | [], d => d
+
+/-- `rev_assoc_int a l`. -/
+def rev_assoc_int {β : Type} (a : Int) : List (β × Int) → Option β
+  | (x, y) :: t => if y == a then some x else rev_assoc_int a t
+  | [] => none
+
+/-- `lookup_inst x insts`: the instantiation of variable `x`, if any
+    (OCaml returns the sentinel `no_inst` instead of `none`). -/
+def lookup_inst (x : Int) : List (fol_term × Int) → Option fol_term
+  | (t, y) :: rest => if y == x then some t else lookup_inst x rest
+  | [] => none
+
+/-- `lookup_inst` with a default for the "no instantiation" case. -/
+def lookup_instd (x : Int) : List (fol_term × Int) → fol_term → fol_term
+  | (t, y) :: rest, d => if y == x then t else lookup_instd x rest d
+  | [], d => d
 
 /-- A FOL atom: predicate code paired with argument terms. -/
 abbrev fol_atom := Int × List fol_term
@@ -166,7 +256,7 @@ partial def fol_free_in (v : Int) (tm : fol_term) : Bool :=
 /-- Apply a shadow substitution `theta` (a `(term, var)` assoc, reversed). -/
 partial def fol_subst (theta : List (fol_term × Int)) (tm : fol_term) : fol_term :=
   match tm with
-  | .Fvar v => rev_assocd v theta tm
+  | .Fvar v => lookup_instd v theta tm
   | .Fnapp f args =>
       -- meson.ml 203 `if args' == args` (physical): qmapC's flag, in O(1)
       let (args', changed) := qmapC (fol_subst theta) args
@@ -184,8 +274,8 @@ partial def fol_subst_bump (offset : Int) (theta : List (fol_term × Int)) (tm :
   | .Fvar v =>
       if v < offinc then
         let v' := v + offset
-        rev_assocd v' theta (.Fvar v')
-      else rev_assocd v theta tm
+        lookup_instd v' theta (.Fvar v')
+      else lookup_instd v theta tm
   | .Fnapp f args =>
       let (args', changed) := qmapC (fol_subst_bump offset theta) args
       if !changed then tm else .Fnapp f args'
@@ -209,9 +299,9 @@ partial def istriv (env : List (fol_term × Int)) (x : Int) (t : fol_term) :
   | .Fvar y =>
       if y == x then .ok true
       else
-        match rev_assoc y env with
-        | .ok t' => istriv env x t'
-        | .error _ => .ok false
+        match lookup_inst y env with
+        | some t' => istriv env x t'
+        | none => .ok false
   | .Fnapp _ args =>
       -- exists (istriv env x) args && failwith "cyclic"
       let rec anyTriv : List fol_term → Except String Bool
@@ -232,15 +322,15 @@ partial def fol_unify (offset : Int) (tm1 tm2 : fol_term)
       else itlist2M (fun a b s => fol_unify offset a b s) fargs gargs sofar
   | _, .Fvar x =>
       let x' := x + offset
-      match rev_assoc x' sofar with
-      | .ok tm2' => fol_unify 0 tm1 tm2' sofar
-      | .error _ => do
+      match lookup_inst x' sofar with
+      | some tm2' => fol_unify 0 tm1 tm2' sofar
+      | none => do
           if ← istriv sofar x' tm1 then .ok sofar
           else .ok ((tm1, x') :: sofar)
   | .Fvar x, _ =>
-      match rev_assoc x sofar with
-      | .ok tm1' => fol_unify offset tm1' tm2 sofar
-      | .error _ => do
+      match lookup_inst x sofar with
+      | some tm1' => fol_unify offset tm1' tm2 sofar
+      | none => do
           let tm2' := fol_subst_bump offset [] tm2
           if ← istriv sofar x tm2' then .ok sofar
           else .ok ((tm2', x) :: sofar)
@@ -257,13 +347,13 @@ partial def fol_eq (insts : List (fol_term × Int)) (tm1 tm2 : fol_term) : Bool 
       f == g && (fargs.length == gargs.length) &&
         (List.all (fargs.zip gargs) (fun (a, b) => fol_eq insts a b))
   | _, .Fvar x =>
-      match rev_assoc x insts with
-      | .ok tm2' => fol_eq insts tm1 tm2'
-      | .error _ => (istriv insts x tm1).toOption.getD false
+      match lookup_inst x insts with
+      | some tm2' => fol_eq insts tm1 tm2'
+      | none => (istriv insts x tm1).toOption.getD false
   | .Fvar x, _ =>
-      match rev_assoc x insts with
-      | .ok tm1' => fol_eq insts tm1' tm2
-      | .error _ => (istriv insts x tm2).toOption.getD false
+      match lookup_inst x insts with
+      | some tm1' => fol_eq insts tm1' tm2
+      | none => (istriv insts x tm2).toOption.getD false
 
 /-- Atom equality under `insts`. -/
 def fol_atom_eq (insts : List (fol_term × Int)) (a1 a2 : fol_atom) : Bool :=
@@ -274,9 +364,9 @@ def fol_atom_eq (insts : List (fol_term × Int)) (a1 a2 : fol_atom) : Bool :=
 partial def fol_subst_partial (insts : List (fol_term × Int)) (tm : fol_term) : fol_term :=
   match tm with
   | .Fvar v =>
-      match rev_assoc v insts with
-      | .ok t => fol_subst_partial insts t
-      | .error _ => tm
+      match lookup_inst v insts with
+      | some t => fol_subst_partial insts t
+      | none => tm
   | .Fnapp f args => .Fnapp f (args.map (fol_subst_partial insts))
 
 /-- Tease apart local and global instantiations.
@@ -284,7 +374,7 @@ partial def fol_subst_partial (insts : List (fol_term × Int)) (tm : fol_term) :
 def separate_insts (offset : Int) (oldinsts newinsts : List (fol_term × Int)) :
     List (fol_term × Int) × List (fol_term × Int) :=
   let (locins, globins) := qpartition (fun (p : fol_term × Int) => offset <= p.2) oldinsts newinsts
-  if globins == oldinsts then
+  if insts_eq globins oldinsts then
     (locins.map (fun (t, x) => (fol_subst_partial newinsts t, x)), oldinsts)
   else
     (locins.map (fun (t, x) => (fol_subst_partial newinsts t, x)),
@@ -303,12 +393,17 @@ structure FolStores where
   vcounter : IO.Ref Int
   cstore   : IO.Ref (List (term × Int))   -- constant → code
   ccounter : IO.Ref Int
+  /-- Hash tables for the lookups in `vstore` and `cstore` (meson.ml
+      1cd9471 `vtable`, `ctable`); the lists keep the order for the reverse
+      lookups. -/
+  vtable   : IO.Ref (Std.HashMap term Int)
+  ctable   : IO.Ref (Std.HashMap term Int)
   /-- `false_tm = `F`` (meson.ml 122), parsed once when meson.ml loads. -/
   false_tm : term
 
 /-- Reset the variable stores. -/
 def reset_vars (S : FolStores) : IO Unit := do
-  S.vstore.set []; S.gstore.set []; S.vcounter.set 0
+  S.vstore.set []; S.gstore.set []; S.vcounter.set 0; S.vtable.set {}
 
 private def inc_vcounter (S : FolStores) : IO (Except String Int) := do
   let n ← S.vcounter.get
@@ -318,60 +413,63 @@ private def inc_vcounter (S : FolStores) : IO (Except String Int) := do
 
 /-- `fol_of_var v`: code for HOL variable `v` (allocating a fresh code). -/
 def fol_of_var (S : FolStores) (v : term) : IO (Except String Int) := do
-  let currentvars ← S.vstore.get
-  match assoc v currentvars with
-  | .ok n => return .ok n
-  | .error _ =>
+  match (← S.vtable.get)[v]? with
+  | some n => return .ok n
+  | none =>
     match ← inc_vcounter S with
     | .error e => return .error e
-    | .ok n => do S.vstore.set ((v, n) :: currentvars); return .ok n
+    | .ok n => do
+      S.vstore.modify ((v, n) :: ·); S.vtable.modify (·.insert v n); return .ok n
 
 /-- `hol_of_var v`: the HOL variable for code `v`, with variable-bumping:
     a bumped code (≥ offinc) gets a fresh genvar of the right type. -/
 def hol_of_var (S : FolStores) (v : Int) : IO (Except String term) := do
   let vs ← S.vstore.get
-  match rev_assoc v vs with
-  | .ok t => return .ok t
-  | .error _ =>
+  match rev_assoc_int v vs with
+  | some t => return .ok t
+  | none =>
     let gs ← S.gstore.get
-    match rev_assoc v gs with
-    | .ok t => return .ok t
-    | .error _ =>
+    match rev_assoc_int v gs with
+    | some t => return .ok t
+    | none =>
       -- bumped var: base var v mod offinc, looked up in vstore then gstore
       -- (OCaml `hol_of_var v'` = try rev_assoc v' vstore with _ -> rev_assoc v' gstore)
       let v' := v % offinc
-      match rev_assoc v' vs with
-      | .ok hv' => do
+      match rev_assoc_int v' vs with
+      | some hv' => do
           let gv ← genvar (type_of hv')
           S.gstore.set ((gv, v) :: gs)
           return .ok gv
-      | .error _ =>
-        match rev_assoc v' gs with
-        | .error _ => return .error "hol_of_var"
-        | .ok hv' => do
+      | none =>
+        match rev_assoc_int v' gs with
+        | none => return .error "hol_of_var"
+        | some hv' => do
             let gv ← genvar (type_of hv')
             S.gstore.set ((gv, v) :: gs)
             return .ok gv
 
 /-- Reset the constant store to `[(F, 1)]`, counter 2. -/
 def reset_consts (S : FolStores) : IO (Except String Unit) := do
-  S.cstore.set [(S.false_tm, 1)]; S.ccounter.set 2; return .ok ()
+  S.cstore.set [(S.false_tm, 1)]; S.ccounter.set 2
+  S.ctable.set (({} : Std.HashMap term Int).insert S.false_tm 1); return .ok ()
 
 /-- `fol_of_const c`: code for HOL constant/term `c` (allocating fresh). -/
 def fol_of_const (S : FolStores) (c : term) : IO (Except String Int) := do
-  let currentconsts ← S.cstore.get
-  match assoc c currentconsts with
-  | .ok n => return .ok n
-  | .error _ => do
+  match (← S.ctable.get)[c]? with
+  | some n => return .ok n
+  | none => do
       let n ← S.ccounter.get
       S.ccounter.set (n + 1)
-      S.cstore.set ((c, n) :: currentconsts)
+      S.cstore.modify ((c, n) :: ·)
+      S.ctable.modify (·.insert c n)
       return .ok n
 
 /-- `hol_of_const c`: the HOL term for constant code `c`. -/
 def hol_of_const (S : FolStores) (c : Int) : IO (Except String term) := do
   let cs ← S.cstore.get
-  return rev_assoc c cs
+  match rev_assoc_int c cs with
+  | some t => return .ok t
+  | none => return .error "find"
 
 /- ---------------------------------------------------------------------- -/
 /- Translate a term (in NNF) into the shadow syntax.                      -/
@@ -529,11 +627,9 @@ def checkan (insts : List (fol_term × Int)) (pa : fol_atom) (anc : ancestors) :
     Except String ancestors :=
   let p' := -pa.1
   let t' : fol_atom := (p', pa.2)
-  match assoc p' anc with
-  | .error _ => .ok anc   -- Failure "find" → unchanged
-  | .ok ours =>
-      if ours.any (fun u => fol_atom_eq insts t' u.1.2) then .error "checkan"
-      else .ok anc
+  let ours := assocd_int p' anc []
+  if ours.any (fun u => fol_atom_eq insts t' u.1.2) then .error "checkan"
+  else .ok anc
 
 /- ---------------------------------------------------------------------- -/
 /- Insert new goal's negation in ancestor clause, given refinement.       -/
@@ -555,6 +651,41 @@ def insertan (B : BoolThms) (insts : List (fol_term × Int)) (pa : fol_atom)
 /- ---------------------------------------------------------------------- -/
 /- Perform basic MESON expansion.                                         -/
 /- ---------------------------------------------------------------------- -/
+
+/- ---------------------------------------------------------------------- -/
+/- Table of the input clauses, indexed by (signed) predicate code; each   -/
+/- entry lists the contrapositives for that predicate in order of         -/
+/- increasing number of hypotheses (see optimize_rules).  (1cd9471)       -/
+/- ---------------------------------------------------------------------- -/
+
+/-- `rule_table`: `rt_rules[p + rt_bound]` holds predicate `p`'s rules. -/
+structure rule_table where
+  rt_bound : Nat
+  rt_rules : Array (List folRule)
+
+/-- `make_rule_table rules`; the first entry for a predicate wins, as in
+    `assoc`. -/
+def make_rule_table (rules : ancestors) : rule_table :=
+  let bound := itlist (fun (pr : Int × List folRule) m => max pr.1.natAbs m) rules 0
+  let tab : Array (List folRule) := Array.replicate (2 * bound + 1) []
+  -- Fill in reverse, so the first entry for a predicate wins.
+  let tab := rules.reverse.foldl (fun t (pr : Int × List folRule) =>
+    t.set! (pr.1 + bound).toNat pr.2) tab
+  { rt_bound := bound, rt_rules := tab }
+
+/-- `rules_of_pred table p`. -/
+def rules_of_pred (table : rule_table) (p : Int) : List folRule :=
+  if p > table.rt_bound || p < -(table.rt_bound : Int) then []
+  else table.rt_rules[(p + table.rt_bound).toNat]!
+
+/-- `rules_within size l`: the rules with at most `size` hypotheses, a
+    prefix of the sorted list (the list itself when all qualify). -/
+def rules_within (size : Int) (l : List folRule) : List folRule :=
+  let rec go : List folRule → Nat → Nat
+    | r :: t, k => if (r.1.1.length : Int) <= size then go t (k + 1) else k
+    | [], k => k
+  let k := go l 0
+  if k == l.length then l else l.take k
 
 /-- Perform one basic MESON resolution step (bumps `inferences`). -/
 def meson_single_expand (inferences : IO.Ref Int) (loffset : Int) (rule : folRule)
@@ -599,7 +730,7 @@ def cacheconts {γ : Type} (cfg : MesonConfig) (memory : IO.Ref (List (γ × tup
     let mem ← memory.get
     if mem.any (fun entry =>
         let (_, (insts', _, size')) := entry
-        insts == insts' && (size <= size' || cfg.depth)) then
+        (size <= size' || cfg.depth) && insts_eq insts insts') then
       return .error "cachecont"
     else do
       memory.set (input :: mem)
@@ -641,7 +772,7 @@ partial def meson_expand_cont (inferences : IO.Ref Int) (loffset : Int) (rules :
     rule.  Mirrors the OCaml `Cut`/`Failure` control flow: a `Cut` from the
     ancestor path aborts; a plain failure falls through to the clause rules. -/
 def meson_expand (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref Int)
-    (rules : ancestors) (state : folState × tup)
+    (rules : rule_table) (state : folState × tup)
     (cont : (Int × thm) → (List (fol_atom × ancestors) × tup) → IO (Except String searchResult)) :
     IO (Except String searchResult) := do
   let ((g, anc), tupv) := state
@@ -655,21 +786,20 @@ def meson_expand (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref Int)
     let ancestorPath : IO (Except String searchResult) := do
       if cfg.prefine && pr > 0 then return .error "meson_expand"
       else
-        match assoc pr anc with
-        | .error _ => return .error "meson_expand"    -- Failure "find"
-        | .ok arules => meson_expand_cont inferences 0 arules newstate cont
+        match assoc_int pr anc with
+        | none => return .error "meson_expand"    -- Failure "find"
+        | some arules => meson_expand_cont inferences 0 arules newstate cont
     match ← ancestorPath with
     | .ok res => return .ok res
     | .error "Cut" => return .error "meson_expand"
     | .error _ =>
       -- clause-rules path
-      match assoc pr rules with
-      | .error _ => return .error "meson_expand"
-      | .ok prules =>
-        let crules := prules.filter (fun r => r.1.1.length <= size)
-        match ← meson_expand_cont inferences offset crules newstate cont with
-        | .ok res => return .ok res
-        | .error _ => return .error "meson_expand"   -- Cut or Failure both → fail
+      -- 1cd9471: a missing predicate gives [] (then `tryfind` fails), and the
+      -- rules within the size bound are a prefix of the sorted list.
+      let crules := rules_within size (rules_of_pred rules pr)
+      match ← meson_expand_cont inferences offset crules newstate cont with
+      | .ok res => return .ok res
+      | .error _ => return .error "meson_expand"   -- Cut or Failure both → fail
 
 /- ---------------------------------------------------------------------- -/
 /- Simple Prolog engine organizing search and backtracking.               -/
@@ -685,7 +815,7 @@ private def withCache {γ : Type} (cfg : MesonConfig)
 mutual
 /-- Expand a single goal, threading a continuation (CPS Prolog search). -/
 partial def expand_goal (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref Int)
-    (rules : ancestors) (depth : Int) (state : folState × tup)
+    (rules : rule_table) (depth : Int) (state : folState × tup)
     (cont : searchResult → IO (Except String searchResult)) :
     IO (Except String searchResult) := do
   if depth < 0 then return .error "expand_goal: too deep"
@@ -697,7 +827,7 @@ partial def expand_goal (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref 
         let k ← withCache cfg (fun (gs, (newinsts, newoffset, newsize)) => do
           let (locin, globin) := separate_insts offset pinsts newinsts
           let g' := fol_goal.Subgoal g gs apprule offset locin
-          if globin == insts && gs.isEmpty then
+          if insts_eq globin insts && gs.isEmpty then
             match ← cont (g', (globin, newoffset, size)) with
             | .ok r => return .ok r
             | .error _ => return .error "Cut"        -- try ... with Failure _ -> raise Cut
@@ -709,7 +839,7 @@ partial def expand_goal (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref 
 
 /-- Expand a list of goals, with divide-and-conquer for larger goal lists. -/
 partial def expand_goals (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref Int)
-    (rules : ancestors) (depth : Int)
+    (rules : rule_table) (depth : Int)
     (input : List (fol_atom × ancestors) × tup)
     (cont : (List fol_goal × tup) → IO (Except String searchResult)) :
     IO (Except String searchResult) := do
@@ -770,7 +900,7 @@ end
 /-- Entry point: expand a top-level goal with a fresh initial tuple.
     `maxdep` bounds recursion depth, `maxinf` the inference count. -/
 def expandGoalTop (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref Int)
-    (rules : ancestors) (g : folState) (maxdep maxinf : Int)
+    (rules : rule_table) (g : folState) (maxdep maxinf : Int)
     (cont : searchResult → IO (Except String searchResult)) :
     IO (Except String searchResult) :=
   expand_goal B cfg inferences rules maxdep (g, ([], 2 * offinc, maxinf)) cont
@@ -787,7 +917,7 @@ def expandGoalTop (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref Int)
     silent. The non-chatty branch avoids `remark`/`report` since those add a
     newline and the counters must share a line. -/
 partial def solveGoalAux (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref Int)
-    (rules : ancestors) (incdepth : Bool) (max incsize : Int) (g : folState) (n : Int) :
+    (rules : rule_table) (incdepth : Bool) (max incsize : Int) (g : folState) (n : Int) :
     IO (Except String searchResult) := do
   let idFn : searchResult → IO (Except String searchResult) := fun x => pure (.ok x)
   if n > max then return .error "solve_goal: Too deep"
@@ -814,7 +944,7 @@ partial def solveGoalAux (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref
 
 /-- `solve_goal rules incdepth min max incsize g`. -/
 def solve_goal (B : BoolThms) (cfg : MesonConfig) (inferences : IO.Ref Int)
-    (rules : ancestors) (incdepth : Bool) (min max incsize : Int) (g : fol_atom) :
+    (rules : rule_table) (incdepth : Bool) (min max incsize : Int) (g : fol_atom) :
     IO (Except String searchResult) :=
   solveGoalAux B cfg inferences rules incdepth max incsize (g, []) min
 
@@ -878,18 +1008,32 @@ def fol_of_hol_clauses (S : FolStores) (thms : List thm) :
   --   * `fol_of_hol_clause` MUTATES the shared stores (variable and constant
   --     numbering), so the order in which clauses are translated fixes the codes
   --     they receive.  Folding tail-first reproduces OCaml's assignment.
-  let rec rawFold : List thm → IO (Except String (List folRule))
-    | [] => return .ok []
+  --
+  -- 1cd9471: the same as `itlist (union' eqt o fol_of_hol_clause)` (it keeps
+  -- the last of each set of duplicates, in their original order), but each
+  -- rule is looked up among the kept rules with the same hash of its codes,
+  -- in one table shared by all the theorems.
+  let keep (tab : Std.HashMap UInt64 (List folRule)) (r : folRule) (acc : List folRule) :
+      Std.HashMap UInt64 (List folRule) × List folRule :=
+    let key := hash (r.1, r.2.1)
+    let bucket := tab.getD key []
+    if bucket.any (eqtRule r) then (tab, acc)
+    else (tab.insert key (r :: bucket), r :: acc)
+  let rec rawFold : List thm →
+      IO (Except String (Std.HashMap UInt64 (List folRule) × List folRule))
+    | [] => return .ok ({}, [])
     | th :: t => do
         match ← rawFold t with
         | .error e => return .error e
-        | .ok acc =>
+        | .ok tacc =>
           match ← fol_of_hol_clause S th with
           | .error e => return .error e
-          | .ok rs => return .ok (union' eqtRule rs acc)
+          | .ok rs =>
+            -- itlist keep rs acc: the last rule first
+            return .ok (rs.foldr (fun r (tab, acc) => keep tab r acc) tacc)
   match ← rawFold thms with
   | .error e => return .error e
-  | .ok rawrules => do
+  | .ok (_, rawrules) => do
     -- prs = setify (map (fst o snd o fst) rawrules)   [conc's predicate code]
     -- (meson.ml 497).  All three projections are total, so plain `o`; rightmost
     -- (`fst`) runs FIRST.
@@ -897,8 +1041,10 @@ def fol_of_hol_clauses (S : FolStores) (thms : List thm) :
     -- prules = map (fun t -> t, filter ((=) t o fst o snd o fst) rawrules) prs
     -- (meson.ml 499).  The predicate is the same projection chain followed by
     -- the equality test against `t`.
-    let prules : ancestors := prs.map (fun t =>
-      (t, rawrules.filter ((t == ·) o Prod.fst o Prod.snd o Prod.fst)))
+    -- (1cd9471: grouped through a hash table, same lists and order.)
+    let groups : Std.HashMap Int (List folRule) :=
+      rawrules.foldr (fun r g => let p := r.1.2.1; g.insert p (r :: g.getD p [])) {}
+    let prules : ancestors := prs.map (fun t => (t, groups.getD t []))
     -- srules = sort (fun (p,_) (q,_) -> abs p <= abs q) prules
     let srules := sort (fun (p : Int × List folRule) (q : Int × List folRule) =>
       p.1.natAbs <= q.1.natAbs) prules
@@ -1557,7 +1703,7 @@ def SIMPLE_MESON_REFUTE (B : BoolThms) (cfg : MesonConfig) (S : FolStores)
     match ← fol_of_hol_clauses S ths' with
     | .error e => return .error e
     | .ok raw =>
-      let rules := optimize_rules raw
+      let rules := make_rule_table (optimize_rules raw)
       match ← solve_goal B cfg' inferences rules cfg.depth min max inc (1, []) with
       | .error e => return .error e
       | .ok (proof, (insts, _, _)) => meson_to_hol S B P mem insts proof

@@ -267,9 +267,8 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
   let BINOM_TOP_STEP ← prove
    r"!n k. ((n + 1) - k) * binom(n + 1,k) = (n + 1) * binom(n,k)"
    (← do
-    let a ← ARITH_RULE (← q r"n < k ==> n + 1 = k \/ n + 1 < k")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q "n < k:num") THENL
-     [FIRST_ASSUM (DISJ_CASES_TAC o MATCH_MP a) THEN
+     [FIRST_ASSUM (DISJ_CASES_TAC o MATCH_MP (← ARITH_RULE (← q r"n < k ==> n + 1 = k \/ n + 1 < k"))) THEN
       ASM_SIMP_TAC [BINOM_LT, SUB_REFL, MULT_CLAUSES],
       ALL_TAC] THEN
     FIRST_X_ASSUM (MP_TAC o REWRITE_RULE [NOT_LT, LE_EXISTS]) THEN
@@ -284,9 +283,8 @@ def setupBinomial [HolBase] (D : BinomialDeps) :
   let BINOM_BOTTOM_STEP ← prove
    r"!n k. (k + 1) * binom(n,k + 1) = (n - k) * binom(n,k)"
    (← do
-    let a ← ARITH_RULE (← q r"n < k + 1 ==> n = k \/ n < k")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q "n < k + 1") THENL
-     [FIRST_ASSUM (DISJ_CASES_TAC o MATCH_MP a) THEN
+     [FIRST_ASSUM (DISJ_CASES_TAC o MATCH_MP (← ARITH_RULE (← q r"n < k + 1 ==> n = k \/ n < k"))) THEN
       ASM_SIMP_TAC [BINOM_LT, SUB_REFL, MULT_CLAUSES],
       ALL_TAC] THEN
     FIRST_X_ASSUM (MP_TAC o REWRITE_RULE [NOT_LT, LE_EXISTS]) THEN

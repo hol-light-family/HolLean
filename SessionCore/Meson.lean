@@ -30,10 +30,13 @@ initialize mesonGstore : IO.Ref (List (term × Int)) ← IO.mkRef []
 initialize mesonVcounter : IO.Ref Int ← IO.mkRef 0
 initialize mesonCstore : IO.Ref (List (term × Int)) ← IO.mkRef []
 initialize mesonCcounter : IO.Ref Int ← IO.mkRef 2
+initialize mesonVtable : IO.Ref (Std.HashMap term Int) ← IO.mkRef {}
+initialize mesonCtable : IO.Ref (Std.HashMap term Int) ← IO.mkRef {}
 
 def MesonS : Meson.FolStores :=
   { vstore := mesonVstore, gstore := mesonGstore, vcounter := mesonVcounter,
-    cstore := mesonCstore, ccounter := mesonCcounter, false_tm := mesonFalseTm }
+    cstore := mesonCstore, ccounter := mesonCcounter, false_tm := mesonFalseTm,
+    vtable := mesonVtable, ctable := mesonCtable }
 
 def Mn : Meson.MesonThms := mesonLayer
 

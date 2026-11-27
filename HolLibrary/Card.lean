@@ -1343,8 +1343,6 @@ def setupSquare [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
        (!y:A. y IN s ==> ?!x. x IN (s *_c s) /\ R(x,y))
        ==> (s = {z | ?p. R(p,z)})"
      (REWRITE_TAC [EXTENSION, IN_ELIM_THM] THEN MESON_TAC [])
-    -- Built when OCaml builds the tactic, last first.
-    let aad ← ASSUME (← q r"a:A IN d")
     pure (REPEAT STRIP_TAC THEN
       ABBREV_TAC
         (← q r"P = \R. ?s. INFINITE(s:A->bool) /\ s SUBSET k /\
@@ -1488,8 +1486,8 @@ def setupSquare [HolBase] (D : CardDeps) (BBasics : Basics) (BOrder : Order) (BA
           ASM_MESON_TAC [CARD_INFINITE_CONG],
           ALL_TAC] THEN
         REWRITE_TAC [← GSYM MEMBER_NOT_EMPTY] THEN DISCH_THEN (X_CHOOSE_TAC (← q "a:A")) THEN
-        FIRST_ASSUM (MP_TAC o (fun a => MATCH_MP a aad) o
-          (fun (th : thm) => lastThm (CONJUNCTS th))) THEN
+        FIRST_ASSUM ((fun (aad : thm) => MP_TAC o (fun a => MATCH_MP a aad) o
+          (fun (th : thm) => lastThm (CONJUNCTS th))) (← ASSUME (← q r"a:A IN d"))) THEN
         DISCH_THEN (MP_TAC o EXISTENCE) THEN
         DISCH_THEN (X_CHOOSE_THEN (← q r"b:A#A") (CONJUNCTS_THEN ASSUME_TAC)) THEN
         REWRITE_TAC [EXTENSION, NOT_FORALL_THM] THEN
@@ -2630,14 +2628,12 @@ def setupUnionOf [HolBase] (D : CardDeps) (BCountable : Countable) (ADefs : HolL
   let COUNTABLE_FLD ← prove
    r"!l:A->A->bool. COUNTABLE(fld l) <=> COUNTABLE {(x,y) | l x y}"
    (← do
-    let tFST ← q r"FST:A#A->A"
-    let tSND ← q r"SND:A#A->A"
     pure (GEN_TAC THEN EQ_TAC THENL
        [DISCH_THEN (fun th => tactic_of do
           pure (MP_TAC (← MATCH_MP COUNTABLE_CROSS (← CONJ th th)))),
         DISCH_THEN ((fun th => tactic_of do
-          let b2 ← ISPEC tSND th
-          let b1 ← ISPEC tFST th
+          let b2 ← ISPEC (← q r"SND:A#A->A") th
+          let b1 ← ISPEC (← q r"FST:A#A->A") th
           pure (MP_TAC b1 THEN MP_TAC b2)) o
           MATCH_MP COUNTABLE_IMAGE) THEN
         REWRITE_TAC [IMP_IMP, ← GSYM COUNTABLE_UNION]] THEN

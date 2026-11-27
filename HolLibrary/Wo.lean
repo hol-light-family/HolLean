@@ -159,14 +159,12 @@ def setupDefs [HolBase] (D : WoDeps) :
   let FINITE_FLD ← prove
    r"!l:A->A->bool. FINITE(fld l) <=> FINITE {(x,y) | l x y}"
    (← do
-    let tFST ← q r"FST:A#A->A"
-    let tSND ← q r"SND:A#A->A"
     pure (GEN_TAC THEN EQ_TAC THENL
        [DISCH_THEN (fun th => tactic_of do
           pure (MP_TAC (← MATCH_MP FINITE_CROSS (← CONJ th th)))),
         DISCH_THEN ((fun th => tactic_of do
-          let b2 ← ISPEC tSND th
-          let b1 ← ISPEC tFST th
+          let b2 ← ISPEC (← q r"SND:A#A->A") th
+          let b1 ← ISPEC (← q r"FST:A#A->A") th
           pure (MP_TAC b1 THEN MP_TAC b2)) o
           MATCH_MP FINITE_IMAGE) THEN
         REWRITE_TAC [IMP_IMP, ← GSYM FINITE_UNION]] THEN
@@ -977,7 +975,6 @@ def setupSegs [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) :
    r"!l s. wqoset l /\ FINITE s
          ==> wqoset(\x y:K->A. !i. i IN s ==> l (x i) (y i))"
    (← do
-    let tx ← q r"x:num->K->A"
     pure (REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM, WQOSET_NOBAD_SUBSEQ] THEN
       GEN_TAC THEN STRIP_TAC THEN DISCH_TAC THEN
       ASM_SIMP_TAC [QOSET_POINTWISE, FLD_POINTWISE, IN_UNIV, IN_ELIM_THM] THEN
@@ -986,8 +983,9 @@ def setupSegs [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) :
         MAP_EVERY X_GEN_TAC [← q "a:K", ← q r"s:K->bool"]] THEN
       REWRITE_TAC [FORALL_IN_INSERT, FORALL_AND_THM] THEN
       DISCH_THEN (CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN DISCH_THEN (fun th =>
-        X_GEN_TAC tx THEN STRIP_TAC THEN
-        tactic_of do pure (MP_TAC (← SPEC tx th))) THEN
+        tactic_of do
+          pure (X_GEN_TAC (← q r"x:num->K->A") THEN STRIP_TAC THEN
+                MP_TAC (← SPEC (← q r"x:num->K->A") th))) THEN
       ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
       X_GEN_TAC (← q r"l:num->num") THEN STRIP_TAC THEN
       FIRST_X_ASSUM (MP_TAC o SPEC (← q r"\i:num. (x:num->K->A) (l i) a")) THEN
@@ -1040,8 +1038,9 @@ def setupSegs [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) :
   -- Now useful things about the orderings
 
   let (POSET_REFL, POSET_TRANS, POSET_ANTISYM) ← list3 (← do
-    let tl ← q r"l:A->A->bool"
+    -- `map f l`: OCaml evaluates the list before the function.
     let ths := CONJUNCTS (← REWRITE_RULE [poset, IN] (← ASSUME (← q r"poset (l:A->A->bool)")))
+    let tl ← q r"l:A->A->bool"
     ths.mapM (fun th => do GEN tl (← DISCH_ALL th)))
 
   let POSET_FLDEQ ← prove
@@ -1049,9 +1048,10 @@ def setupSegs [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) :
    (MESON_TAC [POSET_REFL, ← REWRITE_RULE [IN] IN_FLD])
 
   let (WOSET_REFL, WOSET_TRANS, WOSET_ANTISYM, WOSET_TOTAL, WOSET_WELL) ← list5 (← do
-    let tl ← q r"l:A->A->bool"
+    -- `map f l`: OCaml evaluates the list before the function.
     let ths := CONJUNCTS (← REWRITE_RULE [woset, SUBSET, ← GSYM MEMBER_NOT_EMPTY, IN]
          (← ASSUME (← q r"woset (l:A->A->bool)")))
+    let tl ← q r"l:A->A->bool"
     ths.mapM (fun th => do GEN tl (← DISCH_ALL th)))
 
   let WOSET_FLDEQ ← prove
@@ -1310,8 +1310,6 @@ def setupInseg [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
                                       k = linseg l a /\
                                       k = linseg m a"
    (← do
-    let aFa ← ASSUME (← q r"fld(l) (a:A)")
-    let aFb ← ASSUME (← q r"fld(m) (b:A)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [ordinal] THEN STRIP_TAC THEN
       EVERY_ASSUM (fun th => TRY
         (tactic_of do pure (REWRITE_TAC [← MATCH_MP INSEG_LINSEG th]))) THEN
@@ -1321,8 +1319,10 @@ def setupInseg [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
                                  (X_CHOOSE_THEN (← q "b:A") STRIP_ASSUME_TAC)) THEN
       EXISTS_TAC (← q "a:A") THEN ASM_REWRITE_TAC [] THEN
       SUBGOAL_THEN (← q "a:A = b") (fun th => ASM_MESON_TAC [th]) THEN
-      FIRST_ASSUM (fun th => tactic_of do pure (SUBST1_TAC (← MATCH_MP th aFa))) THEN
-      FIRST_ASSUM (fun th => tactic_of do pure (SUBST1_TAC (← MATCH_MP th aFb))) THEN
+      FIRST_ASSUM (fun th => tactic_of do
+        pure (SUBST1_TAC (← MATCH_MP th (← ASSUME (← q r"fld(l) (a:A)"))))) THEN
+      FIRST_ASSUM (fun th => tactic_of do
+        pure (SUBST1_TAC (← MATCH_MP th (← ASSUME (← q r"fld(m) (b:A)"))))) THEN
       AP_TERM_TAC THEN ABS_TAC THEN AP_TERM_TAC THEN
       UNDISCH_TAC (← q r"k = linseg m (b:A)") THEN ASM_REWRITE_TAC [] THEN
       REWRITE_TAC [linseg, ← GSYM PAIRED_EXT] THEN PBETA_TAC THEN
@@ -1331,8 +1331,6 @@ def setupInseg [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
   let ORDINAL_CHAINED ← prove
    r"!(l:A->A->bool) m. ordinal(l) /\ ordinal(m) ==> m inseg l \/ l inseg m"
    (← do
-    let tl ← q r"l:A->A->bool"
-    let tm ← q r"m:A->A->bool"
     pure (REPEAT GEN_TAC THEN
       DISCH_THEN (fun th => tactic_of do
         let b2 ← MATCH_MP ORDINAL_CHAINED_LEMMA th
@@ -1340,8 +1338,8 @@ def setupInseg [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs :
         pure (STRIP_ASSUME_TAC b1 THEN ASSUME_TAC b2)) THEN
       MP_TAC (← SPEC (← q r"\k:A->A->bool. k inseg l /\ k inseg m") UNION_INSEG) THEN
       DISCH_THEN (fun th => tactic_of do
-        let c2 ← SPEC tm th
-        let c1 ← SPEC tl th
+        let c2 ← SPEC (← q r"m:A->A->bool") th
+        let c1 ← SPEC (← q r"l:A->A->bool") th
         pure (MP_TAC (← CONJ c1 c2))) THEN
       REWRITE_TAC [(← TAUT (← q r"(a /\ b ==> a) /\ (a /\ b ==> b)"))] THEN
       DISCH_THEN (fun th => STRIP_ASSUME_TAC th THEN
@@ -1656,8 +1654,6 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
   let WF_INSEG_WOSET ← prove
    r"WF(\(x:A->A->bool) y. woset x /\ woset y /\ x inseg y /\ ~(x = y))"
    (← do
-    let lw ← q r"(l:(A->A->bool)->(A->A->bool)) w"
-    let tw ← q r"w:A->A->bool"
     pure (REWRITE_TAC [WF] THEN X_GEN_TAC (← q r"P:(A->A->bool)->bool") THEN
       DISCH_TAC THEN
       ONCE_REWRITE_TAC [(← MESON [] (← q r"(?x. P x) <=> ~(!x. ~P x)"))] THEN
@@ -1694,15 +1690,14 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
                   RIGHT_FORALL_IMP_THM, NOT_IMP] THEN
       CONJ_TAC THENL [ASM_MESON_TAC [INSEG_SUBSET_FLD], ALL_TAC] THEN
       CONJ_TAC THENL [ASM_MESON_TAC [INSEG_REFL], ALL_TAC] THEN
-      DISCH_THEN (X_CHOOSE_THEN tw MP_TAC) THEN
+      DISCH_THEN (X_CHOOSE_THEN (← q r"w:A->A->bool") MP_TAC) THEN
       REPEAT (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-      DISCH_THEN (MP_TAC o SPEC lw) THEN
+      DISCH_THEN (MP_TAC o SPEC (← q r"(l:(A->A->bool)->(A->A->bool)) w")) THEN
       ASM_SIMP_TAC [NOT_IMP] THEN CONJ_TAC THENL
        [ASM_MESON_TAC [LINSEG_INSEG, INSEG_TRANS], DISCH_TAC] THEN
       FIRST_X_ASSUM (fun th => tactic_of do
-        let b2 ← SPEC tw th
-        let b1 ← SPEC lw th
-        pure (MP_TAC b1 THEN MP_TAC b2)) THEN
+        pure (MP_TAC (← SPEC (← q r"(l:(A->A->bool)->(A->A->bool)) w") th) THEN
+              MP_TAC (← SPEC (← q r"w:A->A->bool") th))) THEN
       ASM_SIMP_TAC [] THEN REPEAT STRIP_TAC THEN
       UNDISCH_TAC (← q r"fld ((l:(A->A->bool)->(A->A->bool)) w) (a (l w))") THEN
       FIRST_X_ASSUM (fun th => tactic_of do
@@ -1725,7 +1720,6 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
          ==> ?f. (!x y. x IN s /\ y IN s ==> (l(f x) (f y) <=> l x y)) /\
                  (!x y. y IN IMAGE f s /\ l x y ==> x IN IMAGE f s)"
    (← do
-    let tdiff ← q r"(:A) DIFF IMAGE (f:A->A) {u | u IN s /\ properly l u x}"
     pure (REPEAT STRIP_TAC THEN
       FIRST_ASSUM (MP_TAC o (fun (th : thm) => lastThm (CONJUNCTS th)) o GEN_REWRITE_RULE id [woset]) THEN
       ASM_REWRITE_TAC [UNIV, MEMBER_NOT_EMPTY] THEN
@@ -1745,7 +1739,8 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
        [FIRST_ASSUM (MP_TAC o CONJUNCT2 o REWRITE_RULE [WOSET_WF, properly]) THEN
         REWRITE_TAC [WF_IND] THEN DISCH_THEN MATCH_MP_TAC THEN
         X_GEN_TAC (← q "x:A") THEN REWRITE_TAC [IMP_IMP, ← GSYM CONJ_ASSOC] THEN
-        STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC tdiff) THEN
+        STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC
+         (← q r"(:A) DIFF IMAGE (f:A->A) {u | u IN s /\ properly l u x}")) THEN
         ASM_REWRITE_TAC [] THEN ANTS_TAC THENL
          [REPEAT (POP_ASSUM MP_TAC) THEN
           REWRITE_TAC [properly, woset] THEN SET_TAC [],
@@ -1754,7 +1749,8 @@ def setupWellOrder [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSe
           REPEAT (POP_ASSUM MP_TAC) THEN
           REWRITE_TAC [properly, woset] THEN SET_TAC []],
         ALL_TAC] THEN
-      FIRST_X_ASSUM (MP_TAC o MATCH_MP MONO_FORALL o GEN (← q "x:A") o SPEC tdiff) THEN
+      FIRST_X_ASSUM (MP_TAC o MATCH_MP MONO_FORALL o GEN (← q "x:A") o SPEC
+         (← q r"(:A) DIFF IMAGE (f:A->A) {u | u IN s /\ properly l u x}")) THEN
       ASM_REWRITE_TAC [] THEN ANTS_TAC THENL
        [REPEAT (POP_ASSUM MP_TAC) THEN REWRITE_TAC [properly, woset] THEN SET_TAC [],
         FIRST_X_ASSUM ((fun (_ : thm) => ALL_TAC) o CONV_RULE (BINDER_CONV SYM_CONV))] THEN
@@ -1987,7 +1983,6 @@ def setupZorn [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs : 
             ?P. (chain(l) P /\ C SUBSET P) /\
                 (!R. chain(l) R /\ P SUBSET R ==> (R = P))"
    (← do
-    let t ← TAUT (← q r"a /\ b /\ (a /\ b ==> c) ==> (a /\ b) /\ c")
     pure (REPEAT STRIP_TAC THEN
       MP_TAC (← ISPEC (← q r"\c1 c2. C SUBSET c1 /\ c1 SUBSET c2 /\
                               chain(l:A->A->bool) c2") ZL) THEN PBETA_TAC THEN
@@ -2002,7 +1997,7 @@ def setupZorn [HolBase] (D : WoDeps) (BDefs : Defs) (BOrders : Orders) (BSegs : 
           FIRST_ASSUM (MP_TAC o SPECL [← q r"D:A->bool", ← q r"D:A->bool"]) THEN
           REWRITE_TAC [← ASSUME (← q r"(P:(A->bool)->bool) D"), SUBSET_REFL] THEN
           STRIP_TAC THEN
-          MATCH_MP_TAC t THEN
+          MATCH_MP_TAC (← TAUT (← q r"a /\ b /\ (a /\ b ==> c) ==> (a /\ b) /\ c")) THEN
           REPEAT CONJ_TAC THENL
            [REWRITE_TAC [UNIONS_PRED, SUBSET_PRED] THEN REPEAT STRIP_TAC THEN
             BETA_TAC THEN EXISTS_TAC (← q r"D:A->bool") THEN ASM_REWRITE_TAC [] THEN

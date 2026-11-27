@@ -150,12 +150,9 @@ def setupIter [HolBase] (D : IterDeps) :
           P(f 0) /\ (!m n. P(f m) /\ ~(m = 0) ==> (P(f(m + n)) <=> P(f n)))
           ==> ?d. !n. P(f n) <=> d divides n"
    (← do
-    let n4 ← NUMBER_RULE (← q r"(d:num) divides m + d <=> d divides m")
-    let n3 ← NUMBER_RULE (← q r"n divides 0")
-    let n2 ← NUMBER_RULE (← q r"0 divides n <=> n = 0")
     pure (REPEAT STRIP_TAC THEN
     ASM_CASES_TAC (← q r"!n. ~(n = 0) ==> ~P(f n:A)") THENL
-     [EXISTS_TAC (← q "0") THEN REWRITE_TAC [n2] THEN
+     [EXISTS_TAC (← q "0") THEN REWRITE_TAC [(← NUMBER_RULE (← q r"0 divides n <=> n = 0"))] THEN
       ASM_MESON_TAC [],
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE I [NOT_FORALL_THM])] THEN
     GEN_REWRITE_TAC LAND_CONV [num_WOP] THEN MATCH_MP_TAC MONO_EXISTS THEN
@@ -163,12 +160,12 @@ def setupIter [HolBase] (D : IterDeps) :
     REWRITE_TAC [← GSYM IMP_CONJ_ALT] THEN STRIP_TAC THEN
     MATCH_MP_TAC num_WF THEN X_GEN_TAC (← q "n:num") THEN DISCH_TAC THEN
     ASM_CASES_TAC (← q "n = 0") THENL
-     [ASM_MESON_TAC [n3], ALL_TAC] THEN
+     [ASM_MESON_TAC [(← NUMBER_RULE (← q r"n divides 0"))], ALL_TAC] THEN
     ASM_CASES_TAC (← q "d <= n:num") THENL
      [ALL_TAC, ASM_MESON_TAC [NOT_LT, DIVIDES_LE]] THEN
     SUBGOAL_THEN (← q "n:num = (n - d) + d") SUBST1_TAC THENL
      [ASM_ARITH_TAC, ABBREV_TAC (← q "m:num = n - d")] THEN
-    REWRITE_TAC [n4] THEN
+    REWRITE_TAC [(← NUMBER_RULE (← q r"(d:num) divides m + d <=> d divides m"))] THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q "m:num")) THEN
     ANTS_TAC THENL [ASM_ARITH_TAC, ASM_MESON_TAC [ADD_SYM]]))
 
@@ -180,18 +177,17 @@ def setupIter [HolBase] (D : IterDeps) :
           (!x y. R x y ==> R (f x) (f y))
           ==> ?d. !n. R (ITER n f z) z <=> d divides n"
    (← do
-    let m1 ← MESON []
-      (← q r"!a b:num->A. (!x y. R x y ==> R y x) /\
-            (!x y z. R x y /\ R y z ==> R x z) /\
-            (!n. R (a n) (b n))
-            ==> (!n. R (a n) z <=> R (b n) z)")
     pure (REPEAT STRIP_TAC THEN
     MP_TAC (← ISPECL [← q r"\x. (R:A->A->bool) x z",
                    ← q r"\n. ITER n f (z:A)"] ORDER_EXISTENCE_GEN) THEN
     ASM_REWRITE_TAC [ITER] THEN DISCH_THEN MATCH_MP_TAC THEN
     REWRITE_TAC [RIGHT_FORALL_IMP_THM] THEN X_GEN_TAC (← q "m:num") THEN STRIP_TAC THEN
     ONCE_REWRITE_TAC [ADD_SYM] THEN REWRITE_TAC [← GSYM ITER_ADD] THEN
-    MP_TAC m1 THEN
+    MP_TAC (← MESON []
+      (← q r"!a b:num->A. (!x y. R x y ==> R y x) /\
+            (!x y z. R x y /\ R y z ==> R x z) /\
+            (!n. R (a n) (b n))
+            ==> (!n. R (a n) z <=> R (b n) z)")) THEN
     DISCH_THEN MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN
     INDUCT_TAC THEN ASM_REWRITE_TAC [ITER] THEN
     ASM_MESON_TAC []))
@@ -206,10 +202,6 @@ def setupIter [HolBase] (D : IterDeps) :
        (!x y. R (f x) (f y) <=> R x y)
        ==> ?d. 0 < d /\ d <= k /\ !n. R (ITER n f z) z <=> d divides n"
    (← do
-    let n2 ← NUMBER_RULE (← q r"!n. 0 divides n <=> n = 0")
-    let t1 ← TAUT (← q r"~p /\ (~q ==> r) ==> (p <=> q) ==> r")
-    let a1 ← ARITH_RULE
-      (← q r"c <= k ==> s <= c ==> ~(s = k + 1)")
     pure (REPEAT STRIP_TAC THEN
     SUBGOAL_THEN
      (← q r"?m. 0 < m /\ m <= k /\ (R:A->A->bool) (ITER m f z) z")
@@ -217,9 +209,10 @@ def setupIter [HolBase] (D : IterDeps) :
       [MP_TAC (← ISPECL [← q r"\n. (R:A->A->bool) (ITER n f z)", ← q r"0..k"]
         CARD_IMAGE_EQ_INJ) THEN
        REWRITE_TAC [FINITE_NUMSEG, CARD_NUMSEG, SUB_0] THEN
-       MATCH_MP_TAC t1 THEN
+       MATCH_MP_TAC (← TAUT (← q r"~p /\ (~q ==> r) ==> (p <=> q) ==> r")) THEN
        CONJ_TAC THENL
-        [FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP a1) THEN
+        [FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← ARITH_RULE
+      (← q r"c <= k ==> s <= c ==> ~(s = k + 1)"))) THEN
          MATCH_MP_TAC CARD_SUBSET THEN ASM_REWRITE_TAC [] THEN ASM SET_TAC [],
          REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, LEFT_IMP_EXISTS_THM] THEN
          MATCH_MP_TAC WLOG_LT THEN REWRITE_TAC [] THEN
@@ -246,7 +239,7 @@ def setupIter [HolBase] (D : IterDeps) :
        ASM_REWRITE_TAC [] THEN MATCH_MP_TAC MONO_EXISTS THEN
        X_GEN_TAC (← q "d:num") THEN ASM_CASES_TAC (← q "d = 0") THEN ASM_SIMP_TAC [] THEN
        DISCH_THEN (MP_TAC o SPEC (← q "m:num")) THEN
-       ASM_SIMP_TAC [LE_1, n2] THEN
+       ASM_SIMP_TAC [LE_1, (← NUMBER_RULE (← q r"!n. 0 divides n <=> n = 0"))] THEN
        DISCH_THEN (MP_TAC o MATCH_MP DIVIDES_LE) THEN ASM_ARITH_TAC]))
 
   let ORDER_EXISTENCE_FINITE ← prove

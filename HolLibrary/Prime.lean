@@ -2444,8 +2444,6 @@ def setupLcm [HolBase] (D : PrimeDeps) (PDivides : Divides) (PGcd : Gcd) (PCopri
    (← do
     -- OCaml evaluates the THEN chain's operands right to left: this MESON
     -- (in the last step) runs before the NUMBER_RULE (in an earlier one).
-    let coprime_of_ndiv ← MESON [PRIME_COPRIME_STRONG]
-      (← q r"prime p /\ ~(p divides n) ==> coprime(p,n)")
     pure (REPEAT STRIP_TAC THEN EQ_TAC THENL [STRIP_TAC, MESON_TAC [DIVIDES_LCM]] THEN
     ASM_CASES_TAC (← q r"m = 0") THEN ASM_REWRITE_TAC [LCM_0, DIVIDES_0] THEN
     ASM_CASES_TAC (← q r"n = 0") THEN ASM_REWRITE_TAC [LCM_0, DIVIDES_0] THEN
@@ -2474,7 +2472,8 @@ def setupLcm [HolBase] (D : PrimeDeps) (PDivides : Divides) (PGcd : Gcd) (PCopri
      (← ONCE_REWRITE_RULE [MULT_SYM] COPRIME_EXP_DIVPROD))) THEN
     ANTS_TAC THENL
      [MATCH_MP_TAC COPRIME_MUL THEN CONJ_TAC THEN
-      MATCH_MP_TAC coprime_of_ndiv THEN
+      MATCH_MP_TAC (← MESON [PRIME_COPRIME_STRONG]
+      (← q r"prime p /\ ~(p divides n) ==> coprime(p,n)")) THEN
       ASM_REWRITE_TAC [divides] THEN STRIP_TAC THENL
        [UNDISCH_TAC (← q r"!l. a < l ==> ~(?x. m = p EXP l * x)") THEN
         DISCH_THEN (MP_TAC o SPEC (← q r"a + 1")),

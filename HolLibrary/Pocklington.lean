@@ -357,12 +357,11 @@ def setupBasics [HolBase] (D : PocklingtonDeps) :
   let CONG_CASES ← prove
    r"!x y n. (x == y) (mod n) <=> (?q. x = q * n + y) \/ (?q. y = q * n + x)"
    (← do
-    let a ← ARITH_RULE (← q r"x + a = y + b ==> x = (b - a) + y \/ y = (a - b) + x")
     pure (REPEAT GEN_TAC THEN EQ_TAC THENL
      [ALL_TAC, STRIP_TAC THEN ASM_REWRITE_TAC [] THEN NUMBER_TAC] THEN
     REWRITE_TAC [cong, nat_mod, LEFT_IMP_EXISTS_THM] THEN
     MAP_EVERY X_GEN_TAC [← q "q1:num", ← q "q2:num"] THEN
-    DISCH_THEN (MP_TAC o MATCH_MP a) THEN
+    DISCH_THEN (MP_TAC o MATCH_MP (← ARITH_RULE (← q r"x + a = y + b ==> x = (b - a) + y \/ y = (a - b) + x"))) THEN
     REWRITE_TAC [← GSYM LEFT_SUB_DISTRIB] THEN MESON_TAC [MULT_SYM]))
 
   let CONG_CASE ← prove
@@ -797,13 +796,9 @@ def setupSolve [HolBase] (D : PocklingtonDeps) (BBasics : Basics) :
    r"!a p x. prime p /\ coprime(p,a) /\ 0 < x /\ x < p
            ==> ?!y. 0 < y /\ y < p /\ (x * y == a) (mod p)"
    (← do
-    -- right to left: the three ARITH_RULEs, last first
-    let r3 ← ARITH_RULE (← q r"~(p = 0) ==> 0 < p")
-    let r2 ← ARITH_RULE (← q r"0 < r <=> ~(r = 0)")
-    let r1 ← ARITH_RULE (← q r"1 < p <=> ~(p = 0) /\ ~(p = 1)")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q "p = 0") THEN ASM_REWRITE_TAC [PRIME_0] THEN
     REPEAT STRIP_TAC THEN SUBGOAL_THEN (← q "1 < p") ASSUME_TAC THENL
-     [REWRITE_TAC [r1] THEN
+     [REWRITE_TAC [(← ARITH_RULE (← q r"1 < p <=> ~(p = 0) /\ ~(p = 1)"))] THEN
       ASM_MESON_TAC [PRIME_1],
       ALL_TAC] THEN
     MP_TAC (← SPECL [← q "x:num", ← q "a:num", ← q "p:num"] CONG_SOLVE_UNIQUE) THEN
@@ -817,9 +812,9 @@ def setupSolve [HolBase] (D : PocklingtonDeps) (BBasics : Basics) :
     MATCH_MP_TAC EQ_IMP THEN
     AP_TERM_TAC THEN GEN_REWRITE_TAC id [FUN_EQ_THM] THEN
     X_GEN_TAC (← q "r:num") THEN REWRITE_TAC [] THEN
-    REWRITE_TAC [r2] THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"0 < r <=> ~(r = 0)"))] THEN
     ASM_CASES_TAC (← q "r = 0") THEN ASM_REWRITE_TAC [MULT_CLAUSES] THEN
-    ASM_SIMP_TAC [r3] THEN
+    ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(p = 0) ==> 0 < p"))] THEN
     ONCE_REWRITE_TAC [CONG_SYM] THEN REWRITE_TAC [CONG_0] THEN
     ASM_MESON_TAC [DIVIDES_REFL, PRIME_1, coprime]))
 
@@ -920,11 +915,10 @@ def setupSolve [HolBase] (D : PocklingtonDeps) (BBasics : Basics) :
         ==> ?!x. coprime(x,a * b) /\ x < a * b /\
                  (x == m) (mod a) /\ (x == n) (mod b)"
    (← do
-    let m ← MESON []
-      (← q r"(!x. P(x) ==> Q(x)) ==> (?!x. P x) ==> ?!x. Q(x) /\ P(x)")
     pure (REPEAT STRIP_TAC THEN MP_TAC
      (← SPECL [← q "a:num", ← q "b:num", ← q "m:num", ← q "n:num"] CHINESE_REMAINDER_UNIQUE) THEN
-    ASM_REWRITE_TAC [] THEN MATCH_MP_TAC m THEN
+    ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← MESON []
+      (← q r"(!x. P(x) ==> Q(x)) ==> (?!x. P x) ==> ?!x. Q(x) /\ P(x)")) THEN
     ASM_SIMP_TAC [CHINESE_REMAINDER_UNIQUE] THEN
     ASM_MESON_TAC [CONG_COPRIME, COPRIME_SYM, COPRIME_MUL]))
 
@@ -1066,24 +1060,21 @@ def setupSolve [HolBase] (D : PocklingtonDeps) (BBasics : Basics) :
         (a * x == 1) (mod n) /\ x <= n /\ ~(n = 1 /\ x = 0)
         ==> inverse_mod n a = x"
    (← do
-    let n2 ← NUMBER_RULE
-      (← q r"(a * x == 1) (mod n) /\ (a * y == 1) (mod n) ==> (x == y) (mod n)")
-    let a ← ARITH_RULE
-      (← q r"~(n = 1 /\ x = 0) ==> ~(x = n) /\ x <= n ==> ~(n = 1)")
-    let n ← NUMBER_RULE (← q r"(a * n == z) (mod n) <=> n divides z")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q "n = 0") THENL
      [ASM_REWRITE_TAC [CONG_MOD_0, MULT_EQ_1] THEN ARITH_TAC,
       ALL_TAC] THEN
     ASM_CASES_TAC (← q "x:num = n") THENL
-     [ASM_REWRITE_TAC [n] THEN
+     [ASM_REWRITE_TAC [(← NUMBER_RULE (← q r"(a * n == z) (mod n) <=> n divides z"))] THEN
       REWRITE_TAC [DIVIDES_ONE] THEN SIMP_TAC [inverse_mod, LE_REFL],
       REPEAT STRIP_TAC] THEN
-    FIRST_X_ASSUM (MP_TAC o MATCH_MP a) THEN
+    FIRST_X_ASSUM (MP_TAC o MATCH_MP (← ARITH_RULE
+      (← q r"~(n = 1 /\ x = 0) ==> ~(x = n) /\ x <= n ==> ~(n = 1)"))) THEN
     ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
     MATCH_MP_TAC CONG_IMP_EQ THEN EXISTS_TAC (← q "n:num") THEN
     ASM_REWRITE_TAC [INVERSE_MOD_BOUND] THEN
     REPEAT (CONJ_TAC THENL [ASM_ARITH_TAC, ALL_TAC]) THEN
-    MATCH_MP_TAC n2 THEN
+    MATCH_MP_TAC (← NUMBER_RULE
+      (← q r"(a * x == 1) (mod n) /\ (a * y == 1) (mod n) ==> (x == y) (mod n)")) THEN
     ASM_REWRITE_TAC [INVERSE_MOD_RMUL_EQ] THEN
     UNDISCH_TAC (← q r"(a * x == 1) (mod n)") THEN CONV_TAC NUMBER_RULE))
 
@@ -1146,13 +1137,6 @@ def setupSolve [HolBase] (D : PocklingtonDeps) (BBasics : Basics) :
    r"!m n. coprime(m,n)
          ==> m * inverse_mod n m + n * inverse_mod m n = m * n + 1"
    (← do
-    let a2 ← ARITH_RULE
-      (← q r"m * x <= m * n /\ n * y <= n * m /\ 2 * m * n <= q * m * n
-    ==> m * x + n * y = 1 + q * m * n ==> u:num = v")
-    let a ← ARITH_RULE
-      (← q r"a + b = 1 <=> a = 0 /\ b = 1 \/ a = 1 /\ b = 0")
-    let n2 ← NUMBER_RULE (← q r"(a + m * x == 1) (mod m) <=> (a == 1) (mod m)")
-    let n1 ← NUMBER_RULE (← q r"(m * x + a == 1) (mod m) <=> (a == 1) (mod m)")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q "m = 0") THENL
      [ASM_SIMP_TAC [COPRIME_0, inverse_mod, MULT_CLAUSES, ADD_CLAUSES, ARITH],
       ALL_TAC] THEN
@@ -1164,7 +1148,7 @@ def setupSolve [HolBase] (D : PocklingtonDeps) (BBasics : Basics) :
      (← q r"(m * inverse_mod n m + n * inverse_mod m n == 1) (mod (m * n))")
     MP_TAC THENL
      [MATCH_MP_TAC CONG_CHINESE THEN ASM_REWRITE_TAC [] THEN
-      REWRITE_TAC [n1, n2,
+      REWRITE_TAC [(← NUMBER_RULE (← q r"(m * x + a == 1) (mod m) <=> (a == 1) (mod m)")), (← NUMBER_RULE (← q r"(a + m * x == 1) (mod m) <=> (a == 1) (mod m)")),
                   INVERSE_MOD_RMUL_EQ, INVERSE_MOD_LMUL_EQ] THEN
       ASM_MESON_TAC [COPRIME_SYM],
       REWRITE_TAC [CONG_TO_1, ADD_EQ_0, MULT_EQ_0, MULT_EQ_1]] THEN
@@ -1173,12 +1157,15 @@ def setupSolve [HolBase] (D : PocklingtonDeps) (BBasics : Basics) :
       ASM_CASES_TAC (← q "n = 1") THEN ASM_REWRITE_TAC [inverse_mod, ARITH],
       DISCH_THEN (X_CHOOSE_THEN (← q "q:num") MP_TAC)] THEN
     ASM_CASES_TAC (← q "q = 0") THENL
-     [ASM_REWRITE_TAC [MULT_CLAUSES, ADD_CLAUSES, MULT_EQ_0, MULT_EQ_1, a] THEN
+     [ASM_REWRITE_TAC [MULT_CLAUSES, ADD_CLAUSES, MULT_EQ_0, MULT_EQ_1, (← ARITH_RULE
+      (← q r"a + b = 1 <=> a = 0 /\ b = 1 \/ a = 1 /\ b = 0"))] THEN
       MAP_EVERY ASM_CASES_TAC [← q "m = 1", ← q "n = 1"] THEN
       ASM_REWRITE_TAC [COPRIME_0, inverse_mod, ARITH],
       ALL_TAC] THEN
     ASM_CASES_TAC (← q "q = 1") THENL [ASM_REWRITE_TAC [] THEN ARITH_TAC, ALL_TAC] THEN
-    MATCH_MP_TAC a2 THEN
+    MATCH_MP_TAC (← ARITH_RULE
+      (← q r"m * x <= m * n /\ n * y <= n * m /\ 2 * m * n <= q * m * n
+    ==> m * x + n * y = 1 + q * m * n ==> u:num = v")) THEN
     ASM_REWRITE_TAC [LE_MULT_LCANCEL, INVERSE_MOD_BOUND_LE] THEN
     REWRITE_TAC [LE_MULT_RCANCEL] THEN ASM_ARITH_TAC))
 
@@ -1517,8 +1504,6 @@ def setupSquarefree [HolBase] (D : PocklingtonDeps) (BBasics : Basics) :
         ==> d = e"
    (← do
     -- OCaml's order (right to left): the INTEGER_RULE, then the INT_ARITH
-    let r2 ← INTEGER_RULE (← q r"!a b:int. a divides b * a")
-    let r1 ← INT_ARITH (← q r"(d * t:int) pow 2 = d * d * t pow 2")
     pure (REPEAT STRIP_TAC THEN
     SUBGOAL_THEN (← q r"(d:int) divides n") MP_TAC THENL
      [MATCH_MP_TAC INT_SQUAREFREE_DIVPOW THEN EXISTS_TAC (← q r"2") THEN
@@ -1533,7 +1518,7 @@ def setupSquarefree [HolBase] (D : PocklingtonDeps) (BBasics : Basics) :
       ALL_TAC] THEN
     SUBGOAL_THEN (← q r"e:int = d * t pow 2") SUBST_ALL_TAC THENL
      [UNDISCH_TAC (← q r"d * e = (d * t:int) pow 2") THEN
-      REWRITE_TAC [r1] THEN
+      REWRITE_TAC [(← INT_ARITH (← q r"(d * t:int) pow 2 = d * d * t pow 2"))] THEN
       ASM_REWRITE_TAC [INT_EQ_MUL_LCANCEL],
       ALL_TAC] THEN
     UNDISCH_TAC (← q r"squarefree(num_of_int(abs(d * (t:int) pow 2)))") THEN
@@ -1541,7 +1526,7 @@ def setupSquarefree [HolBase] (D : PocklingtonDeps) (BBasics : Basics) :
     DISCH_THEN (MP_TAC o SPEC (← q r"num_of_int(abs(t:int))")) THEN
     SIMP_TAC [num_divides, ← GSYM INT_OF_NUM_POW, INT_OF_NUM_OF_INT, INT_ABS_POS,
               INT_DIVIDES_ABS, INT_POW2_ABS] THEN
-    REWRITE_TAC [r2] THEN
+    REWRITE_TAC [(← INTEGER_RULE (← q r"!a b:int. a divides b * a"))] THEN
     DISCH_THEN (MP_TAC o AP_TERM (← q r"int_of_num")) THEN
     SIMP_TAC [INT_OF_NUM_OF_INT, INT_ABS_POS] THEN
     ONCE_REWRITE_TAC [← GSYM INT_POW2_ABS] THEN SIMP_TAC [] THEN INT_ARITH_TAC))
@@ -1931,6 +1916,10 @@ def setupPhi [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solve)
     REWRITE_TAC [MULT_AC])
 
   let ITERATE_OVER_COPRIME ← (← do
+    -- OCaml's `let lemma = prove (..) in` runs before the tactic is built.
+    let lemma ← prove
+     r"~(n = 0) ==> ((a * x MOD n == b) (mod n) <=> (a * x == b) (mod n))"
+     (MESON_TAC [CONG_REFL, CONG_SYM, CONG_TRANS, CONG_MULT, CONG_MOD])
     pure (prove
      r"!op f n k.
             monoidal(op) /\ coprime(k,n) /\
@@ -1944,9 +1933,7 @@ def setupPhi [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solve)
       FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP ITERATE_EQ_GENERAL_INVERSES) THEN
       MAP_EVERY EXISTS_TAC [← q r"\x. (k * x) MOD n", ← q r"\x. (m * x) MOD n"] THEN
       REWRITE_TAC [IN_ELIM_THM] THEN
-      ASM_SIMP_TAC [COPRIME_LMOD, CONG_MOD_LT, CONG_LMOD, DIVISION, (← prove
-     r"~(n = 0) ==> ((a * x MOD n == b) (mod n) <=> (a * x == b) (mod n))"
-     (MESON_TAC [CONG_REFL, CONG_SYM, CONG_TRANS, CONG_MULT, CONG_MOD])),
+      ASM_SIMP_TAC [COPRIME_LMOD, CONG_MOD_LT, CONG_LMOD, DIVISION, lemma,
                    COPRIME_LMUL] THEN
       REPEAT STRIP_TAC THEN
       TRY (FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC [CONG_LMOD]) THEN
@@ -2133,19 +2120,15 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
            (!m. 0 < m /\ m < n - 1 ==> ~(a EXP m == 1) (mod n))
            ==> prime(n)"
    (← do
-    let a2 ← ARITH_RULE (← q r"1 <= n ==> 0 < n")
-    let t ← TAUT (← q r"a ==> ~(a /\ b) ==> ~b")
-    let a1 ← ARITH_RULE (← q r"2 <= n ==> ~(n - 1 = 0)")
-    let a0 ← ARITH_RULE (← q r"2 <= n ==> ~(n = 0) /\ ~(n = 1)")
     pure (REPEAT STRIP_TAC THEN
-    ASM_SIMP_TAC [← GSYM PHI_PRIME_EQ, PHI_LIMIT_STRONG, ← GSYM LE_ANTISYM, a0] THEN
+    ASM_SIMP_TAC [← GSYM PHI_PRIME_EQ, PHI_LIMIT_STRONG, ← GSYM LE_ANTISYM, (← ARITH_RULE (← q r"2 <= n ==> ~(n = 0) /\ ~(n = 1)"))] THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q r"phi n")) THEN
     SUBGOAL_THEN (← q r"coprime(a,n)") (fun th => SIMP_TAC [FERMAT_LITTLE, th]) THENL
      [MATCH_MP_TAC LUCAS_COPRIME_LEMMA THEN EXISTS_TAC (← q r"n - 1") THEN
-      ASM_SIMP_TAC [a1], ALL_TAC] THEN
+      ASM_SIMP_TAC [(← ARITH_RULE (← q r"2 <= n ==> ~(n - 1 = 0)"))], ALL_TAC] THEN
     REWRITE_TAC [← GSYM NOT_LT] THEN
-    MATCH_MP_TAC t THEN
-    ASM_SIMP_TAC [PHI_LOWERBOUND_1, a2]))
+    MATCH_MP_TAC (← TAUT (← q r"a ==> ~(a /\ b) ==> ~b")) THEN
+    ASM_SIMP_TAC [PHI_LOWERBOUND_1, (← ARITH_RULE (← q r"1 <= n ==> 0 < n"))]))
 
   let LUCAS ← prove
    r"!a n. 2 <= n /\
@@ -2154,22 +2137,17 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
                 ==> ~(a EXP ((n - 1) DIV p) == 1) (mod n))
            ==> prime(n)"
    (← do
-    let a5 ← ARITH_RULE (← q r"~(p = 0) ==> 0 < p")
-    let a4 ← ARITH_RULE (← q r"~(0 < n) ==> (n = 0)")
-    let a3 ← ARITH_RULE (← q r"0 < n ==> ~(n = 0)")
-    let t2 ← TAUT (← q r"a ==> ~b <=> ~(a /\ b)")
-    let a1 ← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)")
     pure (REPEAT STRIP_TAC THEN
-    FIRST_ASSUM (ASSUME_TAC o MATCH_MP a1) THEN
+    FIRST_ASSUM (ASSUME_TAC o MATCH_MP (← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)"))) THEN
     MATCH_MP_TAC LUCAS_WEAK THEN EXISTS_TAC (← q r"a:num") THEN ASM_REWRITE_TAC [] THEN
-    REWRITE_TAC [t2, ← GSYM NOT_EXISTS_THM] THEN
+    REWRITE_TAC [(← TAUT (← q r"a ==> ~b <=> ~(a /\ b)")), ← GSYM NOT_EXISTS_THM] THEN
     ONCE_REWRITE_TAC [num_WOP] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"m:num") STRIP_ASSUME_TAC) THEN
-    FIRST_ASSUM (ASSUME_TAC o MATCH_MP a3) THEN
+    FIRST_ASSUM (ASSUME_TAC o MATCH_MP (← ARITH_RULE (← q r"0 < n ==> ~(n = 0)"))) THEN
     SUBGOAL_THEN (← q r"m divides (n - 1)") MP_TAC THENL
      [REWRITE_TAC [divides] THEN ONCE_REWRITE_TAC [MULT_SYM] THEN
       ASM_SIMP_TAC [← GSYM MOD_EQ_0] THEN
-      MATCH_MP_TAC a4 THEN DISCH_TAC THEN
+      MATCH_MP_TAC (← ARITH_RULE (← q r"~(0 < n) ==> (n = 0)")) THEN DISCH_TAC THEN
       FIRST_X_ASSUM (MP_TAC o SPEC (← q r"(n - 1) MOD m")) THEN
       ASM_SIMP_TAC [DIVISION] THEN CONJ_TAC THENL
        [MATCH_MP_TAC LT_TRANS THEN EXISTS_TAC (← q r"m:num") THEN
@@ -2203,7 +2181,7 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
      [MATCH_MP_TAC DIV_UNIQ THEN EXISTS_TAC (← q r"0") THEN
       UNDISCH_TAC (← q r"prime p") THEN
       ASM_CASES_TAC (← q r"p = 0") THEN ASM_REWRITE_TAC [PRIME_0] THEN
-      ASM_SIMP_TAC [a5] THEN
+      ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(p = 0) ==> 0 < p"))] THEN
       DISCH_TAC THEN REWRITE_TAC [ADD_CLAUSES, ← GSYM MULT_ASSOC] THEN
       AP_TERM_TAC THEN UNDISCH_TAC (← q r"p divides r") THEN
       REWRITE_TAC [divides] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
@@ -2276,10 +2254,9 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
           prime p
           ==> (order n a = p <=> ~((a == 1) (mod n)) /\ (a EXP p == 1) (mod n))"
    (← do
-    let m0 ← NUMBER_RULE (← q r"1 divides n /\ n divides n")
     pure (SIMP_TAC [ORDER_DIVIDES] THEN REWRITE_TAC [← GSYM ORDER_EQ_1] THEN
     REWRITE_TAC [prime] THEN
-    MESON_TAC [m0]))
+    MESON_TAC [(← NUMBER_RULE (← q r"1 divides n /\ n divides n"))]))
 
   let ORDER_CONG ← prove
    r"!n a b. (a == b) (mod n) ==> order n a = order n b"
@@ -2298,8 +2275,7 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
               (a EXP (order(n) a) == 1) (mod n) /\
               !m. 0 < m /\ m < order(n) a ==> ~((a EXP m == 1) (mod n))"
    (← do
-    let a0 ← ARITH_RULE (← q r"n > 0 <=> ~(n = 0)")
-    pure (SIMP_TAC [a0, ORDER_EQ_0] THEN
+    pure (SIMP_TAC [(← ARITH_RULE (← q r"n > 0 <=> ~(n = 0)")), ORDER_EQ_0] THEN
     MESON_TAC [ORDER, ORDER_MINIMAL]))
 
   let ORDER_DIVIDES_PHI ← prove
@@ -2318,8 +2294,6 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
    r"!a n d e. coprime(n,a)
                ==> ((a EXP d == a EXP e) (mod n) <=> (d == e) (mod (order n a)))"
    (← do
-    let a1 ← ARITH_RULE (← q r"(e + 0) + c = e + c")
-    let a0 ← ARITH_RULE (← q r"e = e + 0")
     pure (SUBGOAL_THEN
      (← q r"!a n d e. coprime(n,a) /\ e <= d
                 ==> ((a EXP d == a EXP e) (mod n) <=> (d == e) (mod (order n a)))")
@@ -2327,8 +2301,8 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
     REPEAT STRIP_TAC THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE I [LE_EXISTS]) THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"c:num") SUBST1_TAC) THEN
-    SUBST1_TAC a0 THEN
-    REWRITE_TAC [a1] THEN
+    SUBST1_TAC (← ARITH_RULE (← q r"e = e + 0")) THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"(e + 0) + c = e + c"))] THEN
     REWRITE_TAC [EXP_ADD] THEN
     ASM_SIMP_TAC [CONG_ADD_LCANCEL_EQ, COPRIME_EXP,
       ← ONCE_REWRITE_RULE [COPRIME_SYM] CONG_MULT_LCANCEL_EQ] THEN
@@ -2353,18 +2327,16 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
   let ORDER_MUL_LCM ← prove
    r"!m n a. coprime(m,n) ==> order (m * n) a = lcm(order m a,order n a)"
    (← do
-    let n0 ← NUMBER_RULE (← q r"coprime(m,n)
-      ==> ((x == y) (mod (m * n)) <=>
-           (x == y) (mod m) /\ (x == y) (mod n))")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [ORDER_UNIQUE_ALT] THEN
-    ASM_SIMP_TAC [n0] THEN
+    ASM_SIMP_TAC [(← NUMBER_RULE (← q r"coprime(m,n)
+      ==> ((x == y) (mod (m * n)) <=>
+           (x == y) (mod m) /\ (x == y) (mod n))"))] THEN
     REWRITE_TAC [ORDER_DIVIDES, LCM_DIVIDES]))
 
   let ORDER_EXP_GEN ← prove
    r"!p a k. order p (a EXP k) =
              if k = 0 then 1 else order p a DIV gcd(order p a,k)"
    (← do
-    let n0 ← NUMBER_RULE (← q r"gcd(order p a,k) divides order p a")
     pure (REPEAT GEN_TAC THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [ORDER_1, EXP] THEN
     ASM_CASES_TAC (← q r"order p a = 0") THENL
@@ -2373,7 +2345,7 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
       ALL_TAC] THEN
     REWRITE_TAC [ORDER_UNIQUE_ALT, EXP_EXP] THEN
     X_GEN_TAC (← q r"j:num") THEN REWRITE_TAC [ORDER_DIVIDES] THEN
-    MP_TAC n0 THEN
+    MP_TAC (← NUMBER_RULE (← q r"gcd(order p a,k) divides order p a")) THEN
     GEN_REWRITE_TAC LAND_CONV [divides] THEN
     ABBREV_TAC (← q r"d = gcd(order p a,k)") THEN
     ASM_CASES_TAC (← q r"d = 0") THENL [ASM_MESON_TAC [GCD_ZERO], ALL_TAC] THEN
@@ -2389,13 +2361,12 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
   let ORDER_INVERSE_MOD ← prove
    r"!n a. coprime(n,a) ==> order n (inverse_mod n a) = order n a"
    (← do
-    let n0 ← NUMBER_RULE (← q r"(a * b == 1) (mod n) ==> ((a == 1) (mod n) <=> (b == 1) (mod n))")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [order] THEN
     AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
     X_GEN_TAC (← q r"d:num") THEN REWRITE_TAC [] THEN
     AP_TERM_TAC THEN GEN_REWRITE_TAC I [FUN_EQ_THM] THEN
     X_GEN_TAC (← q r"k:num") THEN REWRITE_TAC [] THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-    MATCH_MP_TAC n0 THEN
+    MATCH_MP_TAC (← NUMBER_RULE (← q r"(a * b == 1) (mod n) ==> ((a == 1) (mod n) <=> (b == 1) (mod n))")) THEN
     REWRITE_TAC [← GSYM MULT_EXP] THEN MATCH_MP_TAC CONG_EXP_1 THEN
     ASM_REWRITE_TAC [INVERSE_MOD_LMUL_EQ]))
 
@@ -2409,13 +2380,10 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
    r"!p a b. coprime(order p a,order p b)
              ==> order p (a * b) = order p a * order p b"
    (← do
-    let n2 ← NUMBER_RULE (← q r"(a == 1) (mod n) ==> (b == a * b) (mod n)")
-    let n1 ← NUMBER_RULE (← q r"(b == 1) (mod n) ==> (a == a * b) (mod n)")
-    let n0 ← NUMBER_RULE (← q r"(a:num) divides (b * c) /\ b divides (a * c) /\ coprime(a,b)
-      ==> (a * b) divides c")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [← GSYM DIVIDES_ANTISYM] THEN
     ASM_SIMP_TAC [ORDER_MUL_DIVIDES] THEN
-    MATCH_MP_TAC n0 THEN
+    MATCH_MP_TAC (← NUMBER_RULE (← q r"(a:num) divides (b * c) /\ b divides (a * c) /\ coprime(a,b)
+      ==> (a * b) divides c")) THEN
     ASM_REWRITE_TAC [← GSYM ORDER_DIVIDES] THEN CONJ_TAC THEN
     MATCH_MP_TAC CONG_TRANS THENL
      [EXISTS_TAC (← q r"(a * b) EXP (order p b * order p (a * b))"),
@@ -2427,14 +2395,13 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
        REWRITE_TAC [ORDER_WORKS]]) THEN
     REWRITE_TAC [← GSYM EXP_EXP] THEN MATCH_MP_TAC CONG_EXP THEN
     REWRITE_TAC [MULT_EXP] THENL
-     [MATCH_MP_TAC n1,
-      MATCH_MP_TAC n2] THEN
+     [MATCH_MP_TAC (← NUMBER_RULE (← q r"(b == 1) (mod n) ==> (a == a * b) (mod n)")),
+      MATCH_MP_TAC (← NUMBER_RULE (← q r"(a == 1) (mod n) ==> (b == a * b) (mod n)"))] THEN
     REWRITE_TAC [ORDER_WORKS]))
 
   let ORDER_LCM_EXISTS ← prove
    r"!p a b. ?c. order p c = lcm(order p a,order p b)"
    (← do
-    let n0 ← NUMBER_RULE (← q r"gcd(a * b:num,a) = a /\ gcd(a * b,b) = b")
     pure (REPEAT GEN_TAC THEN
     ASM_CASES_TAC (← q r"order p a = 0") THENL
      [ASM_MESON_TAC [LCM_0], ALL_TAC] THEN
@@ -2455,7 +2422,7 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
      (fun th => ASM_SIMP_TAC [th, ORDER_MUL_EQ]) THEN
     ASM_SIMP_TAC [ORDER_EXP_GEN] THEN CONJ_TAC THEN
     (COND_CASES_TAC THENL [ASM_MESON_TAC [MULT_CLAUSES], ALL_TAC]) THEN
-    REWRITE_TAC [n0] THEN
+    REWRITE_TAC [(← NUMBER_RULE (← q r"gcd(a * b:num,a) = a /\ gcd(a * b,b) = b"))] THEN
     ONCE_REWRITE_TAC [MULT_SYM] THEN ASM_SIMP_TAC [DIV_MULT]))
 
   let ORDER_DIVIDES_MAXIMAL ← prove
@@ -2463,14 +2430,10 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
          ==> ?n. coprime(p,n) /\
                  !m. coprime(p,m) ==> order p m divides order p n"
    (← do
-    let a2 ← ARITH_RULE (← q r"a:num <= b ==> b <= a ==> a = b")
-    let a1 ← ARITH_RULE (← q r"a <= b ==> ~(a = 0) ==> ~(b = 0)")
-    let m0 ← MESON [IN] (← q r"IMAGE f s x <=> x IN IMAGE f s")
-    let loc_mxp ← EQ_IMP_RULE (← ISPEC (← q r"IMAGE (order p) {k | k < p}") num_MAX)
     pure (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"p = 0") THEN
     ASM_SIMP_TAC [COPRIME_0, DIVIDES_REFL, UNWIND_THM2] THEN
-    MP_TAC loc_mxp.1 THEN
-    REWRITE_TAC [m0] THEN
+    MP_TAC (← EQ_IMP_RULE (← ISPEC (← q r"IMAGE (order p) {k | k < p}") num_MAX)).1 THEN
+    REWRITE_TAC [(← MESON [IN] (← q r"IMAGE f s x <=> x IN IMAGE f s"))] THEN
     SIMP_TAC [← GSYM num_FINITE, FINITE_IMAGE, FINITE_NUMSEG_LT] THEN
     REWRITE_TAC [MEMBER_NOT_EMPTY, IMAGE_EQ_EMPTY] THEN
     REWRITE_TAC [← GSYM MEMBER_NOT_EMPTY, IN_ELIM_THM] THEN
@@ -2479,7 +2442,7 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
     MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"n:num") THEN STRIP_TAC THEN
     FIRST_ASSUM (MP_TAC o SPEC (← q r"1")) THEN
     ANTS_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
-    DISCH_THEN (MP_TAC o MATCH_MP a1) THEN
+    DISCH_THEN (MP_TAC o MATCH_MP (← ARITH_RULE (← q r"a <= b ==> ~(a = 0) ==> ~(b = 0)"))) THEN
     REWRITE_TAC [ORDER_EQ_0, COPRIME_1] THEN
     DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
     X_GEN_TAC (← q r"m:num") THEN DISCH_TAC THEN
@@ -2487,7 +2450,7 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
     DISCH_THEN (X_CHOOSE_TAC (← q r"q:num")) THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q r"q MOD p")) THEN
     ASM_REWRITE_TAC [ORDER_MOD, MOD_LT_EQ] THEN
-    DISCH_THEN (MP_TAC o MATCH_MP a2) THEN
+    DISCH_THEN (MP_TAC o MATCH_MP (← ARITH_RULE (← q r"a:num <= b ==> b <= a ==> a = b"))) THEN
     ASM_REWRITE_TAC [LE_LCM, ← GSYM DIVIDES_LCM_RIGHT, ORDER_EQ_0]))
 
   let POWER_RESIDUE_MODULO_COPRIME ← prove
@@ -2516,18 +2479,16 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
           (a EXP k == b EXP k) (mod n)
           ==> (a == b) (mod n)"
    (← do
-    let n1 ← NUMBER_RULE (← q r"(a:num == b) (mod d) ==> e divides d ==> (a == b) (mod e)")
-    let n0 ← NUMBER_RULE (← q r"(a':num == a) (mod n) /\ (b' == b) (mod n)
-      ==> (a' == b') (mod n) ==> (a == b) (mod n)")
     pure (REPEAT STRIP_TAC THEN
     SUBGOAL_THEN (← q r"?l. (k * l == 1) (mod phi n)") STRIP_ASSUME_TAC THENL
      [ASM_MESON_TAC [CONG_SOLVE], ALL_TAC] THEN
     SUBGOAL_THEN (← q r"(a EXP k EXP l == b EXP k EXP l) (mod n)") MP_TAC THENL
      [ASM_MESON_TAC [CONG_EXP], ALL_TAC] THEN
-    MATCH_MP_TAC n0 THEN
+    MATCH_MP_TAC (← NUMBER_RULE (← q r"(a':num == a) (mod n) /\ (b' == b) (mod n)
+      ==> (a' == b') (mod n) ==> (a == b) (mod n)")) THEN
     CONJ_TAC THEN GEN_REWRITE_TAC LAND_CONV [← GSYM EXP_1] THEN
     ASM_SIMP_TAC [ORDER_DIVIDES_EXPDIFF, EXP_EXP] THEN
-    FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP n1) THEN
+    FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← NUMBER_RULE (← q r"(a:num == b) (mod d) ==> e divides d ==> (a == b) (mod e)"))) THEN
     ASM_SIMP_TAC [ORDER_DIVIDES_PHI]))
 
   let PRIMITIVE_ROOT_IMP_COPRIME ← prove
@@ -2537,12 +2498,11 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
   let PRIMITIVE_ROOT_IMP_PRIME ← prove
    r"!p g. order p g = p - 1 ==> p = 0 \/ prime p"
    (← do
-    let a0 ← ARITH_RULE (← q r"h <= p - 1 /\ g <= h ==> g = p - 1 ==> h = p - 1")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"p = 0") THENL
      [ASM_REWRITE_TAC [], REWRITE_TAC [← GSYM PHI_EQ_PRIME]] THEN
     ASM_CASES_TAC (← q r"p = 1") THEN
     ASM_REWRITE_TAC [SUB_REFL, ORDER_EQ_0, COPRIME_1] THEN
-    MATCH_MP_TAC a0 THEN
+    MATCH_MP_TAC (← ARITH_RULE (← q r"h <= p - 1 /\ g <= h ==> g = p - 1 ==> h = p - 1")) THEN
     ASM_SIMP_TAC [PHI_LIMIT_STRONG, ORDER_LE_PHI]))
 
   let PRIMITIVE_ROOT_IMAGE ← prove
@@ -2550,7 +2510,6 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
            ==> IMAGE (\i. (g EXP i) MOD n) {i | i < phi n} =
                {a | coprime(a,n) /\ a < n}"
    (← do
-    let s1 ← SET_RULE (← q r"t SUBSET IMAGE f s <=> !y. y IN t ==> ?x. x IN s /\ f x = y")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"n = 0") THEN
     ASM_REWRITE_TAC [PHI_0, ← CONJUNCT1 LT, EMPTY_GSPEC, IMAGE_CLAUSES] THEN
     DISCH_TAC THEN
@@ -2563,7 +2522,7 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
       ASM_REWRITE_TAC [COPRIME_LMOD, COPRIME_LEXP, MOD_LT_EQ] THEN
       ASM_MESON_TAC [COPRIME_SYM],
       DISCH_TAC] THEN
-    REWRITE_TAC [s1] THEN
+    REWRITE_TAC [(← SET_RULE (← q r"t SUBSET IMAGE f s <=> !y. y IN t ==> ?x. x IN s /\ f x = y"))] THEN
     mpPartSnd (fun c => do lhand (← rand c)) SURJECTIVE_IFF_INJECTIVE_GEN THEN
     ASM_REWRITE_TAC [FINITE_NUMSEG_LT, ← GSYM PHI_ALT, CARD_NUMSEG_LT] THEN
     ANTS_TAC THENL
@@ -2578,7 +2537,6 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
            ==> IMAGE (\i. (g EXP i) MOD p) {i | i < p - 1} =
                {a | 0 < a /\ a < p}"
    (← do
-    let a0 ← ARITH_RULE (← q r"0 < a <=> ~(a = 0)")
     pure (REPEAT STRIP_TAC THEN ASM_CASES_TAC (← q r"p = 0") THEN
     ASM_REWRITE_TAC [ARITH, ← CONJUNCT1 LT, EMPTY_GSPEC, IMAGE_CLAUSES] THEN
     FIRST_ASSUM (MP_TAC o MATCH_MP PRIMITIVE_ROOT_IMP_PRIME) THEN
@@ -2589,7 +2547,7 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
     ASM_CASES_TAC (← q r"a:num < p") THEN ASM_REWRITE_TAC [] THEN
     ONCE_REWRITE_TAC [COPRIME_SYM] THEN ASM_SIMP_TAC [PRIME_COPRIME_EQ] THEN
     ASM_CASES_TAC (← q r"a = 0") THEN ASM_REWRITE_TAC [LT_REFL, DIVIDES_0] THEN
-    ASM_REWRITE_TAC [a0] THEN
+    ASM_REWRITE_TAC [(← ARITH_RULE (← q r"0 < a <=> ~(a = 0)"))] THEN
     DISCH_THEN (MP_TAC o MATCH_MP DIVIDES_LE_STRONG) THEN
     ASM_ARITH_TAC))
 
@@ -2597,10 +2555,9 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
    r"!n g a. ~(n = 0) /\ order n g = phi n /\ coprime(a,n)
              ==> ?m. m < phi n /\ (a == g EXP m) (mod n)"
    (← do
-    let s0 ← SET_RULE (← q r"IMAGE f s = t ==> !y. y IN t ==> ?x. x IN s /\ f x = y")
     pure (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (MP_TAC o MATCH_MP PRIMITIVE_ROOT_IMAGE) THEN
-    DISCH_THEN (MP_TAC o MATCH_MP s0) THEN
+    DISCH_THEN (MP_TAC o MATCH_MP (← SET_RULE (← q r"IMAGE f s = t ==> !y. y IN t ==> ?x. x IN s /\ f x = y"))) THEN
     DISCH_THEN (MP_TAC o SPEC (← q r"a MOD n")) THEN
     ASM_REWRITE_TAC [IN_ELIM_THM, COPRIME_LMOD, MOD_LT_EQ] THEN
     MESON_TAC [CONG]))
@@ -2616,14 +2573,12 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
    r"!p g a. ~(p = 0) /\ order p g = p - 1 /\ coprime(a,p)
              ==> ?m. m < p - 1 /\ (a == g EXP m) (mod p)"
    (← do
-    let a0 ← ARITH_RULE (← q r"0 < n <=> ~(n = 0)")
-    let s0 ← SET_RULE (← q r"IMAGE f s = t ==> !y. y IN t ==> ?x. x IN s /\ f x = y")
     pure (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (MP_TAC o MATCH_MP PRIMITIVE_ROOT_IMAGE_PRIME) THEN
-    DISCH_THEN (MP_TAC o MATCH_MP s0) THEN
+    DISCH_THEN (MP_TAC o MATCH_MP (← SET_RULE (← q r"IMAGE f s = t ==> !y. y IN t ==> ?x. x IN s /\ f x = y"))) THEN
     DISCH_THEN (MP_TAC o SPEC (← q r"a MOD p")) THEN
     ASM_REWRITE_TAC [IN_ELIM_THM, COPRIME_LMOD, MOD_LT_EQ] THEN
-    REWRITE_TAC [CONG, a0, ← GSYM DIVIDES_MOD] THEN
+    REWRITE_TAC [CONG, (← ARITH_RULE (← q r"0 < n <=> ~(n = 0)")), ← GSYM DIVIDES_MOD] THEN
     ASM_MESON_TAC [PRIME_COPRIME_EQ, COPRIME_SYM, PRIMITIVE_ROOT_IMP_PRIME]))
 
   let PRIMITIVE_ROOT_SURJECTIVE_PRIME_ALT ← prove
@@ -2636,7 +2591,6 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
   let PRIME_DIVISOR_SQRT ← prove
    r"!n. prime(n) <=> ~(n = 1) /\ !d. d divides n /\ d EXP 2 <= n ==> (d = 1)"
    (← do
-    let a1 ← ARITH_RULE (← q r"~(n * n <= n) <=> n * 1 < n * n")
     pure (GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [prime] THEN
     ASM_CASES_TAC (← q r"n = 1") THEN ASM_SIMP_TAC [DIVIDES_ONE] THEN
     ASM_CASES_TAC (← q r"n = 0") THENL
@@ -2649,7 +2603,7 @@ def setupOrder [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BSolve : Solv
      [ASM_CASES_TAC (← q r"d = n:num") THENL
        [ALL_TAC, ASM_MESON_TAC []] THEN
       UNDISCH_TAC (← q r"d EXP 2 <= n") THEN ASM_REWRITE_TAC [] THEN
-      REWRITE_TAC [EXP_2, a1] THEN
+      REWRITE_TAC [EXP_2, (← ARITH_RULE (← q r"~(n * n <= n) <=> n * 1 < n * n"))] THEN
       ASM_REWRITE_TAC [LT_MULT_LCANCEL] THEN
       MAP_EVERY UNDISCH_TAC [← q r"~(n = 0)", ← q r"~(n = 1)"] THEN ARITH_TAC,
       ALL_TAC] THEN
@@ -2741,10 +2695,6 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
                ==> coprime(a EXP ((n - 1) DIV p) - 1,n))
           ==> !p. prime p /\ p divides n ==> (p == 1) (mod q)"
    (← do
-    let a2 ← ARITH_RULE (← q r"(a * p * b = p * c) <=> (p * a * b = p * c)")
-    let t ← TAUT (← q r"~a ==> a ==> b")
-    let a1 ← ARITH_RULE (← q r"2 <= n ==> (n - 1 = SUC(n - 2))")
-    let a0 ← ARITH_RULE (← q r"(p - 1 = q * d) ==> ~(p = 0) ==> (p + q * 0 = 1 + q * d)")
     pure (REPEAT STRIP_TAC THEN
     SUBGOAL_THEN (← q r"order p (a EXP r) = q") ASSUME_TAC THENL
      [ALL_TAC,
@@ -2754,7 +2704,7 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
         SUBGOAL_THEN (← q r"phi p = p - 1") SUBST1_TAC THENL
          [ASM_MESON_TAC [PHI_PRIME_EQ], ALL_TAC] THEN
         REWRITE_TAC [divides, LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q r"d:num") THEN
-        DISCH_THEN (MP_TAC o MATCH_MP a0) THEN
+        DISCH_THEN (MP_TAC o MATCH_MP (← ARITH_RULE (← q r"(p - 1 = q * d) ==> ~(p = 0) ==> (p + q * 0 = 1 + q * d)"))) THEN
         REWRITE_TAC [nat_mod, cong] THEN ASM_MESON_TAC [PRIME_0]] THEN
       ONCE_REWRITE_TAC [COPRIME_SYM] THEN MATCH_MP_TAC COPRIME_EXP THEN
       UNDISCH_TAC (← q r"(a EXP (n - 1) == 1) (mod n)") THEN
@@ -2764,7 +2714,7 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
       SUBGOAL_THEN (← q r"d = p:num") SUBST_ALL_TAC THENL
        [ASM_MESON_TAC [prime], ALL_TAC] THEN
       SUBGOAL_THEN (← q r"p divides (a EXP (n - 1))") ASSUME_TAC THENL
-       [FIRST_ASSUM (SUBST1_TAC o MATCH_MP a1) THEN
+       [FIRST_ASSUM (SUBST1_TAC o MATCH_MP (← ARITH_RULE (← q r"2 <= n ==> (n - 1 = SUC(n - 2))"))) THEN
         REWRITE_TAC [EXP] THEN ASM_SIMP_TAC [DIVIDES_RMUL],
         ALL_TAC] THEN
       REWRITE_TAC [cong, nat_mod] THEN
@@ -2788,7 +2738,7 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
     SUBGOAL_THEN (← q r"P divides q") ASSUME_TAC THENL
      [ASM_MESON_TAC [DIVIDES_LMUL], ALL_TAC] THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q r"P:num")) THEN ASM_REWRITE_TAC [] THEN
-    MATCH_MP_TAC t THEN
+    MATCH_MP_TAC (← TAUT (← q r"~a ==> a ==> b")) THEN
     UNDISCH_TAC (← q r"P divides q") THEN REWRITE_TAC [divides] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"s:num") SUBST_ALL_TAC) THEN
     REWRITE_TAC [← GSYM MULT_ASSOC] THEN
@@ -2798,7 +2748,7 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
     UNDISCH_TAC (← q r"P divides d") THEN REWRITE_TAC [divides] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"t:num") SUBST_ALL_TAC) THEN
     UNDISCH_TAC (← q r"order p (a EXP r) * P * t = P * s") THEN
-    ONCE_REWRITE_TAC [a2] THEN
+    ONCE_REWRITE_TAC [(← ARITH_RULE (← q r"(a * p * b = p * c) <=> (p * a * b = p * c)"))] THEN
     REWRITE_TAC [EQ_MULT_LCANCEL] THEN ASM_REWRITE_TAC [] THEN
     DISCH_THEN (SUBST_ALL_TAC o SYM) THEN REWRITE_TAC [coprime] THEN
     DISCH_THEN (MP_TAC o SPEC (← q r"p:num")) THEN REWRITE_TAC [NOT_IMP] THEN
@@ -2818,9 +2768,8 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
                ==> coprime(a EXP ((n - 1) DIV p) - 1,n))
           ==> prime(n)"
    (← do
-    let a0 ← ARITH_RULE (← q r"2 <= n ==> ~(n = 0) /\ ~(n = 1)")
     pure (REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC [PRIME_PRIME_FACTOR_SQRT] THEN
-    ASM_SIMP_TAC [a0] THEN
+    ASM_SIMP_TAC [(← ARITH_RULE (← q r"2 <= n ==> ~(n = 0) /\ ~(n = 1)"))] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"p:num") STRIP_ASSUME_TAC) THEN
     MP_TAC (← SPECL [← q r"a:num", ← q r"n:num", ← q r"q:num", ← q r"r:num"] POCKLINGTON_LEMMA) THEN
     ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o SPEC (← q r"p:num")) THEN
@@ -2842,9 +2791,6 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
                        coprime(b - 1,n))
           ==> prime(n)"
    (← do
-    let a2 ← ARITH_RULE (← q r"~(2 <= 1)")
-    let a0 ← ARITH_RULE (← q r"2 <= n ==> (n - 1 = SUC(n - 2))")
-    let a1 ← ARITH_RULE (← q r"1 <= n <=> ~(n = 0)")
     pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC POCKLINGTON THEN
     MAP_EVERY EXISTS_TAC [← q r"a:num", ← q r"q:num", ← q r"r:num"] THEN
     ASM_REWRITE_TAC [] THEN
@@ -2854,10 +2800,10 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
     SUBGOAL_THEN (← q r"(a EXP ((q * r) DIV p) - 1 == b - 1) (mod n)")
      (fun th => ASM_MESON_TAC [CONG_COPRIME, COPRIME_SYM, th]) THEN
     MATCH_MP_TAC CONG_SUB THEN ASM_REWRITE_TAC [CONG_REFL] THEN
-    REWRITE_TAC [a1, EXP_EQ_0] THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"1 <= n <=> ~(n = 0)")), EXP_EQ_0] THEN
     SUBGOAL_THEN (← q r"~(a = 0)") ASSUME_TAC THENL
      [DISCH_TAC THEN UNDISCH_TAC (← q r"(a EXP (n - 1) == 1) (mod n)") THEN
-      SIMP_TAC [a0, ← ASSUME (← q r"a = 0"), ← ASSUME (← q r"2 <= n")] THEN
+      SIMP_TAC [(← ARITH_RULE (← q r"2 <= n ==> (n - 1 = SUC(n - 2))")), ← ASSUME (← q r"a = 0"), ← ASSUME (← q r"2 <= n")] THEN
       REWRITE_TAC [MULT_CLAUSES, EXP] THEN
       ONCE_REWRITE_TAC [CONG_SYM] THEN
       REWRITE_TAC [CONG_0_DIVIDES, DIVIDES_ONE] THEN
@@ -2868,7 +2814,7 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
     ONCE_REWRITE_TAC [← GSYM CONTRAPOS_THM] THEN REWRITE_TAC [] THEN
     DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [CONG_0_DIVIDES] THEN
     SUBGOAL_THEN (← q r"~(n divides (a EXP (n - 1)))") MP_TAC THENL
-     [ASM_MESON_TAC [CONG_DIVIDES, DIVIDES_ONE, a2],
+     [ASM_MESON_TAC [CONG_DIVIDES, DIVIDES_ONE, (← ARITH_RULE (← q r"~(2 <= 1)"))],
       ALL_TAC] THEN
     ASM_REWRITE_TAC [CONTRAPOS_THM] THEN UNDISCH_TAC (← q r"p divides q") THEN
     GEN_REWRITE_TAC LAND_CONV [divides] THEN
@@ -2889,8 +2835,6 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
   let PRIMEFACT ← prove
    r"!n. ~(n = 0) ==> ?ps. primefact ps n"
    (← do
-    let a1 ← ARITH_RULE (← q r"~(p = 0) /\ ~(p = 1) ==> 1 < p")
-    let a0 ← ARITH_RULE (← q r"n = 1 * n")
     pure (MATCH_MP_TAC num_WF THEN X_GEN_TAC (← q r"n:num") THEN
     ASM_CASES_TAC (← q r"n = 1") THEN ASM_REWRITE_TAC [] THENL
      [REPEAT DISCH_TAC THEN EXISTS_TAC (← q r"[]:num list") THEN
@@ -2903,10 +2847,10 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
     FIRST_X_ASSUM (MP_TAC o SPEC (← q r"m:num")) THEN
     UNDISCH_TAC (← q r"~(p * m = 0)") THEN
     ASM_CASES_TAC (← q r"m = 0") THEN ASM_REWRITE_TAC [MULT_CLAUSES] THEN DISCH_TAC THEN
-    GEN_REWRITE_TAC (funpow 3 LAND_CONV) [a0] THEN
+    GEN_REWRITE_TAC (funpow 3 LAND_CONV) [(← ARITH_RULE (← q r"n = 1 * n"))] THEN
     ASM_REWRITE_TAC [LT_MULT_RCANCEL] THEN
     SUBGOAL_THEN (← q r"1 < p") (fun th => REWRITE_TAC [th]) THENL
-     [MATCH_MP_TAC a1 THEN
+     [MATCH_MP_TAC (← ARITH_RULE (← q r"~(p = 0) /\ ~(p = 1) ==> 1 < p")) THEN
       REPEAT STRIP_TAC THEN UNDISCH_TAC (← q r"prime p") THEN
       ASM_REWRITE_TAC [PRIME_0, PRIME_1], ALL_TAC] THEN
     REWRITE_TAC [primefact] THEN
@@ -2961,23 +2905,14 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
                               coprime((b EXP (q DIV p)) MOD n - 1,n)) ps
                      ==> prime n"
    (← do
-    let b8 ← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)")
-    let b7 ← ARITH_RULE (← q r"~(p = 0) ==> (p = SUC(p - 1))")
-    let b6 ← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)")
-    let b5 ← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)")
-    let b4 ← ARITH_RULE (← q r"a <= b /\ ~(a = 0) ==> 1 <= a /\ 1 <= b")
-    let b3 ← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)")
-    let t ← TAUT (← q r"(a ==> (b <=> c)) ==> a /\ b ==> c")
-    let b2 ← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)")
-    let b1 ← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)")
     pure (DISCH_THEN (fun th => DISCH_THEN (SUBST1_TAC o SYM) THEN MP_TAC th) THEN
-    SIMP_TAC [MOD_EXP_MOD, b1] THEN
+    SIMP_TAC [MOD_EXP_MOD, (← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)"))] THEN
     SIMP_TAC [← ONCE_REWRITE_RULE [MULT_SYM] EXP_EXP] THEN
     REPEAT STRIP_TAC THEN MATCH_MP_TAC POCKLINGTON THEN
     MAP_EVERY EXISTS_TAC [← q r"a:num", ← q r"q:num", ← q r"r:num"] THEN
     ASM_REWRITE_TAC [EXP_2] THEN CONJ_TAC THENL
      [MP_TAC (← SPECL [← q r"a EXP (n - 1)", ← q r"n:num"] DIVISION) THEN
-      ASM_SIMP_TAC [b2] THEN
+      ASM_SIMP_TAC [(← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)"))] THEN
       STRIP_TAC THEN ABBREV_TAC (← q r"Q = a EXP (n - 1) DIV n") THEN
       ONCE_ASM_REWRITE_TAC [] THEN REWRITE_TAC [cong, nat_mod] THEN
       MAP_EVERY EXISTS_TAC [← q r"0", ← q r"Q:num"] THEN ARITH_TAC,
@@ -2992,7 +2927,7 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
     DISCH_THEN (ANTE_RES_THEN MP_TAC) THEN
     RULE_ASSUM_TAC (REWRITE_RULE [← GSYM ALL_MEM]) THEN
     DISCH_THEN (ANTE_RES_THEN MP_TAC) THEN
-    MATCH_MP_TAC t THEN
+    MATCH_MP_TAC (← TAUT (← q r"(a ==> (b <=> c)) ==> a /\ b ==> c")) THEN
     DISCH_TAC THEN ONCE_REWRITE_TAC [COPRIME_SYM] THEN
     SUBGOAL_THEN (← q r"~(p = 0)") ASSUME_TAC THENL
      [ASM_MESON_TAC [PRIME_0], ALL_TAC] THEN
@@ -3003,10 +2938,10 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
       ASM_SIMP_TAC [DIV_MULT, ← GSYM MULT_ASSOC],
       ALL_TAC] THEN
     MATCH_MP_TAC CONG_COPRIME THEN MATCH_MP_TAC CONG_SUB THEN
-    ASM_SIMP_TAC [CONG_MOD, b3, CONG_REFL] THEN
-    MATCH_MP_TAC b4 THEN
-    ASM_SIMP_TAC [MOD_LE, b5] THEN
-    ASM_SIMP_TAC [MOD_EQ_0, b6] THEN
+    ASM_SIMP_TAC [CONG_MOD, (← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)")), CONG_REFL] THEN
+    MATCH_MP_TAC (← ARITH_RULE (← q r"a <= b /\ ~(a = 0) ==> 1 <= a /\ 1 <= b")) THEN
+    ASM_SIMP_TAC [MOD_LE, (← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)"))] THEN
+    ASM_SIMP_TAC [MOD_EQ_0, (← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)"))] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"s:num") MP_TAC) THEN
     DISCH_THEN (MP_TAC o C AP_THM (← q r"p:num") o AP_TERM (← q r"(EXP)")) THEN
     REWRITE_TAC [EXP_EXP] THEN
@@ -3019,9 +2954,9 @@ def setupPock [HolBase] (D : PocklingtonDeps) (BBasics : Basics) (BPhi : Phi) (B
       ALL_TAC] THEN
     DISCH_THEN (MP_TAC o C AP_THM (← q r"n:num") o AP_TERM (← q r"(MOD)")) THEN
     ASM_REWRITE_TAC [] THEN
-    FIRST_ASSUM (SUBST1_TAC o MATCH_MP b7) THEN
+    FIRST_ASSUM (SUBST1_TAC o MATCH_MP (← ARITH_RULE (← q r"~(p = 0) ==> (p = SUC(p - 1))"))) THEN
     ONCE_REWRITE_TAC [MULT_SYM] THEN REWRITE_TAC [EXP, ← GSYM MULT_ASSOC] THEN
-    ASM_SIMP_TAC [MOD_MULT, b8] THEN
+    ASM_SIMP_TAC [MOD_MULT, (← ARITH_RULE (← q r"2 <= n ==> ~(n = 0)"))] THEN
     REWRITE_TAC [ARITH_EQ]))
 
   -- @@RETURN BEGIN
@@ -3341,8 +3276,7 @@ def setupCertify [HolBase] (D : PocklingtonDeps) (BPock : Pock) :
     let loc_b_tm ← q r"b:num"
     let loc_ps_tm ← q r"ps:num list"
     let loc_conv_itlist : ioconv ← do
-      let c ← GEN_REWRITE_CONV_NET TOP_DEPTH_CONV [ITLIST]
-      pure (c THENC NUM_REDUCE_CONV)
+      pure ((← GEN_REWRITE_CONV_NET TOP_DEPTH_CONV [ITLIST]) THENC NUM_REDUCE_CONV)
     let loc_conv_all : ioconv ← do
       -- arguments right to left: the second GEN_REWRITE_CONV's TAUT first.
       let taut2 ← TAUT (← q r"(a /\ a /\ b <=> a /\ b) /\ (a /\ a <=> a)")
@@ -3354,14 +3288,15 @@ def setupCertify [HolBase] (D : PocklingtonDeps) (BPock : Pock) :
       -- `itlist (uncurry net_of_conv) [...] empty_net`: the list is built
       -- right to left, so the last pair's TAUT is evaluated first and the
       -- last pair is entered into the net first.
+      -- Each pair is a tuple, so its conversion is built before its pattern.
       let taut4 ← TAUT (← q r"T /\ p <=> p")
-      let taut3 ← TAUT (← q r"p /\ T <=> p")
-      let pat1 ← q r"a - b"
-      let pat2 ← q r"a DIV b"
-      let pat3 ← q r"(a EXP b) MOD c"
-      let pat4 ← q r"coprime(a,b)"
-      let pat5 ← q r"p /\ T"
       let pat6 ← q r"T /\ p"
+      let taut3 ← TAUT (← q r"p /\ T <=> p")
+      let pat5 ← q r"p /\ T"
+      let pat4 ← q r"coprime(a,b)"
+      let pat3 ← q r"(a EXP b) MOD c"
+      let pat2 ← q r"a DIV b"
+      let pat1 ← q r"a - b"
       let pairs :=
         [(pat1, NUM_SUB_CONV), (pat2, NUM_DIV_CONV), (pat3, EXP_MOD_CONV),
          (pat4, COPRIME_CONV), (pat5, REWR_CONV taut3), (pat6, REWR_CONV taut4)]

@@ -406,13 +406,6 @@ def setupDigitsum [HolBase] (D : WordsDeps) : ExceptT String IO Digitsum := do
     SET_TAC [])
 
   -- let DIGITSUM_DIV,DIGITSUM_MOD = (CONJ_PAIR o prove) (`...`, tac).  The
-  -- three printing rules, in OCaml's order: the second THENL branch is
-  -- evaluated first (its MESON before its SET_RULE), then the first branch.
-  let mesonB ← MESON [MULT_CLAUSES]
-     (← q r"(if p then a * b else 0) = a * (if p then b else 0)")
-  let setA ← SET_RULE
-     (← q r"{x | x IN s /\ P x} = {x | x IN {y | P y} /\ x IN s}")
-  let setC ← SET_RULE (← q r"(!x. ~(x IN s)) <=> s = {}")
   let (DIGITSUM_DIV, DIGITSUM_MOD) ← CONJ_PAIR (← prove
    r"(!B b s n.
         FINITE s /\ (!i. i IN s ==> b i < B)
@@ -424,7 +417,7 @@ def setupDigitsum [HolBase] (D : WordsDeps) : ExceptT String IO Digitsum := do
             nsum {i | i IN s /\ i < n} (\i. B EXP i * b i))"
    (REWRITE_TAC [D.core1.AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
     ASM_CASES_TAC (← q "B = 0") THENL
-     [ASM_REWRITE_TAC [← CONJUNCT1 LT, setC] THEN
+     [ASM_REWRITE_TAC [← CONJUNCT1 LT, (← SET_RULE (← q r"(!x. ~(x IN s)) <=> s = {}"))] THEN
       SIMP_TAC [EMPTY_GSPEC, NOT_IN_EMPTY, ← CONJUNCT1 NSUM_CLAUSES] THEN
       REWRITE_TAC [DIV_0, MOD_0],
       ALL_TAC] THEN
@@ -432,8 +425,10 @@ def setupDigitsum [HolBase] (D : WordsDeps) : ExceptT String IO Digitsum := do
     STRIP_TAC THEN MATCH_MP_TAC DIVMOD_UNIQ THEN CONJ_TAC THENL
      [GEN_REWRITE_TAC (RAND_CONV o LAND_CONV) [MULT_SYM] THEN
       MATCH_MP_TAC (← GSYM DIGITSUM_SPLIT) THEN ASM_REWRITE_TAC [],
-      ONCE_REWRITE_TAC [setA] THEN
-      REWRITE_TAC [NSUM_RESTRICT_SET, mesonB] THEN
+      ONCE_REWRITE_TAC [(← SET_RULE
+     (← q r"{x | x IN s /\ P x} = {x | x IN {y | P y} /\ x IN s}"))] THEN
+      REWRITE_TAC [NSUM_RESTRICT_SET, (← MESON [MULT_CLAUSES]
+     (← q r"(if p then a * b else 0) = a * (if p then b else 0)"))] THEN
       MATCH_MP_TAC DIGITSUM_BOUND THEN ASM_MESON_TAC [LE_1]]))
 
   let DIGITSUM_MOD_NUMSEG ← prove
@@ -459,20 +454,17 @@ def setupDigitsum [HolBase] (D : WordsDeps) : ExceptT String IO Digitsum := do
       REWRITE_TAC [← GSYM CONJ_ASSOC, UNWIND_THM2] THEN ARITH_TAC,
       SIMP_TAC [NSUM_IMAGE, EQ_ADD_RCANCEL, o_DEF, ADD_SUB]])
 
-  -- Two printing MESONs; the later one in the proof is evaluated first.
-  let mesonY ← MESON [] (← q r"i IN s /\ i = n <=> n IN s /\ i = n")
-  let mesonX ← MESON [EXP, MULT_SYM] (← q r"B EXP n * B = B EXP SUC n")
   let DIGITSUM_DIV_MOD ← prove
    r"!B b s n.
         FINITE s /\ (!i. i IN s ==> b i < B)
         ==> nsum s (\i. B EXP i * b i) DIV (B EXP n) MOD B =
             if n IN s then b n else 0"
    (REPEAT STRIP_TAC THEN REWRITE_TAC [DIV_MOD] THEN
-    REWRITE_TAC [mesonX] THEN
+    REWRITE_TAC [(← MESON [EXP, MULT_SYM] (← q r"B EXP n * B = B EXP SUC n"))] THEN
     ASM_SIMP_TAC [DIGITSUM_MOD] THEN
     ASM_SIMP_TAC [DIGITSUM_DIV, FINITE_RESTRICT, IN_ELIM_THM] THEN
     REWRITE_TAC [← GSYM CONJ_ASSOC, ← ARITH_RULE (← q r"i < SUC n /\ n <= i <=> i = n")] THEN
-    REWRITE_TAC [mesonY] THEN
+    REWRITE_TAC [(← MESON [] (← q r"i IN s /\ i = n <=> n IN s /\ i = n"))] THEN
     ASM_CASES_TAC (← q "(n:num) IN s") THEN
     ASM_REWRITE_TAC [EMPTY_GSPEC, NSUM_CLAUSES] THEN
     REWRITE_TAC [SING_GSPEC, NSUM_SING, SUB_REFL, MULT_CLAUSES, EXP])
@@ -1362,17 +1354,14 @@ def setupVal [HolBase] (D : WordsDeps) (Bn : Binary) (V : Bitval) (W : WordType)
     CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN
     REWRITE_TAC [← GSYM VAL_WORD_OF_BITS, VAL_BOUND])
 
-  -- Two printing NUMBER_RULEs; the later one is evaluated first.
-  let nrB ← NUMBER_RULE (← q r"(0 == n) (mod p) <=> p divides n")
-  let nrA ← NUMBER_RULE (← q r"(n:num == n) (mod p)")
   let WORD_OF_BITS_AS_WORD_FINITE ← prove
    r"!s. FINITE s ==> word_of_bits s:N word = word(nsum s (\i. 2 EXP i))"
    (REPEAT STRIP_TAC THEN REWRITE_TAC [WORD_EQ, WORD_OF_BITS_AS_WORD] THEN
     ONCE_REWRITE_TAC [CONJ_SYM] THEN REWRITE_TAC [NSUM_RESTRICT_SET] THEN
     MATCH_MP_TAC CONG_NSUM THEN ASM_REWRITE_TAC [] THEN
     X_GEN_TAC (← q "i:num") THEN DISCH_TAC THEN
-    COND_CASES_TAC THEN REWRITE_TAC [nrA] THEN
-    REWRITE_TAC [nrB] THEN
+    COND_CASES_TAC THEN REWRITE_TAC [(← NUMBER_RULE (← q r"(n:num == n) (mod p)"))] THEN
+    REWRITE_TAC [(← NUMBER_RULE (← q r"(0 == n) (mod p) <=> p divides n"))] THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [NOT_LT]) THEN
     SIMP_TAC [LE_EXISTS, EXP_ADD, LEFT_IMP_EXISTS_THM] THEN
     REPEAT STRIP_TAC THEN CONV_TAC (fun t => (NUMBER_RULE t).run))
@@ -1699,17 +1688,14 @@ def setupIval [HolBase] (D : WordsDeps) (V : Bitval) (Vl : Val) :
    r"!n. iword(n rem (&2 pow dimindex(:N))):N word = iword n"
    (REWRITE_TAC [IWORD_EQ, INT_REM_MOD_SELF])
 
-  -- Two printing INTEGER_RULEs; the later one is evaluated first.
-  let irB ← INTEGER_RULE
-   (← q r"(&(val(word w:N word)):int == &w) (mod n) /\ (&w:int == z) (mod n)
-    ==> (&(val(word w:N word)) == z) (mod n)")
-  let irA ← INTEGER_RULE
-   (← q r"(y:int == z) (mod n) ==> (x == y) (mod n) ==> (x == z) (mod n)")
   let IVAL_IWORD_CONG ← prove
    r"!x. (ival(iword x:N word) == x) (mod (&2 pow (dimindex(:N))))"
    (GEN_TAC THEN MP_TAC (← SPEC (← q "iword x:N word") IVAL_VAL_CONG) THEN
-    MATCH_MP_TAC irA THEN
-    REWRITE_TAC [iword] THEN MATCH_MP_TAC irB THEN
+    MATCH_MP_TAC (← INTEGER_RULE
+   (← q r"(y:int == z) (mod n) ==> (x == y) (mod n) ==> (x == z) (mod n)")) THEN
+    REWRITE_TAC [iword] THEN MATCH_MP_TAC (← INTEGER_RULE
+   (← q r"(&(val(word w:N word)):int == &w) (mod n) /\ (&w:int == z) (mod n)
+    ==> (&(val(word w:N word)) == z) (mod n)")) THEN
     CONJ_TAC THENL
      [REWRITE_TAC [INT_OF_NUM_POW, ← GSYM num_congruent] THEN
       REWRITE_TAC [VAL_WORD, CONG, MOD_MOD_REFL],
@@ -1755,21 +1741,18 @@ def setupIval [HolBase] (D : WordsDeps) (V : Bitval) (Vl : Val) :
 
   -- OCaml order: the second THENL branch's MESON, then the first branch's
   -- INTEGER_RULEs, the later one first.
-  let mesonO ← MESON [ODD] (← q r"n = 0 ==> ~ODD n")
-  let irD ← INTEGER_RULE
-   (← q r"!m. (x:int == y) (mod m) /\ n divides m ==> (y == x) (mod n)")
-  let irC ← INTEGER_RULE
-   (← q r"(x:int == y) (mod n) ==> (n divides x <=> n divides y)")
   let BIT_IVAL ← prove
    r"!(x:N word) i.
     bit i x <=> i < dimindex(:N) /\ ~(&2 divides (ival x div &2 pow i))"
    (REPEAT GEN_TAC THEN REWRITE_TAC [BIT_VAL] THEN
     ASM_CASES_TAC (← q "i < dimindex(:N)") THEN ASM_REWRITE_TAC [] THENL
      [REWRITE_TAC [← GSYM NOT_EVEN, EVEN_EXISTS, ← GSYM divides] THEN
-      AP_TERM_TAC THEN REWRITE_TAC [num_divides] THEN MATCH_MP_TAC irC THEN
+      AP_TERM_TAC THEN REWRITE_TAC [num_divides] THEN MATCH_MP_TAC (← INTEGER_RULE
+   (← q r"(x:int == y) (mod n) ==> (n divides x <=> n divides y)")) THEN
       REWRITE_TAC [← GSYM INT_OF_NUM_DIV, ← GSYM INT_OF_NUM_POW] THEN
       MATCH_MP_TAC INT_CONG_DIV2 THEN SIMP_TAC [INT_POW_LE, INT_POS] THEN
-      MATCH_MP_TAC irD THEN
+      MATCH_MP_TAC (← INTEGER_RULE
+   (← q r"!m. (x:int == y) (mod m) /\ n divides m ==> (y == x) (mod n)")) THEN
       EXISTS_TAC (← q r"(&2:int) pow dimindex(:N)") THEN REWRITE_TAC [IVAL_VAL_CONG] THEN
       ONCE_REWRITE_TAC [INT_MUL_SYM] THEN
       REWRITE_TAC [← GSYM (← CONJUNCT2 INT_POW)] THEN
@@ -1777,23 +1760,21 @@ def setupIval [HolBase] (D : WordsDeps) (V : Bitval) (Vl : Val) :
       STRIP_TAC THEN ASM_REWRITE_TAC [INT_POW_ADD, INT_POW] THEN
       CONV_TAC (fun t => (INTEGER_RULE t).run),
       RULE_ASSUM_TAC (REWRITE_RULE [NOT_LT]) THEN
-      MATCH_MP_TAC mesonO THEN
+      MATCH_MP_TAC (← MESON [ODD] (← q r"n = 0 ==> ~ODD n")) THEN
       SIMP_TAC [DIV_EQ_0, ARITH_EQ, EXP_EQ_0] THEN
       TRANS_TAC LTE_TRANS (← q "2 EXP dimindex(:N)") THEN
       ASM_REWRITE_TAC [VAL_BOUND, LE_EXP, DIMINDEX_NONZERO, COND_ID]])
 
-  let irF ← INTEGER_RULE
-   (← q r"!m. (x:int == y) (mod m) /\ n divides m ==> (x == y) (mod n)")
-  let irE ← INTEGER_RULE
-   (← q r"(x:int == y) (mod n) ==> (n divides x <=> n divides y)")
   let BIT_IWORD ← prove
    r"!i x. bit i (iword x:N word) <=>
          i < dimindex(:N) /\ ~(&2 divides (x div (&2 pow i)))"
    (REPEAT GEN_TAC THEN REWRITE_TAC [BIT_IVAL] THEN
     ASM_CASES_TAC (← q "i < dimindex(:N)") THEN ASM_REWRITE_TAC [] THEN
-    AP_TERM_TAC THEN MATCH_MP_TAC irE THEN
+    AP_TERM_TAC THEN MATCH_MP_TAC (← INTEGER_RULE
+   (← q r"(x:int == y) (mod n) ==> (n divides x <=> n divides y)")) THEN
     MATCH_MP_TAC INT_CONG_DIV2 THEN SIMP_TAC [INT_POW_LE, INT_POS] THEN
-    MATCH_MP_TAC irF THEN
+    MATCH_MP_TAC (← INTEGER_RULE
+   (← q r"!m. (x:int == y) (mod m) /\ n divides m ==> (x == y) (mod n)")) THEN
     EXISTS_TAC (← q r"(&2:int) pow dimindex(:N)") THEN
     REWRITE_TAC [IVAL_IWORD_CONG] THEN
       ONCE_REWRITE_TAC [INT_MUL_SYM] THEN
@@ -2086,11 +2067,12 @@ def setupNumBits [HolBase] (D : WordsDeps) (G : Digitsum) (BW : BitsOfWord) (Vl 
    (REWRITE_TAC [numbit, BIT_VAL])
 
   let numbitCtx ← do
-    let i ← q "i:num"
-    let j ← q "j:num"
-    let n ← q "n:num"
-    let B0 ← q "BIT0"
+    -- OCaml's tuple `i,j,n,B0,B1 = ...` is evaluated right to left.
     let B1 ← q "BIT1"
+    let B0 ← q "BIT0"
+    let n ← q "n:num"
+    let j ← q "j:num"
+    let i ← q "i:num"
     let B00 ← CONJUNCT2 ARITH_ZERO
     let th_0 ← PURE_REWRITE_RULE [NUMERAL] (← prove
      r"numbit i 0 = F" (REWRITE_TAC [numbit, DIV_0, ODD]))
@@ -2441,11 +2423,12 @@ def setupNumShiftAdd [HolBase] (D : WordsDeps) (NB : NumBits) :
     REWRITE_TAC [← GSYM (← ONCE_REWRITE_RULE [MULT_SYM] MOD_MULT2), MOD_MOD_REFL])
 
   let nsaCtx ← do
-    let i ← q "i:num"
-    let j ← q "j:num"
-    let a ← q "a:num"
-    let b ← q "b:num"
+    -- OCaml's tuple `i,j,a,b,e = ...` is evaluated right to left.
     let e ← q "e:num"
+    let b ← q "b:num"
+    let a ← q "a:num"
+    let j ← q "j:num"
+    let i ← q "i:num"
     let i0 ← UNDISCH (← prove r"i = _0 ==> num_shift_add a b i = b"
      (DISCH_THEN SUBST1_TAC THEN CONV_TAC BITS_ELIM_CONV THEN
       ACCEPT_TAC num_shift_add_0))
@@ -4138,9 +4121,6 @@ def setupWordOps3 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord 
     SIMP_TAC [INT_DIV_EQ_0, INT_POW_EQ_0, INT_OF_NUM_EQ, ARITH_EQ] THEN
     REWRITE_TAC [INT_ABS_POW, INT_ABS_NUM])
 
-  -- Two printing INTEGER_RULEs, in the last THENL branch; the later first.
-  let irY ← INTEGER_RULE (← q r"(x:int) divides --y <=> x divides y")
-  let irX ← INTEGER_RULE (← q r"(p:int) divides &0")
   let BIT_WORD_ISHR ← prove
    r"!(w:N word) n i.
         bit i (word_ishr w n) <=>
@@ -4174,9 +4154,9 @@ def setupWordOps3 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord 
       ASM_REWRITE_TAC [INT_MUL_RNEG, INT_MUL_RID],
       REWRITE_TAC [← INT_ARITH
        (← q r"-- &1:int <= x /\ x < &1 <=> x = -- &1 \/ x = &0")] THEN
-      STRIP_TAC THEN ASM_REWRITE_TAC [irX] THEN
+      STRIP_TAC THEN ASM_REWRITE_TAC [(← INTEGER_RULE (← q r"(p:int) divides &0"))] THEN
       CONV_TAC INT_REDUCE_CONV THEN
-      REWRITE_TAC [irY] THEN
+      REWRITE_TAC [(← INTEGER_RULE (← q r"(x:int) divides --y <=> x divides y"))] THEN
       REWRITE_TAC [← GSYM num_divides, divides, ← GSYM EVEN_EXISTS] THEN
       CONV_TAC NUM_REDUCE_CONV])
 
@@ -6837,14 +6817,12 @@ def setupMisc1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordTyp
    (SIMP_TAC [WORD_SUB_MASK_WORD])
 
   -- Two rules evaluated as the tactic is built; the later one first.
-  let _wbr ← WORD_BITWISE_RULE (← q r"x = word 0 ==> word_and x y = word 0")
-  let _wr ← WORD_RULE (← q r"w:N word = word_add x w <=> x = word 0")
   let WORD_XOR_INT_MIN ← prove
    r"!w:N word. word_xor word_INT_MIN w = word_add word_INT_MIN w"
    (GEN_TAC THEN ONCE_REWRITE_TAC [WORD_ADD_XOR_GEN] THEN
-    REWRITE_TAC [_wr] THEN
+    REWRITE_TAC [(← WORD_RULE (← q r"w:N word = word_add x w <=> x = word 0"))] THEN
     REWRITE_TAC [WORD_SHL_AND] THEN
-    MATCH_MP_TAC _wbr THEN
+    MATCH_MP_TAC (← WORD_BITWISE_RULE (← q r"x = word 0 ==> word_and x y = word 0")) THEN
     REWRITE_TAC [WORD_EQ_BITS, BIT_WORD_0, BIT_WORD_SHL, BIT_WORD_INT_MIN] THEN
     ARITH_TAC)
 
@@ -7278,20 +7256,17 @@ def setupMasks [HolBase] (D : WordsDeps) (BBitval : Bitval) (BBinary : Binary) (
     REWRITE_TAC [← GSYM INT_REM_EQ] THEN CONV_TAC INT_REM_DOWN_CONV THEN
     REWRITE_TAC [INT_REM_EQ] THEN CONV_TAC (fun t => (INTEGER_RULE t).run))
 
-  -- Two ARITH_RULEs in one THEN chain: the later one is evaluated first.
-  let _ar2 ← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")
-  let _ar1 ← ARITH_RULE
-    (← q r"~(n = 0) ==> MIN i (n - 1) = if i < n then i else n - 1")
   let BIT_WORD_SX ← prove
    r"!x i. bit i ((word_sx:M word->N word) x) <=>
          i < dimindex(:N) /\ bit (MIN i (dimindex(:M) - 1)) x"
-   (REPEAT GEN_TAC THEN SIMP_TAC [DIMINDEX_NONZERO, _ar1] THEN
+   (REPEAT GEN_TAC THEN SIMP_TAC [DIMINDEX_NONZERO, (← ARITH_RULE
+    (← q r"~(n = 0) ==> MIN i (n - 1) = if i < n then i else n - 1"))] THEN
     REWRITE_TAC [WORD_SX_ZX_GEN, BIT_WORD_OR, BIT_WORD_SHL,
                  BIT_WORD_MASK, BIT_WORD_ZX] THEN
     ASM_CASES_TAC (← q r"i < dimindex(:N)") THEN ASM_REWRITE_TAC [] THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [← GSYM NOT_LT] THEN
     ONCE_REWRITE_TAC [BIT_GUARD] THEN
-    REWRITE_TAC [_ar2, DIMINDEX_NONZERO] THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"n - 1 < n <=> ~(n = 0)")), DIMINDEX_NONZERO] THEN
     ASM_CASES_TAC (← q r"bit (dimindex(:M) - 1) (x:M word)") THEN
     ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC)
 
@@ -7518,15 +7493,13 @@ def setupClzCtz [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordTy
     ANTS_TAC THENL [ASM_MESON_TAC [], DISCH_THEN SUBST1_TAC] THEN
     ASM_MESON_TAC [NOT_LE, LE_CASES, LE_TRANS])
 
-  let _a2 ← ARITH_RULE (← q r"SUC n <= m <=> ~(m <= n)")
-  let _a1 ← ARITH_RULE (← q r"m <= n <=> ~(SUC n <= m)")
   let WORD_CTZ_LE ← prove
    r"!(a:N word) n.
         word_ctz a <= n <=> n < dimindex(:N) ==> ?i. i <= n /\ bit i a"
    (REPEAT GEN_TAC THEN
-    GEN_REWRITE_TAC LAND_CONV [_a1] THEN
+    GEN_REWRITE_TAC LAND_CONV [(← ARITH_RULE (← q r"m <= n <=> ~(SUC n <= m)"))] THEN
     REWRITE_TAC [WORD_LE_CTZ, DE_MORGAN_THM] THEN
-    REWRITE_TAC [_a2] THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"SUC n <= m <=> ~(m <= n)"))] THEN
     MESON_TAC [NOT_LT])
 
   let WORD_CTZ_LE_DIMINDEX ← prove
@@ -7623,10 +7596,6 @@ def setupClzCtz [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordTy
    r"!a:N word. word_clz(a) <= dimindex(:N)"
    (REWRITE_TAC [word_clz] THEN ARITH_TAC)
 
-  let _a3 ← ARITH_RULE (← q r"n:num <= d ==> (i < d - n <=> i + n < d)")
-  let _m2 ← MESON [LE_REFL, LTE_TRANS]
-    (← q r"(?m:num. m <= n /\ !i. P i ==> i < m) <=> (!i. P i ==> i < n)")
-  let _t1 ← TAUT (← q r"p ==> ~q <=> q ==> ~p")
   let WORD_LE_CLZ ← prove
    r"!(a:N word) n.
         n <= word_clz(a) <=>
@@ -7639,22 +7608,21 @@ def setupClzCtz [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordTy
     W (MP_TAC o PART_MATCH (lhand o rand) MINIMAL_LE o lhand o snd) THEN
     REWRITE_TAC [] THEN ANTS_TAC THENL
      [MESON_TAC [BIT_TRIVIAL], DISCH_THEN SUBST1_TAC] THEN
-    ONCE_REWRITE_TAC [_t1] THEN
-    REWRITE_TAC [NOT_LE, _m2] THEN
-    ASM_SIMP_TAC [_a3])
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p ==> ~q <=> q ==> ~p"))] THEN
+    REWRITE_TAC [NOT_LE, (← MESON [LE_REFL, LTE_TRANS]
+    (← q r"(?m:num. m <= n /\ !i. P i ==> i < m) <=> (!i. P i ==> i < n)"))] THEN
+    ASM_SIMP_TAC [(← ARITH_RULE (← q r"n:num <= d ==> (i < d - n <=> i + n < d)"))])
 
-  let _b2 ← ARITH_RULE (← q r"i + SUC n = i + n + 1")
-  let _b1 ← ARITH_RULE (← q r"m <= n <=> ~(SUC n <= m)")
   let WORD_CLZ_LE ← prove
    r"!(a:N word) n.
         word_clz(a) <= n <=>
         n < dimindex(:N) ==> ?i. dimindex(:N) <= i + n + 1 /\ bit i a"
    (REPEAT GEN_TAC THEN
-    GEN_REWRITE_TAC LAND_CONV [_b1] THEN
+    GEN_REWRITE_TAC LAND_CONV [(← ARITH_RULE (← q r"m <= n <=> ~(SUC n <= m)"))] THEN
     REWRITE_TAC [WORD_LE_CLZ, DE_MORGAN_THM] THEN REWRITE_TAC [LE_SUC_LT] THEN
     ASM_CASES_TAC (← q r"n < dimindex(:N)") THEN ASM_REWRITE_TAC [] THEN
     REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, NOT_LT] THEN
-    MESON_TAC [_b2])
+    MESON_TAC [(← ARITH_RULE (← q r"i + SUC n = i + n + 1"))])
 
   let WORD_CLZ_LBOUND_ALT ← prove
    r"!(a:N word) i. bit i a ==> word_clz(a) + i < dimindex(:N)"
@@ -7678,16 +7646,14 @@ def setupClzCtz [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordTy
    r"!a:N word. word_clz a < dimindex(:N) <=> ~(a = word 0)"
    (REWRITE_TAC [LT_LE, WORD_CLZ_LE_DIMINDEX, WORD_CLZ_EQ_DIMINDEX])
 
-  let _c2 ← ARITH_RULE (← q r"n <= i + 1 /\ ~(n <= i) <=> i = n - 1 /\ 1 <= n")
-  let _c1 ← MESON [BIT_TRIVIAL]
-    (← q r"bit i (a:N word) <=> ~(dimindex(:N) <= i) /\ bit i a")
   let WORD_CLZ_EQ_0 ← prove
    r"!a:N word. word_clz a = 0 <=> bit (dimindex(:N) - 1) a"
    (REWRITE_TAC [← GSYM (← CONJUNCT1 LE)] THEN
     REWRITE_TAC [WORD_CLZ_LE, ← CONJUNCT1 LE, UNWIND_THM2] THEN
     GEN_TAC THEN SIMP_TAC [DIMINDEX_GE_1, LE_1, ADD_CLAUSES] THEN
-    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [_c1] THEN
-    REWRITE_TAC [CONJ_ASSOC, DIMINDEX_GE_1, UNWIND_THM2, _c2])
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [(← MESON [BIT_TRIVIAL]
+    (← q r"bit i (a:N word) <=> ~(dimindex(:N) <= i) /\ bit i a"))] THEN
+    REWRITE_TAC [CONJ_ASSOC, DIMINDEX_GE_1, UNWIND_THM2, (← ARITH_RULE (← q r"n <= i + 1 /\ ~(n <= i) <=> i = n - 1 /\ 1 <= n"))])
 
   let WORD_CLZ_DECOMP ← prove
    r"!a:N word.
@@ -7696,15 +7662,6 @@ def setupClzCtz [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordTy
     MATCH_MP_TAC SUB_ADD THEN MATCH_MP_TAC MINIMAL_UBOUND THEN
     MESON_TAC [BIT_TRIVIAL])
 
-  -- Built as the tactic is: the THEN chain right to left; the MESON inside
-  -- `fun th ->` runs only when the tactic is applied.
-  let _d4 ← ARITH_RULE
-    (← q r"N <= i + n + 1 /\ i + n < N <=> 1 <= N /\ n < N /\ i = N - n - 1")
-  let _d3 ← TAUT (← q r"(r ==> (p <=> q)) ==> (p /\ r <=> q /\ r)")
-  let _d2 ← ARITH_RULE (← q r"n:num <= N ==> (~(N - n <= i) <=> i + n < N)")
-  let _d1 ← MESON [] (← q r"p ==> ~bit a b <=> bit a b ==> ~p")
-  let _dtm ← q r"(!i. bit i a ==> P i)
-             ==> (!i. bit i a <=> P i /\ bit i a)"
   let WORD_CLZ_UNIQUE_GEN ← prove
    r"!(a:N word) n.
         word_clz a = n <=>
@@ -7714,13 +7671,15 @@ def setupClzCtz [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordTy
    (REPEAT GEN_TAC THEN GEN_REWRITE_TAC LAND_CONV [← GSYM LE_ANTISYM] THEN
     REWRITE_TAC [WORD_CLZ_LE, WORD_LE_CLZ] THEN
     ASM_CASES_TAC (← q r"n <= dimindex(:N)") THEN ASM_REWRITE_TAC [] THEN
-    REWRITE_TAC [NOT_LT, _d1] THEN
-    ASM_SIMP_TAC [_d2] THEN
+    REWRITE_TAC [NOT_LT, (← MESON [] (← q r"p ==> ~bit a b <=> bit a b ==> ~p"))] THEN
+    ASM_SIMP_TAC [(← ARITH_RULE (← q r"n:num <= N ==> (~(N - n <= i) <=> i + n < N)"))] THEN
     ASM_CASES_TAC (← q r"n < dimindex(:N)") THEN ASM_REWRITE_TAC [] THEN
-    MATCH_MP_TAC _d3 THEN
+    MATCH_MP_TAC (← TAUT (← q r"(r ==> (p <=> q)) ==> (p /\ r <=> q /\ r)")) THEN
     DISCH_THEN (fun th => tactic_of do
-      pure (ONCE_REWRITE_TAC [← MATCH_MP (← MESON [] _dtm) th])) THEN
-    ASM_REWRITE_TAC [CONJ_ASSOC, DIMINDEX_GE_1, UNWIND_THM2, _d4] THEN
+      pure (ONCE_REWRITE_TAC [← MATCH_MP (← MESON [] (← q r"(!i. bit i a ==> P i)
+             ==> (!i. bit i a <=> P i /\ bit i a)")) th])) THEN
+    ASM_REWRITE_TAC [CONJ_ASSOC, DIMINDEX_GE_1, UNWIND_THM2, (← ARITH_RULE
+    (← q r"N <= i + n + 1 /\ i + n < N <=> 1 <= N /\ n < N /\ i = N - n - 1"))] THEN
     EQ_TAC THEN SIMP_TAC [] THEN ASM_ARITH_TAC)
 
   let WORD_CLZ_UNIQUE ← prove
@@ -7782,8 +7741,6 @@ def setupClzCtz [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordTy
     REWRITE_TAC [LE_EXP, ARITH_EQ, EXP_EQ_0, LE_MULT_LCANCEL] THEN
     ASM_SIMP_TAC [LE_1, VAL_EQ_0])
 
-  let _e2 ← ARITH_RULE (← q r"1 = 2 EXP 0")
-  let _e1 ← MESON [ODD] (← q r"n = 0 ==> ~ODD n")
   let WORD_CLZ_UNIQUE_VAL ← prove
    r"!(a:N word) n.
         n < dimindex(:N) /\
@@ -7795,9 +7752,9 @@ def setupClzCtz [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordTy
     SUBGOAL_THEN (← q r"i = (dimindex (:N) - n - 1) + SUC(i - (dimindex(:N) - n))")
     SUBST1_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
     ASM_SIMP_TAC [BIT_VAL, EXP_ADD, ← GSYM DIV_DIV] THEN
-    MATCH_MP_TAC _e1 THEN
+    MATCH_MP_TAC (← MESON [ODD] (← q r"n = 0 ==> ~ODD n")) THEN
     SIMP_TAC [DIV_EQ_0, ARITH_EQ, EXP_EQ_0] THEN
-    GEN_REWRITE_TAC LAND_CONV [_e2] THEN
+    GEN_REWRITE_TAC LAND_CONV [(← ARITH_RULE (← q r"1 = 2 EXP 0"))] THEN
     REWRITE_TAC [LT_EXP] THEN ARITH_TAC)
 
   let WORD_CTZ_BIT ← prove
@@ -7899,17 +7856,14 @@ def setupClzCtz [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordTy
      (← q r"(!d:num. d <= x ==> d <= y) ==> x <= y")) THEN
     REWRITE_TAC [WORD_LE_CLZ] THEN ASM_MESON_TAC [BIT_TRIVIAL, NOT_LE])
 
-  let _f3 ← TAUT (← q r"p /\ q /\ r <=> (p /\ q) /\ (p /\ r)")
-  let _f2 ← TAUT (← q r"p \/ q ==> r <=> (p ==> r) /\ (q ==> r)")
-  let _f1 ← ARITH_RULE
-    (← q r"p = MIN m n <=> p <= m /\ p <= n /\ (m <= p \/ n <= p)")
   let WORD_CLZ_OR ← prove
    r"!(x:N word) y. word_clz (word_or x y) = MIN (word_clz x) (word_clz y)"
-   (REPEAT GEN_TAC THEN REWRITE_TAC [_f1] THEN
+   (REPEAT GEN_TAC THEN REWRITE_TAC [(← ARITH_RULE
+    (← q r"p = MIN m n <=> p <= m /\ p <= n /\ (m <= p \/ n <= p)"))] THEN
     SIMP_TAC [WORD_CLZ_IMP, BIT_WORD_OR_ALT] THEN
     MP_TAC (← ISPEC (← q r"word_or x y:N word") WORD_LE_CLZ) THEN
-    REWRITE_TAC [BIT_WORD_OR_ALT, FORALL_AND_THM, _f2] THEN
-    ONCE_REWRITE_TAC [_f3] THEN
+    REWRITE_TAC [BIT_WORD_OR_ALT, FORALL_AND_THM, (← TAUT (← q r"p \/ q ==> r <=> (p ==> r) /\ (q ==> r)"))] THEN
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p /\ q /\ r <=> (p /\ q) /\ (p /\ r)"))] THEN
     SIMP_TAC [← GSYM WORD_LE_CLZ] THEN ARITH_TAC)
 
   let WORD_CTZ_IMP ← prove
@@ -7920,17 +7874,14 @@ def setupClzCtz [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordTy
      (← q r"(!d:num. d <= x ==> d <= y) ==> x <= y")) THEN
     REWRITE_TAC [WORD_LE_CTZ] THEN ASM_MESON_TAC [BIT_TRIVIAL, NOT_LE])
 
-  let _g3 ← TAUT (← q r"p /\ q /\ r <=> (p /\ q) /\ (p /\ r)")
-  let _g2 ← TAUT (← q r"p \/ q ==> r <=> (p ==> r) /\ (q ==> r)")
-  let _g1 ← ARITH_RULE
-    (← q r"p = MIN m n <=> p <= m /\ p <= n /\ (m <= p \/ n <= p)")
   let WORD_CTZ_OR ← prove
    r"!(x:N word) y. word_ctz (word_or x y) = MIN (word_ctz x) (word_ctz y)"
-   (REPEAT GEN_TAC THEN REWRITE_TAC [_g1] THEN
+   (REPEAT GEN_TAC THEN REWRITE_TAC [(← ARITH_RULE
+    (← q r"p = MIN m n <=> p <= m /\ p <= n /\ (m <= p \/ n <= p)"))] THEN
     SIMP_TAC [WORD_CTZ_IMP, BIT_WORD_OR_ALT] THEN
     MP_TAC (← ISPEC (← q r"word_or x y:N word") WORD_LE_CTZ) THEN
-    REWRITE_TAC [BIT_WORD_OR_ALT, FORALL_AND_THM, _g2] THEN
-    ONCE_REWRITE_TAC [_g3] THEN
+    REWRITE_TAC [BIT_WORD_OR_ALT, FORALL_AND_THM, (← TAUT (← q r"p \/ q ==> r <=> (p ==> r) /\ (q ==> r)"))] THEN
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p /\ q /\ r <=> (p /\ q) /\ (p /\ r)"))] THEN
     SIMP_TAC [← GSYM WORD_LE_CTZ] THEN ARITH_TAC)
 
   let WORD_CLZ_MONO ← prove
@@ -8053,22 +8004,19 @@ def setupReverse [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
    (REPEAT GEN_TAC THEN REWRITE_TAC [word_reversefields, BIT_WORD_OF_BITS] THEN
     REWRITE_TAC [IN_ELIM_THM] THEN MESON_TAC [])
 
-  let _a3 ← ARITH_RULE (← q r"x < n ==> n - 1 - (n - 1 - x) = x")
-  let _a2 ← ARITH_RULE (← q r"m < n /\ n * (x + 1) <= n * q ==> n * x + m < n * q")
-  let _a1 ← ARITH_RULE (← q r"b = 0 \/ 0 < b")
   let WORD_REVERSEFIELDS_REVERSEFIELDS ← prove
    r"!(x:(N)word) b. word_reversefields b (word_reversefields b x) = x"
    (ONCE_REWRITE_TAC [WORD_EQ_BITS_ALT] THEN
     REWRITE_TAC [BIT_WORD_REVERSEFIELDS] THEN
     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
-    DISJ_CASES_TAC _a1 THEN
+    DISJ_CASES_TAC (← ARITH_RULE (← q r"b = 0 \/ 0 < b")) THEN
     ASM_REWRITE_TAC [MOD_ZERO, DIV_ZERO, MULT_CLAUSES, ADD_CLAUSES, LT] THEN
     ABBREV_TAC (← q r"q = dimindex (:N) DIV b") THEN
     ASM_CASES_TAC (← q r"i:num < b * q") THEN ASM_REWRITE_TAC [] THEN
     ASM_SIMP_TAC [← ONCE_REWRITE_RULE [MULT_SYM] DIV_MULT, LE_1, DIV_MULT_ADD,
       MOD_MULT_ADD, MOD_MOD_REFL, DIV_LT, MOD_LT_EQ_LT, ADD_CLAUSES] THEN
     SUBGOAL_THEN (← q r"b * (q - 1 - i DIV b) + i MOD b < b * q") ASSUME_TAC THENL
-     [MATCH_MP_TAC _a2 THEN
+     [MATCH_MP_TAC (← ARITH_RULE (← q r"m < n /\ n * (x + 1) <= n * q ==> n * x + m < n * q")) THEN
       ASM_REWRITE_TAC [MOD_LT_EQ_LT, LE_MULT_LCANCEL] THEN
       UNDISCH_TAC (← q r"i:num < b * q") THEN
       ASM_CASES_TAC (← q r"q = 0") THEN ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC,
@@ -8081,7 +8029,7 @@ def setupReverse [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
       TRANS_TAC EQ_TRANS (← q r"b * i DIV b + i MOD b") THEN
       CONJ_TAC THENL [ALL_TAC, REWRITE_TAC [DIVISION_SIMP]] THEN
       AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
-      MATCH_MP_TAC _a3 THEN
+      MATCH_MP_TAC (← ARITH_RULE (← q r"x < n ==> n - 1 - (n - 1 - x) = x")) THEN
       ASM_SIMP_TAC [RDIV_LT_EQ, LE_1] THEN ASM_ARITH_TAC])
 
   let BIT_REVERSEFIELDS_1 ← prove
@@ -8092,11 +8040,9 @@ def setupReverse [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
     REWRITE_TAC [MULT_CLAUSES, DIV_1, MOD_1, ADD_CLAUSES] THEN
     MESON_TAC [])
 
-  let _b2 ← ARITH_RULE (← q r"i < n ==> n - 1 - (n - 1 - i) = i")
-  let _b1 ← MESON [LE_REFL, LE_ANTISYM] (← q r"a = b <=> !x:num. x <= a <=> x <= b")
   let WORD_CTZ_REVERSEFIELDS ← prove
    r"!x:N word. word_ctz(word_reversefields 1 x) = word_clz x"
-   (GEN_TAC THEN REWRITE_TAC [_b1] THEN
+   (GEN_TAC THEN REWRITE_TAC [(← MESON [LE_REFL, LE_ANTISYM] (← q r"a = b <=> !x:num. x <= a <=> x <= b"))] THEN
     REWRITE_TAC [WORD_LE_CTZ, WORD_LE_CLZ] THEN
     X_GEN_TAC (← q "k:num") THEN REWRITE_TAC [BIT_REVERSEFIELDS_1] THEN
     MATCH_MP_TAC (← TAUT (← q r"(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)")) THEN
@@ -8104,25 +8050,22 @@ def setupReverse [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
     X_GEN_TAC (← q "i:num") THEN STRIP_TAC THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q r"dimindex(:N) - 1 - i")) THEN
     FIRST_X_ASSUM (STRIP_ASSUME_TAC o GEN_REWRITE_RULE id [BIT_GUARD]) THEN
-    ASM_SIMP_TAC [_b2] THEN
+    ASM_SIMP_TAC [(← ARITH_RULE (← q r"i < n ==> n - 1 - (n - 1 - i) = i"))] THEN
     ASM_ARITH_TAC)
 
   let WORD_CLZ_REVERSEFIELDS ← prove
    r"!x:N word. word_clz(word_reversefields 1 x) = word_ctz x"
    (MESON_TAC [WORD_REVERSEFIELDS_REVERSEFIELDS, WORD_CTZ_REVERSEFIELDS])
 
-  let _c3 ← ARITH_RULE (← q r"N - MIN N c <= i <=> N <= i + c")
-  let _c2 ← ARITH_RULE (← q r"c + n < N ==> N - MIN N (c + n) - 1 + n = N - c - 1")
-  let _c1 ← ARITH_RULE (← q r"MIN a b < a <=> b < a")
   let WORD_CLZ_USHR ← prove
    r"!(x:N word) n.
         word_clz (word_ushr x n) = MIN (dimindex(:N)) (word_clz x + n)"
    (REPEAT GEN_TAC THEN
     REWRITE_TAC [WORD_CLZ_UNIQUE_GEN, BIT_WORD_USHR] THEN
     CONJ_TAC THENL [ARITH_TAC, ALL_TAC] THEN
-    REWRITE_TAC [_c1] THEN
-    SIMP_TAC [_c2] THEN
-    REWRITE_TAC [_c3] THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"MIN a b < a <=> b < a"))] THEN
+    SIMP_TAC [(← ARITH_RULE (← q r"c + n < N ==> N - MIN N (c + n) - 1 + n = N - c - 1"))] THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"N - MIN N c <= i <=> N <= i + c"))] THEN
     MP_TAC (← ISPECL [← q "x:N word", ← q r"word_clz(x:N word)"] WORD_CLZ_UNIQUE_GEN) THEN
     REWRITE_TAC [LE_REFL] THEN STRIP_TAC THEN CONJ_TAC THENL
      [DISCH_TAC, GEN_TAC THEN DISCH_TAC] THEN
@@ -8168,15 +8111,13 @@ def setupReverse [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
     REWRITE_TAC [DIMINDEX_TYBIT0, ← ARITH_RULE (← q r"2 * 2 * 2 * n = 8 * n")] THEN
     SET_TAC [])
 
-  let _d2 ← ARITH_RULE (← q r"i < 8 * n ==> 8 * (n - 1 - i DIV 8) + i MOD 8 < 8 * n")
-  let _d1 ← ARITH_RULE (← q r"2 * 2 * 2 * n = 8 * n")
   let WORD_BYTEREVERSE_BYTEREVERSE ← prove
    r"!(x:((((N)tybit0)tybit0)tybit0)word).
         word_bytereverse(word_bytereverse x) = x"
    (ONCE_REWRITE_TAC [WORD_EQ_BITS_ALT] THEN REPEAT GEN_TAC THEN
     REWRITE_TAC [BIT_WORD_BYTEREVERSE] THEN
-    REWRITE_TAC [DIMINDEX_TYBIT0, _d1] THEN
-    DISCH_TAC THEN ASM_SIMP_TAC [_d2] THEN
+    REWRITE_TAC [DIMINDEX_TYBIT0, (← ARITH_RULE (← q r"2 * 2 * 2 * n = 8 * n"))] THEN
+    DISCH_TAC THEN ASM_SIMP_TAC [(← ARITH_RULE (← q r"i < 8 * n ==> 8 * (n - 1 - i DIV 8) + i MOD 8 < 8 * n"))] THEN
     AP_THM_TAC THEN AP_TERM_TAC THEN
     SIMP_TAC [MOD_MULT_ADD, MOD_MOD_REFL, DIV_MULT_ADD, ARITH_EQ] THEN
     SIMP_TAC [DIV_LT, MOD_LT_EQ, ARITH_EQ] THEN ASM_ARITH_TAC)
@@ -8254,12 +8195,6 @@ def setupReverse [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
     REWRITE_TAC [IN_ELIM_THM] THEN
     EQ_TAC THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN ASM_ARITH_TAC)
 
-  let _e8 ← ARITH_RULE (← q r"(i + j) + j = 2 * j + i")
-  let _e7 ← ARITH_RULE (← q r"~(SUC i <= i)")
-  let _e6 ← ARITH_RULE (← q r"1 <= SUC n")
-  let _e5 ← ARITH_RULE (← q r"1 <= i - j <=> j + 1 <= i")
-  let _e4 ← ARITH_RULE (← q r"i - j - 1 = i - (j + 1)")
-  let _e3 ← ARITH_RULE (← q r"i:num < N ==> i - j < N")
   let WORD_PMUL_STEP ← prove
    r"!x y. (word_pmul:M word->N word->N word) x y =
          word_xor (if bit 0 x then y else word 0)
@@ -8270,14 +8205,14 @@ def setupReverse [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
     REWRITE_TAC [← TAUT (← q r"(p <=> ~(q <=> r)) <=> ~(p <=> r) <=> q")] THEN
     REWRITE_TAC [← GSYM ODD_ADD] THEN
     REWRITE_TAC [BIT_WORD_USHR, BIT_WORD_SHL] THEN
-    ASM_SIMP_TAC [_e3] THEN
-    REWRITE_TAC [_e4] THEN
-    REWRITE_TAC [_e5] THEN
+    ASM_SIMP_TAC [(← ARITH_RULE (← q r"i:num < N ==> i - j < N"))] THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"i - j - 1 = i - (j + 1)"))] THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"1 <= i - j <=> j + 1 <= i"))] THEN
     REWRITE_TAC [← GSYM (← SPEC (← q "1") NSUM_OFFSET)] THEN
     SIMP_TAC [NSUM_CLAUSES_LEFT, LE_0] THEN REWRITE_TAC [ADD_CLAUSES] THEN
-    REWRITE_TAC [← GSYM ADD1, NSUM_CLAUSES_NUMSEG, _e6] THEN
-    SIMP_TAC [_e7, BITVAL_CLAUSES, MULT_CLAUSES] THEN
-    REWRITE_TAC [ADD_CLAUSES, _e8] THEN
+    REWRITE_TAC [← GSYM ADD1, NSUM_CLAUSES_NUMSEG, (← ARITH_RULE (← q r"1 <= SUC n"))] THEN
+    SIMP_TAC [(← ARITH_RULE (← q r"~(SUC i <= i)")), BITVAL_CLAUSES, MULT_CLAUSES] THEN
+    REWRITE_TAC [ADD_CLAUSES, (← ARITH_RULE (← q r"(i + j) + j = 2 * j + i"))] THEN
     REWRITE_TAC [ODD_ADD, ODD_MULT, ARITH_ODD, SUB_0] THEN
     REWRITE_TAC [bitval] THEN REPEAT (COND_CASES_TAC THEN ASM_REWRITE_TAC []) THEN
     REWRITE_TAC [BIT_WORD_0] THEN CONV_TAC NUM_REDUCE_CONV)
@@ -8487,22 +8422,20 @@ def setupAlign [HolBase] (D : WordsDeps) (BVal : Val) (BIval : Ival) (BWordOps1 
   let word_jrol ← new_definition
    r"word_jrol (w:N word) (k:N word) = word_rol w (val k)"
 
-  let _f2 ← INTEGER_RULE
-    (← q r"n divides e /\ (k':int == k) (mod n) ==> (e - k == n - k') (mod n)")
-  let _f1 ← MESON []
-    (← q r"x MOD n MOD m = x MOD m /\ x MOD m = y ==> x MOD n MOD m = y")
   let VAL_WORD_NEG_MOD_DIMINDEX ← prove
    r"!k:N word.
         dimindex(:N) divides 2 EXP dimindex(:N)
         ==> (val(word_neg k) == dimindex (:N) - val k MOD dimindex(:N))
             (mod dimindex(:N))"
    (REPEAT STRIP_TAC THEN REWRITE_TAC [VAL_WORD_NEG, CONG] THEN
-    MATCH_MP_TAC _f1 THEN
+    MATCH_MP_TAC (← MESON []
+    (← q r"x MOD n MOD m = x MOD m /\ x MOD m = y ==> x MOD n MOD m = y")) THEN
     CONJ_TAC THENL [ASM_MESON_TAC [divides, MOD_MOD], ALL_TAC] THEN
     REWRITE_TAC [← GSYM CONG, num_congruent] THEN
     SIMP_TAC [← GSYM INT_OF_NUM_SUB, LT_IMP_LE, VAL_BOUND, DIVISION,
               DIMINDEX_NONZERO, ← GSYM INT_OF_NUM_REM] THEN
-    MATCH_MP_TAC _f2 THEN
+    MATCH_MP_TAC (← INTEGER_RULE
+    (← q r"n divides e /\ (k':int == k) (mod n) ==> (e - k == n - k') (mod n)")) THEN
     ASM_REWRITE_TAC [← GSYM num_divides, INT_REM_MOD_SELF])
 
   let WORD_JROL_JROR ← prove
@@ -8525,8 +8458,6 @@ def setupAlign [HolBase] (D : WordsDeps) (BVal : Val) (BIval : Ival) (BWordOps1 
      (← q r"(x:num == y) (mod n) <=> (y == x) (mod n)")] THEN
     MATCH_MP_TAC VAL_WORD_NEG_MOD_DIMINDEX THEN ASM_REWRITE_TAC [])
 
-  let _g2 ← ARITH_RULE (← q r"n - k < n <=> ~(k = 0) /\ ~(n = 0)")
-  let _g1 ← WORD_BITWISE_RULE (← q r"y = word 0 ==> word_or x y = word_or x x")
   let WORD_JROR ← prove
    r"!w k:N word.
         dimindex(:N) divides 2 EXP dimindex(:N)
@@ -8540,11 +8471,11 @@ def setupAlign [HolBase] (D : WordsDeps) (BVal : Val) (BIval : Ival) (BWordOps1 
     REWRITE_TAC [CONG] THEN DISCH_THEN SUBST1_TAC THEN
     ASM_CASES_TAC (← q r"val(k:N word) MOD dimindex(:N) = 0") THENL
      [ASM_REWRITE_TAC [SUB_0, MOD_REFL, WORD_USHR_ZERO, WORD_SHL_ZERO] THEN
-      MATCH_MP_TAC _g1 THEN
+      MATCH_MP_TAC (← WORD_BITWISE_RULE (← q r"y = word 0 ==> word_or x y = word_or x x")) THEN
       REWRITE_TAC [← GSYM VAL_EQ_0, VAL_WORD_SHL, MOD_MULT],
       AP_TERM_TAC THEN AP_TERM_TAC THEN
       CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN
-      REWRITE_TAC [_g2] THEN
+      REWRITE_TAC [(← ARITH_RULE (← q r"n - k < n <=> ~(k = 0) /\ ~(n = 0)"))] THEN
       ASM_REWRITE_TAC [DIMINDEX_NONZERO]])
 
   let WORD_JROL ← prove
@@ -8659,11 +8590,9 @@ def setupTopflip [HolBase] (D : WordsDeps) (BVal : Val) (BIval : Ival) (BLimits 
       REWRITE_TAC [VAL_WORD, ← GSYM WORD_ROL_MOD, ← GSYM WORD_ROR_MOD])
     -- `!word_SIZE_CONV` and `!word_POW2SIZE_CONV` are read here, when the
     -- conversion is built.
-    let sizeConv ← D.word_SIZE_CONV.get
-    let pow2Conv ← D.word_POW2SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
       RAND_CONV
-       (binop2ConvIO (RAND_CONV pow2Conv THENC NUM_MOD_CONV) sizeConv THENC
+       (binop2ConvIO (RAND_CONV (← D.word_POW2SIZE_CONV.get) THENC NUM_MOD_CONV) (← D.word_SIZE_CONV.get) THENC
         NUM_MOD_CONV))
 
   let IVAL_TOPFLIP_VAL ← prove
@@ -9159,12 +9088,11 @@ def setupBlast [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BPopco
       let th ← PART_MATCH (lhand o rand) pth_lt tm
       MP th (← EQT_ELIM (← ExceptT.mk (NUM_REDUCE_CONV (← liftExcept (lhand (concl th))))))
     -- `!word_POW2SIZE_CONV` is read here, when the tactic is built.
-    let pow2Conv ← D.word_POW2SIZE_CONV.get
     let tac_word : tactic :=
       CONV_TAC WORD_VAL_CONG_CONV THEN
       TRY (CONV_TAC (RAND_CONV (RAND_CONV
        ((← GEN_REWRITE_CONV_NET id [INT_OF_NUM_POW]) THENC
-        RAND_CONV pow2Conv)))) THEN
+        RAND_CONV (← D.word_POW2SIZE_CONV.get))))) THEN
       CONV_TAC conv THEN
       REPEAT
        ((MATCH_MP_TAC idiv_lemma THEN
@@ -9191,17 +9119,13 @@ def setupBlast [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BPopco
           let s ← HolCore.Printer.string_of_term tm
           throw ("WORD_BLAST `" ++ s ++ "`: " ++ m)))
 
-  let _r1 ← REAL_ARITH
-    (← q r"(x + y) - (((x + y) + w - &2 * z) + z):real = z - w")
-  let _a2 ← ARITH_RULE (← q r"i < n ==> i - 1 < n")
-  let _a1 ← ARITH_RULE (← q r"!x y:num. x <= y /\ a + y <= b + x ==> a <= b")
   let WORD_POPCOUNT_ADD_OR ← prove
    r"!x y:N word. word_popcount(word_add x y) <= word_popcount(word_or x y)"
    (REPEAT GEN_TAC THEN ABBREV_TAC
      (← q r"word_carryout:N word->N word->N word =
       \x y. word_or (word_and x y)
                     (word_and (word_xor x y) (word_not(word_add x y)))") THEN
-    MATCH_MP_TAC _a1 THEN
+    MATCH_MP_TAC (← ARITH_RULE (← q r"!x y:num. x <= y /\ a + y <= b + x ==> a <= b")) THEN
     MAP_EVERY EXISTS_TAC
      [← q r"word_popcount(word_and x y:N word)",
       ← q r"word_popcount(word_carryout (x:N word) (y:N word):N word)"] THEN
@@ -9229,11 +9153,12 @@ def setupBlast [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BPopco
       MP_TAC (← ISPECL [← q "x:N word", ← q "y:N word", ← q "i:num"] BIT_WORD_ADD) THEN
       ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN
       REWRITE_TAC [ADD_SUB, ADD_EQ_0, ARITH_EQ] THEN
-      ASM_SIMP_TAC [_a2] THEN
+      ASM_SIMP_TAC [(← ARITH_RULE (← q r"i < n ==> i - 1 < n"))] THEN
       ASM_CASES_TAC (← q "i = 0") THEN ASM_REWRITE_TAC [] THEN
       SPEC_TAC (← q r"word_add x y:N word", ← q "z:N word") THEN
       CONV_TAC (fun t => (WORD_BLAST t).run),
-      REWRITE_TAC [_r1]] THEN
+      REWRITE_TAC [(← REAL_ARITH
+    (← q r"(x + y) - (((x + y) + w - &2 * z) + z):real = z - w"))]] THEN
     MP_TAC (← ISPECL
      [← q r"\i. if i = 0 then &0:real else
          &(bitval(bit (i - 1) (word_carryout (x:N word) (y:N word): N word)))",
@@ -9413,9 +9338,6 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
       | _ => throw "WORD_SATURATE_CONV")
 
   let IWORD_SATURATE_CONV : ioconv ← do
-    let _a1 ← ARITH_RULE (← q r"~(n = 0) ==> SUC(n - 1) = n")
-    let _i1 ← INTEGER_RULE (← q r"&2 * x:int = n ==> (--x == x) (mod n)")
-    let _n1 ← INT_ARITH (← q r"n:int > m - &1 <=> m <= n")
     let pth ← prove
      r"iword_saturate n:N word =
         (\t. if n < -- &t then word t
@@ -9423,14 +9345,14 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
              else iword n) (2 EXP (dimindex(:N) - 1))"
      (REWRITE_TAC [iword_saturate, IVAL_WORD_INT_MIN, IVAL_WORD_INT_MAX] THEN
       REWRITE_TAC [word_INT_MIN, word_INT_MAX] THEN
-      REWRITE_TAC [_n1] THEN
+      REWRITE_TAC [(← INT_ARITH (← q r"n:int > m - &1 <=> m <= n"))] THEN
       REWRITE_TAC [← GSYM INT_OF_NUM_CLAUSES, WORD_IWORD] THEN
       SIMP_TAC [← GSYM INT_OF_NUM_SUB, LE_1, EXP_EQ_0, ARITH_EQ] THEN
       REWRITE_TAC [← GSYM INT_OF_NUM_CLAUSES] THEN
       REPEAT (COND_CASES_TAC THEN ASM_REWRITE_TAC []) THEN
-      REWRITE_TAC [IWORD_EQ] THEN MATCH_MP_TAC _i1 THEN
+      REWRITE_TAC [IWORD_EQ] THEN MATCH_MP_TAC (← INTEGER_RULE (← q r"&2 * x:int = n ==> (--x == x) (mod n)")) THEN
       REWRITE_TAC [← GSYM (← CONJUNCT2 INT_POW)] THEN
-      SIMP_TAC [DIMINDEX_NONZERO, _a1])
+      SIMP_TAC [DIMINDEX_NONZERO, (← ARITH_RULE (← q r"~(n = 0) ==> SUC(n - 1) = n"))])
     let n_tm ← q "n:int"
     let n_ty ← qty "N"
     let conv_cond_t ← GEN_REWRITE_CONV_NET id [← CONJUNCT1 (← SPEC_ALL COND_CLAUSES)]
@@ -9614,9 +9536,8 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
      word((NUMERAL m + NUMERAL n) MOD (2 EXP dimindex(:N)))"
      (REWRITE_TAC [word_add, modular, VAL_WORD, WORD_EQ, CONG] THEN
       CONV_TAC MOD_DOWN_CONV THEN REWRITE_TAC [])
-    let p2 ← D.word_POW2SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV (binop2ConvIO NUM_ADD_CONV p2 THENC NUM_MOD_CONV))
+      RAND_CONV (binop2ConvIO NUM_ADD_CONV (← D.word_POW2SIZE_CONV.get) THENC NUM_MOD_CONV))
 
   let WORD_MUL_CONV : ioconv ← do
     let pth ← prove
@@ -9624,9 +9545,8 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
      word((NUMERAL m * NUMERAL n) MOD (2 EXP dimindex(:N)))"
      (REWRITE_TAC [word_mul, modular, VAL_WORD, WORD_EQ, CONG] THEN
       CONV_TAC MOD_DOWN_CONV THEN REWRITE_TAC [])
-    let p2 ← D.word_POW2SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV (binop2ConvIO NUM_MULT_CONV p2 THENC NUM_MOD_CONV))
+      RAND_CONV (binop2ConvIO NUM_MULT_CONV (← D.word_POW2SIZE_CONV.get) THENC NUM_MOD_CONV))
 
   let WORD_SUB_CONV : ioconv ← do
     let pth ← prove
@@ -9635,9 +9555,8 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
      (2 EXP dimindex(:N))"
      (REWRITE_TAC [word_sub, modular, VAL_WORD, WORD_EQ, CONG] THEN
       CONV_TAC MOD_DOWN_CONV THEN REWRITE_TAC [])
-    let p2 ← D.word_POW2SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV p2 THENC BETA_CONV THENC
+      RAND_CONV (← D.word_POW2SIZE_CONV.get) THENC BETA_CONV THENC
       RAND_CONV
        (LAND_CONV
         (RAND_CONV (RAND_CONV NUM_MOD_CONV THENC NUM_SUB_CONV) THENC
@@ -9651,9 +9570,8 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
      (2 EXP dimindex(:N))"
      (REWRITE_TAC [word_neg, word_sub, modular, VAL_WORD, WORD_EQ, CONG] THEN
       CONV_TAC MOD_DOWN_CONV THEN REWRITE_TAC [ADD_CLAUSES])
-    let p2 ← D.word_POW2SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV p2 THENC BETA_CONV THENC
+      RAND_CONV (← D.word_POW2SIZE_CONV.get) THENC BETA_CONV THENC
       RAND_CONV
        (LAND_CONV
         (RAND_CONV NUM_MOD_CONV THENC NUM_SUB_CONV) THENC
@@ -9668,9 +9586,8 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
       CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN MATCH_MP_TAC (← ARITH_RULE
        (← q r"m DIV n <= m /\ m < p ==> m DIV n < p")) THEN
       SIMP_TAC [DIV_LE, DIVISION, EXP_EQ_0, ARITH_EQ])
-    let p2 ← D.word_POW2SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV p2 THENC BETA_CONV THENC
+      RAND_CONV (← D.word_POW2SIZE_CONV.get) THENC BETA_CONV THENC
       RAND_CONV (BINOP_CONV NUM_MOD_CONV THENC NUM_DIV_CONV))
 
   let WORD_UMOD_CONV : ioconv ← do
@@ -9682,9 +9599,8 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
       CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN MATCH_MP_TAC (← ARITH_RULE
        (← q r"m MOD n <= m /\ m < p ==> m MOD n < p")) THEN
       SIMP_TAC [MOD_LE, DIVISION, EXP_EQ_0, ARITH_EQ])
-    let p2 ← D.word_POW2SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV p2 THENC BETA_CONV THENC
+      RAND_CONV (← D.word_POW2SIZE_CONV.get) THENC BETA_CONV THENC
       RAND_CONV (BINOP_CONV NUM_MOD_CONV THENC NUM_MOD_CONV))
 
   let WORD_UMAX_CONV : ioconv ← do
@@ -9696,9 +9612,8 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
       CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN
       REWRITE_TAC [← ARITH_RULE (← q r"MAX a b < n <=> a < n /\ b < n")] THEN
       SIMP_TAC [DIVISION, EXP_EQ_0, ARITH_EQ])
-    let p2 ← D.word_POW2SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV p2 THENC BETA_CONV THENC
+      RAND_CONV (← D.word_POW2SIZE_CONV.get) THENC BETA_CONV THENC
       RAND_CONV (BINOP_CONV NUM_MOD_CONV THENC NUM_MAX_CONV))
 
   let WORD_UMIN_CONV : ioconv ← do
@@ -9710,9 +9625,8 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
       CONV_TAC SYM_CONV THEN MATCH_MP_TAC MOD_LT THEN
       REWRITE_TAC [← ARITH_RULE (← q r"MIN a b < n <=> a < n \/ b < n")] THEN
       SIMP_TAC [DIVISION, EXP_EQ_0, ARITH_EQ])
-    let p2 ← D.word_POW2SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV p2 THENC BETA_CONV THENC
+      RAND_CONV (← D.word_POW2SIZE_CONV.get) THENC BETA_CONV THENC
       RAND_CONV (BINOP_CONV NUM_MOD_CONV THENC NUM_MIN_CONV))
 
   let WORD_IMAX_CONV : ioconv ← do
@@ -9724,13 +9638,10 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
      (COND_CASES_TAC THEN
       REWRITE_TAC [← GSYM IVAL_EQ, IVAL_WORD_IMAX, WORD_MOD_SIZE] THEN
       ASM_REWRITE_TAC [INT_MAX])
-    let c1 ← GEN_REWRITE_CONV_NET id [pth]
-    let c2 ← GEN_REWRITE_CONV_NET id [COND_CLAUSES]
-    let p2 ← D.word_POW2SIZE_CONV.get
-    pure (c1 THENC
+    pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
       RATOR_CONV (LAND_CONV (BINOP_CONV WORD_IVAL_CONV THENC INT_LE_CONV)) THENC
-      c2 THENC
-      funpow 2 RAND_CONV p2 THENC RAND_CONV NUM_MOD_CONV)
+      (← GEN_REWRITE_CONV_NET id [COND_CLAUSES]) THENC
+      funpow 2 RAND_CONV (← D.word_POW2SIZE_CONV.get) THENC RAND_CONV NUM_MOD_CONV)
 
   let WORD_IMIN_CONV : ioconv ← do
     let pth ← prove
@@ -9741,13 +9652,10 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
      (COND_CASES_TAC THEN
       REWRITE_TAC [← GSYM IVAL_EQ, IVAL_WORD_IMIN, WORD_MOD_SIZE] THEN
       ASM_REWRITE_TAC [INT_MIN])
-    let c1 ← GEN_REWRITE_CONV_NET id [pth]
-    let c2 ← GEN_REWRITE_CONV_NET id [COND_CLAUSES]
-    let p2 ← D.word_POW2SIZE_CONV.get
-    pure (c1 THENC
+    pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
       RATOR_CONV (LAND_CONV (BINOP_CONV WORD_IVAL_CONV THENC INT_LE_CONV)) THENC
-      c2 THENC
-      funpow 2 RAND_CONV p2 THENC RAND_CONV NUM_MOD_CONV)
+      (← GEN_REWRITE_CONV_NET id [COND_CLAUSES]) THENC
+      funpow 2 RAND_CONV (← D.word_POW2SIZE_CONV.get) THENC RAND_CONV NUM_MOD_CONV)
 
   let WORD_SHL_CONV : ioconv ← do
     let pth ← prove
@@ -9756,9 +9664,8 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
      (2 EXP dimindex(:N))"
      (REWRITE_TAC [word_shl, WORD_EQ, VAL_WORD, CONG] THEN
       CONV_TAC MOD_DOWN_CONV THEN REFL_TAC)
-    let p2 ← D.word_POW2SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV p2 THENC BETA_CONV THENC
+      RAND_CONV (← D.word_POW2SIZE_CONV.get) THENC BETA_CONV THENC
       RAND_CONV
        (LAND_CONV
          (RAND_CONV NUM_EXP_CONV THENC
@@ -9772,9 +9679,8 @@ def setupReduce1 [HolBase] (D : WordsDeps) (BBitval : Bitval) (BVal : Val) (BIva
      (2 EXP dimindex(:N))"
      (REWRITE_TAC [word_ushr, WORD_EQ, VAL_WORD, CONG] THEN
       CONV_TAC MOD_DOWN_CONV THEN REFL_TAC)
-    let p2 ← D.word_POW2SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV p2 THENC BETA_CONV THENC
+      RAND_CONV (← D.word_POW2SIZE_CONV.get) THENC BETA_CONV THENC
       RAND_CONV
        (LAND_CONV
          (binop2ConvIO NUM_MOD_CONV NUM_EXP_CONV THENC NUM_DIV_CONV) THENC
@@ -9925,11 +9831,6 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
     ExceptT.mk (prove_general_recursive_function_exists (← q s))
 
   let WORD_AND_CONV : ioconv ← do
-    let rf ← pgrfe
-     r"?f. !m n. f m n =
-                if m = 0 then 0 else if n = 0 then 0
-                else (if m MOD 2 = 1 /\ n MOD 2 = 1 then 1 else 0) +
-                     2 * f (m DIV 2) (n DIV 2)"
     let pth ← prove
      r"?f. ((!n. f _0 n = _0) /\ (!m. f m _0 = _0)) /\
          ((!m n. f (BIT0 m) (BIT0 n) = BIT0(f m n)) /\
@@ -9938,7 +9839,10 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
           (!m n. f (BIT1 m) (BIT1 n) = BIT1(f m n))) /\
          (!m n. word_and (word(NUMERAL m):N word) (word(NUMERAL n)) =
                 word(NUMERAL(f m n)))"
-     (MP_TAC rf THEN
+     (MP_TAC (← pgrfe r"?f. !m n. f m n =
+                if m = 0 then 0 else if n = 0 then 0
+                else (if m MOD 2 = 1 /\ n MOD 2 = 1 then 1 else 0) +
+                     2 * f (m DIV 2) (n DIV 2)") THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q "f:num->num->num") THEN
       DISCH_TAC THEN
       SUBGOAL_THEN
@@ -9981,11 +9885,6 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
     pure (bitwiseNumeralConv "word_and" "WORD_AND_CONV" pth qth nty WORD_WORD_CONV)
 
   let WORD_OR_CONV : ioconv ← do
-    let rf ← pgrfe
-     r"?f. !m n. f m n =
-                if m = 0 then n else if n = 0 then m
-                else (if m MOD 2 = 1 \/ n MOD 2 = 1 then 1 else 0) +
-                     2 * f (m DIV 2) (n DIV 2)"
     let pth ← prove
      r"?f. ((!n. f _0 n = n) /\ (!m. f m _0 = m)) /\
          ((!m n. f (BIT0 m) (BIT0 n) = BIT0(f m n)) /\
@@ -9994,7 +9893,10 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
           (!m n. f (BIT1 m) (BIT1 n) = BIT1(f m n))) /\
          (!m n. word_or (word(NUMERAL m):N word) (word(NUMERAL n)) =
                 word(NUMERAL(f m n)))"
-     (MP_TAC rf THEN
+     (MP_TAC (← pgrfe r"?f. !m n. f m n =
+                if m = 0 then n else if n = 0 then m
+                else (if m MOD 2 = 1 \/ n MOD 2 = 1 then 1 else 0) +
+                     2 * f (m DIV 2) (n DIV 2)") THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q "f:num->num->num") THEN
       DISCH_TAC THEN
       SUBGOAL_THEN
@@ -10038,11 +9940,6 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
     pure (bitwiseNumeralConv "word_or" "WORD_OR_CONV" pth qth nty WORD_WORD_CONV)
 
   let WORD_XOR_CONV : ioconv ← do
-    let rf ← pgrfe
-     r"?f. !m n. f m n =
-                if m = 0 then n else if n = 0 then m
-                else (if m MOD 2 = 1 <=> n MOD 2 = 1 then 0 else 1) +
-                     2 * f (m DIV 2) (n DIV 2)"
     let pth ← prove
      r"?f. ((!n. f _0 n = n) /\ (!m. f m _0 = m)) /\
          ((!m n. f (BIT0 m) (BIT0 n) = BIT0(f m n)) /\
@@ -10051,7 +9948,10 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
           (!m n. f (BIT1 m) (BIT1 n) = BIT0(f m n))) /\
          (!m n. word_xor (word(NUMERAL m):N word) (word(NUMERAL n)) =
                 word(NUMERAL(f m n)))"
-     (MP_TAC rf THEN
+     (MP_TAC (← pgrfe r"?f. !m n. f m n =
+                if m = 0 then n else if n = 0 then m
+                else (if m MOD 2 = 1 <=> n MOD 2 = 1 then 0 else 1) +
+                     2 * f (m DIV 2) (n DIV 2)") THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q "f:num->num->num") THEN
       DISCH_TAC THEN
       SUBGOAL_THEN
@@ -10138,11 +10038,10 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
      word (NUMERAL n MOD (2 EXP (MIN (dimindex(:M)) (dimindex(:N)))))"
      (REWRITE_TAC [← GSYM VAL_EQ, VAL_WORD_ZX_GEN, VAL_WORD] THEN
       MESON_TAC [MOD_MOD_EXP_MIN, MOD_MOD_REFL])
-    let sz ← D.word_SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
       RAND_CONV
        (RAND_CONV
-         (RAND_CONV (BINOP_CONV sz THENC
+         (RAND_CONV (BINOP_CONV (← D.word_SIZE_CONV.get) THENC
                      NUM_MIN_CONV) THENC
           NUM_EXP_CONV) THENC
         NUM_MOD_CONV))
@@ -10180,13 +10079,10 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
        word(NUMERAL n):N word = word 0
     then word 0 else word 1"
      (REWRITE_TAC [WORD_CAND])
-    let c1 ← GEN_REWRITE_CONV_NET id [pth]
-    let c2 ← GEN_REWRITE_CONV_NET id [OR_CLAUSES]
-    let c3 ← GEN_REWRITE_CONV_NET id [COND_CLAUSES]
-    pure (c1 THENC
+    pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
       RATOR_CONV (LAND_CONV
-       (BINOP_CONV WORD_EQ_CONV THENC c2)) THENC
-      c3)
+       (BINOP_CONV WORD_EQ_CONV THENC (← GEN_REWRITE_CONV_NET id [OR_CLAUSES]))) THENC
+      (← GEN_REWRITE_CONV_NET id [COND_CLAUSES]))
 
   let WORD_COR_CONV : ioconv ← do
     let pth ← prove
@@ -10195,13 +10091,10 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
        word(NUMERAL n):N word = word 0
     then word 0 else word 1"
      (REWRITE_TAC [WORD_COR])
-    let c1 ← GEN_REWRITE_CONV_NET id [pth]
-    let c2 ← GEN_REWRITE_CONV_NET id [AND_CLAUSES]
-    let c3 ← GEN_REWRITE_CONV_NET id [COND_CLAUSES]
-    pure (c1 THENC
+    pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
       RATOR_CONV (LAND_CONV
-       (BINOP_CONV WORD_EQ_CONV THENC c2)) THENC
-      c3)
+       (BINOP_CONV WORD_EQ_CONV THENC (← GEN_REWRITE_CONV_NET id [AND_CLAUSES]))) THENC
+      (← GEN_REWRITE_CONV_NET id [COND_CLAUSES]))
 
   let WORD_JOIN_CONV : ioconv ← do
     let pth ← prove
@@ -10232,12 +10125,11 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
            2 EXP MIN (NUMERAL q) (dimindex (:N)))"
      (REWRITE_TAC [word_subword, ← GSYM MOD_MOD_EXP_MIN] THEN
       REWRITE_TAC [WORD_EQ, CONG, MOD_MOD_REFL])
-    let sz ← D.word_SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
       RAND_CONV
        (binop2ConvIO
          (binop2ConvIO WORD_VAL_CONV NUM_EXP_CONV THENC NUM_DIV_CONV)
-         (RAND_CONV (RAND_CONV sz THENC NUM_MIN_CONV) THENC
+         (RAND_CONV (RAND_CONV (← D.word_SIZE_CONV.get) THENC NUM_MIN_CONV) THENC
           NUM_EXP_CONV) THENC
         NUM_MOD_CONV))
 
@@ -10252,7 +10144,6 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
            val(word(NUMERAL m):M word) MOD 2 EXP NUMERAL pos) MOD
           2 EXP dimindex(:P))"
      (REWRITE_TAC [WORD_MOD_SIZE, word_insert])
-    let sz ← D.word_SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
       RAND_CONV
        (binop2ConvIO
@@ -10269,7 +10160,7 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
               (binop2ConvIO WORD_VAL_CONV NUM_EXP_CONV THENC NUM_MOD_CONV) THENC
             NUM_ADD_CONV) THENC
            NUM_ADD_CONV)
-         (RAND_CONV sz THENC NUM_EXP_CONV) THENC
+         (RAND_CONV (← D.word_SIZE_CONV.get) THENC NUM_EXP_CONV) THENC
         NUM_MOD_CONV))
 
   let WORD_DUPLICATE_CONV : ioconv ← do
@@ -10313,17 +10204,15 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
       | _ => throw "WORD_DUPLICATE_CONV")
 
   let WORD_BITS_OF_WORD_CONV : ioconv ← do
-    let rf ← pgrfe
-     r"?f. !i n. f i n =
-                  if n = 0 then {}
-             else if n MOD 2 = 1 then i INSERT f (i + 1) (n DIV 2)
-             else f (i + 1) (n DIV 2)"
     let pth ← prove
      r"?f. (!i. f i _0 = {} /\
               (!n. f i (BIT0 n) = f (i + 1) n) /\
               (!n. f i (BIT1 n) = i INSERT f (i + 1) n)) /\
          (!w:N word. bits_of_word w = f 0 (val w))"
-     (MP_TAC rf THEN
+     (MP_TAC (← pgrfe r"?f. !i n. f i n =
+                  if n = 0 then {}
+             else if n MOD 2 = 1 then i INSERT f (i + 1) (n DIV 2)
+             else f (i + 1) (n DIV 2)") THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q "f:num->num->num->bool") THEN
       DISCH_TAC THEN
       GEN_REWRITE_TAC
@@ -10392,17 +10281,15 @@ def setupReduce2 [HolBase] (D : WordsDeps) (BWordType : WordType) (BBitsOfWord :
       | _ => throw "WORD_BITS_OF_WORD_CONV")
 
   let WORD_POPCOUNT_CONV : ioconv ← do
-    let rf ← pgrfe
-     r"?f. !n. f n =
-                  if n = 0 then 0
-             else if n MOD 2 = 1 then SUC(f (n DIV 2))
-             else f (n DIV 2)"
     let pth ← prove
      r"?f. (f _0 = 0 /\
           (!n. f (BIT0 n) = f n) /\
           (!n. f (BIT1 n) = SUC(f n))) /\
          (!w:N word. word_popcount w = f (val w))"
-     (MP_TAC rf THEN
+     (MP_TAC (← pgrfe r"?f. !n. f n =
+                  if n = 0 then 0
+             else if n MOD 2 = 1 then SUC(f (n DIV 2))
+             else f (n DIV 2)") THEN
       MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q "f:num->num") THEN
       DISCH_TAC THEN
       GEN_REWRITE_TAC
@@ -10655,9 +10542,6 @@ def setupReduce3 [HolBase] (D : WordsDeps) (BDigitsum : Digitsum) (BBitval : Bit
 
   -- `!word_SIZE_CONV` is read as each of the following is defined.
   let WORD_BYTEREVERSE_CONV : ioconv ← do
-    let _a2 ← ARITH_RULE (← q r"i < n ==> i <= n - 1")
-    let _t1 ← TAUT (← q r"p /\ (q <=> q') ==> (p /\ q <=> q')")
-    let _a1 ← ARITH_RULE (← q r"2 * 2 * 2 * n = 8 * n")
     let pth ← prove
      r"!n. word_bytereverse(word (NUMERAL n):((((N)tybit0)tybit0)tybit0)word) =
          word(nsum (0..8*dimindex(:N)-1)
@@ -10666,26 +10550,23 @@ def setupReduce3 [HolBase] (D : WordsDeps) (BDigitsum : Digitsum) (BBitval : Bit
                         2 EXP (8 * (dimindex(:N) - 1 - i DIV 8) + i MOD 8)))))"
      (GEN_TAC THEN GEN_REWRITE_TAC id [WORD_EQ_BITS_ALT] THEN
       REWRITE_TAC [BIT_WORD_BYTEREVERSE, BIT_WORD] THEN
-      REWRITE_TAC [DIMINDEX_TYBIT0, _a1] THEN
+      REWRITE_TAC [DIMINDEX_TYBIT0, (← ARITH_RULE (← q r"2 * 2 * 2 * n = 8 * n"))] THEN
       X_GEN_TAC (← q "i:num") THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
-      MATCH_MP_TAC _t1 THEN
+      MATCH_MP_TAC (← TAUT (← q r"p /\ (q <=> q') ==> (p /\ q <=> q')")) THEN
       CONJ_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
       GEN_REWRITE_TAC RAND_CONV [ODD_MOD] THEN
       SIMP_TAC [DIGITSUM_DIV_MOD, FINITE_NUMSEG, BITVAL_BOUND_ALT] THEN
-      ASM_SIMP_TAC [IN_NUMSEG, LE_0, _a2] THEN
+      ASM_SIMP_TAC [IN_NUMSEG, LE_0, (← ARITH_RULE (← q r"i < n ==> i <= n - 1"))] THEN
       REWRITE_TAC [BITVAL_EQ_1])
-    let sz ← D.word_SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
       DEPTH_CONV
-       (sz ORELSEC NUM_MULT_CONV ORELSEC NUM_SUB_CONV) THENC
+       ((← D.word_SIZE_CONV.get) ORELSEC NUM_MULT_CONV ORELSEC NUM_SUB_CONV) THENC
       RAND_CONV EXPAND_NSUM_CONV THENC
       DEPTH_CONV ((← GEN_REWRITE_CONV_NET id [BITVAL_CLAUSES]) ORELSEC NUM_RED_CONV))
 
   let WORD_REVERSEFIELDS_CONV : ioconv ← do
-    let _a2 ← ARITH_RULE (← q r"i < n ==> i <= n - 1")
-    let _a1 ← ARITH_RULE (← q r"b * (x + 1) <= n /\ m < b ==> b * x + m < n")
-    let _t1 ← TAUT (← q r"p /\ (q <=> q') ==> (p /\ q <=> q')")
-    let pth0 ← prove
+    -- `[`NUMERAL b`; `NUMERAL n`]`: the list literal is built right to left.
+    let pth ← SPECL [(← q "NUMERAL b"), (← q "NUMERAL n")] (← prove
      r"!b n.
         word_reversefields b (word n:N word) =
         word(nsum (0..dimindex(:N)-1)
@@ -10697,26 +10578,21 @@ def setupReduce3 [HolBase] (D : WordsDeps) (BDigitsum : Digitsum) (BBitval : Bit
      (REPEAT GEN_TAC THEN GEN_REWRITE_TAC id [WORD_EQ_BITS_ALT] THEN
       REWRITE_TAC [BIT_WORD_REVERSEFIELDS, BIT_WORD] THEN
       X_GEN_TAC (← q "i:num") THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
-      MATCH_MP_TAC _t1 THEN
+      MATCH_MP_TAC (← TAUT (← q r"p /\ (q <=> q') ==> (p /\ q <=> q')")) THEN
       CONJ_TAC THENL
        [ASM_CASES_TAC (← q "b = 0") THEN ASM_REWRITE_TAC [MULT_CLAUSES, LT] THEN
         ASM_CASES_TAC (← q r"dimindex (:N) DIV b = 0") THEN
         ASM_REWRITE_TAC [MULT_CLAUSES, LT] THEN
         COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
-        MATCH_MP_TAC _a1 THEN
+        MATCH_MP_TAC (← ARITH_RULE (← q r"b * (x + 1) <= n /\ m < b ==> b * x + m < n")) THEN
         ASM_SIMP_TAC [MOD_LT_EQ, ← GSYM LDIV_LT_EQ] THEN ASM_ARITH_TAC,
         GEN_REWRITE_TAC RAND_CONV [ODD_MOD] THEN
         SIMP_TAC [DIGITSUM_DIV_MOD, FINITE_NUMSEG, BITVAL_BOUND_ALT] THEN
-        ASM_SIMP_TAC [IN_NUMSEG, LE_0, _a2] THEN
-        REWRITE_TAC [BITVAL_EQ_1]])
-    -- `[`NUMERAL b`; `NUMERAL n`]`: the list literal is built right to left.
-    let nn ← q "NUMERAL n"
-    let nb ← q "NUMERAL b"
-    let pth ← SPECL [nb, nn] pth0
-    let sz ← D.word_SIZE_CONV.get
+        ASM_SIMP_TAC [IN_NUMSEG, LE_0, (← ARITH_RULE (← q r"i < n ==> i <= n - 1"))] THEN
+        REWRITE_TAC [BITVAL_EQ_1]]))
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
       DEPTH_CONV
-       (sz ORELSEC NUM_MULT_CONV ORELSEC NUM_SUB_CONV) THENC
+       ((← D.word_SIZE_CONV.get) ORELSEC NUM_MULT_CONV ORELSEC NUM_SUB_CONV) THENC
       RAND_CONV EXPAND_NSUM_CONV THENC
       DEPTH_CONV ((← GEN_REWRITE_CONV_NET id [BITVAL_CLAUSES]) ORELSEC NUM_RED_CONV))
 
@@ -10746,9 +10622,8 @@ def setupReduce3 [HolBase] (D : WordsDeps) (BDigitsum : Digitsum) (BBitval : Bit
      word_shl (word(NUMERAL m):N word)
               (val(word(NUMERAL n):N word) MOD dimindex (:N))"
      (REWRITE_TAC [word_jshl])
-    let sz ← D.word_SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV (binop2ConvIO WORD_VAL_CONV sz THENC
+      RAND_CONV (binop2ConvIO WORD_VAL_CONV (← D.word_SIZE_CONV.get) THENC
                  NUM_MOD_CONV) THENC
       WORD_SHL_CONV)
 
@@ -10758,9 +10633,8 @@ def setupReduce3 [HolBase] (D : WordsDeps) (BDigitsum : Digitsum) (BBitval : Bit
      word_ishr (word(NUMERAL m):N word)
                (val(word(NUMERAL n):N word) MOD dimindex (:N))"
      (REWRITE_TAC [word_jshr])
-    let sz ← D.word_SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV (binop2ConvIO WORD_VAL_CONV sz THENC
+      RAND_CONV (binop2ConvIO WORD_VAL_CONV (← D.word_SIZE_CONV.get) THENC
                  NUM_MOD_CONV) THENC
       WORD_ISHR_CONV)
 
@@ -10770,9 +10644,8 @@ def setupReduce3 [HolBase] (D : WordsDeps) (BDigitsum : Digitsum) (BBitval : Bit
      word_ushr (word(NUMERAL m):N word)
                (val(word(NUMERAL n):N word) MOD dimindex (:N))"
      (REWRITE_TAC [word_jushr])
-    let sz ← D.word_SIZE_CONV.get
     pure ((← GEN_REWRITE_CONV_NET id [pth]) THENC
-      RAND_CONV (binop2ConvIO WORD_VAL_CONV sz THENC
+      RAND_CONV (binop2ConvIO WORD_VAL_CONV (← D.word_SIZE_CONV.get) THENC
                  NUM_MOD_CONV) THENC
       WORD_USHR_CONV)
 
@@ -11329,12 +11202,7 @@ def setupWordify [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
      WA
     -- `mk_abs(`x:num`, subst[`x:num`,`dimindex(:N)-1`] (...))`: the tuple
     -- and the list are built right to left.
-    let d1 ← q r"dimindex(:N)-1"
-    let x1 ← q "x:num"
-    let sb ← ExceptT.mk (subst [(x1, d1)])
-    let body ← ExceptT.mk (sb (← liftExcept (rand (strip_forall (concl pth)).2)))
-    let x0 ← q "x:num"
-    let pat ← liftExcept (mk_abs x0 body)
+    let pat ← liftExcept (mk_abs (← q "x:num") (← ExceptT.mk ((← ExceptT.mk (subst [((← q "x:num"), (← q r"dimindex(:N)-1"))])) (← liftExcept (rand (strip_forall (concl pth)).2)))))
     -- `GSYM NOT_LT` is rebuilt on each call in OCaml; it is a pure rule.
     let gNOT_LT ← GSYM NOT_LT
     let VAL_LT_CONV :=
@@ -11383,23 +11251,21 @@ def setupWordify [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
      ==> !x y. ival(x:M word) + ival(y:N word) =
                ival(word_add (word_sx x) (word_sx y):P word)"
      (← do
-      let ia ← INT_ARITH
-       (← q r"&2 * a <= c /\ &2 * b <= c /\ &2 * c <= e
-      ==> --a <= x /\ x < a ==> --b <= y /\ y < b ==> --c <= z /\ z < c
-          ==> abs((x + y) - z):int < e")
-      let ir ← INTEGER_RULE (← q r"(x:int == y) (mod p) <=> (y == x) (mod p)")
       pure (REPEAT STRIP_TAC THEN TRANS_TAC EQ_TRANS
        (← q r"ival((word_sx:M word->P word) x) +
       ival((word_sx:N word->P word) y)") THEN
       CONJ_TAC THENL [ASM_SIMP_TAC [IVAL_WORD_SX, LT_IMP_LE], ALL_TAC] THEN
       MATCH_MP_TAC INT_CONG_IMP_EQ THEN
       EXISTS_TAC (← q r"(&2:int) pow dimindex(:P)") THEN
-      ONCE_REWRITE_TAC [ir] THEN
+      ONCE_REWRITE_TAC [(← INTEGER_RULE (← q r"(x:int == y) (mod p) <=> (y == x) (mod p)"))] THEN
       REWRITE_TAC [ICONG_WORD_ADD] THEN ASM_SIMP_TAC [IVAL_WORD_SX, LT_IMP_LE] THEN
       MAP_EVERY ib
        [← q r"word_add (word_sx(x:M word)) (word_sx(y:N word)):P word",
         ← q "y:N word", ← q "x:M word"] THEN
-      MATCH_MP_TAC ia THEN
+      MATCH_MP_TAC (← INT_ARITH
+       (← q r"&2 * a <= c /\ &2 * b <= c /\ &2 * c <= e
+      ==> --a <= x /\ x < a ==> --b <= y /\ y < b ==> --c <= z /\ z < c
+          ==> abs((x + y) - z):int < e")) THEN
       REWRITE_TAC [← GSYM (← CONJUNCT2 INT_POW)] THEN
       SUBGOAL_THEN (← q r"~(dimindex(:M) = 0) /\ ~(dimindex(:N) = 0)")
       STRIP_ASSUME_TAC THENL [REWRITE_TAC [DIMINDEX_NONZERO], ALL_TAC] THEN
@@ -11409,23 +11275,21 @@ def setupWordify [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
      ==> !x y. ival(x:M word) - ival(y:N word) =
                ival(word_sub (word_sx x) (word_sx y):P word)"
      (← do
-      let ia ← INT_ARITH
-       (← q r"&2 * a <= c /\ &2 * b <= c /\ &2 * c <= e
-      ==> --a <= x /\ x < a ==> --b <= y /\ y < b ==> --c <= z /\ z < c
-          ==> abs((x - y) - z):int < e")
-      let ir ← INTEGER_RULE (← q r"(x:int == y) (mod p) <=> (y == x) (mod p)")
       pure (REPEAT STRIP_TAC THEN TRANS_TAC EQ_TRANS
        (← q r"ival((word_sx:M word->P word) x) -
       ival((word_sx:N word->P word) y)") THEN
       CONJ_TAC THENL [ASM_SIMP_TAC [IVAL_WORD_SX, LT_IMP_LE], ALL_TAC] THEN
       MATCH_MP_TAC INT_CONG_IMP_EQ THEN
       EXISTS_TAC (← q r"(&2:int) pow dimindex(:P)") THEN
-      ONCE_REWRITE_TAC [ir] THEN
+      ONCE_REWRITE_TAC [(← INTEGER_RULE (← q r"(x:int == y) (mod p) <=> (y == x) (mod p)"))] THEN
       REWRITE_TAC [ICONG_WORD_SUB] THEN ASM_SIMP_TAC [IVAL_WORD_SX, LT_IMP_LE] THEN
       MAP_EVERY ib
        [← q r"word_sub (word_sx(x:M word)) (word_sx(y:N word)):P word",
         ← q "y:N word", ← q "x:M word"] THEN
-      MATCH_MP_TAC ia THEN
+      MATCH_MP_TAC (← INT_ARITH
+       (← q r"&2 * a <= c /\ &2 * b <= c /\ &2 * c <= e
+      ==> --a <= x /\ x < a ==> --b <= y /\ y < b ==> --c <= z /\ z < c
+          ==> abs((x - y) - z):int < e")) THEN
       REWRITE_TAC [← GSYM (← CONJUNCT2 INT_POW)] THEN
       SUBGOAL_THEN (← q r"~(dimindex(:M) = 0) /\ ~(dimindex(:N) = 0)")
       STRIP_ASSUME_TAC THENL [REWRITE_TAC [DIMINDEX_NONZERO], ALL_TAC] THEN
@@ -11434,21 +11298,19 @@ def setupWordify [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
      r"dimindex(:N) < dimindex(:P)
      ==> !x. --(ival(x:N word)) = ival(word_neg(word_sx x:P word))"
      (← do
-      let ia ← INT_ARITH
-       (← q r"&2 * a <= c /\ &2 * c <= e
-      ==> --a <= x /\ x < a ==> --c <= z /\ z < c
-          ==> abs(--x - z):int < e")
-      let ir ← INTEGER_RULE (← q r"(x:int == y) (mod p) <=> (y == x) (mod p)")
       pure (REPEAT STRIP_TAC THEN TRANS_TAC EQ_TRANS
        (← q r"--ival((word_sx:N word->P word) x)") THEN
       CONJ_TAC THENL [ASM_SIMP_TAC [IVAL_WORD_SX, LT_IMP_LE], ALL_TAC] THEN
       MATCH_MP_TAC INT_CONG_IMP_EQ THEN
       EXISTS_TAC (← q r"(&2:int) pow dimindex(:P)") THEN
-      ONCE_REWRITE_TAC [ir] THEN
+      ONCE_REWRITE_TAC [(← INTEGER_RULE (← q r"(x:int == y) (mod p) <=> (y == x) (mod p)"))] THEN
       REWRITE_TAC [ICONG_WORD_NEG] THEN ASM_SIMP_TAC [IVAL_WORD_SX, LT_IMP_LE] THEN
       MAP_EVERY ib
        [← q r"word_neg (word_sx(x:N word)):P word", ← q "x:N word"] THEN
-      MATCH_MP_TAC ia THEN
+      MATCH_MP_TAC (← INT_ARITH
+       (← q r"&2 * a <= c /\ &2 * c <= e
+      ==> --a <= x /\ x < a ==> --c <= z /\ z < c
+          ==> abs(--x - z):int < e")) THEN
       REWRITE_TAC [← GSYM (← CONJUNCT2 INT_POW)] THEN
       SUBGOAL_THEN (← q r"~(dimindex(:M) = 0) /\ ~(dimindex(:N) = 0)")
       STRIP_ASSUME_TAC THENL [REWRITE_TAC [DIMINDEX_NONZERO], ALL_TAC] THEN
@@ -11458,12 +11320,6 @@ def setupWordify [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
      ==> !x y. ival(x:M word) * ival(y:N word) =
                ival(word_mul (word_sx x) (word_sx y):P word)"
      (← do
-      let ia3 ← INT_ARITH (← q r"--e:int <= x /\ x < e ==> abs(x) <= e")
-      let ia2 ← INT_ARITH
-       (← q r"&2 * c <= e /\ &2 * abs(xy) <= c
-      ==> --c <= z /\ z < c
-          ==> abs(xy - z):int < e")
-      let ir ← INTEGER_RULE (← q r"(x:int == y) (mod p) <=> (y == x) (mod p)")
       pure (REPEAT STRIP_TAC THEN
       SUBGOAL_THEN (← q r"~(dimindex(:M) = 0) /\ ~(dimindex(:N) = 0)")
       STRIP_ASSUME_TAC THENL [REWRITE_TAC [DIMINDEX_NONZERO], ALL_TAC] THEN
@@ -11475,11 +11331,14 @@ def setupWordify [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
       CONJ_TAC THENL [ASM_SIMP_TAC [IVAL_WORD_SX, LT_IMP_LE], ALL_TAC] THEN
       MATCH_MP_TAC INT_CONG_IMP_EQ THEN
       EXISTS_TAC (← q r"(&2:int) pow dimindex(:P)") THEN
-      ONCE_REWRITE_TAC [ir] THEN
+      ONCE_REWRITE_TAC [(← INTEGER_RULE (← q r"(x:int == y) (mod p) <=> (y == x) (mod p)"))] THEN
       REWRITE_TAC [ICONG_WORD_MUL] THEN ASM_SIMP_TAC [IVAL_WORD_SX, LT_IMP_LE] THEN
       MP_TAC (← ISPEC (← q r"word_mul (word_sx(x:M word)) (word_sx(y:N word)):P word")
           IVAL_BOUND) THEN
-      MATCH_MP_TAC ia2 THEN
+      MATCH_MP_TAC (← INT_ARITH
+       (← q r"&2 * c <= e /\ &2 * abs(xy) <= c
+      ==> --c <= z /\ z < c
+          ==> abs(xy - z):int < e")) THEN
       CONJ_TAC THENL
        [ALL_TAC,
         MATCH_MP_TAC INT_LE_TRANS THEN EXISTS_TAC
@@ -11489,7 +11348,7 @@ def setupWordify [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
           REWRITE_TAC [INT_ABS_POS, INT_LE_REFL, INT_POS, INT_ABS_MUL] THEN
           MATCH_MP_TAC INT_LE_MUL2 THEN
           REWRITE_TAC [INT_ABS_POS, INT_LE_REFL, INT_POS, INT_ABS_MUL] THEN
-          CONJ_TAC THEN MATCH_MP_TAC ia3 THEN
+          CONJ_TAC THEN MATCH_MP_TAC (← INT_ARITH (← q r"--e:int <= x /\ x < e ==> abs(x) <= e")) THEN
           REWRITE_TAC [IVAL_BOUND],
           ALL_TAC]] THEN
       REWRITE_TAC [← GSYM INT_POW, ← GSYM INT_POW_ADD] THEN
@@ -11540,12 +11399,7 @@ def setupWordify [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : WordT
            (bit (dimindex(:N)-1) x \/ ~bit (dimindex(:N)-1) y) /\
           bit (dimindex(:N)-1) (word_sub x y)"
      WA
-    let d1 ← q r"dimindex(:N)-1"
-    let x1 ← q "x:num"
-    let sb ← ExceptT.mk (subst [(x1, d1)])
-    let body ← ExceptT.mk (sb (← liftExcept (rand (strip_forall (concl pth)).2)))
-    let x0 ← q "x:num"
-    let pat ← liftExcept (mk_abs x0 body)
+    let pat ← liftExcept (mk_abs (← q "x:num") (← ExceptT.mk ((← ExceptT.mk (subst [((← q "x:num"), (← q r"dimindex(:N)-1"))])) (← liftExcept (rand (strip_forall (concl pth)).2)))))
     let gINT_NOT_LT ← GSYM INT_NOT_LT
     let IVAL_LT_CONV :=
        (← GEN_REWRITE_CONV_NET id [pth]) THENC
@@ -11681,17 +11535,13 @@ def setupBitblast [HolBase] (D : WordsDeps) (BBitval : Bitval) (BWordType : Word
       ASM_REWRITE_TAC [BITVAL_CLAUSES, MULT_CLAUSES, WORD_VAL])
     -- `let conv = ... and swap = ...`: left to right; each THENC chain is
     -- built right to left.
-    let c6 ← GEN_REWRITE_CONV_NET ONCE_DEPTH_CONV [WORD_VAL, pth]
-    let c5 ← GEN_REWRITE_CONV_NET TOP_SWEEP_CONV [WORD_ADD]
-    let c4 ← GEN_REWRITE_CONV_NET DEPTH_CONV [BITVAL_CLAUSES, MULT_CLAUSES, ADD_CLAUSES]
-    let c1 ← GEN_REWRITE_CONV_NET id [← REWRITE_RULE [NUMSEG_LT_DIMINDEX] WORD_MUL_EXPAND]
     let conv :=
-      c1 THENC
+      (← GEN_REWRITE_CONV_NET id [← REWRITE_RULE [NUMSEG_LT_DIMINDEX] WORD_MUL_EXPAND]) THENC
       RAND_CONV
        (LAND_CONV (RAND_CONV (LAND_CONV DIMINDEX_CONV THENC NUM_SUB_CONV)) THENC
         EXPAND_NSUM_BALANCE_CONV) THENC
       ONCE_DEPTH_CONV BIT_WORD_CONV THENC
-      c4 THENC c5 THENC c6
+      (← GEN_REWRITE_CONV_NET DEPTH_CONV [BITVAL_CLAUSES, MULT_CLAUSES, ADD_CLAUSES]) THENC (← GEN_REWRITE_CONV_NET TOP_SWEEP_CONV [WORD_ADD]) THENC (← GEN_REWRITE_CONV_NET ONCE_DEPTH_CONV [WORD_VAL, pth])
     let swap ← GEN_REWRITE_CONV_NET id [WORD_MUL_SYM]
     pure (fun tm => do
       match tm with

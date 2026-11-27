@@ -1049,15 +1049,20 @@ partial def forallDepair [HolBase] (rule : thm → ExceptT String IO thm) :
 /-- `GUESS_WF_THEN` (define.ml 923-929). -/
 partial def guessWfThen [HolBase] (pth_lexleft pth_lexright pth_measure : thm)
     (MEASURE MEASURE_LE FORALL_PAIR_THM : thm)
-    (GUESS_MEASURE_THEN : tactic → tactic) (tac : tactic) : tactic := fun g =>
+    (GUESS_MEASURE_THEN : tactic → ExceptT String IO tactic) (tac : tactic) : tactic := fun g => do
   let self := guessWfThen pth_lexleft pth_lexright pth_measure MEASURE MEASURE_LE
                 FORALL_PAIR_THM GUESS_MEASURE_THEN
-  ((MATCH_MP_TAC pth_lexleft THEN self (self tac)) ORELSE
-   (MATCH_MP_TAC pth_lexright THEN self (self tac)) ORELSE
-   (MATCH_MP_TAC pth_measure THEN
-    REWRITE_TAC [MEASURE, MEASURE_LE] THEN
-    REWRITE_TAC [FORALL_PAIR_THM] THEN
-    GUESS_MEASURE_THEN tac)) g
+  -- OCaml evaluates `GUESS_MEASURE_THEN tac` (which parses `\n. n + 1`) each
+  -- time GUESS_WF_THEN is applied to a goal, before any branch is tried.
+  match ← (GUESS_MEASURE_THEN tac).run with
+  | .error e => return .error e
+  | .ok gmt =>
+    ((MATCH_MP_TAC pth_lexleft THEN self (self tac)) ORELSE
+     (MATCH_MP_TAC pth_lexright THEN self (self tac)) ORELSE
+     (MATCH_MP_TAC pth_measure THEN
+      REWRITE_TAC [MEASURE, MEASURE_LE] THEN
+      REWRITE_TAC [FORALL_PAIR_THM] THEN
+      gmt)) g
 
 /-- define.ml 467-953: evaluate the binding. -/
 @[nospecialize]
@@ -1492,10 +1497,12 @@ def setupDefineSuite [HolBase]
     let (ev, _) ← liftExcept (dest_exists gl.2)
     let (ty, _) ← liftExcept (dest_fun_ty (type_of ev))
     ExceptT.mk ((EXISTS_TAC (← liftExcept (mk_abs (← genvar ty) one_tm)) THEN tac) gl)
-  let GUESS_MEASURE_THEN (tac : tactic) : tactic :=
-    tactic_of (do pure (EXISTS_TAC (← q r"\n. n + 1") THEN tac)) ORELSE
-    INDUCTIVE_MEASURE_THEN tac ORELSE
-    CONSTANT_MEASURE_THEN tac
+  -- Applying it to `tac` parses `\n. n + 1`, as OCaml does.
+  let GUESS_MEASURE_THEN (tac : tactic) : ExceptT String IO tactic := do
+    let n1 ← q r"\n. n + 1"
+    pure ((EXISTS_TAC n1 THEN tac) ORELSE
+          INDUCTIVE_MEASURE_THEN tac ORELSE
+          CONSTANT_MEASURE_THEN tac)
   let pth_lexleft ← prove
    r"(?r. WF(r) /\
           ?s. WF(s) /\

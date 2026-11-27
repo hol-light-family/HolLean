@@ -1061,27 +1061,18 @@ def setupNumbers [HolBase] (D : RingTheoryDeps) (BBasics : Basics) :
    r"!(r:A ring) m n.
       ring_of_int r (m + n) = ring_add r (ring_of_int r m) (ring_of_int r n)"
    (← do
-    -- right to left: the two MESONs, then the two INT_ARITHs
-    let m2 ← MESON [RING_ADD_SYM]
-     (← q r"x IN ring_carrier r /\ y IN ring_carrier r /\ ring_add r x y = z
-    ==> ring_add r y x = z")
-    let m1 ← MESON [RING_ADD_SYM, RING_NEG]
-     (← q r"!x y. x IN ring_carrier r /\ y IN ring_carrier r
-         ==> ring_add r (ring_neg r x) y = ring_add r y (ring_neg r x)")
-    let i2 ← INT_ARITH
-     (← q r"(&a + &b:int = -- &c <=> &a:int = &0 /\ &b:int = &0 /\ &c:int = &0) /\
-    (!m n p. m + --n:int = &p <=> m = n + &p) /\
-    (!m n p. m + --n:int = -- &p <=> m + &p = n)")
-    let i1 ← INT_ARITH (← q r"--b + a:int = a + --b")
     pure (SUBGOAL_THEN
      (← q r"!(r:A ring) m n p.
         m + n = p ==>
       ring_of_int r p = ring_add r (ring_of_int r m) (ring_of_int r n)")
      (fun th => MESON_TAC [th]) THEN
     GEN_TAC THEN REWRITE_TAC [FORALL_INT_CASES, RING_OF_INT_CASES] THEN
-    ONCE_REWRITE_TAC [i1] THEN
+    ONCE_REWRITE_TAC [(← INT_ARITH (← q r"--b + a:int = a + --b"))] THEN
     REWRITE_TAC [← GSYM INT_NEG_ADD, INT_NEG_EQ, INT_NEG_NEG] THEN
-    REWRITE_TAC [i2] THEN
+    REWRITE_TAC [(← INT_ARITH
+     (← q r"(&a + &b:int = -- &c <=> &a:int = &0 /\ &b:int = &0 /\ &c:int = &0) /\
+    (!m n p. m + --n:int = &p <=> m = n + &p) /\
+    (!m n p. m + --n:int = -- &p <=> m + &p = n)"))] THEN
     REWRITE_TAC [INT_OF_NUM_ADD, INT_OF_NUM_EQ] THEN
     REPEAT STRIP_TAC THEN
     REPEAT (FIRST_X_ASSUM (SUBST1_TAC o check thmLhandIsVar)) THEN
@@ -1089,11 +1080,15 @@ def setupNumbers [HolBase] (D : RingTheoryDeps) (BBasics : Basics) :
     REWRITE_TAC [RING_OF_NUM_ADD, RING_OF_NUM_0] THEN
     SIMP_TAC [RING_NEG_0, RING_ADD_LZERO, RING_ADD_RZERO, RING_0] THEN
     SIMP_TAC [← GSYM RING_NEG_ADD, RING_OF_NUM] THEN SIMP_TAC
-     [RING_ADD, RING_OF_NUM, m1] THEN
+     [RING_ADD, RING_OF_NUM, (← MESON [RING_ADD_SYM, RING_NEG]
+     (← q r"!x y. x IN ring_carrier r /\ y IN ring_carrier r
+         ==> ring_add r (ring_neg r x) y = ring_add r y (ring_neg r x)"))] THEN
     REWRITE_TAC [← GSYM ring_sub] THEN
     SIMP_TAC [RING_EQ_SUB_LADD, RING_OF_NUM, RING_ADD, RING_NEG] THEN
     TRY (SIMP_TAC [RING_ADD_AC, RING_OF_NUM] THEN NO_TAC) THEN
-    MATCH_MP_TAC m2 THEN
+    MATCH_MP_TAC (← MESON [RING_ADD_SYM]
+     (← q r"x IN ring_carrier r /\ y IN ring_carrier r /\ ring_add r x y = z
+    ==> ring_add r y x = z")) THEN
     SIMP_TAC [RING_NEG, RING_OF_NUM, RING_ADD] THEN
     SIMP_TAC [← GSYM RING_ADD_ASSOC, RING_ADD, RING_NEG, RING_OF_NUM,
               RING_ADD_RNEG, RING_ADD_RZERO]))
@@ -1777,7 +1772,6 @@ def setupSums [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
         ring_sum r s (\j. if j = i then a else ring_0 r) =
         if i IN s /\ a IN ring_carrier r then a else ring_0 r"
    (← do
-    -- right to left: the last SET_RULE first, the first TAUT last
     pure (REPEAT GEN_TAC THEN ONCE_REWRITE_TAC [← GSYM RING_SUM_SUPPORT] THEN
       ONCE_REWRITE_TAC [← GSYM RING_SUM_RESTRICT] THEN REWRITE_TAC [IN_ELIM_THM] THEN
       GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [COND_RAND] THEN
@@ -1858,7 +1852,6 @@ def setupSums [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
         ==> ring_sum r s (\i. ring_sum r (t i) (x i)) =
             ring_sum r {i,j | i IN s /\ j IN t i} (\(i,j). x i j)"
    (← do
-    -- right to left: the second MESON first
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [ring_sum] THEN
       MP_TAC (← ISPECL [← q r"s:K->bool", ← q r"t:K->L->bool", ← q r"x:K->L->A"]
       (← MATCH_MP ITERATE_ITERATE_PRODUCT (← ISPEC (← q "r:D ring") MONOIDAL_RING_ADD))) THEN
@@ -2052,7 +2045,6 @@ def setupSums [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
              ring_sum r (IMAGE f s)
                         (\y. ring_sum r {x | x IN s /\ f x = y} g)"
    (← do
-    -- right to left: the SET_RULE first, then the TAUT
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [ring_sum] THEN
       MP_TAC (← ISPECL
        [← q r"f:K->B", ← q r"g:K->A", ← q r"{x | x IN s /\ (g:K->A) x IN ring_carrier r}"]
@@ -2099,9 +2091,6 @@ def setupSums [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
               (\k. ring_mul r (ring_of_num r (binom(n,k)))
                     (ring_mul r (ring_pow r x k) (ring_pow r y (n - k))))"
    (← do
-    -- right to left, from the end of the text: the last ARITH_RULE, the
-    -- fourth `basic_ss []`, the REWRITE_CONV, the MESON, the third and
-    -- second `basic_ss []`, the first ARITH_RULE, the first `basic_ss []`
     pure (GEN_TAC THEN INDUCT_TAC THEN REPEAT STRIP_TAC THEN
       ASM_SIMP_TAC [NUMSEG_SING, RING_SUM_SING, binom, SUB_REFL, ring_pow,
                     RING_MUL_LID, RING_OF_NUM_1, RING_1] THEN
@@ -2633,7 +2622,6 @@ def setupProducts [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
         ring_product r s (\j. if j = i then a else ring_1 r) =
         if i IN s /\ a IN ring_carrier r then a else ring_1 r"
    (← do
-    -- right to left: the last SET_RULE first, the first TAUT last
     pure (REPEAT GEN_TAC THEN ONCE_REWRITE_TAC [← GSYM RING_PRODUCT_SUPPORT] THEN
       ONCE_REWRITE_TAC [← GSYM RING_PRODUCT_RESTRICT] THEN
       REWRITE_TAC [IN_ELIM_THM] THEN
@@ -2780,7 +2768,6 @@ def setupProducts [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
              ring_product r (IMAGE f s)
                             (\y. ring_product r {x | x IN s /\ f x = y} g)"
    (← do
-    -- right to left: the SET_RULE first, then the TAUT
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [ring_product] THEN
       MP_TAC (← ISPECL
        [← q r"f:K->B", ← q r"g:K->A", ← q r"{x | x IN s /\ (g:K->A) x IN ring_carrier r}"]
@@ -5487,7 +5474,6 @@ def setupIdeals [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
         ==> ring_setadd r s (ring_setadd r t u) =
             ring_setadd r (ring_setadd r s t) u"
    (← do
-    -- right to left: the three SET_RULEs, last first
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [ring_setadd] THEN
       REWRITE_TAC [(← SET_RULE
      (← q r"{f x y |x,y| x IN s /\ y IN {g w z | w IN t /\ z IN u}} =
@@ -5508,7 +5494,6 @@ def setupIdeals [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
         ==> ring_setmul r s (ring_setmul r t u) =
             ring_setmul r (ring_setmul r s t) u"
    (← do
-    -- right to left: the three SET_RULEs, last first
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [ring_setmul] THEN
       REWRITE_TAC [(← SET_RULE
      (← q r"{f x y |x,y| x IN s /\ y IN {g w z | w IN t /\ z IN u}} =
@@ -5710,7 +5695,6 @@ def setupIdeals [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
         ==> ring_setmul r (ring_setadd r j s) (ring_setadd r j t) SUBSET
             ring_setadd r j (ring_setmul r s t)"
    (← do
-    -- right to left: the second `basic_ss []`, the first, then the SET_RULE
     pure (REPEAT STRIP_TAC THEN
       REWRITE_TAC [ring_setmul, ring_setadd, SUBSET, FORALL_IN_GSPEC,
                    IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
@@ -6618,9 +6602,6 @@ def setupIdeals [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
         (!i. 1 <= i /\ i <= n ==> c i IN j)
         ==> ring_1 k IN ideal_generated (subring_generated k (x INSERT r)) j"
    (← do
-    let tneg ← q r"ring_neg (k:A ring)"
-    let tmul ← q r"ring_mul (k:A ring)"
-    let tr ← q r"r:A->bool"
     pure (REPEAT STRIP_TAC THEN ASM_SIMP_TAC [IDEAL_GENERATED_ADJOIN_EXPLICIT] THEN
     SUBGOAL_THEN (← q r"ring_carrier(subring_generated k r) = (r:A->bool)")
     ASSUME_TAC THENL
@@ -6646,11 +6627,20 @@ def setupIdeals [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
       ASM_CASES_TAC (← q r"i = 0") THEN ASM_REWRITE_TAC [] THENL
        [ASM_SIMP_TAC [RING_SUB_REFL, RING_1],
         ASM_SIMP_TAC [RING_SUB_LZERO, RING_MUL] THEN
-        FIRST_X_ASSUM (MATCH_MP_TAC o check (fun th =>
-          is_forall (concl th) && can (find_term (fun t => t == tneg)) (concl th))) THEN
-        FIRST_X_ASSUM (MATCH_MP_TAC o check (fun th =>
-          is_forall (concl th) && can (find_term (fun t => t == tmul)) (concl th) &&
-          can (find_term (fun t => t == tr)) (concl th))) THEN
+        -- OCaml parses each quotation inside `check`'s predicate, for each
+        -- assumption tried, and only when the `&&` before it holds.
+        FIRST_X_ASSUM (fun th => tactic_of do
+          unless is_forall (concl th) do throw "check"
+          let tneg ← q r"ring_neg (k:A ring)"
+          unless can (find_term (fun t => t == tneg)) (concl th) do throw "check"
+          pure (MATCH_MP_TAC th)) THEN
+        FIRST_X_ASSUM (fun th => tactic_of do
+          unless is_forall (concl th) do throw "check"
+          let tmul ← q r"ring_mul (k:A ring)"
+          unless can (find_term (fun t => t == tmul)) (concl th) do throw "check"
+          let tr ← q r"r:A->bool"
+          unless can (find_term (fun t => t == tr)) (concl th) do throw "check"
+          pure (MATCH_MP_TAC th)) THEN
         ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC],
       ALL_TAC] THEN
     CONV_TAC SYM_CONV THEN
@@ -7282,7 +7272,6 @@ def setupDomains [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
    r"!r:A ring.
         integral_domain r ==> ring_char r = 0 \/ prime(ring_char r)"
    (← do
-    -- right to left: the two ARITH_RULEs, last first, then the NUMBER_RULE
     pure (REWRITE_TAC [integral_domain, ← GSYM TRIVIAL_RING_10] THEN REPEAT STRIP_TAC THEN
       ASM_REWRITE_TAC [prime, RING_CHAR_EQ_1] THEN
       ASM_CASES_TAC (← q "ring_char(r:A ring) = 0") THEN ASM_REWRITE_TAC [] THEN
@@ -7314,7 +7303,6 @@ def setupDomains [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
         (integral_domain r \/ field r) /\ prime p
         ==> (ring_char r divides p <=> ring_char r = p)"
    (← do
-    -- right to left: the two NUMBER_RULEs, last first, then the TAUT
     pure (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 MP_TAC ASSUME_TAC) THEN
       MATCH_MP_TAC (← TAUT (← q r"(q ==> p) /\ (p ==> r) ==> (p \/ q ==> r)")) THEN
       REWRITE_TAC [FIELD_IMP_INTEGRAL_DOMAIN] THEN
@@ -8219,7 +8207,6 @@ def setupHoms [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
                 (!i. i IN k ==> h i IN ring_carrier r)
                 ==> f(ring_sum r k h) = ring_sum r' k (f o h)"
    (← do
-    -- right to left: the MESON first, then the TAUT
     pure (REWRITE_TAC [ring_monomorphism, INJECTIVE_ON_ALT] THEN REPEAT STRIP_TAC THEN
       ONCE_REWRITE_TAC [← GSYM RING_SUM_SUPPORT] THEN
       FIRST_ASSUM (SUBST1_TAC o SYM o MATCH_MP RING_HOMOMORPHISM_0) THEN
@@ -8243,7 +8230,6 @@ def setupHoms [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
                 (!i. i IN k ==> h i IN ring_carrier r)
                 ==> f(ring_product r k h) = ring_product r' k (f o h)"
    (← do
-    -- right to left: the MESON first, then the TAUT
     pure (REWRITE_TAC [ring_monomorphism, INJECTIVE_ON_ALT] THEN REPEAT STRIP_TAC THEN
       ONCE_REWRITE_TAC [← GSYM RING_PRODUCT_SUPPORT] THEN
       FIRST_ASSUM (SUBST1_TAC o SYM o MATCH_MP RING_HOMOMORPHISM_1) THEN
@@ -8692,7 +8678,6 @@ def setupHoms [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
       ring_homomorphism(r,r') f /\ s SUBSET ring_carrier r
       ==> IMAGE f (ideal_generated r s) SUBSET ideal_generated r' (IMAGE f s)"
    (← do
-    -- right to left: the second SET_RULE first
     pure (REPEAT STRIP_TAC THEN MATCH_MP_TAC (← SET_RULE
      (← q r"u SUBSET {x | x IN ring_carrier r  /\ f x IN t}
     ==> IMAGE f u SUBSET t")) THEN
@@ -10078,16 +10063,6 @@ def setupKernels [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides : D
             ASM_REWRITE_TAC [])
     -- OCaml evaluates the THENL list right to left, so the hom_f/hom_g
     -- applications inside it are built last element first.
-    let h_mul_g ← hom_g RING_HOMOMORPHISM_MUL
-    let h_mul_f ← hom_f RING_HOMOMORPHISM_MUL
-    let h_add_g ← hom_g RING_HOMOMORPHISM_ADD
-    let h_add_f ← hom_f RING_HOMOMORPHISM_ADD
-    let h_neg_g ← hom_g RING_HOMOMORPHISM_NEG
-    let h_neg_f ← hom_f RING_HOMOMORPHISM_NEG
-    let h_1_g ← hom_g RING_HOMOMORPHISM_1
-    let h_1_f ← hom_f RING_HOMOMORPHISM_1
-    let h_0_g ← hom_g RING_HOMOMORPHISM_0
-    let h_0_f ← hom_f RING_HOMOMORPHISM_0
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [ring_epimorphism] THEN STRIP_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o REWRITE_RULE [SUBSET, FORALL_IN_IMAGE] o CONJUNCT1 o
       GEN_REWRITE_RULE id [ring_homomorphism]) THEN SUBGOAL_THEN
@@ -10137,30 +10112,30 @@ def setupKernels [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides : D
     REPEAT CONJ_TAC THENL
      [X_GEN_TAC (← q "x:A") THEN DISCH_TAC THEN ASM_SIMP_TAC [],
       SUBGOAL_THEN (← q r"ring_0 (r2:B ring) = (f:A->B)(ring_0 r1)") SUBST1_TAC THENL
-       [CONV_TAC SYM_CONV THEN h_0_f,
-        ASM_SIMP_TAC [RING_0] THEN h_0_g],
+       [CONV_TAC SYM_CONV THEN (← hom_f RING_HOMOMORPHISM_0),
+        ASM_SIMP_TAC [RING_0] THEN (← hom_g RING_HOMOMORPHISM_0)],
       SUBGOAL_THEN (← q r"ring_1 (r2:B ring) = (f:A->B)(ring_1 r1)") SUBST1_TAC THENL
-       [CONV_TAC SYM_CONV THEN h_1_f,
-        ASM_SIMP_TAC [RING_1] THEN h_1_g],
+       [CONV_TAC SYM_CONV THEN (← hom_f RING_HOMOMORPHISM_1),
+        ASM_SIMP_TAC [RING_1] THEN (← hom_g RING_HOMOMORPHISM_1)],
       X_GEN_TAC (← q "x:A") THEN DISCH_TAC THEN
       SUBGOAL_THEN (← q r"ring_neg r2 ((f:A->B) x) = f(ring_neg r1 x)") SUBST1_TAC
       THENL
-       [CONV_TAC SYM_CONV THEN h_neg_f THEN
+       [CONV_TAC SYM_CONV THEN (← hom_f RING_HOMOMORPHISM_NEG) THEN
         DISCH_THEN (MP_TAC o SPEC (← q "x:A")) THEN ASM_REWRITE_TAC [],
-        ASM_SIMP_TAC [RING_NEG] THEN h_neg_g THEN
+        ASM_SIMP_TAC [RING_NEG] THEN (← hom_g RING_HOMOMORPHISM_NEG) THEN
         DISCH_THEN (MP_TAC o SPEC (← q "x:A")) THEN ASM_REWRITE_TAC []],
       X_GEN_TAC (← q "x1:A") THEN DISCH_TAC THEN X_GEN_TAC (← q "x2:A") THEN DISCH_TAC THEN
       SUBGOAL_THEN (← q r"ring_add r2 ((f:A->B) x1) (f x2) = f(ring_add r1 x1 x2)")
-       SUBST1_TAC THENL [CONV_TAC SYM_CONV THEN h_add_f THEN
+       SUBST1_TAC THENL [CONV_TAC SYM_CONV THEN (← hom_f RING_HOMOMORPHISM_ADD) THEN
         DISCH_THEN (MP_TAC o SPECL [← q "x1:A", ← q "x2:A"]) THEN ASM_REWRITE_TAC [],
-        ASM_SIMP_TAC [RING_ADD] THEN h_add_g THEN
+        ASM_SIMP_TAC [RING_ADD] THEN (← hom_g RING_HOMOMORPHISM_ADD) THEN
         DISCH_THEN (MP_TAC o SPECL [← q "x1:A", ← q "x2:A"]) THEN ASM_REWRITE_TAC []],
       X_GEN_TAC (← q "x1:A") THEN DISCH_TAC THEN X_GEN_TAC (← q "x2:A") THEN DISCH_TAC THEN
       SUBGOAL_THEN (← q r"ring_mul r2 ((f:A->B) x1) (f x2) = f(ring_mul r1 x1 x2)")
       SUBST1_TAC THENL
-       [CONV_TAC SYM_CONV THEN h_mul_f THEN
+       [CONV_TAC SYM_CONV THEN (← hom_f RING_HOMOMORPHISM_MUL) THEN
         DISCH_THEN (MP_TAC o SPECL [← q "x1:A", ← q "x2:A"]) THEN ASM_REWRITE_TAC [],
-        ASM_SIMP_TAC [RING_MUL] THEN h_mul_g THEN
+        ASM_SIMP_TAC [RING_MUL] THEN (← hom_g RING_HOMOMORPHISM_MUL) THEN
         DISCH_THEN (MP_TAC o SPECL [← q "x1:A", ← q "x2:A"]) THEN ASM_REWRITE_TAC []]]))
 
   let RING_HOMOMORPHISM_MONOMORPHISM_FACTOR ← prove
@@ -12025,8 +12000,6 @@ def setupLimits [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
                 !r. r IN c ==> ring_monomorphism(r,R) I"
    (← do
     -- OCaml evaluates the two SET_RULE calls in reverse text order.
-    let s2 ← SET_RULE (← q r"{f x | x IN s} = {} <=> s = {}")
-    let s1 ← SET_RULE (← q r"x IN s /\ y IN s <=> {x,y} SUBSET s")
     pure (REPEAT STRIP_TAC THEN
     MAP_EVERY ABBREV_TAC
      [← q r"r0:A = let r = @r. r IN c in ring_0 r",
@@ -12069,11 +12042,11 @@ def setupLimits [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
       REWRITE_TAC [ring_0, ring_1, ring_neg, ring_add, ring_mul] THEN
       REWRITE_TAC [PAIR, ← GSYM PAIR_EQ] THEN EXPAND_TAC "R" THEN
       REWRITE_TAC [← GSYM (← CONJUNCT2 ring_tybij)] THEN
-      REWRITE_TAC [s1] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"x IN s /\ y IN s <=> {x,y} SUBSET s"))] THEN
       REWRITE_TAC [← GSYM INSERT_SUBSET] THEN
       MP_TAC (← ISPEC (← q r"{ring_carrier r:A->bool | r IN c}")
           FINITE_SUBSET_UNIONS_DIRECTED_EQ) THEN
-      ASM_REWRITE_TAC [s2] THEN
+      ASM_REWRITE_TAC [(← SET_RULE (← q r"{f x | x IN s} = {} <=> s = {}"))] THEN
       REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
       REWRITE_TAC [FORALL_IN_GSPEC, EXISTS_IN_GSPEC] THEN ANTS_TAC THENL
        [RULE_ASSUM_TAC (REWRITE_RULE
@@ -12692,9 +12665,6 @@ def setupCosets [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
             IN j"
    (← do
     -- OCaml's order (right to left): the RING_RULE, then the MESON
-    let r2 ← RING_RULE
-         (← q r"ring_sub r y (ring_sub r a b) = ring_add r (ring_sub r y a) (b:A)")
-    let m1 ← MESON [] (← q r"!u w:A s. u = w /\ w IN s ==> u IN s")
     pure (REPEAT STRIP_TAC THEN
     SUBGOAL_THEN
      (← q r"ring_sum r s (\x. if P x then (f:K->A) x else ring_0 r) =
@@ -12708,12 +12678,13 @@ def setupCosets [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
       MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q r"x:K") THEN DISCH_TAC THEN
       REWRITE_TAC [] THEN COND_CASES_TAC THEN
       ASM_SIMP_TAC [RING_SUB_RZERO, RING_SUB_REFL],
-      MATCH_MP_TAC m1 THEN
+      MATCH_MP_TAC (← MESON [] (← q r"!u w:A s. u = w /\ w IN s ==> u IN s")) THEN
       EXISTS_TAC
        (← q r"ring_add r (ring_sub r y (ring_sum r s (f:K->A)))
                    (ring_sum r s (\x. if P x then ring_0 r else f x))") THEN
       CONJ_TAC THENL
-       [MATCH_MP_TAC r2 THEN
+       [MATCH_MP_TAC (← RING_RULE
+         (← q r"ring_sub r y (ring_sub r a b) = ring_add r (ring_sub r y a) (b:A)")) THEN
         ASM_REWRITE_TAC [RING_SUM],
         MATCH_MP_TAC IN_RING_IDEAL_ADD THEN ASM_REWRITE_TAC [] THEN
         MATCH_MP_TAC IN_RING_IDEAL_SUM THEN ASM_REWRITE_TAC [] THEN
@@ -12732,20 +12703,6 @@ def setupCosets [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
                     (ring_mul r (ring_pow r x n) t))) IN j"
    (← do
     -- OCaml's order (right to left): the RING_RULE, then the two ARITH_RULEs
-    let r3 ← RING_RULE
-     (← q r"ring_sub r (ring_mul r (ring_add r x t) a)
-        (ring_add r (ring_mul r x (ring_mul r x y))
-           (ring_mul r (ring_add r (ring_add r m (ring_1 r)) (ring_1 r))
-              (ring_mul r (ring_mul r x y) t))) =
-      ring_add r
-        (ring_mul r (ring_add r x t)
-           (ring_sub r a
-              (ring_add r (ring_mul r x y)
-                 (ring_mul r (ring_add r m (ring_1 r)) (ring_mul r y t)))))
-        (ring_mul r (ring_add r m (ring_1 r))
-           (ring_mul r y (ring_mul r t (t:A))))")
-    let a2 ← ARITH_RULE (← q r"SUC n + 1 = SUC(SUC n)")
-    let a1 ← ARITH_RULE (← q r"SUC n + 1 = SUC(n + 1)")
     pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
     SPEC_TAC (← q r"n:num", ← q r"n:num") THEN INDUCT_TAC THENL
      [REWRITE_TAC [ADD_CLAUSES, ring_pow, RING_OF_NUM_1] THEN
@@ -12770,12 +12727,12 @@ def setupCosets [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
        (← q r"ring_pow r (ring_add r x t) (SUC n + 1) =
         ring_mul r (ring_add r x t) (ring_pow r (ring_add r x t) (n + 1)):A")
       SUBST1_TAC THENL
-       [REWRITE_TAC [a1, ring_pow],
+       [REWRITE_TAC [(← ARITH_RULE (← q r"SUC n + 1 = SUC(n + 1)")), ring_pow],
         ALL_TAC] THEN
       SUBGOAL_THEN
        (← q r"ring_pow r x (SUC n + 1) = ring_mul r x (ring_mul r x (ring_pow r x n)):A")
       SUBST1_TAC THENL
-       [REWRITE_TAC [a2, ring_pow],
+       [REWRITE_TAC [(← ARITH_RULE (← q r"SUC n + 1 = SUC(SUC n)")), ring_pow],
         ALL_TAC] THEN
       SUBGOAL_THEN (← q r"ring_pow r x (SUC n) = ring_mul r x (ring_pow r x n):A")
       SUBST1_TAC THENL [REWRITE_TAC [ring_pow], ALL_TAC] THEN
@@ -12790,7 +12747,18 @@ def setupCosets [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
       SUBGOAL_THEN
        (← q r"ring_of_num r (n + 1) = ring_add r (ring_of_num r n) (ring_1 r):A")
       SUBST1_TAC THENL [REWRITE_TAC [RING_OF_NUM_ADD, RING_OF_NUM_1], ALL_TAC] THEN
-      MATCH_MP_TAC r3 THEN
+      MATCH_MP_TAC (← RING_RULE
+     (← q r"ring_sub r (ring_mul r (ring_add r x t) a)
+        (ring_add r (ring_mul r x (ring_mul r x y))
+           (ring_mul r (ring_add r (ring_add r m (ring_1 r)) (ring_1 r))
+              (ring_mul r (ring_mul r x y) t))) =
+      ring_add r
+        (ring_mul r (ring_add r x t)
+           (ring_sub r a
+              (ring_add r (ring_mul r x y)
+                 (ring_mul r (ring_add r m (ring_1 r)) (ring_mul r y t)))))
+        (ring_mul r (ring_add r m (ring_1 r))
+           (ring_mul r y (ring_mul r t (t:A))))")) THEN
       ASM_SIMP_TAC [RING_POW, RING_ADD, RING_OF_NUM],
       ALL_TAC] THEN
     MATCH_MP_TAC IN_RING_IDEAL_ADD THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THEN
@@ -12996,8 +12964,6 @@ def setupCosets [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
                      (cartesian_product k s) (cartesian_product k t) =
         cartesian_product k (\i. ring_setadd (r i) (s i) (t i))"
    (← do
-    -- right to left: the MATCH_MP_TAC SET_RULE, the second SET_RULE, the
-    -- TAUT, then the first SET_RULE
     pure (REPEAT GEN_TAC THEN
       REWRITE_TAC [ring_setadd, CARTESIAN_PRODUCT_AS_RESTRICTIONS,
                    PRODUCT_RING] THEN
@@ -13252,8 +13218,6 @@ def setupQuotients [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
                 (ring_setmul r (ring_coset r j a) (ring_coset r j b)) j =
               ring_coset r j (ring_mul r a b)"
      (← do
-      -- right to left: the second basic_ss, the first, then the two
-      -- SET_RULEs, second first
       pure (REPEAT STRIP_TAC THEN REWRITE_TAC [ring_coset] THEN
         MATCH_MP_TAC SUBSET_ANTISYM THEN
         REWRITE_TAC [SUBSET, ring_setmul, ring_setadd, FORALL_IN_GSPEC, IMP_CONJ,
@@ -13279,10 +13243,9 @@ def setupQuotients [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
           X_GEN_TAC (← q "z:A") THEN DISCH_TAC THEN
           MAP_EVERY EXISTS_TAC [← q "ring_0 r:A", ← q "ring_0 r:A", ← q "z:A"] THEN
           ASM_SIMP_TAC [RING_0, RING_ADD_RZERO, IN_RING_IDEAL_0]]))
-    let t1 ← TAUT (← q r"(q ==> p) /\ q ==> p /\ q")
     pure (REWRITE_TAC [AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
     ASM_CASES_TAC (← q r"ring_ideal r (j:A->bool)") THEN ASM_REWRITE_TAC [] THEN
-    MATCH_MP_TAC t1 THEN CONJ_TAC THENL
+    MATCH_MP_TAC (← TAUT (← q r"(q ==> p) /\ q ==> p /\ q")) THEN CONJ_TAC THENL
      [ASM_SIMP_TAC [ring_homomorphism, RING_SETNEG_COSET,
                     RING_SETADD_COSETS, lemma] THEN
       SET_TAC [],
@@ -13701,11 +13664,6 @@ def setupQuotients [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ==> quotient_ring (quotient_ring r j) (IMAGE (ring_coset r j) k)
              isomorphic_ring quotient_ring r k"
    (← do
-    -- right to left: the TAUT, the SET_RULE, then the MESON
-    let t1 ← TAUT (← q r"p /\ q <=> ~(p ==> ~q)")
-    let s1 ← SET_RULE
-     (← q r"{y | y IN {f x | P x} /\ Q y} = IMAGE f {x | P x /\ Q(f x)}")
-    let m1 ← MESON [ISOMORPHIC_RING_REFL] (← q r"s = t ==> s isomorphic_ring t")
     pure (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL
      [← q "r:A ring", ← q r"quotient_ring r (k:A->bool)", ← q r"j:A->bool",
       ← q r"ring_coset r (k:A->bool)"] QUOTIENT_RING_UNIVERSAL_EPIMORPHISM) THEN
@@ -13714,10 +13672,11 @@ def setupQuotients [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     FIRST_ASSUM (MP_TAC o MATCH_MP FIRST_RING_EPIMORPHISM_THEOREM) THEN
       ASM_SIMP_TAC [ring_kernel, QUOTIENT_RING] THEN
     MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] ISOMORPHIC_RING_TRANS) THEN
-    MATCH_MP_TAC m1 THEN
-    AP_TERM_TAC THEN REWRITE_TAC [s1] THEN
+    MATCH_MP_TAC (← MESON [ISOMORPHIC_RING_REFL] (← q r"s = t ==> s isomorphic_ring t")) THEN
+    AP_TERM_TAC THEN REWRITE_TAC [(← SET_RULE
+     (← q r"{y | y IN {f x | P x} /\ Q y} = IMAGE f {x | P x /\ Q(f x)}"))] THEN
     REWRITE_TAC [ETA_AX] THEN AP_TERM_TAC THEN
-    ONCE_REWRITE_TAC [t1] THEN
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p /\ q <=> ~(p ==> ~q)"))] THEN
     ASM_SIMP_TAC [RING_COSET_EQ, RING_0, RING_SUB_RZERO] THEN
     REPEAT (FIRST_X_ASSUM (MP_TAC o MATCH_MP RING_IDEAL_IMP_SUBSET)) THEN
     SET_TAC []))
@@ -14543,11 +14502,6 @@ def setupFactorizations [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BProd
                 (!i j. i IN s /\ j IN s /\ h i = h j ==> i = j) /\
                 (!i. i IN s ==> ring_associates r (f i) (g(h i)))"
    (← do
-    -- right to left: the THENL list's two SET_RULEs (second first), then the
-    -- MATCH_MP_TAC SET_RULE
-    let s3 ← SET_RULE (← q r"s SUBSET t ==> s UNION (t DIFF s) = t")
-    let s2 ← SET_RULE (← q r"DISJOINT s (t DIFF s)")
-    let s1 ← SET_RULE (← q r"s SUBSET t /\ (~(t DIFF s = {}) ==> F) ==> s = t")
     pure (REPEAT STRIP_TAC THEN
     MP_TAC (← ISPECL [← q "r:A ring", ← q r"s:K->bool", ← q r"f:K->A", ← q r"t:L->bool",
                      ← q r"g:L->A"]
@@ -14555,7 +14509,7 @@ def setupFactorizations [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BProd
     REWRITE_TAC [INJECTIVE_ON_ALT] THEN
     ASM_SIMP_TAC [RING_DIVIDES_ASSOCIATES] THEN
     MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q r"h:K->L") THEN STRIP_TAC THEN
-    ASM_REWRITE_TAC [] THEN MATCH_MP_TAC s1 THEN
+    ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← SET_RULE (← q r"s SUBSET t /\ (~(t DIFF s = {}) ==> F) ==> s = t")) THEN
     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
     SUBGOAL_THEN
       (← q r"ring_associates r
@@ -14572,8 +14526,8 @@ def setupFactorizations [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BProd
      (← q r"ring_mul r (ring_product r (IMAGE h s) g)
                (ring_product r (t DIFF IMAGE (h:K->L) s) g):A") THEN
     CONJ_TAC THENL
-     [ASM_SIMP_TAC [← GSYM RING_PRODUCT_UNION, FINITE_DIFF, FINITE_IMAGE, s2] THEN
-      ASM_SIMP_TAC [s3],
+     [ASM_SIMP_TAC [← GSYM RING_PRODUCT_UNION, FINITE_DIFF, FINITE_IMAGE, (← SET_RULE (← q r"DISJOINT s (t DIFF s)"))] THEN
+      ASM_SIMP_TAC [(← SET_RULE (← q r"s SUBSET t ==> s UNION (t DIFF s) = t"))],
       MATCH_MP_TAC RING_ASSOCIATES_MUL THEN
       REWRITE_TAC [RING_ASSOCIATES_REFL, RING_PRODUCT] THEN
       ASM_SIMP_TAC [RING_PRODUCT_IMAGE, INJECTIVE_ON_ALT] THEN
@@ -14660,17 +14614,14 @@ def setupFactorizations [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BProd
         ~(ring_divides r (ring_product r t g) (ring_product r s f))
         ==> CARD s < CARD t"
    (← do
-    -- right to left: the second MESON first
-    let m2 ← MESON [] (← q r"(?x. P x) /\ ~(?x. Q x) ==> ?x. P x /\ ~Q x")
-    let m1 ← MESON [ring_associates]
-     (← q r"ring_divides r x y /\ ~(ring_divides r y x) <=>
-    ring_divides r x y /\ ~(ring_associates r x y)")
     pure (REPEAT GEN_TAC THEN
     REPLICATE_TAC 5 (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-    REWRITE_TAC [m1] THEN
+    REWRITE_TAC [(← MESON [ring_associates]
+     (← q r"ring_divides r x y /\ ~(ring_divides r y x) <=>
+    ring_divides r x y /\ ~(ring_associates r x y)"))] THEN
     ASM_SIMP_TAC [RING_DIVIDES_PRIMEFACTS_INJECTION_EQ,
                   RING_ASSOCIATES_PRIMEFACTS_BIJECTION_EQ] THEN
-    DISCH_THEN (MP_TAC o MATCH_MP m2) THEN
+    DISCH_THEN (MP_TAC o MATCH_MP (← MESON [] (← q r"(?x. P x) /\ ~(?x. Q x) ==> ?x. P x /\ ~Q x"))) THEN
     REWRITE_TAC [LEFT_IMP_EXISTS_THM, INJECTIVE_ON_ALT] THEN
     X_GEN_TAC (← q r"h:K->L") THEN
     DISCH_THEN (CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
@@ -15309,7 +15260,6 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
                              (ring_add r (ring_mul r a1 b2) (ring_mul r a2 b1),
                               ring_mul r b1 b2)"
      (← do
-      let ss ← ExceptT.mk (basic_ss [])
       pure (REPEAT STRIP_TAC THEN
       GEN_REWRITE_TAC BINDER_CONV [FORALL_UNPAIR_THM] THEN
       GEN_REWRITE_TAC (BINDER_CONV o BINDER_CONV) [FORALL_UNPAIR_THM] THEN
@@ -15319,7 +15269,7 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
       REPLICATE_TAC 2 (DISCH_THEN (CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC)) THEN
       FIRST_ASSUM (STRIP_ASSUME_TAC o GEN_REWRITE_RULE id [ring_multsys]) THEN
       RULE_ASSUM_TAC (REWRITE_RULE [SUBSET]) THEN
-      ASM (simpTac ss 4)
+      ASM (simpTac (← ExceptT.mk (basic_ss [])) 4)
         [← GSYM RING_LOCALEQUIV_EQUIV, RING_MUL, RING_ADD] THEN
       STRIP_TAC THEN
       MATCH_MP_TAC RING_LOCALEQUIV_ADD THEN ASM_REWRITE_TAC []))
@@ -15385,11 +15335,6 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
              (ring_localequiv r s (a1,b1)) (ring_localequiv r s (a2,b2)) =
             ring_localequiv r s (ring_mul r a1 a2, ring_mul r b1 b2)))"
      (← do
-      -- right to left: the three basic_ss (last first), then the TAUT
-      let ss3 ← ExceptT.mk (basic_ss [])
-      let ss2 ← ExceptT.mk (basic_ss [])
-      let ss1 ← ExceptT.mk (basic_ss [])
-      let t1 ← TAUT (← q r"(p ==> q) /\ p ==> p /\ q")
       pure (REWRITE_TAC [AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
       REWRITE_TAC [← GSYM AND_FORALL_THM] THEN
       ASM_CASES_TAC (← q r"ring_multsys r (s:A->bool)") THEN ASM_REWRITE_TAC [] THEN
@@ -15416,7 +15361,7 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
       FIRST_ASSUM (MP_TAC o SELECT_RULE o MATCH_MP localization_add_exists) THEN
       FIRST_ASSUM (MP_TAC o SELECT_RULE o MATCH_MP localization_mul_exists) THEN
       ASM_REWRITE_TAC [] THEN REPEAT DISCH_TAC THEN
-      MATCH_MP_TAC t1 THEN CONJ_TAC THENL
+      MATCH_MP_TAC (← TAUT (← q r"(p ==> q) /\ p ==> p /\ q")) THEN CONJ_TAC THENL
        [DISCH_THEN (fun th => ASM_SIMP_TAC [th]), ALL_TAC] THEN
       GEN_REWRITE_TAC (DEPTH_BINOP_CONV (← q r"/\") o LAND_CONV o ONCE_DEPTH_CONV)
        [ring_carrier, ring_0, ring_1, ring_neg, ring_add, ring_mul] THEN
@@ -15426,7 +15371,7 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
       REWRITE_TAC [FORALL_IN_GSPEC] THEN
       REPEAT (FIRST_X_ASSUM ((fun (_ : thm) => ALL_TAC) o SYM)) THEN
       RULE_ASSUM_TAC (REWRITE_RULE [ring_multsys, SUBSET]) THEN
-      ASM (simpTac ss1 4)
+      ASM (simpTac (← ExceptT.mk (basic_ss [])) 4)
        [RING_0, RING_1, RING_NEG, RING_ADD, RING_MUL] THEN
       REPLICATE_TAC 3
        (CONJ_TAC THENL
@@ -15445,11 +15390,11 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
       REPEAT CONJ_TAC THEN
       MP_TAC (← GSYM (← ISPECL [← q "r:A ring", ← q r"s:A->bool"] RING_LOCALEQUIV_EQUIV)) THEN
       ASM_REWRITE_TAC [ring_multsys, SUBSET] THEN
-      ASM (simpTac ss2 6)
+      ASM (simpTac (← ExceptT.mk (basic_ss [])) 6)
        [RING_0, RING_1, RING_NEG, RING_ADD, RING_MUL] THEN
       DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN REPEAT STRIP_TAC THEN
       REWRITE_TAC [ring_localequiv] THEN
-      ASM (simpTac ss3 5)
+      ASM (simpTac (← ExceptT.mk (basic_ss [])) 5)
        [RING_0, RING_1, RING_NEG, RING_ADD, RING_MUL] THEN
       EXISTS_TAC (← q "ring_1 r:A") THEN ASM_REWRITE_TAC [] THEN
       REWRITE_TAC [PAIR_EQ] THEN RING_TAC THEN ASM SET_TAC []))
@@ -15543,7 +15488,6 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
        ==> (ring_unit (ring_localization r s) (ring_localequiv r s (a,b)) <=>
             a IN s)"
    (← do
-    let ss ← ExceptT.mk (basic_ss [])
     pure (REPEAT STRIP_TAC THEN EQ_TAC THENL
      [ALL_TAC, ASM_MESON_TAC [RING_UNIT_LOCALEQUIV]] THEN
     FIRST_ASSUM (STRIP_ASSUME_TAC o GEN_REWRITE_RULE id [ring_multsys]) THEN
@@ -15557,7 +15501,7 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
     ASM_SIMP_TAC [ring_localequiv, RING_MUL_LID, RING_MUL_RID, RING_MUL] THEN
     REWRITE_TAC [LEFT_IMP_EXISTS_THM, IMP_CONJ] THEN
     X_GEN_TAC (← q "t:A") THEN DISCH_TAC THEN
-    ASM (simpTac ss 4)
+    ASM (simpTac (← ExceptT.mk (basic_ss [])) 4)
         [RING_SUB_LDISTRIB, RING_MUL, RING_SUB_EQ_0] THEN
     ASM_MESON_TAC [RING_MUL]))
 
@@ -15685,20 +15629,17 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
                             (ring_fractionate r s) <=>
            s SUBSET {a | ring_unit r a})"
    (← do
-    -- right to left: the MESON first, then the TAUT
-    let m1 ← MESON [] (← q r"(?x. P x /\ Q x) <=> ~(!x. Q x ==> ~P x)")
-    let t1 ← TAUT
-     (← q r"(r ==> p) /\ (r ==> q) /\ (p ==> q ==> r) ==> (p /\ q <=> r)")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN
     FIRST_ASSUM (STRIP_ASSUME_TAC o REWRITE_RULE [ring_multsys, SUBSET]) THEN
     ASM_SIMP_TAC [← GSYM RING_MONOMORPHISM_EPIMORPHISM, RING_EPIMORPHISM_ALT,
                   RING_MONOMORPHISM_FRACTIONATE_GEN,
                   RING_HOMOMORPHISM_FRACTIONATE, SUBSET, IN_ELIM_THM] THEN
-    MATCH_MP_TAC t1 THEN
+    MATCH_MP_TAC (← TAUT
+     (← q r"(r ==> p) /\ (r ==> q) /\ (p ==> q ==> r) ==> (p /\ q <=> r)")) THEN
     CONJ_TAC THENL [MESON_TAC [RING_UNIT_IMP_REGULAR], ALL_TAC] THEN
     ASM_SIMP_TAC [ring_image, ring_fractionate, RING_LOCALIZATION_CARRIER] THEN
     REWRITE_TAC [SUBSET, FORALL_IN_GSPEC, IN_IMAGE] THEN
-    ONCE_REWRITE_TAC [m1] THEN
+    ONCE_REWRITE_TAC [(← MESON [] (← q r"(?x. P x /\ Q x) <=> ~(!x. Q x ==> ~P x)"))] THEN
     ASM_SIMP_TAC [← GSYM RING_LOCALEQUIV_EQUIV] THEN
     ASM_SIMP_TAC [ring_localequiv, RING_MUL_RID] THEN
     REWRITE_TAC [NOT_FORALL_THM, NOT_IMP] THEN CONJ_TAC THENL
@@ -15742,14 +15683,6 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
       ==> ?g. ring_homomorphism(ring_localization r s,r') g /\
               !x. x IN ring_carrier r ==> g (ring_fractionate r s x) = f x"
    (← do
-    -- right to left: the second basic_ss, the first, then the RING_RULE
-    let ss2 ← ExceptT.mk (basic_ss [])
-    let ss1 ← ExceptT.mk (basic_ss [])
-    let rr ← RING_RULE
-     (← q r"ring_mul r y1 (ring_inv r y1) = ring_1 r /\
-      ring_mul r y2 (ring_inv r y2) = ring_1 r /\
-      ring_mul r x1 y2 = ring_mul r x2 y1
-      ==> ring_mul r x1 (ring_inv r y1) = ring_mul r x2 (ring_inv r y2)")
     pure (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE id [ring_multsys]) THEN
     FIRST_ASSUM (MP_TAC o CONJUNCT1 o REWRITE_RULE [ring_homomorphism]) THEN
@@ -15766,7 +15699,11 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
       MAP_EVERY X_GEN_TAC [← q "a1:A", ← q "b1:A", ← q "a2:A", ← q "b2:A"] THEN
       REPEAT (DISCH_THEN (CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC)) THEN
       ASM_SIMP_TAC [← GSYM RING_LOCALEQUIV_EQUIV] THEN DISCH_TAC THEN
-      MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] rr) THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] (← RING_RULE
+     (← q r"ring_mul r y1 (ring_inv r y1) = ring_1 r /\
+      ring_mul r y2 (ring_inv r y2) = ring_1 r /\
+      ring_mul r x1 y2 = ring_mul r x2 y1
+      ==> ring_mul r x1 (ring_inv r y1) = ring_mul r x2 (ring_inv r y2)"))) THEN
      STRIP_TAC THEN ASM_SIMP_TAC [RING_INV, RING_MUL_RINV] THEN
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [ring_localequiv]) THEN
       ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
@@ -15776,7 +15713,7 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
       FIRST_ASSUM (MP_TAC o MATCH_MP RING_HOMOMORPHISM_0) THEN
       FIRST_ASSUM (MP_TAC o MATCH_MP RING_HOMOMORPHISM_SUB) THEN
       FIRST_ASSUM (MP_TAC o MATCH_MP RING_HOMOMORPHISM_MUL) THEN
-      ASM (simpTac ss1 5)
+      ASM (simpTac (← ExceptT.mk (basic_ss [])) 5)
        [o_THM, RING_SUB, RING_MUL, RING_MUL_ASSOC, RING_MUL_RZERO,
         RING_INV, RING_MUL_LINV, RING_MUL_LID, RING_SUB_EQ_0],
       MATCH_MP_TAC MONO_EXISTS] THEN
@@ -15788,7 +15725,7 @@ def setupLocalization [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
     ASM_SIMP_TAC [RING_LOCALIZATION_CARRIER, IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
     REWRITE_TAC [FORALL_IN_GSPEC, SUBSET, FORALL_IN_IMAGE] THEN
     FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE id [ring_homomorphism]) THEN
-    ASM (simpTac ss2 4)
+    ASM (simpTac (← ExceptT.mk (basic_ss [])) 4)
      [RING_LOCALIZATION_0, RING_LOCALIZATION_1, RING_0, RING_1,
       RING_LOCALIZATION_NEG, RING_LOCALIZATION_ADD, RING_NEG, RING_ADD,
       RING_LOCALIZATION_MUL, RING_MUL, RING_MUL_LZERO, RING_MUL_LID,
@@ -16986,11 +16923,9 @@ def setupLocalization2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbe
      ASM_REWRITE_TAC [] THEN MP_TAC (← ISPECL
       [← q "r:A ring", ← q r"s:A->bool", ← q "a:A", ← q "b:A"] RING_LOCALEQUIV_EQ_0_GEN) THEN
      ASM_REWRITE_TAC [] THEN DISCH_THEN SUBST1_TAC THEN
-     FIRST_X_ASSUM (← do
-       let z0 ← q "ring_0 r:A"
-       let a ← q "a:A"
-       pure (MP_TAC o SPEC a o check (fun th =>
-        is_forall (concl th) && free_in z0 (concl th)))) THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC (← q "a:A") o checkIO (fun th =>
+        if !(is_forall (concl th)) then pure false
+        else do pure (free_in (← q "ring_0 r:A") (concl th)))) THEN
      ASM_REWRITE_TAC [],
      REWRITE_TAC [ring_epimorphism] THEN ASM_REWRITE_TAC [] THEN
      REWRITE_TAC [ring_image, EXTENSION, IN_IMAGE] THEN
@@ -17293,14 +17228,11 @@ def setupLocalization2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbe
                        (ring_localequiv r {x | ring_regular r x} (a,b)) <=>
              ring_zerodivisor r a))"
    (← do
-    -- right to left: the second TAUT first
-    let t2 ← TAUT
-     (← q r"(~r ==> p) /\ (r ==> q) /\ (q ==> ~p)
-    ==> (p <=> ~r) /\ (q <=> r)")
-    let t1 ← TAUT (← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r")
     pure (REWRITE_TAC [ring_regular, AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
-    REWRITE_TAC [t1] THEN
-    STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC t2 THEN
+    REWRITE_TAC [(← TAUT (← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r"))] THEN
+    STRIP_TAC THEN ASM_REWRITE_TAC [] THEN MATCH_MP_TAC (← TAUT
+     (← q r"(~r ==> p) /\ (r ==> q) /\ (q ==> ~p)
+    ==> (p <=> ~r) /\ (q <=> r)")) THEN
     REWRITE_TAC [RING_ZERODIVISOR_IMP_NONUNIT] THEN CONJ_TAC THENL
      [DISCH_TAC THEN REWRITE_TAC [fraction_ring, ← GSYM ring_regular] THEN
       MATCH_MP_TAC RING_UNIT_LOCALEQUIV THEN
@@ -18526,26 +18458,11 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
         (!j'. ring_ideal r j' /\ j PSUBSET j' ==> ~DISJOINT j' s)
         ==> prime_ideal r j"
    (← do
-    -- right to left: the SET_RULEs and TAUT in reverse text order
-    let s6 ← SET_RULE
-     (← q r"DISJOINT j s ==> z IN s /\ j' SUBSET j ==> z IN j' ==> F")
-    let s5 ← SET_RULE
-     (← q r"(P ==> a IN t ==> F) ==> (s SUBSET t ==> a IN s ==> ~P)")
-    let s4 ← SET_RULE
-     (← q r"~DISJOINT t s /\ ~DISJOINT u s ==> P <=>
-         !x y. x IN s /\ y IN s ==> x IN t /\ y IN u ==> P")
-    let s3 ← SET_RULE
-     (← q r"!a. a IN s /\ ~(a IN j) /\
-           j SUBSET ring_setadd r j s /\ s SUBSET ring_setadd r j s
-           ==> j PSUBSET ring_setadd r j s")
-    let t2 ← TAUT
-     (← q r"(p /\ p') /\ (q /\ q' ==> r) ==> (p ==> q) ==> (p' ==> q') ==> r")
-    let s1 ← SET_RULE
-     (← q r"DISJOINT j s
-      ==> j SUBSET c /\ s SUBSET c /\ ~(s = {}) ==> j PSUBSET c")
     pure (REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [prime_ideal, proper_ideal] THEN
     CONJ_TAC THENL
-     [FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP s1) THEN
+     [FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"DISJOINT j s
+      ==> j SUBSET c /\ s SUBSET c /\ ~(s = {}) ==> j PSUBSET c"))) THEN
       ASM_MESON_TAC [RING_MULTSYS_IMP_SUBSET, RING_MULTSYS_IMP_NONEMPTY,
                      RING_IDEAL_IMP_SUBSET],
       MAP_EVERY X_GEN_TAC [← q "a:A", ← q "b:A"] THEN
@@ -18555,22 +18472,30 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
      FIRST_X_ASSUM (fun th => tactic_of do
         pure (MP_TAC (← SPEC (← q "ring_setadd r j (ideal_generated r {b:A})") th) THEN
               MP_TAC (← SPEC (← q "ring_setadd r j (ideal_generated r {a:A})") th))) THEN
-     MATCH_MP_TAC t2 THEN
+     MATCH_MP_TAC (← TAUT
+     (← q r"(p /\ p') /\ (q /\ q' ==> r) ==> (p ==> q) ==> (p' ==> q') ==> r")) THEN
      CONJ_TAC THENL
       [ASM_SIMP_TAC [RING_IDEAL_SETADD, RING_IDEAL_IDEAL_GENERATED] THEN
-       CONJ_TAC THEN MATCH_MP_TAC s3
+       CONJ_TAC THEN MATCH_MP_TAC (← SET_RULE
+     (← q r"!a. a IN s /\ ~(a IN j) /\
+           j SUBSET ring_setadd r j s /\ s SUBSET ring_setadd r j s
+           ==> j PSUBSET ring_setadd r j s"))
        THENL [EXISTS_TAC (← q "a:A"), EXISTS_TAC (← q "b:A")] THEN
        ASM_SIMP_TAC [IDEAL_GENERATED_INC, IN_SING, SING_SUBSET] THEN
        ASM_SIMP_TAC [RING_SETADD_SUPERSET_LEFT, IN_RING_IDEAL_0, SING_SUBSET,
                      RING_IDEAL_IMP_SUBSET, RING_IDEAL_IDEAL_GENERATED,
                      RING_SETADD_SUPERSET_RIGHT],
-       REWRITE_TAC [s4] THEN
+       REWRITE_TAC [(← SET_RULE
+     (← q r"~DISJOINT t s /\ ~DISJOINT u s ==> P <=>
+         !x y. x IN s /\ y IN s ==> x IN t /\ y IN u ==> P"))] THEN
        MAP_EVERY X_GEN_TAC [← q "x:A", ← q "y:A"] THEN STRIP_TAC THEN
        DISCH_THEN (MP_TAC o ISPEC (← q "r:A ring") o MATCH_MP RING_MUL_IN_SETMUL) THEN
        wPart (fun t => do rand (← lhand t)) (fun t => do lhand (← rand t))
          RING_SETMUL_IDEAL_LEFT THEN
-       ASM_REWRITE_TAC [IDEAL_GENERATED_SUBSET] THEN MATCH_MP_TAC s5 THEN
-       DISCH_TAC THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP s6) THEN
+       ASM_REWRITE_TAC [IDEAL_GENERATED_SUBSET] THEN MATCH_MP_TAC (← SET_RULE
+     (← q r"(P ==> a IN t ==> F) ==> (s SUBSET t ==> a IN s ==> ~P)")) THEN
+       DISCH_TAC THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"DISJOINT j s ==> z IN s /\ j' SUBSET j ==> z IN j' ==> F"))) THEN
        CONJ_TAC THENL [ASM_MESON_TAC [ring_multsys], ALL_TAC] THEN
        ASM_SIMP_TAC [RING_SETMUL_IDEAL_GENERATED_SING] THEN
        MATCH_MP_TAC RING_SETADD_SUBSET_IDEAL THEN
@@ -18604,11 +18529,6 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
   let MAXIMAL_IDEAL_0 ← prove
    r"!r:A ring. maximal_ideal r {ring_0 r} <=> field r"
    (← do
-    let s2 ← SET_RULE
-     (← q r"{z} PSUBSET s ==> ?a. z IN s /\ a IN s /\ ~(a = z)")
-    let s1 ← SET_RULE
-      (← q r"!x. x IN a /\ ring_0 r IN a /\ ~(x = ring_0 r) /\ (P ==> Q)
-            ==> ~(~P /\ {ring_0 r} PSUBSET a) ==> Q")
     pure (REWRITE_TAC [maximal_ideal, PROPER_IDEAL, RING_IDEAL_IDEAL_GENERATED] THEN
     REWRITE_TAC [RING_IDEAL_0, IN_SING, field] THEN
     GEN_TAC THEN ASM_CASES_TAC (← q "ring_1 r:A = ring_0 r") THEN
@@ -18616,14 +18536,17 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
      [X_GEN_TAC (← q "a:A") THEN STRIP_TAC THEN
       FIRST_X_ASSUM (MP_TAC o SPEC (← q "ideal_generated r {a:A}")) THEN
       REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN
-      MATCH_MP_TAC s1 THEN
+      MATCH_MP_TAC (← SET_RULE
+      (← q r"!x. x IN a /\ ring_0 r IN a /\ ~(x = ring_0 r) /\ (P ==> Q)
+            ==> ~(~P /\ {ring_0 r} PSUBSET a) ==> Q")) THEN
       EXISTS_TAC (← q "a:A") THEN
       ASM_SIMP_TAC [IDEAL_GENERATED_INC_GEN, IN_SING] THEN
       SIMP_TAC [IN_RING_IDEAL_0, RING_IDEAL_IDEAL_GENERATED] THEN
       ASM_SIMP_TAC [IDEAL_GENERATED_SING, IN_ELIM_THM, ring_divides] THEN
       MESON_TAC [RING_1],
       X_GEN_TAC (← q r"j:A->bool") THEN STRIP_TAC THEN
-      FIRST_X_ASSUM (X_CHOOSE_THEN (← q "a:A") STRIP_ASSUME_TAC o MATCH_MP s2) THEN
+      FIRST_X_ASSUM (X_CHOOSE_THEN (← q "a:A") STRIP_ASSUME_TAC o MATCH_MP (← SET_RULE
+     (← q r"{z} PSUBSET s ==> ?a. z IN s /\ a IN s /\ ~(a = z)"))) THEN
       SUBGOAL_THEN (← q "(a:A) IN ring_carrier r") ASSUME_TAC THENL
        [ASM_MESON_TAC [RING_IDEAL_IMP_SUBSET, SUBSET],
         ASM_MESON_TAC [IN_RING_IDEAL_RMUL]]]))
@@ -18684,30 +18607,15 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
       REPEAT STRIP_TAC THEN MATCH_MP_TAC RING_ADD_IN_SETADD THEN
       REWRITE_TAC [IN_IMAGE, EXISTS_PAIR_THM] THEN ASM_MESON_TAC [])
     -- the main tactic's rules, right to left
-    let s10 ← SET_RULE
-     (← q r"G SUBSET s ==> (!x. x IN s ==> P x) ==> (!x. x IN G ==> P x)")
-    let s9 ← SET_RULE (← q r"s SUBSET t ==> x IN s ==> x IN t")
-    let t8 ← TAUT (← q r"p ==> q ==> r <=> q ==> p ==> r")
-    let s7 ← SET_RULE (← q r"t SUBSET u /\ s SUBSET t /\ x IN s ==> x IN u")
-    let s6 ← SET_RULE
-     (← q r"G SUBSET s ==> (!x. x IN s ==> P x) ==> (!x. x IN G ==> P x)")
-    let s5 ← SET_RULE
-     (← q r"G SUBSET s ==> (!x. x IN s ==> P x) ==> (!x. x IN G ==> P x)")
-    let s4 ← SET_RULE
-     (← q r"j SUBSET r /\ s SUBSET j /\ (s SUBSET j ==> j SUBSET k)
-    ==> s SUBSET r /\ r INTER s SUBSET j /\ j SUBSET k")
-    let t3 ← TAUT (← q r"p /\ (p ==> ~q) ==> (p ==> q) ==> F")
-    let t2 ← TAUT (← q r"p /\ (p ==> ~q) ==> (p ==> q) ==> F")
-    let t1 ← TAUT (← q r"p \/ q <=> ~(~p /\ ~q)")
     pure (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP RING_IDEAL_IMP_SUBSET) THEN
     ASM_REWRITE_TAC [prime_ideal, proper_ideal, PSUBSET] THEN CONJ_TAC THENL
      [ASM_MESON_TAC [FINITELY_GENERATED_IDEAL_CARRIER], ALL_TAC] THEN
     MAP_EVERY X_GEN_TAC [← q "a:A", ← q "b:A"] THEN
-    REWRITE_TAC [t1] THEN REPEAT STRIP_TAC THEN
+    REWRITE_TAC [(← TAUT (← q r"p \/ q <=> ~(~p /\ ~q)"))] THEN REPEAT STRIP_TAC THEN
     ABBREV_TAC (← q "J = ideal_generated r ((a:A) INSERT j)") THEN
     FIRST_ASSUM (MP_TAC o SPEC (← q r"J:A->bool")) THEN
-    MATCH_MP_TAC t2 THEN CONJ_TAC THENL
+    MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> ~q) ==> (p ==> q) ==> F")) THEN CONJ_TAC THENL
      [EXPAND_TAC "J" THEN REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN
       REWRITE_TAC [PSUBSET_ALT] THEN CONJ_TAC THENL
        [wPart rand (fun t => do rand (← rand t))
@@ -18726,7 +18634,7 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
     DISCH_THEN (X_CHOOSE_THEN (← q r"G:A#A->bool") STRIP_ASSUME_TAC) THEN
     ABBREV_TAC (← q r"K = {x:A | x IN ring_carrier r /\ ring_mul r a x IN j}") THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q r"K:A->bool")) THEN
-    MATCH_MP_TAC t3 THEN CONJ_TAC THENL
+    MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> ~q) ==> (p ==> q) ==> F")) THEN CONJ_TAC THENL
      [EXPAND_TAC "K" THEN ASM_SIMP_TAC [RING_IDEAL_QUOTIENT_LMUL] THEN
       EXPAND_TAC "K" THEN REWRITE_TAC [PSUBSET_ALT, IN_ELIM_THM, SUBSET] THEN
       ASM_MESON_TAC [IN_RING_IDEAL_LMUL, SUBSET],
@@ -18739,12 +18647,15 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
     EXISTS_TAC (← q r"IMAGE (ring_mul r a) H UNION IMAGE SND (G:A#A->bool)") THEN
     ASM_SIMP_TAC [FINITE_UNION, FINITE_IMAGE] THEN
     ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL_EQ, ← GSYM SUBSET_ANTISYM_EQ] THEN
-    MATCH_MP_TAC s4 THEN
+    MATCH_MP_TAC (← SET_RULE
+     (← q r"j SUBSET r /\ s SUBSET j /\ (s SUBSET j ==> j SUBSET k)
+    ==> s SUBSET r /\ r INTER s SUBSET j /\ j SUBSET k")) THEN
     ASM_REWRITE_TAC [UNION_SUBSET] THEN CONJ_TAC THENL
      [REWRITE_TAC [SUBSET, FORALL_IN_IMAGE] THEN CONJ_TAC THENL
        [FIRST_ASSUM (MP_TAC o MATCH_MP IDEAL_GENERATED_SUBSET_CARRIER_SUBSET) THEN
         ASM SET_TAC [],
-        FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP s5) THEN
+        FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"G SUBSET s ==> (!x. x IN s ==> P x) ==> (!x. x IN G ==> P x)"))) THEN
         SIMP_TAC [FORALL_PAIR_THM, IN_CROSS]],
       STRIP_TAC] THEN
     REWRITE_TAC [SUBSET] THEN X_GEN_TAC (← q "z:A") THEN DISCH_TAC THEN
@@ -18759,13 +18670,14 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
     ANTS_TAC THENL
      [CONJ_TAC THENL [ALL_TAC, ASM SET_TAC []] THEN
       REWRITE_TAC [SUBSET, FORALL_IN_IMAGE] THEN
-      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP s6) THEN
+      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"G SUBSET s ==> (!x. x IN s ==> P x) ==> (!x. x IN G ==> P x)"))) THEN
       SIMP_TAC [FORALL_PAIR_THM, IN_CROSS] THEN
       MESON_TAC [SUBSET, IDEAL_GENERATED_SUBSET],
       REWRITE_TAC [IMP_IMP, ← GSYM CONJ_ASSOC]] THEN
-    DISCH_THEN (MP_TAC o MATCH_MP s7) THEN
+    DISCH_THEN (MP_TAC o MATCH_MP (← SET_RULE (← q r"t SUBSET u /\ s SUBSET t /\ x IN s ==> x IN u"))) THEN
     UNDISCH_TAC (← q "(z:A) IN j") THEN
-    ONCE_REWRITE_TAC [t8] THEN
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p ==> q ==> r <=> q ==> p ==> r"))] THEN
     SPEC_TAC (← q "z:A", ← q "z:A") THEN REWRITE_TAC [IDEAL_GENERATED_UNION] THEN
     REWRITE_TAC [ring_setadd, FORALL_IN_GSPEC] THEN
     MAP_EVERY X_GEN_TAC [← q "x:A", ← q "y:A"] THEN REPEAT STRIP_TAC THEN
@@ -18780,10 +18692,11 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
     SUBGOAL_THEN (← q "x IN ideal_generated r {a:A}") MP_TAC THENL
      [ONCE_REWRITE_TAC [← GSYM IDEAL_GENERATED_BY_IDEAL_GENERATED] THEN
       UNDISCH_TAC (← q r"x IN ideal_generated r (IMAGE FST (G:A#A->bool))") THEN
-      MATCH_MP_TAC s9 THEN
+      MATCH_MP_TAC (← SET_RULE (← q r"s SUBSET t ==> x IN s ==> x IN t")) THEN
       MATCH_MP_TAC IDEAL_GENERATED_MONO THEN
       REWRITE_TAC [SUBSET, FORALL_IN_IMAGE] THEN
-      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP s10) THEN
+      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"G SUBSET s ==> (!x. x IN s ==> P x) ==> (!x. x IN G ==> P x)"))) THEN
       SIMP_TAC [FORALL_PAIR_THM, IN_CROSS],
       ASM_SIMP_TAC [IN_IDEAL_GENERATED_SING_EQ, ring_divides] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "w:A") (CONJUNCTS_THEN2 ASSUME_TAC SUBST_ALL_TAC) o
@@ -19106,23 +19019,10 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
               integral_domain r /\
               (!j. prime_ideal r j ==> principal_ideal r j)"
    (← do
-    -- right to left: the SET_RULEs (last first), the TAUTs, then the MESON
-    let s7 ← SET_RULE
-     (← q r"ideal_generated r (a INSERT k) = s
-      ==> (a INSERT k) SUBSET ideal_generated r (a INSERT k) /\
-          s INTER k SUBSET t
-          ==> k SUBSET t")
-    let s6 ← SET_RULE
-     (← q r"{x | P x /\ f x IN k} = s ==> d IN s ==> f d IN k")
-    let s5 ← SET_RULE (← q r"a IN s ==> s INTER {a} = {a}")
-    let s4 ← SET_RULE (← q r"s SUBSET a INSERT s")
-    let t3 ← TAUT (← q r"(p /\ ~q) /\ r ==> s <=> p /\ r /\ ~s ==> q")
-    let t2 ← TAUT (← q r"p \/ q <=> ~(~p /\ ~q)")
-    let m1 ← MESON [] (← q r"(!x. P x ==> Q x) <=> ~(?x. P x /\ ~Q x)")
     pure (REPEAT STRIP_TAC THEN EQ_TAC THENL
      [MESON_TAC [PID, PRIME_IMP_RING_IDEAL],
       STRIP_TAC THEN ASM_REWRITE_TAC [PID]] THEN
-    GEN_REWRITE_TAC id [m1] THEN
+    GEN_REWRITE_TAC id [(← MESON [] (← q r"(!x. P x ==> Q x) <=> ~(?x. P x /\ ~Q x)"))] THEN
     DISCH_TAC THEN
     MP_TAC (← ISPEC (← q r"\j:A->bool. ring_ideal r j /\ ~principal_ideal r j")
      ZL_SUBSETS_UNIONS_NONEMPTY) THEN
@@ -19145,12 +19045,12 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
     ASM_REWRITE_TAC [CONTRAPOS_THM] THEN DISCH_TAC THEN
     ASM_SIMP_TAC [prime_ideal, NONPRINCIPAL_IMP_PROPER_IDEAL] THEN
     MAP_EVERY X_GEN_TAC [← q "a:A", ← q "b:A"] THEN STRIP_TAC THEN
-    ONCE_REWRITE_TAC [t2] THEN STRIP_TAC THEN
-    RULE_ASSUM_TAC (REWRITE_RULE [t3]) THEN
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p \/ q <=> ~(~p /\ ~q)"))] THEN STRIP_TAC THEN
+    RULE_ASSUM_TAC (REWRITE_RULE [(← TAUT (← q r"(p /\ ~q) /\ r ==> s <=> p /\ r /\ ~s ==> q"))]) THEN
     FIRST_ASSUM (MP_TAC o SPEC (← q "ideal_generated r ((a:A) INSERT k)")) THEN
     REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED, NOT_IMP] THEN REPEAT CONJ_TAC THENL
      [TRANS_TAC SUBSET_TRANS (← q "(a:A) INSERT k") THEN
-      REWRITE_TAC [s4] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"s SUBSET a INSERT s"))] THEN
       MATCH_MP_TAC IDEAL_GENERATED_SUBSET_CARRIER_SUBSET THEN
       ASM_SIMP_TAC [INSERT_SUBSET, RING_IDEAL_IMP_SUBSET],
       GEN_REWRITE_TAC RAND_CONV [EXTENSION] THEN
@@ -19172,7 +19072,7 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV [principal_ideal]) THEN
     REWRITE_TAC [] THEN EXISTS_TAC (← q "ring_mul r c d:A") THEN
     ASM_SIMP_TAC [RING_MUL, ← GSYM SUBSET_ANTISYM_EQ, IDEAL_GENERATED_MINIMAL_EQ,
-                  SING_SUBSET, s5] THEN
+                  SING_SUBSET, (← SET_RULE (← q r"a IN s ==> s INTER {a} = {a}"))] THEN
     CONJ_TAC THENL
      [FIRST_X_ASSUM (MP_TAC o
        GEN_REWRITE_RULE LAND_CONV [IDEAL_GENERATED_INSERT]) THEN
@@ -19193,9 +19093,14 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
        (← q "ring_mul r (ring_mul r a x) d:A = ring_mul r x (ring_mul r d a)")
       SUBST1_TAC THENL [ASM_SIMP_TAC [RING_MUL_AC], ALL_TAC] THEN
       MATCH_MP_TAC IN_RING_IDEAL_LMUL THEN ASM_REWRITE_TAC [] THEN
-      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP s6) THEN
+      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"{x | P x /\ f x IN k} = s ==> d IN s ==> f d IN k"))) THEN
       ASM_SIMP_TAC [IDEAL_GENERATED_INC_GEN, IN_SING],
-      FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP s7) THEN
+      FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"ideal_generated r (a INSERT k) = s
+      ==> (a INSERT k) SUBSET ideal_generated r (a INSERT k) /\
+          s INTER k SUBSET t
+          ==> k SUBSET t"))) THEN
       CONJ_TAC THENL
        [MATCH_MP_TAC IDEAL_GENERATED_SUBSET_CARRIER_SUBSET THEN
         ASM_SIMP_TAC [INSERT_SUBSET, RING_IDEAL_IMP_SUBSET],
@@ -19242,26 +19147,14 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
    r"!r j:A->bool.
         ring_ideal r j ==> (field(quotient_ring r j) <=> maximal_ideal r j)"
    (← do
-    -- right to left: the basic_ss, the second MESON, the two SET_RULEs
-    -- (second first), the TAUT, then the first MESON
-    let ss ← ExceptT.mk (basic_ss [])
-    let m5 ← MESON []
-     (← q r"x IN j /\
-        ring_add r a (ring_add r x (ring_neg r a)) = x
-        ==> (ring_add r a (ring_add r x (ring_neg r a))) IN j")
-    let s4 ← SET_RULE (← q r"x IN s ==> s SUBSET t ==> x IN t")
-    let s3 ← SET_RULE (← q r"~(a IN j) ==> a IN s ==> ~(j = s)")
-    let t2 ← TAUT (← q r"q /\ (~p ==> r) ==> ~(p /\ q) ==> r")
-    let m1 ← MESON [] (← q r"(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)")
-    let qr2 ← match (CONJUNCTS QUOTIENT_RING)[2]? with
-      | some t => pure t | none => throw "tl"
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [field] THEN
     ASM_SIMP_TAC [← CONJUNCT1 QUOTIENT_RING] THEN
     REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM,
                  FORALL_IN_GSPEC, EXISTS_IN_GSPEC] THEN
     ASM_SIMP_TAC [QUOTIENT_RING_0] THEN
-    ONCE_REWRITE_TAC [m1] THEN
-    ASM_SIMP_TAC [qr2] THEN
+    ONCE_REWRITE_TAC [(← MESON [] (← q r"(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)"))] THEN
+    ASM_SIMP_TAC [(← match (CONJUNCTS QUOTIENT_RING)[2]? with
+      | some t => pure t | none => throw "tl")] THEN
     ASM_SIMP_TAC [RING_COSET_EQ_IDEAL, QUOTIENT_RING_MUL, RING_MUL, RING_1,
                   RING_COSET_EQ] THEN
     ASM_CASES_TAC (← q "(ring_1 r:A) IN j") THEN
@@ -19291,14 +19184,14 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
        (← q "ring_setadd r j (ideal_generated r {a:A})")) THEN
       ASM_SIMP_TAC [RING_IDEAL_SETADD, RING_IDEAL_IDEAL_GENERATED,
                     SING_SUBSET] THEN
-      MATCH_MP_TAC t2 THEN
+      MATCH_MP_TAC (← TAUT (← q r"q /\ (~p ==> r) ==> ~(p /\ q) ==> r")) THEN
       CONJ_TAC THENL
        [ASM_SIMP_TAC [PSUBSET, RING_SETADD_SUPERSET_LEFT, IN_RING_IDEAL_0,
                       RING_IDEAL_IMP_SUBSET, RING_IDEAL_IDEAL_GENERATED] THEN
-        FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP s3) THEN
+        FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE (← q r"~(a IN j) ==> a IN s ==> ~(j = s)"))) THEN
         wPart rand (fun t => do rand (← rand t)) RING_SETADD_SUPERSET_RIGHT THEN
         ASM_SIMP_TAC [IN_RING_IDEAL_0, IDEAL_GENERATED_SUBSET, SING_SUBSET] THEN
-        MATCH_MP_TAC s4 THEN
+        MATCH_MP_TAC (← SET_RULE (← q r"x IN s ==> s SUBSET t ==> x IN t")) THEN
         ASM_SIMP_TAC [IDEAL_GENERATED_INC, IN_SING, SING_SUBSET],
         ASM_SIMP_TAC [ring_setadd, IDEAL_GENERATED_SING_ALT] THEN
         REWRITE_TAC [IN_ELIM_THM] THEN
@@ -19309,13 +19202,16 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
         SUBGOAL_THEN (← q "(x:A) IN ring_carrier r") ASSUME_TAC THENL
          [ASM_MESON_TAC [ring_ideal, SUBSET], ALL_TAC] THEN
         ASM_SIMP_TAC [ring_sub, RING_NEG_ADD, RING_MUL] THEN
-        MATCH_MP_TAC m5 THEN
+        MATCH_MP_TAC (← MESON []
+     (← q r"x IN j /\
+        ring_add r a (ring_add r x (ring_neg r a)) = x
+        ==> (ring_add r a (ring_add r x (ring_neg r a))) IN j")) THEN
         ASM_SIMP_TAC [IN_RING_IDEAL_NEG] THEN CONV_TAC SYM_CONV THEN
         MATCH_MP_TAC RING_LNEG_UNIQUE THEN ASM_REWRITE_TAC [] THEN CONJ_TAC THENL
          [ASM_MESON_TAC [RING_ADD, RING_NEG, RING_MUL], ALL_TAC] THEN
         ASM_SIMP_TAC [← GSYM RING_NEG_ADD, RING_MUL,
                       RING_ADD, RING_MUL, RING_NEG] THEN
-        ASM (simpTac ss 4)
+        ASM (simpTac (← ExceptT.mk (basic_ss [])) 4)
          [RING_ADD_ASSOC, RING_MUL, RING_NEG, RING_ADD, RING_ADD_RNEG]]]))
 
   let PRIME_IDEAL_RING_KERNEL ← prove
@@ -19750,14 +19646,15 @@ def setupSpecialIdeals2 [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
                    f(ring_mul k x y) = ring_mul l (f x) (f y)")
        (LABEL_TAC "am") THENL
         [MAP_EVERY X_GEN_TAC [← q r"x:B", ← q r"y:B"] THEN STRIP_TAC THEN
-         MAP_EVERY (fun v => tactic_of do
+         -- `MAP_EVERY f l = EVERY (map f l)`: OCaml applies `f` to each
+         -- element (left to right) when the tactic is built.
+         EVERY (← [← q r"x:B", ← q r"y:B"].mapM (fun v => do
            let rk ← q r"ring_carrier(k:B ring)"
            let inB ← q r"(IN):B->(B->bool)->bool"
            let th ← ASSUME (← liftExcept (mk_comb (← liftExcept (mk_comb inB v)) rk))
            pure (USE_THEN "facts" (MP_TAC o C MATCH_MP th) THEN
                  USE_THEN "rep" (MP_TAC o C MATCH_MP th) THEN
-                 USE_THEN "fx" (MP_TAC o C MATCH_MP th)))
-          [← q r"x:B", ← q r"y:B"] THEN
+                 USE_THEN "fx" (MP_TAC o C MATCH_MP th)))) THEN
          REMOVE_THEN "fx" (K ALL_TAC) THEN
          REPEAT STRIP_TAC THENL
           [USE_THEN "eq" (MP_TAC o SPECL
@@ -20199,16 +20096,12 @@ def setupRadical [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
         ==> radical r j = if j = ring_carrier r then ring_carrier r
                           else INTERS {k | prime_ideal r k /\ j SUBSET k}"
    (← do
-    let s3 ← SET_RULE
-     (← q r"DISJOINT k {f n | n IN (:num)} ==> ~(f 1 IN k)")
-    let t2 ← TAUT (← q r"(~p ==> r) /\ ~q ==> (p ==> q) ==> r")
-    let t1 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
     pure (REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
     ASM_REWRITE_TAC [RADICAL_RING_CARRIER] THEN
     ASM_SIMP_TAC [RADICAL_ALT, EXTENSION, IN_ELIM_THM, INTERS_GSPEC] THEN
     X_GEN_TAC (← q "x:A") THEN EQ_TAC THENL
      [ASM_MESON_TAC [RING_POW_IN_PRIME_IDEAL, SUBSET], DISCH_TAC] THEN
-    MATCH_MP_TAC t1 THEN CONJ_TAC THENL
+    MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL
      [MP_TAC (← ISPECL [← q "r:A ring", ← q r"j:A->bool"] PRIME_SUPERIDEAL_EXISTS) THEN
       ASM_REWRITE_TAC [PROPER_IDEAL_ALT] THEN
       ASM_MESON_TAC [PRIME_IDEAL_IMP_SUBSET, SUBSET],
@@ -20216,10 +20109,11 @@ def setupRadical [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
       MP_TAC (← ISPECL [← q "r:A ring", ← q r"{ring_pow r (x:A) n | n IN (:num)}",
                    ← q r"j:A->bool"] PRIME_SUPERIDEAL_EXCLUDING_EXISTS) THEN
     ASM_SIMP_TAC [RING_MULTSYS_POWERS] THEN
-    MATCH_MP_TAC t2 THEN
+    MATCH_MP_TAC (← TAUT (← q r"(~p ==> r) /\ ~q ==> (p ==> q) ==> r")) THEN
     CONJ_TAC THENL [SET_TAC [], ALL_TAC] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"k:A->bool") STRIP_ASSUME_TAC) THEN
-    FIRST_X_ASSUM (MP_TAC o MATCH_MP s3) THEN
+    FIRST_X_ASSUM (MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"DISJOINT k {f n | n IN (:num)} ==> ~(f 1 IN k)"))) THEN
     ASM_SIMP_TAC [RING_POW_1]))
 
   let RING_NILRADICAL ← prove
@@ -20593,14 +20487,12 @@ def setupRadical [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
                  ring_sub r (ring_mul r x y) (ring_1 r) IN j)"
    (← do
     -- OCaml's order (right to left): the second TAUT, then the first
-    let t2 ← TAUT (← q r"(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)")
-    let t1 ← TAUT (← q r"p /\ (q <=> r) ==> (p /\ q <=> r)")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [ring_unit] THEN
     ASM_SIMP_TAC [QUOTIENT_RING_CARRIER, QUOTIENT_RING_1] THEN
     REWRITE_TAC [EXISTS_IN_GSPEC, IN_ELIM_THM] THEN
-    MATCH_MP_TAC t1 THEN
+    MATCH_MP_TAC (← TAUT (← q r"p /\ (q <=> r) ==> (p /\ q <=> r)")) THEN
     CONJ_TAC THENL [ASM_MESON_TAC [], AP_TERM_TAC THEN ABS_TAC] THEN
-    MATCH_MP_TAC t2 THEN
+    MATCH_MP_TAC (← TAUT (← q r"(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)")) THEN
     DISCH_TAC THEN
     ASM_SIMP_TAC [QUOTIENT_RING_MUL, RING_COSET_EQ, RING_MUL, RING_1]))
 
@@ -20659,7 +20551,6 @@ def setupRadical [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
                        (ring_coset r (radical r j) x) <=>
              ring_unit (quotient_ring r j) (ring_coset r j x))"
    (← do
-    let trad ← q r"radical r (j:A->bool)"
     pure (REPEAT STRIP_TAC THEN
     ASM_SIMP_TAC [RING_UNIT_QUOTIENT_RING_COSET, RING_IDEAL_RADICAL] THEN
     EQ_TAC THEN DISCH_THEN (X_CHOOSE_THEN (← q r"y:A") STRIP_ASSUME_TAC) THENL
@@ -20670,7 +20561,9 @@ def setupRadical [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
     SUBGOAL_THEN (← q r"(s:A) IN ring_carrier r") ASSUME_TAC THENL
      [EXPAND_TAC "s" THEN ASM_SIMP_TAC [RING_SUB, RING_MUL, RING_1], ALL_TAC] THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV [radical] o
-      check (fun th => (rand (concl th)).toOption == some trad)) THEN
+      checkIO (fun th => do
+        let trad ← q r"radical r (j:A->bool)"
+        pure ((rand (concl th)).toOption == some trad))) THEN
     REWRITE_TAC [IN_ELIM_THM] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"n:num") STRIP_ASSUME_TAC o CONJUNCT2) THEN
     SUBGOAL_THEN (← q r"ring_pow r (ring_neg r s) n IN (j:A->bool)") ASSUME_TAC THENL
@@ -20893,10 +20786,8 @@ def setupRadical [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
         ring_nilpotent r z /\ ring_zerodivisor r w
         ==> ring_zerodivisor r (ring_sub r z w))"
    (← do
-    let t2 ← TAUT (← q r"p <=> ~p ==> F")
-    let t1 ← TAUT
-     (← q r"(p ==> q) /\ (p /\ q ==> r /\ s) /\ p ==> p /\ q /\ r /\ s")
-    pure (MATCH_MP_TAC t1 THEN
+    pure (MATCH_MP_TAC (← TAUT
+     (← q r"(p ==> q) /\ (p /\ q ==> r /\ s) /\ p ==> p /\ q /\ r /\ s")) THEN
     REPEAT CONJ_TAC THENL
      [MESON_TAC [RING_ADD_SYM, RING_NILPOTENT_IN_CARRIER,
                  RING_ZERODIVISOR_IN_CARRIER],
@@ -20905,7 +20796,7 @@ def setupRadical [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
       FIRST_ASSUM (ASSUME_TAC o MATCH_MP RING_ZERODIVISOR_IN_CARRIER) THEN
       FIRST_ASSUM (ASSUME_TAC o MATCH_MP RING_NILPOTENT_IN_CARRIER)] THEN
     ASM_SIMP_TAC [ring_zerodivisor, RING_ADD] THEN
-    GEN_REWRITE_TAC id [t2] THEN DISCH_TAC THEN
+    GEN_REWRITE_TAC id [(← TAUT (← q r"p <=> ~p ==> F"))] THEN DISCH_TAC THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [ring_zerodivisor]) THEN
     ASM_REWRITE_TAC [] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q "w:A") STRIP_ASSUME_TAC) THEN
@@ -20956,28 +20847,22 @@ def setupRadical [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
    (!r z:A. ring_nilpotent r z ==> ring_unit r (ring_sub r (ring_1 r) z)) /\
    (!r z:A. ring_nilpotent r z ==> ring_unit r (ring_sub r z (ring_1 r)))"
    (← do
-    -- right to left: the last RING_RULE first, then the next, the TAUT and
-    -- the first RING_RULE
-    let rr4 ← RING_RULE (← q r"ring_1 r = ring_sub r (ring_1 r) (ring_0 r)")
-    let rr3 ← RING_RULE
-     (← q r"z IN ring_carrier r
-     ==> ring_add r (ring_1 r) z = ring_sub r (ring_1 r) (ring_neg r z)")
-    let t2 ← TAUT (← q r"(q ==> p) /\ q ==> p /\ p /\ q")
-    let rr1 ← RING_RULE
+    pure (SIMP_TAC [RING_NILPOTENT_IN_CARRIER, (← RING_RULE
      (← q r"z IN ring_carrier r
      ==> ring_add r z (ring_1 r) = ring_add r (ring_1 r) z /\
-         ring_sub r z (ring_1 r) = ring_neg r (ring_sub r (ring_1 r) z)")
-    pure (SIMP_TAC [RING_NILPOTENT_IN_CARRIER, rr1] THEN
+         ring_sub r z (ring_1 r) = ring_neg r (ring_sub r (ring_1 r) z)"))] THEN
     SIMP_TAC [RING_UNIT_NEG_EQ, RING_SUB, RING_1, RING_NILPOTENT_IN_CARRIER] THEN
-    MATCH_MP_TAC t2 THEN
-    SIMP_TAC [RING_NILPOTENT_IN_CARRIER, RING_NILPOTENT_NEG, rr3] THEN
+    MATCH_MP_TAC (← TAUT (← q r"(q ==> p) /\ q ==> p /\ p /\ q")) THEN
+    SIMP_TAC [RING_NILPOTENT_IN_CARRIER, RING_NILPOTENT_NEG, (← RING_RULE
+     (← q r"z IN ring_carrier r
+     ==> ring_add r (ring_1 r) z = ring_sub r (ring_1 r) (ring_neg r z)"))] THEN
     REPEAT GEN_TAC THEN REWRITE_TAC [ring_nilpotent, ring_unit] THEN
     DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC
      (X_CHOOSE_THEN (← q "n:num") STRIP_ASSUME_TAC)) THEN
     ASM_SIMP_TAC [RING_SUB, RING_1] THEN
     EXISTS_TAC (← q r"ring_sum r {i | i < n} (\i. ring_pow r z i):A") THEN
     REWRITE_TAC [RING_SUM] THEN
-    GEN_REWRITE_TAC RAND_CONV [rr4] THEN
+    GEN_REWRITE_TAC RAND_CONV [(← RING_RULE (← q r"ring_1 r = ring_sub r (ring_1 r) (ring_0 r)"))] THEN
     FIRST_X_ASSUM (fun th => tactic_of do
       pure (GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [← SYM th])) THEN
     UNDISCH_THEN (← q "~(n = 0)") (fun (_ : thm) => ALL_TAC) THEN
@@ -21264,26 +21149,11 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
             ==> ?n p. (!i. 1 <= i /\ i <= n ==> ring_prime r (p i)) /\
                       ring_associates r (ring_product r (1..n) p) x"
    (← do
-    -- right to left: the rules in reverse text order, the
-    -- prove_inductive_relations_exist call last
-    let a10 ← ARITH_RULE (← q r"~(SUC n <= n)")
-    let m9 ← MESON []
-     (← q r"ring_associates r x z ==> y = x ==> ring_associates r y z")
-    let a8 ← ARITH_RULE (← q r"1 <= SUC n")
-    let a7 ← ARITH_RULE (← q r"~(1 <= i /\ i <= 0)")
-    let a6 ← ARITH_RULE (← q r"1 <= SUC n")
-    let a5 ← ARITH_RULE (← q r"SUC m <= n ==> m <= n")
-    let m4 ← MESON []
-     (← q r"(!x. R x ==> Q x) /\ (!x. Q x ==> R x)
-    ==> ((!x. P x ==> Q x) <=> (!x. P x ==> R x))")
-    let s3 ← SET_RULE (← q r"DISJOINT s t <=> !x. x IN s ==> ~(x IN t)")
-    let t2 ← TAUT (← q r"(q ==> p) /\ q ==> p /\ q")
-    let pir ← ExceptT.mk (prove_inductive_relations_exist
-     (← q r"(!u:A. ring_unit r u ==> pp u) /\
-    !p a. ring_prime r p /\ pp a ==> pp (ring_mul r p a)"))
     pure (GEN_TAC THEN REWRITE_TAC [UFD] THEN
     ASM_CASES_TAC (← q "integral_domain(r:A ring)") THEN ASM_REWRITE_TAC [] THEN
-    X_CHOOSE_THEN (← q r"pp:A->bool") MP_TAC pir THEN
+    X_CHOOSE_THEN (← q r"pp:A->bool") MP_TAC (← ExceptT.mk (prove_inductive_relations_exist
+     (← q r"(!u:A. ring_unit r u ==> pp u) /\
+    !p a. ring_prime r p /\ pp a ==> pp (ring_mul r p a)"))) THEN
     DISCH_THEN (MP_TAC o CONJUNCT1 o ONCE_REWRITE_RULE [CONJ_ASSOC]) THEN
     DISCH_THEN (fun th => tactic_of do
       let (a, b) ← CONJ_PAIR th
@@ -21300,7 +21170,7 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
      (← q r"(!x u:A. x IN pp /\ ring_unit r u ==> ring_mul r x u IN pp) /\
     (!u x:A. ring_unit r u /\ x IN pp ==> ring_mul r u x IN pp)")
     STRIP_ASSUME_TAC THENL
-     [MATCH_MP_TAC t2 THEN CONJ_TAC THENL
+     [MATCH_MP_TAC (← TAUT (← q r"(q ==> p) /\ q ==> p /\ q")) THEN CONJ_TAC THENL
        [ASM_MESON_TAC [RING_UNIT_IN_CARRIER, RING_MUL_SYM],
         REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM]] THEN
       GEN_TAC THEN DISCH_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
@@ -21378,7 +21248,7 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
         REWRITE_TAC [NOT_IMP, RING_IDEAL_IDEAL_GENERATED] THEN
         REWRITE_TAC [← GSYM CONJ_ASSOC, ring_multsys, SUBSET] THEN
         ASM_SIMP_TAC [RING_UNIT_1, IDEAL_GENERATED_SING_ALT] THEN
-        REWRITE_TAC [s3] THEN
+        REWRITE_TAC [(← SET_RULE (← q r"DISJOINT s t <=> !x. x IN s ==> ~(x IN t)"))] THEN
         ASM_SIMP_TAC [FORALL_IN_GSPEC] THEN
         DISCH_THEN (X_CHOOSE_THEN (← q r"j:A->bool") STRIP_ASSUME_TAC) THEN
         FIRST_X_ASSUM (MP_TAC o SPEC (← q r"j:A->bool")) THEN
@@ -21395,7 +21265,9 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
         FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE id [prime_ideal]) THEN
         REWRITE_TAC [PROPER_IDEAL_UNIT, ring_ideal] THEN ASM SET_TAC []],
       ALL_TAC] THEN
-    MATCH_MP_TAC m4 THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"(!x. R x ==> Q x) /\ (!x. Q x ==> R x)
+    ==> ((!x. P x ==> Q x) <=> (!x. P x ==> R x))")) THEN
     CONJ_TAC THENL
      [FIRST_X_ASSUM ((fun (_ : thm) => ALL_TAC) o SPEC (← q r"ring_carrier r:A->bool")) THEN
       ASM_SIMP_TAC [INTEGRAL_DOMAIN_ASSOCIATES] THEN
@@ -21407,12 +21279,12 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
       MP_TAC THENL [ALL_TAC, ASM_MESON_TAC [LE_REFL]] THEN
       INDUCT_TAC THEN ASM_SIMP_TAC [RING_PRODUCT_CLAUSES_NUMSEG_ALT] THEN
       CONV_TAC NUM_REDUCE_CONV THEN ASM_SIMP_TAC [RING_UNIT_1] THEN
-      ASM_MESON_TAC [a5, RING_PRODUCT,
-                     RING_PRIME_IN_CARRIER, a6],
+      ASM_MESON_TAC [(← ARITH_RULE (← q r"SUC m <= n ==> m <= n")), RING_PRODUCT,
+                     RING_PRIME_IN_CARRIER, (← ARITH_RULE (← q r"1 <= SUC n"))],
       FIRST_X_ASSUM MATCH_MP_TAC] THEN
     CONJ_TAC THENL
      [REPEAT STRIP_TAC THEN EXISTS_TAC (← q "0") THEN
-      REWRITE_TAC [a7] THEN
+      REWRITE_TAC [(← ARITH_RULE (← q r"~(1 <= i /\ i <= 0)"))] THEN
       REWRITE_TAC [RING_PRODUCT_CLAUSES_NUMSEG_ALT, ARITH_EQ] THEN
       ASM_REWRITE_TAC [RING_ASSOCIATES_1],
       ALL_TAC] THEN
@@ -21422,13 +21294,14 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
     MAP_EVERY X_GEN_TAC [← q "n:num", ← q r"q:num->A"] THEN STRIP_TAC THEN
     EXISTS_TAC (← q "SUC n") THEN
     EXISTS_TAC (← q r"\i. if i = SUC n then p else (q:num->A) i") THEN
-    REWRITE_TAC [RING_PRODUCT_CLAUSES_NUMSEG_ALT, a8] THEN
+    REWRITE_TAC [RING_PRODUCT_CLAUSES_NUMSEG_ALT, (← ARITH_RULE (← q r"1 <= SUC n"))] THEN
     CONJ_TAC THENL [ASM_MESON_TAC [LE], ASM_SIMP_TAC [RING_PRIME_IN_CARRIER]] THEN
     MATCH_MP_TAC RING_ASSOCIATES_MUL THEN
     ASM_SIMP_TAC [RING_ASSOCIATES_REFL, RING_PRIME_IN_CARRIER] THEN
-    FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP m9) THEN
+    FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← MESON []
+     (← q r"ring_associates r x z ==> y = x ==> ring_associates r y z"))) THEN
     MATCH_MP_TAC RING_PRODUCT_EQ THEN REWRITE_TAC [IN_NUMSEG] THEN
-    MESON_TAC [a10]))
+    MESON_TAC [(← ARITH_RULE (← q r"~(SUC n <= n)"))]))
 
   let UFD_EQ_PRIMEFACT_NONUNIT ← prove
    r"!r:A ring.
@@ -21439,33 +21312,22 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
                       (!i. 1 <= i /\ i <= n ==> ring_prime r (p i)) /\
                       ring_product r (1..n) p = x"
    (← do
-    -- right to left: the rules in reverse text order
-    let a8 ← ARITH_RULE (← q r"~(1 <= i /\ i <= 0)")
-    let a7 ← ARITH_RULE (← q r"~(SUC n <= n)")
-    let a6 ← ARITH_RULE (← q r"1 <= SUC n")
-    let m5 ← MESON []
-     (← q r"f (f u q) p' = f (f q p') u /\ p' = p
-        ==> f (f u q) p = f (f q p') u")
-    let a4 ← ARITH_RULE (← q r"1 <= SUC n")
-    let a3 ← ARITH_RULE (← q r"1 <= SUC n")
-    let a2 ← ARITH_RULE (← q r"1 <= SUC n")
-    let a1 ← ARITH_RULE (← q r"1 <= SUC n")
     pure (GEN_TAC THEN REWRITE_TAC [UFD_EQ_PRIMEFACT] THEN
     ASM_CASES_TAC (← q "integral_domain(r:A ring)") THEN ASM_REWRITE_TAC [] THEN
     EQ_TAC THEN DISCH_TAC THEN X_GEN_TAC (← q "x:A") THEN STRIP_TAC THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q "x:A")) THEN ASM_REWRITE_TAC [] THENL
      [MATCH_MP_TAC MONO_EXISTS THEN MATCH_MP_TAC num_INDUCTION THEN
       ASM_REWRITE_TAC [RING_PRODUCT_CLAUSES_NUMSEG_ALT, ARITH_EQ] THEN
-      ASM_REWRITE_TAC [RING_ASSOCIATES_1, a1] THEN
+      ASM_REWRITE_TAC [RING_ASSOCIATES_1, (← ARITH_RULE (← q r"1 <= SUC n"))] THEN
       X_GEN_TAC (← q "n:num") THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"p:num->A")
        (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-      ASM_SIMP_TAC [a2, LE_REFL, RING_PRIME_IN_CARRIER] THEN
+      ASM_SIMP_TAC [(← ARITH_RULE (← q r"1 <= SUC n")), LE_REFL, RING_PRIME_IN_CARRIER] THEN
       ASM_SIMP_TAC [INTEGRAL_DOMAIN_ASSOCIATES] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "u:A")
        (CONJUNCTS_THEN2 ASSUME_TAC (SUBST1_TAC o SYM)) o CONJUNCT2) THEN
       EXISTS_TAC (← q r"\i. if i = SUC n then ring_mul r u (p(SUC n):A) else p i") THEN
-      ASM_SIMP_TAC [RING_MUL, RING_PRIME_IN_CARRIER, a3,
+      ASM_SIMP_TAC [RING_MUL, RING_PRIME_IN_CARRIER, (← ARITH_RULE (← q r"1 <= SUC n")),
                     LE_REFL, RING_UNIT_IN_CARRIER] THEN
       CONJ_TAC THENL
        [X_GEN_TAC (← q "i:num") THEN COND_CASES_TAC THEN
@@ -21474,17 +21336,19 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
         ANTS_TAC THENL [ARITH_TAC, MATCH_MP_TAC EQ_IMP] THEN
         MATCH_MP_TAC RING_ASSOCIATES_PRIME THEN
         MATCH_MP_TAC RING_ASSOCIATES_LMUL THEN
-        ASM_SIMP_TAC [a4, LE_REFL, RING_PRIME_IN_CARRIER],
-        MATCH_MP_TAC m5 THEN
+        ASM_SIMP_TAC [(← ARITH_RULE (← q r"1 <= SUC n")), LE_REFL, RING_PRIME_IN_CARRIER],
+        MATCH_MP_TAC (← MESON []
+     (← q r"f (f u q) p' = f (f q p') u /\ p' = p
+        ==> f (f u q) p = f (f q p') u")) THEN
         CONJ_TAC THENL
          [ASM_SIMP_TAC [RING_MUL_AC, RING_PRODUCT, RING_UNIT_IN_CARRIER,
-                        a6, LE_REFL, RING_PRIME_IN_CARRIER],
+                        (← ARITH_RULE (← q r"1 <= SUC n")), LE_REFL, RING_PRIME_IN_CARRIER],
           MATCH_MP_TAC RING_PRODUCT_EQ THEN GEN_TAC THEN
           REWRITE_TAC [IN_NUMSEG] THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
-          REWRITE_TAC [a7]]],
+          REWRITE_TAC [(← ARITH_RULE (← q r"~(SUC n <= n)"))]]],
       ASM_CASES_TAC (← q "ring_unit r (x:A)") THEN ASM_REWRITE_TAC [] THENL
        [EXISTS_TAC (← q "0") THEN
-        REWRITE_TAC [a8] THEN
+        REWRITE_TAC [(← ARITH_RULE (← q r"~(1 <= i /\ i <= 0)"))] THEN
         REWRITE_TAC [RING_PRODUCT_CLAUSES_NUMSEG_ALT, ARITH_EQ] THEN
         ASM_REWRITE_TAC [RING_ASSOCIATES_1],
         MESON_TAC [RING_ASSOCIATES_REFL, RING_PRODUCT]]]))
@@ -21558,25 +21422,6 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
                                  (!i. 1 <= i /\ i <= n
                                       ==> ring_associates r (p i) (q(f i)))"
    (← do
-    -- right to left: the rules in reverse text order
-    let a11 ← ARITH_RULE
-     (← q r"1 <= k /\ k <= a + b /\ ~(k <= a)
-        ==> 1 <= k - a /\ k - a <= b")
-    let a10 ← ARITH_RULE
-     (← q r"1 <= k /\ k <= a + b /\ ~(k <= a)
-        ==> 1 <= k - a /\ k - a <= b")
-    let t9 ← TAUT (← q r"~p ==> p ==> q")
-    let t8 ← TAUT (← q r"~p ==> p ==> q")
-    let m7 ← MESON [RING_ASSOCIATES_REFL]
-     (← q r"y IN ring_carrier r /\ x = y ==> ring_associates r x y")
-    let a6 ← ARITH_RULE (← q r"1 <= n + 1")
-    let a5 ← ARITH_RULE (← q r"1 <= SUC n_c /\ SUC n_c <= SUC n_c")
-    let a4 ← ARITH_RULE (← q r"~(SUC n <= n)")
-    let m3 ← MESON [RING_ASSOCIATES_REFL]
-     (← q r"y IN ring_carrier r /\ x = y ==> ring_associates r x y")
-    let a2 ← ARITH_RULE (← q r"1 <= SUC n")
-    let t1 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
-    let mabpc ← ASSUME (← q "ring_mul r a b:A = ring_mul r p c")
     pure (GEN_TAC THEN EQ_TAC THENL
      [DISCH_TAC THEN
       FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE id [UFD_EQ_PRIMEFACT]) THEN
@@ -21600,7 +21445,7 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
       CONJ_TAC THENL [ALL_TAC, ASM_MESON_TAC []]] THEN
     X_GEN_TAC (← q "p:A") THEN DISCH_TAC THEN REWRITE_TAC [ring_prime] THEN
     REWRITE_TAC [CONJ_ASSOC] THEN
-    MATCH_MP_TAC t1 THEN
+    MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN
     CONJ_TAC THENL [ASM_MESON_TAC [ring_irreducible], STRIP_TAC] THEN
     MAP_EVERY X_GEN_TAC [← q "a:A", ← q "b:A"] THEN STRIP_TAC THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [ring_divides]) THEN
@@ -21612,10 +21457,11 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
     ASM_CASES_TAC (← q "c:A = ring_0 r") THENL
      [ASM_MESON_TAC [RING_MUL_RZERO, integral_domain], ALL_TAC] THEN
     DISCH_TAC THEN FIRST_X_ASSUM (fun th => tactic_of do
-      let tc ← SPEC (← q "c:A") th
-      let tb ← SPEC (← q "b:A") th
-      let ta ← SPEC (← q "a:A") th
+      -- OCaml evaluates the THEN operands right to left.
       let tab ← SPEC (← q "ring_mul r a b:A") th
+      let ta ← SPEC (← q "a:A") th
+      let tb ← SPEC (← q "b:A") th
+      let tc ← SPEC (← q "c:A") th
       pure (MP_TAC tc THEN MP_TAC tb THEN MP_TAC ta THEN MP_TAC tab)) THEN
     ASM_REWRITE_TAC [] THEN ANTS_TAC THENL
      [ASM_MESON_TAC [integral_domain, RING_MUL], ALL_TAC] THEN
@@ -21639,14 +21485,15 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
       pure (MP_TAC t1 THEN MP_TAC t2)) THEN
     REWRITE_TAC [] THEN ANTS_TAC THENL
      [CONJ_TAC THENL [REWRITE_TAC [LE] THEN ASM_MESON_TAC [], ALL_TAC] THEN
-      ASM_SIMP_TAC [RING_PRODUCT_CLAUSES_NUMSEG_ALT, a2] THEN
+      ASM_SIMP_TAC [RING_PRODUCT_CLAUSES_NUMSEG_ALT, (← ARITH_RULE (← q r"1 <= SUC n"))] THEN
       MATCH_MP_TAC RING_ASSOCIATES_MUL THEN
       ASM_REWRITE_TAC [RING_ASSOCIATES_REFL] THEN FIRST_X_ASSUM (MATCH_MP_TAC o
         MATCH_MP (← REWRITE_RULE [IMP_CONJ_ALT] RING_ASSOCIATES_TRANS)) THEN
-      MATCH_MP_TAC m3 THEN
+      MATCH_MP_TAC (← MESON [RING_ASSOCIATES_REFL]
+     (← q r"y IN ring_carrier r /\ x = y ==> ring_associates r x y")) THEN
       REWRITE_TAC [RING_PRODUCT] THEN MATCH_MP_TAC RING_PRODUCT_EQ THEN
       GEN_TAC THEN REWRITE_TAC [IN_NUMSEG] THEN
-      COND_CASES_TAC THEN ASM_REWRITE_TAC [a4],
+      COND_CASES_TAC THEN ASM_REWRITE_TAC [(← ARITH_RULE (← q r"~(SUC n <= n)"))],
       ALL_TAC] THEN
     DISCH_TAC THEN
     SUBGOAL_THEN (← q r"?k. 1 <= k /\ k <= n_ab /\
@@ -21655,7 +21502,7 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
      [FIRST_X_ASSUM (X_CHOOSE_THEN (← q r"f:num->num") MP_TAC) THEN
       REWRITE_TAC [numseg] THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
       SUBGOAL_THEN (← q r"?k. 1 <= k /\ k <= n_ab /\ f(k) = SUC n_c") MP_TAC THENL
-       [MP_TAC a5, ALL_TAC] THEN
+       [MP_TAC (← ARITH_RULE (← q r"1 <= SUC n_c /\ SUC n_c <= SUC n_c")), ALL_TAC] THEN
       ASM SET_TAC [],
       FIRST_X_ASSUM ((fun (_ : thm) => ALL_TAC) o check (fun th => is_exists (concl th)))] THEN
     ANTS_TAC THENL
@@ -21663,17 +21510,18 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
        [REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
         FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC,
         ALL_TAC] THEN
-      SIMP_TAC [NUMSEG_ADD_SPLIT, a6] THEN
+      SIMP_TAC [NUMSEG_ADD_SPLIT, (← ARITH_RULE (← q r"1 <= n + 1"))] THEN
       wPart lhand (fun t => do lhand (← rand t)) RING_PRODUCT_UNION THEN
       ANTS_TAC THENL
        [REWRITE_TAC [FINITE_NUMSEG, DISJOINT, EXTENSION, IN_ELIM_THM] THEN
         REWRITE_TAC [NOT_IN_EMPTY, IN_INTER, IN_NUMSEG] THEN ARITH_TAC,
         DISCH_THEN SUBST1_TAC] THEN
-      SUBST1_TAC (← SYM mabpc) THEN
+      SUBST1_TAC (← SYM (← ASSUME (← q "ring_mul r a b:A = ring_mul r p c"))) THEN
       MATCH_MP_TAC RING_ASSOCIATES_MUL THEN CONJ_TAC THEN
      FIRST_X_ASSUM (MATCH_MP_TAC o
         MATCH_MP (← REWRITE_RULE [IMP_CONJ_ALT] RING_ASSOCIATES_TRANS)) THEN
-      MATCH_MP_TAC m7 THEN
+      MATCH_MP_TAC (← MESON [RING_ASSOCIATES_REFL]
+     (← q r"y IN ring_carrier r /\ x = y ==> ring_associates r x y")) THEN
       REWRITE_TAC [RING_PRODUCT] THENL
        [MATCH_MP_TAC RING_PRODUCT_EQ THEN
         GEN_TAC THEN REWRITE_TAC [IN_NUMSEG] THEN
@@ -21699,7 +21547,7 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
       CONJ_TAC THENL
        [REWRITE_TAC [RING_PRODUCT_SING, o_DEF] THEN
         COND_CASES_TAC THEN ASM_SIMP_TAC [RING_DIVIDES_ASSOCIATES] THEN
-        FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP t8) THEN
+        FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← TAUT (← q r"~p ==> p ==> q"))) THEN
         MATCH_MP_TAC RING_IRREDUCIBLE_IN_CARRIER THEN
         FIRST_X_ASSUM MATCH_MP_TAC THEN
         RULE_ASSUM_TAC (REWRITE_RULE [numseg]) THEN ASM SET_TAC [],
@@ -21719,10 +21567,12 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
       CONJ_TAC THENL
        [REWRITE_TAC [RING_PRODUCT_SING, o_DEF] THEN
         COND_CASES_TAC THEN ASM_SIMP_TAC [RING_DIVIDES_ASSOCIATES] THEN
-        FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP t9) THEN
+        FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← TAUT (← q r"~p ==> p ==> q"))) THEN
         MATCH_MP_TAC RING_IRREDUCIBLE_IN_CARRIER THEN
         FIRST_X_ASSUM MATCH_MP_TAC THEN
-        MATCH_MP_TAC a10 THEN
+        MATCH_MP_TAC (← ARITH_RULE
+     (← q r"1 <= k /\ k <= a + b /\ ~(k <= a)
+        ==> 1 <= k - a /\ k - a <= b")) THEN
         RULE_ASSUM_TAC (REWRITE_RULE [numseg]) THEN ASM SET_TAC [],
         ALL_TAC] THEN
       TRANS_TAC RING_DIVIDES_TRANS
@@ -21730,7 +21580,9 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
       ASM_SIMP_TAC [RING_DIVIDES_ASSOCIATES] THEN
       MATCH_MP_TAC RING_DIVIDES_PRODUCT_SUBSET THEN
       REWRITE_TAC [FINITE_NUMSEG, SING_SUBSET, IN_NUMSEG] THEN
-      MATCH_MP_TAC a11 THEN
+      MATCH_MP_TAC (← ARITH_RULE
+     (← q r"1 <= k /\ k <= a + b /\ ~(k <= a)
+        ==> 1 <= k - a /\ k - a <= b")) THEN
       RULE_ASSUM_TAC (REWRITE_RULE [numseg]) THEN ASM SET_TAC []]))
 
   let UFD_PRIME_POWER_FACTORIZATION ← prove
@@ -21867,8 +21719,6 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
                ==> P(ring_mul r p a))
         ==> !a. a IN ring_carrier r ==> P a"
    (← do
-    let a2 ← ARITH_RULE (← q r"1 <= SUC n")
-    let a1 ← ARITH_RULE (← q r"1 <= SUC n")
     pure (REPEAT STRIP_TAC THEN
     ASM_CASES_TAC (← q "a:A = ring_0 r") THEN ASM_REWRITE_TAC [] THEN
     ASM_CASES_TAC (← q "ring_unit r (a:A)") THEN ASM_SIMP_TAC [] THEN
@@ -21883,10 +21733,10 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
       ASM_MESON_TAC []] THEN
     INDUCT_TAC THEN
     REWRITE_TAC [RING_PRODUCT_CLAUSES_NUMSEG_ALT, ARITH_EQ] THEN
-    ASM_SIMP_TAC [RING_UNIT_1, LE_REFL, a1,
+    ASM_SIMP_TAC [RING_UNIT_1, LE_REFL, (← ARITH_RULE (← q r"1 <= SUC n")),
                   RING_PRIME_IN_CARRIER] THEN
     REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-    ASM_SIMP_TAC [LE_REFL, a2] THEN
+    ASM_SIMP_TAC [LE_REFL, (← ARITH_RULE (← q r"1 <= SUC n"))] THEN
     REWRITE_TAC [RING_PRODUCT] THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
     REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC))
 
@@ -22218,13 +22068,11 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
         ==> ?p. prime_ideal r p /\ p INTER s = {} /\
                 q = {ring_localequiv r s (a,b) | a,b | a IN p /\ b IN s}"
    (← do
-    let t1 ← TAUT (← q r"a /\ b /\ (a ==> c) ==> a /\ b /\ c")
-    let ams ← ASSUME (← q r"ring_multsys r (s:A->bool)")
     pure (REPEAT STRIP_TAC THEN
     EXISTS_TAC (← q r"{a:A | a IN ring_carrier r /\ ring_fractionate r s a IN q}") THEN
     SUBGOAL_THEN (← q r"ring_ideal (ring_localization r (s:A->bool)) q") ASSUME_TAC THENL
      [ASM_MESON_TAC [prime_ideal, proper_ideal], ALL_TAC] THEN
-    MATCH_MP_TAC t1 THEN
+    MATCH_MP_TAC (← TAUT (← q r"a /\ b /\ (a ==> c) ==> a /\ b /\ c")) THEN
     REPEAT CONJ_TAC THENL
      [MP_TAC (← ISPECL [← q "r:A ring", ← q r"ring_localization r (s:A->bool)",
                        ← q r"ring_fractionate r (s:A->bool)", ← q r"q:(A#A->bool)->bool"]
@@ -22246,7 +22094,7 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
       ASSUME_TAC THENL [ASM_MESON_TAC [ring_ideal, SUBSET], ALL_TAC] THEN
       ASM_REWRITE_TAC [] THEN
       FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV
-       [← MATCH_MP RING_LOCALIZATION_CARRIER ams]) THEN
+       [← MATCH_MP RING_LOCALIZATION_CARRIER (← ASSUME (← q r"ring_multsys r (s:A->bool)"))]) THEN
       REWRITE_TAC [IN_ELIM_THM] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "a:A") (X_CHOOSE_THEN (← q "b:A") STRIP_ASSUME_TAC)) THEN
       MAP_EVERY EXISTS_TAC [← q "a:A", ← q "b:A"] THEN ASM_REWRITE_TAC [] THEN
@@ -22287,7 +22135,7 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
         EXISTS_TAC (← q "ring_1 r:A") THEN ASM_REWRITE_TAC [] THEN
         ASM_SIMP_TAC [RING_SUB_REFL, RING_MUL, RING_MUL_RZERO, RING_1],
         DISCH_TAC THEN FIRST_ASSUM (MP_TAC o REWRITE_RULE
-         [← MATCH_MP RING_LOCALEQUIV_SYM ams]) THEN
+         [← MATCH_MP RING_LOCALEQUIV_SYM (← ASSUME (← q r"ring_multsys r (s:A->bool)"))]) THEN
         ASM_SIMP_TAC [RING_LOCALEQUIV_EQUIV, RING_MUL, RING_1, RING_MULTSYS]],
        MATCH_MP_TAC (← ISPEC (← q r"ring_localization r (s:A->bool)")
           IN_RING_IDEAL_LMUL) THEN
@@ -22568,9 +22416,7 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
                   ring_mul r u (ring_pow r y k) IN j"
    (← do
     -- `check ((=) `tm` o concl)`: the quotations are parsed when the
-    -- tactic is built, as in OCaml
-    let rjA ← q r"ring_ideal r (j:A->bool)"
-    let pPA ← q r"prime_ideal r (P:A->bool)"
+    -- tactic is built, as in OCaml, at their places in the THEN chain
     pure
       (REPEAT STRIP_TAC THEN
        FIRST_ASSUM (ASSUME_TAC o MATCH_MP RING_MULTSYS_NONPRIME) THEN
@@ -22600,8 +22446,8 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
          MP_TAC THENL
           [REWRITE_TAC [SUBSET, IN_ELIM_THM] THEN X_GEN_TAC (← q r"a:A") THEN
            DISCH_TAC THEN CONJ_TAC THENL
-            [FIRST_ASSUM (MP_TAC o MATCH_MP RING_IDEAL_IMP_SUBSET o
-               check (fun th => concl th == rjA)) THEN
+            [FIRST_ASSUM ((fun (rjA : term) => MP_TAC o MATCH_MP RING_IDEAL_IMP_SUBSET o
+               check (fun th => concl th == rjA)) (← q r"ring_ideal r (j:A->bool)")) THEN
              DISCH_THEN (MP_TAC o SPEC (← q r"a:A") o REWRITE_RULE [SUBSET]) THEN
              ASM_REWRITE_TAC [],
              ALL_TAC] THEN
@@ -22616,8 +22462,8 @@ def setupUFDs [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Numb
          X_GEN_TAC (← q r"P:A->bool") THEN REPEAT STRIP_TAC THEN
          SUBGOAL_THEN (← q r"P:A->bool = p") SUBST_ALL_TAC THENL
           [FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN
-           FIRST_ASSUM (MP_TAC o MATCH_MP PRIME_IDEAL_IMP_SUBSET o
-             check (fun th => concl th == pPA)) THEN
+           FIRST_ASSUM ((fun (pPA : term) => MP_TAC o MATCH_MP PRIME_IDEAL_IMP_SUBSET o
+             check (fun th => concl th == pPA)) (← q r"prime_ideal r (P:A->bool)")) THEN
            UNDISCH_TAC (← q r"(P:A->bool) INTER (ring_carrier r DIFF p) = {}") THEN
            SET_TAC [],
            UNDISCH_TAC
@@ -22723,9 +22569,6 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
                           (ring_mul r b q = a \/
                            n(ring_sub r a (ring_mul r b q)) < n a)"
    (← do
-    let t3 ← TAUT (← q r"p ==> ~q <=> q ==> ~p")
-    let m2 ← MESON [] (← q r"(!x. ~(P x /\ a = f x)) <=> !x. P x ==> ~(f x = a)")
-    let a1 ← ARITH_RULE (← q r"t:num < b ==> b <= a /\ u = t ==> u < a")
     pure (GEN_TAC THEN REWRITE_TAC [euclidean_ring] THEN AP_TERM_TAC THEN
     GEN_REWRITE_TAC id [FUN_EQ_THM] THEN X_GEN_TAC (← q r"n:A->num") THEN
     REWRITE_TAC [] THEN EQ_TAC THEN DISCH_TAC THEN
@@ -22736,7 +22579,7 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
       REPLICATE_TAC 2 (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
       ASM_CASES_TAC (← q "t:A = ring_0 r") THEN
       ASM_SIMP_TAC [RING_MUL, RING_ADD_RZERO] THEN
-      STRIP_TAC THEN DISJ2_TAC THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP a1) THEN
+      STRIP_TAC THEN DISJ2_TAC THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← ARITH_RULE (← q r"t:num < b ==> b <= a /\ u = t ==> u < a"))) THEN
       ASM_REWRITE_TAC [] THEN AP_TERM_TAC THEN
       ASM_SIMP_TAC [RING_EQ_SUB_RADD, RING_MUL] THEN
       ASM_MESON_TAC [RING_ADD_SYM, RING_MUL],
@@ -22747,7 +22590,7 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
       REPEAT STRIP_TAC THEN EXISTS_TAC (← q "ring_0 r:A") THEN
       ASM_SIMP_TAC [RING_0, RING_ADD_RZERO, RING_MUL],
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV [ring_divides]) THEN
-      ASM_REWRITE_TAC [NOT_EXISTS_THM, m2] THEN
+      ASM_REWRITE_TAC [NOT_EXISTS_THM, (← MESON [] (← q r"(!x. ~(P x /\ a = f x)) <=> !x. P x ==> ~(f x = a)"))] THEN
       DISCH_TAC] THEN
     MP_TAC (← EQ_IMP_RULE (← SPEC
      (← q r"\m. m IN IMAGE (n:A->num)
@@ -22755,7 +22598,7 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
      num_WOP)).1 THEN
     REWRITE_TAC [EXISTS_IN_IMAGE, EXISTS_IN_GSPEC] THEN
     ANTS_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
-    ONCE_REWRITE_TAC [t3] THEN
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p ==> ~q <=> q ==> ~p"))] THEN
     REWRITE_TAC [FORALL_IN_IMAGE, FORALL_IN_GSPEC, NOT_LT] THEN
     MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q "q:A") THEN STRIP_TAC THEN
     EXISTS_TAC (← q "ring_sub r a (ring_mul r b q):A") THEN
@@ -22785,10 +22628,6 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
                             ring_add r (ring_mul r b q) t = a /\
                             (t = ring_0 r \/ n(t) < n(b)))"
    (← do
-    let t4 ← TAUT (← q r"p \/ q ==> p \/ ~p /\ q")
-    let t3 ← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)")
-    let t2 ← TAUT (← q r"p ==> ~q <=> q ==> ~p")
-    let t1 ← TAUT (← q r"p <=> p /\ T")
     pure (GEN_TAC THEN REWRITE_TAC [euclidean_ring] THEN
     EQ_TAC THENL [ALL_TAC, MATCH_MP_TAC MONO_EXISTS THEN SIMP_TAC []] THEN
     DISCH_THEN (X_CHOOSE_TAC (← q r"n:A->num")) THEN
@@ -22799,15 +22638,15 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
                        b IN ring_carrier r /\ ~(ring_mul r a b = ring_0 r)}")
     MP_TAC THENL
      [X_GEN_TAC (← q "a:A") THEN STRIP_TAC THEN
-      GEN_REWRITE_TAC BINDER_CONV [t1] THEN
+      GEN_REWRITE_TAC BINDER_CONV [(← TAUT (← q r"p <=> p /\ T"))] THEN
       PURE_REWRITE_TAC [EXISTS_IN_GSPEC] THEN EXISTS_TAC (← q "ring_1 r:A") THEN
       ASM_SIMP_TAC [RING_MUL_RID, RING_1],
       GEN_REWRITE_TAC (LAND_CONV o BINDER_CONV o RAND_CONV) [num_WOP]] THEN
     REWRITE_TAC [EXISTS_IN_GSPEC] THEN
     GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
-    ONCE_REWRITE_TAC [t2] THEN
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p ==> ~q <=> q ==> ~p"))] THEN
     REWRITE_TAC [FORALL_IN_GSPEC, LEFT_IMP_EXISTS_THM, SKOLEM_THM, NOT_LT] THEN
-    REWRITE_TAC [FORALL_AND_THM, t3] THEN
+    REWRITE_TAC [FORALL_AND_THM, (← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)"))] THEN
     REWRITE_TAC [RIGHT_IMP_FORALL_THM, IMP_IMP, ← GSYM CONJ_ASSOC] THEN
     X_GEN_TAC (← q r"dd:A->A") THEN STRIP_TAC THEN
     EXISTS_TAC (← q r"(n:A->num) o (\x. ring_mul r x (dd x))") THEN
@@ -22836,7 +22675,7 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
     DISCH_THEN (REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
     MAP_EVERY EXISTS_TAC [← q r"ring_mul r ((dd:A->A) b) q", ← q "t:A"] THEN
     ASM_SIMP_TAC [RING_MUL_ASSOC, RING_MUL] THEN
-    FIRST_X_ASSUM (STRIP_ASSUME_TAC o MATCH_MP t4) THEN
+    FIRST_X_ASSUM (STRIP_ASSUME_TAC o MATCH_MP (← TAUT (← q r"p \/ q ==> p \/ ~p /\ q"))) THEN
     ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP
      (← REWRITE_RULE [IMP_CONJ_ALT] LET_TRANS)) THEN
     FIRST_X_ASSUM (MP_TAC o SPECL [← q "t:A", ← q "ring_1 r:A"]) THEN
@@ -22845,18 +22684,15 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
   let EUCLIDEAN_IMP_PRINCIPAL_IDEAL_RING ← prove
    r"!r j:A->bool. euclidean_ring r /\ ring_ideal r j ==> principal_ideal r j"
    (← do
-    let t3 ← TAUT (← q r"p ==> ~p ==> q")
-    let t2 ← TAUT (← q r"p ==> ~q <=> q ==> ~p")
-    let t1 ← TAUT (← q r"p /\ (q ==> r) ==> (p <=> q) ==> r")
     pure (REPEAT STRIP_TAC THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [euclidean_ring]) THEN
     DISCH_THEN (X_CHOOSE_TAC (← q r"n:A->num")) THEN
     ASM_CASES_TAC (← q "j = {ring_0 r:A}") THEN ASM_REWRITE_TAC [PRINCIPAL_IDEAL_0] THEN
     MP_TAC (← SPEC (← q r"\m. m IN IMAGE (n:A->num) (j DELETE ring_0 r)") num_WOP) THEN
     REWRITE_TAC [EXISTS_IN_IMAGE, MEMBER_NOT_EMPTY, IMAGE_EQ_EMPTY] THEN
-    MATCH_MP_TAC t1 THEN CONJ_TAC THENL
+    MATCH_MP_TAC (← TAUT (← q r"p /\ (q ==> r) ==> (p <=> q) ==> r")) THEN CONJ_TAC THENL
      [MP_TAC (← ISPECL [← q "r:A ring", ← q r"j:A->bool"] IN_RING_IDEAL_0) THEN ASM SET_TAC [],
-      ONCE_REWRITE_TAC [t2]] THEN
+      ONCE_REWRITE_TAC [(← TAUT (← q r"p ==> ~q <=> q ==> ~p"))]] THEN
     REWRITE_TAC [FORALL_IN_IMAGE, IN_DELETE, principal_ideal] THEN
     MATCH_MP_TAC MONO_EXISTS THEN X_GEN_TAC (← q "b:A") THEN STRIP_TAC THEN
     SUBGOAL_THEN (← q "(b:A) IN ring_carrier r") ASSUME_TAC THENL
@@ -22873,7 +22709,7 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
     ASM_CASES_TAC (← q "t:A = ring_0 r") THEN
     ASM_SIMP_TAC [RING_MUL, RING_ADD_RZERO] THEN STRIP_TAC THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q "t:A")) THEN ASM_REWRITE_TAC [] THEN
-    MATCH_MP_TAC t3 THEN
+    MATCH_MP_TAC (← TAUT (← q r"p ==> ~p ==> q")) THEN
     SUBGOAL_THEN (← q r"t = ring_add r (ring_neg r (ring_mul r b q))
                                (ring_add r (ring_mul r b q) t):A")
     SUBST1_TAC THENL
@@ -22928,8 +22764,6 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
    r"!r r' (f:A->B).
         ring_epimorphism(r,r') f /\ euclidean_ring r ==> euclidean_ring r'"
    (← do
-    let t2 ← TAUT (← q r"p ==> ~q <=> q ==> ~p")
-    let t1 ← TAUT (← q r"p ==> ~q <=> q ==> ~p")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [ring_epimorphism, euclidean_ring] THEN
     DISCH_THEN (CONJUNCTS_THEN2 STRIP_ASSUME_TAC MP_TAC) THEN
     FIRST_ASSUM (SUBST1_TAC o SYM) THEN
@@ -22948,7 +22782,7 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
     SPEC_TAC
      (← q r"minimal p. p IN IMAGE n {x | x IN ring_carrier r /\ (f:A->B) x = f b}",
       ← q "c:num") THEN
-    ONCE_REWRITE_TAC [t1] THEN
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p ==> ~q <=> q ==> ~p"))] THEN
     REWRITE_TAC [IMP_CONJ, FORALL_IN_IMAGE, IN_ELIM_THM, NOT_LT] THEN
     X_GEN_TAC (← q "b':A") THEN DISCH_TAC THEN DISCH_TAC THEN
     DISCH_THEN (MP_TAC o SPEC (← q "b:A")) THEN ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
@@ -22963,7 +22797,7 @@ def setupEuclidean [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides :
     ABBREV_TAC
      (← q r"v = minimal p.
           p IN IMAGE n {x | x IN ring_carrier r /\ (f:A->B) x = f t}") THEN
-    ONCE_REWRITE_TAC [t2] THEN
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p ==> ~q <=> q ==> ~p"))] THEN
     REWRITE_TAC [FORALL_IN_IMAGE, IN_ELIM_THM, NOT_LT] THEN
     GEN_REWRITE_TAC id [IMP_CONJ] THEN REWRITE_TAC [IN_IMAGE, IN_ELIM_THM] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q "t':A")
@@ -23065,18 +22899,7 @@ def setupNoetherian [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BIdeals :
         noetherian_ring r <=>
         WF(\j j'. ring_ideal r j /\ ring_ideal r j' /\ j' PSUBSET j)"
    (← do
-    -- right to left: the second MESON, the first, the SET_RULEs, the TAUTs
-    let m6 ← MESON [LE_CASES]
-     (← q r"(!m n. m <= n ==> (s:num->A->bool) m SUBSET s n)
-        ==> !m n. s m SUBSET s n \/ s n SUBSET s m")
-    let m5 ← MESON [LE_CASES]
-     (← q r"(!m n. m <= n ==> (s:num->A->bool) m SUBSET s n)
-        ==> !m n. s m SUBSET s n \/ s n SUBSET s m")
-    let s4 ← SET_RULE (← q r"s SUBSET a INSERT s")
-    let s3 ← SET_RULE (← q r"~(s SUBSET t) <=> ?x. x IN s /\ ~(x IN t)")
-    let t2 ← TAUT (← q r"(p /\ q) /\ (~r ==> s) ==> ~(p /\ q /\ r) ==> s")
-    let t1 ← TAUT (← q r"(~p ==> ~q) /\ (p ==> q) ==> (p <=> q)")
-    pure (GEN_TAC THEN MATCH_MP_TAC t1 THEN
+    pure (GEN_TAC THEN MATCH_MP_TAC (← TAUT (← q r"(~p ==> ~q) /\ (p ==> q) ==> (p <=> q)")) THEN
     CONJ_TAC THENL
      [REWRITE_TAC [noetherian_ring, WF_DCHAIN, NOT_FORALL_THM, NOT_IMP] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q r"j:A->bool") STRIP_ASSUME_TAC) THEN
@@ -23096,14 +22919,14 @@ def setupNoetherian [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BIdeals :
       REWRITE_TAC [NOT_EXISTS_THM, ← GSYM SUBSET_ANTISYM_EQ] THEN
       DISCH_THEN (MP_TAC o SPEC (← q r"k:A->bool")) THEN
       ASM_SIMP_TAC [IDEAL_GENERATED_MINIMAL_EQ] THEN
-      MATCH_MP_TAC t2 THEN
+      MATCH_MP_TAC (← TAUT (← q r"(p /\ q) /\ (~r ==> s) ==> ~(p /\ q /\ r) ==> s")) THEN
       CONJ_TAC THENL
        [RULE_ASSUM_TAC (REWRITE_RULE [ring_ideal]) THEN ASM SET_TAC [],
-        REWRITE_TAC [s3]] THEN
+        REWRITE_TAC [(← SET_RULE (← q r"~(s SUBSET t) <=> ?x. x IN s /\ ~(x IN t)"))]] THEN
       DISCH_THEN (X_CHOOSE_THEN (← q "a:A") STRIP_ASSUME_TAC) THEN
       EXISTS_TAC (← q "(a:A) INSERT k") THEN
       ASM_REWRITE_TAC [FINITE_INSERT, INSERT_SUBSET] THEN
-      SIMP_TAC [PSUBSET_ALT, IDEAL_GENERATED_MONO, s4] THEN
+      SIMP_TAC [PSUBSET_ALT, IDEAL_GENERATED_MONO, (← SET_RULE (← q r"s SUBSET a INSERT s"))] THEN
       EXISTS_TAC (← q "a:A") THEN ASM_REWRITE_TAC [] THEN
       MATCH_MP_TAC IDEAL_GENERATED_INC_GEN THEN
       RULE_ASSUM_TAC (REWRITE_RULE [ring_ideal]) THEN ASM SET_TAC [],
@@ -23115,7 +22938,9 @@ def setupNoetherian [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BIdeals :
        [MATCH_MP_TAC RING_IDEAL_UNIONS THEN
         CONJ_TAC THENL [SET_TAC [], ALL_TAC] THEN
         ASM_REWRITE_TAC [FORALL_IN_IMAGE, FORALL_IN_IMAGE_2, IN_UNIV] THEN
-        MATCH_MP_TAC m5 THEN
+        MATCH_MP_TAC (← MESON [LE_CASES]
+     (← q r"(!m n. m <= n ==> (s:num->A->bool) m SUBSET s n)
+        ==> !m n. s m SUBSET s n \/ s n SUBSET s m")) THEN
         MATCH_MP_TAC TRANSITIVE_STEPWISE_LE THEN ASM SET_TAC [],
         REWRITE_TAC [finitely_generated_ideal, NOT_EXISTS_THM]] THEN
       X_GEN_TAC (← q r"k:A->bool") THEN STRIP_TAC THEN
@@ -23125,7 +22950,9 @@ def setupNoetherian [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BIdeals :
       REPEAT CONJ_TAC THENL
        [ASM_MESON_TAC [IDEAL_GENERATED_SUBSET_CARRIER_SUBSET],
         SET_TAC [],
-        MATCH_MP_TAC m6 THEN
+        MATCH_MP_TAC (← MESON [LE_CASES]
+     (← q r"(!m n. m <= n ==> (s:num->A->bool) m SUBSET s n)
+        ==> !m n. s m SUBSET s n \/ s n SUBSET s m")) THEN
         MATCH_MP_TAC TRANSITIVE_STEPWISE_LE THEN ASM SET_TAC [],
         DISCH_THEN (X_CHOOSE_TAC (← q "m:num")) THEN
         SUBGOAL_THEN (← q r"(s:num->A->bool) (SUC m) SUBSET s(m)")
@@ -23214,22 +23041,13 @@ def setupNoetherian [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BIdeals :
         FINITE {i | i IN k /\ ~trivial_ring(r i)} /\
         !i. i IN k ==> noetherian_ring (r i)"
    (← do
-    -- right to left: the TAUT, the SET_RULE, then the two MESONs
-    let t4 ← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)")
-    let s3 ← SET_RULE
-     (← q r"ideal_generated r s = s'
-          ==> s SUBSET ideal_generated r s /\ (!x. x IN s' ==> P x)
-              ==> !x. x IN s ==> P x")
-    let m2 ← MESON [FINITE_EMPTY, MEMBER_NOT_EMPTY]
-     (← q r"(!x. x IN s ==> F) ==> FINITE s")
-    let m1 ← MESON [INFINITE] (← q r"FINITE s <=> ~INFINITE s")
     pure (REPEAT GEN_TAC THEN EQ_TAC THENL
      [DISCH_TAC THEN CONJ_TAC THENL
        [ALL_TAC,
         REPEAT STRIP_TAC THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP
           (← REWRITE_RULE [IMP_CONJ_ALT] NOETHERIAN_RING_EPIMORPHIC_IMAGE)) THEN
         ASM_MESON_TAC [RING_EPIMORPHISM_PRODUCT_PROJECTION]] THEN
-      REWRITE_TAC [m1] THEN DISCH_TAC THEN
+      REWRITE_TAC [(← MESON [INFINITE] (← q r"FINITE s <=> ~INFINITE s"))] THEN DISCH_TAC THEN
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [noetherian_ring]) THEN
       DISCH_THEN (MP_TAC o SPEC
        (← q r"{x | x IN ring_carrier(product_ring k (r:K->A ring)) /\
@@ -23238,7 +23056,8 @@ def setupNoetherian [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BIdeals :
        [REWRITE_TAC [ring_ideal, SUBSET_RESTRICT] THEN
         SIMP_TAC [IN_ELIM_THM, RING_0, RING_NEG, RING_ADD, RING_MUL] THEN
         REPEAT CONJ_TAC THEN REPEAT GEN_TAC THENL
-         [MATCH_MP_TAC m2 THEN
+         [MATCH_MP_TAC (← MESON [FINITE_EMPTY, MEMBER_NOT_EMPTY]
+     (← q r"(!x. x IN s ==> F) ==> FINITE s")) THEN
           SIMP_TAC [IN_ELIM_THM, PRODUCT_RING, RESTRICTION] THEN MESON_TAC [],
           DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC),
           DISCH_THEN (CONJUNCTS_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
@@ -23282,7 +23101,10 @@ def setupNoetherian [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BIdeals :
         SUBGOAL_THEN (← q r"FINITE(k':K->bool)") ASSUME_TAC THENL
          [EXPAND_TAC "k'" THEN REWRITE_TAC [FINITE_UNIONS] THEN
           ASM_SIMP_TAC [FINITE_IMAGE, SIMPLE_IMAGE, FORALL_IN_IMAGE] THEN
-          FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP s3) THEN
+          FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"ideal_generated r s = s'
+          ==> s SUBSET ideal_generated r s /\ (!x. x IN s' ==> P x)
+              ==> !x. x IN s ==> P x"))) THEN
           ASM_SIMP_TAC [IDEAL_GENERATED_SUBSET_CARRIER_SUBSET, IN_ELIM_THM],
           ALL_TAC] THEN
         SUBGOAL_THEN
@@ -23313,7 +23135,7 @@ def setupNoetherian [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BIdeals :
     MP_TAC THENL [ASM_MESON_TAC [noetherian_ring], ALL_TAC] THEN
     REWRITE_TAC [finitely_generated_ideal] THEN
     GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [RIGHT_IMP_EXISTS_THM] THEN
-    REWRITE_TAC [SKOLEM_THM, LEFT_IMP_EXISTS_THM, FORALL_AND_THM, t4] THEN
+    REWRITE_TAC [SKOLEM_THM, LEFT_IMP_EXISTS_THM, FORALL_AND_THM, (← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)"))] THEN
     X_GEN_TAC (← q r"s:K->(A->bool)") THEN STRIP_TAC THEN
     EXISTS_TAC (← q r"cartesian_product k
                 (\i. ring_0 ((r:K->A ring) i) INSERT s i)") THEN
@@ -23482,8 +23304,8 @@ def setupACCP [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BProducts : Pro
           RING_DIVIDES_PRIMEFACTS_LT) THEN
       ASM_REWRITE_TAC [CARD_NUMSEG_1] THEN DISCH_THEN MATCH_MP_TAC THEN
       FIRST_X_ASSUM (fun th => tactic_of do
-        let ty ← SPEC (← q "y:A") th
         let tx ← SPEC (← q "x:A") th
+        let ty ← SPEC (← q "y:A") th
         pure (MP_TAC ty THEN MP_TAC tx)) THEN
       ASM_REWRITE_TAC [] THEN STRIP_TAC THEN STRIP_TAC THEN
       ASM_SIMP_TAC [IN_NUMSEG, FINITE_NUMSEG,
@@ -23528,9 +23350,6 @@ def setupACCP [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BProducts : Pro
         ==> ?n p. (!i. 1 <= i /\ i <= n ==> ring_irreducible r (p i)) /\
                   ring_associates r (ring_product r (1..n) p) a"
    (← do
-    let m2 ← MESON [RING_ASSOCIATES_REFL]
-     (← q r"y IN ring_carrier r /\ x = y ==> ring_associates r x y")
-    let a1 ← ARITH_RULE (← q "1 <= n + 1")
     pure (GEN_TAC THEN REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
     REPEAT DISCH_TAC THEN MATCH_MP_TAC ACCP_RING_PROPER_DIVISOR_INDUCT THEN
     ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q "a:A") THEN
@@ -23550,8 +23369,8 @@ def setupACCP [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BProducts : Pro
     REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
     MAP_EVERY X_GEN_TAC [← q "b:A", ← q "c:A"] THEN STRIP_TAC THEN
     FIRST_X_ASSUM (fun t => tactic_of do
-      let tc ← SPEC (← q "c:A") t
       let tb ← SPEC (← q "b:A") t
+      let tc ← SPEC (← q "c:A") t
       pure (MP_TAC tc THEN MP_TAC tb)) THEN
     ASM_REWRITE_TAC [] THEN UNDISCH_TAC (← q "~(a:A = ring_0 r)") THEN
     FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN
@@ -23565,7 +23384,7 @@ def setupACCP [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BProducts : Pro
     REWRITE_TAC [] THEN CONJ_TAC THENL
      [REPEAT STRIP_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
       FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC,
-      SIMP_TAC [NUMSEG_ADD_SPLIT, a1]] THEN
+      SIMP_TAC [NUMSEG_ADD_SPLIT, (← ARITH_RULE (← q "1 <= n + 1"))]] THEN
     wPart lhand (fun t => do lhand (← rand t)) RING_PRODUCT_UNION THEN
     ANTS_TAC THENL
      [REWRITE_TAC [FINITE_NUMSEG, DISJOINT, EXTENSION, IN_ELIM_THM] THEN
@@ -23578,7 +23397,8 @@ def setupACCP [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BProducts : Pro
       REWRITE_TAC [] THEN ANTS_TAC THENL [ARITH_TAC, DISCH_THEN SUBST1_TAC]] THEN
     FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← REWRITE_RULE [IMP_CONJ_ALT]
       RING_ASSOCIATES_TRANS)) THEN
-    MATCH_MP_TAC m2 THEN
+    MATCH_MP_TAC (← MESON [RING_ASSOCIATES_REFL]
+     (← q r"y IN ring_carrier r /\ x = y ==> ring_associates r x y")) THEN
     REWRITE_TAC [RING_PRODUCT] THEN MATCH_MP_TAC RING_PRODUCT_EQ THEN
     GEN_TAC THEN REWRITE_TAC [IN_NUMSEG, o_THM] THEN
     STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
@@ -23591,23 +23411,20 @@ def setupACCP [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BProducts : Pro
         x IN ring_carrier r /\ ~(x = ring_0 r) /\ ~(ring_unit r x)
         ==> ?p. ring_irreducible r p /\ ring_divides r p x"
    (← do
-    let a3 ← ARITH_RULE (← q "1 <= SUC n")
-    let a2 ← ARITH_RULE (← q "1 <= SUC n")
-    let a1 ← ARITH_RULE (← q "1 <= SUC n")
     pure (REPEAT STRIP_TAC THEN
     MP_TAC (← ISPECL [← q "r:A ring", ← q "x:A"] ACCP_DOMAIN_ATOMIC) THEN
     ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
     MATCH_MP_TAC num_INDUCTION THEN REWRITE_TAC [IMP_CONJ] THEN
     ASM_SIMP_TAC [RING_PRODUCT_CLAUSES_NUMSEG, ARITH_EQ, RING_ASSOCIATES_1,
-      a1, LE_REFL, RING_IRREDUCIBLE_IN_CARRIER] THEN
+      (← ARITH_RULE (← q "1 <= SUC n")), LE_REFL, RING_IRREDUCIBLE_IN_CARRIER] THEN
     X_GEN_TAC (← q "n:num") THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN
     X_GEN_TAC (← q r"q:num->A") THEN REWRITE_TAC [IMP_IMP] THEN STRIP_TAC THEN
     EXISTS_TAC (← q "q(SUC n):A") THEN
-    ASM_SIMP_TAC [a2, LE_REFL] THEN
+    ASM_SIMP_TAC [(← ARITH_RULE (← q "1 <= SUC n")), LE_REFL] THEN
     FIRST_X_ASSUM (MP_TAC o MATCH_MP (← REWRITE_RULE [IMP_CONJ_ALT]
           RING_ASSOCIATES_DIVIDES)) THEN
     REPEAT (DISCH_THEN (MP_TAC o SPEC (← q "q(SUC n):A"))) THEN
-    ASM_SIMP_TAC [a3, LE_REFL, RING_IRREDUCIBLE_IN_CARRIER,
+    ASM_SIMP_TAC [(← ARITH_RULE (← q "1 <= SUC n")), LE_REFL, RING_IRREDUCIBLE_IN_CARRIER,
                   RING_ASSOCIATES_REFL, RING_DIVIDES_LMUL, RING_DIVIDES_REFL,
                   RING_PRODUCT]))
 
@@ -23766,19 +23583,16 @@ def setupRingGcd [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
   let RING_GCD ← prove
    r"!r a b:A. ring_gcd r (a,b) IN ring_carrier r"
    (← do
-    let m3 ← MESON [] (← q r"(?x. P x) ==> (!x. P x ==> Q x) ==> ~(!x. ~(Q x))")
-    let t2 ← TAUT (← q r"~p ==> p ==> q")
-    let t1 ← TAUT (← q r"(p ==> r) /\ (~q ==> r) ==> (p <=> q) ==> r")
     pure (REPEAT GEN_TAC THEN
     MP_TAC (← ISPECL [← q "r:A ring", ← q "a:A", ← q "b:A"] RING_GCD_WORKS) THEN
-    MATCH_MP_TAC t1 THEN
+    MATCH_MP_TAC (← TAUT (← q r"(p ==> r) /\ (~q ==> r) ==> (p <=> q) ==> r")) THEN
     CONJ_TAC THENL [SIMP_TAC [], DISCH_TAC] THEN ASM_REWRITE_TAC [ring_gcd] THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [RING_1] THEN
     FIRST_X_ASSUM (STRIP_ASSUME_TAC o GEN_REWRITE_RULE id [NOT_IMP]) THEN
     COND_CASES_TAC THENL
      [FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [NOT_EXISTS_THM]) THEN
-      MATCH_MP_TAC t2 THEN
-      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP m3) THEN
+      MATCH_MP_TAC (← TAUT (← q r"~p ==> p ==> q")) THEN
+      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← MESON [] (← q r"(?x. P x) ==> (!x. P x ==> Q x) ==> ~(!x. ~(Q x))"))) THEN
       ONCE_REWRITE_TAC [IMP_CONJ] THEN
       REWRITE_TAC [FORALL_IN_IMAGE, RING_OF_NUM],
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV [ring_coprime]) THEN
@@ -23791,16 +23605,13 @@ def setupRingGcd [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
                   ring_divides r d a' /\ ring_divides r d b'))
         ==> ring_gcd r (a,b) = ring_gcd r (a',b')"
    (← do
-    let t3 ← TAUT (← q r"ring_divides r d a /\ ring_divides r d b /\ q <=>
-                    (ring_divides r d a /\ ring_divides r d b) /\ q")
-    let t2 ← TAUT (← q r"p /\ q /\ r /\ s <=> p /\ (q /\ r) /\ s")
-    let m1 ← MESON [] (← q r"(!d. P d ==> Q d) ==> (!d. ~(P d) ==> Q d) ==> (!d. Q d)")
     pure (REPEAT STRIP_TAC THEN
-    FIRST_ASSUM (MP_TAC o MATCH_MP m1) THEN
+    FIRST_ASSUM (MP_TAC o MATCH_MP (← MESON [] (← q r"(!d. P d ==> Q d) ==> (!d. ~(P d) ==> Q d) ==> (!d. Q d)"))) THEN
     ANTS_TAC THENL [SIMP_TAC [ring_divides], DISCH_TAC] THEN
     REWRITE_TAC [ring_gcd, ring_coprime] THEN
-    REWRITE_TAC [t2] THEN
-    REWRITE_TAC [t3] THEN
+    REWRITE_TAC [(← TAUT (← q r"p /\ q /\ r /\ s <=> p /\ (q /\ r) /\ s"))] THEN
+    REWRITE_TAC [(← TAUT (← q r"ring_divides r d a /\ ring_divides r d b /\ q <=>
+                    (ring_divides r d a /\ ring_divides r d b) /\ q"))] THEN
     ASM_REWRITE_TAC [] THEN AP_THM_TAC THEN AP_THM_TAC THEN
     AP_TERM_TAC THEN SIMP_TAC [] THEN
     FIRST_ASSUM (MP_TAC o SPEC (← q "ring_1 r:A")) THEN
@@ -23815,20 +23626,17 @@ def setupRingGcd [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
    r"(!r a b:A. ring_divides r (ring_gcd r (a,b)) a <=> a IN ring_carrier r) /\
    (!r a b:A. ring_divides r (ring_gcd r (a,b)) b <=> b IN ring_carrier r)"
    (← do
-    let m3 ← MESON [] (← q r"(?x. P x) ==> (!x. P x ==> Q x) ==> ~(!x. ~(Q x))")
-    let t2 ← TAUT (← q r"~p ==> p ==> q")
-    let t1 ← TAUT (← q r"(p ==> r) /\ (~q ==> r) ==> (p <=> q) ==> r")
     pure (REPEAT STRIP_TAC THEN
     (EQ_TAC THENL [MESON_TAC [RING_DIVIDES_IN_CARRIER], DISCH_TAC]) THEN
     MP_TAC (← ISPECL [← q "r:A ring", ← q "a:A", ← q "b:A"] RING_GCD_WORKS) THEN
-    MATCH_MP_TAC t1 THEN
+    MATCH_MP_TAC (← TAUT (← q r"(p ==> r) /\ (~q ==> r) ==> (p <=> q) ==> r")) THEN
     (CONJ_TAC THENL [SIMP_TAC [], DISCH_TAC]) THEN ASM_REWRITE_TAC [ring_gcd] THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [RING_DIVIDES_1] THEN
     FIRST_X_ASSUM (STRIP_ASSUME_TAC o GEN_REWRITE_RULE id [NOT_IMP]) THEN
     (COND_CASES_TAC THENL
      [FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [NOT_EXISTS_THM]) THEN
-      MATCH_MP_TAC t2 THEN
-      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP m3) THEN
+      MATCH_MP_TAC (← TAUT (← q r"~p ==> p ==> q")) THEN
+      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← MESON [] (← q r"(?x. P x) ==> (!x. P x ==> Q x) ==> ~(!x. ~(Q x))"))) THEN
       ONCE_REWRITE_TAC [IMP_CONJ] THEN
       REWRITE_TAC [FORALL_IN_IMAGE, RING_OF_NUM],
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV [ring_coprime]) THEN
@@ -23839,15 +23647,12 @@ def setupRingGcd [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
         ring_unit r (ring_gcd r (a,b)) <=>
         a IN ring_carrier r /\ b IN ring_carrier r ==> ring_coprime r (a,b)"
    (← do
-    let m3 ← MESON [] (← q r"(?x. P x) ==> (!x. P x ==> Q x) ==> ~(!x. ~(Q x))")
-    let t2 ← TAUT (← q r"~p ==> p ==> q")
-    let t1 ← TAUT (← q r"(p ==> r) /\ (~q ==> r) ==> (p <=> q) ==> r")
     pure (REPEAT GEN_TAC THEN EQ_TAC THENL
      [ALL_TAC, SIMP_TAC [ring_gcd, RING_UNIT_1]] THEN
     DISCH_THEN (fun th => STRIP_TAC THEN MP_TAC th) THEN
     GEN_REWRITE_TAC id [← GSYM CONTRAPOS_THM] THEN DISCH_TAC THEN
     MP_TAC (← ISPECL [← q "r:A ring", ← q "a:A", ← q "b:A"] RING_GCD_WORKS) THEN
-    MATCH_MP_TAC t1 THEN
+    MATCH_MP_TAC (← TAUT (← q r"(p ==> r) /\ (~q ==> r) ==> (p <=> q) ==> r")) THEN
     CONJ_TAC THENL
      [STRIP_TAC THEN
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV [ring_coprime]) THEN
@@ -23859,8 +23664,8 @@ def setupRingGcd [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
       DISCH_TAC] THEN
     ASM_REWRITE_TAC [ring_gcd] THEN COND_CASES_TAC THENL
      [FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [NOT_EXISTS_THM]) THEN
-      MATCH_MP_TAC t2 THEN
-      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP m3) THEN
+      MATCH_MP_TAC (← TAUT (← q r"~p ==> p ==> q")) THEN
+      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← MESON [] (← q r"(?x. P x) ==> (!x. P x ==> Q x) ==> ~(!x. ~(Q x))"))) THEN
       ONCE_REWRITE_TAC [IMP_CONJ] THEN
       REWRITE_TAC [FORALL_IN_IMAGE, RING_OF_NUM],
       ALL_TAC] THEN
@@ -24344,7 +24149,6 @@ def setupBezout [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides : Di
         ring_multsys r s /\ bezout_ring r
         ==> bezout_ring (ring_localization r s)"
    (← do
-    let ss ← ExceptT.mk (basic_ss [])
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [BEZOUT_RING] THEN
     FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE id [ring_multsys]) THEN
     REWRITE_TAC [SUBSET] THEN STRIP_TAC THEN
@@ -24366,7 +24170,7 @@ def setupBezout [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides : Di
     FIRST_ASSUM (MP_TAC o MATCH_MP RING_HOMOMORPHISM_FRACTIONATE) THEN
     REWRITE_TAC [ring_homomorphism, SUBSET, FORALL_IN_IMAGE] THEN
     STRIP_TAC THEN ASM_SIMP_TAC [RING_MUL] THEN
-    ASM (simpTac ss 6)
+    ASM (simpTac (← ExceptT.mk (basic_ss [])) 6)
      [ring_fractionate, RING_LOCALIZATION_MUL, RING_LOCALIZATION_ADD,
       RING_MUL, RING_1, RING_MUL_LID, RING_MUL_RID, RING_ADD,
       ← GSYM RING_LOCALEQUIV_EQUIV, ring_localequiv] THEN
@@ -25380,12 +25184,10 @@ def setupSquarefreeUFD [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbe
              !b. b IN ring_carrier r /\ ring_divides r a (ring_pow r b 2)
                  ==> ring_divides r a b))"
    (← do
-    let t2 ← TAUT
-     (← q r"((p ==> q) /\ (q ==> r)) /\ (r ==> p) ==> (p <=> q) /\ (p <=> r)")
-    let t1 ← TAUT (← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r")
     pure (REWRITE_TAC [AND_FORALL_THM] THEN REPEAT GEN_TAC THEN
-    REWRITE_TAC [t1] THEN
-    STRIP_TAC THEN MATCH_MP_TAC t2 THEN
+    REWRITE_TAC [(← TAUT (← q r"(p ==> q) /\ (p ==> r) <=> p ==> q /\ r"))] THEN
+    STRIP_TAC THEN MATCH_MP_TAC (← TAUT
+     (← q r"((p ==> q) /\ (q ==> r)) /\ (r ==> p) ==> (p <=> q) /\ (p <=> r)")) THEN
     CONJ_TAC THENL
      [ASM_MESON_TAC [RING_SQUAREFREE_DIVPOW, RING_SQUAREFREE_0, RING_POW,
                      UFD_IMP_INTEGRAL_DOMAIN, INTEGRAL_DOMAIN_IMP_NONTRIVIAL_RING],
@@ -25748,19 +25550,17 @@ def setupBooleanRings [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumber
    r"!r j:A->bool.
            boolean_ring r ==> (maximal_ideal r j <=> prime_ideal r j)"
    (← do
-    let s2 ← SET_RULE
-     (← q r"(!a. a IN s /\ ~(a = z) <=> a = w) ==> s SUBSET {w,z}")
-    let t1 ← TAUT (← q r"p ==> q <=> p ==> p ==> q")
     pure (REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC [MAXIMAL_IMP_PRIME_IDEAL] THEN
     ASM_CASES_TAC (← q r"ring_ideal r (j:A->bool)") THENL
      [ALL_TAC, ASM_MESON_TAC [PRIME_IMP_RING_IDEAL]] THEN
     ASM_SIMP_TAC [← GSYM INTEGRAL_DOMAIN_QUOTIENT_RING,
                   ← GSYM FIELD_QUOTIENT_RING] THEN
-    ONCE_REWRITE_TAC [t1] THEN DISCH_TAC THEN
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p ==> q <=> p ==> p ==> q"))] THEN DISCH_TAC THEN
     MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] FINITE_INTEGRAL_DOMAIN_IMP_FIELD) THEN
     FIRST_ASSUM (MP_TAC o MATCH_MP INTEGRAL_DOMAIN_ZERODIVISOR) THEN
     ASM_SIMP_TAC [BOOLEAN_RING_ZERODIVISOR, BOOLEAN_QUOTIENT_RING] THEN
-    DISCH_THEN (MP_TAC o MATCH_MP s2) THEN
+    DISCH_THEN (MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"(!a. a IN s /\ ~(a = z) <=> a = w) ==> s SUBSET {w,z}"))) THEN
     MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ] FINITE_SUBSET) THEN
     REWRITE_TAC [FINITE_INSERT, FINITE_EMPTY]))
 
@@ -25928,7 +25728,6 @@ def setupLocalRings [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides 
         local_ring (r:A ring) <=>
         ring_ideal r {x | x IN ring_carrier r /\ ~(ring_unit r x)}"
    (← do
-    -- right to left: the last SET_RULE, the MESON, then the first SET_RULE
     pure (GEN_TAC THEN REWRITE_TAC [local_ring] THEN EQ_TAC THENL
      [REWRITE_TAC [(← SET_RULE (← q r"(?!x. P x) <=> ?a. {x | P x} = {a}"))] THEN
       REWRITE_TAC [← MATCH_MP (← MESON [UNIONS_1] (← q r"UNIONS u = t ==> ((?a. u = {a}) <=> u = {t})")) (← SPEC_ALL UNIONS_MAXIMAL_IDEALS)] THEN
@@ -26111,17 +25910,13 @@ def setupLocalRings [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides 
         prime_ideal r j
         ==> local_ring(ring_localization r (ring_carrier r DIFF j))"
    (← do
-    -- right to left: the second TAUT, the basic_ss, then the first TAUT
-    let t3 ← TAUT (← q r"q ==> ~(p /\ ~q)")
-    let ss ← ExceptT.mk (basic_ss [])
-    let t1 ← TAUT (← q r"p /\ ~q /\ r /\ ~s <=> p /\ r /\ ~q /\ ~s")
     pure (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (STRIP_ASSUME_TAC o MATCH_MP RING_SATURATED_MULTSYS_NONPRIME) THEN
     ABBREV_TAC (← q r"s:A->bool = ring_carrier r DIFF j") THEN
     REWRITE_TAC [LOCAL_RING_IDEAL_NONUNITS, RING_IDEAL_NONUNITS] THEN
     ASM_SIMP_TAC [TRIVIAL_RING_LOCALIZATION] THEN CONJ_TAC THENL
      [ASM_MESON_TAC [IN_RING_IDEAL_0, PRIME_IMP_RING_IDEAL, IN_DIFF],
-      REWRITE_TAC [t1]] THEN
+      REWRITE_TAC [(← TAUT (← q r"p /\ ~q /\ r /\ ~s <=> p /\ r /\ ~q /\ ~s"))]] THEN
     REWRITE_TAC [IMP_CONJ, RIGHT_FORALL_IMP_THM] THEN
     ASM_SIMP_TAC [← CONJUNCT1 RING_LOCALIZATION, FORALL_IN_GSPEC] THEN
     ASM_SIMP_TAC [RING_LOCALIZATION_ADD] THEN
@@ -26131,11 +25926,11 @@ def setupLocalRings [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides 
     ASM_REWRITE_TAC [] THEN
     FIRST_X_ASSUM ((fun (_ : thm) => ALL_TAC) o check (fun th => is_forall (concl th))) THEN
     RULE_ASSUM_TAC (REWRITE_RULE [ring_multsys, SUBSET]) THEN
-    ASM (simpTac ss 4)
+    ASM (simpTac (← ExceptT.mk (basic_ss [])) 4)
         [RING_ADD, RING_MUL] THEN
     DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN EXPAND_TAC "s" THEN
     REWRITE_TAC [IN_DIFF] THEN ASM_REWRITE_TAC [] THEN STRIP_TAC THEN
-    MATCH_MP_TAC t3 THEN
+    MATCH_MP_TAC (← TAUT (← q r"q ==> ~(p /\ ~q)")) THEN
     FIRST_X_ASSUM (MP_TAC o MATCH_MP PRIME_IMP_RING_IDEAL) THEN
     REWRITE_TAC [ring_ideal, SUBSET] THEN REPEAT STRIP_TAC THEN
     FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC [RING_MUL_SYM]))
@@ -26763,8 +26558,8 @@ def setupVonNeumann [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
     REWRITE_TAC [BEZOUT_RING_SETADD, VNREGULAR_RING_PRINCIPAL_IDEALS] THEN
     DISCH_TAC THEN MAP_EVERY X_GEN_TAC [← q r"j:A->bool", ← q r"k:A->bool"] THEN
     STRIP_TAC THEN FIRST_X_ASSUM (fun th => tactic_of do
-      let tk ← SPEC (← q r"k:A->bool") th
       let tj ← SPEC (← q r"j:A->bool") th
+      let tk ← SPEC (← q r"k:A->bool") th
       pure (MP_TAC tk THEN MP_TAC tj)) THEN
     ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN
     X_GEN_TAC (← q "e:A") THEN STRIP_TAC THEN
@@ -26845,7 +26640,6 @@ def setupVonNeumann [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
         vnregular_ring r /\ ring_multsys r s
         ==> vnregular_ring (ring_localization r s)"
    (← do
-    let ss ← ExceptT.mk (basic_ss [])
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [vnregular_ring] THEN STRIP_TAC THEN
     ASM_SIMP_TAC [RING_LOCALIZATION_CARRIER, FORALL_IN_GSPEC] THEN
     MAP_EVERY X_GEN_TAC [← q "a:A", ← q "p:A"] THEN STRIP_TAC THEN
@@ -26857,7 +26651,7 @@ def setupVonNeumann [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
     EXISTS_TAC (← q "ring_fractionate r s (ring_mul r p x:A)") THEN
     ASM_SIMP_TAC [RING_FRACTIONATE_IN_CARRIER, ← GSYM RING_LOCALIZATION_CARRIER,
                   RING_DIVIDES_LOCALEQUIV, RING_MUL] THEN
-    ASM (simpTac ss 5)
+    ASM (simpTac (← ExceptT.mk (basic_ss [])) 5)
      [ring_fractionate, RING_LOCALIZATION_MUL, RING_MUL, RING_MUL_LID,
       ← GSYM RING_LOCALEQUIV_EQUIV, ring_localequiv] THEN
     EXISTS_TAC (← q "ring_1 r:A") THEN ASM_SIMP_TAC [] THEN
@@ -26961,12 +26755,6 @@ def setupBoolRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDomains : 
    r"(!r:A ring. r isomorphic_ring bool_ring <=> ring_carrier r HAS_SIZE 2) /\
    (!r:A ring. bool_ring isomorphic_ring r <=> ring_carrier r HAS_SIZE 2)"
    (← do
-    -- right to left: the SET_RULE first, then the RING_RULE
-    let s2 ← SET_RULE (← q r"s = {a,b} ==> x IN s /\ ~(x = b) ==> x = a")
-    let rr1 ← RING_RULE
-     (← q r"x IN ring_carrier r /\ y IN ring_carrier r /\
-    ring_add r x y = ring_0 r
-    ==> y = ring_neg r x /\ ring_0 r = ring_add r x y")
     pure (GEN_REWRITE_TAC (RAND_CONV o BINDER_CONV o LAND_CONV)
      [ISOMORPHIC_RING_SYM] THEN
     REWRITE_TAC [] THEN GEN_TAC THEN EQ_TAC THENL
@@ -26984,8 +26772,11 @@ def setupBoolRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDomains : 
     ASM_SIMP_TAC [FORALL_IN_INSERT, RING_0, RING_1, NOT_IN_EMPTY,
                   RING_MUL_LID, RING_ADD_LZERO, RING_MUL_LZERO,
                   RING_MUL_RID, RING_ADD_RZERO, RING_NEG_0] THEN
-    MATCH_MP_TAC rr1 THEN
-    REWRITE_TAC [RING_1] THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP s2) THEN
+    MATCH_MP_TAC (← RING_RULE
+     (← q r"x IN ring_carrier r /\ y IN ring_carrier r /\
+    ring_add r x y = ring_0 r
+    ==> y = ring_neg r x /\ ring_0 r = ring_add r x y")) THEN
+    REWRITE_TAC [RING_1] THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE (← q r"s = {a,b} ==> x IN s /\ ~(x = b) ==> x = a"))) THEN
     ASM_SIMP_TAC [RING_ADD, RING_1, RING_ADD_EQ_LEFT]))
 
   -- @@RETURN BEGIN
@@ -27142,11 +26933,9 @@ def setupIntegerRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers
    r"!r:A ring. ring_monomorphism (integer_ring,r) (ring_of_int r) <=>
               ring_char r = 0"
    (← do
-    let i2 ← INTEGER_RULE (← q r"!x:int. x divides x")
-    let i1 ← INTEGER_RULE (← q r"!x:int. &0 divides x <=> x = &0")
     pure (SIMP_TAC [RING_MONOMORPHISM_ALT, RING_HOMOMORPHISM_INTEGER_RING_OF_INT] THEN
     REWRITE_TAC [RING_OF_INT_EQ_0, INTEGER_RING, IN_UNIV, ← GSYM INT_OF_NUM_EQ] THEN
-    MESON_TAC [i1, i2]))
+    MESON_TAC [(← INTEGER_RULE (← q r"!x:int. &0 divides x <=> x = &0")), (← INTEGER_RULE (← q r"!x:int. x divides x"))]))
 
   let INTEGRAL_DOMAIN_INTEGER_RING ← prove
    r"integral_domain integer_ring"
@@ -27208,38 +26997,32 @@ def setupIntegerRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers
   let INTEGER_RING_GCD ← prove
    r"ring_gcd integer_ring = gcd"
    (← do
-    -- right to left: the INTEGER_RULE, the second INT_ARITH, the MESON,
-    -- then the first INT_ARITH
-    let i4 ← INTEGER_RULE
-     (← q r"(n:int) divides a /\ n divides b ==> n divides gcd(a,b)")
-    let a3 ← INT_ARITH
-     (← q r"&0:int <= x /\ &0 <= y /\ (x = y \/ x = --y) ==> x = y")
-    let m2 ← MESON []
-     (← q r"P x /\ (!x'. P x' ==> x' = x)
-    ==> (if ?x. P x then @x. P x else a) = x")
-    let a1 ← INT_ARITH
-     (← q r"&0:int <= x /\ (x = &1 \/ x = -- &1) ==> &1 = x")
     let ir : ioconv := fun t => (INTEGER_RULE t).run
     pure (REWRITE_TAC [FUN_EQ_THM, FORALL_PAIR_THM] THEN
     MAP_EVERY X_GEN_TAC [← q "a:int", ← q "b:int"] THEN
     REWRITE_TAC [ring_gcd, INTEGER_RING, IN_UNIV, INTEGER_RING_COPRIME] THEN
     COND_CASES_TAC THENL
-     [MATCH_MP_TAC a1 THEN
+     [MATCH_MP_TAC (← INT_ARITH
+       (← q r"&0:int <= x /\ (x = &1 \/ x = -- &1) ==> &1 = x")) THEN
       REWRITE_TAC [int_gcd, ← GSYM INTEGER_RING_ASSOCIATES] THEN
       REWRITE_TAC [ring_associates, INTEGER_RING_DIVIDES] THEN
       CONJ_TAC THEN POP_ASSUM MP_TAC THEN CONV_TAC ir,
       ALL_TAC] THEN
-    MATCH_MP_TAC m2 THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"P x /\ (!x'. P x' ==> x' = x)
+    ==> (if ?x. P x then @x. P x else a) = x")) THEN
     REWRITE_TAC [INTEGER_RING_DIVIDES] THEN CONJ_TAC THENL
      [CONJ_TAC THENL [ALL_TAC, CONV_TAC ir] THEN
       REWRITE_TAC [IN_IMAGE, INTEGER_RING_OF_NUM, IN_UNIV] THEN
       REWRITE_TAC [INT_OF_NUM_EXISTS, int_gcd],
       REWRITE_TAC [IMP_CONJ, FORALL_IN_IMAGE, INTEGER_RING_OF_NUM, IN_UNIV]] THEN
     X_GEN_TAC (← q "n:num") THEN REWRITE_TAC [IMP_IMP] THEN STRIP_TAC THEN
-    MATCH_MP_TAC a3 THEN
+    MATCH_MP_TAC (← INT_ARITH
+     (← q r"&0:int <= x /\ &0 <= y /\ (x = y \/ x = --y) ==> x = y")) THEN
     REWRITE_TAC [INT_POS, int_gcd, ← GSYM INTEGER_RING_ASSOCIATES] THEN
     REWRITE_TAC [ring_associates, INTEGER_RING_DIVIDES] THEN
-    ASM_SIMP_TAC [i4] THEN
+    ASM_SIMP_TAC [(← INTEGER_RULE
+     (← q r"(n:int) divides a /\ n divides b ==> n divides gcd(a,b)"))] THEN
     FIRST_X_ASSUM MATCH_MP_TAC THEN CONV_TAC ir))
 
   let INTEGER_RING_IDEAL_GENERATED_SING ← prove
@@ -27483,16 +27266,14 @@ def setupIntegerModRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
            b IN ring_carrier(integer_mod_ring n) /\
            gcd(a,&n) divides b"
    (← do
-    let i2 ← INTEGER_RULE
-     (← q r"gcd(a,n) divides b <=> ?x:int. (a * x == b) (mod n)")
-    let t1 ← TAUT
-     (← q r"(p /\ q ==> (r <=> s)) ==> (p /\ q /\ r <=> p /\ q /\ s)")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q "n = 0") THENL
      [ASM_REWRITE_TAC [integer_mod_ring, INTEGER_RING, INTEGER_RING_DIVIDES] THEN
       REWRITE_TAC [IN_UNIV] THEN CONV_TAC (fun t => (INTEGER_RULE t).run),
       ASM_SIMP_TAC [ring_divides, INTEGER_MOD_RING, LE_1]] THEN
-    REWRITE_TAC [IN_ELIM_THM] THEN MATCH_MP_TAC t1 THEN
-    STRIP_TAC THEN REWRITE_TAC [i2] THEN
+    REWRITE_TAC [IN_ELIM_THM] THEN MATCH_MP_TAC (← TAUT
+     (← q r"(p /\ q ==> (r <=> s)) ==> (p /\ q /\ r <=> p /\ q /\ s)")) THEN
+    STRIP_TAC THEN REWRITE_TAC [(← INTEGER_RULE
+     (← q r"gcd(a,n) divides b <=> ?x:int. (a * x == b) (mod n)"))] THEN
     ASM_SIMP_TAC [← GSYM INT_REM_EQ, INT_REM_LT] THEN
     EQ_TAC THENL [MESON_TAC [], ALL_TAC] THEN
     DISCH_THEN (X_CHOOSE_TAC (← q "x:int")) THEN EXISTS_TAC (← q "x rem &n") THEN
@@ -27506,17 +27287,15 @@ def setupIntegerModRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
            y IN ring_carrier(integer_mod_ring n) /\
            gcd(x,&n) = gcd(y,&n)"
    (← do
-    let a2 ← INT_ARITH (← q r"&0:int <= x /\ &0 <= y ==> (x = y \/ x = --y <=> x = y)")
-    let i1 ← INTEGER_RULE
-     (← q r"gcd(x:int,n) divides y /\ gcd(y,n) divides x <=>
-    gcd(x,n) divides gcd(y,n) /\ gcd(y,n) divides gcd(x,n)")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [ring_associates] THEN
     REWRITE_TAC [INTEGER_MOD_RING_DIVIDES] THEN
     ASM_CASES_TAC (← q "x IN ring_carrier (integer_mod_ring n)") THEN
     ASM_CASES_TAC (← q "y IN ring_carrier (integer_mod_ring n)") THEN
-    ASM_REWRITE_TAC [] THEN REWRITE_TAC [i1] THEN
+    ASM_REWRITE_TAC [] THEN REWRITE_TAC [(← INTEGER_RULE
+     (← q r"gcd(x:int,n) divides y /\ gcd(y,n) divides x <=>
+    gcd(x,n) divides gcd(y,n) /\ gcd(y,n) divides gcd(x,n)"))] THEN
     REWRITE_TAC [← GSYM INTEGER_RING_DIVIDES, ← GSYM ring_associates] THEN
-    REWRITE_TAC [INTEGER_RING_ASSOCIATES] THEN MATCH_MP_TAC a2 THEN
+    REWRITE_TAC [INTEGER_RING_ASSOCIATES] THEN MATCH_MP_TAC (← INT_ARITH (← q r"&0:int <= x /\ &0 <= y ==> (x = y \/ x = --y <=> x = y)")) THEN
     REWRITE_TAC [int_gcd]))
 
   let INTEGER_MOD_RING_UNIT ← prove
@@ -27569,9 +27348,6 @@ def setupIntegerModRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
    r"!n. field (integer_mod_ring n) <=> prime n"
    (← do
     -- right to left: the second NUMBER_RULE first
-    let n2 ← NUMBER_RULE
-     (← q r"coprime(d:num,n) ==> d divides n ==> coprime(d,d)")
-    let n1 ← NUMBER_RULE (← q r"0 divides n <=> n = 0")
     let nr : ioconv := fun t => (NUMBER_RULE t).run
     pure (GEN_TAC THEN REWRITE_TAC [prime] THEN ASM_CASES_TAC (← q "n = 0") THENL
      [ASM_REWRITE_TAC [integer_mod_ring, NOT_FIELD_INTEGER_RING] THEN
@@ -27587,8 +27363,9 @@ def setupIntegerModRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
       REWRITE_TAC [LE_LT] THEN STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
       FIRST_X_ASSUM (MP_TAC o SPEC (← q "d:num")) THEN ASM_REWRITE_TAC [] THEN
       ANTS_TAC THENL
-       [ASM_MESON_TAC [n1],
-        DISCH_TAC THEN DISJ1_TAC THEN FIRST_ASSUM (MP_TAC o MATCH_MP n2) THEN
+       [ASM_MESON_TAC [(← NUMBER_RULE (← q r"0 divides n <=> n = 0"))],
+        DISCH_TAC THEN DISJ1_TAC THEN FIRST_ASSUM (MP_TAC o MATCH_MP (← NUMBER_RULE
+     (← q r"coprime(d:num,n) ==> d divides n ==> coprime(d,d)"))) THEN
         ASM_REWRITE_TAC [] THEN CONV_TAC nr],
       DISCH_TAC THEN REWRITE_TAC [coprime] THEN
       X_GEN_TAC (← q "e:num") THEN STRIP_TAC THEN
@@ -27611,9 +27388,6 @@ def setupIntegerModRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
         ring_homomorphism (integer_mod_ring p,r) (ring_of_int r) <=>
         ring_char r divides p"
    (← do
-    let i2 ← INTEGER_RULE (← q r"(x:int == x) (mod p)")
-    let i1 ← INTEGER_RULE
-     (← q r"!p:int. q divides p /\ (x == y) (mod p) ==> (x == y) (mod q)")
     pure (REPEAT GEN_TAC THEN EQ_TAC THENL
      [MESON_TAC [RING_CHAR_HOMOMORPHIC_IMAGE, INTEGER_MOD_RING_CHAR],
       DISCH_TAC] THEN
@@ -27622,9 +27396,10 @@ def setupIntegerModRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
     REWRITE_TAC [← GSYM RING_OF_INT_1, RING_OF_INT] THEN
     REWRITE_TAC [RING_OF_INT_EQ] THEN
     REWRITE_TAC [INTEGER_MOD_RING, INTEGER_MOD_RING_OF_INT] THEN
-    REPEAT STRIP_TAC THEN MATCH_MP_TAC i1 THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC (← INTEGER_RULE
+     (← q r"!p:int. q divides p /\ (x == y) (mod p) ==> (x == y) (mod q)")) THEN
     EXISTS_TAC (← q "&p:int") THEN ASM_REWRITE_TAC [← GSYM num_divides] THEN
-    REWRITE_TAC [INT_CONG_LREM, i2]))
+    REWRITE_TAC [INT_CONG_LREM, (← INTEGER_RULE (← q r"(x:int == x) (mod p)"))]))
 
   let RING_MONOMORPHISM_INTEGER_MOD_RING_OF_INT ← prove
    r"!(r:A ring) p.
@@ -27698,15 +27473,13 @@ def setupIntegerModRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
           (\a. (a rem &m),(a rem &n)) <=>
          coprime(m,n)"
    (← do
-    let i2 ← INTEGER_RULE (← q r"(&0:int == x) (mod n) <=> n divides x")
-    let s1 ← SET_RULE
-     (← q r"s SUBSET IMAGE f UNIV <=> !y. y IN s ==> ?x. f x = y")
     let ir : ioconv := fun t => (INTEGER_RULE t).run
     pure (REPEAT GEN_TAC THEN
     REWRITE_TAC [RING_ISOMORPHISM_SUBSET] THEN
     REWRITE_TAC [RING_HOMOMORPHISM_PROD_INTEGER_MOD_RING] THEN
     REWRITE_TAC [RING_CARRIER_INTEGER_MOD_RING, ← GSYM IMAGE_o] THEN
-    REWRITE_TAC [s1] THEN
+    REWRITE_TAC [(← SET_RULE
+     (← q r"s SUBSET IMAGE f UNIV <=> !y. y IN s ==> ?x. f x = y"))] THEN
     REWRITE_TAC [PROD_RING, FORALL_IN_CROSS] THEN
     REWRITE_TAC [RING_CARRIER_INTEGER_MOD_RING] THEN
     REWRITE_TAC [FORALL_IN_IMAGE, RIGHT_FORALL_IMP_THM, IMP_CONJ] THEN
@@ -27722,7 +27495,7 @@ def setupIntegerModRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
       ASM_REWRITE_TAC [] THEN CONV_TAC ir,
       ALL_TAC] THEN
     DISCH_THEN (MP_TAC o SPEC (← q "&0:int") o CONJUNCT2) THEN
-    REWRITE_TAC [i2] THEN
+    REWRITE_TAC [(← INTEGER_RULE (← q r"(&0:int == x) (mod n) <=> n divides x"))] THEN
     DISCH_THEN (MP_TAC o SPEC (← q "lcm(&m,&n):int")) THEN
     REWRITE_TAC [← GSYM NUM_LCM, ← GSYM num_divides, ← GSYM num_coprime,
                  INT_OF_NUM_CLAUSES, LCM] THEN
@@ -27761,36 +27534,27 @@ def setupIntegerModRing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumb
    r"quotient_ring integer_ring (ideal_generated integer_ring {&n})
    isomorphic_ring integer_mod_ring n"
    (← do
-    -- right to left: the INTEGER_RULEs (last first), then the SET_RULE
-    let i6 ← INTEGER_RULE (← q r"(x:int == x) (mod n)")
-    let i5 ← INTEGER_RULE (← q r"(x == y) (mod(&0)) <=> x:int = y")
-    let i4 ← INTEGER_RULE (← q r"(x:int == x) (mod n)")
-    let i3 ← INTEGER_RULE (← q r"(x:int == x) (mod n)")
-    let i2 ← INTEGER_RULE (← q r"(d:int) divides x - y <=> (x == y) (mod d)")
-    let s1 ← SET_RULE (← q r"(s SUBSET t /\ P) /\ (s = t /\ Q) <=>
-                        s SUBSET t /\ t SUBSET s /\ P /\ Q")
-    let ci ← CONJUNCT1 INTEGER_RING
-    let ci' ← CONJUNCT1 INTEGER_RING
     pure (ONCE_REWRITE_TAC [ISOMORPHIC_RING_SYM] THEN REWRITE_TAC [isomorphic_ring] THEN
     EXISTS_TAC (← q "ring_coset integer_ring (ideal_generated integer_ring {&n})") THEN
     REWRITE_TAC [RING_ISOMORPHISM, RING_HOMOMORPHISM] THEN
-    REWRITE_TAC [s1] THEN
+    REWRITE_TAC [(← SET_RULE (← q r"(s SUBSET t /\ P) /\ (s = t /\ Q) <=>
+                        s SUBSET t /\ t SUBSET s /\ P /\ Q"))] THEN
     SIMP_TAC [QUOTIENT_RING_ADD, QUOTIENT_RING_MUL, QUOTIENT_RING_1,
               QUOTIENT_RING_0, QUOTIENT_RING_CARRIER, FORALL_IN_GSPEC,
               RING_COSET_IDEAL_GENERATED_SING_EQ, SUBSET, FORALL_IN_IMAGE,
-              RING_IDEAL_IDEAL_GENERATED, ci, IN_UNIV] THEN
+              RING_IDEAL_IDEAL_GENERATED, (← CONJUNCT1 INTEGER_RING), IN_UNIV] THEN
     SIMP_TAC [IN_IMAGE, IN_ELIM_THM, RING_COSET_IDEAL_GENERATED_SING_EQ,
-              RING_IDEAL_IDEAL_GENERATED, ci', IN_UNIV] THEN
+              RING_IDEAL_IDEAL_GENERATED, (← CONJUNCT1 INTEGER_RING), IN_UNIV] THEN
     REWRITE_TAC [INTEGER_RING, INTEGER_MOD_RING, INTEGER_RING_DIVIDES,
                  IN_INTEGER_MOD_RING_CARRIER, ring_sub, ← GSYM INT_SUB] THEN
-    REWRITE_TAC [i2] THEN
-    REWRITE_TAC [INT_CONG_LREM, i3] THEN
-    CONJ_TAC THENL [MESON_TAC [i4], ALL_TAC] THEN
+    REWRITE_TAC [(← INTEGER_RULE (← q r"(d:int) divides x - y <=> (x == y) (mod d)"))] THEN
+    REWRITE_TAC [INT_CONG_LREM, (← INTEGER_RULE (← q r"(x:int == x) (mod n)"))] THEN
+    CONJ_TAC THENL [MESON_TAC [(← INTEGER_RULE (← q r"(x:int == x) (mod n)"))], ALL_TAC] THEN
     ASM_CASES_TAC (← q "n = 0") THEN
-    ASM_REWRITE_TAC [INT_OF_NUM_EQ, ← GSYM EXISTS_REFL, i5] THEN
+    ASM_REWRITE_TAC [INT_OF_NUM_EQ, ← GSYM EXISTS_REFL, (← INTEGER_RULE (← q r"(x == y) (mod(&0)) <=> x:int = y"))] THEN
     CONJ_TAC THENL
      [X_GEN_TAC (← q "a:int") THEN EXISTS_TAC (← q "a rem (&n)") THEN
-      REWRITE_TAC [INT_CONG_RREM, i6] THEN
+      REWRITE_TAC [INT_CONG_RREM, (← INTEGER_RULE (← q r"(x:int == x) (mod n)"))] THEN
       ASM_REWRITE_TAC [INT_REM_POS_EQ, INT_LT_REM_EQ, INT_OF_NUM_EQ] THEN
       ASM_SIMP_TAC [INT_OF_NUM_CLAUSES, LE_1],
       REPEAT STRIP_TAC THEN MATCH_MP_TAC INT_CONG_IMP_EQ THEN
@@ -29187,18 +28951,14 @@ def setupPowerSeries [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : 
                {(m1,m2,m3) | monomial_mul m1 (monomial_mul m2 m3) = m}
                (\(m1,m2,m3). ring_mul r (p1 m1) (ring_mul r (p2 m2) (p3 m3)))"
      (← do
-      let mz ← MESON [RING_MUL_RZERO]
-         (← q r"x IN ring_carrier r /\ y = ring_0 r
-          ==> ring_mul r x y = ring_0 r")
-      let m0 ← MESON []
-         (← q r"ring_sum r s f = ring_0 r /\ ring_sum r t g = ring_0 r
-          ==> ring_sum r s f = ring_sum r t g")
       pure (REWRITE_TAC [ring_powerseries] THEN
       REPEAT STRIP_TAC THEN REWRITE_TAC [poly_mul] THEN
       GEN_REWRITE_TAC id [FUN_EQ_THM] THEN X_GEN_TAC (← q r"m:V->num") THEN
       REWRITE_TAC [] THEN ASM_CASES_TAC (← q r"FINITE(monomial_vars m:V->bool)") THENL
        [ALL_TAC,
-        MATCH_MP_TAC m0 THEN
+        MATCH_MP_TAC (← MESON []
+         (← q r"ring_sum r s f = ring_0 r /\ ring_sum r t g = ring_0 r
+          ==> ring_sum r s f = ring_sum r t g")) THEN
         CONJ_TAC THEN REPLICATE_TAC 2
          (MATCH_MP_TAC RING_SUM_EQ_0 THEN
           REWRITE_TAC [IMP_CONJ, FORALL_IN_GSPEC] THEN REPEAT GEN_TAC THEN
@@ -29208,7 +28968,9 @@ def setupPowerSeries [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : 
           RULE_ASSUM_TAC (REWRITE_RULE [← GSYM INFINITE, DE_MORGAN_THM]) THEN
           FIRST_X_ASSUM DISJ_CASES_TAC THEN
           ASM_SIMP_TAC [RING_MUL_LZERO, RING_MUL_RZERO, RING_MUL, RING_SUM] THEN
-          MATCH_MP_TAC mz THEN
+          MATCH_MP_TAC (← MESON [RING_MUL_RZERO]
+         (← q r"x IN ring_carrier r /\ y = ring_0 r
+          ==> ring_mul r x y = ring_0 r")) THEN
           ASM_REWRITE_TAC [] THEN TRY (FIRST_X_ASSUM DISJ_CASES_TAC) THEN
           ASM_SIMP_TAC [RING_MUL_LZERO, RING_MUL_RZERO])] THEN
       MP_TAC (← ISPECL
@@ -29296,13 +29058,6 @@ def setupPowerSeries [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : 
         c IN ring_carrier r /\ ring_powerseries r p
         ==> poly_mul r (poly_const r c) p = \m. ring_mul r c (p m)"
    (← do
-    -- right to left: the last SET_RULE, the MESON, then the first SET_RULE
-    let s2 ← SET_RULE (← q r"{f x y | x = a /\ y = b} = {f a b}")
-    let m1 ← MESON [MONOMIAL_MUL_LID]
-      (← q r"monomial_mul m1 m2 = m /\ m1 = monomial_1 <=>
-       m1 = monomial_1 /\ m2 = m")
-    let s1 ← SET_RULE (← q r"{p | p IN {f x y |x,y| P x y} /\ Q p} =
-                          {f x y |x,y| P x y /\ Q(f x y)}")
     pure (REWRITE_TAC [ring_powerseries] THEN
     REPEAT STRIP_TAC THEN GEN_REWRITE_TAC id [FUN_EQ_THM] THEN
     X_GEN_TAC (← q r"m:V->num") THEN REWRITE_TAC [poly_mul, poly_const] THEN
@@ -29311,9 +29066,12 @@ def setupPowerSeries [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : 
     GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [LAMBDA_PAIR] THEN
     REWRITE_TAC [← GSYM RING_SUM_RESTRICT_SET] THEN
     REWRITE_TAC [← GSYM LAMBDA_PAIR] THEN
-    REWRITE_TAC [s1] THEN
-    REWRITE_TAC [m1] THEN
-    REWRITE_TAC [s2] THEN
+    REWRITE_TAC [(← SET_RULE (← q r"{p | p IN {f x y |x,y| P x y} /\ Q p} =
+                          {f x y |x,y| P x y /\ Q(f x y)}"))] THEN
+    REWRITE_TAC [(← MESON [MONOMIAL_MUL_LID]
+      (← q r"monomial_mul m1 m2 = m /\ m1 = monomial_1 <=>
+       m1 = monomial_1 /\ m2 = m"))] THEN
+    REWRITE_TAC [(← SET_RULE (← q r"{f x y | x = a /\ y = b} = {f a b}"))] THEN
     ASM_SIMP_TAC [RING_SUM_SING, RING_MUL]))
 
   let POLY_MUL_CONST ← prove
@@ -29333,10 +29091,6 @@ def setupPowerSeries [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : 
     let lemma ← prove
      r"monomial_mul m1 m2 = m <=> monomial_divides m1 m /\ monomial_div m m1 = m2"
      MONOMIAL_TAC
-    -- right to left: the second SET_RULE, then the first
-    let s2 ← SET_RULE (← q r"{f a b |P a b /\ a = c} = IMAGE (f c) {b | P c b}")
-    let s1 ← SET_RULE (← q r"{x | x IN {f a b | P a b} /\ Q x} =
-                          {f a b |a,b| P a b /\ Q(f a b)}")
     pure (REWRITE_TAC [ring_powerseries, poly_mul, poly_var] THEN REPEAT STRIP_TAC THEN
     ONCE_REWRITE_TAC [COND_RAND] THEN ONCE_REWRITE_TAC [COND_RATOR] THEN
     ASM_SIMP_TAC [RING_MUL_LZERO, RING_MUL_LID] THEN
@@ -29344,8 +29098,9 @@ def setupPowerSeries [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : 
     REWRITE_TAC [] THEN
     GEN_REWRITE_TAC (LAND_CONV o RAND_CONV) [LAMBDA_PAIR] THEN
     REWRITE_TAC [← GSYM RING_SUM_RESTRICT_SET] THEN
-    REWRITE_TAC [s1] THEN
-    SIMP_TAC [s2] THEN
+    REWRITE_TAC [(← SET_RULE (← q r"{x | x IN {f a b | P a b} /\ Q x} =
+                          {f a b |a,b| P a b /\ Q(f a b)}"))] THEN
+    SIMP_TAC [(← SET_RULE (← q r"{f a b |P a b /\ a = c} = IMAGE (f c) {b | P c b}"))] THEN
     REWRITE_TAC [lemma] THEN COND_CASES_TAC THEN
     ASM_REWRITE_TAC [EMPTY_GSPEC, SING_GSPEC, IMAGE_CLAUSES,
                      RING_SUM_CLAUSES, RING_SUM_SING]))
@@ -29431,10 +29186,6 @@ def setupPowerSeries [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : 
         ==> poly_vars r (poly_mul r p1 p2) SUBSET
             poly_vars r p1 UNION poly_vars r p2"
    (← do
-    let rr ← RING_RULE
-     (← q r"~(ring_mul r x y = ring_0 r)
-      ==> x IN ring_carrier r /\ y IN ring_carrier r
-          ==> ~(x = ring_0 r) /\ ~(y = ring_0 r)")
     pure (REWRITE_TAC [ring_powerseries, poly_vars, poly_mul] THEN
     REPEAT STRIP_TAC THEN REWRITE_TAC [SUBSET, UNIONS_GSPEC] THEN
     X_GEN_TAC (← q "x:V") THEN REWRITE_TAC [IN_ELIM_THM] THEN
@@ -29444,7 +29195,10 @@ def setupPowerSeries [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : 
     REWRITE_TAC [NOT_FORALL_THM, NOT_IMP, ← GSYM CONJ_ASSOC] THEN
     REWRITE_TAC [LEFT_IMP_EXISTS_THM, IMP_CONJ, FORALL_IN_GSPEC] THEN
     REPEAT GEN_TAC THEN DISCH_THEN (SUBST_ALL_TAC o SYM) THEN
-    DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN DISCH_THEN (MP_TAC o MATCH_MP rr) THEN
+    DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN DISCH_THEN (MP_TAC o MATCH_MP (← RING_RULE
+     (← q r"~(ring_mul r x y = ring_0 r)
+      ==> x IN ring_carrier r /\ y IN ring_carrier r
+          ==> ~(x = ring_0 r) /\ ~(y = ring_0 r)"))) THEN
     ASM_REWRITE_TAC [] THEN STRIP_TAC THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV [MONOMIAL_VARS_MUL]) THEN
     ASM SET_TAC []))
@@ -30096,10 +29850,7 @@ def setupPolyRings [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ring_powerseries r p
         ==> (poly_mul r p (poly_var r x) = poly_0 r <=> p = poly_0 r))"
    (← do
-    -- right to left: the MONOMIAL_RULE, then the TAUT
-    let mr ← MONOMIAL_RULE (← q "monomial_div (monomial_mul m1 m2) m1 = m2")
-    let tt ← TAUT (← q r"(p ==> q) /\ p ==> p /\ q")
-    pure (MATCH_MP_TAC tt THEN CONJ_TAC THENL
+    pure (MATCH_MP_TAC (← TAUT (← q r"(p ==> q) /\ p ==> p /\ q")) THEN CONJ_TAC THENL
      [MESON_TAC [POLY_MUL_SYM, RING_POWERSERIES_VAR],
       REPEAT STRIP_TAC] THEN
     EQ_TAC THEN
@@ -30110,7 +29861,7 @@ def setupPolyRings [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     X_GEN_TAC (← q r"m:V->num") THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q "monomial_mul (monomial_var(x:V)) m")) THEN
     REWRITE_TAC [MONOMIAL_VAR_DIVIDES_MUL, MONOMIAL_DIVIDES_REFL] THEN
-    REWRITE_TAC [mr] THEN
+    REWRITE_TAC [(← MONOMIAL_RULE (← q "monomial_div (monomial_mul m1 m2) m1 = m2"))] THEN
     MESON_TAC []))
 
   let POWSER_VARPOW_MUL_EQ_0 ← prove
@@ -30218,14 +29969,6 @@ def setupPolyRings [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
             \m'. if m' = (\i. if i IN k then m i else 0)
                  then ring_1 r else ring_0 r"
    (← do
-    -- right to left: the MESON, then the TAUT
-    let mm ← MESON
-     [RING_MUL_LZERO, RING_MUL_RZERO, RING_MUL_LID,
-      RING_MUL_RID, RING_0, RING_1]
-     (← q r"ring_mul r (if p then ring_1 r else ring_0 r)
-                 (if q then ring_1 r else ring_0 r) =
-      if p /\ q then ring_1 r else ring_0 r")
-    let tt ← TAUT (← q r"~p ==> p ==> q")
     pure (REPLICATE_TAC 3 GEN_TAC THEN REWRITE_TAC [IMP_CONJ] THEN
     MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
     SIMP_TAC [RING_PRODUCT_CLAUSES, FORALL_IN_INSERT, INSERT_SUBSET] THEN
@@ -30233,12 +29976,17 @@ def setupPolyRings [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     MAP_EVERY X_GEN_TAC [← q "i:V", ← q r"k:V->bool"] THEN
     DISCH_THEN (STRIP_ASSUME_TAC o CONJUNCT2) THEN STRIP_TAC THEN
     COND_CASES_TAC THENL
-     [FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP tt) THEN
+     [FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← TAUT (← q r"~p ==> p ==> q"))) THEN
       REWRITE_TAC [← GSYM (← CONJUNCT1 POLY_RING)] THEN MATCH_MP_TAC RING_POW THEN
       REWRITE_TAC [POLY_RING, IN_ELIM_THM, RING_POLYNOMIAL_VAR] THEN
       REWRITE_TAC [POLY_VARS_VAR] THEN ASM SET_TAC [],
       ALL_TAC] THEN
-    REWRITE_TAC [POLY_RING_VAR_POW, poly_mul, mm] THEN
+    REWRITE_TAC [POLY_RING_VAR_POW, poly_mul, (← MESON
+     [RING_MUL_LZERO, RING_MUL_RZERO, RING_MUL_LID,
+      RING_MUL_RID, RING_0, RING_1]
+     (← q r"ring_mul r (if p then ring_1 r else ring_0 r)
+                 (if q then ring_1 r else ring_0 r) =
+      if p /\ q then ring_1 r else ring_0 r"))] THEN
     REWRITE_TAC [← GSYM PAIR_EQ, ← GSYM LAMBDA_PAIR_THM] THEN
     REWRITE_TAC [RING_SUM_DELTA, RING_1, IN_ELIM_PAIR_THM] THEN
     REWRITE_TAC [monomial_mul] THEN ABS_TAC THEN
@@ -30281,12 +30029,6 @@ def setupPolyRings [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       REWRITE_TAC [monomial_vars, IN_ELIM_THM] THEN
       REWRITE_TAC [← MESON [] (← q r"(if ~(m = 0) then m else 0) = m")] THEN
       REWRITE_TAC [ETA_AX])
-    let mm ← MESON
-       [RING_MUL_LZERO, RING_MUL_RZERO, RING_MUL_RID, RING_0, RING_1]
-       (← q r"x IN ring_carrier r
-        ==> ring_mul r (if p then x else ring_0 r)
-                       (if q then ring_1 r else ring_0 r) =
-             (if p /\ q then x else ring_0 r)")
     pure (REPEAT STRIP_TAC THEN
     wPart lhand (fun t => do lhand (← rand t)) POLY_SUM THEN
     ANTS_TAC THENL
@@ -30313,7 +30055,12 @@ def setupPolyRings [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       REWRITE_TAC [IN_ELIM_THM] THEN ASM_MESON_TAC [],
       RULE_ASSUM_TAC (REWRITE_RULE
        [POLY_RING, IN_ELIM_THM, ring_polynomial, ring_powerseries]) THEN
-      ASM_SIMP_TAC [poly_const, poly_mul, POLY_RING, mm] THEN
+      ASM_SIMP_TAC [poly_const, poly_mul, POLY_RING, (← MESON
+       [RING_MUL_LZERO, RING_MUL_RZERO, RING_MUL_RID, RING_0, RING_1]
+       (← q r"x IN ring_carrier r
+        ==> ring_mul r (if p then x else ring_0 r)
+                       (if q then ring_1 r else ring_0 r) =
+             (if p /\ q then x else ring_0 r)"))] THEN
       ASM_REWRITE_TAC [← GSYM PAIR_EQ, ← GSYM LAMBDA_PAIR_THM] THEN
       ASM_SIMP_TAC [RING_SUM_DELTA, RING_1, IN_ELIM_PAIR_THM,
                     MONOMIAL_MUL_LID] THEN
@@ -30721,19 +30468,16 @@ def setupHomExtend [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ring_homomorphism(r,r') h /\ x i IN ring_carrier r'
         ==> poly_extend (r,r') h x (poly_var r i) = x i"
    (← do
-    -- right to left: the MESON, then the SET_RULE
-    let mm ← MESON [] (← q r"~(if p then q else T) <=> p /\ ~q")
-    let ss ← SET_RULE (← q r"a IN s ==> (s = {z} /\ P) /\ b IN s ==> a = b")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q "trivial_ring (r:A ring)") THENL
      [ASM_SIMP_TAC [RING_HOMOMORPHISM_FROM_TRIVIAL_RING] THEN
-      REWRITE_TAC [trivial_ring] THEN MATCH_MP_TAC ss THEN
+      REWRITE_TAC [trivial_ring] THEN MATCH_MP_TAC (← SET_RULE (← q r"a IN s ==> (s = {z} /\ P) /\ b IN s ==> a = b")) THEN
       REWRITE_TAC [POLY_EXTEND],
       RULE_ASSUM_TAC (REWRITE_RULE [TRIVIAL_RING_10])] THEN
     REWRITE_TAC [ring_homomorphism, SUBSET, FORALL_IN_IMAGE] THEN
     REPEAT STRIP_TAC THEN REWRITE_TAC [poly_extend, poly_var] THEN
     REWRITE_TAC [] THEN ONCE_REWRITE_TAC [COND_RAND] THEN
     ONCE_REWRITE_TAC [COND_RATOR] THEN
-    ASM_REWRITE_TAC [mm] THEN
+    ASM_REWRITE_TAC [(← MESON [] (← q r"~(if p then q else T) <=> p /\ ~q"))] THEN
     REWRITE_TAC [RING_SUM_SING, SING_GSPEC] THEN
     SIMP_TAC [RING_MUL_LID, RING_PRODUCT, MONOMIAL_VARS_VAR] THEN
     REWRITE_TAC [RING_PRODUCT_SING] THEN
@@ -30792,56 +30536,30 @@ def setupHomExtend [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
      (REWRITE_TAC [EXTENSION, IN_IMAGE, FORALL_PAIR_THM, EXISTS_PAIR_THM] THEN
       REWRITE_TAC [IN_ELIM_PAIR_THM] THEN
       REWRITE_TAC [PAIR_EQ] THEN MESON_TAC [])
-    -- right to left: the second MESON[INFINITE], the MESON on ring_product,
-    -- the RING_RULE, the MESON on rsum t, the first MESON[INFINITE], the
-    -- MESON[RING_SUM_CLAUSES], the MESON on rsum UNIV, the SET_RULE, and
-    -- the basic_ss []
-    let mi2 ← MESON [INFINITE] (← q r"~INFINITE s <=> FINITE s")
-    let mp ← MESON []
-     (← q r"(ring_product r s f = ring_product r u f /\
-       ring_product r t g = ring_product r u g) /\
-      ring_mul r (ring_product r u f) (ring_product r u g) =
-      ring_product r u h
-      ==> ring_mul r (ring_product r s f) (ring_product r t g) =
-          ring_product r u h")
-    let rr ← RING_RULE
-     (← q r"a IN ring_carrier r /\ b IN ring_carrier r /\ c IN ring_carrier r /\
-      x IN ring_carrier r /\ y IN ring_carrier r /\
-      ring_mul r a b = c
-      ==> ring_mul r (ring_mul r x y) c =
-          ring_mul r (ring_mul r x a) (ring_mul r y b)")
-    let mt ← MESON []
-     (← q r"rsum s f = rsum t f /\ rsum t f = rsum t g
-      ==> rsum s f = rsum t g")
-    let mi1 ← MESON [INFINITE] (← q r"~INFINITE s <=> FINITE s")
-    let mc ← MESON [RING_SUM_CLAUSES]
-       (← q r"s = {} ==> ring_sum r s f = ring_0 r")
-    let mu ← MESON []
-     (← q r"(rsum UNIV f = rsum s f /\ rsum UNIV g = rsum t g) /\
-      rsum UNIV f = rsum UNIV g
-      ==> rsum s f = rsum t g")
-    let sr ← SET_RULE
-     (← q r"{z | z IN {x,y | P x y} /\ Q z} = {x,y | P x y /\ Q(x,y)}")
-    let ss ← ExceptT.mk (basic_ss [])
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [poly_extend] THEN
     FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE id [ring_homomorphism]) THEN
     REWRITE_TAC [SUBSET, FORALL_IN_IMAGE] THEN STRIP_TAC THEN
     RULE_ASSUM_TAC (REWRITE_RULE [ring_polynomial, ring_powerseries]) THEN
     ASM_SIMP_TAC [← GSYM RING_SUM_LMUL, RING_SUM, RING_MUL, RING_PRODUCT] THEN
     ASM_SIMP_TAC [← GSYM RING_SUM_RMUL, RING_SUM, RING_MUL, RING_PRODUCT] THEN
-    ASM (simpTac ss 4)
+    ASM (simpTac (← ExceptT.mk (basic_ss [])) 4)
      [RING_SUM_SUM_PRODUCT, RING_MUL, RING_PRODUCT] THEN
     MP_TAC (← ISPECL [← q "r':B ring", ← q r"\(m1:V->num,m2). monomial_mul m1 m2"]
           RING_SUM_IMAGE_GEN) THEN
     ASM_SIMP_TAC [FINITE_PRODUCT_DEPENDENT] THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN
-    REWRITE_TAC [sr] THEN
-    MATCH_MP_TAC mu THEN
+    REWRITE_TAC [(← SET_RULE
+     (← q r"{z | z IN {x,y | P x y} /\ Q z} = {x,y | P x y /\ Q(x,y)}"))] THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"(rsum UNIV f = rsum s f /\ rsum UNIV g = rsum t g) /\
+      rsum UNIV f = rsum UNIV g
+      ==> rsum s f = rsum t g")) THEN
    CONJ_TAC THENL
      [CONJ_TAC THEN MATCH_MP_TAC RING_SUM_SUPERSET THEN
       REWRITE_TAC [SUBSET_UNIV, IN_UNIV, IN_ELIM_THM] THEN
       ASM_SIMP_TAC [RING_MUL_LZERO, RING_PRODUCT] THEN
       REWRITE_TAC [IN_IMAGE, EXISTS_PAIR_THM, IN_ELIM_PAIR_THM] THEN
-      REPEAT STRIP_TAC THEN MATCH_MP_TAC mc THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC (← MESON [RING_SUM_CLAUSES]
+       (← q r"s = {} ==> ring_sum r s f = ring_0 r")) THEN
       ASM SET_TAC [],
       MATCH_MP_TAC RING_SUM_EQ] THEN
     X_GEN_TAC (← q r"m:V->num") THEN REWRITE_TAC [IN_UNIV] THEN
@@ -30859,7 +30577,7 @@ def setupHomExtend [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       ASM_REWRITE_TAC [INFINITE, FINITE_UNION, monomial_vars] THEN
       REWRITE_TAC [← GSYM INFINITE, ← GSYM monomial_vars, DE_MORGAN_THM] THEN
       ASM_MESON_TAC [],
-      RULE_ASSUM_TAC (REWRITE_RULE [mi1])] THEN
+      RULE_ASSUM_TAC (REWRITE_RULE [(← MESON [INFINITE] (← q r"~INFINITE s <=> FINITE s"))])] THEN
     REWRITE_TAC [poly_mul] THEN FIRST_ASSUM (fun th => tactic_of do
      pure (wPart (fun t => do lhand (← lhand t)) (fun t => do lhand (← rand t))
        (← MATCH_MP RING_HOMOMORPHISM_SUM th))) THEN
@@ -30885,7 +30603,9 @@ def setupHomExtend [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [LAMBDA_PAIR_THM] THEN
       REWRITE_TAC [] THEN
       GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [MONOMIAL_MUL_SYM]] THEN
-    MATCH_MP_TAC mt THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"rsum s f = rsum t f /\ rsum t f = rsum t g
+      ==> rsum s f = rsum t g")) THEN
     CONJ_TAC THENL
      [MATCH_MP_TAC RING_SUM_SUPERSET THEN
       CONJ_TAC THENL [SET_TAC [], REWRITE_TAC []] THEN
@@ -30896,9 +30616,20 @@ def setupHomExtend [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       MATCH_MP_TAC RING_SUM_EQ] THEN
     REWRITE_TAC [FORALL_IN_GSPEC] THEN
     MAP_EVERY X_GEN_TAC [← q r"m1:V->num", ← q r"m2:V->num"] THEN STRIP_TAC THEN
-    MATCH_MP_TAC rr THEN
+    MATCH_MP_TAC (← RING_RULE
+     (← q r"a IN ring_carrier r /\ b IN ring_carrier r /\ c IN ring_carrier r /\
+      x IN ring_carrier r /\ y IN ring_carrier r /\
+      ring_mul r a b = c
+      ==> ring_mul r (ring_mul r x y) c =
+          ring_mul r (ring_mul r x a) (ring_mul r y b)")) THEN
     ASM_SIMP_TAC [RING_PRODUCT] THEN
-    MATCH_MP_TAC mp THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"(ring_product r s f = ring_product r u f /\
+       ring_product r t g = ring_product r u g) /\
+      ring_mul r (ring_product r u f) (ring_product r u g) =
+      ring_product r u h
+      ==> ring_mul r (ring_product r s f) (ring_product r t g) =
+          ring_product r u h")) THEN
     CONJ_TAC THENL
      [EXPAND_TAC "m" THEN REWRITE_TAC [MONOMIAL_VARS_MUL] THEN
       CONJ_TAC THEN CONV_TAC SYM_CONV THEN
@@ -30909,7 +30640,7 @@ def setupHomExtend [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       SIMP_TAC [ring_pow],
       ALL_TAC] THEN
     wPart lhand (fun t => do rand (← rand t)) RING_PRODUCT_MUL THEN
-    RULE_ASSUM_TAC (REWRITE_RULE [mi2]) THEN
+    RULE_ASSUM_TAC (REWRITE_RULE [(← MESON [INFINITE] (← q r"~INFINITE s <=> FINITE s"))]) THEN
     ASM_REWRITE_TAC [] THEN ANTS_TAC THENL
      [X_GEN_TAC (← q "i:V") THEN EXPAND_TAC "m" THEN
       REWRITE_TAC [MONOMIAL_VARS_MUL, IN_UNION] THEN
@@ -31304,12 +31035,6 @@ def setupHomExtend [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ==> poly_extend (r,subring_generated r' s) h x p =
             poly_extend (r,r') h x p"
    (← do
-    -- right to left: the TAUT, the SET_RULE, then the MESON
-    let tt ← TAUT (← q r"(p ==> r) ==> p /\ ~(p /\ r) ==> s")
-    let sr ← SET_RULE (← q r"{x | P x /\ Q x} = {x | P x} <=> !x. P x ==> Q x")
-    let mm ← MESON [RING_SUM_EQ]
-     (← q r"s = t /\ (!x. x IN t ==> f x = g x)
-      ==> ring_sum r s f = ring_sum r t g")
     pure (REPEAT STRIP_TAC THEN
     SUBGOAL_THEN (← q r"!i. i IN v ==> (x:V->B) i IN ring_carrier r'") ASSUME_TAC THENL
      [ASM_MESON_TAC [SUBSET, RING_CARRIER_SUBRING_GENERATED_SUBSET], ALL_TAC] THEN
@@ -31318,9 +31043,11 @@ def setupHomExtend [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     REWRITE_TAC [poly_extend, SUBRING_GENERATED, RING_POW_SUBRING_GENERATED] THEN
     ONCE_REWRITE_TAC [← GSYM SUBRING_GENERATED_BY_SUBRING_GENERATED] THEN
     SIMP_TAC [RING_SUM_SUBRING_GENERATED, SUBRING_SUBRING_GENERATED] THEN
-    MATCH_MP_TAC mm THEN
+    MATCH_MP_TAC (← MESON [RING_SUM_EQ]
+     (← q r"s = t /\ (!x. x IN t ==> f x = g x)
+      ==> ring_sum r s f = ring_sum r t g")) THEN
     REWRITE_TAC [IN_ELIM_THM] THEN CONJ_TAC THENL
-     [REWRITE_TAC [sr] THEN
+     [REWRITE_TAC [(← SET_RULE (← q r"{x | P x /\ Q x} = {x | P x} <=> !x. P x ==> Q x"))] THEN
       X_GEN_TAC (← q r"m:V->num") THEN DISCH_TAC THEN
       MATCH_MP_TAC RING_MUL_IN_SUBRING_GENERATED THEN
       REWRITE_TAC [SUBRING_GENERATED_BY_SUBRING_GENERATED, RING_PRODUCT] THEN
@@ -31330,7 +31057,7 @@ def setupHomExtend [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     SIMP_TAC [RING_PRODUCT_SUBRING_GENERATED, SUBRING_SUBRING_GENERATED] THEN
     CONV_TAC SYM_CONV THEN MATCH_MP_TAC RING_PRODUCT_SUPERSET THEN
     REWRITE_TAC [SUBSET_RESTRICT, IN_ELIM_THM] THEN X_GEN_TAC (← q "i:V") THEN
-    MATCH_MP_TAC tt THEN
+    MATCH_MP_TAC (← TAUT (← q r"(p ==> r) ==> p /\ ~(p /\ r) ==> s")) THEN
     DISCH_TAC THEN MATCH_MP_TAC RING_POW_IN_SUBRING_GENERATED THEN
     RULE_ASSUM_TAC (REWRITE_RULE [POLY_RING, poly_vars, IN_ELIM_THM]) THEN
     ASM SET_TAC []))
@@ -31486,21 +31213,6 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
                     then g(q(\v. if v IN s' then m(j v) else 0))
                     else ring_0 r))"
    (← do
-    -- right to left: the MESON on monomial_mul, the RING_RULE, the MESON
-    -- on !j, the TAUT, the MESON on g(f(p m)), the MESON on if-then-0
-    let m6 ← MESON []
-       (← q r"monomial_mul m1 m2 = m
-        ==> (INFINITE(monomial_vars(monomial_mul m1 m2)) <=>
-             INFINITE(monomial_vars m))")
-    let rr ← RING_RULE
-       (← q r"x IN ring_carrier r /\ y IN ring_carrier r /\
-        (x = ring_0 r \/ y = ring_0 r)
-        ==> ring_mul r x y = ring_0 r")
-    let m4 ← MESON []
-       (← q r"!j. (!x. P(j x) ==> Q x) ==> (!x. P x) ==> (!x. Q x)")
-    let tt ← TAUT (← q r"~p ==> p ==> q")
-    let m2 ← MESON [] (← q r"n = m /\ g(f(p m)) = p m ==> g(f(p n)) = p m")
-    let m1 ← MESON [] (← q r"~((if p then x else 0) = 0) <=> p /\ ~(x = 0)")
     pure (REPEAT GEN_TAC THEN
     GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [ring_isomorphisms] THEN
     REWRITE_TAC [ring_homomorphism] THEN
@@ -31529,9 +31241,9 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
        (GEN_REWRITE_TAC id [FUN_EQ_THM] THEN GEN_TAC THEN
         ASM_SIMP_TAC [] THEN
         COND_CASES_TAC THENL [ALL_TAC, ASM SET_TAC []] THEN
-        REWRITE_TAC [m1] THEN
+        REWRITE_TAC [(← MESON [] (← q r"~((if p then x else 0) = 0) <=> p /\ ~(x = 0)"))] THEN
         REWRITE_TAC [SUBSET_RESTRICT] THEN
-        MATCH_MP_TAC m2 THEN
+        MATCH_MP_TAC (← MESON [] (← q r"n = m /\ g(f(p m)) = p m ==> g(f(p n)) = p m")) THEN
         CONJ_TAC THENL
          [REWRITE_TAC [FUN_EQ_THM] THEN ASM SET_TAC [],
           FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_MESON_TAC []])] THEN
@@ -31561,7 +31273,7 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
       COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
       COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [FUN_EQ_THM]) THEN
-      MATCH_MP_TAC tt THEN
+      MATCH_MP_TAC (← TAUT (← q r"~p ==> p ==> q")) THEN
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV [FUN_EQ_THM]) THEN
       ASM SET_TAC [],
       MAP_EVERY X_GEN_TAC [← q r"p:(V->num)->A", ← q r"q:(V->num)->A"] THEN
@@ -31622,7 +31334,8 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
       MAP_EVERY X_GEN_TAC
        [← q r"m1:W->num", ← q r"m2:W->num", ← q r"m1':W->num", ← q r"m2':W->num"] THEN
       REPLICATE_TAC 2 (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-      MATCH_MP_TAC MONO_AND THEN CONJ_TAC THEN MATCH_MP_TAC m4 THEN
+      MATCH_MP_TAC MONO_AND THEN CONJ_TAC THEN MATCH_MP_TAC (← MESON []
+       (← q r"!j. (!x. P(j x) ==> Q x) ==> (!x. P x) ==> (!x. Q x)")) THEN
       EXISTS_TAC (← q r"j:W->V") THEN X_GEN_TAC (← q "w:W") THEN
       ASM_CASES_TAC (← q "(w:W) IN s'") THEN ASM_SIMP_TAC [] THEN
       DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN TRANS_TAC EQ_TRANS (← q "0") THEN
@@ -31662,10 +31375,16 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
       MATCH_MP_TAC RING_SUM_EQ_0 THEN
       REWRITE_TAC [IMP_CONJ, FORALL_IN_GSPEC] THEN
       REPEAT GEN_TAC THEN DISCH_TAC THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN
-      MATCH_MP_TAC rr THEN
+      MATCH_MP_TAC (← RING_RULE
+       (← q r"x IN ring_carrier r /\ y IN ring_carrier r /\
+        (x = ring_0 r \/ y = ring_0 r)
+        ==> ring_mul r x y = ring_0 r")) THEN
       ASM_SIMP_TAC [] THEN
       REPEAT (COND_CASES_TAC THEN ASM_SIMP_TAC [RING_0]) THEN
-      FIRST_ASSUM (MP_TAC o MATCH_MP m6) THEN
+      FIRST_ASSUM (MP_TAC o MATCH_MP (← MESON []
+       (← q r"monomial_mul m1 m2 = m
+        ==> (INFINITE(monomial_vars(monomial_mul m1 m2)) <=>
+             INFINITE(monomial_vars m))"))) THEN
       ASM_REWRITE_TAC [MONOMIAL_VARS_MUL] THEN
       ASM_REWRITE_TAC [monomial_vars] THEN
       REWRITE_TAC [INFINITE, FINITE_UNION, DE_MORGAN_THM] THEN
@@ -31709,27 +31428,21 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
                     then g(q(\v. if v IN s' then m(j v) else 0))
                     else ring_0 r))"
    (← do
-    -- right to left: the TAUT, the MESON[], the SET_RULE, then the MESON
-    -- on ring_isomorphisms
-    let tt ← TAUT (← q r"~p ==> (q ==> p) ==> ~q")
-    let m3 ← MESON [] (← q r"~((if p then x else z) = z) <=> p /\ ~(x = z)")
-    let sr ← SET_RULE
-     (← q r"(!x. P x /\ Q x /\ R x /\ P'(f x) /\ R'(f x) ==> Q'(f x))
-      ==> IMAGE f {x | P x /\ R x} SUBSET {y | P' y /\ R' y}
-          ==> IMAGE f {x | (P x /\ Q x) /\ R x} SUBSET
-                      {y | (P' y /\ Q' y) /\ R' y}")
-    let m1 ← MESON [ring_isomorphisms, RING_HOMOMORPHISM]
-     (← q r"ring_isomorphisms (r,r') (f,g)
-      ==> IMAGE f (ring_carrier r) SUBSET ring_carrier r' /\
-          IMAGE g (ring_carrier r') SUBSET ring_carrier r")
     pure (REPEAT GEN_TAC THEN DISCH_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP RING_ISOMORPHISMS_POWSER_RINGS) THEN
     REWRITE_TAC [POLY_RING_AS_SUBRING] THEN
     MATCH_MP_TAC RING_ISOMORPHISMS_BETWEEN_SUBRINGS THEN ASM_REWRITE_TAC [] THEN
-    FIRST_X_ASSUM (MP_TAC o MATCH_MP m1) THEN
+    FIRST_X_ASSUM (MP_TAC o MATCH_MP (← MESON [ring_isomorphisms, RING_HOMOMORPHISM]
+     (← q r"ring_isomorphisms (r,r') (f,g)
+      ==> IMAGE f (ring_carrier r) SUBSET ring_carrier r' /\
+          IMAGE g (ring_carrier r') SUBSET ring_carrier r"))) THEN
     REWRITE_TAC [POWSER_RING, POLY_RING, ring_polynomial] THEN
-    MATCH_MP_TAC MONO_AND THEN CONJ_TAC THEN MATCH_MP_TAC sr THEN
-    REWRITE_TAC [m3] THENL
+    MATCH_MP_TAC MONO_AND THEN CONJ_TAC THEN MATCH_MP_TAC (← SET_RULE
+     (← q r"(!x. P x /\ Q x /\ R x /\ P'(f x) /\ R'(f x) ==> Q'(f x))
+      ==> IMAGE f {x | P x /\ R x} SUBSET {y | P' y /\ R' y}
+          ==> IMAGE f {x | (P x /\ Q x) /\ R x} SUBSET
+                      {y | (P' y /\ Q' y) /\ R' y}")) THEN
+    REWRITE_TAC [(← MESON [] (← q r"~((if p then x else z) = z) <=> p /\ ~(x = z)"))] THENL
      [X_GEN_TAC (← q r"p:(V->num)->A"), X_GEN_TAC (← q r"p:(W->num)->B")] THEN
     REWRITE_TAC [ring_powerseries, poly_vars] THEN
     REWRITE_TAC [UNIONS_SUBSET, FORALL_IN_GSPEC] THEN STRIP_TAC THEN
@@ -31749,7 +31462,7 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
     (CONJ_TAC THENL
      [GEN_REWRITE_TAC id [FUN_EQ_THM] THEN GEN_TAC THEN
       ASM_SIMP_TAC [] THEN COND_CASES_TAC THEN ASM SET_TAC [],
-      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP tt) THEN
+      FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← TAUT (← q r"~p ==> (q ==> p) ==> ~q"))) THEN
       SIMP_TAC [] THEN RULE_ASSUM_TAC (REWRITE_RULE
        [ring_isomorphisms, ring_homomorphism]) THEN
       ASM_REWRITE_TAC []])))
@@ -31775,33 +31488,6 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
               (\p m1 m2. if monomial v m1 /\ monomial u m2
                          then p(monomial_mul m1 m2) else ring_0 r))"
    (← do
-    -- right to left: the MESON on ring_mul, the second and first SET_RULEs
-    -- on {f a b ...}, the MESON on if-then-else, the RING_RULE, the MESON
-    -- on ring_0, the SET_RULE on {x | x IN s ...}, the MESON on if-then-0
-    let m8 ← MESON []
-      (← q r"x = x' /\ y = y'
-       ==> ring_mul r (p x) (q y) = ring_mul r (p x') (q y')")
-    let s7 ← SET_RULE
-     (← q r"{f x y | (x IN {g a b | P a b} /\ y IN {h c d | Q c d}) /\ R x y} =
-      {f (g a b) (h c d) |a,b,c,d| P a b /\ Q c d /\ R (g a b) (h c d)}")
-    let s6 ← SET_RULE
-     (← q r"{x | x IN {f a b | P a b} /\ Q x} = {f a b |a,b| P a b /\ Q(f a b)}")
-    let m5 ← MESON [RING_0, RING_MUL_LZERO, RING_MUL_RZERO]
-     (← q r"x IN ring_carrier r /\ y IN ring_carrier r
-      ==> ring_mul r (if p then x else ring_0 r) (if q then y else ring_0 r) =
-          if p /\ q then ring_mul r x y else ring_0 r")
-    let r4 ← RING_RULE
-       (← q r"(x IN ring_carrier r /\ y IN ring_carrier r) /\
-        (x = ring_0 r \/ y = ring_0 r)
-        ==> ring_mul r x y = ring_0 r")
-    let m3 ← MESON []
-       (← q r"ring_0 (powser_ring r t) m = ring_0 r /\
-        ring_sum (powser_ring r t) s f = ring_0 (powser_ring r t)
-        ==> ring_0 r = ring_sum (powser_ring r t) s f m")
-    let s2 ← SET_RULE
-       (← q r"{x | x IN s /\ P x} = {x | x IN {y | P y} /\ x IN s}")
-    let m1 ← MESON []
-       (← q r"~((if p then x else 0) = 0) <=> p /\ ~(x = 0)")
     pure (MAP_EVERY X_GEN_TAC [← q "r:A ring", ← q r"v:V->bool", ← q r"u:V->bool"] THEN
     ONCE_REWRITE_TAC [UNION_COMM, DISJOINT_SYM] THEN DISCH_TAC THEN
     REWRITE_TAC [monomial_restrict] THEN
@@ -31813,8 +31499,10 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
       GEN_REWRITE_TAC id [FUN_EQ_THM] THEN X_GEN_TAC (← q r"m:V->num") THEN
       REWRITE_TAC [] THEN COND_CASES_TAC THEN ASM_SIMP_TAC [] THEN
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [monomial]) THEN
-      REWRITE_TAC [monomial, monomial_vars, SUBSET_RESTRICT, m1] THEN
-      ONCE_REWRITE_TAC [s2] THEN
+      REWRITE_TAC [monomial, monomial_vars, SUBSET_RESTRICT, (← MESON []
+       (← q r"~((if p then x else 0) = 0) <=> p /\ ~(x = 0)"))] THEN
+      ONCE_REWRITE_TAC [(← SET_RULE
+       (← q r"{x | x IN s /\ P x} = {x | x IN {y | P y} /\ x IN s}"))] THEN
       SIMP_TAC [FINITE_RESTRICT] THEN STRIP_TAC THEN AP_TERM_TAC THEN
       REWRITE_TAC [FUN_EQ_THM, monomial_mul] THEN GEN_TAC THEN
       REPEAT (COND_CASES_TAC THEN ASM_REWRITE_TAC [ADD_CLAUSES]) THEN
@@ -31866,14 +31554,20 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
      [ALL_TAC,
       GEN_REWRITE_TAC id [FUN_EQ_THM] THEN X_GEN_TAC (← q r"n:V->num") THEN
       REWRITE_TAC [POWSER_RING] THEN REWRITE_TAC [poly_mul] THEN
-      MATCH_MP_TAC m3 THEN
+      MATCH_MP_TAC (← MESON []
+       (← q r"ring_0 (powser_ring r t) m = ring_0 r /\
+        ring_sum (powser_ring r t) s f = ring_0 (powser_ring r t)
+        ==> ring_0 r = ring_sum (powser_ring r t) s f m")) THEN
       CONJ_TAC THENL
        [REWRITE_TAC [POWSER_RING, poly_0, poly_const, COND_ID], ALL_TAC] THEN
       MATCH_MP_TAC RING_SUM_EQ_0 THEN
       REWRITE_TAC [IMP_CONJ, FORALL_IN_GSPEC] THEN
       MAP_EVERY X_GEN_TAC [← q r"ma:V->num", ← q r"mb:V->num"] THEN
       DISCH_TAC THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN
-      MATCH_MP_TAC r4 THEN
+      MATCH_MP_TAC (← RING_RULE
+       (← q r"(x IN ring_carrier r /\ y IN ring_carrier r) /\
+        (x = ring_0 r \/ y = ring_0 r)
+        ==> ring_mul r x y = ring_0 r")) THEN
       REWRITE_TAC [RING_CARRIER_POWSER_RING, IN_ELIM_THM] THEN
       CONJ_TAC THENL [ASM_MESON_TAC [RING_0], ALL_TAC] THEN
       UNDISCH_TAC (← q r"~monomial (u:V->bool) m") THEN EXPAND_TAC "m" THEN
@@ -31913,11 +31607,17 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
      [REPEAT (CONJ_TAC THENL [ASM_MESON_TAC [monomial], ALL_TAC]) THEN
       ASM_MESON_TAC [RING_0, RING_MUL],
       DISCH_THEN SUBST1_TAC] THEN
-    ASM_SIMP_TAC [m5] THEN
+    ASM_SIMP_TAC [(← MESON [RING_0, RING_MUL_LZERO, RING_MUL_RZERO]
+     (← q r"x IN ring_carrier r /\ y IN ring_carrier r
+      ==> ring_mul r (if p then x else ring_0 r) (if q then y else ring_0 r) =
+          if p /\ q then ring_mul r x y else ring_0 r"))] THEN
     GEN_REWRITE_TAC (RAND_CONV o RAND_CONV) [LAMBDA_PAIR] THEN
     REWRITE_TAC [← GSYM RING_SUM_RESTRICT_SET] THEN
-    REWRITE_TAC [s6] THEN
-    REWRITE_TAC [s7] THEN
+    REWRITE_TAC [(← SET_RULE
+     (← q r"{x | x IN {f a b | P a b} /\ Q x} = {f a b |a,b| P a b /\ Q(f a b)}"))] THEN
+    REWRITE_TAC [(← SET_RULE
+     (← q r"{f x y | (x IN {g a b | P a b} /\ y IN {h c d | Q c d}) /\ R x y} =
+      {f (g a b) (h c d) |a,b,c,d| P a b /\ Q c d /\ R (g a b) (h c d)}"))] THEN
     MATCH_MP_TAC RING_SUM_EQ_GENERAL_INVERSES THEN
     EXISTS_TAC (← q r"(\(m',n'). (monomial_restrict u m',monomial_restrict u n'),
                            (monomial_restrict v m',monomial_restrict v n'))
@@ -31939,7 +31639,9 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
         pure (MP_TAC th THEN MP_TAC a2 THEN MP_TAC a1))] THEN
     ASM_REWRITE_TAC [o_THM, MONOMIAL_VARS_MUL, FINITE_UNION] THEN
     ASM_SIMP_TAC [FINITE_INTER] THEN REPEAT STRIP_TAC THEN
-    TRY (MATCH_MP_TAC m8) THEN
+    TRY (MATCH_MP_TAC (← MESON []
+      (← q r"x = x' /\ y = y'
+       ==> ring_mul r (p x) (q y) = ring_mul r (p x') (q y')"))) THEN
     REPEAT CONJ_TAC THEN GEN_REWRITE_TAC id [FUN_EQ_THM] THEN
     REPEAT (FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [FUN_EQ_THM])) THEN
     REWRITE_TAC [IMP_IMP, AND_FORALL_THM] THEN MATCH_MP_TAC MONO_FORALL THEN
@@ -32076,15 +31778,11 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
               subring_generated (powser_ring r v) {p | !m. p m IN s})
              (I,I)"
    (← do
-    -- right to left: the second SET_RULE, the first, then the TAUT
-    let s2 ← SET_RULE (← q r"(!y. y IN t ==> y IN s) /\ s SUBSET t <=> s = t")
-    let s1 ← SET_RULE (← q r"{x | x IN s /\ P x} = s <=> !x. x IN s ==> P x")
-    let tt ← TAUT (← q r"(p /\ q) /\ r <=> q /\ (r /\ p)")
     pure (REPEAT STRIP_TAC THEN
     REWRITE_TAC [RING_ISOMORPHISMS, RING_HOMOMORPHISM] THEN
     REWRITE_TAC [I_THM, IMAGE_I, ← CONJUNCT2 SUBRING_GENERATED] THEN
     ASM_SIMP_TAC [RING_CARRIER_POWSER_SUBRING_GENERATED] THEN
-    GEN_REWRITE_TAC id [tt] THEN
+    GEN_REWRITE_TAC id [(← TAUT (← q r"(p /\ q) /\ r <=> q /\ (r /\ p)"))] THEN
     CONJ_TAC THENL
      [SIMP_TAC [← CONJUNCT2 POWSER_RING, ← CONJUNCT2 SUBRING_GENERATED,
                 poly_1, poly_const, poly_add, poly_mul] THEN
@@ -32092,10 +31790,10 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
       REWRITE_TAC [IN_INTER, IN_ELIM_THM] THEN STRIP_TAC THEN
       ASM_SIMP_TAC [RING_SUM_SUBRING_GENERATED] THEN
       ABS_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-      REWRITE_TAC [s1] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"{x | x IN s /\ P x} = s <=> !x. x IN s ==> P x"))] THEN
       RULE_ASSUM_TAC (REWRITE_RULE [subring_of]) THEN
       ASM_SIMP_TAC [FORALL_IN_GSPEC],
-      REWRITE_TAC [s2] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"(!y. y IN t ==> y IN s) /\ s SUBSET t <=> s = t"))] THEN
       ONCE_REWRITE_TAC [SUBRING_GENERATED_RESTRICT] THEN
       CONV_TAC SYM_CONV THEN
       MATCH_MP_TAC CARRIER_SUBRING_GENERATED_SUBRING THEN
@@ -32118,15 +31816,11 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
               subring_generated (poly_ring r v) {p | !m. p m IN s})
              (I,I)"
    (← do
-    -- right to left: the second SET_RULE, the first, then the TAUT
-    let s2 ← SET_RULE (← q r"(!y. y IN t ==> y IN s) /\ s SUBSET t <=> s = t")
-    let s1 ← SET_RULE (← q r"{x | x IN s /\ P x} = s <=> !x. x IN s ==> P x")
-    let tt ← TAUT (← q r"(p /\ q) /\ r <=> q /\ (r /\ p)")
     pure (REPEAT STRIP_TAC THEN
     REWRITE_TAC [RING_ISOMORPHISMS, RING_HOMOMORPHISM] THEN
     REWRITE_TAC [I_THM, IMAGE_I, ← CONJUNCT2 SUBRING_GENERATED] THEN
     ASM_SIMP_TAC [RING_CARRIER_POLY_SUBRING_GENERATED] THEN
-    GEN_REWRITE_TAC id [tt] THEN
+    GEN_REWRITE_TAC id [(← TAUT (← q r"(p /\ q) /\ r <=> q /\ (r /\ p)"))] THEN
     CONJ_TAC THENL
      [SIMP_TAC [← CONJUNCT2 POLY_RING, ← CONJUNCT2 SUBRING_GENERATED,
                 poly_1, poly_const, poly_add, poly_mul] THEN
@@ -32134,10 +31828,10 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
       REWRITE_TAC [IN_INTER, IN_ELIM_THM] THEN STRIP_TAC THEN
       ASM_SIMP_TAC [RING_SUM_SUBRING_GENERATED] THEN
       ABS_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN
-      REWRITE_TAC [s1] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"{x | x IN s /\ P x} = s <=> !x. x IN s ==> P x"))] THEN
       RULE_ASSUM_TAC (REWRITE_RULE [subring_of]) THEN
       ASM_SIMP_TAC [FORALL_IN_GSPEC],
-      REWRITE_TAC [s2] THEN
+      REWRITE_TAC [(← SET_RULE (← q r"(!y. y IN t ==> y IN s) /\ s SUBSET t <=> s = t"))] THEN
       ONCE_REWRITE_TAC [SUBRING_GENERATED_RESTRICT] THEN
       CONV_TAC SYM_CONV THEN
       MATCH_MP_TAC CARRIER_SUBRING_GENERATED_SUBRING THEN
@@ -32163,18 +31857,6 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
               (\p m1 m2. if monomial v m1 /\ monomial u m2
                          then p(monomial_mul m1 m2) else ring_0 r))"
    (← do
-    -- right to left: the second and first MESON on if-then-else, the
-    -- second SET_RULE, the TAUT, the MESON on subring_of, the first SET_RULE
-    let m6 ← MESON [] (← q r"~((if p then x else z) = z) <=> p /\ ~(x = z)")
-    let m5 ← MESON [] (← q r"~((if p then x else z) = z) <=> p /\ ~(x = z)")
-    let s4 ← SET_RULE
-     (← q r"(!x. x IN s /\ x IN s' ==> f x IN t')
-      ==> IMAGE f s SUBSET t
-          ==> IMAGE f (s INTER s') SUBSET t INTER t'")
-    let tt ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
-    let m2 ← MESON [SUBRING_OF_SUBRING_GENERATED_REV, POLY_RING_AS_SUBRING]
-       (← q r"t subring_of poly_ring r s ==> t subring_of powser_ring r s")
-    let s1 ← SET_RULE (← q r"s INTER s INTER t = s INTER t")
     pure (REPEAT STRIP_TAC THEN
     GEN_REWRITE_TAC (RAND_CONV o LAND_CONV)
      [← GSYM (← CONJUNCT2 (← SPEC_ALL I_O_ID))] THEN
@@ -32203,8 +31885,9 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
     REWRITE_TAC [← GSYM SUBRING_GENERATED_RESTRICT] THEN
     REWRITE_TAC [← GSYM POLY_RING_AS_SUBRING_FINITE] THEN
     REWRITE_TAC [← GSYM RING_CARRIER_POLY_RING_FINITE] THEN
-    REWRITE_TAC [s1] THEN ANTS_TAC THENL
-     [MATCH_MP_TAC m2 THEN
+    REWRITE_TAC [(← SET_RULE (← q r"s INTER s INTER t = s INTER t"))] THEN ANTS_TAC THENL
+     [MATCH_MP_TAC (← MESON [SUBRING_OF_SUBRING_GENERATED_REV, POLY_RING_AS_SUBRING]
+       (← q r"t subring_of poly_ring r s ==> t subring_of powser_ring r s")) THEN
       MATCH_MP_TAC SUBRING_POLY_INTO_SUBRING THEN
       REWRITE_TAC [POLY_CARRIER_SUBRING_OF_POWSER_RING],
       DISCH_THEN SUBST1_TAC] THEN
@@ -32212,7 +31895,7 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
        [← ONCE_REWRITE_RULE [SUBRING_GENERATED_RESTRICT]
            POLY_RING_AS_SUBRING_FINITE] THEN
     MATCH_MP_TAC RING_ISOMORPHISMS_BETWEEN_SUBRINGS THEN
-    MATCH_MP_TAC tt THEN CONJ_TAC THENL
+    MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL
      [MATCH_MP_TAC RING_ISOMORPHISMS_POWSER_POWSER_RING THEN ASM_REWRITE_TAC [],
       REWRITE_TAC [ring_isomorphisms] THEN
       GEN_REWRITE_TAC LAND_CONV [CONJ_ASSOC] THEN
@@ -32223,9 +31906,12 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
        [RING_CARRIER_POLY_RING_FINITE],
       GEN_REWRITE_TAC (RAND_CONV o RAND_CONV o LAND_CONV)
        [RING_CARRIER_POLY_RING_FINITE]] THEN
-    REWRITE_TAC [INTER_ASSOC] THEN MATCH_MP_TAC s4 THEN
+    REWRITE_TAC [INTER_ASSOC] THEN MATCH_MP_TAC (← SET_RULE
+     (← q r"(!x. x IN s /\ x IN s' ==> f x IN t')
+      ==> IMAGE f s SUBSET t
+          ==> IMAGE f (s INTER s') SUBSET t INTER t'")) THEN
     REWRITE_TAC [RING_CARRIER_POLY_RING_FINITE, IN_INTER, IN_ELIM_THM] THEN
-    REWRITE_TAC [m5] THENL
+    REWRITE_TAC [(← MESON [] (← q r"~((if p then x else z) = z) <=> p /\ ~(x = z)"))] THENL
      [X_GEN_TAC (← q r"p:(V->num)->(V->num)->A") THEN
       REWRITE_TAC [FORALL_AND_THM] THEN STRIP_TAC THEN
       MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC
@@ -32258,7 +31944,7 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
         CONJ_TAC THENL
          [REWRITE_TAC [MONOMIAL_FINITE_DIVISORS] THEN ASM SET_TAC [],
           GEN_REWRITE_TAC id [SUBSET] THEN REWRITE_TAC [IN_ELIM_THM] THEN
-          X_GEN_TAC (← q r"n:V->num") THEN REWRITE_TAC [NOT_FORALL_THM, m6] THEN
+          X_GEN_TAC (← q r"n:V->num") THEN REWRITE_TAC [NOT_FORALL_THM, (← MESON [] (← q r"~((if p then x else z) = z) <=> p /\ ~(x = z)"))] THEN
           DISCH_THEN (X_CHOOSE_THEN (← q r"p:V->num") STRIP_ASSUME_TAC) THEN
           EXISTS_TAC (← q r"monomial_mul n p:V->num") THEN
           ASM_SIMP_TAC [MONOMIAL_DIVIDES_RMUL, MONOMIAL_DIVIDES_REFL]],
@@ -32318,19 +32004,14 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
                                  else ring_0 r) =
             poly_extend (r,s) h x p"
    (← do
-    -- right to left: the SET_RULE, the MONOMIAL_RULE, the TAUT, the MESON
-    let sr ← SET_RULE (← q r"DISJOINT s t ==> !x. ~(x IN s /\ x IN t)")
-    let mr ← MONOMIAL_RULE (← q r"monomial_mul m2 m1:V->num = monomial_mul m1 m2")
-    let tt ← TAUT (← q r"r /\ (r ==> q) /\ (q ==> p) ==> (p /\ q) /\ r")
-    let mm ← MESON []
+    pure (REWRITE_TAC [RING_CARRIER_POLY_RING, IN_ELIM_THM] THEN
+    REPEAT STRIP_TAC THEN REWRITE_TAC [poly_extend] THEN MATCH_MP_TAC (← MESON []
      (← q r"(FINITE s /\ (!x. x IN s ==> FINITE(t x))) /\
       (FINITE s /\ (!x. x IN s ==> FINITE(t x))
        ==> ring_sum r s (\x. ring_mul r (ring_sum r (t x)  (f x)) (c x)) =
            ring_sum r s (\x. ring_sum r (t x) (\y. ring_mul r (f x y) (c x))) /\
            ring_sum r s (\x. ring_sum r (t x) (\y. ring_mul r (f x y) (c x))) = w)
-      ==> ring_sum r s (\x. ring_mul r (ring_sum r (t x) (f x)) (c x)) = w")
-    pure (REWRITE_TAC [RING_CARRIER_POLY_RING, IN_ELIM_THM] THEN
-    REPEAT STRIP_TAC THEN REWRITE_TAC [poly_extend] THEN MATCH_MP_TAC mm THEN
+      ==> ring_sum r s (\x. ring_mul r (ring_sum r (t x) (f x)) (c x)) = w")) THEN
     CONJ_TAC THENL
      [REWRITE_TAC [IN_ELIM_THM] THEN
       CONJ_TAC THENL [ALL_TAC, X_GEN_TAC (← q r"m1:V->num") THEN STRIP_TAC] THEN
@@ -32381,7 +32062,7 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
       THENL
        [ASM SET_TAC [], GEN_REWRITE_TAC LAND_CONV [monomial] THEN STRIP_TAC] THEN
       ASM_SIMP_TAC [MONOMIAL_RESTRICT_EQ, FINITE_INTER] THEN
-      MATCH_MP_TAC tt THEN
+      MATCH_MP_TAC (← TAUT (← q r"r /\ (r ==> q) /\ (q ==> p) ==> (p /\ q) /\ r")) THEN
       REPEAT CONJ_TAC THENL
        [ASM_SIMP_TAC [MONOMIAL_MUL_RESTRICT, MONOMIAL_RESTRICT_REFL],
         ASM_MESON_TAC [MONOMIAL_MUL_SYM],
@@ -32392,14 +32073,14 @@ def setupNatIso [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sums)
       MAP_EVERY X_GEN_TAC [← q r"m2:V->num", ← q r"m1:V->num"] THEN
       COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
       FIRST_X_ASSUM (CONJUNCTS_THEN ASSUME_TAC) THEN
-      SUBST1_TAC mr THEN
+      SUBST1_TAC (← MONOMIAL_RULE (← q r"monomial_mul m2 m1:V->num = monomial_mul m1 m2")) THEN
       DISCH_THEN (ASSUME_TAC o CONJUNCT2) THEN ASM_REWRITE_TAC [IN_ELIM_THM] THEN
       CONJ_TAC THENL
        [REWRITE_TAC [PAIR_EQ, FUN_EQ_THM] THEN
         REWRITE_TAC [monomial_restrict, monomial_mul] THEN CONJ_TAC THEN
         REPEAT (FIRST_X_ASSUM
          (MP_TAC o CONJUNCT2 o GEN_REWRITE_RULE id [monomial])) THEN
-        FIRST_ASSUM (MP_TAC o MATCH_MP sr) THEN
+        FIRST_ASSUM (MP_TAC o MATCH_MP (← SET_RULE (← q r"DISJOINT s t ==> !x. ~(x IN s /\ x IN t)"))) THEN
         REWRITE_TAC [SUBSET, IMP_IMP, AND_FORALL_THM, monomial_vars] THEN
         MATCH_MP_TAC MONO_FORALL THEN X_GEN_TAC (← q "i:V") THEN
         REWRITE_TAC [IN_ELIM_THM] THEN
@@ -32600,21 +32281,18 @@ def setupRenaming [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sum
         BIJ f s t /\ x IN s
         ==> poly_reindex r (poly_var r (f x)) f s t = poly_var r x"
    (← do
-    -- right to left: the TAUT, then the MESON
-    let tt ← TAUT (← q "F ==> p")
-    let mm ← MESON [] (← q "p ==> (if p then x else y) = x")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [poly_reindex, poly_var] THEN
     GEN_REWRITE_TAC id [FUN_EQ_THM] THEN X_GEN_TAC (← q r"m:V->num") THEN
     REWRITE_TAC [] THEN
     ASM_CASES_TAC (← q r"m:V->num = monomial_var x") THENL
      [ASM_REWRITE_TAC [MONOMIAL_VARS_VAR, SING_SUBSET] THEN
-      ASM_REWRITE_TAC [monomial_var] THEN MATCH_MP_TAC mm THEN
+      ASM_REWRITE_TAC [monomial_var] THEN MATCH_MP_TAC (← MESON [] (← q "p ==> (if p then x else y) = x")) THEN
       GEN_REWRITE_TAC id [FUN_EQ_THM] THEN
       RULE_ASSUM_TAC (REWRITE_RULE [BIJ, INJ, SURJ]) THEN ASM_MESON_TAC [],
       ASM_REWRITE_TAC []] THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
-    MATCH_MP_TAC tt THEN
+    MATCH_MP_TAC (← TAUT (← q "F ==> p")) THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE RAND_CONV [FUN_EQ_THM]) THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [FUN_EQ_THM]) THEN
     REWRITE_TAC [monomial_var] THEN DISCH_TAC THEN
@@ -32718,9 +32396,6 @@ def setupRenaming [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sum
         (!m. ring_divides r c (p m))
         ==> ring_divides (poly_ring r s) (poly_const r c) p"
    (← do
-    -- right to left: the MESON, then the TAUT
-    let mm ← MESON [] (← q r"(if p then z else x) = z <=> p \/ x = z")
-    let tt ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
     pure (REPEAT STRIP_TAC THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE BINDER_CONV [ring_divides]) THEN
     REWRITE_TAC [FORALL_AND_THM, SKOLEM_THM] THEN
@@ -32730,12 +32405,12 @@ def setupRenaming [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Sum
     ABBREV_TAC
      (← q r"q' = \m. if p m = ring_0 r then ring_0 r else (q:(V->num)->A) m") THEN
     EXISTS_TAC (← q r"q':(V->num)->A") THEN
-    MATCH_MP_TAC tt THEN CONJ_TAC THENL
+    MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL
      [UNDISCH_TAC (← q r"(p:(V->num)->A) IN ring_carrier (poly_ring r s)") THEN
       REWRITE_TAC [POLY_RING, IN_ELIM_THM, ring_polynomial, ring_powerseries] THEN
       ASM_REWRITE_TAC [poly_vars] THEN EXPAND_TAC "q'" THEN
       REWRITE_TAC [← GSYM CONJ_ASSOC] THEN ASM_REWRITE_TAC [] THEN
-      REWRITE_TAC [mm] THEN
+      REWRITE_TAC [(← MESON [] (← q r"(if p then z else x) = z <=> p \/ x = z"))] THEN
       DISCH_THEN (fun th =>
         CONJ_TAC THENL [ASM_MESON_TAC [RING_0], MP_TAC th]) THEN
       MATCH_MP_TAC MONO_AND THEN SIMP_TAC [] THEN
@@ -33112,14 +32787,6 @@ def setupMonomialOrders [HolBase] (D : RingTheoryDeps) (BMonomials : Monomials) 
             \m1 m2. monomial (:V) m1 /\ monomial (:V) m2 /\
                     !i. m2 i < m1 i ==> ?j. i <<= j /\ m1 j < m2 j"
    (← do
-    -- right to left: the two ARITH_RULEs in the last ASM_MESON_TAC list
-    -- (second first), the MESON, the ARITH_RULE in MESON_TAC, the first one
-    let a5 ← ARITH_RULE (← q r"a <= b /\ ~(a = 0) ==> ~(b = 0)")
-    let a4 ← ARITH_RULE (← q r"a < b ==> ~(b = 0)")
-    let m3 ← MESON [] (← q r"(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)")
-    let a2 ← ARITH_RULE
-       (← q r"a + b:num = c + d ==> (b < d <=> c < a) /\ (a < c <=> d < b)")
-    let a1 ← ARITH_RULE (← q r"~(a - b = 0) <=> b < a")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [FUN_EQ_THM] THEN
     MAP_EVERY X_GEN_TAC [← q r"m1:V->num", ← q r"m2:V->num"] THEN
     REWRITE_TAC [monomial_le, properly, MONOMIAL] THEN
@@ -33134,7 +32801,7 @@ def setupMonomialOrders [HolBase] (D : RingTheoryDeps) (BMonomials : Monomials) 
         MATCH_MP_TAC FINITE_SUBSET THEN EXISTS_TAC (← q r"monomial_vars(m1:V->num)"),
         REWRITE_TAC [monomial_mul] THEN ABS_TAC THEN ARITH_TAC,
         X_GEN_TAC (← q "i:V") THEN REWRITE_TAC [monomial_vars, IN_ELIM_THM] THEN
-        REWRITE_TAC [a1] THEN
+        REWRITE_TAC [(← ARITH_RULE (← q r"~(a - b = 0) <=> b < a"))] THEN
         ASM_MESON_TAC [LT_ANTISYM]] THEN
       ASM_REWRITE_TAC [SUBSET, monomial_vars, IN_ELIM_THM] THEN ARITH_TAC] THEN
     REWRITE_TAC [LEFT_IMP_EXISTS_THM, IMP_CONJ] THEN
@@ -33146,8 +32813,9 @@ def setupMonomialOrders [HolBase] (D : RingTheoryDeps) (BMonomials : Monomials) 
     MP_TAC THENL
      [ALL_TAC,
       FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [FUN_EQ_THM]) THEN
-      REWRITE_TAC [monomial_mul] THEN MESON_TAC [a2]] THEN
-    X_GEN_TAC (← q "i:V") THEN DISCH_TAC THEN ONCE_REWRITE_TAC [m3] THEN
+      REWRITE_TAC [monomial_mul] THEN MESON_TAC [(← ARITH_RULE
+       (← q r"a + b:num = c + d ==> (b < d <=> c < a) /\ (a < c <=> d < b)"))]] THEN
+    X_GEN_TAC (← q "i:V") THEN DISCH_TAC THEN ONCE_REWRITE_TAC [(← MESON [] (← q r"(?x. P x /\ Q x) <=> ~(!x. P x ==> ~Q x)"))] THEN
     REWRITE_TAC [NOT_LT] THEN DISCH_TAC THEN
     MP_TAC (← ISPECL [← q r"\x y:V. x = y \/ x <<= y",
                    ← q r"{j:V | j IN monomial_vars mb /\ (i:V) <<= j}"]
@@ -33158,7 +32826,7 @@ def setupMonomialOrders [HolBase] (D : RingTheoryDeps) (BMonomials : Monomials) 
     REPEAT CONJ_TAC THENL
      [FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [poset]) THEN
       REWRITE_TAC [poset, fld] THEN SET_TAC [],
-      ASM_MESON_TAC [a4, a5],
+      ASM_MESON_TAC [(← ARITH_RULE (← q r"a < b ==> ~(b = 0)")), (← ARITH_RULE (← q r"a <= b /\ ~(a = 0) ==> ~(b = 0)"))],
       REWRITE_TAC [fld] THEN SET_TAC [],
       DISCH_THEN (X_CHOOSE_THEN (← q "j:V") STRIP_ASSUME_TAC) THEN
       UNDISCH_THEN
@@ -33180,16 +32848,13 @@ def setupMonomialOrders [HolBase] (D : RingTheoryDeps) (BMonomials : Monomials) 
         monomial_le (<<=) m2 m1
         ==> m1 = m2"
    (← do
-    -- right to left: the SET_RULE, then the ARITH_RULE
-    let sr ← SET_RULE
-     (← q r"~(~({i | P i} = {})) /\ ~(~({i | Q i} = {}))
-      ==> !i. ~(P i) /\ ~(Q i)")
-    let ar ← ARITH_RULE (← q r"m:num = n <=> ~(m < n) /\ ~(n < m)")
     pure (REPEAT GEN_TAC THEN GEN_REWRITE_TAC id [IMP_CONJ] THEN
     SIMP_TAC [MONOMIAL_LE_POSET] THEN REWRITE_TAC [poset] THEN
     REPEAT STRIP_TAC THEN GEN_REWRITE_TAC id [FUN_EQ_THM] THEN
-    REWRITE_TAC [ar] THEN
-    MATCH_MP_TAC sr THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"m:num = n <=> ~(m < n) /\ ~(n < m)"))] THEN
+    MATCH_MP_TAC (← SET_RULE
+     (← q r"~(~({i | P i} = {})) /\ ~(~({i | Q i} = {}))
+      ==> !i. ~(P i) /\ ~(Q i)")) THEN
     CONJ_TAC THEN DISCH_TAC THEN
     MP_TAC (← ISPEC (← q r"\x y:V. x = y \/ x <<= y") POSET_MAX) THENL
      [DISCH_THEN (MP_TAC o SPEC (← q r"{i | (m1:V->num) i < m2 i}")),
@@ -33319,14 +32984,11 @@ def setupMonomialOrders [HolBase] (D : RingTheoryDeps) (BMonomials : Monomials) 
              monomial (:V) m1 /\ monomial (:V) m2 /\
              ?i. m1 i < m2 i /\ !j. properly (<<=) i j ==> m1 j = m2 j)"
    (← do
-    -- right to left: the ARITH_RULE, then the TAUT
-    let ar ← ARITH_RULE (← q r"~(a:num = b) /\ ~(a < b) ==> b < a")
-    let tt ← TAUT (← q r"(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [monomial_lt] THEN
     ASM_CASES_TAC (← q r"m1:V->num = m2") THEN ASM_REWRITE_TAC [LT_REFL] THEN
     ASM_SIMP_TAC [MONOMIAL_LE_POSET, TOSET_IMP_POSET, properly, CONJ_ASSOC] THEN
     REWRITE_TAC [MONOMIAL, ← GSYM FINITE_UNION] THEN
-    MATCH_MP_TAC tt THEN
+    MATCH_MP_TAC (← TAUT (← q r"(p ==> (q <=> r)) ==> (p /\ q <=> p /\ r)")) THEN
     DISCH_TAC THEN EQ_TAC THENL
      [DISCH_TAC THEN
       MP_TAC (← ISPECL [← q r"(<<=):V->V->bool", ← q r"{i | ~((m1:V->num) i = m2 i)}"]
@@ -33343,7 +33005,7 @@ def setupMonomialOrders [HolBase] (D : RingTheoryDeps) (BMonomials : Monomials) 
         FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [toset]) THEN
         ASM_REWRITE_TAC [IN_UNIV] THEN
         REPEAT STRIP_TAC THENL [ALL_TAC, ASM_MESON_TAC [LT_ANTISYM]] THEN
-        MATCH_MP_TAC ar THEN
+        MATCH_MP_TAC (← ARITH_RULE (← q r"~(a:num = b) /\ ~(a < b) ==> b < a")) THEN
         ASM_METIS_TAC [LT_ANTISYM, LT_TRANS]],
       DISCH_THEN (X_CHOOSE_THEN (← q "j:V") STRIP_ASSUME_TAC) THEN
       X_GEN_TAC (← q "i:V") THEN DISCH_TAC THEN EXISTS_TAC (← q "j:V") THEN
@@ -33405,18 +33067,6 @@ def setupMonomialOrders [HolBase] (D : RingTheoryDeps) (BMonomials : Monomials) 
   let WF_MONOMIAL_LT ← prove
    r"!(<<):V->V->bool. WF(<<) ==> WF(monomial_lt(<<))"
    (← do
-    -- right to left: the MESON, the second TAUT, the SET_RULE, the second
-    -- prove_inductive_relations_exist, the first TAUT, the first one
-    let mm ← MESON []
-     (← q r"(!x y. Q x y ==> R x y) ==> (!x y. P x y /\ Q x y ==> R x y)")
-    let t2 ← TAUT (← q r"a ==> b <=> a ==> a /\ b")
-    let sr ← SET_RULE (← q r"!m:V->num. w m <=> m IN w")
-    let pir2 ← ExceptT.mk (prove_inductive_relations_exist
-     (← q r"!m. monomial (:V) m /\ (!m'. monomial_lt (<<) m' m ==> w m') ==> w m"))
-    let t1 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
-    let pir1 ← ExceptT.mk (prove_inductive_relations_exist
-     (← q r"(!x y. x << y ==> x <<< y) /\
-      (!(x:V) y z. x <<< y /\ y <<< z ==> x <<< z)"))
     pure (SUBGOAL_THEN
      (← q r"!(<<):V->V->bool.
           WF(<<) /\
@@ -33427,13 +33077,15 @@ def setupMonomialOrders [HolBase] (D : RingTheoryDeps) (BMonomials : Monomials) 
     ASSUME_TAC THENL
      [ALL_TAC,
       X_GEN_TAC (← q r"(<<):V->V->bool") THEN STRIP_TAC THEN
-      X_CHOOSE_THEN (← q r"(<<<):V->V->bool") MP_TAC pir1 THEN
+      X_CHOOSE_THEN (← q r"(<<<):V->V->bool") MP_TAC (← ExceptT.mk (prove_inductive_relations_exist
+     (← q r"(!x y. x << y ==> x <<< y) /\
+      (!(x:V) y z. x <<< y /\ y <<< z ==> x <<< z)"))) THEN
       DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (ASSUME_TAC o CONJUNCT1)) THEN
       MATCH_MP_TAC WF_SUBSET THEN
       EXISTS_TAC (← q r"monomial_lt((<<<):V->V->bool)") THEN CONJ_TAC THENL
        [MATCH_MP_TAC MONOMIAL_LT_MONO THEN ASM_REWRITE_TAC [], ALL_TAC] THEN
       FIRST_X_ASSUM MATCH_MP_TAC THEN
-      MATCH_MP_TAC t1 THEN CONJ_TAC THENL
+      MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL
        [REWRITE_TAC [WF] THEN X_GEN_TAC (← q r"P:V->bool") THEN
         FIRST_X_ASSUM (MP_TAC o SPEC (← q r"\y:V. ?z:V. P z /\ z <<< y") o
           GEN_REWRITE_RULE id [WF]) THEN
@@ -33451,8 +33103,9 @@ def setupMonomialOrders [HolBase] (D : RingTheoryDeps) (BMonomials : Monomials) 
         MESON_TAC [LT_ANTISYM]]] THEN
     X_GEN_TAC (← q r"(<<):V->V->bool") THEN
     DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC (LABEL_TAC "D")) THEN
-    X_CHOOSE_THEN (← q r"w:(V->num)->bool") MP_TAC pir2 THEN
-    MP_TAC sr THEN
+    X_CHOOSE_THEN (← q r"w:(V->num)->bool") MP_TAC (← ExceptT.mk (prove_inductive_relations_exist
+     (← q r"!m. monomial (:V) m /\ (!m'. monomial_lt (<<) m' m ==> w m') ==> w m"))) THEN
+    MP_TAC (← SET_RULE (← q r"!m:V->num. w m <=> m IN w")) THEN
     DISCH_THEN (fun th => ONCE_REWRITE_TAC [th]) THEN
     DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "R") MP_TAC) THEN
     DISCH_THEN (CONJUNCTS_THEN2 (LABEL_TAC "I") (LABEL_TAC "C" o GSYM)) THEN
@@ -33475,10 +33128,11 @@ def setupMonomialOrders [HolBase] (D : RingTheoryDeps) (BMonomials : Monomials) 
      (LABEL_TAC "J")
     THENL
      [GEN_TAC THEN STRIP_TAC THEN
-      ONCE_REWRITE_TAC [t2] THEN
+      ONCE_REWRITE_TAC [(← TAUT (← q r"a ==> b <=> a ==> a /\ b"))] THEN
       REMOVE_THEN "I" MATCH_MP_TAC THEN ASM_MESON_TAC [],
       ALL_TAC] THEN
-    MATCH_MP_TAC mm THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"(!x y. Q x y ==> R x y) ==> (!x y. P x y /\ Q x y ==> R x y)")) THEN
     FIRST_ASSUM (MATCH_MP_TAC o GEN_REWRITE_RULE id [WF_IND]) THEN
     X_GEN_TAC (← q "a:V") THEN
     GEN_REWRITE_TAC (LAND_CONV o TOP_DEPTH_CONV)
@@ -34527,9 +34181,6 @@ def setupDegree [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
         ~(poly_deg r p = poly_deg r q)
         ==> poly_deg r (poly_add r p q) = MAX (poly_deg r p) (poly_deg r q)"
    (← do
-    -- right to left: the second RING_RULE, then the first
-    let r2 ← RING_RULE (← q r"ring_sub r (ring_add r x y) y:A = x")
-    let r1 ← RING_RULE (← q r"ring_sub r (ring_add r x y) x:A = y")
     pure (REWRITE_TAC [RING_POLYNOMIAL] THEN REPEAT STRIP_TAC THEN
     MP_TAC (← SPECL [← q "r:A ring", ← q r"p:(V->num)->A", ← q r"q:(V->num)->A"]
           POLY_DEG_ADD_LE) THEN
@@ -34538,7 +34189,7 @@ def setupDegree [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
     MP_TAC (← SPECL [← q "r:A ring", ← q r"poly_add r p q:(V->num)->A", ← q r"q:(V->num)->A"]
           POLY_DEG_SUB_LE) THEN
     ASM_SIMP_TAC [RING_POLYNOMIAL] THEN
-    ASM_SIMP_TAC [POLY_CLAUSES, RING_ADD, RING_SUB, r1, r2] THEN
+    ASM_SIMP_TAC [POLY_CLAUSES, RING_ADD, RING_SUB, (← RING_RULE (← q r"ring_sub r (ring_add r x y) x:A = y")), (← RING_RULE (← q r"ring_sub r (ring_add r x y) y:A = x"))] THEN
     REPEAT (POP_ASSUM MP_TAC) THEN ARITH_TAC))
 
   let POLY_DEG_SUB ← prove
@@ -34612,18 +34263,6 @@ def setupDegree [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
         (p = poly_0 r <=> q = poly_0 r)
         ==> poly_deg r (poly_mul r p q) = poly_deg r p + poly_deg r q"
    (← do
-    -- right to left: the MESON[MONOMIAL_LT_REFL], the ARITH_RULE, then the
-    -- second and first MESON
-    let m4 ← MESON [MONOMIAL_LT_REFL]
-     (← q r"!l. monomial_lt l m n ==> ~(m = n)")
-    let a3 ← ARITH_RULE
-     (← q r"x + y:num = m + n ==> x <= m /\ y <= n ==> x = m /\ y = n")
-    let m2 ← MESON []
-     (← q r"(monomial_deg m = monomial_deg m' ==> ~p ==> ~(m = m'))
-      ==> m = m' ==> p")
-    let m1 ← MESON []
-     (← q r"!m. ring_sum r t f = ring_sum r {m} f /\ ~(ring_sum r {m} f = a)
-          ==> ~(ring_sum r t f = a)")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"q:(V->num)->A = poly_0 r") THEN
     ASM_SIMP_TAC [POLY_MUL_0, POLY_DEG_0, ADD_CLAUSES] THEN STRIP_TAC THEN
     MP_TAC (← ISPEC (← q "(:V)") WO) THEN DISCH_THEN (X_CHOOSE_TAC (← q r"l:V->V->bool")) THEN
@@ -34641,7 +34280,9 @@ def setupDegree [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
     SUBGOAL_THEN (← q r"monomial (:V) m1 /\ monomial (:V) m2") STRIP_ASSUME_TAC THENL
      [ASM_MESON_TAC [RING_POLYNOMIAL_MONOMIAL],
       ASM_SIMP_TAC [MONOMIAL_DEG_MUL, LE_REFL]] THEN
-    MATCH_MP_TAC m1 THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"!m. ring_sum r t f = ring_sum r {m} f /\ ~(ring_sum r {m} f = a)
+          ==> ~(ring_sum r t f = a)")) THEN
     EXISTS_TAC (← q r"(m1:V->num,m2:V->num)") THEN
     GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [RING_SUM_SING] THEN
     RULE_ASSUM_TAC (REWRITE_RULE [ring_polynomial, ring_powerseries]) THEN
@@ -34656,15 +34297,19 @@ def setupDegree [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
      [CONJ_TAC THEN MATCH_MP_TAC RING_POLYNOMIAL_MONOMIAL THEN
       ASM_REWRITE_TAC [ring_polynomial, ring_powerseries] THEN ASM_MESON_TAC [],
       ASM_SIMP_TAC [MONOMIAL_DEG_MUL]] THEN
-    MATCH_MP_TAC m2 THEN
-    ASM_SIMP_TAC [MONOMIAL_DEG_MUL] THEN DISCH_THEN (MP_TAC o MATCH_MP a3) THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"(monomial_deg m = monomial_deg m' ==> ~p ==> ~(m = m'))
+      ==> m = m' ==> p")) THEN
+    ASM_SIMP_TAC [MONOMIAL_DEG_MUL] THEN DISCH_THEN (MP_TAC o MATCH_MP (← ARITH_RULE
+     (← q r"x + y:num = m + n ==> x <= m /\ y <= n ==> x = m /\ y = n"))) THEN
     ASM_SIMP_TAC [MONOMIAL_DEG_LE_POLY_DEG, ring_polynomial, ring_powerseries] THEN
     STRIP_TAC THEN
     ASM_CASES_TAC (← q r"n1:V->num = m1") THEN ASM_REWRITE_TAC [] THENL
      [FIRST_X_ASSUM SUBST_ALL_TAC THEN DISCH_TAC,
       ASM_CASES_TAC (← q r"n2:V->num = m2") THENL
        [FIRST_X_ASSUM SUBST_ALL_TAC, ALL_TAC]] THEN
-    MATCH_MP_TAC m4 THEN
+    MATCH_MP_TAC (← MESON [MONOMIAL_LT_REFL]
+     (← q r"!l. monomial_lt l m n ==> ~(m = n)")) THEN
     EXISTS_TAC (← q r"l:V->V->bool") THEN
     ASM_SIMP_TAC [MONOMIAL_LT_LMUL, MONOMIAL_LT_RMUL] THEN
     ASM_SIMP_TAC [MONOMIAL_LT_MUL2, WOSET_IMP_POSET]))
@@ -35021,31 +34666,23 @@ def setupDegree [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
    (← do
     -- right to left: the second TAUT, the three SET_RULEs (last first),
     -- then the first TAUT
-    let t5 ← TAUT
-     (← q r"~(q /\ s) /\ (~(p /\ r) ==> t)
-     ==> (p <=> q) ==> (r <=> s) ==> t")
-    let fv ← q r"f:((V->num)->A)->((V->num)->(V->num)->A)"
-    let s4 ← SET_RULE
-     (← q r"t DELETE a = s ==> a IN t ==> s UNION {a} = t")
-    let s3 ← SET_RULE
-     (← q r"s SUBSET t ==> !a. ~(a IN s) ==> s SUBSET t DELETE a")
-    let s2 ← SET_RULE (← q r"t = s <=> t SUBSET s /\ ~(t PSUBSET s)")
-    let t1 ← TAUT (← q r"(p <=> q) <=> p /\ q \/ ~p /\ ~q")
-    let mkEq ← ExceptT.mk mk_eq
-    let abbrevF : tactic := fun gl => ExceptT.run do
+    -- `W(ABBREV_TAC o curry mk_eq `f:..` o ..)`: `f` is parsed when the
+    -- tactic is built.
+    let abbrevF (fv : term) : tactic := fun gl => ExceptT.run do
       let t ← liftExcept (do rand (← lhand gl.2))
-      let e ← liftExcept (mkEq (fv, t))
+      let e ← liftExcept ((← ExceptT.mk mk_eq) (fv, t))
       ExceptT.mk (ABBREV_TAC e gl)
-    pure (REWRITE_TAC [t1] THEN
+    pure (REWRITE_TAC [(← TAUT (← q r"(p <=> q) <=> p /\ q \/ ~p /\ ~q"))] THEN
     REPEAT STRIP_TAC THEN ASM_SIMP_TAC [POLY_MUL_0, RING_POLYNOMIAL_0] THEN
     REWRITE_TAC [POLY_VARS_0, UNION_EMPTY] THEN
-    REWRITE_TAC [s2] THEN
+    REWRITE_TAC [(← SET_RULE (← q r"t = s <=> t SUBSET s /\ ~(t PSUBSET s)"))] THEN
     ASM_SIMP_TAC [POLY_VARS_MUL, RING_POLYNOMIAL_IMP_POWERSERIES] THEN
     REWRITE_TAC [PSUBSET_ALT] THEN
     DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
     DISCH_THEN (X_CHOOSE_THEN (← q "a:V") STRIP_ASSUME_TAC) THEN ABBREV_TAC
      (← q r"s = (poly_vars (r:A ring) p1 UNION poly_vars r p2) DELETE (a:V)") THEN
-    FIRST_X_ASSUM (MP_TAC o SPEC (← q "a:V") o MATCH_MP s3) THEN
+    FIRST_X_ASSUM (MP_TAC o SPEC (← q "a:V") o MATCH_MP (← SET_RULE
+     (← q r"s SUBSET t ==> !a. ~(a IN s) ==> s SUBSET t DELETE a"))) THEN
     ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
     MP_TAC (← ISPECL [← q "r:A ring", ← q r"s:V->bool", ← q "{a:V}"]
       POLY_POLY_DEG_EQ_0) THEN
@@ -35054,14 +34691,15 @@ def setupDegree [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
     MP_TAC (← ISPECL [← q "r:A ring", ← q r"s:V->bool", ← q "{a:V}"]
           RING_ISOMORPHISMS_POLY_POLY_RING) THEN
     ANTS_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
-    FIRST_ASSUM (MP_TAC o MATCH_MP s4) THEN
+    FIRST_ASSUM (MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"t DELETE a = s ==> a IN t ==> s UNION {a} = t"))) THEN
     ASM_REWRITE_TAC [] THEN DISCH_TAC THEN ASM_REWRITE_TAC [] THEN
     REWRITE_TAC [RING_ISOMORPHISMS_ISOMORPHISM] THEN
     DISCH_THEN (fun th => tactic_of do
       match (CONJUNCTS th)[1]? with
       | some c => pure (MP_TAC c)
       | none => throw "el") THEN
-    abbrevF THEN
+    abbrevF (← q r"f:((V->num)->A)->((V->num)->(V->num)->A)") THEN
     FIRST_ASSUM (MP_TAC o GEN_REWRITE_RULE id [FUN_EQ_THM]) THEN
     SIMP_TAC [] THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN DISCH_TAC THEN
     DISCH_THEN (fun th => tactic_of do
@@ -35070,7 +34708,9 @@ def setupDegree [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
       let a3 ← SPEC (← q r"poly_mul r p1 p2:(V->num)->A") th
       pure (MP_TAC a3 THEN MP_TAC a2 THEN MP_TAC a1)) THEN
     ASM_REWRITE_TAC [IN_POLY_RING_CARRIER, SUBSET_UNION] THEN
-    MATCH_MP_TAC t5 THEN
+    MATCH_MP_TAC (← TAUT
+     (← q r"~(q /\ s) /\ (~(p /\ r) ==> t)
+     ==> (p <=> q) ==> (r <=> s) ==> t")) THEN
     CONJ_TAC THENL [ASM SET_TAC [], REWRITE_TAC [← GSYM ADD_EQ_0]] THEN
     DISCH_TAC THEN ASM_SIMP_TAC [NOT_IMP, RING_POLYNOMIAL_MUL] THEN
     CONJ_TAC THENL [ASM SET_TAC [], ALL_TAC] THEN
@@ -35182,15 +34822,12 @@ def setupCardinalities [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BMonom
   let CARD_EQ_MONOMIALS_FINITE ← prove
    r"!s:V->bool. FINITE s /\ ~(s = {}) ==> {m | monomial s m} =_c (:num)"
    (← do
-    -- right to left: the SET_RULE, then the MESON
-    let sr ← SET_RULE
-     (← q r"{x | ~(f x = k x)} SUBSET s <=>
-      IMAGE f s SUBSET UNIV /\ {x | ~(f x = k x)} SUBSET s")
-    let mm ← MESON [FINITE_SUBSET]
-     (← q r"FINITE s ==> (FINITE t /\ t SUBSET s <=> t SUBSET s)")
     pure (REPEAT STRIP_TAC THEN REWRITE_TAC [monomial, monomial_vars] THEN
-    ASM_SIMP_TAC [mm] THEN
-    ONCE_REWRITE_TAC [sr] THEN
+    ASM_SIMP_TAC [(← MESON [FINITE_SUBSET]
+     (← q r"FINITE s ==> (FINITE t /\ t SUBSET s <=> t SUBSET s)"))] THEN
+    ONCE_REWRITE_TAC [(← SET_RULE
+     (← q r"{x | ~(f x = k x)} SUBSET s <=>
+      IMAGE f s SUBSET UNIV /\ {x | ~(f x = k x)} SUBSET s"))] THEN
     wPart lhand lhand CARD_EQ_FUNSPACE THEN
     MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_EQ_TRANS) THEN
     MATCH_MP_TAC CARD_EQ_EXP_INFINITE_FINITE THEN
@@ -35223,18 +34860,15 @@ def setupCardinalities [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BMonom
   let CARD_EQ_MONOMIALS_INFINITE ← prove
    r"!s:V->bool. INFINITE s ==> {m | monomial s m} =_c s"
    (← do
-    -- right to left: the ARITH_RULE, then the SET_RULE
-    let ar ← ARITH_RULE (← q "~(1 = 0)")
-    let sr ← SET_RULE
+    pure (REPEAT STRIP_TAC THEN REWRITE_TAC [monomial, monomial_vars] THEN
+    ONCE_REWRITE_TAC [(← SET_RULE
      (← q r"{m | FINITE {i | ~(m i = 0)} /\ {i | ~(m i = 0)} SUBSET s} =
       {m | IMAGE m s SUBSET (:num) /\
            {i | ~(m i = 0)} SUBSET s /\
-           FINITE {i | ~(m i = 0)}}")
-    pure (REPEAT STRIP_TAC THEN REWRITE_TAC [monomial, monomial_vars] THEN
-    ONCE_REWRITE_TAC [sr] THEN
+           FINITE {i | ~(m i = 0)}}"))] THEN
     wPart lhand (fun t => do lhand (← rand t)) CARD_EQ_RESTRICTED_FUNSPACE_INFINITE THEN
     ASM_REWRITE_TAC [] THEN ANTS_TAC THENL
-     [REWRITE_TAC [SUBSET_UNIV] THEN MP_TAC ar THEN
+     [REWRITE_TAC [SUBSET_UNIV] THEN MP_TAC (← ARITH_RULE (← q "~(1 = 0)")) THEN
       ASM SET_TAC [],
       MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] CARD_EQ_TRANS)] THEN
     wPart lhand lhand CARD_MUL_SYM THEN
@@ -35922,14 +35556,11 @@ def setupEvaluation [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
           ring_sum r' (0..poly_deg r p)
                       (\i. ring_mul r' (h(coeff i p)) (ring_pow r' (x one) i))"
    (← do
-    -- right to left: the TAUT, then the MESON
-    let tt ← TAUT (← q r"r /\ (r ==> (q <=> p)) ==> ~p ==> ~q /\ r")
-    let mm ← MESON [RING_SUM_SUPERSET]
+    pure (REWRITE_TAC [coeff] THEN
+    REPEAT STRIP_TAC THEN MATCH_MP_TAC (← MESON [RING_SUM_SUPERSET]
      (← q r"!t. t SUBSET s /\ (!x. x IN s /\ ~(x IN t) ==> f x = ring_0 r) /\
            ring_sum r t f = p
-          ==> p = ring_sum r s f")
-    pure (REWRITE_TAC [coeff] THEN
-    REPEAT STRIP_TAC THEN MATCH_MP_TAC mm THEN
+          ==> p = ring_sum r s f")) THEN
     EXISTS_TAC (← q r"{i | ~((p:(1->num)->A) (\v. i) = ring_0 r)}") THEN
     REWRITE_TAC [SUBSET, IN_ELIM_THM, IN_NUMSEG, LE_0] THEN REPEAT CONJ_TAC THENL
      [X_GEN_TAC (← q "i:num") THEN DISCH_TAC THEN
@@ -35942,7 +35573,7 @@ def setupEvaluation [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
     MATCH_MP_TAC RING_SUM_EQ_GENERAL_INVERSES THEN
     MAP_EVERY EXISTS_TAC [← q r"\(i:num) (v:1). i", ← q r"\m:1->num. m one"] THEN
     REWRITE_TAC [IN_ELIM_THM] THEN CONJ_TAC THENL
-     [X_GEN_TAC (← q "m:1->num") THEN MATCH_MP_TAC tt THEN
+     [X_GEN_TAC (← q "m:1->num") THEN MATCH_MP_TAC (← TAUT (← q r"r /\ (r ==> (q <=> p)) ==> ~p ==> ~q /\ r")) THEN
       SIMP_TAC [] THEN REWRITE_TAC [FUN_EQ_THM, FORALL_ONE_THM],
       X_GEN_TAC (← q "i:num") THEN DISCH_TAC THEN ASM_REWRITE_TAC []] THEN
     AP_TERM_TAC THEN REWRITE_TAC [MONOMIAL_VARS_UNIVARIATE] THEN
@@ -36365,9 +35996,6 @@ def setupComposing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Su
         ==> ring_homomorphism (poly_ring r v,poly_ring s v) (\p. f o p))"
    (CONJ_TAC THEN
     (← do
-     let mm ← MESON []
-       (← q r"f(ring_0 r) = ring_0 s
-        ==> x = ring_0 r /\ y = ring_0 s ==> f x = y")
      pure (REPEAT STRIP_TAC THEN
     REWRITE_TAC [RING_HOMOMORPHISM, SUBSET, FORALL_IN_IMAGE] THEN
     CONJ_TAC THENL
@@ -36389,7 +36017,9 @@ def setupComposing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Su
       ASM_SIMP_TAC [MONOMIAL_FINITE_DIVISORPAIRS, FORALL_IN_GSPEC, RING_MUL] THEN
       DISCH_THEN SUBST1_TAC THEN MATCH_MP_TAC RING_SUM_EQ THEN
       ASM_SIMP_TAC [FORALL_IN_GSPEC, o_THM],
-      FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP mm) THEN
+      FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP (← MESON []
+       (← q r"f(ring_0 r) = ring_0 s
+        ==> x = ring_0 r /\ y = ring_0 s ==> f x = y"))) THEN
       CONJ_TAC THEN MATCH_MP_TAC RING_SUM_EQ_0 THEN
       ASM_SIMP_TAC [IMP_CONJ, FORALL_IN_GSPEC, RING_MUL] THEN
       REPEAT GEN_TAC THEN DISCH_THEN (SUBST_ALL_TAC o SYM) THEN
@@ -36464,8 +36094,6 @@ def setupComposing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Su
         ==> ring_epimorphism (poly_ring r v,poly_ring s v) (\p. f o p))"
    (CONJ_TAC THEN
     (← do
-     let mm ← MESON []
-       (← q r"(?g. Q g) /\ (!g. Q g ==> ?h. P h /\ Q h) ==> ?g. P g /\ Q g")
      pure (REWRITE_TAC [RING_EPIMORPHISM_ALT] THEN
     SIMP_TAC [RING_HOMOMORPHISM_POWSER_RINGS, RING_HOMOMORPHISM_POLY_RINGS] THEN
     REWRITE_TAC [POLY_RING, POWSER_RING, POLY_0, IN_ELIM_THM,
@@ -36476,7 +36104,8 @@ def setupComposing [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums : Su
      (← q r"?g:B->A. g(ring_0 s) = ring_0 r /\
                !y. y IN ring_carrier s ==> g(y) IN ring_carrier r /\ f(g y) = y")
     STRIP_ASSUME_TAC THENL
-     [MATCH_MP_TAC mm THEN
+     [MATCH_MP_TAC (← MESON []
+       (← q r"(?g. Q g) /\ (!g. Q g ==> ?h. P h /\ Q h) ==> ?g. P g /\ Q g")) THEN
       CONJ_TAC THENL
        [REWRITE_TAC [← GSYM SURJECTIVE_ON_RIGHT_INVERSE] THEN ASM SET_TAC [],
         X_GEN_TAC (← q "g:B->A") THEN STRIP_TAC] THEN
@@ -36798,13 +36427,6 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
    r"!(r:A ring) (s:V->bool).
         integral_domain(powser_ring r s) <=> integral_domain r"
    (← do
-    -- right to left: the MESON[MONOMIAL_LT_REFL], the TAUT, the MESON
-    let m3 ← MESON [MONOMIAL_LT_REFL]
-     (← q r"m' = m ==> !l. ~monomial_lt l m m'")
-    let tt ← TAUT (← q r"~p ==> p ==> q")
-    let m1 ← MESON []
-     (← q r"!m. ~(ring_sum r {m} f = z) /\ ring_sum r s f = ring_sum r {m} f
-          ==> ~(ring_sum r s f = z)")
     pure (REPEAT GEN_TAC THEN EQ_TAC THENL
      [MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ]
        INTEGRAL_DOMAIN_MONOMORPHIC_PREIMAGE) THEN
@@ -36830,7 +36452,9 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
     DISCH_THEN (X_CHOOSE_THEN (← q r"mp:V->num") STRIP_ASSUME_TAC) THEN
     ANTS_TAC THENL [ASM_MESON_TAC [monomial], ALL_TAC] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q r"mq:V->num") STRIP_ASSUME_TAC) THEN
-    EXISTS_TAC (← q r"monomial_mul mp mq:V->num") THEN MATCH_MP_TAC m1 THEN
+    EXISTS_TAC (← q r"monomial_mul mp mq:V->num") THEN MATCH_MP_TAC (← MESON []
+     (← q r"!m. ~(ring_sum r {m} f = z) /\ ring_sum r s f = ring_sum r {m} f
+          ==> ~(ring_sum r s f = z)")) THEN
     EXISTS_TAC (← q r"(mp:V->num),(mq:V->num)") THEN CONJ_TAC THENL
      [ASM_SIMP_TAC [RING_SUM_SING, RING_MUL] THEN ASM_MESON_TAC [], ALL_TAC] THEN
     MATCH_MP_TAC RING_SUM_SUPERSET THEN
@@ -36842,8 +36466,9 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
      [ASM_SIMP_TAC [RING_MUL_LZERO], ALL_TAC] THEN
     ASM_CASES_TAC (← q r"(q:(V->num)->A) nq = ring_0 r") THENL
      [ASM_SIMP_TAC [RING_MUL_RZERO], ALL_TAC] THEN
-    MATCH_MP_TAC tt THEN STRIP_TAC THEN
-    FIRST_ASSUM (MP_TAC o MATCH_MP m3) THEN
+    MATCH_MP_TAC (← TAUT (← q r"~p ==> p ==> q")) THEN STRIP_TAC THEN
+    FIRST_ASSUM (MP_TAC o MATCH_MP (← MESON [MONOMIAL_LT_REFL]
+     (← q r"m' = m ==> !l. ~monomial_lt l m m'"))) THEN
     DISCH_THEN (MP_TAC o SPEC (← q r"l:V->V->bool")) THEN REWRITE_TAC [] THENL
      [MATCH_MP_TAC MONOMIAL_LTE_MUL2,
       MATCH_MP_TAC MONOMIAL_LET_MUL2] THEN
@@ -37072,14 +36697,10 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
     field f /\ p IN ring_carrier(poly_ring f s) /\ poly_deg f p = 1
     ==> ring_irreducible (poly_ring f s) p"
    (← do
-    -- right to left: the second ARITH_RULE, the first, then the TAUT
-    let a2 ← ARITH_RULE (← q "a + b = 1 ==> a = 0 \\/ b = 0")
-    let a1 ← ARITH_RULE (← q "~(1 = 0)")
-    let tt ← TAUT (← q r"(p /\ q) /\ (p /\ q ==> r) ==> p /\ q /\ r")
     pure (REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [ring_irreducible] THEN
-    MATCH_MP_TAC tt THEN
+    MATCH_MP_TAC (← TAUT (← q r"(p /\ q) /\ (p /\ q ==> r) ==> p /\ q /\ r")) THEN
     CONJ_TAC THENL
-     [ASM_MESON_TAC [IN_POLY_RING_CARRIER, POLY_DEG_EQ_0_UNIT, a1],
+     [ASM_MESON_TAC [IN_POLY_RING_CARRIER, POLY_DEG_EQ_0_UNIT, (← ARITH_RULE (← q "~(1 = 0)"))],
       REWRITE_TAC [IN_POLY_RING_CARRIER] THEN STRIP_TAC] THEN
     RULE_ASSUM_TAC (REWRITE_RULE [IN_POLY_RING_CARRIER, POLY_RING]) THEN
     MAP_EVERY X_GEN_TAC [← q r"q:(V->num)->A", ← q r"r:(V->num)->A"] THEN
@@ -37090,7 +36711,7 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
     ASM_SIMP_TAC [POLY_MUL_0, POLY_RING] THEN DISCH_TAC THEN
     UNDISCH_TAC (← q r"poly_deg f (p:(V->num)->A) = 1") THEN EXPAND_TAC "p" THEN
     ASM_SIMP_TAC [POLY_DEG_MUL, FIELD_IMP_INTEGRAL_DOMAIN] THEN
-    DISCH_THEN (MP_TAC o MATCH_MP a2) THEN
+    DISCH_THEN (MP_TAC o MATCH_MP (← ARITH_RULE (← q "a + b = 1 ==> a = 0 \\/ b = 0"))) THEN
     ASM_SIMP_TAC [POLY_DEG_EQ_0_UNIT] THEN ASM_MESON_TAC [POLY_RING]))
 
   let RING_UNIT_POWSER_RING ← prove
@@ -37099,15 +36720,6 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
         p IN ring_carrier(powser_ring r s) /\
         ring_unit r (p monomial_1)"
    (← do
-    -- right to left: the third, second TAUT, the RING_RULE, the first TAUT,
-    -- then the SET_RULE
-    let t3 ← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)")
-    let t2 ← TAUT (← q r"(p ==> (q <=> r)) ==> (p ==> q <=> p ==> r)")
-    let rr ← RING_RULE
-     (← q r"x IN ring_carrier r /\ y IN ring_carrier r
-       ==> x = ring_add r y (ring_sub r x y)")
-    let t1 ← TAUT (← q r"p /\ q <=> ~(p ==> ~q)")
-    let sr ← SET_RULE (← q r"{f x y | x = a /\ y = b} = {f a b}")
     pure (REPEAT GEN_TAC THEN REWRITE_TAC [ring_unit] THEN
     EQ_TAC THEN DISCH_THEN (REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC) THEN
     ASM_REWRITE_TAC [] THENL
@@ -37123,9 +36735,9 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
         FIRST_X_ASSUM ((fun (ocq1 : _) => fun th => tactic_of do
           pure (MP_TAC (← AP_THM th ocq1))) (← q r"monomial_1:V->num")) THEN
         ASM_REWRITE_TAC [poly_mul, poly_1, MONOMIAL_MUL_EQ_1, poly_const] THEN
-        REWRITE_TAC [sr] THEN
+        REWRITE_TAC [(← SET_RULE (← q r"{f x y | x = a /\ y = b} = {f a b}"))] THEN
         ASM_SIMP_TAC [RING_SUM_SING, RING_MUL]],
-      ONCE_REWRITE_TAC [t1] THEN
+      ONCE_REWRITE_TAC [(← TAUT (← q r"p /\ q <=> ~(p ==> ~q)"))] THEN
       MP_TAC (← ISPECL [← q "r:A ring", ← q r"s:V->bool"] POWSER_RING_EQ) THEN
       ASM_SIMP_TAC [RING_MUL, RING_1] THEN
       DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN
@@ -37147,7 +36759,9 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
     MP_TAC THENL
      [SIMP_TAC [RING_SUM_DELETE, RING_MUL, MONOMIAL_MUL_LID,
                 MONOMIAL_FINITE_DIVISORPAIRS, monomial, IN_ELIM_PAIR_THM] THEN
-      REPEAT STRIP_TAC THEN MATCH_MP_TAC rr THEN
+      REPEAT STRIP_TAC THEN MATCH_MP_TAC (← RING_RULE
+     (← q r"x IN ring_carrier r /\ y IN ring_carrier r
+       ==> x = ring_add r y (ring_sub r x y)")) THEN
       ASM_SIMP_TAC [RING_SUM, RING_MUL],
       SIMP_TAC [] THEN DISCH_THEN (fun (_ : thm) => ALL_TAC) THEN STRIP_TAC] THEN
     REWRITE_TAC [NOT_IMP, AND_FORALL_THM] THEN
@@ -37157,7 +36771,7 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
     REWRITE_TAC [PROPERLY_MONOMIAL_LE] THEN
     DISCH_THEN (MATCH_MP_TAC o MATCH_MP WF_REC_EXISTS) THEN CONJ_TAC THENL
      [REPEAT STRIP_TAC THEN AP_TERM_TAC THEN
-      MATCH_MP_TAC t2 THEN
+      MATCH_MP_TAC (← TAUT (← q r"(p ==> (q <=> r)) ==> (p ==> q <=> p ==> r)")) THEN
       REWRITE_TAC [monomial] THEN STRIP_TAC THEN
       AP_THM_TAC THEN AP_TERM_TAC THEN AP_TERM_TAC THEN
       MATCH_MP_TAC RING_SUM_EQ THEN
@@ -37173,7 +36787,7 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
       ASM_MESON_TAC [MONOMIAL_MUL, MONOMIAL],
       ALL_TAC] THEN
     MAP_EVERY X_GEN_TAC [← q r"q:(V->num)->A", ← q r"m:V->num"] THEN
-    REWRITE_TAC [t3] THEN
+    REWRITE_TAC [(← TAUT (← q r"p ==> q /\ r <=> (p ==> q) /\ (p ==> r)"))] THEN
     REWRITE_TAC [FORALL_AND_THM] THEN
     DISCH_THEN (CONJUNCTS_THEN STRIP_ASSUME_TAC o CONJUNCT1) THEN
     ASM_CASES_TAC (← q r"monomial s (m:V->num)") THEN ASM_REWRITE_TAC [] THENL
@@ -37265,7 +36879,6 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
        [← q "r:A ring", ← q r"(\v:V. one)", ← q "{x:V}", ← q "(:1)", ← q "x:V"]
             POLY_REINDEX_VAR) THEN
       ASM_SIMP_TAC [IN_SING])
-    let sr ← SET_RULE (← q r"x IN v ==> v DELETE x UNION {x} = v")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q "(x:V) IN v") THEN ASM_REWRITE_TAC [] THENL
      [ALL_TAC,
       ASM_MESON_TAC [RING_PRIME_IN_CARRIER, RING_PRIME_IMP_NONTRIVIAL_RING,
@@ -37273,7 +36886,7 @@ def setupZerodivisors [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BSums :
     MP_TAC (← ISPECL [← q "r:A ring", ← q "v DELETE (x:V)", ← q "{x:V}"]
           RING_ISOMORPHISMS_POLY_POLY_RING) THEN
     ANTS_TAC THENL [SET_TAC [], ALL_TAC] THEN
-    ASM_SIMP_TAC [sr] THEN
+    ASM_SIMP_TAC [(← SET_RULE (← q r"x IN v ==> v DELETE x UNION {x} = v"))] THEN
     ONCE_REWRITE_TAC [RING_ISOMORPHISMS_SYM] THEN
     DISCH_THEN (MP_TAC o MATCH_MP RING_ISOMORPHISMS_IMP_ISOMORPHISM) THEN
     DISCH_THEN (MP_TAC o SPEC (← q r"poly_var r x:(V->num)->A") o MATCH_MP
@@ -37751,9 +37364,6 @@ def setupXMinusA [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
             CARD {x | x IN ring_carrier r /\ poly_eval r p x = ring_0 r}
             <= poly_deg r p"
    (← do
-    -- right to left: the second ARITH_RULE, then the first
-    let a2 ← ARITH_RULE (← q "q < q + 1")
-    let a1 ← ARITH_RULE (← q "~(1 = 0)")
     pure (REPEAT GEN_TAC THEN WF_INDUCT_TAC (← q "poly_deg r (p:(1->num)->A)") THEN
     STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC (← q "r:A ring")) THEN
     ASM_REWRITE_TAC [] THEN DISCH_TAC THEN
@@ -37786,9 +37396,9 @@ def setupXMinusA [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
       ASM_REWRITE_TAC [POLY_CLAUSES, RING_POLYNOMIAL] THEN
       REWRITE_TAC [ADD_SYM] THEN DISCH_THEN MATCH_MP_TAC THEN
       REWRITE_TAC [POLY_RING_CLAUSES] THEN
-      ASM_MESON_TAC [POLY_DEG_0, a1],
+      ASM_MESON_TAC [POLY_DEG_0, (← ARITH_RULE (← q "~(1 = 0)"))],
       FIRST_X_ASSUM (MP_TAC o SPEC (← q "q:(1->num)->A"))] THEN
-    ASM_REWRITE_TAC [a2] THEN STRIP_TAC THEN
+    ASM_REWRITE_TAC [(← ARITH_RULE (← q "q < q + 1"))] THEN STRIP_TAC THEN
     SUBGOAL_THEN
      (← q r"{x:A | x IN ring_carrier r /\ poly_eval r p x = ring_0 r} =
       a INSERT {x | x IN ring_carrier r /\ poly_eval r q x = ring_0 r}")
@@ -38034,12 +37644,6 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
                                               (poly_var r one) (poly_deg r p)))
                          q = p"
    (← do
-    -- right to left: the ARITH_RULE, then the MESON
-    let ar ← ARITH_RULE (← q r"~(n = 0) /\ x <= n - 1 ==> x < n")
-    let mm ← MESON [RING_ADD_SYM]
-     (← q r"t IN ring_carrier r /\ q IN ring_carrier r /\ P q
-      ==> ring_add r q t = p
-       ==> ?q. q IN ring_carrier r /\ (P q \/ Q q) /\ ring_add r t q = p")
     pure (REPEAT STRIP_TAC THEN ABBREV_TAC (← q "n = poly_deg r (p:(1->num)->A)") THEN
     FIRST_ASSUM (MP_TAC o SYM o MATCH_MP POLY_EXPAND) THEN
     REWRITE_TAC [coeff] THEN ASM_REWRITE_TAC [] THEN
@@ -38052,9 +37656,12 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
       ASM_SIMP_TAC [RING_0, RING_ADD_RZERO],
       ASM_SIMP_TAC [RING_SUM_CLAUSES_RIGHT, LE_1, LE_0]] THEN
     ASM_SIMP_TAC [RING_MUL, RING_POW, POLY_CONST, POLY_VAR_UNIV] THEN
-    MATCH_MP_TAC mm THEN
+    MATCH_MP_TAC (← MESON [RING_ADD_SYM]
+     (← q r"t IN ring_carrier r /\ q IN ring_carrier r /\ P q
+      ==> ring_add r q t = p
+       ==> ?q. q IN ring_carrier r /\ (P q \/ Q q) /\ ring_add r t q = p")) THEN
     ASM_SIMP_TAC [RING_SUM, RING_MUL, RING_POW, POLY_CONST, POLY_VAR_UNIV] THEN
-    MATCH_MP_TAC ar THEN
+    MATCH_MP_TAC (← ARITH_RULE (← q r"~(n = 0) /\ x <= n - 1 ==> x < n")) THEN
     ASM_REWRITE_TAC [] THEN MATCH_MP_TAC POLY_DEG_RING_SUM_LE THEN
     ASM_SIMP_TAC [RING_MUL, RING_POW, POLY_CONST, POLY_VAR_UNIV] THEN
     ASM_SIMP_TAC [FINITE_NUMSEG, IN_NUMSEG, LE_0] THEN
@@ -38091,14 +37698,11 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
         coeff n p = ring_0 r
         ==> poly_deg r p < n"
    (← do
-    -- right to left: the second ARITH_RULE, then the first
-    let a2 ← ARITH_RULE (← q r"~(n = 0) ==> (d <= n - 1 <=> d <= n /\ ~(d = n))")
-    let a1 ← ARITH_RULE (← q r"~(n = 0) ==> (x < n <=> x <= n - 1)")
     pure (REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
     ASM_CASES_TAC (← q "n = 0") THEN ASM_REWRITE_TAC [] THENL
      [ASM_MESON_TAC [LE, POLY_TOP_EQ_0], ASM_SIMP_TAC [LE_1]] THEN
-    ASM_SIMP_TAC [POLY_DEG_LE_COEFF_EQ, a1] THEN
-    ASM_MESON_TAC [a2]))
+    ASM_SIMP_TAC [POLY_DEG_LE_COEFF_EQ, (← ARITH_RULE (← q r"~(n = 0) ==> (x < n <=> x <= n - 1)"))] THEN
+    ASM_MESON_TAC [(← ARITH_RULE (← q r"~(n = 0) ==> (d <= n - 1 <=> d <= n /\ ~(d = n))"))]))
 
   /- One step of pseudo-division: for deg q <= deg p, the leading terms of -/
   /- c p and e X^(deg p - deg q) q cancel, where c and e are the leading   -/
@@ -38120,12 +37724,6 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
             poly_deg r p"
    (← do
     -- OCaml's order (right to left): the RING_RULE, then the two ARITH_RULEs
-    let r3 ← RING_RULE
-       (← q r"!r x y:A. ring_sub r (ring_mul r x y) (ring_mul r y x) = ring_0 r")
-    let a2 ← ARITH_RULE
-       (← q r"a <= N /\ b <= N ==> x <= MAX a b ==> x <= N")
-    let a1 ← ARITH_RULE
-       (← q r"d:num <= N ==> ~(N < N - d) /\ N - (N - d) = d")
     pure (REPEAT STRIP_TAC THEN
     MAP_EVERY ABBREV_TAC
      [← q r"N = poly_deg r (p:(1->num)->A)", ← q r"d = poly_deg r (q:(1->num)->A)"] THEN
@@ -38142,7 +37740,8 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
                     RING_POLYNOMIAL_POW, RING_POLYNOMIAL_VAR,
                     POLY_DEG_VARPOW_MUL, COEFF_POLY_VARPOW_MUL,
                     RING_POLYNOMIAL_IMP_POWERSERIES] THEN
-      ASM_SIMP_TAC [a1] THEN
+      ASM_SIMP_TAC [(← ARITH_RULE
+       (← q r"d:num <= N ==> ~(N < N - d) /\ N - (N - d) = d"))] THEN
       COND_CASES_TAC THEN ASM_ARITH_TAC,
       ALL_TAC] THEN
     ASM_CASES_TAC
@@ -38154,12 +37753,14 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
     CONJ_TAC THENL
      [wPart lhand (fun t => do lhand (← rand t)) POLY_DEG_SUB_LE THEN
       ASM_SIMP_TAC [RING_POLYNOMIAL_MUL, RING_POLYNOMIAL_CONST] THEN
-      MATCH_MP_TAC a2 THEN
+      MATCH_MP_TAC (← ARITH_RULE
+       (← q r"a <= N /\ b <= N ==> x <= MAX a b ==> x <= N")) THEN
       CONJ_TAC THEN MATCH_MP_TAC POLY_DEG_CMUL_LE THEN
       ASM_REWRITE_TAC [LE_REFL],
       ASM_SIMP_TAC [COEFF_POLY_SUB, COEFF_POLY_LMUL,
                     RING_POLYNOMIAL_IMP_POWERSERIES] THEN
-      MATCH_MP_TAC r3 THEN
+      MATCH_MP_TAC (← RING_RULE
+       (← q r"!r x y:A. ring_sub r (ring_mul r x y) (ring_mul r y x) = ring_0 r")) THEN
       ASM_REWRITE_TAC []]))
 
   /- A root w of an image under g of least degree among the nonzero images -/
@@ -38174,7 +37775,6 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
         w IN ring_carrier l /\ poly_eval l (g o b) w = ring_0 l
         ==> !p. p IN j ==> poly_eval l (g o p) w = ring_0 l"
    (← do
-    let tgq ← q r"(g:A->B) o (q:(1->num)->A)"
     pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP
      (← REWRITE_RULE [IMP_CONJ] RING_HOMOMORPHISM_IN_CARRIER)) THEN
@@ -38282,8 +37882,9 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
                        ← q r"(g:A->B) o (b:(1->num)->A)"]
         POLY_DEG_PSEUDO_DIVISION_STEP) THEN
       ASM_REWRITE_TAC [COEFF_COMPOSE] THEN
-      FIRST_X_ASSUM (SUBST1_TAC o SYM o check (fun th =>
-        is_eq (concl th) && (lhand (concl th)).toOption == some tgq)) THEN
+      FIRST_X_ASSUM (SUBST1_TAC o SYM o checkIO (fun th =>
+        if !(is_eq (concl th)) then pure false
+        else do pure ((lhand (concl th)).toOption == some (← q r"(g:A->B) o (q:(1->num)->A)")))) THEN
       STRIP_TAC THEN ASM_REWRITE_TAC [POLY_EVAL_0] THEN
       USE_THEN "ih" (MP_TAC o SPEC (← q r"poly_deg l ((g:A->B) o (q:(1->num)->A))")) THEN
       ANTS_TAC THENL [FIRST_ASSUM ACCEPT_TAC, ALL_TAC] THEN
@@ -38333,30 +37934,14 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
                         (ring_mul (poly_ring r (:1)) q d) t = p"
    (← do
     -- right to left: the rules in reverse text order
-    let a9 ← ARITH_RULE
-     (← q r"s:num < m ==> m <= n /\ q <= n - m ==> q + s <= n - 1")
-    let a8 ← ARITH_RULE (← q r"~(n = 0) ==> (x < n <=> x <= n - 1)")
-    let t7 ← TAUT (← q r"p \/ q ==> (q ==> p) ==> p")
-    let r6 ← RING_RULE
-     (← q r"ring_mul r pnm pm = pn /\ ring_mul r xy y = x
-      ==> ring_mul r (ring_mul r xy pnm)
-                     (ring_mul r y pm) = ring_mul r x pn")
-    let r5 ← RING_RULE
-     (← q r"ring_mul r q y = x
-      ==> ring_sub r (ring_add r x t) (ring_mul r q (ring_add r y s)) =
-          ring_sub r t (ring_mul r q s)")
-    let r4 ← RING_RULE (← q "ring_add r q (ring_sub r p q) = p")
-    let t3 ← TAUT (← q "p ==> q ==> r ==> s <=> q ==> p /\\ r ==> s")
-    let t2 ← TAUT (← q "~p ==> p ==> q")
-    let m1 ← MESON []
-     (← q r"(!n p. poly_deg r p = n ==> p IN ring_carrier(poly_ring r u) ==> P p)
-      ==> p IN ring_carrier(poly_ring r u) ==> P p")
     let pr1 ← match (CONJUNCTS POLY_RING)[1]? with
       | some c => pure c
       | none => throw "el"
     pure (REWRITE_TAC [coeff] THEN
     REPEAT GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 MP_TAC STRIP_ASSUME_TAC) THEN
-    MATCH_MP_TAC m1 THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"(!n p. poly_deg r p = n ==> p IN ring_carrier(poly_ring r u) ==> P p)
+      ==> p IN ring_carrier(poly_ring r u) ==> P p")) THEN
     MATCH_MP_TAC num_WF THEN X_GEN_TAC (← q "n:num") THEN
     GEN_REWRITE_TAC (BINOP_CONV o TOP_DEPTH_CONV) [RIGHT_IMP_FORALL_THM] THEN
     DISCH_TAC THEN X_GEN_TAC (← q "p:(1->num)->A") THEN REPEAT DISCH_TAC THEN
@@ -38371,7 +37956,7 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
       ALL_TAC] THEN
     ASM_CASES_TAC (← q "d:(1->num)->A = ring_0(poly_ring r (:1))") THENL
      [UNDISCH_TAC (← q r"ring_unit r ((d:(1->num)->A) (\v. m))") THEN
-      MATCH_MP_TAC t2 THEN
+      MATCH_MP_TAC (← TAUT (← q "~p ==> p ==> q")) THEN
       ASM_REWRITE_TAC [POLY_RING, POLY_0, RING_UNIT_0] THEN DISCH_TAC THEN
       MP_TAC (← ISPECL [← q "r:A ring", ← q "(:1)"] TRIVIAL_POLY_RING) THEN
       ASM_REWRITE_TAC [] THEN REWRITE_TAC [trivial_ring] THEN ASM SET_TAC [],
@@ -38408,7 +37993,7 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
     DISCH_THEN (MP_TAC o SPEC
      (← q r"ring_sub (poly_ring r (:1)) p
                (ring_mul (poly_ring r (:1)) q d):(1->num)->A")) THEN
-    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [t3] THEN
+    GEN_REWRITE_TAC (LAND_CONV o ONCE_DEPTH_CONV) [(← TAUT (← q "p ==> q ==> r ==> s <=> q ==> p /\\ r ==> s"))] THEN
     REWRITE_TAC [FORALL_UNWIND_THM1] THEN ANTS_TAC THENL
      [ASM_SIMP_TAC [RING_SUB, RING_MUL],
       GEN_REWRITE_TAC BINOP_CONV [SWAP_EXISTS_THM] THEN
@@ -38417,7 +38002,7 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
        (REPEAT_TCL CONJUNCTS_THEN ASSUME_TAC)) THEN
       EXISTS_TAC (← q "ring_add (poly_ring r (:1)) q s:(1->num)->A") THEN
       ASM_SIMP_TAC [RING_ADD, RING_ADD_RDISTRIB, ← GSYM RING_ADD_ASSOC, RING_MUL,
-                    r4]] THEN
+                    (← RING_RULE (← q "ring_add r q (ring_sub r p q) = p"))]] THEN
     MP_TAC (← ISPECL [← q "r:A ring", ← q "p:(1->num)->A"]
           (← REWRITE_RULE [coeff] POLY_TOP_TAIL)) THEN
     MP_TAC (← ISPECL [← q "r:A ring", ← q "d:(1->num)->A"]
@@ -38434,9 +38019,15 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
                (ring_mul (poly_ring r (:1)) q s)")
     SUBST_ALL_TAC THENL
      [MAP_EVERY EXPAND_TAC ["d", "p"] THEN
-      MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] r5) THEN
+      MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] (← RING_RULE
+     (← q r"ring_mul r q y = x
+      ==> ring_sub r (ring_add r x t) (ring_mul r q (ring_add r y s)) =
+          ring_sub r t (ring_mul r q s)"))) THEN
       ASM_SIMP_TAC [RING_MUL, RING_ADD, POLY_CONST, POLY_VAR_UNIV, RING_POW] THEN
-      EXPAND_TAC "q" THEN MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] r6) THEN
+      EXPAND_TAC "q" THEN MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] (← RING_RULE
+     (← q r"ring_mul r pnm pm = pn /\ ring_mul r xy y = x
+      ==> ring_mul r (ring_mul r xy pnm)
+                     (ring_mul r y pm) = ring_mul r x pn"))) THEN
       ASM_SIMP_TAC [RING_MUL, RING_DIV, POLY_CONST, POLY_VAR_UNIV, RING_POW,
                     ← GSYM RING_POW_ADD, SUB_ADD] THEN
       ASM_SIMP_TAC [POLY_RING, ← GSYM POLY_CONST_MUL, RING_DIV] THEN
@@ -38456,9 +38047,9 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
       DISCH_TAC] THEN
     UNDISCH_TAC
      (← q r"poly_deg r t < n \/ t:(1->num)->A = ring_0(poly_ring r (:1))") THEN
-    DISCH_THEN (MP_TAC o MATCH_MP t7) THEN
+    DISCH_THEN (MP_TAC o MATCH_MP (← TAUT (← q r"p \/ q ==> (q ==> p) ==> p"))) THEN
     ASM_SIMP_TAC [pr1, POLY_DEG_0, LE_1] THEN
-    ASM_SIMP_TAC [a8] THEN
+    ASM_SIMP_TAC [(← ARITH_RULE (← q r"~(n = 0) ==> (x < n <=> x <= n - 1)"))] THEN
     DISCH_TAC THEN MATCH_MP_TAC POLY_DEG_RING_SUB_LE THEN
     ASM_SIMP_TAC [RING_MUL] THEN FIRST_X_ASSUM DISJ_CASES_TAC THENL
      [ALL_TAC,
@@ -38468,7 +38059,8 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
     wPart lhand (fun t => do lhand (← rand t)) POLY_DEG_MUL_LE THEN
     ASM_REWRITE_TAC [RING_POLYNOMIAL] THEN
     MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] LE_TRANS) THEN
-    FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP a9) THEN
+    FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← ARITH_RULE
+     (← q r"s:num < m ==> m <= n /\ q <= n - m ==> q + s <= n - 1"))) THEN
     ASM_REWRITE_TAC [] THEN EXPAND_TAC "q" THEN REWRITE_TAC [POLY_RING] THEN
     wPart lhand (fun t => do lhand (← rand t)) POLY_DEG_MUL_LE THEN
     ANTS_TAC THENL
@@ -38509,10 +38101,6 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
                            (ring_mul (poly_ring r (:1)) q d) t = p"
    (← do
     -- OCaml's order (right to left): the RING_RULE, then the ARITH_RULE
-    let r2 ← RING_RULE
-         (← q r"ring_add R (ring_mul R (ring_mul R c q) d) (ring_mul R c t) =
-          ring_mul R c (ring_add R (ring_mul R q d) (t:(1->num)->A))")
-    let a1 ← ARITH_RULE (← q r"~(n = 0) /\ x <= n - 1 ==> x < n")
     pure (REPEAT STRIP_TAC THEN
     SUBGOAL_THEN
      (← q r"!i. ?q t. q IN ring_carrier(poly_ring r (:1)) /\
@@ -38570,7 +38158,7 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
         STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
         MATCH_MP_TAC RING_MUL_RZERO THEN ASM_REWRITE_TAC [POLY_CONST],
         DISJ1_TAC] THEN
-      MATCH_MP_TAC a1 THEN
+      MATCH_MP_TAC (← ARITH_RULE (← q r"~(n = 0) /\ x <= n - 1 ==> x < n")) THEN
       ASM_REWRITE_TAC [] THEN MATCH_MP_TAC POLY_DEG_RING_SUM_LE THEN
       REWRITE_TAC [FINITE_NUMSEG] THEN X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN
       ASM_SIMP_TAC [RING_MUL, POLY_CONST] THEN
@@ -38598,7 +38186,9 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
         REWRITE_TAC [] THEN
         USE_THEN "qt" (SUBST1_TAC o SYM o CONJUNCT2 o CONJUNCT2 o CONJUNCT2 o
                        SPEC (← q r"i:num")) THEN
-        MATCH_MP_TAC r2 THEN
+        MATCH_MP_TAC (← RING_RULE
+         (← q r"ring_add R (ring_mul R (ring_mul R c q) d) (ring_mul R c t) =
+          ring_mul R c (ring_add R (ring_mul R q d) (t:(1->num)->A))")) THEN
         ASM_SIMP_TAC [POLY_CONST]]]))
 
   let POLY_DIVISION ← prove
@@ -38789,13 +38379,10 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
                      (ring_mul (poly_ring r (:1)) (poly_div r p d) d)
                      (poly_rem r p d) = p"
    (← do
-    -- right to left: the RING_RULE, then the REWRITE_CONV
-    let rr ← RING_RULE (← q r"ring_sub r p x = t <=> ring_add r x t = p")
-    let rc ← REWRITE_CONV [poly_div] (← q "poly_div (r:A ring) p d")
     pure (REPEAT GEN_TAC THEN DISCH_TAC THEN
     FIRST_ASSUM (MP_TAC o MATCH_MP POLY_DIVISION_GEN) THEN
     DISCH_THEN (MP_TAC o SELECT_RULE) THEN
-    MP_TAC rc THEN
+    MP_TAC (← REWRITE_CONV [poly_div] (← q "poly_div (r:A ring) p d")) THEN
     ASM_REWRITE_TAC [RIGHT_EXISTS_AND_THM] THEN
     DISCH_THEN (fun th => tactic_of do pure (REWRITE_TAC [← GSYM th])) THEN
     DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC
@@ -38803,7 +38390,7 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
     SUBGOAL_THEN (← q "poly_rem (r:A ring) p d = t")
      (fun th => ASM_REWRITE_TAC [th]) THEN
     REWRITE_TAC [poly_rem] THEN
-    ASM_SIMP_TAC [RING_MUL, rr]))
+    ASM_SIMP_TAC [RING_MUL, (← RING_RULE (← q r"ring_sub r p x = t <=> ring_add r x t = p"))]))
 
   let POLY_DIV ← prove
    r"!(r:A ring) p d.
@@ -38921,7 +38508,6 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
             POLY_DEG_SUB_LE) THEN
       ASM_SIMP_TAC [RING_SUB_EQ_0, ← CONJUNCT2 POLY_CLAUSES, RING_POLYNOMIAL] THEN
       ASM_ARITH_TAC)
-    let tt ← TAUT (← q r"p /\ q ==> r /\ s ==> t <=> p /\ r ==> s /\ q ==> t")
     pure (REPEAT STRIP_TAC THEN COND_CASES_TAC THENL
      [ALL_TAC,
       ASM_REWRITE_TAC [poly_rem, poly_div] THEN REPEAT (POP_ASSUM MP_TAC) THEN
@@ -38941,7 +38527,7 @@ def setupDivision [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : 
                poly_deg r p < poly_deg r (q:(1->num)->A))")
     (fun th => ASM_SIMP_TAC [th, POLY_REM]) THENL
      [REWRITE_TAC [POLY_RING] THEN ASM_MESON_TAC [POLY_DEG_0, LE_1], ALL_TAC] THEN
-    ONCE_REWRITE_TAC [tt] THEN
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p /\ q ==> r /\ s ==> t <=> p /\ r ==> s /\ q ==> t"))] THEN
     STRIP_TAC THEN DISCH_TAC THEN MATCH_MP_TAC lemma THEN
     MAP_EVERY EXISTS_TAC [← q "r:A ring", ← q "q:(1->num)->A"] THEN
     ASM_SIMP_TAC [POLY_REM, RING_UNIT_IMP_REGULAR] THEN
@@ -39170,16 +38756,6 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
      noetherian_ring (poly_ring r (:1)) <=> noetherian_ring r"
    (← do
     -- right to left: the rules in reverse text order
-    let r9 ← RING_RULE (← q "x = ring_add r (ring_sub r x y) y")
-    let t8 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
-    let a7 ← ARITH_RULE (← q r"m:num <= n ==> m + n - m = n /\ n - (n - m) = m")
-    let a6 ← ARITH_RULE (← q "~(d:num < d - a)")
-    let s5 ← SET_RULE
-     (← q r"(!n. ~(p n IN s n)) ==> s m SUBSET s n ==> ~(p n IN s m)")
-    let s4 ← SET_RULE (← q r"!x. x IN t /\ ~(x IN s) ==> ~(s = t)")
-    let s3 ← SET_RULE (← q r"i SUBSET j /\ ~(i = j) ==> ~(j DIFF i = {})")
-    let s2 ← SET_RULE (← q r"{f x | P x} = {y | ?x. ~(P x ==> ~(f x = y))}")
-    let m1 ← MESON [] (← q r"(?x. P x /\ Q x /\ R x) <=> ~(!x. P x /\ Q x ==> ~R x)")
     let alpha (v : term) : ioconv := fun t => pure (HolCore.Equal.ALPHA_CONV v t)
     pure (GEN_TAC THEN EQ_TAC THEN REWRITE_TAC
      [← MATCH_MP (← REWRITE_RULE [IMP_CONJ] NOETHERIAN_RING_EPIMORPHIC_IMAGE)
@@ -39188,7 +38764,7 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
     STRIP_TAC THEN REWRITE_TAC [noetherian_ring] THEN
     X_GEN_TAC (← q "j:((1->num)->A)->bool") THEN DISCH_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP RING_IDEAL_IMP_SUBSET) THEN
-    ASM_REWRITE_TAC [finitely_generated_ideal, m1] THEN
+    ASM_REWRITE_TAC [finitely_generated_ideal, (← MESON [] (← q r"(?x. P x /\ Q x /\ R x) <=> ~(!x. P x /\ Q x ==> ~R x)"))] THEN
     DISCH_TAC THEN MP_TAC (← ISPEC
      (← q r"\(p:num->(1->num)->A) n q.
           q IN j DIFF ideal_generated (poly_ring r (:1)) {p m | m < n} /\
@@ -39196,7 +38772,7 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
                ==> poly_deg r q <= poly_deg r q'")
      (← MATCH_MP WF_REC_EXISTS WF_num)) THEN
     REWRITE_TAC [NOT_IMP] THEN REPEAT CONJ_TAC THENL
-     [ONCE_REWRITE_TAC [s2] THEN
+     [ONCE_REWRITE_TAC [(← SET_RULE (← q r"{f x | P x} = {y | ?x. ~(P x ==> ~(f x = y))}"))] THEN
       SIMP_TAC [],
       MAP_EVERY X_GEN_TAC [← q "p:num->(1->num)->A", ← q "n:num"] THEN DISCH_TAC THEN
       MP_TAC (← EQ_IMP_RULE (← ISPEC
@@ -39205,7 +38781,7 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
           num_WOP)).1 THEN
       REWRITE_TAC [EXISTS_IN_IMAGE, MEMBER_NOT_EMPTY, IMAGE_EQ_EMPTY] THEN
       ANTS_TAC THENL [ALL_TAC, SET_TAC [NOT_LE]] THEN
-      MATCH_MP_TAC s3 THEN
+      MATCH_MP_TAC (← SET_RULE (← q r"i SUBSET j /\ ~(i = j) ==> ~(j DIFF i = {})")) THEN
       CONJ_TAC THENL
        [MATCH_MP_TAC IDEAL_GENERATED_MINIMAL THEN ASM SET_TAC [],
         FIRST_X_ASSUM MATCH_MP_TAC THEN ONCE_REWRITE_TAC [SIMPLE_IMAGE_GEN] THEN
@@ -39226,7 +38802,7 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
     X_GEN_TAC (← q "n:num") THEN CONJ_TAC THENL
      [MATCH_MP_TAC IDEAL_GENERATED_MONO THEN
       REWRITE_TAC [← GSYM ADD1, LT] THEN SET_TAC [],
-      MATCH_MP_TAC s4] THEN
+      MATCH_MP_TAC (← SET_RULE (← q r"!x. x IN t /\ ~(x IN s) ==> ~(s = t)"))] THEN
     EXISTS_TAC (← q "coeff (poly_deg r (p(n:num))) (p n):A") THEN CONJ_TAC THENL
      [MATCH_MP_TAC IDEAL_GENERATED_INC THEN
       REWRITE_TAC [SUBSET, FORALL_IN_GSPEC, ← GSYM ADD1, LT] THEN
@@ -39244,7 +38820,8 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
       (← q "!m. m < n ==> poly_deg r ((p:num->(1->num)->A) m) <= poly_deg r (p n)")
     ASSUME_TAC THENL
      [REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
-      ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP s5) THEN
+      ASM_REWRITE_TAC [] THEN FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← SET_RULE
+     (← q r"(!n. ~(p n IN s n)) ==> s m SUBSET s n ==> ~(p n IN s m)"))) THEN
       MATCH_MP_TAC IDEAL_GENERATED_MONO THEN ASM SET_TAC [LT_TRANS],
       ALL_TAC] THEN
     SUBGOAL_THEN
@@ -39265,9 +38842,9 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
           ASM_SIMP_TAC [POLY_DEG_VARPOW_MUL, RING_POLYNOMIAL_CONST,
                         COEFF_POLY_VARPOW_MUL, RING_POLYNOMIAL_IMP_POWERSERIES,
                         COEFF_POLY_CONST, POLY_DEG_CONST] THEN
-          REWRITE_TAC [a6] THEN
+          REWRITE_TAC [(← ARITH_RULE (← q "~(d:num < d - a)"))] THEN
           FIRST_X_ASSUM (SUBST1_TAC o SYM) THEN
-          ASM_SIMP_TAC [a7] THEN
+          ASM_SIMP_TAC [(← ARITH_RULE (← q r"m:num <= n ==> m + n - m = n /\ n - (n - m) = m"))] THEN
           ARITH_TAC],
         EXISTS_TAC (← q "poly_0 r:(1->num)->A") THEN
         REWRITE_TAC [POLY_DEG_0, COEFF_POLY_0, LE_0] THEN
@@ -39308,13 +38885,13 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
        [REWRITE_TAC [POLY_CLAUSES] THEN MATCH_MP_TAC IN_RING_IDEAL_SUB THEN
         ASM SET_TAC [],
         ALL_TAC] THEN
-      MATCH_MP_TAC t8 THEN CONJ_TAC THENL
+      MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN CONJ_TAC THENL
        [DISCH_TAC THEN
         FIRST_X_ASSUM (MP_TAC o check (fun th => is_neg (concl th)) o SPEC (← q "n:num")) THEN
         SUBGOAL_THEN
          (← q "(p:num->(1->num)->A) n = poly_add r (poly_sub r (p n) q) q")
         SUBST1_TAC THENL
-         [REWRITE_TAC [POLY_CLAUSES] THEN MATCH_MP_TAC r9 THEN
+         [REWRITE_TAC [POLY_CLAUSES] THEN MATCH_MP_TAC (← RING_RULE (← q "x = ring_add r (ring_sub r x y) y")) THEN
           ASM SET_TAC [],
           REWRITE_TAC [POLY_CLAUSES] THEN MATCH_MP_TAC IN_RING_IDEAL_ADD THEN
           ASM_REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN
@@ -39334,10 +38911,6 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
       noetherian_ring (poly_ring r s) <=>
       noetherian_ring r /\ (FINITE s \/ trivial_ring r)"
    (← do
-    -- right to left: the SET_RULE, the second ARITH_RULE, then the first
-    let s3 ← SET_RULE (← q r"!P. ~P a /\ (!y. y IN s ==> P y) ==> ~(a IN s)")
-    let a2 ← ARITH_RULE (← q r"i < n + 1 <=> i < n \/ i = n")
-    let a1 ← ARITH_RULE (← q r"i < n + 1 <=> i < n \/ i = n")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"FINITE(s:V->bool)") THEN
     ASM_REWRITE_TAC [] THENL
      [UNDISCH_TAC (← q r"FINITE(s:V->bool)") THEN
@@ -39370,13 +38943,13 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
     REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN
     X_GEN_TAC (← q "n:num") THEN REWRITE_TAC [PSUBSET_ALT] THEN CONJ_TAC THENL
      [MATCH_MP_TAC IDEAL_GENERATED_MONO THEN
-      REWRITE_TAC [a1] THEN SET_TAC [],
+      REWRITE_TAC [(← ARITH_RULE (← q r"i < n + 1 <=> i < n \/ i = n"))] THEN SET_TAC [],
       EXISTS_TAC (← q r"poly_var r (v(n:num)):(V->num)->A")] THEN
     CONJ_TAC THENL
      [MATCH_MP_TAC IDEAL_GENERATED_INC THEN
       ASM_REWRITE_TAC [SUBSET, FORALL_IN_GSPEC, POLY_VAR] THEN
-      REWRITE_TAC [a2] THEN SET_TAC [],
-      MATCH_MP_TAC s3] THEN
+      REWRITE_TAC [(← ARITH_RULE (← q r"i < n + 1 <=> i < n \/ i = n"))] THEN SET_TAC [],
+      MATCH_MP_TAC (← SET_RULE (← q r"!P. ~P a /\ (!y. y IN s ==> P y) ==> ~(a IN s)"))] THEN
     EXISTS_TAC (← q r"\p:(V->num)->A. poly_evaluate r p
             (\i. if i = v(n:num) then ring_1 r else ring_0 r) = ring_0 r") THEN
     ASM_SIMP_TAC [POLY_EVALUATE_VAR, RING_1, ← GSYM TRIVIAL_RING_10] THEN
@@ -39419,29 +38992,6 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
         ==> (finitely_generated_ideal (powser_ring r (:1)) j <=>
              finitely_generated_ideal r (IMAGE (coeff 0) j))"
    (← do
-    -- right to left: the two RING_RULEs, the two later MESONs, the MESON on
-    -- poly_add, then the prove_recursive_functions_exist call
-    let rf ← RING_RULE
-     (← q r"ring_add r x (ring_mul r c n) = y
-      ==> ring_sub r (ring_mul r y i) (ring_mul r x i) =
-          ring_mul r n (ring_mul r c i)")
-    let re ← RING_RULE
-     (← q r"ring_sub r y y2 = y1
-      ==> ring_add r (ring_mul r (ring_mul r x n) q) y =
-          ring_add r (ring_add r (ring_mul r n (ring_mul r x q)) y1) y2")
-    let md ← MESON [POWSER_MUL_0]
-     (← q r"ring_powerseries r q /\ p = poly_0 r
-          ==> poly_mul r p q = poly_0 r")
-    let mc ← MESON [POLY_ADD_RZERO, RING_POWERSERIES_0]
-     (← q r"ring_powerseries r p /\ q = poly_0 r ==> poly_add r p q = p")
-    let mb ← MESON []
-     (← q r"poly_add r x y = z
-      ==> poly_sub r z y IN j /\
-          poly_sub r (poly_add r x y) y = x
-          ==> x IN j")
-    let prf ← prove_recursive_functions_exist num_RECURSION
-     (← q r"q 0 = p /\
-      (!n. q(SUC n) = (h:((1->num)->A)->(1->num)->A) (q n))")
     pure (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP PRIME_IDEAL_IMP_SUBSET) THEN
     EQ_TAC THENL
@@ -39538,7 +39088,9 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
     REWRITE_TAC [SUBSET] THEN X_GEN_TAC (← q "p:(1->num)->A") THEN DISCH_TAC THEN
     SUBGOAL_THEN (← q "ring_powerseries r (p:(1->num)->A)") ASSUME_TAC THENL
      [ASM_MESON_TAC [RING_POWERSERIES, SUBSET], ALL_TAC] THEN
-    MP_TAC prf THEN
+    MP_TAC (← prove_recursive_functions_exist num_RECURSION
+     (← q r"q 0 = p /\
+      (!n. q(SUC n) = (h:((1->num)->A)->(1->num)->A) (q n))")) THEN
     STRIP_TAC THEN
     ABBREV_TAC
      (← q r"c = \i (n:num). (tc:((1->num)->A)->((1->num)->A)->A) (q n) i") THEN
@@ -39568,7 +39120,11 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
       ASM_REWRITE_TAC [POWSER_VAR_UNIV] THEN DISCH_THEN MATCH_MP_TAC THEN
       ASM_REWRITE_TAC [← GSYM RING_POWERSERIES, POWSER_RING] THEN
       FIRST_X_ASSUM (CONJUNCTS_THEN STRIP_ASSUME_TAC) THEN
-      FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP mb) THEN
+      FIRST_ASSUM (MATCH_MP_TAC o MATCH_MP (← MESON []
+     (← q r"poly_add r x y = z
+      ==> poly_sub r z y IN j /\
+          poly_sub r (poly_add r x y) y = x
+          ==> x IN j"))) THEN
       CONJ_TAC THENL
        [REWRITE_TAC [POWSER_CLAUSES] THEN MATCH_MP_TAC IN_RING_IDEAL_SUB THEN
         ASM_SIMP_TAC [PRIME_IMP_RING_IDEAL] THEN
@@ -39623,10 +39179,13 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
     ASSUME_TAC THENL
      [INDUCT_TAC THENL
        [ASM_SIMP_TAC [POLY_POW, POLY_MUL_LID] THEN
-        MATCH_MP_TAC mc THEN
+        MATCH_MP_TAC (← MESON [POLY_ADD_RZERO, RING_POWERSERIES_0]
+     (← q r"ring_powerseries r p /\ q = poly_0 r ==> poly_add r p q = p")) THEN
         ASM_REWRITE_TAC [POWSER_CLAUSES] THEN MATCH_MP_TAC RING_SUM_EQ_0 THEN
         REWRITE_TAC [POWSER_RING] THEN X_GEN_TAC (← q "i:(1->num)->A") THEN
-        STRIP_TAC THEN MATCH_MP_TAC md THEN
+        STRIP_TAC THEN MATCH_MP_TAC (← MESON [POWSER_MUL_0]
+     (← q r"ring_powerseries r q /\ p = poly_0 r
+          ==> poly_mul r p q = poly_0 r")) THEN
         ASM_SIMP_TAC [← GSYM FUN_EQ_COEFF, COEFF_POLY_0, LT],
         ALL_TAC] THEN
       FIRST_X_ASSUM (fun th => tactic_of do
@@ -39641,7 +39200,10 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
                        RING_POWERSERIES_MUL, RING_POWERSERIES, RING_SUM],
         DISCH_THEN SUBST1_TAC] THEN
       REWRITE_TAC [POWSER_CLAUSES] THEN
-      MATCH_MP_TAC (← ONCE_REWRITE_RULE [IMP_IMP] re) THEN
+      MATCH_MP_TAC (← ONCE_REWRITE_RULE [IMP_IMP] (← RING_RULE
+     (← q r"ring_sub r y y2 = y1
+      ==> ring_add r (ring_mul r (ring_mul r x n) q) y =
+          ring_add r (ring_add r (ring_mul r n (ring_mul r x q)) y1) y2"))) THEN
       CONJ_TAC THENL
        [REPEAT CONJ_TAC THEN RING_CARRIER_TAC THEN
         REWRITE_TAC [POWSER_VAR_UNIV, RING_SUM] THEN
@@ -39659,7 +39221,10 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
         ASM_MESON_TAC [RING_POWERSERIES],
         DISCH_THEN (SUBST1_TAC o SYM)] THEN
       MATCH_MP_TAC RING_SUM_EQ THEN X_GEN_TAC (← q "i:(1->num)->A") THEN DISCH_TAC THEN
-      REWRITE_TAC [] THEN MATCH_MP_TAC (← ONCE_REWRITE_RULE [IMP_IMP] rf) THEN
+      REWRITE_TAC [] THEN MATCH_MP_TAC (← ONCE_REWRITE_RULE [IMP_IMP] (← RING_RULE
+     (← q r"ring_add r x (ring_mul r c n) = y
+      ==> ring_sub r (ring_mul r y i) (ring_mul r x i) =
+          ring_mul r n (ring_mul r c i)"))) THEN
       CONJ_TAC THENL
        [REPEAT CONJ_TAC THEN RING_CARRIER_TAC THEN
         REWRITE_TAC [POWSER_CONST, POWSER_VAR_UNIV] THEN
@@ -39706,10 +39271,6 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
       noetherian_ring (powser_ring r s) <=>
       noetherian_ring r /\ (FINITE s \/ trivial_ring r)"
    (← do
-    -- right to left: the SET_RULE, the second ARITH_RULE, then the first
-    let s3 ← SET_RULE (← q r"!P. ~P a /\ (!y. y IN s ==> P y) ==> ~(a IN s)")
-    let a2 ← ARITH_RULE (← q r"i < n + 1 <=> i < n \/ i = n")
-    let a1 ← ARITH_RULE (← q r"i < n + 1 <=> i < n \/ i = n")
     pure (REPEAT GEN_TAC THEN ASM_CASES_TAC (← q r"FINITE(s:V->bool)") THEN
     ASM_REWRITE_TAC [] THENL
      [UNDISCH_TAC (← q r"FINITE(s:V->bool)") THEN
@@ -39742,13 +39303,13 @@ def setupHilbert [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : N
     REWRITE_TAC [RING_IDEAL_IDEAL_GENERATED] THEN
     X_GEN_TAC (← q "n:num") THEN REWRITE_TAC [PSUBSET_ALT] THEN CONJ_TAC THENL
      [MATCH_MP_TAC IDEAL_GENERATED_MONO THEN
-      REWRITE_TAC [a1] THEN SET_TAC [],
+      REWRITE_TAC [(← ARITH_RULE (← q r"i < n + 1 <=> i < n \/ i = n"))] THEN SET_TAC [],
       EXISTS_TAC (← q r"poly_var r (v(n:num)):(V->num)->A")] THEN
     CONJ_TAC THENL
      [MATCH_MP_TAC IDEAL_GENERATED_INC THEN
       ASM_REWRITE_TAC [SUBSET, FORALL_IN_GSPEC, POWSER_VAR] THEN
-      REWRITE_TAC [a2] THEN SET_TAC [],
-      MATCH_MP_TAC s3] THEN
+      REWRITE_TAC [(← ARITH_RULE (← q r"i < n + 1 <=> i < n \/ i = n"))] THEN SET_TAC [],
+      MATCH_MP_TAC (← SET_RULE (← q r"!P. ~P a /\ (!y. y IN s ==> P y) ==> ~(a IN s)"))] THEN
     EXISTS_TAC (← q r"\p. (p:(V->num)->A) (monomial_var(v(n:num))) = ring_0 r") THEN
     REWRITE_TAC [] THEN CONJ_TAC THENL
      [ASM_REWRITE_TAC [poly_var, ← GSYM TRIVIAL_RING_10],
@@ -40158,19 +39719,10 @@ def setupMonic [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Num
                       (\i. ring_mul r (c(i + 1)) (ring_pow r x i)))))"
    (← do
     -- OCaml's order (right to left): the two RING_RULEs, then the ARITH_RULEs
-    let r5 ← RING_RULE
-     (← q r"ring_add (r:A ring) (ring_mul r x p) (ring_add r c0 (ring_mul r x s)) =
-      ring_add r c0 (ring_mul r x (ring_add r p s))")
-    let r4 ← RING_RULE
-       (← q r"ring_mul (r:A ring) a (ring_mul r x y) =
-        ring_mul r x (ring_mul r a y)")
-    let a3 ← ARITH_RULE (← q r"1 + i = i + 1")
-    let a2 ← ARITH_RULE (← q r"i < 1 <=> i = 0")
-    let a1 ← ARITH_RULE (← q r"(1 + n) - 1 = n")
     pure (REPEAT STRIP_TAC THEN
     SUBGOAL_THEN (← q r"?n. d = 1 + n") (X_CHOOSE_THEN (← q r"n:num") SUBST_ALL_TAC) THENL
      [EXISTS_TAC (← q r"d - 1") THEN ASM_ARITH_TAC,
-      REWRITE_TAC [a1]] THEN
+      REWRITE_TAC [(← ARITH_RULE (← q r"(1 + n) - 1 = n"))]] THEN
     SUBGOAL_THEN (← q r"!i. i < n ==> (c:num->A)(i + 1) IN ring_carrier r")
     ASSUME_TAC THENL
      [REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC,
@@ -40178,7 +39730,7 @@ def setupMonic [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Num
     SUBGOAL_THEN (← q r"(c:num->A) 0 IN ring_carrier r") ASSUME_TAC THENL
      [FIRST_X_ASSUM MATCH_MP_TAC THEN ARITH_TAC, ALL_TAC] THEN
     REWRITE_TAC [RING_SUM_NUMSEG_LT_ADD] THEN
-    REWRITE_TAC [a2, SING_GSPEC, RING_SUM_SING] THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"i < 1 <=> i = 0")), SING_GSPEC, RING_SUM_SING] THEN
     ASM_SIMP_TAC [RING_MUL, RING_POW, RING_POW_ADD, RING_POW_1, ring_pow,
                   RING_MUL_RID] THEN
     SUBGOAL_THEN
@@ -40192,11 +39744,15 @@ def setupMonic [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Num
                     RING_MUL, RING_POW] THEN
       MATCH_MP_TAC RING_SUM_EQ THEN REWRITE_TAC [IN_ELIM_THM] THEN
       X_GEN_TAC (← q r"i:num") THEN DISCH_TAC THEN
-      REWRITE_TAC [a3] THEN
-      MATCH_MP_TAC r4 THEN
+      REWRITE_TAC [(← ARITH_RULE (← q r"1 + i = i + 1"))] THEN
+      MATCH_MP_TAC (← RING_RULE
+       (← q r"ring_mul (r:A ring) a (ring_mul r x y) =
+        ring_mul r x (ring_mul r a y)")) THEN
       ASM_SIMP_TAC [RING_POW],
       ALL_TAC] THEN
-    MATCH_MP_TAC r5 THEN
+    MATCH_MP_TAC (← RING_RULE
+     (← q r"ring_add (r:A ring) (ring_mul r x p) (ring_add r c0 (ring_mul r x s)) =
+      ring_add r c0 (ring_mul r x (ring_add r p s))")) THEN
     ASM_SIMP_TAC [RING_POW, RING_SUM]))
 
   /- The subring generated by a root a of a monic m over r is spanned by   -/
@@ -40212,7 +39768,6 @@ def setupMonic [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Num
                (\i. ring_mul s (h(c i)) (ring_pow s a i)) |
              c | !i. c i IN ring_carrier r}"
    (← do
-    let tm ← q r"m:(1->num)->A"
     pure (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (STRIP_ASSUME_TAC o REWRITE_RULE [SUBSET, FORALL_IN_IMAGE] o
       GEN_REWRITE_RULE I [ring_homomorphism]) THEN
@@ -40288,8 +39843,9 @@ def setupMonic [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Num
       CONJ_TAC THENL [ARITH_TAC, ALL_TAC] THEN
       X_GEN_TAC (← q r"i:num") THEN STRIP_TAC THEN
       SUBGOAL_THEN (← q r"coeff i (t:(1->num)->A) = ring_0 r") SUBST1_TAC THENL
-       [FIRST_X_ASSUM (MATCH_MP_TAC o check (fun th =>
-          can (find_term (fun t => t == tm)) (concl th))) THEN
+       [FIRST_X_ASSUM (MATCH_MP_TAC o checkIO (fun th => do
+          let tm ← q r"m:(1->num)->A"
+          pure (can (find_term (fun t => t == tm)) (concl th)))) THEN
         ASM_ARITH_TAC,
         ASM_SIMP_TAC [RING_MUL_LZERO, RING_POW]]]))
 
@@ -41166,9 +40722,6 @@ def setupMonic [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Num
             (!j. poly_deg k f <= j ==> coeff j b = ring_0 l) /\
             (!j. coeff j b IN t)"
    (← do
-    let thf ← q r"(h:A->B) o (f:(1->num)->A)"
-    let tadd ← q r"ring_add:(B ring)->B->B->B"
-    let r1 ← RING_RULE (← q r"ring_add r (ring_sub r x y) y = (x:B)")
     pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
     ABBREV_TAC (← q r"n = poly_deg k (f:(1->num)->A)") THEN
     SUBGOAL_THEN (← q r"ring_monomorphism(k,l) (h:A->B)") ASSUME_TAC THENL
@@ -41205,8 +40758,9 @@ def setupMonic [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Num
      [MP_TAC (← ISPECL [← q r"l:B ring", ← q r"a:B", ← q r"b:(1->num)->B"]
         POLY_DEG_MUL_X_MINUS_A) THEN
       ASM_REWRITE_TAC [] THEN
-      FIRST_X_ASSUM (SUBST1_TAC o SYM o check (fun th =>
-        is_eq (concl th) && (lhs (concl th)).toOption == some thf)) THEN
+      FIRST_X_ASSUM (SUBST1_TAC o SYM o checkIO (fun th =>
+        if !(is_eq (concl th)) then pure false
+        else do pure ((lhs (concl th)).toOption == some (← q r"(h:A->B) o (f:(1->num)->A)")))) THEN
       MP_TAC (← ISPECL [← q r"k:A ring", ← q r"l:B ring", ← q r"h:A->B", ← q r"f:(1->num)->A"]
         POLY_DEG_MONOMORPHIC_IMAGE) THEN
       ASM_REWRITE_TAC [] THEN ARITH_TAC,
@@ -41226,7 +40780,7 @@ def setupMonic [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Num
      [REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [] THEN
       COND_CASES_TAC THENL [ASM_ARITH_TAC, ALL_TAC] THEN
       CONV_TAC SYM_CONV THEN
-      MATCH_MP_TAC r1 THEN
+      MATCH_MP_TAC (← RING_RULE (← q r"ring_add r (ring_sub r x y) y = (x:B)")) THEN
       ASM_SIMP_TAC [RING_MUL],
       ALL_TAC] THEN
     SUBGOAL_THEN (← q r"coeff (n - 1) (b:(1->num)->B) = ring_1 l") ASSUME_TAC THENL
@@ -41250,9 +40804,11 @@ def setupMonic [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Num
         ANTS_TAC THENL [ASM_ARITH_TAC, DISCH_TAC] THEN
         SUBGOAL_THEN (← q r"n - 1 - SUC d = (n - 1 - d) - 1") SUBST1_TAC THENL
          [ARITH_TAC, ALL_TAC] THEN
-        FIRST_ASSUM (MP_TAC o SPEC (← q r"n - 1 - d") o check (fun th =>
-          is_forall (concl th) &&
-          can (find_term (fun t => t == tadd)) (concl th))) THEN
+        FIRST_ASSUM (MP_TAC o SPEC (← q r"n - 1 - d") o checkIO (fun th =>
+          if !(is_forall (concl th)) then pure false
+          else do
+            let tadd ← q r"ring_add:(B ring)->B->B->B"
+            pure (can (find_term (fun t => t == tadd)) (concl th)))) THEN
         ANTS_TAC THENL [ASM_ARITH_TAC, DISCH_THEN SUBST1_TAC] THEN
         MATCH_MP_TAC IN_SUBRING_ADD THEN ASM_REWRITE_TAC [] THEN
         MATCH_MP_TAC IN_SUBRING_MUL THEN ASM_REWRITE_TAC []],
@@ -41287,12 +40843,10 @@ def setupMonic [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Num
                                             (poly_const r (x s)))))"
    (← do
     -- OCaml's order (right to left): the TAUT, then the MESON
-    let t2 ← TAUT (← q r"(~p ==> F) ==> p")
-    let m1 ← MESON []
-     (← q r"(!s t. s < m /\ t < m /\ (x:num->A) s = x t ==> s = t) <=>
-      (!s t. s < m /\ t < m /\ ~(s = t) ==> ~(x s = x t))")
     pure (REPEAT GEN_TAC THEN
-    REWRITE_TAC [m1] THEN
+    REWRITE_TAC [(← MESON []
+     (← q r"(!s t. s < m /\ t < m /\ (x:num->A) s = x t ==> s = t) <=>
+      (!s t. s < m /\ t < m /\ ~(s = t) ==> ~(x s = x t))"))] THEN
     STRIP_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP FIELD_IMP_INTEGRAL_DOMAIN) THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP FIELD_IMP_NONTRIVIAL_RING) THEN
@@ -41480,7 +41034,7 @@ def setupMonic [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Num
       ASM_SIMP_TAC [POLY_EVAL_SUB, RING_POLYNOMIAL, RING_SUB_REFL, POLY_EVAL],
       ALL_TAC] THEN
     SUBGOAL_THEN (← q r"G = ring_0(poly_ring r (:1)):(1->num)->A") MP_TAC THENL
-     [MATCH_MP_TAC t2 THEN DISCH_TAC THEN
+     [MATCH_MP_TAC (← TAUT (← q r"(~p ==> F) ==> p")) THEN DISCH_TAC THEN
       MP_TAC (← ISPECL [← q r"r:A ring", ← q r"G:(1->num)->A"] POLY_ROOT_BOUND) THEN
       ASM_REWRITE_TAC [← GSYM RING_POLYNOMIAL] THEN STRIP_TAC THEN
       SUBGOAL_THEN
@@ -42756,13 +42310,10 @@ def setupReciprocal [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
         ring_polynomial r p /\ ~(coeff 0 p = ring_0 r)
         ==> poly_recip r (poly_recip r p) = p"
    (← do
-    -- right to left: the second ARITH_RULE, then the first
-    let a2 ← ARITH_RULE (← q "p - d:num <= p")
-    let a1 ← ARITH_RULE (← q "d:num <= p ==> p - (p - d) = d")
     pure (REPEAT STRIP_TAC THEN
     ASM_SIMP_TAC [← GSYM FUN_EQ_COEFF, COEFF_POLY_RECIP, POLY_DEG_RECIP] THEN
-    SIMP_TAC [a1] THEN
-    GEN_TAC THEN REWRITE_TAC [a2] THEN
+    SIMP_TAC [(← ARITH_RULE (← q "d:num <= p ==> p - (p - d) = d"))] THEN
+    GEN_TAC THEN REWRITE_TAC [(← ARITH_RULE (← q "p - d:num <= p"))] THEN
     COND_CASES_TAC THEN ASM_REWRITE_TAC [] THEN
     ASM_MESON_TAC [COEFF_ABOVE_DEG, NOT_LE]))
 
@@ -42861,9 +42412,6 @@ def setupReciprocal [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
       ==> poly_recip r (poly_mul r p q) =
           poly_mul r (poly_recip r p) (poly_recip r q)"
    (← do
-    -- right to left: the second ARITH_RULE, then the first
-    let a2 ← ARITH_RULE (← q "i:num <= n ==> n - (n - i) = i")
-    let a1 ← ARITH_RULE (← q "n - i:num <= n")
     pure (REPEAT GEN_TAC THEN
     REPEAT (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
     ASM_SIMP_TAC [POLY_TOP_EQ_0] THEN
@@ -42889,7 +42437,7 @@ def setupReciprocal [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
       REWRITE_TAC [FORALL_PAIR_THM, IN_ELIM_PAIR_THM] THEN
       ONCE_REWRITE_TAC [IN_ELIM_THM] THEN
       REWRITE_TAC [IN_ELIM_PAIR_THM] THEN
-      REWRITE_TAC [a1, PAIR_EQ] THEN
+      REWRITE_TAC [(← ARITH_RULE (← q "n - i:num <= n")), PAIR_EQ] THEN
       CONJ_TAC THEN MAP_EVERY X_GEN_TAC [← q "i:num", ← q "j:num"] THENL
        [REPEAT (COND_CASES_TAC THEN ASM_REWRITE_TAC []) THEN
         ASM_SIMP_TAC [RING_MUL_LZERO, RING_MUL_RZERO, COEFF_IN_CARRIER, RING_0,
@@ -42903,7 +42451,7 @@ def setupReciprocal [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
          [ALL_TAC,
           ASM_MESON_TAC [COEFF_ABOVE_DEG, NOT_LE, RING_MUL_RZERO,
                          COEFF_IN_CARRIER, RING_POLYNOMIAL_IMP_POWERSERIES]] THEN
-        ASM_SIMP_TAC [a2] THEN
+        ASM_SIMP_TAC [(← ARITH_RULE (← q "i:num <= n ==> n - (n - i) = i"))] THEN
         ASM_ARITH_TAC],
       CONV_TAC SYM_CONV THEN MATCH_MP_TAC RING_SUM_EQ_0 THEN
       REWRITE_TAC [FORALL_PAIR_THM, IN_ELIM_PAIR_THM] THEN
@@ -43020,13 +42568,6 @@ def setupReciprocal [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
             ring_mul r (ring_pow r x (poly_deg r p))
                        (poly_eval r p (ring_inv r x))"
    (← do
-    -- right to left: the ARITH_RULE, the MESON, then the basic_ss []
-    let a3 ← ARITH_RULE (← q "i:num <= p ==> (p - i) + i = p")
-    let m2 ← MESON []
-     (← q r"ring_sum r t g = ring_sum r s g /\
-      ring_sum r s f = ring_sum r s g
-      ==> ring_sum r s f = ring_sum r t g")
-    let ss ← ExceptT.mk (basic_ss [])
     pure (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP RING_UNIT_IN_CARRIER) THEN
     ASM_SIMP_TAC [POLY_EVAL_EXPAND, RING_INV, RING_POLYNOMIAL_RECIP, ← GSYM
@@ -43035,11 +42576,14 @@ def setupReciprocal [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
       RING_SUM_REFLECT THEN
     REWRITE_TAC [← CONJUNCT1 LT, SUB_0] THEN
     ANTS_TAC THENL [ALL_TAC, DISCH_THEN SUBST1_TAC] THEN
-    ASM (simpTac ss 4)
+    ASM (simpTac (← ExceptT.mk (basic_ss [])) 4)
      [POLY_EVAL_EXPAND, ← GSYM RING_POLYNOMIAL, RING_INV, FINITE_NUMSEG,
       RING_POLYNOMIAL_RECIP, POLY_DEG_RECIP, ← GSYM RING_SUM_LMUL,
       RING_MUL, RING_POW, COEFF_IN_CARRIER_ALT] THEN
-    MATCH_MP_TAC m2 THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"ring_sum r t g = ring_sum r s g /\
+      ring_sum r s f = ring_sum r s g
+      ==> ring_sum r s f = ring_sum r t g")) THEN
     CONJ_TAC THENL
      [MATCH_MP_TAC RING_SUM_SUPERSET THEN
       REWRITE_TAC [SUBSET_NUMSEG, ← CONJUNCT1 LT, LE_0, IN_NUMSEG] THEN
@@ -43055,7 +42599,7 @@ def setupReciprocal [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
        [ALL_TAC, ASM_MESON_TAC [POLY_DEG_RECIP_LE, LE_TRANS]] THEN
       FIRST_ASSUM (MP_TAC o SPECL [← q "poly_deg r (p:(1->num)->A) - i", ← q "i:num"] o
         MATCH_MP RING_POW_ADD) THEN
-      ASM_SIMP_TAC [a3] THEN
+      ASM_SIMP_TAC [(← ARITH_RULE (← q "i:num <= p ==> (p - i) + i = p"))] THEN
       DISCH_THEN SUBST1_TAC THEN
       FIRST_ASSUM (MP_TAC o MATCH_MP RING_MUL_RINV) THEN
       DISCH_THEN (MP_TAC o AP_TERM
@@ -43326,24 +42870,20 @@ def setupDerivative [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
             poly_add r (poly_mul r (poly_deriv r p) q)
                        (poly_mul r p (poly_deriv r q))"
    (← do
-    -- right to left: the RING_RULE, the second ARITH_RULE, then the first
-    let r3 ← RING_RULE
-       (← q r"t0' = t0 /\ t1' = t1 /\ ring_add r s2 s3 = s1
-        ==> ring_add r t0 (ring_add r s1 t1) =
-            ring_add r (ring_add r s2 t1') (ring_add r t0' s3)")
-    let a2 ← ARITH_RULE (← q r"0 < n + 1 /\ 0 + 1 <= n + 1")
-    let a1 ← ARITH_RULE (← q "n - i = (n + 1) - (i + 1)")
     pure (REWRITE_TAC [RING_POWERSERIES_COEFF] THEN REPEAT STRIP_TAC THEN
     REWRITE_TAC [← GSYM FUN_EQ_COEFF] THEN X_GEN_TAC (← q "n:num") THEN
     REWRITE_TAC [COEFF_POLY_DERIV, COEFF_POLY_ADD, COEFF_POLY_MUL] THEN
     ASM_SIMP_TAC [← GSYM RING_SUM_LMUL, FINITE_NUMSEG, RING_MUL, RING_OF_NUM] THEN
-    GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o ONCE_DEPTH_CONV) [a1] THEN
+    GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o ONCE_DEPTH_CONV) [(← ARITH_RULE (← q "n - i = (n + 1) - (i + 1)"))] THEN
     REWRITE_TAC [← GSYM (← SPEC (← q "1") RING_SUM_OFFSET)] THEN
     SIMP_TAC [RING_SUM_CLAUSES_LEFT, LE_0] THEN
-    SIMP_TAC [RING_SUM_CLAUSES_RIGHT, a2] THEN
+    SIMP_TAC [RING_SUM_CLAUSES_RIGHT, (← ARITH_RULE (← q r"0 < n + 1 /\ 0 + 1 <= n + 1"))] THEN
     ASM_SIMP_TAC [RING_MUL, RING_OF_NUM, RING_SUM, SUB_0, RING_ADD] THEN
     REWRITE_TAC [ADD_SUB, ADD_CLAUSES] THEN MATCH_MP_TAC
-     (← REWRITE_RULE [IMP_IMP] r3) THEN
+     (← REWRITE_RULE [IMP_IMP] (← RING_RULE
+       (← q r"t0' = t0 /\ t1' = t1 /\ ring_add r s2 s3 = s1
+        ==> ring_add r t0 (ring_add r s1 t1) =
+            ring_add r (ring_add r s2 t1') (ring_add r t0' s3)"))) THEN
     ASM_SIMP_TAC [RING_MUL, RING_OF_NUM, RING_SUM, SUB_0, RING_ADD] THEN
     REPEAT (CONJ_TAC THENL [RING_TAC, ALL_TAC]) THEN
     ASM_SIMP_TAC [← GSYM RING_SUM_ADD, FINITE_NUMSEG, RING_MUL, RING_OF_NUM] THEN
@@ -43507,10 +43047,6 @@ def setupDerivative [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
                     (ring_product (powser_ring r (:1))
                                   (s DELETE x) f))"
    (← do
-    -- right to left: the second SET_RULE, then the first
-    let s2 ← SET_RULE
-     (← q r"~(i IN k) /\ j IN k ==> (i INSERT k) DELETE j = i INSERT (k DELETE j)")
-    let s1 ← SET_RULE (← q r"~(i IN k) ==> (i INSERT k) DELETE i = k")
     pure (GEN_TAC THEN GEN_TAC THEN REWRITE_TAC [IMP_CONJ] THEN
     MATCH_MP_TAC FINITE_INDUCT_STRONG THEN
     SIMP_TAC [NOT_IN_EMPTY, RING_PRODUCT_CLAUSES, FORALL_IN_INSERT,
@@ -43521,8 +43057,9 @@ def setupDerivative [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers 
     DISCH_THEN (fun th => STRIP_TAC THEN MP_TAC th) THEN
     ASM_REWRITE_TAC [] THEN STRIP_TAC THEN
     ASM_SIMP_TAC [POLY_DERIV_MUL, RING_POWERSERIES, RING_PRODUCT] THEN
-    ASM_SIMP_TAC [s1] THEN
-    AP_TERM_TAC THEN ASM_SIMP_TAC [s2] THEN
+    ASM_SIMP_TAC [(← SET_RULE (← q r"~(i IN k) ==> (i INSERT k) DELETE i = k"))] THEN
+    AP_TERM_TAC THEN ASM_SIMP_TAC [(← SET_RULE
+     (← q r"~(i IN k) /\ j IN k ==> (i INSERT k) DELETE j = i INSERT (k DELETE j)"))] THEN
     RULE_ASSUM_TAC (REWRITE_RULE [RING_POWERSERIES]) THEN
     REWRITE_TAC [POWSER_CLAUSES] THEN
     wPart lhand (fun t => do rand (← rand t)) RING_SUM_LMUL THEN
@@ -43865,17 +43402,14 @@ def setupSeparable [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     ring_irreducible(poly_ring r (:1)) p /\ ~(poly_deg r p = 0)
     ==> poly_separable r p"
    (← do
-    -- right to left: the ARITH_RULE, then the TAUT
-    let a2 ← ARITH_RULE (← q r"d <= d' /\ ~(d = 0) ==> d' <= d - 1 ==> F")
-    let t1 ← TAUT (← q r"~p ==> p \/ q ==> q")
     pure (REWRITE_TAC [poly_separable] THEN REPEAT STRIP_TAC THEN
     wPart pure (fun t => do rand (← rand t)) RING_IRREDUCIBLE_DIVIDES_OR_COPRIME THEN
     ASM_SIMP_TAC [POLY_DERIV_IN_CARRIER, RING_IRREDUCIBLE_IN_CARRIER] THEN
-    MATCH_MP_TAC t1 THEN DISCH_TAC THEN
+    MATCH_MP_TAC (← TAUT (← q r"~p ==> p \/ q ==> q")) THEN DISCH_TAC THEN
     MP_TAC (← ISPECL [← q "r:A ring", ← q "p:(1->num)->A"] POLY_DEG_DERIV_LE) THEN
     ANTS_TAC THENL
      [ASM_MESON_TAC [RING_POLYNOMIAL, ring_irreducible],
-      MATCH_MP_TAC a2] THEN
+      MATCH_MP_TAC (← ARITH_RULE (← q r"d <= d' /\ ~(d = 0) ==> d' <= d - 1 ==> F"))] THEN
     ASM_REWRITE_TAC [] THEN MATCH_MP_TAC POLY_DEG_DIVIDES_LE THEN
     EXISTS_TAC (← q "(:1)") THEN ASM_REWRITE_TAC [] THEN
     MATCH_MP_TAC POLY_DERIV_NONZERO_CHAR0 THEN ASM_SIMP_TAC [LE_1] THEN
@@ -44006,9 +43540,6 @@ def setupSeparable [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ring_squarefree (poly_ring k (:1)) p
         ==> poly_separable k p"
    (← do
-    -- right to left: the second TAUT, then the first
-    let t2 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
-    let t1 ← TAUT (← q "p <=> ~p ==> F")
     pure (REWRITE_TAC [poly_separable] THEN
     REPEAT STRIP_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP RING_SQUAREFREE_IN_CARRIER) THEN
@@ -44019,11 +43550,11 @@ def setupSeparable [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       ASM_MESON_TAC [RING_SQUAREFREE_0, TRIVIAL_POLY_RING,
                      FIELD_IMP_NONTRIVIAL_RING],
       STRIP_TAC THEN
-      GEN_REWRITE_TAC id [t1] THEN DISCH_TAC] THEN
+      GEN_REWRITE_TAC id [(← TAUT (← q "p <=> ~p ==> F"))] THEN DISCH_TAC] THEN
     MP_TAC (← ISPECL [← q "poly_ring (k:A ring) (:1)", ← q "d:(1->num)->A"]
           NOETHERIAN_DOMAIN_IRREDUCIBLE_FACTOR_EXISTS) THEN
     ASM_SIMP_TAC [PID_POLY_RING, PID_IMP_UFD, NOT_IMP] THEN
-    MATCH_MP_TAC t2 THEN
+    MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN
     CONJ_TAC THENL [ASM_MESON_TAC [ring_divides], DISCH_TAC] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q "q:(1->num)->A") STRIP_ASSUME_TAC) THEN
     FIRST_X_ASSUM (MP_TAC o GEN_REWRITE_RULE id [ring_squarefree]) THEN
@@ -44236,10 +43767,6 @@ def setupSeparable [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     CARD {x | x IN ring_carrier k /\ poly_eval k p x = ring_0 k} = poly_deg k p
     ==> ring_squarefree (poly_ring k (:1)) p"
    (← do
-    -- right to left: the second ARITH_RULE, the first, then the TAUT
-    let a3 ← ARITH_RULE (← q r"d + q < 2 * d + q <=> ~(d = 0)")
-    let a2 ← ARITH_RULE (← q "a:num = b ==> a < b ==> F")
-    let t1 ← TAUT (← q "(~p ==> F) ==> p")
     pure (REPEAT STRIP_TAC THEN ASM_REWRITE_TAC [ring_squarefree] THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP FIELD_IMP_INTEGRAL_DOMAIN) THEN
     X_GEN_TAC (← q "d:(1->num)->A") THEN
@@ -44251,8 +43778,8 @@ def setupSeparable [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     ASM_CASES_TAC (← q "q:(1->num)->A = ring_0 (poly_ring k (:1))") THEN
     ASM_SIMP_TAC [RING_POW, RING_MUL_RZERO] THEN
     DISCH_THEN (ASSUME_TAC o SYM) THEN
-    MATCH_MP_TAC t1 THEN DISCH_TAC THEN
-    FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP a2) THEN
+    MATCH_MP_TAC (← TAUT (← q "(~p ==> F) ==> p")) THEN DISCH_TAC THEN
+    FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← ARITH_RULE (← q "a:num = b ==> a < b ==> F"))) THEN
     MATCH_MP_TAC LET_TRANS THEN
     EXISTS_TAC
      (← q r"CARD{x | x IN ring_carrier k /\ poly_eval k (d:(1->num)->A) x = ring_0 k} +
@@ -44282,7 +43809,7 @@ def setupSeparable [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     DISCH_THEN SUBST1_TAC THEN REWRITE_TAC [← CONJUNCT2 POLY_RING_CLAUSES] THEN
     wPart (fun t => do lhand (← rand t)) (fun t => do lhand (← rand t)) POLY_DEG_POW THEN
     ASM_REWRITE_TAC [RING_POLYNOMIAL] THEN DISCH_THEN SUBST1_TAC THEN
-    REWRITE_TAC [a3] THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"d + q < 2 * d + q <=> ~(d = 0)"))] THEN
     ASM_MESON_TAC [POLY_DEG_EQ_0_UNIT, RING_POLYNOMIAL]))
 
   let POLY_SEPARABLE_EQ_DERIV_NONZERO ← prove
@@ -44789,23 +44316,6 @@ def setupGaussB [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
     let UFD_POLY_RING_1 ← prove
      r"!(r:A ring). UFD r ==> UFD(poly_ring r (:1))"
      (← do
-      -- right to left: the second RING_RULE, the two ARITH_RULEs (later
-      -- first), the first RING_RULE, then the TAUT
-      let r5 ← RING_RULE
-       (← q r"(x:(1->num)->A) IN ring_carrier rr /\ y IN ring_carrier rr
-         ==> x = ring_add rr (ring_sub rr x y) y")
-      let a4 ← ARITH_RULE (← q r"~(nn = 0) /\ x <= nn - 1 ==> x < nn")
-      let a3 ← ARITH_RULE
-       (← q r"s:num < m ==> m <= n /\ q <= n - m ==> q + s <= n - 1")
-      let r2 ← RING_RULE
-       (← q r"ring_mul (rr:(((1->num)->A)ring)) xk xdg = xn
-         ==> ring_sub rr
-          (ring_mul rr a (ring_add rr (ring_mul rr b xn) t))
-          (ring_mul rr (ring_mul rr b xk)
-           (ring_add rr (ring_mul rr a xdg) s)) =
-         ring_sub rr (ring_mul rr a t)
-          (ring_mul rr (ring_mul rr b xk) s)")
-      let t1 ← TAUT (← q r"~(p /\ ~q /\ r) <=> p /\ r ==> q")
       pure (GEN_TAC THEN DISCH_TAC THEN
       FIRST_ASSUM (ASSUME_TAC o MATCH_MP UFD_IMP_INTEGRAL_DOMAIN) THEN
       REWRITE_TAC [UFD] THEN CONJ_TAC THENL
@@ -44835,7 +44345,7 @@ def setupGaussB [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
        EXISTS_TAC (← q "poly_const (r:A ring) p:(1->num)->A") THEN
        ASM_SIMP_TAC [RING_PRIME_POLY_CONST],
        FIRST_X_ASSUM (ASSUME_TAC o
-         REWRITE_RULE [t1] o
+         REWRITE_RULE [(← TAUT (← q r"~(p /\ ~q /\ r) <=> p /\ r ==> q"))] o
          GEN_REWRITE_RULE id [NOT_EXISTS_THM]) THEN
        SUBGOAL_THEN
         (← q r"?g:(1->num)->A.
@@ -44976,7 +44486,14 @@ def setupGaussB [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
              (ring_mul (poly_ring r (:1)) qterm (qg:(1->num)->A))")
            SUBST1_TAC THENL
           [MAP_EVERY EXPAND_TAC ["hh'", "g", "hh", "qterm"] THEN
-           MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] r2) THEN
+           MATCH_MP_TAC (← REWRITE_RULE [IMP_IMP] (← RING_RULE
+       (← q r"ring_mul (rr:(((1->num)->A)ring)) xk xdg = xn
+         ==> ring_sub rr
+          (ring_mul rr a (ring_add rr (ring_mul rr b xn) t))
+          (ring_mul rr (ring_mul rr b xk)
+           (ring_add rr (ring_mul rr a xdg) s)) =
+         ring_sub rr (ring_mul rr a t)
+          (ring_mul rr (ring_mul rr b xk) s)"))) THEN
            ASM_SIMP_TAC [RING_MUL, RING_POW, POLY_VAR_UNIV,
             POLY_CONST, RING_ADD],
            ALL_TAC] THEN
@@ -45036,7 +44553,8 @@ def setupGaussB [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
            wPart lhand (fun t => do lhand (← rand t)) POLY_DEG_MUL_LE THEN
            ASM_SIMP_TAC [RING_POLYNOMIAL] THEN
            MATCH_MP_TAC (← REWRITE_RULE [IMP_CONJ_ALT] LE_TRANS) THEN
-           FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP a3) THEN
+           FIRST_X_ASSUM (MATCH_MP_TAC o MATCH_MP (← ARITH_RULE
+       (← q r"s:num < m ==> m <= n /\ q <= n - m ==> q + s <= n - 1"))) THEN
            ASM_REWRITE_TAC [] THEN CONJ_TAC THENL
            [REPEAT (FIRST_X_ASSUM DISJ_CASES_TAC) THEN ASM_MESON_TAC [],
             ALL_TAC] THEN
@@ -45049,7 +44567,7 @@ def setupGaussB [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
                         POLY_RING_CLAUSES, ADD_CLAUSES] THEN
            ASM_REWRITE_TAC [LE_REFL],
            ALL_TAC] THEN
-          MATCH_MP_TAC a4 THEN
+          MATCH_MP_TAC (← ARITH_RULE (← q r"~(nn = 0) /\ x <= nn - 1 ==> x < nn")) THEN
           ASM_REWRITE_TAC [] THEN
           MATCH_MP_TAC POLY_DEG_RING_SUB_LE THEN
           ASM_SIMP_TAC [RING_MUL, POLY_CONST],
@@ -45062,7 +44580,9 @@ def setupGaussB [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
            (ring_mul (poly_ring r (:1)) qterm (g:(1->num)->A)):(1->num)->A")
          ASSUME_TAC THENL
         [EXPAND_TAC "hh'" THEN
-         MATCH_MP_TAC r5 THEN
+         MATCH_MP_TAC (← RING_RULE
+       (← q r"(x:(1->num)->A) IN ring_carrier rr /\ y IN ring_carrier rr
+         ==> x = ring_add rr (ring_sub rr x y) y")) THEN
          ASM_SIMP_TAC [RING_MUL, POLY_CONST],
          ALL_TAC] THEN
         ASM_SIMP_TAC [RING_DIVIDES_ADD, RING_DIVIDES_LMUL, RING_DIVIDES_REFL],
@@ -45082,7 +44602,6 @@ def setupGaussB [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
      r"!(r:A ring) (s:V->bool).
          UFD r /\ FINITE s ==> UFD (poly_ring r s)"
      (← do
-      let sr ← SET_RULE (← q "(a:V) INSERT t = t UNION {a}")
       pure (GEN_TAC THEN X_GEN_TAC (← q r"s:V->bool") THEN
       DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
       SPEC_TAC (← q r"s:V->bool", ← q r"s:V->bool") THEN
@@ -45105,7 +44624,7 @@ def setupGaussB [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers : Nu
       [MATCH_MP_TAC ISOMORPHIC_POLY_RINGS THEN
        REWRITE_TAC [ISOMORPHIC_RING_REFL, eq_c, IN_UNIV, IN_SING] THEN
        EXISTS_TAC (← q r"(\x:1. a:V)") THEN MESON_TAC [one],
-       SUBST1_TAC sr THEN
+       SUBST1_TAC (← SET_RULE (← q "(a:V) INSERT t = t UNION {a}")) THEN
        MATCH_MP_TAC ISOMORPHIC_RING_POLY_POLY THEN ASM SET_TAC []]))
     pure (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP UFD_IMP_INTEGRAL_DOMAIN) THEN
@@ -45250,18 +44769,6 @@ def setupGaussC [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDomains : Do
         [REWRITE_TAC [POLY_RING_CLAUSES] THEN
          ASM_SIMP_TAC [POLY_CONST_MUL], ALL_TAC]
     -- the THENL list is built right to left: the second RING_RULE first
-    let r2 ← RING_RULE
-     (← q r"(a:B) IN ring_carrier r /\ b IN ring_carrier r /\
-      x IN ring_carrier r /\ y IN ring_carrier r
-      ==> ring_mul r (ring_mul r a b) (ring_mul r x y) =
-          ring_mul r (ring_mul r a x) (ring_mul r b y)")
-    let r1 ← RING_RULE
-     (← q r"(a:B) IN ring_carrier r /\ b IN ring_carrier r /\
-      x IN ring_carrier r /\ y IN ring_carrier r
-      ==> ring_mul r (ring_mul r a b) (ring_add r x y) =
-          ring_add r
-            (ring_mul r b (ring_mul r a x))
-            (ring_mul r a (ring_mul r b y))")
     pure (REPEAT GEN_TAC THEN
     ABBREV_TAC (← q r"frc = ring_fractionate r {a:A | ring_regular r a}") THEN
     DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
@@ -45431,7 +44938,13 @@ def setupGaussC [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDomains : Do
        REPEAT DISCH_TAC THEN ASM_REWRITE_TAC [],
        ALL_TAC] THEN
      clear_denom_subst_tac THEN
-     MATCH_MP_TAC r1 THEN
+     MATCH_MP_TAC (← RING_RULE
+     (← q r"(a:B) IN ring_carrier r /\ b IN ring_carrier r /\
+      x IN ring_carrier r /\ y IN ring_carrier r
+      ==> ring_mul r (ring_mul r a b) (ring_add r x y) =
+          ring_add r
+            (ring_mul r b (ring_mul r a x))
+            (ring_mul r a (ring_mul r b y))")) THEN
      ASM_SIMP_TAC [POLY_CONST],
      REPEAT GEN_TAC THEN
      DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC
@@ -45465,7 +44978,11 @@ def setupGaussC [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDomains : Do
        REPEAT DISCH_TAC THEN ASM_REWRITE_TAC [],
        ALL_TAC] THEN
      clear_denom_subst_tac THEN
-     MATCH_MP_TAC r2 THEN
+     MATCH_MP_TAC (← RING_RULE
+     (← q r"(a:B) IN ring_carrier r /\ b IN ring_carrier r /\
+      x IN ring_carrier r /\ y IN ring_carrier r
+      ==> ring_mul r (ring_mul r a b) (ring_mul r x y) =
+          ring_mul r (ring_mul r a x) (ring_mul r b y)")) THEN
      ASM_SIMP_TAC [POLY_CONST]]))
 
   -- @@RETURN BEGIN
@@ -45529,12 +45046,6 @@ def setupGaussD [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides : Di
             (ring_fractionate r
               {a | ring_regular r a} o f))"
    (← do
-    let rr ← RING_RULE
-        (← q r"!r a b c d:A.
-            a IN ring_carrier r /\ b IN ring_carrier r /\
-            c IN ring_carrier r /\ d IN ring_carrier r
-            ==> ring_mul r (ring_mul r a b) (ring_mul r c d) =
-                ring_mul r (ring_mul r a c) (ring_mul r b d)")
     pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
     ABBREV_TAC
       (← q r"frc:A->(A#A->bool) =
@@ -45760,7 +45271,12 @@ def setupGaussD [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BDivides : Di
           ring_carrier(poly_ring (fraction_ring r) (:1))")
          MP_TAC THENL
         [CONJ_TAC THEN ASM_SIMP_TAC [POLY_CONST], ALL_TAC] THEN
-       REPEAT STRIP_TAC THEN MATCH_MP_TAC rr THEN
+       REPEAT STRIP_TAC THEN MATCH_MP_TAC (← RING_RULE
+        (← q r"!r a b c d:A.
+            a IN ring_carrier r /\ b IN ring_carrier r /\
+            c IN ring_carrier r /\ d IN ring_carrier r
+            ==> ring_mul r (ring_mul r a b) (ring_mul r c d) =
+                ring_mul r (ring_mul r a c) (ring_mul r b d)")) THEN
        ASM_REWRITE_TAC [],
        ALL_TAC] THEN
      SUBGOAL_THEN
@@ -47161,10 +46677,9 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ring_pow r x m = ring_pow r x n
         ==> m = n"
    (← do
-    let a1 ← ARITH_RULE (← q "i < n ==> ~(n = 0)")
     pure (REPEAT GEN_TAC THEN
     REPEAT (DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC)) THEN
-    FIRST_ASSUM (ASSUME_TAC o MATCH_MP a1) THEN
+    FIRST_ASSUM (ASSUME_TAC o MATCH_MP (← ARITH_RULE (← q "i < n ==> ~(n = 0)"))) THEN
     ASM_SIMP_TAC [RING_POW_EQ_GEN] THEN ASM_MESON_TAC [CONG_IMP_EQ]))
 
   let RING_POW_EQ_LT_EQ ← prove
@@ -47189,22 +46704,19 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         if k = 0 then 1
         else ring_order r x DIV gcd(ring_order r x,k)"
    (← do
-    -- right to left: the second NUMBER_RULE, then the first
-    let n2 ← NUMBER_RULE (← q r"gcd(d,k) = 0 <=> d = 0 /\ k = 0")
-    let n1 ← NUMBER_RULE (← q "gcd(d:num,k) divides d")
     pure (REPEAT STRIP_TAC THEN COND_CASES_TAC THEN
     ASM_REWRITE_TAC [ring_pow, RING_ORDER_1] THEN
     ASM_SIMP_TAC [RING_ORDER_UNIQUE, RING_POW] THEN
     ASM_SIMP_TAC [← GSYM RING_POW_MUL] THEN
     ASM_SIMP_TAC [RING_POW_EQ_1] THEN X_GEN_TAC (← q "n:num") THEN
     SPEC_TAC (← q "ring_order r (x:A)", ← q "d:num") THEN GEN_TAC THEN
-    MP_TAC n1 THEN
+    MP_TAC (← NUMBER_RULE (← q "gcd(d:num,k) divides d")) THEN
     GEN_REWRITE_TAC LAND_CONV [divides] THEN
     DISCH_THEN (X_CHOOSE_THEN (← q "m:num") MP_TAC) THEN
     DISCH_THEN (fun th => tactic_of do
       pure (GEN_REWRITE_TAC (RAND_CONV o LAND_CONV o LAND_CONV) [th] THEN
       MP_TAC (← SYM th))) THEN
-    ASM_SIMP_TAC [DIV_MULT, n2] THEN
+    ASM_SIMP_TAC [DIV_MULT, (← NUMBER_RULE (← q r"gcd(d,k) = 0 <=> d = 0 /\ k = 0"))] THEN
     UNDISCH_TAC (← q "~(k = 0)") THEN NUMBER_TAC))
 
   let RING_ORDER_POW_DIVIDES ← prove
@@ -47228,21 +46740,18 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         coprime(ring_order r x, ring_order r y)
         ==> ring_order r (ring_mul r x y) = ring_order r x * ring_order r y"
    (← do
-    -- right to left: the MESON, then the NUMBER_RULE
-    let m2 ← MESON []
+    pure (REPEAT STRIP_TAC THEN REWRITE_TAC [← GSYM DIVIDES_ANTISYM] THEN
+    ASM_SIMP_TAC [RING_ORDER_MUL_DIVIDES] THEN
+    MATCH_MP_TAC (← NUMBER_RULE
+     (← q r"(a:num) divides (b * c) /\ b divides (a * c) /\ coprime(a,b)
+      ==> (a * b) divides c")) THEN
+    ASM_SIMP_TAC [← GSYM RING_POW_EQ_1] THEN
+    MATCH_MP_TAC (← MESON []
      (← q r"(ring_mul r (ring_pow r x m) (ring_pow r y m) = ring_pow r x m /\
        ring_mul r (ring_pow r x n) (ring_pow r y n) = ring_pow r (y:A) n) /\
       (ring_mul r (ring_pow r x m) (ring_pow r y m) = ring_1 r /\
        ring_mul r (ring_pow r x n) (ring_pow r y n) = ring_1 r)
-      ==> ring_pow r x m = ring_1 r /\ ring_pow r y n = ring_1 r")
-    let n1 ← NUMBER_RULE
-     (← q r"(a:num) divides (b * c) /\ b divides (a * c) /\ coprime(a,b)
-      ==> (a * b) divides c")
-    pure (REPEAT STRIP_TAC THEN REWRITE_TAC [← GSYM DIVIDES_ANTISYM] THEN
-    ASM_SIMP_TAC [RING_ORDER_MUL_DIVIDES] THEN
-    MATCH_MP_TAC n1 THEN
-    ASM_SIMP_TAC [← GSYM RING_POW_EQ_1] THEN
-    MATCH_MP_TAC m2 THEN
+      ==> ring_pow r x m = ring_1 r /\ ring_pow r y n = ring_1 r")) THEN
     CONJ_TAC THENL
      [ASM_SIMP_TAC [RING_POW_MUL, RING_POW_RING_ORDER, RING_POW_ONE] THEN
       ASM_SIMP_TAC [RING_MUL_LID, RING_MUL_RID, RING_POW],
@@ -47290,14 +46799,13 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
   let FINITE_RING_REGULAR ← prove
    r"!r x:A. FINITE(ring_carrier r) ==> (ring_regular r x <=> ring_unit r x)"
    (← do
-    let a1 ← ARITH_RULE (← q r"~(n = 0) ==> SUC(n - 1) = n")
     pure (REPEAT STRIP_TAC THEN EQ_TAC THEN REWRITE_TAC [RING_UNIT_IMP_REGULAR] THEN
     DISCH_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP RING_REGULAR_IN_CARRIER) THEN
     ASM_REWRITE_TAC [ring_unit] THEN
     EXISTS_TAC (← q r"ring_pow r (x:A) (ring_order r x - 1)") THEN
     ASM_SIMP_TAC [RING_POW, ← GSYM (← CONJUNCT2 ring_pow)] THEN
-    ASM_SIMP_TAC [RING_ORDER_NONZERO, RING_POW_RING_ORDER, a1]))
+    ASM_SIMP_TAC [RING_ORDER_NONZERO, RING_POW_RING_ORDER, (← ARITH_RULE (← q r"~(n = 0) ==> SUC(n - 1) = n"))]))
 
   let FINITE_INTEGRAL_DOMAIN_UNIT ← prove
    r"!r x:A. integral_domain r /\ FINITE(ring_carrier r)
@@ -47309,7 +46817,6 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
      ring_multsys r s /\ x IN s /\ y IN s
      ==> ?z. z IN s /\ ring_order r z = lcm(ring_order r x, ring_order r y)"
    (← do
-    let n1 ← NUMBER_RULE (← q r"gcd(a * b:num,a) = a /\ gcd(a * b,b) = b")
     pure (REPEAT STRIP_TAC THEN
     ASM_CASES_TAC (← q r"ring_order r (x:A) = 0") THENL
      [EXISTS_TAC (← q "x:A") THEN ASM_MESON_TAC [LCM_0], ALL_TAC] THEN
@@ -47335,7 +46842,7 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     STRIP_ASSUME_TAC THENL
      [ASM_SIMP_TAC [RING_ORDER_POW_GEN] THEN CONJ_TAC THEN
       (COND_CASES_TAC THENL [ASM_MESON_TAC [MULT_CLAUSES], ALL_TAC]) THEN
-      REWRITE_TAC [n1] THEN
+      REWRITE_TAC [(← NUMBER_RULE (← q r"gcd(a * b:num,a) = a /\ gcd(a * b,b) = b"))] THEN
       ASM_MESON_TAC [DIV_MULT, MULT_SYM],
       ASM_SIMP_TAC [RING_ORDER_MUL, RING_POW,
                     RING_POW_IN_MULTSYS, RING_MUL_IN_MULTSYS]]))
@@ -47353,13 +46860,9 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       (!x. x IN s ==> ~(ring_order r x = 0))
       ==> ?g. g IN s /\ !x. x IN s ==> ring_order r x divides ring_order r g"
    (← do
-    -- right to left: the ARITH_RULE, then the MESON
-    let a2 ← ARITH_RULE
-     (← q r"lcm(a,b) <= a ==> MAX a b <= lcm(a,b) ==> lcm(a,b) = a")
-    let m1 ← MESON [IN] (← q r"IMAGE f s x <=> x IN IMAGE f s")
     pure (REPEAT STRIP_TAC THEN MP_TAC (← EQ_IMP_RULE (← ISPEC
      (← q r"IMAGE (ring_order r) (s:A->bool)") num_MAX)).1 THEN
-    REWRITE_TAC [m1] THEN
+    REWRITE_TAC [(← MESON [IN] (← q r"IMAGE f s x <=> x IN IMAGE f s"))] THEN
     ASM_SIMP_TAC [← GSYM num_FINITE, FINITE_IMAGE] THEN
     REWRITE_TAC [MEMBER_NOT_EMPTY, IMAGE_EQ_EMPTY] THEN
     REWRITE_TAC [EXISTS_IN_IMAGE, FORALL_IN_IMAGE] THEN
@@ -47371,7 +46874,8 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       RING_ORDER_LCM_EXISTS_MULTSYS) THEN
     ASM_REWRITE_TAC [LEFT_IMP_EXISTS_THM] THEN X_GEN_TAC (← q "z:A") THEN
     STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC (← q "z:A")) THEN ASM_REWRITE_TAC [] THEN
-    DISCH_THEN (MP_TAC o MATCH_MP a2) THEN
+    DISCH_THEN (MP_TAC o MATCH_MP (← ARITH_RULE
+     (← q r"lcm(a,b) <= a ==> MAX a b <= lcm(a,b) ==> lcm(a,b) = a"))) THEN
     REWRITE_TAC [← GSYM DIVIDES_LCM_LEFT] THEN DISCH_THEN MATCH_MP_TAC THEN
     MATCH_MP_TAC MAX_LE_LCM THEN ASM_MESON_TAC []))
 
@@ -47415,8 +46919,6 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         integral_domain r /\ ring_multsys r s /\ FINITE s /\ ~(ring_0 r IN s)
         ==> ?g. g IN s /\ !x. x IN s ==> ?k. ring_pow r g k = x"
    (← do
-    let s1 ← SET_RULE
-     (← q r"(!x. P x ==> x IN t) ==> IMAGE f s = t ==> !x. P x ==> ?i. f i = x")
     pure (REPEAT STRIP_TAC THEN MP_TAC (← ISPECL
      [← q "r:A ring", ← q "s:A->bool"] RING_ORDER_DIVIDES_MAXIMAL_MULTSYS) THEN
     ASM_REWRITE_TAC [] THEN ANTS_TAC THENL
@@ -47442,7 +46944,8 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       wPart rand (fun t => do lhand (← rand t)) CARD_IMAGE_INJ THEN
       REWRITE_TAC [CARD_NUMSEG_LT, FINITE_NUMSEG_LT, IN_ELIM_THM] THEN
       ANTS_TAC THENL [ASM_MESON_TAC [RING_POW_EQ_LT], SIMP_TAC [LE_REFL]],
-      MATCH_MP_TAC s1 THEN
+      MATCH_MP_TAC (← SET_RULE
+     (← q r"(!x. P x ==> x IN t) ==> IMAGE f s = t ==> !x. P x ==> ?i. f i = x")) THEN
       X_GEN_TAC (← q "x:A") THEN DISCH_TAC THEN
       SUBGOAL_THEN (← q r"(x:A) IN ring_carrier r") ASSUME_TAC THENL
        [ASM_MESON_TAC [ring_multsys, SUBSET], ALL_TAC] THEN
@@ -47468,9 +46971,8 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ==> ?a. a IN ring_carrier f /\ ~(a = ring_0 f) /\
                 ~(ring_mul f a a = ring_1 f)"
    (← do
-    let t1 ← TAUT (← q r"(~q ==> ~p) ==> p ==> q")
     pure (GEN_TAC THEN DISCH_THEN (CONJUNCTS_THEN2 ASSUME_TAC MP_TAC) THEN
-    MATCH_MP_TAC t1 THEN
+    MATCH_MP_TAC (← TAUT (← q r"(~q ==> ~p) ==> p ==> q")) THEN
     REWRITE_TAC [NOT_EXISTS_THM, INFINITE, DE_MORGAN_THM, NOT_LT] THEN
     DISCH_TAC THEN
     SUBGOAL_THEN
@@ -47509,16 +47011,6 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ==> CARD {x | x IN ring_carrier f /\ ring_pow f x n = ring_1 f} =
             gcd(n,CARD(ring_carrier f) - 1)"
    (← do
-    -- right to left: the last ARITH_RULE, the NUMBER_RULEs (later first),
-    -- the SET_RULE, then the first ARITH_RULE
-    let a6 ← ARITH_RULE (← q r"(e * j) * d:num = (d * e) * j")
-    let n5 ← NUMBER_RULE (← q r"gcd(n:num,m) divides m")
-    let n4 ← NUMBER_RULE (← q r"gcd(n,m) = 0 <=> n = 0 /\ m = 0")
-    let n3 ← NUMBER_RULE (← q r"gcd(n,m) = 0 <=> n = 0 /\ m = 0")
-    let s2 ← SET_RULE
-     (← q r"(!x:A. P x ==> (Q x <=> R x))
-      ==> {x | P x /\ Q x} = {x | P x /\ R x}")
-    let a1 ← ARITH_RULE (← q r"a:num = b ==> a <= c ==> b <= c")
     pure (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP FIELD_IMP_INTEGRAL_DOMAIN) THEN
     MP_TAC (← ISPEC (← q "f:A ring") FINITE_INTEGRAL_DOMAIN_CYCLIC) THEN
@@ -47562,7 +47054,7 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
                         IN_ELIM_THM, RING_POW, INTEGRAL_DOMAIN_POW_EQ_0],
           ALL_TAC] THEN
         ASM_SIMP_TAC [CARD_DELETE, RING_0] THEN
-        MATCH_MP_TAC a1 THEN
+        MATCH_MP_TAC (← ARITH_RULE (← q r"a:num = b ==> a <= c ==> b <= c")) THEN
         wPart lhand (fun t => do lhand (← rand t)) CARD_IMAGE_INJ THEN
         REWRITE_TAC [IN_ELIM_THM, FINITE_NUMSEG_LT, CARD_NUMSEG_LT] THEN
         DISCH_THEN MATCH_MP_TAC THEN
@@ -47574,11 +47066,13 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
      (← q r"{x:A | x IN ring_carrier f /\ ring_pow f x n = ring_1 f} =
       {x | x IN ring_carrier f /\ ring_pow f x (gcd(n,m)) = ring_1 f}")
     SUBST1_TAC THENL
-     [MATCH_MP_TAC s2 THEN
+     [MATCH_MP_TAC (← SET_RULE
+     (← q r"(!x:A. P x ==> (Q x <=> R x))
+      ==> {x | P x /\ Q x} = {x | P x /\ R x}")) THEN
       X_GEN_TAC (← q "x:A") THEN DISCH_TAC THEN
       ASM_CASES_TAC (← q "x = ring_0 f:A") THENL
        [SUBGOAL_THEN (← q r"~(n = 0) /\ ~(gcd(n,m) = 0)") STRIP_ASSUME_TAC THENL
-         [REWRITE_TAC [n3] THEN
+         [REWRITE_TAC [(← NUMBER_RULE (← q r"gcd(n,m) = 0 <=> n = 0 /\ m = 0"))] THEN
           UNDISCH_TAC (← q "1 <= n") THEN ARITH_TAC,
           ASM_REWRITE_TAC [RING_POW_ZERO]],
         ALL_TAC] THEN
@@ -47591,8 +47085,8 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     ABBREV_TAC (← q r"d = gcd(n:num,m)") THEN
     SUBGOAL_THEN (← q r"~(d = 0) /\ d divides m") STRIP_ASSUME_TAC THENL
      [EXPAND_TAC "d" THEN
-      REWRITE_TAC [n4] THEN
-      ASM_REWRITE_TAC [n5],
+      REWRITE_TAC [(← NUMBER_RULE (← q r"gcd(n,m) = 0 <=> n = 0 /\ m = 0"))] THEN
+      ASM_REWRITE_TAC [(← NUMBER_RULE (← q r"gcd(n:num,m) divides m"))],
       ALL_TAC] THEN
     MP_TAC (← ISPECL [← q "f:A ring", ← q "d:num"] ROOTS_OF_UNITY_BOUND) THEN
     ASM_SIMP_TAC [LE_1] THEN STRIP_TAC THEN
@@ -47622,7 +47116,7 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       ASM_REWRITE_TAC [SUBSET, FORALL_IN_IMAGE, IN_ELIM_THM] THEN
       X_GEN_TAC (← q "j:num") THEN DISCH_TAC THEN
       ASM_SIMP_TAC [RING_POW, RING_POW_POW] THEN
-      ONCE_REWRITE_TAC [a6] THEN
+      ONCE_REWRITE_TAC [(← ARITH_RULE (← q r"(e * j) * d:num = (d * e) * j"))] THEN
       ASM_SIMP_TAC [RING_POW_MUL, RING_POW_ONE]]))
 
   let INTEGRAL_DOMAIN_ROOTS_OF_UNITY_CYCLIC ← prove
@@ -47758,14 +47252,13 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         z IN ring_carrier r /\ ~(ring_order r z = 0)
         ==> ?j. f z = ring_pow r z j"
    (← do
-    let t1 ← TAUT (← q r"p /\ (q ==> r) ==> (p <=> q) ==> r")
     pure (REWRITE_TAC [ring_endomorphism] THEN REPEAT STRIP_TAC THEN
     MP_TAC (← ISPECL [← q "r:A ring", ← q "z:A", ← q r"ring_order r (z:A)"]
       ROOTS_OF_UNITY_RING_ORDER) THEN
     ASM_REWRITE_TAC [] THEN DISCH_THEN (MP_TAC o CONJUNCT1) THEN
     REWRITE_TAC [EXTENSION, IN_ELIM_THM, IN_IMAGE] THEN
     DISCH_THEN (MP_TAC o SPEC (← q r"(f:A->A) z")) THEN
-    MATCH_MP_TAC t1 THEN
+    MATCH_MP_TAC (← TAUT (← q r"p /\ (q ==> r) ==> (p <=> q) ==> r")) THEN
     CONJ_TAC THENL [ALL_TAC, MESON_TAC []] THEN
     CONJ_TAC THENL [ASM_MESON_TAC [RING_HOMOMORPHISM_IN_CARRIER], ALL_TAC] THEN
     SUBGOAL_THEN
@@ -47788,7 +47281,6 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         {x | x IN ring_carrier r /\ ring_pow r x n = ring_1 r} HAS_SIZE n
         ==> ?z. z IN ring_carrier r /\ ring_order r z = n"
    (← do
-    let a1 ← ARITH_RULE (← q r"d <= n /\ n <= d ==> d:num = n")
     pure (REPEAT GEN_TAC THEN
     ABBREV_TAC (← q r"s = {x:A | x IN ring_carrier r /\ ring_pow r x n = ring_1 r}") THEN
     STRIP_TAC THEN
@@ -47808,7 +47300,7 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
      [DISCH_TAC THEN UNDISCH_TAC (← q r"ring_order r (z:A) divides n") THEN
       ASM_REWRITE_TAC [DIVIDES_ZERO],
       ALL_TAC] THEN
-    MATCH_MP_TAC a1 THEN CONJ_TAC THENL
+    MATCH_MP_TAC (← ARITH_RULE (← q r"d <= n /\ n <= d ==> d:num = n")) THEN CONJ_TAC THENL
      [MP_TAC (← SPECL [← q r"ring_order r (z:A)", ← q "n:num"] DIVIDES_LE) THEN
       ASM_REWRITE_TAC [],
       ALL_TAC] THEN
@@ -47863,43 +47355,6 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ring_sub r x y IN j
         ==> x = y"
    (← do
-    -- right to left: the last RING_RULE, the TAUT, then the other
-    -- RING_RULEs (later first)
-    let r7 ← RING_RULE
-     (← q r"!r c d:A. c IN ring_carrier r /\ d IN ring_carrier r
-                ==> ring_add r c d = ring_0 r ==> c = ring_neg r d")
-    let t6 ← TAUT (← q r"p ==> ~p ==> q")
-    let r5 ← RING_RULE
-     (← q r"!r x y u:A.
-        x IN ring_carrier r /\ y IN ring_carrier r /\ u IN ring_carrier r
-        ==> ring_mul r y u = ring_1 r
-            ==> ring_1 r = ring_mul r x u ==> x = y")
-    let r4 ← RING_RULE
-     (← q r"!r t w c:A.
-        t IN ring_carrier r /\ w IN ring_carrier r /\ c IN ring_carrier r
-        ==> ring_1 r =
-            ring_add r (ring_add r (ring_1 r) (ring_mul r c t))
-                       (ring_mul r (ring_mul r t t) w)
-            ==> ring_mul r t (ring_add r c (ring_mul r t w)) = ring_0 r")
-    let r3 ← RING_RULE
-     (← q r"!r a:A. a IN ring_carrier r
-            ==> ring_add r (ring_1 r) (ring_sub r a (ring_1 r)) = a")
-    let r2 ← RING_RULE
-     (← q r"!r x y u:A.
-        x IN ring_carrier r /\ y IN ring_carrier r /\ u IN ring_carrier r
-        ==> ring_sub r (ring_mul r x u) (ring_mul r y u) =
-            ring_mul r (ring_sub r x y) u")
-    let r1 ← RING_RULE
-     (← q r"!r t w c:A.
-        t IN ring_carrier r /\ w IN ring_carrier r /\ c IN ring_carrier r
-        ==> ring_mul r (ring_add r (ring_1 r) t)
-              (ring_add r (ring_add r (ring_1 r) (ring_mul r c t))
-                          (ring_mul r (ring_mul r t t) w)) =
-            ring_add r (ring_add r (ring_1 r)
-                         (ring_mul r (ring_add r c (ring_1 r)) t))
-                       (ring_mul r (ring_mul r t t)
-                          (ring_add r (ring_add r c w)
-                           (ring_mul r t w)))")
     pure (REPEAT STRIP_TAC THEN
     SUBGOAL_THEN (← q "~(n = 0)") ASSUME_TAC THENL
      [DISCH_THEN SUBST_ALL_TAC THEN
@@ -47924,7 +47379,17 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         CONJ_TAC THENL
           [ASM_SIMP_TAC [RING_ADD, RING_MUL, RING_OF_NUM], ALL_TAC] THEN
         ASM_REWRITE_TAC [ring_pow, ring_of_num] THEN
-        MATCH_MP_TAC r1 THEN
+        MATCH_MP_TAC (← RING_RULE
+     (← q r"!r t w c:A.
+        t IN ring_carrier r /\ w IN ring_carrier r /\ c IN ring_carrier r
+        ==> ring_mul r (ring_add r (ring_1 r) t)
+              (ring_add r (ring_add r (ring_1 r) (ring_mul r c t))
+                          (ring_mul r (ring_mul r t t) w)) =
+            ring_add r (ring_add r (ring_1 r)
+                         (ring_mul r (ring_add r c (ring_1 r)) t))
+                       (ring_mul r (ring_mul r t t)
+                          (ring_add r (ring_add r c w)
+                           (ring_mul r t w)))")) THEN
         ASM_SIMP_TAC [RING_OF_NUM]],
       ALL_TAC] THEN
     ABBREV_TAC (← q r"u = ring_pow r (y:A) (n - 1)") THEN
@@ -47954,13 +47419,19 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       SUBST1_TAC THENL
        [UNDISCH_TAC (← q r"ring_mul r y u = ring_1 r:A") THEN
         DISCH_THEN (SUBST1_TAC o SYM) THEN
-        MATCH_MP_TAC r2 THEN
+        MATCH_MP_TAC (← RING_RULE
+     (← q r"!r x y u:A.
+        x IN ring_carrier r /\ y IN ring_carrier r /\ u IN ring_carrier r
+        ==> ring_sub r (ring_mul r x u) (ring_mul r y u) =
+            ring_mul r (ring_sub r x y) u")) THEN
         ASM_REWRITE_TAC [],
         MATCH_MP_TAC IN_RING_IDEAL_RMUL THEN ASM_REWRITE_TAC []],
       ALL_TAC] THEN
     SUBGOAL_THEN (← q r"ring_add r (ring_1 r) t = ring_mul r x (u:A)") ASSUME_TAC THENL
      [EXPAND_TAC "t" THEN
-      MATCH_MP_TAC r3 THEN
+      MATCH_MP_TAC (← RING_RULE
+     (← q r"!r a:A. a IN ring_carrier r
+            ==> ring_add r (ring_1 r) (ring_sub r a (ring_1 r)) = a")) THEN
       ASM_SIMP_TAC [RING_MUL],
       ALL_TAC] THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q "n:num") o C MATCH_MP
@@ -47974,7 +47445,13 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ring_add r (ring_add r (ring_1 r) (ring_mul r (ring_of_num r n) t))
                    (ring_mul r (ring_mul r t t) (w:A))") THEN
       ASM_SIMP_TAC [RING_MUL_POW, RING_MUL_LID, RING_1] THEN
-      MATCH_MP_TAC r4 THEN
+      MATCH_MP_TAC (← RING_RULE
+     (← q r"!r t w c:A.
+        t IN ring_carrier r /\ w IN ring_carrier r /\ c IN ring_carrier r
+        ==> ring_1 r =
+            ring_add r (ring_add r (ring_1 r) (ring_mul r c t))
+                       (ring_mul r (ring_mul r t t) w)
+            ==> ring_mul r t (ring_add r c (ring_mul r t w)) = ring_0 r")) THEN
       ASM_SIMP_TAC [RING_OF_NUM],
       ALL_TAC] THEN
     ASM_SIMP_TAC [INTEGRAL_DOMAIN_MUL_EQ_0, RING_ADD, RING_MUL, RING_OF_NUM] THEN
@@ -47983,15 +47460,21 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       ASM_SIMP_TAC [RING_ADD_RZERO, RING_1] THEN DISCH_TAC THEN
       MAP_EVERY UNDISCH_TAC
        [← q r"ring_1 r = ring_mul r x (u:A)", ← q r"ring_mul r y u = ring_1 r:A"] THEN
-      MATCH_MP_TAC r5 THEN
+      MATCH_MP_TAC (← RING_RULE
+     (← q r"!r x y u:A.
+        x IN ring_carrier r /\ y IN ring_carrier r /\ u IN ring_carrier r
+        ==> ring_mul r y u = ring_1 r
+            ==> ring_1 r = ring_mul r x u ==> x = y")) THEN
       ASM_REWRITE_TAC [],
       UNDISCH_TAC (← q r"~(ring_of_num r n IN (j:A->bool))") THEN
-      MATCH_MP_TAC t6 THEN
+      MATCH_MP_TAC (← TAUT (← q r"p ==> ~p ==> q")) THEN
       SUBGOAL_THEN (← q r"ring_of_num r n = ring_neg r (ring_mul r t (w:A))")
       SUBST1_TAC THENL
        [UNDISCH_TAC
          (← q r"ring_add r (ring_of_num r n) (ring_mul r t w) = ring_0 r:A") THEN
-        MATCH_MP_TAC r7 THEN
+        MATCH_MP_TAC (← RING_RULE
+     (← q r"!r c d:A. c IN ring_carrier r /\ d IN ring_carrier r
+                ==> ring_add r c d = ring_0 r ==> c = ring_neg r d")) THEN
         ASM_SIMP_TAC [RING_OF_NUM, RING_MUL],
         MATCH_MP_TAC IN_RING_IDEAL_NEG THEN ASM_REWRITE_TAC [] THEN
         MATCH_MP_TAC IN_RING_IDEAL_RMUL THEN ASM_REWRITE_TAC []]]))
@@ -48003,11 +47486,8 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ==> {x | x IN ring_carrier r /\ ring_pow r x n = ring_1 r} HAS_SIZE n /\
             ?z. z IN ring_carrier r /\ ring_order r z = n"
    (← do
-    -- right to left: the second TAUT, then the first
-    let t2 ← TAUT (← q r"~p ==> p ==> F")
-    let t1 ← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")
     pure (REPEAT GEN_TAC THEN STRIP_TAC THEN
-    MATCH_MP_TAC t1 THEN
+    MATCH_MP_TAC (← TAUT (← q r"p /\ (p ==> q) ==> p /\ q")) THEN
     ASM_SIMP_TAC [ROOTS_OF_UNITY_HAS_SIZE_PRIMITIVE] THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP INTEGRAL_DOMAIN_NONTRIVIAL) THEN
     SUBGOAL_THEN (← q "~(n = 0)") ASSUME_TAC THENL
@@ -48073,7 +47553,7 @@ def setupRingOrder [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     ASM_REWRITE_TAC [] THEN X_GEN_TAC (← q "a:A") THEN STRIP_TAC THEN
     DISCH_THEN (MP_TAC o MATCH_MP REPEATED_ROOT_POLY_DERIV_ZERO o
       CONJ (← ASSUME (← q r"(a:A) IN ring_carrier r"))) THEN
-    MATCH_MP_TAC t2 THEN
+    MATCH_MP_TAC (← TAUT (← q r"~p ==> p ==> F")) THEN
     FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC [] THEN
     FIRST_X_ASSUM (MP_TAC o SPEC (← q "a:A")) THEN ASM_REWRITE_TAC []))
 
@@ -48193,16 +47673,13 @@ def setupFrobenius [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         {x | x IN ring_carrier r /\ ring_pow r x n = ring_1 r} HAS_SIZE n
         ==> ~(ring_char r divides n)"
    (← do
-    -- right to left: the ARITH_RULE, then the NUMBER_RULE
-    let a2 ← ARITH_RULE (← q r"p * m <= m <=> p * m <= 1 * m")
-    let n1 ← NUMBER_RULE (← q r"0 divides n <=> n = 0")
     pure (REPEAT STRIP_TAC THEN
     FIRST_ASSUM (ASSUME_TAC o MATCH_MP ROOTS_OF_UNITY_HAS_SIZE_NONZERO) THEN
     MP_TAC (← ISPECL [← q "r:A ring", ← q "n:num"] ROOTS_OF_UNITY_HAS_SIZE_PRIMITIVE) THEN
     ASM_REWRITE_TAC [] THEN DISCH_THEN (X_CHOOSE_THEN (← q "z:A") STRIP_ASSUME_TAC) THEN
     FIRST_ASSUM (DISJ_CASES_TAC o MATCH_MP INTEGRAL_DOMAIN_CHAR) THENL
      [UNDISCH_TAC (← q r"ring_char(r:A ring) divides n") THEN
-      ASM_REWRITE_TAC [n1],
+      ASM_REWRITE_TAC [(← NUMBER_RULE (← q r"0 divides n <=> n = 0"))],
       ALL_TAC] THEN
     FIRST_X_ASSUM (X_CHOOSE_THEN (← q "m:num") ASSUME_TAC o
       GEN_REWRITE_RULE I [divides]) THEN
@@ -48226,7 +47703,7 @@ def setupFrobenius [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
     ASM_REWRITE_TAC [] THEN
     SPEC_TAC (← q r"ring_char(r:A ring)", ← q "p:num") THEN GEN_TAC THEN
     DISCH_THEN SUBST1_TAC THEN
-    REWRITE_TAC [a2, LE_MULT_RCANCEL] THEN
+    REWRITE_TAC [(← ARITH_RULE (← q r"p * m <= m <=> p * m <= 1 * m")), LE_MULT_RCANCEL] THEN
     ARITH_TAC))
 
   let RING_AUTOMORPHISM_FROBENIUS ← prove
@@ -48244,19 +47721,8 @@ def setupFrobenius [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
         ==> { x | x IN ring_carrier r /\ ring_pow r x (ring_char r) = x} =
             { ring_of_int r n | n IN (:int)}"
    (← do
-    -- right to left: the SET_RULE, the two MESONs (later first), the
-    -- ARITH_RULE, then the TAUT
-    let s5 ← SET_RULE
-     (← q r"{x | x IN s /\ P x} = {x | x IN s /\ Q x} <=>
-                          !x. x IN s ==> (P x <=> Q x)")
-    let m4 ← MESON []
-     (← q r"s = t ==> FINITE s /\ CARD s <= n ==> FINITE t /\ CARD t <= n")
-    let m3 ← MESON [POLY_DEG_0, POLY_RING]
-       (← q "p = ring_0(poly_ring r s) ==> poly_deg r p = 0")
-    let a2 ← ARITH_RULE (← q "~(x = 0) ==> MAX x 1 = x")
-    let t1 ← TAUT (← q r"p /\ q /\ r <=> q /\ p /\ r")
     pure (REPEAT STRIP_TAC THEN CONV_TAC SYM_CONV THEN MATCH_MP_TAC CARD_SUBSET_LE THEN
-    ONCE_REWRITE_TAC [t1] THEN CONJ_TAC THENL
+    ONCE_REWRITE_TAC [(← TAUT (← q r"p /\ q /\ r <=> q /\ p /\ r"))] THEN CONJ_TAC THENL
      [MATCH_MP_TAC PRIME_SUBRING_MINIMAL THEN
       MATCH_MP_TAC SUBRING_OF_FIXPOINTS THEN
       ASM_SIMP_TAC [RING_ENDOMORPHISM_FROBENIUS],
@@ -48288,17 +47754,21 @@ def setupFrobenius [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (BNumbers :
       EXPAND_TAC "q" THEN
       REWRITE_TAC [POLY_DEG_VAR_POW, POLY_DEG_VAR] THEN
       ASM_SIMP_TAC [INTEGRAL_DOMAIN_NONTRIVIAL, POLY_RING_CLAUSES] THEN
-      ASM_SIMP_TAC [PRIME_IMP_NZ, a2] THEN
+      ASM_SIMP_TAC [PRIME_IMP_NZ, (← ARITH_RULE (← q "~(x = 0) ==> MAX x 1 = x"))] THEN
      DISCH_THEN MATCH_MP_TAC THEN
       ASM_REWRITE_TAC [RING_POLYNOMIAL_VAR, IN_UNIV] THEN
       ASM_MESON_TAC [RING_POLYNOMIAL, PRIME_1],
       ASM_REWRITE_TAC []] THEN
     ANTS_TAC THENL
-     [DISCH_THEN (MP_TAC o MATCH_MP m3) THEN
+     [DISCH_THEN (MP_TAC o MATCH_MP (← MESON [POLY_DEG_0, POLY_RING]
+       (← q "p = ring_0(poly_ring r s) ==> poly_deg r p = 0"))) THEN
       ASM_SIMP_TAC [PRIME_IMP_NZ],
       ALL_TAC] THEN
-    MATCH_MP_TAC m4 THEN
-    REWRITE_TAC [s5] THEN
+    MATCH_MP_TAC (← MESON []
+     (← q r"s = t ==> FINITE s /\ CARD s <= n ==> FINITE t /\ CARD t <= n")) THEN
+    REWRITE_TAC [(← SET_RULE
+     (← q r"{x | x IN s /\ P x} = {x | x IN s /\ Q x} <=>
+                          !x. x IN s ==> (P x <=> Q x)"))] THEN
     X_GEN_TAC (← q "x:A") THEN DISCH_TAC THEN
     RULE_ASSUM_TAC (REWRITE_RULE [← GSYM RING_POLYNOMIAL]) THEN
     ASM_SIMP_TAC [POLY_EVAL_SUB, POLY_RING_CLAUSES, RING_POLYNOMIAL_VAR] THEN
@@ -48448,8 +47918,7 @@ def idWord [HolBase] (C : IdRuleCtx) (tm : term) : ExceptT String IO thm := do
   let pr ← ExceptT.mk (HolMath.Pair.mk_pair (rtm, rtm'))
   let hasm ← ExceptT.mk (list_mk_icomb "ring_monomorphism" [pr, htm])
   let hth ← ASSUME hasm
-  let rmi ← C.RING_MONOMORPHIC_IMAGE_RULE hth
-  let th ← rmi tm
+  let th ← (← C.RING_MONOMORPHIC_IMAGE_RULE hth) tm
   let utm ← liftExcept (rand (concl th))
   let hvs := find_terms (fun t =>
     is_comb t && (match rator t with | .ok f => f == htm | .error _ => false) &&
@@ -48680,10 +48149,9 @@ def setupIntegralDomainRule [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (B
                                 ring_mul r (ring_sub r x y) z = ring_1 r"
      (REPEAT STRIP_TAC THEN EXISTS_TAC (← q "ring_inv r (ring_sub r x y):A") THEN
       ASM_SIMP_TAC [FIELD_MUL_RINV, RING_SUB_EQ_0, RING_INV, RING_SUB])
-    let fA ← q "f:A ring"
     let rabinify_tac : tactic :=
       REPEAT
-       (FIRST_X_ASSUM (MP_TAC o ISPEC fA o
+       (FIRST_X_ASSUM (MP_TAC o ISPEC (← q "f:A ring") o
            MATCH_MP rabinowitsch_lemma) THEN
         ANTS_TAC THENL
          [ASM_REWRITE_TAC [] THEN REPEAT CONJ_TAC THEN
@@ -48717,10 +48185,9 @@ def setupIntegralDomainRule [HolBase] (D : RingTheoryDeps) (BBasics : Basics) (B
                (CONJUNCTS_THEN2 SUBST1_TAC MP_TAC)
                (CHOOSE_THEN (CONJUNCTS_THEN2 ASSUME_TAC
                  (CONJUNCTS_THEN2 SUBST1_TAC MP_TAC))))))
-    let mm ← MESON [] (← q "(~(a = b) ==> F) ==> a = b")
     pure (REWRITE_TAC [DE_MORGAN_THM] THEN
       REPEAT STRIP_TAC THEN
-      TRY (MATCH_MP_TAC mm THEN DISCH_TAC) THEN
+      TRY (MATCH_MP_TAC (← MESON [] (← q "(~(a = b) ==> F) ==> a = b")) THEN DISCH_TAC) THEN
       TRY (FIRST_ASSUM (HolCore.Tactics.CONTR_TAC HolBase.B)) THEN
       carrier_tac THEN
       ASM_REWRITE_TAC [] THEN
